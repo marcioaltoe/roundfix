@@ -1,0 +1,275 @@
+{
+  "version": 1,
+  "skills": {
+    "architectural-analysis": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-methods/architectural-analysis/SKILL.md",
+      "computedHash": "4d41b45f118c6d3b4d6b5191067421d1780d8eacc46cdf6853250ca815dd2d44"
+    },
+    "architecture-diagram": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-methods/architecture-diagram/SKILL.md",
+      "computedHash": "a29d13183103ac28dc0198d661e16cf1ca438865c21250787985c381cc9cc64e"
+    },
+    "brainstorming": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-methods/brainstorming/SKILL.md",
+      "computedHash": "3d898aa741852ad3f01954ba69c3b5b5e132931a570ca6319138bb610747f9c4"
+    },
+    "business-analyst": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-methods/business-analyst/SKILL.md",
+      "computedHash": "d9a3b9b3745570d21be8f3b8722012784b86581b042eb3c7d90a5a6c4c8b957c"
+    },
+    "business-storyteller": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/writing/business-storyteller/SKILL.md",
+      "computedHash": "a29b6dba911bec1616d2bec36bd8b8544982efc89beb03fc65784906865abbd6"
+    },
+    "coding-guidelines": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-core/coding-guidelines/SKILL.md",
+      "computedHash": "28a414c715d3c41aae28a25e2f109813ec3f246f76b5567c1e7d6a128cd289ff"
+    },
+    "commit-style": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-core/commit-style/SKILL.md",
+      "computedHash": "594c9192c732fecd82b15fd003be72c5b32c63e42e1c2bb63558252304d69c64"
+    },
+    "context7": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-core/context7/SKILL.md",
+      "computedHash": "23f0178420043f01cd0f00745eb06eaac6f3eee4ef58f87f1ae353c2a408f79c"
+    },
+    "copywriting": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/writing/copywriting/SKILL.md",
+      "computedHash": "a4d6bf88420121e1a566be53f88380a3a8fd9eaafc48d6d268d9992838663b28"
+    },
+    "council": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-methods/council/SKILL.md",
+      "computedHash": "59e7d9dd757f2c937123a3b972ccb5979944334ea68d47d3e03b7c75cf729268"
+    },
+    "crafting-effective-readmes": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-core/crafting-effective-readmes/SKILL.md",
+      "computedHash": "8cc4d0dde3f669a684de534cd04ea5f39e6ca3d4580a6445f174383b68615a18"
+    },
+    "diagnose": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-core/diagnose/SKILL.md",
+      "computedHash": "15939a26f86edec2d4862042b8564e5a062cb81d04e047a0cea6305c8830b5f5"
+    },
+    "doc-coauthoring": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/writing/doc-coauthoring/SKILL.md",
+      "computedHash": "13553c9a1d41bca871978dec6938a470ddf7b008a8a8d90d878049fb827adc81"
+    },
+    "docs-writer": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/writing/docs-writer/SKILL.md",
+      "computedHash": "50952880c5c74e9ceddf2250a199ef2e6f28cccdd381c193f67aebee85749f61"
+    },
+    "exa-web-search": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/research-tools/exa-web-search/SKILL.md",
+      "computedHash": "d8b53369f54c57dea66e64d83d6f3a27bfeee364d88ff3845f6b7312f6b3c2ae"
+    },
+    "executing-plans": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-core/executing-plans/SKILL.md",
+      "computedHash": "09d910542b633bc9f526cbf911f745ebec50ab7e54ed24e1725e9054c19cb939"
+    },
+    "find-rules": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-core/find-rules/SKILL.md",
+      "computedHash": "83c250b0fd70e94eb9b28390275677d3fe48c91b8e9e1a34f97ef071e35cf3de"
+    },
+    "find-skills": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-core/find-skills/SKILL.md",
+      "computedHash": "6412eb4eb3b91595ebab937f0c69501240e7ba761b3d82510b5cf506ec5c7adc"
+    },
+    "firecrawl": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/research-tools/firecrawl/SKILL.md",
+      "computedHash": "f79f957689cc705613a2731f2f35360192fc9a6a28bc3de73484c973621df5ed"
+    },
+    "game-changing-features": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-methods/game-changing-features/SKILL.md",
+      "computedHash": "6d2e82f414fc585081d526211eaf54f6f0466707c5a9070db025faf073dbf1cc"
+    },
+    "git-rebase": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-core/git-rebase/SKILL.md",
+      "computedHash": "0dee5c78e11da0a8e9a057791ac69392018cc13045d27783f114ba22a1f7207b"
+    },
+    "grill-with-docs": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-methods/grill-with-docs/SKILL.md",
+      "computedHash": "eb0e91e84277283dc2b23ed544399e53afd6b5287e5b6929f25fe8aa608e164b"
+    },
+    "handoff": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-core/handoff/SKILL.md",
+      "computedHash": "1a78d774f8a59db5daa6e65e20a6596872fa8cde769f9a6e3a09b678dd5ae8cc"
+    },
+    "humanizer": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/writing/humanizer/SKILL.md",
+      "computedHash": "3e92f245c00fc670c9a6ac42440a7d07bbe3cfc9a609b01ea8106d93876fa1d3"
+    },
+    "improve-codebase-architecture": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-methods/improve-codebase-architecture/SKILL.md",
+      "computedHash": "ef32aea0a8fab9b365ff9e08a95f8d353e20ca21ea46ec2e73587c86dd341351"
+    },
+    "lesson-learned": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-core/lesson-learned/SKILL.md",
+      "computedHash": "053e3ace7f3fa0e4c90172c7785d4a3ae6c581e25d2f9bebac41ce1e3f9a5d6d"
+    },
+    "monorepo-management": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-core/monorepo-management/SKILL.md",
+      "computedHash": "ab847844b01c6939fb945ce8ff6339a3a34bc475841cf06a5d1e64324c0e33c4"
+    },
+    "no-workarounds": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-core/no-workarounds/SKILL.md",
+      "computedHash": "9b34a293a4a836612b1f8509c521b0ab163cec2105eafc270ebb347badea8471"
+    },
+    "professional-communication": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/writing/professional-communication/SKILL.md",
+      "computedHash": "55913a883b5790413d221b4ecbf2e22ac9cf056e0a4fc2f1742ef48cd981f8fd"
+    },
+    "refactoring-analysis": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-methods/refactoring-analysis/SKILL.md",
+      "computedHash": "cb26e39774d399ebf64375f4b1a0edb5cc5e7190603ec688253a831ec641a304"
+    },
+    "requirements-clarity": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-methods/requirements-clarity/SKILL.md",
+      "computedHash": "724ad93dfcffcb00cd03c0a4a614a2dac933897b938ace6a0b8ed0c5908bc6e3"
+    },
+    "systematic-debugging": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-core/systematic-debugging/SKILL.md",
+      "computedHash": "6785f4c4549a7024c7d84fe06f06781284808875f050974422b330e9524c070a"
+    },
+    "tactical-ddd": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-methods/tactical-ddd/SKILL.md",
+      "computedHash": "08642aa64f73fda57605cc69fe158943d77a571ad38d085d6412845216f3ddb0"
+    },
+    "tech-writer": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/writing/tech-writer/SKILL.md",
+      "computedHash": "9b24073d866d1200eb643b650df58c40972e22c422a46b53c9fb5ef4105ac1da"
+    },
+    "technical-design-doc-creator": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-methods/create-technical-design-doc/SKILL.md",
+      "computedHash": "f349c6f29e78dbde09ef90330cb3f9a6af16d41aa1826fb9a5205060ecfda73f"
+    },
+    "testing-boss": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-core/testing-boss/SKILL.md",
+      "computedHash": "36865bc741803fd1485d7b17789d583591ca2a6bcc3c249b42a3e0d294adb6c3"
+    },
+    "the-fool": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-methods/the-fool/SKILL.md",
+      "computedHash": "6bdba13f4c274424f97601061201c0333a620c0c8fe03f4d68f0f407806e6177"
+    },
+    "to-issues": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-methods/to-issues/SKILL.md",
+      "computedHash": "47f648f3414848ccfc62cb41d2828b7e575fb5e7cbd6c4bdf630c063b5dc5e82"
+    },
+    "to-prd": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-methods/to-prd/SKILL.md",
+      "computedHash": "a6d6d475f1d01c201937fa0c306e55b7056b02023ad615bc92f57514e831dd31"
+    },
+    "to-prompt": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-core/to-prompt/SKILL.md",
+      "computedHash": "c79ce0dd86fd0b9b44f56aee5fb0ee2481a677118e4688a34232c00fb8e3c934"
+    },
+    "triage": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-methods/triage/SKILL.md",
+      "computedHash": "2b6efb6da12d92551772fcc04acf331f4e0e6f7bd9d4cb23ce0b301e0b128feb"
+    },
+    "typescript-advanced": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-core/typescript-advanced/SKILL.md",
+      "computedHash": "719610967f6b9b468ab3b0578aeb39c05ee5ae69cb914928ed91be9aa1399adf"
+    },
+    "verification-before-completion": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-core/verification-before-completion/SKILL.md",
+      "computedHash": "545a9eb4701e91ff8357e12a1b4731deb7442fce01a42f7eb22e5deb8cb53bd3"
+    },
+    "writing-clearly-and-concisely": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/writing/writing-clearly-and-concisely/SKILL.md",
+      "computedHash": "044aa1743f92c1eabd2510931b75c58f5594cfa68c02a14869e0af5e01d3ffae"
+    },
+    "zoom-out": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/dev-core/zoom-out/SKILL.md",
+      "computedHash": "8357aeaece3b709c442eab67e64b86844e05e2f1ea95b109565eba50b6def36e"
+    }
+  }
+}

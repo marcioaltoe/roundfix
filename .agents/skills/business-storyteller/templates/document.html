@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<!--
+  Self-contained business document template. No CDN, no network, print-ready.
+  Replace every {{PLACEHOLDER}}. Write sections as plain HTML inside CONTENT.
+  Inline SVG charts inside <figure class="chart"> blocks.
+  Change the accent color via the - -accent variable to match company branding.
+-->
+<html lang="{{LANG}}">
+<head>
+<meta charset="UTF-8">
+<title>{{TITLE}}</title>
+<style>
+  :root {
+    --accent: {{ACCENT_COLOR}}; /* e.g. #1a5fb4 */
+    --ink: #1f2430;
+    --muted: #5c6470;
+    --rule: #e3e6ea;
+    --bg-soft: #f6f7f9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Avenir Next", "Segoe UI", Inter, -apple-system, sans-serif;
+    color: var(--ink);
+    margin: 0;
+    line-height: 1.55;
+    font-size: 15px;
+  }
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 56px 64px;
+  }
+  header.doc {
+    border-bottom: 3px solid var(--accent);
+    padding-bottom: 20px;
+    margin-bottom: 32px;
+  }
+  .kicker {
+    color: var(--accent);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin: 0 0 10px;
+  }
+  h1 {
+    font-size: 28px;
+    line-height: 1.2;
+    margin: 0 0 10px;
+    letter-spacing: -0.01em;
+  }
+  .subtitle { color: var(--muted); font-size: 16px; margin: 0 0 14px; }
+  .meta { color: var(--muted); font-size: 12.5px; margin: 0; }
+  .meta span + span::before { content: "  ·  "; }
+  h2 {
+    font-size: 19px;
+    margin: 34px 0 10px;
+    letter-spacing: -0.01em;
+  }
+  h2::before {
+    content: "";
+    display: inline-block;
+    width: 18px; height: 3px;
+    background: var(--accent);
+    margin-right: 10px;
+    vertical-align: middle;
+    border-radius: 2px;
+  }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 14px; padding-left: 22px; }
+  li { margin-bottom: 6px; }
+  strong { color: var(--ink); }
+  .summary {
+    background: var(--bg-soft);
+    border-left: 4px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    margin: 0 0 24px;
+  }
+  .summary p { margin: 0 0 6px; }
+  .summary p:last-child { margin: 0; }
+  .ask {
+    background: var(--bg-soft);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 28px 0 0;
+  }
+  .ask .label {
+    color: var(--accent);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin: 0 0 6px;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 14px 0 18px;
+    font-size: 14px;
+  }
+  th {
+    text-align: left;
+    border-bottom: 2px solid var(--accent);
+    padding: 8px 10px;
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  td { border-bottom: 1px solid var(--rule); padding: 9px 10px; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  blockquote {
+    margin: 16px 0;
+    padding: 10px 18px;
+    border-left: 3px solid var(--accent);
+    color: var(--muted);
+    font-style: italic;
+  }
+  figure.chart {
+    margin: 22px 0;
+    text-align: center;
+  }
+  figure.chart svg { max-width: 100%; height: auto; }
+  figure.chart figcaption {
+    color: var(--muted);
+    font-size: 12.5px;
+    margin-top: 8px;
+  }
+  .big-number {
+    color: var(--accent);
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+  .big-number-label { color: var(--muted); font-size: 13px; }
+  .number-row { display: flex; gap: 28px; margin: 20px 0; }
+  .number-row > div { flex: 1; }
+  footer.doc {
+    margin-top: 48px;
+    padding-top: 14px;
+    border-top: 1px solid var(--rule);
+    color: var(--muted);
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+  }
+  @page { size: A4; margin: 18mm 16mm; }
+  @media print {
+    .page { max-width: none; padding: 0; }
+    h2, .summary, .ask, figure.chart, table { break-inside: avoid; }
+    h2 { break-after: avoid; } /* never orphan a heading at the bottom of a page */
+    body { font-size: 13.5px; }
+  }
+  /* Compact mode — REQUIRED for the executive one-pager (<body class="compact">).
+     Tighter type and spacing so a full one-pager fits a single A4 page. */
+  body.compact { font-size: 13px; line-height: 1.45; }
+  body.compact .page { padding: 28px 40px 32px; }
+  body.compact header.doc { padding-bottom: 12px; margin-bottom: 18px; }
+  body.compact h1 { font-size: 22px; }
+  body.compact .subtitle { font-size: 14px; margin-bottom: 8px; }
+  body.compact h2 { font-size: 15.5px; margin: 18px 0 6px; }
+  body.compact p { margin: 0 0 8px; }
+  body.compact ul, body.compact ol { margin: 0 0 8px; padding-left: 18px; }
+  body.compact li { margin-bottom: 3px; }
+  body.compact .summary { padding: 10px 14px; margin-bottom: 14px; }
+  body.compact .ask { padding: 10px 14px; margin-top: 14px; }
+  body.compact table { font-size: 12px; margin: 8px 0 10px; }
+  body.compact th, body.compact td { padding: 5px 8px; }
+  body.compact blockquote { margin: 8px 0; padding: 6px 12px; }
+  body.compact figure.chart { margin: 12px 0; }
+  body.compact footer.doc { margin-top: 20px; padding-top: 8px; }
+  @media print {
+    body.compact { font-size: 11.5px; line-height: 1.4; }
+    body.compact .page { padding: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="doc">
+    <p class="kicker">{{KICKER}}</p>
+    <h1>{{TITLE}}</h1>
+    <p class="subtitle">{{SUBTITLE}}</p>
+    <p class="meta"><span>{{AUTHOR}}</span><span>{{DATE}}</span><span>{{AUDIENCE}}</span></p>
+  </header>
+
+  <!-- Three-line executive summary, when the document asks for a decision:
+  <div class="summary">
+    <p><strong>Recommendation:</strong> ...</p>
+    <p><strong>Impact:</strong> ...</p>
+    <p><strong>Ask:</strong> ...</p>
+  </div>
+  -->
+
+  {{CONTENT}}
+
+  <!-- Single call to action block:
+  <div class="ask">
+    <p class="label">Decision needed</p>
+    <p>...what, who decides, by when...</p>
+  </div>
+  -->
+
+  <footer class="doc">
+    <span>{{FOOTER_LEFT}}</span>
+    <span>{{FOOTER_RIGHT}}</span>
+  </footer>
+</div>
+</body>
+</html>
