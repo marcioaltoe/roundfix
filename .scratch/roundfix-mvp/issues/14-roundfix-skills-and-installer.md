@@ -2,7 +2,7 @@
 title: "Skills: ship Roundfix watch and resolve-round skills"
 type: AFK
 category: enhancement
-state: ready-for-agent
+state: completed
 labels:
   - enhancement
   - ready-for-agent
@@ -30,19 +30,19 @@ contract for child Agents.
 
 ## Acceptance criteria
 
-- [ ] The watch skill instructs agents to prefer `roundfix` commands over manual
+- [x] The watch skill instructs agents to prefer `roundfix` commands over manual
       GitHub scraping and to report Run identity, pull request, Review Source,
       Agent, and state.
-- [ ] The resolve-round skill instructs child Agents to read assigned issue
+- [x] The resolve-round skill instructs child Agents to read assigned issue
       files, triage issues, make valid fixes, update assigned statuses, and run
       verification.
-- [ ] The resolve-round skill forbids commits, pushes, Review Source mutations,
+- [x] The resolve-round skill forbids commits, pushes, Review Source mutations,
       unassigned issue edits, and daemon-owned `duplicated` status changes.
-- [ ] Skill installation supports Codex, Claude Code, and OpenCode-compatible
+- [x] Skill installation supports Codex, Claude Code, and OpenCode-compatible
       directories where the MVP supports them.
-- [ ] Skill text and generated artifacts use Roundfix names only and do not copy
+- [x] Skill text and generated artifacts use Roundfix names only and do not copy
       reference-project branding.
-- [ ] Tests or scripted checks validate skill presence, required sections, and
+- [x] Tests or scripted checks validate skill presence, required sections, and
       forbidden-action wording.
 
 ## Blocked by

@@ -2,7 +2,7 @@
 title: "Daemon: verify and commit successful Batches"
 type: AFK
 category: enhancement
-state: ready-for-agent
+state: completed
 labels:
   - enhancement
   - ready-for-agent
@@ -29,16 +29,16 @@ successful Batch is allowed even while other Unresolved Review Issues remain.
 
 ## Acceptance criteria
 
-- [ ] The Daemon runs the configured verification command after Agent completion
+- [x] The Daemon runs the configured verification command after Agent completion
       and before a Batch commit.
-- [ ] A Batch succeeds only when every assigned Review Issue is terminal and
+- [x] A Batch succeeds only when every assigned Review Issue is terminal and
       verification exits successfully.
-- [ ] Verification failure exits as a Run failure and does not create a commit,
+- [x] Verification failure exits as a Run failure and does not create a commit,
       push, or resolve source threads.
-- [ ] Auto-commit creates one local commit per successful Batch.
-- [ ] Successful Batch commits remain allowed while other Unresolved Review
+- [x] Auto-commit creates one local commit per successful Batch.
+- [x] Successful Batch commits remain allowed while other Unresolved Review
       Issues remain.
-- [ ] Tests use fake git and fake verification runners to prove commit and
+- [x] Tests use fake git and fake verification runners to prove commit and
       failure behavior.
 
 ## Blocked by

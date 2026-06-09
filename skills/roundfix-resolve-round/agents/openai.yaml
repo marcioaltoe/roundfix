@@ -1,0 +1,15 @@
+name: roundfix-resolve-round
+description: Follow the bounded Roundfix Batch contract for assigned Review Issues only.
+entrypoint: SKILL.md
+runtime_hints:
+  owns:
+    - assigned Review Issue files
+    - code edits
+    - tests
+    - verification command execution
+  forbidden:
+    - commits
+    - pushes
+    - Review Source mutations
+    - unassigned issue edits
+    - duplicated status changes

@@ -2,7 +2,7 @@
 title: "Preflight: validate git, PR, and push safety inputs"
 type: AFK
 category: enhancement
-state: ready-for-agent
+state: completed
 labels:
   - enhancement
   - ready-for-agent
@@ -31,15 +31,15 @@ any long-running work or mutation starts.
 
 ## Acceptance criteria
 
-- [ ] Commands can detect git root, current branch, current HEAD, upstream
+- [x] Commands can detect git root, current branch, current HEAD, upstream
       remote, upstream branch, unpushed commit count, and dirty worktree status.
-- [ ] Commands can resolve Open Pull Request metadata, PR Head Branch, and Head
+- [x] Commands can resolve Open Pull Request metadata, PR Head Branch, and Head
       Repository from explicit input or safe inference.
-- [ ] Dirty worktree blockers outside the Artifact Directory fail with exit `2`,
+- [x] Dirty worktree blockers outside the Artifact Directory fail with exit `2`,
       list changed paths and statuses, and describe the required user action.
-- [ ] Auto-push preflight rejects missing upstream information and never plans a
+- [x] Auto-push preflight rejects missing upstream information and never plans a
       force-push.
-- [ ] Tests cover fake git and fake pull request metadata without live network
+- [x] Tests cover fake git and fake pull request metadata without live network
       calls.
 
 ## Blocked by

@@ -2,7 +2,7 @@
 title: "Run state: record Fetch Runs and lock Active Runs"
 type: AFK
 category: enhancement
-state: ready-for-agent
+state: completed
 labels:
   - enhancement
   - ready-for-agent
@@ -33,16 +33,16 @@ pushing.
 
 ## Acceptance criteria
 
-- [ ] Roundfix opens or creates the central Run Database under Roundfix Home and
+- [x] Roundfix opens or creates the central Run Database under Roundfix Home and
       applies migrations before creating any Run.
-- [ ] `fetch` creates a Fetch Run only after Preflight Validation succeeds.
-- [ ] A successful Fetch Run reaches the `Fetched` terminal outcome and releases
+- [x] `fetch` creates a Fetch Run only after Preflight Validation succeeds.
+- [x] A successful Fetch Run reaches the `Fetched` terminal outcome and releases
       any Active Run lock it acquired.
-- [ ] A second Active Run for the same Head Repository and PR Head Branch is
+- [x] A second Active Run for the same Head Repository and PR Head Branch is
       rejected with the existing run identifier and state.
-- [ ] Terminal outcomes, including `Fetched` and `Stopped`, release the logical
+- [x] Terminal outcomes, including `Fetched` and `Stopped`, release the logical
       Active Run lock.
-- [ ] Preflight Validation failures do not create Run records or Active Run
+- [x] Preflight Validation failures do not create Run records or Active Run
       locks.
 
 ## Blocked by

@@ -2,7 +2,7 @@
 title: "Stop: terminate Runs without hiding unfinished work"
 type: AFK
 category: enhancement
-state: ready-for-agent
+state: completed
 labels:
   - enhancement
   - ready-for-agent
@@ -33,17 +33,17 @@ mutation.
 
 ## Acceptance criteria
 
-- [ ] A Stop Request with no active Agent marks the Run `Stopped`, releases the
+- [x] A Stop Request with no active Agent marks the Run `Stopped`, releases the
       Active Run lock, and exits cleanly.
-- [ ] A Stop Request with an active Agent sends graceful termination, waits up to
+- [x] A Stop Request with an active Agent sends graceful termination, waits up to
       the configured grace period, then kills the process if needed.
-- [ ] Stop handling persists available Agent output and reports changed paths and
+- [x] Stop handling persists available Agent output and reports changed paths and
       statuses left in the worktree.
-- [ ] Stop handling does not run verification, commit, push, fetch more issues,
+- [x] Stop handling does not run verification, commit, push, fetch more issues,
       or resolve source threads after the Stop Request.
-- [ ] A later `resolve` or `watch` creates a new Run, and dirty preserved work
+- [x] A later `resolve` or `watch` creates a new Run, and dirty preserved work
       blocks that new Run during Preflight Validation.
-- [ ] Roundfix-controlled clean stops exit `0`; SIGINT exits `130`.
+- [x] Roundfix-controlled clean stops exit `0`; SIGINT exits `130`.
 
 ## Blocked by
 

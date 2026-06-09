@@ -2,7 +2,7 @@
 title: "Fetch: import CodeRabbit findings as Round artifacts"
 type: AFK
 category: enhancement
-state: ready-for-agent
+state: completed
 labels:
   - enhancement
   - ready-for-agent
@@ -31,18 +31,18 @@ must not start Agent work or mutate git.
 
 ## Acceptance criteria
 
-- [ ] `fetch` retrieves CodeRabbit review comments and review threads for the
+- [x] `fetch` retrieves CodeRabbit review comments and review threads for the
       current pull request head and filters out non-CodeRabbit and resolved
       source threads.
-- [ ] Review Source identifiers, review hashes, source review identifiers, and
+- [x] Review Source identifiers, review hashes, source review identifiers, and
       source review submission timestamps are preserved in markdown artifacts.
-- [ ] Markdown artifacts include the MVP frontmatter fields and allowed Review
+- [x] Markdown artifacts include the MVP frontmatter fields and allowed Review
       Issue statuses.
-- [ ] Fetched reviewer text is treated as untrusted content and is never
+- [x] Fetched reviewer text is treated as untrusted content and is never
       executed, shell-interpolated, or logged with credentials.
-- [ ] A successful fetch persists one Round, records `Fetched`, exits `0`, and
+- [x] A successful fetch persists one Round, records `Fetched`, exits `0`, and
       does not start an Agent, commit, push, or resolve source threads.
-- [ ] Tests use fake GitHub or fake CodeRabbit responses and temporary artifact
+- [x] Tests use fake GitHub or fake CodeRabbit responses and temporary artifact
       storage.
 
 ## Blocked by

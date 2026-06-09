@@ -2,7 +2,7 @@
 title: "Watch: repeat CodeRabbit Rounds to a terminal outcome"
 type: AFK
 category: enhancement
-state: ready-for-agent
+state: completed
 labels:
   - enhancement
   - ready-for-agent
@@ -36,17 +36,17 @@ repeats until the Run reaches a documented terminal outcome.
 
 ## Acceptance criteria
 
-- [ ] `watch` waits for CodeRabbit to review or settle the current HEAD before
+- [x] `watch` waits for CodeRabbit to review or settle the current HEAD before
       fetching issues.
-- [ ] `watch` observes the configured poll interval, quiet period, review
+- [x] `watch` observes the configured poll interval, quiet period, review
       timeout, `max_rounds`, and `max_run_duration`.
-- [ ] `Clean`, `MaxRoundsReached`, `BudgetExceeded`, `TimedOut`, `Failed`, and
+- [x] `Clean`, `MaxRoundsReached`, `BudgetExceeded`, `TimedOut`, `Failed`, and
       `Stopped` terminal outcomes map to the documented exit behavior.
-- [ ] `MaxRoundsReached` exits as a non-error terminal outcome and reports any
+- [x] `MaxRoundsReached` exits as a non-error terminal outcome and reports any
       remaining Unresolved Review Issues.
-- [ ] Review timeout output offers a manual review trigger action without
+- [x] Review timeout output offers a manual review trigger action without
       automatically posting one.
-- [ ] Tests run the full loop with fake Review Source, fake Agent, fake git,
+- [x] Tests run the full loop with fake Review Source, fake Agent, fake git,
       fake verification, and fake clock boundaries.
 
 ## Blocked by

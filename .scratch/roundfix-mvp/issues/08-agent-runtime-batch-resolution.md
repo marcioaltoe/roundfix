@@ -2,7 +2,7 @@
 title: "Agent: run a bounded Batch through an ACP Runtime"
 type: AFK
 category: enhancement
-state: ready-for-agent
+state: completed
 labels:
   - enhancement
   - ready-for-agent
@@ -33,16 +33,16 @@ Review Source mutations.
 
 ## Acceptance criteria
 
-- [ ] Runtime probing supports the configured Agent, command overrides, model
+- [x] Runtime probing supports the configured Agent, command overrides, model
       options, and actionable install or authentication diagnostics.
-- [ ] The child-agent prompt includes assigned issue files, required triage
+- [x] The child-agent prompt includes assigned issue files, required triage
       steps, verification expectations, and forbidden actions.
-- [ ] Agent output streams to the command path and is persisted with the Run.
-- [ ] Agent failure marks the Batch path as failed without committing, pushing,
+- [x] Agent output streams to the command path and is persisted with the Run.
+- [x] Agent failure marks the Batch path as failed without committing, pushing,
       or resolving source threads.
-- [ ] Roundfix validates that every assigned Review Issue reaches a terminal
+- [x] Roundfix validates that every assigned Review Issue reaches a terminal
       local status before a Batch can proceed.
-- [ ] Tests use a fake ACP Runtime and prove no git or Review Source mutation is
+- [x] Tests use a fake ACP Runtime and prove no git or Review Source mutation is
       attempted by this slice.
 
 ## Blocked by

@@ -2,7 +2,7 @@
 title: "Preflight: validate config and Artifact Directory"
 type: AFK
 category: enhancement
-state: ready-for-agent
+state: completed
 labels:
   - enhancement
   - ready-for-agent
@@ -30,15 +30,15 @@ through MVP commands and testable without live GitHub access.
 
 ## Acceptance criteria
 
-- [ ] Built-in defaults, User Config, Project Config, and CLI flags apply in the
+- [x] Built-in defaults, User Config, Project Config, and CLI flags apply in the
       documented order.
-- [ ] Invalid YAML, invalid config values, and invalid duration values fail
+- [x] Invalid YAML, invalid config values, and invalid duration values fail
       during Preflight Validation with exit `2` and concrete diagnostics.
-- [ ] Empty, absolute, relative, and home-relative Artifact Directory values
+- [x] Empty, absolute, relative, and home-relative Artifact Directory values
       resolve according to the product contract.
-- [ ] The Artifact Directory is created when missing, rejected when it is not a
+- [x] The Artifact Directory is created when missing, rejected when it is not a
       directory, and checked for writability before fetching.
-- [ ] Artifact Directory validation failures do not create Run records, markdown
+- [x] Artifact Directory validation failures do not create Run records, markdown
       artifacts, Agent processes, commits, pushes, or Review Source calls.
 
 ## Blocked by

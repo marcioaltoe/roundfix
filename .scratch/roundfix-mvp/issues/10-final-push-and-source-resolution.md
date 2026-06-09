@@ -2,7 +2,7 @@
 title: "Final Push: push only when Review Issues are terminal"
 type: AFK
 category: enhancement
-state: ready-for-agent
+state: completed
 labels:
   - enhancement
   - ready-for-agent
@@ -32,15 +32,15 @@ remain and push safety requirements are satisfied.
 
 ## Acceptance criteria
 
-- [ ] Source threads for `resolved` and `invalid` assigned issues are resolved
+- [x] Source threads for `resolved` and `invalid` assigned issues are resolved
       only after Batch verification succeeds.
-- [ ] Older `duplicated` occurrences remain local-only and do not trigger
+- [x] Older `duplicated` occurrences remain local-only and do not trigger
       separate source thread resolution.
-- [ ] Final Push is blocked while any Unresolved Review Issues remain.
-- [ ] Final Push requires auto-push, auto-commit, known upstream target, and
+- [x] Final Push is blocked while any Unresolved Review Issues remain.
+- [x] Final Push requires auto-push, auto-commit, known upstream target, and
       local commits not present on the target branch.
-- [ ] The push sends local HEAD to the PR Head Branch without force-push.
-- [ ] Tests prove no per-issue, per-Batch, or per-Round push happens.
+- [x] The push sends local HEAD to the PR Head Branch without force-push.
+- [x] Tests prove no per-issue, per-Batch, or per-Round push happens.
 
 ## Blocked by
 

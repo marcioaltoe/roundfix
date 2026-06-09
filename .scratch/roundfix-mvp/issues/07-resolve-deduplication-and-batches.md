@@ -2,7 +2,7 @@
 title: "Resolve: deduplicate Review Issues and assign Batches"
 type: AFK
 category: enhancement
-state: ready-for-agent
+state: completed
 labels:
   - enhancement
   - ready-for-agent
@@ -32,17 +32,17 @@ artifact bookkeeping until the newest occurrence reaches a terminal outcome.
 
 ## Acceptance criteria
 
-- [ ] Review Issue Fingerprints prefer source thread identity and fall back to a
+- [x] Review Issue Fingerprints prefer source thread identity and fall back to a
       provider-specific review hash.
-- [ ] Newest duplicate selection orders by Round, source review submission time,
+- [x] Newest duplicate selection orders by Round, source review submission time,
       and Round creation time.
-- [ ] Ambiguous newest duplicate selection fails during Preflight Validation and
+- [x] Ambiguous newest duplicate selection fails during Preflight Validation and
       does not create a Run.
-- [ ] Only newest unresolved occurrences are assigned to Agent Batches.
-- [ ] Older duplicate occurrences are associated with the newest occurrence and
+- [x] Only newest unresolved occurrences are assigned to Agent Batches.
+- [x] Older duplicate occurrences are associated with the newest occurrence and
       marked `duplicated` only after the newest occurrence reaches `resolved` or
       `invalid`.
-- [ ] Tests prove duplicate groups produce one Agent assignment and older
+- [x] Tests prove duplicate groups produce one Agent assignment and older
       duplicate occurrences do not resolve source threads separately.
 
 ## Blocked by
