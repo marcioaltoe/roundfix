@@ -33,11 +33,37 @@ const (
 	KindAgentStatus      Kind = "agent.status"
 	KindAgentRaw         Kind = "agent.raw"
 
-	// KindDaemonStatus reports daemon-owned Run lifecycle status such as a
-	// Stop Request observed between Batches. The full daemon taxonomy
-	// arrives with the daemon event stream PRD.
-	KindDaemonStatus Kind = "daemon.status"
+	// Daemon kinds cover the orchestration loop: every user-meaningful
+	// state transition appends one of these with a small payload of IDs
+	// and counts. Large output stays in agent-source events.
+	KindDaemonStatus           Kind = "daemon.status"
+	KindDaemonReviewStatus     Kind = "daemon.review_status"
+	KindDaemonQuietPeriod      Kind = "daemon.quiet_period"
+	KindDaemonFetch            Kind = "daemon.fetch"
+	KindDaemonSelection        Kind = "daemon.selection"
+	KindDaemonBatch            Kind = "daemon.batch"
+	KindDaemonVerification     Kind = "daemon.verification"
+	KindDaemonCommit           Kind = "daemon.commit"
+	KindDaemonPush             Kind = "daemon.push"
+	KindDaemonSourceResolution Kind = "daemon.source_resolution"
+	KindDaemonRetry            Kind = "daemon.retry"
+	KindDaemonOutcome          Kind = "daemon.outcome"
 )
+
+// IsDaemonKind reports whether the kind belongs to the known daemon
+// vocabulary. Readers render these from the bounded summary; unknown kinds
+// stay skippable.
+func IsDaemonKind(kind Kind) bool {
+	switch kind {
+	case KindDaemonStatus, KindDaemonReviewStatus, KindDaemonQuietPeriod,
+		KindDaemonFetch, KindDaemonSelection, KindDaemonBatch,
+		KindDaemonVerification, KindDaemonCommit, KindDaemonPush,
+		KindDaemonSourceResolution, KindDaemonRetry, KindDaemonOutcome:
+		return true
+	default:
+		return false
+	}
+}
 
 // RunEvent is one ordered product record of something meaningful that
 // happened during a Run. For agent-source events the payload is the raw ACP

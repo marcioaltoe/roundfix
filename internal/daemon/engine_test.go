@@ -421,7 +421,7 @@ func TestResolveCycleStopBeforeBatchPublishesStopAndDoesNothing(t *testing.T) {
 		t.Fatalf("expected no daemon actions after Stop Request, got %v", *fixture.calls)
 	}
 	kinds := fixture.sink.kinds()
-	if len(kinds) != 1 || kinds[0] != runevent.KindDaemonStatus {
+	if len(kinds) == 0 || kinds[len(kinds)-1] != runevent.KindDaemonStatus {
 		t.Fatalf("expected daemon stop event published to the sink, got %v", kinds)
 	}
 }
@@ -450,8 +450,14 @@ func TestResolveCycleStopDuringAgentPreservesWorktreeAndHaltsDaemonActions(t *te
 		t.Fatal("expected stopped Batch to preserve issue state, got failed")
 	}
 	kinds := fixture.sink.kinds()
-	if len(kinds) != 1 || kinds[0] != runevent.KindAgentStatus {
+	if len(kinds) == 0 || kinds[len(kinds)-1] != runevent.KindAgentStatus {
 		t.Fatalf("expected the runner's stop event to reach the sink, got %v", kinds)
+	}
+	for _, kind := range kinds {
+		switch kind {
+		case runevent.KindDaemonVerification, runevent.KindDaemonCommit, runevent.KindDaemonPush, runevent.KindDaemonSourceResolution:
+			t.Fatalf("expected no unsafe daemon events after stop, got %v", kinds)
+		}
 	}
 }
 
@@ -526,7 +532,9 @@ func TestResolveCycleFailsRunWhenCriticalJournalSinkFails(t *testing.T) {
 	if cycleErr == nil || !strings.Contains(cycleErr.Error(), "journal append failed") {
 		t.Fatalf("expected journal append failure to fail the Run, got %v", cycleErr)
 	}
-	if got := strings.Join(*fixture.calls, ">"); got != "agent" {
+	// Publication is non-optional: the selection event fails before any
+	// daemon action, so nothing beyond (at most) the Agent ran.
+	if got := strings.Join(*fixture.calls, ">"); strings.Contains(got, "verify") || strings.Contains(got, "commit") || strings.Contains(got, "source") {
 		t.Fatalf("expected cycle halted after publish failure, got %q", got)
 	}
 }

@@ -2276,7 +2276,12 @@ func journaledRunEvents(t *testing.T, homeDir string, stderr string) (string, []
 	t.Helper()
 	runID := ""
 	for _, line := range strings.Split(stderr, "\n") {
-		if value, ok := strings.CutPrefix(strings.TrimSpace(line), "Run: "); ok {
+		trimmed := strings.TrimSpace(line)
+		if value, ok := strings.CutPrefix(trimmed, "Run: "); ok {
+			runID = strings.TrimSpace(value)
+			break
+		}
+		if value, ok := strings.CutPrefix(trimmed, "Watch Run: "); ok {
 			runID = strings.TrimSpace(value)
 			break
 		}
@@ -2321,12 +2326,18 @@ func TestResolveJournalsAgentRunEventsDurably(t *testing.T) {
 	if len(events) == 0 {
 		t.Fatal("expected journaled Run Events after the Resolve Run")
 	}
-	event := events[0].Event
+	var event runevent.RunEvent
+	for _, entry := range events {
+		if entry.Event.Kind == runevent.KindAgentRaw {
+			event = entry.Event
+			break
+		}
+	}
+	if event.Kind != runevent.KindAgentRaw || event.Source != runevent.SourceAgent {
+		t.Fatalf("expected agent.raw journal entry, got %+v", events)
+	}
 	if event.RunID != runID || event.Batch != 1 {
 		t.Fatalf("expected Run identity on journaled event, got %+v", event)
-	}
-	if event.Source != runevent.SourceAgent || event.Kind != runevent.KindAgentRaw {
-		t.Fatalf("expected agent.raw journal entry, got %+v", event)
 	}
 	if !strings.Contains(event.Summary, "fake agent output") {
 		t.Fatalf("expected bounded summary, got %q", event.Summary)
@@ -2853,4 +2864,215 @@ func withAttachSleep(t *testing.T, sleep func(ctx context.Context) error) {
 	t.Cleanup(func() {
 		attachSleep = old
 	})
+}
+
+func daemonKindSequence(events []store.JournalEvent) []string {
+	kinds := []string{}
+	for _, entry := range events {
+		if entry.Event.Source != runevent.SourceDaemon {
+			continue
+		}
+		kinds = append(kinds, string(entry.Event.Kind))
+	}
+	return kinds
+}
+
+func assertOrderedSubsequence(t *testing.T, haystack []string, expected []string) {
+	t.Helper()
+	index := 0
+	for _, item := range haystack {
+		if index < len(expected) && item == expected[index] {
+			index++
+		}
+	}
+	if index != len(expected) {
+		t.Fatalf("expected ordered subsequence %v in %v (matched %d)", expected, haystack, index)
+	}
+}
+
+func TestWatchRunJournalsOrderedLoopNarrative(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean watch exit, got %d stderr=%q", code, stderr.String())
+	}
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	kinds := daemonKindSequence(events)
+	assertOrderedSubsequence(t, kinds, []string{
+		string(runevent.KindDaemonReviewStatus),
+		string(runevent.KindDaemonFetch),
+		string(runevent.KindDaemonFetch),
+		string(runevent.KindDaemonSelection),
+		string(runevent.KindDaemonBatch),
+		string(runevent.KindDaemonVerification),
+		string(runevent.KindDaemonVerification),
+		string(runevent.KindDaemonCommit),
+		string(runevent.KindDaemonSourceResolution),
+		string(runevent.KindDaemonBatch),
+		string(runevent.KindDaemonPush),
+		string(runevent.KindDaemonOutcome),
+	})
+	pushed := 0
+	for _, entry := range events {
+		if entry.Event.Kind == runevent.KindDaemonPush && strings.Contains(string(entry.Event.Payload), `"pushed"`) {
+			pushed++
+		}
+	}
+	if pushed != 1 {
+		t.Fatalf("expected exactly one pushed decision on the clean Round, got %d", pushed)
+	}
+	last := events[len(events)-1].Event
+	if last.Kind != runevent.KindDaemonOutcome || !strings.Contains(string(last.Payload), `"Clean"`) {
+		t.Fatalf("expected Clean outcome event last, got %+v", last)
+	}
+}
+
+func TestStoppedRunJournalsStopWithoutLaterUnsafeDaemonEvents(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withAgentRunner(t, &fakeStoppingAgentRunner{})
+	withChangedPaths(t, []preflight.ChangedPath{{Status: "M", Path: "src/app.go"}})
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean Stop Request exit, got %d", code)
+	}
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	stopIndex := -1
+	for index, entry := range events {
+		if entry.Event.Kind == runevent.KindAgentStatus && strings.Contains(string(entry.Event.Payload), `"stopped"`) {
+			stopIndex = index
+		}
+	}
+	if stopIndex < 0 {
+		t.Fatalf("expected stop event journaled, got %+v", events)
+	}
+	for _, entry := range events[stopIndex+1:] {
+		switch entry.Event.Kind {
+		case runevent.KindDaemonVerification, runevent.KindDaemonCommit, runevent.KindDaemonPush, runevent.KindDaemonSourceResolution, runevent.KindDaemonFetch:
+			t.Fatalf("expected no unsafe daemon events after stop, got %+v", entry.Event)
+		}
+	}
+	last := events[len(events)-1].Event
+	if last.Kind != runevent.KindDaemonOutcome || !strings.Contains(string(last.Payload), `"Stopped"`) {
+		t.Fatalf("expected Stopped outcome event last, got %+v", last)
+	}
+}
+
+func TestFailedVerificationJournalsFailureWithoutCommitEvents(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withVerifier(t, &fakeVerifier{err: errors.New("tests failed")})
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code == 0 {
+		t.Fatal("expected failed verification to fail the Run")
+	}
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	failed := false
+	for _, entry := range events {
+		if entry.Event.Kind == runevent.KindDaemonVerification && strings.Contains(string(entry.Event.Payload), `"failed"`) {
+			failed = true
+		}
+		if entry.Event.Kind == runevent.KindDaemonCommit {
+			t.Fatalf("expected no commit events after failed verification, got %+v", entry.Event)
+		}
+		if entry.Event.Kind == runevent.KindDaemonPush && strings.Contains(string(entry.Event.Payload), `"pushed"`) {
+			t.Fatalf("expected no push after failed verification, got %+v", entry.Event)
+		}
+	}
+	if !failed {
+		t.Fatalf("expected verification failure event journaled, got %+v", events)
+	}
+	last := events[len(events)-1].Event
+	if last.Kind != runevent.KindDaemonOutcome || !strings.Contains(string(last.Payload), `"Failed"`) {
+		t.Fatalf("expected Failed outcome event last, got %+v", last)
+	}
+}
+
+func TestTriageOnlyBatchJournalsCommitSkipDecision(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	// Identical snapshots: the Agent triaged without touching the worktree.
+	overrideCollaborators(t, func(collaborators *engineCollaborators) {
+		collaborators.worktree = staticWorktree{}
+	})
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected triage-only Batch to succeed, got %d stderr=%q", code, stderr.String())
+	}
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	skipped := false
+	for _, entry := range events {
+		if entry.Event.Kind == runevent.KindDaemonCommit && strings.Contains(string(entry.Event.Payload), `"skipped"`) {
+			skipped = true
+		}
+	}
+	if !skipped {
+		t.Fatalf("expected commit-skip decision journaled, got %v", daemonKindSequence(events))
+	}
+}
+
+type staticWorktree struct{}
+
+func (staticWorktree) Snapshot(context.Context, string) ([]string, error) {
+	return []string{"user-wip.txt"}, nil
+}
+
+func TestAttachRendersWatchDaemonEventsInTimeline(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	var watchStdout bytes.Buffer
+	var watchStderr bytes.Buffer
+	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &watchStdout, &watchStderr)
+	if code != 0 {
+		t.Fatalf("seed watch run failed: %d stderr=%q", code, watchStderr.String())
+	}
+	runID := ""
+	for _, line := range strings.Split(watchStderr.String(), "\n") {
+		if value, ok := strings.CutPrefix(strings.TrimSpace(line), "Watch Run: "); ok {
+			runID = strings.TrimSpace(value)
+			break
+		}
+	}
+	if runID == "" {
+		t.Fatalf("expected Watch Run id, got %q", watchStderr.String())
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	attachCode := RunContext(context.Background(), []string{"attach", runID}, &stdout, &stderr)
+
+	if attachCode != 0 {
+		t.Fatalf("expected clean attach exit, got %d stderr=%q", attachCode, stderr.String())
+	}
+	for _, expected := range []string{
+		"Review Source status: settled",
+		"Verification command passed:",
+		"Batch commit created:",
+		"Final Push completed:",
+		"Run reached Clean.",
+	} {
+		if !strings.Contains(stdout.String(), expected) {
+			t.Fatalf("expected attach timeline to narrate %q, got:\n%s", expected, stdout.String())
+		}
+	}
 }

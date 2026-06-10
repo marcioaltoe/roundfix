@@ -2,10 +2,12 @@ package watch
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
+	"roundfix/internal/runevent"
 	"roundfix/internal/store"
 )
 
@@ -16,6 +18,7 @@ const (
 )
 
 type Request struct {
+	RunID          string
 	PRNumber       string
 	HeadSHA        string
 	UntilClean     bool
@@ -120,6 +123,9 @@ type Dependencies struct {
 	Resolver     Resolver
 	Clock        Clock
 	Sleeper      Sleeper
+	// Sink receives watch-loop Run Events: review status waits, quiet
+	// periods, and fetch results. Nil means events are discarded.
+	Sink runevent.Sink
 }
 
 func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
@@ -134,13 +140,17 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 	if sleeper == nil {
 		sleeper = realSleeper{}
 	}
+	if deps.Sink == nil {
+		deps.Sink = runevent.Discard
+	}
+	publisher := watchEventPublisher{sink: deps.Sink, runID: req.RunID, clock: clock}
 
 	startedAt := clock.Now()
 	for round := 1; round <= req.MaxRounds; round++ {
 		if budgetExceeded(req, startedAt, clock.Now()) {
 			return Result{Outcome: store.StateBudgetExceeded, Rounds: round - 1}, nil
 		}
-		status, err := waitForSettled(ctx, req, deps.StatusSource, clock, sleeper)
+		status, err := waitForSettled(ctx, req, deps.StatusSource, clock, sleeper, publisher)
 		if err != nil {
 			return Result{Outcome: store.StateFailed, Rounds: round - 1}, err
 		}
@@ -151,6 +161,14 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 				ManualReviewCommand: "@coderabbitai review",
 			}, nil
 		}
+		if req.QuietPeriod > 0 {
+			if err := publisher.publish(ctx, runevent.KindDaemonQuietPeriod,
+				fmt.Sprintf("Quiet period: waiting %s before fetching Round %03d.", req.QuietPeriod, round),
+				map[string]any{"seconds": req.QuietPeriod.Seconds(), "round": round},
+			); err != nil {
+				return Result{Outcome: store.StateFailed, Rounds: round - 1}, err
+			}
+		}
 		if err := sleeper.Sleep(ctx, req.QuietPeriod); err != nil {
 			return Result{Outcome: store.StateFailed, Rounds: round - 1}, err
 		}
@@ -158,8 +176,20 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 			return Result{Outcome: store.StateBudgetExceeded, Rounds: round - 1}, nil
 		}
 
+		if err := publisher.publish(ctx, runevent.KindDaemonFetch,
+			fmt.Sprintf("Fetching Round %03d from the Review Source.", round),
+			map[string]any{"phase": "started", "round": round},
+		); err != nil {
+			return Result{Outcome: store.StateFailed, Rounds: round - 1}, err
+		}
 		fetched, err := deps.Fetcher.Fetch(ctx, round)
 		if err != nil {
+			return Result{Outcome: store.StateFailed, Rounds: round - 1}, err
+		}
+		if err := publisher.publish(ctx, runevent.KindDaemonFetch,
+			fmt.Sprintf("Fetched Round %03d with %d Review Issue(s).", fetched.Round, fetched.Issues),
+			map[string]any{"phase": "completed", "round": fetched.Round, "issues": fetched.Issues},
+		); err != nil {
 			return Result{Outcome: store.StateFailed, Rounds: round - 1}, err
 		}
 		if fetched.Issues == 0 {
@@ -186,7 +216,7 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 	return Result{Outcome: store.StateMaxRoundsReached, Rounds: req.MaxRounds}, nil
 }
 
-func waitForSettled(ctx context.Context, req Request, source StatusSource, clock Clock, sleeper Sleeper) (Status, error) {
+func waitForSettled(ctx context.Context, req Request, source StatusSource, clock Clock, sleeper Sleeper, publisher watchEventPublisher) (Status, error) {
 	startedAt := clock.Now()
 	for {
 		if err := ctx.Err(); err != nil {
@@ -197,6 +227,12 @@ func waitForSettled(ctx context.Context, req Request, source StatusSource, clock
 			HeadSHA:  req.HeadSHA,
 		})
 		if err != nil {
+			return Status{}, err
+		}
+		if err := publisher.publish(ctx, runevent.KindDaemonReviewStatus,
+			fmt.Sprintf("Review Source status: %s", status.State),
+			map[string]any{"state": status.State, "detail": status.Detail},
+		); err != nil {
 			return Status{}, err
 		}
 		if status.State == StatusSettled {
@@ -247,4 +283,34 @@ func validateRequest(req Request, deps Dependencies) error {
 
 func budgetExceeded(req Request, startedAt time.Time, now time.Time) bool {
 	return req.BudgetEnabled && !now.Before(startedAt.Add(req.MaxRunDuration))
+}
+
+// watchEventPublisher appends watch-loop Run Events: status waits, quiet
+// periods, and fetch results. Publication is part of the Run state
+// contract, so a critical sink failure fails the Run.
+type watchEventPublisher struct {
+	sink  runevent.Sink
+	runID string
+	clock Clock
+}
+
+func (publisher watchEventPublisher) publish(ctx context.Context, kind runevent.Kind, summary string, payload any) error {
+	if publisher.runID == "" {
+		return nil
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("encode watch event payload: %w", err)
+	}
+	if err := publisher.sink.Publish(ctx, runevent.RunEvent{
+		RunID:   publisher.runID,
+		Source:  runevent.SourceDaemon,
+		Kind:    kind,
+		Summary: runevent.BoundSummary(summary),
+		Time:    publisher.clock.Now(),
+		Payload: raw,
+	}); err != nil {
+		return fmt.Errorf("publish watch event %s: %w", kind, err)
+	}
+	return nil
 }

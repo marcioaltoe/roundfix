@@ -159,6 +159,12 @@ func (engine *Engine) ResolveCycle(ctx context.Context, plan CyclePlan) (CycleRe
 	if err := validateCyclePlan(plan); err != nil {
 		return CycleResult{}, err
 	}
+	if err := engine.publishDaemonEvent(ctx, plan.RunID, 0, runevent.KindDaemonSelection,
+		fmt.Sprintf("Selected %d Review Issue(s) into %d Batch(es); %d duplicate occurrence(s) associated.", plan.TotalIssues, len(plan.Batches), len(plan.Duplicates)),
+		map[string]any{"issues": plan.TotalIssues, "batches": len(plan.Batches), "duplicates": len(plan.Duplicates)},
+	); err != nil {
+		return CycleResult{}, err
+	}
 	result := CycleResult{Remaining: plan.TotalIssues}
 	for index, batch := range plan.Batches {
 		if err := ctx.Err(); err != nil {
@@ -190,11 +196,17 @@ func (engine *Engine) FinalPush(ctx context.Context, req FinalPushRequest) error
 			return err
 		}
 	}
-	return engine.deps.Pusher.Push(ctx, PushRequest{
+	if err := engine.deps.Pusher.Push(ctx, PushRequest{
 		WorkDir: req.WorkDir,
 		Remote:  req.Remote,
 		Branch:  req.Branch,
-	})
+	}); err != nil {
+		return err
+	}
+	return engine.publishDaemonEvent(ctx, req.RunID, 0, runevent.KindDaemonPush,
+		fmt.Sprintf("Final Push completed: git push %s HEAD:%s", req.Remote, req.Branch),
+		map[string]any{"decision": "pushed", "remote": req.Remote, "branch": req.Branch},
+	)
 }
 
 func (engine *Engine) resolveBatch(ctx context.Context, plan CyclePlan, batch rounds.Batch, batchIndex int, batchTotal int) (BatchOutcome, int, error) {
@@ -238,11 +250,23 @@ func (engine *Engine) resolveBatch(ctx context.Context, plan CyclePlan, batch ro
 	if err != nil {
 		return outcome, 0, err
 	}
+	if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonBatch,
+		fmt.Sprintf("Batch %03d completed; %d Unresolved Review Issue(s) remain.", batch.Number, remaining),
+		map[string]any{"phase": "completed", "batch": batch.Number, "remaining": remaining},
+	); err != nil {
+		return outcome, 0, err
+	}
 	return outcome, remaining, nil
 }
 
 func (engine *Engine) runBatchAgent(ctx context.Context, plan CyclePlan, batch rounds.Batch, batchIndex int, batchTotal int) error {
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateResolvingWithAgent); err != nil {
+		return err
+	}
+	if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonBatch,
+		fmt.Sprintf("Batch %03d/%03d started with %d Review Issue(s).", batchIndex, batchTotal, len(batch.Issues)),
+		map[string]any{"phase": "started", "batch": batch.Number, "issues": len(batch.Issues)},
+	); err != nil {
 		return err
 	}
 	prompt := agent.BuildPrompt(agent.PromptRequest{
@@ -276,6 +300,10 @@ func (engine *Engine) runBatchAgent(ctx context.Context, plan CyclePlan, batch r
 			return runErr
 		}
 		_ = agent.MarkBatchFailed(batch)
+		_ = engine.publishDaemonEvent(context.WithoutCancel(ctx), plan.RunID, batch.Number, runevent.KindDaemonBatch,
+			fmt.Sprintf("Batch %03d failed: %v", batch.Number, runErr),
+			map[string]any{"phase": "failed", "batch": batch.Number, "error": runErr.Error()},
+		)
 		return runErr
 	}
 	if err := ctx.Err(); err != nil {
@@ -294,12 +322,28 @@ func (engine *Engine) verifyBatch(ctx context.Context, plan CyclePlan, batch rou
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateVerifying); err != nil {
 		return err
 	}
+	if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonVerification,
+		fmt.Sprintf("Verification started: %s", plan.Verification),
+		map[string]any{"phase": "started", "command": plan.Verification},
+	); err != nil {
+		return err
+	}
 	if err := engine.deps.Verifier.Verify(ctx, VerifyRequest{
 		WorkDir: plan.GitRoot,
 		Command: plan.Verification,
 		Stream:  engine.deps.Progress,
 	}); err != nil {
 		_ = agent.MarkBatchFailed(batch)
+		_ = engine.publishDaemonEvent(context.WithoutCancel(ctx), plan.RunID, batch.Number, runevent.KindDaemonVerification,
+			fmt.Sprintf("Verification failed: %s", plan.Verification),
+			map[string]any{"phase": "failed", "command": plan.Verification, "error": err.Error()},
+		)
+		return err
+	}
+	if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonVerification,
+		fmt.Sprintf("Verification command passed: %s", plan.Verification),
+		map[string]any{"phase": "passed", "command": plan.Verification},
+	); err != nil {
 		return err
 	}
 	fmt.Fprintf(engine.deps.Progress, "Verification command passed: %s\n", plan.Verification)
@@ -309,7 +353,11 @@ func (engine *Engine) verifyBatch(ctx context.Context, plan CyclePlan, batch rou
 func (engine *Engine) commitBatch(ctx context.Context, plan CyclePlan, batch rounds.Batch, before []string) (bool, bool, error) {
 	if !plan.AutoCommit {
 		fmt.Fprintln(engine.deps.Progress, "Auto-commit disabled; no Batch commit created.")
-		return false, false, nil
+		err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonCommit,
+			"Auto-commit disabled; no Batch commit created.",
+			map[string]any{"decision": "disabled", "batch": batch.Number},
+		)
+		return false, false, err
 	}
 	if err := ctx.Err(); err != nil {
 		engine.publishStop(ctx, plan.RunID, batch.Number)
@@ -324,7 +372,11 @@ func (engine *Engine) commitBatch(ctx context.Context, plan CyclePlan, batch rou
 		// A triage-only Batch changed nothing: skipping the commit is a
 		// success, never a nothing-to-commit failure.
 		fmt.Fprintf(engine.deps.Progress, "Batch commit skipped: Batch %03d made no worktree changes.\n", batch.Number)
-		return false, true, nil
+		err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonCommit,
+			fmt.Sprintf("Batch commit skipped: Batch %03d made no worktree changes.", batch.Number),
+			map[string]any{"decision": "skipped", "batch": batch.Number},
+		)
+		return false, true, err
 	}
 	message := BatchCommitMessage(batch.Number)
 	if err := engine.deps.Committer.Commit(ctx, CommitRequest{
@@ -335,6 +387,12 @@ func (engine *Engine) commitBatch(ctx context.Context, plan CyclePlan, batch rou
 		return false, false, err
 	}
 	fmt.Fprintf(engine.deps.Progress, "Batch commit created: %s\n", message)
+	if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonCommit,
+		fmt.Sprintf("Batch commit created: %s", message),
+		map[string]any{"decision": "created", "batch": batch.Number, "paths": len(changed)},
+	); err != nil {
+		return false, false, err
+	}
 	return true, false, nil
 }
 
@@ -379,7 +437,35 @@ func (engine *Engine) resolveBatchSources(ctx context.Context, plan CyclePlan, b
 		return 0, err
 	}
 	fmt.Fprintf(engine.deps.Progress, "Resolved %d Review Source thread(s).\n", len(issues))
+	if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonSourceResolution,
+		fmt.Sprintf("Resolved %d Review Source thread(s).", len(issues)),
+		map[string]any{"batch": batch.Number, "resolved": len(issues)},
+	); err != nil {
+		return 0, err
+	}
 	return len(issues), nil
+}
+
+// publishDaemonEvent appends one daemon-owned Run Event. Publication is
+// part of the Run state contract: a critical sink failure propagates and
+// fails the cycle rather than being swallowed.
+func (engine *Engine) publishDaemonEvent(ctx context.Context, runID string, batchNumber int, kind runevent.Kind, summary string, payload any) error {
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("encode daemon event payload: %w", err)
+	}
+	if err := engine.deps.Sink.Publish(ctx, runevent.RunEvent{
+		RunID:   runID,
+		Batch:   batchNumber,
+		Source:  runevent.SourceDaemon,
+		Kind:    kind,
+		Summary: runevent.BoundSummary(summary),
+		Time:    engine.deps.Now(),
+		Payload: raw,
+	}); err != nil {
+		return fmt.Errorf("publish daemon event %s: %w", kind, err)
+	}
+	return nil
 }
 
 // publishStop records a Stop Request observed at a daemon boundary so the

@@ -3,6 +3,7 @@ package cli
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -796,6 +797,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		printResolveRunFailureAfterBatchCommit(err, stderr)
 		return exitRunFailed
 	}
+	publishRunOutcome(ctx, runStore, completed.ID, completed.State, 0, stderr)
 	fmt.Fprintf(stderr, "Resolve Run %s reached %s.\n", completed.ID, completed.State)
 	return exitOK
 }
@@ -876,7 +878,7 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 	}
 
 	result, cycleErr := engine.ResolveCycle(ctx, cyclePlanFrom(req, loaded, preflightResult, runID, resolvePlan))
-	fanout.Close()
+	defer fanout.Close()
 	if closeErr := closeAgentConsoleStream(agentStream); closeErr != nil && cycleErr == nil {
 		cycleErr = closeErr
 	}
@@ -886,10 +888,27 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 
 	if result.Remaining > 0 {
 		fmt.Fprintf(stderr, "Final Push blocked: %d Unresolved Review Issue(s) remain.\n", result.Remaining)
-	} else if err := maybeRunFinalPush(ctx, engine, runID, loaded, preflightResult, loaded.Config.Defaults.AutoCommit, stderr); err != nil {
+		publishPushDecision(ctx, fanout, runID, "blocked", fmt.Sprintf("Final Push blocked: %d Unresolved Review Issue(s) remain.", result.Remaining), result.Remaining)
+	} else if err := maybeRunFinalPush(ctx, engine, fanout, runID, loaded, preflightResult, loaded.Config.Defaults.AutoCommit, stderr); err != nil {
 		return resolveBatchResult{}, err
 	}
 	return resolveBatchResult{Remaining: result.Remaining}, nil
+}
+
+// publishPushDecision journals daemon-owned Final Push gating decisions.
+func publishPushDecision(ctx context.Context, sink runevent.Sink, runID string, decision string, summary string, remaining int) {
+	payload, err := json.Marshal(map[string]any{"decision": decision, "remaining": remaining})
+	if err != nil {
+		return
+	}
+	_ = sink.Publish(context.WithoutCancel(ctx), runevent.RunEvent{
+		RunID:   runID,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonPush,
+		Summary: runevent.BoundSummary(summary),
+		Time:    time.Now().UTC(),
+		Payload: payload,
+	})
 }
 
 func cyclePlanFrom(req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, resolvePlan resolveBatchPlan) daemon.CyclePlan {
@@ -957,6 +976,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	printLiveRunView(stderr, req, loaded, preflightResult, run.ID, "WaitingForReview", nil, []string{"Waiting for Review Source status..."})
 
 	result, err := watch.Run(ctx, watch.Request{
+		RunID:          run.ID,
 		PRNumber:       preflightResult.PullRequest.Number,
 		HeadSHA:        preflightResult.Git.HEAD,
 		UntilClean:     req.untilClean,
@@ -989,6 +1009,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		}),
 		Clock:   watchClock,
 		Sleeper: watchSleeper,
+		Sink:    store.JournalSink{Store: runStore},
 	})
 	stopped := isStopRequest(ctx, err)
 	if stopped {
@@ -1012,6 +1033,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printRunFailure(req.name, completeErr, stderr)
 		return exitRunFailed
 	}
+	publishRunOutcome(completeCtx, runStore, completed.ID, completed.State, result.Remaining, stderr)
 
 	fmt.Fprintf(stderr, "Watch Run %s reached %s after %d Round(s).\n", completed.ID, completed.State, result.Rounds)
 	if result.Outcome == store.StateMaxRoundsReached && result.Remaining > 0 {
@@ -1121,6 +1143,7 @@ func completeStoppedRun(runStore *store.Store, runID string, req commandRequest,
 		printRunFailure(req.name, err, stderr)
 		return exitRunFailed
 	}
+	publishRunOutcome(ctx, runStore, completed.ID, completed.State, 0, stderr)
 	fmt.Fprintf(stderr, "%s Run %s reached %s.\n", commandDisplayName(req.name), completed.ID, completed.State)
 	printStopSummary(req, preflightResult, stderr)
 	return exitOK
@@ -1577,9 +1600,10 @@ func countBatchIssues(batches []rounds.Batch) int {
 	return count
 }
 
-func maybeRunFinalPush(ctx context.Context, engine *daemon.Engine, runID string, loaded roundconfig.Loaded, preflightResult preflight.Result, batchCommitCreated bool, stderr io.Writer) error {
+func maybeRunFinalPush(ctx context.Context, engine *daemon.Engine, sink runevent.Sink, runID string, loaded roundconfig.Loaded, preflightResult preflight.Result, batchCommitCreated bool, stderr io.Writer) error {
 	if !preflightResult.PushPlan.Enabled {
 		fmt.Fprintln(stderr, "Final Push skipped: auto-push disabled or no push target configured.")
+		publishPushDecision(ctx, sink, runID, "skipped", "Final Push skipped: auto-push disabled or no push target configured.", 0)
 		return nil
 	}
 	if preflightResult.PushPlan.Force {
@@ -1587,10 +1611,12 @@ func maybeRunFinalPush(ctx context.Context, engine *daemon.Engine, runID string,
 	}
 	if !loaded.Config.Defaults.AutoCommit {
 		fmt.Fprintln(stderr, "Final Push skipped: auto-commit disabled.")
+		publishPushDecision(ctx, sink, runID, "skipped", "Final Push skipped: auto-commit disabled.", 0)
 		return nil
 	}
 	if preflightResult.Git.UnpushedCommits == 0 && !batchCommitCreated {
 		fmt.Fprintln(stderr, "Final Push skipped: no local commits are waiting for the PR Head Branch.")
+		publishPushDecision(ctx, sink, runID, "skipped", "Final Push skipped: no local commits are waiting for the PR Head Branch.", 0)
 		return nil
 	}
 	if err := engine.FinalPush(ctx, daemon.FinalPushRequest{
@@ -1606,7 +1632,29 @@ func maybeRunFinalPush(ctx context.Context, engine *daemon.Engine, runID string,
 }
 
 func markRunFailed(ctx context.Context, runStore *store.Store, runID string) {
-	_, _ = runStore.CompleteRun(ctx, runID, store.StateFailed)
+	completeCtx := context.WithoutCancel(ctx)
+	if _, err := runStore.CompleteRun(completeCtx, runID, store.StateFailed); err == nil {
+		publishRunOutcome(completeCtx, runStore, runID, store.StateFailed, 0, io.Discard)
+	}
+}
+
+// publishRunOutcome appends the terminal outcome event after CompleteRun so
+// terminal states are provable from the journal alone.
+func publishRunOutcome(ctx context.Context, runStore *store.Store, runID string, state string, remaining int, stderr io.Writer) {
+	payload, err := json.Marshal(map[string]any{"state": state, "remaining": remaining})
+	if err != nil {
+		return
+	}
+	if err := (store.JournalSink{Store: runStore}).Publish(context.WithoutCancel(ctx), runevent.RunEvent{
+		RunID:   runID,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonOutcome,
+		Summary: fmt.Sprintf("Run reached %s.", state),
+		Time:    time.Now().UTC(),
+		Payload: payload,
+	}); err != nil {
+		fmt.Fprintf(stderr, "Warning: terminal outcome event not journaled: %v\n", err)
+	}
 }
 
 func commandUsage(name string) string {
