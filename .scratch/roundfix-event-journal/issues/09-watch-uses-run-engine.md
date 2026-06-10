@@ -2,10 +2,10 @@
 title: "Watch loop delegates resolve cycles to the Run engine"
 type: AFK
 category: enhancement
-state: ready-for-agent
+state: completed
 labels:
   - enhancement
-  - ready-for-agent
+  - completed
 user_stories:
   - 5
   - 13
@@ -29,13 +29,27 @@ the Run and auto-push is enabled.
 
 ## Acceptance criteria
 
-- [ ] Watch Rounds execute through the same engine operation as the resolve command
-- [ ] Duplicated orchestration wiring between resolve and watch removed
-- [ ] Watch-side Final Push gating preserved and proven by tests
-- [ ] Full watch loop test without network passes through the engine
-- [ ] Watch state machine module keeps owning polling/quiet/timeout/round policy
+- [x] Watch Rounds execute through the same engine operation as the resolve command
+- [x] Duplicated orchestration wiring between resolve and watch removed
+- [x] Watch-side Final Push gating preserved and proven by tests
+- [x] Full watch loop test without network passes through the engine
+- [x] Watch state machine module keeps owning polling/quiet/timeout/round policy
 
 ## Blocked by
 
 - 07-daemon-run-engine-resolve-cycle.md
 - 08-snapshot-diff-batch-commits.md
+
+## Comments
+
+**2026-06-10 (agent):** The structural delegation landed with issue 07: `resolveWatchBatches` calls the same
+`executeResolveCycle` → `daemon.Engine.ResolveCycle` path as the resolve command, and the old duplicated
+`executeResolveBatches`/`executeResolveBatch` wiring is gone (grep across the repo finds no references). The watch
+state machine module (`internal/watch`) is untouched in this unit — it keeps owning polling, quiet period, review
+timeout, and round policy, and calls the engine once per Round through its Resolver callback. This unit adds the
+remaining proof: `TestWatchFinalPushRunsOncePerCleanRoundThroughEngine` (full watch loop with fake collaborators,
+no network: fetch → engine-driven Batch commit → exactly one Final Push to the push-plan target on the clean Round)
+and `TestWatchSkipsFinalPushWhenAutoPushDisabled` (auto-push off → zero pushes, "Final Push skipped" gating message,
+Run still reaches Clean). The pre-existing watch table test also exercises the whole loop through the engine fakes.
+Verification: `rtk go vet ./...` clean, `rtk go test ./...` 189 passed in 15 packages,
+`rtk go run ./cmd/roundfix --help` green.

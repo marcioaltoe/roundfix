@@ -2371,3 +2371,71 @@ func TestStoppedResolveJournalsStoppedEventBeforeReturning(t *testing.T) {
 		t.Fatalf("expected stopped status event journaled, got %+v", events)
 	}
 }
+
+func TestWatchSkipsFinalPushWhenAutoPushDisabled(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	pusher := &fakePusher{}
+	withPusher(t, pusher)
+	withPreflight(t, func(_ context.Context, req commandRequest, _ roundconfig.Loaded) (preflight.Result, error) {
+		return preflight.Result{
+			Git: preflight.GitState{
+				Root:            repoDir,
+				Branch:          "feature/review",
+				HEAD:            "abc123",
+				UpstreamRemote:  "origin",
+				UpstreamBranch:  "feature/review",
+				UnpushedCommits: 1,
+			},
+			PullRequest: preflight.PullRequest{
+				Number:         req.pr,
+				State:          "OPEN",
+				BaseRepository: "owner/project",
+				HeadBranch:     "feature/review",
+				HeadRepository: "owner/project",
+			},
+			PushPlan: preflight.PushPlan{Enabled: false},
+		}, nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean watch exit, got %d stderr=%q", code, stderr.String())
+	}
+	if pusher.calls != 0 {
+		t.Fatalf("expected Final Push gated off when auto-push is disabled, got %d push(es)", pusher.calls)
+	}
+	if !strings.Contains(stderr.String(), "Final Push skipped: auto-push disabled or no push target configured.") {
+		t.Fatalf("expected gating message, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "reached Clean") {
+		t.Fatalf("expected Clean watch outcome without push, got %q", stderr.String())
+	}
+}
+
+func TestWatchFinalPushRunsOncePerCleanRoundThroughEngine(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	pusher := &fakePusher{}
+	withPusher(t, pusher)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean watch exit, got %d stderr=%q", code, stderr.String())
+	}
+	if pusher.calls != 1 {
+		t.Fatalf("expected exactly one Final Push for the clean Round, got %d", pusher.calls)
+	}
+	if pusher.remotes[0] != "origin" || pusher.branches[0] != "feature/review" {
+		t.Fatalf("expected push target from the push plan, got %v %v", pusher.remotes, pusher.branches)
+	}
+	if !strings.Contains(stderr.String(), "Batch commit created") {
+		t.Fatalf("expected engine-driven Batch commit in watch Round, got %q", stderr.String())
+	}
+}
