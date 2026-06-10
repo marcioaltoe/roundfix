@@ -10,6 +10,7 @@ import (
 
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/rounds"
+	"roundfix/internal/runevent"
 	"roundfix/internal/store"
 
 	tea "charm.land/bubbletea/v2"
@@ -305,5 +306,88 @@ func TestCockpitOwningModeKeysDifferFromAttach(t *testing.T) {
 	}
 	if !strings.Contains(viewText(model), "Ctrl-C stop") {
 		t.Fatalf("expected owning footer keys, got:\n%s", viewText(model))
+	}
+}
+
+func TestOwningCockpitPollsJournalWhileOwnProcessWrites(t *testing.T) {
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	writer, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open writer: %v", err)
+	}
+	t.Cleanup(func() { _ = writer.Close() })
+	run, err := writer.CreateRun(ctx, store.CreateRunRequest{
+		Kind:           store.KindResolve,
+		HeadRepository: "owner/project",
+		HeadBranch:     "feature/review",
+		BaseRepository: "owner/project",
+		PRNumber:       "123",
+		GitRoot:        t.TempDir(),
+		LocalBranch:    "feature/review",
+		HeadSHA:        "abc123",
+		ArtifactDir:    filepath.Join(t.TempDir(), ".roundfix"),
+	})
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	reader, err := store.OpenReader(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open reader: %v", err)
+	}
+	t.Cleanup(func() { _ = reader.Close() })
+
+	stopRequested := false
+	model, err := newCockpitModel(ctx, CockpitConfig{
+		Mode:   CockpitOwning,
+		View:   LiveRunView{PipelineState: store.StateActive, Width: 100},
+		RunID:  run.ID,
+		Source: reader,
+		OnStop: func() { stopRequested = true },
+	})
+	if err != nil {
+		t.Fatalf("new cockpit model: %v", err)
+	}
+
+	const total = 25
+	written := make(chan error, 1)
+	go func() {
+		for index := 0; index < total; index++ {
+			if _, err := writer.AppendRunEvent(ctx, runevent.RunEvent{
+				RunID:   run.ID,
+				Source:  runevent.SourceAgent,
+				Kind:    runevent.KindAgentRaw,
+				Summary: fmt.Sprintf("live line %02d\n", index),
+				Payload: []byte(fmt.Sprintf(`{"text":"live line %02d\n"}`, index)),
+			}); err != nil {
+				written <- err
+				return
+			}
+		}
+		_, err := writer.CompleteRun(ctx, run.ID, store.StateStopped)
+		written <- err
+	}()
+
+	// The owning cockpit polls its read-only connection while the same
+	// process writes — a Stop Request mid-poll must keep working.
+	sawAll := false
+	for tick := 0; tick < 10_000 && !sawAll; tick++ {
+		model.Update(cockpitTickMsg{})
+		if tick == 5 {
+			pressKey(t, model, "ctrl+c")
+		}
+		rendered := viewText(model)
+		sawAll = strings.Contains(rendered, fmt.Sprintf("live line %02d", total-1)) && strings.Contains(rendered, "READ-ONLY")
+	}
+	if err := <-written; err != nil {
+		t.Fatalf("writer: %v", err)
+	}
+	model.Update(cockpitTickMsg{})
+
+	if !sawAll {
+		t.Fatalf("expected the owning cockpit to render journal writes and the terminal state, got:\n%s", viewText(model))
+	}
+	if !stopRequested {
+		t.Fatal("expected ctrl+c during active polling to trigger the Stop Request callback")
 	}
 }

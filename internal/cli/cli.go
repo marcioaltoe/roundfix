@@ -783,7 +783,17 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	}
 	printLiveRunView(stderr, req, loaded, preflightResult, run.ID, "ResolvingWithAgent", resolvePlan.selection.Issues, []string{"Agent and verification output will stream below."})
 
-	if _, err := executeResolveCycle(ctx, req, loaded, preflightResult, run.ID, resolvePlan, collaborators, runStore, stderr); err != nil {
+	cockpitView := buildLiveRunView(req, loaded, preflightResult, run.ID, "ResolvingWithAgent", resolvePlan.selection.Issues, nil)
+	ui, err := startRunUI(ctx, cockpitView, run.ID, loaded.HomeDir, runStore, stderr)
+	if err != nil {
+		markRunFailed(ctx, runStore, run.ID)
+		printResolveRunFailure(err, stderr)
+		return exitRunFailed
+	}
+	defer ui.Close()
+
+	if _, err := executeResolveCycle(ctx, req, loaded, preflightResult, run.ID, resolvePlan, collaborators, runStore, ui); err != nil {
+		ui.Close()
 		if isStopRequest(ctx, err) {
 			return completeStoppedRun(runStore, run.ID, req, preflightResult, stderr)
 		}
@@ -791,6 +801,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		printResolveRunFailure(err, stderr)
 		return exitRunFailed
 	}
+	ui.Close()
 
 	completed, err := runStore.CompleteRun(ctx, run.ID, store.StateClean)
 	if err != nil {
@@ -843,23 +854,14 @@ func prepareResolveBatch(ctx context.Context, req commandRequest, loaded roundco
 	}, nil
 }
 
-func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, resolvePlan resolveBatchPlan, collaborators engineCollaborators, runStore *store.Store, stderr io.Writer) (resolveBatchResult, error) {
-	fmt.Fprintf(stderr, "%s: resolve selected %d downloaded Unresolved Review Issue(s) from %d Compatible Artifact Round(s), assigned %d newest occurrence(s) into %d Batch(es), and associated %d older duplicate occurrence(s).\n", app.Name, len(resolvePlan.selection.Issues), len(resolvePlan.selection.Rounds), countBatchIssues(resolvePlan.plan.Batches), len(resolvePlan.plan.Batches), len(resolvePlan.plan.Duplicates))
-	fmt.Fprintf(stderr, "Run: %s\n", runID)
-	fmt.Fprintf(stderr, "Artifact Directory: %s\n", req.artifactDir)
-	fmt.Fprintf(stderr, "Round scope: %s\n", formatRoundScope(resolvePlan.roundNumber))
-	fmt.Fprintf(stderr, "Open Pull Request: #%s %s %s\n", preflightResult.PullRequest.Number, preflightResult.PullRequest.HeadRepository, preflightResult.PullRequest.HeadBranch)
-	fmt.Fprintf(stderr, "Agent: %s\n", resolvePlan.runtime.DisplayName)
+func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, resolvePlan resolveBatchPlan, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (resolveBatchResult, error) {
+	fmt.Fprintf(ui.progress, "%s: resolve selected %d downloaded Unresolved Review Issue(s) from %d Compatible Artifact Round(s), assigned %d newest occurrence(s) into %d Batch(es), and associated %d older duplicate occurrence(s).\n", app.Name, len(resolvePlan.selection.Issues), len(resolvePlan.selection.Rounds), countBatchIssues(resolvePlan.plan.Batches), len(resolvePlan.plan.Batches), len(resolvePlan.plan.Duplicates))
+	fmt.Fprintf(ui.progress, "Run: %s\n", runID)
+	fmt.Fprintf(ui.progress, "Artifact Directory: %s\n", req.artifactDir)
+	fmt.Fprintf(ui.progress, "Round scope: %s\n", formatRoundScope(resolvePlan.roundNumber))
+	fmt.Fprintf(ui.progress, "Open Pull Request: #%s %s %s\n", preflightResult.PullRequest.Number, preflightResult.PullRequest.HeadRepository, preflightResult.PullRequest.HeadBranch)
+	fmt.Fprintf(ui.progress, "Agent: %s\n", resolvePlan.runtime.DisplayName)
 
-	liveView := buildLiveRunView(req, loaded, preflightResult, runID, "ResolvingWithAgent", resolvePlan.selection.Issues, []string{
-		fmt.Sprintf("Run %s started with %d Review Issue(s) in %d Batch(es)", runID, len(resolvePlan.selection.Issues), len(resolvePlan.plan.Batches)),
-		fmt.Sprintf("Agent: %s", resolvePlan.runtime.DisplayName),
-		"Streaming Agent output...",
-	})
-	liveView.BatchTotal = len(resolvePlan.plan.Batches)
-	liveView.TotalIssues = len(resolvePlan.selection.Issues)
-	agentStream := newAgentConsoleStream(stderr, liveView)
-	fanout := newAgentEventFanout(agentStream, runStore)
 	engine, err := daemon.NewEngine(daemon.Dependencies{
 		Runner:    collaborators.runner,
 		Verifier:  collaborators.verifier,
@@ -868,28 +870,22 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 		Source:    collaborators.source,
 		Runs:      runStore,
 		Worktree:  collaborators.worktree,
-		Sink:      fanout,
-		Progress:  stderr,
+		Sink:      ui.sink,
+		Progress:  ui.progress,
 	})
 	if err != nil {
-		fanout.Close()
-		_ = closeAgentConsoleStream(agentStream)
 		return resolveBatchResult{}, err
 	}
 
 	result, cycleErr := engine.ResolveCycle(ctx, cyclePlanFrom(req, loaded, preflightResult, runID, resolvePlan))
-	defer fanout.Close()
-	if closeErr := closeAgentConsoleStream(agentStream); closeErr != nil && cycleErr == nil {
-		cycleErr = closeErr
-	}
 	if cycleErr != nil {
 		return resolveBatchResult{}, cycleErr
 	}
 
 	if result.Remaining > 0 {
-		fmt.Fprintf(stderr, "Final Push blocked: %d Unresolved Review Issue(s) remain.\n", result.Remaining)
-		publishPushDecision(ctx, fanout, runID, "blocked", fmt.Sprintf("Final Push blocked: %d Unresolved Review Issue(s) remain.", result.Remaining), result.Remaining)
-	} else if err := maybeRunFinalPush(ctx, engine, fanout, runID, loaded, preflightResult, loaded.Config.Defaults.AutoCommit, stderr); err != nil {
+		fmt.Fprintf(ui.progress, "Final Push blocked: %d Unresolved Review Issue(s) remain.\n", result.Remaining)
+		publishPushDecision(ctx, ui.sink, runID, "blocked", fmt.Sprintf("Final Push blocked: %d Unresolved Review Issue(s) remain.", result.Remaining), result.Remaining)
+	} else if err := maybeRunFinalPush(ctx, engine, ui.sink, runID, loaded, preflightResult, loaded.Config.Defaults.AutoCommit, ui.progress); err != nil {
 		return resolveBatchResult{}, err
 	}
 	return resolveBatchResult{Remaining: result.Remaining}, nil
@@ -975,6 +971,15 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	fmt.Fprintf(stderr, "Max Rounds: %d\n", req.maxRounds)
 	printLiveRunView(stderr, req, loaded, preflightResult, run.ID, "WaitingForReview", nil, []string{"Waiting for Review Source status..."})
 
+	// One cockpit for the entire Watch Run, across all Rounds and Batches.
+	ui, err := startRunUI(ctx, buildLiveRunView(req, loaded, preflightResult, run.ID, "WaitingForReview", nil, nil), run.ID, loaded.HomeDir, runStore, stderr)
+	if err != nil {
+		markRunFailed(ctx, runStore, run.ID)
+		printRunFailure(req.name, err, stderr)
+		return exitRunFailed
+	}
+	defer ui.Close()
+
 	result, err := watch.Run(ctx, watch.Request{
 		RunID:          run.ID,
 		PRNumber:       preflightResult.PullRequest.Number,
@@ -997,15 +1002,15 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 				HeadSHA:        preflightResult.Git.HEAD,
 			})
 			if err == nil {
-				fmt.Fprintf(stderr, "Review Source status: %s\n", status.State)
+				fmt.Fprintf(ui.progress, "Review Source status: %s\n", status.State)
 			}
 			return status, err
 		}),
 		Fetcher: watch.FetchFunc(func(ctx context.Context, _ int) (watch.FetchResult, error) {
-			return fetchWatchRound(ctx, req, loaded, preflightResult, stderr)
+			return fetchWatchRound(ctx, req, loaded, preflightResult, ui.progress)
 		}),
 		Resolver: watch.ResolveFunc(func(ctx context.Context) (watch.ResolveResult, error) {
-			return resolveWatchBatches(ctx, req, loaded, preflightResult, runtime, run.ID, collaborators, runStore, stderr)
+			return resolveWatchBatches(ctx, req, loaded, preflightResult, runtime, run.ID, collaborators, runStore, ui)
 		}),
 		Clock:   watchClock,
 		Sleeper: watchSleeper,
@@ -1030,10 +1035,12 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 	completed, completeErr := runStore.CompleteRun(completeCtx, run.ID, terminal)
 	if completeErr != nil {
+		ui.Close()
 		printRunFailure(req.name, completeErr, stderr)
 		return exitRunFailed
 	}
 	publishRunOutcome(completeCtx, runStore, completed.ID, completed.State, result.Remaining, stderr)
+	ui.Close()
 
 	fmt.Fprintf(stderr, "Watch Run %s reached %s after %d Round(s).\n", completed.ID, completed.State, result.Rounds)
 	if result.Outcome == store.StateMaxRoundsReached && result.Remaining > 0 {
@@ -1100,7 +1107,7 @@ func fetchWatchRound(ctx context.Context, req commandRequest, loaded roundconfig
 	return watch.FetchResult{Round: roundResult.Round, Issues: len(roundResult.IssuePaths)}, nil
 }
 
-func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runtime agent.RuntimeSpec, runID string, collaborators engineCollaborators, runStore *store.Store, stderr io.Writer) (watch.ResolveResult, error) {
+func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runtime agent.RuntimeSpec, runID string, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (watch.ResolveResult, error) {
 	progress := false
 	for {
 		resolvePlan, err := prepareResolveBatch(ctx, req, loaded, preflightResult)
@@ -1112,7 +1119,7 @@ func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundco
 			return watch.ResolveResult{}, err
 		}
 		resolvePlan.runtime = runtime
-		result, err := executeResolveCycle(ctx, req, loaded, preflightResult, runID, resolvePlan, collaborators, runStore, stderr)
+		result, err := executeResolveCycle(ctx, req, loaded, preflightResult, runID, resolvePlan, collaborators, runStore, ui)
 		if err != nil {
 			return watch.ResolveResult{}, err
 		}
@@ -1254,26 +1261,6 @@ func buildLiveRunView(req commandRequest, loaded roundconfig.Loaded, preflightRe
 		Console:       console,
 		Width:         liveViewWidth(),
 	}
-}
-
-func newAgentConsoleStream(output io.Writer, view roundtui.LiveRunView) *roundtui.AgentLiveStream {
-	return roundtui.NewAgentLiveStream(output, view, liveTUIEnabled(output))
-}
-
-// newAgentEventFanout wires the Run Event consumers for a resolve cycle:
-// the Run Event Journal is critical (an append failure fails the Run); the
-// live view is best-effort; the non-TTY writer stays critical so console
-// ordering and write errors keep today's behavior.
-func newAgentEventFanout(stream *roundtui.AgentLiveStream, runStore *store.Store) *runevent.Fanout {
-	journal := store.JournalSink{Store: runStore}
-	if stream.Live() {
-		return runevent.NewFanout([]runevent.Sink{journal}, []runevent.Sink{stream})
-	}
-	return runevent.NewFanout([]runevent.Sink{journal, agent.WriterSink{Writer: stream}}, nil)
-}
-
-func closeAgentConsoleStream(stream *roundtui.AgentLiveStream) error {
-	return stream.Close()
 }
 
 func liveTUIEnabled(output io.Writer) bool {

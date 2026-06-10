@@ -2,10 +2,10 @@
 title: "Live resolve/watch cockpit reads the journal (ADR 0009)"
 type: AFK
 category: enhancement
-state: ready-for-agent
+state: completed
 labels:
   - enhancement
-  - ready-for-agent
+  - completed
 user_stories:
   - 11
   - 12
@@ -33,13 +33,34 @@ a view per cycle.
 
 ## Acceptance criteria
 
-- [ ] Live resolve/watch TTY cockpit renders journal content while the engine writes (same-process writer+reader)
-- [ ] Ctrl-C in the owning cockpit still produces a Stop Request with today's stop semantics and exit codes
-- [ ] No detach in owning mode; contextual footer differs between owning and attach modes
-- [ ] TUI sink delivery retired; non-TTY console output byte-compatible with today across resolve and watch
-- [ ] One cockpit per Watch Run across all Rounds and Batches
-- [ ] Race tests: owning process writing while its own cockpit polls; stop during active polling
+- [x] Live resolve/watch TTY cockpit renders journal content while the engine writes (same-process writer+reader)
+- [x] Ctrl-C in the owning cockpit still produces a Stop Request with today's stop semantics and exit codes
+- [x] No detach in owning mode; contextual footer differs between owning and attach modes
+- [x] TUI sink delivery retired; non-TTY console output byte-compatible with today across resolve and watch
+- [x] One cockpit per Watch Run across all Rounds and Batches
+- [x] Race tests: owning process writing while its own cockpit polls; stop during active polling
 
 ## Blocked by
 
 - 03-interactive-cockpit-attach.md
+
+## Comments
+
+**2026-06-10 (agent):** Added `runUI` (`internal/cli/runui.go`), the per-command Run Event consumer wiring. TTY:
+opens its own read-only journal connection (`store.OpenReader`), starts the shared cockpit in owning mode in a
+goroutine, the engine's fanout becomes journal-critical only, and raw progress text goes to `io.Discard` — the
+cockpit narrates the loop from the journaled daemon/agent events (ADR 0009). Non-TTY: journal critical +
+`agent.WriterSink` over stderr, progress to stderr — byte-compatible, with every pre-existing CLI test passing
+unchanged. Ctrl-C in the owning cockpit (a key event under raw mode, not SIGINT) calls `interruptSelf`, which
+re-sends `os.Interrupt` to the process so the existing `interruptContext`/`exitForInterrupt` plumbing preserves
+Stop Request semantics and exit codes by construction; q does nothing in owning mode and the contextual footer
+shows `Ctrl-C stop` (vs `q detach` in attach). `executeResolveCycle` now receives the command-level `runUI`
+instead of building a per-cycle view/stream/fanout, so the watch command runs **one cockpit for the entire Run**
+across all Rounds and Batches (watch status/fetch prints also route through `ui.progress`). The TUI sink delivery
+is fully retired: `EventBuffer` (event_sink.go), `AgentLiveStream`, the live Bubble Tea model, and their CLI
+helpers are deleted along with the EventBuffer tests; render helpers the cockpit uses stay. Race coverage:
+`TestOwningCockpitPollsJournalWhileOwnProcessWrites` runs a same-process writer goroutine (25 events +
+CompleteRun) while the owning cockpit model polls its read-only connection, fires Ctrl-C mid-poll (Stop Request
+callback observed), and renders every line plus the terminal READ-ONLY state — under `-race`. Verification:
+`rtk go vet ./...` clean, `rtk go test ./...` 222 passed in 15 packages, `rtk go test -race` cli+tui 108 passed,
+`rtk go run ./cmd/roundfix --help` green.
