@@ -853,6 +853,7 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 	liveView.BatchTotal = len(resolvePlan.plan.Batches)
 	liveView.TotalIssues = len(resolvePlan.selection.Issues)
 	agentStream := newAgentConsoleStream(stderr, liveView)
+	fanout := newAgentEventFanout(agentStream, runStore)
 	engine, err := daemon.NewEngine(daemon.Dependencies{
 		Runner:    collaborators.runner,
 		Verifier:  collaborators.verifier,
@@ -860,15 +861,17 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 		Pusher:    collaborators.pusher,
 		Source:    collaborators.source,
 		Runs:      runStore,
-		Sink:      newAgentEventSink(agentStream),
+		Sink:      fanout,
 		Progress:  stderr,
 	})
 	if err != nil {
+		fanout.Close()
 		_ = closeAgentConsoleStream(agentStream)
 		return resolveBatchResult{}, err
 	}
 
 	result, cycleErr := engine.ResolveCycle(ctx, cyclePlanFrom(req, loaded, preflightResult, runID, resolvePlan))
+	fanout.Close()
 	if closeErr := closeAgentConsoleStream(agentStream); closeErr != nil && cycleErr == nil {
 		cycleErr = closeErr
 	}
@@ -1229,14 +1232,16 @@ func newAgentConsoleStream(output io.Writer, view roundtui.LiveRunView) *roundtu
 	return roundtui.NewAgentLiveStream(output, view, liveTUIEnabled(output))
 }
 
-// newAgentEventSink adapts the Agent Console to the Run Event seam: the
-// live view consumes events itself through its bounded best-effort buffer,
-// while non-TTY output renders synchronously through the writer sink.
-func newAgentEventSink(stream *roundtui.AgentLiveStream) runevent.Sink {
+// newAgentEventFanout wires the Run Event consumers for a resolve cycle:
+// the Run Event Journal is critical (an append failure fails the Run); the
+// live view is best-effort; the non-TTY writer stays critical so console
+// ordering and write errors keep today's behavior.
+func newAgentEventFanout(stream *roundtui.AgentLiveStream, runStore *store.Store) *runevent.Fanout {
+	journal := store.JournalSink{Store: runStore}
 	if stream.Live() {
-		return stream
+		return runevent.NewFanout([]runevent.Sink{journal}, []runevent.Sink{stream})
 	}
-	return agent.WriterSink{Writer: stream}
+	return runevent.NewFanout([]runevent.Sink{journal, agent.WriterSink{Writer: stream}}, nil)
 }
 
 func closeAgentConsoleStream(stream *roundtui.AgentLiveStream) error {

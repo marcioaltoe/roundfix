@@ -2207,6 +2207,20 @@ func (runner *fakeStoppingAgentRunner) Run(ctx context.Context, req agent.Execut
 	if err := publishFakeAgentOutput(ctx, sink, req, output); err != nil {
 		return agent.ExecuteResult{}, err
 	}
+	if sink != nil {
+		// Mirror the real runner: a stopped Agent publishes its status
+		// event before returning.
+		if err := sink.Publish(ctx, runevent.RunEvent{
+			RunID:   req.RunID,
+			Batch:   req.Batch.Number,
+			Source:  runevent.SourceAgent,
+			Kind:    runevent.KindAgentStatus,
+			Summary: "SESSION STOPPED\n",
+			Payload: []byte(`{"status":"stopped"}`),
+		}); err != nil {
+			return agent.ExecuteResult{}, err
+		}
+	}
 	if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {
 		return agent.ExecuteResult{}, err
 	}
@@ -2217,5 +2231,103 @@ func (runner *fakeStoppingAgentRunner) Run(ctx context.Context, req agent.Execut
 		LogPath: req.LogPath,
 		Output:  output,
 		Err:     context.Canceled,
+	}
+}
+
+func journaledRunEvents(t *testing.T, homeDir string, stderr string) (string, []store.JournalEvent) {
+	t.Helper()
+	runID := ""
+	for _, line := range strings.Split(stderr, "\n") {
+		if value, ok := strings.CutPrefix(strings.TrimSpace(line), "Run: "); ok {
+			runID = strings.TrimSpace(value)
+			break
+		}
+	}
+	if runID == "" {
+		t.Fatalf("expected Run id in stderr, got %q", stderr)
+	}
+	reader, err := store.OpenReader(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database reader: %v", err)
+	}
+	defer func() {
+		_ = reader.Close()
+	}()
+	events, err := reader.RunEventsAfter(context.Background(), runID, 0, 100)
+	if err != nil {
+		t.Fatalf("list journaled Run Events: %v", err)
+	}
+	return runID, events
+}
+
+func TestResolveJournalsAgentRunEventsDurably(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withVerifier(t, &fakeVerifier{})
+	withCommitter(t, &fakeCommitter{})
+	withSourceResolver(t, &fakeSourceResolver{})
+	withPusher(t, &fakePusher{})
+	withAgentRunner(t, &fakeAgentRunner{})
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
+	}
+	runID, events := journaledRunEvents(t, homeDir, stderr.String())
+	if len(events) == 0 {
+		t.Fatal("expected journaled Run Events after the Resolve Run")
+	}
+	event := events[0].Event
+	if event.RunID != runID || event.Batch != 1 {
+		t.Fatalf("expected Run identity on journaled event, got %+v", event)
+	}
+	if event.Source != runevent.SourceAgent || event.Kind != runevent.KindAgentRaw {
+		t.Fatalf("expected agent.raw journal entry, got %+v", event)
+	}
+	if !strings.Contains(event.Summary, "fake agent output") {
+		t.Fatalf("expected bounded summary, got %q", event.Summary)
+	}
+	if !strings.Contains(string(event.Payload), "fake agent output") {
+		t.Fatalf("expected raw payload preserved, got %s", event.Payload)
+	}
+	if !strings.Contains(stderr.String(), "fake agent output") {
+		t.Fatalf("expected console output unchanged, got %q", stderr.String())
+	}
+}
+
+func TestStoppedResolveJournalsStoppedEventBeforeReturning(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withVerifier(t, &fakeVerifier{})
+	withCommitter(t, &fakeCommitter{})
+	withSourceResolver(t, &fakeSourceResolver{})
+	withPusher(t, &fakePusher{})
+	withAgentRunner(t, &fakeStoppingAgentRunner{})
+	withChangedPaths(t, []preflight.ChangedPath{{Status: "M", Path: "src/app.go"}})
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean Stop Request exit, got %d stderr=%q", code, stderr.String())
+	}
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	stoppedSeen := false
+	for _, entry := range events {
+		if entry.Event.Kind != runevent.KindAgentStatus {
+			continue
+		}
+		if strings.Contains(string(entry.Event.Payload), `"stopped"`) {
+			stoppedSeen = true
+		}
+	}
+	if !stoppedSeen {
+		t.Fatalf("expected stopped status event journaled, got %+v", events)
 	}
 }

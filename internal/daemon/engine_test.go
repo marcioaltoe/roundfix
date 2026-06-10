@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -440,5 +441,67 @@ func TestNewEngineRequiresExplicitDependencies(t *testing.T) {
 		if !strings.Contains(err.Error(), expected) {
 			t.Fatalf("expected %q in missing dependency error, got %v", expected, err)
 		}
+	}
+}
+
+type publishingFakeRunner struct {
+	calls *[]string
+}
+
+func (runner *publishingFakeRunner) Probe(context.Context, agent.RuntimeSpec) error { return nil }
+
+func (runner *publishingFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
+	*runner.calls = append(*runner.calls, "agent")
+	// Mirror the real runner: a critical sink failure surfaces from
+	// publication and fails the run.
+	if err := sink.Publish(ctx, runevent.RunEvent{
+		RunID:   req.RunID,
+		Batch:   req.Batch.Number,
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentRaw,
+		Summary: "output",
+		Payload: []byte(`{"text":"output"}`),
+	}); err != nil {
+		return agent.ExecuteResult{}, fmt.Errorf("publish Run Events: %w", err)
+	}
+	for _, issue := range req.Batch.Issues {
+		if err := rounds.SetIssueStatus(issue.Path, rounds.StatusResolved, ""); err != nil {
+			return agent.ExecuteResult{}, err
+		}
+	}
+	return agent.ExecuteResult{}, nil
+}
+
+type failingCriticalSink struct{}
+
+func (failingCriticalSink) Publish(context.Context, runevent.RunEvent) error {
+	return errors.New("journal append failed")
+}
+
+func TestResolveCycleFailsRunWhenCriticalJournalSinkFails(t *testing.T) {
+	fixture := newEngineFixture(t)
+	fanout := runevent.NewFanout([]runevent.Sink{failingCriticalSink{}}, nil)
+	defer fanout.Close()
+	engine, err := NewEngine(Dependencies{
+		Runner:    &publishingFakeRunner{calls: fixture.calls},
+		Verifier:  &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID},
+		Committer: &engineFakeCommitter{calls: fixture.calls},
+		Pusher:    &engineFakePusher{calls: fixture.calls},
+		Source:    &engineFakeSource{calls: fixture.calls},
+		Runs:      fixture.store,
+		Sink:      fanout,
+		Progress:  fixture.progress,
+	})
+	if err != nil {
+		t.Fatalf("new engine: %v", err)
+	}
+
+	_, cycleErr := engine.ResolveCycle(context.Background(), fixture.plan())
+
+	if cycleErr == nil || !strings.Contains(cycleErr.Error(), "journal append failed") {
+		t.Fatalf("expected journal append failure to fail the Run, got %v", cycleErr)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent" {
+		t.Fatalf("expected cycle halted after publish failure, got %q", got)
 	}
 }

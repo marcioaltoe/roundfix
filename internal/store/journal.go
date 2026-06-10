@@ -171,6 +171,18 @@ func scanJournalEvent(rows *sql.Rows, runID string) (JournalEvent, error) {
 	return entry, nil
 }
 
+// JournalSink adapts the Run Database to the Run Event sink interface. It
+// registers as a critical sink: an append failure after Run start must fail
+// the Run, never be swallowed.
+type JournalSink struct {
+	Store *Store
+}
+
+func (sink JournalSink) Publish(ctx context.Context, event runevent.RunEvent) error {
+	_, err := sink.Store.AppendRunEvent(ctx, event)
+	return err
+}
+
 // DataVersion exposes SQLite's data_version for this connection: it changes
 // when another connection commits, so pollers can detect new events without
 // reading rows.
