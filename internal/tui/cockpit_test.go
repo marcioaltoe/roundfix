@@ -436,7 +436,7 @@ func TestCockpitSidebarShowsBatchesStatusAndElapsed(t *testing.T) {
 
 	rendered := viewText(model)
 	for _, expected := range []string{
-		"─── Batch 001/003"[:len("─── Batch 001/0")] + "02", // batch 1 of 2
+		"─── Batch 001/002",
 		"─── Batch 002/002",
 		"Issue #001",
 		"Resolved",
@@ -449,6 +449,15 @@ func TestCockpitSidebarShowsBatchesStatusAndElapsed(t *testing.T) {
 	} {
 		if !strings.Contains(rendered, expected) {
 			t.Fatalf("expected sidebar to contain %q, got:\n%s", expected, rendered)
+		}
+	}
+	// The clock belongs to the executing Batch separator, never to issues.
+	for _, line := range strings.Split(rendered, "\n") {
+		if !strings.Contains(line, "01:23") {
+			continue
+		}
+		if !strings.Contains(line, "Batch 001/002") {
+			t.Fatalf("expected elapsed clock on the executing Batch separator, got %q", line)
 		}
 	}
 }

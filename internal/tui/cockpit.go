@@ -490,8 +490,8 @@ func (model *cockpitModel) renderIssuePane(width int, height int) string {
 
 func (model *cockpitModel) issueBlock(index int, width int) []string {
 	lines := []string{}
-	if separator := model.batchSeparator(index); separator != "" {
-		lines = append(lines, styleAccent.Render(truncateDisplay(separator, width-4)))
+	if separator := model.batchSeparator(index, width); separator != "" {
+		lines = append(lines, styleAccent.Render(separator))
 	}
 	label := model.issueStatusLabel(index)
 	name := fmt.Sprintf("Issue #%03d", index+1)
@@ -499,27 +499,19 @@ func (model *cockpitModel) issueBlock(index int, width int) []string {
 	if index == model.selected {
 		marker = "> "
 	}
-	elapsed := ""
-	if label == "Executing" {
-		elapsed = formatElapsed(model.now().Sub(model.batchStartedAt))
-	}
-	first := marker + name
-	if elapsed != "" {
-		pad := maxInt(width-4-displayWidth(first)-displayWidth(elapsed), 1)
-		first += strings.Repeat(" ", pad) + elapsed
-	}
 	nameStyle := styleMuted
 	if index == model.selected {
 		nameStyle = styleBright
 	}
-	lines = append(lines, nameStyle.Render(truncateDisplay(first, width-4)))
+	lines = append(lines, nameStyle.Render(truncateDisplay(marker+name, width-4)))
 	lines = append(lines, model.statusStyle(label).Render(truncateDisplay("  "+label, width-4)))
 	return append(lines, "")
 }
 
 // batchSeparator labels the first issue of each Batch when the plan is
-// known.
-func (model *cockpitModel) batchSeparator(index int) string {
+// known. One Agent executes the whole Batch, so the elapsed clock lives on
+// the executing Batch's separator, not on individual issues.
+func (model *cockpitModel) batchSeparator(index int, width int) string {
 	total := len(model.cfg.View.BatchSizes)
 	if total == 0 {
 		return ""
@@ -531,7 +523,13 @@ func (model *cockpitModel) batchSeparator(index int) string {
 	if index > 0 && model.batchOf(index-1) == batch {
 		return ""
 	}
-	return fmt.Sprintf("─── Batch %03d/%03d", batch, total)
+	separator := fmt.Sprintf("─── Batch %03d/%03d", batch, total)
+	if batch == model.currentBatch && !model.terminal && !store.IsTerminalState(model.runState) {
+		elapsed := formatElapsed(model.now().Sub(model.batchStartedAt))
+		pad := maxInt(width-4-displayWidth(separator)-displayWidth(elapsed), 1)
+		separator += strings.Repeat(" ", pad) + elapsed
+	}
+	return truncateDisplay(separator, width-4)
 }
 
 func (model *cockpitModel) statusStyle(label string) lipgloss.Style {
