@@ -40,6 +40,7 @@ Usage:
   roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean
   roundfix init [--scope <project|user>]
   roundfix stop [<run-id>|--run-id <id>|--pr <number>]
+  roundfix attach <run-id>
   roundfix skills check
   roundfix skills install --target <codex|claude|opencode|all>
 
@@ -49,6 +50,7 @@ Commands:
   resolve    Resolve downloaded Unresolved Review Issues
   watch      Fetch and resolve in a watched loop
   stop       Stop an Active Run and release its lock
+  attach     Replay a Run's event timeline from the Run Database
   skills     Check or install Roundfix agent skills
 
 Options:
@@ -137,6 +139,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runInitCommand(ctx, args[1:], stdout, stderr)
 	case "stop":
 		return runStopCommand(ctx, args[1:], stdout, stderr)
+	case "attach":
+		return runAttachCommand(ctx, args[1:], stdout, stderr)
 	case "skills":
 		return runSkillsCommand(ctx, args[1:], stdout, stderr)
 	case "fetch", "resolve", "watch":
@@ -1607,6 +1611,17 @@ func markRunFailed(ctx context.Context, runStore *store.Store, runID string) {
 
 func commandUsage(name string) string {
 	switch name {
+	case "attach":
+		return `Usage:
+  roundfix attach <run-id>
+
+Replays the Run's event timeline from the Run Database, read-only.
+Attach never creates Runs, fetches, starts Agents, commits, pushes, or
+resolves Review Source threads.
+
+Options:
+  --run-id  Run ID to attach to (same as the positional argument)
+`
 	case "init":
 		return `Usage:
   roundfix init [--scope <project|user>] [--force]

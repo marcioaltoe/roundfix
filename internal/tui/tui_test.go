@@ -325,3 +325,67 @@ func TestEventBufferConcurrentPublishersAccountForEveryEvent(t *testing.T) {
 		t.Fatalf("expected delivered+dropped=%d, got %d+%d", total, received.Load(), buffer.DroppedEvents())
 	}
 }
+
+func TestRunTimelineCoalescesMessageChunksIntoOneLine(t *testing.T) {
+	timeline := NewRunTimeline(10)
+	for _, chunk := range []string{"Hel", "lo ", "world\n"} {
+		timeline.Append(runevent.RunEvent{
+			Source:  runevent.SourceAgent,
+			Kind:    runevent.KindAgentMessage,
+			Payload: []byte(`{"sessionId":"s","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":` + strconv.Quote(chunk) + `}}}`),
+		})
+	}
+
+	lines := timeline.Lines()
+	if len(lines) != 1 || lines[0] != "Hello world" {
+		t.Fatalf("expected chunks coalesced into one line, got %v", lines)
+	}
+}
+
+func TestRunTimelineBoundsConsoleMemory(t *testing.T) {
+	timeline := NewRunTimeline(5)
+	for index := 0; index < 50; index++ {
+		timeline.Append(rawAgentEvent("line " + strconv.Itoa(index) + "\n"))
+	}
+
+	lines := timeline.Lines()
+	if len(lines) != 5 {
+		t.Fatalf("expected ring-bounded console of 5 lines, got %d", len(lines))
+	}
+	if lines[4] != "line 49" {
+		t.Fatalf("expected newest lines kept, got %v", lines)
+	}
+}
+
+func TestRunTimelineSkipsUnknownEventKinds(t *testing.T) {
+	timeline := NewRunTimeline(5)
+	timeline.Append(runevent.RunEvent{Source: runevent.SourceAgent, Kind: "future.unknown", Payload: []byte(`{}`)})
+	timeline.Append(rawAgentEvent("kept\n"))
+
+	lines := timeline.Lines()
+	if len(lines) != 1 || lines[0] != "kept" {
+		t.Fatalf("expected unknown kinds skipped, got %v", lines)
+	}
+}
+
+func TestRunTimelineRendersToolEventsFromRawPayloads(t *testing.T) {
+	timeline := NewRunTimeline(20)
+	timeline.Append(runevent.RunEvent{
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentToolStarted,
+		Payload: []byte(`{"sessionId":"s","update":{"sessionUpdate":"tool_call","toolCallId":"call_1","title":"rtk go test","status":"pending"}}`),
+	})
+	timeline.Append(runevent.RunEvent{
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentStatus,
+		Payload: []byte(`{"status":"completed"}`),
+	})
+
+	lines := strings.Join(timeline.Lines(), "\n")
+	if !strings.Contains(lines, "[TOOL] rtk go test (call_1)") {
+		t.Fatalf("expected tool marker rendered from raw payload, got %q", lines)
+	}
+	if !strings.Contains(lines, "SESSION COMPLETED") {
+		t.Fatalf("expected session status rendered, got %q", lines)
+	}
+}

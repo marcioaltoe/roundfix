@@ -2439,3 +2439,140 @@ func TestWatchFinalPushRunsOncePerCleanRoundThroughEngine(t *testing.T) {
 		t.Fatalf("expected engine-driven Batch commit in watch Round, got %q", stderr.String())
 	}
 }
+
+func runResolveForAttachTest(t *testing.T, repoDir string) (string, *bytes.Buffer) {
+	t.Helper()
+	withSuccessfulPreflight(t, repoDir)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("seed resolve run failed: %d stderr=%q", code, stderr.String())
+	}
+	runID := ""
+	for _, line := range strings.Split(stderr.String(), "\n") {
+		if value, ok := strings.CutPrefix(strings.TrimSpace(line), "Run: "); ok {
+			runID = strings.TrimSpace(value)
+			break
+		}
+	}
+	if runID == "" {
+		t.Fatalf("expected Run id in resolve output, got %q", stderr.String())
+	}
+	return runID, &stderr
+}
+
+func TestAttachReplaysCompletedRunReadOnly(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	runID, _ := runResolveForAttachTest(t, repoDir)
+	// Attach must never probe or start an Agent; a probing attach would
+	// fail loudly here.
+	withAgentRunner(t, &fakeAgentRunner{probeErr: errors.New("attach must not probe Agents")})
+	dbPath := filepath.Join(homeDir, ".roundfix", "roundfix.db")
+	assertRunCount(t, dbPath, 1)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"attach", runID}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean attach exit, got %d stderr=%q", code, stderr.String())
+	}
+	output := stdout.String()
+	for _, expected := range []string{
+		"Roundfix attach",
+		"ID: " + runID,
+		"State: Clean",
+		"fake agent output",
+		"Run " + runID + " reached Clean; timeline replayed read-only.",
+	} {
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected attach output to contain %q, got:\n%s", expected, output)
+		}
+	}
+	// Non-mutating: no new Runs, and the Run's terminal state is untouched.
+	assertRunCount(t, dbPath, 1)
+	reader, err := store.OpenReader(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open reader: %v", err)
+	}
+	defer func() { _ = reader.Close() }()
+	run, found, err := reader.Run(context.Background(), runID)
+	if err != nil || !found {
+		t.Fatalf("lookup run after attach: found=%v err=%v", found, err)
+	}
+	if run.State != store.StateClean {
+		t.Fatalf("expected attach to leave Run state untouched, got %q", run.State)
+	}
+}
+
+func TestAttachUnknownRunFailsBeforeTUIStart(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	runResolveForAttachTest(t, repoDir)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"attach", "run_missing"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected preflight exit for unknown Run, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), `Run "run_missing" does not exist`) {
+		t.Fatalf("expected unknown Run error, got %q", stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no replay output before failure, got %q", stdout.String())
+	}
+}
+
+func TestAttachWithoutRunDatabaseFailsAsCLIError(t *testing.T) {
+	withCLIWorkspace(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"attach", "run_x"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected preflight exit without a Run Database, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "roundfix attach failed:") {
+		t.Fatalf("expected CLI error before TUI start, got %q", stderr.String())
+	}
+}
+
+func TestAttachSkipsUnknownEventKindsOnReplay(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	runID, _ := runResolveForAttachTest(t, repoDir)
+	writer, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open writer: %v", err)
+	}
+	if _, err := writer.AppendRunEvent(context.Background(), runevent.RunEvent{
+		RunID:   runID,
+		Source:  runevent.SourceDaemon,
+		Kind:    "future.unknown",
+		Summary: "future event",
+		Time:    time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC),
+		Payload: []byte(`{"new":"shape"}`),
+	}); err != nil {
+		t.Fatalf("append future event: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("close writer: %v", err)
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"attach", runID}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected unknown kinds skipped, got exit %d stderr=%q", code, stderr.String())
+	}
+	if strings.Contains(stdout.String(), "future event") {
+		t.Fatalf("expected unknown kind not rendered, got %q", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "fake agent output") {
+		t.Fatalf("expected known events still replayed, got %q", stdout.String())
+	}
+}
