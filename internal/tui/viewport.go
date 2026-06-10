@@ -144,6 +144,11 @@ func (viewport *TimelineViewport) ScrollUp(ctx context.Context, lines int) error
 	if lines <= 0 || viewport.state == FollowReplaying {
 		return nil
 	}
+	// Nothing above to scroll to: stay in Follow Mode instead of freezing
+	// a viewport that cannot move.
+	if viewport.state == FollowFollowing && viewport.maxScroll() == 0 && viewport.atHead {
+		return nil
+	}
 	if viewport.state == FollowFollowing {
 		viewport.state = FollowScrolled
 	}

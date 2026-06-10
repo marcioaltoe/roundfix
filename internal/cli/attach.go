@@ -62,6 +62,10 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitPreflight
 	}
 
+	if liveTUIEnabled(stdout) {
+		return runAttachCockpit(ctx, reader, run, stdout, stderr)
+	}
+
 	timeline := roundtui.NewRunTimeline(attachTimelineLines)
 	cursor, err := replayRunEvents(ctx, reader, run.ID, 0, timeline)
 	if err != nil {
@@ -97,6 +101,32 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitRunFailed
 	}
 	fmt.Fprintf(stdout, "Run %s reached %s.\n", final.ID, final.State)
+	return exitOK
+}
+
+// runAttachCockpit opens the interactive cockpit in the alternate screen.
+// Attach mode: q/Ctrl-C detach and never stop the Run; no stop key exists.
+func runAttachCockpit(ctx context.Context, reader *store.Store, run store.Run, stdout io.Writer, stderr io.Writer) int {
+	view := attachRunView(run, attachIssues(ctx, run), nil)
+	err := roundtui.RunCockpit(ctx, stdout, roundtui.CockpitConfig{
+		Mode:   roundtui.CockpitAttach,
+		View:   view,
+		RunID:  run.ID,
+		Source: reader,
+	})
+	if err != nil && !isStopRequest(ctx, err) {
+		printAttachFailure(err, stderr)
+		return exitRunFailed
+	}
+	current, found, lookupErr := reader.Run(context.WithoutCancel(ctx), run.ID)
+	if lookupErr != nil || !found {
+		current = run
+	}
+	if store.IsTerminalState(current.State) {
+		fmt.Fprintf(stdout, "Run %s reached %s.\n", current.ID, current.State)
+		return exitOK
+	}
+	fmt.Fprintf(stdout, "Detached; Run %s keeps going.\n", current.ID)
 	return exitOK
 }
 
