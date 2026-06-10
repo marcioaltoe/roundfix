@@ -861,6 +861,7 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 		Pusher:    collaborators.pusher,
 		Source:    collaborators.source,
 		Runs:      runStore,
+		Worktree:  collaborators.worktree,
 		Sink:      fanout,
 		Progress:  stderr,
 	})
@@ -1507,6 +1508,7 @@ type engineCollaborators struct {
 	committer daemon.Committer
 	pusher    daemon.Pusher
 	source    daemon.ReviewSourceResolver
+	worktree  daemon.WorktreeSnapshotter
 }
 
 func defaultEngineCollaborators() engineCollaborators {
@@ -1516,6 +1518,7 @@ func defaultEngineCollaborators() engineCollaborators {
 		committer: daemon.GitCommitter{},
 		pusher:    daemon.GitPusher{},
 		source:    daemon.ReviewSourceResolverFunc(defaultResolveReviewSourceIssues),
+		worktree:  daemon.GitWorktreeSnapshotter{},
 	}
 }
 

@@ -28,6 +28,26 @@ type engineFixture struct {
 	calls       *[]string
 	sink        *captureEventSink
 	progress    *bytes.Buffer
+	worktree    *engineFakeWorktree
+}
+
+// engineFakeWorktree returns scripted snapshots in call order, then keeps
+// returning the last one.
+type engineFakeWorktree struct {
+	snapshots [][]string
+	calls     int
+}
+
+func (worktree *engineFakeWorktree) Snapshot(context.Context, string) ([]string, error) {
+	index := worktree.calls
+	worktree.calls++
+	if len(worktree.snapshots) == 0 {
+		return nil, nil
+	}
+	if index >= len(worktree.snapshots) {
+		index = len(worktree.snapshots) - 1
+	}
+	return worktree.snapshots[index], nil
 }
 
 type captureEventSink struct {
@@ -113,11 +133,13 @@ type engineFakeCommitter struct {
 	calls    *[]string
 	err      error
 	messages []string
+	paths    [][]string
 }
 
 func (committer *engineFakeCommitter) Commit(_ context.Context, req CommitRequest) error {
 	*committer.calls = append(*committer.calls, "commit")
 	committer.messages = append(committer.messages, req.Message)
+	committer.paths = append(committer.paths, req.Paths)
 	return committer.err
 }
 
@@ -217,6 +239,7 @@ func newEngineFixture(t *testing.T) *engineFixture {
 		calls:       &calls,
 		sink:        &captureEventSink{},
 		progress:    &bytes.Buffer{},
+		worktree:    &engineFakeWorktree{snapshots: [][]string{nil, {"src/agent-change.go"}}},
 	}
 }
 
@@ -254,6 +277,7 @@ func (fixture *engineFixture) engine(t *testing.T, runner agent.Runner, verifier
 		Pusher:    pusher,
 		Source:    source,
 		Runs:      fixture.store,
+		Worktree:  fixture.worktree,
 		Sink:      fixture.sink,
 		Progress:  fixture.progress,
 	})
@@ -437,7 +461,7 @@ func TestNewEngineRequiresExplicitDependencies(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected missing dependencies error")
 	}
-	for _, expected := range []string{"Runner", "Verifier", "Committer", "Pusher", "Source", "Runs"} {
+	for _, expected := range []string{"Runner", "Verifier", "Committer", "Pusher", "Source", "Runs", "Worktree"} {
 		if !strings.Contains(err.Error(), expected) {
 			t.Fatalf("expected %q in missing dependency error, got %v", expected, err)
 		}
@@ -489,6 +513,7 @@ func TestResolveCycleFailsRunWhenCriticalJournalSinkFails(t *testing.T) {
 		Pusher:    &engineFakePusher{calls: fixture.calls},
 		Source:    &engineFakeSource{calls: fixture.calls},
 		Runs:      fixture.store,
+		Worktree:  fixture.worktree,
 		Sink:      fanout,
 		Progress:  fixture.progress,
 	})
@@ -503,5 +528,61 @@ func TestResolveCycleFailsRunWhenCriticalJournalSinkFails(t *testing.T) {
 	}
 	if got := strings.Join(*fixture.calls, ">"); got != "agent" {
 		t.Fatalf("expected cycle halted after publish failure, got %q", got)
+	}
+}
+
+func TestResolveCycleStagesOnlyAgentTouchedPaths(t *testing.T) {
+	fixture := newEngineFixture(t)
+	issuePath := fixture.issuePaths[0]
+	// user-wip.txt is dirty before the Batch starts — pre-existing work or
+	// a mid-Run user edit — and must never reach the Batch commit.
+	fixture.worktree.snapshots = [][]string{
+		{"user-wip.txt"},
+		{"user-wip.txt", "src/fixed.go", issuePath},
+	}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, &engineFakeRunner{calls: fixture.calls, store: fixture.store}, &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}, committer, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
+
+	result, err := engine.ResolveCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("resolve cycle: %v", err)
+	}
+	if len(committer.paths) != 1 {
+		t.Fatalf("expected one commit, got %v", committer.paths)
+	}
+	staged := strings.Join(committer.paths[0], "|")
+	if staged != issuePath+"|src/fixed.go" {
+		t.Fatalf("expected only Agent-touched paths staged (issue file + code), got %q", staged)
+	}
+	if strings.Contains(staged, "user-wip.txt") {
+		t.Fatal("expected pre-existing user change kept out of the Batch commit")
+	}
+	if !result.Batches[0].Committed || result.Batches[0].CommitSkipped {
+		t.Fatalf("expected committed outcome, got %+v", result.Batches[0])
+	}
+}
+
+func TestResolveCycleSkipsCommitForTriageOnlyBatch(t *testing.T) {
+	fixture := newEngineFixture(t)
+	// Identical snapshots: the Agent triaged without changing the worktree.
+	fixture.worktree.snapshots = [][]string{{"user-wip.txt"}, {"user-wip.txt"}}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, &engineFakeRunner{calls: fixture.calls, store: fixture.store, status: rounds.StatusInvalid}, &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}, committer, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
+
+	result, err := engine.ResolveCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("expected triage-only Batch to succeed, got %v", err)
+	}
+	if len(committer.paths) != 0 {
+		t.Fatalf("expected no commit for triage-only Batch, got %v", committer.paths)
+	}
+	outcome := result.Batches[0]
+	if outcome.Committed || !outcome.CommitSkipped {
+		t.Fatalf("expected commit-skip outcome, got %+v", outcome)
+	}
+	if !strings.Contains(fixture.progress.String(), "Batch commit skipped: Batch 001 made no worktree changes.") {
+		t.Fatalf("expected skip surfaced in command output, got %q", fixture.progress.String())
 	}
 }

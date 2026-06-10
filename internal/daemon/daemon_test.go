@@ -119,3 +119,56 @@ func mustWriteForTest(t *testing.T, path string, content string) {
 		t.Fatalf("write %s: %v", path, err)
 	}
 }
+
+func TestSnapshotDiffCommitStagesOnlyAgentChangesInRealRepo(t *testing.T) {
+	ctx := context.Background()
+	repoDir := t.TempDir()
+	runGitForTest(t, repoDir, "init", "-b", "main")
+	runGitForTest(t, repoDir, "config", "user.name", "Roundfix Test")
+	runGitForTest(t, repoDir, "config", "user.email", "test@example.com")
+	mustWriteForTest(t, filepath.Join(repoDir, "tracked.txt"), "original\n")
+	runGitForTest(t, repoDir, "add", "tracked.txt")
+	runGitForTest(t, repoDir, "commit", "-m", "initial")
+
+	// Pre-existing user work that slipped past Preflight Validation.
+	mustWriteForTest(t, filepath.Join(repoDir, "tracked.txt"), "user edit\n")
+	mustWriteForTest(t, filepath.Join(repoDir, "user-notes.md"), "wip\n")
+
+	snapshotter := GitWorktreeSnapshotter{}
+	before, err := snapshotter.Snapshot(ctx, repoDir)
+	if err != nil {
+		t.Fatalf("before snapshot: %v", err)
+	}
+
+	// The Agent creates a fix.
+	mustWriteForTest(t, filepath.Join(repoDir, "agent-fix.go"), "package fix\n")
+
+	after, err := snapshotter.Snapshot(ctx, repoDir)
+	if err != nil {
+		t.Fatalf("after snapshot: %v", err)
+	}
+	changed := diffSnapshots(before, after)
+	if len(changed) != 1 || changed[0] != "agent-fix.go" {
+		t.Fatalf("expected only the Agent-made change in the diff, got %v", changed)
+	}
+
+	if err := (GitCommitter{}).Commit(ctx, CommitRequest{
+		WorkDir: repoDir,
+		Message: BatchCommitMessage(1),
+		Paths:   changed,
+	}); err != nil {
+		t.Fatalf("snapshot-diff commit: %v", err)
+	}
+
+	committed := runGitForTest(t, repoDir, "show", "--name-only", "--format=", "HEAD")
+	if !strings.Contains(committed, "agent-fix.go") {
+		t.Fatalf("expected Agent change committed, got %q", committed)
+	}
+	if strings.Contains(committed, "tracked.txt") || strings.Contains(committed, "user-notes.md") {
+		t.Fatalf("expected user changes kept out of the Batch commit, got %q", committed)
+	}
+	status := runGitForTest(t, repoDir, "status", "--porcelain=v1")
+	if !strings.Contains(status, " M tracked.txt") || !strings.Contains(status, "?? user-notes.md") {
+		t.Fatalf("expected user work preserved in the worktree, got %q", status)
+	}
+}

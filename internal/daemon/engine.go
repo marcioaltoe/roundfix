@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"time"
 
@@ -44,6 +45,7 @@ type Dependencies struct {
 	Pusher    Pusher
 	Source    ReviewSourceResolver
 	Runs      RunStateStore
+	Worktree  WorktreeSnapshotter
 	Sink      runevent.Sink
 	Now       func() time.Time
 	Progress  io.Writer
@@ -82,11 +84,13 @@ type CyclePlan struct {
 	TotalIssues  int
 }
 
-// BatchOutcome reports what one Batch produced.
+// BatchOutcome reports what one Batch produced. CommitSkipped means
+// auto-commit was on but the Agent changed nothing, which is a success.
 type BatchOutcome struct {
 	Batch                 int
 	Issues                int
 	Committed             bool
+	CommitSkipped         bool
 	ResolvedSourceThreads int
 }
 
@@ -126,6 +130,9 @@ func NewEngine(deps Dependencies) (*Engine, error) {
 	}
 	if deps.Runs == nil {
 		missing = append(missing, "Runs")
+	}
+	if deps.Worktree == nil {
+		missing = append(missing, "Worktree")
 	}
 	if len(missing) > 0 {
 		return nil, fmt.Errorf("create Run engine: missing dependencies: %s", strings.Join(missing, ", "))
@@ -192,6 +199,17 @@ func (engine *Engine) FinalPush(ctx context.Context, req FinalPushRequest) error
 
 func (engine *Engine) resolveBatch(ctx context.Context, plan CyclePlan, batch rounds.Batch, batchIndex int, batchTotal int) (BatchOutcome, int, error) {
 	outcome := BatchOutcome{Batch: batch.Number, Issues: len(batch.Issues)}
+	// The before-snapshot is taken at Batch start, so anything already
+	// dirty — pre-existing user work or edits from earlier in the Run —
+	// never reaches a Batch commit.
+	var before []string
+	if plan.AutoCommit {
+		snapshot, err := engine.deps.Worktree.Snapshot(ctx, plan.GitRoot)
+		if err != nil {
+			return outcome, 0, err
+		}
+		before = snapshot
+	}
 	if err := engine.runBatchAgent(ctx, plan, batch, batchIndex, batchTotal); err != nil {
 		return outcome, 0, err
 	}
@@ -205,11 +223,12 @@ func (engine *Engine) resolveBatch(ctx context.Context, plan CyclePlan, batch ro
 	if marked > 0 {
 		fmt.Fprintf(engine.deps.Progress, "Marked %d older duplicate Review Issue occurrence(s) as duplicated.\n", marked)
 	}
-	committed, err := engine.commitBatch(ctx, plan, batch)
+	committed, skipped, err := engine.commitBatch(ctx, plan, batch, before)
 	if err != nil {
 		return outcome, 0, err
 	}
 	outcome.Committed = committed
+	outcome.CommitSkipped = skipped
 	resolved, err := engine.resolveBatchSources(ctx, plan, batch)
 	if err != nil {
 		return outcome, 0, err
@@ -287,25 +306,56 @@ func (engine *Engine) verifyBatch(ctx context.Context, plan CyclePlan, batch rou
 	return nil
 }
 
-func (engine *Engine) commitBatch(ctx context.Context, plan CyclePlan, batch rounds.Batch) (bool, error) {
+func (engine *Engine) commitBatch(ctx context.Context, plan CyclePlan, batch rounds.Batch, before []string) (bool, bool, error) {
 	if !plan.AutoCommit {
 		fmt.Fprintln(engine.deps.Progress, "Auto-commit disabled; no Batch commit created.")
-		return false, nil
+		return false, false, nil
 	}
 	if err := ctx.Err(); err != nil {
 		engine.publishStop(ctx, plan.RunID, batch.Number)
-		return false, err
+		return false, false, err
+	}
+	after, err := engine.deps.Worktree.Snapshot(ctx, plan.GitRoot)
+	if err != nil {
+		return false, false, err
+	}
+	changed := diffSnapshots(before, after)
+	if len(changed) == 0 {
+		// A triage-only Batch changed nothing: skipping the commit is a
+		// success, never a nothing-to-commit failure.
+		fmt.Fprintf(engine.deps.Progress, "Batch commit skipped: Batch %03d made no worktree changes.\n", batch.Number)
+		return false, true, nil
 	}
 	message := BatchCommitMessage(batch.Number)
 	if err := engine.deps.Committer.Commit(ctx, CommitRequest{
-		WorkDir:      plan.GitRoot,
-		Message:      message,
-		ExcludePaths: []string{".roundfixrc.yml"},
+		WorkDir: plan.GitRoot,
+		Message: message,
+		Paths:   changed,
 	}); err != nil {
-		return false, err
+		return false, false, err
 	}
 	fmt.Fprintf(engine.deps.Progress, "Batch commit created: %s\n", message)
-	return true, nil
+	return true, false, nil
+}
+
+// diffSnapshots returns the paths dirty after the Batch that were not
+// already dirty before it, sorted for deterministic staging. Project Config
+// stays excluded as defense in depth.
+func diffSnapshots(before []string, after []string) []string {
+	seen := make(map[string]bool, len(before))
+	for _, path := range before {
+		seen[path] = true
+	}
+	changed := []string{}
+	for _, path := range after {
+		if seen[path] || path == ".roundfixrc.yml" {
+			continue
+		}
+		seen[path] = true
+		changed = append(changed, path)
+	}
+	sort.Strings(changed)
+	return changed
 }
 
 func (engine *Engine) resolveBatchSources(ctx context.Context, plan CyclePlan, batch rounds.Batch) (int, error) {

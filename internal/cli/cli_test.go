@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -527,9 +528,11 @@ func TestRunResolveStopRequestDuringAgentPreservesWorkAndSkipsDaemonMutations(t 
 	pusher := &fakePusher{}
 	withVerifier(t, verifier)
 	withCommitter(t, committer)
+	withFakeWorktree(t)
 	withSourceResolver(t, sourceResolver)
 	withPusher(t, pusher)
 	withAgentRunner(t, &fakeStoppingAgentRunner{})
+	withFakeWorktree(t)
 	withChangedPaths(t, []preflight.ChangedPath{{Status: "M", Path: "src/app.go"}})
 	result := persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	var stdout bytes.Buffer
@@ -596,6 +599,7 @@ func TestRunResolveSIGINTStopReturns130(t *testing.T) {
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withAgentRunner(t, &fakeStoppingAgentRunner{})
+	withFakeWorktree(t)
 	withChangedPaths(t, nil)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	var stdout bytes.Buffer
@@ -753,6 +757,7 @@ func TestRunResolveVerificationFailureDoesNotCommit(t *testing.T) {
 	pusher := &fakePusher{}
 	withVerifier(t, verifier)
 	withCommitter(t, committer)
+	withFakeWorktree(t)
 	withSourceResolver(t, sourceResolver)
 	withPusher(t, pusher)
 	result := persistCLIReviewIssue(t, repoDir, 1, "feature/review")
@@ -805,6 +810,7 @@ func TestRunResolveProcessesAllBatchesBeforeFinalPush(t *testing.T) {
 	pusher := &fakePusher{}
 	withVerifier(t, verifier)
 	withCommitter(t, committer)
+	withFakeWorktree(t)
 	withSourceResolver(t, sourceResolver)
 	withPusher(t, pusher)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
@@ -911,6 +917,7 @@ func TestRunResolveFinalPushRunsOnceAfterAllUnresolvedTerminal(t *testing.T) {
 	pusher := &fakePusher{}
 	withVerifier(t, verifier)
 	withCommitter(t, committer)
+	withFakeWorktree(t)
 	withSourceResolver(t, sourceResolver)
 	withPusher(t, pusher)
 	persistCLIReviewItems(t, repoDir, 1, "feature/review", []reviewsource.ReviewItem{
@@ -982,6 +989,7 @@ func TestRunResolveResolvesInvalidAssignedIssueSourceThread(t *testing.T) {
 	withSuccessfulPreflight(t, repoDir)
 	sourceResolver := &fakeSourceResolver{}
 	withAgentRunner(t, &fakeAgentRunner{status: rounds.StatusInvalid})
+	withFakeWorktree(t)
 	withSourceResolver(t, sourceResolver)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	var stdout bytes.Buffer
@@ -1005,6 +1013,7 @@ func TestRunResolveProbeFailureDoesNotCreateRun(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withAgentRunner(t, &fakeAgentRunner{probeErr: errors.New("adapter missing")})
+	withFakeWorktree(t)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -1027,6 +1036,7 @@ func TestRunResolveAgentFailureMarksBatchFailed(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withAgentRunner(t, &fakeAgentRunner{runErr: errors.New("agent crashed")})
+	withFakeWorktree(t)
 	result := persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -1061,6 +1071,7 @@ func TestRunResolveAgentFailureStopsBeforeLaterBatches(t *testing.T) {
 	withSuccessfulPreflight(t, repoDir)
 	runner := &fakeAgentRunner{runErr: errors.New("agent crashed")}
 	withAgentRunner(t, runner)
+	withFakeWorktree(t)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
 resolve:
   batch_size: 1
@@ -1721,8 +1732,10 @@ func mustWrite(t *testing.T, path string, content string) {
 func withSuccessfulPreflight(t *testing.T, repoDir string) {
 	t.Helper()
 	withAgentRunner(t, &fakeAgentRunner{})
+	withFakeWorktree(t)
 	withVerifier(t, &fakeVerifier{})
 	withCommitter(t, &fakeCommitter{})
+	withFakeWorktree(t)
 	withSourceResolver(t, &fakeSourceResolver{})
 	withPusher(t, &fakePusher{})
 	clock := &fakeWatchClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
@@ -1837,6 +1850,29 @@ func withSourceResolver(t *testing.T, resolver *fakeSourceResolver) {
 func withPusher(t *testing.T, pusher daemon.Pusher) {
 	overrideCollaborators(t, func(collaborators *engineCollaborators) {
 		collaborators.pusher = pusher
+	})
+}
+
+// fakeWorktree reports an Agent-made change on every post-Batch snapshot so
+// CLI tests exercise the commit path without a real git repository.
+type fakeWorktree struct {
+	mu    sync.Mutex
+	calls int
+}
+
+func (worktree *fakeWorktree) Snapshot(context.Context, string) ([]string, error) {
+	worktree.mu.Lock()
+	defer worktree.mu.Unlock()
+	worktree.calls++
+	if worktree.calls%2 == 0 {
+		return []string{"src/agent-change.go"}, nil
+	}
+	return nil, nil
+}
+
+func withFakeWorktree(t *testing.T) {
+	overrideCollaborators(t, func(collaborators *engineCollaborators) {
+		collaborators.worktree = &fakeWorktree{}
 	})
 }
 
@@ -2265,9 +2301,11 @@ func TestResolveJournalsAgentRunEventsDurably(t *testing.T) {
 	withSuccessfulPreflight(t, repoDir)
 	withVerifier(t, &fakeVerifier{})
 	withCommitter(t, &fakeCommitter{})
+	withFakeWorktree(t)
 	withSourceResolver(t, &fakeSourceResolver{})
 	withPusher(t, &fakePusher{})
 	withAgentRunner(t, &fakeAgentRunner{})
+	withFakeWorktree(t)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -2304,9 +2342,11 @@ func TestStoppedResolveJournalsStoppedEventBeforeReturning(t *testing.T) {
 	withSuccessfulPreflight(t, repoDir)
 	withVerifier(t, &fakeVerifier{})
 	withCommitter(t, &fakeCommitter{})
+	withFakeWorktree(t)
 	withSourceResolver(t, &fakeSourceResolver{})
 	withPusher(t, &fakePusher{})
 	withAgentRunner(t, &fakeStoppingAgentRunner{})
+	withFakeWorktree(t)
 	withChangedPaths(t, []preflight.ChangedPath{{Status: "M", Path: "src/app.go"}})
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	var stdout bytes.Buffer
