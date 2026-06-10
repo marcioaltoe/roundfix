@@ -339,7 +339,16 @@ func (c *acpClient) stop(grace time.Duration) bool {
 		return false
 	case <-timer.C:
 		_ = c.cmd.Process.Kill()
-		<-c.waitCh
+		// cmd.Wait can outlive the kill: grandchildren that inherited the
+		// agent's stderr keep the pipe open and Wait blocks on the copier.
+		// The Run must never freeze on runtime teardown, so the wait is
+		// bounded and the reaper goroutine is abandoned past it.
+		killTimer := time.NewTimer(grace)
+		defer killTimer.Stop()
+		select {
+		case <-c.waitCh:
+		case <-killTimer.C:
+		}
 		return true
 	}
 }
@@ -564,7 +573,7 @@ func contentBlockText(block acp.ContentBlock) string {
 func toolContentBlocks(content []acp.ToolCallContent, rawInput any, rawOutput any) []StreamBlock {
 	blocks := []StreamBlock{}
 	if rawInput != nil {
-		blocks = append(blocks, StreamBlock{Kind: StreamBlockInput, Text: marshalCompact(rawInput)})
+		blocks = append(blocks, StreamBlock{Kind: StreamBlockInput, Text: formatToolInput(rawInput)})
 	}
 	for _, item := range content {
 		switch {
@@ -590,9 +599,85 @@ func toolContentBlocks(content []acp.ToolCallContent, rawInput any, rawOutput an
 		}
 	}
 	if rawOutput != nil {
-		blocks = append(blocks, StreamBlock{Kind: StreamBlockOutput, Text: marshalCompact(rawOutput)})
+		blocks = append(blocks, StreamBlock{Kind: StreamBlockOutput, Text: formatToolOutput(rawOutput)})
 	}
 	return blocks
+}
+
+// formatToolInput renders tool input as a log line, not raw JSON: shell
+// invocations show the command itself; anything else falls back to compact
+// JSON.
+func formatToolInput(rawInput any) string {
+	fields, ok := rawInput.(map[string]any)
+	if !ok {
+		return marshalCompact(rawInput)
+	}
+	if command := shellCommandFromInput(fields["command"]); command != "" {
+		return command
+	}
+	return marshalCompact(rawInput)
+}
+
+// shellCommandFromInput extracts the human command from exec-style inputs
+// like ["/bin/zsh","-lc","rtk go test ./..."].
+func shellCommandFromInput(value any) string {
+	switch command := value.(type) {
+	case string:
+		return strings.TrimSpace(command)
+	case []any:
+		parts := make([]string, 0, len(command))
+		for _, item := range command {
+			text, ok := item.(string)
+			if !ok {
+				return ""
+			}
+			parts = append(parts, text)
+		}
+		if len(parts) == 0 {
+			return ""
+		}
+		last := strings.TrimSpace(parts[len(parts)-1])
+		if len(parts) >= 3 && strings.HasPrefix(parts[1], "-") && last != "" {
+			return last
+		}
+		return strings.Join(parts, " ")
+	default:
+		return ""
+	}
+}
+
+// toolOutputMaxLines bounds rendered tool output so chatty commands stay
+// readable; the raw payload keeps the full data.
+const toolOutputMaxLines = 8
+
+// formatToolOutput renders tool output as log text: exec-style payloads show
+// their aggregated output, bounded; anything else falls back to compact JSON.
+func formatToolOutput(rawOutput any) string {
+	fields, ok := rawOutput.(map[string]any)
+	if !ok {
+		return marshalCompact(rawOutput)
+	}
+	for _, key := range []string{"aggregated_output", "formatted_output", "stdout", "output"} {
+		text, found := fields[key].(string)
+		if !found {
+			continue
+		}
+		return boundOutputLines(text)
+	}
+	return marshalCompact(rawOutput)
+}
+
+func boundOutputLines(text string) string {
+	trimmed := strings.TrimRight(text, "\r\n")
+	if trimmed == "" {
+		return ""
+	}
+	lines := strings.Split(trimmed, "\n")
+	if len(lines) <= toolOutputMaxLines {
+		return trimmed
+	}
+	kept := lines[:toolOutputMaxLines]
+	return strings.Join(kept, "\n") + fmt.Sprintf("\n… (+%d more line(s))", len(lines)-toolOutputMaxLines)
 }
 
 func streamBlockText(blocks []StreamBlock) string {

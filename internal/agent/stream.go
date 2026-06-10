@@ -132,7 +132,7 @@ func formatStreamBlocks(blocks []StreamBlock) []string {
 			}
 		case StreamBlockInput:
 			if text := strings.TrimRight(block.Text, "\r\n"); text != "" {
-				lines = append(lines, "input: "+text)
+				lines = append(lines, "$ "+text)
 			}
 		case StreamBlockOutput:
 			if text := strings.TrimRight(block.Text, "\r\n"); text != "" {

@@ -379,7 +379,7 @@ func (runner ExecRunner) Run(ctx context.Context, req ExecuteRequest, sink runev
 	case waitErr = <-waitCh:
 	case <-ctx.Done():
 		killed := stopProcess(cmd, stopGrace(req.StopGrace), waitCh)
-		wg.Wait()
+		waitBounded(&wg, stopGrace(req.StopGrace))
 		publisher.publishStatus("stopped")
 		return ExecuteResult{LogPath: req.LogPath, Output: output.String()}, StopError{
 			LogPath: req.LogPath,
@@ -495,7 +495,30 @@ func stopProcess(cmd *exec.Cmd, grace time.Duration, waitCh <-chan error) bool {
 		return false
 	case <-timer.C:
 		_ = cmd.Process.Kill()
-		<-waitCh
+		// Grandchildren holding the Agent's pipes can keep cmd.Wait alive
+		// after the kill; never let runtime teardown freeze the Run.
+		killTimer := time.NewTimer(grace)
+		defer killTimer.Stop()
+		select {
+		case <-waitCh:
+		case <-killTimer.C:
+		}
 		return true
+	}
+}
+
+// waitBounded waits for the output copiers, but only up to the grace
+// period: pipes inherited by grandchildren may never reach EOF.
+func waitBounded(wg *sync.WaitGroup, grace time.Duration) {
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	timer := time.NewTimer(grace)
+	defer timer.Stop()
+	select {
+	case <-done:
+	case <-timer.C:
 	}
 }

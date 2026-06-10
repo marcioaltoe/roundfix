@@ -164,10 +164,10 @@ func TestStreamUpdateFromACPPreservesToolBlocks(t *testing.T) {
 	for _, expected := range []string{
 		"[TOOL] rtk git diff",
 		"completed",
-		`input: {"command":"rtk git diff"}`,
+		"$ rtk git diff",
 		"diff: apps/api/server.go",
 		"terminal: term_001",
-		`output: {"aggregated_output":"ok"}`,
+		"output: ok",
 	} {
 		if !strings.Contains(rendered, expected) {
 			t.Fatalf("expected rendered update to contain %q, got:\n%s", expected, rendered)
@@ -716,9 +716,8 @@ func TestWriterSinkRendersConsoleTextContract(t *testing.T) {
 
 	text := buffer.String()
 	for _, expected := range []string{
-		"[TOOL] rtk make verify",
-		"completed",
-		`output: {"aggregated_output":"ok"}`,
+		"[TOOL] rtk make verify · completed",
+		"ok",
 		"diff: apps/api/server.go",
 		"terminal: term_001",
 		"raw line\n",

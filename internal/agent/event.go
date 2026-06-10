@@ -186,22 +186,19 @@ func consoleToolStartedText(update StreamUpdate) string {
 	if title == "" {
 		title = "tool call"
 	}
-	lines := []string{}
+	marker := "[TOOL] " + title
 	if update.ToolID != "" {
-		lines = append(lines, fmt.Sprintf("[TOOL] %s (%s)", title, update.ToolID))
-	} else {
-		lines = append(lines, fmt.Sprintf("[TOOL] %s", title))
+		marker = fmt.Sprintf("[TOOL] %s (%s)", title, update.ToolID)
 	}
+	lines := []string{consoleToolMarker(marker, update.ToolState)}
 	lines = appendConsoleToolDetail(lines, update)
 	return strings.Join(lines, "\n") + "\n"
 }
 
 func consoleToolUpdatedText(update StreamUpdate) string {
 	lines := []string{}
-	if strings.TrimSpace(update.Title) != "" {
-		lines = append(lines, "[TOOL] "+strings.TrimSpace(update.Title))
-	} else if strings.TrimSpace(update.ToolID) != "" {
-		lines = append(lines, "[TOOL] "+strings.TrimSpace(update.ToolID))
+	if name := firstNonEmpty(update.Title, update.ToolID); name != "" {
+		lines = append(lines, consoleToolMarker("[TOOL] "+name, update.ToolState))
 	}
 	lines = appendConsoleToolDetail(lines, update)
 	if len(lines) == 0 {
@@ -210,10 +207,15 @@ func consoleToolUpdatedText(update StreamUpdate) string {
 	return strings.Join(lines, "\n") + "\n"
 }
 
-func appendConsoleToolDetail(lines []string, update StreamUpdate) []string {
-	if strings.TrimSpace(update.ToolState) != "" {
-		lines = append(lines, update.ToolState)
+// consoleToolMarker keeps the tool call and its state on one log line.
+func consoleToolMarker(marker string, state string) string {
+	if strings.TrimSpace(state) == "" {
+		return marker
 	}
+	return marker + " · " + strings.TrimSpace(state)
+}
+
+func appendConsoleToolDetail(lines []string, update StreamUpdate) []string {
 	if strings.TrimSpace(update.Text) != "" && len(update.Blocks) == 0 {
 		lines = append(lines, strings.TrimRight(update.Text, "\r\n"))
 	}
@@ -230,11 +232,11 @@ func consoleBlockLines(blocks []StreamBlock) []string {
 			}
 		case StreamBlockInput:
 			if text := strings.TrimRight(block.Text, "\r\n"); text != "" {
-				lines = append(lines, "input: "+text)
+				lines = append(lines, "$ "+text)
 			}
 		case StreamBlockOutput:
 			if text := strings.TrimRight(block.Text, "\r\n"); text != "" {
-				lines = append(lines, "output: "+text)
+				lines = append(lines, strings.Split(text, "\n")...)
 			}
 		case StreamBlockDiff:
 			if block.Path != "" {
