@@ -1301,24 +1301,13 @@ func newAgentConsoleStream(output io.Writer, view roundtui.LiveRunView) *roundtu
 }
 
 // newAgentEventSink adapts the Agent Console to the Run Event seam: the
-// live view receives reconstructed stream updates, while non-TTY output
-// renders through the plain-text writer sink.
+// live view consumes events itself through its bounded best-effort buffer,
+// while non-TTY output renders synchronously through the writer sink.
 func newAgentEventSink(stream *roundtui.AgentLiveStream) runevent.Sink {
 	if stream.Live() {
-		return liveViewSink{stream: stream}
+		return stream
 	}
 	return agent.WriterSink{Writer: stream}
-}
-
-type liveViewSink struct {
-	stream *roundtui.AgentLiveStream
-}
-
-func (sink liveViewSink) Publish(_ context.Context, event runevent.RunEvent) error {
-	if update, ok := agent.StreamUpdateFromEvent(event); ok {
-		sink.stream.HandleAgentUpdate(update)
-	}
-	return nil
 }
 
 func closeAgentConsoleStream(stream *roundtui.AgentLiveStream) error {

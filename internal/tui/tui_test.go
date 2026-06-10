@@ -2,11 +2,16 @@ package tui
 
 import (
 	"context"
+	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"roundfix/internal/agent"
 	"roundfix/internal/rounds"
+	"roundfix/internal/runevent"
 )
 
 func TestRenderInteractiveInputShowsCurrentAndConfiguredDefaults(t *testing.T) {
@@ -195,5 +200,128 @@ func TestRenderAgentSidebarShowsBatchProgressAndTotalIssues(t *testing.T) {
 		if strings.Contains(sidebar, hidden) {
 			t.Fatalf("expected sidebar to hide %q, got:\n%s", hidden, sidebar)
 		}
+	}
+}
+
+func rawAgentEvent(text string) runevent.RunEvent {
+	return runevent.RunEvent{
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentRaw,
+		Summary: text,
+		Payload: []byte(`{"text":` + strconv.Quote(text) + `}`),
+	}
+}
+
+func TestEventBufferDeliversEventsInOrder(t *testing.T) {
+	var mu sync.Mutex
+	delivered := []string{}
+	buffer := NewEventBuffer(8, func(update agent.StreamUpdate) {
+		mu.Lock()
+		delivered = append(delivered, update.Text)
+		mu.Unlock()
+	})
+
+	for _, text := range []string{"one", "two", "three"} {
+		if err := buffer.Publish(context.Background(), rawAgentEvent(text)); err != nil {
+			t.Fatalf("publish: %v", err)
+		}
+	}
+	buffer.Close()
+
+	mu.Lock()
+	defer mu.Unlock()
+	if strings.Join(delivered, "|") != "one|two|three" {
+		t.Fatalf("expected ordered delivery, got %v", delivered)
+	}
+	if buffer.DroppedEvents() != 0 {
+		t.Fatalf("expected no drops, got %d", buffer.DroppedEvents())
+	}
+}
+
+func TestEventBufferCountsDropsAndNeverBlocksWhenFull(t *testing.T) {
+	release := make(chan struct{})
+	started := make(chan struct{})
+	var once sync.Once
+	buffer := NewEventBuffer(2, func(agent.StreamUpdate) {
+		once.Do(func() { close(started) })
+		<-release
+	})
+
+	published := make(chan struct{})
+	go func() {
+		for index := 0; index < 8; index++ {
+			_ = buffer.Publish(context.Background(), rawAgentEvent("pressure"))
+		}
+		close(published)
+	}()
+
+	select {
+	case <-published:
+	case <-time.After(5 * time.Second):
+		t.Fatal("publication blocked on a slow Live Run View")
+	}
+	<-started
+	if buffer.DroppedEvents() == 0 {
+		t.Fatal("expected drops counted under rendering pressure")
+	}
+	close(release)
+	buffer.Close()
+}
+
+func TestEventBufferSkipsUnknownKindsWithoutDropCount(t *testing.T) {
+	buffer := NewEventBuffer(2, func(agent.StreamUpdate) {})
+
+	err := buffer.Publish(context.Background(), runevent.RunEvent{
+		Source:  runevent.SourceAgent,
+		Kind:    "future.unknown",
+		Payload: []byte(`{}`),
+	})
+	buffer.Close()
+
+	if err != nil {
+		t.Fatalf("expected unknown kinds skipped silently, got %v", err)
+	}
+	if buffer.DroppedEvents() != 0 {
+		t.Fatalf("expected skip, not drop, got %d", buffer.DroppedEvents())
+	}
+}
+
+func TestEventBufferPublishAfterCloseCountsDrop(t *testing.T) {
+	buffer := NewEventBuffer(2, func(agent.StreamUpdate) {})
+	buffer.Close()
+	buffer.Close()
+
+	if err := buffer.Publish(context.Background(), rawAgentEvent("late")); err != nil {
+		t.Fatalf("expected publish after close to stay best-effort, got %v", err)
+	}
+	if buffer.DroppedEvents() != 1 {
+		t.Fatalf("expected late publish counted as drop, got %d", buffer.DroppedEvents())
+	}
+}
+
+func TestEventBufferConcurrentPublishersAccountForEveryEvent(t *testing.T) {
+	var received atomic.Int64
+	buffer := NewEventBuffer(16, func(agent.StreamUpdate) {
+		received.Add(1)
+	})
+
+	const publishers = 8
+	const perPublisher = 100
+	var wg sync.WaitGroup
+	for index := 0; index < publishers; index++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for n := 0; n < perPublisher; n++ {
+				_ = buffer.Publish(context.Background(), rawAgentEvent("burst"))
+			}
+		}()
+	}
+	wg.Wait()
+	buffer.Close()
+
+	total := int64(publishers * perPublisher)
+	if received.Load()+int64(buffer.DroppedEvents()) != total {
+		t.Fatalf("expected delivered+dropped=%d, got %d+%d", total, received.Load(), buffer.DroppedEvents())
 	}
 }

@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 
 	"roundfix/internal/agent"
 	"roundfix/internal/rounds"
+	"roundfix/internal/runevent"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -20,6 +22,7 @@ type AgentLiveStream struct {
 	live   bool
 	prog   *tea.Program
 	done   chan error
+	events *EventBuffer
 
 	mu     sync.Mutex
 	closed bool
@@ -50,6 +53,7 @@ func NewAgentLiveStream(output io.Writer, view LiveRunView, live bool) *AgentLiv
 		live:   live,
 		done:   make(chan error, 1),
 	}
+	stream.events = NewEventBuffer(agentEventBufferSize, stream.handleAgentUpdate)
 	if !live {
 		return stream
 	}
@@ -87,7 +91,19 @@ func (stream *AgentLiveStream) Write(payload []byte) (int, error) {
 	return len(payload), nil
 }
 
-func (stream *AgentLiveStream) HandleAgentUpdate(update agent.StreamUpdate) {
+// Publish implements the Run Event sink as a best-effort consumer: events
+// flow through the bounded buffer so rendering pressure never blocks or
+// fails producers.
+func (stream *AgentLiveStream) Publish(ctx context.Context, event runevent.RunEvent) error {
+	return stream.events.Publish(ctx, event)
+}
+
+// DroppedEvents reports Run Events dropped under rendering pressure.
+func (stream *AgentLiveStream) DroppedEvents() uint64 {
+	return stream.events.DroppedEvents()
+}
+
+func (stream *AgentLiveStream) handleAgentUpdate(update agent.StreamUpdate) {
 	if !stream.live || stream.prog == nil {
 		_, _ = io.WriteString(stream.output, agentText(update))
 		return
@@ -105,6 +121,7 @@ func (stream *AgentLiveStream) Close() error {
 	prog := stream.prog
 	done := stream.done
 	stream.mu.Unlock()
+	stream.events.Close()
 	if prog == nil {
 		return nil
 	}
