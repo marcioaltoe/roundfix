@@ -2,8 +2,8 @@
 
 Roundfix is a local-first Go CLI for resolving pull request review feedback with
 local coding agents. It fetches unresolved CodeRabbit findings, stores them as
-local markdown Review Issue artifacts, assigns bounded Batches to an ACP
-Runtime, verifies Agent changes, creates Batch commits, and runs the Final Push
+local markdown Review Issue artifacts, assigns bounded Batches to a local Agent
+runtime, verifies Agent changes, creates Batch commits, and runs the Final Push
 only after no Unresolved Review Issues remain.
 
 Roundfix is not a general workflow engine, CI healer, or task orchestration
@@ -14,9 +14,9 @@ system. The MVP focuses on one review-resolution loop for an Open Pull Request.
 - Go 1.26 or newer.
 - `make`.
 - GitHub CLI `gh` authenticated for the target repository.
-- A local ACP Runtime command for the selected Agent:
-  - `codex-acp`
-  - `claude-agent-acp`
+- A local Agent runtime command for the selected Agent:
+  - `codex-acp` for Codex, with `npx --yes @zed-industries/codex-acp` as a fallback
+  - `claude-agent-acp`, with `npx --yes @agentclientprotocol/claude-agent-acp` as a fallback
   - `opencode acp`
 - `rtk` is optional. The `Makefile` uses it when available and falls back to the
   plain Go toolchain when it is not installed.
@@ -124,8 +124,8 @@ it, or set `NO_COLOR` to suppress color.
   `Fetched` terminal outcome. It never starts an Agent, commits, pushes, or
   resolves Review Source threads.
 - `resolve` works only over downloaded Compatible Artifacts. It does not fetch
-  Review Source issues. It assigns a bounded Batch, runs the selected ACP
-  Runtime, verifies terminal assigned issues, commits successful Batches when
+  Review Source issues. It assigns a bounded Batch, runs the selected Agent
+  runtime, verifies terminal assigned issues, commits successful Batches when
   auto-commit is enabled, resolves source threads for `resolved` and `invalid`
   assigned issues, and runs Final Push only when no Unresolved Review Issues
   remain.
@@ -190,15 +190,20 @@ resolve:
 - Agent logs:
   `<artifact-dir>/runs/<run-id>/agent/batch-<nnn>.log`
 
-Each successful `fetch` with automatic Round selection writes the next Round
-directory. Roundfix does not overwrite existing Round artifacts. Repeated
-findings are deduplicated later during `resolve` by Review Issue Fingerprint,
-preferring `source_ref` such as `thread:<id>,comment:<id>` and falling back to
+With automatic Round selection, `fetch` reuses an existing matching Round when
+the same HEAD already has the same Review Issue fingerprints. If the fetched
+payload is new, Roundfix writes the next Round directory. Roundfix does not
+overwrite existing Round artifacts. Repeated findings across different payloads
+are deduplicated later during `resolve` by Review Issue Fingerprint, preferring
+`source_ref` such as `thread:<id>,comment:<id>` and falling back to
 `review_hash`.
 
 Roundfix rejects dirty worktree changes outside the Artifact Directory before
-starting operational work. Terminal Run outcomes release the Active Run lock for
-the PR Head Branch.
+starting operational work. `fetch` allows a local Project Config change at
+`.roundfixrc.yml` because it never starts an Agent, commits, or pushes.
+`resolve` and `watch` also allow `.roundfixrc.yml`, but Batch commits exclude it
+so local setup changes do not mix with review fixes. Terminal Run outcomes
+release the Active Run lock for the PR Head Branch.
 
 The current CodeRabbit fetch imports unresolved inline review threads.
 CodeRabbit review-body summaries and outside-diff comments are not converted
@@ -236,16 +241,16 @@ make skills-install TARGET=codex
 
 ```text
 cmd/roundfix/                    CLI entry point
-internal/agent/                  ACP Runtime execution
+internal/agent/                  ACP Agent runtime execution
 internal/cli/                    command parsing, output, and exit codes
 internal/config/                 YAML config loading and validation
 internal/daemon/                 verification, commits, source resolution, push
 internal/preflight/              git, PR, worktree, and push safety checks
 internal/reviewsource/           Review Source boundary
 internal/reviewsource/coderabbit/ CodeRabbit implementation
+internal/tui/                    Interactive Input and ACP Live Run View
 internal/rounds/                 Round artifacts, issue parsing, batching
 internal/store/                  central Run Database
-internal/tui/                    Interactive Input and Live Run View rendering
 internal/watch/                  watch state machine
 skills/                          shipped Roundfix agent skills
 docs/                            product docs and architecture decisions

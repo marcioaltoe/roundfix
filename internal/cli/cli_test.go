@@ -341,6 +341,9 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 				if !strings.Contains(stdout.String(), "Review Issues: 1") {
 					t.Fatalf("expected fetched issue count, got %q", stdout.String())
 				}
+				if !strings.Contains(stdout.String(), "Artifacts: created new Round") {
+					t.Fatalf("expected new artifact confirmation, got %q", stdout.String())
+				}
 				issuePath := filepath.Join(repoDir, ".roundfix", "reviews", "pr-123", "round-001", "issue_001.md")
 				issueContent, err := os.ReadFile(issuePath)
 				if err != nil {
@@ -398,6 +401,34 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRunFetchReusesMatchingAutoRound(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	args := []string{"fetch", "--source", "coderabbit", "--pr", "123", "--round", "auto", "--no-input"}
+
+	var firstStdout bytes.Buffer
+	var firstStderr bytes.Buffer
+	firstCode := Run(args, &firstStdout, &firstStderr)
+	if firstCode != 0 {
+		t.Fatalf("expected first fetch exit 0, got %d stdout=%q stderr=%q", firstCode, firstStdout.String(), firstStderr.String())
+	}
+
+	var secondStdout bytes.Buffer
+	var secondStderr bytes.Buffer
+	secondCode := Run(args, &secondStdout, &secondStderr)
+	if secondCode != 0 {
+		t.Fatalf("expected second fetch exit 0, got %d stdout=%q stderr=%q", secondCode, secondStdout.String(), secondStderr.String())
+	}
+
+	if !strings.Contains(secondStdout.String(), "Artifacts: reused existing matching Round") {
+		t.Fatalf("expected second fetch to report reused Round, got %q", secondStdout.String())
+	}
+	if _, err := os.Stat(filepath.Join(repoDir, ".roundfix", "reviews", "pr-123", "round-002")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected no duplicate round-002, got err %v", err)
+	}
+	assertRunCount(t, filepath.Join(homeDir, ".roundfix", "roundfix.db"), 2)
 }
 
 func TestRunWatchTimeoutOffersManualReviewWithoutFetching(t *testing.T) {

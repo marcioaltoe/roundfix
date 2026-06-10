@@ -187,6 +187,48 @@ func TestRunRejectsDirtyWorktreeOutsideArtifactDirectory(t *testing.T) {
 	}
 }
 
+func TestFetchAllowsDirtyProjectConfig(t *testing.T) {
+	runner := cleanGitRunner("origin/feature/review")
+	runner.outputs[gitKey("status", "--porcelain=v1", "-z")] = "?? .roundfixrc.yml\x00"
+
+	_, err := Run(context.Background(), Request{
+		Command:                CommandFetch,
+		WorkDir:                "/repo",
+		ArtifactDir:            "/repo/.roundfix",
+		PRNumber:               "123",
+		ExplicitHeadBranch:     "feature/review",
+		ExplicitHeadRepository: "owner/project",
+		AutoCommit:             true,
+		AutoPush:               true,
+		GitRunner:              runner,
+	})
+
+	if err != nil {
+		t.Fatalf("expected fetch to allow dirty Project Config, got %v", err)
+	}
+}
+
+func TestResolveAllowsDirtyProjectConfig(t *testing.T) {
+	runner := cleanGitRunner("origin/feature/review")
+	runner.outputs[gitKey("status", "--porcelain=v1", "-z")] = "?? .roundfixrc.yml\x00"
+
+	_, err := Run(context.Background(), Request{
+		Command:                CommandResolve,
+		WorkDir:                "/repo",
+		ArtifactDir:            "/repo/.roundfix",
+		PRNumber:               "123",
+		ExplicitHeadBranch:     "feature/review",
+		ExplicitHeadRepository: "owner/project",
+		AutoCommit:             true,
+		AutoPush:               true,
+		GitRunner:              runner,
+	})
+
+	if err != nil {
+		t.Fatalf("expected resolve to allow dirty Project Config, got %v", err)
+	}
+}
+
 func TestRunRejectsMissingUpstreamWhenAutoPushCanRun(t *testing.T) {
 	_, err := Run(context.Background(), Request{
 		Command:                CommandWatch,

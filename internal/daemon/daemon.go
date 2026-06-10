@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -41,8 +42,9 @@ func (ExecVerifier) Verify(ctx context.Context, req VerifyRequest) error {
 }
 
 type CommitRequest struct {
-	WorkDir string
-	Message string
+	WorkDir      string
+	Message      string
+	ExcludePaths []string
 }
 
 type Committer interface {
@@ -58,7 +60,9 @@ func (GitCommitter) Commit(ctx context.Context, req CommitRequest) error {
 	if strings.TrimSpace(req.Message) == "" {
 		return fmt.Errorf("create Batch commit: message is required")
 	}
-	if err := runGit(ctx, req.WorkDir, "add", "-A"); err != nil {
+	addArgs := []string{"add", "-A", "--", "."}
+	addArgs = append(addArgs, gitExcludePathspecs(req.WorkDir, req.ExcludePaths)...)
+	if err := runGit(ctx, req.WorkDir, addArgs...); err != nil {
 		return err
 	}
 	if err := runGit(ctx, req.WorkDir, "commit", "-m", req.Message); err != nil {
@@ -94,6 +98,34 @@ func (GitPusher) Push(ctx context.Context, req PushRequest) error {
 		return fmt.Errorf("run Final Push: PR Head Branch is required")
 	}
 	return runGit(ctx, req.WorkDir, "push", req.Remote, "HEAD:"+req.Branch)
+}
+
+func gitExcludePathspecs(workDir string, paths []string) []string {
+	if len(paths) == 0 {
+		return nil
+	}
+	root := filepath.Clean(workDir)
+	pathspecs := make([]string, 0, len(paths))
+	for _, path := range paths {
+		path = strings.TrimSpace(path)
+		if path == "" {
+			continue
+		}
+		cleanPath := filepath.Clean(path)
+		if filepath.IsAbs(cleanPath) {
+			rel, err := filepath.Rel(root, cleanPath)
+			if err != nil || rel == "." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || rel == ".." {
+				continue
+			}
+			cleanPath = rel
+		}
+		cleanPath = filepath.ToSlash(cleanPath)
+		if cleanPath == "." || cleanPath == ".." || strings.HasPrefix(cleanPath, "../") {
+			continue
+		}
+		pathspecs = append(pathspecs, ":(exclude)"+cleanPath)
+	}
+	return pathspecs
 }
 
 func runGit(ctx context.Context, workDir string, args ...string) error {

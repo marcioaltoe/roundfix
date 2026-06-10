@@ -37,7 +37,7 @@ The external review system that produces feedback for an Open Pull Request.
 _Avoid_: Review Provider, Agent, ACP Runtime
 
 **ACP Runtime**:
-An ACP-compatible local coding runtime that Roundfix launches through the user's installed tool and authentication setup.
+A local coding runtime that Roundfix launches through the user's installed tool and authentication setup using Agent Client Protocol stdio. The MVP supports Codex through `codex-acp`, Claude through `claude-agent-acp`, and OpenCode through `opencode acp`; command overrides remain a stdio escape hatch for local testing.
 _Avoid_: Review Source, review provider
 
 **Max Rounds**:

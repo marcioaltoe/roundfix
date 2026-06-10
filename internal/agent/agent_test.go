@@ -28,6 +28,12 @@ func TestRuntimeForSupportsCommandOverrideAndModel(t *testing.T) {
 	if runtime.Command != "custom-acp" {
 		t.Fatalf("expected command override, got %q", runtime.Command)
 	}
+	if runtime.ID == "codex" {
+		t.Fatal("custom command must not receive Codex-specific exec flags")
+	}
+	if args := runnerArgs(ExecuteRequest{Runtime: runtime}); len(args) != 0 {
+		t.Fatalf("expected custom command to use no automatic args, got %#v", args)
+	}
 	if runtime.Model != "gpt-test" {
 		t.Fatalf("expected model override, got %q", runtime.Model)
 	}
@@ -36,6 +42,35 @@ func TestRuntimeForSupportsCommandOverrideAndModel(t *testing.T) {
 	}
 	if len(runtime.ProbeArgs) == 0 {
 		t.Fatal("expected probe args")
+	}
+}
+
+func TestRuntimeForCodexUsesACPAdapter(t *testing.T) {
+	runtime, err := RuntimeFor(RuntimeOptions{Agent: "codex"})
+	if err != nil {
+		t.Fatalf("runtime for codex: %v", err)
+	}
+
+	if runtime.Protocol != ProtocolACP {
+		t.Fatalf("expected ACP protocol, got %q", runtime.Protocol)
+	}
+	if runtime.Command != "codex-acp" {
+		t.Fatalf("expected codex-acp command, got %q", runtime.Command)
+	}
+	if runtime.DefaultModel != DefaultCodexModel {
+		t.Fatalf("expected default model %q, got %q", DefaultCodexModel, runtime.DefaultModel)
+	}
+	if !runtime.BootstrapModel {
+		t.Fatal("expected Codex model to be supplied during ACP bootstrap")
+	}
+	if len(runtime.Fallbacks) == 0 || runtime.Fallbacks[0].Command != "npx" {
+		t.Fatalf("expected npx fallback for codex ACP, got %#v", runtime.Fallbacks)
+	}
+	args := runtimeBootstrapArgs(runtime, "gpt-test")
+	for _, expected := range []string{`model="gpt-test"`, "features.code_mode=false", `approval_policy="never"`, `sandbox_mode="workspace-write"`} {
+		if !contains(args, expected) {
+			t.Fatalf("expected Codex bootstrap args to contain %q, got %#v", expected, args)
+		}
 	}
 }
 
@@ -174,6 +209,48 @@ func persistTestRound(t *testing.T, artifactDir string) rounds.PersistResult {
 		t.Fatalf("persist test round: %v", err)
 	}
 	return result
+}
+
+func TestExecRunnerRunUsesExplicitArgsOnlyForCustomCommand(t *testing.T) {
+	dir := t.TempDir()
+	argsPath := filepath.Join(dir, "args.txt")
+	promptPath := filepath.Join(dir, "prompt.txt")
+	script := filepath.Join(dir, "fake-agent.sh")
+	if err := os.WriteFile(script, []byte("#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$ARGS_PATH\"\ncat > \"$PROMPT_PATH\"\nprintf 'done\\n'\n"), 0o755); err != nil {
+		t.Fatalf("write fake agent: %v", err)
+	}
+	t.Setenv("ARGS_PATH", argsPath)
+	t.Setenv("PROMPT_PATH", promptPath)
+
+	var stream strings.Builder
+	_, err := ExecRunner{}.Run(context.Background(), ExecuteRequest{
+		Runtime: RuntimeSpec{
+			ID:       "codex-custom",
+			Protocol: ProtocolStdio,
+			Command:  script,
+			Args:     []string{"--one", "two"},
+		},
+		LogPath: filepath.Join(dir, "agent.log"),
+		GitRoot: dir,
+		Prompt:  "agent prompt",
+	}, &stream)
+	if err != nil {
+		t.Fatalf("run fake agent: %v", err)
+	}
+
+	args := readFile(t, argsPath)
+	if !strings.Contains(args, "--one") || !strings.Contains(args, "two") {
+		t.Fatalf("expected explicit args to be passed, got %q", args)
+	}
+	if strings.Contains(args, "--model") || strings.Contains(args, "--add-dir") || strings.Contains(args, "-\n") {
+		t.Fatalf("expected no automatic Codex args for custom command, got %q", args)
+	}
+	if prompt := readFile(t, promptPath); prompt != "agent prompt" {
+		t.Fatalf("expected prompt on stdin, got %q", prompt)
+	}
+	if !strings.Contains(stream.String(), "done") {
+		t.Fatalf("expected fake output to stream, got %q", stream.String())
+	}
 }
 
 func TestExecRunnerRunStreamsAndPersistsOutput(t *testing.T) {
@@ -342,6 +419,24 @@ func (writer *notifyingWriter) String() string {
 	writer.mu.Lock()
 	defer writer.mu.Unlock()
 	return writer.output.String()
+}
+
+func contains(values []string, expected string) bool {
+	for _, value := range values {
+		if value == expected {
+			return true
+		}
+	}
+	return false
+}
+
+func readFile(t *testing.T, path string) string {
+	t.Helper()
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	return string(content)
 }
 
 func buildAgentHelper(t *testing.T, dir string) string {

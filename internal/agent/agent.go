@@ -18,13 +18,23 @@ import (
 type RuntimeSpec struct {
 	ID              string
 	DisplayName     string
+	Protocol        string
 	Command         string
 	Args            []string
 	ProbeArgs       []string
+	Fallbacks       []RuntimeLauncher
 	DefaultModel    string
 	Model           string
 	SupportsAddDirs bool
+	BootstrapModel  bool
+	FullAccessMode  string
 	InstallHint     string
+}
+
+type RuntimeLauncher struct {
+	Command   string
+	Args      []string
+	ProbeArgs []string
 }
 
 type RuntimeOptions struct {
@@ -56,6 +66,17 @@ type Runner interface {
 	Probe(ctx context.Context, runtime RuntimeSpec) error
 	Run(ctx context.Context, req ExecuteRequest, stream io.Writer) (ExecuteResult, error)
 }
+
+const (
+	ProtocolACP   = "acp"
+	ProtocolStdio = "stdio"
+
+	DefaultCodexModel    = "gpt-5.5"
+	DefaultClaudeModel   = "opus"
+	DefaultOpenCodeModel = "anthropic/claude-opus-4-6"
+)
+
+type DefaultRunner struct{}
 
 type ExecRunner struct{}
 
@@ -121,27 +142,44 @@ func RuntimeFor(opts RuntimeOptions) (RuntimeSpec, error) {
 		"codex": {
 			ID:              "codex",
 			DisplayName:     "Codex",
+			Protocol:        ProtocolACP,
 			Command:         "codex-acp",
-			ProbeArgs:       []string{"--help"},
+			DefaultModel:    DefaultCodexModel,
 			SupportsAddDirs: true,
-			InstallHint:     "Install and authenticate Codex ACP, or pass --agent-command with the installed adapter command.",
+			BootstrapModel:  true,
+			Fallbacks: []RuntimeLauncher{
+				{
+					Command: "npx",
+					Args:    []string{"--yes", "@zed-industries/codex-acp"},
+				},
+			},
+			InstallHint: "Install and authenticate Codex ACP (`npm install -g @zed-industries/codex-acp`) or pass --agent-command with an installed command that accepts a prompt on stdin.",
 		},
 		"claude": {
 			ID:              "claude",
 			DisplayName:     "Claude Code",
+			Protocol:        ProtocolACP,
 			Command:         "claude-agent-acp",
-			ProbeArgs:       []string{"--help"},
+			DefaultModel:    DefaultClaudeModel,
 			SupportsAddDirs: true,
-			InstallHint:     "Install and authenticate Claude Code ACP, or pass --agent-command with the installed adapter command.",
+			FullAccessMode:  "bypassPermissions",
+			Fallbacks: []RuntimeLauncher{
+				{
+					Command: "npx",
+					Args:    []string{"--yes", "@agentclientprotocol/claude-agent-acp"},
+				},
+			},
+			InstallHint: "Install and authenticate Claude Code ACP, or pass --agent-command with an installed command that accepts a prompt on stdin.",
 		},
 		"opencode": {
-			ID:              "opencode",
-			DisplayName:     "OpenCode",
-			Command:         "opencode",
-			Args:            []string{"acp"},
-			ProbeArgs:       []string{"acp", "--help"},
-			SupportsAddDirs: true,
-			InstallHint:     "Install and authenticate OpenCode, or pass --agent-command with the installed adapter command.",
+			ID:           "opencode",
+			DisplayName:  "OpenCode",
+			Protocol:     ProtocolACP,
+			Command:      "opencode",
+			Args:         []string{"acp"},
+			ProbeArgs:    []string{"acp", "--help"},
+			DefaultModel: DefaultOpenCodeModel,
+			InstallHint:  "Install and authenticate OpenCode, or pass --agent-command with an installed command that accepts a prompt on stdin.",
 		},
 	}
 	spec, ok := specs[opts.Agent]
@@ -149,9 +187,12 @@ func RuntimeFor(opts RuntimeOptions) (RuntimeSpec, error) {
 		return RuntimeSpec{}, fmt.Errorf("unsupported Agent %q; supported values: codex, claude, opencode", opts.Agent)
 	}
 	if opts.CommandOverride != "" {
+		spec.ID = spec.ID + "-custom"
+		spec.Protocol = ProtocolStdio
 		spec.Command = opts.CommandOverride
 		spec.Args = nil
 		spec.ProbeArgs = []string{"--help"}
+		spec.Fallbacks = nil
 	}
 	spec.Model = opts.Model
 	return spec, nil
@@ -241,6 +282,20 @@ func (runner ExecRunner) Probe(ctx context.Context, runtime RuntimeSpec) error {
 	return nil
 }
 
+func (runner DefaultRunner) Probe(ctx context.Context, runtime RuntimeSpec) error {
+	if runtime.Protocol == ProtocolACP {
+		return ACPRunner{}.Probe(ctx, runtime)
+	}
+	return ExecRunner{}.Probe(ctx, runtime)
+}
+
+func (runner DefaultRunner) Run(ctx context.Context, req ExecuteRequest, stream io.Writer) (ExecuteResult, error) {
+	if req.Runtime.Protocol == ProtocolACP {
+		return ACPRunner{}.Run(ctx, req, stream)
+	}
+	return ExecRunner{}.Run(ctx, req, stream)
+}
+
 func (runner ExecRunner) Run(ctx context.Context, req ExecuteRequest, stream io.Writer) (ExecuteResult, error) {
 	if strings.TrimSpace(req.LogPath) == "" {
 		return ExecuteResult{}, errors.New("Agent log path is required")
@@ -260,7 +315,7 @@ func (runner ExecRunner) Run(ctx context.Context, req ExecuteRequest, stream io.
 		return ExecuteResult{LogPath: req.LogPath}, StopError{LogPath: req.LogPath, Err: err}
 	}
 
-	args := append([]string{}, req.Runtime.Args...)
+	args := runnerArgs(req)
 	cmd := exec.Command(req.Runtime.Command, args...)
 	cmd.Dir = req.GitRoot
 	stdin, err := cmd.StdinPipe()
@@ -326,6 +381,25 @@ func (runner ExecRunner) Run(ctx context.Context, req ExecuteRequest, stream io.
 		return ExecuteResult{LogPath: req.LogPath, Output: output.String()}, fmt.Errorf("Agent command failed: %w", waitErr)
 	}
 	return ExecuteResult{LogPath: req.LogPath, Output: output.String()}, nil
+}
+
+func runnerArgs(req ExecuteRequest) []string {
+	args := append([]string{}, req.Runtime.Args...)
+	if req.Runtime.ID == "codex" {
+		if strings.TrimSpace(req.Runtime.Model) != "" {
+			args = append(args, "--model", strings.TrimSpace(req.Runtime.Model))
+		}
+		if req.Runtime.SupportsAddDirs {
+			for _, dir := range req.AllowAddDirs {
+				dir = strings.TrimSpace(dir)
+				if dir != "" {
+					args = append(args, "--add-dir", dir)
+				}
+			}
+		}
+		args = append(args, "-")
+	}
+	return args
 }
 
 func stopGrace(value time.Duration) time.Duration {

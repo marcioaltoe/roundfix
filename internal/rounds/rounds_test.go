@@ -84,6 +84,14 @@ func TestPersistRoundWritesReviewIssueArtifacts(t *testing.T) {
 	if !strings.Contains(round, "issue_count: 1") {
 		t.Fatalf("expected round metadata issue count, got:\n%s", round)
 	}
+
+	parsed, err := ParseIssue(result.IssuePaths[0])
+	if err != nil {
+		t.Fatalf("parse issue artifact: %v", err)
+	}
+	if parsed.Title != "major: handle nil cache" {
+		t.Fatalf("expected parsed issue title, got %q", parsed.Title)
+	}
 }
 
 func TestPersistRoundUsesNextRoundNumber(t *testing.T) {
@@ -107,6 +115,54 @@ func TestPersistRoundUsesNextRoundNumber(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(artifactDir, "reviews", "pr-123", "round-002", "round.md")); err != nil {
 		t.Fatalf("expected round metadata: %v", err)
+	}
+}
+
+func TestPersistRoundReusesMatchingAutoRound(t *testing.T) {
+	artifactDir := t.TempDir()
+	createdAt := time.Date(2026, 6, 9, 12, 30, 0, 0, time.UTC)
+	items := []reviewsource.ReviewItem{
+		reviewItem("thread:PRRT_1,comment:PRRC_1", "hash-1", createdAt),
+		reviewItem("thread:PRRT_2,comment:PRRC_2", "hash-2", createdAt.Add(time.Minute)),
+	}
+	first := persistTestRound(t, artifactDir, PersistRequest{
+		Source:         reviewsource.SourceCodeRabbit,
+		PRNumber:       "123",
+		HeadRepository: "owner/project",
+		HeadBranch:     "feature/review",
+		HeadSHA:        "abc123",
+		CreatedAt:      createdAt,
+		Items:          items,
+	})
+
+	second, err := PersistRound(context.Background(), PersistRequest{
+		ArtifactDir:    artifactDir,
+		Source:         reviewsource.SourceCodeRabbit,
+		PRNumber:       "123",
+		HeadRepository: "owner/project",
+		HeadBranch:     "feature/review",
+		HeadSHA:        "abc123",
+		CreatedAt:      createdAt.Add(10 * time.Minute),
+		Items: []reviewsource.ReviewItem{
+			items[1],
+			items[0],
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected matching auto Round reuse, got %v", err)
+	}
+
+	if !second.Reused {
+		t.Fatal("expected matching auto Round to be reused")
+	}
+	if second.Round != first.Round || second.RoundDir != first.RoundDir {
+		t.Fatalf("expected first Round to be reused, got %#v want round %d dir %s", second, first.Round, first.RoundDir)
+	}
+	if len(second.IssuePaths) != 2 {
+		t.Fatalf("expected reused issue paths, got %#v", second.IssuePaths)
+	}
+	if _, err := os.Stat(filepath.Join(artifactDir, "reviews", "pr-123", "round-002")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected no duplicate round-002, got err %v", err)
 	}
 }
 

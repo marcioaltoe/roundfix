@@ -93,10 +93,11 @@ func TestRenderLiveRunViewGroupsIssuesAndShowsStatusStrips(t *testing.T) {
 		AutoCommit:    true,
 		AutoPush:      true,
 		LastPush:      "pending",
+		Width:         100,
 		Issues: []rounds.Issue{
-			{Round: 2, Severity: "minor", Status: rounds.StatusPending, File: "README.md", Line: 12},
-			{Round: 1, Severity: "major", Status: rounds.StatusResolved, File: "api/auth.go", Line: 88},
-			{Round: 2, Severity: "major", Status: rounds.StatusValid, File: "src/cache.ts", Line: 41},
+			{Round: 2, Title: "fix stale readme", Severity: "minor", Status: rounds.StatusPending, File: "README.md", Line: 12},
+			{Round: 1, Title: "guard auth cache", Severity: "major", Status: rounds.StatusResolved, File: "api/auth.go", Line: 88},
+			{Round: 2, Title: "invalidate cache", Severity: "major", Status: rounds.StatusValid, File: "src/cache.ts", Line: 41},
 		},
 		Console: []string{
 			"codex resolving batch 1/2",
@@ -121,22 +122,26 @@ func TestRenderLiveRunViewGroupsIssuesAndShowsStatusStrips(t *testing.T) {
 		"Auto-commit: on",
 		"Auto-push: on",
 		"Last push: pending",
-		"Progress:",
+		"Review Issues",
+		"Agent Console",
 		"codex resolving batch 1/2",
 		"running make verify",
-		"Review Issues:",
 		"Round 001",
 		"major    resolved   api/auth.go:88",
+		"guard auth cache",
 		"Round 002",
 		"major    valid      src/cache.ts:41",
+		"invalidate cache",
 		"minor    pending    README.md:12",
+		"fix stale readme",
+		"Keys: Ctrl-C stop",
 	}
 	for _, text := range expected {
 		if !strings.Contains(view, text) {
 			t.Fatalf("expected live view to contain %q, got:\n%s", text, view)
 		}
 	}
-	for _, removed := range []string{"[tab] focus", "[s] stop", "Console"} {
+	for _, removed := range []string{"[tab] focus", "[s] stop"} {
 		if strings.Contains(view, removed) {
 			t.Fatalf("did not expect non-interactive hint %q, got:\n%s", removed, view)
 		}

@@ -41,6 +41,7 @@ type PersistResult struct {
 	Round      int
 	RoundDir   string
 	IssuePaths []string
+	Reused     bool
 }
 
 type SelectRequest struct {
@@ -79,6 +80,7 @@ type DuplicateAssociation struct {
 
 type Issue struct {
 	Path                    string
+	Title                   string
 	Source                  string
 	PRNumber                string
 	Round                   int
@@ -170,6 +172,13 @@ func PersistRound(ctx context.Context, req PersistRequest) (PersistResult, error
 	}
 	roundNumber := req.Round
 	if roundNumber == 0 {
+		existing, found, err := findMatchingRound(ctx, req)
+		if err != nil {
+			return PersistResult{}, err
+		}
+		if found {
+			return existing, nil
+		}
 		next, err := NextRoundNumber(req.ArtifactDir, req.PRNumber)
 		if err != nil {
 			return PersistResult{}, err
@@ -267,7 +276,7 @@ func ParseIssue(path string) (Issue, error) {
 	if err != nil {
 		return Issue{}, fmt.Errorf("read Review Issue artifact %q: %w", path, err)
 	}
-	frontmatterBytes, err := extractFrontmatter(content)
+	frontmatterBytes, body, err := splitMarkdown(content)
 	if err != nil {
 		return Issue{}, fmt.Errorf("parse Review Issue artifact %q: %w", path, err)
 	}
@@ -285,6 +294,7 @@ func ParseIssue(path string) (Issue, error) {
 	}
 	return Issue{
 		Path:                    path,
+		Title:                   parseIssueTitle(body),
 		Source:                  frontmatter.Source,
 		PRNumber:                frontmatter.PR,
 		Round:                   frontmatter.Round,
@@ -373,6 +383,54 @@ func ReviewIssueFingerprint(issue Issue) (string, error) {
 		return "review_hash:" + reviewHash, nil
 	}
 	return "", fmt.Errorf("Review Issue artifact %q is missing source_ref and review_hash for fingerprinting", issue.Path)
+}
+
+func reviewItemFingerprint(item reviewsource.ReviewItem) (string, error) {
+	sourceRef := strings.TrimSpace(item.SourceRef)
+	if sourceRef != "" {
+		return "source_ref:" + sourceRef, nil
+	}
+	reviewHash := strings.TrimSpace(item.ReviewHash)
+	if reviewHash != "" {
+		return "review_hash:" + reviewHash, nil
+	}
+	return "", errors.New("Review Source item is missing source_ref and review_hash for fingerprinting")
+}
+
+func findMatchingRound(ctx context.Context, req PersistRequest) (PersistResult, bool, error) {
+	if err := ctx.Err(); err != nil {
+		return PersistResult{}, false, err
+	}
+	incoming, err := reviewItemFingerprints(req.Items)
+	if err != nil {
+		return PersistResult{}, false, err
+	}
+	roundDirs, err := compatibleRoundDirs(SelectRequest{
+		ArtifactDir:    req.ArtifactDir,
+		PRNumber:       req.PRNumber,
+		HeadRepository: req.HeadRepository,
+		HeadBranch:     req.HeadBranch,
+	})
+	if err != nil {
+		return PersistResult{}, false, err
+	}
+
+	var match PersistResult
+	found := false
+	for _, roundDir := range roundDirs {
+		if err := ctx.Err(); err != nil {
+			return PersistResult{}, false, err
+		}
+		result, ok, err := matchingRoundResult(roundDir, req, incoming)
+		if err != nil {
+			return PersistResult{}, false, err
+		}
+		if ok {
+			match = result
+			found = true
+		}
+	}
+	return match, found, nil
 }
 
 func MarkDuplicatedAfterTerminal(ctx context.Context, associations []DuplicateAssociation) (int, error) {
@@ -536,6 +594,101 @@ func compatibleRoundDirs(req SelectRequest) ([]string, error) {
 	}
 	sort.Strings(roundDirs)
 	return roundDirs, nil
+}
+
+func matchingRoundResult(roundDir string, req PersistRequest, incoming []string) (PersistResult, bool, error) {
+	metadata, ok, err := readRoundMetadata(roundDir)
+	if err != nil || !ok {
+		return PersistResult{}, false, err
+	}
+	if metadata.Source != req.Source ||
+		metadata.PR != req.PRNumber ||
+		metadata.HeadRepository != req.HeadRepository ||
+		metadata.HeadBranch != req.HeadBranch ||
+		metadata.HeadSHA != req.HeadSHA {
+		return PersistResult{}, false, nil
+	}
+
+	issuePaths, fingerprints, err := roundIssueFingerprints(roundDir)
+	if err != nil {
+		return PersistResult{}, false, err
+	}
+	if metadata.IssueCount != len(incoming) || !sameFingerprints(incoming, fingerprints) {
+		return PersistResult{}, false, nil
+	}
+	return PersistResult{
+		Round:      metadata.Round,
+		RoundDir:   roundDir,
+		IssuePaths: issuePaths,
+		Reused:     true,
+	}, true, nil
+}
+
+func readRoundMetadata(roundDir string) (roundFrontmatter, bool, error) {
+	path := filepath.Join(roundDir, "round.md")
+	content, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return roundFrontmatter{}, false, nil
+	}
+	if err != nil {
+		return roundFrontmatter{}, false, fmt.Errorf("read Round metadata %q: %w", path, err)
+	}
+	frontmatterBytes, err := extractFrontmatter(content)
+	if err != nil {
+		return roundFrontmatter{}, false, fmt.Errorf("parse Round metadata %q: %w", path, err)
+	}
+	var frontmatter roundFrontmatter
+	if err := yaml.Unmarshal(frontmatterBytes, &frontmatter); err != nil {
+		return roundFrontmatter{}, false, fmt.Errorf("parse Round metadata frontmatter %q: %w", path, err)
+	}
+	return frontmatter, true, nil
+}
+
+func roundIssueFingerprints(roundDir string) ([]string, []string, error) {
+	issuePaths, err := filepath.Glob(filepath.Join(roundDir, "issue_*.md"))
+	if err != nil {
+		return nil, nil, fmt.Errorf("find Review Issue artifacts in %q: %w", roundDir, err)
+	}
+	sort.Strings(issuePaths)
+	fingerprints := make([]string, 0, len(issuePaths))
+	for _, issuePath := range issuePaths {
+		issue, err := ParseIssue(issuePath)
+		if err != nil {
+			return nil, nil, err
+		}
+		fingerprint, err := ReviewIssueFingerprint(issue)
+		if err != nil {
+			return nil, nil, err
+		}
+		fingerprints = append(fingerprints, fingerprint)
+	}
+	sort.Strings(fingerprints)
+	return issuePaths, fingerprints, nil
+}
+
+func reviewItemFingerprints(items []reviewsource.ReviewItem) ([]string, error) {
+	fingerprints := make([]string, 0, len(items))
+	for _, item := range items {
+		fingerprint, err := reviewItemFingerprint(item)
+		if err != nil {
+			return nil, err
+		}
+		fingerprints = append(fingerprints, fingerprint)
+	}
+	sort.Strings(fingerprints)
+	return fingerprints, nil
+}
+
+func sameFingerprints(left []string, right []string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for index := range left {
+		if left[index] != right[index] {
+			return false
+		}
+	}
+	return true
 }
 
 func matchesSelectRequest(issue Issue, req SelectRequest) bool {
@@ -713,6 +866,23 @@ func splitMarkdown(content []byte) ([]byte, []byte, error) {
 		bodyStart++
 	}
 	return []byte(rest[:end]), []byte(rest[bodyStart:]), nil
+}
+
+func parseIssueTitle(body []byte) string {
+	for _, line := range strings.Split(string(body), "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, "# ") {
+			continue
+		}
+		title := strings.TrimSpace(strings.TrimPrefix(line, "# "))
+		if strings.HasPrefix(title, "Issue ") {
+			if marker := strings.Index(title, ":"); marker >= 0 {
+				return strings.TrimSpace(title[marker+1:])
+			}
+		}
+		return title
+	}
+	return ""
 }
 
 func formatTime(value time.Time) string {

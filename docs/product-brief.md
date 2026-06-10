@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Build a focused Go tool that watches GitHub pull requests, imports CodeRabbit review feedback, uses local ACP-capable coding runtimes to resolve valid issues, commits successful batches, pushes the complete branch state only after no Unresolved Review Issues remain, and repeats until CodeRabbit reports the PR is clean, a configured review round limit is reached, or a budget safeguard stops the run.
+Build a focused Go tool that watches GitHub pull requests, imports CodeRabbit review feedback, uses local coding runtimes to resolve valid issues, commits successful batches, pushes the complete branch state only after no Unresolved Review Issues remain, and repeats until CodeRabbit reports the PR is clean, a configured review round limit is reached, or a budget safeguard stops the run.
 
 This should not be a full workflow/orchestration system. It should be a narrow, durable review-resolution loop.
 
@@ -15,7 +15,7 @@ Given an open pull request with CodeRabbit review comments, the tool should:
 3. Wait for CodeRabbit to finish reviewing the current HEAD.
 4. Fetch unresolved CodeRabbit review threads.
 5. Persist those findings as local round artifacts.
-6. Spawn an ACP Runtime, such as Codex, Claude Code, or OpenCode, to resolve one bounded batch.
+6. Spawn a selected Agent runtime, such as Codex, Claude Code, or OpenCode, to resolve one bounded batch.
 7. Verify the batch.
 8. Create one local commit per successful Batch.
 9. Push the complete branch state only after no Unresolved Review Issues remain.
@@ -135,7 +135,7 @@ internal/tui/                 # Interactive Input and Live Run View rendering
 internal/watch/               # Durable review loop state machine
 internal/reviewsource/        # Review Source interface
 internal/reviewsource/coderabbit/ # CodeRabbit implementation
-internal/agent/               # ACP Runtimes: codex, claude, opencode
+internal/agent/               # Agent runtimes: codex, claude, opencode
 internal/rounds/              # Markdown issue artifacts and frontmatter
 internal/store/               # Global SQLite Run Database
 internal/config/              # User and project config loading and validation
@@ -148,13 +148,13 @@ docs/                         # User docs after MVP stabilizes
 ## Current Implementation Choices
 
 - CLI: Go standard library `flag` and explicit command dispatch.
-- Interactive Input and Live Run View: line-oriented terminal rendering owned by `internal/tui`.
+- Interactive Input and Live Run View: prompt collection plus ACP cockpit-style terminal rendering owned by `internal/tui`.
 - State: SQLite Run Database
 - SQLite driver: `modernc.org/sqlite`
 - Config: YAML user and project config files through `gopkg.in/yaml.v3`
 - GitHub: `gh` subprocess for REST, GraphQL, PR metadata, review status, and thread resolution boundaries.
 
-Cobra, Bubble Tea, Bubbles, and Lipgloss remain future options if the CLI or TUI grows enough to justify extra dependencies.
+Cobra remains a future option if the CLI grows enough to justify a framework. The Live Run View now uses Bubble Tea and Lipgloss because ACP streaming needs a real terminal render loop.
 
 ## Review Source Interface
 
@@ -337,6 +337,8 @@ Dirty worktree behavior:
 - Tell the user to commit, stash, or remove those changes before continuing.
 - Do not stage, commit, stash, or revert user changes automatically.
 - Do not treat Roundfix-owned markdown changes inside the Artifact Directory as a dirty-worktree blocker.
+- Do not treat Project Config changes at `<repo>/.roundfixrc.yml` as a dirty-worktree blocker.
+- Exclude Project Config changes from Batch commits so local setup changes do not mix with review fixes.
 
 Loop logic:
 
@@ -456,9 +458,10 @@ Artifact Directory git tracking:
 - Roundfix must not edit `.gitignore` automatically.
 - Roundfix does not warn about Artifact Directory files being tracked, ignored, or untracked.
 - The user or repository owner decides whether to add the Artifact Directory to `.gitignore`, version it, or manage it another way.
-- Each successful `fetch` with automatic Round selection writes the next Round directory. Roundfix does not upsert Round artifacts in place.
+- Each successful `fetch` with automatic Round selection reuses an existing matching Round when the same HEAD already has the same Review Issue fingerprints.
+- If the fetched payload is new, automatic Round selection writes the next Round directory. Roundfix does not upsert Round artifacts in place.
 - An explicit existing `--round <n>` is rejected instead of overwritten.
-- Repeated findings across Rounds are handled during `resolve` by Review Issue Fingerprint deduplication, not by deleting old artifacts at fetch time.
+- Repeated findings across different Rounds are handled during `resolve` by Review Issue Fingerprint deduplication, not by deleting old artifacts at fetch time.
 
 ```text
 <artifact-dir>/
@@ -556,15 +559,15 @@ The child agent must:
 
 The daemon resolves Review Source threads after the batch succeeds for assigned `resolved` and `invalid` issues.
 
-## ACP Runtime Compatibility
+## Agent Runtime Compatibility
 
-Public CLI and TUI surfaces should label the selected coding runtime as `Agent`. Use `ACP Runtime` in implementation and technical docs when the protocol boundary matters.
+Public CLI and TUI surfaces should label the selected coding runtime as `Agent`. Use `ACP Runtime` in implementation and technical docs only when the protocol boundary matters.
 
 MVP runtimes:
 
 ```text
-codex       -> codex-acp
-claude      -> claude-agent-acp
+codex       -> codex-acp, fallback npx --yes @zed-industries/codex-acp
+claude      -> claude-agent-acp, fallback npx --yes @agentclientprotocol/claude-agent-acp
 opencode    -> opencode acp
 ```
 
@@ -575,17 +578,22 @@ cursor-agent
 gemini
 ```
 
-ACP Runtime interface:
+Agent runtime interface:
 
 ```go
-type ACPRuntime struct {
+type RuntimeSpec struct {
     ID              string
     DisplayName     string
+    Protocol        string
     Command         string
     Args            []string
     ProbeArgs       []string
+    Fallbacks       []RuntimeLauncher
     DefaultModel    string
+    Model           string
     SupportsAddDirs bool
+    BootstrapModel  bool
+    FullAccessMode  string
 }
 ```
 
@@ -594,13 +602,14 @@ Requirements:
 - Probe runtime availability before starting a run.
 - Show actionable install hints.
 - Keep model selection runtime-specific.
-- Treat ACP Runtime startup as using the user's local installed tool, login, subscription, and model-vendor credentials.
-- Do not ask for model-vendor API keys when the selected ACP Runtime can use the user's local authenticated setup.
+- Treat Agent runtime startup as using the user's local installed tool, login, subscription, and model-vendor credentials.
+- Do not ask for model-vendor API keys when the selected Agent runtime can use the user's local authenticated setup.
 - Support command overrides because ACP adapter command names can differ by installation.
-- Do not use automatic installer or package-manager fallback commands.
+- Use explicit adapter fallback commands only for known ACP runtimes, matching the selected Agent and never silently switching to another Agent.
 - If the selected Agent command fails to probe or start, show the concrete command, error, and install/authentication hint, then stop.
 - Let the user choose another Agent explicitly if they want to retry with a different local setup.
-- Drive ACP over stdio using the standard session lifecycle and streaming updates.
+- Drive Codex, Claude, and OpenCode through their ACP stdio protocol, not by streaming Markdown prompts directly into a JSON-RPC server.
+- Convert ACP session updates into a bounded local stream for the Agent log and Live Run View.
 - Support headless streaming logs.
 - Persist agent output per run.
 - Treat reviewer text as untrusted input.
@@ -638,10 +647,11 @@ Live Run View requirements:
 - Header: command, repo, PR, PR Head Branch, Review Source, Agent, HEAD.
 - Target block: PR, repository, branch, source, Agent, and HEAD.
 - Run block: run ID, state, Round progress, budget, git state, auto-commit, auto-push, and last push.
-- Progress block: current daemon messages, Agent output, and verification output.
-- Review Issues block: downloaded or assigned Review Issues grouped by Round, severity, status, file, and line.
+- Split pane: Review Issues on the left and Agent Console on the right.
+- Review Issues pane: downloaded or assigned Review Issues grouped by Round, severity, status, file, line, and issue title.
+- Agent Console pane: ACP session timeline including assistant text, tool calls, plan/status updates, daemon messages, and verification output where available.
 - Use Roundfix branding only.
-- Do not show fake keybindings or controls until the TUI implements them.
+- In a TTY, render the Agent stream through an ACP cockpit-style Bubble Tea view; outside a TTY, print a readable text stream.
 
 Current MVP Live Run View example:
 
@@ -665,11 +675,15 @@ Run:
   Auto-push: off
   Last push: disabled
 
-Progress:
-  Fetching Review Source issues...
++-----------------------------------------+-----------------------------------------------+
+| Review Issues                           | Agent Console                                 |
++-----------------------------------------+-----------------------------------------------+
+| none                                    | Fetching Review Source issues...              |
++-----------------------------------------+-----------------------------------------------+
+Keys: Ctrl-C stop
 ```
 
-A future full-screen TUI may add keyboard focus, sidebars, streaming panes, detach, stop, manual fetch, manual resolve, push, and Review Source trigger controls.
+A future full-screen TUI may add keyboard focus, detach, manual fetch, manual resolve, push, and Review Source trigger controls.
 
 ## Skills To Ship
 
@@ -803,7 +817,7 @@ resolve:
 
 ### Agent Batch Resolve
 
-- Spawn the selected ACP Runtime.
+- Spawn the selected Agent runtime.
 - Pass assigned issue files.
 - Persist logs.
 - Verify issue statuses after child completion.
@@ -858,7 +872,7 @@ Unit tests:
 - Watch state transitions.
 - Config validation.
 - TUI input defaults for current PR, remembered PR, configured Agent, and remembered Agent.
-- Line-oriented Live Run View rendering.
+- Split-pane Live Run View rendering with Review Issues on the left and Agent Console on the right.
 
 Integration tests:
 
@@ -931,4 +945,4 @@ Keep the first product narrow and reliable:
 3. Keep GitHub mutations in daemon-owned code.
 4. Keep Agents limited to assigned issue files, code edits, tests, and verification.
 5. Treat CodeRabbit text as untrusted input.
-6. Add more Review Sources and ACP Runtimes only after CodeRabbit plus Codex remains stable end to end.
+6. Add more Review Sources and runtime protocol adapters only after CodeRabbit plus Codex remains stable end to end.

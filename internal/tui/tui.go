@@ -42,6 +42,7 @@ type LiveRunView struct {
 	HeadBranch    string
 	ReviewSource  string
 	Agent         string
+	Model         string
 	HEAD          string
 	RunID         string
 	PipelineState string
@@ -54,6 +55,7 @@ type LiveRunView struct {
 	LastPush      string
 	Issues        []rounds.Issue
 	Console       []string
+	Width         int
 }
 
 type IssueGroup struct {
@@ -179,26 +181,116 @@ func RenderLiveRunView(view LiveRunView) string {
 	builder.WriteString(fmt.Sprintf("  Auto-push: %s\n", onOff(view.AutoPush)))
 	builder.WriteString(fmt.Sprintf("  Last push: %s\n", emptyDash(view.LastPush)))
 
-	builder.WriteString("\nProgress:\n")
-	for _, line := range view.Console {
-		builder.WriteString("  ")
-		builder.WriteString(line)
-		builder.WriteByte('\n')
+	builder.WriteString("\n")
+	builder.WriteString(renderSplitPanes(view))
+	builder.WriteByte('\n')
+	return builder.String()
+}
+
+func renderSplitPanes(view LiveRunView) string {
+	width := view.Width
+	if width <= 0 {
+		width = 100
 	}
-	if len(view.Console) == 0 {
-		builder.WriteString("  waiting for output\n")
+	if width < 80 {
+		width = 80
 	}
-	if len(view.Issues) > 0 {
-		builder.WriteString("\nReview Issues:\n")
-		for _, group := range GroupIssuesByRound(view.Issues) {
-			builder.WriteString(fmt.Sprintf("  Round %03d\n", group.Round))
-			for _, issue := range group.Issues {
-				builder.WriteString(fmt.Sprintf("    %-8s %-10s %s:%d\n", emptyDash(issue.Severity), emptyDash(issue.Status), emptyDash(issue.File), issue.Line))
+	available := width - 7
+	leftWidth := available * 42 / 100
+	if leftWidth < 30 {
+		leftWidth = 30
+	}
+	rightWidth := available - leftWidth
+	if rightWidth < 30 {
+		rightWidth = 30
+		leftWidth = available - rightWidth
+	}
+
+	leftLines := issuePaneLines(view.Issues)
+	rightLines := consolePaneLines(view.Console)
+	rowCount := len(leftLines)
+	if len(rightLines) > rowCount {
+		rowCount = len(rightLines)
+	}
+
+	var builder strings.Builder
+	builder.WriteString(paneBorder(leftWidth, rightWidth))
+	builder.WriteString(paneRow("Review Issues", "Agent Console", leftWidth, rightWidth))
+	builder.WriteString(paneBorder(leftWidth, rightWidth))
+	for index := 0; index < rowCount; index++ {
+		left := ""
+		right := ""
+		if index < len(leftLines) {
+			left = leftLines[index]
+		}
+		if index < len(rightLines) {
+			right = rightLines[index]
+		}
+		builder.WriteString(paneRow(left, right, leftWidth, rightWidth))
+	}
+	builder.WriteString(paneBorder(leftWidth, rightWidth))
+	builder.WriteString("Keys: Ctrl-C stop\n")
+	return builder.String()
+}
+
+func issuePaneLines(issues []rounds.Issue) []string {
+	if len(issues) == 0 {
+		return []string{"none"}
+	}
+	lines := []string{}
+	for _, group := range GroupIssuesByRound(issues) {
+		lines = append(lines, fmt.Sprintf("Round %03d", group.Round))
+		for _, issue := range group.Issues {
+			location := emptyDash(issue.File)
+			if issue.Line > 0 {
+				location = fmt.Sprintf("%s:%d", location, issue.Line)
+			}
+			lines = append(lines, fmt.Sprintf("%-8s %-10s %s", emptyDash(issue.Severity), emptyDash(issue.Status), location))
+			if strings.TrimSpace(issue.Title) != "" {
+				lines = append(lines, "  "+strings.TrimSpace(issue.Title))
 			}
 		}
 	}
-	builder.WriteByte('\n')
-	return builder.String()
+	return lines
+}
+
+func consolePaneLines(console []string) []string {
+	lines := make([]string, 0, len(console))
+	for _, line := range console {
+		line = strings.TrimRight(line, "\r\n")
+		if line != "" {
+			lines = append(lines, line)
+		}
+	}
+	if len(lines) == 0 {
+		return []string{"waiting for output"}
+	}
+	return lines
+}
+
+func paneBorder(leftWidth int, rightWidth int) string {
+	return "+" + strings.Repeat("-", leftWidth+2) + "+" + strings.Repeat("-", rightWidth+2) + "+\n"
+}
+
+func paneRow(left string, right string, leftWidth int, rightWidth int) string {
+	return fmt.Sprintf("| %s | %s |\n", padRight(truncateText(left, leftWidth), leftWidth), padRight(truncateText(right, rightWidth), rightWidth))
+}
+
+func padRight(value string, width int) string {
+	if len(value) >= width {
+		return value
+	}
+	return value + strings.Repeat(" ", width-len(value))
+}
+
+func truncateText(value string, width int) string {
+	if width <= 0 || len(value) <= width {
+		return value
+	}
+	if width <= 3 {
+		return value[:width]
+	}
+	return value[:width-3] + "..."
 }
 
 func GroupIssuesByRound(issues []rounds.Issue) []IssueGroup {

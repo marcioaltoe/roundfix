@@ -16,6 +16,8 @@ const (
 	CommandFetch   = "fetch"
 	CommandResolve = "resolve"
 	CommandWatch   = "watch"
+
+	projectConfigName = ".roundfixrc.yml"
 )
 
 type Request struct {
@@ -220,7 +222,7 @@ func Run(ctx context.Context, req Request) (Result, error) {
 		return Result{}, err
 	}
 
-	blockingChanges := DirtyOutsideArtifact(gitState.Root, req.ArtifactDir, gitState.Dirty)
+	blockingChanges := IgnoreProjectConfigChanges(gitState.Root, DirtyOutsideArtifact(gitState.Root, req.ArtifactDir, gitState.Dirty))
 	if len(blockingChanges) > 0 {
 		return Result{}, DirtyWorktreeError{
 			ArtifactDir: req.ArtifactDir,
@@ -389,6 +391,20 @@ func DirtyOutsideArtifact(gitRoot string, artifactDir string, dirty []ChangedPat
 	return blocking
 }
 
+func IgnoreProjectConfigChanges(gitRoot string, dirty []ChangedPath) []ChangedPath {
+	if len(dirty) == 0 {
+		return nil
+	}
+	blocking := make([]ChangedPath, 0, len(dirty))
+	for _, change := range dirty {
+		if isProjectConfigPath(gitRoot, change.Path) {
+			continue
+		}
+		blocking = append(blocking, change)
+	}
+	return blocking
+}
+
 type ResolvePullRequestRequest struct {
 	Number                 string
 	ExplicitBaseRepository string
@@ -486,4 +502,19 @@ func isWithinPath(path string, dir string) bool {
 		return false
 	}
 	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)))
+}
+
+func isProjectConfigPath(gitRoot string, path string) bool {
+	if strings.TrimSpace(gitRoot) == "" || strings.TrimSpace(path) == "" {
+		return false
+	}
+	cleanPath := filepath.Clean(path)
+	if !filepath.IsAbs(cleanPath) {
+		cleanPath = filepath.Join(filepath.Clean(gitRoot), cleanPath)
+	}
+	rel, err := filepath.Rel(filepath.Clean(gitRoot), cleanPath)
+	if err != nil {
+		return false
+	}
+	return rel == projectConfigName
 }

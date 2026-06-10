@@ -81,7 +81,7 @@ type commandRequest struct {
 
 var runCommandPreflight = defaultRunCommandPreflight
 var fetchReviewItems = defaultFetchReviewItems
-var runAgentRuntime agent.Runner = agent.ExecRunner{}
+var runAgentRuntime agent.Runner = agent.DefaultRunner{}
 var runVerificationGate daemon.Verifier = daemon.ExecVerifier{}
 var createBatchCommit daemon.Committer = daemon.GitCommitter{}
 var resolveReviewSourceIssues = defaultResolveReviewSourceIssues
@@ -588,6 +588,7 @@ func runFetchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		ReviewIssues:   len(roundResult.IssuePaths),
 		RunDatabase:    store.DatabasePath(loaded.HomeDir),
 		ArtifactDir:    req.artifactDir,
+		ReusedRound:    roundResult.Reused,
 		StartedAgent:   false,
 		CreatedCommit:  false,
 		CompletedPush:  false,
@@ -719,7 +720,13 @@ func executeResolveBatch(ctx context.Context, req commandRequest, loaded roundco
 	fmt.Fprintf(stderr, "Batch: %03d (%d Review Issue(s))\n", batch.Number, len(batch.Issues))
 	fmt.Fprintf(stderr, "Agent log: %s\n", logPath)
 
-	if _, err := runAgentRuntime.Run(ctx, agent.ExecuteRequest{
+	agentStream := newAgentConsoleStream(stderr, buildLiveRunView(req, loaded, preflightResult, runID, "ResolvingWithAgent", batch.Issues, []string{
+		fmt.Sprintf("Batch %03d started with %d Review Issue(s)", batch.Number, len(batch.Issues)),
+		fmt.Sprintf("Agent: %s", resolvePlan.runtime.DisplayName),
+		fmt.Sprintf("Agent log: %s", logPath),
+		"Streaming Agent output...",
+	}))
+	_, runErr := runAgentRuntime.Run(ctx, agent.ExecuteRequest{
 		Runtime:      resolvePlan.runtime,
 		RunID:        runID,
 		Batch:        batch,
@@ -728,12 +735,17 @@ func executeResolveBatch(ctx context.Context, req commandRequest, loaded roundco
 		ArtifactDir:  req.artifactDir,
 		GitRoot:      preflightResult.Git.Root,
 		Verification: loaded.Config.Defaults.Verification,
-	}, stderr); err != nil {
-		if isStopRequest(ctx, err) {
-			return resolveBatchResult{}, err
+		AllowAddDirs: []string{req.artifactDir},
+	}, agentStream)
+	if closeErr := closeAgentConsoleStream(agentStream); closeErr != nil && runErr == nil {
+		runErr = closeErr
+	}
+	if runErr != nil {
+		if isStopRequest(ctx, runErr) {
+			return resolveBatchResult{}, runErr
 		}
 		_ = agent.MarkBatchFailed(batch)
-		return resolveBatchResult{}, err
+		return resolveBatchResult{}, runErr
 	}
 	if err := ctx.Err(); err != nil {
 		return resolveBatchResult{}, err
@@ -765,8 +777,9 @@ func executeResolveBatch(ctx context.Context, req commandRequest, loaded roundco
 	if loaded.Config.Defaults.AutoCommit {
 		message := daemon.BatchCommitMessage(batch.Number)
 		if err := createBatchCommit.Commit(ctx, daemon.CommitRequest{
-			WorkDir: preflightResult.Git.Root,
-			Message: message,
+			WorkDir:      preflightResult.Git.Root,
+			Message:      message,
+			ExcludePaths: []string{".roundfixrc.yml"},
 		}); err != nil {
 			return resolveBatchResult{}, err
 		}
@@ -958,7 +971,11 @@ func fetchWatchRound(ctx context.Context, req commandRequest, loaded roundconfig
 	if err != nil {
 		return watch.FetchResult{}, err
 	}
-	fmt.Fprintf(stderr, "Fetched Round %03d with %d Review Issue(s).\n", roundResult.Round, len(roundResult.IssuePaths))
+	if roundResult.Reused {
+		fmt.Fprintf(stderr, "Reused Round %03d with %d Review Issue(s).\n", roundResult.Round, len(roundResult.IssuePaths))
+	} else {
+		fmt.Fprintf(stderr, "Fetched Round %03d with %d Review Issue(s).\n", roundResult.Round, len(roundResult.IssuePaths))
+	}
 	return watch.FetchResult{Round: roundResult.Round, Issues: len(roundResult.IssuePaths)}, nil
 }
 
@@ -1048,6 +1065,7 @@ type fetchSuccessView struct {
 	ReviewIssues   int
 	RunDatabase    string
 	ArtifactDir    string
+	ReusedRound    bool
 	StartedAgent   bool
 	CreatedCommit  bool
 	CompletedPush  bool
@@ -1064,6 +1082,11 @@ func printFetchSuccess(stdout io.Writer, view fetchSuccessView) {
 		fmt.Fprintln(stdout, "  Review Issues: none")
 	} else {
 		fmt.Fprintf(stdout, "  Review Issues: %d\n", view.ReviewIssues)
+	}
+	if view.ReusedRound {
+		fmt.Fprintln(stdout, "  Artifacts: reused existing matching Round")
+	} else {
+		fmt.Fprintln(stdout, "  Artifacts: created new Round")
 	}
 	fmt.Fprintln(stdout)
 	fmt.Fprintf(stdout, "%s\n", style.cyan("Files:"))
@@ -1083,13 +1106,18 @@ func printFetchSuccess(stdout io.Writer, view fetchSuccessView) {
 }
 
 func printLiveRunView(stderr io.Writer, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, pipelineState string, issues []rounds.Issue, console []string) {
-	fmt.Fprint(stderr, roundtui.RenderLiveRunView(roundtui.LiveRunView{
+	fmt.Fprint(stderr, roundtui.RenderLiveRunView(buildLiveRunView(req, loaded, preflightResult, runID, pipelineState, issues, console)))
+}
+
+func buildLiveRunView(req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, pipelineState string, issues []rounds.Issue, console []string) roundtui.LiveRunView {
+	return roundtui.LiveRunView{
 		Command:       req.name,
 		Repository:    preflightResult.PullRequest.HeadRepository,
 		PRNumber:      preflightResult.PullRequest.Number,
 		HeadBranch:    preflightResult.PullRequest.HeadBranch,
 		ReviewSource:  displayReviewSource(req.source),
 		Agent:         displayAgent(req.agent),
+		Model:         req.model,
 		HEAD:          preflightResult.Git.HEAD,
 		RunID:         runID,
 		PipelineState: pipelineState,
@@ -1102,7 +1130,48 @@ func printLiveRunView(stderr io.Writer, req commandRequest, loaded roundconfig.L
 		LastPush:      lastPushState(preflightResult.PushPlan),
 		Issues:        issues,
 		Console:       console,
-	}))
+		Width:         liveViewWidth(),
+	}
+}
+
+func newAgentConsoleStream(output io.Writer, view roundtui.LiveRunView) io.Writer {
+	return roundtui.NewAgentLiveStream(output, view, liveTUIEnabled(output))
+}
+
+func closeAgentConsoleStream(stream io.Writer) error {
+	closer, ok := stream.(interface {
+		Close() error
+	})
+	if !ok {
+		return nil
+	}
+	return closer.Close()
+}
+
+func liveTUIEnabled(output io.Writer) bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("ROUNDFIX_TUI"))) {
+	case "always", "1", "true", "yes", "on":
+		return true
+	case "never", "0", "false", "no", "off":
+		return false
+	}
+	if strings.EqualFold(os.Getenv("TERM"), "dumb") {
+		return false
+	}
+	file, ok := output.(*os.File)
+	if !ok {
+		return false
+	}
+	info, err := file.Stat()
+	return err == nil && info.Mode()&os.ModeCharDevice != 0
+}
+
+func liveViewWidth() int {
+	width, err := strconv.Atoi(strings.TrimSpace(os.Getenv("COLUMNS")))
+	if err == nil && width >= 80 {
+		return width
+	}
+	return 100
 }
 
 func yesNo(value bool) string {
