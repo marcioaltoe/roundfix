@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"roundfix/internal/runevent"
@@ -169,6 +170,51 @@ func scanJournalEvent(rows *sql.Rows, runID string) (JournalEvent, error) {
 		entry.Event.Payload = []byte(payload)
 	}
 	return entry, nil
+}
+
+// RunEventsBefore lists events for one Run with cursors strictly less than
+// the given cursor, oldest first, bounded by limit: the limit events
+// immediately before the cursor. Scrollback pages the journal backward with
+// it, symmetric to RunEventsAfter and under the same short autocommit
+// read discipline.
+func (store *Store) RunEventsBefore(ctx context.Context, runID string, cursor int64, limit int) ([]JournalEvent, error) {
+	runID = strings.TrimSpace(runID)
+	if runID == "" {
+		return nil, errors.New("list Run Events: Run ID is required")
+	}
+	if limit <= 0 {
+		return nil, errors.New("list Run Events: a positive limit is required")
+	}
+	rows, err := store.db.QueryContext(ctx, `
+SELECT cursor, batch, source, kind, review_issue, tool_id, tool_state, summary, created_at, payload
+FROM run_events
+WHERE run_id = ? AND cursor < ?
+ORDER BY cursor DESC
+LIMIT ?`,
+		runID,
+		cursor,
+		limit,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list Run Events for Run %q: %w", runID, err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	events := []JournalEvent{}
+	for rows.Next() {
+		entry, err := scanJournalEvent(rows, runID)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, entry)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate Run Events for Run %q: %w", runID, err)
+	}
+	slices.Reverse(events)
+	return events, nil
 }
 
 // JournalSink adapts the Run Database to the Run Event sink interface. It

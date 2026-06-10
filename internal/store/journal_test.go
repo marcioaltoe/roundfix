@@ -287,3 +287,167 @@ func TestDataVersionSignalsWriterCommitsToPollers(t *testing.T) {
 		t.Fatalf("expected data version change after writer commit, got %d twice", after)
 	}
 }
+
+func TestRunEventsBeforeReturnsImmediatelyPrecedingEventsAscending(t *testing.T) {
+	ctx := context.Background()
+	store := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, store)
+
+	run, err := store.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	for _, summary := range []string{"one", "two", "three", "four", "five"} {
+		if _, err := store.AppendRunEvent(ctx, sampleRunEvent(run.ID, summary)); err != nil {
+			t.Fatalf("append %q: %v", summary, err)
+		}
+	}
+
+	page, err := store.RunEventsBefore(ctx, run.ID, 4, 2)
+	if err != nil {
+		t.Fatalf("list before cursor: %v", err)
+	}
+	if len(page) != 2 || page[0].Cursor != 2 || page[1].Cursor != 3 {
+		t.Fatalf("expected the two events immediately before cursor 4, ascending, got %+v", page)
+	}
+	if page[0].Event.Summary != "two" || page[1].Event.Summary != "three" {
+		t.Fatalf("expected ordered summaries, got %+v", page)
+	}
+
+	if _, err := store.RunEventsBefore(ctx, run.ID, 4, 0); err == nil {
+		t.Fatal("expected positive-limit requirement")
+	}
+	if _, err := store.RunEventsBefore(ctx, "", 4, 1); err == nil {
+		t.Fatal("expected Run ID requirement")
+	}
+}
+
+func TestRunEventsBeforeBoundaryCursors(t *testing.T) {
+	ctx := context.Background()
+	store := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, store)
+
+	run, err := store.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	for _, summary := range []string{"one", "two", "three"} {
+		if _, err := store.AppendRunEvent(ctx, sampleRunEvent(run.ID, summary)); err != nil {
+			t.Fatalf("append %q: %v", summary, err)
+		}
+	}
+
+	for _, cursor := range []int64{0, 1} {
+		page, err := store.RunEventsBefore(ctx, run.ID, cursor, 10)
+		if err != nil {
+			t.Fatalf("list before %d: %v", cursor, err)
+		}
+		if len(page) != 0 {
+			t.Fatalf("expected nothing before cursor %d, got %+v", cursor, page)
+		}
+	}
+	page, err := store.RunEventsBefore(ctx, run.ID, 2, 10)
+	if err != nil {
+		t.Fatalf("list before 2: %v", err)
+	}
+	if len(page) != 1 || page[0].Cursor != 1 {
+		t.Fatalf("expected exactly the first event, got %+v", page)
+	}
+	missing, err := store.RunEventsBefore(ctx, "run_missing", 10, 5)
+	if err != nil {
+		t.Fatalf("expected empty page for unknown Run like the forward read, got %v", err)
+	}
+	if len(missing) != 0 {
+		t.Fatalf("expected empty page, got %+v", missing)
+	}
+}
+
+func TestRunEventsBeforePagesComposeTailToHeadWithoutDuplicates(t *testing.T) {
+	ctx := context.Background()
+	store := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, store)
+
+	run, err := store.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	const total = 23
+	for index := 0; index < total; index++ {
+		if _, err := store.AppendRunEvent(ctx, sampleRunEvent(run.ID, "event")); err != nil {
+			t.Fatalf("append %d: %v", index, err)
+		}
+	}
+
+	// Walk tail→head with a page size that does not divide the total, so
+	// the head page is partial — an exact page-edge case.
+	cursor := int64(total + 1)
+	seen := []int64{}
+	for {
+		page, err := store.RunEventsBefore(ctx, run.ID, cursor, 5)
+		if err != nil {
+			t.Fatalf("page before %d: %v", cursor, err)
+		}
+		if len(page) == 0 {
+			break
+		}
+		for index := len(page) - 1; index >= 0; index-- {
+			seen = append(seen, page[index].Cursor)
+		}
+		cursor = page[0].Cursor
+	}
+	if len(seen) != total {
+		t.Fatalf("expected every event exactly once, got %d of %d", len(seen), total)
+	}
+	for index, cursor := range seen {
+		if cursor != int64(total-index) {
+			t.Fatalf("expected strictly descending walk without gaps, got %v", seen)
+		}
+	}
+}
+
+func TestRunEventsBeforeOnReaderWhileWriterAppends(t *testing.T) {
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	writer := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, writer)
+	run, err := writer.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	for index := 0; index < 10; index++ {
+		if _, err := writer.AppendRunEvent(ctx, sampleRunEvent(run.ID, "seed")); err != nil {
+			t.Fatalf("seed append: %v", err)
+		}
+	}
+	reader, err := OpenReader(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open reader: %v", err)
+	}
+	defer closeStore(t, reader)
+
+	appended := make(chan error, 1)
+	go func() {
+		for index := 0; index < 20; index++ {
+			if _, err := writer.AppendRunEvent(ctx, sampleRunEvent(run.ID, "live")); err != nil {
+				appended <- err
+				return
+			}
+		}
+		appended <- nil
+	}()
+
+	// Backward pages over the stable prefix stay correct while the writer
+	// appends past the tail: short autocommit reads, no read transaction.
+	for round := 0; round < 10; round++ {
+		page, err := reader.RunEventsBefore(ctx, run.ID, 6, 5)
+		if err != nil {
+			t.Fatalf("reader page: %v", err)
+		}
+		if len(page) != 5 || page[0].Cursor != 1 || page[4].Cursor != 5 {
+			t.Fatalf("expected stable backward page [1..5], got %+v", page)
+		}
+	}
+	if err := <-appended; err != nil {
+		t.Fatalf("writer append: %v", err)
+	}
+}
