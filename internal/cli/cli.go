@@ -38,6 +38,7 @@ Usage:
   roundfix resolve --pr <number> --agent <agent>
   roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean
   roundfix init [--scope <project|user>]
+  roundfix stop [<run-id>|--run-id <id>|--pr <number>]
   roundfix skills check
   roundfix skills install --target <codex|claude|opencode|all>
 
@@ -46,6 +47,7 @@ Commands:
   fetch      Download review issues for an Open Pull Request
   resolve    Resolve downloaded Unresolved Review Issues
   watch      Fetch and resolve in a watched loop
+  stop       Stop an Active Run and release its lock
   skills     Check or install Roundfix agent skills
 
 Options:
@@ -92,6 +94,7 @@ var watchSleeper watch.Sleeper
 var inspectChangedPaths = defaultInspectChangedPaths
 var collectInteractiveInput = defaultCollectInteractiveInput
 var suggestCurrentPullRequest = defaultSuggestCurrentPullRequest
+var resolvePullRequestForStop = defaultResolvePullRequestForStop
 var promptInitScope = defaultPromptInitScope
 
 type validationError struct {
@@ -131,6 +134,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return exitOK
 	case "init":
 		return runInitCommand(ctx, args[1:], stdout, stderr)
+	case "stop":
+		return runStopCommand(ctx, args[1:], stdout, stderr)
 	case "skills":
 		return runSkillsCommand(ctx, args[1:], stdout, stderr)
 	case "fetch", "resolve", "watch":
@@ -220,6 +225,138 @@ func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		fmt.Fprintf(stderr, "Run '%s skills --help' for usage.\n", app.Name)
 		return exitPreflight
 	}
+}
+
+type stopRequest struct {
+	runID      string
+	pr         string
+	headRepo   string
+	headBranch string
+}
+
+func runStopCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+	if commandWantsHelp(args) {
+		fmt.Fprint(stdout, commandUsage("stop"))
+		return exitOK
+	}
+
+	req, err := parseStopCommand(args)
+	if err != nil {
+		printStopFailure(err, stderr)
+		return exitPreflight
+	}
+	loaded, err := roundconfig.Load(roundconfig.LoadOptions{})
+	if err != nil {
+		printStopFailure(err, stderr)
+		return exitPreflight
+	}
+	runStore, err := store.Open(ctx, loaded.HomeDir)
+	if err != nil {
+		printStopFailure(err, stderr)
+		return exitPreflight
+	}
+	defer func() {
+		_ = runStore.Close()
+	}()
+
+	run, err := stopTargetRun(ctx, req, loaded, runStore)
+	if err != nil {
+		printStopFailure(err, stderr)
+		return exitPreflight
+	}
+	printStopSuccess(run, stdout)
+	return exitOK
+}
+
+func parseStopCommand(args []string) (stopRequest, error) {
+	req := stopRequest{}
+	fs := flag.NewFlagSet("stop", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	fs.StringVar(&req.runID, "run-id", "", "Run ID to stop")
+	fs.StringVar(&req.runID, "run", "", "Run ID to stop")
+	fs.StringVar(&req.pr, "pr", "", "Open Pull Request number")
+	fs.StringVar(&req.headRepo, "head-repo", "", "Head Repository, owner/name")
+	fs.StringVar(&req.headBranch, "head-branch", "", "PR Head Branch")
+	if err := fs.Parse(args); err != nil {
+		return req, validationError{message: err.Error()}
+	}
+	remaining := fs.Args()
+	if len(remaining) > 1 {
+		return req, validationError{message: fmt.Sprintf("unexpected argument %q", remaining[1])}
+	}
+	if len(remaining) == 1 {
+		if req.runID != "" {
+			return req, validationError{message: "pass Run ID either as an argument or with --run-id, not both"}
+		}
+		req.runID = strings.TrimSpace(remaining[0])
+	}
+	if req.runID != "" && (req.pr != "" || req.headRepo != "" || req.headBranch != "") {
+		return req, validationError{message: "--run-id cannot be combined with --pr, --head-repo, or --head-branch"}
+	}
+	if req.pr != "" {
+		if err := validatePositiveInt("pr", req.pr); err != nil {
+			return req, err
+		}
+	}
+	if (req.headRepo == "") != (req.headBranch == "") {
+		return req, validationError{message: "--head-repo and --head-branch must be used together"}
+	}
+	return req, nil
+}
+
+func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Loaded, runStore *store.Store) (store.Run, error) {
+	if req.runID != "" {
+		current, found, err := runStore.Run(ctx, req.runID)
+		if err != nil {
+			return store.Run{}, err
+		} else if !found {
+			return store.Run{}, validationError{message: fmt.Sprintf("Run %q does not exist", req.runID)}
+		}
+		if current.State != store.StateActive {
+			return store.Run{}, validationError{message: fmt.Sprintf("Run %q is already %s", req.runID, current.State)}
+		}
+		run, err := runStore.CompleteRun(ctx, req.runID, store.StateStopped)
+		if err != nil {
+			return store.Run{}, err
+		}
+		return run, nil
+	}
+
+	headRepo := strings.TrimSpace(req.headRepo)
+	headBranch := strings.TrimSpace(req.headBranch)
+	if headRepo == "" || headBranch == "" {
+		pr := strings.TrimSpace(req.pr)
+		if pr == "" {
+			suggested, _ := suggestCurrentPullRequest(ctx, loaded.GitRoot)
+			pr = strings.TrimSpace(suggested)
+		}
+		if pr == "" {
+			return store.Run{}, validationError{message: "missing stop target; pass a Run ID, --run-id, --pr, or --head-repo with --head-branch"}
+		}
+		resolved, err := resolvePullRequestForStop(ctx, loaded.GitRoot, pr)
+		if err != nil {
+			return store.Run{}, fmt.Errorf("resolve Open Pull Request %s for stop target: %w", pr, err)
+		}
+		headRepo = resolved.HeadRepository
+		headBranch = resolved.HeadBranch
+	}
+
+	active, found, err := runStore.ActiveRun(ctx, headRepo, headBranch)
+	if err != nil {
+		return store.Run{}, err
+	}
+	if !found {
+		return store.Run{}, validationError{message: fmt.Sprintf("no Active Run exists for Head Repository %q and PR Head Branch %q", headRepo, headBranch)}
+	}
+	run, err := runStore.CompleteRun(ctx, active.ID, store.StateStopped)
+	if err != nil {
+		return store.Run{}, err
+	}
+	return run, nil
+}
+
+func defaultResolvePullRequestForStop(ctx context.Context, workDir string, pr string) (preflight.PullRequest, error) {
+	return (preflight.GHPullRequestResolver{}).ResolvePullRequest(ctx, workDir, pr)
 }
 
 func runSkillsInstall(ctx context.Context, args []string, stdout, stderr io.Writer) int {
@@ -639,7 +776,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	}
 	printLiveRunView(stderr, req, loaded, preflightResult, run.ID, "ResolvingWithAgent", resolvePlan.selection.Issues, []string{"Agent and verification output will stream below."})
 
-	if _, err := executeResolveBatch(ctx, req, loaded, preflightResult, run.ID, resolvePlan, stderr); err != nil {
+	if _, err := executeResolveBatches(ctx, req, loaded, preflightResult, run.ID, resolvePlan, stderr); err != nil {
 		if isStopRequest(ctx, err) {
 			return completeStoppedRun(runStore, run.ID, req, preflightResult, stderr)
 		}
@@ -698,8 +835,39 @@ func prepareResolveBatch(ctx context.Context, req commandRequest, loaded roundco
 	}, nil
 }
 
-func executeResolveBatch(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, resolvePlan resolveBatchPlan, stderr io.Writer) (resolveBatchResult, error) {
-	batch := resolvePlan.plan.Batches[0]
+func executeResolveBatches(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, resolvePlan resolveBatchPlan, stderr io.Writer) (resolveBatchResult, error) {
+	fmt.Fprintf(stderr, "%s: resolve selected %d downloaded Unresolved Review Issue(s) from %d Compatible Artifact Round(s), assigned %d newest occurrence(s) into %d Batch(es), and associated %d older duplicate occurrence(s).\n", app.Name, len(resolvePlan.selection.Issues), len(resolvePlan.selection.Rounds), countBatchIssues(resolvePlan.plan.Batches), len(resolvePlan.plan.Batches), len(resolvePlan.plan.Duplicates))
+	fmt.Fprintf(stderr, "Run: %s\n", runID)
+	fmt.Fprintf(stderr, "Artifact Directory: %s\n", req.artifactDir)
+	fmt.Fprintf(stderr, "Round scope: %s\n", formatRoundScope(resolvePlan.roundNumber))
+	fmt.Fprintf(stderr, "Open Pull Request: #%s %s %s\n", preflightResult.PullRequest.Number, preflightResult.PullRequest.HeadRepository, preflightResult.PullRequest.HeadBranch)
+	fmt.Fprintf(stderr, "Agent: %s\n", resolvePlan.runtime.DisplayName)
+
+	remaining := len(resolvePlan.selection.Issues)
+	for index, batch := range resolvePlan.plan.Batches {
+		result, err := executeResolveBatch(ctx, req, loaded, preflightResult, runID, resolvePlan, batch, index+1, len(resolvePlan.plan.Batches), stderr)
+		if err != nil {
+			pendingBatches := resolvePlan.plan.Batches[index+1:]
+			if pending := countBatchIssues(pendingBatches); pending > 0 {
+				fmt.Fprintf(stderr, "Resolve stopped after Batch %03d/%03d failed; %d planned Review Issue(s) remain pending in %d Batch(es).\n", batch.Number, len(resolvePlan.plan.Batches), pending, len(pendingBatches))
+			}
+			return resolveBatchResult{}, err
+		}
+		remaining = result.Remaining
+		if remaining > 0 && index < len(resolvePlan.plan.Batches)-1 {
+			fmt.Fprintf(stderr, "Batch %03d/%03d completed; %d Unresolved Review Issue(s) remain.\n", batch.Number, len(resolvePlan.plan.Batches), remaining)
+		}
+	}
+
+	if remaining > 0 {
+		fmt.Fprintf(stderr, "Final Push blocked: %d Unresolved Review Issue(s) remain.\n", remaining)
+	} else if err := maybeRunFinalPush(ctx, loaded, preflightResult, loaded.Config.Defaults.AutoCommit, stderr); err != nil {
+		return resolveBatchResult{}, err
+	}
+	return resolveBatchResult{Remaining: remaining}, nil
+}
+
+func executeResolveBatch(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, resolvePlan resolveBatchPlan, batch rounds.Batch, batchIndex int, batchTotal int, stderr io.Writer) (resolveBatchResult, error) {
 	prompt := agent.BuildPrompt(agent.PromptRequest{
 		RunID:        runID,
 		Batch:        batch,
@@ -711,21 +879,19 @@ func executeResolveBatch(ctx context.Context, req commandRequest, loaded roundco
 	})
 	logPath := agent.LogPath(req.artifactDir, runID, batch.Number)
 
-	fmt.Fprintf(stderr, "%s: resolve selected %d downloaded Unresolved Review Issue(s) from %d Compatible Artifact Round(s), assigned %d newest occurrence(s) into %d Batch(es), and associated %d older duplicate occurrence(s).\n", app.Name, len(resolvePlan.selection.Issues), len(resolvePlan.selection.Rounds), countBatchIssues(resolvePlan.plan.Batches), len(resolvePlan.plan.Batches), len(resolvePlan.plan.Duplicates))
-	fmt.Fprintf(stderr, "Run: %s\n", runID)
-	fmt.Fprintf(stderr, "Artifact Directory: %s\n", req.artifactDir)
-	fmt.Fprintf(stderr, "Round scope: %s\n", formatRoundScope(resolvePlan.roundNumber))
-	fmt.Fprintf(stderr, "Open Pull Request: #%s %s %s\n", preflightResult.PullRequest.Number, preflightResult.PullRequest.HeadRepository, preflightResult.PullRequest.HeadBranch)
-	fmt.Fprintf(stderr, "Agent: %s\n", resolvePlan.runtime.DisplayName)
-	fmt.Fprintf(stderr, "Batch: %03d (%d Review Issue(s))\n", batch.Number, len(batch.Issues))
+	fmt.Fprintf(stderr, "Batch: %03d/%03d (%d Review Issue(s))\n", batchIndex, batchTotal, len(batch.Issues))
 	fmt.Fprintf(stderr, "Agent log: %s\n", logPath)
 
-	agentStream := newAgentConsoleStream(stderr, buildLiveRunView(req, loaded, preflightResult, runID, "ResolvingWithAgent", batch.Issues, []string{
-		fmt.Sprintf("Batch %03d started with %d Review Issue(s)", batch.Number, len(batch.Issues)),
+	liveView := buildLiveRunView(req, loaded, preflightResult, runID, "ResolvingWithAgent", resolvePlan.selection.Issues, []string{
+		fmt.Sprintf("Batch %03d/%03d started with %d Review Issue(s)", batchIndex, batchTotal, len(batch.Issues)),
 		fmt.Sprintf("Agent: %s", resolvePlan.runtime.DisplayName),
 		fmt.Sprintf("Agent log: %s", logPath),
 		"Streaming Agent output...",
-	}))
+	})
+	liveView.BatchNumber = batchIndex
+	liveView.BatchTotal = batchTotal
+	liveView.TotalIssues = len(resolvePlan.selection.Issues)
+	agentStream := newAgentConsoleStream(stderr, liveView)
 	_, runErr := runAgentRuntime.Run(ctx, agent.ExecuteRequest{
 		Runtime:      resolvePlan.runtime,
 		RunID:        runID,
@@ -806,11 +972,6 @@ func executeResolveBatch(ctx context.Context, req commandRequest, loaded roundco
 
 	remaining, err := remainingUnresolvedIssues(ctx, req.artifactDir, preflightResult.PullRequest)
 	if err != nil {
-		return resolveBatchResult{}, err
-	}
-	if remaining > 0 {
-		fmt.Fprintf(stderr, "Final Push blocked: %d Unresolved Review Issue(s) remain.\n", remaining)
-	} else if err := maybeRunFinalPush(ctx, loaded, preflightResult, loaded.Config.Defaults.AutoCommit, stderr); err != nil {
 		return resolveBatchResult{}, err
 	}
 	return resolveBatchResult{Remaining: remaining}, nil
@@ -991,7 +1152,7 @@ func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundco
 			return watch.ResolveResult{}, err
 		}
 		resolvePlan.runtime = runtime
-		result, err := executeResolveBatch(ctx, req, loaded, preflightResult, runID, resolvePlan, stderr)
+		result, err := executeResolveBatches(ctx, req, loaded, preflightResult, runID, resolvePlan, stderr)
 		if err != nil {
 			return watch.ResolveResult{}, err
 		}
@@ -1585,6 +1746,20 @@ Options:
   --interactive  Open Interactive Input before starting
   --no-input     Fail instead of opening Interactive Input
 `
+	case "stop":
+		return `Usage:
+  roundfix stop <run-id>
+  roundfix stop --run-id <id>
+  roundfix stop --pr <number>
+  roundfix stop --head-repo <owner/name> --head-branch <branch>
+
+Options:
+  --run-id      Active Run ID to stop
+  --run         Alias for --run-id
+  --pr          Open Pull Request number used to find the Active Run
+  --head-repo   Explicit Head Repository, owner/name
+  --head-branch Explicit PR Head Branch
+`
 	case "skills":
 		return `Usage:
   roundfix skills check
@@ -1670,6 +1845,28 @@ func printInitFailure(err error, stderr io.Writer) {
 	fmt.Fprintf(stderr, "  %v\n\n", err)
 	fmt.Fprintf(stderr, "%s\n", style.cyan("Usage:"))
 	fmt.Fprintf(stderr, "  Run '%s init --help' for usage.\n", app.Name)
+}
+
+func printStopSuccess(run store.Run, stdout io.Writer) {
+	style := styleFor(stdout)
+	fmt.Fprintf(stdout, "%s\n\n", style.green(style.bold("Roundfix Run stopped")))
+	fmt.Fprintf(stdout, "%s\n", style.cyan("Run:"))
+	fmt.Fprintf(stdout, "  ID: %s\n", run.ID)
+	fmt.Fprintf(stdout, "  State: %s\n", run.State)
+	fmt.Fprintf(stdout, "  Kind: %s\n", run.Kind)
+	fmt.Fprintf(stdout, "  PR: #%s %s\n", run.PRNumber, run.HeadRepository)
+	fmt.Fprintf(stdout, "  Branch: %s\n\n", run.HeadBranch)
+	fmt.Fprintf(stdout, "%s\n", style.cyan("No repository side effects:"))
+	fmt.Fprintln(stdout, "  Roundfix released the Active Run lock without editing files, committing, pushing, fetching, or resolving Review Source threads.")
+}
+
+func printStopFailure(err error, stderr io.Writer) {
+	style := styleFor(stderr)
+	fmt.Fprintf(stderr, "%s\n\n", style.red(style.bold("Stop failed")))
+	fmt.Fprintf(stderr, "%s\n", style.cyan("Reason:"))
+	fmt.Fprintf(stderr, "  %v\n\n", err)
+	fmt.Fprintf(stderr, "%s\n", style.cyan("Usage:"))
+	fmt.Fprintf(stderr, "  Run '%s stop --help' for usage.\n", app.Name)
 }
 
 func printRunFailure(name string, err error, stderr io.Writer) {

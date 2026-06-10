@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -197,21 +198,34 @@ func agentTextFromFormat(update agent.StreamUpdate) string {
 		if title == "" {
 			title = "tool call"
 		}
-		if update.ToolID != "" {
-			return fmt.Sprintf("[TOOL] %s (%s)\n", title, update.ToolID)
-		}
-		return fmt.Sprintf("[TOOL] %s\n", title)
-	case agent.StreamUpdateToolUpdated:
 		lines := []string{}
-		if strings.TrimSpace(update.Title) != "" {
-			lines = append(lines, update.Title)
+		if update.ToolID != "" {
+			lines = append(lines, fmt.Sprintf("[TOOL] %s (%s)", title, update.ToolID))
+		} else {
+			lines = append(lines, fmt.Sprintf("[TOOL] %s", title))
 		}
 		if strings.TrimSpace(update.ToolState) != "" {
 			lines = append(lines, update.ToolState)
 		}
-		if strings.TrimSpace(update.Text) != "" {
+		if strings.TrimSpace(update.Text) != "" && len(update.Blocks) == 0 {
 			lines = append(lines, strings.TrimRight(update.Text, "\r\n"))
 		}
+		lines = append(lines, agentBlockLines(update.Blocks)...)
+		return strings.Join(lines, "\n") + "\n"
+	case agent.StreamUpdateToolUpdated:
+		lines := []string{}
+		if strings.TrimSpace(update.Title) != "" {
+			lines = append(lines, "[TOOL] "+strings.TrimSpace(update.Title))
+		} else if strings.TrimSpace(update.ToolID) != "" {
+			lines = append(lines, "[TOOL] "+strings.TrimSpace(update.ToolID))
+		}
+		if strings.TrimSpace(update.ToolState) != "" {
+			lines = append(lines, update.ToolState)
+		}
+		if strings.TrimSpace(update.Text) != "" && len(update.Blocks) == 0 {
+			lines = append(lines, strings.TrimRight(update.Text, "\r\n"))
+		}
+		lines = append(lines, agentBlockLines(update.Blocks)...)
 		if len(lines) == 0 {
 			return ""
 		}
@@ -233,6 +247,50 @@ func agentTextFromFormat(update agent.StreamUpdate) string {
 	}
 }
 
+func agentBlockLines(blocks []agent.StreamBlock) []string {
+	lines := []string{}
+	for _, block := range blocks {
+		switch block.Kind {
+		case agent.StreamBlockText:
+			if text := strings.TrimRight(block.Text, "\r\n"); text != "" {
+				lines = append(lines, text)
+			}
+		case agent.StreamBlockInput:
+			if text := strings.TrimRight(block.Text, "\r\n"); text != "" {
+				lines = append(lines, "input: "+text)
+			}
+		case agent.StreamBlockOutput:
+			if text := strings.TrimRight(block.Text, "\r\n"); text != "" {
+				lines = append(lines, "output: "+text)
+			}
+		case agent.StreamBlockDiff:
+			if block.Path != "" {
+				lines = append(lines, "diff: "+block.Path)
+			}
+		case agent.StreamBlockTerminal:
+			if block.TerminalID != "" {
+				lines = append(lines, "terminal: "+block.TerminalID)
+			}
+		case agent.StreamBlockImage:
+			label := firstNonEmpty(block.MimeType, block.URI, "image")
+			lines = append(lines, "image: "+label)
+		case agent.StreamBlockResource:
+			label := firstNonEmpty(block.Name, block.URI, "resource")
+			lines = append(lines, "resource: "+label)
+		}
+	}
+	return lines
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
+}
+
 func renderAgentHeader(view LiveRunView, width int) string {
 	left := styleLime.Bold(true).Render("ROUNDFIX") + styleMuted.Render(" // ACP COCKPIT")
 	right := styleBright.Render("RUN 0/1")
@@ -250,18 +308,23 @@ func renderPipelineBar(view LiveRunView, width int) string {
 func renderAgentSidebar(view LiveRunView, startedAt time.Time, width int, height int) string {
 	lines := []string{}
 	elapsed := time.Since(startedAt).Truncate(time.Second)
-	lines = append(lines, styleLime.Render("[ : batch_001")+padRightDisplay("", max(width-22, 0))+styleLime.Render(elapsed.String()))
-	files := countIssueFiles(view.Issues)
-	lines = append(lines, styleMuted.Render(fmt.Sprintf("  RUNNING · FILES %d · ISSUES %d", files, len(view.Issues))))
-	lines = append(lines, "")
-	for _, group := range GroupIssuesByRound(view.Issues) {
-		lines = append(lines, styleSection.Render(fmt.Sprintf("ROUND %03d", group.Round)))
-		for _, issue := range group.Issues {
-			lines = append(lines, issueLine(issue, width-4))
-			if title := strings.TrimSpace(issue.Title); title != "" {
-				lines = append(lines, "  "+styleMuted.Render(truncateDisplay(title, width-6)))
-			}
+	label := "run"
+	if view.BatchNumber > 0 {
+		label = fmt.Sprintf("batch_%03d", view.BatchNumber)
+		if view.BatchTotal > 0 {
+			label = fmt.Sprintf("batch_%03d/%03d", view.BatchNumber, view.BatchTotal)
 		}
+	}
+	lines = append(lines, styleLime.Render("[ : "+label)+padRightDisplay("", max(width-displayWidth(label)-11, 0))+styleLime.Render(elapsed.String()))
+	files := countIssueFiles(view.Issues)
+	issueCount := len(view.Issues)
+	if view.TotalIssues > 0 {
+		issueCount = view.TotalIssues
+	}
+	lines = append(lines, styleMuted.Render(fmt.Sprintf("  RUNNING · FILES %d · ISSUES %d", files, issueCount)))
+	lines = append(lines, "")
+	for index, issue := range view.Issues {
+		lines = append(lines, issueJobLines(issue, index+1, view.BatchNumber == index+1, elapsed, width-4)...)
 	}
 	if len(view.Issues) == 0 {
 		lines = append(lines, styleMuted.Render("No Review Issues"))
@@ -290,13 +353,41 @@ func renderAgentFooter(width int) string {
 	return styleFooter.Render(padRightDisplay(text, width))
 }
 
-func issueLine(issue rounds.Issue, width int) string {
-	location := emptyDash(issue.File)
-	if issue.Line > 0 {
-		location = fmt.Sprintf("%s:%d", location, issue.Line)
+func issueJobLines(issue rounds.Issue, fallbackNumber int, active bool, elapsed time.Duration, width int) []string {
+	name := issueDisplayName(issue, fallbackNumber)
+	severity := emptyDash(issue.Severity)
+	status := strings.ToUpper(emptyDash(issue.Status))
+	duration := "--"
+	if active {
+		duration = elapsed.String()
+		if status == strings.ToUpper(rounds.StatusPending) {
+			status = "RUNNING"
+		}
 	}
-	line := fmt.Sprintf("%-7s %-9s %s", emptyDash(issue.Severity), emptyDash(issue.Status), location)
-	return truncateDisplay(line, width)
+	label := fmt.Sprintf("%s • %s", name, severity)
+	if active {
+		label = styleLime.Render("▌ ") + truncateDisplay(label, width-2)
+	} else {
+		label = "  " + truncateDisplay(label, width-2)
+	}
+	return []string{
+		label,
+		styleMuted.Render(truncateDisplay("  "+fmt.Sprintf("%s • %s", status, duration), width)),
+	}
+}
+
+func issueDisplayName(issue rounds.Issue, fallbackNumber int) string {
+	base := filepath.Base(issue.Path)
+	if strings.HasPrefix(base, "issue_") && strings.HasSuffix(base, ".md") {
+		number := strings.TrimSuffix(strings.TrimPrefix(base, "issue_"), ".md")
+		if number != "" {
+			return "Issue " + number
+		}
+	}
+	if fallbackNumber > 0 {
+		return fmt.Sprintf("Issue %03d", fallbackNumber)
+	}
+	return "Issue"
 }
 
 func colorTimelineLines(lines []string, width int) []string {
@@ -404,7 +495,6 @@ var (
 	styleLime         = lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
 	styleBright       = lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
 	styleMuted        = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
-	styleSection      = lipgloss.NewStyle().Foreground(lipgloss.Color("70")).Bold(true)
 	styleTool         = lipgloss.NewStyle().Foreground(lipgloss.Color("48"))
 	styleBar          = lipgloss.NewStyle().Foreground(lipgloss.Color("250")).Background(lipgloss.Color("238"))
 	styleFooter       = lipgloss.NewStyle().Foreground(lipgloss.Color("248")).Background(lipgloss.Color("234"))

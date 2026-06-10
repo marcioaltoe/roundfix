@@ -794,7 +794,7 @@ func TestRunResolveVerificationFailureDoesNotCommit(t *testing.T) {
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
 }
 
-func TestRunResolveCommitsSuccessfulBatchWithRemainingUnresolved(t *testing.T) {
+func TestRunResolveProcessesAllBatchesBeforeFinalPush(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	verifier := &fakeVerifier{}
@@ -846,26 +846,35 @@ resolve:
 	if stdout.Len() != 0 {
 		t.Fatalf("expected no stdout, got %q", stdout.String())
 	}
-	if verifier.calls != 1 {
-		t.Fatalf("expected one verification call, got %d", verifier.calls)
+	if verifier.calls != 2 {
+		t.Fatalf("expected one verification call per Batch, got %d", verifier.calls)
 	}
-	if committer.calls != 1 {
-		t.Fatalf("expected one Batch commit, got %d", committer.calls)
+	if committer.calls != 2 {
+		t.Fatalf("expected one commit per Batch, got %d", committer.calls)
 	}
-	if sourceResolver.calls != 1 {
-		t.Fatalf("expected one Review Source resolution call, got %d", sourceResolver.calls)
+	if sourceResolver.calls != 2 {
+		t.Fatalf("expected one Review Source resolution call per Batch, got %d", sourceResolver.calls)
 	}
 	if got := len(sourceResolver.requests[0].Issues); got != 1 {
-		t.Fatalf("expected only assigned Batch issue to be source-resolved, got %d", got)
+		t.Fatalf("expected first Batch source resolution to include one issue, got %d", got)
 	}
-	if pusher.calls != 0 {
-		t.Fatalf("expected no Final Push while Unresolved Review Issues remain, got %d", pusher.calls)
+	if got := len(sourceResolver.requests[1].Issues); got != 1 {
+		t.Fatalf("expected second Batch source resolution to include one issue, got %d", got)
+	}
+	if pusher.calls != 1 {
+		t.Fatalf("expected Final Push after all Batches complete, got %d", pusher.calls)
 	}
 	if committer.messages[0] != daemon.BatchCommitMessage(1) {
 		t.Fatalf("expected Batch commit message %q, got %q", daemon.BatchCommitMessage(1), committer.messages[0])
 	}
+	if committer.messages[1] != daemon.BatchCommitMessage(2) {
+		t.Fatalf("expected Batch commit message %q, got %q", daemon.BatchCommitMessage(2), committer.messages[1])
+	}
 	if !strings.Contains(stderr.String(), "assigned 2 newest occurrence(s) into 2 Batch(es)") {
 		t.Fatalf("expected two planned Batches, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "Batch: 001/002") || !strings.Contains(stderr.String(), "Batch: 002/002") {
+		t.Fatalf("expected both Batch progress lines, got %q", stderr.String())
 	}
 	first, err := rounds.ParseIssue(result.IssuePaths[0])
 	if err != nil {
@@ -878,11 +887,14 @@ resolve:
 	if first.Status != rounds.StatusResolved {
 		t.Fatalf("expected first Batch issue resolved, got %q", first.Status)
 	}
-	if second.Status != rounds.StatusPending {
-		t.Fatalf("expected second Batch issue to remain unresolved, got %q", second.Status)
+	if second.Status != rounds.StatusResolved {
+		t.Fatalf("expected second Batch issue resolved, got %q", second.Status)
 	}
-	if !strings.Contains(stderr.String(), "Final Push blocked: 1 Unresolved Review Issue") {
-		t.Fatalf("expected Final Push blocked output, got %q", stderr.String())
+	if strings.Contains(stderr.String(), "Final Push blocked") {
+		t.Fatalf("did not expect Final Push blocked after all Batches complete, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "Final Push completed: git push origin HEAD:feature/review") {
+		t.Fatalf("expected Final Push output, got %q", stderr.String())
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
@@ -1037,6 +1049,73 @@ func TestRunResolveAgentFailureMarksBatchFailed(t *testing.T) {
 	}
 	if issue.Status != rounds.StatusFailed {
 		t.Fatalf("expected failed issue status, got %q", issue.Status)
+	}
+	assertRunCount(t, store.DatabasePath(homeDir), 1)
+	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
+}
+
+func TestRunResolveAgentFailureStopsBeforeLaterBatches(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	runner := &fakeAgentRunner{runErr: errors.New("agent crashed")}
+	withAgentRunner(t, runner)
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
+resolve:
+  batch_size: 1
+`)
+	result := persistCLIReviewItems(t, repoDir, 1, "feature/review", []reviewsource.ReviewItem{
+		{
+			Title:                   "major: handle first issue",
+			File:                    "internal/first.go",
+			Line:                    12,
+			Severity:                "major",
+			Author:                  "coderabbitai[bot]",
+			Body:                    "First issue.",
+			SourceRef:               "thread:PRRT_first,comment:PRRC_first",
+			ReviewHash:              "review-hash-first",
+			SourceReviewID:          "9001",
+			SourceReviewSubmittedAt: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC),
+		},
+		{
+			Title:                   "major: handle second issue",
+			File:                    "internal/second.go",
+			Line:                    24,
+			Severity:                "major",
+			Author:                  "coderabbitai[bot]",
+			Body:                    "Second issue.",
+			SourceRef:               "thread:PRRT_second,comment:PRRC_second",
+			ReviewHash:              "review-hash-second",
+			SourceReviewID:          "9002",
+			SourceReviewSubmittedAt: time.Date(2026, 6, 9, 12, 1, 0, 0, time.UTC),
+		},
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != 1 {
+		t.Fatalf("expected Run failure exit 1, got %d", code)
+	}
+	if runner.calls != 1 {
+		t.Fatalf("expected only the failing Batch to run, got %d Agent calls", runner.calls)
+	}
+	first, err := rounds.ParseIssue(result.IssuePaths[0])
+	if err != nil {
+		t.Fatalf("parse first issue: %v", err)
+	}
+	second, err := rounds.ParseIssue(result.IssuePaths[1])
+	if err != nil {
+		t.Fatalf("parse second issue: %v", err)
+	}
+	if first.Status != rounds.StatusFailed {
+		t.Fatalf("expected first Batch issue failed, got %q", first.Status)
+	}
+	if second.Status != rounds.StatusPending {
+		t.Fatalf("expected later Batch issue to remain pending, got %q", second.Status)
+	}
+	if !strings.Contains(stderr.String(), "Resolve stopped after Batch 001/002 failed; 1 planned Review Issue(s) remain pending in 1 Batch(es).") {
+		t.Fatalf("expected pending Batch diagnostic, got %q", stderr.String())
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
@@ -1350,6 +1429,143 @@ func TestRunFetchRejectsDuplicateActiveRun(t *testing.T) {
 		t.Fatalf("expected existing run id in stderr, got %q", stderr.String())
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
+}
+
+func TestRunStopByRunIDMarksActiveRunStopped(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+
+	ctx := context.Background()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	active, err := runStore.CreateRun(ctx, store.CreateRunRequest{
+		Kind:           store.KindResolve,
+		HeadRepository: "owner/project",
+		HeadBranch:     "feature/review",
+		BaseRepository: "owner/project",
+		PRNumber:       "123",
+		GitRoot:        repoDir,
+		LocalBranch:    "feature/review",
+		HeadSHA:        "abc123",
+		ArtifactDir:    filepath.Join(repoDir, ".roundfix"),
+	})
+	if err != nil {
+		t.Fatalf("create active run: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close store: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"stop", active.ID}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected stop exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+	for _, expected := range []string{"Roundfix Run stopped", active.ID, "State: Stopped", "No repository side effects"} {
+		if !strings.Contains(stdout.String(), expected) {
+			t.Fatalf("expected stop output to contain %q, got %q", expected, stdout.String())
+		}
+	}
+	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
+}
+
+func TestRunStopByPullRequestStopsMatchingActiveRun(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withStopPullRequestResolver(t, preflight.PullRequest{
+		Number:         "123",
+		State:          "OPEN",
+		BaseRepository: "owner/project",
+		HeadRepository: "owner/project",
+		HeadBranch:     "feature/review",
+	})
+
+	ctx := context.Background()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	active, err := runStore.CreateRun(ctx, store.CreateRunRequest{
+		Kind:           store.KindWatch,
+		HeadRepository: "owner/project",
+		HeadBranch:     "feature/review",
+		BaseRepository: "owner/project",
+		PRNumber:       "123",
+		GitRoot:        repoDir,
+		LocalBranch:    "feature/review",
+		HeadSHA:        "abc123",
+		ArtifactDir:    filepath.Join(repoDir, ".roundfix"),
+	})
+	if err != nil {
+		t.Fatalf("create active run: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close store: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"stop", "--pr", "123"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected stop exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), active.ID) {
+		t.Fatalf("expected stopped run id in stdout, got %q", stdout.String())
+	}
+	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
+}
+
+func TestRunStopRejectsAlreadyTerminalRun(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+
+	ctx := context.Background()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	active, err := runStore.CreateRun(ctx, store.CreateRunRequest{
+		Kind:           store.KindResolve,
+		HeadRepository: "owner/project",
+		HeadBranch:     "feature/review",
+		BaseRepository: "owner/project",
+		PRNumber:       "123",
+		GitRoot:        repoDir,
+		LocalBranch:    "feature/review",
+		HeadSHA:        "abc123",
+		ArtifactDir:    filepath.Join(repoDir, ".roundfix"),
+	})
+	if err != nil {
+		t.Fatalf("create active run: %v", err)
+	}
+	if _, err := runStore.CompleteRun(ctx, active.ID, store.StateClean); err != nil {
+		t.Fatalf("complete run: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close store: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"stop", active.ID}, &stdout, &stderr)
+
+	if code != 2 {
+		t.Fatalf("expected stop validation exit 2, got %d", code)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout, got %q", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "already Clean") {
+		t.Fatalf("expected already terminal message, got %q", stderr.String())
+	}
 }
 
 func TestRunOperationalCommandReportsDirtyWorktreePreflight(t *testing.T) {
@@ -1676,6 +1892,17 @@ func withCurrentPullRequestSuggestion(t *testing.T, value string) {
 	})
 }
 
+func withStopPullRequestResolver(t *testing.T, result preflight.PullRequest) {
+	t.Helper()
+	old := resolvePullRequestForStop
+	resolvePullRequestForStop = func(context.Context, string, string) (preflight.PullRequest, error) {
+		return result, nil
+	}
+	t.Cleanup(func() {
+		resolvePullRequestForStop = old
+	})
+}
+
 func withChangedPaths(t *testing.T, changes []preflight.ChangedPath) {
 	t.Helper()
 	old := inspectChangedPaths
@@ -1917,6 +2144,7 @@ type fakeAgentRunner struct {
 	probeErr error
 	runErr   error
 	status   string
+	calls    int
 }
 
 func (runner *fakeAgentRunner) Probe(context.Context, agent.RuntimeSpec) error {
@@ -1924,6 +2152,7 @@ func (runner *fakeAgentRunner) Probe(context.Context, agent.RuntimeSpec) error {
 }
 
 func (runner *fakeAgentRunner) Run(_ context.Context, req agent.ExecuteRequest, stream io.Writer) (agent.ExecuteResult, error) {
+	runner.calls++
 	status := runner.status
 	if status == "" {
 		status = rounds.StatusResolved

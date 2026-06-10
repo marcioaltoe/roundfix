@@ -4,7 +4,9 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
+	"roundfix/internal/agent"
 	"roundfix/internal/rounds"
 )
 
@@ -160,5 +162,66 @@ func TestStreamBufferKeepsRecentConsoleOutput(t *testing.T) {
 	lines := buffer.Lines()
 	if got := strings.Join(lines, "|"); got != "second|third" {
 		t.Fatalf("expected bounded stream lines, got %q", got)
+	}
+}
+
+func TestAgentTextFromFormatRendersStructuredToolBlocks(t *testing.T) {
+	text := agentTextFromFormat(agent.StreamUpdate{
+		Kind:      agent.StreamUpdateToolUpdated,
+		Title:     "rtk make verify",
+		ToolID:    "call_123",
+		ToolState: "completed",
+		Blocks: []agent.StreamBlock{
+			{Kind: agent.StreamBlockText, Text: "completed"},
+			{Kind: agent.StreamBlockOutput, Text: `{"aggregated_output":"ok"}`},
+			{Kind: agent.StreamBlockDiff, Path: "apps/api/server.go"},
+			{Kind: agent.StreamBlockTerminal, TerminalID: "term_001"},
+		},
+	})
+
+	for _, expected := range []string{
+		"rtk make verify",
+		"completed",
+		`output: {"aggregated_output":"ok"}`,
+		"diff: apps/api/server.go",
+		"terminal: term_001",
+	} {
+		if !strings.Contains(text, expected) {
+			t.Fatalf("expected rendered Agent text to contain %q, got:\n%s", expected, text)
+		}
+	}
+}
+
+func TestRenderAgentSidebarShowsBatchProgressAndTotalIssues(t *testing.T) {
+	view := LiveRunView{
+		BatchNumber: 1,
+		BatchTotal:  3,
+		TotalIssues: 3,
+		Issues: []rounds.Issue{
+			{Path: "/repo/.roundfix/reviews/pr-20/round-001/issue_001.md", Round: 1, Title: "first", Severity: "minor", Status: rounds.StatusPending, File: "apps/api/test.ts", Line: 7},
+			{Path: "/repo/.roundfix/reviews/pr-20/round-001/issue_002.md", Round: 1, Title: "second", Severity: "major", Status: rounds.StatusPending, File: "docker-compose.yml", Line: 22},
+			{Path: "/repo/.roundfix/reviews/pr-20/round-001/issue_003.md", Round: 1, Title: "third", Severity: "major", Status: rounds.StatusFailed, File: "Makefile", Line: 52},
+		},
+	}
+
+	sidebar := stripANSI(renderAgentSidebar(view, time.Now().Add(-90*time.Second), 42, 14))
+	for _, expected := range []string{
+		"batch_001/003",
+		"FILES 3 · ISSUES 3",
+		"Issue 001 • minor",
+		"RUNNING •",
+		"Issue 002 • major",
+		"PENDING • --",
+		"Issue 003 • major",
+		"FAILED • --",
+	} {
+		if !strings.Contains(sidebar, expected) {
+			t.Fatalf("expected sidebar to contain %q, got:\n%s", expected, sidebar)
+		}
+	}
+	for _, hidden := range []string{"first", "apps/api/test.ts", "Makefile:52"} {
+		if strings.Contains(sidebar, hidden) {
+			t.Fatalf("expected sidebar to hide %q, got:\n%s", hidden, sidebar)
+		}
 	}
 }

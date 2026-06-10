@@ -180,6 +180,33 @@ func TestStoppedRunReleasesActiveLock(t *testing.T) {
 	}
 }
 
+func TestRunLooksUpExistingRunByID(t *testing.T) {
+	ctx := context.Background()
+	store := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, store)
+
+	created, err := store.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("expected Run creation, got %v", err)
+	}
+
+	found, ok, err := store.Run(ctx, created.ID)
+	if err != nil {
+		t.Fatalf("lookup Run: %v", err)
+	}
+	if !ok || found.ID != created.ID {
+		t.Fatalf("expected Run lookup for %s, ok=%v found=%#v", created.ID, ok, found)
+	}
+
+	_, ok, err = store.Run(ctx, "run_missing")
+	if err != nil {
+		t.Fatalf("lookup missing Run: %v", err)
+	}
+	if ok {
+		t.Fatal("expected missing Run lookup")
+	}
+}
+
 func TestCreateRunAllowsDifferentHeadBranch(t *testing.T) {
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())

@@ -380,12 +380,14 @@ func streamUpdateFromACP(update acp.SessionUpdate) StreamUpdate {
 	case update.AgentThoughtChunk != nil:
 		return StreamUpdate{Kind: StreamUpdateThought, Text: contentBlockText(update.AgentThoughtChunk.Content)}
 	case update.ToolCall != nil:
+		blocks := toolContentBlocks(update.ToolCall.Content, update.ToolCall.RawInput, update.ToolCall.RawOutput)
 		return StreamUpdate{
 			Kind:      StreamUpdateToolStarted,
 			Title:     update.ToolCall.Title,
 			ToolID:    string(update.ToolCall.ToolCallId),
 			ToolState: string(update.ToolCall.Status),
-			Text:      toolContentText(update.ToolCall.Content, update.ToolCall.RawInput, update.ToolCall.RawOutput),
+			Text:      streamBlockText(blocks),
+			Blocks:    blocks,
 		}
 	case update.ToolCallUpdate != nil:
 		title := ""
@@ -396,12 +398,14 @@ func streamUpdateFromACP(update acp.SessionUpdate) StreamUpdate {
 		if update.ToolCallUpdate.Status != nil {
 			state = string(*update.ToolCallUpdate.Status)
 		}
+		blocks := toolContentBlocks(update.ToolCallUpdate.Content, update.ToolCallUpdate.RawInput, update.ToolCallUpdate.RawOutput)
 		return StreamUpdate{
 			Kind:      StreamUpdateToolUpdated,
 			Title:     title,
 			ToolID:    string(update.ToolCallUpdate.ToolCallId),
 			ToolState: state,
-			Text:      toolContentText(update.ToolCallUpdate.Content, update.ToolCallUpdate.RawInput, update.ToolCallUpdate.RawOutput),
+			Text:      streamBlockText(blocks),
+			Blocks:    blocks,
 		}
 	case update.Plan != nil:
 		lines := make([]string, 0, len(update.Plan.Entries))
@@ -433,24 +437,81 @@ func contentBlockText(block acp.ContentBlock) string {
 }
 
 func toolContentText(content []acp.ToolCallContent, rawInput any, rawOutput any) string {
-	parts := []string{}
+	return streamBlockText(toolContentBlocks(content, rawInput, rawOutput))
+}
+
+func toolContentBlocks(content []acp.ToolCallContent, rawInput any, rawOutput any) []StreamBlock {
+	blocks := []StreamBlock{}
 	if rawInput != nil {
-		parts = append(parts, "input: "+marshalCompact(rawInput))
+		blocks = append(blocks, StreamBlock{Kind: StreamBlockInput, Text: marshalCompact(rawInput)})
 	}
 	for _, item := range content {
 		switch {
 		case item.Content != nil && item.Content.Content.Text != nil:
-			parts = append(parts, item.Content.Content.Text.Text)
+			blocks = append(blocks, StreamBlock{Kind: StreamBlockText, Text: item.Content.Content.Text.Text})
+		case item.Content != nil && item.Content.Content.Image != nil:
+			blocks = append(blocks, StreamBlock{
+				Kind:     StreamBlockImage,
+				MimeType: item.Content.Content.Image.MimeType,
+				URI:      stringValue(item.Content.Content.Image.Uri),
+			})
+		case item.Content != nil && item.Content.Content.ResourceLink != nil:
+			blocks = append(blocks, StreamBlock{
+				Kind:     StreamBlockResource,
+				Name:     item.Content.Content.ResourceLink.Name,
+				URI:      item.Content.Content.ResourceLink.Uri,
+				MimeType: stringValue(item.Content.Content.ResourceLink.MimeType),
+			})
 		case item.Diff != nil:
-			parts = append(parts, "diff: "+item.Diff.Path)
+			blocks = append(blocks, StreamBlock{Kind: StreamBlockDiff, Path: item.Diff.Path})
 		case item.Terminal != nil:
-			parts = append(parts, "terminal: "+item.Terminal.TerminalId)
+			blocks = append(blocks, StreamBlock{Kind: StreamBlockTerminal, TerminalID: item.Terminal.TerminalId})
 		}
 	}
 	if rawOutput != nil {
-		parts = append(parts, "output: "+marshalCompact(rawOutput))
+		blocks = append(blocks, StreamBlock{Kind: StreamBlockOutput, Text: marshalCompact(rawOutput)})
+	}
+	return blocks
+}
+
+func streamBlockText(blocks []StreamBlock) string {
+	parts := []string{}
+	for _, block := range blocks {
+		switch block.Kind {
+		case StreamBlockText:
+			if strings.TrimSpace(block.Text) != "" {
+				parts = append(parts, block.Text)
+			}
+		case StreamBlockInput:
+			if strings.TrimSpace(block.Text) != "" {
+				parts = append(parts, "input: "+block.Text)
+			}
+		case StreamBlockOutput:
+			if strings.TrimSpace(block.Text) != "" {
+				parts = append(parts, "output: "+block.Text)
+			}
+		case StreamBlockDiff:
+			if block.Path != "" {
+				parts = append(parts, "diff: "+block.Path)
+			}
+		case StreamBlockTerminal:
+			if block.TerminalID != "" {
+				parts = append(parts, "terminal: "+block.TerminalID)
+			}
+		case StreamBlockImage:
+			parts = append(parts, "image: "+firstNonEmpty(block.MimeType, block.URI, "image"))
+		case StreamBlockResource:
+			parts = append(parts, "resource: "+firstNonEmpty(block.Name, block.URI, "resource"))
+		}
 	}
 	return strings.Join(parts, "\n")
+}
+
+func stringValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }
 
 func marshalCompact(value any) string {

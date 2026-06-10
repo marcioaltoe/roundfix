@@ -53,6 +53,9 @@ type LiveRunView struct {
 	AutoCommit    bool
 	AutoPush      bool
 	LastPush      string
+	BatchNumber   int
+	BatchTotal    int
+	TotalIssues   int
 	Issues        []rounds.Issue
 	Console       []string
 	Width         int

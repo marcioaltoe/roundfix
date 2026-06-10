@@ -243,6 +243,21 @@ func (store *Store) ActiveRun(ctx context.Context, headRepository string, headBr
 	return selectActiveRun(ctx, store.db, headRepository, headBranch)
 }
 
+func (store *Store) Run(ctx context.Context, runID string) (Run, bool, error) {
+	runID = strings.TrimSpace(runID)
+	if runID == "" {
+		return Run{}, false, errors.New("Run ID is required")
+	}
+	run, err := selectRun(ctx, store.db, runID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return Run{}, false, nil
+		}
+		return Run{}, false, err
+	}
+	return run, true, nil
+}
+
 func (store *Store) RunCount(ctx context.Context) (int, error) {
 	var count int
 	if err := store.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM runs`).Scan(&count); err != nil {
