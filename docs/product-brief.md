@@ -136,6 +136,7 @@ internal/watch/               # Durable review loop state machine
 internal/reviewsource/        # Review Source interface
 internal/reviewsource/coderabbit/ # CodeRabbit implementation
 internal/agent/               # Agent runtimes: codex, claude, opencode
+internal/runevent/            # Run Event type, sink seam, and fanout
 internal/rounds/              # Markdown issue artifacts and frontmatter
 internal/store/               # Global SQLite Run Database
 internal/config/              # User and project config loading and validation
@@ -538,6 +539,18 @@ When multiple unresolved Review Issues share the same Review Issue Fingerprint a
 
 After the assigned newest occurrence reaches `resolved` or `invalid`, the daemon marks older duplicate occurrences as `duplicated` and sets `duplicate_of` to the newest occurrence. The Agent must not mark issues as `duplicated`.
 
+## Run Events
+
+Roundfix records Run activity as Run Events so the Run Database can answer what happened, in what order, for which Run, Batch, Review Issue, and tool call.
+
+- Every meaningful Run occurrence becomes a Run Event: Run state transitions, daemon decisions, Agent stream output, verification milestones, commit and Final Push decisions, Review Source resolution, Stop Requests, and terminal outcomes.
+- Run Events live in the Run Event Journal inside the Run Database, ordered by a per-Run monotonic cursor that readers treat as an opaque replay position.
+- Producers publish Run Events through one sink seam owned by `internal/runevent`. The Agent log, the Run Event Journal, and the Live Run View are sink adapters; producers never know which adapters are attached.
+- The journal sink is critical: once a Run has started, a journal append failure fails the Run. Live Run View and log sinks are best-effort and must never block or fail producers.
+- Agent Run Event payloads store the raw ACP session update JSON (ADR 0008). Readers skip unknown event kinds instead of failing, so journals stay readable across ACP Runtime versions.
+- The Live Run View renders live Run Events and replayed Run Events through the same timeline renderer, so Attach shows the same cockpit as a live Run.
+- Attach is non-mutating: it replays the Run Event Journal and follows new Run Events. Detach leaves the Run active. Stop Request remains the only way to end an Active Run.
+
 ## Child Agent Contract
 
 The child agent receives a strict prompt and a bounded list of issue files.
@@ -609,8 +622,9 @@ Requirements:
 - If the selected Agent command fails to probe or start, show the concrete command, error, and install/authentication hint, then stop.
 - Let the user choose another Agent explicitly if they want to retry with a different local setup.
 - Drive Codex, Claude, and OpenCode through their ACP stdio protocol, not by streaming Markdown prompts directly into a JSON-RPC server.
-- Convert ACP session updates into a bounded local stream for the Agent log and Live Run View.
-- Support headless streaming logs.
+- Publish ACP session updates as Run Events through one event sink boundary that feeds the Agent log, the Run Event Journal, and the Live Run View.
+- Keep the raw ACP session update JSON as the durable Run Event payload; bounded text summaries serve list rendering.
+- Support headless streaming logs through a writer sink adapter, not a separate output path inside the runner.
 - Persist agent output per run.
 - Treat reviewer text as untrusted input.
 

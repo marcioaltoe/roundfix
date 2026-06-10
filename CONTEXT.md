@@ -137,12 +137,24 @@ The TUI flow that collects command parameters before a Run starts.
 _Avoid_: Wizard, form, setup screen
 
 **Live Run View**:
-The TUI view that shows Review Issues and streaming Agent output while a Run is active.
+The TUI view that shows Review Issues and Run Events for a Run: streaming live while the Run is active, or replayed from the Run Event Journal during Attach.
 _Avoid_: Dashboard, report, log file
 
 **Daemon**:
 The Roundfix process that owns the Run lifecycle and Review Source-facing outcomes.
 _Avoid_: Orchestrator, controller, manager
+
+**Run Event**:
+One ordered product record of something meaningful that happened during a Run, carrying Run identity, Batch when known, event source, event kind, and a structured payload. Producers convert their native models into Run Events; ACP stream updates remain an Agent-internal protocol model.
+_Avoid_: Stream update, log line, message
+
+**Run Event Journal**:
+The append-only history of Run Events stored in the Run Database, ordered by a per-Run cursor so replay is deterministic and duplicate-free.
+_Avoid_: Agent log, log file, event broker
+
+**Attach**:
+Viewing a Run by replaying its Run Event Journal and then following new Run Events, without owning, mutating, or stopping the Run.
+_Avoid_: Resume, reconnect, takeover
 
 **Agent**:
 The local coding assistant invoked by Roundfix to triage and resolve an assigned Batch.
