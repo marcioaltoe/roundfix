@@ -3,6 +3,9 @@ package preflight
 import (
 	"context"
 	"errors"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -353,4 +356,92 @@ func gitKey(args ...string) string {
 
 func ghKey(args ...string) string {
 	return strings.Join(args, "\x00")
+}
+
+func TestExecGitRunnerParsesStdoutSeparatelyFromStderr(t *testing.T) {
+	repo := initGitRepoForTest(t)
+	runner := ExecGitRunner{}
+
+	if _, err := runner.RunGit(context.Background(), repo, "checkout", "-b", "feature/noise"); err != nil {
+		t.Fatalf("create branch: %v", err)
+	}
+	// git checkout reports the branch switch on stderr; parsed output must stay empty.
+	output, err := runner.RunGit(context.Background(), repo, "checkout", "main")
+	if err != nil {
+		t.Fatalf("checkout main: %v", err)
+	}
+	if output != "" {
+		t.Fatalf("expected stderr kept out of parsed output, got %q", output)
+	}
+}
+
+func TestExecGitRunnerReportsStderrDetailOnFailure(t *testing.T) {
+	repo := initGitRepoForTest(t)
+
+	_, err := ExecGitRunner{}.RunGit(context.Background(), repo, "checkout", "missing-branch")
+
+	if err == nil {
+		t.Fatal("expected checkout of missing branch to fail")
+	}
+	if !strings.Contains(err.Error(), "missing-branch") {
+		t.Fatalf("expected stderr detail in error, got %v", err)
+	}
+}
+
+func TestExecGitRunnerDisablesFSMonitorPerInvocation(t *testing.T) {
+	repo := initGitRepoForTest(t)
+	runGitForSetup(t, repo, "config", "core.fsmonitor", "true")
+
+	value, err := ExecGitRunner{}.RunGit(context.Background(), repo, "config", "core.fsmonitor")
+
+	if err != nil {
+		t.Fatalf("read effective fsmonitor config: %v", err)
+	}
+	if value != "false" {
+		t.Fatalf("expected per-invocation fsmonitor override to win, got %q", value)
+	}
+}
+
+func TestExecGitRunnerStatusDetectionSurvivesFSMonitorNoise(t *testing.T) {
+	repo := initGitRepoForTest(t)
+	hook := filepath.Join(repo, ".git", "noisy-fsmonitor.sh")
+	script := "#!/bin/sh\necho 'fsmonitor_ipc__send_query: noise' >&2\nexit 1\n"
+	if err := os.WriteFile(hook, []byte(script), 0o755); err != nil {
+		t.Fatalf("write noisy fsmonitor hook: %v", err)
+	}
+	runGitForSetup(t, repo, "config", "core.fsmonitor", hook)
+	if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("changed\n"), 0o644); err != nil {
+		t.Fatalf("dirty worktree: %v", err)
+	}
+
+	status, err := ExecGitRunner{}.RunGit(context.Background(), repo, "status", "--porcelain=v1", "-z")
+
+	if err != nil {
+		t.Fatalf("read status: %v", err)
+	}
+	if status != " M a.txt\x00" {
+		t.Fatalf("expected exact porcelain record despite fsmonitor noise, got %q", status)
+	}
+}
+
+func initGitRepoForTest(t *testing.T) string {
+	t.Helper()
+	repo := t.TempDir()
+	runGitForSetup(t, repo, "init", "-b", "main")
+	runGitForSetup(t, repo, "config", "user.name", "Roundfix Test")
+	runGitForSetup(t, repo, "config", "user.email", "test@example.com")
+	if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("initial\n"), 0o644); err != nil {
+		t.Fatalf("write seed file: %v", err)
+	}
+	runGitForSetup(t, repo, "add", "a.txt")
+	runGitForSetup(t, repo, "commit", "-m", "initial")
+	return repo
+}
+
+func runGitForSetup(t *testing.T, workDir string, args ...string) {
+	t.Helper()
+	cmd := exec.Command("git", append([]string{"-C", workDir}, args...)...)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, output)
+	}
 }

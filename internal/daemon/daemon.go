@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -129,11 +130,19 @@ func gitExcludePathspecs(workDir string, paths []string) []string {
 }
 
 func runGit(ctx context.Context, workDir string, args ...string) error {
-	cmdArgs := append([]string{"-C", workDir}, args...)
+	// fsmonitor is disabled per invocation so daemon warnings such as
+	// fsmonitor_ipc__send_query never reach parsed output.
+	cmdArgs := append([]string{"-C", workDir, "-c", "core.fsmonitor=false"}, args...)
 	cmd := exec.CommandContext(ctx, "git", cmdArgs...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("git %s failed: %w%s", strings.Join(args, " "), err, formatCommandOutput(output))
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		detail := formatCommandOutput(stderr.Bytes())
+		if detail == "" {
+			detail = formatCommandOutput(stdout.Bytes())
+		}
+		return fmt.Errorf("git %s failed: %w%s", strings.Join(args, " "), err, detail)
 	}
 	return nil
 }

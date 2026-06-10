@@ -1,6 +1,7 @@
 package preflight
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -91,12 +92,20 @@ func (runner ExecGitRunner) RunGit(ctx context.Context, workDir string, args ...
 	if workDir == "" {
 		workDir = "."
 	}
-	gitArgs := append([]string{"-C", workDir}, args...)
+	// fsmonitor is disabled per invocation so daemon warnings such as
+	// fsmonitor_ipc__send_query never reach parsed output.
+	gitArgs := append([]string{"-C", workDir, "-c", "core.fsmonitor=false"}, args...)
 	cmd := exec.CommandContext(ctx, "git", gitArgs...)
-	output, err := cmd.CombinedOutput()
-	text := strings.TrimRight(string(output), "\n")
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	text := strings.TrimRight(stdout.String(), "\n")
 	if err != nil {
-		detail := strings.TrimSpace(text)
+		detail := strings.TrimSpace(stderr.String())
+		if detail == "" {
+			detail = strings.TrimSpace(text)
+		}
 		if detail == "" {
 			detail = err.Error()
 		}
