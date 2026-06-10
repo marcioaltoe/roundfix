@@ -5,9 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -2575,4 +2577,280 @@ func TestAttachSkipsUnknownEventKindsOnReplay(t *testing.T) {
 	if !strings.Contains(stdout.String(), "fake agent output") {
 		t.Fatalf("expected known events still replayed, got %q", stdout.String())
 	}
+}
+
+type fakeAttachSource struct {
+	mu          sync.Mutex
+	run         store.Run
+	events      []store.JournalEvent
+	version     int64
+	eventReads  int
+	versionRead int
+}
+
+func (source *fakeAttachSource) Run(context.Context, string) (store.Run, bool, error) {
+	source.mu.Lock()
+	defer source.mu.Unlock()
+	return source.run, true, nil
+}
+
+func (source *fakeAttachSource) RunEventsAfter(_ context.Context, _ string, cursor int64, limit int) ([]store.JournalEvent, error) {
+	source.mu.Lock()
+	defer source.mu.Unlock()
+	source.eventReads++
+	page := []store.JournalEvent{}
+	for _, entry := range source.events {
+		if entry.Cursor > cursor && len(page) < limit {
+			page = append(page, entry)
+		}
+	}
+	return page, nil
+}
+
+func (source *fakeAttachSource) DataVersion(context.Context) (int64, error) {
+	source.mu.Lock()
+	defer source.mu.Unlock()
+	source.versionRead++
+	return source.version, nil
+}
+
+func (source *fakeAttachSource) appendEvent(summary string) {
+	source.mu.Lock()
+	defer source.mu.Unlock()
+	cursor := int64(len(source.events) + 1)
+	source.events = append(source.events, store.JournalEvent{
+		Cursor: cursor,
+		Event: runevent.RunEvent{
+			RunID:   source.run.ID,
+			Source:  runevent.SourceAgent,
+			Kind:    runevent.KindAgentRaw,
+			Summary: summary,
+			Payload: []byte(`{"text":` + strconv.Quote(summary) + `}`),
+		},
+	})
+	source.version++
+}
+
+func (source *fakeAttachSource) complete(state string) {
+	source.mu.Lock()
+	defer source.mu.Unlock()
+	source.run.State = state
+	source.version++
+}
+
+func TestAttachFollowerAppendsOnlyNewerEventsWithoutDuplicates(t *testing.T) {
+	source := &fakeAttachSource{run: store.Run{ID: "run-1", State: store.StateActive}, version: 1}
+	source.appendEvent("backlog one\n")
+	source.appendEvent("backlog two\n")
+	accepted := []string{}
+	steps := 0
+	follower := attachFollower{
+		source: source,
+		sleep: func(context.Context) error {
+			steps++
+			switch steps {
+			case 1:
+				source.appendEvent("live three\n")
+			case 2:
+				source.complete(store.StateClean)
+			}
+			return nil
+		},
+		accept: func(entry store.JournalEvent) {
+			accepted = append(accepted, entry.Event.Summary)
+		},
+	}
+
+	final, cursor, err := follower.follow(context.Background(), "run-1", 2)
+
+	if err != nil {
+		t.Fatalf("follow: %v", err)
+	}
+	if final.State != store.StateClean {
+		t.Fatalf("expected terminal run returned, got %+v", final)
+	}
+	if strings.Join(accepted, "") != "live three\n" {
+		t.Fatalf("expected only events newer than the replay cursor, got %v", accepted)
+	}
+	if cursor != 3 {
+		t.Fatalf("expected cursor advanced to 3, got %d", cursor)
+	}
+
+	// Reconnect from the returned cursor: nothing replays twice.
+	reaccepted := []string{}
+	again := attachFollower{
+		source: source,
+		sleep:  func(context.Context) error { return nil },
+		accept: func(entry store.JournalEvent) {
+			reaccepted = append(reaccepted, entry.Event.Summary)
+		},
+	}
+	if _, _, err := again.follow(context.Background(), "run-1", cursor); err != nil {
+		t.Fatalf("reconnect follow: %v", err)
+	}
+	if len(reaccepted) != 0 {
+		t.Fatalf("expected no duplicates across reconnects, got %v", reaccepted)
+	}
+}
+
+func TestAttachFollowerIdlePollsReadNoEventRows(t *testing.T) {
+	source := &fakeAttachSource{run: store.Run{ID: "run-1", State: store.StateActive}, version: 7}
+	steps := 0
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	follower := attachFollower{
+		source: source,
+		sleep: func(context.Context) error {
+			steps++
+			if steps >= 5 {
+				cancel()
+			}
+			return ctx.Err()
+		},
+		accept: func(store.JournalEvent) {},
+	}
+
+	_, _, err := follower.follow(ctx, "run-1", 0)
+
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected detach via cancellation, got %v", err)
+	}
+	if source.eventReads != 1 {
+		t.Fatalf("expected only the initial drain to read rows; idle polls must not, got %d reads", source.eventReads)
+	}
+	if source.versionRead < 5 {
+		t.Fatalf("expected change-detection polls to continue, got %d", source.versionRead)
+	}
+}
+
+func TestAttachDetachLeavesRunActive(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	runResolveForAttachTest(t, repoDir)
+	writer, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open writer: %v", err)
+	}
+	active, err := writer.CreateRun(context.Background(), store.CreateRunRequest{
+		Kind:           store.KindResolve,
+		HeadRepository: "owner/project",
+		HeadBranch:     "feature/other",
+		BaseRepository: "owner/project",
+		PRNumber:       "456",
+		GitRoot:        repoDir,
+		LocalBranch:    "feature/other",
+		HeadSHA:        "def456",
+		ArtifactDir:    filepath.Join(repoDir, ".roundfix"),
+	})
+	if err != nil {
+		t.Fatalf("create active run: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("close writer: %v", err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	// Detach on the first follow poll, after backlog replay.
+	withAttachSleep(t, func(sleepCtx context.Context) error {
+		cancel()
+		return sleepCtx.Err()
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(ctx, []string{"attach", active.ID}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean detach exit, got %d stderr=%q", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Following live events.") {
+		t.Fatalf("expected live-follow status visible, got %q", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "Detached; Run "+active.ID+" keeps going.") {
+		t.Fatalf("expected detach message, got %q", stdout.String())
+	}
+	reader, err := store.OpenReader(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open reader: %v", err)
+	}
+	defer func() { _ = reader.Close() }()
+	after, found, err := reader.Run(context.Background(), active.ID)
+	if err != nil || !found {
+		t.Fatalf("lookup run after detach: found=%v err=%v", found, err)
+	}
+	if store.IsTerminalState(after.State) {
+		t.Fatalf("expected detach to leave the Run active, got %q", after.State)
+	}
+}
+
+func TestAttachFollowsLiveRunToTerminalState(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	runResolveForAttachTest(t, repoDir)
+	writer, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open writer: %v", err)
+	}
+	t.Cleanup(func() { _ = writer.Close() })
+	active, err := writer.CreateRun(context.Background(), store.CreateRunRequest{
+		Kind:           store.KindResolve,
+		HeadRepository: "owner/project",
+		HeadBranch:     "feature/other",
+		BaseRepository: "owner/project",
+		PRNumber:       "456",
+		GitRoot:        repoDir,
+		LocalBranch:    "feature/other",
+		HeadSHA:        "def456",
+		ArtifactDir:    filepath.Join(repoDir, ".roundfix"),
+	})
+	if err != nil {
+		t.Fatalf("create active run: %v", err)
+	}
+	withAttachSleep(t, func(ctx context.Context) error { return ctx.Err() })
+
+	writerDone := make(chan error, 1)
+	go func() {
+		for index := 0; index < 5; index++ {
+			if _, err := writer.AppendRunEvent(context.Background(), runevent.RunEvent{
+				RunID:   active.ID,
+				Source:  runevent.SourceAgent,
+				Kind:    runevent.KindAgentRaw,
+				Summary: fmt.Sprintf("live line %d\n", index),
+				Payload: []byte(fmt.Sprintf(`{"text":"live line %d\n"}`, index)),
+			}); err != nil {
+				writerDone <- err
+				return
+			}
+		}
+		_, err := writer.CompleteRun(context.Background(), active.ID, store.StateStopped)
+		writerDone <- err
+	}()
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := RunContext(context.Background(), []string{"attach", active.ID}, &stdout, &stderr)
+
+	if err := <-writerDone; err != nil {
+		t.Fatalf("writer goroutine: %v", err)
+	}
+	if code != 0 {
+		t.Fatalf("expected clean follow exit, got %d stderr=%q", code, stderr.String())
+	}
+	output := stdout.String()
+	for index := 0; index < 5; index++ {
+		needle := fmt.Sprintf("live line %d", index)
+		if count := strings.Count(output, needle); count != 1 {
+			t.Fatalf("expected %q exactly once, got %d in:\n%s", needle, count, output)
+		}
+	}
+	if !strings.Contains(output, "Run "+active.ID+" reached Stopped.") {
+		t.Fatalf("expected terminal follow exit message, got %q", output)
+	}
+}
+
+func withAttachSleep(t *testing.T, sleep func(ctx context.Context) error) {
+	t.Helper()
+	old := attachSleep
+	attachSleep = sleep
+	t.Cleanup(func() {
+		attachSleep = old
+	})
 }

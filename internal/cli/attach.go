@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/rounds"
@@ -62,7 +63,8 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 
 	timeline := roundtui.NewRunTimeline(attachTimelineLines)
-	if _, err := replayRunEvents(ctx, reader, run.ID, 0, timeline); err != nil {
+	cursor, err := replayRunEvents(ctx, reader, run.ID, 0, timeline)
+	if err != nil {
 		printAttachFailure(err, stderr)
 		return exitPreflight
 	}
@@ -71,9 +73,30 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	fmt.Fprint(stdout, roundtui.RenderLiveRunView(view))
 	if store.IsTerminalState(run.State) {
 		fmt.Fprintf(stdout, "Run %s reached %s; timeline replayed read-only.\n", run.ID, run.State)
-	} else {
-		fmt.Fprintf(stdout, "Run %s is %s; timeline replayed read-only. Detaching never stops the Run.\n", run.ID, run.State)
+		return exitOK
 	}
+
+	fmt.Fprintf(stdout, "Replayed backlog through cursor %d; Run %s is %s.\n", cursor, run.ID, run.State)
+	fmt.Fprintln(stdout, "Following live events. Detach with Ctrl-C; detaching never stops the Run.")
+	follower := attachFollower{
+		source: reader,
+		sleep:  attachSleep,
+		accept: func(entry store.JournalEvent) {
+			if text := timeline.Append(entry.Event); text != "" {
+				fmt.Fprint(stdout, text)
+			}
+		},
+	}
+	final, _, err := follower.follow(ctx, run.ID, cursor)
+	if err != nil {
+		if isStopRequest(ctx, err) {
+			fmt.Fprintf(stdout, "Detached; Run %s keeps going.\n", run.ID)
+			return exitOK
+		}
+		printAttachFailure(err, stderr)
+		return exitRunFailed
+	}
+	fmt.Fprintf(stdout, "Run %s reached %s.\n", final.ID, final.State)
 	return exitOK
 }
 
@@ -153,4 +176,94 @@ func attachRunView(run store.Run, issues []rounds.Issue, console []string) round
 
 func printAttachFailure(err error, stderr io.Writer) {
 	fmt.Fprintf(stderr, "roundfix attach failed: %v\n", err)
+}
+
+// attachPollInterval paces follow-mode polls between change checks.
+const attachPollInterval = 250 * time.Millisecond
+
+// attachSleep is the follow-mode pacing seam; tests inject an immediate
+// sleeper so polling behavior is provable without real waits.
+var attachSleep = defaultAttachSleep
+
+func defaultAttachSleep(ctx context.Context) error {
+	timer := time.NewTimer(attachPollInterval)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+// attachEventSource is the read-only journal surface follow mode needs.
+// *store.Store satisfies it.
+type attachEventSource interface {
+	Run(ctx context.Context, runID string) (store.Run, bool, error)
+	RunEventsAfter(ctx context.Context, runID string, cursor int64, limit int) ([]store.JournalEvent, error)
+	DataVersion(ctx context.Context) (int64, error)
+}
+
+// attachFollower follows newly appended Run Events for an Active Run.
+// Polls use the journal's data-version change signal so idle polls read no
+// rows, and every read is a short autocommit query on the read-only
+// connection. The cursor advances only after an event is accepted, so
+// reconnects never duplicate output.
+type attachFollower struct {
+	source attachEventSource
+	sleep  func(ctx context.Context) error
+	accept func(entry store.JournalEvent)
+}
+
+// follow returns the terminal Run and the final cursor when the Run ends,
+// or the context error when the user detaches. Detaching never mutates or
+// stops the Run.
+func (follower attachFollower) follow(ctx context.Context, runID string, cursor int64) (store.Run, int64, error) {
+	lastVersion := int64(-1)
+	for {
+		version, err := follower.source.DataVersion(ctx)
+		if err != nil {
+			return store.Run{}, cursor, err
+		}
+		if version != lastVersion {
+			lastVersion = version
+			cursor, err = follower.drain(ctx, runID, cursor)
+			if err != nil {
+				return store.Run{}, cursor, err
+			}
+			run, found, err := follower.source.Run(ctx, runID)
+			if err != nil {
+				return store.Run{}, cursor, err
+			}
+			if !found {
+				return store.Run{}, cursor, fmt.Errorf("Run %q disappeared while following", runID)
+			}
+			if store.IsTerminalState(run.State) {
+				cursor, err = follower.drain(ctx, runID, cursor)
+				if err != nil {
+					return store.Run{}, cursor, err
+				}
+				return run, cursor, nil
+			}
+		}
+		if err := follower.sleep(ctx); err != nil {
+			return store.Run{}, cursor, err
+		}
+	}
+}
+
+func (follower attachFollower) drain(ctx context.Context, runID string, cursor int64) (int64, error) {
+	for {
+		page, err := follower.source.RunEventsAfter(ctx, runID, cursor, attachReplayPageSize)
+		if err != nil {
+			return cursor, err
+		}
+		for _, entry := range page {
+			follower.accept(entry)
+			cursor = entry.Cursor
+		}
+		if len(page) < attachReplayPageSize {
+			return cursor, nil
+		}
+	}
 }
