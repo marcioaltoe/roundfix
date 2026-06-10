@@ -172,7 +172,7 @@ func (c *acpClient) start(ctx context.Context) error {
 	if _, err := conn.Initialize(ctx, acp.InitializeRequest{
 		ProtocolVersion: acp.ProtocolVersionNumber,
 		ClientCapabilities: acp.ClientCapabilities{
-			Fs: acp.FileSystemCapability{
+			Fs: acp.FileSystemCapabilities{
 				ReadTextFile:  true,
 				WriteTextFile: true,
 			},
@@ -220,11 +220,8 @@ func (c *acpClient) newSession(ctx context.Context) (acp.SessionId, error) {
 
 	modelName := runtimeEffectiveModel(c.runtime)
 	if modelName != "" && modelName != launchModel(c.runtime, modelName) {
-		if _, err := c.conn.SetSessionModel(ctx, acp.SetSessionModelRequest{
-			SessionId: resp.SessionId,
-			ModelId:   acp.ModelId(modelName),
-		}); err != nil {
-			return "", fmt.Errorf("set ACP session model %q: %w", modelName, err)
+		if err := c.setSessionModel(ctx, resp, modelName); err != nil {
+			return "", err
 		}
 	}
 	if c.runtime.FullAccessMode != "" {
@@ -236,6 +233,38 @@ func (c *acpClient) newSession(ctx context.Context) (acp.SessionId, error) {
 		}
 	}
 	return resp.SessionId, nil
+}
+
+// setSessionModel selects the runtime model through session config options,
+// which replaced the session/set_model method in current ACP revisions.
+func (c *acpClient) setSessionModel(ctx context.Context, resp acp.NewSessionResponse, modelName string) error {
+	option := modelConfigOption(resp.ConfigOptions)
+	if option == nil {
+		return fmt.Errorf("set ACP session model %q: agent advertises no model config option", modelName)
+	}
+	if _, err := c.conn.SetSessionConfigOption(ctx, acp.SetSessionConfigOptionRequest{
+		ValueId: &acp.SetSessionConfigOptionValueId{
+			SessionId: resp.SessionId,
+			ConfigId:  option.Id,
+			Value:     acp.SessionConfigValueId(modelName),
+		},
+	}); err != nil {
+		return fmt.Errorf("set ACP session model %q: %w", modelName, err)
+	}
+	return nil
+}
+
+func modelConfigOption(options []acp.SessionConfigOption) *acp.SessionConfigOptionSelect {
+	for _, option := range options {
+		sel := option.Select
+		if sel == nil || sel.Category == nil {
+			continue
+		}
+		if *sel.Category == acp.SessionConfigOptionCategoryModel {
+			return sel
+		}
+	}
+	return nil
 }
 
 func (c *acpClient) prompt(ctx context.Context, sessionID acp.SessionId, prompt string) error {
@@ -705,13 +734,13 @@ func (c *acpClient) CreateTerminal(ctx context.Context, params acp.CreateTermina
 	return acp.CreateTerminalResponse{TerminalId: terminal.id}, nil
 }
 
-func (c *acpClient) KillTerminalCommand(_ context.Context, params acp.KillTerminalCommandRequest) (acp.KillTerminalCommandResponse, error) {
+func (c *acpClient) KillTerminal(_ context.Context, params acp.KillTerminalRequest) (acp.KillTerminalResponse, error) {
 	terminal, err := c.lookupTerminal(params.SessionId, params.TerminalId)
 	if err != nil {
-		return acp.KillTerminalCommandResponse{}, err
+		return acp.KillTerminalResponse{}, err
 	}
 	terminal.kill()
-	return acp.KillTerminalCommandResponse{}, nil
+	return acp.KillTerminalResponse{}, nil
 }
 
 func (c *acpClient) TerminalOutput(_ context.Context, params acp.TerminalOutputRequest) (acp.TerminalOutputResponse, error) {
