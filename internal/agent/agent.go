@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"roundfix/internal/rounds"
+	"roundfix/internal/runevent"
 )
 
 type RuntimeSpec struct {
@@ -64,7 +65,7 @@ type ExecuteResult struct {
 
 type Runner interface {
 	Probe(ctx context.Context, runtime RuntimeSpec) error
-	Run(ctx context.Context, req ExecuteRequest, stream io.Writer) (ExecuteResult, error)
+	Run(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error)
 }
 
 const (
@@ -76,9 +77,17 @@ const (
 	DefaultOpenCodeModel = "anthropic/claude-opus-4-6"
 )
 
-type DefaultRunner struct{}
+// DefaultRunner dispatches to the protocol-specific runner. Now overrides
+// the event clock; nil means time.Now.
+type DefaultRunner struct {
+	Now func() time.Time
+}
 
-type ExecRunner struct{}
+// ExecRunner runs stdio Agents and publishes their output as agent.raw Run
+// Events. Now overrides the event clock; nil means time.Now.
+type ExecRunner struct {
+	Now func() time.Time
+}
 
 type StopError struct {
 	LogPath string
@@ -294,14 +303,14 @@ func (runner DefaultRunner) Probe(ctx context.Context, runtime RuntimeSpec) erro
 	return ExecRunner{}.Probe(ctx, runtime)
 }
 
-func (runner DefaultRunner) Run(ctx context.Context, req ExecuteRequest, stream io.Writer) (ExecuteResult, error) {
+func (runner DefaultRunner) Run(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error) {
 	if req.Runtime.Protocol == ProtocolACP {
-		return ACPRunner{}.Run(ctx, req, stream)
+		return ACPRunner{Now: runner.Now}.Run(ctx, req, sink)
 	}
-	return ExecRunner{}.Run(ctx, req, stream)
+	return ExecRunner{Now: runner.Now}.Run(ctx, req, sink)
 }
 
-func (runner ExecRunner) Run(ctx context.Context, req ExecuteRequest, stream io.Writer) (ExecuteResult, error) {
+func (runner ExecRunner) Run(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error) {
 	if strings.TrimSpace(req.LogPath) == "" {
 		return ExecuteResult{}, errors.New("Agent log path is required")
 	}
@@ -316,7 +325,13 @@ func (runner ExecRunner) Run(ctx context.Context, req ExecuteRequest, stream io.
 		_ = logFile.Close()
 	}()
 
+	if sink == nil {
+		sink = runevent.Discard
+	}
+	publisher := &rawEventPublisher{ctx: ctx, sink: sink, req: req, now: eventClock(runner.Now)}
+
 	if err := ctx.Err(); err != nil {
+		publisher.publishStatus("stopped")
 		return ExecuteResult{LogPath: req.LogPath}, StopError{LogPath: req.LogPath, Err: err}
 	}
 
@@ -339,11 +354,8 @@ func (runner ExecRunner) Run(ctx context.Context, req ExecuteRequest, stream io.
 		return ExecuteResult{}, fmt.Errorf("start Agent command %q: %w", req.Runtime.Command, err)
 	}
 
-	if stream == nil {
-		stream = io.Discard
-	}
 	var output strings.Builder
-	writer := &lockedWriter{writer: io.MultiWriter(logFile, &output, stream)}
+	writer := &lockedWriter{writer: io.MultiWriter(logFile, &output, publisher)}
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
@@ -368,6 +380,7 @@ func (runner ExecRunner) Run(ctx context.Context, req ExecuteRequest, stream io.
 	case <-ctx.Done():
 		killed := stopProcess(cmd, stopGrace(req.StopGrace), waitCh)
 		wg.Wait()
+		publisher.publishStatus("stopped")
 		return ExecuteResult{LogPath: req.LogPath, Output: output.String()}, StopError{
 			LogPath: req.LogPath,
 			Output:  output.String(),
@@ -385,7 +398,62 @@ func (runner ExecRunner) Run(ctx context.Context, req ExecuteRequest, stream io.
 	if waitErr != nil {
 		return ExecuteResult{LogPath: req.LogPath, Output: output.String()}, fmt.Errorf("Agent command failed: %w", waitErr)
 	}
+	if err := publisher.err(); err != nil {
+		return ExecuteResult{LogPath: req.LogPath, Output: output.String()}, fmt.Errorf("publish Run Events: %w", err)
+	}
 	return ExecuteResult{LogPath: req.LogPath, Output: output.String()}, nil
+}
+
+// rawEventPublisher publishes stdio Agent output chunks as agent.raw Run
+// Events. Write never fails so the log and output capture keep working when
+// a sink fails; the first publish error surfaces when the runner finishes.
+type rawEventPublisher struct {
+	ctx  context.Context
+	sink runevent.Sink
+	req  ExecuteRequest
+	now  func() time.Time
+
+	mu       sync.Mutex
+	firstErr error
+}
+
+func (publisher *rawEventPublisher) Write(payload []byte) (int, error) {
+	text := string(payload)
+	update := StreamUpdate{Kind: StreamUpdateRaw, Text: text}
+	event := newAgentRunEvent(publisher.req, update, marshalRawPayload(text), publisher.now())
+	publisher.record(publisher.sink.Publish(publisher.ctx, event))
+	return len(payload), nil
+}
+
+func (publisher *rawEventPublisher) publishStatus(status string) {
+	update := StreamUpdate{Kind: StreamUpdateStatus, Status: status}
+	event := newAgentRunEvent(publisher.req, update, marshalStatusPayload(status), publisher.now())
+	// The stop event must reach sinks even after the run context is canceled.
+	publisher.record(publisher.sink.Publish(context.WithoutCancel(publisher.ctx), event))
+}
+
+func (publisher *rawEventPublisher) record(err error) {
+	if err == nil {
+		return
+	}
+	publisher.mu.Lock()
+	defer publisher.mu.Unlock()
+	if publisher.firstErr == nil {
+		publisher.firstErr = err
+	}
+}
+
+func (publisher *rawEventPublisher) err() error {
+	publisher.mu.Lock()
+	defer publisher.mu.Unlock()
+	return publisher.firstErr
+}
+
+func eventClock(now func() time.Time) func() time.Time {
+	if now != nil {
+		return now
+	}
+	return time.Now
 }
 
 func runnerArgs(req ExecuteRequest) []string {

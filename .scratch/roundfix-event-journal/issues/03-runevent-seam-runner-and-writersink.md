@@ -2,10 +2,10 @@
 title: "Run Event seam: runevent package, runner publication, WriterSink"
 type: AFK
 category: enhancement
-state: ready-for-agent
+state: completed
 labels:
   - enhancement
-  - ready-for-agent
+  - completed
 user_stories:
   - 1
   - 2
@@ -45,14 +45,33 @@ Run Events with byte-exact raw payloads.
 
 ## Acceptance criteria
 
-- [ ] Leaf module with RunEvent, Source/Kind vocabularies, `Publish(ctx, event) error` sink, fanout with critical vs best-effort policy
-- [ ] Runner publishes Run Events with Run ID/Batch stamped; raw ACP payload byte-equal to what the runtime sent
-- [ ] Kind mapping covers message, thought, tool_started, tool_updated, plan, status, raw
-- [ ] Stopped status event published on cancellation
-- [ ] WriterSink preserves the existing non-TTY output contract; formatting tests migrate to it
-- [ ] Old type-assert publish path and single-consumer sink interface removed
-- [ ] Fanout race tests; critical error propagates, best-effort error swallowed and never blocks
+- [x] Leaf module with RunEvent, Source/Kind vocabularies, `Publish(ctx, event) error` sink, fanout with critical vs best-effort policy
+- [x] Runner publishes Run Events with Run ID/Batch stamped; raw ACP payload byte-equal to what the runtime sent
+- [x] Kind mapping covers message, thought, tool_started, tool_updated, plan, status, raw
+- [x] Stopped status event published on cancellation
+- [x] WriterSink preserves the existing non-TTY output contract; formatting tests migrate to it
+- [x] Old type-assert publish path and single-consumer sink interface removed
+- [x] Fanout race tests; critical error propagates, best-effort error swallowed and never blocks
 
 ## Blocked by
 
 - 01-bump-acp-sdk-and-bubbletea.md
+
+## Comments
+
+**2026-06-10 (agent):** Built `internal/runevent` as a stdlib-only leaf module: `RunEvent` (Run ID, Batch, source,
+kind, Review Issue ref, tool id/state, bounded summary, producer time, raw JSON payload), source/kind vocabularies
+(`agent.message` … `agent.raw`), `Sink` with `Publish(ctx, event) error`, `BoundSummary` (2048-byte rune-safe), and
+`Fanout` (critical sinks synchronous with joined error propagation; best-effort sinks behind per-sink bounded
+queues + one delivery goroutine each, drops and failures counted, `Close` drains). Raw payload fidelity: the ACP
+runner now tees the agent's newline-delimited JSON-RPC stdout through an interceptor that publishes each
+`session/update` with its raw params bytes verbatim (ADR 0008) before forwarding the line to the SDK — proven
+byte-equal in tests; the SDK `SessionUpdate` callback is a no-op. Runner-generated events (`agent.status`,
+`agent.raw`) carry small JSON payloads; both runners publish a stopped status event on cancellation (using
+`context.WithoutCancel` so durable sinks still receive it). Runner interface is now
+`Run(ctx, req, sink runevent.Sink)`; `publishStreamUpdate` and `StreamUpdateSink` are deleted. Console text
+formatting moved to `agent.ConsoleText` (shared by `agent.WriterSink` and the TUI), so the non-TTY contract is
+byte-identical; the TUI formatting test migrated to `TestWriterSinkRendersConsoleTextContract`. CLI wires
+TTY → interim live-view sink (replaced by the bounded TUI sink in issue 04), non-TTY → `WriterSink`. Verification:
+`rtk go vet ./...` clean, `rtk go test ./...` and `rtk go test -race ./...` 161 passed in 15 packages,
+`rtk go run ./cmd/roundfix --help` green.

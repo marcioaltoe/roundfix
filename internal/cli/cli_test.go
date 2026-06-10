@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"roundfix/internal/preflight"
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/rounds"
+	"roundfix/internal/runevent"
 	"roundfix/internal/store"
 	roundtui "roundfix/internal/tui"
 	"roundfix/internal/watch"
@@ -2140,6 +2142,26 @@ func (sleeper *fakeWatchSleeper) Sleep(_ context.Context, duration time.Duration
 	return nil
 }
 
+func publishFakeAgentOutput(ctx context.Context, sink runevent.Sink, req agent.ExecuteRequest, text string) error {
+	if sink == nil {
+		return nil
+	}
+	payload, err := json.Marshal(struct {
+		Text string `json:"text"`
+	}{Text: text})
+	if err != nil {
+		return err
+	}
+	return sink.Publish(ctx, runevent.RunEvent{
+		RunID:   req.RunID,
+		Batch:   req.Batch.Number,
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentRaw,
+		Summary: text,
+		Payload: payload,
+	})
+}
+
 type fakeAgentRunner struct {
 	probeErr error
 	runErr   error
@@ -2151,7 +2173,7 @@ func (runner *fakeAgentRunner) Probe(context.Context, agent.RuntimeSpec) error {
 	return runner.probeErr
 }
 
-func (runner *fakeAgentRunner) Run(_ context.Context, req agent.ExecuteRequest, stream io.Writer) (agent.ExecuteResult, error) {
+func (runner *fakeAgentRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
 	runner.calls++
 	status := runner.status
 	if status == "" {
@@ -2163,7 +2185,7 @@ func (runner *fakeAgentRunner) Run(_ context.Context, req agent.ExecuteRequest, 
 		}
 	}
 	output := "fake agent output\n"
-	if _, err := io.WriteString(stream, output); err != nil {
+	if err := publishFakeAgentOutput(ctx, sink, req, output); err != nil {
 		return agent.ExecuteResult{}, err
 	}
 	if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {
@@ -2184,9 +2206,9 @@ func (runner *fakeStoppingAgentRunner) Probe(context.Context, agent.RuntimeSpec)
 	return nil
 }
 
-func (runner *fakeStoppingAgentRunner) Run(_ context.Context, req agent.ExecuteRequest, stream io.Writer) (agent.ExecuteResult, error) {
+func (runner *fakeStoppingAgentRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
 	output := "partial agent output\n"
-	if _, err := io.WriteString(stream, output); err != nil {
+	if err := publishFakeAgentOutput(ctx, sink, req, output); err != nil {
 		return agent.ExecuteResult{}, err
 	}
 	if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {

@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"roundfix/internal/agent"
 	"roundfix/internal/rounds"
 )
 
@@ -162,33 +161,6 @@ func TestStreamBufferKeepsRecentConsoleOutput(t *testing.T) {
 	lines := buffer.Lines()
 	if got := strings.Join(lines, "|"); got != "second|third" {
 		t.Fatalf("expected bounded stream lines, got %q", got)
-	}
-}
-
-func TestAgentTextFromFormatRendersStructuredToolBlocks(t *testing.T) {
-	text := agentTextFromFormat(agent.StreamUpdate{
-		Kind:      agent.StreamUpdateToolUpdated,
-		Title:     "rtk make verify",
-		ToolID:    "call_123",
-		ToolState: "completed",
-		Blocks: []agent.StreamBlock{
-			{Kind: agent.StreamBlockText, Text: "completed"},
-			{Kind: agent.StreamBlockOutput, Text: `{"aggregated_output":"ok"}`},
-			{Kind: agent.StreamBlockDiff, Path: "apps/api/server.go"},
-			{Kind: agent.StreamBlockTerminal, TerminalID: "term_001"},
-		},
-	})
-
-	for _, expected := range []string{
-		"rtk make verify",
-		"completed",
-		`output: {"aggregated_output":"ok"}`,
-		"diff: apps/api/server.go",
-		"terminal: term_001",
-	} {
-		if !strings.Contains(text, expected) {
-			t.Fatalf("expected rendered Agent text to contain %q, got:\n%s", expected, text)
-		}
 	}
 }
 

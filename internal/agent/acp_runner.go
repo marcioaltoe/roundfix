@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -16,10 +17,16 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"roundfix/internal/runevent"
+
 	acp "github.com/coder/acp-go-sdk"
 )
 
-type ACPRunner struct{}
+// ACPRunner runs ACP Agents and publishes their session updates as Run
+// Events. Now overrides the event clock; nil means time.Now.
+type ACPRunner struct {
+	Now func() time.Time
+}
 
 type acpSession struct {
 	id           string
@@ -30,9 +37,14 @@ type acpSession struct {
 type acpClient struct {
 	runtime RuntimeSpec
 	req     ExecuteRequest
-	stream  io.Writer
+	sink    runevent.Sink
+	now     func() time.Time
+	runCtx  context.Context
 	log     io.Writer
 	output  *strings.Builder
+
+	pubMu  sync.Mutex
+	pubErr error
 
 	mu       sync.Mutex
 	conn     *acp.ClientSideConnection
@@ -74,7 +86,7 @@ func (runner ACPRunner) Probe(ctx context.Context, runtime RuntimeSpec) error {
 	return nil
 }
 
-func (runner ACPRunner) Run(ctx context.Context, req ExecuteRequest, stream io.Writer) (ExecuteResult, error) {
+func (runner ACPRunner) Run(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error) {
 	if strings.TrimSpace(req.LogPath) == "" {
 		return ExecuteResult{}, errors.New("Agent log path is required")
 	}
@@ -88,15 +100,17 @@ func (runner ACPRunner) Run(ctx context.Context, req ExecuteRequest, stream io.W
 	defer func() {
 		_ = logFile.Close()
 	}()
-	if stream == nil {
-		stream = io.Discard
+	if sink == nil {
+		sink = runevent.Discard
 	}
 
 	var output strings.Builder
 	client := &acpClient{
 		runtime:  req.Runtime,
 		req:      req,
-		stream:   stream,
+		sink:     sink,
+		now:      eventClock(runner.Now),
+		runCtx:   ctx,
 		log:      logFile,
 		output:   &output,
 		sessions: make(map[string]*acpSession),
@@ -125,6 +139,7 @@ func (runner ACPRunner) Run(ctx context.Context, req ExecuteRequest, stream io.W
 	case <-ctx.Done():
 		_ = client.cancelPrompt(sessionID)
 		killed := client.stop(stopGrace(req.StopGrace))
+		client.emitStatus(context.WithoutCancel(ctx), "stopped")
 		return ExecuteResult{LogPath: req.LogPath, Output: output.String()}, StopError{
 			LogPath: req.LogPath,
 			Output:  output.String(),
@@ -133,6 +148,9 @@ func (runner ACPRunner) Run(ctx context.Context, req ExecuteRequest, stream io.W
 		}
 	}
 
+	if err := client.publishErr(); err != nil {
+		return ExecuteResult{LogPath: req.LogPath, Output: output.String()}, fmt.Errorf("publish Run Events: %w", err)
+	}
 	return ExecuteResult{LogPath: req.LogPath, Output: output.String()}, nil
 }
 
@@ -167,7 +185,7 @@ func (c *acpClient) start(ctx context.Context) error {
 		c.waitCh <- cmd.Wait()
 	}()
 
-	conn := acp.NewClientSideConnection(c, stdin, stdout)
+	conn := acp.NewClientSideConnection(c, stdin, c.interceptUpdates(stdout))
 	c.conn = conn
 	if _, err := conn.Initialize(ctx, acp.InitializeRequest{
 		ProtocolVersion: acp.ProtocolVersionNumber,
@@ -278,7 +296,7 @@ func (c *acpClient) prompt(ctx context.Context, sessionID acp.SessionId, prompt 
 	if resp.StopReason == acp.StopReasonCancelled {
 		return context.Canceled
 	}
-	_ = c.emit(StreamUpdate{Kind: StreamUpdateStatus, Status: "completed"})
+	c.emitStatus(ctx, "completed")
 	return nil
 }
 
@@ -326,7 +344,62 @@ func (c *acpClient) stop(grace time.Duration) bool {
 	}
 }
 
-func (c *acpClient) emit(update StreamUpdate) error {
+// interceptUpdates tees the agent's newline-delimited JSON-RPC output so
+// session/update notifications are published with their raw params bytes
+// (ADR 0008) before the SDK connection processes the line. Handling before
+// forwarding keeps event order ahead of prompt completion.
+func (c *acpClient) interceptUpdates(stdout io.Reader) io.Reader {
+	pipeReader, pipeWriter := io.Pipe()
+	go func() {
+		reader := bufio.NewReader(stdout)
+		for {
+			line, err := reader.ReadBytes('\n')
+			if len(line) > 0 {
+				c.handleWireLine(line)
+				if _, writeErr := pipeWriter.Write(line); writeErr != nil {
+					// The connection side is gone; drain so the process can exit.
+					_, _ = io.Copy(io.Discard, stdout)
+					return
+				}
+			}
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					_ = pipeWriter.Close()
+				} else {
+					_ = pipeWriter.CloseWithError(err)
+				}
+				return
+			}
+		}
+	}()
+	return pipeReader
+}
+
+type wireEnvelope struct {
+	Method string          `json:"method"`
+	Params json.RawMessage `json:"params"`
+}
+
+func (c *acpClient) handleWireLine(line []byte) {
+	var envelope wireEnvelope
+	if err := json.Unmarshal(line, &envelope); err != nil {
+		return
+	}
+	if envelope.Method != acp.ClientMethodSessionUpdate {
+		return
+	}
+	var note acp.SessionNotification
+	if err := json.Unmarshal(envelope.Params, &note); err != nil {
+		return
+	}
+	update := streamUpdateFromACP(note.Update)
+	if update.Kind == "" {
+		return
+	}
+	_ = c.emit(c.runCtx, update, json.RawMessage(envelope.Params))
+}
+
+func (c *acpClient) emit(ctx context.Context, update StreamUpdate, payload json.RawMessage) error {
 	text := formatStreamUpdate(update)
 	if text != "" {
 		if c.log != nil {
@@ -338,7 +411,31 @@ func (c *acpClient) emit(update StreamUpdate) error {
 			c.output.WriteString(text)
 		}
 	}
-	return publishStreamUpdate(c.stream, update)
+	event := newAgentRunEvent(c.req, update, payload, c.now())
+	if err := c.sink.Publish(ctx, event); err != nil {
+		c.recordPublishErr(err)
+		return err
+	}
+	return nil
+}
+
+func (c *acpClient) emitStatus(ctx context.Context, status string) {
+	update := StreamUpdate{Kind: StreamUpdateStatus, Status: status}
+	_ = c.emit(ctx, update, marshalStatusPayload(status))
+}
+
+func (c *acpClient) recordPublishErr(err error) {
+	c.pubMu.Lock()
+	defer c.pubMu.Unlock()
+	if c.pubErr == nil {
+		c.pubErr = err
+	}
+}
+
+func (c *acpClient) publishErr() error {
+	c.pubMu.Lock()
+	defer c.pubMu.Unlock()
+	return c.pubErr
 }
 
 func (c *acpClient) ReadTextFile(_ context.Context, params acp.ReadTextFileRequest) (acp.ReadTextFileResponse, error) {
@@ -377,12 +474,11 @@ func (c *acpClient) RequestPermission(_ context.Context, params acp.RequestPermi
 	return acp.RequestPermissionResponse{Outcome: acp.NewRequestPermissionOutcomeSelected(params.Options[0].OptionId)}, nil
 }
 
-func (c *acpClient) SessionUpdate(_ context.Context, params acp.SessionNotification) error {
-	update := streamUpdateFromACP(params.Update)
-	if update.Kind == "" {
-		return nil
-	}
-	return c.emit(update)
+// SessionUpdate satisfies the ACP client interface. Publication happens in
+// handleWireLine, which sees the raw notification bytes; reacting here too
+// would publish every update twice.
+func (c *acpClient) SessionUpdate(context.Context, acp.SessionNotification) error {
+	return nil
 }
 
 func (c *acpClient) resolveSessionPath(sessionID acp.SessionId, rawPath string) (string, error) {
@@ -463,10 +559,6 @@ func contentBlockText(block acp.ContentBlock) string {
 		return ""
 	}
 	return string(raw)
-}
-
-func toolContentText(content []acp.ToolCallContent, rawInput any, rawOutput any) string {
-	return streamBlockText(toolContentBlocks(content, rawInput, rawOutput))
 }
 
 func toolContentBlocks(content []acp.ToolCallContent, rawInput any, rawOutput any) []StreamBlock {

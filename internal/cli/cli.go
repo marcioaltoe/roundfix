@@ -23,6 +23,7 @@ import (
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/reviewsource/coderabbit"
 	"roundfix/internal/rounds"
+	"roundfix/internal/runevent"
 	"roundfix/internal/store"
 	roundtui "roundfix/internal/tui"
 	"roundfix/internal/watch"
@@ -902,7 +903,7 @@ func executeResolveBatch(ctx context.Context, req commandRequest, loaded roundco
 		GitRoot:      preflightResult.Git.Root,
 		Verification: loaded.Config.Defaults.Verification,
 		AllowAddDirs: []string{req.artifactDir},
-	}, agentStream)
+	}, newAgentEventSink(agentStream))
 	if closeErr := closeAgentConsoleStream(agentStream); closeErr != nil && runErr == nil {
 		runErr = closeErr
 	}
@@ -1295,18 +1296,33 @@ func buildLiveRunView(req commandRequest, loaded roundconfig.Loaded, preflightRe
 	}
 }
 
-func newAgentConsoleStream(output io.Writer, view roundtui.LiveRunView) io.Writer {
+func newAgentConsoleStream(output io.Writer, view roundtui.LiveRunView) *roundtui.AgentLiveStream {
 	return roundtui.NewAgentLiveStream(output, view, liveTUIEnabled(output))
 }
 
-func closeAgentConsoleStream(stream io.Writer) error {
-	closer, ok := stream.(interface {
-		Close() error
-	})
-	if !ok {
-		return nil
+// newAgentEventSink adapts the Agent Console to the Run Event seam: the
+// live view receives reconstructed stream updates, while non-TTY output
+// renders through the plain-text writer sink.
+func newAgentEventSink(stream *roundtui.AgentLiveStream) runevent.Sink {
+	if stream.Live() {
+		return liveViewSink{stream: stream}
 	}
-	return closer.Close()
+	return agent.WriterSink{Writer: stream}
+}
+
+type liveViewSink struct {
+	stream *roundtui.AgentLiveStream
+}
+
+func (sink liveViewSink) Publish(_ context.Context, event runevent.RunEvent) error {
+	if update, ok := agent.StreamUpdateFromEvent(event); ok {
+		sink.stream.HandleAgentUpdate(update)
+	}
+	return nil
+}
+
+func closeAgentConsoleStream(stream *roundtui.AgentLiveStream) error {
+	return stream.Close()
 }
 
 func liveTUIEnabled(output io.Writer) bool {

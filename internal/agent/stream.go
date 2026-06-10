@@ -2,7 +2,6 @@ package agent
 
 import (
 	"fmt"
-	"io"
 	"strings"
 )
 
@@ -48,26 +47,6 @@ type StreamBlock struct {
 	MimeType   string
 	URI        string
 	Name       string
-}
-
-type StreamUpdateSink interface {
-	HandleAgentUpdate(StreamUpdate)
-}
-
-func publishStreamUpdate(dst io.Writer, update StreamUpdate) error {
-	if sink, ok := dst.(StreamUpdateSink); ok {
-		sink.HandleAgentUpdate(update)
-		return nil
-	}
-	if dst == nil {
-		return nil
-	}
-	text := formatStreamUpdate(update)
-	if text == "" {
-		return nil
-	}
-	_, err := io.WriteString(dst, text)
-	return err
 }
 
 func formatStreamUpdate(update StreamUpdate) string {

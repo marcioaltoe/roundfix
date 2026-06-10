@@ -1,8 +1,11 @@
 package agent
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +16,7 @@ import (
 
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/rounds"
+	"roundfix/internal/runevent"
 
 	acp "github.com/coder/acp-go-sdk"
 )
@@ -283,7 +287,7 @@ func TestExecRunnerRunUsesExplicitArgsOnlyForCustomCommand(t *testing.T) {
 	t.Setenv("ARGS_PATH", argsPath)
 	t.Setenv("PROMPT_PATH", promptPath)
 
-	var stream strings.Builder
+	sink := newCaptureSink("")
 	_, err := ExecRunner{}.Run(context.Background(), ExecuteRequest{
 		Runtime: RuntimeSpec{
 			ID:       "codex-custom",
@@ -294,7 +298,7 @@ func TestExecRunnerRunUsesExplicitArgsOnlyForCustomCommand(t *testing.T) {
 		LogPath: filepath.Join(dir, "agent.log"),
 		GitRoot: dir,
 		Prompt:  "agent prompt",
-	}, &stream)
+	}, sink)
 	if err != nil {
 		t.Fatalf("run fake agent: %v", err)
 	}
@@ -309,8 +313,8 @@ func TestExecRunnerRunUsesExplicitArgsOnlyForCustomCommand(t *testing.T) {
 	if prompt := readFile(t, promptPath); prompt != "agent prompt" {
 		t.Fatalf("expected prompt on stdin, got %q", prompt)
 	}
-	if !strings.Contains(stream.String(), "done") {
-		t.Fatalf("expected fake output to stream, got %q", stream.String())
+	if !strings.Contains(sink.Text(), "done") {
+		t.Fatalf("expected fake output published as Run Events, got %q", sink.Text())
 	}
 }
 
@@ -320,17 +324,19 @@ func TestExecRunnerRunStreamsAndPersistsOutput(t *testing.T) {
 	if err := os.WriteFile(script, []byte("#!/bin/sh\ncat >/dev/null\nprintf 'agent stdout\\n'\nprintf 'agent stderr\\n' >&2\n"), 0o755); err != nil {
 		t.Fatalf("write fake agent: %v", err)
 	}
-	var stream strings.Builder
+	sink := newCaptureSink("")
 	logPath := filepath.Join(dir, "agent.log")
 
 	result, err := ExecRunner{}.Run(context.Background(), ExecuteRequest{
+		RunID: "run-42",
+		Batch: rounds.Batch{Number: 3},
 		Runtime: RuntimeSpec{
 			Command: script,
 		},
 		LogPath: logPath,
 		GitRoot: dir,
 		Prompt:  "prompt",
-	}, &stream)
+	}, sink)
 	if err != nil {
 		t.Fatalf("run fake agent: %v", err)
 	}
@@ -338,9 +344,17 @@ func TestExecRunnerRunStreamsAndPersistsOutput(t *testing.T) {
 	if result.LogPath != logPath {
 		t.Fatalf("expected log path %q, got %q", logPath, result.LogPath)
 	}
+	for _, event := range sink.Events() {
+		if event.RunID != "run-42" || event.Batch != 3 {
+			t.Fatalf("expected Run identity stamped on events, got %+v", event)
+		}
+		if event.Source != runevent.SourceAgent || event.Kind != runevent.KindAgentRaw {
+			t.Fatalf("expected agent.raw events from exec runner, got %+v", event)
+		}
+	}
 	for _, expected := range []string{"agent stdout", "agent stderr"} {
-		if !strings.Contains(stream.String(), expected) {
-			t.Fatalf("expected stream to contain %q, got %q", expected, stream.String())
+		if !strings.Contains(sink.Text(), expected) {
+			t.Fatalf("expected published events to contain %q, got %q", expected, sink.Text())
 		}
 		content, err := os.ReadFile(logPath)
 		if err != nil {
@@ -358,10 +372,10 @@ func TestExecRunnerRunStopsGracefullyOnContextCancel(t *testing.T) {
 	helper := buildAgentHelper(t, dir)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	stream := newNotifyingWriter("helper started")
+	sink := newCaptureSink("helper started")
 	go func() {
 		select {
-		case <-stream.done:
+		case <-sink.done:
 			cancel()
 		case <-time.After(5 * time.Second):
 			cancel()
@@ -377,7 +391,7 @@ func TestExecRunnerRunStopsGracefullyOnContextCancel(t *testing.T) {
 		GitRoot:   dir,
 		Prompt:    "prompt",
 		StopGrace: time.Second,
-	}, stream)
+	}, sink)
 
 	if err == nil {
 		t.Fatal("expected stop error")
@@ -392,9 +406,12 @@ func TestExecRunnerRunStopsGracefullyOnContextCancel(t *testing.T) {
 	if result.LogPath != logPath {
 		t.Fatalf("expected log path %q, got %q", logPath, result.LogPath)
 	}
+	if !sink.HasStatus("stopped") {
+		t.Fatal("expected stopped status event published on cancellation")
+	}
 	for _, expected := range []string{"helper started", "helper graceful stop"} {
-		if !strings.Contains(stream.String(), expected) {
-			t.Fatalf("expected stream to contain %q, got %q", expected, stream.String())
+		if !strings.Contains(sink.Text(), expected) {
+			t.Fatalf("expected published events to contain %q, got %q", expected, sink.Text())
 		}
 		content, err := os.ReadFile(logPath)
 		if err != nil {
@@ -411,10 +428,10 @@ func TestExecRunnerRunKillsAgentAfterGracePeriod(t *testing.T) {
 	helper := buildAgentHelper(t, dir)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	stream := newNotifyingWriter("helper started")
+	sink := newCaptureSink("helper started")
 	go func() {
 		select {
-		case <-stream.done:
+		case <-sink.done:
 			cancel()
 		case <-time.After(5 * time.Second):
 			cancel()
@@ -430,7 +447,7 @@ func TestExecRunnerRunKillsAgentAfterGracePeriod(t *testing.T) {
 		GitRoot:   dir,
 		Prompt:    "prompt",
 		StopGrace: 10 * time.Millisecond,
-	}, stream)
+	}, sink)
 
 	if err == nil {
 		t.Fatal("expected stop error")
@@ -442,44 +459,72 @@ func TestExecRunnerRunKillsAgentAfterGracePeriod(t *testing.T) {
 	if !stopErr.Killed {
 		t.Fatalf("expected forced kill after grace period, got %#v", stopErr)
 	}
-	if !strings.Contains(stream.String(), "helper started") {
-		t.Fatalf("expected available output to stream before kill, got %q", stream.String())
+	if !strings.Contains(sink.Text(), "helper started") {
+		t.Fatalf("expected available output published before kill, got %q", sink.Text())
+	}
+	if !sink.HasStatus("stopped") {
+		t.Fatal("expected stopped status event published on cancellation")
 	}
 }
 
-type notifyingWriter struct {
+// captureSink records published Run Events and optionally closes done when
+// the accumulated summary text contains needle.
+type captureSink struct {
 	mu      sync.Mutex
-	output  strings.Builder
+	events  []runevent.RunEvent
+	text    strings.Builder
 	needle  string
 	done    chan struct{}
 	close   sync.Once
 	matched bool
 }
 
-func newNotifyingWriter(needle string) *notifyingWriter {
-	return &notifyingWriter{
+func newCaptureSink(needle string) *captureSink {
+	return &captureSink{
 		needle: needle,
 		done:   make(chan struct{}),
 	}
 }
 
-func (writer *notifyingWriter) Write(payload []byte) (int, error) {
-	writer.mu.Lock()
-	defer writer.mu.Unlock()
-	n, err := writer.output.Write(payload)
-	if !writer.matched && strings.Contains(writer.output.String(), writer.needle) {
-		writer.matched = true
-		writer.close.Do(func() {
-			close(writer.done)
+func (sink *captureSink) Publish(_ context.Context, event runevent.RunEvent) error {
+	sink.mu.Lock()
+	defer sink.mu.Unlock()
+	sink.events = append(sink.events, event)
+	sink.text.WriteString(event.Summary)
+	if sink.needle != "" && !sink.matched && strings.Contains(sink.text.String(), sink.needle) {
+		sink.matched = true
+		sink.close.Do(func() {
+			close(sink.done)
 		})
 	}
-	return n, err
+	return nil
 }
 
-func (writer *notifyingWriter) String() string {
-	writer.mu.Lock()
-	defer writer.mu.Unlock()
-	return writer.output.String()
+func (sink *captureSink) Events() []runevent.RunEvent {
+	sink.mu.Lock()
+	defer sink.mu.Unlock()
+	return append([]runevent.RunEvent(nil), sink.events...)
+}
+
+func (sink *captureSink) Text() string {
+	sink.mu.Lock()
+	defer sink.mu.Unlock()
+	return sink.text.String()
+}
+
+func (sink *captureSink) HasStatus(status string) bool {
+	for _, event := range sink.Events() {
+		if event.Kind != runevent.KindAgentStatus {
+			continue
+		}
+		var payload struct {
+			Status string `json:"status"`
+		}
+		if json.Unmarshal(event.Payload, &payload) == nil && payload.Status == status {
+			return true
+		}
+	}
+	return false
 }
 
 func contains(values []string, expected string) bool {
@@ -549,3 +594,142 @@ func main() {
 	}
 	return binary
 }
+
+func TestACPInterceptorPublishesRawPayloadsWithIdentity(t *testing.T) {
+	fixedTime := time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC)
+	sink := newCaptureSink("")
+	client := &acpClient{
+		req:    ExecuteRequest{RunID: "run-7", Batch: rounds.Batch{Number: 2}},
+		sink:   sink,
+		now:    func() time.Time { return fixedTime },
+		runCtx: context.Background(),
+		output: &strings.Builder{},
+	}
+
+	params := []string{
+		`{"sessionId":"sess-1","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"hello"}}}`,
+		`{"sessionId":"sess-1","update":{"sessionUpdate":"agent_thought_chunk","content":{"type":"text","text":"thinking"}}}`,
+		`{"sessionId":"sess-1","update":{"sessionUpdate":"tool_call","toolCallId":"call_1","title":"read file","status":"pending"}}`,
+		`{"sessionId":"sess-1","update":{"sessionUpdate":"tool_call_update","toolCallId":"call_1","status":"completed"}}`,
+		`{"sessionId":"sess-1","update":{"sessionUpdate":"plan","entries":[{"content":"step one","priority":"high","status":"pending"}]}}`,
+	}
+	var wire strings.Builder
+	wire.WriteString(`{"jsonrpc":"2.0","id":1,"result":{}}` + "\n")
+	for _, param := range params {
+		wire.WriteString(`{"jsonrpc":"2.0","method":"session/update","params":` + param + `}` + "\n")
+	}
+	wire.WriteString(`{"jsonrpc":"2.0","method":"other/notification","params":{"x":1}}` + "\n")
+
+	forwarded, err := io.ReadAll(client.interceptUpdates(strings.NewReader(wire.String())))
+	if err != nil {
+		t.Fatalf("read intercepted stream: %v", err)
+	}
+	if string(forwarded) != wire.String() {
+		t.Fatal("expected intercepted stream forwarded byte-identical to the SDK")
+	}
+
+	events := sink.Events()
+	if len(events) != len(params) {
+		t.Fatalf("expected %d events, got %d", len(params), len(events))
+	}
+	expectedKinds := []runevent.Kind{
+		runevent.KindAgentMessage,
+		runevent.KindAgentThought,
+		runevent.KindAgentToolStarted,
+		runevent.KindAgentToolUpdated,
+		runevent.KindAgentPlan,
+	}
+	for index, event := range events {
+		if event.Kind != expectedKinds[index] {
+			t.Fatalf("expected kind %q at %d, got %q", expectedKinds[index], index, event.Kind)
+		}
+		if event.RunID != "run-7" || event.Batch != 2 || event.Source != runevent.SourceAgent {
+			t.Fatalf("expected Run identity stamped, got %+v", event)
+		}
+		if !event.Time.Equal(fixedTime) {
+			t.Fatalf("expected injected clock timestamp, got %v", event.Time)
+		}
+		if !bytes.Equal(event.Payload, []byte(params[index])) {
+			t.Fatalf("expected payload byte-equal to wire params\nwant: %s\ngot:  %s", params[index], event.Payload)
+		}
+	}
+	if events[2].ToolID != "call_1" || events[2].ToolState != "pending" {
+		t.Fatalf("expected tool identity on tool events, got %+v", events[2])
+	}
+}
+
+func TestACPEmitStatusPublishesStatusEvent(t *testing.T) {
+	sink := newCaptureSink("")
+	client := &acpClient{
+		req:    ExecuteRequest{RunID: "run-7", Batch: rounds.Batch{Number: 1}},
+		sink:   sink,
+		now:    time.Now,
+		runCtx: context.Background(),
+		output: &strings.Builder{},
+	}
+
+	client.emitStatus(context.Background(), "stopped")
+
+	if !sink.HasStatus("stopped") {
+		t.Fatalf("expected stopped status event, got %+v", sink.Events())
+	}
+	events := sink.Events()
+	if events[0].Kind != runevent.KindAgentStatus || events[0].Summary != "SESSION STOPPED\n" {
+		t.Fatalf("expected status event with console summary, got %+v", events[0])
+	}
+}
+
+func TestWriterSinkRendersConsoleTextContract(t *testing.T) {
+	note := acp.SessionNotification{
+		SessionId: "sess-1",
+		Update: acp.SessionUpdate{
+			ToolCallUpdate: &acp.SessionToolCallUpdate{
+				ToolCallId: "call_123",
+				Title:      stringPtr("rtk make verify"),
+				Status:     toolStatusPtr(acp.ToolCallStatusCompleted),
+				RawOutput:  map[string]any{"aggregated_output": "ok"},
+				Content: []acp.ToolCallContent{
+					{Content: &acp.ToolCallContentContent{Content: acp.TextBlock("completed")}},
+					{Diff: &acp.ToolCallContentDiff{Path: "apps/api/server.go"}},
+					{Terminal: &acp.ToolCallContentTerminal{TerminalId: "term_001"}},
+				},
+			},
+		},
+	}
+	payload, err := json.Marshal(note)
+	if err != nil {
+		t.Fatalf("marshal notification: %v", err)
+	}
+
+	var buffer strings.Builder
+	sink := WriterSink{Writer: &buffer}
+	publish := func(event runevent.RunEvent) {
+		t.Helper()
+		if err := sink.Publish(context.Background(), event); err != nil {
+			t.Fatalf("publish: %v", err)
+		}
+	}
+	publish(runevent.RunEvent{Kind: runevent.KindAgentToolUpdated, Source: runevent.SourceAgent, Payload: payload})
+	publish(runevent.RunEvent{Kind: runevent.KindAgentRaw, Source: runevent.SourceAgent, Payload: []byte(`{"text":"raw line\n"}`)})
+	publish(runevent.RunEvent{Kind: runevent.KindAgentStatus, Source: runevent.SourceAgent, Payload: []byte(`{"status":"completed"}`)})
+	publish(runevent.RunEvent{Kind: "future.unknown", Source: runevent.SourceAgent, Payload: []byte(`{}`)})
+
+	text := buffer.String()
+	for _, expected := range []string{
+		"[TOOL] rtk make verify",
+		"completed",
+		`output: {"aggregated_output":"ok"}`,
+		"diff: apps/api/server.go",
+		"terminal: term_001",
+		"raw line\n",
+		"SESSION COMPLETED\n",
+	} {
+		if !strings.Contains(text, expected) {
+			t.Fatalf("expected writer output to contain %q, got:\n%s", expected, text)
+		}
+	}
+}
+
+func stringPtr(value string) *string { return &value }
+
+func toolStatusPtr(value acp.ToolCallStatus) *acp.ToolCallStatus { return &value }

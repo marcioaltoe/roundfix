@@ -73,6 +73,12 @@ func NewAgentLiveStream(output io.Writer, view LiveRunView, live bool) *AgentLiv
 	return stream
 }
 
+// Live reports whether the stream renders through a terminal program rather
+// than plain text output.
+func (stream *AgentLiveStream) Live() bool {
+	return stream.live && stream.prog != nil
+}
+
 func (stream *AgentLiveStream) Write(payload []byte) (int, error) {
 	if !stream.live || stream.prog == nil {
 		return stream.output.Write(payload)
@@ -177,109 +183,7 @@ func (model agentLiveModel) View() tea.View {
 }
 
 func agentText(update agent.StreamUpdate) string {
-	text := agentTextFromFormat(update)
-	if text == "" {
-		return ""
-	}
-	return text
-}
-
-func agentTextFromFormat(update agent.StreamUpdate) string {
-	switch update.Kind {
-	case agent.StreamUpdateMessage:
-		return update.Text
-	case agent.StreamUpdateThought:
-		if strings.TrimSpace(update.Text) == "" {
-			return ""
-		}
-		return "THINK " + strings.TrimRight(update.Text, "\r\n") + "\n"
-	case agent.StreamUpdateToolStarted:
-		title := strings.TrimSpace(update.Title)
-		if title == "" {
-			title = "tool call"
-		}
-		lines := []string{}
-		if update.ToolID != "" {
-			lines = append(lines, fmt.Sprintf("[TOOL] %s (%s)", title, update.ToolID))
-		} else {
-			lines = append(lines, fmt.Sprintf("[TOOL] %s", title))
-		}
-		if strings.TrimSpace(update.ToolState) != "" {
-			lines = append(lines, update.ToolState)
-		}
-		if strings.TrimSpace(update.Text) != "" && len(update.Blocks) == 0 {
-			lines = append(lines, strings.TrimRight(update.Text, "\r\n"))
-		}
-		lines = append(lines, agentBlockLines(update.Blocks)...)
-		return strings.Join(lines, "\n") + "\n"
-	case agent.StreamUpdateToolUpdated:
-		lines := []string{}
-		if strings.TrimSpace(update.Title) != "" {
-			lines = append(lines, "[TOOL] "+strings.TrimSpace(update.Title))
-		} else if strings.TrimSpace(update.ToolID) != "" {
-			lines = append(lines, "[TOOL] "+strings.TrimSpace(update.ToolID))
-		}
-		if strings.TrimSpace(update.ToolState) != "" {
-			lines = append(lines, update.ToolState)
-		}
-		if strings.TrimSpace(update.Text) != "" && len(update.Blocks) == 0 {
-			lines = append(lines, strings.TrimRight(update.Text, "\r\n"))
-		}
-		lines = append(lines, agentBlockLines(update.Blocks)...)
-		if len(lines) == 0 {
-			return ""
-		}
-		return strings.Join(lines, "\n") + "\n"
-	case agent.StreamUpdatePlan:
-		if strings.TrimSpace(update.Text) == "" {
-			return ""
-		}
-		return "PLAN\n" + strings.TrimRight(update.Text, "\r\n") + "\n"
-	case agent.StreamUpdateStatus:
-		if update.Status == "" {
-			return ""
-		}
-		return "SESSION " + strings.ToUpper(update.Status) + "\n"
-	case agent.StreamUpdateRaw:
-		return update.Text
-	default:
-		return update.Text
-	}
-}
-
-func agentBlockLines(blocks []agent.StreamBlock) []string {
-	lines := []string{}
-	for _, block := range blocks {
-		switch block.Kind {
-		case agent.StreamBlockText:
-			if text := strings.TrimRight(block.Text, "\r\n"); text != "" {
-				lines = append(lines, text)
-			}
-		case agent.StreamBlockInput:
-			if text := strings.TrimRight(block.Text, "\r\n"); text != "" {
-				lines = append(lines, "input: "+text)
-			}
-		case agent.StreamBlockOutput:
-			if text := strings.TrimRight(block.Text, "\r\n"); text != "" {
-				lines = append(lines, "output: "+text)
-			}
-		case agent.StreamBlockDiff:
-			if block.Path != "" {
-				lines = append(lines, "diff: "+block.Path)
-			}
-		case agent.StreamBlockTerminal:
-			if block.TerminalID != "" {
-				lines = append(lines, "terminal: "+block.TerminalID)
-			}
-		case agent.StreamBlockImage:
-			label := firstNonEmpty(block.MimeType, block.URI, "image")
-			lines = append(lines, "image: "+label)
-		case agent.StreamBlockResource:
-			label := firstNonEmpty(block.Name, block.URI, "resource")
-			lines = append(lines, "resource: "+label)
-		}
-	}
-	return lines
+	return agent.ConsoleText(update)
 }
 
 func firstNonEmpty(values ...string) string {
