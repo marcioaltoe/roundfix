@@ -92,6 +92,10 @@ _Avoid_: Comment, thread, finding
 The stable identity Roundfix uses to recognize the same Review Issue across Rounds.
 _Avoid_: File path only, line number only, round-local id
 
+**Source Reference**:
+The Review Source-native identity stored as `source_ref` on a Review Issue, such as a CodeRabbit `thread:<id>,comment:<id>` pair.
+_Avoid_: Local artifact path, generated issue number
+
 **Duplicated Review Issue**:
 A Review Issue that is complete because a newer occurrence with the same Review Issue Fingerprint is being resolved instead.
 _Avoid_: Duplicate Review Issue, resolved issue, ignored issue
@@ -119,6 +123,14 @@ _Avoid_: Fix Command, Fetch command, watch command
 **Reprocess Command**:
 An explicit future command for revisiting selected Terminal Review Issues.
 _Avoid_: Include resolved, resolve option
+
+**Init Command**:
+The support command that creates User Config or Project Config before operational Runs.
+_Avoid_: Bootstrap run, setup run
+
+**Roundfix Skill**:
+A shipped agent skill that teaches an external Agent how to start Roundfix or how to resolve one assigned Batch.
+_Avoid_: Runtime, Review Source, plugin
 
 **Interactive Input**:
 The TUI flow that collects command parameters before a Run starts.

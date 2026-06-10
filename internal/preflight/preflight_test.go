@@ -120,6 +120,42 @@ func TestRunResolvesPullRequestThroughInjectedResolver(t *testing.T) {
 	}
 }
 
+func TestGHPullRequestResolverUsesSupportedFieldsAndParsesBaseRepositoryFromURL(t *testing.T) {
+	runner := &fakeGHRunner{
+		outputs: map[string]string{
+			ghKey("pr", "view", "20", "--json", "number,state,url,headRefName,headRepository"): `{
+				"number": 20,
+				"state": "OPEN",
+				"url": "https://github.com/owner/base/pull/20",
+				"headRefName": "feature/review",
+				"headRepository": {"nameWithOwner": "contributor/fork"}
+			}`,
+		},
+	}
+
+	pr, err := (GHPullRequestResolver{Runner: runner}).ResolvePullRequest(context.Background(), "/repo", "20")
+
+	if err != nil {
+		t.Fatalf("expected pull request metadata, got %v", err)
+	}
+	if pr.BaseRepository != "owner/base" {
+		t.Fatalf("expected base repository from PR URL, got %q", pr.BaseRepository)
+	}
+	if pr.HeadRepository != "contributor/fork" {
+		t.Fatalf("expected Head Repository from gh JSON, got %q", pr.HeadRepository)
+	}
+	if len(runner.calls) != 1 {
+		t.Fatalf("expected one gh call, got %#v", runner.calls)
+	}
+	fields := strings.Join(runner.calls[0], " ")
+	if strings.Contains(fields, "baseRepository") {
+		t.Fatalf("must not request unsupported baseRepository field, got %q", fields)
+	}
+	if !strings.Contains(fields, "url") {
+		t.Fatalf("expected resolver to request supported url field, got %q", fields)
+	}
+}
+
 func TestRunRejectsDirtyWorktreeOutsideArtifactDirectory(t *testing.T) {
 	runner := cleanGitRunner("origin/feature/review")
 	runner.outputs[gitKey("status", "--porcelain=v1", "-z")] = " M .roundfix/reviews/pr-123/issue.md\x00?? src/app.go\x00"
@@ -210,6 +246,25 @@ func (runner fakeGitRunner) RunGit(_ context.Context, _ string, args ...string) 
 	return "", errors.New("missing fake git output for " + strings.Join(args, " "))
 }
 
+type fakeGHRunner struct {
+	outputs map[string]string
+	errors  map[string]error
+	calls   [][]string
+}
+
+func (runner *fakeGHRunner) RunGH(_ context.Context, _ string, args ...string) (string, error) {
+	copied := append([]string(nil), args...)
+	runner.calls = append(runner.calls, copied)
+	key := ghKey(args...)
+	if err := runner.errors[key]; err != nil {
+		return "", err
+	}
+	if value, ok := runner.outputs[key]; ok {
+		return value, nil
+	}
+	return "", errors.New("missing fake gh output for " + strings.Join(args, " "))
+}
+
 type fakePullRequestResolver struct {
 	pr     PullRequest
 	err    error
@@ -251,5 +306,9 @@ func cleanGitRunner(upstream string) fakeGitRunner {
 }
 
 func gitKey(args ...string) string {
+	return strings.Join(args, "\x00")
+}
+
+func ghKey(args ...string) string {
 	return strings.Join(args, "\x00")
 }

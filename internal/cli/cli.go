@@ -582,12 +582,17 @@ func runFetchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		return exitRunFailed
 	}
 
-	fmt.Fprintf(stdout, "Fetch Run %s reached Fetched.\n", completed.ID)
-	fmt.Fprintf(stdout, "Run Database: %s\n", store.DatabasePath(loaded.HomeDir))
-	fmt.Fprintf(stdout, "Artifact Directory: %s\n", req.artifactDir)
-	fmt.Fprintf(stdout, "Round: %03d\n", roundResult.Round)
-	fmt.Fprintf(stdout, "Review Issues: %d\n", len(roundResult.IssuePaths))
-	fmt.Fprintln(stdout, "Roundfix did not start an Agent, commit, or push.")
+	printFetchSuccess(stdout, fetchSuccessView{
+		RunID:          completed.ID,
+		Round:          roundResult.Round,
+		ReviewIssues:   len(roundResult.IssuePaths),
+		RunDatabase:    store.DatabasePath(loaded.HomeDir),
+		ArtifactDir:    req.artifactDir,
+		StartedAgent:   false,
+		CreatedCommit:  false,
+		CompletedPush:  false,
+		ResolvedSource: false,
+	})
 	return exitOK
 }
 
@@ -1037,8 +1042,49 @@ func defaultInspectChangedPaths(ctx context.Context, gitRoot string) ([]prefligh
 	return state.Dirty, nil
 }
 
+type fetchSuccessView struct {
+	RunID          string
+	Round          int
+	ReviewIssues   int
+	RunDatabase    string
+	ArtifactDir    string
+	StartedAgent   bool
+	CreatedCommit  bool
+	CompletedPush  bool
+	ResolvedSource bool
+}
+
+func printFetchSuccess(stdout io.Writer, view fetchSuccessView) {
+	style := styleFor(stdout)
+	fmt.Fprintf(stdout, "%s\n\n", style.green(style.bold("Fetch complete")))
+	fmt.Fprintf(stdout, "%s\n", style.cyan("Result:"))
+	fmt.Fprintf(stdout, "  Run: %s reached Fetched\n", view.RunID)
+	fmt.Fprintf(stdout, "  Round: %03d\n", view.Round)
+	if view.ReviewIssues == 0 {
+		fmt.Fprintln(stdout, "  Review Issues: none")
+	} else {
+		fmt.Fprintf(stdout, "  Review Issues: %d\n", view.ReviewIssues)
+	}
+	fmt.Fprintln(stdout)
+	fmt.Fprintf(stdout, "%s\n", style.cyan("Files:"))
+	fmt.Fprintf(stdout, "  Run Database: %s\n", view.RunDatabase)
+	fmt.Fprintf(stdout, "  Artifact Directory: %s\n", view.ArtifactDir)
+	fmt.Fprintln(stdout)
+	fmt.Fprintf(stdout, "%s\n", style.cyan("No side effects:"))
+	if !view.StartedAgent && !view.CreatedCommit && !view.CompletedPush && !view.ResolvedSource {
+		fmt.Fprintln(stdout, "  Roundfix did not start an Agent, commit, or push.")
+		fmt.Fprintln(stdout, "  Roundfix did not resolve Review Source threads.")
+		return
+	}
+	fmt.Fprintf(stdout, "  Agent started: %s\n", yesNo(view.StartedAgent))
+	fmt.Fprintf(stdout, "  Commit created: %s\n", yesNo(view.CreatedCommit))
+	fmt.Fprintf(stdout, "  Push completed: %s\n", yesNo(view.CompletedPush))
+	fmt.Fprintf(stdout, "  Review Source resolved: %s\n", yesNo(view.ResolvedSource))
+}
+
 func printLiveRunView(stderr io.Writer, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, pipelineState string, issues []rounds.Issue, console []string) {
 	fmt.Fprint(stderr, roundtui.RenderLiveRunView(roundtui.LiveRunView{
+		Command:       req.name,
 		Repository:    preflightResult.PullRequest.HeadRepository,
 		PRNumber:      preflightResult.PullRequest.Number,
 		HeadBranch:    preflightResult.PullRequest.HeadBranch,
@@ -1057,6 +1103,13 @@ func printLiveRunView(stderr io.Writer, req commandRequest, loaded roundconfig.L
 		Issues:        issues,
 		Console:       console,
 	}))
+}
+
+func yesNo(value bool) string {
+	if value {
+		return "yes"
+	}
+	return "no"
 }
 
 func displayReviewSource(source string) string {

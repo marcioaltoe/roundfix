@@ -36,6 +36,7 @@ type InputRequest struct {
 }
 
 type LiveRunView struct {
+	Command       string
 	Repository    string
 	PRNumber      string
 	HeadBranch    string
@@ -53,7 +54,6 @@ type LiveRunView struct {
 	LastPush      string
 	Issues        []rounds.Issue
 	Console       []string
-	Keybindings   []string
 }
 
 type IssueGroup struct {
@@ -156,28 +156,30 @@ func RenderInteractiveInput(req InputRequest) string {
 }
 
 func RenderLiveRunView(view LiveRunView) string {
-	keybindings := view.Keybindings
-	if len(keybindings) == 0 {
-		keybindings = []string{"[tab] focus", "[j/k] issue", "[f] fetch", "[r] resolve", "[p] push", "[t] trigger", "[d] detach", "[s] stop", "[q] quit"}
-	}
 	var builder strings.Builder
-	builder.WriteString("Roundfix\n")
-	builder.WriteString(fmt.Sprintf("repo: %s     pr: #%s     head: %s     source: %s     agent: %s     head_sha: %s\n", emptyDash(view.Repository), emptyDash(view.PRNumber), emptyDash(view.HeadBranch), emptyDash(view.ReviewSource), emptyDash(view.Agent), emptyDash(view.HEAD)))
-	builder.WriteString(fmt.Sprintf("run: %s     state: %s     round: %s     budget: %s\n", emptyDash(view.RunID), emptyDash(view.PipelineState), formatRound(view.CurrentRound, view.MaxRounds), emptyDash(view.BudgetState)))
-	builder.WriteString(fmt.Sprintf("git: %s     auto-commit: %s     auto-push: %s     last push: %s\n", emptyDash(view.GitState), onOff(view.AutoCommit), onOff(view.AutoPush), emptyDash(view.LastPush)))
-	builder.WriteString(strings.Repeat("-", 80))
-	builder.WriteByte('\n')
-	builder.WriteString("Review Issues\n")
-	for _, group := range GroupIssuesByRound(view.Issues) {
-		builder.WriteString(fmt.Sprintf("Round %03d\n", group.Round))
-		for _, issue := range group.Issues {
-			builder.WriteString(fmt.Sprintf("  %-8s %-10s %s:%d\n", emptyDash(issue.Severity), emptyDash(issue.Status), emptyDash(issue.File), issue.Line))
-		}
+	builder.WriteString(fmt.Sprintf("Roundfix %s\n\n", strings.ToLower(emptyDash(view.Command))))
+	builder.WriteString("Target:\n")
+	builder.WriteString(fmt.Sprintf("  PR: #%s %s\n", emptyDash(view.PRNumber), emptyDash(view.Repository)))
+	builder.WriteString(fmt.Sprintf("  Branch: %s\n", emptyDash(view.HeadBranch)))
+	builder.WriteString(fmt.Sprintf("  Source: %s\n", emptyDash(view.ReviewSource)))
+	if view.Agent != "" {
+		builder.WriteString(fmt.Sprintf("  Agent: %s\n", emptyDash(view.Agent)))
 	}
-	if len(view.Issues) == 0 {
-		builder.WriteString("  none\n")
+	if view.HEAD != "" {
+		builder.WriteString(fmt.Sprintf("  HEAD: %s\n", view.HEAD))
 	}
-	builder.WriteString("\nConsole\n")
+
+	builder.WriteString("\nRun:\n")
+	builder.WriteString(fmt.Sprintf("  ID: %s\n", emptyDash(view.RunID)))
+	builder.WriteString(fmt.Sprintf("  State: %s\n", emptyDash(view.PipelineState)))
+	builder.WriteString(fmt.Sprintf("  Round: %s\n", formatRound(view.CurrentRound, view.MaxRounds)))
+	builder.WriteString(fmt.Sprintf("  Budget: %s\n", emptyDash(view.BudgetState)))
+	builder.WriteString(fmt.Sprintf("  Git: %s\n", emptyDash(view.GitState)))
+	builder.WriteString(fmt.Sprintf("  Auto-commit: %s\n", onOff(view.AutoCommit)))
+	builder.WriteString(fmt.Sprintf("  Auto-push: %s\n", onOff(view.AutoPush)))
+	builder.WriteString(fmt.Sprintf("  Last push: %s\n", emptyDash(view.LastPush)))
+
+	builder.WriteString("\nProgress:\n")
 	for _, line := range view.Console {
 		builder.WriteString("  ")
 		builder.WriteString(line)
@@ -186,8 +188,15 @@ func RenderLiveRunView(view LiveRunView) string {
 	if len(view.Console) == 0 {
 		builder.WriteString("  waiting for output\n")
 	}
-	builder.WriteString("\n")
-	builder.WriteString(strings.Join(keybindings, "   "))
+	if len(view.Issues) > 0 {
+		builder.WriteString("\nReview Issues:\n")
+		for _, group := range GroupIssuesByRound(view.Issues) {
+			builder.WriteString(fmt.Sprintf("  Round %03d\n", group.Round))
+			for _, issue := range group.Issues {
+				builder.WriteString(fmt.Sprintf("    %-8s %-10s %s:%d\n", emptyDash(issue.Severity), emptyDash(issue.Status), emptyDash(issue.File), issue.Line))
+			}
+		}
+	}
 	builder.WriteByte('\n')
 	return builder.String()
 }

@@ -123,6 +123,50 @@ func TestFetchReviewsFiltersToUnresolvedCodeRabbitThreads(t *testing.T) {
 	}
 }
 
+func TestFetchReviewsAcceptsCodeRabbitAppLoginFromGraphQLThreads(t *testing.T) {
+	client := Client{
+		GitHub: &fakeGitHubClient{
+			comments: []ReviewComment{
+				{
+					DatabaseID: 301,
+					NodeID:     "PRRC_301",
+					Body:       "major: update the smoke URL",
+					Path:       "apps/api/tests/smoke/production-smoke.test.ts",
+					Line:       7,
+					Author:     coderabbitBotLogin,
+				},
+			},
+			threads: []ReviewThread{
+				{
+					ID:         "PRRT_graphql_login",
+					IsResolved: false,
+					Comments: []ThreadComment{
+						{
+							DatabaseID: 301,
+							NodeID:     "PRRC_301",
+							Author:     coderabbitAppLogin,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	items, err := client.FetchReviews(context.Background(), reviewsource.FetchRequest{
+		BaseRepository: "owner/project",
+		PRNumber:       "123",
+	})
+	if err != nil {
+		t.Fatalf("expected CodeRabbit items, got %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("expected CodeRabbit item with app login thread author, got %#v", items)
+	}
+	if items[0].SourceRef != "thread:PRRT_graphql_login,comment:PRRC_301" {
+		t.Fatalf("expected stable thread/comment source ref, got %q", items[0].SourceRef)
+	}
+}
+
 func TestFetchReviewsCanIncludeNitpicks(t *testing.T) {
 	client := Client{
 		GitHub: &fakeGitHubClient{

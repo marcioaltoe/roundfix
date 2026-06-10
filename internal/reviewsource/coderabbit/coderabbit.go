@@ -16,7 +16,10 @@ import (
 	"roundfix/internal/watch"
 )
 
-const coderabbitBotLogin = "coderabbitai[bot]"
+const (
+	coderabbitBotLogin = "coderabbitai[bot]"
+	coderabbitAppLogin = "coderabbitai"
+)
 
 type Client struct {
 	GitHub GitHubClient
@@ -98,7 +101,7 @@ func (client Client) FetchReviews(ctx context.Context, req reviewsource.FetchReq
 	unresolved := unresolvedCommentThreads(threads)
 	items := make([]reviewsource.ReviewItem, 0, len(comments))
 	for _, comment := range comments {
-		if comment.Author != coderabbitBotLogin {
+		if !isCodeRabbitAuthor(comment.Author) {
 			continue
 		}
 		thread, ok := unresolved[commentKey(comment.DatabaseID, comment.NodeID)]
@@ -609,7 +612,7 @@ func unresolvedCommentThreads(threads []ReviewThread) map[string]unresolvedThrea
 			continue
 		}
 		for _, comment := range thread.Comments {
-			if comment.Author != coderabbitBotLogin {
+			if !isCodeRabbitAuthor(comment.Author) {
 				continue
 			}
 			value := unresolvedThreadComment{
@@ -621,6 +624,11 @@ func unresolvedCommentThreads(threads []ReviewThread) map[string]unresolvedThrea
 		}
 	}
 	return index
+}
+
+func isCodeRabbitAuthor(author string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(author))
+	return normalized == coderabbitBotLogin || normalized == coderabbitAppLogin
 }
 
 func uniqueThreadIDs(issues []reviewsource.ResolvedIssue) []string {

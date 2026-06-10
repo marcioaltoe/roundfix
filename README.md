@@ -39,12 +39,38 @@ Remove build artifacts with:
 make clean
 ```
 
+Install the CLI into your Go bin directory for local testing:
+
+```bash
+make install
+```
+
+Make sure your Go bin directory, usually `~/go/bin`, is on `PATH` before
+running `roundfix` directly.
+
+## GitHub Access
+
+Roundfix uses the GitHub CLI (`gh`) from the local machine. It does not ask for
+or store a GitHub token directly. Authenticate `gh` for the target repository
+before running operational commands:
+
+```bash
+gh auth status
+```
+
 ## Commands
 
 Show help:
 
 ```bash
 go run ./cmd/roundfix --help
+```
+
+Show version:
+
+```bash
+go run ./cmd/roundfix --version
+go run ./cmd/roundfix -v
 ```
 
 Create a Project Config in the current repository:
@@ -86,6 +112,10 @@ go run ./cmd/roundfix skills install --target codex
 
 Supported Agent names are `codex`, `claude`, and `opencode`. Supported Review
 Source is `coderabbit`.
+
+Preflight and run messages use color automatically in interactive terminals.
+Set `ROUNDFIX_COLOR=always` to force color, `ROUNDFIX_COLOR=never` to disable
+it, or set `NO_COLOR` to suppress color.
 
 ## Command Boundaries
 
@@ -160,9 +190,19 @@ resolve:
 - Agent logs:
   `<artifact-dir>/runs/<run-id>/agent/batch-<nnn>.log`
 
+Each successful `fetch` with automatic Round selection writes the next Round
+directory. Roundfix does not overwrite existing Round artifacts. Repeated
+findings are deduplicated later during `resolve` by Review Issue Fingerprint,
+preferring `source_ref` such as `thread:<id>,comment:<id>` and falling back to
+`review_hash`.
+
 Roundfix rejects dirty worktree changes outside the Artifact Directory before
 starting operational work. Terminal Run outcomes release the Active Run lock for
 the PR Head Branch.
+
+The current CodeRabbit fetch imports unresolved inline review threads.
+CodeRabbit review-body summaries and outside-diff comments are not converted
+into Review Issue artifacts yet.
 
 ## Development
 
@@ -186,6 +226,7 @@ make fmt-check
 make test
 make test-race
 make build
+make install
 make deps
 make skills-check
 make skills-install TARGET=codex

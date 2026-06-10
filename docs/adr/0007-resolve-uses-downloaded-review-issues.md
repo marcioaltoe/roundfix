@@ -6,6 +6,8 @@ A new `resolve` Run reuses Compatible Artifacts already present in the Artifact 
 
 When `resolve` includes multiple Compatible Artifact Rounds, Roundfix deduplicates repeated unresolved Review Issues before batching. Deduplication uses the Review Issue Fingerprint, preferring `source_ref` when present and otherwise using a provider-specific fingerprint such as `review_hash`. Only the newest occurrence is assigned to an Agent; older occurrences are associated to the newest issue.
 
+This means Roundfix does not need `fetch` to upsert Review Issue artifacts in place. Repeated fetches may preserve repeated Review Source findings in newer Round directories, and `resolve` remains the boundary that decides which occurrence should create Agent work.
+
 After the assigned newest occurrence reaches `resolved` or `invalid`, the daemon marks older duplicate occurrences with terminal `status: duplicated` and sets `duplicate_of` to the newest occurrence. The Agent does not set `duplicated`, because duplicated status is a daemon-owned artifact bookkeeping result, not direct Agent work.
 
 Duplicated older occurrences are local-only and do not resolve Review Source threads separately.

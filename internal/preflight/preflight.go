@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -78,6 +79,10 @@ type PullRequestResolver interface {
 	ResolvePullRequest(ctx context.Context, workDir string, number string) (PullRequest, error)
 }
 
+type GHRunner interface {
+	RunGH(ctx context.Context, workDir string, args ...string) (string, error)
+}
+
 type ExecGitRunner struct{}
 
 func (runner ExecGitRunner) RunGit(ctx context.Context, workDir string, args ...string) (string, error) {
@@ -98,36 +103,58 @@ func (runner ExecGitRunner) RunGit(ctx context.Context, workDir string, args ...
 	return text, nil
 }
 
-type GHPullRequestResolver struct{}
+type ExecGHRunner struct{}
+
+func (runner ExecGHRunner) RunGH(ctx context.Context, workDir string, args ...string) (string, error) {
+	if workDir == "" {
+		workDir = "."
+	}
+	cmd := exec.CommandContext(ctx, "gh", args...)
+	cmd.Dir = workDir
+	output, err := cmd.CombinedOutput()
+	text := strings.TrimRight(string(output), "\n")
+	if err != nil {
+		detail := strings.TrimSpace(text)
+		if detail == "" {
+			detail = err.Error()
+		}
+		return "", fmt.Errorf("gh %s: %s: %w", strings.Join(args, " "), detail, err)
+	}
+	return text, nil
+}
+
+type GHPullRequestResolver struct {
+	Runner GHRunner
+}
 
 func (resolver GHPullRequestResolver) ResolvePullRequest(ctx context.Context, workDir string, number string) (PullRequest, error) {
 	if workDir == "" {
 		workDir = "."
 	}
-	cmd := exec.CommandContext(ctx, "gh", "pr", "view", number, "--json", "number,state,baseRepository,headRefName,headRepository")
-	cmd.Dir = workDir
-	output, err := cmd.CombinedOutput()
+	runner := resolver.Runner
+	if runner == nil {
+		runner = ExecGHRunner{}
+	}
+	output, err := runner.RunGH(ctx, workDir, "pr", "view", number, "--json", "number,state,url,headRefName,headRepository")
 	if err != nil {
-		detail := strings.TrimSpace(string(output))
-		if detail == "" {
-			detail = err.Error()
-		}
-		return PullRequest{}, fmt.Errorf("gh pr view %s: %s: %w", number, detail, err)
+		return PullRequest{}, err
 	}
 
 	var raw struct {
 		Number         int    `json:"number"`
 		State          string `json:"state"`
+		URL            string `json:"url"`
 		HeadRefName    string `json:"headRefName"`
-		BaseRepository struct {
-			NameWithOwner string `json:"nameWithOwner"`
-		} `json:"baseRepository"`
 		HeadRepository struct {
 			NameWithOwner string `json:"nameWithOwner"`
 		} `json:"headRepository"`
 	}
-	if err := json.Unmarshal(output, &raw); err != nil {
+	if err := json.Unmarshal([]byte(output), &raw); err != nil {
 		return PullRequest{}, fmt.Errorf("parse gh pull request metadata: %w", err)
+	}
+	baseRepository, err := baseRepositoryFromPullRequestURL(raw.URL)
+	if err != nil {
+		return PullRequest{}, fmt.Errorf("parse gh pull request URL: %w", err)
 	}
 	prNumber := number
 	if raw.Number > 0 {
@@ -136,10 +163,28 @@ func (resolver GHPullRequestResolver) ResolvePullRequest(ctx context.Context, wo
 	return PullRequest{
 		Number:         prNumber,
 		State:          raw.State,
-		BaseRepository: raw.BaseRepository.NameWithOwner,
+		BaseRepository: baseRepository,
 		HeadBranch:     raw.HeadRefName,
 		HeadRepository: raw.HeadRepository.NameWithOwner,
 	}, nil
+}
+
+func baseRepositoryFromPullRequestURL(rawURL string) (string, error) {
+	if strings.TrimSpace(rawURL) == "" {
+		return "", nil
+	}
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return "", err
+	}
+	parts := strings.Split(strings.Trim(parsed.Path, "/"), "/")
+	if len(parts) < 4 || parts[2] != "pull" {
+		return "", fmt.Errorf("expected GitHub pull request URL path /owner/repo/pull/<number>, got %q", parsed.Path)
+	}
+	if parts[0] == "" || parts[1] == "" {
+		return "", fmt.Errorf("expected owner and repository in pull request URL path %q", parsed.Path)
+	}
+	return parts[0] + "/" + parts[1], nil
 }
 
 type DirtyWorktreeError struct {

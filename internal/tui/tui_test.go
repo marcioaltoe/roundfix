@@ -77,6 +77,7 @@ func TestCollectInputAppliesDefaultsAndUserOverrides(t *testing.T) {
 
 func TestRenderLiveRunViewGroupsIssuesAndShowsStatusStrips(t *testing.T) {
 	view := RenderLiveRunView(LiveRunView{
+		Command:       "resolve",
 		Repository:    "owner/project",
 		PRNumber:      "123",
 		HeadBranch:    "feature/review",
@@ -104,23 +105,40 @@ func TestRenderLiveRunViewGroupsIssuesAndShowsStatusStrips(t *testing.T) {
 	})
 
 	expected := []string{
-		"Roundfix",
-		"repo: owner/project     pr: #123     head: feature/review     source: CodeRabbit     agent: Codex     head_sha: abc123",
-		"run: run_123     state: ResolvingWithAgent     round: 2 / 6     budget: 38m / 2h",
-		"git: clean, 1 unpushed commit     auto-commit: on     auto-push: on     last push: pending",
+		"Roundfix resolve",
+		"Target:",
+		"PR: #123 owner/project",
+		"Branch: feature/review",
+		"Source: CodeRabbit",
+		"Agent: Codex",
+		"HEAD: abc123",
+		"Run:",
+		"ID: run_123",
+		"State: ResolvingWithAgent",
+		"Round: 2 / 6",
+		"Budget: 38m / 2h",
+		"Git: clean, 1 unpushed commit",
+		"Auto-commit: on",
+		"Auto-push: on",
+		"Last push: pending",
+		"Progress:",
+		"codex resolving batch 1/2",
+		"running make verify",
+		"Review Issues:",
 		"Round 001",
 		"major    resolved   api/auth.go:88",
 		"Round 002",
 		"major    valid      src/cache.ts:41",
 		"minor    pending    README.md:12",
-		"codex resolving batch 1/2",
-		"running make verify",
-		"[tab] focus",
-		"[s] stop",
 	}
 	for _, text := range expected {
 		if !strings.Contains(view, text) {
 			t.Fatalf("expected live view to contain %q, got:\n%s", text, view)
+		}
+	}
+	for _, removed := range []string{"[tab] focus", "[s] stop", "Console"} {
+		if strings.Contains(view, removed) {
+			t.Fatalf("did not expect non-interactive hint %q, got:\n%s", removed, view)
 		}
 	}
 }

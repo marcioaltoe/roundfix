@@ -1125,7 +1125,7 @@ func TestRunFetchCollectsMissingPullRequestWithInteractiveInput(t *testing.T) {
 	if !strings.Contains(stderr.String(), "Interactive Input collected command parameters.") {
 		t.Fatalf("expected Interactive Input confirmation, got %q", stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "Roundfix") || !strings.Contains(stderr.String(), "state: FetchingIssues") {
+	if !strings.Contains(stderr.String(), "Roundfix fetch") || !strings.Contains(stderr.String(), "State: FetchingIssues") {
 		t.Fatalf("expected Live Run View output, got %q", stderr.String())
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
@@ -1200,7 +1200,7 @@ func TestRunResolveInteractiveInputSuggestsConfiguredAgentAndRememberedPullReque
 	if inputReq.AgentSuggestion.Value != "codex" || inputReq.AgentSuggestion.Source != "config" {
 		t.Fatalf("expected configured Agent suggestion before remembered value, got %#v", inputReq.AgentSuggestion)
 	}
-	if !strings.Contains(stderr.String(), "state: ResolvingWithAgent") {
+	if !strings.Contains(stderr.String(), "State: ResolvingWithAgent") {
 		t.Fatalf("expected resolving Live Run View, got %q", stderr.String())
 	}
 	defaults := readInteractiveDefaults(t, homeDir)
