@@ -159,3 +159,7 @@ _Avoid_: Resume, reconnect, takeover
 **Agent**:
 The local coding assistant invoked by Roundfix to triage and resolve an assigned Batch.
 _Avoid_: Review Source, review provider, worker, bot
+
+**Follow Mode**:
+The Live Run View state in which the timeline tail advances automatically as new Run Events arrive; suspended while the user scrolls back, resumed when the viewport returns to the bottom. Scrolling never affects the Run.
+_Avoid_: tail mode, auto-scroll, live mode
