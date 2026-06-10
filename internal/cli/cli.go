@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"flag"
@@ -36,10 +37,12 @@ Usage:
   roundfix fetch --source coderabbit --pr <number>
   roundfix resolve --pr <number> --agent <agent>
   roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean
+  roundfix init [--scope <project|user>]
   roundfix skills check
   roundfix skills install --target <codex|claude|opencode|all>
 
 Commands:
+  init       Create User Config or Project Config
   fetch      Download review issues for an Open Pull Request
   resolve    Resolve downloaded Unresolved Review Issues
   watch      Fetch and resolve in a watched loop
@@ -47,7 +50,7 @@ Commands:
 
 Options:
   -h, --help      Show help
-  --version       Show version
+  -v, --version   Show version
 `
 
 const (
@@ -89,6 +92,7 @@ var watchSleeper watch.Sleeper
 var inspectChangedPaths = defaultInspectChangedPaths
 var collectInteractiveInput = defaultCollectInteractiveInput
 var suggestCurrentPullRequest = defaultSuggestCurrentPullRequest
+var promptInitScope = defaultPromptInitScope
 
 type validationError struct {
 	message string
@@ -122,9 +126,11 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 	case "-h", "--help", "help":
 		fmt.Fprint(stdout, usage)
 		return exitOK
-	case "--version", "version":
+	case "-v", "--version", "version":
 		fmt.Fprintf(stdout, "%s %s\n", app.Name, app.Version)
 		return exitOK
+	case "init":
+		return runInitCommand(ctx, args[1:], stdout, stderr)
 	case "skills":
 		return runSkillsCommand(ctx, args[1:], stdout, stderr)
 	case "fetch", "resolve", "watch":
@@ -134,6 +140,46 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		fmt.Fprintf(stderr, "Run '%s --help' for usage.\n", app.Name)
 		return exitPreflight
 	}
+}
+
+func runInitCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+	if commandWantsHelp(args) {
+		fmt.Fprint(stdout, commandUsage("init"))
+		return exitOK
+	}
+	fs := flag.NewFlagSet("init", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	scope := fs.String("scope", "", "Config scope: project or user")
+	force := fs.Bool("force", false, "Overwrite an existing config file")
+	if err := fs.Parse(args); err != nil {
+		printInitFailure(err, stderr)
+		return exitPreflight
+	}
+	if remaining := fs.Args(); len(remaining) > 0 {
+		printInitFailure(validationError{message: fmt.Sprintf("unexpected argument %q", remaining[0])}, stderr)
+		return exitPreflight
+	}
+
+	selectedScope := strings.TrimSpace(*scope)
+	if selectedScope == "" {
+		var err error
+		selectedScope, err = promptInitScope(ctx, stderr)
+		if err != nil {
+			printInitFailure(err, stderr)
+			return exitPreflight
+		}
+	}
+
+	result, err := roundconfig.Init(ctx, roundconfig.InitOptions{
+		Scope: selectedScope,
+		Force: *force,
+	})
+	if err != nil {
+		printInitFailure(err, stderr)
+		return exitPreflight
+	}
+	printInitSuccess(result, stdout)
+	return exitOK
 }
 
 func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
@@ -219,6 +265,42 @@ func exitForInterrupt(code int, interrupted bool) int {
 		return exitSIGINT
 	}
 	return code
+}
+
+func defaultPromptInitScope(ctx context.Context, stderr io.Writer) (string, error) {
+	return readInitScope(ctx, os.Stdin, stderr)
+}
+
+func readInitScope(ctx context.Context, stdin io.Reader, stderr io.Writer) (string, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	fmt.Fprintln(stderr, "Roundfix Config Init")
+	fmt.Fprintln(stderr, "Choose where to write the config.")
+	fmt.Fprintln(stderr, "Press Enter to use project config.")
+	fmt.Fprint(stderr, "Scope [project] (project/user): ")
+	line, err := bufio.NewReader(stdin).ReadString('\n')
+	if err != nil && !errors.Is(err, io.EOF) {
+		return "", fmt.Errorf("read init scope: %w", err)
+	}
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	return normalizeInitScope(line)
+}
+
+func normalizeInitScope(value string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", roundconfig.InitScopeProject:
+		return roundconfig.InitScopeProject, nil
+	case roundconfig.InitScopeUser:
+		return roundconfig.InitScopeUser, nil
+	default:
+		return "", fmt.Errorf("unsupported init scope %q; supported values: project, user", strings.TrimSpace(value))
+	}
 }
 
 func interruptContext(parent context.Context) (context.Context, func(), func() bool) {
@@ -1320,6 +1402,16 @@ func markRunFailed(ctx context.Context, runStore *store.Store, runID string) {
 
 func commandUsage(name string) string {
 	switch name {
+	case "init":
+		return `Usage:
+  roundfix init [--scope <project|user>] [--force]
+
+Options:
+  --scope  Config scope. Supported: project, user
+           project writes <repo>/.roundfixrc.yml
+           user writes ~/.roundfix/config.yml
+  --force  Overwrite an existing config file
+`
 	case "fetch":
 		return `Usage:
   roundfix fetch --source coderabbit --pr <number> [--round <number|auto>] [--no-input]
@@ -1432,6 +1524,30 @@ func printPreflightNoSideEffects(stderr io.Writer, style terminalStyle) {
 	fmt.Fprintf(stderr, "%s\n", style.cyan("No side effects:"))
 	fmt.Fprintln(stderr, "  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.")
 	fmt.Fprintln(stderr)
+}
+
+func printInitSuccess(result roundconfig.InitResult, stdout io.Writer) {
+	style := styleFor(stdout)
+	action := "created"
+	if result.Overwritten {
+		action = "updated"
+	}
+	fmt.Fprintf(stdout, "%s\n\n", style.green(style.bold("Roundfix config "+action)))
+	fmt.Fprintf(stdout, "%s\n", style.cyan("Scope:"))
+	fmt.Fprintf(stdout, "  %s\n\n", result.Scope)
+	fmt.Fprintf(stdout, "%s\n", style.cyan("Path:"))
+	fmt.Fprintf(stdout, "  %s\n\n", result.Path)
+	fmt.Fprintf(stdout, "%s\n", style.cyan("Next:"))
+	fmt.Fprintln(stdout, "  roundfix fetch --pr <number>")
+}
+
+func printInitFailure(err error, stderr io.Writer) {
+	style := styleFor(stderr)
+	fmt.Fprintf(stderr, "%s\n\n", style.red(style.bold("Init failed")))
+	fmt.Fprintf(stderr, "%s\n", style.cyan("Reason:"))
+	fmt.Fprintf(stderr, "  %v\n\n", err)
+	fmt.Fprintf(stderr, "%s\n", style.cyan("Usage:"))
+	fmt.Fprintf(stderr, "  Run '%s init --help' for usage.\n", app.Name)
 }
 
 func printRunFailure(name string, err error, stderr io.Writer) {

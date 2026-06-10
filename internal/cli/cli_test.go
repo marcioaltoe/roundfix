@@ -40,16 +40,160 @@ func TestRunHelp(t *testing.T) {
 }
 
 func TestRunVersion(t *testing.T) {
+	for _, args := range [][]string{{"--version"}, {"version"}, {"-v"}} {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run(args, &stdout, &stderr)
+
+			if code != 0 {
+				t.Fatalf("expected exit code 0, got %d", code)
+			}
+			if !strings.HasPrefix(stdout.String(), "roundfix ") {
+				t.Fatalf("expected version output, got %q", stdout.String())
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no stderr, got %q", stderr.String())
+			}
+		})
+	}
+}
+
+func TestRunInitCreatesProjectConfigWithExplicitScope(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"--version"}, &stdout, &stderr)
+	code := Run([]string{"init", "--scope", "project"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
 	}
-	if !strings.HasPrefix(stdout.String(), "roundfix ") {
-		t.Fatalf("expected version output, got %q", stdout.String())
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+	if _, err := os.Stat(configPath); err != nil {
+		t.Fatalf("expected Project Config %s: %v", configPath, err)
+	}
+	if !strings.Contains(stdout.String(), "Roundfix config created") || !strings.Contains(stdout.String(), "roundfix fetch --pr <number>") {
+		t.Fatalf("expected init success output, got %q", stdout.String())
+	}
+}
+
+func TestRunInitCreatesUserConfigWithExplicitScope(t *testing.T) {
+	homeDir, _ := withCLIWorkspace(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"init", "--scope", "user"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
+	if _, err := os.Stat(configPath); err != nil {
+		t.Fatalf("expected User Config %s: %v", configPath, err)
+	}
+	if !strings.Contains(stdout.String(), configPath) {
+		t.Fatalf("expected user config path in stdout, got %q", stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+}
+
+func TestRunInitPromptsForScopeAndDefaultsProject(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	prompted := false
+	withInitScopePrompt(t, func(context.Context, io.Writer) (string, error) {
+		prompted = true
+		return roundconfig.InitScopeProject, nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"init"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	if !prompted {
+		t.Fatal("expected init to prompt for missing scope")
+	}
+	if _, err := os.Stat(filepath.Join(repoDir, ".roundfixrc.yml")); err != nil {
+		t.Fatalf("expected default Project Config: %v", err)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr from stubbed prompt, got %q", stderr.String())
+	}
+}
+
+func TestReadInitScopeDefaultsProjectOnBlankInput(t *testing.T) {
+	var stderr bytes.Buffer
+
+	scope, err := readInitScope(context.Background(), strings.NewReader("\n"), &stderr)
+
+	if err != nil {
+		t.Fatalf("expected blank scope to default, got %v", err)
+	}
+	if scope != roundconfig.InitScopeProject {
+		t.Fatalf("expected project default, got %q", scope)
+	}
+	if !strings.Contains(stderr.String(), "Scope [project]") {
+		t.Fatalf("expected prompt output, got %q", stderr.String())
+	}
+}
+
+func TestRunInitRejectsExistingConfigWithoutForce(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+	mustWrite(t, configPath, "defaults:\n  agent: claude\n")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"init", "--scope", "project"}, &stdout, &stderr)
+
+	if code != 2 {
+		t.Fatalf("expected exit code 2, got %d", code)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout, got %q", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "--force") {
+		t.Fatalf("expected force guidance, got %q", stderr.String())
+	}
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	if !strings.Contains(string(content), "agent: claude") {
+		t.Fatalf("expected existing config to remain, got %s", string(content))
+	}
+}
+
+func TestRunInitForceOverwritesExistingConfig(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+	mustWrite(t, configPath, "defaults:\n  agent: claude\n")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"init", "--scope", "project", "--force"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	if !strings.Contains(string(content), "agent: codex") || strings.Contains(string(content), "agent: claude") {
+		t.Fatalf("expected generated config to replace old content, got %s", string(content))
+	}
+	if !strings.Contains(stdout.String(), "Roundfix config updated") {
+		t.Fatalf("expected updated output, got %q", stdout.String())
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
@@ -1478,6 +1622,15 @@ func withInteractiveInput(t *testing.T, fn func(context.Context, roundtui.InputR
 	collectInteractiveInput = fn
 	t.Cleanup(func() {
 		collectInteractiveInput = old
+	})
+}
+
+func withInitScopePrompt(t *testing.T, fn func(context.Context, io.Writer) (string, error)) {
+	t.Helper()
+	old := promptInitScope
+	promptInitScope = fn
+	t.Cleanup(func() {
+		promptInitScope = old
 	})
 }
 

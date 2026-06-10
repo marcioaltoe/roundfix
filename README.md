@@ -47,6 +47,18 @@ Show help:
 go run ./cmd/roundfix --help
 ```
 
+Create a Project Config in the current repository:
+
+```bash
+go run ./cmd/roundfix init
+```
+
+Create a User Config instead:
+
+```bash
+go run ./cmd/roundfix init --scope user
+```
+
 Fetch unresolved CodeRabbit Review Issues into local Round artifacts:
 
 ```bash
@@ -104,6 +116,10 @@ Roundfix reads YAML config in this order:
 2. User Config at `~/.roundfix/config.yml`.
 3. Project Config at `<repo>/.roundfixrc.yml`.
 4. CLI flags.
+
+Use `roundfix init` to create config. When `--scope` is omitted, Roundfix asks
+where to write the file and defaults to Project Config when you press Enter.
+Use `--force` to overwrite an existing config file.
 
 Example:
 

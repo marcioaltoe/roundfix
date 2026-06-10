@@ -47,6 +47,10 @@ func (style terminalStyle) yellow(text string) string {
 	return style.wrap("33", text)
 }
 
+func (style terminalStyle) green(text string) string {
+	return style.wrap("32", text)
+}
+
 func (style terminalStyle) bold(text string) string {
 	return style.wrap("1", text)
 }

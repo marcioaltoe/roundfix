@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -109,6 +110,115 @@ watch:
 	}
 }
 
+func TestInitCreatesUserConfig(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+
+	result, err := Init(context.Background(), InitOptions{
+		Scope:   InitScopeUser,
+		HomeDir: homeDir,
+		WorkDir: workDir,
+	})
+	if err != nil {
+		t.Fatalf("expected init to create User Config, got %v", err)
+	}
+	expectedPath := filepath.Join(homeDir, ".roundfix", "config.yml")
+	if result.Scope != InitScopeUser || result.Path != expectedPath {
+		t.Fatalf("expected user result at %q, got %#v", expectedPath, result)
+	}
+	content := mustRead(t, expectedPath)
+	if !strings.Contains(content, "agent: codex") || !strings.Contains(content, "max_run_duration: 2h") {
+		t.Fatalf("expected default config content, got %s", content)
+	}
+	if _, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir}); err != nil {
+		t.Fatalf("expected generated User Config to load, got %v", err)
+	}
+}
+
+func TestInitCreatesProjectConfig(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+
+	result, err := Init(context.Background(), InitOptions{
+		Scope:   InitScopeProject,
+		HomeDir: homeDir,
+		WorkDir: workDir,
+	})
+	if err != nil {
+		t.Fatalf("expected init to create Project Config, got %v", err)
+	}
+	expectedPath := filepath.Join(workDir, ".roundfixrc.yml")
+	if result.Scope != InitScopeProject || result.Path != expectedPath {
+		t.Fatalf("expected project result at %q, got %#v", expectedPath, result)
+	}
+	if _, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir}); err != nil {
+		t.Fatalf("expected generated Project Config to load, got %v", err)
+	}
+}
+
+func TestInitRejectsProjectScopeOutsideGitRoot(t *testing.T) {
+	_, err := Init(context.Background(), InitOptions{
+		Scope:   InitScopeProject,
+		HomeDir: t.TempDir(),
+		WorkDir: t.TempDir(),
+	})
+	if err == nil {
+		t.Fatal("expected project init outside Git root to fail")
+	}
+	if !strings.Contains(err.Error(), "requires a Git root") {
+		t.Fatalf("expected Git root guidance, got %q", err.Error())
+	}
+}
+
+func TestInitDoesNotOverwriteWithoutForce(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	path := filepath.Join(workDir, ".roundfixrc.yml")
+	mustWrite(t, path, "defaults:\n  agent: claude\n")
+
+	_, err := Init(context.Background(), InitOptions{
+		Scope:   InitScopeProject,
+		HomeDir: homeDir,
+		WorkDir: workDir,
+	})
+	if err == nil {
+		t.Fatal("expected existing config to fail without force")
+	}
+	if !strings.Contains(err.Error(), "--force") {
+		t.Fatalf("expected force guidance, got %q", err.Error())
+	}
+	if content := mustRead(t, path); !strings.Contains(content, "agent: claude") {
+		t.Fatalf("expected existing config to remain, got %s", content)
+	}
+}
+
+func TestInitForceOverwritesExistingConfig(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	path := filepath.Join(workDir, ".roundfixrc.yml")
+	mustWrite(t, path, "defaults:\n  agent: claude\n")
+
+	result, err := Init(context.Background(), InitOptions{
+		Scope:   InitScopeProject,
+		HomeDir: homeDir,
+		WorkDir: workDir,
+		Force:   true,
+	})
+	if err != nil {
+		t.Fatalf("expected force init to overwrite config, got %v", err)
+	}
+	if !result.Overwritten {
+		t.Fatalf("expected overwritten result, got %#v", result)
+	}
+	if content := mustRead(t, path); !strings.Contains(content, "agent: codex") || strings.Contains(content, "agent: claude") {
+		t.Fatalf("expected default config to replace old content, got %s", content)
+	}
+}
+
 func TestValidateArtifactDirectoryResolvesAndCreatesPaths(t *testing.T) {
 	homeDir := t.TempDir()
 	gitRoot := t.TempDir()
@@ -175,6 +285,15 @@ func mustWrite(t *testing.T, path string, content string) {
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write %s: %v", path, err)
 	}
+}
+
+func mustRead(t *testing.T, path string) string {
+	t.Helper()
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	return string(content)
 }
 
 func assertDir(t *testing.T, path string) {

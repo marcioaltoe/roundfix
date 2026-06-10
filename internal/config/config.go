@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -24,6 +25,11 @@ const (
 	defaultReviewTimeout = 30 * time.Minute
 	defaultQuietPeriod   = 30 * time.Second
 	defaultRunDuration   = 2 * time.Hour
+)
+
+const (
+	InitScopeUser    = "user"
+	InitScopeProject = "project"
 )
 
 type Config struct {
@@ -79,6 +85,19 @@ type Loaded struct {
 type LoadOptions struct {
 	HomeDir string
 	WorkDir string
+}
+
+type InitOptions struct {
+	Scope   string
+	HomeDir string
+	WorkDir string
+	Force   bool
+}
+
+type InitResult struct {
+	Scope       string
+	Path        string
+	Overwritten bool
 }
 
 type durationValue struct {
@@ -203,6 +222,99 @@ func Load(opts LoadOptions) (Loaded, error) {
 	return loaded, nil
 }
 
+func Init(ctx context.Context, opts InitOptions) (InitResult, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	scope := strings.ToLower(strings.TrimSpace(opts.Scope))
+	if scope != InitScopeUser && scope != InitScopeProject {
+		return InitResult{}, fmt.Errorf("unsupported init scope %q; supported values: user, project", opts.Scope)
+	}
+	if err := ctx.Err(); err != nil {
+		return InitResult{}, err
+	}
+
+	homeDir, err := resolveHomeDir(opts.HomeDir)
+	if err != nil {
+		return InitResult{}, err
+	}
+	workDir, err := resolveWorkDir(opts.WorkDir)
+	if err != nil {
+		return InitResult{}, err
+	}
+
+	path := filepath.Join(homeDir, userConfigRelPath)
+	if scope == InitScopeProject {
+		gitRoot := findGitRoot(workDir)
+		if gitRoot == "" {
+			return InitResult{}, errors.New("project init requires a Git root; use --scope user outside a repository")
+		}
+		path = filepath.Join(gitRoot, projectConfigName)
+	}
+
+	overwritten, err := writeDefaultConfig(ctx, path, opts.Force)
+	if err != nil {
+		return InitResult{}, err
+	}
+	return InitResult{Scope: scope, Path: path, Overwritten: overwritten}, nil
+}
+
+func DefaultConfigYAML() string {
+	config := Builtin()
+	return fmt.Sprintf(`# Roundfix config.
+# User Config: ~/.roundfix/config.yml
+# Project Config: <repo>/.roundfixrc.yml
+
+defaults:
+  agent: %s
+  model: ""
+  verification: %s
+  artifact_dir: %s
+  auto_commit: %t
+
+review_source:
+  name: %s
+  include_nitpicks: %t
+
+watch:
+  until_clean: %t
+  max_rounds: %d
+  poll_interval: %s
+  review_timeout: %s
+  quiet_period: %s
+  # auto_push runs only after no Unresolved Review Issues remain.
+  auto_push: %t
+  # Leave empty to use the branch upstream detected by Preflight Validation.
+  push_remote: ""
+  push_branch: ""
+
+budget:
+  enabled: %t
+  max_run_duration: %s
+
+resolve:
+  batch_size: %d
+  concurrent: %d
+`,
+		config.Defaults.Agent,
+		config.Defaults.Verification,
+		defaultArtifactDir,
+		config.Defaults.AutoCommit,
+		config.ReviewSource.Name,
+		config.ReviewSource.IncludeNitpicks,
+		config.Watch.UntilClean,
+		config.Watch.MaxRounds,
+		formatConfigDuration(config.Watch.PollInterval),
+		formatConfigDuration(config.Watch.ReviewTimeout),
+		formatConfigDuration(config.Watch.QuietPeriod),
+		config.Watch.AutoPush,
+		config.Budget.Enabled,
+		formatConfigDuration(config.Budget.MaxRunDuration),
+		config.Resolve.BatchSize,
+		config.Resolve.Concurrent,
+	)
+}
+
 func Validate(config Config) error {
 	if config.Defaults.Agent != "" && !isSupportedAgent(config.Defaults.Agent) {
 		return fmt.Errorf("defaults.agent %q is invalid; supported values: codex, claude, opencode", config.Defaults.Agent)
@@ -238,6 +350,60 @@ func Validate(config Config) error {
 		return errors.New("watch.auto_push requires defaults.auto_commit to be true")
 	}
 	return nil
+}
+
+func writeDefaultConfig(ctx context.Context, path string, force bool) (bool, error) {
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	overwritten := false
+	if _, err := os.Stat(path); err == nil {
+		if !force {
+			return false, fmt.Errorf("config already exists at %q; pass --force to overwrite", path)
+		}
+		overwritten = true
+	} else if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return false, fmt.Errorf("stat config %q: %w", path, err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return false, fmt.Errorf("create config directory %q: %w", filepath.Dir(path), err)
+	}
+	flags := os.O_WRONLY | os.O_CREATE
+	if force {
+		flags |= os.O_TRUNC
+	} else {
+		flags |= os.O_EXCL
+	}
+	file, err := os.OpenFile(path, flags, 0o644)
+	if errors.Is(err, os.ErrExist) {
+		return false, fmt.Errorf("config already exists at %q; pass --force to overwrite", path)
+	}
+	if err != nil {
+		return false, fmt.Errorf("create config %q: %w", path, err)
+	}
+	_, writeErr := file.WriteString(DefaultConfigYAML())
+	closeErr := file.Close()
+	if writeErr != nil {
+		return false, fmt.Errorf("write config %q: %w", path, writeErr)
+	}
+	if closeErr != nil {
+		return false, fmt.Errorf("write config %q: %w", path, closeErr)
+	}
+	return overwritten, nil
+}
+
+func formatConfigDuration(duration time.Duration) string {
+	switch {
+	case duration%time.Hour == 0:
+		return fmt.Sprintf("%dh", int(duration/time.Hour))
+	case duration%time.Minute == 0:
+		return fmt.Sprintf("%dm", int(duration/time.Minute))
+	case duration%time.Second == 0:
+		return fmt.Sprintf("%ds", int(duration/time.Second))
+	default:
+		return duration.String()
+	}
 }
 
 func ValidateArtifactDirectory(artifactDir string, gitRoot string, homeDir string) (string, error) {
