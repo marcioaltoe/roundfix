@@ -784,6 +784,9 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	printLiveRunView(stderr, req, loaded, preflightResult, run.ID, "ResolvingWithAgent", resolvePlan.selection.Issues, []string{"Agent and verification output will stream below."})
 
 	cockpitView := buildLiveRunView(req, loaded, preflightResult, run.ID, "ResolvingWithAgent", resolvePlan.selection.Issues, nil)
+	for _, batch := range resolvePlan.plan.Batches {
+		cockpitView.BatchSizes = append(cockpitView.BatchSizes, len(batch.Issues))
+	}
 	ui, err := startRunUI(ctx, cockpitView, run.ID, loaded.HomeDir, runStore, stderr)
 	if err != nil {
 		markRunFailed(ctx, runStore, run.ID)

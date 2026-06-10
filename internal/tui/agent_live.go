@@ -21,13 +21,24 @@ func firstNonEmpty(values ...string) string {
 }
 
 func renderAgentHeader(view LiveRunView, width int) string {
-	left := styleLime.Bold(true).Render("ROUNDFIX") + styleMuted.Render(" // ACP COCKPIT")
-	right := styleBright.Render("RUN 0/1")
+	left := styleAccent.Bold(true).Render("ROUNDFIX") + styleMuted.Render(" // LIVE RUN VIEW")
+	right := styleBright.Render(shortRunID(view.RunID))
 	return padRightDisplay(left, max(width-displayWidth(right), 1)) + right
 }
 
+// shortRunID keeps the header compact: the trailing hash identifies the Run.
+func shortRunID(runID string) string {
+	if runID == "" {
+		return "RUN"
+	}
+	if len(runID) > 8 {
+		return "RUN " + runID[len(runID)-8:]
+	}
+	return "RUN " + runID
+}
+
 func renderPipelineBar(view LiveRunView, width int) string {
-	label := styleLime.Bold(true).Render("SYS.PIPELINE")
+	label := styleAccent.Bold(true).Render("SYS.PIPELINE")
 	state := strings.ToUpper(emptyDash(view.PipelineState))
 	barWidth := max(width-displayWidth("SYS.PIPELINE ")-2, 8)
 	bar := styleBar.Render(padRightDisplay(state, barWidth))
@@ -44,7 +55,7 @@ func renderAgentSidebar(view LiveRunView, startedAt time.Time, width int, height
 			label = fmt.Sprintf("batch_%03d/%03d", view.BatchNumber, view.BatchTotal)
 		}
 	}
-	lines = append(lines, styleLime.Render("[ : "+label)+padRightDisplay("", max(width-displayWidth(label)-11, 0))+styleLime.Render(elapsed.String()))
+	lines = append(lines, styleAccent.Render("[ : "+label)+padRightDisplay("", max(width-displayWidth(label)-11, 0))+styleAccent.Render(elapsed.String()))
 	files := countIssueFiles(view.Issues)
 	issueCount := len(view.Issues)
 	if view.TotalIssues > 0 {
@@ -62,7 +73,7 @@ func renderAgentSidebar(view LiveRunView, startedAt time.Time, width int, height
 }
 
 func renderAgentTimeline(view LiveRunView, lines []string, width int, height int) string {
-	header := styleLime.Bold(true).Render("SESSION.TIMELINE")
+	header := styleAccent.Bold(true).Render("SESSION.TIMELINE")
 	model := strings.TrimSpace(view.Model)
 	if model == "" {
 		model = "auto"
@@ -95,7 +106,7 @@ func issueJobLines(issue rounds.Issue, fallbackNumber int, active bool, elapsed 
 	}
 	label := fmt.Sprintf("%s • %s", name, severity)
 	if active {
-		label = styleLime.Render("▌ ") + truncateDisplay(label, width-2)
+		label = styleAccent.Render("▌ ") + truncateDisplay(label, width-2)
 	} else {
 		label = "  " + truncateDisplay(label, width-2)
 	}
@@ -127,11 +138,11 @@ func colorTimelineLines(lines []string, width int) []string {
 		case strings.HasPrefix(trimmed, "[TOOL]"):
 			colored = append(colored, styleTool.Render(truncateDisplay(trimmed, width)))
 		case strings.HasPrefix(trimmed, "PLAN"):
-			colored = append(colored, styleLime.Render(truncateDisplay(trimmed, width)))
+			colored = append(colored, styleAccent.Render(truncateDisplay(trimmed, width)))
 		case strings.HasPrefix(trimmed, "THINK"):
 			colored = append(colored, styleMuted.Render(truncateDisplay(trimmed, width)))
 		case strings.HasPrefix(trimmed, "SESSION"):
-			colored = append(colored, styleLime.Render(truncateDisplay(trimmed, width)))
+			colored = append(colored, styleAccent.Render(truncateDisplay(trimmed, width)))
 		default:
 			colored = append(colored, styleBright.Render(truncateDisplay(trimmed, width)))
 		}
@@ -220,13 +231,18 @@ func stripANSI(value string) string {
 	return builder.String()
 }
 
+// Roundfix uses a blue accent palette so the cockpit reads distinctly from
+// other terminal tools.
 var (
-	styleLime         = lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
+	styleAccent       = lipgloss.NewStyle().Foreground(lipgloss.Color("39"))
 	styleBright       = lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
 	styleMuted        = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
-	styleTool         = lipgloss.NewStyle().Foreground(lipgloss.Color("48"))
+	styleTool         = lipgloss.NewStyle().Foreground(lipgloss.Color("75"))
 	styleBar          = lipgloss.NewStyle().Foreground(lipgloss.Color("250")).Background(lipgloss.Color("238"))
+	styleBarFill      = lipgloss.NewStyle().Foreground(lipgloss.Color("231")).Background(lipgloss.Color("27")).Bold(true)
+	styleBarRest      = lipgloss.NewStyle().Foreground(lipgloss.Color("17")).Background(lipgloss.Color("153"))
+	styleError        = lipgloss.NewStyle().Foreground(lipgloss.Color("203"))
 	styleFooter       = lipgloss.NewStyle().Foreground(lipgloss.Color("248")).Background(lipgloss.Color("234"))
 	styleBorder       = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("238")).Padding(0, 1)
-	styleActiveBorder = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("10")).Padding(0, 1)
+	styleActiveBorder = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("39")).Padding(0, 1)
 )

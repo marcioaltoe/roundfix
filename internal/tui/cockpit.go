@@ -43,6 +43,8 @@ type CockpitConfig struct {
 	PollInterval time.Duration
 	// OnStop handles Ctrl-C in owning mode (Stop Request). Nil in attach.
 	OnStop func()
+	// Now overrides the clock for elapsed-time rendering. Nil means time.Now.
+	Now func() time.Time
 }
 
 const defaultCockpitPollInterval = 250 * time.Millisecond
@@ -67,11 +69,16 @@ type cockpitModel struct {
 	ctx      context.Context
 	cfg      CockpitConfig
 	viewport *TimelineViewport
+	now      func() time.Time
 
 	focus    cockpitFocus
 	selected int
 	issueTop int
 	detail   *issueDetailView
+
+	issueStatuses  []string
+	currentBatch   int
+	batchStartedAt time.Time
 
 	runState    string
 	terminal    bool
@@ -87,10 +94,15 @@ func newCockpitModel(ctx context.Context, cfg CockpitConfig) (*cockpitModel, err
 	if cfg.PollInterval <= 0 {
 		cfg.PollInterval = defaultCockpitPollInterval
 	}
+	now := cfg.Now
+	if now == nil {
+		now = time.Now
+	}
 	model := &cockpitModel{
 		ctx:         ctx,
 		cfg:         cfg,
 		viewport:    NewTimelineViewport(cfg.Source, cfg.RunID, 0, 0),
+		now:         now,
 		runState:    cfg.View.PipelineState,
 		lastVersion: -1,
 		width:       maxInt(cfg.View.Width, 88),
@@ -100,6 +112,7 @@ func newCockpitModel(ctx context.Context, cfg CockpitConfig) (*cockpitModel, err
 		model.terminal = true
 		model.viewport.SetTerminal()
 	}
+	model.refreshIssues()
 	model.viewport.SetHeight(model.bodyHeight())
 	if err := model.viewport.Replay(ctx); err != nil {
 		return nil, err
@@ -173,6 +186,76 @@ func (model *cockpitModel) poll() {
 		model.terminal = true
 		model.viewport.SetTerminal()
 	}
+	model.refreshIssues()
+}
+
+// refreshIssues re-reads Review Issue artifact statuses and derives which
+// Batch is executing, so the sidebar and the progress bar track the Run.
+func (model *cockpitModel) refreshIssues() {
+	issues := model.cfg.View.Issues
+	if len(model.issueStatuses) != len(issues) {
+		model.issueStatuses = make([]string, len(issues))
+	}
+	for index, issue := range issues {
+		status := issue.Status
+		if parsed, err := rounds.ParseIssue(issue.Path); err == nil {
+			status = parsed.Status
+		}
+		model.issueStatuses[index] = status
+	}
+	current := 0
+	for index := range issues {
+		if model.issueStatuses[index] == rounds.StatusPending || model.issueStatuses[index] == "" {
+			current = model.batchOf(index)
+			break
+		}
+	}
+	if current != model.currentBatch {
+		model.currentBatch = current
+		model.batchStartedAt = model.now()
+	}
+}
+
+// batchOf maps an issue index to its 1-based Batch number; 0 means the plan
+// is unknown (attach without batch info).
+func (model *cockpitModel) batchOf(index int) int {
+	consumed := 0
+	for batch, size := range model.cfg.View.BatchSizes {
+		consumed += size
+		if index < consumed {
+			return batch + 1
+		}
+	}
+	return 0
+}
+
+// issueStatusLabel renders the execution state per recorded design:
+// terminal artifact statuses verbatim, Executing for the current Batch,
+// Waiting ahead of it, Paused once the Run itself has ended.
+func (model *cockpitModel) issueStatusLabel(index int) string {
+	status := model.issueStatuses[index]
+	switch status {
+	case rounds.StatusResolved, rounds.StatusInvalid, rounds.StatusDuplicated, rounds.StatusFailed:
+		return strings.ToUpper(status[:1]) + status[1:]
+	}
+	if model.terminal || store.IsTerminalState(model.runState) {
+		return "Paused"
+	}
+	if model.currentBatch > 0 && model.batchOf(index) == model.currentBatch {
+		return "Executing"
+	}
+	return "Waiting"
+}
+
+func (model *cockpitModel) progressCounts() (int, int) {
+	done := 0
+	for _, status := range model.issueStatuses {
+		switch status {
+		case rounds.StatusResolved, rounds.StatusInvalid, rounds.StatusDuplicated:
+			done++
+		}
+	}
+	return done, len(model.issueStatuses)
 }
 
 func (model *cockpitModel) handleKey(key tea.Key) (tea.Model, tea.Cmd) {
@@ -350,7 +433,7 @@ func (model *cockpitModel) renderRightPane(width int, height int) string {
 		return panel(width, height, model.renderDetail(width, height), true)
 	}
 	lines := model.viewport.VisibleLines()
-	content := []string{styleLime.Bold(true).Render("SESSION.TIMELINE"), ""}
+	content := []string{styleAccent.Bold(true).Render("SESSION.TIMELINE"), ""}
 	if len(lines) == 0 {
 		content = append(content, styleMuted.Render("No Run Events yet..."))
 	} else {
@@ -363,7 +446,7 @@ func (model *cockpitModel) renderDetail(width int, height int) string {
 	detail := model.detail
 	issue := detail.issue
 	header := []string{
-		styleLime.Bold(true).Render("REVIEW.ISSUE"),
+		styleAccent.Bold(true).Render("REVIEW.ISSUE"),
 		styleBright.Render(emptyDash(issue.Title)),
 		styleMuted.Render(fmt.Sprintf("%s · %s · %s:%d", emptyDash(issue.Severity), emptyDash(issue.Status), emptyDash(issue.File), issue.Line)),
 		styleMuted.Render("source: " + emptyDash(issue.SourceRef)),
@@ -384,11 +467,14 @@ func (model *cockpitModel) renderDetail(width int, height int) string {
 
 func (model *cockpitModel) renderIssuePane(width int, height int) string {
 	issues := model.cfg.View.Issues
-	lines := []string{styleLime.Bold(true).Render("REVIEW.ISSUES"), styleMuted.Render(fmt.Sprintf("%d issue(s)", len(issues))), ""}
-	visible := height - 5
-	if visible < 1 {
-		visible = 1
+	lines := []string{styleAccent.Bold(true).Render("REVIEW.ISSUES"), styleMuted.Render(fmt.Sprintf("%d issue(s)", len(issues))), ""}
+	if len(issues) == 0 {
+		lines = append(lines, styleMuted.Render("No Review Issues"))
+		return strings.Join(limitLines(lines, height-2), "\n")
 	}
+	// Each issue renders as a two-line block plus a blank spacer, with a
+	// Batch separator ahead of each Batch's first issue.
+	visible := maxInt((height-5)/3, 1)
 	if model.selected < model.issueTop {
 		model.issueTop = model.selected
 	}
@@ -397,45 +483,122 @@ func (model *cockpitModel) renderIssuePane(width int, height int) string {
 	}
 	end := minInt(model.issueTop+visible, len(issues))
 	for index := model.issueTop; index < end; index++ {
-		issue := issues[index]
-		marker := "  "
-		line := fmt.Sprintf("%s%-8s %-10s %s", marker, issue.Severity, issue.Status, emptyDash(issue.Title))
-		if index == model.selected {
-			line = "> " + line[2:]
-			lines = append(lines, styleBright.Render(truncateDisplay(line, width-4)))
-			continue
-		}
-		lines = append(lines, styleMuted.Render(truncateDisplay(line, width-4)))
-	}
-	if len(issues) == 0 {
-		lines = append(lines, styleMuted.Render("No Review Issues"))
+		lines = append(lines, model.issueBlock(index, width)...)
 	}
 	return strings.Join(limitLines(lines, height-2), "\n")
 }
 
-func (model *cockpitModel) renderStatusBar(width int) string {
-	label := styleLime.Bold(true).Render("RUN.STATUS")
-	left := strings.ToUpper(emptyDash(model.runState))
-	right := model.followStatusText()
-	text := left + "  ·  " + right
-	barWidth := maxInt(width-displayWidth("RUN.STATUS ")-2, 8)
-	return label + " " + styleBar.Render(padRightDisplay(text, barWidth))
+func (model *cockpitModel) issueBlock(index int, width int) []string {
+	lines := []string{}
+	if separator := model.batchSeparator(index); separator != "" {
+		lines = append(lines, styleAccent.Render(truncateDisplay(separator, width-4)))
+	}
+	label := model.issueStatusLabel(index)
+	name := fmt.Sprintf("Issue #%03d", index+1)
+	marker := "  "
+	if index == model.selected {
+		marker = "> "
+	}
+	elapsed := ""
+	if label == "Executing" {
+		elapsed = formatElapsed(model.now().Sub(model.batchStartedAt))
+	}
+	first := marker + name
+	if elapsed != "" {
+		pad := maxInt(width-4-displayWidth(first)-displayWidth(elapsed), 1)
+		first += strings.Repeat(" ", pad) + elapsed
+	}
+	nameStyle := styleMuted
+	if index == model.selected {
+		nameStyle = styleBright
+	}
+	lines = append(lines, nameStyle.Render(truncateDisplay(first, width-4)))
+	lines = append(lines, model.statusStyle(label).Render(truncateDisplay("  "+label, width-4)))
+	return append(lines, "")
 }
 
-func (model *cockpitModel) followStatusText() string {
+// batchSeparator labels the first issue of each Batch when the plan is
+// known.
+func (model *cockpitModel) batchSeparator(index int) string {
+	total := len(model.cfg.View.BatchSizes)
+	if total == 0 {
+		return ""
+	}
+	batch := model.batchOf(index)
+	if batch == 0 {
+		return ""
+	}
+	if index > 0 && model.batchOf(index-1) == batch {
+		return ""
+	}
+	return fmt.Sprintf("─── Batch %03d/%03d", batch, total)
+}
+
+func (model *cockpitModel) statusStyle(label string) lipgloss.Style {
+	switch label {
+	case "Executing":
+		return styleAccent
+	case "Resolved", "Invalid", "Duplicated":
+		return styleTool
+	case "Failed":
+		return styleError
+	default:
+		return styleMuted
+	}
+}
+
+func formatElapsed(elapsed time.Duration) string {
+	if elapsed < 0 {
+		elapsed = 0
+	}
+	total := int(elapsed.Seconds())
+	if total >= 3600 {
+		return fmt.Sprintf("%d:%02d:%02d", total/3600, (total%3600)/60, total%60)
+	}
+	return fmt.Sprintf("%02d:%02d", total/60, total%60)
+}
+
+// renderStatusBar is the Run progress bar: resolved issues over total,
+// filled solid blue to the completed percentage. Scrollback and read-only
+// hints surface only when they apply.
+func (model *cockpitModel) renderStatusBar(width int) string {
+	label := styleAccent.Bold(true).Render("RUN.PROGRESS")
+	barWidth := maxInt(width-displayWidth("RUN.PROGRESS ")-2, 8)
+	done, total := model.progressCounts()
+	text := strings.ToUpper(emptyDash(model.runState))
+	percent := 0
+	if total > 0 {
+		percent = done * 100 / total
+		text = fmt.Sprintf(" %d of %d issue(s) resolved · %d%%", done, total, percent)
+	}
+	if suffix := model.statusSuffix(); suffix != "" {
+		text += " · " + suffix
+	}
+	padded := padRightDisplay(truncateDisplay(text, barWidth), barWidth)
+	fill := barWidth * percent / 100
+	runes := []rune(padded)
+	if fill > len(runes) {
+		fill = len(runes)
+	}
+	return label + " " + styleBarFill.Render(string(runes[:fill])) + styleBarRest.Render(string(runes[fill:]))
+}
+
+// statusSuffix narrates only the states the user must notice: a frozen
+// scrolled viewport, replay in progress, or a finished read-only Run.
+func (model *cockpitModel) statusSuffix() string {
 	state, below := model.viewport.State()
 	switch state {
 	case FollowReplaying:
 		return "REPLAYING BACKLOG..."
-	case FollowFollowing:
-		return "FOLLOWING"
 	case FollowScrolled:
 		if below > 0 {
 			return fmt.Sprintf("SCROLLED · %d new event(s) below — End to follow", below)
 		}
 		return "SCROLLED — End to follow"
-	default:
+	case FollowTerminal:
 		return "READ-ONLY"
+	default:
+		return ""
 	}
 }
 

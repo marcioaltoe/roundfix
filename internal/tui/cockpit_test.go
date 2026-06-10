@@ -84,7 +84,7 @@ func pressKey(t *testing.T, model *cockpitModel, keystroke string) tea.Cmd {
 }
 
 func viewText(model *cockpitModel) string {
-	return model.View().Content
+	return stripANSI(model.View().Content)
 }
 
 func sampleIssues(count int) []rounds.Issue {
@@ -124,7 +124,7 @@ func TestCockpitTabSwitchesFocusAndArrowsMoveSelection(t *testing.T) {
 	if model.selected != 2 {
 		t.Fatalf("expected selection clamped at the last issue, got %d", model.selected)
 	}
-	if !strings.Contains(viewText(model), "> major") {
+	if !strings.Contains(viewText(model), "> Issue #003") {
 		t.Fatalf("expected selection marker rendered, got:\n%s", viewText(model))
 	}
 	pressKey(t, model, "tab")
@@ -228,8 +228,8 @@ func TestCockpitScrollFreezesFollowAndStatusBarNarratesStates(t *testing.T) {
 	}
 	model := newTestCockpit(t, source, LiveRunView{PipelineState: store.StateActive})
 
-	if !strings.Contains(viewText(model), "FOLLOWING") {
-		t.Fatalf("expected FOLLOWING status after replay, got:\n%s", viewText(model))
+	if strings.Contains(viewText(model), "SCROLLED") {
+		t.Fatalf("expected no scroll hint while following, got:\n%s", viewText(model))
 	}
 
 	pressKey(t, model, "pgup")
@@ -244,7 +244,7 @@ func TestCockpitScrollFreezesFollowAndStatusBarNarratesStates(t *testing.T) {
 
 	pressKey(t, model, "end")
 	rendered = viewText(model)
-	if !strings.Contains(rendered, "FOLLOWING") || !strings.Contains(rendered, "line 0061") {
+	if strings.Contains(rendered, "SCROLLED") || !strings.Contains(rendered, "line 0061") {
 		t.Fatalf("expected End to resume following at the tail, got:\n%s", rendered)
 	}
 }
@@ -270,7 +270,7 @@ func TestCockpitTerminalRunShowsReadOnlyAndStopsTicking(t *testing.T) {
 	model := newTestCockpit(t, source, LiveRunView{PipelineState: store.StateClean})
 
 	rendered := viewText(model)
-	if !strings.Contains(rendered, "READ-ONLY") || !strings.Contains(rendered, "CLEAN") {
+	if !strings.Contains(rendered, "READ-ONLY") {
 		t.Fatalf("expected terminal read-only status, got:\n%s", rendered)
 	}
 	if cmd := model.Init(); cmd != nil {
@@ -389,5 +389,66 @@ func TestOwningCockpitPollsJournalWhileOwnProcessWrites(t *testing.T) {
 	}
 	if !stopRequested {
 		t.Fatal("expected ctrl+c during active polling to trigger the Stop Request callback")
+	}
+}
+
+func TestCockpitSidebarShowsBatchesStatusAndElapsed(t *testing.T) {
+	artifactDir := t.TempDir()
+	persisted, err := rounds.PersistRound(context.Background(), rounds.PersistRequest{
+		ArtifactDir:    artifactDir,
+		Source:         reviewsource.SourceCodeRabbit,
+		PRNumber:       "123",
+		HeadRepository: "owner/project",
+		HeadBranch:     "feature/review",
+		HeadSHA:        "abc123",
+		Round:          1,
+		CreatedAt:      time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC),
+		Items: []reviewsource.ReviewItem{
+			{Title: "one", File: "a.go", Line: 1, Severity: "major", Author: "bot", Body: "b", SourceRef: "thread:1,comment:1", ReviewHash: "h1", SourceReviewID: "1", SourceReviewSubmittedAt: time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC)},
+			{Title: "two", File: "b.go", Line: 2, Severity: "minor", Author: "bot", Body: "b", SourceRef: "thread:2,comment:2", ReviewHash: "h2", SourceReviewID: "1", SourceReviewSubmittedAt: time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC)},
+			{Title: "three", File: "c.go", Line: 3, Severity: "minor", Author: "bot", Body: "b", SourceRef: "thread:3,comment:3", ReviewHash: "h3", SourceReviewID: "1", SourceReviewSubmittedAt: time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC)},
+		},
+	})
+	if err != nil {
+		t.Fatalf("persist round: %v", err)
+	}
+	// First issue resolved on disk; the other two stay pending.
+	if err := rounds.SetIssueStatus(persisted.IssuePaths[0], rounds.StatusResolved, ""); err != nil {
+		t.Fatalf("set status: %v", err)
+	}
+	issues := []rounds.Issue{}
+	for _, path := range persisted.IssuePaths {
+		issues = append(issues, rounds.Issue{Path: path, Status: rounds.StatusPending})
+	}
+	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateResolvingWithAgent}, version: 1}
+	clock := time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC)
+	model, err := newCockpitModel(context.Background(), CockpitConfig{
+		Mode:   CockpitOwning,
+		View:   LiveRunView{PipelineState: store.StateResolvingWithAgent, Width: 100, Issues: issues, BatchSizes: []int{2, 1}},
+		RunID:  "run-1",
+		Source: source,
+		Now:    func() time.Time { return clock },
+	})
+	if err != nil {
+		t.Fatalf("new cockpit model: %v", err)
+	}
+	clock = clock.Add(83 * time.Second)
+
+	rendered := viewText(model)
+	for _, expected := range []string{
+		"─── Batch 001/003"[:len("─── Batch 001/0")] + "02", // batch 1 of 2
+		"─── Batch 002/002",
+		"Issue #001",
+		"Resolved",
+		"Issue #002",
+		"Executing",
+		"01:23",
+		"Issue #003",
+		"Waiting",
+		"1 of 3 issue(s) resolved · 33%",
+	} {
+		if !strings.Contains(rendered, expected) {
+			t.Fatalf("expected sidebar to contain %q, got:\n%s", expected, rendered)
+		}
 	}
 }

@@ -57,8 +57,12 @@ type LiveRunView struct {
 	BatchTotal    int
 	TotalIssues   int
 	Issues        []rounds.Issue
-	Console       []string
-	Width         int
+	// BatchSizes lists the planned Review Issue count per Batch, in Batch
+	// order, when the caller knows the plan. The cockpit derives Batch
+	// separators and Executing/Waiting states from it.
+	BatchSizes []int
+	Console    []string
+	Width      int
 }
 
 type IssueGroup struct {
