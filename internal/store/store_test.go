@@ -284,3 +284,32 @@ func sampleCreateRunRequest() CreateRunRequest {
 		ArtifactDir:    filepath.Join("tmp", "repo", ".roundfix"),
 	}
 }
+
+func TestUpdateRunStateRejectsTerminalStatesAndMissingRuns(t *testing.T) {
+	ctx := context.Background()
+	store := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, store)
+
+	run, err := store.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+
+	if err := store.UpdateRunState(ctx, run.ID, StateResolvingWithAgent); err != nil {
+		t.Fatalf("expected intermediate state update, got %v", err)
+	}
+	updated, _, err := store.Run(ctx, run.ID)
+	if err != nil {
+		t.Fatalf("lookup run: %v", err)
+	}
+	if updated.State != StateResolvingWithAgent {
+		t.Fatalf("expected ResolvingWithAgent, got %q", updated.State)
+	}
+
+	if err := store.UpdateRunState(ctx, run.ID, StateClean); err == nil {
+		t.Fatal("expected terminal state rejection; terminal outcomes go through CompleteRun")
+	}
+	if err := store.UpdateRunState(ctx, "run_missing", StateVerifying); err == nil {
+		t.Fatal("expected missing Run rejection")
+	}
+}

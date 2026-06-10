@@ -2,10 +2,10 @@
 title: "Daemon Run engine: resolve cycle extraction with explicit dependencies"
 type: AFK
 category: enhancement
-state: ready-for-agent
+state: completed
 labels:
   - enhancement
-  - ready-for-agent
+  - completed
 user_stories:
   - 5
   - 6
@@ -40,14 +40,37 @@ published to the sink; Agent worktree changes preserved.
 
 ## Acceptance criteria
 
-- [ ] Engine proves resolve→verify→commit→source-resolution contract with fake collaborators and a temp store; no terminal, no network
-- [ ] Final Push is a separate operation; caller-side gating decides when it runs
-- [ ] Intermediate Run states updated during the cycle; terminal completion remains caller-owned
-- [ ] CLI orchestration globals removed; resolve command delegates to the engine
-- [ ] Stop tests: no post-stop daemon actions, stop event reaches sink, worktree preserved
-- [ ] Existing CLI orchestration tests and fakes migrate to engine tests
-- [ ] Batch failure policy unchanged: verification/Agent failure fails the Run
+- [x] Engine proves resolve→verify→commit→source-resolution contract with fake collaborators and a temp store; no terminal, no network
+- [x] Final Push is a separate operation; caller-side gating decides when it runs
+- [x] Intermediate Run states updated during the cycle; terminal completion remains caller-owned
+- [x] CLI orchestration globals removed; resolve command delegates to the engine
+- [x] Stop tests: no post-stop daemon actions, stop event reaches sink, worktree preserved
+- [x] Existing CLI orchestration tests and fakes migrate to engine tests
+- [x] Batch failure policy unchanged: verification/Agent failure fails the Run
 
 ## Blocked by
 
 - 03-runevent-seam-runner-and-writersink.md
+
+## Comments
+
+**2026-06-10 (agent):** Built `daemon.Engine` (`internal/daemon/engine.go`): `NewEngine(Dependencies)` validates an
+explicit struct (Runner, Verifier, Committer, Pusher, Source resolver, Runs store, Sink, clock, Progress writer);
+`ResolveCycle(ctx, CyclePlan)` executes per Batch agent → terminal-status validation → verification →
+duplicate-marking → commit (auto-commit) → Review Source thread resolution, returning per-Batch outcomes
+(committed, resolved threads) and the remaining Unresolved Review Issue count; `FinalPush` is a separate explicit
+operation with gating left in the caller (ADR 0001). Intermediate Run states: store gained non-terminal
+`ResolvingWithAgent`/`Verifying`/`Pushing` constants and `UpdateRunState` (rejects terminal states and missing
+Runs); engine sets them at phase boundaries; terminal completion stays caller-owned. Stop semantics: at any daemon
+boundary a canceled context halts the cycle, publishes a `daemon.status` stopped event (new `KindDaemonStatus` in
+runevent, full taxonomy deferred to PRD 6) via `context.WithoutCancel`; a stop during the Agent surfaces the
+runner's own stop event and the Batch is not marked failed (worktree preserved). The five CLI orchestration globals
+(`runAgentRuntime`, `runVerificationGate`, `createBatchCommit`, `resolveReviewSourceIssues`, `runFinalPush`) are
+deleted; one `newEngineCollaborators` factory remains as the CLI dispatch-test seam; resolve delegates to the
+engine via `executeResolveCycle`, and the watch resolver calls the same path interim (unit 09 finishes the watch
+migration). Engine tests (`internal/daemon/engine_test.go`) use fake collaborators plus a real temp Run Database
+and prove: call order `agent>verify>commit>source`, no push during a cycle, explicit FinalPush sets `Pushing`,
+agent/verification failures fail the cycle and mark the Batch failed, stop-before-Batch publishes the daemon stop
+event with zero collaborator calls, and stop-during-Agent preserves issue state. All existing CLI text-contract
+tests pass unchanged. Verification: `rtk go vet ./...` clean, `rtk go test ./...` 181 passed in 15 packages,
+`rtk go test -race` on daemon+cli 77 passed, `rtk go run ./cmd/roundfix --help` green.

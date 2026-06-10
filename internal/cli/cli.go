@@ -84,11 +84,11 @@ type commandRequest struct {
 
 var runCommandPreflight = defaultRunCommandPreflight
 var fetchReviewItems = defaultFetchReviewItems
-var runAgentRuntime agent.Runner = agent.DefaultRunner{}
-var runVerificationGate daemon.Verifier = daemon.ExecVerifier{}
-var createBatchCommit daemon.Committer = daemon.GitCommitter{}
-var resolveReviewSourceIssues = defaultResolveReviewSourceIssues
-var runFinalPush daemon.Pusher = daemon.GitPusher{}
+
+// newEngineCollaborators is the single test seam for Run engine
+// collaborators; orchestration itself lives in the daemon Run engine and
+// receives them through an explicit dependencies struct.
+var newEngineCollaborators = defaultEngineCollaborators
 var watchReviewStatus = defaultWatchReviewStatus
 var watchClock watch.Clock
 var watchSleeper watch.Sleeper
@@ -752,7 +752,8 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
-	if err := runAgentRuntime.Probe(ctx, resolvePlan.runtime); err != nil {
+	collaborators := newEngineCollaborators()
+	if err := collaborators.runner.Probe(ctx, resolvePlan.runtime); err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
@@ -777,7 +778,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	}
 	printLiveRunView(stderr, req, loaded, preflightResult, run.ID, "ResolvingWithAgent", resolvePlan.selection.Issues, []string{"Agent and verification output will stream below."})
 
-	if _, err := executeResolveBatches(ctx, req, loaded, preflightResult, run.ID, resolvePlan, stderr); err != nil {
+	if _, err := executeResolveCycle(ctx, req, loaded, preflightResult, run.ID, resolvePlan, collaborators, runStore, stderr); err != nil {
 		if isStopRequest(ctx, err) {
 			return completeStoppedRun(runStore, run.ID, req, preflightResult, stderr)
 		}
@@ -836,7 +837,7 @@ func prepareResolveBatch(ctx context.Context, req commandRequest, loaded roundco
 	}, nil
 }
 
-func executeResolveBatches(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, resolvePlan resolveBatchPlan, stderr io.Writer) (resolveBatchResult, error) {
+func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, resolvePlan resolveBatchPlan, collaborators engineCollaborators, runStore *store.Store, stderr io.Writer) (resolveBatchResult, error) {
 	fmt.Fprintf(stderr, "%s: resolve selected %d downloaded Unresolved Review Issue(s) from %d Compatible Artifact Round(s), assigned %d newest occurrence(s) into %d Batch(es), and associated %d older duplicate occurrence(s).\n", app.Name, len(resolvePlan.selection.Issues), len(resolvePlan.selection.Rounds), countBatchIssues(resolvePlan.plan.Batches), len(resolvePlan.plan.Batches), len(resolvePlan.plan.Duplicates))
 	fmt.Fprintf(stderr, "Run: %s\n", runID)
 	fmt.Fprintf(stderr, "Artifact Directory: %s\n", req.artifactDir)
@@ -844,138 +845,65 @@ func executeResolveBatches(ctx context.Context, req commandRequest, loaded round
 	fmt.Fprintf(stderr, "Open Pull Request: #%s %s %s\n", preflightResult.PullRequest.Number, preflightResult.PullRequest.HeadRepository, preflightResult.PullRequest.HeadBranch)
 	fmt.Fprintf(stderr, "Agent: %s\n", resolvePlan.runtime.DisplayName)
 
-	remaining := len(resolvePlan.selection.Issues)
-	for index, batch := range resolvePlan.plan.Batches {
-		result, err := executeResolveBatch(ctx, req, loaded, preflightResult, runID, resolvePlan, batch, index+1, len(resolvePlan.plan.Batches), stderr)
-		if err != nil {
-			pendingBatches := resolvePlan.plan.Batches[index+1:]
-			if pending := countBatchIssues(pendingBatches); pending > 0 {
-				fmt.Fprintf(stderr, "Resolve stopped after Batch %03d/%03d failed; %d planned Review Issue(s) remain pending in %d Batch(es).\n", batch.Number, len(resolvePlan.plan.Batches), pending, len(pendingBatches))
-			}
-			return resolveBatchResult{}, err
-		}
-		remaining = result.Remaining
-		if remaining > 0 && index < len(resolvePlan.plan.Batches)-1 {
-			fmt.Fprintf(stderr, "Batch %03d/%03d completed; %d Unresolved Review Issue(s) remain.\n", batch.Number, len(resolvePlan.plan.Batches), remaining)
-		}
-	}
-
-	if remaining > 0 {
-		fmt.Fprintf(stderr, "Final Push blocked: %d Unresolved Review Issue(s) remain.\n", remaining)
-	} else if err := maybeRunFinalPush(ctx, loaded, preflightResult, loaded.Config.Defaults.AutoCommit, stderr); err != nil {
-		return resolveBatchResult{}, err
-	}
-	return resolveBatchResult{Remaining: remaining}, nil
-}
-
-func executeResolveBatch(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, resolvePlan resolveBatchPlan, batch rounds.Batch, batchIndex int, batchTotal int, stderr io.Writer) (resolveBatchResult, error) {
-	prompt := agent.BuildPrompt(agent.PromptRequest{
-		RunID:        runID,
-		Batch:        batch,
-		Agent:        req.agent,
-		Model:        resolvePlan.runtime.Model,
-		ArtifactDir:  req.artifactDir,
-		GitRoot:      preflightResult.Git.Root,
-		Verification: loaded.Config.Defaults.Verification,
-	})
-	logPath := agent.LogPath(req.artifactDir, runID, batch.Number)
-
-	fmt.Fprintf(stderr, "Batch: %03d/%03d (%d Review Issue(s))\n", batchIndex, batchTotal, len(batch.Issues))
-	fmt.Fprintf(stderr, "Agent log: %s\n", logPath)
-
 	liveView := buildLiveRunView(req, loaded, preflightResult, runID, "ResolvingWithAgent", resolvePlan.selection.Issues, []string{
-		fmt.Sprintf("Batch %03d/%03d started with %d Review Issue(s)", batchIndex, batchTotal, len(batch.Issues)),
+		fmt.Sprintf("Run %s started with %d Review Issue(s) in %d Batch(es)", runID, len(resolvePlan.selection.Issues), len(resolvePlan.plan.Batches)),
 		fmt.Sprintf("Agent: %s", resolvePlan.runtime.DisplayName),
-		fmt.Sprintf("Agent log: %s", logPath),
 		"Streaming Agent output...",
 	})
-	liveView.BatchNumber = batchIndex
-	liveView.BatchTotal = batchTotal
+	liveView.BatchTotal = len(resolvePlan.plan.Batches)
 	liveView.TotalIssues = len(resolvePlan.selection.Issues)
 	agentStream := newAgentConsoleStream(stderr, liveView)
-	_, runErr := runAgentRuntime.Run(ctx, agent.ExecuteRequest{
-		Runtime:      resolvePlan.runtime,
+	engine, err := daemon.NewEngine(daemon.Dependencies{
+		Runner:    collaborators.runner,
+		Verifier:  collaborators.verifier,
+		Committer: collaborators.committer,
+		Pusher:    collaborators.pusher,
+		Source:    collaborators.source,
+		Runs:      runStore,
+		Sink:      newAgentEventSink(agentStream),
+		Progress:  stderr,
+	})
+	if err != nil {
+		_ = closeAgentConsoleStream(agentStream)
+		return resolveBatchResult{}, err
+	}
+
+	result, cycleErr := engine.ResolveCycle(ctx, cyclePlanFrom(req, loaded, preflightResult, runID, resolvePlan))
+	if closeErr := closeAgentConsoleStream(agentStream); closeErr != nil && cycleErr == nil {
+		cycleErr = closeErr
+	}
+	if cycleErr != nil {
+		return resolveBatchResult{}, cycleErr
+	}
+
+	if result.Remaining > 0 {
+		fmt.Fprintf(stderr, "Final Push blocked: %d Unresolved Review Issue(s) remain.\n", result.Remaining)
+	} else if err := maybeRunFinalPush(ctx, engine, runID, loaded, preflightResult, loaded.Config.Defaults.AutoCommit, stderr); err != nil {
+		return resolveBatchResult{}, err
+	}
+	return resolveBatchResult{Remaining: result.Remaining}, nil
+}
+
+func cyclePlanFrom(req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, resolvePlan resolveBatchPlan) daemon.CyclePlan {
+	return daemon.CyclePlan{
 		RunID:        runID,
-		Batch:        batch,
-		LogPath:      logPath,
-		Prompt:       prompt,
-		ArtifactDir:  req.artifactDir,
 		GitRoot:      preflightResult.Git.Root,
+		ArtifactDir:  req.artifactDir,
+		SourceName:   req.source,
+		AgentName:    req.agent,
+		Runtime:      resolvePlan.runtime,
 		Verification: loaded.Config.Defaults.Verification,
-		AllowAddDirs: []string{req.artifactDir},
-	}, newAgentEventSink(agentStream))
-	if closeErr := closeAgentConsoleStream(agentStream); closeErr != nil && runErr == nil {
-		runErr = closeErr
-	}
-	if runErr != nil {
-		if isStopRequest(ctx, runErr) {
-			return resolveBatchResult{}, runErr
-		}
-		_ = agent.MarkBatchFailed(batch)
-		return resolveBatchResult{}, runErr
-	}
-	if err := ctx.Err(); err != nil {
-		return resolveBatchResult{}, err
-	}
-	if err := agent.ValidateAssignedIssuesTerminal(batch); err != nil {
-		_ = agent.MarkBatchFailed(batch)
-		return resolveBatchResult{}, err
-	}
-
-	fmt.Fprintln(stderr, "Agent Batch reached terminal local Review Issue statuses.")
-	if err := runVerificationGate.Verify(ctx, daemon.VerifyRequest{
-		WorkDir: preflightResult.Git.Root,
-		Command: loaded.Config.Defaults.Verification,
-		Stream:  stderr,
-	}); err != nil {
-		_ = agent.MarkBatchFailed(batch)
-		return resolveBatchResult{}, err
-	}
-	fmt.Fprintf(stderr, "Verification command passed: %s\n", loaded.Config.Defaults.Verification)
-
-	markedDuplicates, err := rounds.MarkDuplicatedAfterTerminal(ctx, resolvePlan.plan.Duplicates)
-	if err != nil {
-		return resolveBatchResult{}, err
-	}
-	if markedDuplicates > 0 {
-		fmt.Fprintf(stderr, "Marked %d older duplicate Review Issue occurrence(s) as duplicated.\n", markedDuplicates)
-	}
-
-	if loaded.Config.Defaults.AutoCommit {
-		message := daemon.BatchCommitMessage(batch.Number)
-		if err := createBatchCommit.Commit(ctx, daemon.CommitRequest{
-			WorkDir:      preflightResult.Git.Root,
-			Message:      message,
-			ExcludePaths: []string{".roundfixrc.yml"},
-		}); err != nil {
-			return resolveBatchResult{}, err
-		}
-		fmt.Fprintf(stderr, "Batch commit created: %s\n", message)
-	} else {
-		fmt.Fprintln(stderr, "Auto-commit disabled; no Batch commit created.")
-	}
-
-	sourceIssues, err := terminalAssignedSourceIssues(batch)
-	if err != nil {
-		return resolveBatchResult{}, err
-	}
-	if len(sourceIssues) > 0 {
-		if err := resolveReviewSourceIssues(ctx, reviewsource.ResolveRequest{
-			Source:         req.source,
-			PRNumber:       preflightResult.PullRequest.Number,
+		AutoCommit:   loaded.Config.Defaults.AutoCommit,
+		PullRequest: daemon.PullRequestRef{
+			Number:         preflightResult.PullRequest.Number,
 			BaseRepository: preflightResult.PullRequest.BaseRepository,
-			Issues:         sourceIssues,
-		}); err != nil {
-			return resolveBatchResult{}, err
-		}
-		fmt.Fprintf(stderr, "Resolved %d Review Source thread(s).\n", len(sourceIssues))
+			HeadRepository: preflightResult.PullRequest.HeadRepository,
+			HeadBranch:     preflightResult.PullRequest.HeadBranch,
+		},
+		Batches:     resolvePlan.plan.Batches,
+		Duplicates:  resolvePlan.plan.Duplicates,
+		TotalIssues: len(resolvePlan.selection.Issues),
 	}
-
-	remaining, err := remainingUnresolvedIssues(ctx, req.artifactDir, preflightResult.PullRequest)
-	if err != nil {
-		return resolveBatchResult{}, err
-	}
-	return resolveBatchResult{Remaining: remaining}, nil
 }
 
 func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, _ io.Writer, stderr io.Writer) int {
@@ -988,7 +916,8 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
-	if err := runAgentRuntime.Probe(ctx, runtime); err != nil {
+	collaborators := newEngineCollaborators()
+	if err := collaborators.runner.Probe(ctx, runtime); err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
@@ -1048,7 +977,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 			return fetchWatchRound(ctx, req, loaded, preflightResult, stderr)
 		}),
 		Resolver: watch.ResolveFunc(func(ctx context.Context) (watch.ResolveResult, error) {
-			return resolveWatchBatches(ctx, req, loaded, preflightResult, runtime, run.ID, stderr)
+			return resolveWatchBatches(ctx, req, loaded, preflightResult, runtime, run.ID, collaborators, runStore, stderr)
 		}),
 		Clock:   watchClock,
 		Sleeper: watchSleeper,
@@ -1141,7 +1070,7 @@ func fetchWatchRound(ctx context.Context, req commandRequest, loaded roundconfig
 	return watch.FetchResult{Round: roundResult.Round, Issues: len(roundResult.IssuePaths)}, nil
 }
 
-func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runtime agent.RuntimeSpec, runID string, stderr io.Writer) (watch.ResolveResult, error) {
+func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runtime agent.RuntimeSpec, runID string, collaborators engineCollaborators, runStore *store.Store, stderr io.Writer) (watch.ResolveResult, error) {
 	progress := false
 	for {
 		resolvePlan, err := prepareResolveBatch(ctx, req, loaded, preflightResult)
@@ -1153,7 +1082,7 @@ func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundco
 			return watch.ResolveResult{}, err
 		}
 		resolvePlan.runtime = runtime
-		result, err := executeResolveBatches(ctx, req, loaded, preflightResult, runID, resolvePlan, stderr)
+		result, err := executeResolveCycle(ctx, req, loaded, preflightResult, runID, resolvePlan, collaborators, runStore, stderr)
 		if err != nil {
 			return watch.ResolveResult{}, err
 		}
@@ -1567,6 +1496,24 @@ func defaultFetchReviewItems(ctx context.Context, req reviewsource.FetchRequest)
 	return coderabbit.Client{}.FetchReviews(ctx, req)
 }
 
+type engineCollaborators struct {
+	runner    agent.Runner
+	verifier  daemon.Verifier
+	committer daemon.Committer
+	pusher    daemon.Pusher
+	source    daemon.ReviewSourceResolver
+}
+
+func defaultEngineCollaborators() engineCollaborators {
+	return engineCollaborators{
+		runner:    agent.DefaultRunner{},
+		verifier:  daemon.ExecVerifier{},
+		committer: daemon.GitCommitter{},
+		pusher:    daemon.GitPusher{},
+		source:    daemon.ReviewSourceResolverFunc(defaultResolveReviewSourceIssues),
+	}
+}
+
 func defaultResolveReviewSourceIssues(ctx context.Context, req reviewsource.ResolveRequest) error {
 	if req.Source != reviewsource.SourceCodeRabbit {
 		return fmt.Errorf("unsupported Review Source %q; supported value: coderabbit", req.Source)
@@ -1618,46 +1565,7 @@ func countBatchIssues(batches []rounds.Batch) int {
 	return count
 }
 
-func terminalAssignedSourceIssues(batch rounds.Batch) ([]reviewsource.ResolvedIssue, error) {
-	issues := make([]reviewsource.ResolvedIssue, 0, len(batch.Issues))
-	for _, assigned := range batch.Issues {
-		issue, err := rounds.ParseIssue(assigned.Path)
-		if err != nil {
-			return nil, err
-		}
-		if issue.Status != rounds.StatusResolved && issue.Status != rounds.StatusInvalid {
-			continue
-		}
-		if strings.TrimSpace(issue.SourceRef) == "" {
-			continue
-		}
-		issues = append(issues, reviewsource.ResolvedIssue{
-			FilePath:  issue.Path,
-			Status:    issue.Status,
-			SourceRef: issue.SourceRef,
-		})
-	}
-	return issues, nil
-}
-
-func remainingUnresolvedIssues(ctx context.Context, artifactDir string, pullRequest preflight.PullRequest) (int, error) {
-	selection, err := rounds.SelectCompatibleIssues(ctx, rounds.SelectRequest{
-		ArtifactDir:    artifactDir,
-		PRNumber:       pullRequest.Number,
-		HeadRepository: pullRequest.HeadRepository,
-		HeadBranch:     pullRequest.HeadBranch,
-	})
-	if err != nil {
-		var noArtifacts rounds.NoCompatibleArtifactsError
-		if errors.As(err, &noArtifacts) {
-			return 0, nil
-		}
-		return 0, err
-	}
-	return len(selection.Issues), nil
-}
-
-func maybeRunFinalPush(ctx context.Context, loaded roundconfig.Loaded, preflightResult preflight.Result, batchCommitCreated bool, stderr io.Writer) error {
+func maybeRunFinalPush(ctx context.Context, engine *daemon.Engine, runID string, loaded roundconfig.Loaded, preflightResult preflight.Result, batchCommitCreated bool, stderr io.Writer) error {
 	if !preflightResult.PushPlan.Enabled {
 		fmt.Fprintln(stderr, "Final Push skipped: auto-push disabled or no push target configured.")
 		return nil
@@ -1673,7 +1581,8 @@ func maybeRunFinalPush(ctx context.Context, loaded roundconfig.Loaded, preflight
 		fmt.Fprintln(stderr, "Final Push skipped: no local commits are waiting for the PR Head Branch.")
 		return nil
 	}
-	if err := runFinalPush.Push(ctx, daemon.PushRequest{
+	if err := engine.FinalPush(ctx, daemon.FinalPushRequest{
+		RunID:   runID,
 		WorkDir: preflightResult.Git.Root,
 		Remote:  preflightResult.PushPlan.Remote,
 		Branch:  preflightResult.PushPlan.Branch,

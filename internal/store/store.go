@@ -31,6 +31,12 @@ const (
 	StateBudgetExceeded   = "BudgetExceeded"
 	StateTimedOut         = "TimedOut"
 	StateFailed           = "Failed"
+
+	// Intermediate states reflect what an Active Run is doing during a
+	// resolve cycle. They are non-terminal: CompleteRun still ends the Run.
+	StateResolvingWithAgent = "ResolvingWithAgent"
+	StateVerifying          = "Verifying"
+	StatePushing            = "Pushing"
 )
 
 type Store struct {
@@ -280,6 +286,34 @@ WHERE id = ?`,
 		return Run{}, fmt.Errorf("commit Run completion: %w", err)
 	}
 	return run, nil
+}
+
+// UpdateRunState records an intermediate, non-terminal state for an Active
+// Run. Terminal outcomes must go through CompleteRun.
+func (store *Store) UpdateRunState(ctx context.Context, runID string, state string) error {
+	if strings.TrimSpace(state) == "" {
+		return errors.New("update Run state: state is required")
+	}
+	if IsTerminalState(state) {
+		return fmt.Errorf("update Run state: %q is terminal; use CompleteRun", state)
+	}
+	result, err := store.db.ExecContext(ctx, `
+UPDATE runs SET state = ?, updated_at = ? WHERE id = ?`,
+		state,
+		formatTime(store.now()),
+		runID,
+	)
+	if err != nil {
+		return fmt.Errorf("update Run state: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("read Run state update result: %w", err)
+	}
+	if affected == 0 {
+		return fmt.Errorf("update Run state: Run %q does not exist", runID)
+	}
+	return nil
 }
 
 func (store *Store) ActiveRun(ctx context.Context, headRepository string, headBranch string) (Run, bool, error) {

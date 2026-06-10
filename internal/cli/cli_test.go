@@ -1799,48 +1799,44 @@ func withPreflight(t *testing.T, fn func(context.Context, commandRequest, roundc
 	})
 }
 
-func withAgentRunner(t *testing.T, runner agent.Runner) {
+func overrideCollaborators(t *testing.T, mutate func(*engineCollaborators)) {
 	t.Helper()
-	old := runAgentRuntime
-	runAgentRuntime = runner
+	old := newEngineCollaborators
+	current := old()
+	mutate(&current)
+	newEngineCollaborators = func() engineCollaborators { return current }
 	t.Cleanup(func() {
-		runAgentRuntime = old
+		newEngineCollaborators = old
+	})
+}
+
+func withAgentRunner(t *testing.T, runner agent.Runner) {
+	overrideCollaborators(t, func(collaborators *engineCollaborators) {
+		collaborators.runner = runner
 	})
 }
 
 func withVerifier(t *testing.T, verifier daemon.Verifier) {
-	t.Helper()
-	old := runVerificationGate
-	runVerificationGate = verifier
-	t.Cleanup(func() {
-		runVerificationGate = old
+	overrideCollaborators(t, func(collaborators *engineCollaborators) {
+		collaborators.verifier = verifier
 	})
 }
 
 func withCommitter(t *testing.T, committer daemon.Committer) {
-	t.Helper()
-	old := createBatchCommit
-	createBatchCommit = committer
-	t.Cleanup(func() {
-		createBatchCommit = old
+	overrideCollaborators(t, func(collaborators *engineCollaborators) {
+		collaborators.committer = committer
 	})
 }
 
 func withSourceResolver(t *testing.T, resolver *fakeSourceResolver) {
-	t.Helper()
-	old := resolveReviewSourceIssues
-	resolveReviewSourceIssues = resolver.Resolve
-	t.Cleanup(func() {
-		resolveReviewSourceIssues = old
+	overrideCollaborators(t, func(collaborators *engineCollaborators) {
+		collaborators.source = daemon.ReviewSourceResolverFunc(resolver.Resolve)
 	})
 }
 
 func withPusher(t *testing.T, pusher daemon.Pusher) {
-	t.Helper()
-	old := runFinalPush
-	runFinalPush = pusher
-	t.Cleanup(func() {
-		runFinalPush = old
+	overrideCollaborators(t, func(collaborators *engineCollaborators) {
+		collaborators.pusher = pusher
 	})
 }
 

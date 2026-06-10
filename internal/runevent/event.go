@@ -32,6 +32,11 @@ const (
 	KindAgentPlan        Kind = "agent.plan"
 	KindAgentStatus      Kind = "agent.status"
 	KindAgentRaw         Kind = "agent.raw"
+
+	// KindDaemonStatus reports daemon-owned Run lifecycle status such as a
+	// Stop Request observed between Batches. The full daemon taxonomy
+	// arrives with the daemon event stream PRD.
+	KindDaemonStatus Kind = "daemon.status"
 )
 
 // RunEvent is one ordered product record of something meaningful that
