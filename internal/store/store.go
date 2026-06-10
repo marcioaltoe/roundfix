@@ -84,6 +84,9 @@ func DatabasePath(homeDir string) string {
 	return filepath.Join(homeDir, roundfixHomeDir, databaseName)
 }
 
+// Open opens the writer connection: single connection, immediate
+// transactions, WAL enabled at creation before any reader connects, and a
+// busy timeout. Single-writer discipline: open at most one writer.
 func Open(ctx context.Context, homeDir string) (*Store, error) {
 	if strings.TrimSpace(homeDir) == "" {
 		return nil, errors.New("open Run Database: home directory is required")
@@ -93,7 +96,7 @@ func Open(ctx context.Context, homeDir string) (*Store, error) {
 		return nil, fmt.Errorf("create Roundfix Home %q: %w", filepath.Dir(path), err)
 	}
 
-	db, err := sql.Open("sqlite", path)
+	db, err := sql.Open("sqlite", writerDSN(path))
 	if err != nil {
 		return nil, fmt.Errorf("open Run Database %q: %w", path, err)
 	}
@@ -108,6 +111,46 @@ func Open(ctx context.Context, homeDir string) (*Store, error) {
 		return nil, err
 	}
 	return store, nil
+}
+
+// OpenReader opens a read-only connection for paging Run Events while the
+// writer appends. It never migrates; the Run Database must already exist.
+func OpenReader(ctx context.Context, homeDir string) (*Store, error) {
+	if strings.TrimSpace(homeDir) == "" {
+		return nil, errors.New("open Run Database reader: home directory is required")
+	}
+	path := DatabasePath(homeDir)
+	if _, err := os.Stat(path); err != nil {
+		return nil, fmt.Errorf("open Run Database reader %q: %w", path, err)
+	}
+
+	db, err := sql.Open("sqlite", readerDSN(path))
+	if err != nil {
+		return nil, fmt.Errorf("open Run Database reader %q: %w", path, err)
+	}
+	db.SetMaxOpenConns(1)
+	store := &Store{
+		db:  db,
+		now: func() time.Time { return time.Now().UTC() },
+	}
+	if err := db.PingContext(ctx); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("open Run Database reader %q: %w", path, err)
+	}
+	return store, nil
+}
+
+func writerDSN(path string) string {
+	return "file:" + path + "?_txlock=immediate" +
+		"&_pragma=busy_timeout(5000)" +
+		"&_pragma=journal_mode(WAL)" +
+		"&_pragma=foreign_keys(1)"
+}
+
+func readerDSN(path string) string {
+	return "file:" + path + "?mode=ro" +
+		"&_pragma=busy_timeout(5000)" +
+		"&_pragma=foreign_keys(1)"
 }
 
 func (store *Store) Close() error {
@@ -372,7 +415,22 @@ func (store *Store) migrate(ctx context.Context) error {
 			value TEXT NOT NULL,
 			updated_at TEXT NOT NULL
 		)`,
-		`PRAGMA user_version = 2`,
+		`CREATE TABLE IF NOT EXISTS run_events (
+			run_id TEXT NOT NULL,
+			cursor INTEGER NOT NULL,
+			batch INTEGER NOT NULL DEFAULT 0,
+			source TEXT NOT NULL,
+			kind TEXT NOT NULL,
+			review_issue TEXT NOT NULL DEFAULT '',
+			tool_id TEXT NOT NULL DEFAULT '',
+			tool_state TEXT NOT NULL DEFAULT '',
+			summary TEXT NOT NULL DEFAULT '',
+			created_at TEXT NOT NULL,
+			payload TEXT NOT NULL DEFAULT '',
+			PRIMARY KEY (run_id, cursor),
+			FOREIGN KEY (run_id) REFERENCES runs(id) ON DELETE CASCADE
+		)`,
+		`PRAGMA user_version = 3`,
 	}
 	for _, statement := range statements {
 		if _, err := store.db.ExecContext(ctx, statement); err != nil {

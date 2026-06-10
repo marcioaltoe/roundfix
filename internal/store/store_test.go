@@ -23,8 +23,8 @@ func TestOpenCreatesRunDatabaseAndAppliesMigrations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected migration version, got %v", err)
 	}
-	if version != 2 {
-		t.Fatalf("expected migration version 2, got %d", version)
+	if version != 3 {
+		t.Fatalf("expected migration version 3, got %d", version)
 	}
 }
 
