@@ -17,8 +17,6 @@ const (
 	CommandFetch   = "fetch"
 	CommandResolve = "resolve"
 	CommandWatch   = "watch"
-
-	projectConfigName = ".roundfixrc.yml"
 )
 
 type Request struct {
@@ -198,24 +196,6 @@ func baseRepositoryFromPullRequestURL(rawURL string) (string, error) {
 	return parts[0] + "/" + parts[1], nil
 }
 
-type DirtyWorktreeError struct {
-	ArtifactDir string
-	Changes     []ChangedPath
-}
-
-func (err DirtyWorktreeError) Error() string {
-	var builder strings.Builder
-	builder.WriteString("dirty worktree outside the Artifact Directory")
-	if err.ArtifactDir != "" {
-		builder.WriteString(fmt.Sprintf(" %q", err.ArtifactDir))
-	}
-	builder.WriteString("; commit, stash, or remove these changes before running Roundfix again:")
-	for _, change := range err.Changes {
-		builder.WriteString(fmt.Sprintf("\n  %s %s", change.Status, change.Path))
-	}
-	return builder.String()
-}
-
 func Run(ctx context.Context, req Request) (Result, error) {
 	gitRunner := req.GitRunner
 	if gitRunner == nil {
@@ -229,14 +209,6 @@ func Run(ctx context.Context, req Request) (Result, error) {
 	gitState, err := InspectGit(ctx, req.WorkDir, gitRunner)
 	if err != nil {
 		return Result{}, err
-	}
-
-	blockingChanges := IgnoreProjectConfigChanges(gitState.Root, DirtyOutsideArtifact(gitState.Root, req.ArtifactDir, gitState.Dirty))
-	if len(blockingChanges) > 0 {
-		return Result{}, DirtyWorktreeError{
-			ArtifactDir: req.ArtifactDir,
-			Changes:     blockingChanges,
-		}
 	}
 
 	pullRequest, err := ResolvePullRequest(ctx, ResolvePullRequestRequest{
@@ -377,43 +349,6 @@ func ParsePorcelainStatus(raw string) ([]ChangedPath, error) {
 	return changes, nil
 }
 
-func DirtyOutsideArtifact(gitRoot string, artifactDir string, dirty []ChangedPath) []ChangedPath {
-	if len(dirty) == 0 {
-		return nil
-	}
-	if artifactDir == "" {
-		return dirty
-	}
-	root := filepath.Clean(gitRoot)
-	artifact := filepath.Clean(artifactDir)
-	blocking := make([]ChangedPath, 0, len(dirty))
-	for _, change := range dirty {
-		path := change.Path
-		if !filepath.IsAbs(path) {
-			path = filepath.Join(root, path)
-		}
-		if isWithinPath(path, artifact) {
-			continue
-		}
-		blocking = append(blocking, change)
-	}
-	return blocking
-}
-
-func IgnoreProjectConfigChanges(gitRoot string, dirty []ChangedPath) []ChangedPath {
-	if len(dirty) == 0 {
-		return nil
-	}
-	blocking := make([]ChangedPath, 0, len(dirty))
-	for _, change := range dirty {
-		if isProjectConfigPath(gitRoot, change.Path) {
-			continue
-		}
-		blocking = append(blocking, change)
-	}
-	return blocking
-}
-
 type ResolvePullRequestRequest struct {
 	Number                 string
 	ExplicitBaseRepository string
@@ -503,27 +438,4 @@ func BuildPushPlan(req PushPlanRequest) (PushPlan, error) {
 		Command: []string{"git", "push", remote, "HEAD:" + branch},
 		Force:   false,
 	}, nil
-}
-
-func isWithinPath(path string, dir string) bool {
-	rel, err := filepath.Rel(dir, filepath.Clean(path))
-	if err != nil {
-		return false
-	}
-	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)))
-}
-
-func isProjectConfigPath(gitRoot string, path string) bool {
-	if strings.TrimSpace(gitRoot) == "" || strings.TrimSpace(path) == "" {
-		return false
-	}
-	cleanPath := filepath.Clean(path)
-	if !filepath.IsAbs(cleanPath) {
-		cleanPath = filepath.Join(filepath.Clean(gitRoot), cleanPath)
-	}
-	rel, err := filepath.Rel(filepath.Clean(gitRoot), cleanPath)
-	if err != nil {
-		return false
-	}
-	return rel == projectConfigName
 }

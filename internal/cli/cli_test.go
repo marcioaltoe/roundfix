@@ -579,22 +579,6 @@ func TestRunResolveStopRequestDuringAgentPreservesWorkAndSkipsDaemonMutations(t 
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
 
-	withPreflight(t, func(context.Context, commandRequest, roundconfig.Loaded) (preflight.Result, error) {
-		return preflight.Result{}, preflight.DirtyWorktreeError{
-			ArtifactDir: filepath.Join(repoDir, ".roundfix"),
-			Changes:     []preflight.ChangedPath{{Status: "M", Path: "src/app.go"}},
-		}
-	})
-	var retryStdout bytes.Buffer
-	var retryStderr bytes.Buffer
-	retryCode := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &retryStdout, &retryStderr)
-	if retryCode != 2 {
-		t.Fatalf("expected dirty preserved work to block next Run with exit 2, got %d", retryCode)
-	}
-	if !strings.Contains(retryStderr.String(), "M src/app.go") {
-		t.Fatalf("expected dirty path on retry, got %q", retryStderr.String())
-	}
-	assertRunCount(t, store.DatabasePath(homeDir), 1)
 }
 
 func TestRunResolveSIGINTStopReturns130(t *testing.T) {
@@ -1581,39 +1565,6 @@ func TestRunStopRejectsAlreadyTerminalRun(t *testing.T) {
 	if !strings.Contains(stderr.String(), "already Clean") {
 		t.Fatalf("expected already terminal message, got %q", stderr.String())
 	}
-}
-
-func TestRunOperationalCommandReportsDirtyWorktreePreflight(t *testing.T) {
-	homeDir, _ := withCLIWorkspace(t)
-	withPreflight(t, func(context.Context, commandRequest, roundconfig.Loaded) (preflight.Result, error) {
-		return preflight.Result{}, preflight.DirtyWorktreeError{
-			ArtifactDir: "/repo/.roundfix",
-			Changes: []preflight.ChangedPath{
-				{Status: "M", Path: "src/app.go"},
-			},
-		}
-	})
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-
-	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
-
-	if code != 2 {
-		t.Fatalf("expected exit code 2, got %d", code)
-	}
-	if stdout.Len() != 0 {
-		t.Fatalf("expected no stdout, got %q", stdout.String())
-	}
-	if !strings.Contains(stderr.String(), "M src/app.go") {
-		t.Fatalf("expected changed path and status, got %q", stderr.String())
-	}
-	if !strings.Contains(stderr.String(), "commit, stash, or remove") {
-		t.Fatalf("expected user action guidance, got %q", stderr.String())
-	}
-	if !strings.Contains(stderr.String(), "did not create a Run") {
-		t.Fatalf("expected no side-effect confirmation, got %q", stderr.String())
-	}
-	assertNoRunDatabase(t, homeDir)
 }
 
 func TestRunPreflightFailureLeavesBufferOutputPlainByDefault(t *testing.T) {

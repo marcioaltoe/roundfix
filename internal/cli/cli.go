@@ -1765,31 +1765,11 @@ func commandWantsHelp(args []string) bool {
 func printPreflightFailure(name string, err error, stderr io.Writer) {
 	style := styleFor(stderr)
 	fmt.Fprintf(stderr, "%s\n\n", style.red(style.bold("Preflight failed")))
-	var dirtyErr preflight.DirtyWorktreeError
-	if errors.As(err, &dirtyErr) {
-		printDirtyWorktreeFailure(dirtyErr, stderr, style)
-	} else {
-		fmt.Fprintf(stderr, "%s\n", style.cyan("Reason:"))
-		fmt.Fprintf(stderr, "  %v\n\n", err)
-	}
+	fmt.Fprintf(stderr, "%s\n", style.cyan("Reason:"))
+	fmt.Fprintf(stderr, "  %v\n\n", err)
 	printPreflightNoSideEffects(stderr, style)
 	fmt.Fprintf(stderr, "%s\n", style.cyan("Usage:"))
 	fmt.Fprintf(stderr, "  Run '%s %s --help' for usage.\n", app.Name, name)
-}
-
-func printDirtyWorktreeFailure(err preflight.DirtyWorktreeError, stderr io.Writer, style terminalStyle) {
-	fmt.Fprintf(stderr, "%s\n", style.cyan("Reason:"))
-	fmt.Fprintln(stderr, "  Dirty worktree outside the Artifact Directory.")
-	if strings.TrimSpace(err.ArtifactDir) != "" {
-		fmt.Fprintf(stderr, "  Artifact Directory: %s\n", style.dim(err.ArtifactDir))
-	}
-	fmt.Fprintln(stderr)
-	fmt.Fprintf(stderr, "%s\n", style.yellow("Resolve before running Roundfix:"))
-	fmt.Fprintln(stderr, "  commit, stash, or remove these changes:")
-	for _, change := range err.Changes {
-		fmt.Fprintf(stderr, "  %s %s\n", change.Status, change.Path)
-	}
-	fmt.Fprintln(stderr)
 }
 
 func printPreflightNoSideEffects(stderr io.Writer, style terminalStyle) {
