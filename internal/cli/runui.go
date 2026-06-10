@@ -27,6 +27,7 @@ type runUI struct {
 	cockpitCancel context.CancelFunc
 	cockpitDone   chan error
 
+	waitOnce  sync.Once
 	closeOnce sync.Once
 }
 
@@ -42,7 +43,10 @@ func startRunUI(ctx context.Context, view roundtui.LiveRunView, runID string, ho
 		return nil, err
 	}
 	fanout := runevent.NewFanout([]runevent.Sink{journal}, nil)
-	cockpitCtx, cancel := context.WithCancel(ctx)
+	// The cockpit outlives command-context cancellation on purpose: after a
+	// Stop Request the user keeps the view open to inspect what happened,
+	// closing it with q. Close cancels it as the backstop.
+	cockpitCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	ui := &runUI{
 		sink:          fanout,
 		progress:      io.Discard,
@@ -63,6 +67,17 @@ func startRunUI(ctx context.Context, view roundtui.LiveRunView, runID string, ho
 	return ui, nil
 }
 
+// Wait keeps the cockpit on screen until the user closes it (q after the
+// Run reaches a terminal state). Non-TTY mode returns immediately.
+func (ui *runUI) Wait() {
+	if ui.cockpitDone == nil {
+		return
+	}
+	ui.waitOnce.Do(func() {
+		<-ui.cockpitDone
+	})
+}
+
 // Close drains the fanout, quits the cockpit, and releases the reader. It
 // is idempotent so commands can both defer it and call it before printing
 // their closing summary.
@@ -73,7 +88,9 @@ func (ui *runUI) Close() {
 		}
 		if ui.cockpitCancel != nil {
 			ui.cockpitCancel()
-			<-ui.cockpitDone
+			ui.waitOnce.Do(func() {
+				<-ui.cockpitDone
+			})
 		}
 		if ui.reader != nil {
 			_ = ui.reader.Close()

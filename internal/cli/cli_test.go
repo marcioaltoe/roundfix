@@ -3027,3 +3027,29 @@ func TestAttachRendersWatchDaemonEventsInTimeline(t *testing.T) {
 		}
 	}
 }
+
+func TestResolvePrintsIssueSummaryAfterCompletion(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
+	}
+	output := stderr.String()
+	if !strings.Contains(output, "Review Issues:") {
+		t.Fatalf("expected closing issue summary, got %q", output)
+	}
+	if !strings.Contains(output, "#001  resolved") {
+		t.Fatalf("expected final per-issue status, got %q", output)
+	}
+	summaryAt := strings.Index(output, "Review Issues:")
+	reachedAt := strings.Index(output, "reached Clean")
+	if reachedAt < 0 || summaryAt < reachedAt {
+		t.Fatalf("expected summary after the terminal outcome line, got %q", output)
+	}
+}

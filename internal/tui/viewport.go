@@ -113,18 +113,18 @@ func (viewport *TimelineViewport) Replay(ctx context.Context) error {
 func (viewport *TimelineViewport) Poll(ctx context.Context) error {
 	switch viewport.state {
 	case FollowFollowing:
-		for {
-			page, err := viewport.source.RunEventsAfter(ctx, viewport.runID, viewport.tailCursor(), viewport.pageSize)
-			if err != nil {
+		if err := viewport.drainForward(ctx); err != nil {
+			return err
+		}
+	case FollowTerminal:
+		// Late events (the terminal outcome) still land right after a Run
+		// ends; keep draining while pinned to the bottom, but never yank a
+		// user who is reading history.
+		if viewport.atBottom() {
+			if err := viewport.drainForward(ctx); err != nil {
 				return err
 			}
-			viewport.appendEntries(entriesFromJournal(page))
-			if len(page) < viewport.pageSize {
-				break
-			}
 		}
-		viewport.atTail = true
-		viewport.scrollToBottom()
 	case FollowScrolled:
 		page, err := viewport.source.RunEventsAfter(ctx, viewport.runID, viewport.windowEnd(), viewport.pageSize)
 		if err != nil {
@@ -135,6 +135,22 @@ func (viewport *TimelineViewport) Poll(ctx context.Context) error {
 			viewport.atTail = false
 		}
 	}
+	return nil
+}
+
+func (viewport *TimelineViewport) drainForward(ctx context.Context) error {
+	for {
+		page, err := viewport.source.RunEventsAfter(ctx, viewport.runID, viewport.tailCursor(), viewport.pageSize)
+		if err != nil {
+			return err
+		}
+		viewport.appendEntries(entriesFromJournal(page))
+		if len(page) < viewport.pageSize {
+			break
+		}
+	}
+	viewport.atTail = true
+	viewport.scrollToBottom()
 	return nil
 }
 

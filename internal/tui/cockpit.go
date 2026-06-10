@@ -146,7 +146,9 @@ func (model *cockpitModel) Init() tea.Cmd {
 }
 
 func (model *cockpitModel) scheduleTick() tea.Cmd {
-	if model.terminal {
+	// The owning cockpit lingers after the Run ends and must still drain
+	// late events (the terminal outcome); attach opens after they exist.
+	if model.terminal && model.cfg.Mode == CockpitAttach {
 		return nil
 	}
 	return tea.Tick(model.cfg.PollInterval, func(time.Time) tea.Msg {
@@ -262,12 +264,12 @@ func (model *cockpitModel) handleKey(key tea.Key) (tea.Model, tea.Cmd) {
 	keystroke := key.String()
 	switch keystroke {
 	case "q":
-		if model.cfg.Mode == CockpitAttach {
+		if model.cfg.Mode == CockpitAttach || model.terminal {
 			return model, tea.Quit
 		}
 		return model, nil
 	case "ctrl+c":
-		if model.cfg.Mode == CockpitAttach {
+		if model.cfg.Mode == CockpitAttach || model.terminal {
 			return model, tea.Quit
 		}
 		if model.cfg.OnStop != nil {
@@ -602,9 +604,12 @@ func (model *cockpitModel) statusSuffix() string {
 
 func (model *cockpitModel) renderFooter(width int) string {
 	keys := "Tab focus · ↑↓ scroll · PgUp/PgDn page · End follow · Enter issue · Esc back"
-	if model.cfg.Mode == CockpitAttach {
+	switch {
+	case model.cfg.Mode == CockpitAttach:
 		keys += " · q detach"
-	} else {
+	case model.terminal:
+		keys += " · q close"
+	default:
 		keys += " · Ctrl-C stop"
 	}
 	return styleMuted.Render(padRightDisplay("Keys: "+keys, width))

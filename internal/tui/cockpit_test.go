@@ -461,3 +461,39 @@ func TestCockpitSidebarShowsBatchesStatusAndElapsed(t *testing.T) {
 		}
 	}
 }
+
+func TestOwningCockpitClosesOnQOnlyAfterTerminalState(t *testing.T) {
+	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateActive}, version: 1}
+	model, err := newCockpitModel(context.Background(), CockpitConfig{
+		Mode:   CockpitOwning,
+		View:   LiveRunView{PipelineState: store.StateActive, Width: 100},
+		RunID:  "run-1",
+		Source: source,
+		OnStop: func() {},
+	})
+	if err != nil {
+		t.Fatalf("new cockpit model: %v", err)
+	}
+
+	if cmd := pressKey(t, model, "q"); cmd != nil {
+		t.Fatal("expected q to do nothing while the Run is active")
+	}
+
+	source.run.State = store.StateClean
+	source.version++
+	model.Update(cockpitTickMsg{})
+
+	if !strings.Contains(viewText(model), "q close") {
+		t.Fatalf("expected lingering footer after the Run ended, got:\n%s", viewText(model))
+	}
+	cmd := pressKey(t, model, "q")
+	if cmd == nil {
+		t.Fatal("expected q to close the lingering cockpit")
+	}
+	if msg := cmd(); fmt.Sprintf("%T", msg) != "tea.QuitMsg" {
+		t.Fatalf("expected quit, got %T", msg)
+	}
+	if cmd := pressKey(t, model, "ctrl+c"); cmd == nil {
+		t.Fatal("expected ctrl+c to also close after terminal state")
+	}
+}

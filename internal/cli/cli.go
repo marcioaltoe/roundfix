@@ -781,7 +781,9 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		printResolveRunFailure(err, stderr)
 		return exitRunFailed
 	}
-	printLiveRunView(stderr, req, loaded, preflightResult, run.ID, "ResolvingWithAgent", resolvePlan.selection.Issues, []string{"Agent and verification output will stream below."})
+	if !liveTUIEnabled(stderr) {
+		printLiveRunView(stderr, req, loaded, preflightResult, run.ID, "ResolvingWithAgent", resolvePlan.selection.Issues, []string{"Agent and verification output will stream below."})
+	}
 
 	cockpitView := buildLiveRunView(req, loaded, preflightResult, run.ID, "ResolvingWithAgent", resolvePlan.selection.Issues, nil)
 	for _, batch := range resolvePlan.plan.Batches {
@@ -796,24 +798,77 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	defer ui.Close()
 
 	if _, err := executeResolveCycle(ctx, req, loaded, preflightResult, run.ID, resolvePlan, collaborators, runStore, ui); err != nil {
-		ui.Close()
 		if isStopRequest(ctx, err) {
-			return completeStoppedRun(runStore, run.ID, req, preflightResult, stderr)
+			code := completeStoppedRunRecord(runStore, run.ID)
+			ui.Wait()
+			ui.Close()
+			if code != exitOK {
+				printRunFailure(req.name, errors.New("complete stopped Run"), stderr)
+				return code
+			}
+			fmt.Fprintf(stderr, "%s Run %s reached %s.\n", commandDisplayName(req.name), run.ID, store.StateStopped)
+			printStopSummary(req, preflightResult, stderr)
+			printIssueSummary(stderr, resolvePlan.selection.Issues)
+			return exitOK
 		}
 		markRunFailed(ctx, runStore, run.ID)
+		ui.Wait()
+		ui.Close()
 		printResolveRunFailure(err, stderr)
+		printIssueSummary(stderr, resolvePlan.selection.Issues)
 		return exitRunFailed
 	}
-	ui.Close()
 
 	completed, err := runStore.CompleteRun(ctx, run.ID, store.StateClean)
 	if err != nil {
+		ui.Close()
 		printResolveRunFailureAfterBatchCommit(err, stderr)
 		return exitRunFailed
 	}
 	publishRunOutcome(ctx, runStore, completed.ID, completed.State, 0, stderr)
+	// The cockpit stays on screen, read-only, until the user closes it.
+	ui.Wait()
+	ui.Close()
 	fmt.Fprintf(stderr, "Resolve Run %s reached %s.\n", completed.ID, completed.State)
+	printIssueSummary(stderr, resolvePlan.selection.Issues)
 	return exitOK
+}
+
+// completeStoppedRunRecord finishes a stopped Run in the Run Database and
+// journals the outcome, without printing: callers print after the cockpit
+// leaves the screen.
+func completeStoppedRunRecord(runStore *store.Store, runID string) int {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	completed, err := runStore.CompleteRun(ctx, runID, store.StateStopped)
+	if err != nil {
+		return exitRunFailed
+	}
+	publishRunOutcome(ctx, runStore, completed.ID, completed.State, 0, io.Discard)
+	return exitOK
+}
+
+// printIssueSummary lists each Review Issue with its final artifact status,
+// re-read from disk, as the command's closing report.
+func printIssueSummary(stderr io.Writer, issues []rounds.Issue) {
+	if len(issues) == 0 {
+		return
+	}
+	fmt.Fprintln(stderr, "\nReview Issues:")
+	for index, listed := range issues {
+		status := listed.Status
+		title := listed.Title
+		if parsed, err := rounds.ParseIssue(listed.Path); err == nil {
+			status = parsed.Status
+			if strings.TrimSpace(parsed.Title) != "" {
+				title = parsed.Title
+			}
+		}
+		if strings.TrimSpace(status) == "" {
+			status = rounds.StatusPending
+		}
+		fmt.Fprintf(stderr, "  #%03d  %-10s %s\n", index+1, status, title)
+	}
 }
 
 func prepareResolveBatch(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result) (resolveBatchPlan, error) {
@@ -972,7 +1027,9 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	fmt.Fprintf(stderr, "Review Source: %s\n", req.source)
 	fmt.Fprintf(stderr, "Agent: %s\n", runtime.DisplayName)
 	fmt.Fprintf(stderr, "Max Rounds: %d\n", req.maxRounds)
-	printLiveRunView(stderr, req, loaded, preflightResult, run.ID, "WaitingForReview", nil, []string{"Waiting for Review Source status..."})
+	if !liveTUIEnabled(stderr) {
+		printLiveRunView(stderr, req, loaded, preflightResult, run.ID, "WaitingForReview", nil, []string{"Waiting for Review Source status..."})
+	}
 
 	// One cockpit for the entire Watch Run, across all Rounds and Batches.
 	ui, err := startRunUI(ctx, buildLiveRunView(req, loaded, preflightResult, run.ID, "WaitingForReview", nil, nil), run.ID, loaded.HomeDir, runStore, stderr)
@@ -1043,6 +1100,8 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		return exitRunFailed
 	}
 	publishRunOutcome(completeCtx, runStore, completed.ID, completed.State, result.Remaining, stderr)
+	// The cockpit stays on screen, read-only, until the user closes it.
+	ui.Wait()
 	ui.Close()
 
 	fmt.Fprintf(stderr, "Watch Run %s reached %s after %d Round(s).\n", completed.ID, completed.State, result.Rounds)
@@ -1142,21 +1201,6 @@ func exitForWatchOutcome(outcome string) int {
 	default:
 		return exitRunFailed
 	}
-}
-
-func completeStoppedRun(runStore *store.Store, runID string, req commandRequest, preflightResult preflight.Result, stderr io.Writer) int {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	completed, err := runStore.CompleteRun(ctx, runID, store.StateStopped)
-	if err != nil {
-		printRunFailure(req.name, err, stderr)
-		return exitRunFailed
-	}
-	publishRunOutcome(ctx, runStore, completed.ID, completed.State, 0, stderr)
-	fmt.Fprintf(stderr, "%s Run %s reached %s.\n", commandDisplayName(req.name), completed.ID, completed.State)
-	printStopSummary(req, preflightResult, stderr)
-	return exitOK
 }
 
 func printStopSummary(req commandRequest, preflightResult preflight.Result, stderr io.Writer) {
