@@ -17,6 +17,7 @@ remaining unresolved issues.
   unless the user explicitly asks for that git operation.
 - If unexpected user changes exist, read them and work with them. Do not revert
   unrelated work.
+- **ALWAYS USE** the `golang-pro` skill before writing any Go code
 
 ## Project map
 
@@ -31,11 +32,11 @@ remaining unresolved issues.
 
 Use the narrowest local skill that matches the task:
 
-- `go-development` before writing or changing Go production code.
+- `go-development` + ` before writing or changing Go production code.
 - `go-cli` before changing command parsing, interactive prompts, command
   output, or exit codes.
 - `go-testing` before writing, changing, or reviewing Go tests.
-- `go-tui` before building terminal UI, panes, keybindings, or streaming views.
+- `go-tui` + `tui-design` + `tui-glamorous` before building terminal UI, panes, keybindings, or streaming views.
 - `systematic-debugging` and `no-workarounds` for bugs, regressions, and
   failing tests.
 - `docs-writer` for markdown docs.

@@ -14,11 +14,12 @@ BIN := $(BIN_DIR)/$(APP)
 PKGS := ./...
 BUILD_FLAGS ?= -buildvcs=false
 RUN_FLAGS ?= -buildvcs=false
+TARGET ?= all
 GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')
 
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap verify fmt fmt-check test test-race build run version clean deps skills-link
+.PHONY: help bootstrap verify fmt fmt-check test test-race build install run version clean deps skills-check skills-install skills-link
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n"} \
@@ -38,7 +39,7 @@ deps: ## Download, tidy, and verify Go modules
 
 ##@ Quality & Testing
 
-verify: fmt-check test build ## Run the required local verification gate
+verify: fmt-check test skills-check build ## Run the required local verification gate
 
 fmt: ## Format Go files
 	$(GOFMT) -w $(GO_FILES)
@@ -63,6 +64,9 @@ build: ## Build the CLI binary into bin/roundfix
 	@mkdir -p $(BIN_DIR)
 	$(GO) build $(BUILD_FLAGS) -o $(BIN) $(CMD)
 
+install: build ## Build and install roundfix into Go bin for local testing
+	$(GO) install $(BUILD_FLAGS) $(CMD)
+
 run: ## Run the CLI; pass ARGS="--help" or another command
 	$(GO) run $(RUN_FLAGS) $(CMD) $(ARGS)
 
@@ -77,6 +81,12 @@ clean: ## Remove build artifacts
 
 
 ##@ Agent Skills
+
+skills-check: ## Validate shipped Roundfix skill artifacts
+	$(GO) run $(RUN_FLAGS) $(CMD) skills check
+
+skills-install: ## Install shipped Roundfix skills; pass TARGET=codex|claude|opencode|all
+	$(GO) run $(RUN_FLAGS) $(CMD) skills install --target $(TARGET)
 
 skills-link: ## Recreate .claude/skills symlinks from .agents/skills
 	@mkdir -p .claude/skills

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Build a focused Go tool that watches GitHub pull requests, imports CodeRabbit review feedback, uses local ACP-capable coding runtimes to resolve valid issues, commits successful batches, pushes the complete branch state only after no Unresolved Review Issues remain, and repeats until CodeRabbit reports the PR is clean, a configured review round limit is reached, or a budget safeguard stops the run.
+Build a focused Go tool that watches GitHub pull requests, imports CodeRabbit review feedback, uses local coding runtimes to resolve valid issues, commits successful batches, pushes the complete branch state only after no Unresolved Review Issues remain, and repeats until CodeRabbit reports the PR is clean, a configured review round limit is reached, or a budget safeguard stops the run.
 
 This should not be a full workflow/orchestration system. It should be a narrow, durable review-resolution loop.
 
@@ -15,7 +15,7 @@ Given an open pull request with CodeRabbit review comments, the tool should:
 3. Wait for CodeRabbit to finish reviewing the current HEAD.
 4. Fetch unresolved CodeRabbit review threads.
 5. Persist those findings as local round artifacts.
-6. Spawn an ACP Runtime, such as Codex, Claude Code, or OpenCode, to resolve one bounded batch.
+6. Spawn a selected Agent runtime, such as Codex, Claude Code, or OpenCode, to resolve one bounded batch.
 7. Verify the batch.
 8. Create one local commit per successful Batch.
 9. Push the complete branch state only after no Unresolved Review Issues remain.
@@ -76,16 +76,23 @@ roundfix watch --source coderabbit --pr 123 --agent codex \
 ## CLI Commands
 
 ```bash
+roundfix init [--scope project|user]
+roundfix --version
+roundfix -v
 roundfix fetch --source coderabbit --pr 123
 roundfix resolve --pr 123 --agent codex
 roundfix watch --source coderabbit --pr 123 --agent codex --until-clean
+roundfix skills check
+roundfix skills install --target codex
 ```
 
-The MVP has three operational commands:
+The MVP has three operational commands and two support command groups:
 
 - `fetch`: download unresolved Review Source issues for an Open Pull Request and persist markdown artifacts.
 - `resolve`: iterate over downloaded unresolved Review Issues for an Open Pull Request and resolve them with the configured Agent.
 - `watch`: automate `fetch` and `resolve` while monitoring Review Source publication across configured review rounds.
+- `init`: create User Config or Project Config. If `--scope` is omitted, prompt for the scope and default to Project Config.
+- `skills`: validate or install the shipped `roundfix-watch` and `roundfix-resolve-round` skills for Codex, Claude Code, and OpenCode-compatible skill directories.
 
 `roundfix fetch` creates a tracked Fetch Run in the Run Database. It resolves the Open Pull Request, validates the Artifact Directory, fetches Review Source issues, persists markdown artifacts, and then stops without starting an Agent, committing, or pushing.
 
@@ -118,38 +125,37 @@ Future command:
 
 `roundfix reprocess` is separate from `resolve` and `watch`, and should be implemented after the MVP. It never runs implicitly and must target specific Terminal Review Issues by issue id, issue range, pull request selector, source ref, or another explicit selector. Roundfix must not provide a broad `include_resolved` option that silently mixes Terminal Review Issues into normal resolution.
 
-## Suggested Go Project Layout
+## Current Go Project Layout
 
 ```text
 cmd/roundfix/main.go
 
-internal/cli/                 # Cobra command tree
-internal/tui/                 # Bubble Tea UI
+internal/cli/                 # CLI parsing, output, and exit behavior
+internal/tui/                 # Interactive Input and Live Run View rendering
 internal/watch/               # Durable review loop state machine
 internal/reviewsource/        # Review Source interface
 internal/reviewsource/coderabbit/ # CodeRabbit implementation
-internal/github/              # GitHub REST/GraphQL or gh wrapper
-internal/git/                 # Safe git state and push boundary
-internal/agent/               # ACP Runtimes: codex, claude, opencode
+internal/agent/               # Agent runtimes: codex, claude, opencode
+internal/runevent/            # Run Event type, sink seam, and fanout
 internal/rounds/              # Markdown issue artifacts and frontmatter
 internal/store/               # Global SQLite Run Database
 internal/config/              # User and project config loading and validation
-internal/logs/                # Structured run logs
+internal/preflight/           # Git, PR, worktree, config, and push safety checks
+internal/daemon/              # Verification, commits, source resolution, and push
 skills/                       # Agent skills shipped with the tool
 docs/                         # User docs after MVP stabilizes
 ```
 
-## Recommended Libraries
+## Current Implementation Choices
 
-- CLI: `github.com/spf13/cobra`
-- TUI: `charm.land/bubbletea/v2`
-- TUI components: Charm `bubbles`
-- TUI styling: Charm `lipgloss`
+- CLI: Go standard library `flag` and explicit command dispatch.
+- Interactive Input and Live Run View: prompt collection plus ACP cockpit-style terminal rendering owned by `internal/tui`.
 - State: SQLite Run Database
-- SQLite driver: `modernc.org/sqlite` for pure Go, or `mattn/go-sqlite3` if CGO is acceptable
-- Config: YAML user and project config files
-- Logging: `log/slog`
-- GitHub: start with `gh` subprocess for MVP, then move hot paths to direct GraphQL/REST
+- SQLite driver: `modernc.org/sqlite`
+- Config: YAML user and project config files through `gopkg.in/yaml.v3`
+- GitHub: `gh` subprocess for REST, GraphQL, PR metadata, review status, and thread resolution boundaries.
+
+Cobra remains a future option if the CLI grows enough to justify a framework. The Live Run View now uses Bubble Tea and Lipgloss because ACP streaming needs a real terminal render loop.
 
 ## Review Source Interface
 
@@ -157,7 +163,12 @@ Start with a small Review Source interface.
 
 ```go
 type FetchRequest struct {
-    PR              string
+    Source          string
+    PRNumber        string
+    BaseRepository  string
+    HeadRepository  string
+    HeadBranch      string
+    HeadSHA         string
     IncludeNitpicks bool
 }
 
@@ -168,27 +179,30 @@ type ReviewItem struct {
     Severity    string
     Author      string
     Body        string
-    SourceRef string
+    SourceRef  string
 
     ReviewHash              string
     SourceReviewID          string
-    SourceReviewSubmittedAt string
+    SourceReviewSubmittedAt time.Time
 }
 
 type ResolvedIssue struct {
-    FilePath    string
+    FilePath  string
+    Status    string
     SourceRef string
 }
 
-type ReviewSource interface {
-    Name() string
+type Source interface {
     FetchReviews(ctx context.Context, req FetchRequest) ([]ReviewItem, error)
-    ResolveIssues(ctx context.Context, pr string, issues []ResolvedIssue) error
 }
 
-type WatchStatusSource interface {
-    ReviewSource
-    WatchStatus(ctx context.Context, pr string) (WatchStatus, error)
+type WatchStatusRequest struct {
+    Source         string
+    PRNumber       string
+    BaseRepository string
+    HeadRepository string
+    HeadBranch     string
+    HeadSHA        string
 }
 ```
 
@@ -201,13 +215,13 @@ The CodeRabbit Review Source should:
 - Fetch pull request review comments.
 - Fetch GraphQL review threads.
 - Map REST review comments to GraphQL threads via comment database IDs.
-- Filter to `coderabbitai[bot]`.
+- Accept both `coderabbitai[bot]` and `coderabbitai`, because GitHub REST and GraphQL can expose the CodeRabbit actor differently.
 - Skip resolved review threads.
-- Preserve `thread:<id>` in `source_ref`.
+- Preserve `thread:<id>,comment:<id>` in `source_ref`.
 - Resolve source threads only after the child agent completed and local issue files are terminal.
 - Duplicated older occurrences are local artifact bookkeeping; do not resolve their Review Source threads separately.
-- Optionally parse review-body comments such as nitpick, minor, and major sections.
-- Hash review-body comments so resolved nitpicks do not reappear in later rounds unless the source review is newer.
+- The current MVP fetches unresolved inline CodeRabbit review threads. Review-body summaries and outside-diff comments remain future parser work.
+- Future review-body parsing should hash review-body comments so resolved nitpicks or outside-diff findings do not reappear in later rounds unless the source review is newer.
 - Use `source_ref` or `review_hash` as the Review Issue Fingerprint for deduplicating repeated findings across Rounds.
 
 ## Watch Loop
@@ -324,6 +338,8 @@ Dirty worktree behavior:
 - Tell the user to commit, stash, or remove those changes before continuing.
 - Do not stage, commit, stash, or revert user changes automatically.
 - Do not treat Roundfix-owned markdown changes inside the Artifact Directory as a dirty-worktree blocker.
+- Do not treat Project Config changes at `<repo>/.roundfixrc.yml` as a dirty-worktree blocker.
+- Exclude Project Config changes from Batch commits so local setup changes do not mix with review fixes.
 
 Loop logic:
 
@@ -443,6 +459,10 @@ Artifact Directory git tracking:
 - Roundfix must not edit `.gitignore` automatically.
 - Roundfix does not warn about Artifact Directory files being tracked, ignored, or untracked.
 - The user or repository owner decides whether to add the Artifact Directory to `.gitignore`, version it, or manage it another way.
+- Each successful `fetch` with automatic Round selection reuses an existing matching Round when the same HEAD already has the same Review Issue fingerprints.
+- If the fetched payload is new, automatic Round selection writes the next Round directory. Roundfix does not upsert Round artifacts in place.
+- An explicit existing `--round <n>` is rejected instead of overwritten.
+- Repeated findings across different Rounds are handled during `resolve` by Review Issue Fingerprint deduplication, not by deleting old artifacts at fetch time.
 
 ```text
 <artifact-dir>/
@@ -519,6 +539,18 @@ When multiple unresolved Review Issues share the same Review Issue Fingerprint a
 
 After the assigned newest occurrence reaches `resolved` or `invalid`, the daemon marks older duplicate occurrences as `duplicated` and sets `duplicate_of` to the newest occurrence. The Agent must not mark issues as `duplicated`.
 
+## Run Events
+
+Roundfix records Run activity as Run Events so the Run Database can answer what happened, in what order, for which Run, Batch, Review Issue, and tool call.
+
+- Every meaningful Run occurrence becomes a Run Event: Run state transitions, daemon decisions, Agent stream output, verification milestones, commit and Final Push decisions, Review Source resolution, Stop Requests, and terminal outcomes.
+- Run Events live in the Run Event Journal inside the Run Database, ordered by a per-Run monotonic cursor that readers treat as an opaque replay position.
+- Producers publish Run Events through one sink seam owned by `internal/runevent`. The Agent log, the Run Event Journal, and the Live Run View are sink adapters; producers never know which adapters are attached.
+- The journal sink is critical: once a Run has started, a journal append failure fails the Run. Live Run View and log sinks are best-effort and must never block or fail producers.
+- Agent Run Event payloads store the raw ACP session update JSON (ADR 0008). Readers skip unknown event kinds instead of failing, so journals stay readable across ACP Runtime versions.
+- The Live Run View renders live Run Events and replayed Run Events through the same timeline renderer, so Attach shows the same cockpit as a live Run.
+- Attach is non-mutating: it replays the Run Event Journal and follows new Run Events. Detach leaves the Run active. Stop Request remains the only way to end an Active Run.
+
 ## Child Agent Contract
 
 The child agent receives a strict prompt and a bounded list of issue files.
@@ -540,15 +572,15 @@ The child agent must:
 
 The daemon resolves Review Source threads after the batch succeeds for assigned `resolved` and `invalid` issues.
 
-## ACP Runtime Compatibility
+## Agent Runtime Compatibility
 
-Public CLI and TUI surfaces should label the selected coding runtime as `Agent`. Use `ACP Runtime` in implementation and technical docs when the protocol boundary matters.
+Public CLI and TUI surfaces should label the selected coding runtime as `Agent`. Use `ACP Runtime` in implementation and technical docs only when the protocol boundary matters.
 
 MVP runtimes:
 
 ```text
-codex       -> codex-acp
-claude      -> claude-agent-acp
+codex       -> codex-acp, fallback npx --yes @zed-industries/codex-acp
+claude      -> claude-agent-acp, fallback npx --yes @agentclientprotocol/claude-agent-acp
 opencode    -> opencode acp
 ```
 
@@ -559,17 +591,22 @@ cursor-agent
 gemini
 ```
 
-ACP Runtime interface:
+Agent runtime interface:
 
 ```go
-type ACPRuntime struct {
+type RuntimeSpec struct {
     ID              string
     DisplayName     string
+    Protocol        string
     Command         string
     Args            []string
     ProbeArgs       []string
+    Fallbacks       []RuntimeLauncher
     DefaultModel    string
+    Model           string
     SupportsAddDirs bool
+    BootstrapModel  bool
+    FullAccessMode  string
 }
 ```
 
@@ -578,25 +615,25 @@ Requirements:
 - Probe runtime availability before starting a run.
 - Show actionable install hints.
 - Keep model selection runtime-specific.
-- Treat ACP Runtime startup as using the user's local installed tool, login, subscription, and model-vendor credentials.
-- Do not ask for model-vendor API keys when the selected ACP Runtime can use the user's local authenticated setup.
+- Treat Agent runtime startup as using the user's local installed tool, login, subscription, and model-vendor credentials.
+- Do not ask for model-vendor API keys when the selected Agent runtime can use the user's local authenticated setup.
 - Support command overrides because ACP adapter command names can differ by installation.
-- Do not use automatic installer or package-manager fallback commands.
+- Use explicit adapter fallback commands only for known ACP runtimes, matching the selected Agent and never silently switching to another Agent.
 - If the selected Agent command fails to probe or start, show the concrete command, error, and install/authentication hint, then stop.
 - Let the user choose another Agent explicitly if they want to retry with a different local setup.
-- Drive ACP over stdio using the standard session lifecycle and streaming updates.
-- Support headless streaming logs.
+- Drive Codex, Claude, and OpenCode through their ACP stdio protocol, not by streaming Markdown prompts directly into a JSON-RPC server.
+- Publish ACP session updates as Run Events through one event sink boundary that feeds the Agent log, the Run Event Journal, and the Live Run View.
+- Keep the raw ACP session update JSON as the durable Run Event payload; bounded text summaries serve list rendering.
+- Support headless streaming logs through a writer sink adapter, not a separate output path inside the runner.
 - Persist agent output per run.
 - Treat reviewer text as untrusted input.
 
 ## TUI Requirements
 
-Use Bubble Tea.
-
-The TUI has two MVP responsibilities:
+The MVP terminal UI has two responsibilities:
 
 1. Collect optional parameters for `fetch`, `resolve`, and `watch`.
-2. Monitor active work while Agents are running.
+2. Show a readable Live Run View for Fetch, Resolve, and Watch Runs.
 
 Interactive input requirements:
 
@@ -608,7 +645,7 @@ Interactive input requirements:
 - Run full Preflight Validation after Interactive Input and before waiting for Review Source work.
 - `fetch` should ask for pull request number, Review Source, and Round.
 - `resolve` should ask for pull request number, Round, Artifact Directory override, concurrent jobs, batch size, Agent, model override, additional directories, reasoning effort, dry run, and auto commit.
-- `watch` should ask for pull request number, Review Source, concurrent jobs, batch size, Agent, model override, additional directories, reasoning effort, dry run, auto commit, max rounds, and max run duration.
+- `watch` should ask for pull request number, Review Source, Agent, max rounds, and max run duration in the MVP. More advanced knobs can be added when the corresponding runtime behavior is implemented.
 - Auto push is resolved from User Config or Project Config and shown as read-only Run state in the TUI.
 - When possible, infer the current pull request number and suggest it.
 - Remember the last pull request number and Agent in the Run Database and suggest them on the next run.
@@ -621,35 +658,46 @@ Interactive input requirements:
 
 Live Run View requirements:
 
-- Header: repo, PR, PR Head Branch, Review Source, Agent, HEAD.
-- Full-screen terminal cockpit layout.
-- Top pipeline/status bar with compact Run progress.
-- Left sidebar: keyboard-navigable Review Issues grouped by Round, severity, status, file, and line.
-- Right panel: streaming console output from the active Agent and verification commands.
-- The selected Review Issue in the sidebar should stay visually highlighted while the console continues streaming.
-- Status strip: current state, elapsed time, max run duration, next Review Source poll, current round, max rounds, auto commit, and auto push.
-- Git strip: dirty status, unpushed commits, upstream, and last push outcome.
-- Bottom keybinding bar: focus switch, previous/next Review Issue, fetch now, resolve, push, trigger review, detach, stop, and quit.
+- Header: command, repo, PR, PR Head Branch, Review Source, Agent, HEAD.
+- Target block: PR, repository, branch, source, Agent, and HEAD.
+- Run block: run ID, state, Round progress, budget, git state, auto-commit, auto-push, and last push.
+- Split pane: Review Issues on the left and Agent Console on the right.
+- Review Issues pane: downloaded or assigned Review Issues grouped by Round, severity, status, file, line, and issue title.
+- Agent Console pane: ACP session timeline including assistant text, tool calls, plan/status updates, daemon messages, and verification output where available.
 - Use Roundfix branding only.
+- In a TTY, render the Agent stream through an ACP cockpit-style Bubble Tea view; outside a TTY, print a readable text stream.
 
-Example live run screen:
+Current MVP Live Run View example:
 
 ```text
-Roundfix
-repo: owner/project     pr: #123     head: feature/auth     source: CodeRabbit     agent: Codex     run: 2/6
+Roundfix fetch
 
-Status: ResolvingWithAgent     Round: 2 / 6     Auto-push: on     Budget: 38m / 2h
---------------------------------------------------------------------------------
-Review Issues                         Console
+Target:
+  PR: #123 owner/project
+  Branch: feature/auth
+  Source: CodeRabbit
+  Agent: Codex
+  HEAD: abc123
 
-> major    valid     src/cache.ts:41   codex resolving batch 1/2
-  major    resolved  api/auth.go:88    reading issue_002.md
-  nitpick  pending   README.md:12      editing src/cache.ts
-                                       running make test
-                                       tests passed
+Run:
+  ID: run_20260610T001344Z_639014c1cb9ac528
+  State: FetchingIssues
+  Round: 0 / 6
+  Budget: 0s / 2h0m0s
+  Git: clean, 0 unpushed commit(s), upstream origin/feature/auth
+  Auto-commit: on
+  Auto-push: off
+  Last push: disabled
 
-[tab] focus   [j/k] issue   [f] fetch   [r] resolve   [p] push   [t] trigger   [d] detach   [q] quit
++-----------------------------------------+-----------------------------------------------+
+| Review Issues                           | Agent Console                                 |
++-----------------------------------------+-----------------------------------------------+
+| none                                    | Fetching Review Source issues...              |
++-----------------------------------------+-----------------------------------------------+
+Keys: Ctrl-C stop
 ```
+
+A future full-screen TUI may add keyboard focus, detach, manual fetch, manual resolve, push, and Review Source trigger controls.
 
 ## Skills To Ship
 
@@ -704,13 +752,15 @@ skills/
 
 ## Config Example
 
-Roundfix should support User Config and Project Config files. User Config applies across repositories. Project Config applies inside one repository. Built-in defaults should set `auto_commit = true` and `auto_push = true`. Disabling Final Push is an explicit opt-out in User Config or Project Config, not an interactive prompt.
+Roundfix supports User Config and Project Config files. User Config applies across repositories. Project Config applies inside one repository. Built-in defaults set `auto_commit = true` and `auto_push = true`. Disabling Final Push is an explicit opt-out in User Config or Project Config, not an interactive prompt.
 
 Paths:
 
 - User Config: `~/.roundfix/config.yml`
 - Run Database: `~/.roundfix/roundfix.db`
 - Project Config: `<repo>/.roundfixrc.yml`
+
+`roundfix init` creates these files. If `--scope` is omitted, Roundfix asks where to write the file and defaults to Project Config when the user presses Enter.
 
 Project Config discovery:
 
@@ -756,15 +806,11 @@ budget:
 resolve:
   batch_size: 3
   concurrent: 1
-
-tui:
-  enabled: true
-  default_view: watch
 ```
 
-## MVP Milestones
+## Implemented MVP Capabilities
 
-### Milestone 1: TUI Input Prototype
+### Interactive Input
 
 - Add Preflight Validation before and after Interactive Input.
 - Collect optional parameters for `fetch`, `resolve`, and `watch`.
@@ -772,39 +818,39 @@ tui:
 - Suggest configured or remembered Agent when available.
 - Start the selected command with the collected parameters.
 
-### Milestone 2: Git and PR Detection
+### Git and PR Detection
 
 - Detect repo, branch, HEAD, upstream, dirty status, and unpushed commits.
 - Detect current PR with `gh pr view`.
 
-### Milestone 3: CodeRabbit Fetch
+### CodeRabbit Fetch
 
 - Fetch unresolved CodeRabbit review threads.
 - Persist markdown issue files.
-- Show them in TUI.
+- Show them in the Live Run View and fetch summary.
 
-### Milestone 4: Agent Round Resolve
+### Agent Batch Resolve
 
-- Spawn Codex first.
+- Spawn the selected Agent runtime.
 - Pass assigned issue files.
 - Persist logs.
 - Verify issue statuses after child completion.
-- Render live Agent and verification output in the TUI right panel.
-- Render Review Issues in the TUI left sidebar.
+- Render live Agent and verification output in the Live Run View.
+- Render Review Issues grouped by Round.
 
-### Milestone 5: Commit and Push
+### Commit and Push
 
 - Add one commit per successful Batch.
 - Add explicit final auto-push.
 - Enforce push safety.
 
-### Milestone 6: Durable Watch Loop
+### Durable Watch Loop
 
 - Poll CodeRabbit status.
 - Handle quiet period and timeout.
 - Repeat until clean or max rounds.
 
-### Milestone 7: Skills Installer
+### Skills Installer
 
 - Install `roundfix-watch`.
 - Install `roundfix-resolve-round`.
@@ -816,7 +862,7 @@ Unit tests:
 
 - Review Source parsing.
 - GraphQL thread mapping.
-- Review-body/nitpick parsing.
+- CodeRabbit author normalization across REST and GraphQL actor names.
 - Round artifact parsing and writing.
 - Artifact Directory resolution and validation.
 - Active Run uniqueness by Head Repository and PR Head Branch.
@@ -840,6 +886,7 @@ Unit tests:
 - Watch state transitions.
 - Config validation.
 - TUI input defaults for current PR, remembered PR, configured Agent, and remembered Agent.
+- Split-pane Live Run View rendering with Review Issues on the left and Agent Console on the right.
 
 Integration tests:
 
@@ -868,7 +915,7 @@ Integration tests:
 - Final Push is blocked while any Unresolved Review Issues remain, but successful Batch commits are still allowed.
 - Ambiguous duplicate newest occurrence selection exits with `2` before creating a Run.
 - Full watch loop without network.
-- TUI snapshot tests for interactive inputs, Review Issue sidebar, and streaming console panel.
+- TUI output tests for interactive inputs and Live Run View state.
 
 Manual tests:
 
@@ -881,6 +928,11 @@ Manual tests:
 - Failed verification.
 - Dirty worktree rejection.
 - Stop during Agent run with leftover worktree changes.
+
+Future tests:
+
+- Review-body, outside-diff, and nitpick parsing after those CodeRabbit sources become first-class Review Issue artifacts.
+- Full-screen TUI keyboard navigation after a real interactive TUI is implemented.
 
 ## Security Rules
 
@@ -898,23 +950,13 @@ Roundfix is a local-first PR review cleanup tool. It watches CodeRabbit feedback
 
 It is designed for developers who already use Codex, Claude Code, or OpenCode and want the review-resolve-push-repeat loop to run safely without babysitting GitHub.
 
-## First Implementation Recommendation
+## Maintenance Recommendation
 
-Start with:
+Keep the first product narrow and reliable:
 
-```bash
-go mod init github.com/<owner>/roundfix
-go get github.com/spf13/cobra
-go get charm.land/bubbletea/v2
-go get github.com/charmbracelet/lipgloss
-go get github.com/charmbracelet/bubbles
-go get modernc.org/sqlite
-```
-
-Then build in this order:
-
-1. `roundfix fetch --source coderabbit --pr <n>`
-2. `roundfix resolve --pr <n> --agent codex`
-3. `roundfix watch --source coderabbit --pr <n> --agent codex`
-
-Keep the first version narrow and reliable. Add more Review Sources and ACP Runtimes after CodeRabbit plus Codex works end to end.
+1. Preserve the command boundaries: `fetch` downloads, `resolve` works over downloaded artifacts, and `watch` automates both.
+2. Prefer the Go standard library until an added dependency removes real complexity.
+3. Keep GitHub mutations in daemon-owned code.
+4. Keep Agents limited to assigned issue files, code edits, tests, and verification.
+5. Treat CodeRabbit text as untrusted input.
+6. Add more Review Sources and runtime protocol adapters only after CodeRabbit plus Codex remains stable end to end.

@@ -37,7 +37,7 @@ The external review system that produces feedback for an Open Pull Request.
 _Avoid_: Review Provider, Agent, ACP Runtime
 
 **ACP Runtime**:
-An ACP-compatible local coding runtime that Roundfix launches through the user's installed tool and authentication setup.
+A local coding runtime that Roundfix launches through the user's installed tool and authentication setup using Agent Client Protocol stdio. The MVP supports Codex through `codex-acp`, Claude through `claude-agent-acp`, and OpenCode through `opencode acp`; command overrides remain a stdio escape hatch for local testing.
 _Avoid_: Review Source, review provider
 
 **Max Rounds**:
@@ -92,6 +92,10 @@ _Avoid_: Comment, thread, finding
 The stable identity Roundfix uses to recognize the same Review Issue across Rounds.
 _Avoid_: File path only, line number only, round-local id
 
+**Source Reference**:
+The Review Source-native identity stored as `source_ref` on a Review Issue, such as a CodeRabbit `thread:<id>,comment:<id>` pair.
+_Avoid_: Local artifact path, generated issue number
+
 **Duplicated Review Issue**:
 A Review Issue that is complete because a newer occurrence with the same Review Issue Fingerprint is being resolved instead.
 _Avoid_: Duplicate Review Issue, resolved issue, ignored issue
@@ -120,18 +124,42 @@ _Avoid_: Fix Command, Fetch command, watch command
 An explicit future command for revisiting selected Terminal Review Issues.
 _Avoid_: Include resolved, resolve option
 
+**Init Command**:
+The support command that creates User Config or Project Config before operational Runs.
+_Avoid_: Bootstrap run, setup run
+
+**Roundfix Skill**:
+A shipped agent skill that teaches an external Agent how to start Roundfix or how to resolve one assigned Batch.
+_Avoid_: Runtime, Review Source, plugin
+
 **Interactive Input**:
 The TUI flow that collects command parameters before a Run starts.
 _Avoid_: Wizard, form, setup screen
 
 **Live Run View**:
-The TUI view that shows Review Issues and streaming Agent output while a Run is active.
+The TUI view that shows Review Issues and Run Events for a Run: streaming live while the Run is active, or replayed from the Run Event Journal during Attach.
 _Avoid_: Dashboard, report, log file
 
 **Daemon**:
 The Roundfix process that owns the Run lifecycle and Review Source-facing outcomes.
 _Avoid_: Orchestrator, controller, manager
 
+**Run Event**:
+One ordered product record of something meaningful that happened during a Run, carrying Run identity, Batch when known, event source, event kind, and a structured payload. Producers convert their native models into Run Events; ACP stream updates remain an Agent-internal protocol model.
+_Avoid_: Stream update, log line, message
+
+**Run Event Journal**:
+The append-only history of Run Events stored in the Run Database, ordered by a per-Run cursor so replay is deterministic and duplicate-free.
+_Avoid_: Agent log, log file, event broker
+
+**Attach**:
+Viewing a Run by replaying its Run Event Journal and then following new Run Events, without owning, mutating, or stopping the Run.
+_Avoid_: Resume, reconnect, takeover
+
 **Agent**:
 The local coding assistant invoked by Roundfix to triage and resolve an assigned Batch.
 _Avoid_: Review Source, review provider, worker, bot
+
+**Follow Mode**:
+The Live Run View state in which the timeline tail advances automatically as new Run Events arrive; suspended while the user scrolls back, resumed when the viewport returns to the bottom. Scrolling never affects the Run.
+_Avoid_: tail mode, auto-scroll, live mode
