@@ -83,7 +83,7 @@ roundfix fetch --source coderabbit --pr 123
 roundfix resolve --pr 123 --agent codex
 roundfix watch --source coderabbit --pr 123 --agent codex --until-clean
 roundfix skills check
-roundfix skills install --target codex
+roundfix skills install
 ```
 
 The MVP has three operational commands and two support command groups:
@@ -92,7 +92,7 @@ The MVP has three operational commands and two support command groups:
 - `resolve`: iterate over downloaded unresolved Review Issues for an Open Pull Request and resolve them with the configured Agent.
 - `watch`: automate `fetch` and `resolve` while monitoring Review Source publication across configured review rounds.
 - `init`: create User Config or Project Config. If `--scope` is omitted, prompt for the scope and default to Project Config.
-- `skills`: validate or install the shipped `roundfix-watch` and `roundfix-resolve-round` skills for Codex, Claude Code, and OpenCode-compatible skill directories.
+- `skills`: validate or install the shipped `roundfix` skill into the current project or Codex, Claude Code, and OpenCode-compatible skill directories.
 
 `roundfix fetch` creates a tracked Fetch Run in the Run Database. It resolves the Open Pull Request, validates the Artifact Directory, fetches Review Source issues, persists markdown artifacts, and then stops without starting an Agent, committing, or pushing.
 
@@ -699,13 +699,13 @@ Keys: Ctrl-C stop
 
 A future full-screen TUI may add keyboard focus, detach, manual fetch, manual resolve, push, and Review Source trigger controls.
 
-## Skills To Ship
+## Skill To Ship
 
-Ship agent skills with the Go tool.
+Ship one `roundfix` agent skill with the Go tool.
 
-### Skill 1: `roundfix-watch`
+### User-Facing Mode
 
-Purpose: user-facing skill for starting and observing the tool.
+Purpose: starting and observing the tool.
 
 Trigger phrases:
 
@@ -723,9 +723,9 @@ Instructions:
 - Report the run ID, PR, Review Source, Agent, and current state.
 - Do not manually resolve CodeRabbit threads unless the tool is unavailable.
 
-### Skill 2: `roundfix-resolve-round`
+### Assigned Batch Mode
 
-Purpose: internal child-agent skill for one bounded batch.
+Purpose: internal child-agent guidance for one bounded batch.
 
 Instructions:
 
@@ -742,10 +742,7 @@ Suggested skill layout:
 
 ```text
 skills/
-  roundfix-watch/
-    SKILL.md
-    agents/openai.yaml
-  roundfix-resolve-round/
+  roundfix/
     SKILL.md
     agents/openai.yaml
 ```
@@ -852,9 +849,10 @@ resolve:
 
 ### Skills Installer
 
-- Install `roundfix-watch`.
-- Install `roundfix-resolve-round`.
-- Support Codex, Claude Code, and OpenCode Agent skill directories.
+- Install `roundfix`.
+- Install to `<repo>/.agents/skills/roundfix` by default.
+- Support explicit Codex, Claude Code, and OpenCode Agent skill directories.
+- If `<repo>/.claude/skills` exists, ask whether to create `.claude/skills/roundfix` as a symlink to the project-local skill.
 
 ## Testing Strategy
 

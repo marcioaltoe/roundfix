@@ -19,7 +19,7 @@ func TestCheckValidatesRoundfixSkillArtifacts(t *testing.T) {
 	}
 }
 
-func TestFilesIncludesBothSkillsAndAgentMetadata(t *testing.T) {
+func TestFilesIncludesRoundfixSkillAndAgentMetadata(t *testing.T) {
 	files, err := Files()
 	if err != nil {
 		t.Fatalf("read skill files: %v", err)
@@ -34,10 +34,8 @@ func TestFilesIncludesBothSkillsAndAgentMetadata(t *testing.T) {
 	}
 
 	expected := []string{
-		"roundfix-resolve-round/SKILL.md",
-		"roundfix-resolve-round/agents/openai.yaml",
-		"roundfix-watch/SKILL.md",
-		"roundfix-watch/agents/openai.yaml",
+		"roundfix/SKILL.md",
+		"roundfix/agents/openai.yaml",
 	}
 	if !reflect.DeepEqual(paths, expected) {
 		t.Fatalf("expected embedded paths %#v, got %#v", expected, paths)
@@ -63,18 +61,44 @@ func TestInstallCopiesSkillsToSupportedTargetDirectories(t *testing.T) {
 		t.Fatalf("expected three install targets, got %#v", result.Targets)
 	}
 	for _, target := range result.Targets {
-		if target.Files != 4 {
-			t.Fatalf("expected four files for %s, got %d", target.Target, target.Files)
+		if target.Files != 2 {
+			t.Fatalf("expected two files for %s, got %d", target.Target, target.Files)
 		}
 		for _, path := range []string{
-			"roundfix-watch/SKILL.md",
-			"roundfix-watch/agents/openai.yaml",
-			"roundfix-resolve-round/SKILL.md",
-			"roundfix-resolve-round/agents/openai.yaml",
+			"roundfix/SKILL.md",
+			"roundfix/agents/openai.yaml",
 		} {
 			if _, err := os.Stat(filepath.Join(target.Dir, path)); err != nil {
 				t.Fatalf("expected installed file %s for %s: %v", path, target.Target, err)
 			}
+		}
+	}
+}
+
+func TestInstallCopiesSkillsToProjectDirectoryByDefault(t *testing.T) {
+	projectDir := t.TempDir()
+
+	result, err := Install(context.Background(), InstallRequest{ProjectDir: projectDir})
+	if err != nil {
+		t.Fatalf("install project skill: %v", err)
+	}
+	if len(result.Targets) != 1 {
+		t.Fatalf("expected one install target, got %#v", result.Targets)
+	}
+	target := result.Targets[0]
+	if target.Target != "project" {
+		t.Fatalf("expected project target, got %q", target.Target)
+	}
+	expectedDir := filepath.Join(projectDir, ".agents", "skills")
+	if target.Dir != expectedDir {
+		t.Fatalf("expected project target dir %q, got %q", expectedDir, target.Dir)
+	}
+	for _, path := range []string{
+		"roundfix/SKILL.md",
+		"roundfix/agents/openai.yaml",
+	} {
+		if _, err := os.Stat(filepath.Join(expectedDir, path)); err != nil {
+			t.Fatalf("expected installed file %s: %v", path, err)
 		}
 	}
 }

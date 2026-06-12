@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -43,7 +44,7 @@ Usage:
   roundfix stop [<run-id>|--run-id <id>|--pr <number>]
   roundfix attach <run-id>
   roundfix skills check
-  roundfix skills install --target <codex|claude|opencode|all>
+  roundfix skills install [--target <project|codex|claude|opencode|all>]
 
 Commands:
   init       Create User Config or Project Config
@@ -52,7 +53,7 @@ Commands:
   watch      Fetch and resolve in a watched loop
   stop       Stop an Active Run and release its lock
   attach     Replay a Run's event timeline from the Run Database
-  skills     Check or install Roundfix agent skills
+  skills     Check or install the Roundfix agent skill
 
 Options:
   -h, --help      Show help
@@ -100,6 +101,8 @@ var collectInteractiveInput = defaultCollectInteractiveInput
 var suggestCurrentPullRequest = defaultSuggestCurrentPullRequest
 var resolvePullRequestForStop = defaultResolvePullRequestForStop
 var promptInitScope = defaultPromptInitScope
+var resolveSkillsProjectRoot = defaultResolveSkillsProjectRoot
+var promptProjectClaudeSkillSymlink = defaultPromptProjectClaudeSkillSymlink
 
 type validationError struct {
 	message string
@@ -216,13 +219,13 @@ func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		}
 		diagnostics := roundskills.Check()
 		if len(diagnostics) > 0 {
-			fmt.Fprintf(stderr, "%s: Roundfix skills check failed:\n", app.Name)
+			fmt.Fprintf(stderr, "%s: Roundfix skill check failed:\n", app.Name)
 			for _, diagnostic := range diagnostics {
 				fmt.Fprintf(stderr, "  %s: %s\n", diagnostic.Path, diagnostic.Message)
 			}
 			return exitRunFailed
 		}
-		fmt.Fprintf(stdout, "Roundfix skills check passed: %s\n", strings.Join(roundskills.Names(), ", "))
+		fmt.Fprintf(stdout, "Roundfix skill check passed: %s\n", strings.Join(roundskills.Names(), ", "))
 		return exitOK
 	case "install":
 		return runSkillsInstall(ctx, args[1:], stdout, stderr)
@@ -368,7 +371,7 @@ func defaultResolvePullRequestForStop(ctx context.Context, workDir string, pr st
 func runSkillsInstall(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("skills install", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
-	target := fs.String("target", "all", "Skill install target: codex, claude, opencode, or all")
+	target := fs.String("target", "project", "Skill install target: project, codex, claude, opencode, or all")
 	dir := fs.String("dir", "", "Override target skills directory for a single target")
 	if err := fs.Parse(args); err != nil {
 		fmt.Fprintf(stderr, "%s: %v\n", app.Name, err)
@@ -385,20 +388,40 @@ func runSkillsInstall(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitPreflight
 	}
 
+	targetValue := strings.TrimSpace(*target)
+	if targetValue == "" {
+		targetValue = "project"
+	}
 	targetDirs := map[string]string{}
 	if strings.TrimSpace(*dir) != "" {
-		targetDirs[strings.TrimSpace(*target)] = strings.TrimSpace(*dir)
+		targetDirs[targetValue] = strings.TrimSpace(*dir)
+	}
+	projectRoot := ""
+	if targetValue == "project" && strings.TrimSpace(*dir) == "" {
+		var err error
+		projectRoot, err = resolveSkillsProjectRoot(ctx)
+		if err != nil {
+			fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
+			return exitPreflight
+		}
 	}
 	result, err := roundskills.Install(ctx, roundskills.InstallRequest{
-		Target:     strings.TrimSpace(*target),
+		Target:     targetValue,
 		TargetDirs: targetDirs,
+		ProjectDir: projectRoot,
 	})
 	if err != nil {
 		fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
 		return exitPreflight
 	}
 	for _, installed := range result.Targets {
-		fmt.Fprintf(stdout, "Installed Roundfix skills for %s: %s (%d file(s))\n", installed.Target, installed.Dir, installed.Files)
+		fmt.Fprintf(stdout, "Installed Roundfix skill for %s: %s (%d file(s))\n", installed.Target, installed.Dir, installed.Files)
+	}
+	if targetValue == "project" && projectRoot != "" {
+		if err := maybeCreateProjectClaudeSkillSymlink(ctx, projectRoot, stdout, stderr); err != nil {
+			fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
+			return exitPreflight
+		}
 	}
 	return exitOK
 }
@@ -412,6 +435,140 @@ func exitForInterrupt(code int, interrupted bool) int {
 
 func defaultPromptInitScope(ctx context.Context, stderr io.Writer) (string, error) {
 	return readInitScope(ctx, os.Stdin, stderr)
+}
+
+func defaultResolveSkillsProjectRoot(ctx context.Context) (string, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("resolve work directory: %w", err)
+	}
+	if root := findSkillsGitRoot(cwd); root != "" {
+		return root, nil
+	}
+	cmd := exec.CommandContext(ctx, "git", "rev-parse", "--show-toplevel")
+	cmd.Dir = cwd
+	output, err := cmd.Output()
+	if err != nil {
+		return "", errors.New("project skill install requires running inside a git repository or passing --dir")
+	}
+	root := strings.TrimSpace(string(output))
+	if root == "" {
+		return "", errors.New("project skill install requires running inside a git repository or passing --dir")
+	}
+	return root, nil
+}
+
+func findSkillsGitRoot(start string) string {
+	current := filepath.Clean(start)
+	for {
+		if _, err := os.Stat(filepath.Join(current, ".git")); err == nil {
+			return current
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			return ""
+		}
+		current = parent
+	}
+}
+
+func maybeCreateProjectClaudeSkillSymlink(ctx context.Context, projectRoot string, stdout, stderr io.Writer) error {
+	claudeSkillsDir := filepath.Join(projectRoot, ".claude", "skills")
+	info, err := os.Stat(claudeSkillsDir)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("inspect project Claude skills directory %q: %w", claudeSkillsDir, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("project Claude skills path %q is not a directory", claudeSkillsDir)
+	}
+
+	targetPath := filepath.Join(projectRoot, ".agents", "skills", "roundfix")
+	linkPath := filepath.Join(claudeSkillsDir, "roundfix")
+	if linkInfo, err := os.Lstat(linkPath); err == nil {
+		if linkInfo.Mode()&os.ModeSymlink != 0 {
+			existingTarget, readErr := os.Readlink(linkPath)
+			if readErr == nil && sameSkillSymlinkTarget(linkPath, existingTarget, targetPath) {
+				fmt.Fprintf(stdout, "Claude skill symlink already exists: %s -> %s\n", linkPath, existingTarget)
+				return nil
+			}
+		}
+		fmt.Fprintf(stdout, "Claude skill symlink skipped: %s already exists\n", linkPath)
+		return nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("inspect Claude skill symlink %q: %w", linkPath, err)
+	}
+
+	relativeTarget, err := filepath.Rel(claudeSkillsDir, targetPath)
+	if err != nil {
+		return fmt.Errorf("resolve Claude skill symlink target: %w", err)
+	}
+	create, err := promptProjectClaudeSkillSymlink(ctx, stderr, linkPath, relativeTarget)
+	if err != nil {
+		return err
+	}
+	if !create {
+		fmt.Fprintf(stdout, "Claude skill symlink skipped by user: %s\n", linkPath)
+		return nil
+	}
+	if err := os.Symlink(relativeTarget, linkPath); err != nil {
+		return fmt.Errorf("create Claude skill symlink %q -> %q: %w", linkPath, relativeTarget, err)
+	}
+	fmt.Fprintf(stdout, "Created Claude skill symlink: %s -> %s\n", linkPath, relativeTarget)
+	return nil
+}
+
+func sameSkillSymlinkTarget(linkPath string, existingTarget string, expectedTarget string) bool {
+	if !filepath.IsAbs(existingTarget) {
+		existingTarget = filepath.Join(filepath.Dir(linkPath), existingTarget)
+	}
+	return filepath.Clean(existingTarget) == filepath.Clean(expectedTarget)
+}
+
+func defaultPromptProjectClaudeSkillSymlink(ctx context.Context, stderr io.Writer, linkPath string, target string) (bool, error) {
+	return readProjectClaudeSkillSymlinkPrompt(ctx, os.Stdin, stderr, linkPath, target)
+}
+
+func readProjectClaudeSkillSymlinkPrompt(ctx context.Context, stdin io.Reader, stderr io.Writer, linkPath string, target string) (bool, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	if _, err := fmt.Fprintln(stderr, "Project Claude skills directory detected."); err != nil {
+		return false, fmt.Errorf("write Claude skill symlink prompt: %w", err)
+	}
+	if _, err := fmt.Fprintf(stderr, "Create symlink %s -> %s? [Y/n]: ", linkPath, target); err != nil {
+		return false, fmt.Errorf("write Claude skill symlink prompt: %w", err)
+	}
+	line, err := bufio.NewReader(stdin).ReadString('\n')
+	if err != nil && !errors.Is(err, io.EOF) {
+		return false, fmt.Errorf("read Claude skill symlink prompt: %w", err)
+	}
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	return normalizeYesNo(line)
+}
+
+func normalizeYesNo(value string) (bool, error) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", "y", "yes":
+		return true, nil
+	case "n", "no":
+		return false, nil
+	default:
+		return false, fmt.Errorf("unsupported symlink response %q; enter yes or no", strings.TrimSpace(value))
+	}
 }
 
 func readInitScope(ctx context.Context, stdin io.Reader, stderr io.Writer) (string, error) {
@@ -1782,14 +1939,15 @@ Options:
 	case "skills":
 		return `Usage:
   roundfix skills check
-  roundfix skills install [--target <codex|claude|opencode|all>] [--dir <path>]
+  roundfix skills install [--target <project|codex|claude|opencode|all>] [--dir <path>]
 
 Commands:
   check      Validate shipped Roundfix skill artifacts
-  install    Install Roundfix skills into Codex, Claude Code, or OpenCode-compatible directories
+  install    Install the Roundfix skill into this project or compatible Agent skill directories
 
 Options:
-  --target   Install target. Supported: codex, claude, opencode, all
+  --target   Install target. Supported: project, codex, claude, opencode, all
+             project writes <repo>/.agents/skills/roundfix and can link .claude/skills/roundfix
   --dir      Override the target skills directory for a single target
 `
 	default:

@@ -14,7 +14,7 @@ BIN := $(BIN_DIR)/$(APP)
 PKGS := ./...
 BUILD_FLAGS ?= -buildvcs=false
 RUN_FLAGS ?= -buildvcs=false
-TARGET ?= all
+TARGET ?= project
 GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')
 
 .DEFAULT_GOAL := help
@@ -85,7 +85,7 @@ clean: ## Remove build artifacts
 skills-check: ## Validate shipped Roundfix skill artifacts
 	$(GO) run $(RUN_FLAGS) $(CMD) skills check
 
-skills-install: ## Install shipped Roundfix skills; pass TARGET=codex|claude|opencode|all
+skills-install: ## Install shipped Roundfix skills; pass TARGET=project|codex|claude|opencode|all
 	$(GO) run $(RUN_FLAGS) $(CMD) skills install --target $(TARGET)
 
 skills-link: ## Recreate .claude/skills symlinks from .agents/skills

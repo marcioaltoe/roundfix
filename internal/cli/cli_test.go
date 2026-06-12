@@ -231,18 +231,45 @@ func TestRunSkillsCheck(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
 	}
-	if !strings.Contains(stdout.String(), "Roundfix skills check passed") {
+	if !strings.Contains(stdout.String(), "Roundfix skill check passed") {
 		t.Fatalf("expected skills check output, got %q", stdout.String())
 	}
-	if !strings.Contains(stdout.String(), "roundfix-watch") || !strings.Contains(stdout.String(), "roundfix-resolve-round") {
-		t.Fatalf("expected both skill names, got %q", stdout.String())
+	if !strings.Contains(stdout.String(), "roundfix") || strings.Contains(stdout.String(), "roundfix-watch") || strings.Contains(stdout.String(), "roundfix-resolve-round") {
+		t.Fatalf("expected consolidated skill name only, got %q", stdout.String())
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
 	}
 }
 
-func TestRunSkillsInstallCopiesArtifacts(t *testing.T) {
+func TestRunSkillsInstallCopiesArtifactsToProjectByDefault(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"skills", "install"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	if !strings.Contains(stdout.String(), "Installed Roundfix skill for project") {
+		t.Fatalf("expected project install output, got %q", stdout.String())
+	}
+	targetDir := filepath.Join(repoDir, ".agents", "skills")
+	for _, path := range []string{
+		"roundfix/SKILL.md",
+		"roundfix/agents/openai.yaml",
+	} {
+		if _, err := os.Stat(filepath.Join(targetDir, path)); err != nil {
+			t.Fatalf("expected installed file %s: %v", path, err)
+		}
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+}
+
+func TestRunSkillsInstallCopiesArtifactsToExplicitTarget(t *testing.T) {
 	targetDir := t.TempDir()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -252,18 +279,60 @@ func TestRunSkillsInstallCopiesArtifacts(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
 	}
-	if !strings.Contains(stdout.String(), "Installed Roundfix skills for codex") {
+	if !strings.Contains(stdout.String(), "Installed Roundfix skill for codex") {
 		t.Fatalf("expected install output, got %q", stdout.String())
 	}
 	for _, path := range []string{
-		"roundfix-watch/SKILL.md",
-		"roundfix-watch/agents/openai.yaml",
-		"roundfix-resolve-round/SKILL.md",
-		"roundfix-resolve-round/agents/openai.yaml",
+		"roundfix/SKILL.md",
+		"roundfix/agents/openai.yaml",
 	} {
 		if _, err := os.Stat(filepath.Join(targetDir, path)); err != nil {
 			t.Fatalf("expected installed file %s: %v", path, err)
 		}
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+}
+
+func TestRunSkillsInstallCreatesClaudeProjectSymlink(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	mustMkdir(t, filepath.Join(repoDir, ".claude", "skills"))
+	prompted := false
+	withClaudeSkillSymlinkPrompt(t, func(ctx context.Context, stderr io.Writer, linkPath string, target string) (bool, error) {
+		prompted = true
+		expectedLink := filepath.Join(repoDir, ".claude", "skills", "roundfix")
+		if linkPath != expectedLink {
+			t.Fatalf("expected prompt link path %q, got %q", expectedLink, linkPath)
+		}
+		expectedTarget := filepath.Join("..", "..", ".agents", "skills", "roundfix")
+		if target != expectedTarget {
+			t.Fatalf("expected prompt target %q, got %q", expectedTarget, target)
+		}
+		return true, nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"skills", "install"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	if !prompted {
+		t.Fatal("expected Claude symlink prompt")
+	}
+	linkPath := filepath.Join(repoDir, ".claude", "skills", "roundfix")
+	target, err := os.Readlink(linkPath)
+	if err != nil {
+		t.Fatalf("expected Claude skill symlink: %v", err)
+	}
+	expectedTarget := filepath.Join("..", "..", ".agents", "skills", "roundfix")
+	if target != expectedTarget {
+		t.Fatalf("expected symlink target %q, got %q", expectedTarget, target)
+	}
+	if !strings.Contains(stdout.String(), "Created Claude skill symlink") {
+		t.Fatalf("expected symlink output, got %q", stdout.String())
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
@@ -1865,6 +1934,15 @@ func withInitScopePrompt(t *testing.T, fn func(context.Context, io.Writer) (stri
 	promptInitScope = fn
 	t.Cleanup(func() {
 		promptInitScope = old
+	})
+}
+
+func withClaudeSkillSymlinkPrompt(t *testing.T, fn func(context.Context, io.Writer, string, string) (bool, error)) {
+	t.Helper()
+	old := promptProjectClaudeSkillSymlink
+	promptProjectClaudeSkillSymlink = fn
+	t.Cleanup(func() {
+		promptProjectClaudeSkillSymlink = old
 	})
 }
 

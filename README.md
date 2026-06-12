@@ -103,12 +103,18 @@ Run the watched review-resolution loop:
 go run ./cmd/roundfix watch --source coderabbit --pr <number> --agent codex --until-clean
 ```
 
-Validate or install the shipped Roundfix agent skills:
+Validate or install the shipped Roundfix agent skill:
 
 ```bash
 go run ./cmd/roundfix skills check
-go run ./cmd/roundfix skills install --target codex
+go run ./cmd/roundfix skills install
 ```
+
+By default, `skills install` writes the shipped skill to
+`<repo>/.agents/skills/roundfix`. Use `--target codex`, `--target claude`,
+`--target opencode`, or `--target all` for user-scoped Agent skill directories.
+If the project already has `.claude/skills`, Roundfix asks whether to create
+`.claude/skills/roundfix` as a symlink to the project-local skill.
 
 Supported Agent names are `codex`, `claude`, and `opencode`. Supported Review
 Source is `coderabbit`.
@@ -234,7 +240,7 @@ make build
 make install
 make deps
 make skills-check
-make skills-install TARGET=codex
+make skills-install
 ```
 
 ## Project Structure
@@ -252,7 +258,7 @@ internal/tui/                    Interactive Input and ACP Live Run View
 internal/rounds/                 Round artifacts, issue parsing, batching
 internal/store/                  central Run Database
 internal/watch/                  watch state machine
-skills/                          shipped Roundfix agent skills
+skills/                          shipped Roundfix agent skill
 docs/                            product docs and architecture decisions
 ```
 
