@@ -234,6 +234,31 @@ func TestCreateRunAllowsDifferentHeadBranch(t *testing.T) {
 	}
 }
 
+func TestCompleteRunAcceptsUnresolvedAsTerminal(t *testing.T) {
+	ctx := context.Background()
+	store := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, store)
+
+	run, err := store.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("expected Run creation, got %v", err)
+	}
+	completed, err := store.CompleteRun(ctx, run.ID, StateUnresolved)
+	if err != nil {
+		t.Fatalf("expected Unresolved completion, got %v", err)
+	}
+	if completed.State != StateUnresolved || completed.CompletedAt == nil {
+		t.Fatalf("expected completed Unresolved Run, got %+v", completed)
+	}
+	_, found, err := store.ActiveRun(ctx, run.HeadRepository, run.HeadBranch)
+	if err != nil {
+		t.Fatalf("expected active lookup, got %v", err)
+	}
+	if found {
+		t.Fatal("expected Unresolved Run to release the Active Run lock")
+	}
+}
+
 func TestCompleteRunRejectsNonTerminalState(t *testing.T) {
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())

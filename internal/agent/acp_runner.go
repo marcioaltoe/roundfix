@@ -796,9 +796,13 @@ func runtimeBootstrapArgs(runtime RuntimeSpec, modelName string) []string {
 	args = appendCodexConfig(args,
 		"features.code_mode=false",
 		"features.code_mode_only=false",
-		`approval_policy="never"`,
-		`sandbox_mode="workspace-write"`,
 	)
+	if runtime.FullAccessMode == "full-access" {
+		args = appendCodexConfig(args,
+			`approval_policy="never"`,
+			`sandbox_mode="danger-full-access"`,
+		)
+	}
 	return args
 }
 

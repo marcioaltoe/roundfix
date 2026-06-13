@@ -31,6 +31,10 @@ const (
 	StateBudgetExceeded   = "BudgetExceeded"
 	StateTimedOut         = "TimedOut"
 	StateFailed           = "Failed"
+	// StateUnresolved means the resolve work completed but Unresolved
+	// Review Issues remain, so Final Push stayed blocked. It is a deliberate
+	// outcome, distinct from StateFailed which means the Run itself broke.
+	StateUnresolved = "Unresolved"
 
 	// Intermediate states reflect what an Active Run is doing during a
 	// resolve cycle. They are non-terminal: CompleteRun still ends the Run.
@@ -409,7 +413,7 @@ ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.upd
 
 func IsTerminalState(state string) bool {
 	switch state {
-	case StateFetched, StateStopped, StateClean, StateMaxRoundsReached, StateBudgetExceeded, StateTimedOut, StateFailed:
+	case StateFetched, StateStopped, StateClean, StateMaxRoundsReached, StateBudgetExceeded, StateTimedOut, StateFailed, StateUnresolved:
 		return true
 	default:
 		return false

@@ -516,6 +516,13 @@ func AllowedStatus(status string) bool {
 	}
 }
 
+// IsSettledStatus reports whether a Review Issue needs no further Agent
+// work in the current Batch: every Terminal status plus failed, which
+// stays Unresolved and is retried in a later Round.
+func IsSettledStatus(status string) bool {
+	return IsTerminalStatus(status) || status == StatusFailed
+}
+
 func IsTerminalStatus(status string) bool {
 	switch status {
 	case StatusResolved, StatusInvalid, StatusDuplicated:

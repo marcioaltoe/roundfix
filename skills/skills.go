@@ -10,12 +10,14 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
-//go:embed roundfix-watch/SKILL.md roundfix-watch/agents/openai.yaml roundfix-resolve-round/SKILL.md roundfix-resolve-round/agents/openai.yaml
+//go:embed roundfix/SKILL.md roundfix/agents/openai.yaml
 var embedded embed.FS
 
-var skillNames = []string{"roundfix-watch", "roundfix-resolve-round"}
+var skillNames = []string{"roundfix"}
 
 type File struct {
 	Skill string
@@ -28,9 +30,23 @@ type Diagnostic struct {
 	Message string
 }
 
+type openAIManifest struct {
+	Name         string `yaml:"name"`
+	EntryPoint   string `yaml:"entrypoint"`
+	RuntimeHints struct {
+		Command string `yaml:"command"`
+	} `yaml:"runtime_hints"`
+	Runtime struct {
+		Hints struct {
+			Command string `yaml:"command"`
+		} `yaml:"hints"`
+	} `yaml:"runtime"`
+}
+
 type InstallRequest struct {
 	Target     string
 	TargetDirs map[string]string
+	ProjectDir string
 }
 
 type InstalledTarget struct {
@@ -80,22 +96,27 @@ func Files() ([]File, error) {
 
 func Check() []Diagnostic {
 	required := map[string][]string{
-		"roundfix-watch/SKILL.md": {
+		"roundfix/SKILL.md": {
 			"Prefer `roundfix` commands over manual GitHub scraping.",
-			"Report the Run ID, Open Pull Request, Review Source, Agent, and current Run state",
+			"Report the Run ID",
+			"state whenever you summarize progress.",
 			"Do not manually resolve CodeRabbit threads",
-		},
-		"roundfix-resolve-round/SKILL.md": {
 			"Read every assigned Review Issue file completely",
 			"Update only assigned Review Issue statuses",
-			"Do not create commits.",
-			"Do not push.",
-			"Do not call GitHub, CodeRabbit, or other Review Source mutation APIs.",
+			"Do not create commits inside an assigned Batch run.",
+			"Do not push inside an assigned Batch run.",
+			"Do not call GitHub, CodeRabbit, or other Review Source mutation APIs",
 			"Do not edit unassigned Review Issue files.",
 			"Do not mark any issue as `duplicated`",
+			"rtk bun run --cwd <package-dir> <script> [args...]",
 		},
-		"roundfix-watch/agents/openai.yaml":         {"roundfix-watch"},
-		"roundfix-resolve-round/agents/openai.yaml": {"roundfix-resolve-round"},
+		"roundfix/agents/openai.yaml": {
+			"name: roundfix",
+			"entrypoint: SKILL.md",
+			"command: roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean",
+			"assigned Review Issue files during Batch runs",
+			"Run state",
+		},
 	}
 	banned := []string{
 		"reference project",
@@ -123,6 +144,9 @@ func Check() []Diagnostic {
 				diagnostics = append(diagnostics, Diagnostic{Path: path, Message: fmt.Sprintf("contains banned reference branding %q", phrase)})
 			}
 		}
+		if path == "roundfix/agents/openai.yaml" {
+			diagnostics = append(diagnostics, checkOpenAIManifest(path, data)...)
+		}
 	}
 	sort.Slice(diagnostics, func(i, j int) bool {
 		if diagnostics[i].Path == diagnostics[j].Path {
@@ -131,6 +155,31 @@ func Check() []Diagnostic {
 		return diagnostics[i].Path < diagnostics[j].Path
 	})
 	return diagnostics
+}
+
+func checkOpenAIManifest(path string, data []byte) []Diagnostic {
+	var manifest openAIManifest
+	if err := yaml.Unmarshal(data, &manifest); err != nil {
+		return []Diagnostic{{Path: path, Message: fmt.Sprintf("parse skill manifest: %v", err)}}
+	}
+	var diagnostics []Diagnostic
+	if strings.TrimSpace(manifest.Name) != "roundfix" {
+		diagnostics = append(diagnostics, Diagnostic{Path: path, Message: "manifest field name must be roundfix"})
+	}
+	if strings.TrimSpace(manifest.EntryPoint) == "" {
+		diagnostics = append(diagnostics, Diagnostic{Path: path, Message: "manifest field entrypoint is required"})
+	}
+	if strings.TrimSpace(openAIManifestCommand(manifest)) == "" {
+		diagnostics = append(diagnostics, Diagnostic{Path: path, Message: "manifest runtime command is required"})
+	}
+	return diagnostics
+}
+
+func openAIManifestCommand(manifest openAIManifest) string {
+	if command := strings.TrimSpace(manifest.RuntimeHints.Command); command != "" {
+		return command
+	}
+	return strings.TrimSpace(manifest.Runtime.Hints.Command)
 }
 
 func Install(ctx context.Context, req InstallRequest) (InstallResult, error) {
@@ -184,10 +233,13 @@ func DefaultTargetDirs() (map[string]string, error) {
 func targetDirs(req InstallRequest) (map[string]string, error) {
 	target := strings.TrimSpace(req.Target)
 	if target == "" {
-		target = "all"
+		target = "project"
 	}
-	if target != "all" && target != "codex" && target != "claude" && target != "opencode" {
-		return nil, fmt.Errorf("unsupported skill install target %q; supported values: codex, claude, opencode, all", target)
+	if target != "project" && target != "all" && target != "codex" && target != "claude" && target != "opencode" {
+		return nil, fmt.Errorf("unsupported skill install target %q; supported values: project, codex, claude, opencode, all", target)
+	}
+	if target == "project" {
+		return projectTargetDirs(req)
 	}
 	defaults, err := DefaultTargetDirs()
 	if err != nil {
@@ -212,8 +264,19 @@ func targetDirs(req InstallRequest) (map[string]string, error) {
 	return map[string]string{target: dir}, nil
 }
 
+func projectTargetDirs(req InstallRequest) (map[string]string, error) {
+	if dir := strings.TrimSpace(req.TargetDirs["project"]); dir != "" {
+		return map[string]string{"project": dir}, nil
+	}
+	projectDir := strings.TrimSpace(req.ProjectDir)
+	if projectDir == "" {
+		return nil, errors.New("project skill install requires a project directory")
+	}
+	return map[string]string{"project": filepath.Join(projectDir, ".agents", "skills")}, nil
+}
+
 func orderedTargets(targets map[string]string) []string {
-	order := []string{"codex", "claude", "opencode"}
+	order := []string{"project", "codex", "claude", "opencode"}
 	ordered := make([]string, 0, len(targets))
 	for _, target := range order {
 		if _, ok := targets[target]; ok {

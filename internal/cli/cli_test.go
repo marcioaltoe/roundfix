@@ -231,18 +231,45 @@ func TestRunSkillsCheck(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
 	}
-	if !strings.Contains(stdout.String(), "Roundfix skills check passed") {
+	if !strings.Contains(stdout.String(), "Roundfix skill check passed") {
 		t.Fatalf("expected skills check output, got %q", stdout.String())
 	}
-	if !strings.Contains(stdout.String(), "roundfix-watch") || !strings.Contains(stdout.String(), "roundfix-resolve-round") {
-		t.Fatalf("expected both skill names, got %q", stdout.String())
+	if !strings.Contains(stdout.String(), "roundfix") || strings.Contains(stdout.String(), "roundfix-watch") || strings.Contains(stdout.String(), "roundfix-resolve-round") {
+		t.Fatalf("expected consolidated skill name only, got %q", stdout.String())
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
 	}
 }
 
-func TestRunSkillsInstallCopiesArtifacts(t *testing.T) {
+func TestRunSkillsInstallCopiesArtifactsToProjectByDefault(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"skills", "install"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	if !strings.Contains(stdout.String(), "Installed Roundfix skill for project") {
+		t.Fatalf("expected project install output, got %q", stdout.String())
+	}
+	targetDir := filepath.Join(repoDir, ".agents", "skills")
+	for _, path := range []string{
+		"roundfix/SKILL.md",
+		"roundfix/agents/openai.yaml",
+	} {
+		if _, err := os.Stat(filepath.Join(targetDir, path)); err != nil {
+			t.Fatalf("expected installed file %s: %v", path, err)
+		}
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+}
+
+func TestRunSkillsInstallCopiesArtifactsToExplicitTarget(t *testing.T) {
 	targetDir := t.TempDir()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -252,18 +279,60 @@ func TestRunSkillsInstallCopiesArtifacts(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
 	}
-	if !strings.Contains(stdout.String(), "Installed Roundfix skills for codex") {
+	if !strings.Contains(stdout.String(), "Installed Roundfix skill for codex") {
 		t.Fatalf("expected install output, got %q", stdout.String())
 	}
 	for _, path := range []string{
-		"roundfix-watch/SKILL.md",
-		"roundfix-watch/agents/openai.yaml",
-		"roundfix-resolve-round/SKILL.md",
-		"roundfix-resolve-round/agents/openai.yaml",
+		"roundfix/SKILL.md",
+		"roundfix/agents/openai.yaml",
 	} {
 		if _, err := os.Stat(filepath.Join(targetDir, path)); err != nil {
 			t.Fatalf("expected installed file %s: %v", path, err)
 		}
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+}
+
+func TestRunSkillsInstallCreatesClaudeProjectSymlink(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	mustMkdir(t, filepath.Join(repoDir, ".claude", "skills"))
+	prompted := false
+	withClaudeSkillSymlinkPrompt(t, func(ctx context.Context, stderr io.Writer, linkPath string, target string) (bool, error) {
+		prompted = true
+		expectedLink := filepath.Join(repoDir, ".claude", "skills", "roundfix")
+		if linkPath != expectedLink {
+			t.Fatalf("expected prompt link path %q, got %q", expectedLink, linkPath)
+		}
+		expectedTarget := filepath.Join("..", "..", ".agents", "skills", "roundfix")
+		if target != expectedTarget {
+			t.Fatalf("expected prompt target %q, got %q", expectedTarget, target)
+		}
+		return true, nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"skills", "install"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	if !prompted {
+		t.Fatal("expected Claude symlink prompt")
+	}
+	linkPath := filepath.Join(repoDir, ".claude", "skills", "roundfix")
+	target, err := os.Readlink(linkPath)
+	if err != nil {
+		t.Fatalf("expected Claude skill symlink: %v", err)
+	}
+	expectedTarget := filepath.Join("..", "..", ".agents", "skills", "roundfix")
+	if target != expectedTarget {
+		t.Fatalf("expected symlink target %q, got %q", expectedTarget, target)
+	}
+	if !strings.Contains(stdout.String(), "Created Claude skill symlink") {
+		t.Fatalf("expected symlink output, got %q", stdout.String())
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
@@ -403,6 +472,68 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 				}
 				assertRunCount(t, filepath.Join(os.Getenv("HOME"), ".roundfix", "roundfix.db"), 1)
 				assertAgentLogContains(t, repoDir, "fake agent output")
+			}
+		})
+	}
+}
+
+func TestRunResolveAgentFullAccessIsExplicitOptIn(t *testing.T) {
+	tests := []struct {
+		name       string
+		config     string
+		args       []string
+		wantAccess string
+	}{
+		{
+			name:       "default sandboxed",
+			args:       []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"},
+			wantAccess: "",
+		},
+		{
+			name:       "command flag opts in",
+			args:       []string{"resolve", "--pr", "123", "--agent", "codex", "--agent-full-access", "--round", "all", "--no-input"},
+			wantAccess: "full-access",
+		},
+		{
+			name: "config opts in",
+			config: `
+defaults:
+  agent_full_access: true
+`,
+			args:       []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"},
+			wantAccess: "full-access",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, repoDir := withCLIWorkspace(t)
+			withSuccessfulPreflight(t, repoDir)
+			runner := &fakeAgentRunner{}
+			withAgentRunner(t, runner)
+			if tt.config != "" {
+				mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), tt.config)
+			}
+			persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run(tt.args, &stdout, &stderr)
+
+			if code != 0 {
+				t.Fatalf("expected exit code 0, got %d, stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+			}
+			if len(runner.probedRuntimes) != 1 {
+				t.Fatalf("expected one runtime probe, got %#v", runner.probedRuntimes)
+			}
+			if runner.probedRuntimes[0].FullAccessMode != tt.wantAccess {
+				t.Fatalf("expected probe full-access mode %q, got %q", tt.wantAccess, runner.probedRuntimes[0].FullAccessMode)
+			}
+			if len(runner.runRuntimes) != 1 {
+				t.Fatalf("expected one Agent run, got %#v", runner.runRuntimes)
+			}
+			if runner.runRuntimes[0].FullAccessMode != tt.wantAccess {
+				t.Fatalf("expected run full-access mode %q, got %q", tt.wantAccess, runner.runRuntimes[0].FullAccessMode)
 			}
 		})
 	}
@@ -613,6 +744,7 @@ func TestExitForWatchOutcome(t *testing.T) {
 		{outcome: store.StateBudgetExceeded, code: 1},
 		{outcome: store.StateTimedOut, code: 1},
 		{outcome: store.StateFailed, code: 1},
+		{outcome: store.StateUnresolved, code: 1},
 	}
 
 	for _, tt := range tests {
@@ -668,8 +800,8 @@ func TestRunResolveHonorsRoundSelector(t *testing.T) {
 
 	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--round", "2", "--no-input"}, &stdout, &stderr)
 
-	if code != 0 {
-		t.Fatalf("expected successful resolve exit code 0, got %d", code)
+	if code != 1 {
+		t.Fatalf("expected Unresolved resolve exit code 1, got %d", code)
 	}
 	if stdout.Len() != 0 {
 		t.Fatalf("expected no stdout, got %q", stdout.String())
@@ -682,6 +814,9 @@ func TestRunResolveHonorsRoundSelector(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "Final Push blocked: 1 Unresolved Review Issue") {
 		t.Fatalf("expected Final Push to be blocked by unselected unresolved issue, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "reached Unresolved") {
+		t.Fatalf("expected Unresolved outcome for out-of-scope unresolved issue, got %q", stderr.String())
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
 }
@@ -773,8 +908,8 @@ func TestRunResolveVerificationFailureDoesNotCommit(t *testing.T) {
 	if !strings.Contains(stderr.String(), "tests failed") {
 		t.Fatalf("expected verification failure, got %q", stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "did not commit, push, or resolve Review Source threads") {
-		t.Fatalf("expected daemon-owned mutation boundary, got %q", stderr.String())
+	if !strings.Contains(stderr.String(), "reached Unresolved") {
+		t.Fatalf("expected Unresolved outcome after failed verification, got %q", stderr.String())
 	}
 	issue, err := rounds.ParseIssue(result.IssuePaths[0])
 	if err != nil {
@@ -1038,8 +1173,8 @@ func TestRunResolveAgentFailureMarksBatchFailed(t *testing.T) {
 	if !strings.Contains(stderr.String(), "agent crashed") {
 		t.Fatalf("expected Agent failure, got %q", stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "did not commit, push, or resolve Review Source threads") {
-		t.Fatalf("expected daemon-owned mutation boundary, got %q", stderr.String())
+	if !strings.Contains(stderr.String(), "reached Unresolved") {
+		t.Fatalf("expected Unresolved outcome after Agent failure, got %q", stderr.String())
 	}
 	issue, err := rounds.ParseIssue(result.IssuePaths[0])
 	if err != nil {
@@ -1052,7 +1187,7 @@ func TestRunResolveAgentFailureMarksBatchFailed(t *testing.T) {
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
 }
 
-func TestRunResolveAgentFailureStopsBeforeLaterBatches(t *testing.T) {
+func TestRunResolveAgentFailureContinuesWithLaterBatches(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	runner := &fakeAgentRunner{runErr: errors.New("agent crashed")}
@@ -1094,10 +1229,10 @@ resolve:
 	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
-		t.Fatalf("expected Run failure exit 1, got %d", code)
+		t.Fatalf("expected Unresolved exit 1, got %d", code)
 	}
-	if runner.calls != 1 {
-		t.Fatalf("expected only the failing Batch to run, got %d Agent calls", runner.calls)
+	if runner.calls != 2 {
+		t.Fatalf("expected later Batches to run after the first failed, got %d Agent calls", runner.calls)
 	}
 	first, err := rounds.ParseIssue(result.IssuePaths[0])
 	if err != nil {
@@ -1110,11 +1245,14 @@ resolve:
 	if first.Status != rounds.StatusFailed {
 		t.Fatalf("expected first Batch issue failed, got %q", first.Status)
 	}
-	if second.Status != rounds.StatusPending {
-		t.Fatalf("expected later Batch issue to remain pending, got %q", second.Status)
+	if second.Status != rounds.StatusFailed {
+		t.Fatalf("expected second Batch issue failed after its own Agent failure, got %q", second.Status)
 	}
-	if !strings.Contains(stderr.String(), "Resolve stopped after Batch 001/002 failed; 1 planned Review Issue(s) remain pending in 1 Batch(es).") {
-		t.Fatalf("expected pending Batch diagnostic, got %q", stderr.String())
+	if !strings.Contains(stderr.String(), "Batch 001 failed") || !strings.Contains(stderr.String(), "Batch 002 failed") {
+		t.Fatalf("expected both Batch failures reported, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "reached Unresolved") {
+		t.Fatalf("expected Unresolved outcome, got %q", stderr.String())
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
@@ -1868,6 +2006,15 @@ func withInitScopePrompt(t *testing.T, fn func(context.Context, io.Writer) (stri
 	})
 }
 
+func withClaudeSkillSymlinkPrompt(t *testing.T, fn func(context.Context, io.Writer, string, string) (bool, error)) {
+	t.Helper()
+	old := promptProjectClaudeSkillSymlink
+	promptProjectClaudeSkillSymlink = fn
+	t.Cleanup(func() {
+		promptProjectClaudeSkillSymlink = old
+	})
+}
+
 func withCurrentPullRequestSuggestion(t *testing.T, value string) {
 	t.Helper()
 	old := suggestCurrentPullRequest
@@ -2148,18 +2295,22 @@ func publishFakeAgentOutput(ctx context.Context, sink runevent.Sink, req agent.E
 }
 
 type fakeAgentRunner struct {
-	probeErr error
-	runErr   error
-	status   string
-	calls    int
+	probeErr       error
+	runErr         error
+	status         string
+	calls          int
+	probedRuntimes []agent.RuntimeSpec
+	runRuntimes    []agent.RuntimeSpec
 }
 
-func (runner *fakeAgentRunner) Probe(context.Context, agent.RuntimeSpec) error {
+func (runner *fakeAgentRunner) Probe(_ context.Context, runtime agent.RuntimeSpec) error {
+	runner.probedRuntimes = append(runner.probedRuntimes, runtime)
 	return runner.probeErr
 }
 
 func (runner *fakeAgentRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
 	runner.calls++
+	runner.runRuntimes = append(runner.runRuntimes, req.Runtime)
 	status := runner.status
 	if status == "" {
 		status = rounds.StatusResolved
@@ -2949,8 +3100,8 @@ func TestFailedVerificationJournalsFailureWithoutCommitEvents(t *testing.T) {
 		t.Fatalf("expected verification failure event journaled, got %+v", events)
 	}
 	last := events[len(events)-1].Event
-	if last.Kind != runevent.KindDaemonOutcome || !strings.Contains(string(last.Payload), `"Failed"`) {
-		t.Fatalf("expected Failed outcome event last, got %+v", last)
+	if last.Kind != runevent.KindDaemonOutcome || !strings.Contains(string(last.Payload), `"Unresolved"`) {
+		t.Fatalf("expected Unresolved outcome event last, got %+v", last)
 	}
 }
 

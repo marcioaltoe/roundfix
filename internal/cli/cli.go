@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -43,7 +44,7 @@ Usage:
   roundfix stop [<run-id>|--run-id <id>|--pr <number>]
   roundfix attach <run-id>
   roundfix skills check
-  roundfix skills install --target <codex|claude|opencode|all>
+  roundfix skills install [--target <project|codex|claude|opencode|all>]
 
 Commands:
   init       Create User Config or Project Config
@@ -52,7 +53,7 @@ Commands:
   watch      Fetch and resolve in a watched loop
   stop       Stop an Active Run and release its lock
   attach     Replay a Run's event timeline from the Run Database
-  skills     Check or install Roundfix agent skills
+  skills     Check or install the Roundfix agent skill
 
 Options:
   -h, --help      Show help
@@ -67,22 +68,23 @@ const (
 )
 
 type commandRequest struct {
-	name        string
-	pr          string
-	source      string
-	agent       string
-	round       string
-	noInput     bool
-	interactive bool
-	inputShown  bool
-	untilClean  bool
-	maxRounds   int
-	artifactDir string
-	baseRepo    string
-	model       string
-	agentCmd    string
-	headBranch  string
-	headRepo    string
+	name            string
+	pr              string
+	source          string
+	agent           string
+	round           string
+	noInput         bool
+	interactive     bool
+	inputShown      bool
+	untilClean      bool
+	maxRounds       int
+	artifactDir     string
+	baseRepo        string
+	model           string
+	agentCmd        string
+	agentFullAccess bool
+	headBranch      string
+	headRepo        string
 }
 
 var runCommandPreflight = defaultRunCommandPreflight
@@ -100,6 +102,8 @@ var collectInteractiveInput = defaultCollectInteractiveInput
 var suggestCurrentPullRequest = defaultSuggestCurrentPullRequest
 var resolvePullRequestForStop = defaultResolvePullRequestForStop
 var promptInitScope = defaultPromptInitScope
+var resolveSkillsProjectRoot = defaultResolveSkillsProjectRoot
+var promptProjectClaudeSkillSymlink = defaultPromptProjectClaudeSkillSymlink
 
 type validationError struct {
 	message string
@@ -216,13 +220,13 @@ func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		}
 		diagnostics := roundskills.Check()
 		if len(diagnostics) > 0 {
-			fmt.Fprintf(stderr, "%s: Roundfix skills check failed:\n", app.Name)
+			fmt.Fprintf(stderr, "%s: Roundfix skill check failed:\n", app.Name)
 			for _, diagnostic := range diagnostics {
 				fmt.Fprintf(stderr, "  %s: %s\n", diagnostic.Path, diagnostic.Message)
 			}
 			return exitRunFailed
 		}
-		fmt.Fprintf(stdout, "Roundfix skills check passed: %s\n", strings.Join(roundskills.Names(), ", "))
+		fmt.Fprintf(stdout, "Roundfix skill check passed: %s\n", strings.Join(roundskills.Names(), ", "))
 		return exitOK
 	case "install":
 		return runSkillsInstall(ctx, args[1:], stdout, stderr)
@@ -368,7 +372,7 @@ func defaultResolvePullRequestForStop(ctx context.Context, workDir string, pr st
 func runSkillsInstall(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("skills install", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
-	target := fs.String("target", "all", "Skill install target: codex, claude, opencode, or all")
+	target := fs.String("target", "project", "Skill install target: project, codex, claude, opencode, or all")
 	dir := fs.String("dir", "", "Override target skills directory for a single target")
 	if err := fs.Parse(args); err != nil {
 		fmt.Fprintf(stderr, "%s: %v\n", app.Name, err)
@@ -385,20 +389,40 @@ func runSkillsInstall(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitPreflight
 	}
 
+	targetValue := strings.TrimSpace(*target)
+	if targetValue == "" {
+		targetValue = "project"
+	}
 	targetDirs := map[string]string{}
 	if strings.TrimSpace(*dir) != "" {
-		targetDirs[strings.TrimSpace(*target)] = strings.TrimSpace(*dir)
+		targetDirs[targetValue] = strings.TrimSpace(*dir)
+	}
+	projectRoot := ""
+	if targetValue == "project" && strings.TrimSpace(*dir) == "" {
+		var err error
+		projectRoot, err = resolveSkillsProjectRoot(ctx)
+		if err != nil {
+			fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
+			return exitPreflight
+		}
 	}
 	result, err := roundskills.Install(ctx, roundskills.InstallRequest{
-		Target:     strings.TrimSpace(*target),
+		Target:     targetValue,
 		TargetDirs: targetDirs,
+		ProjectDir: projectRoot,
 	})
 	if err != nil {
 		fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
 		return exitPreflight
 	}
 	for _, installed := range result.Targets {
-		fmt.Fprintf(stdout, "Installed Roundfix skills for %s: %s (%d file(s))\n", installed.Target, installed.Dir, installed.Files)
+		fmt.Fprintf(stdout, "Installed Roundfix skill for %s: %s (%d file(s))\n", installed.Target, installed.Dir, installed.Files)
+	}
+	if targetValue == "project" && projectRoot != "" {
+		if err := maybeCreateProjectClaudeSkillSymlink(ctx, projectRoot, stdout, stderr); err != nil {
+			fmt.Fprintf(stderr, "%s: skills install failed: %v\n", app.Name, err)
+			return exitPreflight
+		}
 	}
 	return exitOK
 }
@@ -412,6 +436,140 @@ func exitForInterrupt(code int, interrupted bool) int {
 
 func defaultPromptInitScope(ctx context.Context, stderr io.Writer) (string, error) {
 	return readInitScope(ctx, os.Stdin, stderr)
+}
+
+func defaultResolveSkillsProjectRoot(ctx context.Context) (string, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("resolve work directory: %w", err)
+	}
+	if root := findSkillsGitRoot(cwd); root != "" {
+		return root, nil
+	}
+	cmd := exec.CommandContext(ctx, "git", "rev-parse", "--show-toplevel")
+	cmd.Dir = cwd
+	output, err := cmd.Output()
+	if err != nil {
+		return "", errors.New("project skill install requires running inside a git repository or passing --dir")
+	}
+	root := strings.TrimSpace(string(output))
+	if root == "" {
+		return "", errors.New("project skill install requires running inside a git repository or passing --dir")
+	}
+	return root, nil
+}
+
+func findSkillsGitRoot(start string) string {
+	current := filepath.Clean(start)
+	for {
+		if _, err := os.Stat(filepath.Join(current, ".git")); err == nil {
+			return current
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			return ""
+		}
+		current = parent
+	}
+}
+
+func maybeCreateProjectClaudeSkillSymlink(ctx context.Context, projectRoot string, stdout, stderr io.Writer) error {
+	claudeSkillsDir := filepath.Join(projectRoot, ".claude", "skills")
+	info, err := os.Stat(claudeSkillsDir)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("inspect project Claude skills directory %q: %w", claudeSkillsDir, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("project Claude skills path %q is not a directory", claudeSkillsDir)
+	}
+
+	targetPath := filepath.Join(projectRoot, ".agents", "skills", "roundfix")
+	linkPath := filepath.Join(claudeSkillsDir, "roundfix")
+	if linkInfo, err := os.Lstat(linkPath); err == nil {
+		if linkInfo.Mode()&os.ModeSymlink != 0 {
+			existingTarget, readErr := os.Readlink(linkPath)
+			if readErr == nil && sameSkillSymlinkTarget(linkPath, existingTarget, targetPath) {
+				fmt.Fprintf(stdout, "Claude skill symlink already exists: %s -> %s\n", linkPath, existingTarget)
+				return nil
+			}
+		}
+		fmt.Fprintf(stdout, "Claude skill symlink skipped: %s already exists\n", linkPath)
+		return nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("inspect Claude skill symlink %q: %w", linkPath, err)
+	}
+
+	relativeTarget, err := filepath.Rel(claudeSkillsDir, targetPath)
+	if err != nil {
+		return fmt.Errorf("resolve Claude skill symlink target: %w", err)
+	}
+	create, err := promptProjectClaudeSkillSymlink(ctx, stderr, linkPath, relativeTarget)
+	if err != nil {
+		return err
+	}
+	if !create {
+		fmt.Fprintf(stdout, "Claude skill symlink skipped by user: %s\n", linkPath)
+		return nil
+	}
+	if err := os.Symlink(relativeTarget, linkPath); err != nil {
+		return fmt.Errorf("create Claude skill symlink %q -> %q: %w", linkPath, relativeTarget, err)
+	}
+	fmt.Fprintf(stdout, "Created Claude skill symlink: %s -> %s\n", linkPath, relativeTarget)
+	return nil
+}
+
+func sameSkillSymlinkTarget(linkPath string, existingTarget string, expectedTarget string) bool {
+	if !filepath.IsAbs(existingTarget) {
+		existingTarget = filepath.Join(filepath.Dir(linkPath), existingTarget)
+	}
+	return filepath.Clean(existingTarget) == filepath.Clean(expectedTarget)
+}
+
+func defaultPromptProjectClaudeSkillSymlink(ctx context.Context, stderr io.Writer, linkPath string, target string) (bool, error) {
+	return readProjectClaudeSkillSymlinkPrompt(ctx, os.Stdin, stderr, linkPath, target)
+}
+
+func readProjectClaudeSkillSymlinkPrompt(ctx context.Context, stdin io.Reader, stderr io.Writer, linkPath string, target string) (bool, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	if _, err := fmt.Fprintln(stderr, "Project Claude skills directory detected."); err != nil {
+		return false, fmt.Errorf("write Claude skill symlink prompt: %w", err)
+	}
+	if _, err := fmt.Fprintf(stderr, "Create symlink %s -> %s? [Y/n]: ", linkPath, target); err != nil {
+		return false, fmt.Errorf("write Claude skill symlink prompt: %w", err)
+	}
+	line, err := bufio.NewReader(stdin).ReadString('\n')
+	if err != nil && !errors.Is(err, io.EOF) {
+		return false, fmt.Errorf("read Claude skill symlink prompt: %w", err)
+	}
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	return normalizeYesNo(line)
+}
+
+func normalizeYesNo(value string) (bool, error) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", "y", "yes":
+		return true, nil
+	case "n", "no":
+		return false, nil
+	default:
+		return false, fmt.Errorf("unsupported symlink response %q; enter yes or no", strings.TrimSpace(value))
+	}
 }
 
 func readInitScope(ctx context.Context, stdin io.Reader, stderr io.Writer) (string, error) {
@@ -797,7 +955,8 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	}
 	defer ui.Close()
 
-	if _, err := executeResolveCycle(ctx, req, loaded, preflightResult, run.ID, resolvePlan, collaborators, runStore, ui); err != nil {
+	cycleResult, err := executeResolveCycle(ctx, req, loaded, preflightResult, run.ID, resolvePlan, collaborators, runStore, ui)
+	if err != nil {
 		if isStopRequest(ctx, err) {
 			code := completeStoppedRunRecord(runStore, run.ID)
 			ui.Wait()
@@ -819,18 +978,28 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		return exitRunFailed
 	}
 
-	completed, err := runStore.CompleteRun(ctx, run.ID, store.StateClean)
+	outcome := store.StateClean
+	if cycleResult.Remaining > 0 {
+		outcome = store.StateUnresolved
+	}
+	completed, err := runStore.CompleteRun(ctx, run.ID, outcome)
 	if err != nil {
 		ui.Close()
 		printResolveRunFailureAfterBatchCommit(err, stderr)
 		return exitRunFailed
 	}
-	publishRunOutcome(ctx, runStore, completed.ID, completed.State, 0, stderr)
+	publishRunOutcome(ctx, runStore, completed.ID, completed.State, cycleResult.Remaining, stderr)
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
 	ui.Close()
 	fmt.Fprintf(stderr, "Resolve Run %s reached %s.\n", completed.ID, completed.State)
+	if completed.State == store.StateUnresolved {
+		fmt.Fprintf(stderr, "%d Unresolved Review Issue(s) remain; failed issues are retried by the next fetched Round.\n", cycleResult.Remaining)
+	}
 	printIssueSummary(stderr, resolvePlan.selection.Issues)
+	if completed.State == store.StateUnresolved {
+		return exitRunFailed
+	}
 	return exitOK
 }
 
@@ -897,9 +1066,10 @@ func prepareResolveBatch(ctx context.Context, req commandRequest, loaded roundco
 		return resolveBatchPlan{}, fmt.Errorf("no Batch assignments were produced for selected Compatible Artifacts")
 	}
 	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
-		Agent:           req.agent,
-		CommandOverride: req.agentCmd,
-		Model:           req.model,
+		Agent:            req.agent,
+		CommandOverride:  req.agentCmd,
+		Model:            req.model,
+		EnableFullAccess: req.agentFullAccess,
 	})
 	if err != nil {
 		return resolveBatchPlan{}, err
@@ -989,9 +1159,10 @@ func cyclePlanFrom(req commandRequest, loaded roundconfig.Loaded, preflightResul
 
 func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, _ io.Writer, stderr io.Writer) int {
 	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
-		Agent:           req.agent,
-		CommandOverride: req.agentCmd,
-		Model:           req.model,
+		Agent:            req.agent,
+		CommandOverride:  req.agentCmd,
+		Model:            req.model,
+		EnableFullAccess: req.agentFullAccess,
 	})
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
@@ -1108,6 +1279,9 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	if result.Outcome == store.StateMaxRoundsReached && result.Remaining > 0 {
 		fmt.Fprintf(stderr, "MaxRoundsReached with %d Unresolved Review Issue(s) remaining.\n", result.Remaining)
 	}
+	if result.Outcome == store.StateUnresolved {
+		fmt.Fprintf(stderr, "Unresolved: the last Round settled nothing; %d Unresolved Review Issue(s) remain for developer attention.\n", result.Remaining)
+	}
 	if result.Outcome == store.StateTimedOut {
 		fmt.Fprintf(stderr, "Review Source timed out. To request another CodeRabbit review manually, comment: %s\n", result.ManualReviewCommand)
 	}
@@ -1169,34 +1343,36 @@ func fetchWatchRound(ctx context.Context, req commandRequest, loaded roundconfig
 	return watch.FetchResult{Round: roundResult.Round, Issues: len(roundResult.IssuePaths)}, nil
 }
 
+// resolveWatchBatches runs exactly one resolve cycle for the current
+// Round. Failed Review Issues are not retried inside the same Round: the
+// next fetched Round re-downloads their still-open Review Source threads
+// as fresh occurrences. Progress means the cycle settled at least one
+// selected issue, so the watch loop can stop Rounds that change nothing.
 func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runtime agent.RuntimeSpec, runID string, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (watch.ResolveResult, error) {
-	progress := false
-	for {
-		resolvePlan, err := prepareResolveBatch(ctx, req, loaded, preflightResult)
-		if err != nil {
-			var noArtifacts rounds.NoCompatibleArtifactsError
-			if errors.As(err, &noArtifacts) {
-				return watch.ResolveResult{Remaining: 0, Progress: progress}, nil
-			}
-			return watch.ResolveResult{}, err
+	resolvePlan, err := prepareResolveBatch(ctx, req, loaded, preflightResult)
+	if err != nil {
+		var noArtifacts rounds.NoCompatibleArtifactsError
+		if errors.As(err, &noArtifacts) {
+			return watch.ResolveResult{Remaining: 0, Progress: false}, nil
 		}
-		resolvePlan.runtime = runtime
-		result, err := executeResolveCycle(ctx, req, loaded, preflightResult, runID, resolvePlan, collaborators, runStore, ui)
-		if err != nil {
-			return watch.ResolveResult{}, err
-		}
-		progress = true
-		if result.Remaining == 0 {
-			return watch.ResolveResult{Remaining: 0, Progress: true}, nil
-		}
+		return watch.ResolveResult{}, err
 	}
+	resolvePlan.runtime = runtime
+	result, err := executeResolveCycle(ctx, req, loaded, preflightResult, runID, resolvePlan, collaborators, runStore, ui)
+	if err != nil {
+		return watch.ResolveResult{}, err
+	}
+	return watch.ResolveResult{
+		Remaining: result.Remaining,
+		Progress:  result.Remaining < len(resolvePlan.selection.Issues),
+	}, nil
 }
 
 func exitForWatchOutcome(outcome string) int {
 	switch outcome {
 	case store.StateClean, store.StateMaxRoundsReached, store.StateStopped:
 		return exitOK
-	case store.StateBudgetExceeded, store.StateTimedOut, store.StateFailed:
+	case store.StateBudgetExceeded, store.StateTimedOut, store.StateFailed, store.StateUnresolved:
 		return exitRunFailed
 	default:
 		return exitRunFailed
@@ -1404,14 +1580,15 @@ func commandDisplayName(name string) string {
 
 func parseOperationalCommand(name string, args []string, config roundconfig.Config) (commandRequest, error) {
 	req := commandRequest{
-		name:        name,
-		source:      config.ReviewSource.Name,
-		agent:       config.Defaults.Agent,
-		round:       "all",
-		untilClean:  config.Watch.UntilClean,
-		maxRounds:   config.Watch.MaxRounds,
-		artifactDir: config.Defaults.ArtifactDir,
-		model:       config.Defaults.Model,
+		name:            name,
+		source:          config.ReviewSource.Name,
+		agent:           config.Defaults.Agent,
+		round:           "all",
+		untilClean:      config.Watch.UntilClean,
+		maxRounds:       config.Watch.MaxRounds,
+		artifactDir:     config.Defaults.ArtifactDir,
+		model:           config.Defaults.Model,
+		agentFullAccess: config.Defaults.AgentFullAccess,
 	}
 	if name == "fetch" {
 		req.round = "auto"
@@ -1435,12 +1612,14 @@ func parseOperationalCommand(name string, args []string, config roundconfig.Conf
 		fs.StringVar(&req.agent, "agent", req.agent, "Agent runtime")
 		fs.StringVar(&req.model, "model", req.model, "Agent model override")
 		fs.StringVar(&req.agentCmd, "agent-command", "", "Agent command override")
+		fs.BoolVar(&req.agentFullAccess, "agent-full-access", req.agentFullAccess, "Opt into Agent runtime full-access mode")
 		fs.StringVar(&req.round, "round", "all", "Round number or all")
 	case "watch":
 		fs.StringVar(&req.source, "source", req.source, "Review Source")
 		fs.StringVar(&req.agent, "agent", req.agent, "Agent runtime")
 		fs.StringVar(&req.model, "model", req.model, "Agent model override")
 		fs.StringVar(&req.agentCmd, "agent-command", "", "Agent command override")
+		fs.BoolVar(&req.agentFullAccess, "agent-full-access", req.agentFullAccess, "Opt into Agent runtime full-access mode")
 		fs.BoolVar(&req.untilClean, "until-clean", req.untilClean, "Repeat until no Unresolved Review Issues remain")
 		fs.IntVar(&req.maxRounds, "max-rounds", req.maxRounds, "Maximum Review Source rounds")
 	default:
@@ -1738,6 +1917,7 @@ Options:
   --agent        Agent runtime. Supported: codex, claude, opencode
   --model        Agent model override
   --agent-command Agent command override
+  --agent-full-access Opt into Agent runtime full-access mode
   --round        Round number or all
   --artifact-dir Artifact Directory
   --base-repo    Explicit base repository, owner/name
@@ -1756,6 +1936,7 @@ Options:
   --agent        Agent runtime. Supported: codex, claude, opencode
   --model        Agent model override
   --agent-command Agent command override
+  --agent-full-access Opt into Agent runtime full-access mode
   --until-clean  Repeat until no Unresolved Review Issues remain
   --max-rounds   Maximum Review Source rounds
   --artifact-dir Artifact Directory
@@ -1782,14 +1963,15 @@ Options:
 	case "skills":
 		return `Usage:
   roundfix skills check
-  roundfix skills install [--target <codex|claude|opencode|all>] [--dir <path>]
+  roundfix skills install [--target <project|codex|claude|opencode|all>] [--dir <path>]
 
 Commands:
   check      Validate shipped Roundfix skill artifacts
-  install    Install Roundfix skills into Codex, Claude Code, or OpenCode-compatible directories
+  install    Install the Roundfix skill into this project or compatible Agent skill directories
 
 Options:
-  --target   Install target. Supported: codex, claude, opencode, all
+  --target   Install target. Supported: project, codex, claude, opencode, all
+             project writes <repo>/.agents/skills/roundfix and can link .claude/skills/roundfix
   --dir      Override the target skills directory for a single target
 `
 	default:
