@@ -48,6 +48,10 @@ _Avoid_: Budget, timeout, token cap
 A terminal Run outcome where the configured review round policy is complete, even if unresolved Review Issues remain for developer judgment.
 _Avoid_: Failure, timeout, budget exceeded
 
+**Unresolved Outcome**:
+A terminal Run outcome where resolve work completed but Unresolved Review Issues remain, so Final Push stayed blocked. Distinct from Failed, which means the Run itself broke.
+_Avoid_: Failure, crash, partial success
+
 **Run Budget**:
 A safeguard that stops a Run before it can continue indefinitely and indirectly consume unbounded resources.
 _Avoid_: Max rounds, review round limit
@@ -103,6 +107,14 @@ _Avoid_: Duplicate Review Issue, resolved issue, ignored issue
 **Terminal Review Issue**:
 A Review Issue whose local outcome is complete for the current Round because it is resolved, invalid, or duplicated.
 _Avoid_: Done issue, closed issue
+
+**Settled Review Issue**:
+A Review Issue that needs no further Agent work in the current Batch because it is resolved, invalid, duplicated, or failed.
+_Avoid_: Terminal issue, done issue
+
+**Failed Review Issue**:
+A Review Issue whose latest resolution attempt did not complete: the Agent could not fix it or verification did not pass. It stays Unresolved and is retried when a later Round downloads its still-open Review Source thread.
+_Avoid_: Terminal issue, invalid issue, abandoned issue
 
 **Unresolved Review Issue**:
 A Review Issue that has been downloaded but has not reached a terminal local outcome.

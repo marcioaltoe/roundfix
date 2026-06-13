@@ -156,6 +156,10 @@ func RuntimeFor(opts RuntimeOptions) (RuntimeSpec, error) {
 			DefaultModel:    DefaultCodexModel,
 			SupportsAddDirs: true,
 			BootstrapModel:  true,
+			// "full-access" is the codex approval preset that disables the
+			// Seatbelt sandbox (danger-full-access) and approval prompts, so
+			// Batch verification can reach local services such as databases.
+			FullAccessMode: "full-access",
 			Fallbacks: []RuntimeLauncher{
 				{
 					Command: "npx",
@@ -228,9 +232,12 @@ func BuildPrompt(req PromptRequest) string {
 	builder.WriteString("2. Triage each assigned issue as valid or invalid.\n")
 	builder.WriteString("3. For valid issues, make production-quality code changes and update tests when behavior changes.\n")
 	builder.WriteString("4. Update only assigned Review Issue files.\n")
-	builder.WriteString("5. Set assigned issue statuses to resolved or invalid only when the local work and verification support that outcome.\n")
-	builder.WriteString("6. Run real repository verification before marking valid issues resolved.\n")
-	builder.WriteString("7. If the configured verification command is missing or the environment blocks verification, record the exact failure evidence in the assigned issue files and leave unresolved work for the daemon to report.\n\n")
+	builder.WriteString("5. Run the configured verification command before marking any issue resolved.\n\n")
+	builder.WriteString("Assigned Review Issue status contract:\n")
+	builder.WriteString("- Every assigned issue file must end this Batch with status resolved, invalid, or failed. Never leave status pending or valid; the daemon marks leftovers failed without your evidence.\n")
+	builder.WriteString("- resolved: the fix is applied and the configured verification command passed in this session. Record the command and its result in the issue file.\n")
+	builder.WriteString("- invalid: triage concluded the finding requires no change. Record the justification in the issue file.\n")
+	builder.WriteString("- failed: the fix could not be completed, or verification failed or was blocked. Record the exact failing command and error in the issue file; a later Round retries failed issues.\n\n")
 	builder.WriteString("Command syntax discipline:\n")
 	builder.WriteString("- If you run focused Bun package tests from the repository root, use `rtk bun run --cwd <package-dir> <script> [args...]`; for example, `rtk bun run --cwd packages/backend test src/__tests__/seed.test.ts`.\n")
 	builder.WriteString("- Do not use `rtk bun --cwd <package-dir> run ...`; that form can print Bun usage/help instead of running the package script.\n")
@@ -253,21 +260,25 @@ func LogPath(artifactDir string, runID string, batchNumber int) string {
 	return filepath.Join(artifactDir, "runs", runID, "agent", fmt.Sprintf("batch-%03d.log", batchNumber))
 }
 
-func ValidateAssignedIssuesTerminal(batch rounds.Batch) error {
-	notTerminal := []string{}
+// SettleAssignedIssues marks assigned Review Issues the Agent left
+// unsettled (pending, valid) as failed, so every assigned issue ends the
+// Batch in resolved, invalid, or failed. It returns the paths it changed.
+func SettleAssignedIssues(batch rounds.Batch) ([]string, error) {
+	changed := []string{}
 	for _, assigned := range batch.Issues {
 		issue, err := rounds.ParseIssue(assigned.Path)
 		if err != nil {
-			return err
+			return changed, err
 		}
-		if !rounds.IsTerminalStatus(issue.Status) {
-			notTerminal = append(notTerminal, fmt.Sprintf("%s status=%s", issue.Path, issue.Status))
+		if rounds.IsSettledStatus(issue.Status) {
+			continue
 		}
+		if err := rounds.SetIssueStatus(assigned.Path, rounds.StatusFailed, ""); err != nil {
+			return changed, err
+		}
+		changed = append(changed, assigned.Path)
 	}
-	if len(notTerminal) > 0 {
-		return fmt.Errorf("Batch %03d did not reach terminal Review Issue status: %s", batch.Number, strings.Join(notTerminal, ", "))
-	}
-	return nil
+	return changed, nil
 }
 
 func MarkBatchFailed(batch rounds.Batch) error {

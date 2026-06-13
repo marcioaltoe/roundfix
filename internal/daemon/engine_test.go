@@ -118,14 +118,20 @@ func (runner *engineFakeRunner) Run(ctx context.Context, req agent.ExecuteReques
 type engineFakeVerifier struct {
 	calls *[]string
 	err   error
-	store *store.Store
-	runID string
-	seen  []string
+	// failFirst fails only the first verification, so tests can prove a
+	// failed Batch does not stop later Batches from verifying cleanly.
+	failFirst bool
+	store     *store.Store
+	runID     string
+	seen      []string
 }
 
 func (verifier *engineFakeVerifier) Verify(context.Context, VerifyRequest) error {
 	*verifier.calls = append(*verifier.calls, "verify")
 	verifier.seen = append(verifier.seen, runStateForTest(verifier.store, verifier.runID))
+	if verifier.failFirst && len(verifier.seen) == 1 {
+		return errors.New("verification failed")
+	}
 	return verifier.err
 }
 
@@ -175,6 +181,24 @@ func runStateForTest(runStore *store.Store, runID string) string {
 
 func newEngineFixture(t *testing.T) *engineFixture {
 	t.Helper()
+	return newEngineFixtureWithItems(t, []reviewsource.ReviewItem{
+		{
+			Title:                   "major: handle nil cache",
+			File:                    "internal/cache/cache.go",
+			Line:                    42,
+			Severity:                "major",
+			Author:                  "coderabbitai[bot]",
+			Body:                    "review body",
+			SourceRef:               "thread:PRRT_1,comment:PRRC_1",
+			ReviewHash:              "abc",
+			SourceReviewID:          "9001",
+			SourceReviewSubmittedAt: time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC),
+		},
+	})
+}
+
+func newEngineFixtureWithItems(t *testing.T, items []reviewsource.ReviewItem) *engineFixture {
+	t.Helper()
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	gitRoot := t.TempDir()
@@ -210,20 +234,7 @@ func newEngineFixture(t *testing.T) *engineFixture {
 		HeadSHA:        "abc123",
 		Round:          1,
 		CreatedAt:      time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC),
-		Items: []reviewsource.ReviewItem{
-			{
-				Title:                   "major: handle nil cache",
-				File:                    "internal/cache/cache.go",
-				Line:                    42,
-				Severity:                "major",
-				Author:                  "coderabbitai[bot]",
-				Body:                    "review body",
-				SourceRef:               "thread:PRRT_1,comment:PRRC_1",
-				ReviewHash:              "abc",
-				SourceReviewID:          "9001",
-				SourceReviewSubmittedAt: time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC),
-			},
-		},
+		Items:          items,
 	})
 	if err != nil {
 		t.Fatalf("persist round: %v", err)
@@ -360,19 +371,28 @@ func TestFinalPushIsASeparateExplicitOperation(t *testing.T) {
 	}
 }
 
-func TestResolveCycleAgentFailureFailsBatchAndRun(t *testing.T) {
+func TestResolveCycleAgentFailureFailsBatchAndContinues(t *testing.T) {
 	fixture := newEngineFixture(t)
 	runner := &engineFakeRunner{calls: fixture.calls, store: fixture.store, err: errors.New("agent crashed")}
 	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}
 	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
 
-	_, err := engine.ResolveCycle(context.Background(), fixture.plan())
+	result, err := engine.ResolveCycle(context.Background(), fixture.plan())
 
-	if err == nil || !strings.Contains(err.Error(), "agent crashed") {
-		t.Fatalf("expected Agent failure to fail the cycle, got %v", err)
+	if err != nil {
+		t.Fatalf("expected Agent failure to fail only the Batch, got cycle error %v", err)
 	}
 	if got := strings.Join(*fixture.calls, ">"); got != "agent" {
 		t.Fatalf("expected no daemon actions after Agent failure, got %q", got)
+	}
+	if len(result.Batches) != 1 || !result.Batches[0].Failed {
+		t.Fatalf("expected failed Batch outcome, got %+v", result.Batches)
+	}
+	if !strings.Contains(result.Batches[0].FailureReason, "agent crashed") {
+		t.Fatalf("expected Agent failure reason, got %q", result.Batches[0].FailureReason)
+	}
+	if result.Remaining != 1 {
+		t.Fatalf("expected failed issue to stay Unresolved, got remaining %d", result.Remaining)
 	}
 	issue, parseErr := rounds.ParseIssue(fixture.issuePaths[0])
 	if parseErr != nil {
@@ -383,19 +403,28 @@ func TestResolveCycleAgentFailureFailsBatchAndRun(t *testing.T) {
 	}
 }
 
-func TestResolveCycleVerificationFailureFailsBatchAndRun(t *testing.T) {
+func TestResolveCycleVerificationFailureFailsBatchAndContinues(t *testing.T) {
 	fixture := newEngineFixture(t)
 	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID, err: errors.New("verification failed")}
 	committer := &engineFakeCommitter{calls: fixture.calls}
 	engine := fixture.engine(t, &engineFakeRunner{calls: fixture.calls, store: fixture.store}, verifier, committer, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
 
-	_, err := engine.ResolveCycle(context.Background(), fixture.plan())
+	result, err := engine.ResolveCycle(context.Background(), fixture.plan())
 
-	if err == nil || !strings.Contains(err.Error(), "verification failed") {
-		t.Fatalf("expected verification failure to fail the cycle, got %v", err)
+	if err != nil {
+		t.Fatalf("expected verification failure to fail only the Batch, got cycle error %v", err)
 	}
 	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify" {
 		t.Fatalf("expected no commit or source mutation after failed verification, got %q", got)
+	}
+	if len(result.Batches) != 1 || !result.Batches[0].Failed {
+		t.Fatalf("expected failed Batch outcome, got %+v", result.Batches)
+	}
+	if !strings.Contains(result.Batches[0].FailureReason, "verification failed") {
+		t.Fatalf("expected verification failure reason, got %q", result.Batches[0].FailureReason)
+	}
+	if result.Remaining != 1 {
+		t.Fatalf("expected failed issue to stay Unresolved, got remaining %d", result.Remaining)
 	}
 	issue, parseErr := rounds.ParseIssue(fixture.issuePaths[0])
 	if parseErr != nil {
@@ -403,6 +432,89 @@ func TestResolveCycleVerificationFailureFailsBatchAndRun(t *testing.T) {
 	}
 	if issue.Status != rounds.StatusFailed {
 		t.Fatalf("expected failed Batch issue status, got %q", issue.Status)
+	}
+}
+
+func TestResolveCycleContinuesToNextBatchAfterFailedBatch(t *testing.T) {
+	fixture := newEngineFixtureWithItems(t, []reviewsource.ReviewItem{
+		{
+			Title:                   "major: handle nil cache",
+			File:                    "internal/cache/cache.go",
+			Line:                    42,
+			Severity:                "major",
+			Author:                  "coderabbitai[bot]",
+			Body:                    "review body",
+			SourceRef:               "thread:PRRT_1,comment:PRRC_1",
+			ReviewHash:              "abc",
+			SourceReviewID:          "9001",
+			SourceReviewSubmittedAt: time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC),
+		},
+		{
+			Title:                   "major: close response body",
+			File:                    "internal/http/client.go",
+			Line:                    17,
+			Severity:                "major",
+			Author:                  "coderabbitai[bot]",
+			Body:                    "second review body",
+			SourceRef:               "thread:PRRT_2,comment:PRRC_2",
+			ReviewHash:              "def",
+			SourceReviewID:          "9002",
+			SourceReviewSubmittedAt: time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC),
+		},
+	})
+	// One before-snapshot for each Batch, then the after-snapshot of the
+	// second Batch: its commit must exclude the first Batch's residue.
+	fixture.worktree = &engineFakeWorktree{snapshots: [][]string{
+		nil,
+		{"src/batch-one-residue.go"},
+		{"src/batch-one-residue.go", "src/batch-two-change.go"},
+	}}
+	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID, failFirst: true}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	source := &engineFakeSource{calls: fixture.calls}
+	engine := fixture.engine(t, &engineFakeRunner{calls: fixture.calls, store: fixture.store}, verifier, committer, &engineFakePusher{calls: fixture.calls}, source)
+	plan := fixture.plan()
+	plan.Batches = []rounds.Batch{
+		{Number: 1, Issues: []rounds.Issue{{Path: fixture.issuePaths[0]}}},
+		{Number: 2, Issues: []rounds.Issue{{Path: fixture.issuePaths[1]}}},
+	}
+
+	result, err := engine.ResolveCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("resolve cycle: %v", err)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>agent>verify>commit>source" {
+		t.Fatalf("expected second Batch to run after the first failed, got %q", got)
+	}
+	if len(result.Batches) != 2 {
+		t.Fatalf("expected two Batch outcomes, got %+v", result.Batches)
+	}
+	if !result.Batches[0].Failed || result.Batches[0].Committed || result.Batches[0].ResolvedSourceThreads != 0 {
+		t.Fatalf("expected first Batch failed without commit or source resolution, got %+v", result.Batches[0])
+	}
+	if result.Batches[1].Failed || !result.Batches[1].Committed || result.Batches[1].ResolvedSourceThreads != 1 {
+		t.Fatalf("expected second Batch committed with one resolved thread, got %+v", result.Batches[1])
+	}
+	if result.Remaining != 1 {
+		t.Fatalf("expected only the failed issue to remain Unresolved, got %d", result.Remaining)
+	}
+	first, parseErr := rounds.ParseIssue(fixture.issuePaths[0])
+	if parseErr != nil {
+		t.Fatalf("parse first issue: %v", parseErr)
+	}
+	if first.Status != rounds.StatusFailed {
+		t.Fatalf("expected first issue failed, got %q", first.Status)
+	}
+	second, parseErr := rounds.ParseIssue(fixture.issuePaths[1])
+	if parseErr != nil {
+		t.Fatalf("parse second issue: %v", parseErr)
+	}
+	if second.Status != rounds.StatusResolved {
+		t.Fatalf("expected second issue resolved, got %q", second.Status)
+	}
+	if len(committer.paths) != 1 || strings.Join(committer.paths[0], ",") != "src/batch-two-change.go" {
+		t.Fatalf("expected second Batch commit to exclude first Batch residue, got %v", committer.paths)
 	}
 }
 

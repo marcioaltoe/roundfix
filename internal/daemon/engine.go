@@ -86,9 +86,14 @@ type CyclePlan struct {
 
 // BatchOutcome reports what one Batch produced. CommitSkipped means
 // auto-commit was on but the Agent changed nothing, which is a success.
+// Failed means the Batch ended with its assigned Review Issues marked
+// failed (Agent error or failed verification); the cycle continues with
+// the next Batch and the failed issues are retried in a later Round.
 type BatchOutcome struct {
 	Batch                 int
 	Issues                int
+	Failed                bool
+	FailureReason         string
 	Committed             bool
 	CommitSkipped         bool
 	ResolvedSourceThreads int
@@ -150,11 +155,13 @@ func NewEngine(deps Dependencies) (*Engine, error) {
 }
 
 // ResolveCycle executes one resolve cycle: for each Batch it runs the
-// Agent, verifies assigned issue statuses, creates the Batch commit when
+// Agent, settles assigned issue statuses, creates the Batch commit when
 // auto-commit is enabled, and resolves Review Source threads for resolved
-// and invalid issues. A Stop Request halts before any new Batch,
-// verification, commit, or Review Source mutation; Agent worktree changes
-// are preserved.
+// and invalid issues. A failed Batch (Agent error or failed verification)
+// marks its assigned issues failed and the cycle continues with the next
+// Batch; only Stop Requests and infrastructure errors halt the cycle.
+// A Stop Request halts before any new Batch, verification, commit, or
+// Review Source mutation; Agent worktree changes are preserved.
 func (engine *Engine) ResolveCycle(ctx context.Context, plan CyclePlan) (CycleResult, error) {
 	if err := validateCyclePlan(plan); err != nil {
 		return CycleResult{}, err
@@ -178,7 +185,7 @@ func (engine *Engine) ResolveCycle(ctx context.Context, plan CyclePlan) (CycleRe
 		}
 		result.Batches = append(result.Batches, outcome)
 		result.Remaining = remaining
-		if remaining > 0 && index < len(plan.Batches)-1 {
+		if !outcome.Failed && remaining > 0 && index < len(plan.Batches)-1 {
 			fmt.Fprintf(engine.deps.Progress, "Batch %03d/%03d completed; %d Unresolved Review Issue(s) remain.\n", batch.Number, len(plan.Batches), remaining)
 		}
 	}
@@ -222,11 +229,18 @@ func (engine *Engine) resolveBatch(ctx context.Context, plan CyclePlan, batch ro
 		}
 		before = snapshot
 	}
-	if err := engine.runBatchAgent(ctx, plan, batch, batchIndex, batchTotal); err != nil {
+	failure, err := engine.runBatchAgent(ctx, plan, batch, batchIndex, batchTotal)
+	if err != nil {
 		return outcome, 0, err
 	}
-	if err := engine.verifyBatch(ctx, plan, batch); err != nil {
-		return outcome, 0, err
+	if failure == "" {
+		failure, err = engine.verifyBatch(ctx, plan, batch)
+		if err != nil {
+			return outcome, 0, err
+		}
+	}
+	if failure != "" {
+		return engine.completeFailedBatch(ctx, plan, batch, outcome, failure)
 	}
 	marked, err := rounds.MarkDuplicatedAfterTerminal(ctx, plan.Duplicates)
 	if err != nil {
@@ -259,15 +273,19 @@ func (engine *Engine) resolveBatch(ctx context.Context, plan CyclePlan, batch ro
 	return outcome, remaining, nil
 }
 
-func (engine *Engine) runBatchAgent(ctx context.Context, plan CyclePlan, batch rounds.Batch, batchIndex int, batchTotal int) error {
+// runBatchAgent runs the Agent over one Batch. It returns a non-empty
+// failure reason when the Batch failed but the cycle should continue;
+// the returned error is reserved for Stop Requests and infrastructure
+// failures, which halt the cycle.
+func (engine *Engine) runBatchAgent(ctx context.Context, plan CyclePlan, batch rounds.Batch, batchIndex int, batchTotal int) (string, error) {
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateResolvingWithAgent); err != nil {
-		return err
+		return "", err
 	}
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonBatch,
 		fmt.Sprintf("Batch %03d/%03d started with %d Review Issue(s).", batchIndex, batchTotal, len(batch.Issues)),
 		map[string]any{"phase": "started", "batch": batch.Number, "issues": len(batch.Issues)},
 	); err != nil {
-		return err
+		return "", err
 	}
 	prompt := agent.BuildPrompt(agent.PromptRequest{
 		RunID:        plan.RunID,
@@ -297,57 +315,97 @@ func (engine *Engine) runBatchAgent(ctx context.Context, plan CyclePlan, batch r
 		if isStop(ctx, runErr) {
 			// The runner already published the stopped status event;
 			// Agent-created worktree changes stay untouched.
-			return runErr
+			return "", runErr
 		}
-		_ = agent.MarkBatchFailed(batch)
-		_ = engine.publishDaemonEvent(context.WithoutCancel(ctx), plan.RunID, batch.Number, runevent.KindDaemonBatch,
-			fmt.Sprintf("Batch %03d failed: %v", batch.Number, runErr),
-			map[string]any{"phase": "failed", "batch": batch.Number, "error": runErr.Error()},
-		)
-		return runErr
+		if err := agent.MarkBatchFailed(batch); err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("Agent failed: %v", runErr), nil
 	}
 	if err := ctx.Err(); err != nil {
 		engine.publishStop(ctx, plan.RunID, batch.Number)
-		return err
+		return "", err
 	}
-	if err := agent.ValidateAssignedIssuesTerminal(batch); err != nil {
-		_ = agent.MarkBatchFailed(batch)
-		return err
+	settled, err := agent.SettleAssignedIssues(batch)
+	if err != nil {
+		return "", err
 	}
-	fmt.Fprintln(engine.deps.Progress, "Agent Batch reached terminal local Review Issue statuses.")
-	return nil
+	if len(settled) > 0 {
+		fmt.Fprintf(engine.deps.Progress, "Marked %d assigned Review Issue(s) the Agent left unsettled as failed.\n", len(settled))
+		if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonBatch,
+			fmt.Sprintf("Marked %d assigned Review Issue(s) the Agent left unsettled as failed.", len(settled)),
+			map[string]any{"phase": "settled", "batch": batch.Number, "failed": len(settled)},
+		); err != nil {
+			return "", err
+		}
+	}
+	fmt.Fprintln(engine.deps.Progress, "Agent Batch finished with settled Review Issue statuses.")
+	return "", nil
 }
 
-func (engine *Engine) verifyBatch(ctx context.Context, plan CyclePlan, batch rounds.Batch) error {
+// verifyBatch runs the configured verification command. It returns a
+// non-empty failure reason when verification failed and the Batch issues
+// were marked failed; the returned error is reserved for Stop Requests
+// and infrastructure failures, which halt the cycle.
+func (engine *Engine) verifyBatch(ctx context.Context, plan CyclePlan, batch rounds.Batch) (string, error) {
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateVerifying); err != nil {
-		return err
+		return "", err
 	}
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonVerification,
 		fmt.Sprintf("Verification started: %s", plan.Verification),
 		map[string]any{"phase": "started", "command": plan.Verification},
 	); err != nil {
-		return err
+		return "", err
 	}
 	if err := engine.deps.Verifier.Verify(ctx, VerifyRequest{
 		WorkDir: plan.GitRoot,
 		Command: plan.Verification,
 		Stream:  engine.deps.Progress,
 	}); err != nil {
-		_ = agent.MarkBatchFailed(batch)
-		_ = engine.publishDaemonEvent(context.WithoutCancel(ctx), plan.RunID, batch.Number, runevent.KindDaemonVerification,
+		if isStop(ctx, err) {
+			// A Stop Request during verification keeps Agent statuses
+			// untouched; the run ends Stopped, not failed.
+			return "", err
+		}
+		if markErr := agent.MarkBatchFailed(batch); markErr != nil {
+			return "", markErr
+		}
+		if publishErr := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonVerification,
 			fmt.Sprintf("Verification failed: %s", plan.Verification),
 			map[string]any{"phase": "failed", "command": plan.Verification, "error": err.Error()},
-		)
-		return err
+		); publishErr != nil {
+			return "", publishErr
+		}
+		return fmt.Sprintf("verification failed: %v", err), nil
 	}
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonVerification,
 		fmt.Sprintf("Verification command passed: %s", plan.Verification),
 		map[string]any{"phase": "passed", "command": plan.Verification},
 	); err != nil {
-		return err
+		return "", err
 	}
 	fmt.Fprintf(engine.deps.Progress, "Verification command passed: %s\n", plan.Verification)
-	return nil
+	return "", nil
+}
+
+// completeFailedBatch records a failed Batch outcome and the remaining
+// Unresolved Review Issue count so the cycle can continue with the next
+// Batch. The Batch issues were already marked failed at the failure site.
+func (engine *Engine) completeFailedBatch(ctx context.Context, plan CyclePlan, batch rounds.Batch, outcome BatchOutcome, failure string) (BatchOutcome, int, error) {
+	outcome.Failed = true
+	outcome.FailureReason = failure
+	remaining, err := remainingUnresolvedIssues(ctx, plan)
+	if err != nil {
+		return outcome, 0, err
+	}
+	fmt.Fprintf(engine.deps.Progress, "Batch %03d failed: %s\n", batch.Number, failure)
+	if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonBatch,
+		fmt.Sprintf("Batch %03d failed; %d Unresolved Review Issue(s) remain.", batch.Number, remaining),
+		map[string]any{"phase": "failed", "batch": batch.Number, "remaining": remaining, "error": failure},
+	); err != nil {
+		return outcome, 0, err
+	}
+	return outcome, remaining, nil
 }
 
 func (engine *Engine) commitBatch(ctx context.Context, plan CyclePlan, batch rounds.Batch, before []string) (bool, bool, error) {

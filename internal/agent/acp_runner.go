@@ -797,7 +797,10 @@ func runtimeBootstrapArgs(runtime RuntimeSpec, modelName string) []string {
 		"features.code_mode=false",
 		"features.code_mode_only=false",
 		`approval_policy="never"`,
-		`sandbox_mode="workspace-write"`,
+		// Batches run with the full-access preset (ADR 0011): the
+		// workspace-write sandbox blocks all network access, including
+		// localhost services that verification commands depend on.
+		`sandbox_mode="danger-full-access"`,
 	)
 	return args
 }

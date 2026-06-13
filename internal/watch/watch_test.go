@@ -164,7 +164,7 @@ func TestRunStopsWhenBudgetExceeded(t *testing.T) {
 	}
 }
 
-func TestRunReturnsFailedWhenResolveMakesNoProgress(t *testing.T) {
+func TestRunReturnsUnresolvedWhenResolveMakesNoProgress(t *testing.T) {
 	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
 	status := &fakeStatusSource{statuses: []Status{{State: StatusSettled}}}
 	fetcher := &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 1}}}
@@ -178,11 +178,17 @@ func TestRunReturnsFailedWhenResolveMakesNoProgress(t *testing.T) {
 		Sleeper:      &fakeSleeper{clock: clock},
 	})
 
-	if err == nil {
-		t.Fatal("expected no-progress error")
+	if err != nil {
+		t.Fatalf("a no-progress Round is a terminal outcome, not an error, got %v", err)
 	}
-	if result.Outcome != store.StateFailed {
-		t.Fatalf("expected Failed, got %q", result.Outcome)
+	if result.Outcome != store.StateUnresolved {
+		t.Fatalf("expected Unresolved, got %q", result.Outcome)
+	}
+	if result.Remaining != 1 {
+		t.Fatalf("expected remaining Unresolved Review Issue count, got %d", result.Remaining)
+	}
+	if fetcher.calls != 1 || resolver.calls != 1 {
+		t.Fatalf("expected exactly one Round before stopping, got fetch=%d resolve=%d", fetcher.calls, resolver.calls)
 	}
 }
 

@@ -72,8 +72,11 @@ func TestRuntimeForCodexUsesACPAdapter(t *testing.T) {
 	if len(runtime.Fallbacks) == 0 || runtime.Fallbacks[0].Command != "npx" {
 		t.Fatalf("expected npx fallback for codex ACP, got %#v", runtime.Fallbacks)
 	}
+	if runtime.FullAccessMode != "full-access" {
+		t.Fatalf("expected Codex full-access session mode, got %q", runtime.FullAccessMode)
+	}
 	args := runtimeBootstrapArgs(runtime, "gpt-test")
-	for _, expected := range []string{`model="gpt-test"`, "features.code_mode=false", `approval_policy="never"`, `sandbox_mode="workspace-write"`} {
+	for _, expected := range []string{`model="gpt-test"`, "features.code_mode=false", `approval_policy="never"`, `sandbox_mode="danger-full-access"`} {
 		if !contains(args, expected) {
 			t.Fatalf("expected Codex bootstrap args to contain %q, got %#v", expected, args)
 		}
@@ -108,7 +111,9 @@ func TestBuildPromptIncludesAssignedFilesAndForbiddenActions(t *testing.T) {
 		"Do not call gh or any Review Source API",
 		"Do not edit unassigned Review Issue files.",
 		"Do not set status: duplicated",
-		"If the configured verification command is missing",
+		"must end this Batch with status resolved, invalid, or failed",
+		"Never leave status pending or valid",
+		"a later Round retries failed issues",
 		"Do not run broad cleanup commands",
 		"`rm -rf`",
 		"Do not delete dependency directories",
@@ -178,24 +183,44 @@ func TestStreamUpdateFromACPPreservesToolBlocks(t *testing.T) {
 	}
 }
 
-func TestValidateAssignedIssuesTerminal(t *testing.T) {
-	artifactDir := t.TempDir()
-	result := persistTestRound(t, artifactDir)
-	batch := rounds.Batch{
-		Number: 1,
-		Issues: []rounds.Issue{
-			{Path: result.IssuePaths[0]},
-		},
+func TestSettleAssignedIssues(t *testing.T) {
+	tests := []struct {
+		name        string
+		status      string
+		wantStatus  string
+		wantChanged bool
+	}{
+		{name: "marks pending issue failed", status: rounds.StatusPending, wantStatus: rounds.StatusFailed, wantChanged: true},
+		{name: "marks valid issue failed", status: rounds.StatusValid, wantStatus: rounds.StatusFailed, wantChanged: true},
+		{name: "keeps resolved issue untouched", status: rounds.StatusResolved, wantStatus: rounds.StatusResolved},
+		{name: "keeps invalid issue untouched", status: rounds.StatusInvalid, wantStatus: rounds.StatusInvalid},
+		{name: "keeps failed issue untouched", status: rounds.StatusFailed, wantStatus: rounds.StatusFailed},
 	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			artifactDir := t.TempDir()
+			result := persistTestRound(t, artifactDir)
+			if err := rounds.SetIssueStatus(result.IssuePaths[0], test.status, ""); err != nil {
+				t.Fatalf("set issue status: %v", err)
+			}
+			batch := rounds.Batch{Number: 1, Issues: []rounds.Issue{{Path: result.IssuePaths[0]}}}
 
-	if err := ValidateAssignedIssuesTerminal(batch); err == nil {
-		t.Fatal("expected pending issue to fail terminal validation")
-	}
-	if err := rounds.SetIssueStatus(result.IssuePaths[0], rounds.StatusInvalid, ""); err != nil {
-		t.Fatalf("set issue invalid: %v", err)
-	}
-	if err := ValidateAssignedIssuesTerminal(batch); err != nil {
-		t.Fatalf("expected terminal issue to pass, got %v", err)
+			changed, err := SettleAssignedIssues(batch)
+
+			if err != nil {
+				t.Fatalf("settle assigned issues: %v", err)
+			}
+			if test.wantChanged != (len(changed) == 1) {
+				t.Fatalf("expected changed=%t, got %v", test.wantChanged, changed)
+			}
+			issue, parseErr := rounds.ParseIssue(result.IssuePaths[0])
+			if parseErr != nil {
+				t.Fatalf("parse issue: %v", parseErr)
+			}
+			if issue.Status != test.wantStatus {
+				t.Fatalf("expected status %q, got %q", test.wantStatus, issue.Status)
+			}
+		})
 	}
 }
 

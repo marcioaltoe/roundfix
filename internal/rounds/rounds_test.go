@@ -175,6 +175,31 @@ func TestAllowedStatusRejectsOutOfScopeStatuses(t *testing.T) {
 	}
 }
 
+func TestIsSettledStatusIncludesFailedButKeepsItNonTerminal(t *testing.T) {
+	tests := []struct {
+		status   string
+		settled  bool
+		terminal bool
+	}{
+		{status: StatusPending, settled: false, terminal: false},
+		{status: StatusValid, settled: false, terminal: false},
+		{status: StatusResolved, settled: true, terminal: true},
+		{status: StatusInvalid, settled: true, terminal: true},
+		{status: StatusDuplicated, settled: true, terminal: true},
+		{status: StatusFailed, settled: true, terminal: false},
+	}
+	for _, test := range tests {
+		t.Run(test.status, func(t *testing.T) {
+			if got := IsSettledStatus(test.status); got != test.settled {
+				t.Fatalf("expected settled=%t for %q, got %t", test.settled, test.status, got)
+			}
+			if got := IsTerminalStatus(test.status); got != test.terminal {
+				t.Fatalf("expected terminal=%t for %q, got %t", test.terminal, test.status, got)
+			}
+		})
+	}
+}
+
 func TestSelectCompatibleIssuesFindsAllUnresolvedCompatibleRounds(t *testing.T) {
 	artifactDir := t.TempDir()
 	createdAt := time.Date(2026, 6, 9, 12, 30, 0, 0, time.UTC)

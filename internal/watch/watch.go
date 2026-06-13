@@ -204,7 +204,9 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 			return Result{Outcome: store.StateClean, Rounds: round}, nil
 		}
 		if !resolved.Progress {
-			return Result{Outcome: store.StateFailed, Rounds: round, Remaining: resolved.Remaining}, fmt.Errorf("watch made no progress with %d Unresolved Review Issue(s) remaining", resolved.Remaining)
+			// A Round that settles nothing will not improve by repeating:
+			// end the Run as Unresolved instead of burning more Rounds.
+			return Result{Outcome: store.StateUnresolved, Rounds: round, Remaining: resolved.Remaining}, nil
 		}
 		if !req.UntilClean {
 			return Result{Outcome: store.StateMaxRoundsReached, Rounds: round, Remaining: resolved.Remaining}, nil

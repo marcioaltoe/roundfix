@@ -682,6 +682,7 @@ func TestExitForWatchOutcome(t *testing.T) {
 		{outcome: store.StateBudgetExceeded, code: 1},
 		{outcome: store.StateTimedOut, code: 1},
 		{outcome: store.StateFailed, code: 1},
+		{outcome: store.StateUnresolved, code: 1},
 	}
 
 	for _, tt := range tests {
@@ -737,8 +738,8 @@ func TestRunResolveHonorsRoundSelector(t *testing.T) {
 
 	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--round", "2", "--no-input"}, &stdout, &stderr)
 
-	if code != 0 {
-		t.Fatalf("expected successful resolve exit code 0, got %d", code)
+	if code != 1 {
+		t.Fatalf("expected Unresolved resolve exit code 1, got %d", code)
 	}
 	if stdout.Len() != 0 {
 		t.Fatalf("expected no stdout, got %q", stdout.String())
@@ -751,6 +752,9 @@ func TestRunResolveHonorsRoundSelector(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "Final Push blocked: 1 Unresolved Review Issue") {
 		t.Fatalf("expected Final Push to be blocked by unselected unresolved issue, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "reached Unresolved") {
+		t.Fatalf("expected Unresolved outcome for out-of-scope unresolved issue, got %q", stderr.String())
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
 }
@@ -842,8 +846,8 @@ func TestRunResolveVerificationFailureDoesNotCommit(t *testing.T) {
 	if !strings.Contains(stderr.String(), "tests failed") {
 		t.Fatalf("expected verification failure, got %q", stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "did not commit, push, or resolve Review Source threads") {
-		t.Fatalf("expected daemon-owned mutation boundary, got %q", stderr.String())
+	if !strings.Contains(stderr.String(), "reached Unresolved") {
+		t.Fatalf("expected Unresolved outcome after failed verification, got %q", stderr.String())
 	}
 	issue, err := rounds.ParseIssue(result.IssuePaths[0])
 	if err != nil {
@@ -1107,8 +1111,8 @@ func TestRunResolveAgentFailureMarksBatchFailed(t *testing.T) {
 	if !strings.Contains(stderr.String(), "agent crashed") {
 		t.Fatalf("expected Agent failure, got %q", stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "did not commit, push, or resolve Review Source threads") {
-		t.Fatalf("expected daemon-owned mutation boundary, got %q", stderr.String())
+	if !strings.Contains(stderr.String(), "reached Unresolved") {
+		t.Fatalf("expected Unresolved outcome after Agent failure, got %q", stderr.String())
 	}
 	issue, err := rounds.ParseIssue(result.IssuePaths[0])
 	if err != nil {
@@ -1121,7 +1125,7 @@ func TestRunResolveAgentFailureMarksBatchFailed(t *testing.T) {
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
 }
 
-func TestRunResolveAgentFailureStopsBeforeLaterBatches(t *testing.T) {
+func TestRunResolveAgentFailureContinuesWithLaterBatches(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	runner := &fakeAgentRunner{runErr: errors.New("agent crashed")}
@@ -1163,10 +1167,10 @@ resolve:
 	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
-		t.Fatalf("expected Run failure exit 1, got %d", code)
+		t.Fatalf("expected Unresolved exit 1, got %d", code)
 	}
-	if runner.calls != 1 {
-		t.Fatalf("expected only the failing Batch to run, got %d Agent calls", runner.calls)
+	if runner.calls != 2 {
+		t.Fatalf("expected later Batches to run after the first failed, got %d Agent calls", runner.calls)
 	}
 	first, err := rounds.ParseIssue(result.IssuePaths[0])
 	if err != nil {
@@ -1179,11 +1183,14 @@ resolve:
 	if first.Status != rounds.StatusFailed {
 		t.Fatalf("expected first Batch issue failed, got %q", first.Status)
 	}
-	if second.Status != rounds.StatusPending {
-		t.Fatalf("expected later Batch issue to remain pending, got %q", second.Status)
+	if second.Status != rounds.StatusFailed {
+		t.Fatalf("expected second Batch issue failed after its own Agent failure, got %q", second.Status)
 	}
-	if !strings.Contains(stderr.String(), "Resolve stopped after Batch 001/002 failed; 1 planned Review Issue(s) remain pending in 1 Batch(es).") {
-		t.Fatalf("expected pending Batch diagnostic, got %q", stderr.String())
+	if !strings.Contains(stderr.String(), "Batch 001 failed") || !strings.Contains(stderr.String(), "Batch 002 failed") {
+		t.Fatalf("expected both Batch failures reported, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "reached Unresolved") {
+		t.Fatalf("expected Unresolved outcome, got %q", stderr.String())
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
@@ -3027,8 +3034,8 @@ func TestFailedVerificationJournalsFailureWithoutCommitEvents(t *testing.T) {
 		t.Fatalf("expected verification failure event journaled, got %+v", events)
 	}
 	last := events[len(events)-1].Event
-	if last.Kind != runevent.KindDaemonOutcome || !strings.Contains(string(last.Payload), `"Failed"`) {
-		t.Fatalf("expected Failed outcome event last, got %+v", last)
+	if last.Kind != runevent.KindDaemonOutcome || !strings.Contains(string(last.Payload), `"Unresolved"`) {
+		t.Fatalf("expected Unresolved outcome event last, got %+v", last)
 	}
 }
 

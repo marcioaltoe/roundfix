@@ -954,7 +954,8 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	}
 	defer ui.Close()
 
-	if _, err := executeResolveCycle(ctx, req, loaded, preflightResult, run.ID, resolvePlan, collaborators, runStore, ui); err != nil {
+	cycleResult, err := executeResolveCycle(ctx, req, loaded, preflightResult, run.ID, resolvePlan, collaborators, runStore, ui)
+	if err != nil {
 		if isStopRequest(ctx, err) {
 			code := completeStoppedRunRecord(runStore, run.ID)
 			ui.Wait()
@@ -976,18 +977,28 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		return exitRunFailed
 	}
 
-	completed, err := runStore.CompleteRun(ctx, run.ID, store.StateClean)
+	outcome := store.StateClean
+	if cycleResult.Remaining > 0 {
+		outcome = store.StateUnresolved
+	}
+	completed, err := runStore.CompleteRun(ctx, run.ID, outcome)
 	if err != nil {
 		ui.Close()
 		printResolveRunFailureAfterBatchCommit(err, stderr)
 		return exitRunFailed
 	}
-	publishRunOutcome(ctx, runStore, completed.ID, completed.State, 0, stderr)
+	publishRunOutcome(ctx, runStore, completed.ID, completed.State, cycleResult.Remaining, stderr)
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
 	ui.Close()
 	fmt.Fprintf(stderr, "Resolve Run %s reached %s.\n", completed.ID, completed.State)
+	if completed.State == store.StateUnresolved {
+		fmt.Fprintf(stderr, "%d Unresolved Review Issue(s) remain; failed issues are retried by the next fetched Round.\n", cycleResult.Remaining)
+	}
 	printIssueSummary(stderr, resolvePlan.selection.Issues)
+	if completed.State == store.StateUnresolved {
+		return exitRunFailed
+	}
 	return exitOK
 }
 
@@ -1265,6 +1276,9 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	if result.Outcome == store.StateMaxRoundsReached && result.Remaining > 0 {
 		fmt.Fprintf(stderr, "MaxRoundsReached with %d Unresolved Review Issue(s) remaining.\n", result.Remaining)
 	}
+	if result.Outcome == store.StateUnresolved {
+		fmt.Fprintf(stderr, "Unresolved: the last Round settled nothing; %d Unresolved Review Issue(s) remain for developer attention.\n", result.Remaining)
+	}
 	if result.Outcome == store.StateTimedOut {
 		fmt.Fprintf(stderr, "Review Source timed out. To request another CodeRabbit review manually, comment: %s\n", result.ManualReviewCommand)
 	}
@@ -1326,34 +1340,36 @@ func fetchWatchRound(ctx context.Context, req commandRequest, loaded roundconfig
 	return watch.FetchResult{Round: roundResult.Round, Issues: len(roundResult.IssuePaths)}, nil
 }
 
+// resolveWatchBatches runs exactly one resolve cycle for the current
+// Round. Failed Review Issues are not retried inside the same Round: the
+// next fetched Round re-downloads their still-open Review Source threads
+// as fresh occurrences. Progress means the cycle settled at least one
+// selected issue, so the watch loop can stop Rounds that change nothing.
 func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runtime agent.RuntimeSpec, runID string, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (watch.ResolveResult, error) {
-	progress := false
-	for {
-		resolvePlan, err := prepareResolveBatch(ctx, req, loaded, preflightResult)
-		if err != nil {
-			var noArtifacts rounds.NoCompatibleArtifactsError
-			if errors.As(err, &noArtifacts) {
-				return watch.ResolveResult{Remaining: 0, Progress: progress}, nil
-			}
-			return watch.ResolveResult{}, err
+	resolvePlan, err := prepareResolveBatch(ctx, req, loaded, preflightResult)
+	if err != nil {
+		var noArtifacts rounds.NoCompatibleArtifactsError
+		if errors.As(err, &noArtifacts) {
+			return watch.ResolveResult{Remaining: 0, Progress: false}, nil
 		}
-		resolvePlan.runtime = runtime
-		result, err := executeResolveCycle(ctx, req, loaded, preflightResult, runID, resolvePlan, collaborators, runStore, ui)
-		if err != nil {
-			return watch.ResolveResult{}, err
-		}
-		progress = true
-		if result.Remaining == 0 {
-			return watch.ResolveResult{Remaining: 0, Progress: true}, nil
-		}
+		return watch.ResolveResult{}, err
 	}
+	resolvePlan.runtime = runtime
+	result, err := executeResolveCycle(ctx, req, loaded, preflightResult, runID, resolvePlan, collaborators, runStore, ui)
+	if err != nil {
+		return watch.ResolveResult{}, err
+	}
+	return watch.ResolveResult{
+		Remaining: result.Remaining,
+		Progress:  result.Remaining < len(resolvePlan.selection.Issues),
+	}, nil
 }
 
 func exitForWatchOutcome(outcome string) int {
 	switch outcome {
 	case store.StateClean, store.StateMaxRoundsReached, store.StateStopped:
 		return exitOK
-	case store.StateBudgetExceeded, store.StateTimedOut, store.StateFailed:
+	case store.StateBudgetExceeded, store.StateTimedOut, store.StateFailed, store.StateUnresolved:
 		return exitRunFailed
 	default:
 		return exitRunFailed
