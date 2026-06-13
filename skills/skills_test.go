@@ -19,6 +19,41 @@ func TestCheckValidatesRoundfixSkillArtifacts(t *testing.T) {
 	}
 }
 
+func TestCheckOpenAIManifestRequiresEntrypointAndRuntimeCommand(t *testing.T) {
+	diagnostics := checkOpenAIManifest("roundfix/agents/openai.yaml", []byte(`
+name: roundfix
+runtime_hints: {}
+`))
+
+	messages := make([]string, 0, len(diagnostics))
+	for _, diagnostic := range diagnostics {
+		messages = append(messages, diagnostic.Message)
+	}
+	joined := strings.Join(messages, "\n")
+	for _, expected := range []string{
+		"manifest field entrypoint is required",
+		"manifest runtime command is required",
+	} {
+		if !strings.Contains(joined, expected) {
+			t.Fatalf("expected diagnostic %q, got %s", expected, joined)
+		}
+	}
+}
+
+func TestCheckOpenAIManifestAcceptsNestedRuntimeHints(t *testing.T) {
+	diagnostics := checkOpenAIManifest("roundfix/agents/openai.yaml", []byte(`
+name: roundfix
+entrypoint: SKILL.md
+runtime:
+  hints:
+    command: roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean
+`))
+
+	if len(diagnostics) > 0 {
+		t.Fatalf("expected nested runtime hints to pass, got %#v", diagnostics)
+	}
+}
+
 func TestFilesIncludesRoundfixSkillAndAgentMetadata(t *testing.T) {
 	files, err := Files()
 	if err != nil {

@@ -477,6 +477,68 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 	}
 }
 
+func TestRunResolveAgentFullAccessIsExplicitOptIn(t *testing.T) {
+	tests := []struct {
+		name       string
+		config     string
+		args       []string
+		wantAccess string
+	}{
+		{
+			name:       "default sandboxed",
+			args:       []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"},
+			wantAccess: "",
+		},
+		{
+			name:       "command flag opts in",
+			args:       []string{"resolve", "--pr", "123", "--agent", "codex", "--agent-full-access", "--round", "all", "--no-input"},
+			wantAccess: "full-access",
+		},
+		{
+			name: "config opts in",
+			config: `
+defaults:
+  agent_full_access: true
+`,
+			args:       []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"},
+			wantAccess: "full-access",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, repoDir := withCLIWorkspace(t)
+			withSuccessfulPreflight(t, repoDir)
+			runner := &fakeAgentRunner{}
+			withAgentRunner(t, runner)
+			if tt.config != "" {
+				mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), tt.config)
+			}
+			persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run(tt.args, &stdout, &stderr)
+
+			if code != 0 {
+				t.Fatalf("expected exit code 0, got %d, stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+			}
+			if len(runner.probedRuntimes) != 1 {
+				t.Fatalf("expected one runtime probe, got %#v", runner.probedRuntimes)
+			}
+			if runner.probedRuntimes[0].FullAccessMode != tt.wantAccess {
+				t.Fatalf("expected probe full-access mode %q, got %q", tt.wantAccess, runner.probedRuntimes[0].FullAccessMode)
+			}
+			if len(runner.runRuntimes) != 1 {
+				t.Fatalf("expected one Agent run, got %#v", runner.runRuntimes)
+			}
+			if runner.runRuntimes[0].FullAccessMode != tt.wantAccess {
+				t.Fatalf("expected run full-access mode %q, got %q", tt.wantAccess, runner.runRuntimes[0].FullAccessMode)
+			}
+		})
+	}
+}
+
 func TestRunFetchReusesMatchingAutoRound(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
@@ -2233,18 +2295,22 @@ func publishFakeAgentOutput(ctx context.Context, sink runevent.Sink, req agent.E
 }
 
 type fakeAgentRunner struct {
-	probeErr error
-	runErr   error
-	status   string
-	calls    int
+	probeErr       error
+	runErr         error
+	status         string
+	calls          int
+	probedRuntimes []agent.RuntimeSpec
+	runRuntimes    []agent.RuntimeSpec
 }
 
-func (runner *fakeAgentRunner) Probe(context.Context, agent.RuntimeSpec) error {
+func (runner *fakeAgentRunner) Probe(_ context.Context, runtime agent.RuntimeSpec) error {
+	runner.probedRuntimes = append(runner.probedRuntimes, runtime)
 	return runner.probeErr
 }
 
 func (runner *fakeAgentRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
 	runner.calls++
+	runner.runRuntimes = append(runner.runRuntimes, req.Runtime)
 	status := runner.status
 	if status == "" {
 		status = rounds.StatusResolved

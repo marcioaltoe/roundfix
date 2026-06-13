@@ -17,6 +17,7 @@ func TestLoadAppliesConfigPrecedence(t *testing.T) {
 	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
 defaults:
   agent: claude
+  agent_full_access: true
   artifact_dir: user-artifacts
 watch:
   max_rounds: 4
@@ -43,6 +44,9 @@ budget:
 	}
 	if loaded.Config.Defaults.ArtifactDir != "user-artifacts" {
 		t.Fatalf("expected user artifact dir to survive project config, got %q", loaded.Config.Defaults.ArtifactDir)
+	}
+	if !loaded.Config.Defaults.AgentFullAccess {
+		t.Fatal("expected user agent_full_access to survive project config")
 	}
 	if loaded.Config.Watch.MaxRounds != 8 {
 		t.Fatalf("expected project max rounds, got %d", loaded.Config.Watch.MaxRounds)
@@ -128,7 +132,7 @@ func TestInitCreatesUserConfig(t *testing.T) {
 		t.Fatalf("expected user result at %q, got %#v", expectedPath, result)
 	}
 	content := mustRead(t, expectedPath)
-	if !strings.Contains(content, "agent: codex") || !strings.Contains(content, "max_run_duration: 2h") {
+	if !strings.Contains(content, "agent: codex") || !strings.Contains(content, "agent_full_access: false") || !strings.Contains(content, "max_run_duration: 2h") {
 		t.Fatalf("expected default config content, got %s", content)
 	}
 	if _, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir}); err != nil {

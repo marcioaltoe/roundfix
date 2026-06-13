@@ -23,9 +23,10 @@ import (
 
 func TestRuntimeForSupportsCommandOverrideAndModel(t *testing.T) {
 	runtime, err := RuntimeFor(RuntimeOptions{
-		Agent:           "codex",
-		CommandOverride: "custom-acp",
-		Model:           "gpt-test",
+		Agent:            "codex",
+		CommandOverride:  "custom-acp",
+		Model:            "gpt-test",
+		EnableFullAccess: true,
 	})
 	if err != nil {
 		t.Fatalf("expected runtime, got %v", err)
@@ -42,6 +43,9 @@ func TestRuntimeForSupportsCommandOverrideAndModel(t *testing.T) {
 	}
 	if runtime.Model != "gpt-test" {
 		t.Fatalf("expected model override, got %q", runtime.Model)
+	}
+	if runtime.FullAccessMode != "" {
+		t.Fatalf("custom command must not receive ACP full-access mode, got %q", runtime.FullAccessMode)
 	}
 	if runtime.DisplayName != "Codex" {
 		t.Fatalf("expected Codex display name, got %q", runtime.DisplayName)
@@ -72,13 +76,35 @@ func TestRuntimeForCodexUsesACPAdapter(t *testing.T) {
 	if len(runtime.Fallbacks) == 0 || runtime.Fallbacks[0].Command != "npx" {
 		t.Fatalf("expected npx fallback for codex ACP, got %#v", runtime.Fallbacks)
 	}
+	if runtime.FullAccessMode != "" {
+		t.Fatalf("expected Codex default to keep runtime sandbox mode, got %q", runtime.FullAccessMode)
+	}
+	args := runtimeBootstrapArgs(runtime, "gpt-test")
+	for _, expected := range []string{`model="gpt-test"`, "features.code_mode=false"} {
+		if !contains(args, expected) {
+			t.Fatalf("expected Codex bootstrap args to contain %q, got %#v", expected, args)
+		}
+	}
+	for _, unexpected := range []string{`approval_policy="never"`, `sandbox_mode="danger-full-access"`} {
+		if contains(args, unexpected) {
+			t.Fatalf("expected Codex sandboxed default args to omit %q, got %#v", unexpected, args)
+		}
+	}
+}
+
+func TestRuntimeForCodexFullAccessOptIn(t *testing.T) {
+	runtime, err := RuntimeFor(RuntimeOptions{Agent: "codex", EnableFullAccess: true})
+	if err != nil {
+		t.Fatalf("runtime for codex: %v", err)
+	}
+
 	if runtime.FullAccessMode != "full-access" {
 		t.Fatalf("expected Codex full-access session mode, got %q", runtime.FullAccessMode)
 	}
 	args := runtimeBootstrapArgs(runtime, "gpt-test")
-	for _, expected := range []string{`model="gpt-test"`, "features.code_mode=false", `approval_policy="never"`, `sandbox_mode="danger-full-access"`} {
+	for _, expected := range []string{`approval_policy="never"`, `sandbox_mode="danger-full-access"`} {
 		if !contains(args, expected) {
-			t.Fatalf("expected Codex bootstrap args to contain %q, got %#v", expected, args)
+			t.Fatalf("expected Codex full-access bootstrap args to contain %q, got %#v", expected, args)
 		}
 	}
 }
@@ -205,7 +231,7 @@ func TestSettleAssignedIssues(t *testing.T) {
 			}
 			batch := rounds.Batch{Number: 1, Issues: []rounds.Issue{{Path: result.IssuePaths[0]}}}
 
-			changed, err := SettleAssignedIssues(batch)
+			changed, err := SettleAssignedIssues(context.Background(), batch)
 
 			if err != nil {
 				t.Fatalf("settle assigned issues: %v", err)
@@ -221,6 +247,33 @@ func TestSettleAssignedIssues(t *testing.T) {
 				t.Fatalf("expected status %q, got %q", test.wantStatus, issue.Status)
 			}
 		})
+	}
+}
+
+func TestSettleAssignedIssuesStopsOnCanceledContext(t *testing.T) {
+	artifactDir := t.TempDir()
+	result := persistTestRound(t, artifactDir)
+	if err := rounds.SetIssueStatus(result.IssuePaths[0], rounds.StatusPending, ""); err != nil {
+		t.Fatalf("set issue status: %v", err)
+	}
+	batch := rounds.Batch{Number: 1, Issues: []rounds.Issue{{Path: result.IssuePaths[0]}}}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	changed, err := SettleAssignedIssues(ctx, batch)
+
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context cancellation, got %v", err)
+	}
+	if len(changed) != 0 {
+		t.Fatalf("expected no changed issues, got %v", changed)
+	}
+	issue, parseErr := rounds.ParseIssue(result.IssuePaths[0])
+	if parseErr != nil {
+		t.Fatalf("parse issue: %v", parseErr)
+	}
+	if issue.Status != rounds.StatusPending {
+		t.Fatalf("expected issue to remain pending after cancellation, got %q", issue.Status)
 	}
 }
 

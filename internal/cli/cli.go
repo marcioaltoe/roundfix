@@ -68,22 +68,23 @@ const (
 )
 
 type commandRequest struct {
-	name        string
-	pr          string
-	source      string
-	agent       string
-	round       string
-	noInput     bool
-	interactive bool
-	inputShown  bool
-	untilClean  bool
-	maxRounds   int
-	artifactDir string
-	baseRepo    string
-	model       string
-	agentCmd    string
-	headBranch  string
-	headRepo    string
+	name            string
+	pr              string
+	source          string
+	agent           string
+	round           string
+	noInput         bool
+	interactive     bool
+	inputShown      bool
+	untilClean      bool
+	maxRounds       int
+	artifactDir     string
+	baseRepo        string
+	model           string
+	agentCmd        string
+	agentFullAccess bool
+	headBranch      string
+	headRepo        string
 }
 
 var runCommandPreflight = defaultRunCommandPreflight
@@ -1065,9 +1066,10 @@ func prepareResolveBatch(ctx context.Context, req commandRequest, loaded roundco
 		return resolveBatchPlan{}, fmt.Errorf("no Batch assignments were produced for selected Compatible Artifacts")
 	}
 	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
-		Agent:           req.agent,
-		CommandOverride: req.agentCmd,
-		Model:           req.model,
+		Agent:            req.agent,
+		CommandOverride:  req.agentCmd,
+		Model:            req.model,
+		EnableFullAccess: req.agentFullAccess,
 	})
 	if err != nil {
 		return resolveBatchPlan{}, err
@@ -1157,9 +1159,10 @@ func cyclePlanFrom(req commandRequest, loaded roundconfig.Loaded, preflightResul
 
 func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, _ io.Writer, stderr io.Writer) int {
 	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
-		Agent:           req.agent,
-		CommandOverride: req.agentCmd,
-		Model:           req.model,
+		Agent:            req.agent,
+		CommandOverride:  req.agentCmd,
+		Model:            req.model,
+		EnableFullAccess: req.agentFullAccess,
 	})
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
@@ -1577,14 +1580,15 @@ func commandDisplayName(name string) string {
 
 func parseOperationalCommand(name string, args []string, config roundconfig.Config) (commandRequest, error) {
 	req := commandRequest{
-		name:        name,
-		source:      config.ReviewSource.Name,
-		agent:       config.Defaults.Agent,
-		round:       "all",
-		untilClean:  config.Watch.UntilClean,
-		maxRounds:   config.Watch.MaxRounds,
-		artifactDir: config.Defaults.ArtifactDir,
-		model:       config.Defaults.Model,
+		name:            name,
+		source:          config.ReviewSource.Name,
+		agent:           config.Defaults.Agent,
+		round:           "all",
+		untilClean:      config.Watch.UntilClean,
+		maxRounds:       config.Watch.MaxRounds,
+		artifactDir:     config.Defaults.ArtifactDir,
+		model:           config.Defaults.Model,
+		agentFullAccess: config.Defaults.AgentFullAccess,
 	}
 	if name == "fetch" {
 		req.round = "auto"
@@ -1608,12 +1612,14 @@ func parseOperationalCommand(name string, args []string, config roundconfig.Conf
 		fs.StringVar(&req.agent, "agent", req.agent, "Agent runtime")
 		fs.StringVar(&req.model, "model", req.model, "Agent model override")
 		fs.StringVar(&req.agentCmd, "agent-command", "", "Agent command override")
+		fs.BoolVar(&req.agentFullAccess, "agent-full-access", req.agentFullAccess, "Opt into Agent runtime full-access mode")
 		fs.StringVar(&req.round, "round", "all", "Round number or all")
 	case "watch":
 		fs.StringVar(&req.source, "source", req.source, "Review Source")
 		fs.StringVar(&req.agent, "agent", req.agent, "Agent runtime")
 		fs.StringVar(&req.model, "model", req.model, "Agent model override")
 		fs.StringVar(&req.agentCmd, "agent-command", "", "Agent command override")
+		fs.BoolVar(&req.agentFullAccess, "agent-full-access", req.agentFullAccess, "Opt into Agent runtime full-access mode")
 		fs.BoolVar(&req.untilClean, "until-clean", req.untilClean, "Repeat until no Unresolved Review Issues remain")
 		fs.IntVar(&req.maxRounds, "max-rounds", req.maxRounds, "Maximum Review Source rounds")
 	default:
@@ -1911,6 +1917,7 @@ Options:
   --agent        Agent runtime. Supported: codex, claude, opencode
   --model        Agent model override
   --agent-command Agent command override
+  --agent-full-access Opt into Agent runtime full-access mode
   --round        Round number or all
   --artifact-dir Artifact Directory
   --base-repo    Explicit base repository, owner/name
@@ -1929,6 +1936,7 @@ Options:
   --agent        Agent runtime. Supported: codex, claude, opencode
   --model        Agent model override
   --agent-command Agent command override
+  --agent-full-access Opt into Agent runtime full-access mode
   --until-clean  Repeat until no Unresolved Review Issues remain
   --max-rounds   Maximum Review Source rounds
   --artifact-dir Artifact Directory

@@ -796,12 +796,13 @@ func runtimeBootstrapArgs(runtime RuntimeSpec, modelName string) []string {
 	args = appendCodexConfig(args,
 		"features.code_mode=false",
 		"features.code_mode_only=false",
-		`approval_policy="never"`,
-		// Batches run with the full-access preset (ADR 0011): the
-		// workspace-write sandbox blocks all network access, including
-		// localhost services that verification commands depend on.
-		`sandbox_mode="danger-full-access"`,
 	)
+	if runtime.FullAccessMode == "full-access" {
+		args = appendCodexConfig(args,
+			`approval_policy="never"`,
+			`sandbox_mode="danger-full-access"`,
+		)
+	}
 	return args
 }
 

@@ -41,11 +41,12 @@ type Config struct {
 }
 
 type Defaults struct {
-	Agent        string
-	Model        string
-	AutoCommit   bool
-	Verification string
-	ArtifactDir  string
+	Agent           string
+	Model           string
+	AgentFullAccess bool
+	AutoCommit      bool
+	Verification    string
+	ArtifactDir     string
 }
 
 type ReviewSource struct {
@@ -126,11 +127,12 @@ type configOverlay struct {
 }
 
 type defaultsOverlay struct {
-	Agent        *string `yaml:"agent"`
-	Model        *string `yaml:"model"`
-	AutoCommit   *bool   `yaml:"auto_commit"`
-	Verification *string `yaml:"verification"`
-	ArtifactDir  *string `yaml:"artifact_dir"`
+	Agent           *string `yaml:"agent"`
+	Model           *string `yaml:"model"`
+	AgentFullAccess *bool   `yaml:"agent_full_access"`
+	AutoCommit      *bool   `yaml:"auto_commit"`
+	Verification    *string `yaml:"verification"`
+	ArtifactDir     *string `yaml:"artifact_dir"`
 }
 
 type reviewSourceOverlay struct {
@@ -268,6 +270,7 @@ func DefaultConfigYAML() string {
 defaults:
   agent: %s
   model: ""
+  agent_full_access: %t
   verification: %s
   artifact_dir: %s
   auto_commit: %t
@@ -297,6 +300,7 @@ resolve:
   concurrent: %d
 `,
 		config.Defaults.Agent,
+		config.Defaults.AgentFullAccess,
 		config.Defaults.Verification,
 		defaultArtifactDir,
 		config.Defaults.AutoCommit,
@@ -490,6 +494,9 @@ func applyOverlay(config *Config, overlay configOverlay) {
 		}
 		if overlay.Defaults.Model != nil {
 			config.Defaults.Model = *overlay.Defaults.Model
+		}
+		if overlay.Defaults.AgentFullAccess != nil {
+			config.Defaults.AgentFullAccess = *overlay.Defaults.AgentFullAccess
 		}
 		if overlay.Defaults.AutoCommit != nil {
 			config.Defaults.AutoCommit = *overlay.Defaults.AutoCommit

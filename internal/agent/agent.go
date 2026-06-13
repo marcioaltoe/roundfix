@@ -39,9 +39,10 @@ type RuntimeLauncher struct {
 }
 
 type RuntimeOptions struct {
-	Agent           string
-	CommandOverride string
-	Model           string
+	Agent            string
+	CommandOverride  string
+	Model            string
+	EnableFullAccess bool
 }
 
 type ExecuteRequest struct {
@@ -156,10 +157,6 @@ func RuntimeFor(opts RuntimeOptions) (RuntimeSpec, error) {
 			DefaultModel:    DefaultCodexModel,
 			SupportsAddDirs: true,
 			BootstrapModel:  true,
-			// "full-access" is the codex approval preset that disables the
-			// Seatbelt sandbox (danger-full-access) and approval prompts, so
-			// Batch verification can reach local services such as databases.
-			FullAccessMode: "full-access",
 			Fallbacks: []RuntimeLauncher{
 				{
 					Command: "npx",
@@ -175,7 +172,6 @@ func RuntimeFor(opts RuntimeOptions) (RuntimeSpec, error) {
 			Command:         "claude-agent-acp",
 			DefaultModel:    DefaultClaudeModel,
 			SupportsAddDirs: true,
-			FullAccessMode:  "bypassPermissions",
 			Fallbacks: []RuntimeLauncher{
 				{
 					Command: "npx",
@@ -206,6 +202,14 @@ func RuntimeFor(opts RuntimeOptions) (RuntimeSpec, error) {
 		spec.Args = nil
 		spec.ProbeArgs = []string{"--help"}
 		spec.Fallbacks = nil
+	}
+	if opts.EnableFullAccess {
+		switch spec.ID {
+		case "codex":
+			spec.FullAccessMode = "full-access"
+		case "claude":
+			spec.FullAccessMode = "bypassPermissions"
+		}
 	}
 	spec.Model = opts.Model
 	return spec, nil
@@ -263,15 +267,21 @@ func LogPath(artifactDir string, runID string, batchNumber int) string {
 // SettleAssignedIssues marks assigned Review Issues the Agent left
 // unsettled (pending, valid) as failed, so every assigned issue ends the
 // Batch in resolved, invalid, or failed. It returns the paths it changed.
-func SettleAssignedIssues(batch rounds.Batch) ([]string, error) {
+func SettleAssignedIssues(ctx context.Context, batch rounds.Batch) ([]string, error) {
 	changed := []string{}
 	for _, assigned := range batch.Issues {
+		if err := ctx.Err(); err != nil {
+			return changed, err
+		}
 		issue, err := rounds.ParseIssue(assigned.Path)
 		if err != nil {
 			return changed, err
 		}
 		if rounds.IsSettledStatus(issue.Status) {
 			continue
+		}
+		if err := ctx.Err(); err != nil {
+			return changed, err
 		}
 		if err := rounds.SetIssueStatus(assigned.Path, rounds.StatusFailed, ""); err != nil {
 			return changed, err

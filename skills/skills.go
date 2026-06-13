@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 //go:embed roundfix/SKILL.md roundfix/agents/openai.yaml
@@ -26,6 +28,19 @@ type File struct {
 type Diagnostic struct {
 	Path    string
 	Message string
+}
+
+type openAIManifest struct {
+	Name         string `yaml:"name"`
+	EntryPoint   string `yaml:"entrypoint"`
+	RuntimeHints struct {
+		Command string `yaml:"command"`
+	} `yaml:"runtime_hints"`
+	Runtime struct {
+		Hints struct {
+			Command string `yaml:"command"`
+		} `yaml:"hints"`
+	} `yaml:"runtime"`
 }
 
 type InstallRequest struct {
@@ -95,7 +110,13 @@ func Check() []Diagnostic {
 			"Do not mark any issue as `duplicated`",
 			"rtk bun run --cwd <package-dir> <script> [args...]",
 		},
-		"roundfix/agents/openai.yaml": {"roundfix"},
+		"roundfix/agents/openai.yaml": {
+			"name: roundfix",
+			"entrypoint: SKILL.md",
+			"command: roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean",
+			"assigned Review Issue files during Batch runs",
+			"Run state",
+		},
 	}
 	banned := []string{
 		"reference project",
@@ -123,6 +144,9 @@ func Check() []Diagnostic {
 				diagnostics = append(diagnostics, Diagnostic{Path: path, Message: fmt.Sprintf("contains banned reference branding %q", phrase)})
 			}
 		}
+		if path == "roundfix/agents/openai.yaml" {
+			diagnostics = append(diagnostics, checkOpenAIManifest(path, data)...)
+		}
 	}
 	sort.Slice(diagnostics, func(i, j int) bool {
 		if diagnostics[i].Path == diagnostics[j].Path {
@@ -131,6 +155,31 @@ func Check() []Diagnostic {
 		return diagnostics[i].Path < diagnostics[j].Path
 	})
 	return diagnostics
+}
+
+func checkOpenAIManifest(path string, data []byte) []Diagnostic {
+	var manifest openAIManifest
+	if err := yaml.Unmarshal(data, &manifest); err != nil {
+		return []Diagnostic{{Path: path, Message: fmt.Sprintf("parse skill manifest: %v", err)}}
+	}
+	var diagnostics []Diagnostic
+	if strings.TrimSpace(manifest.Name) != "roundfix" {
+		diagnostics = append(diagnostics, Diagnostic{Path: path, Message: "manifest field name must be roundfix"})
+	}
+	if strings.TrimSpace(manifest.EntryPoint) == "" {
+		diagnostics = append(diagnostics, Diagnostic{Path: path, Message: "manifest field entrypoint is required"})
+	}
+	if strings.TrimSpace(openAIManifestCommand(manifest)) == "" {
+		diagnostics = append(diagnostics, Diagnostic{Path: path, Message: "manifest runtime command is required"})
+	}
+	return diagnostics
+}
+
+func openAIManifestCommand(manifest openAIManifest) string {
+	if command := strings.TrimSpace(manifest.RuntimeHints.Command); command != "" {
+		return command
+	}
+	return strings.TrimSpace(manifest.Runtime.Hints.Command)
 }
 
 func Install(ctx context.Context, req InstallRequest) (InstallResult, error) {
