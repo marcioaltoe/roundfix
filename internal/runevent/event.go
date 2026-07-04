@@ -48,6 +48,12 @@ const (
 	KindDaemonSourceResolution Kind = "daemon.source_resolution"
 	KindDaemonRetry            Kind = "daemon.retry"
 	KindDaemonOutcome          Kind = "daemon.outcome"
+
+	// Spec Run kinds: daemon.task records one Task's phase transitions
+	// (started, skipped, settled) and daemon.qa records the QA step. The
+	// Task id rides in the existing ReviewIssue Work Item field.
+	KindDaemonTask Kind = "daemon.task"
+	KindDaemonQA   Kind = "daemon.qa"
 )
 
 // IsDaemonKind reports whether the kind belongs to the known daemon
@@ -58,7 +64,8 @@ func IsDaemonKind(kind Kind) bool {
 	case KindDaemonStatus, KindDaemonReviewStatus, KindDaemonQuietPeriod,
 		KindDaemonFetch, KindDaemonSelection, KindDaemonBatch,
 		KindDaemonVerification, KindDaemonCommit, KindDaemonPush,
-		KindDaemonSourceResolution, KindDaemonRetry, KindDaemonOutcome:
+		KindDaemonSourceResolution, KindDaemonRetry, KindDaemonOutcome,
+		KindDaemonTask, KindDaemonQA:
 		return true
 	default:
 		return false
