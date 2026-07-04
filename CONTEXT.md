@@ -1,11 +1,11 @@
 # Roundfix
 
-Roundfix coordinates repeated review-resolution cycles for pull requests. This glossary defines the product language used to describe that loop.
+Roundfix picks up Work Items — Review Issues from pull request reviews today, Tasks from Spec Task Graphs next — resolves them through the user's selected ACP Runtime, and pushes only when nothing unresolved remains. This glossary defines the product language for that loop.
 
 ## Language
 
 **Run**:
-A durable attempt to clean one pull request by coordinating review rounds until it reaches a terminal outcome.
+A durable attempt to drive one target's Work Items — an Open Pull Request's Review Issues or a Spec's Tasks — to a terminal outcome. One Active Run is allowed per target: (Head Repository, PR Head Branch) for review work, (repository, spec slug) for spec work.
 _Avoid_: Session, execution, job
 
 **Fetch Run**:
@@ -32,9 +32,33 @@ _Avoid_: Local branch, checkout branch
 The GitHub repository that owns the PR Head Branch.
 _Avoid_: Base repository, local checkout
 
+**Work Item**:
+One unit of resolvable work that Roundfix picks up and drives to an outcome: a Review Issue today, a Task next.
+_Avoid_: Ticket, job, to-do
+
+**Task Source**:
+The origin Roundfix reads Work Items from, such as a Review Source or a Spec's Task Graph.
+_Avoid_: Provider, backend, integration
+
 **Review Source**:
 The external review system that produces feedback for an Open Pull Request.
 _Avoid_: Review Provider, Agent, ACP Runtime
+
+**Spec**:
+One feature's planning artifact set produced by the spec workflow: PRD, Task Graph, Task files, and QA evidence.
+_Avoid_: Feature folder, epic, project
+
+**Task**:
+One implementable unit of work within a Spec. Its task file is the sole owner of its status.
+_Avoid_: Subtask, story, ticket
+
+**Task Graph**:
+The Spec's manifest that declares its Tasks and their dependencies as a directed acyclic graph. Dependencies live only in the Task Graph, never in task files.
+_Avoid_: Task list, backlog, roadmap
+
+**QA Report**:
+The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict in its frontmatter.
+_Avoid_: Test report, QA log
 
 **ACP Runtime**:
 A local coding runtime that Roundfix launches through the user's installed tool and authentication setup using Agent Client Protocol stdio. The MVP supports Codex through `codex-acp`, Claude through `claude-agent-acp`, and OpenCode through `opencode acp`; command overrides remain a stdio escape hatch for local testing.
@@ -49,7 +73,7 @@ A terminal Run outcome where the configured review round policy is complete, eve
 _Avoid_: Failure, timeout, budget exceeded
 
 **Unresolved Outcome**:
-A terminal Run outcome where resolve work completed but Unresolved Review Issues remain, so Final Push stayed blocked. Distinct from Failed, which means the Run itself broke.
+A terminal Run outcome where the cycle completed but unresolved Work Items remain: Unresolved Review Issues blocking Final Push, Tasks not completed, or a failing QA verdict. Distinct from Failed, which means the Run itself broke.
 _Avoid_: Failure, crash, partial success
 
 **Run Budget**:
@@ -121,7 +145,7 @@ A Review Issue that has been downloaded but has not reached a terminal local out
 _Avoid_: Open issue, pending task
 
 **Batch**:
-A bounded subset of Review Issues assigned to one agent invocation.
+A bounded subset of Work Items assigned to one agent invocation.
 _Avoid_: Chunk, group, task
 
 **Final Push**:
@@ -131,6 +155,10 @@ _Avoid_: Batch push, round push, agent push
 **Resolve Command**:
 The command that runs Agents over downloaded unresolved Review Issues for an Open Pull Request.
 _Avoid_: Fix Command, Fetch command, watch command
+
+**Implement Command**:
+The command that executes a Spec's Task Graph by running Agents over its Tasks in dependency order.
+_Avoid_: Run command, execute command, spec command
 
 **Reprocess Command**:
 An explicit future command for revisiting selected Terminal Review Issues.
