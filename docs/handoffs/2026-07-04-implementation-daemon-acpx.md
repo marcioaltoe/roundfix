@@ -10,7 +10,7 @@ Evolve roundfix from a CodeRabbit review-resolution CLI into the generic impleme
 
 ## Upstream context (consume, do not rebuild)
 
-The planning side already shipped in marcioaltoe/skills PR #28 (<https://github.com/marcioaltoe/skills/pull/28>): `write-prd` → `write-techspec` → `write-tasks` → `implement-task` / `implement-spec` → `qa-gate` → `archive-spec`, plus `setup-workflow` v0.2.0. Read those SKILL.md files for the exact contracts — `implement-task` is the agent-side contract this daemon must mirror.
+The planning side already shipped in marcioaltoe/skills PR #28 (**merged**, <https://github.com/marcioaltoe/skills/pull/28>): `write-prd` → `write-techspec` → `write-tasks` → `implement-task` / `implement-spec` → `qa-gate` → `archive-spec`, plus `setup-workflow` v0.2.0. Read those SKILL.md files for the exact contracts — `implement-task` is the agent-side contract this daemon must mirror. PR #29 (**merged**, <https://github.com/marcioaltoe/skills/pull/29>) then rebuilt the `go-cli` setup around **this repo's profile** (stdlib `flag` dispatch — no Cobra; Bubble Tea v2 on `charm.land`; zero-test-dep stdlib testing; golang error-handling/concurrency/context/lint skills vendored from samber).
 
 The artifact contract the daemon consumes, per feature at `docs/specs/<slug>/` in **target repos**:
 
@@ -19,7 +19,7 @@ The artifact contract the daemon consumes, per feature at `docs/specs/<slug>/` i
 - `task_NN.md` — frontmatter `task, spec, status: pending|in_progress|completed|failed, type, complexity`. Status lives **only** here. Body: Requirements / Subtasks / Acceptance Criteria / Verification (commands the executor runs verbatim) / References; the executor appends `## Result` with evidence.
 - `qa/` — qa-gate evidence reports. Shipped specs move to `docs/specs/_archived/<slug>/`.
 
-Until PR #28 merges, install from the branch: `curl -fsSL https://raw.githubusercontent.com/marcioaltoe/skills/main/install.sh | bash -s -- go-cli-tui --ref ma/context-workflow` (drop `--ref` after merge).
+Install the setup with: `curl -fsSL https://raw.githubusercontent.com/marcioaltoe/skills/main/install.sh | bash -s -- go-cli` (PRs #28 and #29 are both merged to main).
 
 ## Current repo state (at handoff time)
 
@@ -48,7 +48,7 @@ Small cleanups also pending: empty scaffolds `skills/roundfix-resolve-round/` an
 
 ## Suggested skills
 
-Install the **`go-cli-tui`** setup (the whole spec workflow plus golang-cli, golang-spf13-cobra, golang-testing, bubbletea, tui-design, agentic-cli-design, qa-gate, evidence-gate). Add for the redesign phase: `architectural-analysis`, `refactoring-analysis`, `tactical-ddd`, `git-rebase`, `lesson-learned`, `tech-writer`, `handoff`. Session rhythm: `grill-with-docs` before deciding, `write-prd`/`write-techspec`/`write-tasks` to spec each phase, `implement-task` discipline while executing, `evidence-gate` before any completion claim.
+Install the **`go-cli`** setup — it now carries the whole spec workflow plus golang-cli, golang-testing, golang-error-handling, golang-concurrency, golang-context, golang-lint, bubbletea v2, tui-design, agentic-cli-design, qa-gate, evidence-gate, tech-writer, and handoff (no cobra; this repo uses stdlib flag dispatch). Optional per-project extras for the redesign phase, installed individually (`bunx skills add marcioaltoe/skills/skills/<collection>/<name>`): `architectural-analysis`, `refactoring-analysis`, `tactical-ddd`, `git-rebase`, `lesson-learned`. When roundfix starts cutting versioned releases, `cut-release` (08-release) exists in the catalog. Session rhythm: `grill-with-docs` before deciding, `write-prd`/`write-techspec`/`write-tasks` to spec each phase, `implement-task` discipline while executing, `evidence-gate` before any completion claim.
 
 ## Verification gates
 
@@ -56,7 +56,7 @@ Install the **`go-cli-tui`** setup (the whole spec workflow plus golang-cli, gol
 
 ## First steps for the fresh session
 
-1. Read `CONTEXT.md`, `AGENTS.md`, `docs/adr/`; skim `docs/product-brief.md`.
+1. Read `CONTEXT.md`, `AGENTS.md`, `docs/adr/`; skim `docs/product-brief.md`. Note: `AGENTS.md` was already replaced (2026-07-04, uncommitted) with the marcioaltoe/skills `AGENTS.go-cli.md` template adapted to this repo — the old skill-router drift is gone; commit it together with the `.agents/skills` prune resolution.
 2. Resolve the `.agents/skills` prune (commit or restore), then install the suggested skills.
 3. Run `/setup-workflow` to scaffold `docs/specs/` in this repo.
 4. `/grill-with-docs` on work-plan item 1 (task-source abstraction) → `/write-prd` → `/write-techspec` → `/write-tasks` → implement.
