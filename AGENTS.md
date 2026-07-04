@@ -50,10 +50,6 @@ Read these only when relevant to the task:
   overriding them
 - `docs/product-brief.md` — the product contract from the grill session;
   supersede its decisions via new ADRs, don't edit history
-- `docs/specs/<feature-slug>/` — spec artifacts (`_idea.md`, `_prd.md`,
-  `_techspec.md`, `_tasks.md`, `task_NN.md`, `qa/`); shipped specs move to
-  `docs/specs/_archived/`. Run `setup-workflow` once if the layout is missing.
-- `docs/agents/issue-tracker.md` — the local `docs/specs/` tracker conventions
 - Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
   `internal/...` (`internal/cli/` owns parsing, output, and exit behavior;
   `internal/app/` holds app metadata)
@@ -61,6 +57,25 @@ Read these only when relevant to the task:
 **ALWAYS** use canonical terms from `CONTEXT.md` in command names, help text,
 issue titles, test names, and user-facing explanations. If the right term is
 missing, call out the gap instead of inventing new language.
+
+## Agent skills
+
+### Issue tracker
+
+Tasks live as local markdown under `docs/specs/<feature-slug>/` (the canonical
+source — no external tracker). See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+This is a single-context repo: root `CONTEXT.md` plus ADRs in `docs/adr/`. See
+`docs/agents/domain.md`.
+
+### Spec artifacts
+
+Feature specs live under `docs/specs/<feature-slug>/` (`_idea.md`, `_prd.md`,
+`_techspec.md`, `_tasks.md`, `task_NN.md`, `qa/`). Dependencies live only in
+`_tasks.md`; task status lives only in each task file's frontmatter. Shipped
+specs are archived to `docs/specs/_archived/`.
 
 ## Skill dispatch
 
