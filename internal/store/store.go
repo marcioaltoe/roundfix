@@ -19,9 +19,15 @@ const (
 	roundfixHomeDir = ".roundfix"
 	databaseName    = "roundfix.db"
 
-	KindFetch   = "fetch"
-	KindResolve = "resolve"
-	KindWatch   = "watch"
+	KindFetch     = "fetch"
+	KindResolve   = "resolve"
+	KindWatch     = "watch"
+	KindImplement = "implement"
+
+	// Active Run locks are keyed by work target (ADR 0016): review Kinds
+	// lock the Open Pull Request, the implement Kind locks the Spec.
+	targetKindPR   = "pr"
+	targetKindSpec = "spec"
 
 	StateActive           = "Active"
 	StateFetched          = "Fetched"
@@ -60,6 +66,7 @@ type Run struct {
 	LocalBranch    string
 	HeadSHA        string
 	ArtifactDir    string
+	SpecSlug       string
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	CompletedAt    *time.Time
@@ -80,6 +87,7 @@ type CreateRunRequest struct {
 	LocalBranch    string
 	HeadSHA        string
 	ArtifactDir    string
+	SpecSlug       string
 }
 
 type ActiveRunError struct {
@@ -87,6 +95,9 @@ type ActiveRunError struct {
 }
 
 func (err ActiveRunError) Error() string {
+	if err.Existing.Kind == KindImplement {
+		return fmt.Sprintf("Active Run already exists for repository %q and Spec %q; existing run_id=%s state=%s; stop it with: roundfix stop %s", err.Existing.GitRoot, err.Existing.SpecSlug, err.Existing.ID, err.Existing.State, err.Existing.ID)
+	}
 	return fmt.Sprintf("Active Run already exists for Head Repository %q and PR Head Branch %q; existing run_id=%s state=%s", err.Existing.HeadRepository, err.Existing.HeadBranch, err.Existing.ID, err.Existing.State)
 }
 
@@ -188,7 +199,8 @@ func (store *Store) CreateRun(ctx context.Context, req CreateRunRequest) (Run, e
 	}
 	defer rollbackUnlessCommitted(tx)
 
-	existing, found, err := selectActiveRun(ctx, tx, req.HeadRepository, req.HeadBranch)
+	targetKind, targetKey := lockTarget(req)
+	existing, found, err := selectActiveRunByTarget(ctx, tx, targetKind, targetKey)
 	if err != nil {
 		return Run{}, err
 	}
@@ -199,9 +211,9 @@ func (store *Store) CreateRun(ctx context.Context, req CreateRunRequest) (Run, e
 	_, err = tx.ExecContext(ctx, `
 INSERT INTO runs (
 	id, kind, state, head_repository, head_branch, base_repository,
-	pr_number, git_root, local_branch, head_sha, artifact_dir,
+	pr_number, git_root, local_branch, head_sha, artifact_dir, spec_slug,
 	created_at, updated_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		runID,
 		req.Kind,
 		StateActive,
@@ -213,6 +225,7 @@ INSERT INTO runs (
 		req.LocalBranch,
 		req.HeadSHA,
 		req.ArtifactDir,
+		req.SpecSlug,
 		formatTime(now),
 		formatTime(now),
 	)
@@ -221,15 +234,15 @@ INSERT INTO runs (
 	}
 
 	_, err = tx.ExecContext(ctx, `
-INSERT INTO active_run_locks (head_repository, head_branch, run_id, created_at)
+INSERT INTO active_run_locks (target_kind, target_key, run_id, created_at)
 VALUES (?, ?, ?, ?)`,
-		req.HeadRepository,
-		req.HeadBranch,
+		targetKind,
+		targetKey,
 		runID,
 		formatTime(now),
 	)
 	if err != nil {
-		existing, found, selectErr := selectActiveRun(ctx, tx, req.HeadRepository, req.HeadBranch)
+		existing, found, selectErr := selectActiveRunByTarget(ctx, tx, targetKind, targetKey)
 		if selectErr == nil && found {
 			return Run{}, ActiveRunError{Existing: existing}
 		}
@@ -321,7 +334,30 @@ UPDATE runs SET state = ?, updated_at = ? WHERE id = ?`,
 }
 
 func (store *Store) ActiveRun(ctx context.Context, headRepository string, headBranch string) (Run, bool, error) {
-	return selectActiveRun(ctx, store.db, headRepository, headBranch)
+	return selectActiveRunByTarget(ctx, store.db, targetKindPR, prTargetKey(headRepository, headBranch))
+}
+
+// ActiveRunInGitRoot returns the Active Run of any Kind whose Git root
+// matches. It backs the ADR 0012 single-working-tree Preflight Validation
+// until worktree-per-task lands.
+func (store *Store) ActiveRunInGitRoot(ctx context.Context, gitRoot string) (Run, bool, error) {
+	row := store.db.QueryRowContext(ctx, `
+SELECT r.id, r.kind, r.state, r.head_repository, r.head_branch, r.base_repository,
+       r.pr_number, r.git_root, r.local_branch, r.head_sha, r.artifact_dir, r.spec_slug,
+       r.created_at, r.updated_at, r.completed_at
+FROM active_run_locks l
+JOIN runs r ON r.id = l.run_id
+WHERE r.git_root = ?
+ORDER BY l.created_at, r.id
+LIMIT 1`, gitRoot)
+	run, err := scanRun(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Run{}, false, nil
+	}
+	if err != nil {
+		return Run{}, false, err
+	}
+	return run, true, nil
 }
 
 func (store *Store) Run(ctx context.Context, runID string) (Run, bool, error) {
@@ -420,33 +456,79 @@ func IsTerminalState(state string) bool {
 	}
 }
 
+const schemaVersion = 4
+
+// activeRunLocksColumns is the schema v4 lock-table shape (ADR 0016): one
+// Active Run per work target, keyed by (target_kind, target_key).
+const activeRunLocksColumns = `(
+	target_kind TEXT NOT NULL,
+	target_key TEXT NOT NULL,
+	run_id TEXT NOT NULL UNIQUE,
+	created_at TEXT NOT NULL,
+	PRIMARY KEY (target_kind, target_key),
+	FOREIGN KEY (run_id) REFERENCES runs(id) ON DELETE CASCADE
+)`
+
 func (store *Store) migrate(ctx context.Context) error {
-	statements := []string{
-		`PRAGMA foreign_keys = ON`,
+	if _, err := store.db.ExecContext(ctx, `PRAGMA foreign_keys = ON`); err != nil {
+		return fmt.Errorf("apply Run Database migration: %w", err)
+	}
+	version, err := store.MigrationVersion(ctx)
+	if err != nil {
+		return err
+	}
+	switch version {
+	case schemaVersion:
+		return nil
+	case 0:
+		return store.applyMigration(ctx, createSchemaStatements())
+	case 3:
+		return store.applyMigration(ctx, migrateV3ToV4Statements())
+	default:
+		return fmt.Errorf("migrate Run Database: schema version %d is not supported", version)
+	}
+}
+
+func (store *Store) applyMigration(ctx context.Context, statements []string) error {
+	tx, err := store.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin Run Database migration: %w", err)
+	}
+	defer rollbackUnlessCommitted(tx)
+	for _, statement := range statements {
+		if _, err := tx.ExecContext(ctx, statement); err != nil {
+			return fmt.Errorf("apply Run Database migration: %w", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit Run Database migration: %w", err)
+	}
+	return nil
+}
+
+// createSchemaStatements creates schema v4 directly on a fresh Run Database.
+// spec_slug and the PR-shaped columns use the empty string for "not set";
+// which fields a Run must carry is enforced by Kind in CreateRun.
+func createSchemaStatements() []string {
+	return []string{
 		`CREATE TABLE IF NOT EXISTS runs (
 			id TEXT PRIMARY KEY,
 			kind TEXT NOT NULL,
 			state TEXT NOT NULL,
-			head_repository TEXT NOT NULL,
-			head_branch TEXT NOT NULL,
+			head_repository TEXT NOT NULL DEFAULT '',
+			head_branch TEXT NOT NULL DEFAULT '',
 			base_repository TEXT NOT NULL DEFAULT '',
-			pr_number TEXT NOT NULL,
+			pr_number TEXT NOT NULL DEFAULT '',
 			git_root TEXT NOT NULL,
 			local_branch TEXT NOT NULL,
-			head_sha TEXT NOT NULL,
-			artifact_dir TEXT NOT NULL,
+			head_sha TEXT NOT NULL DEFAULT '',
+			artifact_dir TEXT NOT NULL DEFAULT '',
+			spec_slug TEXT NOT NULL DEFAULT '',
 			created_at TEXT NOT NULL,
 			updated_at TEXT NOT NULL,
 			completed_at TEXT NOT NULL DEFAULT ''
 		)`,
-		`CREATE TABLE IF NOT EXISTS active_run_locks (
-			head_repository TEXT NOT NULL,
-			head_branch TEXT NOT NULL,
-			run_id TEXT NOT NULL UNIQUE,
-			created_at TEXT NOT NULL,
-			PRIMARY KEY (head_repository, head_branch),
-			FOREIGN KEY (run_id) REFERENCES runs(id) ON DELETE CASCADE
-		)`,
+		`CREATE TABLE IF NOT EXISTS active_run_locks ` + activeRunLocksColumns,
 		`CREATE INDEX IF NOT EXISTS idx_runs_head ON runs (head_repository, head_branch)`,
 		`CREATE TABLE IF NOT EXISTS interactive_defaults (
 			key TEXT PRIMARY KEY,
@@ -468,33 +550,50 @@ func (store *Store) migrate(ctx context.Context) error {
 			PRIMARY KEY (run_id, cursor),
 			FOREIGN KEY (run_id) REFERENCES runs(id) ON DELETE CASCADE
 		)`,
-		`PRAGMA user_version = 3`,
+		`PRAGMA user_version = 4`,
 	}
-	for _, statement := range statements {
-		if _, err := store.db.ExecContext(ctx, statement); err != nil {
-			return fmt.Errorf("apply Run Database migration: %w", err)
-		}
+}
+
+// migrateV3ToV4Statements rewrites a v3 Run Database in place (ADR 0016):
+// every run row survives, and each existing lock row — always a review
+// lock in v3 — is re-keyed to ("pr", "<head_repository>#<head_branch>").
+func migrateV3ToV4Statements() []string {
+	return []string{
+		`ALTER TABLE runs ADD COLUMN spec_slug TEXT NOT NULL DEFAULT ''`,
+		`CREATE TABLE active_run_locks_v4 ` + activeRunLocksColumns,
+		`INSERT INTO active_run_locks_v4 (target_kind, target_key, run_id, created_at)
+		 SELECT 'pr', head_repository || '#' || head_branch, run_id, created_at
+		 FROM active_run_locks`,
+		`DROP TABLE active_run_locks`,
+		`ALTER TABLE active_run_locks_v4 RENAME TO active_run_locks`,
+		`PRAGMA user_version = 4`,
 	}
-	return nil
 }
 
 func validateCreateRunRequest(req CreateRunRequest) error {
 	if req.Kind == "" {
 		return errors.New("Run kind is required")
 	}
+	var required map[string]string
 	switch req.Kind {
 	case KindFetch, KindResolve, KindWatch:
+		required = map[string]string{
+			"Head Repository":    req.HeadRepository,
+			"PR Head Branch":     req.HeadBranch,
+			"pull request":       req.PRNumber,
+			"Git root":           req.GitRoot,
+			"local branch":       req.LocalBranch,
+			"HEAD":               req.HeadSHA,
+			"Artifact Directory": req.ArtifactDir,
+		}
+	case KindImplement:
+		required = map[string]string{
+			"Git root":     req.GitRoot,
+			"local branch": req.LocalBranch,
+			"Spec slug":    req.SpecSlug,
+		}
 	default:
 		return fmt.Errorf("Run kind %q is invalid", req.Kind)
-	}
-	required := map[string]string{
-		"Head Repository":    req.HeadRepository,
-		"PR Head Branch":     req.HeadBranch,
-		"pull request":       req.PRNumber,
-		"Git root":           req.GitRoot,
-		"local branch":       req.LocalBranch,
-		"HEAD":               req.HeadSHA,
-		"Artifact Directory": req.ArtifactDir,
 	}
 	for label, value := range required {
 		if strings.TrimSpace(value) == "" {
@@ -504,20 +603,37 @@ func validateCreateRunRequest(req CreateRunRequest) error {
 	return nil
 }
 
+// lockTarget derives the Active Run lock key for a create request (ADR
+// 0016): review Kinds lock the Open Pull Request, implement locks the Spec.
+func lockTarget(req CreateRunRequest) (string, string) {
+	if req.Kind == KindImplement {
+		return targetKindSpec, specTargetKey(req.GitRoot, req.SpecSlug)
+	}
+	return targetKindPR, prTargetKey(req.HeadRepository, req.HeadBranch)
+}
+
+func prTargetKey(headRepository string, headBranch string) string {
+	return headRepository + "#" + headBranch
+}
+
+func specTargetKey(gitRoot string, specSlug string) string {
+	return gitRoot + "#" + specSlug
+}
+
 type runQuerier interface {
 	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
 }
 
-func selectActiveRun(ctx context.Context, querier runQuerier, headRepository string, headBranch string) (Run, bool, error) {
+func selectActiveRunByTarget(ctx context.Context, querier runQuerier, targetKind string, targetKey string) (Run, bool, error) {
 	row := querier.QueryRowContext(ctx, `
 SELECT r.id, r.kind, r.state, r.head_repository, r.head_branch, r.base_repository,
-       r.pr_number, r.git_root, r.local_branch, r.head_sha, r.artifact_dir,
+       r.pr_number, r.git_root, r.local_branch, r.head_sha, r.artifact_dir, r.spec_slug,
        r.created_at, r.updated_at, r.completed_at
 FROM active_run_locks l
 JOIN runs r ON r.id = l.run_id
-WHERE l.head_repository = ? AND l.head_branch = ?`,
-		headRepository,
-		headBranch,
+WHERE l.target_kind = ? AND l.target_key = ?`,
+		targetKind,
+		targetKey,
 	)
 	run, err := scanRun(row)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -532,7 +648,7 @@ WHERE l.head_repository = ? AND l.head_branch = ?`,
 func selectRun(ctx context.Context, querier runQuerier, runID string) (Run, error) {
 	row := querier.QueryRowContext(ctx, `
 SELECT id, kind, state, head_repository, head_branch, base_repository,
-       pr_number, git_root, local_branch, head_sha, artifact_dir,
+       pr_number, git_root, local_branch, head_sha, artifact_dir, spec_slug,
        created_at, updated_at, completed_at
 FROM runs
 WHERE id = ?`, runID)
@@ -560,6 +676,7 @@ func scanRun(row *sql.Row) (Run, error) {
 		&run.LocalBranch,
 		&run.HeadSHA,
 		&run.ArtifactDir,
+		&run.SpecSlug,
 		&createdAt,
 		&updatedAt,
 		&completedAt,
