@@ -4,7 +4,7 @@ Write `docs/specs/<slug>/_idea.md` with this structure. Guidance appears as `<!-
 
 ```markdown
 ---
-spec: <feature-slug>
+spec: <NNNN-feature-slug> # numbered folder slug, e.g. 0001-implement-command
 created: YYYY-MM-DD
 status: proposed # proposed | promoted (write-prd ran) | parked (consciously shelved)
 leverage: quick-win # quick-win | strategic-bet | compounding

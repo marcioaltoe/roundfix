@@ -59,9 +59,9 @@ Before reporting, verify mechanically — parse, don't eyeball:
 
 Print the wave plan (wave 1 = no needs; wave N = needs met by earlier waves) as the execution preview.
 
-### 5. Report and optional mirror
+### 5. Report
 
-Reply with the file list and the wave plan. If `docs/agents/issue-tracker.md` maps work to GitHub/Linear, offer the user to mirror the tasks as tracker issues (via `/to-issues`) — the local files remain canonical either way.
+Reply with the file list and the wave plan.
 
 ## Anti-patterns
 

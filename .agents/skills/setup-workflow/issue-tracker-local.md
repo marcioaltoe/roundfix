@@ -1,19 +1,23 @@
-# Issue tracker: Local Markdown
+# Issue tracker: Local (canonical)
 
-Issues and PRDs for this repo live as markdown files in `.scratch/`.
+Planning artifacts for this repo live as local markdown under `docs/specs/` — there is no external tracker. This is the default and canonical mode of the CONTEXT-driven spec workflow.
 
 ## Conventions
 
-- One feature per directory: `.scratch/<feature-slug>/`
-- The PRD is `.scratch/<feature-slug>/PRD.md`
-- Implementation issues are `.scratch/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01`
-- Triage state is recorded as a `Status:` line near the top of each issue file (see `triage-labels.md` for the role strings)
-- Comments and conversation history append to the bottom of the file under a `## Comments` heading
+- One feature per directory: `docs/specs/<feature-slug>/`
+- Artifacts: `_idea.md` (optional), `_prd.md`, `_techspec.md` (optional), `_tasks.md` (the dependency graph — dependencies live **only** here), and one `task_NN.md` per task
+- Task status lives **only** in each `task_NN.md` frontmatter: `pending | in_progress | completed | failed`
+- QA evidence lives in `docs/specs/<feature-slug>/qa/`
+- Shipped specs move to `docs/specs/_archived/<feature-slug>/` (via `archive-spec`)
 
 ## When a skill says "publish to the issue tracker"
 
-Create a new file under `.scratch/<feature-slug>/` (creating the directory if needed).
+There is no external tracker: the task files written by `write-tasks` **are** the published issues. Nothing further to do.
 
 ## When a skill says "fetch the relevant ticket"
 
-Read the file at the referenced path. The user will normally pass the path or the issue number directly.
+Read the `task_NN.md` file in the spec folder. The user will normally pass the spec slug or the task file path directly.
+
+## When the repo uses the knowledge workspace
+
+If `docs` is a symlink into `.knowledge/`, these files physically live in the central knowledge repository — commit them with `git -C .knowledge …` per the `knowledge-workspace` skill.

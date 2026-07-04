@@ -4,7 +4,7 @@ Write `docs/specs/<feature-slug>/_prd.md` with this exact structure. Guidance ap
 
 ```markdown
 ---
-spec: <feature-slug>
+spec: <NNNN-feature-slug> # numbered folder slug, e.g. 0001-implement-command
 status: active
 created: YYYY-MM-DD
 surfaces: [backend] # every surface touched: frontend | backend | cli | data | infra | docs

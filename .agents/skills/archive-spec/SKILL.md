@@ -42,11 +42,9 @@ If any check fails, stop and report exactly which — the spec stays active.
    git mv docs/specs/<slug> docs/specs/_archived/<slug>
    ```
 
-3. **Mirror** — if `docs/agents/issue-tracker.md` maps this spec's tasks to tracker issues, close them with a link to the release.
+3. **Commit** — `chore(specs): archive <slug>` (Conventional Commits). Do not push unless asked.
 
-4. **Commit** — `chore(specs): archive <slug>` (Conventional Commits). Do not push unless asked.
-
-5. **Report** — the new path, the release reference, and anything carried over (open follow-ups from task `## Result` sections belong in new specs or tracker issues, not in the archive).
+4. **Report** — the new path, the release reference, and anything carried over (open follow-ups from task `## Result` sections belong in new specs, not in the archive).
 
 ## Unarchive
 

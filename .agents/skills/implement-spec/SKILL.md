@@ -65,4 +65,3 @@ Report progress as a checklist (`task_NN ✓ / in_progress / failed / blocked`) 
 - Pushing and PR creation are explicit user actions; the loop never publishes on its own.
 - Never run destructive git commands (`reset`, `restore`, `clean`, `checkout --`) without explicit permission.
 - Never edit `_prd.md`, `_techspec.md`, or `_tasks.md` from inside the loop — spec amendments are a human decision made outside it.
-- If `docs/agents/issue-tracker.md` maps tasks to mirrored tracker issues, update the mirror after each completed task; the local files remain canonical.
