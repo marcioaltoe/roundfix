@@ -6,6 +6,7 @@ metadata:
   tags: [readme, docs, technical-writing, prd, techspec, adr, tasks, issues, qa, communication]
   version: 0.4.0
   author: Marcio Altoé
+  source: https://github.com/marcioaltoe/skills
 ---
 
 # Tech writer

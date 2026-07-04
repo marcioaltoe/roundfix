@@ -2,9 +2,11 @@
 name: council
 description: Orchestrates multi-advisor council debates on high-impact architecture, technology, or product decisions. Dispatches 3-5 domain archetype subagents (pragmatic-engineer, architect-advisor, security-advocate, product-mind, devils-advocate, the-thinker) through opening statements, tensions, position evolution, and synthesis phases. Preserves dissent and delivers actionable recommendations with captured risks. Use when evaluating trade-offs, stress-testing a PRD or tech spec, resolving dilemmas with multiple viable options, or when a decision needs diverse expert perspectives. Don't use for simple yes/no questions, factual lookups, creative brainstorming without tradeoffs, or tasks where a single expert perspective suffices.
 metadata:
-  author: Pedro Nauck
-  github: https://github.com/pedronauck
-  repository: https://github.com/pedronauck/skills
+  category: discovery
+  tags: [architecture, product, research, agents]
+  version: 0.2.0
+  author: Marcio Altoé
+  source: https://github.com/marcioaltoe/skills
 ---
 
 # Council Facilitator
@@ -36,7 +38,7 @@ Facilitate a multi-advisor roundtable by dispatching archetype subagents, surfac
 
 **Step 3: Dispatch Opening Statements (Parallel)**
 
-1. Dispatch all selected archetype subagents **in a single message with parallel Agent tool calls**. Each archetype subagent lives at `.claude/agents/<archetype-name>.md`.
+1. Dispatch all selected archetype subagents **in a single message with parallel calls to the runtime's subagent/task tool**. Build each subagent's prompt from that archetype's definition in `references/archetypes.md` — do not depend on pre-installed agent files (`.claude/agents/*.md`); inlining the archetype definition makes the council portable across Claude, Codex, and opencode. If the runtime has no subagent tool at all, run the advisors sequentially inline, one complete in-character statement per advisor, keeping every debate protocol — and say so in the output.
 2. Each dispatched agent receives:
    - The confirmed dilemma and constraints from Step 1
    - The roster of other advisors (so they know who they're debating)

@@ -294,7 +294,7 @@ These techniques are part of systematic debugging and available in this director
 
 **Related skills:**
 
-- **verification-before-completion** - Verify fix worked before claiming success
+- **evidence-gate** - Verify fix worked before claiming success
 
 ## Real-World Impact
 

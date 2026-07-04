@@ -82,6 +82,11 @@ clean: ## Remove build artifacts
 
 ##@ Agent Skills
 
+skills-update: ## Install missing skills and update existing ones to latest (reads skills-lock.json)
+	bunx skills experimental_install
+	bunx skills update -p -y
+	bun run fmt
+	
 skills-check: ## Validate shipped Roundfix skill artifacts
 	$(GO) run $(RUN_FLAGS) $(CMD) skills check
 

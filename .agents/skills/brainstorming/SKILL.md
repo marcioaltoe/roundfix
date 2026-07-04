@@ -1,101 +1,63 @@
 ---
 name: brainstorming
-description: "You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation."
+description: "You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design through one question at a time, then routes the outcome to write-idea, write-prd, or a direct task."
+metadata:
+  category: discovery
+  tags: [product, requirements, research, workflow]
+  version: 0.2.0
+  author: Marcio Altoé
+  source: https://github.com/marcioaltoe/skills
 ---
 
-# Brainstorming Ideas Into Designs
+# Brainstorming
 
-## Overview
-
-Help turn ideas into fully formed designs and specs through natural collaborative dialogue.
-
-Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design and get user approval.
+Turn a raw intention into a shared understanding through collaborative dialogue — before any spec is written or any code is touched. This skill is the questioning discipline the discovery stage runs on; `write-idea` and `write-prd` both assume a conversation shaped like this has happened.
 
 <HARD-GATE>
-Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have presented a design and the user has approved it. This applies to EVERY project regardless of perceived simplicity.
+Do NOT invoke any implementation skill, write any code, or scaffold anything until the exploration below has run and the user has confirmed the direction. This applies to EVERY request regardless of perceived simplicity.
 </HARD-GATE>
 
-## Anti-Pattern: "This Is Too Simple To Need A Design"
+## Anti-pattern: "this is too simple to need exploration"
 
-Every project goes through this process. A todo list, a single-function utility, a config change — all of them. "Simple" projects are where unexamined assumptions cause the most wasted work. The design can be short (a few sentences for truly simple projects), but you MUST present it and get approval.
+A todo list, a single-function utility, a config change — all of them go through this. "Simple" requests are where unexamined assumptions cause the most wasted work. The exploration can be three questions and two minutes for genuinely simple work, but it must happen.
 
-## Checklist
+## The questioning discipline
 
-You MUST create a task for each of these items and complete them in order:
+- **One question per message.** A topic that needs depth becomes a sequence of questions, never a questionnaire.
+- **Multiple choice preferred** when the options are enumerable — `A/B/C` plus `D) Other — describe` — always with a suggested default and a one-line reason. Open-ended is fine when options genuinely can't be predetermined.
+- **Explore before asking.** Check project state first — files, docs, `CONTEXT.md`, `docs/specs/` (including `_archived/`), recent commits. A question the codebase can answer is wasted user time.
+- **WHAT, WHY, WHO — not HOW.** Databases, APIs, frameworks, and architecture belong to the tech-spec stage; raising them here derails the product conversation.
+- **YAGNI ruthlessly.** Challenge every feature against the smallest version that delivers the value.
 
-1. **Explore project context** — check files, docs, recent commits
-2. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
-3. **Propose 2-3 approaches** — with trade-offs and your recommendation
-4. **Present design** — in sections scaled to their complexity, get user approval after each section
-5. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<topic>-design.md` and commit
-6. **Transition to implementation** — invoke writing-plans skill to create implementation plan
+## Question phases
 
-## Process Flow
+Walk these in order, skipping what the conversation or the codebase already answered. Minimum 3 questions, maximum ~6 — stop early once problem, user, and scope are clear.
 
-```dot
-digraph brainstorming {
-    "Explore project context" [shape=box];
-    "Ask clarifying questions" [shape=box];
-    "Propose 2-3 approaches" [shape=box];
-    "Present design sections" [shape=box];
-    "User approves design?" [shape=diamond];
-    "Write design doc" [shape=box];
-    "Invoke writing-plans skill" [shape=doublecircle];
+1. **Problem / pain point** — what concrete problem does this solve? What prompted it? Offer 2–3 interpretations if ambiguous.
+2. **Target user and context** — who is it for, where in their workflow, what's their current workaround?
+3. **Scope** — ideal V1 size: minimal MVP / complete feature / platform. Recommend one of the first two.
+4. **Ambition** — quick win / strategic bet / compounding feature; and "what would make this 10x more valuable instead of incremental?"
+5. **Dependencies** — does it touch or extend existing features? Name candidates from the codebase.
+6. **Success criteria** — how will we know it worked?
 
-    "Explore project context" -> "Ask clarifying questions";
-    "Ask clarifying questions" -> "Propose 2-3 approaches";
-    "Propose 2-3 approaches" -> "Present design sections";
-    "Present design sections" -> "User approves design?";
-    "User approves design?" -> "Present design sections" [label="no, revise"];
-    "User approves design?" -> "Write design doc" [label="yes"];
-    "Write design doc" -> "Invoke writing-plans skill";
-}
-```
+## Converging
 
-**The terminal state is invoking writing-plans.** Do NOT invoke frontend-design, mcp-builder, or any other implementation skill. The ONLY skill you invoke after brainstorming is writing-plans.
+When understanding feels complete:
 
-## The Process
+1. **Propose 2–3 approaches** with trade-offs, leading with your recommendation and why.
+2. **Present the direction in sections** scaled to their complexity (a few sentences when straightforward, 200–300 words when nuanced), validating each with the user before moving on.
+3. **Capture language as it resolves** — a term the conversation sharpened goes into `CONTEXT.md` right then; a hard-to-reverse decision that survives the three-part gate becomes an ADR.
 
-**Understanding the idea:**
+## Where the outcome goes
 
-- Check out the current project state first (files, docs, recent commits)
-- Ask questions one at a time to refine the idea
-- Prefer multiple choice questions when possible, but open-ended is fine too
-- Only one question per message - if a topic needs more exploration, break it into multiple questions
-- Focus on understanding: purpose, constraints, success criteria
+The conversation itself is the artifact — route it, don't duplicate it:
 
-**Exploring approaches:**
+- **Product-level idea** (market questions, open solution shape) → `write-idea` (produces `docs/specs/<slug>/_idea.md`).
+- **Feature ready to specify** → `write-prd` (synthesizes this conversation; it will not re-interview).
+- **Small, well-understood change** → a single task or direct implementation; say so explicitly.
 
-- Propose 2-3 different approaches with trade-offs
-- Present options conversationally with your recommendation and reasoning
-- Lead with your recommended option and explain why
+Do not write a separate design document — the spec pipeline's artifacts (`_idea.md`, `_prd.md`) are where the outcome lives.
 
-**Presenting the design:**
+## Key principles
 
-- Once you believe you understand what you're building, present the design
-- Scale each section to its complexity: a few sentences if straightforward, up to 200-300 words if nuanced
-- Ask after each section whether it looks right so far
-- Cover: architecture, components, data flow, error handling, testing
-- Be ready to go back and clarify if something doesn't make sense
-
-## After the Design
-
-**Documentation:**
-
-- Write the validated design to `docs/plans/YYYY-MM-DD-<topic>-design.md`
-- Use elements-of-style:writing-clearly-and-concisely skill if available
-- Commit the design document to git
-
-**Implementation:**
-
-- Invoke the writing-plans skill to create a detailed implementation plan
-- Do NOT invoke any other skill. writing-plans is the next step.
-
-## Key Principles
-
-- **One question at a time** - Don't overwhelm with multiple questions
-- **Multiple choice preferred** - Easier to answer than open-ended when possible
-- **YAGNI ruthlessly** - Remove unnecessary features from all designs
-- **Explore alternatives** - Always propose 2-3 approaches before settling
-- **Incremental validation** - Present design, get approval before moving on
-- **Be flexible** - Go back and clarify when something doesn't make sense
+One question at a time · multiple choice preferred · explore before asking · YAGNI ruthlessly · always propose alternatives before settling · validate incrementally · be ready to loop back when an answer breaks an earlier assumption.
