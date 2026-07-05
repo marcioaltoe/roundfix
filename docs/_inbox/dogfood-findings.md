@@ -94,6 +94,11 @@ its own PRD/techspec cycle).
     before-snapshot lands milliseconds after the previous commit, so any
     user change during a long task window postdates it). The interim
     warning heuristic gains urgency.
+    **Product stance (Marcio, 2026-07-05)**: concurrent user work — including
+    commits made in parallel — must never become a verification concern or an
+    impediment; the Daemon tolerates a multi-writer worktree. This rules out
+    turning any warning heuristic into a blocker and confirms
+    worktree-per-task (work-plan item 4) as the real fix.
 
 16. **Codex full-access through acpx may lack the danger sandbox preset.**
     task_02 verified `acpx@0.12.0` + pinned `@agentclientprotocol/codex-acp@0.0.44`:
@@ -168,3 +173,37 @@ its own PRD/techspec cycle).
     (`GIT_CONFIG_GLOBAL=/dev/null` + explicit `commit.gpgsign=false`/user
     identity in the temp repo), matching the daemon's own `-c` discipline.
     Size: small.
+
+## Product ideas from the dogfood debrief (Marcio, 2026-07-05)
+
+22. **`roundfix setup` — environment bootstrap.** One command that installs
+    the pinned acpx (`npm install -g acpx@<pin>`), validates the environment
+    (Node version, acpx probe, runtime adapters), and offers to create the
+    Project Config file (`.roundfixrc.yml`) interactively. Overlaps with the
+    existing Init Command (User/Project Config creation) — decide whether
+    setup extends `roundfix init` or wraps it plus dependency installation.
+    Repo-dev extra: a self-test mode that runs the gated real-acpx
+    integration suite. Size: small/spec.
+
+23. **`roundfix upgrade` + version freshness check.** A command that updates
+    the installed roundfix to the latest released version, plus a passive
+    check that compares the running version against the latest release and
+    suggests the upgrade when behind (non-blocking, stderr). Needs a release
+    channel decision (GitHub Releases + `v*` tags exist as the convention).
+    Size: small.
+
+24. **Graceful stop for live Runs, `--force` to kill.** `roundfix stop`
+    today releases the lock/settles state — the live process is stopped by
+    Ctrl-C. Wanted: stopping an Active Run (spec implement or PR review)
+    from another terminal, graceful by default — let the current Batch/Task
+    settle (verification + commit) then end the Run — and `--force` for
+    immediate cooperative cancel of the Agent. Natural transport: the
+    DB-mediated control channel from work-plan item 3 (stop already reads
+    that way). Size: small/medium.
+
+25. **Push becomes optional Project Config for spec Runs; PR creation stays
+    out of scope.** Direction: a repo-level config key letting a spec Run
+    push its branch at a Clean outcome (default off, preserving today's
+    behavior); opening pull requests is permanently out of Roundfix's scope.
+    Adopting this supersedes the "never push" half of ADR-0013 — needs its
+    own ADR when picked up. Size: small (behavior) + ADR.
