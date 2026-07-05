@@ -2,23 +2,23 @@ ROUNDFIX // LIVE RUN VIEW // SPEC 0005-tui-cockpit   RUN 00000001 [RESOLVING WIT
 ┌──────────────────────────────────────────────────────────────────────────────────────┐
 │ AGENT [run]  >  VERIFY [wait]  >  COMMIT [wait]                                      │
 └──────────────────────────────────────────────────────────────────────────────────────┘
-┌────────────────────────────┐┌─────────────────────────────────────────────────────┐
-│ WORK QUEUE (3)             ││ SESSION.TIMELINE                                    │
-│                            ││                                                     │
-│ > task_01                  ││ Task task_01 settled completed.                     │
-│   Completed                ││ PLAN continue Task Graph execution                  │
-│                            ││ [TOOL] go test ./internal/tui/ * completed          │
-│   task_02                  ││                                                     │
-│   Executing                ││                                                     │
-│                            ││                                                     │
-│   task_03                  ││                                                     │
-│   Waiting                  ││                                                     │
-│                            ││                                                     │
-│                            ││                                                     │
-│                            ││                                                     │
-│                            ││                                                     │
-│                            ││                                                     │
-│                            ││                                                     │
-│                            ││                                                     │
-└────────────────────────────┘└─────────────────────────────────────────────────────┘
+┌────────────────────────────────┐┌─────────────────────────────────────────────────┐
+│ WORK QUEUE (3)                 ││ SESSION.TIMELINE                                │
+│                                ││                                                 │
+│ > [done]                    #1 ││ Task task_01 settled completed.                 │
+│   task_01 Decompose renderers  ││ PLAN continue Task Graph execution              │
+│   docs/specs/0005-tui-cockpit… ││ [TOOL] go test ./internal/tui/ * completed      │
+│                                ││                                                 │
+│   [run]                     #2 ││                                                 │
+│   task_02 Build phase row      ││                                                 │
+│   docs/specs/0005-tui-cockpit… ││                                                 │
+│                                ││                                                 │
+│   [wait]                    #3 ││                                                 │
+│   task_03 Upgrade work queue   ││                                                 │
+│   docs/specs/0005-tui-cockpit… ││                                                 │
+│                                ││                                                 │
+│                                ││                                                 │
+│                                ││                                                 │
+│ 3 Tasks total · 1 completed ·… ││                                                 │
+└────────────────────────────────┘└─────────────────────────────────────────────────┘
 Keys: Tab focus · ↑↓ scroll · PgUp/PgDn page · End follow · Enter issue · Esc back · Ctrl-C stop

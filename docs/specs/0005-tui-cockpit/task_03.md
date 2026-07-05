@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0005-tui-cockpit
-status: pending
+status: completed
 type: frontend
 complexity: medium
 ---
@@ -32,18 +32,18 @@ footer. Verifiable through row-rendering table tests for both Run kinds.
 
 ## Subtasks
 
-- [ ] Batch separators with elapsed placement
-- [ ] Row renderer: marker, optional severity, ordinal, title, location
-- [ ] Totals footer per Run kind
-- [ ] Table tests across all Work Item states and both kinds
+- [x] Batch separators with elapsed placement
+- [x] Row renderer: marker, optional severity, ordinal, title, location
+- [x] Totals footer per Run kind
+- [x] Table tests across all Work Item states and both kinds
 
 ## Acceptance Criteria
 
-- [ ] Row tests cover every status label the pane supports today plus the
+- [x] Row tests cover every status label the pane supports today plus the
       severity-present and severity-absent cases.
-- [ ] Separator tests pin batch ordinal and elapsed rendering.
-- [ ] Totals footer asserts for a review and a spec fixture.
-- [ ] Full suite passes.
+- [x] Separator tests pin batch ordinal and elapsed rendering.
+- [x] Totals footer asserts for a review and a spec fixture.
+- [x] Full suite passes.
 
 ## Verification
 
@@ -55,3 +55,23 @@ footer. Verifiable through row-rendering table tests for both Run kinds.
 `_prd.md` → User Story 1; Core Feature 3. `_techspec.md` → Build Order 3,
 Risks (severity display). `design/ui-redesign-plan.md` → Required Changes
 (queue rows); `design/roundfix-01.png`.
+
+## Result
+
+- Row evidence: `TestCockpitWorkQueueRowsRenderMarkersMetadataAndOptionalSeverity`
+  covers `Executing`, `Resolved`, `Completed`, `Waiting`, `Paused`, `Invalid`,
+  `Duplicated`, and `Failed`, including severity-present Review Issue rows and
+  severity-absent Task rows.
+- Separator evidence: `TestCockpitWorkQueueBatchSeparatorShowsOrdinalAndElapsed`
+  pins `BATCH 001/002`, elapsed placement for the executing Batch, and no
+  elapsed time on a waiting Batch.
+- Totals evidence: `TestCockpitWorkQueueFooterTotalsForRunKinds` asserts the
+  review footer and the spec Task footer.
+- Existing behavior evidence: updated cockpit tests keep selection movement,
+  spec Task refresh, and mid-write last-good status behavior passing with the
+  new row markers.
+- Snapshot evidence: cockpit goldens under
+  `internal/tui/testdata/cockpit_snapshots/` were deliberately regenerated for
+  this row-density visual change.
+- Verification passed: `rtk go test ./internal/tui/` (70 tests),
+  `rtk go test ./...` (550 tests), and `rtk make verify`.

@@ -94,17 +94,26 @@ type IssueGroup struct {
 // Issues into it and spec Runs map Tasks; the Run Kind keys the mapping, so
 // each pane renders exactly one vocabulary.
 type WorkItem struct {
-	Name   string // "Issue #001" for Review Issues, the Task id for Tasks
-	Title  string
-	Status string // artifact status verbatim (pending, resolved, completed, ...)
+	Name     string // "Issue #001" for Review Issues, the Task id for Tasks
+	Title    string
+	Status   string // artifact status verbatim (pending, resolved, completed, ...)
+	Severity string // Review Issue severity when artifacts provide one; empty for Tasks or unknown severity.
+	Ordinal  int
+	Location string
 }
 
 // TaskWorkItems maps a spec Run's Tasks into Work Items, preserving Task
 // Graph order.
 func TaskWorkItems(tasks []spec.Task) []WorkItem {
 	items := make([]WorkItem, 0, len(tasks))
-	for _, task := range tasks {
-		items = append(items, WorkItem{Name: task.ID, Title: strings.TrimSpace(task.Title), Status: string(task.Status)})
+	for index, task := range tasks {
+		items = append(items, WorkItem{
+			Name:     task.ID,
+			Title:    strings.TrimSpace(task.Title),
+			Status:   string(task.Status),
+			Ordinal:  index + 1,
+			Location: task.File,
+		})
 	}
 	return items
 }

@@ -510,6 +510,136 @@ func assertContainsInOrder(t *testing.T, haystack string, needles ...string) {
 	}
 }
 
+func TestCockpitWorkQueueRowsRenderMarkersMetadataAndOptionalSeverity(t *testing.T) {
+	tests := []struct {
+		name     string
+		label    string
+		item     WorkItem
+		want     []string
+		notWant  []string
+		selected bool
+	}{
+		{
+			name:     "executing review issue with severity",
+			label:    "Executing",
+			selected: true,
+			item: WorkItem{
+				Name:     "Issue #007",
+				Title:    "Guard nil cache",
+				Severity: "major",
+				Ordinal:  7,
+				Location: "internal/cache/cache.go:42",
+			},
+			want: []string{"> [run]", "MAJOR", "#7", "Guard nil cache", "internal/cache/cache.go:42"},
+		},
+		{
+			name:  "resolved review issue",
+			label: "Resolved",
+			item:  WorkItem{Name: "Issue #001", Title: "Resolved issue", Severity: "minor", Ordinal: 1, Location: "a.go:1"},
+			want:  []string{"[done]", "MINOR", "#1", "Resolved issue", "a.go:1"},
+		},
+		{
+			name:    "completed task without severity",
+			label:   "Completed",
+			item:    WorkItem{Name: "task_02", Title: "Wire API", Ordinal: 2, Location: "docs/specs/0001-widget-flow/task_02.md"},
+			want:    []string{"[done]", "#2", "task_02", "Wire API", "docs/specs/0001-widget-flow/task_02.md"},
+			notWant: []string{"MAJOR", "MINOR", "LOW", "HIGH"},
+		},
+		{
+			name:    "waiting task without severity",
+			label:   "Waiting",
+			item:    WorkItem{Name: "task_03", Title: "Upgrade queue", Ordinal: 3},
+			want:    []string{"[wait]", "#3", "task_03", "Upgrade queue"},
+			notWant: []string{"MAJOR", "MINOR", "LOW", "HIGH"},
+		},
+		{
+			name:  "paused row",
+			label: "Paused",
+			item:  WorkItem{Name: "Issue #004", Title: "Paused issue", Ordinal: 4},
+			want:  []string{"[locked]", "#4", "Paused issue"},
+		},
+		{
+			name:  "invalid review issue",
+			label: "Invalid",
+			item:  WorkItem{Name: "Issue #005", Title: "Invalid issue", Ordinal: 5},
+			want:  []string{"[invalid]", "#5", "Invalid issue"},
+		},
+		{
+			name:  "duplicated review issue",
+			label: "Duplicated",
+			item:  WorkItem{Name: "Issue #006", Title: "Duplicated issue", Ordinal: 6},
+			want:  []string{"[dup]", "#6", "Duplicated issue"},
+		},
+		{
+			name:  "failed row",
+			label: "Failed",
+			item:  WorkItem{Name: "Issue #008", Title: "Failed issue", Ordinal: 8},
+			want:  []string{"[fail]", "#8", "Failed issue"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			model := &cockpitModel{}
+			if tt.selected {
+				model.selected = 3
+			}
+			rendered := stripANSI(strings.Join(model.workItemBlock(tt.item, tt.label, 3, 46), "\n"))
+			for _, expected := range tt.want {
+				if !strings.Contains(rendered, expected) {
+					t.Fatalf("expected work queue row to contain %q, got:\n%s", expected, rendered)
+				}
+			}
+			for _, unexpected := range tt.notWant {
+				if strings.Contains(rendered, unexpected) {
+					t.Fatalf("expected work queue row not to contain %q, got:\n%s", unexpected, rendered)
+				}
+			}
+		})
+	}
+}
+
+func TestCockpitWorkQueueBatchSeparatorShowsOrdinalAndElapsed(t *testing.T) {
+	clock := time.Date(2026, 7, 5, 12, 1, 23, 0, time.UTC)
+	model := &cockpitModel{
+		cfg:            CockpitConfig{View: LiveRunView{BatchSizes: []int{2, 1}}},
+		currentBatch:   1,
+		batchStartedAt: time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC),
+		now:            func() time.Time { return clock },
+	}
+
+	executing := stripANSI(model.batchSeparator(0, 46))
+	for _, expected := range []string{"BATCH 001/002", "01:23"} {
+		if !strings.Contains(executing, expected) {
+			t.Fatalf("expected executing separator to contain %q, got %q", expected, executing)
+		}
+	}
+	if strings.Contains(executing, "───") {
+		t.Fatalf("expected dense batch separator without decorative rule, got %q", executing)
+	}
+
+	waiting := stripANSI(model.batchSeparator(2, 46))
+	if !strings.Contains(waiting, "BATCH 002/002") || strings.Contains(waiting, "01:23") {
+		t.Fatalf("expected waiting separator without elapsed time, got %q", waiting)
+	}
+}
+
+func TestCockpitWorkQueueFooterTotalsForRunKinds(t *testing.T) {
+	review := newReviewSnapshotCockpit(t, CockpitOwning, store.StateResolvingWithAgent, false)
+	review.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+	reviewRendered := viewText(review)
+	if !strings.Contains(reviewRendered, "3 issues total · 1 resolved · 2 unresolved") {
+		t.Fatalf("expected review totals footer, got:\n%s", reviewRendered)
+	}
+
+	specRun := newSpecPhaseCockpit(t, false, store.StateResolvingWithAgent, spec.StatusCompleted, spec.StatusInProgress, spec.StatusPending)
+	specRun.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+	specRendered := viewText(specRun)
+	if !strings.Contains(specRendered, "3 Tasks total · 1 completed · 2 unresolved") {
+		t.Fatalf("expected spec totals footer, got:\n%s", specRendered)
+	}
+}
+
 func TestCockpitTabSwitchesFocusAndArrowsMoveSelection(t *testing.T) {
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateActive}, version: 1}
 	source.addLine("line one\n")
@@ -534,8 +664,11 @@ func TestCockpitTabSwitchesFocusAndArrowsMoveSelection(t *testing.T) {
 	if model.selected != 2 {
 		t.Fatalf("expected selection clamped at the last issue, got %d", model.selected)
 	}
-	if !strings.Contains(viewText(model), "> Issue #003") {
-		t.Fatalf("expected selection marker rendered, got:\n%s", viewText(model))
+	rendered := viewText(model)
+	for _, expected := range []string{"> [wait]", "#3", "issue title 003"} {
+		if !strings.Contains(rendered, expected) {
+			t.Fatalf("expected selection marker rendered with %q, got:\n%s", expected, rendered)
+		}
 	}
 	pressKey(t, model, "tab")
 	if model.focus != focusTimeline {
@@ -852,15 +985,21 @@ func TestCockpitSidebarShowsBatchesStatusAndElapsed(t *testing.T) {
 		"AGENT [run]",
 		"VERIFY [wait]",
 		"PUSH [locked]",
-		"─── Batch 001/002",
-		"─── Batch 002/002",
-		"Issue #001",
-		"Resolved",
-		"Issue #002",
-		"Executing",
+		"BATCH 001/002",
+		"BATCH 002/002",
+		"[done] MAJOR",
+		"#1",
+		"one",
+		"a.go:1",
+		"[run] MINOR",
+		"#2",
+		"two",
+		"b.go:2",
 		"01:23",
-		"Issue #003",
-		"Waiting",
+		"[wait] MINOR",
+		"#3",
+		"three",
+		"c.go:3",
 	} {
 		if !strings.Contains(rendered, expected) {
 			t.Fatalf("expected sidebar to contain %q, got:\n%s", expected, rendered)
@@ -871,7 +1010,7 @@ func TestCockpitSidebarShowsBatchesStatusAndElapsed(t *testing.T) {
 		if !strings.Contains(line, "01:23") {
 			continue
 		}
-		if !strings.Contains(line, "Batch 001/002") {
+		if !strings.Contains(line, "BATCH 001/002") {
 			t.Fatalf("expected elapsed clock on the executing Batch separator, got %q", line)
 		}
 	}
@@ -918,9 +1057,9 @@ func TestCockpitSpecRunShowsTasksInGraphOrderAndRefreshesStatuses(t *testing.T) 
 		"VERIFY [wait]",
 		"COMMIT [wait]",
 		"task_01",
-		"Executing",
+		"[run]",
 		"task_02",
-		"Waiting",
+		"[wait]",
 	} {
 		if !strings.Contains(rendered, expected) {
 			t.Fatalf("expected the Task pane to contain %q, got:\n%s", expected, rendered)
@@ -941,7 +1080,7 @@ func TestCockpitSpecRunShowsTasksInGraphOrderAndRefreshesStatuses(t *testing.T) 
 
 	rendered = viewText(model)
 	for _, expected := range []string{
-		"Completed",
+		"[done]",
 		"WORK QUEUE (2)",
 		"Task task_01 settled completed.",
 	} {
@@ -966,7 +1105,7 @@ func TestCockpitSpecRunKeepsLastGoodStatusOnMidWriteTaskFile(t *testing.T) {
 		Tasks: []spec.Task{{ID: "task_01", File: file, Title: "Build core", Status: spec.StatusPending}},
 	})
 
-	if !strings.Contains(viewText(model), "Completed") {
+	if !strings.Contains(viewText(model), "[done]") {
 		t.Fatalf("expected the initial refresh to read the task file, got:\n%s", viewText(model))
 	}
 
@@ -979,7 +1118,7 @@ func TestCockpitSpecRunKeepsLastGoodStatusOnMidWriteTaskFile(t *testing.T) {
 	model.Update(cockpitTickMsg{})
 
 	rendered := viewText(model)
-	if !strings.Contains(rendered, "Completed") {
+	if !strings.Contains(rendered, "[done]") {
 		t.Fatalf("expected the last good status kept through the mid-write read, got:\n%s", rendered)
 	}
 	if !strings.Contains(rendered, "COMMIT [done]") {

@@ -242,6 +242,7 @@ func (model *cockpitModel) refreshIssues() {
 		status := issue.Status
 		if parsed, err := rounds.ParseIssue(issue.Path); err == nil {
 			status = parsed.Status
+			model.cfg.View.Issues[index] = parsed
 		}
 		model.issueStatuses[index] = status
 	}
@@ -533,12 +534,15 @@ func cockpitLayoutFor(model *cockpitModel) cockpitLayout {
 	width := maxInt(model.width, 88)
 	bodyHeight := model.bodyHeight()
 	innerWidth := width - 2
-	sidebarWidth := innerWidth * 28 / 100
+	sidebarWidth := innerWidth * 40 / 100
 	if sidebarWidth < 30 {
 		sidebarWidth = 30
 	}
 	if sidebarWidth > 46 {
 		sidebarWidth = 46
+	}
+	if innerWidth-sidebarWidth-1 <= sidebarWidth {
+		sidebarWidth = maxInt((innerWidth-2)/2, 1)
 	}
 	return cockpitLayout{
 		width:        width,
@@ -820,15 +824,17 @@ func (model *cockpitModel) renderDetail(width int, height int) string {
 // decides which Work Items feed it; the layout path stays identical.
 func (model *cockpitModel) renderWorkItemPane(width int, height int) string {
 	items := model.workItems()
+	innerHeight := maxInt(height-2, 1)
 	lines := []string{styleAccent.Bold(true).Render(fmt.Sprintf("WORK QUEUE (%d)", len(items))), ""}
 	if len(items) == 0 {
 		lines = append(lines, styleMuted.Render("No Work Items"))
-		return strings.Join(limitLines(lines, height-2), "\n")
+		return model.renderWorkQueueWithFooter(lines, innerHeight, width)
 	}
 	if model.selected >= len(items) {
 		model.selected = len(items) - 1
 	}
-	visible := maxInt((height-4)/3, 1)
+	rowBudget := maxInt(innerHeight-len(lines)-1, 0)
+	visible := maxInt(rowBudget/4, 1)
 	if model.selected < model.issueTop {
 		model.issueTop = model.selected
 	}
@@ -836,15 +842,33 @@ func (model *cockpitModel) renderWorkItemPane(width int, height int) string {
 		model.issueTop = model.selected - visible + 1
 	}
 	end := minInt(model.issueTop+visible, len(items))
+	rowLines := []string{}
 	for index := model.issueTop; index < end; index++ {
 		if !model.specRun() {
 			if separator := model.batchSeparator(index, width); separator != "" {
-				lines = append(lines, styleAccent.Render(separator))
+				rowLines = append(rowLines, styleAccent.Render(separator))
 			}
 		}
-		lines = append(lines, model.workItemBlock(items[index], model.workItemStatusLabel(index), index, width)...)
+		block := model.workItemBlock(items[index], model.workItemStatusLabel(index), index, width)
+		if len(rowLines)+len(block) > rowBudget && len(rowLines) > 0 {
+			break
+		}
+		rowLines = append(rowLines, block...)
 	}
-	return strings.Join(limitLines(lines, height-2), "\n")
+	lines = append(lines, limitLines(rowLines, rowBudget)...)
+	return model.renderWorkQueueWithFooter(lines, innerHeight, width)
+}
+
+func (model *cockpitModel) renderWorkQueueWithFooter(lines []string, innerHeight int, width int) string {
+	footer := styleMuted.Render(truncateDisplay(model.workQueueTotalsLine(), maxInt(width-4, 1)))
+	if innerHeight <= 1 {
+		return strings.Join(limitLines(lines, innerHeight), "\n")
+	}
+	for len(lines) < innerHeight-1 {
+		lines = append(lines, "")
+	}
+	lines = append(limitLines(lines, innerHeight-1), footer)
+	return strings.Join(limitLines(lines, innerHeight), "\n")
 }
 
 func (model *cockpitModel) workItems() []WorkItem {
@@ -882,24 +906,100 @@ func (model *cockpitModel) issueWorkItems() []WorkItem {
 		if index < len(model.issueStatuses) {
 			status = model.issueStatuses[index]
 		}
-		items[index] = WorkItem{Name: fmt.Sprintf("Issue #%03d", index+1), Title: issue.Title, Status: status}
+		title := strings.TrimSpace(issue.Title)
+		if title == "" {
+			title = fmt.Sprintf("Issue #%03d", index+1)
+		}
+		items[index] = WorkItem{
+			Name:     fmt.Sprintf("Issue #%03d", index+1),
+			Title:    title,
+			Status:   status,
+			Severity: strings.TrimSpace(issue.Severity),
+			Ordinal:  index + 1,
+			Location: issueLocation(issue),
+		}
 	}
 	return items
 }
 
-// workItemBlock renders one Work Item as the two-line sidebar block both
-// Run Kinds share: the marker plus display name, then the status label.
-func (model *cockpitModel) workItemBlock(item WorkItem, label string, index int, width int) []string {
-	marker := "  "
-	nameStyle := styleMuted
-	if index == model.selected {
-		marker = "> "
-		nameStyle = styleBright
+func issueLocation(issue rounds.Issue) string {
+	file := strings.TrimSpace(issue.File)
+	if file == "" {
+		return ""
 	}
-	return []string{
-		nameStyle.Render(truncateDisplay(marker+item.Name, width-4)),
-		model.statusStyle(label).Render(truncateDisplay("  "+label, width-4)),
+	if issue.Line > 0 {
+		return fmt.Sprintf("%s:%d", file, issue.Line)
+	}
+	return file
+}
+
+// workItemBlock renders one Work Item as the compact queue row both Run
+// Kinds share: marker/severity/ordinal, title, and optional location.
+func (model *cockpitModel) workItemBlock(item WorkItem, label string, index int, width int) []string {
+	rowWidth := maxInt(width-4, 1)
+	rowStyle := model.statusStyle(label)
+	if index == model.selected {
+		rowStyle = styleBright
+	}
+	title := strings.TrimSpace(item.Title)
+	if title == "" {
+		title = strings.TrimSpace(item.Name)
+	}
+	if strings.HasPrefix(item.Name, "task_") && title != "" {
+		title = item.Name + " " + title
+	}
+	lines := []string{
+		rowStyle.Render(workItemHeaderLine(item, label, index == model.selected, rowWidth)),
+		styleBright.Render(truncateDisplay("  "+title, rowWidth)),
+	}
+	if location := strings.TrimSpace(item.Location); location != "" {
+		lines = append(lines, styleMuted.Render(truncateDisplay("  "+location, rowWidth)))
+	}
+	return append(lines,
 		"",
+	)
+}
+
+func workItemHeaderLine(item WorkItem, label string, selected bool, width int) string {
+	prefix := "  "
+	if selected {
+		prefix = "> "
+	}
+	left := prefix + "[" + workItemStatusMarker(label) + "]"
+	if severity := strings.TrimSpace(item.Severity); severity != "" {
+		left += " " + strings.ToUpper(severity)
+	}
+	right := workItemOrdinal(item)
+	if right == "" {
+		return truncateDisplay(left, width)
+	}
+	padding := maxInt(width-displayWidth(left)-displayWidth(right), 1)
+	return truncateDisplay(left+strings.Repeat(" ", padding)+right, width)
+}
+
+func workItemOrdinal(item WorkItem) string {
+	if item.Ordinal > 0 {
+		return fmt.Sprintf("#%d", item.Ordinal)
+	}
+	return strings.TrimSpace(item.Name)
+}
+
+func workItemStatusMarker(label string) string {
+	switch label {
+	case "Executing":
+		return phaseRun
+	case "Resolved", "Completed":
+		return phaseDone
+	case "Paused":
+		return phaseLocked
+	case "Invalid":
+		return "invalid"
+	case "Duplicated":
+		return "dup"
+	case "Failed":
+		return "fail"
+	default:
+		return phaseWait
 	}
 }
 
@@ -918,13 +1018,25 @@ func (model *cockpitModel) batchSeparator(index int, width int) string {
 	if index > 0 && model.batchOf(index-1) == batch {
 		return ""
 	}
-	separator := fmt.Sprintf("─── Batch %03d/%03d", batch, total)
+	separator := fmt.Sprintf("BATCH %03d/%03d", batch, total)
 	if batch == model.currentBatch && !model.terminal && !store.IsTerminalState(model.runState) {
 		elapsed := formatElapsed(model.now().Sub(model.batchStartedAt))
 		pad := maxInt(width-4-displayWidth(separator)-displayWidth(elapsed), 1)
 		separator += strings.Repeat(" ", pad) + elapsed
 	}
 	return truncateDisplay(separator, width-4)
+}
+
+func (model *cockpitModel) workQueueTotalsLine() string {
+	done, total := model.progressCounts()
+	unresolved := total - done
+	if unresolved < 0 {
+		unresolved = 0
+	}
+	if model.specRun() {
+		return fmt.Sprintf("%d Tasks total · %d completed · %d unresolved", total, done, unresolved)
+	}
+	return fmt.Sprintf("%d issues total · %d resolved · %d unresolved", total, done, unresolved)
 }
 
 func (model *cockpitModel) statusStyle(label string) lipgloss.Style {

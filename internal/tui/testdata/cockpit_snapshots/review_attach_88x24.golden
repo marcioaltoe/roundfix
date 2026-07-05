@@ -2,23 +2,23 @@ ROUNDFIX // LIVE RUN VIEW // PR #123                 RUN 00000001 [RESOLVING WIT
 ┌──────────────────────────────────────────────────────────────────────────────────────┐
 │ FETCH [done]  >  TRIAGE [done]  >  AGENT [run]  >  VERIFY [wait]  >  PUSH [locked]   │
 └──────────────────────────────────────────────────────────────────────────────────────┘
-┌────────────────────────────┐┌─────────────────────────────────────────────────────┐
-│ WORK QUEUE (3)             ││ SESSION.TIMELINE                                    │
-│                            ││                                                     │
-│ ─── Batch 001/002    01:23 ││ PLAN inspect current cockpit render                 │
-│ > Issue #001               ││ [TOOL] read_file * completed                        │
-│   Resolved                 ││ THINK preserving the shipped layout                 │
-│                            ││ Batch 001 executing.                                │
-│   Issue #002               ││ SESSION running                                     │
-│   Executing                ││                                                     │
-│                            ││                                                     │
-│ ─── Batch 002/002          ││                                                     │
-│   Issue #003               ││                                                     │
-│   Waiting                  ││                                                     │
-│                            ││                                                     │
-│                            ││                                                     │
-│                            ││                                                     │
-│                            ││                                                     │
-│                            ││                                                     │
-└────────────────────────────┘└─────────────────────────────────────────────────────┘
+┌────────────────────────────────┐┌─────────────────────────────────────────────────┐
+│ WORK QUEUE (3)                 ││ SESSION.TIMELINE                                │
+│                                ││                                                 │
+│ BATCH 001/002            01:23 ││ PLAN inspect current cockpit render             │
+│ > [done] MAJOR              #1 ││ [TOOL] read_file * completed                    │
+│   major: guard nil cache       ││ THINK preserving the shipped layout             │
+│   internal/cache/cache.go:42   ││ Batch 001 executing.                            │
+│                                ││ SESSION running                                 │
+│   [run] MINOR               #2 ││                                                 │
+│   minor: trim stale TODO       ││                                                 │
+│   internal/cache/cache_test.g… ││                                                 │
+│                                ││                                                 │
+│ BATCH 002/002                  ││                                                 │
+│   [wait] INFO               #3 ││                                                 │
+│   info: document cache evicti… ││                                                 │
+│   internal/cache/cache.go:88   ││                                                 │
+│                                ││                                                 │
+│ 3 issues total · 1 resolved ·… ││                                                 │
+└────────────────────────────────┘└─────────────────────────────────────────────────┘
 Keys: Tab focus · ↑↓ scroll · PgUp/PgDn page · End follow · Enter issue · Esc back · q detach
