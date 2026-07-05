@@ -1090,11 +1090,13 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		printResolveRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
-	if !liveTUIEnabled(stderr) {
-		printLiveRunView(stderr, req, loaded, preflightResult, run.ID, "ResolvingWithAgent", resolvePlan.selection.Issues, []string{"Agent and verification output will stream below."})
-	}
-
 	cockpitView := buildLiveRunView(req, loaded, preflightResult, run.ID, "ResolvingWithAgent", resolvePlan.selection.Issues, nil)
+	cockpitView.WorkDir = runRef.Path
+	if !liveTUIEnabled(stderr) {
+		plainView := buildLiveRunView(req, loaded, preflightResult, run.ID, "ResolvingWithAgent", resolvePlan.selection.Issues, []string{"Agent and verification output will stream below."})
+		plainView.WorkDir = runRef.Path
+		fmt.Fprint(stderr, roundtui.RenderLiveRunView(plainView))
+	}
 	for _, batch := range resolvePlan.plan.Batches {
 		cockpitView.BatchSizes = append(cockpitView.BatchSizes, len(batch.Issues))
 	}
@@ -1467,12 +1469,16 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	fmt.Fprintf(stderr, "Review Source: %s\n", req.source)
 	fmt.Fprintf(stderr, "Agent: %s\n", runtime.DisplayName)
 	fmt.Fprintf(stderr, "Max Rounds: %d\n", req.maxRounds)
-	if !liveTUIEnabled(stderr) {
-		printLiveRunView(stderr, req, loaded, preflightResult, run.ID, "WaitingForReview", nil, []string{"Waiting for Review Source status..."})
-	}
 
 	// One cockpit for the entire Watch Run, across all Rounds and Batches.
-	ui, err := startRunUI(ctx, buildLiveRunView(req, loaded, preflightResult, run.ID, "WaitingForReview", nil, nil), run.ID, loaded.HomeDir, runStore, stderr, req.noAgentConsole)
+	cockpitView := buildLiveRunView(req, loaded, preflightResult, run.ID, "WaitingForReview", nil, nil)
+	cockpitView.WorkDir = runRef.Path
+	if !liveTUIEnabled(stderr) {
+		plainView := buildLiveRunView(req, loaded, preflightResult, run.ID, "WaitingForReview", nil, []string{"Waiting for Review Source status..."})
+		plainView.WorkDir = runRef.Path
+		fmt.Fprint(stderr, roundtui.RenderLiveRunView(plainView))
+	}
+	ui, err := startRunUI(ctx, cockpitView, run.ID, loaded.HomeDir, runStore, stderr, req.noAgentConsole)
 	if err != nil {
 		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
 		markRunFailed(ctx, runStore, run.ID)

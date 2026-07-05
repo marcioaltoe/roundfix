@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -69,11 +70,13 @@ type LiveRunView struct {
 	// render Tasks where review Runs render Review Issues. Empty means a
 	// review Run, so existing callers keep their rendering unchanged.
 	RunKind string
-	// SpecSlug and GitRoot locate a spec Run's task files
-	// (docs/specs/<slug>/ under the git root) so the cockpit can refresh
-	// Task statuses by re-reading them.
+	// SpecSlug, GitRoot, and WorkDir locate a spec Run's task files
+	// (docs/specs/<slug>/ under the execution root) so the cockpit can
+	// refresh Task statuses by re-reading them. WorkDir is the Run Worktree;
+	// GitRoot is the user checkout fallback for legacy or pruned Runs.
 	SpecSlug string
 	GitRoot  string
+	WorkDir  string
 	// Tasks lists the spec Run's Tasks in Task Graph order.
 	Tasks []spec.Task
 	// BatchSizes lists the planned Review Issue count per Batch, in Batch
@@ -122,6 +125,16 @@ func TaskWorkItems(tasks []spec.Task) []WorkItem {
 // other Run Kind keeps the Review Issue rendering byte-identical.
 func specRunView(view LiveRunView) bool {
 	return view.RunKind == store.KindImplement
+}
+
+func taskReadRoot(view LiveRunView) string {
+	workDir := strings.TrimSpace(view.WorkDir)
+	if workDir != "" {
+		if info, err := os.Stat(workDir); err == nil && info.IsDir() {
+			return workDir
+		}
+	}
+	return view.GitRoot
 }
 
 func CollectInput(ctx context.Context, req InputRequest, input io.Reader, output io.Writer) (CommandValues, error) {
@@ -266,6 +279,9 @@ func RenderLiveRunView(view LiveRunView) string {
 	builder.WriteString("\nRun:\n")
 	builder.WriteString(fmt.Sprintf("  ID: %s\n", emptyDash(view.RunID)))
 	builder.WriteString(fmt.Sprintf("  State: %s\n", emptyDash(view.PipelineState)))
+	if strings.TrimSpace(view.WorkDir) != "" {
+		builder.WriteString(fmt.Sprintf("  Run Worktree: %s\n", view.WorkDir))
+	}
 	if !specRunView(view) {
 		builder.WriteString(fmt.Sprintf("  Round: %s\n", formatRound(view.CurrentRound, view.MaxRounds)))
 		builder.WriteString(fmt.Sprintf("  Budget: %s\n", emptyDash(view.BudgetState)))

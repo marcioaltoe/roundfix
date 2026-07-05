@@ -202,7 +202,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitRunFailed
 	}
 
-	view := implementLiveRunView(req, loadedConfig, gitState, run.ID, executionGraph)
+	view := implementLiveRunView(req, loadedConfig, gitState, run.ID, runRef.Path, executionGraph)
 	if !liveTUIEnabled(stderr) {
 		fmt.Fprint(stderr, roundtui.RenderLiveRunView(view))
 	}
@@ -481,12 +481,13 @@ func maybeRunImplementAutoPush(ctx context.Context, gitState preflight.GitState,
 // the Work Items of the left pane, in Task Graph order, located through the
 // git root and Spec slug so the cockpit refreshes their statuses from the
 // task files.
-func implementLiveRunView(req commandRequest, loaded roundconfig.Loaded, gitState preflight.GitState, runID string, graph *spec.Graph) roundtui.LiveRunView {
+func implementLiveRunView(req commandRequest, loaded roundconfig.Loaded, gitState preflight.GitState, runID string, workDir string, graph *spec.Graph) roundtui.LiveRunView {
 	return roundtui.LiveRunView{
 		Command:       "implement",
 		RunKind:       store.KindImplement,
 		SpecSlug:      graph.Spec.Slug,
 		GitRoot:       gitState.Root,
+		WorkDir:       workDir,
 		Tasks:         graph.Tasks,
 		HeadBranch:    gitState.Branch,
 		Agent:         displayAgent(req.agent),

@@ -1783,6 +1783,73 @@ func TestCockpitSpecRunShowsTasksInGraphOrderAndRefreshesStatuses(t *testing.T) 
 	}
 }
 
+func TestCockpitSpecRunReadsTaskStatusAndDetailFromWorkDir(t *testing.T) {
+	gitRoot := t.TempDir()
+	workDir := t.TempDir()
+	slug := "0001-widget-flow"
+	file := writeCockpitTaskFile(t, gitRoot, slug, "task_01", "Build core", spec.StatusPending)
+	workFile := writeCockpitTaskFile(t, workDir, slug, "task_01", "Build core", spec.StatusCompleted)
+	appendToFile(t, filepath.Join(gitRoot, file), "\n## Notes\n\nuser-root stale detail\n")
+	appendToFile(t, filepath.Join(workDir, workFile), "\n## Notes\n\nworktree truth detail\n")
+	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateResolvingWithAgent}, version: 1}
+	model := newTestCockpit(t, source, LiveRunView{
+		PipelineState: store.StateResolvingWithAgent,
+		RunKind:       store.KindImplement,
+		SpecSlug:      slug,
+		GitRoot:       gitRoot,
+		WorkDir:       workDir,
+		Tasks:         []spec.Task{{ID: "task_01", File: file, Title: "Build core", Status: spec.StatusPending}},
+	})
+
+	rendered := viewText(model)
+	if !strings.Contains(rendered, "[done]") {
+		t.Fatalf("expected WorkDir task status to render completed, got:\n%s", rendered)
+	}
+	if strings.Contains(rendered, "[run]") {
+		t.Fatalf("expected stale user-root pending status ignored, got:\n%s", rendered)
+	}
+
+	pressKey(t, model, "tab")
+	pressKey(t, model, "enter")
+	pressKey(t, model, "pgdown")
+	rendered = viewText(model)
+	if !strings.Contains(rendered, "worktree truth detail") {
+		t.Fatalf("expected Task detail to read WorkDir body, got:\n%s", rendered)
+	}
+	if strings.Contains(rendered, "user-root stale detail") {
+		t.Fatalf("expected Task detail not to read stale GitRoot body, got:\n%s", rendered)
+	}
+}
+
+func TestCockpitSpecRunFallsBackToGitRootWhenWorkDirIsGone(t *testing.T) {
+	gitRoot := t.TempDir()
+	workDir := filepath.Join(t.TempDir(), "pruned-worktree")
+	slug := "0001-widget-flow"
+	file := writeCockpitTaskFile(t, gitRoot, slug, "task_01", "Build core", spec.StatusCompleted)
+	appendToFile(t, filepath.Join(gitRoot, file), "\n## Notes\n\nintegrated user-root detail\n")
+	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateClean}, version: 1}
+	model := newTestCockpit(t, source, LiveRunView{
+		PipelineState: store.StateClean,
+		RunKind:       store.KindImplement,
+		SpecSlug:      slug,
+		GitRoot:       gitRoot,
+		WorkDir:       workDir,
+		Tasks:         []spec.Task{{ID: "task_01", File: file, Title: "Build core", Status: spec.StatusPending}},
+	})
+
+	rendered := viewText(model)
+	if !strings.Contains(rendered, "[done]") {
+		t.Fatalf("expected missing WorkDir to fall back to GitRoot status, got:\n%s", rendered)
+	}
+
+	pressKey(t, model, "tab")
+	pressKey(t, model, "enter")
+	pressKey(t, model, "pgdown")
+	if rendered = viewText(model); !strings.Contains(rendered, "integrated user-root detail") {
+		t.Fatalf("expected missing WorkDir detail fallback to GitRoot, got:\n%s", rendered)
+	}
+}
+
 func TestCockpitSpecRunKeepsLastGoodStatusOnMidWriteTaskFile(t *testing.T) {
 	gitRoot := t.TempDir()
 	slug := "0001-widget-flow"

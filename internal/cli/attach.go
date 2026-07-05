@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"time"
 
@@ -199,6 +200,7 @@ func attachRunView(run store.Run, issues []rounds.Issue, console []string) round
 		HEAD:          run.HeadSHA,
 		RunID:         run.ID,
 		PipelineState: run.State,
+		WorkDir:       run.WorkDir,
 		Issues:        issues,
 		Console:       console,
 		Width:         liveViewWidth(),
@@ -214,15 +216,26 @@ func attachRunView(run store.Run, issues []rounds.Issue, console []string) round
 }
 
 // attachTasks loads the spec Run's Task Graph for the work-item pane, in
-// graph order, through the Run row's git root and Spec slug. Attach must
-// stay usable when the Spec moved or was archived, so load failures render
-// an empty pane instead of failing the command — mirroring attachIssues.
+// graph order, through the Run row's execution workspace and Spec slug.
+// Attach must stay usable when the Spec moved or was archived, so load
+// failures render an empty pane instead of failing the command — mirroring
+// attachIssues.
 func attachTasks(run store.Run) []spec.Task {
-	graph, err := spec.Load(run.GitRoot, run.SpecSlug)
+	graph, err := spec.Load(attachTaskRoot(run), run.SpecSlug)
 	if err != nil {
 		return nil
 	}
 	return graph.Tasks
+}
+
+func attachTaskRoot(run store.Run) string {
+	workDir := strings.TrimSpace(run.WorkDir)
+	if workDir != "" {
+		if info, err := os.Stat(workDir); err == nil && info.IsDir() {
+			return workDir
+		}
+	}
+	return run.GitRoot
 }
 
 func printAttachFailure(err error, stderr io.Writer) {

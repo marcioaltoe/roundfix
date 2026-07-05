@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0008-worktree-isolation
-status: pending
+status: completed
 type: frontend
 complexity: medium
 ---
@@ -31,20 +31,20 @@ locations.
 
 ## Subtasks
 
-- [ ] WorkDir on the view model with fallback semantics
-- [ ] Live and attach wiring
-- [ ] Header/path rendering
-- [ ] Cockpit and attach tests over worktree and fallback fixtures
+- [x] WorkDir on the view model with fallback semantics
+- [x] Live and attach wiring
+- [x] Header/path rendering
+- [x] Cockpit and attach tests over worktree and fallback fixtures
 
 ## Acceptance Criteria
 
-- [ ] A cockpit over a spec Run reads statuses that exist only in the
+- [x] A cockpit over a spec Run reads statuses that exist only in the
       worktree (the user-root copies stale) and renders the worktree
       truth.
-- [ ] Attach on a kept-worktree Run reads it; attach on a pruned Clean Run
+- [x] Attach on a kept-worktree Run reads it; attach on a pruned Clean Run
       falls back to the user root without error.
-- [ ] Review rendering snapshots unchanged.
-- [ ] Full suite passes.
+- [x] Review rendering snapshots unchanged.
+- [x] Full suite passes.
 
 ## Verification
 
@@ -56,3 +56,32 @@ locations.
 `_prd.md` → User Story 6; Core Feature 5. `_techspec.md` → Run flows
 (readers), Build Order 5. ADR-0009 (journal discipline unchanged),
 ADR-0023.
+
+## Result
+
+Implemented the Live Run View `WorkDir` reader path and wired it through
+implement, resolve/watch live views, and Attach. Task status refresh and Task
+detail reads now prefer an existing Run Worktree and fall back to the user
+checkout when `work_dir` is empty or pruned. Worktree-backed views render the
+stored Run Worktree path.
+
+Evidence:
+
+- Cockpit WorkDir truth: `TestCockpitSpecRunReadsTaskStatusAndDetailFromWorkDir`
+  passes; it keeps stale user-root Task files pending while rendering the
+  completed status and detail body that exist only in the worktree.
+- Cockpit fallback: `TestCockpitSpecRunFallsBackToGitRootWhenWorkDirIsGone`
+  passes; a missing WorkDir falls back to the user root without surfacing an
+  error.
+- Attach WorkDir and pruned fallback:
+  `TestAttachSpecRunReadsTasksFromKeptWorkDir` and
+  `TestAttachSpecRunFallsBackToGitRootWhenCleanWorkDirIsPruned` pass.
+- Review rendering snapshots stayed byte-stable under
+  `TestCockpitRenderSnapshots`; the new path only appears when `WorkDir` is
+  set.
+
+Verification:
+
+- `rtk go test ./internal/tui/ ./internal/cli/` passed: 342 tests in 2
+  packages.
+- `rtk go test ./...` passed: 682 tests in 17 packages.

@@ -4741,6 +4741,60 @@ func TestAttachReplaysCompletedRunReadOnly(t *testing.T) {
 	}
 }
 
+func TestAttachSpecRunReadsTasksFromKeptWorkDir(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	workDir := t.TempDir()
+	writeImplementSpec(t, repoDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "pending"}})
+	writeImplementSpec(t, workDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "completed"}})
+	run := createTerminalAttachSpecRun(t, homeDir, repoDir, workDir, store.StateUnresolved)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean attach exit, got %d stderr=%q", code, stderr.String())
+	}
+	output := stdout.String()
+	for _, expected := range []string{
+		"Run Worktree: " + workDir,
+		"task_01 completed — Read state",
+		"Run " + run.ID + " reached Unresolved; timeline replayed read-only.",
+	} {
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected attach output to contain %q, got:\n%s", expected, output)
+		}
+	}
+	if strings.Contains(output, "task_01 pending") {
+		t.Fatalf("expected attach to ignore stale GitRoot task status, got:\n%s", output)
+	}
+}
+
+func TestAttachSpecRunFallsBackToGitRootWhenCleanWorkDirIsPruned(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	workDir := filepath.Join(t.TempDir(), "pruned-worktree")
+	writeImplementSpec(t, repoDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Integrated state", status: "completed"}})
+	run := createTerminalAttachSpecRun(t, homeDir, repoDir, workDir, store.StateClean)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"attach", run.ID}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean attach exit for pruned worktree, got %d stderr=%q", code, stderr.String())
+	}
+	output := stdout.String()
+	for _, expected := range []string{
+		"Run Worktree: " + workDir,
+		"task_01 completed — Integrated state",
+		"Run " + run.ID + " reached Clean; timeline replayed read-only.",
+	} {
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected attach output to contain %q, got:\n%s", expected, output)
+		}
+	}
+}
+
 func TestAttachUnknownRunFailsBeforeTUIStart(t *testing.T) {
 	_, repoDir := withCLIWorkspace(t)
 	runResolveForAttachTest(t, repoDir)
@@ -4809,6 +4863,37 @@ func TestAttachSkipsUnknownEventKindsOnReplay(t *testing.T) {
 	if !strings.Contains(stdout.String(), "fake agent output") {
 		t.Fatalf("expected known events still replayed, got %q", stdout.String())
 	}
+}
+
+func createTerminalAttachSpecRun(t *testing.T, homeDir string, repoDir string, workDir string, state string) store.Run {
+	t.Helper()
+	ctx := context.Background()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close store: %v", err)
+		}
+	}()
+	run, err := runStore.CreateRun(ctx, store.CreateRunRequest{
+		Kind:        store.KindImplement,
+		GitRoot:     repoDir,
+		LocalBranch: "ma/widget-flow",
+		HeadSHA:     "abc123",
+		WorkDir:     workDir,
+		SpecSlug:    implementTestSlug,
+		Agent:       "codex",
+	})
+	if err != nil {
+		t.Fatalf("create implement run: %v", err)
+	}
+	completed, err := runStore.CompleteRun(ctx, run.ID, state)
+	if err != nil {
+		t.Fatalf("complete implement run: %v", err)
+	}
+	return completed
 }
 
 type fakeAttachSource struct {

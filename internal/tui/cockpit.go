@@ -238,9 +238,10 @@ func (model *cockpitModel) refreshTasks() {
 			model.taskStatuses[index] = string(task.Status)
 		}
 	}
+	root := taskReadRoot(model.cfg.View)
 	for index := range tasks {
 		current := tasks[index]
-		if err := spec.ReloadTask(model.cfg.View.GitRoot, &current); err == nil {
+		if err := spec.ReloadTask(root, &current); err == nil {
 			model.taskStatuses[index] = string(current.Status)
 		}
 	}
@@ -558,10 +559,11 @@ func (model *cockpitModel) refreshOpenDetail() {
 
 func (model *cockpitModel) loadTaskDetail(detail *issueDetailView) error {
 	task := detail.task
-	if err := spec.ReloadTask(model.cfg.View.GitRoot, &task); err != nil {
+	root := taskReadRoot(model.cfg.View)
+	if err := spec.ReloadTask(root, &task); err != nil {
 		return err
 	}
-	content, err := os.ReadFile(filepath.Join(model.cfg.View.GitRoot, task.File))
+	content, err := os.ReadFile(filepath.Join(root, task.File))
 	if err != nil {
 		return err
 	}
@@ -706,16 +708,25 @@ func renderCockpitHeaderLeft(text string) string {
 }
 
 func cockpitTargetLabel(view LiveRunView) string {
+	target := ""
 	if specRunView(view) {
 		if strings.TrimSpace(view.SpecSlug) != "" {
-			return "SPEC " + strings.TrimSpace(view.SpecSlug)
+			target = "SPEC " + strings.TrimSpace(view.SpecSlug)
+		} else {
+			target = "SPEC"
 		}
-		return "SPEC"
+	} else if strings.TrimSpace(view.PRNumber) != "" {
+		target = "PR #" + strings.TrimSpace(view.PRNumber)
+	} else {
+		target = strings.TrimSpace(view.HeadBranch)
 	}
-	if strings.TrimSpace(view.PRNumber) != "" {
-		return "PR #" + strings.TrimSpace(view.PRNumber)
+	if workDir := strings.TrimSpace(view.WorkDir); workDir != "" {
+		if target != "" {
+			target += " // "
+		}
+		target += "WORKTREE " + workDir
 	}
-	return strings.TrimSpace(view.HeadBranch)
+	return target
 }
 
 func formatRunStateLabel(state string) string {
