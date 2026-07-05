@@ -188,6 +188,14 @@ _Avoid_: Include resolved, resolve option
 The support command that creates User Config or Project Config before operational Runs.
 _Avoid_: Bootstrap run, setup run
 
+**Setup Command**:
+The support command that verifies and prepares a machine for Roundfix Runs: Node, pinned acpx, configured Agent probe, acpx local adapter overrides, User Config, and Project Config.
+_Avoid_: Manual bootstrap checklist, environment wizard
+
+**Upgrade Command**:
+The support command that checks or installs the latest released Roundfix binary for the current platform.
+_Avoid_: Package manager update, version check only
+
 **Roundfix Skill**:
 A shipped agent skill that teaches an external Agent how to start Roundfix or how to resolve one assigned Batch.
 _Avoid_: Runtime, Review Source, plugin

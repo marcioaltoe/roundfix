@@ -58,7 +58,7 @@ Commands:
   watch      Fetch and resolve in a watched loop
   implement  Execute a Spec's Task Graph as one Run
   settle     Verify and commit all current worktree changes for one failed Task
-  stop       Stop an Active Run and release its lock
+  stop       Request or force-stop an Active Run
   setup      Verify and prepare this machine for Roundfix Runs
   upgrade    Upgrade the Roundfix binary from GitHub Releases
   attach     Replay a Run's event timeline from the Run Database

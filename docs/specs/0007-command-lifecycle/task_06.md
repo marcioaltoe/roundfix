@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0007-command-lifecycle
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -35,19 +35,19 @@ drift check inside the full gate.
 
 ## Subtasks
 
-- [ ] Skill updates + `make skills-sync`
-- [ ] README bootstrap/update guidance
-- [ ] Binary output cross-check
-- [ ] Glossary pass with sparing additions
+- [x] Skill updates + `make skills-sync`
+- [x] README bootstrap/update guidance
+- [x] Binary output cross-check
+- [x] Glossary pass with sparing additions
 
 ## Acceptance Criteria
 
-- [ ] Skill text matches shipped behavior exactly; drift check passes
+- [x] Skill text matches shipped behavior exactly; drift check passes
       inside the full gate.
-- [ ] Documented outcome lines appear verbatim in CLI test fixtures.
-- [ ] README names setup and upgrade as the paths; the manual pin command
+- [x] Documented outcome lines appear verbatim in CLI test fixtures.
+- [x] README names setup and upgrade as the paths; the manual pin command
       remains only as the fallback setup itself prints.
-- [ ] Glossary covers every new command term used.
+- [x] Glossary covers every new command term used.
 
 ## Verification
 
@@ -60,3 +60,31 @@ drift check inside the full gate.
 `_prd.md` → Core Features 1–5; User Experience. `_techspec.md` → Build
 Order 6. ADR-0021, ADR-0022. Repo hard rule (canonical skill ships with CLI
 behavior changes).
+
+## Result
+
+- Skill text and embedded copy: updated `.agents/skills/roundfix/SKILL.md`,
+  regenerated `skills/roundfix/SKILL.md` with `rtk make skills-sync`, and
+  verified no canonical/embedded drift. The skills check passed with
+  `Roundfix skill check passed: roundfix`; the full verify gate passed and
+  includes the skill drift check.
+- Documented outcome lines: setup, upgrade, freshness, graceful stop,
+  force-stop, and Clean auto-push lines were cross-checked against CLI
+  fixtures in `internal/cli/*_test.go`; force-stop fixtures now assert the
+  documented `Roundfix Run force-stopped` report title verbatim.
+- Binary output cross-check: the built `bin/roundfix` help output was checked
+  for top-level command summaries plus `setup`, `upgrade`, `stop`, and
+  `implement` flag/help text.
+- README: install/usage guidance now names `roundfix setup` as the bootstrap
+  path and `roundfix upgrade` as the update path. A README search for
+  `npm install -g acpx@0.12.0` returned no matches, so the manual pin command
+  is not documented there outside the setup fallback behavior.
+- Glossary: `CONTEXT.md` now defines `Setup Command` and `Upgrade Command`
+  in the same command-entry style as the existing lifecycle command terms.
+
+Verification:
+
+- `rtk go test ./internal/cli/` — passed: 231 tests.
+- `rtk go run ./cmd/roundfix skills check` — passed.
+- `rtk make verify` — passed: `rtk go test ./...` reported 656 tests across
+  16 packages, the skill check passed, and the binary built successfully.

@@ -19,9 +19,12 @@ Review Issues or one Task.
 ## acpx dependency
 
 Roundfix drives ACP Runtimes through acpx `0.12.0`. Node.js 22.13 or
-newer with npm/npx is a prerequisite; install the pinned acpx with
-`npm install -g acpx@0.12.0`. Each Run drives its selected ACP Runtime
-through one acpx-backed Agent Session across the Run's Work Items.
+newer with npm/npx is a prerequisite. Prefer the Setup Command after
+installing Roundfix; it verifies Node, installs the pinned acpx on
+confirmation or `--yes`, probes the configured Agent, offers local adapter
+overrides, and offers User Config and Project Config creation. Each Run drives
+its selected ACP Runtime through one acpx-backed Agent Session across the Run's
+Work Items.
 
 Known constraint: acpx `0.12.0` has a hard 10 MiB queue-owner per-message
 buffer in `src/cli/queue/ipc.ts`, bundled in the installed package at
@@ -37,6 +40,75 @@ ADR-0020 classification: when acpx has delivered a valid
 journals the anomaly with the stderr tail and proceeds to the Daemon's
 verification. Without that parsed result, the nonzero exit remains a Batch
 failure. Verification remains the only gate for settling and committing.
+
+## Setup and upgrade
+
+Use `roundfix setup [--yes] [--no-input]` to take a machine from fresh to
+Run-ready. It checks Node.js, pinned acpx, the configured Agent probe, acpx
+local adapter overrides, User Config, and Project Config. Each check prints one
+deterministic report line with status `ok`, `installed`, `skipped`,
+`offered: declined`, or `failed`. Tested report lines include:
+
+```text
+node: ok
+acpx: installed
+agent probe: ok
+acpx agents override: installed
+User Config: installed
+Project Config: installed
+```
+
+`--yes` accepts every offered install or file change. `--no-input` skips
+offers instead of prompting; for a fresh environment that produces report lines
+such as `acpx: skipped`, `agent probe: skipped`, and `Project Config: skipped`.
+When acpx is missing or mismatched, setup offers `npm install -g acpx@0.12.0`.
+
+Use `roundfix upgrade [--check]` to resolve the latest Roundfix release through
+the GitHub CLI. Without `--check`, it downloads the platform asset, verifies
+size and checksum when present, and atomically replaces the current executable.
+`--check` reports without installing. stdout outcomes are deterministic:
+
+```text
+upgraded 1.0.0 → 1.1.0
+already current 1.0.0
+no releases published
+upgrade available 1.0.0 → 1.1.0
+```
+
+Failures exit `1`, leave the current binary untouched, and print a manual
+fallback on stderr. Operational commands (`fetch`, `resolve`, `watch`, and
+`implement`) run a best-effort daily freshness check. When the installed
+version is behind, stderr contains exactly one line shaped like:
+
+```text
+roundfix 1.0.0 is behind latest 1.1.0; run roundfix upgrade
+```
+
+Freshness failures and offline checks stay silent and do not change the Run
+outcome.
+
+## Stopping Runs
+
+Use `roundfix stop` for a graceful stop. Every selector keeps its existing
+shape: `<run-id>`, `--run-id`, `--pr`, `--spec`, or `--head-repo` plus
+`--head-branch`. For an Active Run, the default records a Stop Request in the
+Run Database and returns this report line:
+
+```text
+Stop Request recorded; the Run stops after the current Work Item settles.
+```
+
+The owning Run finishes the in-flight Work Item's verification, settlement,
+and commit boundary first, then ends Stopped through the normal outcome path.
+
+Use `roundfix stop --force` only for a dead, stuck, or runaway Run. It cancels
+the Agent Session best-effort, completes the Run as Stopped immediately, and
+releases Active Run locks. Cancel failures are warnings on stderr and never
+block force completion. The force-stop report title includes:
+
+```text
+Roundfix Run force-stopped
+```
 
 ## User-Facing Review Runs
 
@@ -65,6 +137,8 @@ roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean
 roundfix implement --spec <slug> --agent <agent>
 roundfix settle --spec <slug> --task <task_id>
 roundfix stop --spec <slug>
+roundfix stop --force --spec <slug>
+roundfix setup --yes
 roundfix setup --no-input
 roundfix upgrade --check
 roundfix skills check
@@ -139,8 +213,9 @@ Journal and then follows new Run Events without mutating or stopping the Run.
 
 The Implement Command executes a Spec's Task Graph on the current branch as
 one Run: Tasks run in dependency order, each Task's Verification commands
-gate one commit, and the Run never pushes. Handing the branch to a pull
-request is the developer's explicit decision (ADR-0013).
+gate one commit. By default the Run never pushes; a repository can opt in with
+`implement.auto_push: true`, which pushes only after a Clean outcome and never
+opens pull requests (ADR-0021).
 
 1. Start the Implement Command with:
 
@@ -173,9 +248,13 @@ request is the developer's explicit decision (ADR-0013).
      `Unresolved: X completed, Y failed, Z skipped, W pending.`, or — when
      every Task is already completed and `--qa` is absent —
      `All N Task(s) already completed; no Run was created.`
+   - When `implement.auto_push: true` and the Run ends Clean with an upstream
+     branch, one final line follows the outcome: `pushed <remote>/<branch>`.
+     A tested example is `pushed origin/ma/widget-flow`.
 
-4. Exit codes: `0` Clean or the all-completed no-op, `1` Unresolved or
-   Failed, `2` Preflight Validation failure, `130` Stop Request.
+4. Exit codes: `0` Clean, Stopped, or the all-completed no-op, `1` Unresolved
+   or Failed, `2` Preflight Validation failure, `130` for in-terminal Ctrl-C
+   interrupt mapping.
 
 5. Preflight Validation exits `2` with one actionable message when the Spec
    or its Task Graph is invalid (each failure names the offending Task or
@@ -195,7 +274,19 @@ request is the developer's explicit decision (ADR-0013).
 7. Attach to a spec Run with `roundfix attach <run-id>`; the Live Run View
    shows the Spec's Tasks as Work Items in the shared cockpit.
 
-8. Stop an Active Run for a Spec with `roundfix stop --spec <slug>` from inside
+8. `implement.auto_push` is a bool in config, default `false`. User Config can
+   provide a default, and Project Config can override it:
+
+   ```yaml
+   implement:
+     auto_push: true
+   ```
+
+   The push uses the branch's detected upstream. Missing upstream prints one
+   stderr note and leaves a Clean Run Clean. Unresolved, Failed, Stopped, and
+   failing-QA Runs do not invoke the pusher. Push failure ends the Run Failed.
+
+9. Stop an Active Run for a Spec with `roundfix stop --spec <slug>` from inside
    the current repository. This resolves that repository's Spec target and
    records a Stop Request; the Run stops after the current Work Item settles.
    Use `roundfix stop --force --spec <slug>` only for a dead, stuck, or runaway

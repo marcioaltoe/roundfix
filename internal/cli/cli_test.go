@@ -2621,7 +2621,7 @@ func TestRunStopForceCancelsImplementRunAndReleasesLocks(t *testing.T) {
 	if calls[0].runtime.ID != "codex" || calls[0].session.Name != "roundfix-"+active.ID || calls[0].session.WorkDir != repoDir {
 		t.Fatalf("unexpected cancel call: %#v", calls[0])
 	}
-	if !strings.Contains(stdout.String(), "force-stopped") || !strings.Contains(stdout.String(), active.ID) {
+	if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") || !strings.Contains(stdout.String(), active.ID) {
 		t.Fatalf("expected force stop report with Run ID, got %q", stdout.String())
 	}
 	assertRunState(t, homeDir, active.ID, store.StateStopped)
@@ -2700,7 +2700,7 @@ func TestRunStopForceReportsCancelFailuresButCompletes(t *testing.T) {
 			if !tt.wantCanceller && cancelCalls != 0 {
 				t.Fatalf("expected no cancel attempt, got %d", cancelCalls)
 			}
-			if !strings.Contains(stdout.String(), "force-stopped") {
+			if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
 				t.Fatalf("expected force stop report, got %q", stdout.String())
 			}
 			assertRunState(t, homeDir, active.ID, store.StateStopped)
@@ -2754,7 +2754,7 @@ func TestRunStopGracefulThenForceCompletesImmediately(t *testing.T) {
 	if cancelCalls != 1 {
 		t.Fatalf("expected one cancel after graceful request, got %d", cancelCalls)
 	}
-	if !strings.Contains(forceStdout.String(), "force-stopped") {
+	if !strings.Contains(forceStdout.String(), "Roundfix Run force-stopped") {
 		t.Fatalf("expected force stop report, got %q", forceStdout.String())
 	}
 	assertRunState(t, homeDir, active.ID, store.StateStopped)

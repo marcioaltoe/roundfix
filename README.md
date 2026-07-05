@@ -1,10 +1,11 @@
 # Roundfix
 
-Roundfix is a local-first Go CLI for resolving pull request review feedback with
-local coding agents. It fetches unresolved CodeRabbit findings, stores them as
-local markdown Review Issue artifacts, assigns bounded Batches to a local Agent
-runtime, verifies Agent changes, creates Batch commits, and runs the Final Push
-only after no Unresolved Review Issues remain.
+Roundfix is a local-first Go CLI for resolving pull request review feedback and
+executing Spec Task Graphs with local coding agents. It fetches unresolved
+CodeRabbit findings, stores them as local markdown Review Issue artifacts,
+assigns bounded Batches or Tasks to a local Agent runtime, verifies Agent
+changes, creates Daemon-owned commits, and pushes only at configured clean
+boundaries.
 
 Roundfix is not a general workflow engine, CI healer, or task orchestration
 system. The MVP focuses on one review-resolution loop for an Open Pull Request.
@@ -15,9 +16,9 @@ system. The MVP focuses on one review-resolution loop for an Open Pull Request.
 - `make`.
 - GitHub CLI `gh` authenticated for the target repository.
 - Node.js 22.13 or newer with npm/npx.
-- acpx `0.12.0` on `PATH`. Preflight Validation checks the exact version and
-  reports the same install command on missing or mismatched acpx:
-  `npm install -g acpx@0.12.0`.
+- acpx `0.12.0` on `PATH`. Run `roundfix setup` after installing Roundfix to
+  verify the exact version; when acpx is missing or mismatched, setup offers the
+  pinned install command and runs it only after confirmation or `--yes`.
 - A supported ACP Runtime selected through acpx: `codex`, `claude`, or
   `opencode`.
 - `rtk` is optional. The `Makefile` uses it when available and falls back to the
@@ -61,6 +62,26 @@ make install
 Make sure your Go bin directory, usually `~/go/bin`, is on `PATH` before
 running `roundfix` directly.
 
+Bootstrap a machine for Roundfix Runs:
+
+```bash
+roundfix setup
+```
+
+Use `roundfix setup --yes` to accept every offered install or file change, or
+`roundfix setup --no-input` to report missing pieces without prompting.
+
+Update an installed Roundfix binary:
+
+```bash
+roundfix upgrade
+```
+
+Use `roundfix upgrade --check` to report the latest release outcome without
+installing it. Operational commands also emit one best-effort stderr note per
+day when the installed version is behind, using the shape
+`roundfix 1.0.0 is behind latest 1.1.0; run roundfix upgrade`.
+
 ## GitHub Access
 
 Roundfix uses the GitHub CLI (`gh`) from the local machine. It does not ask for
@@ -98,6 +119,19 @@ Create a User Config instead:
 go run ./cmd/roundfix init --scope user
 ```
 
+Verify and prepare this machine for Roundfix Runs:
+
+```bash
+go run ./cmd/roundfix setup
+```
+
+Upgrade Roundfix or check the release channel:
+
+```bash
+go run ./cmd/roundfix upgrade
+go run ./cmd/roundfix upgrade --check
+```
+
 Fetch unresolved CodeRabbit Review Issues into local Round artifacts:
 
 ```bash
@@ -116,10 +150,23 @@ Run the watched review-resolution loop:
 go run ./cmd/roundfix watch --source coderabbit --pr <number> --agent codex --until-clean
 ```
 
+Execute a Spec's Task Graph:
+
+```bash
+go run ./cmd/roundfix implement --spec <slug> --agent codex
+```
+
 Settle one failed Spec Task whose completed work is already in the tree:
 
 ```bash
 go run ./cmd/roundfix settle --spec <slug> --task <task_id>
+```
+
+Stop a live Run gracefully, or force-stop a dead or runaway Run:
+
+```bash
+go run ./cmd/roundfix stop <run-id>
+go run ./cmd/roundfix stop --force <run-id>
 ```
 
 Validate or install the shipped Roundfix agent skill:
@@ -144,6 +191,16 @@ it, or set `NO_COLOR` to suppress color.
 
 ## Command Boundaries
 
+- `setup` verifies Node.js, the pinned acpx version, the configured Agent
+  probe, acpx local adapter overrides, User Config, and Project Config. Each
+  check prints one deterministic report line such as `node: ok`,
+  `acpx: installed`, or `User Config: skipped`. `--yes` accepts offers;
+  `--no-input` skips offers instead of prompting.
+- `upgrade` resolves the latest Roundfix release through the GitHub CLI.
+  Successful stdout outcomes are `upgraded 1.0.0 → 1.1.0`,
+  `already current 1.0.0`, `no releases published`, and, with `--check`,
+  `upgrade available 1.0.0 → 1.1.0`. Failures leave the current binary
+  untouched and print a manual fallback on stderr.
 - `fetch` validates local state, creates a Fetch Run, fetches unresolved
   CodeRabbit review threads, writes markdown Round artifacts, and stops at the
   `Fetched` terminal outcome. It never starts an Agent, commits, pushes, or
@@ -158,11 +215,21 @@ it, or set `NO_COLOR` to suppress color.
   configured quiet period, fetches unresolved issues, resolves Batches, and
   repeats until `Clean`, `MaxRoundsReached`, `BudgetExceeded`, `TimedOut`,
   `Failed`, or `Stopped`.
+- `implement` executes a Spec's Task Graph on the current branch as one Run.
+  Tasks run in dependency order, each Task's Verification commands gate one
+  commit, and `implement.auto_push: true` makes a Clean spec Run push its
+  branch upstream and append `pushed <remote>/<branch>` to stdout. Unresolved,
+  Failed, Stopped, and failing-QA Runs never push.
 - `settle` targets one failed Task, re-runs its Verification commands, changes
   nothing when verification fails, and on pass settles it `completed`, stages
   all current worktree changes plus the task file, creates the standard Task
   commit, creates no Run, writes no Run Event Journal entries, and never
   pushes.
+- `stop` is graceful by default. It records a Stop Request in the Run Database
+  and reports `Stop Request recorded; the Run stops after the current Work Item
+  settles.` Use `--force` only for a dead, stuck, or runaway Run; it cancels
+  the Agent Session best-effort, completes the Run Stopped immediately, and
+  releases its Active Run locks.
 - Agents own only assigned issue files, triage, code edits, tests,
   verification commands, and assigned Review Issue status updates. They must
   not commit, push, resolve Review Source threads, edit unassigned issue files,
@@ -201,6 +268,9 @@ watch:
   review_timeout: 30m
   quiet_period: 30s
   auto_push: true
+
+implement:
+  auto_push: false
 
 budget:
   enabled: true
