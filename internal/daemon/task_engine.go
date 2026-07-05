@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"roundfix/internal/agent"
 	"roundfix/internal/rounds"
@@ -350,12 +352,13 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 }
 
 // TaskCommitMessage derives the Task commit message from the task
-// frontmatter (ADR 0013): `<type>: <task title>` where docs, test, and
-// chore pass through and every other type maps to feat, plus the
+// frontmatter (ADR 0013): `<type>: <task title>` with the title's first
+// rune lowercased, where docs, test, and chore pass through and every
+// other type maps to feat, plus the
 // Roundfix-Spec and Roundfix-Task trailers separated from the subject by a
 // blank line per git trailer convention.
 func TaskCommitMessage(slug string, task spec.Task) string {
-	return fmt.Sprintf("%s: %s\n\nRoundfix-Spec: %s\nRoundfix-Task: %s", taskCommitType(task.Type), task.Title, slug, task.ID)
+	return fmt.Sprintf("%s: %s\n\nRoundfix-Spec: %s\nRoundfix-Task: %s", taskCommitType(task.Type), lowerFirstRune(task.Title), slug, task.ID)
 }
 
 func taskCommitType(taskType string) string {
@@ -365,6 +368,18 @@ func taskCommitType(taskType string) string {
 	default:
 		return "feat"
 	}
+}
+
+func lowerFirstRune(value string) string {
+	first, size := utf8.DecodeRuneInString(value)
+	if first == utf8.RuneError && size == 0 {
+		return value
+	}
+	lowered := unicode.ToLower(first)
+	if lowered == first {
+		return value
+	}
+	return string(lowered) + value[size:]
 }
 
 // runQAGate runs the qa-gate step as the Run's last Batch: before-snapshot,
@@ -494,11 +509,10 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 }
 
 // QACommitMessage is the QA Report commit contract (ADR 0013, ADR 0015):
-// `docs(qa): qa report for <slug> (<verdict>)` plus the Roundfix-Spec
-// trailer separated from the subject by a blank line per git trailer
-// convention.
+// `docs: qa report for <slug> (<verdict>)` plus the Roundfix-Spec trailer
+// separated from the subject by a blank line per git trailer convention.
 func QACommitMessage(slug string, verdict string) string {
-	return fmt.Sprintf("docs(qa): qa report for %s (%s)\n\nRoundfix-Spec: %s", slug, verdict, slug)
+	return fmt.Sprintf("docs: qa report for %s (%s)\n\nRoundfix-Spec: %s", slug, verdict, slug)
 }
 
 // ensureCommitPath guarantees the settled task file or QA Report rides in

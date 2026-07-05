@@ -20,6 +20,75 @@ import (
 
 const taskCycleSlug = "0001-sample-feature"
 
+func TestTaskCommitMessageDerivesSubjectAndTrailers(t *testing.T) {
+	tests := []struct {
+		name     string
+		taskType string
+		title    string
+		want     string
+	}{
+		{
+			name:     "default type lowercases ascii letter",
+			taskType: "backend",
+			title:    "Build the acpx invocation core",
+			want:     "feat: build the acpx invocation core\n\nRoundfix-Spec: 0003-dogfood-polish\nRoundfix-Task: task_01",
+		},
+		{
+			name:     "docs type passes through",
+			taskType: "docs",
+			title:    "Write the usage docs",
+			want:     "docs: write the usage docs\n\nRoundfix-Spec: 0003-dogfood-polish\nRoundfix-Task: task_01",
+		},
+		{
+			name:     "test type passes through",
+			taskType: "test",
+			title:    "Add commit-message tests",
+			want:     "test: add commit-message tests\n\nRoundfix-Spec: 0003-dogfood-polish\nRoundfix-Task: task_01",
+		},
+		{
+			name:     "chore type passes through",
+			taskType: "chore",
+			title:    "Refresh fixtures",
+			want:     "chore: refresh fixtures\n\nRoundfix-Spec: 0003-dogfood-polish\nRoundfix-Task: task_01",
+		},
+		{
+			name:     "digit first title passes through",
+			taskType: "backend",
+			title:    "2FA setup",
+			want:     "feat: 2FA setup\n\nRoundfix-Spec: 0003-dogfood-polish\nRoundfix-Task: task_01",
+		},
+		{
+			name:     "unicode first title lowercases",
+			taskType: "backend",
+			title:    "Über tracing",
+			want:     "feat: über tracing\n\nRoundfix-Spec: 0003-dogfood-polish\nRoundfix-Task: task_01",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			task := spec.Task{ID: "task_01", Type: tt.taskType, Title: tt.title}
+
+			got := TaskCommitMessage("0003-dogfood-polish", task)
+
+			if got != tt.want {
+				t.Fatalf("TaskCommitMessage() = %q, want %q", got, tt.want)
+			}
+			if task.Title != tt.title {
+				t.Fatalf("TaskCommitMessage mutated task title to %q, want %q", task.Title, tt.title)
+			}
+		})
+	}
+}
+
+func TestQACommitMessageDerivesUnscopedSubjectAndTrailer(t *testing.T) {
+	got := QACommitMessage("0003-dogfood-polish", "pass")
+	want := "docs: qa report for 0003-dogfood-polish (pass)\n\nRoundfix-Spec: 0003-dogfood-polish"
+
+	if got != want {
+		t.Fatalf("QACommitMessage() = %q, want %q", got, want)
+	}
+}
+
 // taskSpecSeed describes one task file for a test Spec directory. Zero
 // values default to status pending, type backend, and one passing
 // verification command.
@@ -370,11 +439,11 @@ func TestTaskCycleExecutesAgentVerifySettleCommitContract(t *testing.T) {
 	if result.Completed != 2 || result.Failed != 0 || result.Skipped != 0 || result.QAVerdict != "" {
 		t.Fatalf("unexpected cycle result: %+v", result)
 	}
-	expectedFirst := "docs: Write the usage docs\n\nRoundfix-Spec: " + taskCycleSlug + "\nRoundfix-Task: task_01"
+	expectedFirst := "docs: write the usage docs\n\nRoundfix-Spec: " + taskCycleSlug + "\nRoundfix-Task: task_01"
 	if committer.messages[0] != expectedFirst {
 		t.Fatalf("expected docs commit message with trailers, got %q", committer.messages[0])
 	}
-	expectedSecond := "feat: Add the backend behavior\n\nRoundfix-Spec: " + taskCycleSlug + "\nRoundfix-Task: task_02"
+	expectedSecond := "feat: add the backend behavior\n\nRoundfix-Spec: " + taskCycleSlug + "\nRoundfix-Task: task_02"
 	if committer.messages[1] != expectedSecond {
 		t.Fatalf("expected default feat commit message with trailers, got %q", committer.messages[1])
 	}
@@ -485,7 +554,7 @@ func TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents(t *testing.T
 	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_03"); got != string(spec.StatusCompleted) {
 		t.Fatalf("expected independent Task completed, got %q", got)
 	}
-	if len(committer.messages) != 1 || !strings.HasPrefix(committer.messages[0], "chore: Tidy the build files") {
+	if len(committer.messages) != 1 || !strings.HasPrefix(committer.messages[0], "chore: tidy the build files") {
 		t.Fatalf("expected only the independent Task committed with chore mapping, got %v", committer.messages)
 	}
 	if runner.requests[1].Batch.Number != 2 {
@@ -777,11 +846,11 @@ func TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt(t *testing.T) {
 		t.Fatalf("expected both Tasks completed, got %+v", result)
 	}
 	firstMessage := strings.TrimSpace(runGitForTest(t, repoDir, "show", "-s", "--format=%B", "HEAD~1"))
-	if firstMessage != "docs: Write the usage docs\n\nRoundfix-Spec: "+taskCycleSlug+"\nRoundfix-Task: task_01" {
+	if firstMessage != "docs: write the usage docs\n\nRoundfix-Spec: "+taskCycleSlug+"\nRoundfix-Task: task_01" {
 		t.Fatalf("expected docs commit message with trailers, got %q", firstMessage)
 	}
 	secondMessage := strings.TrimSpace(runGitForTest(t, repoDir, "show", "-s", "--format=%B", "HEAD"))
-	if secondMessage != "feat: Add the backend behavior\n\nRoundfix-Spec: "+taskCycleSlug+"\nRoundfix-Task: task_02" {
+	if secondMessage != "feat: add the backend behavior\n\nRoundfix-Spec: "+taskCycleSlug+"\nRoundfix-Task: task_02" {
 		t.Fatalf("expected feat commit message with trailers, got %q", secondMessage)
 	}
 	firstFiles := commitFilesForTest(t, repoDir, "HEAD~1")
@@ -869,7 +938,7 @@ func TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport(t *testing.T) {
 				if len(committer.messages) != 2 {
 					t.Fatalf("expected the QA Report committed in its own commit, got %v", committer.messages)
 				}
-				wantMessage := "docs(qa): qa report for " + taskCycleSlug + " (" + tt.wantVerdict + ")\n\nRoundfix-Spec: " + taskCycleSlug
+				wantMessage := "docs: qa report for " + taskCycleSlug + " (" + tt.wantVerdict + ")\n\nRoundfix-Spec: " + taskCycleSlug
 				if committer.messages[1] != wantMessage {
 					t.Fatalf("expected QA commit message %q, got %q", wantMessage, committer.messages[1])
 				}
@@ -963,7 +1032,7 @@ func TestTaskCycleQAOnlyRunWhenEveryTaskAlreadyCompleted(t *testing.T) {
 			t.Fatalf("expected ResolvingWithAgent during the QA Agent run, got %q", state)
 		}
 	}
-	if len(committer.messages) != 1 || !strings.HasPrefix(committer.messages[0], "docs(qa): qa report for "+taskCycleSlug+" (pass)") {
+	if len(committer.messages) != 1 || !strings.HasPrefix(committer.messages[0], "docs: qa report for "+taskCycleSlug+" (pass)") {
 		t.Fatalf("expected the QA Report commit, got %v", committer.messages)
 	}
 }

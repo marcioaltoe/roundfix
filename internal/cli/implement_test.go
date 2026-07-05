@@ -560,10 +560,10 @@ func TestRunImplementExecutesSpecEndToEnd(t *testing.T) {
 	if committer.calls != 2 {
 		t.Fatalf("expected one commit per Task, got %d", committer.calls)
 	}
-	if !strings.HasPrefix(committer.messages[0], "docs: Write the widget guide") || !strings.Contains(committer.messages[0], "Roundfix-Task: task_01") {
+	if !strings.HasPrefix(committer.messages[0], "docs: write the widget guide") || !strings.Contains(committer.messages[0], "Roundfix-Task: task_01") {
 		t.Fatalf("expected frontmatter-derived task_01 commit message, got %q", committer.messages[0])
 	}
-	if !strings.HasPrefix(committer.messages[1], "feat: Build the widget backend") || !strings.Contains(committer.messages[1], "Roundfix-Spec: "+implementTestSlug) {
+	if !strings.HasPrefix(committer.messages[1], "feat: build the widget backend") || !strings.Contains(committer.messages[1], "Roundfix-Spec: "+implementTestSlug) {
 		t.Fatalf("expected frontmatter-derived task_02 commit message, got %q", committer.messages[1])
 	}
 	if verifier.calls != 2 {
@@ -1085,7 +1085,7 @@ func TestRunImplementQAVerdictMatrix(t *testing.T) {
 				t.Fatalf("expected %d commit(s), got %d (%v)", wantCommits, committer.calls, committer.messages)
 			}
 			if tt.wantCommit {
-				wantMessage := "docs(qa): qa report for " + implementTestSlug + " (" + tt.wantVerdict + ")\n\nRoundfix-Spec: " + implementTestSlug
+				wantMessage := "docs: qa report for " + implementTestSlug + " (" + tt.wantVerdict + ")\n\nRoundfix-Spec: " + implementTestSlug
 				if committer.messages[len(committer.messages)-1] != wantMessage {
 					t.Fatalf("expected the QA Report in its own commit %q, got %v", wantMessage, committer.messages)
 				}
