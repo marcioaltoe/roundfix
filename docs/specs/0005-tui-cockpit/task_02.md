@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0005-tui-cockpit
-status: pending
+status: completed
 type: frontend
 complexity: medium
 ---
@@ -33,20 +33,20 @@ through render tests for both Run kinds against the mockup structure.
 
 ## Subtasks
 
-- [ ] Base two-pane layout renderer
-- [ ] Phase derivation for both Run kinds
-- [ ] Phase row renderer with the four markers
-- [ ] Render tests for review and spec fixtures
+- [x] Base two-pane layout renderer
+- [x] Phase derivation for both Run kinds
+- [x] Phase row renderer with the four markers
+- [x] Render tests for review and spec fixtures
 
 ## Acceptance Criteria
 
-- [ ] Review fixture renders queue+timeline+phase row matching the mockup's
+- [x] Review fixture renders queue+timeline+phase row matching the mockup's
       structure (asserted structurally: pane titles, phase sequence, marker
       states — not pixel art).
-- [ ] Spec fixture renders the spec phase sequence with QA locked/omitted
+- [x] Spec fixture renders the spec phase sequence with QA locked/omitted
       cases covered.
-- [ ] The timeline pane is the wider surface at every tested size.
-- [ ] Full suite passes; task_01 snapshots updated deliberately (this task
+- [x] The timeline pane is the wider surface at every tested size.
+- [x] Full suite passes; task_01 snapshots updated deliberately (this task
       is the visual change).
 
 ## Verification
@@ -59,3 +59,23 @@ through render tests for both Run kinds against the mockup structure.
 `_prd.md` → User Stories 1, 2; Core Features 1, 2. `_techspec.md` → Phase
 derivation, Interfaces, Build Order 2. `design/ui-redesign-plan.md` →
 Required Changes 1; `design/roundfix-01.png`.
+
+## Result
+
+- Review fixture evidence: `TestCockpitReviewPhaseRowAndTwoPaneStructure`
+  asserts `WORK QUEUE`, `SESSION.TIMELINE`, the
+  `FETCH > TRIAGE > AGENT > VERIFY > PUSH` phase sequence, and `[locked]`
+  push while Review Issues remain unresolved.
+- Spec fixture evidence: `TestCockpitSpecPhaseRowCoversQAOmittedAndLocked`
+  asserts the shared Work Queue path, `AGENT > VERIFY > COMMIT`, QA omitted
+  without a `daemon.qa` journal event, and `QA [locked]` while Tasks remain
+  incomplete.
+- Layout evidence: `TestCockpitTimelinePaneIsDominantAtTestedSizes` covers
+  `88x24` and `120x40` and asserts the timeline pane width is greater than
+  the Work Queue width.
+- Snapshot evidence: cockpit goldens under
+  `internal/tui/testdata/cockpit_snapshots/` were deliberately regenerated
+  with `ROUNDFIX_UPDATE_COCKPIT_SNAPSHOTS=1` for
+  `TestCockpitRenderSnapshots`.
+- Verification passed: `rtk go test ./internal/tui/` (59 tests),
+  `rtk go test ./...` (539 tests), and `rtk make verify`.

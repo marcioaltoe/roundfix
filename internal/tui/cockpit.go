@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"roundfix/internal/rounds"
+	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
 
@@ -349,6 +350,32 @@ func (model *cockpitModel) progressCounts() (int, int) {
 	return done, len(model.issueStatuses)
 }
 
+func (model *cockpitModel) allReviewIssuesSettled() bool {
+	if len(model.issueStatuses) == 0 {
+		return true
+	}
+	for _, status := range model.issueStatuses {
+		switch status {
+		case rounds.StatusResolved, rounds.StatusInvalid, rounds.StatusDuplicated:
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func (model *cockpitModel) allTasksCompleted() bool {
+	if len(model.taskStatuses) == 0 {
+		return false
+	}
+	for _, status := range model.taskStatuses {
+		if spec.Status(status) != spec.StatusCompleted {
+			return false
+		}
+	}
+	return true
+}
+
 func (model *cockpitModel) handleKey(key tea.Key) (tea.Model, tea.Cmd) {
 	keystroke := key.String()
 	switch keystroke {
@@ -538,10 +565,189 @@ func renderCockpitLayout(model *cockpitModel, layout cockpitLayout) string {
 
 func renderCockpitHeaderArea(model *cockpitModel, width int) string {
 	return strings.Join([]string{
-		renderAgentHeader(model.cfg.View, width),
-		model.renderStatusBar(width),
-		"",
+		renderCockpitHeaderLine(model, width),
+		renderPhaseRow(width, runPhases(model)),
 	}, "\n")
+}
+
+func renderCockpitHeaderLine(model *cockpitModel, width int) string {
+	target := cockpitTargetLabel(model.cfg.View)
+	leftText := "ROUNDFIX // LIVE RUN VIEW"
+	if target != "" {
+		leftText += " // " + target
+	}
+	runID := model.cfg.View.RunID
+	if runID == "" {
+		runID = model.cfg.RunID
+	}
+	rightText := shortRunID(runID) + " [" + formatRunStateLabel(model.runState) + "]"
+	if suffix := model.statusSuffix(); suffix != "" {
+		rightText += " " + suffix
+	}
+	rightWidth := displayWidth(rightText)
+	if rightWidth >= width {
+		rightText = truncateDisplay(rightText, width-1)
+		rightWidth = displayWidth(rightText)
+	}
+	leftText = truncateDisplay(leftText, maxInt(width-rightWidth, 1))
+	left := renderCockpitHeaderLeft(leftText)
+	right := styleBright.Render(rightText)
+	return padRightDisplay(left, maxInt(width-displayWidth(right), 1)) + right
+}
+
+func renderCockpitHeaderLeft(text string) string {
+	if strings.HasPrefix(text, "ROUNDFIX") {
+		return styleAccent.Bold(true).Render("ROUNDFIX") + styleMuted.Render(strings.TrimPrefix(text, "ROUNDFIX"))
+	}
+	return styleMuted.Render(text)
+}
+
+func cockpitTargetLabel(view LiveRunView) string {
+	if specRunView(view) {
+		if strings.TrimSpace(view.SpecSlug) != "" {
+			return "SPEC " + strings.TrimSpace(view.SpecSlug)
+		}
+		return "SPEC"
+	}
+	if strings.TrimSpace(view.PRNumber) != "" {
+		return "PR #" + strings.TrimSpace(view.PRNumber)
+	}
+	return strings.TrimSpace(view.HeadBranch)
+}
+
+func formatRunStateLabel(state string) string {
+	if state == "" {
+		return "UNKNOWN"
+	}
+	var builder strings.Builder
+	previousLowerOrDigit := false
+	for index, r := range state {
+		upper := r >= 'A' && r <= 'Z'
+		if index > 0 && upper && previousLowerOrDigit {
+			builder.WriteByte(' ')
+		}
+		builder.WriteRune(r)
+		previousLowerOrDigit = (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9')
+	}
+	return strings.ToUpper(builder.String())
+}
+
+type cockpitPhase struct {
+	name   string
+	marker string
+}
+
+const (
+	phaseDone   = "done"
+	phaseRun    = "run"
+	phaseWait   = "wait"
+	phaseLocked = "locked"
+)
+
+func runPhases(model *cockpitModel) []cockpitPhase {
+	if model.specRun() {
+		return specRunPhases(model)
+	}
+	return reviewRunPhases(model)
+}
+
+func reviewRunPhases(model *cockpitModel) []cockpitPhase {
+	pushMarker := phaseLocked
+	if model.allReviewIssuesSettled() {
+		pushMarker = phaseWait
+	}
+	phases := []cockpitPhase{
+		{name: "FETCH", marker: phaseDone},
+		{name: "TRIAGE", marker: phaseDone},
+		{name: "AGENT", marker: phaseWait},
+		{name: "VERIFY", marker: phaseWait},
+		{name: "PUSH", marker: pushMarker},
+	}
+	switch model.runState {
+	case store.StatePushing:
+		phases[2].marker = phaseDone
+		phases[3].marker = phaseDone
+		phases[4].marker = phaseRun
+	case store.StateVerifying:
+		phases[2].marker = phaseDone
+		phases[3].marker = phaseRun
+	case store.StateClean:
+		for index := range phases {
+			phases[index].marker = phaseDone
+		}
+	case store.StateUnresolved:
+		phases[2].marker = phaseDone
+		phases[3].marker = phaseDone
+		phases[4].marker = phaseLocked
+	default:
+		if store.IsTerminalState(model.runState) {
+			phases[2].marker = phaseDone
+			phases[3].marker = phaseDone
+			return phases
+		}
+		phases[2].marker = phaseRun
+	}
+	return phases
+}
+
+func specRunPhases(model *cockpitModel) []cockpitPhase {
+	phases := []cockpitPhase{
+		{name: "AGENT", marker: phaseWait},
+		{name: "VERIFY", marker: phaseWait},
+		{name: "COMMIT", marker: phaseWait},
+	}
+	allCompleted := model.allTasksCompleted()
+	switch {
+	case allCompleted:
+		for index := range phases {
+			phases[index].marker = phaseDone
+		}
+	case model.runState == store.StateVerifying:
+		phases[0].marker = phaseDone
+		phases[1].marker = phaseRun
+	case store.IsTerminalState(model.runState):
+		phases[0].marker = phaseDone
+		phases[1].marker = phaseDone
+	default:
+		phases[0].marker = phaseRun
+	}
+	if !model.viewport.HasKind(runevent.KindDaemonQA) {
+		return phases
+	}
+	qaMarker := phaseLocked
+	if allCompleted {
+		qaMarker = phaseRun
+		if store.IsTerminalState(model.runState) {
+			qaMarker = phaseDone
+		}
+	}
+	return append(phases, cockpitPhase{name: "QA", marker: qaMarker})
+}
+
+func renderPhaseRow(width int, phases []cockpitPhase) string {
+	rendered := make([]string, 0, len(phases))
+	for _, phase := range phases {
+		rendered = append(rendered, renderPhase(phase))
+	}
+	line := strings.Join(rendered, styleMuted.Render("  >  "))
+	return panel(width, 3, line, false)
+}
+
+func renderPhase(phase cockpitPhase) string {
+	return styleBright.Render(phase.name) + " " + phaseMarkerStyle(phase.marker).Render("["+phase.marker+"]")
+}
+
+func phaseMarkerStyle(marker string) lipgloss.Style {
+	switch marker {
+	case phaseDone:
+		return styleTool
+	case phaseRun:
+		return styleAccent
+	case phaseLocked:
+		return styleError
+	default:
+		return styleMuted
+	}
 }
 
 func renderCockpitBody(model *cockpitModel, layout cockpitLayout) string {
@@ -610,26 +816,19 @@ func (model *cockpitModel) renderDetail(width int, height int) string {
 	return strings.Join(limitLines(append(header, body...), height-2), "\n")
 }
 
-// renderWorkItemPane renders the sidebar's Work Items keyed on the Run
-// Kind: Tasks for spec Runs, Review Issues for everything else.
+// renderWorkItemPane renders the shared Work Queue surface. Run Kind only
+// decides which Work Items feed it; the layout path stays identical.
 func (model *cockpitModel) renderWorkItemPane(width int, height int) string {
-	if model.specRun() {
-		return model.renderTaskPane(width, height)
-	}
-	return model.renderIssuePane(width, height)
-}
-
-// renderTaskPane renders the spec Run's Tasks in Task Graph order with the
-// statuses of the latest task-file refresh, reusing the issue pane's
-// windowing so selection scrolls identically.
-func (model *cockpitModel) renderTaskPane(width int, height int) string {
-	items := model.taskWorkItems()
-	lines := []string{styleAccent.Bold(true).Render("SPEC.TASKS"), styleMuted.Render(fmt.Sprintf("%d Task(s)", len(items))), ""}
+	items := model.workItems()
+	lines := []string{styleAccent.Bold(true).Render(fmt.Sprintf("WORK QUEUE (%d)", len(items))), ""}
 	if len(items) == 0 {
-		lines = append(lines, styleMuted.Render("No Tasks"))
+		lines = append(lines, styleMuted.Render("No Work Items"))
 		return strings.Join(limitLines(lines, height-2), "\n")
 	}
-	visible := maxInt((height-5)/3, 1)
+	if model.selected >= len(items) {
+		model.selected = len(items) - 1
+	}
+	visible := maxInt((height-4)/3, 1)
 	if model.selected < model.issueTop {
 		model.issueTop = model.selected
 	}
@@ -638,9 +837,28 @@ func (model *cockpitModel) renderTaskPane(width int, height int) string {
 	}
 	end := minInt(model.issueTop+visible, len(items))
 	for index := model.issueTop; index < end; index++ {
-		lines = append(lines, model.workItemBlock(items[index], model.taskStatusLabel(index), index, width)...)
+		if !model.specRun() {
+			if separator := model.batchSeparator(index, width); separator != "" {
+				lines = append(lines, styleAccent.Render(separator))
+			}
+		}
+		lines = append(lines, model.workItemBlock(items[index], model.workItemStatusLabel(index), index, width)...)
 	}
 	return strings.Join(limitLines(lines, height-2), "\n")
+}
+
+func (model *cockpitModel) workItems() []WorkItem {
+	if model.specRun() {
+		return model.taskWorkItems()
+	}
+	return model.issueWorkItems()
+}
+
+func (model *cockpitModel) workItemStatusLabel(index int) string {
+	if model.specRun() {
+		return model.taskStatusLabel(index)
+	}
+	return model.issueStatusLabel(index)
 }
 
 // taskWorkItems maps the spec Run's Tasks into Work Items carrying the
@@ -655,29 +873,6 @@ func (model *cockpitModel) taskWorkItems() []WorkItem {
 	return items
 }
 
-func (model *cockpitModel) renderIssuePane(width int, height int) string {
-	items := model.issueWorkItems()
-	lines := []string{styleAccent.Bold(true).Render("REVIEW.ISSUES"), styleMuted.Render(fmt.Sprintf("%d issue(s)", len(items))), ""}
-	if len(items) == 0 {
-		lines = append(lines, styleMuted.Render("No Review Issues"))
-		return strings.Join(limitLines(lines, height-2), "\n")
-	}
-	// Each issue renders as a two-line block plus a blank spacer, with a
-	// Batch separator ahead of each Batch's first issue.
-	visible := maxInt((height-5)/3, 1)
-	if model.selected < model.issueTop {
-		model.issueTop = model.selected
-	}
-	if model.selected >= model.issueTop+visible {
-		model.issueTop = model.selected - visible + 1
-	}
-	end := minInt(model.issueTop+visible, len(items))
-	for index := model.issueTop; index < end; index++ {
-		lines = append(lines, model.issueBlock(items[index], index, width)...)
-	}
-	return strings.Join(limitLines(lines, height-2), "\n")
-}
-
 // issueWorkItems maps the Run's Review Issues into Work Items: positional
 // display names plus the statuses of the latest artifact refresh.
 func (model *cockpitModel) issueWorkItems() []WorkItem {
@@ -690,14 +885,6 @@ func (model *cockpitModel) issueWorkItems() []WorkItem {
 		items[index] = WorkItem{Name: fmt.Sprintf("Issue #%03d", index+1), Title: issue.Title, Status: status}
 	}
 	return items
-}
-
-func (model *cockpitModel) issueBlock(item WorkItem, index int, width int) []string {
-	lines := []string{}
-	if separator := model.batchSeparator(index, width); separator != "" {
-		lines = append(lines, styleAccent.Render(separator))
-	}
-	return append(lines, model.workItemBlock(item, model.issueStatusLabel(index), index, width)...)
 }
 
 // workItemBlock renders one Work Item as the two-line sidebar block both

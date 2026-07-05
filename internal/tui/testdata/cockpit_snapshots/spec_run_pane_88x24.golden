@@ -1,18 +1,19 @@
-ROUNDFIX // LIVE RUN VIEW                                                   RUN 00000001
-RUN.PROGRESS  1 of 3 Task(s) completed · 33%                                          
-
+ROUNDFIX // LIVE RUN VIEW // SPEC 0005-tui-cockpit   RUN 00000001 [RESOLVING WITH AGENT]
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│ AGENT [run]  >  VERIFY [wait]  >  COMMIT [wait]                                      │
+└──────────────────────────────────────────────────────────────────────────────────────┘
 ┌────────────────────────────┐┌─────────────────────────────────────────────────────┐
-│ SPEC.TASKS                 ││ SESSION.TIMELINE                                    │
-│ 3 Task(s)                  ││                                                     │
-│                            ││ Task task_01 settled completed.                     │
-│ > task_01                  ││ PLAN continue Task Graph execution                  │
-│   Completed                ││ [TOOL] go test ./internal/tui/ * completed          │
+│ WORK QUEUE (3)             ││ SESSION.TIMELINE                                    │
 │                            ││                                                     │
+│ > task_01                  ││ Task task_01 settled completed.                     │
+│   Completed                ││ PLAN continue Task Graph execution                  │
+│                            ││ [TOOL] go test ./internal/tui/ * completed          │
 │   task_02                  ││                                                     │
 │   Executing                ││                                                     │
 │                            ││                                                     │
 │   task_03                  ││                                                     │
 │   Waiting                  ││                                                     │
+│                            ││                                                     │
 │                            ││                                                     │
 │                            ││                                                     │
 │                            ││                                                     │

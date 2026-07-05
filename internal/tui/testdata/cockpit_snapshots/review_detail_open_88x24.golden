@@ -1,20 +1,21 @@
-ROUNDFIX // LIVE RUN VIEW                                                   RUN 00000001
-RUN.PROGRESS  1 of 3 issue(s) resolved · 33%                                          
-
+ROUNDFIX // LIVE RUN VIEW // PR #123                 RUN 00000001 [RESOLVING WITH AGENT]
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│ FETCH [done]  >  TRIAGE [done]  >  AGENT [run]  >  VERIFY [wait]  >  PUSH [locked]   │
+└──────────────────────────────────────────────────────────────────────────────────────┘
 ┌────────────────────────────┐┌─────────────────────────────────────────────────────┐
-│ REVIEW.ISSUES              ││ REVIEW.ISSUE                                        │
-│ 3 issue(s)                 ││ major: guard nil cache                              │
-│                            ││ major · resolved · internal/cache/cache.go:42       │
-│ ─── Batch 001/002    01:23 ││ source: thread:PRRT_1,comment:PRRC_1                │
-│ > Issue #001               ││                                                     │
-│   Resolved                 ││ # Issue 001: major: guard nil cache                 │
+│ WORK QUEUE (3)             ││ REVIEW.ISSUE                                        │
+│                            ││ major: guard nil cache                              │
+│ ─── Batch 001/002    01:23 ││ major · resolved · internal/cache/cache.go:42       │
+│ > Issue #001               ││ source: thread:PRRT_1,comment:PRRC_1                │
+│   Resolved                 ││                                                     │
+│                            ││ # Issue 001: major: guard nil cache                 │
+│   Issue #002               ││                                                     │
+│   Executing                ││ ## Review Comment                                   │
 │                            ││                                                     │
-│   Issue #002               ││ ## Review Comment                                   │
-│   Executing                ││                                                     │
-│                            ││ Guard the map lookup before dereferencing.          │
-│ ─── Batch 002/002          ││                                                     │
-│   Issue #003               ││ ## Triage                                           │
-│   Waiting                  ││                                                     │
+│ ─── Batch 002/002          ││ Guard the map lookup before dereferencing.          │
+│   Issue #003               ││                                                     │
+│   Waiting                  ││ ## Triage                                           │
+│                            ││                                                     │
 │                            ││ - Decision: `UNREVIEWED`                            │
 │                            ││ - Notes:                                            │
 │                            ││                                                     │

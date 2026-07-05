@@ -355,6 +355,161 @@ func cockpitSnapshotDiff(want string, got string) string {
 	return "snapshot lengths differ"
 }
 
+// Suite: cockpit base layout and phases
+// Invariant: review and spec Runs render one Work Queue, one dominant timeline, and the correct phase sequence.
+// Boundary IN: synchronous cockpit model rendering and journal-backed phase derivation.
+// Boundary OUT: rich Work Queue rows, timeline grouping, and modal detail covered by later cockpit tasks.
+func TestCockpitReviewPhaseRowAndTwoPaneStructure(t *testing.T) {
+	model := newReviewSnapshotCockpit(t, CockpitOwning, store.StateResolvingWithAgent, false)
+	model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+
+	rendered := viewText(model)
+	for _, expected := range []string{
+		"WORK QUEUE (3)",
+		"SESSION.TIMELINE",
+		"FETCH [done]",
+		"TRIAGE [done]",
+		"AGENT [run]",
+		"VERIFY [wait]",
+		"PUSH [locked]",
+	} {
+		if !strings.Contains(rendered, expected) {
+			t.Fatalf("expected cockpit render to contain %q, got:\n%s", expected, rendered)
+		}
+	}
+	assertContainsInOrder(t, rendered,
+		"FETCH [done]",
+		"TRIAGE [done]",
+		"AGENT [run]",
+		"VERIFY [wait]",
+		"PUSH [locked]",
+	)
+	for _, unexpected := range []string{"RUN.PROGRESS", "REVIEW.ISSUES"} {
+		if strings.Contains(rendered, unexpected) {
+			t.Fatalf("expected %q to be retired from the base cockpit, got:\n%s", unexpected, rendered)
+		}
+	}
+}
+
+func TestCockpitSpecPhaseRowCoversQAOmittedAndLocked(t *testing.T) {
+	tests := []struct {
+		name       string
+		qaEvent    bool
+		want       []string
+		notWant    []string
+		taskStatus []spec.Status
+	}{
+		{
+			name:       "qa omitted without qa journal event",
+			taskStatus: []spec.Status{spec.StatusCompleted, spec.StatusInProgress, spec.StatusPending},
+			want:       []string{"AGENT [run]", "VERIFY [wait]", "COMMIT [wait]"},
+			notWant:    []string{"QA ["},
+		},
+		{
+			name:       "qa locked until every task completes",
+			qaEvent:    true,
+			taskStatus: []spec.Status{spec.StatusCompleted, spec.StatusInProgress, spec.StatusPending},
+			want:       []string{"AGENT [run]", "VERIFY [wait]", "COMMIT [wait]", "QA [locked]"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			model := newSpecPhaseCockpit(t, tt.qaEvent, store.StateResolvingWithAgent, tt.taskStatus...)
+			model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+
+			rendered := viewText(model)
+			for _, expected := range append([]string{"WORK QUEUE (3)", "SESSION.TIMELINE"}, tt.want...) {
+				if !strings.Contains(rendered, expected) {
+					t.Fatalf("expected spec cockpit to contain %q, got:\n%s", expected, rendered)
+				}
+			}
+			assertContainsInOrder(t, rendered, tt.want...)
+			for _, unexpected := range tt.notWant {
+				if strings.Contains(rendered, unexpected) {
+					t.Fatalf("expected spec cockpit not to contain %q, got:\n%s", unexpected, rendered)
+				}
+			}
+			if strings.Contains(rendered, "SPEC.TASKS") {
+				t.Fatalf("expected spec Run to use the shared Work Queue pane, got:\n%s", rendered)
+			}
+		})
+	}
+}
+
+func TestCockpitTimelinePaneIsDominantAtTestedSizes(t *testing.T) {
+	for _, size := range []struct {
+		name   string
+		width  int
+		height int
+	}{
+		{name: "88x24", width: 88, height: 24},
+		{name: "120x40", width: 120, height: 40},
+	} {
+		t.Run(size.name, func(t *testing.T) {
+			model := newReviewSnapshotCockpit(t, CockpitOwning, store.StateResolvingWithAgent, false)
+			model.Update(tea.WindowSizeMsg{Width: size.width, Height: size.height})
+
+			layout := cockpitLayoutFor(model)
+			if layout.rightWidth <= layout.sidebarWidth {
+				t.Fatalf("expected timeline width to dominate at %s, got queue=%d timeline=%d", size.name, layout.sidebarWidth, layout.rightWidth)
+			}
+		})
+	}
+}
+
+func newSpecPhaseCockpit(t *testing.T, qaEvent bool, runState string, statuses ...spec.Status) *cockpitModel {
+	t.Helper()
+	gitRoot := t.TempDir()
+	slug := "0005-tui-cockpit"
+	tasks := make([]spec.Task, 0, len(statuses))
+	for index, status := range statuses {
+		id := fmt.Sprintf("task_%02d", index+1)
+		title := fmt.Sprintf("Task %02d", index+1)
+		file := writeCockpitTaskFile(t, gitRoot, slug, id, title, status)
+		tasks = append(tasks, spec.Task{ID: id, File: file, Title: title, Status: spec.StatusPending})
+	}
+	source := &cockpitFakeSource{run: store.Run{ID: "run-spec-phase", State: runState}, version: 1}
+	source.addLine("PLAN render spec cockpit phases\n")
+	if qaEvent {
+		source.addDaemonEvent(runevent.KindDaemonQA, "QA requested for Spec 0005-tui-cockpit.")
+	}
+	model, err := newCockpitModel(context.Background(), CockpitConfig{
+		Mode: CockpitOwning,
+		View: LiveRunView{
+			Command:       "implement",
+			RunKind:       store.KindImplement,
+			SpecSlug:      slug,
+			GitRoot:       gitRoot,
+			Tasks:         tasks,
+			HeadBranch:    "feature/cockpit",
+			Agent:         "codex",
+			Model:         "gpt-5",
+			RunID:         "run-spec-phase",
+			PipelineState: runState,
+		},
+		RunID:  "run-spec-phase",
+		Source: source,
+		OnStop: func() {},
+	})
+	if err != nil {
+		t.Fatalf("new cockpit model: %v", err)
+	}
+	return model
+}
+
+func assertContainsInOrder(t *testing.T, haystack string, needles ...string) {
+	t.Helper()
+	offset := 0
+	for _, needle := range needles {
+		index := strings.Index(haystack[offset:], needle)
+		if index < 0 {
+			t.Fatalf("expected %q after byte offset %d in:\n%s", needle, offset, haystack)
+		}
+		offset += index + len(needle)
+	}
+}
+
 func TestCockpitTabSwitchesFocusAndArrowsMoveSelection(t *testing.T) {
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateActive}, version: 1}
 	source.addLine("line one\n")
@@ -691,6 +846,12 @@ func TestCockpitSidebarShowsBatchesStatusAndElapsed(t *testing.T) {
 
 	rendered := viewText(model)
 	for _, expected := range []string{
+		"WORK QUEUE (3)",
+		"FETCH [done]",
+		"TRIAGE [done]",
+		"AGENT [run]",
+		"VERIFY [wait]",
+		"PUSH [locked]",
 		"─── Batch 001/002",
 		"─── Batch 002/002",
 		"Issue #001",
@@ -700,7 +861,6 @@ func TestCockpitSidebarShowsBatchesStatusAndElapsed(t *testing.T) {
 		"01:23",
 		"Issue #003",
 		"Waiting",
-		"1 of 3 issue(s) resolved · 33%",
 	} {
 		if !strings.Contains(rendered, expected) {
 			t.Fatalf("expected sidebar to contain %q, got:\n%s", expected, rendered)
@@ -753,13 +913,14 @@ func TestCockpitSpecRunShowsTasksInGraphOrderAndRefreshesStatuses(t *testing.T) 
 
 	rendered := viewText(model)
 	for _, expected := range []string{
-		"SPEC.TASKS",
-		"2 Task(s)",
+		"WORK QUEUE (2)",
+		"AGENT [run]",
+		"VERIFY [wait]",
+		"COMMIT [wait]",
 		"task_01",
 		"Executing",
 		"task_02",
 		"Waiting",
-		"0 of 2 Task(s) completed · 0%",
 	} {
 		if !strings.Contains(rendered, expected) {
 			t.Fatalf("expected the Task pane to contain %q, got:\n%s", expected, rendered)
@@ -781,7 +942,7 @@ func TestCockpitSpecRunShowsTasksInGraphOrderAndRefreshesStatuses(t *testing.T) 
 	rendered = viewText(model)
 	for _, expected := range []string{
 		"Completed",
-		"1 of 2 Task(s) completed · 50%",
+		"WORK QUEUE (2)",
 		"Task task_01 settled completed.",
 	} {
 		if !strings.Contains(rendered, expected) {
@@ -821,8 +982,8 @@ func TestCockpitSpecRunKeepsLastGoodStatusOnMidWriteTaskFile(t *testing.T) {
 	if !strings.Contains(rendered, "Completed") {
 		t.Fatalf("expected the last good status kept through the mid-write read, got:\n%s", rendered)
 	}
-	if !strings.Contains(rendered, "1 of 1 Task(s) completed · 100%") {
-		t.Fatalf("expected the progress bar to keep the last good counts, got:\n%s", rendered)
+	if !strings.Contains(rendered, "COMMIT [done]") {
+		t.Fatalf("expected the phase row to keep the last good completed state, got:\n%s", rendered)
 	}
 }
 

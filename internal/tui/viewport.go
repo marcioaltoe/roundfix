@@ -5,6 +5,7 @@ import (
 	"math"
 	"strings"
 
+	"roundfix/internal/runevent"
 	"roundfix/internal/store"
 )
 
@@ -41,6 +42,7 @@ type TimelineSource interface {
 // like the streaming renderer.
 type timelineEntry struct {
 	cursor int64
+	kind   runevent.Kind
 	text   string
 }
 
@@ -274,6 +276,15 @@ func (viewport *TimelineViewport) State() (FollowState, int) {
 	return viewport.state, viewport.newBelow
 }
 
+func (viewport *TimelineViewport) HasKind(kind runevent.Kind) bool {
+	for _, entry := range viewport.entries {
+		if entry.kind == kind {
+			return true
+		}
+	}
+	return false
+}
+
 func (viewport *TimelineViewport) enterTailState() {
 	if viewport.terminal {
 		viewport.state = FollowTerminal
@@ -390,6 +401,7 @@ func entriesFromJournal(page []store.JournalEvent) []timelineEntry {
 	for _, journal := range page {
 		entries = append(entries, timelineEntry{
 			cursor: journal.Cursor,
+			kind:   journal.Event.Kind,
 			text:   timelineText(journal.Event),
 		})
 	}
