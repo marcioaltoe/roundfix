@@ -45,8 +45,21 @@ type RuntimeOptions struct {
 	EnableFullAccess bool
 }
 
+type SessionRef struct {
+	Name string
+}
+
+func SessionRefForRun(runID string) SessionRef {
+	runID = strings.TrimSpace(runID)
+	if runID == "" {
+		return SessionRef{}
+	}
+	return SessionRef{Name: "roundfix-" + runID}
+}
+
 type ExecuteRequest struct {
 	Runtime       RuntimeSpec
+	Session       SessionRef
 	RunID         string
 	Batch         rounds.Batch
 	LogPath       string
@@ -68,6 +81,7 @@ type ExecuteResult struct {
 type Runner interface {
 	Probe(ctx context.Context, runtime RuntimeSpec) error
 	Run(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error)
+	EndSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error
 }
 
 const (
@@ -334,6 +348,21 @@ func (runner DefaultRunner) Run(ctx context.Context, req ExecuteRequest, sink ru
 		return ACPRunner{Now: runner.Now}.Run(ctx, req, sink)
 	}
 	return ExecRunner{Now: runner.Now}.Run(ctx, req, sink)
+}
+
+func (runner DefaultRunner) EndSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error {
+	if runtime.Protocol == ProtocolACP {
+		return ACPRunner{}.EndSession(ctx, runtime, session)
+	}
+	return ExecRunner{}.EndSession(ctx, runtime, session)
+}
+
+func (runner ACPRunner) EndSession(context.Context, RuntimeSpec, SessionRef) error {
+	return nil
+}
+
+func (runner ExecRunner) EndSession(context.Context, RuntimeSpec, SessionRef) error {
+	return nil
 }
 
 func (runner ExecRunner) Run(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error) {

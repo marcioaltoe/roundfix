@@ -8,7 +8,8 @@ Planning artifacts for this repo live as local markdown under `docs/specs/` — 
 - Artifacts: `_idea.md` (optional), `_prd.md`, `_techspec.md` (optional), `_tasks.md` (the dependency graph — dependencies live **only** here), and one `task_NN.md` per task
 - Task status lives **only** in each `task_NN.md` frontmatter: `pending | in_progress | completed | failed`
 - QA evidence lives in `docs/specs/<feature-slug>/qa/`
-- Shipped specs move to `docs/specs/_archived/<feature-slug>/` (via `archive-spec`)
+- Completed specs (all tasks done, QA passed) move to `docs/specs/_archived/<feature-slug>/` (via `archive-spec`)
+- Which pipeline stages a given change runs through (idea/PRD/techspec/tasks) is routed per `docs/agents/spec-routing.md`
 
 ## When a skill says "publish to the issue tracker"
 

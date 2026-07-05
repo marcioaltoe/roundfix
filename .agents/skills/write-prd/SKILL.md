@@ -6,7 +6,7 @@ argument-hint: "<feature description, or nothing after a grilling/brainstorm ses
 metadata:
   category: planning
   tags: [prd, product, requirements, workflow, documentation]
-  version: 0.1.0
+  version: 0.2.0
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---
@@ -23,7 +23,7 @@ If `docs/specs/<slug>/_idea.md` exists (produced by `write-idea`), it **is** the
 
 ## Size triage first
 
-Not every change earns a PRD. If the work is a single vertical slice with no open product decisions (a bug fix, a small extension of existing behavior), say so and recommend skipping to a single task file or direct implementation. A PRD pays for itself when there are product decisions to record and multiple tasks to derive.
+Not every change earns a PRD — it pays for itself when there are product decisions to record and multiple tasks to derive. If the work changes no product behavior (a refactor, a bug fix), say so and route to `write-techspec`, which enters the pipeline directly and mints the spec folder with a minimal `_prd.md`. If the change is trivial (one-line fix, typo, config tweak), recommend direct implementation with no spec folder.
 
 ## Ground rules
 
@@ -67,7 +67,7 @@ A product decision that is hard to reverse, surprising without context, and the 
 Create `docs/specs/NNNN-<kebab-slug>/` and write `_prd.md` from the template in [references/prd-template.md](references/prd-template.md). If an `_idea.md` fed this PRD, flip its frontmatter `status` to `promoted`. Set the PRD frontmatter carefully — downstream skills parse it:
 
 - `spec` — the folder slug.
-- `status: active` — flipped to `archived` by `archive-spec` after release.
+- `status: active` — flipped to `archived` by `archive-spec` once the spec completes (every task done, QA passed).
 - `surfaces` — every surface the feature touches (`frontend`, `backend`, `cli`, `data`, `infra`, `docs`). `qa-gate` routes browser-based QA from this list, so an omitted `frontend` means the feature ships without browser validation.
 
 ### 5. Report

@@ -267,6 +267,10 @@ func (runner *taskFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest,
 	return agent.ExecuteResult{LogPath: req.LogPath}, nil
 }
 
+func (runner *taskFakeRunner) EndSession(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+	return nil
+}
+
 func taskIDFromPrompt(prompt string) string {
 	for _, line := range strings.Split(prompt, "\n") {
 		if strings.HasPrefix(line, "Task: ") {

@@ -2336,6 +2336,10 @@ func (runner *fakeAgentRunner) Run(ctx context.Context, req agent.ExecuteRequest
 	return agent.ExecuteResult{LogPath: req.LogPath, Output: output}, nil
 }
 
+func (runner *fakeAgentRunner) EndSession(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+	return nil
+}
+
 type fakeStoppingAgentRunner struct{}
 
 func (runner *fakeStoppingAgentRunner) Probe(context.Context, agent.RuntimeSpec) error {
@@ -2372,6 +2376,10 @@ func (runner *fakeStoppingAgentRunner) Run(ctx context.Context, req agent.Execut
 		Output:  output,
 		Err:     context.Canceled,
 	}
+}
+
+func (runner *fakeStoppingAgentRunner) EndSession(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+	return nil
 }
 
 func journaledRunEvents(t *testing.T, homeDir string, stderr string) (string, []store.JournalEvent) {

@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0002-acpx-migration
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -23,19 +23,19 @@ Give the acpx runner explicit session lifecycle per ADR-0018: ensure-once sessio
 
 ## Subtasks
 
-- [ ] `SessionRef`, `ExecuteRequest.Session`, and the `EndSession` interface extension
-- [ ] Ensure-once sequencing before the first prompt
-- [ ] Full-access mode and codex sandbox mapping with fail-fast semantics
-- [ ] Cooperative cancel with kill fallback
-- [ ] Best-effort `EndSession`
+- [x] `SessionRef`, `ExecuteRequest.Session`, and the `EndSession` interface extension
+- [x] Ensure-once sequencing before the first prompt
+- [x] Full-access mode and codex sandbox mapping with fail-fast semantics
+- [x] Cooperative cancel with kill fallback
+- [x] Best-effort `EndSession`
 
 ## Acceptance Criteria
 
-- [ ] Two prompts against one session produce exactly one `sessions ensure` invocation; a second session name re-ensures (asserted via captured invocations).
-- [ ] Full-access tests assert the exact `set-mode` invocation per runtime, the codex sandbox application, the no-op for OpenCode, and that a failing `set-mode` fails session setup when full access was requested.
-- [ ] Canceling the context mid-prompt issues the cancel invocation and classifies the outcome as a Stop Request; the fallback kill path is covered.
-- [ ] `EndSession` issues the close invocation and swallows a non-zero exit with a logged warning.
-- [ ] The full existing suite passes with only mechanical fake extensions (no behavioral edits to existing tests).
+- [x] Two prompts against one session produce exactly one `sessions ensure` invocation; a second session name re-ensures (asserted via captured invocations).
+- [x] Full-access tests assert the exact `set-mode` invocation per runtime, the codex sandbox application, the no-op for OpenCode, and that a failing `set-mode` fails session setup when full access was requested.
+- [x] Canceling the context mid-prompt issues the cancel invocation and classifies the outcome as a Stop Request; the fallback kill path is covered.
+- [x] `EndSession` issues the close invocation and swallows a non-zero exit with a logged warning.
+- [x] The full existing suite passes with only mechanical fake extensions (no behavioral edits to existing tests).
 
 ## Verification
 
@@ -45,3 +45,23 @@ Give the acpx runner explicit session lifecycle per ADR-0018: ensure-once sessio
 ## References
 
 `_prd.md` → User Stories 1, 3, 4; Core Features 2, 4, 7, 8. `_techspec.md` → Interfaces, acpx invocation mapping, Build Order 2, Risks (codex sandbox key). ADR-0011, ADR-0018.
+
+## Result
+
+Implemented the acpx Agent Session lifecycle in `internal/agent`: `SessionRef`, `ExecuteRequest.Session`, and `Runner.EndSession`; ensure-once session setup; full-access `set-mode`; Codex sandbox config attempt; cooperative cancel with kill fallback; and best-effort session close.
+
+Acceptance evidence:
+
+- Ensure-once: `TestACPXRunEnsuresSessionOncePerRunnerAndSessionName` captures one `acpx codex sessions ensure --name roundfix-run-1 --cwd <workdir>` for two prompts, then a second ensure for `roundfix-run-2`.
+- Full access: `TestACPXRunAppliesFullAccessSessionSetup` captures `acpx codex set-mode full-access -s roundfix-run-1`, `acpx claude set-mode bypassPermissions -s roundfix-run-1`, no OpenCode mode call, and the Codex sandbox invocation `acpx codex set sandbox_mode danger-full-access -s roundfix-run-1`.
+- Codex sandbox key check: inspected `acpx@0.12.0` and its pinned `@agentclientprotocol/codex-acp@0.0.44` adapter. The adapter's full-access mode carries `sandboxMode: "danger-full-access"` / `sandboxPolicy: {type:"dangerFullAccess"}` and does not advertise a separate sandbox `configOptions` key. Roundfix therefore attempts the existing Codex config key `sandbox_mode` through `acpx set`, journals `codex_sandbox_full_access_unavailable` when acpx reports the option unsupported, and still keeps `set-mode full-access` failure fatal.
+- Failure semantics: `TestACPXRunFailsSetupWhenFullAccessModeFails` proves rejected `set-mode` fails setup; `TestACPXRunWarnsWhenCodexSandboxPresetUnavailable` proves unsupported Codex sandbox config continues with a journaled warning.
+- Cancellation: `TestACPXRunCancelsPromptCooperatively` captures `acpx codex cancel -s roundfix-run-1` and returns `StopError`; `TestACPXRunKillsPromptAfterCancelGracePeriod` covers the kill fallback.
+- End session: `TestACPXEndSessionClosesBestEffort` captures `acpx codex sessions close -s roundfix-run-1`, returns nil on non-zero exit, and records the warning.
+- Interface blast radius: existing runner fakes in CLI and daemon tests were extended mechanically with `EndSession` no-ops.
+
+Verification:
+
+- `rtk go test ./internal/agent/` — passed: 63 tests in 1 package.
+- `rtk go test ./...` — passed: 432 tests in 16 packages.
+- `rtk env GOCACHE=/private/tmp/roundfix-gocache make verify` — passed: full Go suite, `roundfix skills check`, and build.

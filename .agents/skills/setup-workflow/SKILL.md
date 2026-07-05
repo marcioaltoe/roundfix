@@ -1,11 +1,11 @@
 ---
 name: setup-workflow
-description: Configure a repo for the CONTEXT-driven spec workflow — scaffold docs/specs/, docs/adr/, and the CONTEXT.md glossary, wire the knowledge workspace when the repo uses one, and configure triage labels when the repo receives external issues. Run once when preparing a repo for the write-prd/write-tasks/implement pipeline.
+description: Configure a repo for the CONTEXT-driven spec workflow — scaffold docs/specs/, docs/adr/, and the CONTEXT.md glossary, seed the docs/agents/ usage guides (issue tracker, spec routing, domain docs, triage labels), and wire the knowledge workspace when the repo uses one. Run when preparing a repo for the write-prd/write-tasks/implement pipeline; re-run to refresh — it overwrites the skill-owned docs/agents/ files and prunes deprecated content.
 disable-model-invocation: true
 metadata:
   category: setup
   tags: [workflow, prd, issues, planning, triage, repository-context, agents]
-  version: 0.4.0
+  version: 0.5.0
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---
@@ -15,8 +15,11 @@ metadata:
 Scaffold the per-repo configuration the CONTEXT-driven spec workflow assumes. Local markdown under `docs/specs/` is the **only home of planning artifacts** — there is no external tracker.
 
 - **Spec artifacts** — `docs/specs/<feature-slug>/`, read and written by `write-idea`, `write-prd`, `write-techspec`, `write-tasks`, `implement-task`, `implement-spec`, `qa-gate`, and `archive-spec`
+- **Spec routing** — how an agent picks the pipeline entry point for a given change (large initiative / feature / refactor-bugfix / trivial) and what marks a spec done
 - **Domain docs** — `CONTEXT.md` (glossary) and `docs/adr/`, and the consumer rules for reading them
 - **Triage labels** (conditional) — only when the repo receives external/incoming issues on its forge (e.g. a public GitHub repo) that the `triage` skill will process
+
+These usage rules are seeded into the repo as `docs/agents/*.md` — the canonical, always-current explanation of how agents work inside the CONTEXT-driven workflow. This skill owns those files: a re-run regenerates them.
 
 This is a prompt-driven skill, not a deterministic script. Explore, present what you found, confirm with the user, then write.
 
@@ -41,7 +44,7 @@ Summarise what's present and what's missing. Then walk the user through the deci
 
 **Section A — Spec artifacts (the core; a confirmation, not a choice).**
 
-> Explainer: The spec workflow skills coordinate through per-feature folders. Each feature gets `docs/specs/<feature-slug>/` holding `_idea.md` (optional), `_prd.md`, `_techspec.md` (optional), the `_tasks.md` dependency graph, one `task_NN.md` per task, and `qa/` evidence. Dependencies live only in `_tasks.md`; task status lives only in each task file's frontmatter. Shipped specs move to `docs/specs/_archived/` so the active folder shows only live work.
+> Explainer: The spec workflow skills coordinate through per-feature folders. Each feature gets `docs/specs/<feature-slug>/` holding `_idea.md` (optional), `_prd.md`, `_techspec.md` (optional), the `_tasks.md` dependency graph, one `task_NN.md` per task, and `qa/` evidence. Dependencies live only in `_tasks.md`; task status lives only in each task file's frontmatter. Completed specs (all tasks done, QA passed) move to `docs/specs/_archived/` so the active folder shows only live work.
 
 The layout is a fixed convention the skills share — confirm the user wants it scaffolded, and whether any legacy planning artifacts found in step 1 should be flagged as read-only history in the summary.
 
@@ -66,9 +69,9 @@ Show the user a draft of:
 
 - The scaffold actions for spec artifacts (directories to create, `CONTEXT.md` skeleton if missing)
 - The `## Agent skills` block to add to whichever of `CLAUDE.md` / `AGENTS.md` is being edited (see step 4 for selection rules)
-- The contents of `docs/agents/issue-tracker.md` and `docs/agents/domain.md` (plus `docs/agents/triage-labels.md` when Section C applies)
+- The contents of `docs/agents/issue-tracker.md`, `docs/agents/spec-routing.md`, and `docs/agents/domain.md` (plus `docs/agents/triage-labels.md` when Section C applies)
 
-Let them edit before writing.
+Let them edit before writing. On a re-run, existing `docs/agents/` files found in step 1 are inputs to the draft, not something to preserve verbatim: carry forward repo-specific answers (like custom label strings), regenerate the rest from the current seeds.
 
 ### 4. Write
 
@@ -95,10 +98,16 @@ Tasks live as local markdown under `docs/specs/<feature-slug>/` (the canonical s
 
 ### Spec artifacts
 
-Feature specs live under `docs/specs/<feature-slug>/` (`_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, `task_NN.md`, `qa/`). Dependencies live only in `_tasks.md`; task status lives only in each task file's frontmatter. Shipped specs are archived to `docs/specs/_archived/`.
+Feature specs live under `docs/specs/<feature-slug>/` (`_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, `task_NN.md`, `qa/`). Dependencies live only in `_tasks.md`; task status lives only in each task file's frontmatter. Completed specs (all tasks done, QA passed) are archived to `docs/specs/_archived/`.
+
+### Spec routing
+
+Pick the pipeline entry point by the change — large initiative, feature, refactor/bugfix, or trivial. See `docs/agents/spec-routing.md`.
 ```
 
 Add a `### Triage labels` line only when Section C applies.
+
+**Re-run semantics — this skill owns `docs/agents/` and the `## Agent skills` block.** When either already exists, rewrite rather than append: overwrite each seeded `docs/agents/*.md` with the freshly confirmed draft, delete `docs/agents/` files this skill no longer seeds (deprecated guides must not linger and contradict current ones), and regenerate the `## Agent skills` block in place, dropping subsections that no longer apply. User content elsewhere in `AGENTS.md`/`CLAUDE.md` stays untouched — ownership covers only the block and the seeded files.
 
 Then scaffold the spec artifacts:
 
@@ -122,6 +131,7 @@ _Avoid_: rejected synonyms
 Then write the docs files using the seed templates in this skill folder as a starting point:
 
 - [issue-tracker-local.md](./issue-tracker-local.md) — the canonical local `docs/specs/` conventions
+- [spec-routing.md](./spec-routing.md) — pipeline entry-point routing and the definition of done
 - [triage-labels.md](./triage-labels.md) — label mapping (Section C only)
 - [domain.md](./domain.md) — domain doc consumer rules + layout
 
@@ -129,4 +139,4 @@ Then write the docs files using the seed templates in this skill folder as a sta
 
 ### 5. Done
 
-Tell the user the setup is complete and which skills now read from these files: the spec pipeline (`write-idea`, `write-prd`, `write-techspec`, `write-tasks`, `implement-task`, `implement-spec`, `qa-gate`, `archive-spec`) plus `triage` when external issues arrive on the forge. Mention they can edit `docs/agents/*.md` and `CONTEXT.md` directly later — re-running this skill is only necessary to restart from scratch.
+Tell the user the setup is complete and which skills now read from these files: the spec pipeline (`write-idea`, `write-prd`, `write-techspec`, `write-tasks`, `implement-task`, `implement-spec`, `qa-gate`, `archive-spec`) plus `triage` when external issues arrive on the forge. Mention they can edit `docs/agents/*.md` and `CONTEXT.md` directly later, but that a re-run of this skill regenerates the seeded `docs/agents/` files and the `## Agent skills` block from the current templates — durable customizations belong in the confirmation answers, `CONTEXT.md`, or sections outside the owned block.

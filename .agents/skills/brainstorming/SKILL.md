@@ -1,10 +1,10 @@
 ---
 name: brainstorming
-description: "You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design through one question at a time, then routes the outcome to write-idea, write-prd, or a direct task."
+description: "You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design through one question at a time, then routes the outcome to write-idea, write-prd, write-techspec (refactors/bug fixes), or a direct task."
 metadata:
   category: discovery
   tags: [product, requirements, research, workflow]
-  version: 0.2.0
+  version: 0.3.0
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---
@@ -54,7 +54,10 @@ The conversation itself is the artifact — route it, don't duplicate it:
 
 - **Product-level idea** (market questions, open solution shape) → `write-idea` (produces `docs/specs/<slug>/_idea.md`).
 - **Feature ready to specify** → `write-prd` (synthesizes this conversation; it will not re-interview).
-- **Small, well-understood change** → a single task or direct implementation; say so explicitly.
+- **Refactor or bug fix** (no product behavior change) → `write-techspec` directly — it mints the spec folder with a minimal `_prd.md`, no product interview.
+- **Trivial, well-understood change** (one-line fix, typo, config tweak) → direct implementation, no spec folder; say so explicitly.
+
+When a repo carries `docs/agents/spec-routing.md`, follow its routing table — it is the canonical version of this list for that project.
 
 Do not write a separate design document — the spec pipeline's artifacts (`_idea.md`, `_prd.md`) are where the outcome lives.
 

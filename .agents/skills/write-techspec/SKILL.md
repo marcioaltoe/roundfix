@@ -1,23 +1,26 @@
 ---
 name: write-techspec
-description: Write the technical spec for an approved PRD at docs/specs/<slug>/_techspec.md — explore the architecture, settle technical decisions one question at a time, record them as ADRs, and produce a build order that write-tasks can decompose.
+description: Write the technical spec at docs/specs/<slug>/_techspec.md — explore the architecture, settle technical decisions one question at a time, record them as ADRs, and produce a build order that write-tasks can decompose. Entry point for feature work with an approved PRD, and also for refactors and bug fixes, where it mints the spec folder with a minimal _prd.md instead of requiring a product interview.
 disable-model-invocation: true
-argument-hint: "<spec slug or path to docs/specs/<slug>/_prd.md>"
+argument-hint: "<spec slug, path to docs/specs/<slug>/_prd.md, or a refactor/bugfix description>"
 metadata:
   category: engineering-design
   tags: [architecture, documentation, workflow]
-  version: 0.1.0
+  version: 0.2.0
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---
 
 # Write TechSpec
 
-Produce `docs/specs/<slug>/_techspec.md` — the technical answer to an approved `_prd.md`. The PRD said _what_ and _why_; this document decides _how_, _where_, and _with which_ — and its Build Order is what `write-tasks` turns into the task graph, so sequencing quality here becomes execution quality later.
+Produce `docs/specs/<slug>/_techspec.md` — the technical answer to the spec's requirements. The PRD said _what_ and _why_; this document decides _how_, _where_, and _with which_ — and its Build Order is what `write-tasks` turns into the task graph, so sequencing quality here becomes execution quality later.
 
-## Preconditions
+## Preconditions — two entry modes
 
-`$ARGUMENTS` names the spec (slug or path). `docs/specs/<slug>/_prd.md` must exist — if it doesn't, stop and point the user at `write-prd`. If the PRD contains low-level technical decisions that belong here, surface that as a finding and propose relocating them rather than silently duplicating.
+`$ARGUMENTS` names the spec (slug or path), or describes a refactor/bug fix. Pick the mode by whether product behavior changes:
+
+- **Feature work** (product behavior changes) — `docs/specs/<slug>/_prd.md` must exist; if it doesn't, stop and point the user at `write-prd`. Product decisions need the product conversation first. If the PRD contains low-level technical decisions that belong here, surface that as a finding and propose relocating them rather than silently duplicating.
+- **Refactor or bug fix** (no product behavior change) — this skill is the pipeline entry point; no PRD interview happens. When no spec folder exists yet, mint one following `write-prd`'s numbering rule (`docs/specs/NNNN-<kebab-slug>/`, scanning both `docs/specs/` and `docs/specs/_archived/` for the highest prefix), and write a **minimal `_prd.md`** carrying only the contract downstream skills parse: the frontmatter (`spec`, `status: active`, `surfaces`), a problem statement, acceptance criteria, and non-goals — engineering-framed, a few lines each. It exists so `write-tasks`, `qa-gate`, and `archive-spec` keep a single artifact contract; it is not a product document. If the "refactor" turns out to change product behavior, stop and route to `write-prd`.
 
 ## Ground rules
 

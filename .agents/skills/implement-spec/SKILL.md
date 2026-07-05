@@ -45,7 +45,7 @@ Context hygiene: each task deserves fresh attention. When subagents are availabl
 
 When every task in the graph is `completed`, run the **qa-gate** skill against the spec. It validates the assembled feature against the PRD's user stories on the running app — browser-driven when the PRD's `surfaces` include `frontend` — and writes its report under `docs/specs/<slug>/qa/`.
 
-- QA verdict **pass** → report the loop complete and suggest the publish step (PR via `github-pr-workflow`) and, after release, `archive-spec`.
+- QA verdict **pass** → the spec is complete: run **archive-spec** on it automatically (its gate is completion — all tasks done plus this QA pass — not a merged PR), then report the loop complete. Archiving is the loop's last step; `archive-spec` itself closes by suggesting the publish step, so don't suggest a PR from here.
 - QA verdict **fail** → stop and surface the failures. Fixes re-enter as new tasks in the graph or as direct fixes the user directs — the loop does not silently patch and re-run.
 
 ## 5. Stop conditions — fail loudly

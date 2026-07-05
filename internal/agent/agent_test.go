@@ -21,6 +21,16 @@ import (
 	acp "github.com/coder/acp-go-sdk"
 )
 
+func TestSessionRefForRunNamesRoundfixSession(t *testing.T) {
+	session := SessionRefForRun(" run-123 ")
+	if session.Name != "roundfix-run-123" {
+		t.Fatalf("expected roundfix session name, got %q", session.Name)
+	}
+	if empty := SessionRefForRun(" "); empty.Name != "" {
+		t.Fatalf("expected empty run id to return empty session, got %q", empty.Name)
+	}
+}
+
 func TestRuntimeForSupportsCommandOverrideAndModel(t *testing.T) {
 	runtime, err := RuntimeFor(RuntimeOptions{
 		Agent:            "codex",

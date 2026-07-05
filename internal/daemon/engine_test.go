@@ -115,6 +115,10 @@ func (runner *engineFakeRunner) Run(ctx context.Context, req agent.ExecuteReques
 	return agent.ExecuteResult{LogPath: req.LogPath}, nil
 }
 
+func (runner *engineFakeRunner) EndSession(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+	return nil
+}
+
 type engineFakeVerifier struct {
 	calls *[]string
 	err   error
@@ -612,6 +616,10 @@ func (runner *publishingFakeRunner) Run(ctx context.Context, req agent.ExecuteRe
 		}
 	}
 	return agent.ExecuteResult{}, nil
+}
+
+func (runner *publishingFakeRunner) EndSession(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+	return nil
 }
 
 type failingCriticalSink struct{}

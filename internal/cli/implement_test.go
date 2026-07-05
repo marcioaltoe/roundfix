@@ -169,6 +169,10 @@ func (runner *implementFakeRunner) Run(_ context.Context, req agent.ExecuteReque
 	return agent.ExecuteResult{LogPath: req.LogPath}, nil
 }
 
+func (runner *implementFakeRunner) EndSession(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+	return nil
+}
+
 const implementQAReportName = "qa-report-2026-01-01.md"
 
 func implementQAReportRelPath() string {
