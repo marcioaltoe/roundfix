@@ -51,6 +51,42 @@ roundfix stop --spec <slug>
 roundfix skills check
 ```
 
+Review Run output and completion contract:
+
+- With `--until-clean`, a Watch Run ends Clean only after there are no
+  Unresolved Review Issues and the Review Source check on the final pushed
+  commit reports success. If no matching Review Source check exists for the
+  pushed HEAD, watch ends Clean and writes this stderr note:
+  `Review Source check missing for the pushed HEAD; treating Run as Clean.`
+  Pending or failing checks keep the Run inside the existing review timeout
+  and Max Rounds bounds.
+- `watch` and `resolve` write diagnostics, progress, the Run ID, and Agent
+  output to stderr. stdout is reserved for the deterministic report at Run
+  end.
+- The report has one line per Review Issue in Round/fetch order, followed by
+  one outcome line. The CLI fixtures assert this byte shape:
+
+  ```text
+  issue 001 resolved — major: handle test issue
+  Clean after 1 Round(s): 1 resolved, 0 invalid, 0 failed, 0 unresolved.
+  ```
+
+  Review Issue statuses in the first line are `resolved`, `invalid`,
+  `failed`, `duplicated`, or `unresolved`. `resolve` uses the same report
+  shape with `1 Round(s)`.
+- A terminal Run with no fetched Review Issues prints only the outcome line;
+  for example:
+
+  ```text
+  TimedOut after 0 Round(s): 0 resolved, 0 invalid, 0 failed, 0 unresolved.
+  ```
+
+- `--no-agent-console` is available on `resolve`, `watch`, and `implement`.
+  In non-TTY mode it hides Agent-source console events from stderr while
+  keeping Daemon/progress lines. The Run Event Journal still records both
+  Agent-source and Daemon-source events. The flag is rejected before Run
+  creation when it conflicts with Interactive Input or the Live Run View.
+
 ## User-Facing Spec Runs
 
 The Implement Command executes a Spec's Task Graph on the current branch as
@@ -73,6 +109,8 @@ request is the developer's explicit decision (ADR-0013).
    - `--model` — Agent model override.
    - `--agent-command` — Agent command override.
    - `--agent-full-access` — opt into Agent runtime full-access mode.
+   - `--no-agent-console` — hide Agent-source console events from non-TTY
+     stderr; the Run Event Journal is not filtered.
    - `--interactive` — open Interactive Input before starting.
    - `--no-input` — fail instead of opening Interactive Input.
 

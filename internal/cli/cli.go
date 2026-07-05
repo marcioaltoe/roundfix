@@ -1807,7 +1807,7 @@ func parseOperationalCommand(name string, args []string, config roundconfig.Conf
 		fs.StringVar(&req.agentCmd, "agent-command", "", "Agent command override")
 		fs.BoolVar(&req.agentFullAccess, "agent-full-access", req.agentFullAccess, "Opt into Agent runtime full-access mode")
 		fs.BoolVar(&req.noAgentConsole, "no-agent-console", false, "Hide Agent-source console events from non-TTY stderr")
-		fs.BoolVar(&req.untilClean, "until-clean", req.untilClean, "Repeat until no Unresolved Review Issues remain")
+		fs.BoolVar(&req.untilClean, "until-clean", req.untilClean, "Repeat until no Unresolved Review Issues remain and Review Source check succeeds")
 		fs.IntVar(&req.maxRounds, "max-rounds", req.maxRounds, "Maximum Review Source rounds")
 	default:
 		return req, validationError{message: fmt.Sprintf("unknown command %q", name)}
@@ -2179,7 +2179,7 @@ Options:
   --agent-command Agent command override
   --agent-full-access Opt into Agent runtime full-access mode
   --no-agent-console Hide Agent-source console events from non-TTY stderr
-  --until-clean  Repeat until no Unresolved Review Issues remain
+  --until-clean  Repeat until no Unresolved Review Issues remain and Review Source check succeeds
   --max-rounds   Maximum Review Source rounds
   --artifact-dir Artifact Directory
   --base-repo    Explicit base repository, owner/name

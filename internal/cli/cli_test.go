@@ -224,7 +224,7 @@ func TestRunCommandHelp(t *testing.T) {
 		{
 			name:     "watch",
 			args:     []string{"watch", "--help"},
-			contains: []string{"roundfix watch --source coderabbit --pr <number> --agent <agent>", "--no-agent-console"},
+			contains: []string{"roundfix watch --source coderabbit --pr <number> --agent <agent>", "--until-clean", "Review Source check succeeds", "--no-agent-console"},
 		},
 	}
 

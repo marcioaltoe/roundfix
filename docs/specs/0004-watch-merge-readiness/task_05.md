@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0004-watch-merge-readiness
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -30,17 +30,17 @@ Verifiable through the skills drift check inside the full gate.
 
 ## Subtasks
 
-- [ ] Skill updates + `make skills-sync`
-- [ ] Help-text cross-check against shipped output
-- [ ] Glossary pass
+- [x] Skill updates + `make skills-sync`
+- [x] Help-text cross-check against shipped output
+- [x] Glossary pass
 
 ## Acceptance Criteria
 
-- [ ] Skill text matches shipped behavior exactly; drift check passes inside
+- [x] Skill text matches shipped behavior exactly; drift check passes inside
       the full gate.
-- [ ] Every documented stdout line shape appears verbatim in a CLI test
+- [x] Every documented stdout line shape appears verbatim in a CLI test
       fixture.
-- [ ] No new un-glossaried term, or the gap is called out in the Result.
+- [x] No new un-glossaried term, or the gap is called out in the Result.
 
 ## Verification
 
@@ -53,3 +53,33 @@ Verifiable through the skills drift check inside the full gate.
 `_prd.md` → Core Features 2–4; User Experience. `_techspec.md` → Build Order
 5. ADR-0019. Repo hard rule (canonical skill ships with CLI behavior
 changes).
+
+## Result
+
+Status: completed.
+
+Acceptance evidence:
+
+- Skill sync: `.agents/skills/roundfix/SKILL.md` documents the Watch Run Clean
+  contract, the missing-check stderr note, the watch/resolve stdout report
+  examples, and `--no-agent-console`; `rtk make skills-sync` regenerated
+  `skills/roundfix/SKILL.md`, and `diff -r .agents/skills/roundfix
+  skills/roundfix` returned no drift.
+- Help-text cross-check: the built binary output from `rtk ./bin/roundfix
+  watch --help` includes `--until-clean  Repeat until no Unresolved Review
+  Issues remain and Review Source check succeeds`; `resolve --help`,
+  `watch --help`, and `implement --help` all include `--no-agent-console`.
+  `TestRunCommandHelp` asserts the watch help wording.
+- Stdout shape cross-check: the documented report examples
+  `issue 001 resolved — major: handle test issue`, `Clean after 1 Round(s):
+  1 resolved, 0 invalid, 0 failed, 0 unresolved.`, and `TimedOut after 0
+  Round(s): 0 resolved, 0 invalid, 0 failed, 0 unresolved.` appear verbatim
+  in `internal/cli/cli_test.go`.
+- Glossary pass: the skill uses glossary terms such as Run, Watch Run, Clean,
+  Review Source, Review Issue, Unresolved Review Issue, Final Push, Max
+  Rounds, Daemon, Agent, Run Event Journal, Interactive Input, and Live Run
+  View. Gap called out: `merge-readiness` / `merge-ready` appears in this
+  Spec and ADR-0019, but not in `CONTEXT.md`; the skill avoids introducing
+  that as a new product term.
+- Verification passed: `rtk go run ./cmd/roundfix skills check` and
+  `rtk make verify`.
