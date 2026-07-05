@@ -125,6 +125,62 @@ func TestCollectInputSpecPickerSelectsListedSpec(t *testing.T) {
 	}
 }
 
+func TestCollectInputImplementQAGate(t *testing.T) {
+	tests := []struct {
+		name       string
+		input      string
+		defaultQA  bool
+		wantQA     bool
+		wantPrompt string
+	}{
+		{name: "yes enables QA", input: "\n\ny\n", wantQA: true, wantPrompt: "QA gate [y/N]:"},
+		{name: "empty keeps QA disabled", input: "\n\n\n", wantQA: false, wantPrompt: "QA gate [y/N]:"},
+		{name: "empty keeps QA flag default", input: "\n\n\n", defaultQA: true, wantQA: true, wantPrompt: "QA gate [Y/n]:"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var output strings.Builder
+
+			values, err := CollectInput(context.Background(), InputRequest{
+				Command: "implement",
+				Values: CommandValues{
+					Spec:  "0001-widget-flow",
+					Agent: "codex",
+					QA:    tt.defaultQA,
+				},
+			}, strings.NewReader(tt.input), &output)
+			if err != nil {
+				t.Fatalf("collect input: %v", err)
+			}
+			if values.QA != tt.wantQA {
+				t.Fatalf("expected QA %v, got %v", tt.wantQA, values.QA)
+			}
+			if !strings.Contains(output.String(), tt.wantPrompt) {
+				t.Fatalf("expected QA prompt %q, got:\n%s", tt.wantPrompt, output.String())
+			}
+		})
+	}
+}
+
+func TestCollectInputImplementQAGateInvalidInputRepromptsOnce(t *testing.T) {
+	var output strings.Builder
+
+	_, err := CollectInput(context.Background(), InputRequest{
+		Command: "implement",
+		Values:  CommandValues{Spec: "0001-widget-flow", Agent: "codex"},
+	}, strings.NewReader("\n\nmaybe\nlater\n"), &output)
+
+	if err == nil {
+		t.Fatal("expected invalid QA input to fail")
+	}
+	if !strings.Contains(err.Error(), "QA gate") {
+		t.Fatalf("expected error to name QA gate, got %v", err)
+	}
+	if count := strings.Count(output.String(), "QA gate [y/N]:"); count != 2 {
+		t.Fatalf("expected one QA re-prompt, got %d prompts:\n%s", count, output.String())
+	}
+}
+
 func TestRenderLiveRunViewGroupsIssuesAndShowsStatusStrips(t *testing.T) {
 	view := RenderLiveRunView(LiveRunView{
 		Command:       "resolve",

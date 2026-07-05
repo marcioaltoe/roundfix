@@ -753,6 +753,7 @@ func buildInteractiveInputRequest(ctx context.Context, req commandRequest, loade
 			Model:        req.model,
 			MaxRounds:    req.maxRounds,
 			UntilClean:   req.untilClean,
+			QA:           req.qa,
 		},
 		PRSuggestion:    prSuggestion,
 		AgentSuggestion: agentSuggestion,
@@ -772,6 +773,7 @@ func applyInteractiveValues(req commandRequest, values roundtui.CommandValues) c
 		req.maxRounds = values.MaxRounds
 	}
 	req.untilClean = values.UntilClean
+	req.qa = values.QA
 	return req
 }
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -463,19 +464,66 @@ func TestRunImplementInteractiveInputPicksSpecThroughCollector(t *testing.T) {
 	}
 }
 
-func TestRunImplementInteractiveInputRemembersAgentButNotSpec(t *testing.T) {
+func TestRunImplementInteractiveInputMergesQAGateChoice(t *testing.T) {
+	tests := []struct {
+		name        string
+		args        []string
+		input       string
+		qaReport    string
+		wantQACalls int
+	}{
+		{name: "scripted yes produces QA Run", args: []string{"implement"}, input: "1\ncodex\ny\n", qaReport: implementQAReport("pass"), wantQACalls: 1},
+		{name: "empty input produces non-QA Run", args: []string{"implement"}, input: "1\ncodex\n\n", wantQACalls: 0},
+		{name: "qa flag preset keeps QA on with enter", args: []string{"implement", "--qa"}, input: "1\ncodex\n\n", qaReport: implementQAReport("pass"), wantQACalls: 1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, repoDir := newImplementWorkspace(t, []implementSeed{
+				{id: "task_01", title: "Build the widget core"},
+			})
+			runner := &implementFakeRunner{
+				gitRoot:      repoDir,
+				statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+				qaReport:     tt.qaReport,
+			}
+			withImplementCollaborators(t, runner)
+			withInteractiveInput(t, func(ctx context.Context, req roundtui.InputRequest) (roundtui.CommandValues, error) {
+				return roundtui.CollectInput(ctx, req, strings.NewReader(tt.input), io.Discard)
+			})
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+
+			if code != 0 {
+				t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
+			}
+			if runner.qaCalls != tt.wantQACalls {
+				t.Fatalf("expected %d QA call(s), got %d", tt.wantQACalls, runner.qaCalls)
+			}
+			hasQAVerdict := strings.Contains(stdout.String(), "qa pass — "+implementQAReportRelPath())
+			if wantVerdict := tt.wantQACalls > 0; hasQAVerdict != wantVerdict {
+				t.Fatalf("expected QA verdict line presence %v, got stdout:\n%s", wantVerdict, stdout.String())
+			}
+		})
+	}
+}
+
+func TestRunImplementInteractiveInputRemembersAgentButNotSpecOrQA(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 	})
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
 		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		qaReport:     implementQAReport("pass"),
 	}
 	withImplementCollaborators(t, runner)
 	withInteractiveInput(t, func(_ context.Context, req roundtui.InputRequest) (roundtui.CommandValues, error) {
 		values := req.Values
 		values.Spec = implementTestSlug
 		values.Agent = "claude"
+		values.QA = true
 		return values, nil
 	})
 	var stdout bytes.Buffer
@@ -494,12 +542,10 @@ func TestRunImplementInteractiveInputRemembersAgentButNotSpec(t *testing.T) {
 	gitImplement(t, repoDir, "add", "-A")
 	gitImplement(t, repoDir, "commit", "-m", "keep first run")
 	var secondReq roundtui.InputRequest
+	var secondCollected strings.Builder
 	withInteractiveInput(t, func(_ context.Context, req roundtui.InputRequest) (roundtui.CommandValues, error) {
 		secondReq = req
-		values := req.Values
-		values.Spec = implementTestSlug
-		values.Agent = req.AgentSuggestion.Value
-		return values, nil
+		return roundtui.CollectInput(context.Background(), req, strings.NewReader("1\n\n\n"), &secondCollected)
 	})
 	stdout.Reset()
 	stderr.Reset()
@@ -512,6 +558,12 @@ func TestRunImplementInteractiveInputRemembersAgentButNotSpec(t *testing.T) {
 	}
 	if secondReq.Values.Spec != "" {
 		t.Fatalf("expected the spec slug not remembered across invocations, got %q", secondReq.Values.Spec)
+	}
+	if secondReq.Values.QA {
+		t.Fatal("expected the QA choice not remembered across invocations")
+	}
+	if !strings.Contains(secondCollected.String(), "QA gate [y/N]:") {
+		t.Fatalf("expected the second invocation to show the default QA prompt, got:\n%s", secondCollected.String())
 	}
 }
 

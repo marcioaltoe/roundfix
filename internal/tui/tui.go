@@ -24,6 +24,7 @@ type CommandValues struct {
 	Model        string
 	MaxRounds    int
 	UntilClean   bool
+	QA           bool
 }
 
 type Suggestion struct {
@@ -134,6 +135,17 @@ func CollectInput(ctx context.Context, req InputRequest, input io.Reader, output
 		if current == "" || req.Values == values {
 			current = defaults[field]
 		}
+		if field == "qa" {
+			qa, done, err := collectQAGateInput(reader, output, current == "yes")
+			if err != nil {
+				return CommandValues{}, err
+			}
+			values.QA = qa
+			if done {
+				break
+			}
+			continue
+		}
 		fmt.Fprintf(output, "%s [%s]: ", inputLabel(field), current)
 		line, err := reader.ReadString('\n')
 		if err != nil && err != io.EOF {
@@ -168,9 +180,13 @@ func DefaultsForInput(req InputRequest) map[string]string {
 		"artifact-dir": req.Values.ArtifactDir,
 		"model":        req.Values.Model,
 		"max-rounds":   "",
+		"qa":           "",
 	}
 	if req.Values.MaxRounds > 0 {
 		defaults["max-rounds"] = strconv.Itoa(req.Values.MaxRounds)
+	}
+	if req.Values.QA {
+		defaults["qa"] = "yes"
 	}
 	if defaults["pr"] == "" {
 		defaults["pr"] = req.PRSuggestion.Value
@@ -453,7 +469,7 @@ func fieldsForCommand(command string) []string {
 	case "watch":
 		return []string{"pr", "source", "agent", "artifact-dir", "model", "max-rounds"}
 	case "implement":
-		return []string{"spec", "agent"}
+		return []string{"spec", "agent", "qa"}
 	default:
 		return []string{"pr"}
 	}
@@ -488,6 +504,8 @@ func inputLabel(field string) string {
 		return "Model"
 	case "max-rounds":
 		return "Max Rounds"
+	case "qa":
+		return "QA gate"
 	default:
 		return field
 	}
@@ -512,6 +530,10 @@ func getValue(values CommandValues, field string) string {
 	case "max-rounds":
 		if values.MaxRounds > 0 {
 			return strconv.Itoa(values.MaxRounds)
+		}
+	case "qa":
+		if values.QA {
+			return "yes"
 		}
 	}
 	return ""
@@ -539,8 +561,57 @@ func setValue(values *CommandValues, field string, value string) error {
 			return fmt.Errorf("Max Rounds must be a number: %w", err)
 		}
 		values.MaxRounds = number
+	case "qa":
+		qa, ok := parseQAGateChoice(value)
+		if !ok {
+			return fmt.Errorf("QA gate must be y, yes, n, no, or empty")
+		}
+		values.QA = qa
 	}
 	return nil
+}
+
+func collectQAGateInput(reader *bufio.Reader, output io.Writer, current bool) (bool, bool, error) {
+	for attempt := 0; attempt < 2; attempt++ {
+		fmt.Fprint(output, qaGatePrompt(current))
+		line, err := reader.ReadString('\n')
+		done := err == io.EOF
+		if err != nil && err != io.EOF {
+			return false, done, fmt.Errorf("read Interactive Input field QA gate: %w", err)
+		}
+		choice := strings.TrimSpace(line)
+		if choice == "" {
+			return current, done, nil
+		}
+		qa, ok := parseQAGateChoice(choice)
+		if ok {
+			return qa, done, nil
+		}
+		if attempt == 0 && !done {
+			fmt.Fprintln(output, "QA gate must be y, yes, n, no, or empty.")
+			continue
+		}
+		return false, done, fmt.Errorf("QA gate must be y, yes, n, no, or empty")
+	}
+	return false, false, fmt.Errorf("QA gate must be y, yes, n, no, or empty")
+}
+
+func qaGatePrompt(current bool) string {
+	if current {
+		return "QA gate [Y/n]: "
+	}
+	return "QA gate [y/N]: "
+}
+
+func parseQAGateChoice(value string) (bool, bool) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "y", "yes":
+		return true, true
+	case "n", "no":
+		return false, true
+	default:
+		return false, false
+	}
 }
 
 func emptyDash(value string) string {
