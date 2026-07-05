@@ -8,6 +8,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"roundfix/internal/agent"
@@ -15,6 +16,7 @@ import (
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
 	"roundfix/internal/store"
+	runworktree "roundfix/internal/worktree"
 )
 
 // ReviewSourceResolver resolves Review Source threads for terminal Review
@@ -42,16 +44,17 @@ var ErrStopRequested = errors.New("stop requested")
 // Dependencies are the engine's explicit collaborators, replacing the CLI
 // package globals that previously wired orchestration.
 type Dependencies struct {
-	Runner    agent.Runner
-	Verifier  Verifier
-	Committer Committer
-	Pusher    Pusher
-	Source    ReviewSourceResolver
-	Runs      RunStateStore
-	Worktree  WorktreeSnapshotter
-	Sink      runevent.Sink
-	Now       func() time.Time
-	Progress  io.Writer
+	Runner        agent.Runner
+	Verifier      Verifier
+	Committer     Committer
+	Pusher        Pusher
+	Source        ReviewSourceResolver
+	Runs          RunStateStore
+	Worktree      WorktreeSnapshotter
+	TaskWorktrees TaskWorktreeManager
+	Sink          runevent.Sink
+	Now           func() time.Time
+	Progress      io.Writer
 }
 
 // Engine executes one resolve cycle over a validated plan and exposes Final
@@ -60,6 +63,26 @@ type Dependencies struct {
 // Push per ADR 0001.
 type Engine struct {
 	deps Dependencies
+}
+
+type TaskWorktreeManager interface {
+	CreateTask(ctx context.Context, run runworktree.Ref, taskID string, copyList []string) (runworktree.TaskRef, error)
+	IntegrateTask(ctx context.Context, run runworktree.Ref, task runworktree.TaskRef) (runworktree.TaskIntegration, error)
+	CleanupTask(ctx context.Context, task runworktree.TaskRef) error
+}
+
+type GitTaskWorktreeManager struct{}
+
+func (GitTaskWorktreeManager) CreateTask(ctx context.Context, run runworktree.Ref, taskID string, copyList []string) (runworktree.TaskRef, error) {
+	return runworktree.CreateTask(ctx, run, taskID, copyList)
+}
+
+func (GitTaskWorktreeManager) IntegrateTask(ctx context.Context, run runworktree.Ref, task runworktree.TaskRef) (runworktree.TaskIntegration, error) {
+	return runworktree.IntegrateTask(ctx, run, task)
+}
+
+func (GitTaskWorktreeManager) CleanupTask(ctx context.Context, task runworktree.TaskRef) error {
+	return runworktree.CleanupTask(ctx, task)
 }
 
 // PullRequestRef identifies the Open Pull Request a cycle works on.
@@ -149,13 +172,28 @@ func NewEngine(deps Dependencies) (*Engine, error) {
 	if deps.Sink == nil {
 		deps.Sink = runevent.Discard
 	}
+	if deps.TaskWorktrees == nil {
+		deps.TaskWorktrees = GitTaskWorktreeManager{}
+	}
 	if deps.Now == nil {
 		deps.Now = time.Now
 	}
 	if deps.Progress == nil {
 		deps.Progress = io.Discard
 	}
+	deps.Progress = &lockedWriter{writer: deps.Progress}
 	return &Engine{deps: deps}, nil
+}
+
+type lockedWriter struct {
+	mu     sync.Mutex
+	writer io.Writer
+}
+
+func (writer *lockedWriter) Write(data []byte) (int, error) {
+	writer.mu.Lock()
+	defer writer.mu.Unlock()
+	return writer.writer.Write(data)
 }
 
 // ResolveCycle executes one resolve cycle: for each Batch it runs the

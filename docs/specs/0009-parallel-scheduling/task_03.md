@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0009-parallel-scheduling
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -49,25 +49,25 @@ fake-runner tests under `-race`.
 
 ## Subtasks
 
-- [ ] Owner loop with ready-set recomputation and status map
-- [ ] Worker pipeline with per-Task sessions and worktrees
-- [ ] Serialized integration wiring with conflict → failed settlement
-- [ ] Ordinals, journaling, and log paths under concurrency
-- [ ] Stop/cancellation at boundaries with worker drain
-- [ ] Sequential-parity and `-race` gates
+- [x] Owner loop with ready-set recomputation and status map
+- [x] Worker pipeline with per-Task sessions and worktrees
+- [x] Serialized integration wiring with conflict → failed settlement
+- [x] Ordinals, journaling, and log paths under concurrency
+- [x] Stop/cancellation at boundaries with worker drain
+- [x] Sequential-parity and `-race` gates
 
 ## Acceptance Criteria
 
-- [ ] A 4-Task independent Wave at concurrency 2 shows observed execution
+- [x] A 4-Task independent Wave at concurrency 2 shows observed execution
       overlap (instrumented fakes), 4 commits on the Run Branch, correct
       counts, and deterministic journal replay.
-- [ ] Dependency gating holds under concurrency: a dependent never starts
+- [x] Dependency gating holds under concurrency: a dependent never starts
       before its needs settle; failed-dependency chains end skipped.
-- [ ] An induced integration conflict settles that Task failed (worktree
+- [x] An induced integration conflict settles that Task failed (worktree
       kept, reason journaled) while independents complete.
-- [ ] A Stop Request mid-Wave lets running Tasks settle and commit, starts
+- [x] A Stop Request mid-Wave lets running Tasks settle and commit, starts
       nothing new, ends Stopped.
-- [ ] Concurrency 1 passes the existing TaskCycle expectations unchanged;
+- [x] Concurrency 1 passes the existing TaskCycle expectations unchanged;
       `rtk go test -race ./internal/daemon/` is clean.
 
 ## Verification
@@ -81,3 +81,54 @@ fake-runner tests under `-race`.
 `_prd.md` → User Stories 1, 3, 5; Core Features 1–3. `_techspec.md` →
 Scheduler, Build Order 3, Risks. ADR-0010, ADR-0014, ADR-0018 (scoped
 refinement), ADR-0025, ADR-0026.
+
+## Result
+
+- Implemented the TaskCycle owner-loop scheduler in `internal/daemon`, with
+  ready-set recomputation, a concurrency cap, worker settlement collection,
+  serialized Task Worktree integration, failed-dependency skipping, and
+  stop-boundary draining.
+- Added per-Task worker execution in Task Worktrees for parallel-ready graphs:
+  Task Worktree creation, per-Task Agent Session naming
+  `roundfix-<run-id>-<task_id>`, verification in the Task Worktree, ADR-0014
+  settlement, Task Worktree commit, serialized integration, conflict failure
+  handling, and success cleanup.
+- Wired `worktree.concurrency` and copy-list provisioning from the CLI
+  implement path into `TaskPlan`, while preserving concurrency-1 sequential
+  behavior through the scheduler path.
+- Added scheduler matrix tests:
+  `TestTaskCycleSchedulesIndependentWaveWithConcurrencyCap`,
+  `TestTaskCycleGatesDependenciesAndSkipsFailedDependencyChainsUnderConcurrency`,
+  `TestTaskCycleIntegrationConflictSettlesTaskFailedAndKeepsTaskWorktree`, and
+  `TestTaskCycleStopRequestMidWaveDrainsRunningTasksAndStartsNothingNew`.
+
+Acceptance evidence:
+
+- 4-Task independent Wave at concurrency 2: covered by
+  `TestTaskCycleSchedulesIndependentWaveWithConcurrencyCap`, which observes
+  worker overlap at cap 2, then verifies four integrations, four commits,
+  completed counts, and deterministic ordinal journal events.
+- Dependency gating and failed-dependency skips: covered by
+  `TestTaskCycleGatesDependenciesAndSkipsFailedDependencyChainsUnderConcurrency`,
+  which asserts a dependent does not start before its need integrates and that
+  failed-dependency chains settle skipped.
+- Integration conflict behavior: covered by
+  `TestTaskCycleIntegrationConflictSettlesTaskFailedAndKeepsTaskWorktree`,
+  which returns a conflict result, settles the Task failed, journals the
+  reason, keeps the Task Worktree, and allows independent Tasks to complete.
+- Stop Request mid-Wave: covered by
+  `TestTaskCycleStopRequestMidWaveDrainsRunningTasksAndStartsNothingNew`,
+  which lets started Tasks settle and integrate, prevents new starts, and ends
+  through the stopped path.
+- Concurrency 1 parity and race cleanliness: existing TaskCycle expectations
+  still pass, `TestRunImplementUsesOneAgentSessionPerRunAndCloses` pins
+  concurrency 1 for the ADR-0018 path, and
+  `rtk go test -race ./internal/daemon/` passed.
+
+Verification evidence:
+
+- `rtk go test ./internal/daemon/` - passed, 57 tests.
+- `rtk go test -race ./internal/daemon/` - passed, 57 tests, no races.
+- `rtk go test ./...` - passed, 702 tests across 17 packages.
+- `rtk make verify` - passed, including full Go tests, Roundfix skill check,
+  and build.

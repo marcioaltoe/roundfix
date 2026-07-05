@@ -17,6 +17,7 @@ import (
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
+	runworktree "roundfix/internal/worktree"
 )
 
 // TaskPlan is the validated input for one Task cycle over an
@@ -27,11 +28,14 @@ type TaskPlan struct {
 	RunID       string
 	Session     agent.SessionRef
 	WorkDir     string
+	RunWorktree runworktree.Ref
 	ArtifactDir string
 	Spec        spec.Spec
 	Tasks       []spec.Task
 	Runtime     agent.RuntimeSpec
 	QA          bool
+	Concurrency int
+	CopyList    []string
 }
 
 // TaskCycleResult reports what one Task cycle settled. Skipped counts
@@ -69,60 +73,16 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	if err := validateTaskPlan(plan); err != nil {
 		return TaskCycleResult{}, err
 	}
-	// The live status map is seeded from the loaded task files, so Tasks
-	// completed in prior Runs satisfy needs, and updated as this Run
-	// settles Tasks.
-	statuses := make(map[string]spec.Status, len(plan.Tasks))
-	for _, task := range plan.Tasks {
-		statuses[task.ID] = task.Status
-	}
-	result := TaskCycleResult{}
-	ordinal := 0
-	for _, task := range plan.Tasks {
-		if statuses[task.ID] == spec.StatusCompleted {
-			continue
-		}
-		if err := ctx.Err(); err != nil {
-			if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
-				return result, fmt.Errorf("publish stop event for run %q before Task %s: %w", plan.RunID, task.ID, errors.Join(err, publishErr))
-			}
-			return result, fmt.Errorf("stop run %q before Task %s: %w", plan.RunID, task.ID, err)
-		}
-		if err := engine.stopIfRequested(ctx, plan.RunID, ordinal); err != nil {
-			return result, fmt.Errorf("stop run %q before Task %s: %w", plan.RunID, task.ID, err)
-		}
-		if unmet := unmetNeeds(task, statuses); len(unmet) > 0 {
-			result.Skipped++
-			reason := fmt.Sprintf("needs not completed: %s", strings.Join(unmet, ", "))
-			fmt.Fprintf(engine.deps.Progress, "Task %s skipped: %s\n", task.ID, reason)
-			if err := engine.publishTaskEvent(ctx, plan.RunID, 0, task.ID, runevent.KindDaemonTask,
-				fmt.Sprintf("Task %s skipped: %s", task.ID, reason),
-				map[string]any{"task": task.ID, "phase": "skipped", "reason": reason},
-			); err != nil {
-				return result, err
-			}
-			continue
-		}
-		ordinal++
-		settled, err := engine.executeTask(ctx, plan, task, ordinal)
-		if err != nil {
-			return result, err
-		}
-		statuses[task.ID] = settled
-		if settled == spec.StatusCompleted {
-			result.Completed++
-		} else {
-			result.Failed++
-		}
-		if err := engine.stopIfRequested(ctx, plan.RunID, ordinal); err != nil {
-			return result, fmt.Errorf("stop run %q after Task %s settlement: %w", plan.RunID, task.ID, err)
-		}
+	statuses := initialTaskRunStatuses(plan.Tasks)
+	result, ordinal, err := engine.runTaskScheduler(ctx, plan, statuses)
+	if err != nil {
+		return result, err
 	}
 	// QA step (ADR 0015): the qa-gate runs only when plan.QA is set and
 	// every Task in the Task Graph — including Tasks completed by earlier
 	// Runs — ended completed; any failed, skipped, or pending Task leaves
 	// the outcome to the Task results alone.
-	if plan.QA && allTasksCompleted(plan.Tasks, statuses) {
+	if plan.QA && allTasksRunCompleted(plan.Tasks, statuses) {
 		if err := engine.stopIfRequested(ctx, plan.RunID, ordinal+1); err != nil {
 			return result, fmt.Errorf("stop run %q before the QA step: %w", plan.RunID, err)
 		}
@@ -141,6 +101,357 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 		return result, err
 	}
 	return result, nil
+}
+
+type taskRunStatus string
+
+const (
+	taskRunPending   taskRunStatus = "pending"
+	taskRunRunning   taskRunStatus = "running"
+	taskRunCompleted taskRunStatus = "completed"
+	taskRunFailed    taskRunStatus = "failed"
+	taskRunSkipped   taskRunStatus = "skipped"
+)
+
+type taskWorkerResult struct {
+	task             spec.Task
+	ordinal          int
+	status           spec.Status
+	taskPlan         TaskPlan
+	taskRef          runworktree.TaskRef
+	usesTaskWorktree bool
+	err              error
+}
+
+func (engine *Engine) runTaskScheduler(ctx context.Context, plan TaskPlan, statuses map[string]taskRunStatus) (TaskCycleResult, int, error) {
+	result := TaskCycleResult{}
+	concurrency := taskConcurrency(plan)
+	useTaskWorktrees := concurrency > 1 && hasParallelTaskPotential(plan.Tasks, statuses)
+	results := make(chan taskWorkerResult)
+	running := 0
+	ordinal := 0
+	var stopErr error
+	var fatalErr error
+
+	for {
+		if fatalErr == nil && stopErr == nil {
+			skipped, err := engine.skipBlockedTasks(ctx, plan, statuses, &result)
+			if err != nil {
+				return result, ordinal, err
+			}
+			_ = skipped
+			for running < concurrency {
+				task, ok := nextReadyTask(plan.Tasks, statuses)
+				if !ok {
+					break
+				}
+				if err := taskStartBoundary(ctx, engine, plan.RunID, ordinal, task.ID); err != nil {
+					stopErr = err
+					break
+				}
+				ordinal++
+				statuses[task.ID] = taskRunRunning
+				running++
+				go func(task spec.Task, ordinal int) {
+					results <- engine.executeTaskWorker(ctx, plan, task, ordinal, useTaskWorktrees)
+				}(task, ordinal)
+			}
+		}
+
+		if running == 0 {
+			switch {
+			case fatalErr != nil:
+				return result, ordinal, fatalErr
+			case stopErr != nil:
+				return result, ordinal, stopErr
+			case allTaskRunStatusesTerminal(statuses):
+				return result, ordinal, nil
+			default:
+				// A valid graph should not get here. If it does, keep the
+				// shipped behavior by reporting remaining Tasks skipped.
+				if err := engine.skipPendingTasks(ctx, plan, statuses, &result); err != nil {
+					return result, ordinal, err
+				}
+			}
+			continue
+		}
+
+		workerResult := <-results
+		running--
+		if workerResult.err != nil {
+			statuses[workerResult.task.ID] = taskRunFailed
+			if fatalErr == nil {
+				fatalErr = workerResult.err
+			}
+			continue
+		}
+		if fatalErr != nil {
+			continue
+		}
+		settled, err := engine.integrateTaskSettlement(ctx, plan, workerResult)
+		if err != nil {
+			if fatalErr == nil {
+				fatalErr = err
+			}
+			continue
+		}
+		if settled == spec.StatusCompleted {
+			statuses[workerResult.task.ID] = taskRunCompleted
+			result.Completed++
+		} else {
+			statuses[workerResult.task.ID] = taskRunFailed
+			result.Failed++
+		}
+		if stopErr == nil {
+			if err := engine.stopIfRequested(ctx, plan.RunID, workerResult.ordinal); err != nil {
+				stopErr = fmt.Errorf("stop run %q after Task %s settlement: %w", plan.RunID, workerResult.task.ID, err)
+			}
+		}
+	}
+}
+
+func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, usesTaskWorktree bool) taskWorkerResult {
+	taskPlan := plan
+	var taskRef runworktree.TaskRef
+	if usesTaskWorktree {
+		var err error
+		taskRef, err = engine.deps.TaskWorktrees.CreateTask(ctx, plan.RunWorktree, task.ID, plan.CopyList)
+		if err != nil {
+			return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: true, err: err}
+		}
+		taskPlan = taskPlanForTaskWorktree(plan, task, taskRef)
+	}
+	settled, err := engine.executeTask(ctx, taskPlan, task, ordinal)
+	if usesTaskWorktree {
+		if closeErr := engine.deps.Runner.EndSession(context.WithoutCancel(ctx), taskPlan.Runtime, taskPlan.Session); closeErr != nil {
+			err = errors.Join(err, fmt.Errorf("close Agent Session for run %q Task %s: %w", plan.RunID, task.ID, closeErr))
+		}
+	}
+	return taskWorkerResult{
+		task:             task,
+		ordinal:          ordinal,
+		status:           settled,
+		taskPlan:         taskPlan,
+		taskRef:          taskRef,
+		usesTaskWorktree: usesTaskWorktree,
+		err:              err,
+	}
+}
+
+func (engine *Engine) integrateTaskSettlement(ctx context.Context, plan TaskPlan, result taskWorkerResult) (spec.Status, error) {
+	if result.status != spec.StatusCompleted || !result.usesTaskWorktree {
+		return result.status, nil
+	}
+	integration, err := engine.deps.TaskWorktrees.IntegrateTask(ctx, plan.RunWorktree, result.taskRef)
+	if err != nil {
+		return "", fmt.Errorf("integrate Task %s into Run Branch: %w", result.task.ID, err)
+	}
+	if integration.Mode == runworktree.ModeTaskConflict {
+		reason := strings.TrimSpace(integration.Reason)
+		if reason == "" {
+			reason = "unknown conflict"
+		}
+		reason = "integration conflict: " + reason
+		if err := engine.settleTask(ctx, result.taskPlan, result.task, result.ordinal, spec.StatusFailed, reason); err != nil {
+			return "", err
+		}
+		fmt.Fprintf(engine.deps.Progress, "Task %s failed: %s\n", result.task.ID, reason)
+		return spec.StatusFailed, nil
+	}
+	if err := engine.deps.TaskWorktrees.CleanupTask(ctx, result.taskRef); err != nil {
+		return "", fmt.Errorf("cleanup Task Worktree for %s: %w", result.task.ID, err)
+	}
+	return spec.StatusCompleted, nil
+}
+
+func initialTaskRunStatuses(tasks []spec.Task) map[string]taskRunStatus {
+	statuses := make(map[string]taskRunStatus, len(tasks))
+	for _, task := range tasks {
+		if task.Status == spec.StatusCompleted {
+			statuses[task.ID] = taskRunCompleted
+			continue
+		}
+		statuses[task.ID] = taskRunPending
+	}
+	return statuses
+}
+
+func taskConcurrency(plan TaskPlan) int {
+	if plan.Concurrency < 1 {
+		return 1
+	}
+	return plan.Concurrency
+}
+
+func hasParallelTaskPotential(tasks []spec.Task, statuses map[string]taskRunStatus) bool {
+	remaining := make([]spec.Task, 0, len(tasks))
+	for _, task := range tasks {
+		if statuses[task.ID] != taskRunCompleted {
+			remaining = append(remaining, task)
+		}
+	}
+	for left := 0; left < len(remaining); left++ {
+		for right := left + 1; right < len(remaining); right++ {
+			if !taskDependsOn(remaining[left].ID, remaining[right].ID, tasks) && !taskDependsOn(remaining[right].ID, remaining[left].ID, tasks) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func taskDependsOn(taskID string, needID string, tasks []spec.Task) bool {
+	byID := make(map[string]spec.Task, len(tasks))
+	for _, task := range tasks {
+		byID[task.ID] = task
+	}
+	seen := map[string]bool{}
+	var visit func(string) bool
+	visit = func(id string) bool {
+		if seen[id] {
+			return false
+		}
+		seen[id] = true
+		task, found := byID[id]
+		if !found {
+			return false
+		}
+		for _, need := range task.Needs {
+			if need == needID || visit(need) {
+				return true
+			}
+		}
+		return false
+	}
+	return visit(taskID)
+}
+
+func taskStartBoundary(ctx context.Context, engine *Engine, runID string, ordinal int, taskID string) error {
+	if err := ctx.Err(); err != nil {
+		if publishErr := engine.publishStop(ctx, runID, ordinal); publishErr != nil {
+			return fmt.Errorf("publish stop event for run %q before Task %s: %w", runID, taskID, errors.Join(err, publishErr))
+		}
+		return fmt.Errorf("stop run %q before Task %s: %w", runID, taskID, err)
+	}
+	if err := engine.stopIfRequested(ctx, runID, ordinal); err != nil {
+		return fmt.Errorf("stop run %q before Task %s: %w", runID, taskID, err)
+	}
+	return nil
+}
+
+func nextReadyTask(tasks []spec.Task, statuses map[string]taskRunStatus) (spec.Task, bool) {
+	for _, task := range tasks {
+		if statuses[task.ID] != taskRunPending {
+			continue
+		}
+		if taskNeedsCompleted(task, statuses) {
+			return task, true
+		}
+	}
+	return spec.Task{}, false
+}
+
+func taskNeedsCompleted(task spec.Task, statuses map[string]taskRunStatus) bool {
+	for _, need := range task.Needs {
+		if statuses[need] != taskRunCompleted {
+			return false
+		}
+	}
+	return true
+}
+
+func (engine *Engine) skipBlockedTasks(ctx context.Context, plan TaskPlan, statuses map[string]taskRunStatus, result *TaskCycleResult) (bool, error) {
+	skippedAny := false
+	for {
+		skippedPass := false
+		for _, task := range plan.Tasks {
+			if statuses[task.ID] != taskRunPending {
+				continue
+			}
+			if !hasTerminalFailedNeed(task, statuses) {
+				continue
+			}
+			if err := engine.skipTask(ctx, plan.RunID, task, statuses); err != nil {
+				return skippedAny, err
+			}
+			result.Skipped++
+			skippedPass = true
+			skippedAny = true
+		}
+		if !skippedPass {
+			return skippedAny, nil
+		}
+	}
+}
+
+func (engine *Engine) skipPendingTasks(ctx context.Context, plan TaskPlan, statuses map[string]taskRunStatus, result *TaskCycleResult) error {
+	for _, task := range plan.Tasks {
+		if statuses[task.ID] != taskRunPending {
+			continue
+		}
+		if err := engine.skipTask(ctx, plan.RunID, task, statuses); err != nil {
+			return err
+		}
+		result.Skipped++
+	}
+	return nil
+}
+
+func (engine *Engine) skipTask(ctx context.Context, runID string, task spec.Task, statuses map[string]taskRunStatus) error {
+	unmet := unmetRunNeeds(task, statuses)
+	reason := fmt.Sprintf("needs not completed: %s", strings.Join(unmet, ", "))
+	statuses[task.ID] = taskRunSkipped
+	fmt.Fprintf(engine.deps.Progress, "Task %s skipped: %s\n", task.ID, reason)
+	return engine.publishTaskEvent(ctx, runID, 0, task.ID, runevent.KindDaemonTask,
+		fmt.Sprintf("Task %s skipped: %s", task.ID, reason),
+		map[string]any{"task": task.ID, "phase": "skipped", "reason": reason},
+	)
+}
+
+func hasTerminalFailedNeed(task spec.Task, statuses map[string]taskRunStatus) bool {
+	for _, need := range task.Needs {
+		if statuses[need] == taskRunFailed || statuses[need] == taskRunSkipped {
+			return true
+		}
+	}
+	return false
+}
+
+func unmetRunNeeds(task spec.Task, statuses map[string]taskRunStatus) []string {
+	var unmet []string
+	for _, need := range task.Needs {
+		if statuses[need] != taskRunCompleted {
+			unmet = append(unmet, need)
+		}
+	}
+	return unmet
+}
+
+func allTaskRunStatusesTerminal(statuses map[string]taskRunStatus) bool {
+	for _, status := range statuses {
+		switch status {
+		case taskRunCompleted, taskRunFailed, taskRunSkipped:
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func taskPlanForTaskWorktree(plan TaskPlan, task spec.Task, taskRef runworktree.TaskRef) TaskPlan {
+	taskPlan := plan
+	taskPlan.WorkDir = taskRef.Path
+	taskPlan.Session = agent.SessionRefForTask(plan.RunID, task.ID, taskRef.Path)
+	taskPlan.Spec = specForWorkDir(plan, taskRef.Path)
+	return taskPlan
+}
+
+func specForWorkDir(plan TaskPlan, workDir string) spec.Spec {
+	specRef := plan.Spec
+	if rel, err := filepath.Rel(plan.WorkDir, plan.Spec.Dir); err == nil && rel != "." && !strings.HasPrefix(rel, "..") {
+		specRef.Dir = filepath.Join(workDir, rel)
+	}
+	return specRef
 }
 
 // executeTask runs one Task end to end: before-snapshot, Agent, reload,
@@ -552,6 +863,15 @@ func allTasksCompleted(tasks []spec.Task, statuses map[string]spec.Status) bool 
 	return true
 }
 
+func allTasksRunCompleted(tasks []spec.Task, statuses map[string]taskRunStatus) bool {
+	for _, task := range tasks {
+		if statuses[task.ID] != taskRunCompleted {
+			return false
+		}
+	}
+	return true
+}
+
 func unmetNeeds(task spec.Task, statuses map[string]spec.Status) []string {
 	var unmet []string
 	for _, need := range task.Needs {
@@ -601,6 +921,19 @@ func validateTaskPlan(plan TaskPlan) error {
 	}
 	if len(plan.Tasks) == 0 {
 		return errors.New("task cycle: at least one Task is required")
+	}
+	if taskConcurrency(plan) > 1 {
+		concurrentRequired := map[string]string{
+			"Run Worktree path":   plan.RunWorktree.Path,
+			"Run Branch":          plan.RunWorktree.Branch,
+			"user checkout root":  plan.RunWorktree.UserRoot,
+			"Run Worktree Run ID": plan.RunWorktree.RunID,
+		}
+		for label, value := range concurrentRequired {
+			if strings.TrimSpace(value) == "" {
+				return fmt.Errorf("task cycle: %s is required when concurrency is greater than 1", label)
+			}
+		}
 	}
 	return nil
 }

@@ -1230,6 +1230,9 @@ func TestRunImplementUsesOneAgentSessionPerRunAndCloses(t *testing.T) {
 		{id: "task_01", title: "Build the widget core"},
 		{id: "task_02", title: "Wire the widget API"},
 	})
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "worktree:\n  concurrency: 1\n")
+	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+	gitImplement(t, repoDir, "commit", "-m", "configure sequential task cycle")
 	inner := &implementFakeRunner{
 		gitRoot: repoDir,
 		statusByTask: map[string]spec.Status{

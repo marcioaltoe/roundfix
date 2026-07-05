@@ -45,6 +45,15 @@ func SessionRefForRun(runID string, workDir string) SessionRef {
 	return SessionRef{Name: "roundfix-" + runID, WorkDir: strings.TrimSpace(workDir)}
 }
 
+func SessionRefForTask(runID string, taskID string, workDir string) SessionRef {
+	runID = strings.TrimSpace(runID)
+	taskID = strings.TrimSpace(taskID)
+	if runID == "" || taskID == "" {
+		return SessionRef{}
+	}
+	return SessionRef{Name: "roundfix-" + runID + "-" + taskID, WorkDir: strings.TrimSpace(workDir)}
+}
+
 type ExecuteRequest struct {
 	Runtime       RuntimeSpec
 	Session       SessionRef

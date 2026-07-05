@@ -221,7 +221,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 	defer ui.Close()
 
-	cycleResult, err := executeImplementCycle(ctx, gitState, runRef, session, executionGraph, req.artifactDir, req.qa, runtime, collaborators, runStore, ui)
+	cycleResult, err := executeImplementCycle(ctx, gitState, runRef, session, executionGraph, req.artifactDir, req.qa, loadedConfig.Config.Worktree.Concurrency, loadedConfig.Config.Worktree.Copy, runtime, collaborators, runStore, ui)
 	if err != nil {
 		if isStopRequest(ctx, err) {
 			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
@@ -400,7 +400,7 @@ func printSkippedSpecDiagnostics(stderr io.Writer, skipped []spec.SkippedSpec) {
 
 // executeImplementCycle wires the Run engine exactly like the resolve path
 // and runs one Task cycle over the full graph.
-func executeImplementCycle(ctx context.Context, gitState preflight.GitState, runRef runworktree.Ref, session agent.SessionRef, graph *spec.Graph, artifactDir string, qa bool, runtime agent.RuntimeSpec, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
+func executeImplementCycle(ctx context.Context, gitState preflight.GitState, runRef runworktree.Ref, session agent.SessionRef, graph *spec.Graph, artifactDir string, qa bool, concurrency int, copyList []string, runtime agent.RuntimeSpec, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
 	runID := runRef.RunID
 	fmt.Fprintf(ui.progress, "%s: implement selected Spec %s with %d Task(s); %d to execute this Run.\n", app.Name, graph.Spec.Slug, len(graph.Tasks), countNonCompletedTasks(graph.Tasks))
 	fmt.Fprintf(ui.progress, "Implement Run: %s\n", runID)
@@ -429,11 +429,14 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, run
 		RunID:       runID,
 		Session:     session,
 		WorkDir:     runRef.Path,
+		RunWorktree: runRef,
 		ArtifactDir: artifactDir,
 		Spec:        graph.Spec,
 		Tasks:       graph.Tasks,
 		Runtime:     runtime,
 		QA:          qa,
+		Concurrency: concurrency,
+		CopyList:    copyList,
 	})
 }
 
