@@ -68,6 +68,10 @@ _Avoid_: Review Source, review provider
 The persistent acpx-backed session through which one Run drives its Agent across Work Items — created when the Run starts Agent work, named by the Run, and closed at the Run's terminal outcome.
 _Avoid_: ACP session, chat, conversation, thread
 
+**Merge-Ready**:
+The state where the pull request's Review Source status check on the pushed head commit reports success with no new Review Issues, letting a watch Run end Clean.
+_Avoid_: mergeable, green check, approved
+
 **Max Rounds**:
 The configured number of Review Source rounds after which a Run is considered sufficiently reviewed for the developer's final merge, squash, or rebase decision.
 _Avoid_: Budget, timeout, token cap

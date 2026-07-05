@@ -38,3 +38,8 @@ Sizes: `cosmetic` / `small` / `spec`.
    the Agent would turn this recovery into one command. Pairs with finding 2
    (which prevents the false failure) and round-1 finding 24 (graceful
    stop). Size: small/medium.
+
+4. **RESOLVED 2026-07-05** — 0004's docs task flagged that `merge-ready`
+   (ADR-0019 vocabulary) had no `CONTEXT.md` entry; the **Merge-Ready**
+   glossary term was added at the Run boundary in the same commit as this
+   note.
