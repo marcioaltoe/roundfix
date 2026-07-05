@@ -55,9 +55,11 @@ type FetchResult struct {
 }
 
 type ResolveResult struct {
-	Remaining int
-	Progress  bool
-	HeadSHA   string
+	Remaining          int
+	Progress           bool
+	HeadSHA            string
+	Outcome            string
+	IntegrationCommand string
 }
 
 type Result struct {
@@ -244,6 +246,9 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 		resolved, err := deps.Resolver.Resolve(ctx)
 		if err != nil {
 			return Result{Outcome: store.StateFailed, Rounds: round}, err
+		}
+		if resolved.Outcome != "" {
+			return Result{Outcome: resolved.Outcome, Rounds: round, Remaining: resolved.Remaining}, nil
 		}
 		if resolved.HeadSHA != "" {
 			currentHeadSHA = resolved.HeadSHA

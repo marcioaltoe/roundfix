@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0008-worktree-isolation
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -37,21 +37,21 @@ tests.
 
 ## Subtasks
 
-- [ ] Worktree creation and wiring in resolve and watch flows
-- [ ] Integration-before-push ordering incl. the confirm phase
-- [ ] Outcome lifecycle parity with implement
-- [ ] Review-suite regression over worktree WorkDirs
+- [x] Worktree creation and wiring in resolve and watch flows
+- [x] Integration-before-push ordering incl. the confirm phase
+- [x] Outcome lifecycle parity with implement
+- [x] Review-suite regression over worktree WorkDirs
 
 ## Acceptance Criteria
 
-- [ ] A resolve Run with concurrent user commits produces batch commits
+- [x] A resolve Run with concurrent user commits produces batch commits
       free of user files; the review suite passes over the worktree
       WorkDir without behavioral edits.
-- [ ] Ordering test: push is invoked only after integration succeeds; the
+- [x] Ordering test: push is invoked only after integration succeeds; the
       refusal fixture ends IntegrationPending with zero push calls.
-- [ ] Watch executes multiple Rounds in one worktree and cleans up only on
+- [x] Watch executes multiple Rounds in one worktree and cleans up only on
       integrated Clean.
-- [ ] Fetch behavior byte-identical; full suite passes.
+- [x] Fetch behavior byte-identical; full suite passes.
 
 ## Verification
 
@@ -64,3 +64,19 @@ tests.
 `_prd.md` → User Stories 1, 3, 4; Core Features 2, 3. `_techspec.md` → Run
 flows, Risks (watch rounds), Build Order 4. ADR-0023, ADR-0024, ADR-0019
 (confirm phase ordering).
+
+## Result
+
+Status: completed.
+
+Acceptance evidence:
+
+- Resolve isolation: `TestRunResolveWorktreeIsolationExcludesConcurrentUserCommit` runs resolve in a real Run Worktree while committing `user.txt` in the user checkout. The test asserts the Run Branch commit contains `agent.txt`, excludes `user.txt`, the user branch keeps its commit, the Agent ran with `GitRoot == work_dir`, and the refusal ended `IntegrationPending`.
+- Integration-before-push: `TestRunResolvePushRunsAfterSuccessfulIntegrationAndCleansWorktree` uses a pusher that fails unless the user branch already contains the integrated agent commit. It also asserts the push runs from the Run Worktree and that Clean removes the worktree and Run Branch. The concurrent-user refusal fixture asserts zero push calls and prints `git merge --ff-only roundfix/run-<id>`.
+- Watch lifecycle: `TestRunWatchReusesOneRealWorktreeAcrossRoundsAndCleansOnIntegratedClean` drives two watched Rounds through the same recorded worktree, verifies Final Push runs after each integrated clean Round, and asserts terminal Clean removes the worktree and Run Branch.
+- Fetch unchanged: existing fetch assertions in `TestRunOperationalCommandAcceptsMVPFlags/fetch` still pass with the same no-Agent/no-commit/no-push contract; no fetch worktree path is created or printed.
+
+Verification:
+
+- `rtk go test ./internal/cli/ ./internal/daemon/ ./internal/watch/` passed: 307 tests in 3 packages.
+- `rtk go test ./...` passed: 678 tests in 17 packages.

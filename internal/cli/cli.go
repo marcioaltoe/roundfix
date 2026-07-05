@@ -30,6 +30,7 @@ import (
 	"roundfix/internal/store"
 	roundtui "roundfix/internal/tui"
 	"roundfix/internal/watch"
+	runworktree "roundfix/internal/worktree"
 	roundskills "roundfix/skills"
 )
 
@@ -1044,7 +1045,10 @@ type resolveBatchPlan struct {
 }
 
 type resolveBatchResult struct {
-	Remaining int
+	Remaining          int
+	CommitCreated      bool
+	IntegrationPending bool
+	IntegrationCommand string
 }
 
 func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, stdout, stderr io.Writer) int {
@@ -1072,11 +1076,18 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
-	session := agent.SessionRefForRun(run.ID, preflightResult.Git.Root)
+	run, runRef, err := createReviewRunWorktree(ctx, runStore, run, preflightResult, loaded)
+	if err != nil {
+		markRunFailed(ctx, runStore, run.ID)
+		printResolveRunFailureWithWorktree(err, runRef.Path, stderr)
+		return exitRunFailed
+	}
+	fmt.Fprintf(stderr, "Run Worktree: %s\n", runRef.Path)
+	session := agent.SessionRefForRun(run.ID, runRef.Path)
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
 		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
 		markRunFailed(ctx, runStore, run.ID)
-		printResolveRunFailure(err, stderr)
+		printResolveRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
 	if !liveTUIEnabled(stderr) {
@@ -1096,7 +1107,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	}
 	defer ui.Close()
 
-	cycleResult, err := executeResolveCycle(ctx, req, loaded, preflightResult, run.ID, resolvePlan, collaborators, runStore, ui)
+	cycleResult, err := executeResolveCycle(ctx, req, loaded, preflightResult, runRef, session, resolvePlan, collaborators, runStore, ui)
 	if err != nil {
 		if isStopRequest(ctx, err) {
 			closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
@@ -1108,6 +1119,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 				return code
 			}
 			fmt.Fprintf(stderr, "%s Run %s reached %s.\n", commandDisplayName(req.name), run.ID, store.StateStopped)
+			printKeptRunWorktree(stderr, runRef.Path)
 			printStopSummary(req, preflightResult, stderr)
 			printReviewIssueReport(stdout, store.StateStopped, 1, reviewIssueReportIssues(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues))
 			return exitOK
@@ -1116,7 +1128,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		markRunFailed(ctx, runStore, run.ID)
 		ui.Wait()
 		ui.Close()
-		printResolveRunFailure(err, stderr)
+		printResolveRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
 
@@ -1124,11 +1136,23 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	if cycleResult.Remaining > 0 {
 		outcome = store.StateUnresolved
 	}
+	if cycleResult.IntegrationPending {
+		outcome = store.StateIntegrationPending
+	}
+	if outcome == store.StateClean {
+		if err := cleanupCleanRunWorktree(ctx, runRef); err != nil {
+			ui.Close()
+			closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
+			markRunFailed(ctx, runStore, run.ID)
+			printResolveRunFailureWithWorktree(err, runRef.Path, stderr)
+			return exitRunFailed
+		}
+	}
 	completed, err := runStore.CompleteRun(ctx, run.ID, outcome)
 	if err != nil {
 		ui.Close()
 		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
-		printResolveRunFailureAfterBatchCommit(err, stderr)
+		printResolveRunFailureAfterBatchCommitWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
 	closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, completed.ID, runStore)
@@ -1137,11 +1161,17 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	ui.Wait()
 	ui.Close()
 	fmt.Fprintf(stderr, "Resolve Run %s reached %s.\n", completed.ID, completed.State)
+	if completed.State != store.StateClean {
+		printKeptRunWorktree(stderr, runRef.Path)
+	}
+	if completed.State == store.StateIntegrationPending {
+		fmt.Fprintf(stderr, "Integration command: %s\n", cycleResult.IntegrationCommand)
+	}
 	if completed.State == store.StateUnresolved {
 		fmt.Fprintf(stderr, "%d Unresolved Review Issue(s) remain; failed issues are retried by the next fetched Round.\n", cycleResult.Remaining)
 	}
 	printReviewIssueReport(stdout, completed.State, 1, reviewIssueReportIssues(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues))
-	if completed.State == store.StateUnresolved {
+	if completed.State == store.StateUnresolved || completed.State == store.StateIntegrationPending {
 		return exitRunFailed
 	}
 	return exitOK
@@ -1289,9 +1319,12 @@ func prepareResolveBatch(ctx context.Context, req commandRequest, loaded roundco
 	}, nil
 }
 
-func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, resolvePlan resolveBatchPlan, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (resolveBatchResult, error) {
+func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runRef runworktree.Ref, session agent.SessionRef, resolvePlan resolveBatchPlan, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (resolveBatchResult, error) {
+	runID := runRef.RunID
 	fmt.Fprintf(ui.progress, "%s: resolve selected %d downloaded Unresolved Review Issue(s) from %d Compatible Artifact Round(s), assigned %d newest occurrence(s) into %d Batch(es), and associated %d older duplicate occurrence(s).\n", app.Name, len(resolvePlan.selection.Issues), len(resolvePlan.selection.Rounds), countBatchIssues(resolvePlan.plan.Batches), len(resolvePlan.plan.Batches), len(resolvePlan.plan.Duplicates))
 	fmt.Fprintf(ui.progress, "Run: %s\n", runID)
+	fmt.Fprintf(ui.progress, "User checkout: %s on branch %s\n", preflightResult.Git.Root, preflightResult.Git.Branch)
+	fmt.Fprintf(ui.progress, "Run Worktree: %s on branch %s\n", runRef.Path, runRef.Branch)
 	fmt.Fprintf(ui.progress, "Artifact Directory: %s\n", req.artifactDir)
 	fmt.Fprintf(ui.progress, "Round scope: %s\n", formatRoundScope(resolvePlan.roundNumber))
 	fmt.Fprintf(ui.progress, "Open Pull Request: #%s %s %s\n", preflightResult.PullRequest.Number, preflightResult.PullRequest.HeadRepository, preflightResult.PullRequest.HeadBranch)
@@ -1312,18 +1345,37 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 		return resolveBatchResult{}, err
 	}
 
-	result, cycleErr := engine.ResolveCycle(ctx, cyclePlanFrom(req, loaded, preflightResult, runID, resolvePlan))
+	result, cycleErr := engine.ResolveCycle(ctx, cyclePlanFrom(req, loaded, preflightResult, runID, runRef.Path, session, resolvePlan))
 	if cycleErr != nil {
 		return resolveBatchResult{}, cycleErr
 	}
 
+	commitCreated := false
+	for _, batch := range result.Batches {
+		if batch.Committed {
+			commitCreated = true
+			break
+		}
+	}
 	if result.Remaining > 0 {
 		fmt.Fprintf(ui.progress, "Final Push blocked: %d Unresolved Review Issue(s) remain.\n", result.Remaining)
 		publishPushDecision(ctx, ui.sink, runID, "blocked", fmt.Sprintf("Final Push blocked: %d Unresolved Review Issue(s) remain.", result.Remaining), result.Remaining)
-	} else if err := maybeRunFinalPush(ctx, engine, ui.sink, runID, loaded, preflightResult, loaded.Config.Defaults.AutoCommit, ui.progress); err != nil {
+		return resolveBatchResult{Remaining: result.Remaining, CommitCreated: commitCreated}, nil
+	}
+	integration, err := integrateCleanImplementRun(ctx, runRef, preflightResult.Git.Branch)
+	if err != nil {
 		return resolveBatchResult{}, err
 	}
-	return resolveBatchResult{Remaining: result.Remaining}, nil
+	if integration.Mode == runworktree.ModePending {
+		command := implementIntegrationCommand(runRef)
+		fmt.Fprintf(ui.progress, "Final Push skipped: Run integration pending; integrate with %s\n", command)
+		publishPushDecision(ctx, ui.sink, runID, "skipped", "Final Push skipped: Run integration pending.", 0)
+		return resolveBatchResult{Remaining: result.Remaining, CommitCreated: commitCreated, IntegrationPending: true, IntegrationCommand: command}, nil
+	}
+	if err := maybeRunFinalPush(ctx, engine, ui.sink, runID, loaded, preflightResult, runRef.Path, commitCreated, ui.progress); err != nil {
+		return resolveBatchResult{}, err
+	}
+	return resolveBatchResult{Remaining: result.Remaining, CommitCreated: commitCreated}, nil
 }
 
 // publishPushDecision journals daemon-owned Final Push gating decisions.
@@ -1342,11 +1394,11 @@ func publishPushDecision(ctx context.Context, sink runevent.Sink, runID string, 
 	})
 }
 
-func cyclePlanFrom(req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, resolvePlan resolveBatchPlan) daemon.CyclePlan {
+func cyclePlanFrom(req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, gitRoot string, session agent.SessionRef, resolvePlan resolveBatchPlan) daemon.CyclePlan {
 	return daemon.CyclePlan{
 		RunID:        runID,
-		Session:      agent.SessionRefForRun(runID, preflightResult.Git.Root),
-		GitRoot:      preflightResult.Git.Root,
+		Session:      session,
+		GitRoot:      gitRoot,
 		ArtifactDir:  req.artifactDir,
 		SourceName:   req.source,
 		AgentName:    req.agent,
@@ -1395,15 +1447,22 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
-	session := agent.SessionRefForRun(run.ID, preflightResult.Git.Root)
+	run, runRef, err := createReviewRunWorktree(ctx, runStore, run, preflightResult, loaded)
+	if err != nil {
+		markRunFailed(ctx, runStore, run.ID)
+		printWatchRunFailureWithWorktree(err, runRef.Path, stderr)
+		return exitRunFailed
+	}
+	session := agent.SessionRefForRun(run.ID, runRef.Path)
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
 		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
 		markRunFailed(ctx, runStore, run.ID)
-		printRunFailure(req.name, err, stderr)
+		printWatchRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
 
 	fmt.Fprintf(stderr, "Watch Run: %s\n", run.ID)
+	fmt.Fprintf(stderr, "Run Worktree: %s\n", runRef.Path)
 	fmt.Fprintf(stderr, "Open Pull Request: #%s %s %s\n", preflightResult.PullRequest.Number, preflightResult.PullRequest.HeadRepository, preflightResult.PullRequest.HeadBranch)
 	fmt.Fprintf(stderr, "Review Source: %s\n", req.source)
 	fmt.Fprintf(stderr, "Agent: %s\n", runtime.DisplayName)
@@ -1417,12 +1476,13 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	if err != nil {
 		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
 		markRunFailed(ctx, runStore, run.ID)
-		printRunFailure(req.name, err, stderr)
+		printWatchRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
 	defer ui.Close()
 
 	watchReportIssues := []rounds.Issue{}
+	integrationCommand := ""
 	result, err := watch.Run(ctx, watch.Request{
 		RunID:          run.ID,
 		PRNumber:       preflightResult.PullRequest.Number,
@@ -1457,7 +1517,11 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 			return fetchResult, err
 		}),
 		Resolver: watch.ResolveFunc(func(ctx context.Context) (watch.ResolveResult, error) {
-			return resolveWatchBatches(ctx, req, loaded, preflightResult, runtime, run.ID, collaborators, runStore, ui)
+			result, err := resolveWatchBatches(ctx, req, loaded, preflightResult, runtime, runRef, session, collaborators, runStore, ui)
+			if result.Outcome == store.StateIntegrationPending {
+				integrationCommand = result.IntegrationCommand
+			}
+			return result, err
 		}),
 		CheckSource: watch.CheckFunc(func(ctx context.Context, headSHA string) (watch.HeadCheckState, error) {
 			return watchHeadCheck(ctx, reviewsource.HeadCheckRequest{
@@ -1481,6 +1545,15 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	if terminal == "" {
 		terminal = store.StateFailed
 	}
+	if terminal == store.StateClean {
+		if err := cleanupCleanRunWorktree(ctx, runRef); err != nil {
+			ui.Close()
+			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
+			markRunFailed(ctx, runStore, run.ID)
+			printWatchRunFailureWithWorktree(err, runRef.Path, stderr)
+			return exitRunFailed
+		}
+	}
 	completeCtx := ctx
 	var completeCancel context.CancelFunc
 	if stopped {
@@ -1501,6 +1574,12 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	ui.Close()
 
 	fmt.Fprintf(stderr, "Watch Run %s reached %s after %d Round(s).\n", completed.ID, completed.State, result.Rounds)
+	if completed.State != store.StateClean {
+		printKeptRunWorktree(stderr, runRef.Path)
+	}
+	if completed.State == store.StateIntegrationPending {
+		fmt.Fprintf(stderr, "Integration command: %s\n", integrationCommand)
+	}
 	if result.Outcome == store.StateMaxRoundsReached && result.Remaining > 0 {
 		fmt.Fprintf(stderr, "MaxRoundsReached with %d Unresolved Review Issue(s) remaining.\n", result.Remaining)
 	}
@@ -1538,6 +1617,18 @@ func createOperationalRun(ctx context.Context, runStore *store.Store, kind strin
 		ArtifactDir:    artifactDir,
 		Agent:          agentID,
 	})
+}
+
+func createReviewRunWorktree(ctx context.Context, runStore *store.Store, run store.Run, preflightResult preflight.Result, loaded roundconfig.Loaded) (store.Run, runworktree.Ref, error) {
+	ref, err := createRunWorktree(ctx, preflightResult.Git.Root, run.ID, preflightResult.Git.HEAD, loaded.Config.Worktree.Copy)
+	if err != nil {
+		return run, ref, err
+	}
+	updated, err := runStore.SetRunWorkDir(ctx, run.ID, ref.Path)
+	if err != nil {
+		return run, ref, err
+	}
+	return updated, ref, nil
 }
 
 func fetchWatchRound(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, stderr io.Writer) (watch.FetchResult, []rounds.Issue, error) {
@@ -1586,7 +1677,7 @@ func fetchWatchRound(ctx context.Context, req commandRequest, loaded roundconfig
 // next fetched Round re-downloads their still-open Review Source threads
 // as fresh occurrences. Progress means the cycle settled at least one
 // selected issue, so the watch loop can stop Rounds that change nothing.
-func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runtime agent.RuntimeSpec, runID string, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (watch.ResolveResult, error) {
+func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runtime agent.RuntimeSpec, runRef runworktree.Ref, session agent.SessionRef, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (watch.ResolveResult, error) {
 	resolvePlan, err := prepareResolveBatch(ctx, req, loaded, preflightResult)
 	if err != nil {
 		var noArtifacts rounds.NoCompatibleArtifactsError
@@ -1596,9 +1687,17 @@ func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundco
 		return watch.ResolveResult{}, err
 	}
 	resolvePlan.runtime = runtime
-	result, err := executeResolveCycle(ctx, req, loaded, preflightResult, runID, resolvePlan, collaborators, runStore, ui)
+	result, err := executeResolveCycle(ctx, req, loaded, preflightResult, runRef, session, resolvePlan, collaborators, runStore, ui)
 	if err != nil {
 		return watch.ResolveResult{}, err
+	}
+	if result.IntegrationPending {
+		return watch.ResolveResult{
+			Remaining:          result.Remaining,
+			Progress:           true,
+			Outcome:            store.StateIntegrationPending,
+			IntegrationCommand: result.IntegrationCommand,
+		}, nil
 	}
 	headSHA := ""
 	if req.untilClean && result.Remaining == 0 {
@@ -1618,7 +1717,7 @@ func exitForWatchOutcome(outcome string) int {
 	switch outcome {
 	case store.StateClean, store.StateMaxRoundsReached, store.StateStopped:
 		return exitOK
-	case store.StateBudgetExceeded, store.StateTimedOut, store.StateFailed, store.StateUnresolved:
+	case store.StateBudgetExceeded, store.StateTimedOut, store.StateFailed, store.StateUnresolved, store.StateIntegrationPending:
 		return exitRunFailed
 	default:
 		return exitRunFailed
@@ -2087,7 +2186,7 @@ func countBatchIssues(batches []rounds.Batch) int {
 	return count
 }
 
-func maybeRunFinalPush(ctx context.Context, engine *daemon.Engine, sink runevent.Sink, runID string, loaded roundconfig.Loaded, preflightResult preflight.Result, batchCommitCreated bool, stderr io.Writer) error {
+func maybeRunFinalPush(ctx context.Context, engine *daemon.Engine, sink runevent.Sink, runID string, loaded roundconfig.Loaded, preflightResult preflight.Result, workDir string, batchCommitCreated bool, stderr io.Writer) error {
 	if !preflightResult.PushPlan.Enabled {
 		fmt.Fprintln(stderr, "Final Push skipped: auto-push disabled or no push target configured.")
 		publishPushDecision(ctx, sink, runID, "skipped", "Final Push skipped: auto-push disabled or no push target configured.", 0)
@@ -2108,7 +2207,7 @@ func maybeRunFinalPush(ctx context.Context, engine *daemon.Engine, sink runevent
 	}
 	if err := engine.FinalPush(ctx, daemon.FinalPushRequest{
 		RunID:   runID,
-		WorkDir: preflightResult.Git.Root,
+		WorkDir: workDir,
 		Remote:  preflightResult.PushPlan.Remote,
 		Branch:  preflightResult.PushPlan.Branch,
 	}); err != nil {
@@ -2434,12 +2533,27 @@ func printResolveRunFailure(err error, stderr io.Writer) {
 	fmt.Fprintln(stderr, "Roundfix did not commit, push, or resolve Review Source threads.")
 }
 
+func printResolveRunFailureWithWorktree(err error, worktreePath string, stderr io.Writer) {
+	printResolveRunFailure(err, stderr)
+	printKeptRunWorktree(stderr, worktreePath)
+}
+
 func printResolveRunFailureAfterBatchCommit(err error, stderr io.Writer) {
 	fmt.Fprintf(stderr, "%s: resolve failed after Run start: %v\n", app.Name, err)
 	fmt.Fprintln(stderr, "Roundfix did not complete Final Push; local Batch commit and artifact changes remain for inspection.")
 }
 
+func printResolveRunFailureAfterBatchCommitWithWorktree(err error, worktreePath string, stderr io.Writer) {
+	printResolveRunFailureAfterBatchCommit(err, stderr)
+	printKeptRunWorktree(stderr, worktreePath)
+}
+
 func printWatchRunFailure(err error, stderr io.Writer) {
 	fmt.Fprintf(stderr, "%s: watch failed after Run start: %v\n", app.Name, err)
 	fmt.Fprintln(stderr, "Roundfix completed the Watch Run with a terminal failure; inspect local artifacts and Run output before retrying.")
+}
+
+func printWatchRunFailureWithWorktree(err error, worktreePath string, stderr io.Writer) {
+	printWatchRunFailure(err, stderr)
+	printKeptRunWorktree(stderr, worktreePath)
 }

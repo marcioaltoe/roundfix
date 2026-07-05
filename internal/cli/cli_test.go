@@ -27,6 +27,7 @@ import (
 	"roundfix/internal/store"
 	roundtui "roundfix/internal/tui"
 	"roundfix/internal/watch"
+	runworktree "roundfix/internal/worktree"
 )
 
 func TestRunHelp(t *testing.T) {
@@ -860,6 +861,193 @@ func TestRunResolvePrintsDeterministicStdoutReport(t *testing.T) {
 		"Clean after 1 Round(s): 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("stdout mismatch\nwant:\n%q\ngot:\n%q\nstderr:\n%s", wantStdout, stdout.String(), stderr.String())
+	}
+}
+
+func TestRunResolveWorktreeIsolationExcludesConcurrentUserCommit(t *testing.T) {
+	homeDir, repoDir := withReviewGitWorkspace(t)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	withRealReviewPreflight(t, repoDir, true)
+	source := &fakeSourceResolver{}
+	withSourceResolver(t, source)
+	pusher := &checkingPusher{}
+	withPusher(t, pusher)
+	runner := &fakeAgentRunner{
+		onRun: func(req agent.ExecuteRequest) error {
+			if err := os.WriteFile(filepath.Join(req.GitRoot, "agent.txt"), []byte("agent work\n"), 0o644); err != nil {
+				return err
+			}
+			mustWrite(t, filepath.Join(repoDir, "user.txt"), "user work\n")
+			gitImplement(t, repoDir, "add", "user.txt")
+			gitImplement(t, repoDir, "commit", "-m", "user work during resolve")
+			return nil
+		},
+	}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected IntegrationPending exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	runID := reviewRunIDFromStderr(t, stderr.String())
+	run := runFromStore(t, homeDir, runID)
+	if run.State != store.StateIntegrationPending {
+		t.Fatalf("expected IntegrationPending Run, got %s", run.State)
+	}
+	if pusher.calls != 0 {
+		t.Fatalf("expected Final Push skipped on IntegrationPending, got %d calls", pusher.calls)
+	}
+	if len(runner.gitRoots) != 1 || runner.gitRoots[0] != run.WorkDir {
+		t.Fatalf("expected Agent to run in Run Worktree %q, got %v", run.WorkDir, runner.gitRoots)
+	}
+	branch := runworktree.BranchName(runID)
+	assertRunWorktreeExists(t, run.WorkDir)
+	assertRunBranchExists(t, repoDir, branch)
+	taskCommitFiles := gitImplementOutput(t, repoDir, "diff-tree", "--no-commit-id", "--name-only", "-r", branch)
+	if !strings.Contains(taskCommitFiles, "agent.txt") {
+		t.Fatalf("expected Run Branch commit to contain agent work, got %q", taskCommitFiles)
+	}
+	if strings.Contains(taskCommitFiles, "user.txt") {
+		t.Fatalf("expected Run Branch commit to exclude concurrent user file, got %q", taskCommitFiles)
+	}
+	userFiles := gitImplementOutput(t, repoDir, "ls-tree", "-r", "--name-only", "HEAD")
+	if !strings.Contains(userFiles, "user.txt") {
+		t.Fatalf("expected user commit to survive on user branch, got %q", userFiles)
+	}
+	if strings.Contains(userFiles, "agent.txt") {
+		t.Fatalf("expected unintegrated agent work to stay off user branch, got %q", userFiles)
+	}
+	if !strings.Contains(stderr.String(), "Integration command: git merge --ff-only "+branch) {
+		t.Fatalf("expected integration command on stderr, got %q", stderr.String())
+	}
+}
+
+func TestRunResolvePushRunsAfterSuccessfulIntegrationAndCleansWorktree(t *testing.T) {
+	homeDir, repoDir := withReviewGitWorkspace(t)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	withRealReviewPreflight(t, repoDir, true)
+	source := &fakeSourceResolver{}
+	withSourceResolver(t, source)
+	pusher := &checkingPusher{
+		check: func(req daemon.PushRequest) error {
+			if req.WorkDir == repoDir {
+				return fmt.Errorf("push WorkDir stayed on user checkout %q", req.WorkDir)
+			}
+			if got := gitImplementOutput(t, repoDir, "show", "HEAD:agent.txt"); got != "agent work\n" {
+				return fmt.Errorf("push ran before integrated agent work reached HEAD, got %q", got)
+			}
+			return nil
+		},
+	}
+	withPusher(t, pusher)
+	runner := &fakeAgentRunner{
+		onRun: func(req agent.ExecuteRequest) error {
+			return os.WriteFile(filepath.Join(req.GitRoot, "agent.txt"), []byte("agent work\n"), 0o644)
+		},
+	}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected clean resolve exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if pusher.calls != 1 {
+		t.Fatalf("expected one Final Push after integration, got %d", pusher.calls)
+	}
+	runID := reviewRunIDFromStderr(t, stderr.String())
+	run := runFromStore(t, homeDir, runID)
+	if run.State != store.StateClean {
+		t.Fatalf("expected Clean Run, got %s", run.State)
+	}
+	if len(pusher.workDir) != 1 || pusher.workDir[0] != run.WorkDir {
+		t.Fatalf("expected Final Push from Run Worktree %q, got %v", run.WorkDir, pusher.workDir)
+	}
+	assertRunWorktreeRemoved(t, run.WorkDir)
+	assertRunBranchRemoved(t, repoDir, runworktree.BranchName(runID))
+	if got := mustRead(t, filepath.Join(repoDir, "agent.txt")); got != "agent work\n" {
+		t.Fatalf("expected integrated agent work in user checkout, got %q", got)
+	}
+}
+
+func TestRunWatchReusesOneRealWorktreeAcrossRoundsAndCleansOnIntegratedClean(t *testing.T) {
+	homeDir, repoDir := withReviewGitWorkspace(t)
+	withRealReviewPreflight(t, repoDir, true)
+	withWatchStatus(t, (&fakeWatchStatus{
+		statuses: []reviewsource.WatchStatus{
+			{State: watch.StatusSettled},
+			{State: watch.StatusSettled},
+		},
+	}).Status)
+	fetchCalls := 0
+	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
+		fetchCalls++
+		return []reviewsource.ReviewItem{
+			{
+				Title:                   fmt.Sprintf("major: handle watch issue %d", fetchCalls),
+				File:                    fmt.Sprintf("internal/watch_%d.go", fetchCalls),
+				Line:                    12,
+				Severity:                "major",
+				Author:                  "coderabbitai[bot]",
+				Body:                    "Watch issue.",
+				SourceRef:               fmt.Sprintf("thread:PRRT_watch_%d,comment:PRRC_watch_%d", fetchCalls, fetchCalls),
+				ReviewHash:              fmt.Sprintf("review-hash-watch-%d", fetchCalls),
+				SourceReviewID:          fmt.Sprintf("90%02d", fetchCalls),
+				SourceReviewSubmittedAt: time.Date(2026, 6, 9, 12, fetchCalls, 0, 0, time.UTC),
+			},
+		}, nil
+	})
+	headCheck := &fakeWatchHeadCheck{states: []watch.HeadCheckState{watch.CheckFailure, watch.CheckSuccess}}
+	withWatchHeadCheck(t, headCheck.Check)
+	source := &fakeSourceResolver{}
+	withSourceResolver(t, source)
+	pusher := &checkingPusher{}
+	withPusher(t, pusher)
+	runCount := 0
+	runner := &fakeAgentRunner{
+		onRun: func(req agent.ExecuteRequest) error {
+			runCount++
+			return os.WriteFile(filepath.Join(req.GitRoot, "agent.txt"), []byte(fmt.Sprintf("agent round %d\n", runCount)), 0o644)
+		},
+	}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "2", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected clean watch exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if runner.calls != 2 {
+		t.Fatalf("expected two watched resolve rounds, got %d", runner.calls)
+	}
+	if len(runner.gitRoots) != 2 || runner.gitRoots[0] == "" || runner.gitRoots[0] != runner.gitRoots[1] {
+		t.Fatalf("expected one Run Worktree reused across rounds, got %v", runner.gitRoots)
+	}
+	if pusher.calls != 2 {
+		t.Fatalf("expected Final Push after each integrated clean round, got %d", pusher.calls)
+	}
+	runID := reviewRunIDFromStderr(t, stderr.String())
+	run := runFromStore(t, homeDir, runID)
+	if run.State != store.StateClean {
+		t.Fatalf("expected Clean watch Run, got %s", run.State)
+	}
+	if run.WorkDir != runner.gitRoots[0] {
+		t.Fatalf("expected recorded work_dir %q to match Agent WorkDir %q", run.WorkDir, runner.gitRoots[0])
+	}
+	assertRunWorktreeRemoved(t, run.WorkDir)
+	assertRunBranchRemoved(t, repoDir, runworktree.BranchName(runID))
+	if got := mustRead(t, filepath.Join(repoDir, "agent.txt")); got != "agent round 2\n" {
+		t.Fatalf("expected latest integrated watch work in user checkout, got %q", got)
+	}
+	if !strings.Contains(stdout.String(), "Clean after 2 Round(s):") {
+		t.Fatalf("expected clean two-round stdout report, got %q", stdout.String())
 	}
 }
 
@@ -3120,6 +3308,67 @@ func withCLIWorkspace(t *testing.T) (string, string) {
 	return homeDir, repoDir
 }
 
+func withReviewGitWorkspace(t *testing.T) (string, string) {
+	t.Helper()
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+	repoDir := t.TempDir()
+	gitImplement(t, repoDir, "init", "--initial-branch=main")
+	gitImplement(t, repoDir, "config", "user.name", "Roundfix Test")
+	gitImplement(t, repoDir, "config", "user.email", "roundfix-test@example.com")
+	gitImplement(t, repoDir, "config", "commit.gpgsign", "false")
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
+defaults:
+  verification: test -f agent.txt
+watch:
+  poll_interval: 1s
+  review_timeout: 5s
+  quiet_period: 1ms
+`)
+	mustWrite(t, filepath.Join(repoDir, "README.md"), "seed\n")
+	gitImplement(t, repoDir, "add", "-A")
+	gitImplement(t, repoDir, "commit", "-m", "seed review repo")
+	gitImplement(t, repoDir, "checkout", "-b", "feature/review")
+	resolved, err := filepath.EvalSymlinks(repoDir)
+	if err != nil {
+		t.Fatalf("resolve review repo dir: %v", err)
+	}
+	t.Chdir(resolved)
+	return homeDir, resolved
+}
+
+func withRealReviewPreflight(t *testing.T, repoDir string, pushEnabled bool) {
+	t.Helper()
+	withPreflight(t, func(_ context.Context, req commandRequest, _ roundconfig.Loaded) (preflight.Result, error) {
+		if req.pr == "" {
+			return preflight.Result{}, errors.New("missing pr in test preflight")
+		}
+		head := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+		return preflight.Result{
+			Git: preflight.GitState{
+				Root:           repoDir,
+				Branch:         "feature/review",
+				HEAD:           head,
+				UpstreamRemote: "origin",
+				UpstreamBranch: "feature/review",
+			},
+			PullRequest: preflight.PullRequest{
+				Number:         req.pr,
+				State:          "OPEN",
+				BaseRepository: "owner/project",
+				HeadBranch:     "feature/review",
+				HeadRepository: "owner/project",
+			},
+			PushPlan: preflight.PushPlan{
+				Enabled: pushEnabled,
+				Remote:  "origin",
+				Branch:  "feature/review",
+				Command: []string{"git", "push", "origin", "HEAD:feature/review"},
+			},
+		}, nil
+	})
+}
+
 func mustMkdir(t *testing.T, path string) {
 	t.Helper()
 	if err := os.MkdirAll(path, 0o755); err != nil {
@@ -3137,6 +3386,7 @@ func mustWrite(t *testing.T, path string, content string) {
 func withSuccessfulPreflight(t *testing.T, repoDir string) {
 	t.Helper()
 	withAgentRunner(t, &fakeAgentRunner{})
+	withFakeReviewRunWorktrees(t)
 	withFakeWorktree(t)
 	withVerifier(t, &fakeVerifier{})
 	withCommitter(t, &fakeCommitter{})
@@ -3195,6 +3445,44 @@ func withSuccessfulPreflight(t *testing.T, repoDir string) {
 				Command: []string{"git", "push", "origin", "HEAD:feature/review"},
 			},
 		}, nil
+	})
+}
+
+func withFakeReviewRunWorktrees(t *testing.T) {
+	t.Helper()
+	oldCreate := createRunWorktree
+	oldIntegrate := integrateRunWorktree
+	oldCleanup := cleanupCleanRunWorktree
+	oldPrune := pruneTerminalRunWorktrees
+	createRunWorktree = func(_ context.Context, userRoot, runID, _ string, _ []string) (runworktree.Ref, error) {
+		path := filepath.Join(os.Getenv("HOME"), ".roundfix", "worktrees", "fake-review", runID)
+		if err := os.MkdirAll(path, 0o755); err != nil {
+			return runworktree.Ref{}, err
+		}
+		gitImplement(t, path, "init", "--initial-branch=main")
+		gitImplement(t, path, "commit", "--allow-empty", "-m", "seed fake review run worktree")
+		gitImplement(t, path, "branch", "-m", runworktree.BranchName(runID))
+		return runworktree.Ref{
+			RunID:    runID,
+			Path:     path,
+			Branch:   runworktree.BranchName(runID),
+			UserRoot: userRoot,
+		}, nil
+	}
+	integrateRunWorktree = func(context.Context, runworktree.Ref, string, string) (runworktree.IntegrationResult, error) {
+		return runworktree.IntegrationResult{Mode: runworktree.ModeFastForwardMerge}, nil
+	}
+	cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
+		return os.RemoveAll(ref.Path)
+	}
+	pruneTerminalRunWorktrees = func(context.Context, string, func(string) bool) error {
+		return nil
+	}
+	t.Cleanup(func() {
+		createRunWorktree = oldCreate
+		integrateRunWorktree = oldIntegrate
+		cleanupCleanRunWorktree = oldCleanup
+		pruneTerminalRunWorktrees = oldPrune
 	})
 }
 
@@ -3546,6 +3834,21 @@ func assertRunState(t *testing.T, homeDir string, runID string, want string) {
 	}
 }
 
+func reviewRunIDFromStderr(t *testing.T, stderr string) string {
+	t.Helper()
+	for _, line := range strings.Split(stderr, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if value, ok := strings.CutPrefix(trimmed, "Run: "); ok {
+			return strings.TrimSpace(value)
+		}
+		if value, ok := strings.CutPrefix(trimmed, "Watch Run: "); ok {
+			return strings.TrimSpace(value)
+		}
+	}
+	t.Fatalf("expected review Run id in stderr, got %q", stderr)
+	return ""
+}
+
 func assertStopRequested(t *testing.T, homeDir string, runID string) {
 	t.Helper()
 	runStore, err := store.Open(context.Background(), homeDir)
@@ -3700,6 +4003,21 @@ func (pusher *fakePusher) Push(_ context.Context, req daemon.PushRequest) error 
 	return pusher.err
 }
 
+type checkingPusher struct {
+	calls   int
+	workDir []string
+	check   func(daemon.PushRequest) error
+}
+
+func (pusher *checkingPusher) Push(_ context.Context, req daemon.PushRequest) error {
+	pusher.calls++
+	pusher.workDir = append(pusher.workDir, req.WorkDir)
+	if pusher.check != nil {
+		return pusher.check(req)
+	}
+	return nil
+}
+
 type fakeWatchStatus struct {
 	err      error
 	calls    int
@@ -3846,7 +4164,9 @@ type fakeAgentRunner struct {
 	runErr         error
 	status         string
 	statuses       []string
+	onRun          func(agent.ExecuteRequest) error
 	calls          int
+	gitRoots       []string
 	probedRuntimes []agent.RuntimeSpec
 	runRuntimes    []agent.RuntimeSpec
 }
@@ -3858,6 +4178,7 @@ func (runner *fakeAgentRunner) Probe(_ context.Context, runtime agent.RuntimeSpe
 
 func (runner *fakeAgentRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
 	runner.calls++
+	runner.gitRoots = append(runner.gitRoots, req.GitRoot)
 	runner.runRuntimes = append(runner.runRuntimes, req.Runtime)
 	status := runner.status
 	if len(runner.statuses) >= runner.calls {
@@ -3865,6 +4186,11 @@ func (runner *fakeAgentRunner) Run(ctx context.Context, req agent.ExecuteRequest
 	}
 	if status == "" {
 		status = rounds.StatusResolved
+	}
+	if runner.onRun != nil {
+		if err := runner.onRun(req); err != nil {
+			return agent.ExecuteResult{}, err
+		}
 	}
 	for _, issue := range req.Batch.Issues {
 		if err := rounds.SetIssueStatus(issue.Path, status, ""); err != nil {
