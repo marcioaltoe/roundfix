@@ -16,6 +16,7 @@ import (
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
+	roundtui "roundfix/internal/tui"
 )
 
 const implementTestSlug = "0001-widget-flow"
@@ -317,19 +318,21 @@ func TestRunImplementValidationFailures(t *testing.T) {
 		message string
 	}{
 		{
-			name:    "missing spec",
+			// The workspace has no docs/specs/, so the Spec picker has
+			// nothing to offer and fails with the fix instead.
+			name:    "missing spec without active Specs",
 			args:    []string{"implement", "--agent", "codex"},
-			message: "missing required --spec",
+			message: "no active Specs to implement",
 		},
 		{
 			name:    "missing spec with no-input",
 			args:    []string{"implement", "--agent", "codex", "--no-input"},
-			message: "missing required --spec",
+			message: "missing required --spec because --no-input disables Interactive Input",
 		},
 		{
-			name:    "missing spec with interactive",
+			name:    "interactive without active Specs",
 			args:    []string{"implement", "--agent", "codex", "--interactive"},
-			message: "missing required --spec",
+			message: "no active Specs to implement",
 		},
 		{
 			name:    "interactive with no-input",
@@ -339,9 +342,9 @@ func TestRunImplementValidationFailures(t *testing.T) {
 		{
 			// The built-in config default is codex, so an empty Agent only
 			// happens when the flag explicitly clears it.
-			name:    "explicitly empty agent",
-			args:    []string{"implement", "--spec", implementTestSlug, "--agent="},
-			message: "missing required --agent",
+			name:    "explicitly empty agent with no-input",
+			args:    []string{"implement", "--spec", implementTestSlug, "--agent=", "--no-input"},
+			message: "missing required --agent because --no-input disables Interactive Input",
 		},
 		{
 			name:    "unsupported agent",
@@ -373,6 +376,150 @@ func TestRunImplementValidationFailures(t *testing.T) {
 			}
 			assertNoRunDatabase(t, homeDir)
 		})
+	}
+}
+
+func TestRunImplementInteractiveInputPicksSpecThroughCollector(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build the widget core"},
+	})
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	withImplementCollaborators(t, runner)
+	var inputReq roundtui.InputRequest
+	var collected strings.Builder
+	withInteractiveInput(t, func(ctx context.Context, req roundtui.InputRequest) (roundtui.CommandValues, error) {
+		inputReq = req
+		// Drive the real collector synchronously: pick the first listed
+		// Spec by number and override the Agent.
+		return roundtui.CollectInput(ctx, req, strings.NewReader("1\nclaude\n"), &collected)
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
+	}
+	if len(inputReq.SpecOptions) != 1 || inputReq.SpecOptions[0] != implementTestSlug {
+		t.Fatalf("expected the picker to list the active Spec, got %#v", inputReq.SpecOptions)
+	}
+	for _, expected := range []string{
+		"Active Specs:",
+		"1. " + implementTestSlug,
+		"Pick a Spec by number or slug.",
+		"Spec []:",
+		"Agent [codex]:",
+	} {
+		if !strings.Contains(collected.String(), expected) {
+			t.Fatalf("expected the Spec picker to show %q, got:\n%s", expected, collected.String())
+		}
+	}
+	if !strings.Contains(stderr.String(), "Interactive Input collected command parameters.") {
+		t.Fatalf("expected Interactive Input confirmation, got %q", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "task_01 completed — Build the widget core") {
+		t.Fatalf("expected the Run to execute the picked Spec, got %q", stdout.String())
+	}
+	run := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
+	if run.SpecSlug != implementTestSlug {
+		t.Fatalf("expected the Run to target the picked Spec, got %q", run.SpecSlug)
+	}
+	defaults := readInteractiveDefaults(t, homeDir)
+	if defaults.Agent != "claude" {
+		t.Fatalf("expected the picked Agent remembered, got %#v", defaults)
+	}
+	if defaults.PRNumber != "" {
+		t.Fatalf("expected no PR default from a spec Run, got %#v", defaults)
+	}
+}
+
+func TestRunImplementInteractiveInputRemembersAgentButNotSpec(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build the widget core"},
+	})
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	withImplementCollaborators(t, runner)
+	withInteractiveInput(t, func(_ context.Context, req roundtui.InputRequest) (roundtui.CommandValues, error) {
+		values := req.Values
+		values.Spec = implementTestSlug
+		values.Agent = "claude"
+		return values, nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	if code := RunContext(context.Background(), []string{"implement"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("expected first run exit 0, got %d (stderr %q)", code, stderr.String())
+	}
+	if defaults := readInteractiveDefaults(t, homeDir); defaults.Agent != "claude" {
+		t.Fatalf("expected the Agent remembered after the first Run, got %#v", defaults)
+	}
+
+	// A second invocation with the Agent explicitly cleared reopens the
+	// flow: the remembered Agent surfaces as the suggestion, the Spec does
+	// not — each Run's target is an explicit choice.
+	gitImplement(t, repoDir, "add", "-A")
+	gitImplement(t, repoDir, "commit", "-m", "keep first run")
+	var secondReq roundtui.InputRequest
+	withInteractiveInput(t, func(_ context.Context, req roundtui.InputRequest) (roundtui.CommandValues, error) {
+		secondReq = req
+		values := req.Values
+		values.Spec = implementTestSlug
+		values.Agent = req.AgentSuggestion.Value
+		return values, nil
+	})
+	stdout.Reset()
+	stderr.Reset()
+
+	if code := RunContext(context.Background(), []string{"implement", "--agent="}, &stdout, &stderr); code != 0 {
+		t.Fatalf("expected second run exit 0, got %d (stderr %q)", code, stderr.String())
+	}
+	if secondReq.AgentSuggestion.Value != "claude" || secondReq.AgentSuggestion.Source != "remembered" {
+		t.Fatalf("expected the remembered Agent suggestion, got %#v", secondReq.AgentSuggestion)
+	}
+	if secondReq.Values.Spec != "" {
+		t.Fatalf("expected the spec slug not remembered across invocations, got %q", secondReq.Values.Spec)
+	}
+}
+
+func TestRunImplementInteractiveForcedWithFlagsProvidedStillOpensFlow(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build the widget core"},
+	})
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	withImplementCollaborators(t, runner)
+	var inputReq roundtui.InputRequest
+	withInteractiveInput(t, func(_ context.Context, req roundtui.InputRequest) (roundtui.CommandValues, error) {
+		inputReq = req
+		return req.Values, nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--interactive"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
+	}
+	if inputReq.Command != "implement" {
+		t.Fatalf("expected --interactive to open the flow, got %#v", inputReq)
+	}
+	if inputReq.Values.Spec != implementTestSlug {
+		t.Fatalf("expected the provided Spec pre-filled, got %q", inputReq.Values.Spec)
+	}
+	run := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
+	if run.SpecSlug != implementTestSlug {
+		t.Fatalf("expected the Run to target the provided Spec, got %q", run.SpecSlug)
 	}
 }
 

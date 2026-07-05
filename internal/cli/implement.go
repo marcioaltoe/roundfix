@@ -23,8 +23,8 @@ const implementUsage = `Usage:
 
 Executes the Spec's Task Graph on the current branch as one Run: Tasks run
 in dependency order, each Task's Verification commands gate one commit, and
-the Run never pushes. Interactive Input for implement is not available yet,
-so --spec is always required.
+the Run never pushes. Without --spec, Interactive Input lists the
+repository's active Specs for selection.
 
 Options:
   --spec               Spec slug under docs/specs/
@@ -34,8 +34,7 @@ Options:
   --model              Agent model override
   --agent-command      Agent command override
   --agent-full-access  Opt into Agent runtime full-access mode
-  --interactive        Open Interactive Input before starting; not available
-                       for implement yet
+  --interactive        Open Interactive Input before starting
   --no-input           Fail instead of opening Interactive Input
 `
 
@@ -54,6 +53,11 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitPreflight
 	}
 	req, err := parseImplementCommand(args, loadedConfig.Config)
+	if err != nil {
+		printPreflightFailure("implement", err, stderr)
+		return exitPreflight
+	}
+	req, err = maybeCollectInteractiveInput(ctx, req, loadedConfig, stderr)
 	if err != nil {
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
@@ -145,6 +149,11 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		// it already names the blocking run id and the stop command.
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
+	}
+	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
+		markRunFailed(ctx, runStore, run.ID)
+		printImplementRunFailure(err, stderr)
+		return exitRunFailed
 	}
 
 	view := implementLiveRunView(req, loadedConfig, gitState, run.ID, graph)
@@ -239,20 +248,37 @@ func parseImplementCommand(args []string, config roundconfig.Config) (commandReq
 	return req, nil
 }
 
-// validateImplementRequest rejects invalid flag combinations. Interactive
-// Input for implement is not wired yet, so a missing --spec is a validation
-// error in every mode.
+// validateImplementRequest rejects invalid flag combinations after
+// Interactive Input had its chance to fill the gaps.
 func validateImplementRequest(req commandRequest) error {
 	if req.noInput && req.interactive {
 		return validationError{message: "--interactive cannot be used with --no-input"}
 	}
 	if req.spec == "" {
-		return validationError{message: "missing required --spec; Interactive Input for implement is not available yet, so pass --spec <slug>"}
+		return missingRequiredFlag(req, "spec")
 	}
 	if req.agent == "" {
-		return validationError{message: "missing required --agent; pass --agent or set defaults.agent in the config (Interactive Input for implement is not available yet)"}
+		return missingRequiredFlag(req, "agent")
 	}
 	return validateAgent(req.agent)
+}
+
+// implementSpecOptions lists the active Spec slugs the Interactive Input
+// Spec picker offers. An empty list fails with the fix instead of opening
+// an empty picker: there is nothing to implement.
+func implementSpecOptions(gitRoot string) ([]string, error) {
+	active, err := spec.ListActive(gitRoot)
+	if err != nil {
+		return nil, err
+	}
+	if len(active) == 0 {
+		return nil, validationError{message: "no active Specs to implement: a Spec is eligible when docs/specs/<slug>/_prd.md has frontmatter status: active; create or activate one, then re-run implement"}
+	}
+	options := make([]string, 0, len(active))
+	for _, entry := range active {
+		options = append(options, entry.Slug)
+	}
+	return options, nil
 }
 
 // executeImplementCycle wires the Run engine exactly like the resolve path

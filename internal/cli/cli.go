@@ -663,6 +663,12 @@ func shouldOpenInteractiveInput(req commandRequest) bool {
 	if req.interactive {
 		return true
 	}
+	if req.name == "implement" {
+		// A missing Spec is the primary trigger: the built-in config default
+		// fills --agent, so an empty Agent only happens when the flag
+		// explicitly clears it.
+		return strings.TrimSpace(req.spec) == "" || strings.TrimSpace(req.agent) == ""
+	}
 	if strings.TrimSpace(req.pr) == "" {
 		return true
 	}
@@ -675,14 +681,27 @@ func shouldOpenInteractiveInput(req commandRequest) bool {
 }
 
 func buildInteractiveInputRequest(ctx context.Context, req commandRequest, loaded roundconfig.Loaded) (roundtui.InputRequest, error) {
+	var specOptions []string
+	if req.name == "implement" {
+		// List the picker's Specs before any Run Database access so a
+		// nothing-to-implement failure leaves no side effects behind.
+		options, err := implementSpecOptions(loaded.GitRoot)
+		if err != nil {
+			return roundtui.InputRequest{}, err
+		}
+		specOptions = options
+	}
 	remembered, err := loadRememberedInteractiveDefaults(ctx, loaded.HomeDir)
 	if err != nil {
 		return roundtui.InputRequest{}, err
 	}
-	currentPR, _ := suggestCurrentPullRequest(ctx, loaded.GitRoot)
-	prSuggestion := roundtui.Suggestion{Value: currentPR, Source: "current"}
-	if prSuggestion.Value == "" {
-		prSuggestion = roundtui.Suggestion{Value: remembered.PRNumber, Source: "remembered"}
+	var prSuggestion roundtui.Suggestion
+	if req.name != "implement" {
+		currentPR, _ := suggestCurrentPullRequest(ctx, loaded.GitRoot)
+		prSuggestion = roundtui.Suggestion{Value: currentPR, Source: "current"}
+		if prSuggestion.Value == "" {
+			prSuggestion = roundtui.Suggestion{Value: remembered.PRNumber, Source: "remembered"}
+		}
 	}
 	agentSuggestion := roundtui.Suggestion{Value: req.agent, Source: "config"}
 	if agentSuggestion.Value == "" {
@@ -692,6 +711,7 @@ func buildInteractiveInputRequest(ctx context.Context, req commandRequest, loade
 		Command: req.name,
 		Values: roundtui.CommandValues{
 			PRNumber:     req.pr,
+			Spec:         req.spec,
 			ReviewSource: req.source,
 			Agent:        req.agent,
 			Round:        req.round,
@@ -702,11 +722,13 @@ func buildInteractiveInputRequest(ctx context.Context, req commandRequest, loade
 		},
 		PRSuggestion:    prSuggestion,
 		AgentSuggestion: agentSuggestion,
+		SpecOptions:     specOptions,
 	}, nil
 }
 
 func applyInteractiveValues(req commandRequest, values roundtui.CommandValues) commandRequest {
 	req.pr = strings.TrimSpace(values.PRNumber)
+	req.spec = strings.TrimSpace(values.Spec)
 	req.source = strings.TrimSpace(values.ReviewSource)
 	req.agent = strings.TrimSpace(values.Agent)
 	req.round = strings.TrimSpace(values.Round)
@@ -735,8 +757,10 @@ func loadRememberedInteractiveDefaults(ctx context.Context, homeDir string) (sto
 }
 
 func rememberInteractiveDefaults(ctx context.Context, runStore *store.Store, req commandRequest) error {
+	// The spec slug is deliberately never remembered: each Run's target is
+	// an explicit choice.
 	defaults := store.InteractiveDefaults{PRNumber: req.pr}
-	if req.name == "resolve" || req.name == "watch" {
+	if req.name == "resolve" || req.name == "watch" || req.name == "implement" {
 		defaults.Agent = req.agent
 	}
 	return runStore.RememberInteractiveDefaults(ctx, defaults)

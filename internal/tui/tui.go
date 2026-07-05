@@ -14,6 +14,7 @@ import (
 
 type CommandValues struct {
 	PRNumber     string
+	Spec         string
 	ReviewSource string
 	Agent        string
 	Round        string
@@ -33,6 +34,10 @@ type InputRequest struct {
 	Values          CommandValues
 	PRSuggestion    Suggestion
 	AgentSuggestion Suggestion
+	// SpecOptions lists the active Spec slugs the Spec picker offers, in
+	// slug order. The spec field accepts a 1-based number into this list
+	// or a slug typed directly.
+	SpecOptions []string
 }
 
 type LiveRunView struct {
@@ -99,6 +104,9 @@ func CollectInput(ctx context.Context, req InputRequest, input io.Reader, output
 		if line == "" {
 			line = current
 		}
+		if field == "spec" {
+			line = pickSpecOption(line, req.SpecOptions)
+		}
 		if line != "" {
 			if err := setValue(&values, field, line); err != nil {
 				return CommandValues{}, err
@@ -114,6 +122,7 @@ func CollectInput(ctx context.Context, req InputRequest, input io.Reader, output
 func DefaultsForInput(req InputRequest) map[string]string {
 	defaults := map[string]string{
 		"pr":           req.Values.PRNumber,
+		"spec":         req.Values.Spec,
 		"source":       req.Values.ReviewSource,
 		"agent":        req.Values.Agent,
 		"round":        req.Values.Round,
@@ -138,6 +147,13 @@ func RenderInteractiveInput(req InputRequest) string {
 	var builder strings.Builder
 	builder.WriteString("Roundfix Interactive Input\n")
 	builder.WriteString(fmt.Sprintf("Command: %s\n", req.Command))
+	if len(req.SpecOptions) > 0 {
+		builder.WriteString("Active Specs:\n")
+		for index, slug := range req.SpecOptions {
+			builder.WriteString(fmt.Sprintf("  %d. %s\n", index+1, slug))
+		}
+		builder.WriteString("Pick a Spec by number or slug.\n")
+	}
 	if defaults["pr"] != "" {
 		source := req.PRSuggestion.Source
 		if source == "" && req.Values.PRNumber != "" {
@@ -372,15 +388,30 @@ func fieldsForCommand(command string) []string {
 		return []string{"pr", "agent", "round", "artifact-dir", "model"}
 	case "watch":
 		return []string{"pr", "source", "agent", "artifact-dir", "model", "max-rounds"}
+	case "implement":
+		return []string{"spec", "agent"}
 	default:
 		return []string{"pr"}
 	}
+}
+
+// pickSpecOption maps a 1-based picker number onto the listed Spec slug and
+// passes any other entry through unchanged, so a known slug can be typed
+// directly.
+func pickSpecOption(line string, options []string) string {
+	index, err := strconv.Atoi(line)
+	if err != nil || index < 1 || index > len(options) {
+		return line
+	}
+	return options[index-1]
 }
 
 func inputLabel(field string) string {
 	switch field {
 	case "pr":
 		return "Open Pull Request"
+	case "spec":
+		return "Spec"
 	case "source":
 		return "Review Source"
 	case "agent":
@@ -402,6 +433,8 @@ func getValue(values CommandValues, field string) string {
 	switch field {
 	case "pr":
 		return values.PRNumber
+	case "spec":
+		return values.Spec
 	case "source":
 		return values.ReviewSource
 	case "agent":
@@ -424,6 +457,8 @@ func setValue(values *CommandValues, field string, value string) error {
 	switch field {
 	case "pr":
 		values.PRNumber = value
+	case "spec":
+		values.Spec = value
 	case "source":
 		values.ReviewSource = value
 	case "agent":

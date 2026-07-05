@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0001-implement-command
-status: pending
+status: completed
 type: frontend
 complexity: medium
 ---
@@ -22,18 +22,18 @@ Give the Implement Command the same Interactive Input parity the review commands
 
 ## Subtasks
 
-- [ ] Spec field in the input collector and its field set for the Implement Command
-- [ ] Active-Spec listing wired into the picker
-- [ ] Merge and precedence of collected values into the command request
-- [ ] Empty-list and `--no-input` failure paths
+- [x] Spec field in the input collector and its field set for the Implement Command
+- [x] Active-Spec listing wired into the picker
+- [x] Merge and precedence of collected values into the command request
+- [x] Empty-list and `--no-input` failure paths
 
 ## Acceptance Criteria
 
-- [ ] Driving the collector synchronously with a scripted selection returns the chosen slug and agent; the resulting Run targets that Spec.
-- [ ] `--no-input` without `--spec` exits 2 naming the missing flag; `--interactive` with both flags still opens the flow.
-- [ ] With no active Specs, the command exits 2 with a message saying there is nothing to implement and where Specs live.
-- [ ] Agent selection is remembered across invocations; the spec slug is not.
-- [ ] The full existing suite passes unchanged.
+- [x] Driving the collector synchronously with a scripted selection returns the chosen slug and agent; the resulting Run targets that Spec.
+- [x] `--no-input` without `--spec` exits 2 naming the missing flag; `--interactive` with both flags still opens the flow.
+- [x] With no active Specs, the command exits 2 with a message saying there is nothing to implement and where Specs live.
+- [x] Agent selection is remembered across invocations; the spec slug is not.
+- [x] The full existing suite passes unchanged.
 
 ## Verification
 
@@ -43,3 +43,24 @@ Give the Implement Command the same Interactive Input parity the review commands
 ## References
 
 `_prd.md` → User Story 7; Core Feature 12. `_techspec.md` → System Architecture (tui), Coverage Map (Story 7), Build Order 9.
+
+## Result
+
+The Implement Command now opens Interactive Input under the shared rules — forced by `--interactive`, suppressed by `--no-input`, and otherwise when `--spec` is missing or `--agent` is explicitly cleared (the built-in `defaults.agent` makes a missing `--spec` the primary trigger). The flow presents a Spec picker: a numbered `Active Specs:` list of `spec.ListActive` slugs, selectable by 1-based number or by typing a slug, followed by the existing Agent field with the config/remembered suggestion. Collected values merge through the established `buildInteractiveInputRequest`/`applyInteractiveValues` precedence (flag-provided values pre-fill their fields; Enter accepts them). The Agent selection is remembered through the existing interactive defaults after Run creation; the spec slug is never stored. With `--no-input` and no `--spec`, the command fails with the shared `missing required --spec because --no-input disables Interactive Input` shape, exit 2. With no active Specs, the flow fails before any Run Database access with one actionable message naming `docs/specs/<slug>/_prd.md` `status: active`, exit 2 — never an empty picker. The two placeholder "not available yet" validation messages and the help-text caveat are gone.
+
+Commands run:
+
+- `rtk go test ./internal/tui/ ./internal/cli/` — pass (159 tests, 2 packages).
+- `rtk go test ./...` — pass (401 tests, 16 packages).
+- `make verify` — pass (fmt-check, tests, `roundfix skills check`, build).
+- `rtk go run ./cmd/roundfix implement --help` — help text matches shipped behavior.
+
+Evidence per acceptance criterion:
+
+- Scripted selection → chosen slug and agent, Run targets that Spec: `TestCollectInputSpecPickerSelectsListedSpec` (tui, scripted stdin, by-number/by-slug/out-of-range) and `TestRunImplementInteractiveInputPicksSpecThroughCollector` (CLI seam driving the real `tui.CollectInput` with `"1\nclaude\n"`; asserts `run.SpecSlug`).
+- `--no-input` without `--spec` exits 2 naming the flag: `TestRunImplementValidationFailures/missing spec with no-input`. `--interactive` with both flags still opens the flow: `TestRunImplementInteractiveForcedWithFlagsProvidedStillOpensFlow`.
+- No active Specs → exit 2 with the actionable message and no Run Database side effects: `TestRunImplementValidationFailures/missing spec without active Specs` and `/interactive without active Specs`.
+- Agent remembered, spec slug not: `TestRunImplementInteractiveInputRemembersAgentButNotSpec` (second invocation surfaces the remembered Agent suggestion; `Values.Spec` arrives empty).
+- Full suite passes: `rtk go test ./...` green. Three implement validation table cases were updated because they encoded the pre-picker placeholder behavior this task replaces; the review-path suite passed untouched.
+
+Follow-up: the `roundfix` skill does not document the Implement Command yet — Build Order 11 (skill + docs task) must describe the picker (numbered active-Spec list, number-or-slug selection) when it adds implement.

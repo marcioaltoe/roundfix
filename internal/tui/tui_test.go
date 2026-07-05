@@ -78,6 +78,51 @@ func TestCollectInputAppliesDefaultsAndUserOverrides(t *testing.T) {
 	}
 }
 
+func TestCollectInputSpecPickerSelectsListedSpec(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		wantSpec string
+	}{
+		{name: "by number", input: "2\nclaude\n", wantSpec: "0002-other-flow"},
+		{name: "by slug", input: "0001-widget-flow\nclaude\n", wantSpec: "0001-widget-flow"},
+		{name: "out-of-range number passes through", input: "9\nclaude\n", wantSpec: "9"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var output strings.Builder
+
+			values, err := CollectInput(context.Background(), InputRequest{
+				Command:     "implement",
+				Values:      CommandValues{Agent: "codex"},
+				SpecOptions: []string{"0001-widget-flow", "0002-other-flow"},
+			}, strings.NewReader(tt.input), &output)
+			if err != nil {
+				t.Fatalf("collect input: %v", err)
+			}
+
+			if values.Spec != tt.wantSpec {
+				t.Fatalf("expected Spec %q, got %q", tt.wantSpec, values.Spec)
+			}
+			if values.Agent != "claude" {
+				t.Fatalf("expected agent override, got %q", values.Agent)
+			}
+			for _, expected := range []string{
+				"Active Specs:",
+				"1. 0001-widget-flow",
+				"2. 0002-other-flow",
+				"Pick a Spec by number or slug.",
+				"Spec []:",
+				"Agent [codex]:",
+			} {
+				if !strings.Contains(output.String(), expected) {
+					t.Fatalf("expected the Spec picker to show %q, got:\n%s", expected, output.String())
+				}
+			}
+		})
+	}
+}
+
 func TestRenderLiveRunViewGroupsIssuesAndShowsStatusStrips(t *testing.T) {
 	view := RenderLiveRunView(LiveRunView{
 		Command:       "resolve",
