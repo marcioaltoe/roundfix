@@ -527,6 +527,46 @@ func TestListActiveFiltersInactiveArchivedAndNonSpecDirectories(t *testing.T) {
 	}
 }
 
+func TestListActiveDetailedReportsSkippedSpecFolders(t *testing.T) {
+	gitRoot := t.TempDir()
+	writeSpecDir(t, gitRoot, "0001-active", map[string]string{"_prd.md": prdFixture("active")})
+	if err := os.MkdirAll(filepath.Join(gitRoot, "docs", "specs", "0002-missing-prd"), 0o755); err != nil {
+		t.Fatalf("create missing PRD fixture: %v", err)
+	}
+	writeSpecDir(t, gitRoot, "0003-broken-frontmatter", map[string]string{"_prd.md": "no frontmatter\n"})
+	writeSpecDir(t, gitRoot, "0004-archived-status", map[string]string{"_prd.md": prdFixture("archived")})
+	writeSpecDir(t, gitRoot, "_archived", map[string]string{"0005-old/_prd.md": prdFixture("broken")})
+
+	specs, skipped, err := ListActiveDetailed(gitRoot)
+	if err != nil {
+		t.Fatalf("ListActiveDetailed: %v", err)
+	}
+	if len(specs) != 1 || specs[0].Slug != "0001-active" {
+		t.Fatalf("active Specs = %+v, want only 0001-active", specs)
+	}
+	wantSkipped := []SkippedSpec{
+		{Dir: "docs/specs/0002-missing-prd", Reason: "missing _prd.md"},
+		{Dir: "docs/specs/0003-broken-frontmatter", Reason: "unreadable _prd.md frontmatter: missing YAML frontmatter opening marker"},
+		{Dir: "docs/specs/0004-archived-status", Reason: `status "archived" is not active`},
+	}
+	if len(skipped) != len(wantSkipped) {
+		t.Fatalf("skipped = %+v, want %+v", skipped, wantSkipped)
+	}
+	for index := range wantSkipped {
+		if skipped[index] != wantSkipped[index] {
+			t.Fatalf("skipped[%d] = %+v, want %+v", index, skipped[index], wantSkipped[index])
+		}
+	}
+
+	simple, err := ListActive(gitRoot)
+	if err != nil {
+		t.Fatalf("ListActive: %v", err)
+	}
+	if len(simple) != 1 || simple[0].Slug != specs[0].Slug {
+		t.Fatalf("ListActive = %+v, want active list unchanged from detailed result %+v", simple, specs)
+	}
+}
+
 func TestListActiveWithoutSpecsRootReturnsNothing(t *testing.T) {
 	specs, err := ListActive(t.TempDir())
 	if err != nil {

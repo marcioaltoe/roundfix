@@ -281,18 +281,29 @@ func validateImplementRequest(req commandRequest) error {
 // Spec picker offers. An empty list fails with the fix instead of opening
 // an empty picker: there is nothing to implement.
 func implementSpecOptions(gitRoot string) ([]string, error) {
-	active, err := spec.ListActive(gitRoot)
+	options, _, err := implementSpecOptionsDetailed(gitRoot)
+	return options, err
+}
+
+func implementSpecOptionsDetailed(gitRoot string) ([]string, []spec.SkippedSpec, error) {
+	active, skipped, err := spec.ListActiveDetailed(gitRoot)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if len(active) == 0 {
-		return nil, validationError{message: "no active Specs to implement: a Spec is eligible when docs/specs/<slug>/_prd.md has frontmatter status: active; create or activate one, then re-run implement"}
+		return nil, skipped, validationError{message: "no active Specs to implement: a Spec is eligible when docs/specs/<slug>/_prd.md has frontmatter status: active; create or activate one, then re-run implement"}
 	}
 	options := make([]string, 0, len(active))
 	for _, entry := range active {
 		options = append(options, entry.Slug)
 	}
-	return options, nil
+	return options, skipped, nil
+}
+
+func printSkippedSpecDiagnostics(stderr io.Writer, skipped []spec.SkippedSpec) {
+	for _, entry := range skipped {
+		fmt.Fprintf(stderr, "skipped %s: %s\n", entry.Dir, entry.Reason)
+	}
 }
 
 // executeImplementCycle wires the Run engine exactly like the resolve path

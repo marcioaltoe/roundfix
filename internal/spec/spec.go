@@ -48,6 +48,13 @@ type Spec struct {
 	Dir  string
 }
 
+// SkippedSpec reports a Spec directory that discovery intentionally did not
+// offer to the Implement picker, with the reason a user can fix.
+type SkippedSpec struct {
+	Dir    string
+	Reason string
+}
+
 // Task is one Task Graph node joined with its parsed task file. File is the
 // task file path relative to the repository root, so it can double as a git
 // pathspec and be re-resolved with ReloadTask.
@@ -87,15 +94,24 @@ type manifestFrontmatter struct {
 // PRD are skipped; Load names the exact problem when a slug is requested
 // explicitly. The result is sorted by slug.
 func ListActive(gitRoot string) ([]Spec, error) {
+	specs, _, err := ListActiveDetailed(gitRoot)
+	return specs, err
+}
+
+// ListActiveDetailed discovers active Specs and reports non-active Spec
+// directories skipped because their PRD is missing, unreadable, or inactive.
+// _archived/ is outside active discovery and is not reported as skipped.
+func ListActiveDetailed(gitRoot string) ([]Spec, []SkippedSpec, error) {
 	specsDir := specsRoot(gitRoot)
 	entries, err := os.ReadDir(specsDir)
 	if errors.Is(err, os.ErrNotExist) {
-		return nil, nil
+		return nil, nil, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("read Spec root %q: %w", specsDir, err)
+		return nil, nil, fmt.Errorf("read Spec root %q: %w", specsDir, err)
 	}
 	var specs []Spec
+	var skipped []SkippedSpec
 	// os.ReadDir returns entries sorted by filename, so the result is
 	// already sorted by slug.
 	for _, entry := range entries {
@@ -105,15 +121,30 @@ func ListActive(gitRoot string) ([]Spec, error) {
 		dir := filepath.Join(specsDir, entry.Name())
 		content, err := os.ReadFile(filepath.Join(dir, "_prd.md"))
 		if err != nil {
+			skipped = append(skipped, SkippedSpec{
+				Dir:    specDisplayDir(entry.Name()),
+				Reason: prdReadSkipReason(err),
+			})
 			continue
 		}
 		status, err := prdStatus(content)
-		if err != nil || status != prdStatusActive {
+		if err != nil {
+			skipped = append(skipped, SkippedSpec{
+				Dir:    specDisplayDir(entry.Name()),
+				Reason: fmt.Sprintf("unreadable _prd.md frontmatter: %v", err),
+			})
+			continue
+		}
+		if status != prdStatusActive {
+			skipped = append(skipped, SkippedSpec{
+				Dir:    specDisplayDir(entry.Name()),
+				Reason: fmt.Sprintf("status %q is not active", status),
+			})
 			continue
 		}
 		specs = append(specs, Spec{Slug: entry.Name(), Dir: dir})
 	}
-	return specs, nil
+	return specs, skipped, nil
 }
 
 // Load parses and validates one Spec's Task Graph and task files, returning
@@ -149,6 +180,21 @@ func Load(gitRoot string, slug string) (*Graph, error) {
 
 func specsRoot(gitRoot string) string {
 	return filepath.Join(gitRoot, "docs", "specs")
+}
+
+func specDisplayDir(slug string) string {
+	return filepath.ToSlash(filepath.Join("docs", "specs", slug))
+}
+
+func prdReadSkipReason(err error) string {
+	if errors.Is(err, os.ErrNotExist) {
+		return "missing _prd.md"
+	}
+	var pathErr *os.PathError
+	if errors.As(err, &pathErr) {
+		return fmt.Sprintf("read _prd.md: %v", pathErr.Err)
+	}
+	return fmt.Sprintf("read _prd.md: %v", err)
 }
 
 func requireActive(slug string, dir string) error {

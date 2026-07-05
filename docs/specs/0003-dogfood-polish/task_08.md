@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0003-dogfood-polish
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -31,17 +31,17 @@ Verifiable through spec-package and collector tests.
 
 ## Subtasks
 
-- [ ] Detailed discovery with typed skip reasons
-- [ ] Picker wiring for stderr diagnostics
-- [ ] Table tests over broken fixture folders
+- [x] Detailed discovery with typed skip reasons
+- [x] Picker wiring for stderr diagnostics
+- [x] Table tests over broken fixture folders
 
 ## Acceptance Criteria
 
-- [ ] Fixtures for missing PRD, broken frontmatter, and archived-status
+- [x] Fixtures for missing PRD, broken frontmatter, and archived-status
       folders produce the exact skip reasons; active Specs list unchanged.
-- [ ] Interactive implement over a repo with one broken folder shows the
+- [x] Interactive implement over a repo with one broken folder shows the
       diagnostic on stderr and the picker still works.
-- [ ] Full suite passes.
+- [x] Full suite passes.
 
 ## Verification
 
@@ -52,3 +52,22 @@ Verifiable through spec-package and collector tests.
 
 `_prd.md` → User Story 7; Core Feature 7. `_techspec.md` → Interfaces
 (ListActiveDetailed), Build Order 8. Dogfood finding 6.
+
+## Result
+
+- Added `spec.ListActiveDetailed`, returning active Specs plus typed
+  `SkippedSpec` entries. `TestListActiveDetailedReportsSkippedSpecFolders`
+  covers missing `_prd.md`, broken frontmatter, `status: archived`, keeps
+  `_archived/` out of skipped results, and confirms `ListActive` still returns
+  the unchanged active list.
+- Wired the implement Interactive Input picker to print skipped-folder
+  diagnostics to stderr only, in the form `skipped docs/specs/<dir>: <reason>`.
+  The collector test covers a broken spec folder, confirms the diagnostic
+  appears on stderr, and confirms the picker rendering and stdout stay
+  unchanged.
+- Verification:
+  - `rtk go test ./internal/spec/ ./internal/cli/`: passed (`Go test: 200
+    passed in 2 packages`).
+  - `rtk go test ./...`: passed (`Go test: 479 passed in 16 packages`).
+  - `rtk make verify`: passed (`go test`, `skills check`, and `go build` all
+    exited 0).

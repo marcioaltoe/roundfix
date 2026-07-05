@@ -676,7 +676,7 @@ func maybeCollectInteractiveInput(ctx context.Context, req commandRequest, loade
 	if !shouldOpenInteractiveInput(req) {
 		return req, nil
 	}
-	inputReq, err := buildInteractiveInputRequest(ctx, req, loaded)
+	inputReq, err := buildInteractiveInputRequest(ctx, req, loaded, stderr)
 	if err != nil {
 		return req, err
 	}
@@ -714,15 +714,16 @@ func shouldOpenInteractiveInput(req commandRequest) bool {
 	}
 }
 
-func buildInteractiveInputRequest(ctx context.Context, req commandRequest, loaded roundconfig.Loaded) (roundtui.InputRequest, error) {
+func buildInteractiveInputRequest(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, stderr io.Writer) (roundtui.InputRequest, error) {
 	var specOptions []string
 	if req.name == "implement" {
 		// List the picker's Specs before any Run Database access so a
 		// nothing-to-implement failure leaves no side effects behind.
-		options, err := implementSpecOptions(loaded.GitRoot)
+		options, skipped, err := implementSpecOptionsDetailed(loaded.GitRoot)
 		if err != nil {
 			return roundtui.InputRequest{}, err
 		}
+		printSkippedSpecDiagnostics(stderr, skipped)
 		specOptions = options
 	}
 	remembered, err := loadRememberedInteractiveDefaults(ctx, loaded.HomeDir)

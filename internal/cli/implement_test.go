@@ -421,6 +421,10 @@ func TestRunImplementInteractiveInputPicksSpecThroughCollector(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 	})
+	mustMkdir(t, filepath.Join(repoDir, "docs", "specs", "0002-broken-prd"))
+	mustWrite(t, filepath.Join(repoDir, "docs", "specs", "0002-broken-prd", "_prd.md"), "no frontmatter\n")
+	gitImplement(t, repoDir, "add", "docs/specs/0002-broken-prd/_prd.md")
+	gitImplement(t, repoDir, "commit", "-m", "add broken spec fixture")
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
 		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
@@ -459,8 +463,18 @@ func TestRunImplementInteractiveInputPicksSpecThroughCollector(t *testing.T) {
 	if !strings.Contains(stderr.String(), "Interactive Input collected command parameters.") {
 		t.Fatalf("expected Interactive Input confirmation, got %q", stderr.String())
 	}
+	diagnostic := "skipped docs/specs/0002-broken-prd: unreadable _prd.md frontmatter: missing YAML frontmatter opening marker"
+	if !strings.Contains(stderr.String(), diagnostic) {
+		t.Fatalf("expected skipped Spec diagnostic %q, got %q", diagnostic, stderr.String())
+	}
+	if strings.Contains(collected.String(), "skipped docs/specs") {
+		t.Fatalf("expected picker rendering untouched by skipped diagnostics, got:\n%s", collected.String())
+	}
 	if !strings.Contains(stdout.String(), "task_01 completed — Build the widget core") {
 		t.Fatalf("expected the Run to execute the picked Spec, got %q", stdout.String())
+	}
+	if strings.Contains(stdout.String(), "skipped docs/specs") {
+		t.Fatalf("expected stdout untouched by skipped diagnostics, got %q", stdout.String())
 	}
 	run := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
 	if run.SpecSlug != implementTestSlug {
