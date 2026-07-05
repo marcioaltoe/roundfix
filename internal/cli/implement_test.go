@@ -160,15 +160,21 @@ type implementFakeRunner struct {
 	qaCalls      int
 	logPaths     []string
 	writeLogs    bool
+	agentOutput  string
 }
 
 func (runner *implementFakeRunner) Probe(context.Context, agent.RuntimeSpec) error {
 	return runner.probeErr
 }
 
-func (runner *implementFakeRunner) Run(_ context.Context, req agent.ExecuteRequest, _ runevent.Sink) (agent.ExecuteResult, error) {
+func (runner *implementFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
 	runner.calls++
 	runner.logPaths = append(runner.logPaths, req.LogPath)
+	if runner.agentOutput != "" {
+		if err := publishFakeAgentOutput(ctx, sink, req, runner.agentOutput); err != nil {
+			return agent.ExecuteResult{}, err
+		}
+	}
 	if runner.writeLogs {
 		if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {
 			return agent.ExecuteResult{}, err
@@ -315,6 +321,7 @@ func TestRunImplementHelpListsExactlyImplementedFlags(t *testing.T) {
 		"--agent-command":     true,
 		"--agent-full-access": true,
 		"--interactive":       true,
+		"--no-agent-console":  true,
 		"--no-input":          true,
 	}
 	got := map[string]bool{}
@@ -376,6 +383,11 @@ func TestRunImplementValidationFailures(t *testing.T) {
 			name:    "interactive with no-input",
 			args:    []string{"implement", "--spec", implementTestSlug, "--interactive", "--no-input"},
 			message: "--interactive cannot be used with --no-input",
+		},
+		{
+			name:    "interactive with no-agent-console",
+			args:    []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--interactive", "--no-agent-console"},
+			message: "--interactive cannot be used with --no-agent-console",
 		},
 		{
 			// The built-in config default is codex, so an empty Agent only
@@ -686,6 +698,42 @@ func TestRunImplementExecutesSpecEndToEnd(t *testing.T) {
 		t.Fatalf("unexpected Run row: %#v", run)
 	}
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+func TestRunImplementNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build the widget core"},
+	})
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		agentOutput:  "fake implement agent output\n",
+	}
+	withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-agent-console", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean implement exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if strings.Contains(stderr.String(), "fake implement agent output") {
+		t.Fatalf("expected Agent console hidden from stderr, got %q", stderr.String())
+	}
+	for _, want := range []string{
+		"Implement Run:",
+		"implement selected Spec",
+		"Verification command passed",
+		"Task commit created",
+		"reached Clean",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("expected stderr to keep daemon/progress line %q, got %q", want, stderr.String())
+		}
+	}
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	assertJournalContainsAgentAndDaemonEvents(t, events, "fake implement agent output")
 }
 
 func TestRunImplementUsesConfiguredArtifactDirectoryForAgentLogs(t *testing.T) {

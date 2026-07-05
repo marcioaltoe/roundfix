@@ -34,6 +34,7 @@ Options:
   --model              Agent model override
   --agent-command      Agent command override
   --agent-full-access  Opt into Agent runtime full-access mode
+  --no-agent-console   Hide Agent-source console events from non-TTY stderr
   --interactive        Open Interactive Input before starting
   --no-input           Fail instead of opening Interactive Input
 `
@@ -63,6 +64,10 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitPreflight
 	}
 	if err := validateImplementRequest(req); err != nil {
+		printPreflightFailure("implement", err, stderr)
+		return exitPreflight
+	}
+	if err := validateAgentConsoleDisplay(req, stderr); err != nil {
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
@@ -168,7 +173,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	if !liveTUIEnabled(stderr) {
 		fmt.Fprint(stderr, roundtui.RenderLiveRunView(view))
 	}
-	ui, err := startRunUI(ctx, view, run.ID, loadedConfig.HomeDir, runStore, stderr)
+	ui, err := startRunUI(ctx, view, run.ID, loadedConfig.HomeDir, runStore, stderr, req.noAgentConsole)
 	if err != nil {
 		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
 		markRunFailed(ctx, runStore, run.ID)
@@ -250,6 +255,7 @@ func parseImplementCommand(args []string, config roundconfig.Config) (commandReq
 	fs.StringVar(&req.model, "model", req.model, "Agent model override")
 	fs.StringVar(&req.agentCmd, "agent-command", "", "Agent command override")
 	fs.BoolVar(&req.agentFullAccess, "agent-full-access", req.agentFullAccess, "Opt into Agent runtime full-access mode")
+	fs.BoolVar(&req.noAgentConsole, "no-agent-console", false, "Hide Agent-source console events from non-TTY stderr")
 	fs.BoolVar(&req.interactive, "interactive", false, "Open Interactive Input before starting")
 	fs.BoolVar(&req.noInput, "no-input", false, "Fail instead of opening Interactive Input")
 	if err := fs.Parse(args); err != nil {

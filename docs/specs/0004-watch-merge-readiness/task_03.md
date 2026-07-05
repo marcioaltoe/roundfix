@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0004-watch-merge-readiness
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -30,18 +30,18 @@ unit tests and buffer-captured stderr asserts.
 
 ## Subtasks
 
-- [ ] Source-filter Sink decorator with unit tests
-- [ ] Flag wiring on the three operational commands
-- [ ] TTY rejection and help text
-- [ ] Buffer-captured stderr asserts over a fake Agent run
+- [x] Source-filter Sink decorator with unit tests
+- [x] Flag wiring on the three operational commands
+- [x] TTY rejection and help text
+- [x] Buffer-captured stderr asserts over a fake Agent run
 
 ## Acceptance Criteria
 
-- [ ] A full fake run with `--no-agent-console` yields stderr containing
+- [x] A full fake run with `--no-agent-console` yields stderr containing
       every Daemon-source event line and zero Agent-source lines; the
       Journal contains both.
-- [ ] Without the flag, stderr is byte-identical to today.
-- [ ] `--interactive --no-agent-console` fails with the existing
+- [x] Without the flag, stderr is byte-identical to today.
+- [x] `--interactive --no-agent-console` fails with the existing
       conflicting-flags error shape.
 
 ## Verification
@@ -55,3 +55,33 @@ unit tests and buffer-captured stderr asserts.
 `_prd.md` → User Story 4; Core Feature 4; Decisions (display-only).
 `_techspec.md` → Interfaces (NewSourceFilterSink), Build Order 3. Dogfood
 finding 4. ADR-0008, ADR-0009.
+
+## Result
+
+- Added `runevent.NewSourceFilterSink`, which drops events from one configured
+  source and forwards every other Run Event in order while preserving wrapped
+  sink errors for forwarded events.
+- Added `--no-agent-console` to `resolve`, `watch`, and `implement`. In
+  non-TTY mode, only the stderr writer sink is wrapped with the Agent-source
+  filter; the Run Event Journal sink is unchanged. The flag is rejected for
+  explicit `--interactive` input and for the interactive cockpit path.
+- Help text for `resolve`, `watch`, and `implement` now documents
+  `--no-agent-console`.
+- `TestRunResolveNoAgentConsoleSuppressesAgentDisplayOnly`,
+  `TestRunWatchNoAgentConsoleSuppressesAgentDisplayOnly`, and
+  `TestRunImplementNoAgentConsoleSuppressesAgentDisplayOnly` prove fake full
+  Runs keep daemon/progress stderr lines, hide Agent console lines, and keep
+  Agent and Daemon events in the Run Event Journal.
+- `TestAgentConsoleDisplaySinkKeepsWriterBytesByDefault` proves the default
+  no-flag display path emits the same bytes as `agent.WriterSink`.
+- `TestRunOperationalCommandRejectsInvalidInput`,
+  `TestRunImplementValidationFailures`, and
+  `TestRunNoAgentConsoleRejectsInteractiveCockpit` cover the conflicting flag
+  and cockpit rejection paths.
+
+Verification:
+
+- `rtk go test ./internal/runevent/ ./internal/cli/` — passed, 196 tests.
+- `rtk go test ./...` — passed, 507 tests across 16 packages.
+- `rtk make verify` — passed (`go test ./...`, `roundfix skills check`, and
+  `go build`).

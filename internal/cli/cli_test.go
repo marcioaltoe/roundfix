@@ -206,19 +206,47 @@ func TestRunInitForceOverwritesExistingConfig(t *testing.T) {
 }
 
 func TestRunCommandHelp(t *testing.T) {
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-
-	code := Run([]string{"fetch", "--help"}, &stdout, &stderr)
-
-	if code != 0 {
-		t.Fatalf("expected exit code 0, got %d", code)
+	tests := []struct {
+		name     string
+		args     []string
+		contains []string
+	}{
+		{
+			name:     "fetch",
+			args:     []string{"fetch", "--help"},
+			contains: []string{"roundfix fetch --source coderabbit --pr <number>"},
+		},
+		{
+			name:     "resolve",
+			args:     []string{"resolve", "--help"},
+			contains: []string{"roundfix resolve --pr <number> --agent <agent>", "--no-agent-console"},
+		},
+		{
+			name:     "watch",
+			args:     []string{"watch", "--help"},
+			contains: []string{"roundfix watch --source coderabbit --pr <number> --agent <agent>", "--no-agent-console"},
+		},
 	}
-	if !strings.Contains(stdout.String(), "roundfix fetch --source coderabbit --pr <number>") {
-		t.Fatalf("expected fetch help output, got %q", stdout.String())
-	}
-	if stderr.Len() != 0 {
-		t.Fatalf("expected no stderr, got %q", stderr.String())
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run(tt.args, &stdout, &stderr)
+
+			if code != 0 {
+				t.Fatalf("expected exit code 0, got %d", code)
+			}
+			for _, want := range tt.contains {
+				if !strings.Contains(stdout.String(), want) {
+					t.Fatalf("expected help output to contain %q, got %q", want, stdout.String())
+				}
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no stderr, got %q", stderr.String())
+			}
+		})
 	}
 }
 
@@ -1824,6 +1852,16 @@ func TestRunOperationalCommandRejectsInvalidInput(t *testing.T) {
 			contains: "--max-rounds must be greater than 0",
 		},
 		{
+			name:     "resolve agent console suppression conflicts with interactive input",
+			args:     []string{"resolve", "--pr", "123", "--agent", "codex", "--interactive", "--no-agent-console"},
+			contains: "--interactive cannot be used with --no-agent-console",
+		},
+		{
+			name:     "watch agent console suppression conflicts with interactive input",
+			args:     []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--interactive", "--no-agent-console"},
+			contains: "--interactive cannot be used with --no-agent-console",
+		},
+		{
 			name:     "unknown flag",
 			args:     []string{"fetch", "--unknown"},
 			contains: "flag provided but not defined",
@@ -1854,6 +1892,48 @@ func TestRunOperationalCommandRejectsInvalidInput(t *testing.T) {
 			}
 			if !strings.Contains(stderr.String(), "did not create a Run") {
 				t.Fatalf("expected no side-effect confirmation, got %q", stderr.String())
+			}
+			assertNoRunDatabase(t, homeDir)
+		})
+	}
+}
+
+func TestRunNoAgentConsoleRejectsInteractiveCockpit(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{
+			name: "resolve",
+			args: []string{"resolve", "--pr", "123", "--agent", "codex", "--no-agent-console", "--no-input"},
+		},
+		{
+			name: "watch",
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--no-agent-console", "--no-input"},
+		},
+		{
+			name: "implement",
+			args: []string{"implement", "--spec", "0001-widget-flow", "--agent", "codex", "--no-agent-console", "--no-input"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, _ := withCLIWorkspace(t)
+			t.Setenv("ROUNDFIX_TUI", "always")
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run(tt.args, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("expected no stdout, got %q", stdout.String())
+			}
+			if !strings.Contains(stderr.String(), "--no-agent-console cannot be used with the interactive cockpit") {
+				t.Fatalf("expected interactive cockpit conflict, got %q", stderr.String())
 			}
 			assertNoRunDatabase(t, homeDir)
 		})
@@ -3249,6 +3329,49 @@ func journaledRunEvents(t *testing.T, homeDir string, stderr string) (string, []
 	return runID, events
 }
 
+func TestAgentConsoleDisplaySinkKeepsWriterBytesByDefault(t *testing.T) {
+	event := runevent.RunEvent{
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentRaw,
+		Payload: []byte(`{"text":"fake agent output\n"}`),
+	}
+	var direct bytes.Buffer
+	var wrapped bytes.Buffer
+
+	if err := (agent.WriterSink{Writer: &direct}).Publish(context.Background(), event); err != nil {
+		t.Fatalf("publish through direct writer sink: %v", err)
+	}
+	if err := agentConsoleDisplaySink(&wrapped, false).Publish(context.Background(), event); err != nil {
+		t.Fatalf("publish through default display sink: %v", err)
+	}
+
+	if wrapped.String() != direct.String() {
+		t.Fatalf("expected default display bytes %q, got %q", direct.String(), wrapped.String())
+	}
+}
+
+func assertJournalContainsAgentAndDaemonEvents(t *testing.T, events []store.JournalEvent, agentText string) {
+	t.Helper()
+	agentSeen := false
+	daemonSeen := false
+	for _, entry := range events {
+		switch entry.Event.Source {
+		case runevent.SourceAgent:
+			if strings.Contains(entry.Event.Summary, agentText) || strings.Contains(string(entry.Event.Payload), agentText) {
+				agentSeen = true
+			}
+		case runevent.SourceDaemon:
+			daemonSeen = true
+		}
+	}
+	if !agentSeen {
+		t.Fatalf("expected Agent-source event containing %q in the Run Event Journal, got %+v", agentText, events)
+	}
+	if !daemonSeen {
+		t.Fatalf("expected Daemon-source events in the Run Event Journal, got %+v", events)
+	}
+}
+
 func TestResolveJournalsAgentRunEventsDurably(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
@@ -3294,6 +3417,75 @@ func TestResolveJournalsAgentRunEventsDurably(t *testing.T) {
 	if !strings.Contains(stderr.String(), "fake agent output") {
 		t.Fatalf("expected console output unchanged, got %q", stderr.String())
 	}
+}
+
+func TestRunResolveNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withVerifier(t, &fakeVerifier{})
+	withCommitter(t, &fakeCommitter{})
+	withFakeWorktree(t)
+	withSourceResolver(t, &fakeSourceResolver{})
+	withPusher(t, &fakePusher{})
+	withAgentRunner(t, &fakeAgentRunner{})
+	withFakeWorktree(t)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-agent-console", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
+	}
+	if strings.Contains(stderr.String(), "fake agent output") {
+		t.Fatalf("expected Agent console hidden from stderr, got %q", stderr.String())
+	}
+	for _, want := range []string{
+		"resolve selected 1 downloaded Unresolved Review Issue",
+		"Batch: 001/001 (1 Review Issue(s))",
+		"Verification command passed",
+		"Batch commit created",
+		"Resolved 1 Review Source thread",
+		"Resolve Run",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("expected stderr to keep daemon/progress line %q, got %q", want, stderr.String())
+		}
+	}
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	assertJournalContainsAgentAndDaemonEvents(t, events, "fake agent output")
+}
+
+func TestRunWatchNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-agent-console", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean watch exit, got %d stderr=%q", code, stderr.String())
+	}
+	if strings.Contains(stderr.String(), "fake agent output") {
+		t.Fatalf("expected Agent console hidden from stderr, got %q", stderr.String())
+	}
+	for _, want := range []string{
+		"Watch Run:",
+		"Review Source status: settled",
+		"Fetched Round 001 with 1 Review Issue",
+		"Batch: 001/001 (1 Review Issue(s))",
+		"Verification command passed",
+		"Final Push completed",
+		"Watch Run",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("expected stderr to keep daemon/progress line %q, got %q", want, stderr.String())
+		}
+	}
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	assertJournalContainsAgentAndDaemonEvents(t, events, "fake agent output")
 }
 
 func TestStoppedResolveJournalsStoppedEventBeforeReturning(t *testing.T) {

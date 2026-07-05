@@ -87,6 +87,7 @@ type commandRequest struct {
 	model           string
 	agentCmd        string
 	agentFullAccess bool
+	noAgentConsole  bool
 	headBranch      string
 	headRepo        string
 	qa              bool
@@ -674,6 +675,9 @@ func maybeCollectInteractiveInput(ctx context.Context, req commandRequest, loade
 	if req.noInput && req.interactive {
 		return req, validationError{message: "--interactive cannot be used with --no-input"}
 	}
+	if req.noAgentConsole && req.interactive {
+		return req, validationError{message: "--interactive cannot be used with --no-agent-console"}
+	}
 	if !shouldOpenInteractiveInput(req) {
 		return req, nil
 	}
@@ -841,6 +845,10 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 		return exitPreflight
 	}
 	if err := validateCommandRequest(req); err != nil {
+		printPreflightFailure(name, err, stderr)
+		return exitPreflight
+	}
+	if err := validateAgentConsoleDisplay(req, stderr); err != nil {
 		printPreflightFailure(name, err, stderr)
 		return exitPreflight
 	}
@@ -1017,7 +1025,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	for _, batch := range resolvePlan.plan.Batches {
 		cockpitView.BatchSizes = append(cockpitView.BatchSizes, len(batch.Issues))
 	}
-	ui, err := startRunUI(ctx, cockpitView, run.ID, loaded.HomeDir, runStore, stderr)
+	ui, err := startRunUI(ctx, cockpitView, run.ID, loaded.HomeDir, runStore, stderr, req.noAgentConsole)
 	if err != nil {
 		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
 		markRunFailed(ctx, runStore, run.ID)
@@ -1343,7 +1351,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 
 	// One cockpit for the entire Watch Run, across all Rounds and Batches.
-	ui, err := startRunUI(ctx, buildLiveRunView(req, loaded, preflightResult, run.ID, "WaitingForReview", nil, nil), run.ID, loaded.HomeDir, runStore, stderr)
+	ui, err := startRunUI(ctx, buildLiveRunView(req, loaded, preflightResult, run.ID, "WaitingForReview", nil, nil), run.ID, loaded.HomeDir, runStore, stderr, req.noAgentConsole)
 	if err != nil {
 		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
 		markRunFailed(ctx, runStore, run.ID)
@@ -1770,6 +1778,7 @@ func parseOperationalCommand(name string, args []string, config roundconfig.Conf
 		fs.StringVar(&req.model, "model", req.model, "Agent model override")
 		fs.StringVar(&req.agentCmd, "agent-command", "", "Agent command override")
 		fs.BoolVar(&req.agentFullAccess, "agent-full-access", req.agentFullAccess, "Opt into Agent runtime full-access mode")
+		fs.BoolVar(&req.noAgentConsole, "no-agent-console", false, "Hide Agent-source console events from non-TTY stderr")
 		fs.StringVar(&req.round, "round", "all", "Round number or all")
 	case "watch":
 		fs.StringVar(&req.source, "source", req.source, "Review Source")
@@ -1777,6 +1786,7 @@ func parseOperationalCommand(name string, args []string, config roundconfig.Conf
 		fs.StringVar(&req.model, "model", req.model, "Agent model override")
 		fs.StringVar(&req.agentCmd, "agent-command", "", "Agent command override")
 		fs.BoolVar(&req.agentFullAccess, "agent-full-access", req.agentFullAccess, "Opt into Agent runtime full-access mode")
+		fs.BoolVar(&req.noAgentConsole, "no-agent-console", false, "Hide Agent-source console events from non-TTY stderr")
 		fs.BoolVar(&req.untilClean, "until-clean", req.untilClean, "Repeat until no Unresolved Review Issues remain")
 		fs.IntVar(&req.maxRounds, "max-rounds", req.maxRounds, "Maximum Review Source rounds")
 	default:
@@ -1826,6 +1836,13 @@ func validateCommandRequest(req commandRequest) error {
 		if req.maxRounds < 1 {
 			return validationError{message: "--max-rounds must be greater than 0"}
 		}
+	}
+	return nil
+}
+
+func validateAgentConsoleDisplay(req commandRequest, stderr io.Writer) error {
+	if req.noAgentConsole && liveTUIEnabled(stderr) {
+		return validationError{message: "--no-agent-console cannot be used with the interactive cockpit"}
 	}
 	return nil
 }
@@ -2102,6 +2119,7 @@ Options:
   --model        Agent model override
   --agent-command Agent command override
   --agent-full-access Opt into Agent runtime full-access mode
+  --no-agent-console Hide Agent-source console events from non-TTY stderr
   --round        Round number or all
   --artifact-dir Artifact Directory
   --base-repo    Explicit base repository, owner/name
@@ -2121,6 +2139,7 @@ Options:
   --model        Agent model override
   --agent-command Agent command override
   --agent-full-access Opt into Agent runtime full-access mode
+  --no-agent-console Hide Agent-source console events from non-TTY stderr
   --until-clean  Repeat until no Unresolved Review Issues remain
   --max-rounds   Maximum Review Source rounds
   --artifact-dir Artifact Directory
