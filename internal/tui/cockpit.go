@@ -52,6 +52,8 @@ type CockpitConfig struct {
 
 const defaultCockpitPollInterval = 250 * time.Millisecond
 
+const minTwoPaneCockpitWidth = 88
+
 type cockpitFocus int
 
 const (
@@ -600,11 +602,23 @@ type cockpitLayout struct {
 	bodyHeight   int
 	sidebarWidth int
 	rightWidth   int
+	collapsed    bool
 }
 
 func cockpitLayoutFor(model *cockpitModel) cockpitLayout {
-	width := maxInt(model.width, 88)
+	width := model.width
+	if width <= 0 || model.height <= 0 {
+		return cockpitLayout{}
+	}
 	bodyHeight := model.bodyHeight()
+	if width < minTwoPaneCockpitWidth {
+		return cockpitLayout{
+			width:      width,
+			bodyHeight: bodyHeight,
+			rightWidth: width,
+			collapsed:  true,
+		}
+	}
 	innerWidth := width - 2
 	sidebarWidth := innerWidth * 40 / 100
 	if sidebarWidth < 30 {
@@ -625,6 +639,11 @@ func cockpitLayoutFor(model *cockpitModel) cockpitLayout {
 }
 
 func (model *cockpitModel) View() tea.View {
+	if model.width <= 0 || model.height <= 0 {
+		view := tea.NewView("")
+		view.AltScreen = true
+		return view
+	}
 	layout := cockpitLayoutFor(model)
 	view := tea.NewView(renderCockpitLayout(model, layout))
 	view.AltScreen = true
@@ -835,6 +854,9 @@ func phaseMarkerStyle(marker string) lipgloss.Style {
 }
 
 func renderCockpitBody(model *cockpitModel, layout cockpitLayout) string {
+	if layout.collapsed {
+		return renderCockpitCollapsedTimelinePane(model, layout.width, layout.bodyHeight)
+	}
 	return lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		renderCockpitWorkQueue(model, layout),
@@ -864,6 +886,21 @@ func renderCockpitTimelinePane(model *cockpitModel, width int, height int) strin
 		content = append(content, colorTimelineLines(lines, width-4)...)
 	}
 	return panel(width, height, strings.Join(limitTail(content, height-2), "\n"), model.focus == focusTimeline)
+}
+
+func renderCockpitCollapsedTimelinePane(model *cockpitModel, width int, height int) string {
+	lines := model.viewport.VisibleLines()
+	content := []string{
+		styleAccent.Bold(true).Render("SESSION.TIMELINE"),
+		styleMuted.Render(truncateDisplay("QUEUE.SUMMARY "+model.workQueueTotalsLine(), maxInt(width-4, 1))),
+		"",
+	}
+	if len(lines) == 0 {
+		content = append(content, styleMuted.Render("No Run Events yet..."))
+	} else {
+		content = append(content, colorTimelineLines(lines, width-4)...)
+	}
+	return panel(width, height, strings.Join(limitTail(content, height-2), "\n"), true)
 }
 
 func renderCockpitDetailPane(model *cockpitModel, width int, height int) string {
@@ -1326,16 +1363,64 @@ func (model *cockpitModel) statusSuffix() string {
 }
 
 func (model *cockpitModel) renderFooter(width int) string {
-	keys := "Tab focus · ↑↓ scroll · PgUp/PgDn page · End follow · Enter issue · Esc back"
+	keys := model.footerKeys()
+	line := model.fitFooterLine("Keys: "+keys, width)
+	return styleMuted.Render(padRightDisplay(line, width))
+}
+
+func (model *cockpitModel) fitFooterLine(line string, width int) string {
+	if displayWidth(line) <= width {
+		return line
+	}
+	suffix := " · " + model.footerModeKey()
+	if strings.HasSuffix(line, suffix) && displayWidth(suffix) < width {
+		prefix := strings.TrimSuffix(line, suffix)
+		return truncateDisplay(prefix, width-displayWidth(suffix)) + suffix
+	}
+	return truncateDisplay(line, width)
+}
+
+func (model *cockpitModel) footerKeys() string {
+	if model.detail != nil {
+		return strings.Join([]string{
+			"Esc close",
+			"j/k scroll",
+			"PgUp/PgDn page",
+			model.footerModeKey(),
+		}, " · ")
+	}
+	if model.width > 0 && model.width < minTwoPaneCockpitWidth {
+		return strings.Join([]string{
+			"↑↓ scroll",
+			"PgUp/PgDn page",
+			"widen for Work Queue",
+			model.footerModeKey(),
+		}, " · ")
+	}
+	item := "issue"
+	if model.specRun() {
+		item = "Task"
+	}
+	return strings.Join([]string{
+		"Tab focus",
+		"↑↓ move/scroll",
+		"PgUp/PgDn page",
+		"Enter " + item,
+		"D show detail",
+		"End follow",
+		model.footerModeKey(),
+	}, " · ")
+}
+
+func (model *cockpitModel) footerModeKey() string {
 	switch {
 	case model.cfg.Mode == CockpitAttach:
-		keys += " · q detach"
+		return "q detach"
 	case model.terminal:
-		keys += " · q close"
+		return "q close"
 	default:
-		keys += " · Ctrl-C stop"
+		return "Ctrl-C stop"
 	}
-	return styleMuted.Render(padRightDisplay("Keys: "+keys, width))
 }
 
 func minInt(a int, b int) int {

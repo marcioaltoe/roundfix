@@ -99,6 +99,10 @@ func viewText(model *cockpitModel) string {
 	return stripANSI(model.View().Content)
 }
 
+func footerText(model *cockpitModel, width int) string {
+	return strings.TrimRight(stripANSI(model.renderFooter(width)), " ")
+}
+
 func sampleIssues(count int) []rounds.Issue {
 	issues := []rounds.Issue{}
 	for index := 1; index <= count; index++ {
@@ -637,6 +641,202 @@ func TestCockpitWorkQueueFooterTotalsForRunKinds(t *testing.T) {
 	specRendered := viewText(specRun)
 	if !strings.Contains(specRendered, "3 Tasks total · 1 completed · 2 unresolved") {
 		t.Fatalf("expected spec totals footer, got:\n%s", specRendered)
+	}
+}
+
+func TestCockpitFooterHintsForStatesAndRunKinds(t *testing.T) {
+	tests := []struct {
+		name  string
+		model func(t *testing.T) *cockpitModel
+		want  string
+	}{
+		{
+			name: "review normal owning",
+			model: func(t *testing.T) *cockpitModel {
+				t.Helper()
+				model := newReviewSnapshotCockpit(t, CockpitOwning, store.StateResolvingWithAgent, false)
+				model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+				return model
+			},
+			want: "Keys: Tab focus · ↑↓ move/scroll · PgUp/PgDn page · Enter issue · D show detail · End follow · Ctrl-C stop",
+		},
+		{
+			name: "spec normal owning",
+			model: func(t *testing.T) *cockpitModel {
+				t.Helper()
+				model := newSpecPhaseCockpit(t, false, store.StateResolvingWithAgent, spec.StatusInProgress)
+				model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+				return model
+			},
+			want: "Keys: Tab focus · ↑↓ move/scroll · PgUp/PgDn page · Enter Task · D show detail · End follow · Ctrl-C stop",
+		},
+		{
+			name: "review modal owning",
+			model: func(t *testing.T) *cockpitModel {
+				t.Helper()
+				model := newReviewSnapshotCockpit(t, CockpitOwning, store.StateResolvingWithAgent, true)
+				model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+				return model
+			},
+			want: "Keys: Esc close · j/k scroll · PgUp/PgDn page · Ctrl-C stop",
+		},
+		{
+			name: "spec modal owning",
+			model: func(t *testing.T) *cockpitModel {
+				t.Helper()
+				model := newSpecPhaseCockpit(t, false, store.StateResolvingWithAgent, spec.StatusInProgress)
+				model.detail = &issueDetailView{kind: detailTask, task: model.cfg.View.Tasks[0], lines: []string{"body"}}
+				model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+				return model
+			},
+			want: "Keys: Esc close · j/k scroll · PgUp/PgDn page · Ctrl-C stop",
+		},
+		{
+			name: "review attach",
+			model: func(t *testing.T) *cockpitModel {
+				t.Helper()
+				model := newReviewSnapshotCockpit(t, CockpitAttach, store.StateResolvingWithAgent, false)
+				model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+				return model
+			},
+			want: "Keys: Tab focus · ↑↓ move/scroll · PgUp/PgDn page · Enter issue · D show detail · End follow · q detach",
+		},
+		{
+			name: "spec attach",
+			model: func(t *testing.T) *cockpitModel {
+				t.Helper()
+				model := newSpecPhaseCockpit(t, false, store.StateResolvingWithAgent, spec.StatusInProgress)
+				model.cfg.Mode = CockpitAttach
+				model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+				return model
+			},
+			want: "Keys: Tab focus · ↑↓ move/scroll · PgUp/PgDn page · Enter Task · D show detail · End follow · q detach",
+		},
+		{
+			name: "review terminal",
+			model: func(t *testing.T) *cockpitModel {
+				t.Helper()
+				model := newReviewSnapshotCockpit(t, CockpitOwning, store.StateClean, false)
+				model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+				return model
+			},
+			want: "Keys: Tab focus · ↑↓ move/scroll · PgUp/PgDn page · Enter issue · D show detail · End follow · q close",
+		},
+		{
+			name: "spec terminal",
+			model: func(t *testing.T) *cockpitModel {
+				t.Helper()
+				model := newSpecPhaseCockpit(t, false, store.StateClean, spec.StatusCompleted)
+				model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+				return model
+			},
+			want: "Keys: Tab focus · ↑↓ move/scroll · PgUp/PgDn page · Enter Task · D show detail · End follow · q close",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			model := tt.model(t)
+			if got := footerText(model, 180); got != tt.want {
+				t.Fatalf("expected footer %q, got %q", tt.want, got)
+			}
+		})
+	}
+}
+
+func TestCockpitResponsiveFallbackAndStableSizes(t *testing.T) {
+	tests := []struct {
+		name       string
+		width      int
+		height     int
+		collapsed  bool
+		sidebar    int
+		timeline   int
+		bodyHeight int
+		want       []string
+		notWant    []string
+		wantFooter string
+	}{
+		{
+			name:       "80x24 collapsed",
+			width:      80,
+			height:     24,
+			collapsed:  true,
+			timeline:   80,
+			bodyHeight: 19,
+			want:       []string{"SESSION.TIMELINE", "QUEUE.SUMMARY 3 issues total · 1 resolved · 2 unresolved"},
+			notWant:    []string{"WORK QUEUE ("},
+			wantFooter: "widen for Work Queue",
+		},
+		{
+			name:       "120x40 two pane",
+			width:      120,
+			height:     40,
+			sidebar:    46,
+			timeline:   71,
+			bodyHeight: 35,
+			want:       []string{"WORK QUEUE (3)", "SESSION.TIMELINE"},
+			notWant:    []string{"QUEUE.SUMMARY"},
+		},
+		{
+			name:       "200x50 two pane",
+			width:      200,
+			height:     50,
+			sidebar:    46,
+			timeline:   151,
+			bodyHeight: 45,
+			want:       []string{"WORK QUEUE (3)", "SESSION.TIMELINE"},
+			notWant:    []string{"QUEUE.SUMMARY"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			model := newReviewSnapshotCockpit(t, CockpitOwning, store.StateResolvingWithAgent, false)
+			model.Update(tea.WindowSizeMsg{Width: tt.width, Height: tt.height})
+			layout := cockpitLayoutFor(model)
+			if layout.collapsed != tt.collapsed || layout.sidebarWidth != tt.sidebar || layout.rightWidth != tt.timeline || layout.bodyHeight != tt.bodyHeight {
+				t.Fatalf("unexpected layout for %s: %+v", tt.name, layout)
+			}
+			rendered := viewText(model)
+			for _, expected := range tt.want {
+				if !strings.Contains(rendered, expected) {
+					t.Fatalf("expected %s render to contain %q, got:\n%s", tt.name, expected, rendered)
+				}
+			}
+			for _, unexpected := range tt.notWant {
+				if strings.Contains(rendered, unexpected) {
+					t.Fatalf("expected %s render not to contain %q, got:\n%s", tt.name, unexpected, rendered)
+				}
+			}
+			if tt.wantFooter != "" && !strings.Contains(rendered, tt.wantFooter) {
+				t.Fatalf("expected %s footer to contain %q, got:\n%s", tt.name, tt.wantFooter, rendered)
+			}
+		})
+	}
+}
+
+func TestCockpitDegenerateSizesRenderEmptyWithoutPanic(t *testing.T) {
+	tests := []struct {
+		name   string
+		width  int
+		height int
+	}{
+		{name: "zero width", width: 0, height: 24},
+		{name: "negative width", width: -1, height: 24},
+		{name: "zero height", width: 120, height: 0},
+		{name: "negative height", width: 120, height: -1},
+		{name: "zero both", width: 0, height: 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			model := newReviewSnapshotCockpit(t, CockpitOwning, store.StateResolvingWithAgent, false)
+			model.Update(tea.WindowSizeMsg{Width: tt.width, Height: tt.height})
+			if got := viewText(model); got != "" {
+				t.Fatalf("expected empty render for %s, got:\n%s", tt.name, got)
+			}
+		})
 	}
 }
 

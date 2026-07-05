@@ -37,4 +37,4 @@ ROUNDFIX // LIVE RUN VIEW // SPEC 0005-tui-cockpit                              
 │                                            ││                                                                     │
 │ 3 Tasks total · 1 completed · 2 unresolved ││                                                                     │
 └────────────────────────────────────────────┘└─────────────────────────────────────────────────────────────────────┘
-Keys: Tab focus · ↑↓ scroll · PgUp/PgDn page · End follow · Enter issue · Esc back · Ctrl-C stop                        
+Keys: Tab focus · ↑↓ move/scroll · PgUp/PgDn page · Enter Task · D show detail · End follow · Ctrl-C stop               

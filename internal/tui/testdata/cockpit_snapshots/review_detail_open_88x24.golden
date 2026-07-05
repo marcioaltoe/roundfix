@@ -21,4 +21,4 @@ ROUNDFIX // LIVE RUN VIEW // PR #123                 RUN 00000001 [RESOLVING WIT
 │                                ││                                                 │   
 │ 3 issues total · 1 resolved ·… ││                                                 │   
 └────────────────────────────────┘└─────────────────────────────────────────────────┘   
-Keys: Tab focus · ↑↓ scroll · PgUp/PgDn page · End follow · Enter issue · Esc back · Ct…
+Keys: Esc close · j/k scroll · PgUp/PgDn page · Ctrl-C stop                             
