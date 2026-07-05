@@ -22,6 +22,8 @@ defaults:
 watch:
   max_rounds: 4
   poll_interval: 10s
+implement:
+  auto_push: true
 resolve:
   batch_size: 2
 `)
@@ -30,6 +32,8 @@ defaults:
   agent: opencode
 watch:
   max_rounds: 8
+implement:
+  auto_push: false
 budget:
   max_run_duration: 3h
 `)
@@ -53,6 +57,9 @@ budget:
 	}
 	if loaded.Config.Watch.PollInterval != 10*time.Second {
 		t.Fatalf("expected user poll interval, got %s", loaded.Config.Watch.PollInterval)
+	}
+	if loaded.Config.Implement.AutoPush {
+		t.Fatal("expected project implement.auto_push to override user default")
 	}
 	if loaded.Config.Budget.MaxRunDuration != 3*time.Hour {
 		t.Fatalf("expected project max run duration, got %s", loaded.Config.Budget.MaxRunDuration)
@@ -91,6 +98,14 @@ watch:
   poll_interval: soon
 `,
 			contains: "invalid duration",
+		},
+		{
+			name: "invalid implement auto push",
+			config: `
+implement:
+  auto_push: sometimes
+`,
+			contains: "implement.auto_push must be boolean",
 		},
 	}
 
@@ -132,7 +147,7 @@ func TestInitCreatesUserConfig(t *testing.T) {
 		t.Fatalf("expected user result at %q, got %#v", expectedPath, result)
 	}
 	content := mustRead(t, expectedPath)
-	if !strings.Contains(content, "agent: codex") || !strings.Contains(content, "agent_full_access: false") || !strings.Contains(content, "max_run_duration: 2h") {
+	if !strings.Contains(content, "agent: codex") || !strings.Contains(content, "agent_full_access: false") || !strings.Contains(content, "implement:") || !strings.Contains(content, "auto_push: false") || !strings.Contains(content, "max_run_duration: 2h") {
 		t.Fatalf("expected default config content, got %s", content)
 	}
 	if _, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir}); err != nil {

@@ -94,6 +94,22 @@ func newImplementWorkspace(t *testing.T, seeds []implementSeed) (string, string)
 	return homeDir, resolved
 }
 
+func configureImplementAutoPush(t *testing.T, repoDir string, enabled bool) {
+	t.Helper()
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), fmt.Sprintf("implement:\n  auto_push: %t\n", enabled))
+	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+	gitImplement(t, repoDir, "commit", "-m", "configure implement auto push")
+}
+
+func configureImplementUpstream(t *testing.T, repoDir string, remote string, branch string) {
+	t.Helper()
+	remoteDir := filepath.Join(t.TempDir(), remote+".git")
+	mustMkdir(t, remoteDir)
+	gitImplement(t, remoteDir, "init", "--bare")
+	gitImplement(t, repoDir, "remote", "add", remote, remoteDir)
+	gitImplement(t, repoDir, "push", "-u", remote, "HEAD:"+branch)
+}
+
 func writeImplementSpec(t *testing.T, repoDir string, slug string, seeds []implementSeed) {
 	t.Helper()
 	specDir := filepath.Join(repoDir, "docs", "specs", slug)
@@ -682,7 +698,7 @@ func TestRunImplementExecutesSpecEndToEnd(t *testing.T) {
 		t.Fatalf("expected the Daemon to run each Task's Verification, got %d call(s)", verifier.calls)
 	}
 	if pusher.calls != 0 || sourceResolver.calls != 0 {
-		t.Fatalf("spec Runs must never push or resolve Review Source threads, got push=%d source=%d", pusher.calls, sourceResolver.calls)
+		t.Fatalf("spec Runs without implement.auto_push must not push or resolve Review Source threads, got push=%d source=%d", pusher.calls, sourceResolver.calls)
 	}
 	if !strings.Contains(stderr.String(), "reached Clean") {
 		t.Fatalf("expected Clean outcome diagnostics on stderr, got %q", stderr.String())
@@ -699,6 +715,242 @@ func TestRunImplementExecutesSpecEndToEnd(t *testing.T) {
 		t.Fatalf("unexpected Run row: %#v", run)
 	}
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
+	tests := []struct {
+		name           string
+		enableAutoPush bool
+		configUpstream bool
+		args           []string
+		runner         func(string) *implementFakeRunner
+		wantCode       int
+		wantState      string
+		wantPushes     int
+		wantStdout     []string
+	}{
+		{
+			name:           "clean qa pass with key pushes",
+			enableAutoPush: true,
+			configUpstream: true,
+			args:           []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--qa", "--no-input"},
+			runner: func(repoDir string) *implementFakeRunner {
+				return &implementFakeRunner{
+					gitRoot:      repoDir,
+					statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+					qaReport:     implementQAReport("pass"),
+				}
+			},
+			wantCode:   0,
+			wantState:  store.StateClean,
+			wantPushes: 1,
+			wantStdout: []string{
+				"qa pass — " + implementQAReportRelPath() + "\n",
+				"Clean: all 1 Task(s) completed.\n",
+				"pushed origin/ma/widget-flow\n",
+			},
+		},
+		{
+			name:           "clean without key does not push",
+			configUpstream: true,
+			args:           []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"},
+			runner: func(repoDir string) *implementFakeRunner {
+				return &implementFakeRunner{
+					gitRoot:      repoDir,
+					statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+				}
+			},
+			wantCode:   0,
+			wantState:  store.StateClean,
+			wantPushes: 0,
+			wantStdout: []string{"Clean: all 1 Task(s) completed.\n"},
+		},
+		{
+			name:           "unresolved failed task does not push",
+			enableAutoPush: true,
+			configUpstream: true,
+			args:           []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"},
+			runner: func(repoDir string) *implementFakeRunner {
+				return &implementFakeRunner{
+					gitRoot:      repoDir,
+					statusByTask: map[string]spec.Status{"task_01": spec.StatusFailed},
+				}
+			},
+			wantCode:   1,
+			wantState:  store.StateUnresolved,
+			wantPushes: 0,
+			wantStdout: []string{"Unresolved: 0 completed, 1 failed, 0 skipped, 0 pending.\n"},
+		},
+		{
+			name:           "stopped does not push",
+			enableAutoPush: true,
+			configUpstream: true,
+			args:           []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"},
+			runner: func(repoDir string) *implementFakeRunner {
+				return &implementFakeRunner{
+					gitRoot:   repoDir,
+					errByTask: map[string]error{"task_01": agent.StopError{Err: context.Canceled}},
+				}
+			},
+			wantCode:   0,
+			wantState:  store.StateStopped,
+			wantPushes: 0,
+			wantStdout: []string{"Stopped: 0 completed, 0 failed, 0 skipped, 1 pending.\n"},
+		},
+		{
+			name:           "qa fail does not push",
+			enableAutoPush: true,
+			configUpstream: true,
+			args:           []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--qa", "--no-input"},
+			runner: func(repoDir string) *implementFakeRunner {
+				return &implementFakeRunner{
+					gitRoot:      repoDir,
+					statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+					qaReport:     implementQAReport("fail"),
+				}
+			},
+			wantCode:   1,
+			wantState:  store.StateUnresolved,
+			wantPushes: 0,
+			wantStdout: []string{"qa fail — " + implementQAReportRelPath() + "\n", "Unresolved: 1 completed, 0 failed, 0 skipped, 0 pending.\n"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+				{id: "task_01", title: "Build the widget core"},
+			})
+			if tt.enableAutoPush {
+				configureImplementAutoPush(t, repoDir, true)
+			}
+			if tt.configUpstream {
+				configureImplementUpstream(t, repoDir, "origin", "ma/widget-flow")
+			}
+			_, _, pusher, _ := withImplementCollaborators(t, tt.runner(repoDir))
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+
+			if code != tt.wantCode {
+				t.Fatalf("expected exit code %d, got %d (stderr %q)", tt.wantCode, code, stderr.String())
+			}
+			if pusher.calls != tt.wantPushes {
+				t.Fatalf("expected %d push call(s), got %d args=%v", tt.wantPushes, pusher.calls, pusher.args)
+			}
+			if tt.wantPushes == 1 {
+				if got := strings.Join(pusher.args, " "); got != "push origin HEAD:ma/widget-flow" {
+					t.Fatalf("expected push invocation %q, got %q", "push origin HEAD:ma/widget-flow", got)
+				}
+				if len(pusher.workDirs) != 1 || pusher.workDirs[0] != repoDir {
+					t.Fatalf("expected push from git root %q, got %v", repoDir, pusher.workDirs)
+				}
+			} else if strings.Contains(stdout.String(), "pushed ") {
+				t.Fatalf("stdout must not include pushed line without a push, got %q", stdout.String())
+			}
+			for _, want := range tt.wantStdout {
+				if !strings.Contains(stdout.String(), want) {
+					t.Fatalf("expected stdout to contain %q, got %q", want, stdout.String())
+				}
+			}
+			runID := implementRunIDFromStderr(t, stderr.String())
+			run := implementRunFromStore(t, homeDir, runID)
+			if run.State != tt.wantState {
+				t.Fatalf("expected Run state %q, got %q", tt.wantState, run.State)
+			}
+			if tt.wantPushes == 1 {
+				_, events := journaledRunEvents(t, homeDir, stderr.String())
+				assertImplementPushEvent(t, events, "pushed")
+			}
+			assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+		})
+	}
+}
+
+func TestRunImplementAutoPushMissingUpstreamWarnsAndStaysClean(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build the widget core"},
+	})
+	configureImplementAutoPush(t, repoDir, true)
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	_, _, pusher, _ := withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected Clean path exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if pusher.calls != 0 {
+		t.Fatalf("expected no push without upstream, got %d call(s)", pusher.calls)
+	}
+	note := "Spec Run push skipped: branch ma/widget-flow has no upstream; set an upstream or push manually."
+	if strings.Count(stderr.String(), note) != 1 {
+		t.Fatalf("expected one missing-upstream note %q, got stderr %q", note, stderr.String())
+	}
+	if strings.Contains(stdout.String(), "pushed ") {
+		t.Fatalf("stdout must not include pushed line without a push, got %q", stdout.String())
+	}
+	runID, events := journaledRunEvents(t, homeDir, stderr.String())
+	run := implementRunFromStore(t, homeDir, runID)
+	if run.State != store.StateClean {
+		t.Fatalf("expected Run to remain Clean, got %q", run.State)
+	}
+	assertImplementPushEvent(t, events, "skipped")
+	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+func TestRunImplementAutoPushFailureEndsFailedAndJournalsPush(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build the widget core"},
+	})
+	configureImplementAutoPush(t, repoDir, true)
+	configureImplementUpstream(t, repoDir, "origin", "ma/widget-flow")
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	_, _, pusher, _ := withImplementCollaborators(t, runner)
+	pusher.err = errors.New("push failed")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != 1 {
+		t.Fatalf("expected push failure exit 1, got %d stderr=%q", code, stderr.String())
+	}
+	if pusher.calls != 1 {
+		t.Fatalf("expected one push attempt, got %d", pusher.calls)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout on push failure, got %q", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "push Clean spec Run: push failed") {
+		t.Fatalf("expected push failure diagnostic, got %q", stderr.String())
+	}
+	runID, events := journaledRunEvents(t, homeDir, stderr.String())
+	run := implementRunFromStore(t, homeDir, runID)
+	if run.State != store.StateFailed {
+		t.Fatalf("expected Run state Failed, got %q", run.State)
+	}
+	assertImplementPushEvent(t, events, "failed")
+	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+func assertImplementPushEvent(t *testing.T, events []store.JournalEvent, decision string) {
+	t.Helper()
+	needle := fmt.Sprintf("%q:%q", "decision", decision)
+	for _, entry := range events {
+		if entry.Event.Kind == runevent.KindDaemonPush && strings.Contains(string(entry.Event.Payload), needle) {
+			return
+		}
+	}
+	t.Fatalf("expected daemon.push event with decision %q, got %+v", decision, events)
 }
 
 func TestRunImplementNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {

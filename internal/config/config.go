@@ -36,6 +36,7 @@ type Config struct {
 	Defaults     Defaults
 	ReviewSource ReviewSource
 	Watch        Watch
+	Implement    Implement
 	Budget       Budget
 	Resolve      Resolve
 }
@@ -63,6 +64,10 @@ type Watch struct {
 	AutoPush      bool
 	PushRemote    string
 	PushBranch    string
+}
+
+type Implement struct {
+	AutoPush bool
 }
 
 type Budget struct {
@@ -122,6 +127,7 @@ type configOverlay struct {
 	Defaults     *defaultsOverlay     `yaml:"defaults"`
 	ReviewSource *reviewSourceOverlay `yaml:"review_source"`
 	Watch        *watchOverlay        `yaml:"watch"`
+	Implement    *implementOverlay    `yaml:"implement"`
 	Budget       *budgetOverlay       `yaml:"budget"`
 	Resolve      *resolveOverlay      `yaml:"resolve"`
 }
@@ -149,6 +155,26 @@ type watchOverlay struct {
 	AutoPush      *bool          `yaml:"auto_push"`
 	PushRemote    *string        `yaml:"push_remote"`
 	PushBranch    *string        `yaml:"push_branch"`
+}
+
+type implementOverlay struct {
+	AutoPush *implementAutoPushValue `yaml:"auto_push"`
+}
+
+type implementAutoPushValue struct {
+	value bool
+}
+
+func (value *implementAutoPushValue) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind != yaml.ScalarNode || node.Tag != "!!bool" {
+		return errors.New("implement.auto_push must be boolean")
+	}
+	var raw bool
+	if err := node.Decode(&raw); err != nil {
+		return fmt.Errorf("implement.auto_push must be boolean: %w", err)
+	}
+	value.value = raw
+	return nil
 }
 
 type budgetOverlay struct {
@@ -179,6 +205,9 @@ func Builtin() Config {
 			ReviewTimeout: defaultReviewTimeout,
 			QuietPeriod:   defaultQuietPeriod,
 			AutoPush:      true,
+		},
+		Implement: Implement{
+			AutoPush: false,
 		},
 		Budget: Budget{
 			Enabled:        true,
@@ -291,6 +320,10 @@ watch:
   push_remote: ""
   push_branch: ""
 
+implement:
+  # auto_push runs only after a Clean spec Run and never creates pull requests.
+  auto_push: %t
+
 budget:
   enabled: %t
   max_run_duration: %s
@@ -312,6 +345,7 @@ resolve:
 		formatConfigDuration(config.Watch.ReviewTimeout),
 		formatConfigDuration(config.Watch.QuietPeriod),
 		config.Watch.AutoPush,
+		config.Implement.AutoPush,
 		config.Budget.Enabled,
 		formatConfigDuration(config.Budget.MaxRunDuration),
 		config.Resolve.BatchSize,
@@ -540,6 +574,11 @@ func applyOverlay(config *Config, overlay configOverlay) {
 		}
 		if overlay.Watch.PushBranch != nil {
 			config.Watch.PushBranch = *overlay.Watch.PushBranch
+		}
+	}
+	if overlay.Implement != nil {
+		if overlay.Implement.AutoPush != nil {
+			config.Implement.AutoPush = overlay.Implement.AutoPush.value
 		}
 	}
 	if overlay.Budget != nil {

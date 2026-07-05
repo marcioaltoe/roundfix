@@ -23,8 +23,9 @@ const implementUsage = `Usage:
 
 Executes the Spec's Task Graph on the current branch as one Run: Tasks run
 in dependency order, each Task's Verification commands gate one commit, and
-the Run never pushes. Without --spec, Interactive Input lists the
-repository's active Specs for selection.
+the Run pushes only when config enables implement.auto_push and the outcome
+is Clean. Without --spec, Interactive Input lists the repository's active
+Specs for selection.
 
 Options:
   --spec               Spec slug under docs/specs/
@@ -217,6 +218,18 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	if cycleResult.QAVerdict != "" && cycleResult.QAVerdict != spec.VerdictPass {
 		outcome = store.StateUnresolved
 	}
+	pushResult := implementPushResult{}
+	if outcome == store.StateClean {
+		pushResult, err = maybeRunImplementAutoPush(ctx, gitState, loadedConfig.Config, collaborators, runStore, ui, run.ID, stderr)
+		if err != nil {
+			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
+			markRunFailed(ctx, runStore, run.ID)
+			ui.Wait()
+			ui.Close()
+			printImplementRunPushFailure(err, stderr)
+			return exitRunFailed
+		}
+	}
 	completed, err := runStore.CompleteRun(ctx, run.ID, outcome)
 	if err != nil {
 		ui.Close()
@@ -233,6 +246,9 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	counts := printImplementTaskLines(stdout, gitState.Root, graph, true)
 	printImplementQAVerdictLine(stdout, cycleResult)
 	printImplementOutcomeLine(stdout, completed.State, counts)
+	if pushResult.pushed {
+		fmt.Fprintf(stdout, "pushed %s/%s\n", pushResult.remote, pushResult.branch)
+	}
 	if completed.State == store.StateUnresolved {
 		return exitRunFailed
 	}
@@ -327,8 +343,8 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, run
 		Verifier:  collaborators.verifier,
 		Committer: collaborators.committer,
 		// Pusher and Source only satisfy engine construction: the Task
-		// cycle never invokes them and implement never runs Final Push,
-		// because spec Runs never push (ADR 0013).
+		// cycle never invokes them. The CLI performs the optional
+		// Clean-only spec push after the cycle settles (ADR 0021).
 		Pusher:   collaborators.pusher,
 		Source:   collaborators.source,
 		Runs:     runStore,
@@ -351,6 +367,52 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, run
 	})
 }
 
+type implementPushResult struct {
+	pushed bool
+	remote string
+	branch string
+}
+
+func maybeRunImplementAutoPush(ctx context.Context, gitState preflight.GitState, config roundconfig.Config, collaborators engineCollaborators, runStore *store.Store, ui *runUI, runID string, stderr io.Writer) (implementPushResult, error) {
+	if !config.Implement.AutoPush {
+		return implementPushResult{}, nil
+	}
+	remote := strings.TrimSpace(gitState.UpstreamRemote)
+	branch := strings.TrimSpace(gitState.UpstreamBranch)
+	if remote == "" || branch == "" {
+		summary := fmt.Sprintf("Spec Run push skipped: branch %s has no upstream; set an upstream or push manually.", gitState.Branch)
+		fmt.Fprintln(stderr, summary)
+		publishPushDecision(ctx, ui.sink, runID, "skipped", summary, 0)
+		return implementPushResult{}, nil
+	}
+	engine, err := daemon.NewEngine(daemon.Dependencies{
+		Runner:    collaborators.runner,
+		Verifier:  collaborators.verifier,
+		Committer: collaborators.committer,
+		Pusher:    collaborators.pusher,
+		Source:    collaborators.source,
+		Runs:      runStore,
+		Worktree:  collaborators.worktree,
+		Sink:      ui.sink,
+		Progress:  ui.progress,
+	})
+	if err != nil {
+		return implementPushResult{}, err
+	}
+	if err := engine.FinalPush(ctx, daemon.FinalPushRequest{
+		RunID:   runID,
+		WorkDir: gitState.Root,
+		Remote:  remote,
+		Branch:  branch,
+	}); err != nil {
+		summary := fmt.Sprintf("Spec Run push failed: git push %s HEAD:%s: %v", remote, branch, err)
+		publishPushDecision(ctx, ui.sink, runID, "failed", summary, 0)
+		return implementPushResult{}, fmt.Errorf("push Clean spec Run: %w", err)
+	}
+	fmt.Fprintf(ui.progress, "Spec Run push completed: git push %s HEAD:%s\n", remote, branch)
+	return implementPushResult{pushed: true, remote: remote, branch: branch}, nil
+}
+
 // implementLiveRunView builds the Live Run View for a spec Run: Tasks are
 // the Work Items of the left pane, in Task Graph order, located through the
 // git root and Spec slug so the cockpit refreshes their statuses from the
@@ -371,11 +433,18 @@ func implementLiveRunView(req commandRequest, loaded roundconfig.Loaded, gitStat
 		BudgetState:   formatBudgetState(loaded.Config),
 		GitState:      formatGitState(gitState),
 		AutoCommit:    true,
-		AutoPush:      false,
-		LastPush:      "disabled",
+		AutoPush:      loaded.Config.Implement.AutoPush,
+		LastPush:      implementPushState(loaded.Config.Implement.AutoPush),
 		Console:       []string{"Agent and verification output will stream below."},
 		Width:         liveViewWidth(),
 	}
+}
+
+func implementPushState(enabled bool) string {
+	if enabled {
+		return "pending"
+	}
+	return "disabled"
 }
 
 type implementTaskCounts struct {
@@ -476,4 +545,9 @@ func countNonCompletedTasks(tasks []spec.Task) int {
 func printImplementRunFailure(err error, stderr io.Writer) {
 	fmt.Fprintf(stderr, "%s: implement failed after Run start: %v\n", app.Name, err)
 	fmt.Fprintln(stderr, "Roundfix did not push; completed Task commits and preserved working tree changes remain for inspection.")
+}
+
+func printImplementRunPushFailure(err error, stderr io.Writer) {
+	fmt.Fprintf(stderr, "%s: implement failed after Run start: %v\n", app.Name, err)
+	fmt.Fprintln(stderr, "Roundfix did not complete the spec Run push; completed Task commits and preserved working tree changes remain for inspection.")
 }

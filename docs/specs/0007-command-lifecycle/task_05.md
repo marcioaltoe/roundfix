@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0007-command-lifecycle
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -34,20 +34,20 @@ outcome-matrix CLI tests over the fake pusher.
 
 ## Subtasks
 
-- [ ] Config key, defaults, validation
-- [ ] Clean-only push wiring after the implement outcome
-- [ ] Journal event and stdout line
-- [ ] Outcome-matrix tests over the fake pusher
+- [x] Config key, defaults, validation
+- [x] Clean-only push wiring after the implement outcome
+- [x] Journal event and stdout line
+- [x] Outcome-matrix tests over the fake pusher
 
 ## Acceptance Criteria
 
-- [ ] Matrix tests: Clean+key pushes (invocation captured, stdout line
+- [x] Matrix tests: Clean+key pushes (invocation captured, stdout line
       present); Clean without key, Unresolved, Stopped, QA-fail all record
       zero pusher calls; missing upstream notes and exits per the Clean
       path.
-- [ ] Push failure ends the Run Failed with exit 1, journaled.
-- [ ] Config validation rejects non-boolean values with a named-key error.
-- [ ] Full suite passes; review-path push tests unchanged.
+- [x] Push failure ends the Run Failed with exit 1, journaled.
+- [x] Config validation rejects non-boolean values with a named-key error.
+- [x] Full suite passes; review-path push tests unchanged.
 
 ## Verification
 
@@ -60,3 +60,19 @@ outcome-matrix CLI tests over the fake pusher.
 `_prd.md` → User Story 6; Core Feature 5. `_techspec.md` → Push at Clean,
 Build Order 5. ADR-0013 (superseded half), ADR-0021. Round-1 dogfood
 finding 25.
+
+## Result
+
+- Added `implement.auto_push` to config with default `false`, User Config
+  precedence and Project Config override coverage, generated config output,
+  and a named-key parse error for non-boolean values.
+- Implemented Clean-only spec Run push through the existing `Pusher` and
+  `daemon.push` event kind. `TestRunImplementAutoPushOutcomeMatrix` covers
+  Clean+key with QA pass pushing `origin/ma/widget-flow`, Clean without key,
+  Unresolved, Stopped, and QA-fail with zero pusher calls.
+- Added missing-upstream coverage proving one stderr note, Clean exit
+  semantics, no pusher call, and a journaled skipped push decision.
+- Added push-failure coverage proving exit 1, Run state `Failed`, lock
+  release, one pusher attempt, and a journaled failed push decision.
+- Verification evidence: `rtk go test ./internal/config/ ./internal/cli/`
+  passed with 244 tests; `rtk go test ./...` passed with 656 tests.
