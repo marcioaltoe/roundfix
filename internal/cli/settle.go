@@ -17,14 +17,16 @@ import (
 	"roundfix/internal/preflight"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
+	runworktree "roundfix/internal/worktree"
 )
 
 const settleUsage = `Usage:
   roundfix settle --spec <slug> --task <task_id>
 
-Re-runs one failed Task's Verification commands. On pass, settles completed
-and commits all current worktree changes plus the task file; settle creates no
-Run, writes no Run Event Journal entries, and never pushes.
+Re-runs one failed Task's Verification commands in its kept Run Worktree when
+available. On pass, settles completed and commits all Run Worktree changes plus
+the task file; settle creates no Run, writes no Run Event Journal entries, and
+never pushes.
 
 Options:
   --spec  Spec slug under docs/specs/
@@ -42,9 +44,14 @@ type settleRequest struct {
 }
 
 type settlePlan struct {
-	gitRoot string
-	graph   *spec.Graph
-	task    spec.Task
+	userRoot     string
+	workDir      string
+	targetBranch string
+	homeDir      string
+	graph        *spec.Graph
+	task         spec.Task
+	run          store.Run
+	hasRun       bool
 }
 
 func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
@@ -66,7 +73,7 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	collaborators := newEngineCollaborators()
 	for _, command := range plan.task.Verification {
 		if err := collaborators.verifier.Verify(ctx, daemon.VerifyRequest{
-			WorkDir: plan.gitRoot,
+			WorkDir: plan.workDir,
 			Command: command,
 			Stream:  stderr,
 		}); err != nil {
@@ -81,6 +88,17 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	if err != nil {
 		fmt.Fprintf(stderr, "%s: settle failed after verification: %v\n", app.Name, err)
 		return exitRunFailed
+	}
+	if plan.hasRun {
+		integrationCommand, err := integrateSettledRun(ctx, plan)
+		if err != nil {
+			fmt.Fprintf(stderr, "%s: settle failed after verification: %v\n", app.Name, err)
+			return exitRunFailed
+		}
+		if integrationCommand != "" {
+			fmt.Fprintf(stdout, "integration pending — %s\n", integrationCommand)
+			return exitRunFailed
+		}
 	}
 	fmt.Fprintf(stdout, "settled %s completed — %s\n", plan.task.ID, shortSHA)
 	return exitOK
@@ -118,7 +136,24 @@ func preflightSettle(ctx context.Context, req settleRequest) (settlePlan, error)
 	if err != nil {
 		return settlePlan{}, validationError{message: fmt.Sprintf("repository resolves: %v", err)}
 	}
-	graph, err := spec.Load(gitState.Root, req.specSlug)
+	plan := settlePlan{
+		userRoot:     gitState.Root,
+		workDir:      gitState.Root,
+		targetBranch: gitState.Branch,
+		homeDir:      loadedConfig.HomeDir,
+	}
+	if run, found, err := latestKeptSettleRun(ctx, loadedConfig.HomeDir, gitState.Root, req.specSlug); err != nil {
+		return settlePlan{}, err
+	} else if found {
+		if _, err := os.Stat(run.WorkDir); err != nil {
+			return settlePlan{}, validationError{message: fmt.Sprintf("Run Worktree for Run %s is unavailable at %q: %v", run.ID, run.WorkDir, err)}
+		}
+		plan.workDir = run.WorkDir
+		plan.targetBranch = run.LocalBranch
+		plan.run = run
+		plan.hasRun = true
+	}
+	graph, err := spec.Load(plan.workDir, req.specSlug)
 	if err != nil {
 		return settlePlan{}, validationError{message: fmt.Sprintf("Spec loads valid: %v", err)}
 	}
@@ -132,7 +167,29 @@ func preflightSettle(ctx context.Context, req settleRequest) (settlePlan, error)
 	if err := ensureNoSettleActiveRun(ctx, loadedConfig.HomeDir, gitState.Root, req.specSlug); err != nil {
 		return settlePlan{}, err
 	}
-	return settlePlan{gitRoot: gitState.Root, graph: graph, task: task}, nil
+	plan.graph = graph
+	plan.task = task
+	return plan, nil
+}
+
+func latestKeptSettleRun(ctx context.Context, homeDir string, gitRoot string, specSlug string) (store.Run, bool, error) {
+	if _, err := os.Stat(store.DatabasePath(homeDir)); errors.Is(err, os.ErrNotExist) {
+		return store.Run{}, false, nil
+	} else if err != nil {
+		return store.Run{}, false, validationError{message: fmt.Sprintf("inspect Run Database before settle: %v", err)}
+	}
+	runStore, err := store.OpenReader(ctx, homeDir)
+	if err != nil {
+		return store.Run{}, false, validationError{message: fmt.Sprintf("open Run Database before settle: %v", err)}
+	}
+	defer func() {
+		_ = runStore.Close()
+	}()
+	run, found, err := runStore.LatestKeptSpecRun(ctx, gitRoot, specSlug)
+	if err != nil {
+		return store.Run{}, false, validationError{message: fmt.Sprintf("find kept Run Worktree for Spec: %v", err)}
+	}
+	return run, found, nil
 }
 
 func findSettleTask(tasks []spec.Task, taskID string) (spec.Task, bool) {
@@ -183,27 +240,60 @@ func ensureNoSettleActiveRun(ctx context.Context, homeDir string, gitRoot string
 
 func settleTaskAndCommit(ctx context.Context, plan settlePlan, collaborators engineCollaborators) (string, error) {
 	taskPath := plan.task.File
-	changed, err := collaborators.worktree.Snapshot(ctx, plan.gitRoot)
+	changed, err := collaborators.worktree.Snapshot(ctx, plan.workDir)
 	if err != nil {
 		return "", err
 	}
 	changed = ensureSettleCommitPath(changed, taskPath)
-	if err := spec.SetStatus(filepathInRoot(plan.gitRoot, taskPath), spec.StatusCompleted); err != nil {
+	if err := spec.SetStatus(filepathInRoot(plan.workDir, taskPath), spec.StatusCompleted); err != nil {
 		return "", fmt.Errorf("settle Task %s completed: %w", plan.task.ID, err)
 	}
 	message := daemon.TaskCommitMessage(plan.graph.Spec.Slug, plan.task)
 	if err := collaborators.committer.Commit(ctx, daemon.CommitRequest{
-		WorkDir: plan.gitRoot,
+		WorkDir: plan.workDir,
 		Message: message,
 		Paths:   changed,
 	}); err != nil {
 		return "", err
 	}
-	shortSHA, err := settleShortHEAD(ctx, plan.gitRoot)
+	shortSHA, err := settleShortHEAD(ctx, plan.workDir)
 	if err != nil {
 		return "", err
 	}
 	return shortSHA, nil
+}
+
+func integrateSettledRun(ctx context.Context, plan settlePlan) (string, error) {
+	ref := runworktree.Ref{
+		RunID:    plan.run.ID,
+		Path:     plan.run.WorkDir,
+		Branch:   runworktree.BranchName(plan.run.ID),
+		UserRoot: plan.userRoot,
+	}
+	result, err := integrateCleanImplementRun(ctx, ref, plan.targetBranch)
+	if err != nil {
+		return "", err
+	}
+	runStore, err := store.Open(ctx, plan.homeDir)
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		_ = runStore.Close()
+	}()
+	if result.Mode == runworktree.ModePending {
+		if _, err := runStore.CompleteRun(ctx, plan.run.ID, store.StateIntegrationPending); err != nil {
+			return "", err
+		}
+		return implementIntegrationCommand(ref), nil
+	}
+	if err := cleanupCleanRunWorktree(ctx, ref); err != nil {
+		return "", err
+	}
+	if _, err := runStore.CompleteRun(ctx, plan.run.ID, store.StateClean); err != nil {
+		return "", err
+	}
+	return "", nil
 }
 
 func ensureSettleCommitPath(paths []string, path string) []string {

@@ -158,6 +158,10 @@ func PruneTerminal(ctx context.Context, userRoot string, isTerminalClean func(ru
 	return errors.Join(errs...)
 }
 
+func BranchName(runID string) string {
+	return runBranchPrefix + strings.TrimSpace(runID)
+}
+
 type gitRunner interface {
 	Run(ctx context.Context, workDir string, args ...string) (string, error)
 }
@@ -225,7 +229,7 @@ func newRef(userRoot, runID string) (Ref, error) {
 	if err != nil {
 		return Ref{}, fmt.Errorf("resolve Roundfix Home: %w", err)
 	}
-	branch := runBranchPrefix + runID
+	branch := BranchName(runID)
 	return Ref{
 		RunID:    runID,
 		Path:     filepath.Join(homeDir, ".roundfix", "worktrees", repoID(userRoot), runID),

@@ -19,6 +19,7 @@ import (
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
 	roundtui "roundfix/internal/tui"
+	runworktree "roundfix/internal/worktree"
 )
 
 const implementTestSlug = "0001-widget-flow"
@@ -47,6 +48,21 @@ func gitImplement(t *testing.T, dir string, args ...string) {
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, output.String())
 	}
+}
+
+func gitImplementOutput(t *testing.T, dir string, args ...string) string {
+	t.Helper()
+	cmdArgs := append(gitConfigArgsForTest(), args...)
+	cmd := exec.Command("git", cmdArgs...)
+	cmd.Dir = dir
+	cmd.Env = isolatedGitEnvForTest()
+	var output bytes.Buffer
+	cmd.Stdout = &output
+	cmd.Stderr = &output
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, output.String())
+	}
+	return output.String()
 }
 
 func gitConfigArgsForTest() []string {
@@ -178,6 +194,7 @@ type implementFakeRunner struct {
 	logPaths     []string
 	writeLogs    bool
 	agentOutput  string
+	onTask       func(req agent.ExecuteRequest, taskID string) error
 }
 
 func (runner *implementFakeRunner) Probe(context.Context, agent.RuntimeSpec) error {
@@ -187,6 +204,10 @@ func (runner *implementFakeRunner) Probe(context.Context, agent.RuntimeSpec) err
 func (runner *implementFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
 	runner.calls++
 	runner.logPaths = append(runner.logPaths, req.LogPath)
+	executionRoot := strings.TrimSpace(req.GitRoot)
+	if executionRoot == "" {
+		executionRoot = runner.gitRoot
+	}
 	if runner.agentOutput != "" {
 		if err := publishFakeAgentOutput(ctx, sink, req, runner.agentOutput); err != nil {
 			return agent.ExecuteResult{}, err
@@ -204,7 +225,7 @@ func (runner *implementFakeRunner) Run(ctx context.Context, req agent.ExecuteReq
 	if taskID == "" && strings.Contains(req.Prompt, "Spec QA gate") {
 		runner.qaCalls++
 		if runner.qaReport != "" {
-			reportPath := filepath.Join(runner.gitRoot, implementQAReportRelPath())
+			reportPath := filepath.Join(executionRoot, implementQAReportRelPath())
 			if err := os.MkdirAll(filepath.Dir(reportPath), 0o755); err != nil {
 				return agent.ExecuteResult{}, err
 			}
@@ -218,8 +239,13 @@ func (runner *implementFakeRunner) Run(ctx context.Context, req agent.ExecuteReq
 	if err := runner.errByTask[taskID]; err != nil {
 		return agent.ExecuteResult{}, err
 	}
+	if runner.onTask != nil {
+		if err := runner.onTask(req, taskID); err != nil {
+			return agent.ExecuteResult{}, err
+		}
+	}
 	if status, ok := runner.statusByTask[taskID]; ok {
-		if err := spec.SetStatus(implementTaskPath(runner.gitRoot, taskID), status); err != nil {
+		if err := spec.SetStatus(implementTaskPath(executionRoot, taskID), status); err != nil {
 			return agent.ExecuteResult{}, err
 		}
 	}
@@ -253,6 +279,7 @@ func implementTaskIDFromPrompt(prompt string) string {
 // implement run and returns the ones tests assert on.
 func withImplementCollaborators(t *testing.T, runner agent.Runner) (*fakeCommitter, *fakeVerifier, *fakePusher, *fakeSourceResolver) {
 	t.Helper()
+	withFakeRunWorktrees(t)
 	committer := &fakeCommitter{}
 	verifier := &fakeVerifier{}
 	pusher := &fakePusher{}
@@ -264,6 +291,90 @@ func withImplementCollaborators(t *testing.T, runner agent.Runner) (*fakeCommitt
 	withPusher(t, pusher)
 	withSourceResolver(t, sourceResolver)
 	return committer, verifier, pusher, sourceResolver
+}
+
+func withFakeRunWorktrees(t *testing.T) {
+	t.Helper()
+	oldCreate := createRunWorktree
+	oldIntegrate := integrateRunWorktree
+	oldCleanup := cleanupCleanRunWorktree
+	oldPrune := pruneTerminalRunWorktrees
+	createRunWorktree = func(_ context.Context, userRoot, runID, _ string, _ []string) (runworktree.Ref, error) {
+		path := filepath.Join(os.Getenv("HOME"), ".roundfix", "worktrees", "fake", runID)
+		if err := copyDir(filepath.Join(userRoot, "docs"), filepath.Join(path, "docs")); err != nil {
+			return runworktree.Ref{}, err
+		}
+		gitImplement(t, path, "init", "--initial-branch=main")
+		gitImplement(t, path, "add", "-A")
+		gitImplement(t, path, "commit", "-m", "seed fake run worktree")
+		gitImplement(t, path, "branch", "-m", runworktree.BranchName(runID))
+		return runworktree.Ref{
+			RunID:    runID,
+			Path:     path,
+			Branch:   runworktree.BranchName(runID),
+			UserRoot: userRoot,
+		}, nil
+	}
+	integrateRunWorktree = func(_ context.Context, ref runworktree.Ref, _ string, _ string) (runworktree.IntegrationResult, error) {
+		if err := copyDir(filepath.Join(ref.Path, "docs"), filepath.Join(ref.UserRoot, "docs")); err != nil {
+			return runworktree.IntegrationResult{}, err
+		}
+		return runworktree.IntegrationResult{Mode: runworktree.ModeFastForwardMerge}, nil
+	}
+	cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
+		return os.RemoveAll(ref.Path)
+	}
+	pruneTerminalRunWorktrees = func(context.Context, string, func(string) bool) error {
+		return nil
+	}
+	t.Cleanup(func() {
+		createRunWorktree = oldCreate
+		integrateRunWorktree = oldIntegrate
+		cleanupCleanRunWorktree = oldCleanup
+		pruneTerminalRunWorktrees = oldPrune
+	})
+}
+
+func copyDir(source string, destination string) error {
+	info, err := os.Stat(source)
+	if err != nil {
+		return err
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("%s is not a directory", source)
+	}
+	if err := os.MkdirAll(destination, 0o755); err != nil {
+		return err
+	}
+	entries, err := os.ReadDir(source)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		sourcePath := filepath.Join(source, entry.Name())
+		destinationPath := filepath.Join(destination, entry.Name())
+		if entry.IsDir() {
+			if err := copyDir(sourcePath, destinationPath); err != nil {
+				return err
+			}
+			continue
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		if !info.Mode().IsRegular() {
+			continue
+		}
+		content, err := os.ReadFile(sourcePath)
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(destinationPath, content, info.Mode().Perm()); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func implementRunIDFromStderr(t *testing.T, stderr string) string {
@@ -316,6 +427,68 @@ func assertNoActiveRunInGitRoot(t *testing.T, homeDir string, gitRoot string) {
 	} else if found {
 		t.Fatalf("expected the Active Run lock released, got %#v", blocking)
 	}
+}
+
+func assertRunWorktreeExists(t *testing.T, path string) {
+	t.Helper()
+	if strings.TrimSpace(path) == "" {
+		t.Fatal("expected Run Worktree path to be recorded")
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("expected Run Worktree %q to exist: %v", path, err)
+	}
+	if !info.IsDir() {
+		t.Fatalf("expected Run Worktree %q to be a directory", path)
+	}
+}
+
+func assertRunWorktreeRemoved(t *testing.T, path string) {
+	t.Helper()
+	if strings.TrimSpace(path) == "" {
+		t.Fatal("expected Run Worktree path to be recorded")
+	}
+	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected Run Worktree %q to be removed, stat error %v", path, err)
+	}
+}
+
+func assertRunBranchExists(t *testing.T, repoDir string, branch string) {
+	t.Helper()
+	if strings.TrimSpace(gitImplementOutput(t, repoDir, "branch", "--list", branch)) == "" {
+		t.Fatalf("expected Run Branch %q to exist", branch)
+	}
+}
+
+func assertRunBranchRemoved(t *testing.T, repoDir string, branch string) {
+	t.Helper()
+	if got := strings.TrimSpace(gitImplementOutput(t, repoDir, "branch", "--list", branch)); got != "" {
+		t.Fatalf("expected Run Branch %q to be removed, got %q", branch, got)
+	}
+}
+
+func integrationCommandFromStderr(t *testing.T, stderr string) string {
+	t.Helper()
+	for _, line := range strings.Split(stderr, "\n") {
+		if command, ok := strings.CutPrefix(line, "Integration command: "); ok {
+			command = strings.TrimSpace(command)
+			if command == "" {
+				t.Fatal("empty integration command")
+			}
+			return command
+		}
+	}
+	t.Fatalf("expected integration command in stderr, got %q", stderr)
+	return ""
+}
+
+func runPrintedIntegrationCommand(t *testing.T, repoDir string, command string) {
+	t.Helper()
+	fields := strings.Fields(command)
+	if len(fields) < 2 || fields[0] != "git" {
+		t.Fatalf("expected git integration command, got %q", command)
+	}
+	gitImplement(t, repoDir, fields[1:]...)
 }
 
 func TestRunImplementHelpListsExactlyImplementedFlags(t *testing.T) {
@@ -1191,14 +1364,6 @@ func TestRunImplementPreflightFailures(t *testing.T) {
 			messages: []string{"dependency cycle", "task_01, task_02"},
 		},
 		{
-			name:  "dirty working tree",
-			seeds: []implementSeed{{id: "task_01"}},
-			mutate: func(t *testing.T, repoDir string) {
-				mustWrite(t, filepath.Join(repoDir, "leftover.txt"), "failed attempt leftovers\n")
-			},
-			messages: []string{"working tree", "not clean", "commit, stash, or discard"},
-		},
-		{
 			name:  "default branch veto",
 			seeds: []implementSeed{{id: "task_01"}},
 			mutate: func(t *testing.T, repoDir string) {
@@ -1236,6 +1401,246 @@ func TestRunImplementPreflightFailures(t *testing.T) {
 			}
 			assertNoRunDatabase(t, homeDir)
 		})
+	}
+}
+
+func TestRunImplementDirtyWorkingTreePrintsNoteAndRuns(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	withImplementCollaborators(t, &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	})
+	mustWrite(t, filepath.Join(repoDir, "leftover.txt"), "failed attempt leftovers\n")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected dirty working tree to continue, got exit %d (stderr %q)", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "has 1 uncommitted change(s); implement will run in a Run Worktree") {
+		t.Fatalf("expected dirty-tree note, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "overlapping local changes end the Run Integration Pending") {
+		t.Fatalf("expected Integration Pending note, got %q", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Clean: all 1 Task(s) completed.") {
+		t.Fatalf("expected clean outcome, got %q", stdout.String())
+	}
+	runID := implementRunIDFromStderr(t, stderr.String())
+	run := implementRunFromStore(t, homeDir, runID)
+	if run.State != store.StateClean {
+		t.Fatalf("expected clean run, got %s", run.State)
+	}
+	if _, err := os.Stat(filepath.Join(repoDir, "leftover.txt")); err != nil {
+		t.Fatalf("expected dirty user file to survive: %v", err)
+	}
+}
+
+func TestRunImplementRealWorktreeFastForwardsAndCleansPreservingNonOverlappingUserDirt(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:           "task_01",
+		title:        "Build isolated work",
+		verification: []string{"test -f agent.txt"},
+	}})
+	mustWrite(t, filepath.Join(repoDir, "local.txt"), "user dirt\n")
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		onTask: func(req agent.ExecuteRequest, _ string) error {
+			return os.WriteFile(filepath.Join(req.GitRoot, "agent.txt"), []byte("agent work\n"), 0o644)
+		},
+	}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected Clean fast-forward exit, got %d (stderr %q)", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "has 1 uncommitted change(s); implement will run in a Run Worktree") {
+		t.Fatalf("expected dirty-tree note, got %q", stderr.String())
+	}
+	runID := implementRunIDFromStderr(t, stderr.String())
+	run := implementRunFromStore(t, homeDir, runID)
+	if run.State != store.StateClean {
+		t.Fatalf("expected Clean Run, got %s", run.State)
+	}
+	if run.WorkDir == "" {
+		t.Fatal("expected Run Worktree path to be recorded")
+	}
+	assertRunWorktreeRemoved(t, run.WorkDir)
+	assertRunBranchRemoved(t, repoDir, runworktree.BranchName(runID))
+	if got := mustRead(t, filepath.Join(repoDir, "agent.txt")); got != "agent work\n" {
+		t.Fatalf("expected integrated agent file, got %q", got)
+	}
+	if got := mustRead(t, filepath.Join(repoDir, "local.txt")); got != "user dirt\n" {
+		t.Fatalf("expected non-overlapping user dirt preserved, got %q", got)
+	}
+	if status := gitImplementOutput(t, repoDir, "status", "--porcelain=v1"); !strings.Contains(status, "?? local.txt") {
+		t.Fatalf("expected local.txt to remain untracked, got status %q", status)
+	}
+	if !strings.Contains(stdout.String(), "Clean: all 1 Task(s) completed.") {
+		t.Fatalf("expected Clean stdout, got %q", stdout.String())
+	}
+	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+func TestRunImplementWorktreeIsolationExcludesConcurrentUserCommit(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:           "task_01",
+		title:        "Build isolated work",
+		verification: []string{"test -f agent.txt"},
+	}})
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		onTask: func(req agent.ExecuteRequest, _ string) error {
+			if err := os.WriteFile(filepath.Join(req.GitRoot, "agent.txt"), []byte("agent work\n"), 0o644); err != nil {
+				return err
+			}
+			mustWrite(t, filepath.Join(repoDir, "user.txt"), "user work\n")
+			gitImplement(t, repoDir, "add", "user.txt")
+			gitImplement(t, repoDir, "commit", "-m", "user work during run")
+			return nil
+		},
+	}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected IntegrationPending exit, got %d (stderr %q)", code, stderr.String())
+	}
+	runID := implementRunIDFromStderr(t, stderr.String())
+	run := implementRunFromStore(t, homeDir, runID)
+	if run.State != store.StateIntegrationPending {
+		t.Fatalf("expected IntegrationPending Run, got %s", run.State)
+	}
+	branch := runworktree.BranchName(runID)
+	assertRunWorktreeExists(t, run.WorkDir)
+	assertRunBranchExists(t, repoDir, branch)
+	taskCommitFiles := gitImplementOutput(t, repoDir, "diff-tree", "--no-commit-id", "--name-only", "-r", branch)
+	if !strings.Contains(taskCommitFiles, "agent.txt") {
+		t.Fatalf("expected task commit to contain agent file, got %q", taskCommitFiles)
+	}
+	if strings.Contains(taskCommitFiles, "user.txt") {
+		t.Fatalf("expected task commit to exclude user checkout commit, got %q", taskCommitFiles)
+	}
+	userFiles := gitImplementOutput(t, repoDir, "ls-tree", "-r", "--name-only", "HEAD")
+	if !strings.Contains(userFiles, "user.txt") {
+		t.Fatalf("expected user commit to survive on user branch, got %q", userFiles)
+	}
+	if strings.Contains(userFiles, "agent.txt") {
+		t.Fatalf("expected unintegrated agent file to stay off user branch, got %q", userFiles)
+	}
+	if subject := strings.TrimSpace(gitImplementOutput(t, repoDir, "log", "-1", "--format=%s")); subject != "user work during run" {
+		t.Fatalf("expected user's concurrent commit at HEAD, got %q", subject)
+	}
+	if !strings.Contains(stderr.String(), "Integration command: git merge --ff-only "+branch) {
+		t.Fatalf("expected integration command for pending Run, got %q", stderr.String())
+	}
+}
+
+func TestRunImplementOverlapEndsIntegrationPendingAndPrintedCommandWorks(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:           "task_01",
+		title:        "Edit shared file",
+		verification: []string{"grep -q run shared.txt"},
+	}})
+	mustWrite(t, filepath.Join(repoDir, "shared.txt"), "base\n")
+	gitImplement(t, repoDir, "add", "shared.txt")
+	gitImplement(t, repoDir, "commit", "-m", "seed shared file")
+	baseHead := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+	mustWrite(t, filepath.Join(repoDir, "shared.txt"), "user\n")
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		onTask: func(req agent.ExecuteRequest, _ string) error {
+			return os.WriteFile(filepath.Join(req.GitRoot, "shared.txt"), []byte("run\n"), 0o644)
+		},
+	}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected IntegrationPending exit, got %d (stderr %q)", code, stderr.String())
+	}
+	runID := implementRunIDFromStderr(t, stderr.String())
+	run := implementRunFromStore(t, homeDir, runID)
+	if run.State != store.StateIntegrationPending {
+		t.Fatalf("expected IntegrationPending Run, got %s", run.State)
+	}
+	branch := runworktree.BranchName(runID)
+	if head := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD")); head != baseHead {
+		t.Fatalf("expected target branch unmoved at %s, got %s", baseHead, head)
+	}
+	if got := mustRead(t, filepath.Join(repoDir, "shared.txt")); got != "user\n" {
+		t.Fatalf("expected overlapping user dirt intact, got %q", got)
+	}
+	status := gitImplementOutput(t, repoDir, "status", "--porcelain=v1")
+	if !strings.Contains(status, " M shared.txt") || strings.Contains(status, "M  shared.txt") {
+		t.Fatalf("expected unstaged overlap without phantom staged entries, got status %q", status)
+	}
+	command := integrationCommandFromStderr(t, stderr.String())
+	wantCommand := "git merge --ff-only " + branch
+	if command != wantCommand {
+		t.Fatalf("expected integration command %q, got %q", wantCommand, command)
+	}
+	if !strings.Contains(stdout.String(), wantCommand) {
+		t.Fatalf("expected outcome line to contain integration command, got %q", stdout.String())
+	}
+	gitImplement(t, repoDir, "stash", "push", "-m", "overlap before integration")
+	runPrintedIntegrationCommand(t, repoDir, command)
+	if got := mustRead(t, filepath.Join(repoDir, "shared.txt")); got != "run\n" {
+		t.Fatalf("expected printed command to fast-forward shared file, got %q", got)
+	}
+}
+
+func TestRunImplementUnresolvedKeepsRealRunWorktreeAndPrintsPath(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:    "task_01",
+		title: "Leave unresolved work",
+	}})
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusFailed},
+		onTask: func(req agent.ExecuteRequest, _ string) error {
+			return os.WriteFile(filepath.Join(req.GitRoot, "attempt.txt"), []byte("needs user\n"), 0o644)
+		},
+	}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected Unresolved exit, got %d (stderr %q)", code, stderr.String())
+	}
+	runID := implementRunIDFromStderr(t, stderr.String())
+	run := implementRunFromStore(t, homeDir, runID)
+	if run.State != store.StateUnresolved {
+		t.Fatalf("expected Unresolved Run, got %s", run.State)
+	}
+	assertRunWorktreeExists(t, run.WorkDir)
+	assertRunBranchExists(t, repoDir, runworktree.BranchName(runID))
+	if !strings.Contains(stderr.String(), "Run Worktree kept: "+run.WorkDir) {
+		t.Fatalf("expected kept Run Worktree path on stderr, got %q", stderr.String())
+	}
+	if got := mustRead(t, filepath.Join(run.WorkDir, "attempt.txt")); got != "needs user\n" {
+		t.Fatalf("expected unresolved work in kept Run Worktree, got %q", got)
+	}
+	if !strings.Contains(stdout.String(), "Unresolved: 0 completed, 1 failed") {
+		t.Fatalf("expected Unresolved stdout, got %q", stdout.String())
 	}
 }
 
@@ -1320,7 +1725,7 @@ func TestRunImplementAllTasksCompletedReportsWithoutRun(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
-func TestRunImplementFailedTaskEndsUnresolvedAndResumeFinishesGraph(t *testing.T) {
+func TestRunImplementFailedTaskEndsUnresolvedAndKeepsWorktree(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 		{id: "task_02", title: "Wire the widget API", needs: []string{"task_01"}},
@@ -1356,43 +1761,17 @@ func TestRunImplementFailedTaskEndsUnresolvedAndResumeFinishesGraph(t *testing.T
 	if firstRun.State != store.StateUnresolved {
 		t.Fatalf("expected first Run Unresolved, got %q", firstRun.State)
 	}
+	if firstRun.WorkDir == "" {
+		t.Fatal("expected Unresolved Run to record a kept Run Worktree")
+	}
+	if _, err := os.Stat(firstRun.WorkDir); err != nil {
+		t.Fatalf("expected kept Run Worktree to exist: %v", err)
+	}
+	if !strings.Contains(stderr.String(), "Run Worktree kept: "+firstRun.WorkDir) {
+		t.Fatalf("expected kept Run Worktree path on stderr, got %q", stderr.String())
+	}
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
-
-	// Resume: clear the failed attempt's leftovers, as the dirty-tree
-	// preflight message instructs, then re-run the same command.
-	gitImplement(t, repoDir, "add", "-A")
-	gitImplement(t, repoDir, "commit", "-m", "keep failed attempt")
-	secondRunner := &implementFakeRunner{
-		gitRoot: repoDir,
-		statusByTask: map[string]spec.Status{
-			"task_02": spec.StatusCompleted,
-			"task_03": spec.StatusCompleted,
-		},
-	}
-	withImplementCollaborators(t, secondRunner)
-	stdout.Reset()
-	stderr.Reset()
-
-	code = RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
-
-	if code != 0 {
-		t.Fatalf("expected resume exit code 0, got %d (stderr %q)", code, stderr.String())
-	}
-	if secondRunner.calls != 2 || secondRunner.taskIDs[0] != "task_02" || secondRunner.taskIDs[1] != "task_03" {
-		t.Fatalf("expected the resume Run to execute only non-completed Tasks, got %v", secondRunner.taskIDs)
-	}
-	expected = "task_01 completed — Build the widget core\n" +
-		"task_02 completed — Wire the widget API\n" +
-		"task_03 completed — Document the widget\n" +
-		"Clean: all 3 Task(s) completed.\n"
-	if stdout.String() != expected {
-		t.Fatalf("expected Clean resume report:\n%q\ngot:\n%q", expected, stdout.String())
-	}
-	secondRun := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
-	if secondRun.State != store.StateClean {
-		t.Fatalf("expected resume Run Clean, got %q", secondRun.State)
-	}
-	assertRunCount(t, store.DatabasePath(homeDir), 2)
+	assertRunCount(t, store.DatabasePath(homeDir), 1)
 }
 
 func TestRunImplementResumesStaleInProgressTask(t *testing.T) {

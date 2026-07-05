@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0008-worktree-isolation
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -41,28 +41,28 @@ CLI tests with concurrent user activity.
 
 ## Subtasks
 
-- [ ] Worktree creation and work_dir recording in the implement flow
-- [ ] Engine and agent wiring to the worktree path
-- [ ] Preflight demotion and debris sweep
-- [ ] Outcome integration matrix incl. IntegrationPending state
-- [ ] Settle retarget with integration
-- [ ] End-to-end tests with concurrent user edits and commits
+- [x] Worktree creation and work_dir recording in the implement flow
+- [x] Engine and agent wiring to the worktree path
+- [x] Preflight demotion and debris sweep
+- [x] Outcome integration matrix incl. IntegrationPending state
+- [x] Settle retarget with integration
+- [x] End-to-end tests with concurrent user edits and commits
 
 ## Acceptance Criteria
 
-- [ ] Multi-writer proof: a Run executing while the test mutates and
+- [x] Multi-writer proof: a Run executing while the test mutates and
       commits in the user checkout produces task commits containing zero
       user files, and the user's commits survive untouched.
-- [ ] Outcome matrix: Clean+ff (worktree gone, branch advanced, user dirt
+- [x] Outcome matrix: Clean+ff (worktree gone, branch advanced, user dirt
       preserved when non-overlapping); Clean+overlap → IntegrationPending
       exit 1 with the branch unmoved and the printed command working when
       executed by the test; Unresolved keeps the worktree and prints the
       path.
-- [ ] A dirty user tree no longer blocks implement (note asserted on
+- [x] A dirty user tree no longer blocks implement (note asserted on
       stderr).
-- [ ] Settle over a kept worktree verifies, commits, integrates, and
+- [x] Settle over a kept worktree verifies, commits, integrates, and
       cleans up on success.
-- [ ] Full suite passes with only the documented deliberate updates.
+- [x] Full suite passes with only the documented deliberate updates.
 
 ## Verification
 
@@ -75,3 +75,21 @@ CLI tests with concurrent user activity.
 
 `_prd.md` → User Stories 1–5; Core Features 2–4. `_techspec.md` → Run
 flows, API Contracts, Build Order 3. ADR-0023, ADR-0024.
+
+## Result
+
+Status: completed.
+
+Acceptance evidence:
+
+- Multi-writer proof: `TestRunImplementWorktreeIsolationExcludesConcurrentUserCommit` runs implement in a real Run Worktree while committing `user.txt` in the user checkout. The test asserts the Run Branch task commit contains `agent.txt` and excludes `user.txt`, while the user branch still has the user commit and no unintegrated agent file.
+- Outcome matrix: `TestRunImplementRealWorktreeFastForwardsAndCleansPreservingNonOverlappingUserDirt` proves Clean fast-forward cleanup and non-overlapping user dirt preservation; `TestRunImplementOverlapEndsIntegrationPendingAndPrintedCommandWorks` proves overlap becomes `IntegrationPending`, leaves the branch unmoved with unstaged user dirt intact, prints `git merge --ff-only roundfix/run-<id>`, and that command fast-forwards after the test clears the overlap; `TestRunImplementUnresolvedKeepsRealRunWorktreeAndPrintsPath` proves Unresolved keeps and prints the Run Worktree.
+- Dirty user tree demotion: `TestRunImplementDirtyWorkingTreePrintsNoteAndRuns` asserts the stderr note and a successful implement run instead of preflight rejection.
+- Settle retarget: `TestRunSettleRetargetsKeptRunWorktreeAndCleansUpAfterIntegration` creates an unresolved kept Run Worktree, then `roundfix settle` verifies and commits there, integrates into the user checkout, deletes the Run Worktree and Run Branch, and marks the Run Clean.
+- Deliberate test contract updates were limited to the new isolation behavior: dirty-tree preflight is now a note, unresolved runs are kept worktrees rather than user-checkout leftovers, and settle help names the Run Worktree scope.
+
+Verification:
+
+- `rtk go test ./internal/cli/ ./internal/daemon/` passed: 289 tests in 2 packages.
+- `rtk go test -race ./internal/daemon/` passed: 53 tests in 1 package.
+- `rtk go test ./...` passed: 675 tests in 17 packages.

@@ -10,9 +10,11 @@ import (
 	"strings"
 	"testing"
 
+	"roundfix/internal/agent"
 	"roundfix/internal/daemon"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
+	runworktree "roundfix/internal/worktree"
 )
 
 func TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage(t *testing.T) {
@@ -56,6 +58,73 @@ func TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage(t *testing.T) {
 	assertContainsString(t, changed, "done.txt")
 	assertContainsString(t, changed, filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "task_01.md")))
 	assertNoRunDatabase(t, homeDir)
+}
+
+func TestRunSettleRetargetsKeptRunWorktreeAndCleansUpAfterIntegration(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "Recover kept work",
+			taskType:     "backend",
+			verification: []string{"test -f done.txt"},
+		},
+	})
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusFailed},
+		onTask: func(req agent.ExecuteRequest, _ string) error {
+			return os.WriteFile(filepath.Join(req.GitRoot, "done.txt"), []byte("preserved work\n"), 0o644)
+		},
+	}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected unresolved implement exit, got %d stderr=%q", code, stderr.String())
+	}
+	runID := implementRunIDFromStderr(t, stderr.String())
+	run := implementRunFromStore(t, homeDir, runID)
+	if run.State != store.StateUnresolved {
+		t.Fatalf("expected unresolved Run before settle, got %s", run.State)
+	}
+	assertRunWorktreeExists(t, run.WorkDir)
+	assertRunBranchExists(t, repoDir, runworktree.BranchName(runID))
+	stdout.Reset()
+	stderr.Reset()
+
+	code = RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected settle exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "verify test -f done.txt — ok\n") {
+		t.Fatalf("expected verification line, got %q", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "settled task_01 completed — ") {
+		t.Fatalf("expected settled line, got %q", stdout.String())
+	}
+	completed := implementRunFromStore(t, homeDir, runID)
+	if completed.State != store.StateClean {
+		t.Fatalf("expected settled Run Clean, got %s", completed.State)
+	}
+	assertRunWorktreeRemoved(t, run.WorkDir)
+	assertRunBranchRemoved(t, repoDir, runworktree.BranchName(runID))
+	if got := mustRead(t, filepath.Join(repoDir, "done.txt")); got != "preserved work\n" {
+		t.Fatalf("expected settled work integrated into user checkout, got %q", got)
+	}
+	if content := mustRead(t, implementTaskPath(repoDir, "task_01")); !strings.Contains(content, "status: completed") {
+		t.Fatalf("expected task status completed after settle, got:\n%s", content)
+	}
+	if status := gitSettleOutput(t, repoDir, "status", "--porcelain=v1"); status != "" {
+		t.Fatalf("expected clean user checkout after settle integration, got %q", status)
+	}
+	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
 }
 
 func TestRunSettleRequiresSpecAndTask(t *testing.T) {
@@ -334,7 +403,7 @@ func TestRunSettleHelpDocumentsContract(t *testing.T) {
 		"--spec",
 		"--task",
 		"Exit codes:",
-		"all current worktree changes plus the task file",
+		"all Run Worktree changes plus",
 	} {
 		if !strings.Contains(stdout.String(), expected) {
 			t.Fatalf("expected settle help to contain %q, got:\n%s", expected, stdout.String())

@@ -29,14 +29,15 @@ const (
 	targetKindPR   = "pr"
 	targetKindSpec = "spec"
 
-	StateActive           = "Active"
-	StateFetched          = "Fetched"
-	StateStopped          = "Stopped"
-	StateClean            = "Clean"
-	StateMaxRoundsReached = "MaxRoundsReached"
-	StateBudgetExceeded   = "BudgetExceeded"
-	StateTimedOut         = "TimedOut"
-	StateFailed           = "Failed"
+	StateActive             = "Active"
+	StateFetched            = "Fetched"
+	StateStopped            = "Stopped"
+	StateClean              = "Clean"
+	StateMaxRoundsReached   = "MaxRoundsReached"
+	StateBudgetExceeded     = "BudgetExceeded"
+	StateTimedOut           = "TimedOut"
+	StateFailed             = "Failed"
+	StateIntegrationPending = "IntegrationPending"
 	// StateUnresolved means the resolve work completed but Unresolved
 	// Review Issues remain, so Final Push stayed blocked. It is a deliberate
 	// outcome, distinct from StateFailed which means the Run itself broke.
@@ -375,6 +376,34 @@ func (store *Store) StopRequested(ctx context.Context, runID string) (bool, erro
 	return requestedAt.Valid && strings.TrimSpace(requestedAt.String) != "", nil
 }
 
+func (store *Store) SetRunWorkDir(ctx context.Context, runID string, workDir string) (Run, error) {
+	runID = strings.TrimSpace(runID)
+	if runID == "" {
+		return Run{}, errors.New("Run ID is required")
+	}
+	workDir = strings.TrimSpace(workDir)
+	if workDir == "" {
+		return Run{}, errors.New("Run Worktree path is required")
+	}
+	result, err := store.db.ExecContext(ctx, `
+UPDATE runs SET work_dir = ?, updated_at = ? WHERE id = ?`,
+		workDir,
+		formatTime(store.now()),
+		runID,
+	)
+	if err != nil {
+		return Run{}, fmt.Errorf("record Run Worktree for Run %q: %w", runID, err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return Run{}, fmt.Errorf("read Run Worktree update result: %w", err)
+	}
+	if affected == 0 {
+		return Run{}, fmt.Errorf("record Run Worktree: Run %q does not exist", runID)
+	}
+	return selectRun(ctx, store.db, runID)
+}
+
 // UpdateRunState records an intermediate, non-terminal state for an Active
 // Run. Terminal outcomes must go through CompleteRun.
 func (store *Store) UpdateRunState(ctx context.Context, runID string, state string) error {
@@ -445,6 +474,35 @@ func (store *Store) Run(ctx context.Context, runID string) (Run, bool, error) {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Run{}, false, nil
 		}
+		return Run{}, false, err
+	}
+	return run, true, nil
+}
+
+func (store *Store) LatestKeptSpecRun(ctx context.Context, gitRoot string, specSlug string) (Run, bool, error) {
+	row := store.db.QueryRowContext(ctx, `
+SELECT id, kind, state, head_repository, head_branch, base_repository,
+       pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
+       spec_slug, agent, created_at, updated_at, completed_at
+FROM runs
+WHERE kind = ? AND git_root = ? AND spec_slug = ?
+  AND work_dir IS NOT NULL AND TRIM(work_dir) <> ''
+  AND state IN (?, ?, ?, ?)
+ORDER BY updated_at DESC, created_at DESC, id DESC
+LIMIT 1`,
+		KindImplement,
+		gitRoot,
+		specSlug,
+		StateUnresolved,
+		StateFailed,
+		StateStopped,
+		StateIntegrationPending,
+	)
+	run, err := scanRun(row)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Run{}, false, nil
+	}
+	if err != nil {
 		return Run{}, false, err
 	}
 	return run, true, nil
@@ -524,7 +582,7 @@ ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.upd
 
 func IsTerminalState(state string) bool {
 	switch state {
-	case StateFetched, StateStopped, StateClean, StateMaxRoundsReached, StateBudgetExceeded, StateTimedOut, StateFailed, StateUnresolved:
+	case StateFetched, StateStopped, StateClean, StateMaxRoundsReached, StateBudgetExceeded, StateTimedOut, StateFailed, StateIntegrationPending, StateUnresolved:
 		return true
 	default:
 		return false

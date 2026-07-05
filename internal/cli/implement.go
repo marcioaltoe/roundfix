@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"flag"
@@ -16,6 +17,7 @@ import (
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
 	roundtui "roundfix/internal/tui"
+	runworktree "roundfix/internal/worktree"
 )
 
 const implementUsage = `Usage:
@@ -39,6 +41,11 @@ Options:
   --interactive        Open Interactive Input before starting
   --no-input           Fail instead of opening Interactive Input
 `
+
+var createRunWorktree = runworktree.Create
+var integrateRunWorktree = runworktree.Integrate
+var cleanupCleanRunWorktree = runworktree.CleanupClean
+var pruneTerminalRunWorktrees = runworktree.PruneTerminal
 
 // runImplementCommand executes the Implement Command: Preflight Validation,
 // Run creation, the Live Run View, one Task cycle over the Task Graph, and
@@ -102,12 +109,6 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		fmt.Fprintf(stdout, "All %d Task(s) already completed; no Run was created.\n", counts.total())
 		return exitOK
 	}
-	if len(gitState.Dirty) > 0 {
-		printPreflightFailure("implement", validationError{message: fmt.Sprintf(
-			"working tree %s is not clean: %d uncommitted change(s); a failed Task attempt keeps its changes in the working tree on purpose — commit, stash, or discard them, then re-run implement",
-			gitState.Root, len(gitState.Dirty))}, stderr)
-		return exitPreflight
-	}
 	defaultBranch := preflight.DetectDefaultBranch(ctx, gitState.Root, gitState.Branch, nil)
 	if defaultBranch.IsDefault(gitState.Branch) {
 		printPreflightFailure("implement", validationError{message: fmt.Sprintf(
@@ -124,6 +125,13 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	defer func() {
 		_ = runStore.Close()
 	}()
+	if err := pruneTerminalRunWorktrees(ctx, gitState.Root, func(runID string) bool {
+		run, found, err := runStore.Run(ctx, runID)
+		return err == nil && found && run.State == store.StateClean
+	}); err != nil {
+		printPreflightFailure("implement", err, stderr)
+		return exitPreflight
+	}
 	if blocking, found, err := runStore.ActiveRunInGitRoot(ctx, gitState.Root); err != nil {
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
@@ -164,15 +172,37 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
-	session := agent.SessionRefForRun(run.ID, gitState.Root)
-	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
-		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
+	if len(gitState.Dirty) > 0 {
+		fmt.Fprintf(stderr, "%s: note: working tree %s has %d uncommitted change(s); implement will run in a Run Worktree, and overlapping local changes end the Run Integration Pending.\n", app.Name, gitState.Root, len(gitState.Dirty))
+	}
+	runRef, err := createRunWorktree(ctx, gitState.Root, run.ID, gitState.HEAD, loadedConfig.Config.Worktree.Copy)
+	if err != nil {
 		markRunFailed(ctx, runStore, run.ID)
 		printImplementRunFailure(err, stderr)
 		return exitRunFailed
 	}
+	run, err = runStore.SetRunWorkDir(ctx, run.ID, runRef.Path)
+	if err != nil {
+		markRunFailed(ctx, runStore, run.ID)
+		printImplementRunFailureWithWorktree(err, runRef.Path, stderr)
+		return exitRunFailed
+	}
+	executionGraph, err := spec.Load(runRef.Path, graph.Spec.Slug)
+	if err != nil {
+		markRunFailed(ctx, runStore, run.ID)
+		printImplementRunFailureWithWorktree(fmt.Errorf("load Spec from Run Worktree: %w", err), runRef.Path, stderr)
+		return exitRunFailed
+	}
+	fmt.Fprintf(stderr, "Run Worktree: %s\n", runRef.Path)
+	session := agent.SessionRefForRun(run.ID, runRef.Path)
+	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
+		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
+		markRunFailed(ctx, runStore, run.ID)
+		printImplementRunFailureWithWorktree(err, runRef.Path, stderr)
+		return exitRunFailed
+	}
 
-	view := implementLiveRunView(req, loadedConfig, gitState, run.ID, graph)
+	view := implementLiveRunView(req, loadedConfig, gitState, run.ID, executionGraph)
 	if !liveTUIEnabled(stderr) {
 		fmt.Fprint(stderr, roundtui.RenderLiveRunView(view))
 	}
@@ -185,7 +215,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 	defer ui.Close()
 
-	cycleResult, err := executeImplementCycle(ctx, gitState, run.ID, graph, req.artifactDir, req.qa, runtime, collaborators, runStore, ui)
+	cycleResult, err := executeImplementCycle(ctx, gitState, runRef, session, executionGraph, req.artifactDir, req.qa, runtime, collaborators, runStore, ui)
 	if err != nil {
 		if isStopRequest(ctx, err) {
 			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
@@ -197,7 +227,9 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 				return code
 			}
 			fmt.Fprintf(stderr, "Implement Run %s reached %s.\n", run.ID, store.StateStopped)
-			counts := printImplementTaskLines(stdout, gitState.Root, graph, false)
+			printKeptRunWorktree(stderr, runRef.Path)
+			report, counts := renderImplementTaskLines(runRef.Path, executionGraph, false)
+			fmt.Fprint(stdout, report)
 			printImplementOutcomeLine(stdout, store.StateStopped, counts)
 			return exitOK
 		}
@@ -205,7 +237,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		markRunFailed(ctx, runStore, run.ID)
 		ui.Wait()
 		ui.Close()
-		printImplementRunFailure(err, stderr)
+		printImplementRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
 
@@ -217,6 +249,30 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	// and unreadable all settle Unresolved (ADR 0015).
 	if cycleResult.QAVerdict != "" && cycleResult.QAVerdict != spec.VerdictPass {
 		outcome = store.StateUnresolved
+	}
+	report, counts := renderImplementTaskLines(runRef.Path, executionGraph, true)
+	integrationCommand := ""
+	if outcome == store.StateClean {
+		integration, err := integrateCleanImplementRun(ctx, runRef, gitState.Branch)
+		if err != nil {
+			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
+			markRunFailed(ctx, runStore, run.ID)
+			ui.Wait()
+			ui.Close()
+			printImplementRunFailureWithWorktree(err, runRef.Path, stderr)
+			return exitRunFailed
+		}
+		if integration.Mode == runworktree.ModePending {
+			outcome = store.StateIntegrationPending
+			integrationCommand = implementIntegrationCommand(runRef)
+		} else if err := cleanupCleanRunWorktree(ctx, runRef); err != nil {
+			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
+			markRunFailed(ctx, runStore, run.ID)
+			ui.Wait()
+			ui.Close()
+			printImplementRunFailureWithWorktree(err, runRef.Path, stderr)
+			return exitRunFailed
+		}
 	}
 	pushResult := implementPushResult{}
 	if outcome == store.StateClean {
@@ -243,13 +299,19 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	ui.Wait()
 	ui.Close()
 	fmt.Fprintf(stderr, "Implement Run %s reached %s.\n", completed.ID, completed.State)
-	counts := printImplementTaskLines(stdout, gitState.Root, graph, true)
+	if completed.State != store.StateClean {
+		printKeptRunWorktree(stderr, runRef.Path)
+	}
+	if completed.State == store.StateIntegrationPending {
+		fmt.Fprintf(stderr, "Integration command: %s\n", integrationCommand)
+	}
+	fmt.Fprint(stdout, report)
 	printImplementQAVerdictLine(stdout, cycleResult)
-	printImplementOutcomeLine(stdout, completed.State, counts)
+	printImplementOutcomeLineWithCommand(stdout, completed.State, counts, integrationCommand)
 	if pushResult.pushed {
 		fmt.Fprintf(stdout, "pushed %s/%s\n", pushResult.remote, pushResult.branch)
 	}
-	if completed.State == store.StateUnresolved {
+	if completed.State == store.StateUnresolved || completed.State == store.StateIntegrationPending {
 		return exitRunFailed
 	}
 	return exitOK
@@ -332,10 +394,12 @@ func printSkippedSpecDiagnostics(stderr io.Writer, skipped []spec.SkippedSpec) {
 
 // executeImplementCycle wires the Run engine exactly like the resolve path
 // and runs one Task cycle over the full graph.
-func executeImplementCycle(ctx context.Context, gitState preflight.GitState, runID string, graph *spec.Graph, artifactDir string, qa bool, runtime agent.RuntimeSpec, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
+func executeImplementCycle(ctx context.Context, gitState preflight.GitState, runRef runworktree.Ref, session agent.SessionRef, graph *spec.Graph, artifactDir string, qa bool, runtime agent.RuntimeSpec, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
+	runID := runRef.RunID
 	fmt.Fprintf(ui.progress, "%s: implement selected Spec %s with %d Task(s); %d to execute this Run.\n", app.Name, graph.Spec.Slug, len(graph.Tasks), countNonCompletedTasks(graph.Tasks))
 	fmt.Fprintf(ui.progress, "Implement Run: %s\n", runID)
-	fmt.Fprintf(ui.progress, "Working tree: %s on branch %s\n", gitState.Root, gitState.Branch)
+	fmt.Fprintf(ui.progress, "User checkout: %s on branch %s\n", gitState.Root, gitState.Branch)
+	fmt.Fprintf(ui.progress, "Run Worktree: %s on branch %s\n", runRef.Path, runRef.Branch)
 	fmt.Fprintf(ui.progress, "Agent: %s\n", runtime.DisplayName)
 
 	engine, err := daemon.NewEngine(daemon.Dependencies{
@@ -357,8 +421,8 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, run
 	}
 	return engine.TaskCycle(ctx, daemon.TaskPlan{
 		RunID:       runID,
-		Session:     agent.SessionRefForRun(runID, gitState.Root),
-		WorkDir:     gitState.Root,
+		Session:     session,
+		WorkDir:     runRef.Path,
 		ArtifactDir: artifactDir,
 		Spec:        graph.Spec,
 		Tasks:       graph.Tasks,
@@ -464,7 +528,14 @@ func (counts implementTaskCounts) total() int {
 // skipped (a finished cycle left the Task pending because a needed Task did
 // not complete) from pending (the cycle never reached the Task).
 func printImplementTaskLines(stdout io.Writer, gitRoot string, graph *spec.Graph, cycleFinished bool) implementTaskCounts {
+	report, counts := renderImplementTaskLines(gitRoot, graph, cycleFinished)
+	fmt.Fprint(stdout, report)
+	return counts
+}
+
+func renderImplementTaskLines(gitRoot string, graph *spec.Graph, cycleFinished bool) (string, implementTaskCounts) {
 	counts := implementTaskCounts{}
+	var report bytes.Buffer
 	for _, task := range graph.Tasks {
 		current := task
 		if err := spec.ReloadTask(gitRoot, &current); err != nil {
@@ -487,9 +558,9 @@ func printImplementTaskLines(stdout io.Writer, gitRoot string, graph *spec.Graph
 		if title == "" {
 			title = task.Title
 		}
-		fmt.Fprintf(stdout, "%s %s — %s\n", task.ID, status, title)
+		fmt.Fprintf(&report, "%s %s — %s\n", task.ID, status, title)
 	}
-	return counts
+	return report.String(), counts
 }
 
 func implementDisplayStatus(status spec.Status, cycleFinished bool) string {
@@ -525,8 +596,16 @@ func printImplementQAVerdictLine(stdout io.Writer, result daemon.TaskCycleResult
 // printImplementOutcomeLine prints the one terminal outcome line of the
 // stdout contract, reusing the store's terminal state vocabulary.
 func printImplementOutcomeLine(stdout io.Writer, outcome string, counts implementTaskCounts) {
+	printImplementOutcomeLineWithCommand(stdout, outcome, counts, "")
+}
+
+func printImplementOutcomeLineWithCommand(stdout io.Writer, outcome string, counts implementTaskCounts, integrationCommand string) {
 	if outcome == store.StateClean {
 		fmt.Fprintf(stdout, "Clean: all %d Task(s) completed.\n", counts.total())
+		return
+	}
+	if outcome == store.StateIntegrationPending && strings.TrimSpace(integrationCommand) != "" {
+		fmt.Fprintf(stdout, "%s: %d completed, %d failed, %d skipped, %d pending; integrate with %s\n", outcome, counts.completed, counts.failed, counts.skipped, counts.pending, integrationCommand)
 		return
 	}
 	fmt.Fprintf(stdout, "%s: %d completed, %d failed, %d skipped, %d pending.\n", outcome, counts.completed, counts.failed, counts.skipped, counts.pending)
@@ -547,7 +626,48 @@ func printImplementRunFailure(err error, stderr io.Writer) {
 	fmt.Fprintln(stderr, "Roundfix did not push; completed Task commits and preserved working tree changes remain for inspection.")
 }
 
+func printImplementRunFailureWithWorktree(err error, worktreePath string, stderr io.Writer) {
+	printImplementRunFailure(err, stderr)
+	printKeptRunWorktree(stderr, worktreePath)
+}
+
 func printImplementRunPushFailure(err error, stderr io.Writer) {
 	fmt.Fprintf(stderr, "%s: implement failed after Run start: %v\n", app.Name, err)
 	fmt.Fprintln(stderr, "Roundfix did not complete the spec Run push; completed Task commits and preserved working tree changes remain for inspection.")
+}
+
+func printKeptRunWorktree(stderr io.Writer, worktreePath string) {
+	worktreePath = strings.TrimSpace(worktreePath)
+	if worktreePath == "" {
+		return
+	}
+	fmt.Fprintf(stderr, "Run Worktree kept: %s\n", worktreePath)
+}
+
+func integrateCleanImplementRun(ctx context.Context, ref runworktree.Ref, targetBranch string) (runworktree.IntegrationResult, error) {
+	runSHA, err := gitHEAD(ctx, ref.Path)
+	if err != nil {
+		return runworktree.IntegrationResult{}, fmt.Errorf("read Run Worktree HEAD before integration: %w", err)
+	}
+	result, err := integrateRunWorktree(ctx, ref, targetBranch, runSHA)
+	if err != nil {
+		return runworktree.IntegrationResult{}, err
+	}
+	return result, nil
+}
+
+func implementIntegrationCommand(ref runworktree.Ref) string {
+	return "git merge --ff-only " + ref.Branch
+}
+
+func gitHEAD(ctx context.Context, workDir string) (string, error) {
+	output, err := preflight.ExecGitRunner{}.RunGit(ctx, workDir, "rev-parse", "HEAD")
+	if err != nil {
+		return "", err
+	}
+	head := strings.TrimSpace(output)
+	if head == "" {
+		return "", errors.New("git returned an empty HEAD")
+	}
+	return head, nil
 }
