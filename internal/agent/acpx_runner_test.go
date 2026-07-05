@@ -106,6 +106,76 @@ func TestACPXProbeCommandOverrideStillChecksACPXClient(t *testing.T) {
 	}
 }
 
+func TestInfrastructureErrorErrorIncludesBoundedStderrTail(t *testing.T) {
+	const (
+		stderrDelimiter       = "\n--- acpx stderr tail ---\n"
+		stderrTruncatedMarker = "[stderr truncated]\n"
+	)
+	hundredLineStderr := numberedLinesForTest(100)
+	hundredLineTail := numberedLinesRangeForTest(91, 100)
+	oversizedStderr := strings.Repeat("x", 1100)
+
+	tests := []struct {
+		name            string
+		stderr          string
+		want            string
+		wantSuffix      string
+		wantNotContains []string
+		wantTailBytes   int
+	}{
+		{
+			name:   "empty stderr keeps existing message",
+			stderr: " \n\t",
+			want:   "acpx infrastructure error after exit code 2: usage error",
+		},
+		{
+			name:       "multi-line stderr appended as delimited tail",
+			stderr:     "\nfirst line\nsecond line\nthird line\n",
+			wantSuffix: stderrDelimiter + "first line\nsecond line\nthird line",
+		},
+		{
+			name:            "hundred-line stderr keeps last ten lines",
+			stderr:          hundredLineStderr,
+			wantSuffix:      stderrDelimiter + stderrTruncatedMarker + hundredLineTail,
+			wantNotContains: []string{"line-090"},
+		},
+		{
+			name:          "oversized stderr keeps last kibibyte",
+			stderr:        oversizedStderr,
+			wantSuffix:    stderrDelimiter + stderrTruncatedMarker + strings.Repeat("x", 1024),
+			wantTailBytes: 1024,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			message := (&InfrastructureError{
+				ExitCode: 2,
+				Reason:   acpxExitReasonUsage,
+				Stderr:   tt.stderr,
+			}).Error()
+
+			if tt.want != "" && message != tt.want {
+				t.Fatalf("unexpected message\nwant: %q\ngot:  %q", tt.want, message)
+			}
+			if tt.wantSuffix != "" && !strings.HasSuffix(message, tt.wantSuffix) {
+				t.Fatalf("expected message to end with stderr tail\nwant suffix: %q\ngot:         %q", tt.wantSuffix, message)
+			}
+			for _, forbidden := range tt.wantNotContains {
+				if strings.Contains(message, forbidden) {
+					t.Fatalf("expected message to omit %q, got %q", forbidden, message)
+				}
+			}
+			if tt.wantTailBytes > 0 {
+				tail := strings.TrimPrefix(strings.TrimPrefix(infrastructureTailFromMessageForTest(t, message), stderrTruncatedMarker), "\n")
+				if len(tail) > tt.wantTailBytes {
+					t.Fatalf("expected stderr tail <= %d bytes, got %d", tt.wantTailBytes, len(tail))
+				}
+			}
+		})
+	}
+}
+
 func TestACPXPromptArgsPlaceGlobalsBeforeAgentAndSubcommand(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -224,6 +294,28 @@ func TestACPXRunEnsuresSessionOncePerRunnerAndSessionName(t *testing.T) {
 	}
 	if !reflect.DeepEqual(invocations, want) {
 		t.Fatalf("unexpected acpx invocations\nwant: %#v\ngot:  %#v", want, invocations)
+	}
+}
+
+func TestACPXRunFailsEnsureWithStderrTail(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"sessions ensure": 2}))
+	t.Setenv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{"sessions ensure": "ensure rejected\n"}))
+
+	_, err := harness.run(context.Background(), RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1")
+
+	if err == nil {
+		t.Fatal("expected ensure failure")
+	}
+	var infraErr *InfrastructureError
+	if !errors.As(err, &infraErr) {
+		t.Fatalf("expected InfrastructureError, got %T %v", err, err)
+	}
+	if infraErr.Stderr != "ensure rejected\n" {
+		t.Fatalf("expected captured ensure stderr, got %q", infraErr.Stderr)
+	}
+	if !strings.Contains(err.Error(), "ensure acpx Agent Session") || !strings.Contains(err.Error(), "--- acpx stderr tail ---\nensure rejected") {
+		t.Fatalf("expected ensure error with delimited stderr tail, got %q", err.Error())
 	}
 }
 
@@ -408,6 +500,9 @@ func TestACPXEndSessionClosesBestEffort(t *testing.T) {
 	if len(warnings) != 1 || !strings.Contains(warnings[0], "roundfix-run-1") || !strings.Contains(warnings[0], "close rejected") {
 		t.Fatalf("expected close warning with session and stderr, got %#v", warnings)
 	}
+	if !strings.Contains(warnings[0], "--- acpx stderr tail ---\nclose rejected") {
+		t.Fatalf("expected close warning with delimited stderr tail, got %#v", warnings)
+	}
 }
 
 func TestACPXRunPromptPublishesUpdateLinesAndCapturesStopReason(t *testing.T) {
@@ -551,8 +646,11 @@ func TestACPXExitCodeMapping(t *testing.T) {
 				if infraErr.Reason != acpxExitReasonUsage {
 					t.Fatalf("expected usage reason, got %q", infraErr.Reason)
 				}
-				if !strings.Contains(err.Error(), "bad acpx usage") {
-					t.Fatalf("expected stderr in error context, got %q", err.Error())
+				if infraErr.Stderr != "bad acpx usage\n" {
+					t.Fatalf("expected captured prompt stderr, got %q", infraErr.Stderr)
+				}
+				if !strings.Contains(err.Error(), "--- acpx stderr tail ---\nbad acpx usage") {
+					t.Fatalf("expected delimited stderr tail in error context, got %q", err.Error())
 				}
 			},
 			assertPost: func(t *testing.T, run fakeACPXRun) {
@@ -989,4 +1087,29 @@ func firstFakeACPXString(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func numberedLinesForTest(count int) string {
+	return numberedLinesRangeForTest(1, count) + "\n"
+}
+
+func numberedLinesRangeForTest(start int, end int) string {
+	var builder strings.Builder
+	for i := start; i <= end; i++ {
+		if builder.Len() > 0 {
+			builder.WriteByte('\n')
+		}
+		fmt.Fprintf(&builder, "line-%03d", i)
+	}
+	return builder.String()
+}
+
+func infrastructureTailFromMessageForTest(t *testing.T, message string) string {
+	t.Helper()
+	const delimiter = "\n--- acpx stderr tail ---\n"
+	_, tail, ok := strings.Cut(message, delimiter)
+	if !ok {
+		t.Fatalf("message has no stderr tail delimiter: %q", message)
+	}
+	return tail
 }

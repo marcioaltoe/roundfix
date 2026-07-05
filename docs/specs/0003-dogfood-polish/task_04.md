@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0003-dogfood-polish
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -29,17 +29,17 @@ error-formatting unit tests.
 
 ## Subtasks
 
-- [ ] Bounded-tail formatting in the infrastructure error
-- [ ] Empty-stderr and oversized-stderr table tests
-- [ ] Call-site audit: every producer fills the stderr field
+- [x] Bounded-tail formatting in the infrastructure error
+- [x] Empty-stderr and oversized-stderr table tests
+- [x] Call-site audit: every producer fills the stderr field
 
 ## Acceptance Criteria
 
-- [ ] A synthetic failure with multi-line stderr yields a message ending in
+- [x] A synthetic failure with multi-line stderr yields a message ending in
       the delimited tail; a 100-line stderr is truncated to the bound with a
       truncation marker.
-- [ ] Empty stderr reproduces today's message exactly.
-- [ ] The acpx runner's ensure/prompt/close paths all populate stderr
+- [x] Empty stderr reproduces today's message exactly.
+- [x] The acpx runner's ensure/prompt/close paths all populate stderr
       (asserted via the fake rig).
 
 ## Verification
@@ -52,3 +52,29 @@ error-formatting unit tests.
 `_prd.md` → User Story 4; Core Feature 4. `_techspec.md` → Interfaces
 (InfrastructureError), Build Order 4, Risks (bounded, secret-agnostic).
 Dogfood finding 27.
+
+## Result
+
+- `InfrastructureError.Error()` now appends stderr only as a trimmed,
+  delimited tail headed by `--- acpx stderr tail ---`. The tail keeps the last
+  10 lines, then caps the text at 1 KiB; truncated tails include
+  `[stderr truncated]`.
+- `TestInfrastructureErrorErrorIncludesBoundedStderrTail` covers empty stderr
+  preserving the prior message exactly, multi-line stderr ending in the
+  delimited tail, 100-line stderr keeping only lines 91-100 with the truncation
+  marker, and an oversized single-line stderr capped at 1024 bytes.
+- Call-site audit: `runACPXCommand` populates `InfrastructureError.Stderr` from
+  captured stderr for ensure/close/setup command failures; `mapExitCode`
+  populates `Stderr` for usage, missing-session, and unexpected prompt
+  infrastructure exits. The fake rig asserts ensure stderr in
+  `TestACPXRunFailsEnsureWithStderrTail`, prompt stderr in the usage case of
+  `TestACPXExitCodeMapping`, and close stderr through the best-effort warning
+  in `TestACPXEndSessionClosesBestEffort`.
+- Red signal before the implementation: the focused test run
+  `rtk go test ./internal/agent/ -run
+  'TestInfrastructureErrorErrorIncludesBoundedStderrTail|TestACPXRunFailsEnsureWithStderrTail|TestACPXExitCodeMapping|TestACPXEndSessionClosesBestEffort'
+  -count=1` failed because stderr was appended raw without a delimiter or
+  truncation.
+- Verification passed: `rtk go test ./internal/agent/` reported
+  `Go test: 66 passed in 1 packages`; `rtk go test ./...` reported
+  `Go test: 460 passed in 16 packages`.

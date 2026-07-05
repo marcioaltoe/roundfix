@@ -30,6 +30,10 @@ const (
 	acpxCodexSandboxUnavailable     = "codex_sandbox_full_access_unavailable"
 	acpxCodexSandboxModeKey         = "sandbox_mode"
 	acpxCodexFullAccessSandbox      = "danger-full-access"
+	infrastructureStderrTailLines   = 10
+	infrastructureStderrTailBytes   = 1024
+	infrastructureStderrDelimiter   = "\n--- acpx stderr tail ---\n"
+	infrastructureStderrTruncated   = "[stderr truncated]\n"
 )
 
 // ACPXRunner is the acpx-backed invocation core. Later migration tasks wire
@@ -92,10 +96,35 @@ func (err *InfrastructureError) Error() string {
 	if err.Reason != "" {
 		message += ": " + err.Reason
 	}
-	if detail := strings.TrimSpace(err.Stderr); detail != "" {
-		message += ": " + detail
+	if tail, truncated := infrastructureStderrTail(err.Stderr); tail != "" {
+		message += infrastructureStderrDelimiter
+		if truncated {
+			message += infrastructureStderrTruncated
+		}
+		message += tail
 	}
 	return message
+}
+
+func infrastructureStderrTail(stderr string) (string, bool) {
+	tail := strings.TrimSpace(stderr)
+	if tail == "" {
+		return "", false
+	}
+	truncated := false
+	lines := strings.Split(tail, "\n")
+	if len(lines) > infrastructureStderrTailLines {
+		lines = lines[len(lines)-infrastructureStderrTailLines:]
+		tail = strings.Join(lines, "\n")
+		truncated = true
+	}
+	tail = strings.TrimSpace(tail)
+	if len(tail) > infrastructureStderrTailBytes {
+		tail = tail[len(tail)-infrastructureStderrTailBytes:]
+		truncated = true
+	}
+	tail = strings.TrimSpace(tail)
+	return tail, truncated
 }
 
 type ACPXProbeError struct {
