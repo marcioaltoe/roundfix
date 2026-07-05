@@ -16,15 +16,15 @@ documented, defended by ADR-0020 — nothing more to do locally.
 
 **Open, routed below:**
 
-| Finding | What | Spec |
-| --- | --- | --- |
-| R1-17 | Review artifacts belong with the Spec, not a loose root | 0010 |
-| R3-1 | Force-stopped Runs keep empty worktrees/branches forever | 0009 |
-| R3-2 | CodeRabbit issue titles are raw table fragments (emoji/markdown) | 0010 |
-| R3-3 | merge-readiness `missing` path needs a docs expectation note | 0010 |
-| R3-4 | Status-poll stderr line repeats every interval | 0010 |
-| R1-12 | Prompt-contract drift (templating, work-plan item 5) | deferred |
-| R1-16 | codex full-access sandbox preset unavailable via acpx | upstream/observe |
+| Finding | What                                                             | Spec             |
+| ------- | ---------------------------------------------------------------- | ---------------- |
+| R1-17   | Review artifacts belong with the Spec, not a loose root          | 0010             |
+| R3-1    | Force-stopped Runs keep empty worktrees/branches forever         | 0009             |
+| R3-2    | CodeRabbit issue titles are raw table fragments (emoji/markdown) | 0010             |
+| R3-3    | merge-readiness `missing` path needs a docs expectation note     | 0010             |
+| R3-4    | Status-poll stderr line repeats every interval                   | 0010             |
+| R1-12   | Prompt-contract drift (templating, work-plan item 5)             | deferred         |
+| R1-16   | codex full-access sandbox preset unavailable via acpx            | upstream/observe |
 
 ## Spec 0009 — Parallel Scheduling (the "cited layer")
 
@@ -69,10 +69,10 @@ Three storage/lifecycle fixes so nothing lands loose in `~/.roundfix`.
   loose `~/.roundfix/artifacts/runs/*` accumulation stops.
 - **Spec archiving** (new): after a Spec's Tasks are all completed and QA
   passes, archive it — move `docs/specs/<slug>/` to
-  `docs/specs/_archived/<slug>/` with archive metadata. NOTE: the convention
-  and the existing `archive-spec` skill use `_archived`, not `_achieved`;
-  confirm the folder name. Decide: a `roundfix archive` command, or
-  auto-archive on QA pass, or lean on the skill from the loop.
+  `docs/specs/_archived/<slug>/` with archive metadata. DECIDED 2026-07-05:
+  the correct English spelling `_archived` stands (skills already use it
+  everywhere; nothing to adjust). Decide in the PRD: a `roundfix archive`
+  command, auto-archive on QA pass, or lean on the skill from the loop.
 - Small: CodeRabbit issue-title derivation strips markup/emoji (R3-2);
   status-poll stderr dedup (R3-4); merge-readiness docs note (R3-3).
 

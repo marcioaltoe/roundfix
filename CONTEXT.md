@@ -72,6 +72,14 @@ _Avoid_: ACP session, chat, conversation, thread
 The state where the pull request's Review Source status check on the pushed head commit reports success with no new Review Issues, letting a watch Run end Clean.
 _Avoid_: mergeable, green check, approved
 
+**Wave**:
+The set of Tasks whose dependencies are all completed and that may execute concurrently; the scheduler draws from the current Wave up to the configured concurrency.
+_Avoid_: Batch, stage, phase
+
+**Task Worktree**:
+The ephemeral git worktree one concurrently executing Task runs in — created from the Run Branch tip at Task start and integrated back onto the Run Branch at settlement; kept only when its Task fails.
+_Avoid_: Run Worktree, sandbox, scratch dir
+
 **Run Worktree**:
 The isolated git worktree a Run executes in — created on the Run Branch at Run start, recorded on the Run, removed after a Clean integrated outcome, and kept as the inspection and settle surface otherwise.
 _Avoid_: Sandbox, scratch dir, user checkout
