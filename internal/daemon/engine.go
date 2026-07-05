@@ -313,7 +313,6 @@ func (engine *Engine) runBatchAgent(ctx context.Context, plan CyclePlan, batch r
 		ArtifactDir:  plan.ArtifactDir,
 		GitRoot:      plan.GitRoot,
 		Verification: plan.Verification,
-		AllowAddDirs: []string{plan.ArtifactDir},
 	}, engine.deps.Sink)
 	if runErr != nil {
 		if isStop(ctx, runErr) {

@@ -1,13 +1,10 @@
 package agent
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -17,8 +14,6 @@ import (
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
-
-	acp "github.com/coder/acp-go-sdk"
 )
 
 func TestSessionRefForRunNamesRoundfixSession(t *testing.T) {
@@ -48,8 +43,8 @@ func TestRuntimeForSupportsCommandOverrideAndModel(t *testing.T) {
 	if runtime.ID == "codex" {
 		t.Fatal("custom command must not receive Codex-specific exec flags")
 	}
-	if args := runnerArgs(ExecuteRequest{Runtime: runtime}); len(args) != 0 {
-		t.Fatalf("expected custom command to use no automatic args, got %#v", args)
+	if runtime.Protocol != ProtocolStdio {
+		t.Fatalf("expected command override to use stdio protocol through acpx, got %q", runtime.Protocol)
 	}
 	if runtime.Model != "gpt-test" {
 		t.Fatalf("expected model override, got %q", runtime.Model)
@@ -59,9 +54,6 @@ func TestRuntimeForSupportsCommandOverrideAndModel(t *testing.T) {
 	}
 	if runtime.DisplayName != "Codex" {
 		t.Fatalf("expected Codex display name, got %q", runtime.DisplayName)
-	}
-	if len(runtime.ProbeArgs) == 0 {
-		t.Fatal("expected probe args")
 	}
 }
 
@@ -74,31 +66,14 @@ func TestRuntimeForCodexUsesACPAdapter(t *testing.T) {
 	if runtime.Protocol != ProtocolACP {
 		t.Fatalf("expected ACP protocol, got %q", runtime.Protocol)
 	}
-	if runtime.Command != "codex-acp" {
-		t.Fatalf("expected codex-acp command, got %q", runtime.Command)
+	if runtime.ID != "codex" {
+		t.Fatalf("expected codex adapter id, got %q", runtime.ID)
 	}
-	if runtime.DefaultModel != DefaultCodexModel {
-		t.Fatalf("expected default model %q, got %q", DefaultCodexModel, runtime.DefaultModel)
-	}
-	if !runtime.BootstrapModel {
-		t.Fatal("expected Codex model to be supplied during ACP bootstrap")
-	}
-	if len(runtime.Fallbacks) == 0 || runtime.Fallbacks[0].Command != "npx" {
-		t.Fatalf("expected npx fallback for codex ACP, got %#v", runtime.Fallbacks)
+	if runtime.DisplayName != "Codex" {
+		t.Fatalf("expected Codex display name, got %q", runtime.DisplayName)
 	}
 	if runtime.FullAccessMode != "" {
 		t.Fatalf("expected Codex default to keep runtime sandbox mode, got %q", runtime.FullAccessMode)
-	}
-	args := runtimeBootstrapArgs(runtime, "gpt-test")
-	for _, expected := range []string{`model="gpt-test"`, "features.code_mode=false"} {
-		if !contains(args, expected) {
-			t.Fatalf("expected Codex bootstrap args to contain %q, got %#v", expected, args)
-		}
-	}
-	for _, unexpected := range []string{`approval_policy="never"`, `sandbox_mode="danger-full-access"`} {
-		if contains(args, unexpected) {
-			t.Fatalf("expected Codex sandboxed default args to omit %q, got %#v", unexpected, args)
-		}
 	}
 }
 
@@ -110,12 +85,6 @@ func TestRuntimeForCodexFullAccessOptIn(t *testing.T) {
 
 	if runtime.FullAccessMode != "full-access" {
 		t.Fatalf("expected Codex full-access session mode, got %q", runtime.FullAccessMode)
-	}
-	args := runtimeBootstrapArgs(runtime, "gpt-test")
-	for _, expected := range []string{`approval_policy="never"`, `sandbox_mode="danger-full-access"`} {
-		if !contains(args, expected) {
-			t.Fatalf("expected Codex full-access bootstrap args to contain %q, got %#v", expected, args)
-		}
 	}
 }
 
@@ -166,22 +135,12 @@ func TestBuildPromptIncludesAssignedFilesAndForbiddenActions(t *testing.T) {
 }
 
 func TestStreamUpdateFromACPPreservesToolBlocks(t *testing.T) {
-	status := acp.ToolCallStatusCompleted
 	title := "rtk git diff"
-	update := streamUpdateFromACP(acp.SessionUpdate{
-		ToolCallUpdate: &acp.SessionToolCallUpdate{
-			ToolCallId: "call_123",
-			Title:      &title,
-			Status:     &status,
-			RawInput:   map[string]any{"command": "rtk git diff"},
-			Content: []acp.ToolCallContent{
-				{Content: &acp.ToolCallContentContent{Content: acp.TextBlock("completed")}},
-				{Diff: &acp.ToolCallContentDiff{Path: "apps/api/server.go"}},
-				{Terminal: &acp.ToolCallContentTerminal{TerminalId: "term_001"}},
-			},
-			RawOutput: map[string]any{"aggregated_output": "ok"},
-		},
-	})
+	payload := json.RawMessage(`{"sessionUpdate":"tool_call_update","toolCallId":"call_123","title":"` + title + `","status":"completed","rawInput":{"command":"rtk git diff"},"content":[{"content":{"type":"text","text":"completed"}},{"diff":{"path":"apps/api/server.go"}},{"terminal":{"terminalId":"term_001"}}],"rawOutput":{"aggregated_output":"ok"}}`)
+	update, err := streamUpdateFromSessionUpdate(payload)
+	if err != nil {
+		t.Fatalf("parse stream update: %v", err)
+	}
 
 	if update.Kind != StreamUpdateToolUpdated {
 		t.Fatalf("expected tool update, got %q", update.Kind)
@@ -317,24 +276,6 @@ func TestLogPathIncludesRunAndBatch(t *testing.T) {
 	}
 }
 
-func TestExecRunnerProbeReportsActionableCommandFailure(t *testing.T) {
-	err := ExecRunner{}.Probe(context.Background(), RuntimeSpec{
-		ID:          "codex",
-		DisplayName: "Codex",
-		Command:     "definitely-not-installed-roundfix-test",
-		ProbeArgs:   []string{"--help"},
-		InstallHint: "install hint",
-	})
-	if err == nil {
-		t.Fatal("expected probe failure")
-	}
-	for _, expected := range []string{"Codex", "definitely-not-installed-roundfix-test", "install hint"} {
-		if !strings.Contains(err.Error(), expected) {
-			t.Fatalf("expected probe error to contain %q, got %q", expected, err.Error())
-		}
-	}
-}
-
 func persistTestRound(t *testing.T, artifactDir string) rounds.PersistResult {
 	t.Helper()
 	result, err := rounds.PersistRound(context.Background(), rounds.PersistRequest{
@@ -365,197 +306,6 @@ func persistTestRound(t *testing.T, artifactDir string) rounds.PersistResult {
 		t.Fatalf("persist test round: %v", err)
 	}
 	return result
-}
-
-func TestExecRunnerRunUsesExplicitArgsOnlyForCustomCommand(t *testing.T) {
-	dir := t.TempDir()
-	argsPath := filepath.Join(dir, "args.txt")
-	promptPath := filepath.Join(dir, "prompt.txt")
-	script := filepath.Join(dir, "fake-agent.sh")
-	if err := os.WriteFile(script, []byte("#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$ARGS_PATH\"\ncat > \"$PROMPT_PATH\"\nprintf 'done\\n'\n"), 0o755); err != nil {
-		t.Fatalf("write fake agent: %v", err)
-	}
-	t.Setenv("ARGS_PATH", argsPath)
-	t.Setenv("PROMPT_PATH", promptPath)
-
-	sink := newCaptureSink("")
-	_, err := ExecRunner{}.Run(context.Background(), ExecuteRequest{
-		Runtime: RuntimeSpec{
-			ID:       "codex-custom",
-			Protocol: ProtocolStdio,
-			Command:  script,
-			Args:     []string{"--one", "two"},
-		},
-		LogPath: filepath.Join(dir, "agent.log"),
-		GitRoot: dir,
-		Prompt:  "agent prompt",
-	}, sink)
-	if err != nil {
-		t.Fatalf("run fake agent: %v", err)
-	}
-
-	args := readFile(t, argsPath)
-	if !strings.Contains(args, "--one") || !strings.Contains(args, "two") {
-		t.Fatalf("expected explicit args to be passed, got %q", args)
-	}
-	if strings.Contains(args, "--model") || strings.Contains(args, "--add-dir") || strings.Contains(args, "-\n") {
-		t.Fatalf("expected no automatic Codex args for custom command, got %q", args)
-	}
-	if prompt := readFile(t, promptPath); prompt != "agent prompt" {
-		t.Fatalf("expected prompt on stdin, got %q", prompt)
-	}
-	if !strings.Contains(sink.Text(), "done") {
-		t.Fatalf("expected fake output published as Run Events, got %q", sink.Text())
-	}
-}
-
-func TestExecRunnerRunStreamsAndPersistsOutput(t *testing.T) {
-	dir := t.TempDir()
-	script := filepath.Join(dir, "fake-agent.sh")
-	if err := os.WriteFile(script, []byte("#!/bin/sh\ncat >/dev/null\nprintf 'agent stdout\\n'\nprintf 'agent stderr\\n' >&2\n"), 0o755); err != nil {
-		t.Fatalf("write fake agent: %v", err)
-	}
-	sink := newCaptureSink("")
-	logPath := filepath.Join(dir, "agent.log")
-
-	result, err := ExecRunner{}.Run(context.Background(), ExecuteRequest{
-		RunID: "run-42",
-		Batch: rounds.Batch{Number: 3},
-		Runtime: RuntimeSpec{
-			Command: script,
-		},
-		LogPath: logPath,
-		GitRoot: dir,
-		Prompt:  "prompt",
-	}, sink)
-	if err != nil {
-		t.Fatalf("run fake agent: %v", err)
-	}
-
-	if result.LogPath != logPath {
-		t.Fatalf("expected log path %q, got %q", logPath, result.LogPath)
-	}
-	for _, event := range sink.Events() {
-		if event.RunID != "run-42" || event.Batch != 3 {
-			t.Fatalf("expected Run identity stamped on events, got %+v", event)
-		}
-		if event.Source != runevent.SourceAgent || event.Kind != runevent.KindAgentRaw {
-			t.Fatalf("expected agent.raw events from exec runner, got %+v", event)
-		}
-	}
-	for _, expected := range []string{"agent stdout", "agent stderr"} {
-		if !strings.Contains(sink.Text(), expected) {
-			t.Fatalf("expected published events to contain %q, got %q", expected, sink.Text())
-		}
-		content, err := os.ReadFile(logPath)
-		if err != nil {
-			t.Fatalf("read log: %v", err)
-		}
-		if !strings.Contains(string(content), expected) {
-			t.Fatalf("expected log to contain %q, got %q", expected, string(content))
-		}
-	}
-}
-
-func TestExecRunnerRunStopsGracefullyOnContextCancel(t *testing.T) {
-	dir := t.TempDir()
-	logPath := filepath.Join(dir, "agent.log")
-	helper := buildAgentHelper(t, dir)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	sink := newCaptureSink("helper started")
-	go func() {
-		select {
-		case <-sink.done:
-			cancel()
-		case <-time.After(5 * time.Second):
-			cancel()
-		}
-	}()
-
-	result, err := ExecRunner{}.Run(ctx, ExecuteRequest{
-		Runtime: RuntimeSpec{
-			Command: helper,
-			Args:    []string{"graceful"},
-		},
-		LogPath:   logPath,
-		GitRoot:   dir,
-		Prompt:    "prompt",
-		StopGrace: time.Second,
-	}, sink)
-
-	if err == nil {
-		t.Fatal("expected stop error")
-	}
-	var stopErr StopError
-	if !errors.As(err, &stopErr) {
-		t.Fatalf("expected StopError, got %T %v", err, err)
-	}
-	if stopErr.Killed {
-		t.Fatalf("expected graceful stop, got killed stop: %v", stopErr)
-	}
-	if result.LogPath != logPath {
-		t.Fatalf("expected log path %q, got %q", logPath, result.LogPath)
-	}
-	if !sink.HasStatus("stopped") {
-		t.Fatal("expected stopped status event published on cancellation")
-	}
-	for _, expected := range []string{"helper started", "helper graceful stop"} {
-		if !strings.Contains(sink.Text(), expected) {
-			t.Fatalf("expected published events to contain %q, got %q", expected, sink.Text())
-		}
-		content, err := os.ReadFile(logPath)
-		if err != nil {
-			t.Fatalf("read log: %v", err)
-		}
-		if !strings.Contains(string(content), expected) {
-			t.Fatalf("expected log to contain %q, got %q", expected, string(content))
-		}
-	}
-}
-
-func TestExecRunnerRunKillsAgentAfterGracePeriod(t *testing.T) {
-	dir := t.TempDir()
-	helper := buildAgentHelper(t, dir)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	sink := newCaptureSink("helper started")
-	go func() {
-		select {
-		case <-sink.done:
-			cancel()
-		case <-time.After(5 * time.Second):
-			cancel()
-		}
-	}()
-
-	_, err := ExecRunner{}.Run(ctx, ExecuteRequest{
-		Runtime: RuntimeSpec{
-			Command: helper,
-			Args:    []string{"ignore"},
-		},
-		LogPath:   filepath.Join(dir, "agent.log"),
-		GitRoot:   dir,
-		Prompt:    "prompt",
-		StopGrace: 10 * time.Millisecond,
-	}, sink)
-
-	if err == nil {
-		t.Fatal("expected stop error")
-	}
-	var stopErr StopError
-	if !errors.As(err, &stopErr) {
-		t.Fatalf("expected StopError, got %T %v", err, err)
-	}
-	if !stopErr.Killed {
-		t.Fatalf("expected forced kill after grace period, got %#v", stopErr)
-	}
-	if !strings.Contains(sink.Text(), "helper started") {
-		t.Fatalf("expected available output published before kill, got %q", sink.Text())
-	}
-	if !sink.HasStatus("stopped") {
-		t.Fatal("expected stopped status event published on cancellation")
-	}
 }
 
 // captureSink records published Run Events and optionally closes done when
@@ -618,15 +368,6 @@ func (sink *captureSink) HasStatus(status string) bool {
 	return false
 }
 
-func contains(values []string, expected string) bool {
-	for _, value := range values {
-		if value == expected {
-			return true
-		}
-	}
-	return false
-}
-
 func readFile(t *testing.T, path string) string {
 	t.Helper()
 	content, err := os.ReadFile(path)
@@ -636,161 +377,8 @@ func readFile(t *testing.T, path string) string {
 	return string(content)
 }
 
-func buildAgentHelper(t *testing.T, dir string) string {
-	t.Helper()
-	source := filepath.Join(dir, "agent-helper.go")
-	binary := filepath.Join(dir, "agent-helper")
-	content := `package main
-
-import (
-	"fmt"
-	"os"
-	"os/signal"
-)
-
-func main() {
-	if len(os.Args) < 2 {
-		os.Exit(2)
-	}
-	switch os.Args[1] {
-	case "graceful":
-		signals := make(chan os.Signal, 1)
-		signal.Notify(signals, os.Interrupt)
-		defer signal.Stop(signals)
-		fmt.Println("helper started")
-		<-signals
-		fmt.Println("helper graceful stop")
-	case "ignore":
-		signals := make(chan os.Signal, 1)
-		signal.Notify(signals, os.Interrupt)
-		defer signal.Stop(signals)
-		go func() {
-			for range signals {
-			}
-		}()
-		fmt.Println("helper started")
-		select {}
-	default:
-		os.Exit(2)
-	}
-}
-`
-	if err := os.WriteFile(source, []byte(content), 0o644); err != nil {
-		t.Fatalf("write helper source: %v", err)
-	}
-	cmd := exec.Command("go", "build", "-o", binary, source)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("build helper: %v\n%s", err, string(output))
-	}
-	return binary
-}
-
-func TestACPInterceptorPublishesRawPayloadsWithIdentity(t *testing.T) {
-	fixedTime := time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC)
-	sink := newCaptureSink("")
-	client := &acpClient{
-		req:    ExecuteRequest{RunID: "run-7", Batch: rounds.Batch{Number: 2}},
-		sink:   sink,
-		now:    func() time.Time { return fixedTime },
-		runCtx: context.Background(),
-		output: &strings.Builder{},
-	}
-
-	params := []string{
-		`{"sessionId":"sess-1","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"hello"}}}`,
-		`{"sessionId":"sess-1","update":{"sessionUpdate":"agent_thought_chunk","content":{"type":"text","text":"thinking"}}}`,
-		`{"sessionId":"sess-1","update":{"sessionUpdate":"tool_call","toolCallId":"call_1","title":"read file","status":"pending"}}`,
-		`{"sessionId":"sess-1","update":{"sessionUpdate":"tool_call_update","toolCallId":"call_1","status":"completed"}}`,
-		`{"sessionId":"sess-1","update":{"sessionUpdate":"plan","entries":[{"content":"step one","priority":"high","status":"pending"}]}}`,
-	}
-	var wire strings.Builder
-	wire.WriteString(`{"jsonrpc":"2.0","id":1,"result":{}}` + "\n")
-	for _, param := range params {
-		wire.WriteString(`{"jsonrpc":"2.0","method":"session/update","params":` + param + `}` + "\n")
-	}
-	wire.WriteString(`{"jsonrpc":"2.0","method":"other/notification","params":{"x":1}}` + "\n")
-
-	forwarded, err := io.ReadAll(client.interceptUpdates(strings.NewReader(wire.String())))
-	if err != nil {
-		t.Fatalf("read intercepted stream: %v", err)
-	}
-	if string(forwarded) != wire.String() {
-		t.Fatal("expected intercepted stream forwarded byte-identical to the SDK")
-	}
-
-	events := sink.Events()
-	if len(events) != len(params) {
-		t.Fatalf("expected %d events, got %d", len(params), len(events))
-	}
-	expectedKinds := []runevent.Kind{
-		runevent.KindAgentMessage,
-		runevent.KindAgentThought,
-		runevent.KindAgentToolStarted,
-		runevent.KindAgentToolUpdated,
-		runevent.KindAgentPlan,
-	}
-	for index, event := range events {
-		if event.Kind != expectedKinds[index] {
-			t.Fatalf("expected kind %q at %d, got %q", expectedKinds[index], index, event.Kind)
-		}
-		if event.RunID != "run-7" || event.Batch != 2 || event.Source != runevent.SourceAgent {
-			t.Fatalf("expected Run identity stamped, got %+v", event)
-		}
-		if !event.Time.Equal(fixedTime) {
-			t.Fatalf("expected injected clock timestamp, got %v", event.Time)
-		}
-		if !bytes.Equal(event.Payload, []byte(params[index])) {
-			t.Fatalf("expected payload byte-equal to wire params\nwant: %s\ngot:  %s", params[index], event.Payload)
-		}
-	}
-	if events[2].ToolID != "call_1" || events[2].ToolState != "pending" {
-		t.Fatalf("expected tool identity on tool events, got %+v", events[2])
-	}
-}
-
-func TestACPEmitStatusPublishesStatusEvent(t *testing.T) {
-	sink := newCaptureSink("")
-	client := &acpClient{
-		req:    ExecuteRequest{RunID: "run-7", Batch: rounds.Batch{Number: 1}},
-		sink:   sink,
-		now:    time.Now,
-		runCtx: context.Background(),
-		output: &strings.Builder{},
-	}
-
-	client.emitStatus(context.Background(), "stopped")
-
-	if !sink.HasStatus("stopped") {
-		t.Fatalf("expected stopped status event, got %+v", sink.Events())
-	}
-	events := sink.Events()
-	if events[0].Kind != runevent.KindAgentStatus || events[0].Summary != "SESSION STOPPED\n" {
-		t.Fatalf("expected status event with console summary, got %+v", events[0])
-	}
-}
-
 func TestWriterSinkRendersConsoleTextContract(t *testing.T) {
-	note := acp.SessionNotification{
-		SessionId: "sess-1",
-		Update: acp.SessionUpdate{
-			ToolCallUpdate: &acp.SessionToolCallUpdate{
-				ToolCallId: "call_123",
-				Title:      stringPtr("rtk make verify"),
-				Status:     toolStatusPtr(acp.ToolCallStatusCompleted),
-				RawOutput:  map[string]any{"aggregated_output": "ok"},
-				Content: []acp.ToolCallContent{
-					{Content: &acp.ToolCallContentContent{Content: acp.TextBlock("completed")}},
-					{Diff: &acp.ToolCallContentDiff{Path: "apps/api/server.go"}},
-					{Terminal: &acp.ToolCallContentTerminal{TerminalId: "term_001"}},
-				},
-			},
-		},
-	}
-	payload, err := json.Marshal(note)
-	if err != nil {
-		t.Fatalf("marshal notification: %v", err)
-	}
+	payload := []byte(`{"sessionId":"sess-1","update":{"sessionUpdate":"tool_call_update","toolCallId":"call_123","title":"rtk make verify","status":"completed","content":[{"content":{"type":"text","text":"completed"}},{"diff":{"path":"apps/api/server.go"}},{"terminal":{"terminalId":"term_001"}}],"rawOutput":{"aggregated_output":"ok"}}}`)
 
 	var buffer strings.Builder
 	sink := WriterSink{Writer: &buffer}
@@ -819,7 +407,3 @@ func TestWriterSinkRendersConsoleTextContract(t *testing.T) {
 		}
 	}
 }
-
-func stringPtr(value string) *string { return &value }
-
-func toolStatusPtr(value acp.ToolCallStatus) *acp.ToolCallStatus { return &value }

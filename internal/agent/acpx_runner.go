@@ -16,8 +16,6 @@ import (
 	"time"
 
 	"roundfix/internal/runevent"
-
-	acp "github.com/coder/acp-go-sdk"
 )
 
 const (
@@ -514,7 +512,7 @@ func (runner ACPXRunner) handleStdoutLine(ctx context.Context, req ExecuteReques
 	if message.Error != nil {
 		return fmt.Errorf("acpx JSON-RPC error %d: %s", message.Error.Code, message.Error.Message)
 	}
-	if message.Method == acp.ClientMethodSessionUpdate {
+	if message.Method == acpMethodSessionUpdate {
 		update, ok, err := streamUpdateFromSessionUpdatePayload(line)
 		if err != nil {
 			return err
@@ -541,41 +539,6 @@ func (runner ACPXRunner) handleStdoutLine(ctx context.Context, req ExecuteReques
 		*stopReason = response.StopReason
 	}
 	return nil
-}
-
-func streamUpdateFromSessionUpdatePayload(payload json.RawMessage) (StreamUpdate, bool, error) {
-	note, ok, err := sessionNotificationFromPayload(payload)
-	if err != nil || !ok {
-		return StreamUpdate{}, false, err
-	}
-	update := streamUpdateFromACP(note.Update)
-	if update.Kind == "" {
-		return StreamUpdate{}, false, nil
-	}
-	return update, true, nil
-}
-
-func sessionNotificationFromPayload(payload json.RawMessage) (acp.SessionNotification, bool, error) {
-	var note acp.SessionNotification
-	if err := json.Unmarshal(payload, &note); err == nil {
-		if update := streamUpdateFromACP(note.Update); update.Kind != "" {
-			return note, true, nil
-		}
-	}
-	var message acpxJSONRPCMessage
-	if err := json.Unmarshal(payload, &message); err != nil {
-		return acp.SessionNotification{}, false, fmt.Errorf("parse acpx session/update JSON-RPC line: %w", err)
-	}
-	if message.Method != acp.ClientMethodSessionUpdate {
-		return acp.SessionNotification{}, false, nil
-	}
-	if len(message.Params) == 0 {
-		return acp.SessionNotification{}, false, errors.New("parse acpx session/update: params are required")
-	}
-	if err := json.Unmarshal(message.Params, &note); err != nil {
-		return acp.SessionNotification{}, false, fmt.Errorf("parse acpx session/update params: %w", err)
-	}
-	return note, true, nil
 }
 
 func (runner ACPXRunner) mapExitCode(ctx context.Context, req ExecuteRequest, sink runevent.Sink, exitCode int, stderr string, output string) error {
