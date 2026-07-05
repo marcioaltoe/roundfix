@@ -212,7 +212,7 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 	fmt.Fprintf(engine.deps.Progress, "Task: %s (Batch %03d) %s\n", task.ID, ordinal, task.Title)
 	fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
 
-	_, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
+	runResult, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
 		Runtime:     plan.Runtime,
 		Session:     plan.Session,
 		RunID:       plan.RunID,
@@ -235,6 +235,14 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 			return "", fmt.Errorf("publish stop event for run %q after Agent Task %s: %w", plan.RunID, task.ID, errors.Join(err, publishErr))
 		}
 		return "", fmt.Errorf("stop run %q after Agent Task %s: %w", plan.RunID, task.ID, err)
+	}
+	if anomaly := strings.TrimSpace(runResult.TransportAnomaly); anomaly != "" {
+		if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonTask,
+			fmt.Sprintf("Task %s transport anomaly: %s", task.ID, anomaly),
+			map[string]any{"task": task.ID, "phase": "transport_anomaly", "batch": ordinal, "anomaly": anomaly},
+		); err != nil {
+			return "", fmt.Errorf("publish transport anomaly event for run %q Task %s: %w", plan.RunID, task.ID, err)
+		}
 	}
 	if err := spec.ReloadTask(plan.WorkDir, task); err != nil {
 		// The Agent left the task file unreadable; the Task fails and the

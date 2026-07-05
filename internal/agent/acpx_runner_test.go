@@ -540,6 +540,163 @@ func TestACPXRunPromptPublishesUpdateLinesAndCapturesStopReason(t *testing.T) {
 	}
 }
 
+func TestACPXPromptExitClassificationMatrix(t *testing.T) {
+	longStderr := numberedLinesForTest(12)
+	bufferErrorLine := `{"jsonrpc":"2.0","error":{"code":-32603,"message":"Message buffer exceeded 10485760 bytes","data":{"acpxCode":"RUNTIME"}}}` + "\n"
+
+	tests := []struct {
+		name        string
+		stdout      string
+		stderr      string
+		exitCode    int
+		wantStop    string
+		wantAnomaly bool
+		assertErr   func(t *testing.T, err error)
+	}{
+		{
+			name:     "result exit zero",
+			stdout:   acpxPromptResponseLine("end_turn"),
+			exitCode: 0,
+			wantStop: "end_turn",
+			assertErr: func(t *testing.T, err error) {
+				t.Helper()
+				if err != nil {
+					t.Fatalf("expected success, got %v", err)
+				}
+			},
+		},
+		{
+			name:        "result exit one becomes anomaly success",
+			stdout:      acpxPromptResponseLine("end_turn"),
+			stderr:      longStderr,
+			exitCode:    1,
+			wantStop:    "end_turn",
+			wantAnomaly: true,
+			assertErr: func(t *testing.T, err error) {
+				t.Helper()
+				if err != nil {
+					t.Fatalf("expected anomaly success, got %T %v", err, err)
+				}
+			},
+		},
+		{
+			name:     "no result exit one remains Batch failure",
+			exitCode: 1,
+			assertErr: func(t *testing.T, err error) {
+				t.Helper()
+				var batchErr *BatchFailureError
+				if !errors.As(err, &batchErr) {
+					t.Fatalf("expected BatchFailureError, got %T %v", err, err)
+				}
+				if got := err.Error(); got != "Agent Batch failed after acpx exited with code 1: agent/protocol error" {
+					t.Fatalf("expected byte-identical Batch failure, got %q", got)
+				}
+			},
+		},
+		{
+			name:     "no result exit two remains infrastructure",
+			stderr:   "usage details\n",
+			exitCode: 2,
+			assertErr: func(t *testing.T, err error) {
+				t.Helper()
+				var infraErr *InfrastructureError
+				if !errors.As(err, &infraErr) {
+					t.Fatalf("expected InfrastructureError, got %T %v", err, err)
+				}
+				if got := err.Error(); got != "acpx infrastructure error after exit code 2: usage error\n--- acpx stderr tail ---\nusage details" {
+					t.Fatalf("expected byte-identical infrastructure error, got %q", got)
+				}
+			},
+		},
+		{
+			name:     "no result exit four remains infrastructure",
+			exitCode: 4,
+			assertErr: func(t *testing.T, err error) {
+				t.Helper()
+				var infraErr *InfrastructureError
+				if !errors.As(err, &infraErr) {
+					t.Fatalf("expected InfrastructureError, got %T %v", err, err)
+				}
+				if got := err.Error(); got != "acpx infrastructure error after exit code 4: missing session" {
+					t.Fatalf("expected byte-identical infrastructure error, got %q", got)
+				}
+			},
+		},
+		{
+			name:        "result exit one with buffer error line becomes anomaly success",
+			stdout:      acpxPromptResponseLine("end_turn") + bufferErrorLine,
+			stderr:      "Message buffer exceeded 10485760 bytes\n",
+			exitCode:    1,
+			wantStop:    "end_turn",
+			wantAnomaly: true,
+			assertErr: func(t *testing.T, err error) {
+				t.Helper()
+				if err != nil {
+					t.Fatalf("expected incident-shaped anomaly success, got %T %v", err, err)
+				}
+			},
+		},
+		{
+			name:     "result exit one thirty remains stop",
+			stdout:   acpxPromptResponseLine("end_turn"),
+			exitCode: 130,
+			wantStop: "end_turn",
+			assertErr: func(t *testing.T, err error) {
+				t.Helper()
+				if !IsStopError(err) {
+					t.Fatalf("expected StopError, got %T %v", err, err)
+				}
+			},
+		},
+		{
+			name:     "partial stream exit one remains Batch failure",
+			stdout:   `{"jsonrpc":"2.0","id":1,"result":`,
+			exitCode: 1,
+			assertErr: func(t *testing.T, err error) {
+				t.Helper()
+				var batchErr *BatchFailureError
+				if !errors.As(err, &batchErr) {
+					t.Fatalf("expected BatchFailureError, got %T %v", err, err)
+				}
+				if got := err.Error(); got != "Agent Batch failed after acpx exited with code 1: agent/protocol error" {
+					t.Fatalf("expected byte-identical Batch failure, got %q", got)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			run := runFakeACPXPrompt(t, fakeACPXPrompt{
+				stdout:   tt.stdout,
+				stderr:   tt.stderr,
+				exitCode: tt.exitCode,
+			})
+
+			tt.assertErr(t, run.err)
+			if run.result.StopReason != tt.wantStop {
+				t.Fatalf("expected stop reason %q, got %q", tt.wantStop, run.result.StopReason)
+			}
+			if tt.wantAnomaly {
+				if run.result.TransportAnomaly == "" {
+					t.Fatal("expected transport anomaly on successful result")
+				}
+				if !strings.Contains(run.result.TransportAnomaly, fmt.Sprintf("exit code %d", tt.exitCode)) {
+					t.Fatalf("expected anomaly to include exit code, got %q", run.result.TransportAnomaly)
+				}
+				if !strings.Contains(run.result.TransportAnomaly, "line-012") && !strings.Contains(run.result.TransportAnomaly, "Message buffer exceeded 10485760 bytes") {
+					t.Fatalf("expected anomaly to include bounded stderr tail, got %q", run.result.TransportAnomaly)
+				}
+				if strings.Contains(run.result.TransportAnomaly, "line-002") {
+					t.Fatalf("expected anomaly stderr tail to be bounded, got %q", run.result.TransportAnomaly)
+				}
+			} else if run.result.TransportAnomaly != "" {
+				t.Fatalf("expected no transport anomaly, got %q", run.result.TransportAnomaly)
+			}
+		})
+	}
+}
+
 func TestStreamUpdateFromEventAcceptsACPXJSONRPCLinePayload(t *testing.T) {
 	line := acpxUpdateLine(`{"sessionId":"sess-1","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"hello from acpx"}}}`)
 	update, ok := StreamUpdateFromEvent(runevent.RunEvent{

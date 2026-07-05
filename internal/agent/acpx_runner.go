@@ -167,9 +167,10 @@ type acpxJSONRPCError struct {
 }
 
 type acpxStreamResult struct {
-	output     string
-	stopReason string
-	err        error
+	output             string
+	stopReason         string
+	promptResultParsed bool
+	err                error
 }
 
 func (runner ACPXRunner) Probe(ctx context.Context, _ RuntimeSpec) error {
@@ -362,6 +363,10 @@ func (runner ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, s
 		if !ok {
 			return result, fmt.Errorf("wait for acpx prompt: %w", waitErr)
 		}
+		if stream.promptResultParsed && exitCode != 130 {
+			result.TransportAnomaly = acpxTransportAnomaly(exitCode, stderr.String())
+			return result, nil
+		}
 		return result, runner.mapExitCode(ctx, req.ExecuteRequest, sink, exitCode, stderr.String(), result.Output)
 	}
 	if stream.err != nil {
@@ -376,6 +381,7 @@ func (runner ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, s
 func (runner ACPXRunner) readPromptStream(ctx context.Context, req ExecuteRequest, sink runevent.Sink, stdout io.Reader, logFile io.Writer) acpxStreamResult {
 	var output bytes.Buffer
 	var stopReason string
+	var promptResultParsed bool
 	var streamErr error
 	reader := bufio.NewReader(stdout)
 	for {
@@ -387,7 +393,7 @@ func (runner ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReques
 			if _, err := output.Write(line); err != nil && streamErr == nil {
 				streamErr = fmt.Errorf("capture acpx stdout: %w", err)
 			}
-			if err := runner.handleStdoutLine(ctx, req, sink, line, &stopReason); err != nil && streamErr == nil {
+			if err := runner.handleStdoutLine(ctx, req, sink, line, &stopReason, &promptResultParsed); err != nil && streamErr == nil {
 				streamErr = err
 			}
 		}
@@ -398,7 +404,7 @@ func (runner ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReques
 			break
 		}
 	}
-	return acpxStreamResult{output: output.String(), stopReason: stopReason, err: streamErr}
+	return acpxStreamResult{output: output.String(), stopReason: stopReason, promptResultParsed: promptResultParsed, err: streamErr}
 }
 
 func validateACPXPromptRequest(req ACPXPromptRequest) error {
@@ -541,7 +547,7 @@ func acpxAgentArgs(runtime RuntimeSpec) ([]string, error) {
 	return []string{agent}, nil
 }
 
-func (runner ACPXRunner) handleStdoutLine(ctx context.Context, req ExecuteRequest, sink runevent.Sink, line []byte, stopReason *string) error {
+func (runner ACPXRunner) handleStdoutLine(ctx context.Context, req ExecuteRequest, sink runevent.Sink, line []byte, stopReason *string, promptResultParsed *bool) error {
 	var message acpxJSONRPCMessage
 	if err := json.Unmarshal(line, &message); err != nil {
 		return fmt.Errorf("parse acpx stdout JSON-RPC line: %w", err)
@@ -574,8 +580,21 @@ func (runner ACPXRunner) handleStdoutLine(ctx context.Context, req ExecuteReques
 	}
 	if response.StopReason != "" {
 		*stopReason = response.StopReason
+		*promptResultParsed = true
 	}
 	return nil
+}
+
+func acpxTransportAnomaly(exitCode int, stderr string) string {
+	message := fmt.Sprintf("acpx exited with exit code %d after parsed session/prompt result", exitCode)
+	if tail, truncated := infrastructureStderrTail(stderr); tail != "" {
+		message += infrastructureStderrDelimiter
+		if truncated {
+			message += infrastructureStderrTruncated
+		}
+		message += tail
+	}
+	return message
 }
 
 func (runner ACPXRunner) mapExitCode(ctx context.Context, req ExecuteRequest, sink runevent.Sink, exitCode int, stderr string, output string) error {

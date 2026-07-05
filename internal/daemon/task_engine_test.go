@@ -270,18 +270,19 @@ func taskStatusOnDisk(t *testing.T, gitRoot string, id string) string {
 // from the prompt contract. A QA prompt writes qaReport as the Spec's QA
 // Report, the way the qa-gate Agent does; an empty qaReport writes none.
 type taskFakeRunner struct {
-	calls        *[]string
-	gitRoot      string
-	store        *store.Store
-	statusByTask map[string]spec.Status
-	errByTask    map[string]error
-	writeByTask  map[string]string
-	qaReport     string
-	qaPrompts    []string
-	seenStates   []string
-	prompts      []string
-	requests     []agent.ExecuteRequest
-	writeLogs    bool
+	calls         *[]string
+	gitRoot       string
+	store         *store.Store
+	statusByTask  map[string]spec.Status
+	errByTask     map[string]error
+	writeByTask   map[string]string
+	anomalyByTask map[string]string
+	qaReport      string
+	qaPrompts     []string
+	seenStates    []string
+	prompts       []string
+	requests      []agent.ExecuteRequest
+	writeLogs     bool
 }
 
 func (runner *taskFakeRunner) Probe(context.Context, agent.RuntimeSpec) error { return nil }
@@ -347,7 +348,7 @@ func (runner *taskFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest,
 			return agent.ExecuteResult{}, err
 		}
 	}
-	return agent.ExecuteResult{LogPath: req.LogPath}, nil
+	return agent.ExecuteResult{LogPath: req.LogPath, TransportAnomaly: runner.anomalyByTask[taskID]}, nil
 }
 
 func (runner *taskFakeRunner) EndSession(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
@@ -405,6 +406,32 @@ func taskEventsOfKind(sink *captureEventSink, kind runevent.Kind) []runevent.Run
 		}
 	}
 	return matched
+}
+
+func assertTaskAnomalyBeforeVerification(t *testing.T, events []runevent.RunEvent, taskID string, anomaly string) {
+	t.Helper()
+	anomalyIndex := -1
+	verificationIndex := -1
+	for index, event := range events {
+		if event.Kind == runevent.KindDaemonTask && event.ReviewIssue == taskID && eventPayloadString(t, event, "anomaly") == anomaly {
+			anomalyIndex = index
+			if event.Source != runevent.SourceDaemon {
+				t.Fatalf("expected daemon Task anomaly event, got %+v", event)
+			}
+		}
+		if event.Kind == runevent.KindDaemonVerification && event.ReviewIssue == taskID && strings.Contains(string(event.Payload), `"phase":"started"`) {
+			verificationIndex = index
+		}
+	}
+	if anomalyIndex < 0 {
+		t.Fatalf("expected transport anomaly event for %s, got %+v", taskID, events)
+	}
+	if verificationIndex < 0 {
+		t.Fatalf("expected verification event for %s, got %+v", taskID, events)
+	}
+	if anomalyIndex > verificationIndex {
+		t.Fatalf("expected anomaly before verification, anomaly index %d verification index %d", anomalyIndex, verificationIndex)
+	}
 }
 
 func TestTaskCycleValidatesPlan(t *testing.T) {
@@ -532,6 +559,78 @@ func TestTaskCycleExecutesAgentVerifySettleCommitContract(t *testing.T) {
 	if len(fixture.pusher.remotes) != 0 || len(fixture.source.requests) != 0 {
 		t.Fatal("expected Pusher and Review Source resolver never invoked for spec Runs")
 	}
+}
+
+func TestTaskCycleCommitsAfterTransportAnomalyAndPassingVerification(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Classify by parsed result"}})
+	fixture.worktree.snapshots = [][]string{nil, {"internal/agent/fix.go"}}
+	const anomaly = "acpx exited with exit code 1 after parsed session/prompt result\n--- acpx stderr tail ---\nMessage buffer exceeded 10485760 bytes"
+	runner := &taskFakeRunner{
+		calls:         fixture.calls,
+		gitRoot:       fixture.gitRoot,
+		anomalyByTask: map[string]string{"task_01": anomaly},
+	}
+	verifier := &taskFakeVerifier{calls: fixture.calls}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 || result.Skipped != 0 {
+		t.Fatalf("expected anomaly Task to complete after verification, got %+v", result)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>commit" {
+		t.Fatalf("expected anomaly to preserve Task flow, got %q", got)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusCompleted) {
+		t.Fatalf("expected Daemon to settle completed after verification, got %q", got)
+	}
+	if len(committer.messages) != 1 {
+		t.Fatalf("expected Task commit after passing verification, got %v", committer.messages)
+	}
+	if got := strings.Join(committer.paths[0], "|"); got != taskFileRel(taskCycleSlug, "task_01")+"|internal/agent/fix.go" {
+		t.Fatalf("expected task file and Agent change committed, got %q", got)
+	}
+	assertTaskAnomalyBeforeVerification(t, fixture.sink.snapshot(), "task_01", anomaly)
+}
+
+func TestTaskCycleTransportAnomalyStillLetsVerificationGateSettleFailure(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"make verify"}}})
+	const anomaly = "acpx exited with exit code 1 after parsed session/prompt result\n--- acpx stderr tail ---\nMessage buffer exceeded 10485760 bytes"
+	runner := &taskFakeRunner{
+		calls:         fixture.calls,
+		gitRoot:       fixture.gitRoot,
+		statusByTask:  map[string]spec.Status{"task_01": spec.StatusCompleted},
+		anomalyByTask: map[string]string{"task_01": anomaly},
+	}
+	verifier := &taskFakeVerifier{
+		calls:  fixture.calls,
+		failOn: map[string]error{"make verify": errors.New("gate broke")},
+	}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("expected failed verification to fail only the Task, got %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 1 || result.Skipped != 0 {
+		t.Fatalf("expected verification failure after anomaly to settle failed, got %+v", result)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify" {
+		t.Fatalf("expected no commit after failed verification, got %q", got)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusFailed) {
+		t.Fatalf("expected Daemon to settle failed after verification failure, got %q", got)
+	}
+	if len(committer.messages) != 0 {
+		t.Fatalf("expected no commit after failed verification, got %v", committer.messages)
+	}
+	assertTaskAnomalyBeforeVerification(t, fixture.sink.snapshot(), "task_01", anomaly)
 }
 
 func TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents(t *testing.T) {

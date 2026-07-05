@@ -72,10 +72,29 @@ func (sink *captureEventSink) kinds() []runevent.Kind {
 	return kinds
 }
 
+func (sink *captureEventSink) snapshot() []runevent.RunEvent {
+	sink.mu.Lock()
+	defer sink.mu.Unlock()
+	events := make([]runevent.RunEvent, len(sink.events))
+	copy(events, sink.events)
+	return events
+}
+
+func eventPayloadString(t *testing.T, event runevent.RunEvent, key string) string {
+	t.Helper()
+	var payload map[string]any
+	if err := json.Unmarshal(event.Payload, &payload); err != nil {
+		t.Fatalf("decode event payload %s: %v", event.Payload, err)
+	}
+	value, _ := payload[key].(string)
+	return value
+}
+
 type engineFakeRunner struct {
 	calls    *[]string
 	status   string
 	err      error
+	result   agent.ExecuteResult
 	store    *store.Store
 	seen     []string
 	requests []agent.ExecuteRequest
@@ -114,7 +133,11 @@ func (runner *engineFakeRunner) Run(ctx context.Context, req agent.ExecuteReques
 			return agent.ExecuteResult{}, err
 		}
 	}
-	return agent.ExecuteResult{LogPath: req.LogPath}, nil
+	result := runner.result
+	if result.LogPath == "" {
+		result.LogPath = req.LogPath
+	}
+	return result, nil
 }
 
 func (runner *engineFakeRunner) EndSession(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
@@ -352,6 +375,54 @@ func TestResolveCycleExecutesResolveVerifyCommitSourceContract(t *testing.T) {
 	// Final Push is a separate operation: the cycle never pushes.
 	if len(pusher.remotes) != 0 {
 		t.Fatalf("expected no push during cycle, got %v", pusher.remotes)
+	}
+}
+
+func TestResolveCycleJournalsTransportAnomalyBeforeVerification(t *testing.T) {
+	fixture := newEngineFixture(t)
+	const anomaly = "acpx exited with exit code 1 after parsed session/prompt result\n--- acpx stderr tail ---\nMessage buffer exceeded 10485760 bytes"
+	runner := &engineFakeRunner{
+		calls:  fixture.calls,
+		store:  fixture.store,
+		result: agent.ExecuteResult{TransportAnomaly: anomaly},
+	}
+	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, committer, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
+
+	result, err := engine.ResolveCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("resolve cycle: %v", err)
+	}
+	if len(result.Batches) != 1 || result.Batches[0].Failed {
+		t.Fatalf("expected anomaly Batch to proceed through verification, got %+v", result.Batches)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>commit>source" {
+		t.Fatalf("expected anomaly to preserve resolve flow, got %q", got)
+	}
+	events := fixture.sink.snapshot()
+	anomalyIndex := -1
+	verificationIndex := -1
+	for index, event := range events {
+		if event.Kind == runevent.KindDaemonBatch && eventPayloadString(t, event, "anomaly") == anomaly {
+			anomalyIndex = index
+			if event.Source != runevent.SourceDaemon || event.Batch != 1 {
+				t.Fatalf("expected daemon Batch anomaly event, got %+v", event)
+			}
+		}
+		if event.Kind == runevent.KindDaemonVerification && strings.Contains(string(event.Payload), `"phase":"started"`) {
+			verificationIndex = index
+		}
+	}
+	if anomalyIndex < 0 {
+		t.Fatalf("expected transport anomaly in Run Event Journal, got %+v", events)
+	}
+	if verificationIndex < 0 {
+		t.Fatalf("expected verification start event, got %+v", events)
+	}
+	if anomalyIndex > verificationIndex {
+		t.Fatalf("expected anomaly event before verification, anomaly index %d verification index %d", anomalyIndex, verificationIndex)
 	}
 }
 

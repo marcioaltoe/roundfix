@@ -303,7 +303,7 @@ func (engine *Engine) runBatchAgent(ctx context.Context, plan CyclePlan, batch r
 	fmt.Fprintf(engine.deps.Progress, "Batch: %03d/%03d (%d Review Issue(s))\n", batchIndex, batchTotal, len(batch.Issues))
 	fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
 
-	_, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
+	runResult, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
 		Runtime:      plan.Runtime,
 		Session:      plan.Session,
 		RunID:        plan.RunID,
@@ -330,6 +330,14 @@ func (engine *Engine) runBatchAgent(ctx context.Context, plan CyclePlan, batch r
 			return "", fmt.Errorf("publish stop event for run %q after Agent batch %03d: %w", plan.RunID, batch.Number, errors.Join(err, publishErr))
 		}
 		return "", fmt.Errorf("stop run %q after Agent batch %03d: %w", plan.RunID, batch.Number, err)
+	}
+	if anomaly := strings.TrimSpace(runResult.TransportAnomaly); anomaly != "" {
+		if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonBatch,
+			fmt.Sprintf("Batch %03d transport anomaly: %s", batch.Number, anomaly),
+			map[string]any{"phase": "transport_anomaly", "batch": batch.Number, "anomaly": anomaly},
+		); err != nil {
+			return "", fmt.Errorf("publish transport anomaly event for run %q batch %03d: %w", plan.RunID, batch.Number, err)
+		}
 	}
 	settled, err := agent.SettleAssignedIssues(ctx, batch)
 	if err != nil {
