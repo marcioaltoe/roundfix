@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -62,10 +63,21 @@ type cockpitTickMsg struct{}
 
 type issueDetailView struct {
 	issue   rounds.Issue
+	task    spec.Task
+	kind    detailKind
+	ordinal int
 	missing bool
+	stale   bool
 	lines   []string
 	scroll  int
 }
+
+type detailKind int
+
+const (
+	detailReviewIssue detailKind = iota
+	detailTask
+)
 
 type cockpitModel struct {
 	ctx      context.Context
@@ -192,6 +204,7 @@ func (model *cockpitModel) poll() {
 		model.viewport.SetTerminal()
 	}
 	model.refreshWorkItems()
+	model.refreshOpenDetail()
 }
 
 // specRun reports whether this cockpit renders a spec Run's Tasks; every
@@ -396,6 +409,13 @@ func (model *cockpitModel) handleKey(key tea.Key) (tea.Model, tea.Cmd) {
 	case "esc":
 		model.detail = nil
 		return model, nil
+	case "d":
+		if model.detail != nil {
+			model.detail = nil
+			return model, nil
+		}
+		model.openDetail()
+		return model, nil
 	case "tab":
 		if model.detail == nil {
 			if model.focus == focusTimeline {
@@ -452,37 +472,46 @@ func (model *cockpitModel) handleIssueKey(keystroke string) {
 
 func (model *cockpitModel) handleDetailKey(keystroke string) {
 	detail := model.detail
+	pageSize := model.detailPageSize()
 	switch keystroke {
 	case "up", "k":
 		if detail.scroll > 0 {
 			detail.scroll--
 		}
 	case "down", "j":
-		detail.scroll++
+		if detail.scroll < model.detailMaxScroll() {
+			detail.scroll++
+		}
 	case "pgup":
-		detail.scroll = maxInt(detail.scroll-(model.bodyHeight()-1), 0)
+		detail.scroll = maxInt(detail.scroll-pageSize, 0)
 	case "pgdown":
-		detail.scroll += model.bodyHeight() - 1
+		detail.scroll += pageSize
 	case "home":
 		detail.scroll = 0
 	}
-	if limit := maxInt(len(detail.lines)-1, 0); detail.scroll > limit {
+	if limit := model.detailMaxScroll(); detail.scroll > limit {
 		detail.scroll = limit
 	}
 }
 
-// openDetail loads the selected Review Issue artifact read-only. A missing
-// or cleaned artifact degrades to a notice, never a failure. The detail
-// pane applies to Review Issues only; a spec Run's Task pane has no detail.
+// openDetail loads the selected Work Item read-only. Review Runs show the
+// Review Issue artifact; spec Runs show the Task file body.
 func (model *cockpitModel) openDetail() {
 	if model.specRun() {
+		model.openTaskDetail()
 		return
 	}
+	model.openReviewIssueDetail()
+}
+
+// openReviewIssueDetail loads the selected Review Issue artifact read-only.
+// A missing or cleaned artifact degrades to a notice, never a failure.
+func (model *cockpitModel) openReviewIssueDetail() {
 	if model.selected < 0 || model.selected >= len(model.cfg.View.Issues) {
 		return
 	}
 	listed := model.cfg.View.Issues[model.selected]
-	detail := &issueDetailView{issue: listed}
+	detail := &issueDetailView{kind: detailReviewIssue, issue: listed, ordinal: model.selected + 1}
 	parsed, err := rounds.ParseIssue(listed.Path)
 	if err == nil {
 		detail.issue = parsed
@@ -495,6 +524,49 @@ func (model *cockpitModel) openDetail() {
 		detail.lines = artifactBodyLines(string(content))
 	}
 	model.detail = detail
+}
+
+func (model *cockpitModel) openTaskDetail() {
+	if model.selected < 0 || model.selected >= len(model.cfg.View.Tasks) {
+		return
+	}
+	task := model.cfg.View.Tasks[model.selected]
+	if model.selected < len(model.taskStatuses) {
+		task.Status = spec.Status(model.taskStatuses[model.selected])
+	}
+	detail := &issueDetailView{kind: detailTask, task: task, ordinal: model.selected + 1}
+	if err := model.loadTaskDetail(detail); err != nil {
+		detail.stale = true
+		detail.lines = []string{"task file temporarily unreadable", task.File}
+	}
+	model.detail = detail
+}
+
+func (model *cockpitModel) refreshOpenDetail() {
+	if model.detail == nil || model.detail.kind != detailTask {
+		return
+	}
+	if err := model.loadTaskDetail(model.detail); err != nil {
+		model.detail.stale = true
+	}
+	if model.detail.scroll > model.detailMaxScroll() {
+		model.detail.scroll = model.detailMaxScroll()
+	}
+}
+
+func (model *cockpitModel) loadTaskDetail(detail *issueDetailView) error {
+	task := detail.task
+	if err := spec.ReloadTask(model.cfg.View.GitRoot, &task); err != nil {
+		return err
+	}
+	content, err := os.ReadFile(filepath.Join(model.cfg.View.GitRoot, task.File))
+	if err != nil {
+		return err
+	}
+	detail.task = task
+	detail.lines = artifactBodyLines(string(content))
+	detail.stale = false
+	return nil
 }
 
 // artifactBodyLines drops the YAML frontmatter: the detail header already
@@ -560,6 +632,14 @@ func (model *cockpitModel) View() tea.View {
 }
 
 func renderCockpitLayout(model *cockpitModel, layout cockpitLayout) string {
+	base := renderCockpitBaseLayout(model, layout)
+	if model.detail != nil {
+		return renderCockpitDetailOverlay(model, layout, base)
+	}
+	return base
+}
+
+func renderCockpitBaseLayout(model *cockpitModel, layout cockpitLayout) string {
 	return strings.Join([]string{
 		renderCockpitHeaderArea(model, layout.width),
 		renderCockpitBody(model, layout),
@@ -772,9 +852,6 @@ func renderCockpitWorkQueue(model *cockpitModel, layout cockpitLayout) string {
 }
 
 func renderCockpitRightPane(model *cockpitModel, layout cockpitLayout) string {
-	if model.detail != nil {
-		return renderCockpitDetailPane(model, layout.rightWidth, layout.bodyHeight)
-	}
 	return renderCockpitTimelinePane(model, layout.rightWidth, layout.bodyHeight)
 }
 
@@ -793,31 +870,169 @@ func renderCockpitDetailPane(model *cockpitModel, width int, height int) string 
 	return panel(width, height, model.renderDetail(width, height), true)
 }
 
+const (
+	detailModalMinWidth  = 76
+	detailModalMinHeight = 20
+)
+
+func renderCockpitDetailOverlay(model *cockpitModel, layout cockpitLayout, base string) string {
+	baseLines := strings.Split(base, "\n")
+	if layout.width < detailModalMinWidth || len(baseLines) < detailModalMinHeight {
+		return renderCockpitFullSurfaceDetail(model, layout)
+	}
+	modalWidth, modalHeight := detailModalSize(layout.width, len(baseLines))
+	modal := renderCockpitDetailPane(model, modalWidth, modalHeight)
+	modalLines := strings.Split(modal, "\n")
+	top := maxInt((len(baseLines)-len(modalLines))/2, 0)
+	left := maxInt((layout.width-modalWidth)/2, 0)
+	lines := make([]string, len(baseLines))
+	for index, line := range baseLines {
+		lines[index] = styleMuted.Render(padRightDisplay(truncateDisplay(stripANSI(line), layout.width), layout.width))
+	}
+	for index, line := range modalLines {
+		target := top + index
+		if target >= len(lines) {
+			break
+		}
+		lines[target] = padRightDisplay(strings.Repeat(" ", left)+line, layout.width)
+	}
+	return strings.Join(lines, "\n")
+}
+
+func renderCockpitFullSurfaceDetail(model *cockpitModel, layout cockpitLayout) string {
+	return strings.Join([]string{
+		renderCockpitHeaderArea(model, layout.width),
+		panel(layout.width, layout.bodyHeight, model.renderDetail(layout.width, layout.bodyHeight), true),
+		renderCockpitFooter(model, layout.width),
+	}, "\n")
+}
+
+func detailModalSize(width int, height int) (int, int) {
+	modalWidth := minInt(maxInt(width*78/100, 62), maxInt(width-4, 1))
+	modalHeight := minInt(maxInt(height*50/100, 12), maxInt(height-2, 1))
+	return modalWidth, modalHeight
+}
+
 func renderCockpitFooter(model *cockpitModel, width int) string {
 	return model.renderFooter(width)
 }
 
 func (model *cockpitModel) renderDetail(width int, height int) string {
 	detail := model.detail
-	issue := detail.issue
-	header := []string{
-		styleAccent.Bold(true).Render("REVIEW.ISSUE"),
-		styleBright.Render(emptyDash(issue.Title)),
-		styleMuted.Render(fmt.Sprintf("%s · %s · %s:%d", emptyDash(issue.Severity), emptyDash(issue.Status), emptyDash(issue.File), issue.Line)),
-		styleMuted.Render("source: " + emptyDash(issue.SourceRef)),
-		"",
-	}
-	visible := detail.lines
-	if detail.scroll < len(visible) {
-		visible = visible[detail.scroll:]
-	} else {
-		visible = nil
-	}
+	innerWidth := maxInt(width-4, 1)
+	innerHeight := maxInt(height-2, 1)
+	header := detailHeaderLines(detail, innerWidth)
+	bodyHeight := detailBodyHeight(detail, innerHeight)
+	start, end := detailVisibleRange(detail, bodyHeight)
 	body := []string{}
-	for _, line := range visible {
-		body = append(body, truncateDisplay(line, width-4))
+	for _, line := range detail.lines[start:end] {
+		body = append(body, truncateDisplay(line, innerWidth))
 	}
-	return strings.Join(limitLines(append(header, body...), height-2), "\n")
+	for len(body) < bodyHeight {
+		body = append(body, "")
+	}
+	footer := styleMuted.Render(truncateDisplay(detailScrollFooter(detail, start, end), innerWidth))
+	lines := append(header, body...)
+	lines = append(lines, footer)
+	return strings.Join(limitLines(lines, innerHeight), "\n")
+}
+
+func detailHeaderLines(detail *issueDetailView, width int) []string {
+	lines := []string{
+		styleAccent.Bold(true).Render(detailTitleLine(detail, width)),
+		styleMuted.Render(strings.Repeat("-", width)),
+		styleBright.Render(truncateDisplay(detailSubject(detail), width)),
+		styleMuted.Render(truncateDisplay(detailMeta(detail), width)),
+		styleMuted.Render(truncateDisplay(detailSource(detail), width)),
+	}
+	if detail.stale {
+		lines = append(lines, styleError.Render(truncateDisplay("STALE: keeping last readable task file", width)))
+	}
+	return append(lines, "")
+}
+
+func detailTitleLine(detail *issueDetailView, width int) string {
+	left := "REVIEW.ISSUE"
+	if detail.kind == detailTask {
+		left = "SPEC.TASK"
+	}
+	if detail.kind == detailReviewIssue && detail.ordinal > 0 {
+		left += fmt.Sprintf("  #%03d", detail.ordinal)
+	}
+	if detail.kind == detailTask && strings.TrimSpace(detail.task.ID) != "" {
+		left += "  " + strings.TrimSpace(detail.task.ID)
+	}
+	hint := "Esc close · j/k scroll"
+	padding := maxInt(width-displayWidth(left)-displayWidth(hint), 1)
+	return truncateDisplay(left+strings.Repeat(" ", padding)+hint, width)
+}
+
+func detailSubject(detail *issueDetailView) string {
+	if detail.kind == detailTask {
+		return emptyDash(detail.task.Title)
+	}
+	return emptyDash(detail.issue.Title)
+}
+
+func detailMeta(detail *issueDetailView) string {
+	if detail.kind == detailTask {
+		parts := []string{emptyDash(detail.task.Type), emptyDash(string(detail.task.Status)), emptyDash(detail.task.File)}
+		return strings.Join(parts, " · ")
+	}
+	issue := detail.issue
+	return fmt.Sprintf("%s · %s · %s", emptyDash(issue.Severity), emptyDash(issue.Status), emptyDash(issueLocation(issue)))
+}
+
+func detailSource(detail *issueDetailView) string {
+	if detail.kind == detailTask {
+		return "source: " + emptyDash(detail.task.File) + " (read-only)"
+	}
+	return "source: " + emptyDash(detail.issue.SourceRef)
+}
+
+func detailBodyHeight(detail *issueDetailView, innerHeight int) int {
+	return maxInt(innerHeight-len(detailHeaderLines(detail, 1))-1, 1)
+}
+
+func detailVisibleRange(detail *issueDetailView, bodyHeight int) (int, int) {
+	total := len(detail.lines)
+	if total == 0 {
+		return 0, 0
+	}
+	start := detail.scroll
+	if start > total {
+		start = total
+	}
+	end := minInt(start+bodyHeight, total)
+	return start, end
+}
+
+func detailScrollFooter(detail *issueDetailView, start int, end int) string {
+	total := len(detail.lines)
+	if total == 0 {
+		return "Line 0-0 of 0 · PgUp/PgDn page"
+	}
+	return fmt.Sprintf("Line %d-%d of %d · PgUp/PgDn page", start+1, end, total)
+}
+
+func (model *cockpitModel) detailPageSize() int {
+	if model.detail == nil {
+		return 1
+	}
+	layout := cockpitLayoutFor(model)
+	height := layout.bodyHeight
+	if layout.width >= detailModalMinWidth {
+		_, totalHeight := detailModalSize(layout.width, layout.bodyHeight+4)
+		height = totalHeight
+	}
+	return detailBodyHeight(model.detail, maxInt(height-2, 1))
+}
+
+func (model *cockpitModel) detailMaxScroll() int {
+	if model.detail == nil {
+		return 0
+	}
+	return maxInt(len(model.detail.lines)-model.detailPageSize(), 0)
 }
 
 // renderWorkItemPane renders the shared Work Queue surface. Run Kind only

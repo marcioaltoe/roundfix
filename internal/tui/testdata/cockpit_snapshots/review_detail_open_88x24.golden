@@ -2,23 +2,23 @@ ROUNDFIX // LIVE RUN VIEW // PR #123                 RUN 00000001 [RESOLVING WIT
 ┌──────────────────────────────────────────────────────────────────────────────────────┐
 │ FETCH [done]  >  TRIAGE [done]  >  AGENT [run]  >  VERIFY [wait]  >  PUSH [locked]   │
 └──────────────────────────────────────────────────────────────────────────────────────┘
-┌────────────────────────────────┐┌─────────────────────────────────────────────────┐
-│ WORK QUEUE (3)                 ││ REVIEW.ISSUE                                    │
-│                                ││ major: guard nil cache                          │
-│ BATCH 001/002            01:23 ││ major · resolved · internal/cache/cache.go:42   │
-│ > [done] MAJOR              #1 ││ source: thread:PRRT_1,comment:PRRC_1            │
-│   major: guard nil cache       ││                                                 │
-│   internal/cache/cache.go:42   ││ # Issue 001: major: guard nil cache             │
-│                                ││                                                 │
-│   [run] MINOR               #2 ││ ## Review Comment                               │
-│   minor: trim stale TODO       ││                                                 │
-│   internal/cache/cache_test.g… ││ Guard the map lookup before dereferencing.      │
-│                                ││                                                 │
-│ BATCH 002/002                  ││ ## Triage                                       │
-│   [wait] INFO               #3 ││                                                 │
-│   info: document cache evicti… ││ - Decision: `UNREVIEWED`                        │
-│   internal/cache/cache.go:88   ││ - Notes:                                        │
-│                                ││                                                 │
-│ 3 issues total · 1 resolved ·… ││                                                 │
-└────────────────────────────────┘└─────────────────────────────────────────────────┘
-Keys: Tab focus · ↑↓ scroll · PgUp/PgDn page · End follow · Enter issue · Esc back · Ctrl-C stop
+┌────────────────────────────────┐┌─────────────────────────────────────────────────┐   
+│ WORK QUEUE (3)                 ││ SESSION.TIMELINE                                │   
+          ┌──────────────────────────────────────────────────────────────────┐          
+          │ REVIEW.ISSUE  #001                        Esc close · j/k scroll │          
+          │ ---------------------------------------------------------------- │          
+          │ major: guard nil cache                                           │          
+          │ major · resolved · internal/cache/cache.go:42                    │          
+          │ source: thread:PRRT_1,comment:PRRC_1                             │          
+          │                                                                  │          
+          │ # Issue 001: major: guard nil cache                              │          
+          │                                                                  │          
+          │ ## Review Comment                                                │          
+          │ Line 1-3 of 10 · PgUp/PgDn page                                  │          
+          └──────────────────────────────────────────────────────────────────┘          
+│   info: document cache evicti… ││                                                 │   
+│   internal/cache/cache.go:88   ││                                                 │   
+│                                ││                                                 │   
+│ 3 issues total · 1 resolved ·… ││                                                 │   
+└────────────────────────────────┘└─────────────────────────────────────────────────┘   
+Keys: Tab focus · ↑↓ scroll · PgUp/PgDn page · End follow · Enter issue · Esc back · Ct…

@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0005-tui-cockpit
-status: pending
+status: completed
 type: frontend
 complexity: high
 ---
@@ -37,20 +37,20 @@ finding 5. Verifiable through synchronous key-routing and render tests.
 
 ## Subtasks
 
-- [ ] Modal renderer over the dimmed base
-- [ ] Key routing: open, toggle, close, scroll, focus suspension
-- [ ] Detail sources for both Run kinds with mid-write tolerance
-- [ ] Byte-identical close-context tests and small-width fallback
+- [x] Modal renderer over the dimmed base
+- [x] Key routing: open, toggle, close, scroll, focus suspension
+- [x] Detail sources for both Run kinds with mid-write tolerance
+- [x] Byte-identical close-context tests and small-width fallback
 
 ## Acceptance Criteria
 
-- [ ] Key tests: Enter opens, D toggles, Esc closes, scroll and paging move
+- [x] Key tests: Enter opens, D toggles, Esc closes, scroll and paging move
       the body, queue keys are inert while open.
-- [ ] Render before opening equals render after closing, byte-compared, for
+- [x] Render before opening equals render after closing, byte-compared, for
       both Run kinds.
-- [ ] Task-file detail shows the body read-only and survives a corrupted
+- [x] Task-file detail shows the body read-only and survives a corrupted
       mid-write reload with the stale marker.
-- [ ] Full suite passes.
+- [x] Full suite passes.
 
 ## Verification
 
@@ -63,3 +63,24 @@ finding 5. Verifiable through synchronous key-routing and render tests.
 `_techspec.md` → Detail sources, Build Order 5, Risks (dimming).
 `design/ui-redesign-plan.md` → Required Changes (modal);
 `design/roundfix-02.png`. Dogfood finding 5.
+
+## Result
+
+- Modal renderer evidence: `TestCockpitEnterOpensIssueDetailModalAndEscRestoresReviewContext`
+  asserts the Work Queue and timeline remain visible behind `REVIEW.ISSUE`
+  modal content, with a line-position footer.
+- Key-routing evidence: the same test asserts Enter opens, Esc closes,
+  queue selection stays fixed while arrow keys scroll the modal, and PgDn
+  pages the body; `TestCockpitDetailTogglesWithDAndKeepsTimelineFollowing`
+  asserts `D` opens/closes and the timeline follows while the modal is open.
+- Spec detail evidence: `TestCockpitSpecTaskDetailModalRestoresContextAndSurvivesStaleReload`
+  asserts `SPEC.TASK` renders the task file read-only, keeps the last readable
+  body through a corrupted mid-write reload, and shows the stale marker.
+- Context/fallback evidence: review and spec tests byte-compare render before
+  opening against render after closing; `TestCockpitDetailUsesFullSurfaceFallbackWhenTerminalIsTooShort`
+  covers the small-height full-surface fallback; `TestCockpitDetailKeepsAttachDetachKey`
+  covers attach-mode `q` while a modal is open.
+- Snapshot evidence: the detail-open cockpit golden snapshots were updated
+  through `ROUNDFIX_UPDATE_COCKPIT_SNAPSHOTS=1 go test`.
+- Verification: `rtk go test ./internal/tui/` passed with 78 tests.
+- Verification: `rtk go test ./...` passed with 558 tests across 16 packages.

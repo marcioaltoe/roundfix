@@ -676,7 +676,7 @@ func TestCockpitTabSwitchesFocusAndArrowsMoveSelection(t *testing.T) {
 	}
 }
 
-func TestCockpitEnterOpensIssueDetailAndEscCloses(t *testing.T) {
+func TestCockpitEnterOpensIssueDetailModalAndEscRestoresReviewContext(t *testing.T) {
 	artifactDir := t.TempDir()
 	persisted, err := rounds.PersistRound(context.Background(), rounds.PersistRequest{
 		ArtifactDir:    artifactDir,
@@ -703,6 +703,11 @@ func TestCockpitEnterOpensIssueDetailAndEscCloses(t *testing.T) {
 	if err != nil {
 		t.Fatalf("persist round: %v", err)
 	}
+	extraBody := []string{"", "## Debug notes"}
+	for index := 1; index <= 30; index++ {
+		extraBody = append(extraBody, fmt.Sprintf("detail body line %02d", index))
+	}
+	appendToFile(t, persisted.IssuePaths[0], "\n"+strings.Join(extraBody, "\n")+"\n")
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateClean}, version: 1}
 	model := newTestCockpit(t, source, LiveRunView{
 		PipelineState: store.StateClean,
@@ -710,21 +715,201 @@ func TestCockpitEnterOpensIssueDetailAndEscCloses(t *testing.T) {
 	})
 
 	pressKey(t, model, "tab")
+	before := viewText(model)
 	pressKey(t, model, "enter")
 
 	if model.detail == nil {
-		t.Fatal("expected Enter to open the issue detail pane")
+		t.Fatal("expected Enter to open the issue detail modal")
 	}
 	rendered := viewText(model)
-	for _, expected := range []string{"REVIEW.ISSUE", "major: handle nil cache", "thread:PRRT_1,comment:PRRC_1", "Guard the map lookup"} {
+	for _, expected := range []string{"SESSION.TIMELINE", "WORK QUEUE", "REVIEW.ISSUE  #001", "major: handle nil cache", "thread:PRRT_1,comment:PRRC_1", "Guard the map lookup", "Line 1-"} {
 		if !strings.Contains(rendered, expected) {
 			t.Fatalf("expected detail to contain %q, got:\n%s", expected, rendered)
 		}
 	}
 
+	selected := model.selected
+	pressKey(t, model, "down")
+	if model.selected != selected {
+		t.Fatalf("expected queue selection to stay fixed while modal is open, got %d want %d", model.selected, selected)
+	}
+	if model.detail.scroll == 0 {
+		t.Fatal("expected down to scroll the detail body while modal is open")
+	}
+	if !strings.Contains(viewText(model), "Line 2-") {
+		t.Fatalf("expected scrolled modal footer to move to line 2, got:\n%s", viewText(model))
+	}
+	pressKey(t, model, "pgdown")
+	if model.detail.scroll <= 1 {
+		t.Fatalf("expected PgDn to page the modal body, got scroll %d", model.detail.scroll)
+	}
+
 	pressKey(t, model, "esc")
 	if model.detail != nil {
-		t.Fatal("expected Esc to close the detail pane")
+		t.Fatal("expected Esc to close the detail modal")
+	}
+	if after := viewText(model); after != before {
+		t.Fatalf("expected Esc to restore the exact prior review context\nbefore:\n%s\n\nafter:\n%s", before, after)
+	}
+}
+
+func TestCockpitDetailTogglesWithDAndKeepsTimelineFollowing(t *testing.T) {
+	artifactDir := t.TempDir()
+	persisted, err := rounds.PersistRound(context.Background(), rounds.PersistRequest{
+		ArtifactDir:    artifactDir,
+		Source:         reviewsource.SourceCodeRabbit,
+		PRNumber:       "123",
+		HeadRepository: "owner/project",
+		HeadBranch:     "feature/review",
+		HeadSHA:        "abc123",
+		Round:          1,
+		CreatedAt:      time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC),
+		Items: []reviewsource.ReviewItem{{
+			Title:                   "minor: trim stale TODO",
+			File:                    "internal/cache/cache.go",
+			Line:                    42,
+			Severity:                "minor",
+			Author:                  "coderabbitai[bot]",
+			Body:                    "Remove the stale TODO.",
+			SourceRef:               "thread:PRRT_2,comment:PRRC_2",
+			ReviewHash:              "def",
+			SourceReviewID:          "9002",
+			SourceReviewSubmittedAt: time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC),
+		}},
+	})
+	if err != nil {
+		t.Fatalf("persist round: %v", err)
+	}
+	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateActive}, version: 1}
+	source.addLine("line before modal\n")
+	model := newTestCockpit(t, source, LiveRunView{
+		PipelineState: store.StateActive,
+		Issues:        []rounds.Issue{{Path: persisted.IssuePaths[0], Title: "minor: trim stale TODO", Severity: "minor", Status: "pending"}},
+	})
+	pressKey(t, model, "tab")
+	before := viewText(model)
+
+	pressKey(t, model, "d")
+	if model.detail == nil {
+		t.Fatal("expected D to open the detail modal")
+	}
+	source.addLine("line while modal is open\n")
+	source.version++
+	model.Update(cockpitTickMsg{})
+	if !strings.Contains(strings.Join(model.viewport.VisibleLines(), "\n"), "line while modal is open") {
+		t.Fatalf("expected Follow Mode to keep advancing under the modal, got %v", model.viewport.VisibleLines())
+	}
+
+	pressKey(t, model, "d")
+	if model.detail != nil {
+		t.Fatal("expected D to close the detail modal")
+	}
+	if rendered := viewText(model); !strings.Contains(rendered, "line while modal is open") {
+		t.Fatalf("expected closing the modal to reveal the advanced timeline, got:\n%s", rendered)
+	}
+
+	pressKey(t, model, "d")
+	pressKey(t, model, "d")
+	withoutTimelineAdvance := viewText(model)
+	if !strings.Contains(withoutTimelineAdvance, "line while modal is open") {
+		t.Fatalf("expected detail toggle to preserve the current base context, got:\n%s", withoutTimelineAdvance)
+	}
+	if before == withoutTimelineAdvance {
+		t.Fatal("expected the base context to differ after a real timeline advance")
+	}
+}
+
+func TestCockpitSpecTaskDetailModalRestoresContextAndSurvivesStaleReload(t *testing.T) {
+	gitRoot := t.TempDir()
+	slug := "0005-tui-cockpit"
+	file := writeCockpitTaskFile(t, gitRoot, slug, "task_01", "Open modal", spec.StatusInProgress)
+	appendToFile(t, filepath.Join(gitRoot, file), "\n## Notes\n\nTask detail body line.\n")
+	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateResolvingWithAgent}, version: 1}
+	model := newTestCockpit(t, source, LiveRunView{
+		PipelineState: store.StateResolvingWithAgent,
+		RunKind:       store.KindImplement,
+		SpecSlug:      slug,
+		GitRoot:       gitRoot,
+		Tasks:         []spec.Task{{ID: "task_01", File: file, Title: "Open modal", Status: spec.StatusPending}},
+	})
+	pressKey(t, model, "tab")
+	before := viewText(model)
+
+	pressKey(t, model, "enter")
+	if model.detail == nil {
+		t.Fatal("expected Enter to open the Task detail modal")
+	}
+	rendered := viewText(model)
+	for _, expected := range []string{"SESSION.TIMELINE", "SPEC.TASK  task_01", "Open modal", "source: " + file + " (read-only)", "# Task 01: Open modal", "Line 1-"} {
+		if !strings.Contains(rendered, expected) {
+			t.Fatalf("expected Task detail to contain %q, got:\n%s", expected, rendered)
+		}
+	}
+	pressKey(t, model, "pgdown")
+	if rendered := viewText(model); !strings.Contains(rendered, "Task detail body line.") {
+		t.Fatalf("expected paged Task detail to show lower body text, got:\n%s", rendered)
+	}
+
+	if err := os.WriteFile(filepath.Join(gitRoot, file), []byte("---\ntask: task_01\nstatus: in_prog"), 0o644); err != nil {
+		t.Fatalf("corrupt task file: %v", err)
+	}
+	source.version++
+	model.Update(cockpitTickMsg{})
+	rendered = viewText(model)
+	for _, expected := range []string{"STALE: keeping last readable task file", "Task detail body line."} {
+		if !strings.Contains(rendered, expected) {
+			t.Fatalf("expected stale Task detail to contain %q, got:\n%s", expected, rendered)
+		}
+	}
+
+	pressKey(t, model, "esc")
+	if model.detail != nil {
+		t.Fatal("expected Esc to close the Task detail modal")
+	}
+	if after := viewText(model); after != before {
+		t.Fatalf("expected Esc to restore the exact prior spec context\nbefore:\n%s\n\nafter:\n%s", before, after)
+	}
+}
+
+func TestCockpitDetailUsesFullSurfaceFallbackWhenTerminalIsTooShort(t *testing.T) {
+	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateClean}, version: 1}
+	model := newTestCockpit(t, source, LiveRunView{
+		PipelineState: store.StateClean,
+		Issues:        []rounds.Issue{{Path: filepath.Join(t.TempDir(), "gone.md"), Title: "short terminal", Severity: "minor", Status: "resolved"}},
+	})
+	model.Update(tea.WindowSizeMsg{Width: 88, Height: 16})
+
+	pressKey(t, model, "tab")
+	pressKey(t, model, "enter")
+	rendered := viewText(model)
+	if !strings.Contains(rendered, "REVIEW.ISSUE  #001") || !strings.Contains(rendered, "artifact not available") {
+		t.Fatalf("expected full-surface detail fallback to render the detail, got:\n%s", rendered)
+	}
+	for _, background := range []string{"WORK QUEUE", "SESSION.TIMELINE"} {
+		if strings.Contains(rendered, background) {
+			t.Fatalf("expected too-short terminal fallback to hide background %q, got:\n%s", background, rendered)
+		}
+	}
+}
+
+func TestCockpitDetailKeepsAttachDetachKey(t *testing.T) {
+	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateActive}, version: 1}
+	model := newTestCockpit(t, source, LiveRunView{
+		PipelineState: store.StateActive,
+		Issues:        []rounds.Issue{{Path: filepath.Join(t.TempDir(), "gone.md"), Title: "attach detail", Severity: "minor", Status: "pending"}},
+	})
+
+	pressKey(t, model, "tab")
+	pressKey(t, model, "enter")
+	if model.detail == nil {
+		t.Fatal("expected detail modal open before detach")
+	}
+	cmd := pressKey(t, model, "q")
+	if cmd == nil {
+		t.Fatal("expected q to detach in attach mode while detail is open")
+	}
+	if msg := cmd(); fmt.Sprintf("%T", msg) != "tea.QuitMsg" {
+		t.Fatalf("expected quit command while detail is open, got %T", msg)
 	}
 }
 
@@ -1031,6 +1216,22 @@ func writeCockpitTaskFile(t *testing.T, gitRoot string, slug string, id string, 
 		t.Fatalf("write task file: %v", err)
 	}
 	return relative
+}
+
+func appendToFile(t *testing.T, path string, content string) {
+	t.Helper()
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		t.Fatalf("open file for append: %v", err)
+	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			t.Fatalf("close appended file: %v", err)
+		}
+	}()
+	if _, err := file.WriteString(content); err != nil {
+		t.Fatalf("append file content: %v", err)
+	}
 }
 
 func TestCockpitSpecRunShowsTasksInGraphOrderAndRefreshesStatuses(t *testing.T) {
