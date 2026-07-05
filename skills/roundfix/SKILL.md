@@ -87,6 +87,35 @@ Review Run output and completion contract:
   Agent-source and Daemon-source events. The flag is rejected before Run
   creation when it conflicts with Interactive Input or the Live Run View.
 
+## Live Run View
+
+The Live Run View uses the same cockpit for review and spec Runs, whether the
+Run is owned by `resolve`, `watch`, or `implement`, or replayed read-only
+through Attach. The cockpit reads the Run Event Journal; Attach replays that
+Journal and then follows new Run Events without mutating or stopping the Run.
+
+- The `WORK QUEUE` pane lists Work Items on the left: Review Issues for review
+  Runs and Tasks for spec Runs.
+- The `SESSION.TIMELINE` pane is the wider right pane. It groups Run Events by
+  Batch and event kind, including Agent plan/tool/think/status events and
+  Daemon milestones such as verification, commit, QA, push, and outcome.
+- The Phase Row stays above both panes. Review Runs show
+  `FETCH > TRIAGE > AGENT > VERIFY > PUSH`; spec Runs show
+  `AGENT > VERIFY > COMMIT`, plus `QA` only when the Run opted into QA. Status
+  markers are text: `[done]`, `[run]`, `[wait]`, and `[locked]`.
+- `Enter` opens the selected Work Item's Detail Modal; `D` toggles it; `Esc`
+  closes it. Review detail shows the Review Issue artifact. Spec detail shows
+  the Task file body read-only.
+- Normal footer keys are `Tab focus`, `↑↓ move/scroll`, `PgUp/PgDn page`,
+  `Enter issue` or `Enter Task`, `D show detail`, `End follow`, and the mode
+  key. The modal footer keys are `Esc close`, `j/k scroll`, `PgUp/PgDn page`,
+  and the mode key.
+- Owning active Runs use `Ctrl-C stop`. Attach uses `q detach` in the footer
+  and detaches with `q` or `Ctrl-C`; detaching never stops the Run. Owning
+  terminal Runs use `q close`.
+- Below the two-pane width, the cockpit collapses to `SESSION.TIMELINE` with a
+  one-line Work Queue summary and a footer hint to widen the terminal.
+
 ## User-Facing Spec Runs
 
 The Implement Command executes a Spec's Task Graph on the current branch as
@@ -145,7 +174,7 @@ request is the developer's explicit decision (ADR-0013).
    opening Interactive Input.
 
 7. Attach to a spec Run with `roundfix attach <run-id>`; the Live Run View
-   shows the Spec's Tasks as its Work Items.
+   shows the Spec's Tasks as Work Items in the shared cockpit.
 
 8. Stop an Active Run for a Spec with `roundfix stop --spec <slug>` from inside
    the current repository. This resolves that repository's Spec target,

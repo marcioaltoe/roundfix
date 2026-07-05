@@ -192,6 +192,26 @@ _Avoid_: Wizard, form, setup screen
 The TUI view that shows Review Issues and Run Events for a Run: streaming live while the Run is active, or replayed from the Run Event Journal during Attach.
 _Avoid_: Dashboard, report, log file
 
+**Cockpit**:
+The shared Live Run View composition made of the Phase Row, Work Queue, Session Timeline, footer, and optional Detail Modal.
+_Avoid_: Dashboard, reduced pane
+
+**Work Queue**:
+The Live Run View pane that lists a Run's Work Items and their current status for both review and spec Runs.
+_Avoid_: Issue list, task pane
+
+**Phase Row**:
+The Live Run View row that shows a Run's lifecycle position with terminal-text status markers.
+_Avoid_: Progress header, pipeline bar
+
+**Session Timeline**:
+The Live Run View pane that shows grouped Run Events from the Run Event Journal.
+_Avoid_: Console log, agent output pane
+
+**Detail Modal**:
+The centered Live Run View overlay that shows one selected Work Item's Review Issue artifact or Task file body read-only.
+_Avoid_: Detail pane, inspector panel
+
 **Daemon**:
 The Roundfix process that owns the Run lifecycle and Review Source-facing outcomes.
 _Avoid_: Orchestrator, controller, manager

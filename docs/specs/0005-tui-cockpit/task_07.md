@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0005-tui-cockpit
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -33,19 +33,19 @@ skills drift check.
 
 ## Subtasks
 
-- [ ] Attach parity tests for both Run kinds
-- [ ] Skill Live Run View wording + `make skills-sync`
-- [ ] Design-contract deviation check
-- [ ] Glossary pass
+- [x] Attach parity tests for both Run kinds
+- [x] Skill Live Run View wording + `make skills-sync`
+- [x] Design-contract deviation check
+- [x] Glossary pass
 
 ## Acceptance Criteria
 
-- [ ] Attach tests replay both Run kinds through the new cockpit with the
+- [x] Attach tests replay both Run kinds through the new cockpit with the
       modal working and Run state untouched.
-- [ ] Skill text matches shipped keys and surfaces; drift check passes
+- [x] Skill text matches shipped keys and surfaces; drift check passes
       inside the full gate.
-- [ ] Design docs match shipped behavior (or carry the dated correction).
-- [ ] No new un-glossaried term.
+- [x] Design docs match shipped behavior (or carry the dated correction).
+- [x] No new un-glossaried term.
 
 ## Verification
 
@@ -58,3 +58,26 @@ skills drift check.
 `_prd.md` → User Story 4; Core Feature 6; Success Metrics. `_techspec.md` →
 Build Order 7. ADR-0009. Repo hard rule (canonical skill ships with behavior
 changes).
+
+## Result
+
+- Attach parity evidence: `TestCockpitAttachReplaysFinishedReviewRunThroughRedesignedCockpit`
+  and `TestCockpitAttachReplaysFinishedSpecRunThroughRedesignedCockpit` replay
+  finished review and spec Runs through the cockpit in Attach mode. The tests
+  assert the `WORK QUEUE` and `SESSION.TIMELINE` surfaces, phase rows, grouped
+  Batch timeline, working Detail Modal, `q detach` Attach footer, and unchanged
+  Clean Run state.
+- Skill sync evidence: `.agents/skills/roundfix/SKILL.md` now documents the
+  shipped Live Run View surfaces, Phase Row, Detail Modal, footer keys, Attach
+  detach behavior, owning terminal close behavior, and small-terminal collapse.
+  `rtk make skills-sync` regenerated `skills/roundfix`, and
+  `rtk diff -r .agents/skills/roundfix skills/roundfix` returned no drift.
+- Design-contract evidence: `design/ui-redesign-plan.md` carries a dated
+  2026-07-05 correction for the shipped `WORK QUEUE` label, normal/modal
+  footer wording, Attach/terminal mode keys, and small-terminal fallback.
+- Glossary evidence: `CONTEXT.md` now defines Cockpit, Work Queue, Phase Row,
+  Session Timeline, and Detail Modal, so the new skill and design wording use
+  glossary-backed terms.
+- Verification: `rtk go run ./cmd/roundfix skills check` passed.
+- Verification: `rtk make verify` passed with the full Go suite, skill drift
+  check, skill validation, and build.

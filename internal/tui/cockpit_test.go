@@ -1149,6 +1149,298 @@ func TestCockpitDetachKeysQuitInAttachModeAndRunIsUntouched(t *testing.T) {
 	}
 }
 
+// Suite: cockpit Attach parity
+// Invariant: Attach replays the same read-only cockpit surfaces from the Run Event Journal for finished review and spec Runs.
+// Boundary IN: synchronous cockpit model rendering, journal replay, Attach key routing, and Work Item detail modal rendering.
+// Boundary OUT: CLI command parsing and store read-only opening, covered by internal/cli attach tests.
+func TestCockpitAttachReplaysFinishedReviewRunThroughRedesignedCockpit(t *testing.T) {
+	artifactDir := t.TempDir()
+	persisted, err := rounds.PersistRound(context.Background(), rounds.PersistRequest{
+		ArtifactDir:    artifactDir,
+		Source:         reviewsource.SourceCodeRabbit,
+		PRNumber:       "123",
+		HeadRepository: "owner/project",
+		HeadBranch:     "feature/attach",
+		HeadSHA:        "abc123",
+		Round:          1,
+		CreatedAt:      time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC),
+		Items: []reviewsource.ReviewItem{
+			{
+				Title:                   "major: guard nil cache",
+				File:                    "internal/cache/cache.go",
+				Line:                    42,
+				Severity:                "major",
+				Author:                  "coderabbitai[bot]",
+				Body:                    "Guard the map lookup before dereferencing.",
+				SourceRef:               "thread:PRRT_1,comment:PRRC_1",
+				ReviewHash:              "h1",
+				SourceReviewID:          "1",
+				SourceReviewSubmittedAt: time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC),
+			},
+			{
+				Title:                   "minor: trim stale TODO",
+				File:                    "internal/cache/cache_test.go",
+				Line:                    17,
+				Severity:                "minor",
+				Author:                  "coderabbitai[bot]",
+				Body:                    "Remove the stale TODO from the test fixture.",
+				SourceRef:               "thread:PRRT_2,comment:PRRC_2",
+				ReviewHash:              "h2",
+				SourceReviewID:          "1",
+				SourceReviewSubmittedAt: time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC),
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("persist round: %v", err)
+	}
+	for _, path := range persisted.IssuePaths {
+		if err := rounds.SetIssueStatus(path, rounds.StatusResolved, ""); err != nil {
+			t.Fatalf("set issue status: %v", err)
+		}
+	}
+	issues := []rounds.Issue{}
+	for _, path := range persisted.IssuePaths {
+		issues = append(issues, rounds.Issue{Path: path, Status: rounds.StatusPending})
+	}
+
+	startedAt := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
+	source := &cockpitFakeSource{run: store.Run{ID: "run-review-attach", State: store.StateClean}, version: 1}
+	source.addEvent(runevent.RunEvent{Batch: 1, Source: runevent.SourceDaemon, Kind: runevent.KindDaemonBatch, Summary: "Batch 001 executing.", Time: startedAt})
+	source.addEvent(runevent.RunEvent{
+		Batch:   1,
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentPlan,
+		Payload: []byte(`{"sessionId":"s","update":{"sessionUpdate":"plan","entries":[{"status":"pending","content":"Replay Attach cockpit"}]}}`),
+		Time:    startedAt.Add(5 * time.Second),
+	})
+	source.addEvent(runevent.RunEvent{
+		Batch:   1,
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentToolUpdated,
+		Payload: []byte(`{"sessionId":"s","update":{"sessionUpdate":"tool_call_update","toolCallId":"call_1","title":"read_file","status":"completed","rawInput":{"command":"rtk read internal/tui/cockpit.go"},"content":[{"content":{"type":"text","text":"loaded cockpit renderer"}}]}}`),
+		Time:    startedAt.Add(20 * time.Second),
+	})
+	source.addEvent(runevent.RunEvent{
+		Batch:   1,
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentThought,
+		Payload: []byte(`{"sessionId":"s","update":{"sessionUpdate":"agent_thought_chunk","content":{"type":"text","text":"checking Attach replay"}}}`),
+		Time:    startedAt.Add(32 * time.Second),
+	})
+	source.addEvent(runevent.RunEvent{
+		Batch:   1,
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentStatus,
+		Payload: []byte(`{"status":"completed"}`),
+		Time:    startedAt.Add(38 * time.Second),
+	})
+	source.addEvent(runevent.RunEvent{
+		Batch:   2,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonOutcome,
+		Summary: "Clean after review Attach replay.",
+		Time:    startedAt.Add(90 * time.Second),
+	})
+	model := newTestCockpit(t, source, LiveRunView{
+		Command:       "attach",
+		Repository:    "owner/project",
+		PRNumber:      "123",
+		HeadBranch:    "feature/attach",
+		ReviewSource:  string(reviewsource.SourceCodeRabbit),
+		Agent:         "codex",
+		Model:         "gpt-5",
+		RunID:         "run-review-attach",
+		PipelineState: store.StateClean,
+		Issues:        issues,
+		BatchSizes:    []int{1, 1},
+	})
+	model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+
+	rendered := viewText(model)
+	for _, expected := range []string{
+		"WORK QUEUE (2)",
+		"SESSION.TIMELINE",
+		"FETCH [done]",
+		"TRIAGE [done]",
+		"AGENT [done]",
+		"VERIFY [done]",
+		"PUSH [done]",
+	} {
+		if !strings.Contains(rendered, expected) {
+			t.Fatalf("expected review Attach cockpit to contain %q, got:\n%s", expected, rendered)
+		}
+	}
+	assertContainsInOrder(t, rendered,
+		"FETCH [done]",
+		"TRIAGE [done]",
+		"AGENT [done]",
+		"VERIFY [done]",
+		"PUSH [done]",
+	)
+	assertContainsInOrder(t, rendered,
+		"BATCH 001/002 executing 00:38",
+		"PLAN",
+		"pending  Replay Attach cockpit",
+		"[TOOL] read_file",
+		"THINK checking Attach replay",
+		"SESSION COMPLETED",
+		"BATCH 002/002 00:00",
+		"OUTCOME",
+		"Clean after review Attach replay.",
+	)
+	for _, expected := range []string{
+		"READ-ONLY",
+		"2 issues total · 2 resolved · 0 unresolved",
+		"Keys: Tab focus · ↑↓ move/scroll · PgUp/PgDn page · Enter issue · D show detail · End follow · q detach",
+	} {
+		if !strings.Contains(rendered, expected) {
+			t.Fatalf("expected review Attach cockpit to contain %q, got:\n%s", expected, rendered)
+		}
+	}
+
+	pressKey(t, model, "tab")
+	pressKey(t, model, "enter")
+	rendered = viewText(model)
+	for _, expected := range []string{
+		"REVIEW.ISSUE  #001",
+		"Guard the map lookup before dereferencing.",
+		"source: thread:PRRT_1,comment:PRRC_1",
+		"Keys: Esc close · j/k scroll · PgUp/PgDn page · q detach",
+	} {
+		if !strings.Contains(rendered, expected) {
+			t.Fatalf("expected review Attach modal to contain %q, got:\n%s", expected, rendered)
+		}
+	}
+	pressKey(t, model, "esc")
+	if strings.Contains(viewText(model), "REVIEW.ISSUE  #001") {
+		t.Fatalf("expected Esc to close the review Attach modal, got:\n%s", viewText(model))
+	}
+	if source.run.State != store.StateClean {
+		t.Fatalf("expected review Attach to leave Run state untouched, got %q", source.run.State)
+	}
+}
+
+func TestCockpitAttachReplaysFinishedSpecRunThroughRedesignedCockpit(t *testing.T) {
+	gitRoot := t.TempDir()
+	slug := "0005-tui-cockpit"
+	fileOne := writeCockpitTaskFile(t, gitRoot, slug, "task_01", "Build modal detail", spec.StatusCompleted)
+	fileTwo := writeCockpitTaskFile(t, gitRoot, slug, "task_02", "Sync skill docs", spec.StatusCompleted)
+
+	startedAt := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
+	source := &cockpitFakeSource{run: store.Run{ID: "run-spec-attach", State: store.StateClean}, version: 1}
+	source.addEvent(runevent.RunEvent{
+		Batch:       1,
+		Source:      runevent.SourceDaemon,
+		Kind:        runevent.KindDaemonTask,
+		ReviewIssue: "task_01",
+		Summary:     "Task task_01 started as Batch 001: Build modal detail",
+		Time:        startedAt,
+	})
+	source.addEvent(runevent.RunEvent{
+		Batch:       1,
+		Source:      runevent.SourceDaemon,
+		Kind:        runevent.KindDaemonVerification,
+		ReviewIssue: "task_01",
+		Summary:     "Verification command passed: rtk go test ./internal/tui/",
+		Time:        startedAt.Add(12 * time.Second),
+	})
+	source.addEvent(runevent.RunEvent{
+		Batch:       1,
+		Source:      runevent.SourceDaemon,
+		Kind:        runevent.KindDaemonTask,
+		ReviewIssue: "task_01",
+		Summary:     "Task task_01 settled completed.",
+		Time:        startedAt.Add(20 * time.Second),
+	})
+	source.addEvent(runevent.RunEvent{
+		Batch:   2,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonQA,
+		Summary: "QA verdict pass for Spec 0005-tui-cockpit.",
+		Time:    startedAt.Add(2 * time.Minute),
+	})
+	model := newTestCockpit(t, source, LiveRunView{
+		Command:       "attach",
+		HeadBranch:    "feature/cockpit",
+		Agent:         "codex",
+		Model:         "gpt-5",
+		RunID:         "run-spec-attach",
+		PipelineState: store.StateClean,
+		RunKind:       store.KindImplement,
+		SpecSlug:      slug,
+		GitRoot:       gitRoot,
+		Tasks: []spec.Task{
+			{ID: "task_01", File: fileOne, Title: "Build modal detail", Status: spec.StatusPending},
+			{ID: "task_02", File: fileTwo, Title: "Sync skill docs", Status: spec.StatusPending},
+		},
+	})
+	model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+
+	rendered := viewText(model)
+	for _, expected := range []string{
+		"WORK QUEUE (2)",
+		"SESSION.TIMELINE",
+		"AGENT [done]",
+		"VERIFY [done]",
+		"COMMIT [done]",
+		"QA [done]",
+	} {
+		if !strings.Contains(rendered, expected) {
+			t.Fatalf("expected spec Attach cockpit to contain %q, got:\n%s", expected, rendered)
+		}
+	}
+	assertContainsInOrder(t, rendered,
+		"AGENT [done]",
+		"VERIFY [done]",
+		"COMMIT [done]",
+		"QA [done]",
+	)
+	assertContainsInOrder(t, rendered,
+		"BATCH 001/002 00:20",
+		"TASK",
+		"Task task_01 started as Batch 001: Build modal detail",
+		"VERIFY",
+		"Verification command passed: rtk go test ./internal/tui/",
+		"TASK",
+		"Task task_01 settled completed.",
+		"BATCH 002/002 00:00",
+		"QA",
+		"QA verdict pass for Spec 0005-tui-cockpit.",
+	)
+	for _, expected := range []string{
+		"READ-ONLY",
+		"2 Tasks total · 2 completed · 0 unresolved",
+		"Keys: Tab focus · ↑↓ move/scroll · PgUp/PgDn page · Enter Task · D show detail · End follow · q detach",
+	} {
+		if !strings.Contains(rendered, expected) {
+			t.Fatalf("expected spec Attach cockpit to contain %q, got:\n%s", expected, rendered)
+		}
+	}
+
+	pressKey(t, model, "tab")
+	pressKey(t, model, "enter")
+	rendered = viewText(model)
+	for _, expected := range []string{
+		"SPEC.TASK  task_01",
+		"Build modal detail",
+		"source: docs/specs/0005-tui-cockpit/task_01.md (read-only)",
+		"# Task 01: Build modal detail",
+		"Keys: Esc close · j/k scroll · PgUp/PgDn page · q detach",
+	} {
+		if !strings.Contains(rendered, expected) {
+			t.Fatalf("expected spec Attach modal to contain %q, got:\n%s", expected, rendered)
+		}
+	}
+	pressKey(t, model, "esc")
+	if strings.Contains(viewText(model), "SPEC.TASK  task_01") {
+		t.Fatalf("expected Esc to close the spec Attach modal, got:\n%s", viewText(model))
+	}
+	if source.run.State != store.StateClean {
+		t.Fatalf("expected spec Attach to leave Run state untouched, got %q", source.run.State)
+	}
+}
+
 func TestCockpitScrollFreezesFollowAndStatusBarNarratesStates(t *testing.T) {
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateActive}, version: 1}
 	for index := 1; index <= 60; index++ {

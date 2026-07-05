@@ -278,6 +278,21 @@ visually honest as a terminal tool.
 9. Tune responsive width/height behavior.
 10. Run focused TUI tests, then the broad Go gate.
 
+## Shipped Contract Corrections
+
+2026-07-05:
+
+- The shared left pane ships as `WORK QUEUE` for both review and spec Runs.
+  Review Runs list Review Issues; spec Runs list Tasks.
+- The normal footer ships as
+  `Keys: Tab focus · ↑↓ move/scroll · PgUp/PgDn page · Enter issue · D show detail · End follow · Ctrl-C stop`
+  for review Runs, with `Enter Task` for spec Runs. Attach replaces the mode
+  key with `q detach`; owning terminal Runs replace it with `q close`.
+- The Detail Modal footer ships as
+  `Keys: Esc close · j/k scroll · PgUp/PgDn page` plus the current mode key.
+- Small terminals collapse to `SESSION.TIMELINE` with a one-line Work Queue
+  summary and a footer hint to widen the terminal.
+
 ## Test Plan
 
 Add or update tests around:

@@ -39,6 +39,12 @@ Sizes: `cosmetic` / `small` / `spec`.
    (which prevents the false failure) and round-1 finding 24 (graceful
    stop). Size: small/medium.
 
+   **Recurred at 0005 task_07** (same `-32603` buffer error, again on a
+   docs task touching large skill files — 2 for 2 on docs tasks since the
+   cutover; manual settlement again). Findings 1–3 graduate to must-fix in
+   the next spec cycle: the parsed-result-over-exit-code classification plus
+   an upstream buffer report/mitigation.
+
 4. **RESOLVED 2026-07-05** — 0004's docs task flagged that `merge-ready`
    (ADR-0019 vocabulary) had no `CONTEXT.md` entry; the **Merge-Ready**
    glossary term was added at the Run boundary in the same commit as this
