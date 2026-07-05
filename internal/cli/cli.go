@@ -257,6 +257,12 @@ type stopRequest struct {
 	spec       string
 	headRepo   string
 	headBranch string
+	force      bool
+}
+
+type stopResult struct {
+	Run       store.Run
+	Requested bool
 }
 
 func runStopCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
@@ -284,12 +290,12 @@ func runStopCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 		_ = runStore.Close()
 	}()
 
-	run, err := stopTargetRun(ctx, req, loaded, runStore)
+	result, err := stopTargetRun(ctx, req, loaded, runStore)
 	if err != nil {
 		printStopFailure(err, stderr)
 		return exitPreflight
 	}
-	printStopSuccess(run, stdout)
+	printStopSuccess(result, stdout)
 	return exitOK
 }
 
@@ -303,6 +309,7 @@ func parseStopCommand(args []string) (stopRequest, error) {
 	fs.StringVar(&req.spec, "spec", "", "Spec slug under docs/specs/")
 	fs.StringVar(&req.headRepo, "head-repo", "", "Head Repository, owner/name")
 	fs.StringVar(&req.headBranch, "head-branch", "", "PR Head Branch")
+	fs.BoolVar(&req.force, "force", false, "Immediately stop the target Run and release its lock")
 	if err := fs.Parse(args); err != nil {
 		return req, validationError{message: err.Error()}
 	}
@@ -342,42 +349,51 @@ func parseStopCommand(args []string) (stopRequest, error) {
 	return req, nil
 }
 
-func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Loaded, runStore *store.Store) (store.Run, error) {
+func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Loaded, runStore *store.Store) (stopResult, error) {
 	if req.runID != "" {
 		current, found, err := runStore.Run(ctx, req.runID)
 		if err != nil {
-			return store.Run{}, err
+			return stopResult{}, err
 		} else if !found {
-			return store.Run{}, validationError{message: fmt.Sprintf("Run %q does not exist", req.runID)}
+			return stopResult{}, validationError{message: fmt.Sprintf("Run %q does not exist", req.runID)}
 		}
-		if current.State != store.StateActive {
-			return store.Run{}, validationError{message: fmt.Sprintf("Run %q is already %s", req.runID, current.State)}
+		if req.force {
+			run, err := runStore.CompleteRun(ctx, req.runID, store.StateStopped)
+			if err != nil {
+				return stopResult{}, err
+			}
+			return stopResult{Run: run}, nil
 		}
-		run, err := runStore.CompleteRun(ctx, req.runID, store.StateStopped)
-		if err != nil {
-			return store.Run{}, err
+		if err := runStore.RequestStop(ctx, current.ID); err != nil {
+			return stopResult{}, err
 		}
-		return run, nil
+		return stopResult{Run: current, Requested: true}, nil
 	}
 
 	specSlug := strings.TrimSpace(req.spec)
 	if specSlug != "" {
 		gitRoot := strings.TrimSpace(loaded.GitRoot)
 		if gitRoot == "" {
-			return store.Run{}, validationError{message: "stop --spec requires running inside a git repository"}
+			return stopResult{}, validationError{message: "stop --spec requires running inside a git repository"}
 		}
 		active, found, err := runStore.ActiveSpecRun(ctx, gitRoot, specSlug)
 		if err != nil {
-			return store.Run{}, err
+			return stopResult{}, err
 		}
 		if !found {
-			return store.Run{}, validationError{message: fmt.Sprintf("no Active Run exists for repository %q and Spec %q", gitRoot, specSlug)}
+			return stopResult{}, validationError{message: fmt.Sprintf("no Active Run exists for repository %q and Spec %q", gitRoot, specSlug)}
 		}
-		run, err := runStore.CompleteRun(ctx, active.ID, store.StateStopped)
-		if err != nil {
-			return store.Run{}, err
+		if req.force {
+			run, err := runStore.CompleteRun(ctx, active.ID, store.StateStopped)
+			if err != nil {
+				return stopResult{}, err
+			}
+			return stopResult{Run: run}, nil
 		}
-		return run, nil
+		if err := runStore.RequestStop(ctx, active.ID); err != nil {
+			return stopResult{}, err
+		}
+		return stopResult{Run: active, Requested: true}, nil
 	}
 
 	headRepo := strings.TrimSpace(req.headRepo)
@@ -389,11 +405,11 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 			pr = strings.TrimSpace(suggested)
 		}
 		if pr == "" {
-			return store.Run{}, validationError{message: "missing stop target; pass a Run ID, --run-id, --pr, --spec, or --head-repo with --head-branch"}
+			return stopResult{}, validationError{message: "missing stop target; pass a Run ID, --run-id, --pr, --spec, or --head-repo with --head-branch"}
 		}
 		resolved, err := resolvePullRequestForStop(ctx, loaded.GitRoot, pr)
 		if err != nil {
-			return store.Run{}, fmt.Errorf("resolve Open Pull Request %s for stop target: %w", pr, err)
+			return stopResult{}, fmt.Errorf("resolve Open Pull Request %s for stop target: %w", pr, err)
 		}
 		headRepo = resolved.HeadRepository
 		headBranch = resolved.HeadBranch
@@ -401,16 +417,22 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 
 	active, found, err := runStore.ActiveRun(ctx, headRepo, headBranch)
 	if err != nil {
-		return store.Run{}, err
+		return stopResult{}, err
 	}
 	if !found {
-		return store.Run{}, validationError{message: fmt.Sprintf("no Active Run exists for Head Repository %q and PR Head Branch %q", headRepo, headBranch)}
+		return stopResult{}, validationError{message: fmt.Sprintf("no Active Run exists for Head Repository %q and PR Head Branch %q", headRepo, headBranch)}
 	}
-	run, err := runStore.CompleteRun(ctx, active.ID, store.StateStopped)
-	if err != nil {
-		return store.Run{}, err
+	if req.force {
+		run, err := runStore.CompleteRun(ctx, active.ID, store.StateStopped)
+		if err != nil {
+			return stopResult{}, err
+		}
+		return stopResult{Run: run}, nil
 	}
-	return run, nil
+	if err := runStore.RequestStop(ctx, active.ID); err != nil {
+		return stopResult{}, err
+	}
+	return stopResult{Run: active, Requested: true}, nil
 }
 
 func defaultResolvePullRequestForStop(ctx context.Context, workDir string, pr string) (preflight.PullRequest, error) {
@@ -1589,7 +1611,7 @@ func printStopSummary(req commandRequest, preflightResult preflight.Result, stde
 }
 
 func isStopRequest(ctx context.Context, err error) bool {
-	return agent.IsStopError(err) || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) || (ctx != nil && ctx.Err() != nil)
+	return agent.IsStopError(err) || errors.Is(err, daemon.ErrStopRequested) || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) || (ctx != nil && ctx.Err() != nil)
 }
 
 func defaultInspectChangedPaths(ctx context.Context, gitRoot string) ([]preflight.ChangedPath, error) {
@@ -2211,6 +2233,7 @@ Options:
   --spec        Spec slug used to find the Active Run in the current repository
   --head-repo   Explicit Head Repository, owner/name
   --head-branch Explicit PR Head Branch
+  --force       Immediately stop a dead or runaway Run and release its lock
 `
 	case "skills":
 		return `Usage:
@@ -2280,8 +2303,30 @@ func printInitFailure(err error, stderr io.Writer) {
 	fmt.Fprintf(stderr, "  Run '%s init --help' for usage.\n", app.Name)
 }
 
-func printStopSuccess(run store.Run, stdout io.Writer) {
+func printStopSuccess(result stopResult, stdout io.Writer) {
+	run := result.Run
 	style := styleFor(stdout)
+	if result.Requested {
+		fmt.Fprintf(stdout, "%s\n\n", style.green(style.bold("Roundfix Stop Request recorded")))
+		fmt.Fprintf(stdout, "%s\n", style.cyan("Run:"))
+		fmt.Fprintf(stdout, "  ID: %s\n", run.ID)
+		fmt.Fprintf(stdout, "  State: %s\n", run.State)
+		fmt.Fprintf(stdout, "  Kind: %s\n", run.Kind)
+		if run.PRNumber != "" || run.HeadRepository != "" || run.HeadBranch != "" {
+			fmt.Fprintf(stdout, "  PR: #%s %s\n", run.PRNumber, run.HeadRepository)
+			fmt.Fprintf(stdout, "  Branch: %s\n", run.HeadBranch)
+		}
+		if run.SpecSlug != "" {
+			fmt.Fprintf(stdout, "  Spec: %s\n", run.SpecSlug)
+		}
+		fmt.Fprintln(stdout)
+		fmt.Fprintf(stdout, "%s\n", style.cyan("Next:"))
+		fmt.Fprintln(stdout, "  Stop Request recorded; the Run stops after the current Work Item settles.")
+		fmt.Fprintf(stdout, "  If the owning process is dead or runaway, run '%s stop --force %s'.\n\n", app.Name, run.ID)
+		fmt.Fprintf(stdout, "%s\n", style.cyan("No repository side effects:"))
+		fmt.Fprintln(stdout, "  Roundfix recorded the Stop Request in the Run Database only.")
+		return
+	}
 	fmt.Fprintf(stdout, "%s\n\n", style.green(style.bold("Roundfix Run stopped")))
 	fmt.Fprintf(stdout, "%s\n", style.cyan("Run:"))
 	fmt.Fprintf(stdout, "  ID: %s\n", run.ID)

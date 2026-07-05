@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"roundfix/internal/agent"
+	"roundfix/internal/daemon"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
@@ -1210,6 +1211,65 @@ func TestRunImplementStopRequestEndsStoppedWithInterruptMapping(t *testing.T) {
 		t.Fatalf("expected Stopped, got %q", run.State)
 	}
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+func TestRunImplementDatabaseStopRequestAfterTaskCommitEndsStoppedAndReleasesLock(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build the widget core"},
+		{id: "task_02", title: "Wire the widget API", needs: []string{"task_01"}},
+	})
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted, "task_02": spec.StatusCompleted},
+	}
+	committer, _, _, _ := withImplementCollaborators(t, runner)
+	committer.afterCommit = func(context.Context, daemon.CommitRequest) error {
+		return requestStopForActiveRunInGitRoot(homeDir, repoDir)
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected stopped command exit 0, got %d (stderr %q)", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "reached Stopped") {
+		t.Fatalf("expected Stopped diagnostics on stderr, got %q", stderr.String())
+	}
+	expected := "task_01 completed — Build the widget core\n" +
+		"task_02 pending — Wire the widget API\n" +
+		"Stopped: 1 completed, 0 failed, 0 skipped, 1 pending.\n"
+	if stdout.String() != expected {
+		t.Fatalf("expected Stopped report:\n%q\ngot:\n%q", expected, stdout.String())
+	}
+	if committer.calls != 1 {
+		t.Fatalf("expected only task_01 committed before stop, got %d commit(s)", committer.calls)
+	}
+	run := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
+	if run.State != store.StateStopped {
+		t.Fatalf("expected Stopped, got %q", run.State)
+	}
+	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+func requestStopForActiveRunInGitRoot(homeDir string, gitRoot string) error {
+	ctx := context.Background()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = runStore.Close()
+	}()
+	active, found, err := runStore.ActiveRunInGitRoot(ctx, gitRoot)
+	if err != nil {
+		return err
+	}
+	if !found {
+		return errors.New("no Active Run found for Stop Request")
+	}
+	return runStore.RequestStop(ctx, active.ID)
 }
 
 // implementJournaledQAEvent returns the Run's daemon.qa event from the Run

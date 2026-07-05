@@ -165,17 +165,24 @@ func (verifier *engineFakeVerifier) Verify(context.Context, VerifyRequest) error
 }
 
 type engineFakeCommitter struct {
-	calls    *[]string
-	err      error
-	messages []string
-	paths    [][]string
+	calls       *[]string
+	err         error
+	afterCommit func(context.Context, CommitRequest) error
+	messages    []string
+	paths       [][]string
 }
 
-func (committer *engineFakeCommitter) Commit(_ context.Context, req CommitRequest) error {
+func (committer *engineFakeCommitter) Commit(ctx context.Context, req CommitRequest) error {
 	*committer.calls = append(*committer.calls, "commit")
 	committer.messages = append(committer.messages, req.Message)
 	committer.paths = append(committer.paths, req.Paths)
-	return committer.err
+	if committer.err != nil {
+		return committer.err
+	}
+	if committer.afterCommit != nil {
+		return committer.afterCommit(ctx, req)
+	}
+	return nil
 }
 
 type engineFakePusher struct {
@@ -190,13 +197,17 @@ func (pusher *engineFakePusher) Push(_ context.Context, req PushRequest) error {
 }
 
 type engineFakeSource struct {
-	calls    *[]string
-	requests []reviewsource.ResolveRequest
+	calls        *[]string
+	afterResolve func(context.Context, reviewsource.ResolveRequest) error
+	requests     []reviewsource.ResolveRequest
 }
 
-func (source *engineFakeSource) ResolveIssues(_ context.Context, req reviewsource.ResolveRequest) error {
+func (source *engineFakeSource) ResolveIssues(ctx context.Context, req reviewsource.ResolveRequest) error {
 	*source.calls = append(*source.calls, "source")
 	source.requests = append(source.requests, req)
+	if source.afterResolve != nil {
+		return source.afterResolve(ctx, req)
+	}
 	return nil
 }
 
@@ -623,6 +634,102 @@ func TestResolveCycleStopBeforeBatchPublishesStopAndDoesNothing(t *testing.T) {
 	kinds := fixture.sink.kinds()
 	if len(kinds) == 0 || kinds[len(kinds)-1] != runevent.KindDaemonStatus {
 		t.Fatalf("expected daemon stop event published to the sink, got %v", kinds)
+	}
+}
+
+func TestResolveCycleStopRequestBeforeBatchPublishesStopAndDoesNothing(t *testing.T) {
+	fixture := newEngineFixture(t)
+	if err := fixture.store.RequestStop(context.Background(), fixture.run.ID); err != nil {
+		t.Fatalf("request Stop: %v", err)
+	}
+	engine := fixture.engine(t, &engineFakeRunner{calls: fixture.calls, store: fixture.store}, &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}, &engineFakeCommitter{calls: fixture.calls}, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
+
+	result, err := engine.ResolveCycle(context.Background(), fixture.plan())
+
+	if !errors.Is(err, ErrStopRequested) {
+		t.Fatalf("expected ErrStopRequested, got %v", err)
+	}
+	if len(*fixture.calls) != 0 {
+		t.Fatalf("expected no daemon actions after Stop Request, got %v", *fixture.calls)
+	}
+	if result.Remaining != fixture.plan().TotalIssues {
+		t.Fatalf("expected all issues to remain before the first Batch, got %+v", result)
+	}
+	kinds := fixture.sink.kinds()
+	if len(kinds) == 0 || kinds[len(kinds)-1] != runevent.KindDaemonStatus {
+		t.Fatalf("expected daemon stop event published to the sink, got %v", kinds)
+	}
+}
+
+func TestResolveCycleStopRequestAfterBatchSettlementHaltsBeforeNextBatch(t *testing.T) {
+	fixture := newEngineFixtureWithItems(t, []reviewsource.ReviewItem{
+		{
+			Title:                   "major: handle first",
+			File:                    "internal/first.go",
+			Line:                    10,
+			Severity:                "major",
+			Author:                  "coderabbitai[bot]",
+			Body:                    "first",
+			SourceRef:               "thread:PRRT_first,comment:PRRC_first",
+			ReviewHash:              "hash-first",
+			SourceReviewID:          "9001",
+			SourceReviewSubmittedAt: time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC),
+		},
+		{
+			Title:                   "major: handle second",
+			File:                    "internal/second.go",
+			Line:                    20,
+			Severity:                "major",
+			Author:                  "coderabbitai[bot]",
+			Body:                    "second",
+			SourceRef:               "thread:PRRT_second,comment:PRRC_second",
+			ReviewHash:              "hash-second",
+			SourceReviewID:          "9002",
+			SourceReviewSubmittedAt: time.Date(2026, 6, 10, 12, 1, 0, 0, time.UTC),
+		},
+	})
+	plan := fixture.plan()
+	plan.Batches = []rounds.Batch{
+		{Number: 1, Issues: []rounds.Issue{{Path: fixture.issuePaths[0]}}},
+		{Number: 2, Issues: []rounds.Issue{{Path: fixture.issuePaths[1]}}},
+	}
+	plan.TotalIssues = 2
+	source := &engineFakeSource{
+		calls: fixture.calls,
+		afterResolve: func(context.Context, reviewsource.ResolveRequest) error {
+			return fixture.store.RequestStop(context.Background(), fixture.run.ID)
+		},
+	}
+	engine := fixture.engine(t, &engineFakeRunner{calls: fixture.calls, store: fixture.store}, &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}, &engineFakeCommitter{calls: fixture.calls}, &engineFakePusher{calls: fixture.calls}, source)
+
+	result, err := engine.ResolveCycle(context.Background(), plan)
+
+	if !errors.Is(err, ErrStopRequested) {
+		t.Fatalf("expected ErrStopRequested, got %v", err)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>commit>source" {
+		t.Fatalf("expected first Batch to verify, commit, and resolve source before stop, got %q", got)
+	}
+	if len(result.Batches) != 1 || !result.Batches[0].Committed || result.Remaining != 1 {
+		t.Fatalf("expected first Batch settled and one issue remaining, got %+v", result)
+	}
+	first, err := rounds.ParseIssue(fixture.issuePaths[0])
+	if err != nil {
+		t.Fatalf("parse first issue: %v", err)
+	}
+	second, err := rounds.ParseIssue(fixture.issuePaths[1])
+	if err != nil {
+		t.Fatalf("parse second issue: %v", err)
+	}
+	if first.Status != rounds.StatusResolved {
+		t.Fatalf("expected first issue resolved before stop, got %q", first.Status)
+	}
+	if second.Status != rounds.StatusPending {
+		t.Fatalf("expected second issue left pending, got %q", second.Status)
+	}
+	kinds := fixture.sink.kinds()
+	if len(kinds) == 0 || kinds[len(kinds)-1] != runevent.KindDaemonStatus {
+		t.Fatalf("expected daemon stop event after first Batch settlement, got %v", kinds)
 	}
 }
 

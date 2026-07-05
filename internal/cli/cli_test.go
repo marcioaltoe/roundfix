@@ -2197,7 +2197,7 @@ func TestRunFetchRejectsDuplicateActiveRun(t *testing.T) {
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
 }
 
-func TestRunStopByRunIDMarksActiveRunStopped(t *testing.T) {
+func TestRunStopByRunIDRecordsStopRequest(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 
@@ -2234,15 +2234,16 @@ func TestRunStopByRunIDMarksActiveRunStopped(t *testing.T) {
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
 	}
-	for _, expected := range []string{"Roundfix Run stopped", active.ID, "State: Stopped", "No repository side effects"} {
+	for _, expected := range []string{active.ID, "Stop Request recorded; the Run stops after the current Work Item settles.", "--force"} {
 		if !strings.Contains(stdout.String(), expected) {
 			t.Fatalf("expected stop output to contain %q, got %q", expected, stdout.String())
 		}
 	}
-	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
+	assertStopRequested(t, homeDir, active.ID)
+	assertActiveRun(t, homeDir, "owner/project", "feature/review", active.ID)
 }
 
-func TestRunStopByPullRequestStopsMatchingActiveRun(t *testing.T) {
+func TestRunStopByPullRequestRecordsStopRequestForMatchingActiveRun(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withStopPullRequestResolver(t, preflight.PullRequest{
@@ -2286,10 +2287,14 @@ func TestRunStopByPullRequestStopsMatchingActiveRun(t *testing.T) {
 	if !strings.Contains(stdout.String(), active.ID) {
 		t.Fatalf("expected stopped run id in stdout, got %q", stdout.String())
 	}
-	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
+	if !strings.Contains(stdout.String(), "Stop Request recorded; the Run stops after the current Work Item settles.") {
+		t.Fatalf("expected Stop Request report in stdout, got %q", stdout.String())
+	}
+	assertStopRequested(t, homeDir, active.ID)
+	assertActiveRun(t, homeDir, "owner/project", "feature/review", active.ID)
 }
 
-func TestRunStopBySpecStopsMatchingActiveRun(t *testing.T) {
+func TestRunStopBySpecRecordsStopRequestForMatchingActiveRun(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 
 	ctx := context.Background()
@@ -2321,8 +2326,10 @@ func TestRunStopBySpecStopsMatchingActiveRun(t *testing.T) {
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
 	}
-	if !strings.Contains(stdout.String(), active.ID) || !strings.Contains(stdout.String(), "State: Stopped") {
-		t.Fatalf("expected stopped implement run in stdout, got %q", stdout.String())
+	if !strings.Contains(stdout.String(), active.ID) ||
+		!strings.Contains(stdout.String(), "Stop Request recorded; the Run stops after the current Work Item settles.") ||
+		!strings.Contains(stdout.String(), "--force") {
+		t.Fatalf("expected Stop Request report for implement run in stdout, got %q", stdout.String())
 	}
 	runStore, err = store.Open(ctx, homeDir)
 	if err != nil {
@@ -2333,15 +2340,22 @@ func TestRunStopBySpecStopsMatchingActiveRun(t *testing.T) {
 			t.Fatalf("close reopened store: %v", err)
 		}
 	}()
-	stopped, found, err := runStore.Run(ctx, active.ID)
+	current, found, err := runStore.Run(ctx, active.ID)
 	if err != nil || !found {
-		t.Fatalf("lookup stopped run: found=%v err=%v", found, err)
+		t.Fatalf("lookup Run: found=%v err=%v", found, err)
 	}
-	if stopped.State != store.StateStopped {
-		t.Fatalf("expected stopped state, got %q", stopped.State)
+	if current.State != store.StateActive {
+		t.Fatalf("expected Run to stay Active until the engine settles, got %q", current.State)
 	}
-	if _, err := runStore.CreateRun(ctx, request); err != nil {
-		t.Fatalf("expected stopped spec target lock released, got %v", err)
+	requested, err := runStore.StopRequested(ctx, active.ID)
+	if err != nil {
+		t.Fatalf("read Stop Request flag: %v", err)
+	}
+	if !requested {
+		t.Fatal("expected Stop Request flag recorded")
+	}
+	if _, err := runStore.CreateRun(ctx, request); err == nil {
+		t.Fatal("expected Stop Request to keep the Active Run lock until engine completion")
 	}
 }
 
@@ -2450,8 +2464,9 @@ func TestRunStopRejectsAlreadyTerminalRun(t *testing.T) {
 	if stdout.Len() != 0 {
 		t.Fatalf("expected no stdout, got %q", stdout.String())
 	}
-	if !strings.Contains(stderr.String(), "already Clean") {
-		t.Fatalf("expected already terminal message, got %q", stderr.String())
+	if !strings.Contains(stderr.String(), "cannot record Stop Request for terminal Run") ||
+		!strings.Contains(stderr.String(), "Clean") {
+		t.Fatalf("expected named terminal Stop Request refusal, got %q", stderr.String())
 	}
 }
 
@@ -2904,6 +2919,46 @@ func assertNoActiveRun(t *testing.T, homeDir string, headRepository string, head
 	}
 }
 
+func assertActiveRun(t *testing.T, homeDir string, headRepository string, headBranch string, runID string) {
+	t.Helper()
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open store for active run: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close store for active run: %v", err)
+		}
+	}()
+	active, found, err := runStore.ActiveRun(context.Background(), headRepository, headBranch)
+	if err != nil {
+		t.Fatalf("lookup active run: %v", err)
+	}
+	if !found || active.ID != runID {
+		t.Fatalf("expected Active Run %s, found=%v active=%#v", runID, found, active)
+	}
+}
+
+func assertStopRequested(t *testing.T, homeDir string, runID string) {
+	t.Helper()
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open store for Stop Request flag: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close store for Stop Request flag: %v", err)
+		}
+	}()
+	requested, err := runStore.StopRequested(context.Background(), runID)
+	if err != nil {
+		t.Fatalf("read Stop Request flag: %v", err)
+	}
+	if !requested {
+		t.Fatalf("expected Stop Request recorded for Run %s", runID)
+	}
+}
+
 func assertAgentLogContains(t *testing.T, repoDir string, expected string) {
 	t.Helper()
 	matches, err := filepath.Glob(filepath.Join(repoDir, ".roundfix", "runs", "*", "agent", "batch-001.log"))
@@ -2977,17 +3032,24 @@ func (verifier *fakeVerifier) Verify(_ context.Context, req daemon.VerifyRequest
 }
 
 type fakeCommitter struct {
-	err      error
-	calls    int
-	workDirs []string
-	messages []string
+	err         error
+	afterCommit func(context.Context, daemon.CommitRequest) error
+	calls       int
+	workDirs    []string
+	messages    []string
 }
 
-func (committer *fakeCommitter) Commit(_ context.Context, req daemon.CommitRequest) error {
+func (committer *fakeCommitter) Commit(ctx context.Context, req daemon.CommitRequest) error {
 	committer.calls++
 	committer.workDirs = append(committer.workDirs, req.WorkDir)
 	committer.messages = append(committer.messages, req.Message)
-	return committer.err
+	if committer.err != nil {
+		return committer.err
+	}
+	if committer.afterCommit != nil {
+		return committer.afterCommit(ctx, req)
+	}
+	return nil
 }
 
 type fakeSourceResolver struct {

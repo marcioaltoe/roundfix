@@ -850,6 +850,94 @@ func TestTaskCycleStopBeforeTaskPublishesStopAndDoesNothing(t *testing.T) {
 	}
 }
 
+func TestTaskCycleStopRequestAfterTaskSettlementHaltsBeforeNextTask(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", title: "Build the core"},
+		{id: "task_02", title: "Wire the shell"},
+	})
+	fixture.worktree.snapshots = [][]string{nil, {"src/core.go"}, nil, {"src/shell.go"}}
+	runner := &taskFakeRunner{
+		calls:   fixture.calls,
+		gitRoot: fixture.gitRoot,
+		statusByTask: map[string]spec.Status{
+			"task_01": spec.StatusCompleted,
+			"task_02": spec.StatusCompleted,
+		},
+	}
+	committer := &engineFakeCommitter{
+		calls: fixture.calls,
+		afterCommit: func(context.Context, CommitRequest) error {
+			return fixture.store.RequestStop(context.Background(), fixture.run.ID)
+		},
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if !errors.Is(err, ErrStopRequested) {
+		t.Fatalf("expected ErrStopRequested, got %v", err)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>commit" {
+		t.Fatalf("expected first Task to verify and commit before stop, got %q", got)
+	}
+	if result.Completed != 1 || result.Failed != 0 || result.Skipped != 0 {
+		t.Fatalf("expected one settled completed Task before stop, got %+v", result)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusCompleted) {
+		t.Fatalf("expected task_01 completed before stop, got %q", got)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_02"); got != string(spec.StatusPending) {
+		t.Fatalf("expected task_02 left pending, got %q", got)
+	}
+	if len(committer.messages) != 1 || !strings.HasPrefix(committer.messages[0], "feat: build the core") {
+		t.Fatalf("expected exactly the completed Task committed, got %v", committer.messages)
+	}
+	kinds := fixture.sink.kinds()
+	if len(kinds) == 0 || kinds[len(kinds)-1] != runevent.KindDaemonStatus {
+		t.Fatalf("expected daemon stop event after Task settlement, got %v", kinds)
+	}
+}
+
+func TestTaskCycleStopRequestBeforeQAStepSkipsQA(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
+	fixture.worktree.snapshots = [][]string{nil, {"src/feature.go"}, {"src/feature.go"}, {"src/feature.go", qaReportRelPathForTest()}}
+	runner := &taskFakeRunner{
+		calls:        fixture.calls,
+		gitRoot:      fixture.gitRoot,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		qaReport:     qaReportForTest(spec.VerdictPass),
+	}
+	committer := &engineFakeCommitter{
+		calls: fixture.calls,
+		afterCommit: func(context.Context, CommitRequest) error {
+			return fixture.store.RequestStop(context.Background(), fixture.run.ID)
+		},
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.qaPlan())
+
+	if !errors.Is(err, ErrStopRequested) {
+		t.Fatalf("expected ErrStopRequested, got %v", err)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>commit" {
+		t.Fatalf("expected Task settlement only, with QA skipped, got %q", got)
+	}
+	if result.Completed != 1 || result.Failed != 0 || result.Skipped != 0 || result.QAVerdict != "" || result.QAReportPath != "" {
+		t.Fatalf("expected completed Task and no QA verdict, got %+v", result)
+	}
+	if len(runner.qaPrompts) != 0 {
+		t.Fatalf("expected Stop Request to skip QA, got %d QA prompt(s)", len(runner.qaPrompts))
+	}
+	if events := taskEventsOfKind(fixture.sink, runevent.KindDaemonQA); len(events) != 0 {
+		t.Fatalf("expected no daemon.qa event when Stop Request precedes QA, got %+v", events)
+	}
+	kinds := fixture.sink.kinds()
+	if len(kinds) == 0 || kinds[len(kinds)-1] != runevent.KindDaemonStatus {
+		t.Fatalf("expected daemon stop event before QA, got %v", kinds)
+	}
+}
+
 func TestTaskCycleStopDuringAgentPreservesTaskAndHalts(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{
 		{id: "task_01"},

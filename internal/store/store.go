@@ -94,6 +94,8 @@ type ActiveRunError struct {
 	Existing Run
 }
 
+var ErrTerminalRunStopRequest = errors.New("cannot record Stop Request for terminal Run")
+
 func (err ActiveRunError) Error() string {
 	if err.Existing.Kind == KindImplement {
 		return fmt.Sprintf("Active Run already exists for repository %q and Spec %q; existing run_id=%s state=%s; stop it with: roundfix stop %s", err.Existing.GitRoot, err.Existing.SpecSlug, err.Existing.ID, err.Existing.State, err.Existing.ID)
@@ -305,6 +307,68 @@ WHERE id = ?`,
 	return run, nil
 }
 
+func (store *Store) RequestStop(ctx context.Context, runID string) error {
+	runID = strings.TrimSpace(runID)
+	if runID == "" {
+		return errors.New("Run ID is required")
+	}
+	now := store.now()
+
+	tx, err := store.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin Stop Request: %w", err)
+	}
+	defer rollbackUnlessCommitted(tx)
+
+	var state string
+	if err := tx.QueryRowContext(ctx, `SELECT state FROM runs WHERE id = ?`, runID).Scan(&state); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("request Stop: Run %q does not exist", runID)
+		}
+		return fmt.Errorf("read Run %q state before Stop Request: %w", runID, err)
+	}
+	if IsTerminalState(state) {
+		return fmt.Errorf("%w %q: state %s", ErrTerminalRunStopRequest, runID, state)
+	}
+	result, err := tx.ExecContext(ctx, `
+UPDATE runs
+SET stop_requested_at = COALESCE(stop_requested_at, ?), updated_at = ?
+WHERE id = ?`,
+		formatTime(now),
+		formatTime(now),
+		runID,
+	)
+	if err != nil {
+		return fmt.Errorf("record Stop Request for Run %q: %w", runID, err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("read Stop Request result: %w", err)
+	}
+	if affected == 0 {
+		return fmt.Errorf("request Stop: Run %q does not exist", runID)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit Stop Request: %w", err)
+	}
+	return nil
+}
+
+func (store *Store) StopRequested(ctx context.Context, runID string) (bool, error) {
+	runID = strings.TrimSpace(runID)
+	if runID == "" {
+		return false, errors.New("Run ID is required")
+	}
+	var requestedAt sql.NullString
+	if err := store.db.QueryRowContext(ctx, `SELECT stop_requested_at FROM runs WHERE id = ?`, runID).Scan(&requestedAt); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, fmt.Errorf("read Stop Request flag: Run %q does not exist", runID)
+		}
+		return false, fmt.Errorf("read Stop Request flag for Run %q: %w", runID, err)
+	}
+	return requestedAt.Valid && strings.TrimSpace(requestedAt.String) != "", nil
+}
+
 // UpdateRunState records an intermediate, non-terminal state for an Active
 // Run. Terminal outcomes must go through CompleteRun.
 func (store *Store) UpdateRunState(ctx context.Context, runID string, state string) error {
@@ -461,7 +525,7 @@ func IsTerminalState(state string) bool {
 	}
 }
 
-const schemaVersion = 4
+const schemaVersion = 5
 
 // activeRunLocksColumns is the schema v4 lock-table shape (ADR 0016): one
 // Active Run per work target, keyed by (target_kind, target_key).
@@ -488,7 +552,9 @@ func (store *Store) migrate(ctx context.Context) error {
 	case 0:
 		return store.applyMigration(ctx, createSchemaStatements())
 	case 3:
-		return store.applyMigration(ctx, migrateV3ToV4Statements())
+		return store.applyMigration(ctx, append(migrateV3ToV4Statements(), migrateV4ToV5Statements()...))
+	case 4:
+		return store.applyMigration(ctx, migrateV4ToV5Statements())
 	default:
 		return fmt.Errorf("migrate Run Database: schema version %d is not supported", version)
 	}
@@ -511,7 +577,7 @@ func (store *Store) applyMigration(ctx context.Context, statements []string) err
 	return nil
 }
 
-// createSchemaStatements creates schema v4 directly on a fresh Run Database.
+// createSchemaStatements creates schema v5 directly on a fresh Run Database.
 // spec_slug and the PR-shaped columns use the empty string for "not set";
 // which fields a Run must carry is enforced by Kind in CreateRun.
 func createSchemaStatements() []string {
@@ -529,6 +595,7 @@ func createSchemaStatements() []string {
 			head_sha TEXT NOT NULL DEFAULT '',
 			artifact_dir TEXT NOT NULL DEFAULT '',
 			spec_slug TEXT NOT NULL DEFAULT '',
+			stop_requested_at TEXT,
 			created_at TEXT NOT NULL,
 			updated_at TEXT NOT NULL,
 			completed_at TEXT NOT NULL DEFAULT ''
@@ -555,7 +622,7 @@ func createSchemaStatements() []string {
 			PRIMARY KEY (run_id, cursor),
 			FOREIGN KEY (run_id) REFERENCES runs(id) ON DELETE CASCADE
 		)`,
-		`PRAGMA user_version = 4`,
+		`PRAGMA user_version = 5`,
 	}
 }
 
@@ -572,6 +639,13 @@ func migrateV3ToV4Statements() []string {
 		`DROP TABLE active_run_locks`,
 		`ALTER TABLE active_run_locks_v4 RENAME TO active_run_locks`,
 		`PRAGMA user_version = 4`,
+	}
+}
+
+func migrateV4ToV5Statements() []string {
+	return []string{
+		`ALTER TABLE runs ADD COLUMN stop_requested_at TEXT`,
+		`PRAGMA user_version = 5`,
 	}
 }
 

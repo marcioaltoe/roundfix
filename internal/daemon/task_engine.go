@@ -88,6 +88,9 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 			}
 			return result, fmt.Errorf("stop run %q before Task %s: %w", plan.RunID, task.ID, err)
 		}
+		if err := engine.stopIfRequested(ctx, plan.RunID, ordinal); err != nil {
+			return result, fmt.Errorf("stop run %q before Task %s: %w", plan.RunID, task.ID, err)
+		}
 		if unmet := unmetNeeds(task, statuses); len(unmet) > 0 {
 			result.Skipped++
 			reason := fmt.Sprintf("needs not completed: %s", strings.Join(unmet, ", "))
@@ -111,12 +114,18 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 		} else {
 			result.Failed++
 		}
+		if err := engine.stopIfRequested(ctx, plan.RunID, ordinal); err != nil {
+			return result, fmt.Errorf("stop run %q after Task %s settlement: %w", plan.RunID, task.ID, err)
+		}
 	}
 	// QA step (ADR 0015): the qa-gate runs only when plan.QA is set and
 	// every Task in the Task Graph — including Tasks completed by earlier
 	// Runs — ended completed; any failed, skipped, or pending Task leaves
 	// the outcome to the Task results alone.
 	if plan.QA && allTasksCompleted(plan.Tasks, statuses) {
+		if err := engine.stopIfRequested(ctx, plan.RunID, ordinal+1); err != nil {
+			return result, fmt.Errorf("stop run %q before the QA step: %w", plan.RunID, err)
+		}
 		ordinal++
 		verdict, reportPath, err := engine.runQAGate(ctx, plan, ordinal)
 		if err != nil {
