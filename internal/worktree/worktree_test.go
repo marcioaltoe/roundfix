@@ -19,6 +19,7 @@ func TestCreateUsesNamedRunBranchUnderRoundfixHomeAndCopiesFiles(t *testing.T) {
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	t.Setenv("HOME", homeDir)
+	location := filepath.Join(homeDir, "configured-worktrees")
 	repoDir := initWorktreeRepo(t)
 	mustWriteWorktreeTest(t, filepath.Join(repoDir, ".gitignore"), ".env\n")
 	mustWriteWorktreeTest(t, filepath.Join(repoDir, "tracked.txt"), "base\n")
@@ -30,7 +31,13 @@ func TestCreateUsesNamedRunBranchUnderRoundfixHomeAndCopiesFiles(t *testing.T) {
 	var ref Ref
 	stderr := captureStderr(t, func() {
 		var err error
-		ref, err = Create(ctx, repoDir, "task01", headSHA, []string{".env", "missing.env"})
+		ref, err = Create(ctx, CreateOptions{
+			UserRoot: repoDir,
+			Location: location,
+			RunID:    "task01",
+			HeadSHA:  headSHA,
+			CopyList: []string{".env", "missing.env"},
+		})
 		if err != nil {
 			t.Fatalf("create Run Worktree: %v", err)
 		}
@@ -48,8 +55,12 @@ func TestCreateUsesNamedRunBranchUnderRoundfixHomeAndCopiesFiles(t *testing.T) {
 	if filepath.Base(ref.Path) != "task01" {
 		t.Fatalf("expected path to end in Run ID, got %q", ref.Path)
 	}
-	if filepath.Dir(filepath.Dir(ref.Path)) != filepath.Join(homeDir, ".roundfix", "worktrees") {
-		t.Fatalf("expected path under Roundfix Home worktrees, got %q", ref.Path)
+	if filepath.Dir(filepath.Dir(ref.Path)) != location {
+		t.Fatalf("expected path under configured worktree location %q, got %q", location, ref.Path)
+	}
+	repoSlug := filepath.Base(filepath.Dir(ref.Path))
+	if !strings.HasPrefix(repoSlug, filepath.Base(repoDir)+"-") || !hasLowerHexSuffix(repoSlug, 8) {
+		t.Fatalf("expected readable repo slug with 8 hex suffix, got %q", repoSlug)
 	}
 	if got := strings.TrimSpace(gitWorktreeTest(t, ref.Path, "branch", "--show-current")); got != ref.Branch {
 		t.Fatalf("expected worktree branch %q, got %q", ref.Branch, got)
@@ -65,6 +76,40 @@ func TestCreateUsesNamedRunBranchUnderRoundfixHomeAndCopiesFiles(t *testing.T) {
 	}
 	if status := gitStatus(t, ref.Path); status != "" {
 		t.Fatalf("expected clean Run Worktree, got %q", status)
+	}
+}
+
+func TestDeriveRootPathUsesReadableUniqueRepoSlug(t *testing.T) {
+	location := t.TempDir()
+	parentOne := t.TempDir()
+	parentTwo := t.TempDir()
+	repoOne := filepath.Join(parentOne, "same-name")
+	repoTwo := filepath.Join(parentTwo, "same-name")
+	mustMkdirWorktreeTest(t, repoOne)
+	mustMkdirWorktreeTest(t, repoTwo)
+
+	pathOne, err := deriveRootPath(location, repoOne, "run-one")
+	if err != nil {
+		t.Fatalf("derive first path: %v", err)
+	}
+	pathTwo, err := deriveRootPath(location, repoTwo, "run-one")
+	if err != nil {
+		t.Fatalf("derive second path: %v", err)
+	}
+
+	slugOne := filepath.Base(filepath.Dir(pathOne))
+	slugTwo := filepath.Base(filepath.Dir(pathTwo))
+	if !strings.HasPrefix(slugOne, "same-name-") || !hasLowerHexSuffix(slugOne, 8) {
+		t.Fatalf("expected first readable repo slug with 8 hex suffix, got %q", slugOne)
+	}
+	if !strings.HasPrefix(slugTwo, "same-name-") || !hasLowerHexSuffix(slugTwo, 8) {
+		t.Fatalf("expected second readable repo slug with 8 hex suffix, got %q", slugTwo)
+	}
+	if slugOne == slugTwo {
+		t.Fatalf("expected same-named repos at different paths to get unique slugs, both got %q", slugOne)
+	}
+	if filepath.Dir(filepath.Dir(pathOne)) != location || filepath.Base(pathOne) != "run-one" {
+		t.Fatalf("expected path under location/repo-slug/run-id, got %q", pathOne)
 	}
 }
 
@@ -260,11 +305,12 @@ func TestPruneTerminalReapsCrashedTerminalCleanRunOnly(t *testing.T) {
 	gitWorktreeTest(t, repoDir, "add", "tracked.txt")
 	gitWorktreeTest(t, repoDir, "commit", "-m", "initial")
 	headSHA := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", "HEAD"))
-	cleanRef, err := Create(ctx, repoDir, "terminal-clean", headSHA, nil)
+	location := filepath.Join(homeDir, ".roundfix", "worktrees")
+	cleanRef, err := Create(ctx, CreateOptions{UserRoot: repoDir, Location: location, RunID: "terminal-clean", HeadSHA: headSHA})
 	if err != nil {
 		t.Fatalf("create terminal clean ref: %v", err)
 	}
-	keptRef, err := Create(ctx, repoDir, "kept", headSHA, nil)
+	keptRef, err := Create(ctx, CreateOptions{UserRoot: repoDir, Location: location, RunID: "kept", HeadSHA: headSHA})
 	if err != nil {
 		t.Fatalf("create kept ref: %v", err)
 	}
@@ -272,7 +318,7 @@ func TestPruneTerminalReapsCrashedTerminalCleanRunOnly(t *testing.T) {
 		t.Fatalf("simulate crashed worktree removal: %v", err)
 	}
 
-	err = PruneTerminal(ctx, repoDir, func(runID string) bool {
+	err = PruneTerminal(ctx, repoDir, location, func(runID string) bool {
 		return runID == "terminal-clean"
 	})
 	if err != nil {
@@ -307,7 +353,8 @@ func newIntegrationFixture(t *testing.T, runID string) integrationFixture {
 	gitWorktreeTest(t, repoDir, "add", "shared.txt", "run.txt", "user.txt")
 	gitWorktreeTest(t, repoDir, "commit", "-m", "initial")
 	headSHA := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", "HEAD"))
-	ref, err := Create(ctx, repoDir, runID, headSHA, nil)
+	location := filepath.Join(homeDir, ".roundfix", "worktrees")
+	ref, err := Create(ctx, CreateOptions{UserRoot: repoDir, Location: location, RunID: runID, HeadSHA: headSHA})
 	if err != nil {
 		t.Fatalf("create Run Worktree: %v", err)
 	}
@@ -423,6 +470,13 @@ func mustWriteWorktreeTest(t *testing.T, path string, content string) {
 	}
 }
 
+func mustMkdirWorktreeTest(t *testing.T, path string) {
+	t.Helper()
+	if err := os.MkdirAll(path, 0o755); err != nil {
+		t.Fatalf("mkdir %s: %v", path, err)
+	}
+}
+
 func mustReadWorktreeTest(t *testing.T, path string) string {
 	t.Helper()
 	content, err := os.ReadFile(path)
@@ -430,4 +484,17 @@ func mustReadWorktreeTest(t *testing.T, path string) string {
 		t.Fatalf("read %s: %v", path, err)
 	}
 	return string(content)
+}
+
+func hasLowerHexSuffix(value string, length int) bool {
+	if len(value) < length {
+		return false
+	}
+	suffix := value[len(value)-length:]
+	for _, char := range suffix {
+		if !((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f')) {
+			return false
+		}
+	}
+	return true
 }

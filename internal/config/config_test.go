@@ -12,6 +12,8 @@ import (
 func TestLoadAppliesConfigPrecedence(t *testing.T) {
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
+	userWorktreeLocation := filepath.Join(homeDir, "configured-user-worktrees")
+	projectWorktreeLocation := filepath.Join(homeDir, "configured-project-worktrees")
 	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
 	mustMkdir(t, filepath.Join(workDir, ".git"))
 	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
@@ -25,6 +27,8 @@ watch:
 implement:
   auto_push: true
 worktree:
+  concurrency: 4
+  location: `+userWorktreeLocation+`
   copy:
     - .env.local
     - certs/dev.pem
@@ -39,6 +43,8 @@ watch:
 implement:
   auto_push: false
 worktree:
+  concurrency: 1
+  location: `+projectWorktreeLocation+`
   copy:
     - project.env
 budget:
@@ -71,14 +77,95 @@ budget:
 	if len(loaded.Config.Worktree.Copy) != 1 || loaded.Config.Worktree.Copy[0] != "project.env" {
 		t.Fatalf("expected project worktree.copy to override user list, got %#v", loaded.Config.Worktree.Copy)
 	}
+	if loaded.Config.Worktree.Concurrency != 1 {
+		t.Fatalf("expected project worktree.concurrency to override user config, got %d", loaded.Config.Worktree.Concurrency)
+	}
+	if loaded.Config.Worktree.Location != projectWorktreeLocation {
+		t.Fatalf("expected project worktree.location to override user config, got %q", loaded.Config.Worktree.Location)
+	}
 	if loaded.Config.Budget.MaxRunDuration != 3*time.Hour {
 		t.Fatalf("expected project max run duration, got %s", loaded.Config.Budget.MaxRunDuration)
 	}
 	if loaded.Config.Resolve.BatchSize != 2 {
 		t.Fatalf("expected user batch size, got %d", loaded.Config.Resolve.BatchSize)
 	}
-	if loaded.Config.Resolve.Concurrent != 1 {
-		t.Fatalf("expected built-in concurrent default, got %d", loaded.Config.Resolve.Concurrent)
+}
+
+func TestLoadAppliesWorktreeConfigHierarchy(t *testing.T) {
+	tests := []struct {
+		name            string
+		userConfig      string
+		projectConfig   string
+		wantConcurrency int
+		wantLocation    func(homeDir, workDir string) string
+	}{
+		{
+			name:            "builtin only",
+			wantConcurrency: 2,
+			wantLocation: func(homeDir, workDir string) string {
+				return filepath.Join(homeDir, ".roundfix", "worktrees")
+			},
+		},
+		{
+			name: "user override",
+			userConfig: `
+worktree:
+  concurrency: 4
+  location: __USER_LOCATION__
+`,
+			wantConcurrency: 4,
+			wantLocation: func(homeDir, workDir string) string {
+				return filepath.Join(homeDir, "user-worktrees")
+			},
+		},
+		{
+			name: "project override",
+			userConfig: `
+worktree:
+  concurrency: 4
+  location: __USER_LOCATION__
+`,
+			projectConfig: `
+worktree:
+  concurrency: 1
+  location: __PROJECT_LOCATION__
+`,
+			wantConcurrency: 1,
+			wantLocation: func(homeDir, workDir string) string {
+				return filepath.Join(homeDir, "project-worktrees")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir := t.TempDir()
+			workDir := t.TempDir()
+			userLocation := filepath.Join(homeDir, "user-worktrees")
+			projectLocation := filepath.Join(homeDir, "project-worktrees")
+			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+			mustMkdir(t, filepath.Join(workDir, ".git"))
+			if strings.TrimSpace(tt.userConfig) != "" {
+				content := strings.ReplaceAll(tt.userConfig, "__USER_LOCATION__", userLocation)
+				mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), content)
+			}
+			if strings.TrimSpace(tt.projectConfig) != "" {
+				content := strings.ReplaceAll(tt.projectConfig, "__PROJECT_LOCATION__", projectLocation)
+				mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), content)
+			}
+
+			loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+			if err != nil {
+				t.Fatalf("expected config to load, got %v", err)
+			}
+
+			if loaded.Config.Worktree.Concurrency != tt.wantConcurrency {
+				t.Fatalf("expected worktree.concurrency %d, got %d", tt.wantConcurrency, loaded.Config.Worktree.Concurrency)
+			}
+			if want := tt.wantLocation(homeDir, workDir); loaded.Config.Worktree.Location != want {
+				t.Fatalf("expected worktree.location %q, got %q", want, loaded.Config.Worktree.Location)
+			}
+		})
 	}
 }
 
@@ -135,6 +222,30 @@ worktree:
 `,
 			contains: "worktree.copy",
 		},
+		{
+			name: "invalid worktree concurrency",
+			config: `
+worktree:
+  concurrency: 0
+`,
+			contains: "worktree.concurrency must be greater than 0",
+		},
+		{
+			name: "relative worktree location",
+			config: `
+worktree:
+  location: relative-worktrees
+`,
+			contains: "worktree.location must be absolute after ~ expansion",
+		},
+		{
+			name: "deprecated resolve concurrent",
+			config: `
+resolve:
+  concurrent: 2
+`,
+			contains: "resolve.concurrent has been removed; use worktree.concurrency instead",
+		},
 	}
 
 	for _, tt := range tests {
@@ -154,6 +265,46 @@ worktree:
 				t.Fatalf("expected error to contain %q, got %q", tt.contains, err.Error())
 			}
 		})
+	}
+}
+
+func TestLoadRejectsWorktreeLocationInsideRepository(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
+worktree:
+  location: `+filepath.Join(workDir, ".roundfix", "worktrees")+`
+`)
+
+	_, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+
+	if err == nil {
+		t.Fatal("expected in-repository worktree.location to fail")
+	}
+	if !strings.Contains(err.Error(), "worktree.location must not be inside the repository tree") {
+		t.Fatalf("expected in-repository location error, got %q", err.Error())
+	}
+}
+
+func TestLoadExpandsWorktreeLocationHome(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
+worktree:
+  location: ~/roundfix-worktrees
+`)
+
+	loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+
+	if err != nil {
+		t.Fatalf("expected home-expanded worktree.location to load, got %v", err)
+	}
+	if want := filepath.Join(homeDir, "roundfix-worktrees"); loaded.Config.Worktree.Location != want {
+		t.Fatalf("expected worktree.location %q, got %q", want, loaded.Config.Worktree.Location)
 	}
 }
 
@@ -177,10 +328,14 @@ func TestInitCreatesUserConfig(t *testing.T) {
 	content := mustRead(t, expectedPath)
 	if !strings.Contains(content, "agent: codex") || !strings.Contains(content, "agent_full_access: false") ||
 		!strings.Contains(content, `artifact_dir: ""`) || !strings.Contains(content, "Roundfix Home artifacts/<repo-id>") ||
-		!strings.Contains(content, "worktree:") || !strings.Contains(content, "copy: []") ||
+		!strings.Contains(content, "worktree:") || !strings.Contains(content, `location: "~/.roundfix/worktrees"`) ||
+		!strings.Contains(content, "concurrency: 2") || !strings.Contains(content, "copy: []") ||
 		!strings.Contains(content, "implement:") || !strings.Contains(content, "auto_push: false") ||
 		!strings.Contains(content, "max_run_duration: 2h") {
 		t.Fatalf("expected default config content, got %s", content)
+	}
+	if strings.Contains(content, "resolve.concurrent") || strings.Contains(content, "  concurrent:") {
+		t.Fatalf("expected generated config to omit resolve.concurrent, got %s", content)
 	}
 	if _, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir}); err != nil {
 		t.Fatalf("expected generated User Config to load, got %v", err)

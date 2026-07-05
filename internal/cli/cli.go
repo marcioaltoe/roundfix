@@ -1626,7 +1626,13 @@ func createOperationalRun(ctx context.Context, runStore *store.Store, kind strin
 }
 
 func createReviewRunWorktree(ctx context.Context, runStore *store.Store, run store.Run, preflightResult preflight.Result, loaded roundconfig.Loaded) (store.Run, runworktree.Ref, error) {
-	ref, err := createRunWorktree(ctx, preflightResult.Git.Root, run.ID, preflightResult.Git.HEAD, loaded.Config.Worktree.Copy)
+	ref, err := createRunWorktree(ctx, runworktree.CreateOptions{
+		UserRoot: preflightResult.Git.Root,
+		Location: loaded.Config.Worktree.Location,
+		RunID:    run.ID,
+		HeadSHA:  preflightResult.Git.HEAD,
+		CopyList: loaded.Config.Worktree.Copy,
+	})
 	if err != nil {
 		return run, ref, err
 	}

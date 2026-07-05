@@ -17,15 +17,17 @@ import (
 )
 
 const (
-	userConfigRelPath    = ".roundfix/config.yml"
-	projectConfigName    = ".roundfixrc.yml"
-	defaultReviewSource  = "coderabbit"
-	defaultAgent         = "codex"
-	defaultVerification  = "make verify"
-	defaultPollInterval  = 30 * time.Second
-	defaultReviewTimeout = 30 * time.Minute
-	defaultQuietPeriod   = 30 * time.Second
-	defaultRunDuration   = 2 * time.Hour
+	userConfigRelPath          = ".roundfix/config.yml"
+	projectConfigName          = ".roundfixrc.yml"
+	defaultReviewSource        = "coderabbit"
+	defaultAgent               = "codex"
+	defaultVerification        = "make verify"
+	defaultPollInterval        = 30 * time.Second
+	defaultReviewTimeout       = 30 * time.Minute
+	defaultQuietPeriod         = 30 * time.Second
+	defaultRunDuration         = 2 * time.Hour
+	defaultWorktreeLocation    = "~/.roundfix/worktrees"
+	defaultWorktreeConcurrency = 2
 )
 
 const (
@@ -73,7 +75,9 @@ type Implement struct {
 }
 
 type Worktree struct {
-	Copy []string
+	Concurrency int
+	Location    string
+	Copy        []string
 }
 
 type Budget struct {
@@ -82,8 +86,7 @@ type Budget struct {
 }
 
 type Resolve struct {
-	BatchSize  int
-	Concurrent int
+	BatchSize int
 }
 
 type Loaded struct {
@@ -185,7 +188,9 @@ func (value *implementAutoPushValue) UnmarshalYAML(node *yaml.Node) error {
 }
 
 type worktreeOverlay struct {
-	Copy *[]string `yaml:"copy"`
+	Concurrency *int      `yaml:"concurrency"`
+	Location    *string   `yaml:"location"`
+	Copy        *[]string `yaml:"copy"`
 }
 
 type budgetOverlay struct {
@@ -194,8 +199,29 @@ type budgetOverlay struct {
 }
 
 type resolveOverlay struct {
-	BatchSize  *int `yaml:"batch_size"`
-	Concurrent *int `yaml:"concurrent"`
+	BatchSize *int `yaml:"batch_size"`
+}
+
+func (overlay *resolveOverlay) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind == yaml.MappingNode {
+		for index := 0; index < len(node.Content); index += 2 {
+			key := node.Content[index].Value
+			switch key {
+			case "batch_size":
+			case "concurrent":
+				return errors.New("resolve.concurrent has been removed; use worktree.concurrency instead")
+			default:
+				return fmt.Errorf("resolve.%s is not a supported config key", key)
+			}
+		}
+	}
+	type rawResolveOverlay resolveOverlay
+	var raw rawResolveOverlay
+	if err := node.Decode(&raw); err != nil {
+		return err
+	}
+	*overlay = resolveOverlay(raw)
+	return nil
 }
 
 func Builtin() Config {
@@ -220,13 +246,16 @@ func Builtin() Config {
 		Implement: Implement{
 			AutoPush: false,
 		},
+		Worktree: Worktree{
+			Concurrency: defaultWorktreeConcurrency,
+			Location:    defaultWorktreeLocation,
+		},
 		Budget: Budget{
 			Enabled:        true,
 			MaxRunDuration: defaultRunDuration,
 		},
 		Resolve: Resolve{
-			BatchSize:  3,
-			Concurrent: 1,
+			BatchSize: 3,
 		},
 	}
 }
@@ -261,6 +290,11 @@ func Load(opts LoadOptions) (Loaded, error) {
 	if err := Validate(loaded.Config); err != nil {
 		return Loaded{}, err
 	}
+	worktreeLocation, err := ResolveWorktreeLocation(loaded.Config.Worktree.Location, loaded.GitRoot, loaded.HomeDir)
+	if err != nil {
+		return Loaded{}, err
+	}
+	loaded.Config.Worktree.Location = worktreeLocation
 	return loaded, nil
 }
 
@@ -317,6 +351,10 @@ defaults:
   auto_commit: %t
 
 worktree:
+  # Parent directory; Roundfix always appends <repo-slug>/<run-id>.
+  location: %q
+  # Maximum concurrent Task Worktrees for spec Runs; 1 keeps sequential behavior.
+  concurrency: %d
   # Repository-relative untracked files copied into each Run Worktree.
   copy: []
 
@@ -346,12 +384,13 @@ budget:
 
 resolve:
   batch_size: %d
-  concurrent: %d
 `,
 		config.Defaults.Agent,
 		config.Defaults.AgentFullAccess,
 		config.Defaults.Verification,
 		config.Defaults.AutoCommit,
+		config.Worktree.Location,
+		config.Worktree.Concurrency,
 		config.ReviewSource.Name,
 		config.ReviewSource.IncludeNitpicks,
 		config.Watch.UntilClean,
@@ -364,7 +403,6 @@ resolve:
 		config.Budget.Enabled,
 		formatConfigDuration(config.Budget.MaxRunDuration),
 		config.Resolve.BatchSize,
-		config.Resolve.Concurrent,
 	)
 }
 
@@ -396,8 +434,11 @@ func Validate(config Config) error {
 	if config.Resolve.BatchSize < 1 {
 		return errors.New("resolve.batch_size must be greater than 0")
 	}
-	if config.Resolve.Concurrent < 1 {
-		return errors.New("resolve.concurrent must be greater than 0")
+	if config.Worktree.Concurrency < 1 {
+		return errors.New("worktree.concurrency must be greater than 0")
+	}
+	if strings.TrimSpace(config.Worktree.Location) == "" {
+		return errors.New("worktree.location must not be empty")
 	}
 	for _, path := range config.Worktree.Copy {
 		if err := validateWorktreeCopyPath(path); err != nil {
@@ -522,6 +563,24 @@ func ResolveArtifactDirectory(artifactDir string, gitRoot string, homeDir string
 	return filepath.Join(gitRoot, expanded), nil
 }
 
+func ResolveWorktreeLocation(location string, gitRoot string, homeDir string) (string, error) {
+	expanded, err := expandHomeForKey("worktree.location", strings.TrimSpace(location), homeDir)
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(expanded) == "" {
+		return "", errors.New("worktree.location must not be empty")
+	}
+	if !filepath.IsAbs(expanded) {
+		return "", errors.New("worktree.location must be absolute after ~ expansion")
+	}
+	resolved := filepath.Clean(expanded)
+	if strings.TrimSpace(gitRoot) != "" && pathInsideOrSame(resolved, gitRoot) {
+		return "", fmt.Errorf("worktree.location must not be inside the repository tree: %q", resolved)
+	}
+	return resolved, nil
+}
+
 func applyConfigFile(config *Config, path string) error {
 	content, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -605,6 +664,12 @@ func applyOverlay(config *Config, overlay configOverlay) {
 		}
 	}
 	if overlay.Worktree != nil {
+		if overlay.Worktree.Concurrency != nil {
+			config.Worktree.Concurrency = *overlay.Worktree.Concurrency
+		}
+		if overlay.Worktree.Location != nil {
+			config.Worktree.Location = *overlay.Worktree.Location
+		}
 		if overlay.Worktree.Copy != nil {
 			config.Worktree.Copy = append([]string(nil), (*overlay.Worktree.Copy)...)
 		}
@@ -620,9 +685,6 @@ func applyOverlay(config *Config, overlay configOverlay) {
 	if overlay.Resolve != nil {
 		if overlay.Resolve.BatchSize != nil {
 			config.Resolve.BatchSize = *overlay.Resolve.BatchSize
-		}
-		if overlay.Resolve.Concurrent != nil {
-			config.Resolve.Concurrent = *overlay.Resolve.Concurrent
 		}
 	}
 }
@@ -664,16 +726,30 @@ func findGitRoot(start string) string {
 }
 
 func expandHome(path string, homeDir string) (string, error) {
+	return expandHomeForKey("artifact_dir", path, homeDir)
+}
+
+func expandHomeForKey(key string, path string, homeDir string) (string, error) {
 	if path != "~" && !strings.HasPrefix(path, "~/") {
 		return path, nil
 	}
 	if homeDir == "" {
-		return "", errors.New("artifact_dir uses ~ but home directory is unavailable")
+		return "", fmt.Errorf("%s uses ~ but home directory is unavailable", key)
 	}
 	if path == "~" {
 		return homeDir, nil
 	}
 	return filepath.Join(homeDir, strings.TrimPrefix(path, "~/")), nil
+}
+
+func pathInsideOrSame(path string, root string) bool {
+	path = filepath.Clean(path)
+	root = filepath.Clean(root)
+	rel, err := filepath.Rel(root, path)
+	if err != nil {
+		return false
+	}
+	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel))
 }
 
 func validateWorktreeCopyPath(path string) error {

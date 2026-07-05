@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode"
 )
 
 const (
@@ -35,17 +36,25 @@ type Ref struct {
 	UserRoot string
 }
 
+type CreateOptions struct {
+	UserRoot string
+	Location string
+	RunID    string
+	HeadSHA  string
+	CopyList []string
+}
+
 type IntegrationResult struct {
 	Mode   string
 	Reason string
 }
 
-func Create(ctx context.Context, userRoot, runID, headSHA string, copyList []string) (Ref, error) {
-	ref, err := newRef(userRoot, runID)
+func Create(ctx context.Context, opts CreateOptions) (Ref, error) {
+	ref, err := newRef(opts.UserRoot, opts.Location, opts.RunID)
 	if err != nil {
 		return Ref{}, err
 	}
-	headSHA = strings.TrimSpace(headSHA)
+	headSHA := strings.TrimSpace(opts.HeadSHA)
 	if headSHA == "" {
 		return Ref{}, errors.New("create Run Worktree: HEAD is required")
 	}
@@ -58,7 +67,7 @@ func Create(ctx context.Context, userRoot, runID, headSHA string, copyList []str
 	if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "add", "-b", ref.Branch, ref.Path, headSHA); err != nil {
 		return Ref{}, fmt.Errorf("create Run Worktree: %w", err)
 	}
-	if err := copyProvisionedFiles(ref.UserRoot, ref.Path, copyList); err != nil {
+	if err := copyProvisionedFiles(ref.UserRoot, ref.Path, opts.CopyList); err != nil {
 		return Ref{}, err
 	}
 	return ref, nil
@@ -118,7 +127,7 @@ func CleanupClean(ctx context.Context, ref Ref) error {
 	return nil
 }
 
-func PruneTerminal(ctx context.Context, userRoot string, isTerminalClean func(runID string) bool) error {
+func PruneTerminal(ctx context.Context, userRoot string, location string, isTerminalClean func(runID string) bool) error {
 	userRoot = filepath.Clean(strings.TrimSpace(userRoot))
 	if userRoot == "." || userRoot == "" {
 		return errors.New("prune Run Worktrees: user root is required")
@@ -132,7 +141,7 @@ func PruneTerminal(ctx context.Context, userRoot string, isTerminalClean func(ru
 		return fmt.Errorf("prune git worktrees: %w", err)
 	}
 
-	refs, err := terminalCandidates(ctx, runner, userRoot)
+	refs, err := terminalCandidates(ctx, runner, userRoot, location)
 	if err != nil {
 		return err
 	}
@@ -213,7 +222,7 @@ func (err *gitCommandError) Unwrap() error {
 	return err.err
 }
 
-func newRef(userRoot, runID string) (Ref, error) {
+func newRef(userRoot, location, runID string) (Ref, error) {
 	userRoot = filepath.Clean(strings.TrimSpace(userRoot))
 	if userRoot == "." || userRoot == "" {
 		return Ref{}, errors.New("create Run Worktree: user root is required")
@@ -225,14 +234,14 @@ func newRef(userRoot, runID string) (Ref, error) {
 	if strings.ContainsAny(runID, `/\`) {
 		return Ref{}, fmt.Errorf("create Run Worktree: Run ID %q must not contain path separators", runID)
 	}
-	homeDir, err := os.UserHomeDir()
+	path, err := deriveRootPath(location, userRoot, runID)
 	if err != nil {
-		return Ref{}, fmt.Errorf("resolve Roundfix Home: %w", err)
+		return Ref{}, err
 	}
 	branch := BranchName(runID)
 	return Ref{
 		RunID:    runID,
-		Path:     filepath.Join(homeDir, ".roundfix", "worktrees", repoID(userRoot), runID),
+		Path:     path,
 		Branch:   branch,
 		UserRoot: userRoot,
 	}, nil
@@ -254,9 +263,75 @@ func validateRef(ref Ref) error {
 	return nil
 }
 
-func repoID(userRoot string) string {
-	sum := sha256.Sum256([]byte(filepath.Clean(userRoot)))
-	return hex.EncodeToString(sum[:])[:16]
+func deriveRootPath(location, userRoot string, segments ...string) (string, error) {
+	location = filepath.Clean(strings.TrimSpace(location))
+	if location == "." || location == "" {
+		return "", errors.New("derive Worktree path: location is required")
+	}
+	if !filepath.IsAbs(location) {
+		return "", errors.New("derive Worktree path: location must be absolute")
+	}
+	userRoot = filepath.Clean(strings.TrimSpace(userRoot))
+	if userRoot == "." || userRoot == "" {
+		return "", errors.New("derive Worktree path: user root is required")
+	}
+	parts := []string{location, repoSlug(userRoot)}
+	for _, segment := range segments {
+		cleaned, err := cleanPathSegment(segment)
+		if err != nil {
+			return "", err
+		}
+		parts = append(parts, cleaned)
+	}
+	return filepath.Join(parts...), nil
+}
+
+func cleanPathSegment(segment string) (string, error) {
+	segment = strings.TrimSpace(segment)
+	if segment == "" {
+		return "", errors.New("derive Worktree path: path segment is required")
+	}
+	if strings.ContainsAny(segment, `/\`) {
+		return "", fmt.Errorf("derive Worktree path: path segment %q must not contain path separators", segment)
+	}
+	if segment == "." || segment == ".." || filepath.Clean(segment) != segment {
+		return "", fmt.Errorf("derive Worktree path: path segment %q must be clean", segment)
+	}
+	return segment, nil
+}
+
+func repoSlug(userRoot string) string {
+	clean := filepath.Clean(userRoot)
+	sum := sha256.Sum256([]byte(clean))
+	hash := hex.EncodeToString(sum[:])[:8]
+	return sanitizeSlugBase(filepath.Base(clean)) + "-" + hash
+}
+
+func sanitizeSlugBase(value string) string {
+	var builder strings.Builder
+	lastDash := false
+	for _, char := range value {
+		switch {
+		case unicode.IsLetter(char), unicode.IsDigit(char):
+			builder.WriteRune(unicode.ToLower(char))
+			lastDash = false
+		case char == '-' || char == '_' || char == '.':
+			if !lastDash {
+				builder.WriteByte('-')
+				lastDash = true
+			}
+		default:
+			if !lastDash {
+				builder.WriteByte('-')
+				lastDash = true
+			}
+		}
+	}
+	slug := strings.Trim(builder.String(), "-")
+	if slug == "" {
+		return "repo"
+	}
+	return slug
 }
 
 func copyProvisionedFiles(userRoot, worktreePath string, copyList []string) error {
@@ -364,9 +439,9 @@ func isAncestryMiss(err error) bool {
 	return strings.TrimSpace(gitErr.stderr) == ""
 }
 
-func terminalCandidates(ctx context.Context, runner gitRunner, userRoot string) ([]Ref, error) {
+func terminalCandidates(ctx context.Context, runner gitRunner, userRoot string, location string) ([]Ref, error) {
 	refsByRun := map[string]Ref{}
-	worktreeDir, err := repoWorktreesDir(userRoot)
+	worktreeDir, err := repoWorktreesDir(location, userRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -420,12 +495,8 @@ func terminalCandidates(ctx context.Context, runner gitRunner, userRoot string) 
 	return refs, nil
 }
 
-func repoWorktreesDir(userRoot string) (string, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("resolve Roundfix Home: %w", err)
-	}
-	return filepath.Join(homeDir, ".roundfix", "worktrees", repoID(userRoot)), nil
+func repoWorktreesDir(location, userRoot string) (string, error) {
+	return deriveRootPath(location, userRoot)
 }
 
 func deleteRunBranch(ctx context.Context, runner gitRunner, userRoot, branch string) error {

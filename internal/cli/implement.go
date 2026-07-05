@@ -125,7 +125,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	defer func() {
 		_ = runStore.Close()
 	}()
-	if err := pruneTerminalRunWorktrees(ctx, gitState.Root, func(runID string) bool {
+	if err := pruneTerminalRunWorktrees(ctx, gitState.Root, loadedConfig.Config.Worktree.Location, func(runID string) bool {
 		run, found, err := runStore.Run(ctx, runID)
 		return err == nil && found && run.State == store.StateClean
 	}); err != nil {
@@ -175,7 +175,13 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	if len(gitState.Dirty) > 0 {
 		fmt.Fprintf(stderr, "%s: note: working tree %s has %d uncommitted change(s); implement will run in a Run Worktree, and overlapping local changes end the Run Integration Pending.\n", app.Name, gitState.Root, len(gitState.Dirty))
 	}
-	runRef, err := createRunWorktree(ctx, gitState.Root, run.ID, gitState.HEAD, loadedConfig.Config.Worktree.Copy)
+	runRef, err := createRunWorktree(ctx, runworktree.CreateOptions{
+		UserRoot: gitState.Root,
+		Location: loadedConfig.Config.Worktree.Location,
+		RunID:    run.ID,
+		HeadSHA:  gitState.HEAD,
+		CopyList: loadedConfig.Config.Worktree.Copy,
+	})
 	if err != nil {
 		markRunFailed(ctx, runStore, run.ID)
 		printImplementRunFailure(err, stderr)

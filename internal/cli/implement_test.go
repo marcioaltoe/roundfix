@@ -299,7 +299,9 @@ func withFakeRunWorktrees(t *testing.T) {
 	oldIntegrate := integrateRunWorktree
 	oldCleanup := cleanupCleanRunWorktree
 	oldPrune := pruneTerminalRunWorktrees
-	createRunWorktree = func(_ context.Context, userRoot, runID, _ string, _ []string) (runworktree.Ref, error) {
+	createRunWorktree = func(_ context.Context, opts runworktree.CreateOptions) (runworktree.Ref, error) {
+		userRoot := opts.UserRoot
+		runID := opts.RunID
 		path := filepath.Join(os.Getenv("HOME"), ".roundfix", "worktrees", "fake", runID)
 		if err := copyDir(filepath.Join(userRoot, "docs"), filepath.Join(path, "docs")); err != nil {
 			return runworktree.Ref{}, err
@@ -324,7 +326,7 @@ func withFakeRunWorktrees(t *testing.T) {
 	cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
 		return os.RemoveAll(ref.Path)
 	}
-	pruneTerminalRunWorktrees = func(context.Context, string, func(string) bool) error {
+	pruneTerminalRunWorktrees = func(context.Context, string, string, func(string) bool) error {
 		return nil
 	}
 	t.Cleanup(func() {

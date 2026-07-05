@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0009-parallel-scheduling
-status: pending
+status: completed
 type: data
 complexity: medium
 ---
@@ -38,21 +38,21 @@ through config and worktree-path unit tests.
 
 ## Subtasks
 
-- [ ] Config keys, hierarchy resolution, generated output
-- [ ] Shared slug/path derivation helper
-- [ ] Run Worktree creation switched to the helper
-- [ ] resolve.concurrent removal with pointing error
-- [ ] Validation table tests
+- [x] Config keys, hierarchy resolution, generated output
+- [x] Shared slug/path derivation helper
+- [x] Run Worktree creation switched to the helper
+- [x] resolve.concurrent removal with pointing error
+- [x] Validation table tests
 
 ## Acceptance Criteria
 
-- [ ] Hierarchy tests: builtin only, User override, Project override
+- [x] Hierarchy tests: builtin only, User override, Project override
       winning, for both keys.
-- [ ] Path tests: slug readable + unique for two same-named repos at
+- [x] Path tests: slug readable + unique for two same-named repos at
       different paths; in-repo location rejected; `~` expansion covered.
-- [ ] A config with `resolve.concurrent` fails with the pointing message;
+- [x] A config with `resolve.concurrent` fails with the pointing message;
       generated config no longer mentions it and documents both new keys.
-- [ ] Existing worktree tests pass with only the deliberate path-shape
+- [x] Existing worktree tests pass with only the deliberate path-shape
       updates.
 
 ## Verification
@@ -65,3 +65,32 @@ through config and worktree-path unit tests.
 
 `_prd.md` → User Stories 5, 6; Core Feature 4; Decisions. `_techspec.md` →
 Paths and naming, Build Order 1. ADR-0023 (location refinement).
+
+## Result
+
+Implemented `worktree.concurrency` and `worktree.location` with builtin,
+User Config, and Project Config layering. `worktree.location` is resolved
+through `~` expansion, must be absolute, and is rejected when it falls inside
+the repository tree. The generated config documents both keys and no longer
+emits `resolve.concurrent`; configs that still carry `resolve.concurrent`
+fail with a message pointing to `worktree.concurrency`.
+
+Added a shared worktree path derivation helper that builds
+`<location>/<repo-slug>/<run-id>`, where the repo slug is the sanitized
+repository basename plus 8 hex characters from the user-root path hash. Run
+Worktree creation and terminal pruning now use the configured location and
+that shared derivation.
+
+Acceptance evidence:
+
+- Hierarchy: `TestLoadAppliesWorktreeConfigHierarchy` covers builtin-only,
+  User override, and Project override cases for both new keys.
+- Path behavior: `TestDeriveRootPathUsesReadableUniqueRepoSlug` covers
+  readable, unique slugs for same-named repositories; config tests cover
+  in-repo rejection and `~` expansion.
+- Deprecated key/output: `TestLoadRejectsInvalidConfig/deprecated_resolve_concurrent`
+  covers the pointing error, and `TestInitCreatesUserConfig` covers generated
+  output including the new keys and omitting the old key.
+- Verification run during implementation: `rtk go test ./internal/config/
+  ./internal/worktree/` passed with 35 tests; `rtk go test ./...` passed with
+  694 tests.
