@@ -3,6 +3,8 @@ package config
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -17,7 +19,6 @@ import (
 const (
 	userConfigRelPath    = ".roundfix/config.yml"
 	projectConfigName    = ".roundfixrc.yml"
-	defaultArtifactDir   = ".roundfix"
 	defaultReviewSource  = "coderabbit"
 	defaultAgent         = "codex"
 	defaultVerification  = "make verify"
@@ -37,6 +38,7 @@ type Config struct {
 	ReviewSource ReviewSource
 	Watch        Watch
 	Implement    Implement
+	Worktree     Worktree
 	Budget       Budget
 	Resolve      Resolve
 }
@@ -68,6 +70,10 @@ type Watch struct {
 
 type Implement struct {
 	AutoPush bool
+}
+
+type Worktree struct {
+	Copy []string
 }
 
 type Budget struct {
@@ -128,6 +134,7 @@ type configOverlay struct {
 	ReviewSource *reviewSourceOverlay `yaml:"review_source"`
 	Watch        *watchOverlay        `yaml:"watch"`
 	Implement    *implementOverlay    `yaml:"implement"`
+	Worktree     *worktreeOverlay     `yaml:"worktree"`
 	Budget       *budgetOverlay       `yaml:"budget"`
 	Resolve      *resolveOverlay      `yaml:"resolve"`
 }
@@ -175,6 +182,10 @@ func (value *implementAutoPushValue) UnmarshalYAML(node *yaml.Node) error {
 	}
 	value.value = raw
 	return nil
+}
+
+type worktreeOverlay struct {
+	Copy *[]string `yaml:"copy"`
 }
 
 type budgetOverlay struct {
@@ -301,8 +312,13 @@ defaults:
   model: ""
   agent_full_access: %t
   verification: %s
-  artifact_dir: %s
+  # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
+  artifact_dir: ""
   auto_commit: %t
+
+worktree:
+  # Repository-relative untracked files copied into each Run Worktree.
+  copy: []
 
 review_source:
   name: %s
@@ -335,7 +351,6 @@ resolve:
 		config.Defaults.Agent,
 		config.Defaults.AgentFullAccess,
 		config.Defaults.Verification,
-		defaultArtifactDir,
 		config.Defaults.AutoCommit,
 		config.ReviewSource.Name,
 		config.ReviewSource.IncludeNitpicks,
@@ -383,6 +398,11 @@ func Validate(config Config) error {
 	}
 	if config.Resolve.Concurrent < 1 {
 		return errors.New("resolve.concurrent must be greater than 0")
+	}
+	for _, path := range config.Worktree.Copy {
+		if err := validateWorktreeCopyPath(path); err != nil {
+			return err
+		}
 	}
 	if config.Watch.AutoPush && !config.Defaults.AutoCommit {
 		return errors.New("watch.auto_push requires defaults.auto_commit to be true")
@@ -488,7 +508,10 @@ func ResolveArtifactDirectory(artifactDir string, gitRoot string, homeDir string
 		if gitRoot == "" {
 			return "", errors.New("empty artifact_dir requires a Git root")
 		}
-		return filepath.Join(gitRoot, defaultArtifactDir), nil
+		if homeDir == "" {
+			return "", errors.New("empty artifact_dir requires Roundfix Home")
+		}
+		return filepath.Join(homeDir, ".roundfix", "artifacts", repoID(gitRoot)), nil
 	}
 	if filepath.IsAbs(expanded) {
 		return filepath.Clean(expanded), nil
@@ -581,6 +604,11 @@ func applyOverlay(config *Config, overlay configOverlay) {
 			config.Implement.AutoPush = overlay.Implement.AutoPush.value
 		}
 	}
+	if overlay.Worktree != nil {
+		if overlay.Worktree.Copy != nil {
+			config.Worktree.Copy = append([]string(nil), (*overlay.Worktree.Copy)...)
+		}
+	}
 	if overlay.Budget != nil {
 		if overlay.Budget.Enabled != nil {
 			config.Budget.Enabled = *overlay.Budget.Enabled
@@ -646,6 +674,34 @@ func expandHome(path string, homeDir string) (string, error) {
 		return homeDir, nil
 	}
 	return filepath.Join(homeDir, strings.TrimPrefix(path, "~/")), nil
+}
+
+func validateWorktreeCopyPath(path string) error {
+	if path == "" {
+		return errors.New("worktree.copy entries must not be empty")
+	}
+	if filepath.IsAbs(path) {
+		return fmt.Errorf("worktree.copy entry %q must be repository-relative", path)
+	}
+	clean := filepath.Clean(path)
+	if clean == "." || clean != path || containsDotDotSegment(clean) {
+		return fmt.Errorf("worktree.copy entry %q must be clean and stay inside the repository", path)
+	}
+	return nil
+}
+
+func containsDotDotSegment(path string) bool {
+	for _, segment := range strings.Split(filepath.ToSlash(path), "/") {
+		if segment == ".." {
+			return true
+		}
+	}
+	return false
+}
+
+func repoID(gitRoot string) string {
+	sum := sha256.Sum256([]byte(filepath.Clean(gitRoot)))
+	return hex.EncodeToString(sum[:])[:16]
 }
 
 func isSupportedAgent(agent string) bool {

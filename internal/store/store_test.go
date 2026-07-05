@@ -25,8 +25,8 @@ func TestOpenCreatesRunDatabaseAndAppliesMigrations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected migration version, got %v", err)
 	}
-	if version != 5 {
-		t.Fatalf("expected migration version 5, got %d", version)
+	if version != 6 {
+		t.Fatalf("expected migration version 6, got %d", version)
 	}
 }
 
@@ -206,6 +206,46 @@ func TestRunLooksUpExistingRunByID(t *testing.T) {
 	}
 	if ok {
 		t.Fatal("expected missing Run lookup")
+	}
+}
+
+func TestCreateRunPersistsWorkDir(t *testing.T) {
+	ctx := context.Background()
+	store := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, store)
+
+	req := sampleCreateRunRequest()
+	req.WorkDir = filepath.Join("tmp", "roundfix-home", "worktrees", "repo-id", "run-id")
+	created, err := store.CreateRun(ctx, req)
+	if err != nil {
+		t.Fatalf("expected Run creation, got %v", err)
+	}
+	if created.WorkDir != req.WorkDir {
+		t.Fatalf("expected created WorkDir %q, got %q", req.WorkDir, created.WorkDir)
+	}
+
+	found, ok, err := store.Run(ctx, created.ID)
+	if err != nil || !ok {
+		t.Fatalf("lookup persisted Run: ok=%v err=%v", ok, err)
+	}
+	if found.WorkDir != req.WorkDir {
+		t.Fatalf("expected looked-up WorkDir %q, got %q", req.WorkDir, found.WorkDir)
+	}
+
+	active, ok, err := store.ActiveRun(ctx, req.HeadRepository, req.HeadBranch)
+	if err != nil || !ok {
+		t.Fatalf("lookup active Run: ok=%v err=%v", ok, err)
+	}
+	if active.WorkDir != req.WorkDir {
+		t.Fatalf("expected active WorkDir %q, got %q", req.WorkDir, active.WorkDir)
+	}
+
+	inGitRoot, ok, err := store.ActiveRunInGitRoot(ctx, req.GitRoot)
+	if err != nil || !ok {
+		t.Fatalf("lookup active Run in Git root: ok=%v err=%v", ok, err)
+	}
+	if inGitRoot.WorkDir != req.WorkDir {
+		t.Fatalf("expected Git-root active WorkDir %q, got %q", req.WorkDir, inGitRoot.WorkDir)
 	}
 }
 
@@ -491,8 +531,8 @@ func TestOpenMigratesV3RunDatabasePreservingRunsAndRekeyingLocks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 5 {
-		t.Fatalf("expected user_version 5 after migration, got %d", version)
+	if version != 6 {
+		t.Fatalf("expected user_version 6 after migration, got %d", version)
 	}
 
 	count, err := store.RunCount(ctx)
@@ -510,7 +550,7 @@ func TestOpenMigratesV3RunDatabasePreservingRunsAndRekeyingLocks(t *testing.T) {
 	if clean.Kind != KindResolve || clean.State != StateClean || clean.PRNumber != "99" ||
 		clean.HeadRepository != "owner/project" || clean.HeadBranch != "feature/done" ||
 		clean.HeadSHA != "def456" || clean.ArtifactDir != "tmp/repo/.roundfix" ||
-		clean.SpecSlug != "" || clean.CompletedAt == nil {
+		clean.WorkDir != "" || clean.SpecSlug != "" || clean.CompletedAt == nil {
 		t.Fatalf("expected run_v3_clean fields preserved, got %#v", clean)
 	}
 
@@ -646,8 +686,8 @@ func TestOpenMigratesV4RunDatabasePreservingRunsLocksAndAddingStopRequests(t *te
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 5 {
-		t.Fatalf("expected user_version 5 after migration, got %d", version)
+	if version != 6 {
+		t.Fatalf("expected user_version 6 after migration, got %d", version)
 	}
 	count, err := runStore.RunCount(ctx)
 	if err != nil {
@@ -662,14 +702,15 @@ func TestOpenMigratesV4RunDatabasePreservingRunsLocksAndAddingStopRequests(t *te
 	}
 	if clean.Kind != KindWatch || clean.State != StateClean || clean.PRNumber != "99" ||
 		clean.HeadRepository != "owner/project" || clean.HeadBranch != "feature/done" ||
-		clean.HeadSHA != "def456" || clean.SpecSlug != "" || clean.CompletedAt == nil {
+		clean.HeadSHA != "def456" || clean.WorkDir != "" || clean.SpecSlug != "" || clean.CompletedAt == nil {
 		t.Fatalf("expected run_v4_clean fields preserved, got %#v", clean)
 	}
 	implement, ok, err := runStore.Run(ctx, "run_v4_implement")
 	if err != nil || !ok {
 		t.Fatalf("expected run_v4_implement to survive, ok=%v err=%v", ok, err)
 	}
-	if implement.Kind != KindImplement || implement.SpecSlug != "0001-widget-flow" || implement.GitRoot != "tmp/spec-repo" || implement.CompletedAt == nil {
+	if implement.Kind != KindImplement || implement.SpecSlug != "0001-widget-flow" || implement.GitRoot != "tmp/spec-repo" ||
+		implement.WorkDir != "" || implement.CompletedAt == nil {
 		t.Fatalf("expected implement fields preserved, got %#v", implement)
 	}
 	active, found, err := runStore.ActiveRun(ctx, "owner/project", "feature/review")
@@ -692,6 +733,169 @@ func TestOpenMigratesV4RunDatabasePreservingRunsLocksAndAddingStopRequests(t *te
 	}
 	if stopRequestedAt != nil {
 		t.Fatalf("expected migrated stop_requested_at NULL, got %#v", stopRequestedAt)
+	}
+}
+
+// buildV5Fixture creates a populated schema v5 Run Database via raw SQL:
+// persisted rows have agents and Stop Request state but no work_dir column.
+func buildV5Fixture(t *testing.T, homeDir string) {
+	t.Helper()
+	path := DatabasePath(homeDir)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("create fixture directory: %v", err)
+	}
+	db, err := sql.Open("sqlite", writerDSN(path))
+	if err != nil {
+		t.Fatalf("open fixture database: %v", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Fatalf("close fixture database: %v", err)
+		}
+	}()
+
+	statements := []string{
+		`CREATE TABLE runs (
+			id TEXT PRIMARY KEY,
+			kind TEXT NOT NULL,
+			state TEXT NOT NULL,
+			head_repository TEXT NOT NULL DEFAULT '',
+			head_branch TEXT NOT NULL DEFAULT '',
+			base_repository TEXT NOT NULL DEFAULT '',
+			pr_number TEXT NOT NULL DEFAULT '',
+			git_root TEXT NOT NULL,
+			local_branch TEXT NOT NULL,
+			head_sha TEXT NOT NULL DEFAULT '',
+			artifact_dir TEXT NOT NULL DEFAULT '',
+			spec_slug TEXT NOT NULL DEFAULT '',
+			agent TEXT NOT NULL DEFAULT '',
+			stop_requested_at TEXT,
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL,
+			completed_at TEXT NOT NULL DEFAULT ''
+		)`,
+		`CREATE TABLE active_run_locks ` + activeRunLocksColumns,
+		`CREATE INDEX idx_runs_head ON runs (head_repository, head_branch)`,
+		`CREATE TABLE interactive_defaults (
+			key TEXT PRIMARY KEY,
+			value TEXT NOT NULL,
+			updated_at TEXT NOT NULL
+		)`,
+		`CREATE TABLE run_events (
+			run_id TEXT NOT NULL,
+			cursor INTEGER NOT NULL,
+			batch INTEGER NOT NULL DEFAULT 0,
+			source TEXT NOT NULL,
+			kind TEXT NOT NULL,
+			review_issue TEXT NOT NULL DEFAULT '',
+			tool_id TEXT NOT NULL DEFAULT '',
+			tool_state TEXT NOT NULL DEFAULT '',
+			summary TEXT NOT NULL DEFAULT '',
+			created_at TEXT NOT NULL,
+			payload TEXT NOT NULL DEFAULT '',
+			PRIMARY KEY (run_id, cursor),
+			FOREIGN KEY (run_id) REFERENCES runs(id) ON DELETE CASCADE
+		)`,
+		`INSERT INTO runs (id, kind, state, head_repository, head_branch, base_repository,
+			pr_number, git_root, local_branch, head_sha, artifact_dir, spec_slug, agent,
+			stop_requested_at, created_at, updated_at, completed_at)
+		 VALUES ('run_v5_active', 'resolve', 'Verifying', 'owner/project', 'feature/review', 'owner/project',
+			'123', 'tmp/repo', 'feature/review', 'abc123', 'tmp/repo/.roundfix', '', 'codex',
+			'2026-07-01T10:06:00Z', '2026-07-01T10:00:00Z', '2026-07-01T10:06:00Z', '')`,
+		`INSERT INTO runs (id, kind, state, head_repository, head_branch, base_repository,
+			pr_number, git_root, local_branch, head_sha, artifact_dir, spec_slug, agent,
+			stop_requested_at, created_at, updated_at, completed_at)
+		 VALUES ('run_v5_clean', 'watch', 'Clean', 'owner/project', 'feature/done', 'owner/project',
+			'99', 'tmp/repo', 'feature/done', 'def456', 'tmp/repo/.roundfix', '', 'claude',
+			NULL, '2026-07-01T08:00:00Z', '2026-07-01T09:00:00Z', '2026-07-01T09:00:00Z')`,
+		`INSERT INTO runs (id, kind, state, head_repository, head_branch, base_repository,
+			pr_number, git_root, local_branch, head_sha, artifact_dir, spec_slug, agent,
+			stop_requested_at, created_at, updated_at, completed_at)
+		 VALUES ('run_v5_implement', 'implement', 'Active', '', '', '',
+			'', 'tmp/spec-repo', 'ma/spec-work', '', '', '0001-widget-flow', 'opencode',
+			NULL, '2026-07-01T07:00:00Z', '2026-07-01T07:30:00Z', '')`,
+		`INSERT INTO active_run_locks (target_kind, target_key, run_id, created_at)
+		 VALUES ('pr', 'owner/project#feature/review', 'run_v5_active', '2026-07-01T10:00:00Z')`,
+		`INSERT INTO active_run_locks (target_kind, target_key, run_id, created_at)
+		 VALUES ('spec', 'tmp/spec-repo#0001-widget-flow', 'run_v5_implement', '2026-07-01T07:00:00Z')`,
+		`PRAGMA user_version = 5`,
+	}
+	for _, statement := range statements {
+		if _, err := db.Exec(statement); err != nil {
+			t.Fatalf("build v5 fixture: %v", err)
+		}
+	}
+}
+
+func TestOpenMigratesV5RunDatabasePreservingRunsLocksAndAddingWorkDir(t *testing.T) {
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	buildV5Fixture(t, homeDir)
+
+	runStore := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, runStore)
+
+	version, err := runStore.MigrationVersion(ctx)
+	if err != nil {
+		t.Fatalf("read migration version: %v", err)
+	}
+	if version != 6 {
+		t.Fatalf("expected user_version 6 after migration, got %d", version)
+	}
+	count, err := runStore.RunCount(ctx)
+	if err != nil {
+		t.Fatalf("count runs: %v", err)
+	}
+	if count != 3 {
+		t.Fatalf("expected all 3 v5 run rows to survive, got %d", count)
+	}
+
+	active, found, err := runStore.ActiveRun(ctx, "owner/project", "feature/review")
+	if err != nil {
+		t.Fatalf("active review Run lookup after migration: %v", err)
+	}
+	if !found || active.ID != "run_v5_active" || active.State != StateVerifying ||
+		active.Agent != "codex" || active.WorkDir != "" {
+		t.Fatalf("expected v5 review lock and row to survive with empty WorkDir, found=%v active=%#v", found, active)
+	}
+	requested, err := runStore.StopRequested(ctx, "run_v5_active")
+	if err != nil {
+		t.Fatalf("read migrated Stop Request flag: %v", err)
+	}
+	if !requested {
+		t.Fatal("expected populated v5 Stop Request to survive")
+	}
+
+	implement, found, err := runStore.ActiveSpecRun(ctx, "tmp/spec-repo", "0001-widget-flow")
+	if err != nil {
+		t.Fatalf("active spec Run lookup after migration: %v", err)
+	}
+	if !found || implement.ID != "run_v5_implement" || implement.Agent != "opencode" || implement.WorkDir != "" {
+		t.Fatalf("expected v5 spec lock and row to survive with empty WorkDir, found=%v implement=%#v", found, implement)
+	}
+
+	clean, ok, err := runStore.Run(ctx, "run_v5_clean")
+	if err != nil || !ok {
+		t.Fatalf("expected run_v5_clean to survive, ok=%v err=%v", ok, err)
+	}
+	if clean.Kind != KindWatch || clean.State != StateClean || clean.Agent != "claude" ||
+		clean.WorkDir != "" || clean.CompletedAt == nil {
+		t.Fatalf("expected run_v5_clean fields preserved with empty WorkDir, got %#v", clean)
+	}
+
+	var rawWorkDir any
+	if err := runStore.db.QueryRowContext(ctx, `SELECT work_dir FROM runs WHERE id = 'run_v5_active'`).Scan(&rawWorkDir); err != nil {
+		t.Fatalf("read migrated work_dir column: %v", err)
+	}
+	if rawWorkDir != nil {
+		t.Fatalf("expected migrated work_dir NULL for legacy row, got %#v", rawWorkDir)
+	}
+	var lockCount int
+	if err := runStore.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM active_run_locks`).Scan(&lockCount); err != nil {
+		t.Fatalf("count migrated locks: %v", err)
+	}
+	if lockCount != 2 {
+		t.Fatalf("expected both v5 locks to survive, got %d", lockCount)
 	}
 }
 

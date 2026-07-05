@@ -3,6 +3,8 @@ package cli
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -661,7 +663,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 			if !strings.Contains(output, tt.expectedOutput) {
 				t.Fatalf("expected output to contain %q, got stdout=%q stderr=%q", tt.expectedOutput, stdout.String(), stderr.String())
 			}
-			if !strings.Contains(output, filepath.Join(repoDir, ".roundfix")) {
+			if !strings.Contains(output, builtinArtifactDirForRepo(t, repoDir)) {
 				t.Fatalf("expected artifact dir in output, got stdout=%q stderr=%q", stdout.String(), stderr.String())
 			}
 			if strings.Contains(output, "not implemented yet") {
@@ -677,7 +679,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 				if !strings.Contains(stdout.String(), "Artifacts: created new Round") {
 					t.Fatalf("expected new artifact confirmation, got %q", stdout.String())
 				}
-				issuePath := filepath.Join(repoDir, ".roundfix", "reviews", "pr-123", "round-001", "issue_001.md")
+				issuePath := filepath.Join(builtinArtifactDirForRepo(t, repoDir), "reviews", "pr-123", "round-001", "issue_001.md")
 				issueContent, err := os.ReadFile(issuePath)
 				if err != nil {
 					t.Fatalf("expected Review Issue artifact %s: %v", issuePath, err)
@@ -1047,7 +1049,7 @@ func TestRunFetchReusesMatchingAutoRound(t *testing.T) {
 	if !strings.Contains(secondStdout.String(), "Artifacts: reused existing matching Round") {
 		t.Fatalf("expected second fetch to report reused Round, got %q", secondStdout.String())
 	}
-	if _, err := os.Stat(filepath.Join(repoDir, ".roundfix", "reviews", "pr-123", "round-002")); !errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(filepath.Join(builtinArtifactDirForRepo(t, repoDir), "reviews", "pr-123", "round-002")); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("expected no duplicate round-002, got err %v", err)
 	}
 	assertRunCount(t, filepath.Join(homeDir, ".roundfix", "roundfix.db"), 2)
@@ -1477,7 +1479,7 @@ func TestRunResolveDeduplicatesBeforeBatching(t *testing.T) {
 	if got := len(sourceResolver.requests[0].Issues); got != 1 {
 		t.Fatalf("expected only newest issue to resolve source thread, got %d", got)
 	}
-	if sourceResolver.requests[0].Issues[0].FilePath != filepath.Join(repoDir, ".roundfix", "reviews", "pr-123", "round-002", "issue_001.md") {
+	if sourceResolver.requests[0].Issues[0].FilePath != filepath.Join(builtinArtifactDirForRepo(t, repoDir), "reviews", "pr-123", "round-002", "issue_001.md") {
 		t.Fatalf("expected newest duplicate source resolution, got %#v", sourceResolver.requests[0].Issues[0])
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
@@ -3566,7 +3568,7 @@ func assertStopRequested(t *testing.T, homeDir string, runID string) {
 
 func assertAgentLogContains(t *testing.T, repoDir string, expected string) {
 	t.Helper()
-	matches, err := filepath.Glob(filepath.Join(repoDir, ".roundfix", "runs", "*", "agent", "batch-001.log"))
+	matches, err := filepath.Glob(filepath.Join(builtinArtifactDirForRepo(t, repoDir), "runs", "*", "agent", "batch-001.log"))
 	if err != nil {
 		t.Fatalf("glob Agent logs: %v", err)
 	}
@@ -3603,7 +3605,7 @@ func persistCLIReviewIssue(t *testing.T, repoDir string, roundNumber int, headBr
 func persistCLIReviewItems(t *testing.T, repoDir string, roundNumber int, headBranch string, items []reviewsource.ReviewItem) rounds.PersistResult {
 	t.Helper()
 	result, err := rounds.PersistRound(context.Background(), rounds.PersistRequest{
-		ArtifactDir:    filepath.Join(repoDir, ".roundfix"),
+		ArtifactDir:    builtinArtifactDirForRepo(t, repoDir),
 		Source:         reviewsource.SourceCodeRabbit,
 		PRNumber:       "123",
 		HeadRepository: "owner/project",
@@ -3617,6 +3619,17 @@ func persistCLIReviewItems(t *testing.T, repoDir string, roundNumber int, headBr
 		t.Fatalf("persist CLI Review Issue artifact: %v", err)
 	}
 	return result
+}
+
+func builtinArtifactDirForRepo(t *testing.T, repoDir string) string {
+	t.Helper()
+	homeDir := os.Getenv("HOME")
+	if homeDir == "" {
+		t.Fatal("HOME is required for builtin Artifact Directory")
+	}
+	sum := sha256.Sum256([]byte(filepath.Clean(repoDir)))
+	repoID := hex.EncodeToString(sum[:])[:16]
+	return filepath.Join(homeDir, ".roundfix", "artifacts", repoID)
 }
 
 type fakeVerifier struct {

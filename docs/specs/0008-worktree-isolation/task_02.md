@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0008-worktree-isolation
-status: pending
+status: completed
 type: data
 complexity: medium
 ---
@@ -34,19 +34,19 @@ config tests.
 
 ## Subtasks
 
-- [ ] Schema v6 migration with populated v5 fixture test
-- [ ] work_dir through CreateRun and reads
-- [ ] worktree.copy config with validation
-- [ ] Artifact Directory builtin default relocation
+- [x] Schema v6 migration with populated v5 fixture test
+- [x] work_dir through CreateRun and reads
+- [x] worktree.copy config with validation
+- [x] Artifact Directory builtin default relocation
 
 ## Acceptance Criteria
 
-- [ ] Migration test proves row/lock survival and version 6; legacy rows
+- [x] Migration test proves row/lock survival and version 6; legacy rows
       read back with empty work_dir.
-- [ ] Config tests cover the copy list (valid, absolute rejected, dot-dot
+- [x] Config tests cover the copy list (valid, absolute rejected, dot-dot
       rejected) and the new builtin artifact default, with explicit-value
       resolution byte-identical to today.
-- [ ] Full suite passes with zero review-path assertion changes beyond the
+- [x] Full suite passes with zero review-path assertion changes beyond the
       builtin-default cases deliberately updated.
 
 ## Verification
@@ -59,3 +59,27 @@ config tests.
 
 `_prd.md` → User Story 7; Core Feature 6; Decisions. `_techspec.md` → Data
 Models, Build Order 2. ADR-0023.
+
+## Result
+
+- Schema v6 is implemented in `internal/store`: fresh databases set
+  `user_version = 6`, migrations from v3/v4/v5 flow to v6, and `runs.work_dir`
+  is nullable. `TestOpenMigratesV5RunDatabasePreservingRunsLocksAndAddingWorkDir`
+  proves populated v5 rows and locks survive while legacy `Run.WorkDir` reads
+  back empty; v3/v4 migration tests now also assert version 6 and empty legacy
+  WorkDir. `TestCreateRunPersistsWorkDir` proves `CreateRunRequest.WorkDir`
+  is returned by create/read/active lookup paths.
+- Config now supports `worktree.copy`; tests cover project override with valid
+  repo-relative entries plus absolute and `..` rejection. Generated config
+  includes `worktree.copy` and documents that empty `defaults.artifact_dir`
+  uses Roundfix Home `artifacts/<repo-id>`.
+- Artifact Directory builtin default now resolves to Roundfix Home
+  `.roundfix/artifacts/<repo-id>`. Config tests prove the new builtin default
+  and keep explicit relative, home-expanded, and absolute values resolving as
+  before. CLI review-path tests were updated only where they deliberately
+  asserted the old builtin default artifact location.
+- Verification passed:
+  `rtk go test ./internal/store/ ./internal/config/` → 55 passed in 2 packages;
+  `rtk go test ./...` → 670 passed in 17 packages;
+  `rtk make verify` → full gate passed (`go test ./...`, `roundfix skills check`,
+  and build).
