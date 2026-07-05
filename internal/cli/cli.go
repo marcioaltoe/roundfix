@@ -42,6 +42,7 @@ Usage:
   roundfix resolve --pr <number> --agent <agent>
   roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean
   roundfix implement --spec <slug> --agent <agent>
+  roundfix settle --spec <slug> --task <task_id>
   roundfix init [--scope <project|user>]
   roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
   roundfix attach <run-id>
@@ -54,6 +55,7 @@ Commands:
   resolve    Resolve downloaded Unresolved Review Issues
   watch      Fetch and resolve in a watched loop
   implement  Execute a Spec's Task Graph as one Run
+  settle     Verify and commit all current worktree changes for one failed Task
   stop       Stop an Active Run and release its lock
   attach     Replay a Run's event timeline from the Run Database
   skills     Check or install the Roundfix agent skill
@@ -160,6 +162,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runOperationalCommand(ctx, args[0], args[1:], stdout, stderr)
 	case "implement":
 		return runImplementCommand(ctx, args[1:], stdout, stderr)
+	case "settle":
+		return runSettleCommand(ctx, args[1:], stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "%s: unknown command %q\n", app.Name, args[0])
 		fmt.Fprintf(stderr, "Run '%s --help' for usage.\n", app.Name)
@@ -2190,6 +2194,8 @@ Options:
 `
 	case "implement":
 		return implementUsage
+	case "settle":
+		return settleUsage
 	case "stop":
 		return `Usage:
   roundfix stop <run-id>
