@@ -47,6 +47,7 @@ Useful commands:
 roundfix fetch --source coderabbit --pr <number>
 roundfix resolve --pr <number> --agent <agent>
 roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean
+roundfix stop --spec <slug>
 roundfix skills check
 ```
 
@@ -99,12 +100,19 @@ request is the developer's explicit decision (ADR-0013).
 
 6. Without `--spec`, Interactive Input lists the repository's active Specs
    under an `Active Specs:` picker that accepts a number or a slug, and the
-   agent field suggests the remembered Agent. The Agent is remembered across
-   runs; the Spec slug never is. `--no-input` fails instead of opening
-   Interactive Input.
+   agent field suggests the remembered Agent. The final `QA gate [y/N]` field
+   enables the qa-gate step for that Run; when `--qa` was passed, the prompt is
+   `QA gate [Y/n]` and Enter keeps QA on. The Agent is remembered across runs;
+   the Spec slug and QA choice never are. `--no-input` fails instead of
+   opening Interactive Input.
 
 7. Attach to a spec Run with `roundfix attach <run-id>`; the Live Run View
    shows the Spec's Tasks as its Work Items.
+
+8. Stop an Active Run for a Spec with `roundfix stop --spec <slug>` from inside
+   the current repository. This resolves that repository's Spec target,
+   releases its lock, and records the Stop Request without repository side
+   effects.
 
 ## Assigned Review Issue Batches
 
@@ -151,12 +159,12 @@ The Daemon owns verification, settling, and commits:
 
 - It re-runs the Task's Verification commands verbatim and settles the final
   status; `completed` stands only when verification passes.
-- It creates one commit per verified Task, titled `<type>: <title>` — a
-  `docs`, `test`, or `chore` Task type passes through, every other type
-  becomes `feat` — with `Roundfix-Spec` and `Roundfix-Task` trailers.
+- It creates one commit per verified Task, titled `<type>: <lowercase-title>`
+  — the first rune of the Task title lowercased only in the subject; a `docs`,
+  `test`, or `chore` Task type passes through, every other type becomes `feat`
+  — with `Roundfix-Spec` and `Roundfix-Task` trailers.
 - With `--qa`, it commits the QA Report as
-  `docs(qa): qa report for <slug> (<verdict>)` with a `Roundfix-Spec`
-  trailer.
+  `docs: qa report for <slug> (<verdict>)` with a `Roundfix-Spec` trailer.
 
 The Agent never commits, never pushes, never opens pull requests, and never
 edits the Task Graph manifest (`_tasks.md`) or any unassigned task file.

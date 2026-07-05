@@ -186,6 +186,8 @@ completion claim.**
 - **MUST** check `git status --short` before staging; keep unrelated user
   changes out of your diff.
 - Use `conventional-commits` for commits and PR titles (check `cog.toml`).
+- Commit and PR titles are unscoped Conventional Commits subjects here
+  (`cog.toml` sets `scopes = []`).
 - **NEVER** rewrite unrelated files or format the whole repo unless asked.
 - PR bodies summarize changes, call out risk, and list validation commands run.
 

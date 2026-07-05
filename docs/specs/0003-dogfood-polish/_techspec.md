@@ -142,3 +142,11 @@ contract tests change only for the two removed header lines.
   this Spec's docs task rather than edited retroactively.
 - Spec-Run logs adopt the Artifact Directory (unify, not document).
 - No new config keys; no ADRs.
+
+## Prior Spec Amendments
+
+- 2026-07-05: This Spec amends the 0001 Implement Command techspec's commit
+  contract without editing that shipped file. Per-Task commits still use the
+  same type mapping and `Roundfix-Spec`/`Roundfix-Task` trailers, but the first
+  rune of the derived Task subject is lowercased. QA Report commits now use
+  `docs: qa report for <slug> (<verdict>)` with the `Roundfix-Spec` trailer.
