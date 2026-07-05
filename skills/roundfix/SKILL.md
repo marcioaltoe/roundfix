@@ -33,7 +33,7 @@ Large docs-task payloads, especially turns that print or return large
 skill/docs file content, can trigger `-32603 Message buffer exceeded 10485760
 bytes`. Treat this as an upstream acpx limit: keep payloads smaller when
 practical, and rely on the ADR-0020 classification and the Settle Command for
-completed work preserved in the tree.
+completed work preserved in the Run Worktree.
 
 ADR-0020 classification: when acpx has delivered a valid
 `session/prompt` result for a Batch before a later nonzero acpx exit, Roundfix
@@ -144,6 +144,48 @@ roundfix upgrade --check
 roundfix skills check
 ```
 
+## Run Worktree Isolation
+
+Operational Runs that start an Agent (`resolve`, `watch`, and `implement`)
+execute in a Run Worktree, not in the user's checkout. `fetch` remains
+read/write artifact work only: it starts no Agent and creates no Run Worktree.
+
+- Each Run Worktree is created under Roundfix Home at
+  `worktrees/<repo-id>/<run-id>` on a Run Branch named
+  `roundfix/run-<id>`. The Run row records the path as `work_dir`.
+- Run startup reports the execution workspace on stderr with
+  `Run Worktree: <path>`. Terminal outcomes that keep the workspace report
+  `Run Worktree kept: <path>`.
+- Integrated Clean outcomes remove the Run Worktree and delete the Run Branch.
+  Integration Pending, Unresolved, Failed, Stopped, BudgetExceeded,
+  TimedOut, and any other non-integrated outcome keep the Run Worktree and
+  Run Branch.
+- `watch` reuses one Run Worktree across all Rounds in the Run.
+- A new Run Worktree starts from committed Git state. Untracked files in the
+  user's checkout are not present unless they are listed in `worktree.copy`;
+  each entry must be a repository-relative path that stays inside the
+  repository.
+- The built-in Artifact Directory default is Roundfix Home
+  `artifacts/<repo-id>`. Explicit `defaults.artifact_dir` values, including
+  repository-relative values, continue to override the built-in default.
+
+Integration uses porcelain git only. When integration cannot fast-forward the
+user's branch, the Run ends Integration Pending, exits `1`, keeps the Run
+Worktree and Run Branch, and prints the manual command shape:
+
+```text
+Integration command: git merge --ff-only roundfix/run-<id>
+```
+
+For Implement Runs, the stdout outcome line is:
+
+```text
+IntegrationPending: X completed, Y failed, Z skipped, W pending; integrate with git merge --ff-only roundfix/run-<id>
+```
+
+For review Runs, Final Push is skipped until integration succeeds, so a pushed
+branch is never ahead of an unintegrated local branch.
+
 Review Run output and completion contract:
 
 - With `--until-clean`, a Watch Run ends Clean only after there are no
@@ -245,23 +287,25 @@ opens pull requests (ADR-0021).
      `qa <verdict> — <report path>`; a missing report prints
      `qa missing — no QA Report found`.
    - One outcome line: `Clean: all N Task(s) completed.`,
-     `Unresolved: X completed, Y failed, Z skipped, W pending.`, or — when
-     every Task is already completed and `--qa` is absent —
+     `Unresolved: X completed, Y failed, Z skipped, W pending.`,
+     `IntegrationPending: X completed, Y failed, Z skipped, W pending; integrate with git merge --ff-only roundfix/run-<id>`,
+     or — when every Task is already completed and `--qa` is absent —
      `All N Task(s) already completed; no Run was created.`
    - When `implement.auto_push: true` and the Run ends Clean with an upstream
      branch, one final line follows the outcome: `pushed <remote>/<branch>`.
      A tested example is `pushed origin/ma/widget-flow`.
 
-4. Exit codes: `0` Clean, Stopped, or the all-completed no-op, `1` Unresolved
-   or Failed, `2` Preflight Validation failure, `130` for in-terminal Ctrl-C
-   interrupt mapping.
+4. Exit codes: `0` Clean, Stopped, or the all-completed no-op, `1` Unresolved,
+   Failed, or Integration Pending, `2` Preflight Validation failure, `130` for
+   in-terminal Ctrl-C interrupt mapping.
 
 5. Preflight Validation exits `2` with one actionable message when the Spec
    or its Task Graph is invalid (each failure names the offending Task or
-   check), the working tree has uncommitted changes, the current branch is
-   the repository default branch, another Active Run holds the work target
-   or working tree (the error names the run id and `roundfix stop <id>`),
-   or the Agent runtime probe fails.
+   check), the current branch is the repository default branch, another Active
+   Run holds the work target or working tree (the error names the run id and
+   `roundfix stop <id>`), or the Agent runtime probe fails. A dirty user
+   checkout no longer blocks `implement`; stderr prints a note shaped like
+   `roundfix: note: working tree <path> has N uncommitted change(s); implement will run in a Run Worktree, and overlapping local changes end the Run Integration Pending.`
 
 6. Without `--spec`, Interactive Input lists the repository's active Specs
    under an `Active Specs:` picker that accepts a number or a slug, and the
@@ -283,8 +327,9 @@ opens pull requests (ADR-0021).
    ```
 
    The push uses the branch's detected upstream. Missing upstream prints one
-   stderr note and leaves a Clean Run Clean. Unresolved, Failed, Stopped, and
-   failing-QA Runs do not invoke the pusher. Push failure ends the Run Failed.
+   stderr note and leaves a Clean Run Clean. Integration Pending, Unresolved,
+   Failed, Stopped, and failing-QA Runs do not invoke the pusher. Push failure
+   ends the Run Failed.
 
 9. Stop an Active Run for a Spec with `roundfix stop --spec <slug>` from inside
    the current repository. This resolves that repository's Spec target and
@@ -296,8 +341,8 @@ opens pull requests (ADR-0021).
 ## Settle Command
 
 Use `roundfix settle --spec <slug> --task <task_id>` only as a local recovery
-command for one failed Task whose completed work is already in the current
-working tree.
+command for one failed Task whose completed work is already in its kept Run
+Worktree.
 
 Flags:
 
@@ -306,10 +351,10 @@ Flags:
 
 Preflight Validation exits `2` with one actionable message when either flag is
 missing, the repository does not resolve, the Spec or Task Graph does not load,
-the Task id is absent from the Task Graph, the target Task is not `failed`, or
-another Active Run owns the Spec target or working tree. `pending` and
-`in_progress` Tasks belong to the Implement Command; completed Tasks have
-nothing to do.
+the Task id is absent from the Task Graph, the target Task is not `failed`, the
+kept Run Worktree is unavailable, or another Active Run owns the Spec target or
+working tree. `pending` and `in_progress` Tasks belong to the Implement
+Command; completed Tasks have nothing to do.
 
 stdout carries only deterministic report lines:
 
@@ -330,9 +375,17 @@ task_01 stays failed — verification failed
 Exit codes: `0` means settled completed and committed, `1` means verification
 failed and no commit was created, and `2` means Preflight Validation failed.
 
-On pass, settle stages all current worktree changes plus the task file, creates
-the standard Task commit, creates no Run, writes no Run Event Journal entries,
-and never pushes. Review the working tree before running it.
+On pass, settle verifies in the kept Run Worktree, stages all Run Worktree
+changes plus the task file, creates the standard Task commit, creates no Run,
+writes no Run Event Journal entries, and never pushes. It then runs the same
+integration protocol as `implement`; an integration refusal exits `1` and
+prints:
+
+```text
+integration pending — git merge --ff-only roundfix/run-<id>
+```
+
+Review the Run Worktree before running it.
 
 ## Assigned Review Issue Batches
 
@@ -363,7 +416,8 @@ verification commands, and assigned Review Issue status updates.
 
 Inside a Roundfix-assigned spec Run, each Task is one Batch of one. A Task's
 status is `pending`, `in_progress`, `completed`, or `failed`, and its task
-file is the sole owner of that status.
+file is the sole owner of that status. The assigned working tree is the Run
+Worktree recorded for the Run, not the user's checkout.
 
 The Agent owns the assigned task file and the working tree:
 

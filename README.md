@@ -33,7 +33,7 @@ package. Large docs-task payloads, especially turns that print or return large
 skill/docs file content, can trigger `-32603 Message buffer exceeded 10485760
 bytes`. Roundfix proceeds to verification when acpx delivered a parsed prompt
 result before that exit; if completed work is preserved in the tree but a Task
-stays failed, review the tree and run the Settle Command.
+stays failed, review the kept Run Worktree and run the Settle Command.
 
 ## Build
 
@@ -209,22 +209,22 @@ it, or set `NO_COLOR` to suppress color.
   Review Source issues. It assigns a bounded Batch, runs the selected Agent
   runtime, verifies terminal assigned issues, commits successful Batches when
   auto-commit is enabled, resolves source threads for `resolved` and `invalid`
-  assigned issues, and runs Final Push only when no Unresolved Review Issues
-  remain.
+  assigned issues, integrates the Run Worktree, and runs Final Push only when
+  no Unresolved Review Issues remain.
 - `watch` waits for CodeRabbit status on the current PR HEAD, observes the
   configured quiet period, fetches unresolved issues, resolves Batches, and
   repeats until `Clean`, `MaxRoundsReached`, `BudgetExceeded`, `TimedOut`,
   `Failed`, or `Stopped`.
-- `implement` executes a Spec's Task Graph on the current branch as one Run.
-  Tasks run in dependency order, each Task's Verification commands gate one
-  commit, and `implement.auto_push: true` makes a Clean spec Run push its
-  branch upstream and append `pushed <remote>/<branch>` to stdout. Unresolved,
-  Failed, Stopped, and failing-QA Runs never push.
-- `settle` targets one failed Task, re-runs its Verification commands, changes
-  nothing when verification fails, and on pass settles it `completed`, stages
-  all current worktree changes plus the task file, creates the standard Task
-  commit, creates no Run, writes no Run Event Journal entries, and never
-  pushes.
+- `implement` executes a Spec's Task Graph in a Run Worktree as one Run. Tasks
+  run in dependency order, each Task's Verification commands gate one commit,
+  and `implement.auto_push: true` makes a Clean spec Run push its branch
+  upstream and append `pushed <remote>/<branch>` to stdout. Integration
+  Pending, Unresolved, Failed, Stopped, and failing-QA Runs never push.
+- `settle` targets one failed Task in its kept Run Worktree, re-runs its
+  Verification commands there, changes nothing when verification fails, and on
+  pass settles it `completed`, stages all Run Worktree changes plus the task
+  file, creates the standard Task commit, creates no Run, writes no Run Event
+  Journal entries, and never pushes.
 - `stop` is graceful by default. It records a Stop Request in the Run Database
   and reports `Stop Request recorded; the Run stops after the current Work Item
   settles.` Use `--force` only for a dead, stuck, or runaway Run; it cancels
@@ -254,7 +254,8 @@ Example:
 defaults:
   agent: codex
   verification: make verify
-  artifact_dir: .roundfix
+  # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
+  artifact_dir: ""
   auto_commit: true
 
 review_source:
@@ -272,6 +273,10 @@ watch:
 implement:
   auto_push: false
 
+worktree:
+  # Repository-relative untracked files copied into each Run Worktree.
+  copy: []
+
 budget:
   enabled: true
   max_run_duration: 2h
@@ -284,7 +289,8 @@ resolve:
 ## Local State
 
 - Run Database: `~/.roundfix/roundfix.db`
-- Default Artifact Directory: `<repo>/.roundfix/`
+- Run Worktrees: Roundfix Home `worktrees/<repo-id>/<run-id>`
+- Default Artifact Directory: Roundfix Home `artifacts/<repo-id>`
 - Review Issue artifacts:
   `<artifact-dir>/reviews/pr-<number>/round-<nnn>/issue_<nnn>.md`
 - Agent logs:
@@ -298,12 +304,17 @@ are deduplicated later during `resolve` by Review Issue Fingerprint, preferring
 `source_ref` such as `thread:<id>,comment:<id>` and falling back to
 `review_hash`.
 
-Roundfix rejects dirty worktree changes outside the Artifact Directory before
-starting operational work. `fetch` allows a local Project Config change at
-`.roundfixrc.yml` because it never starts an Agent, commits, or pushes.
-`resolve` and `watch` also allow `.roundfixrc.yml`, but Batch commits exclude it
-so local setup changes do not mix with review fixes. Terminal Run outcomes
-release the Active Run lock for the PR Head Branch.
+Operational Runs that start an Agent work in Run Worktrees. A new Run Worktree
+starts from committed Git state, so untracked files in the user's checkout are
+absent unless they are listed under `worktree.copy`; add repository-relative
+paths there when Verification or local tooling needs untracked files. Dirty
+user checkout behavior is command-specific: `implement` no longer blocks on it
+and instead prints a note that overlapping local changes end the Run Integration
+Pending. Other operational commands retain their existing preflight rules,
+including the local Project Config allowances for `fetch`, `resolve`, and
+`watch` at `.roundfixrc.yml`. Batch commits exclude that config file so local
+setup changes do not mix with review fixes. Terminal Run outcomes release the
+Active Run lock for the PR Head Branch.
 
 The current CodeRabbit fetch imports unresolved inline review threads.
 CodeRabbit review-body summaries and outside-diff comments are not converted

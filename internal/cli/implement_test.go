@@ -1595,8 +1595,9 @@ func TestRunImplementOverlapEndsIntegrationPendingAndPrintedCommandWorks(t *test
 	if command != wantCommand {
 		t.Fatalf("expected integration command %q, got %q", wantCommand, command)
 	}
-	if !strings.Contains(stdout.String(), wantCommand) {
-		t.Fatalf("expected outcome line to contain integration command, got %q", stdout.String())
+	wantOutcome := "IntegrationPending: 1 completed, 0 failed, 0 skipped, 0 pending; integrate with " + wantCommand
+	if !strings.Contains(stdout.String(), wantOutcome) {
+		t.Fatalf("expected Integration Pending outcome line %q, got %q", wantOutcome, stdout.String())
 	}
 	gitImplement(t, repoDir, "stash", "push", "-m", "overlap before integration")
 	runPrintedIntegrationCommand(t, repoDir, command)
