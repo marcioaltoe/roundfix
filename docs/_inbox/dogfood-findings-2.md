@@ -54,6 +54,12 @@ Sizes: `cosmetic` / `small` / `spec`.
    parsed-result-over-exit-code classification plus an upstream buffer
    report/mitigation.
 
+   **RESOLVED 2026-07-05** — findings 2 and 3 shipped in spec
+   `0006-acpx-run-robustness` (ADR-0020 classification in task_01; the
+   Settle Command in task_02, first real use settling task_03 itself);
+   finding 1's outcome is recorded above (upstream-only, issue draft in the
+   0006 task_03 Result). Round 2 closed with QA pass.
+
 4. **RESOLVED 2026-07-05** — 0004's docs task flagged that `merge-ready`
    (ADR-0019 vocabulary) had no `CONTEXT.md` entry; the **Merge-Ready**
    glossary term was added at the Run boundary in the same commit as this
