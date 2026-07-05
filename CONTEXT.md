@@ -76,6 +76,10 @@ _Avoid_: Failure, timeout, budget exceeded
 A terminal Run outcome where the cycle completed but unresolved Work Items remain: Unresolved Review Issues blocking Final Push, Tasks not completed, or a failing QA verdict. Distinct from Failed, which means the Run itself broke.
 _Avoid_: Failure, crash, partial success
 
+**Clean**:
+A terminal Run outcome where the cycle completed with nothing unresolved remaining: no Unresolved Review Issues for review work, or every Task completed — and a passing QA verdict when requested — for spec work.
+_Avoid_: Success, done, green
+
 **Run Budget**:
 A safeguard that stops a Run before it can continue indefinitely and indirectly consume unbounded resources.
 _Avoid_: Max rounds, review round limit
