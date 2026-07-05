@@ -157,3 +157,14 @@ its own PRD/techspec cycle).
     bounded by Max Rounds. Size: small/medium (one more status source in the
     watch loop; the review-status seam already exists). Pairs with finding
     18 (poll-first ordering).
+
+21. **Temp-repo tests are not hermetic against user git config.** (Implement
+    dogfood, task_06.) On a machine with global `commit.gpgsign=true`, six
+    temporary-repo tests failed with `gpg failed to sign the data`; the
+    executing agent had to pass `GIT_CONFIG_*` env overrides to reach a green
+    gate (the Daemon's own verbatim re-run then passed, so settlement was
+    unaffected — likely gpg-agent caching, which also makes this flaky).
+    Root fix: test helpers that create git repos must isolate config
+    (`GIT_CONFIG_GLOBAL=/dev/null` + explicit `commit.gpgsign=false`/user
+    identity in the temp repo), matching the daemon's own `-c` discipline.
+    Size: small.
