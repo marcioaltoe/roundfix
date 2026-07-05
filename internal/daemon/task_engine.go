@@ -29,6 +29,7 @@ const specRunArtifactDirName = ".roundfix"
 // Agent working directory.
 type TaskPlan struct {
 	RunID   string
+	Session agent.SessionRef
 	WorkDir string
 	Spec    spec.Spec
 	Tasks   []spec.Task
@@ -216,6 +217,7 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 
 	_, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
 		Runtime: plan.Runtime,
+		Session: plan.Session,
 		RunID:   plan.RunID,
 		Batch:   rounds.Batch{Number: ordinal},
 		LogPath: logPath,
@@ -398,6 +400,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, ordinal int)
 	fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
 	if _, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
 		Runtime: plan.Runtime,
+		Session: plan.Session,
 		RunID:   plan.RunID,
 		Batch:   rounds.Batch{Number: ordinal},
 		LogPath: logPath,
@@ -557,9 +560,10 @@ func (engine *Engine) publishTaskEvent(ctx context.Context, runID string, ordina
 
 func validateTaskPlan(plan TaskPlan) error {
 	required := map[string]string{
-		"Run ID":       plan.RunID,
-		"working tree": plan.WorkDir,
-		"Spec slug":    plan.Spec.Slug,
+		"Run ID":        plan.RunID,
+		"Agent Session": plan.Session.Name,
+		"working tree":  plan.WorkDir,
+		"Spec slug":     plan.Spec.Slug,
 	}
 	for label, value := range required {
 		if strings.TrimSpace(value) == "" {

@@ -73,17 +73,19 @@ func (sink *captureEventSink) kinds() []runevent.Kind {
 }
 
 type engineFakeRunner struct {
-	calls  *[]string
-	status string
-	err    error
-	store  *store.Store
-	seen   []string
+	calls    *[]string
+	status   string
+	err      error
+	store    *store.Store
+	seen     []string
+	requests []agent.ExecuteRequest
 }
 
 func (runner *engineFakeRunner) Probe(context.Context, agent.RuntimeSpec) error { return nil }
 
 func (runner *engineFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
 	*runner.calls = append(*runner.calls, "agent")
+	runner.requests = append(runner.requests, req)
 	runner.seen = append(runner.seen, runStateForTest(runner.store, req.RunID))
 	if runner.err != nil {
 		if agent.IsStopError(runner.err) && sink != nil {
@@ -265,6 +267,7 @@ func (fixture *engineFixture) plan() CyclePlan {
 	}
 	return CyclePlan{
 		RunID:        fixture.run.ID,
+		Session:      agent.SessionRefForRun(fixture.run.ID),
 		GitRoot:      fixture.gitRoot,
 		ArtifactDir:  fixture.artifactDir,
 		SourceName:   reviewsource.SourceCodeRabbit,
@@ -476,12 +479,14 @@ func TestResolveCycleContinuesToNextBatchAfterFailedBatch(t *testing.T) {
 	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID, failFirst: true}
 	committer := &engineFakeCommitter{calls: fixture.calls}
 	source := &engineFakeSource{calls: fixture.calls}
-	engine := fixture.engine(t, &engineFakeRunner{calls: fixture.calls, store: fixture.store}, verifier, committer, &engineFakePusher{calls: fixture.calls}, source)
 	plan := fixture.plan()
+	plan.Session = agent.SessionRefForRun(fixture.run.ID)
 	plan.Batches = []rounds.Batch{
 		{Number: 1, Issues: []rounds.Issue{{Path: fixture.issuePaths[0]}}},
 		{Number: 2, Issues: []rounds.Issue{{Path: fixture.issuePaths[1]}}},
 	}
+	runner := &engineFakeRunner{calls: fixture.calls, store: fixture.store}
+	engine := fixture.engine(t, runner, verifier, committer, &engineFakePusher{calls: fixture.calls}, source)
 
 	result, err := engine.ResolveCycle(context.Background(), plan)
 
@@ -519,6 +524,14 @@ func TestResolveCycleContinuesToNextBatchAfterFailedBatch(t *testing.T) {
 	}
 	if len(committer.paths) != 1 || strings.Join(committer.paths[0], ",") != "src/batch-two-change.go" {
 		t.Fatalf("expected second Batch commit to exclude first Batch residue, got %v", committer.paths)
+	}
+	if len(runner.requests) != 2 {
+		t.Fatalf("expected two Agent requests, got %d", len(runner.requests))
+	}
+	for _, req := range runner.requests {
+		if req.Session != plan.Session {
+			t.Fatalf("expected shared Agent Session %#v, got %#v", plan.Session, req.Session)
+		}
 	}
 }
 

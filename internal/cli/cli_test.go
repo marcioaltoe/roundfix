@@ -614,6 +614,91 @@ watch:
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
 }
 
+func TestRunWatchReusesOneAgentSessionAcrossRoundsAndCloses(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	inner := &fakeAgentRunner{statuses: []string{rounds.StatusResolved, rounds.StatusFailed, rounds.StatusResolved}}
+	runner := &sessionRecordingRunner{inner: inner}
+	withAgentRunner(t, runner)
+	withFakeWorktree(t)
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
+resolve:
+  batch_size: 1
+`)
+	fetchCalls := 0
+	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
+		fetchCalls++
+		switch fetchCalls {
+		case 1:
+			return []reviewsource.ReviewItem{
+				{
+					Title:                   "major: handle first issue",
+					File:                    "internal/first.go",
+					Line:                    12,
+					Severity:                "major",
+					Author:                  "coderabbitai[bot]",
+					Body:                    "First issue.",
+					SourceRef:               "thread:PRRT_first,comment:PRRC_first",
+					ReviewHash:              "review-hash-first",
+					SourceReviewID:          "9001",
+					SourceReviewSubmittedAt: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC),
+				},
+				{
+					Title:                   "major: handle retry issue",
+					File:                    "internal/retry.go",
+					Line:                    24,
+					Severity:                "major",
+					Author:                  "coderabbitai[bot]",
+					Body:                    "Retry issue.",
+					SourceRef:               "thread:PRRT_retry_1,comment:PRRC_retry_1",
+					ReviewHash:              "review-hash-retry",
+					SourceReviewID:          "9002",
+					SourceReviewSubmittedAt: time.Date(2026, 6, 9, 12, 1, 0, 0, time.UTC),
+				},
+			}, nil
+		default:
+			return []reviewsource.ReviewItem{
+				{
+					Title:                   "major: handle retry issue",
+					File:                    "internal/retry.go",
+					Line:                    24,
+					Severity:                "major",
+					Author:                  "coderabbitai[bot]",
+					Body:                    "Retry issue.",
+					SourceRef:               "thread:PRRT_retry_2,comment:PRRC_retry_2",
+					ReviewHash:              "review-hash-retry",
+					SourceReviewID:          "9003",
+					SourceReviewSubmittedAt: time.Date(2026, 6, 9, 12, 2, 0, 0, time.UTC),
+				},
+			}, nil
+		}
+	})
+	withWatchStatus(t, (&fakeWatchStatus{
+		statuses: []reviewsource.WatchStatus{
+			{State: watch.StatusSettled},
+			{State: watch.StatusSettled},
+		},
+	}).Status)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "2", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean watch exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if fetchCalls != 2 {
+		t.Fatalf("expected two fetched Rounds, got %d", fetchCalls)
+	}
+	if !strings.Contains(stderr.String(), "after 2 Round(s)") {
+		t.Fatalf("expected Watch Run to span two Rounds, got %q", stderr.String())
+	}
+	runID, events := journaledRunEvents(t, homeDir, stderr.String())
+	assertRecordedOneSessionForRun(t, runner, runID, inner.calls)
+	assertSessionLifecycleEvents(t, events)
+	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
+}
+
 func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -1316,6 +1401,127 @@ resolve:
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
+}
+
+func TestRunResolveUsesOneAgentSessionPerRunAndCloses(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	inner := &fakeAgentRunner{}
+	runner := &sessionRecordingRunner{inner: inner}
+	withAgentRunner(t, runner)
+	withFakeWorktree(t)
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
+resolve:
+  batch_size: 1
+`)
+	persistCLIReviewItems(t, repoDir, 1, "feature/review", []reviewsource.ReviewItem{
+		{
+			Title:                   "major: handle first issue",
+			File:                    "internal/first.go",
+			Line:                    12,
+			Severity:                "major",
+			Author:                  "coderabbitai[bot]",
+			Body:                    "First issue.",
+			SourceRef:               "thread:PRRT_first,comment:PRRC_first",
+			ReviewHash:              "review-hash-first",
+			SourceReviewID:          "9001",
+			SourceReviewSubmittedAt: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC),
+		},
+		{
+			Title:                   "major: handle second issue",
+			File:                    "internal/second.go",
+			Line:                    24,
+			Severity:                "major",
+			Author:                  "coderabbitai[bot]",
+			Body:                    "Second issue.",
+			SourceRef:               "thread:PRRT_second,comment:PRRC_second",
+			ReviewHash:              "review-hash-second",
+			SourceReviewID:          "9002",
+			SourceReviewSubmittedAt: time.Date(2026, 6, 9, 12, 1, 0, 0, time.UTC),
+		},
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean resolve exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if inner.calls != 2 {
+		t.Fatalf("expected two Agent calls for two Batches, got %d", inner.calls)
+	}
+	runID, events := journaledRunEvents(t, homeDir, stderr.String())
+	assertRecordedOneSessionForRun(t, runner, runID, inner.calls)
+	assertSessionLifecycleEvents(t, events)
+}
+
+func TestRunResolveClosesAgentSessionForTerminalOutcomes(t *testing.T) {
+	tests := []struct {
+		name      string
+		inner     agent.Runner
+		pusherErr error
+		wantCode  int
+		wantState string
+		closeErr  error
+	}{
+		{
+			name:      "clean",
+			inner:     &fakeAgentRunner{},
+			wantCode:  0,
+			wantState: store.StateClean,
+			closeErr:  errors.New("close failed"),
+		},
+		{
+			name:      "unresolved",
+			inner:     &fakeAgentRunner{runErr: errors.New("agent crashed")},
+			wantCode:  1,
+			wantState: store.StateUnresolved,
+		},
+		{
+			name:      "failed",
+			inner:     &fakeAgentRunner{},
+			pusherErr: errors.New("push failed"),
+			wantCode:  1,
+			wantState: store.StateFailed,
+		},
+		{
+			name:      "stopped",
+			inner:     &fakeStoppingAgentRunner{},
+			wantCode:  0,
+			wantState: store.StateStopped,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			withSuccessfulPreflight(t, repoDir)
+			runner := &sessionRecordingRunner{inner: tt.inner, closeErr: tt.closeErr}
+			withAgentRunner(t, runner)
+			withFakeWorktree(t)
+			if tt.pusherErr != nil {
+				withPusher(t, &fakePusher{err: tt.pusherErr})
+			}
+			if tt.wantState == store.StateStopped {
+				withChangedPaths(t, nil)
+			}
+			persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+			if code != tt.wantCode {
+				t.Fatalf("expected exit code %d, got %d stderr=%q", tt.wantCode, code, stderr.String())
+			}
+			runID, _ := journaledRunEvents(t, homeDir, stderr.String())
+			run := runFromStore(t, homeDir, runID)
+			if run.State != tt.wantState {
+				t.Fatalf("expected Run state %q, got %q", tt.wantState, run.State)
+			}
+			assertRecordedOneSessionForRun(t, runner, runID, len(runner.runSessions))
+		})
+	}
 }
 
 func TestRunResolveRejectsIncompatibleArtifacts(t *testing.T) {
@@ -2374,6 +2580,7 @@ type fakeAgentRunner struct {
 	probeErr       error
 	runErr         error
 	status         string
+	statuses       []string
 	calls          int
 	probedRuntimes []agent.RuntimeSpec
 	runRuntimes    []agent.RuntimeSpec
@@ -2388,6 +2595,9 @@ func (runner *fakeAgentRunner) Run(ctx context.Context, req agent.ExecuteRequest
 	runner.calls++
 	runner.runRuntimes = append(runner.runRuntimes, req.Runtime)
 	status := runner.status
+	if len(runner.statuses) >= runner.calls {
+		status = runner.statuses[runner.calls-1]
+	}
 	if status == "" {
 		status = rounds.StatusResolved
 	}
@@ -2458,6 +2668,123 @@ func (runner *fakeStoppingAgentRunner) EndSession(context.Context, agent.Runtime
 	return nil
 }
 
+type sessionRecordingRunner struct {
+	inner          agent.Runner
+	closeErr       error
+	runSessions    []agent.SessionRef
+	ensureSessions []agent.SessionRef
+	closeSessions  []agent.SessionRef
+	seenSessions   map[string]bool
+}
+
+func (runner *sessionRecordingRunner) Probe(ctx context.Context, runtime agent.RuntimeSpec) error {
+	return runner.inner.Probe(ctx, runtime)
+}
+
+func (runner *sessionRecordingRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
+	runner.runSessions = append(runner.runSessions, req.Session)
+	sessionName := strings.TrimSpace(req.Session.Name)
+	if sessionName != "" {
+		if runner.seenSessions == nil {
+			runner.seenSessions = map[string]bool{}
+		}
+		if !runner.seenSessions[sessionName] {
+			runner.seenSessions[sessionName] = true
+			runner.ensureSessions = append(runner.ensureSessions, req.Session)
+			if err := publishFakeSessionStatus(ctx, sink, req, "session_started"); err != nil {
+				return agent.ExecuteResult{}, err
+			}
+		}
+	}
+	return runner.inner.Run(ctx, req, sink)
+}
+
+func (runner *sessionRecordingRunner) EndSession(ctx context.Context, runtime agent.RuntimeSpec, session agent.SessionRef) error {
+	runner.closeSessions = append(runner.closeSessions, session)
+	if err := runner.inner.EndSession(ctx, runtime, session); err != nil {
+		return err
+	}
+	return runner.closeErr
+}
+
+func publishFakeSessionStatus(ctx context.Context, sink runevent.Sink, req agent.ExecuteRequest, status string) error {
+	if sink == nil {
+		return nil
+	}
+	payload, err := json.Marshal(struct {
+		Status string `json:"status"`
+	}{Status: status})
+	if err != nil {
+		return err
+	}
+	return sink.Publish(ctx, runevent.RunEvent{
+		RunID:   req.RunID,
+		Batch:   req.Batch.Number,
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentStatus,
+		Summary: "SESSION " + strings.ToUpper(status) + "\n",
+		Payload: payload,
+	})
+}
+
+func assertRecordedOneSessionForRun(t *testing.T, runner *sessionRecordingRunner, runID string, wantRunCalls int) {
+	t.Helper()
+	want := agent.SessionRefForRun(runID)
+	if len(runner.ensureSessions) != 1 || runner.ensureSessions[0] != want {
+		t.Fatalf("expected exactly one ensure for %#v, got %#v", want, runner.ensureSessions)
+	}
+	if len(runner.closeSessions) != 1 || runner.closeSessions[0] != want {
+		t.Fatalf("expected exactly one close for %#v, got %#v", want, runner.closeSessions)
+	}
+	if len(runner.runSessions) != wantRunCalls {
+		t.Fatalf("expected %d Agent run session records, got %#v", wantRunCalls, runner.runSessions)
+	}
+	for _, session := range runner.runSessions {
+		if session != want {
+			t.Fatalf("expected every Agent run to use %#v, got %#v", want, runner.runSessions)
+		}
+	}
+}
+
+func assertSessionLifecycleEvents(t *testing.T, events []store.JournalEvent) {
+	t.Helper()
+	started := false
+	closed := false
+	for _, entry := range events {
+		if entry.Event.Kind != runevent.KindAgentStatus {
+			continue
+		}
+		payload := string(entry.Event.Payload)
+		started = started || strings.Contains(payload, `"session_started"`)
+		closed = closed || strings.Contains(payload, `"session_closed"`)
+	}
+	if !started || !closed {
+		t.Fatalf("expected session_started and session_closed agent.status events, got %+v", events)
+	}
+}
+
+func runFromStore(t *testing.T, homeDir string, runID string) store.Run {
+	t.Helper()
+	ctx := context.Background()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close store: %v", err)
+		}
+	}()
+	run, found, err := runStore.Run(ctx, runID)
+	if err != nil {
+		t.Fatalf("read run %s: %v", runID, err)
+	}
+	if !found {
+		t.Fatalf("run %s not found", runID)
+	}
+	return run
+}
+
 func journaledRunEvents(t *testing.T, homeDir string, stderr string) (string, []store.JournalEvent) {
 	t.Helper()
 	runID := ""
@@ -2468,6 +2795,10 @@ func journaledRunEvents(t *testing.T, homeDir string, stderr string) (string, []
 			break
 		}
 		if value, ok := strings.CutPrefix(trimmed, "Watch Run: "); ok {
+			runID = strings.TrimSpace(value)
+			break
+		}
+		if value, ok := strings.CutPrefix(trimmed, "Implement Run: "); ok {
 			runID = strings.TrimSpace(value)
 			break
 		}

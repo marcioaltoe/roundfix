@@ -27,6 +27,9 @@ its own PRD/techspec cycle).
    event (messages, thoughts, skill text). An automated supervisor has to
    anchor-grep for daemon lines. Candidate: a diagnostics verbosity level
    (e.g. daemon-events-only) for machine supervision. Size: small.
+   **Recurred during the review dogfood (2026-07-05)**: the watch supervisor
+   needed two rounds of filter re-tuning because agent-console text (skill
+   descriptions) kept matching outcome vocabulary like "Clean".
 
 ## Carried from 0001 QA report and task Results
 
@@ -56,11 +59,9 @@ its own PRD/techspec cycle).
 
 ## Repo and docs hygiene
 
-11. **`docs/agents/issue-tracker.md` has a stale "Knowledge workspace"
-    section.** It claims `docs` is a symlink into `.knowledge/` and mandates
-    `git -C .knowledge` commits; the knowledge-workspace setup was dropped
-    (commit 412fad2) and `docs/` is a real directory. Prune the section.
-    Size: cosmetic.
+11. **RESOLVED 2026-07-05** — the stale "Knowledge workspace" section in
+    `docs/agents/issue-tracker.md` was pruned by Marcio's docs/agents update
+    (landed inside a0e572d).
 12. **Prompt-contract drift remains structural.** `BuildTaskPrompt` mirrors
     the implement-task skill by construction, not mechanism; templating is
     work-plan item 5. Listed for completeness. Size: spec.
@@ -84,6 +85,15 @@ its own PRD/techspec cycle).
     during an Active Run", and/or journal a warning when a task commit stages
     paths outside the roots the task file references. Size: spec (proper) /
     small (warning heuristic).
+    **Escalated at task_03**: commit a0e572d swept 53 files / −2,855 lines of
+    concurrent user cleanup (`.scratch/_achieved/**`, `docs/plans/`,
+    knowledge-workspace removal, `AGENTS.md`, `docs/agents/*`,
+    `skills-lock.json`). Code check ruled out a parsing bug —
+    `parsePorcelainPaths` does capture deletions, so pre-task dirt is
+    excluded correctly; the sweep is pure timing (the next task's
+    before-snapshot lands milliseconds after the previous commit, so any
+    user change during a long task window postdates it). The interim
+    warning heuristic gains urgency.
 
 16. **Codex full-access through acpx may lack the danger sandbox preset.**
     task_02 verified `acpx@0.12.0` + pinned `@agentclientprotocol/codex-acp@0.0.44`:
@@ -111,3 +121,39 @@ its own PRD/techspec cycle).
     mid-Run; artifacts would need committing like `qa/` or explicit
     exclusion). Same problem family as finding 15 — consider solving both in
     one spec. Size: spec (own PRD; supersedes ADR-0003).
+
+18. **Watch should poll first, sleep after.** (Marcio, 2026-07-05, review
+    dogfood.) On start, watch should immediately check whether the Open Pull
+    Request already has comments/Review Issues — an already-settled review
+    with waiting feedback should flow straight into fetch — and apply
+    `poll_interval` only between subsequent checks. Same instinct for the
+    quiet period: skip or shorten it when the Review Source was already
+    settled before the Run began. Today the timers run ahead of the first
+    useful check, adding dead wait to the common "review finished long ago"
+    case. Size: small (watch loop ordering).
+
+19. **Watch has no stdout contract.** (Review dogfood, 2026-07-05: Run
+    `run_20260705T112746Z_d514575a110198e5`, tax-poc PR #9, Clean after 1
+    Round.) The entire outcome report — fetch counts, batch settlement,
+    verification result, Final Push, `reached Clean after 1 Round(s)` — went
+    to stderr and stdout ended empty; exit code is the only machine-readable
+    result. Inconsistent with the Implement Command's deterministic stdout
+    report and the repo's own stdout-carries-requested-output rule.
+    Candidate: give watch (and resolve) a deterministic stdout report shaped
+    like implement's per-item lines plus one outcome line. Size: small.
+
+20. **Watch should end on merge-readiness, not only on local Clean.**
+    (Marcio, 2026-07-05, review dogfood.) Watch terminates on Max Rounds or
+    when the local Review Issue set empties — but the PR's real gate is the
+    GitHub status check CodeRabbit reports on the head commit (the merge-box
+    "pending check" that blocks squash/merge; GitHub vocabulary: commit
+    status / check run, readable via `gh pr checks` or the Checks API).
+    Observed live: right after the Final Push, the Run was already Clean
+    while the PR showed "CodeRabbit — Waiting for status to be reported —
+    Review in progress" on the pushed commit. Proposal: watch's until-clean
+    should (optionally) keep watching after the Final Push until the
+    CodeRabbit check on the final head SHA reports success with no new
+    Review Issues — making Clean mean "ready for squash/merge" — still
+    bounded by Max Rounds. Size: small/medium (one more status source in the
+    watch loop; the review-status seam already exists). Pairs with finding
+    18 (poll-first ordering).

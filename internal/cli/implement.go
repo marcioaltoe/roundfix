@@ -150,7 +150,9 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
+	session := agent.SessionRefForRun(run.ID)
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
+		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
 		markRunFailed(ctx, runStore, run.ID)
 		printImplementRunFailure(err, stderr)
 		return exitRunFailed
@@ -162,6 +164,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 	ui, err := startRunUI(ctx, view, run.ID, loadedConfig.HomeDir, runStore, stderr)
 	if err != nil {
+		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
 		markRunFailed(ctx, runStore, run.ID)
 		printImplementRunFailure(err, stderr)
 		return exitRunFailed
@@ -171,6 +174,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	cycleResult, err := executeImplementCycle(ctx, gitState, run.ID, graph, req.qa, runtime, collaborators, runStore, ui)
 	if err != nil {
 		if isStopRequest(ctx, err) {
+			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
 			code := completeStoppedRunRecord(runStore, run.ID)
 			ui.Wait()
 			ui.Close()
@@ -183,6 +187,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			printImplementOutcomeLine(stdout, store.StateStopped, counts)
 			return exitOK
 		}
+		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
 		markRunFailed(ctx, runStore, run.ID)
 		ui.Wait()
 		ui.Close()
@@ -202,9 +207,11 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	completed, err := runStore.CompleteRun(ctx, run.ID, outcome)
 	if err != nil {
 		ui.Close()
+		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
 		printImplementRunFailure(err, stderr)
 		return exitRunFailed
 	}
+	closeAgentSession(ctx, collaborators.runner, runtime, session, completed.ID, runStore)
 	publishRunOutcome(ctx, runStore, completed.ID, completed.State, cycleResult.Failed+cycleResult.Skipped, stderr)
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
@@ -308,6 +315,7 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, run
 	}
 	return engine.TaskCycle(ctx, daemon.TaskPlan{
 		RunID:   runID,
+		Session: agent.SessionRefForRun(runID),
 		WorkDir: gitState.Root,
 		Spec:    graph.Spec,
 		Tasks:   graph.Tasks,

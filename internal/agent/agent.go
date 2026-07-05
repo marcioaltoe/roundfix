@@ -88,15 +88,20 @@ const (
 	ProtocolACP   = "acp"
 	ProtocolStdio = "stdio"
 
+	AgentSessionStartedStatus = "session_started"
+	AgentSessionClosedStatus  = "session_closed"
+
 	DefaultCodexModel    = "gpt-5.5"
 	DefaultClaudeModel   = "opus"
 	DefaultOpenCodeModel = "anthropic/claude-opus-4-6"
 )
 
-// DefaultRunner dispatches to the protocol-specific runner. Now overrides
-// the event clock; nil means time.Now.
+// DefaultRunner dispatches real Agent work through acpx. Now overrides the
+// event clock; nil means time.Now.
 type DefaultRunner struct {
 	Now func() time.Time
+
+	acpx *ACPXRunner
 }
 
 // ExecRunner runs stdio Agents and publishes their output as agent.raw Run
@@ -336,25 +341,28 @@ func (runner ExecRunner) Probe(ctx context.Context, runtime RuntimeSpec) error {
 	return nil
 }
 
-func (runner DefaultRunner) Probe(ctx context.Context, runtime RuntimeSpec) error {
-	if runtime.Protocol == ProtocolACP {
-		return ACPRunner{}.Probe(ctx, runtime)
-	}
-	return ExecRunner{}.Probe(ctx, runtime)
+func NewDefaultRunner() *DefaultRunner {
+	return &DefaultRunner{acpx: &ACPXRunner{}}
 }
 
-func (runner DefaultRunner) Run(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error) {
-	if req.Runtime.Protocol == ProtocolACP {
-		return ACPRunner{Now: runner.Now}.Run(ctx, req, sink)
-	}
-	return ExecRunner{Now: runner.Now}.Run(ctx, req, sink)
+func (runner *DefaultRunner) Probe(ctx context.Context, runtime RuntimeSpec) error {
+	return runner.acpxRunner().Probe(ctx, runtime)
 }
 
-func (runner DefaultRunner) EndSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error {
-	if runtime.Protocol == ProtocolACP {
-		return ACPRunner{}.EndSession(ctx, runtime, session)
+func (runner *DefaultRunner) Run(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error) {
+	return runner.acpxRunner().Run(ctx, req, sink)
+}
+
+func (runner *DefaultRunner) EndSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error {
+	return runner.acpxRunner().EndSession(ctx, runtime, session)
+}
+
+func (runner *DefaultRunner) acpxRunner() *ACPXRunner {
+	if runner.acpx == nil {
+		runner.acpx = &ACPXRunner{}
 	}
-	return ExecRunner{}.EndSession(ctx, runtime, session)
+	runner.acpx.Now = runner.Now
+	return runner.acpx
 }
 
 func (runner ACPRunner) EndSession(context.Context, RuntimeSpec, SessionRef) error {

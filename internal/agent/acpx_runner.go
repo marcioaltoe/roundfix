@@ -225,6 +225,9 @@ func (runner *ACPXRunner) ensureSession(ctx context.Context, req ExecuteRequest,
 	if runner.ensuredSessions == nil {
 		runner.ensuredSessions = map[string]struct{}{}
 	}
+	if err := runner.publishStatus(ctx, req, sink, AgentSessionStartedStatus); err != nil {
+		return err
+	}
 	runner.ensuredSessions[sessionName] = struct{}{}
 	return nil
 }

@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0002-acpx-migration
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -22,18 +22,18 @@ Connect the acpx runner to real Runs: the CLI derives the Agent Session name fro
 
 ## Subtasks
 
-- [ ] Session name derivation and lazy creation at first Agent work
-- [ ] Session reference through the resolve cycle and TaskCycle plans
-- [ ] `EndSession` on every terminal path of both paths, including stop
-- [ ] Default runner switch to acpx with probe at the existing call sites
-- [ ] Session lifecycle journaled via existing event kinds
+- [x] Session name derivation and lazy creation at first Agent work
+- [x] Session reference through the resolve cycle and TaskCycle plans
+- [x] `EndSession` on every terminal path of both paths, including stop
+- [x] Default runner switch to acpx with probe at the existing call sites
+- [x] Session lifecycle journaled via existing event kinds
 
 ## Acceptance Criteria
 
-- [ ] A multi-Batch review Run and a multi-Task spec Run each show exactly one ensure per Run and one close at the end (asserted via runner fakes recording session calls).
-- [ ] Terminal-path matrix tests: Clean, Unresolved, Failed, and Stopped each close the session on both paths; a failing close never changes the Run outcome or exit code.
-- [ ] Watch Runs reuse one session across their Rounds' resolve cycles within the same Run and close it at the watch outcome.
-- [ ] The full existing suite passes with unchanged assertions on stdout, exit codes, states, and events.
+- [x] A multi-Batch review Run and a multi-Task spec Run each show exactly one ensure per Run and one close at the end (asserted via runner fakes recording session calls).
+- [x] Terminal-path matrix tests: Clean, Unresolved, Failed, and Stopped each close the session on both paths; a failing close never changes the Run outcome or exit code.
+- [x] Watch Runs reuse one session across their Rounds' resolve cycles within the same Run and close it at the watch outcome.
+- [x] The full existing suite passes with unchanged assertions on stdout, exit codes, states, and events.
 
 ## Verification
 
@@ -44,3 +44,17 @@ Connect the acpx runner to real Runs: the CLI derives the Agent Session name fro
 ## References
 
 `_prd.md` → User Stories 1, 2; Core Features 2, 8; Success Metrics (one spawn per Run). `_techspec.md` → System Architecture (edges), Coverage Map, Build Order 4. ADR-0018.
+
+## Result
+
+- Implemented one lazily ensured Agent Session per Run through the acpx default runner, named with `agent.SessionRefForRun(run.ID)` and shared by the review resolve, watch, and spec implement paths.
+- Threaded `Session` through `daemon.CyclePlan` and `daemon.TaskPlan` into every `agent.ExecuteRequest`; fetch remains Agent-free.
+- Added best-effort terminal session close calls for Clean, Unresolved, Failed, and Stopped outcomes on resolve/watch and implement, with lifecycle journal entries using existing `agent.status` events and no new Run Event vocabulary.
+- Extended runner fakes and CLI/daemon tests to prove one ensure and one close per multi-Batch/multi-Task Run, terminal close behavior including close failure, and watch session reuse across rounds.
+
+Verification evidence:
+
+- `rtk go test ./internal/cli/ ./internal/daemon/` passed: 181 tests passed in 2 packages.
+- `rtk go test -race ./internal/daemon/` passed: 37 tests passed in 1 package.
+- `rtk go test ./...` passed: 452 tests passed in 16 packages.
+- `rtk make verify` passed: full test suite, `roundfix skills check`, and build completed.

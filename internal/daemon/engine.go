@@ -71,6 +71,7 @@ type PullRequestRef struct {
 // Review Issues already assembled into Batches for an already-created Run.
 type CyclePlan struct {
 	RunID        string
+	Session      agent.SessionRef
 	GitRoot      string
 	ArtifactDir  string
 	SourceName   string
@@ -304,6 +305,7 @@ func (engine *Engine) runBatchAgent(ctx context.Context, plan CyclePlan, batch r
 
 	_, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
 		Runtime:      plan.Runtime,
+		Session:      plan.Session,
 		RunID:        plan.RunID,
 		Batch:        batch,
 		LogPath:      logPath,
@@ -573,6 +575,7 @@ func (engine *Engine) reportPending(plan CyclePlan, failedIndex int) {
 func validateCyclePlan(plan CyclePlan) error {
 	required := map[string]string{
 		"Run ID":             plan.RunID,
+		"Agent Session":      plan.Session.Name,
 		"git root":           plan.GitRoot,
 		"Artifact Directory": plan.ArtifactDir,
 	}

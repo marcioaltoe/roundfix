@@ -964,7 +964,9 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
+	session := agent.SessionRefForRun(run.ID)
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
+		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
 		markRunFailed(ctx, runStore, run.ID)
 		printResolveRunFailure(err, stderr)
 		return exitRunFailed
@@ -979,6 +981,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	}
 	ui, err := startRunUI(ctx, cockpitView, run.ID, loaded.HomeDir, runStore, stderr)
 	if err != nil {
+		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
 		markRunFailed(ctx, runStore, run.ID)
 		printResolveRunFailure(err, stderr)
 		return exitRunFailed
@@ -988,6 +991,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	cycleResult, err := executeResolveCycle(ctx, req, loaded, preflightResult, run.ID, resolvePlan, collaborators, runStore, ui)
 	if err != nil {
 		if isStopRequest(ctx, err) {
+			closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
 			code := completeStoppedRunRecord(runStore, run.ID)
 			ui.Wait()
 			ui.Close()
@@ -1000,6 +1004,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 			printIssueSummary(stderr, resolvePlan.selection.Issues)
 			return exitOK
 		}
+		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
 		markRunFailed(ctx, runStore, run.ID)
 		ui.Wait()
 		ui.Close()
@@ -1015,9 +1020,11 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	completed, err := runStore.CompleteRun(ctx, run.ID, outcome)
 	if err != nil {
 		ui.Close()
+		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
 		printResolveRunFailureAfterBatchCommit(err, stderr)
 		return exitRunFailed
 	}
+	closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, completed.ID, runStore)
 	publishRunOutcome(ctx, runStore, completed.ID, completed.State, cycleResult.Remaining, stderr)
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
@@ -1168,6 +1175,7 @@ func publishPushDecision(ctx context.Context, sink runevent.Sink, runID string, 
 func cyclePlanFrom(req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, resolvePlan resolveBatchPlan) daemon.CyclePlan {
 	return daemon.CyclePlan{
 		RunID:        runID,
+		Session:      agent.SessionRefForRun(runID),
 		GitRoot:      preflightResult.Git.Root,
 		ArtifactDir:  req.artifactDir,
 		SourceName:   req.source,
@@ -1217,7 +1225,9 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
+	session := agent.SessionRefForRun(run.ID)
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
+		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
 		markRunFailed(ctx, runStore, run.ID)
 		printRunFailure(req.name, err, stderr)
 		return exitRunFailed
@@ -1235,6 +1245,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	// One cockpit for the entire Watch Run, across all Rounds and Batches.
 	ui, err := startRunUI(ctx, buildLiveRunView(req, loaded, preflightResult, run.ID, "WaitingForReview", nil, nil), run.ID, loaded.HomeDir, runStore, stderr)
 	if err != nil {
+		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
 		markRunFailed(ctx, runStore, run.ID)
 		printRunFailure(req.name, err, stderr)
 		return exitRunFailed
@@ -1297,9 +1308,11 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	completed, completeErr := runStore.CompleteRun(completeCtx, run.ID, terminal)
 	if completeErr != nil {
 		ui.Close()
+		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
 		printRunFailure(req.name, completeErr, stderr)
 		return exitRunFailed
 	}
+	closeAgentSession(completeCtx, collaborators.runner, runtime, session, completed.ID, runStore)
 	publishRunOutcome(completeCtx, runStore, completed.ID, completed.State, result.Remaining, stderr)
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
@@ -1783,7 +1796,7 @@ type engineCollaborators struct {
 
 func defaultEngineCollaborators() engineCollaborators {
 	return engineCollaborators{
-		runner:    agent.DefaultRunner{},
+		runner:    agent.NewDefaultRunner(),
 		verifier:  daemon.ExecVerifier{},
 		committer: daemon.GitCommitter{},
 		pusher:    daemon.GitPusher{},
@@ -1879,6 +1892,33 @@ func markRunFailed(ctx context.Context, runStore *store.Store, runID string) {
 	if _, err := runStore.CompleteRun(completeCtx, runID, store.StateFailed); err == nil {
 		publishRunOutcome(completeCtx, runStore, runID, store.StateFailed, 0, io.Discard)
 	}
+}
+
+func closeAgentSession(ctx context.Context, runner agent.Runner, runtime agent.RuntimeSpec, session agent.SessionRef, runID string, runStore *store.Store) {
+	if runner == nil || runStore == nil || strings.TrimSpace(session.Name) == "" {
+		return
+	}
+	closeCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	_ = runner.EndSession(closeCtx, runtime, session)
+	publishAgentSessionStatus(closeCtx, store.JournalSink{Store: runStore}, runID, agent.AgentSessionClosedStatus)
+}
+
+func publishAgentSessionStatus(ctx context.Context, sink runevent.Sink, runID string, status string) {
+	payload, err := json.Marshal(struct {
+		Status string `json:"status"`
+	}{Status: status})
+	if err != nil {
+		return
+	}
+	_ = sink.Publish(context.WithoutCancel(ctx), runevent.RunEvent{
+		RunID:   runID,
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentStatus,
+		Summary: runevent.BoundSummary("SESSION " + strings.ToUpper(status) + "\n"),
+		Time:    time.Now().UTC(),
+		Payload: payload,
+	})
 }
 
 // publishRunOutcome appends the terminal outcome event after CompleteRun so

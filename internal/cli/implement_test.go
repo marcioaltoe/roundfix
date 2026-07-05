@@ -194,7 +194,7 @@ func implementTaskIDFromPrompt(prompt string) string {
 
 // withImplementCollaborators wires the standard fake collaborators for an
 // implement run and returns the ones tests assert on.
-func withImplementCollaborators(t *testing.T, runner *implementFakeRunner) (*fakeCommitter, *fakeVerifier, *fakePusher, *fakeSourceResolver) {
+func withImplementCollaborators(t *testing.T, runner agent.Runner) (*fakeCommitter, *fakeVerifier, *fakePusher, *fakeSourceResolver) {
 	t.Helper()
 	committer := &fakeCommitter{}
 	verifier := &fakeVerifier{}
@@ -587,6 +587,108 @@ func TestRunImplementExecutesSpecEndToEnd(t *testing.T) {
 		t.Fatalf("unexpected Run row: %#v", run)
 	}
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+func TestRunImplementUsesOneAgentSessionPerRunAndCloses(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build the widget core"},
+		{id: "task_02", title: "Wire the widget API"},
+	})
+	inner := &implementFakeRunner{
+		gitRoot: repoDir,
+		statusByTask: map[string]spec.Status{
+			"task_01": spec.StatusCompleted,
+			"task_02": spec.StatusCompleted,
+		},
+	}
+	runner := &sessionRecordingRunner{inner: inner}
+	withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean implement exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if inner.calls != 2 {
+		t.Fatalf("expected two Task Agent calls, got %d", inner.calls)
+	}
+	runID := implementRunIDFromStderr(t, stderr.String())
+	assertRecordedOneSessionForRun(t, runner, runID, inner.calls)
+	_, events := journaledRunEvents(t, homeDir, "Implement Run: "+runID+"\n")
+	assertSessionLifecycleEvents(t, events)
+}
+
+func TestRunImplementClosesAgentSessionForTerminalOutcomes(t *testing.T) {
+	tests := []struct {
+		name      string
+		inner     *implementFakeRunner
+		commitErr error
+		wantCode  int
+		wantState string
+		closeErr  error
+	}{
+		{
+			name: "clean",
+			inner: &implementFakeRunner{
+				statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+			},
+			wantCode:  0,
+			wantState: store.StateClean,
+			closeErr:  errors.New("close failed"),
+		},
+		{
+			name: "unresolved",
+			inner: &implementFakeRunner{
+				statusByTask: map[string]spec.Status{"task_01": spec.StatusFailed},
+			},
+			wantCode:  1,
+			wantState: store.StateUnresolved,
+		},
+		{
+			name: "failed",
+			inner: &implementFakeRunner{
+				statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+			},
+			commitErr: errors.New("commit failed"),
+			wantCode:  1,
+			wantState: store.StateFailed,
+		},
+		{
+			name: "stopped",
+			inner: &implementFakeRunner{
+				errByTask: map[string]error{"task_01": agent.StopError{Err: context.Canceled}},
+			},
+			wantCode:  0,
+			wantState: store.StateStopped,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+				{id: "task_01", title: "Build the widget core"},
+			})
+			tt.inner.gitRoot = repoDir
+			runner := &sessionRecordingRunner{inner: tt.inner, closeErr: tt.closeErr}
+			committer, _, _, _ := withImplementCollaborators(t, runner)
+			committer.err = tt.commitErr
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+			if code != tt.wantCode {
+				t.Fatalf("expected exit code %d, got %d stderr=%q", tt.wantCode, code, stderr.String())
+			}
+			runID := implementRunIDFromStderr(t, stderr.String())
+			run := implementRunFromStore(t, homeDir, runID)
+			if run.State != tt.wantState {
+				t.Fatalf("expected Run state %q, got %q", tt.wantState, run.State)
+			}
+			assertRecordedOneSessionForRun(t, runner, runID, len(runner.runSessions))
+		})
+	}
 }
 
 func TestRunImplementPreflightFailures(t *testing.T) {
