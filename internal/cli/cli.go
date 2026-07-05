@@ -42,7 +42,7 @@ Usage:
   roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean
   roundfix implement --spec <slug> --agent <agent>
   roundfix init [--scope <project|user>]
-  roundfix stop [<run-id>|--run-id <id>|--pr <number>]
+  roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
   roundfix attach <run-id>
   roundfix skills check
   roundfix skills install [--target <project|codex|claude|opencode|all>]
@@ -246,6 +246,7 @@ func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 type stopRequest struct {
 	runID      string
 	pr         string
+	spec       string
 	headRepo   string
 	headBranch string
 }
@@ -291,6 +292,7 @@ func parseStopCommand(args []string) (stopRequest, error) {
 	fs.StringVar(&req.runID, "run-id", "", "Run ID to stop")
 	fs.StringVar(&req.runID, "run", "", "Run ID to stop")
 	fs.StringVar(&req.pr, "pr", "", "Open Pull Request number")
+	fs.StringVar(&req.spec, "spec", "", "Spec slug under docs/specs/")
 	fs.StringVar(&req.headRepo, "head-repo", "", "Head Repository, owner/name")
 	fs.StringVar(&req.headBranch, "head-branch", "", "PR Head Branch")
 	if err := fs.Parse(args); err != nil {
@@ -306,8 +308,20 @@ func parseStopCommand(args []string) (stopRequest, error) {
 		}
 		req.runID = strings.TrimSpace(remaining[0])
 	}
-	if req.runID != "" && (req.pr != "" || req.headRepo != "" || req.headBranch != "") {
-		return req, validationError{message: "--run-id cannot be combined with --pr, --head-repo, or --head-branch"}
+	req.runID = strings.TrimSpace(req.runID)
+	req.pr = strings.TrimSpace(req.pr)
+	req.spec = strings.TrimSpace(req.spec)
+	req.headRepo = strings.TrimSpace(req.headRepo)
+	req.headBranch = strings.TrimSpace(req.headBranch)
+	headSelector := req.headRepo != "" || req.headBranch != ""
+	if req.runID != "" && (req.pr != "" || req.spec != "" || headSelector) {
+		return req, validationError{message: "--run-id cannot be combined with --pr, --spec, --head-repo, or --head-branch"}
+	}
+	if req.spec != "" && (req.pr != "" || headSelector) {
+		return req, validationError{message: "--spec cannot be combined with --pr, --head-repo, or --head-branch"}
+	}
+	if req.pr != "" && headSelector {
+		return req, validationError{message: "--pr cannot be combined with --head-repo or --head-branch"}
 	}
 	if req.pr != "" {
 		if err := validatePositiveInt("pr", req.pr); err != nil {
@@ -338,6 +352,26 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 		return run, nil
 	}
 
+	specSlug := strings.TrimSpace(req.spec)
+	if specSlug != "" {
+		gitRoot := strings.TrimSpace(loaded.GitRoot)
+		if gitRoot == "" {
+			return store.Run{}, validationError{message: "stop --spec requires running inside a git repository"}
+		}
+		active, found, err := runStore.ActiveSpecRun(ctx, gitRoot, specSlug)
+		if err != nil {
+			return store.Run{}, err
+		}
+		if !found {
+			return store.Run{}, validationError{message: fmt.Sprintf("no Active Run exists for repository %q and Spec %q", gitRoot, specSlug)}
+		}
+		run, err := runStore.CompleteRun(ctx, active.ID, store.StateStopped)
+		if err != nil {
+			return store.Run{}, err
+		}
+		return run, nil
+	}
+
 	headRepo := strings.TrimSpace(req.headRepo)
 	headBranch := strings.TrimSpace(req.headBranch)
 	if headRepo == "" || headBranch == "" {
@@ -347,7 +381,7 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 			pr = strings.TrimSpace(suggested)
 		}
 		if pr == "" {
-			return store.Run{}, validationError{message: "missing stop target; pass a Run ID, --run-id, --pr, or --head-repo with --head-branch"}
+			return store.Run{}, validationError{message: "missing stop target; pass a Run ID, --run-id, --pr, --spec, or --head-repo with --head-branch"}
 		}
 		resolved, err := resolvePullRequestForStop(ctx, loaded.GitRoot, pr)
 		if err != nil {
@@ -2023,12 +2057,14 @@ Options:
   roundfix stop <run-id>
   roundfix stop --run-id <id>
   roundfix stop --pr <number>
+  roundfix stop --spec <slug>
   roundfix stop --head-repo <owner/name> --head-branch <branch>
 
 Options:
   --run-id      Active Run ID to stop
   --run         Alias for --run-id
   --pr          Open Pull Request number used to find the Active Run
+  --spec        Spec slug used to find the Active Run in the current repository
   --head-repo   Explicit Head Repository, owner/name
   --head-branch Explicit PR Head Branch
 `

@@ -1817,6 +1817,9 @@ func TestRunFetchRejectsDuplicateActiveRun(t *testing.T) {
 	if err := runStore.Close(); err != nil {
 		t.Fatalf("close store: %v", err)
 	}
+	subdir := filepath.Join(repoDir, "nested")
+	mustMkdir(t, subdir)
+	t.Chdir(subdir)
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -1924,6 +1927,127 @@ func TestRunStopByPullRequestStopsMatchingActiveRun(t *testing.T) {
 		t.Fatalf("expected stopped run id in stdout, got %q", stdout.String())
 	}
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
+}
+
+func TestRunStopBySpecStopsMatchingActiveRun(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+
+	ctx := context.Background()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	request := store.CreateRunRequest{
+		Kind:        store.KindImplement,
+		GitRoot:     repoDir,
+		LocalBranch: "ma/implement-spec",
+		SpecSlug:    "0001-widget-flow",
+	}
+	active, err := runStore.CreateRun(ctx, request)
+	if err != nil {
+		t.Fatalf("create active implement run: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close store: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"stop", "--spec", "0001-widget-flow"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected stop exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), active.ID) || !strings.Contains(stdout.String(), "State: Stopped") {
+		t.Fatalf("expected stopped implement run in stdout, got %q", stdout.String())
+	}
+	runStore, err = store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("reopen store: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close reopened store: %v", err)
+		}
+	}()
+	stopped, found, err := runStore.Run(ctx, active.ID)
+	if err != nil || !found {
+		t.Fatalf("lookup stopped run: found=%v err=%v", found, err)
+	}
+	if stopped.State != store.StateStopped {
+		t.Fatalf("expected stopped state, got %q", stopped.State)
+	}
+	if _, err := runStore.CreateRun(ctx, request); err != nil {
+		t.Fatalf("expected stopped spec target lock released, got %v", err)
+	}
+}
+
+func TestRunStopSpecSelectorRejectsOtherSelectors(t *testing.T) {
+	withCLIWorkspace(t)
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "with pull request", args: []string{"stop", "--spec", "0001-widget-flow", "--pr", "123"}},
+		{name: "with run id", args: []string{"stop", "--spec", "0001-widget-flow", "run_existing"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run(tt.args, &stdout, &stderr)
+
+			if code != 2 {
+				t.Fatalf("expected stop validation exit 2, got %d", code)
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("expected no stdout, got %q", stdout.String())
+			}
+			if !strings.Contains(stderr.String(), "cannot be combined") {
+				t.Fatalf("expected mutual-exclusion message, got %q", stderr.String())
+			}
+		})
+	}
+}
+
+func TestRunStopBySpecReportsMissingActiveRun(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"stop", "--spec", "0002-missing"}, &stdout, &stderr)
+
+	if code != 2 {
+		t.Fatalf("expected stop validation exit 2, got %d", code)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout, got %q", stdout.String())
+	}
+	want := fmt.Sprintf("no Active Run exists for repository %q and Spec %q", repoDir, "0002-missing")
+	if !strings.Contains(stderr.String(), want) {
+		t.Fatalf("expected missing spec target %q, got %q", want, stderr.String())
+	}
+}
+
+func TestRunStopHelpListsSpecSelector(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"stop", "--help"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected stop help exit 0, got %d", code)
+	}
+	if !strings.Contains(stdout.String(), "roundfix stop --spec <slug>") || !strings.Contains(stdout.String(), "--spec") {
+		t.Fatalf("expected stop help to list --spec selector, got %q", stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
 }
 
 func TestRunStopRejectsAlreadyTerminalRun(t *testing.T) {

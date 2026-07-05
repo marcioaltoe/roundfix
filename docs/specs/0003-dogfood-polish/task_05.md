@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0003-dogfood-polish
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -30,18 +30,18 @@ real temp store.
 
 ## Subtasks
 
-- [ ] `--spec` flag and target resolution from the current repository
-- [ ] Mutual-exclusion and not-found error shapes
-- [ ] Help text
-- [ ] Buffer-captured tests over a temp store
+- [x] `--spec` flag and target resolution from the current repository
+- [x] Mutual-exclusion and not-found error shapes
+- [x] Help text
+- [x] Buffer-captured tests over a temp store
 
 ## Acceptance Criteria
 
-- [ ] Stopping an Active implement Run by `--spec` releases its lock and
+- [x] Stopping an Active implement Run by `--spec` releases its lock and
       settles `Stopped`, asserted via the store.
-- [ ] `--spec` + `--pr` (and `--spec` + run id) fail with the existing
+- [x] `--spec` + `--pr` (and `--spec` + run id) fail with the existing
       mutual-exclusion message; unknown slug fails with the named target.
-- [ ] Help lists the new selector; full suite passes.
+- [x] Help lists the new selector; full suite passes.
 
 ## Verification
 
@@ -53,3 +53,28 @@ real temp store.
 
 `_prd.md` → User Story 5; Core Feature 5. `_techspec.md` → API Contracts,
 Build Order 5. Dogfood finding 13. ADR-0016 (spec target key shape).
+
+## Result
+
+- `roundfix stop --spec <slug>` now resolves the Active Run for the current
+  repository's Spec target via the existing ADR-0016 key shape:
+  `("spec", "<git_root>#<slug>")`. The CLI uses `roundconfig.Load`'s resolved
+  `GitRoot` and `store.ActiveSpecRun`, then completes the same run id with
+  `StateStopped` through the existing stop path.
+- `TestRunStopBySpecStopsMatchingActiveRun` creates an Active implement Run in
+  a temp Run Database, runs `stop --spec` from a repository subdirectory,
+  asserts the run is `Stopped`, and proves the target lock is released by
+  creating another implement Run for the same Spec target.
+- `TestRunStopSpecSelectorRejectsOtherSelectors` covers `--spec` with `--pr`
+  and `--spec` with a positional run id; both fail with the existing
+  `cannot be combined` selector error shape. `TestRunStopBySpecReportsMissingActiveRun`
+  asserts the unknown slug error names the repository and Spec target.
+- `TestRunStopHelpListsSpecSelector` and
+  `rtk go run ./cmd/roundfix stop --help` both show
+  `roundfix stop --spec <slug>` and the `--spec` option.
+- Red signal before implementation: the focused stop tests failed because
+  `--spec` was an unknown flag and stop help omitted the selector.
+- Verification passed: `rtk go test ./internal/cli/` reported
+  `Go test: 150 passed in 1 packages`; `rtk go run ./cmd/roundfix stop --help`
+  exited 0 and listed `--spec`; `rtk go test ./...` reported
+  `Go test: 466 passed in 16 packages`.

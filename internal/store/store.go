@@ -337,6 +337,11 @@ func (store *Store) ActiveRun(ctx context.Context, headRepository string, headBr
 	return selectActiveRunByTarget(ctx, store.db, targetKindPR, prTargetKey(headRepository, headBranch))
 }
 
+// ActiveSpecRun returns the Active Run for one Spec work target, if any.
+func (store *Store) ActiveSpecRun(ctx context.Context, gitRoot string, specSlug string) (Run, bool, error) {
+	return selectActiveRunByTarget(ctx, store.db, targetKindSpec, specTargetKey(gitRoot, specSlug))
+}
+
 // ActiveRunInGitRoot returns the Active Run of any Kind whose Git root
 // matches. It backs the ADR 0012 single-working-tree Preflight Validation
 // until worktree-per-task lands.
