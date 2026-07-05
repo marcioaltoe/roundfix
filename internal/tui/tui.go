@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"roundfix/internal/rounds"
+	"roundfix/internal/spec"
+	"roundfix/internal/store"
 )
 
 type CommandValues struct {
@@ -62,6 +64,17 @@ type LiveRunView struct {
 	BatchTotal    int
 	TotalIssues   int
 	Issues        []rounds.Issue
+	// RunKind selects the Work Item vocabulary of the panes: implement Runs
+	// render Tasks where review Runs render Review Issues. Empty means a
+	// review Run, so existing callers keep their rendering unchanged.
+	RunKind string
+	// SpecSlug and GitRoot locate a spec Run's task files
+	// (docs/specs/<slug>/ under the git root) so the cockpit can refresh
+	// Task statuses by re-reading them.
+	SpecSlug string
+	GitRoot  string
+	// Tasks lists the spec Run's Tasks in Task Graph order.
+	Tasks []spec.Task
 	// BatchSizes lists the planned Review Issue count per Batch, in Batch
 	// order, when the caller knows the plan. The cockpit derives Batch
 	// separators and Executing/Waiting states from it.
@@ -73,6 +86,32 @@ type LiveRunView struct {
 type IssueGroup struct {
 	Round  int
 	Issues []rounds.Issue
+}
+
+// WorkItem is the Run-Kind-neutral view model of the work-item pane: the
+// display name and current status of one Work Item. Review Runs map Review
+// Issues into it and spec Runs map Tasks; the Run Kind keys the mapping, so
+// each pane renders exactly one vocabulary.
+type WorkItem struct {
+	Name   string // "Issue #001" for Review Issues, the Task id for Tasks
+	Title  string
+	Status string // artifact status verbatim (pending, resolved, completed, ...)
+}
+
+// TaskWorkItems maps a spec Run's Tasks into Work Items, preserving Task
+// Graph order.
+func TaskWorkItems(tasks []spec.Task) []WorkItem {
+	items := make([]WorkItem, 0, len(tasks))
+	for _, task := range tasks {
+		items = append(items, WorkItem{Name: task.ID, Title: strings.TrimSpace(task.Title), Status: string(task.Status)})
+	}
+	return items
+}
+
+// specRunView reports whether the view renders a spec Run's Tasks; every
+// other Run Kind keeps the Review Issue rendering byte-identical.
+func specRunView(view LiveRunView) bool {
+	return view.RunKind == store.KindImplement
 }
 
 func CollectInput(ctx context.Context, req InputRequest, input io.Reader, output io.Writer) (CommandValues, error) {
@@ -184,9 +223,14 @@ func RenderLiveRunView(view LiveRunView) string {
 	var builder strings.Builder
 	builder.WriteString(fmt.Sprintf("Roundfix %s\n\n", strings.ToLower(emptyDash(view.Command))))
 	builder.WriteString("Target:\n")
-	builder.WriteString(fmt.Sprintf("  PR: #%s %s\n", emptyDash(view.PRNumber), emptyDash(view.Repository)))
-	builder.WriteString(fmt.Sprintf("  Branch: %s\n", emptyDash(view.HeadBranch)))
-	builder.WriteString(fmt.Sprintf("  Source: %s\n", emptyDash(view.ReviewSource)))
+	if specRunView(view) {
+		builder.WriteString(fmt.Sprintf("  Spec: %s\n", emptyDash(view.SpecSlug)))
+		builder.WriteString(fmt.Sprintf("  Branch: %s\n", emptyDash(view.HeadBranch)))
+	} else {
+		builder.WriteString(fmt.Sprintf("  PR: #%s %s\n", emptyDash(view.PRNumber), emptyDash(view.Repository)))
+		builder.WriteString(fmt.Sprintf("  Branch: %s\n", emptyDash(view.HeadBranch)))
+		builder.WriteString(fmt.Sprintf("  Source: %s\n", emptyDash(view.ReviewSource)))
+	}
 	if view.Agent != "" {
 		builder.WriteString(fmt.Sprintf("  Agent: %s\n", emptyDash(view.Agent)))
 	}
@@ -229,7 +273,12 @@ func renderSplitPanes(view LiveRunView) string {
 		leftWidth = available - rightWidth
 	}
 
+	leftTitle := "Review Issues"
 	leftLines := issuePaneLines(view.Issues)
+	if specRunView(view) {
+		leftTitle = "Tasks"
+		leftLines = taskPaneLines(TaskWorkItems(view.Tasks))
+	}
 	rightLines := consolePaneLines(view.Console)
 	rowCount := len(leftLines)
 	if len(rightLines) > rowCount {
@@ -238,7 +287,7 @@ func renderSplitPanes(view LiveRunView) string {
 
 	var builder strings.Builder
 	builder.WriteString(paneBorder(leftWidth, rightWidth))
-	builder.WriteString(paneRow("Review Issues", "Agent Console", leftWidth, rightWidth))
+	builder.WriteString(paneRow(leftTitle, "Agent Console", leftWidth, rightWidth))
 	builder.WriteString(paneBorder(leftWidth, rightWidth))
 	for index := 0; index < rowCount; index++ {
 		left := ""
@@ -273,6 +322,19 @@ func issuePaneLines(issues []rounds.Issue) []string {
 				lines = append(lines, "  "+strings.TrimSpace(issue.Title))
 			}
 		}
+	}
+	return lines
+}
+
+// taskPaneLines renders Task Work Items one per line in Task Graph order,
+// mirroring the implement stdout contract shape: `task_NN <status> — <title>`.
+func taskPaneLines(items []WorkItem) []string {
+	if len(items) == 0 {
+		return []string{"none"}
+	}
+	lines := make([]string, 0, len(items))
+	for _, item := range items {
+		lines = append(lines, fmt.Sprintf("%s %s — %s", item.Name, emptyDash(item.Status), emptyDash(item.Title)))
 	}
 	return lines
 }

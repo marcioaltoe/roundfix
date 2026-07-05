@@ -3,6 +3,7 @@ package tui
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
+	"roundfix/internal/spec"
 	"roundfix/internal/store"
 
 	tea "charm.land/bubbletea/v2"
@@ -30,6 +32,16 @@ func (source *cockpitFakeSource) DataVersion(context.Context) (int64, error) {
 
 func (source *cockpitFakeSource) Run(context.Context, string) (store.Run, bool, error) {
 	return source.run, true, nil
+}
+
+// addDaemonEvent appends one daemon-source journal event; the timeline
+// renders daemon kinds from their bounded summaries.
+func (source *cockpitFakeSource) addDaemonEvent(kind runevent.Kind, summary string) {
+	cursor := int64(len(source.events) + 1)
+	source.events = append(source.events, store.JournalEvent{
+		Cursor: cursor,
+		Event:  runevent.RunEvent{Source: runevent.SourceDaemon, Kind: kind, Summary: summary},
+	})
 }
 
 func newTestCockpit(t *testing.T, source *cockpitFakeSource, view LiveRunView) *cockpitModel {
@@ -459,6 +471,115 @@ func TestCockpitSidebarShowsBatchesStatusAndElapsed(t *testing.T) {
 		if !strings.Contains(line, "Batch 001/002") {
 			t.Fatalf("expected elapsed clock on the executing Batch separator, got %q", line)
 		}
+	}
+}
+
+// writeCockpitTaskFile writes a parseable task file under the git root's
+// docs/specs/<slug>/ and returns its path relative to the git root, the way
+// spec.Load records Task files.
+func writeCockpitTaskFile(t *testing.T, gitRoot string, slug string, id string, title string, status spec.Status) string {
+	t.Helper()
+	dir := filepath.Join(gitRoot, "docs", "specs", slug)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("mkdir spec dir: %v", err)
+	}
+	content := fmt.Sprintf("---\ntask: %s\nspec: %s\nstatus: %s\ntype: backend\n---\n\n# Task 01: %s\n\n## Verification\n\n- `true` — expected: passes.\n", id, slug, status, title)
+	relative := filepath.Join("docs", "specs", slug, id+".md")
+	if err := os.WriteFile(filepath.Join(gitRoot, relative), []byte(content), 0o644); err != nil {
+		t.Fatalf("write task file: %v", err)
+	}
+	return relative
+}
+
+func TestCockpitSpecRunShowsTasksInGraphOrderAndRefreshesStatuses(t *testing.T) {
+	gitRoot := t.TempDir()
+	slug := "0001-widget-flow"
+	fileOne := writeCockpitTaskFile(t, gitRoot, slug, "task_01", "Build core", spec.StatusPending)
+	fileTwo := writeCockpitTaskFile(t, gitRoot, slug, "task_02", "Wire API", spec.StatusPending)
+	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateResolvingWithAgent}, version: 1}
+	model := newTestCockpit(t, source, LiveRunView{
+		PipelineState: store.StateResolvingWithAgent,
+		RunKind:       store.KindImplement,
+		SpecSlug:      slug,
+		GitRoot:       gitRoot,
+		Tasks: []spec.Task{
+			{ID: "task_01", File: fileOne, Title: "Build core", Status: spec.StatusPending},
+			{ID: "task_02", File: fileTwo, Title: "Wire API", Status: spec.StatusPending},
+		},
+	})
+
+	rendered := viewText(model)
+	for _, expected := range []string{
+		"SPEC.TASKS",
+		"2 Task(s)",
+		"task_01",
+		"Executing",
+		"task_02",
+		"Waiting",
+		"0 of 2 Task(s) completed · 0%",
+	} {
+		if !strings.Contains(rendered, expected) {
+			t.Fatalf("expected the Task pane to contain %q, got:\n%s", expected, rendered)
+		}
+	}
+	if strings.Index(rendered, "task_01") > strings.Index(rendered, "task_02") {
+		t.Fatalf("expected Tasks in Task Graph order, got:\n%s", rendered)
+	}
+
+	// The Agent settles task_01 in its file and the Daemon journals the
+	// settlement; the poll tick re-reads the task files (never the sink).
+	if err := spec.SetStatus(filepath.Join(gitRoot, fileOne), spec.StatusCompleted); err != nil {
+		t.Fatalf("settle task file: %v", err)
+	}
+	source.addDaemonEvent(runevent.KindDaemonTask, "Task task_01 settled completed.")
+	source.version++
+	model.Update(cockpitTickMsg{})
+
+	rendered = viewText(model)
+	for _, expected := range []string{
+		"Completed",
+		"1 of 2 Task(s) completed · 50%",
+		"Task task_01 settled completed.",
+	} {
+		if !strings.Contains(rendered, expected) {
+			t.Fatalf("expected the refreshed view to contain %q, got:\n%s", expected, rendered)
+		}
+	}
+}
+
+func TestCockpitSpecRunKeepsLastGoodStatusOnMidWriteTaskFile(t *testing.T) {
+	gitRoot := t.TempDir()
+	slug := "0001-widget-flow"
+	file := writeCockpitTaskFile(t, gitRoot, slug, "task_01", "Build core", spec.StatusCompleted)
+	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateResolvingWithAgent}, version: 1}
+	model := newTestCockpit(t, source, LiveRunView{
+		PipelineState: store.StateResolvingWithAgent,
+		RunKind:       store.KindImplement,
+		SpecSlug:      slug,
+		GitRoot:       gitRoot,
+		// The seeded status is stale on purpose: the initial refresh must
+		// read the task file, not trust the loaded snapshot.
+		Tasks: []spec.Task{{ID: "task_01", File: file, Title: "Build core", Status: spec.StatusPending}},
+	})
+
+	if !strings.Contains(viewText(model), "Completed") {
+		t.Fatalf("expected the initial refresh to read the task file, got:\n%s", viewText(model))
+	}
+
+	// A mid-write read sees a truncated file: the pane keeps the last good
+	// status and no error surfaces in the view.
+	if err := os.WriteFile(filepath.Join(gitRoot, file), []byte("---\ntask: task_01\nstatus: comp"), 0o644); err != nil {
+		t.Fatalf("truncate task file: %v", err)
+	}
+	source.version++
+	model.Update(cockpitTickMsg{})
+
+	rendered := viewText(model)
+	if !strings.Contains(rendered, "Completed") {
+		t.Fatalf("expected the last good status kept through the mid-write read, got:\n%s", rendered)
+	}
+	if !strings.Contains(rendered, "1 of 1 Task(s) completed · 100%") {
+		t.Fatalf("expected the progress bar to keep the last good counts, got:\n%s", rendered)
 	}
 }
 

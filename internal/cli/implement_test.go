@@ -1093,6 +1093,67 @@ func TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict(t *testing.T) {
 	}
 }
 
+func TestAttachReplaysCompletedSpecRunReadOnly(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Guide docs", taskType: "docs"},
+		{id: "task_02", title: "Build core", needs: []string{"task_01"}},
+	})
+	runner := &implementFakeRunner{
+		gitRoot: repoDir,
+		statusByTask: map[string]spec.Status{
+			"task_01": spec.StatusCompleted,
+			"task_02": spec.StatusCompleted,
+		},
+		qaReport: implementQAReport("pass"),
+	}
+	withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	if code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--qa", "--no-input"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("seed implement run failed: %d stderr=%q", code, stderr.String())
+	}
+	runID := implementRunIDFromStderr(t, stderr.String())
+	// Attach must never probe or start an Agent; a probing attach would
+	// fail loudly here.
+	withAgentRunner(t, &fakeAgentRunner{probeErr: errors.New("attach must not probe Agents")})
+	assertRunCount(t, store.DatabasePath(homeDir), 1)
+	stdout.Reset()
+	stderr.Reset()
+
+	code := RunContext(context.Background(), []string{"attach", runID}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean attach exit, got %d stderr=%q", code, stderr.String())
+	}
+	output := stdout.String()
+	for _, expected := range []string{
+		"Roundfix attach",
+		"Spec: " + implementTestSlug,
+		"Branch: ma/widget-flow",
+		"ID: " + runID,
+		"State: Clean",
+		"Tasks",
+		"task_01 completed — Guide docs",
+		"task_02 completed — Build core",
+		"Task task_01 settled completed.",
+		"QA verdict pass for Spec " + implementTestSlug + ".",
+		"Run " + runID + " reached Clean; timeline replayed read-only.",
+	} {
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected attach output to contain %q, got:\n%s", expected, output)
+		}
+	}
+	if strings.Contains(output, "Review Issues") {
+		t.Fatalf("expected the Task pane instead of Review Issues, got:\n%s", output)
+	}
+	// Read-only: no new Runs, and the Run's terminal state is untouched.
+	assertRunCount(t, store.DatabasePath(homeDir), 1)
+	run := implementRunFromStore(t, homeDir, runID)
+	if run.State != store.StateClean {
+		t.Fatalf("expected attach to leave the Run state untouched, got %q", run.State)
+	}
+}
+
 func TestRunImplementInfrastructureFailureEndsFailed(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},

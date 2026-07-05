@@ -316,15 +316,18 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, run
 	})
 }
 
-// implementLiveRunView builds the cockpit header for a spec Run. Tasks
-// render as the Work Items of the left pane in a later slice; until then
-// the cockpit shows the Run header and the Run Event timeline.
+// implementLiveRunView builds the Live Run View for a spec Run: Tasks are
+// the Work Items of the left pane, in Task Graph order, located through the
+// git root and Spec slug so the cockpit refreshes their statuses from the
+// task files.
 func implementLiveRunView(req commandRequest, loaded roundconfig.Loaded, gitState preflight.GitState, runID string, graph *spec.Graph) roundtui.LiveRunView {
 	return roundtui.LiveRunView{
 		Command:       "implement",
-		Repository:    graph.Spec.Slug,
+		RunKind:       store.KindImplement,
+		SpecSlug:      graph.Spec.Slug,
+		GitRoot:       gitState.Root,
+		Tasks:         graph.Tasks,
 		HeadBranch:    gitState.Branch,
-		ReviewSource:  "-",
 		Agent:         displayAgent(req.agent),
 		Model:         req.model,
 		HEAD:          gitState.HEAD,

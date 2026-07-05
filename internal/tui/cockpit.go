@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"roundfix/internal/rounds"
+	"roundfix/internal/spec"
 	"roundfix/internal/store"
 
 	tea "charm.land/bubbletea/v2"
@@ -77,6 +78,7 @@ type cockpitModel struct {
 	detail   *issueDetailView
 
 	issueStatuses  []string
+	taskStatuses   []string
 	currentBatch   int
 	batchStartedAt time.Time
 
@@ -112,7 +114,7 @@ func newCockpitModel(ctx context.Context, cfg CockpitConfig) (*cockpitModel, err
 		model.terminal = true
 		model.viewport.SetTerminal()
 	}
-	model.refreshIssues()
+	model.refreshWorkItems()
 	model.viewport.SetHeight(model.bodyHeight())
 	if err := model.viewport.Replay(ctx); err != nil {
 		return nil, err
@@ -188,7 +190,44 @@ func (model *cockpitModel) poll() {
 		model.terminal = true
 		model.viewport.SetTerminal()
 	}
+	model.refreshWorkItems()
+}
+
+// specRun reports whether this cockpit renders a spec Run's Tasks; every
+// other Run Kind keeps the Review Issue pane unchanged.
+func (model *cockpitModel) specRun() bool {
+	return specRunView(model.cfg.View)
+}
+
+// refreshWorkItems refreshes the work-item pane keyed on the Run Kind:
+// Review Issue artifacts for review Runs, task files for spec Runs.
+func (model *cockpitModel) refreshWorkItems() {
+	if model.specRun() {
+		model.refreshTasks()
+		return
+	}
 	model.refreshIssues()
+}
+
+// refreshTasks re-reads Task statuses from the task files located through
+// the Run row's git root. A parse failure keeps the last good status: the
+// Agent rewrites task files while the pane polls, and a mid-write read must
+// never fail the view (ADR 0009 keeps the cockpit on the journal plus these
+// files; it never consumes the live sink).
+func (model *cockpitModel) refreshTasks() {
+	tasks := model.cfg.View.Tasks
+	if len(model.taskStatuses) != len(tasks) {
+		model.taskStatuses = make([]string, len(tasks))
+		for index, task := range tasks {
+			model.taskStatuses[index] = string(task.Status)
+		}
+	}
+	for index := range tasks {
+		current := tasks[index]
+		if err := spec.ReloadTask(model.cfg.View.GitRoot, &current); err == nil {
+			model.taskStatuses[index] = string(current.Status)
+		}
+	}
 }
 
 // refreshIssues re-reads Review Issue artifact statuses and derives which
@@ -249,7 +288,57 @@ func (model *cockpitModel) issueStatusLabel(index int) string {
 	return "Waiting"
 }
 
+// taskStatusLabel mirrors the Review Issue labels: terminal task statuses
+// verbatim, Executing for the Task the cycle is on, Waiting ahead of it,
+// Paused once the Run itself has ended.
+func (model *cockpitModel) taskStatusLabel(index int) string {
+	status := spec.Status(model.taskStatuses[index])
+	switch status {
+	case spec.StatusCompleted:
+		return "Completed"
+	case spec.StatusFailed:
+		return "Failed"
+	}
+	if model.terminal || store.IsTerminalState(model.runState) {
+		return "Paused"
+	}
+	if status == spec.StatusInProgress || index == model.currentTaskIndex() {
+		return "Executing"
+	}
+	return "Waiting"
+}
+
+// currentTaskIndex approximates the executing Task the same way the review
+// pane derives the executing Batch: the cycle runs Tasks in Task Graph
+// order, so the first unsettled Task is the one in flight.
+func (model *cockpitModel) currentTaskIndex() int {
+	for index, status := range model.taskStatuses {
+		if spec.Status(status) != spec.StatusCompleted && spec.Status(status) != spec.StatusFailed {
+			return index
+		}
+	}
+	return -1
+}
+
+// workItemCount sizes selection over the pane's Work Items, keyed on the
+// Run Kind.
+func (model *cockpitModel) workItemCount() int {
+	if model.specRun() {
+		return len(model.cfg.View.Tasks)
+	}
+	return len(model.cfg.View.Issues)
+}
+
 func (model *cockpitModel) progressCounts() (int, int) {
+	if model.specRun() {
+		done := 0
+		for _, status := range model.taskStatuses {
+			if spec.Status(status) == spec.StatusCompleted {
+				done++
+			}
+		}
+		return done, len(model.taskStatuses)
+	}
 	done := 0
 	for _, status := range model.issueStatuses {
 		switch status {
@@ -325,7 +414,7 @@ func (model *cockpitModel) handleIssueKey(keystroke string) {
 			model.selected--
 		}
 	case "down", "j":
-		if model.selected < len(model.cfg.View.Issues)-1 {
+		if model.selected < model.workItemCount()-1 {
 			model.selected++
 		}
 	case "enter":
@@ -355,8 +444,12 @@ func (model *cockpitModel) handleDetailKey(keystroke string) {
 }
 
 // openDetail loads the selected Review Issue artifact read-only. A missing
-// or cleaned artifact degrades to a notice, never a failure.
+// or cleaned artifact degrades to a notice, never a failure. The detail
+// pane applies to Review Issues only; a spec Run's Task pane has no detail.
 func (model *cockpitModel) openDetail() {
+	if model.specRun() {
+		return
+	}
 	if model.selected < 0 || model.selected >= len(model.cfg.View.Issues) {
 		return
 	}
@@ -416,7 +509,7 @@ func (model *cockpitModel) View() tea.View {
 	rightWidth := innerWidth - sidebarWidth - 1
 
 	right := model.renderRightPane(rightWidth, bodyHeight)
-	sidebar := panel(sidebarWidth, bodyHeight, model.renderIssuePane(sidebarWidth, bodyHeight), model.focus == focusIssues && model.detail == nil)
+	sidebar := panel(sidebarWidth, bodyHeight, model.renderWorkItemPane(sidebarWidth, bodyHeight), model.focus == focusIssues && model.detail == nil)
 
 	content := strings.Join([]string{
 		renderAgentHeader(model.cfg.View, width),
@@ -467,10 +560,55 @@ func (model *cockpitModel) renderDetail(width int, height int) string {
 	return strings.Join(limitLines(append(header, body...), height-2), "\n")
 }
 
+// renderWorkItemPane renders the sidebar's Work Items keyed on the Run
+// Kind: Tasks for spec Runs, Review Issues for everything else.
+func (model *cockpitModel) renderWorkItemPane(width int, height int) string {
+	if model.specRun() {
+		return model.renderTaskPane(width, height)
+	}
+	return model.renderIssuePane(width, height)
+}
+
+// renderTaskPane renders the spec Run's Tasks in Task Graph order with the
+// statuses of the latest task-file refresh, reusing the issue pane's
+// windowing so selection scrolls identically.
+func (model *cockpitModel) renderTaskPane(width int, height int) string {
+	items := model.taskWorkItems()
+	lines := []string{styleAccent.Bold(true).Render("SPEC.TASKS"), styleMuted.Render(fmt.Sprintf("%d Task(s)", len(items))), ""}
+	if len(items) == 0 {
+		lines = append(lines, styleMuted.Render("No Tasks"))
+		return strings.Join(limitLines(lines, height-2), "\n")
+	}
+	visible := maxInt((height-5)/3, 1)
+	if model.selected < model.issueTop {
+		model.issueTop = model.selected
+	}
+	if model.selected >= model.issueTop+visible {
+		model.issueTop = model.selected - visible + 1
+	}
+	end := minInt(model.issueTop+visible, len(items))
+	for index := model.issueTop; index < end; index++ {
+		lines = append(lines, model.workItemBlock(items[index], model.taskStatusLabel(index), index, width)...)
+	}
+	return strings.Join(limitLines(lines, height-2), "\n")
+}
+
+// taskWorkItems maps the spec Run's Tasks into Work Items carrying the
+// statuses of the latest refresh instead of the load-time ones.
+func (model *cockpitModel) taskWorkItems() []WorkItem {
+	items := TaskWorkItems(model.cfg.View.Tasks)
+	for index := range items {
+		if index < len(model.taskStatuses) {
+			items[index].Status = model.taskStatuses[index]
+		}
+	}
+	return items
+}
+
 func (model *cockpitModel) renderIssuePane(width int, height int) string {
-	issues := model.cfg.View.Issues
-	lines := []string{styleAccent.Bold(true).Render("REVIEW.ISSUES"), styleMuted.Render(fmt.Sprintf("%d issue(s)", len(issues))), ""}
-	if len(issues) == 0 {
+	items := model.issueWorkItems()
+	lines := []string{styleAccent.Bold(true).Render("REVIEW.ISSUES"), styleMuted.Render(fmt.Sprintf("%d issue(s)", len(items))), ""}
+	if len(items) == 0 {
 		lines = append(lines, styleMuted.Render("No Review Issues"))
 		return strings.Join(limitLines(lines, height-2), "\n")
 	}
@@ -483,31 +621,49 @@ func (model *cockpitModel) renderIssuePane(width int, height int) string {
 	if model.selected >= model.issueTop+visible {
 		model.issueTop = model.selected - visible + 1
 	}
-	end := minInt(model.issueTop+visible, len(issues))
+	end := minInt(model.issueTop+visible, len(items))
 	for index := model.issueTop; index < end; index++ {
-		lines = append(lines, model.issueBlock(index, width)...)
+		lines = append(lines, model.issueBlock(items[index], index, width)...)
 	}
 	return strings.Join(limitLines(lines, height-2), "\n")
 }
 
-func (model *cockpitModel) issueBlock(index int, width int) []string {
+// issueWorkItems maps the Run's Review Issues into Work Items: positional
+// display names plus the statuses of the latest artifact refresh.
+func (model *cockpitModel) issueWorkItems() []WorkItem {
+	items := make([]WorkItem, len(model.cfg.View.Issues))
+	for index, issue := range model.cfg.View.Issues {
+		status := ""
+		if index < len(model.issueStatuses) {
+			status = model.issueStatuses[index]
+		}
+		items[index] = WorkItem{Name: fmt.Sprintf("Issue #%03d", index+1), Title: issue.Title, Status: status}
+	}
+	return items
+}
+
+func (model *cockpitModel) issueBlock(item WorkItem, index int, width int) []string {
 	lines := []string{}
 	if separator := model.batchSeparator(index, width); separator != "" {
 		lines = append(lines, styleAccent.Render(separator))
 	}
-	label := model.issueStatusLabel(index)
-	name := fmt.Sprintf("Issue #%03d", index+1)
+	return append(lines, model.workItemBlock(item, model.issueStatusLabel(index), index, width)...)
+}
+
+// workItemBlock renders one Work Item as the two-line sidebar block both
+// Run Kinds share: the marker plus display name, then the status label.
+func (model *cockpitModel) workItemBlock(item WorkItem, label string, index int, width int) []string {
 	marker := "  "
-	if index == model.selected {
-		marker = "> "
-	}
 	nameStyle := styleMuted
 	if index == model.selected {
+		marker = "> "
 		nameStyle = styleBright
 	}
-	lines = append(lines, nameStyle.Render(truncateDisplay(marker+name, width-4)))
-	lines = append(lines, model.statusStyle(label).Render(truncateDisplay("  "+label, width-4)))
-	return append(lines, "")
+	return []string{
+		nameStyle.Render(truncateDisplay(marker+item.Name, width-4)),
+		model.statusStyle(label).Render(truncateDisplay("  "+label, width-4)),
+		"",
+	}
 }
 
 // batchSeparator labels the first issue of each Batch when the plan is
@@ -538,7 +694,7 @@ func (model *cockpitModel) statusStyle(label string) lipgloss.Style {
 	switch label {
 	case "Executing":
 		return styleAccent
-	case "Resolved", "Invalid", "Duplicated":
+	case "Resolved", "Invalid", "Duplicated", "Completed":
 		return styleTool
 	case "Failed":
 		return styleError
@@ -570,6 +726,9 @@ func (model *cockpitModel) renderStatusBar(width int) string {
 	if total > 0 {
 		percent = done * 100 / total
 		text = fmt.Sprintf(" %d of %d issue(s) resolved · %d%%", done, total, percent)
+		if model.specRun() {
+			text = fmt.Sprintf(" %d of %d Task(s) completed · %d%%", done, total, percent)
+		}
 	}
 	if suffix := model.statusSuffix(); suffix != "" {
 		text += " · " + suffix

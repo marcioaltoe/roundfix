@@ -10,6 +10,7 @@ import (
 
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/rounds"
+	"roundfix/internal/spec"
 	"roundfix/internal/store"
 	roundtui "roundfix/internal/tui"
 )
@@ -190,7 +191,7 @@ func attachIssues(ctx context.Context, run store.Run) []rounds.Issue {
 }
 
 func attachRunView(run store.Run, issues []rounds.Issue, console []string) roundtui.LiveRunView {
-	return roundtui.LiveRunView{
+	view := roundtui.LiveRunView{
 		Command:       "attach",
 		Repository:    run.HeadRepository,
 		PRNumber:      run.PRNumber,
@@ -202,6 +203,26 @@ func attachRunView(run store.Run, issues []rounds.Issue, console []string) round
 		Console:       console,
 		Width:         liveViewWidth(),
 	}
+	if run.Kind == store.KindImplement {
+		view.RunKind = run.Kind
+		view.SpecSlug = run.SpecSlug
+		view.GitRoot = run.GitRoot
+		view.HeadBranch = run.LocalBranch
+		view.Tasks = attachTasks(run)
+	}
+	return view
+}
+
+// attachTasks loads the spec Run's Task Graph for the work-item pane, in
+// graph order, through the Run row's git root and Spec slug. Attach must
+// stay usable when the Spec moved or was archived, so load failures render
+// an empty pane instead of failing the command — mirroring attachIssues.
+func attachTasks(run store.Run) []spec.Task {
+	graph, err := spec.Load(run.GitRoot, run.SpecSlug)
+	if err != nil {
+		return nil
+	}
+	return graph.Tasks
 }
 
 func printAttachFailure(err error, stderr io.Writer) {

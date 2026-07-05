@@ -9,6 +9,8 @@ import (
 
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
+	"roundfix/internal/spec"
+	"roundfix/internal/store"
 )
 
 func TestRenderInteractiveInputShowsCurrentAndConfiguredDefaults(t *testing.T) {
@@ -192,6 +194,74 @@ func TestRenderLiveRunViewGroupsIssuesAndShowsStatusStrips(t *testing.T) {
 	for _, removed := range []string{"[tab] focus", "[s] stop"} {
 		if strings.Contains(view, removed) {
 			t.Fatalf("did not expect non-interactive hint %q, got:\n%s", removed, view)
+		}
+	}
+}
+
+func TestRenderLiveRunViewSpecRunRendersTasksAsWorkItems(t *testing.T) {
+	view := RenderLiveRunView(LiveRunView{
+		Command:       "implement",
+		RunKind:       store.KindImplement,
+		SpecSlug:      "0001-widget-flow",
+		GitRoot:       "/repo",
+		HeadBranch:    "ma/widget-flow",
+		Agent:         "Codex",
+		HEAD:          "abc123",
+		RunID:         "run_9",
+		PipelineState: "ResolvingWithAgent",
+		Width:         100,
+		Tasks: []spec.Task{
+			{ID: "task_01", Title: "Build core", Status: spec.StatusCompleted},
+			{ID: "task_02", Title: "Wire API", Status: spec.StatusInProgress},
+			{ID: "task_03", Title: "Write docs", Status: spec.StatusPending},
+		},
+		Console: []string{"Task task_01 settled completed."},
+	})
+
+	for _, expected := range []string{
+		"Roundfix implement",
+		"Spec: 0001-widget-flow",
+		"Branch: ma/widget-flow",
+		"Agent: Codex",
+		"Tasks",
+		"Agent Console",
+		"task_01 completed — Build core",
+		"task_02 in_progress — Wire API",
+		"task_03 pending — Write docs",
+		"Task task_01 settled completed.",
+	} {
+		if !strings.Contains(view, expected) {
+			t.Fatalf("expected spec live view to contain %q, got:\n%s", expected, view)
+		}
+	}
+	for _, absent := range []string{"Review Issues", "PR: #", "Source:"} {
+		if strings.Contains(view, absent) {
+			t.Fatalf("expected review vocabulary %q absent from a spec Run view, got:\n%s", absent, view)
+		}
+	}
+	if strings.Index(view, "task_01") > strings.Index(view, "task_02") || strings.Index(view, "task_02") > strings.Index(view, "task_03") {
+		t.Fatalf("expected Tasks rendered in Task Graph order, got:\n%s", view)
+	}
+}
+
+func TestRunTimelineRendersTaskAndQAEventSummaries(t *testing.T) {
+	timeline := NewRunTimeline(10)
+	timeline.Append(runevent.RunEvent{Source: runevent.SourceDaemon, Kind: runevent.KindDaemonTask, Summary: "Task task_01 started as Batch 001: Build core"})
+	timeline.Append(runevent.RunEvent{Source: runevent.SourceDaemon, Kind: runevent.KindDaemonTask, Summary: "Task task_01 settled completed."})
+	timeline.Append(runevent.RunEvent{Source: runevent.SourceDaemon, Kind: runevent.KindDaemonQA, Summary: "QA verdict pass for Spec 0001-widget-flow."})
+
+	lines := timeline.Lines()
+	expected := []string{
+		"Task task_01 started as Batch 001: Build core",
+		"Task task_01 settled completed.",
+		"QA verdict pass for Spec 0001-widget-flow.",
+	}
+	if len(lines) != len(expected) {
+		t.Fatalf("expected one timeline line per event, got %v", lines)
+	}
+	for index := range expected {
+		if lines[index] != expected[index] {
+			t.Fatalf("expected timeline line %q, got %q", expected[index], lines[index])
 		}
 	}
 }
