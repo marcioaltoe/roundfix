@@ -34,7 +34,10 @@ func (fn ReviewSourceResolverFunc) ResolveIssues(ctx context.Context, req review
 // completion stays with the caller.
 type RunStateStore interface {
 	UpdateRunState(ctx context.Context, runID string, state string) error
+	StopRequested(ctx context.Context, runID string) (bool, error)
 }
+
+var ErrStopRequested = errors.New("stop requested")
 
 // Dependencies are the engine's explicit collaborators, replacing the CLI
 // package globals that previously wired orchestration.
@@ -71,6 +74,7 @@ type PullRequestRef struct {
 // Review Issues already assembled into Batches for an already-created Run.
 type CyclePlan struct {
 	RunID        string
+	Session      agent.SessionRef
 	GitRoot      string
 	ArtifactDir  string
 	SourceName   string
@@ -180,6 +184,9 @@ func (engine *Engine) ResolveCycle(ctx context.Context, plan CyclePlan) (CycleRe
 			}
 			return result, fmt.Errorf("stop run %q before Batch %03d: %w", plan.RunID, batch.Number, err)
 		}
+		if err := engine.stopIfRequested(ctx, plan.RunID, batch.Number); err != nil {
+			return result, fmt.Errorf("stop run %q before Batch %03d: %w", plan.RunID, batch.Number, err)
+		}
 		outcome, remaining, err := engine.resolveBatch(ctx, plan, batch, index+1, len(plan.Batches))
 		if err != nil {
 			engine.reportPending(plan, index)
@@ -189,6 +196,9 @@ func (engine *Engine) ResolveCycle(ctx context.Context, plan CyclePlan) (CycleRe
 		result.Remaining = remaining
 		if !outcome.Failed && remaining > 0 && index < len(plan.Batches)-1 {
 			fmt.Fprintf(engine.deps.Progress, "Batch %03d/%03d completed; %d Unresolved Review Issue(s) remain.\n", batch.Number, len(plan.Batches), remaining)
+		}
+		if err := engine.stopIfRequested(ctx, plan.RunID, batch.Number); err != nil {
+			return result, fmt.Errorf("stop run %q after Batch %03d settlement: %w", plan.RunID, batch.Number, err)
 		}
 	}
 	return result, nil
@@ -302,8 +312,9 @@ func (engine *Engine) runBatchAgent(ctx context.Context, plan CyclePlan, batch r
 	fmt.Fprintf(engine.deps.Progress, "Batch: %03d/%03d (%d Review Issue(s))\n", batchIndex, batchTotal, len(batch.Issues))
 	fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
 
-	_, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
+	runResult, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
 		Runtime:      plan.Runtime,
+		Session:      plan.Session,
 		RunID:        plan.RunID,
 		Batch:        batch,
 		LogPath:      logPath,
@@ -311,7 +322,6 @@ func (engine *Engine) runBatchAgent(ctx context.Context, plan CyclePlan, batch r
 		ArtifactDir:  plan.ArtifactDir,
 		GitRoot:      plan.GitRoot,
 		Verification: plan.Verification,
-		AllowAddDirs: []string{plan.ArtifactDir},
 	}, engine.deps.Sink)
 	if runErr != nil {
 		if isStop(ctx, runErr) {
@@ -329,6 +339,14 @@ func (engine *Engine) runBatchAgent(ctx context.Context, plan CyclePlan, batch r
 			return "", fmt.Errorf("publish stop event for run %q after Agent batch %03d: %w", plan.RunID, batch.Number, errors.Join(err, publishErr))
 		}
 		return "", fmt.Errorf("stop run %q after Agent batch %03d: %w", plan.RunID, batch.Number, err)
+	}
+	if anomaly := strings.TrimSpace(runResult.TransportAnomaly); anomaly != "" {
+		if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonBatch,
+			fmt.Sprintf("Batch %03d transport anomaly: %s", batch.Number, anomaly),
+			map[string]any{"phase": "transport_anomaly", "batch": batch.Number, "anomaly": anomaly},
+		); err != nil {
+			return "", fmt.Errorf("publish transport anomaly event for run %q batch %03d: %w", plan.RunID, batch.Number, err)
+		}
 	}
 	settled, err := agent.SettleAssignedIssues(ctx, batch)
 	if err != nil {
@@ -559,6 +577,20 @@ func (engine *Engine) publishStop(ctx context.Context, runID string, batchNumber
 	return nil
 }
 
+func (engine *Engine) stopIfRequested(ctx context.Context, runID string, batchNumber int) error {
+	requested, err := engine.deps.Runs.StopRequested(ctx, runID)
+	if err != nil {
+		return fmt.Errorf("read Stop Request flag for run %q: %w", runID, err)
+	}
+	if !requested {
+		return nil
+	}
+	if err := engine.publishStop(ctx, runID, batchNumber); err != nil {
+		return err
+	}
+	return ErrStopRequested
+}
+
 func (engine *Engine) reportPending(plan CyclePlan, failedIndex int) {
 	pendingBatches := plan.Batches[failedIndex+1:]
 	pending := 0
@@ -573,6 +605,7 @@ func (engine *Engine) reportPending(plan CyclePlan, failedIndex int) {
 func validateCyclePlan(plan CyclePlan) error {
 	required := map[string]string{
 		"Run ID":             plan.RunID,
+		"Agent Session":      plan.Session.Name,
 		"git root":           plan.GitRoot,
 		"Artifact Directory": plan.ArtifactDir,
 	}
@@ -627,5 +660,5 @@ func remainingUnresolvedIssues(ctx context.Context, plan CyclePlan) (int, error)
 }
 
 func isStop(ctx context.Context, err error) bool {
-	return agent.IsStopError(err) || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) || (ctx != nil && ctx.Err() != nil)
+	return agent.IsStopError(err) || errors.Is(err, ErrStopRequested) || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) || (ctx != nil && ctx.Err() != nil)
 }

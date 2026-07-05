@@ -30,6 +30,15 @@ unresolved remains. Stdlib `flag` dispatch and a Bubble Tea v2 TUI.
   `git clean`, commits, pushes, rebases, or removal of tracked files
   **WITHOUT EXPLICIT USER PERMISSION**. These can permanently lose code.
 - Agent-created branches **MUST** use the `ma/` prefix.
+- **ALWAYS** use the AskUserQuestion tool for confirmations, clarifying questions, decision points, and any needed user interaction. If this CLI has no such tool, ask as a plain message and stop until the user answers — **NEVER** guess an answer the user can give cheaply.
+- **HARD RULE**: before opening any PR, confirm
+  `.agents/skills/roundfix/SKILL.md` still matches the shipped CLI behavior
+  (commands, flags, output formats, exit codes, Batch contract semantics). If
+  the PR changes any of those, the skill update ships in the same PR. The
+  project-local copy at `.agents/skills/roundfix/` is canonical and its
+  `metadata.version` tracks the released CLI version (the `v*` tag), not an
+  independent skill version; the embedded `skills/roundfix/` is generated from
+  it with `make skills-sync`, and `make verify` fails on drift.
 
 ## Agent docs
 
@@ -41,11 +50,6 @@ Read these only when relevant to the task:
   overriding them
 - `docs/product-brief.md` — the product contract from the grill session;
   supersede its decisions via new ADRs, don't edit history
-- `docs/specs/<feature-slug>/` — spec artifacts (`_idea.md`, `_prd.md`,
-  `_techspec.md`, `_tasks.md`, `task_NN.md`, `qa/`); shipped specs move to
-  `docs/specs/_archived/`. Run `setup-workflow` once if the layout is missing.
-- `docs/agents/issue-tracker.md` — optional tracker mirror for spec tasks
-  (local `docs/specs/` files remain canonical)
 - Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
   `internal/...` (`internal/cli/` owns parsing, output, and exit behavior;
   `internal/app/` holds app metadata)
@@ -53,6 +57,30 @@ Read these only when relevant to the task:
 **ALWAYS** use canonical terms from `CONTEXT.md` in command names, help text,
 issue titles, test names, and user-facing explanations. If the right term is
 missing, call out the gap instead of inventing new language.
+
+## Agent skills
+
+### Issue tracker
+
+Tasks live as local markdown under `docs/specs/<feature-slug>/` (the canonical
+source — no external tracker). See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+This is a single-context repo: root `CONTEXT.md` plus ADRs in `docs/adr/`. See
+`docs/agents/domain.md`.
+
+### Spec artifacts
+
+Feature specs live under `docs/specs/<feature-slug>/` (`_idea.md`, `_prd.md`,
+`_techspec.md`, `_tasks.md`, `task_NN.md`, `qa/`). Dependencies live only in
+`_tasks.md`; task status lives only in each task file's frontmatter. Shipped
+specs are archived to `docs/specs/_archived/`.
+
+### Spec routing
+
+Pick the pipeline entry point by the change — large initiative, feature,
+refactor/bugfix, or trivial. See `docs/agents/spec-routing.md`.
 
 ## Skill dispatch
 
@@ -90,6 +118,9 @@ Before editing, identify the task domain and **activate every matching skill**:
 - **Commits or PR titles**: Use `conventional-commits`
 - **Completion claim**: Use `evidence-gate`
 - **Session handoff**: Use `handoff`
+- **Roundfix dogfooding or assigned-Batch contract checks**: Use `roundfix`
+  when driving Roundfix against an Open Pull Request or validating the Batch
+  resolution contract
 
 ## CLI behavior
 
@@ -155,6 +186,8 @@ completion claim.**
 - **MUST** check `git status --short` before staging; keep unrelated user
   changes out of your diff.
 - Use `conventional-commits` for commits and PR titles (check `cog.toml`).
+- Commit and PR titles are unscoped Conventional Commits subjects here
+  (`cog.toml` sets `scopes = []`).
 - **NEVER** rewrite unrelated files or format the whole repo unless asked.
 - PR bodies summarize changes, call out risk, and list validation commands run.
 

@@ -1,0 +1,3 @@
+# Spec runs commit per task and never push
+
+Spec Runs keep ADR 0001's ownership split: the Daemon creates one commit per successfully verified Task — the code changes plus the updated task file — with a Conventional Commits message derived from the task frontmatter type and title. Spec Runs work on the user's current branch (Preflight Validation rejects the repository default branch), never push, and never open pull requests: Final Push remains a review-Run concept, and handing the branch to a pull request is the user's explicit decision after the Run.

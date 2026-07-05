@@ -4,12 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"roundfix/internal/rounds"
@@ -17,25 +13,12 @@ import (
 )
 
 type RuntimeSpec struct {
-	ID              string
-	DisplayName     string
-	Protocol        string
-	Command         string
-	Args            []string
-	ProbeArgs       []string
-	Fallbacks       []RuntimeLauncher
-	DefaultModel    string
-	Model           string
-	SupportsAddDirs bool
-	BootstrapModel  bool
-	FullAccessMode  string
-	InstallHint     string
-}
-
-type RuntimeLauncher struct {
-	Command   string
-	Args      []string
-	ProbeArgs []string
+	ID             string
+	DisplayName    string
+	Protocol       string
+	Command        string
+	Model          string
+	FullAccessMode string
 }
 
 type RuntimeOptions struct {
@@ -45,8 +28,26 @@ type RuntimeOptions struct {
 	EnableFullAccess bool
 }
 
+// SessionRef names one acpx Agent Session and the working directory that
+// scopes it. WorkDir travels with the name because every session-scoped acpx
+// invocation must pass the same global --cwd for deterministic session
+// resolution, regardless of the Roundfix process cwd.
+type SessionRef struct {
+	Name    string
+	WorkDir string
+}
+
+func SessionRefForRun(runID string, workDir string) SessionRef {
+	runID = strings.TrimSpace(runID)
+	if runID == "" {
+		return SessionRef{}
+	}
+	return SessionRef{Name: "roundfix-" + runID, WorkDir: strings.TrimSpace(workDir)}
+}
+
 type ExecuteRequest struct {
 	Runtime       RuntimeSpec
+	Session       SessionRef
 	RunID         string
 	Batch         rounds.Batch
 	LogPath       string
@@ -54,40 +55,37 @@ type ExecuteRequest struct {
 	ArtifactDir   string
 	GitRoot       string
 	Verification  string
-	AllowAddDirs  []string
 	ReasoningHint string
 	StopGrace     time.Duration
 }
 
 type ExecuteResult struct {
-	LogPath string
-	Output  string
+	LogPath          string
+	Output           string
+	StopReason       string
+	TransportAnomaly string
 }
 
 type Runner interface {
 	Probe(ctx context.Context, runtime RuntimeSpec) error
 	Run(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error)
+	EndSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error
 }
 
 const (
 	ProtocolACP   = "acp"
 	ProtocolStdio = "stdio"
 
-	DefaultCodexModel    = "gpt-5.5"
-	DefaultClaudeModel   = "opus"
-	DefaultOpenCodeModel = "anthropic/claude-opus-4-6"
+	AgentSessionStartedStatus = "session_started"
+	AgentSessionClosedStatus  = "session_closed"
 )
 
-// DefaultRunner dispatches to the protocol-specific runner. Now overrides
-// the event clock; nil means time.Now.
+// DefaultRunner dispatches real Agent work through acpx. Now overrides the
+// event clock; nil means time.Now.
 type DefaultRunner struct {
 	Now func() time.Time
-}
 
-// ExecRunner runs stdio Agents and publishes their output as agent.raw Run
-// Events. Now overrides the event clock; nil means time.Now.
-type ExecRunner struct {
-	Now func() time.Time
+	acpx *ACPXRunner
 }
 
 type StopError struct {
@@ -113,30 +111,6 @@ func IsStopError(err error) bool {
 	return errors.As(err, &stopErr)
 }
 
-type lockedWriter struct {
-	mu     sync.Mutex
-	writer io.Writer
-}
-
-func (writer *lockedWriter) Write(payload []byte) (int, error) {
-	writer.mu.Lock()
-	defer writer.mu.Unlock()
-	return writer.writer.Write(payload)
-}
-
-type ProbeError struct {
-	Runtime RuntimeSpec
-	Err     error
-}
-
-func (err ProbeError) Error() string {
-	return fmt.Sprintf("Agent %s is unavailable; probe command `%s %s` failed: %v. %s", err.Runtime.DisplayName, err.Runtime.Command, strings.Join(err.Runtime.ProbeArgs, " "), err.Err, err.Runtime.InstallHint)
-}
-
-func (err ProbeError) Unwrap() error {
-	return err.Err
-}
-
 type PromptRequest struct {
 	RunID        string
 	Batch        rounds.Batch
@@ -150,45 +124,19 @@ type PromptRequest struct {
 func RuntimeFor(opts RuntimeOptions) (RuntimeSpec, error) {
 	specs := map[string]RuntimeSpec{
 		"codex": {
-			ID:              "codex",
-			DisplayName:     "Codex",
-			Protocol:        ProtocolACP,
-			Command:         "codex-acp",
-			DefaultModel:    DefaultCodexModel,
-			SupportsAddDirs: true,
-			BootstrapModel:  true,
-			Fallbacks: []RuntimeLauncher{
-				{
-					Command: "npx",
-					Args:    []string{"--yes", "@zed-industries/codex-acp"},
-				},
-			},
-			InstallHint: "Install and authenticate Codex ACP (`npm install -g @zed-industries/codex-acp`) or pass --agent-command with an installed command that accepts a prompt on stdin.",
+			ID:          "codex",
+			DisplayName: "Codex",
+			Protocol:    ProtocolACP,
 		},
 		"claude": {
-			ID:              "claude",
-			DisplayName:     "Claude Code",
-			Protocol:        ProtocolACP,
-			Command:         "claude-agent-acp",
-			DefaultModel:    DefaultClaudeModel,
-			SupportsAddDirs: true,
-			Fallbacks: []RuntimeLauncher{
-				{
-					Command: "npx",
-					Args:    []string{"--yes", "@agentclientprotocol/claude-agent-acp"},
-				},
-			},
-			InstallHint: "Install and authenticate Claude Code ACP, or pass --agent-command with an installed command that accepts a prompt on stdin.",
+			ID:          "claude",
+			DisplayName: "Claude Code",
+			Protocol:    ProtocolACP,
 		},
 		"opencode": {
-			ID:           "opencode",
-			DisplayName:  "OpenCode",
-			Protocol:     ProtocolACP,
-			Command:      "opencode",
-			Args:         []string{"acp"},
-			ProbeArgs:    []string{"acp", "--help"},
-			DefaultModel: DefaultOpenCodeModel,
-			InstallHint:  "Install and authenticate OpenCode, or pass --agent-command with an installed command that accepts a prompt on stdin.",
+			ID:          "opencode",
+			DisplayName: "OpenCode",
+			Protocol:    ProtocolACP,
 		},
 	}
 	spec, ok := specs[opts.Agent]
@@ -199,9 +147,6 @@ func RuntimeFor(opts RuntimeOptions) (RuntimeSpec, error) {
 		spec.ID = spec.ID + "-custom"
 		spec.Protocol = ProtocolStdio
 		spec.Command = opts.CommandOverride
-		spec.Args = nil
-		spec.ProbeArgs = []string{"--help"}
-		spec.Fallbacks = nil
 	}
 	if opts.EnableFullAccess {
 		switch spec.ID {
@@ -300,178 +245,32 @@ func MarkBatchFailed(batch rounds.Batch) error {
 	return nil
 }
 
-func (runner ExecRunner) Probe(ctx context.Context, runtime RuntimeSpec) error {
-	if strings.TrimSpace(runtime.Command) == "" {
-		return ProbeError{Runtime: runtime, Err: errors.New("empty command")}
-	}
-	if _, err := exec.LookPath(runtime.Command); err != nil {
-		return ProbeError{Runtime: runtime, Err: err}
-	}
-	if len(runtime.ProbeArgs) == 0 {
-		return nil
-	}
-	cmd := exec.CommandContext(ctx, runtime.Command, runtime.ProbeArgs...)
-	if output, err := cmd.CombinedOutput(); err != nil {
-		detail := strings.TrimSpace(string(output))
-		if detail == "" {
-			detail = err.Error()
-		}
-		return ProbeError{Runtime: runtime, Err: errors.New(detail)}
-	}
-	return nil
+func NewDefaultRunner() *DefaultRunner {
+	return &DefaultRunner{acpx: &ACPXRunner{}}
 }
 
-func (runner DefaultRunner) Probe(ctx context.Context, runtime RuntimeSpec) error {
-	if runtime.Protocol == ProtocolACP {
-		return ACPRunner{}.Probe(ctx, runtime)
-	}
-	return ExecRunner{}.Probe(ctx, runtime)
+func (runner *DefaultRunner) Probe(ctx context.Context, runtime RuntimeSpec) error {
+	return runner.acpxRunner().Probe(ctx, runtime)
 }
 
-func (runner DefaultRunner) Run(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error) {
-	if req.Runtime.Protocol == ProtocolACP {
-		return ACPRunner{Now: runner.Now}.Run(ctx, req, sink)
-	}
-	return ExecRunner{Now: runner.Now}.Run(ctx, req, sink)
+func (runner *DefaultRunner) Run(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error) {
+	return runner.acpxRunner().Run(ctx, req, sink)
 }
 
-func (runner ExecRunner) Run(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error) {
-	if strings.TrimSpace(req.LogPath) == "" {
-		return ExecuteResult{}, errors.New("Agent log path is required")
-	}
-	if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {
-		return ExecuteResult{}, fmt.Errorf("create Agent log directory: %w", err)
-	}
-	logFile, err := os.Create(req.LogPath)
-	if err != nil {
-		return ExecuteResult{}, fmt.Errorf("create Agent log %q: %w", req.LogPath, err)
-	}
-	defer func() {
-		_ = logFile.Close()
-	}()
-
-	if sink == nil {
-		sink = runevent.Discard
-	}
-	publisher := &rawEventPublisher{ctx: ctx, sink: sink, req: req, now: eventClock(runner.Now)}
-
-	if err := ctx.Err(); err != nil {
-		publisher.publishStatus("stopped")
-		return ExecuteResult{LogPath: req.LogPath}, StopError{LogPath: req.LogPath, Err: err}
-	}
-
-	args := runnerArgs(req)
-	cmd := exec.Command(req.Runtime.Command, args...)
-	cmd.Dir = req.GitRoot
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		return ExecuteResult{}, fmt.Errorf("open Agent stdin: %w", err)
-	}
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return ExecuteResult{}, fmt.Errorf("open Agent stdout: %w", err)
-	}
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return ExecuteResult{}, fmt.Errorf("open Agent stderr: %w", err)
-	}
-	if err := cmd.Start(); err != nil {
-		return ExecuteResult{}, fmt.Errorf("start Agent command %q: %w", req.Runtime.Command, err)
-	}
-
-	var output strings.Builder
-	writer := &lockedWriter{writer: io.MultiWriter(logFile, &output, publisher)}
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		_, _ = io.Copy(writer, stdout)
-	}()
-	go func() {
-		defer wg.Done()
-		_, _ = io.Copy(writer, stderr)
-	}()
-
-	_, writeErr := io.WriteString(stdin, req.Prompt)
-	closeErr := stdin.Close()
-	waitCh := make(chan error, 1)
-	go func() {
-		waitCh <- cmd.Wait()
-	}()
-
-	var waitErr error
-	select {
-	case waitErr = <-waitCh:
-	case <-ctx.Done():
-		killed := stopProcess(cmd, stopGrace(req.StopGrace), waitCh)
-		waitBounded(&wg, stopGrace(req.StopGrace))
-		publisher.publishStatus("stopped")
-		return ExecuteResult{LogPath: req.LogPath, Output: output.String()}, StopError{
-			LogPath: req.LogPath,
-			Output:  output.String(),
-			Killed:  killed,
-			Err:     ctx.Err(),
-		}
-	}
-	wg.Wait()
-	if writeErr != nil {
-		return ExecuteResult{LogPath: req.LogPath, Output: output.String()}, fmt.Errorf("write Agent prompt: %w", writeErr)
-	}
-	if closeErr != nil {
-		return ExecuteResult{LogPath: req.LogPath, Output: output.String()}, fmt.Errorf("close Agent stdin: %w", closeErr)
-	}
-	if waitErr != nil {
-		return ExecuteResult{LogPath: req.LogPath, Output: output.String()}, fmt.Errorf("Agent command failed: %w", waitErr)
-	}
-	if err := publisher.err(); err != nil {
-		return ExecuteResult{LogPath: req.LogPath, Output: output.String()}, fmt.Errorf("publish Run Events: %w", err)
-	}
-	return ExecuteResult{LogPath: req.LogPath, Output: output.String()}, nil
+func (runner *DefaultRunner) EndSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error {
+	return runner.acpxRunner().EndSession(ctx, runtime, session)
 }
 
-// rawEventPublisher publishes stdio Agent output chunks as agent.raw Run
-// Events. Write never fails so the log and output capture keep working when
-// a sink fails; the first publish error surfaces when the runner finishes.
-type rawEventPublisher struct {
-	ctx  context.Context
-	sink runevent.Sink
-	req  ExecuteRequest
-	now  func() time.Time
-
-	mu       sync.Mutex
-	firstErr error
+func (runner *DefaultRunner) CancelSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error {
+	return runner.acpxRunner().CancelSession(ctx, runtime, session)
 }
 
-func (publisher *rawEventPublisher) Write(payload []byte) (int, error) {
-	text := string(payload)
-	update := StreamUpdate{Kind: StreamUpdateRaw, Text: text}
-	event := newAgentRunEvent(publisher.req, update, marshalRawPayload(text), publisher.now())
-	publisher.record(publisher.sink.Publish(publisher.ctx, event))
-	return len(payload), nil
-}
-
-func (publisher *rawEventPublisher) publishStatus(status string) {
-	update := StreamUpdate{Kind: StreamUpdateStatus, Status: status}
-	event := newAgentRunEvent(publisher.req, update, marshalStatusPayload(status), publisher.now())
-	// The stop event must reach sinks even after the run context is canceled.
-	publisher.record(publisher.sink.Publish(context.WithoutCancel(publisher.ctx), event))
-}
-
-func (publisher *rawEventPublisher) record(err error) {
-	if err == nil {
-		return
+func (runner *DefaultRunner) acpxRunner() *ACPXRunner {
+	if runner.acpx == nil {
+		runner.acpx = &ACPXRunner{}
 	}
-	publisher.mu.Lock()
-	defer publisher.mu.Unlock()
-	if publisher.firstErr == nil {
-		publisher.firstErr = err
-	}
-}
-
-func (publisher *rawEventPublisher) err() error {
-	publisher.mu.Lock()
-	defer publisher.mu.Unlock()
-	return publisher.firstErr
+	runner.acpx.Now = runner.Now
+	return runner.acpx
 }
 
 func eventClock(now func() time.Time) func() time.Time {
@@ -481,69 +280,9 @@ func eventClock(now func() time.Time) func() time.Time {
 	return time.Now
 }
 
-func runnerArgs(req ExecuteRequest) []string {
-	args := append([]string{}, req.Runtime.Args...)
-	if req.Runtime.ID == "codex" {
-		if strings.TrimSpace(req.Runtime.Model) != "" {
-			args = append(args, "--model", strings.TrimSpace(req.Runtime.Model))
-		}
-		if req.Runtime.SupportsAddDirs {
-			for _, dir := range req.AllowAddDirs {
-				dir = strings.TrimSpace(dir)
-				if dir != "" {
-					args = append(args, "--add-dir", dir)
-				}
-			}
-		}
-		args = append(args, "-")
-	}
-	return args
-}
-
 func stopGrace(value time.Duration) time.Duration {
 	if value <= 0 {
 		return 10 * time.Second
 	}
 	return value
-}
-
-func stopProcess(cmd *exec.Cmd, grace time.Duration, waitCh <-chan error) bool {
-	if cmd.Process == nil {
-		return false
-	}
-	_ = cmd.Process.Signal(os.Interrupt)
-	timer := time.NewTimer(grace)
-	defer timer.Stop()
-
-	select {
-	case <-waitCh:
-		return false
-	case <-timer.C:
-		_ = cmd.Process.Kill()
-		// Grandchildren holding the Agent's pipes can keep cmd.Wait alive
-		// after the kill; never let runtime teardown freeze the Run.
-		killTimer := time.NewTimer(grace)
-		defer killTimer.Stop()
-		select {
-		case <-waitCh:
-		case <-killTimer.C:
-		}
-		return true
-	}
-}
-
-// waitBounded waits for the output copiers, but only up to the grace
-// period: pipes inherited by grandchildren may never reach EOF.
-func waitBounded(wg *sync.WaitGroup, grace time.Duration) {
-	done := make(chan struct{})
-	go func() {
-		wg.Wait()
-		close(done)
-	}()
-	timer := time.NewTimer(grace)
-	defer timer.Stop()
-	select {
-	case <-done:
-	case <-timer.C:
-	}
 }

@@ -1,0 +1,24 @@
+ROUNDFIX // LIVE RUN VIEW // PR #123                 RUN 00000001 [RESOLVING WITH AGENT]
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│ FETCH [done]  >  TRIAGE [done]  >  AGENT [run]  >  VERIFY [wait]  >  PUSH [locked]   │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────┐┌─────────────────────────────────────────────────┐   
+│ WORK QUEUE (3)                 ││ SESSION.TIMELINE                                │   
+          ┌──────────────────────────────────────────────────────────────────┐          
+          │ REVIEW.ISSUE  #001                        Esc close · j/k scroll │          
+          │ ---------------------------------------------------------------- │          
+          │ major: guard nil cache                                           │          
+          │ major · resolved · internal/cache/cache.go:42                    │          
+          │ source: thread:PRRT_1,comment:PRRC_1                             │          
+          │                                                                  │          
+          │ # Issue 001: major: guard nil cache                              │          
+          │                                                                  │          
+          │ ## Review Comment                                                │          
+          │ Line 1-3 of 10 · PgUp/PgDn page                                  │          
+          └──────────────────────────────────────────────────────────────────┘          
+│   info: document cache evicti… ││                                                 │   
+│   internal/cache/cache.go:88   ││                                                 │   
+│                                ││                                                 │   
+│ 3 issues total · 1 resolved ·… ││                                                 │   
+└────────────────────────────────┘└─────────────────────────────────────────────────┘   
+Keys: Esc close · j/k scroll · PgUp/PgDn page · Ctrl-C stop                             

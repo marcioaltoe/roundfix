@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"roundfix/internal/runevent"
-
-	acp "github.com/coder/acp-go-sdk"
 )
 
 // statusPayload and rawPayload are the runner-defined small JSON payloads
@@ -68,6 +66,10 @@ func streamUpdateKind(kind runevent.Kind) StreamUpdateKind {
 // newAgentRunEvent stamps Run identity from the execute request and bounds
 // the summary; payload bytes pass through untouched per ADR 0008.
 func newAgentRunEvent(req ExecuteRequest, update StreamUpdate, payload json.RawMessage, at time.Time) runevent.RunEvent {
+	summary := ConsoleText(update)
+	if summary == "" && update.Kind == StreamUpdateStatus && isSessionLifecycleStatus(update.Status) {
+		summary = "SESSION " + strings.ToUpper(update.Status) + "\n"
+	}
 	return runevent.RunEvent{
 		RunID:     req.RunID,
 		Batch:     req.Batch.Number,
@@ -75,7 +77,7 @@ func newAgentRunEvent(req ExecuteRequest, update StreamUpdate, payload json.RawM
 		Kind:      runEventKind(update.Kind),
 		ToolID:    update.ToolID,
 		ToolState: update.ToolState,
-		Summary:   runevent.BoundSummary(ConsoleText(update)),
+		Summary:   runevent.BoundSummary(summary),
 		Time:      at,
 		Payload:   payload,
 	}
@@ -118,12 +120,8 @@ func StreamUpdateFromEvent(event runevent.RunEvent) (StreamUpdate, bool) {
 		}
 		return StreamUpdate{Kind: StreamUpdateRaw, Text: payload.Text}, true
 	default:
-		var note acp.SessionNotification
-		if err := json.Unmarshal(event.Payload, &note); err != nil {
-			return StreamUpdate{}, false
-		}
-		update := streamUpdateFromACP(note.Update)
-		if update.Kind == "" {
+		update, ok, err := streamUpdateFromSessionUpdatePayload(event.Payload)
+		if err != nil || !ok {
 			return StreamUpdate{}, false
 		}
 		return update, true
@@ -173,12 +171,19 @@ func ConsoleText(update StreamUpdate) string {
 		if update.Status == "" {
 			return ""
 		}
+		if isSessionLifecycleStatus(update.Status) {
+			return ""
+		}
 		return "SESSION " + strings.ToUpper(update.Status) + "\n"
 	case StreamUpdateRaw:
 		return update.Text
 	default:
 		return update.Text
 	}
+}
+
+func isSessionLifecycleStatus(status string) bool {
+	return status == AgentSessionStartedStatus || status == AgentSessionClosedStatus
 }
 
 func consoleToolStartedText(update StreamUpdate) string {

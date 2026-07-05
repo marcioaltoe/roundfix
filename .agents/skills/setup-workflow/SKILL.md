@@ -1,23 +1,25 @@
 ---
 name: setup-workflow
-description: Configure a repo for a CONTEXT-driven spec workflow — set up its issue tracker, triage label vocabulary, domain doc layout, and the docs/specs/ artifact scaffold (CONTEXT.md glossary, docs/adr/, spec folders) before using planning, decomposition, or implementation-loop skills. Run once when preparing a repo for PRD, spec, task, triage, or agent workflow skills.
+description: Configure a repo for the CONTEXT-driven spec workflow — scaffold docs/specs/, docs/adr/, and the CONTEXT.md glossary, and seed the docs/agents/ usage guides (issue tracker, spec routing, domain docs, triage labels). Run when preparing a repo for the write-prd/write-tasks/implement pipeline; re-run to refresh — it overwrites the skill-owned docs/agents/ files and prunes deprecated content.
 disable-model-invocation: true
 metadata:
   category: setup
   tags: [workflow, prd, issues, planning, triage, repository-context, agents]
-  version: 0.2.0
+  version: 0.5.0
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---
 
 # Setup Workflow
 
-Scaffold the per-repo configuration that a CONTEXT-driven spec workflow assumes:
+Scaffold the per-repo configuration the CONTEXT-driven spec workflow assumes. Local markdown under `docs/specs/` is the **only home of planning artifacts** — there is no external tracker.
 
-- **Issue tracker** — where issues live (GitHub by default; local markdown is also supported out of the box)
-- **Triage labels** — the strings used for the five canonical triage roles
-- **Domain docs** — where `CONTEXT.md` and ADRs live, and the consumer rules for reading them
-- **Spec artifacts** — the `docs/specs/<feature-slug>/` layout that `write-prd`, `write-techspec`, `write-tasks`, `implement-task`, `implement-spec`, `qa-gate`, and `archive-spec` read and write
+- **Spec artifacts** — `docs/specs/<feature-slug>/`, read and written by `write-idea`, `write-prd`, `write-techspec`, `write-tasks`, `implement-task`, `implement-spec`, `qa-gate`, and `archive-spec`
+- **Spec routing** — how an agent picks the pipeline entry point for a given change (large initiative / feature / refactor-bugfix / trivial) and what marks a spec done
+- **Domain docs** — `CONTEXT.md` (glossary) and `docs/adr/`, and the consumer rules for reading them
+- **Triage labels** (conditional) — only when the repo receives external/incoming issues on its forge (e.g. a public GitHub repo) that the `triage` skill will process
+
+These usage rules are seeded into the repo as `docs/agents/*.md` — the canonical, always-current explanation of how agents work inside the CONTEXT-driven workflow. This skill owns those files: a re-run regenerates them.
 
 This is a prompt-driven skill, not a deterministic script. Explore, present what you found, confirm with the user, then write.
 
@@ -27,82 +29,58 @@ This is a prompt-driven skill, not a deterministic script. Explore, present what
 
 Look at the current repo to understand its starting state. Read whatever exists; don't assume:
 
-- `git remote -v` and `.git/config` — is this a GitHub repo? Which one?
-- `AGENTS.md` and `CLAUDE.md` at the repo root — does either exist? Is there already an `## Agent skills` section in either?
-- `CONTEXT.md` and `CONTEXT-MAP.md` at the repo root
+- `AGENTS.md` and `CLAUDE.md` at the repo root — does either exist? Is there already an `## Agent skills` section? Is `CLAUDE.md` a symlink to `AGENTS.md` (the usual convention)?
+- `CONTEXT.md` / `CONTEXT-MAP.md` at the repo root
+- `docs/specs/` and `docs/specs/_archived/` — layout already in place? Any active specs?
 - `docs/adr/` and any `src/*/docs/adr/` directories
 - `docs/agents/` — does this skill's prior output already exist?
-- `docs/specs/` and `docs/specs/_archived/` — is the spec artifact layout already in place? Any active specs?
-- `.scratch/` — sign that a local-markdown issue tracker convention is already in use
+- Legacy planning locations (`.scratch/`, `.compozy/`, `docs/tasks/`, `docs/plans/`) — note them as read-only history; new work goes to `docs/specs/`.
+- `git remote -v` — a public forge remote means external issues may arrive (Section C).
 
 ### 2. Present findings and ask
 
-Summarise what's present and what's missing. Then walk the user through the four decisions **one at a time** — present a section, get the user's answer, then move to the next. Don't dump them all at once.
+Summarise what's present and what's missing. Then walk the user through the decisions **one at a time** — present a section, get the answer, move on (use the AskUserQuestion tool or the CLI's equivalent). Assume the user may not know the terms: open each section with a short explainer.
 
-Assume the user does not know what these terms mean. Each section starts with a short explainer (what it is, why these skills need it, what changes if they pick differently). Then show the choices and the default.
+**Section A — Spec artifacts (the core; a confirmation, not a choice).**
 
-**Section A — Issue tracker.**
+> Explainer: The spec workflow skills coordinate through per-feature folders. Each feature gets `docs/specs/<feature-slug>/` holding `_idea.md` (optional), `_prd.md`, `_techspec.md` (optional), the `_tasks.md` dependency graph, one `task_NN.md` per task, and `qa/` evidence. Dependencies live only in `_tasks.md`; task status lives only in each task file's frontmatter. Completed specs (all tasks done, QA passed) move to `docs/specs/_archived/` so the active folder shows only live work.
 
-> Explainer: The "issue tracker" is where issues live for this repo. Skills like `to-issues`, `triage`, `to-prd`, and `qa` read from and write to it — they need to know whether to call `gh issue create`, write a markdown file under `.scratch/`, or follow some other workflow you describe. Pick the place you actually track work for this repo.
+The layout is a fixed convention the skills share — confirm the user wants it scaffolded, and whether any legacy planning artifacts found in step 1 should be flagged as read-only history in the summary.
 
-Default posture: PRD-to-issues workflows usually work best when the issue tracker is explicit before planning starts. If a `git remote` points at GitHub, propose that. If a `git remote` points at GitLab (`gitlab.com` or a self-hosted host), propose GitLab. Otherwise (or if the user prefers), offer:
+**Section B — Domain docs.**
 
-- **GitHub** — issues live in the repo's GitHub Issues (uses the `gh` CLI)
-- **GitLab** — issues live in the repo's GitLab Issues (uses the [`glab`](https://gitlab.com/gitlab-org/cli) CLI)
-- **Local markdown** — issues live as files under `.scratch/<feature>/` in this repo (good for solo projects or repos without a remote)
-- **Linear** — issues live in a Linear workspace, driven through the **Linear MCP** (no CLI). Initiatives = products, projects = deliverables, issues = stories; PRDs map to projects. See [issue-tracker-linear.md](./issue-tracker-linear.md) for the full structure. Linear isn't detectable from `git remote`, so propose it when the user says they track work in Linear.
-- **Other** (Jira, etc.) — ask the user to describe the workflow in one paragraph; the skill will record it as freeform prose
-
-**Section B — Triage label vocabulary.**
-
-> Explainer: When the `triage` skill processes an incoming issue, it moves it through a state machine — needs evaluation, waiting on reporter, ready for an AFK agent to pick up, ready for a human, or won't fix. To do that, it needs to apply labels (or the equivalent in your issue tracker) that match strings _you've actually configured_. If your repo already uses different label names (e.g. `bug:triage` instead of `needs-triage`), map them here so the skill applies the right ones instead of creating duplicates.
-
-The five canonical roles:
-
-- `needs-triage` — maintainer needs to evaluate
-- `needs-info` — waiting on reporter
-- `ready-for-agent` — fully specified, AFK-ready (an agent can pick it up with no human context)
-- `ready-for-human` — needs human implementation
-- `wontfix` — will not be actioned
-
-Default: each role's string equals its name. Ask the user if they want to override any. If their issue tracker has no existing labels, the defaults are fine.
-
-**Section C — Domain docs.**
-
-> Explainer: Some skills (`improve-codebase-architecture`, `diagnosing-bugs`, `tdd`) read a `CONTEXT.md` file to learn the project's domain language, and `docs/adr/` for past architectural decisions. They need to know whether the repo has one global context or multiple (e.g. a monorepo with separate frontend/backend contexts) so they look in the right place.
+> Explainer: The skills read `CONTEXT.md` (the glossary — pure ubiquitous language) before writing specs, code names, or test names, and `docs/adr/` for past decisions. They need to know whether the repo has one global context or multiple (a monorepo with separate bounded contexts).
 
 Confirm the layout:
 
 - **Single-context** — one `CONTEXT.md` + `docs/adr/` at the repo root. Most repos are this.
 - **Multi-context** — `CONTEXT-MAP.md` at the root pointing to per-context `CONTEXT.md` files (typically a monorepo).
 
-**Section D — Spec artifacts.**
+**Section C — Triage labels (only when the repo receives external issues on its forge).**
 
-> Explainer: The spec workflow skills (`write-prd` → `write-techspec` → `write-tasks` → `implement-task`/`implement-spec` → `qa-gate` → `archive-spec`) coordinate through per-feature artifact folders. Each feature gets `docs/specs/<feature-slug>/` holding `_prd.md`, optionally `_techspec.md`, the `_tasks.md` dependency graph, one `task_NN.md` per task, and `qa/` for QA evidence. Shipped specs move to `docs/specs/_archived/<feature-slug>/` so the active folder always shows only live work.
+> Explainer: When outsiders (users, teammates, bots) file issues on the forge (e.g. GitHub issues of a public repo), the `triage` skill moves them through a state machine using five canonical roles. It needs the label strings this repo actually uses. If nothing external lands on the forge, skip this section entirely — spec tasks carry their own status lifecycle (`pending`/`in_progress`/`completed`/`failed`) and never need triage labels.
 
-This section is a confirmation, not an open choice — the layout is a fixed convention the skills share. Confirm the user wants it scaffolded, and whether any existing planning artifacts (e.g. `docs/tasks/`, `docs/plans/`) should be noted as legacy locations in the summary.
+The five canonical roles: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. Default: each role's string equals its name; ask only if the repo's labels differ.
 
 ### 3. Confirm and edit
 
 Show the user a draft of:
 
-- The `## Agent skills` block to add to whichever of `CLAUDE.md` / `AGENTS.md` is being edited (see step 4 for selection rules)
-- The contents of `docs/agents/issue-tracker.md`, `docs/agents/triage-labels.md`, `docs/agents/domain.md`
 - The scaffold actions for spec artifacts (directories to create, `CONTEXT.md` skeleton if missing)
+- The `## Agent skills` block to add to whichever of `CLAUDE.md` / `AGENTS.md` is being edited (see step 4 for selection rules)
+- The contents of `docs/agents/issue-tracker.md`, `docs/agents/spec-routing.md`, and `docs/agents/domain.md` (plus `docs/agents/triage-labels.md` when Section C applies)
 
-Let them edit before writing.
+Let them edit before writing. On a re-run, existing `docs/agents/` files found in step 1 are inputs to the draft, not something to preserve verbatim: carry forward repo-specific answers (like custom label strings), regenerate the rest from the current seeds.
 
 ### 4. Write
 
 **Pick the file to edit:**
 
-- If `CLAUDE.md` exists, edit it.
+- If `CLAUDE.md` exists as a real file, edit it. If it is a symlink to `AGENTS.md`, edit `AGENTS.md`.
 - Else if `AGENTS.md` exists, edit it.
 - If neither exists, ask the user which one to create — don't pick for them.
 
-Never create `AGENTS.md` when `CLAUDE.md` already exists (or vice versa) — always edit the one that's already there.
-
-If an `## Agent skills` block already exists in the chosen file, update its contents in-place rather than appending a duplicate. Don't overwrite user edits to the surrounding sections.
+If an `## Agent skills` block already exists in the chosen file, update it in place rather than appending a duplicate. Don't overwrite user edits to surrounding sections.
 
 The block:
 
@@ -111,11 +89,7 @@ The block:
 
 ### Issue tracker
 
-[one-line summary of where issues are tracked]. See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-[one-line summary of the label vocabulary]. See `docs/agents/triage-labels.md`.
+Tasks live as local markdown under `docs/specs/<feature-slug>/` (the canonical source — no external tracker). See `docs/agents/issue-tracker.md`.
 
 ### Domain docs
 
@@ -123,19 +97,16 @@ The block:
 
 ### Spec artifacts
 
-Feature specs live under `docs/specs/<feature-slug>/` (`_prd.md`, `_techspec.md`, `_tasks.md`, `task_NN.md`, `qa/`). Dependencies live only in `_tasks.md`; task status lives only in each task file's frontmatter. Shipped specs are archived to `docs/specs/_archived/`.
+Feature specs live under `docs/specs/<feature-slug>/` (`_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, `task_NN.md`, `qa/`). Dependencies live only in `_tasks.md`; task status lives only in each task file's frontmatter. Completed specs (all tasks done, QA passed) are archived to `docs/specs/_archived/`.
+
+### Spec routing
+
+Pick the pipeline entry point by the change — large initiative, feature, refactor/bugfix, or trivial. See `docs/agents/spec-routing.md`.
 ```
 
-Then write the three docs files using the seed templates in this skill folder as a starting point:
+Add a `### Triage labels` line only when Section C applies.
 
-- [issue-tracker-github.md](./issue-tracker-github.md) — GitHub issue tracker
-- [issue-tracker-gitlab.md](./issue-tracker-gitlab.md) — GitLab issue tracker
-- [issue-tracker-local.md](./issue-tracker-local.md) — local-markdown issue tracker
-- [issue-tracker-linear.md](./issue-tracker-linear.md) — Linear issue tracker (via Linear MCP)
-- [triage-labels.md](./triage-labels.md) — label mapping
-- [domain.md](./domain.md) — domain doc consumer rules + layout
-
-For "other" issue trackers, write `docs/agents/issue-tracker.md` from scratch using the user's description.
+**Re-run semantics — this skill owns `docs/agents/` and the `## Agent skills` block.** When either already exists, rewrite rather than append: overwrite each seeded `docs/agents/*.md` with the freshly confirmed draft, delete `docs/agents/` files this skill no longer seeds (deprecated guides must not linger and contradict current ones), and regenerate the `## Agent skills` block in place, dropping subsections that no longer apply. User content elsewhere in `AGENTS.md`/`CLAUDE.md` stays untouched — ownership covers only the block and the seeded files.
 
 Then scaffold the spec artifacts:
 
@@ -156,6 +127,13 @@ _Avoid_: rejected synonyms
 -->
 ```
 
+Then write the docs files using the seed templates in this skill folder as a starting point:
+
+- [issue-tracker-local.md](./issue-tracker-local.md) — the canonical local `docs/specs/` conventions
+- [spec-routing.md](./spec-routing.md) — pipeline entry-point routing and the definition of done
+- [triage-labels.md](./triage-labels.md) — label mapping (Section C only)
+- [domain.md](./domain.md) — domain doc consumer rules + layout
+
 ### 5. Done
 
-Tell the user the setup is complete and which skills now read from these files: the spec pipeline (`write-prd`, `write-techspec`, `write-tasks`, `implement-task`, `implement-spec`, `qa-gate`, `archive-spec`) plus the PRD, issue-decomposition, and triage skills. Mention they can edit `docs/agents/*.md` and `CONTEXT.md` directly later — re-running this skill is only necessary to switch issue trackers or restart from scratch.
+Tell the user the setup is complete and which skills now read from these files: the spec pipeline (`write-idea`, `write-prd`, `write-techspec`, `write-tasks`, `implement-task`, `implement-spec`, `qa-gate`, `archive-spec`) plus `triage` when external issues arrive on the forge. Mention they can edit `docs/agents/*.md` and `CONTEXT.md` directly later, but that a re-run of this skill regenerates the seeded `docs/agents/` files and the `## Agent skills` block from the current templates — durable customizations belong in the confirmation answers, `CONTEXT.md`, or sections outside the owned block.

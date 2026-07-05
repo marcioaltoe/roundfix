@@ -1,0 +1,110 @@
+---
+task: task_01
+spec: 0008-worktree-isolation
+status: completed
+type: backend
+complexity: high
+---
+
+# Task 01: Build the worktree package
+
+## Overview
+
+Create `internal/worktree`: Run Worktree creation on a named Run Branch,
+keep/remove/prune lifecycle, untracked-file provisioning, and the
+porcelain-only integration protocol from ADR-0024 — reproducing the
+empirically verified git matrix from the techspec as the package's test
+suite. Nothing is wired into Runs yet. Verifiable alone over hermetic temp
+repositories.
+
+## Requirements
+
+1. MUST create worktrees with `git worktree add -b roundfix/run-<id>
+   <path> <headSHA>`, path under Roundfix Home
+   (`worktrees/<repo-id>/<run-id>`), returning a Ref carrying run id, path,
+   branch, and the owning user root; copy-list entries are copied by
+   relative path with per-file stderr notes for missing sources, never
+   failures.
+2. MUST implement `Integrate` per ADR-0024 exactly: target branch checked
+   out in the user root → `git -C <userRoot> merge --ff-only <runSHA>`;
+   checked out nowhere → `git merge-base --is-ancestor` then
+   `git branch -f`; refusals (overlap, divergence, non-ancestry) return a
+   `pending` result with the reason and MUST leave the target branch
+   unmoved; `git update-ref` is never used.
+3. MUST implement `CleanupClean` (worktree remove + Run Branch delete, only
+   for integrated Clean outcomes) and `PruneTerminal` (`git worktree prune`
+   plus directory/branch removal exclusively for Runs the callback reports
+   terminal-Clean).
+4. MUST keep dirty worktrees intact on every path — `git worktree remove`
+   without `--force` refusing dirty trees is relied on, not overridden.
+5. MUST use the hermetic git test helpers (0003 discipline) and context-
+   first git invocations through the package's own small runner.
+
+## Subtasks
+
+- [x] Create with named Run Branch, Roundfix Home paths, copy-list
+- [x] Integration protocol: two cases plus pending reasons
+- [x] CleanupClean and PruneTerminal
+- [x] Verified-matrix test suite over hermetic temp repos
+
+## Acceptance Criteria
+
+- [x] Creation succeeds while the source branch is checked out in the main
+      repo (named-branch path proven); the worktree starts clean and
+      independent.
+- [x] Integration tests reproduce the full matrix: ff on clean checkout, ff
+      preserving non-overlapping dirt, pending on overlap with branch
+      unmoved and user dirt intact, pending on divergence, branch-move when
+      the user switched away, pending on non-ancestry; after every pending
+      case the user checkout's `git status` shows no phantom staged
+      entries.
+- [x] Crash simulation (`rm -rf` of a worktree) is reaped by PruneTerminal
+      only for terminal-Clean run ids; kept worktrees of other runs
+      survive the sweep.
+- [x] Full suite passes; no production wiring outside the new package.
+
+## Verification
+
+- `rtk go test ./internal/worktree/` — expected: all tests pass.
+- `rtk go test ./...` — expected: full suite passes.
+
+## References
+
+`_prd.md` → Core Features 1, 3; Decisions. `_techspec.md` → Interfaces,
+Worktree creation, Integration protocol, Build Order 1. ADR-0023, ADR-0024.
+Round-1 findings 10, 15.
+
+## Result
+
+- Added `internal/worktree` with `Create`, `Integrate`, `CleanupClean`, and
+  `PruneTerminal`. Git calls go through the package runner with
+  `context.Context` first and `core.fsmonitor=false`; the implementation uses
+  `worktree add`, `merge --ff-only`, `merge-base --is-ancestor`, `branch -f`,
+  `worktree remove`, `worktree prune`, and Run Branch deletion. `rtk rg
+  'update-ref' internal/worktree` found no production-code matches.
+- Creation evidence: `TestCreateUsesNamedRunBranchUnderRoundfixHomeAndCopiesFiles`
+  proves `git worktree add -b roundfix/run-<id>` works while `main` is checked
+  out in the user root, creates the path under
+  `~/.roundfix/worktrees/<repo-id>/<run-id>`, keeps the user checkout on
+  `main`, copies an ignored provisioning file, emits a stderr note for a
+  missing copy-list entry, and leaves the Run Worktree clean.
+- Integration evidence: the package suite covers ff merge on a clean checkout,
+  ff merge preserving non-overlapping dirt, overlap pending with branch unmoved
+  and dirt intact, divergence pending with branch unmoved, branch move when
+  `main` is checked out nowhere, and non-ancestry pending. Every pending test
+  asserts `git status --porcelain=v1` has no staged phantom entries.
+- Cleanup evidence: `TestCleanupCleanRemovesCleanRunWorktreeAndBranch` proves
+  Clean cleanup removes the worktree and Run Branch; `TestCleanupCleanKeepsDirtyRunWorktreeAndBranch`
+  proves dirty worktrees are kept because `git worktree remove` is not forced.
+- Prune evidence: `TestPruneTerminalReapsCrashedTerminalCleanRunOnly` removes
+  one Run Worktree directory with `rm -rf`, then proves `PruneTerminal` reaps
+  only the terminal-Clean Run Branch while the non-terminal Run Worktree and
+  branch survive.
+- Verification:
+  - `rtk go test ./internal/worktree/` passed: `Go test: 10 passed in 1 packages`.
+  - `rtk go test ./...` passed: `Go test: 666 passed in 17 packages`.
+  - `rtk make verify` passed: `rtk go test ./...`, `roundfix skills check`,
+    and `go build -buildvcs=false -o bin/roundfix ./cmd/roundfix`.
+- Diff scope evidence: `rtk git -c core.fsmonitor=false status --short`
+  showed only this task file and the new `internal/worktree/` package; no
+  production wiring outside the new package and no Task Graph edits.

@@ -1,0 +1,40 @@
+ROUNDFIX // LIVE RUN VIEW // PR #123                                                 RUN 00000001 [RESOLVING WITH AGENT]
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ FETCH [done]  >  TRIAGE [done]  >  AGENT [run]  >  VERIFY [wait]  >  PUSH [locked]                                   │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────┐┌─────────────────────────────────────────────────────────────────────┐   
+│ WORK QUEUE (3)                             ││ SESSION.TIMELINE                                                    │   
+│                                            ││                                                                     │   
+│ BATCH 001/002                        01:23 ││ PLAN inspect current cockpit render                                 │   
+│ > [done] MAJOR                          #1 ││ [TOOL] read_file * completed                                        │   
+│   major: guard nil cache                   ││ THINK preserving the shipped layout                                 │   
+             ┌───────────────────────────────────────────────────────────────────────────────────────────┐              
+             │ REVIEW.ISSUE  #001                                                 Esc close · j/k scroll │              
+             │ ----------------------------------------------------------------------------------------- │              
+             │ major: guard nil cache                                                                    │              
+             │ major · resolved · internal/cache/cache.go:42                                             │              
+             │ source: thread:PRRT_1,comment:PRRC_1                                                      │              
+             │                                                                                           │              
+             │ # Issue 001: major: guard nil cache                                                       │              
+             │                                                                                           │              
+             │ ## Review Comment                                                                         │              
+             │                                                                                           │              
+             │ Guard the map lookup before dereferencing.                                                │              
+             │                                                                                           │              
+             │ ## Triage                                                                                 │              
+             │                                                                                           │              
+             │ - Decision: `UNREVIEWED`                                                                  │              
+             │ - Notes:                                                                                  │              
+             │                                                                                           │              
+             │ Line 1-10 of 10 · PgUp/PgDn page                                                          │              
+             └───────────────────────────────────────────────────────────────────────────────────────────┘              
+│                                            ││                                                                     │   
+│                                            ││                                                                     │   
+│                                            ││                                                                     │   
+│                                            ││                                                                     │   
+│                                            ││                                                                     │   
+│                                            ││                                                                     │   
+│                                            ││                                                                     │   
+│ 3 issues total · 1 resolved · 2 unresolved ││                                                                     │   
+└────────────────────────────────────────────┘└─────────────────────────────────────────────────────────────────────┘   
+Keys: Esc close · j/k scroll · PgUp/PgDn page · Ctrl-C stop                                                             

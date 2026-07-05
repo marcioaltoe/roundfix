@@ -9,6 +9,8 @@ import (
 
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
+	"roundfix/internal/spec"
+	"roundfix/internal/store"
 )
 
 func TestRenderInteractiveInputShowsCurrentAndConfiguredDefaults(t *testing.T) {
@@ -75,6 +77,107 @@ func TestCollectInputAppliesDefaultsAndUserOverrides(t *testing.T) {
 	}
 	if !strings.Contains(output.String(), "Open Pull Request [123]:") {
 		t.Fatalf("expected prompted PR default, got %q", output.String())
+	}
+}
+
+func TestCollectInputSpecPickerSelectsListedSpec(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		wantSpec string
+	}{
+		{name: "by number", input: "2\nclaude\n", wantSpec: "0002-other-flow"},
+		{name: "by slug", input: "0001-widget-flow\nclaude\n", wantSpec: "0001-widget-flow"},
+		{name: "out-of-range number passes through", input: "9\nclaude\n", wantSpec: "9"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var output strings.Builder
+
+			values, err := CollectInput(context.Background(), InputRequest{
+				Command:     "implement",
+				Values:      CommandValues{Agent: "codex"},
+				SpecOptions: []string{"0001-widget-flow", "0002-other-flow"},
+			}, strings.NewReader(tt.input), &output)
+			if err != nil {
+				t.Fatalf("collect input: %v", err)
+			}
+
+			if values.Spec != tt.wantSpec {
+				t.Fatalf("expected Spec %q, got %q", tt.wantSpec, values.Spec)
+			}
+			if values.Agent != "claude" {
+				t.Fatalf("expected agent override, got %q", values.Agent)
+			}
+			for _, expected := range []string{
+				"Active Specs:",
+				"1. 0001-widget-flow",
+				"2. 0002-other-flow",
+				"Pick a Spec by number or slug.",
+				"Spec []:",
+				"Agent [codex]:",
+			} {
+				if !strings.Contains(output.String(), expected) {
+					t.Fatalf("expected the Spec picker to show %q, got:\n%s", expected, output.String())
+				}
+			}
+		})
+	}
+}
+
+func TestCollectInputImplementQAGate(t *testing.T) {
+	tests := []struct {
+		name       string
+		input      string
+		defaultQA  bool
+		wantQA     bool
+		wantPrompt string
+	}{
+		{name: "yes enables QA", input: "\n\ny\n", wantQA: true, wantPrompt: "QA gate [y/N]:"},
+		{name: "empty keeps QA disabled", input: "\n\n\n", wantQA: false, wantPrompt: "QA gate [y/N]:"},
+		{name: "empty keeps QA flag default", input: "\n\n\n", defaultQA: true, wantQA: true, wantPrompt: "QA gate [Y/n]:"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var output strings.Builder
+
+			values, err := CollectInput(context.Background(), InputRequest{
+				Command: "implement",
+				Values: CommandValues{
+					Spec:  "0001-widget-flow",
+					Agent: "codex",
+					QA:    tt.defaultQA,
+				},
+			}, strings.NewReader(tt.input), &output)
+			if err != nil {
+				t.Fatalf("collect input: %v", err)
+			}
+			if values.QA != tt.wantQA {
+				t.Fatalf("expected QA %v, got %v", tt.wantQA, values.QA)
+			}
+			if !strings.Contains(output.String(), tt.wantPrompt) {
+				t.Fatalf("expected QA prompt %q, got:\n%s", tt.wantPrompt, output.String())
+			}
+		})
+	}
+}
+
+func TestCollectInputImplementQAGateInvalidInputRepromptsOnce(t *testing.T) {
+	var output strings.Builder
+
+	_, err := CollectInput(context.Background(), InputRequest{
+		Command: "implement",
+		Values:  CommandValues{Spec: "0001-widget-flow", Agent: "codex"},
+	}, strings.NewReader("\n\nmaybe\nlater\n"), &output)
+
+	if err == nil {
+		t.Fatal("expected invalid QA input to fail")
+	}
+	if !strings.Contains(err.Error(), "QA gate") {
+		t.Fatalf("expected error to name QA gate, got %v", err)
+	}
+	if count := strings.Count(output.String(), "QA gate [y/N]:"); count != 2 {
+		t.Fatalf("expected one QA re-prompt, got %d prompts:\n%s", count, output.String())
 	}
 }
 
@@ -147,6 +250,95 @@ func TestRenderLiveRunViewGroupsIssuesAndShowsStatusStrips(t *testing.T) {
 	for _, removed := range []string{"[tab] focus", "[s] stop"} {
 		if strings.Contains(view, removed) {
 			t.Fatalf("did not expect non-interactive hint %q, got:\n%s", removed, view)
+		}
+	}
+}
+
+func TestRenderLiveRunViewSpecRunRendersTasksAsWorkItems(t *testing.T) {
+	view := RenderLiveRunView(LiveRunView{
+		Command:       "implement",
+		RunKind:       store.KindImplement,
+		SpecSlug:      "0001-widget-flow",
+		GitRoot:       "/repo",
+		WorkDir:       "/home/user/.roundfix/worktrees/repo/run_9",
+		HeadBranch:    "ma/widget-flow",
+		Agent:         "Codex",
+		HEAD:          "abc123",
+		RunID:         "run_9",
+		PipelineState: "ResolvingWithAgent",
+		BudgetState:   "38m / 2h",
+		GitState:      "clean, 1 unpushed commit",
+		CurrentRound:  2,
+		MaxRounds:     6,
+		AutoCommit:    true,
+		AutoPush:      false,
+		LastPush:      "disabled",
+		Width:         100,
+		Tasks: []spec.Task{
+			{ID: "task_01", Title: "Build core", Status: spec.StatusCompleted},
+			{ID: "task_02", Title: "Wire API", Status: spec.StatusInProgress},
+			{ID: "task_03", Title: "Write docs", Status: spec.StatusPending},
+		},
+		Console: []string{"Task task_01 settled completed."},
+	})
+
+	for _, expected := range []string{
+		"Roundfix implement",
+		"Spec: 0001-widget-flow",
+		"Branch: ma/widget-flow",
+		"Agent: Codex",
+		"Run:",
+		"ID: run_9",
+		"State: ResolvingWithAgent",
+		"Run Worktree: /home/user/.roundfix/worktrees/repo/run_9",
+		"Git: clean, 1 unpushed commit",
+		"Auto-commit: on",
+		"Auto-push: off",
+		"Last push: disabled",
+		"Tasks",
+		"Agent Console",
+		"task_01 completed — Build core",
+		"task_02 in_progress — Wire API",
+		"task_03 pending — Write docs",
+		"Task task_01 settled completed.",
+	} {
+		if !strings.Contains(view, expected) {
+			t.Fatalf("expected spec live view to contain %q, got:\n%s", expected, view)
+		}
+	}
+	for _, absent := range []string{"Review Issues", "PR: #", "Source:"} {
+		if strings.Contains(view, absent) {
+			t.Fatalf("expected review vocabulary %q absent from a spec Run view, got:\n%s", absent, view)
+		}
+	}
+	for _, absent := range []string{"\n  Round:", "\n  Budget:"} {
+		if strings.Contains(view, absent) {
+			t.Fatalf("expected spec Run header line %q absent, got:\n%s", strings.TrimSpace(absent), view)
+		}
+	}
+	if strings.Index(view, "task_01") > strings.Index(view, "task_02") || strings.Index(view, "task_02") > strings.Index(view, "task_03") {
+		t.Fatalf("expected Tasks rendered in Task Graph order, got:\n%s", view)
+	}
+}
+
+func TestRunTimelineRendersTaskAndQAEventSummaries(t *testing.T) {
+	timeline := NewRunTimeline(10)
+	timeline.Append(runevent.RunEvent{Source: runevent.SourceDaemon, Kind: runevent.KindDaemonTask, Summary: "Task task_01 started as Batch 001: Build core"})
+	timeline.Append(runevent.RunEvent{Source: runevent.SourceDaemon, Kind: runevent.KindDaemonTask, Summary: "Task task_01 settled completed."})
+	timeline.Append(runevent.RunEvent{Source: runevent.SourceDaemon, Kind: runevent.KindDaemonQA, Summary: "QA verdict pass for Spec 0001-widget-flow."})
+
+	lines := timeline.Lines()
+	expected := []string{
+		"Task task_01 started as Batch 001: Build core",
+		"Task task_01 settled completed.",
+		"QA verdict pass for Spec 0001-widget-flow.",
+	}
+	if len(lines) != len(expected) {
+		t.Fatalf("expected one timeline line per event, got %v", lines)
+	}
+	for index := range expected {
+		if lines[index] != expected[index] {
+			t.Fatalf("expected timeline line %q, got %q", expected[index], lines[index])
 		}
 	}
 }

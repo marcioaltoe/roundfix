@@ -19,7 +19,7 @@ GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')
 
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap verify fmt fmt-check test test-race build install run version clean deps skills-check skills-install skills-link
+.PHONY: help bootstrap verify fmt fmt-check test test-race build install run version clean deps skills-check skills-install skills-link skills-sync skills-sync-check
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n"} \
@@ -39,7 +39,7 @@ deps: ## Download, tidy, and verify Go modules
 
 ##@ Quality & Testing
 
-verify: fmt-check test skills-check build ## Run the required local verification gate
+verify: fmt-check test skills-sync-check skills-check build ## Run the required local verification gate
 
 fmt: ## Format Go files
 	$(GOFMT) -w $(GO_FILES)
@@ -89,6 +89,16 @@ skills-update: ## Install missing skills and update existing ones to latest (rea
 	
 skills-check: ## Validate shipped Roundfix skill artifacts
 	$(GO) run $(RUN_FLAGS) $(CMD) skills check
+
+skills-sync: ## Regenerate embedded skills/roundfix from the canonical .agents/skills/roundfix
+	rm -rf skills/roundfix
+	cp -R .agents/skills/roundfix skills/roundfix
+
+skills-sync-check: ## Fail when skills/roundfix drifts from the canonical .agents/skills/roundfix
+	@diff -r .agents/skills/roundfix skills/roundfix >/dev/null || { \
+		echo "skills/roundfix drifts from canonical .agents/skills/roundfix; run 'make skills-sync'"; \
+		exit 1; \
+	}
 
 skills-install: ## Install shipped Roundfix skills; pass TARGET=project|codex|claude|opencode|all
 	$(GO) run $(RUN_FLAGS) $(CMD) skills install --target $(TARGET)

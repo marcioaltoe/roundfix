@@ -22,6 +22,12 @@ defaults:
 watch:
   max_rounds: 4
   poll_interval: 10s
+implement:
+  auto_push: true
+worktree:
+  copy:
+    - .env.local
+    - certs/dev.pem
 resolve:
   batch_size: 2
 `)
@@ -30,6 +36,11 @@ defaults:
   agent: opencode
 watch:
   max_rounds: 8
+implement:
+  auto_push: false
+worktree:
+  copy:
+    - project.env
 budget:
   max_run_duration: 3h
 `)
@@ -53,6 +64,12 @@ budget:
 	}
 	if loaded.Config.Watch.PollInterval != 10*time.Second {
 		t.Fatalf("expected user poll interval, got %s", loaded.Config.Watch.PollInterval)
+	}
+	if loaded.Config.Implement.AutoPush {
+		t.Fatal("expected project implement.auto_push to override user default")
+	}
+	if len(loaded.Config.Worktree.Copy) != 1 || loaded.Config.Worktree.Copy[0] != "project.env" {
+		t.Fatalf("expected project worktree.copy to override user list, got %#v", loaded.Config.Worktree.Copy)
 	}
 	if loaded.Config.Budget.MaxRunDuration != 3*time.Hour {
 		t.Fatalf("expected project max run duration, got %s", loaded.Config.Budget.MaxRunDuration)
@@ -91,6 +108,32 @@ watch:
   poll_interval: soon
 `,
 			contains: "invalid duration",
+		},
+		{
+			name: "invalid implement auto push",
+			config: `
+implement:
+  auto_push: sometimes
+`,
+			contains: "implement.auto_push must be boolean",
+		},
+		{
+			name: "absolute worktree copy",
+			config: `
+worktree:
+  copy:
+    - /tmp/secret.env
+`,
+			contains: "worktree.copy",
+		},
+		{
+			name: "dot-dot worktree copy",
+			config: `
+worktree:
+  copy:
+    - ../secret.env
+`,
+			contains: "worktree.copy",
 		},
 	}
 
@@ -132,7 +175,11 @@ func TestInitCreatesUserConfig(t *testing.T) {
 		t.Fatalf("expected user result at %q, got %#v", expectedPath, result)
 	}
 	content := mustRead(t, expectedPath)
-	if !strings.Contains(content, "agent: codex") || !strings.Contains(content, "agent_full_access: false") || !strings.Contains(content, "max_run_duration: 2h") {
+	if !strings.Contains(content, "agent: codex") || !strings.Contains(content, "agent_full_access: false") ||
+		!strings.Contains(content, `artifact_dir: ""`) || !strings.Contains(content, "Roundfix Home artifacts/<repo-id>") ||
+		!strings.Contains(content, "worktree:") || !strings.Contains(content, "copy: []") ||
+		!strings.Contains(content, "implement:") || !strings.Contains(content, "auto_push: false") ||
+		!strings.Contains(content, "max_run_duration: 2h") {
 		t.Fatalf("expected default config content, got %s", content)
 	}
 	if _, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir}); err != nil {
@@ -231,8 +278,8 @@ func TestValidateArtifactDirectoryResolvesAndCreatesPaths(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected default artifact dir to validate, got %v", err)
 	}
-	if defaultPath != filepath.Join(gitRoot, ".roundfix") {
-		t.Fatalf("expected default artifact dir under git root, got %q", defaultPath)
+	if defaultPath != filepath.Join(homeDir, ".roundfix", "artifacts", repoID(gitRoot)) {
+		t.Fatalf("expected default artifact dir under Roundfix Home, got %q", defaultPath)
 	}
 	assertDir(t, defaultPath)
 
@@ -253,6 +300,16 @@ func TestValidateArtifactDirectoryResolvesAndCreatesPaths(t *testing.T) {
 		t.Fatalf("expected home artifact dir expansion, got %q", homePath)
 	}
 	assertDir(t, homePath)
+
+	absoluteConfigPath := filepath.Join(t.TempDir(), "configured-artifacts")
+	absolutePath, err := ValidateArtifactDirectory(absoluteConfigPath, gitRoot, homeDir)
+	if err != nil {
+		t.Fatalf("expected absolute artifact dir to validate, got %v", err)
+	}
+	if absolutePath != absoluteConfigPath {
+		t.Fatalf("expected absolute artifact dir unchanged, got %q", absolutePath)
+	}
+	assertDir(t, absolutePath)
 }
 
 func TestValidateArtifactDirectoryRejectsInvalidPaths(t *testing.T) {

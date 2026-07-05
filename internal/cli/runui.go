@@ -31,10 +31,10 @@ type runUI struct {
 	closeOnce sync.Once
 }
 
-func startRunUI(ctx context.Context, view roundtui.LiveRunView, runID string, homeDir string, runStore *store.Store, stderr io.Writer) (*runUI, error) {
+func startRunUI(ctx context.Context, view roundtui.LiveRunView, runID string, homeDir string, runStore *store.Store, stderr io.Writer, noAgentConsole bool) (*runUI, error) {
 	journal := store.JournalSink{Store: runStore}
 	if !liveTUIEnabled(stderr) {
-		fanout := runevent.NewFanout([]runevent.Sink{journal, agent.WriterSink{Writer: stderr}}, nil)
+		fanout := runevent.NewFanout([]runevent.Sink{journal, agentConsoleDisplaySink(stderr, noAgentConsole)}, nil)
 		return &runUI{sink: fanout, progress: stderr, fanout: fanout}, nil
 	}
 
@@ -65,6 +65,14 @@ func startRunUI(ctx context.Context, view roundtui.LiveRunView, runID string, ho
 		})
 	}()
 	return ui, nil
+}
+
+func agentConsoleDisplaySink(stderr io.Writer, noAgentConsole bool) runevent.Sink {
+	sink := agent.WriterSink{Writer: stderr}
+	if noAgentConsole {
+		return runevent.NewSourceFilterSink(sink, runevent.SourceAgent)
+	}
+	return sink
 }
 
 // Wait keeps the cockpit on screen until the user closes it (q after the

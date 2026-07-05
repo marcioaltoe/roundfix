@@ -5,15 +5,19 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
 
 	"roundfix/internal/rounds"
+	"roundfix/internal/spec"
+	"roundfix/internal/store"
 )
 
 type CommandValues struct {
 	PRNumber     string
+	Spec         string
 	ReviewSource string
 	Agent        string
 	Round        string
@@ -21,6 +25,7 @@ type CommandValues struct {
 	Model        string
 	MaxRounds    int
 	UntilClean   bool
+	QA           bool
 }
 
 type Suggestion struct {
@@ -33,6 +38,10 @@ type InputRequest struct {
 	Values          CommandValues
 	PRSuggestion    Suggestion
 	AgentSuggestion Suggestion
+	// SpecOptions lists the active Spec slugs the Spec picker offers, in
+	// slug order. The spec field accepts a 1-based number into this list
+	// or a slug typed directly.
+	SpecOptions []string
 }
 
 type LiveRunView struct {
@@ -57,6 +66,19 @@ type LiveRunView struct {
 	BatchTotal    int
 	TotalIssues   int
 	Issues        []rounds.Issue
+	// RunKind selects the Work Item vocabulary of the panes: implement Runs
+	// render Tasks where review Runs render Review Issues. Empty means a
+	// review Run, so existing callers keep their rendering unchanged.
+	RunKind string
+	// SpecSlug, GitRoot, and WorkDir locate a spec Run's task files
+	// (docs/specs/<slug>/ under the execution root) so the cockpit can
+	// refresh Task statuses by re-reading them. WorkDir is the Run Worktree;
+	// GitRoot is the user checkout fallback for legacy or pruned Runs.
+	SpecSlug string
+	GitRoot  string
+	WorkDir  string
+	// Tasks lists the spec Run's Tasks in Task Graph order.
+	Tasks []spec.Task
 	// BatchSizes lists the planned Review Issue count per Batch, in Batch
 	// order, when the caller knows the plan. The cockpit derives Batch
 	// separators and Executing/Waiting states from it.
@@ -68,6 +90,51 @@ type LiveRunView struct {
 type IssueGroup struct {
 	Round  int
 	Issues []rounds.Issue
+}
+
+// WorkItem is the Run-Kind-neutral view model of the work-item pane: the
+// display name and current status of one Work Item. Review Runs map Review
+// Issues into it and spec Runs map Tasks; the Run Kind keys the mapping, so
+// each pane renders exactly one vocabulary.
+type WorkItem struct {
+	Name     string // "Issue #001" for Review Issues, the Task id for Tasks
+	Title    string
+	Status   string // artifact status verbatim (pending, resolved, completed, ...)
+	Severity string // Review Issue severity when artifacts provide one; empty for Tasks or unknown severity.
+	Ordinal  int
+	Location string
+}
+
+// TaskWorkItems maps a spec Run's Tasks into Work Items, preserving Task
+// Graph order.
+func TaskWorkItems(tasks []spec.Task) []WorkItem {
+	items := make([]WorkItem, 0, len(tasks))
+	for index, task := range tasks {
+		items = append(items, WorkItem{
+			Name:     task.ID,
+			Title:    strings.TrimSpace(task.Title),
+			Status:   string(task.Status),
+			Ordinal:  index + 1,
+			Location: task.File,
+		})
+	}
+	return items
+}
+
+// specRunView reports whether the view renders a spec Run's Tasks; every
+// other Run Kind keeps the Review Issue rendering byte-identical.
+func specRunView(view LiveRunView) bool {
+	return view.RunKind == store.KindImplement
+}
+
+func taskReadRoot(view LiveRunView) string {
+	workDir := strings.TrimSpace(view.WorkDir)
+	if workDir != "" {
+		if info, err := os.Stat(workDir); err == nil && info.IsDir() {
+			return workDir
+		}
+	}
+	return view.GitRoot
 }
 
 func CollectInput(ctx context.Context, req InputRequest, input io.Reader, output io.Writer) (CommandValues, error) {
@@ -90,6 +157,17 @@ func CollectInput(ctx context.Context, req InputRequest, input io.Reader, output
 		if current == "" || req.Values == values {
 			current = defaults[field]
 		}
+		if field == "qa" {
+			qa, done, err := collectQAGateInput(reader, output, current == "yes")
+			if err != nil {
+				return CommandValues{}, err
+			}
+			values.QA = qa
+			if done {
+				break
+			}
+			continue
+		}
 		fmt.Fprintf(output, "%s [%s]: ", inputLabel(field), current)
 		line, err := reader.ReadString('\n')
 		if err != nil && err != io.EOF {
@@ -98,6 +176,9 @@ func CollectInput(ctx context.Context, req InputRequest, input io.Reader, output
 		line = strings.TrimSpace(line)
 		if line == "" {
 			line = current
+		}
+		if field == "spec" {
+			line = pickSpecOption(line, req.SpecOptions)
 		}
 		if line != "" {
 			if err := setValue(&values, field, line); err != nil {
@@ -114,15 +195,20 @@ func CollectInput(ctx context.Context, req InputRequest, input io.Reader, output
 func DefaultsForInput(req InputRequest) map[string]string {
 	defaults := map[string]string{
 		"pr":           req.Values.PRNumber,
+		"spec":         req.Values.Spec,
 		"source":       req.Values.ReviewSource,
 		"agent":        req.Values.Agent,
 		"round":        req.Values.Round,
 		"artifact-dir": req.Values.ArtifactDir,
 		"model":        req.Values.Model,
 		"max-rounds":   "",
+		"qa":           "",
 	}
 	if req.Values.MaxRounds > 0 {
 		defaults["max-rounds"] = strconv.Itoa(req.Values.MaxRounds)
+	}
+	if req.Values.QA {
+		defaults["qa"] = "yes"
 	}
 	if defaults["pr"] == "" {
 		defaults["pr"] = req.PRSuggestion.Value
@@ -138,6 +224,13 @@ func RenderInteractiveInput(req InputRequest) string {
 	var builder strings.Builder
 	builder.WriteString("Roundfix Interactive Input\n")
 	builder.WriteString(fmt.Sprintf("Command: %s\n", req.Command))
+	if len(req.SpecOptions) > 0 {
+		builder.WriteString("Active Specs:\n")
+		for index, slug := range req.SpecOptions {
+			builder.WriteString(fmt.Sprintf("  %d. %s\n", index+1, slug))
+		}
+		builder.WriteString("Pick a Spec by number or slug.\n")
+	}
 	if defaults["pr"] != "" {
 		source := req.PRSuggestion.Source
 		if source == "" && req.Values.PRNumber != "" {
@@ -168,9 +261,14 @@ func RenderLiveRunView(view LiveRunView) string {
 	var builder strings.Builder
 	builder.WriteString(fmt.Sprintf("Roundfix %s\n\n", strings.ToLower(emptyDash(view.Command))))
 	builder.WriteString("Target:\n")
-	builder.WriteString(fmt.Sprintf("  PR: #%s %s\n", emptyDash(view.PRNumber), emptyDash(view.Repository)))
-	builder.WriteString(fmt.Sprintf("  Branch: %s\n", emptyDash(view.HeadBranch)))
-	builder.WriteString(fmt.Sprintf("  Source: %s\n", emptyDash(view.ReviewSource)))
+	if specRunView(view) {
+		builder.WriteString(fmt.Sprintf("  Spec: %s\n", emptyDash(view.SpecSlug)))
+		builder.WriteString(fmt.Sprintf("  Branch: %s\n", emptyDash(view.HeadBranch)))
+	} else {
+		builder.WriteString(fmt.Sprintf("  PR: #%s %s\n", emptyDash(view.PRNumber), emptyDash(view.Repository)))
+		builder.WriteString(fmt.Sprintf("  Branch: %s\n", emptyDash(view.HeadBranch)))
+		builder.WriteString(fmt.Sprintf("  Source: %s\n", emptyDash(view.ReviewSource)))
+	}
 	if view.Agent != "" {
 		builder.WriteString(fmt.Sprintf("  Agent: %s\n", emptyDash(view.Agent)))
 	}
@@ -181,8 +279,13 @@ func RenderLiveRunView(view LiveRunView) string {
 	builder.WriteString("\nRun:\n")
 	builder.WriteString(fmt.Sprintf("  ID: %s\n", emptyDash(view.RunID)))
 	builder.WriteString(fmt.Sprintf("  State: %s\n", emptyDash(view.PipelineState)))
-	builder.WriteString(fmt.Sprintf("  Round: %s\n", formatRound(view.CurrentRound, view.MaxRounds)))
-	builder.WriteString(fmt.Sprintf("  Budget: %s\n", emptyDash(view.BudgetState)))
+	if strings.TrimSpace(view.WorkDir) != "" {
+		builder.WriteString(fmt.Sprintf("  Run Worktree: %s\n", view.WorkDir))
+	}
+	if !specRunView(view) {
+		builder.WriteString(fmt.Sprintf("  Round: %s\n", formatRound(view.CurrentRound, view.MaxRounds)))
+		builder.WriteString(fmt.Sprintf("  Budget: %s\n", emptyDash(view.BudgetState)))
+	}
 	builder.WriteString(fmt.Sprintf("  Git: %s\n", emptyDash(view.GitState)))
 	builder.WriteString(fmt.Sprintf("  Auto-commit: %s\n", onOff(view.AutoCommit)))
 	builder.WriteString(fmt.Sprintf("  Auto-push: %s\n", onOff(view.AutoPush)))
@@ -213,7 +316,12 @@ func renderSplitPanes(view LiveRunView) string {
 		leftWidth = available - rightWidth
 	}
 
+	leftTitle := "Review Issues"
 	leftLines := issuePaneLines(view.Issues)
+	if specRunView(view) {
+		leftTitle = "Tasks"
+		leftLines = taskPaneLines(TaskWorkItems(view.Tasks))
+	}
 	rightLines := consolePaneLines(view.Console)
 	rowCount := len(leftLines)
 	if len(rightLines) > rowCount {
@@ -222,7 +330,7 @@ func renderSplitPanes(view LiveRunView) string {
 
 	var builder strings.Builder
 	builder.WriteString(paneBorder(leftWidth, rightWidth))
-	builder.WriteString(paneRow("Review Issues", "Agent Console", leftWidth, rightWidth))
+	builder.WriteString(paneRow(leftTitle, "Agent Console", leftWidth, rightWidth))
 	builder.WriteString(paneBorder(leftWidth, rightWidth))
 	for index := 0; index < rowCount; index++ {
 		left := ""
@@ -257,6 +365,19 @@ func issuePaneLines(issues []rounds.Issue) []string {
 				lines = append(lines, "  "+strings.TrimSpace(issue.Title))
 			}
 		}
+	}
+	return lines
+}
+
+// taskPaneLines renders Task Work Items one per line in Task Graph order,
+// mirroring the implement stdout contract shape: `task_NN <status> — <title>`.
+func taskPaneLines(items []WorkItem) []string {
+	if len(items) == 0 {
+		return []string{"none"}
+	}
+	lines := make([]string, 0, len(items))
+	for _, item := range items {
+		lines = append(lines, fmt.Sprintf("%s %s — %s", item.Name, emptyDash(item.Status), emptyDash(item.Title)))
 	}
 	return lines
 }
@@ -372,15 +493,30 @@ func fieldsForCommand(command string) []string {
 		return []string{"pr", "agent", "round", "artifact-dir", "model"}
 	case "watch":
 		return []string{"pr", "source", "agent", "artifact-dir", "model", "max-rounds"}
+	case "implement":
+		return []string{"spec", "agent", "qa"}
 	default:
 		return []string{"pr"}
 	}
+}
+
+// pickSpecOption maps a 1-based picker number onto the listed Spec slug and
+// passes any other entry through unchanged, so a known slug can be typed
+// directly.
+func pickSpecOption(line string, options []string) string {
+	index, err := strconv.Atoi(line)
+	if err != nil || index < 1 || index > len(options) {
+		return line
+	}
+	return options[index-1]
 }
 
 func inputLabel(field string) string {
 	switch field {
 	case "pr":
 		return "Open Pull Request"
+	case "spec":
+		return "Spec"
 	case "source":
 		return "Review Source"
 	case "agent":
@@ -393,6 +529,8 @@ func inputLabel(field string) string {
 		return "Model"
 	case "max-rounds":
 		return "Max Rounds"
+	case "qa":
+		return "QA gate"
 	default:
 		return field
 	}
@@ -402,6 +540,8 @@ func getValue(values CommandValues, field string) string {
 	switch field {
 	case "pr":
 		return values.PRNumber
+	case "spec":
+		return values.Spec
 	case "source":
 		return values.ReviewSource
 	case "agent":
@@ -416,6 +556,10 @@ func getValue(values CommandValues, field string) string {
 		if values.MaxRounds > 0 {
 			return strconv.Itoa(values.MaxRounds)
 		}
+	case "qa":
+		if values.QA {
+			return "yes"
+		}
 	}
 	return ""
 }
@@ -424,6 +568,8 @@ func setValue(values *CommandValues, field string, value string) error {
 	switch field {
 	case "pr":
 		values.PRNumber = value
+	case "spec":
+		values.Spec = value
 	case "source":
 		values.ReviewSource = value
 	case "agent":
@@ -440,8 +586,57 @@ func setValue(values *CommandValues, field string, value string) error {
 			return fmt.Errorf("Max Rounds must be a number: %w", err)
 		}
 		values.MaxRounds = number
+	case "qa":
+		qa, ok := parseQAGateChoice(value)
+		if !ok {
+			return fmt.Errorf("QA gate must be y, yes, n, no, or empty")
+		}
+		values.QA = qa
 	}
 	return nil
+}
+
+func collectQAGateInput(reader *bufio.Reader, output io.Writer, current bool) (bool, bool, error) {
+	for attempt := 0; attempt < 2; attempt++ {
+		fmt.Fprint(output, qaGatePrompt(current))
+		line, err := reader.ReadString('\n')
+		done := err == io.EOF
+		if err != nil && err != io.EOF {
+			return false, done, fmt.Errorf("read Interactive Input field QA gate: %w", err)
+		}
+		choice := strings.TrimSpace(line)
+		if choice == "" {
+			return current, done, nil
+		}
+		qa, ok := parseQAGateChoice(choice)
+		if ok {
+			return qa, done, nil
+		}
+		if attempt == 0 && !done {
+			fmt.Fprintln(output, "QA gate must be y, yes, n, no, or empty.")
+			continue
+		}
+		return false, done, fmt.Errorf("QA gate must be y, yes, n, no, or empty")
+	}
+	return false, false, fmt.Errorf("QA gate must be y, yes, n, no, or empty")
+}
+
+func qaGatePrompt(current bool) string {
+	if current {
+		return "QA gate [Y/n]: "
+	}
+	return "QA gate [y/N]: "
+}
+
+func parseQAGateChoice(value string) (bool, bool) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "y", "yes":
+		return true, true
+	case "n", "no":
+		return false, true
+	default:
+		return false, false
+	}
 }
 
 func emptyDash(value string) string {

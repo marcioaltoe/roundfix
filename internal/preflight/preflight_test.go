@@ -357,6 +357,7 @@ func initGitRepoForTest(t *testing.T) string {
 	runGitForSetup(t, repo, "init", "-b", "main")
 	runGitForSetup(t, repo, "config", "user.name", "Roundfix Test")
 	runGitForSetup(t, repo, "config", "user.email", "test@example.com")
+	runGitForSetup(t, repo, "config", "commit.gpgsign", "false")
 	if err := os.WriteFile(filepath.Join(repo, "a.txt"), []byte("initial\n"), 0o644); err != nil {
 		t.Fatalf("write seed file: %v", err)
 	}
@@ -367,8 +368,31 @@ func initGitRepoForTest(t *testing.T) string {
 
 func runGitForSetup(t *testing.T, workDir string, args ...string) {
 	t.Helper()
-	cmd := exec.Command("git", append([]string{"-C", workDir}, args...)...)
+	cmdArgs := append([]string{"-C", workDir}, gitConfigArgsForTest()...)
+	cmdArgs = append(cmdArgs, args...)
+	cmd := exec.Command("git", cmdArgs...)
+	cmd.Env = isolatedGitEnvForTest()
 	if output, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, output)
 	}
+}
+
+func gitConfigArgsForTest() []string {
+	return []string{
+		"-c", "user.name=Roundfix Test",
+		"-c", "user.email=test@example.com",
+		"-c", "commit.gpgsign=false",
+	}
+}
+
+func isolatedGitEnvForTest() []string {
+	env := make([]string, 0, len(os.Environ())+2)
+	for _, entry := range os.Environ() {
+		key, _, _ := strings.Cut(entry, "=")
+		if strings.HasPrefix(key, "GIT_CONFIG_") {
+			continue
+		}
+		env = append(env, entry)
+	}
+	return append(env, "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null")
 }

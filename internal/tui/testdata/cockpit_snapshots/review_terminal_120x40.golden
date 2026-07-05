@@ -1,0 +1,40 @@
+ROUNDFIX // LIVE RUN VIEW // PR #123                                                      RUN 00000001 [CLEAN] READ-ONLY
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ FETCH [done]  >  TRIAGE [done]  >  AGENT [done]  >  VERIFY [done]  >  PUSH [done]                                    │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────┐┌─────────────────────────────────────────────────────────────────────┐
+│ WORK QUEUE (3)                             ││ SESSION.TIMELINE                                                    │
+│                                            ││                                                                     │
+│ BATCH 001/002                              ││ PLAN inspect current cockpit render                                 │
+│ > [done] MAJOR                          #1 ││ [TOOL] read_file * completed                                        │
+│   major: guard nil cache                   ││ THINK preserving the shipped layout                                 │
+│   internal/cache/cache.go:42               ││ Batch 001 executing.                                                │
+│                                            ││ SESSION running                                                     │
+│   [locked] MINOR                        #2 ││                                                                     │
+│   minor: trim stale TODO                   ││                                                                     │
+│   internal/cache/cache_test.go:17          ││                                                                     │
+│                                            ││                                                                     │
+│ BATCH 002/002                              ││                                                                     │
+│   [locked] INFO                         #3 ││                                                                     │
+│   info: document cache eviction            ││                                                                     │
+│   internal/cache/cache.go:88               ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│                                            ││                                                                     │
+│ 3 issues total · 1 resolved · 2 unresolved ││                                                                     │
+└────────────────────────────────────────────┘└─────────────────────────────────────────────────────────────────────┘
+Keys: Tab focus · ↑↓ move/scroll · PgUp/PgDn page · Enter issue · D show detail · End follow · q close                  

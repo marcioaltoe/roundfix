@@ -1,10 +1,11 @@
 # Roundfix
 
-Roundfix is a local-first Go CLI for resolving pull request review feedback with
-local coding agents. It fetches unresolved CodeRabbit findings, stores them as
-local markdown Review Issue artifacts, assigns bounded Batches to a local Agent
-runtime, verifies Agent changes, creates Batch commits, and runs the Final Push
-only after no Unresolved Review Issues remain.
+Roundfix is a local-first Go CLI for resolving pull request review feedback and
+executing Spec Task Graphs with local coding agents. It fetches unresolved
+CodeRabbit findings, stores them as local markdown Review Issue artifacts,
+assigns bounded Batches or Tasks to a local Agent runtime, verifies Agent
+changes, creates Daemon-owned commits, and pushes only at configured clean
+boundaries.
 
 Roundfix is not a general workflow engine, CI healer, or task orchestration
 system. The MVP focuses on one review-resolution loop for an Open Pull Request.
@@ -14,12 +15,25 @@ system. The MVP focuses on one review-resolution loop for an Open Pull Request.
 - Go 1.26 or newer.
 - `make`.
 - GitHub CLI `gh` authenticated for the target repository.
-- A local Agent runtime command for the selected Agent:
-  - `codex-acp` for Codex, with `npx --yes @zed-industries/codex-acp` as a fallback
-  - `claude-agent-acp`, with `npx --yes @agentclientprotocol/claude-agent-acp` as a fallback
-  - `opencode acp`
+- Node.js 22.13 or newer with npm/npx.
+- acpx `0.12.0` on `PATH`. Run `roundfix setup` after installing Roundfix to
+  verify the exact version; when acpx is missing or mismatched, setup offers the
+  pinned install command and runs it only after confirmation or `--yes`.
+- A supported ACP Runtime selected through acpx: `codex`, `claude`, or
+  `opencode`.
 - `rtk` is optional. The `Makefile` uses it when available and falls back to the
   plain Go toolchain when it is not installed.
+
+For latency-sensitive setups, configure direct adapter binaries in acpx config
+so default adapters do not launch through `npx -y` on first use.
+
+Known constraint: acpx `0.12.0` has a hard 10 MiB queue-owner per-message
+buffer with no CLI, config, or environment override found in the pinned
+package. Large docs-task payloads, especially turns that print or return large
+skill/docs file content, can trigger `-32603 Message buffer exceeded 10485760
+bytes`. Roundfix proceeds to verification when acpx delivered a parsed prompt
+result before that exit; if completed work is preserved in the tree but a Task
+stays failed, review the kept Run Worktree and run the Settle Command.
 
 ## Build
 
@@ -47,6 +61,26 @@ make install
 
 Make sure your Go bin directory, usually `~/go/bin`, is on `PATH` before
 running `roundfix` directly.
+
+Bootstrap a machine for Roundfix Runs:
+
+```bash
+roundfix setup
+```
+
+Use `roundfix setup --yes` to accept every offered install or file change, or
+`roundfix setup --no-input` to report missing pieces without prompting.
+
+Update an installed Roundfix binary:
+
+```bash
+roundfix upgrade
+```
+
+Use `roundfix upgrade --check` to report the latest release outcome without
+installing it. Operational commands also emit one best-effort stderr note per
+day when the installed version is behind, using the shape
+`roundfix 1.0.0 is behind latest 1.1.0; run roundfix upgrade`.
 
 ## GitHub Access
 
@@ -85,6 +119,19 @@ Create a User Config instead:
 go run ./cmd/roundfix init --scope user
 ```
 
+Verify and prepare this machine for Roundfix Runs:
+
+```bash
+go run ./cmd/roundfix setup
+```
+
+Upgrade Roundfix or check the release channel:
+
+```bash
+go run ./cmd/roundfix upgrade
+go run ./cmd/roundfix upgrade --check
+```
+
 Fetch unresolved CodeRabbit Review Issues into local Round artifacts:
 
 ```bash
@@ -101,6 +148,25 @@ Run the watched review-resolution loop:
 
 ```bash
 go run ./cmd/roundfix watch --source coderabbit --pr <number> --agent codex --until-clean
+```
+
+Execute a Spec's Task Graph:
+
+```bash
+go run ./cmd/roundfix implement --spec <slug> --agent codex
+```
+
+Settle one failed Spec Task whose completed work is already in the tree:
+
+```bash
+go run ./cmd/roundfix settle --spec <slug> --task <task_id>
+```
+
+Stop a live Run gracefully, or force-stop a dead or runaway Run:
+
+```bash
+go run ./cmd/roundfix stop <run-id>
+go run ./cmd/roundfix stop --force <run-id>
 ```
 
 Validate or install the shipped Roundfix agent skill:
@@ -125,6 +191,16 @@ it, or set `NO_COLOR` to suppress color.
 
 ## Command Boundaries
 
+- `setup` verifies Node.js, the pinned acpx version, the configured Agent
+  probe, acpx local adapter overrides, User Config, and Project Config. Each
+  check prints one deterministic report line such as `node: ok`,
+  `acpx: installed`, or `User Config: skipped`. `--yes` accepts offers;
+  `--no-input` skips offers instead of prompting.
+- `upgrade` resolves the latest Roundfix release through the GitHub CLI.
+  Successful stdout outcomes are `upgraded 1.0.0 → 1.1.0`,
+  `already current 1.0.0`, `no releases published`, and, with `--check`,
+  `upgrade available 1.0.0 → 1.1.0`. Failures leave the current binary
+  untouched and print a manual fallback on stderr.
 - `fetch` validates local state, creates a Fetch Run, fetches unresolved
   CodeRabbit review threads, writes markdown Round artifacts, and stops at the
   `Fetched` terminal outcome. It never starts an Agent, commits, pushes, or
@@ -133,12 +209,27 @@ it, or set `NO_COLOR` to suppress color.
   Review Source issues. It assigns a bounded Batch, runs the selected Agent
   runtime, verifies terminal assigned issues, commits successful Batches when
   auto-commit is enabled, resolves source threads for `resolved` and `invalid`
-  assigned issues, and runs Final Push only when no Unresolved Review Issues
-  remain.
+  assigned issues, integrates the Run Worktree, and runs Final Push only when
+  no Unresolved Review Issues remain.
 - `watch` waits for CodeRabbit status on the current PR HEAD, observes the
   configured quiet period, fetches unresolved issues, resolves Batches, and
   repeats until `Clean`, `MaxRoundsReached`, `BudgetExceeded`, `TimedOut`,
   `Failed`, or `Stopped`.
+- `implement` executes a Spec's Task Graph in a Run Worktree as one Run. Tasks
+  run in dependency order, each Task's Verification commands gate one commit,
+  and `implement.auto_push: true` makes a Clean spec Run push its branch
+  upstream and append `pushed <remote>/<branch>` to stdout. Integration
+  Pending, Unresolved Outcome, Failed, Stopped, and failing-QA Runs never push.
+- `settle` targets one failed Task in its kept Run Worktree, re-runs its
+  Verification commands there, changes nothing when verification fails, and on
+  pass settles it `completed`, stages all Run Worktree changes plus the task
+  file, creates the standard Task commit, creates no Run, writes no Run Event
+  Journal entries, and never pushes.
+- `stop` is graceful by default. It records a Stop Request in the Run Database
+  and reports `Stop Request recorded; the Run stops after the current Work Item
+  settles.` Use `--force` only for a dead, stuck, or runaway Run; it cancels
+  the Agent Session best-effort, completes the Run Stopped immediately, and
+  releases its Active Run locks.
 - Agents own only assigned issue files, triage, code edits, tests,
   verification commands, and assigned Review Issue status updates. They must
   not commit, push, resolve Review Source threads, edit unassigned issue files,
@@ -163,7 +254,8 @@ Example:
 defaults:
   agent: codex
   verification: make verify
-  artifact_dir: .roundfix
+  # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
+  artifact_dir: ""
   auto_commit: true
 
 review_source:
@@ -178,6 +270,13 @@ watch:
   quiet_period: 30s
   auto_push: true
 
+implement:
+  auto_push: false
+
+worktree:
+  # Repository-relative untracked files copied into each Run Worktree.
+  copy: []
+
 budget:
   enabled: true
   max_run_duration: 2h
@@ -190,7 +289,8 @@ resolve:
 ## Local State
 
 - Run Database: `~/.roundfix/roundfix.db`
-- Default Artifact Directory: `<repo>/.roundfix/`
+- Run Worktrees: Roundfix Home `worktrees/<repo-id>/<run-id>`
+- Default Artifact Directory: Roundfix Home `artifacts/<repo-id>`
 - Review Issue artifacts:
   `<artifact-dir>/reviews/pr-<number>/round-<nnn>/issue_<nnn>.md`
 - Agent logs:
@@ -204,12 +304,17 @@ are deduplicated later during `resolve` by Review Issue Fingerprint, preferring
 `source_ref` such as `thread:<id>,comment:<id>` and falling back to
 `review_hash`.
 
-Roundfix rejects dirty worktree changes outside the Artifact Directory before
-starting operational work. `fetch` allows a local Project Config change at
-`.roundfixrc.yml` because it never starts an Agent, commits, or pushes.
-`resolve` and `watch` also allow `.roundfixrc.yml`, but Batch commits exclude it
-so local setup changes do not mix with review fixes. Terminal Run outcomes
-release the Active Run lock for the PR Head Branch.
+Operational Runs that start an Agent work in Run Worktrees. A new Run Worktree
+starts from committed Git state, so untracked files in the user's checkout are
+absent unless they are listed under `worktree.copy`; add repository-relative
+paths there when Verification or local tooling needs untracked files. Dirty
+user checkout behavior is command-specific: `implement` no longer blocks on it
+and instead prints a note that overlapping local changes end the Run in
+Integration Pending. Other operational commands retain their existing preflight rules,
+including the local Project Config allowances for `fetch`, `resolve`, and
+`watch` at `.roundfixrc.yml`. Batch commits exclude that config file so local
+setup changes do not mix with review fixes. Terminal Run outcomes release the
+Active Run lock for the PR Head Branch.
 
 The current CodeRabbit fetch imports unresolved inline review threads.
 CodeRabbit review-body summaries and outside-diff comments are not converted

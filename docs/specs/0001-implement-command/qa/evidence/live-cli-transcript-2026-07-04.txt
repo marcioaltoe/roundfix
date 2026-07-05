@@ -1,0 +1,207 @@
+===== S01 implement --help
+--- cmd: roundfix implement --help   (cwd: repo-a)
+--- exit: 0
+--- stdout:
+    Usage:
+      roundfix implement --spec <slug> --agent <agent>
+    
+    Executes the Spec's Task Graph on the current branch as one Run: Tasks run
+    in dependency order, each Task's Verification commands gate one commit, and
+    the Run never pushes. Without --spec, Interactive Input lists the
+    repository's active Specs for selection.
+    
+    Options:
+      --spec               Spec slug under docs/specs/
+      --qa                 End the Run with the qa-gate step once every Task is
+                           completed; only a pass verdict lets the Run end Clean
+      --agent              Agent runtime. Supported: codex, claude, opencode
+      --model              Agent model override
+      --agent-command      Agent command override
+      --agent-full-access  Opt into Agent runtime full-access mode
+      --interactive        Open Interactive Input before starting
+      --no-input           Fail instead of opening Interactive Input
+--- stderr:
+===== S02 nonexistent spec
+--- cmd: roundfix implement --spec 0099-nope --no-input   (cwd: repo-a)
+--- exit: 2
+--- stdout:
+--- stderr:
+    Preflight failed
+    
+    Reason:
+      Spec "0099-nope" not found: no _prd.md under "/private/tmp/claude-501/-Users-marcio-dev-roundfix/d63be719-e75f-4aab-8d62-5c6c7b11af57/scratchpad/fixtures/repo-a/docs/specs/0099-nope"; check the slug or run the spec workflow first
+    
+    No side effects:
+      Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+    
+    Usage:
+      Run 'roundfix implement --help' for usage.
+===== S03 inactive spec
+--- cmd: roundfix implement --spec 0002-demo --no-input   (cwd: repo-c)
+--- exit: 2
+--- stdout:
+--- stderr:
+    Preflight failed
+    
+    Reason:
+      Spec "0002-demo" is not active: _prd.md frontmatter status is "draft"; expected "active"
+    
+    No side effects:
+      Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+    
+    Usage:
+      Run 'roundfix implement --help' for usage.
+===== S04 manifest cycle
+--- cmd: roundfix implement --spec 0002-demo --no-input   (cwd: repo-d)
+--- exit: 2
+--- stdout:
+--- stderr:
+    Preflight failed
+    
+    Reason:
+      Task Graph has a dependency cycle among: task_01, task_02
+    
+    No side effects:
+      Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+    
+    Usage:
+      Run 'roundfix implement --help' for usage.
+===== S05 unknown need
+--- cmd: roundfix implement --spec 0002-demo --no-input   (cwd: repo-e)
+--- exit: 2
+--- stdout:
+--- stderr:
+    Preflight failed
+    
+    Reason:
+      Task "task_02" needs "task_99", which is not a Task Graph node id
+    
+    No side effects:
+      Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+    
+    Usage:
+      Run 'roundfix implement --help' for usage.
+===== S06 missing task file
+--- cmd: roundfix implement --spec 0002-demo --no-input   (cwd: repo-f)
+--- exit: 2
+--- stdout:
+--- stderr:
+    Preflight failed
+    
+    Reason:
+      Task "task_02" file "/private/tmp/claude-501/-Users-marcio-dev-roundfix/d63be719-e75f-4aab-8d62-5c6c7b11af57/scratchpad/fixtures/repo-f/docs/specs/0002-demo/task_02.md" does not exist
+    
+    No side effects:
+      Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+    
+    Usage:
+      Run 'roundfix implement --help' for usage.
+===== S07 task without Verification
+--- cmd: roundfix implement --spec 0002-demo --no-input   (cwd: repo-g)
+--- exit: 2
+--- stdout:
+--- stderr:
+    Preflight failed
+    
+    Reason:
+      Task "task_02" has no Verification commands: add a backticked command bullet to the ## Verification section in "/private/tmp/claude-501/-Users-marcio-dev-roundfix/d63be719-e75f-4aab-8d62-5c6c7b11af57/scratchpad/fixtures/repo-g/docs/specs/0002-demo/task_02.md"
+    
+    No side effects:
+      Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+    
+    Usage:
+      Run 'roundfix implement --help' for usage.
+===== S08 dirty worktree
+--- cmd: roundfix implement --spec 0002-demo --no-input   (cwd: repo-a)
+--- exit: 2
+--- stdout:
+--- stderr:
+    Preflight failed
+    
+    Reason:
+      working tree /private/tmp/claude-501/-Users-marcio-dev-roundfix/d63be719-e75f-4aab-8d62-5c6c7b11af57/scratchpad/fixtures/repo-a is not clean: 1 uncommitted change(s); a failed Task attempt keeps its changes in the working tree on purpose — commit, stash, or discard them, then re-run implement
+    
+    No side effects:
+      Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+    
+    Usage:
+      Run 'roundfix implement --help' for usage.
+===== S09 default-branch veto
+--- cmd: roundfix implement --spec 0002-demo --no-input   (cwd: repo-b)
+--- exit: 2
+--- stdout:
+--- stderr:
+    Preflight failed
+    
+    Reason:
+      current branch "main" is the repository default branch "main" (detected via name-match); spec Runs commit per Task, so switch to a work branch (git switch -c <branch>) and re-run implement
+    
+    No side effects:
+      Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+    
+    Usage:
+      Run 'roundfix implement --help' for usage.
+===== S10 --no-input without --spec
+--- cmd: roundfix implement --no-input   (cwd: repo-a)
+--- exit: 2
+--- stdout:
+--- stderr:
+    Preflight failed
+    
+    Reason:
+      missing required --spec because --no-input disables Interactive Input
+    
+    No side effects:
+      Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+    
+    Usage:
+      Run 'roundfix implement --help' for usage.
+===== S11 no active Specs (interactive would open)
+--- cmd: roundfix implement   (cwd: repo-i)
+--- exit: 2
+--- stdout:
+--- stderr:
+    Preflight failed
+    
+    Reason:
+      no active Specs to implement: a Spec is eligible when docs/specs/<slug>/_prd.md has frontmatter status: active; create or activate one, then re-run implement
+    
+    No side effects:
+      Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+    
+    Usage:
+      Run 'roundfix implement --help' for usage.
+===== S12 runtime probe failure
+--- cmd: roundfix implement --spec 0002-demo --no-input --agent-command /nonexistent/qa-agent-binary   (cwd: repo-a)
+--- exit: 2
+--- stdout:
+--- stderr:
+    Preflight failed
+    
+    Reason:
+      Agent Codex is unavailable; probe command `/nonexistent/qa-agent-binary --help` failed: exec: "/nonexistent/qa-agent-binary": stat /nonexistent/qa-agent-binary: no such file or directory. Install and authenticate Codex ACP (`npm install -g @zed-industries/codex-acp`) or pass --agent-command with an installed command that accepts a prompt on stdin.
+    
+    No side effects:
+      Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.
+    
+    Usage:
+      Run 'roundfix implement --help' for usage.
+===== S13 all tasks completed no-op
+--- cmd: roundfix implement --spec 0002-demo --no-input   (cwd: repo-h)
+--- exit: 0
+--- stdout:
+    task_01 completed — First fixture slice
+    task_02 completed — Second fixture slice
+    All 2 Task(s) already completed; no Run was created.
+--- stderr:
+===== S14 attach nonexistent run id
+--- cmd: roundfix attach run-does-not-exist   (cwd: repo-a)
+--- exit: 2
+--- stdout:
+--- stderr:
+    roundfix attach failed: Run "run-does-not-exist" does not exist
+===== S15 run database state after all scenarios
+db exists: /private/tmp/claude-501/-Users-marcio-dev-roundfix/d63be719-e75f-4aab-8d62-5c6c7b11af57/scratchpad/qa-home/.roundfix/roundfix.db
+    runs rows: 0
+    lock rows: 0
+    user_version: 4

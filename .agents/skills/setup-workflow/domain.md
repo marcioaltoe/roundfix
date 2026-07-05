@@ -1,6 +1,6 @@
 # Domain Docs
 
-How the engineering skills should consume this repo's domain documentation when exploring the codebase.
+How agents consume this repo's domain documentation inside the CONTEXT-driven spec workflow. Every pipeline stage — discovery, PRD, techspec, tasks, implementation, QA — reads these files before writing specs, code names, or test names; they are the shared vocabulary that keeps the artifacts consistent across sessions.
 
 ## Before exploring, read these
 

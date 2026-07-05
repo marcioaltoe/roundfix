@@ -5,6 +5,7 @@ import (
 	"math"
 	"strings"
 
+	"roundfix/internal/runevent"
 	"roundfix/internal/store"
 )
 
@@ -41,7 +42,9 @@ type TimelineSource interface {
 // like the streaming renderer.
 type timelineEntry struct {
 	cursor int64
+	kind   runevent.Kind
 	text   string
+	event  runevent.RunEvent
 }
 
 // TimelineViewport is the cockpit's timeline engine: a bounded sliding
@@ -274,6 +277,15 @@ func (viewport *TimelineViewport) State() (FollowState, int) {
 	return viewport.state, viewport.newBelow
 }
 
+func (viewport *TimelineViewport) HasKind(kind runevent.Kind) bool {
+	for _, entry := range viewport.entries {
+		if entry.kind == kind {
+			return true
+		}
+	}
+	return false
+}
+
 func (viewport *TimelineViewport) enterTailState() {
 	if viewport.terminal {
 		viewport.state = FollowTerminal
@@ -367,7 +379,7 @@ func (viewport *TimelineViewport) tailCursor() int64 {
 }
 
 func (viewport *TimelineViewport) rebuildLines() {
-	viewport.lines = splitRenderedLines(concatEntryText(viewport.entries))
+	viewport.lines = renderedTimelineLines(viewport.entries)
 }
 
 func (viewport *TimelineViewport) maxScroll() int {
@@ -390,7 +402,9 @@ func entriesFromJournal(page []store.JournalEvent) []timelineEntry {
 	for _, journal := range page {
 		entries = append(entries, timelineEntry{
 			cursor: journal.Cursor,
+			kind:   journal.Event.Kind,
 			text:   timelineText(journal.Event),
+			event:  journal.Event,
 		})
 	}
 	return entries
@@ -405,7 +419,7 @@ func concatEntryText(entries []timelineEntry) string {
 }
 
 func linesOfEntries(entries []timelineEntry) int {
-	return len(splitRenderedLines(concatEntryText(entries)))
+	return len(renderedTimelineLines(entries))
 }
 
 // splitRenderedLines splits rendered text into display lines; a trailing

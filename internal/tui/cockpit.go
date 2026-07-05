@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"roundfix/internal/rounds"
+	"roundfix/internal/runevent"
+	"roundfix/internal/spec"
 	"roundfix/internal/store"
 
 	tea "charm.land/bubbletea/v2"
@@ -49,6 +52,8 @@ type CockpitConfig struct {
 
 const defaultCockpitPollInterval = 250 * time.Millisecond
 
+const minTwoPaneCockpitWidth = 88
+
 type cockpitFocus int
 
 const (
@@ -60,10 +65,21 @@ type cockpitTickMsg struct{}
 
 type issueDetailView struct {
 	issue   rounds.Issue
+	task    spec.Task
+	kind    detailKind
+	ordinal int
 	missing bool
+	stale   bool
 	lines   []string
 	scroll  int
 }
+
+type detailKind int
+
+const (
+	detailReviewIssue detailKind = iota
+	detailTask
+)
 
 type cockpitModel struct {
 	ctx      context.Context
@@ -77,6 +93,7 @@ type cockpitModel struct {
 	detail   *issueDetailView
 
 	issueStatuses  []string
+	taskStatuses   []string
 	currentBatch   int
 	batchStartedAt time.Time
 
@@ -112,7 +129,7 @@ func newCockpitModel(ctx context.Context, cfg CockpitConfig) (*cockpitModel, err
 		model.terminal = true
 		model.viewport.SetTerminal()
 	}
-	model.refreshIssues()
+	model.refreshWorkItems()
 	model.viewport.SetHeight(model.bodyHeight())
 	if err := model.viewport.Replay(ctx); err != nil {
 		return nil, err
@@ -188,7 +205,46 @@ func (model *cockpitModel) poll() {
 		model.terminal = true
 		model.viewport.SetTerminal()
 	}
+	model.refreshWorkItems()
+	model.refreshOpenDetail()
+}
+
+// specRun reports whether this cockpit renders a spec Run's Tasks; every
+// other Run Kind keeps the Review Issue pane unchanged.
+func (model *cockpitModel) specRun() bool {
+	return specRunView(model.cfg.View)
+}
+
+// refreshWorkItems refreshes the work-item pane keyed on the Run Kind:
+// Review Issue artifacts for review Runs, task files for spec Runs.
+func (model *cockpitModel) refreshWorkItems() {
+	if model.specRun() {
+		model.refreshTasks()
+		return
+	}
 	model.refreshIssues()
+}
+
+// refreshTasks re-reads Task statuses from the task files located through
+// the Run row's git root. A parse failure keeps the last good status: the
+// Agent rewrites task files while the pane polls, and a mid-write read must
+// never fail the view (ADR 0009 keeps the cockpit on the journal plus these
+// files; it never consumes the live sink).
+func (model *cockpitModel) refreshTasks() {
+	tasks := model.cfg.View.Tasks
+	if len(model.taskStatuses) != len(tasks) {
+		model.taskStatuses = make([]string, len(tasks))
+		for index, task := range tasks {
+			model.taskStatuses[index] = string(task.Status)
+		}
+	}
+	root := taskReadRoot(model.cfg.View)
+	for index := range tasks {
+		current := tasks[index]
+		if err := spec.ReloadTask(root, &current); err == nil {
+			model.taskStatuses[index] = string(current.Status)
+		}
+	}
 }
 
 // refreshIssues re-reads Review Issue artifact statuses and derives which
@@ -202,6 +258,7 @@ func (model *cockpitModel) refreshIssues() {
 		status := issue.Status
 		if parsed, err := rounds.ParseIssue(issue.Path); err == nil {
 			status = parsed.Status
+			model.cfg.View.Issues[index] = parsed
 		}
 		model.issueStatuses[index] = status
 	}
@@ -249,7 +306,57 @@ func (model *cockpitModel) issueStatusLabel(index int) string {
 	return "Waiting"
 }
 
+// taskStatusLabel mirrors the Review Issue labels: terminal task statuses
+// verbatim, Executing for the Task the cycle is on, Waiting ahead of it,
+// Paused once the Run itself has ended.
+func (model *cockpitModel) taskStatusLabel(index int) string {
+	status := spec.Status(model.taskStatuses[index])
+	switch status {
+	case spec.StatusCompleted:
+		return "Completed"
+	case spec.StatusFailed:
+		return "Failed"
+	}
+	if model.terminal || store.IsTerminalState(model.runState) {
+		return "Paused"
+	}
+	if status == spec.StatusInProgress || index == model.currentTaskIndex() {
+		return "Executing"
+	}
+	return "Waiting"
+}
+
+// currentTaskIndex approximates the executing Task the same way the review
+// pane derives the executing Batch: the cycle runs Tasks in Task Graph
+// order, so the first unsettled Task is the one in flight.
+func (model *cockpitModel) currentTaskIndex() int {
+	for index, status := range model.taskStatuses {
+		if spec.Status(status) != spec.StatusCompleted && spec.Status(status) != spec.StatusFailed {
+			return index
+		}
+	}
+	return -1
+}
+
+// workItemCount sizes selection over the pane's Work Items, keyed on the
+// Run Kind.
+func (model *cockpitModel) workItemCount() int {
+	if model.specRun() {
+		return len(model.cfg.View.Tasks)
+	}
+	return len(model.cfg.View.Issues)
+}
+
 func (model *cockpitModel) progressCounts() (int, int) {
+	if model.specRun() {
+		done := 0
+		for _, status := range model.taskStatuses {
+			if spec.Status(status) == spec.StatusCompleted {
+				done++
+			}
+		}
+		return done, len(model.taskStatuses)
+	}
 	done := 0
 	for _, status := range model.issueStatuses {
 		switch status {
@@ -258,6 +365,32 @@ func (model *cockpitModel) progressCounts() (int, int) {
 		}
 	}
 	return done, len(model.issueStatuses)
+}
+
+func (model *cockpitModel) allReviewIssuesSettled() bool {
+	if len(model.issueStatuses) == 0 {
+		return true
+	}
+	for _, status := range model.issueStatuses {
+		switch status {
+		case rounds.StatusResolved, rounds.StatusInvalid, rounds.StatusDuplicated:
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func (model *cockpitModel) allTasksCompleted() bool {
+	if len(model.taskStatuses) == 0 {
+		return false
+	}
+	for _, status := range model.taskStatuses {
+		if spec.Status(status) != spec.StatusCompleted {
+			return false
+		}
+	}
+	return true
 }
 
 func (model *cockpitModel) handleKey(key tea.Key) (tea.Model, tea.Cmd) {
@@ -278,6 +411,13 @@ func (model *cockpitModel) handleKey(key tea.Key) (tea.Model, tea.Cmd) {
 		return model, nil
 	case "esc":
 		model.detail = nil
+		return model, nil
+	case "d":
+		if model.detail != nil {
+			model.detail = nil
+			return model, nil
+		}
+		model.openDetail()
 		return model, nil
 	case "tab":
 		if model.detail == nil {
@@ -325,7 +465,7 @@ func (model *cockpitModel) handleIssueKey(keystroke string) {
 			model.selected--
 		}
 	case "down", "j":
-		if model.selected < len(model.cfg.View.Issues)-1 {
+		if model.selected < model.workItemCount()-1 {
 			model.selected++
 		}
 	case "enter":
@@ -335,33 +475,46 @@ func (model *cockpitModel) handleIssueKey(keystroke string) {
 
 func (model *cockpitModel) handleDetailKey(keystroke string) {
 	detail := model.detail
+	pageSize := model.detailPageSize()
 	switch keystroke {
 	case "up", "k":
 		if detail.scroll > 0 {
 			detail.scroll--
 		}
 	case "down", "j":
-		detail.scroll++
+		if detail.scroll < model.detailMaxScroll() {
+			detail.scroll++
+		}
 	case "pgup":
-		detail.scroll = maxInt(detail.scroll-(model.bodyHeight()-1), 0)
+		detail.scroll = maxInt(detail.scroll-pageSize, 0)
 	case "pgdown":
-		detail.scroll += model.bodyHeight() - 1
+		detail.scroll += pageSize
 	case "home":
 		detail.scroll = 0
 	}
-	if limit := maxInt(len(detail.lines)-1, 0); detail.scroll > limit {
+	if limit := model.detailMaxScroll(); detail.scroll > limit {
 		detail.scroll = limit
 	}
 }
 
-// openDetail loads the selected Review Issue artifact read-only. A missing
-// or cleaned artifact degrades to a notice, never a failure.
+// openDetail loads the selected Work Item read-only. Review Runs show the
+// Review Issue artifact; spec Runs show the Task file body.
 func (model *cockpitModel) openDetail() {
+	if model.specRun() {
+		model.openTaskDetail()
+		return
+	}
+	model.openReviewIssueDetail()
+}
+
+// openReviewIssueDetail loads the selected Review Issue artifact read-only.
+// A missing or cleaned artifact degrades to a notice, never a failure.
+func (model *cockpitModel) openReviewIssueDetail() {
 	if model.selected < 0 || model.selected >= len(model.cfg.View.Issues) {
 		return
 	}
 	listed := model.cfg.View.Issues[model.selected]
-	detail := &issueDetailView{issue: listed}
+	detail := &issueDetailView{kind: detailReviewIssue, issue: listed, ordinal: model.selected + 1}
 	parsed, err := rounds.ParseIssue(listed.Path)
 	if err == nil {
 		detail.issue = parsed
@@ -374,6 +527,50 @@ func (model *cockpitModel) openDetail() {
 		detail.lines = artifactBodyLines(string(content))
 	}
 	model.detail = detail
+}
+
+func (model *cockpitModel) openTaskDetail() {
+	if model.selected < 0 || model.selected >= len(model.cfg.View.Tasks) {
+		return
+	}
+	task := model.cfg.View.Tasks[model.selected]
+	if model.selected < len(model.taskStatuses) {
+		task.Status = spec.Status(model.taskStatuses[model.selected])
+	}
+	detail := &issueDetailView{kind: detailTask, task: task, ordinal: model.selected + 1}
+	if err := model.loadTaskDetail(detail); err != nil {
+		detail.stale = true
+		detail.lines = []string{"task file temporarily unreadable", task.File}
+	}
+	model.detail = detail
+}
+
+func (model *cockpitModel) refreshOpenDetail() {
+	if model.detail == nil || model.detail.kind != detailTask {
+		return
+	}
+	if err := model.loadTaskDetail(model.detail); err != nil {
+		model.detail.stale = true
+	}
+	if model.detail.scroll > model.detailMaxScroll() {
+		model.detail.scroll = model.detailMaxScroll()
+	}
+}
+
+func (model *cockpitModel) loadTaskDetail(detail *issueDetailView) error {
+	task := detail.task
+	root := taskReadRoot(model.cfg.View)
+	if err := spec.ReloadTask(root, &task); err != nil {
+		return err
+	}
+	content, err := os.ReadFile(filepath.Join(root, task.File))
+	if err != nil {
+		return err
+	}
+	detail.task = task
+	detail.lines = artifactBodyLines(string(content))
+	detail.stale = false
+	return nil
 }
 
 // artifactBodyLines drops the YAML frontmatter: the detail header already
@@ -402,38 +599,296 @@ func (model *cockpitModel) bodyHeight() int {
 	return height
 }
 
-func (model *cockpitModel) View() tea.View {
-	width := maxInt(model.width, 88)
+type cockpitLayout struct {
+	width        int
+	bodyHeight   int
+	sidebarWidth int
+	rightWidth   int
+	collapsed    bool
+}
+
+func cockpitLayoutFor(model *cockpitModel) cockpitLayout {
+	width := model.width
+	if width <= 0 || model.height <= 0 {
+		return cockpitLayout{}
+	}
 	bodyHeight := model.bodyHeight()
+	if width < minTwoPaneCockpitWidth {
+		return cockpitLayout{
+			width:      width,
+			bodyHeight: bodyHeight,
+			rightWidth: width,
+			collapsed:  true,
+		}
+	}
 	innerWidth := width - 2
-	sidebarWidth := innerWidth * 28 / 100
+	sidebarWidth := innerWidth * 40 / 100
 	if sidebarWidth < 30 {
 		sidebarWidth = 30
 	}
 	if sidebarWidth > 46 {
 		sidebarWidth = 46
 	}
-	rightWidth := innerWidth - sidebarWidth - 1
+	if innerWidth-sidebarWidth-1 <= sidebarWidth {
+		sidebarWidth = maxInt((innerWidth-2)/2, 1)
+	}
+	return cockpitLayout{
+		width:        width,
+		bodyHeight:   bodyHeight,
+		sidebarWidth: sidebarWidth,
+		rightWidth:   innerWidth - sidebarWidth - 1,
+	}
+}
 
-	right := model.renderRightPane(rightWidth, bodyHeight)
-	sidebar := panel(sidebarWidth, bodyHeight, model.renderIssuePane(sidebarWidth, bodyHeight), model.focus == focusIssues && model.detail == nil)
-
-	content := strings.Join([]string{
-		renderAgentHeader(model.cfg.View, width),
-		model.renderStatusBar(width),
-		"",
-		lipgloss.JoinHorizontal(lipgloss.Top, sidebar, right),
-		model.renderFooter(width),
-	}, "\n")
-	view := tea.NewView(content)
+func (model *cockpitModel) View() tea.View {
+	if model.width <= 0 || model.height <= 0 {
+		view := tea.NewView("")
+		view.AltScreen = true
+		return view
+	}
+	layout := cockpitLayoutFor(model)
+	view := tea.NewView(renderCockpitLayout(model, layout))
 	view.AltScreen = true
 	return view
 }
 
-func (model *cockpitModel) renderRightPane(width int, height int) string {
+func renderCockpitLayout(model *cockpitModel, layout cockpitLayout) string {
+	base := renderCockpitBaseLayout(model, layout)
 	if model.detail != nil {
-		return panel(width, height, model.renderDetail(width, height), true)
+		return renderCockpitDetailOverlay(model, layout, base)
 	}
+	return base
+}
+
+func renderCockpitBaseLayout(model *cockpitModel, layout cockpitLayout) string {
+	return strings.Join([]string{
+		renderCockpitHeaderArea(model, layout.width),
+		renderCockpitBody(model, layout),
+		renderCockpitFooter(model, layout.width),
+	}, "\n")
+}
+
+func renderCockpitHeaderArea(model *cockpitModel, width int) string {
+	return strings.Join([]string{
+		renderCockpitHeaderLine(model, width),
+		renderPhaseRow(width, runPhases(model)),
+	}, "\n")
+}
+
+func renderCockpitHeaderLine(model *cockpitModel, width int) string {
+	target := cockpitTargetLabel(model.cfg.View)
+	leftText := "ROUNDFIX // LIVE RUN VIEW"
+	if target != "" {
+		leftText += " // " + target
+	}
+	runID := model.cfg.View.RunID
+	if runID == "" {
+		runID = model.cfg.RunID
+	}
+	rightText := shortRunID(runID) + " [" + formatRunStateLabel(model.runState) + "]"
+	if suffix := model.statusSuffix(); suffix != "" {
+		rightText += " " + suffix
+	}
+	rightWidth := displayWidth(rightText)
+	if rightWidth >= width {
+		rightText = truncateDisplay(rightText, width-1)
+		rightWidth = displayWidth(rightText)
+	}
+	leftText = truncateDisplay(leftText, maxInt(width-rightWidth, 1))
+	left := renderCockpitHeaderLeft(leftText)
+	right := styleBright.Render(rightText)
+	return padRightDisplay(left, maxInt(width-displayWidth(right), 1)) + right
+}
+
+func renderCockpitHeaderLeft(text string) string {
+	if strings.HasPrefix(text, "ROUNDFIX") {
+		return styleAccent.Bold(true).Render("ROUNDFIX") + styleMuted.Render(strings.TrimPrefix(text, "ROUNDFIX"))
+	}
+	return styleMuted.Render(text)
+}
+
+func cockpitTargetLabel(view LiveRunView) string {
+	target := ""
+	if specRunView(view) {
+		if strings.TrimSpace(view.SpecSlug) != "" {
+			target = "SPEC " + strings.TrimSpace(view.SpecSlug)
+		} else {
+			target = "SPEC"
+		}
+	} else if strings.TrimSpace(view.PRNumber) != "" {
+		target = "PR #" + strings.TrimSpace(view.PRNumber)
+	} else {
+		target = strings.TrimSpace(view.HeadBranch)
+	}
+	if workDir := strings.TrimSpace(view.WorkDir); workDir != "" {
+		if target != "" {
+			target += " // "
+		}
+		target += "WORKTREE " + workDir
+	}
+	return target
+}
+
+func formatRunStateLabel(state string) string {
+	if state == "" {
+		return "UNKNOWN"
+	}
+	var builder strings.Builder
+	previousLowerOrDigit := false
+	for index, r := range state {
+		upper := r >= 'A' && r <= 'Z'
+		if index > 0 && upper && previousLowerOrDigit {
+			builder.WriteByte(' ')
+		}
+		builder.WriteRune(r)
+		previousLowerOrDigit = (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9')
+	}
+	return strings.ToUpper(builder.String())
+}
+
+type cockpitPhase struct {
+	name   string
+	marker string
+}
+
+const (
+	phaseDone   = "done"
+	phaseRun    = "run"
+	phaseWait   = "wait"
+	phaseLocked = "locked"
+)
+
+func runPhases(model *cockpitModel) []cockpitPhase {
+	if model.specRun() {
+		return specRunPhases(model)
+	}
+	return reviewRunPhases(model)
+}
+
+func reviewRunPhases(model *cockpitModel) []cockpitPhase {
+	pushMarker := phaseLocked
+	if model.allReviewIssuesSettled() {
+		pushMarker = phaseWait
+	}
+	phases := []cockpitPhase{
+		{name: "FETCH", marker: phaseDone},
+		{name: "TRIAGE", marker: phaseDone},
+		{name: "AGENT", marker: phaseWait},
+		{name: "VERIFY", marker: phaseWait},
+		{name: "PUSH", marker: pushMarker},
+	}
+	switch model.runState {
+	case store.StatePushing:
+		phases[2].marker = phaseDone
+		phases[3].marker = phaseDone
+		phases[4].marker = phaseRun
+	case store.StateVerifying:
+		phases[2].marker = phaseDone
+		phases[3].marker = phaseRun
+	case store.StateClean:
+		for index := range phases {
+			phases[index].marker = phaseDone
+		}
+	case store.StateUnresolved:
+		phases[2].marker = phaseDone
+		phases[3].marker = phaseDone
+		phases[4].marker = phaseLocked
+	default:
+		if store.IsTerminalState(model.runState) {
+			phases[2].marker = phaseDone
+			phases[3].marker = phaseDone
+			return phases
+		}
+		phases[2].marker = phaseRun
+	}
+	return phases
+}
+
+func specRunPhases(model *cockpitModel) []cockpitPhase {
+	phases := []cockpitPhase{
+		{name: "AGENT", marker: phaseWait},
+		{name: "VERIFY", marker: phaseWait},
+		{name: "COMMIT", marker: phaseWait},
+	}
+	allCompleted := model.allTasksCompleted()
+	switch {
+	case allCompleted:
+		for index := range phases {
+			phases[index].marker = phaseDone
+		}
+	case model.runState == store.StateVerifying:
+		phases[0].marker = phaseDone
+		phases[1].marker = phaseRun
+	case store.IsTerminalState(model.runState):
+		phases[0].marker = phaseDone
+		phases[1].marker = phaseDone
+	default:
+		phases[0].marker = phaseRun
+	}
+	if !model.viewport.HasKind(runevent.KindDaemonQA) {
+		return phases
+	}
+	qaMarker := phaseLocked
+	if allCompleted {
+		qaMarker = phaseRun
+		if store.IsTerminalState(model.runState) {
+			qaMarker = phaseDone
+		}
+	}
+	return append(phases, cockpitPhase{name: "QA", marker: qaMarker})
+}
+
+func renderPhaseRow(width int, phases []cockpitPhase) string {
+	rendered := make([]string, 0, len(phases))
+	for _, phase := range phases {
+		rendered = append(rendered, renderPhase(phase))
+	}
+	line := strings.Join(rendered, styleMuted.Render("  >  "))
+	return panel(width, 3, line, false)
+}
+
+func renderPhase(phase cockpitPhase) string {
+	return styleBright.Render(phase.name) + " " + phaseMarkerStyle(phase.marker).Render("["+phase.marker+"]")
+}
+
+func phaseMarkerStyle(marker string) lipgloss.Style {
+	switch marker {
+	case phaseDone:
+		return styleTool
+	case phaseRun:
+		return styleAccent
+	case phaseLocked:
+		return styleError
+	default:
+		return styleMuted
+	}
+}
+
+func renderCockpitBody(model *cockpitModel, layout cockpitLayout) string {
+	if layout.collapsed {
+		return renderCockpitCollapsedTimelinePane(model, layout.width, layout.bodyHeight)
+	}
+	return lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		renderCockpitWorkQueue(model, layout),
+		renderCockpitRightPane(model, layout),
+	)
+}
+
+func renderCockpitWorkQueue(model *cockpitModel, layout cockpitLayout) string {
+	return panel(
+		layout.sidebarWidth,
+		layout.bodyHeight,
+		model.renderWorkItemPane(layout.sidebarWidth, layout.bodyHeight),
+		model.focus == focusIssues && model.detail == nil,
+	)
+}
+
+func renderCockpitRightPane(model *cockpitModel, layout cockpitLayout) string {
+	return renderCockpitTimelinePane(model, layout.rightWidth, layout.bodyHeight)
+}
+
+func renderCockpitTimelinePane(model *cockpitModel, width int, height int) string {
 	lines := model.viewport.VisibleLines()
 	content := []string{styleAccent.Bold(true).Render("SESSION.TIMELINE"), ""}
 	if len(lines) == 0 {
@@ -444,70 +899,371 @@ func (model *cockpitModel) renderRightPane(width int, height int) string {
 	return panel(width, height, strings.Join(limitTail(content, height-2), "\n"), model.focus == focusTimeline)
 }
 
-func (model *cockpitModel) renderDetail(width int, height int) string {
-	detail := model.detail
-	issue := detail.issue
-	header := []string{
-		styleAccent.Bold(true).Render("REVIEW.ISSUE"),
-		styleBright.Render(emptyDash(issue.Title)),
-		styleMuted.Render(fmt.Sprintf("%s · %s · %s:%d", emptyDash(issue.Severity), emptyDash(issue.Status), emptyDash(issue.File), issue.Line)),
-		styleMuted.Render("source: " + emptyDash(issue.SourceRef)),
+func renderCockpitCollapsedTimelinePane(model *cockpitModel, width int, height int) string {
+	lines := model.viewport.VisibleLines()
+	content := []string{
+		styleAccent.Bold(true).Render("SESSION.TIMELINE"),
+		styleMuted.Render(truncateDisplay("QUEUE.SUMMARY "+model.workQueueTotalsLine(), maxInt(width-4, 1))),
 		"",
 	}
-	visible := detail.lines
-	if detail.scroll < len(visible) {
-		visible = visible[detail.scroll:]
+	if len(lines) == 0 {
+		content = append(content, styleMuted.Render("No Run Events yet..."))
 	} else {
-		visible = nil
+		content = append(content, colorTimelineLines(lines, width-4)...)
 	}
-	body := []string{}
-	for _, line := range visible {
-		body = append(body, truncateDisplay(line, width-4))
-	}
-	return strings.Join(limitLines(append(header, body...), height-2), "\n")
+	return panel(width, height, strings.Join(limitTail(content, height-2), "\n"), true)
 }
 
-func (model *cockpitModel) renderIssuePane(width int, height int) string {
-	issues := model.cfg.View.Issues
-	lines := []string{styleAccent.Bold(true).Render("REVIEW.ISSUES"), styleMuted.Render(fmt.Sprintf("%d issue(s)", len(issues))), ""}
-	if len(issues) == 0 {
-		lines = append(lines, styleMuted.Render("No Review Issues"))
-		return strings.Join(limitLines(lines, height-2), "\n")
+func renderCockpitDetailPane(model *cockpitModel, width int, height int) string {
+	return panel(width, height, model.renderDetail(width, height), true)
+}
+
+const (
+	detailModalMinWidth  = 76
+	detailModalMinHeight = 20
+)
+
+func renderCockpitDetailOverlay(model *cockpitModel, layout cockpitLayout, base string) string {
+	baseLines := strings.Split(base, "\n")
+	if layout.width < detailModalMinWidth || len(baseLines) < detailModalMinHeight {
+		return renderCockpitFullSurfaceDetail(model, layout)
 	}
-	// Each issue renders as a two-line block plus a blank spacer, with a
-	// Batch separator ahead of each Batch's first issue.
-	visible := maxInt((height-5)/3, 1)
+	modalWidth, modalHeight := detailModalSize(layout.width, len(baseLines))
+	modal := renderCockpitDetailPane(model, modalWidth, modalHeight)
+	modalLines := strings.Split(modal, "\n")
+	top := maxInt((len(baseLines)-len(modalLines))/2, 0)
+	left := maxInt((layout.width-modalWidth)/2, 0)
+	lines := make([]string, len(baseLines))
+	for index, line := range baseLines {
+		lines[index] = styleMuted.Render(padRightDisplay(truncateDisplay(stripANSI(line), layout.width), layout.width))
+	}
+	for index, line := range modalLines {
+		target := top + index
+		if target >= len(lines) {
+			break
+		}
+		lines[target] = padRightDisplay(strings.Repeat(" ", left)+line, layout.width)
+	}
+	return strings.Join(lines, "\n")
+}
+
+func renderCockpitFullSurfaceDetail(model *cockpitModel, layout cockpitLayout) string {
+	return strings.Join([]string{
+		renderCockpitHeaderArea(model, layout.width),
+		panel(layout.width, layout.bodyHeight, model.renderDetail(layout.width, layout.bodyHeight), true),
+		renderCockpitFooter(model, layout.width),
+	}, "\n")
+}
+
+func detailModalSize(width int, height int) (int, int) {
+	modalWidth := minInt(maxInt(width*78/100, 62), maxInt(width-4, 1))
+	modalHeight := minInt(maxInt(height*50/100, 12), maxInt(height-2, 1))
+	return modalWidth, modalHeight
+}
+
+func renderCockpitFooter(model *cockpitModel, width int) string {
+	return model.renderFooter(width)
+}
+
+func (model *cockpitModel) renderDetail(width int, height int) string {
+	detail := model.detail
+	innerWidth := maxInt(width-4, 1)
+	innerHeight := maxInt(height-2, 1)
+	header := detailHeaderLines(detail, innerWidth)
+	bodyHeight := detailBodyHeight(detail, innerHeight)
+	start, end := detailVisibleRange(detail, bodyHeight)
+	body := []string{}
+	for _, line := range detail.lines[start:end] {
+		body = append(body, truncateDisplay(line, innerWidth))
+	}
+	for len(body) < bodyHeight {
+		body = append(body, "")
+	}
+	footer := styleMuted.Render(truncateDisplay(detailScrollFooter(detail, start, end), innerWidth))
+	lines := append(header, body...)
+	lines = append(lines, footer)
+	return strings.Join(limitLines(lines, innerHeight), "\n")
+}
+
+func detailHeaderLines(detail *issueDetailView, width int) []string {
+	lines := []string{
+		styleAccent.Bold(true).Render(detailTitleLine(detail, width)),
+		styleMuted.Render(strings.Repeat("-", width)),
+		styleBright.Render(truncateDisplay(detailSubject(detail), width)),
+		styleMuted.Render(truncateDisplay(detailMeta(detail), width)),
+		styleMuted.Render(truncateDisplay(detailSource(detail), width)),
+	}
+	if detail.stale {
+		lines = append(lines, styleError.Render(truncateDisplay("STALE: keeping last readable task file", width)))
+	}
+	return append(lines, "")
+}
+
+func detailTitleLine(detail *issueDetailView, width int) string {
+	left := "REVIEW.ISSUE"
+	if detail.kind == detailTask {
+		left = "SPEC.TASK"
+	}
+	if detail.kind == detailReviewIssue && detail.ordinal > 0 {
+		left += fmt.Sprintf("  #%03d", detail.ordinal)
+	}
+	if detail.kind == detailTask && strings.TrimSpace(detail.task.ID) != "" {
+		left += "  " + strings.TrimSpace(detail.task.ID)
+	}
+	hint := "Esc close · j/k scroll"
+	padding := maxInt(width-displayWidth(left)-displayWidth(hint), 1)
+	return truncateDisplay(left+strings.Repeat(" ", padding)+hint, width)
+}
+
+func detailSubject(detail *issueDetailView) string {
+	if detail.kind == detailTask {
+		return emptyDash(detail.task.Title)
+	}
+	return emptyDash(detail.issue.Title)
+}
+
+func detailMeta(detail *issueDetailView) string {
+	if detail.kind == detailTask {
+		parts := []string{emptyDash(detail.task.Type), emptyDash(string(detail.task.Status)), emptyDash(detail.task.File)}
+		return strings.Join(parts, " · ")
+	}
+	issue := detail.issue
+	return fmt.Sprintf("%s · %s · %s", emptyDash(issue.Severity), emptyDash(issue.Status), emptyDash(issueLocation(issue)))
+}
+
+func detailSource(detail *issueDetailView) string {
+	if detail.kind == detailTask {
+		return "source: " + emptyDash(detail.task.File) + " (read-only)"
+	}
+	return "source: " + emptyDash(detail.issue.SourceRef)
+}
+
+func detailBodyHeight(detail *issueDetailView, innerHeight int) int {
+	return maxInt(innerHeight-len(detailHeaderLines(detail, 1))-1, 1)
+}
+
+func detailVisibleRange(detail *issueDetailView, bodyHeight int) (int, int) {
+	total := len(detail.lines)
+	if total == 0 {
+		return 0, 0
+	}
+	start := detail.scroll
+	if start > total {
+		start = total
+	}
+	end := minInt(start+bodyHeight, total)
+	return start, end
+}
+
+func detailScrollFooter(detail *issueDetailView, start int, end int) string {
+	total := len(detail.lines)
+	if total == 0 {
+		return "Line 0-0 of 0 · PgUp/PgDn page"
+	}
+	return fmt.Sprintf("Line %d-%d of %d · PgUp/PgDn page", start+1, end, total)
+}
+
+func (model *cockpitModel) detailPageSize() int {
+	if model.detail == nil {
+		return 1
+	}
+	layout := cockpitLayoutFor(model)
+	height := layout.bodyHeight
+	if layout.width >= detailModalMinWidth {
+		_, totalHeight := detailModalSize(layout.width, layout.bodyHeight+4)
+		height = totalHeight
+	}
+	return detailBodyHeight(model.detail, maxInt(height-2, 1))
+}
+
+func (model *cockpitModel) detailMaxScroll() int {
+	if model.detail == nil {
+		return 0
+	}
+	return maxInt(len(model.detail.lines)-model.detailPageSize(), 0)
+}
+
+// renderWorkItemPane renders the shared Work Queue surface. Run Kind only
+// decides which Work Items feed it; the layout path stays identical.
+func (model *cockpitModel) renderWorkItemPane(width int, height int) string {
+	items := model.workItems()
+	innerHeight := maxInt(height-2, 1)
+	lines := []string{styleAccent.Bold(true).Render(fmt.Sprintf("WORK QUEUE (%d)", len(items))), ""}
+	if len(items) == 0 {
+		lines = append(lines, styleMuted.Render("No Work Items"))
+		return model.renderWorkQueueWithFooter(lines, innerHeight, width)
+	}
+	if model.selected >= len(items) {
+		model.selected = len(items) - 1
+	}
+	rowBudget := maxInt(innerHeight-len(lines)-1, 0)
+	visible := maxInt(rowBudget/4, 1)
 	if model.selected < model.issueTop {
 		model.issueTop = model.selected
 	}
 	if model.selected >= model.issueTop+visible {
 		model.issueTop = model.selected - visible + 1
 	}
-	end := minInt(model.issueTop+visible, len(issues))
+	end := minInt(model.issueTop+visible, len(items))
+	rowLines := []string{}
 	for index := model.issueTop; index < end; index++ {
-		lines = append(lines, model.issueBlock(index, width)...)
+		if !model.specRun() {
+			if separator := model.batchSeparator(index, width); separator != "" {
+				rowLines = append(rowLines, styleAccent.Render(separator))
+			}
+		}
+		block := model.workItemBlock(items[index], model.workItemStatusLabel(index), index, width)
+		if len(rowLines)+len(block) > rowBudget && len(rowLines) > 0 {
+			break
+		}
+		rowLines = append(rowLines, block...)
 	}
-	return strings.Join(limitLines(lines, height-2), "\n")
+	lines = append(lines, limitLines(rowLines, rowBudget)...)
+	return model.renderWorkQueueWithFooter(lines, innerHeight, width)
 }
 
-func (model *cockpitModel) issueBlock(index int, width int) []string {
-	lines := []string{}
-	if separator := model.batchSeparator(index, width); separator != "" {
-		lines = append(lines, styleAccent.Render(separator))
+func (model *cockpitModel) renderWorkQueueWithFooter(lines []string, innerHeight int, width int) string {
+	footer := styleMuted.Render(truncateDisplay(model.workQueueTotalsLine(), maxInt(width-4, 1)))
+	if innerHeight <= 1 {
+		return strings.Join(limitLines(lines, innerHeight), "\n")
 	}
-	label := model.issueStatusLabel(index)
-	name := fmt.Sprintf("Issue #%03d", index+1)
-	marker := "  "
+	for len(lines) < innerHeight-1 {
+		lines = append(lines, "")
+	}
+	lines = append(limitLines(lines, innerHeight-1), footer)
+	return strings.Join(limitLines(lines, innerHeight), "\n")
+}
+
+func (model *cockpitModel) workItems() []WorkItem {
+	if model.specRun() {
+		return model.taskWorkItems()
+	}
+	return model.issueWorkItems()
+}
+
+func (model *cockpitModel) workItemStatusLabel(index int) string {
+	if model.specRun() {
+		return model.taskStatusLabel(index)
+	}
+	return model.issueStatusLabel(index)
+}
+
+// taskWorkItems maps the spec Run's Tasks into Work Items carrying the
+// statuses of the latest refresh instead of the load-time ones.
+func (model *cockpitModel) taskWorkItems() []WorkItem {
+	items := TaskWorkItems(model.cfg.View.Tasks)
+	for index := range items {
+		if index < len(model.taskStatuses) {
+			items[index].Status = model.taskStatuses[index]
+		}
+	}
+	return items
+}
+
+// issueWorkItems maps the Run's Review Issues into Work Items: positional
+// display names plus the statuses of the latest artifact refresh.
+func (model *cockpitModel) issueWorkItems() []WorkItem {
+	items := make([]WorkItem, len(model.cfg.View.Issues))
+	for index, issue := range model.cfg.View.Issues {
+		status := ""
+		if index < len(model.issueStatuses) {
+			status = model.issueStatuses[index]
+		}
+		title := strings.TrimSpace(issue.Title)
+		if title == "" {
+			title = fmt.Sprintf("Issue #%03d", index+1)
+		}
+		items[index] = WorkItem{
+			Name:     fmt.Sprintf("Issue #%03d", index+1),
+			Title:    title,
+			Status:   status,
+			Severity: strings.TrimSpace(issue.Severity),
+			Ordinal:  index + 1,
+			Location: issueLocation(issue),
+		}
+	}
+	return items
+}
+
+func issueLocation(issue rounds.Issue) string {
+	file := strings.TrimSpace(issue.File)
+	if file == "" {
+		return ""
+	}
+	if issue.Line > 0 {
+		return fmt.Sprintf("%s:%d", file, issue.Line)
+	}
+	return file
+}
+
+// workItemBlock renders one Work Item as the compact queue row both Run
+// Kinds share: marker/severity/ordinal, title, and optional location.
+func (model *cockpitModel) workItemBlock(item WorkItem, label string, index int, width int) []string {
+	rowWidth := maxInt(width-4, 1)
+	rowStyle := model.statusStyle(label)
 	if index == model.selected {
-		marker = "> "
+		rowStyle = styleBright
 	}
-	nameStyle := styleMuted
-	if index == model.selected {
-		nameStyle = styleBright
+	title := strings.TrimSpace(item.Title)
+	if title == "" {
+		title = strings.TrimSpace(item.Name)
 	}
-	lines = append(lines, nameStyle.Render(truncateDisplay(marker+name, width-4)))
-	lines = append(lines, model.statusStyle(label).Render(truncateDisplay("  "+label, width-4)))
-	return append(lines, "")
+	if strings.HasPrefix(item.Name, "task_") && title != "" {
+		title = item.Name + " " + title
+	}
+	lines := []string{
+		rowStyle.Render(workItemHeaderLine(item, label, index == model.selected, rowWidth)),
+		styleBright.Render(truncateDisplay("  "+title, rowWidth)),
+	}
+	if location := strings.TrimSpace(item.Location); location != "" {
+		lines = append(lines, styleMuted.Render(truncateDisplay("  "+location, rowWidth)))
+	}
+	return append(lines,
+		"",
+	)
+}
+
+func workItemHeaderLine(item WorkItem, label string, selected bool, width int) string {
+	prefix := "  "
+	if selected {
+		prefix = "> "
+	}
+	left := prefix + "[" + workItemStatusMarker(label) + "]"
+	if severity := strings.TrimSpace(item.Severity); severity != "" {
+		left += " " + strings.ToUpper(severity)
+	}
+	right := workItemOrdinal(item)
+	if right == "" {
+		return truncateDisplay(left, width)
+	}
+	padding := maxInt(width-displayWidth(left)-displayWidth(right), 1)
+	return truncateDisplay(left+strings.Repeat(" ", padding)+right, width)
+}
+
+func workItemOrdinal(item WorkItem) string {
+	if item.Ordinal > 0 {
+		return fmt.Sprintf("#%d", item.Ordinal)
+	}
+	return strings.TrimSpace(item.Name)
+}
+
+func workItemStatusMarker(label string) string {
+	switch label {
+	case "Executing":
+		return phaseRun
+	case "Resolved", "Completed":
+		return phaseDone
+	case "Paused":
+		return phaseLocked
+	case "Invalid":
+		return "invalid"
+	case "Duplicated":
+		return "dup"
+	case "Failed":
+		return "fail"
+	default:
+		return phaseWait
+	}
 }
 
 // batchSeparator labels the first issue of each Batch when the plan is
@@ -525,7 +1281,7 @@ func (model *cockpitModel) batchSeparator(index int, width int) string {
 	if index > 0 && model.batchOf(index-1) == batch {
 		return ""
 	}
-	separator := fmt.Sprintf("─── Batch %03d/%03d", batch, total)
+	separator := fmt.Sprintf("BATCH %03d/%03d", batch, total)
 	if batch == model.currentBatch && !model.terminal && !store.IsTerminalState(model.runState) {
 		elapsed := formatElapsed(model.now().Sub(model.batchStartedAt))
 		pad := maxInt(width-4-displayWidth(separator)-displayWidth(elapsed), 1)
@@ -534,11 +1290,23 @@ func (model *cockpitModel) batchSeparator(index int, width int) string {
 	return truncateDisplay(separator, width-4)
 }
 
+func (model *cockpitModel) workQueueTotalsLine() string {
+	done, total := model.progressCounts()
+	unresolved := total - done
+	if unresolved < 0 {
+		unresolved = 0
+	}
+	if model.specRun() {
+		return fmt.Sprintf("%d Tasks total · %d completed · %d unresolved", total, done, unresolved)
+	}
+	return fmt.Sprintf("%d issues total · %d resolved · %d unresolved", total, done, unresolved)
+}
+
 func (model *cockpitModel) statusStyle(label string) lipgloss.Style {
 	switch label {
 	case "Executing":
 		return styleAccent
-	case "Resolved", "Invalid", "Duplicated":
+	case "Resolved", "Invalid", "Duplicated", "Completed":
 		return styleTool
 	case "Failed":
 		return styleError
@@ -570,6 +1338,9 @@ func (model *cockpitModel) renderStatusBar(width int) string {
 	if total > 0 {
 		percent = done * 100 / total
 		text = fmt.Sprintf(" %d of %d issue(s) resolved · %d%%", done, total, percent)
+		if model.specRun() {
+			text = fmt.Sprintf(" %d of %d Task(s) completed · %d%%", done, total, percent)
+		}
 	}
 	if suffix := model.statusSuffix(); suffix != "" {
 		text += " · " + suffix
@@ -603,16 +1374,64 @@ func (model *cockpitModel) statusSuffix() string {
 }
 
 func (model *cockpitModel) renderFooter(width int) string {
-	keys := "Tab focus · ↑↓ scroll · PgUp/PgDn page · End follow · Enter issue · Esc back"
+	keys := model.footerKeys()
+	line := model.fitFooterLine("Keys: "+keys, width)
+	return styleMuted.Render(padRightDisplay(line, width))
+}
+
+func (model *cockpitModel) fitFooterLine(line string, width int) string {
+	if displayWidth(line) <= width {
+		return line
+	}
+	suffix := " · " + model.footerModeKey()
+	if strings.HasSuffix(line, suffix) && displayWidth(suffix) < width {
+		prefix := strings.TrimSuffix(line, suffix)
+		return truncateDisplay(prefix, width-displayWidth(suffix)) + suffix
+	}
+	return truncateDisplay(line, width)
+}
+
+func (model *cockpitModel) footerKeys() string {
+	if model.detail != nil {
+		return strings.Join([]string{
+			"Esc close",
+			"j/k scroll",
+			"PgUp/PgDn page",
+			model.footerModeKey(),
+		}, " · ")
+	}
+	if model.width > 0 && model.width < minTwoPaneCockpitWidth {
+		return strings.Join([]string{
+			"↑↓ scroll",
+			"PgUp/PgDn page",
+			"widen for Work Queue",
+			model.footerModeKey(),
+		}, " · ")
+	}
+	item := "issue"
+	if model.specRun() {
+		item = "Task"
+	}
+	return strings.Join([]string{
+		"Tab focus",
+		"↑↓ move/scroll",
+		"PgUp/PgDn page",
+		"Enter " + item,
+		"D show detail",
+		"End follow",
+		model.footerModeKey(),
+	}, " · ")
+}
+
+func (model *cockpitModel) footerModeKey() string {
 	switch {
 	case model.cfg.Mode == CockpitAttach:
-		keys += " · q detach"
+		return "q detach"
 	case model.terminal:
-		keys += " · q close"
+		return "q close"
 	default:
-		keys += " · Ctrl-C stop"
+		return "Ctrl-C stop"
 	}
-	return styleMuted.Render(padRightDisplay("Keys: "+keys, width))
 }
 
 func minInt(a int, b int) int {

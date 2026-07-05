@@ -31,7 +31,9 @@ Use it for product-level ideas: greenfield features, ideas with real market/comp
 
 ### 1. Resolve the slug and check for prior art
 
-Derive a kebab-case slug (2–5 words). If `docs/specs/<slug>/_idea.md` exists, read it and operate in update mode (preserve sections the user hasn't asked to change). Check `docs/specs/` and `docs/specs/_archived/` for overlapping specs — overlap is a finding to surface, not absorb.
+**HARD RULE — spec folders are numbered `docs/specs/NNNN-<kebab-slug>/`** (zero-padded 4 digits, e.g. `0001-implement-command`). Determine `NNNN` by scanning **both** `docs/specs/` and `docs/specs/_archived/` for the highest existing prefix and adding 1; use `0001` when no specs exist anywhere. Numbers are never reused and travel with the spec when archived. Never create an unnumbered spec folder.
+
+Derive the kebab-case name (2–5 words) and prepend the number. If a spec folder for this idea already exists (any number), read its `_idea.md` and operate in update mode (preserve sections the user hasn't asked to change) — do not mint a new number. Check `docs/specs/` and `docs/specs/_archived/` for overlapping specs — overlap is a finding to surface, not absorb.
 
 ### 2. Understand the idea
 
