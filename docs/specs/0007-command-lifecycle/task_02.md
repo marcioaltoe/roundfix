@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0007-command-lifecycle
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -43,23 +43,23 @@ npm/acpx/filesystem boundaries.
 
 ## Subtasks
 
-- [ ] Command skeleton, flags, dispatch, report format
-- [ ] Node/acpx/agent probe checks with install offer
-- [ ] Surgical acpx agents override with diff and confirmation
-- [ ] Init-flow reuse for missing configs
-- [ ] Idempotency and non-interactive tests over faked boundaries
+- [x] Command skeleton, flags, dispatch, report format
+- [x] Node/acpx/agent probe checks with install offer
+- [x] Surgical acpx agents override with diff and confirmation
+- [x] Init-flow reuse for missing configs
+- [x] Idempotency and non-interactive tests over faked boundaries
 
 ## Acceptance Criteria
 
-- [ ] Fixture matrix: fresh machine (everything offered/installed),
+- [x] Fixture matrix: fresh machine (everything offered/installed),
       healthy machine (all ok, zero writes), mismatched acpx (upgrade
       offered), local adapters without override (merge offered, diff
       printed, file byte-checked after), declined offers (reported, no
       writes).
-- [ ] The override merge preserves every unrelated key in the acpx config
+- [x] The override merge preserves every unrelated key in the acpx config
       file byte-for-byte.
-- [ ] `--yes` accepts every offer; `--no-input` skips them as reported.
-- [ ] `setup --help` truthful; full suite passes.
+- [x] `--yes` accepts every offer; `--no-input` skips them as reported.
+- [x] `setup --help` truthful; full suite passes.
 
 ## Verification
 
@@ -73,3 +73,38 @@ npm/acpx/filesystem boundaries.
 `_prd.md` → User Story 1; Core Feature 1; Decisions. `_techspec.md` → Setup
 Command, Risks (user-owned file), Build Order 2. Round-1 dogfood findings
 22 and 27.
+
+## Result
+
+Implemented `roundfix setup [--yes] [--no-input]` in `internal/cli` with
+deterministic report lines for Node, pinned acpx, configured Agent probe,
+acpx agents override, User Config, and Project Config. The command routes
+Node/acpx/npm/probe/filesystem/init boundaries through package seams for
+buffer-captured tests.
+
+Acceptance evidence:
+
+- Fixture matrix: `TestRunSetupFreshMachineAcceptsOffers`,
+  `TestRunSetupHealthyMachineIsIdempotent`,
+  `TestRunSetupMismatchedACPXUpgradeOffer`,
+  `TestRunSetupMergesACPXAgentsOverridePreservingUnrelatedBytes`, and
+  `TestRunSetupDeclinedOffersReportNoWrites` cover fresh, healthy,
+  mismatched acpx, missing override, and declined-offer cases.
+- Override preservation: `TestRunSetupMergesACPXAgentsOverridePreservingUnrelatedBytes`
+  asserts the unrelated top-level `theme` block and existing `agents.claude`
+  block remain byte-identical while `agents.codex.command: codex-acp` is
+  added and the diff is printed.
+- `--yes` / `--no-input`: `TestRunSetupFreshMachineAcceptsOffers` proves
+  `--yes` accepts every offer without prompts; `TestRunSetupNoInputSkipsOffers`
+  proves `--no-input` reports skipped offers and performs no writes.
+- Help and exit codes: `TestRunCommandHelp` covers setup help text, and
+  `TestRunSetupExitCodes` covers exit 1 for failed checks and exit 2 for
+  usage errors.
+
+Verification:
+
+- `rtk go test ./internal/cli/` — passed, 207 tests.
+- `rtk go run ./cmd/roundfix setup --help` — passed, exit 0, usage lists
+  `--yes` and `--no-input`.
+- `rtk go test ./...` — passed, 623 tests across 16 packages.
+- `rtk make verify` — passed: full Go suite, Roundfix skill check, and build.

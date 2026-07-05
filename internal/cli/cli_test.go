@@ -226,6 +226,11 @@ func TestRunCommandHelp(t *testing.T) {
 			args:     []string{"watch", "--help"},
 			contains: []string{"roundfix watch --source coderabbit --pr <number> --agent <agent>", "--until-clean", "Review Source check succeeds", "--no-agent-console"},
 		},
+		{
+			name:     "setup",
+			args:     []string{"setup", "--help"},
+			contains: []string{"roundfix setup [--yes] [--no-input]", "--yes", "--no-input"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -248,6 +253,227 @@ func TestRunCommandHelp(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
+	fake := newSetupFakeDeps()
+	fake.acpxErr = errors.New("acpx not found")
+	fake.paths["codex-acp"] = "/bin/codex-acp"
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected setup exit 0, got %d (stderr %q)", code, stderr.String())
+	}
+	assertSetupLineOrder(t, stdout.String(), []string{
+		"node: ok",
+		"acpx: installed",
+		"agent probe: ok",
+		"acpx agents override: installed",
+		"User Config: installed",
+		"Project Config: installed",
+	})
+	if got := strings.Join(fake.installCalls, "\n"); got != "npm install -g acpx@"+agent.PinnedACPXVersion {
+		t.Fatalf("expected pinned acpx install command, got %q", got)
+	}
+	if got := strings.Join(fake.initScopes, ","); got != "user,project" {
+		t.Fatalf("expected User and Project Config init flows, got %q", got)
+	}
+	if fake.acpxInitCalls != 1 {
+		t.Fatalf("expected one acpx config init call, got %d", fake.acpxInitCalls)
+	}
+	acpxConfig := fake.files[fake.acpxConfigPath]
+	if !strings.Contains(acpxConfig, `"codex"`) || !strings.Contains(acpxConfig, `"command": "codex-acp"`) {
+		t.Fatalf("expected codex direct adapter override, got %s", acpxConfig)
+	}
+	for _, want := range []string{"acpx agents override diff:", "--- ", "+++ ", "+  \"agents\""} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("expected setup output to contain %q, got %q", want, stdout.String())
+		}
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected --yes to avoid prompts, got stderr %q", stderr.String())
+	}
+}
+
+func TestRunSetupHealthyMachineIsIdempotent(t *testing.T) {
+	fake := newSetupFakeDeps()
+	fake.paths["codex-acp"] = "/bin/codex-acp"
+	fake.files[fake.userConfigPath] = "defaults:\n  agent: codex\n"
+	fake.files[fake.projectConfigPath] = "defaults:\n  verification: make verify\n"
+	fake.files[fake.acpxConfigPath] = "{\n  \"agents\": {\n    \"codex\": {\n      \"command\": \"codex-acp\"\n    }\n  }\n}\n"
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected setup exit 0, got %d (stderr %q)", code, stderr.String())
+	}
+	assertSetupLineOrder(t, stdout.String(), []string{
+		"node: ok",
+		"acpx: ok",
+		"agent probe: ok",
+		"acpx agents override: ok",
+		"User Config: ok",
+		"Project Config: ok",
+	})
+	if len(fake.installCalls) != 0 || len(fake.initScopes) != 0 || len(fake.writeCalls) != 0 || len(fake.prompts) != 0 {
+		t.Fatalf("expected idempotent setup to avoid side effects, installs=%v init=%v writes=%v prompts=%v", fake.installCalls, fake.initScopes, fake.writeCalls, fake.prompts)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+}
+
+func TestRunSetupMismatchedACPXUpgradeOffer(t *testing.T) {
+	fake := newSetupFakeDeps()
+	fake.acpxVersion = "0.11.0"
+	fake.files[fake.userConfigPath] = "defaults:\n  agent: codex\n"
+	fake.files[fake.projectConfigPath] = "defaults:\n  verification: make verify\n"
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected setup exit 0, got %d (stderr %q)", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "acpx: installed") || !strings.Contains(stdout.String(), "found 0.11.0") {
+		t.Fatalf("expected mismatched acpx upgrade report, got %q", stdout.String())
+	}
+	if got := strings.Join(fake.installCalls, "\n"); got != "npm install -g acpx@"+agent.PinnedACPXVersion {
+		t.Fatalf("expected pinned acpx install command, got %q", got)
+	}
+}
+
+func TestRunSetupMergesACPXAgentsOverridePreservingUnrelatedBytes(t *testing.T) {
+	fake := newSetupFakeDeps()
+	fake.paths["codex-acp"] = "/bin/codex-acp"
+	fake.files[fake.userConfigPath] = "defaults:\n  agent: codex\n"
+	fake.files[fake.projectConfigPath] = "defaults:\n  verification: make verify\n"
+	unrelated := "  \"theme\": {\n    \"color\": \"blue\",\n    \"nested\": [1, 2, 3]\n  }"
+	existingAgent := "    \"claude\": {\n      \"command\": \"existing-claude\"\n    }"
+	fake.files[fake.acpxConfigPath] = "{\n" + unrelated + ",\n  \"agents\": {\n" + existingAgent + "\n  }\n}\n"
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected setup exit 0, got %d (stderr %q)", code, stderr.String())
+	}
+	acpxConfig := fake.files[fake.acpxConfigPath]
+	for _, want := range []string{unrelated, existingAgent, `"codex"`, `"command": "codex-acp"`} {
+		if !strings.Contains(acpxConfig, want) {
+			t.Fatalf("expected merged config to preserve/include %q, got %s", want, acpxConfig)
+		}
+	}
+	if !strings.Contains(stdout.String(), "acpx agents override diff:") || !strings.Contains(stdout.String(), "+    \"codex\"") {
+		t.Fatalf("expected before/after diff for override, got %q", stdout.String())
+	}
+}
+
+func TestRunSetupDeclinedOffersReportNoWrites(t *testing.T) {
+	fake := newSetupFakeDeps()
+	fake.acpxErr = errors.New("acpx not found")
+	fake.paths["codex-acp"] = "/bin/codex-acp"
+	fake.confirm = func(context.Context, io.Writer, string) (bool, error) {
+		return false, nil
+	}
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected declined setup offers to exit 0, got %d (stderr %q)", code, stderr.String())
+	}
+	assertSetupLineOrder(t, stdout.String(), []string{
+		"node: ok",
+		"acpx: offered: declined",
+		"agent probe: skipped",
+		"acpx agents override: offered: declined",
+		"User Config: offered: declined",
+		"Project Config: offered: declined",
+	})
+	if len(fake.installCalls) != 0 || len(fake.initScopes) != 0 || len(fake.writeCalls) != 0 || fake.acpxInitCalls != 0 {
+		t.Fatalf("expected no writes after declined offers, installs=%v init=%v writes=%v acpxInit=%d", fake.installCalls, fake.initScopes, fake.writeCalls, fake.acpxInitCalls)
+	}
+	if len(fake.prompts) != 4 {
+		t.Fatalf("expected four confirmation prompts, got %d: %v", len(fake.prompts), fake.prompts)
+	}
+}
+
+func TestRunSetupNoInputSkipsOffers(t *testing.T) {
+	fake := newSetupFakeDeps()
+	fake.acpxErr = errors.New("acpx not found")
+	fake.paths["codex-acp"] = "/bin/codex-acp"
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected no-input skipped offers to exit 0, got %d (stderr %q)", code, stderr.String())
+	}
+	assertSetupLineOrder(t, stdout.String(), []string{
+		"node: ok",
+		"acpx: skipped",
+		"agent probe: skipped",
+		"acpx agents override: skipped",
+		"User Config: skipped",
+		"Project Config: skipped",
+	})
+	if len(fake.installCalls) != 0 || len(fake.initScopes) != 0 || len(fake.writeCalls) != 0 || len(fake.prompts) != 0 {
+		t.Fatalf("expected --no-input to avoid side effects, installs=%v init=%v writes=%v prompts=%v", fake.installCalls, fake.initScopes, fake.writeCalls, fake.prompts)
+	}
+}
+
+func TestRunSetupExitCodes(t *testing.T) {
+	t.Run("check failure exits one", func(t *testing.T) {
+		fake := newSetupFakeDeps()
+		fake.nodeVersion = "v20.0.0"
+		fake.files[fake.userConfigPath] = "defaults:\n  agent: codex\n"
+		fake.files[fake.projectConfigPath] = "defaults:\n  verification: make verify\n"
+		withSetupFakeDeps(t, fake)
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := Run([]string{"setup"}, &stdout, &stderr)
+
+		if code != exitRunFailed {
+			t.Fatalf("expected setup check failure exit 1, got %d", code)
+		}
+		if !strings.Contains(stdout.String(), "node: failed") {
+			t.Fatalf("expected node failure report, got %q", stdout.String())
+		}
+	})
+
+	t.Run("usage error exits two", func(t *testing.T) {
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := Run([]string{"setup", "--yes", "--no-input"}, &stdout, &stderr)
+
+		if code != exitPreflight {
+			t.Fatalf("expected setup usage error exit 2, got %d", code)
+		}
+		if stdout.Len() != 0 {
+			t.Fatalf("expected no stdout, got %q", stdout.String())
+		}
+		if !strings.Contains(stderr.String(), "--yes cannot be used with --no-input") {
+			t.Fatalf("expected usage diagnostic, got %q", stderr.String())
+		}
+	})
 }
 
 func TestRunSkillsCheck(t *testing.T) {
@@ -2559,6 +2785,137 @@ func TestRunOperationalCommandRejectsInvalidConfigAndArtifactDirectory(t *testin
 			t.Fatalf("expected no side-effect confirmation, got %q", stderr.String())
 		}
 	})
+}
+
+type setupFakeDeps struct {
+	homeDir           string
+	gitRoot           string
+	userConfigPath    string
+	projectConfigPath string
+	acpxConfigPath    string
+	nodeVersion       string
+	nodeErr           error
+	acpxVersion       string
+	acpxErr           error
+	probeErr          error
+	paths             map[string]string
+	files             map[string]string
+	installCalls      []string
+	initScopes        []string
+	acpxInitCalls     int
+	writeCalls        []string
+	prompts           []string
+	confirm           func(context.Context, io.Writer, string) (bool, error)
+}
+
+func newSetupFakeDeps() *setupFakeDeps {
+	homeDir := "/home/roundfix-test"
+	gitRoot := "/repo/project"
+	return &setupFakeDeps{
+		homeDir:           homeDir,
+		gitRoot:           gitRoot,
+		userConfigPath:    filepath.Join(homeDir, ".roundfix", "config.yml"),
+		projectConfigPath: filepath.Join(gitRoot, ".roundfixrc.yml"),
+		acpxConfigPath:    filepath.Join(homeDir, ".acpx", "config.json"),
+		nodeVersion:       "v25.6.1",
+		acpxVersion:       agent.PinnedACPXVersion,
+		paths:             map[string]string{},
+		files:             map[string]string{},
+	}
+}
+
+func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
+	t.Helper()
+	old := setupDeps
+	setupDeps = setupDependencies{
+		loadConfig: func(roundconfig.LoadOptions) (roundconfig.Loaded, error) {
+			return roundconfig.Loaded{
+				Config:            roundconfig.Builtin(),
+				GitRoot:           fake.gitRoot,
+				HomeDir:           fake.homeDir,
+				UserConfigPath:    fake.userConfigPath,
+				ProjectConfigPath: fake.projectConfigPath,
+			}, nil
+		},
+		nodeVersion: func(context.Context) (string, error) {
+			return fake.nodeVersion, fake.nodeErr
+		},
+		acpxVersion: func(context.Context) (string, error) {
+			return fake.acpxVersion, fake.acpxErr
+		},
+		installACPX: func(context.Context) error {
+			fake.installCalls = append(fake.installCalls, "npm install -g acpx@"+agent.PinnedACPXVersion)
+			return nil
+		},
+		probeAgent: func(context.Context, agent.RuntimeSpec) error {
+			return fake.probeErr
+		},
+		lookPath: func(command string) (string, error) {
+			path := fake.paths[command]
+			if path == "" {
+				return "", os.ErrNotExist
+			}
+			return path, nil
+		},
+		exists: func(path string) (bool, error) {
+			_, ok := fake.files[path]
+			return ok, nil
+		},
+		readFile: func(path string) ([]byte, error) {
+			content, ok := fake.files[path]
+			if !ok {
+				return nil, os.ErrNotExist
+			}
+			return []byte(content), nil
+		},
+		writeFile: func(path string, content []byte) error {
+			fake.files[path] = string(content)
+			fake.writeCalls = append(fake.writeCalls, path)
+			return nil
+		},
+		mkdirAll: func(string) error {
+			return nil
+		},
+		initACPXConfig: func(context.Context, string) error {
+			fake.acpxInitCalls++
+			fake.files[fake.acpxConfigPath] = "{\n}\n"
+			return nil
+		},
+		initConfig: func(_ context.Context, opts roundconfig.InitOptions) (roundconfig.InitResult, error) {
+			fake.initScopes = append(fake.initScopes, opts.Scope)
+			path := fake.userConfigPath
+			if opts.Scope == roundconfig.InitScopeProject {
+				path = fake.projectConfigPath
+			}
+			fake.files[path] = roundconfig.DefaultConfigYAML()
+			return roundconfig.InitResult{Scope: opts.Scope, Path: path}, nil
+		},
+		confirm: func(ctx context.Context, stderr io.Writer, prompt string) (bool, error) {
+			fake.prompts = append(fake.prompts, prompt)
+			if fake.confirm != nil {
+				return fake.confirm(ctx, stderr, prompt)
+			}
+			return true, nil
+		},
+	}
+	t.Cleanup(func() {
+		setupDeps = old
+	})
+}
+
+func assertSetupLineOrder(t *testing.T, output string, lines []string) {
+	t.Helper()
+	last := -1
+	for _, line := range lines {
+		index := strings.Index(output, line)
+		if index < 0 {
+			t.Fatalf("expected setup output to contain %q, got %q", line, output)
+		}
+		if index < last {
+			t.Fatalf("expected setup output line %q after previous lines, got %q", line, output)
+		}
+		last = index
+	}
 }
 
 func withCLIWorkspace(t *testing.T) (string, string) {

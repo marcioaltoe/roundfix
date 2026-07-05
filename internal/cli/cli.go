@@ -44,6 +44,7 @@ Usage:
   roundfix implement --spec <slug> --agent <agent>
   roundfix settle --spec <slug> --task <task_id>
   roundfix init [--scope <project|user>]
+  roundfix setup [--yes] [--no-input]
   roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
   roundfix attach <run-id>
   roundfix skills check
@@ -57,6 +58,7 @@ Commands:
   implement  Execute a Spec's Task Graph as one Run
   settle     Verify and commit all current worktree changes for one failed Task
   stop       Stop an Active Run and release its lock
+  setup      Verify and prepare this machine for Roundfix Runs
   attach     Replay a Run's event timeline from the Run Database
   skills     Check or install the Roundfix agent skill
 
@@ -152,6 +154,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return exitOK
 	case "init":
 		return runInitCommand(ctx, args[1:], stdout, stderr)
+	case "setup":
+		return runSetupCommand(ctx, args[1:], stdout, stderr)
 	case "stop":
 		return runStopCommand(ctx, args[1:], stdout, stderr)
 	case "attach":
@@ -2158,6 +2162,19 @@ Options:
            project writes <repo>/.roundfixrc.yml
            user writes ~/.roundfix/config.yml
   --force  Overwrite an existing config file
+`
+	case "setup":
+		return `Usage:
+  roundfix setup [--yes] [--no-input]
+
+Checks Node.js, the pinned acpx version, the configured Agent probe,
+acpx local adapter overrides, User Config, and Project Config. Each check
+prints one deterministic report line with ok, installed, skipped,
+offered: declined, or failed.
+
+Options:
+  --yes       Accept every offered install or file change
+  --no-input  Skip offered changes instead of prompting
 `
 	case "fetch":
 		return `Usage:
