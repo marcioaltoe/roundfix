@@ -38,11 +38,25 @@ type TaskPlan struct {
 
 // TaskCycleResult reports what one Task cycle settled. Skipped counts
 // Tasks left pending because a needed Task did not end completed.
-// QAVerdict stays empty when the QA step did not run.
+// QAVerdict stays empty when the QA step did not run; when it ran it is
+// the report verdict (pass, fail, partial) or a Daemon settlement
+// (missing, unreadable). QAReportPath is the newest QA Report relative to
+// the working tree, empty when no report exists.
 type TaskCycleResult struct {
 	Completed, Failed, Skipped int
 	QAVerdict                  string
+	QAReportPath               string
 }
+
+// QA verdict settlements the Daemon adds beyond the report-authored
+// pass/fail/partial values: a QA step that finds no report settles
+// "missing" and one whose report verdict cannot be read settles
+// "unreadable". Every value except spec.VerdictPass ends the Run
+// Unresolved (ADR 0015).
+const (
+	qaVerdictMissing    = "missing"
+	qaVerdictUnreadable = "unreadable"
+)
 
 // TaskCycle executes the Task Graph for one Spec as a sibling of
 // ResolveCycle: each non-completed Task, in topological order, runs
@@ -100,9 +114,19 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 			result.Failed++
 		}
 	}
-	// QA step seam (task_07): when plan.QA is set and every Task ended
-	// completed, the QA step runs here — after the Task walk, before the
-	// cycle outcome event — and fills result.QAVerdict.
+	// QA step (ADR 0015): the qa-gate runs only when plan.QA is set and
+	// every Task in the Task Graph — including Tasks completed by earlier
+	// Runs — ended completed; any failed, skipped, or pending Task leaves
+	// the outcome to the Task results alone.
+	if plan.QA && allTasksCompleted(plan.Tasks, statuses) {
+		ordinal++
+		verdict, reportPath, err := engine.runQAGate(ctx, plan, ordinal)
+		if err != nil {
+			return result, err
+		}
+		result.QAVerdict = verdict
+		result.QAReportPath = reportPath
+	}
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, 0, runevent.KindDaemonOutcome,
 		fmt.Sprintf("Task cycle finished: %d completed, %d failed, %d skipped.", result.Completed, result.Failed, result.Skipped),
 		map[string]any{"completed": result.Completed, "failed": result.Failed, "skipped": result.Skipped},
@@ -303,7 +327,7 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 	if err != nil {
 		return err
 	}
-	changed := ensureTaskFile(diffSnapshots(before, after), task.File)
+	changed := ensureCommitPath(diffSnapshots(before, after), task.File)
 	message := TaskCommitMessage(plan.Spec.Slug, task)
 	if err := engine.deps.Committer.Commit(ctx, CommitRequest{
 		WorkDir: plan.WorkDir,
@@ -341,18 +365,160 @@ func taskCommitType(taskType string) string {
 	}
 }
 
-// ensureTaskFile guarantees the settled task file rides in its own Task
-// commit even when it was already dirty before the Task started and the
-// snapshot diff therefore excluded it.
-func ensureTaskFile(changed []string, taskFile string) []string {
-	for _, path := range changed {
-		if path == taskFile {
+// runQAGate runs the qa-gate step as the Run's last Batch: before-snapshot,
+// Agent with the QA prompt, verdict settling from the newest QA Report
+// frontmatter, the daemon.qa Run Event, and the QA Report commit — created
+// either way, pass or fail, while a missing report commits nothing
+// (ADR 0015). It returns the settled verdict and the report path relative
+// to the working tree; the returned error is reserved for Stop Requests
+// and infrastructure failures. Unlike a Task, the QA step has no per-item
+// settlement to fall back on, so a non-stop Agent failure halts the cycle.
+func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, ordinal int) (string, string, error) {
+	if err := ctx.Err(); err != nil {
+		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
+			return "", "", fmt.Errorf("publish stop event for run %q before the QA step: %w", plan.RunID, errors.Join(err, publishErr))
+		}
+		return "", "", fmt.Errorf("stop run %q before the QA step: %w", plan.RunID, err)
+	}
+	// The before-snapshot keeps everything already dirty out of the QA
+	// Report commit: only the QA step's own report and evidence ride in it.
+	before, err := engine.deps.Worktree.Snapshot(ctx, plan.WorkDir)
+	if err != nil {
+		return "", "", err
+	}
+	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateResolvingWithAgent); err != nil {
+		return "", "", fmt.Errorf("update run %q to state %q before the QA step: %w", plan.RunID, store.StateResolvingWithAgent, err)
+	}
+	prompt, err := agent.BuildQAPrompt(plan.Spec.Slug, plan.Spec.Dir, filepath.Join(plan.Spec.Dir, "_prd.md"))
+	if err != nil {
+		return "", "", fmt.Errorf("build QA prompt for run %q: %w", plan.RunID, err)
+	}
+	logPath := agent.LogPath(filepath.Join(plan.WorkDir, specRunArtifactDirName), plan.RunID, ordinal)
+	fmt.Fprintf(engine.deps.Progress, "QA step (Batch %03d) for Spec %s\n", ordinal, plan.Spec.Slug)
+	fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
+	if _, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
+		Runtime: plan.Runtime,
+		RunID:   plan.RunID,
+		Batch:   rounds.Batch{Number: ordinal},
+		LogPath: logPath,
+		Prompt:  prompt,
+		GitRoot: plan.WorkDir,
+	}, engine.deps.Sink); runErr != nil {
+		return "", "", fmt.Errorf("run Agent for run %q QA step: %w", plan.RunID, runErr)
+	}
+	if err := ctx.Err(); err != nil {
+		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
+			return "", "", fmt.Errorf("publish stop event for run %q after the QA step Agent: %w", plan.RunID, errors.Join(err, publishErr))
+		}
+		return "", "", fmt.Errorf("stop run %q after the QA step Agent: %w", plan.RunID, err)
+	}
+	verdict, reportPath := engine.settleQAVerdict(plan)
+	if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
+		fmt.Sprintf("QA verdict %s for Spec %s.", verdict, plan.Spec.Slug),
+		map[string]any{"verdict": verdict, "report": reportPath},
+	); err != nil {
+		return "", "", fmt.Errorf("publish QA event for run %q: %w", plan.RunID, err)
+	}
+	fmt.Fprintf(engine.deps.Progress, "QA verdict: %s\n", verdict)
+	if reportPath == "" {
+		// A missing report means nothing to commit (ADR 0015).
+		return verdict, reportPath, nil
+	}
+	if err := engine.commitQAReport(ctx, plan, ordinal, before, verdict, reportPath); err != nil {
+		return "", "", err
+	}
+	return verdict, reportPath, nil
+}
+
+// settleQAVerdict settles the QA verdict from the newest QA Report: the
+// report's own verdict when readable, missing when no report exists, and
+// unreadable when the report exists but its verdict cannot be read
+// (ADR 0015). The report path comes back relative to the working tree,
+// empty when no report exists.
+func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string) {
+	verdict := ""
+	switch value, err := spec.QAVerdict(plan.Spec.Dir); {
+	case err == nil:
+		verdict = value
+	case errors.Is(err, spec.ErrNoQAReport):
+		verdict = qaVerdictMissing
+	default:
+		fmt.Fprintf(engine.deps.Progress, "QA Report verdict unreadable: %v\n", err)
+		verdict = qaVerdictUnreadable
+	}
+	reportPath := ""
+	if newest, err := spec.NewestQAReport(plan.Spec.Dir); err == nil {
+		reportPath = newest
+		if relative, relErr := filepath.Rel(plan.WorkDir, newest); relErr == nil {
+			reportPath = relative
+		}
+	}
+	return verdict, reportPath
+}
+
+// commitQAReport creates the QA Report commit from the QA step's snapshot
+// diff with the report ensured, so the report and its evidence always ride
+// in their own commit, separate from every Task commit (ADR 0015).
+func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal int, before []string, verdict string, reportPath string) error {
+	if err := ctx.Err(); err != nil {
+		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
+			return fmt.Errorf("publish stop event for run %q before the QA Report commit: %w", plan.RunID, errors.Join(err, publishErr))
+		}
+		return fmt.Errorf("stop run %q before the QA Report commit: %w", plan.RunID, err)
+	}
+	after, err := engine.deps.Worktree.Snapshot(ctx, plan.WorkDir)
+	if err != nil {
+		return err
+	}
+	changed := ensureCommitPath(diffSnapshots(before, after), reportPath)
+	message := QACommitMessage(plan.Spec.Slug, verdict)
+	if err := engine.deps.Committer.Commit(ctx, CommitRequest{
+		WorkDir: plan.WorkDir,
+		Message: message,
+		Paths:   changed,
+	}); err != nil {
+		return err
+	}
+	subject, _, _ := strings.Cut(message, "\n")
+	fmt.Fprintf(engine.deps.Progress, "QA Report commit created: %s\n", subject)
+	if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonCommit,
+		fmt.Sprintf("QA Report commit created: %s", subject),
+		map[string]any{"decision": "created", "report": reportPath, "paths": len(changed)},
+	); err != nil {
+		return fmt.Errorf("publish QA commit event for run %q: %w", plan.RunID, err)
+	}
+	return nil
+}
+
+// QACommitMessage is the QA Report commit contract (ADR 0013, ADR 0015):
+// `docs(qa): qa report for <slug> (<verdict>)` plus the Roundfix-Spec
+// trailer separated from the subject by a blank line per git trailer
+// convention.
+func QACommitMessage(slug string, verdict string) string {
+	return fmt.Sprintf("docs(qa): qa report for %s (%s)\n\nRoundfix-Spec: %s", slug, verdict, slug)
+}
+
+// ensureCommitPath guarantees the settled task file or QA Report rides in
+// its own commit even when it was already dirty before the step started
+// and the snapshot diff therefore excluded it.
+func ensureCommitPath(changed []string, path string) []string {
+	for _, existing := range changed {
+		if existing == path {
 			return changed
 		}
 	}
-	changed = append(changed, taskFile)
+	changed = append(changed, path)
 	sort.Strings(changed)
 	return changed
+}
+
+func allTasksCompleted(tasks []spec.Task, statuses map[string]spec.Status) bool {
+	for _, task := range tasks {
+		if statuses[task.ID] != spec.StatusCompleted {
+			return false
+		}
+	}
+	return true
 }
 
 func unmetNeeds(task spec.Task, statuses map[string]spec.Status) []string {

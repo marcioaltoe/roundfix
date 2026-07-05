@@ -28,6 +28,8 @@ so --spec is always required.
 
 Options:
   --spec               Spec slug under docs/specs/
+  --qa                 End the Run with the qa-gate step once every Task is
+                       completed; only a pass verdict lets the Run end Clean
   --agent              Agent runtime. Supported: codex, claude, opencode
   --model              Agent model override
   --agent-command      Agent command override
@@ -76,7 +78,9 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
-	if countNonCompletedTasks(graph.Tasks) == 0 {
+	if countNonCompletedTasks(graph.Tasks) == 0 && !req.qa {
+		// With --qa, an all-completed graph is not a no-op: the Run
+		// consists of the qa-gate step only (ADR 0015).
 		counts := printImplementTaskLines(stdout, gitState.Root, graph, true)
 		fmt.Fprintf(stdout, "All %d Task(s) already completed; no Run was created.\n", counts.total())
 		return exitOK
@@ -155,7 +159,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 	defer ui.Close()
 
-	cycleResult, err := executeImplementCycle(ctx, gitState, run.ID, graph, runtime, collaborators, runStore, ui)
+	cycleResult, err := executeImplementCycle(ctx, gitState, run.ID, graph, req.qa, runtime, collaborators, runStore, ui)
 	if err != nil {
 		if isStopRequest(ctx, err) {
 			code := completeStoppedRunRecord(runStore, run.ID)
@@ -181,6 +185,11 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	if cycleResult.Failed > 0 || cycleResult.Skipped > 0 {
 		outcome = store.StateUnresolved
 	}
+	// Only a pass verdict lets a QA Run end Clean: partial, fail, missing,
+	// and unreadable all settle Unresolved (ADR 0015).
+	if cycleResult.QAVerdict != "" && cycleResult.QAVerdict != spec.VerdictPass {
+		outcome = store.StateUnresolved
+	}
 	completed, err := runStore.CompleteRun(ctx, run.ID, outcome)
 	if err != nil {
 		ui.Close()
@@ -193,6 +202,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	ui.Close()
 	fmt.Fprintf(stderr, "Implement Run %s reached %s.\n", completed.ID, completed.State)
 	counts := printImplementTaskLines(stdout, gitState.Root, graph, true)
+	printImplementQAVerdictLine(stdout, cycleResult)
 	printImplementOutcomeLine(stdout, completed.State, counts)
 	if completed.State == store.StateUnresolved {
 		return exitRunFailed
@@ -212,6 +222,7 @@ func parseImplementCommand(args []string, config roundconfig.Config) (commandReq
 	fs := flag.NewFlagSet("implement", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	fs.StringVar(&req.spec, "spec", "", "Spec slug under docs/specs/")
+	fs.BoolVar(&req.qa, "qa", false, "End the Run with the qa-gate step once every Task is completed")
 	fs.StringVar(&req.agent, "agent", req.agent, "Agent runtime")
 	fs.StringVar(&req.model, "model", req.model, "Agent model override")
 	fs.StringVar(&req.agentCmd, "agent-command", "", "Agent command override")
@@ -246,7 +257,7 @@ func validateImplementRequest(req commandRequest) error {
 
 // executeImplementCycle wires the Run engine exactly like the resolve path
 // and runs one Task cycle over the full graph.
-func executeImplementCycle(ctx context.Context, gitState preflight.GitState, runID string, graph *spec.Graph, runtime agent.RuntimeSpec, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
+func executeImplementCycle(ctx context.Context, gitState preflight.GitState, runID string, graph *spec.Graph, qa bool, runtime agent.RuntimeSpec, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
 	fmt.Fprintf(ui.progress, "%s: implement selected Spec %s with %d Task(s); %d to execute this Run.\n", app.Name, graph.Spec.Slug, len(graph.Tasks), countNonCompletedTasks(graph.Tasks))
 	fmt.Fprintf(ui.progress, "Implement Run: %s\n", runID)
 	fmt.Fprintf(ui.progress, "Working tree: %s on branch %s\n", gitState.Root, gitState.Branch)
@@ -269,14 +280,13 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, run
 	if err != nil {
 		return daemon.TaskCycleResult{}, err
 	}
-	// QA stays false until the --qa flag ships (ADR 0015).
 	return engine.TaskCycle(ctx, daemon.TaskPlan{
 		RunID:   runID,
 		WorkDir: gitState.Root,
 		Spec:    graph.Spec,
 		Tasks:   graph.Tasks,
 		Runtime: runtime,
-		QA:      false,
+		QA:      qa,
 	})
 }
 
@@ -361,6 +371,22 @@ func implementDisplayStatus(status spec.Status, cycleFinished bool) string {
 		}
 		return "pending"
 	}
+}
+
+// printImplementQAVerdictLine prints the deterministic QA verdict line of
+// the stdout contract — `qa <verdict> — <report path>`, mirroring the
+// per-Task line shape — after the Task lines and before the outcome line.
+// A missing report has no path, so the detail names the absence. Nothing
+// is printed when the QA step did not run.
+func printImplementQAVerdictLine(stdout io.Writer, result daemon.TaskCycleResult) {
+	if result.QAVerdict == "" {
+		return
+	}
+	detail := result.QAReportPath
+	if detail == "" {
+		detail = "no QA Report found"
+	}
+	fmt.Fprintf(stdout, "qa %s — %s\n", result.QAVerdict, detail)
 }
 
 // printImplementOutcomeLine prints the one terminal outcome line of the

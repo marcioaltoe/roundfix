@@ -88,6 +88,7 @@ type commandRequest struct {
 	agentFullAccess bool
 	headBranch      string
 	headRepo        string
+	qa              bool
 }
 
 var runCommandPreflight = defaultRunCommandPreflight

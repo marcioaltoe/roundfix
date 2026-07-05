@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -121,7 +122,9 @@ func implementTaskPath(repoDir string, taskID string) string {
 
 // implementFakeRunner scripts per-Task Agent behavior keyed by the Task id
 // parsed from the prompt, writing task statuses through spec.SetStatus the
-// way a real Agent edits the task file.
+// way a real Agent edits the task file. A QA prompt writes qaReport as the
+// Spec's QA Report, the way the qa-gate Agent does; an empty qaReport
+// writes none.
 type implementFakeRunner struct {
 	gitRoot      string
 	statusByTask map[string]spec.Status
@@ -129,6 +132,8 @@ type implementFakeRunner struct {
 	probeErr     error
 	calls        int
 	taskIDs      []string
+	qaReport     string
+	qaCalls      int
 }
 
 func (runner *implementFakeRunner) Probe(context.Context, agent.RuntimeSpec) error {
@@ -138,6 +143,19 @@ func (runner *implementFakeRunner) Probe(context.Context, agent.RuntimeSpec) err
 func (runner *implementFakeRunner) Run(_ context.Context, req agent.ExecuteRequest, _ runevent.Sink) (agent.ExecuteResult, error) {
 	runner.calls++
 	taskID := implementTaskIDFromPrompt(req.Prompt)
+	if taskID == "" && strings.Contains(req.Prompt, "Spec QA gate") {
+		runner.qaCalls++
+		if runner.qaReport != "" {
+			reportPath := filepath.Join(runner.gitRoot, implementQAReportRelPath())
+			if err := os.MkdirAll(filepath.Dir(reportPath), 0o755); err != nil {
+				return agent.ExecuteResult{}, err
+			}
+			if err := os.WriteFile(reportPath, []byte(runner.qaReport), 0o644); err != nil {
+				return agent.ExecuteResult{}, err
+			}
+		}
+		return agent.ExecuteResult{LogPath: req.LogPath}, nil
+	}
 	runner.taskIDs = append(runner.taskIDs, taskID)
 	if err := runner.errByTask[taskID]; err != nil {
 		return agent.ExecuteResult{}, err
@@ -148,6 +166,16 @@ func (runner *implementFakeRunner) Run(_ context.Context, req agent.ExecuteReque
 		}
 	}
 	return agent.ExecuteResult{LogPath: req.LogPath}, nil
+}
+
+const implementQAReportName = "qa-report-2026-01-01.md"
+
+func implementQAReportRelPath() string {
+	return filepath.Join("docs", "specs", implementTestSlug, "qa", implementQAReportName)
+}
+
+func implementQAReport(verdict string) string {
+	return fmt.Sprintf("---\nverdict: %s\n---\n\n# QA Report\n", verdict)
 }
 
 func implementTaskIDFromPrompt(prompt string) string {
@@ -242,6 +270,7 @@ func TestRunImplementHelpListsExactlyImplementedFlags(t *testing.T) {
 	}
 	want := map[string]bool{
 		"--spec":              true,
+		"--qa":                true,
 		"--agent":             true,
 		"--model":             true,
 		"--agent-command":     true,
@@ -264,9 +293,6 @@ func TestRunImplementHelpListsExactlyImplementedFlags(t *testing.T) {
 		if !want[flagName] {
 			t.Fatalf("help lists unimplemented flag %s:\n%s", flagName, stdout.String())
 		}
-	}
-	if strings.Contains(stdout.String(), "--qa") {
-		t.Fatalf("help must not list --qa before it ships:\n%s", stdout.String())
 	}
 }
 
@@ -321,11 +347,6 @@ func TestRunImplementValidationFailures(t *testing.T) {
 			name:    "unsupported agent",
 			args:    []string{"implement", "--spec", implementTestSlug, "--agent", "gemini"},
 			message: `unsupported Agent "gemini"`,
-		},
-		{
-			name:    "qa flag not shipped",
-			args:    []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--qa"},
-			message: "flag provided but not defined: -qa",
 		},
 		{
 			name:    "unexpected argument",
@@ -728,6 +749,201 @@ func TestRunImplementStopRequestEndsStoppedWithInterruptMapping(t *testing.T) {
 		t.Fatalf("expected Stopped, got %q", run.State)
 	}
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+// implementJournaledQAEvent returns the Run's daemon.qa event from the Run
+// Event Journal, and whether one was journaled at all.
+func implementJournaledQAEvent(t *testing.T, homeDir string, runID string) (runevent.RunEvent, bool) {
+	t.Helper()
+	ctx := context.Background()
+	reader, err := store.OpenReader(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database reader: %v", err)
+	}
+	defer func() {
+		_ = reader.Close()
+	}()
+	events, err := reader.RunEventsAfter(ctx, runID, 0, 200)
+	if err != nil {
+		t.Fatalf("list journaled Run Events: %v", err)
+	}
+	for _, entry := range events {
+		if entry.Event.Kind == runevent.KindDaemonQA {
+			return entry.Event, true
+		}
+	}
+	return runevent.RunEvent{}, false
+}
+
+func TestRunImplementQAVerdictMatrix(t *testing.T) {
+	reportRel := implementQAReportRelPath()
+	tests := []struct {
+		name        string
+		report      string
+		wantCode    int
+		wantVerdict string
+		wantState   string
+		wantCommit  bool
+		wantDetail  string
+	}{
+		{name: "pass", report: implementQAReport("pass"), wantCode: 0, wantVerdict: "pass", wantState: store.StateClean, wantCommit: true, wantDetail: reportRel},
+		{name: "partial", report: implementQAReport("partial"), wantCode: 1, wantVerdict: "partial", wantState: store.StateUnresolved, wantCommit: true, wantDetail: reportRel},
+		{name: "fail", report: implementQAReport("fail"), wantCode: 1, wantVerdict: "fail", wantState: store.StateUnresolved, wantCommit: true, wantDetail: reportRel},
+		{name: "missing report", report: "", wantCode: 1, wantVerdict: "missing", wantState: store.StateUnresolved, wantCommit: false, wantDetail: "no QA Report found"},
+		{name: "unreadable verdict", report: "---\nsummary: no verdict field\n---\n\n# QA Report\n", wantCode: 1, wantVerdict: "unreadable", wantState: store.StateUnresolved, wantCommit: true, wantDetail: reportRel},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+				{id: "task_01", title: "Build the widget core"},
+			})
+			runner := &implementFakeRunner{
+				gitRoot:      repoDir,
+				statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+				qaReport:     tt.report,
+			}
+			committer, _, _, _ := withImplementCollaborators(t, runner)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--qa", "--no-input"}, &stdout, &stderr)
+
+			if code != tt.wantCode {
+				t.Fatalf("expected exit code %d, got %d (stderr %q)", tt.wantCode, code, stderr.String())
+			}
+			outcomeLine := "Unresolved: 1 completed, 0 failed, 0 skipped, 0 pending.\n"
+			if tt.wantState == store.StateClean {
+				outcomeLine = "Clean: all 1 Task(s) completed.\n"
+			}
+			expected := "task_01 completed — Build the widget core\n" +
+				"qa " + tt.wantVerdict + " — " + tt.wantDetail + "\n" +
+				outcomeLine
+			if stdout.String() != expected {
+				t.Fatalf("expected QA report on stdout:\n%q\ngot:\n%q", expected, stdout.String())
+			}
+			if runner.qaCalls != 1 {
+				t.Fatalf("expected one QA Agent invocation, got %d", runner.qaCalls)
+			}
+			wantCommits := 1
+			if tt.wantCommit {
+				wantCommits = 2
+			}
+			if committer.calls != wantCommits {
+				t.Fatalf("expected %d commit(s), got %d (%v)", wantCommits, committer.calls, committer.messages)
+			}
+			if tt.wantCommit {
+				wantMessage := "docs(qa): qa report for " + implementTestSlug + " (" + tt.wantVerdict + ")\n\nRoundfix-Spec: " + implementTestSlug
+				if committer.messages[len(committer.messages)-1] != wantMessage {
+					t.Fatalf("expected the QA Report in its own commit %q, got %v", wantMessage, committer.messages)
+				}
+			}
+			runID := implementRunIDFromStderr(t, stderr.String())
+			run := implementRunFromStore(t, homeDir, runID)
+			if run.State != tt.wantState {
+				t.Fatalf("expected Run state %q, got %q", tt.wantState, run.State)
+			}
+			event, found := implementJournaledQAEvent(t, homeDir, runID)
+			if !found {
+				t.Fatalf("expected a daemon.qa event in the Run Event Journal, got none")
+			}
+			if !strings.Contains(string(event.Payload), fmt.Sprintf("%q", tt.wantVerdict)) {
+				t.Fatalf("expected the verdict in the daemon.qa payload, got %s", event.Payload)
+			}
+			if tt.wantCommit && !strings.Contains(string(event.Payload), reportRel) {
+				t.Fatalf("expected the report path in the daemon.qa payload, got %s", event.Payload)
+			}
+			assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+		})
+	}
+}
+
+func TestRunImplementQAStepSkippedWhenAnyTaskFails(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build the widget core"},
+		{id: "task_02", title: "Wire the widget API", needs: []string{"task_01"}},
+	})
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusFailed},
+		qaReport:     implementQAReport("pass"),
+	}
+	committer, _, _, _ := withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--qa", "--no-input"}, &stdout, &stderr)
+
+	if code != 1 {
+		t.Fatalf("expected exit code 1, got %d (stderr %q)", code, stderr.String())
+	}
+	expected := "task_01 failed — Build the widget core\n" +
+		"task_02 skipped — Wire the widget API\n" +
+		"Unresolved: 0 completed, 1 failed, 1 skipped, 0 pending.\n"
+	if stdout.String() != expected {
+		t.Fatalf("expected no QA verdict line with a failed Task:\n%q\ngot:\n%q", expected, stdout.String())
+	}
+	if runner.qaCalls != 0 {
+		t.Fatalf("expected the QA step never invoked with a failed Task, got %d QA call(s)", runner.qaCalls)
+	}
+	if committer.calls != 0 {
+		t.Fatalf("expected no commits, got %d", committer.calls)
+	}
+	runID := implementRunIDFromStderr(t, stderr.String())
+	if _, found := implementJournaledQAEvent(t, homeDir, runID); found {
+		t.Fatal("expected no daemon.qa event when the QA step is skipped")
+	}
+}
+
+func TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict(t *testing.T) {
+	tests := []struct {
+		name      string
+		verdict   string
+		wantCode  int
+		wantState string
+	}{
+		{name: "pass ends Clean", verdict: "pass", wantCode: 0, wantState: store.StateClean},
+		{name: "fail ends Unresolved", verdict: "fail", wantCode: 1, wantState: store.StateUnresolved},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+				{id: "task_01", title: "Write the widget guide", status: string(spec.StatusCompleted)},
+				{id: "task_02", title: "Build the widget backend", status: string(spec.StatusCompleted), needs: []string{"task_01"}},
+			})
+			runner := &implementFakeRunner{
+				gitRoot:  repoDir,
+				qaReport: implementQAReport(tt.verdict),
+			}
+			withImplementCollaborators(t, runner)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--qa", "--no-input"}, &stdout, &stderr)
+
+			if code != tt.wantCode {
+				t.Fatalf("expected exit code %d, got %d (stderr %q)", tt.wantCode, code, stderr.String())
+			}
+			outcomeLine := "Unresolved: 2 completed, 0 failed, 0 skipped, 0 pending.\n"
+			if tt.wantState == store.StateClean {
+				outcomeLine = "Clean: all 2 Task(s) completed.\n"
+			}
+			expected := "task_01 completed — Write the widget guide\n" +
+				"task_02 completed — Build the widget backend\n" +
+				"qa " + tt.verdict + " — " + implementQAReportRelPath() + "\n" +
+				outcomeLine
+			if stdout.String() != expected {
+				t.Fatalf("expected QA-only report:\n%q\ngot:\n%q", expected, stdout.String())
+			}
+			if runner.calls != 1 || runner.qaCalls != 1 || len(runner.taskIDs) != 0 {
+				t.Fatalf("expected a Run consisting of only the QA step, got calls=%d qaCalls=%d taskIDs=%v", runner.calls, runner.qaCalls, runner.taskIDs)
+			}
+			run := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
+			if run.Kind != store.KindImplement || run.State != tt.wantState {
+				t.Fatalf("expected a QA-only Run reaching %q, got kind=%q state=%q", tt.wantState, run.Kind, run.State)
+			}
+			assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+		})
+	}
 }
 
 func TestRunImplementInfrastructureFailureEndsFailed(t *testing.T) {

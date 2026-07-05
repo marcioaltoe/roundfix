@@ -98,6 +98,12 @@ func (fixture *taskCycleFixture) plan() TaskPlan {
 	}
 }
 
+func (fixture *taskCycleFixture) qaPlan() TaskPlan {
+	plan := fixture.plan()
+	plan.QA = true
+	return plan
+}
+
 func (fixture *taskCycleFixture) engine(t *testing.T, runner agent.Runner, verifier Verifier, committer Committer, worktree WorktreeSnapshotter) *Engine {
 	t.Helper()
 	engine, err := NewEngine(Dependencies{
@@ -187,7 +193,8 @@ func taskStatusOnDisk(t *testing.T, gitRoot string, id string) string {
 
 // taskFakeRunner scripts per-Task Agent behavior keyed by the Task id it
 // parses from the prompt, mirroring how a real Agent learns its assignment
-// from the prompt contract.
+// from the prompt contract. A QA prompt writes qaReport as the Spec's QA
+// Report, the way the qa-gate Agent does; an empty qaReport writes none.
 type taskFakeRunner struct {
 	calls        *[]string
 	gitRoot      string
@@ -195,6 +202,8 @@ type taskFakeRunner struct {
 	statusByTask map[string]spec.Status
 	errByTask    map[string]error
 	writeByTask  map[string]string
+	qaReport     string
+	qaPrompts    []string
 	seenStates   []string
 	prompts      []string
 	requests     []agent.ExecuteRequest
@@ -210,6 +219,19 @@ func (runner *taskFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest,
 		runner.seenStates = append(runner.seenStates, runStateForTest(runner.store, req.RunID))
 	}
 	taskID := taskIDFromPrompt(req.Prompt)
+	if taskID == "" && strings.Contains(req.Prompt, "Spec QA gate") {
+		runner.qaPrompts = append(runner.qaPrompts, req.Prompt)
+		if runner.qaReport != "" {
+			reportPath := filepath.Join(runner.gitRoot, qaReportRelPathForTest())
+			if err := os.MkdirAll(filepath.Dir(reportPath), 0o755); err != nil {
+				return agent.ExecuteResult{}, err
+			}
+			if err := os.WriteFile(reportPath, []byte(runner.qaReport), 0o644); err != nil {
+				return agent.ExecuteResult{}, err
+			}
+		}
+		return agent.ExecuteResult{LogPath: req.LogPath}, nil
+	}
 	if err := runner.errByTask[taskID]; err != nil {
 		if agent.IsStopError(err) && sink != nil {
 			// Mirror the real runner: a stopped Agent publishes its status
@@ -252,6 +274,16 @@ func taskIDFromPrompt(prompt string) string {
 		}
 	}
 	return ""
+}
+
+const qaReportNameForTest = "qa-report-2026-01-01.md"
+
+func qaReportRelPathForTest() string {
+	return filepath.Join("docs", "specs", taskCycleSlug, "qa", qaReportNameForTest)
+}
+
+func qaReportForTest(verdict string) string {
+	return fmt.Sprintf("---\nverdict: %s\n---\n\n# QA Report\n", verdict)
 }
 
 // taskFakeVerifier records every verification command verbatim and fails
@@ -755,6 +787,173 @@ func TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt(t *testing.T) {
 	}
 	if got := taskStatusOnDisk(t, repoDir, "task_02"); got != string(spec.StatusCompleted) {
 		t.Fatalf("expected forgotten status settled completed, got %q", got)
+	}
+}
+
+func TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport(t *testing.T) {
+	reportRel := qaReportRelPathForTest()
+	tests := []struct {
+		name        string
+		report      string
+		wantVerdict string
+		wantCommit  bool
+	}{
+		{name: "pass", report: qaReportForTest(spec.VerdictPass), wantVerdict: spec.VerdictPass, wantCommit: true},
+		{name: "partial", report: qaReportForTest(spec.VerdictPartial), wantVerdict: spec.VerdictPartial, wantCommit: true},
+		{name: "fail", report: qaReportForTest(spec.VerdictFail), wantVerdict: spec.VerdictFail, wantCommit: true},
+		{name: "missing report", report: "", wantVerdict: "missing", wantCommit: false},
+		{name: "unreadable verdict", report: "---\nsummary: no verdict field\n---\n\n# QA Report\n", wantVerdict: "unreadable", wantCommit: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
+			// Snapshot script: task_01 before/after, then the QA step
+			// before/after — only the QA Report is new in the QA diff.
+			fixture.worktree.snapshots = [][]string{nil, {"src/one.go"}, {"src/one.go"}, {"src/one.go", reportRel}}
+			runner := &taskFakeRunner{
+				calls:        fixture.calls,
+				gitRoot:      fixture.gitRoot,
+				store:        fixture.store,
+				statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+				qaReport:     tt.report,
+			}
+			committer := &engineFakeCommitter{calls: fixture.calls}
+			engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+
+			result, err := engine.TaskCycle(context.Background(), fixture.qaPlan())
+
+			if err != nil {
+				t.Fatalf("task cycle: %v", err)
+			}
+			if result.Completed != 1 || result.Failed != 0 || result.Skipped != 0 {
+				t.Fatalf("unexpected Task counts: %+v", result)
+			}
+			if result.QAVerdict != tt.wantVerdict {
+				t.Fatalf("expected QA verdict %q, got %q", tt.wantVerdict, result.QAVerdict)
+			}
+			wantReportPath := reportRel
+			if tt.report == "" {
+				wantReportPath = ""
+			}
+			if result.QAReportPath != wantReportPath {
+				t.Fatalf("expected QA Report path %q, got %q", wantReportPath, result.QAReportPath)
+			}
+			if len(runner.qaPrompts) != 1 || !strings.Contains(runner.qaPrompts[0], "Spec: "+taskCycleSlug) {
+				t.Fatalf("expected one QA prompt naming the Spec, got %v", runner.qaPrompts)
+			}
+			// The QA step runs as the next Batch ordinal after the Tasks.
+			last := runner.requests[len(runner.requests)-1]
+			if last.Batch.Number != 2 {
+				t.Fatalf("expected the QA step as Batch 2, got %d", last.Batch.Number)
+			}
+			qaEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonQA)
+			if len(qaEvents) != 1 || qaEvents[0].Batch != 2 {
+				t.Fatalf("expected one daemon.qa event on the QA Batch, got %+v", qaEvents)
+			}
+			payload := string(qaEvents[0].Payload)
+			if !strings.Contains(payload, fmt.Sprintf("%q", tt.wantVerdict)) || !strings.Contains(payload, wantReportPath) {
+				t.Fatalf("expected daemon.qa payload with verdict and report path, got %s", payload)
+			}
+			if tt.wantCommit {
+				if len(committer.messages) != 2 {
+					t.Fatalf("expected the QA Report committed in its own commit, got %v", committer.messages)
+				}
+				wantMessage := "docs(qa): qa report for " + taskCycleSlug + " (" + tt.wantVerdict + ")\n\nRoundfix-Spec: " + taskCycleSlug
+				if committer.messages[1] != wantMessage {
+					t.Fatalf("expected QA commit message %q, got %q", wantMessage, committer.messages[1])
+				}
+				if got := strings.Join(committer.paths[1], "|"); got != reportRel {
+					t.Fatalf("expected only the QA step's changes in the QA commit, got %q", got)
+				}
+			} else if len(committer.messages) != 1 {
+				t.Fatalf("expected no QA commit for a missing report, got %v", committer.messages)
+			}
+			kinds := fixture.sink.kinds()
+			if kinds[len(kinds)-1] != runevent.KindDaemonOutcome {
+				t.Fatalf("expected the outcome event after the QA step, got %v", kinds)
+			}
+		})
+	}
+}
+
+func TestTaskCycleQAStepSkippedUnlessEveryTaskCompleted(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01"},
+		{id: "task_02", needs: []string{"task_01"}},
+	})
+	runner := &taskFakeRunner{
+		calls:        fixture.calls,
+		gitRoot:      fixture.gitRoot,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusFailed},
+		qaReport:     qaReportForTest(spec.VerdictPass),
+	}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.qaPlan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Failed != 1 || result.Skipped != 1 {
+		t.Fatalf("expected the failed and skipped Tasks settled, got %+v", result)
+	}
+	if len(runner.qaPrompts) != 0 {
+		t.Fatalf("expected the QA step never invoked with a failed Task, got %d QA prompt(s)", len(runner.qaPrompts))
+	}
+	if result.QAVerdict != "" || result.QAReportPath != "" {
+		t.Fatalf("expected no QA verdict when the step is skipped, got %+v", result)
+	}
+	if events := taskEventsOfKind(fixture.sink, runevent.KindDaemonQA); len(events) != 0 {
+		t.Fatalf("expected no daemon.qa event when the step is skipped, got %+v", events)
+	}
+	if len(committer.messages) != 0 {
+		t.Fatalf("expected no commits, got %v", committer.messages)
+	}
+}
+
+func TestTaskCycleQAOnlyRunWhenEveryTaskAlreadyCompleted(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", status: string(spec.StatusCompleted)},
+		{id: "task_02", status: string(spec.StatusCompleted), needs: []string{"task_01"}},
+	})
+	fixture.worktree.snapshots = [][]string{nil, {qaReportRelPathForTest()}}
+	runner := &taskFakeRunner{
+		calls:    fixture.calls,
+		gitRoot:  fixture.gitRoot,
+		store:    fixture.store,
+		qaReport: qaReportForTest(spec.VerdictPass),
+	}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.qaPlan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 0 || result.Skipped != 0 {
+		t.Fatalf("expected no Task executions in a QA-only Run, got %+v", result)
+	}
+	if result.QAVerdict != spec.VerdictPass || result.QAReportPath != qaReportRelPathForTest() {
+		t.Fatalf("expected the pass verdict from the fresh report, got %+v", result)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>commit" {
+		t.Fatalf("expected only the QA Agent run and the QA Report commit, got %q", got)
+	}
+	if len(runner.qaPrompts) != 1 || !strings.Contains(runner.qaPrompts[0], "PRD: ") {
+		t.Fatalf("expected the QA prompt with the PRD path, got %v", runner.qaPrompts)
+	}
+	if runner.requests[0].Batch.Number != 1 {
+		t.Fatalf("expected the QA step as Batch 1 in a QA-only Run, got %d", runner.requests[0].Batch.Number)
+	}
+	for _, state := range runner.seenStates {
+		if state != store.StateResolvingWithAgent {
+			t.Fatalf("expected ResolvingWithAgent during the QA Agent run, got %q", state)
+		}
+	}
+	if len(committer.messages) != 1 || !strings.HasPrefix(committer.messages[0], "docs(qa): qa report for "+taskCycleSlug+" (pass)") {
+		t.Fatalf("expected the QA Report commit, got %v", committer.messages)
 	}
 }
 
