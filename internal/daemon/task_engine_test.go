@@ -102,16 +102,17 @@ type taskSpecSeed struct {
 }
 
 type taskCycleFixture struct {
-	store    *store.Store
-	run      store.Run
-	gitRoot  string
-	graph    *spec.Graph
-	calls    *[]string
-	sink     *captureEventSink
-	progress *bytes.Buffer
-	worktree *engineFakeWorktree
-	pusher   *engineFakePusher
-	source   *engineFakeSource
+	store       *store.Store
+	run         store.Run
+	gitRoot     string
+	artifactDir string
+	graph       *spec.Graph
+	calls       *[]string
+	sink        *captureEventSink
+	progress    *bytes.Buffer
+	worktree    *engineFakeWorktree
+	pusher      *engineFakePusher
+	source      *engineFakeSource
 }
 
 func newTaskCycleFixture(t *testing.T, seeds []taskSpecSeed) *taskCycleFixture {
@@ -119,6 +120,7 @@ func newTaskCycleFixture(t *testing.T, seeds []taskSpecSeed) *taskCycleFixture {
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	gitRoot := t.TempDir()
+	artifactDir := filepath.Join(t.TempDir(), "artifacts")
 	writeSpecDirForTest(t, gitRoot, taskCycleSlug, seeds)
 
 	runStore, err := store.Open(ctx, homeDir)
@@ -144,27 +146,29 @@ func newTaskCycleFixture(t *testing.T, seeds []taskSpecSeed) *taskCycleFixture {
 
 	calls := []string{}
 	return &taskCycleFixture{
-		store:    runStore,
-		run:      run,
-		gitRoot:  gitRoot,
-		graph:    graph,
-		calls:    &calls,
-		sink:     &captureEventSink{},
-		progress: &bytes.Buffer{},
-		worktree: &engineFakeWorktree{},
-		pusher:   &engineFakePusher{calls: &calls},
-		source:   &engineFakeSource{calls: &calls},
+		store:       runStore,
+		run:         run,
+		gitRoot:     gitRoot,
+		artifactDir: artifactDir,
+		graph:       graph,
+		calls:       &calls,
+		sink:        &captureEventSink{},
+		progress:    &bytes.Buffer{},
+		worktree:    &engineFakeWorktree{},
+		pusher:      &engineFakePusher{calls: &calls},
+		source:      &engineFakeSource{calls: &calls},
 	}
 }
 
 func (fixture *taskCycleFixture) plan() TaskPlan {
 	return TaskPlan{
-		RunID:   fixture.run.ID,
-		Session: agent.SessionRefForRun(fixture.run.ID, fixture.gitRoot),
-		WorkDir: fixture.gitRoot,
-		Spec:    fixture.graph.Spec,
-		Tasks:   fixture.graph.Tasks,
-		Runtime: agent.RuntimeSpec{ID: "codex", DisplayName: "Codex"},
+		RunID:       fixture.run.ID,
+		Session:     agent.SessionRefForRun(fixture.run.ID, fixture.gitRoot),
+		WorkDir:     fixture.gitRoot,
+		Spec:        fixture.graph.Spec,
+		Tasks:       fixture.graph.Tasks,
+		Runtime:     agent.RuntimeSpec{ID: "codex", DisplayName: "Codex"},
+		ArtifactDir: fixture.artifactDir,
 	}
 }
 
@@ -277,6 +281,7 @@ type taskFakeRunner struct {
 	seenStates   []string
 	prompts      []string
 	requests     []agent.ExecuteRequest
+	writeLogs    bool
 }
 
 func (runner *taskFakeRunner) Probe(context.Context, agent.RuntimeSpec) error { return nil }
@@ -285,6 +290,14 @@ func (runner *taskFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest,
 	*runner.calls = append(*runner.calls, "agent")
 	runner.prompts = append(runner.prompts, req.Prompt)
 	runner.requests = append(runner.requests, req)
+	if runner.writeLogs {
+		if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {
+			return agent.ExecuteResult{}, err
+		}
+		if err := os.WriteFile(req.LogPath, []byte("fake agent output\n"), 0o644); err != nil {
+			return agent.ExecuteResult{}, err
+		}
+	}
 	if runner.store != nil {
 		runner.seenStates = append(runner.seenStates, runStateForTest(runner.store, req.RunID))
 	}
@@ -416,9 +429,10 @@ func TestTaskCycleExecutesAgentVerifySettleCommitContract(t *testing.T) {
 	// Snapshot script: task_01 before/after, then task_02 before/after.
 	fixture.worktree.snapshots = [][]string{nil, {"src/one.go"}, nil, {"src/two.go"}}
 	runner := &taskFakeRunner{
-		calls:   fixture.calls,
-		gitRoot: fixture.gitRoot,
-		store:   fixture.store,
+		calls:     fixture.calls,
+		gitRoot:   fixture.gitRoot,
+		store:     fixture.store,
+		writeLogs: true,
 		statusByTask: map[string]spec.Status{
 			"task_01": spec.StatusCompleted,
 			"task_02": spec.StatusCompleted,
@@ -467,9 +481,15 @@ func TestTaskCycleExecutesAgentVerifySettleCommitContract(t *testing.T) {
 			t.Fatalf("expected shared Agent Session %#v, got %#v", expectedSession, req.Session)
 		}
 	}
-	expectedLog := filepath.Join(fixture.gitRoot, ".roundfix", "runs", fixture.run.ID, "agent", "batch-001.log")
+	expectedLog := agent.LogPath(fixture.artifactDir, fixture.run.ID, 1)
 	if runner.requests[0].LogPath != expectedLog {
-		t.Fatalf("expected review-path log convention, got %q", runner.requests[0].LogPath)
+		t.Fatalf("expected Artifact Directory log path %q, got %q", expectedLog, runner.requests[0].LogPath)
+	}
+	if _, err := os.Stat(expectedLog); err != nil {
+		t.Fatalf("expected fake Agent log under Artifact Directory: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(fixture.gitRoot, ".roundfix")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected no repo .roundfix directory, got err=%v", err)
 	}
 	if runner.requests[0].GitRoot != fixture.gitRoot {
 		t.Fatalf("expected Agent working directory %q, got %q", fixture.gitRoot, runner.requests[0].GitRoot)
@@ -896,6 +916,7 @@ func TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport(t *testing.T) {
 				store:        fixture.store,
 				statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
 				qaReport:     tt.report,
+				writeLogs:    true,
 			}
 			committer := &engineFakeCommitter{calls: fixture.calls}
 			engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
@@ -925,6 +946,16 @@ func TestTaskCycleQAVerdictMatrixSettlesRunAndCommitsReport(t *testing.T) {
 			last := runner.requests[len(runner.requests)-1]
 			if last.Batch.Number != 2 {
 				t.Fatalf("expected the QA step as Batch 2, got %d", last.Batch.Number)
+			}
+			expectedQALog := agent.LogPath(fixture.artifactDir, fixture.run.ID, 2)
+			if last.LogPath != expectedQALog {
+				t.Fatalf("expected QA Agent log under Artifact Directory %q, got %q", expectedQALog, last.LogPath)
+			}
+			if _, err := os.Stat(expectedQALog); err != nil {
+				t.Fatalf("expected fake QA Agent log under Artifact Directory: %v", err)
+			}
+			if _, err := os.Stat(filepath.Join(fixture.gitRoot, ".roundfix")); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("expected no repo .roundfix directory after QA step, got err=%v", err)
 			}
 			qaEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonQA)
 			if len(qaEvents) != 1 || qaEvents[0].Batch != 2 {

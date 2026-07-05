@@ -19,24 +19,19 @@ import (
 	"roundfix/internal/store"
 )
 
-// specRunArtifactDirName is the documented Artifact Directory default.
-// TaskPlan carries no Artifact Directory, so spec Runs keep Agent logs
-// under the default directory inside the working tree, following the
-// review path's runs/<run-id>/agent/batch-NNN.log convention.
-const specRunArtifactDirName = ".roundfix"
-
 // TaskPlan is the validated input for one Task cycle over an
 // already-created implement Run: the full Task Graph in the deterministic
 // topological order spec.Load produced. WorkDir is the git root and the
 // Agent working directory.
 type TaskPlan struct {
-	RunID   string
-	Session agent.SessionRef
-	WorkDir string
-	Spec    spec.Spec
-	Tasks   []spec.Task
-	Runtime agent.RuntimeSpec
-	QA      bool
+	RunID       string
+	Session     agent.SessionRef
+	WorkDir     string
+	ArtifactDir string
+	Spec        spec.Spec
+	Tasks       []spec.Task
+	Runtime     agent.RuntimeSpec
+	QA          bool
 }
 
 // TaskCycleResult reports what one Task cycle settled. Skipped counts
@@ -213,18 +208,19 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 	if err != nil {
 		return "", fmt.Errorf("build Task prompt for run %q Task %s: %w", plan.RunID, task.ID, err)
 	}
-	logPath := agent.LogPath(filepath.Join(plan.WorkDir, specRunArtifactDirName), plan.RunID, ordinal)
+	logPath := agent.LogPath(plan.ArtifactDir, plan.RunID, ordinal)
 	fmt.Fprintf(engine.deps.Progress, "Task: %s (Batch %03d) %s\n", task.ID, ordinal, task.Title)
 	fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
 
 	_, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
-		Runtime: plan.Runtime,
-		Session: plan.Session,
-		RunID:   plan.RunID,
-		Batch:   rounds.Batch{Number: ordinal},
-		LogPath: logPath,
-		Prompt:  prompt,
-		GitRoot: plan.WorkDir,
+		Runtime:     plan.Runtime,
+		Session:     plan.Session,
+		RunID:       plan.RunID,
+		Batch:       rounds.Batch{Number: ordinal},
+		LogPath:     logPath,
+		ArtifactDir: plan.ArtifactDir,
+		Prompt:      prompt,
+		GitRoot:     plan.WorkDir,
 	}, engine.deps.Sink)
 	if runErr != nil {
 		if isStop(ctx, runErr) {
@@ -410,17 +406,18 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, ordinal int)
 	if err != nil {
 		return "", "", fmt.Errorf("build QA prompt for run %q: %w", plan.RunID, err)
 	}
-	logPath := agent.LogPath(filepath.Join(plan.WorkDir, specRunArtifactDirName), plan.RunID, ordinal)
+	logPath := agent.LogPath(plan.ArtifactDir, plan.RunID, ordinal)
 	fmt.Fprintf(engine.deps.Progress, "QA step (Batch %03d) for Spec %s\n", ordinal, plan.Spec.Slug)
 	fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
 	if _, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
-		Runtime: plan.Runtime,
-		Session: plan.Session,
-		RunID:   plan.RunID,
-		Batch:   rounds.Batch{Number: ordinal},
-		LogPath: logPath,
-		Prompt:  prompt,
-		GitRoot: plan.WorkDir,
+		Runtime:     plan.Runtime,
+		Session:     plan.Session,
+		RunID:       plan.RunID,
+		Batch:       rounds.Batch{Number: ordinal},
+		LogPath:     logPath,
+		ArtifactDir: plan.ArtifactDir,
+		Prompt:      prompt,
+		GitRoot:     plan.WorkDir,
 	}, engine.deps.Sink); runErr != nil {
 		return "", "", fmt.Errorf("run Agent for run %q QA step: %w", plan.RunID, runErr)
 	}
@@ -574,10 +571,11 @@ func (engine *Engine) publishTaskEvent(ctx context.Context, runID string, ordina
 
 func validateTaskPlan(plan TaskPlan) error {
 	required := map[string]string{
-		"Run ID":        plan.RunID,
-		"Agent Session": plan.Session.Name,
-		"working tree":  plan.WorkDir,
-		"Spec slug":     plan.Spec.Slug,
+		"Run ID":             plan.RunID,
+		"Agent Session":      plan.Session.Name,
+		"working tree":       plan.WorkDir,
+		"Artifact Directory": plan.ArtifactDir,
+		"Spec slug":          plan.Spec.Slug,
 	}
 	for label, value := range required {
 		if strings.TrimSpace(value) == "" {

@@ -158,6 +158,8 @@ type implementFakeRunner struct {
 	taskIDs      []string
 	qaReport     string
 	qaCalls      int
+	logPaths     []string
+	writeLogs    bool
 }
 
 func (runner *implementFakeRunner) Probe(context.Context, agent.RuntimeSpec) error {
@@ -166,6 +168,15 @@ func (runner *implementFakeRunner) Probe(context.Context, agent.RuntimeSpec) err
 
 func (runner *implementFakeRunner) Run(_ context.Context, req agent.ExecuteRequest, _ runevent.Sink) (agent.ExecuteResult, error) {
 	runner.calls++
+	runner.logPaths = append(runner.logPaths, req.LogPath)
+	if runner.writeLogs {
+		if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {
+			return agent.ExecuteResult{}, err
+		}
+		if err := os.WriteFile(req.LogPath, []byte("fake agent output\n"), 0o644); err != nil {
+			return agent.ExecuteResult{}, err
+		}
+	}
 	taskID := implementTaskIDFromPrompt(req.Prompt)
 	if taskID == "" && strings.Contains(req.Prompt, "Spec QA gate") {
 		runner.qaCalls++
@@ -661,6 +672,67 @@ func TestRunImplementExecutesSpecEndToEnd(t *testing.T) {
 		t.Fatalf("unexpected Run row: %#v", run)
 	}
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+func TestRunImplementUsesConfiguredArtifactDirectoryForAgentLogs(t *testing.T) {
+	tests := []struct {
+		name         string
+		config       string
+		expectedBase func(homeDir string, repoDir string) string
+	}{
+		{
+			name:   "repo relative",
+			config: "var/roundfix-artifacts",
+			expectedBase: func(_ string, repoDir string) string {
+				return filepath.Join(repoDir, "var", "roundfix-artifacts")
+			},
+		},
+		{
+			name:   "home relative",
+			config: "~/roundfix-artifacts",
+			expectedBase: func(homeDir string, _ string) string {
+				return filepath.Join(homeDir, "roundfix-artifacts")
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+				{id: "task_01", title: "Build the widget core"},
+			})
+			mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), fmt.Sprintf("defaults:\n  artifact_dir: %q\n", tt.config))
+			gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+			gitImplement(t, repoDir, "commit", "-m", "configure artifact dir")
+			runner := &implementFakeRunner{
+				gitRoot:      repoDir,
+				statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+				writeLogs:    true,
+			}
+			withImplementCollaborators(t, runner)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+			if code != 0 {
+				t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
+			}
+			runID := implementRunIDFromStderr(t, stderr.String())
+			expectedLog := agent.LogPath(tt.expectedBase(homeDir, repoDir), runID, 1)
+			if len(runner.logPaths) != 1 || runner.logPaths[0] != expectedLog {
+				t.Fatalf("expected Agent log path %q, got %v", expectedLog, runner.logPaths)
+			}
+			if _, err := os.Stat(expectedLog); err != nil {
+				t.Fatalf("expected fake Agent log under configured Artifact Directory: %v", err)
+			}
+			if !strings.Contains(stderr.String(), "Agent log: "+expectedLog) {
+				t.Fatalf("expected stderr to name Agent log %q, got %q", expectedLog, stderr.String())
+			}
+			if _, err := os.Stat(filepath.Join(repoDir, ".roundfix")); !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("expected no repo .roundfix directory, got err=%v", err)
+			}
+		})
+	}
 }
 
 func TestRunImplementUsesOneAgentSessionPerRunAndCloses(t *testing.T) {

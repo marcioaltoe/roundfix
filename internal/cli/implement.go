@@ -75,6 +75,12 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printPreflightFailure("implement", fmt.Errorf("implement requires a git repository working tree: %w", err), stderr)
 		return exitPreflight
 	}
+	artifactDir, err := roundconfig.ValidateArtifactDirectory(req.artifactDir, gitState.Root, loadedConfig.HomeDir)
+	if err != nil {
+		printPreflightFailure("implement", err, stderr)
+		return exitPreflight
+	}
+	req.artifactDir = artifactDir
 	graph, err := spec.Load(gitState.Root, req.spec)
 	if err != nil {
 		// spec.Load returns typed validation errors whose messages name the
@@ -171,7 +177,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 	defer ui.Close()
 
-	cycleResult, err := executeImplementCycle(ctx, gitState, run.ID, graph, req.qa, runtime, collaborators, runStore, ui)
+	cycleResult, err := executeImplementCycle(ctx, gitState, run.ID, graph, req.artifactDir, req.qa, runtime, collaborators, runStore, ui)
 	if err != nil {
 		if isStopRequest(ctx, err) {
 			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
@@ -233,6 +239,7 @@ func parseImplementCommand(args []string, config roundconfig.Config) (commandReq
 		name:            "implement",
 		agent:           config.Defaults.Agent,
 		model:           config.Defaults.Model,
+		artifactDir:     config.Defaults.ArtifactDir,
 		agentFullAccess: config.Defaults.AgentFullAccess,
 	}
 	fs := flag.NewFlagSet("implement", flag.ContinueOnError)
@@ -290,7 +297,7 @@ func implementSpecOptions(gitRoot string) ([]string, error) {
 
 // executeImplementCycle wires the Run engine exactly like the resolve path
 // and runs one Task cycle over the full graph.
-func executeImplementCycle(ctx context.Context, gitState preflight.GitState, runID string, graph *spec.Graph, qa bool, runtime agent.RuntimeSpec, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
+func executeImplementCycle(ctx context.Context, gitState preflight.GitState, runID string, graph *spec.Graph, artifactDir string, qa bool, runtime agent.RuntimeSpec, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
 	fmt.Fprintf(ui.progress, "%s: implement selected Spec %s with %d Task(s); %d to execute this Run.\n", app.Name, graph.Spec.Slug, len(graph.Tasks), countNonCompletedTasks(graph.Tasks))
 	fmt.Fprintf(ui.progress, "Implement Run: %s\n", runID)
 	fmt.Fprintf(ui.progress, "Working tree: %s on branch %s\n", gitState.Root, gitState.Branch)
@@ -314,13 +321,14 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, run
 		return daemon.TaskCycleResult{}, err
 	}
 	return engine.TaskCycle(ctx, daemon.TaskPlan{
-		RunID:   runID,
-		Session: agent.SessionRefForRun(runID, gitState.Root),
-		WorkDir: gitState.Root,
-		Spec:    graph.Spec,
-		Tasks:   graph.Tasks,
-		Runtime: runtime,
-		QA:      qa,
+		RunID:       runID,
+		Session:     agent.SessionRefForRun(runID, gitState.Root),
+		WorkDir:     gitState.Root,
+		ArtifactDir: artifactDir,
+		Spec:        graph.Spec,
+		Tasks:       graph.Tasks,
+		Runtime:     runtime,
+		QA:          qa,
 	})
 }
 
