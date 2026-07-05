@@ -52,6 +52,81 @@ func TestRunWaitsFetchesResolvesToClean(t *testing.T) {
 	}
 }
 
+func TestRunSkipsQuietPeriodWhenReviewAlreadySettledAtStart(t *testing.T) {
+	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
+	sleeper := &fakeSleeper{clock: clock}
+	status := &fakeStatusSource{statuses: []Status{{State: StatusSettled}}}
+	fetchCalls := 0
+
+	result, err := Run(context.Background(), validRequest(), Dependencies{
+		StatusSource: status,
+		Fetcher: FetchFunc(func(_ context.Context, round int) (FetchResult, error) {
+			fetchCalls++
+			assertSleeps(t, sleeper.sleeps)
+			return FetchResult{Round: round, Issues: 0}, nil
+		}),
+		Resolver: &fakeResolver{},
+		Clock:    clock,
+		Sleeper:  sleeper,
+	})
+
+	if err != nil {
+		t.Fatalf("watch run: %v", err)
+	}
+	if result.Outcome != store.StateClean {
+		t.Fatalf("expected Clean, got %q", result.Outcome)
+	}
+	if status.calls != 1 {
+		t.Fatalf("expected one status check, got %d", status.calls)
+	}
+	if fetchCalls != 1 {
+		t.Fatalf("expected one fetch, got %d", fetchCalls)
+	}
+	assertSleeps(t, sleeper.sleeps)
+}
+
+func TestRunSleepsBetweenStatusChecksAndKeepsQuietPeriodWhenReviewSettlesDuringRun(t *testing.T) {
+	req := validRequest()
+	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
+	sleeper := &fakeSleeper{clock: clock}
+	statusCalls := 0
+
+	result, err := Run(context.Background(), req, Dependencies{
+		StatusSource: StatusFunc(func(_ context.Context, _ StatusRequest) (Status, error) {
+			statusCalls++
+			switch statusCalls {
+			case 1:
+				assertSleeps(t, sleeper.sleeps)
+				return Status{State: StatusPending}, nil
+			case 2:
+				assertSleeps(t, sleeper.sleeps, req.PollInterval)
+				return Status{State: StatusPending}, nil
+			case 3:
+				assertSleeps(t, sleeper.sleeps, req.PollInterval, req.PollInterval)
+				return Status{State: StatusSettled}, nil
+			default:
+				t.Fatalf("unexpected status call %d", statusCalls)
+				return Status{}, nil
+			}
+		}),
+		Fetcher:  &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 0}}},
+		Resolver: &fakeResolver{},
+		Clock:    clock,
+		Sleeper:  sleeper,
+	})
+
+	if err != nil {
+		t.Fatalf("watch run: %v", err)
+	}
+	if result.Outcome != store.StateClean {
+		t.Fatalf("expected Clean, got %q", result.Outcome)
+	}
+	if statusCalls != 3 {
+		t.Fatalf("expected three status checks, got %d", statusCalls)
+	}
+	assertSleeps(t, sleeper.sleeps, req.PollInterval, req.PollInterval, req.QuietPeriod)
+}
+
 func TestRunTimesOutAndOffersManualReviewTrigger(t *testing.T) {
 	req := validRequest()
 	req.ReviewTimeout = 2 * time.Second
@@ -141,7 +216,12 @@ func TestRunStopsWhenBudgetExceeded(t *testing.T) {
 	req.QuietPeriod = 2 * time.Second
 	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
 	sleeper := &fakeSleeper{clock: clock}
-	status := &fakeStatusSource{statuses: []Status{{State: StatusSettled}}}
+	status := &fakeStatusSource{
+		statuses: []Status{
+			{State: StatusPending},
+			{State: StatusSettled},
+		},
+	}
 	fetcher := &fakeFetcher{}
 	resolver := &fakeResolver{}
 
@@ -242,6 +322,18 @@ func (sleeper *fakeSleeper) saw(duration time.Duration) bool {
 		}
 	}
 	return false
+}
+
+func assertSleeps(t *testing.T, got []time.Duration, want ...time.Duration) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("expected sleeps %#v, got %#v", want, got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("expected sleeps %#v, got %#v", want, got)
+		}
+	}
 }
 
 type fakeStatusSource struct {

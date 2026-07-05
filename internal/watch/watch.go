@@ -150,10 +150,11 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 		if budgetExceeded(req, startedAt, clock.Now()) {
 			return Result{Outcome: store.StateBudgetExceeded, Rounds: round - 1}, nil
 		}
-		status, err := waitForSettled(ctx, req, deps.StatusSource, clock, sleeper, publisher)
+		settledWait, err := waitForSettled(ctx, req, deps.StatusSource, clock, sleeper, publisher)
 		if err != nil {
 			return Result{Outcome: store.StateFailed, Rounds: round - 1}, err
 		}
+		status := settledWait.status
 		if status.State != StatusSettled {
 			return Result{
 				Outcome:             store.StateTimedOut,
@@ -161,16 +162,19 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 				ManualReviewCommand: "@coderabbitai review",
 			}, nil
 		}
-		if req.QuietPeriod > 0 {
-			if err := publisher.publish(ctx, runevent.KindDaemonQuietPeriod,
-				fmt.Sprintf("Quiet period: waiting %s before fetching Round %03d.", req.QuietPeriod, round),
-				map[string]any{"seconds": req.QuietPeriod.Seconds(), "round": round},
-			); err != nil {
+		settledBeforeRun := round == 1 && settledWait.statusChecks == 1
+		if !settledBeforeRun {
+			if req.QuietPeriod > 0 {
+				if err := publisher.publish(ctx, runevent.KindDaemonQuietPeriod,
+					fmt.Sprintf("Quiet period: waiting %s before fetching Round %03d.", req.QuietPeriod, round),
+					map[string]any{"seconds": req.QuietPeriod.Seconds(), "round": round},
+				); err != nil {
+					return Result{Outcome: store.StateFailed, Rounds: round - 1}, err
+				}
+			}
+			if err := sleeper.Sleep(ctx, req.QuietPeriod); err != nil {
 				return Result{Outcome: store.StateFailed, Rounds: round - 1}, err
 			}
-		}
-		if err := sleeper.Sleep(ctx, req.QuietPeriod); err != nil {
-			return Result{Outcome: store.StateFailed, Rounds: round - 1}, err
 		}
 		if budgetExceeded(req, startedAt, clock.Now()) {
 			return Result{Outcome: store.StateBudgetExceeded, Rounds: round - 1}, nil
@@ -218,33 +222,43 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 	return Result{Outcome: store.StateMaxRoundsReached, Rounds: req.MaxRounds}, nil
 }
 
-func waitForSettled(ctx context.Context, req Request, source StatusSource, clock Clock, sleeper Sleeper, publisher watchEventPublisher) (Status, error) {
+type settledWaitResult struct {
+	status       Status
+	statusChecks int
+}
+
+func waitForSettled(ctx context.Context, req Request, source StatusSource, clock Clock, sleeper Sleeper, publisher watchEventPublisher) (settledWaitResult, error) {
 	startedAt := clock.Now()
+	statusChecks := 0
 	for {
 		if err := ctx.Err(); err != nil {
-			return Status{}, err
+			return settledWaitResult{}, err
 		}
 		status, err := source.Status(ctx, StatusRequest{
 			PRNumber: req.PRNumber,
 			HeadSHA:  req.HeadSHA,
 		})
+		statusChecks++
 		if err != nil {
-			return Status{}, err
+			return settledWaitResult{}, err
 		}
 		if err := publisher.publish(ctx, runevent.KindDaemonReviewStatus,
 			fmt.Sprintf("Review Source status: %s", status.State),
 			map[string]any{"state": status.State, "detail": status.Detail},
 		); err != nil {
-			return Status{}, err
+			return settledWaitResult{}, err
 		}
 		if status.State == StatusSettled {
-			return status, nil
+			return settledWaitResult{status: status, statusChecks: statusChecks}, nil
 		}
 		if clock.Now().Sub(startedAt) >= req.ReviewTimeout {
-			return Status{State: store.StateTimedOut, Detail: status.Detail}, nil
+			return settledWaitResult{
+				status:       Status{State: store.StateTimedOut, Detail: status.Detail},
+				statusChecks: statusChecks,
+			}, nil
 		}
 		if err := sleeper.Sleep(ctx, req.PollInterval); err != nil {
-			return Status{}, err
+			return settledWaitResult{}, err
 		}
 	}
 }
