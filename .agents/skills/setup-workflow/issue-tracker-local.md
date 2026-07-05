@@ -18,7 +18,3 @@ There is no external tracker: the task files written by `write-tasks` **are** th
 ## When a skill says "fetch the relevant ticket"
 
 Read the `task_NN.md` file in the spec folder. The user will normally pass the spec slug or the task file path directly.
-
-## When the repo uses the knowledge workspace
-
-If `docs` is a symlink into `.knowledge/`, these files physically live in the central knowledge repository — commit them with `git -C .knowledge …` per the `knowledge-workspace` skill.

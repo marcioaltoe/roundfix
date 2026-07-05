@@ -22,13 +22,12 @@ issues. Nothing further to do.
 Read the `task_NN.md` file in the spec folder. The user will normally pass the spec slug or the
 task file path directly.
 
-## Knowledge workspace
+## Repository ownership
 
-In this repo `docs` is a symlink into `.knowledge/` — spec artifacts physically live in the
-central knowledge repository. Commit them with `git -C .knowledge …` per the
-`knowledge-workspace` skill, never in the code repository.
+This repo stores `docs/` directly in the code repository. Commit docs changes through the normal
+Roundfix repository workflow.
 
-## Legacy planning artifacts
+## Non-tracker docs
 
-`docs/plans/`, `docs/handoffs/`, and `docs/_inbox/` predate the spec workflow and are read-only
-history. New work always goes to `docs/specs/<feature-slug>/`.
+`docs/handoffs/` and `docs/_inbox/` are supporting documentation, not the issue tracker. New
+spec work always goes to `docs/specs/<feature-slug>/`.

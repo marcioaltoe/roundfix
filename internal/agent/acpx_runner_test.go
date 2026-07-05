@@ -42,6 +42,70 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func TestACPXProbePassesWhenVersionMatchesPin(t *testing.T) {
+	err, invocations := runFakeACPXProbe(t, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, PinnedACPXVersion)
+
+	if err != nil {
+		t.Fatalf("expected matching acpx version to pass, got %v", err)
+	}
+	want := [][]string{{"--version"}}
+	if !reflect.DeepEqual(invocations, want) {
+		t.Fatalf("unexpected probe invocations\nwant: %#v\ngot:  %#v", want, invocations)
+	}
+}
+
+func TestACPXProbeMissingBinaryNamesInstallCommand(t *testing.T) {
+	err := (ACPXRunner{Command: filepath.Join(t.TempDir(), "missing-acpx")}).Probe(context.Background(), RuntimeSpec{ID: "codex", Protocol: ProtocolACP})
+
+	if err == nil {
+		t.Fatal("expected missing acpx binary to fail")
+	}
+	message := err.Error()
+	if !strings.Contains(message, acpxInstallCommand()) {
+		t.Fatalf("expected install command in probe error, got %q", message)
+	}
+	if strings.Count(message, acpxInstallCommand()) != 1 {
+		t.Fatalf("expected exactly one install command, got %q", message)
+	}
+}
+
+func TestACPXProbeMismatchedVersionNamesFoundRequiredAndInstallCommand(t *testing.T) {
+	const foundVersion = "0.11.0"
+
+	err, invocations := runFakeACPXProbe(t, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, foundVersion)
+
+	if err == nil {
+		t.Fatal("expected mismatched acpx version to fail")
+	}
+	message := err.Error()
+	for _, want := range []string{foundVersion, PinnedACPXVersion, acpxInstallCommand(), "upgrade or downgrade"} {
+		if !strings.Contains(message, want) {
+			t.Fatalf("expected probe error to contain %q, got %q", want, message)
+		}
+	}
+	if strings.Count(message, acpxInstallCommand()) != 1 {
+		t.Fatalf("expected exactly one install command, got %q", message)
+	}
+	wantInvocations := [][]string{{"--version"}}
+	if !reflect.DeepEqual(invocations, wantInvocations) {
+		t.Fatalf("unexpected probe invocations\nwant: %#v\ngot:  %#v", wantInvocations, invocations)
+	}
+}
+
+func TestACPXProbeCommandOverrideStillChecksACPXClient(t *testing.T) {
+	runtime := RuntimeSpec{ID: "codex-custom", Protocol: ProtocolStdio, Command: "custom-acp --stdio"}
+
+	err, invocations := runFakeACPXProbe(t, runtime, PinnedACPXVersion)
+
+	if err != nil {
+		t.Fatalf("expected command override probe to pass through acpx, got %v", err)
+	}
+	want := [][]string{{"--version"}}
+	if !reflect.DeepEqual(invocations, want) {
+		t.Fatalf("expected command override to probe acpx only\nwant: %#v\ngot:  %#v", want, invocations)
+	}
+}
+
 func TestACPXPromptArgsMatchTechSpecOrder(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -660,6 +724,18 @@ func runFakeACPXPrompt(t *testing.T, prompt fakeACPXPrompt) fakeACPXRun {
 		args:    readJSONArgs(t, argsPath),
 		prompt:  readFile(t, promptPath),
 	}
+}
+
+func runFakeACPXProbe(t *testing.T, runtime RuntimeSpec, version string) (error, [][]string) {
+	t.Helper()
+	dir := t.TempDir()
+	invocationsPath := filepath.Join(dir, "invocations.jsonl")
+	t.Setenv(fakeACPXEnv, "1")
+	t.Setenv(fakeACPXInvokes, invocationsPath)
+	t.Setenv(fakeACPXStdout, version+"\n")
+
+	err := (ACPXRunner{Command: os.Args[0]}).Probe(context.Background(), runtime)
+	return err, readJSONInvocations(t, invocationsPath)
 }
 
 func readJSONInvocations(t *testing.T, path string) [][]string {

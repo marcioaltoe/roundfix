@@ -77,6 +77,11 @@ Feature specs live under `docs/specs/<feature-slug>/` (`_idea.md`, `_prd.md`,
 `_tasks.md`; task status lives only in each task file's frontmatter. Shipped
 specs are archived to `docs/specs/_archived/`.
 
+### Spec routing
+
+Pick the pipeline entry point by the change — large initiative, feature,
+refactor/bugfix, or trivial. See `docs/agents/spec-routing.md`.
+
 ## Skill dispatch
 
 Before editing, identify the task domain and **activate every matching skill**:

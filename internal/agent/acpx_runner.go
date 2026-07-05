@@ -22,6 +22,7 @@ import (
 
 const (
 	defaultACPXCommand              = "acpx"
+	PinnedACPXVersion               = "0.12.0"
 	acpxPermissionDeniedStatus      = "permissions_denied"
 	acpxExitReasonAgentProtocol     = "agent/protocol error"
 	acpxExitReasonTimeout           = "timeout"
@@ -99,6 +100,33 @@ func (err *InfrastructureError) Error() string {
 	return message
 }
 
+type ACPXProbeError struct {
+	Command         string
+	FoundVersion    string
+	RequiredVersion string
+	Missing         bool
+	Err             error
+}
+
+func (err ACPXProbeError) Error() string {
+	install := acpxInstallCommand()
+	if err.Missing {
+		return fmt.Sprintf("acpx is required but was not found on PATH; install it with: %s", install)
+	}
+	if err.FoundVersion != "" {
+		return fmt.Sprintf("acpx version mismatch: found %s, but Roundfix requires %s; upgrade or downgrade with: %s", err.FoundVersion, err.RequiredVersion, install)
+	}
+	message := "acpx --version failed"
+	if err.Err != nil {
+		message = fmt.Sprintf("%s: %v", message, err.Err)
+	}
+	return fmt.Sprintf("%s; install it with: %s", message, install)
+}
+
+func (err ACPXProbeError) Unwrap() error {
+	return err.Err
+}
+
 type acpxJSONRPCMessage struct {
 	Method string            `json:"method"`
 	Params json.RawMessage   `json:"params"`
@@ -115,6 +143,33 @@ type acpxStreamResult struct {
 	output     string
 	stopReason string
 	err        error
+}
+
+func (runner ACPXRunner) Probe(ctx context.Context, _ RuntimeSpec) error {
+	command := runner.command()
+	if _, err := exec.LookPath(command); err != nil {
+		return ACPXProbeError{Command: command, RequiredVersion: PinnedACPXVersion, Missing: true, Err: err}
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	cmd := exec.CommandContext(ctx, command, "--version")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return ctxErr
+		}
+		detail := strings.TrimSpace(string(output))
+		if detail == "" {
+			detail = err.Error()
+		}
+		return ACPXProbeError{Command: command, RequiredVersion: PinnedACPXVersion, Err: errors.New(detail)}
+	}
+	foundVersion := strings.TrimSpace(string(output))
+	if foundVersion != PinnedACPXVersion {
+		return ACPXProbeError{Command: command, FoundVersion: displayACPXVersion(foundVersion), RequiredVersion: PinnedACPXVersion}
+	}
+	return nil
 }
 
 func (runner *ACPXRunner) Run(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error) {
@@ -334,6 +389,17 @@ func (runner ACPXRunner) command() string {
 		return strings.TrimSpace(runner.Command)
 	}
 	return defaultACPXCommand
+}
+
+func acpxInstallCommand() string {
+	return "npm install -g acpx@" + PinnedACPXVersion
+}
+
+func displayACPXVersion(version string) string {
+	if strings.TrimSpace(version) == "" {
+		return "<empty>"
+	}
+	return version
 }
 
 func (runner ACPXRunner) runACPXCommand(ctx context.Context, args []string) error {

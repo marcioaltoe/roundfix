@@ -1,6 +1,6 @@
 ---
 name: setup-workflow
-description: Configure a repo for the CONTEXT-driven spec workflow — scaffold docs/specs/, docs/adr/, and the CONTEXT.md glossary, seed the docs/agents/ usage guides (issue tracker, spec routing, domain docs, triage labels), and wire the knowledge workspace when the repo uses one. Run when preparing a repo for the write-prd/write-tasks/implement pipeline; re-run to refresh — it overwrites the skill-owned docs/agents/ files and prunes deprecated content.
+description: Configure a repo for the CONTEXT-driven spec workflow — scaffold docs/specs/, docs/adr/, and the CONTEXT.md glossary, and seed the docs/agents/ usage guides (issue tracker, spec routing, domain docs, triage labels). Run when preparing a repo for the write-prd/write-tasks/implement pipeline; re-run to refresh — it overwrites the skill-owned docs/agents/ files and prunes deprecated content.
 disable-model-invocation: true
 metadata:
   category: setup
@@ -30,7 +30,6 @@ This is a prompt-driven skill, not a deterministic script. Explore, present what
 Look at the current repo to understand its starting state. Read whatever exists; don't assume:
 
 - `AGENTS.md` and `CLAUDE.md` at the repo root — does either exist? Is there already an `## Agent skills` section? Is `CLAUDE.md` a symlink to `AGENTS.md` (the usual convention)?
-- **Knowledge workspace**: are `CONTEXT.md` and `docs` symlinks into `.knowledge/`? If so, the docs tree lives in the central knowledge repository — the scaffolding below happens _through_ the symlinks, and every docs commit follows the `knowledge-workspace` skill (`git -C .knowledge …`), never the code repo. If the symlinks are absent but the project should use the workspace, point the user at `scripts/knowledge-bootstrap.sh` before continuing.
 - `CONTEXT.md` / `CONTEXT-MAP.md` at the repo root
 - `docs/specs/` and `docs/specs/_archived/` — layout already in place? Any active specs?
 - `docs/adr/` and any `src/*/docs/adr/` directories
@@ -134,8 +133,6 @@ Then write the docs files using the seed templates in this skill folder as a sta
 - [spec-routing.md](./spec-routing.md) — pipeline entry-point routing and the definition of done
 - [triage-labels.md](./triage-labels.md) — label mapping (Section C only)
 - [domain.md](./domain.md) — domain doc consumer rules + layout
-
-**Knowledge workspace note:** when `docs` is a symlink into `.knowledge/`, everything written above lands in the knowledge repository — remind the user (or the committing agent) that these files are committed via `git -C .knowledge …` per the `knowledge-workspace` skill, and the code repo commits only the symlinks and `AGENTS.md`.
 
 ### 5. Done
 

@@ -1153,6 +1153,66 @@ func TestRunResolveProbeFailureDoesNotCreateRun(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
+func TestRunResolveACPXProbeFailureReportsActionablePreflight(t *testing.T) {
+	installCommand := "npm install -g acpx@" + agent.PinnedACPXVersion
+	tests := []struct {
+		name     string
+		runner   agent.Runner
+		contains []string
+	}{
+		{
+			name:   "missing binary",
+			runner: &agent.ACPXRunner{Command: filepath.Join(t.TempDir(), "missing-acpx")},
+			contains: []string{
+				"acpx is required but was not found on PATH",
+				installCommand,
+			},
+		},
+		{
+			name:   "version mismatch",
+			runner: &agent.ACPXRunner{Command: fakeACPXVersionCommand(t, "0.11.0")},
+			contains: []string{
+				"found 0.11.0",
+				"requires " + agent.PinnedACPXVersion,
+				"upgrade or downgrade",
+				installCommand,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			withSuccessfulPreflight(t, repoDir)
+			withAgentRunner(t, tt.runner)
+			withFakeWorktree(t)
+			persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+			if code != 2 {
+				t.Fatalf("expected probe preflight exit 2, got %d", code)
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("expected no stdout, got %q", stdout.String())
+			}
+			for _, want := range tt.contains {
+				if !strings.Contains(stderr.String(), want) {
+					t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())
+				}
+			}
+			if strings.Count(stderr.String(), installCommand) != 1 {
+				t.Fatalf("expected one actionable install command, got %q", stderr.String())
+			}
+			if !strings.Contains(stderr.String(), "Roundfix did not create a Run") {
+				t.Fatalf("expected no-side-effects line, got %q", stderr.String())
+			}
+			assertNoRunDatabase(t, homeDir)
+		})
+	}
+}
+
 func TestRunResolveAgentFailureMarksBatchFailed(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
@@ -1918,6 +1978,22 @@ func withAgentRunner(t *testing.T, runner agent.Runner) {
 	overrideCollaborators(t, func(collaborators *engineCollaborators) {
 		collaborators.runner = runner
 	})
+}
+
+func fakeACPXVersionCommand(t *testing.T, version string) string {
+	t.Helper()
+	script := filepath.Join(t.TempDir(), "acpx")
+	body := "#!/bin/sh\n" +
+		"if [ \"$1\" = \"--version\" ]; then\n" +
+		"  printf '%s\\n' '" + version + "'\n" +
+		"  exit 0\n" +
+		"fi\n" +
+		"printf 'unexpected acpx invocation: %s\\n' \"$*\" >&2\n" +
+		"exit 2\n"
+	if err := os.WriteFile(script, []byte(body), 0o755); err != nil {
+		t.Fatalf("write fake acpx command: %v", err)
+	}
+	return script
 }
 
 func withVerifier(t *testing.T, verifier daemon.Verifier) {

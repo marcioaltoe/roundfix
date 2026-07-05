@@ -162,13 +162,6 @@
       "skillPath": "skills/05-implementation-loop/implement-task/SKILL.md",
       "computedHash": "7ba176d5e1013e7bc45635dc869d20a70f7605c60a73db55ba7299cd25eb100e"
     },
-    "knowledge-workspace": {
-      "source": "marcioaltoe/skills",
-      "ref": "main",
-      "sourceType": "github",
-      "skillPath": "skills/00-setup/knowledge-workspace/SKILL.md",
-      "computedHash": "9305c41a879e239ed26871d1cd01ac601e77c8c3c56d9e4a1b81efa685aa9263"
-    },
     "no-workarounds": {
       "source": "marcioaltoe/skills",
       "ref": "main",
