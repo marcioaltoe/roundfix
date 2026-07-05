@@ -72,6 +72,18 @@ _Avoid_: ACP session, chat, conversation, thread
 The state where the pull request's Review Source status check on the pushed head commit reports success with no new Review Issues, letting a watch Run end Clean.
 _Avoid_: mergeable, green check, approved
 
+**Run Worktree**:
+The isolated git worktree a Run executes in — created on the Run Branch at Run start, recorded on the Run, removed after a Clean integrated outcome, and kept as the inspection and settle surface otherwise.
+_Avoid_: Sandbox, scratch dir, user checkout
+
+**Run Branch**:
+The named branch (`roundfix/run-<id>`) that carries a Run's commits inside its Run Worktree until integration moves them to the user's branch.
+_Avoid_: Temp branch, detached HEAD, feature branch
+
+**Integration Pending**:
+A terminal Run outcome where the Run's work completed but its commits could not be fast-forwarded onto the user's branch (local changes overlap or the branch diverged); the commits stay on the Run Branch and the report names the integration command.
+_Avoid_: Failure, conflict, silent divergence
+
 **Max Rounds**:
 The configured number of Review Source rounds after which a Run is considered sufficiently reviewed for the developer's final merge, squash, or rebase decision.
 _Avoid_: Budget, timeout, token cap
