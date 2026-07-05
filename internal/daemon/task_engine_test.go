@@ -91,7 +91,7 @@ func newTaskCycleFixture(t *testing.T, seeds []taskSpecSeed) *taskCycleFixture {
 func (fixture *taskCycleFixture) plan() TaskPlan {
 	return TaskPlan{
 		RunID:   fixture.run.ID,
-		Session: agent.SessionRefForRun(fixture.run.ID),
+		Session: agent.SessionRefForRun(fixture.run.ID, fixture.gitRoot),
 		WorkDir: fixture.gitRoot,
 		Spec:    fixture.graph.Spec,
 		Tasks:   fixture.graph.Tasks,
@@ -392,7 +392,7 @@ func TestTaskCycleExecutesAgentVerifySettleCommitContract(t *testing.T) {
 	if runner.requests[0].Batch.Number != 1 || runner.requests[1].Batch.Number != 2 {
 		t.Fatalf("expected 1-based execution ordinals as Batch numbers, got %d and %d", runner.requests[0].Batch.Number, runner.requests[1].Batch.Number)
 	}
-	expectedSession := agent.SessionRefForRun(fixture.run.ID)
+	expectedSession := agent.SessionRefForRun(fixture.run.ID, fixture.gitRoot)
 	for _, req := range runner.requests {
 		if req.Session != expectedSession {
 			t.Fatalf("expected shared Agent Session %#v, got %#v", expectedSession, req.Session)

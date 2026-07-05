@@ -28,16 +28,21 @@ type RuntimeOptions struct {
 	EnableFullAccess bool
 }
 
+// SessionRef names one acpx Agent Session and the working directory that
+// scopes it. WorkDir travels with the name because every session-scoped acpx
+// invocation must pass the same global --cwd for deterministic session
+// resolution, regardless of the Roundfix process cwd.
 type SessionRef struct {
-	Name string
+	Name    string
+	WorkDir string
 }
 
-func SessionRefForRun(runID string) SessionRef {
+func SessionRefForRun(runID string, workDir string) SessionRef {
 	runID = strings.TrimSpace(runID)
 	if runID == "" {
 		return SessionRef{}
 	}
-	return SessionRef{Name: "roundfix-" + runID}
+	return SessionRef{Name: "roundfix-" + runID, WorkDir: strings.TrimSpace(workDir)}
 }
 
 type ExecuteRequest struct {

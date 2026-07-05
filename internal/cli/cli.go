@@ -964,7 +964,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
-	session := agent.SessionRefForRun(run.ID)
+	session := agent.SessionRefForRun(run.ID, preflightResult.Git.Root)
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
 		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
 		markRunFailed(ctx, runStore, run.ID)
@@ -1175,7 +1175,7 @@ func publishPushDecision(ctx context.Context, sink runevent.Sink, runID string, 
 func cyclePlanFrom(req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, resolvePlan resolveBatchPlan) daemon.CyclePlan {
 	return daemon.CyclePlan{
 		RunID:        runID,
-		Session:      agent.SessionRefForRun(runID),
+		Session:      agent.SessionRefForRun(runID, preflightResult.Git.Root),
 		GitRoot:      preflightResult.Git.Root,
 		ArtifactDir:  req.artifactDir,
 		SourceName:   req.source,
@@ -1225,7 +1225,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
-	session := agent.SessionRefForRun(run.ID)
+	session := agent.SessionRefForRun(run.ID, preflightResult.Git.Root)
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
 		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
 		markRunFailed(ctx, runStore, run.ID)

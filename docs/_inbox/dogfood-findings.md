@@ -207,3 +207,20 @@ its own PRD/techspec cycle).
     behavior); opening pull requests is permanently out of Roundfix's scope.
     Adopting this supersedes the "never push" half of ADR-0013 — needs its
     own ADR when picked up. Size: small (behavior) + ADR.
+
+26. **Real-acpx integration test caught global-vs-subcommand flag mismatches
+    on its first real run.** The fake-acpx rig had encoded a wrong CLI
+    grammar: acpx treats `--cwd`, `--format`, `--json-strict`,
+    `--approve-all`, `--model`, and `--agent` as program-level globals that
+    must precede the agent name/subcommand, while `sessions ensure` accepts
+    only `--name`/`--resume-session` and `sessions close` takes the session
+    name positionally. Wrong→right: `<agent> sessions ensure --name <s>
+    --cwd <dir>` → `--cwd <dir> <agent> sessions ensure --name <s>`;
+    `<agent> sessions close -s <s>` → `--cwd <dir> <agent> sessions close
+    <s>`; `<agent> prompt -s <s> --cwd <dir> --format json …` → `--cwd
+    <dir> --format json --json-strict --approve-all [--model <id>] <agent>
+    prompt -s <s> -f -`; set-mode/set/cancel likewise gained the leading
+    global `--cwd`. Fixed same day; the fake rig now asserts the true
+    grammar, and the gated real test passes. Lesson: a fake rig only
+    re-encodes assumptions — the gated real-binary test is the actual
+    contract check and earned its keep on run one.

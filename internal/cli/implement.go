@@ -150,7 +150,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
-	session := agent.SessionRefForRun(run.ID)
+	session := agent.SessionRefForRun(run.ID, gitState.Root)
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
 		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
 		markRunFailed(ctx, runStore, run.ID)
@@ -315,7 +315,7 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, run
 	}
 	return engine.TaskCycle(ctx, daemon.TaskPlan{
 		RunID:   runID,
-		Session: agent.SessionRefForRun(runID),
+		Session: agent.SessionRefForRun(runID, gitState.Root),
 		WorkDir: gitState.Root,
 		Spec:    graph.Spec,
 		Tasks:   graph.Tasks,

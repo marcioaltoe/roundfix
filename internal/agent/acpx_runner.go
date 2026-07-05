@@ -186,7 +186,7 @@ func (runner *ACPXRunner) EndSession(ctx context.Context, runtime RuntimeSpec, s
 	if sessionName == "" {
 		return nil
 	}
-	args, err := acpxCloseArgs(runtime, sessionName)
+	args, err := acpxCloseArgs(runtime, sessionName, session.WorkDir)
 	if err != nil {
 		runner.warningf("close acpx Agent Session %q: %v", sessionName, err)
 		return nil
@@ -236,7 +236,7 @@ func (runner *ACPXRunner) applyFullAccess(ctx context.Context, req ExecuteReques
 		return nil
 	}
 	sessionName := strings.TrimSpace(req.Session.Name)
-	args, err := acpxSetModeArgs(req.Runtime, mode, sessionName)
+	args, err := acpxSetModeArgs(req.Runtime, mode, sessionName, req.GitRoot)
 	if err != nil {
 		return err
 	}
@@ -246,7 +246,7 @@ func (runner *ACPXRunner) applyFullAccess(ctx context.Context, req ExecuteReques
 	if req.Runtime.ID != "codex" || mode != "full-access" {
 		return nil
 	}
-	args, err = acpxSetConfigArgs(req.Runtime, acpxCodexSandboxModeKey, acpxCodexFullAccessSandbox, sessionName)
+	args, err = acpxSetConfigArgs(req.Runtime, acpxCodexSandboxModeKey, acpxCodexFullAccessSandbox, sessionName, req.GitRoot)
 	if err != nil {
 		return err
 	}
@@ -418,75 +418,83 @@ func (runner ACPXRunner) runACPXCommand(ctx context.Context, args []string) erro
 	return nil
 }
 
+// acpx CLI grammar: --cwd, --format, --json-strict, --approve-all, --model,
+// and --agent are program-level globals and must appear before the agent
+// name / subcommand. Subcommands accept only their own options (prompt,
+// cancel, set-mode, set take -s <session>; sessions ensure takes --name;
+// sessions close takes the session name as a positional argument). Every
+// session-scoped invocation carries the global --cwd so session resolution
+// is deterministic regardless of the Roundfix process cwd.
+
 func acpxPromptArgs(req ACPXPromptRequest) ([]string, error) {
 	agentArgs, err := acpxAgentArgs(req.Runtime)
 	if err != nil {
 		return nil, err
 	}
-	args := append([]string{}, agentArgs...)
-	args = append(args,
-		"prompt",
-		"-s", strings.TrimSpace(req.Session),
+	args := []string{
 		"--cwd", strings.TrimSpace(req.GitRoot),
 		"--format", "json",
 		"--json-strict",
 		"--approve-all",
-	)
+	}
 	if model := strings.TrimSpace(req.Runtime.Model); model != "" {
 		args = append(args, "--model", model)
 	}
-	args = append(args, "-f", "-")
+	args = append(args, agentArgs...)
+	args = append(args, "prompt", "-s", strings.TrimSpace(req.Session), "-f", "-")
 	return args, nil
 }
 
 func acpxEnsureArgs(runtime RuntimeSpec, sessionName string, workDir string) ([]string, error) {
-	agentArgs, err := acpxAgentArgs(runtime)
+	args, err := acpxGlobalArgs(runtime, workDir)
 	if err != nil {
 		return nil, err
 	}
-	args := append([]string{}, agentArgs...)
-	args = append(args, "sessions", "ensure", "--name", strings.TrimSpace(sessionName), "--cwd", strings.TrimSpace(workDir))
-	return args, nil
+	return append(args, "sessions", "ensure", "--name", strings.TrimSpace(sessionName)), nil
 }
 
-func acpxSetModeArgs(runtime RuntimeSpec, mode string, sessionName string) ([]string, error) {
-	agentArgs, err := acpxAgentArgs(runtime)
+func acpxSetModeArgs(runtime RuntimeSpec, mode string, sessionName string, workDir string) ([]string, error) {
+	args, err := acpxGlobalArgs(runtime, workDir)
 	if err != nil {
 		return nil, err
 	}
-	args := append([]string{}, agentArgs...)
-	args = append(args, "set-mode", strings.TrimSpace(mode), "-s", strings.TrimSpace(sessionName))
-	return args, nil
+	return append(args, "set-mode", strings.TrimSpace(mode), "-s", strings.TrimSpace(sessionName)), nil
 }
 
-func acpxSetConfigArgs(runtime RuntimeSpec, key string, value string, sessionName string) ([]string, error) {
-	agentArgs, err := acpxAgentArgs(runtime)
+func acpxSetConfigArgs(runtime RuntimeSpec, key string, value string, sessionName string, workDir string) ([]string, error) {
+	args, err := acpxGlobalArgs(runtime, workDir)
 	if err != nil {
 		return nil, err
 	}
-	args := append([]string{}, agentArgs...)
-	args = append(args, "set", strings.TrimSpace(key), strings.TrimSpace(value), "-s", strings.TrimSpace(sessionName))
-	return args, nil
+	return append(args, "set", strings.TrimSpace(key), strings.TrimSpace(value), "-s", strings.TrimSpace(sessionName)), nil
 }
 
-func acpxCancelArgs(runtime RuntimeSpec, sessionName string) ([]string, error) {
-	agentArgs, err := acpxAgentArgs(runtime)
+func acpxCancelArgs(runtime RuntimeSpec, sessionName string, workDir string) ([]string, error) {
+	args, err := acpxGlobalArgs(runtime, workDir)
 	if err != nil {
 		return nil, err
 	}
-	args := append([]string{}, agentArgs...)
-	args = append(args, "cancel", "-s", strings.TrimSpace(sessionName))
-	return args, nil
+	return append(args, "cancel", "-s", strings.TrimSpace(sessionName)), nil
 }
 
-func acpxCloseArgs(runtime RuntimeSpec, sessionName string) ([]string, error) {
+func acpxCloseArgs(runtime RuntimeSpec, sessionName string, workDir string) ([]string, error) {
+	args, err := acpxGlobalArgs(runtime, workDir)
+	if err != nil {
+		return nil, err
+	}
+	return append(args, "sessions", "close", strings.TrimSpace(sessionName)), nil
+}
+
+func acpxGlobalArgs(runtime RuntimeSpec, workDir string) ([]string, error) {
+	workDir = strings.TrimSpace(workDir)
+	if workDir == "" {
+		return nil, errors.New("Agent working directory is required")
+	}
 	agentArgs, err := acpxAgentArgs(runtime)
 	if err != nil {
 		return nil, err
 	}
-	args := append([]string{}, agentArgs...)
-	args = append(args, "sessions", "close", "-s", strings.TrimSpace(sessionName))
-	return args, nil
+	return append([]string{"--cwd", workDir}, agentArgs...), nil
 }
 
 func acpxAgentArgs(runtime RuntimeSpec) ([]string, error) {
@@ -571,7 +579,7 @@ func (runner ACPXRunner) cancelPrompt(ctx context.Context, req ACPXPromptRequest
 	grace := stopGrace(req.StopGrace)
 	cancelCtx, cancel := context.WithTimeout(ctx, grace)
 	defer cancel()
-	if args, err := acpxCancelArgs(req.Runtime, req.Session); err == nil {
+	if args, err := acpxCancelArgs(req.Runtime, req.Session, req.GitRoot); err == nil {
 		if err := runner.runACPXCommand(cancelCtx, args); err != nil {
 			runner.warningf("cancel acpx Agent Session %q: %v", req.Session, err)
 		}

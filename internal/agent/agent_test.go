@@ -17,12 +17,15 @@ import (
 )
 
 func TestSessionRefForRunNamesRoundfixSession(t *testing.T) {
-	session := SessionRefForRun(" run-123 ")
+	session := SessionRefForRun(" run-123 ", " /repo ")
 	if session.Name != "roundfix-run-123" {
 		t.Fatalf("expected roundfix session name, got %q", session.Name)
 	}
-	if empty := SessionRefForRun(" "); empty.Name != "" {
-		t.Fatalf("expected empty run id to return empty session, got %q", empty.Name)
+	if session.WorkDir != "/repo" {
+		t.Fatalf("expected trimmed session working directory, got %q", session.WorkDir)
+	}
+	if empty := SessionRefForRun(" ", "/repo"); empty != (SessionRef{}) {
+		t.Fatalf("expected empty run id to return empty session, got %#v", empty)
 	}
 }
 

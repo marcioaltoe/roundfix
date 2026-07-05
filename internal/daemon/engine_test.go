@@ -267,7 +267,7 @@ func (fixture *engineFixture) plan() CyclePlan {
 	}
 	return CyclePlan{
 		RunID:        fixture.run.ID,
-		Session:      agent.SessionRefForRun(fixture.run.ID),
+		Session:      agent.SessionRefForRun(fixture.run.ID, fixture.gitRoot),
 		GitRoot:      fixture.gitRoot,
 		ArtifactDir:  fixture.artifactDir,
 		SourceName:   reviewsource.SourceCodeRabbit,
@@ -480,7 +480,7 @@ func TestResolveCycleContinuesToNextBatchAfterFailedBatch(t *testing.T) {
 	committer := &engineFakeCommitter{calls: fixture.calls}
 	source := &engineFakeSource{calls: fixture.calls}
 	plan := fixture.plan()
-	plan.Session = agent.SessionRefForRun(fixture.run.ID)
+	plan.Session = agent.SessionRefForRun(fixture.run.ID, fixture.gitRoot)
 	plan.Batches = []rounds.Batch{
 		{Number: 1, Issues: []rounds.Issue{{Path: fixture.issuePaths[0]}}},
 		{Number: 2, Issues: []rounds.Issue{{Path: fixture.issuePaths[1]}}},

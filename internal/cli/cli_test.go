@@ -2729,10 +2729,11 @@ func publishFakeSessionStatus(ctx context.Context, sink runevent.Sink, req agent
 
 func assertRecordedOneSessionForRun(t *testing.T, runner *sessionRecordingRunner, runID string, wantRunCalls int) {
 	t.Helper()
-	want := agent.SessionRefForRun(runID)
-	if len(runner.ensureSessions) != 1 || runner.ensureSessions[0] != want {
-		t.Fatalf("expected exactly one ensure for %#v, got %#v", want, runner.ensureSessions)
+	wantName := "roundfix-" + runID
+	if len(runner.ensureSessions) != 1 || runner.ensureSessions[0].Name != wantName || strings.TrimSpace(runner.ensureSessions[0].WorkDir) == "" {
+		t.Fatalf("expected exactly one ensure named %q with a working directory, got %#v", wantName, runner.ensureSessions)
 	}
+	want := runner.ensureSessions[0]
 	if len(runner.closeSessions) != 1 || runner.closeSessions[0] != want {
 		t.Fatalf("expected exactly one close for %#v, got %#v", want, runner.closeSessions)
 	}

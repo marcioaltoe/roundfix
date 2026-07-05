@@ -106,7 +106,7 @@ func TestACPXProbeCommandOverrideStillChecksACPXClient(t *testing.T) {
 	}
 }
 
-func TestACPXPromptArgsMatchTechSpecOrder(t *testing.T) {
+func TestACPXPromptArgsPlaceGlobalsBeforeAgentAndSubcommand(t *testing.T) {
 	tests := []struct {
 		name    string
 		runtime RuntimeSpec
@@ -116,12 +116,12 @@ func TestACPXPromptArgsMatchTechSpecOrder(t *testing.T) {
 			name:    "default adapter",
 			runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP},
 			want: []string{
-				"codex", "prompt",
-				"-s", "roundfix-run-1",
 				"--cwd", "/repo",
 				"--format", "json",
 				"--json-strict",
 				"--approve-all",
+				"codex", "prompt",
+				"-s", "roundfix-run-1",
 				"-f", "-",
 			},
 		},
@@ -129,13 +129,13 @@ func TestACPXPromptArgsMatchTechSpecOrder(t *testing.T) {
 			name:    "model set",
 			runtime: RuntimeSpec{ID: "claude", Protocol: ProtocolACP, Model: "opus-test"},
 			want: []string{
-				"claude", "prompt",
-				"-s", "roundfix-run-1",
 				"--cwd", "/repo",
 				"--format", "json",
 				"--json-strict",
 				"--approve-all",
 				"--model", "opus-test",
+				"claude", "prompt",
+				"-s", "roundfix-run-1",
 				"-f", "-",
 			},
 		},
@@ -143,12 +143,13 @@ func TestACPXPromptArgsMatchTechSpecOrder(t *testing.T) {
 			name:    "command override",
 			runtime: RuntimeSpec{ID: "codex-custom", Protocol: ProtocolStdio, Command: "custom-acp --stdio"},
 			want: []string{
-				"--agent", "custom-acp --stdio", "prompt",
-				"-s", "roundfix-run-1",
 				"--cwd", "/repo",
 				"--format", "json",
 				"--json-strict",
 				"--approve-all",
+				"--agent", "custom-acp --stdio",
+				"prompt",
+				"-s", "roundfix-run-1",
 				"-f", "-",
 			},
 		},
@@ -179,13 +180,13 @@ func TestACPXRunPromptSendsPromptOnStdin(t *testing.T) {
 		t.Fatalf("run fake acpx: %v", run.err)
 	}
 	wantArgs := []string{
-		"codex", "prompt",
-		"-s", "roundfix-run-1",
 		"--cwd", run.gitRoot,
 		"--format", "json",
 		"--json-strict",
 		"--approve-all",
 		"--model", "gpt-test",
+		"codex", "prompt",
+		"-s", "roundfix-run-1",
 		"-f", "-",
 	}
 	if !reflect.DeepEqual(run.args, wantArgs) {
@@ -215,11 +216,11 @@ func TestACPXRunEnsuresSessionOncePerRunnerAndSessionName(t *testing.T) {
 
 	invocations := readJSONInvocations(t, harness.invocationsPath)
 	want := [][]string{
-		{"codex", "sessions", "ensure", "--name", "roundfix-run-1", "--cwd", harness.gitRoot},
-		{"codex", "prompt", "-s", "roundfix-run-1", "--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "-f", "-"},
-		{"codex", "prompt", "-s", "roundfix-run-1", "--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "-f", "-"},
-		{"codex", "sessions", "ensure", "--name", "roundfix-run-2", "--cwd", harness.gitRoot},
-		{"codex", "prompt", "-s", "roundfix-run-2", "--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "-f", "-"},
+		{"--cwd", harness.gitRoot, "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
+		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
+		{"--cwd", harness.gitRoot, "codex", "sessions", "ensure", "--name", "roundfix-run-2"},
+		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "codex", "prompt", "-s", "roundfix-run-2", "-f", "-"},
 	}
 	if !reflect.DeepEqual(invocations, want) {
 		t.Fatalf("unexpected acpx invocations\nwant: %#v\ngot:  %#v", want, invocations)
@@ -237,10 +238,10 @@ func TestACPXRunAppliesFullAccessSessionSetup(t *testing.T) {
 			runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, FullAccessMode: "full-access"},
 			want: func(gitRoot string) [][]string {
 				return [][]string{
-					{"codex", "sessions", "ensure", "--name", "roundfix-run-1", "--cwd", gitRoot},
-					{"codex", "set-mode", "full-access", "-s", "roundfix-run-1"},
-					{"codex", "set", "sandbox_mode", "danger-full-access", "-s", "roundfix-run-1"},
-					{"codex", "prompt", "-s", "roundfix-run-1", "--cwd", gitRoot, "--format", "json", "--json-strict", "--approve-all", "-f", "-"},
+					{"--cwd", gitRoot, "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+					{"--cwd", gitRoot, "codex", "set-mode", "full-access", "-s", "roundfix-run-1"},
+					{"--cwd", gitRoot, "codex", "set", "sandbox_mode", "danger-full-access", "-s", "roundfix-run-1"},
+					{"--cwd", gitRoot, "--format", "json", "--json-strict", "--approve-all", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
 				}
 			},
 		},
@@ -249,9 +250,9 @@ func TestACPXRunAppliesFullAccessSessionSetup(t *testing.T) {
 			runtime: RuntimeSpec{ID: "claude", Protocol: ProtocolACP, FullAccessMode: "bypassPermissions"},
 			want: func(gitRoot string) [][]string {
 				return [][]string{
-					{"claude", "sessions", "ensure", "--name", "roundfix-run-1", "--cwd", gitRoot},
-					{"claude", "set-mode", "bypassPermissions", "-s", "roundfix-run-1"},
-					{"claude", "prompt", "-s", "roundfix-run-1", "--cwd", gitRoot, "--format", "json", "--json-strict", "--approve-all", "-f", "-"},
+					{"--cwd", gitRoot, "claude", "sessions", "ensure", "--name", "roundfix-run-1"},
+					{"--cwd", gitRoot, "claude", "set-mode", "bypassPermissions", "-s", "roundfix-run-1"},
+					{"--cwd", gitRoot, "--format", "json", "--json-strict", "--approve-all", "claude", "prompt", "-s", "roundfix-run-1", "-f", "-"},
 				}
 			},
 		},
@@ -260,8 +261,8 @@ func TestACPXRunAppliesFullAccessSessionSetup(t *testing.T) {
 			runtime: RuntimeSpec{ID: "opencode", Protocol: ProtocolACP},
 			want: func(gitRoot string) [][]string {
 				return [][]string{
-					{"opencode", "sessions", "ensure", "--name", "roundfix-run-1", "--cwd", gitRoot},
-					{"opencode", "prompt", "-s", "roundfix-run-1", "--cwd", gitRoot, "--format", "json", "--json-strict", "--approve-all", "-f", "-"},
+					{"--cwd", gitRoot, "opencode", "sessions", "ensure", "--name", "roundfix-run-1"},
+					{"--cwd", gitRoot, "--format", "json", "--json-strict", "--approve-all", "opencode", "prompt", "-s", "roundfix-run-1", "-f", "-"},
 				}
 			},
 		},
@@ -296,8 +297,8 @@ func TestACPXRunFailsSetupWhenFullAccessModeFails(t *testing.T) {
 	}
 	invocations := readJSONInvocations(t, harness.invocationsPath)
 	want := [][]string{
-		{"codex", "sessions", "ensure", "--name", "roundfix-run-1", "--cwd", harness.gitRoot},
-		{"codex", "set-mode", "full-access", "-s", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "codex", "set-mode", "full-access", "-s", "roundfix-run-1"},
 	}
 	if !reflect.DeepEqual(invocations, want) {
 		t.Fatalf("unexpected invocations after setup failure\nwant: %#v\ngot:  %#v", want, invocations)
@@ -322,10 +323,10 @@ func TestACPXRunWarnsWhenCodexSandboxPresetUnavailable(t *testing.T) {
 	}
 	invocations := readJSONInvocations(t, harness.invocationsPath)
 	want := [][]string{
-		{"codex", "sessions", "ensure", "--name", "roundfix-run-1", "--cwd", harness.gitRoot},
-		{"codex", "set-mode", "full-access", "-s", "roundfix-run-1"},
-		{"codex", "set", "sandbox_mode", "danger-full-access", "-s", "roundfix-run-1"},
-		{"codex", "prompt", "-s", "roundfix-run-1", "--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "-f", "-"},
+		{"--cwd", harness.gitRoot, "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "codex", "set-mode", "full-access", "-s", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "codex", "set", "sandbox_mode", "danger-full-access", "-s", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
 	}
 	if !reflect.DeepEqual(invocations, want) {
 		t.Fatalf("unexpected invocations\nwant: %#v\ngot:  %#v", want, invocations)
@@ -355,7 +356,7 @@ func TestACPXRunCancelsPromptCooperatively(t *testing.T) {
 		t.Fatalf("expected cooperative stop without kill, got %#v", stopErr)
 	}
 	invocations := readJSONInvocations(t, harness.invocationsPath)
-	if !containsInvocation(invocations, []string{"codex", "cancel", "-s", "roundfix-run-1"}) {
+	if !containsInvocation(invocations, []string{"--cwd", harness.gitRoot, "codex", "cancel", "-s", "roundfix-run-1"}) {
 		t.Fatalf("expected cancel invocation, got %#v", invocations)
 	}
 }
@@ -380,7 +381,7 @@ func TestACPXRunKillsPromptAfterCancelGracePeriod(t *testing.T) {
 		t.Fatalf("expected fallback kill after cancel, got %#v", stopErr)
 	}
 	invocations := readJSONInvocations(t, harness.invocationsPath)
-	if !containsInvocation(invocations, []string{"codex", "cancel", "-s", "roundfix-run-1"}) {
+	if !containsInvocation(invocations, []string{"--cwd", harness.gitRoot, "codex", "cancel", "-s", "roundfix-run-1"}) {
 		t.Fatalf("expected cancel invocation before kill, got %#v", invocations)
 	}
 }
@@ -394,13 +395,13 @@ func TestACPXEndSessionClosesBestEffort(t *testing.T) {
 		warnings = append(warnings, fmt.Sprintf(format, args...))
 	}
 
-	err := harness.runner.EndSession(context.Background(), RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, SessionRef{Name: "roundfix-run-1"})
+	err := harness.runner.EndSession(context.Background(), RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, SessionRef{Name: "roundfix-run-1", WorkDir: harness.gitRoot})
 
 	if err != nil {
 		t.Fatalf("expected close failure to be swallowed, got %v", err)
 	}
 	invocations := readJSONInvocations(t, harness.invocationsPath)
-	want := [][]string{{"codex", "sessions", "close", "-s", "roundfix-run-1"}}
+	want := [][]string{{"--cwd", harness.gitRoot, "codex", "sessions", "close", "roundfix-run-1"}}
 	if !reflect.DeepEqual(invocations, want) {
 		t.Fatalf("unexpected close invocation\nwant: %#v\ngot:  %#v", want, invocations)
 	}
@@ -914,24 +915,47 @@ func appendFakeACPXInvocation(path string, args []string) error {
 	return nil
 }
 
+// fakeACPXCommandKey mirrors the real acpx grammar: program-level global
+// options come first (--cwd, --format, --model, --agent, ... take a value;
+// --json-strict and --approve-all are booleans), then the agent name (unless
+// --agent supplied the raw command), then the subcommand.
 func fakeACPXCommandKey(args []string) string {
-	index := 1
-	if len(args) >= 2 && args[0] == "--agent" {
-		index = 2
+	valueGlobals := map[string]bool{
+		"--cwd":     true,
+		"--format":  true,
+		"--model":   true,
+		"--agent":   true,
+		"--timeout": true,
+		"--ttl":     true,
 	}
-	if len(args) <= index {
+	booleanGlobals := map[string]bool{
+		"--json-strict": true,
+		"--approve-all": true,
+	}
+	sawAgentOverride := false
+	index := 0
+globals:
+	for index < len(args) {
+		switch {
+		case valueGlobals[args[index]]:
+			if args[index] == "--agent" {
+				sawAgentOverride = true
+			}
+			index += 2
+		case booleanGlobals[args[index]]:
+			index++
+		default:
+			break globals
+		}
+	}
+	if !sawAgentOverride {
+		index++ // skip the positional agent name
+	}
+	if index >= len(args) {
 		return ""
 	}
-	switch args[index] {
-	case "sessions":
-		if len(args) > index+1 {
-			return "sessions " + args[index+1]
-		}
-	case "prompt", "set-mode", "set", "cancel":
-		return args[index]
-	}
-	if len(args) > index+1 {
-		return args[index+1]
+	if args[index] == "sessions" && index+1 < len(args) {
+		return "sessions " + args[index+1]
 	}
 	return args[index]
 }

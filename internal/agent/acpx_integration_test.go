@@ -44,7 +44,7 @@ func TestRealACPXCommandOverrideRoundTripCancelCrashResume(t *testing.T) {
 	t.Setenv("ROUNDFIX_ACPX_ECHO_STATE", helperState)
 
 	runtime := RuntimeSpec{ID: "codex-custom", Protocol: ProtocolStdio, Command: helper}
-	session := SessionRef{Name: "roundfix-real-acpx-" + strconv.FormatInt(time.Now().UnixNano(), 36)}
+	session := SessionRef{Name: "roundfix-real-acpx-" + strconv.FormatInt(time.Now().UnixNano(), 36), WorkDir: dir}
 	t.Cleanup(func() {
 		_ = runner.EndSession(context.Background(), runtime, session)
 	})
