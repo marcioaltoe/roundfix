@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0005-tui-cockpit
-status: pending
+status: completed
 type: frontend
 complexity: medium
 ---
@@ -31,16 +31,16 @@ Verifiable by the snapshots passing before and after.
 
 ## Subtasks
 
-- [ ] Snapshot assertions over the shipped cockpit states
-- [ ] Per-surface helper extraction
-- [ ] Neutrality proof: snapshots green post-refactor
+- [x] Snapshot assertions over the shipped cockpit states
+- [x] Per-surface helper extraction
+- [x] Neutrality proof: snapshots green post-refactor
 
 ## Acceptance Criteria
 
-- [ ] Snapshot tests exist for the listed states/sizes and pass before and
+- [x] Snapshot tests exist for the listed states/sizes and pass before and
       after the refactor with identical expected strings.
-- [ ] No exported API changes; no behavior or key-routing changes.
-- [ ] Full suite passes.
+- [x] No exported API changes; no behavior or key-routing changes.
+- [x] Full suite passes.
 
 ## Verification
 
@@ -53,3 +53,31 @@ Verifiable by the snapshots passing before and after.
 `_prd.md` → Goals; Decisions (refactor-before-feature). `_techspec.md` →
 Executive Summary, Interfaces, Build Order 1, Risks (neutrality).
 `design/ui-redesign-plan.md` → Suggested Implementation Order 1–2.
+
+## Result
+
+Implemented the rendering-neutral cockpit decomposition behind snapshot
+coverage. `TestCockpitRenderSnapshots` now compares the full visible cockpit
+render for review normal, detail-open, attach, and terminal states at 88x24
+and 120x40, plus the spec-Run pane at both sizes.
+
+Evidence:
+
+- Snapshot capture before refactor: `ROUNDFIX_UPDATE_COCKPIT_SNAPSHOTS=1 rtk go test ./internal/tui/ -run TestCockpitRenderSnapshots` passed with 11 snapshot cases.
+- Pre-refactor snapshot proof: `rtk go test ./internal/tui/ -run TestCockpitRenderSnapshots` passed with 11 snapshot cases.
+- Post-refactor neutrality proof: `rtk go test ./internal/tui/ -run TestCockpitRenderSnapshots` passed with the same golden strings.
+- Focused verification: `rtk go test ./internal/tui/` passed, 52 tests.
+- Full verification: `rtk go test ./...` passed, 532 tests across 16 packages.
+- Repository gate: `rtk make verify` passed (`go test ./...`, `roundfix skills check`, and build).
+
+Acceptance criteria evidence:
+
+- Snapshot tests cover the listed states and sizes, including the shipped
+  spec-Run pane, and passed before and after helper extraction without
+  changing the golden files.
+- The production diff adds only package-internal render helpers and a
+  `cockpitLayout` struct in `internal/tui`; exported APIs, model state,
+  key routing, and update logic were not changed.
+- The full suite and repository verification gate passed.
+
+Follow-ups: none.

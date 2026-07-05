@@ -495,7 +495,14 @@ func (model *cockpitModel) bodyHeight() int {
 	return height
 }
 
-func (model *cockpitModel) View() tea.View {
+type cockpitLayout struct {
+	width        int
+	bodyHeight   int
+	sidebarWidth int
+	rightWidth   int
+}
+
+func cockpitLayoutFor(model *cockpitModel) cockpitLayout {
 	width := maxInt(model.width, 88)
 	bodyHeight := model.bodyHeight()
 	innerWidth := width - 2
@@ -506,27 +513,62 @@ func (model *cockpitModel) View() tea.View {
 	if sidebarWidth > 46 {
 		sidebarWidth = 46
 	}
-	rightWidth := innerWidth - sidebarWidth - 1
+	return cockpitLayout{
+		width:        width,
+		bodyHeight:   bodyHeight,
+		sidebarWidth: sidebarWidth,
+		rightWidth:   innerWidth - sidebarWidth - 1,
+	}
+}
 
-	right := model.renderRightPane(rightWidth, bodyHeight)
-	sidebar := panel(sidebarWidth, bodyHeight, model.renderWorkItemPane(sidebarWidth, bodyHeight), model.focus == focusIssues && model.detail == nil)
-
-	content := strings.Join([]string{
-		renderAgentHeader(model.cfg.View, width),
-		model.renderStatusBar(width),
-		"",
-		lipgloss.JoinHorizontal(lipgloss.Top, sidebar, right),
-		model.renderFooter(width),
-	}, "\n")
-	view := tea.NewView(content)
+func (model *cockpitModel) View() tea.View {
+	layout := cockpitLayoutFor(model)
+	view := tea.NewView(renderCockpitLayout(model, layout))
 	view.AltScreen = true
 	return view
 }
 
-func (model *cockpitModel) renderRightPane(width int, height int) string {
+func renderCockpitLayout(model *cockpitModel, layout cockpitLayout) string {
+	return strings.Join([]string{
+		renderCockpitHeaderArea(model, layout.width),
+		renderCockpitBody(model, layout),
+		renderCockpitFooter(model, layout.width),
+	}, "\n")
+}
+
+func renderCockpitHeaderArea(model *cockpitModel, width int) string {
+	return strings.Join([]string{
+		renderAgentHeader(model.cfg.View, width),
+		model.renderStatusBar(width),
+		"",
+	}, "\n")
+}
+
+func renderCockpitBody(model *cockpitModel, layout cockpitLayout) string {
+	return lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		renderCockpitWorkQueue(model, layout),
+		renderCockpitRightPane(model, layout),
+	)
+}
+
+func renderCockpitWorkQueue(model *cockpitModel, layout cockpitLayout) string {
+	return panel(
+		layout.sidebarWidth,
+		layout.bodyHeight,
+		model.renderWorkItemPane(layout.sidebarWidth, layout.bodyHeight),
+		model.focus == focusIssues && model.detail == nil,
+	)
+}
+
+func renderCockpitRightPane(model *cockpitModel, layout cockpitLayout) string {
 	if model.detail != nil {
-		return panel(width, height, model.renderDetail(width, height), true)
+		return renderCockpitDetailPane(model, layout.rightWidth, layout.bodyHeight)
 	}
+	return renderCockpitTimelinePane(model, layout.rightWidth, layout.bodyHeight)
+}
+
+func renderCockpitTimelinePane(model *cockpitModel, width int, height int) string {
 	lines := model.viewport.VisibleLines()
 	content := []string{styleAccent.Bold(true).Render("SESSION.TIMELINE"), ""}
 	if len(lines) == 0 {
@@ -535,6 +577,14 @@ func (model *cockpitModel) renderRightPane(width int, height int) string {
 		content = append(content, colorTimelineLines(lines, width-4)...)
 	}
 	return panel(width, height, strings.Join(limitTail(content, height-2), "\n"), model.focus == focusTimeline)
+}
+
+func renderCockpitDetailPane(model *cockpitModel, width int, height int) string {
+	return panel(width, height, model.renderDetail(width, height), true)
+}
+
+func renderCockpitFooter(model *cockpitModel, width int) string {
+	return model.renderFooter(width)
 }
 
 func (model *cockpitModel) renderDetail(width int, height int) string {

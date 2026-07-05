@@ -1,0 +1,39 @@
+ROUNDFIX // LIVE RUN VIEW                                                                                   RUN 00000001
+RUN.PROGRESS  1 of 3 Task(s) completed · 33%                                                                          
+
+┌───────────────────────────────┐┌──────────────────────────────────────────────────────────────────────────────────┐
+│ SPEC.TASKS                    ││ SESSION.TIMELINE                                                                 │
+│ 3 Task(s)                     ││                                                                                  │
+│                               ││ Task task_01 settled completed.                                                  │
+│ > task_01                     ││ PLAN continue Task Graph execution                                               │
+│   Completed                   ││ [TOOL] go test ./internal/tui/ * completed                                       │
+│                               ││                                                                                  │
+│   task_02                     ││                                                                                  │
+│   Executing                   ││                                                                                  │
+│                               ││                                                                                  │
+│   task_03                     ││                                                                                  │
+│   Waiting                     ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+│                               ││                                                                                  │
+└───────────────────────────────┘└──────────────────────────────────────────────────────────────────────────────────┘
+Keys: Tab focus · ↑↓ scroll · PgUp/PgDn page · End follow · Enter issue · Esc back · Ctrl-C stop                        

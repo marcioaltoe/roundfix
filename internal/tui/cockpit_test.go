@@ -112,6 +112,249 @@ func sampleIssues(count int) []rounds.Issue {
 	return issues
 }
 
+// Suite: cockpit render snapshots
+// Invariant: the shipped Live Run View visible render string stays byte-identical while render helpers are extracted.
+// Boundary IN: synchronous cockpit model rendering for review and spec Runs.
+// Boundary OUT: terminal emulation, ANSI color assertions, daemon/store behavior covered by lower suites.
+func TestCockpitRenderSnapshots(t *testing.T) {
+	sizes := []struct {
+		name   string
+		width  int
+		height int
+	}{
+		{name: "88x24", width: 88, height: 24},
+		{name: "120x40", width: 120, height: 40},
+	}
+	cases := []struct {
+		name  string
+		model func(t *testing.T) *cockpitModel
+	}{
+		{
+			name: "review_normal",
+			model: func(t *testing.T) *cockpitModel {
+				t.Helper()
+				return newReviewSnapshotCockpit(t, CockpitOwning, store.StateResolvingWithAgent, false)
+			},
+		},
+		{
+			name: "review_detail_open",
+			model: func(t *testing.T) *cockpitModel {
+				t.Helper()
+				return newReviewSnapshotCockpit(t, CockpitOwning, store.StateResolvingWithAgent, true)
+			},
+		},
+		{
+			name: "review_attach",
+			model: func(t *testing.T) *cockpitModel {
+				t.Helper()
+				return newReviewSnapshotCockpit(t, CockpitAttach, store.StateResolvingWithAgent, false)
+			},
+		},
+		{
+			name: "review_terminal",
+			model: func(t *testing.T) *cockpitModel {
+				t.Helper()
+				return newReviewSnapshotCockpit(t, CockpitOwning, store.StateClean, false)
+			},
+		},
+		{
+			name: "spec_run_pane",
+			model: func(t *testing.T) *cockpitModel {
+				t.Helper()
+				return newSpecSnapshotCockpit(t)
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		for _, size := range sizes {
+			t.Run(tc.name+"/"+size.name, func(t *testing.T) {
+				model := tc.model(t)
+				model.Update(tea.WindowSizeMsg{Width: size.width, Height: size.height})
+				assertCockpitSnapshot(t, tc.name+"_"+size.name, stripANSI(model.View().Content))
+			})
+		}
+	}
+}
+
+func newReviewSnapshotCockpit(t *testing.T, mode CockpitMode, runState string, openDetail bool) *cockpitModel {
+	t.Helper()
+	artifactDir := t.TempDir()
+	persisted, err := rounds.PersistRound(context.Background(), rounds.PersistRequest{
+		ArtifactDir:    artifactDir,
+		Source:         reviewsource.SourceCodeRabbit,
+		PRNumber:       "123",
+		HeadRepository: "owner/project",
+		HeadBranch:     "feature/cockpit",
+		HeadSHA:        "abc123",
+		Round:          1,
+		CreatedAt:      time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC),
+		Items: []reviewsource.ReviewItem{
+			{
+				Title:                   "major: guard nil cache",
+				File:                    "internal/cache/cache.go",
+				Line:                    42,
+				Severity:                "major",
+				Author:                  "coderabbitai[bot]",
+				Body:                    "Guard the map lookup before dereferencing.",
+				SourceRef:               "thread:PRRT_1,comment:PRRC_1",
+				ReviewHash:              "h1",
+				SourceReviewID:          "1",
+				SourceReviewSubmittedAt: time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC),
+			},
+			{
+				Title:                   "minor: trim stale TODO",
+				File:                    "internal/cache/cache_test.go",
+				Line:                    17,
+				Severity:                "minor",
+				Author:                  "coderabbitai[bot]",
+				Body:                    "Remove the stale TODO from the test fixture.",
+				SourceRef:               "thread:PRRT_2,comment:PRRC_2",
+				ReviewHash:              "h2",
+				SourceReviewID:          "1",
+				SourceReviewSubmittedAt: time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC),
+			},
+			{
+				Title:                   "info: document cache eviction",
+				File:                    "internal/cache/cache.go",
+				Line:                    88,
+				Severity:                "info",
+				Author:                  "coderabbitai[bot]",
+				Body:                    "Document why the eviction path ignores expired entries.",
+				SourceRef:               "thread:PRRT_3,comment:PRRC_3",
+				ReviewHash:              "h3",
+				SourceReviewID:          "1",
+				SourceReviewSubmittedAt: time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC),
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("persist round: %v", err)
+	}
+	if err := rounds.SetIssueStatus(persisted.IssuePaths[0], rounds.StatusResolved, ""); err != nil {
+		t.Fatalf("set issue status: %v", err)
+	}
+	issues := make([]rounds.Issue, 0, len(persisted.IssuePaths))
+	for _, path := range persisted.IssuePaths {
+		issues = append(issues, rounds.Issue{Path: path, Status: rounds.StatusPending})
+	}
+	source := &cockpitFakeSource{run: store.Run{ID: "run-review-00000001", State: runState}, version: 1}
+	source.addLine("PLAN inspect current cockpit render\n")
+	source.addLine("[TOOL] read_file * completed\n")
+	source.addLine("THINK preserving the shipped layout\n")
+	source.addDaemonEvent(runevent.KindDaemonBatch, "Batch 001 executing.")
+	source.addLine("SESSION running\n")
+	clock := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
+	model, err := newCockpitModel(context.Background(), CockpitConfig{
+		Mode: mode,
+		View: LiveRunView{
+			Command:       "resolve",
+			Repository:    "owner/project",
+			PRNumber:      "123",
+			HeadBranch:    "feature/cockpit",
+			ReviewSource:  string(reviewsource.SourceCodeRabbit),
+			Agent:         "codex",
+			Model:         "gpt-5",
+			RunID:         "run-review-00000001",
+			PipelineState: runState,
+			Issues:        issues,
+			BatchSizes:    []int{2, 1},
+		},
+		RunID:  "run-review-00000001",
+		Source: source,
+		OnStop: func() {},
+		Now:    func() time.Time { return clock },
+	})
+	if err != nil {
+		t.Fatalf("new cockpit model: %v", err)
+	}
+	clock = clock.Add(83 * time.Second)
+	if openDetail {
+		pressKey(t, model, "tab")
+		pressKey(t, model, "enter")
+	}
+	return model
+}
+
+func newSpecSnapshotCockpit(t *testing.T) *cockpitModel {
+	t.Helper()
+	gitRoot := t.TempDir()
+	slug := "0005-tui-cockpit"
+	fileOne := writeCockpitTaskFile(t, gitRoot, slug, "task_01", "Decompose renderers", spec.StatusCompleted)
+	fileTwo := writeCockpitTaskFile(t, gitRoot, slug, "task_02", "Build phase row", spec.StatusInProgress)
+	fileThree := writeCockpitTaskFile(t, gitRoot, slug, "task_03", "Upgrade work queue", spec.StatusPending)
+	source := &cockpitFakeSource{run: store.Run{ID: "run-spec-00000001", State: store.StateResolvingWithAgent}, version: 1}
+	source.addDaemonEvent(runevent.KindDaemonTask, "Task task_01 settled completed.")
+	source.addLine("PLAN continue Task Graph execution\n")
+	source.addLine("[TOOL] go test ./internal/tui/ * completed\n")
+	model, err := newCockpitModel(context.Background(), CockpitConfig{
+		Mode: CockpitOwning,
+		View: LiveRunView{
+			Command:       "implement",
+			HeadBranch:    "feature/cockpit",
+			Agent:         "codex",
+			Model:         "gpt-5",
+			RunID:         "run-spec-00000001",
+			PipelineState: store.StateResolvingWithAgent,
+			RunKind:       store.KindImplement,
+			SpecSlug:      slug,
+			GitRoot:       gitRoot,
+			Tasks: []spec.Task{
+				{ID: "task_01", File: fileOne, Title: "Decompose renderers", Status: spec.StatusPending},
+				{ID: "task_02", File: fileTwo, Title: "Build phase row", Status: spec.StatusPending},
+				{ID: "task_03", File: fileThree, Title: "Upgrade work queue", Status: spec.StatusPending},
+			},
+		},
+		RunID:  "run-spec-00000001",
+		Source: source,
+		OnStop: func() {},
+	})
+	if err != nil {
+		t.Fatalf("new cockpit model: %v", err)
+	}
+	return model
+}
+
+func assertCockpitSnapshot(t *testing.T, name string, got string) {
+	t.Helper()
+	path := filepath.Join("testdata", "cockpit_snapshots", name+".golden")
+	if os.Getenv("ROUNDFIX_UPDATE_COCKPIT_SNAPSHOTS") == "1" {
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("create cockpit snapshot dir: %v", err)
+		}
+		if err := os.WriteFile(path, []byte(got), 0o644); err != nil {
+			t.Fatalf("write cockpit snapshot: %v", err)
+		}
+	}
+	want, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read cockpit snapshot %s: %v", path, err)
+	}
+	if got != string(want) {
+		t.Fatalf("cockpit snapshot %s mismatch\n%s", name, cockpitSnapshotDiff(string(want), got))
+	}
+}
+
+func cockpitSnapshotDiff(want string, got string) string {
+	wantLines := strings.Split(want, "\n")
+	gotLines := strings.Split(got, "\n")
+	limit := maxInt(len(wantLines), len(gotLines))
+	for index := 0; index < limit; index++ {
+		wantLine := "<missing>"
+		gotLine := "<missing>"
+		if index < len(wantLines) {
+			wantLine = wantLines[index]
+		}
+		if index < len(gotLines) {
+			gotLine = gotLines[index]
+		}
+		if wantLine != gotLine {
+			return fmt.Sprintf("line %d:\nwant: %q\ngot:  %q\n\nfull got:\n%s", index+1, wantLine, gotLine, got)
+		}
+	}
+	return "snapshot lengths differ"
+}
+
 func TestCockpitTabSwitchesFocusAndArrowsMoveSelection(t *testing.T) {
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateActive}, version: 1}
 	source.addLine("line one\n")
