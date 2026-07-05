@@ -26,6 +26,12 @@ system. The MVP focuses on one review-resolution loop for an Open Pull Request.
 For latency-sensitive setups, configure direct adapter binaries in acpx config
 so default adapters do not launch through `npx -y` on first use.
 
+Known constraint: acpx `0.12.0` has a hard 10 MiB queue-owner per-message
+buffer with no CLI, config, or environment override found in the pinned
+package. Large docs-task payloads, especially turns that print or return large
+skill/docs file content, can trigger `-32603 Message buffer exceeded 10485760
+bytes`.
+
 ## Build
 
 ```bash

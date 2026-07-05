@@ -23,6 +23,15 @@ newer with npm/npx is a prerequisite; install the pinned acpx with
 `npm install -g acpx@0.12.0`. Each Run drives its selected ACP Runtime
 through one acpx-backed Agent Session across the Run's Work Items.
 
+Known constraint: acpx `0.12.0` has a hard 10 MiB queue-owner per-message
+buffer in `src/cli/queue/ipc.ts`, bundled in the installed package at
+`dist/output-CjdF5rHk.js`, with no CLI, config, or environment override found.
+Large docs-task payloads, especially turns that print or return large
+skill/docs file content, can trigger `-32603 Message buffer exceeded 10485760
+bytes`. Treat this as an upstream acpx limit: keep payloads smaller when
+practical, and rely on Roundfix's result-over-exit classification and
+`roundfix settle` recovery for completed work preserved in the tree.
+
 ## User-Facing Review Runs
 
 1. Prefer `roundfix` commands over manual GitHub scraping.

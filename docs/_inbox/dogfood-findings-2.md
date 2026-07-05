@@ -19,6 +19,14 @@ Sizes: `cosmetic` / `small` / `spec`.
    buffer-size config; roundfix-side, see finding 2. Size: small (upstream +
    observe).
 
+   **Outcome 2026-07-05:** upstream-only. Inspection of acpx `0.12.0` found the
+   hard limit at `MAX_MESSAGE_BUFFER_SIZE = 10 * 1024 * 1024` in
+   `src/cli/queue/ipc.ts` via the installed source map, bundled at
+   `dist/output-CjdF5rHk.js`, and found no CLI, config, or environment override.
+   The shipped docs now record the known constraint for large docs-task
+   payloads; the upstream issue draft is recorded in
+   `docs/specs/0006-acpx-run-robustness/task_03.md`.
+
 2. **Exit-code-only Batch classification can fail completed work.** The
    stream had already delivered the Agent's full completion report when acpx
    died; the runner classifies solely on process exit. Candidate: when the
@@ -39,11 +47,12 @@ Sizes: `cosmetic` / `small` / `spec`.
    (which prevents the false failure) and round-1 finding 24 (graceful
    stop). Size: small/medium.
 
-   **Recurred at 0005 task_07** (same `-32603` buffer error, again on a
-   docs task touching large skill files — 2 for 2 on docs tasks since the
-   cutover; manual settlement again). Findings 1–3 graduate to must-fix in
-   the next spec cycle: the parsed-result-over-exit-code classification plus
-   an upstream buffer report/mitigation.
+   **Recurred at 0005 Run `run_20260705T152742Z_854a4b853b910140`, task_07**
+   (same `-32603` buffer error, again on a docs task touching large skill files
+   — 2 for 2 on docs tasks since the cutover; manual settlement again).
+   Findings 1–3 graduate to must-fix in the next spec cycle: the
+   parsed-result-over-exit-code classification plus an upstream buffer
+   report/mitigation.
 
 4. **RESOLVED 2026-07-05** — 0004's docs task flagged that `merge-ready`
    (ADR-0019 vocabulary) had no `CONTEXT.md` entry; the **Merge-Ready**
