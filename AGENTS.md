@@ -39,6 +39,18 @@ unresolved remains. Stdlib `flag` dispatch and a Bubble Tea v2 TUI.
   `metadata.version` tracks the released CLI version (the `v*` tag), not an
   independent skill version; the embedded `skills/roundfix/` is generated from
   it with `make skills-sync`, and `make verify` fails on drift.
+- **HARD RULE — skill ownership**: the authorial context-workflow skills are
+  vendored in this repository and owned by it: `write-idea`, `write-prd`,
+  `write-techspec`, `write-tasks`, `setup-workflow`, `implement-task`,
+  `implement-spec`, `brainstorming`, `council`, `business-analyst`,
+  `archive-spec`, `qa-gate`, and `evidence-gate`. They live in
+  `.agents/skills/` as plain repo files, are **NEVER** listed in
+  `skills-lock.json`, and may be adapted to Roundfix's needs — changes ship
+  like any other repo change. Every other skill (including `grilling`,
+  `grill-with-docs`, `the-fool`, `domain-modeling`, and all generic
+  engineering skills) remains managed by the external `marcioaltoe/skills`
+  origin through `skills-lock.json` and **MUST NOT** be modified locally —
+  needed changes go upstream.
 
 ## Agent docs
 
