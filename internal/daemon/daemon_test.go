@@ -61,6 +61,7 @@ func TestGitCommitterExcludesProjectConfigFromBatchCommit(t *testing.T) {
 	runGitForTest(t, repoDir, "init", "-q")
 	runGitForTest(t, repoDir, "config", "user.email", "test@example.com")
 	runGitForTest(t, repoDir, "config", "user.name", "Test")
+	runGitForTest(t, repoDir, "config", "commit.gpgsign", "false")
 	mustWriteForTest(t, filepath.Join(repoDir, "tracked.txt"), "base\n")
 	runGitForTest(t, repoDir, "add", "tracked.txt")
 	runGitForTest(t, repoDir, "commit", "-q", "-m", "init")
@@ -104,13 +105,35 @@ func TestGitPusherValidatesRequest(t *testing.T) {
 
 func runGitForTest(t *testing.T, workDir string, args ...string) string {
 	t.Helper()
-	cmdArgs := append([]string{"-C", workDir}, args...)
+	cmdArgs := append([]string{"-C", workDir}, gitConfigArgsForTest()...)
+	cmdArgs = append(cmdArgs, args...)
 	cmd := exec.Command("git", cmdArgs...)
+	cmd.Env = isolatedGitEnvForTest()
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("git %s failed: %v\n%s", strings.Join(args, " "), err, string(output))
 	}
 	return string(output)
+}
+
+func gitConfigArgsForTest() []string {
+	return []string{
+		"-c", "user.name=Roundfix Test",
+		"-c", "user.email=test@example.com",
+		"-c", "commit.gpgsign=false",
+	}
+}
+
+func isolatedGitEnvForTest() []string {
+	env := make([]string, 0, len(os.Environ())+2)
+	for _, entry := range os.Environ() {
+		key, _, _ := strings.Cut(entry, "=")
+		if strings.HasPrefix(key, "GIT_CONFIG_") {
+			continue
+		}
+		env = append(env, entry)
+	}
+	return append(env, "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null")
 }
 
 func mustWriteForTest(t *testing.T, path string, content string) {
@@ -126,6 +149,7 @@ func TestSnapshotDiffCommitStagesOnlyAgentChangesInRealRepo(t *testing.T) {
 	runGitForTest(t, repoDir, "init", "-b", "main")
 	runGitForTest(t, repoDir, "config", "user.name", "Roundfix Test")
 	runGitForTest(t, repoDir, "config", "user.email", "test@example.com")
+	runGitForTest(t, repoDir, "config", "commit.gpgsign", "false")
 	mustWriteForTest(t, filepath.Join(repoDir, "tracked.txt"), "original\n")
 	runGitForTest(t, repoDir, "add", "tracked.txt")
 	runGitForTest(t, repoDir, "commit", "-m", "initial")
@@ -171,4 +195,38 @@ func TestSnapshotDiffCommitStagesOnlyAgentChangesInRealRepo(t *testing.T) {
 	if !strings.Contains(status, " M tracked.txt") || !strings.Contains(status, "?? user-notes.md") {
 		t.Fatalf("expected user work preserved in the worktree, got %q", status)
 	}
+}
+
+func TestRunGitForTestIgnoresForcedSigningConfig(t *testing.T) {
+	t.Setenv("GIT_CONFIG_COUNT", "2")
+	t.Setenv("GIT_CONFIG_KEY_0", "commit.gpgsign")
+	t.Setenv("GIT_CONFIG_VALUE_0", "true")
+	t.Setenv("GIT_CONFIG_KEY_1", "gpg.program")
+	t.Setenv("GIT_CONFIG_VALUE_1", "false")
+
+	if got := mustReadUnisolatedGitConfigForCanary(t, "commit.gpgsign"); strings.TrimSpace(got) != "true" {
+		t.Fatalf("expected forced signing visible to unisolated git, got %q", got)
+	}
+
+	repoDir := t.TempDir()
+	runGitForTest(t, repoDir, "init", "-q")
+	if got := runGitForTest(t, repoDir, "config", "--get", "commit.gpgsign"); strings.TrimSpace(got) != "false" {
+		t.Fatalf("expected isolated helper to override forced signing, got %q", got)
+	}
+	runGitForTest(t, repoDir, "config", "user.name", "Roundfix Test")
+	runGitForTest(t, repoDir, "config", "user.email", "test@example.com")
+	runGitForTest(t, repoDir, "config", "commit.gpgsign", "false")
+	mustWriteForTest(t, filepath.Join(repoDir, "tracked.txt"), "base\n")
+	runGitForTest(t, repoDir, "add", "tracked.txt")
+	runGitForTest(t, repoDir, "commit", "-q", "-m", "init")
+}
+
+func mustReadUnisolatedGitConfigForCanary(t *testing.T, key string) string {
+	t.Helper()
+	cmd := exec.Command("git", "config", "--get", key)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("unisolated git config --get %s failed: %v\n%s", key, err, output)
+	}
+	return string(output)
 }

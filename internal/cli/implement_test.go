@@ -35,14 +35,36 @@ type implementSeed struct {
 
 func gitImplement(t *testing.T, dir string, args ...string) {
 	t.Helper()
-	cmd := exec.Command("git", args...)
+	cmdArgs := append(gitConfigArgsForTest(), args...)
+	cmd := exec.Command("git", cmdArgs...)
 	cmd.Dir = dir
+	cmd.Env = isolatedGitEnvForTest()
 	var output bytes.Buffer
 	cmd.Stdout = &output
 	cmd.Stderr = &output
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, output.String())
 	}
+}
+
+func gitConfigArgsForTest() []string {
+	return []string{
+		"-c", "user.name=Roundfix Test",
+		"-c", "user.email=test@example.com",
+		"-c", "commit.gpgsign=false",
+	}
+}
+
+func isolatedGitEnvForTest() []string {
+	env := make([]string, 0, len(os.Environ())+2)
+	for _, entry := range os.Environ() {
+		key, _, _ := strings.Cut(entry, "=")
+		if strings.HasPrefix(key, "GIT_CONFIG_") {
+			continue
+		}
+		env = append(env, entry)
+	}
+	return append(env, "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null")
 }
 
 // newImplementWorkspace builds a real git repository containing a committed

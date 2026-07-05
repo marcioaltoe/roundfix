@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0003-dogfood-polish
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -33,18 +33,18 @@ green.
 
 ## Subtasks
 
-- [ ] Inventory of repo-creating helpers across test suites
-- [ ] Config isolation applied to every helper
-- [ ] Canary test for forced-signing environments
-- [ ] Full-suite pass without environment overrides
+- [x] Inventory of repo-creating helpers across test suites
+- [x] Config isolation applied to every helper
+- [x] Canary test for forced-signing environments
+- [x] Full-suite pass without environment overrides
 
 ## Acceptance Criteria
 
-- [ ] `rg` shows no test helper creating a git repo without the isolation
+- [x] `rg` shows no test helper creating a git repo without the isolation
       pattern (inventory recorded in the Result).
-- [ ] The canary test passes; removing the isolation makes it fail (proven
+- [x] The canary test passes; removing the isolation makes it fail (proven
       once during development, stated in the Result).
-- [ ] The full suite passes with no `GIT_CONFIG_*` overrides in the
+- [x] The full suite passes with no `GIT_CONFIG_*` overrides in the
       environment.
 
 ## Verification
@@ -59,3 +59,31 @@ green.
 `_prd.md` → User Story 3; Core Feature 3; Success Metrics. `_techspec.md` →
 Interfaces (test helpers), Build Order 3. Dogfood finding 21; 0002 QA report
 `qa-report-2026-07-05.md` (the environmental fail this unblocks).
+
+## Result
+
+- Inventory: `rg` found the real repo-creating test helpers in
+  `internal/daemon/daemon_test.go` (`runGitForTest`), `internal/cli/implement_test.go`
+  (`gitImplement`), and `internal/preflight/preflight_test.go`
+  (`runGitForSetup`). `internal/daemon/task_engine_test.go` uses
+  `runGitForTest`. Searches of `internal/store` and `internal/spec` found no
+  git-command repo helper.
+- Isolation: each repo helper now runs git with inherited `GIT_CONFIG_*`
+  removed, `GIT_CONFIG_GLOBAL=/dev/null`, `GIT_CONFIG_SYSTEM=/dev/null`, and
+  explicit `-c user.name=Roundfix Test`, `-c user.email=test@example.com`, and
+  `-c commit.gpgsign=false`. Each temp repo setup also writes local
+  `commit.gpgsign=false`.
+- Canary: `TestRunGitForTestIgnoresForcedSigningConfig` forces
+  `commit.gpgsign=true` and `gpg.program=false` through scoped config visible
+  to an unisolated git call, proves the isolated helper overrides signing to
+  `false`, then proves the helper-created repo still commits without gpg.
+- Red/green evidence: before the helper isolation, `rtk env
+  GIT_CONFIG_GLOBAL=/private/tmp/roundfix-task03-forced.gitconfig
+  GIT_CONFIG_SYSTEM=/dev/null go test ./internal/daemon/ ./internal/preflight/`
+  failed with the six gpg-signing failures from the QA report. After the fix,
+  the same hostile-config package run passed:
+  `ok roundfix/internal/daemon`, `ok roundfix/internal/preflight`.
+- Verification passed with no `GIT_CONFIG_*` overrides:
+  `rtk go test ./internal/daemon/ ./internal/cli/ ./internal/store/` reported
+  `Go test: 225 passed in 3 packages`; `rtk go test ./...` reported
+  `Go test: 454 passed in 16 packages`.
