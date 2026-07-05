@@ -64,6 +64,10 @@ _Avoid_: Test report, QA log
 A local coding runtime that Roundfix launches through the user's installed tool and authentication setup using Agent Client Protocol stdio. The MVP supports Codex through `codex-acp`, Claude through `claude-agent-acp`, and OpenCode through `opencode acp`; command overrides remain a stdio escape hatch for local testing.
 _Avoid_: Review Source, review provider
 
+**Agent Session**:
+The persistent acpx-backed session through which one Run drives its Agent across Work Items — created when the Run starts Agent work, named by the Run, and closed at the Run's terminal outcome.
+_Avoid_: ACP session, chat, conversation, thread
+
 **Max Rounds**:
 The configured number of Review Source rounds after which a Run is considered sufficiently reviewed for the developer's final merge, squash, or rebase decision.
 _Avoid_: Budget, timeout, token cap
