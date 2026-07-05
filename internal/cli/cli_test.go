@@ -231,6 +231,11 @@ func TestRunCommandHelp(t *testing.T) {
 			args:     []string{"setup", "--help"},
 			contains: []string{"roundfix setup [--yes] [--no-input]", "--yes", "--no-input"},
 		},
+		{
+			name:     "upgrade",
+			args:     []string{"upgrade", "--help"},
+			contains: []string{"roundfix upgrade [--check]", "--check", "atomically"},
+		},
 	}
 
 	for _, tt := range tests {

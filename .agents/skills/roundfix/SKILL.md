@@ -65,6 +65,8 @@ roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean
 roundfix implement --spec <slug> --agent <agent>
 roundfix settle --spec <slug> --task <task_id>
 roundfix stop --spec <slug>
+roundfix setup --no-input
+roundfix upgrade --check
 roundfix skills check
 ```
 

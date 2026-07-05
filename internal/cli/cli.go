@@ -45,6 +45,7 @@ Usage:
   roundfix settle --spec <slug> --task <task_id>
   roundfix init [--scope <project|user>]
   roundfix setup [--yes] [--no-input]
+  roundfix upgrade [--check]
   roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
   roundfix attach <run-id>
   roundfix skills check
@@ -59,6 +60,7 @@ Commands:
   settle     Verify and commit all current worktree changes for one failed Task
   stop       Stop an Active Run and release its lock
   setup      Verify and prepare this machine for Roundfix Runs
+  upgrade    Upgrade the Roundfix binary from GitHub Releases
   attach     Replay a Run's event timeline from the Run Database
   skills     Check or install the Roundfix agent skill
 
@@ -156,6 +158,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runInitCommand(ctx, args[1:], stdout, stderr)
 	case "setup":
 		return runSetupCommand(ctx, args[1:], stdout, stderr)
+	case "upgrade":
+		return runUpgradeCommand(ctx, args[1:], stdout, stderr)
 	case "stop":
 		return runStopCommand(ctx, args[1:], stdout, stderr)
 	case "attach":
@@ -864,6 +868,7 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 		printPreflightFailure(name, err, stderr)
 		return exitPreflight
 	}
+	maybeReportVersionFreshness(ctx, loadedConfig, stderr)
 
 	req, err := parseOperationalCommand(name, args, loadedConfig.Config)
 	if err != nil {
@@ -2175,6 +2180,17 @@ offered: declined, or failed.
 Options:
   --yes       Accept every offered install or file change
   --no-input  Skip offered changes instead of prompting
+`
+	case "upgrade":
+		return `Usage:
+  roundfix upgrade [--check]
+
+Resolves the latest Roundfix release for this platform through the GitHub CLI.
+Without --check, downloads the matching asset, verifies it, and atomically
+replaces the current executable. If no releases exist, reports that cleanly.
+
+Options:
+  --check  Report the latest release outcome without installing it
 `
 	case "fetch":
 		return `Usage:

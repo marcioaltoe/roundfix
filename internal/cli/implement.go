@@ -53,6 +53,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
+	maybeReportVersionFreshness(ctx, loadedConfig, stderr)
 	req, err := parseImplementCommand(args, loadedConfig.Config)
 	if err != nil {
 		printPreflightFailure("implement", err, stderr)
