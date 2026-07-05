@@ -40,6 +40,7 @@ Usage:
   roundfix fetch --source coderabbit --pr <number>
   roundfix resolve --pr <number> --agent <agent>
   roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean
+  roundfix implement --spec <slug> --agent <agent>
   roundfix init [--scope <project|user>]
   roundfix stop [<run-id>|--run-id <id>|--pr <number>]
   roundfix attach <run-id>
@@ -51,6 +52,7 @@ Commands:
   fetch      Download review issues for an Open Pull Request
   resolve    Resolve downloaded Unresolved Review Issues
   watch      Fetch and resolve in a watched loop
+  implement  Execute a Spec's Task Graph as one Run
   stop       Stop an Active Run and release its lock
   attach     Replay a Run's event timeline from the Run Database
   skills     Check or install the Roundfix agent skill
@@ -70,6 +72,7 @@ const (
 type commandRequest struct {
 	name            string
 	pr              string
+	spec            string
 	source          string
 	agent           string
 	round           string
@@ -150,6 +153,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runSkillsCommand(ctx, args[1:], stdout, stderr)
 	case "fetch", "resolve", "watch":
 		return runOperationalCommand(ctx, args[0], args[1:], stdout, stderr)
+	case "implement":
+		return runImplementCommand(ctx, args[1:], stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "%s: unknown command %q\n", app.Name, args[0])
 		fmt.Fprintf(stderr, "Run '%s --help' for usage.\n", app.Name)
@@ -1946,6 +1951,8 @@ Options:
   --interactive  Open Interactive Input before starting
   --no-input     Fail instead of opening Interactive Input
 `
+	case "implement":
+		return implementUsage
 	case "stop":
 		return `Usage:
   roundfix stop <run-id>
