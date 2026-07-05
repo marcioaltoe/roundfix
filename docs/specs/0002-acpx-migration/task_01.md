@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0002-acpx-migration
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -24,19 +24,19 @@ Create the acpx-backed runner core inside the agent package: constructing acpx c
 
 ## Subtasks
 
-- [ ] Command-line construction for prompt invocations and the command override
-- [ ] NDJSON parsing into the existing stream→Run Event conversion with raw payloads
-- [ ] Agent log writing and stderr capture
-- [ ] Exit-code mapping table
-- [ ] Helper-process fake-acpx test rig
+- [x] Command-line construction for prompt invocations and the command override
+- [x] NDJSON parsing into the existing stream→Run Event conversion with raw payloads
+- [x] Agent log writing and stderr capture
+- [x] Exit-code mapping table
+- [x] Helper-process fake-acpx test rig
 
 ## Acceptance Criteria
 
-- [ ] Command-construction tests assert every flag and its order for: default adapter, model set, command override, prompt via stdin.
-- [ ] A scripted NDJSON stream produces Run Events whose payloads are byte-identical to the emitted lines, and the stop reason lands in the execute result.
-- [ ] The agent log contains every stdout line in order; a stream mixing valid updates and the final response journals only the updates.
-- [ ] Each exit code in the mapping table has a test asserting the classified outcome (Batch failure vs infrastructure error vs stop), including the timeout reason for exit 3.
-- [ ] No production file outside the agent package changes; the full existing suite passes unchanged.
+- [x] Command-construction tests assert every flag and its order for: default adapter, model set, command override, prompt via stdin.
+- [x] A scripted NDJSON stream produces Run Events whose payloads are byte-identical to the emitted lines, and the stop reason lands in the execute result.
+- [x] The agent log contains every stdout line in order; a stream mixing valid updates and the final response journals only the updates.
+- [x] Each exit code in the mapping table has a test asserting the classified outcome (Batch failure vs infrastructure error vs stop), including the timeout reason for exit 3.
+- [x] No production file outside the agent package changes; the full existing suite passes unchanged.
 
 ## Verification
 
@@ -47,3 +47,26 @@ Create the acpx-backed runner core inside the agent package: constructing acpx c
 ## References
 
 `_prd.md` → User Stories 5, 6; Core Features 3, 5, 6. `_techspec.md` → Interfaces, acpx invocation mapping, Stream and journaling, Exit-code mapping, Testing Approach, Build Order 1. ADR-0008, ADR-0010, ADR-0017.
+
+## Result
+
+Implemented an isolated `internal/agent` acpx invocation core. The core builds explicit acpx prompt commands, maps command overrides through global `--agent`, sends the prompt on stdin, parses stdout as JSON-RPC NDJSON, journals only `session/update` lines as byte-exact Run Event payloads, appends every stdout line to the Agent log, stores the final `session/prompt` stop reason in `ExecuteResult.StopReason`, and classifies documented acpx exit codes into Batch failure, infrastructure error, or Stop Request outcomes.
+
+Fresh verification:
+
+- `rtk go test ./internal/agent/` — passed, 52 tests in 1 package.
+- `rtk go build ./...` — passed.
+- `rtk go test ./...` — passed, 421 tests in 16 packages.
+- `rtk make verify` — passed: full suite, `roundfix skills check`, and build.
+
+Acceptance evidence:
+
+- Command construction: `TestACPXPromptArgsMatchTechSpecOrder` covers default adapter, model flag placement, and command override; `TestACPXRunPromptSendsPromptOnStdin` proves prompt delivery via stdin and captured argv order.
+- Stream and journaling: `TestACPXRunPromptPublishesUpdateLinesAndCapturesStopReason` proves emitted update lines are stored byte-identically in Run Events, the final response is not journaled as an event, and `end_turn` lands in `ExecuteResult.StopReason`.
+- Agent log and stderr handling: the same stream test proves every stdout line is written to the log in order; `TestACPXExitCodeMapping/usage_infrastructure_error` proves stderr appears only in error context, not the Agent log or Run Events.
+- Exit mapping: `TestACPXExitCodeMapping` covers exits 0, 1, 2, 3, 4, 5, and 130, including timeout reason for exit 3 and the loud permission-denied status event for exit 5.
+- Scope: `git status --short` after implementation shows production changes only under `internal/agent`; no CLI, daemon, `Runner` interface, SDK runner wiring, Task Graph manifest, or other task files were edited.
+
+Follow-up notes:
+
+- Wiring `ACPXRunner` into real Runs, Agent Session lifecycle, cancellation commands, and preflight/version checks remain deferred to later tasks in this Spec.

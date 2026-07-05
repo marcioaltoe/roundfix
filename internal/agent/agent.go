@@ -60,8 +60,9 @@ type ExecuteRequest struct {
 }
 
 type ExecuteResult struct {
-	LogPath string
-	Output  string
+	LogPath    string
+	Output     string
+	StopReason string
 }
 
 type Runner interface {

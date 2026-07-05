@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"roundfix/internal/runevent"
-
-	acp "github.com/coder/acp-go-sdk"
 )
 
 // statusPayload and rawPayload are the runner-defined small JSON payloads
@@ -118,12 +116,8 @@ func StreamUpdateFromEvent(event runevent.RunEvent) (StreamUpdate, bool) {
 		}
 		return StreamUpdate{Kind: StreamUpdateRaw, Text: payload.Text}, true
 	default:
-		var note acp.SessionNotification
-		if err := json.Unmarshal(event.Payload, &note); err != nil {
-			return StreamUpdate{}, false
-		}
-		update := streamUpdateFromACP(note.Update)
-		if update.Kind == "" {
+		update, ok, err := streamUpdateFromSessionUpdatePayload(event.Payload)
+		if err != nil || !ok {
 			return StreamUpdate{}, false
 		}
 		return update, true
