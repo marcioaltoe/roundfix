@@ -56,6 +56,12 @@ type WatchStatusRequest struct {
 
 type WatchStatus = watch.Status
 
+type HeadCheckRequest struct {
+	Source         string
+	BaseRepository string
+	HeadSHA        string
+}
+
 type Source interface {
 	FetchReviews(ctx context.Context, req FetchRequest) ([]ReviewItem, error)
 }

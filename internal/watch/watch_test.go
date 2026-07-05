@@ -272,6 +272,253 @@ func TestRunReturnsUnresolvedWhenResolveMakesNoProgress(t *testing.T) {
 	}
 }
 
+func TestRunConfirmsSuccessAndMissingHeadCheckAsClean(t *testing.T) {
+	tests := []struct {
+		name        string
+		checkState  HeadCheckState
+		wantMissing bool
+	}{
+		{name: "success", checkState: CheckSuccess},
+		{name: "missing", checkState: CheckMissing, wantMissing: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := validRequest()
+			clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
+			sleeper := &fakeSleeper{clock: clock}
+			status := &fakeStatusSource{statuses: []Status{{State: StatusSettled}}}
+			fetcher := &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 1}}}
+			resolver := &fakeResolver{results: []ResolveResult{{Remaining: 0, Progress: true}}}
+			check := &fakeCheckSource{states: []HeadCheckState{tt.checkState}}
+
+			result, err := Run(context.Background(), req, Dependencies{
+				StatusSource: status,
+				Fetcher:      fetcher,
+				Resolver:     resolver,
+				CheckSource:  check,
+				Clock:        clock,
+				Sleeper:      sleeper,
+			})
+
+			if err != nil {
+				t.Fatalf("watch run: %v", err)
+			}
+			if result.Outcome != store.StateClean {
+				t.Fatalf("expected Clean, got %q", result.Outcome)
+			}
+			if result.Rounds != 1 {
+				t.Fatalf("expected 1 Round, got %d", result.Rounds)
+			}
+			if result.CheckMissing != tt.wantMissing {
+				t.Fatalf("expected CheckMissing %t, got %t", tt.wantMissing, result.CheckMissing)
+			}
+			if check.calls != 1 {
+				t.Fatalf("expected one check call, got %d", check.calls)
+			}
+			assertSleeps(t, sleeper.sleeps)
+		})
+	}
+}
+
+func TestRunKeepsPollingWhenLocalQueueIsEmptyUntilHeadCheckSucceeds(t *testing.T) {
+	req := validRequest()
+	req.ReviewTimeout = 5 * time.Second
+	req.PollInterval = time.Second
+	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
+	sleeper := &fakeSleeper{clock: clock}
+	status := &fakeStatusSource{statuses: []Status{{State: StatusSettled}}}
+	fetcher := &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 0}}}
+	check := &fakeCheckSource{states: []HeadCheckState{CheckPending, CheckPending, CheckSuccess}}
+
+	result, err := Run(context.Background(), req, Dependencies{
+		StatusSource: status,
+		Fetcher:      fetcher,
+		Resolver:     &fakeResolver{},
+		CheckSource:  check,
+		Clock:        clock,
+		Sleeper:      sleeper,
+	})
+
+	if err != nil {
+		t.Fatalf("watch run: %v", err)
+	}
+	if result.Outcome != store.StateClean {
+		t.Fatalf("expected Clean after check success, got %q", result.Outcome)
+	}
+	if fetcher.calls != 1 {
+		t.Fatalf("expected one fetch before confirmation, got %d", fetcher.calls)
+	}
+	if check.calls != 3 {
+		t.Fatalf("expected polling until the third check, got %d calls", check.calls)
+	}
+	assertSleeps(t, sleeper.sleeps, req.PollInterval, req.PollInterval)
+}
+
+func TestRunReentersFetchWhenHeadCheckFails(t *testing.T) {
+	req := validRequest()
+	req.MaxRounds = 2
+	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
+	sleeper := &fakeSleeper{clock: clock}
+	statusHeadSHAs := []string{}
+	check := &fakeCheckSource{states: []HeadCheckState{CheckFailure, CheckSuccess}}
+	fetcher := &fakeFetcher{
+		results: []FetchResult{
+			{Round: 1, Issues: 1},
+			{Round: 2, Issues: 1},
+		},
+	}
+	resolver := &fakeResolver{
+		results: []ResolveResult{
+			{Remaining: 0, Progress: true, HeadSHA: "def456"},
+			{Remaining: 0, Progress: true, HeadSHA: "fedcba"},
+		},
+	}
+
+	result, err := Run(context.Background(), req, Dependencies{
+		StatusSource: StatusFunc(func(_ context.Context, req StatusRequest) (Status, error) {
+			statusHeadSHAs = append(statusHeadSHAs, req.HeadSHA)
+			return Status{State: StatusSettled}, nil
+		}),
+		Fetcher:     fetcher,
+		Resolver:    resolver,
+		CheckSource: check,
+		Clock:       clock,
+		Sleeper:     sleeper,
+	})
+
+	if err != nil {
+		t.Fatalf("watch run: %v", err)
+	}
+	if result.Outcome != store.StateClean {
+		t.Fatalf("expected Clean after second Round succeeds, got %q", result.Outcome)
+	}
+	if result.Rounds != 2 {
+		t.Fatalf("expected 2 Rounds, got %d", result.Rounds)
+	}
+	if fetcher.calls != 2 || resolver.calls != 2 {
+		t.Fatalf("expected failure check to re-enter fetch and resolve, got fetch=%d resolve=%d", fetcher.calls, resolver.calls)
+	}
+	if check.calls != 2 {
+		t.Fatalf("expected two check calls, got %d", check.calls)
+	}
+	wantStatusHeads := []string{"abc123", "def456"}
+	if len(statusHeadSHAs) != len(wantStatusHeads) {
+		t.Fatalf("expected status head SHAs %#v, got %#v", wantStatusHeads, statusHeadSHAs)
+	}
+	for i := range wantStatusHeads {
+		if statusHeadSHAs[i] != wantStatusHeads[i] {
+			t.Fatalf("expected status head SHAs %#v, got %#v", wantStatusHeads, statusHeadSHAs)
+		}
+	}
+	wantCheckHeads := []string{"def456", "fedcba"}
+	if len(check.headSHAs) != len(wantCheckHeads) {
+		t.Fatalf("expected check head SHAs %#v, got %#v", wantCheckHeads, check.headSHAs)
+	}
+	for i := range wantCheckHeads {
+		if check.headSHAs[i] != wantCheckHeads[i] {
+			t.Fatalf("expected check head SHAs %#v, got %#v", wantCheckHeads, check.headSHAs)
+		}
+	}
+}
+
+func TestRunReturnsMaxRoundsReachedWhenHeadCheckFailsOnFinalRound(t *testing.T) {
+	req := validRequest()
+	req.MaxRounds = 1
+	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
+	status := &fakeStatusSource{statuses: []Status{{State: StatusSettled}}}
+	fetcher := &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 1}}}
+	resolver := &fakeResolver{results: []ResolveResult{{Remaining: 0, Progress: true}}}
+	check := &fakeCheckSource{states: []HeadCheckState{CheckFailure}}
+
+	result, err := Run(context.Background(), req, Dependencies{
+		StatusSource: status,
+		Fetcher:      fetcher,
+		Resolver:     resolver,
+		CheckSource:  check,
+		Clock:        clock,
+		Sleeper:      &fakeSleeper{clock: clock},
+	})
+
+	if err != nil {
+		t.Fatalf("watch run: %v", err)
+	}
+	if result.Outcome != store.StateMaxRoundsReached {
+		t.Fatalf("expected MaxRoundsReached, got %q", result.Outcome)
+	}
+	if result.Rounds != 1 {
+		t.Fatalf("expected 1 Round, got %d", result.Rounds)
+	}
+	if fetcher.calls != 1 || resolver.calls != 1 || check.calls != 1 {
+		t.Fatalf("expected one Round and one check, got fetch=%d resolve=%d check=%d", fetcher.calls, resolver.calls, check.calls)
+	}
+}
+
+func TestRunTimesOutWhileHeadCheckStaysPending(t *testing.T) {
+	req := validRequest()
+	req.ReviewTimeout = 2 * time.Second
+	req.PollInterval = time.Second
+	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
+	sleeper := &fakeSleeper{clock: clock}
+	status := &fakeStatusSource{statuses: []Status{{State: StatusSettled}}}
+	fetcher := &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 0}}}
+	check := &fakeCheckSource{states: []HeadCheckState{CheckPending, CheckPending, CheckPending}}
+
+	result, err := Run(context.Background(), req, Dependencies{
+		StatusSource: status,
+		Fetcher:      fetcher,
+		Resolver:     &fakeResolver{},
+		CheckSource:  check,
+		Clock:        clock,
+		Sleeper:      sleeper,
+	})
+
+	if err != nil {
+		t.Fatalf("watch run: %v", err)
+	}
+	if result.Outcome != store.StateTimedOut {
+		t.Fatalf("expected TimedOut, got %q", result.Outcome)
+	}
+	if result.Rounds != 1 {
+		t.Fatalf("expected timeout after 1 fetched Round, got %d", result.Rounds)
+	}
+	if result.ManualReviewCommand != "@coderabbitai review" {
+		t.Fatalf("expected manual review trigger guidance, got %q", result.ManualReviewCommand)
+	}
+	if check.calls != 3 {
+		t.Fatalf("expected three check calls before timeout, got %d", check.calls)
+	}
+	assertSleeps(t, sleeper.sleeps, req.PollInterval, req.PollInterval)
+}
+
+func TestRunDoesNotConfirmMergeReadinessWithoutUntilClean(t *testing.T) {
+	req := validRequest()
+	req.UntilClean = false
+	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
+	status := &fakeStatusSource{statuses: []Status{{State: StatusSettled}}}
+	fetcher := &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 1}}}
+	resolver := &fakeResolver{results: []ResolveResult{{Remaining: 0, Progress: true}}}
+
+	result, err := Run(context.Background(), req, Dependencies{
+		StatusSource: status,
+		Fetcher:      fetcher,
+		Resolver:     resolver,
+		CheckSource: CheckFunc(func(context.Context, string) (HeadCheckState, error) {
+			t.Fatal("non-until-clean watch must not poll the merge-readiness check")
+			return CheckFailure, nil
+		}),
+		Clock:   clock,
+		Sleeper: &fakeSleeper{clock: clock},
+	})
+
+	if err != nil {
+		t.Fatalf("watch run: %v", err)
+	}
+	if result.Outcome != store.StateClean {
+		t.Fatalf("expected legacy Clean, got %q", result.Outcome)
+	}
+}
+
 func validRequest() Request {
 	return Request{
 		PRNumber:       "123",
@@ -355,6 +602,29 @@ func (source *fakeStatusSource) Status(context.Context, StatusRequest) (Status, 
 		source.statuses = source.statuses[1:]
 	}
 	return status, nil
+}
+
+type fakeCheckSource struct {
+	err      error
+	calls    int
+	states   []HeadCheckState
+	headSHAs []string
+}
+
+func (source *fakeCheckSource) Check(_ context.Context, headSHA string) (HeadCheckState, error) {
+	source.calls++
+	source.headSHAs = append(source.headSHAs, headSHA)
+	if source.err != nil {
+		return "", source.err
+	}
+	if len(source.states) == 0 {
+		return CheckSuccess, nil
+	}
+	state := source.states[0]
+	if len(source.states) > 1 {
+		source.states = source.states[1:]
+	}
+	return state, nil
 }
 
 type fakeFetcher struct {

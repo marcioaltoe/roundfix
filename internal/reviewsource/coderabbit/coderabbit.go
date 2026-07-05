@@ -184,6 +184,28 @@ func (client Client) WatchStatus(ctx context.Context, req reviewsource.WatchStat
 	return classifyWatchStatus(req.HeadSHA, checkRuns, statuses, reviews), nil
 }
 
+func (client Client) HeadCheck(ctx context.Context, req reviewsource.HeadCheckRequest) (watch.HeadCheckState, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(req.BaseRepository) == "" {
+		return "", errors.New("CodeRabbit head check requires base repository metadata")
+	}
+	if strings.TrimSpace(req.HeadSHA) == "" {
+		return "", errors.New("CodeRabbit head check requires HEAD metadata")
+	}
+	gh := client.GitHub
+	if gh == nil {
+		gh = GHClient{}
+	}
+
+	checkRuns, err := gh.CheckRuns(ctx, req.BaseRepository, req.HeadSHA)
+	if err != nil {
+		return "", fmt.Errorf("fetch CodeRabbit check runs: %w", err)
+	}
+	return classifyHeadCheck(req.HeadSHA, checkRuns), nil
+}
+
 type GHClient struct{}
 
 func (client GHClient) ReviewComments(ctx context.Context, repo string, prNumber string) ([]ReviewComment, error) {
@@ -268,6 +290,10 @@ func (client GHClient) CheckRuns(ctx context.Context, repo string, headSHA strin
 	if err != nil {
 		return nil, err
 	}
+	return parseCheckRuns(output)
+}
+
+func parseCheckRuns(output []byte) ([]CheckRun, error) {
 	var raw struct {
 		CheckRuns []struct {
 			Name       string `json:"name"`
@@ -477,6 +503,37 @@ func classifyWatchStatus(headSHA string, checkRuns []CheckRun, statuses []Commit
 		State:  watch.StatusPending,
 		Detail: "No CodeRabbit status or review found for the current HEAD",
 	}
+}
+
+func classifyHeadCheck(headSHA string, checkRuns []CheckRun) watch.HeadCheckState {
+	for _, run := range checkRuns {
+		if !isCodeRabbitSignal(run.Name, run.AppName) {
+			continue
+		}
+		if run.HeadSHA != "" && run.HeadSHA != headSHA {
+			continue
+		}
+		status := strings.ToLower(strings.TrimSpace(run.Status))
+		conclusion := strings.ToLower(strings.TrimSpace(run.Conclusion))
+		switch status {
+		case "queued", "in_progress", "pending", "requested", "waiting":
+			return watch.CheckPending
+		case "completed":
+			if conclusion == "success" {
+				return watch.CheckSuccess
+			}
+			return watch.CheckFailure
+		}
+		switch conclusion {
+		case "success":
+			return watch.CheckSuccess
+		case "failure", "error", "cancelled", "timed_out", "action_required", "neutral", "skipped", "stale":
+			return watch.CheckFailure
+		default:
+			return watch.CheckPending
+		}
+	}
+	return watch.CheckMissing
 }
 
 func classifyCheckRuns(headSHA string, checkRuns []CheckRun) (reviewsource.WatchStatus, bool) {

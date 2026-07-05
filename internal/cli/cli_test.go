@@ -870,6 +870,36 @@ watch:
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
 }
 
+func TestRunWatchMissingHeadCheckPrintsCleanNote(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withWatchHeadCheck(t, (&fakeWatchHeadCheck{
+		states: []watch.HeadCheckState{watch.CheckMissing},
+	}).Check)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected clean watch exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "Review Source check missing for the pushed HEAD; treating Run as Clean.") {
+		t.Fatalf("expected missing-check stderr note, got %q", stderr.String())
+	}
+	if strings.Count(stderr.String(), "Review Source check missing for the pushed HEAD") != 1 {
+		t.Fatalf("expected one missing-check stderr note, got %q", stderr.String())
+	}
+	wantStdout := "" +
+		"issue 001 resolved — major: handle test issue\n" +
+		"Clean after 1 Round(s): 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n"
+	if stdout.String() != wantStdout {
+		t.Fatalf("expected Clean stdout report %q, got %q", wantStdout, stdout.String())
+	}
+	assertRunCount(t, store.DatabasePath(homeDir), 1)
+	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
+}
+
 func TestRunWatchReusesOneAgentSessionAcrossRoundsAndCloses(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
@@ -2554,6 +2584,12 @@ func withSuccessfulPreflight(t *testing.T, repoDir string) {
 	withWatchStatus(t, (&fakeWatchStatus{
 		statuses: []reviewsource.WatchStatus{{State: watch.StatusSettled}},
 	}).Status)
+	withWatchHeadCheck(t, (&fakeWatchHeadCheck{
+		states: []watch.HeadCheckState{watch.CheckSuccess},
+	}).Check)
+	withWatchHeadSHA(t, func(context.Context, string) (string, error) {
+		return "abc123", nil
+	})
 	withFetchReviewItems(t, []reviewsource.ReviewItem{
 		{
 			Title:                   "major: handle test issue",
@@ -2709,6 +2745,24 @@ func withWatchStatus(t *testing.T, fn func(context.Context, reviewsource.WatchSt
 	watchReviewStatus = fn
 	t.Cleanup(func() {
 		watchReviewStatus = old
+	})
+}
+
+func withWatchHeadCheck(t *testing.T, fn func(context.Context, reviewsource.HeadCheckRequest) (watch.HeadCheckState, error)) {
+	t.Helper()
+	old := watchHeadCheck
+	watchHeadCheck = fn
+	t.Cleanup(func() {
+		watchHeadCheck = old
+	})
+}
+
+func withWatchHeadSHA(t *testing.T, fn func(context.Context, string) (string, error)) {
+	t.Helper()
+	old := watchHeadSHA
+	watchHeadSHA = fn
+	t.Cleanup(func() {
+		watchHeadSHA = old
 	})
 }
 
@@ -2985,6 +3039,29 @@ func (source *fakeWatchStatus) Status(context.Context, reviewsource.WatchStatusR
 		source.statuses = source.statuses[1:]
 	}
 	return status, nil
+}
+
+type fakeWatchHeadCheck struct {
+	err      error
+	calls    int
+	states   []watch.HeadCheckState
+	headSHAs []string
+}
+
+func (source *fakeWatchHeadCheck) Check(_ context.Context, req reviewsource.HeadCheckRequest) (watch.HeadCheckState, error) {
+	source.calls++
+	source.headSHAs = append(source.headSHAs, req.HeadSHA)
+	if source.err != nil {
+		return "", source.err
+	}
+	if len(source.states) == 0 {
+		return watch.CheckSuccess, nil
+	}
+	state := source.states[0]
+	if len(source.states) > 1 {
+		source.states = source.states[1:]
+	}
+	return state, nil
 }
 
 type fakeWatchClock struct {

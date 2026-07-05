@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0004-watch-merge-readiness
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -38,23 +38,23 @@ scripted check source plus a gh-adapter unit test.
 
 ## Subtasks
 
-- [ ] CheckFunc seam and Request wiring
-- [ ] Confirm phase in the loop with bounds accounting
-- [ ] gh check-runs adapter with app/check filtering
-- [ ] Scripted-check tests: success, failure→next Round, missing, timeout
-- [ ] CLI wiring and stderr note for the missing case
+- [x] CheckFunc seam and Request wiring
+- [x] Confirm phase in the loop with bounds accounting
+- [x] gh check-runs adapter with app/check filtering
+- [x] Scripted-check tests: success, failure→next Round, missing, timeout
+- [x] CLI wiring and stderr note for the missing case
 
 ## Acceptance Criteria
 
-- [ ] Loop tests cover all four check states and both bound exhaustions with
+- [x] Loop tests cover all four check states and both bound exhaustions with
       exact outcomes; the failure path demonstrably re-enters fetch and
       resolves new issues in the next Round.
-- [ ] The adapter unit test maps real gh JSON fixtures (success, failure,
+- [x] The adapter unit test maps real gh JSON fixtures (success, failure,
       in_progress, absent) to the four states.
-- [ ] A Clean outcome is only reachable with check success or missing —
+- [x] A Clean outcome is only reachable with check success or missing —
       asserted by a test that empties the local queue while the check stays
       pending and observes the Run keep polling.
-- [ ] Full suite passes; only deliberate ADR-0019 assertion changes.
+- [x] Full suite passes; only deliberate ADR-0019 assertion changes.
 
 ## Verification
 
@@ -67,3 +67,25 @@ scripted check source plus a gh-adapter unit test.
 `_prd.md` → User Story 2; Core Feature 2; Decisions. `_techspec.md` → Check
 adapter, Watch loop changes, Risks, Build Order 4. Dogfood finding 20.
 ADR-0019.
+
+## Result
+
+Status: completed.
+
+Acceptance evidence:
+
+- Loop coverage: `internal/watch` covers check success, failure, pending,
+  and missing; timeout while pending; and MaxRoundsReached after a final-round
+  failed check. `TestRunReentersFetchWhenHeadCheckFails` asserts the failure
+  path fetches and resolves a second Round, and asserts later status/check
+  calls use the updated head SHA.
+- Adapter coverage: `TestHeadCheckMapsGitHubCheckRunJSON` parses gh
+  check-runs JSON fixtures for success, failure, in_progress, and absent
+  CodeRabbit checks, then asserts the four watch check states.
+- Clean gating: `TestRunKeepsPollingWhenLocalQueueIsEmptyUntilHeadCheckSucceeds`
+  empties the local queue on fetch, observes pending checks sleep and poll,
+  and reaches Clean only after check success. Missing checks reach Clean and
+  `TestRunWatchMissingHeadCheckPrintsCleanNote` asserts the single stderr
+  note.
+- Verification passed: `rtk go test ./internal/watch/ ./internal/cli/`,
+  `rtk go test -race ./internal/watch/`, and `rtk go test ./...`.

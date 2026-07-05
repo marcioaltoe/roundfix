@@ -359,6 +359,92 @@ func TestWatchStatusReportsPendingWithoutCodeRabbitSignal(t *testing.T) {
 	}
 }
 
+func TestHeadCheckMapsGitHubCheckRunJSON(t *testing.T) {
+	tests := []struct {
+		name    string
+		fixture string
+		want    watch.HeadCheckState
+	}{
+		{
+			name: "success",
+			fixture: `{
+				"total_count": 1,
+				"check_runs": [{
+					"name": "CodeRabbit",
+					"head_sha": "abc123",
+					"status": "completed",
+					"conclusion": "success",
+					"app": {"name": "CodeRabbit", "slug": "coderabbitai"}
+				}]
+			}`,
+			want: watch.CheckSuccess,
+		},
+		{
+			name: "failure",
+			fixture: `{
+				"total_count": 1,
+				"check_runs": [{
+					"name": "CodeRabbit",
+					"head_sha": "abc123",
+					"status": "completed",
+					"conclusion": "failure",
+					"app": {"name": "CodeRabbit", "slug": "coderabbitai"}
+				}]
+			}`,
+			want: watch.CheckFailure,
+		},
+		{
+			name: "in progress",
+			fixture: `{
+				"total_count": 1,
+				"check_runs": [{
+					"name": "CodeRabbit",
+					"head_sha": "abc123",
+					"status": "in_progress",
+					"app": {"name": "CodeRabbit", "slug": "coderabbitai"}
+				}]
+			}`,
+			want: watch.CheckPending,
+		},
+		{
+			name: "absent",
+			fixture: `{
+				"total_count": 1,
+				"check_runs": [{
+					"name": "ci",
+					"head_sha": "abc123",
+					"status": "completed",
+					"conclusion": "success",
+					"app": {"name": "GitHub Actions", "slug": "github-actions"}
+				}]
+			}`,
+			want: watch.CheckMissing,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			checkRuns, err := parseCheckRuns([]byte(tt.fixture))
+			if err != nil {
+				t.Fatalf("parse check runs fixture: %v", err)
+			}
+			client := Client{GitHub: &fakeGitHubClient{checkRuns: checkRuns}}
+
+			got, err := client.HeadCheck(context.Background(), reviewsource.HeadCheckRequest{
+				BaseRepository: "owner/project",
+				HeadSHA:        "abc123",
+			})
+
+			if err != nil {
+				t.Fatalf("head check: %v", err)
+			}
+			if got != tt.want {
+				t.Fatalf("expected %q, got %q", tt.want, got)
+			}
+		})
+	}
+}
+
 func watchStatusRequest() reviewsource.WatchStatusRequest {
 	return reviewsource.WatchStatusRequest{
 		BaseRepository: "owner/project",

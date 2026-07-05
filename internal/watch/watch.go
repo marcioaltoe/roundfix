@@ -17,6 +17,15 @@ const (
 	StatusSettled   = "settled"
 )
 
+type HeadCheckState string
+
+const (
+	CheckPending HeadCheckState = "pending"
+	CheckSuccess HeadCheckState = "success"
+	CheckFailure HeadCheckState = "failure"
+	CheckMissing HeadCheckState = "missing"
+)
+
 type Request struct {
 	RunID          string
 	PRNumber       string
@@ -48,6 +57,7 @@ type FetchResult struct {
 type ResolveResult struct {
 	Remaining int
 	Progress  bool
+	HeadSHA   string
 }
 
 type Result struct {
@@ -55,6 +65,7 @@ type Result struct {
 	Rounds              int
 	Remaining           int
 	ManualReviewCommand string
+	CheckMissing        bool
 }
 
 type StatusSource interface {
@@ -85,6 +96,16 @@ type ResolveFunc func(context.Context) (ResolveResult, error)
 
 func (fn ResolveFunc) Resolve(ctx context.Context) (ResolveResult, error) {
 	return fn(ctx)
+}
+
+type CheckSource interface {
+	Check(context.Context, string) (HeadCheckState, error)
+}
+
+type CheckFunc func(context.Context, string) (HeadCheckState, error)
+
+func (fn CheckFunc) Check(ctx context.Context, headSHA string) (HeadCheckState, error) {
+	return fn(ctx, headSHA)
 }
 
 type Clock interface {
@@ -121,10 +142,12 @@ type Dependencies struct {
 	StatusSource StatusSource
 	Fetcher      Fetcher
 	Resolver     Resolver
+	CheckSource  CheckSource
 	Clock        Clock
 	Sleeper      Sleeper
 	// Sink receives watch-loop Run Events: review status waits, quiet
-	// periods, and fetch results. Nil means events are discarded.
+	// periods, fetch results, and merge-readiness checks. Nil means
+	// events are discarded.
 	Sink runevent.Sink
 }
 
@@ -146,11 +169,12 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 	publisher := watchEventPublisher{sink: deps.Sink, runID: req.RunID, clock: clock}
 
 	startedAt := clock.Now()
+	currentHeadSHA := req.HeadSHA
 	for round := 1; round <= req.MaxRounds; round++ {
 		if budgetExceeded(req, startedAt, clock.Now()) {
 			return Result{Outcome: store.StateBudgetExceeded, Rounds: round - 1}, nil
 		}
-		settledWait, err := waitForSettled(ctx, req, deps.StatusSource, clock, sleeper, publisher)
+		settledWait, err := waitForSettled(ctx, req, currentHeadSHA, deps.StatusSource, clock, sleeper, publisher)
 		if err != nil {
 			return Result{Outcome: store.StateFailed, Rounds: round - 1}, err
 		}
@@ -197,15 +221,52 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 			return Result{Outcome: store.StateFailed, Rounds: round - 1}, err
 		}
 		if fetched.Issues == 0 {
-			return Result{Outcome: store.StateClean, Rounds: round}, nil
+			confirm, err := confirmMergeReady(ctx, req, deps.CheckSource, currentHeadSHA, clock, sleeper, publisher)
+			if err != nil {
+				return Result{Outcome: store.StateFailed, Rounds: round}, err
+			}
+			if confirm.ready {
+				return Result{Outcome: store.StateClean, Rounds: round, CheckMissing: confirm.missing}, nil
+			}
+			if confirm.timedOut {
+				return Result{
+					Outcome:             store.StateTimedOut,
+					Rounds:              round,
+					ManualReviewCommand: "@coderabbitai review",
+				}, nil
+			}
+			if round == req.MaxRounds {
+				return Result{Outcome: store.StateMaxRoundsReached, Rounds: round}, nil
+			}
+			continue
 		}
 
 		resolved, err := deps.Resolver.Resolve(ctx)
 		if err != nil {
 			return Result{Outcome: store.StateFailed, Rounds: round}, err
 		}
+		if resolved.HeadSHA != "" {
+			currentHeadSHA = resolved.HeadSHA
+		}
 		if resolved.Remaining == 0 {
-			return Result{Outcome: store.StateClean, Rounds: round}, nil
+			confirm, err := confirmMergeReady(ctx, req, deps.CheckSource, currentHeadSHA, clock, sleeper, publisher)
+			if err != nil {
+				return Result{Outcome: store.StateFailed, Rounds: round}, err
+			}
+			if confirm.ready {
+				return Result{Outcome: store.StateClean, Rounds: round, CheckMissing: confirm.missing}, nil
+			}
+			if confirm.timedOut {
+				return Result{
+					Outcome:             store.StateTimedOut,
+					Rounds:              round,
+					ManualReviewCommand: "@coderabbitai review",
+				}, nil
+			}
+			if round == req.MaxRounds {
+				return Result{Outcome: store.StateMaxRoundsReached, Rounds: round}, nil
+			}
+			continue
 		}
 		if !resolved.Progress {
 			// A Round that settles nothing will not improve by repeating:
@@ -227,7 +288,7 @@ type settledWaitResult struct {
 	statusChecks int
 }
 
-func waitForSettled(ctx context.Context, req Request, source StatusSource, clock Clock, sleeper Sleeper, publisher watchEventPublisher) (settledWaitResult, error) {
+func waitForSettled(ctx context.Context, req Request, headSHA string, source StatusSource, clock Clock, sleeper Sleeper, publisher watchEventPublisher) (settledWaitResult, error) {
 	startedAt := clock.Now()
 	statusChecks := 0
 	for {
@@ -236,7 +297,7 @@ func waitForSettled(ctx context.Context, req Request, source StatusSource, clock
 		}
 		status, err := source.Status(ctx, StatusRequest{
 			PRNumber: req.PRNumber,
-			HeadSHA:  req.HeadSHA,
+			HeadSHA:  headSHA,
 		})
 		statusChecks++
 		if err != nil {
@@ -259,6 +320,55 @@ func waitForSettled(ctx context.Context, req Request, source StatusSource, clock
 		}
 		if err := sleeper.Sleep(ctx, req.PollInterval); err != nil {
 			return settledWaitResult{}, err
+		}
+	}
+}
+
+type confirmResult struct {
+	ready    bool
+	missing  bool
+	timedOut bool
+}
+
+func confirmMergeReady(ctx context.Context, req Request, source CheckSource, headSHA string, clock Clock, sleeper Sleeper, publisher watchEventPublisher) (confirmResult, error) {
+	if !req.UntilClean || source == nil {
+		return confirmResult{ready: true}, nil
+	}
+	startedAt := clock.Now()
+	for {
+		if err := ctx.Err(); err != nil {
+			return confirmResult{}, err
+		}
+		state, err := source.Check(ctx, headSHA)
+		if err == nil {
+			if err := publisher.publish(ctx, runevent.KindDaemonReviewStatus,
+				fmt.Sprintf("Review Source check: %s", state),
+				map[string]any{"state": state, "head_sha": headSHA},
+			); err != nil {
+				return confirmResult{}, err
+			}
+			switch state {
+			case CheckSuccess:
+				return confirmResult{ready: true}, nil
+			case CheckMissing:
+				return confirmResult{ready: true, missing: true}, nil
+			case CheckFailure:
+				return confirmResult{}, nil
+			case CheckPending:
+			default:
+				return confirmResult{}, fmt.Errorf("unknown Review Source check state %q", state)
+			}
+		} else if err := publisher.publish(ctx, runevent.KindDaemonReviewStatus,
+			"Review Source check poll failed; retrying.",
+			map[string]any{"head_sha": headSHA, "error": err.Error()},
+		); err != nil {
+			return confirmResult{}, err
+		}
+		if clock.Now().Sub(startedAt) >= req.ReviewTimeout {
+			return confirmResult{timedOut: true}, nil
+		}
+		if err := sleeper.Sleep(ctx, req.PollInterval); err != nil {
+			return confirmResult{}, err
 		}
 	}
 }

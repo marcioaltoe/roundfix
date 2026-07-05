@@ -101,6 +101,8 @@ var fetchReviewItems = defaultFetchReviewItems
 // receives them through an explicit dependencies struct.
 var newEngineCollaborators = defaultEngineCollaborators
 var watchReviewStatus = defaultWatchReviewStatus
+var watchHeadCheck = defaultWatchHeadCheck
+var watchHeadSHA = defaultWatchHeadSHA
 var watchClock watch.Clock
 var watchSleeper watch.Sleeper
 var inspectChangedPaths = defaultInspectChangedPaths
@@ -1373,14 +1375,14 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		BudgetEnabled:  loaded.Config.Budget.Enabled,
 		MaxRunDuration: loaded.Config.Budget.MaxRunDuration,
 	}, watch.Dependencies{
-		StatusSource: watch.StatusFunc(func(ctx context.Context, _ watch.StatusRequest) (watch.Status, error) {
+		StatusSource: watch.StatusFunc(func(ctx context.Context, statusReq watch.StatusRequest) (watch.Status, error) {
 			status, err := watchReviewStatus(ctx, reviewsource.WatchStatusRequest{
 				Source:         req.source,
-				PRNumber:       preflightResult.PullRequest.Number,
+				PRNumber:       statusReq.PRNumber,
 				BaseRepository: preflightResult.PullRequest.BaseRepository,
 				HeadRepository: preflightResult.PullRequest.HeadRepository,
 				HeadBranch:     preflightResult.PullRequest.HeadBranch,
-				HeadSHA:        preflightResult.Git.HEAD,
+				HeadSHA:        statusReq.HeadSHA,
 			})
 			if err == nil {
 				fmt.Fprintf(ui.progress, "Review Source status: %s\n", status.State)
@@ -1396,6 +1398,13 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		}),
 		Resolver: watch.ResolveFunc(func(ctx context.Context) (watch.ResolveResult, error) {
 			return resolveWatchBatches(ctx, req, loaded, preflightResult, runtime, run.ID, collaborators, runStore, ui)
+		}),
+		CheckSource: watch.CheckFunc(func(ctx context.Context, headSHA string) (watch.HeadCheckState, error) {
+			return watchHeadCheck(ctx, reviewsource.HeadCheckRequest{
+				Source:         req.source,
+				BaseRepository: preflightResult.PullRequest.BaseRepository,
+				HeadSHA:        headSHA,
+			})
 		}),
 		Clock:   watchClock,
 		Sleeper: watchSleeper,
@@ -1440,6 +1449,9 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 	if result.Outcome == store.StateTimedOut {
 		fmt.Fprintf(stderr, "Review Source timed out. To request another CodeRabbit review manually, comment: %s\n", result.ManualReviewCommand)
+	}
+	if result.CheckMissing {
+		fmt.Fprintln(stderr, "Review Source check missing for the pushed HEAD; treating Run as Clean.")
 	}
 	printReviewIssueReport(stdout, completed.State, result.Rounds, reviewIssueReportIssues(context.WithoutCancel(ctx), req, preflightResult, watchReportIssues))
 	if stopped {
@@ -1527,9 +1539,17 @@ func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundco
 	if err != nil {
 		return watch.ResolveResult{}, err
 	}
+	headSHA := ""
+	if req.untilClean && result.Remaining == 0 {
+		headSHA, err = watchHeadSHA(ctx, preflightResult.Git.Root)
+		if err != nil {
+			return watch.ResolveResult{}, err
+		}
+	}
 	return watch.ResolveResult{
 		Remaining: result.Remaining,
 		Progress:  result.Remaining < len(resolvePlan.selection.Issues),
+		HeadSHA:   headSHA,
 	}, nil
 }
 
@@ -1948,6 +1968,25 @@ func defaultWatchReviewStatus(ctx context.Context, req reviewsource.WatchStatusR
 		return reviewsource.WatchStatus{}, fmt.Errorf("unsupported Review Source %q; supported value: coderabbit", req.Source)
 	}
 	return coderabbit.Client{}.WatchStatus(ctx, req)
+}
+
+func defaultWatchHeadCheck(ctx context.Context, req reviewsource.HeadCheckRequest) (watch.HeadCheckState, error) {
+	if req.Source != reviewsource.SourceCodeRabbit {
+		return "", fmt.Errorf("unsupported Review Source %q; supported value: coderabbit", req.Source)
+	}
+	return coderabbit.Client{}.HeadCheck(ctx, req)
+}
+
+func defaultWatchHeadSHA(ctx context.Context, gitRoot string) (string, error) {
+	head, err := preflight.ExecGitRunner{}.RunGit(ctx, gitRoot, "rev-parse", "HEAD")
+	if err != nil {
+		return "", fmt.Errorf("detect pushed HEAD: %w", err)
+	}
+	head = strings.TrimSpace(head)
+	if head == "" {
+		return "", errors.New("detect pushed HEAD: git returned an empty SHA")
+	}
+	return head, nil
 }
 
 func fetchRoundNumber(value string) (int, error) {
