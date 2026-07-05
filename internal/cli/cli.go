@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -976,7 +977,7 @@ type resolveBatchResult struct {
 	Remaining int
 }
 
-func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, _ io.Writer, stderr io.Writer) int {
+func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, stdout, stderr io.Writer) int {
 	resolvePlan, err := prepareResolveBatch(ctx, req, loaded, preflightResult)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
@@ -1038,7 +1039,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 			}
 			fmt.Fprintf(stderr, "%s Run %s reached %s.\n", commandDisplayName(req.name), run.ID, store.StateStopped)
 			printStopSummary(req, preflightResult, stderr)
-			printIssueSummary(stderr, resolvePlan.selection.Issues)
+			printReviewIssueReport(stdout, store.StateStopped, 1, reviewIssueReportIssues(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues))
 			return exitOK
 		}
 		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
@@ -1046,7 +1047,6 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		ui.Wait()
 		ui.Close()
 		printResolveRunFailure(err, stderr)
-		printIssueSummary(stderr, resolvePlan.selection.Issues)
 		return exitRunFailed
 	}
 
@@ -1070,7 +1070,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	if completed.State == store.StateUnresolved {
 		fmt.Fprintf(stderr, "%d Unresolved Review Issue(s) remain; failed issues are retried by the next fetched Round.\n", cycleResult.Remaining)
 	}
-	printIssueSummary(stderr, resolvePlan.selection.Issues)
+	printReviewIssueReport(stdout, completed.State, 1, reviewIssueReportIssues(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues))
 	if completed.State == store.StateUnresolved {
 		return exitRunFailed
 	}
@@ -1091,27 +1091,90 @@ func completeStoppedRunRecord(runStore *store.Store, runID string) int {
 	return exitOK
 }
 
-// printIssueSummary lists each Review Issue with its final artifact status,
-// re-read from disk, as the command's closing report.
-func printIssueSummary(stderr io.Writer, issues []rounds.Issue) {
-	if len(issues) == 0 {
-		return
-	}
-	fmt.Fprintln(stderr, "\nReview Issues:")
+type reviewIssueReportCounts struct {
+	resolved   int
+	invalid    int
+	failed     int
+	unresolved int
+}
+
+// printReviewIssueReport prints the deterministic stdout contract for review
+// Runs after the terminal outcome is known.
+func printReviewIssueReport(stdout io.Writer, outcome string, roundsCompleted int, issues []rounds.Issue) {
+	counts := reviewIssueReportCounts{}
 	for index, listed := range issues {
-		status := listed.Status
-		title := listed.Title
+		current := listed
 		if parsed, err := rounds.ParseIssue(listed.Path); err == nil {
-			status = parsed.Status
-			if strings.TrimSpace(parsed.Title) != "" {
-				title = parsed.Title
+			current = parsed
+			if strings.TrimSpace(current.Title) == "" {
+				current.Title = listed.Title
 			}
 		}
-		if strings.TrimSpace(status) == "" {
-			status = rounds.StatusPending
+		status := reviewIssueDisplayStatus(current.Status)
+		switch status {
+		case rounds.StatusResolved:
+			counts.resolved++
+		case rounds.StatusInvalid:
+			counts.invalid++
+		case rounds.StatusFailed:
+			counts.failed++
+		case "unresolved":
+			counts.unresolved++
 		}
-		fmt.Fprintf(stderr, "  #%03d  %-10s %s\n", index+1, status, title)
+		fmt.Fprintf(stdout, "issue %03d %s — %s\n", index+1, status, strings.TrimSpace(current.Title))
 	}
+	fmt.Fprintf(stdout, "%s after %d Round(s): %d resolved, %d invalid, %d failed, %d unresolved.\n",
+		outcome, roundsCompleted, counts.resolved, counts.invalid, counts.failed, counts.unresolved)
+}
+
+func reviewIssueDisplayStatus(status string) string {
+	switch status {
+	case rounds.StatusResolved, rounds.StatusInvalid, rounds.StatusFailed, rounds.StatusDuplicated:
+		return status
+	default:
+		return "unresolved"
+	}
+}
+
+func reviewIssueReportIssues(ctx context.Context, req commandRequest, preflightResult preflight.Result, fallback []rounds.Issue) []rounds.Issue {
+	issues, err := loadReviewIssueReportIssues(ctx, req, preflightResult)
+	if err != nil {
+		return fallback
+	}
+	return issues
+}
+
+func loadReviewIssueReportIssues(ctx context.Context, req commandRequest, preflightResult preflight.Result) ([]rounds.Issue, error) {
+	root := filepath.Join(req.artifactDir, "reviews", "pr-"+preflightResult.PullRequest.Number)
+	roundDirs, err := filepath.Glob(filepath.Join(root, "round-*"))
+	if err != nil {
+		return nil, fmt.Errorf("find Round artifacts in %q: %w", root, err)
+	}
+	sort.Strings(roundDirs)
+	issues := []rounds.Issue{}
+	for _, roundDir := range roundDirs {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		issuePaths, err := filepath.Glob(filepath.Join(roundDir, "issue_*.md"))
+		if err != nil {
+			return nil, fmt.Errorf("find Review Issue artifacts in %q: %w", roundDir, err)
+		}
+		sort.Strings(issuePaths)
+		for _, issuePath := range issuePaths {
+			issue, err := rounds.ParseIssue(issuePath)
+			if err != nil {
+				return nil, err
+			}
+			if issue.PRNumber != preflightResult.PullRequest.Number ||
+				issue.HeadRepository != preflightResult.PullRequest.HeadRepository ||
+				issue.HeadBranch != preflightResult.PullRequest.HeadBranch {
+				continue
+			}
+			issues = append(issues, issue)
+		}
+	}
+	return issues, nil
 }
 
 func prepareResolveBatch(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result) (resolveBatchPlan, error) {
@@ -1232,7 +1295,7 @@ func cyclePlanFrom(req commandRequest, loaded roundconfig.Loaded, preflightResul
 	}
 }
 
-func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, _ io.Writer, stderr io.Writer) int {
+func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, stdout, stderr io.Writer) int {
 	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
 		Agent:            req.agent,
 		CommandOverride:  req.agentCmd,
@@ -1289,6 +1352,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 	defer ui.Close()
 
+	watchReportIssues := []rounds.Issue{}
 	result, err := watch.Run(ctx, watch.Request{
 		RunID:          run.ID,
 		PRNumber:       preflightResult.PullRequest.Number,
@@ -1316,7 +1380,11 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 			return status, err
 		}),
 		Fetcher: watch.FetchFunc(func(ctx context.Context, _ int) (watch.FetchResult, error) {
-			return fetchWatchRound(ctx, req, loaded, preflightResult, ui.progress)
+			fetchResult, issues, err := fetchWatchRound(ctx, req, loaded, preflightResult, ui.progress)
+			if err == nil {
+				watchReportIssues = append(watchReportIssues, issues...)
+			}
+			return fetchResult, err
 		}),
 		Resolver: watch.ResolveFunc(func(ctx context.Context) (watch.ResolveResult, error) {
 			return resolveWatchBatches(ctx, req, loaded, preflightResult, runtime, run.ID, collaborators, runStore, ui)
@@ -1365,6 +1433,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	if result.Outcome == store.StateTimedOut {
 		fmt.Fprintf(stderr, "Review Source timed out. To request another CodeRabbit review manually, comment: %s\n", result.ManualReviewCommand)
 	}
+	printReviewIssueReport(stdout, completed.State, result.Rounds, reviewIssueReportIssues(context.WithoutCancel(ctx), req, preflightResult, watchReportIssues))
 	if stopped {
 		printStopSummary(req, preflightResult, stderr)
 		return exitOK
@@ -1390,7 +1459,7 @@ func createOperationalRun(ctx context.Context, runStore *store.Store, kind strin
 	})
 }
 
-func fetchWatchRound(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, stderr io.Writer) (watch.FetchResult, error) {
+func fetchWatchRound(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, stderr io.Writer) (watch.FetchResult, []rounds.Issue, error) {
 	items, err := fetchReviewItems(ctx, reviewsource.FetchRequest{
 		Source:          req.source,
 		PRNumber:        preflightResult.PullRequest.Number,
@@ -1401,7 +1470,7 @@ func fetchWatchRound(ctx context.Context, req commandRequest, loaded roundconfig
 		IncludeNitpicks: loaded.Config.ReviewSource.IncludeNitpicks,
 	})
 	if err != nil {
-		return watch.FetchResult{}, err
+		return watch.FetchResult{}, nil, err
 	}
 	roundResult, err := rounds.PersistRound(ctx, rounds.PersistRequest{
 		ArtifactDir:    req.artifactDir,
@@ -1413,14 +1482,22 @@ func fetchWatchRound(ctx context.Context, req commandRequest, loaded roundconfig
 		Items:          items,
 	})
 	if err != nil {
-		return watch.FetchResult{}, err
+		return watch.FetchResult{}, nil, err
 	}
 	if roundResult.Reused {
 		fmt.Fprintf(stderr, "Reused Round %03d with %d Review Issue(s).\n", roundResult.Round, len(roundResult.IssuePaths))
 	} else {
 		fmt.Fprintf(stderr, "Fetched Round %03d with %d Review Issue(s).\n", roundResult.Round, len(roundResult.IssuePaths))
 	}
-	return watch.FetchResult{Round: roundResult.Round, Issues: len(roundResult.IssuePaths)}, nil
+	reportIssues := make([]rounds.Issue, 0, len(roundResult.IssuePaths))
+	for _, path := range roundResult.IssuePaths {
+		issue, err := rounds.ParseIssue(path)
+		if err != nil {
+			return watch.FetchResult{}, nil, err
+		}
+		reportIssues = append(reportIssues, issue)
+	}
+	return watch.FetchResult{Round: roundResult.Round, Issues: len(roundResult.IssuePaths)}, reportIssues, nil
 }
 
 // resolveWatchBatches runs exactly one resolve cycle for the current
