@@ -196,9 +196,11 @@ request is the developer's explicit decision (ADR-0013).
    shows the Spec's Tasks as Work Items in the shared cockpit.
 
 8. Stop an Active Run for a Spec with `roundfix stop --spec <slug>` from inside
-   the current repository. This resolves that repository's Spec target,
-   releases its lock, and records the Stop Request without repository side
-   effects.
+   the current repository. This resolves that repository's Spec target and
+   records a Stop Request; the Run stops after the current Work Item settles.
+   Use `roundfix stop --force --spec <slug>` only for a dead, stuck, or runaway
+   Run; it cancels the Agent Session best-effort, completes the Run Stopped,
+   and releases its lock immediately.
 
 ## Settle Command
 

@@ -67,6 +67,7 @@ type Run struct {
 	HeadSHA        string
 	ArtifactDir    string
 	SpecSlug       string
+	Agent          string
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	CompletedAt    *time.Time
@@ -88,6 +89,7 @@ type CreateRunRequest struct {
 	HeadSHA        string
 	ArtifactDir    string
 	SpecSlug       string
+	Agent          string
 }
 
 type ActiveRunError struct {
@@ -214,8 +216,8 @@ func (store *Store) CreateRun(ctx context.Context, req CreateRunRequest) (Run, e
 INSERT INTO runs (
 	id, kind, state, head_repository, head_branch, base_repository,
 	pr_number, git_root, local_branch, head_sha, artifact_dir, spec_slug,
-	created_at, updated_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	agent, created_at, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		runID,
 		req.Kind,
 		StateActive,
@@ -228,6 +230,7 @@ INSERT INTO runs (
 		req.HeadSHA,
 		req.ArtifactDir,
 		req.SpecSlug,
+		req.Agent,
 		formatTime(now),
 		formatTime(now),
 	)
@@ -413,7 +416,7 @@ func (store *Store) ActiveRunInGitRoot(ctx context.Context, gitRoot string) (Run
 	row := store.db.QueryRowContext(ctx, `
 SELECT r.id, r.kind, r.state, r.head_repository, r.head_branch, r.base_repository,
        r.pr_number, r.git_root, r.local_branch, r.head_sha, r.artifact_dir, r.spec_slug,
-       r.created_at, r.updated_at, r.completed_at
+       r.agent, r.created_at, r.updated_at, r.completed_at
 FROM active_run_locks l
 JOIN runs r ON r.id = l.run_id
 WHERE r.git_root = ?
@@ -548,7 +551,7 @@ func (store *Store) migrate(ctx context.Context) error {
 	}
 	switch version {
 	case schemaVersion:
-		return nil
+		return store.ensureAgentColumn(ctx)
 	case 0:
 		return store.applyMigration(ctx, createSchemaStatements())
 	case 3:
@@ -595,6 +598,7 @@ func createSchemaStatements() []string {
 			head_sha TEXT NOT NULL DEFAULT '',
 			artifact_dir TEXT NOT NULL DEFAULT '',
 			spec_slug TEXT NOT NULL DEFAULT '',
+			agent TEXT NOT NULL DEFAULT '',
 			stop_requested_at TEXT,
 			created_at TEXT NOT NULL,
 			updated_at TEXT NOT NULL,
@@ -644,9 +648,52 @@ func migrateV3ToV4Statements() []string {
 
 func migrateV4ToV5Statements() []string {
 	return []string{
+		`ALTER TABLE runs ADD COLUMN agent TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE runs ADD COLUMN stop_requested_at TEXT`,
 		`PRAGMA user_version = 5`,
 	}
+}
+
+func (store *Store) ensureAgentColumn(ctx context.Context) error {
+	exists, err := store.runColumnExists(ctx, "agent")
+	if err != nil {
+		return err
+	}
+	if exists {
+		return nil
+	}
+	return store.applyMigration(ctx, []string{
+		`ALTER TABLE runs ADD COLUMN agent TEXT NOT NULL DEFAULT ''`,
+		`PRAGMA user_version = 5`,
+	})
+}
+
+func (store *Store) runColumnExists(ctx context.Context, name string) (bool, error) {
+	rows, err := store.db.QueryContext(ctx, `PRAGMA table_info(runs)`)
+	if err != nil {
+		return false, fmt.Errorf("inspect runs columns: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+	for rows.Next() {
+		var cid int
+		var columnName string
+		var columnType string
+		var notNull int
+		var defaultValue any
+		var primaryKey int
+		if err := rows.Scan(&cid, &columnName, &columnType, &notNull, &defaultValue, &primaryKey); err != nil {
+			return false, fmt.Errorf("scan runs column: %w", err)
+		}
+		if columnName == name {
+			return true, nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return false, fmt.Errorf("inspect runs columns: %w", err)
+	}
+	return false, nil
 }
 
 func validateCreateRunRequest(req CreateRunRequest) error {
@@ -707,7 +754,7 @@ func selectActiveRunByTarget(ctx context.Context, querier runQuerier, targetKind
 	row := querier.QueryRowContext(ctx, `
 SELECT r.id, r.kind, r.state, r.head_repository, r.head_branch, r.base_repository,
        r.pr_number, r.git_root, r.local_branch, r.head_sha, r.artifact_dir, r.spec_slug,
-       r.created_at, r.updated_at, r.completed_at
+       r.agent, r.created_at, r.updated_at, r.completed_at
 FROM active_run_locks l
 JOIN runs r ON r.id = l.run_id
 WHERE l.target_kind = ? AND l.target_key = ?`,
@@ -728,7 +775,7 @@ func selectRun(ctx context.Context, querier runQuerier, runID string) (Run, erro
 	row := querier.QueryRowContext(ctx, `
 SELECT id, kind, state, head_repository, head_branch, base_repository,
        pr_number, git_root, local_branch, head_sha, artifact_dir, spec_slug,
-       created_at, updated_at, completed_at
+       agent, created_at, updated_at, completed_at
 FROM runs
 WHERE id = ?`, runID)
 	run, err := scanRun(row)
@@ -756,6 +803,7 @@ func scanRun(row *sql.Row) (Run, error) {
 		&run.HeadSHA,
 		&run.ArtifactDir,
 		&run.SpecSlug,
+		&run.Agent,
 		&createdAt,
 		&updatedAt,
 		&completedAt,

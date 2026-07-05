@@ -155,6 +155,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		LocalBranch: gitState.Branch,
 		HeadSHA:     gitState.HEAD,
 		SpecSlug:    graph.Spec.Slug,
+		Agent:       runtime.ID,
 	})
 	if err != nil {
 		// A lost work-target race surfaces the store's ActiveRunError as-is;

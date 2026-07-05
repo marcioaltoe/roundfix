@@ -228,6 +228,21 @@ func (runner *ACPXRunner) EndSession(ctx context.Context, runtime RuntimeSpec, s
 	return nil
 }
 
+func (runner *ACPXRunner) CancelSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error {
+	sessionName := strings.TrimSpace(session.Name)
+	if sessionName == "" {
+		return errors.New("Agent Session name is required")
+	}
+	args, err := acpxCancelArgs(runtime, sessionName, session.WorkDir)
+	if err != nil {
+		return fmt.Errorf("build acpx cancel command for Agent Session %q: %w", sessionName, err)
+	}
+	if err := runner.runACPXCommand(ctx, args); err != nil {
+		return fmt.Errorf("cancel acpx Agent Session %q: %w", sessionName, err)
+	}
+	return nil
+}
+
 func (runner *ACPXRunner) ensureSession(ctx context.Context, req ExecuteRequest, sink runevent.Sink) error {
 	sessionName := strings.TrimSpace(req.Session.Name)
 	if sessionName == "" {

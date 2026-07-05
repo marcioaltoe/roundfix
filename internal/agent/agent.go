@@ -261,6 +261,10 @@ func (runner *DefaultRunner) EndSession(ctx context.Context, runtime RuntimeSpec
 	return runner.acpxRunner().EndSession(ctx, runtime, session)
 }
 
+func (runner *DefaultRunner) CancelSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error {
+	return runner.acpxRunner().CancelSession(ctx, runtime, session)
+}
+
 func (runner *DefaultRunner) acpxRunner() *ACPXRunner {
 	if runner.acpx == nil {
 		runner.acpx = &ACPXRunner{}

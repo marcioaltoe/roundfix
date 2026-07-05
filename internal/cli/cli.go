@@ -118,6 +118,7 @@ var resolvePullRequestForStop = defaultResolvePullRequestForStop
 var promptInitScope = defaultPromptInitScope
 var resolveSkillsProjectRoot = defaultResolveSkillsProjectRoot
 var promptProjectClaudeSkillSymlink = defaultPromptProjectClaudeSkillSymlink
+var cancelStopAgentSession = defaultCancelStopAgentSession
 
 type validationError struct {
 	message string
@@ -271,6 +272,8 @@ type stopRequest struct {
 type stopResult struct {
 	Run       store.Run
 	Requested bool
+	Forced    bool
+	Warnings  []string
 }
 
 func runStopCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
@@ -302,6 +305,9 @@ func runStopCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 	if err != nil {
 		printStopFailure(err, stderr)
 		return exitPreflight
+	}
+	for _, warning := range result.Warnings {
+		fmt.Fprintf(stderr, "%s: %s\n", app.Name, warning)
 	}
 	printStopSuccess(result, stdout)
 	return exitOK
@@ -366,11 +372,7 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 			return stopResult{}, validationError{message: fmt.Sprintf("Run %q does not exist", req.runID)}
 		}
 		if req.force {
-			run, err := runStore.CompleteRun(ctx, req.runID, store.StateStopped)
-			if err != nil {
-				return stopResult{}, err
-			}
-			return stopResult{Run: run}, nil
+			return forceStopRun(ctx, runStore, current)
 		}
 		if err := runStore.RequestStop(ctx, current.ID); err != nil {
 			return stopResult{}, err
@@ -392,11 +394,7 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 			return stopResult{}, validationError{message: fmt.Sprintf("no Active Run exists for repository %q and Spec %q", gitRoot, specSlug)}
 		}
 		if req.force {
-			run, err := runStore.CompleteRun(ctx, active.ID, store.StateStopped)
-			if err != nil {
-				return stopResult{}, err
-			}
-			return stopResult{Run: run}, nil
+			return forceStopRun(ctx, runStore, active)
 		}
 		if err := runStore.RequestStop(ctx, active.ID); err != nil {
 			return stopResult{}, err
@@ -431,16 +429,43 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 		return stopResult{}, validationError{message: fmt.Sprintf("no Active Run exists for Head Repository %q and PR Head Branch %q", headRepo, headBranch)}
 	}
 	if req.force {
-		run, err := runStore.CompleteRun(ctx, active.ID, store.StateStopped)
-		if err != nil {
-			return stopResult{}, err
-		}
-		return stopResult{Run: run}, nil
+		return forceStopRun(ctx, runStore, active)
 	}
 	if err := runStore.RequestStop(ctx, active.ID); err != nil {
 		return stopResult{}, err
 	}
 	return stopResult{Run: active, Requested: true}, nil
+}
+
+func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run) (stopResult, error) {
+	warnings := bestEffortCancelAgentSession(ctx, active)
+	run, err := runStore.CompleteRun(ctx, active.ID, store.StateStopped)
+	if err != nil {
+		return stopResult{}, err
+	}
+	return stopResult{Run: run, Forced: true, Warnings: warnings}, nil
+}
+
+func bestEffortCancelAgentSession(ctx context.Context, run store.Run) []string {
+	agentID := strings.TrimSpace(run.Agent)
+	if agentID == "" {
+		return []string{fmt.Sprintf("Agent Session cancel skipped for Run %s: no Agent runtime recorded", run.ID)}
+	}
+	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{Agent: agentID})
+	if err != nil {
+		return []string{fmt.Sprintf("Agent Session cancel skipped for Run %s: %v", run.ID, err)}
+	}
+	session := agent.SessionRefForRun(run.ID, run.GitRoot)
+	cancelCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	if err := cancelStopAgentSession(cancelCtx, runtime, session); err != nil {
+		return []string{fmt.Sprintf("Agent Session cancel failed for Run %s: %v", run.ID, err)}
+	}
+	return nil
+}
+
+func defaultCancelStopAgentSession(ctx context.Context, runtime agent.RuntimeSpec, session agent.SessionRef) error {
+	return agent.NewDefaultRunner().CancelSession(ctx, runtime, session)
 }
 
 func defaultResolvePullRequestForStop(ctx context.Context, workDir string, pr string) (preflight.PullRequest, error) {
@@ -1042,7 +1067,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	defer func() {
 		_ = runStore.Close()
 	}()
-	run, err := createOperationalRun(ctx, runStore, store.KindResolve, preflightResult, req.artifactDir)
+	run, err := createOperationalRun(ctx, runStore, store.KindResolve, preflightResult, req.artifactDir, resolvePlan.runtime.ID)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
@@ -1365,7 +1390,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	defer func() {
 		_ = runStore.Close()
 	}()
-	run, err := createOperationalRun(ctx, runStore, store.KindWatch, preflightResult, req.artifactDir)
+	run, err := createOperationalRun(ctx, runStore, store.KindWatch, preflightResult, req.artifactDir, runtime.ID)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
@@ -1500,7 +1525,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	return exitForWatchOutcome(result.Outcome)
 }
 
-func createOperationalRun(ctx context.Context, runStore *store.Store, kind string, preflightResult preflight.Result, artifactDir string) (store.Run, error) {
+func createOperationalRun(ctx context.Context, runStore *store.Store, kind string, preflightResult preflight.Result, artifactDir string, agentID string) (store.Run, error) {
 	return runStore.CreateRun(ctx, store.CreateRunRequest{
 		Kind:           kind,
 		HeadRepository: preflightResult.PullRequest.HeadRepository,
@@ -1511,6 +1536,7 @@ func createOperationalRun(ctx context.Context, runStore *store.Store, kind strin
 		LocalBranch:    preflightResult.Git.Branch,
 		HeadSHA:        preflightResult.Git.HEAD,
 		ArtifactDir:    artifactDir,
+		Agent:          agentID,
 	})
 }
 
@@ -2267,6 +2293,11 @@ Options:
   --head-repo   Explicit Head Repository, owner/name
   --head-branch Explicit PR Head Branch
   --force       Immediately stop a dead or runaway Run and release its lock
+
+Default stop is graceful: it records a Stop Request and the Run stops after
+the current Work Item settles. Use --force only for a dead, stuck, or runaway
+Run; it cancels the Agent Session best-effort and completes the Run Stopped
+immediately.
 `
 	case "skills":
 		return `Usage:
@@ -2342,16 +2373,7 @@ func printStopSuccess(result stopResult, stdout io.Writer) {
 	if result.Requested {
 		fmt.Fprintf(stdout, "%s\n\n", style.green(style.bold("Roundfix Stop Request recorded")))
 		fmt.Fprintf(stdout, "%s\n", style.cyan("Run:"))
-		fmt.Fprintf(stdout, "  ID: %s\n", run.ID)
-		fmt.Fprintf(stdout, "  State: %s\n", run.State)
-		fmt.Fprintf(stdout, "  Kind: %s\n", run.Kind)
-		if run.PRNumber != "" || run.HeadRepository != "" || run.HeadBranch != "" {
-			fmt.Fprintf(stdout, "  PR: #%s %s\n", run.PRNumber, run.HeadRepository)
-			fmt.Fprintf(stdout, "  Branch: %s\n", run.HeadBranch)
-		}
-		if run.SpecSlug != "" {
-			fmt.Fprintf(stdout, "  Spec: %s\n", run.SpecSlug)
-		}
+		printStopRunFields(stdout, run)
 		fmt.Fprintln(stdout)
 		fmt.Fprintf(stdout, "%s\n", style.cyan("Next:"))
 		fmt.Fprintln(stdout, "  Stop Request recorded; the Run stops after the current Work Item settles.")
@@ -2360,15 +2382,37 @@ func printStopSuccess(result stopResult, stdout io.Writer) {
 		fmt.Fprintln(stdout, "  Roundfix recorded the Stop Request in the Run Database only.")
 		return
 	}
+	if result.Forced {
+		fmt.Fprintf(stdout, "%s\n\n", style.green(style.bold("Roundfix Run force-stopped")))
+		fmt.Fprintf(stdout, "%s\n", style.cyan("Run:"))
+		printStopRunFields(stdout, run)
+		fmt.Fprintln(stdout)
+		fmt.Fprintf(stdout, "%s\n", style.cyan("Result:"))
+		fmt.Fprintln(stdout, "  Force stop completed the Run as Stopped immediately and released its Active Run locks.")
+		fmt.Fprintln(stdout)
+		fmt.Fprintf(stdout, "%s\n", style.cyan("No repository side effects:"))
+		fmt.Fprintln(stdout, "  Roundfix did not edit files, commit, push, fetch, or resolve Review Source threads.")
+		return
+	}
 	fmt.Fprintf(stdout, "%s\n\n", style.green(style.bold("Roundfix Run stopped")))
 	fmt.Fprintf(stdout, "%s\n", style.cyan("Run:"))
+	printStopRunFields(stdout, run)
+	fmt.Fprintln(stdout)
+	fmt.Fprintf(stdout, "%s\n", style.cyan("No repository side effects:"))
+	fmt.Fprintln(stdout, "  Roundfix released the Active Run lock without editing files, committing, pushing, fetching, or resolving Review Source threads.")
+}
+
+func printStopRunFields(stdout io.Writer, run store.Run) {
 	fmt.Fprintf(stdout, "  ID: %s\n", run.ID)
 	fmt.Fprintf(stdout, "  State: %s\n", run.State)
 	fmt.Fprintf(stdout, "  Kind: %s\n", run.Kind)
-	fmt.Fprintf(stdout, "  PR: #%s %s\n", run.PRNumber, run.HeadRepository)
-	fmt.Fprintf(stdout, "  Branch: %s\n\n", run.HeadBranch)
-	fmt.Fprintf(stdout, "%s\n", style.cyan("No repository side effects:"))
-	fmt.Fprintln(stdout, "  Roundfix released the Active Run lock without editing files, committing, pushing, fetching, or resolving Review Source threads.")
+	if run.PRNumber != "" || run.HeadRepository != "" || run.HeadBranch != "" {
+		fmt.Fprintf(stdout, "  PR: #%s %s\n", run.PRNumber, run.HeadRepository)
+		fmt.Fprintf(stdout, "  Branch: %s\n", run.HeadBranch)
+	}
+	if run.SpecSlug != "" {
+		fmt.Fprintf(stdout, "  Spec: %s\n", run.SpecSlug)
+	}
 }
 
 func printStopFailure(err error, stderr io.Writer) {

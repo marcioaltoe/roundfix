@@ -240,6 +240,33 @@ func TestACPXPromptArgsPlaceGlobalsBeforeAgentAndSubcommand(t *testing.T) {
 	}
 }
 
+func TestACPXCancelSessionInvokesSessionCancel(t *testing.T) {
+	dir := t.TempDir()
+	invocationsPath := filepath.Join(dir, "invocations.jsonl")
+	t.Setenv(fakeACPXEnv, "1")
+	t.Setenv(fakeACPXInvokes, invocationsPath)
+
+	err := (&ACPXRunner{Command: os.Args[0]}).CancelSession(context.Background(), RuntimeSpec{
+		ID:       "codex",
+		Protocol: ProtocolACP,
+	}, SessionRef{
+		Name:    "roundfix-run-1",
+		WorkDir: "/repo",
+	})
+
+	if err != nil {
+		t.Fatalf("CancelSession returned error: %v", err)
+	}
+	want := [][]string{{
+		"--cwd", "/repo",
+		"codex", "cancel",
+		"-s", "roundfix-run-1",
+	}}
+	if got := readJSONInvocations(t, invocationsPath); !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected cancel invocation\nwant: %#v\ngot:  %#v", want, got)
+	}
+}
+
 func TestACPXRunPromptSendsPromptOnStdin(t *testing.T) {
 	run := runFakeACPXPrompt(t, fakeACPXPrompt{
 		runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-test"},
