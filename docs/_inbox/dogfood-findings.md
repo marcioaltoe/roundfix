@@ -224,3 +224,18 @@ its own PRD/techspec cycle).
     grammar, and the gated real test passes. Lesson: a fake rig only
     re-encodes assumptions — the gated real-binary test is the actual
     contract check and earned its keep on run one.
+
+27. **acpx built-in codex adapter died on spawn; local binary override fixed
+    it.** First production Run through acpx (QA-only,
+    run_20260705T124844Z_abf9db53798b59a4) failed at `sessions ensure`:
+    acpx's built-in codex agent launches `npx -y @agentclientprotocol/codex-acp`
+    (resolved 1.1.0), whose wrapped Codex process exits 1 on this machine,
+    while the locally installed `codex-acp` works. Remediation applied:
+    `acpx config init` + `agents.codex.command: codex-acp` in
+    `~/.acpx/config.json` — exactly the direct-binary recommendation the
+    README already carries. Follow-ups: the `roundfix setup` idea (finding
+    22) should offer to write this override; Roundfix's infrastructure error
+    surfaced only acpx's opaque "Internal error" — include the adapter's
+    stderr tail in the message for actionability; consider reporting the
+    1.1.0 spawn failure upstream. The Run failed loud and released its lock
+    correctly. Size: small.
