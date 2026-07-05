@@ -231,7 +231,7 @@ func (runner *ACPXRunner) EndSession(ctx context.Context, runtime RuntimeSpec, s
 func (runner *ACPXRunner) CancelSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error {
 	sessionName := strings.TrimSpace(session.Name)
 	if sessionName == "" {
-		return errors.New("Agent Session name is required")
+		return errors.New("agent session name is required")
 	}
 	args, err := acpxCancelArgs(runtime, sessionName, session.WorkDir)
 	if err != nil {
@@ -246,11 +246,11 @@ func (runner *ACPXRunner) CancelSession(ctx context.Context, runtime RuntimeSpec
 func (runner *ACPXRunner) ensureSession(ctx context.Context, req ExecuteRequest, sink runevent.Sink) error {
 	sessionName := strings.TrimSpace(req.Session.Name)
 	if sessionName == "" {
-		return errors.New("Agent Session is required")
+		return errors.New("agent session is required")
 	}
 	workDir := strings.TrimSpace(req.GitRoot)
 	if workDir == "" {
-		return errors.New("Agent working directory is required")
+		return errors.New("agent working directory is required")
 	}
 	if _, ok := runner.ensuredSessions[sessionName]; ok {
 		return nil

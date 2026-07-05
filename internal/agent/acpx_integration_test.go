@@ -141,7 +141,9 @@ func buildRealACPXEchoAgent(t *testing.T, dir string) string {
 	if err := os.WriteFile(source, []byte(realACPXEchoAgentSource), 0o644); err != nil {
 		t.Fatalf("write echo agent source: %v", err)
 	}
-	cmd := exec.Command("go", "build", "-o", binary, source)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "go", "build", "-o", binary, source)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("build echo agent: %v\n%s", err, string(output))
@@ -174,7 +176,10 @@ func assertNoRealACPXOrphans(t *testing.T, sessionName string, helperLog string)
 	defer ticker.Stop()
 	for {
 		helperPIDs := liveEchoAgentPIDs(helperLog)
-		ownerLines := realACPXOwnerLines(sessionName)
+		ownerLines, err := realACPXOwnerLines(sessionName)
+		if err != nil {
+			t.Fatalf("inspect real acpx owner processes: %v", err)
+		}
 		if len(helperPIDs) == 0 && len(ownerLines) == 0 {
 			return
 		}
@@ -217,11 +222,13 @@ func processAlive(pid int) bool {
 	return err == nil || errors.Is(err, syscall.EPERM)
 }
 
-func realACPXOwnerLines(sessionName string) []string {
-	cmd := exec.Command("ps", "-axo", "pid=,command=")
+func realACPXOwnerLines(sessionName string) ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "ps", "-axo", "pid=,command=")
 	output, err := cmd.Output()
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("run ps: %w", err)
 	}
 	lines := []string{}
 	for _, line := range strings.Split(string(output), "\n") {
@@ -229,7 +236,7 @@ func realACPXOwnerLines(sessionName string) []string {
 			lines = append(lines, strings.TrimSpace(line))
 		}
 	}
-	return lines
+	return lines, nil
 }
 
 const realACPXEchoAgentSource = `package main

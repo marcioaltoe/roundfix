@@ -43,7 +43,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestACPXProbePassesWhenVersionMatchesPin(t *testing.T) {
-	err, invocations := runFakeACPXProbe(t, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, PinnedACPXVersion)
+	invocations, err := runFakeACPXProbe(t, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, PinnedACPXVersion)
 
 	if err != nil {
 		t.Fatalf("expected matching acpx version to pass, got %v", err)
@@ -72,7 +72,7 @@ func TestACPXProbeMissingBinaryNamesInstallCommand(t *testing.T) {
 func TestACPXProbeMismatchedVersionNamesFoundRequiredAndInstallCommand(t *testing.T) {
 	const foundVersion = "0.11.0"
 
-	err, invocations := runFakeACPXProbe(t, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, foundVersion)
+	invocations, err := runFakeACPXProbe(t, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, foundVersion)
 
 	if err == nil {
 		t.Fatal("expected mismatched acpx version to fail")
@@ -95,7 +95,7 @@ func TestACPXProbeMismatchedVersionNamesFoundRequiredAndInstallCommand(t *testin
 func TestACPXProbeCommandOverrideStillChecksACPXClient(t *testing.T) {
 	runtime := RuntimeSpec{ID: "codex-custom", Protocol: ProtocolStdio, Command: "custom-acp --stdio"}
 
-	err, invocations := runFakeACPXProbe(t, runtime, PinnedACPXVersion)
+	invocations, err := runFakeACPXProbe(t, runtime, PinnedACPXVersion)
 
 	if err != nil {
 		t.Fatalf("expected command override probe to pass through acpx, got %v", err)
@@ -1009,7 +1009,7 @@ func runFakeACPXPrompt(t *testing.T, prompt fakeACPXPrompt) fakeACPXRun {
 	}
 }
 
-func runFakeACPXProbe(t *testing.T, runtime RuntimeSpec, version string) (error, [][]string) {
+func runFakeACPXProbe(t *testing.T, runtime RuntimeSpec, version string) ([][]string, error) {
 	t.Helper()
 	dir := t.TempDir()
 	invocationsPath := filepath.Join(dir, "invocations.jsonl")
@@ -1018,7 +1018,7 @@ func runFakeACPXProbe(t *testing.T, runtime RuntimeSpec, version string) (error,
 	t.Setenv(fakeACPXStdout, version+"\n")
 
 	err := (ACPXRunner{Command: os.Args[0]}).Probe(context.Background(), runtime)
-	return err, readJSONInvocations(t, invocationsPath)
+	return readJSONInvocations(t, invocationsPath), err
 }
 
 func readJSONInvocations(t *testing.T, path string) [][]string {

@@ -219,7 +219,7 @@ it, or set `NO_COLOR` to suppress color.
   run in dependency order, each Task's Verification commands gate one commit,
   and `implement.auto_push: true` makes a Clean spec Run push its branch
   upstream and append `pushed <remote>/<branch>` to stdout. Integration
-  Pending, Unresolved, Failed, Stopped, and failing-QA Runs never push.
+  Pending, Unresolved Outcome, Failed, Stopped, and failing-QA Runs never push.
 - `settle` targets one failed Task in its kept Run Worktree, re-runs its
   Verification commands there, changes nothing when verification fails, and on
   pass settles it `completed`, stages all Run Worktree changes plus the task
@@ -309,8 +309,8 @@ starts from committed Git state, so untracked files in the user's checkout are
 absent unless they are listed under `worktree.copy`; add repository-relative
 paths there when Verification or local tooling needs untracked files. Dirty
 user checkout behavior is command-specific: `implement` no longer blocks on it
-and instead prints a note that overlapping local changes end the Run Integration
-Pending. Other operational commands retain their existing preflight rules,
+and instead prints a note that overlapping local changes end the Run in
+Integration Pending. Other operational commands retain their existing preflight rules,
 including the local Project Config allowances for `fetch`, `resolve`, and
 `watch` at `.roundfixrc.yml`. Batch commits exclude that config file so local
 setup changes do not mix with review fixes. Terminal Run outcomes release the

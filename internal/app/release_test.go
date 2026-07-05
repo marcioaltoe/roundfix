@@ -17,6 +17,8 @@ func TestCompareVersions(t *testing.T) {
 		{name: "equal with tag prefix", left: "v1.2.3", right: "1.2.3", want: 0},
 		{name: "older patch", left: "1.2.2", right: "1.2.3", want: -1},
 		{name: "dev prerelease lower than stable", left: "0.0.0-dev", right: "0.0.0", want: -1},
+		{name: "build metadata hyphen equals stable", left: "1.2.3+build-info", right: "1.2.3", want: 0},
+		{name: "prerelease with build metadata lower than stable", left: "1.2.3-rc.1+build-info", right: "1.2.3", want: -1},
 	}
 
 	for _, tt := range tests {

@@ -109,10 +109,13 @@ type comparableVersion struct {
 
 func parseComparableVersion(version string) comparableVersion {
 	normalized := NormalizeVersion(version)
+	if idx := strings.IndexByte(normalized, '+'); idx >= 0 {
+		normalized = normalized[:idx]
+	}
 	main := normalized
 	prerelease := false
-	if idx := strings.IndexAny(normalized, "-+"); idx >= 0 {
-		prerelease = strings.Contains(normalized[idx:], "-")
+	if idx := strings.IndexByte(normalized, '-'); idx >= 0 {
+		prerelease = true
 		main = normalized[:idx]
 	}
 	fields := strings.FieldsFunc(main, func(r rune) bool {
