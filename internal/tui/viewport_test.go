@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"roundfix/internal/runevent"
 	"roundfix/internal/store"
@@ -44,14 +45,18 @@ func (source *fakeTimelineSource) RunEventsBefore(_ context.Context, _ string, c
 }
 
 func (source *fakeTimelineSource) addLine(text string) {
+	source.addEvent(runevent.RunEvent{
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentRaw,
+		Payload: []byte(`{"text":` + strconv.Quote(text) + `}`),
+	})
+}
+
+func (source *fakeTimelineSource) addEvent(event runevent.RunEvent) {
 	cursor := int64(len(source.events) + 1)
 	source.events = append(source.events, store.JournalEvent{
 		Cursor: cursor,
-		Event: runevent.RunEvent{
-			Source:  runevent.SourceAgent,
-			Kind:    runevent.KindAgentRaw,
-			Payload: []byte(`{"text":` + strconv.Quote(text) + `}`),
-		},
+		Event:  event,
 	})
 }
 
@@ -278,6 +283,32 @@ func TestViewportCoalescesChunksAcrossEventsAndWindowSlides(t *testing.T) {
 	}
 }
 
+func TestViewportCoalescesChunksInsideGroupedBatch(t *testing.T) {
+	ctx := context.Background()
+	source := &fakeTimelineSource{}
+	for _, chunk := range []string{"Hel", "lo ", "world\n"} {
+		source.addEvent(runevent.RunEvent{
+			Batch:   1,
+			Source:  runevent.SourceAgent,
+			Kind:    runevent.KindAgentRaw,
+			Payload: []byte(`{"text":` + strconv.Quote(chunk) + `}`),
+		})
+	}
+	viewport := NewTimelineViewport(source, "run-1", 50, 10)
+	viewport.SetHeight(5)
+	if err := viewport.Replay(ctx); err != nil {
+		t.Fatalf("replay: %v", err)
+	}
+
+	rendered := strings.Join(viewport.VisibleLines(), "|")
+	if !strings.Contains(rendered, "BATCH 001/001|Hello world") {
+		t.Fatalf("expected grouped chunks coalesced into one line, got %q", rendered)
+	}
+	if strings.Contains(rendered, "Hel|") || strings.Contains(rendered, "lo |") {
+		t.Fatalf("expected no fragment lines inside grouped timeline, got %q", rendered)
+	}
+}
+
 func TestViewportSkipsUnknownKindsWithoutBlankLines(t *testing.T) {
 	ctx := context.Background()
 	source := &fakeTimelineSource{}
@@ -297,4 +328,196 @@ func TestViewportSkipsUnknownKindsWithoutBlankLines(t *testing.T) {
 	if visible != "line one|line two" {
 		t.Fatalf("expected unknown kinds skipped without blank lines, got %q", visible)
 	}
+}
+
+func TestViewportGroupsReviewTimelineByBatchAndKind(t *testing.T) {
+	ctx := context.Background()
+	source := &fakeTimelineSource{}
+	startedAt := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
+	source.addEvent(runevent.RunEvent{
+		Batch:   1,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonBatch,
+		Summary: "Batch 001 executing.",
+		Time:    startedAt,
+	})
+	source.addEvent(runevent.RunEvent{
+		Batch:   1,
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentPlan,
+		Payload: []byte(`{"sessionId":"s","update":{"sessionUpdate":"plan","entries":[{"status":"pending","content":"Inspect current cockpit render"}]}}`),
+		Time:    startedAt.Add(5 * time.Second),
+	})
+	source.addEvent(runevent.RunEvent{
+		Batch:   1,
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentToolUpdated,
+		Payload: []byte(`{"sessionId":"s","update":{"sessionUpdate":"tool_call_update","toolCallId":"call_1","title":"read_file","status":"completed","rawInput":{"command":"rtk read internal/tui/cockpit.go"},"content":[{"content":{"type":"text","text":"loaded cockpit renderer"}}]}}`),
+		Time:    startedAt.Add(20 * time.Second),
+	})
+	source.addEvent(runevent.RunEvent{
+		Batch:   1,
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentThought,
+		Payload: []byte(`{"sessionId":"s","update":{"sessionUpdate":"agent_thought_chunk","content":{"type":"text","text":"checking error paths"}}}`),
+		Time:    startedAt.Add(32 * time.Second),
+	})
+	source.addEvent(runevent.RunEvent{
+		Batch:   1,
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentStatus,
+		Payload: []byte(`{"status":"running"}`),
+		Time:    startedAt.Add(38 * time.Second),
+	})
+	source.addEvent(runevent.RunEvent{
+		Batch:   2,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonBatch,
+		Summary: "Batch 002 waiting.",
+		Time:    startedAt.Add(90 * time.Second),
+	})
+	viewport := NewTimelineViewport(source, "run-1", 50, 10)
+	viewport.SetHeight(20)
+	if err := viewport.Replay(ctx); err != nil {
+		t.Fatalf("replay: %v", err)
+	}
+
+	rendered := strings.Join(viewport.VisibleLines(), "\n")
+	assertContainsInOrder(t, rendered,
+		"BATCH 001/002 executing 00:38",
+		"PLAN",
+		"pending  Inspect current cockpit render",
+		"[TOOL] read_file",
+		"$ rtk read internal/tui/cockpit.go",
+		"loaded cockpit renderer",
+		"THINK checking error paths",
+		"SESSION RUNNING",
+		"BATCH 002/002 waiting 00:00",
+	)
+	if strings.Contains(rendered, "Batch 001 executing.") || strings.Contains(rendered, "Batch 002 waiting.") {
+		t.Fatalf("expected daemon.batch summaries folded into headers, got:\n%s", rendered)
+	}
+}
+
+func TestViewportGroupsSpecTimelineTaskAndQAMilestones(t *testing.T) {
+	ctx := context.Background()
+	source := &fakeTimelineSource{}
+	startedAt := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
+	source.addEvent(runevent.RunEvent{
+		Batch:       1,
+		Source:      runevent.SourceDaemon,
+		Kind:        runevent.KindDaemonTask,
+		ReviewIssue: "task_01",
+		Summary:     "Task task_01 started as Batch 001: Group timeline",
+		Time:        startedAt,
+	})
+	source.addEvent(runevent.RunEvent{
+		Batch:       1,
+		Source:      runevent.SourceDaemon,
+		Kind:        runevent.KindDaemonVerification,
+		ReviewIssue: "task_01",
+		Summary:     "Verification command passed: rtk go test ./internal/tui/",
+		Time:        startedAt.Add(12 * time.Second),
+	})
+	source.addEvent(runevent.RunEvent{
+		Batch:       1,
+		Source:      runevent.SourceDaemon,
+		Kind:        runevent.KindDaemonTask,
+		ReviewIssue: "task_01",
+		Summary:     "Task task_01 settled completed.",
+		Time:        startedAt.Add(20 * time.Second),
+	})
+	source.addEvent(runevent.RunEvent{
+		Batch:   2,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonQA,
+		Summary: "QA verdict pass for Spec 0005-tui-cockpit.",
+		Time:    startedAt.Add(2 * time.Minute),
+	})
+	viewport := NewTimelineViewport(source, "run-1", 50, 10)
+	viewport.SetHeight(20)
+	if err := viewport.Replay(ctx); err != nil {
+		t.Fatalf("replay: %v", err)
+	}
+
+	rendered := strings.Join(viewport.VisibleLines(), "\n")
+	assertContainsInOrder(t, rendered,
+		"BATCH 001/002 00:20",
+		"TASK",
+		"Task task_01 started as Batch 001: Group timeline",
+		"VERIFY",
+		"Verification command passed: rtk go test ./internal/tui/",
+		"TASK",
+		"Task task_01 settled completed.",
+		"BATCH 002/002 00:00",
+		"QA",
+		"QA verdict pass for Spec 0005-tui-cockpit.",
+	)
+}
+
+func TestViewportFollowModeTracksGroupedBatchBoundaries(t *testing.T) {
+	ctx := context.Background()
+	source := &fakeTimelineSource{}
+	startedAt := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
+	for batch := 1; batch <= 2; batch++ {
+		source.addEvent(runevent.RunEvent{
+			Batch:   batch,
+			Source:  runevent.SourceDaemon,
+			Kind:    runevent.KindDaemonBatch,
+			Summary: fmt.Sprintf("Batch %03d executing.", batch),
+			Time:    startedAt.Add(time.Duration(batch) * time.Minute),
+		})
+		source.addEvent(runevent.RunEvent{
+			Batch:   batch,
+			Source:  runevent.SourceAgent,
+			Kind:    runevent.KindAgentRaw,
+			Payload: []byte(`{"text":` + strconv.Quote(fmt.Sprintf("SESSION batch %03d\n", batch)) + `}`),
+			Time:    startedAt.Add(time.Duration(batch)*time.Minute + time.Second),
+		})
+	}
+	viewport := NewTimelineViewport(source, "run-1", 50, 10)
+	viewport.SetHeight(3)
+	if err := viewport.Replay(ctx); err != nil {
+		t.Fatalf("replay: %v", err)
+	}
+
+	if err := viewport.ScrollUp(ctx, 2); err != nil {
+		t.Fatalf("scroll up: %v", err)
+	}
+	frozen := strings.Join(viewport.VisibleLines(), "|")
+	source.addEvent(runevent.RunEvent{
+		Batch:   3,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonBatch,
+		Summary: "Batch 003 executing.",
+		Time:    startedAt.Add(3 * time.Minute),
+	})
+	source.addEvent(runevent.RunEvent{
+		Batch:   3,
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentRaw,
+		Payload: []byte(`{"text":"SESSION batch 003\n"}`),
+		Time:    startedAt.Add(3*time.Minute + time.Second),
+	})
+	if err := viewport.Poll(ctx); err != nil {
+		t.Fatalf("poll: %v", err)
+	}
+	if got := strings.Join(viewport.VisibleLines(), "|"); got != frozen {
+		t.Fatalf("expected grouped timeline to stay frozen during scrollback, got %q want %q", got, frozen)
+	}
+	if state, below := viewport.State(); state != FollowScrolled || below != 2 {
+		t.Fatalf("expected SCROLLED with 2 new events below, got %q %d", state, below)
+	}
+
+	if err := viewport.JumpToTail(ctx); err != nil {
+		t.Fatalf("jump to tail: %v", err)
+	}
+	rendered := strings.Join(viewport.VisibleLines(), "\n")
+	if state, below := viewport.State(); state != FollowFollowing || below != 0 {
+		t.Fatalf("expected FOLLOWING after End, got %q %d", state, below)
+	}
+	assertContainsInOrder(t, rendered,
+		"BATCH 003/003 executing 00:01",
+		"SESSION batch 003",
+	)
 }

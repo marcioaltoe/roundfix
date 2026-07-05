@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0005-tui-cockpit
-status: pending
+status: completed
 type: frontend
 complexity: medium
 ---
@@ -33,19 +33,19 @@ fixtures.
 
 ## Subtasks
 
-- [ ] Batch header grouping over journal order
-- [ ] Kind-section rendering from existing summaries
-- [ ] Follow Mode guard tests after regrouping
-- [ ] Spec-Run timeline fixtures
+- [x] Batch header grouping over journal order
+- [x] Kind-section rendering from existing summaries
+- [x] Follow Mode guard tests after regrouping
+- [x] Spec-Run timeline fixtures
 
 ## Acceptance Criteria
 
-- [ ] A review journal fixture renders grouped batches with plan/tool/think
+- [x] A review journal fixture renders grouped batches with plan/tool/think
       sections matching the mockup's structure.
-- [ ] A spec journal fixture groups task and qa milestones legibly.
-- [ ] Follow Mode tests pass unchanged plus new ones proving tail behavior
+- [x] A spec journal fixture groups task and qa milestones legibly.
+- [x] Follow Mode tests pass unchanged plus new ones proving tail behavior
       across group boundaries.
-- [ ] Full suite passes.
+- [x] Full suite passes.
 
 ## Verification
 
@@ -57,3 +57,22 @@ fixtures.
 `_prd.md` → User Stories 1, 5; Core Feature 4. `_techspec.md` → Build Order
 4, Decisions (render-time only). `design/ui-redesign-plan.md` → Required
 Changes (timeline grouping); `design/roundfix-01.png`. ADR-0008.
+
+## Result
+
+- Review grouping evidence: `TestViewportGroupsReviewTimelineByBatchAndKind`
+  asserts `BATCH 001/002 executing 00:38`, plan text, tool marker and command,
+  think text, session status, and a second Batch header with daemon Batch
+  summaries folded into headers.
+- Spec grouping evidence: `TestViewportGroupsSpecTimelineTaskAndQAMilestones`
+  asserts `TASK`, `VERIFY`, and `QA` sections under Batch headers for
+  `daemon.task`, `daemon.verification`, and `daemon.qa` events.
+- Follow Mode evidence: existing viewport follow/scroll tests pass unchanged,
+  and `TestViewportFollowModeTracksGroupedBatchBoundaries` proves scrollback
+  remains frozen on new events and `End` resumes at the new Batch tail.
+- Raw-payload/coalescing evidence: agent plan/tool/thought/status rendering
+  uses the existing raw payload conversion, and
+  `TestViewportCoalescesChunksInsideGroupedBatch` guards chunk coalescing
+  inside grouped Batches.
+- Verification: `rtk go test ./internal/tui/` passed with 74 tests.
+- Verification: `rtk go test ./...` passed with 554 tests across 16 packages.
