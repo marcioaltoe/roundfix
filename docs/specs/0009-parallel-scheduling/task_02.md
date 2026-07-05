@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0009-parallel-scheduling
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -40,24 +40,24 @@ wiring yet. Verifiable alone over hermetic temp repositories.
 
 ## Subtasks
 
-- [ ] Task Worktree creation with sibling paths and provisioning
-- [ ] IntegrateTask: ff, cherry-pick, conflict-abort matrix
-- [ ] Success cleanup vs kept-on-failure
-- [ ] Empty-debris reap extension
-- [ ] Hermetic matrix test suite
+- [x] Task Worktree creation with sibling paths and provisioning
+- [x] IntegrateTask: ff, cherry-pick, conflict-abort matrix
+- [x] Success cleanup vs kept-on-failure
+- [x] Empty-debris reap extension
+- [x] Hermetic matrix test suite
 
 ## Acceptance Criteria
 
-- [ ] Two Task Worktrees from one tip: first integrates by ff, second by
+- [x] Two Task Worktrees from one tip: first integrates by ff, second by
       cherry-pick, both commits on the Run Branch in completion order with
       messages and trailers byte-identical to the originals.
-- [ ] Induced conflict (two Tasks editing one file): second integration
+- [x] Induced conflict (two Tasks editing one file): second integration
       returns the conflict result naming the path, the Run Branch tip is
       byte-unmoved, and the conflicting Task Worktree survives.
-- [ ] Success cleanup removes worktree and branch; failure keeps both.
-- [ ] Reap matrix: empty terminal Run and Task branches reaped; branches
+- [x] Success cleanup removes worktree and branch; failure keeps both.
+- [x] Reap matrix: empty terminal Run and Task branches reaped; branches
       with commits kept; non-terminal Runs never touched.
-- [ ] Full suite passes; no wiring outside the package.
+- [x] Full suite passes; no wiring outside the package.
 
 ## Verification
 
@@ -69,3 +69,13 @@ wiring yet. Verifiable alone over hermetic temp repositories.
 `_prd.md` → User Stories 3, 7; Core Features 2, 3, 5. `_techspec.md` →
 Interfaces, Paths and naming, Build Order 2. ADR-0024 (unchanged outer
 protocol), ADR-0026. Round-3 finding 1.
+
+## Result
+
+- Task Worktree creation evidence: `TestTaskWorktreesIntegrateFirstByFastForwardThenCherryPick` creates two Task Worktrees as siblings of the Run Worktree, verifies neither is nested, and verifies copy-list provisioning into the Task Worktree.
+- Integration evidence: `TestTaskWorktreesIntegrateFirstByFastForwardThenCherryPick` proves first Task integration uses fast-forward and second uses cherry-pick, then compares raw commit-object messages/trailers byte-for-byte in completion order.
+- Conflict evidence: `TestIntegrateTaskReturnsConflictAndLeavesRunBranchUnmoved` induces a conflict on `shared.txt`, verifies the conflict result names the path, verifies the Run Branch tip is unchanged after `cherry-pick --abort`, and verifies the conflicting Task Worktree and branch remain.
+- Cleanup evidence: `TestCleanupTaskRemovesTaskWorktreeAndBranch` verifies successful Task cleanup removes both Task Worktree and Task Branch; the conflict test verifies failed/conflicting Tasks keep both inspection surfaces.
+- Reap evidence: `TestPruneTerminalReapsOnlyEmptyTerminalRunAndTaskBranches` verifies empty terminal Run and Task worktrees/branches are removed, branches with commits are kept, and non-terminal Runs are untouched.
+- Scope evidence: implementation is contained to `internal/worktree` and its tests, with no scheduler or CLI wiring changes.
+- Verification: `rtk go test ./internal/worktree/` passed with 15 tests; `rtk go test ./...` passed with 698 tests across 17 packages.

@@ -21,6 +21,9 @@ const (
 	ModeFastForwardMerge = "ff-merge"
 	ModeBranchMove       = "branch-move"
 	ModePending          = "pending"
+	ModeTaskFastForward  = "ff"
+	ModeTaskCherryPick   = "cherry-pick"
+	ModeTaskConflict     = "conflict"
 
 	ReasonOverlap             = "overlap"
 	ReasonDiverged            = "diverged"
@@ -49,6 +52,20 @@ type IntegrationResult struct {
 	Reason string
 }
 
+type TaskRef struct {
+	RunID    string
+	TaskID   string
+	Path     string
+	Branch   string
+	UserRoot string
+	BaseSHA  string
+}
+
+type TaskIntegration struct {
+	Mode   string
+	Reason string
+}
+
 func Create(ctx context.Context, opts CreateOptions) (Ref, error) {
 	ref, err := newRef(opts.UserRoot, opts.Location, opts.RunID)
 	if err != nil {
@@ -69,6 +86,40 @@ func Create(ctx context.Context, opts CreateOptions) (Ref, error) {
 	}
 	if err := copyProvisionedFiles(ref.UserRoot, ref.Path, opts.CopyList); err != nil {
 		return Ref{}, err
+	}
+	return ref, nil
+}
+
+func CreateTask(ctx context.Context, run Ref, taskID string, copyList []string) (TaskRef, error) {
+	if err := validateRef(run); err != nil {
+		return TaskRef{}, err
+	}
+	taskID, err := cleanPathSegment(taskID)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("create Task Worktree: %w", err)
+	}
+
+	runner := execGitRunner{}
+	baseSHA, err := gitRevision(ctx, runner, run.UserRoot, run.Branch)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("resolve Run Branch tip for Task Worktree: %w", err)
+	}
+	ref := TaskRef{
+		RunID:    run.RunID,
+		TaskID:   taskID,
+		Path:     filepath.Join(filepath.Dir(run.Path), taskPathSegment(run.RunID, taskID)),
+		Branch:   TaskBranchName(run.RunID, taskID),
+		UserRoot: run.UserRoot,
+		BaseSHA:  baseSHA,
+	}
+	if err := os.MkdirAll(filepath.Dir(ref.Path), 0o755); err != nil {
+		return TaskRef{}, fmt.Errorf("create Task Worktree parent %q: %w", filepath.Dir(ref.Path), err)
+	}
+	if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "add", "-b", ref.Branch, ref.Path, baseSHA); err != nil {
+		return TaskRef{}, fmt.Errorf("create Task Worktree: %w", err)
+	}
+	if err := copyProvisionedFiles(ref.UserRoot, ref.Path, copyList); err != nil {
+		return TaskRef{}, err
 	}
 	return ref, nil
 }
@@ -113,6 +164,73 @@ func Integrate(ctx context.Context, ref Ref, targetBranch, runSHA string) (Integ
 	return IntegrationResult{Mode: ModeBranchMove}, nil
 }
 
+func IntegrateTask(ctx context.Context, run Ref, task TaskRef) (TaskIntegration, error) {
+	if err := validateRef(run); err != nil {
+		return TaskIntegration{}, err
+	}
+	if err := validateTaskRef(task); err != nil {
+		return TaskIntegration{}, err
+	}
+	if run.RunID != task.RunID {
+		return TaskIntegration{}, fmt.Errorf("integrate Task Worktree: Task Run ID %q does not match Run ID %q", task.RunID, run.RunID)
+	}
+	if filepath.Clean(run.UserRoot) != filepath.Clean(task.UserRoot) {
+		return TaskIntegration{}, errors.New("integrate Task Worktree: Task and Run must share one user root")
+	}
+
+	runner := execGitRunner{}
+	runTip, err := gitRevision(ctx, runner, run.UserRoot, run.Branch)
+	if err != nil {
+		return TaskIntegration{}, fmt.Errorf("resolve Run Branch tip: %w", err)
+	}
+	baseSHA, err := taskBaseSHA(ctx, runner, run, task)
+	if err != nil {
+		return TaskIntegration{}, err
+	}
+	if runTip == baseSHA {
+		if _, err := runner.Run(ctx, run.Path, "merge", "--ff-only", task.Branch); err != nil {
+			return TaskIntegration{}, fmt.Errorf("fast-forward Run Branch from Task Branch %q: %w", task.Branch, err)
+		}
+		return TaskIntegration{Mode: ModeTaskFastForward}, nil
+	}
+
+	commits, err := taskCommits(ctx, runner, run.UserRoot, baseSHA, task.Branch)
+	if err != nil {
+		return TaskIntegration{}, err
+	}
+	if len(commits) == 0 {
+		return TaskIntegration{Mode: ModeTaskCherryPick}, nil
+	}
+	args := append([]string{"cherry-pick"}, commits...)
+	if _, err := runner.Run(ctx, run.Path, args...); err != nil {
+		paths, pathsErr := conflictingPaths(ctx, runner, run.Path)
+		if pathsErr != nil {
+			return TaskIntegration{}, errors.Join(
+				fmt.Errorf("cherry-pick Task Branch %q: %w", task.Branch, err),
+				fmt.Errorf("list conflicting paths: %w", pathsErr),
+			)
+		}
+		if len(paths) == 0 {
+			return TaskIntegration{}, fmt.Errorf("cherry-pick Task Branch %q: %w", task.Branch, err)
+		}
+		if _, abortErr := runner.Run(ctx, run.Path, "cherry-pick", "--abort"); abortErr != nil {
+			return TaskIntegration{}, errors.Join(
+				fmt.Errorf("cherry-pick Task Branch %q: %w", task.Branch, err),
+				fmt.Errorf("abort conflicting Task cherry-pick: %w", abortErr),
+			)
+		}
+		afterAbort, tipErr := gitRevision(ctx, runner, run.UserRoot, run.Branch)
+		if tipErr != nil {
+			return TaskIntegration{}, fmt.Errorf("verify Run Branch after Task conflict abort: %w", tipErr)
+		}
+		if afterAbort != runTip {
+			return TaskIntegration{}, fmt.Errorf("Task conflict abort left Run Branch at %s, expected %s", afterAbort, runTip)
+		}
+		return TaskIntegration{Mode: ModeTaskConflict, Reason: strings.Join(paths, ", ")}, nil
+	}
+	return TaskIntegration{Mode: ModeTaskCherryPick}, nil
+}
+
 func CleanupClean(ctx context.Context, ref Ref) error {
 	if err := validateRef(ref); err != nil {
 		return err
@@ -122,6 +240,20 @@ func CleanupClean(ctx context.Context, ref Ref) error {
 		return fmt.Errorf("remove Run Worktree %q: %w", ref.Path, err)
 	}
 	if err := deleteRunBranch(ctx, runner, ref.UserRoot, ref.Branch); err != nil {
+		return err
+	}
+	return nil
+}
+
+func CleanupTask(ctx context.Context, task TaskRef) error {
+	if err := validateTaskRef(task); err != nil {
+		return err
+	}
+	runner := execGitRunner{}
+	if _, err := runner.Run(ctx, task.UserRoot, "worktree", "remove", task.Path); err != nil {
+		return fmt.Errorf("remove Task Worktree %q: %w", task.Path, err)
+	}
+	if err := deleteRunBranch(ctx, runner, task.UserRoot, task.Branch); err != nil {
 		return err
 	}
 	return nil
@@ -151,13 +283,21 @@ func PruneTerminal(ctx context.Context, userRoot string, location string, isTerm
 		if !isTerminalClean(ref.RunID) {
 			continue
 		}
+		hasCommits, err := branchHasCommitsBeyondBase(ctx, runner, userRoot, ref.Branch)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		if hasCommits {
+			continue
+		}
 		if _, err := os.Stat(ref.Path); err == nil {
 			if _, err := runner.Run(ctx, userRoot, "worktree", "remove", ref.Path); err != nil {
-				errs = append(errs, fmt.Errorf("remove terminal Run Worktree %q: %w", ref.Path, err))
+				errs = append(errs, fmt.Errorf("remove terminal Worktree %q: %w", ref.Path, err))
 				continue
 			}
 		} else if err != nil && !errors.Is(err, os.ErrNotExist) {
-			errs = append(errs, fmt.Errorf("stat terminal Run Worktree %q: %w", ref.Path, err))
+			errs = append(errs, fmt.Errorf("stat terminal Worktree %q: %w", ref.Path, err))
 			continue
 		}
 		if err := deleteRunBranch(ctx, runner, userRoot, ref.Branch); err != nil {
@@ -169,6 +309,10 @@ func PruneTerminal(ctx context.Context, userRoot string, location string, isTerm
 
 func BranchName(runID string) string {
 	return runBranchPrefix + strings.TrimSpace(runID)
+}
+
+func TaskBranchName(runID string, taskID string) string {
+	return BranchName(runID) + "-" + strings.TrimSpace(taskID)
 }
 
 type gitRunner interface {
@@ -259,6 +403,25 @@ func validateRef(ref Ref) error {
 	}
 	if strings.TrimSpace(ref.UserRoot) == "" {
 		return errors.New("Run Worktree ref: user root is required")
+	}
+	return nil
+}
+
+func validateTaskRef(ref TaskRef) error {
+	if strings.TrimSpace(ref.RunID) == "" {
+		return errors.New("Task Worktree ref: Run ID is required")
+	}
+	if strings.TrimSpace(ref.TaskID) == "" {
+		return errors.New("Task Worktree ref: Task ID is required")
+	}
+	if strings.TrimSpace(ref.Path) == "" {
+		return errors.New("Task Worktree ref: path is required")
+	}
+	if strings.TrimSpace(ref.Branch) == "" {
+		return errors.New("Task Worktree ref: Task Branch is required")
+	}
+	if strings.TrimSpace(ref.UserRoot) == "" {
+		return errors.New("Task Worktree ref: user root is required")
 	}
 	return nil
 }
@@ -439,8 +602,16 @@ func isAncestryMiss(err error) bool {
 	return strings.TrimSpace(gitErr.stderr) == ""
 }
 
-func terminalCandidates(ctx context.Context, runner gitRunner, userRoot string, location string) ([]Ref, error) {
-	refsByRun := map[string]Ref{}
+type terminalCandidate struct {
+	RunID    string
+	TaskID   string
+	Path     string
+	Branch   string
+	UserRoot string
+}
+
+func terminalCandidates(ctx context.Context, runner gitRunner, userRoot string, location string) ([]terminalCandidate, error) {
+	refsByBranch := map[string]terminalCandidate{}
 	worktreeDir, err := repoWorktreesDir(location, userRoot)
 	if err != nil {
 		return nil, err
@@ -451,12 +622,9 @@ func terminalCandidates(ctx context.Context, runner gitRunner, userRoot string, 
 			if !entry.IsDir() {
 				continue
 			}
-			runID := entry.Name()
-			refsByRun[runID] = Ref{
-				RunID:    runID,
-				Path:     filepath.Join(worktreeDir, runID),
-				Branch:   runBranchPrefix + runID,
-				UserRoot: userRoot,
+			ref, ok := terminalCandidateFromPath(worktreeDir, userRoot, entry.Name())
+			if ok {
+				refsByBranch[ref.Branch] = ref
 			}
 		}
 	} else if !errors.Is(err, os.ErrNotExist) {
@@ -472,31 +640,172 @@ func terminalCandidates(ctx context.Context, runner gitRunner, userRoot string, 
 		if branch == "" || !strings.HasPrefix(branch, runBranchPrefix) {
 			continue
 		}
-		runID := strings.TrimPrefix(branch, runBranchPrefix)
-		if _, found := refsByRun[runID]; !found {
-			refsByRun[runID] = Ref{
-				RunID:    runID,
-				Path:     filepath.Join(worktreeDir, runID),
-				Branch:   branch,
-				UserRoot: userRoot,
+		if _, found := refsByBranch[branch]; !found {
+			ref, ok := terminalCandidateFromBranch(worktreeDir, userRoot, branch)
+			if ok {
+				refsByBranch[branch] = ref
 			}
 		}
 	}
 
-	runIDs := make([]string, 0, len(refsByRun))
-	for runID := range refsByRun {
-		runIDs = append(runIDs, runID)
+	branches := make([]string, 0, len(refsByBranch))
+	for branch := range refsByBranch {
+		branches = append(branches, branch)
 	}
-	sort.Strings(runIDs)
-	refs := make([]Ref, 0, len(runIDs))
-	for _, runID := range runIDs {
-		refs = append(refs, refsByRun[runID])
+	sort.Strings(branches)
+	refs := make([]terminalCandidate, 0, len(branches))
+	for _, branch := range branches {
+		refs = append(refs, refsByBranch[branch])
 	}
 	return refs, nil
 }
 
+func terminalCandidateFromPath(worktreeDir, userRoot, name string) (terminalCandidate, bool) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return terminalCandidate{}, false
+	}
+	runID := name
+	taskID := ""
+	if idx := strings.LastIndex(name, "."); idx > 0 && idx < len(name)-1 {
+		runID = name[:idx]
+		taskID = name[idx+1:]
+	}
+	branch := BranchName(runID)
+	if taskID != "" {
+		branch = TaskBranchName(runID, taskID)
+	}
+	return terminalCandidate{
+		RunID:    runID,
+		TaskID:   taskID,
+		Path:     filepath.Join(worktreeDir, name),
+		Branch:   branch,
+		UserRoot: userRoot,
+	}, true
+}
+
+func terminalCandidateFromBranch(worktreeDir, userRoot, branch string) (terminalCandidate, bool) {
+	suffix := strings.TrimPrefix(branch, runBranchPrefix)
+	if suffix == "" {
+		return terminalCandidate{}, false
+	}
+	runID := suffix
+	taskID := ""
+	if idx := strings.LastIndex(suffix, "-"); idx > 0 && idx < len(suffix)-1 && strings.HasPrefix(suffix[idx+1:], "task_") {
+		runID = suffix[:idx]
+		taskID = suffix[idx+1:]
+	}
+	segment := runID
+	if taskID != "" {
+		segment = taskPathSegment(runID, taskID)
+	}
+	return terminalCandidate{
+		RunID:    runID,
+		TaskID:   taskID,
+		Path:     filepath.Join(worktreeDir, segment),
+		Branch:   branch,
+		UserRoot: userRoot,
+	}, true
+}
+
+func taskPathSegment(runID, taskID string) string {
+	return strings.TrimSpace(runID) + "." + strings.TrimSpace(taskID)
+}
+
 func repoWorktreesDir(location, userRoot string) (string, error) {
 	return deriveRootPath(location, userRoot)
+}
+
+func gitRevision(ctx context.Context, runner gitRunner, workDir, revision string) (string, error) {
+	output, err := runner.Run(ctx, workDir, "rev-parse", strings.TrimSpace(revision))
+	if err != nil {
+		return "", err
+	}
+	sha := strings.TrimSpace(output)
+	if sha == "" {
+		return "", fmt.Errorf("git revision %q resolved to an empty SHA", revision)
+	}
+	return sha, nil
+}
+
+func taskBaseSHA(ctx context.Context, runner gitRunner, run Ref, task TaskRef) (string, error) {
+	baseSHA := strings.TrimSpace(task.BaseSHA)
+	if baseSHA != "" {
+		return baseSHA, nil
+	}
+	output, err := runner.Run(ctx, run.UserRoot, "merge-base", run.Branch, task.Branch)
+	if err != nil {
+		return "", fmt.Errorf("resolve Task Branch base: %w", err)
+	}
+	baseSHA = strings.TrimSpace(output)
+	if baseSHA == "" {
+		return "", errors.New("resolve Task Branch base: git returned an empty SHA")
+	}
+	return baseSHA, nil
+}
+
+func taskCommits(ctx context.Context, runner gitRunner, userRoot, baseSHA, taskBranch string) ([]string, error) {
+	output, err := runner.Run(ctx, userRoot, "rev-list", "--reverse", baseSHA+".."+taskBranch)
+	if err != nil {
+		return nil, fmt.Errorf("list Task Branch commits: %w", err)
+	}
+	var commits []string
+	for _, line := range strings.Split(output, "\n") {
+		sha := strings.TrimSpace(line)
+		if sha != "" {
+			commits = append(commits, sha)
+		}
+	}
+	return commits, nil
+}
+
+func conflictingPaths(ctx context.Context, runner gitRunner, workDir string) ([]string, error) {
+	output, err := runner.Run(ctx, workDir, "diff", "--name-only", "--diff-filter=U")
+	if err != nil {
+		return nil, err
+	}
+	var paths []string
+	for _, line := range strings.Split(output, "\n") {
+		path := strings.TrimSpace(line)
+		if path != "" {
+			paths = append(paths, path)
+		}
+	}
+	sort.Strings(paths)
+	return paths, nil
+}
+
+func branchHasCommitsBeyondBase(ctx context.Context, runner gitRunner, userRoot, branch string) (bool, error) {
+	tip, err := gitRevision(ctx, runner, userRoot, branch)
+	if err != nil {
+		return false, fmt.Errorf("resolve terminal Worktree Branch %q tip: %w", branch, err)
+	}
+	base, found, err := branchCreationBase(ctx, runner, userRoot, branch)
+	if err != nil {
+		return false, err
+	}
+	if !found {
+		return true, nil
+	}
+	return tip != base, nil
+}
+
+func branchCreationBase(ctx context.Context, runner gitRunner, userRoot, branch string) (string, bool, error) {
+	output, err := runner.Run(ctx, userRoot, "reflog", "show", "--format=%H", branch)
+	if err != nil {
+		return "", false, fmt.Errorf("read Worktree Branch %q reflog: %w", branch, err)
+	}
+	var base string
+	for _, line := range strings.Split(output, "\n") {
+		sha := strings.TrimSpace(line)
+		if sha != "" {
+			base = sha
+		}
+	}
+	if base == "" {
+		return "", false, nil
+	}
+	return base, true, nil
 }
 
 func deleteRunBranch(ctx context.Context, runner gitRunner, userRoot, branch string) error {
