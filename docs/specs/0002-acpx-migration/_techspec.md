@@ -43,13 +43,13 @@ type Runner interface {
 
 ### acpx invocation mapping
 
-The whole integration surface, explicit so tasks need no other reference (acpx pinned at the version current when implementation starts; constant in `internal/agent`):
+The whole integration surface, explicit so tasks need no other reference (acpx pinned at the version current when implementation starts; constant in `internal/agent`). **Grammar corrected 2026-07-05** after the first real-acpx integration run (dogfood finding 26): `--cwd`, `--format`, `--json-strict`, `--approve-all`, and `--model` are acpx program-level globals and precede the agent/subcommand; `sessions close` takes the name positionally.
 
-- **Ensure (first Agent work of a Run, idempotent):** `acpx <agent> sessions ensure --name <session> --cwd <workdir>` — prompt commands never auto-create; exit 4 from a prompt means the ensure was skipped (infrastructure bug, not a user error).
-- **Full access (after ensure, when opted in, ADR-0011):** `acpx <agent> set-mode <FullAccessMode> -s <session>` with the existing verbatim ids (`full-access` codex, `bypassPermissions` claude; OpenCode keeps defaults). Codex's `danger-full-access` sandbox preset is applied through acpx's session config options (`acpx codex set <key> <value>`; the exact key is verified against the pinned adapter during implementation — acpx persists desired mode and config options and replays them after crash respawn).
-- **Prompt (per Work Item):** `acpx <agent> prompt -s <session> --cwd <workdir> --format json --json-strict --approve-all [--model <id>] -f -` with the built prompt on stdin. stdout is then one raw ACP JSON-RPC message per line, no envelope, no renamed keys.
-- **Cancel (context canceled mid-prompt):** `acpx <agent> cancel -s <session>` (cooperative `session/cancel`), then process kill as fallback — mirroring acpx's own SIGINT behavior.
-- **Close (every terminal Run outcome):** `acpx <agent> sessions close -s <session>` (best effort; acpx's 300 s idle TTL is the backstop for crashed Roundfix processes).
+- **Ensure (first Agent work of a Run, idempotent):** `acpx --cwd <workdir> <agent> sessions ensure --name <session>` — prompt commands never auto-create; exit 4 from a prompt means the ensure was skipped (infrastructure bug, not a user error).
+- **Full access (after ensure, when opted in, ADR-0011):** `acpx --cwd <workdir> <agent> set-mode <FullAccessMode> -s <session>` with the existing verbatim ids (`full-access` codex, `bypassPermissions` claude; OpenCode keeps defaults). Codex's `danger-full-access` sandbox preset is applied through acpx's session config options (`acpx --cwd <workdir> codex set <key> <value> -s <session>`; the pinned adapter advertises no sandbox config option, so an unsupported key is journaled as a warning while the mode id still applies — see dogfood finding 16).
+- **Prompt (per Work Item):** `acpx --cwd <workdir> --format json --json-strict --approve-all [--model <id>] <agent> prompt -s <session> -f -` with the built prompt on stdin. stdout is then one raw ACP JSON-RPC message per line, no envelope, no renamed keys.
+- **Cancel (context canceled mid-prompt):** `acpx --cwd <workdir> <agent> cancel -s <session>` (cooperative `session/cancel`), then process kill as fallback — mirroring acpx's own SIGINT behavior.
+- **Close (every terminal Run outcome):** `acpx --cwd <workdir> <agent> sessions close <session>` (best effort; acpx's 300 s idle TTL is the backstop for crashed Roundfix processes).
 - **Command override:** the stdio escape hatch maps to the global `--agent "<command>"` in place of the adapter name.
 - **Probe:** acpx binary on PATH and `acpx --version` equal to the pin; mismatch or absence becomes one Preflight Validation message carrying `npm install -g acpx@<pin>`.
 - The runtime name is always passed explicitly — acpx's implicit codex default is never relied on.
