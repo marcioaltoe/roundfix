@@ -30,7 +30,9 @@ Known constraint: acpx `0.12.0` has a hard 10 MiB queue-owner per-message
 buffer with no CLI, config, or environment override found in the pinned
 package. Large docs-task payloads, especially turns that print or return large
 skill/docs file content, can trigger `-32603 Message buffer exceeded 10485760
-bytes`.
+bytes`. Roundfix proceeds to verification when acpx delivered a parsed prompt
+result before that exit; if completed work is preserved in the tree but a Task
+stays failed, review the tree and run the Settle Command.
 
 ## Build
 
@@ -114,6 +116,12 @@ Run the watched review-resolution loop:
 go run ./cmd/roundfix watch --source coderabbit --pr <number> --agent codex --until-clean
 ```
 
+Settle one failed Spec Task whose completed work is already in the tree:
+
+```bash
+go run ./cmd/roundfix settle --spec <slug> --task <task_id>
+```
+
 Validate or install the shipped Roundfix agent skill:
 
 ```bash
@@ -150,6 +158,11 @@ it, or set `NO_COLOR` to suppress color.
   configured quiet period, fetches unresolved issues, resolves Batches, and
   repeats until `Clean`, `MaxRoundsReached`, `BudgetExceeded`, `TimedOut`,
   `Failed`, or `Stopped`.
+- `settle` targets one failed Task, re-runs its Verification commands, changes
+  nothing when verification fails, and on pass settles it `completed`, stages
+  all current worktree changes plus the task file, creates the standard Task
+  commit, creates no Run, writes no Run Event Journal entries, and never
+  pushes.
 - Agents own only assigned issue files, triage, code edits, tests,
   verification commands, and assigned Review Issue status updates. They must
   not commit, push, resolve Review Source threads, edit unassigned issue files,

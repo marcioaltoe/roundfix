@@ -29,8 +29,14 @@ buffer in `src/cli/queue/ipc.ts`, bundled in the installed package at
 Large docs-task payloads, especially turns that print or return large
 skill/docs file content, can trigger `-32603 Message buffer exceeded 10485760
 bytes`. Treat this as an upstream acpx limit: keep payloads smaller when
-practical, and rely on Roundfix's result-over-exit classification and
-`roundfix settle` recovery for completed work preserved in the tree.
+practical, and rely on the ADR-0020 classification and the Settle Command for
+completed work preserved in the tree.
+
+ADR-0020 classification: when acpx has delivered a valid
+`session/prompt` result for a Batch before a later nonzero acpx exit, Roundfix
+journals the anomaly with the stderr tail and proceeds to the Daemon's
+verification. Without that parsed result, the nonzero exit remains a Batch
+failure. Verification remains the only gate for settling and committing.
 
 ## User-Facing Review Runs
 
@@ -56,6 +62,8 @@ Useful commands:
 roundfix fetch --source coderabbit --pr <number>
 roundfix resolve --pr <number> --agent <agent>
 roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean
+roundfix implement --spec <slug> --agent <agent>
+roundfix settle --spec <slug> --task <task_id>
 roundfix stop --spec <slug>
 roundfix skills check
 ```
@@ -190,6 +198,47 @@ request is the developer's explicit decision (ADR-0013).
    releases its lock, and records the Stop Request without repository side
    effects.
 
+## Settle Command
+
+Use `roundfix settle --spec <slug> --task <task_id>` only as a local recovery
+command for one failed Task whose completed work is already in the current
+working tree.
+
+Flags:
+
+- `--spec` — Spec slug under `docs/specs/`.
+- `--task` — Task id from the Spec Task Graph.
+
+Preflight Validation exits `2` with one actionable message when either flag is
+missing, the repository does not resolve, the Spec or Task Graph does not load,
+the Task id is absent from the Task Graph, the target Task is not `failed`, or
+another Active Run owns the Spec target or working tree. `pending` and
+`in_progress` Tasks belong to the Implement Command; completed Tasks have
+nothing to do.
+
+stdout carries only deterministic report lines:
+
+```text
+verify test -f done.txt — ok
+settled task_01 completed — <short sha>
+```
+
+If verification fails, the command stops at the first failed Verification
+command, leaves the Task and tree unchanged, and prints:
+
+```text
+verify test -f done.txt — ok
+verify test -f missing.txt — failed
+task_01 stays failed — verification failed
+```
+
+Exit codes: `0` means settled completed and committed, `1` means verification
+failed and no commit was created, and `2` means Preflight Validation failed.
+
+On pass, settle stages all current worktree changes plus the task file, creates
+the standard Task commit, creates no Run, writes no Run Event Journal entries,
+and never pushes. Review the working tree before running it.
+
 ## Assigned Review Issue Batches
 
 Inside a Roundfix-assigned Agent run, the Daemon owns the Run lifecycle. The
@@ -235,6 +284,9 @@ The Daemon owns verification, settling, and commits:
 
 - It re-runs the Task's Verification commands verbatim and settles the final
   status; `completed` stands only when verification passes.
+- When ADR-0020 classifies a Batch as delivered despite a later nonzero acpx
+  exit, the Daemon journals the anomaly and still runs verification. The
+  anomaly never settles or commits a Task by itself.
 - It creates one commit per verified Task, titled `<type>: <lowercase-title>`
   — the first rune of the Task title lowercased only in the subject; a `docs`,
   `test`, or `chore` Task type passes through, every other type becomes `feat`

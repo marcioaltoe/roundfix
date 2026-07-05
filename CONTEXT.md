@@ -96,6 +96,10 @@ _Avoid_: Max rounds, review round limit
 The early checks Roundfix runs before starting a Run or work that would make the developer wait.
 _Avoid_: Best-effort validation, late failure
 
+**Verification**:
+The command or commands Roundfix runs verbatim in the repository root to decide whether Agent or Settle Command work can be settled and committed. For Tasks, passing Verification is required before status `completed`.
+_Avoid_: CI, smoke test, best-effort check
+
 **User Config**:
 Configuration that applies to Roundfix runs started by one developer across repositories.
 _Avoid_: Global config, machine config
@@ -171,6 +175,10 @@ _Avoid_: Fix Command, Fetch command, watch command
 **Implement Command**:
 The command that executes a Spec's Task Graph by running Agents over its Tasks in dependency order.
 _Avoid_: Run command, execute command, spec command
+
+**Settle Command**:
+The local recovery command that re-runs one failed Task's Verification commands in the current repository. On pass, it settles the Task `completed`, stages all current worktree changes plus the task file, and creates the standard Task commit; it creates no Run and never pushes.
+_Avoid_: Retry command, auto-settle, task fix command
 
 **Reprocess Command**:
 An explicit future command for revisiting selected Terminal Review Issues.
