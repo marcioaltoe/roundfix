@@ -209,6 +209,13 @@ func TestRenderLiveRunViewSpecRunRendersTasksAsWorkItems(t *testing.T) {
 		HEAD:          "abc123",
 		RunID:         "run_9",
 		PipelineState: "ResolvingWithAgent",
+		BudgetState:   "38m / 2h",
+		GitState:      "clean, 1 unpushed commit",
+		CurrentRound:  2,
+		MaxRounds:     6,
+		AutoCommit:    true,
+		AutoPush:      false,
+		LastPush:      "disabled",
 		Width:         100,
 		Tasks: []spec.Task{
 			{ID: "task_01", Title: "Build core", Status: spec.StatusCompleted},
@@ -223,6 +230,13 @@ func TestRenderLiveRunViewSpecRunRendersTasksAsWorkItems(t *testing.T) {
 		"Spec: 0001-widget-flow",
 		"Branch: ma/widget-flow",
 		"Agent: Codex",
+		"Run:",
+		"ID: run_9",
+		"State: ResolvingWithAgent",
+		"Git: clean, 1 unpushed commit",
+		"Auto-commit: on",
+		"Auto-push: off",
+		"Last push: disabled",
 		"Tasks",
 		"Agent Console",
 		"task_01 completed — Build core",
@@ -237,6 +251,11 @@ func TestRenderLiveRunViewSpecRunRendersTasksAsWorkItems(t *testing.T) {
 	for _, absent := range []string{"Review Issues", "PR: #", "Source:"} {
 		if strings.Contains(view, absent) {
 			t.Fatalf("expected review vocabulary %q absent from a spec Run view, got:\n%s", absent, view)
+		}
+	}
+	for _, absent := range []string{"\n  Round:", "\n  Budget:"} {
+		if strings.Contains(view, absent) {
+			t.Fatalf("expected spec Run header line %q absent, got:\n%s", strings.TrimSpace(absent), view)
 		}
 	}
 	if strings.Index(view, "task_01") > strings.Index(view, "task_02") || strings.Index(view, "task_02") > strings.Index(view, "task_03") {

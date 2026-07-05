@@ -241,8 +241,10 @@ func RenderLiveRunView(view LiveRunView) string {
 	builder.WriteString("\nRun:\n")
 	builder.WriteString(fmt.Sprintf("  ID: %s\n", emptyDash(view.RunID)))
 	builder.WriteString(fmt.Sprintf("  State: %s\n", emptyDash(view.PipelineState)))
-	builder.WriteString(fmt.Sprintf("  Round: %s\n", formatRound(view.CurrentRound, view.MaxRounds)))
-	builder.WriteString(fmt.Sprintf("  Budget: %s\n", emptyDash(view.BudgetState)))
+	if !specRunView(view) {
+		builder.WriteString(fmt.Sprintf("  Round: %s\n", formatRound(view.CurrentRound, view.MaxRounds)))
+		builder.WriteString(fmt.Sprintf("  Budget: %s\n", emptyDash(view.BudgetState)))
+	}
 	builder.WriteString(fmt.Sprintf("  Git: %s\n", emptyDash(view.GitState)))
 	builder.WriteString(fmt.Sprintf("  Auto-commit: %s\n", onOff(view.AutoCommit)))
 	builder.WriteString(fmt.Sprintf("  Auto-push: %s\n", onOff(view.AutoPush)))
