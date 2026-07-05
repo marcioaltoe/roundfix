@@ -14,12 +14,17 @@ system. The MVP focuses on one review-resolution loop for an Open Pull Request.
 - Go 1.26 or newer.
 - `make`.
 - GitHub CLI `gh` authenticated for the target repository.
-- A local Agent runtime command for the selected Agent:
-  - `codex-acp` for Codex, with `npx --yes @zed-industries/codex-acp` as a fallback
-  - `claude-agent-acp`, with `npx --yes @agentclientprotocol/claude-agent-acp` as a fallback
-  - `opencode acp`
+- Node.js 22.13 or newer with npm/npx.
+- acpx `0.12.0` on `PATH`. Preflight Validation checks the exact version and
+  reports the same install command on missing or mismatched acpx:
+  `npm install -g acpx@0.12.0`.
+- A supported ACP Runtime selected through acpx: `codex`, `claude`, or
+  `opencode`.
 - `rtk` is optional. The `Makefile` uses it when available and falls back to the
   plain Go toolchain when it is not installed.
+
+For latency-sensitive setups, configure direct adapter binaries in acpx config
+so default adapters do not launch through `npx -y` on first use.
 
 ## Build
 

@@ -16,6 +16,13 @@ request, run Roundfix until clean, clean up review bot feedback, execute a
 Spec's Task Graph, or when a Roundfix daemon assigns one bounded Batch of
 Review Issues or one Task.
 
+## acpx dependency
+
+Roundfix drives ACP Runtimes through acpx `0.12.0`. Node.js 22.13 or
+newer with npm/npx is a prerequisite; install the pinned acpx with
+`npm install -g acpx@0.12.0`. Each Run drives its selected ACP Runtime
+through one acpx-backed Agent Session across the Run's Work Items.
+
 ## User-Facing Review Runs
 
 1. Prefer `roundfix` commands over manual GitHub scraping.
