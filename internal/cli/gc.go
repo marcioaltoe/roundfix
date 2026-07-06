@@ -56,6 +56,58 @@ type gcArtifactDir struct {
 	bytes int64
 }
 
+type retentionPruneReport struct {
+	RunIDs        []string
+	JournalRows   int
+	ArtifactBytes int64
+}
+
+func pruneRunRetention(ctx context.Context, runStore *store.Store, artifactRoot string, cutoff time.Time) (retentionPruneReport, error) {
+	candidates, err := runStore.TerminalRunPruneCandidates(ctx, cutoff)
+	if err != nil {
+		return retentionPruneReport{}, err
+	}
+	runDirs, err := gcCandidateArtifactDirs(artifactRoot, candidates)
+	if err != nil {
+		return retentionPruneReport{}, err
+	}
+	pruned, err := runStore.PruneTerminalRuns(ctx, cutoff)
+	if err != nil {
+		return retentionPruneReport{}, err
+	}
+	runDirs = gcFilterArtifactDirs(runDirs, pruned.RunIDs)
+	bytes := gcArtifactBytes(runDirs)
+	if err := gcRemoveArtifactDirs(runDirs); err != nil {
+		return retentionPruneReport{}, err
+	}
+	return retentionPruneReport{
+		RunIDs:        pruned.RunIDs,
+		JournalRows:   pruned.Events,
+		ArtifactBytes: bytes,
+	}, nil
+}
+
+func sweepRunRetention(ctx context.Context, runStore *store.Store, artifactRoot string, retention time.Duration, stderr io.Writer) {
+	if retention <= 0 {
+		return
+	}
+	cutoff := time.Now().UTC().Add(-retention)
+	report, err := pruneRunRetention(ctx, runStore, artifactRoot, cutoff)
+	if err != nil {
+		fmt.Fprintf(stderr, "%s: warning: Journal Retention prune failed: %v\n", app.Name, err)
+		return
+	}
+	if len(report.RunIDs) == 0 && report.JournalRows == 0 && report.ArtifactBytes == 0 {
+		return
+	}
+	fmt.Fprintf(stderr, "%s: pruned Run storage runs=%d journal_rows=%d artifact_bytes=%d\n",
+		app.Name,
+		len(report.RunIDs),
+		report.JournalRows,
+		report.ArtifactBytes,
+	)
+}
+
 func runGCCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("gc"))
@@ -153,16 +205,13 @@ func runGC(ctx context.Context, opts gcOptions, loaded roundconfig.Loaded) (gcRe
 	}
 
 	if runStore != nil {
-		pruned, err := runStore.PruneTerminalRuns(ctx, cutoff)
+		pruned, err := pruneRunRetention(ctx, runStore, artifactRoot, cutoff)
 		if err != nil {
 			return gcReport{}, err
 		}
 		report.RunIDs = pruned.RunIDs
-		report.JournalRows = pruned.Events
-		runDirs = gcFilterArtifactDirs(runDirs, pruned.RunIDs)
-	}
-	if err := gcRemoveArtifactDirs(runDirs); err != nil {
-		return gcReport{}, err
+		report.JournalRows = pruned.JournalRows
+		report.ArtifactBytes = pruned.ArtifactBytes + gcArtifactBytes(orphanDirs)
 	}
 	if err := gcRemoveArtifactDirs(orphanDirs); err != nil {
 		return gcReport{}, err

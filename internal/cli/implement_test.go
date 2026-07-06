@@ -354,6 +354,13 @@ func newImplementWorkspace(t *testing.T, seeds []implementSeed) (string, string)
 	return homeDir, resolved
 }
 
+func writeUserConfig(t *testing.T, homeDir string, content string) {
+	t.Helper()
+	path := filepath.Join(homeDir, ".roundfix", "config.yml")
+	mustMkdir(t, filepath.Dir(path))
+	mustWrite(t, path, content)
+}
+
 func configureImplementAutoPush(t *testing.T, repoDir string, enabled bool) {
 	t.Helper()
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), fmt.Sprintf("implement:\n  auto_push: %t\n", enabled))
@@ -2137,6 +2144,122 @@ func TestRunImplementPreflightClosesTerminalRunSessionsOnly(t *testing.T) {
 	if strings.Contains(stderr.String(), activeOther.ID) || strings.Contains(stderr.String(), "unknown") {
 		t.Fatalf("active and unknown sessions must be untouched, got %q", stderr.String())
 	}
+	if !strings.Contains(stdout.String(), "Clean: all 1 Task(s) completed.") {
+		t.Fatalf("expected Clean implement output, got %q", stdout.String())
+	}
+}
+
+func TestRunImplementPreflightPrunesRetainedRunStorage(t *testing.T) {
+	ctx := context.Background()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:     "task_01",
+		title:  "Build after retention cleanup",
+		status: string(spec.StatusPending),
+	}})
+	artifactDir := filepath.Join(homeDir, "artifacts")
+	writeUserConfig(t, homeDir, fmt.Sprintf("defaults:\n  artifact_dir: %q\nstore:\n  journal_retention: 336h\n", artifactDir))
+	fixture := seedGCFixture(t, ctx, homeDir, artifactDir, time.Now().UTC())
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(ctx, []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected implement exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if want := "roundfix: pruned Run storage runs=1 journal_rows=2 artifact_bytes=12"; !strings.Contains(stderr.String(), want) {
+		t.Fatalf("expected retention sweep summary %q, got %q", want, stderr.String())
+	}
+	assertRunEvents(t, homeDir, fixture.oldRun.ID, 0)
+	assertRunEvents(t, homeDir, fixture.activeRun.ID, 1)
+	assertRunEvents(t, homeDir, fixture.recentRun.ID, 1)
+	assertPathMissing(t, fixture.oldArtifactDir)
+	assertPathExists(t, fixture.activeArtifactDir)
+	assertPathExists(t, fixture.recentArtifactDir)
+	assertPathExists(t, fixture.orphanDir)
+	if !strings.Contains(stdout.String(), "Clean: all 1 Task(s) completed.") {
+		t.Fatalf("expected Clean implement output, got %q", stdout.String())
+	}
+}
+
+func TestRunImplementPreflightRetentionPruneFailureIsNonFatal(t *testing.T) {
+	ctx := context.Background()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:     "task_01",
+		title:  "Build despite retention warning",
+		status: string(spec.StatusPending),
+	}})
+	artifactDir := filepath.Join(homeDir, "artifacts")
+	writeUserConfig(t, homeDir, fmt.Sprintf("defaults:\n  artifact_dir: %q\nstore:\n  journal_retention: 336h\n", artifactDir))
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open Run store: %v", err)
+	}
+	oldRun := createGCTestRun(t, ctx, runStore, artifactDir, "old-terminal-file-artifact", 1)
+	if _, err := runStore.CompleteRun(ctx, oldRun.ID, store.StateClean); err != nil {
+		t.Fatalf("complete old Run: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close Run store after seed: %v", err)
+	}
+	setRunTimestamps(t, homeDir, oldRun.ID, time.Now().Add(-400*time.Hour), time.Now().Add(-400*time.Hour))
+	mustMkdir(t, filepath.Join(artifactDir, "runs"))
+	mustWrite(t, filepath.Join(artifactDir, "runs", oldRun.ID), "not a directory")
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(ctx, []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected implement exit 0 despite retention warning, got %d stderr=%q", code, stderr.String())
+	}
+	if want := "roundfix: warning: Journal Retention prune failed:"; !strings.Contains(stderr.String(), want) {
+		t.Fatalf("expected retention warning %q, got %q", want, stderr.String())
+	}
+	assertRunEvents(t, homeDir, oldRun.ID, 1)
+	if !strings.Contains(stdout.String(), "Clean: all 1 Task(s) completed.") {
+		t.Fatalf("expected Clean implement output, got %q", stdout.String())
+	}
+}
+
+func TestRunImplementPreflightRetentionZeroSkipsPrune(t *testing.T) {
+	ctx := context.Background()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:     "task_01",
+		title:  "Build without retention cleanup",
+		status: string(spec.StatusPending),
+	}})
+	artifactDir := filepath.Join(homeDir, "artifacts")
+	writeUserConfig(t, homeDir, fmt.Sprintf("defaults:\n  artifact_dir: %q\nstore:\n  journal_retention: 0\n", artifactDir))
+	fixture := seedGCFixture(t, ctx, homeDir, artifactDir, time.Now().UTC())
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(ctx, []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected implement exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if strings.Contains(stderr.String(), "pruned Run storage") {
+		t.Fatalf("expected no retention summary when Journal Retention is zero, got %q", stderr.String())
+	}
+	assertRunEvents(t, homeDir, fixture.oldRun.ID, 2)
+	assertPathExists(t, fixture.oldArtifactDir)
 	if !strings.Contains(stdout.String(), "Clean: all 1 Task(s) completed.") {
 		t.Fatalf("expected Clean implement output, got %q", stdout.String())
 	}
