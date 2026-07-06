@@ -238,6 +238,10 @@ _Avoid_: Clean command, vacuum, purge
 The configured age window after which a terminal Run's Run Event Journal and artifact directory become eligible for pruning. Active Runs are never eligible; a retention of zero keeps everything. See ADR-0033.
 _Avoid_: Log rotation, TTL, expiry
 
+**Worktree Bootstrap**:
+The configured command Roundfix runs once in a newly created Run or Task Worktree, after copying `worktree.copy` files and before Agent work and Verification, to prepare the environment (install dependencies, migrate and seed databases, warm caches). A bootstrap failure ends the Run or settles the Task with a bootstrap-failed outcome. See ADR-0034.
+_Avoid_: Setup command, provisioning, install step
+
 **Roundfix Skill**:
 A shipped agent skill that teaches an external Agent how to start Roundfix or how to resolve one assigned Batch.
 _Avoid_: Runtime, Review Source, plugin

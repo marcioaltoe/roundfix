@@ -112,6 +112,17 @@ into a robustness spec (0011 or a dedicated 0012):**
   (`Task task_NN failed: …`) but the summary misleads. Fix candidate: report
   the settled Task outcome the Daemon observed, not only the Run-Worktree file
   status.
+- **R4-7 Worktree Bootstrap for stateful projects (routed to 0016)**: Roundfix
+  runs each agent Run in an isolated worktree from committed state — no installed
+  dependencies, no migrated/seeded database, no warm caches. For a stateful
+  monorepo (TypeScript + package manager + database — Marcio's standard project
+  shape) the Daemon's verbatim Verification fails on a bare environment, not on
+  wrong work. `worktree.copy` already places `.env` and untracked files. Spec
+  **0016-worktree-bootstrap** (ADR-0034) adds `worktree.bootstrap` (a command run
+  once per new worktree after copy, before Agent work and Verification) so
+  `bun install && bun run db:migrate && bun run db:seed` prepares the worktree.
+  With `worktree.concurrency: 1` the reused Run Worktree bootstraps once. Marcio
+  2026-07-06: prioritized. Queue: 0013 → 0014 → 0016 → 0015 → 0012 → review.
 - **R4-6 task Verification must match the repo's build flags**: 0012 task_01
   (npm scaffold) settled failed although its work was correct — its Verification
   ran bare `rtk go build ./...`, and Go's VCS stamping (`git status`) returns
