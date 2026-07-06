@@ -1490,6 +1490,9 @@ watch:
 	if !strings.Contains(stderr.String(), "Review Source status: pending") {
 		t.Fatalf("expected pending Review Source status output, got %q", stderr.String())
 	}
+	if count := strings.Count(stderr.String(), "Review Source status: pending\n"); count != 1 {
+		t.Fatalf("expected one unchanged status-poll line, got %d in %q", count, stderr.String())
+	}
 	if !strings.Contains(stderr.String(), "reached TimedOut") {
 		t.Fatalf("expected TimedOut terminal outcome, got %q", stderr.String())
 	}
@@ -1519,6 +1522,12 @@ func TestRunWatchMissingHeadCheckPrintsCleanNote(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "Review Source check missing for the pushed HEAD; treating Run as Clean.") {
 		t.Fatalf("expected missing-check stderr note, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "Expected: Watch Run Clean normally means the Review Source check on the pushed HEAD reports success.") {
+		t.Fatalf("expected missing-check documentation expectation, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "Next: confirm the PR's Review Source check before merging.") {
+		t.Fatalf("expected missing-check next action, got %q", stderr.String())
 	}
 	if strings.Count(stderr.String(), "Review Source check missing for the pushed HEAD") != 1 {
 		t.Fatalf("expected one missing-check stderr note, got %q", stderr.String())

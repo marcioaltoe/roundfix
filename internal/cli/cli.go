@@ -1635,6 +1635,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 
 	watchReportIssues := []rounds.Issue{}
 	integrationCommand := ""
+	lastReviewStatusLine := ""
 	result, err := watch.Run(ctx, watch.Request{
 		RunID:          run.ID,
 		PRNumber:       preflightResult.PullRequest.Number,
@@ -1657,7 +1658,11 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 				HeadSHA:        statusReq.HeadSHA,
 			})
 			if err == nil {
-				fmt.Fprintf(ui.progress, "Review Source status: %s\n", status.State)
+				line := fmt.Sprintf("Review Source status: %s", status.State)
+				if line != lastReviewStatusLine {
+					fmt.Fprintln(ui.progress, line)
+					lastReviewStatusLine = line
+				}
 			}
 			return status, err
 		}),
@@ -1742,7 +1747,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		fmt.Fprintf(stderr, "Review Source timed out. To request another CodeRabbit review manually, comment: %s\n", result.ManualReviewCommand)
 	}
 	if result.CheckMissing {
-		fmt.Fprintln(stderr, "Review Source check missing for the pushed HEAD; treating Run as Clean.")
+		fmt.Fprintln(stderr, "Review Source check missing for the pushed HEAD; treating Run as Clean. Expected: Watch Run Clean normally means the Review Source check on the pushed HEAD reports success. Next: confirm the PR's Review Source check before merging.")
 	}
 	printReviewIssueReport(stdout, completed.State, result.Rounds, reviewIssueReportIssues(context.WithoutCancel(ctx), req, preflightResult, watchReportIssues))
 	if stopped {
