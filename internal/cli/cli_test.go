@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"roundfix/internal/agent"
+	"roundfix/internal/codex"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/daemon"
 	"roundfix/internal/preflight"
@@ -590,11 +591,38 @@ func TestHealthCheckerReportsFailedPrerequisitesWithNextActions(t *testing.T) {
 	})
 }
 
+func TestHealthCheckerReportsCodexResult(t *testing.T) {
+	checker := newHealthChecker(healthCheckDependencies{
+		codexInspector: fakeCodexInspector{
+			result: codex.Result{
+				Status:     codex.StatusFailed,
+				Detail:     "/path/codex is not accepted by Gatekeeper",
+				NextAction: codex.ReinstallNextAction,
+			},
+		},
+	})
+
+	assertCheckResult(t, checker.Codex(context.Background()), CheckResult{
+		Name:       HealthCheckCodex,
+		Status:     CheckStatusFailed,
+		Detail:     "/path/codex is not accepted by Gatekeeper",
+		NextAction: codex.ReinstallNextAction,
+	})
+}
+
 func assertCheckResult(t *testing.T, got CheckResult, want CheckResult) {
 	t.Helper()
 	if got != want {
 		t.Fatalf("unexpected check result:\n got: %#v\nwant: %#v", got, want)
 	}
+}
+
+type fakeCodexInspector struct {
+	result codex.Result
+}
+
+func (fake fakeCodexInspector) Inspect(context.Context) codex.Result {
+	return fake.result
 }
 
 func TestRunSkillsCheck(t *testing.T) {

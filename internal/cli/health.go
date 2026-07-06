@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"roundfix/internal/agent"
+	"roundfix/internal/codex"
 )
 
 type CheckStatus string
@@ -18,6 +19,7 @@ const (
 	HealthCheckNode  = "node"
 	HealthCheckACPX  = "acpx"
 	HealthCheckAgent = "agent"
+	HealthCheckCodex = "codex"
 )
 
 type CheckResult struct {
@@ -31,16 +33,22 @@ type HealthChecker interface {
 	Node(ctx context.Context) CheckResult
 	ACPX(ctx context.Context) CheckResult
 	Agent(ctx context.Context, runtime agent.RuntimeSpec) CheckResult
+	Codex(ctx context.Context) CheckResult
 }
 
 type healthCheckDependencies struct {
-	nodeVersion func(context.Context) (string, error)
-	acpxVersion func(context.Context) (string, error)
-	probeAgent  func(context.Context, agent.RuntimeSpec) error
+	nodeVersion    func(context.Context) (string, error)
+	acpxVersion    func(context.Context) (string, error)
+	probeAgent     func(context.Context, agent.RuntimeSpec) error
+	codexInspector codexInspector
 }
 
 type runtimeHealthChecker struct {
 	deps healthCheckDependencies
+}
+
+type codexInspector interface {
+	Inspect(ctx context.Context) codex.Result
 }
 
 func newHealthChecker(deps healthCheckDependencies) HealthChecker {
@@ -106,5 +114,19 @@ func (checker runtimeHealthChecker) Agent(ctx context.Context, runtime agent.Run
 		Name:   HealthCheckAgent,
 		Status: CheckStatusOK,
 		Detail: runtime.ID,
+	}
+}
+
+func (checker runtimeHealthChecker) Codex(ctx context.Context) CheckResult {
+	inspector := checker.deps.codexInspector
+	if inspector == nil {
+		inspector = codex.Inspector{}
+	}
+	result := inspector.Inspect(ctx)
+	return CheckResult{
+		Name:       HealthCheckCodex,
+		Status:     CheckStatus(result.Status),
+		Detail:     result.Detail,
+		NextAction: result.NextAction,
 	}
 }
