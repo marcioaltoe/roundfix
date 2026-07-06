@@ -1,11 +1,11 @@
 ---
 name: setup-workflow
-description: Configure a repo for the CONTEXT-driven spec workflow — scaffold docs/specs/, docs/adr/, and the CONTEXT.md glossary, and seed the docs/agents/ usage guides (issue tracker, spec routing, domain docs, triage labels). Run when preparing a repo for the write-prd/write-tasks/implement pipeline; re-run to refresh — it overwrites the skill-owned docs/agents/ files and prunes deprecated content.
+description: Configure a repo for the CONTEXT-driven spec workflow — scaffold docs/specs/, docs/adr/, and the CONTEXT.md glossary, and seed the docs/agents/ usage guides (issue tracker, spec routing, domain docs, triage labels, autonomous work model). Run when preparing a repo for the write-prd/write-tasks/implement pipeline or for Roundfix-driven autonomous work; re-run to refresh — it overwrites the skill-owned docs/agents/ files and prunes deprecated content.
 disable-model-invocation: true
 metadata:
   category: setup
   tags: [workflow, prd, issues, planning, triage, repository-context, agents]
-  version: 0.5.0
+  version: 0.6.0
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---
@@ -18,6 +18,7 @@ Scaffold the per-repo configuration the CONTEXT-driven spec workflow assumes. Lo
 - **Spec routing** — how an agent picks the pipeline entry point for a given change (large initiative / feature / refactor-bugfix / trivial) and what marks a spec done
 - **Domain docs** — `CONTEXT.md` (glossary) and `docs/adr/`, and the consumer rules for reading them
 - **Triage labels** (conditional) — only when the repo receives external/incoming issues on its forge (e.g. a public GitHub repo) that the `triage` skill will process
+- **Autonomous work model** (conditional) — only when the repo delegates implementation to agent runtimes (e.g. through Roundfix): the orchestrator/implementer split (Fable orchestrates and authors Specs; implementation goes to an ACP Runtime), runtime routing, and the hard rule that makes the split binding
 
 These usage rules are seeded into the repo as `docs/agents/*.md` — the canonical, always-current explanation of how agents work inside the CONTEXT-driven workflow. This skill owns those files: a re-run regenerates them.
 
@@ -62,13 +63,24 @@ Confirm the layout:
 
 The five canonical roles: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. Default: each role's string equals its name; ask only if the repo's labels differ.
 
+**Section D — Autonomous work model (only when the repo delegates implementation to agent runtimes).**
+
+> Explainer: When a supervising Claude Code session (Fable) drives this repo autonomously — typically through Roundfix — the roles split hard: Fable orchestrates and authors Specs; implementation is delegated to an ACP Runtime. Fable's usage budget is reserved for judgment; operational work goes to the other models. The split binds every Fable-powered session, interactive or autonomous.
+
+Confirm, one at a time:
+
+- Whether the repo works this way at all — if not, skip the section and don't seed the file.
+- The default implementer (default: Codex `gpt-5.5` at `xhigh`, model selection delegated down the acpx → codex chain).
+- The design implementer and its scope (default: Claude Code with Opus 4.8 at `high`/`xhigh` for design, UI, UX, and frontend Tasks) — and what this repo's design surface actually is (TUI, web frontend, both), which fills the placeholder in the seed.
+- The repo's verification gate name, so the seed's runtime-independence section can name it.
+
 ### 3. Confirm and edit
 
 Show the user a draft of:
 
 - The scaffold actions for spec artifacts (directories to create, `CONTEXT.md` skeleton if missing)
 - The `## Agent skills` block to add to whichever of `CLAUDE.md` / `AGENTS.md` is being edited (see step 4 for selection rules)
-- The contents of `docs/agents/issue-tracker.md`, `docs/agents/spec-routing.md`, and `docs/agents/domain.md` (plus `docs/agents/triage-labels.md` when Section C applies)
+- The contents of `docs/agents/issue-tracker.md`, `docs/agents/spec-routing.md`, and `docs/agents/domain.md` (plus `docs/agents/triage-labels.md` when Section C applies, and `docs/agents/autonomous-work.md` when Section D applies)
 
 Let them edit before writing. On a re-run, existing `docs/agents/` files found in step 1 are inputs to the draft, not something to preserve verbatim: carry forward repo-specific answers (like custom label strings), regenerate the rest from the current seeds.
 
@@ -106,7 +118,25 @@ Pick the pipeline entry point by the change — large initiative, feature, refac
 
 Add a `### Triage labels` line only when Section C applies.
 
-**Re-run semantics — this skill owns `docs/agents/` and the `## Agent skills` block.** When either already exists, rewrite rather than append: overwrite each seeded `docs/agents/*.md` with the freshly confirmed draft, delete `docs/agents/` files this skill no longer seeds (deprecated guides must not linger and contradict current ones), and regenerate the `## Agent skills` block in place, dropping subsections that no longer apply. User content elsewhere in `AGENTS.md`/`CLAUDE.md` stays untouched — ownership covers only the block and the seeded files.
+When Section D applies, add this subsection to the block:
+
+```markdown
+### Autonomous work
+
+Fable orchestrates and authors Specs; implementation is delegated to an ACP Runtime — Codex (`gpt-5.5` at `xhigh`) by default, Claude Code (Opus 4.8 at `high`/`xhigh`) for design, UI, UX, and frontend Tasks. Binding for every Fable-powered session. See `docs/agents/autonomous-work.md`.
+```
+
+and add a one-line hard-rule pointer to the repo's high-priority rules (the section the repo uses for MUST-level rules), for example:
+
+```markdown
+- **HARD RULE — autonomous work model**: binding for every Fable-powered
+  session — Fable orchestrates only; implementation is delegated to an ACP
+  Runtime per `docs/agents/autonomous-work.md`.
+```
+
+Rule bodies live in the seeded doc and in the workflow skills — the agent-instructions file holds only short mandatory pointers, never the full rule text.
+
+**Re-run semantics — this skill owns its seeded `docs/agents/` files and the `## Agent skills` block.** When either already exists, rewrite rather than append: overwrite each seeded `docs/agents/*.md` with the freshly confirmed draft (carrying forward repo-specific answers), delete previously seeded `docs/agents/` files this skill no longer seeds (deprecated guides must not linger and contradict current ones), and regenerate the `## Agent skills` block in place, dropping subsections that no longer apply while carrying forward repo-authored subsections that point at `docs/agents/` files this skill does not seed. Ownership covers only the block and the files seeded from this skill's templates — repo-authored `docs/agents/` files it never seeded and user content elsewhere in `AGENTS.md`/`CLAUDE.md` stay untouched.
 
 Then scaffold the spec artifacts:
 
@@ -133,7 +163,8 @@ Then write the docs files using the seed templates in this skill folder as a sta
 - [spec-routing.md](./spec-routing.md) — pipeline entry-point routing and the definition of done
 - [triage-labels.md](./triage-labels.md) — label mapping (Section C only)
 - [domain.md](./domain.md) — domain doc consumer rules + layout
+- [autonomous-work.md](./autonomous-work.md) — orchestrator/implementer split, runtime routing, and Spec-authoring behaviors (Section D only; fill the design-surface and verification-gate placeholders with the confirmed answers)
 
 ### 5. Done
 
-Tell the user the setup is complete and which skills now read from these files: the spec pipeline (`write-idea`, `write-prd`, `write-techspec`, `write-tasks`, `implement-task`, `implement-spec`, `qa-gate`, `archive-spec`) plus `triage` when external issues arrive on the forge. Mention they can edit `docs/agents/*.md` and `CONTEXT.md` directly later, but that a re-run of this skill regenerates the seeded `docs/agents/` files and the `## Agent skills` block from the current templates — durable customizations belong in the confirmation answers, `CONTEXT.md`, or sections outside the owned block.
+Tell the user the setup is complete and which skills now read from these files: the spec pipeline (`write-idea`, `write-prd`, `write-techspec`, `write-tasks`, `implement-task`, `implement-spec`, `qa-gate`, `archive-spec`), `triage` when external issues arrive on the forge, and — when Section D applies — every Fable-powered orchestrator session, which is bound by `docs/agents/autonomous-work.md`. Mention they can edit `docs/agents/*.md` and `CONTEXT.md` directly later, but that a re-run of this skill regenerates the seeded `docs/agents/` files and the `## Agent skills` block from the current templates — durable customizations belong in the confirmation answers, `CONTEXT.md`, or sections outside the owned block.
