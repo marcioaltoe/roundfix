@@ -24,19 +24,18 @@ jobs:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
 
-      # Fail fast unless the pushed tag, the npm launcher version, and the
-      # embedded app version all agree. A mismatched release never publishes.
-      - name: Version agreement
+      # The pushed tag is the single source of truth for the release version:
+      # it is injected into the binary (ldflags) and set on every npm package
+      # below, so nothing can disagree. Validate the tag is a semver version.
+      - name: Validate tag
         run: |
           set -euo pipefail
           TAG="${GITHUB_REF_NAME#v}"
-          LAUNCHER="$(jq -r .version dist/npm/roundfix/package.json)"
-          APP="$(grep -oE '"[^"]+"' internal/app/version.go | tr -d '"' | head -1)"
-          echo "tag=$TAG launcher=$LAUNCHER app=$APP"
-          if [ "$TAG" != "$LAUNCHER" ] || [ "$TAG" != "$APP" ]; then
-            echo "::error::version mismatch (tag=$TAG launcher=$LAUNCHER app=$APP). Bump internal/app/version.go, dist/npm/roundfix/package.json, and every dist/npm/packages/*/package.json to match the tag before tagging."
+          if ! printf '%s' "$TAG" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error::tag $GITHUB_REF_NAME is not a semver version (expected vMAJOR.MINOR.PATCH)"
             exit 1
           fi
+          echo "releasing $TAG"
 
       # The full local gate must pass before any build or publish.
       - name: Verify gate
@@ -62,7 +61,9 @@ jobs:
             mkdir -p "$(dirname "$out")"
             echo "building $goos/$goarch -> $out"
             GOOS="$goos" GOARCH="$goarch" CGO_ENABLED=0 \
-              go build -buildvcs=false -trimpath -o "$out" ./cmd/roundfix
+              go build -buildvcs=false -trimpath \
+                -ldflags "-X roundfix/internal/app.Version=$TAG" \
+                -o "$out" ./cmd/roundfix
             cp "$out" "release-assets/$asset"
             ( cd "$pkgdir" && npm version "$TAG" --no-git-tag-version --allow-same-version )
           done < <(jq -c '.[]' dist/npm/platforms.json)
