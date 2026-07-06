@@ -3,11 +3,14 @@ package worktree
 import (
 	"bytes"
 	"context"
+	"errors"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // Suite: Run Worktree git lifecycle.
@@ -76,6 +79,101 @@ func TestCreateUsesNamedRunBranchUnderRoundfixHomeAndCopiesFiles(t *testing.T) {
 	}
 	if status := gitStatus(t, ref.Path); status != "" {
 		t.Fatalf("expected clean Run Worktree, got %q", status)
+	}
+}
+
+func TestCreateRunsBootstrapAfterCopyInRunWorktreeRoot(t *testing.T) {
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+	location := filepath.Join(homeDir, "configured-worktrees")
+	repoDir := initWorktreeRepo(t)
+	mustWriteWorktreeTest(t, filepath.Join(repoDir, ".gitignore"), ".env\n")
+	mustWriteWorktreeTest(t, filepath.Join(repoDir, "tracked.txt"), "base\n")
+	gitWorktreeTest(t, repoDir, "add", ".gitignore", "tracked.txt")
+	gitWorktreeTest(t, repoDir, "commit", "-m", "initial")
+	headSHA := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", "HEAD"))
+	mustWriteWorktreeTest(t, filepath.Join(repoDir, ".env"), "SECRET=1\n")
+	var output bytes.Buffer
+
+	ref, err := Create(ctx, CreateOptions{
+		UserRoot: repoDir,
+		Location: location,
+		RunID:    "bootstrap-run",
+		HeadSHA:  headSHA,
+		CopyList: []string{".env"},
+		Bootstrap: BootstrapSpec{
+			Command: "test -f .env && pwd > bootstrap.pwd && cat .env > bootstrap.env && printf bootstrap-output",
+			Timeout: time.Second,
+		},
+		BootstrapOutput: &output,
+	})
+	if err != nil {
+		t.Fatalf("create Run Worktree: %v", err)
+	}
+
+	if got := strings.TrimSpace(mustReadWorktreeTest(t, filepath.Join(ref.Path, "bootstrap.pwd"))); got != ref.Path {
+		t.Fatalf("expected bootstrap to run in %q, got %q", ref.Path, got)
+	}
+	if got := mustReadWorktreeTest(t, filepath.Join(ref.Path, "bootstrap.env")); got != "SECRET=1\n" {
+		t.Fatalf("expected bootstrap to see copied .env, got %q", got)
+	}
+	if output.String() != "bootstrap-output" {
+		t.Fatalf("expected bootstrap output to stream, got %q", output.String())
+	}
+}
+
+func TestRunBootstrapReturnsBootstrapErrorOnNonZeroExit(t *testing.T) {
+	var output bytes.Buffer
+	command := "printf failure-tail; exit 7"
+
+	err := runBootstrap(context.Background(), t.TempDir(), BootstrapSpec{Command: command, Timeout: time.Second}, &output)
+
+	var bootstrapErr *BootstrapError
+	if !errors.As(err, &bootstrapErr) {
+		t.Fatalf("expected BootstrapError, got %T %[1]v", err)
+	}
+	if bootstrapErr.Command != command {
+		t.Fatalf("expected command %q, got %q", command, bootstrapErr.Command)
+	}
+	if !strings.Contains(err.Error(), "worktree bootstrap failed: "+command+": exit status 7") {
+		t.Fatalf("expected bootstrap failure message, got %q", err.Error())
+	}
+	if bootstrapErr.Tail != "failure-tail" {
+		t.Fatalf("expected captured output tail, got %q", bootstrapErr.Tail)
+	}
+	if output.String() != "failure-tail" {
+		t.Fatalf("expected output streamed before failure, got %q", output.String())
+	}
+}
+
+func TestRunBootstrapReturnsBootstrapErrorOnTimeout(t *testing.T) {
+	command := "sleep 1"
+
+	err := runBootstrap(context.Background(), t.TempDir(), BootstrapSpec{Command: command, Timeout: 10 * time.Millisecond}, io.Discard)
+
+	var bootstrapErr *BootstrapError
+	if !errors.As(err, &bootstrapErr) {
+		t.Fatalf("expected BootstrapError, got %T %[1]v", err)
+	}
+	if bootstrapErr.Command != command {
+		t.Fatalf("expected command %q, got %q", command, bootstrapErr.Command)
+	}
+	if !strings.Contains(err.Error(), "worktree bootstrap failed: "+command+": timed out after 10ms") {
+		t.Fatalf("expected timeout bootstrap failure, got %q", err.Error())
+	}
+}
+
+func TestRunBootstrapSkipsEmptyCommand(t *testing.T) {
+	var output bytes.Buffer
+
+	err := runBootstrap(context.Background(), t.TempDir(), BootstrapSpec{Timeout: time.Nanosecond}, &output)
+
+	if err != nil {
+		t.Fatalf("expected empty bootstrap to skip, got %v", err)
+	}
+	if output.Len() != 0 {
+		t.Fatalf("expected no output for empty bootstrap, got %q", output.String())
 	}
 }
 

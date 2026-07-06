@@ -1220,7 +1220,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		printRunFailure(req.name, err, stderr)
 		return exitRunFailed
 	}
-	run, runRef, err := createReviewRunWorktree(ctx, runStore, run, preflightResult, loaded)
+	run, runRef, err := createReviewRunWorktree(ctx, runStore, run, preflightResult, loaded, stderr)
 	if err != nil {
 		markRunFailed(ctx, runStore, run.ID)
 		printResolveRunFailureWithWorktree(err, runRef.Path, stderr)
@@ -1605,7 +1605,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printRunFailure(req.name, err, stderr)
 		return exitRunFailed
 	}
-	run, runRef, err := createReviewRunWorktree(ctx, runStore, run, preflightResult, loaded)
+	run, runRef, err := createReviewRunWorktree(ctx, runStore, run, preflightResult, loaded, stderr)
 	if err != nil {
 		markRunFailed(ctx, runStore, run.ID)
 		printWatchRunFailureWithWorktree(err, runRef.Path, stderr)
@@ -1786,13 +1786,75 @@ func createOperationalRun(ctx context.Context, runStore *store.Store, kind strin
 	})
 }
 
-func createReviewRunWorktree(ctx context.Context, runStore *store.Store, run store.Run, preflightResult preflight.Result, loaded roundconfig.Loaded) (store.Run, runworktree.Ref, error) {
+func worktreeBootstrapSpec(config roundconfig.Config) runworktree.BootstrapSpec {
+	return runworktree.BootstrapSpec{
+		Command: config.Worktree.Bootstrap,
+		Timeout: config.Worktree.BootstrapTimeout,
+	}
+}
+
+func newBootstrapOutputWriter(ctx context.Context, runID string, runStore *store.Store, stderr io.Writer) io.Writer {
+	return bootstrapRunWriter{
+		ctx:    ctx,
+		runID:  runID,
+		stderr: stderr,
+		sink:   store.JournalSink{Store: runStore},
+	}
+}
+
+type bootstrapRunWriter struct {
+	ctx    context.Context
+	runID  string
+	stderr io.Writer
+	sink   runevent.Sink
+}
+
+func (writer bootstrapRunWriter) Write(p []byte) (int, error) {
+	if len(p) == 0 {
+		return 0, nil
+	}
+	if writer.stderr != nil {
+		n, err := writer.stderr.Write(p)
+		if err != nil {
+			return n, err
+		}
+		if n != len(p) {
+			return n, io.ErrShortWrite
+		}
+	}
+	if writer.sink == nil {
+		return len(p), nil
+	}
+	payload, err := json.Marshal(map[string]string{"output": string(p)})
+	if err != nil {
+		return len(p), nil
+	}
+	ctx := writer.ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := writer.sink.Publish(context.WithoutCancel(ctx), runevent.RunEvent{
+		RunID:   writer.runID,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonStatus,
+		Summary: runevent.BoundSummary(string(p)),
+		Time:    time.Now().UTC(),
+		Payload: payload,
+	}); err != nil {
+		return len(p), err
+	}
+	return len(p), nil
+}
+
+func createReviewRunWorktree(ctx context.Context, runStore *store.Store, run store.Run, preflightResult preflight.Result, loaded roundconfig.Loaded, stderr io.Writer) (store.Run, runworktree.Ref, error) {
 	ref, err := createRunWorktree(ctx, runworktree.CreateOptions{
-		UserRoot: preflightResult.Git.Root,
-		Location: loaded.Config.Worktree.Location,
-		RunID:    run.ID,
-		HeadSHA:  preflightResult.Git.HEAD,
-		CopyList: loaded.Config.Worktree.Copy,
+		UserRoot:        preflightResult.Git.Root,
+		Location:        loaded.Config.Worktree.Location,
+		RunID:           run.ID,
+		HeadSHA:         preflightResult.Git.HEAD,
+		CopyList:        loaded.Config.Worktree.Copy,
+		Bootstrap:       worktreeBootstrapSpec(loaded.Config),
+		BootstrapOutput: newBootstrapOutputWriter(ctx, run.ID, runStore, stderr),
 	})
 	if err != nil {
 		return run, ref, err

@@ -7,11 +7,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 	"unicode"
 )
 
@@ -40,11 +42,39 @@ type Ref struct {
 }
 
 type CreateOptions struct {
-	UserRoot string
-	Location string
-	RunID    string
-	HeadSHA  string
-	CopyList []string
+	UserRoot        string
+	Location        string
+	RunID           string
+	HeadSHA         string
+	CopyList        []string
+	Bootstrap       BootstrapSpec
+	BootstrapOutput io.Writer
+}
+
+type BootstrapSpec struct {
+	Command string
+	Timeout time.Duration
+}
+
+type BootstrapError struct {
+	Command string
+	Err     error
+	Tail    string
+}
+
+func (err *BootstrapError) Error() string {
+	reason := "unknown error"
+	if err != nil && err.Err != nil {
+		reason = err.Err.Error()
+	}
+	return fmt.Sprintf("worktree bootstrap failed: %s: %s", err.Command, reason)
+}
+
+func (err *BootstrapError) Unwrap() error {
+	if err == nil {
+		return nil
+	}
+	return err.Err
 }
 
 type IntegrationResult struct {
@@ -93,6 +123,9 @@ func Create(ctx context.Context, opts CreateOptions) (Ref, error) {
 	}
 	if err := copyProvisionedFiles(ref.UserRoot, ref.Path, opts.CopyList); err != nil {
 		return Ref{}, err
+	}
+	if err := runBootstrap(ctx, ref.Path, opts.Bootstrap, opts.BootstrapOutput); err != nil {
+		return ref, err
 	}
 	return ref, nil
 }
@@ -583,6 +616,78 @@ func cleanRelativeCopyPath(path string) (string, bool, error) {
 		return "", false, fmt.Errorf("Run Worktree copy path %q must stay inside the repository", path)
 	}
 	return clean, true, nil
+}
+
+func runBootstrap(ctx context.Context, worktreeDir string, spec BootstrapSpec, out io.Writer) error {
+	command := strings.TrimSpace(spec.Command)
+	if command == "" {
+		return nil
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	worktreeDir = strings.TrimSpace(worktreeDir)
+	if worktreeDir == "" {
+		return &BootstrapError{Command: command, Err: errors.New("worktree root is required")}
+	}
+	if spec.Timeout <= 0 {
+		return &BootstrapError{Command: command, Err: errors.New("timeout must be greater than 0")}
+	}
+	if out == nil {
+		out = io.Discard
+	}
+
+	runCtx, cancel := context.WithTimeout(ctx, spec.Timeout)
+	defer cancel()
+	cmd := exec.CommandContext(runCtx, "sh", "-c", command)
+	cmd.Dir = worktreeDir
+	tail := &boundedTail{limit: 4096}
+	stream := io.MultiWriter(out, tail)
+	cmd.Stdout = stream
+	cmd.Stderr = stream
+	err := cmd.Run()
+	if err == nil {
+		return nil
+	}
+	if errors.Is(runCtx.Err(), context.DeadlineExceeded) {
+		return &BootstrapError{
+			Command: command,
+			Err:     fmt.Errorf("timed out after %s", spec.Timeout),
+			Tail:    tail.String(),
+		}
+	}
+	if errors.Is(runCtx.Err(), context.Canceled) && ctx.Err() != nil {
+		return ctx.Err()
+	}
+	return &BootstrapError{Command: command, Err: err, Tail: tail.String()}
+}
+
+type boundedTail struct {
+	limit int
+	data  []byte
+}
+
+func (tail *boundedTail) Write(p []byte) (int, error) {
+	if tail.limit <= 0 {
+		return len(p), nil
+	}
+	if len(p) >= tail.limit {
+		tail.data = append(tail.data[:0], p[len(p)-tail.limit:]...)
+		return len(p), nil
+	}
+	overflow := len(tail.data) + len(p) - tail.limit
+	if overflow > 0 {
+		tail.data = append(tail.data[:0], tail.data[overflow:]...)
+	}
+	tail.data = append(tail.data, p...)
+	return len(p), nil
+}
+
+func (tail *boundedTail) String() string {
+	if tail == nil {
+		return ""
+	}
+	return string(tail.data)
 }
 
 func checkedOutBranchPath(ctx context.Context, runner gitRunner, userRoot, targetBranch string) (string, error) {

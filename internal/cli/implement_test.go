@@ -368,6 +368,13 @@ func configureImplementAutoPush(t *testing.T, repoDir string, enabled bool) {
 	gitImplement(t, repoDir, "commit", "-m", "configure implement auto push")
 }
 
+func configureWorktreeBootstrap(t *testing.T, repoDir string, command string, timeout string) {
+	t.Helper()
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), fmt.Sprintf("worktree:\n  bootstrap: %q\n  bootstrap_timeout: %s\n", command, timeout))
+	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+	gitImplement(t, repoDir, "commit", "-m", "configure worktree bootstrap")
+}
+
 func configureImplementUpstream(t *testing.T, repoDir string, remote string, branch string) {
 	t.Helper()
 	remoteDir := filepath.Join(t.TempDir(), remote+".git")
@@ -659,6 +666,35 @@ func implementRunFromStore(t *testing.T, homeDir string, runID string) store.Run
 	}
 	if !found {
 		t.Fatalf("run %s not found in Run Database", runID)
+	}
+	return run
+}
+
+func onlyRunFromStore(t *testing.T, homeDir string) store.Run {
+	t.Helper()
+	ctx := context.Background()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close store: %v", err)
+		}
+	}()
+	runIDs, err := runStore.RunIDs(ctx)
+	if err != nil {
+		t.Fatalf("list runs: %v", err)
+	}
+	if len(runIDs) != 1 {
+		t.Fatalf("expected one Run, got %d: %v", len(runIDs), runIDs)
+	}
+	run, found, err := runStore.Run(ctx, runIDs[0])
+	if err != nil {
+		t.Fatalf("read run %s: %v", runIDs[0], err)
+	}
+	if !found {
+		t.Fatalf("run %s not found in Run Database", runIDs[0])
 	}
 	return run
 }
@@ -1253,6 +1289,109 @@ func TestRunImplementExecutesSpecEndToEnd(t *testing.T) {
 		t.Fatalf("unexpected Run row: %#v", run)
 	}
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+func TestRunImplementBootstrapFailureEndsFailedBeforeAgentWork(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:    "task_01",
+		title: "Build the widget core",
+	}})
+	command := "printf bootstrap-output; exit 7"
+	configureWorktreeBootstrap(t, repoDir, command, "1s")
+	runner := &implementFakeRunner{gitRoot: repoDir}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected bootstrap failure exit %d, got %d (stderr %q)", exitRunFailed, code, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout before any Task settles, got %q", stdout.String())
+	}
+	if runner.calls != 0 {
+		t.Fatalf("expected bootstrap failure before Agent work, got %d Agent call(s)", runner.calls)
+	}
+	if !strings.Contains(stderr.String(), "bootstrap-output") {
+		t.Fatalf("expected bootstrap output on stderr, got %q", stderr.String())
+	}
+	wantFailure := "worktree bootstrap failed: " + command + ": exit status 7"
+	if !strings.Contains(stderr.String(), wantFailure) {
+		t.Fatalf("expected stderr to contain %q, got %q", wantFailure, stderr.String())
+	}
+
+	run := onlyRunFromStore(t, homeDir)
+	if run.State != store.StateFailed {
+		t.Fatalf("expected Run Failed, got %q", run.State)
+	}
+	events := runEventsForRun(t, homeDir, run.ID)
+	sawBootstrapOutput := false
+	sawFailedOutcome := false
+	for _, entry := range events {
+		if entry.Event.Kind == runevent.KindDaemonBatch {
+			t.Fatalf("expected no Batch event before bootstrap failure, got %#v", entry.Event)
+		}
+		if strings.Contains(entry.Event.Summary, "bootstrap-output") || strings.Contains(string(entry.Event.Payload), "bootstrap-output") {
+			sawBootstrapOutput = true
+		}
+		if entry.Event.Kind == runevent.KindDaemonOutcome && strings.Contains(string(entry.Event.Payload), store.StateFailed) {
+			sawFailedOutcome = true
+		}
+	}
+	if !sawBootstrapOutput {
+		t.Fatalf("expected bootstrap output in Run Event Journal, got %#v", events)
+	}
+	if !sawFailedOutcome {
+		t.Fatalf("expected Failed outcome in Run Event Journal, got %#v", events)
+	}
+	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+func TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:           "task_01",
+		title:        "Build the widget core",
+		verification: []string{"test -f bootstrap.ready"},
+	}})
+	command := "pwd > bootstrap.cwd && printf ready > bootstrap.ready"
+	mustWrite(t, filepath.Join(repoDir, ".gitignore"), "bootstrap.cwd\nbootstrap.ready\n")
+	gitImplement(t, repoDir, "add", ".gitignore")
+	gitImplement(t, repoDir, "commit", "-m", "ignore bootstrap markers")
+	configureWorktreeBootstrap(t, repoDir, command, "1s")
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		onTask: func(req agent.ExecuteRequest, _ string) error {
+			if got := mustRead(t, filepath.Join(req.GitRoot, "bootstrap.ready")); got != "ready" {
+				return fmt.Errorf("bootstrap marker content = %q", got)
+			}
+			if got := strings.TrimSpace(mustRead(t, filepath.Join(req.GitRoot, "bootstrap.cwd"))); got != req.GitRoot {
+				return fmt.Errorf("bootstrap cwd = %q, want %q", got, req.GitRoot)
+			}
+			return nil
+		},
+	}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected Clean exit, got %d (stderr %q)", code, stderr.String())
+	}
+	if runner.calls != 1 || runner.taskIDs[0] != "task_01" {
+		t.Fatalf("expected one Agent call after bootstrap, got calls=%d tasks=%v", runner.calls, runner.taskIDs)
+	}
+	if !strings.Contains(stdout.String(), "Clean: all 1 Task(s) completed.") {
+		t.Fatalf("expected Clean stdout, got %q", stdout.String())
+	}
+	run := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
+	if run.State != store.StateClean {
+		t.Fatalf("expected Run Clean, got %q", run.State)
+	}
 }
 
 func TestRenderImplementTaskLinesKeepsGraphOrderWhenCompletionReversed(t *testing.T) {

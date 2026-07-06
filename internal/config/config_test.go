@@ -98,11 +98,14 @@ func TestLoadAppliesWorktreeConfigHierarchy(t *testing.T) {
 		userConfig      string
 		projectConfig   string
 		wantConcurrency int
+		wantBootstrap   string
+		wantTimeout     time.Duration
 		wantLocation    func(homeDir, workDir string) string
 	}{
 		{
 			name:            "builtin only",
 			wantConcurrency: 2,
+			wantTimeout:     10 * time.Minute,
 			wantLocation: func(homeDir, workDir string) string {
 				return filepath.Join(homeDir, ".roundfix", "worktrees")
 			},
@@ -113,8 +116,12 @@ func TestLoadAppliesWorktreeConfigHierarchy(t *testing.T) {
 worktree:
   concurrency: 4
   location: __USER_LOCATION__
+  bootstrap: make user-bootstrap
+  bootstrap_timeout: 2m
 `,
 			wantConcurrency: 4,
+			wantBootstrap:   "make user-bootstrap",
+			wantTimeout:     2 * time.Minute,
 			wantLocation: func(homeDir, workDir string) string {
 				return filepath.Join(homeDir, "user-worktrees")
 			},
@@ -125,13 +132,19 @@ worktree:
 worktree:
   concurrency: 4
   location: __USER_LOCATION__
+  bootstrap: make user-bootstrap
+  bootstrap_timeout: 2m
 `,
 			projectConfig: `
 worktree:
   concurrency: 1
   location: __PROJECT_LOCATION__
+  bootstrap: make project-bootstrap
+  bootstrap_timeout: 30s
 `,
 			wantConcurrency: 1,
+			wantBootstrap:   "make project-bootstrap",
+			wantTimeout:     30 * time.Second,
 			wantLocation: func(homeDir, workDir string) string {
 				return filepath.Join(homeDir, "project-worktrees")
 			},
@@ -162,6 +175,12 @@ worktree:
 
 			if loaded.Config.Worktree.Concurrency != tt.wantConcurrency {
 				t.Fatalf("expected worktree.concurrency %d, got %d", tt.wantConcurrency, loaded.Config.Worktree.Concurrency)
+			}
+			if loaded.Config.Worktree.Bootstrap != tt.wantBootstrap {
+				t.Fatalf("expected worktree.bootstrap %q, got %q", tt.wantBootstrap, loaded.Config.Worktree.Bootstrap)
+			}
+			if loaded.Config.Worktree.BootstrapTimeout != tt.wantTimeout {
+				t.Fatalf("expected worktree.bootstrap_timeout %s, got %s", tt.wantTimeout, loaded.Config.Worktree.BootstrapTimeout)
 			}
 			if want := tt.wantLocation(homeDir, workDir); loaded.Config.Worktree.Location != want {
 				t.Fatalf("expected worktree.location %q, got %q", want, loaded.Config.Worktree.Location)
@@ -479,6 +498,26 @@ store:
 	}
 }
 
+func TestLoadRejectsUnknownWorktreeConfigKey(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
+worktree:
+  bootstrapp: make setup
+`)
+
+	_, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+
+	if err == nil {
+		t.Fatal("expected config load to fail")
+	}
+	if !strings.Contains(err.Error(), "worktree.bootstrapp is not a supported config key") {
+		t.Fatalf("expected strict worktree key error, got %q", err.Error())
+	}
+}
+
 func TestLoadRejectsInvalidConfig(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -547,6 +586,14 @@ worktree:
   concurrency: 0
 `,
 			contains: "worktree.concurrency must be greater than 0",
+		},
+		{
+			name: "invalid worktree bootstrap timeout",
+			config: `
+worktree:
+  bootstrap_timeout: 0
+`,
+			contains: "worktree.bootstrap_timeout must be greater than 0",
 		},
 		{
 			name: "relative worktree location",

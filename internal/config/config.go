@@ -17,18 +17,19 @@ import (
 )
 
 const (
-	userConfigRelPath          = ".roundfix/config.yml"
-	projectConfigName          = ".roundfixrc.yml"
-	defaultReviewSource        = "coderabbit"
-	defaultAgent               = "codex"
-	defaultVerification        = "make verify"
-	defaultPollInterval        = 30 * time.Second
-	defaultReviewTimeout       = 30 * time.Minute
-	defaultQuietPeriod         = 30 * time.Second
-	defaultRunDuration         = 2 * time.Hour
-	defaultJournalRetention    = 336 * time.Hour
-	defaultWorktreeLocation    = "~/.roundfix/worktrees"
-	defaultWorktreeConcurrency = 2
+	userConfigRelPath               = ".roundfix/config.yml"
+	projectConfigName               = ".roundfixrc.yml"
+	defaultReviewSource             = "coderabbit"
+	defaultAgent                    = "codex"
+	defaultVerification             = "make verify"
+	defaultPollInterval             = 30 * time.Second
+	defaultReviewTimeout            = 30 * time.Minute
+	defaultQuietPeriod              = 30 * time.Second
+	defaultRunDuration              = 2 * time.Hour
+	defaultJournalRetention         = 336 * time.Hour
+	defaultWorktreeLocation         = "~/.roundfix/worktrees"
+	defaultWorktreeConcurrency      = 2
+	defaultWorktreeBootstrapTimeout = 10 * time.Minute
 )
 
 const (
@@ -78,9 +79,11 @@ type Implement struct {
 }
 
 type Worktree struct {
-	Concurrency int
-	Location    string
-	Copy        []string
+	Concurrency      int
+	Location         string
+	Copy             []string
+	Bootstrap        string
+	BootstrapTimeout time.Duration
 }
 
 type Budget struct {
@@ -206,9 +209,11 @@ func (value *implementAutoPushValue) UnmarshalYAML(node *yaml.Node) error {
 }
 
 type worktreeOverlay struct {
-	Concurrency *int      `yaml:"concurrency"`
-	Location    *string   `yaml:"location"`
-	Copy        *[]string `yaml:"copy"`
+	Concurrency      *int           `yaml:"concurrency"`
+	Location         *string        `yaml:"location"`
+	Copy             *[]string      `yaml:"copy"`
+	Bootstrap        *string        `yaml:"bootstrap"`
+	BootstrapTimeout *durationValue `yaml:"bootstrap_timeout"`
 }
 
 type budgetOverlay struct {
@@ -265,6 +270,26 @@ func (overlay *storeOverlay) UnmarshalYAML(node *yaml.Node) error {
 		return err
 	}
 	*overlay = storeOverlay(raw)
+	return nil
+}
+
+func (overlay *worktreeOverlay) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind == yaml.MappingNode {
+		for index := 0; index < len(node.Content); index += 2 {
+			key := node.Content[index].Value
+			switch key {
+			case "concurrency", "location", "copy", "bootstrap", "bootstrap_timeout":
+			default:
+				return fmt.Errorf("worktree.%s is not a supported config key", key)
+			}
+		}
+	}
+	type rawWorktreeOverlay worktreeOverlay
+	var raw rawWorktreeOverlay
+	if err := node.Decode(&raw); err != nil {
+		return err
+	}
+	*overlay = worktreeOverlay(raw)
 	return nil
 }
 
@@ -328,8 +353,9 @@ func Builtin() Config {
 			AutoPush: false,
 		},
 		Worktree: Worktree{
-			Concurrency: defaultWorktreeConcurrency,
-			Location:    defaultWorktreeLocation,
+			Concurrency:      defaultWorktreeConcurrency,
+			Location:         defaultWorktreeLocation,
+			BootstrapTimeout: defaultWorktreeBootstrapTimeout,
 		},
 		Budget: Budget{
 			Enabled:        true,
@@ -445,6 +471,9 @@ worktree:
   concurrency: %d
   # Repository-relative untracked files copied into each Run Worktree.
   copy: []
+  # Command run once after copy before Agent work; empty disables bootstrap.
+  bootstrap: ""
+  bootstrap_timeout: %s
 
 store:
   # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
@@ -483,6 +512,7 @@ resolve:
 		config.Defaults.AutoCommit,
 		config.Worktree.Location,
 		config.Worktree.Concurrency,
+		formatConfigDuration(config.Worktree.BootstrapTimeout),
 		formatConfigDuration(config.Store.JournalRetention),
 		config.ReviewSource.Name,
 		config.ReviewSource.IncludeNitpicks,
@@ -535,6 +565,9 @@ func Validate(config Config) error {
 	}
 	if strings.TrimSpace(config.Worktree.Location) == "" {
 		return errors.New("worktree.location must not be empty")
+	}
+	if config.Worktree.BootstrapTimeout <= 0 {
+		return errors.New("worktree.bootstrap_timeout must be greater than 0")
 	}
 	for _, path := range config.Worktree.Copy {
 		if err := validateWorktreeCopyPath(path); err != nil {
@@ -879,6 +912,12 @@ func applyOverlay(config *Config, overlay configOverlay) {
 		}
 		if overlay.Worktree.Copy != nil {
 			config.Worktree.Copy = append([]string(nil), (*overlay.Worktree.Copy)...)
+		}
+		if overlay.Worktree.Bootstrap != nil {
+			config.Worktree.Bootstrap = *overlay.Worktree.Bootstrap
+		}
+		if overlay.Worktree.BootstrapTimeout != nil {
+			config.Worktree.BootstrapTimeout = overlay.Worktree.BootstrapTimeout.value
 		}
 	}
 	if overlay.Budget != nil {
