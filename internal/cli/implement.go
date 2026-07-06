@@ -40,6 +40,7 @@ Options:
   --agent-command      Agent command override
   --agent-full-access  Opt into Agent runtime full-access mode
   --no-agent-console   Hide Agent-source console events from non-TTY stderr
+  --detach             Start a Detached Run and print attach/stop commands
   --interactive        Open Interactive Input before starting
   --no-input           Fail instead of opening Interactive Input
 `
@@ -52,7 +53,7 @@ var pruneTerminalRunWorktrees = runworktree.PruneTerminalReport
 // runImplementCommand executes the Implement Command: Preflight Validation,
 // Run creation, the Live Run View, one Task cycle over the Task Graph, and
 // the terminal outcome, following the runOperationalCommand shape.
-func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.Writer, detachChild *detachChild) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("implement"))
 		return exitOK
@@ -69,6 +70,8 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
+	req.detachChild = detachChild
+	req = applyDetachSemantics(req)
 	req, err = maybeCollectInteractiveInput(ctx, req, loadedConfig, stderr)
 	if err != nil {
 		printPreflightFailure("implement", err, stderr)
@@ -81,6 +84,9 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	if err := validateAgentConsoleDisplay(req, stderr); err != nil {
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
+	}
+	if req.detach {
+		return runDetachedCommand(append([]string{"implement"}, args...), req, loadedConfig, stdout, stderr)
 	}
 
 	// Preflight Validation: every failure below exits 2 with one actionable
@@ -170,6 +176,11 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		// it already names the blocking run id and the stop command.
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
+	}
+	if err := req.reportDetachedRunCreated(run.ID); err != nil {
+		markRunFailed(ctx, runStore, run.ID)
+		printImplementRunFailure(err, stderr)
+		return exitRunFailed
 	}
 	if len(gitState.Dirty) > 0 {
 		fmt.Fprintf(stderr, "%s: note: working tree %s has %d uncommitted change(s); implement will run in a Run Worktree, and overlapping local changes end the Run Integration Pending.\n", app.Name, gitState.Root, len(gitState.Dirty))
@@ -341,6 +352,7 @@ func parseImplementCommand(args []string, config roundconfig.Config) (commandReq
 	fs.StringVar(&req.agentCmd, "agent-command", "", "Agent command override")
 	fs.BoolVar(&req.agentFullAccess, "agent-full-access", req.agentFullAccess, "Opt into Agent runtime full-access mode")
 	fs.BoolVar(&req.noAgentConsole, "no-agent-console", false, "Hide Agent-source console events from non-TTY stderr")
+	fs.BoolVar(&req.detach, "detach", false, "Start a Detached Run and print attach/stop commands")
 	fs.BoolVar(&req.interactive, "interactive", false, "Open Interactive Input before starting")
 	fs.BoolVar(&req.noInput, "no-input", false, "Fail instead of opening Interactive Input")
 	if err := fs.Parse(args); err != nil {

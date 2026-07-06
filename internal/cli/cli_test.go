@@ -224,12 +224,12 @@ func TestRunCommandHelp(t *testing.T) {
 		{
 			name:     "resolve",
 			args:     []string{"resolve", "--help"},
-			contains: []string{"roundfix resolve --pr <number> --agent <agent>", "--no-agent-console"},
+			contains: []string{"roundfix resolve --pr <number> --agent <agent>", "--no-agent-console", "--detach"},
 		},
 		{
 			name:     "watch",
 			args:     []string{"watch", "--help"},
-			contains: []string{"roundfix watch --source coderabbit --pr <number> --agent <agent>", "--until-clean", "Review Source check succeeds", "--no-agent-console"},
+			contains: []string{"roundfix watch --source coderabbit --pr <number> --agent <agent>", "--until-clean", "Review Source check succeeds", "--no-agent-console", "--detach"},
 		},
 		{
 			name:     "setup",
@@ -261,6 +261,37 @@ func TestRunCommandHelp(t *testing.T) {
 			if stderr.Len() != 0 {
 				t.Fatalf("expected no stderr, got %q", stderr.String())
 			}
+		})
+	}
+}
+
+func TestRunDetachRejectsInteractiveWithExistingConflictShape(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "resolve", args: []string{"resolve", "--detach", "--interactive"}},
+		{name: "watch", args: []string{"watch", "--detach", "--interactive"}},
+		{name: "implement", args: []string{"implement", "--detach", "--interactive"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, _ := withCLIWorkspace(t)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("expected exit code 2, got %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("expected no stdout, got %q", stdout.String())
+			}
+			if !strings.Contains(stderr.String(), "--interactive cannot be used with --no-input") {
+				t.Fatalf("expected existing no-input conflict shape, got %q", stderr.String())
+			}
+			assertNoRunDatabase(t, homeDir)
 		})
 	}
 }

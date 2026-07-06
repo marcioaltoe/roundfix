@@ -98,6 +98,8 @@ type commandRequest struct {
 	headBranch      string
 	headRepo        string
 	qa              bool
+	detach          bool
+	detachChild     *detachChild
 }
 
 var runCommandPreflight = defaultRunCommandPreflight
@@ -146,6 +148,16 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	detachChild, err := newDetachChildFromEnv()
+	if err != nil {
+		fmt.Fprintf(stderr, "%s: detach setup failed: %v\n", app.Name, err)
+		return exitPreflight
+	}
+	if detachChild != nil {
+		defer func() {
+			_ = detachChild.Close()
+		}()
+	}
 	if len(args) == 0 {
 		fmt.Fprint(stdout, usage)
 		return exitOK
@@ -171,9 +183,9 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 	case "skills":
 		return runSkillsCommand(ctx, args[1:], stdout, stderr)
 	case "fetch", "resolve", "watch":
-		return runOperationalCommand(ctx, args[0], args[1:], stdout, stderr)
+		return runOperationalCommand(ctx, args[0], args[1:], stdout, stderr, detachChild)
 	case "implement":
-		return runImplementCommand(ctx, args[1:], stdout, stderr)
+		return runImplementCommand(ctx, args[1:], stdout, stderr, detachChild)
 	case "settle":
 		return runSettleCommand(ctx, args[1:], stdout, stderr)
 	default:
@@ -980,7 +992,7 @@ func defaultSuggestCurrentPullRequest(ctx context.Context, gitRoot string) (stri
 	return strings.TrimSpace(string(output)), nil
 }
 
-func runOperationalCommand(ctx context.Context, name string, args []string, stdout, stderr io.Writer) int {
+func runOperationalCommand(ctx context.Context, name string, args []string, stdout, stderr io.Writer, detachChild *detachChild) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage(name))
 		return exitOK
@@ -998,6 +1010,8 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 		printPreflightFailure(name, err, stderr)
 		return exitPreflight
 	}
+	req.detachChild = detachChild
+	req = applyDetachSemantics(req)
 
 	req, err = maybeCollectInteractiveInput(ctx, req, loadedConfig, stderr)
 	if err != nil {
@@ -1011,6 +1025,9 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 	if err := validateAgentConsoleDisplay(req, stderr); err != nil {
 		printPreflightFailure(name, err, stderr)
 		return exitPreflight
+	}
+	if req.detach {
+		return runDetachedCommand(append([]string{name}, args...), req, loadedConfig, stdout, stderr)
 	}
 
 	artifactDir, err := roundconfig.ValidateArtifactDirectory(req.artifactDir, loadedConfig.GitRoot, loadedConfig.HomeDir)
@@ -1172,6 +1189,11 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
+	}
+	if err := req.reportDetachedRunCreated(run.ID); err != nil {
+		markRunFailed(ctx, runStore, run.ID)
+		printRunFailure(req.name, err, stderr)
+		return exitRunFailed
 	}
 	run, runRef, err := createReviewRunWorktree(ctx, runStore, run, preflightResult, loaded)
 	if err != nil {
@@ -1545,6 +1567,11 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
+	}
+	if err := req.reportDetachedRunCreated(run.ID); err != nil {
+		markRunFailed(ctx, runStore, run.ID)
+		printRunFailure(req.name, err, stderr)
+		return exitRunFailed
 	}
 	run, runRef, err := createReviewRunWorktree(ctx, runStore, run, preflightResult, loaded)
 	if err != nil {
@@ -2063,6 +2090,7 @@ func parseOperationalCommand(name string, args []string, config roundconfig.Conf
 		fs.StringVar(&req.source, "source", req.source, "Review Source")
 		fs.StringVar(&req.round, "round", "auto", "Round number or auto")
 	case "resolve":
+		fs.BoolVar(&req.detach, "detach", false, "Start a Detached Run and print attach/stop commands")
 		fs.StringVar(&req.agent, "agent", req.agent, "Agent runtime")
 		fs.StringVar(&req.model, "model", req.model, "Agent model override")
 		fs.StringVar(&req.agentCmd, "agent-command", "", "Agent command override")
@@ -2070,6 +2098,7 @@ func parseOperationalCommand(name string, args []string, config roundconfig.Conf
 		fs.BoolVar(&req.noAgentConsole, "no-agent-console", false, "Hide Agent-source console events from non-TTY stderr")
 		fs.StringVar(&req.round, "round", "all", "Round number or all")
 	case "watch":
+		fs.BoolVar(&req.detach, "detach", false, "Start a Detached Run and print attach/stop commands")
 		fs.StringVar(&req.source, "source", req.source, "Review Source")
 		fs.StringVar(&req.agent, "agent", req.agent, "Agent runtime")
 		fs.StringVar(&req.model, "model", req.model, "Agent model override")
@@ -2131,6 +2160,9 @@ func validateCommandRequest(req commandRequest) error {
 
 func validateAgentConsoleDisplay(req commandRequest, stderr io.Writer) error {
 	if req.noAgentConsole && liveTUIEnabled(stderr) {
+		if req.detach || req.detachChild != nil {
+			return nil
+		}
 		return validationError{message: "--no-agent-console cannot be used with the interactive cockpit"}
 	}
 	return nil
@@ -2452,6 +2484,7 @@ Options:
   --agent-command Agent command override
   --agent-full-access Opt into Agent runtime full-access mode
   --no-agent-console Hide Agent-source console events from non-TTY stderr
+  --detach       Start a Detached Run and print attach/stop commands
   --round        Round number or all
   --artifact-dir Artifact Directory
   --base-repo    Explicit base repository, owner/name
@@ -2472,6 +2505,7 @@ Options:
   --agent-command Agent command override
   --agent-full-access Opt into Agent runtime full-access mode
   --no-agent-console Hide Agent-source console events from non-TTY stderr
+  --detach       Start a Detached Run and print attach/stop commands
   --until-clean  Repeat until no Unresolved Review Issues remain and Review Source check succeeds
   --max-rounds   Maximum Review Source rounds
   --artifact-dir Artifact Directory

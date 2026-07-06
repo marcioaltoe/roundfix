@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"errors"
@@ -11,7 +12,9 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"syscall"
 	"testing"
+	"time"
 
 	"roundfix/internal/agent"
 	"roundfix/internal/daemon"
@@ -23,6 +26,15 @@ import (
 )
 
 const implementTestSlug = "0001-widget-flow"
+
+const cliTestHelperEnv = "ROUNDFIX_CLI_TEST_HELPER"
+
+func TestMain(m *testing.M) {
+	if os.Getenv(cliTestHelperEnv) == "1" {
+		os.Exit(Run(os.Args[1:], os.Stdout, os.Stderr))
+	}
+	os.Exit(m.Run())
+}
 
 // implementSeed describes one task file for a test Spec directory. Zero
 // values default to status pending, type backend, and one passing
@@ -63,6 +75,193 @@ func gitImplementOutput(t *testing.T, dir string, args ...string) string {
 		t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, output.String())
 	}
 	return output.String()
+}
+
+func runCLIHelper(t *testing.T, dir string, fakeACPX string, extraEnv map[string]string, args ...string) (string, string, int) {
+	t.Helper()
+	cmd := exec.Command(os.Args[0], args...)
+	cmd.Dir = dir
+	cmd.Env = cliHelperEnv(fakeACPX, extraEnv)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	return stdout.String(), stderr.String(), exitCodeFromWait(err)
+}
+
+func cliHelperEnv(fakeACPX string, extra map[string]string) []string {
+	env := isolatedGitEnvForTest()
+	env = withEnvValue(env, cliTestHelperEnv, "1")
+	if fakeACPX != "" {
+		env = withEnvValue(env, "PATH", filepath.Dir(fakeACPX)+string(os.PathListSeparator)+os.Getenv("PATH"))
+	}
+	for key, value := range extra {
+		env = withEnvValue(env, key, value)
+	}
+	return env
+}
+
+func withEnvValue(env []string, key string, value string) []string {
+	prefix := key + "="
+	filtered := make([]string, 0, len(env)+1)
+	for _, entry := range env {
+		if strings.HasPrefix(entry, prefix) {
+			continue
+		}
+		filtered = append(filtered, entry)
+	}
+	return append(filtered, prefix+value)
+}
+
+func fakeACPXCommand(t *testing.T) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "acpx")
+	body := fmt.Sprintf(`#!/bin/sh
+if [ "$1" = "--version" ]; then
+  printf '%%s\n' '%s'
+  exit 0
+fi
+case " $* " in
+  *" sessions ensure "*|*" sessions close "*)
+    exit 0
+    ;;
+  *" prompt "*)
+    cat >/dev/null
+    if [ -n "$ROUNDFIX_FAKE_ACPX_PROMPT_STARTED" ]; then
+      : > "$ROUNDFIX_FAKE_ACPX_PROMPT_STARTED"
+    fi
+    if [ -n "$ROUNDFIX_FAKE_ACPX_RELEASE" ]; then
+      while [ ! -f "$ROUNDFIX_FAKE_ACPX_RELEASE" ]; do
+        sleep 0.05
+      done
+    fi
+    printf '{"jsonrpc":"2.0","id":1,"result":{"stopReason":"end_turn"}}\n'
+    exit 0
+    ;;
+esac
+exit 0
+`, agent.PinnedACPXVersion)
+	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
+		t.Fatalf("write fake acpx: %v", err)
+	}
+	return path
+}
+
+func parseDetachedReport(t *testing.T, stdout string) (string, string) {
+	t.Helper()
+	lines := strings.Split(strings.TrimSuffix(stdout, "\n"), "\n")
+	if len(lines) != 4 {
+		t.Fatalf("expected four detach stdout lines, got %d: %q", len(lines), stdout)
+	}
+	runID, ok := strings.CutPrefix(lines[0], "Run detached: ")
+	if !ok || strings.TrimSpace(runID) == "" {
+		t.Fatalf("expected Run detached line, got %q", lines[0])
+	}
+	consoleLog, ok := strings.CutPrefix(lines[1], "Console log: ")
+	if !ok || strings.TrimSpace(consoleLog) == "" {
+		t.Fatalf("expected Console log line, got %q", lines[1])
+	}
+	if lines[2] != "Follow: roundfix attach "+runID {
+		t.Fatalf("expected follow line for %s, got %q", runID, lines[2])
+	}
+	if lines[3] != "Stop: roundfix stop "+runID {
+		t.Fatalf("expected stop line for %s, got %q", runID, lines[3])
+	}
+	return runID, consoleLog
+}
+
+func readLineWithTimeout(t *testing.T, reader *bufio.Reader, timeout time.Duration) string {
+	t.Helper()
+	lineCh := make(chan string, 1)
+	errCh := make(chan error, 1)
+	go func() {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			errCh <- err
+			return
+		}
+		lineCh <- line
+	}()
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+	select {
+	case line := <-lineCh:
+		return line
+	case err := <-errCh:
+		t.Fatalf("read line: %v", err)
+	case <-timer.C:
+		t.Fatalf("timed out waiting for line")
+	}
+	return ""
+}
+
+func waitProcessForTest(cmd *exec.Cmd, timeout time.Duration) (error, bool) {
+	waitCh := make(chan error, 1)
+	go func() {
+		waitCh <- cmd.Wait()
+	}()
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+	select {
+	case err := <-waitCh:
+		return err, true
+	case <-timer.C:
+		return nil, false
+	}
+}
+
+func waitForFile(t *testing.T, path string, timeout time.Duration) {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		if _, err := os.Stat(path); err == nil {
+			return
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+	t.Fatalf("timed out waiting for %s", path)
+}
+
+func waitForRunState(t *testing.T, homeDir string, runID string, state string, timeout time.Duration) store.Run {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	var last store.Run
+	for time.Now().Before(deadline) {
+		reader, err := store.OpenReader(context.Background(), homeDir)
+		if err == nil {
+			run, found, runErr := reader.Run(context.Background(), runID)
+			_ = reader.Close()
+			if runErr != nil {
+				t.Fatalf("read Run %s: %v", runID, runErr)
+			}
+			if found {
+				last = run
+				if run.State == state {
+					return run
+				}
+			}
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+	t.Fatalf("timed out waiting for Run %s state %s; last state %s", runID, state, last.State)
+	return store.Run{}
+}
+
+func runEventsForRun(t *testing.T, homeDir string, runID string) []store.JournalEvent {
+	t.Helper()
+	reader, err := store.OpenReader(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database reader: %v", err)
+	}
+	defer func() {
+		_ = reader.Close()
+	}()
+	events, err := reader.RunEventsAfter(context.Background(), runID, 0, 200)
+	if err != nil {
+		t.Fatalf("read Run Events for %s: %v", runID, err)
+	}
+	return events
 }
 
 func gitConfigArgsForTest() []string {
@@ -512,6 +711,7 @@ func TestRunImplementHelpListsExactlyImplementedFlags(t *testing.T) {
 		"--model":             true,
 		"--agent-command":     true,
 		"--agent-full-access": true,
+		"--detach":            true,
 		"--interactive":       true,
 		"--no-agent-console":  true,
 		"--no-input":          true,
@@ -531,6 +731,131 @@ func TestRunImplementHelpListsExactlyImplementedFlags(t *testing.T) {
 		if !want[flagName] {
 			t.Fatalf("help lists unimplemented flag %s:\n%s", flagName, stdout.String())
 		}
+	}
+}
+
+func TestRunImplementDetachPrintsReportAndCompletesRun(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	fakeACPX := fakeACPXCommand(t)
+	stdout, stderr, code := runCLIHelper(t, repoDir, fakeACPX, nil,
+		"implement", "--spec", implementTestSlug, "--agent", "codex", "--detach")
+
+	if code != exitOK {
+		t.Fatalf("expected detach caller exit 0, got %d stderr=%q stdout=%q", code, stderr, stdout)
+	}
+	if stderr != "" {
+		t.Fatalf("expected detach caller stderr empty, got %q", stderr)
+	}
+	runID, consoleLog := parseDetachedReport(t, stdout)
+	wantStdout := fmt.Sprintf("Run detached: %s\nConsole log: %s\nFollow: roundfix attach %s\nStop: roundfix stop %s\n", runID, consoleLog, runID, runID)
+	if stdout != wantStdout {
+		t.Fatalf("detach stdout mismatch\nwant: %q\ngot:  %q", wantStdout, stdout)
+	}
+
+	run := waitForRunState(t, homeDir, runID, store.StateClean, 10*time.Second)
+	if run.Kind != store.KindImplement {
+		t.Fatalf("expected Implement Run, got %s", run.Kind)
+	}
+	if run.WorkDir == "" {
+		t.Fatal("expected Run Worktree recorded on detached Run")
+	}
+	assertRunWorktreeRemoved(t, run.WorkDir)
+	consoleContent := mustRead(t, consoleLog)
+	if !strings.Contains(consoleContent, "Implement Run "+runID+" reached Clean") {
+		t.Fatalf("expected detached console log to contain terminal outcome, got %q", consoleContent)
+	}
+	events := runEventsForRun(t, homeDir, runID)
+	if len(events) == 0 {
+		t.Fatal("expected Run Event Journal entries for detached Run")
+	}
+	last := events[len(events)-1].Event
+	if last.Kind != runevent.KindDaemonOutcome || !strings.Contains(string(last.Payload), `"Clean"`) {
+		t.Fatalf("expected terminal Clean outcome in Run Event Journal, got kind=%s payload=%s", last.Kind, string(last.Payload))
+	}
+}
+
+func TestRunImplementDetachRelaysPreflightFailureVerbatim(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	var foregroundStdout bytes.Buffer
+	var foregroundStderr bytes.Buffer
+	foregroundCode := RunContext(context.Background(), []string{"implement", "--spec", "9999-missing", "--agent", "codex", "--no-input"}, &foregroundStdout, &foregroundStderr)
+	if foregroundCode != exitPreflight {
+		t.Fatalf("expected foreground preflight exit 2, got %d stderr=%q", foregroundCode, foregroundStderr.String())
+	}
+
+	stdout, stderr, code := runCLIHelper(t, repoDir, "", nil,
+		"implement", "--spec", "9999-missing", "--agent", "codex", "--detach")
+
+	if code != exitPreflight {
+		t.Fatalf("expected detached preflight exit 2, got %d stderr=%q stdout=%q", code, stderr, stdout)
+	}
+	if stdout != "" {
+		t.Fatalf("expected detached preflight stdout empty, got %q", stdout)
+	}
+	if stderr != foregroundStderr.String() {
+		t.Fatalf("detached preflight stderr was not relayed verbatim\nwant: %q\ngot:  %q", foregroundStderr.String(), stderr)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
+func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	dir := t.TempDir()
+	promptStarted := filepath.Join(dir, "prompt-started")
+	releasePrompt := filepath.Join(dir, "release")
+	t.Cleanup(func() {
+		_ = os.WriteFile(releasePrompt, []byte("release\n"), 0o644)
+	})
+	fakeACPX := fakeACPXCommand(t)
+	cmd := exec.Command(os.Args[0], "implement", "--spec", implementTestSlug, "--agent", "codex", "--detach")
+	cmd.Dir = repoDir
+	cmd.Env = cliHelperEnv(fakeACPX, map[string]string{
+		"ROUNDFIX_FAKE_ACPX_PROMPT_STARTED": promptStarted,
+		"ROUNDFIX_FAKE_ACPX_RELEASE":        releasePrompt,
+	})
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		t.Fatalf("open caller stdout pipe: %v", err)
+	}
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("start detach caller: %v", err)
+	}
+
+	firstLine := readLineWithTimeout(t, bufio.NewReader(stdoutPipe), 5*time.Second)
+	runID, ok := strings.CutPrefix(strings.TrimSpace(firstLine), "Run detached: ")
+	if !ok || strings.TrimSpace(runID) == "" {
+		t.Fatalf("expected first detach line with Run id, got %q stderr=%q", firstLine, stderr.String())
+	}
+	if err := syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); err != nil && !errors.Is(err, syscall.ESRCH) {
+		t.Fatalf("kill caller process group: %v", err)
+	}
+	_, _ = waitProcessForTest(cmd, 2*time.Second)
+	waitForFile(t, promptStarted, 10*time.Second)
+
+	var attachStdout bytes.Buffer
+	var attachStderr bytes.Buffer
+	attachCtx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	attachCode := RunContext(attachCtx, []string{"attach", runID}, &attachStdout, &attachStderr)
+	cancel()
+	if attachCode != exitOK {
+		t.Fatalf("expected attach to detach cleanly from active Run, got %d stderr=%q stdout=%q", attachCode, attachStderr.String(), attachStdout.String())
+	}
+	if !strings.Contains(attachStdout.String(), "Detached; Run "+runID+" keeps going.") {
+		t.Fatalf("expected attach to prove active Run is attachable, got stdout=%q stderr=%q", attachStdout.String(), attachStderr.String())
+	}
+
+	mustWrite(t, releasePrompt, "release\n")
+	run := waitForRunState(t, homeDir, runID, store.StateClean, 10*time.Second)
+	if run.State != store.StateClean {
+		t.Fatalf("expected detached child to reach Clean after caller kill, got %s", run.State)
+	}
+	events := runEventsForRun(t, homeDir, runID)
+	last := events[len(events)-1].Event
+	if last.Kind != runevent.KindDaemonOutcome || !strings.Contains(string(last.Payload), `"Clean"`) {
+		t.Fatalf("expected journaled Clean outcome after caller kill, got kind=%s payload=%s", last.Kind, string(last.Payload))
 	}
 }
 
