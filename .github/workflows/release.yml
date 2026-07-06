@@ -91,6 +91,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          TAG="${GITHUB_REF_NAME#v}"
+          # Release notes are this version's section from CHANGELOG.md.
+          awk -v v="$TAG" '
+            $0 ~ ("^## \\[" v "\\]") { grab=1; next }
+            grab && /^## \[/ { exit }
+            grab { print }
+          ' CHANGELOG.md > /tmp/release-notes.md
+          if [ ! -s /tmp/release-notes.md ]; then
+            printf 'Release %s\n' "$GITHUB_REF_NAME" > /tmp/release-notes.md
+          fi
           gh release create "$GITHUB_REF_NAME" release-assets/* \
             --title "$GITHUB_REF_NAME" \
-            --generate-notes
+            --notes-file /tmp/release-notes.md
