@@ -1,0 +1,47 @@
+[
+  {
+    "npmOS": "darwin",
+    "npmCPU": "arm64",
+    "goos": "darwin",
+    "goarch": "arm64",
+    "package": "@roundfix/cli-darwin-arm64",
+    "binary": "bin/roundfix",
+    "asset": "roundfix-darwin-arm64"
+  },
+  {
+    "npmOS": "darwin",
+    "npmCPU": "x64",
+    "goos": "darwin",
+    "goarch": "amd64",
+    "package": "@roundfix/cli-darwin-x64",
+    "binary": "bin/roundfix",
+    "asset": "roundfix-darwin-amd64"
+  },
+  {
+    "npmOS": "linux",
+    "npmCPU": "arm64",
+    "goos": "linux",
+    "goarch": "arm64",
+    "package": "@roundfix/cli-linux-arm64",
+    "binary": "bin/roundfix",
+    "asset": "roundfix-linux-arm64"
+  },
+  {
+    "npmOS": "linux",
+    "npmCPU": "x64",
+    "goos": "linux",
+    "goarch": "amd64",
+    "package": "@roundfix/cli-linux-x64",
+    "binary": "bin/roundfix",
+    "asset": "roundfix-linux-amd64"
+  },
+  {
+    "npmOS": "win32",
+    "npmCPU": "x64",
+    "goos": "windows",
+    "goarch": "amd64",
+    "package": "@roundfix/cli-win32-x64",
+    "binary": "bin/roundfix.exe",
+    "asset": "roundfix-windows-amd64.exe"
+  }
+]

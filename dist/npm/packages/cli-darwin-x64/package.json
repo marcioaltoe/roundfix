@@ -1,0 +1,13 @@
+{
+  "name": "@roundfix/cli-darwin-x64",
+  "version": "0.0.0-dev",
+  "description": "Roundfix CLI prebuilt binary for macOS x64.",
+  "os": ["darwin"],
+  "cpu": ["x64"],
+  "files": ["bin/roundfix"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marcioaltoe/roundfix.git"
+  }
+}

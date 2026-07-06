@@ -1,0 +1,27 @@
+{
+  "name": "roundfix",
+  "version": "0.0.0-dev",
+  "description": "Roundfix CLI — resolve CodeRabbit PR review feedback and execute Spec Task Graphs with local coding agents.",
+  "type": "commonjs",
+  "bin": {
+    "roundfix": "bin/roundfix.js"
+  },
+  "files": [
+    "bin/roundfix.js"
+  ],
+  "optionalDependencies": {
+    "@roundfix/cli-darwin-arm64": "0.0.0-dev",
+    "@roundfix/cli-darwin-x64": "0.0.0-dev",
+    "@roundfix/cli-linux-arm64": "0.0.0-dev",
+    "@roundfix/cli-linux-x64": "0.0.0-dev",
+    "@roundfix/cli-win32-x64": "0.0.0-dev"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marcioaltoe/roundfix.git"
+  }
+}

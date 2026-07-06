@@ -1,0 +1,95 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write # create the GitHub Release and upload binary assets
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          check-latest: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      # Fail fast unless the pushed tag, the npm launcher version, and the
+      # embedded app version all agree. A mismatched release never publishes.
+      - name: Version agreement
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME#v}"
+          LAUNCHER="$(jq -r .version dist/npm/roundfix/package.json)"
+          APP="$(grep -oE '"[^"]+"' internal/app/version.go | tr -d '"' | head -1)"
+          echo "tag=$TAG launcher=$LAUNCHER app=$APP"
+          if [ "$TAG" != "$LAUNCHER" ] || [ "$TAG" != "$APP" ]; then
+            echo "::error::version mismatch (tag=$TAG launcher=$LAUNCHER app=$APP). Bump internal/app/version.go, dist/npm/roundfix/package.json, and every dist/npm/packages/*/package.json to match the tag before tagging."
+            exit 1
+          fi
+
+      # The full local gate must pass before any build or publish.
+      - name: Verify gate
+        run: make verify
+
+      # Cross-compile every target from one runner (Go needs no per-OS runner),
+      # stage each binary into its per-platform npm package, pin versions to the
+      # tag, and collect release assets named with GOOS+GOARCH tokens so the
+      # Upgrade Command's platform selection resolves them.
+      - name: Cross-compile and stage
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME#v}"
+          mkdir -p release-assets
+          while read -r row; do
+            goos="$(echo "$row" | jq -r .goos)"
+            goarch="$(echo "$row" | jq -r .goarch)"
+            pkg="$(echo "$row" | jq -r .package)"
+            binrel="$(echo "$row" | jq -r .binary)"
+            asset="$(echo "$row" | jq -r .asset)"
+            pkgdir="dist/npm/packages/${pkg#@roundfix/}"
+            out="$pkgdir/$binrel"
+            mkdir -p "$(dirname "$out")"
+            echo "building $goos/$goarch -> $out"
+            GOOS="$goos" GOARCH="$goarch" CGO_ENABLED=0 \
+              go build -buildvcs=false -trimpath -o "$out" ./cmd/roundfix
+            cp "$out" "release-assets/$asset"
+            ( cd "$pkgdir" && npm version "$TAG" --no-git-tag-version --allow-same-version )
+          done < <(jq -c '.[]' dist/npm/platforms.json)
+          ( cd dist/npm/roundfix && npm version "$TAG" --no-git-tag-version --allow-same-version )
+          jq --arg v "$TAG" '.optionalDependencies |= with_entries(.value=$v)' \
+            dist/npm/roundfix/package.json > dist/npm/roundfix/package.json.tmp
+          mv dist/npm/roundfix/package.json.tmp dist/npm/roundfix/package.json
+
+      # Publish the per-platform packages first so the launcher's
+      # optionalDependencies resolve the moment it goes live.
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          for pkgdir in dist/npm/packages/cli-*; do
+            ( cd "$pkgdir" && npm publish --access public )
+          done
+          ( cd dist/npm/roundfix && npm publish --access public )
+
+      # Upload the same binaries as GitHub Release assets to feed the Upgrade
+      # Command's release channel.
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "$GITHUB_REF_NAME" release-assets/* \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes
