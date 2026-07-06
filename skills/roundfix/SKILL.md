@@ -35,9 +35,10 @@ shared Node.js, pinned acpx, configured Agent probe, and codex runtime hygiene
 checks and prints one line per check with status `ok`, `failed`, or `skipped`.
 Failed checks include `next: <action>` when Roundfix knows the remediation.
 On macOS, the codex hygiene check resolves `CODEX_PATH` first and then `codex`
-on `PATH`, inspects the `com.apple.quarantine` attribute, and asks Gatekeeper
-whether the binary is accepted for execution. Quarantined or unaccepted codex
-fails with the next action to reinstall codex with the official curl installer
+on `PATH`, inspects the `com.apple.quarantine` attribute (the real XProtect
+trigger), and verifies the binary's code signature (not `spctl --assess`, which
+rejects any signed CLI that is not a notarized app). A quarantined or
+improperly-signed codex fails with the next action to reinstall codex with the official curl installer
 into `~/.local/bin`, then set `CODEX_PATH` to that binary. On non-Darwin
 platforms the codex check is `skipped` and never fails the command by itself.
 

@@ -758,7 +758,7 @@ func TestHealthCheckerReportsCodexResult(t *testing.T) {
 		codexInspector: fakeCodexInspector{
 			result: codex.Result{
 				Status:     codex.StatusFailed,
-				Detail:     "/path/codex is not accepted by Gatekeeper",
+				Detail:     "/path/codex has an invalid or missing code signature",
 				NextAction: codex.ReinstallNextAction,
 			},
 		},
@@ -767,7 +767,7 @@ func TestHealthCheckerReportsCodexResult(t *testing.T) {
 	assertCheckResult(t, checker.Codex(context.Background()), CheckResult{
 		Name:       HealthCheckCodex,
 		Status:     CheckStatusFailed,
-		Detail:     "/path/codex is not accepted by Gatekeeper",
+		Detail:     "/path/codex has an invalid or missing code signature",
 		NextAction: codex.ReinstallNextAction,
 	})
 }

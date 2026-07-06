@@ -84,10 +84,12 @@ set, else PATH). Inspect:
 
 - **Quarantine** — presence of the `com.apple.quarantine` extended attribute on
   the resolved binary.
-- **Acceptance** — Gatekeeper/notarization assessment of the binary (a
-  read-only assess; no mutation).
+- **Signature** — code-signature validity (`codesign --verify`, read-only).
+  Deliberately NOT `spctl --assess`, which rejects any signed CLI that is not a
+  notarized app bundle ("does not seem to be an app") — codex is OpenAI-signed
+  and never Apple-notarized, so spctl would reject every codex.
 
-If quarantined or not accepted, the check fails with the curl-to-`~/.local/bin`
+If quarantined or the signature is invalid, the check fails with the curl-to-`~/.local/bin`
 reinstall command as the next action. On non-darwin platforms the check returns
 `skipped` with "not applicable" and never fails the command.
 

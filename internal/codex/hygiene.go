@@ -89,7 +89,7 @@ func (inspector Inspector) Inspect(ctx context.Context) Result {
 	if err != nil {
 		return Result{
 			Status: StatusFailed,
-			Detail: fmt.Sprintf("assess codex at %s: %v", path, err),
+			Detail: fmt.Sprintf("verify codex signature at %s: %v", path, err),
 			Hygiene: CodexHygiene{
 				Path:        path,
 				Quarantined: quarantined,
@@ -113,14 +113,14 @@ func (inspector Inspector) Inspect(ctx context.Context) Result {
 	if !accepted {
 		return Result{
 			Status:     StatusFailed,
-			Detail:     fmt.Sprintf("%s is not accepted by Gatekeeper", path),
+			Detail:     fmt.Sprintf("%s has an invalid or missing code signature", path),
 			NextAction: ReinstallNextAction,
 			Hygiene:    hygiene,
 		}
 	}
 	return Result{
 		Status:  StatusOK,
-		Detail:  fmt.Sprintf("%s is accepted by Gatekeeper and has no %s attribute", path, QuarantineAttribute),
+		Detail:  fmt.Sprintf("%s has a valid code signature and no %s attribute", path, QuarantineAttribute),
 		Hygiene: hygiene,
 	}
 }
@@ -152,7 +152,7 @@ func (inspector Inspector) acceptanceProbe() AcceptanceProbe {
 	if inspector.Acceptance != nil {
 		return inspector.Acceptance
 	}
-	return spctlAcceptanceProbe{}
+	return codesignAcceptanceProbe{}
 }
 
 type xattrQuarantineProbe struct{}
@@ -177,13 +177,19 @@ func (xattrQuarantineProbe) Quarantined(ctx context.Context, path string) (bool,
 	return false, nil
 }
 
-type spctlAcceptanceProbe struct{}
+// codesignAcceptanceProbe treats a codex with a valid code signature as
+// acceptable. It deliberately does NOT use `spctl --assess`, which rejects any
+// signed CLI binary that is not a notarized app bundle ("the code is valid but
+// does not seem to be an app") — codex is OpenAI-signed and never Apple-
+// notarized, so spctl would reject every codex. The real XProtect trigger is
+// the quarantine attribute, checked separately.
+type codesignAcceptanceProbe struct{}
 
-func (spctlAcceptanceProbe) Accepted(ctx context.Context, path string) (bool, error) {
+func (codesignAcceptanceProbe) Accepted(ctx context.Context, path string) (bool, error) {
 	if err := ctx.Err(); err != nil {
 		return false, err
 	}
-	cmd := exec.CommandContext(ctx, "spctl", "--assess", "--type", "execute", path)
+	cmd := exec.CommandContext(ctx, "codesign", "--verify", path)
 	output, err := cmd.CombinedOutput()
 	if ctxErr := ctx.Err(); ctxErr != nil {
 		return false, ctxErr
@@ -195,7 +201,7 @@ func (spctlAcceptanceProbe) Accepted(ctx context.Context, path string) (bool, er
 	if errors.As(err, &exitErr) {
 		return false, nil
 	}
-	return false, commandOutputError("run spctl assess", err, output)
+	return false, commandOutputError("run codesign verify", err, output)
 }
 
 func commandOutputError(operation string, err error, output []byte) error {

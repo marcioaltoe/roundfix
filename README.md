@@ -28,8 +28,10 @@ Run `roundfix doctor` at any time to diagnose Run readiness without installing,
 writing config, or otherwise mutating the machine. Doctor checks Node.js, the
 pinned acpx version, the configured Agent probe, and codex runtime hygiene. On
 macOS, codex hygiene resolves `CODEX_PATH` first and then `codex` on `PATH`,
-checks the `com.apple.quarantine` attribute, and asks Gatekeeper whether the
-binary is accepted for execution. A quarantined or unaccepted codex fails with
+checks the `com.apple.quarantine` attribute (the real XProtect trigger), and
+verifies the binary's code signature. It does not use `spctl --assess`, which
+rejects any signed CLI that is not a notarized app — codex is never
+Apple-notarized. A quarantined or improperly-signed codex fails with
 the next action to reinstall codex with the official curl installer into
 `~/.local/bin`, then set `CODEX_PATH` to that binary. On non-Darwin platforms
 the codex check is skipped and does not fail the command.
@@ -259,8 +261,8 @@ it, or set `NO_COLOR` to suppress color.
   per check with `ok`, `failed`, or `skipped`; failure lines include
   `next: <action>` when a remediation is known. It mutates nothing and exits
   nonzero when any check fails. The codex check is macOS-only: it inspects
-  `com.apple.quarantine` and Gatekeeper acceptance, reports the curl reinstall
-  into `~/.local/bin` as the next action for quarantined or unaccepted codex,
+  `com.apple.quarantine` and code-signature validity, reports the curl reinstall
+  into `~/.local/bin` as the next action for a quarantined or improperly-signed codex,
   and is skipped on non-Darwin platforms.
 - `upgrade` resolves the latest Roundfix release through the GitHub CLI.
   Successful stdout outcomes are `upgraded 1.0.0 → 1.1.0`,
