@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"roundfix/internal/agent"
@@ -120,7 +121,11 @@ func (checker runtimeHealthChecker) Agent(ctx context.Context, runtime agent.Run
 func (checker runtimeHealthChecker) Codex(ctx context.Context) CheckResult {
 	inspector := checker.deps.codexInspector
 	if inspector == nil {
-		inspector = codex.Inspector{}
+		// Doctor must inspect the codex a Run would actually spawn: CODEX_PATH
+		// first (mirroring the codex-acp spawn path), then PATH inside the
+		// inspector. Without the configured path, Doctor would check the wrong
+		// binary.
+		inspector = codex.Inspector{ConfiguredPath: os.Getenv("CODEX_PATH")}
 	}
 	result := inspector.Inspect(ctx)
 	return CheckResult{
