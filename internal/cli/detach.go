@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	roundconfig "roundfix/internal/config"
@@ -151,7 +150,7 @@ func runDetachedCommand(args []string, req commandRequest, loaded roundconfig.Lo
 	cmd.Stdout = tempFile
 	cmd.Stderr = tempFile
 	cmd.ExtraFiles = []*os.File{writePipe}
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	configureDetachedSysProcAttr(cmd)
 
 	if err := cmd.Start(); err != nil {
 		printPreflightFailure(req.name, fmt.Errorf("start Detached Run child: %w", err), stderr)
@@ -264,7 +263,7 @@ func killDetachedProcess(cmd *exec.Cmd) {
 	if cmd == nil || cmd.Process == nil {
 		return
 	}
-	if err := syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); err == nil || errors.Is(err, syscall.ESRCH) {
+	if killDetachedProcessGroup(cmd) {
 		return
 	}
 	_ = cmd.Process.Kill()
