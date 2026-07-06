@@ -44,6 +44,7 @@ Usage:
   roundfix watch --source coderabbit --pr <number> --agent <agent> [--spec <slug>] --until-clean
   roundfix implement --spec <slug> --agent <agent>
   roundfix settle --spec <slug> --task <task_id>
+  roundfix archive <slug>
   roundfix init [--scope <project|user>]
   roundfix setup [--yes] [--no-input]
   roundfix upgrade [--check]
@@ -59,6 +60,7 @@ Commands:
   watch      Fetch and resolve in a watched loop
   implement  Execute a Spec's Task Graph as one Run
   settle     Verify and commit all current worktree changes for one failed Task
+  archive    Archive a completed Spec
   stop       Request or force-stop an Active Run
   setup      Verify and prepare this machine for Roundfix Runs
   upgrade    Upgrade the Roundfix binary from GitHub Releases
@@ -191,6 +193,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runImplementCommand(ctx, args[1:], stdout, stderr, detachChild)
 	case "settle":
 		return runSettleCommand(ctx, args[1:], stdout, stderr)
+	case "archive":
+		return runArchiveCommand(ctx, args[1:], stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "%s: unknown command %q\n", app.Name, args[0])
 		fmt.Fprintf(stderr, "Run '%s --help' for usage.\n", app.Name)
@@ -2623,6 +2627,8 @@ Options:
 		return implementUsage
 	case "settle":
 		return settleUsage
+	case "archive":
+		return archiveUsage
 	case "stop":
 		return `Usage:
   roundfix stop <run-id>
