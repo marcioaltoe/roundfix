@@ -137,7 +137,9 @@ Configuration that applies to Roundfix runs inside one repository.
 _Avoid_: Local config, repo config
 
 **Artifact Directory**:
-The directory where Roundfix stores markdown Round and Review Issue artifacts.
+The configured directory that overrides review-artifact placement and stores
+Artifact Directory-backed Run files such as Detached Run console logs and
+opt-in Agent logs. When unset, review artifacts use the Spec tree resolver.
 _Avoid_: Workspace, cache, output folder
 
 **Compatible Artifacts**:

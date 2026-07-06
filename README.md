@@ -136,19 +136,19 @@ go run ./cmd/roundfix upgrade --check
 Fetch unresolved CodeRabbit Review Issues into local Round artifacts:
 
 ```bash
-go run ./cmd/roundfix fetch --source coderabbit --pr <number>
+go run ./cmd/roundfix fetch --source coderabbit --pr <number> [--spec <slug>]
 ```
 
 Resolve downloaded Compatible Artifacts with a selected Agent:
 
 ```bash
-go run ./cmd/roundfix resolve --pr <number> --agent codex
+go run ./cmd/roundfix resolve --pr <number> --agent codex [--spec <slug>]
 ```
 
 Run the watched review-resolution loop:
 
 ```bash
-go run ./cmd/roundfix watch --source coderabbit --pr <number> --agent codex --until-clean
+go run ./cmd/roundfix watch --source coderabbit --pr <number> --agent codex [--spec <slug>] --until-clean
 ```
 
 Execute a Spec's Task Graph:
@@ -184,6 +184,13 @@ Worktree, kept Run Worktree, or the current repository:
 
 ```bash
 go run ./cmd/roundfix settle --spec <slug> --task <task_id>
+```
+
+Archive a completed Spec after all Tasks are completed and the newest QA
+Report has `verdict: pass`:
+
+```bash
+go run ./cmd/roundfix archive <slug>
 ```
 
 Stop a live Run gracefully, or force-stop a dead or runaway Run:
@@ -258,6 +265,13 @@ it, or set `NO_COLOR` to suppress color.
   Task commit, creates no Run, writes no Run Event Journal entries, and never
   pushes. Task Worktree settlements integrate onto the Run Branch before the
   existing Run-level integration runs.
+- `archive` is non-interactive, creates no Run, and never pushes. Before
+  touching the filesystem, it verifies every Task in the Spec's Task Graph is
+  `completed` and that the newest QA Report has `verdict: pass`. On pass, it
+  stamps `_prd.md` with `status: archived`, `archived`, and `source_slug`, then
+  moves `docs/specs/<slug>/` to `docs/specs/_archived/<slug>/`. Refusals exit
+  `2`, write the Preflight Validation failure to stderr, and leave the folder
+  in place.
 - `stop` is graceful by default. It records a Stop Request in the Run Database
   and reports `Stop Request recorded; the Run stops after the current Work Item
   settles.` Use `--force` only for a dead, stuck, or runaway Run; it cancels
@@ -332,18 +346,44 @@ resolve:
   batch_size: 3
 ```
 
+Per-Batch Agent log files are development opt-in. `logs.agent` defaults to
+`false` in built-in, User, and Project Config; when it is false, Roundfix still
+records every Agent payload in the Run Event Journal. Set it to `true` in User
+or Project Config to write the per-Batch files again:
+
+```yaml
+logs:
+  agent: true
+```
+
 ## Local State
 
 - Run Database: `~/.roundfix/roundfix.db`
 - Run Worktrees: `<worktree.location>/<repo-slug>/<run-id>`
 - Task Worktrees: `<worktree.location>/<repo-slug>/<run-id>.<task_id>`
-- Default Artifact Directory: Roundfix Home `artifacts/<repo-id>`
-- Review Issue artifacts:
-  `<artifact-dir>/reviews/pr-<number>/round-<nnn>/issue_<nnn>.md`
-- Agent logs:
+- Default Artifact Directory: Roundfix Home `artifacts/<repo-id>`, used for
+  Artifact Directory-backed Run files and as the base when an explicit
+  Artifact Directory is configured.
+- Review Issue artifacts, with the ADR-0029 resolver:
+  - Explicit `--artifact-dir` or `defaults.artifact_dir` preserves the legacy
+    layout: `<artifact-dir>/reviews/pr-<number>/round-<nnn>/issue_<nnn>.md`.
+  - Otherwise, a PR associated with a Spec writes
+    `docs/specs/<slug>/reviews/round-<nnn>/issue_<nnn>.md`.
+  - Without a valid Spec association, review artifacts write to
+    `docs/specs/_reviews/pr-<number>/round-<nnn>/issue_<nnn>.md`.
+- Per-Batch Agent logs, only when `logs.agent: true`:
   `<artifact-dir>/runs/<run-id>/agent/batch-<nnn>.log`
-- Detached Run console log:
+- Detached Run console log, always written for Detached Runs:
   `<artifact-dir>/runs/<run-id>/console.log`
+
+For review commands, explicit `--spec <slug>` wins over trailer discovery. When
+`--spec` is absent, Roundfix uses the newest `Roundfix-Spec: <slug>` trailer on
+the PR head commit only if `docs/specs/<slug>/` exists; an unknown or invalid
+slug falls back to the spec-less `_reviews` path. Roundfix never commits or
+gitignores review artifacts, so versioning them stays a repository decision.
+ADR-0030 keeps per-Batch Agent log files off by default because the Run Event
+Journal already stores the raw payloads; the Detached Run console log remains
+unconditional for the ADR-0028 detach contract.
 
 With automatic Round selection, `fetch` reuses an existing matching Round when
 the same HEAD already has the same Review Issue fingerprints. If the fetched

@@ -1,6 +1,6 @@
 ---
 name: roundfix
-description: Use Roundfix to clean CodeRabbit pull request feedback, execute a Spec's Task Graph with the Implement Command, and, inside daemon-assigned Batch runs, follow the bounded Review Issue or Task resolution contract.
+description: Use Roundfix to clean CodeRabbit pull request feedback, execute a Spec's Task Graph with the Implement Command, archive completed Specs, and, inside daemon-assigned Batch runs, follow the bounded Review Issue or Task resolution contract.
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, github, qa, agents]
@@ -13,8 +13,8 @@ metadata:
 
 Use this skill when the user asks to resolve CodeRabbit comments, watch a pull
 request, run Roundfix until clean, clean up review bot feedback, execute a
-Spec's Task Graph, or when a Roundfix daemon assigns one bounded Batch of
-Review Issues or one Task.
+Spec's Task Graph, archive a completed Spec, or when a Roundfix daemon assigns
+one bounded Batch of Review Issues or one Task.
 
 ## acpx dependency
 
@@ -103,6 +103,21 @@ config: resolve.concurrent is deprecated and ignored; use worktree.concurrency
 Unknown keys that are not in the deprecation registry still fail strict
 validation.
 
+`logs.agent` is a User Config and Project Config key that defaults to `false`.
+When it is false, Roundfix writes no per-Batch Agent log files. The Run Event
+Journal still records every Agent payload, and `--no-agent-console` only hides
+Agent-source console events from non-TTY stderr. Set the key to `true` for
+development or debugging when file logs are useful:
+
+```yaml
+logs:
+  agent: true
+```
+
+With `logs.agent: true`, per-Batch Agent log files use
+`<artifact_dir>/runs/<run-id>/agent/batch-<nnn>.log`. The Detached Run console
+log remains unconditional and is not controlled by `logs.agent` (ADR-0030).
+
 ## Stopping Runs
 
 Use `roundfix stop` for a graceful stop. Every selector keeps its existing
@@ -183,7 +198,7 @@ no stdout and relays the child's stderr and exit code verbatim.
 3. Start the watched loop with:
 
    ```bash
-   roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean
+   roundfix watch --source coderabbit --pr <number> --agent <agent> [--spec <slug>] --until-clean
    ```
 
 4. Let Roundfix own Review Source waits, CodeRabbit fetches, Round creation,
@@ -196,14 +211,15 @@ no stdout and relays the child's stderr and exit code verbatim.
 Useful commands:
 
 ```bash
-roundfix fetch --source coderabbit --pr <number>
-roundfix resolve --pr <number> --agent <agent>
-roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean
-roundfix resolve --pr <number> --agent <agent> --detach
-roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean --detach
+roundfix fetch --source coderabbit --pr <number> [--spec <slug>]
+roundfix resolve --pr <number> --agent <agent> [--spec <slug>]
+roundfix watch --source coderabbit --pr <number> --agent <agent> [--spec <slug>] --until-clean
+roundfix resolve --pr <number> --agent <agent> [--spec <slug>] --detach
+roundfix watch --source coderabbit --pr <number> --agent <agent> [--spec <slug>] --until-clean --detach
 roundfix implement --spec <slug> --agent <agent>
 roundfix implement --spec <slug> --agent <agent> --detach
 roundfix settle --spec <slug> --task <task_id>
+roundfix archive <slug>
 roundfix stop --spec <slug>
 roundfix stop --force --spec <slug>
 roundfix setup --yes
@@ -243,7 +259,8 @@ read/write artifact work only: it starts no Agent and creates no Run Worktree.
   repository.
 - The built-in Artifact Directory default is Roundfix Home
   `artifacts/<repo-id>`. Explicit `defaults.artifact_dir` values, including
-  repository-relative values, continue to override the built-in default.
+  repository-relative values, continue to override the built-in default and
+  the review-artifact Spec tree resolver.
 
 Integration uses porcelain git only. When integration cannot fast-forward the
 user's branch, the Run ends Integration Pending, exits `1`, keeps the Run
@@ -274,7 +291,7 @@ Review Run output and completion contract:
   Unresolved Review Issues and the Review Source check on the final pushed
   commit reports success. If no matching Review Source check exists for the
   pushed HEAD, watch ends Clean and writes this stderr note:
-  `Review Source check missing for the pushed HEAD; treating Run as Clean.`
+  `Review Source check missing for the pushed HEAD; treating Run as Clean. Expected: Watch Run Clean normally means the Review Source check on the pushed HEAD reports success. Next: confirm the PR's Review Source check before merging.`
   Pending or failing checks keep the Run inside the existing review timeout
   and Max Rounds bounds.
 - `watch` and `resolve` write diagnostics, progress, the Run ID, and Agent
@@ -303,6 +320,24 @@ Review Run output and completion contract:
   keeping Daemon/progress lines. The Run Event Journal still records both
   Agent-source and Daemon-source events. The flag is rejected before Run
   creation when it conflicts with Interactive Input or the Live Run View.
+
+## Review Artifact Storage
+
+For `fetch`, `resolve`, and `watch`, Roundfix resolves the directory under
+which `round-*` is written with this ADR-0029 hierarchy:
+
+- Explicit `--artifact-dir` or `defaults.artifact_dir` preserves the legacy
+  layout: `<artifact_dir>/reviews/pr-<number>/round-*`.
+- Otherwise, explicit `--spec <slug>` wins. If `docs/specs/<slug>/` exists,
+  artifacts go to `docs/specs/<slug>/reviews/round-*`.
+- Otherwise, Roundfix uses the newest `Roundfix-Spec: <slug>` trailer on the
+  PR head commit when that Spec folder exists.
+- Without a valid Spec association, artifacts go to
+  `docs/specs/_reviews/pr-<number>/round-*`.
+
+Unknown or invalid trailer slugs are treated as no association. Roundfix never
+commits or gitignores review artifacts; repository owners decide whether to
+version them.
 
 ## Live Run View
 
@@ -506,6 +541,25 @@ integration pending — git merge --ff-only roundfix/run-<id>
 ```
 
 Review the Run Worktree before running it.
+
+## Archive Command
+
+Use `roundfix archive <slug>` only after a Spec's Tasks are completed and QA
+has passed. The command is non-interactive, creates no Run, and never pushes.
+Before touching the filesystem, it verifies every Task in the Spec's Task Graph
+has `status: completed` and that the newest QA Report has `verdict: pass`.
+
+On pass, archive stamps `_prd.md` with `status: archived`, `archived`, and
+`source_slug`, then moves `docs/specs/<slug>/` to
+`docs/specs/_archived/<slug>/`. stdout carries the deterministic report:
+
+```text
+archived <slug> -> docs/specs/_archived/<slug>
+```
+
+Refusals exit `2` through Preflight Validation, name the first unmet condition
+on stderr, and leave the active Spec folder in place. Missing QA, failing QA,
+and any non-completed Task are refusal cases.
 
 ## Assigned Review Issue Batches
 

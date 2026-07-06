@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0011-storage-lifecycle
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -29,16 +29,16 @@ matches shipped behavior, and closes the mandatory SKILL.md-matches-CLI gate.
 
 ## Subtasks
 
-- [ ] Update user docs for artifact location, `logs.agent`, and Archive Command
-- [ ] Update SKILL.md + agent manifest for the changed surface
-- [ ] `make skills-sync` to regenerate the embedded copy
-- [ ] Verify no skill drift and no doc/behavior mismatch
+- [x] Update user docs for artifact location, `logs.agent`, and Archive Command
+- [x] Update SKILL.md + agent manifest for the changed surface
+- [x] `make skills-sync` to regenerate the embedded copy
+- [x] Verify no skill drift and no doc/behavior mismatch
 
 ## Acceptance Criteria
 
-- [ ] Docs describe the three-branch artifact hierarchy, the opt-in `logs.agent` default, and `roundfix archive` accurately.
-- [ ] SKILL.md matches the shipped CLI surface; the embedded copy is regenerated.
-- [ ] `roundfix skills check` passes and `skills-sync-check` reports no drift.
+- [x] Docs describe the three-branch artifact hierarchy, the opt-in `logs.agent` default, and `roundfix archive` accurately.
+- [x] SKILL.md matches the shipped CLI surface; the embedded copy is regenerated.
+- [x] `roundfix skills check` passes and `skills-sync-check` reports no drift.
 
 ## Verification
 
@@ -49,3 +49,9 @@ matches shipped behavior, and closes the mandatory SKILL.md-matches-CLI gate.
 
 `_prd.md` → all stories (documentation). `_techspec.md` → Build Order 5. ADR-0029,
 ADR-0030. CLAUDE.md skill-ownership and SKILL.md-matches-CLI gate.
+
+## Result
+
+- Updated `README.md`, `CONTEXT.md`, and agent workflow docs so user-facing docs describe the ADR-0029 review-artifact hierarchy, the ADR-0030 default-off `logs.agent` opt-in, and the `roundfix archive <slug>` precondition and outcome.
+- Updated `.agents/skills/roundfix/SKILL.md` and `.agents/skills/roundfix/agents/openai.yaml` for the Archive Command, the review `--spec` selector, `logs.agent`, review artifact storage, and the current missing-check note; regenerated `skills/roundfix/` with `rtk make skills-sync`.
+- Verification evidence: `rtk make skills-sync` passed; `rtk go run ./cmd/roundfix skills check` passed with `Roundfix skill check passed: roundfix`; `rtk make skills-sync-check` passed with no drift output; `rtk make verify` passed with `Go test: 765 passed in 17 packages`, `Roundfix skill check passed: roundfix`, and a successful build.
