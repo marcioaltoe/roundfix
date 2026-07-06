@@ -589,6 +589,7 @@ docs/                            product docs and architecture decisions
 
 Start with:
 
+- [Operational guide](docs/usage.md)
 - [Project glossary](CONTEXT.md)
 - [Architecture decisions](docs/adr/)
 - [Release runbook](docs/release-runbook.md)
