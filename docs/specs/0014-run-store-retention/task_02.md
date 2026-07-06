@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0014-run-store-retention
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -31,18 +31,18 @@ freed. `--dry-run` previews the same set without changing anything.
 
 ## Subtasks
 
-- [ ] `gc` command parsing/dispatch with `--dry-run`
-- [ ] Live path: prune journals + remove pruned-Run artifact dirs + orphan dirs
-- [ ] Dry-run path: read-only eligibility listing, no changes
-- [ ] Freed-counts report (Runs, rows, bytes); zero-retention message
-- [ ] Tests: dry-run no-op, live prune + artifact removal, orphan dir, Active kept
+- [x] `gc` command parsing/dispatch with `--dry-run`
+- [x] Live path: prune journals + remove pruned-Run artifact dirs + orphan dirs
+- [x] Dry-run path: read-only eligibility listing, no changes
+- [x] Freed-counts report (Runs, rows, bytes); zero-retention message
+- [x] Tests: dry-run no-op, live prune + artifact removal, orphan dir, Active kept
 
 ## Acceptance Criteria
 
-- [ ] `roundfix gc` prunes eligible terminal Runs' journals and artifact dirs and reports Runs/rows/bytes freed.
-- [ ] `roundfix gc --dry-run` changes nothing and lists exactly the set a live run would prune.
-- [ ] An orphaned `runs/<id>` directory (no `runs` row) is removed; an Active Run's directory is kept.
-- [ ] With `journal_retention: 0`, gc prunes nothing and reports so.
+- [x] `roundfix gc` prunes eligible terminal Runs' journals and artifact dirs and reports Runs/rows/bytes freed.
+- [x] `roundfix gc --dry-run` changes nothing and lists exactly the set a live run would prune.
+- [x] An orphaned `runs/<id>` directory (no `runs` row) is removed; an Active Run's directory is kept.
+- [x] With `journal_retention: 0`, gc prunes nothing and reports so.
 
 ## Verification
 
@@ -54,3 +54,37 @@ freed. `--dry-run` previews the same set without changing anything.
 
 `_prd.md` → User Stories 2, 3; Core Feature 2. `_techspec.md` → GC Command,
 Build Order 2. CONTEXT.md → GC Command. ADR-0033.
+
+## Result
+
+Implemented `roundfix gc` with `--dry-run`, Journal Retention cutoff handling,
+read-only terminal Run eligibility listing, live journal pruning, scoped
+`<artifact_root>/runs/<id>` cleanup, orphan run-artifact cleanup, and stdout
+reports for Runs, journal rows, and artifact bytes.
+
+Acceptance evidence:
+
+- Live GC: `TestRunGCPrunesEligibleJournalsArtifactsAndOrphans` verifies
+  `roundfix gc` reports `Runs pruned: 1`, `Journal rows removed: 2`, and
+  `Artifact bytes reclaimed: 16`; deletes only the eligible terminal Run's Run
+  Events and run artifact directory; removes the orphaned `runs/<id>` directory;
+  and preserves all `runs` rows.
+- Dry run: `TestRunGCDryRunListsEligibleRunsAndChangesNothing` verifies
+  `roundfix gc --dry-run` reports the same eligible Run, row count, bytes, and
+  orphan ID while leaving Run Events and artifact directories unchanged.
+- Active safety: the live GC test verifies an old Active Run keeps its journal
+  and run artifact directory, and the review artifact path under `reviews/`
+  remains present.
+- Zero retention: `TestRunGCSkipsWhenJournalRetentionIsZero` verifies
+  `journal_retention: 0` prints `GC skipped`, `Journal Retention: 0`, and
+  `No pruning performed.`, while leaving journals and artifact directories in
+  place.
+
+Verification evidence:
+
+- `rtk go test ./internal/cli/` passed: `Go test: 287 passed in 1 packages`.
+- `rtk go run ./cmd/roundfix gc --help` passed and printed concise `roundfix gc
+  [--dry-run]` usage with the Journal Retention and safety contract.
+- `rtk go test ./...` passed: `Go test: 798 passed in 18 packages`.
+- Repo gate `rtk make verify` passed: full Go suite, `roundfix skills check`,
+  and build completed.

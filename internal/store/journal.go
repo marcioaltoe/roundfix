@@ -26,6 +26,12 @@ type PruneResult struct {
 	Events int
 }
 
+// PruneCandidate describes one terminal Run eligible for Run Event pruning.
+type PruneCandidate struct {
+	RunID  string
+	Events int
+}
+
 // AppendRunEvent persists one Run Event, allocating the next per-Run cursor
 // inside the insert transaction. Appending to a missing Run fails clearly.
 func (store *Store) AppendRunEvent(ctx context.Context, event runevent.RunEvent) (int64, error) {
@@ -71,10 +77,11 @@ func (store *Store) PruneTerminalRuns(ctx context.Context, cutoff time.Time) (Pr
 	}
 	defer rollbackUnlessCommitted(tx)
 
-	runIDs, err := terminalRunIDsBefore(ctx, tx, cutoff)
+	candidates, err := terminalRunPruneCandidates(ctx, tx, cutoff)
 	if err != nil {
 		return PruneResult{}, err
 	}
+	runIDs := pruneCandidateRunIDs(candidates)
 	if len(runIDs) == 0 {
 		if err := tx.Commit(); err != nil {
 			return PruneResult{}, fmt.Errorf("commit Run Event prune: %w", err)
@@ -92,13 +99,25 @@ func (store *Store) PruneTerminalRuns(ctx context.Context, cutoff time.Time) (Pr
 	return PruneResult{RunIDs: runIDs, Events: deleted}, nil
 }
 
-func terminalRunIDsBefore(ctx context.Context, tx *sql.Tx, cutoff time.Time) ([]string, error) {
-	rows, err := tx.QueryContext(ctx, `
-SELECT id, completed_at
-FROM runs
-WHERE state IN (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  AND TRIM(completed_at) <> ''
-ORDER BY completed_at, id`,
+// TerminalRunPruneCandidates lists terminal Runs whose completed_at is before
+// cutoff without mutating the Run Database.
+func (store *Store) TerminalRunPruneCandidates(ctx context.Context, cutoff time.Time) ([]PruneCandidate, error) {
+	return terminalRunPruneCandidates(ctx, store.db, cutoff)
+}
+
+type queryContextRunner interface {
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+}
+
+func terminalRunPruneCandidates(ctx context.Context, querier queryContextRunner, cutoff time.Time) ([]PruneCandidate, error) {
+	rows, err := querier.QueryContext(ctx, `
+SELECT r.id, r.completed_at, COUNT(e.run_id)
+FROM runs r
+LEFT JOIN run_events e ON e.run_id = r.id
+WHERE r.state IN (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  AND TRIM(r.completed_at) <> ''
+GROUP BY r.id, r.completed_at
+ORDER BY r.completed_at, r.id`,
 		StateFetched,
 		StateStopped,
 		StateClean,
@@ -116,25 +135,33 @@ ORDER BY completed_at, id`,
 		_ = rows.Close()
 	}()
 
-	runIDs := []string{}
+	candidates := []PruneCandidate{}
 	for rows.Next() {
-		var runID string
+		var candidate PruneCandidate
 		var completedAtRaw string
-		if err := rows.Scan(&runID, &completedAtRaw); err != nil {
+		if err := rows.Scan(&candidate.RunID, &completedAtRaw, &candidate.Events); err != nil {
 			return nil, fmt.Errorf("scan terminal Run for Run Event prune: %w", err)
 		}
 		completedAt, err := parseTime(completedAtRaw)
 		if err != nil {
-			return nil, fmt.Errorf("read Run %q completion time for Run Event prune: %w", runID, err)
+			return nil, fmt.Errorf("read Run %q completion time for Run Event prune: %w", candidate.RunID, err)
 		}
 		if completedAt.Before(cutoff) {
-			runIDs = append(runIDs, runID)
+			candidates = append(candidates, candidate)
 		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate terminal Runs for Run Event prune: %w", err)
 	}
-	return runIDs, nil
+	return candidates, nil
+}
+
+func pruneCandidateRunIDs(candidates []PruneCandidate) []string {
+	runIDs := make([]string, 0, len(candidates))
+	for _, candidate := range candidates {
+		runIDs = append(runIDs, candidate.RunID)
+	}
+	return runIDs
 }
 
 func deleteRunEventsForRuns(ctx context.Context, tx *sql.Tx, runIDs []string) (int, error) {
