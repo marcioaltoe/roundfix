@@ -26,6 +26,7 @@ const (
 	defaultReviewTimeout       = 30 * time.Minute
 	defaultQuietPeriod         = 30 * time.Second
 	defaultRunDuration         = 2 * time.Hour
+	defaultJournalRetention    = 336 * time.Hour
 	defaultWorktreeLocation    = "~/.roundfix/worktrees"
 	defaultWorktreeConcurrency = 2
 )
@@ -44,6 +45,7 @@ type Config struct {
 	Budget       Budget
 	Resolve      Resolve
 	Logs         Logs
+	Store        Store
 }
 
 type Defaults struct {
@@ -94,6 +96,10 @@ type Logs struct {
 	Agent bool
 }
 
+type Store struct {
+	JournalRetention time.Duration
+}
+
 type Loaded struct {
 	Config            Config
 	GitRoot           string
@@ -126,9 +132,13 @@ type durationValue struct {
 }
 
 func (duration *durationValue) UnmarshalYAML(node *yaml.Node) error {
-	var raw string
-	if err := node.Decode(&raw); err != nil {
-		return err
+	if node.Kind != yaml.ScalarNode {
+		return errors.New("duration must be a scalar")
+	}
+	raw := node.Value
+	if raw == "0" {
+		duration.value = 0
+		return nil
 	}
 	value, err := time.ParseDuration(raw)
 	if err != nil {
@@ -147,6 +157,7 @@ type configOverlay struct {
 	Budget       *budgetOverlay       `yaml:"budget"`
 	Resolve      *resolveOverlay      `yaml:"resolve"`
 	Logs         *logsOverlay         `yaml:"logs"`
+	Store        *storeOverlay        `yaml:"store"`
 }
 
 type defaultsOverlay struct {
@@ -213,6 +224,10 @@ type logsOverlay struct {
 	Agent *bool `yaml:"agent"`
 }
 
+type storeOverlay struct {
+	JournalRetention *durationValue `yaml:"journal_retention"`
+}
+
 func (overlay *resolveOverlay) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind == yaml.MappingNode {
 		for index := 0; index < len(node.Content); index += 2 {
@@ -230,6 +245,26 @@ func (overlay *resolveOverlay) UnmarshalYAML(node *yaml.Node) error {
 		return err
 	}
 	*overlay = resolveOverlay(raw)
+	return nil
+}
+
+func (overlay *storeOverlay) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind == yaml.MappingNode {
+		for index := 0; index < len(node.Content); index += 2 {
+			key := node.Content[index].Value
+			switch key {
+			case "journal_retention":
+			default:
+				return fmt.Errorf("store.%s is not a supported config key", key)
+			}
+		}
+	}
+	type rawStoreOverlay storeOverlay
+	var raw rawStoreOverlay
+	if err := node.Decode(&raw); err != nil {
+		return err
+	}
+	*overlay = storeOverlay(raw)
 	return nil
 }
 
@@ -305,6 +340,9 @@ func Builtin() Config {
 		},
 		Logs: Logs{
 			Agent: false,
+		},
+		Store: Store{
+			JournalRetention: defaultJournalRetention,
 		},
 	}
 }
@@ -408,6 +446,10 @@ worktree:
   # Repository-relative untracked files copied into each Run Worktree.
   copy: []
 
+store:
+  # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
+  journal_retention: %s
+
 review_source:
   name: %s
   include_nitpicks: %t
@@ -441,6 +483,7 @@ resolve:
 		config.Defaults.AutoCommit,
 		config.Worktree.Location,
 		config.Worktree.Concurrency,
+		formatConfigDuration(config.Store.JournalRetention),
 		config.ReviewSource.Name,
 		config.ReviewSource.IncludeNitpicks,
 		config.Watch.UntilClean,
@@ -483,6 +526,9 @@ func Validate(config Config) error {
 	}
 	if config.Resolve.BatchSize < 1 {
 		return errors.New("resolve.batch_size must be greater than 0")
+	}
+	if config.Store.JournalRetention < 0 {
+		return errors.New("store.journal_retention must be greater than or equal to 0")
 	}
 	if config.Worktree.Concurrency < 1 {
 		return errors.New("worktree.concurrency must be greater than 0")
@@ -851,6 +897,11 @@ func applyOverlay(config *Config, overlay configOverlay) {
 	if overlay.Logs != nil {
 		if overlay.Logs.Agent != nil {
 			config.Logs.Agent = *overlay.Logs.Agent
+		}
+	}
+	if overlay.Store != nil {
+		if overlay.Store.JournalRetention != nil {
+			config.Store.JournalRetention = overlay.Store.JournalRetention.value
 		}
 	}
 }

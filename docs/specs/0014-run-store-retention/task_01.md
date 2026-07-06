@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0014-run-store-retention
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -32,17 +32,17 @@ Command and the preflight sweep build on — it must never touch Active Runs,
 
 ## Subtasks
 
-- [ ] `store.journal_retention` config key (default 336h, 0 = keep everything)
-- [ ] `PruneTerminalRuns(ctx, cutoff)` deleting only eligible `run_events`
-- [ ] Guard: Active Runs and `runs`/locks never touched
-- [ ] Table tests: terminal-past-cutoff pruned; Active + recent kept; counts
+- [x] `store.journal_retention` config key (default 336h, 0 = keep everything)
+- [x] `PruneTerminalRuns(ctx, cutoff)` deleting only eligible `run_events`
+- [x] Guard: Active Runs and `runs`/locks never touched
+- [x] Table tests: terminal-past-cutoff pruned; Active + recent kept; counts
 
 ## Acceptance Criteria
 
-- [ ] `PruneTerminalRuns` deletes `run_events` only for terminal Runs with `completed_at` older than the cutoff and returns their ids and row count.
-- [ ] An Active Run (even with an old `created_at`) keeps its journal; all `runs` rows and locks survive any prune.
-- [ ] `journal_retention: 0` yields a cutoff that prunes nothing.
-- [ ] Config loads `store.journal_retention` with correct precedence; an unknown `store` key still fails strict validation.
+- [x] `PruneTerminalRuns` deletes `run_events` only for terminal Runs with `completed_at` older than the cutoff and returns their ids and row count.
+- [x] An Active Run (even with an old `created_at`) keeps its journal; all `runs` rows and locks survive any prune.
+- [x] `journal_retention: 0` yields a cutoff that prunes nothing.
+- [x] Config loads `store.journal_retention` with correct precedence; an unknown `store` key still fails strict validation.
 
 ## Verification
 
@@ -53,3 +53,40 @@ Command and the preflight sweep build on — it must never touch Active Runs,
 
 `_prd.md` → User Stories 1, 4; Core Features 1, 3. `_techspec.md` → Prune scope,
 Build Order 1, Interfaces: `PruneTerminalRuns`. ADR-0033. Work-plan finding R4-5.
+
+## Result
+
+Implemented the retention primitive. Config now has `store.journal_retention`
+with builtin default `336h`, User > Project override behavior, `0` accepted as
+disabled retention, negative values rejected, and strict validation for unknown
+`store` keys. The default generated config includes the new `store` section.
+
+Added `store.PruneTerminalRuns(ctx, cutoff)` returning `PruneResult{RunIDs,
+Events}`. The operation selects only terminal Runs with non-empty
+`completed_at` before the cutoff, parses stored timestamps with the store's
+existing parser, deletes only `run_events` rows, and leaves `runs` rows and
+`active_run_locks` untouched.
+
+Acceptance evidence:
+
+- `TestPruneTerminalRunsDeletesOnlyEligibleJournalRows` prunes two old terminal
+  Runs, returns their ids, deletes 3 journal rows, keeps recent terminal,
+  Active, non-terminal, and empty-`completed_at` journals, verifies a zero
+  cutoff prunes nothing, and checks all Run rows and locks survive.
+- `TestPruneTerminalRunsNoOpsWhenCutoffSelectsNothing` verifies an empty prune
+  result and retained journal when no terminal Run is older than the cutoff.
+- `TestLoadAppliesStoreRetentionConfigHierarchy` covers builtin default, User
+  override, Project override, and `journal_retention: 0`.
+- `TestLoadRejectsUnknownStoreConfigKey` verifies strict validation still fails
+  for an unknown `store` key.
+
+Verification:
+
+- `rtk go test ./internal/store/ ./internal/config/` — passed, 92 tests in 2
+  packages.
+- `rtk go test ./...` — passed, 794 tests in 18 packages.
+- `rtk make verify` — passed: full Go suite, Roundfix skill check, and
+  `go build -buildvcs=false -o bin/roundfix ./cmd/roundfix`.
+
+Follow-up: GC Command artifact cleanup and the preflight sweep prune remain in
+`task_02` and `task_03`.

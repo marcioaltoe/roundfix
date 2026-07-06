@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"roundfix/internal/runevent"
 )
@@ -17,6 +18,12 @@ import (
 type JournalEvent struct {
 	Cursor int64
 	Event  runevent.RunEvent
+}
+
+// PruneResult reports the Run Event Journal rows removed for eligible Runs.
+type PruneResult struct {
+	RunIDs []string
+	Events int
 }
 
 // AppendRunEvent persists one Run Event, allocating the next per-Run cursor
@@ -53,6 +60,101 @@ func (store *Store) AppendRunEvents(ctx context.Context, events []runevent.RunEv
 		return nil, fmt.Errorf("commit Run Event append: %w", err)
 	}
 	return cursors, nil
+}
+
+// PruneTerminalRuns deletes Run Event Journal rows for terminal Runs completed
+// before cutoff. It never deletes Run rows or Active Run locks.
+func (store *Store) PruneTerminalRuns(ctx context.Context, cutoff time.Time) (PruneResult, error) {
+	tx, err := store.db.BeginTx(ctx, nil)
+	if err != nil {
+		return PruneResult{}, fmt.Errorf("begin Run Event prune: %w", err)
+	}
+	defer rollbackUnlessCommitted(tx)
+
+	runIDs, err := terminalRunIDsBefore(ctx, tx, cutoff)
+	if err != nil {
+		return PruneResult{}, err
+	}
+	if len(runIDs) == 0 {
+		if err := tx.Commit(); err != nil {
+			return PruneResult{}, fmt.Errorf("commit Run Event prune: %w", err)
+		}
+		return PruneResult{}, nil
+	}
+
+	deleted, err := deleteRunEventsForRuns(ctx, tx, runIDs)
+	if err != nil {
+		return PruneResult{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return PruneResult{}, fmt.Errorf("commit Run Event prune: %w", err)
+	}
+	return PruneResult{RunIDs: runIDs, Events: deleted}, nil
+}
+
+func terminalRunIDsBefore(ctx context.Context, tx *sql.Tx, cutoff time.Time) ([]string, error) {
+	rows, err := tx.QueryContext(ctx, `
+SELECT id, completed_at
+FROM runs
+WHERE state IN (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  AND TRIM(completed_at) <> ''
+ORDER BY completed_at, id`,
+		StateFetched,
+		StateStopped,
+		StateClean,
+		StateMaxRoundsReached,
+		StateBudgetExceeded,
+		StateTimedOut,
+		StateFailed,
+		StateIntegrationPending,
+		StateUnresolved,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("select terminal Runs for Run Event prune: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	runIDs := []string{}
+	for rows.Next() {
+		var runID string
+		var completedAtRaw string
+		if err := rows.Scan(&runID, &completedAtRaw); err != nil {
+			return nil, fmt.Errorf("scan terminal Run for Run Event prune: %w", err)
+		}
+		completedAt, err := parseTime(completedAtRaw)
+		if err != nil {
+			return nil, fmt.Errorf("read Run %q completion time for Run Event prune: %w", runID, err)
+		}
+		if completedAt.Before(cutoff) {
+			runIDs = append(runIDs, runID)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate terminal Runs for Run Event prune: %w", err)
+	}
+	return runIDs, nil
+}
+
+func deleteRunEventsForRuns(ctx context.Context, tx *sql.Tx, runIDs []string) (int, error) {
+	if len(runIDs) == 0 {
+		return 0, nil
+	}
+	placeholders := strings.TrimRight(strings.Repeat("?,", len(runIDs)), ",")
+	args := make([]any, 0, len(runIDs))
+	for _, runID := range runIDs {
+		args = append(args, runID)
+	}
+	result, err := tx.ExecContext(ctx, `DELETE FROM run_events WHERE run_id IN (`+placeholders+`)`, args...)
+	if err != nil {
+		return 0, fmt.Errorf("delete Run Events for terminal Runs: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("read Run Event prune result: %w", err)
+	}
+	return int(affected), nil
 }
 
 func appendRunEvent(ctx context.Context, tx *sql.Tx, event runevent.RunEvent) (int64, error) {
