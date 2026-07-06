@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -2835,8 +2836,8 @@ func TestRunStopForceCancelsImplementRunAndReleasesLocks(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
 	}
-	if stderr.Len() != 0 {
-		t.Fatalf("expected no stderr for successful cancel, got %q", stderr.String())
+	if want := "roundfix: closed session roundfix-" + active.ID; !strings.Contains(stderr.String(), want) {
+		t.Fatalf("expected force close report %q, got %q", want, stderr.String())
 	}
 	if len(calls) != 1 {
 		t.Fatalf("expected one Agent Session cancel, got %#v", calls)
@@ -2864,6 +2865,103 @@ func TestRunStopForceCancelsImplementRunAndReleasesLocks(t *testing.T) {
 	}
 	if next.ID == active.ID {
 		t.Fatal("expected a new Run after force stop")
+	}
+}
+
+func TestRunStopForceCancelsListsAndClosesRunAndTaskSessions(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:     "task_01",
+		title:  "Stopped task",
+		status: string(spec.StatusPending),
+	}})
+	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
+	active, _, taskRef := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "task_01", "")
+	calls := []string{}
+	withStopAgentSessionCanceler(t, func(_ context.Context, runtime agent.RuntimeSpec, session agent.SessionRef) error {
+		calls = append(calls, "cancel "+runtime.ID+" "+session.Name+" "+session.WorkDir)
+		return nil
+	})
+	withRoundfixSessionLister(t, func(_ context.Context, runtime agent.RuntimeSpec, workDir string) ([]agent.RoundfixSession, error) {
+		calls = append(calls, "list "+runtime.ID+" "+workDir)
+		return []agent.RoundfixSession{
+			{Name: "roundfix-" + active.ID + "-task_01", RunID: active.ID, TaskID: "task_01"},
+			{Name: "roundfix-other-run-task_01", RunID: "other-run", TaskID: "task_01"},
+		}, nil
+	})
+	withStopAgentSessionCloser(t, func(_ context.Context, runtime agent.RuntimeSpec, session agent.SessionRef) error {
+		calls = append(calls, "close "+runtime.ID+" "+session.Name+" "+session.WorkDir)
+		return nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	wantCalls := []string{
+		"cancel codex roundfix-" + active.ID + " " + active.WorkDir,
+		"list codex " + active.WorkDir,
+		"close codex roundfix-" + active.ID + " " + active.WorkDir,
+		"close codex roundfix-" + active.ID + "-task_01 " + taskRef.Path,
+	}
+	if !reflect.DeepEqual(calls, wantCalls) {
+		t.Fatalf("unexpected session invocations\nwant: %#v\ngot:  %#v", wantCalls, calls)
+	}
+	for _, want := range []string{
+		"roundfix: closed session roundfix-" + active.ID,
+		"roundfix: closed session roundfix-" + active.ID + "-task_01",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())
+		}
+	}
+	if strings.Contains(stderr.String(), "other-run") {
+		t.Fatalf("foreign Run session must not be reported or closed, got %q", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
+		t.Fatalf("expected force stop report, got %q", stdout.String())
+	}
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+}
+
+func TestRunStopForceCloseFailureStillCompletesStopped(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return nil
+	})
+	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return errors.New("close denied")
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if want := "roundfix: could not close session roundfix-" + active.ID + ": close denied"; !strings.Contains(stderr.String(), want) {
+		t.Fatalf("expected close failure note %q, got %q", want, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
+		t.Fatalf("expected force stop report, got %q", stdout.String())
+	}
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	_, err = runStore.CreateRun(context.Background(), request)
+	closeErr := runStore.Close()
+	if err != nil {
+		t.Fatalf("expected force stop to release Spec lock after close failure, got %v", err)
+	}
+	if closeErr != nil {
+		t.Fatalf("close store: %v", closeErr)
 	}
 }
 
@@ -3040,8 +3138,8 @@ func TestRunStopGracefulThenForceCompletesImmediately(t *testing.T) {
 	if forceCode != 0 {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", forceCode, forceStderr.String())
 	}
-	if forceStderr.Len() != 0 {
-		t.Fatalf("expected no force stderr, got %q", forceStderr.String())
+	if want := "roundfix: closed session roundfix-" + active.ID; !strings.Contains(forceStderr.String(), want) {
+		t.Fatalf("expected force close report %q, got %q", want, forceStderr.String())
 	}
 	if cancelCalls != 1 {
 		t.Fatalf("expected one cancel after graceful request, got %d", cancelCalls)
@@ -3630,6 +3728,12 @@ func withAgentRunner(t *testing.T, runner agent.Runner) {
 	overrideCollaborators(t, func(collaborators *engineCollaborators) {
 		collaborators.runner = runner
 	})
+	withRoundfixSessionLister(t, func(context.Context, agent.RuntimeSpec, string) ([]agent.RoundfixSession, error) {
+		return nil, nil
+	})
+	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return nil
+	})
 }
 
 func withStopAgentSessionCanceler(t *testing.T, cancel func(context.Context, agent.RuntimeSpec, agent.SessionRef) error) {
@@ -3638,6 +3742,30 @@ func withStopAgentSessionCanceler(t *testing.T, cancel func(context.Context, age
 	cancelStopAgentSession = cancel
 	t.Cleanup(func() {
 		cancelStopAgentSession = old
+	})
+	withRoundfixSessionLister(t, func(context.Context, agent.RuntimeSpec, string) ([]agent.RoundfixSession, error) {
+		return nil, nil
+	})
+	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return nil
+	})
+}
+
+func withRoundfixSessionLister(t *testing.T, list func(context.Context, agent.RuntimeSpec, string) ([]agent.RoundfixSession, error)) {
+	t.Helper()
+	old := listRoundfixAgentSessions
+	listRoundfixAgentSessions = list
+	t.Cleanup(func() {
+		listRoundfixAgentSessions = old
+	})
+}
+
+func withStopAgentSessionCloser(t *testing.T, closeSession func(context.Context, agent.RuntimeSpec, agent.SessionRef) error) {
+	t.Helper()
+	old := closeStopAgentSession
+	closeStopAgentSession = closeSession
+	t.Cleanup(func() {
+		closeStopAgentSession = old
 	})
 }
 
@@ -3875,6 +4003,31 @@ func createActiveImplementRunForStop(t *testing.T, homeDir string, repoDir strin
 		t.Fatalf("create active implement run: %v", err)
 	}
 	return active, request
+}
+
+func createActiveImplementRunForStopInGitRoot(t *testing.T, homeDir string, gitRoot string, specSlug string) store.Run {
+	t.Helper()
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close store: %v", err)
+		}
+	}()
+	active, err := runStore.CreateRun(context.Background(), store.CreateRunRequest{
+		Kind:        store.KindImplement,
+		GitRoot:     gitRoot,
+		LocalBranch: "ma/other-work",
+		HeadSHA:     "abc123",
+		SpecSlug:    specSlug,
+		Agent:       "codex",
+	})
+	if err != nil {
+		t.Fatalf("create active implement run: %v", err)
+	}
+	return active
 }
 
 func assertNoActiveRun(t *testing.T, homeDir string, headRepository string, headBranch string) {

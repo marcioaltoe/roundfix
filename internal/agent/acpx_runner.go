@@ -216,16 +216,38 @@ func (runner *ACPXRunner) EndSession(ctx context.Context, runtime RuntimeSpec, s
 	if sessionName == "" {
 		return nil
 	}
-	args, err := acpxCloseArgs(runtime, sessionName, session.WorkDir)
-	if err != nil {
-		runner.warningf("close acpx Agent Session %q: %v", sessionName, err)
-		return nil
-	}
-	if err := runner.runACPXCommand(ctx, args); err != nil {
+	if err := runner.CloseSession(ctx, runtime, session); err != nil {
 		runner.warningf("close acpx Agent Session %q: %v", sessionName, err)
 	}
 	delete(runner.ensuredSessions, sessionName)
 	return nil
+}
+
+func (runner *ACPXRunner) CloseSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error {
+	sessionName := strings.TrimSpace(session.Name)
+	if sessionName == "" {
+		return nil
+	}
+	args, err := acpxCloseArgs(runtime, sessionName, session.WorkDir)
+	if err != nil {
+		return fmt.Errorf("build acpx close command for Agent Session %q: %w", sessionName, err)
+	}
+	if err := runner.runACPXCommand(ctx, args); err != nil {
+		return fmt.Errorf("close acpx Agent Session %q: %w", sessionName, err)
+	}
+	return nil
+}
+
+func (runner ACPXRunner) ListRoundfixSessions(ctx context.Context, runtime RuntimeSpec, workDir string) ([]RoundfixSession, error) {
+	args, err := acpxListSessionsArgs(runtime, workDir)
+	if err != nil {
+		return nil, fmt.Errorf("build acpx sessions list command: %w", err)
+	}
+	output, err := runner.runACPXCommandOutput(ctx, args)
+	if err != nil {
+		return nil, fmt.Errorf("list acpx Agent Sessions: %w", err)
+	}
+	return ParseRoundfixSessions(output), nil
 }
 
 func (runner *ACPXRunner) CancelSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error {
@@ -360,12 +382,12 @@ func (runner ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, s
 	select {
 	case waitErr = <-waitCh:
 	case <-ctx.Done():
-		killed := runner.cancelPrompt(context.WithoutCancel(ctx), req, cmd, waitCh)
+		forceClosed := runner.cancelPrompt(context.WithoutCancel(ctx), req, waitCh)
 		stream := waitForACPXStream(streamCh, stopGrace(req.StopGrace))
 		result.Output = stream.output
 		result.StopReason = stream.stopReason
 		_ = runner.publishStatus(context.WithoutCancel(ctx), req.ExecuteRequest, sink, "stopped")
-		return result, StopError{LogPath: req.LogPath, Output: result.Output, Killed: killed, Err: ctx.Err()}
+		return result, StopError{LogPath: req.LogPath, Output: result.Output, Killed: forceClosed, Err: ctx.Err()}
 	}
 	stream := <-streamCh
 	result.Output = stream.output
@@ -454,6 +476,11 @@ func displayACPXVersion(version string) string {
 }
 
 func (runner ACPXRunner) runACPXCommand(ctx context.Context, args []string) error {
+	_, err := runner.runACPXCommandOutput(ctx, args)
+	return err
+}
+
+func (runner ACPXRunner) runACPXCommandOutput(ctx context.Context, args []string) (string, error) {
 	cmd := exec.CommandContext(ctx, runner.command(), args...)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -461,11 +488,11 @@ func (runner ACPXRunner) runACPXCommand(ctx context.Context, args []string) erro
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		if exitCode, ok := commandExitCode(err); ok {
-			return &InfrastructureError{ExitCode: exitCode, Reason: "acpx command failed", Stderr: stderr.String()}
+			return stdout.String(), &InfrastructureError{ExitCode: exitCode, Reason: "acpx command failed", Stderr: stderr.String()}
 		}
-		return fmt.Errorf("run acpx command: %w", err)
+		return stdout.String(), fmt.Errorf("run acpx command: %w", err)
 	}
-	return nil
+	return stdout.String(), nil
 }
 
 // acpx CLI grammar: --cwd, --format, --json-strict, --approve-all, --model,
@@ -533,6 +560,14 @@ func acpxCloseArgs(runtime RuntimeSpec, sessionName string, workDir string) ([]s
 		return nil, err
 	}
 	return append(args, "sessions", "close", strings.TrimSpace(sessionName)), nil
+}
+
+func acpxListSessionsArgs(runtime RuntimeSpec, workDir string) ([]string, error) {
+	args, err := acpxGlobalArgs(runtime, workDir)
+	if err != nil {
+		return nil, err
+	}
+	return append(args, "sessions", "list"), nil
 }
 
 func acpxGlobalArgs(runtime RuntimeSpec, workDir string) ([]string, error) {
@@ -638,7 +673,7 @@ func (runner ACPXRunner) mapExitCode(ctx context.Context, req ExecuteRequest, si
 	}
 }
 
-func (runner ACPXRunner) cancelPrompt(ctx context.Context, req ACPXPromptRequest, cmd *exec.Cmd, waitCh <-chan error) bool {
+func (runner ACPXRunner) cancelPrompt(ctx context.Context, req ACPXPromptRequest, waitCh <-chan error) bool {
 	grace := stopGrace(req.StopGrace)
 	cancelCtx, cancel := context.WithTimeout(ctx, grace)
 	defer cancel()
@@ -655,14 +690,20 @@ func (runner ACPXRunner) cancelPrompt(ctx context.Context, req ACPXPromptRequest
 	case <-waitCh:
 		return false
 	case <-timer.C:
-		if cmd.Process != nil {
-			_ = cmd.Process.Kill()
+		closeCtx, closeCancel := context.WithTimeout(ctx, grace)
+		defer closeCancel()
+		if args, err := acpxCloseArgs(req.Runtime, req.Session, req.GitRoot); err == nil {
+			if err := runner.runACPXCommand(closeCtx, args); err != nil {
+				runner.warningf("close acpx Agent Session %q: %v", req.Session, err)
+			}
+		} else {
+			runner.warningf("build acpx close command for Agent Session %q: %v", req.Session, err)
 		}
-		killTimer := time.NewTimer(grace)
-		defer killTimer.Stop()
+		closeTimer := time.NewTimer(grace)
+		defer closeTimer.Stop()
 		select {
 		case <-waitCh:
-		case <-killTimer.C:
+		case <-closeTimer.C:
 		}
 		return true
 	}

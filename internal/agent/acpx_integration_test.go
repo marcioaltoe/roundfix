@@ -110,6 +110,12 @@ func TestRealACPXCommandOverrideRoundTripCancelCrashResume(t *testing.T) {
 		t.Fatalf("close real acpx session: %v", err)
 	}
 	assertNoRealACPXOrphans(t, session.Name, helperLog)
+
+	forceSession := SessionRef{Name: "roundfix-real-acpx-force-" + strconv.FormatInt(time.Now().UnixNano(), 36), WorkDir: dir}
+	t.Cleanup(func() {
+		_ = runner.EndSession(context.Background(), runtime, forceSession)
+	})
+	assertRealACPXForceStopClosesLiveSession(t, runner, runtime, forceSession, dir, helperLog)
 }
 
 func realACPXRequest(dir string, runtime RuntimeSpec, session SessionRef, batch int, prompt string) ExecuteRequest {
@@ -123,6 +129,39 @@ func realACPXRequest(dir string, runtime RuntimeSpec, session SessionRef, batch 
 		GitRoot:   dir,
 		StopGrace: 2 * time.Second,
 	}
+}
+
+func assertRealACPXForceStopClosesLiveSession(t *testing.T, runner *ACPXRunner, runtime RuntimeSpec, session SessionRef, dir string, helperLog string) {
+	t.Helper()
+	runCtx, cancelRun := context.WithCancel(context.Background())
+	defer cancelRun()
+	sink := newCaptureSink("prompt-blocked")
+	errCh := make(chan error, 1)
+	go func() {
+		_, err := runner.Run(runCtx, realACPXRequest(dir, runtime, session, 5, "block-until-cancel"), sink)
+		errCh <- err
+	}()
+	select {
+	case <-sink.done:
+	case <-time.After(10 * time.Second):
+		cancelRun()
+		t.Fatal("timed out waiting for force-stop prompt to start")
+	}
+	cancelCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := runner.CancelSession(cancelCtx, runtime, session); err != nil {
+		t.Fatalf("force-stop cancel real acpx session: %v", err)
+	}
+	closeCtx, closeCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer closeCancel()
+	if err := runner.CloseSession(closeCtx, runtime, session); err != nil {
+		t.Fatalf("force-stop close real acpx session: %v", err)
+	}
+	err := receiveError(t, errCh)
+	if err != nil && !IsStopError(err) {
+		t.Fatalf("expected force-stopped prompt to finish cleanly or as StopError, got %T %v", err, err)
+	}
+	assertNoRealACPXOrphans(t, session.Name, helperLog)
 }
 
 func sinkContainsPayload(sink *captureSink, needle string) bool {

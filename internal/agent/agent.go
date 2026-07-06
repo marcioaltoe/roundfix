@@ -106,7 +106,7 @@ type StopError struct {
 
 func (err StopError) Error() string {
 	if err.Killed {
-		return "Agent stopped after graceful termination timed out and the process was killed"
+		return "Agent stopped after graceful termination timed out and the Agent Session was closed"
 	}
 	return "Agent stopped after graceful termination"
 }
@@ -268,6 +268,14 @@ func (runner *DefaultRunner) Run(ctx context.Context, req ExecuteRequest, sink r
 
 func (runner *DefaultRunner) EndSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error {
 	return runner.acpxRunner().EndSession(ctx, runtime, session)
+}
+
+func (runner *DefaultRunner) CloseSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error {
+	return runner.acpxRunner().CloseSession(ctx, runtime, session)
+}
+
+func (runner *DefaultRunner) ListRoundfixSessions(ctx context.Context, runtime RuntimeSpec, workDir string) ([]RoundfixSession, error) {
+	return runner.acpxRunner().ListRoundfixSessions(ctx, runtime, workDir)
 }
 
 func (runner *DefaultRunner) CancelSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error {

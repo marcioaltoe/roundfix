@@ -120,6 +120,8 @@ var promptInitScope = defaultPromptInitScope
 var resolveSkillsProjectRoot = defaultResolveSkillsProjectRoot
 var promptProjectClaudeSkillSymlink = defaultPromptProjectClaudeSkillSymlink
 var cancelStopAgentSession = defaultCancelStopAgentSession
+var listRoundfixAgentSessions = defaultListRoundfixAgentSessions
+var closeStopAgentSession = defaultCloseStopAgentSession
 
 type validationError struct {
 	message string
@@ -439,7 +441,7 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 }
 
 func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, worktreeLocation string) (stopResult, error) {
-	warnings := bestEffortCancelAgentSession(ctx, active)
+	warnings := bestEffortForceStopAgentSessions(ctx, active)
 	run, err := runStore.CompleteRun(ctx, active.ID, store.StateStopped)
 	if err != nil {
 		return stopResult{}, err
@@ -459,7 +461,7 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 	return stopResult{Run: run, Forced: true, Warnings: warnings}, nil
 }
 
-func bestEffortCancelAgentSession(ctx context.Context, run store.Run) []string {
+func bestEffortForceStopAgentSessions(ctx context.Context, run store.Run) []string {
 	agentID := strings.TrimSpace(run.Agent)
 	if agentID == "" {
 		return []string{fmt.Sprintf("Agent Session cancel skipped for Run %s: no Agent runtime recorded", run.ID)}
@@ -468,17 +470,100 @@ func bestEffortCancelAgentSession(ctx context.Context, run store.Run) []string {
 	if err != nil {
 		return []string{fmt.Sprintf("Agent Session cancel skipped for Run %s: %v", run.ID, err)}
 	}
-	session := agent.SessionRefForRun(run.ID, run.GitRoot)
+	session := agent.SessionRefForRun(run.ID, runSessionWorkDir(run))
+	warnings := []string{}
 	cancelCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 	defer cancel()
 	if err := cancelStopAgentSession(cancelCtx, runtime, session); err != nil {
-		return []string{fmt.Sprintf("Agent Session cancel failed for Run %s: %v", run.ID, err)}
+		warnings = append(warnings, fmt.Sprintf("Agent Session cancel failed for Run %s: %v", run.ID, err))
 	}
-	return nil
+	return append(warnings, closeForceStoppedRunSessions(ctx, runtime, run, session)...)
 }
 
 func defaultCancelStopAgentSession(ctx context.Context, runtime agent.RuntimeSpec, session agent.SessionRef) error {
 	return agent.NewDefaultRunner().CancelSession(ctx, runtime, session)
+}
+
+func closeForceStoppedRunSessions(ctx context.Context, runtime agent.RuntimeSpec, run store.Run, runSession agent.SessionRef) []string {
+	closeCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	discovered, err := listRoundfixAgentSessions(closeCtx, runtime, runSession.WorkDir)
+	warnings := []string{}
+	if err != nil {
+		warnings = append(warnings, fmt.Sprintf("Agent Session discovery failed for Run %s: %v", run.ID, err))
+	}
+	sessions := []agent.RoundfixSession{{
+		Name:  runSession.Name,
+		RunID: run.ID,
+	}}
+	for _, session := range discovered {
+		if session.RunID == run.ID && session.TaskID != "" {
+			sessions = append(sessions, session)
+		}
+	}
+	sort.SliceStable(sessions[1:], func(i, j int) bool {
+		return sessions[i+1].Name < sessions[j+1].Name
+	})
+	seen := map[string]struct{}{}
+	for _, session := range sessions {
+		if strings.TrimSpace(session.Name) == "" {
+			continue
+		}
+		if _, ok := seen[session.Name]; ok {
+			continue
+		}
+		seen[session.Name] = struct{}{}
+		ref := sessionRefForDiscoveredRunSession(run, session)
+		if err := closeStopAgentSession(closeCtx, runtime, ref); err != nil {
+			warnings = append(warnings, fmt.Sprintf("could not close session %s: %v", ref.Name, err))
+			continue
+		}
+		warnings = append(warnings, fmt.Sprintf("closed session %s", ref.Name))
+	}
+	return warnings
+}
+
+func sessionRefForDiscoveredRunSession(run store.Run, session agent.RoundfixSession) agent.SessionRef {
+	workDir := runSessionWorkDir(run)
+	if strings.TrimSpace(session.TaskID) != "" {
+		if taskWorkDir, ok := taskSessionWorkDir(run, session.TaskID); ok {
+			workDir = taskWorkDir
+		}
+	}
+	return agent.SessionRef{Name: session.Name, WorkDir: workDir}
+}
+
+func runSessionWorkDir(run store.Run) string {
+	if workDir := strings.TrimSpace(run.WorkDir); workDir != "" {
+		return workDir
+	}
+	return strings.TrimSpace(run.GitRoot)
+}
+
+func taskSessionWorkDir(run store.Run, taskID string) (string, bool) {
+	runWorkDir := strings.TrimSpace(run.WorkDir)
+	gitRoot := strings.TrimSpace(run.GitRoot)
+	if runWorkDir == "" || gitRoot == "" || strings.TrimSpace(taskID) == "" {
+		return "", false
+	}
+	taskRef, err := runworktree.TaskRefFor(runworktree.Ref{
+		RunID:    run.ID,
+		Path:     runWorkDir,
+		Branch:   runworktree.BranchName(run.ID),
+		UserRoot: gitRoot,
+	}, taskID)
+	if err != nil {
+		return "", false
+	}
+	return taskRef.Path, true
+}
+
+func defaultListRoundfixAgentSessions(ctx context.Context, runtime agent.RuntimeSpec, workDir string) ([]agent.RoundfixSession, error) {
+	return agent.NewDefaultRunner().ListRoundfixSessions(ctx, runtime, workDir)
+}
+
+func defaultCloseStopAgentSession(ctx context.Context, runtime agent.RuntimeSpec, session agent.SessionRef) error {
+	return agent.NewDefaultRunner().CloseSession(ctx, runtime, session)
 }
 
 func defaultResolvePullRequestForStop(ctx context.Context, workDir string, pr string) (preflight.PullRequest, error) {

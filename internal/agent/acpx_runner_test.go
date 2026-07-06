@@ -30,6 +30,7 @@ const (
 	fakeACPXStderrBy   = "ROUNDFIX_FAKE_ACPX_STDERR_BY_COMMAND"
 	fakeACPXExitBy     = "ROUNDFIX_FAKE_ACPX_EXIT_BY_COMMAND"
 	fakeACPXCanceled   = "ROUNDFIX_FAKE_ACPX_CANCELED"
+	fakeACPXClosed     = "ROUNDFIX_FAKE_ACPX_CLOSED"
 	fakeACPXStarted    = "ROUNDFIX_FAKE_ACPX_STARTED"
 	fakeACPXBlock      = "ROUNDFIX_FAKE_ACPX_BLOCK_PROMPT"
 	fakeACPXExitCancel = "ROUNDFIX_FAKE_ACPX_EXIT_AFTER_CANCEL"
@@ -267,6 +268,75 @@ func TestACPXCancelSessionInvokesSessionCancel(t *testing.T) {
 	}
 }
 
+func TestParseRoundfixSessionsFiltersAndExtractsRunIDs(t *testing.T) {
+	output := strings.Join([]string{
+		"NAME                          UPDATED",
+		"roundfix-run_20260706T120000Z_abcd1234  now",
+		"foreign-session               now",
+		"| roundfix-run_20260706T120000Z_abcd1234-task_02 | active |",
+		`{"sessions":[{"name":"roundfix-run_20260706T120000Z_abcd1234-task_03"},{"name":"other"}]}`,
+	}, "\n")
+
+	got := ParseRoundfixSessions(output)
+	want := []RoundfixSession{
+		{Name: "roundfix-run_20260706T120000Z_abcd1234", RunID: "run_20260706T120000Z_abcd1234"},
+		{Name: "roundfix-run_20260706T120000Z_abcd1234-task_02", RunID: "run_20260706T120000Z_abcd1234", TaskID: "task_02"},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected sessions\nwant: %#v\ngot:  %#v", want, got)
+	}
+
+	jsonOutput := `{"sessions":[{"name":"roundfix-run_20260706T120000Z_abcd1234-task_03"},{"name":"foreign"}]}`
+	got = ParseRoundfixSessions(jsonOutput)
+	want = []RoundfixSession{{
+		Name:   "roundfix-run_20260706T120000Z_abcd1234-task_03",
+		RunID:  "run_20260706T120000Z_abcd1234",
+		TaskID: "task_03",
+	}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected JSON sessions\nwant: %#v\ngot:  %#v", want, got)
+	}
+}
+
+func TestACPXListRoundfixSessionsInvokesSessionsList(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Setenv(fakeACPXStdoutBy, mustJSONForTest(t, map[string]string{
+		"sessions list": "NAME\nroundfix-run_20260706T120000Z_abcd1234\nforeign\n",
+	}))
+
+	got, err := harness.runner.ListRoundfixSessions(context.Background(), RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, harness.gitRoot)
+
+	if err != nil {
+		t.Fatalf("list sessions: %v", err)
+	}
+	wantSessions := []RoundfixSession{{
+		Name:  "roundfix-run_20260706T120000Z_abcd1234",
+		RunID: "run_20260706T120000Z_abcd1234",
+	}}
+	if !reflect.DeepEqual(got, wantSessions) {
+		t.Fatalf("unexpected sessions\nwant: %#v\ngot:  %#v", wantSessions, got)
+	}
+	wantInvocations := [][]string{{"--cwd", harness.gitRoot, "codex", "sessions", "list"}}
+	if invocations := readJSONInvocations(t, harness.invocationsPath); !reflect.DeepEqual(invocations, wantInvocations) {
+		t.Fatalf("unexpected invocations\nwant: %#v\ngot:  %#v", wantInvocations, invocations)
+	}
+}
+
+func TestACPXCloseSessionReturnsCloseFailure(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"sessions close": 1}))
+	t.Setenv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{"sessions close": "close rejected\n"}))
+
+	err := harness.runner.CloseSession(context.Background(), RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, SessionRef{Name: "roundfix-run-1", WorkDir: harness.gitRoot})
+
+	if err == nil {
+		t.Fatal("expected close failure")
+	}
+	if !strings.Contains(err.Error(), "close acpx Agent Session") || !strings.Contains(err.Error(), "close rejected") {
+		t.Fatalf("expected close error context, got %v", err)
+	}
+}
+
 func TestACPXRunPromptSendsPromptOnStdin(t *testing.T) {
 	run := runFakeACPXPrompt(t, fakeACPXPrompt{
 		runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-test"},
@@ -480,7 +550,7 @@ func TestACPXRunCancelsPromptCooperatively(t *testing.T) {
 	}
 }
 
-func TestACPXRunKillsPromptAfterCancelGracePeriod(t *testing.T) {
+func TestACPXRunClosesSessionAfterCancelGracePeriod(t *testing.T) {
 	harness := newBlockingFakeACPXHarness(t, false)
 	ctx, cancel := context.WithCancel(context.Background())
 	resultCh := make(chan error, 1)
@@ -497,11 +567,14 @@ func TestACPXRunKillsPromptAfterCancelGracePeriod(t *testing.T) {
 		t.Fatalf("expected StopError, got %T %v", err, err)
 	}
 	if !stopErr.Killed {
-		t.Fatalf("expected fallback kill after cancel, got %#v", stopErr)
+		t.Fatalf("expected fallback close after cancel, got %#v", stopErr)
 	}
 	invocations := readJSONInvocations(t, harness.invocationsPath)
 	if !containsInvocation(invocations, []string{"--cwd", harness.gitRoot, "codex", "cancel", "-s", "roundfix-run-1"}) {
-		t.Fatalf("expected cancel invocation before kill, got %#v", invocations)
+		t.Fatalf("expected cancel invocation before close, got %#v", invocations)
+	}
+	if !containsInvocation(invocations, []string{"--cwd", harness.gitRoot, "codex", "sessions", "close", "roundfix-run-1"}) {
+		t.Fatalf("expected close invocation after cancel grace, got %#v", invocations)
 	}
 }
 
@@ -938,6 +1011,7 @@ func newBlockingFakeACPXHarness(t *testing.T, exitAfterCancel bool) *fakeACPXHar
 	t.Setenv(fakeACPXBlock, "1")
 	t.Setenv(fakeACPXStarted, harness.startedPath)
 	t.Setenv(fakeACPXCanceled, filepath.Join(harness.gitRoot, "canceled"))
+	t.Setenv(fakeACPXClosed, filepath.Join(harness.gitRoot, "closed"))
 	if exitAfterCancel {
 		t.Setenv(fakeACPXExitCancel, "1")
 	}
@@ -1144,6 +1218,14 @@ func runFakeACPXProcess() int {
 			}
 		}
 	}
+	if commandKey == "sessions close" {
+		if path := os.Getenv(fakeACPXClosed); path != "" {
+			if err := os.WriteFile(path, []byte("closed\n"), 0o644); err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "write close marker: %v\n", err)
+				return 2
+			}
+		}
+	}
 	if commandKey == "prompt" && os.Getenv(fakeACPXBlock) == "1" {
 		if path := os.Getenv(fakeACPXStarted); path != "" {
 			if err := os.WriteFile(path, []byte("started\n"), 0o644); err != nil {
@@ -1154,6 +1236,11 @@ func runFakeACPXProcess() int {
 		for {
 			if canceled := os.Getenv(fakeACPXCanceled); canceled != "" {
 				if _, err := os.Stat(canceled); err == nil && os.Getenv(fakeACPXExitCancel) == "1" {
+					return 130
+				}
+			}
+			if closed := os.Getenv(fakeACPXClosed); closed != "" {
+				if _, err := os.Stat(closed); err == nil {
 					return 130
 				}
 			}

@@ -7,7 +7,9 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
+	"time"
 
 	"roundfix/internal/agent"
 	"roundfix/internal/app"
@@ -125,7 +127,17 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	defer func() {
 		_ = runStore.Close()
 	}()
-	if err := pruneTerminalRunWorktreeDebris(ctx, gitState.Root, loadedConfig.Config.Worktree.Location, runStore, stderr); err != nil {
+	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
+		Agent:            req.agent,
+		CommandOverride:  req.agentCmd,
+		Model:            req.model,
+		EnableFullAccess: req.agentFullAccess,
+	})
+	if err != nil {
+		printPreflightFailure("implement", err, stderr)
+		return exitPreflight
+	}
+	if err := pruneTerminalRunWorktreeDebris(ctx, gitState.Root, loadedConfig.Config.Worktree.Location, runtime, runStore, stderr); err != nil {
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
@@ -139,16 +151,6 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitPreflight
 	}
 
-	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
-		Agent:            req.agent,
-		CommandOverride:  req.agentCmd,
-		Model:            req.model,
-		EnableFullAccess: req.agentFullAccess,
-	})
-	if err != nil {
-		printPreflightFailure("implement", err, stderr)
-		return exitPreflight
-	}
 	collaborators := newEngineCollaborators()
 	if err := collaborators.runner.Probe(ctx, runtime); err != nil {
 		printPreflightFailure("implement", err, stderr)
@@ -680,7 +682,7 @@ func gitHEAD(ctx context.Context, workDir string) (string, error) {
 	return head, nil
 }
 
-func pruneTerminalRunWorktreeDebris(ctx context.Context, gitRoot string, location string, runStore *store.Store, stderr io.Writer) error {
+func pruneTerminalRunWorktreeDebris(ctx context.Context, gitRoot string, location string, runtime agent.RuntimeSpec, runStore *store.Store, stderr io.Writer) error {
 	pruned, err := pruneTerminalRunWorktrees(ctx, gitRoot, location, func(runID string) bool {
 		run, found, err := runStore.Run(ctx, runID)
 		return err == nil && found && store.IsTerminalState(run.State)
@@ -691,5 +693,38 @@ func pruneTerminalRunWorktreeDebris(ctx context.Context, gitRoot string, locatio
 	for _, ref := range pruned {
 		fmt.Fprintf(stderr, "%s: reaped terminal Worktree path=%s branch=%s\n", app.Name, ref.Path, ref.Branch)
 	}
+	sweepTerminalRunSessions(ctx, runtime, gitRoot, runStore, stderr)
 	return nil
+}
+
+func sweepTerminalRunSessions(ctx context.Context, runtime agent.RuntimeSpec, gitRoot string, runStore *store.Store, stderr io.Writer) {
+	sweepCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	sessions, err := listRoundfixAgentSessions(sweepCtx, runtime, gitRoot)
+	if err != nil {
+		return
+	}
+	sort.SliceStable(sessions, func(i, j int) bool {
+		return sessions[i].Name < sessions[j].Name
+	})
+	seen := map[string]struct{}{}
+	for _, session := range sessions {
+		if strings.TrimSpace(session.Name) == "" {
+			continue
+		}
+		if _, ok := seen[session.Name]; ok {
+			continue
+		}
+		seen[session.Name] = struct{}{}
+		run, found, err := runStore.Run(sweepCtx, session.RunID)
+		if err != nil || !found || !store.IsTerminalState(run.State) {
+			continue
+		}
+		ref := sessionRefForDiscoveredRunSession(run, session)
+		if err := closeStopAgentSession(sweepCtx, runtime, ref); err != nil {
+			fmt.Fprintf(stderr, "%s: could not close session %s: %v\n", app.Name, ref.Name, err)
+			continue
+		}
+		fmt.Fprintf(stderr, "%s: closed session %s\n", app.Name, ref.Name)
+	}
 }

@@ -1717,6 +1717,75 @@ func TestRunImplementPreflightReapsEmptyTerminalRunAndTaskWorktrees(t *testing.T
 	}
 }
 
+func TestRunImplementPreflightClosesTerminalRunSessionsOnly(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:     "task_01",
+		title:  "Build after session cleanup",
+		status: string(spec.StatusPending),
+	}})
+	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
+	terminalRun, _, terminalTask := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "task_01", store.StateStopped)
+	activeOther := createActiveImplementRunForStopInGitRoot(t, homeDir, filepath.Join(repoDir, "other"), "0002-other-spec")
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	withAgentRunner(t, runner)
+	withRoundfixSessionLister(t, func(_ context.Context, runtime agent.RuntimeSpec, workDir string) ([]agent.RoundfixSession, error) {
+		if runtime.ID != "codex" || workDir != repoDir {
+			t.Fatalf("unexpected session sweep list runtime=%#v workDir=%q", runtime, workDir)
+		}
+		return []agent.RoundfixSession{
+			{Name: "roundfix-" + terminalRun.ID, RunID: terminalRun.ID},
+			{Name: "roundfix-" + terminalRun.ID + "-task_01", RunID: terminalRun.ID, TaskID: "task_01"},
+			{Name: "roundfix-" + activeOther.ID, RunID: activeOther.ID},
+			{Name: "roundfix-run_20990101T000000Z_unknown", RunID: "run_20990101T000000Z_unknown"},
+		}, nil
+	})
+	closeCalls := []agent.SessionRef{}
+	withStopAgentSessionCloser(t, func(_ context.Context, runtime agent.RuntimeSpec, session agent.SessionRef) error {
+		if runtime.ID != "codex" {
+			t.Fatalf("unexpected close runtime: %#v", runtime)
+		}
+		closeCalls = append(closeCalls, session)
+		return nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected implement exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	wantCloseCalls := []agent.SessionRef{
+		{Name: "roundfix-" + terminalRun.ID, WorkDir: terminalRun.WorkDir},
+		{Name: "roundfix-" + terminalRun.ID + "-task_01", WorkDir: terminalTask.Path},
+	}
+	if len(closeCalls) != len(wantCloseCalls) {
+		t.Fatalf("expected close calls %#v, got %#v", wantCloseCalls, closeCalls)
+	}
+	for i, want := range wantCloseCalls {
+		if closeCalls[i] != want {
+			t.Fatalf("close call %d\nwant: %#v\ngot:  %#v", i, want, closeCalls[i])
+		}
+	}
+	for _, want := range []string{
+		"roundfix: closed session roundfix-" + terminalRun.ID,
+		"roundfix: closed session roundfix-" + terminalRun.ID + "-task_01",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())
+		}
+	}
+	if strings.Contains(stderr.String(), activeOther.ID) || strings.Contains(stderr.String(), "unknown") {
+		t.Fatalf("active and unknown sessions must be untouched, got %q", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Clean: all 1 Task(s) completed.") {
+		t.Fatalf("expected Clean implement output, got %q", stdout.String())
+	}
+}
+
 func TestRunImplementPreflightRejectsActiveRunInWorkingTree(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	withImplementCollaborators(t, &implementFakeRunner{gitRoot: repoDir})
