@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0009-parallel-scheduling
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -35,19 +35,19 @@ skills drift check inside the full gate.
 
 ## Subtasks
 
-- [ ] Skill updates + `make skills-sync`
-- [ ] README config and concurrency notes
-- [ ] Fixture and binary cross-check
-- [ ] Glossary pass
+- [x] Skill updates + `make skills-sync`
+- [x] README config and concurrency notes
+- [x] Fixture and binary cross-check
+- [x] Glossary pass
 
 ## Acceptance Criteria
 
-- [ ] Skill text matches shipped behavior exactly; drift check passes
+- [x] Skill text matches shipped behavior exactly; drift check passes
       inside the full gate.
-- [ ] Documented shapes appear verbatim in CLI test fixtures.
-- [ ] README documents both keys with the hierarchy and the fixed
+- [x] Documented shapes appear verbatim in CLI test fixtures.
+- [x] README documents both keys with the hierarchy and the fixed
       segments rule.
-- [ ] No new un-glossaried term.
+- [x] No new un-glossaried term.
 
 ## Verification
 
@@ -60,3 +60,26 @@ skills drift check inside the full gate.
 `_prd.md` → User Experience; Core Features 1–6. `_techspec.md` → Build
 Order 6. ADR-0025, ADR-0026. Repo hard rule (canonical skill ships with CLI
 behavior changes).
+
+## Result
+
+- Updated the canonical Roundfix skill with Wave scheduling, `worktree.concurrency`
+  default/sequential behavior, Task Worktrees, per-Task Agent Sessions, Task
+  Worktree integration conflict semantics, settle resolution order,
+  `worktree.location` hierarchy, fixed slug/run-id/task suffix segments, and
+  empty-debris reap reporting. Ran `rtk make skills-sync`; `.agents/skills/roundfix`
+  and `skills/roundfix` are byte-identical.
+- Updated the README configuration and behavior notes for `worktree.location`
+  and `worktree.concurrency`, including the fixed hierarchy and parallel
+  Verification load expectation for commands such as `make verify`.
+- Cross-checked line shapes against fixtures and the built binary:
+  `rtk rg -n "Concurrency: 4|roundfix: reaped terminal Worktree path=|roundfix: settle failed after verification: task worktree integration conflict on|integration conflict: shared\\.txt" internal/cli internal/daemon`
+  found the documented shapes in CLI/daemon fixtures, and
+  `rtk proxy strings bin/roundfix | rtk rg "Concurrency:|reaped terminal Worktree|task worktree integration conflict|integration conflict:|Re-runs one failed Task"`
+  found the shipped binary strings.
+- Glossary pass: `CONTEXT.md` already defines `Wave` and `Task Worktree`; no
+  additional un-glossaried term was introduced.
+- Verification: `rtk go test ./internal/cli/ ./internal/daemon/` passed
+  (`304 passed in 2 packages`) after rerunning outside the sandbox-restricted
+  Go build cache; `rtk go run ./cmd/roundfix skills check` passed; `rtk make verify`
+  passed (`711 passed in 17 packages`, skill check passed, build passed).

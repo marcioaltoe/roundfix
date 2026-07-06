@@ -1701,11 +1701,8 @@ func TestRunImplementPreflightReapsEmptyTerminalRunAndTaskWorktrees(t *testing.T
 		t.Fatalf("expected implement exit 0, got %d stderr=%q", code, stderr.String())
 	}
 	for _, expected := range []string{
-		"reaped terminal Worktree",
-		"path=" + staleRun.WorkDir,
-		"branch=" + runworktree.BranchName(staleRun.ID),
-		"path=" + staleTask.Path,
-		"branch=" + staleTask.Branch,
+		"roundfix: reaped terminal Worktree path=" + staleRun.WorkDir + " branch=" + runworktree.BranchName(staleRun.ID),
+		"roundfix: reaped terminal Worktree path=" + staleTask.Path + " branch=" + staleTask.Branch,
 	} {
 		if !strings.Contains(stderr.String(), expected) {
 			t.Fatalf("expected stderr to contain %q, got %q", expected, stderr.String())

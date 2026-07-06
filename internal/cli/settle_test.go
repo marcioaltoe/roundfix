@@ -220,7 +220,7 @@ func TestRunSettleTaskWorktreeIntegrationConflictKeepsSurfaces(t *testing.T) {
 	if stdout.String() != "verify grep -q task shared.txt — ok\n" {
 		t.Fatalf("expected only verification success on stdout, got %q", stdout.String())
 	}
-	for _, expected := range []string{"settle failed after verification", "conflict", "shared.txt"} {
+	for _, expected := range []string{"roundfix: settle failed after verification: task worktree integration conflict on shared.txt"} {
 		if !strings.Contains(stderr.String(), expected) {
 			t.Fatalf("expected stderr to contain %q, got %q", expected, stderr.String())
 		}

@@ -22,9 +22,11 @@ Roundfix drives ACP Runtimes through acpx `0.12.0`. Node.js 22.13 or
 newer with npm/npx is a prerequisite. Prefer the Setup Command after
 installing Roundfix; it verifies Node, installs the pinned acpx on
 confirmation or `--yes`, probes the configured Agent, offers local adapter
-overrides, and offers User Config and Project Config creation. Each Run drives
-its selected ACP Runtime through one acpx-backed Agent Session across the Run's
-Work Items.
+overrides, and offers User Config and Project Config creation. Review Runs and
+sequential Spec Runs drive the selected ACP Runtime through one acpx-backed
+Agent Session across the Run's Work Items. Concurrent Spec Tasks run through
+per-Task Agent Sessions named `roundfix-<run-id>-<task_id>` in their Task
+Worktrees.
 
 Known constraint: acpx `0.12.0` has a hard 10 MiB queue-owner per-message
 buffer in `src/cli/queue/ipc.ts`, bundled in the installed package at
@@ -110,6 +112,14 @@ block force completion. The force-stop report title includes:
 Roundfix Run force-stopped
 ```
 
+Force stop also reaps kept Run or Task Worktrees and branches for terminal Runs
+whose branch has no commits beyond its base. Each removed pair is reported on
+stderr with this shape:
+
+```text
+roundfix: reaped terminal Worktree path=<path> branch=<branch>
+```
+
 ## User-Facing Review Runs
 
 1. Prefer `roundfix` commands over manual GitHub scraping.
@@ -150,9 +160,17 @@ Operational Runs that start an Agent (`resolve`, `watch`, and `implement`)
 execute in a Run Worktree, not in the user's checkout. `fetch` remains
 read/write artifact work only: it starts no Agent and creates no Run Worktree.
 
-- Each Run Worktree is created under Roundfix Home at
-  `worktrees/<repo-id>/<run-id>` on a Run Branch named
+- `worktree.location` sets the parent directory with Project Config > User
+  Config > built-in default precedence. The built-in default is
+  `~/.roundfix/worktrees`.
+- Each Run Worktree is created at
+  `<worktree.location>/<repo-slug>/<run-id>` on a Run Branch named
   `roundfix/run-<id>`. The Run row records the path as `work_dir`.
+- Each concurrent Task runs in a sibling Task Worktree at
+  `<worktree.location>/<repo-slug>/<run-id>.<task_id>` on a Task Branch named
+  `roundfix/run-<id>-<task_id>`. Roundfix always appends the repo slug and Run
+  ID segments plus the Task suffix; those final path segments are not
+  configurable.
 - Run startup reports the execution workspace on stderr with
   `Run Worktree: <path>`. Terminal outcomes that keep the workspace report
   `Run Worktree kept: <path>`.
@@ -185,6 +203,12 @@ IntegrationPending: X completed, Y failed, Z skipped, W pending; integrate with 
 
 For review Runs, Final Push is skipped until integration succeeds, so a pushed
 branch is never ahead of an unintegrated local branch.
+
+For Spec Runs, completed Task Worktree commits integrate onto the Run Branch
+through a serialized queue. The first compatible Task can fast-forward; later
+compatible Tasks cherry-pick onto the Run Branch. A conflict settles that Task
+`failed`, keeps its Task Worktree and Task Branch, and records a reason shaped
+like `integration conflict: <path>`.
 
 Review Run output and completion contract:
 
@@ -254,10 +278,12 @@ Journal and then follows new Run Events without mutating or stopping the Run.
 ## User-Facing Spec Runs
 
 The Implement Command executes a Spec's Task Graph on the current branch as
-one Run: Tasks run in dependency order, each Task's Verification commands
-gate one commit. By default the Run never pushes; a repository can opt in with
-`implement.auto_push: true`, which pushes only after a Clean outcome and never
-opens pull requests (ADR-0021).
+one Run. Tasks whose dependencies are completed form the current Wave; the
+scheduler starts up to `worktree.concurrency` Tasks from that Wave at once.
+The default is `2`; `1` keeps sequential behavior. Each Task's Verification
+commands gate one commit. By default the Run never pushes; a repository can
+opt in with `implement.auto_push: true`, which pushes only after a Clean
+outcome and never opens pull requests (ADR-0021).
 
 1. Start the Implement Command with:
 
@@ -295,6 +321,12 @@ opens pull requests (ADR-0021).
      branch, one final line follows the outcome: `pushed <remote>/<branch>`.
      A tested example is `pushed origin/ma/widget-flow`.
 
+   The spec Run header names the effective concurrency with this shape:
+
+   ```text
+   Concurrency: N
+   ```
+
 4. Exit codes: `0` Clean, Stopped, or the all-completed no-op, `1` Unresolved,
    Failed, or Integration Pending, `2` Preflight Validation failure, `130` for
    in-terminal Ctrl-C interrupt mapping.
@@ -331,18 +363,34 @@ opens pull requests (ADR-0021).
    Failed, Stopped, and failing-QA Runs do not invoke the pusher. Push failure
    ends the Run Failed.
 
-9. Stop an Active Run for a Spec with `roundfix stop --spec <slug>` from inside
+9. `worktree.concurrency` is an int in config, default `2`; `1` keeps
+   sequential behavior. `worktree.location` is the parent directory, default
+   `~/.roundfix/worktrees`; Project Config overrides User Config, and Roundfix
+   always appends `<repo-slug>/<run-id>` or `<repo-slug>/<run-id>.<task_id>`.
+   Concurrent Tasks can run Verification commands at the same time, so heavy
+   commands such as `make verify` can consume matching local CPU and cache
+   resources.
+
+   ```yaml
+   worktree:
+     location: "~/.roundfix/worktrees"
+     concurrency: 2
+   ```
+
+10. Stop an Active Run for a Spec with `roundfix stop --spec <slug>` from inside
    the current repository. This resolves that repository's Spec target and
    records a Stop Request; the Run stops after the current Work Item settles.
    Use `roundfix stop --force --spec <slug>` only for a dead, stuck, or runaway
    Run; it cancels the Agent Session best-effort, completes the Run Stopped,
-   and releases its lock immediately.
+   releases its lock immediately, and reaps empty terminal worktree debris.
 
 ## Settle Command
 
 Use `roundfix settle --spec <slug> --task <task_id>` only as a local recovery
-command for one failed Task whose completed work is already in its kept Run
-Worktree.
+command for one failed Task whose completed work is already in a kept Task
+Worktree, a kept Run Worktree, or the current repository. Settle resolves that
+surface in order: the deterministic Task Worktree path, then the Run Worktree
+recorded on the latest kept Run, then the current repository.
 
 Flags:
 
@@ -351,10 +399,10 @@ Flags:
 
 Preflight Validation exits `2` with one actionable message when either flag is
 missing, the repository does not resolve, the Spec or Task Graph does not load,
-the Task id is absent from the Task Graph, the target Task is not `failed`, the
-kept Run Worktree is unavailable, or another Active Run owns the Spec target or
-working tree. `pending` and `in_progress` Tasks belong to the Implement
-Command; completed Tasks have nothing to do.
+the Task id is absent from the Task Graph, the target Task is not `failed`, a
+settle surface path exists but is unusable, or another Active Run owns the Spec
+target or working tree. `pending` and `in_progress` Tasks belong to the
+Implement Command; completed Tasks have nothing to do.
 
 stdout carries only deterministic report lines:
 
@@ -373,13 +421,25 @@ task_01 stays failed — verification failed
 ```
 
 Exit codes: `0` means settled completed and committed, `1` means verification
-failed and no commit was created, and `2` means Preflight Validation failed.
+failed or post-verification integration failed, and `2` means Preflight
+Validation failed.
 
-On pass, settle verifies in the kept Run Worktree, stages all Run Worktree
-changes plus the task file, creates the standard Task commit, creates no Run,
-writes no Run Event Journal entries, and never pushes. It then runs the same
-integration protocol as `implement`; an integration refusal exits `1` and
-prints:
+On pass, settle verifies in the selected surface, stages that surface's changes
+plus the task file, creates the standard Task commit, creates no Run, writes no
+Run Event Journal entries, and never pushes. When the selected surface is a
+Task Worktree, settle integrates that commit onto the Run Branch through the
+same queue mechanics as `implement`; success removes the Task Worktree and Task
+Branch. A Task Worktree integration conflict exits `1`, keeps both the Run and
+Task worktrees and branches, leaves stdout with only verification lines, and
+prints stderr shaped like:
+
+```text
+roundfix: settle failed after verification: task worktree integration conflict on <path>
+```
+
+After a successful Task Worktree integration, or when settling from the Run
+Worktree, settle then runs the Run-level integration protocol. A Run-level
+integration refusal exits `1` and prints:
 
 ```text
 integration pending — git merge --ff-only roundfix/run-<id>
@@ -416,8 +476,9 @@ verification commands, and assigned Review Issue status updates.
 
 Inside a Roundfix-assigned spec Run, each Task is one Batch of one. A Task's
 status is `pending`, `in_progress`, `completed`, or `failed`, and its task
-file is the sole owner of that status. The assigned working tree is the Run
-Worktree recorded for the Run, not the user's checkout.
+file is the sole owner of that status. Concurrent spec Runs assign each Task to
+its Task Worktree; sequential Runs (`worktree.concurrency: 1`) use the Run
+Worktree. The assigned working tree is never the user's checkout.
 
 The Agent owns the assigned task file and the working tree:
 

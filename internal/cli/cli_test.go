@@ -2858,11 +2858,8 @@ func TestRunStopForceReapsEmptyRunAndTaskWorktrees(t *testing.T) {
 		t.Fatalf("expected force stop report, got %q", stdout.String())
 	}
 	for _, expected := range []string{
-		"reaped terminal Worktree",
-		"path=" + active.WorkDir,
-		"branch=" + runworktree.BranchName(active.ID),
-		"path=" + taskRef.Path,
-		"branch=" + taskRef.Branch,
+		"roundfix: reaped terminal Worktree path=" + active.WorkDir + " branch=" + runworktree.BranchName(active.ID),
+		"roundfix: reaped terminal Worktree path=" + taskRef.Path + " branch=" + taskRef.Branch,
 	} {
 		if !strings.Contains(stderr.String(), expected) {
 			t.Fatalf("expected stderr to contain %q, got %q", expected, stderr.String())

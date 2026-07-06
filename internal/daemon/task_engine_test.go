@@ -929,7 +929,7 @@ func TestTaskCycleIntegrationConflictSettlesTaskFailedAndKeepsTaskWorktree(t *te
 	}
 	var journaled bool
 	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonTask) {
-		if event.ReviewIssue == "task_02" && strings.Contains(string(event.Payload), "shared.txt") {
+		if event.ReviewIssue == "task_02" && strings.Contains(string(event.Payload), "integration conflict: shared.txt") {
 			journaled = true
 		}
 	}
