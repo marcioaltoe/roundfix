@@ -220,6 +220,14 @@ _Avoid_: Manual bootstrap checklist, environment wizard
 The support command that checks or installs the latest released Roundfix binary for the current platform.
 _Avoid_: Package manager update, version check only
 
+**Doctor Command**:
+The support command that diagnoses a machine's readiness for Roundfix Runs — Node, pinned acpx, configured Agent probe, and codex runtime hygiene — reporting each check with a next action and mutating nothing. Distinct from the Setup Command, which prepares the machine.
+_Avoid_: Health check run, setup run, environment wizard
+
+**Archive Command**:
+The support command that archives a completed Spec: it verifies every Task is completed and QA passed, stamps archive metadata, and moves the Spec folder to the archived spec root. Refuses a Spec with incomplete Tasks or no passing QA verdict.
+_Avoid_: Move command, retire run, cleanup command
+
 **Roundfix Skill**:
 A shipped agent skill that teaches an external Agent how to start Roundfix or how to resolve one assigned Batch.
 _Avoid_: Runtime, Review Source, plugin

@@ -145,8 +145,17 @@ Adapts to Go, which cross-compiles without per-platform toolchains — simpler.
 
 ## Sequencing (revised 2026-07-06, robustness prioritized)
 
-0009 parallel (SHIPPED, Clean + QA pass) → **0010-run-robustness** (R3-5/6/7:
-config deprecation, session-close reaping, Detached Runs — prioritized by
-Marcio before storage/distribution) → 0011 storage/lifecycle → 0012 npm
-distribution. Each is one `roundfix implement` cycle with Codex, QA pass,
-then archive. Distribution last so the released binary carries everything.
+0009 parallel (SHIPPED, Clean + QA pass) → **0010-run-robustness** (SHIPPED,
+R3-5/6/7: config deprecation, session-close reaping, Detached Runs — all four
+tasks completed) → **0011-storage-lifecycle** (R1-17/R3-2/R3-3/R3-4 + opt-in
+logs + Archive Command) → **0012-npm-distribution** → **0013-codex-runtime-
+hygiene** (R3-8: `roundfix doctor` + verified-clean codex spawn). Each is one
+`roundfix implement` cycle with Codex, QA pass, then archive.
+
+Specs 0011/0012/0013 were authored 2026-07-06 (PRD + TechSpec + Task Graph each;
+ADRs 0029/0030/0031 already existed, ADR-0032 added for R3-8; CONTEXT.md gained
+Doctor Command and Archive Command). R3-8 was verified **not** implemented by
+0010 and routed to its own spec 0013 (the doctor a doctor "waits for real
+demand" note in 0010's non-goals — R3-8 is that demand). Distribution (0012)
+still lands before 0013 only if the release should carry doctor; otherwise 0013
+can run before 0012 since they are independent.
