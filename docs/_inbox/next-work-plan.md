@@ -51,6 +51,21 @@ into a robustness spec (0011 or a dedicated 0012):**
   (already shipped) becomes the follow surface and `roundfix stop` the
   control surface. This is the stepping stone to `roundfix serve`
   (work-plan item 3), which remains the real long-term answer.
+- **R3-8 codex notarization / XProtect false-positive (Marcio, 2026-07-06)**:
+  macOS Tahoe fired "Malware Blocked: 'codex' was not opened because it
+  contains malware" — a known OpenAI issue (openai/codex#24246, root cause
+  #23649): the codex binary is OpenAI-signed but not Apple-notarized, so when
+  an agent loop spawns it frequently, XProtect YARA-scans the ~193 MB binary
+  every exec and intermittently blocks it, especially with the Homebrew-Cask
+  `com.apple.quarantine` flag. Environment fixed 2026-07-06 (curl install to
+  ~/.local/bin, no quarantine; CODEX_PATH pinned in fish+zsh). Product fix
+  candidates: `roundfix setup`/`doctor` detects a quarantined or un-notarized
+  codex on PATH and prints the curl-reinstall fix; the agent layer sets
+  CODEX_PATH to a verified-clean codex when spawning codex-acp. Note: the
+  same research validated R3-6 — Zed hit the identical `codex-acp` PPID=1
+  orphan leak (zed-industries/zed#56146) and their fix (kill only PPID=1
+  orphans) matches 0010's session-close reaping.
+
 - **Supervision lesson (agent-side, not product)**: a Monitor filter must
   cover every terminal signature (`Preflight failed`, `reached ...`), not just
   the happy path — a config-death read as "still running" for hours. And
