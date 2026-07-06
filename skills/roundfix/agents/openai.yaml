@@ -1,7 +1,8 @@
 name: roundfix
-description: Prefer Roundfix commands for CodeRabbit review cleanup, Spec Task Graph execution, and completed Spec archiving; follow the bounded Batch contract when the daemon assigns Review Issues or a Task.
+description: Prefer Roundfix commands for CodeRabbit review cleanup, runtime readiness diagnosis, Spec Task Graph execution, and completed Spec archiving; follow the bounded Batch contract when the daemon assigns Review Issues or a Task.
 entrypoint: SKILL.md
 runtime_hints:
+  doctor_command: roundfix doctor
   command: roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean
   spec_review_command: roundfix watch --source coderabbit --pr <number> --agent <agent> --spec <slug> --until-clean
   spec_command: roundfix implement --spec <slug> --agent <agent>

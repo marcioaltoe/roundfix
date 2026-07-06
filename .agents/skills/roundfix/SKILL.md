@@ -1,9 +1,9 @@
 ---
 name: roundfix
-description: Use Roundfix to clean CodeRabbit pull request feedback, execute a Spec's Task Graph with the Implement Command, archive completed Specs, and, inside daemon-assigned Batch runs, follow the bounded Review Issue or Task resolution contract.
+description: Use Roundfix to clean CodeRabbit pull request feedback, diagnose runtime readiness with the Doctor Command, execute a Spec's Task Graph with the Implement Command, archive completed Specs, and, inside daemon-assigned Batch runs, follow the bounded Review Issue or Task resolution contract.
 metadata:
   category: code-review
-  tags: [code-review, coderabbit, roundfix, github, qa, agents]
+  tags: [code-review, coderabbit, roundfix, doctor, github, qa, agents]
   version: 0.1.0
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
@@ -13,8 +13,9 @@ metadata:
 
 Use this skill when the user asks to resolve CodeRabbit comments, watch a pull
 request, run Roundfix until clean, clean up review bot feedback, execute a
-Spec's Task Graph, archive a completed Spec, or when a Roundfix daemon assigns
-one bounded Batch of Review Issues or one Task.
+Spec's Task Graph, diagnose Roundfix runtime health, archive a completed Spec,
+or when a Roundfix daemon assigns one bounded Batch of Review Issues or one
+Task.
 
 ## acpx dependency
 
@@ -27,6 +28,23 @@ sequential Spec Runs drive the selected ACP Runtime through one acpx-backed
 Agent Session across the Run's Work Items. Concurrent Spec Tasks run through
 per-Task Agent Sessions named `roundfix-<run-id>-<task_id>` in their Task
 Worktrees.
+
+Use the Doctor Command, `roundfix doctor`, to diagnose Run readiness without
+installing dependencies, writing config, or changing files. Doctor runs the
+shared Node.js, pinned acpx, configured Agent probe, and codex runtime hygiene
+checks and prints one line per check with status `ok`, `failed`, or `skipped`.
+Failed checks include `next: <action>` when Roundfix knows the remediation.
+On macOS, the codex hygiene check resolves `CODEX_PATH` first and then `codex`
+on `PATH`, inspects the `com.apple.quarantine` attribute, and asks Gatekeeper
+whether the binary is accepted for execution. Quarantined or unaccepted codex
+fails with the next action to reinstall codex with the official curl installer
+into `~/.local/bin`, then set `CODEX_PATH` to that binary. On non-Darwin
+platforms the codex check is `skipped` and never fails the command by itself.
+
+When Roundfix launches codex through `codex-acp` on macOS, it uses the same
+configured-path-then-`PATH` resolution and passes a verified-clean codex to
+acpx through `CODEX_PATH`. If no clean codex is available, Roundfix surfaces
+the hygiene failure instead of silently spawning a known unsafe binary.
 
 Known constraint: acpx `0.12.0` has a hard 10 MiB queue-owner per-message
 buffer in `src/cli/queue/ipc.ts`, bundled in the installed package at
@@ -43,7 +61,7 @@ journals the anomaly with the stderr tail and proceeds to the Daemon's
 verification. Without that parsed result, the nonzero exit remains a Batch
 failure. Verification remains the only gate for settling and committing.
 
-## Setup and upgrade
+## Setup, doctor, and upgrade
 
 Use `roundfix setup [--yes] [--no-input]` to take a machine from fresh to
 Run-ready. It checks Node.js, pinned acpx, the configured Agent probe, acpx
@@ -64,6 +82,10 @@ Project Config: installed
 offers instead of prompting; for a fresh environment that produces report lines
 such as `acpx: skipped`, `agent probe: skipped`, and `Project Config: skipped`.
 When acpx is missing or mismatched, setup offers `npm install -g acpx@0.12.0`.
+
+Use `roundfix doctor` when you only need a read-only readiness report. It runs
+the Node.js, pinned acpx, configured Agent probe, and codex runtime hygiene
+checks and exits nonzero if any check fails. The command has no flags.
 
 Use `roundfix upgrade [--check]` to resolve the latest Roundfix release through
 the GitHub CLI. Without `--check`, it downloads the platform asset, verifies
@@ -224,6 +246,7 @@ roundfix stop --spec <slug>
 roundfix stop --force --spec <slug>
 roundfix setup --yes
 roundfix setup --no-input
+roundfix doctor
 roundfix upgrade --check
 roundfix skills check
 ```

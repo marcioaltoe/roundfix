@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0013-codex-runtime-hygiene
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -30,16 +30,16 @@ closes.
 
 ## Subtasks
 
-- [ ] Doctor Command docs incl. codex hygiene and platform behavior
-- [ ] Note verified-clean codex spawn where relevant
-- [ ] Update SKILL.md/manifest for `doctor` + `make skills-sync`
-- [ ] Verify no skill drift
+- [x] Doctor Command docs incl. codex hygiene and platform behavior
+- [x] Note verified-clean codex spawn where relevant
+- [x] Update SKILL.md/manifest for `doctor` + `make skills-sync`
+- [x] Verify no skill drift
 
 ## Acceptance Criteria
 
-- [ ] Docs accurately describe `roundfix doctor`, its checks, and the macOS-only codex hygiene remediation.
-- [ ] SKILL.md matches the shipped CLI surface; the embedded copy is regenerated.
-- [ ] `roundfix skills check` passes and `skills-sync-check` reports no drift.
+- [x] Docs accurately describe `roundfix doctor`, its checks, and the macOS-only codex hygiene remediation.
+- [x] SKILL.md matches the shipped CLI surface; the embedded copy is regenerated.
+- [x] `roundfix skills check` passes and `skills-sync-check` reports no drift.
 
 ## Verification
 
@@ -50,3 +50,25 @@ closes.
 
 `_prd.md` → all stories (documentation). `_techspec.md` → Build Order 5. ADR-0032.
 CONTEXT.md → Doctor Command. CLAUDE.md SKILL.md-matches-CLI gate.
+
+## Result
+
+- Documented `roundfix doctor` in `README.md` as a diagnosis-only command that
+  checks Node.js, pinned acpx, the configured Agent probe, and codex runtime
+  hygiene; the docs now describe the macOS quarantine/Gatekeeper behavior, the
+  curl reinstall remediation into `~/.local/bin`, and the non-Darwin skipped
+  codex check.
+- Added the verified-clean codex spawn note where acpx/codex setup is
+  documented: macOS codex-acp launches resolve `CODEX_PATH` first, then
+  `PATH`, pass a verified-clean codex through `CODEX_PATH`, and surface the
+  hygiene risk when no clean codex is available.
+- Updated `.agents/skills/roundfix/SKILL.md` plus
+  `.agents/skills/roundfix/agents/openai.yaml` for the Doctor Command surface
+  and ran `rtk make skills-sync` to regenerate `skills/roundfix/`.
+- Verification passed:
+  - `rtk make skills-sync` exited 0 and regenerated `skills/roundfix/`.
+  - `rtk go run ./cmd/roundfix skills check` exited 0 with
+    `Roundfix skill check passed: roundfix`.
+  - `rtk make skills-sync-check` exited 0 with no diff output.
+  - `rtk make verify` exited 0; it ran `rtk go test ./...` with 785 passing
+    tests in 18 packages, `roundfix skills check`, and the Roundfix build.

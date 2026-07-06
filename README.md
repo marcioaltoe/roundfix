@@ -24,6 +24,21 @@ system. The MVP focuses on one review-resolution loop for an Open Pull Request.
 - `rtk` is optional. The `Makefile` uses it when available and falls back to the
   plain Go toolchain when it is not installed.
 
+Run `roundfix doctor` at any time to diagnose Run readiness without installing,
+writing config, or otherwise mutating the machine. Doctor checks Node.js, the
+pinned acpx version, the configured Agent probe, and codex runtime hygiene. On
+macOS, codex hygiene resolves `CODEX_PATH` first and then `codex` on `PATH`,
+checks the `com.apple.quarantine` attribute, and asks Gatekeeper whether the
+binary is accepted for execution. A quarantined or unaccepted codex fails with
+the next action to reinstall codex with the official curl installer into
+`~/.local/bin`, then set `CODEX_PATH` to that binary. On non-Darwin platforms
+the codex check is skipped and does not fail the command.
+
+When Roundfix launches codex through `codex-acp` on macOS, it uses the same
+configured-path-then-`PATH` resolution and passes a verified-clean codex through
+`CODEX_PATH`. If no clean codex is available, Roundfix surfaces the hygiene
+risk instead of silently spawning a known unsafe binary.
+
 For latency-sensitive setups, configure direct adapter binaries in acpx config
 so default adapters do not launch through `npx -y` on first use.
 
@@ -71,6 +86,12 @@ roundfix setup
 
 Use `roundfix setup --yes` to accept every offered install or file change, or
 `roundfix setup --no-input` to report missing pieces without prompting.
+
+Diagnose this machine for Roundfix Runs without changing it:
+
+```bash
+roundfix doctor
+```
 
 Update an installed Roundfix binary:
 
@@ -124,6 +145,12 @@ Verify and prepare this machine for Roundfix Runs:
 
 ```bash
 go run ./cmd/roundfix setup
+```
+
+Diagnose this machine for Roundfix Runs without installing or writing config:
+
+```bash
+go run ./cmd/roundfix doctor
 ```
 
 Upgrade Roundfix or check the release channel:
@@ -227,6 +254,14 @@ it, or set `NO_COLOR` to suppress color.
   check prints one deterministic report line such as `node: ok`,
   `acpx: installed`, or `User Config: skipped`. `--yes` accepts offers;
   `--no-input` skips offers instead of prompting.
+- `doctor` runs the read-only readiness checks for Node.js, pinned acpx, the
+  configured Agent probe, and codex runtime hygiene. It prints one stdout line
+  per check with `ok`, `failed`, or `skipped`; failure lines include
+  `next: <action>` when a remediation is known. It mutates nothing and exits
+  nonzero when any check fails. The codex check is macOS-only: it inspects
+  `com.apple.quarantine` and Gatekeeper acceptance, reports the curl reinstall
+  into `~/.local/bin` as the next action for quarantined or unaccepted codex,
+  and is skipped on non-Darwin platforms.
 - `upgrade` resolves the latest Roundfix release through the GitHub CLI.
   Successful stdout outcomes are `upgraded 1.0.0 → 1.1.0`,
   `already current 1.0.0`, `no releases published`, and, with `--check`,
