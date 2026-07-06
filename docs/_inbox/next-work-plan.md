@@ -42,6 +42,15 @@ into a robustness spec (0011 or a dedicated 0012):**
   acpx session but never reaps the OS process tree. Candidates: `stop --force`
   and the preflight sweep reap the Run's adapter tree; a `roundfix doctor`
   lists/kills orphaned adapters.
+- **R3-7 `--detach` mode (Marcio, 2026-07-06)**: Runs die with their parent
+  process — three Runs were killed mid-flight when the invoking session
+  reaped its background tasks; the interim fix is caller-side
+  `nohup ... & disown`, which no product should depend on. Add `--detach` to
+  the operational commands: roundfix re-executes itself as a detached
+  session leader, prints the run id, exits 0; `roundfix attach <run-id>`
+  (already shipped) becomes the follow surface and `roundfix stop` the
+  control surface. This is the stepping stone to `roundfix serve`
+  (work-plan item 3), which remains the real long-term answer.
 - **Supervision lesson (agent-side, not product)**: a Monitor filter must
   cover every terminal signature (`Preflight failed`, `reached ...`), not just
   the happy path — a config-death read as "still running" for hours. And
