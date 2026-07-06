@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0012-npm-distribution
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -43,12 +43,12 @@ the recommended external skills.
 
 ## Subtasks
 
-- [ ] Owned-skills manifest + widened embed from a synced bundle directory
-- [ ] `make skills-sync`/`skills-sync-check` over the whole bundle
-- [ ] Per-skill `Check` policy (strict roundfix, structural authorial)
-- [ ] `skills install` over the full set (semantics unchanged)
-- [ ] `skills list` (owned vs recommended external) + recommended-external manifest
-- [ ] Tests: install writes 14 skills; check passes for the set and fails on a broken authorial skill; list separates owned from external
+- [x] Owned-skills manifest + widened embed from a synced bundle directory
+- [x] `make skills-sync`/`skills-sync-check` over the whole bundle
+- [x] Per-skill `Check` policy (strict roundfix, structural authorial)
+- [x] `skills install` over the full set (semantics unchanged)
+- [x] `skills list` (owned vs recommended external) + recommended-external manifest
+- [x] Tests: install writes 14 skills; check passes for the set and fails on a broken authorial skill; list separates owned from external
 
 ## Acceptance Criteria
 

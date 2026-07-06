@@ -807,6 +807,32 @@ func TestRunSkillsCheck(t *testing.T) {
 	}
 }
 
+func TestRunSkillsListSeparatesOwnedFromExternal(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"skills", "list"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	out := stdout.String()
+	for _, want := range []string{
+		"Bundled skills",
+		"roundfix",
+		"write-prd",
+		"evidence-gate",
+		"Recommended skills",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("expected skills list to contain %q, got %q", want, out)
+		}
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+}
+
 func TestRunSkillsInstallCopiesArtifactsToProjectByDefault(t *testing.T) {
 	_, repoDir := withCLIWorkspace(t)
 	var stdout bytes.Buffer

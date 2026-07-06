@@ -8,7 +8,10 @@ changes, creates Daemon-owned commits, and pushes only at configured clean
 boundaries.
 
 Roundfix is not a general workflow engine, CI healer, or task orchestration
-system. The MVP focuses on one review-resolution loop for an Open Pull Request.
+system. It runs two local-first loops — resolving CodeRabbit review feedback on
+an Open Pull Request, and executing a Spec's Task Graph — plus first-class
+supporting commands (`setup`, `doctor`, `upgrade`, `gc`, `settle`, `archive`,
+`stop`) that keep a machine Run-ready and manage Run lifecycle and storage.
 
 ## Requirements
 
@@ -80,31 +83,10 @@ make install
 Make sure your Go bin directory, usually `~/go/bin`, is on `PATH` before
 running `roundfix` directly.
 
-Bootstrap a machine for Roundfix Runs:
-
-```bash
-roundfix setup
-```
-
-Use `roundfix setup --yes` to accept every offered install or file change, or
-`roundfix setup --no-input` to report missing pieces without prompting.
-
-Diagnose this machine for Roundfix Runs without changing it:
-
-```bash
-roundfix doctor
-```
-
-Update an installed Roundfix binary:
-
-```bash
-roundfix upgrade
-```
-
-Use `roundfix upgrade --check` to report the latest release outcome without
-installing it. Operational commands also emit one best-effort stderr note per
-day when the installed version is behind, using the shape
-`roundfix 1.0.0 is behind latest 1.1.0; run roundfix upgrade`.
+Once the binary is on `PATH`, use `roundfix setup` to make the machine
+Run-ready, `roundfix doctor` to diagnose readiness without changing anything,
+and `roundfix upgrade` to update the binary. The Commands and Command
+Boundaries sections below cover their flags and outcomes.
 
 ## GitHub Access
 
@@ -118,82 +100,86 @@ gh auth status
 
 ## Commands
 
+These examples call the installed `roundfix` binary. From a source checkout
+without installing, substitute `go run ./cmd/roundfix` for `roundfix`.
+
 Show help:
 
 ```bash
-go run ./cmd/roundfix --help
+roundfix --help
 ```
 
 Show version:
 
 ```bash
-go run ./cmd/roundfix --version
-go run ./cmd/roundfix -v
+roundfix --version
+roundfix -v
 ```
 
 Create a Project Config in the current repository:
 
 ```bash
-go run ./cmd/roundfix init
+roundfix init
 ```
 
 Create a User Config instead:
 
 ```bash
-go run ./cmd/roundfix init --scope user
+roundfix init --scope user
 ```
 
 Verify and prepare this machine for Roundfix Runs:
 
 ```bash
-go run ./cmd/roundfix setup
+roundfix setup
 ```
 
 Diagnose this machine for Roundfix Runs without installing or writing config:
 
 ```bash
-go run ./cmd/roundfix doctor
+roundfix doctor
 ```
 
 Upgrade Roundfix or check the release channel:
 
 ```bash
-go run ./cmd/roundfix upgrade
-go run ./cmd/roundfix upgrade --check
+roundfix upgrade
+roundfix upgrade --check
 ```
 
 Fetch unresolved CodeRabbit Review Issues into local Round artifacts:
 
 ```bash
-go run ./cmd/roundfix fetch --source coderabbit --pr <number> [--spec <slug>]
+roundfix fetch --source coderabbit --pr <number> [--spec <slug>]
 ```
 
 Resolve downloaded Compatible Artifacts with a selected Agent:
 
 ```bash
-go run ./cmd/roundfix resolve --pr <number> --agent codex [--spec <slug>]
+roundfix resolve --pr <number> --agent codex [--spec <slug>]
 ```
 
 Run the watched review-resolution loop:
 
 ```bash
-go run ./cmd/roundfix watch --source coderabbit --pr <number> --agent codex [--spec <slug>] --until-clean
+roundfix watch --source coderabbit --pr <number> --agent codex [--spec <slug>] --until-clean
 ```
 
 Execute a Spec's Task Graph:
 
 ```bash
-go run ./cmd/roundfix implement --spec <slug> --agent codex
+roundfix implement --spec <slug> --agent codex
 ```
 
 Start a Detached Run for scripts or CI. The `--detach` flag is available on
 `resolve`, `watch`, and `implement`:
 
 ```bash
-go run ./cmd/roundfix implement --spec <slug> --agent codex --detach
+roundfix implement --spec <slug> --agent codex --detach
 ```
 
-Detached Runs print exactly four stdout lines:
+Detached Runs print exactly four stdout lines — the Run ID, the console log
+path, and the `attach`/`stop` follow-up commands:
 
 ```text
 Run detached: <run-id>
@@ -202,49 +188,53 @@ Follow: roundfix attach <run-id>
 Stop: roundfix stop <run-id>
 ```
 
-Use the `Follow` command to attach to the Live Run View, and the `Stop` command
-to request a graceful stop. The console log lives at
-`<artifact-dir>/runs/<run-id>/console.log`. If startup fails before the Run is
-created, for example during Preflight Validation, the foreground command
-relays the same stderr and exit code a normal foreground Run would have used.
+See Command Boundaries for the full detach contract.
 
 Settle one failed Spec Task whose completed work is already in a kept Task
 Worktree, kept Run Worktree, or the current repository:
 
 ```bash
-go run ./cmd/roundfix settle --spec <slug> --task <task_id>
+roundfix settle --spec <slug> --task <task_id>
 ```
 
 Archive a completed Spec after all Tasks are completed and the newest QA
 Report has `verdict: pass`:
 
 ```bash
-go run ./cmd/roundfix archive <slug>
+roundfix archive <slug>
 ```
 
 Preview or reclaim old terminal Run journal and run artifact storage:
 
 ```bash
-go run ./cmd/roundfix gc --dry-run
-go run ./cmd/roundfix gc
+roundfix gc --dry-run
+roundfix gc
 ```
 
 Stop a live Run gracefully, or force-stop a dead or runaway Run:
 
 ```bash
-go run ./cmd/roundfix stop <run-id>
-go run ./cmd/roundfix stop --force <run-id>
+roundfix stop <run-id>
+roundfix stop --force <run-id>
 ```
 
-Validate or install the shipped Roundfix agent skill:
+List, validate, or install the bundled Roundfix skills:
 
 ```bash
-go run ./cmd/roundfix skills check
-go run ./cmd/roundfix skills install
+roundfix skills list
+roundfix skills check
+roundfix skills install
 ```
 
-By default, `skills install` writes the shipped skill to
-`<repo>/.agents/skills/roundfix`. Use `--target codex`, `--target claude`,
+The binary ships 14 Roundfix-owned skills: the operational `roundfix` skill plus
+the authorial workflow skills (`write-idea`, `write-prd`, `write-techspec`,
+`write-tasks`, `setup-workflow`, `implement-task`, `implement-spec`,
+`brainstorming`, `council`, `business-analyst`, `archive-spec`, `qa-gate`,
+`evidence-gate`). `skills list` also prints the recommended external skills,
+which install through your own skills tooling and are never shipped.
+
+By default, `skills install` writes all bundled skills to
+`<repo>/.agents/skills`. Use `--target codex`, `--target claude`,
 `--target opencode`, or `--target all` for user-scoped Agent skill directories.
 If the project already has `.claude/skills`, Roundfix asks whether to create
 `.claude/skills/roundfix` as a symlink to the project-local skill.
@@ -566,7 +556,7 @@ internal/tui/                    Interactive Input and ACP Live Run View
 internal/rounds/                 Round artifacts, issue parsing, batching
 internal/store/                  central Run Database
 internal/watch/                  watch state machine
-skills/                          shipped Roundfix agent skill
+skills/                          shipped Roundfix skill bundle (synced from .agents/skills)
 docs/                            product docs and architecture decisions
 ```
 

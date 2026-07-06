@@ -285,6 +285,7 @@ roundfix setup --yes
 roundfix setup --no-input
 roundfix doctor
 roundfix upgrade --check
+roundfix skills list
 roundfix skills check
 ```
 
@@ -568,6 +569,74 @@ outcome and never opens pull requests (ADR-0021).
    Use `roundfix stop --force --spec <slug>` only for a dead, stuck, or runaway
    Run; it cancels the Agent Session best-effort, completes the Run Stopped,
    releases its lock immediately, and reaps empty terminal worktree debris.
+
+## Driving a Spec implementation loop
+
+Use this loop to carry one Spec — or a queue of Specs — from pending Tasks to an
+archived Spec without owning the Run's terminal in the foreground. It composes
+the Implement, Attach, Settle, Stop, and Archive commands documented above.
+
+1. **Prepare.** Work on a non-default branch and confirm readiness with
+   `roundfix doctor`. Pick the Spec slug under `docs/specs/`. Do not edit files
+   the Run will touch once it is Active; overlapping local edits end the Run
+   Integration Pending.
+
+2. **Start detached.** Launch the Run without owning its lifetime:
+
+   ```bash
+   roundfix implement --spec <slug> --agent codex --detach
+   ```
+
+   Capture `<run-id>` from the four-line report. Detach implies non-interactive
+   mode. If startup fails before the handshake, the foreground command relays
+   the child's stderr and exit code with no stdout report — fix the reported
+   Preflight Validation failure and start again.
+
+3. **Monitor without owning.** Follow progress through the console log at
+   `<artifact-dir>/runs/<run-id>/console.log`, or open the read-only Live Run
+   View with `roundfix attach <run-id>`. Attach replays the Run Event Journal
+   and follows new events; `q` or `Ctrl-C` detaches and never stops the Run.
+
+4. **Detect the terminal outcome.** The Run ends with exactly one stdout outcome
+   line in the console log:
+   - `Clean: all N Task(s) completed.` — every Task passed and integrated onto
+     the current branch; the Run Worktree and Run Branch are removed.
+   - `All N Task(s) already completed; no Run was created.` — nothing to do;
+     advance to the next Spec.
+   - `IntegrationPending: … integrate with git merge --ff-only roundfix/run-<id>`
+     — Tasks completed but the current branch could not fast-forward. Run the
+     printed command from the repository root, then continue. This usually means
+     the user checkout drifted while the Run was Active.
+   - `Unresolved: X completed, Y failed, Z skipped, W pending.` — one or more
+     Tasks did not settle. Go to recovery.
+
+5. **Recover failed Tasks.** Read the per-Task status lines
+   (`task_NN failed — <title>`). For each failed Task, inspect its kept Task
+   Worktree or the kept Run Worktree, then recover only that Task once its
+   Verification passes there:
+
+   ```bash
+   roundfix settle --spec <slug> --task <task_id>
+   ```
+
+   Settle re-runs the Task's Verification in the kept surface, commits on pass,
+   and integrates onto the Run Branch. Re-run `roundfix implement --spec <slug>`
+   to pick up any still-pending Tasks; completed Tasks are skipped.
+
+6. **Stop when needed.** Prefer graceful `roundfix stop --spec <slug>`; the Run
+   ends after the current Work Item settles. Use `roundfix stop --force --spec
+   <slug>` only for a dead, stuck, or runaway Run. Never kill Agent or acpx
+   processes directly while a Run is Active — force stop reaps sessions and
+   terminal Worktree debris for you.
+
+7. **Advance.** When the Spec ends Clean and its QA Report has `verdict: pass`,
+   archive it with `roundfix archive <slug>`, then start the loop again on the
+   next Spec.
+
+Failure recovery stays clean when you keep two invariants: never edit
+Run-touched files while a Run is Active, and never reap sessions or Worktrees by
+hand — let `roundfix stop --force` and the Implement Command preflight sweep
+close terminal sessions and Worktrees.
 
 ## Settle Command
 

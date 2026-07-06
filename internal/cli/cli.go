@@ -70,7 +70,7 @@ Commands:
   gc         Prune old terminal Run journals and run artifacts
   upgrade    Upgrade the Roundfix binary from GitHub Releases
   attach     Replay a Run's event timeline from the Run Database
-  skills     Check or install the Roundfix agent skill
+  skills     List, check, or install the bundled Roundfix skills
 
 Options:
   -h, --help      Show help
@@ -282,6 +282,17 @@ func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		}
 		fmt.Fprintf(stdout, "Roundfix skill check passed: %s\n", strings.Join(roundskills.Names(), ", "))
 		return exitOK
+	case "list":
+		if commandWantsHelp(args[1:]) {
+			fmt.Fprint(stdout, commandUsage("skills"))
+			return exitOK
+		}
+		if len(args) > 1 {
+			fmt.Fprintf(stderr, "%s: unexpected argument %q\n", app.Name, args[1])
+			fmt.Fprintf(stderr, "Run '%s skills --help' for usage.\n", app.Name)
+			return exitPreflight
+		}
+		return runSkillsList(stdout)
 	case "install":
 		return runSkillsInstall(ctx, args[1:], stdout, stderr)
 	default:
@@ -289,6 +300,20 @@ func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		fmt.Fprintf(stderr, "Run '%s skills --help' for usage.\n", app.Name)
 		return exitPreflight
 	}
+}
+
+func runSkillsList(stdout io.Writer) int {
+	fmt.Fprintln(stdout, "Bundled skills (install with 'roundfix skills install'):")
+	for _, name := range roundskills.Names() {
+		fmt.Fprintf(stdout, "  %s\n", name)
+	}
+	if recommended := roundskills.Recommended(); len(recommended) > 0 {
+		fmt.Fprintln(stdout, "Recommended skills (managed by your skills tooling, not shipped):")
+		for _, name := range recommended {
+			fmt.Fprintf(stdout, "  %s\n", name)
+		}
+	}
+	return exitOK
 }
 
 type stopRequest struct {
@@ -2759,16 +2784,18 @@ reporting each reaped path and branch on stderr.
 `
 	case "skills":
 		return `Usage:
+  roundfix skills list
   roundfix skills check
   roundfix skills install [--target <project|codex|claude|opencode|all>] [--dir <path>]
 
 Commands:
+  list       List the bundled Roundfix skills and recommended external skills
   check      Validate shipped Roundfix skill artifacts
-  install    Install the Roundfix skill into this project or compatible Agent skill directories
+  install    Install the bundled Roundfix skills into this project or compatible Agent skill directories
 
 Options:
   --target   Install target. Supported: project, codex, claude, opencode, all
-             project writes <repo>/.agents/skills/roundfix and can link .claude/skills/roundfix
+             project writes <repo>/.agents/skills and can link .claude/skills
   --dir      Override the target skills directory for a single target
 `
 	default:

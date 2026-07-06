@@ -14,10 +14,19 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed roundfix/SKILL.md roundfix/agents/openai.yaml
+//go:embed roundfix write-idea write-prd write-techspec write-tasks setup-workflow implement-task implement-spec brainstorming council business-analyst archive-spec qa-gate evidence-gate recommended.txt
 var embedded embed.FS
 
-var skillNames = []string{"roundfix"}
+// skillNames is the Roundfix-owned skill bundle shipped in the binary: the
+// operational roundfix skill plus the 13 authorial workflow skills. Kept in
+// sync with the Makefile OWNED_SKILLS list by make skills-sync/skills-sync-check.
+var skillNames = []string{
+	"roundfix",
+	"write-idea", "write-prd", "write-techspec", "write-tasks",
+	"setup-workflow", "implement-task", "implement-spec",
+	"brainstorming", "council", "business-analyst",
+	"archive-spec", "qa-gate", "evidence-gate",
+}
 
 type File struct {
 	Skill string
@@ -95,7 +104,15 @@ func Files() ([]File, error) {
 }
 
 func Check() []Diagnostic {
-	required := map[string][]string{
+	banned := []string{
+		"reference project",
+		"Reference Project",
+	}
+	var diagnostics []Diagnostic
+
+	// The operational roundfix skill carries a strict contract: required
+	// wording, Roundfix branding, and a valid OpenAI manifest.
+	roundfixRequired := map[string][]string{
 		"roundfix/SKILL.md": {
 			"Prefer `roundfix` commands over manual GitHub scraping.",
 			"Report the Run ID",
@@ -118,13 +135,7 @@ func Check() []Diagnostic {
 			"Run state",
 		},
 	}
-	banned := []string{
-		"reference project",
-		"Reference Project",
-	}
-
-	var diagnostics []Diagnostic
-	for path, phrases := range required {
+	for path, phrases := range roundfixRequired {
 		data, err := embedded.ReadFile(path)
 		if err != nil {
 			diagnostics = append(diagnostics, Diagnostic{Path: path, Message: "missing required skill artifact"})
@@ -148,6 +159,34 @@ func Check() []Diagnostic {
 			diagnostics = append(diagnostics, checkOpenAIManifest(path, data)...)
 		}
 	}
+
+	// The authorial workflow skills get structural validation only: a SKILL.md
+	// that parses with a name and carries no reference-project branding. Their
+	// generic authorial language and independent versions never trip the check.
+	for _, skill := range skillNames {
+		if skill == "roundfix" {
+			continue
+		}
+		path := skill + "/SKILL.md"
+		data, err := embedded.ReadFile(path)
+		if err != nil {
+			diagnostics = append(diagnostics, Diagnostic{Path: path, Message: "missing SKILL.md"})
+			continue
+		}
+		text := string(data)
+		switch name := frontmatterName(text); {
+		case name == "":
+			diagnostics = append(diagnostics, Diagnostic{Path: path, Message: "SKILL.md frontmatter is missing a name"})
+		case name != skill:
+			diagnostics = append(diagnostics, Diagnostic{Path: path, Message: fmt.Sprintf("frontmatter name %q does not match skill directory %q", name, skill)})
+		}
+		for _, phrase := range banned {
+			if strings.Contains(text, phrase) {
+				diagnostics = append(diagnostics, Diagnostic{Path: path, Message: fmt.Sprintf("contains banned reference branding %q", phrase)})
+			}
+		}
+	}
+
 	sort.Slice(diagnostics, func(i, j int) bool {
 		if diagnostics[i].Path == diagnostics[j].Path {
 			return diagnostics[i].Message < diagnostics[j].Message
@@ -155,6 +194,44 @@ func Check() []Diagnostic {
 		return diagnostics[i].Path < diagnostics[j].Path
 	})
 	return diagnostics
+}
+
+// frontmatterName returns the name field from a SKILL.md YAML frontmatter block,
+// or "" when there is none.
+func frontmatterName(text string) string {
+	trimmed := strings.TrimSpace(text)
+	if !strings.HasPrefix(trimmed, "---") {
+		return ""
+	}
+	rest := strings.TrimPrefix(trimmed, "---")
+	end := strings.Index(rest, "\n---")
+	if end < 0 {
+		return ""
+	}
+	var meta struct {
+		Name string `yaml:"name"`
+	}
+	if err := yaml.Unmarshal([]byte(rest[:end]), &meta); err != nil {
+		return ""
+	}
+	return strings.TrimSpace(meta.Name)
+}
+
+// Recommended returns the externally-managed skills (from skills-lock.json) that
+// Roundfix recommends but does not ship. They install through the user's own
+// skills tooling, never through roundfix.
+func Recommended() []string {
+	data, err := embedded.ReadFile("recommended.txt")
+	if err != nil {
+		return nil
+	}
+	var names []string
+	for _, line := range strings.Split(string(data), "\n") {
+		if s := strings.TrimSpace(line); s != "" {
+			names = append(names, s)
+		}
+	}
+	return names
 }
 
 func checkOpenAIManifest(path string, data []byte) []Diagnostic {
