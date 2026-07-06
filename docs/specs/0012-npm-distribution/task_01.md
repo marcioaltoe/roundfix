@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0012-npm-distribution
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -32,17 +32,17 @@ lives in exactly one place.
 
 ## Subtasks
 
-- [ ] Mapping table for the five targets (npm ↔ Go ↔ asset names)
-- [ ] Per-platform `package.json` scaffolds with `os`/`cpu`
-- [ ] Binary slot/layout each package expects
-- [ ] A `npm pack` dry-run (or equivalent) confirms file inclusion per package
+- [x] Mapping table for the five targets (npm ↔ Go ↔ asset names)
+- [x] Per-platform `package.json` scaffolds with `os`/`cpu`
+- [x] Binary slot/layout each package expects
+- [x] A `npm pack` dry-run (or equivalent) confirms file inclusion per package
 
 ## Acceptance Criteria
 
-- [ ] The mapping table lists all five targets with correct npm `os`/`cpu`, Go `GOOS`/`GOARCH`, and asset-name tokens (win32 package ↔ windows asset).
-- [ ] Each per-platform `package.json` declares `os`/`cpu` matching its target.
-- [ ] `npm pack` (dry run) on a per-platform package includes the binary slot and nothing extraneous.
-- [ ] No Go source or CLI behavior changed.
+- [x] The mapping table lists all five targets with correct npm `os`/`cpu`, Go `GOOS`/`GOARCH`, and asset-name tokens (win32 package ↔ windows asset).
+- [x] Each per-platform `package.json` declares `os`/`cpu` matching its target.
+- [x] `npm pack` (dry run) on a per-platform package includes the binary slot and nothing extraneous.
+- [x] No Go source or CLI behavior changed.
 
 ## Verification
 

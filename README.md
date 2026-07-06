@@ -13,6 +13,33 @@ an Open Pull Request, and executing a Spec's Task Graph — plus first-class
 supporting commands (`setup`, `doctor`, `upgrade`, `gc`, `settle`, `archive`,
 `stop`) that keep a machine Run-ready and manage Run lifecycle and storage.
 
+## Install
+
+Roundfix ships through npm as a `roundfix` launcher package with a per-platform
+binary package for each target (darwin, linux, and windows on both `x64` and
+`arm64`, except windows which is `x64` only). The launcher runs the binary for
+your platform, so `npx`, `bunx`, and global installs all behave identically to a
+locally built binary — same stdout, stderr, and exit codes.
+
+Run it once without installing:
+
+```bash
+npx roundfix --version
+bunx roundfix --version
+```
+
+Install it globally to put `roundfix` on `PATH`:
+
+```bash
+npm install -g roundfix
+# or: bun add -g roundfix
+```
+
+After installing, make the machine Run-ready with `roundfix setup` and verify
+readiness with `roundfix doctor`. Node.js is a hard prerequisite either way,
+since the ACP Agent layer runs through acpx. Building from source
+(`make build`, below) stays supported and produces the same CLI.
+
 ## Requirements
 
 - Go 1.26 or newer.
@@ -565,6 +592,7 @@ Start with:
 - [Product brief](docs/product-brief.md)
 - [Project glossary](CONTEXT.md)
 - [Architecture decisions](docs/adr/)
+- [Release runbook](docs/release-runbook.md)
 
 ## License
 
