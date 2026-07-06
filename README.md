@@ -222,6 +222,13 @@ Report has `verdict: pass`:
 go run ./cmd/roundfix archive <slug>
 ```
 
+Preview or reclaim old terminal Run journal and run artifact storage:
+
+```bash
+go run ./cmd/roundfix gc --dry-run
+go run ./cmd/roundfix gc
+```
+
 Stop a live Run gracefully, or force-stop a dead or runaway Run:
 
 ```bash
@@ -309,6 +316,14 @@ it, or set `NO_COLOR` to suppress color.
   moves `docs/specs/<slug>/` to `docs/specs/_archived/<slug>/`. Refusals exit
   `2`, write the Preflight Validation failure to stderr, and leave the folder
   in place.
+- `gc` is non-interactive. It resolves `store.journal_retention`, computes the
+  cutoff, prunes eligible terminal Runs' Run Event Journal rows and
+  `<artifact-dir>/runs/<run-id>` directories, removes orphaned `runs/<id>`
+  directories under the resolved run artifact root, and reports Runs, journal
+  rows, and artifact bytes reclaimed on stdout. `--dry-run` lists the same
+  eligible set without deleting anything. `journal_retention: 0` skips pruning
+  and reports that no pruning was performed. Retention never deletes Active
+  Runs, `runs` rows, active-run locks, or Review artifacts under `docs/specs/`.
 - `stop` is graceful by default. It records a Stop Request in the Run Database
   and reports `Stop Request recorded; the Run stops after the current Work Item
   settles.` Use `--force` only for a dead, stuck, or runaway Run; it cancels
@@ -375,6 +390,10 @@ worktree:
   # Repository-relative untracked files copied into each Run Worktree.
   copy: []
 
+store:
+  # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
+  journal_retention: 336h
+
 budget:
   enabled: true
   max_run_duration: 2h
@@ -392,6 +411,16 @@ or Project Config to write the per-Batch files again:
 logs:
   agent: true
 ```
+
+`store.journal_retention` defaults to `336h` (14 days). It accepts Go duration
+strings, and `0` keeps every Run Event Journal and run artifact directory. A
+non-zero value makes terminal Runs older than the window eligible for journal
+and run artifact pruning. Active Runs are never eligible, and retention never
+deletes `runs` rows or active-run locks. The `implement`, `resolve`, and
+`watch` preflight sweep runs the same prune best-effort and reports one stderr
+summary when it frees storage; failures are warnings and do not block the Run.
+Use `roundfix gc --dry-run` to preview the same terminal Run set, and
+`roundfix gc` to reclaim on demand.
 
 ## Local State
 
@@ -412,6 +441,10 @@ logs:
   `<artifact-dir>/runs/<run-id>/agent/batch-<nnn>.log`
 - Detached Run console log, always written for Detached Runs:
   `<artifact-dir>/runs/<run-id>/console.log`
+- Journal Retention prunes only terminal Run Event Journal rows and
+  `<artifact-dir>/runs/<run-id>` directories. Review artifacts under
+  `docs/specs/<slug>/reviews/` or `docs/specs/_reviews/` are outside retention
+  scope.
 
 For review commands, explicit `--spec <slug>` wins over trailer discovery. When
 `--spec` is absent, Roundfix uses the newest `Roundfix-Spec: <slug>` trailer on

@@ -1,9 +1,9 @@
 ---
 name: roundfix
-description: Use Roundfix to clean CodeRabbit pull request feedback, diagnose runtime readiness with the Doctor Command, execute a Spec's Task Graph with the Implement Command, archive completed Specs, and, inside daemon-assigned Batch runs, follow the bounded Review Issue or Task resolution contract.
+description: Use Roundfix to clean CodeRabbit pull request feedback, diagnose runtime readiness with the Doctor Command, execute a Spec's Task Graph with the Implement Command, reclaim Run storage with the GC Command, archive completed Specs, and, inside daemon-assigned Batch runs, follow the bounded Review Issue or Task resolution contract.
 metadata:
   category: code-review
-  tags: [code-review, coderabbit, roundfix, doctor, github, qa, agents]
+  tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
   version: 0.1.0
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
@@ -13,9 +13,9 @@ metadata:
 
 Use this skill when the user asks to resolve CodeRabbit comments, watch a pull
 request, run Roundfix until clean, clean up review bot feedback, execute a
-Spec's Task Graph, diagnose Roundfix runtime health, archive a completed Spec,
-or when a Roundfix daemon assigns one bounded Batch of Review Issues or one
-Task.
+Spec's Task Graph, diagnose Roundfix runtime health, reclaim Run storage with
+the GC Command, archive a completed Spec, or when a Roundfix daemon assigns one
+bounded Batch of Review Issues or one Task.
 
 ## acpx dependency
 
@@ -141,6 +141,40 @@ With `logs.agent: true`, per-Batch Agent log files use
 `<artifact_dir>/runs/<run-id>/agent/batch-<nnn>.log`. The Detached Run console
 log remains unconditional and is not controlled by `logs.agent` (ADR-0030).
 
+## Run storage retention
+
+`store.journal_retention` is a User Config and Project Config key that defaults
+to `336h` (14 days). It accepts Go duration strings, and `0` keeps every Run
+Event Journal and run artifact directory. Non-zero values make terminal Runs
+older than the retention window eligible for pruning. Retention never deletes
+Active Runs, `runs` rows, or active-run locks, and it does not remove Review
+artifacts under the Spec tree.
+
+Use `roundfix gc [--dry-run]` to inspect or reclaim Run storage. `--dry-run`
+prints the eligible terminal Runs, journal rows, orphaned `runs/<id>`
+directories, and artifact bytes without changing anything. A live `roundfix gc`
+deletes eligible Run Event Journal rows, removes each pruned Run's
+`<artifact_dir>/runs/<run-id>` directory, removes orphaned `runs/<id>`
+directories under the resolved run artifact root, and reports Runs, journal
+rows, and artifact bytes reclaimed on stdout. With `journal_retention: 0`, it
+prints `GC skipped` and performs no pruning.
+
+Operational `implement`, `resolve`, and `watch` startup runs the same Journal
+Retention prune best-effort when retention is non-zero. Successful cleanup
+prints one stderr line shaped like:
+
+```text
+roundfix: pruned Run storage runs=<n> journal_rows=<n> artifact_bytes=<n>
+```
+
+Failures print one warning line shaped like:
+
+```text
+roundfix: warning: Journal Retention prune failed: <reason>
+```
+
+and never block the Run.
+
 ## Stopping Runs
 
 Use `roundfix stop` for a graceful stop. Every selector keeps its existing
@@ -243,6 +277,8 @@ roundfix implement --spec <slug> --agent <agent>
 roundfix implement --spec <slug> --agent <agent> --detach
 roundfix settle --spec <slug> --task <task_id>
 roundfix archive <slug>
+roundfix gc --dry-run
+roundfix gc
 roundfix stop --spec <slug>
 roundfix stop --force --spec <slug>
 roundfix setup --yes
