@@ -112,6 +112,16 @@ into a robustness spec (0011 or a dedicated 0012):**
   (`Task task_NN failed: …`) but the summary misleads. Fix candidate: report
   the settled Task outcome the Daemon observed, not only the Run-Worktree file
   status.
+- **R4-6 task Verification must match the repo's build flags**: 0012 task_01
+  (npm scaffold) settled failed although its work was correct — its Verification
+  ran bare `rtk go build ./...`, and Go's VCS stamping (`git status`) returns
+  `exit status 128` inside a sandboxed linked Task Worktree, because the main
+  repo `.git` is outside the worktree and the sandbox blocks it. The repo always
+  builds with `-buildvcs=false` (Makefile `BUILD_FLAGS`/`RUN_FLAGS`). Fixed the
+  one offending line to `rtk go build -buildvcs=false ./...`. `go run
+  ./cmd/roundfix … --help` is proven fine (archived 0011 used it). Lesson: spec
+  task Verification commands must use the repo's real build flags; audit new
+  task files for bare `go build`/`go run` that stamps VCS.
 - **R4-5 Run Event Journal never pruned → unbounded DB**: `run_events` is
   append-only with no retention, so `~/.roundfix/roundfix.db` reached ~220 MB
   (almost all journal rows carrying every agent payload). Routed to spec

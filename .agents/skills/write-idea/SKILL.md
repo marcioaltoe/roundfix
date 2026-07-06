@@ -1,7 +1,6 @@
 ---
 name: write-idea
 description: Expand a raw product idea into a research-backed spec at docs/specs/<slug>/_idea.md — targeted questions, parallel codebase + market research, business-viability scoring, council debate, and an opportunity scan before drafting. The _idea.md feeds write-prd.
-disable-model-invocation: true
 argument-hint: "<feature idea or problem description>"
 metadata:
   category: discovery

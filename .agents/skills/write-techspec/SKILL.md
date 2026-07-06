@@ -1,7 +1,6 @@
 ---
 name: write-techspec
 description: Write the technical spec at docs/specs/<slug>/_techspec.md — explore the architecture, settle technical decisions one question at a time, record them as ADRs, and produce a build order that write-tasks can decompose. Entry point for feature work with an approved PRD, and also for refactors and bug fixes, where it mints the spec folder with a minimal _prd.md instead of requiring a product interview.
-disable-model-invocation: true
 argument-hint: "<spec slug, path to docs/specs/<slug>/_prd.md, or a refactor/bugfix description>"
 metadata:
   category: engineering-design

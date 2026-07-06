@@ -1,7 +1,6 @@
 ---
 name: write-tasks
 description: Decompose a spec's PRD/TechSpec into a dependency-ordered task graph — vertical-slice task files plus a machine-parseable _tasks.md DAG manifest under docs/specs/<slug>/, gated by user approval of the breakdown before any file is written.
-disable-model-invocation: true
 argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition

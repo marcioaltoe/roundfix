@@ -47,7 +47,7 @@ lives in exactly one place.
 ## Verification
 
 - `cd dist/npm/<a-platform-package> && npm pack --dry-run` — expected: lists the intended files only.
-- `rtk go build ./...` — expected: builds unchanged (no Go changes in this task).
+- `rtk go build -buildvcs=false ./...` — expected: builds unchanged (no Go changes in this task). The `-buildvcs=false` flag matches the repo Makefile and avoids VCS-stamping failures in sandboxed Task Worktrees.
 
 ## References
 
