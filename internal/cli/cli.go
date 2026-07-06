@@ -39,9 +39,9 @@ const usage = `Roundfix
 Usage:
   roundfix --help
   roundfix --version
-  roundfix fetch --source coderabbit --pr <number>
-  roundfix resolve --pr <number> --agent <agent>
-  roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean
+  roundfix fetch --source coderabbit --pr <number> [--spec <slug>]
+  roundfix resolve --pr <number> --agent <agent> [--spec <slug>]
+  roundfix watch --source coderabbit --pr <number> --agent <agent> [--spec <slug>] --until-clean
   roundfix implement --spec <slug> --agent <agent>
   roundfix settle --spec <slug> --task <task_id>
   roundfix init [--scope <project|user>]
@@ -78,28 +78,30 @@ const (
 )
 
 type commandRequest struct {
-	name            string
-	pr              string
-	spec            string
-	source          string
-	agent           string
-	round           string
-	noInput         bool
-	interactive     bool
-	inputShown      bool
-	untilClean      bool
-	maxRounds       int
-	artifactDir     string
-	baseRepo        string
-	model           string
-	agentCmd        string
-	agentFullAccess bool
-	noAgentConsole  bool
-	headBranch      string
-	headRepo        string
-	qa              bool
-	detach          bool
-	detachChild     *detachChild
+	name                string
+	pr                  string
+	spec                string
+	source              string
+	agent               string
+	round               string
+	noInput             bool
+	interactive         bool
+	inputShown          bool
+	untilClean          bool
+	maxRounds           int
+	artifactDir         string
+	explicitArtifactDir bool
+	reviewRoot          string
+	baseRepo            string
+	model               string
+	agentCmd            string
+	agentFullAccess     bool
+	noAgentConsole      bool
+	headBranch          string
+	headRepo            string
+	qa                  bool
+	detach              bool
+	detachChild         *detachChild
 }
 
 var runCommandPreflight = defaultRunCommandPreflight
@@ -112,6 +114,7 @@ var newEngineCollaborators = defaultEngineCollaborators
 var watchReviewStatus = defaultWatchReviewStatus
 var watchHeadCheck = defaultWatchHeadCheck
 var watchHeadSHA = defaultWatchHeadSHA
+var reviewSpecGitRunner preflight.GitRunner = preflight.ExecGitRunner{}
 var watchClock watch.Clock
 var watchSleeper watch.Sleeper
 var inspectChangedPaths = defaultInspectChangedPaths
@@ -1030,18 +1033,26 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 		return runDetachedCommand(append([]string{name}, args...), req, loadedConfig, stdout, stderr)
 	}
 
+	explicitArtifactDir := strings.TrimSpace(req.artifactDir) != ""
 	artifactDir, err := roundconfig.ValidateArtifactDirectory(req.artifactDir, loadedConfig.GitRoot, loadedConfig.HomeDir)
 	if err != nil {
 		printPreflightFailure(name, err, stderr)
 		return exitPreflight
 	}
 	req.artifactDir = artifactDir
+	req.explicitArtifactDir = explicitArtifactDir
 
 	preflightResult, err := runCommandPreflight(ctx, req, loadedConfig)
 	if err != nil {
 		printPreflightFailure(name, err, stderr)
 		return exitPreflight
 	}
+	reviewRoot, err := resolveReviewArtifactRoot(ctx, req, preflightResult)
+	if err != nil {
+		printPreflightFailure(name, err, stderr)
+		return exitPreflight
+	}
+	req.reviewRoot = reviewRoot
 	switch req.name {
 	case "fetch":
 		return runFetchCommand(ctx, req, loadedConfig, preflightResult, stdout, stderr)
@@ -1116,6 +1127,7 @@ func runFetchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 	roundResult, err := rounds.PersistRound(ctx, rounds.PersistRequest{
 		ArtifactDir:    req.artifactDir,
+		ReviewRoot:     req.reviewRoot,
 		Source:         req.source,
 		PRNumber:       preflightResult.PullRequest.Number,
 		HeadRepository: preflightResult.PullRequest.HeadRepository,
@@ -1366,7 +1378,10 @@ func reviewIssueReportIssues(ctx context.Context, req commandRequest, preflightR
 }
 
 func loadReviewIssueReportIssues(ctx context.Context, req commandRequest, preflightResult preflight.Result) ([]rounds.Issue, error) {
-	root := filepath.Join(req.artifactDir, "reviews", "pr-"+preflightResult.PullRequest.Number)
+	root := req.reviewRoot
+	if strings.TrimSpace(root) == "" {
+		root = filepath.Join(req.artifactDir, "reviews", "pr-"+preflightResult.PullRequest.Number)
+	}
 	roundDirs, err := filepath.Glob(filepath.Join(root, "round-*"))
 	if err != nil {
 		return nil, fmt.Errorf("find Round artifacts in %q: %w", root, err)
@@ -1405,6 +1420,7 @@ func prepareResolveBatch(ctx context.Context, req commandRequest, loaded roundco
 	}
 	selection, err := rounds.SelectCompatibleIssues(ctx, rounds.SelectRequest{
 		ArtifactDir:    req.artifactDir,
+		ReviewRoot:     req.reviewRoot,
 		PRNumber:       preflightResult.PullRequest.Number,
 		HeadRepository: preflightResult.PullRequest.HeadRepository,
 		HeadBranch:     preflightResult.PullRequest.HeadBranch,
@@ -1521,6 +1537,7 @@ func cyclePlanFrom(req commandRequest, loaded roundconfig.Loaded, preflightResul
 		Session:      session,
 		GitRoot:      gitRoot,
 		ArtifactDir:  req.artifactDir,
+		ReviewRoot:   req.reviewRoot,
 		SourceName:   req.source,
 		AgentName:    req.agent,
 		Runtime:      resolvePlan.runtime,
@@ -1782,6 +1799,7 @@ func fetchWatchRound(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 	roundResult, err := rounds.PersistRound(ctx, rounds.PersistRequest{
 		ArtifactDir:    req.artifactDir,
+		ReviewRoot:     req.reviewRoot,
 		Source:         req.source,
 		PRNumber:       preflightResult.PullRequest.Number,
 		HeadRepository: preflightResult.PullRequest.HeadRepository,
@@ -2078,6 +2096,7 @@ func parseOperationalCommand(name string, args []string, config roundconfig.Conf
 	fs := flag.NewFlagSet(name, flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	fs.StringVar(&req.pr, "pr", "", "Open Pull Request number")
+	fs.StringVar(&req.spec, "spec", "", "Spec slug under docs/specs/")
 	fs.BoolVar(&req.noInput, "no-input", false, "Fail instead of opening Interactive Input")
 	fs.BoolVar(&req.interactive, "interactive", false, "Open Interactive Input before starting")
 	fs.StringVar(&req.artifactDir, "artifact-dir", req.artifactDir, "Artifact Directory")
@@ -2212,6 +2231,87 @@ func validateAgent(agent string) error {
 	default:
 		return validationError{message: fmt.Sprintf("unsupported Agent %q; supported values: codex, claude, opencode", agent)}
 	}
+}
+
+type reviewSpecRequest struct {
+	ExplicitSlug string
+	RepoRoot     string
+	HeadSHA      string
+}
+
+func resolveReviewArtifactRoot(ctx context.Context, req commandRequest, preflightResult preflight.Result) (string, error) {
+	prNumber, err := strconv.Atoi(req.pr)
+	if err != nil {
+		return "", fmt.Errorf("parse Open Pull Request number %q: %w", req.pr, err)
+	}
+	explicitArtifactDir := ""
+	if req.explicitArtifactDir {
+		explicitArtifactDir = req.artifactDir
+	}
+	specSlug := ""
+	if explicitArtifactDir == "" {
+		specSlug, err = reviewSpecSlug(ctx, reviewSpecRequest{
+			ExplicitSlug: req.spec,
+			RepoRoot:     preflightResult.Git.Root,
+			HeadSHA:      preflightResult.Git.HEAD,
+		}, reviewSpecGitRunner)
+		if err != nil {
+			return "", err
+		}
+	}
+	return roundconfig.ResolveReviewRoot(roundconfig.ReviewArtifactContext{
+		ExplicitArtifactDir: explicitArtifactDir,
+		RepoRoot:            preflightResult.Git.Root,
+		SpecSlug:            specSlug,
+		PRNumber:            prNumber,
+	})
+}
+
+func reviewSpecSlug(ctx context.Context, req reviewSpecRequest, runner preflight.GitRunner) (string, error) {
+	if slug := strings.TrimSpace(req.ExplicitSlug); slug != "" {
+		if reviewSpecFolderExists(req.RepoRoot, slug) {
+			return slug, nil
+		}
+		return "", nil
+	}
+	message, err := runner.RunGit(ctx, req.RepoRoot, "log", "-1", "--format=%B", req.HeadSHA)
+	if err != nil {
+		return "", fmt.Errorf("read PR head commit trailers: %w", err)
+	}
+	slug := newestRoundfixSpecTrailer(message)
+	if slug == "" || !reviewSpecFolderExists(req.RepoRoot, slug) {
+		return "", nil
+	}
+	return slug, nil
+}
+
+func newestRoundfixSpecTrailer(message string) string {
+	slug := ""
+	for _, line := range strings.Split(message, "\n") {
+		key, value, ok := strings.Cut(line, ":")
+		if !ok || strings.TrimSpace(key) != "Roundfix-Spec" {
+			continue
+		}
+		if candidate := strings.TrimSpace(value); candidate != "" {
+			slug = candidate
+		}
+	}
+	return slug
+}
+
+func reviewSpecFolderExists(repoRoot string, slug string) bool {
+	if !validReviewSpecSlug(slug) {
+		return false
+	}
+	info, err := os.Stat(filepath.Join(repoRoot, "docs", "specs", slug))
+	return err == nil && info.IsDir()
+}
+
+func validReviewSpecSlug(slug string) bool {
+	if slug == "" || slug == "." || slug == ".." || filepath.IsAbs(slug) {
+		return false
+	}
+	return !strings.ContainsAny(slug, `/\`)
 }
 
 func defaultRunCommandPreflight(ctx context.Context, req commandRequest, loaded roundconfig.Loaded) (preflight.Result, error) {
@@ -2460,11 +2560,12 @@ Options:
 `
 	case "fetch":
 		return `Usage:
-  roundfix fetch --source coderabbit --pr <number> [--round <number|auto>] [--no-input]
+  roundfix fetch --source coderabbit --pr <number> [--spec <slug>] [--round <number|auto>] [--no-input]
 
 Options:
   --source       Review Source. Supported: coderabbit
   --pr           Open Pull Request number
+  --spec         Spec slug under docs/specs/
   --round        Round number or auto
   --artifact-dir Artifact Directory
   --base-repo    Explicit base repository, owner/name
@@ -2475,10 +2576,11 @@ Options:
 `
 	case "resolve":
 		return `Usage:
-  roundfix resolve --pr <number> --agent <agent> [--round <number|all>] [--no-input]
+  roundfix resolve --pr <number> --agent <agent> [--spec <slug>] [--round <number|all>] [--no-input]
 
 Options:
   --pr           Open Pull Request number
+  --spec         Spec slug under docs/specs/
   --agent        Agent runtime. Supported: codex, claude, opencode
   --model        Agent model override
   --agent-command Agent command override
@@ -2495,11 +2597,12 @@ Options:
 `
 	case "watch":
 		return `Usage:
-  roundfix watch --source coderabbit --pr <number> --agent <agent> [--until-clean] [--max-rounds <number>] [--no-input]
+  roundfix watch --source coderabbit --pr <number> --agent <agent> [--spec <slug>] [--until-clean] [--max-rounds <number>] [--no-input]
 
 Options:
   --source       Review Source. Supported: coderabbit
   --pr           Open Pull Request number
+  --spec         Spec slug under docs/specs/
   --agent        Agent runtime. Supported: codex, claude, opencode
   --model        Agent model override
   --agent-command Agent command override

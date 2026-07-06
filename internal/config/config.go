@@ -600,6 +600,49 @@ func ResolveArtifactDirectory(artifactDir string, gitRoot string, homeDir string
 	return filepath.Join(gitRoot, expanded), nil
 }
 
+// ReviewArtifactContext identifies the review artifact root for one Open Pull
+// Request. ExplicitArtifactDir must already be resolved like Artifact Directory.
+type ReviewArtifactContext struct {
+	ExplicitArtifactDir string
+	RepoRoot            string
+	SpecSlug            string
+	PRNumber            int
+}
+
+func ResolveReviewRoot(ctx ReviewArtifactContext) (string, error) {
+	if ctx.PRNumber < 1 {
+		return "", errors.New("PR number is required to resolve Review artifact root")
+	}
+	prDir := fmt.Sprintf("pr-%d", ctx.PRNumber)
+	if explicit := strings.TrimSpace(ctx.ExplicitArtifactDir); explicit != "" {
+		return filepath.Join(explicit, "reviews", prDir), nil
+	}
+
+	repoRoot := strings.TrimSpace(ctx.RepoRoot)
+	if repoRoot == "" {
+		return "", errors.New("Git root is required to resolve Review artifact root")
+	}
+	if slug := strings.TrimSpace(ctx.SpecSlug); slug != "" && reviewSpecDirExists(repoRoot, slug) {
+		return filepath.Join(repoRoot, "docs", "specs", slug, "reviews"), nil
+	}
+	return filepath.Join(repoRoot, "docs", "specs", "_reviews", prDir), nil
+}
+
+func reviewSpecDirExists(repoRoot string, slug string) bool {
+	if !validReviewSpecSlug(slug) {
+		return false
+	}
+	info, err := os.Stat(filepath.Join(repoRoot, "docs", "specs", slug))
+	return err == nil && info.IsDir()
+}
+
+func validReviewSpecSlug(slug string) bool {
+	if slug == "" || slug == "." || slug == ".." || filepath.IsAbs(slug) {
+		return false
+	}
+	return !strings.ContainsAny(slug, `/\`)
+}
+
 func ResolveWorktreeLocation(location string, gitRoot string, homeDir string) (string, error) {
 	expanded, err := expandHomeForKey("worktree.location", strings.TrimSpace(location), homeDir)
 	if err != nil {

@@ -100,6 +100,7 @@ type CyclePlan struct {
 	Session      agent.SessionRef
 	GitRoot      string
 	ArtifactDir  string
+	ReviewRoot   string
 	SourceName   string
 	AgentName    string
 	Runtime      agent.RuntimeSpec
@@ -683,6 +684,7 @@ func terminalAssignedSourceIssues(batch rounds.Batch) ([]reviewsource.ResolvedIs
 func remainingUnresolvedIssues(ctx context.Context, plan CyclePlan) (int, error) {
 	selection, err := rounds.SelectCompatibleIssues(ctx, rounds.SelectRequest{
 		ArtifactDir:    plan.ArtifactDir,
+		ReviewRoot:     plan.ReviewRoot,
 		PRNumber:       plan.PullRequest.Number,
 		HeadRepository: plan.PullRequest.HeadRepository,
 		HeadBranch:     plan.PullRequest.HeadBranch,

@@ -27,6 +27,7 @@ const (
 
 type PersistRequest struct {
 	ArtifactDir    string
+	ReviewRoot     string
 	Source         string
 	PRNumber       string
 	HeadRepository string
@@ -46,6 +47,7 @@ type PersistResult struct {
 
 type SelectRequest struct {
 	ArtifactDir    string
+	ReviewRoot     string
 	PRNumber       string
 	HeadRepository string
 	HeadBranch     string
@@ -179,14 +181,15 @@ func PersistRound(ctx context.Context, req PersistRequest) (PersistResult, error
 		if found {
 			return existing, nil
 		}
-		next, err := NextRoundNumber(req.ArtifactDir, req.PRNumber)
+		root := requestReviewRoot(req.ArtifactDir, req.ReviewRoot, req.PRNumber)
+		next, err := nextRoundNumber(root)
 		if err != nil {
 			return PersistResult{}, err
 		}
 		roundNumber = next
 	}
 
-	roundDir := filepath.Join(req.ArtifactDir, "reviews", "pr-"+req.PRNumber, fmt.Sprintf("round-%03d", roundNumber))
+	roundDir := filepath.Join(requestReviewRoot(req.ArtifactDir, req.ReviewRoot, req.PRNumber), fmt.Sprintf("round-%03d", roundNumber))
 	if _, err := os.Stat(roundDir); err == nil {
 		return PersistResult{}, fmt.Errorf("Round artifact directory %q already exists", roundDir)
 	} else if err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -407,6 +410,7 @@ func findMatchingRound(ctx context.Context, req PersistRequest) (PersistResult, 
 	}
 	roundDirs, err := compatibleRoundDirs(SelectRequest{
 		ArtifactDir:    req.ArtifactDir,
+		ReviewRoot:     req.ReviewRoot,
 		PRNumber:       req.PRNumber,
 		HeadRepository: req.HeadRepository,
 		HeadBranch:     req.HeadBranch,
@@ -484,6 +488,10 @@ func SetIssueStatus(path string, status string, duplicateOf string) error {
 
 func NextRoundNumber(artifactDir string, prNumber string) (int, error) {
 	root := filepath.Join(artifactDir, "reviews", "pr-"+prNumber)
+	return nextRoundNumber(root)
+}
+
+func nextRoundNumber(root string) (int, error) {
 	entries, err := os.ReadDir(root)
 	if errors.Is(err, os.ErrNotExist) {
 		return 1, nil
@@ -505,6 +513,13 @@ func NextRoundNumber(artifactDir string, prNumber string) (int, error) {
 		}
 	}
 	return maxRound + 1, nil
+}
+
+func requestReviewRoot(artifactDir string, reviewRoot string, prNumber string) string {
+	if strings.TrimSpace(reviewRoot) != "" {
+		return filepath.Clean(reviewRoot)
+	}
+	return filepath.Join(artifactDir, "reviews", "pr-"+prNumber)
 }
 
 func AllowedStatus(status string) bool {
@@ -571,7 +586,7 @@ func validateSelectRequest(req SelectRequest) error {
 }
 
 func compatibleRoundDirs(req SelectRequest) ([]string, error) {
-	prDir := filepath.Join(req.ArtifactDir, "reviews", "pr-"+req.PRNumber)
+	prDir := requestReviewRoot(req.ArtifactDir, req.ReviewRoot, req.PRNumber)
 	if req.Round > 0 {
 		roundDir := filepath.Join(prDir, fmt.Sprintf("round-%03d", req.Round))
 		if _, err := os.Stat(roundDir); errors.Is(err, os.ErrNotExist) {

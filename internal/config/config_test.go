@@ -645,6 +645,68 @@ func TestValidateArtifactDirectoryRejectsInvalidPaths(t *testing.T) {
 	}
 }
 
+func TestResolveReviewRoot(t *testing.T) {
+	repoRoot := t.TempDir()
+	specSlug := "0001-widget-flow"
+	mustMkdir(t, filepath.Join(repoRoot, "docs", "specs", specSlug))
+	explicitDir := filepath.Join(t.TempDir(), "artifacts")
+
+	tests := []struct {
+		name string
+		ctx  ReviewArtifactContext
+		want string
+	}{
+		{
+			name: "explicit artifact directory keeps existing layout",
+			ctx: ReviewArtifactContext{
+				ExplicitArtifactDir: explicitDir,
+				RepoRoot:            repoRoot,
+				SpecSlug:            specSlug,
+				PRNumber:            123,
+			},
+			want: filepath.Join(explicitDir, "reviews", "pr-123"),
+		},
+		{
+			name: "existing spec stores rounds under spec reviews",
+			ctx: ReviewArtifactContext{
+				RepoRoot: repoRoot,
+				SpecSlug: specSlug,
+				PRNumber: 123,
+			},
+			want: filepath.Join(repoRoot, "docs", "specs", specSlug, "reviews"),
+		},
+		{
+			name: "spec-less stores rounds under in-repo review root",
+			ctx: ReviewArtifactContext{
+				RepoRoot: repoRoot,
+				PRNumber: 123,
+			},
+			want: filepath.Join(repoRoot, "docs", "specs", "_reviews", "pr-123"),
+		},
+		{
+			name: "unknown spec falls back to spec-less root",
+			ctx: ReviewArtifactContext{
+				RepoRoot: repoRoot,
+				SpecSlug: "9999-missing",
+				PRNumber: 123,
+			},
+			want: filepath.Join(repoRoot, "docs", "specs", "_reviews", "pr-123"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ResolveReviewRoot(tt.ctx)
+			if err != nil {
+				t.Fatalf("ResolveReviewRoot() error = %v", err)
+			}
+			if got != tt.want {
+				t.Fatalf("ResolveReviewRoot() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func mustMkdir(t *testing.T, path string) {
 	t.Helper()
 	if err := os.MkdirAll(path, 0o755); err != nil {

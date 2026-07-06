@@ -713,7 +713,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 				if !strings.Contains(stdout.String(), "Artifacts: created new Round") {
 					t.Fatalf("expected new artifact confirmation, got %q", stdout.String())
 				}
-				issuePath := filepath.Join(builtinArtifactDirForRepo(t, repoDir), "reviews", "pr-123", "round-001", "issue_001.md")
+				issuePath := filepath.Join(defaultReviewRootForRepo(repoDir, "123"), "round-001", "issue_001.md")
 				issueContent, err := os.ReadFile(issuePath)
 				if err != nil {
 					t.Fatalf("expected Review Issue artifact %s: %v", issuePath, err)
@@ -770,6 +770,153 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRunFetchWritesReviewArtifactsUnderSpecSelector(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	specSlug := "0001-widget-flow"
+	mustMkdir(t, filepath.Join(repoDir, "docs", "specs", specSlug))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"fetch", "--pr", "123", "--spec", specSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected successful fetch exit code 0, got %d; stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	issuePath := filepath.Join(repoDir, "docs", "specs", specSlug, "reviews", "round-001", "issue_001.md")
+	if _, err := os.Stat(issuePath); err != nil {
+		t.Fatalf("expected spec-associated Review Issue artifact %s: %v", issuePath, err)
+	}
+	oldPath := filepath.Join(builtinArtifactDirForRepo(t, repoDir), "reviews", "pr-123", "round-001", "issue_001.md")
+	if _, err := os.Stat(oldPath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected no default Artifact Directory Review Issue at %s, got err %v", oldPath, err)
+	}
+}
+
+func TestRunFetchWritesReviewArtifactsUnderTrailerSpec(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	specSlug := "0001-widget-flow"
+	mustMkdir(t, filepath.Join(repoDir, "docs", "specs", specSlug))
+	withReviewSpecGitRunner(t, &fakeReviewSpecGitRunner{message: "subject\n\nRoundfix-Spec: " + specSlug})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"fetch", "--pr", "123", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected successful fetch exit code 0, got %d; stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	issuePath := filepath.Join(repoDir, "docs", "specs", specSlug, "reviews", "round-001", "issue_001.md")
+	if _, err := os.Stat(issuePath); err != nil {
+		t.Fatalf("expected trailer-associated Review Issue artifact %s: %v", issuePath, err)
+	}
+}
+
+func TestRunFetchWritesReviewArtifactsUnderSpeclessRoot(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"fetch", "--pr", "123", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected successful fetch exit code 0, got %d; stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	issuePath := filepath.Join(repoDir, "docs", "specs", "_reviews", "pr-123", "round-001", "issue_001.md")
+	if _, err := os.Stat(issuePath); err != nil {
+		t.Fatalf("expected spec-less Review Issue artifact %s: %v", issuePath, err)
+	}
+}
+
+func TestReviewSpecSlugAssociation(t *testing.T) {
+	repoRoot := t.TempDir()
+	explicitSlug := "0001-explicit"
+	oldSlug := "0002-old"
+	newSlug := "0003-new"
+	for _, slug := range []string{explicitSlug, oldSlug, newSlug} {
+		mustMkdir(t, filepath.Join(repoRoot, "docs", "specs", slug))
+	}
+
+	tests := []struct {
+		name     string
+		req      reviewSpecRequest
+		message  string
+		want     string
+		wantCall bool
+	}{
+		{
+			name: "explicit selector wins without reading git",
+			req: reviewSpecRequest{
+				ExplicitSlug: explicitSlug,
+				RepoRoot:     repoRoot,
+				HeadSHA:      "abc123",
+			},
+			message:  "subject\n\nRoundfix-Spec: " + newSlug,
+			want:     explicitSlug,
+			wantCall: false,
+		},
+		{
+			name: "newest trailer wins",
+			req: reviewSpecRequest{
+				RepoRoot: repoRoot,
+				HeadSHA:  "abc123",
+			},
+			message:  "subject\n\nRoundfix-Spec: " + oldSlug + "\nRoundfix-Spec: " + newSlug,
+			want:     newSlug,
+			wantCall: true,
+		},
+		{
+			name: "unknown trailer slug is no association",
+			req: reviewSpecRequest{
+				RepoRoot: repoRoot,
+				HeadSHA:  "abc123",
+			},
+			message:  "subject\n\nRoundfix-Spec: 9999-missing",
+			want:     "",
+			wantCall: true,
+		},
+		{
+			name: "missing trailer is no association",
+			req: reviewSpecRequest{
+				RepoRoot: repoRoot,
+				HeadSHA:  "abc123",
+			},
+			message:  "subject only",
+			want:     "",
+			wantCall: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			runner := &fakeReviewSpecGitRunner{message: tt.message}
+
+			got, err := reviewSpecSlug(context.Background(), tt.req, runner)
+			if err != nil {
+				t.Fatalf("reviewSpecSlug() error = %v", err)
+			}
+			if got != tt.want {
+				t.Fatalf("reviewSpecSlug() = %q, want %q", got, tt.want)
+			}
+			if gotCall := runner.calls > 0; gotCall != tt.wantCall {
+				t.Fatalf("git calls = %v, want %v", gotCall, tt.wantCall)
+			}
+		})
+	}
+}
+
+type fakeReviewSpecGitRunner struct {
+	message string
+	calls   int
+}
+
+func (runner *fakeReviewSpecGitRunner) RunGit(_ context.Context, _ string, _ ...string) (string, error) {
+	runner.calls++
+	return runner.message, nil
 }
 
 func TestRunFetchWarnsAndIgnoresDeprecatedUserConfig(t *testing.T) {
@@ -1302,7 +1449,7 @@ func TestRunFetchReusesMatchingAutoRound(t *testing.T) {
 	if !strings.Contains(secondStdout.String(), "Artifacts: reused existing matching Round") {
 		t.Fatalf("expected second fetch to report reused Round, got %q", secondStdout.String())
 	}
-	if _, err := os.Stat(filepath.Join(builtinArtifactDirForRepo(t, repoDir), "reviews", "pr-123", "round-002")); !errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(filepath.Join(defaultReviewRootForRepo(repoDir, "123"), "round-002")); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("expected no duplicate round-002, got err %v", err)
 	}
 	assertRunCount(t, filepath.Join(homeDir, ".roundfix", "roundfix.db"), 2)
@@ -1732,7 +1879,7 @@ func TestRunResolveDeduplicatesBeforeBatching(t *testing.T) {
 	if got := len(sourceResolver.requests[0].Issues); got != 1 {
 		t.Fatalf("expected only newest issue to resolve source thread, got %d", got)
 	}
-	if sourceResolver.requests[0].Issues[0].FilePath != filepath.Join(builtinArtifactDirForRepo(t, repoDir), "reviews", "pr-123", "round-002", "issue_001.md") {
+	if sourceResolver.requests[0].Issues[0].FilePath != filepath.Join(defaultReviewRootForRepo(repoDir, "123"), "round-002", "issue_001.md") {
 		t.Fatalf("expected newest duplicate source resolution, got %#v", sourceResolver.requests[0].Issues[0])
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
@@ -3635,6 +3782,7 @@ func withSuccessfulPreflight(t *testing.T, repoDir string) {
 	withWatchHeadSHA(t, func(context.Context, string) (string, error) {
 		return "abc123", nil
 	})
+	withReviewSpecGitRunner(t, &fakeReviewSpecGitRunner{})
 	withFetchReviewItems(t, []reviewsource.ReviewItem{
 		{
 			Title:                   "major: handle test issue",
@@ -3741,6 +3889,15 @@ func withPreflight(t *testing.T, fn func(context.Context, commandRequest, roundc
 	runCommandPreflight = fn
 	t.Cleanup(func() {
 		runCommandPreflight = old
+	})
+}
+
+func withReviewSpecGitRunner(t *testing.T, runner preflight.GitRunner) {
+	t.Helper()
+	old := reviewSpecGitRunner
+	reviewSpecGitRunner = runner
+	t.Cleanup(func() {
+		reviewSpecGitRunner = old
 	})
 }
 
@@ -4197,6 +4354,7 @@ func persistCLIReviewItems(t *testing.T, repoDir string, roundNumber int, headBr
 	t.Helper()
 	result, err := rounds.PersistRound(context.Background(), rounds.PersistRequest{
 		ArtifactDir:    builtinArtifactDirForRepo(t, repoDir),
+		ReviewRoot:     defaultReviewRootForRepo(repoDir, "123"),
 		Source:         reviewsource.SourceCodeRabbit,
 		PRNumber:       "123",
 		HeadRepository: "owner/project",
@@ -4210,6 +4368,10 @@ func persistCLIReviewItems(t *testing.T, repoDir string, roundNumber int, headBr
 		t.Fatalf("persist CLI Review Issue artifact: %v", err)
 	}
 	return result
+}
+
+func defaultReviewRootForRepo(repoDir string, prNumber string) string {
+	return filepath.Join(repoDir, "docs", "specs", "_reviews", "pr-"+prNumber)
 }
 
 func builtinArtifactDirForRepo(t *testing.T, repoDir string) string {
