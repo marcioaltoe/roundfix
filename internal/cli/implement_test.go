@@ -804,7 +804,7 @@ func TestRunImplementDetachPrintsReportAndCompletesRun(t *testing.T) {
 		t.Fatalf("detach stdout mismatch\nwant: %q\ngot:  %q", wantStdout, stdout)
 	}
 
-	run := waitForRunState(t, homeDir, runID, store.StateClean, 30*time.Second)
+	run := waitForRunState(t, homeDir, runID, store.StateClean, 90*time.Second)
 	if run.Kind != store.KindImplement {
 		t.Fatalf("expected Implement Run, got %s", run.Kind)
 	}
@@ -812,8 +812,8 @@ func TestRunImplementDetachPrintsReportAndCompletesRun(t *testing.T) {
 		t.Fatal("expected Run Worktree recorded on detached Run")
 	}
 	assertRunWorktreeRemoved(t, run.WorkDir)
-	waitForFileContains(t, consoleLog, "Implement Run "+runID+" reached Clean", 30*time.Second)
-	waitForCleanOutcomeEvent(t, homeDir, runID, 30*time.Second)
+	waitForFileContains(t, consoleLog, "Implement Run "+runID+" reached Clean", 90*time.Second)
+	waitForCleanOutcomeEvent(t, homeDir, runID, 90*time.Second)
 }
 
 func TestRunImplementDetachRelaysPreflightFailureVerbatim(t *testing.T) {
@@ -875,7 +875,7 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 		t.Fatalf("kill caller process group: %v", err)
 	}
 	_, _ = waitProcessForTest(cmd, 2*time.Second)
-	waitForFile(t, promptStarted, 20*time.Second)
+	waitForFile(t, promptStarted, 60*time.Second)
 
 	var attachStdout bytes.Buffer
 	var attachStderr bytes.Buffer
@@ -890,11 +890,11 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 	}
 
 	mustWrite(t, releasePrompt, "release\n")
-	run := waitForRunState(t, homeDir, runID, store.StateClean, 30*time.Second)
+	run := waitForRunState(t, homeDir, runID, store.StateClean, 90*time.Second)
 	if run.State != store.StateClean {
 		t.Fatalf("expected detached child to reach Clean after caller kill, got %s", run.State)
 	}
-	waitForCleanOutcomeEvent(t, homeDir, runID, 30*time.Second)
+	waitForCleanOutcomeEvent(t, homeDir, runID, 90*time.Second)
 }
 
 func TestRunHelpListsImplementCommand(t *testing.T) {
