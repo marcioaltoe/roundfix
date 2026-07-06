@@ -238,6 +238,11 @@ func TestRunCommandHelp(t *testing.T) {
 			contains: []string{"roundfix setup [--yes] [--no-input]", "--yes", "--no-input"},
 		},
 		{
+			name:     "doctor",
+			args:     []string{"doctor", "--help"},
+			contains: []string{"roundfix doctor", "codex runtime hygiene", "Doctor mutates nothing"},
+		},
+		{
 			name:     "upgrade",
 			args:     []string{"upgrade", "--help"},
 			contains: []string{"roundfix upgrade [--check]", "--check", "atomically"},
@@ -263,6 +268,163 @@ func TestRunCommandHelp(t *testing.T) {
 				t.Fatalf("expected no stderr, got %q", stderr.String())
 			}
 		})
+	}
+}
+
+func TestRunDoctorReportsReadinessChecks(t *testing.T) {
+	tests := []struct {
+		name       string
+		checker    *doctorFakeHealthChecker
+		wantCode   int
+		wantStdout string
+	}{
+		{
+			name: "all checks pass",
+			checker: newDoctorFakeHealthChecker(
+				CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
+				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
+				CheckResult{Name: HealthCheckAgent, Status: CheckStatusOK, Detail: "codex"},
+				CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK, Detail: "/home/roundfix/.local/bin/codex accepted"},
+			),
+			wantCode: exitOK,
+			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
+				"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
+				"agent: ok (codex)\n" +
+				"codex: ok (/home/roundfix/.local/bin/codex accepted)\n",
+		},
+		{
+			name: "quarantined codex fails with reinstall action",
+			checker: newDoctorFakeHealthChecker(
+				CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
+				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
+				CheckResult{Name: HealthCheckAgent, Status: CheckStatusOK, Detail: "codex"},
+				CheckResult{Name: HealthCheckCodex, Status: CheckStatusFailed, Detail: "/tmp/codex is quarantined", NextAction: codex.ReinstallNextAction},
+			),
+			wantCode: exitRunFailed,
+			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
+				"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
+				"agent: ok (codex)\n" +
+				"codex: failed (/tmp/codex is quarantined; next: " + codex.ReinstallNextAction + ")\n",
+		},
+		{
+			name: "codex not applicable does not fail",
+			checker: newDoctorFakeHealthChecker(
+				CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
+				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
+				CheckResult{Name: HealthCheckAgent, Status: CheckStatusOK, Detail: "codex"},
+				CheckResult{Name: HealthCheckCodex, Status: CheckStatusSkipped, Detail: "not-applicable on linux"},
+			),
+			wantCode: exitOK,
+			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
+				"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
+				"agent: ok (codex)\n" +
+				"codex: skipped (not-applicable on linux)\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			withDoctorFakeDeps(t, tt.checker)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"doctor"}, &stdout, &stderr)
+
+			if code != tt.wantCode {
+				t.Fatalf("expected exit code %d, got %d", tt.wantCode, code)
+			}
+			if got := stdout.String(); got != tt.wantStdout {
+				t.Fatalf("unexpected stdout:\n got: %q\nwant: %q", got, tt.wantStdout)
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no stderr, got %q", stderr.String())
+			}
+			if len(tt.checker.agentRuntimes) != 1 || tt.checker.agentRuntimes[0].ID != "codex" {
+				t.Fatalf("expected configured codex runtime probe, got %#v", tt.checker.agentRuntimes)
+			}
+			assertDoctorPathMissing(t, filepath.Join(homeDir, ".acpx"))
+			assertDoctorPathMissing(t, filepath.Join(homeDir, ".roundfix"))
+			assertDoctorPathMissing(t, filepath.Join(repoDir, ".roundfixrc.yml"))
+		})
+	}
+}
+
+func TestRunDoctorRejectsArguments(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"doctor", "extra"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected exit code %d, got %d", exitPreflight, code)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout, got %q", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "unexpected argument \"extra\"") {
+		t.Fatalf("expected argument diagnostic, got %q", stderr.String())
+	}
+}
+
+func newDoctorFakeHealthChecker(node, acpx, agentResult, codex CheckResult) *doctorFakeHealthChecker {
+	return &doctorFakeHealthChecker{
+		node:        node,
+		acpx:        acpx,
+		agentResult: agentResult,
+		codex:       codex,
+	}
+}
+
+type doctorFakeHealthChecker struct {
+	node          CheckResult
+	acpx          CheckResult
+	agentResult   CheckResult
+	codex         CheckResult
+	agentRuntimes []agent.RuntimeSpec
+}
+
+func (checker *doctorFakeHealthChecker) Node(context.Context) CheckResult {
+	return checker.node
+}
+
+func (checker *doctorFakeHealthChecker) ACPX(context.Context) CheckResult {
+	return checker.acpx
+}
+
+func (checker *doctorFakeHealthChecker) Agent(_ context.Context, runtime agent.RuntimeSpec) CheckResult {
+	checker.agentRuntimes = append(checker.agentRuntimes, runtime)
+	return checker.agentResult
+}
+
+func (checker *doctorFakeHealthChecker) Codex(context.Context) CheckResult {
+	return checker.codex
+}
+
+func withDoctorFakeDeps(t *testing.T, checker HealthChecker) {
+	t.Helper()
+	old := doctorDeps
+	doctorDeps = doctorDependencies{
+		loadConfig: func(roundconfig.LoadOptions) (roundconfig.Loaded, error) {
+			return roundconfig.Loaded{
+				Config:  roundconfig.Builtin(),
+				GitRoot: "/repo/project",
+				HomeDir: "/home/roundfix-test",
+			}, nil
+		},
+		healthChecker: func(roundconfig.Loaded) HealthChecker {
+			return checker
+		},
+	}
+	t.Cleanup(func() {
+		doctorDeps = old
+	})
+}
+
+func assertDoctorPathMissing(t *testing.T, path string) {
+	t.Helper()
+	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected %s to be absent, got error %v", path, err)
 	}
 }
 

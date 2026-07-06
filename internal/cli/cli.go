@@ -47,6 +47,7 @@ Usage:
   roundfix archive <slug>
   roundfix init [--scope <project|user>]
   roundfix setup [--yes] [--no-input]
+  roundfix doctor
   roundfix upgrade [--check]
   roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
   roundfix attach <run-id>
@@ -63,6 +64,7 @@ Commands:
   archive    Archive a completed Spec
   stop       Request or force-stop an Active Run
   setup      Verify and prepare this machine for Roundfix Runs
+  doctor     Diagnose this machine's readiness for Roundfix Runs
   upgrade    Upgrade the Roundfix binary from GitHub Releases
   attach     Replay a Run's event timeline from the Run Database
   skills     Check or install the Roundfix agent skill
@@ -179,6 +181,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runInitCommand(ctx, args[1:], stdout, stderr)
 	case "setup":
 		return runSetupCommand(ctx, args[1:], stdout, stderr)
+	case "doctor":
+		return runDoctorCommand(ctx, args[1:], stdout, stderr)
 	case "upgrade":
 		return runUpgradeCommand(ctx, args[1:], stdout, stderr)
 	case "stop":
@@ -2556,6 +2560,15 @@ offered: declined, or failed.
 Options:
   --yes       Accept every offered install or file change
   --no-input  Skip offered changes instead of prompting
+`
+	case "doctor":
+		return `Usage:
+  roundfix doctor
+
+Diagnoses this machine's readiness for Runs. Checks Node.js, the pinned acpx
+version, the configured Agent probe, and codex runtime hygiene. Prints one
+line per check with ok, failed, or skipped plus the next action for failures.
+Doctor mutates nothing.
 `
 	case "upgrade":
 		return `Usage:
