@@ -24,8 +24,8 @@ them. `0009-parallel-scheduling` shipped Clean + QA pass — R3-1 done.)
 | R3-2    | CodeRabbit issue titles are raw table fragments (emoji/markdown) | 0010             |
 | R3-3    | merge-readiness `missing` path needs a docs expectation note     | 0010             |
 | R3-4    | Status-poll stderr line repeats every interval                   | 0010             |
-| R3-5    | Removing a config key hard-failed the user's own config          | 0011 (robustness) |
-| R3-6    | External kills orphan acpx adapter processes (40 leaked in a day)| 0011 (robustness) |
+| R3-5    | Removing a config key hard-failed the user's own config          | 0010 (shipped focus) |
+| R3-6    | External kills orphan acpx adapter processes (40 leaked in a day)| 0010 (shipped focus) |
 | R1-12   | Prompt-contract drift (templating, work-plan item 5)             | deferred         |
 | R1-16   | codex full-access sandbox preset unavailable via acpx            | upstream/observe |
 | R3-1    | Force-stopped Runs keep empty worktrees/branches forever         | DONE (0009)      |
@@ -83,7 +83,7 @@ one Run Branch.
   and crash recovery must all survive concurrency; ADRs 0010/0013/0014/0023/
   0024 semantics preserved per unit.
 
-## Spec 0010 — Review Artifacts, Run Logs, and Spec Archiving
+## Spec 0011 — Review Artifacts, Run Logs, and Spec Archiving
 
 Three storage/lifecycle fixes so nothing lands loose in `~/.roundfix`.
 
@@ -108,7 +108,7 @@ Three storage/lifecycle fixes so nothing lands loose in `~/.roundfix`.
 - Small: CodeRabbit issue-title derivation strips markup/emoji (R3-2);
   status-poll stderr dedup (R3-4); merge-readiness docs note (R3-3).
 
-## Spec 0011 — npm Distribution (tag → npx/bunx/global)
+## Spec 0012 — npm Distribution (tag → npx/bunx/global)
 
 Model: `~/dev/onioncry` (Rust binary shipped via npm platform packages).
 Adapts to Go, which cross-compiles without per-platform toolchains — simpler.
@@ -128,9 +128,10 @@ Adapts to Go, which cross-compiles without per-platform toolchains — simpler.
   Windows) and needs a maintained tap/formula; npm covers all three platforms
   from one channel, so it goes first.
 
-## Sequencing
+## Sequencing (revised 2026-07-06, robustness prioritized)
 
-0009 (parallel — the layer to implement now) → 0010 (storage/lifecycle) →
-0011 (distribution). Each is one `roundfix implement` cycle with Codex, QA
-pass, then archive. Distribution last so the released binary already carries
-the parallel + storage work.
+0009 parallel (SHIPPED, Clean + QA pass) → **0010-run-robustness** (R3-5/6/7:
+config deprecation, session-close reaping, Detached Runs — prioritized by
+Marcio before storage/distribution) → 0011 storage/lifecycle → 0012 npm
+distribution. Each is one `roundfix implement` cycle with Codex, QA pass,
+then archive. Distribution last so the released binary carries everything.

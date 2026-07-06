@@ -80,6 +80,10 @@ _Avoid_: Batch, stage, phase
 The ephemeral git worktree one concurrently executing Task runs in — created from the Run Branch tip at Task start and integrated back onto the Run Branch at settlement; kept only when its Task fails.
 _Avoid_: Run Worktree, sandbox, scratch dir
 
+**Detached Run**:
+A Run started with the detach flag: roundfix re-executes itself as a session leader independent of the caller, reports the run id, and is followed through Attach and ended through the Stop Command.
+_Avoid_: Background job, nohup run, daemon
+
 **Run Worktree**:
 The isolated git worktree a Run executes in — created on the Run Branch at Run start, recorded on the Run, removed after a Clean integrated outcome, and kept as the inspection and settle surface otherwise.
 _Avoid_: Sandbox, scratch dir, user checkout
