@@ -48,6 +48,7 @@ Usage:
   roundfix init [--scope <project|user>]
   roundfix setup [--yes] [--no-input]
   roundfix doctor
+  roundfix gc [--dry-run]
   roundfix upgrade [--check]
   roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
   roundfix attach <run-id>
@@ -65,6 +66,7 @@ Commands:
   stop       Request or force-stop an Active Run
   setup      Verify and prepare this machine for Roundfix Runs
   doctor     Diagnose this machine's readiness for Roundfix Runs
+  gc         Prune old terminal Run journals and run artifacts
   upgrade    Upgrade the Roundfix binary from GitHub Releases
   attach     Replay a Run's event timeline from the Run Database
   skills     Check or install the Roundfix agent skill
@@ -183,6 +185,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runSetupCommand(ctx, args[1:], stdout, stderr)
 	case "doctor":
 		return runDoctorCommand(ctx, args[1:], stdout, stderr)
+	case "gc":
+		return runGCCommand(ctx, args[1:], stdout, stderr)
 	case "upgrade":
 		return runUpgradeCommand(ctx, args[1:], stdout, stderr)
 	case "stop":
@@ -1205,6 +1209,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	defer func() {
 		_ = runStore.Close()
 	}()
+	sweepRunRetention(ctx, runStore, req.artifactDir, loaded.Config.Store.JournalRetention, stderr)
 	run, err := createOperationalRun(ctx, runStore, store.KindResolve, preflightResult, req.artifactDir, resolvePlan.runtime.ID)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
@@ -1589,6 +1594,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	defer func() {
 		_ = runStore.Close()
 	}()
+	sweepRunRetention(ctx, runStore, req.artifactDir, loaded.Config.Store.JournalRetention, stderr)
 	run, err := createOperationalRun(ctx, runStore, store.KindWatch, preflightResult, req.artifactDir, runtime.ID)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
@@ -2569,6 +2575,18 @@ Diagnoses this machine's readiness for Runs. Checks Node.js, the pinned acpx
 version, the configured Agent probe, and codex runtime hygiene. Prints one
 line per check with ok, failed, or skipped plus the next action for failures.
 Doctor mutates nothing.
+`
+	case "gc":
+		return `Usage:
+  roundfix gc [--dry-run]
+
+Prunes Run Event Journal rows for terminal Runs older than Journal Retention,
+then removes their run artifact directories and orphaned runs/<id> directories
+under the resolved run artifact root. It never deletes Run rows or Active Run locks,
+and it never removes Review artifacts outside the run artifact root.
+
+Options:
+  --dry-run  List the Runs, journal rows, and artifact bytes that would be pruned without changing anything
 `
 	case "upgrade":
 		return `Usage:

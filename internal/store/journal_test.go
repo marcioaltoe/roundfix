@@ -3,6 +3,7 @@ package store
 import (
 	"bytes"
 	"context"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -112,6 +113,218 @@ func TestAppendRunEventToMissingRunFailsClearly(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), `Run "run_missing" does not exist`) {
 		t.Fatalf("expected clear missing-Run error, got %v", err)
+	}
+}
+
+func TestPruneTerminalRunsDeletesOnlyEligibleJournalRows(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	cutoff := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
+	oldCreated := cutoff.Add(-72 * time.Hour)
+	oldCompleted := cutoff.Add(-24 * time.Hour)
+	recentCompleted := cutoff.Add(24 * time.Hour)
+
+	tests := []struct {
+		name                   string
+		branch                 string
+		terminalState          string
+		nonTerminalState       string
+		terminalEmptyCompleted bool
+		completedAt            time.Time
+		eventCount             int
+		wantEventCount         int
+		wantPruned             bool
+		wantLock               bool
+	}{
+		{
+			name:           "terminal clean before cutoff",
+			branch:         "old-clean",
+			terminalState:  StateClean,
+			completedAt:    oldCompleted,
+			eventCount:     2,
+			wantPruned:     true,
+			wantEventCount: 0,
+		},
+		{
+			name:           "terminal unresolved before cutoff",
+			branch:         "old-unresolved",
+			terminalState:  StateUnresolved,
+			completedAt:    oldCompleted.Add(time.Minute),
+			eventCount:     1,
+			wantPruned:     true,
+			wantEventCount: 0,
+		},
+		{
+			name:           "terminal clean after cutoff",
+			branch:         "recent-clean",
+			terminalState:  StateClean,
+			completedAt:    recentCompleted,
+			eventCount:     1,
+			wantEventCount: 1,
+		},
+		{
+			name:           "active run with old created at",
+			branch:         "active-old",
+			eventCount:     1,
+			wantEventCount: 1,
+			wantLock:       true,
+		},
+		{
+			name:             "non-terminal run with old created at",
+			branch:           "resolving-old",
+			nonTerminalState: StateResolvingWithAgent,
+			eventCount:       1,
+			wantEventCount:   1,
+			wantLock:         true,
+		},
+		{
+			name:                   "terminal state with empty completed at",
+			branch:                 "empty-completed",
+			terminalEmptyCompleted: true,
+			eventCount:             1,
+			wantEventCount:         1,
+			wantLock:               true,
+		},
+	}
+
+	runByName := map[string]Run{}
+	wantPrunedRunIDs := []string{}
+	wantLockCount := 0
+	for _, tt := range tests {
+		createdAt := oldCreated.Add(time.Duration(len(runByName)) * time.Minute)
+		runStore.now = func() time.Time { return createdAt }
+		req := sampleCreateRunRequest()
+		req.HeadBranch = "feature/" + tt.branch
+		req.PRNumber = tt.branch
+		run, err := runStore.CreateRun(ctx, req)
+		if err != nil {
+			t.Fatalf("%s: create Run: %v", tt.name, err)
+		}
+		for eventIndex := 0; eventIndex < tt.eventCount; eventIndex++ {
+			if _, err := runStore.AppendRunEvent(ctx, sampleRunEvent(run.ID, tt.branch)); err != nil {
+				t.Fatalf("%s: append Run Event: %v", tt.name, err)
+			}
+		}
+		switch {
+		case tt.terminalState != "":
+			completedAt := tt.completedAt
+			runStore.now = func() time.Time { return completedAt }
+			run, err = runStore.CompleteRun(ctx, run.ID, tt.terminalState)
+			if err != nil {
+				t.Fatalf("%s: complete Run: %v", tt.name, err)
+			}
+		case tt.nonTerminalState != "":
+			if err := runStore.UpdateRunState(ctx, run.ID, tt.nonTerminalState); err != nil {
+				t.Fatalf("%s: update Run state: %v", tt.name, err)
+			}
+		case tt.terminalEmptyCompleted:
+			if _, err := runStore.db.ExecContext(ctx, `
+UPDATE runs
+SET state = ?, updated_at = ?, completed_at = ''
+WHERE id = ?`,
+				StateClean,
+				formatTime(oldCompleted),
+				run.ID,
+			); err != nil {
+				t.Fatalf("%s: seed empty completed_at terminal Run: %v", tt.name, err)
+			}
+			run.State = StateClean
+		}
+
+		runByName[tt.name] = run
+		if tt.wantPruned {
+			wantPrunedRunIDs = append(wantPrunedRunIDs, run.ID)
+		}
+		if tt.wantLock {
+			wantLockCount++
+		}
+	}
+
+	initialRunCount, err := runStore.RunCount(ctx)
+	if err != nil {
+		t.Fatalf("count seeded Runs: %v", err)
+	}
+	initialLockCount := countActiveRunLocks(t, ctx, runStore)
+
+	result, err := runStore.PruneTerminalRuns(ctx, time.Time{})
+	if err != nil {
+		t.Fatalf("prune terminal Runs with zero cutoff: %v", err)
+	}
+	if len(result.RunIDs) != 0 || result.Events != 0 {
+		t.Fatalf("expected empty zero-cutoff prune result, got %#v", result)
+	}
+	for _, tt := range tests {
+		run := runByName[tt.name]
+		if got := countRunEvents(t, ctx, runStore, run.ID); got != tt.eventCount {
+			t.Fatalf("%s: expected zero cutoff to keep %d Run Events, got %d", tt.name, tt.eventCount, got)
+		}
+	}
+
+	result, err = runStore.PruneTerminalRuns(ctx, cutoff)
+
+	if err != nil {
+		t.Fatalf("prune terminal Runs: %v", err)
+	}
+	gotRunIDs := append([]string(nil), result.RunIDs...)
+	slices.Sort(gotRunIDs)
+	slices.Sort(wantPrunedRunIDs)
+	if !slices.Equal(gotRunIDs, wantPrunedRunIDs) {
+		t.Fatalf("expected pruned Run ids %v, got %v", wantPrunedRunIDs, result.RunIDs)
+	}
+	if result.Events != 3 {
+		t.Fatalf("expected 3 pruned Run Events, got %d", result.Events)
+	}
+	for _, tt := range tests {
+		run := runByName[tt.name]
+		if got := countRunEvents(t, ctx, runStore, run.ID); got != tt.wantEventCount {
+			t.Fatalf("%s: expected %d remaining Run Events, got %d", tt.name, tt.wantEventCount, got)
+		}
+		if _, ok, err := runStore.Run(ctx, run.ID); err != nil || !ok {
+			t.Fatalf("%s: expected Run row to survive, ok=%v err=%v", tt.name, ok, err)
+		}
+	}
+	if got, err := runStore.RunCount(ctx); err != nil || got != initialRunCount {
+		t.Fatalf("expected all Run rows to survive, got count=%d err=%v", got, err)
+	}
+	if got := countActiveRunLocks(t, ctx, runStore); got != initialLockCount || got != wantLockCount {
+		t.Fatalf("expected Active Run locks untouched at %d, got %d", wantLockCount, got)
+	}
+}
+
+func TestPruneTerminalRunsNoOpsWhenCutoffSelectsNothing(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	cutoff := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
+	runStore.now = func() time.Time { return cutoff.Add(-time.Hour) }
+	run, err := runStore.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create Run: %v", err)
+	}
+	if _, err := runStore.AppendRunEvent(ctx, sampleRunEvent(run.ID, "recent terminal")); err != nil {
+		t.Fatalf("append Run Event: %v", err)
+	}
+	runStore.now = func() time.Time { return cutoff.Add(time.Hour) }
+	if _, err := runStore.CompleteRun(ctx, run.ID, StateClean); err != nil {
+		t.Fatalf("complete Run: %v", err)
+	}
+
+	result, err := runStore.PruneTerminalRuns(ctx, cutoff)
+
+	if err != nil {
+		t.Fatalf("prune terminal Runs: %v", err)
+	}
+	if len(result.RunIDs) != 0 || result.Events != 0 {
+		t.Fatalf("expected empty prune result, got %#v", result)
+	}
+	if got := countRunEvents(t, ctx, runStore, run.ID); got != 1 {
+		t.Fatalf("expected recent terminal journal kept, got %d events", got)
+	}
+	if count, err := runStore.RunCount(ctx); err != nil || count != 1 {
+		t.Fatalf("expected Run row to survive, count=%d err=%v", count, err)
 	}
 }
 
@@ -450,4 +663,22 @@ func TestRunEventsBeforeOnReaderWhileWriterAppends(t *testing.T) {
 	if err := <-appended; err != nil {
 		t.Fatalf("writer append: %v", err)
 	}
+}
+
+func countRunEvents(t *testing.T, ctx context.Context, store *Store, runID string) int {
+	t.Helper()
+	var count int
+	if err := store.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM run_events WHERE run_id = ?`, runID).Scan(&count); err != nil {
+		t.Fatalf("count Run Events for %s: %v", runID, err)
+	}
+	return count
+}
+
+func countActiveRunLocks(t *testing.T, ctx context.Context, store *Store) int {
+	t.Helper()
+	var count int
+	if err := store.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM active_run_locks`).Scan(&count); err != nil {
+		t.Fatalf("count Active Run locks: %v", err)
+	}
+	return count
 }

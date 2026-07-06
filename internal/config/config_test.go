@@ -235,6 +235,75 @@ logs:
 	}
 }
 
+func TestLoadAppliesStoreRetentionConfigHierarchy(t *testing.T) {
+	tests := []struct {
+		name          string
+		userConfig    string
+		projectConfig string
+		want          time.Duration
+	}{
+		{
+			name: "builtin only",
+			want: 336 * time.Hour,
+		},
+		{
+			name: "user override",
+			userConfig: `
+store:
+  journal_retention: 168h
+`,
+			want: 168 * time.Hour,
+		},
+		{
+			name: "project override",
+			userConfig: `
+store:
+  journal_retention: 168h
+`,
+			projectConfig: `
+store:
+  journal_retention: 72h
+`,
+			want: 72 * time.Hour,
+		},
+		{
+			name: "project disables pruning",
+			userConfig: `
+store:
+  journal_retention: 168h
+`,
+			projectConfig: `
+store:
+  journal_retention: 0
+`,
+			want: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir := t.TempDir()
+			workDir := t.TempDir()
+			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+			mustMkdir(t, filepath.Join(workDir, ".git"))
+			if strings.TrimSpace(tt.userConfig) != "" {
+				mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.userConfig)
+			}
+			if strings.TrimSpace(tt.projectConfig) != "" {
+				mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), tt.projectConfig)
+			}
+
+			loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+			if err != nil {
+				t.Fatalf("expected config to load, got %v", err)
+			}
+			if loaded.Config.Store.JournalRetention != tt.want {
+				t.Fatalf("expected store.journal_retention %s, got %s", tt.want, loaded.Config.Store.JournalRetention)
+			}
+		})
+	}
+}
+
 func TestLoadWarnsAndIgnoresDeprecatedConfigKeys(t *testing.T) {
 	const warning = "config: resolve.concurrent is deprecated and ignored; use worktree.concurrency\n"
 
@@ -390,6 +459,26 @@ resolve:
 	}
 }
 
+func TestLoadRejectsUnknownStoreConfigKey(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
+store:
+  journal_ttl: 24h
+`)
+
+	_, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+
+	if err == nil {
+		t.Fatal("expected config load to fail")
+	}
+	if !strings.Contains(err.Error(), "store.journal_ttl is not a supported config key") {
+		t.Fatalf("expected strict store key error, got %q", err.Error())
+	}
+}
+
 func TestLoadRejectsInvalidConfig(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -416,6 +505,14 @@ watch:
   poll_interval: soon
 `,
 			contains: "invalid duration",
+		},
+		{
+			name: "negative journal retention",
+			config: `
+store:
+  journal_retention: -1h
+`,
+			contains: "store.journal_retention must be greater than or equal to 0",
 		},
 		{
 			name: "invalid implement auto push",
@@ -551,6 +648,7 @@ func TestInitCreatesUserConfig(t *testing.T) {
 		!strings.Contains(content, `artifact_dir: ""`) || !strings.Contains(content, "Roundfix Home artifacts/<repo-id>") ||
 		!strings.Contains(content, "worktree:") || !strings.Contains(content, `location: "~/.roundfix/worktrees"`) ||
 		!strings.Contains(content, "concurrency: 2") || !strings.Contains(content, "copy: []") ||
+		!strings.Contains(content, "store:") || !strings.Contains(content, "journal_retention: 336h") ||
 		!strings.Contains(content, "implement:") || !strings.Contains(content, "auto_push: false") ||
 		!strings.Contains(content, "max_run_duration: 2h") {
 		t.Fatalf("expected default config content, got %s", content)
