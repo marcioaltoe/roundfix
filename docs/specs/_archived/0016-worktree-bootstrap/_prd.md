@@ -1,9 +1,12 @@
 ---
 spec: 0016-worktree-bootstrap
-status: active
+status: archived
 created: 2026-07-06
 surfaces: [cli, infra, docs]
+archived: "2026-07-06"
+source_slug: 0016-worktree-bootstrap
 ---
+
 
 # Worktree Bootstrap
 
