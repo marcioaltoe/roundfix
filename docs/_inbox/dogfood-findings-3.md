@@ -49,3 +49,44 @@ of Agent console noise under `--no-agent-console`.
 
 (The fixed review batch commit template `fix: resolve Roundfix batch 001`
 remains tracked by work-plan item 1; not re-recorded here.)
+
+## 0009 cycle (2026-07-05/06)
+
+5. **Removing a config key with a hard-fail broke the user's own config.**
+   0009 task_01 (my PRD/techspec decision) made `resolve.concurrent` a
+   Preflight hard-fail: `resolve.concurrent has been removed; use
+   worktree.concurrency instead`. But the dogfood machine's live
+   `~/.roundfix/config.yml` still carried it, so the freshly-built binary
+   rejected every Run — implement, resolve, watch, and the 0009 QA — at
+   Preflight in ~1s. The QA "ran overnight" only in appearance; it died
+   immediately and was never executed. Root cause: hostile migration. A
+   removed config key should degrade to a deprecation **warning** (or be
+   auto-migrated), never a hard Preflight failure — the very users who set
+   the old key are the ones broken. Fix needed in a follow-up: turn the
+   `resolve.concurrent` rejection into an ignored-with-warning path.
+   Size: small (compat), but a design lesson: never hard-break existing
+   config.
+
+6. **External kills orphan acpx adapter processes; they accumulate badly.**
+   After a day of externally-killed Runs, `pgrep codex-acp` found **40**
+   orphaned adapter processes (PPID=1), each holding memory. acpx spawns
+   codex-acp as a detached queue-owner (the resume feature), so killing the
+   parent roundfix leaves the adapter running, and `stop --force` cancels
+   the acpx *session* cooperatively without reaping the OS process tree.
+   Every kill+relaunch leaked more. Candidates: `stop --force` (and the
+   preflight sweep) should reap the Run's adapter process tree, and/or a
+   `roundfix doctor`/`setup` check that lists and offers to kill orphaned
+   adapters. Size: small/medium. Pairs with the acpx detached-owner model
+   (round-2 finding 1 territory).
+
+## Supervision lessons (self-inflicted, 2026-07-06)
+
+- A Monitor grep pattern MUST cover failure signatures, not just the happy
+  path: the QA monitor watched `^Task|^qa|^Clean|^Unresolved|failed after
+  Run start` and missed `Preflight failed`, so a dead process read as
+  "still running" for hours. Widen supervision filters to every terminal
+  signature.
+- `nohup ... & disown` detaches a Run from the harness (surviving external
+  task stops — the intended fix) but also removes the harness completion
+  notification, so a monitor is the ONLY signal. The monitor must therefore
+  be comprehensive.
