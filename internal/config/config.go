@@ -43,6 +43,7 @@ type Config struct {
 	Worktree     Worktree
 	Budget       Budget
 	Resolve      Resolve
+	Logs         Logs
 }
 
 type Defaults struct {
@@ -87,6 +88,10 @@ type Budget struct {
 
 type Resolve struct {
 	BatchSize int
+}
+
+type Logs struct {
+	Agent bool
 }
 
 type Loaded struct {
@@ -141,6 +146,7 @@ type configOverlay struct {
 	Worktree     *worktreeOverlay     `yaml:"worktree"`
 	Budget       *budgetOverlay       `yaml:"budget"`
 	Resolve      *resolveOverlay      `yaml:"resolve"`
+	Logs         *logsOverlay         `yaml:"logs"`
 }
 
 type defaultsOverlay struct {
@@ -201,6 +207,10 @@ type budgetOverlay struct {
 
 type resolveOverlay struct {
 	BatchSize *int `yaml:"batch_size"`
+}
+
+type logsOverlay struct {
+	Agent *bool `yaml:"agent"`
 }
 
 func (overlay *resolveOverlay) UnmarshalYAML(node *yaml.Node) error {
@@ -292,6 +302,9 @@ func Builtin() Config {
 		},
 		Resolve: Resolve{
 			BatchSize: 3,
+		},
+		Logs: Logs{
+			Agent: false,
 		},
 	}
 }
@@ -833,6 +846,11 @@ func applyOverlay(config *Config, overlay configOverlay) {
 	if overlay.Resolve != nil {
 		if overlay.Resolve.BatchSize != nil {
 			config.Resolve.BatchSize = *overlay.Resolve.BatchSize
+		}
+	}
+	if overlay.Logs != nil {
+		if overlay.Logs.Agent != nil {
+			config.Logs.Agent = *overlay.Logs.Agent
 		}
 	}
 }

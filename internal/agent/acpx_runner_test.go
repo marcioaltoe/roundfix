@@ -640,6 +640,37 @@ func TestACPXRunPromptPublishesUpdateLinesAndCapturesStopReason(t *testing.T) {
 	}
 }
 
+func TestACPXRunPromptAllowsEmptyLogPathAndStillJournals(t *testing.T) {
+	messageLine := acpxUpdateLine(`{"sessionId":"sess-1","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"hello"}}}`)
+	responseLine := acpxPromptResponseLine("end_turn")
+
+	run := runFakeACPXPrompt(t, fakeACPXPrompt{
+		stdout:     messageLine + responseLine,
+		withoutLog: true,
+	})
+
+	if run.err != nil {
+		t.Fatalf("run fake acpx without Agent log path: %v", run.err)
+	}
+	if run.result.LogPath != "" {
+		t.Fatalf("expected empty Agent log path in result, got %q", run.result.LogPath)
+	}
+	matches, err := filepath.Glob(filepath.Join(run.gitRoot, "runs", "*", "agent", "*.log"))
+	if err != nil {
+		t.Fatalf("glob Agent logs: %v", err)
+	}
+	if len(matches) != 0 {
+		t.Fatalf("expected no Agent log files, got %#v", matches)
+	}
+	events := run.sink.Events()
+	if len(events) != 1 || events[0].Kind != runevent.KindAgentMessage {
+		t.Fatalf("expected Agent message event without log file, got %+v", events)
+	}
+	if !strings.Contains(string(events[0].Payload), "hello") {
+		t.Fatalf("expected raw Agent payload preserved, got %s", events[0].Payload)
+	}
+}
+
 func TestACPXPromptExitClassificationMatrix(t *testing.T) {
 	longStderr := numberedLinesForTest(12)
 	bufferErrorLine := `{"jsonrpc":"2.0","error":{"code":-32603,"message":"Message buffer exceeded 10485760 bytes","data":{"acpxCode":"RUNTIME"}}}` + "\n"
@@ -961,11 +992,12 @@ func TestACPXExitCodeMapping(t *testing.T) {
 }
 
 type fakeACPXPrompt struct {
-	runtime  RuntimeSpec
-	prompt   string
-	stdout   string
-	stderr   string
-	exitCode int
+	runtime    RuntimeSpec
+	prompt     string
+	stdout     string
+	stderr     string
+	exitCode   int
+	withoutLog bool
 }
 
 type fakeACPXRun struct {
@@ -1056,6 +1088,9 @@ func runFakeACPXPrompt(t *testing.T, prompt fakeACPXPrompt) fakeACPXRun {
 	}
 	sink := newCaptureSink("")
 	logPath := filepath.Join(dir, "runs", "run-acpx", "agent", "batch-007.log")
+	if prompt.withoutLog {
+		logPath = ""
+	}
 	result, err := (ACPXRunner{
 		Command: os.Args[0],
 		Now: func() time.Time {

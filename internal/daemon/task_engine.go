@@ -30,6 +30,7 @@ type TaskPlan struct {
 	WorkDir     string
 	RunWorktree runworktree.Ref
 	ArtifactDir string
+	AgentLogs   bool
 	Spec        spec.Spec
 	Tasks       []spec.Task
 	Runtime     agent.RuntimeSpec
@@ -535,9 +536,11 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 	if err != nil {
 		return "", fmt.Errorf("build Task prompt for run %q Task %s: %w", plan.RunID, task.ID, err)
 	}
-	logPath := agent.LogPath(plan.ArtifactDir, plan.RunID, ordinal)
+	logPath := agentLogPath(plan.AgentLogs, plan.ArtifactDir, plan.RunID, ordinal)
 	fmt.Fprintf(engine.deps.Progress, "Task: %s (Batch %03d) %s\n", task.ID, ordinal, task.Title)
-	fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
+	if logPath != "" {
+		fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
+	}
 
 	runResult, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
 		Runtime:     plan.Runtime,
@@ -741,9 +744,11 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, ordinal int)
 	if err != nil {
 		return "", "", fmt.Errorf("build QA prompt for run %q: %w", plan.RunID, err)
 	}
-	logPath := agent.LogPath(plan.ArtifactDir, plan.RunID, ordinal)
+	logPath := agentLogPath(plan.AgentLogs, plan.ArtifactDir, plan.RunID, ordinal)
 	fmt.Fprintf(engine.deps.Progress, "QA step (Batch %03d) for Spec %s\n", ordinal, plan.Spec.Slug)
-	fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
+	if logPath != "" {
+		fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
+	}
 	if _, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
 		Runtime:     plan.Runtime,
 		Session:     plan.Session,

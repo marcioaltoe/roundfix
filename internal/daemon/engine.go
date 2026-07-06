@@ -101,6 +101,7 @@ type CyclePlan struct {
 	GitRoot      string
 	ArtifactDir  string
 	ReviewRoot   string
+	AgentLogs    bool
 	SourceName   string
 	AgentName    string
 	Runtime      agent.RuntimeSpec
@@ -125,6 +126,13 @@ type BatchOutcome struct {
 	Committed             bool
 	CommitSkipped         bool
 	ResolvedSourceThreads int
+}
+
+func agentLogPath(enabled bool, artifactDir string, runID string, batchNumber int) string {
+	if !enabled {
+		return ""
+	}
+	return agent.LogPath(artifactDir, runID, batchNumber)
 }
 
 // CycleResult reports per-Batch outcomes and the remaining Unresolved
@@ -347,9 +355,11 @@ func (engine *Engine) runBatchAgent(ctx context.Context, plan CyclePlan, batch r
 		GitRoot:      plan.GitRoot,
 		Verification: plan.Verification,
 	})
-	logPath := agent.LogPath(plan.ArtifactDir, plan.RunID, batch.Number)
+	logPath := agentLogPath(plan.AgentLogs, plan.ArtifactDir, plan.RunID, batch.Number)
 	fmt.Fprintf(engine.deps.Progress, "Batch: %03d/%03d (%d Review Issue(s))\n", batchIndex, batchTotal, len(batch.Issues))
-	fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
+	if logPath != "" {
+		fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
+	}
 
 	runResult, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
 		Runtime:      plan.Runtime,

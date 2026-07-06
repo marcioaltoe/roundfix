@@ -457,7 +457,7 @@ func (runner *implementFakeRunner) Run(ctx context.Context, req agent.ExecuteReq
 			return agent.ExecuteResult{}, err
 		}
 	}
-	if runner.writeLogs {
+	if runner.writeLogs && strings.TrimSpace(req.LogPath) != "" {
 		if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {
 			return agent.ExecuteResult{}, err
 		}
@@ -1575,7 +1575,7 @@ func TestRunImplementUsesConfiguredArtifactDirectoryForAgentLogs(t *testing.T) {
 			homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 				{id: "task_01", title: "Build the widget core"},
 			})
-			mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), fmt.Sprintf("defaults:\n  artifact_dir: %q\n", tt.config))
+			mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), fmt.Sprintf("defaults:\n  artifact_dir: %q\nlogs:\n  agent: true\n", tt.config))
 			gitImplement(t, repoDir, "add", ".roundfixrc.yml")
 			gitImplement(t, repoDir, "commit", "-m", "configure artifact dir")
 			runner := &implementFakeRunner{

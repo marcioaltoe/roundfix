@@ -739,7 +739,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 					t.Fatalf("expected Final Push confirmation, got %q", stderr.String())
 				}
 				assertRunCount(t, filepath.Join(os.Getenv("HOME"), ".roundfix", "roundfix.db"), 1)
-				assertAgentLogContains(t, repoDir, "fake agent output")
+				assertNoAgentLogs(t, repoDir)
 			} else if tt.name == "watch" {
 				if !strings.Contains(stderr.String(), "Review Source status: settled") {
 					t.Fatalf("expected fake Review Source status output, got %q", stderr.String())
@@ -766,7 +766,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 					t.Fatalf("expected watch Clean terminal outcome, got %q", stderr.String())
 				}
 				assertRunCount(t, filepath.Join(os.Getenv("HOME"), ".roundfix", "roundfix.db"), 1)
-				assertAgentLogContains(t, repoDir, "fake agent output")
+				assertNoAgentLogs(t, repoDir)
 			}
 		})
 	}
@@ -4332,6 +4332,17 @@ func assertAgentLogContains(t *testing.T, repoDir string, expected string) {
 	}
 }
 
+func assertNoAgentLogs(t *testing.T, repoDir string) {
+	t.Helper()
+	matches, err := filepath.Glob(filepath.Join(builtinArtifactDirForRepo(t, repoDir), "runs", "*", "agent", "batch-*.log"))
+	if err != nil {
+		t.Fatalf("glob Agent logs: %v", err)
+	}
+	if len(matches) != 0 {
+		t.Fatalf("expected no Agent logs, got %#v", matches)
+	}
+}
+
 func persistCLIReviewIssue(t *testing.T, repoDir string, roundNumber int, headBranch string) rounds.PersistResult {
 	t.Helper()
 	return persistCLIReviewItems(t, repoDir, roundNumber, headBranch, []reviewsource.ReviewItem{
@@ -4651,11 +4662,13 @@ func (runner *fakeAgentRunner) Run(ctx context.Context, req agent.ExecuteRequest
 	if err := publishFakeAgentOutput(ctx, sink, req, output); err != nil {
 		return agent.ExecuteResult{}, err
 	}
-	if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {
-		return agent.ExecuteResult{}, err
-	}
-	if err := os.WriteFile(req.LogPath, []byte(output), 0o644); err != nil {
-		return agent.ExecuteResult{}, err
+	if strings.TrimSpace(req.LogPath) != "" {
+		if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {
+			return agent.ExecuteResult{}, err
+		}
+		if err := os.WriteFile(req.LogPath, []byte(output), 0o644); err != nil {
+			return agent.ExecuteResult{}, err
+		}
 	}
 	if runner.runErr != nil {
 		return agent.ExecuteResult{LogPath: req.LogPath, Output: output}, runner.runErr
@@ -4692,11 +4705,13 @@ func (runner *fakeStoppingAgentRunner) Run(ctx context.Context, req agent.Execut
 			return agent.ExecuteResult{}, err
 		}
 	}
-	if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {
-		return agent.ExecuteResult{}, err
-	}
-	if err := os.WriteFile(req.LogPath, []byte(output), 0o644); err != nil {
-		return agent.ExecuteResult{}, err
+	if strings.TrimSpace(req.LogPath) != "" {
+		if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {
+			return agent.ExecuteResult{}, err
+		}
+		if err := os.WriteFile(req.LogPath, []byte(output), 0o644); err != nil {
+			return agent.ExecuteResult{}, err
+		}
 	}
 	return agent.ExecuteResult{LogPath: req.LogPath, Output: output}, agent.StopError{
 		LogPath: req.LogPath,
@@ -4950,6 +4965,44 @@ func TestResolveJournalsAgentRunEventsDurably(t *testing.T) {
 	if !strings.Contains(stderr.String(), "fake agent output") {
 		t.Fatalf("expected console output unchanged, got %q", stderr.String())
 	}
+}
+
+func TestRunResolveSkipsAgentLogFilesByDefaultAndStillJournals(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
+	}
+	assertNoAgentLogs(t, repoDir)
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	assertJournalContainsAgentAndDaemonEvents(t, events, "fake agent output")
+}
+
+func TestRunResolveWritesAgentLogFilesWhenEnabledAndStillJournals(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
+logs:
+  agent: true
+`)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
+	}
+	assertAgentLogContains(t, repoDir, "fake agent output")
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	assertJournalContainsAgentAndDaemonEvents(t, events, "fake agent output")
 }
 
 func TestRunResolveNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {

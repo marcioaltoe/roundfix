@@ -170,6 +170,71 @@ worktree:
 	}
 }
 
+func TestLoadAppliesAgentLogConfigHierarchy(t *testing.T) {
+	tests := []struct {
+		name          string
+		userConfig    string
+		projectConfig string
+		want          bool
+	}{
+		{
+			name: "builtin only",
+			want: false,
+		},
+		{
+			name: "user enables",
+			userConfig: `
+logs:
+  agent: true
+`,
+			want: true,
+		},
+		{
+			name: "project enables",
+			projectConfig: `
+logs:
+  agent: true
+`,
+			want: true,
+		},
+		{
+			name: "project overrides user",
+			userConfig: `
+logs:
+  agent: true
+`,
+			projectConfig: `
+logs:
+  agent: false
+`,
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir := t.TempDir()
+			workDir := t.TempDir()
+			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+			mustMkdir(t, filepath.Join(workDir, ".git"))
+			if strings.TrimSpace(tt.userConfig) != "" {
+				mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.userConfig)
+			}
+			if strings.TrimSpace(tt.projectConfig) != "" {
+				mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), tt.projectConfig)
+			}
+
+			loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+			if err != nil {
+				t.Fatalf("expected config to load, got %v", err)
+			}
+			if loaded.Config.Logs.Agent != tt.want {
+				t.Fatalf("expected logs.agent %t, got %t", tt.want, loaded.Config.Logs.Agent)
+			}
+		})
+	}
+}
+
 func TestLoadWarnsAndIgnoresDeprecatedConfigKeys(t *testing.T) {
 	const warning = "config: resolve.concurrent is deprecated and ignored; use worktree.concurrency\n"
 

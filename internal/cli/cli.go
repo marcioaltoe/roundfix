@@ -1538,6 +1538,7 @@ func cyclePlanFrom(req commandRequest, loaded roundconfig.Loaded, preflightResul
 		GitRoot:      gitRoot,
 		ArtifactDir:  req.artifactDir,
 		ReviewRoot:   req.reviewRoot,
+		AgentLogs:    loaded.Config.Logs.Agent,
 		SourceName:   req.source,
 		AgentName:    req.agent,
 		Runtime:      resolvePlan.runtime,

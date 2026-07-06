@@ -173,6 +173,7 @@ func (fixture *taskCycleFixture) plan() TaskPlan {
 		Tasks:       fixture.graph.Tasks,
 		Runtime:     agent.RuntimeSpec{ID: "codex", DisplayName: "Codex"},
 		ArtifactDir: fixture.artifactDir,
+		AgentLogs:   true,
 	}
 }
 
@@ -301,7 +302,7 @@ func (runner *taskFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest,
 	*runner.calls = append(*runner.calls, "agent")
 	runner.prompts = append(runner.prompts, req.Prompt)
 	runner.requests = append(runner.requests, req)
-	if runner.writeLogs {
+	if runner.writeLogs && strings.TrimSpace(req.LogPath) != "" {
 		if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {
 			return agent.ExecuteResult{}, err
 		}

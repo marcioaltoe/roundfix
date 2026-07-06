@@ -338,16 +338,20 @@ func (runner ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, s
 	if sink == nil {
 		sink = runevent.Discard
 	}
-	if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {
-		return result, fmt.Errorf("create Agent log directory: %w", err)
+	logWriter := io.Writer(io.Discard)
+	if strings.TrimSpace(req.LogPath) != "" {
+		if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {
+			return result, fmt.Errorf("create Agent log directory: %w", err)
+		}
+		logFile, err := os.OpenFile(req.LogPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+		if err != nil {
+			return result, fmt.Errorf("open Agent log %q: %w", req.LogPath, err)
+		}
+		defer func() {
+			_ = logFile.Close()
+		}()
+		logWriter = logFile
 	}
-	logFile, err := os.OpenFile(req.LogPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
-	if err != nil {
-		return result, fmt.Errorf("open Agent log %q: %w", req.LogPath, err)
-	}
-	defer func() {
-		_ = logFile.Close()
-	}()
 
 	if err := ctx.Err(); err != nil {
 		return result, StopError{LogPath: req.LogPath, Err: err}
@@ -371,7 +375,7 @@ func (runner ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, s
 
 	streamCh := make(chan acpxStreamResult, 1)
 	go func() {
-		streamCh <- runner.readPromptStream(ctx, req.ExecuteRequest, sink, stdout, logFile)
+		streamCh <- runner.readPromptStream(ctx, req.ExecuteRequest, sink, stdout, logWriter)
 	}()
 	waitCh := make(chan error, 1)
 	go func() {
@@ -445,9 +449,6 @@ func (runner ACPXRunner) readPromptStream(ctx context.Context, req ExecuteReques
 }
 
 func validateACPXPromptRequest(req ACPXPromptRequest) error {
-	if strings.TrimSpace(req.LogPath) == "" {
-		return errors.New("Agent log path is required")
-	}
 	if strings.TrimSpace(req.Session) == "" {
 		return errors.New("Agent Session is required")
 	}

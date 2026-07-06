@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0011-storage-lifecycle
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -29,17 +29,17 @@ leaving the journal and the Detached Run console log untouched.
 
 ## Subtasks
 
-- [ ] `logs.agent` config key with default-off semantics
-- [ ] Guard the per-Batch log writer on the key
-- [ ] Confirm the journal path is independent of the guard
-- [ ] Tests: no log files with key off, files with key on, journal populated in both
+- [x] `logs.agent` config key with default-off semantics
+- [x] Guard the per-Batch log writer on the key
+- [x] Confirm the journal path is independent of the guard
+- [x] Tests: no log files with key off, files with key on, journal populated in both
 
 ## Acceptance Criteria
 
-- [ ] A production Run with the default config writes zero per-Batch agent log files.
-- [ ] The same Run with `logs.agent` enabled writes the log files.
-- [ ] The Run Event Journal contains the agent payloads in both cases.
-- [ ] A Detached Run's console log is written regardless of `logs.agent`.
+- [x] A production Run with the default config writes zero per-Batch agent log files.
+- [x] The same Run with `logs.agent` enabled writes the log files.
+- [x] The Run Event Journal contains the agent payloads in both cases.
+- [x] A Detached Run's console log is written regardless of `logs.agent`.
 
 ## Verification
 
@@ -50,3 +50,13 @@ leaving the journal and the Detached Run console log untouched.
 
 `_prd.md` → User Stories 4-5; Core Feature 2. `_techspec.md` → Opt-in agent
 logs, Build Order 2. ADR-0030 (extends ADR-0008). Work-plan finding R1-8.
+
+## Result
+
+- Added `logs.agent` to User and Project Config overlays with default-off semantics; `TestLoadAppliesAgentLogConfigHierarchy` covers builtin, user, project, and project-over-user cases.
+- Guarded per-Batch Agent log paths in resolve/watch and implement/QA plans; when disabled, Agents receive an empty `LogPath` and the ACPX runner journals payloads through the Run Event Journal without opening a log file.
+- Evidence for default-off Run behavior: `TestRunResolveSkipsAgentLogFilesByDefaultAndStillJournals` and `TestRunOperationalCommandAcceptsMVPFlags` assert zero per-Batch Agent log files with default config.
+- Evidence for opt-in Run behavior: `TestRunResolveWritesAgentLogFilesWhenEnabledAndStillJournals` asserts `logs.agent: true` writes the Agent log file; `TestRunImplementUsesConfiguredArtifactDirectoryForAgentLogs` preserves explicit Artifact Directory log layout when enabled.
+- Evidence for journal independence: the default-off and opt-in resolve tests both assert the Run Event Journal contains the fake Agent payload; `TestACPXRunPromptAllowsEmptyLogPathAndStillJournals` covers the ACPX runner directly.
+- Evidence for Detached Run console logs: `TestRunImplementDetachPrintsReportAndCompletesRun` passes with default config and waits for the Detached Run console log to contain the Clean completion line.
+- Verification: `rtk go test ./internal/config/ ./internal/agent/ ./internal/cli/` passed (`391 passed in 3 packages`); `rtk go test ./internal/daemon/` passed (`57 passed in 1 packages`); `rtk go test ./...` passed (`755 passed in 17 packages`); `rtk make verify` passed (full tests, skill check, build).
