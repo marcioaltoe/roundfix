@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0013-codex-runtime-hygiene
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -29,17 +29,17 @@ binary without surfacing the risk.
 
 ## Subtasks
 
-- [ ] Resolve codex path for codex-acp launch (config then PATH)
-- [ ] On macOS, prefer a hygiene-passing binary via the task_02 inspector
-- [ ] Surface the risk when only a quarantined binary is available
-- [ ] Cache the resolution per Run; tests for clean-over-quarantined selection
+- [x] Resolve codex path for codex-acp launch (config then PATH)
+- [x] On macOS, prefer a hygiene-passing binary via the task_02 inspector
+- [x] Surface the risk when only a quarantined binary is available
+- [x] Cache the resolution per Run; tests for clean-over-quarantined selection
 
 ## Acceptance Criteria
 
-- [ ] A codex-acp launch resolves the configured clean codex over a quarantined PATH entry.
-- [ ] When only a quarantined codex is available, the risk is surfaced rather than silently spawned.
-- [ ] Codex hygiene is inspected once per Run resolution, not on every exec.
-- [ ] Non-macOS spawn behavior is unchanged.
+- [x] A codex-acp launch resolves the configured clean codex over a quarantined PATH entry.
+- [x] When only a quarantined codex is available, the risk is surfaced rather than silently spawned.
+- [x] Codex hygiene is inspected once per Run resolution, not on every exec.
+- [x] Non-macOS spawn behavior is unchanged.
 
 ## Verification
 
@@ -50,3 +50,38 @@ binary without surfacing the risk.
 
 `_prd.md` → User Story 4; Core Feature 3. `_techspec.md` → Verified-clean codex
 on spawn, Build Order 4. ADR-0032.
+
+## Result
+
+Implemented verified-clean codex resolution on the codex-acp Run spawn path.
+On macOS, Roundfix now resolves `CODEX_PATH` first and PATH second, inspects
+candidate binaries with the task_02 codex hygiene inspector, passes the selected
+clean binary to acpx through `CODEX_PATH`, and fails before spawning acpx when
+no clean codex is available. Non-Darwin runs return the existing acpx arguments
+without running codex probes.
+
+Evidence:
+
+- Configured clean codex preference:
+  `TestACPXRunCodexUsesConfiguredCleanPathOnDarwin` passed and asserts acpx
+  receives the configured clean `CODEX_PATH` while a quarantined PATH entry is
+  available.
+- Clean PATH fallback:
+  `TestACPXRunCodexFallsBackToCleanPathWhenConfiguredPathIsQuarantined` passed
+  and asserts a quarantined configured path falls back to the clean PATH codex.
+- Quarantined-only failure:
+  `TestACPXRunCodexSurfacesQuarantinedPathWithoutSpawning` passed and asserts
+  the error names the quarantine risk and reinstall next action, with no acpx
+  invocation file created.
+- Once-per-Run resolution:
+  `TestACPXRunCodexInspectsOncePerSessionResolution` passed and asserts two
+  acpx execs in the same session use one quarantine probe and one acceptance
+  probe.
+- Non-Darwin behavior:
+  `TestACPXRunCodexLeavesNonDarwinSpawnUnchanged` passed and asserts no codex
+  probes run and the acpx invocation arguments remain unchanged.
+- Required focused gate: `rtk go test ./internal/agent/ -run Codex` passed with
+  8 tests in 1 package.
+- Required full suite: `rtk go test ./...` passed with 785 tests in 18 packages.
+- Repository gate: `rtk make verify` passed, including full tests, Roundfix
+  skill check, and build.

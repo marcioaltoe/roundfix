@@ -39,10 +39,12 @@ const (
 // ACPXRunner is the acpx-backed invocation core. Later migration tasks wire
 // this into Runner after Agent Session lifecycle is available.
 type ACPXRunner struct {
-	Command         string
-	Now             func() time.Time
-	warnf           func(string, ...any)
-	ensuredSessions map[string]struct{}
+	Command          string
+	Now              func() time.Time
+	warnf            func(string, ...any)
+	ensuredSessions  map[string]struct{}
+	codexSpawn       codexSpawnDependencies
+	codexResolutions map[string]codexSpawnResolution
 }
 
 // ACPXPromptRequest carries the explicit Agent Session needed by acpx prompt
@@ -202,6 +204,9 @@ func (runner ACPXRunner) Probe(ctx context.Context, _ RuntimeSpec) error {
 
 func (runner *ACPXRunner) Run(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error) {
 	result := ExecuteResult{LogPath: req.LogPath}
+	if _, err := runner.codexEnvForSession(ctx, req.Runtime, req.Session.Name); err != nil {
+		return result, err
+	}
 	if err := runner.ensureSession(ctx, req, sink); err != nil {
 		return result, err
 	}
@@ -220,6 +225,7 @@ func (runner *ACPXRunner) EndSession(ctx context.Context, runtime RuntimeSpec, s
 		runner.warningf("close acpx Agent Session %q: %v", sessionName, err)
 	}
 	delete(runner.ensuredSessions, sessionName)
+	delete(runner.codexResolutions, sessionName)
 	return nil
 }
 
@@ -232,7 +238,11 @@ func (runner *ACPXRunner) CloseSession(ctx context.Context, runtime RuntimeSpec,
 	if err != nil {
 		return fmt.Errorf("build acpx close command for Agent Session %q: %w", sessionName, err)
 	}
-	if err := runner.runACPXCommand(ctx, args); err != nil {
+	codexEnv, err := runner.codexEnvForSession(ctx, runtime, sessionName)
+	if err != nil {
+		return err
+	}
+	if err := runner.runACPXCommandWithEnv(ctx, args, codexEnv); err != nil {
 		return fmt.Errorf("close acpx Agent Session %q: %w", sessionName, err)
 	}
 	return nil
@@ -259,7 +269,11 @@ func (runner *ACPXRunner) CancelSession(ctx context.Context, runtime RuntimeSpec
 	if err != nil {
 		return fmt.Errorf("build acpx cancel command for Agent Session %q: %w", sessionName, err)
 	}
-	if err := runner.runACPXCommand(ctx, args); err != nil {
+	codexEnv, err := runner.codexEnvForSession(ctx, runtime, sessionName)
+	if err != nil {
+		return err
+	}
+	if err := runner.runACPXCommandWithEnv(ctx, args, codexEnv); err != nil {
 		return fmt.Errorf("cancel acpx Agent Session %q: %w", sessionName, err)
 	}
 	return nil
@@ -277,14 +291,18 @@ func (runner *ACPXRunner) ensureSession(ctx context.Context, req ExecuteRequest,
 	if _, ok := runner.ensuredSessions[sessionName]; ok {
 		return nil
 	}
+	codexEnv, err := runner.codexEnvForSession(ctx, req.Runtime, sessionName)
+	if err != nil {
+		return err
+	}
 	args, err := acpxEnsureArgs(req.Runtime, sessionName, workDir)
 	if err != nil {
 		return err
 	}
-	if err := runner.runACPXCommand(ctx, args); err != nil {
+	if err := runner.runACPXCommandWithEnv(ctx, args, codexEnv); err != nil {
 		return fmt.Errorf("ensure acpx Agent Session %q: %w", sessionName, err)
 	}
-	if err := runner.applyFullAccess(ctx, req, sink); err != nil {
+	if err := runner.applyFullAccess(ctx, req, sink, codexEnv); err != nil {
 		return err
 	}
 	if runner.ensuredSessions == nil {
@@ -297,7 +315,7 @@ func (runner *ACPXRunner) ensureSession(ctx context.Context, req ExecuteRequest,
 	return nil
 }
 
-func (runner *ACPXRunner) applyFullAccess(ctx context.Context, req ExecuteRequest, sink runevent.Sink) error {
+func (runner *ACPXRunner) applyFullAccess(ctx context.Context, req ExecuteRequest, sink runevent.Sink, codexEnv []string) error {
 	mode := strings.TrimSpace(req.Runtime.FullAccessMode)
 	if mode == "" {
 		return nil
@@ -307,7 +325,7 @@ func (runner *ACPXRunner) applyFullAccess(ctx context.Context, req ExecuteReques
 	if err != nil {
 		return err
 	}
-	if err := runner.runACPXCommand(ctx, args); err != nil {
+	if err := runner.runACPXCommandWithEnv(ctx, args, codexEnv); err != nil {
 		return fmt.Errorf("set acpx Agent Session mode %q: %w", mode, err)
 	}
 	if req.Runtime.ID != "codex" || mode != "full-access" {
@@ -317,7 +335,7 @@ func (runner *ACPXRunner) applyFullAccess(ctx context.Context, req ExecuteReques
 	if err != nil {
 		return err
 	}
-	if err := runner.runACPXCommand(ctx, args); err != nil {
+	if err := runner.runACPXCommandWithEnv(ctx, args, codexEnv); err != nil {
 		if isCodexSandboxUnavailable(err) {
 			runner.warningf("codex full-access sandbox preset unavailable for Agent Session %q: %v", sessionName, err)
 			if publishErr := runner.publishStatus(ctx, req, sink, acpxCodexSandboxUnavailable); publishErr != nil {
@@ -330,7 +348,7 @@ func (runner *ACPXRunner) applyFullAccess(ctx context.Context, req ExecuteReques
 	return nil
 }
 
-func (runner ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, sink runevent.Sink) (ExecuteResult, error) {
+func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, sink runevent.Sink) (ExecuteResult, error) {
 	result := ExecuteResult{LogPath: req.LogPath}
 	if err := validateACPXPromptRequest(req); err != nil {
 		return result, err
@@ -356,11 +374,16 @@ func (runner ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, s
 	if err := ctx.Err(); err != nil {
 		return result, StopError{LogPath: req.LogPath, Err: err}
 	}
+	codexEnv, err := runner.codexEnvForSession(ctx, req.Runtime, req.Session)
+	if err != nil {
+		return result, err
+	}
 	args, err := acpxPromptArgs(req)
 	if err != nil {
 		return result, err
 	}
 	cmd := exec.Command(runner.command(), args...)
+	cmd.Env = acpxCommandEnv(codexEnv)
 	cmd.Dir = req.GitRoot
 	cmd.Stdin = strings.NewReader(req.Prompt)
 	stdout, err := cmd.StdoutPipe()
@@ -386,7 +409,7 @@ func (runner ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, s
 	select {
 	case waitErr = <-waitCh:
 	case <-ctx.Done():
-		forceClosed := runner.cancelPrompt(context.WithoutCancel(ctx), req, waitCh)
+		forceClosed := runner.cancelPrompt(context.WithoutCancel(ctx), req, waitCh, codexEnv)
 		stream := waitForACPXStream(streamCh, stopGrace(req.StopGrace))
 		result.Output = stream.output
 		result.StopReason = stream.stopReason
@@ -465,6 +488,30 @@ func (runner ACPXRunner) command() string {
 	return defaultACPXCommand
 }
 
+func (runner *ACPXRunner) codexEnvForSession(ctx context.Context, runtime RuntimeSpec, sessionName string) ([]string, error) {
+	if strings.TrimSpace(runtime.ID) != "codex" || runtime.Protocol == ProtocolStdio {
+		return nil, nil
+	}
+	key := strings.TrimSpace(sessionName)
+	if key == "" {
+		key = "codex"
+	}
+	if runner.codexResolutions != nil {
+		if resolution, ok := runner.codexResolutions[key]; ok {
+			return resolution.env, nil
+		}
+	}
+	resolution, err := runner.codexSpawn.resolve(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if runner.codexResolutions == nil {
+		runner.codexResolutions = map[string]codexSpawnResolution{}
+	}
+	runner.codexResolutions[key] = resolution
+	return resolution.env, nil
+}
+
 func acpxInstallCommand() string {
 	return "npm install -g acpx@" + PinnedACPXVersion
 }
@@ -482,7 +529,17 @@ func (runner ACPXRunner) runACPXCommand(ctx context.Context, args []string) erro
 }
 
 func (runner ACPXRunner) runACPXCommandOutput(ctx context.Context, args []string) (string, error) {
+	return runner.runACPXCommandOutputWithEnv(ctx, args, nil)
+}
+
+func (runner ACPXRunner) runACPXCommandWithEnv(ctx context.Context, args []string, env []string) error {
+	_, err := runner.runACPXCommandOutputWithEnv(ctx, args, env)
+	return err
+}
+
+func (runner ACPXRunner) runACPXCommandOutputWithEnv(ctx context.Context, args []string, env []string) (string, error) {
 	cmd := exec.CommandContext(ctx, runner.command(), args...)
+	cmd.Env = acpxCommandEnv(env)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -674,12 +731,12 @@ func (runner ACPXRunner) mapExitCode(ctx context.Context, req ExecuteRequest, si
 	}
 }
 
-func (runner ACPXRunner) cancelPrompt(ctx context.Context, req ACPXPromptRequest, waitCh <-chan error) bool {
+func (runner ACPXRunner) cancelPrompt(ctx context.Context, req ACPXPromptRequest, waitCh <-chan error, codexEnv []string) bool {
 	grace := stopGrace(req.StopGrace)
 	cancelCtx, cancel := context.WithTimeout(ctx, grace)
 	defer cancel()
 	if args, err := acpxCancelArgs(req.Runtime, req.Session, req.GitRoot); err == nil {
-		if err := runner.runACPXCommand(cancelCtx, args); err != nil {
+		if err := runner.runACPXCommandWithEnv(cancelCtx, args, codexEnv); err != nil {
 			runner.warningf("cancel acpx Agent Session %q: %v", req.Session, err)
 		}
 	} else {
@@ -694,7 +751,7 @@ func (runner ACPXRunner) cancelPrompt(ctx context.Context, req ACPXPromptRequest
 		closeCtx, closeCancel := context.WithTimeout(ctx, grace)
 		defer closeCancel()
 		if args, err := acpxCloseArgs(req.Runtime, req.Session, req.GitRoot); err == nil {
-			if err := runner.runACPXCommand(closeCtx, args); err != nil {
+			if err := runner.runACPXCommandWithEnv(closeCtx, args, codexEnv); err != nil {
 				runner.warningf("close acpx Agent Session %q: %v", req.Session, err)
 			}
 		} else {

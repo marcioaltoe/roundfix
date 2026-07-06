@@ -783,7 +783,7 @@ func TestRunImplementDetachPrintsReportAndCompletesRun(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	fakeACPX := fakeACPXCommand(t)
 	stdout, stderr, code := runCLIHelper(t, repoDir, fakeACPX, nil,
-		"implement", "--spec", implementTestSlug, "--agent", "codex", "--detach")
+		"implement", "--spec", implementTestSlug, "--agent", "codex", "--agent-command", "codex-acp --stdio", "--detach")
 
 	if code != exitOK {
 		t.Fatalf("expected detach caller exit 0, got %d stderr=%q stdout=%q", code, stderr, stdout)
@@ -842,7 +842,7 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 		_ = os.WriteFile(releasePrompt, []byte("release\n"), 0o644)
 	})
 	fakeACPX := fakeACPXCommand(t)
-	cmd := exec.Command(os.Args[0], "implement", "--spec", implementTestSlug, "--agent", "codex", "--detach")
+	cmd := exec.Command(os.Args[0], "implement", "--spec", implementTestSlug, "--agent", "codex", "--agent-command", "codex-acp --stdio", "--detach")
 	cmd.Dir = repoDir
 	cmd.Env = cliHelperEnv(fakeACPX, map[string]string{
 		"ROUNDFIX_FAKE_ACPX_PROMPT_STARTED": promptStarted,

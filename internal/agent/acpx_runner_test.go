@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"roundfix/internal/codex"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
 )
@@ -34,6 +35,7 @@ const (
 	fakeACPXStarted    = "ROUNDFIX_FAKE_ACPX_STARTED"
 	fakeACPXBlock      = "ROUNDFIX_FAKE_ACPX_BLOCK_PROMPT"
 	fakeACPXExitCancel = "ROUNDFIX_FAKE_ACPX_EXIT_AFTER_CANCEL"
+	fakeACPXCodexPath  = "ROUNDFIX_FAKE_ACPX_CODEX_PATH"
 )
 
 func TestMain(m *testing.M) {
@@ -247,7 +249,7 @@ func TestACPXCancelSessionInvokesSessionCancel(t *testing.T) {
 	t.Setenv(fakeACPXEnv, "1")
 	t.Setenv(fakeACPXInvokes, invocationsPath)
 
-	err := (&ACPXRunner{Command: os.Args[0]}).CancelSession(context.Background(), RuntimeSpec{
+	err := (&ACPXRunner{Command: os.Args[0], codexSpawn: codexSpawnDependencies{goos: "linux"}}).CancelSession(context.Background(), RuntimeSpec{
 		ID:       "codex",
 		Protocol: ProtocolACP,
 	}, SessionRef{
@@ -391,6 +393,163 @@ func TestACPXRunEnsuresSessionOncePerRunnerAndSessionName(t *testing.T) {
 	}
 	if !reflect.DeepEqual(invocations, want) {
 		t.Fatalf("unexpected acpx invocations\nwant: %#v\ngot:  %#v", want, invocations)
+	}
+}
+
+func TestACPXRunCodexUsesConfiguredCleanPathOnDarwin(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	envPath := filepath.Join(harness.gitRoot, "codex-paths.jsonl")
+	t.Setenv(fakeACPXCodexPath, envPath)
+	t.Setenv(codexPathEnv, "/configured/clean/codex")
+	probe := &fakeCodexSpawnProbe{
+		accepted: map[string]bool{
+			"/configured/clean/codex": true,
+			"/path/quarantined/codex": true,
+		},
+		quarantined: map[string]bool{
+			"/path/quarantined/codex": true,
+		},
+	}
+	harness.runner.codexSpawn = codexSpawnDependencies{
+		goos:       "darwin",
+		lookPath:   fakeCodexLookPath("/path/quarantined/codex", nil),
+		quarantine: probe,
+		acceptance: probe,
+	}
+
+	if _, err := harness.run(context.Background(), RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1"); err != nil {
+		t.Fatalf("run acpx with configured clean codex: %v", err)
+	}
+
+	wantEnv := []string{"/configured/clean/codex", "/configured/clean/codex"}
+	if got := readJSONStrings(t, envPath); !reflect.DeepEqual(got, wantEnv) {
+		t.Fatalf("unexpected CODEX_PATH values\nwant: %#v\ngot:  %#v", wantEnv, got)
+	}
+	if got, want := probe.quarantineCalls, []string{"/configured/clean/codex"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("expected only configured codex to be inspected\nwant: %#v\ngot:  %#v", want, got)
+	}
+}
+
+func TestACPXRunCodexFallsBackToCleanPathWhenConfiguredPathIsQuarantined(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	envPath := filepath.Join(harness.gitRoot, "codex-paths.jsonl")
+	t.Setenv(fakeACPXCodexPath, envPath)
+	t.Setenv(codexPathEnv, "/configured/quarantined/codex")
+	probe := &fakeCodexSpawnProbe{
+		accepted: map[string]bool{
+			"/configured/quarantined/codex": true,
+			"/path/clean/codex":             true,
+		},
+		quarantined: map[string]bool{
+			"/configured/quarantined/codex": true,
+		},
+	}
+	harness.runner.codexSpawn = codexSpawnDependencies{
+		goos:       "darwin",
+		lookPath:   fakeCodexLookPath("/path/clean/codex", nil),
+		quarantine: probe,
+		acceptance: probe,
+	}
+
+	if _, err := harness.run(context.Background(), RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1"); err != nil {
+		t.Fatalf("run acpx with fallback clean codex: %v", err)
+	}
+
+	wantEnv := []string{"/path/clean/codex", "/path/clean/codex"}
+	if got := readJSONStrings(t, envPath); !reflect.DeepEqual(got, wantEnv) {
+		t.Fatalf("unexpected CODEX_PATH values\nwant: %#v\ngot:  %#v", wantEnv, got)
+	}
+	wantInspections := []string{"/configured/quarantined/codex", "/path/clean/codex"}
+	if !reflect.DeepEqual(probe.quarantineCalls, wantInspections) {
+		t.Fatalf("unexpected quarantine inspections\nwant: %#v\ngot:  %#v", wantInspections, probe.quarantineCalls)
+	}
+}
+
+func TestACPXRunCodexSurfacesQuarantinedPathWithoutSpawning(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Setenv(codexPathEnv, "")
+	probe := &fakeCodexSpawnProbe{
+		accepted: map[string]bool{
+			"/path/quarantined/codex": true,
+		},
+		quarantined: map[string]bool{
+			"/path/quarantined/codex": true,
+		},
+	}
+	harness.runner.codexSpawn = codexSpawnDependencies{
+		goos:       "darwin",
+		lookPath:   fakeCodexLookPath("/path/quarantined/codex", nil),
+		quarantine: probe,
+		acceptance: probe,
+	}
+
+	_, err := harness.run(context.Background(), RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1")
+
+	if err == nil {
+		t.Fatal("expected quarantined codex to fail before spawning acpx")
+	}
+	message := err.Error()
+	for _, want := range []string{"not safe for acpx launch", "quarantined", codex.ReinstallNextAction} {
+		if !strings.Contains(message, want) {
+			t.Fatalf("expected error to contain %q, got %q", want, message)
+		}
+	}
+	if _, statErr := os.Stat(harness.invocationsPath); !errors.Is(statErr, os.ErrNotExist) {
+		t.Fatalf("expected no acpx invocation file, got stat error %v", statErr)
+	}
+}
+
+func TestACPXRunCodexInspectsOncePerSessionResolution(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Setenv(codexPathEnv, "/configured/clean/codex")
+	probe := &fakeCodexSpawnProbe{
+		accepted: map[string]bool{"/configured/clean/codex": true},
+	}
+	harness.runner.codexSpawn = codexSpawnDependencies{
+		goos:       "darwin",
+		lookPath:   fakeCodexLookPath("/path/clean/codex", nil),
+		quarantine: probe,
+		acceptance: probe,
+	}
+
+	if _, err := harness.run(context.Background(), RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1"); err != nil {
+		t.Fatalf("first acpx run: %v", err)
+	}
+	if _, err := harness.run(context.Background(), RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1"); err != nil {
+		t.Fatalf("second acpx run: %v", err)
+	}
+
+	if got, want := probe.quarantineCalls, []string{"/configured/clean/codex"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("expected one quarantine inspection for the session\nwant: %#v\ngot:  %#v", want, got)
+	}
+	if got, want := probe.acceptanceCalls, []string{"/configured/clean/codex"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("expected one acceptance inspection for the session\nwant: %#v\ngot:  %#v", want, got)
+	}
+}
+
+func TestACPXRunCodexLeavesNonDarwinSpawnUnchanged(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	probe := &fakeCodexSpawnProbe{}
+	harness.runner.codexSpawn = codexSpawnDependencies{
+		goos:       "linux",
+		lookPath:   fakeCodexLookPath("/path/clean/codex", nil),
+		quarantine: probe,
+		acceptance: probe,
+	}
+
+	if _, err := harness.run(context.Background(), RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1"); err != nil {
+		t.Fatalf("run acpx on non-darwin: %v", err)
+	}
+
+	if len(probe.quarantineCalls) != 0 || len(probe.acceptanceCalls) != 0 {
+		t.Fatalf("expected non-darwin run not to inspect codex, got quarantine=%#v acceptance=%#v", probe.quarantineCalls, probe.acceptanceCalls)
+	}
+	want := [][]string{
+		{"--cwd", harness.gitRoot, "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
+	}
+	if got := readJSONInvocations(t, harness.invocationsPath); !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected non-darwin acpx invocations\nwant: %#v\ngot:  %#v", want, got)
 	}
 }
 
@@ -1030,6 +1189,7 @@ func newFakeACPXHarness(t *testing.T) *fakeACPXHarness {
 			Now: func() time.Time {
 				return time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
 			},
+			codexSpawn: codexSpawnDependencies{goos: "linux"},
 		},
 		gitRoot:         dir,
 		invocationsPath: invocationsPath,
@@ -1091,12 +1251,14 @@ func runFakeACPXPrompt(t *testing.T, prompt fakeACPXPrompt) fakeACPXRun {
 	if prompt.withoutLog {
 		logPath = ""
 	}
-	result, err := (ACPXRunner{
+	runner := &ACPXRunner{
 		Command: os.Args[0],
 		Now: func() time.Time {
 			return time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
 		},
-	}).RunPrompt(context.Background(), ACPXPromptRequest{
+		codexSpawn: codexSpawnDependencies{goos: "linux"},
+	}
+	result, err := runner.RunPrompt(context.Background(), ACPXPromptRequest{
 		ExecuteRequest: ExecuteRequest{
 			Runtime: runtime,
 			RunID:   "run-acpx",
@@ -1130,6 +1292,36 @@ func runFakeACPXProbe(t *testing.T, runtime RuntimeSpec, version string) ([][]st
 	return readJSONInvocations(t, invocationsPath), err
 }
 
+type fakeCodexSpawnProbe struct {
+	quarantined     map[string]bool
+	accepted        map[string]bool
+	quarantineCalls []string
+	acceptanceCalls []string
+}
+
+func (probe *fakeCodexSpawnProbe) Quarantined(_ context.Context, path string) (bool, error) {
+	probe.quarantineCalls = append(probe.quarantineCalls, path)
+	return probe.quarantined[path], nil
+}
+
+func (probe *fakeCodexSpawnProbe) Accepted(_ context.Context, path string) (bool, error) {
+	probe.acceptanceCalls = append(probe.acceptanceCalls, path)
+	accepted, ok := probe.accepted[path]
+	if !ok {
+		return true, nil
+	}
+	return accepted, nil
+}
+
+func fakeCodexLookPath(path string, err error) codex.LookPathFunc {
+	return func(command string) (string, error) {
+		if command != codex.BinaryName {
+			return "", fmt.Errorf("unexpected look path command %q", command)
+		}
+		return path, err
+	}
+}
+
 func readJSONInvocations(t *testing.T, path string) [][]string {
 	t.Helper()
 	content, err := os.ReadFile(path)
@@ -1149,6 +1341,27 @@ func readJSONInvocations(t *testing.T, path string) [][]string {
 		invocations = append(invocations, args)
 	}
 	return invocations
+}
+
+func readJSONStrings(t *testing.T, path string) []string {
+	t.Helper()
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read strings: %v", err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(content)), "\n")
+	values := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		var value string
+		if err := json.Unmarshal([]byte(line), &value); err != nil {
+			t.Fatalf("decode string %q: %v", line, err)
+		}
+		values = append(values, value)
+	}
+	return values
 }
 
 func containsInvocation(invocations [][]string, want []string) bool {
@@ -1234,6 +1447,12 @@ func runFakeACPXProcess() int {
 			return 2
 		}
 	}
+	if path := os.Getenv(fakeACPXCodexPath); path != "" {
+		if err := appendFakeACPXString(path, os.Getenv(codexPathEnv)); err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "append codex path: %v\n", err)
+			return 2
+		}
+	}
 	if path := os.Getenv(fakeACPXPromptPath); path != "" {
 		prompt, err := io.ReadAll(os.Stdin)
 		if err != nil {
@@ -1310,6 +1529,24 @@ func appendFakeACPXInvocation(path string, args []string) error {
 		_ = file.Close()
 	}()
 	payload, err := json.Marshal(args)
+	if err != nil {
+		return err
+	}
+	if _, err := file.Write(append(payload, '\n')); err != nil {
+		return err
+	}
+	return nil
+}
+
+func appendFakeACPXString(path string, value string) error {
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = file.Close()
+	}()
+	payload, err := json.Marshal(value)
 	if err != nil {
 		return err
 	}
