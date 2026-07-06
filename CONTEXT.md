@@ -230,6 +230,14 @@ _Avoid_: Health check run, setup run, environment wizard
 The support command that archives a completed Spec: it verifies every Task is completed and QA passed, stamps archive metadata, and moves the Spec folder to the archived spec root. Refuses a Spec with incomplete Tasks or no passing QA verdict.
 _Avoid_: Move command, retire run, cleanup command
 
+**GC Command**:
+The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window and removes orphaned run artifact directories, reporting what it freed. Never touches Active Runs, `runs` rows, or active-run locks.
+_Avoid_: Clean command, vacuum, purge
+
+**Journal Retention**:
+The configured age window after which a terminal Run's Run Event Journal and artifact directory become eligible for pruning. Active Runs are never eligible; a retention of zero keeps everything. See ADR-0033.
+_Avoid_: Log rotation, TTL, expiry
+
 **Roundfix Skill**:
 A shipped agent skill that teaches an external Agent how to start Roundfix or how to resolve one assigned Batch.
 _Avoid_: Runtime, Review Source, plugin

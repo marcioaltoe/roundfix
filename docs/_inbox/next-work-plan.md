@@ -73,6 +73,54 @@ into a robustness spec (0011 or a dedicated 0012):**
   stops) but removes the completion notification, so a comprehensive monitor
   is the only signal.
 
+**Round-4 robustness findings (from the 0011 dogfood, 2026-07-06):**
+
+- **R4-1 preflight sweep hard-fails on failed-Task debris**: the preflight
+  sweep and `stop --force` reap terminal-Run worktree debris with
+  `git worktree remove` **without `--force`**. A failed Task keeps its Task
+  Worktree by design, and that worktree holds the agent's uncommitted edits, so
+  `git worktree remove` refuses and the sweep aborts Preflight with exit 2 —
+  bricking every future `implement` Run for that repo until a manual
+  `git worktree remove --force`. roundfix cannot self-heal it (both reap paths
+  share the bug). Fix candidate: force-remove terminal-Run debris the sweep
+  owns, or skip-and-warn instead of hard-failing Preflight. Severity: high
+  (any single failed Task blocks the repo). Interim: manual force-remove +
+  branch delete.
+- **R4-2 orphaned adapters survive session-close reaping**: terminal/failed
+  Runs still leak PPID=1 `codex-acp` processes whose acpx session is already
+  gone ("No named session … for cwd"), so 0010's session-close reaping has no
+  session to close and the OS processes leak (9 accumulated from one Run).
+  Extends R3-6: reaping must also cover adapters whose session is already
+  detached — reap by explicit PID or process-tree, not only by session close.
+  Interim: reap by explicit PID when no Run is active.
+- **R4-3 concurrent Tasks editing one file conflict at integration**: the
+  serialized cherry-pick integration (ADR-0026) fails the second concurrent
+  Wave Task when two independent (`needs: []`) Tasks edit the same file. 0011's
+  Wave-1 Tasks all touch `internal/cli/cli.go`, so concurrency 2 produced a
+  spurious `integration conflict: internal/cli/cli.go` that failed task_02 even
+  though its code was correct. Two mitigations, not mutually exclusive: (a)
+  decomposition discipline — one Task owns a hot shared file per Wave, or make
+  such Tasks depend on each other so they serialize; (b) product — a 3-way
+  merge instead of a plain cherry-pick, or auto-serialize Wave Tasks that touch
+  overlapping paths. Interim for the dogfood: run cli-heavy specs at
+  `worktree.concurrency: 1`.
+- **R4-4 outcome under-reports failures as "skipped"**: the deterministic
+  implement outcome line re-reads each Task's status from the Run Worktree,
+  where a failed Task's `failed` status never lands (it stays in the kept Task
+  Worktree, un-integrated), so genuine verification/integration failures print
+  as `skipped` with `0 failed`. The failures are visible in the stream
+  (`Task task_NN failed: …`) but the summary misleads. Fix candidate: report
+  the settled Task outcome the Daemon observed, not only the Run-Worktree file
+  status.
+- **R4-5 Run Event Journal never pruned → unbounded DB**: `run_events` is
+  append-only with no retention, so `~/.roundfix/roundfix.db` reached ~220 MB
+  (almost all journal rows carrying every agent payload). Routed to spec
+  **0014-run-store-retention** (ADR-0033): retention window + `roundfix gc`
+  (`--dry-run`) + best-effort preflight-sweep prune, pruning journals and
+  artifact dirs of terminal Runs only — never `runs` rows or active-run locks.
+  Marcio's call 2026-07-06: retention/prune + opt-in logs (0011 already makes
+  the redundant per-Batch agent log files opt-in); keep the durable Run state.
+
 ## Spec 0009 — Parallel Scheduling (the "cited layer")
 
 The worktree isolation from 0008 was built to host this. Turn sequential
@@ -151,6 +199,10 @@ tasks completed) → **0011-storage-lifecycle** (R1-17/R3-2/R3-3/R3-4 + opt-in
 logs + Archive Command) → **0012-npm-distribution** → **0013-codex-runtime-
 hygiene** (R3-8: `roundfix doctor` + verified-clean codex spawn). Each is one
 `roundfix implement` cycle with Codex, QA pass, then archive.
+
+Spec **0014-run-store-retention** was added 2026-07-06 (R4-5): implement it after
+0013 and before the review-surface validation. Queue: 0011 → 0012 → 0013 → 0014 →
+review validation (open PR + `roundfix watch --until-clean`).
 
 Specs 0011/0012/0013 were authored 2026-07-06 (PRD + TechSpec + Task Graph each;
 ADRs 0029/0030/0031 already existed, ADR-0032 added for R3-8; CONTEXT.md gained

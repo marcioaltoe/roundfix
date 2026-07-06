@@ -1,9 +1,12 @@
 ---
 spec: 0011-storage-lifecycle
-status: active
+status: archived
 created: 2026-07-06
 surfaces: [cli, infra, docs]
+archived: "2026-07-06"
+source_slug: 0011-storage-lifecycle
 ---
+
 
 # Review Artifacts, Run Logs, and Spec Archiving
 
