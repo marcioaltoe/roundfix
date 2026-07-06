@@ -73,7 +73,7 @@ func runSetupCommand(ctx context.Context, args []string, stdout, stderr io.Write
 		printSetupFailure(err, stderr)
 		return exitPreflight
 	}
-	loaded, err := setupDeps.loadConfig(roundconfig.LoadOptions{})
+	loaded, err := setupDeps.loadConfig(roundconfig.LoadOptions{Stderr: stderr})
 	if err != nil {
 		runner := setupRunner{req: req, deps: setupDeps, stdout: stdout, stderr: stderr}
 		runner.report("config", "failed", err.Error())

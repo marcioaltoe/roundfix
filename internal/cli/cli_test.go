@@ -740,6 +740,38 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 	}
 }
 
+func TestRunFetchWarnsAndIgnoresDeprecatedUserConfig(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
+resolve:
+  concurrent: 1
+`)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--round", "auto", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected fetch exit 0, got %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	if strings.Contains(stdout.String(), "deprecated") {
+		t.Fatalf("expected warning to stay off stdout, got %q", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "Review Issues: 1") || !strings.Contains(stdout.String(), "Artifacts: created new Round") {
+		t.Fatalf("expected normal fetch stdout, got %q", stdout.String())
+	}
+	warning := "config: resolve.concurrent is deprecated and ignored; use worktree.concurrency\n"
+	if strings.Count(stderr.String(), warning) != 1 {
+		t.Fatalf("expected one deprecated config warning %q, got %q", warning, stderr.String())
+	}
+	if strings.Contains(stderr.String(), "Preflight failed") {
+		t.Fatalf("expected fetch to proceed past Preflight, got %q", stderr.String())
+	}
+	assertRunCount(t, store.DatabasePath(homeDir), 1)
+}
+
 func TestRunWatchPrintsDeterministicStdoutReport(t *testing.T) {
 	tests := []struct {
 		name       string

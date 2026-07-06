@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"path/filepath"
@@ -169,6 +170,161 @@ worktree:
 	}
 }
 
+func TestLoadWarnsAndIgnoresDeprecatedConfigKeys(t *testing.T) {
+	const warning = "config: resolve.concurrent is deprecated and ignored; use worktree.concurrency\n"
+
+	tests := []struct {
+		name            string
+		userConfig      string
+		projectConfig   string
+		wantBatchSize   int
+		wantConcurrency int
+	}{
+		{
+			name: "user config exact 0009 corpse key",
+			userConfig: `
+resolve:
+  concurrent: 1
+`,
+			wantBatchSize:   3,
+			wantConcurrency: 2,
+		},
+		{
+			name: "user config mixes deprecated and valid keys",
+			userConfig: `
+resolve:
+  concurrent: 1
+  batch_size: 5
+worktree:
+  concurrency: 4
+`,
+			wantBatchSize:   5,
+			wantConcurrency: 4,
+		},
+		{
+			name: "project config mixes deprecated and valid keys",
+			projectConfig: `
+resolve:
+  concurrent: 1
+  batch_size: 6
+worktree:
+  concurrency: 3
+`,
+			wantBatchSize:   6,
+			wantConcurrency: 3,
+		},
+		{
+			name: "user and project config warn once per load",
+			userConfig: `
+resolve:
+  concurrent: 1
+`,
+			projectConfig: `
+resolve:
+  concurrent: 1
+  batch_size: 7
+`,
+			wantBatchSize:   7,
+			wantConcurrency: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir := t.TempDir()
+			workDir := t.TempDir()
+			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+			mustMkdir(t, filepath.Join(workDir, ".git"))
+			if strings.TrimSpace(tt.userConfig) != "" {
+				mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.userConfig)
+			}
+			if strings.TrimSpace(tt.projectConfig) != "" {
+				mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), tt.projectConfig)
+			}
+			var stderr bytes.Buffer
+
+			loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir, Stderr: &stderr})
+
+			if err != nil {
+				t.Fatalf("expected config to load, got %v", err)
+			}
+			if stderr.String() != warning {
+				t.Fatalf("expected warning %q, got %q", warning, stderr.String())
+			}
+			if loaded.Config.Resolve.BatchSize != tt.wantBatchSize {
+				t.Fatalf("expected resolve.batch_size %d, got %d", tt.wantBatchSize, loaded.Config.Resolve.BatchSize)
+			}
+			if loaded.Config.Worktree.Concurrency != tt.wantConcurrency {
+				t.Fatalf("expected worktree.concurrency %d, got %d", tt.wantConcurrency, loaded.Config.Worktree.Concurrency)
+			}
+		})
+	}
+}
+
+func TestLoadRejectsUnknownConfigKeys(t *testing.T) {
+	const warning = "config: resolve.concurrent is deprecated and ignored; use worktree.concurrency\n"
+
+	tests := []struct {
+		name          string
+		userConfig    string
+		projectConfig string
+		wantStderr    string
+	}{
+		{
+			name: "user config typo",
+			userConfig: `
+resolve:
+  concurent: 1
+`,
+		},
+		{
+			name: "project config typo",
+			projectConfig: `
+resolve:
+  concurent: 1
+`,
+		},
+		{
+			name: "deprecated key does not bypass typo",
+			userConfig: `
+resolve:
+  concurrent: 1
+  concurent: 1
+  batch_size: 4
+`,
+			wantStderr: warning,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir := t.TempDir()
+			workDir := t.TempDir()
+			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+			mustMkdir(t, filepath.Join(workDir, ".git"))
+			if strings.TrimSpace(tt.userConfig) != "" {
+				mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.userConfig)
+			}
+			if strings.TrimSpace(tt.projectConfig) != "" {
+				mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), tt.projectConfig)
+			}
+			var stderr bytes.Buffer
+
+			_, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir, Stderr: &stderr})
+
+			if err == nil {
+				t.Fatal("expected config load to fail")
+			}
+			if !strings.Contains(err.Error(), "resolve.concurent is not a supported config key") {
+				t.Fatalf("expected strict resolve typo error, got %q", err.Error())
+			}
+			if stderr.String() != tt.wantStderr {
+				t.Fatalf("expected stderr %q, got %q", tt.wantStderr, stderr.String())
+			}
+		})
+	}
+}
+
 func TestLoadRejectsInvalidConfig(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -239,12 +395,12 @@ worktree:
 			contains: "worktree.location must be absolute after ~ expansion",
 		},
 		{
-			name: "deprecated resolve concurrent",
+			name: "unknown resolve key",
 			config: `
 resolve:
-  concurrent: 2
+  concurent: 2
 `,
-			contains: "resolve.concurrent has been removed; use worktree.concurrency instead",
+			contains: "resolve.concurent is not a supported config key",
 		},
 	}
 

@@ -288,7 +288,7 @@ func runStopCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 		printStopFailure(err, stderr)
 		return exitPreflight
 	}
-	loaded, err := roundconfig.Load(roundconfig.LoadOptions{})
+	loaded, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
 	if err != nil {
 		printStopFailure(err, stderr)
 		return exitPreflight
@@ -901,7 +901,7 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 		return exitOK
 	}
 
-	loadedConfig, err := roundconfig.Load(roundconfig.LoadOptions{})
+	loadedConfig, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
 	if err != nil {
 		printPreflightFailure(name, err, stderr)
 		return exitPreflight

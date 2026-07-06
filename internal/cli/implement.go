@@ -56,7 +56,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitOK
 	}
 
-	loadedConfig, err := roundconfig.Load(roundconfig.LoadOptions{})
+	loadedConfig, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
 	if err != nil {
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight

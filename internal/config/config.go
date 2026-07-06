@@ -100,6 +100,7 @@ type Loaded struct {
 type LoadOptions struct {
 	HomeDir string
 	WorkDir string
+	Stderr  io.Writer
 }
 
 type InitOptions struct {
@@ -208,8 +209,6 @@ func (overlay *resolveOverlay) UnmarshalYAML(node *yaml.Node) error {
 			key := node.Content[index].Value
 			switch key {
 			case "batch_size":
-			case "concurrent":
-				return errors.New("resolve.concurrent has been removed; use worktree.concurrency instead")
 			default:
 				return fmt.Errorf("resolve.%s is not a supported config key", key)
 			}
@@ -222,6 +221,43 @@ func (overlay *resolveOverlay) UnmarshalYAML(node *yaml.Node) error {
 	}
 	*overlay = resolveOverlay(raw)
 	return nil
+}
+
+type deprecatedConfigKey struct {
+	path        []string
+	name        string
+	replacement string
+}
+
+var deprecatedConfigKeys = []deprecatedConfigKey{
+	{
+		path:        []string{"resolve", "concurrent"},
+		name:        "resolve.concurrent",
+		replacement: "worktree.concurrency",
+	},
+}
+
+type deprecatedConfigWarnings struct {
+	stderr  io.Writer
+	emitted map[string]bool
+}
+
+func newDeprecatedConfigWarnings(stderr io.Writer) *deprecatedConfigWarnings {
+	if stderr == nil {
+		stderr = os.Stderr
+	}
+	return &deprecatedConfigWarnings{
+		stderr:  stderr,
+		emitted: map[string]bool{},
+	}
+}
+
+func (warnings *deprecatedConfigWarnings) warn(key deprecatedConfigKey) {
+	if warnings == nil || warnings.emitted[key.name] {
+		return
+	}
+	warnings.emitted[key.name] = true
+	fmt.Fprintf(warnings.stderr, "config: %s is deprecated and ignored; use %s\n", key.name, key.replacement)
 }
 
 func Builtin() Config {
@@ -276,13 +312,14 @@ func Load(opts LoadOptions) (Loaded, error) {
 		HomeDir:        homeDir,
 		UserConfigPath: filepath.Join(homeDir, userConfigRelPath),
 	}
-	if err := applyConfigFile(&loaded.Config, loaded.UserConfigPath); err != nil {
+	warnings := newDeprecatedConfigWarnings(opts.Stderr)
+	if err := applyConfigFile(&loaded.Config, loaded.UserConfigPath, warnings); err != nil {
 		return Loaded{}, err
 	}
 
 	if loaded.GitRoot != "" {
 		loaded.ProjectConfigPath = filepath.Join(loaded.GitRoot, projectConfigName)
-		if err := applyConfigFile(&loaded.Config, loaded.ProjectConfigPath); err != nil {
+		if err := applyConfigFile(&loaded.Config, loaded.ProjectConfigPath, warnings); err != nil {
 			return Loaded{}, err
 		}
 	}
@@ -581,7 +618,7 @@ func ResolveWorktreeLocation(location string, gitRoot string, homeDir string) (s
 	return resolved, nil
 }
 
-func applyConfigFile(config *Config, path string) error {
+func applyConfigFile(config *Config, path string, warnings *deprecatedConfigWarnings) error {
 	content, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
@@ -590,8 +627,22 @@ func applyConfigFile(config *Config, path string) error {
 		return fmt.Errorf("read config %q: %w", path, err)
 	}
 
-	var overlay configOverlay
+	var document yaml.Node
 	decoder := yaml.NewDecoder(bytes.NewReader(content))
+	if err := decoder.Decode(&document); err != nil {
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		return fmt.Errorf("parse config %q: %w", path, err)
+	}
+	stripDeprecatedConfigKeys(&document, warnings)
+	cleaned, err := encodeYAMLNode(&document)
+	if err != nil {
+		return fmt.Errorf("parse config %q: %w", path, err)
+	}
+
+	var overlay configOverlay
+	decoder = yaml.NewDecoder(bytes.NewReader(cleaned))
 	decoder.KnownFields(true)
 	if err := decoder.Decode(&overlay); err != nil {
 		if errors.Is(err, io.EOF) {
@@ -601,6 +652,60 @@ func applyConfigFile(config *Config, path string) error {
 	}
 	applyOverlay(config, overlay)
 	return nil
+}
+
+func stripDeprecatedConfigKeys(document *yaml.Node, warnings *deprecatedConfigWarnings) {
+	for _, key := range deprecatedConfigKeys {
+		if removeYAMLPath(document, key.path) {
+			warnings.warn(key)
+		}
+	}
+}
+
+func removeYAMLPath(node *yaml.Node, path []string) bool {
+	if node == nil || len(path) == 0 {
+		return false
+	}
+	if node.Kind == yaml.DocumentNode {
+		if len(node.Content) == 0 {
+			return false
+		}
+		return removeYAMLPath(node.Content[0], path)
+	}
+	if node.Kind != yaml.MappingNode {
+		return false
+	}
+	removed := false
+	for index := 0; index+1 < len(node.Content); {
+		key := node.Content[index]
+		value := node.Content[index+1]
+		if key.Value != path[0] {
+			index += 2
+			continue
+		}
+		if len(path) == 1 {
+			node.Content = append(node.Content[:index], node.Content[index+2:]...)
+			removed = true
+			continue
+		}
+		if removeYAMLPath(value, path[1:]) {
+			removed = true
+		}
+		index += 2
+	}
+	return removed
+}
+
+func encodeYAMLNode(node *yaml.Node) ([]byte, error) {
+	var buffer bytes.Buffer
+	encoder := yaml.NewEncoder(&buffer)
+	if err := encoder.Encode(node); err != nil {
+		return nil, err
+	}
+	if err := encoder.Close(); err != nil {
+		return nil, err
+	}
+	return buffer.Bytes(), nil
 }
 
 func applyOverlay(config *Config, overlay configOverlay) {

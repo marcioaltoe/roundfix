@@ -41,7 +41,7 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		printAttachFailure(err, stderr)
 		return exitPreflight
 	}
-	loaded, err := roundconfig.Load(roundconfig.LoadOptions{})
+	loaded, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
 	if err != nil {
 		printAttachFailure(err, stderr)
 		return exitPreflight

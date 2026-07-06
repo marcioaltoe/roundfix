@@ -69,7 +69,7 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		printPreflightFailure("settle", err, stderr)
 		return exitPreflight
 	}
-	plan, err := preflightSettle(ctx, req)
+	plan, err := preflightSettle(ctx, req, stderr)
 	if err != nil {
 		printPreflightFailure("settle", err, stderr)
 		return exitPreflight
@@ -140,8 +140,8 @@ func parseSettleCommand(args []string) (settleRequest, error) {
 	return req, nil
 }
 
-func preflightSettle(ctx context.Context, req settleRequest) (settlePlan, error) {
-	loadedConfig, err := roundconfig.Load(roundconfig.LoadOptions{})
+func preflightSettle(ctx context.Context, req settleRequest, stderr io.Writer) (settlePlan, error) {
+	loadedConfig, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
 	if err != nil {
 		return settlePlan{}, err
 	}
