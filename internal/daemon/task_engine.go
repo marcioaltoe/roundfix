@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -25,18 +26,20 @@ import (
 // topological order spec.Load produced. WorkDir is the git root and the
 // Agent working directory.
 type TaskPlan struct {
-	RunID       string
-	Session     agent.SessionRef
-	WorkDir     string
-	RunWorktree runworktree.Ref
-	ArtifactDir string
-	AgentLogs   bool
-	Spec        spec.Spec
-	Tasks       []spec.Task
-	Runtime     agent.RuntimeSpec
-	QA          bool
-	Concurrency int
-	CopyList    []string
+	RunID           string
+	Session         agent.SessionRef
+	WorkDir         string
+	RunWorktree     runworktree.Ref
+	ArtifactDir     string
+	AgentLogs       bool
+	Spec            spec.Spec
+	Tasks           []spec.Task
+	Runtime         agent.RuntimeSpec
+	QA              bool
+	Concurrency     int
+	CopyList        []string
+	Bootstrap       runworktree.BootstrapSpec
+	BootstrapOutput io.Writer
 }
 
 // TaskCycleResult reports what one Task cycle settled. Skipped counts
@@ -223,8 +226,29 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 	var taskRef runworktree.TaskRef
 	if usesTaskWorktree {
 		var err error
-		taskRef, err = engine.deps.TaskWorktrees.CreateTask(ctx, plan.RunWorktree, task.ID, plan.CopyList)
+		taskRef, err = engine.deps.TaskWorktrees.CreateTask(ctx, plan.RunWorktree, task.ID, runworktree.TaskCreateOptions{
+			CopyList:        plan.CopyList,
+			Bootstrap:       plan.Bootstrap,
+			BootstrapOutput: plan.BootstrapOutput,
+		})
 		if err != nil {
+			var bootstrapErr *runworktree.BootstrapError
+			if errors.As(err, &bootstrapErr) && strings.TrimSpace(taskRef.Path) != "" {
+				taskPlan = taskPlanForTaskWorktree(plan, task, taskRef)
+				reason := err.Error()
+				if settleErr := engine.settleTask(ctx, taskPlan, task, ordinal, spec.StatusFailed, reason); settleErr != nil {
+					return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: true, taskRef: taskRef, err: settleErr}
+				}
+				fmt.Fprintf(engine.deps.Progress, "Task %s failed: %s\n", task.ID, reason)
+				return taskWorkerResult{
+					task:             task,
+					ordinal:          ordinal,
+					status:           spec.StatusFailed,
+					taskPlan:         taskPlan,
+					taskRef:          taskRef,
+					usesTaskWorktree: true,
+				}
+			}
 			return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: true, err: err}
 		}
 		taskPlan = taskPlanForTaskWorktree(plan, task, taskRef)

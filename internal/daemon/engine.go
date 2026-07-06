@@ -66,15 +66,15 @@ type Engine struct {
 }
 
 type TaskWorktreeManager interface {
-	CreateTask(ctx context.Context, run runworktree.Ref, taskID string, copyList []string) (runworktree.TaskRef, error)
+	CreateTask(ctx context.Context, run runworktree.Ref, taskID string, opts runworktree.TaskCreateOptions) (runworktree.TaskRef, error)
 	IntegrateTask(ctx context.Context, run runworktree.Ref, task runworktree.TaskRef) (runworktree.TaskIntegration, error)
 	CleanupTask(ctx context.Context, task runworktree.TaskRef) error
 }
 
 type GitTaskWorktreeManager struct{}
 
-func (GitTaskWorktreeManager) CreateTask(ctx context.Context, run runworktree.Ref, taskID string, copyList []string) (runworktree.TaskRef, error) {
-	return runworktree.CreateTask(ctx, run, taskID, copyList)
+func (GitTaskWorktreeManager) CreateTask(ctx context.Context, run runworktree.Ref, taskID string, opts runworktree.TaskCreateOptions) (runworktree.TaskRef, error) {
+	return runworktree.CreateTaskWithOptions(ctx, run, taskID, opts)
 }
 
 func (GitTaskWorktreeManager) IntegrateTask(ctx context.Context, run runworktree.Ref, task runworktree.TaskRef) (runworktree.TaskIntegration, error) {

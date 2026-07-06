@@ -51,6 +51,12 @@ type CreateOptions struct {
 	BootstrapOutput io.Writer
 }
 
+type TaskCreateOptions struct {
+	CopyList        []string
+	Bootstrap       BootstrapSpec
+	BootstrapOutput io.Writer
+}
+
 type BootstrapSpec struct {
 	Command string
 	Timeout time.Duration
@@ -131,6 +137,10 @@ func Create(ctx context.Context, opts CreateOptions) (Ref, error) {
 }
 
 func CreateTask(ctx context.Context, run Ref, taskID string, copyList []string) (TaskRef, error) {
+	return CreateTaskWithOptions(ctx, run, taskID, TaskCreateOptions{CopyList: copyList})
+}
+
+func CreateTaskWithOptions(ctx context.Context, run Ref, taskID string, opts TaskCreateOptions) (TaskRef, error) {
 	if err := validateRef(run); err != nil {
 		return TaskRef{}, err
 	}
@@ -158,8 +168,11 @@ func CreateTask(ctx context.Context, run Ref, taskID string, copyList []string) 
 	if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "add", "-b", ref.Branch, ref.Path, baseSHA); err != nil {
 		return TaskRef{}, fmt.Errorf("create Task Worktree: %w", err)
 	}
-	if err := copyProvisionedFiles(ref.UserRoot, ref.Path, copyList); err != nil {
+	if err := copyProvisionedFiles(ref.UserRoot, ref.Path, opts.CopyList); err != nil {
 		return TaskRef{}, err
+	}
+	if err := runBootstrap(ctx, ref.Path, opts.Bootstrap, opts.BootstrapOutput); err != nil {
+		return ref, err
 	}
 	return ref, nil
 }

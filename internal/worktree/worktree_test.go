@@ -123,6 +123,35 @@ func TestCreateRunsBootstrapAfterCopyInRunWorktreeRoot(t *testing.T) {
 	}
 }
 
+func TestCreateTaskRunsBootstrapAfterCopyInTaskWorktreeRoot(t *testing.T) {
+	ctx := context.Background()
+	fixture := newIntegrationFixture(t, "task-bootstrap")
+	mustWriteWorktreeTest(t, filepath.Join(fixture.repoDir, ".env.task"), "TASK_SECRET=1\n")
+	var output bytes.Buffer
+
+	task, err := CreateTaskWithOptions(ctx, fixture.ref, "task_01", TaskCreateOptions{
+		CopyList: []string{".env.task"},
+		Bootstrap: BootstrapSpec{
+			Command: "test -f .env.task && pwd > task-bootstrap.pwd && cat .env.task > task-bootstrap.env && printf task-bootstrap-output",
+			Timeout: time.Second,
+		},
+		BootstrapOutput: &output,
+	})
+	if err != nil {
+		t.Fatalf("create Task Worktree: %v", err)
+	}
+
+	if got := strings.TrimSpace(mustReadWorktreeTest(t, filepath.Join(task.Path, "task-bootstrap.pwd"))); got != task.Path {
+		t.Fatalf("expected bootstrap to run in %q, got %q", task.Path, got)
+	}
+	if got := mustReadWorktreeTest(t, filepath.Join(task.Path, "task-bootstrap.env")); got != "TASK_SECRET=1\n" {
+		t.Fatalf("expected bootstrap to see copied .env.task, got %q", got)
+	}
+	if output.String() != "task-bootstrap-output" {
+		t.Fatalf("expected bootstrap output to stream, got %q", output.String())
+	}
+}
+
 func TestRunBootstrapReturnsBootstrapErrorOnNonZeroExit(t *testing.T) {
 	var output bytes.Buffer
 	command := "printf failure-tail; exit 7"

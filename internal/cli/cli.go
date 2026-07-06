@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -1794,11 +1795,12 @@ func worktreeBootstrapSpec(config roundconfig.Config) runworktree.BootstrapSpec 
 }
 
 func newBootstrapOutputWriter(ctx context.Context, runID string, runStore *store.Store, stderr io.Writer) io.Writer {
-	return bootstrapRunWriter{
+	return &bootstrapRunWriter{
 		ctx:    ctx,
 		runID:  runID,
 		stderr: stderr,
 		sink:   store.JournalSink{Store: runStore},
+		mu:     &sync.Mutex{},
 	}
 }
 
@@ -1807,11 +1809,16 @@ type bootstrapRunWriter struct {
 	runID  string
 	stderr io.Writer
 	sink   runevent.Sink
+	mu     *sync.Mutex
 }
 
-func (writer bootstrapRunWriter) Write(p []byte) (int, error) {
+func (writer *bootstrapRunWriter) Write(p []byte) (int, error) {
 	if len(p) == 0 {
 		return 0, nil
+	}
+	if writer.mu != nil {
+		writer.mu.Lock()
+		defer writer.mu.Unlock()
 	}
 	if writer.stderr != nil {
 		n, err := writer.stderr.Write(p)

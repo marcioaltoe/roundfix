@@ -11,7 +11,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -441,6 +443,7 @@ func implementTaskPath(repoDir string, taskID string) string {
 // Spec's QA Report, the way the qa-gate Agent does; an empty qaReport
 // writes none.
 type implementFakeRunner struct {
+	mu           sync.Mutex
 	gitRoot      string
 	statusByTask map[string]spec.Status
 	errByTask    map[string]error
@@ -460,18 +463,27 @@ func (runner *implementFakeRunner) Probe(context.Context, agent.RuntimeSpec) err
 }
 
 func (runner *implementFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
+	runner.mu.Lock()
 	runner.calls++
 	runner.logPaths = append(runner.logPaths, req.LogPath)
+	agentOutput := runner.agentOutput
+	writeLogs := runner.writeLogs
+	errByTask := runner.errByTask
+	onTask := runner.onTask
+	statusByTask := runner.statusByTask
+	qaReport := runner.qaReport
+	runner.mu.Unlock()
+
 	executionRoot := strings.TrimSpace(req.GitRoot)
 	if executionRoot == "" {
 		executionRoot = runner.gitRoot
 	}
-	if runner.agentOutput != "" {
-		if err := publishFakeAgentOutput(ctx, sink, req, runner.agentOutput); err != nil {
+	if agentOutput != "" {
+		if err := publishFakeAgentOutput(ctx, sink, req, agentOutput); err != nil {
 			return agent.ExecuteResult{}, err
 		}
 	}
-	if runner.writeLogs && strings.TrimSpace(req.LogPath) != "" {
+	if writeLogs && strings.TrimSpace(req.LogPath) != "" {
 		if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {
 			return agent.ExecuteResult{}, err
 		}
@@ -481,28 +493,32 @@ func (runner *implementFakeRunner) Run(ctx context.Context, req agent.ExecuteReq
 	}
 	taskID := implementTaskIDFromPrompt(req.Prompt)
 	if taskID == "" && strings.Contains(req.Prompt, "Spec QA gate") {
+		runner.mu.Lock()
 		runner.qaCalls++
-		if runner.qaReport != "" {
+		runner.mu.Unlock()
+		if qaReport != "" {
 			reportPath := filepath.Join(executionRoot, implementQAReportRelPath())
 			if err := os.MkdirAll(filepath.Dir(reportPath), 0o755); err != nil {
 				return agent.ExecuteResult{}, err
 			}
-			if err := os.WriteFile(reportPath, []byte(runner.qaReport), 0o644); err != nil {
+			if err := os.WriteFile(reportPath, []byte(qaReport), 0o644); err != nil {
 				return agent.ExecuteResult{}, err
 			}
 		}
 		return agent.ExecuteResult{LogPath: req.LogPath}, nil
 	}
+	runner.mu.Lock()
 	runner.taskIDs = append(runner.taskIDs, taskID)
-	if err := runner.errByTask[taskID]; err != nil {
+	runner.mu.Unlock()
+	if err := errByTask[taskID]; err != nil {
 		return agent.ExecuteResult{}, err
 	}
-	if runner.onTask != nil {
-		if err := runner.onTask(req, taskID); err != nil {
+	if onTask != nil {
+		if err := onTask(req, taskID); err != nil {
 			return agent.ExecuteResult{}, err
 		}
 	}
-	if status, ok := runner.statusByTask[taskID]; ok {
+	if status, ok := statusByTask[taskID]; ok {
 		if err := spec.SetStatus(implementTaskPath(executionRoot, taskID), status); err != nil {
 			return agent.ExecuteResult{}, err
 		}
@@ -1386,6 +1402,71 @@ func TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification(t *testing.T) {
 		t.Fatalf("expected one Agent call after bootstrap, got calls=%d tasks=%v", runner.calls, runner.taskIDs)
 	}
 	if !strings.Contains(stdout.String(), "Clean: all 1 Task(s) completed.") {
+		t.Fatalf("expected Clean stdout, got %q", stdout.String())
+	}
+	run := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
+	if run.State != store.StateClean {
+		t.Fatalf("expected Run Clean, got %q", run.State)
+	}
+}
+
+func TestRunImplementBootstrapsEachConcurrentTaskWorktreeBeforeAgentWork(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build the first slice", verification: []string{"test -f bootstrap.ready"}},
+		{id: "task_02", title: "Build the second slice", verification: []string{"test -f bootstrap.ready"}},
+	})
+	command := "pwd > bootstrap.cwd && printf ready > bootstrap.ready"
+	mustWrite(t, filepath.Join(repoDir, ".gitignore"), "bootstrap.cwd\nbootstrap.ready\n")
+	gitImplement(t, repoDir, "add", ".gitignore")
+	gitImplement(t, repoDir, "commit", "-m", "ignore bootstrap markers")
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), fmt.Sprintf("worktree:\n  concurrency: 2\n  bootstrap: %q\n  bootstrap_timeout: 1s\n", command))
+	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+	gitImplement(t, repoDir, "commit", "-m", "configure concurrent worktree bootstrap")
+	runner := &implementFakeRunner{
+		gitRoot: repoDir,
+		statusByTask: map[string]spec.Status{
+			"task_01": spec.StatusCompleted,
+			"task_02": spec.StatusCompleted,
+		},
+		onTask: func(req agent.ExecuteRequest, taskID string) error {
+			if req.GitRoot == repoDir {
+				return fmt.Errorf("%s ran in the user checkout instead of a Task Worktree", taskID)
+			}
+			ready, err := os.ReadFile(filepath.Join(req.GitRoot, "bootstrap.ready"))
+			if err != nil {
+				return fmt.Errorf("read %s bootstrap marker: %w", taskID, err)
+			}
+			if got := string(ready); got != "ready" {
+				return fmt.Errorf("%s bootstrap marker content = %q", taskID, got)
+			}
+			cwd, err := os.ReadFile(filepath.Join(req.GitRoot, "bootstrap.cwd"))
+			if err != nil {
+				return fmt.Errorf("read %s bootstrap cwd: %w", taskID, err)
+			}
+			if got := strings.TrimSpace(string(cwd)); got != req.GitRoot {
+				return fmt.Errorf("%s bootstrap cwd = %q, want %q", taskID, got, req.GitRoot)
+			}
+			return nil
+		},
+	}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected Clean exit, got %d (stderr %q)", code, stderr.String())
+	}
+	if runner.calls != 2 {
+		t.Fatalf("expected two Agent calls after Task Worktree bootstrap, got %d", runner.calls)
+	}
+	gotTasks := append([]string(nil), runner.taskIDs...)
+	sort.Strings(gotTasks)
+	if got := strings.Join(gotTasks, "|"); got != "task_01|task_02" {
+		t.Fatalf("expected both Tasks to run, got %q", got)
+	}
+	if !strings.Contains(stdout.String(), "Clean: all 2 Task(s) completed.") {
 		t.Fatalf("expected Clean stdout, got %q", stdout.String())
 	}
 	run := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
