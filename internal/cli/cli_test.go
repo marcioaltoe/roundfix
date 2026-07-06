@@ -24,6 +24,7 @@ import (
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
+	"roundfix/internal/spec"
 	"roundfix/internal/store"
 	roundtui "roundfix/internal/tui"
 	"roundfix/internal/watch"
@@ -2834,6 +2835,78 @@ func TestRunStopForceCancelsImplementRunAndReleasesLocks(t *testing.T) {
 	}
 }
 
+func TestRunStopForceReapsEmptyRunAndTaskWorktrees(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:     "task_01",
+		title:  "Stopped task",
+		status: string(spec.StatusPending),
+	}})
+	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
+	active, _, taskRef := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "task_01", "")
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
+		t.Fatalf("expected force stop report, got %q", stdout.String())
+	}
+	for _, expected := range []string{
+		"reaped terminal Worktree",
+		"path=" + active.WorkDir,
+		"branch=" + runworktree.BranchName(active.ID),
+		"path=" + taskRef.Path,
+		"branch=" + taskRef.Branch,
+	} {
+		if !strings.Contains(stderr.String(), expected) {
+			t.Fatalf("expected stderr to contain %q, got %q", expected, stderr.String())
+		}
+	}
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+	assertRunWorktreeRemoved(t, active.WorkDir)
+	assertRunBranchRemoved(t, repoDir, runworktree.BranchName(active.ID))
+	assertRunWorktreeRemoved(t, taskRef.Path)
+	assertRunBranchRemoved(t, repoDir, taskRef.Branch)
+}
+
+func TestRunStopForceKeepsRunWorktreeWithCommits(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:     "task_01",
+		title:  "Stopped task",
+		status: string(spec.StatusPending),
+	}})
+	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
+	active, runRef, _ := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "", "")
+	if err := os.WriteFile(filepath.Join(runRef.Path, "kept.txt"), []byte("settled work\n"), 0o644); err != nil {
+		t.Fatalf("write kept work: %v", err)
+	}
+	gitImplement(t, runRef.Path, "add", "kept.txt")
+	gitImplement(t, runRef.Path, "commit", "-m", "settled work")
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if strings.Contains(stderr.String(), "reaped terminal Worktree") {
+		t.Fatalf("expected no debris reap report for a Run Branch with commits, got %q", stderr.String())
+	}
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+	assertRunWorktreeExists(t, active.WorkDir)
+	assertRunBranchExists(t, repoDir, runworktree.BranchName(active.ID))
+}
+
 func TestRunStopForceReportsCancelFailuresButCompletes(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -3477,8 +3550,8 @@ func withFakeReviewRunWorktrees(t *testing.T) {
 	cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
 		return os.RemoveAll(ref.Path)
 	}
-	pruneTerminalRunWorktrees = func(context.Context, string, string, func(string) bool) error {
-		return nil
+	pruneTerminalRunWorktrees = func(context.Context, string, string, func(string) bool) ([]runworktree.PrunedRef, error) {
+		return nil, nil
 	}
 	t.Cleanup(func() {
 		createRunWorktree = oldCreate

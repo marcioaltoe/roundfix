@@ -45,7 +45,7 @@ Options:
 var createRunWorktree = runworktree.Create
 var integrateRunWorktree = runworktree.Integrate
 var cleanupCleanRunWorktree = runworktree.CleanupClean
-var pruneTerminalRunWorktrees = runworktree.PruneTerminal
+var pruneTerminalRunWorktrees = runworktree.PruneTerminalReport
 
 // runImplementCommand executes the Implement Command: Preflight Validation,
 // Run creation, the Live Run View, one Task cycle over the Task Graph, and
@@ -125,10 +125,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	defer func() {
 		_ = runStore.Close()
 	}()
-	if err := pruneTerminalRunWorktrees(ctx, gitState.Root, loadedConfig.Config.Worktree.Location, func(runID string) bool {
-		run, found, err := runStore.Run(ctx, runID)
-		return err == nil && found && run.State == store.StateClean
-	}); err != nil {
+	if err := pruneTerminalRunWorktreeDebris(ctx, gitState.Root, loadedConfig.Config.Worktree.Location, runStore, stderr); err != nil {
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
@@ -681,4 +678,18 @@ func gitHEAD(ctx context.Context, workDir string) (string, error) {
 		return "", errors.New("git returned an empty HEAD")
 	}
 	return head, nil
+}
+
+func pruneTerminalRunWorktreeDebris(ctx context.Context, gitRoot string, location string, runStore *store.Store, stderr io.Writer) error {
+	pruned, err := pruneTerminalRunWorktrees(ctx, gitRoot, location, func(runID string) bool {
+		run, found, err := runStore.Run(ctx, runID)
+		return err == nil && found && store.IsTerminalState(run.State)
+	})
+	if err != nil {
+		return err
+	}
+	for _, ref := range pruned {
+		fmt.Fprintf(stderr, "%s: reaped terminal Worktree path=%s branch=%s\n", app.Name, ref.Path, ref.Branch)
+	}
+	return nil
 }

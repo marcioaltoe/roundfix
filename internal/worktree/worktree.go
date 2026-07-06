@@ -66,6 +66,13 @@ type TaskIntegration struct {
 	Reason string
 }
 
+type PrunedRef struct {
+	RunID  string
+	TaskID string
+	Path   string
+	Branch string
+}
+
 func Create(ctx context.Context, opts CreateOptions) (Ref, error) {
 	ref, err := newRef(opts.UserRoot, opts.Location, opts.RunID)
 	if err != nil {
@@ -122,6 +129,23 @@ func CreateTask(ctx context.Context, run Ref, taskID string, copyList []string) 
 		return TaskRef{}, err
 	}
 	return ref, nil
+}
+
+func TaskRefFor(run Ref, taskID string) (TaskRef, error) {
+	if err := validateRef(run); err != nil {
+		return TaskRef{}, err
+	}
+	taskID, err := cleanPathSegment(taskID)
+	if err != nil {
+		return TaskRef{}, fmt.Errorf("derive Task Worktree ref: %w", err)
+	}
+	return TaskRef{
+		RunID:    run.RunID,
+		TaskID:   taskID,
+		Path:     filepath.Join(filepath.Dir(run.Path), taskPathSegment(run.RunID, taskID)),
+		Branch:   TaskBranchName(run.RunID, taskID),
+		UserRoot: run.UserRoot,
+	}, nil
 }
 
 func Integrate(ctx context.Context, ref Ref, targetBranch, runSHA string) (IntegrationResult, error) {
@@ -259,28 +283,34 @@ func CleanupTask(ctx context.Context, task TaskRef) error {
 	return nil
 }
 
-func PruneTerminal(ctx context.Context, userRoot string, location string, isTerminalClean func(runID string) bool) error {
+func PruneTerminal(ctx context.Context, userRoot string, location string, isTerminalRun func(runID string) bool) error {
+	_, err := PruneTerminalReport(ctx, userRoot, location, isTerminalRun)
+	return err
+}
+
+func PruneTerminalReport(ctx context.Context, userRoot string, location string, isTerminalRun func(runID string) bool) ([]PrunedRef, error) {
 	userRoot = filepath.Clean(strings.TrimSpace(userRoot))
 	if userRoot == "." || userRoot == "" {
-		return errors.New("prune Run Worktrees: user root is required")
+		return nil, errors.New("prune Run Worktrees: user root is required")
 	}
-	if isTerminalClean == nil {
-		return errors.New("prune Run Worktrees: terminal Clean callback is required")
+	if isTerminalRun == nil {
+		return nil, errors.New("prune Run Worktrees: terminal callback is required")
 	}
 
 	runner := execGitRunner{}
 	if _, err := runner.Run(ctx, userRoot, "worktree", "prune"); err != nil {
-		return fmt.Errorf("prune git worktrees: %w", err)
+		return nil, fmt.Errorf("prune git worktrees: %w", err)
 	}
 
 	refs, err := terminalCandidates(ctx, runner, userRoot, location)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
+	var pruned []PrunedRef
 	var errs []error
 	for _, ref := range refs {
-		if !isTerminalClean(ref.RunID) {
+		if !isTerminalRun(ref.RunID) {
 			continue
 		}
 		hasCommits, err := branchHasCommitsBeyondBase(ctx, runner, userRoot, ref.Branch)
@@ -302,9 +332,16 @@ func PruneTerminal(ctx context.Context, userRoot string, location string, isTerm
 		}
 		if err := deleteRunBranch(ctx, runner, userRoot, ref.Branch); err != nil {
 			errs = append(errs, err)
+			continue
 		}
+		pruned = append(pruned, PrunedRef{
+			RunID:  ref.RunID,
+			TaskID: ref.TaskID,
+			Path:   ref.Path,
+			Branch: ref.Branch,
+		})
 	}
-	return errors.Join(errs...)
+	return pruned, errors.Join(errs...)
 }
 
 func BranchName(runID string) string {

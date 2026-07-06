@@ -373,7 +373,7 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 			return stopResult{}, validationError{message: fmt.Sprintf("Run %q does not exist", req.runID)}
 		}
 		if req.force {
-			return forceStopRun(ctx, runStore, current)
+			return forceStopRun(ctx, runStore, current, loaded.Config.Worktree.Location)
 		}
 		if err := runStore.RequestStop(ctx, current.ID); err != nil {
 			return stopResult{}, err
@@ -395,7 +395,7 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 			return stopResult{}, validationError{message: fmt.Sprintf("no Active Run exists for repository %q and Spec %q", gitRoot, specSlug)}
 		}
 		if req.force {
-			return forceStopRun(ctx, runStore, active)
+			return forceStopRun(ctx, runStore, active, loaded.Config.Worktree.Location)
 		}
 		if err := runStore.RequestStop(ctx, active.ID); err != nil {
 			return stopResult{}, err
@@ -430,7 +430,7 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 		return stopResult{}, validationError{message: fmt.Sprintf("no Active Run exists for Head Repository %q and PR Head Branch %q", headRepo, headBranch)}
 	}
 	if req.force {
-		return forceStopRun(ctx, runStore, active)
+		return forceStopRun(ctx, runStore, active, loaded.Config.Worktree.Location)
 	}
 	if err := runStore.RequestStop(ctx, active.ID); err != nil {
 		return stopResult{}, err
@@ -438,11 +438,23 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 	return stopResult{Run: active, Requested: true}, nil
 }
 
-func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run) (stopResult, error) {
+func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, worktreeLocation string) (stopResult, error) {
 	warnings := bestEffortCancelAgentSession(ctx, active)
 	run, err := runStore.CompleteRun(ctx, active.ID, store.StateStopped)
 	if err != nil {
 		return stopResult{}, err
+	}
+	if strings.TrimSpace(active.GitRoot) != "" && strings.TrimSpace(active.WorkDir) != "" {
+		pruned, pruneErr := pruneTerminalRunWorktrees(ctx, active.GitRoot, worktreeLocation, func(runID string) bool {
+			run, found, err := runStore.Run(ctx, runID)
+			return err == nil && found && store.IsTerminalState(run.State)
+		})
+		for _, ref := range pruned {
+			warnings = append(warnings, fmt.Sprintf("reaped terminal Worktree path=%s branch=%s", ref.Path, ref.Branch))
+		}
+		if pruneErr != nil {
+			warnings = append(warnings, fmt.Sprintf("terminal Worktree reap failed for Run %s: %v", active.ID, pruneErr))
+		}
 	}
 	return stopResult{Run: run, Forced: true, Warnings: warnings}, nil
 }
@@ -2408,7 +2420,8 @@ Options:
 Default stop is graceful: it records a Stop Request and the Run stops after
 the current Work Item settles. Use --force only for a dead, stuck, or runaway
 Run; it cancels the Agent Session best-effort and completes the Run Stopped
-immediately.
+immediately. It also reaps provably empty kept Worktrees and branches,
+reporting each reaped path and branch on stderr.
 `
 	case "skills":
 		return `Usage:
@@ -2501,8 +2514,8 @@ func printStopSuccess(result stopResult, stdout io.Writer) {
 		fmt.Fprintf(stdout, "%s\n", style.cyan("Result:"))
 		fmt.Fprintln(stdout, "  Force stop completed the Run as Stopped immediately and released its Active Run locks.")
 		fmt.Fprintln(stdout)
-		fmt.Fprintf(stdout, "%s\n", style.cyan("No repository side effects:"))
-		fmt.Fprintln(stdout, "  Roundfix did not edit files, commit, push, fetch, or resolve Review Source threads.")
+		fmt.Fprintf(stdout, "%s\n", style.cyan("No user work side effects:"))
+		fmt.Fprintln(stdout, "  Roundfix did not edit user files, commit, push, fetch, or resolve Review Source threads.")
 		return
 	}
 	fmt.Fprintf(stdout, "%s\n\n", style.green(style.bold("Roundfix Run stopped")))

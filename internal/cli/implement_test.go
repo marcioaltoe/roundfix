@@ -326,8 +326,8 @@ func withFakeRunWorktrees(t *testing.T) {
 	cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
 		return os.RemoveAll(ref.Path)
 	}
-	pruneTerminalRunWorktrees = func(context.Context, string, string, func(string) bool) error {
-		return nil
+	pruneTerminalRunWorktrees = func(context.Context, string, string, func(string) bool) ([]runworktree.PrunedRef, error) {
+		return nil, nil
 	}
 	t.Cleanup(func() {
 		createRunWorktree = oldCreate
@@ -1676,6 +1676,47 @@ func TestRunImplementUnresolvedKeepsRealRunWorktreeAndPrintsPath(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "Unresolved: 0 completed, 1 failed") {
 		t.Fatalf("expected Unresolved stdout, got %q", stdout.String())
+	}
+}
+
+func TestRunImplementPreflightReapsEmptyTerminalRunAndTaskWorktrees(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:     "task_01",
+		title:  "Build after cleanup",
+		status: string(spec.StatusPending),
+	}})
+	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
+	staleRun, _, staleTask := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "task_01", store.StateStopped)
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected implement exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	for _, expected := range []string{
+		"reaped terminal Worktree",
+		"path=" + staleRun.WorkDir,
+		"branch=" + runworktree.BranchName(staleRun.ID),
+		"path=" + staleTask.Path,
+		"branch=" + staleTask.Branch,
+	} {
+		if !strings.Contains(stderr.String(), expected) {
+			t.Fatalf("expected stderr to contain %q, got %q", expected, stderr.String())
+		}
+	}
+	assertRunWorktreeRemoved(t, staleRun.WorkDir)
+	assertRunBranchRemoved(t, repoDir, runworktree.BranchName(staleRun.ID))
+	assertRunWorktreeRemoved(t, staleTask.Path)
+	assertRunBranchRemoved(t, repoDir, staleTask.Branch)
+	if !strings.Contains(stdout.String(), "Clean: all 1 Task(s) completed.") {
+		t.Fatalf("expected Clean implement output, got %q", stdout.String())
 	}
 }
 

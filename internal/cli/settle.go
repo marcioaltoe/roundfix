@@ -23,10 +23,12 @@ import (
 const settleUsage = `Usage:
   roundfix settle --spec <slug> --task <task_id>
 
-Re-runs one failed Task's Verification commands in its kept Run Worktree when
-available. On pass, settles completed and commits all Run Worktree changes plus
-the task file; settle creates no Run, writes no Run Event Journal entries, and
-never pushes.
+Re-runs one failed Task's Verification commands in its kept Task Worktree when
+available, then its kept Run Worktree, then the current repository. On pass,
+settles completed and commits all Run Worktree changes plus the task file; for
+a kept Task Worktree, commits all Task Worktree changes plus the task file and
+integrates them onto the Run Branch. settle creates no Run, writes no Run Event
+Journal entries, and never pushes.
 
 Options:
   --spec  Spec slug under docs/specs/
@@ -51,7 +53,10 @@ type settlePlan struct {
 	graph        *spec.Graph
 	task         spec.Task
 	run          store.Run
+	runRef       runworktree.Ref
+	taskRef      runworktree.TaskRef
 	hasRun       bool
+	taskSurface  bool
 }
 
 func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
@@ -88,6 +93,14 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	if err != nil {
 		fmt.Fprintf(stderr, "%s: settle failed after verification: %v\n", app.Name, err)
 		return exitRunFailed
+	}
+	if plan.taskSurface {
+		if integratedSHA, err := integrateSettledTaskWorktree(ctx, plan); err != nil {
+			fmt.Fprintf(stderr, "%s: settle failed after verification: %v\n", app.Name, err)
+			return exitRunFailed
+		} else if integratedSHA != "" {
+			shortSHA = integratedSHA
+		}
 	}
 	if plan.hasRun {
 		integrationCommand, err := integrateSettledRun(ctx, plan)
@@ -145,13 +158,35 @@ func preflightSettle(ctx context.Context, req settleRequest) (settlePlan, error)
 	if run, found, err := latestKeptSettleRun(ctx, loadedConfig.HomeDir, gitState.Root, req.specSlug); err != nil {
 		return settlePlan{}, err
 	} else if found {
-		if _, err := os.Stat(run.WorkDir); err != nil {
-			return settlePlan{}, validationError{message: fmt.Sprintf("Run Worktree for Run %s is unavailable at %q: %v", run.ID, run.WorkDir, err)}
+		runRef := runworktree.Ref{
+			RunID:    run.ID,
+			Path:     run.WorkDir,
+			Branch:   runworktree.BranchName(run.ID),
+			UserRoot: gitState.Root,
 		}
-		plan.workDir = run.WorkDir
-		plan.targetBranch = run.LocalBranch
-		plan.run = run
-		plan.hasRun = true
+		taskRef, err := runworktree.TaskRefFor(runRef, req.taskID)
+		if err != nil {
+			return settlePlan{}, err
+		}
+		if ok, err := settlePathExists(taskRef.Path); err != nil {
+			return settlePlan{}, err
+		} else if ok {
+			plan.workDir = taskRef.Path
+			plan.targetBranch = run.LocalBranch
+			plan.run = run
+			plan.runRef = runRef
+			plan.taskRef = taskRef
+			plan.hasRun = true
+			plan.taskSurface = true
+		} else if ok, err := settlePathExists(run.WorkDir); err != nil {
+			return settlePlan{}, err
+		} else if ok {
+			plan.workDir = run.WorkDir
+			plan.targetBranch = run.LocalBranch
+			plan.run = run
+			plan.runRef = runRef
+			plan.hasRun = true
+		}
 	}
 	graph, err := spec.Load(plan.workDir, req.specSlug)
 	if err != nil {
@@ -190,6 +225,24 @@ func latestKeptSettleRun(ctx context.Context, homeDir string, gitRoot string, sp
 		return store.Run{}, false, validationError{message: fmt.Sprintf("find kept Run Worktree for Spec: %v", err)}
 	}
 	return run, found, nil
+}
+
+func settlePathExists(path string) (bool, error) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return false, nil
+	}
+	info, err := os.Stat(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, validationError{message: fmt.Sprintf("settle surface %q is unavailable: %v", path, err)}
+	}
+	if !info.IsDir() {
+		return false, validationError{message: fmt.Sprintf("settle surface %q is not a directory", path)}
+	}
+	return true, nil
 }
 
 func findSettleTask(tasks []spec.Task, taskID string) (spec.Task, bool) {
@@ -263,13 +316,26 @@ func settleTaskAndCommit(ctx context.Context, plan settlePlan, collaborators eng
 	return shortSHA, nil
 }
 
-func integrateSettledRun(ctx context.Context, plan settlePlan) (string, error) {
-	ref := runworktree.Ref{
-		RunID:    plan.run.ID,
-		Path:     plan.run.WorkDir,
-		Branch:   runworktree.BranchName(plan.run.ID),
-		UserRoot: plan.userRoot,
+func integrateSettledTaskWorktree(ctx context.Context, plan settlePlan) (string, error) {
+	result, err := runworktree.IntegrateTask(ctx, plan.runRef, plan.taskRef)
+	if err != nil {
+		return "", err
 	}
+	if result.Mode == runworktree.ModeTaskConflict {
+		return "", fmt.Errorf("task worktree integration conflict on %s", result.Reason)
+	}
+	shortSHA, err := settleShortHEAD(ctx, plan.runRef.Path)
+	if err != nil {
+		return "", fmt.Errorf("read run branch HEAD after task worktree integration: %w", err)
+	}
+	if err := runworktree.CleanupTask(ctx, plan.taskRef); err != nil {
+		return "", err
+	}
+	return shortSHA, nil
+}
+
+func integrateSettledRun(ctx context.Context, plan settlePlan) (string, error) {
+	ref := plan.runRef
 	result, err := integrateCleanImplementRun(ctx, ref, plan.targetBranch)
 	if err != nil {
 		return "", err
