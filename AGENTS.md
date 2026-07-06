@@ -58,10 +58,8 @@ Read these only when relevant to the task:
 
 - `CONTEXT.md` — the project glossary (vocabulary contract for code, docs,
   prompts, and TUI copy)
-- `docs/adr/` — accepted architectural decisions; flag conflicts before
-  overriding them
-- `docs/product-brief.md` — the product contract from the grill session;
-  supersede its decisions via new ADRs, don't edit history
+- `docs/adr/` — accepted architectural decisions and the living contract;
+  flag conflicts before overriding them
 - Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
   `internal/...` (`internal/cli/` owns parsing, output, and exit behavior;
   `internal/app/` holds app metadata)

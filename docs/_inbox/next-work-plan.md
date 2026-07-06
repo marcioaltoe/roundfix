@@ -14,17 +14,40 @@ cross-checked against shipped specs 0001–0008.
 glossary gap. Round-2 finding 1 (acpx 10 MiB buffer) is upstream-only,
 documented, defended by ADR-0020 — nothing more to do locally.
 
-**Open, routed below:**
+**Open, routed below.** (The three `dogfood-findings*.md` logs were deleted
+2026-07-06 after this table absorbed every still-open item; git history keeps
+them. `0009-parallel-scheduling` shipped Clean + QA pass — R3-1 done.)
 
 | Finding | What                                                             | Spec             |
 | ------- | ---------------------------------------------------------------- | ---------------- |
 | R1-17   | Review artifacts belong with the Spec, not a loose root          | 0010             |
-| R3-1    | Force-stopped Runs keep empty worktrees/branches forever         | 0009             |
 | R3-2    | CodeRabbit issue titles are raw table fragments (emoji/markdown) | 0010             |
 | R3-3    | merge-readiness `missing` path needs a docs expectation note     | 0010             |
 | R3-4    | Status-poll stderr line repeats every interval                   | 0010             |
+| R3-5    | Removing a config key hard-failed the user's own config          | 0011 (robustness) |
+| R3-6    | External kills orphan acpx adapter processes (40 leaked in a day)| 0011 (robustness) |
 | R1-12   | Prompt-contract drift (templating, work-plan item 5)             | deferred         |
 | R1-16   | codex full-access sandbox preset unavailable via acpx            | upstream/observe |
+| R3-1    | Force-stopped Runs keep empty worktrees/branches forever         | DONE (0009)      |
+
+**Round-3 robustness findings (from the 0009 dogfood, 2026-07-06) — route
+into a robustness spec (0011 or a dedicated 0012):**
+
+- **R3-5 config hard-break**: removing `resolve.concurrent` made every Run
+  fail Preflight on any config still carrying it (broke the dogfood machine's
+  own config). A removed config key must degrade to a deprecation **warning**
+  or auto-migrate, never a hard Preflight failure.
+- **R3-6 adapter orphans**: externally-killed Runs leak detached `codex-acp`
+  adapter processes (40 accumulated over one day); `stop --force` cancels the
+  acpx session but never reaps the OS process tree. Candidates: `stop --force`
+  and the preflight sweep reap the Run's adapter tree; a `roundfix doctor`
+  lists/kills orphaned adapters.
+- **Supervision lesson (agent-side, not product)**: a Monitor filter must
+  cover every terminal signature (`Preflight failed`, `reached ...`), not just
+  the happy path — a config-death read as "still running" for hours. And
+  `nohup ... & disown` detaches a Run from the harness (surviving external task
+  stops) but removes the completion notification, so a comprehensive monitor
+  is the only signal.
 
 ## Spec 0009 — Parallel Scheduling (the "cited layer")
 
