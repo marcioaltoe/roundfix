@@ -157,6 +157,28 @@ Execute a Spec's Task Graph:
 go run ./cmd/roundfix implement --spec <slug> --agent codex
 ```
 
+Start a Detached Run for scripts or CI. The `--detach` flag is available on
+`resolve`, `watch`, and `implement`:
+
+```bash
+go run ./cmd/roundfix implement --spec <slug> --agent codex --detach
+```
+
+Detached Runs print exactly four stdout lines:
+
+```text
+Run detached: <run-id>
+Console log: <path>
+Follow: roundfix attach <run-id>
+Stop: roundfix stop <run-id>
+```
+
+Use the `Follow` command to attach to the Live Run View, and the `Stop` command
+to request a graceful stop. The console log lives at
+`<artifact-dir>/runs/<run-id>/console.log`. If startup fails before the Run is
+created, for example during Preflight Validation, the foreground command
+relays the same stderr and exit code a normal foreground Run would have used.
+
 Settle one failed Spec Task whose completed work is already in a kept Task
 Worktree, kept Run Worktree, or the current repository:
 
@@ -224,6 +246,11 @@ it, or set `NO_COLOR` to suppress color.
   `implement.auto_push: true` makes a Clean spec Run push its branch upstream
   and append `pushed <remote>/<branch>` to stdout. Integration Pending,
   Unresolved Outcome, Failed, Stopped, and failing-QA Runs never push.
+- `resolve`, `watch`, and `implement` accept `--detach` to start a Detached
+  Run. The foreground command prints the four-line report, exits `0`, and
+  leaves follow-up control to `roundfix attach <run-id>` and
+  `roundfix stop <run-id>`. Detached startup failures before the handshake
+  relay the child's stderr and exit code verbatim, with no stdout report.
 - `settle` targets one failed Task by resolving its kept Task Worktree first,
   then its kept Run Worktree, then the current repository. It re-runs the
   Task's Verification commands in the selected tree, changes nothing when
@@ -256,6 +283,13 @@ Roundfix reads YAML config in this order:
 Use `roundfix init` to create config. When `--scope` is omitted, Roundfix asks
 where to write the file and defaults to Project Config when you press Enter.
 Use `--force` to overwrite an existing config file.
+
+Removed keys that Roundfix registers as deprecated never break an existing
+config: Roundfix ignores them and prints one stderr warning naming the
+replacement. The current deprecated key is `resolve.concurrent`, which prints
+`config: resolve.concurrent is deprecated and ignored; use worktree.concurrency`
+and then continues. Unknown keys that are not registered as deprecated still
+fail strict validation.
 
 Example:
 
@@ -308,6 +342,8 @@ resolve:
   `<artifact-dir>/reviews/pr-<number>/round-<nnn>/issue_<nnn>.md`
 - Agent logs:
   `<artifact-dir>/runs/<run-id>/agent/batch-<nnn>.log`
+- Detached Run console log:
+  `<artifact-dir>/runs/<run-id>/console.log`
 
 With automatic Round selection, `fetch` reuses an existing matching Round when
 the same HEAD already has the same Review Issue fingerprints. If the fetched

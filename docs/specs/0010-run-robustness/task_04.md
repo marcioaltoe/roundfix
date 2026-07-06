@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0010-run-robustness
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -32,19 +32,19 @@ skills drift check inside the full gate.
 
 ## Subtasks
 
-- [ ] Skill updates + `make skills-sync`
-- [ ] README migration promise and detach usage
-- [ ] Fixture and binary cross-check
-- [ ] Glossary pass
+- [x] Skill updates + `make skills-sync`
+- [x] README migration promise and detach usage
+- [x] Fixture and binary cross-check
+- [x] Glossary pass
 
 ## Acceptance Criteria
 
-- [ ] Skill text matches shipped behavior exactly; drift check passes
+- [x] Skill text matches shipped behavior exactly; drift check passes
       inside the full gate.
-- [ ] The four detach lines and the deprecation warning appear verbatim in
+- [x] The four detach lines and the deprecation warning appear verbatim in
       CLI test fixtures.
-- [ ] README carries both notes.
-- [ ] No new un-glossaried term.
+- [x] README carries both notes.
+- [x] No new un-glossaried term.
 
 ## Verification
 
@@ -57,3 +57,39 @@ skills drift check inside the full gate.
 `_prd.md` → User Experience; Core Features 1–3. `_techspec.md` → Build
 Order 4. ADR-0027, ADR-0028. Repo hard rule (canonical skill ships with CLI
 behavior changes).
+
+## Result
+
+Updated the canonical Roundfix skill and regenerated the embedded
+`skills/roundfix` copy with `rtk make skills-sync`. The skill now documents the
+`resolve` / `watch` / `implement --detach` report, follow/stop commands,
+console-log location, Preflight Validation relay, config deprecation warning,
+and force-stop plus implement-sweep session-close reports. Updated the README
+with the config-migration promise and Detached Run usage for scripts or CI.
+
+Evidence:
+
+- Skill drift: `rtk diff -r .agents/skills/roundfix skills/roundfix` produced
+  no output after `rtk make skills-sync`.
+- Fixture cross-check: `rtk rg -n -e "Run detached: %s|Console log: %s|Follow:
+  roundfix attach %s|Stop: roundfix stop %s|config: resolve.concurrent is
+  deprecated and ignored; use worktree.concurrency" internal/cli
+  internal/config` found the four detach lines in
+  `internal/cli/detach.go` / `internal/cli/implement_test.go` and the
+  deprecation warning in `internal/cli/cli_test.go` /
+  `internal/config/config_test.go`.
+- Binary cross-check: a temporary binary built with
+  `rtk go build -buildvcs=false -o /private/tmp/roundfix-task04/roundfix
+  ./cmd/roundfix`; `resolve --help`, `watch --help`, and `implement --help`
+  each listed `--detach`; `rtk strings /private/tmp/roundfix-task04/roundfix |
+  rtk rg ...` found the detach report formats and config warning text in the
+  built binary.
+- Glossary: `CONTEXT.md` already defines `Detached Run`, `Attach`, `Stop
+  Command`, `Preflight Validation`, `Artifact Directory`, and `Agent Session`.
+  `Console log` is used only as the literal shipped CLI report label.
+- `rtk go run ./cmd/roundfix skills check` passed:
+  `Roundfix skill check passed: roundfix`.
+- `rtk make verify` passed: Go tests reported 734 passing tests across 17
+  packages, the Roundfix skill check passed, and the build completed.
+
+Follow-ups: none.

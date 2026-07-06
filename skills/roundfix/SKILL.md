@@ -89,6 +89,20 @@ roundfix 1.0.0 is behind latest 1.1.0; run roundfix upgrade
 Freshness failures and offline checks stay silent and do not change the Run
 outcome.
 
+## Config compatibility
+
+Roundfix treats registered removed config keys as migrations, not Preflight
+Validation failures. The current deprecated key is `resolve.concurrent`; it is
+ignored and prints exactly once per User Config or Project Config load on
+stderr:
+
+```text
+config: resolve.concurrent is deprecated and ignored; use worktree.concurrency
+```
+
+Unknown keys that are not in the deprecation registry still fail strict
+validation.
+
 ## Stopping Runs
 
 Use `roundfix stop` for a graceful stop. Every selector keeps its existing
@@ -106,7 +120,16 @@ and commit boundary first, then ends Stopped through the normal outcome path.
 Use `roundfix stop --force` only for a dead, stuck, or runaway Run. It cancels
 the Agent Session best-effort, completes the Run as Stopped immediately, and
 releases Active Run locks. Cancel failures are warnings on stderr and never
-block force completion. The force-stop report title includes:
+block force completion. Force stop then closes discovered roundfix Agent
+Sessions for the Run, including Run-level and per-Task sessions. Successful
+session closes and close failures are reported on stderr with these shapes:
+
+```text
+roundfix: closed session <session>
+roundfix: could not close session <session>: <reason>
+```
+
+The force-stop report title includes:
 
 ```text
 Roundfix Run force-stopped
@@ -119,6 +142,38 @@ stderr with this shape:
 ```text
 roundfix: reaped terminal Worktree path=<path> branch=<branch>
 ```
+
+The Implement Command preflight sweep uses the same worktree reaping report and
+the same `roundfix: closed session <session>` /
+`roundfix: could not close session <session>: <reason>` session-close reports
+for roundfix-named Agent Sessions whose Runs are terminal. Active, unknown, and
+non-roundfix sessions are ignored.
+
+## Detached Runs
+
+Use `--detach` on `resolve`, `watch`, or `implement` when the caller must not
+own the Run lifetime, such as scripts and CI jobs. The foreground command
+starts a Detached Run, prints exactly this four-line stdout report, and exits
+`0`:
+
+```text
+Run detached: <run-id>
+Console log: <path>
+Follow: roundfix attach <run-id>
+Stop: roundfix stop <run-id>
+```
+
+The console log path is under the Artifact Directory at
+`<artifact_dir>/runs/<run-id>/console.log`; it receives the detached child's
+stderr, Agent output, and terminal outcome messages. `Follow` is the Attach
+surface; `Stop` is the Stop Command surface. Detached Runs behave as normal
+non-TTY Runs after startup: Run Events, Worktrees, integration, outcomes, and
+locks keep their normal contracts.
+
+Detach implies non-interactive mode. `--interactive` is rejected before Run
+creation, and `--no-input` is implied. If the child exits before the startup
+handshake, such as during Preflight Validation, the foreground command writes
+no stdout and relays the child's stderr and exit code verbatim.
 
 ## User-Facing Review Runs
 
@@ -144,7 +199,10 @@ Useful commands:
 roundfix fetch --source coderabbit --pr <number>
 roundfix resolve --pr <number> --agent <agent>
 roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean
+roundfix resolve --pr <number> --agent <agent> --detach
+roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean --detach
 roundfix implement --spec <slug> --agent <agent>
+roundfix implement --spec <slug> --agent <agent> --detach
 roundfix settle --spec <slug> --task <task_id>
 roundfix stop --spec <slug>
 roundfix stop --force --spec <slug>
@@ -302,6 +360,8 @@ outcome and never opens pull requests (ADR-0021).
    - `--agent-full-access` — opt into Agent runtime full-access mode.
    - `--no-agent-console` — hide Agent-source console events from non-TTY
      stderr; the Run Event Journal is not filtered.
+   - `--detach` — start a Detached Run and print the four-line attach/stop
+     report.
    - `--interactive` — open Interactive Input before starting.
    - `--no-input` — fail instead of opening Interactive Input.
 
