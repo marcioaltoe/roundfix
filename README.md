@@ -24,6 +24,23 @@ system. The MVP focuses on one review-resolution loop for an Open Pull Request.
 - `rtk` is optional. The `Makefile` uses it when available and falls back to the
   plain Go toolchain when it is not installed.
 
+Run `roundfix doctor` at any time to diagnose Run readiness without installing,
+writing config, or otherwise mutating the machine. Doctor checks Node.js, the
+pinned acpx version, the configured Agent probe, and codex runtime hygiene. On
+macOS, codex hygiene resolves `CODEX_PATH` first and then `codex` on `PATH`,
+checks the `com.apple.quarantine` attribute (the real XProtect trigger), and
+verifies the binary's code signature. It does not use `spctl --assess`, which
+rejects any signed CLI that is not a notarized app — codex is never
+Apple-notarized. A quarantined or improperly-signed codex fails with
+the next action to reinstall codex with the official curl installer into
+`~/.local/bin`, then set `CODEX_PATH` to that binary. On non-Darwin platforms
+the codex check is skipped and does not fail the command.
+
+When Roundfix launches codex through `codex-acp` on macOS, it uses the same
+configured-path-then-`PATH` resolution and passes a verified-clean codex through
+`CODEX_PATH`. If no clean codex is available, Roundfix surfaces the hygiene
+risk instead of silently spawning a known unsafe binary.
+
 For latency-sensitive setups, configure direct adapter binaries in acpx config
 so default adapters do not launch through `npx -y` on first use.
 
@@ -32,8 +49,9 @@ buffer with no CLI, config, or environment override found in the pinned
 package. Large docs-task payloads, especially turns that print or return large
 skill/docs file content, can trigger `-32603 Message buffer exceeded 10485760
 bytes`. Roundfix proceeds to verification when acpx delivered a parsed prompt
-result before that exit; if completed work is preserved in the tree but a Task
-stays failed, review the kept Run Worktree and run the Settle Command.
+result before that exit; if completed work is preserved but a Task stays
+failed, review the kept Task Worktree or Run Worktree and run the Settle
+Command.
 
 ## Build
 
@@ -70,6 +88,12 @@ roundfix setup
 
 Use `roundfix setup --yes` to accept every offered install or file change, or
 `roundfix setup --no-input` to report missing pieces without prompting.
+
+Diagnose this machine for Roundfix Runs without changing it:
+
+```bash
+roundfix doctor
+```
 
 Update an installed Roundfix binary:
 
@@ -125,6 +149,12 @@ Verify and prepare this machine for Roundfix Runs:
 go run ./cmd/roundfix setup
 ```
 
+Diagnose this machine for Roundfix Runs without installing or writing config:
+
+```bash
+go run ./cmd/roundfix doctor
+```
+
 Upgrade Roundfix or check the release channel:
 
 ```bash
@@ -135,19 +165,19 @@ go run ./cmd/roundfix upgrade --check
 Fetch unresolved CodeRabbit Review Issues into local Round artifacts:
 
 ```bash
-go run ./cmd/roundfix fetch --source coderabbit --pr <number>
+go run ./cmd/roundfix fetch --source coderabbit --pr <number> [--spec <slug>]
 ```
 
 Resolve downloaded Compatible Artifacts with a selected Agent:
 
 ```bash
-go run ./cmd/roundfix resolve --pr <number> --agent codex
+go run ./cmd/roundfix resolve --pr <number> --agent codex [--spec <slug>]
 ```
 
 Run the watched review-resolution loop:
 
 ```bash
-go run ./cmd/roundfix watch --source coderabbit --pr <number> --agent codex --until-clean
+go run ./cmd/roundfix watch --source coderabbit --pr <number> --agent codex [--spec <slug>] --until-clean
 ```
 
 Execute a Spec's Task Graph:
@@ -156,10 +186,47 @@ Execute a Spec's Task Graph:
 go run ./cmd/roundfix implement --spec <slug> --agent codex
 ```
 
-Settle one failed Spec Task whose completed work is already in the tree:
+Start a Detached Run for scripts or CI. The `--detach` flag is available on
+`resolve`, `watch`, and `implement`:
+
+```bash
+go run ./cmd/roundfix implement --spec <slug> --agent codex --detach
+```
+
+Detached Runs print exactly four stdout lines:
+
+```text
+Run detached: <run-id>
+Console log: <path>
+Follow: roundfix attach <run-id>
+Stop: roundfix stop <run-id>
+```
+
+Use the `Follow` command to attach to the Live Run View, and the `Stop` command
+to request a graceful stop. The console log lives at
+`<artifact-dir>/runs/<run-id>/console.log`. If startup fails before the Run is
+created, for example during Preflight Validation, the foreground command
+relays the same stderr and exit code a normal foreground Run would have used.
+
+Settle one failed Spec Task whose completed work is already in a kept Task
+Worktree, kept Run Worktree, or the current repository:
 
 ```bash
 go run ./cmd/roundfix settle --spec <slug> --task <task_id>
+```
+
+Archive a completed Spec after all Tasks are completed and the newest QA
+Report has `verdict: pass`:
+
+```bash
+go run ./cmd/roundfix archive <slug>
+```
+
+Preview or reclaim old terminal Run journal and run artifact storage:
+
+```bash
+go run ./cmd/roundfix gc --dry-run
+go run ./cmd/roundfix gc
 ```
 
 Stop a live Run gracefully, or force-stop a dead or runaway Run:
@@ -196,6 +263,14 @@ it, or set `NO_COLOR` to suppress color.
   check prints one deterministic report line such as `node: ok`,
   `acpx: installed`, or `User Config: skipped`. `--yes` accepts offers;
   `--no-input` skips offers instead of prompting.
+- `doctor` runs the read-only readiness checks for Node.js, pinned acpx, the
+  configured Agent probe, and codex runtime hygiene. It prints one stdout line
+  per check with `ok`, `failed`, or `skipped`; failure lines include
+  `next: <action>` when a remediation is known. It mutates nothing and exits
+  nonzero when any check fails. The codex check is macOS-only: it inspects
+  `com.apple.quarantine` and code-signature validity, reports the curl reinstall
+  into `~/.local/bin` as the next action for a quarantined or improperly-signed codex,
+  and is skipped on non-Darwin platforms.
 - `upgrade` resolves the latest Roundfix release through the GitHub CLI.
   Successful stdout outcomes are `upgraded 1.0.0 → 1.1.0`,
   `already current 1.0.0`, `no releases published`, and, with `--check`,
@@ -215,21 +290,48 @@ it, or set `NO_COLOR` to suppress color.
   configured quiet period, fetches unresolved issues, resolves Batches, and
   repeats until `Clean`, `MaxRoundsReached`, `BudgetExceeded`, `TimedOut`,
   `Failed`, or `Stopped`.
-- `implement` executes a Spec's Task Graph in a Run Worktree as one Run. Tasks
-  run in dependency order, each Task's Verification commands gate one commit,
-  and `implement.auto_push: true` makes a Clean spec Run push its branch
-  upstream and append `pushed <remote>/<branch>` to stdout. Integration
-  Pending, Unresolved Outcome, Failed, Stopped, and failing-QA Runs never push.
-- `settle` targets one failed Task in its kept Run Worktree, re-runs its
-  Verification commands there, changes nothing when verification fails, and on
-  pass settles it `completed`, stages all Run Worktree changes plus the task
-  file, creates the standard Task commit, creates no Run, writes no Run Event
-  Journal entries, and never pushes.
+- `implement` executes a Spec's Task Graph in a Run Worktree as one Run. The
+  scheduler executes the current Wave up to `worktree.concurrency` at a time
+  (default `2`; `1` keeps sequential behavior), with concurrently running
+  Tasks in Task Worktrees and one commit per completed Task on the Run Branch.
+  `implement.auto_push: true` makes a Clean spec Run push its branch upstream
+  and append `pushed <remote>/<branch>` to stdout. Integration Pending,
+  Unresolved Outcome, Failed, Stopped, and failing-QA Runs never push.
+- `resolve`, `watch`, and `implement` accept `--detach` to start a Detached
+  Run. The foreground command prints the four-line report, exits `0`, and
+  leaves follow-up control to `roundfix attach <run-id>` and
+  `roundfix stop <run-id>`. Detached startup failures before the handshake
+  relay the child's stderr and exit code verbatim, with no stdout report.
+- `settle` targets one failed Task by resolving its kept Task Worktree first,
+  then its kept Run Worktree, then the current repository. It re-runs the
+  Task's Verification commands in the selected tree, changes nothing when
+  verification fails, and on pass settles it `completed`, creates the standard
+  Task commit, creates no Run, writes no Run Event Journal entries, and never
+  pushes. Task Worktree settlements integrate onto the Run Branch before the
+  existing Run-level integration runs.
+- `archive` is non-interactive, creates no Run, and never pushes. Before
+  touching the filesystem, it verifies every Task in the Spec's Task Graph is
+  `completed` and that the newest QA Report has `verdict: pass`. On pass, it
+  stamps `_prd.md` with `status: archived`, `archived`, and `source_slug`, then
+  moves `docs/specs/<slug>/` to `docs/specs/_archived/<slug>/`. Refusals exit
+  `2`, write the Preflight Validation failure to stderr, and leave the folder
+  in place.
+- `gc` is non-interactive. It resolves `store.journal_retention`, computes the
+  cutoff, prunes eligible terminal Runs' Run Event Journal rows and
+  `<artifact-dir>/runs/<run-id>` directories, removes orphaned `runs/<id>`
+  directories under the resolved run artifact root, and reports Runs, journal
+  rows, and artifact bytes reclaimed on stdout. `--dry-run` lists the same
+  eligible set without deleting anything. `journal_retention: 0` skips pruning
+  and reports that no pruning was performed. Retention never deletes Active
+  Runs, `runs` rows, active-run locks, or Review artifacts under `docs/specs/`.
 - `stop` is graceful by default. It records a Stop Request in the Run Database
   and reports `Stop Request recorded; the Run stops after the current Work Item
   settles.` Use `--force` only for a dead, stuck, or runaway Run; it cancels
   the Agent Session best-effort, completes the Run Stopped immediately, and
-  releases its Active Run locks.
+  releases its Active Run locks. It also reaps kept Run or Task Worktrees and
+  branches for terminal Runs whose branch has no commits beyond its base,
+  reporting each removed pair on stderr as
+  `roundfix: reaped terminal Worktree path=<path> branch=<branch>`.
 - Agents own only assigned issue files, triage, code edits, tests,
   verification commands, and assigned Review Issue status updates. They must
   not commit, push, resolve Review Source threads, edit unassigned issue files,
@@ -247,6 +349,13 @@ Roundfix reads YAML config in this order:
 Use `roundfix init` to create config. When `--scope` is omitted, Roundfix asks
 where to write the file and defaults to Project Config when you press Enter.
 Use `--force` to overwrite an existing config file.
+
+Removed keys that Roundfix registers as deprecated never break an existing
+config: Roundfix ignores them and prints one stderr warning naming the
+replacement. The current deprecated key is `resolve.concurrent`, which prints
+`config: resolve.concurrent is deprecated and ignored; use worktree.concurrency`
+and then continues. Unknown keys that are not registered as deprecated still
+fail strict validation.
 
 Example:
 
@@ -274,8 +383,21 @@ implement:
   auto_push: false
 
 worktree:
-  # Repository-relative untracked files copied into each Run Worktree.
+  # Parent directory; Roundfix always appends <repo-slug>/<run-id>[.<task_id>].
+  location: "~/.roundfix/worktrees"
+  # Maximum concurrent Task Worktrees for spec Runs; 1 keeps sequential behavior.
+  concurrency: 2
+  # Repository-relative untracked files copied into each new Run or Task Worktree.
+  # List only files that are already gitignored.
   copy: []
+  # Command run in each new worktree after copy and before Agent work; empty disables it.
+  bootstrap: ""
+  # Maximum time before the bootstrap command fails the owning Run or Task.
+  bootstrap_timeout: 10m
+
+store:
+  # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
+  journal_retention: 336h
 
 budget:
   enabled: true
@@ -283,18 +405,60 @@ budget:
 
 resolve:
   batch_size: 3
-  concurrent: 1
 ```
+
+Per-Batch Agent log files are development opt-in. `logs.agent` defaults to
+`false` in built-in, User, and Project Config; when it is false, Roundfix still
+records every Agent payload in the Run Event Journal. Set it to `true` in User
+or Project Config to write the per-Batch files again:
+
+```yaml
+logs:
+  agent: true
+```
+
+`store.journal_retention` defaults to `336h` (14 days). It accepts Go duration
+strings, and `0` keeps every Run Event Journal and run artifact directory. A
+non-zero value makes terminal Runs older than the window eligible for journal
+and run artifact pruning. Active Runs are never eligible, and retention never
+deletes `runs` rows or active-run locks. The `implement`, `resolve`, and
+`watch` preflight sweep runs the same prune best-effort and reports one stderr
+summary when it frees storage; failures are warnings and do not block the Run.
+Use `roundfix gc --dry-run` to preview the same terminal Run set, and
+`roundfix gc` to reclaim on demand.
 
 ## Local State
 
 - Run Database: `~/.roundfix/roundfix.db`
-- Run Worktrees: Roundfix Home `worktrees/<repo-id>/<run-id>`
-- Default Artifact Directory: Roundfix Home `artifacts/<repo-id>`
-- Review Issue artifacts:
-  `<artifact-dir>/reviews/pr-<number>/round-<nnn>/issue_<nnn>.md`
-- Agent logs:
+- Run Worktrees: `<worktree.location>/<repo-slug>/<run-id>`
+- Task Worktrees: `<worktree.location>/<repo-slug>/<run-id>.<task_id>`
+- Default Artifact Directory: Roundfix Home `artifacts/<repo-id>`, used for
+  Artifact Directory-backed Run files and as the base when an explicit
+  Artifact Directory is configured.
+- Review Issue artifacts, with the ADR-0029 resolver:
+  - Explicit `--artifact-dir` or `defaults.artifact_dir` preserves the legacy
+    layout: `<artifact-dir>/reviews/pr-<number>/round-<nnn>/issue_<nnn>.md`.
+  - Otherwise, a PR associated with a Spec writes
+    `docs/specs/<slug>/reviews/round-<nnn>/issue_<nnn>.md`.
+  - Without a valid Spec association, review artifacts write to
+    `docs/specs/_reviews/pr-<number>/round-<nnn>/issue_<nnn>.md`.
+- Per-Batch Agent logs, only when `logs.agent: true`:
   `<artifact-dir>/runs/<run-id>/agent/batch-<nnn>.log`
+- Detached Run console log, always written for Detached Runs:
+  `<artifact-dir>/runs/<run-id>/console.log`
+- Journal Retention prunes only terminal Run Event Journal rows and
+  `<artifact-dir>/runs/<run-id>` directories. Review artifacts under
+  `docs/specs/<slug>/reviews/` or `docs/specs/_reviews/` are outside retention
+  scope.
+
+For review commands, explicit `--spec <slug>` wins over trailer discovery. When
+`--spec` is absent, Roundfix uses the newest `Roundfix-Spec: <slug>` trailer on
+the PR head commit only if `docs/specs/<slug>/` exists; an unknown or invalid
+slug falls back to the spec-less `_reviews` path. Roundfix never commits or
+gitignores review artifacts, so versioning them stays a repository decision.
+ADR-0030 keeps per-Batch Agent log files off by default because the Run Event
+Journal already stores the raw payloads; the Detached Run console log remains
+unconditional for the ADR-0028 detach contract.
 
 With automatic Round selection, `fetch` reuses an existing matching Round when
 the same HEAD already has the same Review Issue fingerprints. If the fetched
@@ -304,17 +468,56 @@ are deduplicated later during `resolve` by Review Issue Fingerprint, preferring
 `source_ref` such as `thread:<id>,comment:<id>` and falling back to
 `review_hash`.
 
-Operational Runs that start an Agent work in Run Worktrees. A new Run Worktree
-starts from committed Git state, so untracked files in the user's checkout are
-absent unless they are listed under `worktree.copy`; add repository-relative
-paths there when Verification or local tooling needs untracked files. Dirty
-user checkout behavior is command-specific: `implement` no longer blocks on it
-and instead prints a note that overlapping local changes end the Run in
-Integration Pending. Other operational commands retain their existing preflight rules,
-including the local Project Config allowances for `fetch`, `resolve`, and
-`watch` at `.roundfixrc.yml`. Batch commits exclude that config file so local
-setup changes do not mix with review fixes. Terminal Run outcomes release the
-Active Run lock for the PR Head Branch.
+Operational Runs that start an Agent work in Run Worktrees. `worktree.location`
+sets only the parent directory with Project Config > User Config > built-in
+default precedence. Roundfix always appends the readable repo slug and Run ID;
+for concurrently executing Tasks, Task Worktrees are siblings of the Run
+Worktree and append `.<task_id>`. Those final path segments are fixed and not
+configurable.
+
+A new Run Worktree starts from committed Git state, so untracked files in the
+user's checkout are absent unless they are listed under `worktree.copy`; add
+repository-relative paths there when Verification or local tooling needs
+untracked files. Copied environment files must already be gitignored; Roundfix
+does not add ignore rules for arbitrary copied files, and Batch or Task commits
+can include changed repository files. Dirty user checkout behavior is
+command-specific: `implement` no longer blocks on it and instead prints a note
+that overlapping local changes end the Run in Integration Pending. Other
+operational commands retain their existing preflight rules, including the local
+Project Config allowances for `fetch`, `resolve`, and `watch` at
+`.roundfixrc.yml`. Batch commits exclude that config file so local setup
+changes do not mix with review fixes. Terminal Run outcomes release the Active
+Run lock for the PR Head Branch.
+
+Worktree Bootstrap prepares each newly created Run or Task Worktree after
+`worktree.copy` placement and before Agent work and Verification.
+`worktree.bootstrap` is a shell command run in the worktree root; an empty value
+skips the step. `worktree.bootstrap_timeout` defaults to `10m` and bounds the
+command. Bootstrap output streams to stderr and the Run Event Journal. A start
+failure, non-zero exit, or timeout fails the owning Run for a Run Worktree or
+settles only the owning Task failed for a Task Worktree, with a message shaped
+as `worktree bootstrap failed: <command>: <reason>`.
+
+Roundfix owns running and timing the bootstrap command. Dependency installation,
+database provisioning, migrations, seeding, and cache strategy belong in the
+configured command. For a stateful monorepo that uses one shared database, keep
+Task execution sequential so bootstrap runs once on the reused Run Worktree:
+
+```yaml
+worktree:
+  concurrency: 1
+  copy: [".env", "packages/backend/.env"]
+  bootstrap: "bun install && bun run db:migrate && bun run db:seed"
+  bootstrap_timeout: 10m
+```
+
+The files listed in `worktree.copy` must be repository-relative and must stay
+inside the repository. They must also be gitignored before they are copied.
+
+Spec Runs schedule Tasks by Wave. `worktree.concurrency` defaults to `2`,
+which can run two Verification commands at once; if those commands are heavy
+(`make verify`, for example), expect matching local CPU and cache load. Set
+`worktree.concurrency: 1` for sequential execution.
 
 The current CodeRabbit fetch imports unresolved inline review threads.
 CodeRabbit review-body summaries and outside-diff comments are not converted

@@ -7,7 +7,9 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
+	"time"
 
 	"roundfix/internal/agent"
 	"roundfix/internal/app"
@@ -38,6 +40,7 @@ Options:
   --agent-command      Agent command override
   --agent-full-access  Opt into Agent runtime full-access mode
   --no-agent-console   Hide Agent-source console events from non-TTY stderr
+  --detach             Start a Detached Run and print attach/stop commands
   --interactive        Open Interactive Input before starting
   --no-input           Fail instead of opening Interactive Input
 `
@@ -45,18 +48,18 @@ Options:
 var createRunWorktree = runworktree.Create
 var integrateRunWorktree = runworktree.Integrate
 var cleanupCleanRunWorktree = runworktree.CleanupClean
-var pruneTerminalRunWorktrees = runworktree.PruneTerminal
+var pruneTerminalRunWorktrees = runworktree.PruneTerminalReport
 
 // runImplementCommand executes the Implement Command: Preflight Validation,
 // Run creation, the Live Run View, one Task cycle over the Task Graph, and
 // the terminal outcome, following the runOperationalCommand shape.
-func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.Writer, detachChild *detachChild) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("implement"))
 		return exitOK
 	}
 
-	loadedConfig, err := roundconfig.Load(roundconfig.LoadOptions{})
+	loadedConfig, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
 	if err != nil {
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
@@ -67,6 +70,8 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
+	req.detachChild = detachChild
+	req = applyDetachSemantics(req)
 	req, err = maybeCollectInteractiveInput(ctx, req, loadedConfig, stderr)
 	if err != nil {
 		printPreflightFailure("implement", err, stderr)
@@ -79,6 +84,9 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	if err := validateAgentConsoleDisplay(req, stderr); err != nil {
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
+	}
+	if req.detach {
+		return runDetachedCommand(append([]string{"implement"}, args...), req, loadedConfig, stdout, stderr)
 	}
 
 	// Preflight Validation: every failure below exits 2 with one actionable
@@ -125,10 +133,18 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	defer func() {
 		_ = runStore.Close()
 	}()
-	if err := pruneTerminalRunWorktrees(ctx, gitState.Root, func(runID string) bool {
-		run, found, err := runStore.Run(ctx, runID)
-		return err == nil && found && run.State == store.StateClean
-	}); err != nil {
+	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
+		Agent:            req.agent,
+		CommandOverride:  req.agentCmd,
+		Model:            req.model,
+		EnableFullAccess: req.agentFullAccess,
+	})
+	if err != nil {
+		printPreflightFailure("implement", err, stderr)
+		return exitPreflight
+	}
+	sweepRunRetention(ctx, runStore, req.artifactDir, loadedConfig.Config.Store.JournalRetention, stderr)
+	if err := pruneTerminalRunWorktreeDebris(ctx, gitState.Root, loadedConfig.Config.Worktree.Location, runtime, runStore, stderr); err != nil {
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
@@ -142,16 +158,6 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitPreflight
 	}
 
-	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
-		Agent:            req.agent,
-		CommandOverride:  req.agentCmd,
-		Model:            req.model,
-		EnableFullAccess: req.agentFullAccess,
-	})
-	if err != nil {
-		printPreflightFailure("implement", err, stderr)
-		return exitPreflight
-	}
 	collaborators := newEngineCollaborators()
 	if err := collaborators.runner.Probe(ctx, runtime); err != nil {
 		printPreflightFailure("implement", err, stderr)
@@ -172,10 +178,23 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
+	if err := req.reportDetachedRunCreated(run.ID); err != nil {
+		markRunFailed(ctx, runStore, run.ID)
+		printImplementRunFailure(err, stderr)
+		return exitRunFailed
+	}
 	if len(gitState.Dirty) > 0 {
 		fmt.Fprintf(stderr, "%s: note: working tree %s has %d uncommitted change(s); implement will run in a Run Worktree, and overlapping local changes end the Run Integration Pending.\n", app.Name, gitState.Root, len(gitState.Dirty))
 	}
-	runRef, err := createRunWorktree(ctx, gitState.Root, run.ID, gitState.HEAD, loadedConfig.Config.Worktree.Copy)
+	runRef, err := createRunWorktree(ctx, runworktree.CreateOptions{
+		UserRoot:        gitState.Root,
+		Location:        loadedConfig.Config.Worktree.Location,
+		RunID:           run.ID,
+		HeadSHA:         gitState.HEAD,
+		CopyList:        loadedConfig.Config.Worktree.Copy,
+		Bootstrap:       worktreeBootstrapSpec(loadedConfig.Config),
+		BootstrapOutput: newBootstrapOutputWriter(ctx, run.ID, runStore, stderr),
+	})
 	if err != nil {
 		markRunFailed(ctx, runStore, run.ID)
 		printImplementRunFailure(err, stderr)
@@ -215,7 +234,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 	defer ui.Close()
 
-	cycleResult, err := executeImplementCycle(ctx, gitState, runRef, session, executionGraph, req.artifactDir, req.qa, runtime, collaborators, runStore, ui)
+	cycleResult, err := executeImplementCycle(ctx, gitState, runRef, session, executionGraph, req.artifactDir, loadedConfig.Config.Logs.Agent, req.qa, loadedConfig.Config.Worktree.Concurrency, loadedConfig.Config.Worktree.Copy, worktreeBootstrapSpec(loadedConfig.Config), newBootstrapOutputWriter(ctx, run.ID, runStore, ui.progress), runtime, collaborators, runStore, ui)
 	if err != nil {
 		if isStopRequest(ctx, err) {
 			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
@@ -336,6 +355,7 @@ func parseImplementCommand(args []string, config roundconfig.Config) (commandReq
 	fs.StringVar(&req.agentCmd, "agent-command", "", "Agent command override")
 	fs.BoolVar(&req.agentFullAccess, "agent-full-access", req.agentFullAccess, "Opt into Agent runtime full-access mode")
 	fs.BoolVar(&req.noAgentConsole, "no-agent-console", false, "Hide Agent-source console events from non-TTY stderr")
+	fs.BoolVar(&req.detach, "detach", false, "Start a Detached Run and print attach/stop commands")
 	fs.BoolVar(&req.interactive, "interactive", false, "Open Interactive Input before starting")
 	fs.BoolVar(&req.noInput, "no-input", false, "Fail instead of opening Interactive Input")
 	if err := fs.Parse(args); err != nil {
@@ -394,7 +414,7 @@ func printSkippedSpecDiagnostics(stderr io.Writer, skipped []spec.SkippedSpec) {
 
 // executeImplementCycle wires the Run engine exactly like the resolve path
 // and runs one Task cycle over the full graph.
-func executeImplementCycle(ctx context.Context, gitState preflight.GitState, runRef runworktree.Ref, session agent.SessionRef, graph *spec.Graph, artifactDir string, qa bool, runtime agent.RuntimeSpec, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
+func executeImplementCycle(ctx context.Context, gitState preflight.GitState, runRef runworktree.Ref, session agent.SessionRef, graph *spec.Graph, artifactDir string, agentLogs bool, qa bool, concurrency int, copyList []string, bootstrap runworktree.BootstrapSpec, bootstrapOutput io.Writer, runtime agent.RuntimeSpec, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
 	runID := runRef.RunID
 	fmt.Fprintf(ui.progress, "%s: implement selected Spec %s with %d Task(s); %d to execute this Run.\n", app.Name, graph.Spec.Slug, len(graph.Tasks), countNonCompletedTasks(graph.Tasks))
 	fmt.Fprintf(ui.progress, "Implement Run: %s\n", runID)
@@ -420,14 +440,20 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, run
 		return daemon.TaskCycleResult{}, err
 	}
 	return engine.TaskCycle(ctx, daemon.TaskPlan{
-		RunID:       runID,
-		Session:     session,
-		WorkDir:     runRef.Path,
-		ArtifactDir: artifactDir,
-		Spec:        graph.Spec,
-		Tasks:       graph.Tasks,
-		Runtime:     runtime,
-		QA:          qa,
+		RunID:           runID,
+		Session:         session,
+		WorkDir:         runRef.Path,
+		RunWorktree:     runRef,
+		ArtifactDir:     artifactDir,
+		AgentLogs:       agentLogs,
+		Spec:            graph.Spec,
+		Tasks:           graph.Tasks,
+		Runtime:         runtime,
+		QA:              qa,
+		Concurrency:     concurrency,
+		CopyList:        copyList,
+		Bootstrap:       bootstrap,
+		BootstrapOutput: bootstrapOutput,
 	})
 }
 
@@ -495,6 +521,7 @@ func implementLiveRunView(req commandRequest, loaded roundconfig.Loaded, gitStat
 		HEAD:          gitState.HEAD,
 		RunID:         runID,
 		PipelineState: "ResolvingWithAgent",
+		Concurrency:   loaded.Config.Worktree.Concurrency,
 		BudgetState:   formatBudgetState(loaded.Config),
 		GitState:      formatGitState(gitState),
 		AutoCommit:    true,
@@ -671,4 +698,51 @@ func gitHEAD(ctx context.Context, workDir string) (string, error) {
 		return "", errors.New("git returned an empty HEAD")
 	}
 	return head, nil
+}
+
+func pruneTerminalRunWorktreeDebris(ctx context.Context, gitRoot string, location string, runtime agent.RuntimeSpec, runStore *store.Store, stderr io.Writer) error {
+	pruned, err := pruneTerminalRunWorktrees(ctx, gitRoot, location, func(runID string) bool {
+		run, found, err := runStore.Run(ctx, runID)
+		return err == nil && found && store.IsTerminalState(run.State)
+	})
+	if err != nil {
+		return err
+	}
+	for _, ref := range pruned {
+		fmt.Fprintf(stderr, "%s: reaped terminal Worktree path=%s branch=%s\n", app.Name, ref.Path, ref.Branch)
+	}
+	sweepTerminalRunSessions(ctx, runtime, gitRoot, runStore, stderr)
+	return nil
+}
+
+func sweepTerminalRunSessions(ctx context.Context, runtime agent.RuntimeSpec, gitRoot string, runStore *store.Store, stderr io.Writer) {
+	sweepCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	sessions, err := listRoundfixAgentSessions(sweepCtx, runtime, gitRoot)
+	if err != nil {
+		return
+	}
+	sort.SliceStable(sessions, func(i, j int) bool {
+		return sessions[i].Name < sessions[j].Name
+	})
+	seen := map[string]struct{}{}
+	for _, session := range sessions {
+		if strings.TrimSpace(session.Name) == "" {
+			continue
+		}
+		if _, ok := seen[session.Name]; ok {
+			continue
+		}
+		seen[session.Name] = struct{}{}
+		run, found, err := runStore.Run(sweepCtx, session.RunID)
+		if err != nil || !found || !store.IsTerminalState(run.State) {
+			continue
+		}
+		ref := sessionRefForDiscoveredRunSession(run, session)
+		if err := closeStopAgentSession(sweepCtx, runtime, ref); err != nil {
+			fmt.Fprintf(stderr, "%s: could not close session %s: %v\n", app.Name, ref.Name, err)
+			continue
+		}
+		fmt.Fprintf(stderr, "%s: closed session %s\n", app.Name, ref.Name)
+	}
 }

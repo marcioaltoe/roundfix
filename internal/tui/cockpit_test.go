@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -41,6 +42,38 @@ func (source *cockpitFakeSource) addDaemonEvent(kind runevent.Kind, summary stri
 	source.events = append(source.events, store.JournalEvent{
 		Cursor: cursor,
 		Event:  runevent.RunEvent{Source: runevent.SourceDaemon, Kind: kind, Summary: summary},
+	})
+}
+
+func (source *cockpitFakeSource) addTaskEvent(t *testing.T, taskID string, phase string, status spec.Status, batch int) {
+	t.Helper()
+	payload := map[string]any{"task": taskID, "phase": phase}
+	if status != "" {
+		payload["status"] = string(status)
+	}
+	if batch > 0 {
+		payload["batch"] = batch
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal task event: %v", err)
+	}
+	summary := fmt.Sprintf("Task %s %s.", taskID, phase)
+	switch phase {
+	case "started":
+		summary = fmt.Sprintf("Task %s started as Batch %03d.", taskID, batch)
+	case "settled":
+		summary = fmt.Sprintf("Task %s settled %s.", taskID, status)
+	case "skipped":
+		summary = fmt.Sprintf("Task %s skipped.", taskID)
+	}
+	source.addEvent(runevent.RunEvent{
+		Batch:       batch,
+		Source:      runevent.SourceDaemon,
+		Kind:        runevent.KindDaemonTask,
+		ReviewIssue: taskID,
+		Summary:     summary,
+		Payload:     raw,
 	})
 }
 
@@ -512,6 +545,24 @@ func assertContainsInOrder(t *testing.T, haystack string, needles ...string) {
 		}
 		offset += index + len(needle)
 	}
+}
+
+func assertTaskQueueRow(t *testing.T, rendered string, taskID string, marker string) {
+	t.Helper()
+	lines := strings.Split(rendered, "\n")
+	for index, line := range lines {
+		if !strings.Contains(line, taskID+" ") {
+			continue
+		}
+		if index == 0 {
+			t.Fatalf("expected %s title line to have a marker line before it in:\n%s", taskID, rendered)
+		}
+		if !strings.Contains(lines[index-1], marker) {
+			t.Fatalf("expected %s row marker %q, got marker line %q in:\n%s", taskID, marker, lines[index-1], rendered)
+		}
+		return
+	}
+	t.Fatalf("expected rendered Work Queue to contain %s, got:\n%s", taskID, rendered)
 }
 
 func TestCockpitWorkQueueRowsRenderMarkersMetadataAndOptionalSeverity(t *testing.T) {
@@ -1780,6 +1831,116 @@ func TestCockpitSpecRunShowsTasksInGraphOrderAndRefreshesStatuses(t *testing.T) 
 		if !strings.Contains(rendered, expected) {
 			t.Fatalf("expected the refreshed view to contain %q, got:\n%s", expected, rendered)
 		}
+	}
+}
+
+func TestCockpitSpecRunDerivesConcurrentTaskStateFromJournal(t *testing.T) {
+	gitRoot := t.TempDir()
+	slug := "0009-parallel-scheduling"
+	files := []string{
+		writeCockpitTaskFile(t, gitRoot, slug, "task_01", "Build scheduler", spec.StatusPending),
+		writeCockpitTaskFile(t, gitRoot, slug, "task_02", "Wire queue", spec.StatusPending),
+		writeCockpitTaskFile(t, gitRoot, slug, "task_03", "Write docs", spec.StatusPending),
+	}
+	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateResolvingWithAgent}, version: 1}
+	source.addTaskEvent(t, "task_01", "started", "", 1)
+	source.addTaskEvent(t, "task_02", "started", "", 2)
+	model := newTestCockpit(t, source, LiveRunView{
+		PipelineState: store.StateResolvingWithAgent,
+		RunKind:       store.KindImplement,
+		SpecSlug:      slug,
+		GitRoot:       gitRoot,
+		Concurrency:   2,
+		Tasks: []spec.Task{
+			{ID: "task_01", File: files[0], Title: "Build scheduler", Status: spec.StatusPending},
+			{ID: "task_02", File: files[1], Title: "Wire queue", Status: spec.StatusPending},
+			{ID: "task_03", File: files[2], Title: "Write docs", Status: spec.StatusPending},
+		},
+	})
+	model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+
+	rendered := viewText(model)
+	assertTaskQueueRow(t, rendered, "task_01", "[run]")
+	assertTaskQueueRow(t, rendered, "task_02", "[run]")
+	assertTaskQueueRow(t, rendered, "task_03", "[wait]")
+	assertContainsInOrder(t, rendered, "task_01 Build scheduler", "task_02 Wire queue", "task_03 Write docs")
+	if !strings.Contains(rendered, "3 Tasks total · 0 completed · 3 unresolved") {
+		t.Fatalf("expected initial concurrent totals, got:\n%s", rendered)
+	}
+
+	source.addTaskEvent(t, "task_02", "settled", spec.StatusCompleted, 2)
+	source.version++
+	model.Update(cockpitTickMsg{})
+
+	rendered = viewText(model)
+	assertTaskQueueRow(t, rendered, "task_01", "[run]")
+	assertTaskQueueRow(t, rendered, "task_02", "[done]")
+	assertTaskQueueRow(t, rendered, "task_03", "[wait]")
+	if !strings.Contains(rendered, "3 Tasks total · 1 completed · 2 unresolved") {
+		t.Fatalf("expected out-of-order settlement totals, got:\n%s", rendered)
+	}
+
+	source.addTaskEvent(t, "task_01", "settled", spec.StatusCompleted, 1)
+	source.version++
+	model.Update(cockpitTickMsg{})
+
+	rendered = viewText(model)
+	assertTaskQueueRow(t, rendered, "task_01", "[done]")
+	assertTaskQueueRow(t, rendered, "task_02", "[done]")
+	assertTaskQueueRow(t, rendered, "task_03", "[wait]")
+	if !strings.Contains(rendered, "3 Tasks total · 2 completed · 1 unresolved") {
+		t.Fatalf("expected final concurrent totals, got:\n%s", rendered)
+	}
+}
+
+func TestCockpitSpecRunInterleavedTaskReplayMatchesLivePolling(t *testing.T) {
+	gitRoot := t.TempDir()
+	slug := "0009-parallel-scheduling"
+	tasks := []spec.Task{
+		{ID: "task_01", File: writeCockpitTaskFile(t, gitRoot, slug, "task_01", "Build scheduler", spec.StatusPending), Title: "Build scheduler", Status: spec.StatusPending},
+		{ID: "task_02", File: writeCockpitTaskFile(t, gitRoot, slug, "task_02", "Wire queue", spec.StatusPending), Title: "Wire queue", Status: spec.StatusPending},
+	}
+	view := LiveRunView{
+		PipelineState: store.StateResolvingWithAgent,
+		RunKind:       store.KindImplement,
+		SpecSlug:      slug,
+		GitRoot:       gitRoot,
+		Concurrency:   2,
+		Tasks:         tasks,
+	}
+
+	liveSource := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateResolvingWithAgent}, version: 1}
+	live := newTestCockpit(t, liveSource, view)
+	live.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+	liveSource.addTaskEvent(t, "task_01", "started", "", 1)
+	liveSource.addTaskEvent(t, "task_02", "started", "", 2)
+	liveSource.version++
+	live.Update(cockpitTickMsg{})
+	liveSource.addTaskEvent(t, "task_02", "settled", spec.StatusCompleted, 2)
+	liveSource.version++
+	live.Update(cockpitTickMsg{})
+	liveRendered := viewText(live)
+
+	replaySource := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateResolvingWithAgent}, version: 1}
+	replaySource.addTaskEvent(t, "task_01", "started", "", 1)
+	replaySource.addTaskEvent(t, "task_02", "started", "", 2)
+	replaySource.addTaskEvent(t, "task_02", "settled", spec.StatusCompleted, 2)
+	replay := newTestCockpit(t, replaySource, view)
+	replay.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+
+	if replayRendered := viewText(replay); replayRendered != liveRendered {
+		t.Fatalf("expected Attach-style replay to match live polling\nlive:\n%s\n\nreplay:\n%s", liveRendered, replayRendered)
+	}
+}
+
+func TestCockpitSpecRunHeaderShowsConcurrency(t *testing.T) {
+	model := newSpecPhaseCockpit(t, false, store.StateResolvingWithAgent, spec.StatusPending)
+	model.cfg.View.Concurrency = 3
+	model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+
+	rendered := viewText(model)
+	if !strings.Contains(rendered, "Concurrency: 3") {
+		t.Fatalf("expected spec Run header to show concurrency, got:\n%s", rendered)
 	}
 }
 

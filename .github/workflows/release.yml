@@ -1,0 +1,106 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write # create the GitHub Release and upload binary assets
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          check-latest: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      # The pushed tag is the single source of truth for the release version:
+      # it is injected into the binary (ldflags) and set on every npm package
+      # below, so nothing can disagree. Validate the tag is a semver version.
+      - name: Validate tag
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME#v}"
+          if ! printf '%s' "$TAG" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error::tag $GITHUB_REF_NAME is not a semver version (expected vMAJOR.MINOR.PATCH)"
+            exit 1
+          fi
+          echo "releasing $TAG"
+
+      # The full local gate must pass before any build or publish.
+      - name: Verify gate
+        run: make verify
+
+      # Cross-compile every target from one runner (Go needs no per-OS runner),
+      # stage each binary into its per-platform npm package, pin versions to the
+      # tag, and collect release assets named with GOOS+GOARCH tokens so the
+      # Upgrade Command's platform selection resolves them.
+      - name: Cross-compile and stage
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME#v}"
+          mkdir -p release-assets
+          while read -r row; do
+            goos="$(echo "$row" | jq -r .goos)"
+            goarch="$(echo "$row" | jq -r .goarch)"
+            pkg="$(echo "$row" | jq -r .package)"
+            binrel="$(echo "$row" | jq -r .binary)"
+            asset="$(echo "$row" | jq -r .asset)"
+            pkgdir="dist/npm/packages/${pkg#@roundfix/}"
+            out="$pkgdir/$binrel"
+            mkdir -p "$(dirname "$out")"
+            echo "building $goos/$goarch -> $out"
+            GOOS="$goos" GOARCH="$goarch" CGO_ENABLED=0 \
+              go build -buildvcs=false -trimpath \
+                -ldflags "-X roundfix/internal/app.Version=$TAG" \
+                -o "$out" ./cmd/roundfix
+            cp "$out" "release-assets/$asset"
+            ( cd "$pkgdir" && npm version "$TAG" --no-git-tag-version --allow-same-version )
+          done < <(jq -c '.[]' dist/npm/platforms.json)
+          ( cd dist/npm/roundfix && npm version "$TAG" --no-git-tag-version --allow-same-version )
+          jq --arg v "$TAG" '.optionalDependencies |= with_entries(.value=$v)' \
+            dist/npm/roundfix/package.json > dist/npm/roundfix/package.json.tmp
+          mv dist/npm/roundfix/package.json.tmp dist/npm/roundfix/package.json
+
+      # Publish the per-platform packages first so the launcher's
+      # optionalDependencies resolve the moment it goes live.
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          for pkgdir in dist/npm/packages/cli-*; do
+            ( cd "$pkgdir" && npm publish --access public )
+          done
+          ( cd dist/npm/roundfix && npm publish --access public )
+
+      # Upload the same binaries as GitHub Release assets to feed the Upgrade
+      # Command's release channel.
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME#v}"
+          # Release notes are this version's section from CHANGELOG.md.
+          awk -v v="$TAG" '
+            $0 ~ ("^## \\[" v "\\]") { grab=1; next }
+            grab && /^## \[/ { exit }
+            grab { print }
+          ' CHANGELOG.md > /tmp/release-notes.md
+          if [ ! -s /tmp/release-notes.md ]; then
+            printf 'Release %s\n' "$GITHUB_REF_NAME" > /tmp/release-notes.md
+          fi
+          gh release create "$GITHUB_REF_NAME" release-assets/* \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file /tmp/release-notes.md

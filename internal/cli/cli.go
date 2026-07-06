@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -39,13 +40,16 @@ const usage = `Roundfix
 Usage:
   roundfix --help
   roundfix --version
-  roundfix fetch --source coderabbit --pr <number>
-  roundfix resolve --pr <number> --agent <agent>
-  roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean
+  roundfix fetch --source coderabbit --pr <number> [--spec <slug>]
+  roundfix resolve --pr <number> --agent <agent> [--spec <slug>]
+  roundfix watch --source coderabbit --pr <number> --agent <agent> [--spec <slug>] --until-clean
   roundfix implement --spec <slug> --agent <agent>
   roundfix settle --spec <slug> --task <task_id>
+  roundfix archive <slug>
   roundfix init [--scope <project|user>]
   roundfix setup [--yes] [--no-input]
+  roundfix doctor
+  roundfix gc [--dry-run]
   roundfix upgrade [--check]
   roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
   roundfix attach <run-id>
@@ -59,8 +63,11 @@ Commands:
   watch      Fetch and resolve in a watched loop
   implement  Execute a Spec's Task Graph as one Run
   settle     Verify and commit all current worktree changes for one failed Task
+  archive    Archive a completed Spec
   stop       Request or force-stop an Active Run
   setup      Verify and prepare this machine for Roundfix Runs
+  doctor     Diagnose this machine's readiness for Roundfix Runs
+  gc         Prune old terminal Run journals and run artifacts
   upgrade    Upgrade the Roundfix binary from GitHub Releases
   attach     Replay a Run's event timeline from the Run Database
   skills     Check or install the Roundfix agent skill
@@ -78,26 +85,30 @@ const (
 )
 
 type commandRequest struct {
-	name            string
-	pr              string
-	spec            string
-	source          string
-	agent           string
-	round           string
-	noInput         bool
-	interactive     bool
-	inputShown      bool
-	untilClean      bool
-	maxRounds       int
-	artifactDir     string
-	baseRepo        string
-	model           string
-	agentCmd        string
-	agentFullAccess bool
-	noAgentConsole  bool
-	headBranch      string
-	headRepo        string
-	qa              bool
+	name                string
+	pr                  string
+	spec                string
+	source              string
+	agent               string
+	round               string
+	noInput             bool
+	interactive         bool
+	inputShown          bool
+	untilClean          bool
+	maxRounds           int
+	artifactDir         string
+	explicitArtifactDir bool
+	reviewRoot          string
+	baseRepo            string
+	model               string
+	agentCmd            string
+	agentFullAccess     bool
+	noAgentConsole      bool
+	headBranch          string
+	headRepo            string
+	qa                  bool
+	detach              bool
+	detachChild         *detachChild
 }
 
 var runCommandPreflight = defaultRunCommandPreflight
@@ -110,6 +121,7 @@ var newEngineCollaborators = defaultEngineCollaborators
 var watchReviewStatus = defaultWatchReviewStatus
 var watchHeadCheck = defaultWatchHeadCheck
 var watchHeadSHA = defaultWatchHeadSHA
+var reviewSpecGitRunner preflight.GitRunner = preflight.ExecGitRunner{}
 var watchClock watch.Clock
 var watchSleeper watch.Sleeper
 var inspectChangedPaths = defaultInspectChangedPaths
@@ -120,6 +132,8 @@ var promptInitScope = defaultPromptInitScope
 var resolveSkillsProjectRoot = defaultResolveSkillsProjectRoot
 var promptProjectClaudeSkillSymlink = defaultPromptProjectClaudeSkillSymlink
 var cancelStopAgentSession = defaultCancelStopAgentSession
+var listRoundfixAgentSessions = defaultListRoundfixAgentSessions
+var closeStopAgentSession = defaultCloseStopAgentSession
 
 type validationError struct {
 	message string
@@ -144,6 +158,16 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	detachChild, err := newDetachChildFromEnv()
+	if err != nil {
+		fmt.Fprintf(stderr, "%s: detach setup failed: %v\n", app.Name, err)
+		return exitPreflight
+	}
+	if detachChild != nil {
+		defer func() {
+			_ = detachChild.Close()
+		}()
+	}
 	if len(args) == 0 {
 		fmt.Fprint(stdout, usage)
 		return exitOK
@@ -160,6 +184,10 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runInitCommand(ctx, args[1:], stdout, stderr)
 	case "setup":
 		return runSetupCommand(ctx, args[1:], stdout, stderr)
+	case "doctor":
+		return runDoctorCommand(ctx, args[1:], stdout, stderr)
+	case "gc":
+		return runGCCommand(ctx, args[1:], stdout, stderr)
 	case "upgrade":
 		return runUpgradeCommand(ctx, args[1:], stdout, stderr)
 	case "stop":
@@ -169,11 +197,13 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 	case "skills":
 		return runSkillsCommand(ctx, args[1:], stdout, stderr)
 	case "fetch", "resolve", "watch":
-		return runOperationalCommand(ctx, args[0], args[1:], stdout, stderr)
+		return runOperationalCommand(ctx, args[0], args[1:], stdout, stderr, detachChild)
 	case "implement":
-		return runImplementCommand(ctx, args[1:], stdout, stderr)
+		return runImplementCommand(ctx, args[1:], stdout, stderr, detachChild)
 	case "settle":
 		return runSettleCommand(ctx, args[1:], stdout, stderr)
+	case "archive":
+		return runArchiveCommand(ctx, args[1:], stdout, stderr)
 	default:
 		fmt.Fprintf(stderr, "%s: unknown command %q\n", app.Name, args[0])
 		fmt.Fprintf(stderr, "Run '%s --help' for usage.\n", app.Name)
@@ -288,7 +318,7 @@ func runStopCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 		printStopFailure(err, stderr)
 		return exitPreflight
 	}
-	loaded, err := roundconfig.Load(roundconfig.LoadOptions{})
+	loaded, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
 	if err != nil {
 		printStopFailure(err, stderr)
 		return exitPreflight
@@ -373,7 +403,7 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 			return stopResult{}, validationError{message: fmt.Sprintf("Run %q does not exist", req.runID)}
 		}
 		if req.force {
-			return forceStopRun(ctx, runStore, current)
+			return forceStopRun(ctx, runStore, current, loaded.Config.Worktree.Location)
 		}
 		if err := runStore.RequestStop(ctx, current.ID); err != nil {
 			return stopResult{}, err
@@ -395,7 +425,7 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 			return stopResult{}, validationError{message: fmt.Sprintf("no Active Run exists for repository %q and Spec %q", gitRoot, specSlug)}
 		}
 		if req.force {
-			return forceStopRun(ctx, runStore, active)
+			return forceStopRun(ctx, runStore, active, loaded.Config.Worktree.Location)
 		}
 		if err := runStore.RequestStop(ctx, active.ID); err != nil {
 			return stopResult{}, err
@@ -430,7 +460,7 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 		return stopResult{}, validationError{message: fmt.Sprintf("no Active Run exists for Head Repository %q and PR Head Branch %q", headRepo, headBranch)}
 	}
 	if req.force {
-		return forceStopRun(ctx, runStore, active)
+		return forceStopRun(ctx, runStore, active, loaded.Config.Worktree.Location)
 	}
 	if err := runStore.RequestStop(ctx, active.ID); err != nil {
 		return stopResult{}, err
@@ -438,16 +468,28 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 	return stopResult{Run: active, Requested: true}, nil
 }
 
-func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run) (stopResult, error) {
-	warnings := bestEffortCancelAgentSession(ctx, active)
+func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, worktreeLocation string) (stopResult, error) {
+	warnings := bestEffortForceStopAgentSessions(ctx, active)
 	run, err := runStore.CompleteRun(ctx, active.ID, store.StateStopped)
 	if err != nil {
 		return stopResult{}, err
 	}
+	if strings.TrimSpace(active.GitRoot) != "" && strings.TrimSpace(active.WorkDir) != "" {
+		pruned, pruneErr := pruneTerminalRunWorktrees(ctx, active.GitRoot, worktreeLocation, func(runID string) bool {
+			run, found, err := runStore.Run(ctx, runID)
+			return err == nil && found && store.IsTerminalState(run.State)
+		})
+		for _, ref := range pruned {
+			warnings = append(warnings, fmt.Sprintf("reaped terminal Worktree path=%s branch=%s", ref.Path, ref.Branch))
+		}
+		if pruneErr != nil {
+			warnings = append(warnings, fmt.Sprintf("terminal Worktree reap failed for Run %s: %v", active.ID, pruneErr))
+		}
+	}
 	return stopResult{Run: run, Forced: true, Warnings: warnings}, nil
 }
 
-func bestEffortCancelAgentSession(ctx context.Context, run store.Run) []string {
+func bestEffortForceStopAgentSessions(ctx context.Context, run store.Run) []string {
 	agentID := strings.TrimSpace(run.Agent)
 	if agentID == "" {
 		return []string{fmt.Sprintf("Agent Session cancel skipped for Run %s: no Agent runtime recorded", run.ID)}
@@ -456,17 +498,100 @@ func bestEffortCancelAgentSession(ctx context.Context, run store.Run) []string {
 	if err != nil {
 		return []string{fmt.Sprintf("Agent Session cancel skipped for Run %s: %v", run.ID, err)}
 	}
-	session := agent.SessionRefForRun(run.ID, run.GitRoot)
+	session := agent.SessionRefForRun(run.ID, runSessionWorkDir(run))
+	warnings := []string{}
 	cancelCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 	defer cancel()
 	if err := cancelStopAgentSession(cancelCtx, runtime, session); err != nil {
-		return []string{fmt.Sprintf("Agent Session cancel failed for Run %s: %v", run.ID, err)}
+		warnings = append(warnings, fmt.Sprintf("Agent Session cancel failed for Run %s: %v", run.ID, err))
 	}
-	return nil
+	return append(warnings, closeForceStoppedRunSessions(ctx, runtime, run, session)...)
 }
 
 func defaultCancelStopAgentSession(ctx context.Context, runtime agent.RuntimeSpec, session agent.SessionRef) error {
 	return agent.NewDefaultRunner().CancelSession(ctx, runtime, session)
+}
+
+func closeForceStoppedRunSessions(ctx context.Context, runtime agent.RuntimeSpec, run store.Run, runSession agent.SessionRef) []string {
+	closeCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	discovered, err := listRoundfixAgentSessions(closeCtx, runtime, runSession.WorkDir)
+	warnings := []string{}
+	if err != nil {
+		warnings = append(warnings, fmt.Sprintf("Agent Session discovery failed for Run %s: %v", run.ID, err))
+	}
+	sessions := []agent.RoundfixSession{{
+		Name:  runSession.Name,
+		RunID: run.ID,
+	}}
+	for _, session := range discovered {
+		if session.RunID == run.ID && session.TaskID != "" {
+			sessions = append(sessions, session)
+		}
+	}
+	sort.SliceStable(sessions[1:], func(i, j int) bool {
+		return sessions[i+1].Name < sessions[j+1].Name
+	})
+	seen := map[string]struct{}{}
+	for _, session := range sessions {
+		if strings.TrimSpace(session.Name) == "" {
+			continue
+		}
+		if _, ok := seen[session.Name]; ok {
+			continue
+		}
+		seen[session.Name] = struct{}{}
+		ref := sessionRefForDiscoveredRunSession(run, session)
+		if err := closeStopAgentSession(closeCtx, runtime, ref); err != nil {
+			warnings = append(warnings, fmt.Sprintf("could not close session %s: %v", ref.Name, err))
+			continue
+		}
+		warnings = append(warnings, fmt.Sprintf("closed session %s", ref.Name))
+	}
+	return warnings
+}
+
+func sessionRefForDiscoveredRunSession(run store.Run, session agent.RoundfixSession) agent.SessionRef {
+	workDir := runSessionWorkDir(run)
+	if strings.TrimSpace(session.TaskID) != "" {
+		if taskWorkDir, ok := taskSessionWorkDir(run, session.TaskID); ok {
+			workDir = taskWorkDir
+		}
+	}
+	return agent.SessionRef{Name: session.Name, WorkDir: workDir}
+}
+
+func runSessionWorkDir(run store.Run) string {
+	if workDir := strings.TrimSpace(run.WorkDir); workDir != "" {
+		return workDir
+	}
+	return strings.TrimSpace(run.GitRoot)
+}
+
+func taskSessionWorkDir(run store.Run, taskID string) (string, bool) {
+	runWorkDir := strings.TrimSpace(run.WorkDir)
+	gitRoot := strings.TrimSpace(run.GitRoot)
+	if runWorkDir == "" || gitRoot == "" || strings.TrimSpace(taskID) == "" {
+		return "", false
+	}
+	taskRef, err := runworktree.TaskRefFor(runworktree.Ref{
+		RunID:    run.ID,
+		Path:     runWorkDir,
+		Branch:   runworktree.BranchName(run.ID),
+		UserRoot: gitRoot,
+	}, taskID)
+	if err != nil {
+		return "", false
+	}
+	return taskRef.Path, true
+}
+
+func defaultListRoundfixAgentSessions(ctx context.Context, runtime agent.RuntimeSpec, workDir string) ([]agent.RoundfixSession, error) {
+	return agent.NewDefaultRunner().ListRoundfixSessions(ctx, runtime, workDir)
+}
+
+func defaultCloseStopAgentSession(ctx context.Context, runtime agent.RuntimeSpec, session agent.SessionRef) error {
+	return agent.NewDefaultRunner().CloseSession(ctx, runtime, session)
 }
 
 func defaultResolvePullRequestForStop(ctx context.Context, workDir string, pr string) (preflight.PullRequest, error) {
@@ -883,13 +1008,13 @@ func defaultSuggestCurrentPullRequest(ctx context.Context, gitRoot string) (stri
 	return strings.TrimSpace(string(output)), nil
 }
 
-func runOperationalCommand(ctx context.Context, name string, args []string, stdout, stderr io.Writer) int {
+func runOperationalCommand(ctx context.Context, name string, args []string, stdout, stderr io.Writer, detachChild *detachChild) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage(name))
 		return exitOK
 	}
 
-	loadedConfig, err := roundconfig.Load(roundconfig.LoadOptions{})
+	loadedConfig, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
 	if err != nil {
 		printPreflightFailure(name, err, stderr)
 		return exitPreflight
@@ -901,6 +1026,8 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 		printPreflightFailure(name, err, stderr)
 		return exitPreflight
 	}
+	req.detachChild = detachChild
+	req = applyDetachSemantics(req)
 
 	req, err = maybeCollectInteractiveInput(ctx, req, loadedConfig, stderr)
 	if err != nil {
@@ -915,19 +1042,30 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 		printPreflightFailure(name, err, stderr)
 		return exitPreflight
 	}
+	if req.detach {
+		return runDetachedCommand(append([]string{name}, args...), req, loadedConfig, stdout, stderr)
+	}
 
+	explicitArtifactDir := strings.TrimSpace(req.artifactDir) != ""
 	artifactDir, err := roundconfig.ValidateArtifactDirectory(req.artifactDir, loadedConfig.GitRoot, loadedConfig.HomeDir)
 	if err != nil {
 		printPreflightFailure(name, err, stderr)
 		return exitPreflight
 	}
 	req.artifactDir = artifactDir
+	req.explicitArtifactDir = explicitArtifactDir
 
 	preflightResult, err := runCommandPreflight(ctx, req, loadedConfig)
 	if err != nil {
 		printPreflightFailure(name, err, stderr)
 		return exitPreflight
 	}
+	reviewRoot, err := resolveReviewArtifactRoot(ctx, req, preflightResult)
+	if err != nil {
+		printPreflightFailure(name, err, stderr)
+		return exitPreflight
+	}
+	req.reviewRoot = reviewRoot
 	switch req.name {
 	case "fetch":
 		return runFetchCommand(ctx, req, loadedConfig, preflightResult, stdout, stderr)
@@ -1002,6 +1140,7 @@ func runFetchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 	roundResult, err := rounds.PersistRound(ctx, rounds.PersistRequest{
 		ArtifactDir:    req.artifactDir,
+		ReviewRoot:     req.reviewRoot,
 		Source:         req.source,
 		PRNumber:       preflightResult.PullRequest.Number,
 		HeadRepository: preflightResult.PullRequest.HeadRepository,
@@ -1071,12 +1210,18 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	defer func() {
 		_ = runStore.Close()
 	}()
+	sweepRunRetention(ctx, runStore, req.artifactDir, loaded.Config.Store.JournalRetention, stderr)
 	run, err := createOperationalRun(ctx, runStore, store.KindResolve, preflightResult, req.artifactDir, resolvePlan.runtime.ID)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
-	run, runRef, err := createReviewRunWorktree(ctx, runStore, run, preflightResult, loaded)
+	if err := req.reportDetachedRunCreated(run.ID); err != nil {
+		markRunFailed(ctx, runStore, run.ID)
+		printRunFailure(req.name, err, stderr)
+		return exitRunFailed
+	}
+	run, runRef, err := createReviewRunWorktree(ctx, runStore, run, preflightResult, loaded, stderr)
 	if err != nil {
 		markRunFailed(ctx, runStore, run.ID)
 		printResolveRunFailureWithWorktree(err, runRef.Path, stderr)
@@ -1247,7 +1392,10 @@ func reviewIssueReportIssues(ctx context.Context, req commandRequest, preflightR
 }
 
 func loadReviewIssueReportIssues(ctx context.Context, req commandRequest, preflightResult preflight.Result) ([]rounds.Issue, error) {
-	root := filepath.Join(req.artifactDir, "reviews", "pr-"+preflightResult.PullRequest.Number)
+	root := req.reviewRoot
+	if strings.TrimSpace(root) == "" {
+		root = filepath.Join(req.artifactDir, "reviews", "pr-"+preflightResult.PullRequest.Number)
+	}
 	roundDirs, err := filepath.Glob(filepath.Join(root, "round-*"))
 	if err != nil {
 		return nil, fmt.Errorf("find Round artifacts in %q: %w", root, err)
@@ -1286,6 +1434,7 @@ func prepareResolveBatch(ctx context.Context, req commandRequest, loaded roundco
 	}
 	selection, err := rounds.SelectCompatibleIssues(ctx, rounds.SelectRequest{
 		ArtifactDir:    req.artifactDir,
+		ReviewRoot:     req.reviewRoot,
 		PRNumber:       preflightResult.PullRequest.Number,
 		HeadRepository: preflightResult.PullRequest.HeadRepository,
 		HeadBranch:     preflightResult.PullRequest.HeadBranch,
@@ -1402,6 +1551,8 @@ func cyclePlanFrom(req commandRequest, loaded roundconfig.Loaded, preflightResul
 		Session:      session,
 		GitRoot:      gitRoot,
 		ArtifactDir:  req.artifactDir,
+		ReviewRoot:   req.reviewRoot,
+		AgentLogs:    loaded.Config.Logs.Agent,
 		SourceName:   req.source,
 		AgentName:    req.agent,
 		Runtime:      resolvePlan.runtime,
@@ -1444,12 +1595,18 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	defer func() {
 		_ = runStore.Close()
 	}()
+	sweepRunRetention(ctx, runStore, req.artifactDir, loaded.Config.Store.JournalRetention, stderr)
 	run, err := createOperationalRun(ctx, runStore, store.KindWatch, preflightResult, req.artifactDir, runtime.ID)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
-	run, runRef, err := createReviewRunWorktree(ctx, runStore, run, preflightResult, loaded)
+	if err := req.reportDetachedRunCreated(run.ID); err != nil {
+		markRunFailed(ctx, runStore, run.ID)
+		printRunFailure(req.name, err, stderr)
+		return exitRunFailed
+	}
+	run, runRef, err := createReviewRunWorktree(ctx, runStore, run, preflightResult, loaded, stderr)
 	if err != nil {
 		markRunFailed(ctx, runStore, run.ID)
 		printWatchRunFailureWithWorktree(err, runRef.Path, stderr)
@@ -1489,6 +1646,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 
 	watchReportIssues := []rounds.Issue{}
 	integrationCommand := ""
+	lastReviewStatusLine := ""
 	result, err := watch.Run(ctx, watch.Request{
 		RunID:          run.ID,
 		PRNumber:       preflightResult.PullRequest.Number,
@@ -1511,7 +1669,11 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 				HeadSHA:        statusReq.HeadSHA,
 			})
 			if err == nil {
-				fmt.Fprintf(ui.progress, "Review Source status: %s\n", status.State)
+				line := fmt.Sprintf("Review Source status: %s", status.State)
+				if line != lastReviewStatusLine {
+					fmt.Fprintln(ui.progress, line)
+					lastReviewStatusLine = line
+				}
 			}
 			return status, err
 		}),
@@ -1596,7 +1758,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		fmt.Fprintf(stderr, "Review Source timed out. To request another CodeRabbit review manually, comment: %s\n", result.ManualReviewCommand)
 	}
 	if result.CheckMissing {
-		fmt.Fprintln(stderr, "Review Source check missing for the pushed HEAD; treating Run as Clean.")
+		fmt.Fprintln(stderr, "Review Source check missing for the pushed HEAD; treating Run as Clean. Expected: Watch Run Clean normally means the Review Source check on the pushed HEAD reports success. Next: confirm the PR's Review Source check before merging.")
 	}
 	printReviewIssueReport(stdout, completed.State, result.Rounds, reviewIssueReportIssues(context.WithoutCancel(ctx), req, preflightResult, watchReportIssues))
 	if stopped {
@@ -1625,8 +1787,82 @@ func createOperationalRun(ctx context.Context, runStore *store.Store, kind strin
 	})
 }
 
-func createReviewRunWorktree(ctx context.Context, runStore *store.Store, run store.Run, preflightResult preflight.Result, loaded roundconfig.Loaded) (store.Run, runworktree.Ref, error) {
-	ref, err := createRunWorktree(ctx, preflightResult.Git.Root, run.ID, preflightResult.Git.HEAD, loaded.Config.Worktree.Copy)
+func worktreeBootstrapSpec(config roundconfig.Config) runworktree.BootstrapSpec {
+	return runworktree.BootstrapSpec{
+		Command: config.Worktree.Bootstrap,
+		Timeout: config.Worktree.BootstrapTimeout,
+	}
+}
+
+func newBootstrapOutputWriter(ctx context.Context, runID string, runStore *store.Store, stderr io.Writer) io.Writer {
+	return &bootstrapRunWriter{
+		ctx:    ctx,
+		runID:  runID,
+		stderr: stderr,
+		sink:   store.JournalSink{Store: runStore},
+		mu:     &sync.Mutex{},
+	}
+}
+
+type bootstrapRunWriter struct {
+	ctx    context.Context
+	runID  string
+	stderr io.Writer
+	sink   runevent.Sink
+	mu     *sync.Mutex
+}
+
+func (writer *bootstrapRunWriter) Write(p []byte) (int, error) {
+	if len(p) == 0 {
+		return 0, nil
+	}
+	if writer.mu != nil {
+		writer.mu.Lock()
+		defer writer.mu.Unlock()
+	}
+	if writer.stderr != nil {
+		n, err := writer.stderr.Write(p)
+		if err != nil {
+			return n, err
+		}
+		if n != len(p) {
+			return n, io.ErrShortWrite
+		}
+	}
+	if writer.sink == nil {
+		return len(p), nil
+	}
+	payload, err := json.Marshal(map[string]string{"output": string(p)})
+	if err != nil {
+		return len(p), nil
+	}
+	ctx := writer.ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := writer.sink.Publish(context.WithoutCancel(ctx), runevent.RunEvent{
+		RunID:   writer.runID,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonStatus,
+		Summary: runevent.BoundSummary(string(p)),
+		Time:    time.Now().UTC(),
+		Payload: payload,
+	}); err != nil {
+		return len(p), err
+	}
+	return len(p), nil
+}
+
+func createReviewRunWorktree(ctx context.Context, runStore *store.Store, run store.Run, preflightResult preflight.Result, loaded roundconfig.Loaded, stderr io.Writer) (store.Run, runworktree.Ref, error) {
+	ref, err := createRunWorktree(ctx, runworktree.CreateOptions{
+		UserRoot:        preflightResult.Git.Root,
+		Location:        loaded.Config.Worktree.Location,
+		RunID:           run.ID,
+		HeadSHA:         preflightResult.Git.HEAD,
+		CopyList:        loaded.Config.Worktree.Copy,
+		Bootstrap:       worktreeBootstrapSpec(loaded.Config),
+		BootstrapOutput: newBootstrapOutputWriter(ctx, run.ID, runStore, stderr),
+	})
 	if err != nil {
 		return run, ref, err
 	}
@@ -1652,6 +1888,7 @@ func fetchWatchRound(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 	roundResult, err := rounds.PersistRound(ctx, rounds.PersistRequest{
 		ArtifactDir:    req.artifactDir,
+		ReviewRoot:     req.reviewRoot,
 		Source:         req.source,
 		PRNumber:       preflightResult.PullRequest.Number,
 		HeadRepository: preflightResult.PullRequest.HeadRepository,
@@ -1948,6 +2185,7 @@ func parseOperationalCommand(name string, args []string, config roundconfig.Conf
 	fs := flag.NewFlagSet(name, flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	fs.StringVar(&req.pr, "pr", "", "Open Pull Request number")
+	fs.StringVar(&req.spec, "spec", "", "Spec slug under docs/specs/")
 	fs.BoolVar(&req.noInput, "no-input", false, "Fail instead of opening Interactive Input")
 	fs.BoolVar(&req.interactive, "interactive", false, "Open Interactive Input before starting")
 	fs.StringVar(&req.artifactDir, "artifact-dir", req.artifactDir, "Artifact Directory")
@@ -1960,6 +2198,7 @@ func parseOperationalCommand(name string, args []string, config roundconfig.Conf
 		fs.StringVar(&req.source, "source", req.source, "Review Source")
 		fs.StringVar(&req.round, "round", "auto", "Round number or auto")
 	case "resolve":
+		fs.BoolVar(&req.detach, "detach", false, "Start a Detached Run and print attach/stop commands")
 		fs.StringVar(&req.agent, "agent", req.agent, "Agent runtime")
 		fs.StringVar(&req.model, "model", req.model, "Agent model override")
 		fs.StringVar(&req.agentCmd, "agent-command", "", "Agent command override")
@@ -1967,6 +2206,7 @@ func parseOperationalCommand(name string, args []string, config roundconfig.Conf
 		fs.BoolVar(&req.noAgentConsole, "no-agent-console", false, "Hide Agent-source console events from non-TTY stderr")
 		fs.StringVar(&req.round, "round", "all", "Round number or all")
 	case "watch":
+		fs.BoolVar(&req.detach, "detach", false, "Start a Detached Run and print attach/stop commands")
 		fs.StringVar(&req.source, "source", req.source, "Review Source")
 		fs.StringVar(&req.agent, "agent", req.agent, "Agent runtime")
 		fs.StringVar(&req.model, "model", req.model, "Agent model override")
@@ -2028,6 +2268,9 @@ func validateCommandRequest(req commandRequest) error {
 
 func validateAgentConsoleDisplay(req commandRequest, stderr io.Writer) error {
 	if req.noAgentConsole && liveTUIEnabled(stderr) {
+		if req.detach || req.detachChild != nil {
+			return nil
+		}
 		return validationError{message: "--no-agent-console cannot be used with the interactive cockpit"}
 	}
 	return nil
@@ -2077,6 +2320,87 @@ func validateAgent(agent string) error {
 	default:
 		return validationError{message: fmt.Sprintf("unsupported Agent %q; supported values: codex, claude, opencode", agent)}
 	}
+}
+
+type reviewSpecRequest struct {
+	ExplicitSlug string
+	RepoRoot     string
+	HeadSHA      string
+}
+
+func resolveReviewArtifactRoot(ctx context.Context, req commandRequest, preflightResult preflight.Result) (string, error) {
+	prNumber, err := strconv.Atoi(req.pr)
+	if err != nil {
+		return "", fmt.Errorf("parse Open Pull Request number %q: %w", req.pr, err)
+	}
+	explicitArtifactDir := ""
+	if req.explicitArtifactDir {
+		explicitArtifactDir = req.artifactDir
+	}
+	specSlug := ""
+	if explicitArtifactDir == "" {
+		specSlug, err = reviewSpecSlug(ctx, reviewSpecRequest{
+			ExplicitSlug: req.spec,
+			RepoRoot:     preflightResult.Git.Root,
+			HeadSHA:      preflightResult.Git.HEAD,
+		}, reviewSpecGitRunner)
+		if err != nil {
+			return "", err
+		}
+	}
+	return roundconfig.ResolveReviewRoot(roundconfig.ReviewArtifactContext{
+		ExplicitArtifactDir: explicitArtifactDir,
+		RepoRoot:            preflightResult.Git.Root,
+		SpecSlug:            specSlug,
+		PRNumber:            prNumber,
+	})
+}
+
+func reviewSpecSlug(ctx context.Context, req reviewSpecRequest, runner preflight.GitRunner) (string, error) {
+	if slug := strings.TrimSpace(req.ExplicitSlug); slug != "" {
+		if reviewSpecFolderExists(req.RepoRoot, slug) {
+			return slug, nil
+		}
+		return "", nil
+	}
+	message, err := runner.RunGit(ctx, req.RepoRoot, "log", "-1", "--format=%B", req.HeadSHA)
+	if err != nil {
+		return "", fmt.Errorf("read PR head commit trailers: %w", err)
+	}
+	slug := newestRoundfixSpecTrailer(message)
+	if slug == "" || !reviewSpecFolderExists(req.RepoRoot, slug) {
+		return "", nil
+	}
+	return slug, nil
+}
+
+func newestRoundfixSpecTrailer(message string) string {
+	slug := ""
+	for _, line := range strings.Split(message, "\n") {
+		key, value, ok := strings.Cut(line, ":")
+		if !ok || strings.TrimSpace(key) != "Roundfix-Spec" {
+			continue
+		}
+		if candidate := strings.TrimSpace(value); candidate != "" {
+			slug = candidate
+		}
+	}
+	return slug
+}
+
+func reviewSpecFolderExists(repoRoot string, slug string) bool {
+	if !validReviewSpecSlug(slug) {
+		return false
+	}
+	info, err := os.Stat(filepath.Join(repoRoot, "docs", "specs", slug))
+	return err == nil && info.IsDir()
+}
+
+func validReviewSpecSlug(slug string) bool {
+	if slug == "" || slug == "." || slug == ".." || filepath.IsAbs(slug) {
+		return false
+	}
+	return !strings.ContainsAny(slug, `/\`)
 }
 
 func defaultRunCommandPreflight(ctx context.Context, req commandRequest, loaded roundconfig.Loaded) (preflight.Result, error) {
@@ -2312,6 +2636,27 @@ Options:
   --yes       Accept every offered install or file change
   --no-input  Skip offered changes instead of prompting
 `
+	case "doctor":
+		return `Usage:
+  roundfix doctor
+
+Diagnoses this machine's readiness for Runs. Checks Node.js, the pinned acpx
+version, the configured Agent probe, and codex runtime hygiene. Prints one
+line per check with ok, failed, or skipped plus the next action for failures.
+Doctor mutates nothing.
+`
+	case "gc":
+		return `Usage:
+  roundfix gc [--dry-run]
+
+Prunes Run Event Journal rows for terminal Runs older than Journal Retention,
+then removes their run artifact directories and orphaned runs/<id> directories
+under the resolved run artifact root. It never deletes Run rows or Active Run locks,
+and it never removes Review artifacts outside the run artifact root.
+
+Options:
+  --dry-run  List the Runs, journal rows, and artifact bytes that would be pruned without changing anything
+`
 	case "upgrade":
 		return `Usage:
   roundfix upgrade [--check]
@@ -2325,11 +2670,12 @@ Options:
 `
 	case "fetch":
 		return `Usage:
-  roundfix fetch --source coderabbit --pr <number> [--round <number|auto>] [--no-input]
+  roundfix fetch --source coderabbit --pr <number> [--spec <slug>] [--round <number|auto>] [--no-input]
 
 Options:
   --source       Review Source. Supported: coderabbit
   --pr           Open Pull Request number
+  --spec         Spec slug under docs/specs/
   --round        Round number or auto
   --artifact-dir Artifact Directory
   --base-repo    Explicit base repository, owner/name
@@ -2340,15 +2686,17 @@ Options:
 `
 	case "resolve":
 		return `Usage:
-  roundfix resolve --pr <number> --agent <agent> [--round <number|all>] [--no-input]
+  roundfix resolve --pr <number> --agent <agent> [--spec <slug>] [--round <number|all>] [--no-input]
 
 Options:
   --pr           Open Pull Request number
+  --spec         Spec slug under docs/specs/
   --agent        Agent runtime. Supported: codex, claude, opencode
   --model        Agent model override
   --agent-command Agent command override
   --agent-full-access Opt into Agent runtime full-access mode
   --no-agent-console Hide Agent-source console events from non-TTY stderr
+  --detach       Start a Detached Run and print attach/stop commands
   --round        Round number or all
   --artifact-dir Artifact Directory
   --base-repo    Explicit base repository, owner/name
@@ -2359,16 +2707,18 @@ Options:
 `
 	case "watch":
 		return `Usage:
-  roundfix watch --source coderabbit --pr <number> --agent <agent> [--until-clean] [--max-rounds <number>] [--no-input]
+  roundfix watch --source coderabbit --pr <number> --agent <agent> [--spec <slug>] [--until-clean] [--max-rounds <number>] [--no-input]
 
 Options:
   --source       Review Source. Supported: coderabbit
   --pr           Open Pull Request number
+  --spec         Spec slug under docs/specs/
   --agent        Agent runtime. Supported: codex, claude, opencode
   --model        Agent model override
   --agent-command Agent command override
   --agent-full-access Opt into Agent runtime full-access mode
   --no-agent-console Hide Agent-source console events from non-TTY stderr
+  --detach       Start a Detached Run and print attach/stop commands
   --until-clean  Repeat until no Unresolved Review Issues remain and Review Source check succeeds
   --max-rounds   Maximum Review Source rounds
   --artifact-dir Artifact Directory
@@ -2382,6 +2732,8 @@ Options:
 		return implementUsage
 	case "settle":
 		return settleUsage
+	case "archive":
+		return archiveUsage
 	case "stop":
 		return `Usage:
   roundfix stop <run-id>
@@ -2402,7 +2754,8 @@ Options:
 Default stop is graceful: it records a Stop Request and the Run stops after
 the current Work Item settles. Use --force only for a dead, stuck, or runaway
 Run; it cancels the Agent Session best-effort and completes the Run Stopped
-immediately.
+immediately. It also reaps provably empty kept Worktrees and branches,
+reporting each reaped path and branch on stderr.
 `
 	case "skills":
 		return `Usage:
@@ -2495,8 +2848,8 @@ func printStopSuccess(result stopResult, stdout io.Writer) {
 		fmt.Fprintf(stdout, "%s\n", style.cyan("Result:"))
 		fmt.Fprintln(stdout, "  Force stop completed the Run as Stopped immediately and released its Active Run locks.")
 		fmt.Fprintln(stdout)
-		fmt.Fprintf(stdout, "%s\n", style.cyan("No repository side effects:"))
-		fmt.Fprintln(stdout, "  Roundfix did not edit files, commit, push, fetch, or resolve Review Source threads.")
+		fmt.Fprintf(stdout, "%s\n", style.cyan("No user work side effects:"))
+		fmt.Fprintln(stdout, "  Roundfix did not edit user files, commit, push, fetch, or resolve Review Source threads.")
 		return
 	}
 	fmt.Fprintf(stdout, "%s\n\n", style.green(style.bold("Roundfix Run stopped")))

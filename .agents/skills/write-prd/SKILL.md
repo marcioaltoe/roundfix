@@ -1,7 +1,6 @@
 ---
 name: write-prd
 description: Write a PRD as a durable local artifact at docs/specs/<slug>/_prd.md — research first, clarify with one multiple-choice question at a time, record decisions as ADRs, then write directly without draft-approval rounds.
-disable-model-invocation: true
 argument-hint: "<feature description, or nothing after a grilling/brainstorm session>"
 metadata:
   category: planning

@@ -31,14 +31,16 @@ unresolved remains. Stdlib `flag` dispatch and a Bubble Tea v2 TUI.
   **WITHOUT EXPLICIT USER PERMISSION**. These can permanently lose code.
 - Agent-created branches **MUST** use the `ma/` prefix.
 - **ALWAYS** use the AskUserQuestion tool for confirmations, clarifying questions, decision points, and any needed user interaction. If this CLI has no such tool, ask as a plain message and stop until the user answers — **NEVER** guess an answer the user can give cheaply.
-- **HARD RULE**: before opening any PR, confirm
-  `.agents/skills/roundfix/SKILL.md` still matches the shipped CLI behavior
-  (commands, flags, output formats, exit codes, Batch contract semantics). If
-  the PR changes any of those, the skill update ships in the same PR. The
-  project-local copy at `.agents/skills/roundfix/` is canonical and its
-  `metadata.version` tracks the released CLI version (the `v*` tag), not an
-  independent skill version; the embedded `skills/roundfix/` is generated from
-  it with `make skills-sync`, and `make verify` fails on drift.
+- **HARD RULE — roundfix skill sync**: before opening any PR, confirm the
+  roundfix skill still matches the shipped CLI behavior; a PR that changes
+  CLI behavior ships the skill update too. Contract:
+  `docs/agents/skill-governance.md`.
+- **HARD RULE — skill ownership**: repo-owned authorial workflow skills may
+  be adapted locally; every other skill is upstream-managed and **MUST NOT**
+  be modified here. Ownership split: `docs/agents/skill-governance.md`.
+- **HARD RULE — autonomous work model**: binding for every Fable-powered
+  session — Fable orchestrates only; implementation is delegated to an ACP
+  Runtime per `docs/agents/autonomous-work.md`.
 
 ## Agent docs
 
@@ -46,10 +48,8 @@ Read these only when relevant to the task:
 
 - `CONTEXT.md` — the project glossary (vocabulary contract for code, docs,
   prompts, and TUI copy)
-- `docs/adr/` — accepted architectural decisions; flag conflicts before
-  overriding them
-- `docs/product-brief.md` — the product contract from the grill session;
-  supersede its decisions via new ADRs, don't edit history
+- `docs/adr/` — accepted architectural decisions and the living contract;
+  flag conflicts before overriding them
 - Project map: `cmd/roundfix/` is the thin CLI entry point; behavior lives in
   `internal/...` (`internal/cli/` owns parsing, output, and exit behavior;
   `internal/app/` holds app metadata)
@@ -81,6 +81,18 @@ specs are archived to `docs/specs/_archived/`.
 
 Pick the pipeline entry point by the change — large initiative, feature,
 refactor/bugfix, or trivial. See `docs/agents/spec-routing.md`.
+
+### Autonomous work
+
+Fable orchestrates and authors Specs; implementation is delegated to an ACP
+Runtime — Codex (`gpt-5.5` at `xhigh`) by default, Claude Code (Opus 4.8 at
+`high`/`xhigh`) for design, UI, UX, and frontend Tasks. Binding for every
+Fable-powered session. See `docs/agents/autonomous-work.md`.
+
+### Skill governance
+
+Skill ownership and the roundfix skill-sync contract. See
+`docs/agents/skill-governance.md`.
 
 ## Skill dispatch
 

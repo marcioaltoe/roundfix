@@ -127,6 +127,120 @@ func TestRunSettleRetargetsKeptRunWorktreeAndCleansUpAfterIntegration(t *testing
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
 }
 
+func TestRunSettleRetargetsKeptTaskWorktreeAndCleansUpAfterIntegration(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "Recover concurrent work",
+			taskType:     "backend",
+			status:       string(spec.StatusFailed),
+			verification: []string{"test -f done.txt"},
+		},
+	})
+	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
+	run, _, taskRef := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "task_01", store.StateUnresolved)
+	if err := os.WriteFile(filepath.Join(taskRef.Path, "done.txt"), []byte("task work\n"), 0o644); err != nil {
+		t.Fatalf("write task work: %v", err)
+	}
+	if err := spec.SetStatus(implementTaskPath(taskRef.Path, "task_01"), spec.StatusFailed); err != nil {
+		t.Fatalf("settle task failed in Task Worktree: %v", err)
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected settle exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+	shortSHA := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "--short", "HEAD"))
+	expectedStdout := "verify test -f done.txt — ok\n" +
+		"settled task_01 completed — " + shortSHA + "\n"
+	if stdout.String() != expectedStdout {
+		t.Fatalf("expected stdout:\n%q\ngot:\n%q", expectedStdout, stdout.String())
+	}
+	completed := implementRunFromStore(t, homeDir, run.ID)
+	if completed.State != store.StateClean {
+		t.Fatalf("expected settled Run Clean, got %s", completed.State)
+	}
+	assertRunWorktreeRemoved(t, run.WorkDir)
+	assertRunBranchRemoved(t, repoDir, runworktree.BranchName(run.ID))
+	assertRunWorktreeRemoved(t, taskRef.Path)
+	assertRunBranchRemoved(t, repoDir, taskRef.Branch)
+	if got := mustRead(t, filepath.Join(repoDir, "done.txt")); got != "task work\n" {
+		t.Fatalf("expected Task Worktree work integrated into user checkout, got %q", got)
+	}
+	if content := mustRead(t, implementTaskPath(repoDir, "task_01")); !strings.Contains(content, "status: completed") {
+		t.Fatalf("expected task status completed after settle, got:\n%s", content)
+	}
+	if status := gitSettleOutput(t, repoDir, "status", "--porcelain=v1"); status != "" {
+		t.Fatalf("expected clean user checkout after settle integration, got %q", status)
+	}
+	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+func TestRunSettleTaskWorktreeIntegrationConflictKeepsSurfaces(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "Recover conflicting work",
+			taskType:     "backend",
+			status:       string(spec.StatusFailed),
+			verification: []string{"grep -q task shared.txt"},
+		},
+	})
+	mustWrite(t, filepath.Join(repoDir, "shared.txt"), "base\n")
+	gitImplement(t, repoDir, "add", "shared.txt")
+	gitImplement(t, repoDir, "commit", "-m", "seed shared file")
+	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
+	run, runRef, taskRef := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "task_01", store.StateUnresolved)
+	if err := os.WriteFile(filepath.Join(taskRef.Path, "shared.txt"), []byte("task\n"), 0o644); err != nil {
+		t.Fatalf("write task shared file: %v", err)
+	}
+	if err := spec.SetStatus(implementTaskPath(taskRef.Path, "task_01"), spec.StatusFailed); err != nil {
+		t.Fatalf("settle task failed in Task Worktree: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(runRef.Path, "shared.txt"), []byte("run\n"), 0o644); err != nil {
+		t.Fatalf("write Run Worktree conflict: %v", err)
+	}
+	gitImplement(t, runRef.Path, "add", "shared.txt")
+	gitImplement(t, runRef.Path, "commit", "-m", "conflicting run branch work")
+	runTip := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", runRef.Branch))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected settle conflict exit 1, got %d", code)
+	}
+	if stdout.String() != "verify grep -q task shared.txt — ok\n" {
+		t.Fatalf("expected only verification success on stdout, got %q", stdout.String())
+	}
+	for _, expected := range []string{"roundfix: settle failed after verification: task worktree integration conflict on shared.txt"} {
+		if !strings.Contains(stderr.String(), expected) {
+			t.Fatalf("expected stderr to contain %q, got %q", expected, stderr.String())
+		}
+	}
+	if got := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", runRef.Branch)); got != runTip {
+		t.Fatalf("expected Run Branch tip %s to stay unchanged, got %s", runTip, got)
+	}
+	assertRunWorktreeExists(t, run.WorkDir)
+	assertRunBranchExists(t, repoDir, runworktree.BranchName(run.ID))
+	assertRunWorktreeExists(t, taskRef.Path)
+	assertRunBranchExists(t, repoDir, taskRef.Branch)
+	if got := mustRead(t, filepath.Join(repoDir, "shared.txt")); got != "base\n" {
+		t.Fatalf("expected user checkout unchanged, got %q", got)
+	}
+	current := implementRunFromStore(t, homeDir, run.ID)
+	if current.State != store.StateUnresolved {
+		t.Fatalf("expected Run to remain Unresolved, got %s", current.State)
+	}
+}
+
 func TestRunSettleRequiresSpecAndTask(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -466,4 +580,65 @@ func assertContainsString(t *testing.T, values []string, expected string) {
 		}
 	}
 	t.Fatalf("expected %q in %v", expected, values)
+}
+
+func configureSettleWorktreeLocation(t *testing.T, repoDir string, location string) string {
+	t.Helper()
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "worktree:\n  location: "+filepath.ToSlash(location)+"\n")
+	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+	gitImplement(t, repoDir, "commit", "-m", "configure worktree location")
+	return location
+}
+
+func createImplementRunWorktreeFixture(t *testing.T, homeDir string, repoDir string, location string, specSlug string, taskID string, terminalState string) (store.Run, runworktree.Ref, runworktree.TaskRef) {
+	t.Helper()
+	ctx := context.Background()
+	head := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "HEAD"))
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close Run Database: %v", err)
+		}
+	}()
+	run, err := runStore.CreateRun(ctx, store.CreateRunRequest{
+		Kind:        store.KindImplement,
+		GitRoot:     repoDir,
+		LocalBranch: "ma/widget-flow",
+		HeadSHA:     head,
+		SpecSlug:    specSlug,
+		Agent:       "codex",
+	})
+	if err != nil {
+		t.Fatalf("create implement Run: %v", err)
+	}
+	runRef, err := runworktree.Create(ctx, runworktree.CreateOptions{
+		UserRoot: repoDir,
+		Location: location,
+		RunID:    run.ID,
+		HeadSHA:  head,
+	})
+	if err != nil {
+		t.Fatalf("create Run Worktree: %v", err)
+	}
+	run, err = runStore.SetRunWorkDir(ctx, run.ID, runRef.Path)
+	if err != nil {
+		t.Fatalf("record Run Worktree: %v", err)
+	}
+	var taskRef runworktree.TaskRef
+	if strings.TrimSpace(taskID) != "" {
+		taskRef, err = runworktree.CreateTask(ctx, runRef, taskID, nil)
+		if err != nil {
+			t.Fatalf("create Task Worktree: %v", err)
+		}
+	}
+	if terminalState != "" {
+		run, err = runStore.CompleteRun(ctx, run.ID, terminalState)
+		if err != nil {
+			t.Fatalf("complete Run %s: %v", terminalState, err)
+		}
+	}
+	return run, runRef, taskRef
 }

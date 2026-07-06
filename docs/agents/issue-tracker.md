@@ -10,7 +10,9 @@ external tracker. This is the default and canonical mode of the CONTEXT-driven s
   dependency graph — dependencies live **only** here), and one `task_NN.md` per task
 - Task status lives **only** in each `task_NN.md` frontmatter: `pending | in_progress | completed | failed`
 - QA evidence lives in `docs/specs/<feature-slug>/qa/`
-- Shipped specs move to `docs/specs/_archived/<feature-slug>/` (via `archive-spec`)
+- Shipped specs move to `docs/specs/_archived/<feature-slug>/` with the Archive
+  Command, `roundfix archive <feature-slug>`, after every Task is completed and
+  QA passed
 
 ## When a skill says "publish to the issue tracker"
 

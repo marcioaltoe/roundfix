@@ -516,6 +516,30 @@ func (store *Store) RunCount(ctx context.Context) (int, error) {
 	return count, nil
 }
 
+// RunIDs lists persisted Run IDs for artifact cleanup comparisons.
+func (store *Store) RunIDs(ctx context.Context) ([]string, error) {
+	rows, err := store.db.QueryContext(ctx, `SELECT id FROM runs ORDER BY id`)
+	if err != nil {
+		return nil, fmt.Errorf("list Run IDs: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	runIDs := []string{}
+	for rows.Next() {
+		var runID string
+		if err := rows.Scan(&runID); err != nil {
+			return nil, fmt.Errorf("scan Run ID: %w", err)
+		}
+		runIDs = append(runIDs, runID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate Run IDs: %w", err)
+	}
+	return runIDs, nil
+}
+
 func (store *Store) MigrationVersion(ctx context.Context) (int, error) {
 	var version int
 	if err := store.db.QueryRowContext(ctx, `PRAGMA user_version`).Scan(&version); err != nil {

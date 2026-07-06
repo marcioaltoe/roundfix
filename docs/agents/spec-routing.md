@@ -7,7 +7,7 @@ change, and what marks the work done. The canonical working model is local markd
 ## Pipeline
 
 ```text
-write-idea -> write-prd -> write-techspec -> write-tasks -> implement-spec / implement-task -> qa-gate -> archive-spec
+write-idea -> write-prd -> write-techspec -> write-tasks -> implement-spec / implement-task -> qa-gate -> roundfix archive
 ```
 
 Every stage reads and writes `docs/specs/<slug>/`. Downstream stages parse the artifacts, not the
@@ -41,5 +41,6 @@ Notes that keep the routes honest:
   verification evidence.
 - After the last Task, `qa-gate` validates the assembled feature against the Spec's user stories
   and acceptance criteria, writing evidence to `docs/specs/<slug>/qa/`.
-- On QA pass, `archive-spec` stamps the frontmatter and moves the folder to
-  `docs/specs/_archived/`. Merge and release are separate, user-driven actions.
+- On QA pass, the Archive Command (`roundfix archive <slug>`) stamps archive
+  metadata and moves the folder to `docs/specs/_archived/`. Merge and release
+  are separate, user-driven actions.

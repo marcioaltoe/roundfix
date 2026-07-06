@@ -1,0 +1,5 @@
+# The release workflow cross-compiles and stages the platform binaries here;
+# they are build artifacts, never committed.
+packages/*/bin/
+roundfix/node_modules/
+*.tgz

@@ -34,11 +34,14 @@ type engineFixture struct {
 // engineFakeWorktree returns scripted snapshots in call order, then keeps
 // returning the last one.
 type engineFakeWorktree struct {
+	mu        sync.Mutex
 	snapshots [][]string
 	calls     int
 }
 
 func (worktree *engineFakeWorktree) Snapshot(context.Context, string) ([]string, error) {
+	worktree.mu.Lock()
+	defer worktree.mu.Unlock()
 	index := worktree.calls
 	worktree.calls++
 	if len(worktree.snapshots) == 0 {

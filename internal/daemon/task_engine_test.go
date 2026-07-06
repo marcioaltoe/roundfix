@@ -10,12 +10,15 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"roundfix/internal/agent"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
+	runworktree "roundfix/internal/worktree"
 )
 
 const taskCycleSlug = "0001-sample-feature"
@@ -165,10 +168,12 @@ func (fixture *taskCycleFixture) plan() TaskPlan {
 		RunID:       fixture.run.ID,
 		Session:     agent.SessionRefForRun(fixture.run.ID, fixture.gitRoot),
 		WorkDir:     fixture.gitRoot,
+		RunWorktree: runworktree.Ref{RunID: fixture.run.ID, Path: fixture.gitRoot, Branch: runworktree.BranchName(fixture.run.ID), UserRoot: fixture.gitRoot},
 		Spec:        fixture.graph.Spec,
 		Tasks:       fixture.graph.Tasks,
 		Runtime:     agent.RuntimeSpec{ID: "codex", DisplayName: "Codex"},
 		ArtifactDir: fixture.artifactDir,
+		AgentLogs:   true,
 	}
 }
 
@@ -180,16 +185,22 @@ func (fixture *taskCycleFixture) qaPlan() TaskPlan {
 
 func (fixture *taskCycleFixture) engine(t *testing.T, runner agent.Runner, verifier Verifier, committer Committer, worktree WorktreeSnapshotter) *Engine {
 	t.Helper()
+	return fixture.engineWithTaskWorktrees(t, runner, verifier, committer, worktree, nil)
+}
+
+func (fixture *taskCycleFixture) engineWithTaskWorktrees(t *testing.T, runner agent.Runner, verifier Verifier, committer Committer, worktree WorktreeSnapshotter, taskWorktrees TaskWorktreeManager) *Engine {
+	t.Helper()
 	engine, err := NewEngine(Dependencies{
-		Runner:    runner,
-		Verifier:  verifier,
-		Committer: committer,
-		Pusher:    fixture.pusher,
-		Source:    fixture.source,
-		Runs:      fixture.store,
-		Worktree:  worktree,
-		Sink:      fixture.sink,
-		Progress:  fixture.progress,
+		Runner:        runner,
+		Verifier:      verifier,
+		Committer:     committer,
+		Pusher:        fixture.pusher,
+		Source:        fixture.source,
+		Runs:          fixture.store,
+		Worktree:      worktree,
+		TaskWorktrees: taskWorktrees,
+		Sink:          fixture.sink,
+		Progress:      fixture.progress,
 	})
 	if err != nil {
 		t.Fatalf("new engine: %v", err)
@@ -291,7 +302,7 @@ func (runner *taskFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest,
 	*runner.calls = append(*runner.calls, "agent")
 	runner.prompts = append(runner.prompts, req.Prompt)
 	runner.requests = append(runner.requests, req)
-	if runner.writeLogs {
+	if runner.writeLogs && strings.TrimSpace(req.LogPath) != "" {
 		if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {
 			return agent.ExecuteResult{}, err
 		}
@@ -396,6 +407,357 @@ func (verifier *taskFakeVerifier) Verify(_ context.Context, req VerifyRequest) e
 	return verifier.failOn[req.Command]
 }
 
+type taskSchedulerRunner struct {
+	mu           sync.Mutex
+	started      chan string
+	release      map[string]chan struct{}
+	statusByTask map[string]spec.Status
+	errByTask    map[string]error
+	onStart      func(taskID string, req agent.ExecuteRequest) error
+	active       int
+	maxActive    int
+	starts       []string
+	requests     []agent.ExecuteRequest
+}
+
+func newTaskSchedulerRunner(taskIDs ...string) *taskSchedulerRunner {
+	runner := &taskSchedulerRunner{
+		started: make(chan string, len(taskIDs)),
+		release: make(map[string]chan struct{}, len(taskIDs)),
+	}
+	for _, taskID := range taskIDs {
+		runner.release[taskID] = make(chan struct{})
+	}
+	return runner
+}
+
+func (runner *taskSchedulerRunner) Probe(context.Context, agent.RuntimeSpec) error { return nil }
+
+func (runner *taskSchedulerRunner) Run(ctx context.Context, req agent.ExecuteRequest, _ runevent.Sink) (agent.ExecuteResult, error) {
+	taskID := taskIDFromPrompt(req.Prompt)
+	runner.mu.Lock()
+	runner.active++
+	if runner.active > runner.maxActive {
+		runner.maxActive = runner.active
+	}
+	runner.starts = append(runner.starts, taskID)
+	runner.requests = append(runner.requests, req)
+	runner.mu.Unlock()
+	runner.started <- taskID
+	defer func() {
+		runner.mu.Lock()
+		runner.active--
+		runner.mu.Unlock()
+	}()
+
+	if runner.onStart != nil {
+		if err := runner.onStart(taskID, req); err != nil {
+			return agent.ExecuteResult{}, err
+		}
+	}
+	if release := runner.release[taskID]; release != nil {
+		select {
+		case <-release:
+		case <-ctx.Done():
+			return agent.ExecuteResult{}, agent.StopError{Err: ctx.Err()}
+		}
+	}
+	if err := runner.errByTask[taskID]; err != nil {
+		return agent.ExecuteResult{}, err
+	}
+	if status, ok := runner.statusByTask[taskID]; ok {
+		if err := spec.SetStatus(taskPathFor(req.GitRoot, taskCycleSlug, taskID), status); err != nil {
+			return agent.ExecuteResult{}, err
+		}
+	}
+	return agent.ExecuteResult{LogPath: req.LogPath}, nil
+}
+
+func (runner *taskSchedulerRunner) EndSession(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+	return nil
+}
+
+func (runner *taskSchedulerRunner) releaseTask(taskID string) {
+	if release := runner.release[taskID]; release != nil {
+		close(release)
+	}
+}
+
+func (runner *taskSchedulerRunner) maxObservedActive() int {
+	runner.mu.Lock()
+	defer runner.mu.Unlock()
+	return runner.maxActive
+}
+
+func (runner *taskSchedulerRunner) startedTasks() []string {
+	runner.mu.Lock()
+	defer runner.mu.Unlock()
+	return append([]string(nil), runner.starts...)
+}
+
+func waitSchedulerStarts(t *testing.T, runner *taskSchedulerRunner, count int) []string {
+	t.Helper()
+	started := make([]string, 0, count)
+	for len(started) < count {
+		select {
+		case taskID := <-runner.started:
+			started = append(started, taskID)
+		case <-time.After(2 * time.Second):
+			t.Fatalf("timed out waiting for %d Task start(s), got %v", count, started)
+		}
+	}
+	return started
+}
+
+func assertNoSchedulerStart(t *testing.T, runner *taskSchedulerRunner) {
+	t.Helper()
+	select {
+	case taskID := <-runner.started:
+		t.Fatalf("expected no additional Task to start, got %s", taskID)
+	default:
+	}
+}
+
+func assertTaskSet(t *testing.T, got []string, want ...string) {
+	t.Helper()
+	sort.Strings(got)
+	sort.Strings(want)
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("expected started Tasks %v, got %v", want, got)
+	}
+}
+
+type taskSchedulerVerifier struct {
+	mu       sync.Mutex
+	failOn   map[string]error
+	commands []string
+	workDirs []string
+}
+
+func (verifier *taskSchedulerVerifier) Verify(_ context.Context, req VerifyRequest) error {
+	verifier.mu.Lock()
+	verifier.commands = append(verifier.commands, req.Command)
+	verifier.workDirs = append(verifier.workDirs, req.WorkDir)
+	verifier.mu.Unlock()
+	return verifier.failOn[req.Command]
+}
+
+type taskSchedulerCommitter struct {
+	mu       sync.Mutex
+	messages []string
+	paths    [][]string
+}
+
+func (committer *taskSchedulerCommitter) Commit(_ context.Context, req CommitRequest) error {
+	committer.mu.Lock()
+	defer committer.mu.Unlock()
+	committer.messages = append(committer.messages, req.Message)
+	committer.paths = append(committer.paths, append([]string(nil), req.Paths...))
+	return nil
+}
+
+func (committer *taskSchedulerCommitter) commitCount() int {
+	committer.mu.Lock()
+	defer committer.mu.Unlock()
+	return len(committer.messages)
+}
+
+type fakeTaskWorktrees struct {
+	mu               sync.Mutex
+	conflictByTask   map[string]string
+	createErrByTask  map[string]error
+	onCreate         func(taskID string, ref runworktree.TaskRef, opts runworktree.TaskCreateOptions) error
+	onIntegrate      func(taskID string)
+	created          map[string]runworktree.TaskRef
+	createOptions    map[string]runworktree.TaskCreateOptions
+	integrated       []string
+	cleaned          []string
+	integratedSignal chan string
+}
+
+func newFakeTaskWorktrees() *fakeTaskWorktrees {
+	return &fakeTaskWorktrees{
+		created:          map[string]runworktree.TaskRef{},
+		createOptions:    map[string]runworktree.TaskCreateOptions{},
+		integratedSignal: make(chan string, 16),
+	}
+}
+
+func (worktrees *fakeTaskWorktrees) CreateTask(_ context.Context, run runworktree.Ref, taskID string, opts runworktree.TaskCreateOptions) (runworktree.TaskRef, error) {
+	path := filepath.Join(filepath.Dir(run.Path), run.RunID+"."+taskID)
+	if err := os.RemoveAll(path); err != nil {
+		return runworktree.TaskRef{}, err
+	}
+	if err := copyTreeForSchedulerTest(run.Path, path); err != nil {
+		return runworktree.TaskRef{}, err
+	}
+	ref := runworktree.TaskRef{
+		RunID:    run.RunID,
+		TaskID:   taskID,
+		Path:     path,
+		Branch:   runworktree.TaskBranchName(run.RunID, taskID),
+		UserRoot: run.UserRoot,
+		BaseSHA:  "base-" + taskID,
+	}
+	optsCopy := opts
+	optsCopy.CopyList = append([]string(nil), opts.CopyList...)
+	worktrees.mu.Lock()
+	worktrees.created[taskID] = ref
+	worktrees.createOptions[taskID] = optsCopy
+	createErr := worktrees.createErrByTask[taskID]
+	onCreate := worktrees.onCreate
+	worktrees.mu.Unlock()
+	if onCreate != nil {
+		if err := onCreate(taskID, ref, opts); err != nil {
+			return ref, err
+		}
+	}
+	if createErr != nil {
+		return ref, createErr
+	}
+	return ref, nil
+}
+
+func (worktrees *fakeTaskWorktrees) IntegrateTask(_ context.Context, run runworktree.Ref, task runworktree.TaskRef) (runworktree.TaskIntegration, error) {
+	worktrees.mu.Lock()
+	worktrees.integrated = append(worktrees.integrated, task.TaskID)
+	conflict := worktrees.conflictByTask[task.TaskID]
+	onIntegrate := worktrees.onIntegrate
+	worktrees.mu.Unlock()
+	worktrees.integratedSignal <- task.TaskID
+	if onIntegrate != nil {
+		onIntegrate(task.TaskID)
+	}
+	if conflict != "" {
+		return runworktree.TaskIntegration{Mode: runworktree.ModeTaskConflict, Reason: conflict}, nil
+	}
+	if err := copyTreeForSchedulerTest(task.Path, run.Path); err != nil {
+		return runworktree.TaskIntegration{}, err
+	}
+	return runworktree.TaskIntegration{Mode: runworktree.ModeTaskCherryPick}, nil
+}
+
+func (worktrees *fakeTaskWorktrees) CleanupTask(_ context.Context, task runworktree.TaskRef) error {
+	worktrees.mu.Lock()
+	worktrees.cleaned = append(worktrees.cleaned, task.TaskID)
+	worktrees.mu.Unlock()
+	return os.RemoveAll(task.Path)
+}
+
+func (worktrees *fakeTaskWorktrees) integratedTasks() []string {
+	worktrees.mu.Lock()
+	defer worktrees.mu.Unlock()
+	return append([]string(nil), worktrees.integrated...)
+}
+
+func (worktrees *fakeTaskWorktrees) cleanedTasks() []string {
+	worktrees.mu.Lock()
+	defer worktrees.mu.Unlock()
+	return append([]string(nil), worktrees.cleaned...)
+}
+
+func (worktrees *fakeTaskWorktrees) taskRef(taskID string) runworktree.TaskRef {
+	worktrees.mu.Lock()
+	defer worktrees.mu.Unlock()
+	return worktrees.created[taskID]
+}
+
+func (worktrees *fakeTaskWorktrees) taskCreateOptions(taskID string) runworktree.TaskCreateOptions {
+	worktrees.mu.Lock()
+	defer worktrees.mu.Unlock()
+	return worktrees.createOptions[taskID]
+}
+
+func (worktrees *fakeTaskWorktrees) integratedTask(taskID string) bool {
+	worktrees.mu.Lock()
+	defer worktrees.mu.Unlock()
+	for _, integrated := range worktrees.integrated {
+		if integrated == taskID {
+			return true
+		}
+	}
+	return false
+}
+
+func waitIntegratedTask(t *testing.T, worktrees *fakeTaskWorktrees) string {
+	t.Helper()
+	select {
+	case taskID := <-worktrees.integratedSignal:
+		return taskID
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for Task integration")
+		return ""
+	}
+}
+
+func waitTaskCycleResult(t *testing.T, resultCh <-chan struct {
+	result TaskCycleResult
+	err    error
+}) struct {
+	result TaskCycleResult
+	err    error
+} {
+	t.Helper()
+	select {
+	case outcome := <-resultCh:
+		return outcome
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for TaskCycle result")
+		return struct {
+			result TaskCycleResult
+			err    error
+		}{}
+	}
+}
+
+func taskStartedEvents(t *testing.T, sink *captureEventSink) []string {
+	t.Helper()
+	var started []string
+	for _, event := range taskEventsOfKind(sink, runevent.KindDaemonTask) {
+		if eventPayloadString(t, event, "phase") == "started" {
+			started = append(started, fmt.Sprintf("%s:%d", event.ReviewIssue, event.Batch))
+		}
+	}
+	return started
+}
+
+func copyTreeForSchedulerTest(source string, destination string) error {
+	if err := os.MkdirAll(destination, 0o755); err != nil {
+		return err
+	}
+	return filepath.WalkDir(source, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(source, path)
+		if err != nil {
+			return err
+		}
+		if rel == "." {
+			return nil
+		}
+		target := filepath.Join(destination, rel)
+		if entry.IsDir() {
+			return os.MkdirAll(target, 0o755)
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		if !info.Mode().IsRegular() {
+			return nil
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+			return err
+		}
+		return os.WriteFile(target, content, info.Mode().Perm())
+	})
+}
+
 func taskEventsOfKind(sink *captureEventSink, kind runevent.Kind) []runevent.RunEvent {
 	sink.mu.Lock()
 	defer sink.mu.Unlock()
@@ -445,6 +807,343 @@ func TestTaskCycleValidatesPlan(t *testing.T) {
 	}
 	if len(*fixture.calls) != 0 {
 		t.Fatalf("expected no daemon actions for invalid plan, got %v", *fixture.calls)
+	}
+}
+
+func TestTaskCycleSchedulesIndependentWaveWithConcurrencyCap(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", title: "Do first independent work"},
+		{id: "task_02", title: "Do second independent work"},
+		{id: "task_03", title: "Do third independent work"},
+		{id: "task_04", title: "Do fourth independent work"},
+	})
+	taskWorktrees := newFakeTaskWorktrees()
+	runner := newTaskSchedulerRunner("task_01", "task_02", "task_03", "task_04")
+	verifier := &taskSchedulerVerifier{}
+	committer := &taskSchedulerCommitter{}
+	engine := fixture.engineWithTaskWorktrees(t, runner, verifier, committer, fixture.worktree, taskWorktrees)
+	plan := fixture.plan()
+	plan.Concurrency = 2
+
+	resultCh := make(chan struct {
+		result TaskCycleResult
+		err    error
+	}, 1)
+	go func() {
+		result, err := engine.TaskCycle(context.Background(), plan)
+		resultCh <- struct {
+			result TaskCycleResult
+			err    error
+		}{result: result, err: err}
+	}()
+
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	assertNoSchedulerStart(t, runner)
+	runner.releaseTask("task_01")
+	if got := strings.Join(waitSchedulerStarts(t, runner, 1), "|"); got != "task_03" {
+		t.Fatalf("expected task_03 to start when one slot opened, got %s", got)
+	}
+	runner.releaseTask("task_02")
+	if got := strings.Join(waitSchedulerStarts(t, runner, 1), "|"); got != "task_04" {
+		t.Fatalf("expected task_04 to start when the next slot opened, got %s", got)
+	}
+	runner.releaseTask("task_03")
+	runner.releaseTask("task_04")
+
+	outcome := waitTaskCycleResult(t, resultCh)
+	if outcome.err != nil {
+		t.Fatalf("task cycle: %v", outcome.err)
+	}
+	if outcome.result.Completed != 4 || outcome.result.Failed != 0 || outcome.result.Skipped != 0 {
+		t.Fatalf("expected all four independent Tasks completed, got %+v", outcome.result)
+	}
+	if runner.maxObservedActive() != 2 {
+		t.Fatalf("expected observed execution overlap capped at 2, got max active %d", runner.maxObservedActive())
+	}
+	if got := len(taskWorktrees.integratedTasks()); got != 4 {
+		t.Fatalf("expected four Task integrations onto the Run Branch, got %d", got)
+	}
+	if got := committer.commitCount(); got != 4 {
+		t.Fatalf("expected four Task commits before integration, got %d", got)
+	}
+	startEvents := taskStartedEvents(t, fixture.sink)
+	sort.Strings(startEvents)
+	if got := strings.Join(startEvents, "|"); got != "task_01:1|task_02:2|task_03:3|task_04:4" {
+		t.Fatalf("expected deterministic start ordinals in journal replay, got %s", got)
+	}
+}
+
+func TestTaskCycleCreatesTaskWorktreesWithBootstrapBeforeAgentWork(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", title: "Prepare first Task"},
+		{id: "task_02", title: "Prepare second Task"},
+	})
+	const command = "make task-bootstrap"
+	var bootstrapOutput bytes.Buffer
+	bootstrapWriter := &lockedWriter{writer: &bootstrapOutput}
+	taskWorktrees := newFakeTaskWorktrees()
+	taskWorktrees.onCreate = func(taskID string, ref runworktree.TaskRef, opts runworktree.TaskCreateOptions) error {
+		if opts.Bootstrap.Command != command {
+			return fmt.Errorf("bootstrap command for %s = %q", taskID, opts.Bootstrap.Command)
+		}
+		if opts.Bootstrap.Timeout != time.Second {
+			return fmt.Errorf("bootstrap timeout for %s = %s", taskID, opts.Bootstrap.Timeout)
+		}
+		if opts.BootstrapOutput == nil {
+			return fmt.Errorf("missing bootstrap output writer for %s", taskID)
+		}
+		if _, err := opts.BootstrapOutput.Write([]byte("bootstrap " + taskID + "\n")); err != nil {
+			return err
+		}
+		return os.WriteFile(filepath.Join(ref.Path, "bootstrap.ready"), []byte(taskID), 0o644)
+	}
+	runner := &taskSchedulerRunner{
+		started: make(chan string, 2),
+		statusByTask: map[string]spec.Status{
+			"task_01": spec.StatusCompleted,
+			"task_02": spec.StatusCompleted,
+		},
+		onStart: func(taskID string, req agent.ExecuteRequest) error {
+			got, err := os.ReadFile(filepath.Join(req.GitRoot, "bootstrap.ready"))
+			if err != nil {
+				return fmt.Errorf("read bootstrap marker for %s: %w", taskID, err)
+			}
+			if string(got) != taskID {
+				return fmt.Errorf("bootstrap marker for %s = %q", taskID, got)
+			}
+			return nil
+		},
+	}
+	verifier := &taskSchedulerVerifier{}
+	committer := &taskSchedulerCommitter{}
+	engine := fixture.engineWithTaskWorktrees(t, runner, verifier, committer, fixture.worktree, taskWorktrees)
+	plan := fixture.plan()
+	plan.Concurrency = 2
+	plan.Bootstrap = runworktree.BootstrapSpec{Command: command, Timeout: time.Second}
+	plan.BootstrapOutput = bootstrapWriter
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 2 || result.Failed != 0 || result.Skipped != 0 {
+		t.Fatalf("expected both bootstrapped Tasks completed, got %+v", result)
+	}
+	assertTaskSet(t, runner.startedTasks(), "task_01", "task_02")
+	for _, taskID := range []string{"task_01", "task_02"} {
+		opts := taskWorktrees.taskCreateOptions(taskID)
+		if opts.Bootstrap.Command != command || opts.Bootstrap.Timeout != time.Second {
+			t.Fatalf("expected bootstrap options for %s, got %#v", taskID, opts.Bootstrap)
+		}
+		if !strings.Contains(bootstrapOutput.String(), "bootstrap "+taskID) {
+			t.Fatalf("expected bootstrap output for %s, got %q", taskID, bootstrapOutput.String())
+		}
+	}
+}
+
+func TestTaskCycleTaskWorktreeBootstrapFailureIsolatesIndependentTasks(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", title: "Fail bootstrap"},
+		{id: "task_02", title: "Keep running"},
+		{id: "task_03", title: "Also keep running"},
+	})
+	const command = "make task-bootstrap"
+	taskWorktrees := newFakeTaskWorktrees()
+	taskWorktrees.createErrByTask = map[string]error{
+		"task_01": &runworktree.BootstrapError{Command: command, Err: errors.New("exit status 7")},
+	}
+	runner := &taskSchedulerRunner{
+		started: make(chan string, 3),
+		statusByTask: map[string]spec.Status{
+			"task_02": spec.StatusCompleted,
+			"task_03": spec.StatusCompleted,
+		},
+	}
+	verifier := &taskSchedulerVerifier{}
+	committer := &taskSchedulerCommitter{}
+	engine := fixture.engineWithTaskWorktrees(t, runner, verifier, committer, fixture.worktree, taskWorktrees)
+	plan := fixture.plan()
+	plan.Concurrency = 2
+	plan.Bootstrap = runworktree.BootstrapSpec{Command: command, Timeout: time.Second}
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("expected bootstrap failure to fail only its Task, got %v", err)
+	}
+	if result.Completed != 2 || result.Failed != 1 || result.Skipped != 0 {
+		t.Fatalf("expected one bootstrap-failed Task and two completed independents, got %+v", result)
+	}
+	assertTaskSet(t, runner.startedTasks(), "task_02", "task_03")
+	if got := taskStatusOnDisk(t, taskWorktrees.taskRef("task_01").Path, "task_01"); got != string(spec.StatusFailed) {
+		t.Fatalf("expected bootstrap-failed Task settled failed in its Task Worktree, got %q", got)
+	}
+	for _, integrated := range taskWorktrees.integratedTasks() {
+		if integrated == "task_01" {
+			t.Fatalf("expected bootstrap-failed Task not integrated, got %v", taskWorktrees.integratedTasks())
+		}
+	}
+	if len(taskWorktrees.integratedTasks()) != 2 {
+		t.Fatalf("expected only independent completed Tasks integrated, got %v", taskWorktrees.integratedTasks())
+	}
+	wantReason := "worktree bootstrap failed: " + command + ": exit status 7"
+	var journaled bool
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonTask) {
+		if event.ReviewIssue == "task_01" && strings.Contains(string(event.Payload), wantReason) {
+			journaled = true
+		}
+	}
+	if !journaled {
+		t.Fatalf("expected bootstrap failure reason %q journaled", wantReason)
+	}
+}
+
+func TestTaskCycleGatesDependenciesAndSkipsFailedDependencyChainsUnderConcurrency(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", title: "Build prerequisite"},
+		{id: "task_03", title: "Fail independent prerequisite", verification: []string{"fail task_03"}},
+		{id: "task_02", title: "Use prerequisite", needs: []string{"task_01"}},
+		{id: "task_04", title: "Blocked by failed prerequisite", needs: []string{"task_03"}},
+		{id: "task_05", title: "Blocked by skipped prerequisite", needs: []string{"task_04"}},
+	})
+	taskWorktrees := newFakeTaskWorktrees()
+	runner := &taskSchedulerRunner{
+		started: make(chan string, 5),
+		onStart: func(taskID string, _ agent.ExecuteRequest) error {
+			if taskID == "task_02" && !taskWorktrees.integratedTask("task_01") {
+				return errors.New("task_02 started before task_01 settled")
+			}
+			return nil
+		},
+	}
+	verifier := &taskSchedulerVerifier{failOn: map[string]error{"fail task_03": errors.New("gate broke")}}
+	committer := &taskSchedulerCommitter{}
+	engine := fixture.engineWithTaskWorktrees(t, runner, verifier, committer, fixture.worktree, taskWorktrees)
+	plan := fixture.plan()
+	plan.Concurrency = 2
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 2 || result.Failed != 1 || result.Skipped != 2 {
+		t.Fatalf("expected dependency-gated counts 2 completed, 1 failed, 2 skipped, got %+v", result)
+	}
+	assertTaskSet(t, runner.startedTasks(), "task_01", "task_02", "task_03")
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_04"); got != string(spec.StatusPending) {
+		t.Fatalf("expected skipped task_04 left pending on disk, got %q", got)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_05"); got != string(spec.StatusPending) {
+		t.Fatalf("expected skipped task_05 left pending on disk, got %q", got)
+	}
+	if got := len(taskWorktrees.integratedTasks()); got != 2 {
+		t.Fatalf("expected only completed Tasks integrated, got %d", got)
+	}
+}
+
+func TestTaskCycleIntegrationConflictSettlesTaskFailedAndKeepsTaskWorktree(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", title: "Write first independent change"},
+		{id: "task_02", title: "Collide during integration"},
+		{id: "task_03", title: "Write third independent change"},
+	})
+	taskWorktrees := newFakeTaskWorktrees()
+	taskWorktrees.conflictByTask = map[string]string{"task_02": "shared.txt"}
+	runner := &taskSchedulerRunner{started: make(chan string, 3)}
+	verifier := &taskSchedulerVerifier{}
+	committer := &taskSchedulerCommitter{}
+	engine := fixture.engineWithTaskWorktrees(t, runner, verifier, committer, fixture.worktree, taskWorktrees)
+	plan := fixture.plan()
+	plan.Concurrency = 2
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 2 || result.Failed != 1 || result.Skipped != 0 {
+		t.Fatalf("expected one integration-conflicted Task failed and independents completed, got %+v", result)
+	}
+	cleaned := strings.Join(taskWorktrees.cleanedTasks(), "|")
+	if strings.Contains(cleaned, "task_02") {
+		t.Fatalf("expected conflicting Task Worktree kept, cleaned %s", cleaned)
+	}
+	conflicting := taskWorktrees.taskRef("task_02")
+	if _, err := os.Stat(conflicting.Path); err != nil {
+		t.Fatalf("expected conflicting Task Worktree kept at %q: %v", conflicting.Path, err)
+	}
+	if got := taskStatusOnDisk(t, conflicting.Path, "task_02"); got != string(spec.StatusFailed) {
+		t.Fatalf("expected conflicting Task settled failed in its Task Worktree, got %q", got)
+	}
+	var journaled bool
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonTask) {
+		if event.ReviewIssue == "task_02" && strings.Contains(string(event.Payload), "integration conflict: shared.txt") {
+			journaled = true
+		}
+	}
+	if !journaled {
+		t.Fatal("expected integration conflict reason journaled for task_02")
+	}
+	if got := len(taskWorktrees.integratedTasks()); got != 3 {
+		t.Fatalf("expected all completed Task branches offered to the integration queue, got %d", got)
+	}
+}
+
+func TestTaskCycleStopRequestMidWaveDrainsRunningTasksAndStartsNothingNew(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", title: "Start first"},
+		{id: "task_02", title: "Start second"},
+		{id: "task_03", title: "Must not start"},
+		{id: "task_04", title: "Must also not start"},
+	})
+	taskWorktrees := newFakeTaskWorktrees()
+	taskWorktrees.onIntegrate = func(taskID string) {
+		if taskID == "task_01" {
+			_ = fixture.store.RequestStop(context.Background(), fixture.run.ID)
+		}
+	}
+	runner := newTaskSchedulerRunner("task_01", "task_02", "task_03", "task_04")
+	verifier := &taskSchedulerVerifier{}
+	committer := &taskSchedulerCommitter{}
+	engine := fixture.engineWithTaskWorktrees(t, runner, verifier, committer, fixture.worktree, taskWorktrees)
+	plan := fixture.plan()
+	plan.Concurrency = 2
+
+	resultCh := make(chan struct {
+		result TaskCycleResult
+		err    error
+	}, 1)
+	go func() {
+		result, err := engine.TaskCycle(context.Background(), plan)
+		resultCh <- struct {
+			result TaskCycleResult
+			err    error
+		}{result: result, err: err}
+	}()
+
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	runner.releaseTask("task_01")
+	if got := waitIntegratedTask(t, taskWorktrees); got != "task_01" {
+		t.Fatalf("expected task_01 to integrate first, got %s", got)
+	}
+	assertNoSchedulerStart(t, runner)
+	runner.releaseTask("task_02")
+
+	outcome := waitTaskCycleResult(t, resultCh)
+	if !errors.Is(outcome.err, ErrStopRequested) {
+		t.Fatalf("expected ErrStopRequested after draining running Tasks, got %v", outcome.err)
+	}
+	if outcome.result.Completed != 2 || outcome.result.Failed != 0 || outcome.result.Skipped != 0 {
+		t.Fatalf("expected the two running Tasks settled before stop, got %+v", outcome.result)
+	}
+	assertTaskSet(t, runner.startedTasks(), "task_01", "task_02")
+	if got := len(taskWorktrees.integratedTasks()); got != 2 {
+		t.Fatalf("expected both running Tasks integrated before stop, got %d", got)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_03"); got != string(spec.StatusPending) {
+		t.Fatalf("expected task_03 left pending, got %q", got)
 	}
 }
 
@@ -546,6 +1245,10 @@ func TestTaskCycleExecutesAgentVerifySettleCommitContract(t *testing.T) {
 	}
 	if !strings.Contains(string(taskEvents[1].Payload), `"settled"`) || !strings.Contains(string(taskEvents[1].Payload), `"completed"`) {
 		t.Fatalf("expected settled completed payload, got %s", taskEvents[1].Payload)
+	}
+	statusEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonStatus)
+	if len(statusEvents) == 0 || !strings.Contains(string(statusEvents[0].Payload), `"concurrency":1`) {
+		t.Fatalf("expected TaskCycle start event to journal concurrency, got %+v", statusEvents)
 	}
 	kinds := fixture.sink.kinds()
 	if kinds[len(kinds)-1] != runevent.KindDaemonOutcome {

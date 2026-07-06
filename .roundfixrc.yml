@@ -1,0 +1,42 @@
+# Roundfix Project Config — authoritative for this repository's testing.
+#
+# Load order is builtin default -> User Config (~/.roundfix/config.yml) -> this
+# Project Config, applied as a per-key overlay. Every value set here overrides
+# the machine-global User Config, so this file pins reproducible behavior for
+# this repo regardless of the developer's global settings.
+
+defaults:
+  agent: codex # dogfood and tests always drive codex
+  model: "" # empty -> the codex-acp / ~/.codex chain selects the model
+  verification: make verify
+  auto_commit: true
+
+review_source:
+  name: coderabbit
+  include_nitpicks: false
+
+watch:
+  until_clean: true
+  max_rounds: 3
+  poll_interval: 30s
+  review_timeout: 30m
+  quiet_period: 30s
+  auto_push: true # pushes the PR head only after no Unresolved Review Issues remain
+  push_remote: ""
+  push_branch: ""
+
+budget:
+  enabled: true
+  max_run_duration: 2h
+
+resolve:
+  batch_size: 20
+
+implement:
+  auto_push: false # spec Runs never push; the branch is pushed manually as a PR
+
+worktree:
+  # Sequential for now: mitigates R4-3 (concurrent Tasks that edit the same file
+  # conflict at the serialized cherry-pick integration). Raise to 2 once
+  # integration performs a 3-way merge instead of a plain cherry-pick.
+  concurrency: 1

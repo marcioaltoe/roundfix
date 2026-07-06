@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/watch"
@@ -732,7 +733,7 @@ func commentRef(comment ReviewComment) string {
 
 func titleFromBody(body string) string {
 	for _, line := range strings.Split(body, "\n") {
-		title := strings.TrimSpace(strings.TrimLeft(line, "# "))
+		title := cleanTitleLine(line)
 		if title != "" {
 			if len(title) > 80 {
 				return title[:77] + "..."
@@ -741,6 +742,69 @@ func titleFromBody(body string) string {
 		}
 	}
 	return "CodeRabbit finding"
+}
+
+func cleanTitleLine(line string) string {
+	title := strings.ReplaceAll(line, "|", " ")
+	title = strings.TrimSpace(strings.TrimLeft(title, "# "))
+	title = stripMarkdownTitleDecoration(title)
+	title = stripEmojiShortcodes(title)
+	title = stripEmojiRunes(title)
+	title = strings.Join(strings.Fields(title), " ")
+	if strings.Trim(title, "-: ") == "" {
+		return ""
+	}
+	return title
+}
+
+func stripMarkdownTitleDecoration(title string) string {
+	replacer := strings.NewReplacer("**", "", "`", "", "*", "")
+	return replacer.Replace(title)
+}
+
+func stripEmojiShortcodes(title string) string {
+	fields := strings.Fields(title)
+	kept := fields[:0]
+	for _, field := range fields {
+		if isEmojiShortcode(field) {
+			continue
+		}
+		kept = append(kept, field)
+	}
+	return strings.Join(kept, " ")
+}
+
+func isEmojiShortcode(field string) bool {
+	field = strings.Trim(field, ".,;()[]{}")
+	if len(field) < 3 || !strings.HasPrefix(field, ":") || !strings.HasSuffix(field, ":") {
+		return false
+	}
+	for _, r := range strings.Trim(field, ":") {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' || r == '+' || r == '-' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func stripEmojiRunes(title string) string {
+	var builder strings.Builder
+	for _, r := range title {
+		switch {
+		case r == '\ufe0f', r == '\u200d':
+			continue
+		case unicode.Is(unicode.So, r), isEmojiModifier(r):
+			continue
+		default:
+			builder.WriteRune(r)
+		}
+	}
+	return builder.String()
+}
+
+func isEmojiModifier(r rune) bool {
+	return r >= '\U0001F3FB' && r <= '\U0001F3FF'
 }
 
 func detectSeverity(body string) string {

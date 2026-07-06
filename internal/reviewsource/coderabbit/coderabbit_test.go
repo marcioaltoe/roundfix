@@ -208,6 +208,44 @@ func TestFetchReviewsCanIncludeNitpicks(t *testing.T) {
 	}
 }
 
+func TestTitleFromBodyStripsCodeRabbitMarkup(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want string
+	}{
+		{
+			name: "table fragment heading with emoji",
+			body: "| ## 🧹 Clean up API docs |\n\nThe generated docs need trimming.",
+			want: "Clean up API docs",
+		},
+		{
+			name: "heading with shortcode emoji and markdown emphasis",
+			body: "### :warning: **Potential issue** | avoid panic in setup\n\nDetails.",
+			want: "Potential issue avoid panic in setup",
+		},
+		{
+			name: "surrounding whitespace and emoji marker",
+			body: "  ## 🛠️ major: handle nil cache  \n\nDetails.",
+			want: "major: handle nil cache",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := titleFromBody(tt.body)
+			if got != tt.want {
+				t.Fatalf("expected title %q, got %q", tt.want, got)
+			}
+			for _, disallowed := range []string{"|", "#", "🧹", "🛠", ":warning:", "**"} {
+				if strings.Contains(got, disallowed) {
+					t.Fatalf("expected title %q to omit %q", got, disallowed)
+				}
+			}
+		})
+	}
+}
+
 func TestResolveIssuesResolvesUniqueReviewThreads(t *testing.T) {
 	gh := &fakeGitHubClient{}
 	client := Client{GitHub: gh}

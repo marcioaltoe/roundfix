@@ -17,15 +17,19 @@ import (
 )
 
 const (
-	userConfigRelPath    = ".roundfix/config.yml"
-	projectConfigName    = ".roundfixrc.yml"
-	defaultReviewSource  = "coderabbit"
-	defaultAgent         = "codex"
-	defaultVerification  = "make verify"
-	defaultPollInterval  = 30 * time.Second
-	defaultReviewTimeout = 30 * time.Minute
-	defaultQuietPeriod   = 30 * time.Second
-	defaultRunDuration   = 2 * time.Hour
+	userConfigRelPath               = ".roundfix/config.yml"
+	projectConfigName               = ".roundfixrc.yml"
+	defaultReviewSource             = "coderabbit"
+	defaultAgent                    = "codex"
+	defaultVerification             = "make verify"
+	defaultPollInterval             = 30 * time.Second
+	defaultReviewTimeout            = 30 * time.Minute
+	defaultQuietPeriod              = 30 * time.Second
+	defaultRunDuration              = 2 * time.Hour
+	defaultJournalRetention         = 336 * time.Hour
+	defaultWorktreeLocation         = "~/.roundfix/worktrees"
+	defaultWorktreeConcurrency      = 2
+	defaultWorktreeBootstrapTimeout = 10 * time.Minute
 )
 
 const (
@@ -41,6 +45,8 @@ type Config struct {
 	Worktree     Worktree
 	Budget       Budget
 	Resolve      Resolve
+	Logs         Logs
+	Store        Store
 }
 
 type Defaults struct {
@@ -73,7 +79,11 @@ type Implement struct {
 }
 
 type Worktree struct {
-	Copy []string
+	Concurrency      int
+	Location         string
+	Copy             []string
+	Bootstrap        string
+	BootstrapTimeout time.Duration
 }
 
 type Budget struct {
@@ -82,8 +92,15 @@ type Budget struct {
 }
 
 type Resolve struct {
-	BatchSize  int
-	Concurrent int
+	BatchSize int
+}
+
+type Logs struct {
+	Agent bool
+}
+
+type Store struct {
+	JournalRetention time.Duration
 }
 
 type Loaded struct {
@@ -97,6 +114,7 @@ type Loaded struct {
 type LoadOptions struct {
 	HomeDir string
 	WorkDir string
+	Stderr  io.Writer
 }
 
 type InitOptions struct {
@@ -117,9 +135,13 @@ type durationValue struct {
 }
 
 func (duration *durationValue) UnmarshalYAML(node *yaml.Node) error {
-	var raw string
-	if err := node.Decode(&raw); err != nil {
-		return err
+	if node.Kind != yaml.ScalarNode {
+		return errors.New("duration must be a scalar")
+	}
+	raw := node.Value
+	if raw == "0" {
+		duration.value = 0
+		return nil
 	}
 	value, err := time.ParseDuration(raw)
 	if err != nil {
@@ -137,6 +159,8 @@ type configOverlay struct {
 	Worktree     *worktreeOverlay     `yaml:"worktree"`
 	Budget       *budgetOverlay       `yaml:"budget"`
 	Resolve      *resolveOverlay      `yaml:"resolve"`
+	Logs         *logsOverlay         `yaml:"logs"`
+	Store        *storeOverlay        `yaml:"store"`
 }
 
 type defaultsOverlay struct {
@@ -185,7 +209,11 @@ func (value *implementAutoPushValue) UnmarshalYAML(node *yaml.Node) error {
 }
 
 type worktreeOverlay struct {
-	Copy *[]string `yaml:"copy"`
+	Concurrency      *int           `yaml:"concurrency"`
+	Location         *string        `yaml:"location"`
+	Copy             *[]string      `yaml:"copy"`
+	Bootstrap        *string        `yaml:"bootstrap"`
+	BootstrapTimeout *durationValue `yaml:"bootstrap_timeout"`
 }
 
 type budgetOverlay struct {
@@ -194,8 +222,112 @@ type budgetOverlay struct {
 }
 
 type resolveOverlay struct {
-	BatchSize  *int `yaml:"batch_size"`
-	Concurrent *int `yaml:"concurrent"`
+	BatchSize *int `yaml:"batch_size"`
+}
+
+type logsOverlay struct {
+	Agent *bool `yaml:"agent"`
+}
+
+type storeOverlay struct {
+	JournalRetention *durationValue `yaml:"journal_retention"`
+}
+
+func (overlay *resolveOverlay) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind == yaml.MappingNode {
+		for index := 0; index < len(node.Content); index += 2 {
+			key := node.Content[index].Value
+			switch key {
+			case "batch_size":
+			default:
+				return fmt.Errorf("resolve.%s is not a supported config key", key)
+			}
+		}
+	}
+	type rawResolveOverlay resolveOverlay
+	var raw rawResolveOverlay
+	if err := node.Decode(&raw); err != nil {
+		return err
+	}
+	*overlay = resolveOverlay(raw)
+	return nil
+}
+
+func (overlay *storeOverlay) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind == yaml.MappingNode {
+		for index := 0; index < len(node.Content); index += 2 {
+			key := node.Content[index].Value
+			switch key {
+			case "journal_retention":
+			default:
+				return fmt.Errorf("store.%s is not a supported config key", key)
+			}
+		}
+	}
+	type rawStoreOverlay storeOverlay
+	var raw rawStoreOverlay
+	if err := node.Decode(&raw); err != nil {
+		return err
+	}
+	*overlay = storeOverlay(raw)
+	return nil
+}
+
+func (overlay *worktreeOverlay) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind == yaml.MappingNode {
+		for index := 0; index < len(node.Content); index += 2 {
+			key := node.Content[index].Value
+			switch key {
+			case "concurrency", "location", "copy", "bootstrap", "bootstrap_timeout":
+			default:
+				return fmt.Errorf("worktree.%s is not a supported config key", key)
+			}
+		}
+	}
+	type rawWorktreeOverlay worktreeOverlay
+	var raw rawWorktreeOverlay
+	if err := node.Decode(&raw); err != nil {
+		return err
+	}
+	*overlay = worktreeOverlay(raw)
+	return nil
+}
+
+type deprecatedConfigKey struct {
+	path        []string
+	name        string
+	replacement string
+}
+
+var deprecatedConfigKeys = []deprecatedConfigKey{
+	{
+		path:        []string{"resolve", "concurrent"},
+		name:        "resolve.concurrent",
+		replacement: "worktree.concurrency",
+	},
+}
+
+type deprecatedConfigWarnings struct {
+	stderr  io.Writer
+	emitted map[string]bool
+}
+
+func newDeprecatedConfigWarnings(stderr io.Writer) *deprecatedConfigWarnings {
+	if stderr == nil {
+		stderr = os.Stderr
+	}
+	return &deprecatedConfigWarnings{
+		stderr:  stderr,
+		emitted: map[string]bool{},
+	}
+}
+
+func (warnings *deprecatedConfigWarnings) warn(key deprecatedConfigKey) {
+	if warnings == nil || warnings.emitted[key.name] {
+		return
+	}
+	warnings.emitted[key.name] = true
+	fmt.Fprintf(warnings.stderr, "config: %s is deprecated and ignored; use %s\n", key.name, key.replacement)
 }
 
 func Builtin() Config {
@@ -220,13 +352,23 @@ func Builtin() Config {
 		Implement: Implement{
 			AutoPush: false,
 		},
+		Worktree: Worktree{
+			Concurrency:      defaultWorktreeConcurrency,
+			Location:         defaultWorktreeLocation,
+			BootstrapTimeout: defaultWorktreeBootstrapTimeout,
+		},
 		Budget: Budget{
 			Enabled:        true,
 			MaxRunDuration: defaultRunDuration,
 		},
 		Resolve: Resolve{
-			BatchSize:  3,
-			Concurrent: 1,
+			BatchSize: 3,
+		},
+		Logs: Logs{
+			Agent: false,
+		},
+		Store: Store{
+			JournalRetention: defaultJournalRetention,
 		},
 	}
 }
@@ -247,13 +389,14 @@ func Load(opts LoadOptions) (Loaded, error) {
 		HomeDir:        homeDir,
 		UserConfigPath: filepath.Join(homeDir, userConfigRelPath),
 	}
-	if err := applyConfigFile(&loaded.Config, loaded.UserConfigPath); err != nil {
+	warnings := newDeprecatedConfigWarnings(opts.Stderr)
+	if err := applyConfigFile(&loaded.Config, loaded.UserConfigPath, warnings); err != nil {
 		return Loaded{}, err
 	}
 
 	if loaded.GitRoot != "" {
 		loaded.ProjectConfigPath = filepath.Join(loaded.GitRoot, projectConfigName)
-		if err := applyConfigFile(&loaded.Config, loaded.ProjectConfigPath); err != nil {
+		if err := applyConfigFile(&loaded.Config, loaded.ProjectConfigPath, warnings); err != nil {
 			return Loaded{}, err
 		}
 	}
@@ -261,6 +404,11 @@ func Load(opts LoadOptions) (Loaded, error) {
 	if err := Validate(loaded.Config); err != nil {
 		return Loaded{}, err
 	}
+	worktreeLocation, err := ResolveWorktreeLocation(loaded.Config.Worktree.Location, loaded.GitRoot, loaded.HomeDir)
+	if err != nil {
+		return Loaded{}, err
+	}
+	loaded.Config.Worktree.Location = worktreeLocation
 	return loaded, nil
 }
 
@@ -317,8 +465,19 @@ defaults:
   auto_commit: %t
 
 worktree:
+  # Parent directory; Roundfix always appends <repo-slug>/<run-id>.
+  location: %q
+  # Maximum concurrent Task Worktrees for spec Runs; 1 keeps sequential behavior.
+  concurrency: %d
   # Repository-relative untracked files copied into each Run Worktree.
   copy: []
+  # Command run once after copy before Agent work; empty disables bootstrap.
+  bootstrap: ""
+  bootstrap_timeout: %s
+
+store:
+  # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
+  journal_retention: %s
 
 review_source:
   name: %s
@@ -346,12 +505,15 @@ budget:
 
 resolve:
   batch_size: %d
-  concurrent: %d
 `,
 		config.Defaults.Agent,
 		config.Defaults.AgentFullAccess,
 		config.Defaults.Verification,
 		config.Defaults.AutoCommit,
+		config.Worktree.Location,
+		config.Worktree.Concurrency,
+		formatConfigDuration(config.Worktree.BootstrapTimeout),
+		formatConfigDuration(config.Store.JournalRetention),
 		config.ReviewSource.Name,
 		config.ReviewSource.IncludeNitpicks,
 		config.Watch.UntilClean,
@@ -364,7 +526,6 @@ resolve:
 		config.Budget.Enabled,
 		formatConfigDuration(config.Budget.MaxRunDuration),
 		config.Resolve.BatchSize,
-		config.Resolve.Concurrent,
 	)
 }
 
@@ -396,8 +557,17 @@ func Validate(config Config) error {
 	if config.Resolve.BatchSize < 1 {
 		return errors.New("resolve.batch_size must be greater than 0")
 	}
-	if config.Resolve.Concurrent < 1 {
-		return errors.New("resolve.concurrent must be greater than 0")
+	if config.Store.JournalRetention < 0 {
+		return errors.New("store.journal_retention must be greater than or equal to 0")
+	}
+	if config.Worktree.Concurrency < 1 {
+		return errors.New("worktree.concurrency must be greater than 0")
+	}
+	if strings.TrimSpace(config.Worktree.Location) == "" {
+		return errors.New("worktree.location must not be empty")
+	}
+	if config.Worktree.BootstrapTimeout <= 0 {
+		return errors.New("worktree.bootstrap_timeout must be greater than 0")
 	}
 	for _, path := range config.Worktree.Copy {
 		if err := validateWorktreeCopyPath(path); err != nil {
@@ -522,7 +692,68 @@ func ResolveArtifactDirectory(artifactDir string, gitRoot string, homeDir string
 	return filepath.Join(gitRoot, expanded), nil
 }
 
-func applyConfigFile(config *Config, path string) error {
+// ReviewArtifactContext identifies the review artifact root for one Open Pull
+// Request. ExplicitArtifactDir must already be resolved like Artifact Directory.
+type ReviewArtifactContext struct {
+	ExplicitArtifactDir string
+	RepoRoot            string
+	SpecSlug            string
+	PRNumber            int
+}
+
+func ResolveReviewRoot(ctx ReviewArtifactContext) (string, error) {
+	if ctx.PRNumber < 1 {
+		return "", errors.New("PR number is required to resolve Review artifact root")
+	}
+	prDir := fmt.Sprintf("pr-%d", ctx.PRNumber)
+	if explicit := strings.TrimSpace(ctx.ExplicitArtifactDir); explicit != "" {
+		return filepath.Join(explicit, "reviews", prDir), nil
+	}
+
+	repoRoot := strings.TrimSpace(ctx.RepoRoot)
+	if repoRoot == "" {
+		return "", errors.New("Git root is required to resolve Review artifact root")
+	}
+	if slug := strings.TrimSpace(ctx.SpecSlug); slug != "" && reviewSpecDirExists(repoRoot, slug) {
+		return filepath.Join(repoRoot, "docs", "specs", slug, "reviews"), nil
+	}
+	return filepath.Join(repoRoot, "docs", "specs", "_reviews", prDir), nil
+}
+
+func reviewSpecDirExists(repoRoot string, slug string) bool {
+	if !validReviewSpecSlug(slug) {
+		return false
+	}
+	info, err := os.Stat(filepath.Join(repoRoot, "docs", "specs", slug))
+	return err == nil && info.IsDir()
+}
+
+func validReviewSpecSlug(slug string) bool {
+	if slug == "" || slug == "." || slug == ".." || filepath.IsAbs(slug) {
+		return false
+	}
+	return !strings.ContainsAny(slug, `/\`)
+}
+
+func ResolveWorktreeLocation(location string, gitRoot string, homeDir string) (string, error) {
+	expanded, err := expandHomeForKey("worktree.location", strings.TrimSpace(location), homeDir)
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(expanded) == "" {
+		return "", errors.New("worktree.location must not be empty")
+	}
+	if !filepath.IsAbs(expanded) {
+		return "", errors.New("worktree.location must be absolute after ~ expansion")
+	}
+	resolved := filepath.Clean(expanded)
+	if strings.TrimSpace(gitRoot) != "" && pathInsideOrSame(resolved, gitRoot) {
+		return "", fmt.Errorf("worktree.location must not be inside the repository tree: %q", resolved)
+	}
+	return resolved, nil
+}
+
+func applyConfigFile(config *Config, path string, warnings *deprecatedConfigWarnings) error {
 	content, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
@@ -531,8 +762,22 @@ func applyConfigFile(config *Config, path string) error {
 		return fmt.Errorf("read config %q: %w", path, err)
 	}
 
-	var overlay configOverlay
+	var document yaml.Node
 	decoder := yaml.NewDecoder(bytes.NewReader(content))
+	if err := decoder.Decode(&document); err != nil {
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		return fmt.Errorf("parse config %q: %w", path, err)
+	}
+	stripDeprecatedConfigKeys(&document, warnings)
+	cleaned, err := encodeYAMLNode(&document)
+	if err != nil {
+		return fmt.Errorf("parse config %q: %w", path, err)
+	}
+
+	var overlay configOverlay
+	decoder = yaml.NewDecoder(bytes.NewReader(cleaned))
 	decoder.KnownFields(true)
 	if err := decoder.Decode(&overlay); err != nil {
 		if errors.Is(err, io.EOF) {
@@ -542,6 +787,60 @@ func applyConfigFile(config *Config, path string) error {
 	}
 	applyOverlay(config, overlay)
 	return nil
+}
+
+func stripDeprecatedConfigKeys(document *yaml.Node, warnings *deprecatedConfigWarnings) {
+	for _, key := range deprecatedConfigKeys {
+		if removeYAMLPath(document, key.path) {
+			warnings.warn(key)
+		}
+	}
+}
+
+func removeYAMLPath(node *yaml.Node, path []string) bool {
+	if node == nil || len(path) == 0 {
+		return false
+	}
+	if node.Kind == yaml.DocumentNode {
+		if len(node.Content) == 0 {
+			return false
+		}
+		return removeYAMLPath(node.Content[0], path)
+	}
+	if node.Kind != yaml.MappingNode {
+		return false
+	}
+	removed := false
+	for index := 0; index+1 < len(node.Content); {
+		key := node.Content[index]
+		value := node.Content[index+1]
+		if key.Value != path[0] {
+			index += 2
+			continue
+		}
+		if len(path) == 1 {
+			node.Content = append(node.Content[:index], node.Content[index+2:]...)
+			removed = true
+			continue
+		}
+		if removeYAMLPath(value, path[1:]) {
+			removed = true
+		}
+		index += 2
+	}
+	return removed
+}
+
+func encodeYAMLNode(node *yaml.Node) ([]byte, error) {
+	var buffer bytes.Buffer
+	encoder := yaml.NewEncoder(&buffer)
+	if err := encoder.Encode(node); err != nil {
+		return nil, err
+	}
+	if err := encoder.Close(); err != nil {
+		return nil, err
+	}
+	return buffer.Bytes(), nil
 }
 
 func applyOverlay(config *Config, overlay configOverlay) {
@@ -605,8 +904,20 @@ func applyOverlay(config *Config, overlay configOverlay) {
 		}
 	}
 	if overlay.Worktree != nil {
+		if overlay.Worktree.Concurrency != nil {
+			config.Worktree.Concurrency = *overlay.Worktree.Concurrency
+		}
+		if overlay.Worktree.Location != nil {
+			config.Worktree.Location = *overlay.Worktree.Location
+		}
 		if overlay.Worktree.Copy != nil {
 			config.Worktree.Copy = append([]string(nil), (*overlay.Worktree.Copy)...)
+		}
+		if overlay.Worktree.Bootstrap != nil {
+			config.Worktree.Bootstrap = *overlay.Worktree.Bootstrap
+		}
+		if overlay.Worktree.BootstrapTimeout != nil {
+			config.Worktree.BootstrapTimeout = overlay.Worktree.BootstrapTimeout.value
 		}
 	}
 	if overlay.Budget != nil {
@@ -621,8 +932,15 @@ func applyOverlay(config *Config, overlay configOverlay) {
 		if overlay.Resolve.BatchSize != nil {
 			config.Resolve.BatchSize = *overlay.Resolve.BatchSize
 		}
-		if overlay.Resolve.Concurrent != nil {
-			config.Resolve.Concurrent = *overlay.Resolve.Concurrent
+	}
+	if overlay.Logs != nil {
+		if overlay.Logs.Agent != nil {
+			config.Logs.Agent = *overlay.Logs.Agent
+		}
+	}
+	if overlay.Store != nil {
+		if overlay.Store.JournalRetention != nil {
+			config.Store.JournalRetention = overlay.Store.JournalRetention.value
 		}
 	}
 }
@@ -664,16 +982,30 @@ func findGitRoot(start string) string {
 }
 
 func expandHome(path string, homeDir string) (string, error) {
+	return expandHomeForKey("artifact_dir", path, homeDir)
+}
+
+func expandHomeForKey(key string, path string, homeDir string) (string, error) {
 	if path != "~" && !strings.HasPrefix(path, "~/") {
 		return path, nil
 	}
 	if homeDir == "" {
-		return "", errors.New("artifact_dir uses ~ but home directory is unavailable")
+		return "", fmt.Errorf("%s uses ~ but home directory is unavailable", key)
 	}
 	if path == "~" {
 		return homeDir, nil
 	}
 	return filepath.Join(homeDir, strings.TrimPrefix(path, "~/")), nil
+}
+
+func pathInsideOrSame(path string, root string) bool {
+	path = filepath.Clean(path)
+	root = filepath.Clean(root)
+	rel, err := filepath.Rel(root, path)
+	if err != nil {
+		return false
+	}
+	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel))
 }
 
 func validateWorktreeCopyPath(path string) error {

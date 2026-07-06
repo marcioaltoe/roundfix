@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -18,12 +19,14 @@ import (
 	"time"
 
 	"roundfix/internal/agent"
+	"roundfix/internal/codex"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/daemon"
 	"roundfix/internal/preflight"
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
+	"roundfix/internal/spec"
 	"roundfix/internal/store"
 	roundtui "roundfix/internal/tui"
 	"roundfix/internal/watch"
@@ -222,17 +225,22 @@ func TestRunCommandHelp(t *testing.T) {
 		{
 			name:     "resolve",
 			args:     []string{"resolve", "--help"},
-			contains: []string{"roundfix resolve --pr <number> --agent <agent>", "--no-agent-console"},
+			contains: []string{"roundfix resolve --pr <number> --agent <agent>", "--no-agent-console", "--detach"},
 		},
 		{
 			name:     "watch",
 			args:     []string{"watch", "--help"},
-			contains: []string{"roundfix watch --source coderabbit --pr <number> --agent <agent>", "--until-clean", "Review Source check succeeds", "--no-agent-console"},
+			contains: []string{"roundfix watch --source coderabbit --pr <number> --agent <agent>", "--until-clean", "Review Source check succeeds", "--no-agent-console", "--detach"},
 		},
 		{
 			name:     "setup",
 			args:     []string{"setup", "--help"},
 			contains: []string{"roundfix setup [--yes] [--no-input]", "--yes", "--no-input"},
+		},
+		{
+			name:     "doctor",
+			args:     []string{"doctor", "--help"},
+			contains: []string{"roundfix doctor", "codex runtime hygiene", "Doctor mutates nothing"},
 		},
 		{
 			name:     "upgrade",
@@ -259,6 +267,194 @@ func TestRunCommandHelp(t *testing.T) {
 			if stderr.Len() != 0 {
 				t.Fatalf("expected no stderr, got %q", stderr.String())
 			}
+		})
+	}
+}
+
+func TestRunDoctorReportsReadinessChecks(t *testing.T) {
+	tests := []struct {
+		name       string
+		checker    *doctorFakeHealthChecker
+		wantCode   int
+		wantStdout string
+	}{
+		{
+			name: "all checks pass",
+			checker: newDoctorFakeHealthChecker(
+				CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
+				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
+				CheckResult{Name: HealthCheckAgent, Status: CheckStatusOK, Detail: "codex"},
+				CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK, Detail: "/home/roundfix/.local/bin/codex accepted"},
+			),
+			wantCode: exitOK,
+			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
+				"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
+				"agent: ok (codex)\n" +
+				"codex: ok (/home/roundfix/.local/bin/codex accepted)\n",
+		},
+		{
+			name: "quarantined codex fails with reinstall action",
+			checker: newDoctorFakeHealthChecker(
+				CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
+				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
+				CheckResult{Name: HealthCheckAgent, Status: CheckStatusOK, Detail: "codex"},
+				CheckResult{Name: HealthCheckCodex, Status: CheckStatusFailed, Detail: "/tmp/codex is quarantined", NextAction: codex.ReinstallNextAction},
+			),
+			wantCode: exitRunFailed,
+			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
+				"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
+				"agent: ok (codex)\n" +
+				"codex: failed (/tmp/codex is quarantined; next: " + codex.ReinstallNextAction + ")\n",
+		},
+		{
+			name: "codex not applicable does not fail",
+			checker: newDoctorFakeHealthChecker(
+				CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
+				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
+				CheckResult{Name: HealthCheckAgent, Status: CheckStatusOK, Detail: "codex"},
+				CheckResult{Name: HealthCheckCodex, Status: CheckStatusSkipped, Detail: "not-applicable on linux"},
+			),
+			wantCode: exitOK,
+			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
+				"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
+				"agent: ok (codex)\n" +
+				"codex: skipped (not-applicable on linux)\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			withDoctorFakeDeps(t, tt.checker)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"doctor"}, &stdout, &stderr)
+
+			if code != tt.wantCode {
+				t.Fatalf("expected exit code %d, got %d", tt.wantCode, code)
+			}
+			if got := stdout.String(); got != tt.wantStdout {
+				t.Fatalf("unexpected stdout:\n got: %q\nwant: %q", got, tt.wantStdout)
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no stderr, got %q", stderr.String())
+			}
+			if len(tt.checker.agentRuntimes) != 1 || tt.checker.agentRuntimes[0].ID != "codex" {
+				t.Fatalf("expected configured codex runtime probe, got %#v", tt.checker.agentRuntimes)
+			}
+			assertDoctorPathMissing(t, filepath.Join(homeDir, ".acpx"))
+			assertDoctorPathMissing(t, filepath.Join(homeDir, ".roundfix"))
+			assertDoctorPathMissing(t, filepath.Join(repoDir, ".roundfixrc.yml"))
+		})
+	}
+}
+
+func TestRunDoctorRejectsArguments(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"doctor", "extra"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected exit code %d, got %d", exitPreflight, code)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout, got %q", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "unexpected argument \"extra\"") {
+		t.Fatalf("expected argument diagnostic, got %q", stderr.String())
+	}
+}
+
+func newDoctorFakeHealthChecker(node, acpx, agentResult, codex CheckResult) *doctorFakeHealthChecker {
+	return &doctorFakeHealthChecker{
+		node:        node,
+		acpx:        acpx,
+		agentResult: agentResult,
+		codex:       codex,
+	}
+}
+
+type doctorFakeHealthChecker struct {
+	node          CheckResult
+	acpx          CheckResult
+	agentResult   CheckResult
+	codex         CheckResult
+	agentRuntimes []agent.RuntimeSpec
+}
+
+func (checker *doctorFakeHealthChecker) Node(context.Context) CheckResult {
+	return checker.node
+}
+
+func (checker *doctorFakeHealthChecker) ACPX(context.Context) CheckResult {
+	return checker.acpx
+}
+
+func (checker *doctorFakeHealthChecker) Agent(_ context.Context, runtime agent.RuntimeSpec) CheckResult {
+	checker.agentRuntimes = append(checker.agentRuntimes, runtime)
+	return checker.agentResult
+}
+
+func (checker *doctorFakeHealthChecker) Codex(context.Context) CheckResult {
+	return checker.codex
+}
+
+func withDoctorFakeDeps(t *testing.T, checker HealthChecker) {
+	t.Helper()
+	old := doctorDeps
+	doctorDeps = doctorDependencies{
+		loadConfig: func(roundconfig.LoadOptions) (roundconfig.Loaded, error) {
+			return roundconfig.Loaded{
+				Config:  roundconfig.Builtin(),
+				GitRoot: "/repo/project",
+				HomeDir: "/home/roundfix-test",
+			}, nil
+		},
+		healthChecker: func(roundconfig.Loaded) HealthChecker {
+			return checker
+		},
+	}
+	t.Cleanup(func() {
+		doctorDeps = old
+	})
+}
+
+func assertDoctorPathMissing(t *testing.T, path string) {
+	t.Helper()
+	if _, err := os.Stat(path); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected %s to be absent, got error %v", path, err)
+	}
+}
+
+func TestRunDetachRejectsInteractiveWithExistingConflictShape(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "resolve", args: []string{"resolve", "--detach", "--interactive"}},
+		{name: "watch", args: []string{"watch", "--detach", "--interactive"}},
+		{name: "implement", args: []string{"implement", "--detach", "--interactive"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, _ := withCLIWorkspace(t)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("expected exit code 2, got %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("expected no stdout, got %q", stdout.String())
+			}
+			if !strings.Contains(stderr.String(), "--interactive cannot be used with --no-input") {
+				t.Fatalf("expected existing no-input conflict shape, got %q", stderr.String())
+			}
+			assertNoRunDatabase(t, homeDir)
 		})
 	}
 }
@@ -484,6 +680,113 @@ func TestRunSetupExitCodes(t *testing.T) {
 	})
 }
 
+func TestHealthCheckerReturnsStructuredReadOnlyResults(t *testing.T) {
+	ctx := context.Background()
+	runtime := agent.RuntimeSpec{ID: "codex"}
+	probed := false
+	checker := newHealthChecker(healthCheckDependencies{
+		nodeVersion: func(context.Context) (string, error) {
+			return " v25.6.1 \n", nil
+		},
+		acpxVersion: func(context.Context) (string, error) {
+			return agent.PinnedACPXVersion + "\n", nil
+		},
+		probeAgent: func(_ context.Context, got agent.RuntimeSpec) error {
+			probed = true
+			if got.ID != runtime.ID {
+				t.Fatalf("expected runtime %q, got %q", runtime.ID, got.ID)
+			}
+			return nil
+		},
+	})
+
+	assertCheckResult(t, checker.Node(ctx), CheckResult{
+		Name:   HealthCheckNode,
+		Status: CheckStatusOK,
+		Detail: "v25.6.1 >= " + setupNodeMinimumVersion,
+	})
+	assertCheckResult(t, checker.ACPX(ctx), CheckResult{
+		Name:   HealthCheckACPX,
+		Status: CheckStatusOK,
+		Detail: agent.PinnedACPXVersion,
+	})
+	assertCheckResult(t, checker.Agent(ctx, runtime), CheckResult{
+		Name:   HealthCheckAgent,
+		Status: CheckStatusOK,
+		Detail: "codex",
+	})
+	if !probed {
+		t.Fatal("expected agent probe to run")
+	}
+}
+
+func TestHealthCheckerReportsFailedPrerequisitesWithNextActions(t *testing.T) {
+	ctx := context.Background()
+	checker := newHealthChecker(healthCheckDependencies{
+		nodeVersion: func(context.Context) (string, error) {
+			return "v20.0.0", nil
+		},
+		acpxVersion: func(context.Context) (string, error) {
+			return "0.11.0", nil
+		},
+		probeAgent: func(context.Context, agent.RuntimeSpec) error {
+			return errors.New("probe denied")
+		},
+	})
+
+	assertCheckResult(t, checker.Node(ctx), CheckResult{
+		Name:       HealthCheckNode,
+		Status:     CheckStatusFailed,
+		Detail:     "found v20.0.0; Node.js " + setupNodeMinimumVersion + " or newer is required",
+		NextAction: "install Node.js " + setupNodeMinimumVersion + " or newer",
+	})
+	assertCheckResult(t, checker.ACPX(ctx), CheckResult{
+		Name:       HealthCheckACPX,
+		Status:     CheckStatusFailed,
+		Detail:     "found 0.11.0; required " + agent.PinnedACPXVersion + "; run " + setupACPXInstallCommand(),
+		NextAction: setupACPXInstallCommand(),
+	})
+	assertCheckResult(t, checker.Agent(ctx, agent.RuntimeSpec{ID: "codex"}), CheckResult{
+		Name:   HealthCheckAgent,
+		Status: CheckStatusFailed,
+		Detail: "probe denied",
+	})
+}
+
+func TestHealthCheckerReportsCodexResult(t *testing.T) {
+	checker := newHealthChecker(healthCheckDependencies{
+		codexInspector: fakeCodexInspector{
+			result: codex.Result{
+				Status:     codex.StatusFailed,
+				Detail:     "/path/codex has an invalid or missing code signature",
+				NextAction: codex.ReinstallNextAction,
+			},
+		},
+	})
+
+	assertCheckResult(t, checker.Codex(context.Background()), CheckResult{
+		Name:       HealthCheckCodex,
+		Status:     CheckStatusFailed,
+		Detail:     "/path/codex has an invalid or missing code signature",
+		NextAction: codex.ReinstallNextAction,
+	})
+}
+
+func assertCheckResult(t *testing.T, got CheckResult, want CheckResult) {
+	t.Helper()
+	if got != want {
+		t.Fatalf("unexpected check result:\n got: %#v\nwant: %#v", got, want)
+	}
+}
+
+type fakeCodexInspector struct {
+	result codex.Result
+}
+
+func (fake fakeCodexInspector) Inspect(context.Context) codex.Result {
+	return fake.result
+}
+
 func TestRunSkillsCheck(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -680,7 +983,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 				if !strings.Contains(stdout.String(), "Artifacts: created new Round") {
 					t.Fatalf("expected new artifact confirmation, got %q", stdout.String())
 				}
-				issuePath := filepath.Join(builtinArtifactDirForRepo(t, repoDir), "reviews", "pr-123", "round-001", "issue_001.md")
+				issuePath := filepath.Join(defaultReviewRootForRepo(repoDir, "123"), "round-001", "issue_001.md")
 				issueContent, err := os.ReadFile(issuePath)
 				if err != nil {
 					t.Fatalf("expected Review Issue artifact %s: %v", issuePath, err)
@@ -706,7 +1009,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 					t.Fatalf("expected Final Push confirmation, got %q", stderr.String())
 				}
 				assertRunCount(t, filepath.Join(os.Getenv("HOME"), ".roundfix", "roundfix.db"), 1)
-				assertAgentLogContains(t, repoDir, "fake agent output")
+				assertNoAgentLogs(t, repoDir)
 			} else if tt.name == "watch" {
 				if !strings.Contains(stderr.String(), "Review Source status: settled") {
 					t.Fatalf("expected fake Review Source status output, got %q", stderr.String())
@@ -733,10 +1036,189 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 					t.Fatalf("expected watch Clean terminal outcome, got %q", stderr.String())
 				}
 				assertRunCount(t, filepath.Join(os.Getenv("HOME"), ".roundfix", "roundfix.db"), 1)
-				assertAgentLogContains(t, repoDir, "fake agent output")
+				assertNoAgentLogs(t, repoDir)
 			}
 		})
 	}
+}
+
+func TestRunFetchWritesReviewArtifactsUnderSpecSelector(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	specSlug := "0001-widget-flow"
+	mustMkdir(t, filepath.Join(repoDir, "docs", "specs", specSlug))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"fetch", "--pr", "123", "--spec", specSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected successful fetch exit code 0, got %d; stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	issuePath := filepath.Join(repoDir, "docs", "specs", specSlug, "reviews", "round-001", "issue_001.md")
+	if _, err := os.Stat(issuePath); err != nil {
+		t.Fatalf("expected spec-associated Review Issue artifact %s: %v", issuePath, err)
+	}
+	oldPath := filepath.Join(builtinArtifactDirForRepo(t, repoDir), "reviews", "pr-123", "round-001", "issue_001.md")
+	if _, err := os.Stat(oldPath); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected no default Artifact Directory Review Issue at %s, got err %v", oldPath, err)
+	}
+}
+
+func TestRunFetchWritesReviewArtifactsUnderTrailerSpec(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	specSlug := "0001-widget-flow"
+	mustMkdir(t, filepath.Join(repoDir, "docs", "specs", specSlug))
+	withReviewSpecGitRunner(t, &fakeReviewSpecGitRunner{message: "subject\n\nRoundfix-Spec: " + specSlug})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"fetch", "--pr", "123", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected successful fetch exit code 0, got %d; stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	issuePath := filepath.Join(repoDir, "docs", "specs", specSlug, "reviews", "round-001", "issue_001.md")
+	if _, err := os.Stat(issuePath); err != nil {
+		t.Fatalf("expected trailer-associated Review Issue artifact %s: %v", issuePath, err)
+	}
+}
+
+func TestRunFetchWritesReviewArtifactsUnderSpeclessRoot(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"fetch", "--pr", "123", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected successful fetch exit code 0, got %d; stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	issuePath := filepath.Join(repoDir, "docs", "specs", "_reviews", "pr-123", "round-001", "issue_001.md")
+	if _, err := os.Stat(issuePath); err != nil {
+		t.Fatalf("expected spec-less Review Issue artifact %s: %v", issuePath, err)
+	}
+}
+
+func TestReviewSpecSlugAssociation(t *testing.T) {
+	repoRoot := t.TempDir()
+	explicitSlug := "0001-explicit"
+	oldSlug := "0002-old"
+	newSlug := "0003-new"
+	for _, slug := range []string{explicitSlug, oldSlug, newSlug} {
+		mustMkdir(t, filepath.Join(repoRoot, "docs", "specs", slug))
+	}
+
+	tests := []struct {
+		name     string
+		req      reviewSpecRequest
+		message  string
+		want     string
+		wantCall bool
+	}{
+		{
+			name: "explicit selector wins without reading git",
+			req: reviewSpecRequest{
+				ExplicitSlug: explicitSlug,
+				RepoRoot:     repoRoot,
+				HeadSHA:      "abc123",
+			},
+			message:  "subject\n\nRoundfix-Spec: " + newSlug,
+			want:     explicitSlug,
+			wantCall: false,
+		},
+		{
+			name: "newest trailer wins",
+			req: reviewSpecRequest{
+				RepoRoot: repoRoot,
+				HeadSHA:  "abc123",
+			},
+			message:  "subject\n\nRoundfix-Spec: " + oldSlug + "\nRoundfix-Spec: " + newSlug,
+			want:     newSlug,
+			wantCall: true,
+		},
+		{
+			name: "unknown trailer slug is no association",
+			req: reviewSpecRequest{
+				RepoRoot: repoRoot,
+				HeadSHA:  "abc123",
+			},
+			message:  "subject\n\nRoundfix-Spec: 9999-missing",
+			want:     "",
+			wantCall: true,
+		},
+		{
+			name: "missing trailer is no association",
+			req: reviewSpecRequest{
+				RepoRoot: repoRoot,
+				HeadSHA:  "abc123",
+			},
+			message:  "subject only",
+			want:     "",
+			wantCall: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			runner := &fakeReviewSpecGitRunner{message: tt.message}
+
+			got, err := reviewSpecSlug(context.Background(), tt.req, runner)
+			if err != nil {
+				t.Fatalf("reviewSpecSlug() error = %v", err)
+			}
+			if got != tt.want {
+				t.Fatalf("reviewSpecSlug() = %q, want %q", got, tt.want)
+			}
+			if gotCall := runner.calls > 0; gotCall != tt.wantCall {
+				t.Fatalf("git calls = %v, want %v", gotCall, tt.wantCall)
+			}
+		})
+	}
+}
+
+type fakeReviewSpecGitRunner struct {
+	message string
+	calls   int
+}
+
+func (runner *fakeReviewSpecGitRunner) RunGit(_ context.Context, _ string, _ ...string) (string, error) {
+	runner.calls++
+	return runner.message, nil
+}
+
+func TestRunFetchWarnsAndIgnoresDeprecatedUserConfig(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
+resolve:
+  concurrent: 1
+`)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--round", "auto", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected fetch exit 0, got %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	if strings.Contains(stdout.String(), "deprecated") {
+		t.Fatalf("expected warning to stay off stdout, got %q", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "Review Issues: 1") || !strings.Contains(stdout.String(), "Artifacts: created new Round") {
+		t.Fatalf("expected normal fetch stdout, got %q", stdout.String())
+	}
+	warning := "config: resolve.concurrent is deprecated and ignored; use worktree.concurrency\n"
+	if strings.Count(stderr.String(), warning) != 1 {
+		t.Fatalf("expected one deprecated config warning %q, got %q", warning, stderr.String())
+	}
+	if strings.Contains(stderr.String(), "Preflight failed") {
+		t.Fatalf("expected fetch to proceed past Preflight, got %q", stderr.String())
+	}
+	assertRunCount(t, store.DatabasePath(homeDir), 1)
 }
 
 func TestRunWatchPrintsDeterministicStdoutReport(t *testing.T) {
@@ -1237,7 +1719,7 @@ func TestRunFetchReusesMatchingAutoRound(t *testing.T) {
 	if !strings.Contains(secondStdout.String(), "Artifacts: reused existing matching Round") {
 		t.Fatalf("expected second fetch to report reused Round, got %q", secondStdout.String())
 	}
-	if _, err := os.Stat(filepath.Join(builtinArtifactDirForRepo(t, repoDir), "reviews", "pr-123", "round-002")); !errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(filepath.Join(defaultReviewRootForRepo(repoDir, "123"), "round-002")); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("expected no duplicate round-002, got err %v", err)
 	}
 	assertRunCount(t, filepath.Join(homeDir, ".roundfix", "roundfix.db"), 2)
@@ -1278,6 +1760,9 @@ watch:
 	if !strings.Contains(stderr.String(), "Review Source status: pending") {
 		t.Fatalf("expected pending Review Source status output, got %q", stderr.String())
 	}
+	if count := strings.Count(stderr.String(), "Review Source status: pending\n"); count != 1 {
+		t.Fatalf("expected one unchanged status-poll line, got %d in %q", count, stderr.String())
+	}
 	if !strings.Contains(stderr.String(), "reached TimedOut") {
 		t.Fatalf("expected TimedOut terminal outcome, got %q", stderr.String())
 	}
@@ -1307,6 +1792,12 @@ func TestRunWatchMissingHeadCheckPrintsCleanNote(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "Review Source check missing for the pushed HEAD; treating Run as Clean.") {
 		t.Fatalf("expected missing-check stderr note, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "Expected: Watch Run Clean normally means the Review Source check on the pushed HEAD reports success.") {
+		t.Fatalf("expected missing-check documentation expectation, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "Next: confirm the PR's Review Source check before merging.") {
+		t.Fatalf("expected missing-check next action, got %q", stderr.String())
 	}
 	if strings.Count(stderr.String(), "Review Source check missing for the pushed HEAD") != 1 {
 		t.Fatalf("expected one missing-check stderr note, got %q", stderr.String())
@@ -1667,7 +2158,7 @@ func TestRunResolveDeduplicatesBeforeBatching(t *testing.T) {
 	if got := len(sourceResolver.requests[0].Issues); got != 1 {
 		t.Fatalf("expected only newest issue to resolve source thread, got %d", got)
 	}
-	if sourceResolver.requests[0].Issues[0].FilePath != filepath.Join(builtinArtifactDirForRepo(t, repoDir), "reviews", "pr-123", "round-002", "issue_001.md") {
+	if sourceResolver.requests[0].Issues[0].FilePath != filepath.Join(defaultReviewRootForRepo(repoDir, "123"), "round-002", "issue_001.md") {
 		t.Fatalf("expected newest duplicate source resolution, got %#v", sourceResolver.requests[0].Issues[0])
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
@@ -2802,8 +3293,8 @@ func TestRunStopForceCancelsImplementRunAndReleasesLocks(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
 	}
-	if stderr.Len() != 0 {
-		t.Fatalf("expected no stderr for successful cancel, got %q", stderr.String())
+	if want := "roundfix: closed session roundfix-" + active.ID; !strings.Contains(stderr.String(), want) {
+		t.Fatalf("expected force close report %q, got %q", want, stderr.String())
 	}
 	if len(calls) != 1 {
 		t.Fatalf("expected one Agent Session cancel, got %#v", calls)
@@ -2832,6 +3323,172 @@ func TestRunStopForceCancelsImplementRunAndReleasesLocks(t *testing.T) {
 	if next.ID == active.ID {
 		t.Fatal("expected a new Run after force stop")
 	}
+}
+
+func TestRunStopForceCancelsListsAndClosesRunAndTaskSessions(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:     "task_01",
+		title:  "Stopped task",
+		status: string(spec.StatusPending),
+	}})
+	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
+	active, _, taskRef := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "task_01", "")
+	calls := []string{}
+	withStopAgentSessionCanceler(t, func(_ context.Context, runtime agent.RuntimeSpec, session agent.SessionRef) error {
+		calls = append(calls, "cancel "+runtime.ID+" "+session.Name+" "+session.WorkDir)
+		return nil
+	})
+	withRoundfixSessionLister(t, func(_ context.Context, runtime agent.RuntimeSpec, workDir string) ([]agent.RoundfixSession, error) {
+		calls = append(calls, "list "+runtime.ID+" "+workDir)
+		return []agent.RoundfixSession{
+			{Name: "roundfix-" + active.ID + "-task_01", RunID: active.ID, TaskID: "task_01"},
+			{Name: "roundfix-other-run-task_01", RunID: "other-run", TaskID: "task_01"},
+		}, nil
+	})
+	withStopAgentSessionCloser(t, func(_ context.Context, runtime agent.RuntimeSpec, session agent.SessionRef) error {
+		calls = append(calls, "close "+runtime.ID+" "+session.Name+" "+session.WorkDir)
+		return nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	wantCalls := []string{
+		"cancel codex roundfix-" + active.ID + " " + active.WorkDir,
+		"list codex " + active.WorkDir,
+		"close codex roundfix-" + active.ID + " " + active.WorkDir,
+		"close codex roundfix-" + active.ID + "-task_01 " + taskRef.Path,
+	}
+	if !reflect.DeepEqual(calls, wantCalls) {
+		t.Fatalf("unexpected session invocations\nwant: %#v\ngot:  %#v", wantCalls, calls)
+	}
+	for _, want := range []string{
+		"roundfix: closed session roundfix-" + active.ID,
+		"roundfix: closed session roundfix-" + active.ID + "-task_01",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())
+		}
+	}
+	if strings.Contains(stderr.String(), "other-run") {
+		t.Fatalf("foreign Run session must not be reported or closed, got %q", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
+		t.Fatalf("expected force stop report, got %q", stdout.String())
+	}
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+}
+
+func TestRunStopForceCloseFailureStillCompletesStopped(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return nil
+	})
+	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return errors.New("close denied")
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if want := "roundfix: could not close session roundfix-" + active.ID + ": close denied"; !strings.Contains(stderr.String(), want) {
+		t.Fatalf("expected close failure note %q, got %q", want, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
+		t.Fatalf("expected force stop report, got %q", stdout.String())
+	}
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	_, err = runStore.CreateRun(context.Background(), request)
+	closeErr := runStore.Close()
+	if err != nil {
+		t.Fatalf("expected force stop to release Spec lock after close failure, got %v", err)
+	}
+	if closeErr != nil {
+		t.Fatalf("close store: %v", closeErr)
+	}
+}
+
+func TestRunStopForceReapsEmptyRunAndTaskWorktrees(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:     "task_01",
+		title:  "Stopped task",
+		status: string(spec.StatusPending),
+	}})
+	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
+	active, _, taskRef := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "task_01", "")
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
+		t.Fatalf("expected force stop report, got %q", stdout.String())
+	}
+	for _, expected := range []string{
+		"roundfix: reaped terminal Worktree path=" + active.WorkDir + " branch=" + runworktree.BranchName(active.ID),
+		"roundfix: reaped terminal Worktree path=" + taskRef.Path + " branch=" + taskRef.Branch,
+	} {
+		if !strings.Contains(stderr.String(), expected) {
+			t.Fatalf("expected stderr to contain %q, got %q", expected, stderr.String())
+		}
+	}
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+	assertRunWorktreeRemoved(t, active.WorkDir)
+	assertRunBranchRemoved(t, repoDir, runworktree.BranchName(active.ID))
+	assertRunWorktreeRemoved(t, taskRef.Path)
+	assertRunBranchRemoved(t, repoDir, taskRef.Branch)
+}
+
+func TestRunStopForceKeepsRunWorktreeWithCommits(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:     "task_01",
+		title:  "Stopped task",
+		status: string(spec.StatusPending),
+	}})
+	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
+	active, runRef, _ := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "", "")
+	if err := os.WriteFile(filepath.Join(runRef.Path, "kept.txt"), []byte("settled work\n"), 0o644); err != nil {
+		t.Fatalf("write kept work: %v", err)
+	}
+	gitImplement(t, runRef.Path, "add", "kept.txt")
+	gitImplement(t, runRef.Path, "commit", "-m", "settled work")
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if strings.Contains(stderr.String(), "reaped terminal Worktree") {
+		t.Fatalf("expected no debris reap report for a Run Branch with commits, got %q", stderr.String())
+	}
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+	assertRunWorktreeExists(t, active.WorkDir)
+	assertRunBranchExists(t, repoDir, runworktree.BranchName(active.ID))
 }
 
 func TestRunStopForceReportsCancelFailuresButCompletes(t *testing.T) {
@@ -2938,8 +3595,8 @@ func TestRunStopGracefulThenForceCompletesImmediately(t *testing.T) {
 	if forceCode != 0 {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", forceCode, forceStderr.String())
 	}
-	if forceStderr.Len() != 0 {
-		t.Fatalf("expected no force stderr, got %q", forceStderr.String())
+	if want := "roundfix: closed session roundfix-" + active.ID; !strings.Contains(forceStderr.String(), want) {
+		t.Fatalf("expected force close report %q, got %q", want, forceStderr.String())
 	}
 	if cancelCalls != 1 {
 		t.Fatalf("expected one cancel after graceful request, got %d", cancelCalls)
@@ -3404,6 +4061,7 @@ func withSuccessfulPreflight(t *testing.T, repoDir string) {
 	withWatchHeadSHA(t, func(context.Context, string) (string, error) {
 		return "abc123", nil
 	})
+	withReviewSpecGitRunner(t, &fakeReviewSpecGitRunner{})
 	withFetchReviewItems(t, []reviewsource.ReviewItem{
 		{
 			Title:                   "major: handle test issue",
@@ -3454,7 +4112,9 @@ func withFakeReviewRunWorktrees(t *testing.T) {
 	oldIntegrate := integrateRunWorktree
 	oldCleanup := cleanupCleanRunWorktree
 	oldPrune := pruneTerminalRunWorktrees
-	createRunWorktree = func(_ context.Context, userRoot, runID, _ string, _ []string) (runworktree.Ref, error) {
+	createRunWorktree = func(_ context.Context, opts runworktree.CreateOptions) (runworktree.Ref, error) {
+		userRoot := opts.UserRoot
+		runID := opts.RunID
 		path := filepath.Join(os.Getenv("HOME"), ".roundfix", "worktrees", "fake-review", runID)
 		if err := os.MkdirAll(path, 0o755); err != nil {
 			return runworktree.Ref{}, err
@@ -3475,8 +4135,8 @@ func withFakeReviewRunWorktrees(t *testing.T) {
 	cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
 		return os.RemoveAll(ref.Path)
 	}
-	pruneTerminalRunWorktrees = func(context.Context, string, func(string) bool) error {
-		return nil
+	pruneTerminalRunWorktrees = func(context.Context, string, string, func(string) bool) ([]runworktree.PrunedRef, error) {
+		return nil, nil
 	}
 	t.Cleanup(func() {
 		createRunWorktree = oldCreate
@@ -3511,6 +4171,15 @@ func withPreflight(t *testing.T, fn func(context.Context, commandRequest, roundc
 	})
 }
 
+func withReviewSpecGitRunner(t *testing.T, runner preflight.GitRunner) {
+	t.Helper()
+	old := reviewSpecGitRunner
+	reviewSpecGitRunner = runner
+	t.Cleanup(func() {
+		reviewSpecGitRunner = old
+	})
+}
+
 func overrideCollaborators(t *testing.T, mutate func(*engineCollaborators)) {
 	t.Helper()
 	old := newEngineCollaborators
@@ -3526,6 +4195,12 @@ func withAgentRunner(t *testing.T, runner agent.Runner) {
 	overrideCollaborators(t, func(collaborators *engineCollaborators) {
 		collaborators.runner = runner
 	})
+	withRoundfixSessionLister(t, func(context.Context, agent.RuntimeSpec, string) ([]agent.RoundfixSession, error) {
+		return nil, nil
+	})
+	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return nil
+	})
 }
 
 func withStopAgentSessionCanceler(t *testing.T, cancel func(context.Context, agent.RuntimeSpec, agent.SessionRef) error) {
@@ -3534,6 +4209,30 @@ func withStopAgentSessionCanceler(t *testing.T, cancel func(context.Context, age
 	cancelStopAgentSession = cancel
 	t.Cleanup(func() {
 		cancelStopAgentSession = old
+	})
+	withRoundfixSessionLister(t, func(context.Context, agent.RuntimeSpec, string) ([]agent.RoundfixSession, error) {
+		return nil, nil
+	})
+	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return nil
+	})
+}
+
+func withRoundfixSessionLister(t *testing.T, list func(context.Context, agent.RuntimeSpec, string) ([]agent.RoundfixSession, error)) {
+	t.Helper()
+	old := listRoundfixAgentSessions
+	listRoundfixAgentSessions = list
+	t.Cleanup(func() {
+		listRoundfixAgentSessions = old
+	})
+}
+
+func withStopAgentSessionCloser(t *testing.T, closeSession func(context.Context, agent.RuntimeSpec, agent.SessionRef) error) {
+	t.Helper()
+	old := closeStopAgentSession
+	closeStopAgentSession = closeSession
+	t.Cleanup(func() {
+		closeStopAgentSession = old
 	})
 }
 
@@ -3773,6 +4472,31 @@ func createActiveImplementRunForStop(t *testing.T, homeDir string, repoDir strin
 	return active, request
 }
 
+func createActiveImplementRunForStopInGitRoot(t *testing.T, homeDir string, gitRoot string, specSlug string) store.Run {
+	t.Helper()
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close store: %v", err)
+		}
+	}()
+	active, err := runStore.CreateRun(context.Background(), store.CreateRunRequest{
+		Kind:        store.KindImplement,
+		GitRoot:     gitRoot,
+		LocalBranch: "ma/other-work",
+		HeadSHA:     "abc123",
+		SpecSlug:    specSlug,
+		Agent:       "codex",
+	})
+	if err != nil {
+		t.Fatalf("create active implement run: %v", err)
+	}
+	return active
+}
+
 func assertNoActiveRun(t *testing.T, homeDir string, headRepository string, headBranch string) {
 	t.Helper()
 	runStore, err := store.Open(context.Background(), homeDir)
@@ -3887,6 +4611,17 @@ func assertAgentLogContains(t *testing.T, repoDir string, expected string) {
 	}
 }
 
+func assertNoAgentLogs(t *testing.T, repoDir string) {
+	t.Helper()
+	matches, err := filepath.Glob(filepath.Join(builtinArtifactDirForRepo(t, repoDir), "runs", "*", "agent", "batch-*.log"))
+	if err != nil {
+		t.Fatalf("glob Agent logs: %v", err)
+	}
+	if len(matches) != 0 {
+		t.Fatalf("expected no Agent logs, got %#v", matches)
+	}
+}
+
 func persistCLIReviewIssue(t *testing.T, repoDir string, roundNumber int, headBranch string) rounds.PersistResult {
 	t.Helper()
 	return persistCLIReviewItems(t, repoDir, roundNumber, headBranch, []reviewsource.ReviewItem{
@@ -3909,6 +4644,7 @@ func persistCLIReviewItems(t *testing.T, repoDir string, roundNumber int, headBr
 	t.Helper()
 	result, err := rounds.PersistRound(context.Background(), rounds.PersistRequest{
 		ArtifactDir:    builtinArtifactDirForRepo(t, repoDir),
+		ReviewRoot:     defaultReviewRootForRepo(repoDir, "123"),
 		Source:         reviewsource.SourceCodeRabbit,
 		PRNumber:       "123",
 		HeadRepository: "owner/project",
@@ -3922,6 +4658,10 @@ func persistCLIReviewItems(t *testing.T, repoDir string, roundNumber int, headBr
 		t.Fatalf("persist CLI Review Issue artifact: %v", err)
 	}
 	return result
+}
+
+func defaultReviewRootForRepo(repoDir string, prNumber string) string {
+	return filepath.Join(repoDir, "docs", "specs", "_reviews", "pr-"+prNumber)
 }
 
 func builtinArtifactDirForRepo(t *testing.T, repoDir string) string {
@@ -4201,11 +4941,13 @@ func (runner *fakeAgentRunner) Run(ctx context.Context, req agent.ExecuteRequest
 	if err := publishFakeAgentOutput(ctx, sink, req, output); err != nil {
 		return agent.ExecuteResult{}, err
 	}
-	if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {
-		return agent.ExecuteResult{}, err
-	}
-	if err := os.WriteFile(req.LogPath, []byte(output), 0o644); err != nil {
-		return agent.ExecuteResult{}, err
+	if strings.TrimSpace(req.LogPath) != "" {
+		if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {
+			return agent.ExecuteResult{}, err
+		}
+		if err := os.WriteFile(req.LogPath, []byte(output), 0o644); err != nil {
+			return agent.ExecuteResult{}, err
+		}
 	}
 	if runner.runErr != nil {
 		return agent.ExecuteResult{LogPath: req.LogPath, Output: output}, runner.runErr
@@ -4242,11 +4984,13 @@ func (runner *fakeStoppingAgentRunner) Run(ctx context.Context, req agent.Execut
 			return agent.ExecuteResult{}, err
 		}
 	}
-	if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {
-		return agent.ExecuteResult{}, err
-	}
-	if err := os.WriteFile(req.LogPath, []byte(output), 0o644); err != nil {
-		return agent.ExecuteResult{}, err
+	if strings.TrimSpace(req.LogPath) != "" {
+		if err := os.MkdirAll(filepath.Dir(req.LogPath), 0o755); err != nil {
+			return agent.ExecuteResult{}, err
+		}
+		if err := os.WriteFile(req.LogPath, []byte(output), 0o644); err != nil {
+			return agent.ExecuteResult{}, err
+		}
 	}
 	return agent.ExecuteResult{LogPath: req.LogPath, Output: output}, agent.StopError{
 		LogPath: req.LogPath,
@@ -4502,6 +5246,44 @@ func TestResolveJournalsAgentRunEventsDurably(t *testing.T) {
 	}
 }
 
+func TestRunResolveSkipsAgentLogFilesByDefaultAndStillJournals(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
+	}
+	assertNoAgentLogs(t, repoDir)
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	assertJournalContainsAgentAndDaemonEvents(t, events, "fake agent output")
+}
+
+func TestRunResolveWritesAgentLogFilesWhenEnabledAndStillJournals(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
+logs:
+  agent: true
+`)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
+	}
+	assertAgentLogContains(t, repoDir, "fake agent output")
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	assertJournalContainsAgentAndDaemonEvents(t, events, "fake agent output")
+}
+
 func TestRunResolveNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
@@ -4747,6 +5529,7 @@ func TestAttachSpecRunReadsTasksFromKeptWorkDir(t *testing.T) {
 	writeImplementSpec(t, repoDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "pending"}})
 	writeImplementSpec(t, workDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "completed"}})
 	run := createTerminalAttachSpecRun(t, homeDir, repoDir, workDir, store.StateUnresolved)
+	appendAttachConcurrencyEvent(t, homeDir, run.ID, 4)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -4758,6 +5541,7 @@ func TestAttachSpecRunReadsTasksFromKeptWorkDir(t *testing.T) {
 	output := stdout.String()
 	for _, expected := range []string{
 		"Run Worktree: " + workDir,
+		"Concurrency: 4",
 		"task_01 completed — Read state",
 		"Run " + run.ID + " reached Unresolved; timeline replayed read-only.",
 	} {
@@ -4894,6 +5678,29 @@ func createTerminalAttachSpecRun(t *testing.T, homeDir string, repoDir string, w
 		t.Fatalf("complete implement run: %v", err)
 	}
 	return completed
+}
+
+func appendAttachConcurrencyEvent(t *testing.T, homeDir string, runID string, concurrency int) {
+	t.Helper()
+	writer, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open writer: %v", err)
+	}
+	defer func() {
+		if err := writer.Close(); err != nil {
+			t.Fatalf("close writer: %v", err)
+		}
+	}()
+	_, err = writer.AppendRunEvent(context.Background(), runevent.RunEvent{
+		RunID:   runID,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonStatus,
+		Summary: fmt.Sprintf("Task cycle started with concurrency %d.", concurrency),
+		Payload: []byte(fmt.Sprintf(`{"concurrency":%d}`, concurrency)),
+	})
+	if err != nil {
+		t.Fatalf("append concurrency event: %v", err)
+	}
 }
 
 type fakeAttachSource struct {

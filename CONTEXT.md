@@ -72,6 +72,18 @@ _Avoid_: ACP session, chat, conversation, thread
 The state where the pull request's Review Source status check on the pushed head commit reports success with no new Review Issues, letting a watch Run end Clean.
 _Avoid_: mergeable, green check, approved
 
+**Wave**:
+The set of Tasks whose dependencies are all completed and that may execute concurrently; the scheduler draws from the current Wave up to the configured concurrency.
+_Avoid_: Batch, stage, phase
+
+**Task Worktree**:
+The ephemeral git worktree one concurrently executing Task runs in — created from the Run Branch tip at Task start and integrated back onto the Run Branch at settlement; kept only when its Task fails.
+_Avoid_: Run Worktree, sandbox, scratch dir
+
+**Detached Run**:
+A Run started with the detach flag: roundfix re-executes itself as a session leader independent of the caller, reports the run id, and is followed through Attach and ended through the Stop Command.
+_Avoid_: Background job, nohup run, daemon
+
 **Run Worktree**:
 The isolated git worktree a Run executes in — created on the Run Branch at Run start, recorded on the Run, removed after a Clean integrated outcome, and kept as the inspection and settle surface otherwise.
 _Avoid_: Sandbox, scratch dir, user checkout
@@ -125,7 +137,9 @@ Configuration that applies to Roundfix runs inside one repository.
 _Avoid_: Local config, repo config
 
 **Artifact Directory**:
-The directory where Roundfix stores markdown Round and Review Issue artifacts.
+The configured directory that overrides review-artifact placement and stores
+Artifact Directory-backed Run files such as Detached Run console logs and
+opt-in Agent logs. When unset, review artifacts use the Spec tree resolver.
 _Avoid_: Workspace, cache, output folder
 
 **Compatible Artifacts**:
@@ -207,6 +221,26 @@ _Avoid_: Manual bootstrap checklist, environment wizard
 **Upgrade Command**:
 The support command that checks or installs the latest released Roundfix binary for the current platform.
 _Avoid_: Package manager update, version check only
+
+**Doctor Command**:
+The support command that diagnoses a machine's readiness for Roundfix Runs — Node, pinned acpx, configured Agent probe, and codex runtime hygiene — reporting each check with a next action and mutating nothing. Distinct from the Setup Command, which prepares the machine.
+_Avoid_: Health check run, setup run, environment wizard
+
+**Archive Command**:
+The support command that archives a completed Spec: it verifies every Task is completed and QA passed, stamps archive metadata, and moves the Spec folder to the archived spec root. Refuses a Spec with incomplete Tasks or no passing QA verdict.
+_Avoid_: Move command, retire run, cleanup command
+
+**GC Command**:
+The support command that reclaims Run storage: it prunes the Run Event Journal and artifact directory of terminal Runs older than the Journal Retention window and removes orphaned run artifact directories, reporting what it freed. Never touches Active Runs, `runs` rows, or active-run locks.
+_Avoid_: Clean command, vacuum, purge
+
+**Journal Retention**:
+The configured age window after which a terminal Run's Run Event Journal and artifact directory become eligible for pruning. Active Runs are never eligible; a retention of zero keeps everything. See ADR-0033.
+_Avoid_: Log rotation, TTL, expiry
+
+**Worktree Bootstrap**:
+The configured command Roundfix runs once in a newly created Run or Task Worktree, after copying `worktree.copy` files and before Agent work and Verification, to prepare the environment (install dependencies, migrate and seed databases, warm caches). A bootstrap failure ends the Run or settles the Task with a bootstrap-failed outcome. See ADR-0034.
+_Avoid_: Setup command, provisioning, install step
 
 **Roundfix Skill**:
 A shipped agent skill that teaches an external Agent how to start Roundfix or how to resolve one assigned Batch.

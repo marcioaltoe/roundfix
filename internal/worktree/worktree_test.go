@@ -3,11 +3,14 @@ package worktree
 import (
 	"bytes"
 	"context"
+	"errors"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // Suite: Run Worktree git lifecycle.
@@ -19,6 +22,7 @@ func TestCreateUsesNamedRunBranchUnderRoundfixHomeAndCopiesFiles(t *testing.T) {
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	t.Setenv("HOME", homeDir)
+	location := filepath.Join(homeDir, "configured-worktrees")
 	repoDir := initWorktreeRepo(t)
 	mustWriteWorktreeTest(t, filepath.Join(repoDir, ".gitignore"), ".env\n")
 	mustWriteWorktreeTest(t, filepath.Join(repoDir, "tracked.txt"), "base\n")
@@ -30,7 +34,13 @@ func TestCreateUsesNamedRunBranchUnderRoundfixHomeAndCopiesFiles(t *testing.T) {
 	var ref Ref
 	stderr := captureStderr(t, func() {
 		var err error
-		ref, err = Create(ctx, repoDir, "task01", headSHA, []string{".env", "missing.env"})
+		ref, err = Create(ctx, CreateOptions{
+			UserRoot: repoDir,
+			Location: location,
+			RunID:    "task01",
+			HeadSHA:  headSHA,
+			CopyList: []string{".env", "missing.env"},
+		})
 		if err != nil {
 			t.Fatalf("create Run Worktree: %v", err)
 		}
@@ -48,8 +58,12 @@ func TestCreateUsesNamedRunBranchUnderRoundfixHomeAndCopiesFiles(t *testing.T) {
 	if filepath.Base(ref.Path) != "task01" {
 		t.Fatalf("expected path to end in Run ID, got %q", ref.Path)
 	}
-	if filepath.Dir(filepath.Dir(ref.Path)) != filepath.Join(homeDir, ".roundfix", "worktrees") {
-		t.Fatalf("expected path under Roundfix Home worktrees, got %q", ref.Path)
+	if filepath.Dir(filepath.Dir(ref.Path)) != location {
+		t.Fatalf("expected path under configured worktree location %q, got %q", location, ref.Path)
+	}
+	repoSlug := filepath.Base(filepath.Dir(ref.Path))
+	if !strings.HasPrefix(repoSlug, filepath.Base(repoDir)+"-") || !hasLowerHexSuffix(repoSlug, 8) {
+		t.Fatalf("expected readable repo slug with 8 hex suffix, got %q", repoSlug)
 	}
 	if got := strings.TrimSpace(gitWorktreeTest(t, ref.Path, "branch", "--show-current")); got != ref.Branch {
 		t.Fatalf("expected worktree branch %q, got %q", ref.Branch, got)
@@ -66,6 +80,361 @@ func TestCreateUsesNamedRunBranchUnderRoundfixHomeAndCopiesFiles(t *testing.T) {
 	if status := gitStatus(t, ref.Path); status != "" {
 		t.Fatalf("expected clean Run Worktree, got %q", status)
 	}
+}
+
+func TestCreateRunsBootstrapAfterCopyInRunWorktreeRoot(t *testing.T) {
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+	location := filepath.Join(homeDir, "configured-worktrees")
+	repoDir := initWorktreeRepo(t)
+	mustWriteWorktreeTest(t, filepath.Join(repoDir, ".gitignore"), ".env\n")
+	mustWriteWorktreeTest(t, filepath.Join(repoDir, "tracked.txt"), "base\n")
+	gitWorktreeTest(t, repoDir, "add", ".gitignore", "tracked.txt")
+	gitWorktreeTest(t, repoDir, "commit", "-m", "initial")
+	headSHA := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", "HEAD"))
+	mustWriteWorktreeTest(t, filepath.Join(repoDir, ".env"), "SECRET=1\n")
+	var output bytes.Buffer
+
+	ref, err := Create(ctx, CreateOptions{
+		UserRoot: repoDir,
+		Location: location,
+		RunID:    "bootstrap-run",
+		HeadSHA:  headSHA,
+		CopyList: []string{".env"},
+		Bootstrap: BootstrapSpec{
+			Command: "test -f .env && pwd > bootstrap.pwd && cat .env > bootstrap.env && printf bootstrap-output",
+			Timeout: time.Second,
+		},
+		BootstrapOutput: &output,
+	})
+	if err != nil {
+		t.Fatalf("create Run Worktree: %v", err)
+	}
+
+	if got := strings.TrimSpace(mustReadWorktreeTest(t, filepath.Join(ref.Path, "bootstrap.pwd"))); got != ref.Path {
+		t.Fatalf("expected bootstrap to run in %q, got %q", ref.Path, got)
+	}
+	if got := mustReadWorktreeTest(t, filepath.Join(ref.Path, "bootstrap.env")); got != "SECRET=1\n" {
+		t.Fatalf("expected bootstrap to see copied .env, got %q", got)
+	}
+	if output.String() != "bootstrap-output" {
+		t.Fatalf("expected bootstrap output to stream, got %q", output.String())
+	}
+}
+
+func TestCreateTaskRunsBootstrapAfterCopyInTaskWorktreeRoot(t *testing.T) {
+	ctx := context.Background()
+	fixture := newIntegrationFixture(t, "task-bootstrap")
+	mustWriteWorktreeTest(t, filepath.Join(fixture.repoDir, ".env.task"), "TASK_SECRET=1\n")
+	var output bytes.Buffer
+
+	task, err := CreateTaskWithOptions(ctx, fixture.ref, "task_01", TaskCreateOptions{
+		CopyList: []string{".env.task"},
+		Bootstrap: BootstrapSpec{
+			Command: "test -f .env.task && pwd > task-bootstrap.pwd && cat .env.task > task-bootstrap.env && printf task-bootstrap-output",
+			Timeout: time.Second,
+		},
+		BootstrapOutput: &output,
+	})
+	if err != nil {
+		t.Fatalf("create Task Worktree: %v", err)
+	}
+
+	if got := strings.TrimSpace(mustReadWorktreeTest(t, filepath.Join(task.Path, "task-bootstrap.pwd"))); got != task.Path {
+		t.Fatalf("expected bootstrap to run in %q, got %q", task.Path, got)
+	}
+	if got := mustReadWorktreeTest(t, filepath.Join(task.Path, "task-bootstrap.env")); got != "TASK_SECRET=1\n" {
+		t.Fatalf("expected bootstrap to see copied .env.task, got %q", got)
+	}
+	if output.String() != "task-bootstrap-output" {
+		t.Fatalf("expected bootstrap output to stream, got %q", output.String())
+	}
+}
+
+func TestRunBootstrapReturnsBootstrapErrorOnNonZeroExit(t *testing.T) {
+	var output bytes.Buffer
+	command := "printf failure-tail; exit 7"
+
+	err := runBootstrap(context.Background(), t.TempDir(), BootstrapSpec{Command: command, Timeout: time.Second}, &output)
+
+	var bootstrapErr *BootstrapError
+	if !errors.As(err, &bootstrapErr) {
+		t.Fatalf("expected BootstrapError, got %T %[1]v", err)
+	}
+	if bootstrapErr.Command != command {
+		t.Fatalf("expected command %q, got %q", command, bootstrapErr.Command)
+	}
+	if !strings.Contains(err.Error(), "worktree bootstrap failed: "+command+": exit status 7") {
+		t.Fatalf("expected bootstrap failure message, got %q", err.Error())
+	}
+	if bootstrapErr.Tail != "failure-tail" {
+		t.Fatalf("expected captured output tail, got %q", bootstrapErr.Tail)
+	}
+	if output.String() != "failure-tail" {
+		t.Fatalf("expected output streamed before failure, got %q", output.String())
+	}
+}
+
+func TestRunBootstrapReturnsBootstrapErrorOnTimeout(t *testing.T) {
+	command := "sleep 1"
+
+	err := runBootstrap(context.Background(), t.TempDir(), BootstrapSpec{Command: command, Timeout: 10 * time.Millisecond}, io.Discard)
+
+	var bootstrapErr *BootstrapError
+	if !errors.As(err, &bootstrapErr) {
+		t.Fatalf("expected BootstrapError, got %T %[1]v", err)
+	}
+	if bootstrapErr.Command != command {
+		t.Fatalf("expected command %q, got %q", command, bootstrapErr.Command)
+	}
+	if !strings.Contains(err.Error(), "worktree bootstrap failed: "+command+": timed out after 10ms") {
+		t.Fatalf("expected timeout bootstrap failure, got %q", err.Error())
+	}
+}
+
+func TestRunBootstrapSkipsEmptyCommand(t *testing.T) {
+	var output bytes.Buffer
+
+	err := runBootstrap(context.Background(), t.TempDir(), BootstrapSpec{Timeout: time.Nanosecond}, &output)
+
+	if err != nil {
+		t.Fatalf("expected empty bootstrap to skip, got %v", err)
+	}
+	if output.Len() != 0 {
+		t.Fatalf("expected no output for empty bootstrap, got %q", output.String())
+	}
+}
+
+func TestDeriveRootPathUsesReadableUniqueRepoSlug(t *testing.T) {
+	location := t.TempDir()
+	parentOne := t.TempDir()
+	parentTwo := t.TempDir()
+	repoOne := filepath.Join(parentOne, "same-name")
+	repoTwo := filepath.Join(parentTwo, "same-name")
+	mustMkdirWorktreeTest(t, repoOne)
+	mustMkdirWorktreeTest(t, repoTwo)
+
+	pathOne, err := deriveRootPath(location, repoOne, "run-one")
+	if err != nil {
+		t.Fatalf("derive first path: %v", err)
+	}
+	pathTwo, err := deriveRootPath(location, repoTwo, "run-one")
+	if err != nil {
+		t.Fatalf("derive second path: %v", err)
+	}
+
+	slugOne := filepath.Base(filepath.Dir(pathOne))
+	slugTwo := filepath.Base(filepath.Dir(pathTwo))
+	if !strings.HasPrefix(slugOne, "same-name-") || !hasLowerHexSuffix(slugOne, 8) {
+		t.Fatalf("expected first readable repo slug with 8 hex suffix, got %q", slugOne)
+	}
+	if !strings.HasPrefix(slugTwo, "same-name-") || !hasLowerHexSuffix(slugTwo, 8) {
+		t.Fatalf("expected second readable repo slug with 8 hex suffix, got %q", slugTwo)
+	}
+	if slugOne == slugTwo {
+		t.Fatalf("expected same-named repos at different paths to get unique slugs, both got %q", slugOne)
+	}
+	if filepath.Dir(filepath.Dir(pathOne)) != location || filepath.Base(pathOne) != "run-one" {
+		t.Fatalf("expected path under location/repo-slug/run-id, got %q", pathOne)
+	}
+}
+
+func TestTaskWorktreesIntegrateFirstByFastForwardThenCherryPick(t *testing.T) {
+	ctx := context.Background()
+	fixture := newIntegrationFixture(t, "task-queue")
+	base := strings.TrimSpace(gitWorktreeTest(t, fixture.ref.Path, "rev-parse", "HEAD"))
+	mustWriteWorktreeTest(t, filepath.Join(fixture.repoDir, ".env.task"), "TASK_SECRET=1\n")
+	first, err := CreateTask(ctx, fixture.ref, "task_01", []string{".env.task"})
+	if err != nil {
+		t.Fatalf("create first Task Worktree: %v", err)
+	}
+	second, err := CreateTask(ctx, fixture.ref, "task_02", nil)
+	if err != nil {
+		t.Fatalf("create second Task Worktree: %v", err)
+	}
+	if filepath.Dir(first.Path) != filepath.Dir(fixture.ref.Path) || filepath.Dir(second.Path) != filepath.Dir(fixture.ref.Path) {
+		t.Fatalf("expected Task Worktrees to be siblings of Run Worktree, got run=%q first=%q second=%q", fixture.ref.Path, first.Path, second.Path)
+	}
+	if strings.HasPrefix(first.Path, fixture.ref.Path+string(filepath.Separator)) || strings.HasPrefix(second.Path, fixture.ref.Path+string(filepath.Separator)) {
+		t.Fatalf("expected Task Worktrees not to nest under Run Worktree, got first=%q second=%q run=%q", first.Path, second.Path, fixture.ref.Path)
+	}
+	if got := mustReadWorktreeTest(t, filepath.Join(first.Path, ".env.task")); got != "TASK_SECRET=1\n" {
+		t.Fatalf("expected copy-list file in first Task Worktree, got %q", got)
+	}
+
+	firstMessage := "task one subject\n\nTask-Trailer: first\n"
+	firstSHA := commitTaskChange(t, first, "first.txt", "first\n", firstMessage)
+	secondMessage := "task two subject\n\nTask-Trailer: second\n"
+	secondSHA := commitTaskChange(t, second, "second.txt", "second\n", secondMessage)
+
+	firstResult, err := IntegrateTask(ctx, fixture.ref, first)
+	if err != nil {
+		t.Fatalf("integrate first task: %v", err)
+	}
+	if firstResult.Mode != ModeTaskFastForward || firstResult.Reason != "" {
+		t.Fatalf("expected first Task fast-forward result, got %#v", firstResult)
+	}
+	if head := strings.TrimSpace(gitWorktreeTest(t, fixture.ref.Path, "rev-parse", fixture.ref.Branch)); head != firstSHA {
+		t.Fatalf("expected Run Branch at first task SHA %s, got %s", firstSHA, head)
+	}
+
+	secondResult, err := IntegrateTask(ctx, fixture.ref, second)
+	if err != nil {
+		t.Fatalf("integrate second task: %v", err)
+	}
+	if secondResult.Mode != ModeTaskCherryPick || secondResult.Reason != "" {
+		t.Fatalf("expected second Task cherry-pick result, got %#v", secondResult)
+	}
+	runMessages := gitCommitMessages(t, fixture.ref.Path, base, fixture.ref.Branch)
+	if len(runMessages) != 2 {
+		t.Fatalf("expected two commits on Run Branch, got %d: %#v", len(runMessages), runMessages)
+	}
+	if runMessages[0] != firstMessage {
+		t.Fatalf("expected first message preserved, got %q want %q", runMessages[0], firstMessage)
+	}
+	if runMessages[1] != secondMessage {
+		t.Fatalf("expected second message preserved, got %q want %q", runMessages[1], secondMessage)
+	}
+	if taskMessage := gitCommitMessage(t, second.Path, secondSHA); taskMessage != secondMessage {
+		t.Fatalf("expected source task message unchanged, got %q", taskMessage)
+	}
+}
+
+func TestIntegrateTaskReturnsConflictAndLeavesRunBranchUnmoved(t *testing.T) {
+	ctx := context.Background()
+	fixture := newIntegrationFixture(t, "task-conflict")
+	first, err := CreateTask(ctx, fixture.ref, "task_01", nil)
+	if err != nil {
+		t.Fatalf("create first Task Worktree: %v", err)
+	}
+	second, err := CreateTask(ctx, fixture.ref, "task_02", nil)
+	if err != nil {
+		t.Fatalf("create second Task Worktree: %v", err)
+	}
+	firstSHA := commitTaskChange(t, first, "shared.txt", "first task\n", "first shared\n")
+	commitTaskChange(t, second, "shared.txt", "second task\n", "second shared\n")
+
+	firstResult, err := IntegrateTask(ctx, fixture.ref, first)
+	if err != nil {
+		t.Fatalf("integrate first task: %v", err)
+	}
+	if firstResult.Mode != ModeTaskFastForward {
+		t.Fatalf("expected first Task fast-forward, got %#v", firstResult)
+	}
+	before := strings.TrimSpace(gitWorktreeTest(t, fixture.ref.Path, "rev-parse", fixture.ref.Branch))
+	if before != firstSHA {
+		t.Fatalf("expected Run Branch at first SHA %s before conflict, got %s", firstSHA, before)
+	}
+
+	conflictResult, err := IntegrateTask(ctx, fixture.ref, second)
+	if err != nil {
+		t.Fatalf("integrate conflicting task: %v", err)
+	}
+	if conflictResult.Mode != ModeTaskConflict || !strings.Contains(conflictResult.Reason, "shared.txt") {
+		t.Fatalf("expected conflict naming shared.txt, got %#v", conflictResult)
+	}
+	after := strings.TrimSpace(gitWorktreeTest(t, fixture.ref.Path, "rev-parse", fixture.ref.Branch))
+	if after != before {
+		t.Fatalf("expected Run Branch tip to stay %s after conflict, got %s", before, after)
+	}
+	if status := gitStatus(t, fixture.ref.Path); status != "" {
+		t.Fatalf("expected Run Worktree clean after cherry-pick abort, got %q", status)
+	}
+	if _, err := os.Stat(second.Path); err != nil {
+		t.Fatalf("expected conflicting Task Worktree kept, stat err=%v", err)
+	}
+	if !branchExists(t, fixture.repoDir, second.Branch) {
+		t.Fatalf("expected conflicting Task Branch %q kept", second.Branch)
+	}
+}
+
+func TestCleanupTaskRemovesTaskWorktreeAndBranch(t *testing.T) {
+	ctx := context.Background()
+	fixture := newIntegrationFixture(t, "task-cleanup")
+	task, err := CreateTask(ctx, fixture.ref, "task_01", nil)
+	if err != nil {
+		t.Fatalf("create Task Worktree: %v", err)
+	}
+	commitTaskChange(t, task, "task.txt", "task\n", "task commit\n")
+	result, err := IntegrateTask(ctx, fixture.ref, task)
+	if err != nil {
+		t.Fatalf("integrate task: %v", err)
+	}
+	if result.Mode != ModeTaskFastForward {
+		t.Fatalf("expected Task fast-forward, got %#v", result)
+	}
+
+	if err := CleanupTask(ctx, task); err != nil {
+		t.Fatalf("cleanup Task Worktree: %v", err)
+	}
+
+	if _, err := os.Stat(task.Path); !os.IsNotExist(err) {
+		t.Fatalf("expected Task Worktree removed, stat err=%v", err)
+	}
+	if branchExists(t, fixture.repoDir, task.Branch) {
+		t.Fatalf("expected Task Branch %q removed", task.Branch)
+	}
+}
+
+func TestPruneTerminalReapsOnlyEmptyTerminalRunAndTaskBranches(t *testing.T) {
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+	repoDir := initWorktreeRepo(t)
+	mustWriteWorktreeTest(t, filepath.Join(repoDir, "tracked.txt"), "base\n")
+	gitWorktreeTest(t, repoDir, "add", "tracked.txt")
+	gitWorktreeTest(t, repoDir, "commit", "-m", "initial")
+	headSHA := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", "HEAD"))
+	location := filepath.Join(homeDir, ".roundfix", "worktrees")
+
+	emptyRun, err := Create(ctx, CreateOptions{UserRoot: repoDir, Location: location, RunID: "empty-run", HeadSHA: headSHA})
+	if err != nil {
+		t.Fatalf("create empty Run Worktree: %v", err)
+	}
+	emptyTask, err := CreateTask(ctx, emptyRun, "task_01", nil)
+	if err != nil {
+		t.Fatalf("create empty Task Worktree: %v", err)
+	}
+	valuableRun, err := Create(ctx, CreateOptions{UserRoot: repoDir, Location: location, RunID: "valuable-run", HeadSHA: headSHA})
+	if err != nil {
+		t.Fatalf("create valuable Run Worktree: %v", err)
+	}
+	fixture := integrationFixture{repoDir: repoDir, ref: valuableRun}
+	fixture.commitRunChange(t, "valuable-run.txt", "valuable\n")
+	valuableTask, err := CreateTask(ctx, valuableRun, "task_01", nil)
+	if err != nil {
+		t.Fatalf("create valuable Task Worktree: %v", err)
+	}
+	commitTaskChange(t, valuableTask, "valuable-task.txt", "valuable\n", "valuable task\n")
+	nonTerminalRun, err := Create(ctx, CreateOptions{UserRoot: repoDir, Location: location, RunID: "nonterminal-run", HeadSHA: headSHA})
+	if err != nil {
+		t.Fatalf("create non-terminal Run Worktree: %v", err)
+	}
+	nonTerminalTask, err := CreateTask(ctx, nonTerminalRun, "task_01", nil)
+	if err != nil {
+		t.Fatalf("create non-terminal Task Worktree: %v", err)
+	}
+
+	err = PruneTerminal(ctx, repoDir, location, func(runID string) bool {
+		return runID == "empty-run" || runID == "valuable-run"
+	})
+	if err != nil {
+		t.Fatalf("prune terminal: %v", err)
+	}
+
+	assertPathRemoved(t, emptyRun.Path)
+	assertPathRemoved(t, emptyTask.Path)
+	assertBranchRemoved(t, repoDir, emptyRun.Branch)
+	assertBranchRemoved(t, repoDir, emptyTask.Branch)
+	assertPathExists(t, valuableRun.Path)
+	assertPathExists(t, valuableTask.Path)
+	assertRunBranchExists(t, repoDir, valuableRun.Branch)
+	assertRunBranchExists(t, repoDir, valuableTask.Branch)
+	assertPathExists(t, nonTerminalRun.Path)
+	assertPathExists(t, nonTerminalTask.Path)
+	assertRunBranchExists(t, repoDir, nonTerminalRun.Branch)
+	assertRunBranchExists(t, repoDir, nonTerminalTask.Branch)
 }
 
 func TestIntegrateFastForwardsCleanCheckout(t *testing.T) {
@@ -260,11 +629,12 @@ func TestPruneTerminalReapsCrashedTerminalCleanRunOnly(t *testing.T) {
 	gitWorktreeTest(t, repoDir, "add", "tracked.txt")
 	gitWorktreeTest(t, repoDir, "commit", "-m", "initial")
 	headSHA := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", "HEAD"))
-	cleanRef, err := Create(ctx, repoDir, "terminal-clean", headSHA, nil)
+	location := filepath.Join(homeDir, ".roundfix", "worktrees")
+	cleanRef, err := Create(ctx, CreateOptions{UserRoot: repoDir, Location: location, RunID: "terminal-clean", HeadSHA: headSHA})
 	if err != nil {
 		t.Fatalf("create terminal clean ref: %v", err)
 	}
-	keptRef, err := Create(ctx, repoDir, "kept", headSHA, nil)
+	keptRef, err := Create(ctx, CreateOptions{UserRoot: repoDir, Location: location, RunID: "kept", HeadSHA: headSHA})
 	if err != nil {
 		t.Fatalf("create kept ref: %v", err)
 	}
@@ -272,7 +642,7 @@ func TestPruneTerminalReapsCrashedTerminalCleanRunOnly(t *testing.T) {
 		t.Fatalf("simulate crashed worktree removal: %v", err)
 	}
 
-	err = PruneTerminal(ctx, repoDir, func(runID string) bool {
+	err = PruneTerminal(ctx, repoDir, location, func(runID string) bool {
 		return runID == "terminal-clean"
 	})
 	if err != nil {
@@ -307,7 +677,8 @@ func newIntegrationFixture(t *testing.T, runID string) integrationFixture {
 	gitWorktreeTest(t, repoDir, "add", "shared.txt", "run.txt", "user.txt")
 	gitWorktreeTest(t, repoDir, "commit", "-m", "initial")
 	headSHA := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", "HEAD"))
-	ref, err := Create(ctx, repoDir, runID, headSHA, nil)
+	location := filepath.Join(homeDir, ".roundfix", "worktrees")
+	ref, err := Create(ctx, CreateOptions{UserRoot: repoDir, Location: location, RunID: runID, HeadSHA: headSHA})
 	if err != nil {
 		t.Fatalf("create Run Worktree: %v", err)
 	}
@@ -320,6 +691,40 @@ func (fixture integrationFixture) commitRunChange(t *testing.T, path string, con
 	gitWorktreeTest(t, fixture.ref.Path, "add", path)
 	gitWorktreeTest(t, fixture.ref.Path, "commit", "-m", "run change")
 	return strings.TrimSpace(gitWorktreeTest(t, fixture.ref.Path, "rev-parse", "HEAD"))
+}
+
+func commitTaskChange(t *testing.T, task TaskRef, path string, content string, message string) string {
+	t.Helper()
+	mustWriteWorktreeTest(t, filepath.Join(task.Path, path), content)
+	gitWorktreeTest(t, task.Path, "add", path)
+	messagePath := filepath.Join(t.TempDir(), "message.txt")
+	mustWriteWorktreeTest(t, messagePath, message)
+	gitWorktreeTest(t, task.Path, "commit", "--cleanup=verbatim", "-F", messagePath)
+	return strings.TrimSpace(gitWorktreeTest(t, task.Path, "rev-parse", "HEAD"))
+}
+
+func gitCommitMessages(t *testing.T, workDir string, base string, branch string) []string {
+	t.Helper()
+	output := gitWorktreeTest(t, workDir, "log", "--reverse", "--format=%H", base+".."+branch)
+	var messages []string
+	for _, line := range strings.Split(output, "\n") {
+		sha := strings.TrimSpace(line)
+		if sha == "" {
+			continue
+		}
+		messages = append(messages, gitCommitMessage(t, workDir, sha))
+	}
+	return messages
+}
+
+func gitCommitMessage(t *testing.T, workDir string, sha string) string {
+	t.Helper()
+	raw := gitWorktreeTest(t, workDir, "cat-file", "commit", sha)
+	_, message, ok := strings.Cut(raw, "\n\n")
+	if !ok {
+		t.Fatalf("commit %s did not contain a raw message body", sha)
+	}
+	return message
 }
 
 func initWorktreeRepo(t *testing.T) string {
@@ -388,6 +793,34 @@ func branchExists(t *testing.T, repoDir string, branch string) bool {
 	return strings.TrimSpace(gitWorktreeTest(t, repoDir, "branch", "--list", branch)) != ""
 }
 
+func assertPathExists(t *testing.T, path string) {
+	t.Helper()
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("expected path %q to exist: %v", path, err)
+	}
+}
+
+func assertPathRemoved(t *testing.T, path string) {
+	t.Helper()
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatalf("expected path %q removed, stat err=%v", path, err)
+	}
+}
+
+func assertRunBranchExists(t *testing.T, repoDir string, branch string) {
+	t.Helper()
+	if !branchExists(t, repoDir, branch) {
+		t.Fatalf("expected branch %q to exist", branch)
+	}
+}
+
+func assertBranchRemoved(t *testing.T, repoDir string, branch string) {
+	t.Helper()
+	if branchExists(t, repoDir, branch) {
+		t.Fatalf("expected branch %q removed", branch)
+	}
+}
+
 func captureStderr(t *testing.T, fn func()) string {
 	t.Helper()
 	original := os.Stderr
@@ -423,6 +856,13 @@ func mustWriteWorktreeTest(t *testing.T, path string, content string) {
 	}
 }
 
+func mustMkdirWorktreeTest(t *testing.T, path string) {
+	t.Helper()
+	if err := os.MkdirAll(path, 0o755); err != nil {
+		t.Fatalf("mkdir %s: %v", path, err)
+	}
+}
+
 func mustReadWorktreeTest(t *testing.T, path string) string {
 	t.Helper()
 	content, err := os.ReadFile(path)
@@ -430,4 +870,17 @@ func mustReadWorktreeTest(t *testing.T, path string) string {
 		t.Fatalf("read %s: %v", path, err)
 	}
 	return string(content)
+}
+
+func hasLowerHexSuffix(value string, length int) bool {
+	if len(value) < length {
+		return false
+	}
+	suffix := value[len(value)-length:]
+	for _, char := range suffix {
+		if !((char >= '0' && char <= '9') || (char >= 'a' && char <= 'f')) {
+			return false
+		}
+	}
+	return true
 }
