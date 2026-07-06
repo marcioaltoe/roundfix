@@ -387,8 +387,13 @@ worktree:
   location: "~/.roundfix/worktrees"
   # Maximum concurrent Task Worktrees for spec Runs; 1 keeps sequential behavior.
   concurrency: 2
-  # Repository-relative untracked files copied into each Run Worktree.
+  # Repository-relative untracked files copied into each new Run or Task Worktree.
+  # List only files that are already gitignored.
   copy: []
+  # Command run in each new worktree after copy and before Agent work; empty disables it.
+  bootstrap: ""
+  # Maximum time before the bootstrap command fails the owning Run or Task.
+  bootstrap_timeout: 10m
 
 store:
   # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
@@ -473,13 +478,41 @@ configurable.
 A new Run Worktree starts from committed Git state, so untracked files in the
 user's checkout are absent unless they are listed under `worktree.copy`; add
 repository-relative paths there when Verification or local tooling needs
-untracked files. Dirty user checkout behavior is command-specific: `implement`
-no longer blocks on it and instead prints a note that overlapping local changes
-end the Run in Integration Pending. Other operational commands retain their
-existing preflight rules, including the local Project Config allowances for
-`fetch`, `resolve`, and `watch` at `.roundfixrc.yml`. Batch commits exclude
-that config file so local setup changes do not mix with review fixes. Terminal
-Run outcomes release the Active Run lock for the PR Head Branch.
+untracked files. Copied environment files must already be gitignored; Roundfix
+does not add ignore rules for arbitrary copied files, and Batch or Task commits
+can include changed repository files. Dirty user checkout behavior is
+command-specific: `implement` no longer blocks on it and instead prints a note
+that overlapping local changes end the Run in Integration Pending. Other
+operational commands retain their existing preflight rules, including the local
+Project Config allowances for `fetch`, `resolve`, and `watch` at
+`.roundfixrc.yml`. Batch commits exclude that config file so local setup
+changes do not mix with review fixes. Terminal Run outcomes release the Active
+Run lock for the PR Head Branch.
+
+Worktree Bootstrap prepares each newly created Run or Task Worktree after
+`worktree.copy` placement and before Agent work and Verification.
+`worktree.bootstrap` is a shell command run in the worktree root; an empty value
+skips the step. `worktree.bootstrap_timeout` defaults to `10m` and bounds the
+command. Bootstrap output streams to stderr and the Run Event Journal. A start
+failure, non-zero exit, or timeout fails the owning Run for a Run Worktree or
+settles only the owning Task failed for a Task Worktree, with a message shaped
+as `worktree bootstrap failed: <command>: <reason>`.
+
+Roundfix owns running and timing the bootstrap command. Dependency installation,
+database provisioning, migrations, seeding, and cache strategy belong in the
+configured command. For a stateful monorepo that uses one shared database, keep
+Task execution sequential so bootstrap runs once on the reused Run Worktree:
+
+```yaml
+worktree:
+  concurrency: 1
+  copy: [".env", "packages/backend/.env"]
+  bootstrap: "bun install && bun run db:migrate && bun run db:seed"
+  bootstrap_timeout: 10m
+```
+
+The files listed in `worktree.copy` must be repository-relative and must stay
+inside the repository. They must also be gitignored before they are copied.
 
 Spec Runs schedule Tasks by Wave. `worktree.concurrency` defaults to `2`,
 which can run two Verification commands at once; if those commands are heavy

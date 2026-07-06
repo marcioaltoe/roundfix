@@ -316,7 +316,21 @@ read/write artifact work only: it starts no Agent and creates no Run Worktree.
 - A new Run Worktree starts from committed Git state. Untracked files in the
   user's checkout are not present unless they are listed in `worktree.copy`;
   each entry must be a repository-relative path that stays inside the
-  repository.
+  repository. Copied environment files must already be gitignored; Roundfix
+  does not add ignore rules for arbitrary copied files.
+- Worktree Bootstrap runs `worktree.bootstrap` once in each newly created Run
+  or Task Worktree after `worktree.copy` and before Agent work and
+  Verification. Empty `worktree.bootstrap` skips the step. The command runs in
+  the worktree root and is bounded by `worktree.bootstrap_timeout`, which
+  defaults to `10m`.
+- A Worktree Bootstrap start failure, non-zero exit, or timeout fails the
+  owning Run for a Run Worktree or settles only the owning Task failed for a
+  Task Worktree. The failure reason is shaped as
+  `worktree bootstrap failed: <command>: <reason>`, and bootstrap output
+  streams to stderr and the Run Event Journal.
+- Roundfix owns invoking and timing the Worktree Bootstrap command. Dependency
+  installation, database provisioning, migrations, seeding, and cache strategy
+  belong in the configured command.
 - The built-in Artifact Directory default is Roundfix Home
   `artifacts/<repo-id>`. Explicit `defaults.artifact_dir` values, including
   repository-relative values, continue to override the built-in default and
@@ -524,12 +538,28 @@ outcome and never opens pull requests (ADR-0021).
    always appends `<repo-slug>/<run-id>` or `<repo-slug>/<run-id>.<task_id>`.
    Concurrent Tasks can run Verification commands at the same time, so heavy
    commands such as `make verify` can consume matching local CPU and cache
-   resources.
+   resources. `worktree.copy` copies repository-relative, gitignored files into
+   each new worktree. `worktree.bootstrap` runs in each new worktree after copy
+   and before Agent work; `worktree.bootstrap_timeout` defaults to `10m`.
 
    ```yaml
    worktree:
      location: "~/.roundfix/worktrees"
      concurrency: 2
+     copy: []
+     bootstrap: ""
+     bootstrap_timeout: 10m
+   ```
+
+   For a stateful monorepo that uses one shared database, keep Task execution
+   sequential so bootstrap runs once on the reused Run Worktree:
+
+   ```yaml
+   worktree:
+     concurrency: 1
+     copy: [".env", "packages/backend/.env"]
+     bootstrap: "bun install && bun run db:migrate && bun run db:seed"
+     bootstrap_timeout: 10m
    ```
 
 10. Stop an Active Run for a Spec with `roundfix stop --spec <slug>` from inside

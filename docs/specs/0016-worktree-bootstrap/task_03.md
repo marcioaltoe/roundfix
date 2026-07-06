@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0016-worktree-bootstrap
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -31,16 +31,16 @@ closes.
 
 ## Subtasks
 
-- [ ] Docs for `worktree.bootstrap`/`bootstrap_timeout` + the monorepo recipe
-- [ ] Document `worktree.copy` for env files with the gitignore-safety note
-- [ ] Update SKILL.md/manifest + `make skills-sync`
-- [ ] Verify no skill drift
+- [x] Docs for `worktree.bootstrap`/`bootstrap_timeout` + the monorepo recipe
+- [x] Document `worktree.copy` for env files with the gitignore-safety note
+- [x] Update SKILL.md/manifest + `make skills-sync`
+- [x] Verify no skill drift
 
 ## Acceptance Criteria
 
-- [ ] Docs describe `worktree.bootstrap`, its failure behavior, and the combined `copy`/`bootstrap`/`concurrency: 1` recipe for stateful monorepos.
-- [ ] SKILL.md matches the shipped CLI/config surface; the embedded copy is regenerated.
-- [ ] `roundfix skills check` passes and `skills-sync-check` reports no drift.
+- [x] Docs describe `worktree.bootstrap`, its failure behavior, and the combined `copy`/`bootstrap`/`concurrency: 1` recipe for stateful monorepos.
+- [x] SKILL.md matches the shipped CLI/config surface; the embedded copy is regenerated.
+- [x] `roundfix skills check` passes and `skills-sync-check` reports no drift.
 
 ## Verification
 
@@ -52,3 +52,22 @@ closes.
 `_prd.md` → all stories, Core Feature 5 (documentation). `_techspec.md` → Env-file
 recipe, Build Order 3. ADR-0034. CONTEXT.md → Worktree Bootstrap. CLAUDE.md
 SKILL.md-matches-CLI gate.
+
+## Result
+
+- README documents `worktree.bootstrap`, `worktree.bootstrap_timeout`, when the
+  command runs, start/non-zero/timeout failure behavior, stderr/journal output,
+  and the shared-database monorepo recipe with `worktree.copy` and
+  `worktree.concurrency: 1`.
+- README and the Roundfix skill document that copied env files must already be
+  gitignored, and that Roundfix only invokes and times the bootstrap command;
+  dependency installation, database provisioning, migrations, seeding, and cache
+  strategy live in the configured command.
+- `.agents/skills/roundfix/SKILL.md` and
+  `.agents/skills/roundfix/agents/openai.yaml` were updated for the new config
+  surface. `rtk make skills-sync` regenerated `skills/roundfix/SKILL.md` and
+  `skills/roundfix/agents/openai.yaml`.
+- Verification passed:
+  `rtk go run ./cmd/roundfix skills check` reported
+  `Roundfix skill check passed: roundfix`; `rtk make skills-sync-check` reported
+  no drift; `rtk make verify` passed tests, skills check, and build.
