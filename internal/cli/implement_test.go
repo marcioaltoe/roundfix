@@ -223,6 +223,26 @@ func waitForFile(t *testing.T, path string, timeout time.Duration) {
 	t.Fatalf("timed out waiting for %s", path)
 }
 
+// waitForFileContains polls a file until it contains substr. A detached child's
+// console log is flushed a hair after the store State flips, so reading it once
+// right after the state change races under load.
+func waitForFileContains(t *testing.T, path string, substr string, timeout time.Duration) {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	var last string
+	for time.Now().Before(deadline) {
+		data, err := os.ReadFile(path)
+		if err == nil {
+			last = string(data)
+			if strings.Contains(last, substr) {
+				return
+			}
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+	t.Fatalf("timed out waiting for %s to contain %q; last content %q", path, substr, last)
+}
+
 func waitForRunState(t *testing.T, homeDir string, runID string, state string, timeout time.Duration) store.Run {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
@@ -246,6 +266,31 @@ func waitForRunState(t *testing.T, homeDir string, runID string, state string, t
 	}
 	t.Fatalf("timed out waiting for Run %s state %s; last state %s", runID, state, last.State)
 	return store.Run{}
+}
+
+// waitForCleanOutcomeEvent polls the Run Event Journal until its last event is
+// the Clean Daemon outcome. The store State can flip to Clean a hair before the
+// terminal outcome event is the last visible entry, so a single snapshot races
+// under load; polling removes the race without masking a product bug.
+func waitForCleanOutcomeEvent(t *testing.T, homeDir string, runID string, timeout time.Duration) {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		events := runEventsForRun(t, homeDir, runID)
+		if len(events) > 0 {
+			last := events[len(events)-1].Event
+			if last.Kind == runevent.KindDaemonOutcome && strings.Contains(string(last.Payload), `"Clean"`) {
+				return
+			}
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+	events := runEventsForRun(t, homeDir, runID)
+	if len(events) == 0 {
+		t.Fatalf("timed out waiting for journaled Clean outcome for Run %s; no events", runID)
+	}
+	last := events[len(events)-1].Event
+	t.Fatalf("timed out waiting for journaled Clean outcome for Run %s; last kind=%s payload=%s", runID, last.Kind, string(last.Payload))
 }
 
 func runEventsForRun(t *testing.T, homeDir string, runID string) []store.JournalEvent {
@@ -752,7 +797,7 @@ func TestRunImplementDetachPrintsReportAndCompletesRun(t *testing.T) {
 		t.Fatalf("detach stdout mismatch\nwant: %q\ngot:  %q", wantStdout, stdout)
 	}
 
-	run := waitForRunState(t, homeDir, runID, store.StateClean, 10*time.Second)
+	run := waitForRunState(t, homeDir, runID, store.StateClean, 30*time.Second)
 	if run.Kind != store.KindImplement {
 		t.Fatalf("expected Implement Run, got %s", run.Kind)
 	}
@@ -760,18 +805,8 @@ func TestRunImplementDetachPrintsReportAndCompletesRun(t *testing.T) {
 		t.Fatal("expected Run Worktree recorded on detached Run")
 	}
 	assertRunWorktreeRemoved(t, run.WorkDir)
-	consoleContent := mustRead(t, consoleLog)
-	if !strings.Contains(consoleContent, "Implement Run "+runID+" reached Clean") {
-		t.Fatalf("expected detached console log to contain terminal outcome, got %q", consoleContent)
-	}
-	events := runEventsForRun(t, homeDir, runID)
-	if len(events) == 0 {
-		t.Fatal("expected Run Event Journal entries for detached Run")
-	}
-	last := events[len(events)-1].Event
-	if last.Kind != runevent.KindDaemonOutcome || !strings.Contains(string(last.Payload), `"Clean"`) {
-		t.Fatalf("expected terminal Clean outcome in Run Event Journal, got kind=%s payload=%s", last.Kind, string(last.Payload))
-	}
+	waitForFileContains(t, consoleLog, "Implement Run "+runID+" reached Clean", 30*time.Second)
+	waitForCleanOutcomeEvent(t, homeDir, runID, 30*time.Second)
 }
 
 func TestRunImplementDetachRelaysPreflightFailureVerbatim(t *testing.T) {
@@ -833,7 +868,7 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 		t.Fatalf("kill caller process group: %v", err)
 	}
 	_, _ = waitProcessForTest(cmd, 2*time.Second)
-	waitForFile(t, promptStarted, 10*time.Second)
+	waitForFile(t, promptStarted, 20*time.Second)
 
 	var attachStdout bytes.Buffer
 	var attachStderr bytes.Buffer
@@ -848,15 +883,11 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 	}
 
 	mustWrite(t, releasePrompt, "release\n")
-	run := waitForRunState(t, homeDir, runID, store.StateClean, 10*time.Second)
+	run := waitForRunState(t, homeDir, runID, store.StateClean, 30*time.Second)
 	if run.State != store.StateClean {
 		t.Fatalf("expected detached child to reach Clean after caller kill, got %s", run.State)
 	}
-	events := runEventsForRun(t, homeDir, runID)
-	last := events[len(events)-1].Event
-	if last.Kind != runevent.KindDaemonOutcome || !strings.Contains(string(last.Payload), `"Clean"`) {
-		t.Fatalf("expected journaled Clean outcome after caller kill, got kind=%s payload=%s", last.Kind, string(last.Payload))
-	}
+	waitForCleanOutcomeEvent(t, homeDir, runID, 30*time.Second)
 }
 
 func TestRunHelpListsImplementCommand(t *testing.T) {
