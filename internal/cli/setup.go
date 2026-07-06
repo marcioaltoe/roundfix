@@ -50,6 +50,7 @@ type setupRequest struct {
 type setupRunner struct {
 	req       setupRequest
 	deps      setupDependencies
+	health    HealthChecker
 	loaded    roundconfig.Loaded
 	stdout    io.Writer
 	stderr    io.Writer
@@ -82,6 +83,7 @@ func runSetupCommand(ctx context.Context, args []string, stdout, stderr io.Write
 	runner := setupRunner{
 		req:    req,
 		deps:   setupDeps,
+		health: setupDeps.healthChecker(),
 		loaded: loaded,
 		stdout: stdout,
 		stderr: stderr,
@@ -117,36 +119,28 @@ func parseSetupCommand(args []string) (setupRequest, error) {
 }
 
 func (runner *setupRunner) checkNode(ctx context.Context) {
-	version, err := runner.deps.nodeVersion(ctx)
-	if err != nil {
-		runner.report("node", "failed", fmt.Sprintf("Node.js %s or newer is required: %v", setupNodeMinimumVersion, err))
-		return
-	}
-	if compareVersions(version, setupNodeMinimumVersion) < 0 {
-		runner.report("node", "failed", fmt.Sprintf("found %s; Node.js %s or newer is required", strings.TrimSpace(version), setupNodeMinimumVersion))
-		return
-	}
-	runner.report("node", "ok", fmt.Sprintf("%s >= %s", strings.TrimSpace(version), setupNodeMinimumVersion))
+	runner.reportHealthResult(runner.health.Node(ctx))
 }
 
 func (runner *setupRunner) checkACPX(ctx context.Context) {
-	version, err := runner.deps.acpxVersion(ctx)
-	if err == nil && strings.TrimSpace(version) == agent.PinnedACPXVersion {
+	result := runner.health.ACPX(ctx)
+	if result.Status == CheckStatusOK {
 		runner.acpxReady = true
-		runner.report("acpx", "ok", agent.PinnedACPXVersion)
+		runner.reportHealthResult(result)
 		return
 	}
 
-	detail := fmt.Sprintf("run %s", setupACPXInstallCommand())
-	if err == nil {
-		detail = fmt.Sprintf("found %s; required %s; run %s", strings.TrimSpace(version), agent.PinnedACPXVersion, setupACPXInstallCommand())
+	detail := result.Detail
+	installCommand := result.NextAction
+	if installCommand == "" {
+		installCommand = setupACPXInstallCommand()
 	}
 	if runner.req.noInput {
 		runner.report("acpx", "skipped", detail)
 		return
 	}
 	if !runner.req.yes {
-		accepted, confirmErr := runner.deps.confirm(ctx, runner.stderr, "Install pinned acpx with "+setupACPXInstallCommand()+"?")
+		accepted, confirmErr := runner.deps.confirm(ctx, runner.stderr, "Install pinned acpx with "+installCommand+"?")
 		if confirmErr != nil {
 			runner.report("acpx", "failed", confirmErr.Error())
 			return
@@ -166,7 +160,11 @@ func (runner *setupRunner) checkACPX(ctx context.Context) {
 
 func (runner *setupRunner) checkAgentProbe(ctx context.Context) {
 	if !runner.acpxReady {
-		runner.report("agent probe", "skipped", "acpx is not at the pinned version")
+		runner.reportHealthResult(CheckResult{
+			Name:   HealthCheckAgent,
+			Status: CheckStatusSkipped,
+			Detail: "acpx is not at the pinned version",
+		})
 		return
 	}
 	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
@@ -178,11 +176,7 @@ func (runner *setupRunner) checkAgentProbe(ctx context.Context) {
 		runner.report("agent probe", "failed", err.Error())
 		return
 	}
-	if err := runner.deps.probeAgent(ctx, runtime); err != nil {
-		runner.report("agent probe", "failed", err.Error())
-		return
-	}
-	runner.report("agent probe", "ok", runtime.ID)
+	runner.reportHealthResult(runner.health.Agent(ctx, runtime))
 }
 
 func (runner *setupRunner) checkACPXAgentsOverride(ctx context.Context) {
@@ -331,6 +325,25 @@ func (runner *setupRunner) report(label string, status string, detail string) {
 		return
 	}
 	fmt.Fprintf(runner.stdout, "%s: %s (%s)\n", label, status, detail)
+}
+
+func (runner *setupRunner) reportHealthResult(result CheckResult) {
+	runner.report(setupHealthCheckLabel(result.Name), string(result.Status), result.Detail)
+}
+
+func setupHealthCheckLabel(name string) string {
+	if name == HealthCheckAgent {
+		return "agent probe"
+	}
+	return name
+}
+
+func (deps setupDependencies) healthChecker() HealthChecker {
+	return newHealthChecker(healthCheckDependencies{
+		nodeVersion: deps.nodeVersion,
+		acpxVersion: deps.acpxVersion,
+		probeAgent:  deps.probeAgent,
+	})
 }
 
 func defaultSetupDependencies() setupDependencies {

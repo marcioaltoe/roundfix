@@ -517,6 +517,86 @@ func TestRunSetupExitCodes(t *testing.T) {
 	})
 }
 
+func TestHealthCheckerReturnsStructuredReadOnlyResults(t *testing.T) {
+	ctx := context.Background()
+	runtime := agent.RuntimeSpec{ID: "codex"}
+	probed := false
+	checker := newHealthChecker(healthCheckDependencies{
+		nodeVersion: func(context.Context) (string, error) {
+			return " v25.6.1 \n", nil
+		},
+		acpxVersion: func(context.Context) (string, error) {
+			return agent.PinnedACPXVersion + "\n", nil
+		},
+		probeAgent: func(_ context.Context, got agent.RuntimeSpec) error {
+			probed = true
+			if got.ID != runtime.ID {
+				t.Fatalf("expected runtime %q, got %q", runtime.ID, got.ID)
+			}
+			return nil
+		},
+	})
+
+	assertCheckResult(t, checker.Node(ctx), CheckResult{
+		Name:   HealthCheckNode,
+		Status: CheckStatusOK,
+		Detail: "v25.6.1 >= " + setupNodeMinimumVersion,
+	})
+	assertCheckResult(t, checker.ACPX(ctx), CheckResult{
+		Name:   HealthCheckACPX,
+		Status: CheckStatusOK,
+		Detail: agent.PinnedACPXVersion,
+	})
+	assertCheckResult(t, checker.Agent(ctx, runtime), CheckResult{
+		Name:   HealthCheckAgent,
+		Status: CheckStatusOK,
+		Detail: "codex",
+	})
+	if !probed {
+		t.Fatal("expected agent probe to run")
+	}
+}
+
+func TestHealthCheckerReportsFailedPrerequisitesWithNextActions(t *testing.T) {
+	ctx := context.Background()
+	checker := newHealthChecker(healthCheckDependencies{
+		nodeVersion: func(context.Context) (string, error) {
+			return "v20.0.0", nil
+		},
+		acpxVersion: func(context.Context) (string, error) {
+			return "0.11.0", nil
+		},
+		probeAgent: func(context.Context, agent.RuntimeSpec) error {
+			return errors.New("probe denied")
+		},
+	})
+
+	assertCheckResult(t, checker.Node(ctx), CheckResult{
+		Name:       HealthCheckNode,
+		Status:     CheckStatusFailed,
+		Detail:     "found v20.0.0; Node.js " + setupNodeMinimumVersion + " or newer is required",
+		NextAction: "install Node.js " + setupNodeMinimumVersion + " or newer",
+	})
+	assertCheckResult(t, checker.ACPX(ctx), CheckResult{
+		Name:       HealthCheckACPX,
+		Status:     CheckStatusFailed,
+		Detail:     "found 0.11.0; required " + agent.PinnedACPXVersion + "; run " + setupACPXInstallCommand(),
+		NextAction: setupACPXInstallCommand(),
+	})
+	assertCheckResult(t, checker.Agent(ctx, agent.RuntimeSpec{ID: "codex"}), CheckResult{
+		Name:   HealthCheckAgent,
+		Status: CheckStatusFailed,
+		Detail: "probe denied",
+	})
+}
+
+func assertCheckResult(t *testing.T, got CheckResult, want CheckResult) {
+	t.Helper()
+	if got != want {
+		t.Fatalf("unexpected check result:\n got: %#v\nwant: %#v", got, want)
+	}
+}
+
 func TestRunSkillsCheck(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
