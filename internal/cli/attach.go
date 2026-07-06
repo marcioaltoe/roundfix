@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -64,8 +65,9 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitPreflight
 	}
 
+	concurrency := attachRunConcurrency(ctx, reader, run, loaded.Config.Worktree.Concurrency)
 	if liveTUIEnabled(stdout) {
-		return runAttachCockpit(ctx, reader, run, stdout, stderr)
+		return runAttachCockpit(ctx, reader, run, concurrency, stdout, stderr)
 	}
 
 	timeline := roundtui.NewRunTimeline(attachTimelineLines)
@@ -75,7 +77,7 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitPreflight
 	}
 
-	view := attachRunView(run, attachIssues(ctx, run), timeline.Lines())
+	view := attachRunView(run, attachIssues(ctx, run), timeline.Lines(), concurrency)
 	fmt.Fprint(stdout, roundtui.RenderLiveRunView(view))
 	if store.IsTerminalState(run.State) {
 		fmt.Fprintf(stdout, "Run %s reached %s; timeline replayed read-only.\n", run.ID, run.State)
@@ -108,8 +110,8 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 
 // runAttachCockpit opens the interactive cockpit in the alternate screen.
 // Attach mode: q/Ctrl-C detach and never stop the Run; no stop key exists.
-func runAttachCockpit(ctx context.Context, reader *store.Store, run store.Run, stdout io.Writer, stderr io.Writer) int {
-	view := attachRunView(run, attachIssues(ctx, run), nil)
+func runAttachCockpit(ctx context.Context, reader *store.Store, run store.Run, concurrency int, stdout io.Writer, stderr io.Writer) int {
+	view := attachRunView(run, attachIssues(ctx, run), nil, concurrency)
 	err := roundtui.RunCockpit(ctx, stdout, roundtui.CockpitConfig{
 		Mode:   roundtui.CockpitAttach,
 		View:   view,
@@ -191,7 +193,7 @@ func attachIssues(ctx context.Context, run store.Run) []rounds.Issue {
 	return selection.Issues
 }
 
-func attachRunView(run store.Run, issues []rounds.Issue, console []string) roundtui.LiveRunView {
+func attachRunView(run store.Run, issues []rounds.Issue, console []string, concurrency int) roundtui.LiveRunView {
 	view := roundtui.LiveRunView{
 		Command:       "attach",
 		Repository:    run.HeadRepository,
@@ -209,10 +211,42 @@ func attachRunView(run store.Run, issues []rounds.Issue, console []string) round
 		view.RunKind = run.Kind
 		view.SpecSlug = run.SpecSlug
 		view.GitRoot = run.GitRoot
+		view.Concurrency = concurrency
 		view.HeadBranch = run.LocalBranch
 		view.Tasks = attachTasks(run)
 	}
 	return view
+}
+
+type attachConcurrencyPayload struct {
+	Concurrency int `json:"concurrency"`
+}
+
+func attachRunConcurrency(ctx context.Context, reader *store.Store, run store.Run, fallback int) int {
+	if run.Kind != store.KindImplement {
+		return 0
+	}
+	cursor := int64(0)
+	for {
+		page, err := reader.RunEventsAfter(ctx, run.ID, cursor, attachReplayPageSize)
+		if err != nil {
+			break
+		}
+		for _, entry := range page {
+			cursor = entry.Cursor
+			var payload attachConcurrencyPayload
+			if len(entry.Event.Payload) > 0 && json.Unmarshal(entry.Event.Payload, &payload) == nil && payload.Concurrency > 0 {
+				return payload.Concurrency
+			}
+		}
+		if len(page) < attachReplayPageSize {
+			break
+		}
+	}
+	if fallback > 0 {
+		return fallback
+	}
+	return 0
 }
 
 // attachTasks loads the spec Run's Task Graph for the work-item pane, in

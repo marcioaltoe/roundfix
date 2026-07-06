@@ -79,6 +79,9 @@ type LiveRunView struct {
 	WorkDir  string
 	// Tasks lists the spec Run's Tasks in Task Graph order.
 	Tasks []spec.Task
+	// Concurrency is the effective worktree.concurrency value for spec Runs.
+	// Zero means the caller did not provide a resolved value.
+	Concurrency int
 	// BatchSizes lists the planned Review Issue count per Batch, in Batch
 	// order, when the caller knows the plan. The cockpit derives Batch
 	// separators and Executing/Waiting states from it.
@@ -279,6 +282,9 @@ func RenderLiveRunView(view LiveRunView) string {
 	builder.WriteString("\nRun:\n")
 	builder.WriteString(fmt.Sprintf("  ID: %s\n", emptyDash(view.RunID)))
 	builder.WriteString(fmt.Sprintf("  State: %s\n", emptyDash(view.PipelineState)))
+	if specRunView(view) && view.Concurrency > 0 {
+		builder.WriteString(fmt.Sprintf("  Concurrency: %d\n", view.Concurrency))
+	}
 	if strings.TrimSpace(view.WorkDir) != "" {
 		builder.WriteString(fmt.Sprintf("  Run Worktree: %s\n", view.WorkDir))
 	}

@@ -504,6 +504,7 @@ func implementLiveRunView(req commandRequest, loaded roundconfig.Loaded, gitStat
 		HEAD:          gitState.HEAD,
 		RunID:         runID,
 		PipelineState: "ResolvingWithAgent",
+		Concurrency:   loaded.Config.Worktree.Concurrency,
 		BudgetState:   formatBudgetState(loaded.Config),
 		GitState:      formatGitState(gitState),
 		AutoCommit:    true,

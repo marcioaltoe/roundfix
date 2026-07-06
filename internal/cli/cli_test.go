@@ -4749,6 +4749,7 @@ func TestAttachSpecRunReadsTasksFromKeptWorkDir(t *testing.T) {
 	writeImplementSpec(t, repoDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "pending"}})
 	writeImplementSpec(t, workDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "completed"}})
 	run := createTerminalAttachSpecRun(t, homeDir, repoDir, workDir, store.StateUnresolved)
+	appendAttachConcurrencyEvent(t, homeDir, run.ID, 4)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -4760,6 +4761,7 @@ func TestAttachSpecRunReadsTasksFromKeptWorkDir(t *testing.T) {
 	output := stdout.String()
 	for _, expected := range []string{
 		"Run Worktree: " + workDir,
+		"Concurrency: 4",
 		"task_01 completed — Read state",
 		"Run " + run.ID + " reached Unresolved; timeline replayed read-only.",
 	} {
@@ -4896,6 +4898,29 @@ func createTerminalAttachSpecRun(t *testing.T, homeDir string, repoDir string, w
 		t.Fatalf("complete implement run: %v", err)
 	}
 	return completed
+}
+
+func appendAttachConcurrencyEvent(t *testing.T, homeDir string, runID string, concurrency int) {
+	t.Helper()
+	writer, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open writer: %v", err)
+	}
+	defer func() {
+		if err := writer.Close(); err != nil {
+			t.Fatalf("close writer: %v", err)
+		}
+	}()
+	_, err = writer.AppendRunEvent(context.Background(), runevent.RunEvent{
+		RunID:   runID,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonStatus,
+		Summary: fmt.Sprintf("Task cycle started with concurrency %d.", concurrency),
+		Payload: []byte(fmt.Sprintf(`{"concurrency":%d}`, concurrency)),
+	})
+	if err != nil {
+		t.Fatalf("append concurrency event: %v", err)
+	}
 }
 
 type fakeAttachSource struct {

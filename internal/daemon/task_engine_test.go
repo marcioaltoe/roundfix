@@ -1096,6 +1096,10 @@ func TestTaskCycleExecutesAgentVerifySettleCommitContract(t *testing.T) {
 	if !strings.Contains(string(taskEvents[1].Payload), `"settled"`) || !strings.Contains(string(taskEvents[1].Payload), `"completed"`) {
 		t.Fatalf("expected settled completed payload, got %s", taskEvents[1].Payload)
 	}
+	statusEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonStatus)
+	if len(statusEvents) == 0 || !strings.Contains(string(statusEvents[0].Payload), `"concurrency":1`) {
+		t.Fatalf("expected TaskCycle start event to journal concurrency, got %+v", statusEvents)
+	}
 	kinds := fixture.sink.kinds()
 	if kinds[len(kinds)-1] != runevent.KindDaemonOutcome {
 		t.Fatalf("expected outcome event at cycle end, got %v", kinds)

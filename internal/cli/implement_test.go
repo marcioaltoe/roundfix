@@ -892,6 +892,35 @@ func TestRunImplementExecutesSpecEndToEnd(t *testing.T) {
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
 }
 
+func TestRenderImplementTaskLinesKeepsGraphOrderWhenCompletionReversed(t *testing.T) {
+	_, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build scheduler"},
+		{id: "task_02", title: "Wire queue"},
+		{id: "task_03", title: "Write docs"},
+	})
+	graph, err := spec.Load(repoDir, implementTestSlug)
+	if err != nil {
+		t.Fatalf("load spec: %v", err)
+	}
+	for _, taskID := range []string{"task_03", "task_02", "task_01"} {
+		if err := spec.SetStatus(implementTaskPath(repoDir, taskID), spec.StatusCompleted); err != nil {
+			t.Fatalf("settle %s: %v", taskID, err)
+		}
+	}
+
+	report, counts := renderImplementTaskLines(repoDir, graph, true)
+
+	expected := "task_01 completed — Build scheduler\n" +
+		"task_02 completed — Wire queue\n" +
+		"task_03 completed — Write docs\n"
+	if report != expected {
+		t.Fatalf("expected graph-order report after reversed completion:\n%q\ngot:\n%q", expected, report)
+	}
+	if counts.completed != 3 || counts.failed != 0 || counts.skipped != 0 || counts.pending != 0 {
+		t.Fatalf("expected completed counts after reversed completion, got %+v", counts)
+	}
+}
+
 func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 	tests := []struct {
 		name           string

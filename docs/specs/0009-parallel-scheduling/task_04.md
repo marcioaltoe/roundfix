@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0009-parallel-scheduling
-status: pending
+status: completed
 type: frontend
 complexity: medium
 ---
@@ -37,19 +37,19 @@ synchronous cockpit tests over interleaved journal fixtures.
 
 ## Subtasks
 
-- [ ] Journal-driven Work Queue state for concurrent Tasks
-- [ ] Multiple-executing rendering with stable order and totals
-- [ ] Header concurrency line in both renderers
-- [ ] Graph-order report and attach determinism fixtures
+- [x] Journal-driven Work Queue state for concurrent Tasks
+- [x] Multiple-executing rendering with stable order and totals
+- [x] Header concurrency line in both renderers
+- [x] Graph-order report and attach determinism fixtures
 
 ## Acceptance Criteria
 
-- [ ] An interleaved journal fixture (two Tasks starting before either
+- [x] An interleaved journal fixture (two Tasks starting before either
       settles) renders two `Executing` rows in graph order; settlements
       out of order update rows and totals correctly.
-- [ ] Reversed-completion fixture: stdout lines in graph order, byte-exact.
-- [ ] Attach over the same fixture renders identically to the live pass.
-- [ ] Review snapshots unchanged; full suite passes.
+- [x] Reversed-completion fixture: stdout lines in graph order, byte-exact.
+- [x] Attach over the same fixture renders identically to the live pass.
+- [x] Review snapshots unchanged; full suite passes.
 
 ## Verification
 
@@ -60,3 +60,10 @@ synchronous cockpit tests over interleaved journal fixtures.
 
 `_prd.md` → User Stories 2, 4; Core Feature 6. `_techspec.md` →
 Concurrency-correct surfaces, Build Order 4. ADR-0009.
+
+## Result
+
+- Interleaved Task journal state: `TestCockpitSpecRunDerivesConcurrentTaskStateFromJournal` covers two `daemon.task` starts before either settles, graph-order Work Queue rows, out-of-order settlement, and totals updates.
+- Reversed completion stdout ordering: `TestRenderImplementTaskLinesKeepsGraphOrderWhenCompletionReversed` asserts byte-exact graph-order task lines after statuses are settled in reverse order.
+- Attach determinism: `TestCockpitSpecRunInterleavedTaskReplayMatchesLivePolling` verifies live polling and Attach-style replay render identically over the same interleaved event stream.
+- Review stability and full verification: `TestCockpitRenderSnapshots` kept review snapshots unchanged; `rtk go test ./internal/tui/ ./internal/cli/`, `rtk go test ./...`, and `rtk make verify` all passed.

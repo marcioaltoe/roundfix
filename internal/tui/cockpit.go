@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -92,10 +93,11 @@ type cockpitModel struct {
 	issueTop int
 	detail   *issueDetailView
 
-	issueStatuses  []string
-	taskStatuses   []string
-	currentBatch   int
-	batchStartedAt time.Time
+	issueStatuses       []string
+	taskStatuses        []string
+	taskJournalStatuses []string
+	currentBatch        int
+	batchStartedAt      time.Time
 
 	runState    string
 	terminal    bool
@@ -216,7 +218,7 @@ func (model *cockpitModel) specRun() bool {
 }
 
 // refreshWorkItems refreshes the work-item pane keyed on the Run Kind:
-// Review Issue artifacts for review Runs, task files for spec Runs.
+// Review Issue artifacts for review Runs, Task journal events for spec Runs.
 func (model *cockpitModel) refreshWorkItems() {
 	if model.specRun() {
 		model.refreshTasks()
@@ -225,19 +227,25 @@ func (model *cockpitModel) refreshWorkItems() {
 	model.refreshIssues()
 }
 
-// refreshTasks re-reads Task statuses from the task files located through
-// the Run row's git root. A parse failure keeps the last good status: the
-// Agent rewrites task files while the pane polls, and a mid-write read must
-// never fail the view (ADR 0009 keeps the cockpit on the journal plus these
-// files; it never consumes the live sink).
+// refreshTasks keeps Task rows truthful under parallel execution. Task files
+// remain the fallback/post-integration status source, while daemon.task events
+// are the execution source for started, settled, and skipped states.
 func (model *cockpitModel) refreshTasks() {
 	tasks := model.cfg.View.Tasks
 	if len(model.taskStatuses) != len(tasks) {
 		model.taskStatuses = make([]string, len(tasks))
+		model.taskJournalStatuses = make([]string, len(tasks))
 		for index, task := range tasks {
 			model.taskStatuses[index] = string(task.Status)
 		}
 	}
+	model.refreshTaskFiles()
+	model.refreshTaskJournalEvents()
+	model.applyTaskJournalStatuses()
+}
+
+func (model *cockpitModel) refreshTaskFiles() {
+	tasks := model.cfg.View.Tasks
 	root := taskReadRoot(model.cfg.View)
 	for index := range tasks {
 		current := tasks[index]
@@ -245,6 +253,136 @@ func (model *cockpitModel) refreshTasks() {
 			model.taskStatuses[index] = string(current.Status)
 		}
 	}
+}
+
+func (model *cockpitModel) refreshTaskJournalEvents() {
+	for index := range model.taskJournalStatuses {
+		model.taskJournalStatuses[index] = ""
+	}
+	runID := model.cfg.RunID
+	if strings.TrimSpace(runID) == "" {
+		runID = model.cfg.View.RunID
+	}
+	if strings.TrimSpace(runID) == "" || model.cfg.Source == nil {
+		return
+	}
+	cursor := int64(0)
+	for {
+		page, err := model.cfg.Source.RunEventsAfter(model.ctx, runID, cursor, 200)
+		if err != nil {
+			return
+		}
+		for _, entry := range page {
+			if entry.Cursor > cursor {
+				cursor = entry.Cursor
+			}
+			model.applyTaskJournalEvent(entry.Event)
+		}
+		if len(page) < 200 {
+			return
+		}
+	}
+}
+
+type taskJournalEvent struct {
+	Task   string `json:"task"`
+	Phase  string `json:"phase"`
+	Status string `json:"status"`
+}
+
+func (model *cockpitModel) applyTaskJournalEvent(event runevent.RunEvent) {
+	if event.Kind != runevent.KindDaemonTask {
+		return
+	}
+	taskEvent := parseTaskJournalEvent(event)
+	if taskEvent.Task == "" {
+		return
+	}
+	index := model.taskIndex(taskEvent.Task)
+	if index < 0 {
+		return
+	}
+	switch taskEvent.Phase {
+	case "started":
+		model.taskJournalStatuses[index] = string(spec.StatusInProgress)
+	case "settled":
+		switch spec.Status(taskEvent.Status) {
+		case spec.StatusCompleted, spec.StatusFailed:
+			model.taskJournalStatuses[index] = taskEvent.Status
+		}
+	case "skipped":
+		model.taskJournalStatuses[index] = "skipped"
+	}
+}
+
+func (model *cockpitModel) applyTaskJournalStatuses() {
+	for index, journalStatus := range model.taskJournalStatuses {
+		switch spec.Status(journalStatus) {
+		case spec.StatusCompleted, spec.StatusFailed:
+			model.taskStatuses[index] = journalStatus
+		case spec.StatusInProgress:
+			switch spec.Status(model.taskStatuses[index]) {
+			case spec.StatusCompleted, spec.StatusFailed:
+			default:
+				model.taskStatuses[index] = journalStatus
+			}
+		default:
+			if journalStatus == "skipped" {
+				model.taskStatuses[index] = journalStatus
+			}
+		}
+	}
+}
+
+func parseTaskJournalEvent(event runevent.RunEvent) taskJournalEvent {
+	parsed := taskJournalEvent{Task: strings.TrimSpace(event.ReviewIssue)}
+	if len(event.Payload) > 0 {
+		var payload taskJournalEvent
+		if err := json.Unmarshal(event.Payload, &payload); err == nil {
+			if strings.TrimSpace(payload.Task) != "" {
+				parsed.Task = strings.TrimSpace(payload.Task)
+			}
+			parsed.Phase = strings.TrimSpace(payload.Phase)
+			parsed.Status = strings.TrimSpace(payload.Status)
+		}
+	}
+	if parsed.Task == "" || parsed.Phase == "" || parsed.Status == "" {
+		applyTaskJournalSummary(&parsed, event.Summary)
+	}
+	return parsed
+}
+
+func applyTaskJournalSummary(parsed *taskJournalEvent, summary string) {
+	words := strings.Fields(strings.TrimSpace(summary))
+	if parsed.Task == "" && len(words) >= 2 && strings.EqualFold(words[0], "Task") {
+		parsed.Task = strings.TrimSpace(strings.TrimSuffix(words[1], ":"))
+	}
+	lower := strings.ToLower(summary)
+	switch {
+	case parsed.Phase == "" && strings.Contains(lower, " started "):
+		parsed.Phase = "started"
+	case parsed.Phase == "" && strings.Contains(lower, " settled "):
+		parsed.Phase = "settled"
+	case parsed.Phase == "" && strings.Contains(lower, " skipped"):
+		parsed.Phase = "skipped"
+	}
+	if parsed.Status == "" {
+		for _, status := range []spec.Status{spec.StatusCompleted, spec.StatusFailed} {
+			if strings.Contains(lower, " "+string(status)) {
+				parsed.Status = string(status)
+				return
+			}
+		}
+	}
+}
+
+func (model *cockpitModel) taskIndex(taskID string) int {
+	for index, task := range model.cfg.View.Tasks {
+		if task.ID == taskID {
+			return index
+		}
+	}
+	return -1
 }
 
 // refreshIssues re-reads Review Issue artifact statuses and derives which
@@ -316,26 +454,19 @@ func (model *cockpitModel) taskStatusLabel(index int) string {
 		return "Completed"
 	case spec.StatusFailed:
 		return "Failed"
+	case spec.StatusInProgress:
+		if model.terminal || store.IsTerminalState(model.runState) {
+			return "Paused"
+		}
+		return "Executing"
+	}
+	if model.taskStatuses[index] == "skipped" {
+		return "Skipped"
 	}
 	if model.terminal || store.IsTerminalState(model.runState) {
 		return "Paused"
 	}
-	if status == spec.StatusInProgress || index == model.currentTaskIndex() {
-		return "Executing"
-	}
 	return "Waiting"
-}
-
-// currentTaskIndex approximates the executing Task the same way the review
-// pane derives the executing Batch: the cycle runs Tasks in Task Graph
-// order, so the first unsettled Task is the one in flight.
-func (model *cockpitModel) currentTaskIndex() int {
-	for index, status := range model.taskStatuses {
-		if spec.Status(status) != spec.StatusCompleted && spec.Status(status) != spec.StatusFailed {
-			return index
-		}
-	}
-	return -1
 }
 
 // workItemCount sizes selection over the pane's Work Items, keyed on the
@@ -714,6 +845,9 @@ func cockpitTargetLabel(view LiveRunView) string {
 			target = "SPEC " + strings.TrimSpace(view.SpecSlug)
 		} else {
 			target = "SPEC"
+		}
+		if view.Concurrency > 0 {
+			target += fmt.Sprintf(" // Concurrency: %d", view.Concurrency)
 		}
 	} else if strings.TrimSpace(view.PRNumber) != "" {
 		target = "PR #" + strings.TrimSpace(view.PRNumber)
@@ -1261,6 +1395,8 @@ func workItemStatusMarker(label string) string {
 		return "dup"
 	case "Failed":
 		return "fail"
+	case "Skipped":
+		return "skip"
 	default:
 		return phaseWait
 	}
@@ -1310,6 +1446,8 @@ func (model *cockpitModel) statusStyle(label string) lipgloss.Style {
 		return styleTool
 	case "Failed":
 		return styleError
+	case "Skipped":
+		return styleMuted
 	default:
 		return styleMuted
 	}

@@ -73,6 +73,13 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	if err := validateTaskPlan(plan); err != nil {
 		return TaskCycleResult{}, err
 	}
+	concurrency := taskConcurrency(plan)
+	if err := engine.publishDaemonEvent(ctx, plan.RunID, 0, runevent.KindDaemonStatus,
+		fmt.Sprintf("Task cycle started with concurrency %d.", concurrency),
+		map[string]any{"spec": plan.Spec.Slug, "tasks": len(plan.Tasks), "concurrency": concurrency},
+	); err != nil {
+		return TaskCycleResult{}, err
+	}
 	statuses := initialTaskRunStatuses(plan.Tasks)
 	result, ordinal, err := engine.runTaskScheduler(ctx, plan, statuses)
 	if err != nil {

@@ -252,6 +252,9 @@ func TestRenderLiveRunViewGroupsIssuesAndShowsStatusStrips(t *testing.T) {
 			t.Fatalf("did not expect non-interactive hint %q, got:\n%s", removed, view)
 		}
 	}
+	if strings.Contains(view, "Concurrency:") {
+		t.Fatalf("expected review Run header not to include concurrency, got:\n%s", view)
+	}
 }
 
 func TestRenderLiveRunViewSpecRunRendersTasksAsWorkItems(t *testing.T) {
@@ -266,6 +269,7 @@ func TestRenderLiveRunViewSpecRunRendersTasksAsWorkItems(t *testing.T) {
 		HEAD:          "abc123",
 		RunID:         "run_9",
 		PipelineState: "ResolvingWithAgent",
+		Concurrency:   2,
 		BudgetState:   "38m / 2h",
 		GitState:      "clean, 1 unpushed commit",
 		CurrentRound:  2,
@@ -290,6 +294,7 @@ func TestRenderLiveRunViewSpecRunRendersTasksAsWorkItems(t *testing.T) {
 		"Run:",
 		"ID: run_9",
 		"State: ResolvingWithAgent",
+		"Concurrency: 2",
 		"Run Worktree: /home/user/.roundfix/worktrees/repo/run_9",
 		"Git: clean, 1 unpushed commit",
 		"Auto-commit: on",
