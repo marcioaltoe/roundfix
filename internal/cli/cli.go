@@ -53,7 +53,7 @@ Usage:
   roundfix upgrade [--check]
   roundfix runs list [--all] [--active]
   roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
-  roundfix attach <run-id>
+  roundfix attach [<run-id>] [--no-input]
   roundfix skills check
   roundfix skills install [--target <project|codex|claude|opencode|all>]
 
@@ -2633,14 +2633,15 @@ func commandUsage(name string) string {
 	switch name {
 	case "attach":
 		return `Usage:
-  roundfix attach <run-id>
+  roundfix attach [<run-id>] [--no-input]
 
 Replays the Run's event timeline from the Run Database, read-only.
 Attach never creates Runs, fetches, starts Agents, commits, pushes, or
 resolves Review Source threads.
 
 Options:
-  --run-id  Run ID to attach to (same as the positional argument)
+  --run-id    Run ID to attach to (same as the positional argument)
+  --no-input  Fail instead of opening Interactive Input when no Run ID is passed
 `
 	case "init":
 		return `Usage:

@@ -5867,6 +5867,165 @@ func TestAttachReplaysCompletedRunReadOnly(t *testing.T) {
 	}
 }
 
+func TestAttachPickerSelectsRunByNumberActiveFirstNewestFirst(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	otherRepo := filepath.Join(t.TempDir(), "other-repo")
+	mustMkdir(t, filepath.Join(otherRepo, ".git"))
+	base := time.Date(2026, 7, 6, 14, 0, 0, 0, time.UTC)
+	runs := seedRunsForList(t, homeDir, []runListSeed{
+		{
+			kind:      store.KindResolve,
+			state:     store.StateClean,
+			gitRoot:   repoDir,
+			branch:    "feature/terminal",
+			prNumber:  "201",
+			createdAt: base.Add(4 * time.Minute),
+		},
+		{
+			kind:      store.KindResolve,
+			state:     store.StateActive,
+			gitRoot:   repoDir,
+			branch:    "feature/active-old",
+			prNumber:  "101",
+			createdAt: base.Add(time.Minute),
+		},
+		{
+			kind:      store.KindImplement,
+			state:     store.StateVerifying,
+			gitRoot:   repoDir,
+			branch:    "ma/spec-active",
+			specSlug:  "0017-run-discovery",
+			createdAt: base.Add(2 * time.Minute),
+		},
+		{
+			kind:      store.KindResolve,
+			state:     store.StateActive,
+			gitRoot:   otherRepo,
+			branch:    "feature/other",
+			prNumber:  "999",
+			createdAt: base.Add(5 * time.Minute),
+		},
+	})
+	withAttachPickerInput(t, "3\n")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"attach"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected picker attach exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	assertSetupLineOrder(t, stderr.String(), []string{
+		fmt.Sprintf("  1. %s  Verifying*  implement  spec:0017-run-discovery", runs[2].ID),
+		fmt.Sprintf("  2. %s  Active*  resolve  pr:101", runs[1].ID),
+		fmt.Sprintf("  3. %s  Clean  resolve  pr:201", runs[0].ID),
+	})
+	if strings.Contains(stderr.String(), runs[3].ID) {
+		t.Fatalf("expected picker to scope to current repository, got %q", stderr.String())
+	}
+	for _, expected := range []string{
+		"ID: " + runs[0].ID,
+		"State: Clean",
+		"Run " + runs[0].ID + " reached Clean; timeline replayed read-only.",
+	} {
+		if !strings.Contains(stdout.String(), expected) {
+			t.Fatalf("expected selected Run attach output to contain %q, got:\n%s", expected, stdout.String())
+		}
+	}
+}
+
+func TestAttachPickerSelectsRunByIDWithExplicitAttachOutput(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	runID, _ := runResolveForAttachTest(t, repoDir)
+	var explicitStdout bytes.Buffer
+	var explicitStderr bytes.Buffer
+	explicitCode := RunContext(context.Background(), []string{"attach", runID}, &explicitStdout, &explicitStderr)
+	if explicitCode != exitOK {
+		t.Fatalf("expected explicit attach exit 0, got %d stderr=%q", explicitCode, explicitStderr.String())
+	}
+	withAttachPickerInput(t, runID+"\n")
+	var pickerStdout bytes.Buffer
+	var pickerStderr bytes.Buffer
+
+	pickerCode := RunContext(context.Background(), []string{"attach"}, &pickerStdout, &pickerStderr)
+
+	if pickerCode != exitOK {
+		t.Fatalf("expected picker attach exit 0, got %d stderr=%q", pickerCode, pickerStderr.String())
+	}
+	if pickerStdout.String() != explicitStdout.String() {
+		t.Fatalf("expected picker to reuse explicit attach output:\n got: %q\nwant: %q", pickerStdout.String(), explicitStdout.String())
+	}
+	if !strings.Contains(pickerStderr.String(), "Pick a Run by number or run id.") {
+		t.Fatalf("expected picker guidance, got %q", pickerStderr.String())
+	}
+}
+
+func TestAttachPickerCancelExitsZeroWithoutAttaching(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	runID, _ := runResolveForAttachTest(t, repoDir)
+	dbPath := filepath.Join(homeDir, ".roundfix", "roundfix.db")
+	assertRunCount(t, dbPath, 1)
+	withAttachPickerInput(t, "\n")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"attach"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected cancelled picker exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no attach output after picker cancel, got %q", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "Press Enter to cancel.") {
+		t.Fatalf("expected cancel guidance, got %q", stderr.String())
+	}
+	assertRunCount(t, dbPath, 1)
+	reader, err := store.OpenReader(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open reader: %v", err)
+	}
+	defer func() { _ = reader.Close() }()
+	run, found, err := reader.Run(context.Background(), runID)
+	if err != nil || !found {
+		t.Fatalf("lookup run after picker cancel: found=%v err=%v", found, err)
+	}
+	if run.State != store.StateClean {
+		t.Fatalf("expected picker cancel to leave Run untouched, got %q", run.State)
+	}
+}
+
+func TestAttachWithoutRunIDNonInteractiveNamesRunsList(t *testing.T) {
+	tests := []struct {
+		name        string
+		args        []string
+		interactive bool
+	}{
+		{name: "no tty", args: []string{"attach"}, interactive: false},
+		{name: "no input flag", args: []string{"attach", "--no-input"}, interactive: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			withCLIWorkspace(t)
+			withAttachInteractiveInput(t, tt.interactive)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("expected exit 2, got %d", code)
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("expected no stdout, got %q", stdout.String())
+			}
+			if !strings.Contains(stderr.String(), "roundfix runs list") {
+				t.Fatalf("expected discovery command guidance, got %q", stderr.String())
+			}
+		})
+	}
+}
+
 func TestAttachSpecRunReadsTasksFromKeptWorkDir(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	workDir := t.TempDir()
@@ -6320,6 +6479,33 @@ func withAttachSleep(t *testing.T, sleep func(ctx context.Context) error) {
 	attachSleep = sleep
 	t.Cleanup(func() {
 		attachSleep = old
+	})
+}
+
+func withAttachPickerInput(t *testing.T, input string) {
+	t.Helper()
+	oldReader := attachPickerInputReader
+	oldInteractive := attachInteractiveInputAvailable
+	attachPickerInputReader = func() io.Reader {
+		return strings.NewReader(input)
+	}
+	attachInteractiveInputAvailable = func() bool {
+		return true
+	}
+	t.Cleanup(func() {
+		attachPickerInputReader = oldReader
+		attachInteractiveInputAvailable = oldInteractive
+	})
+}
+
+func withAttachInteractiveInput(t *testing.T, available bool) {
+	t.Helper()
+	old := attachInteractiveInputAvailable
+	attachInteractiveInputAvailable = func() bool {
+		return available
+	}
+	t.Cleanup(func() {
+		attachInteractiveInputAvailable = old
 	})
 }
 
