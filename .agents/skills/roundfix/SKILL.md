@@ -157,6 +157,18 @@ With `logs.agent: true`, per-Batch Agent log files use
 `<artifact_dir>/runs/<run-id>/agent/batch-<nnn>.log`. The Detached Run console
 log remains unconditional and is not controlled by `logs.agent` (ADR-0030).
 
+`notify.enabled` is a User Config and Project Config key that defaults to
+`true`; `notify.command` defaults to the empty string. Project Config overrides
+User Config, which overrides the built-in defaults. With the default empty
+command, Roundfix uses the native desktop notifier when available: `osascript`
+on macOS, `notify-send` on Linux, and a silent no-op on other platforms or when
+the native tool is missing. A non-empty `notify.command` replaces the native
+path and runs through the shell with a 30s timeout. The command receives the
+completed Run context in `ROUNDFIX_RUN_ID`, `ROUNDFIX_OUTCOME`,
+`ROUNDFIX_KIND`, and `ROUNDFIX_TARGET`; targets are `pr:<number>` for review
+Runs and `spec:<slug>` for Spec Runs. Set `notify.enabled: false` to disable
+outcome notifications entirely.
+
 ## Run storage retention
 
 `store.journal_retention` is a User Config and Project Config key that defaults
@@ -256,12 +268,22 @@ The console log path is under the Artifact Directory at
 stderr, Agent output, and terminal outcome messages. `Follow` is the Attach
 surface; `Stop` is the Stop Command surface. Detached Runs behave as normal
 non-TTY Runs after startup: Run Events, Worktrees, integration, outcomes, and
-locks keep their normal contracts.
+locks keep their normal contracts. The detached child owns completion and sends
+the configured outcome notification when the Run reaches its terminal outcome;
+use that notification as the unattended-Run signal and attach or read the
+console log for details.
 
 Detach implies non-interactive mode. `--interactive` is rejected before Run
 creation, and `--no-input` is implied. If the child exits before the startup
 handshake, such as during Preflight Validation, the foreground command writes
 no stdout and relays the child's stderr and exit code verbatim.
+
+Operational Runs that reach a terminal outcome through `resolve`, `watch`, or
+`implement` send exactly one outcome notification. `fetch`, `settle`,
+`archive`, and commands that create no Run do not notify. Notification failures
+write one stderr warning shaped as
+`roundfix: outcome notification failed: <reason>` and one Daemon-source Run
+Event; they never change the Run report, terminal outcome, or exit code.
 
 ## Run discovery and Attach
 
@@ -678,7 +700,9 @@ the Implement, Attach, Settle, Stop, and Archive commands documented above.
    read-only Live Run View with `roundfix attach <run-id>`. From a fresh
    terminal, discover the Run with `roundfix runs list --active` or open the
    picker with `roundfix attach`. Attach replays the Run Event Journal and
-   follows new events; `q` or `Ctrl-C` detaches and never stops the Run.
+   follows new events; `q` or `Ctrl-C` detaches and never stops the Run. The
+   detached child sends the configured outcome notification at the terminal
+   outcome, which is the unattended-Run signal.
 
 4. **Detect the terminal outcome.** The Run ends with exactly one stdout outcome
    line in the console log:

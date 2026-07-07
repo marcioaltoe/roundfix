@@ -116,8 +116,10 @@ roundfix attach <run-id>          # direct read-only Live Run View
 `runs list` prints this repository's Runs newest first, and `--active` filters
 out terminal Runs. `attach` without a Run ID lists the repository's Runs in an
 interactive terminal and accepts a number or Run ID. The terminal outcome line
-lands in the console log. `attach` never stops, commits, or mutates the Run;
-detaching leaves it running.
+lands in the console log, and the detached child sends the configured outcome
+notification when the Run reaches its terminal outcome. Treat that notification
+as the unattended-Run signal; use `attach` or the console log for details.
+`attach` never stops, commits, or mutates the Run; detaching leaves it running.
 
 ### Read the outcome and act
 

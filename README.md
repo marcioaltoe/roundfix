@@ -219,7 +219,9 @@ Follow: roundfix attach <run-id>
 Stop: roundfix stop <run-id>
 ```
 
-See Command Boundaries for the full detach contract.
+The detached child owns the terminal outcome and fires the outcome
+notification, so unattended Runs can signal completion even after the caller
+exits. See Command Boundaries for the full detach contract.
 
 Settle one failed Spec Task whose completed work is already in a kept Task
 Worktree, kept Run Worktree, or the current repository:
@@ -366,6 +368,12 @@ it, or set `NO_COLOR` to suppress color.
   leaves follow-up control to `roundfix attach <run-id>` and
   `roundfix stop <run-id>`. Detached startup failures before the handshake
   relay the child's stderr and exit code verbatim, with no stdout report.
+- `resolve`, `watch`, and `implement` fire one outcome notification after the
+  Run reaches a terminal outcome. `fetch`, `settle`, `archive`, and commands
+  that create no Run do not notify. Detached Runs notify from the detached
+  child. Notification failures write one stderr warning shaped as
+  `roundfix: outcome notification failed: <reason>` and one Daemon-source Run
+  Event; they never change the Run report, terminal outcome, or exit code.
 - `settle` targets one failed Task by resolving its kept Task Worktree first,
   then its kept Run Worktree, then the current repository. It re-runs the
   Task's Verification commands in the selected tree, changes nothing when
@@ -473,6 +481,12 @@ watch:
 implement:
   auto_push: false
 
+notify:
+  # Send one notification when resolve, watch, or implement reaches a terminal outcome.
+  enabled: true
+  # Empty uses the native desktop notifier when available.
+  command: ""
+
 specs:
   # Directory holding Spec folders; relative values resolve against the repo root.
   root: "docs/specs"
@@ -521,6 +535,24 @@ deletes `runs` rows or active-run locks. The `implement`, `resolve`, and
 summary when it frees storage; failures are warnings and do not block the Run.
 Use `roundfix gc --dry-run` to preview the same terminal Run set, and
 `roundfix gc` to reclaim on demand.
+
+`notify.enabled` defaults to `true`; `notify.command` defaults to the empty
+string. User Config can override the built-in defaults, and Project Config can
+override User Config. With the default empty command, Roundfix uses the native
+desktop path when one is available: `osascript` on macOS, `notify-send` on
+Linux, and a silent no-op on other platforms or when the native tool is
+missing. A non-empty `notify.command` replaces the native path and runs through
+the shell with a 30s timeout. Successful command output is discarded; failed
+command output is captured into the warning reason. The command receives:
+
+- `ROUNDFIX_RUN_ID` — the completed Run id.
+- `ROUNDFIX_OUTCOME` — the terminal outcome, such as `Clean`, `Unresolved`,
+  `Failed`, or `Stopped`.
+- `ROUNDFIX_KIND` — `resolve`, `watch`, or `implement`.
+- `ROUNDFIX_TARGET` — `pr:<number>` for review Runs or `spec:<slug>` for Spec
+  Runs.
+
+Set `notify.enabled: false` to disable outcome notifications entirely.
 
 ## Local State
 

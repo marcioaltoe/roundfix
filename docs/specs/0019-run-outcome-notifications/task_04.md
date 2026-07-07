@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0019-run-outcome-notifications
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -32,17 +32,17 @@ behavior.
 
 ## Subtasks
 
-- [ ] README Config section: notify keys, env contract, native fallback
-- [ ] README Command Boundaries: notification behavior and failure shape
-- [ ] Usage guide Detached Run flow update
-- [ ] roundfix SKILL.md update and `make skills-sync`
+- [x] README Config section: notify keys, env contract, native fallback
+- [x] README Command Boundaries: notification behavior and failure shape
+- [x] Usage guide Detached Run flow update
+- [x] roundfix SKILL.md update and `make skills-sync`
 
 ## Acceptance Criteria
 
-- [ ] README documents both keys, the environment contract, the bound, and
+- [x] README documents both keys, the environment contract, the bound, and
       the per-platform native behavior.
-- [ ] The usage guide names the notification in the detached monitoring flow.
-- [ ] `make skills-sync-check` reports no drift and `roundfix skills check`
+- [x] The usage guide names the notification in the detached monitoring flow.
+- [x] `make skills-sync-check` reports no drift and `roundfix skills check`
       passes.
 
 ## Verification
@@ -54,3 +54,23 @@ behavior.
 
 `_prd.md` → Goals; User Experience. `_techspec.md` → API Contracts; Build
 Order 4. CLAUDE.md SKILL.md-matches-CLI HARD RULE.
+
+## Result
+
+Implemented task_04.
+
+- Acceptance 1: README Config now documents `notify.enabled` and
+  `notify.command`, built-in defaults, User Config and Project Config
+  precedence, the four `ROUNDFIX_*` variables, the 30s command timeout, command
+  output handling, and native behavior for macOS (`osascript`), Linux
+  (`notify-send`), other platforms, and missing tools.
+- Acceptance 2: `docs/usage.md` now names the configured outcome notification
+  as the unattended-Run signal in the Detached Run monitoring flow.
+- Acceptance 3: updated `.agents/skills/roundfix/SKILL.md` and regenerated
+  `skills/roundfix/SKILL.md` with `rtk make skills-sync`. `rtk make
+  skills-sync-check` passed with no drift output. `rtk go run -buildvcs=false
+  ./cmd/roundfix skills check` passed after rerun with normal Go build-cache
+  access.
+- Verification: `rtk make verify` exited 0; it ran `rtk go test ./...` with
+  878 tests in 19 packages, `roundfix skills check`, and `go build`. The
+  verify target also includes `fmt-check` and `skills-sync-check`.
