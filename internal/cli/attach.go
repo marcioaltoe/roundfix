@@ -138,10 +138,11 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 func runAttachCockpit(ctx context.Context, loaded roundconfig.Loaded, reader *store.Store, run store.Run, concurrency int, stdout io.Writer, stderr io.Writer) int {
 	view := attachRunView(loaded, run, attachIssues(ctx, run), nil, concurrency)
 	err := roundtui.RunCockpit(ctx, stdout, roundtui.CockpitConfig{
-		Mode:   roundtui.CockpitAttach,
-		View:   view,
-		RunID:  run.ID,
-		Source: reader,
+		Mode:         roundtui.CockpitAttach,
+		View:         view,
+		RunID:        run.ID,
+		Source:       reader,
+		ColorEnabled: colorEnabled(stdout),
 	})
 	if err != nil && !isStopRequest(ctx, err) {
 		printAttachFailure(err, stderr)
@@ -342,11 +343,13 @@ func attachRunView(loaded roundconfig.Loaded, run store.Run, issues []rounds.Iss
 		WorkDir:       run.WorkDir,
 		Issues:        issues,
 		Console:       console,
-		Width:         liveViewWidth(),
+		// RunKind lets the cockpit's empty states explain the Run: a Fetch
+		// Run writes artifacts and starts no Agent.
+		RunKind: run.Kind,
+		Width:   liveViewWidth(),
 	}
 	if run.Kind == store.KindImplement {
 		specsRoot := attachSpecsRoot(loaded, run)
-		view.RunKind = run.Kind
 		view.SpecSlug = run.SpecSlug
 		view.GitRoot = run.GitRoot
 		view.SpecsRoot = specsRoot

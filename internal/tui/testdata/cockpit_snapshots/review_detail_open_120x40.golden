@@ -3,11 +3,11 @@ ROUNDFIX // LIVE RUN VIEW // PR #123                                            
 │ FETCH [done]  >  TRIAGE [done]  >  AGENT [run]  >  VERIFY [wait]  >  PUSH [locked]                                   │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ┌────────────────────────────────────────────┐┌─────────────────────────────────────────────────────────────────────┐   
-│ WORK QUEUE (3)                             ││ SESSION.TIMELINE                                                    │   
+│ WORK QUEUE (3)                             ││ SESSION.TIMELINE                                 Live · detail open │   
 │                                            ││                                                                     │   
 │ BATCH 001/002                        01:23 ││ PLAN inspect current cockpit render                                 │   
-│ > [done] MAJOR                          #1 ││ [TOOL] read_file * completed                                        │   
-│   major: guard nil cache                   ││ THINK preserving the shipped layout                                 │   
+│ ┌────────────────────────────────────────┐ ││ [TOOL] read_file * completed                                        │   
+│ │> [done] MAJOR                        #1│ ││ THINK preserving the shipped layout                                 │   
              ┌───────────────────────────────────────────────────────────────────────────────────────────┐              
              │ REVIEW.ISSUE  #001                                                 Esc close · j/k scroll │              
              │ ----------------------------------------------------------------------------------------- │              

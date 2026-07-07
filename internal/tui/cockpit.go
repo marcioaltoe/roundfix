@@ -45,6 +45,10 @@ type CockpitConfig struct {
 	RunID        string
 	Source       CockpitSource
 	PollInterval time.Duration
+	// ColorEnabled is the effective color mode resolved by the caller
+	// through the existing ROUNDFIX_COLOR / NO_COLOR contract. Disabled
+	// color renders identity tokens: every distinction rides on markers.
+	ColorEnabled bool
 	// OnStop handles Ctrl-C in owning mode (Stop Request). Nil in attach.
 	OnStop func()
 	// Now overrides the clock for elapsed-time rendering. Nil means time.Now.
@@ -82,11 +86,18 @@ const (
 	detailTask
 )
 
+// batchTimeSpan is the first-to-last Run Event timestamp range of one Batch.
+type batchTimeSpan struct {
+	first time.Time
+	last  time.Time
+}
+
 type cockpitModel struct {
 	ctx      context.Context
 	cfg      CockpitConfig
 	viewport *TimelineViewport
 	now      func() time.Time
+	tokens   Tokens
 
 	focus    cockpitFocus
 	selected int
@@ -97,7 +108,8 @@ type cockpitModel struct {
 	taskStatuses        []string
 	taskJournalStatuses []string
 	currentBatch        int
-	batchStartedAt      time.Time
+	batchTimes          map[int]batchTimeSpan
+	batchTimeCursor     int64
 
 	runState    string
 	terminal    bool
@@ -122,6 +134,8 @@ func newCockpitModel(ctx context.Context, cfg CockpitConfig) (*cockpitModel, err
 		cfg:         cfg,
 		viewport:    NewTimelineViewport(cfg.Source, cfg.RunID, 0, 0),
 		now:         now,
+		tokens:      ResolveTokens(cfg.ColorEnabled),
+		batchTimes:  map[int]batchTimeSpan{},
 		runState:    cfg.View.PipelineState,
 		lastVersion: -1,
 		width:       maxInt(cfg.View.Width, 88),
@@ -407,9 +421,52 @@ func (model *cockpitModel) refreshIssues() {
 			break
 		}
 	}
-	if current != model.currentBatch {
-		model.currentBatch = current
-		model.batchStartedAt = model.now()
+	model.currentBatch = current
+	model.refreshBatchClocks()
+}
+
+// refreshBatchClocks folds new journal events into per-Batch timestamp
+// spans. The scan is incremental: the cursor only moves forward, so each
+// poll reads only the events that arrived since the last one.
+func (model *cockpitModel) refreshBatchClocks() {
+	if model.cfg.Source == nil {
+		return
+	}
+	runID := strings.TrimSpace(model.cfg.RunID)
+	if runID == "" {
+		runID = strings.TrimSpace(model.cfg.View.RunID)
+	}
+	if runID == "" {
+		return
+	}
+	if model.batchTimes == nil {
+		model.batchTimes = map[int]batchTimeSpan{}
+	}
+	for {
+		page, err := model.cfg.Source.RunEventsAfter(model.ctx, runID, model.batchTimeCursor, 200)
+		if err != nil {
+			return
+		}
+		for _, entry := range page {
+			if entry.Cursor > model.batchTimeCursor {
+				model.batchTimeCursor = entry.Cursor
+			}
+			event := entry.Event
+			if event.Batch <= 0 || event.Time.IsZero() {
+				continue
+			}
+			span, seen := model.batchTimes[event.Batch]
+			if !seen || event.Time.Before(span.first) {
+				span.first = event.Time
+			}
+			if event.Time.After(span.last) {
+				span.last = event.Time
+			}
+			model.batchTimes[event.Batch] = span
+		}
+		if len(page) < 200 {
+			return
+		}
 	}
 }
 
@@ -802,7 +859,7 @@ func renderCockpitBaseLayout(model *cockpitModel, layout cockpitLayout) string {
 func renderCockpitHeaderArea(model *cockpitModel, width int) string {
 	return strings.Join([]string{
 		renderCockpitHeaderLine(model, width),
-		renderPhaseRow(width, runPhases(model)),
+		renderPhaseRow(model.tokens, width, runPhases(model)),
 	}, "\n")
 }
 
@@ -816,26 +873,49 @@ func renderCockpitHeaderLine(model *cockpitModel, width int) string {
 	if runID == "" {
 		runID = model.cfg.RunID
 	}
-	rightText := shortRunID(runID) + " [" + formatRunStateLabel(model.runState) + "]"
-	if suffix := model.statusSuffix(); suffix != "" {
+	runLabel := shortRunID(runID)
+	chip := "[" + formatRunStateLabel(model.runState) + "]"
+	suffix := model.statusSuffix()
+	rightText := runLabel + " " + chip
+	if suffix != "" {
 		rightText += " " + suffix
+	}
+	right := model.tokens.Muted.Render(runLabel) + " " + model.runStateToken().Render(chip)
+	if suffix != "" {
+		right += " " + model.tokens.Muted.Render(suffix)
 	}
 	rightWidth := displayWidth(rightText)
 	if rightWidth >= width {
 		rightText = truncateDisplay(rightText, width-1)
 		rightWidth = displayWidth(rightText)
+		right = model.tokens.Muted.Render(rightText)
 	}
 	leftText = truncateDisplay(leftText, maxInt(width-rightWidth, 1))
-	left := renderCockpitHeaderLeft(leftText)
-	right := styleBright.Render(rightText)
-	return padRightDisplay(left, maxInt(width-displayWidth(right), 1)) + right
+	left := renderCockpitHeaderLeft(model.tokens, leftText)
+	return padRightDisplay(left, maxInt(width-rightWidth, 1)) + right
 }
 
-func renderCockpitHeaderLeft(text string) string {
+func renderCockpitHeaderLeft(tokens Tokens, text string) string {
 	if strings.HasPrefix(text, "ROUNDFIX") {
-		return styleAccent.Bold(true).Render("ROUNDFIX") + styleMuted.Render(strings.TrimPrefix(text, "ROUNDFIX"))
+		return tokens.SectionLabel.Render("ROUNDFIX") + tokens.Muted.Render(strings.TrimPrefix(text, "ROUNDFIX"))
 	}
-	return styleMuted.Render(text)
+	return tokens.Muted.Render(text)
+}
+
+// runStateToken maps the Run state to the state chip's token: green for a
+// clean or integrated end, red for every other terminal outcome, amber
+// while the Run is still moving.
+func (model *cockpitModel) runStateToken() lipgloss.Style {
+	switch {
+	case model.runState == store.StateClean,
+		model.runState == store.StateFetched,
+		model.runState == store.StateIntegrationPending:
+		return model.tokens.Done
+	case store.IsTerminalState(model.runState):
+		return model.tokens.Failed
+	default:
+		return model.tokens.Running
+	}
 }
 
 func cockpitTargetLabel(view LiveRunView) string {
@@ -972,29 +1052,29 @@ func specRunPhases(model *cockpitModel) []cockpitPhase {
 	return append(phases, cockpitPhase{name: "QA", marker: qaMarker})
 }
 
-func renderPhaseRow(width int, phases []cockpitPhase) string {
+func renderPhaseRow(tokens Tokens, width int, phases []cockpitPhase) string {
 	rendered := make([]string, 0, len(phases))
 	for _, phase := range phases {
-		rendered = append(rendered, renderPhase(phase))
+		rendered = append(rendered, renderPhase(tokens, phase))
 	}
-	line := strings.Join(rendered, styleMuted.Render("  >  "))
+	line := strings.Join(rendered, tokens.Muted.Render("  >  "))
 	return panel(width, 3, line, false)
 }
 
-func renderPhase(phase cockpitPhase) string {
-	return styleBright.Render(phase.name) + " " + phaseMarkerStyle(phase.marker).Render("["+phase.marker+"]")
+func renderPhase(tokens Tokens, phase cockpitPhase) string {
+	return phase.name + " " + phaseMarkerStyle(tokens, phase.marker).Render("["+phase.marker+"]")
 }
 
-func phaseMarkerStyle(marker string) lipgloss.Style {
+func phaseMarkerStyle(tokens Tokens, marker string) lipgloss.Style {
 	switch marker {
 	case phaseDone:
-		return styleTool
+		return tokens.Done
 	case phaseRun:
-		return styleAccent
+		return tokens.Running
 	case phaseLocked:
-		return styleError
+		return tokens.Locked
 	default:
-		return styleMuted
+		return tokens.Waiting
 	}
 }
 
@@ -1023,33 +1103,229 @@ func renderCockpitRightPane(model *cockpitModel, layout cockpitLayout) string {
 }
 
 func renderCockpitTimelinePane(model *cockpitModel, width int, height int) string {
-	lines := model.viewport.VisibleLines()
-	content := []string{styleAccent.Bold(true).Render("SESSION.TIMELINE"), ""}
-	if len(lines) == 0 {
-		content = append(content, styleMuted.Render("No Run Events yet..."))
-	} else {
-		content = append(content, colorTimelineLines(lines, width-4)...)
-	}
-	return panel(width, height, strings.Join(limitTail(content, height-2), "\n"), model.focus == focusTimeline)
+	innerWidth := maxInt(width-4, 1)
+	content := []string{model.timelinePaneHeaderLine(innerWidth), ""}
+	body := model.timelineBodyLines(innerWidth)
+	content = append(content, limitTail(body, maxInt(height-2-len(content), 1))...)
+	return panel(width, height, strings.Join(content, "\n"), model.focus == focusTimeline)
 }
 
 func renderCockpitCollapsedTimelinePane(model *cockpitModel, width int, height int) string {
-	lines := model.viewport.VisibleLines()
+	innerWidth := maxInt(width-4, 1)
 	content := []string{
-		styleAccent.Bold(true).Render("SESSION.TIMELINE"),
-		styleMuted.Render(truncateDisplay("QUEUE.SUMMARY "+model.workQueueTotalsLine(), maxInt(width-4, 1))),
+		model.timelinePaneHeaderLine(innerWidth),
+		model.tokens.Muted.Render(truncateDisplay("QUEUE.SUMMARY "+model.workQueueTotalsLine(), innerWidth)),
 		"",
 	}
-	if len(lines) == 0 {
-		content = append(content, styleMuted.Render("No Run Events yet..."))
-	} else {
-		content = append(content, colorTimelineLines(lines, width-4)...)
-	}
-	return panel(width, height, strings.Join(limitTail(content, height-2), "\n"), true)
+	body := model.timelineBodyLines(innerWidth)
+	content = append(content, limitTail(body, maxInt(height-2-len(content), 1))...)
+	return panel(width, height, strings.Join(content, "\n"), true)
 }
 
+// timelinePaneHeaderLine pins the pane title and the Live · detail
+// indicator to the top of the timeline pane; the indicator follows the
+// Detail Modal state.
+func (model *cockpitModel) timelinePaneHeaderLine(width int) string {
+	label := "SESSION.TIMELINE"
+	if width <= displayWidth(label) {
+		return model.tokens.SectionLabel.Render(truncateDisplay(label, width))
+	}
+	indicator := "Live · detail hidden"
+	if model.detail != nil {
+		indicator = "Live · detail open"
+	}
+	available := width - displayWidth(label) - 1
+	if displayWidth(indicator) > available {
+		indicator = truncateDisplay(indicator, available)
+	}
+	if indicator == "" {
+		return model.tokens.SectionLabel.Render(label)
+	}
+	padding := maxInt(width-displayWidth(label)-displayWidth(indicator), 1)
+	return model.tokens.SectionLabel.Render(label) + strings.Repeat(" ", padding) + model.tokens.Muted.Render(indicator)
+}
+
+func (model *cockpitModel) timelineBodyLines(width int) []string {
+	lines := model.viewport.VisibleLines()
+	if len(lines) == 0 {
+		return model.mutedEmptyLines(model.timelineEmptyCopy(), width)
+	}
+	return model.styleTimelineRows(lines, width)
+}
+
+// workQueueEmptyLines explains the empty Work Queue: which Run kind this
+// is and what would populate the pane.
+func (model *cockpitModel) workQueueEmptyLines(width int) []string {
+	return model.mutedEmptyLines(model.workQueueEmptyCopy(), width)
+}
+
+func (model *cockpitModel) workQueueEmptyCopy() []string {
+	switch {
+	case model.specRun():
+		return []string{
+			"No Tasks yet.",
+			"An implement Run queues its Spec's",
+			"Task Graph here.",
+		}
+	case model.cfg.View.RunKind == store.KindFetch:
+		return []string{
+			"No Work Items.",
+			"A Fetch Run writes Review artifacts",
+			"to disk and starts no Agent.",
+		}
+	default:
+		return []string{
+			"No Work Items yet.",
+			"Review Issues queue here once the",
+			"Run records them.",
+		}
+	}
+}
+
+func (model *cockpitModel) timelineEmptyCopy() []string {
+	switch {
+	case model.cfg.View.RunKind == store.KindFetch:
+		return []string{
+			"No Run Events.",
+			"A Fetch Run writes Review artifacts to disk and starts no Agent.",
+		}
+	case model.specRun():
+		return []string{
+			"No Run Events yet.",
+			"Task execution and verification stream here.",
+		}
+	default:
+		return []string{
+			"No Run Events yet.",
+			"Agent and Daemon activity streams here.",
+		}
+	}
+}
+
+func (model *cockpitModel) mutedEmptyLines(copyLines []string, width int) []string {
+	lines := make([]string, 0, len(copyLines))
+	for _, line := range copyLines {
+		lines = append(lines, model.tokens.Muted.Render(truncateDisplay(line, width)))
+	}
+	return lines
+}
+
+// styleTimelineRows colors the plain viewport rows through the tokens:
+// batch group headers, the muted timestamp gutter, and kind labels. Rows
+// are truncated to the pane width first, so every event stays one bounded
+// line.
+func (model *cockpitModel) styleTimelineRows(lines []string, width int) []string {
+	styled := make([]string, 0, len(lines))
+	for _, line := range lines {
+		trimmed := truncateDisplay(strings.TrimRight(line, "\r\n"), width)
+		styled = append(styled, model.styleTimelineRow(trimmed))
+	}
+	return styled
+}
+
+func (model *cockpitModel) styleTimelineRow(line string) string {
+	if strings.HasPrefix(line, timelineExpandedMarker+" ") || strings.HasPrefix(line, timelineCollapsedMarker+" ") {
+		return model.styleTimelineBatchHeader(line)
+	}
+	if gutter, rest, ok := splitTimelineGutter(line); ok {
+		return model.tokens.Muted.Render(gutter) + model.styleTimelineKindRow(rest)
+	}
+	return model.styleTimelineKindRow(line)
+}
+
+// styleTimelineBatchHeader colors the group header: marker and Batch label
+// as a section label, the state word in its state token, the elapsed stamp
+// muted.
+func (model *cockpitModel) styleTimelineBatchHeader(line string) string {
+	fields := strings.Fields(line)
+	if len(fields) < 2 {
+		return model.tokens.SectionLabel.Render(line)
+	}
+	label := fields[0] + " " + fields[1]
+	rest := fields[2:]
+	if len(rest) > 0 && strings.Contains(rest[0], "/") {
+		label += " " + rest[0]
+		rest = rest[1:]
+	}
+	styled := model.tokens.SectionLabel.Render(label)
+	for _, field := range rest {
+		if strings.Contains(field, ":") {
+			styled += " " + model.tokens.Muted.Render(field)
+			continue
+		}
+		styled += " " + model.timelineBatchStateToken(field).Render(field)
+	}
+	return styled
+}
+
+func (model *cockpitModel) timelineBatchStateToken(state string) lipgloss.Style {
+	switch state {
+	case "executing", "started", "running":
+		return model.tokens.Running
+	case "waiting":
+		return model.tokens.Waiting
+	case "completed":
+		return model.tokens.Done
+	case "failed", "stopped":
+		return model.tokens.Failed
+	default:
+		return model.tokens.Muted
+	}
+}
+
+// styleTimelineKindRow colors the row's kind label through the tokens:
+// PLAN, [TOOL], and SESSION in the section-label cyan family, THINK rows
+// muted, daemon milestone labels cyan. Text after the label stays plain so
+// the no-color render is marker-only by construction.
+func (model *cockpitModel) styleTimelineKindRow(line string) string {
+	if label, rest, ok := cutTimelineKindLabel(line); ok {
+		if label == "THINK" {
+			return model.tokens.Muted.Render(line)
+		}
+		return model.tokens.SectionLabel.Render(label) + rest
+	}
+	return line
+}
+
+// cutTimelineKindLabel splits a known kind label off the row. It reports
+// ok=false for plain streaming text rows.
+func cutTimelineKindLabel(line string) (string, string, bool) {
+	for _, label := range []string{
+		"[TOOL]", "PLAN", "THINK", "SESSION",
+		"STATUS", "FETCH", "VERIFY", "COMMIT", "PUSH", "SOURCE", "RETRY", "OUTCOME", "TASK", "QA",
+	} {
+		if line == label {
+			return label, "", true
+		}
+		if strings.HasPrefix(line, label+" ") {
+			return label, line[len(label):], true
+		}
+	}
+	return "", "", false
+}
+
+// splitTimelineGutter splits the aligned timestamp column off a rendered
+// event row: either "HH:MM:SS " or a blank column of the same width.
+func splitTimelineGutter(line string) (string, string, bool) {
+	runes := []rune(line)
+	if len(runes) < timelineGutterWidth {
+		return "", "", false
+	}
+	gutter := string(runes[:timelineGutterWidth])
+	rest := string(runes[timelineGutterWidth:])
+	if gutter == strings.Repeat(" ", timelineGutterWidth) {
+		return gutter, rest, true
+	}
+	if gutter[2] == ':' && gutter[5] == ':' && gutter[8] == ' ' {
+		return gutter, rest, true
+	}
+	return "", "", false
+}
+
+// renderCockpitDetailPane draws the Detail Modal frame through the accent
+// border token; the identity token keeps the frame structure without color.
 func renderCockpitDetailPane(model *cockpitModel, width int, height int) string {
-	return panel(width, height, model.renderDetail(width, height), true)
+	return model.tokens.ActiveBorder.Width(width).Height(height).Render(model.renderDetail(width, height))
 }
 
 const (
@@ -1069,7 +1345,7 @@ func renderCockpitDetailOverlay(model *cockpitModel, layout cockpitLayout, base 
 	left := maxInt((layout.width-modalWidth)/2, 0)
 	lines := make([]string, len(baseLines))
 	for index, line := range baseLines {
-		lines[index] = styleMuted.Render(padRightDisplay(truncateDisplay(stripANSI(line), layout.width), layout.width))
+		lines[index] = model.tokens.Muted.Render(padRightDisplay(truncateDisplay(stripANSI(line), layout.width), layout.width))
 	}
 	for index, line := range modalLines {
 		target := top + index
@@ -1084,7 +1360,7 @@ func renderCockpitDetailOverlay(model *cockpitModel, layout cockpitLayout, base 
 func renderCockpitFullSurfaceDetail(model *cockpitModel, layout cockpitLayout) string {
 	return strings.Join([]string{
 		renderCockpitHeaderArea(model, layout.width),
-		panel(layout.width, layout.bodyHeight, model.renderDetail(layout.width, layout.bodyHeight), true),
+		renderCockpitDetailPane(model, layout.width, layout.bodyHeight),
 		renderCockpitFooter(model, layout.width),
 	}, "\n")
 }
@@ -1103,37 +1379,51 @@ func (model *cockpitModel) renderDetail(width int, height int) string {
 	detail := model.detail
 	innerWidth := maxInt(width-4, 1)
 	innerHeight := maxInt(height-2, 1)
-	header := detailHeaderLines(detail, innerWidth)
-	bodyHeight := detailBodyHeight(detail, innerHeight)
+	header := model.detailHeaderLines(detail, innerWidth)
+	bodyHeight := model.detailBodyHeight(detail, innerHeight)
 	start, end := detailVisibleRange(detail, bodyHeight)
 	body := []string{}
 	for _, line := range detail.lines[start:end] {
-		body = append(body, truncateDisplay(line, innerWidth))
+		body = append(body, model.detailBodyLine(line, innerWidth))
 	}
 	for len(body) < bodyHeight {
 		body = append(body, "")
 	}
-	footer := styleMuted.Render(truncateDisplay(detailScrollFooter(detail, start, end), innerWidth))
+	footer := model.tokens.Muted.Render(truncateDisplay(detailScrollFooter(detail, start, end), innerWidth))
 	lines := append(header, body...)
 	lines = append(lines, footer)
 	return strings.Join(limitLines(lines, innerHeight), "\n")
 }
 
-func detailHeaderLines(detail *issueDetailView, width int) []string {
+// detailBodyLine renders one body line; markdown headings become section
+// labels so the body reads sectioned, and the heading markers survive the
+// no-color render.
+func (model *cockpitModel) detailBodyLine(line string, width int) string {
+	rendered := truncateDisplay(line, width)
+	if strings.HasPrefix(strings.TrimSpace(line), "#") {
+		return model.tokens.SectionLabel.Render(rendered)
+	}
+	return rendered
+}
+
+// detailHeaderLines renders the modal's title block: the Work Item title
+// line with the key hints, a rule, the subject, the severity/status/
+// location line, and the read-only source line, all through the tokens.
+func (model *cockpitModel) detailHeaderLines(detail *issueDetailView, width int) []string {
 	lines := []string{
-		styleAccent.Bold(true).Render(detailTitleLine(detail, width)),
-		styleMuted.Render(strings.Repeat("-", width)),
-		styleBright.Render(truncateDisplay(detailSubject(detail), width)),
-		styleMuted.Render(truncateDisplay(detailMeta(detail), width)),
-		styleMuted.Render(truncateDisplay(detailSource(detail), width)),
+		model.detailTitleLine(detail, width),
+		model.tokens.Muted.Render(strings.Repeat("-", width)),
+		truncateDisplay(detailSubject(detail), width),
+		model.detailMetaLine(detail, width),
+		model.tokens.Muted.Render(truncateDisplay(detailSource(detail), width)),
 	}
 	if detail.stale {
-		lines = append(lines, styleError.Render(truncateDisplay("STALE: keeping last readable task file", width)))
+		lines = append(lines, model.tokens.Failed.Render(truncateDisplay("STALE: keeping last readable task file", width)))
 	}
 	return append(lines, "")
 }
 
-func detailTitleLine(detail *issueDetailView, width int) string {
+func (model *cockpitModel) detailTitleLine(detail *issueDetailView, width int) string {
 	left := "REVIEW.ISSUE"
 	if detail.kind == detailTask {
 		left = "SPEC.TASK"
@@ -1146,7 +1436,10 @@ func detailTitleLine(detail *issueDetailView, width int) string {
 	}
 	hint := "Esc close · j/k scroll"
 	padding := maxInt(width-displayWidth(left)-displayWidth(hint), 1)
-	return truncateDisplay(left+strings.Repeat(" ", padding)+hint, width)
+	if displayWidth(left)+padding+displayWidth(hint) > width {
+		return model.tokens.SectionLabel.Render(truncateDisplay(left+strings.Repeat(" ", padding)+hint, width))
+	}
+	return model.tokens.SectionLabel.Render(left) + strings.Repeat(" ", padding) + model.tokens.Muted.Render(hint)
 }
 
 func detailSubject(detail *issueDetailView) string {
@@ -1156,13 +1449,45 @@ func detailSubject(detail *issueDetailView) string {
 	return emptyDash(detail.issue.Title)
 }
 
-func detailMeta(detail *issueDetailView) string {
+// detailMetaLine renders severity and status in the artifact's state token
+// and the location muted, per the modal design's title block.
+func (model *cockpitModel) detailMetaLine(detail *issueDetailView, width int) string {
+	const separator = " · "
+	first, status, location := detailMetaParts(detail)
+	plain := first + separator + status + separator + location
+	if displayWidth(plain) > width {
+		return model.tokens.Muted.Render(truncateDisplay(plain, width))
+	}
+	statusToken := model.artifactStatusToken(status)
+	return statusToken.Render(first) +
+		model.tokens.Muted.Render(separator) +
+		statusToken.Render(status) +
+		model.tokens.Muted.Render(separator+location)
+}
+
+func detailMetaParts(detail *issueDetailView) (string, string, string) {
 	if detail.kind == detailTask {
-		parts := []string{emptyDash(detail.task.Type), emptyDash(string(detail.task.Status)), emptyDash(detail.task.File)}
-		return strings.Join(parts, " · ")
+		return emptyDash(detail.task.Type), emptyDash(string(detail.task.Status)), emptyDash(detail.task.File)
 	}
 	issue := detail.issue
-	return fmt.Sprintf("%s · %s · %s", emptyDash(issue.Severity), emptyDash(issue.Status), emptyDash(issueLocation(issue)))
+	return emptyDash(issue.Severity), emptyDash(issue.Status), emptyDash(issueLocation(issue))
+}
+
+// artifactStatusToken maps a Work Item artifact status (Review Issue or
+// Task) to its state token.
+func (model *cockpitModel) artifactStatusToken(status string) lipgloss.Style {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case rounds.StatusResolved, string(spec.StatusCompleted):
+		return model.tokens.Done
+	case rounds.StatusFailed:
+		return model.tokens.Failed
+	case string(spec.StatusInProgress):
+		return model.tokens.Running
+	case rounds.StatusInvalid, rounds.StatusDuplicated, "skipped":
+		return model.tokens.Muted
+	default:
+		return model.tokens.Waiting
+	}
 }
 
 func detailSource(detail *issueDetailView) string {
@@ -1172,8 +1497,8 @@ func detailSource(detail *issueDetailView) string {
 	return "source: " + emptyDash(detail.issue.SourceRef)
 }
 
-func detailBodyHeight(detail *issueDetailView, innerHeight int) int {
-	return maxInt(innerHeight-len(detailHeaderLines(detail, 1))-1, 1)
+func (model *cockpitModel) detailBodyHeight(detail *issueDetailView, innerHeight int) int {
+	return maxInt(innerHeight-len(model.detailHeaderLines(detail, 1))-1, 1)
 }
 
 func detailVisibleRange(detail *issueDetailView, bodyHeight int) (int, int) {
@@ -1207,7 +1532,7 @@ func (model *cockpitModel) detailPageSize() int {
 		_, totalHeight := detailModalSize(layout.width, layout.bodyHeight+4)
 		height = totalHeight
 	}
-	return detailBodyHeight(model.detail, maxInt(height-2, 1))
+	return model.detailBodyHeight(model.detail, maxInt(height-2, 1))
 }
 
 func (model *cockpitModel) detailMaxScroll() int {
@@ -1222,9 +1547,9 @@ func (model *cockpitModel) detailMaxScroll() int {
 func (model *cockpitModel) renderWorkItemPane(width int, height int) string {
 	items := model.workItems()
 	innerHeight := maxInt(height-2, 1)
-	lines := []string{styleAccent.Bold(true).Render(fmt.Sprintf("WORK QUEUE (%d)", len(items))), ""}
+	lines := []string{model.tokens.SectionLabel.Render(fmt.Sprintf("WORK QUEUE (%d)", len(items))), ""}
 	if len(items) == 0 {
-		lines = append(lines, styleMuted.Render("No Work Items"))
+		lines = append(lines, model.workQueueEmptyLines(maxInt(width-4, 1))...)
 		return model.renderWorkQueueWithFooter(lines, innerHeight, width)
 	}
 	if model.selected >= len(items) {
@@ -1243,7 +1568,7 @@ func (model *cockpitModel) renderWorkItemPane(width int, height int) string {
 	for index := model.issueTop; index < end; index++ {
 		if !model.specRun() {
 			if separator := model.batchSeparator(index, width); separator != "" {
-				rowLines = append(rowLines, styleAccent.Render(separator))
+				rowLines = append(rowLines, separator)
 			}
 		}
 		block := model.workItemBlock(items[index], model.workItemStatusLabel(index), index, width)
@@ -1257,7 +1582,7 @@ func (model *cockpitModel) renderWorkItemPane(width int, height int) string {
 }
 
 func (model *cockpitModel) renderWorkQueueWithFooter(lines []string, innerHeight int, width int) string {
-	footer := styleMuted.Render(truncateDisplay(model.workQueueTotalsLine(), maxInt(width-4, 1)))
+	footer := model.tokens.Muted.Render(truncateDisplay(model.workQueueTotalsLine(), maxInt(width-4, 1)))
 	if innerHeight <= 1 {
 		return strings.Join(limitLines(lines, innerHeight), "\n")
 	}
@@ -1330,13 +1655,15 @@ func issueLocation(issue rounds.Issue) string {
 	return file
 }
 
-// workItemBlock renders one Work Item as the compact queue row both Run
-// Kinds share: marker/severity/ordinal, title, and optional location.
+// workItemBlock renders one Work Item as the card both Run Kinds share:
+// marker and severity in the state color, ordinal and location muted, and
+// the accent selection border around the selected card.
 func (model *cockpitModel) workItemBlock(item WorkItem, label string, index int, width int) []string {
 	rowWidth := maxInt(width-4, 1)
-	rowStyle := model.statusStyle(label)
-	if index == model.selected {
-		rowStyle = styleBright
+	selected := index == model.selected
+	contentWidth := rowWidth
+	if selected {
+		contentWidth = maxInt(rowWidth-2, 1)
 	}
 	title := strings.TrimSpace(item.Title)
 	if title == "" {
@@ -1346,18 +1673,22 @@ func (model *cockpitModel) workItemBlock(item WorkItem, label string, index int,
 		title = item.Name + " " + title
 	}
 	lines := []string{
-		rowStyle.Render(workItemHeaderLine(item, label, index == model.selected, rowWidth)),
-		styleBright.Render(truncateDisplay("  "+title, rowWidth)),
+		model.workItemHeaderLine(item, label, selected, contentWidth),
+		truncateDisplay("  "+title, contentWidth),
 	}
 	if location := strings.TrimSpace(item.Location); location != "" {
-		lines = append(lines, styleMuted.Render(truncateDisplay("  "+location, rowWidth)))
+		lines = append(lines, model.tokens.Muted.Render(truncateDisplay("  "+location, contentWidth)))
+	}
+	if selected {
+		card := model.tokens.Selection.Width(rowWidth).Render(strings.Join(lines, "\n"))
+		return append(strings.Split(card, "\n"), "")
 	}
 	return append(lines,
 		"",
 	)
 }
 
-func workItemHeaderLine(item WorkItem, label string, selected bool, width int) string {
+func (model *cockpitModel) workItemHeaderLine(item WorkItem, label string, selected bool, width int) string {
 	prefix := "  "
 	if selected {
 		prefix = "> "
@@ -1366,12 +1697,16 @@ func workItemHeaderLine(item WorkItem, label string, selected bool, width int) s
 	if severity := strings.TrimSpace(item.Severity); severity != "" {
 		left += " " + strings.ToUpper(severity)
 	}
+	style := model.statusStyle(label)
 	right := workItemOrdinal(item)
 	if right == "" {
-		return truncateDisplay(left, width)
+		return style.Render(truncateDisplay(left, width))
 	}
 	padding := maxInt(width-displayWidth(left)-displayWidth(right), 1)
-	return truncateDisplay(left+strings.Repeat(" ", padding)+right, width)
+	if displayWidth(left)+padding+displayWidth(right) > width {
+		return style.Render(truncateDisplay(left+strings.Repeat(" ", padding)+right, width))
+	}
+	return style.Render(left) + strings.Repeat(" ", padding) + model.tokens.Muted.Render(right)
 }
 
 func workItemOrdinal(item WorkItem) string {
@@ -1417,13 +1752,33 @@ func (model *cockpitModel) batchSeparator(index int, width int) string {
 	if index > 0 && model.batchOf(index-1) == batch {
 		return ""
 	}
-	separator := fmt.Sprintf("BATCH %03d/%03d", batch, total)
-	if batch == model.currentBatch && !model.terminal && !store.IsTerminalState(model.runState) {
-		elapsed := formatElapsed(model.now().Sub(model.batchStartedAt))
-		pad := maxInt(width-4-displayWidth(separator)-displayWidth(elapsed), 1)
-		separator += strings.Repeat(" ", pad) + elapsed
+	lineWidth := maxInt(width-4, 1)
+	label := fmt.Sprintf("BATCH %03d/%03d", batch, total)
+	elapsed := model.batchElapsed(batch)
+	if elapsed == "" {
+		return model.tokens.SectionLabel.Render(truncateDisplay(label, lineWidth))
 	}
-	return truncateDisplay(separator, width-4)
+	pad := maxInt(lineWidth-displayWidth(label)-displayWidth(elapsed), 1)
+	if displayWidth(label)+pad+displayWidth(elapsed) > lineWidth {
+		return model.tokens.SectionLabel.Render(truncateDisplay(label+strings.Repeat(" ", pad)+elapsed, lineWidth))
+	}
+	return model.tokens.SectionLabel.Render(label) + strings.Repeat(" ", pad) + model.tokens.Muted.Render(elapsed)
+}
+
+// batchElapsed derives the Batch's elapsed stamp from its Run Event
+// timestamps: first event to last event, with the executing Batch of a live
+// Run counting against now. Batches without timestamped events have no
+// clock to show.
+func (model *cockpitModel) batchElapsed(batch int) string {
+	span, seen := model.batchTimes[batch]
+	if !seen {
+		return ""
+	}
+	end := span.last
+	if batch == model.currentBatch && !model.terminal && !store.IsTerminalState(model.runState) {
+		end = model.now()
+	}
+	return formatElapsed(end.Sub(span.first))
 }
 
 func (model *cockpitModel) workQueueTotalsLine() string {
@@ -1438,18 +1793,22 @@ func (model *cockpitModel) workQueueTotalsLine() string {
 	return fmt.Sprintf("%d issues total · %d resolved · %d unresolved", total, done, unresolved)
 }
 
+// statusStyle maps the Work Item's execution label to its state token: the
+// same color family the item's text marker belongs to.
 func (model *cockpitModel) statusStyle(label string) lipgloss.Style {
 	switch label {
 	case "Executing":
-		return styleAccent
-	case "Resolved", "Invalid", "Duplicated", "Completed":
-		return styleTool
+		return model.tokens.Running
+	case "Resolved", "Completed":
+		return model.tokens.Done
 	case "Failed":
-		return styleError
-	case "Skipped":
-		return styleMuted
+		return model.tokens.Failed
+	case "Paused":
+		return model.tokens.Locked
+	case "Invalid", "Duplicated", "Skipped":
+		return model.tokens.Muted
 	default:
-		return styleMuted
+		return model.tokens.Waiting
 	}
 }
 

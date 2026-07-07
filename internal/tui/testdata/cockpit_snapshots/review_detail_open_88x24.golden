@@ -3,7 +3,7 @@ ROUNDFIX // LIVE RUN VIEW // PR #123                 RUN 00000001 [RESOLVING WIT
 │ FETCH [done]  >  TRIAGE [done]  >  AGENT [run]  >  VERIFY [wait]  >  PUSH [locked]   │
 └──────────────────────────────────────────────────────────────────────────────────────┘
 ┌────────────────────────────────┐┌─────────────────────────────────────────────────┐   
-│ WORK QUEUE (3)                 ││ SESSION.TIMELINE                                │   
+│ WORK QUEUE (3)                 ││ SESSION.TIMELINE             Live · detail open │   
           ┌──────────────────────────────────────────────────────────────────┐          
           │ REVIEW.ISSUE  #001                        Esc close · j/k scroll │          
           │ ---------------------------------------------------------------- │          
@@ -16,8 +16,8 @@ ROUNDFIX // LIVE RUN VIEW // PR #123                 RUN 00000001 [RESOLVING WIT
           │ ## Review Comment                                                │          
           │ Line 1-3 of 10 · PgUp/PgDn page                                  │          
           └──────────────────────────────────────────────────────────────────┘          
-│   info: document cache evicti… ││                                                 │   
-│   internal/cache/cache.go:88   ││                                                 │   
+│ BATCH 002/002                  ││                                                 │   
+│                                ││                                                 │   
 │                                ││                                                 │   
 │ 3 issues total · 1 resolved ·… ││                                                 │   
 └────────────────────────────────┘└─────────────────────────────────────────────────┘   

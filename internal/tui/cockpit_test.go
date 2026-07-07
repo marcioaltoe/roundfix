@@ -275,13 +275,19 @@ func newReviewSnapshotCockpit(t *testing.T, mode CockpitMode, runState string, o
 	for _, path := range persisted.IssuePaths {
 		issues = append(issues, rounds.Issue{Path: path, Status: rounds.StatusPending})
 	}
+	clock := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
 	source := &cockpitFakeSource{run: store.Run{ID: "run-review-00000001", State: runState}, version: 1}
 	source.addLine("PLAN inspect current cockpit render\n")
 	source.addLine("[TOOL] read_file * completed\n")
 	source.addLine("THINK preserving the shipped layout\n")
-	source.addDaemonEvent(runevent.KindDaemonBatch, "Batch 001 executing.")
+	source.addEvent(runevent.RunEvent{
+		Batch:   1,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonBatch,
+		Summary: "Batch 001 executing.",
+		Time:    clock,
+	})
 	source.addLine("SESSION running\n")
-	clock := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
 	model, err := newCockpitModel(context.Background(), CockpitConfig{
 		Mode: mode,
 		View: LiveRunView{
@@ -297,10 +303,11 @@ func newReviewSnapshotCockpit(t *testing.T, mode CockpitMode, runState string, o
 			Issues:        issues,
 			BatchSizes:    []int{2, 1},
 		},
-		RunID:  "run-review-00000001",
-		Source: source,
-		OnStop: func() {},
-		Now:    func() time.Time { return clock },
+		RunID:        "run-review-00000001",
+		Source:       source,
+		ColorEnabled: true,
+		OnStop:       func() {},
+		Now:          func() time.Time { return clock },
 	})
 	if err != nil {
 		t.Fatalf("new cockpit model: %v", err)
@@ -342,9 +349,10 @@ func newSpecSnapshotCockpit(t *testing.T) *cockpitModel {
 				{ID: "task_03", File: fileThree, Title: "Upgrade work queue", Status: spec.StatusPending},
 			},
 		},
-		RunID:  "run-spec-00000001",
-		Source: source,
-		OnStop: func() {},
+		RunID:        "run-spec-00000001",
+		Source:       source,
+		ColorEnabled: true,
+		OnStop:       func() {},
 	})
 	if err != nil {
 		t.Fatalf("new cockpit model: %v", err)
@@ -547,9 +555,17 @@ func assertContainsInOrder(t *testing.T, haystack string, needles ...string) {
 	}
 }
 
+// assertTaskQueueRow checks the Work Queue card marker for one Task. Only
+// the left pane is scanned: the timeline narrates the same Task ids, and
+// pane rows do not stay vertically aligned across the two panels.
 func assertTaskQueueRow(t *testing.T, rendered string, taskID string, marker string) {
 	t.Helper()
 	lines := strings.Split(rendered, "\n")
+	for index := range lines {
+		if cut := strings.Index(lines[index], "││"); cut >= 0 {
+			lines[index] = lines[index][:cut]
+		}
+	}
 	for index, line := range lines {
 		if !strings.Contains(line, taskID+" ") {
 			continue
@@ -635,9 +651,11 @@ func TestCockpitWorkQueueRowsRenderMarkersMetadataAndOptionalSeverity(t *testing
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			model := &cockpitModel{}
+			model := &cockpitModel{tokens: ResolveTokens(true)}
 			if tt.selected {
 				model.selected = 3
+			} else {
+				model.selected = -1
 			}
 			rendered := stripANSI(strings.Join(model.workItemBlock(tt.item, tt.label, 3, 46), "\n"))
 			for _, expected := range tt.want {
@@ -655,12 +673,30 @@ func TestCockpitWorkQueueRowsRenderMarkersMetadataAndOptionalSeverity(t *testing
 }
 
 func TestCockpitWorkQueueBatchSeparatorShowsOrdinalAndElapsed(t *testing.T) {
-	clock := time.Date(2026, 7, 5, 12, 1, 23, 0, time.UTC)
-	model := &cockpitModel{
-		cfg:            CockpitConfig{View: LiveRunView{BatchSizes: []int{2, 1}}},
-		currentBatch:   1,
-		batchStartedAt: time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC),
-		now:            func() time.Time { return clock },
+	startedAt := time.Date(2026, 7, 5, 12, 0, 0, 0, time.UTC)
+	clock := startedAt.Add(83 * time.Second)
+	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateResolvingWithAgent}, version: 1}
+	source.addEvent(runevent.RunEvent{
+		Batch:   1,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonBatch,
+		Summary: "Batch 001 executing.",
+		Time:    startedAt,
+	})
+	model, err := newCockpitModel(context.Background(), CockpitConfig{
+		Mode: CockpitAttach,
+		View: LiveRunView{
+			PipelineState: store.StateResolvingWithAgent,
+			Width:         100,
+			Issues:        sampleIssues(3),
+			BatchSizes:    []int{2, 1},
+		},
+		RunID:  "run-1",
+		Source: source,
+		Now:    func() time.Time { return clock },
+	})
+	if err != nil {
+		t.Fatalf("new cockpit model: %v", err)
 	}
 
 	executing := stripANSI(model.batchSeparator(0, 46))
@@ -1330,16 +1366,18 @@ func TestCockpitAttachReplaysFinishedReviewRunThroughRedesignedCockpit(t *testin
 		"PUSH [done]",
 	)
 	assertContainsInOrder(t, rendered,
-		"BATCH 001/002 executing 00:38",
+		"▼ BATCH 001/002 executing 00:38",
 		"PLAN",
-		"pending  Replay Attach cockpit",
 		"[TOOL] read_file",
 		"THINK checking Attach replay",
 		"SESSION COMPLETED",
-		"BATCH 002/002 00:00",
+		"▼ BATCH 002/002 00:00",
 		"OUTCOME",
 		"Clean after review Attach replay.",
 	)
+	if strings.Contains(rendered, "pending  Replay Attach cockpit") {
+		t.Fatalf("expected the plan payload to stay behind the PLAN summary row, got:\n%s", rendered)
+	}
 	for _, expected := range []string{
 		"READ-ONLY",
 		"2 issues total · 2 resolved · 0 unresolved",
@@ -1448,14 +1486,14 @@ func TestCockpitAttachReplaysFinishedSpecRunThroughRedesignedCockpit(t *testing.
 		"QA [done]",
 	)
 	assertContainsInOrder(t, rendered,
-		"BATCH 001/002 00:20",
+		"▼ BATCH 001/002 00:20",
 		"TASK",
-		"Task task_01 started as Batch 001: Build modal detail",
+		"Task task_01 started as Batch 001",
 		"VERIFY",
-		"Verification command passed: rtk go test ./internal/tui/",
+		"Verification command passed: rtk go test",
 		"TASK",
 		"Task task_01 settled completed.",
-		"BATCH 002/002 00:00",
+		"▼ BATCH 002/002 00:00",
 		"QA",
 		"QA verdict pass for Spec 0005-tui-cockpit.",
 	)
@@ -1693,6 +1731,13 @@ func TestCockpitSidebarShowsBatchesStatusAndElapsed(t *testing.T) {
 	}
 	source := &cockpitFakeSource{run: store.Run{ID: "run-1", State: store.StateResolvingWithAgent}, version: 1}
 	clock := time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC)
+	source.addEvent(runevent.RunEvent{
+		Batch:   1,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonBatch,
+		Summary: "Batch 001 executing.",
+		Time:    clock,
+	})
 	model, err := newCockpitModel(context.Background(), CockpitConfig{
 		Mode:   CockpitOwning,
 		View:   LiveRunView{PipelineState: store.StateResolvingWithAgent, Width: 100, Issues: issues, BatchSizes: []int{2, 1}},

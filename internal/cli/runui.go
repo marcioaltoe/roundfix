@@ -57,11 +57,12 @@ func startRunUI(ctx context.Context, view roundtui.LiveRunView, runID string, ho
 	}
 	go func() {
 		ui.cockpitDone <- roundtui.RunCockpit(cockpitCtx, stderr, roundtui.CockpitConfig{
-			Mode:   roundtui.CockpitOwning,
-			View:   view,
-			RunID:  runID,
-			Source: reader,
-			OnStop: interruptSelf,
+			Mode:         roundtui.CockpitOwning,
+			View:         view,
+			RunID:        runID,
+			Source:       reader,
+			ColorEnabled: colorEnabled(stderr),
+			OnStop:       interruptSelf,
 		})
 	}()
 	return ui, nil
