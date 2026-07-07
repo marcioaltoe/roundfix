@@ -34,6 +34,7 @@ If any check fails, stop and report exactly which — the spec stays active.
    ```yaml
    status: archived
    archived: YYYY-MM-DD
+   qa_override: true # only when archiving despite failed/missing QA
    release: <tag or PR URL> # only when known — from --release or an already-merged PR/tag
    ```
 

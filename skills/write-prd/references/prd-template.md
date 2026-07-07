@@ -1,6 +1,6 @@
 # PRD template
 
-Write `docs/specs/<feature-slug>/_prd.md` with this exact structure. Guidance appears as `<!-- comments -->`; delete every comment from the final file. Omit a section only when it is genuinely empty — write "None." rather than deleting Non-Goals or Open Questions, so readers know it was considered.
+Write `docs/specs/<NNNN-feature-slug>/_prd.md` with this exact structure. Guidance appears as `<!-- comments -->`; delete every comment from the final file. Omit a section only when it is genuinely empty — write "None." rather than deleting Non-Goals or Open Questions, so readers know it was considered.
 
 ```markdown
 ---

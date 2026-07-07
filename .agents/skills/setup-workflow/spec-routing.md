@@ -4,7 +4,7 @@ How to work inside this repo's CONTEXT-driven spec workflow: which pipeline stag
 
 ## The pipeline
 
-```
+```text
 write-idea → write-prd → write-techspec → write-tasks → implement-spec / implement-task → qa-gate → archive-spec
 ```
 
@@ -22,7 +22,7 @@ Every stage reads and writes `docs/specs/<slug>/`. Downstream stages parse the a
 Notes that keep the routes honest:
 
 - `brainstorming` precedes creative/feature work and routes the outcome to the right entry point; for trivial changes it says so explicitly.
-- On the refactor/bugfix route, `write-techspec` mints the numbered spec folder and a **minimal `_prd.md`** (frontmatter, problem statement, acceptance criteria, non-goals — engineering-framed, no product interview) so `write-tasks`, `qa-gate`, and `archive-spec` keep a single artifact contract.
+- On the refactor/bugfix route, `write-techspec` mints the numbered spec folder and a **minimal `_prd.md`** (frontmatter, problem statement, goals, core features, non-goals — engineering-framed, no product interview) so `write-tasks`, `qa-gate`, and `archive-spec` keep a single artifact contract.
 - A techspec is skippable only when the feature has no real architectural surface — `write-tasks` calls that out and compensates with deeper exploration.
 - When in doubt between two tiers, start with the smaller one — a route upgrades cleanly by adding the missing upstream artifact when product questions appear.
 - Every route converges on `write-tasks`: implementation always executes from the task graph, never from an ad-hoc plan.
