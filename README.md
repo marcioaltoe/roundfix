@@ -13,6 +13,10 @@ an Open Pull Request, and executing a Spec's Task Graph — plus first-class
 supporting commands (`setup`, `doctor`, `upgrade`, `gc`, `settle`, `archive`,
 `stop`) that keep a machine Run-ready and manage Run lifecycle and storage.
 
+The spec pipeline it runs is CONTEXT-driven development. The method is adapted
+from Matt Pocock's **skills** work; see
+[Source and attribution](docs/context-driven-development.md#source-and-attribution).
+
 ## Install
 
 Roundfix ships through npm as a `roundfix` launcher package with a per-platform
