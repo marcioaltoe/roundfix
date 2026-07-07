@@ -261,6 +261,71 @@ logs:
 	}
 }
 
+func TestLoadAppliesNotifyConfigHierarchy(t *testing.T) {
+	tests := []struct {
+		name          string
+		userConfig    string
+		projectConfig string
+		wantEnabled   bool
+		wantCommand   string
+	}{
+		{
+			name:        "builtin only",
+			wantEnabled: true,
+		},
+		{
+			name: "user override",
+			userConfig: `
+notify:
+  enabled: false
+  command: ntfy publish roundfix-runs
+`,
+			wantEnabled: false,
+			wantCommand: "ntfy publish roundfix-runs",
+		},
+		{
+			name: "project override",
+			userConfig: `
+notify:
+  enabled: false
+  command: user-notify
+`,
+			projectConfig: `
+notify:
+  enabled: true
+  command: ""
+`,
+			wantEnabled: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir := t.TempDir()
+			workDir := t.TempDir()
+			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+			mustMkdir(t, filepath.Join(workDir, ".git"))
+			if strings.TrimSpace(tt.userConfig) != "" {
+				mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.userConfig)
+			}
+			if strings.TrimSpace(tt.projectConfig) != "" {
+				mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), tt.projectConfig)
+			}
+
+			loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+			if err != nil {
+				t.Fatalf("expected config to load, got %v", err)
+			}
+			if loaded.Config.Notify.Enabled != tt.wantEnabled {
+				t.Fatalf("expected notify.enabled %t, got %t", tt.wantEnabled, loaded.Config.Notify.Enabled)
+			}
+			if loaded.Config.Notify.Command != tt.wantCommand {
+				t.Fatalf("expected notify.command %q, got %q", tt.wantCommand, loaded.Config.Notify.Command)
+			}
+		})
+	}
+}
+
 func TestLoadAppliesStoreRetentionConfigHierarchy(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -525,6 +590,26 @@ worktree:
 	}
 }
 
+func TestLoadRejectsUnknownNotifyConfigKey(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
+notify:
+  channel: desktop
+`)
+
+	_, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+
+	if err == nil {
+		t.Fatal("expected config load to fail")
+	}
+	if !strings.Contains(err.Error(), "notify.channel is not a supported config key") {
+		t.Fatalf("expected strict notify key error, got %q", err.Error())
+	}
+}
+
 func TestLoadRejectsInvalidConfig(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -721,6 +806,8 @@ func TestInitCreatesUserConfig(t *testing.T) {
 		!strings.Contains(content, "concurrency: 2") || !strings.Contains(content, "copy: []") ||
 		!strings.Contains(content, "store:") || !strings.Contains(content, "journal_retention: 336h") ||
 		!strings.Contains(content, "implement:") || !strings.Contains(content, "auto_push: false") ||
+		!strings.Contains(content, "notify:") || !strings.Contains(content, "enabled: true") ||
+		!strings.Contains(content, `command: ""`) ||
 		!strings.Contains(content, "max_run_duration: 2h") {
 		t.Fatalf("expected default config content, got %s", content)
 	}

@@ -43,6 +43,7 @@ type Config struct {
 	ReviewSource ReviewSource
 	Watch        Watch
 	Implement    Implement
+	Notify       Notify
 	Worktree     Worktree
 	Budget       Budget
 	Resolve      Resolve
@@ -78,6 +79,11 @@ type Watch struct {
 
 type Implement struct {
 	AutoPush bool
+}
+
+type Notify struct {
+	Enabled bool
+	Command string
 }
 
 type Worktree struct {
@@ -167,6 +173,7 @@ type configOverlay struct {
 	ReviewSource *reviewSourceOverlay `yaml:"review_source"`
 	Watch        *watchOverlay        `yaml:"watch"`
 	Implement    *implementOverlay    `yaml:"implement"`
+	Notify       *notifyOverlay       `yaml:"notify"`
 	Worktree     *worktreeOverlay     `yaml:"worktree"`
 	Budget       *budgetOverlay       `yaml:"budget"`
 	Resolve      *resolveOverlay      `yaml:"resolve"`
@@ -204,6 +211,11 @@ type implementOverlay struct {
 	AutoPush *implementAutoPushValue `yaml:"auto_push"`
 }
 
+type notifyOverlay struct {
+	Enabled *bool   `yaml:"enabled"`
+	Command *string `yaml:"command"`
+}
+
 type implementAutoPushValue struct {
 	value bool
 }
@@ -217,6 +229,26 @@ func (value *implementAutoPushValue) UnmarshalYAML(node *yaml.Node) error {
 		return fmt.Errorf("implement.auto_push must be boolean: %w", err)
 	}
 	value.value = raw
+	return nil
+}
+
+func (overlay *notifyOverlay) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind == yaml.MappingNode {
+		for index := 0; index < len(node.Content); index += 2 {
+			key := node.Content[index].Value
+			switch key {
+			case "enabled", "command":
+			default:
+				return fmt.Errorf("notify.%s is not a supported config key", key)
+			}
+		}
+	}
+	type rawNotifyOverlay notifyOverlay
+	var raw rawNotifyOverlay
+	if err := node.Decode(&raw); err != nil {
+		return err
+	}
+	*overlay = notifyOverlay(raw)
 	return nil
 }
 
@@ -388,6 +420,9 @@ func Builtin() Config {
 		Implement: Implement{
 			AutoPush: false,
 		},
+		Notify: Notify{
+			Enabled: true,
+		},
 		Worktree: Worktree{
 			Concurrency:      defaultWorktreeConcurrency,
 			Location:         defaultWorktreeLocation,
@@ -542,6 +577,12 @@ implement:
   # auto_push runs only after a Clean spec Run and never creates pull requests.
   auto_push: %t
 
+notify:
+  # false disables notifications entirely.
+  enabled: %t
+  # Shell command run on terminal outcome; empty uses the native desktop notification.
+  command: %q
+
 budget:
   enabled: %t
   max_run_duration: %s
@@ -567,6 +608,8 @@ resolve:
 		formatConfigDuration(config.Watch.QuietPeriod),
 		config.Watch.AutoPush,
 		config.Implement.AutoPush,
+		config.Notify.Enabled,
+		config.Notify.Command,
 		config.Budget.Enabled,
 		formatConfigDuration(config.Budget.MaxRunDuration),
 		config.Resolve.BatchSize,
@@ -1001,6 +1044,14 @@ func applyOverlay(config *Config, overlay configOverlay) {
 	if overlay.Implement != nil {
 		if overlay.Implement.AutoPush != nil {
 			config.Implement.AutoPush = overlay.Implement.AutoPush.value
+		}
+	}
+	if overlay.Notify != nil {
+		if overlay.Notify.Enabled != nil {
+			config.Notify.Enabled = *overlay.Notify.Enabled
+		}
+		if overlay.Notify.Command != nil {
+			config.Notify.Command = *overlay.Notify.Command
 		}
 	}
 	if overlay.Worktree != nil {
