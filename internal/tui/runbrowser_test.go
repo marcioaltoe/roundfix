@@ -329,6 +329,27 @@ func TestRunBrowserSmallHeightKeepsCursorVisible(t *testing.T) {
 	}
 }
 
+func TestRunBrowserProgramDelegatesToTheModel(t *testing.T) {
+	browser := newTestRunBrowser(t)
+	var program tea.Model = runBrowserProgram{browser: browser}
+
+	view := program.(runBrowserProgram).View()
+	if !view.AltScreen {
+		t.Fatal("expected the browser program to render in the alternate screen")
+	}
+	if !strings.Contains(stripANSI(view.Content), "Run Browser — roundfix — ACTIVE") {
+		t.Fatalf("expected the program view to carry the model view, got:\n%s", view.Content)
+	}
+
+	key := tea.Key{Code: tea.KeyEnter}
+	next, cmd := program.Update(tea.KeyPressMsg(key))
+	assertQuit(t, cmd)
+	outcome := next.(runBrowserProgram).browser.Outcome()
+	if outcome.Cancelled || outcome.RunID == "" {
+		t.Fatalf("expected the program to report the model selection, got %+v", outcome)
+	}
+}
+
 func TestFormatRunRowSharedByBothSurfaces(t *testing.T) {
 	active, all := browserTestRuns()
 	now := browserTestNow

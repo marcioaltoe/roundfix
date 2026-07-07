@@ -46,12 +46,11 @@ func runRunsCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 		return exitOK
 	}
 	if len(args) == 0 {
-		if !runsInteractiveInputAvailable() {
+		if !runsInteractiveInputAvailable() || !liveTUIEnabled(stdout) {
 			fmt.Fprintf(stderr, "%s: runs requires a subcommand in non-interactive mode; use 'roundfix runs list'\n", app.Name)
 			return exitPreflight
 		}
-		fmt.Fprint(stdout, commandUsage("runs"))
-		return exitOK
+		return runRunsBrowserCommand(ctx, stdout, stderr)
 	}
 
 	switch args[0] {
@@ -203,26 +202,6 @@ func printRunsList(stdout io.Writer, runs []store.Run, opts runsListOptions, now
 		fields := roundtui.FormatRunRow(run, now, false, opts.all)
 		fmt.Fprintln(stdout, strings.Join(fields, "  "))
 	}
-}
-
-func runListState(run store.Run) string {
-	if store.IsTerminalState(run.State) {
-		return run.State
-	}
-	return run.State + "*"
-}
-
-func runListTarget(run store.Run) string {
-	if run.Kind == store.KindImplement {
-		if strings.TrimSpace(run.SpecSlug) == "" {
-			return ""
-		}
-		return "spec:" + run.SpecSlug
-	}
-	if strings.TrimSpace(run.PRNumber) == "" {
-		return ""
-	}
-	return "pr:" + run.PRNumber
 }
 
 func printRunsListFailure(err error, stderr io.Writer) {

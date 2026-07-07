@@ -2908,11 +2908,13 @@ func commandUsage(name string) string {
 
 Replays the Run's event timeline from the Run Database, read-only.
 Attach never creates Runs, fetches, starts Agents, commits, pushes, or
-resolves Review Source threads.
+resolves Review Source threads. Without a Run ID at an interactive
+terminal, attach opens the Run Browser to pick a Run; leaving the Live
+Run View returns to a refreshed browser until you quit.
 
 Options:
   --run-id    Run ID to attach to (same as the positional argument)
-  --no-input  Fail instead of opening Interactive Input when no Run ID is passed
+  --no-input  Fail instead of opening the Run Browser when no Run ID is passed
 `
 	case "init":
 		return `Usage:
@@ -2971,12 +2973,15 @@ Options:
 `
 	case "runs":
 		return `Usage:
+  roundfix runs
   roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]
 
 Lists Runs from the Run Database newest first. By default the listing is
 scoped to the current repository and shows the 20 newest Active Runs. When
 the state filter or the bound hides Runs, one trailing stderr note names the
-hidden count and the widening flag.
+hidden count and the widening flag. Without a subcommand at an interactive
+terminal, runs opens the Run Browser; non-interactive contexts must use
+'roundfix runs list'.
 
 Commands:
   list  Print run id, state, kind, target, agent, start time (UTC), duration,

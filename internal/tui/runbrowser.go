@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"context"
+	"io"
 	"strings"
 	"time"
 
@@ -248,6 +250,55 @@ func (browser RunBrowser) visibleWindow(total int) (int, int) {
 		first = browser.cursor - visible + 1
 	}
 	return first, first + visible
+}
+
+// runBrowserProgram adapts RunBrowser to the Bubble Tea program surface so
+// one full-screen program can drive the model the tests exercise directly.
+type runBrowserProgram struct {
+	browser RunBrowser
+}
+
+func (program runBrowserProgram) Init() tea.Cmd {
+	return nil
+}
+
+func (program runBrowserProgram) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	browser, cmd := program.browser.Update(msg)
+	program.browser = browser
+	return program, cmd
+}
+
+func (program runBrowserProgram) View() tea.View {
+	view := tea.NewView(program.browser.View())
+	view.AltScreen = true
+	return view
+}
+
+// RunBrowserSession opens the Run Browser in the alternate screen and
+// blocks until the user selects a Run or cancels. Context cancellation
+// closes the session as a cancel: Run discovery never mutates anything.
+func RunBrowserSession(ctx context.Context, output io.Writer, browser RunBrowser) (BrowserOutcome, error) {
+	prog := tea.NewProgram(runBrowserProgram{browser: browser}, tea.WithOutput(output), tea.WithoutSignalHandler())
+	done := make(chan struct{})
+	defer close(done)
+	go func() {
+		select {
+		case <-ctx.Done():
+			prog.Quit()
+		case <-done:
+		}
+	}()
+	final, err := prog.Run()
+	if err != nil {
+		return BrowserOutcome{}, err
+	}
+	outcome := final.(runBrowserProgram).browser.Outcome()
+	if outcome.RunID == "" && !outcome.Cancelled {
+		// The program ended without a key outcome: context cancellation
+		// quit it, which is a cancel, never a selection.
+		outcome.Cancelled = true
+	}
+	return outcome, nil
 }
 
 // browserShortRunID is the timestamp-less suffix of a run id

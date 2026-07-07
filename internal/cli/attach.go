@@ -1,17 +1,13 @@
 package cli
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -34,8 +30,6 @@ type attachRequest struct {
 	noInput bool
 }
 
-var errAttachPickerCanceled = errors.New("attach picker canceled")
-
 // runAttachCommand replays a Run's event timeline from the Run Database.
 // Attach is non-mutating: it opens a read-only connection and never creates
 // Runs, fetches, starts Agents, commits, pushes, or resolves threads.
@@ -50,7 +44,7 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitPreflight
 	}
 	missingRunID := strings.TrimSpace(req.runID) == ""
-	if missingRunID && (req.noInput || !attachInteractiveInputAvailable()) {
+	if missingRunID && (req.noInput || !attachInteractiveInputAvailable() || !liveTUIEnabled(stdout)) {
 		printAttachFailure(validationError{message: "missing run id in non-interactive mode; pass a run id or run 'roundfix runs list' to discover Runs"}, stderr)
 		return exitPreflight
 	}
@@ -69,15 +63,16 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}()
 
 	if missingRunID {
-		selectedRunID, err := pickAttachRun(ctx, reader, loaded.GitRoot, attachPickerInputReader(), stderr)
-		if errors.Is(err, errAttachPickerCanceled) {
-			return exitOK
-		}
-		if err != nil {
-			printAttachFailure(err, stderr)
+		gitRoot := strings.TrimSpace(loaded.GitRoot)
+		if gitRoot == "" {
+			printAttachFailure(validationError{message: "attach without a Run ID requires a Git repository; run 'roundfix runs list' to discover Runs"}, stderr)
 			return exitPreflight
 		}
-		req.runID = selectedRunID
+		code, err := runRunBrowserLoop(ctx, loaded, reader, gitRoot, stdout, stderr)
+		if err != nil {
+			printAttachFailure(err, stderr)
+		}
+		return code
 	}
 
 	run, found, err := reader.Run(ctx, req.runID)
@@ -184,7 +179,7 @@ func parseAttachCommand(args []string) (attachRequest, error) {
 	fs.SetOutput(io.Discard)
 	fs.StringVar(&req.runID, "run-id", "", "Run ID to attach to")
 	fs.StringVar(&req.runID, "run", "", "Run ID to attach to")
-	fs.BoolVar(&req.noInput, "no-input", false, "Fail instead of opening Interactive Input")
+	fs.BoolVar(&req.noInput, "no-input", false, "Fail instead of opening the Run Browser")
 	if err := fs.Parse(args); err != nil {
 		return req, validationError{message: err.Error()}
 	}
@@ -202,110 +197,7 @@ func parseAttachCommand(args []string) (attachRequest, error) {
 	return req, nil
 }
 
-func pickAttachRun(ctx context.Context, reader *store.Store, gitRoot string, stdin io.Reader, stderr io.Writer) (string, error) {
-	gitRoot = strings.TrimSpace(gitRoot)
-	if gitRoot == "" {
-		return "", validationError{message: "attach without a Run ID requires a Git repository; run 'roundfix runs list' to discover Runs"}
-	}
-	runs, err := reader.ListRuns(ctx, store.ListRunsQuery{GitRoot: gitRoot, States: store.StatesAll})
-	if err != nil {
-		return "", fmt.Errorf("list attach Runs: %w", err)
-	}
-	orderAttachPickerRuns(runs)
-	if len(runs) == 0 {
-		return "", validationError{message: "no Runs found for this repository; run 'roundfix runs list' to discover Runs"}
-	}
-	return collectAttachRunSelection(ctx, runs, stdin, stderr)
-}
-
-func orderAttachPickerRuns(runs []store.Run) {
-	sort.SliceStable(runs, func(i, j int) bool {
-		leftTerminal := store.IsTerminalState(runs[i].State)
-		rightTerminal := store.IsTerminalState(runs[j].State)
-		if leftTerminal != rightTerminal {
-			return !leftTerminal
-		}
-		return false
-	})
-}
-
-func collectAttachRunSelection(ctx context.Context, runs []store.Run, stdin io.Reader, stderr io.Writer) (string, error) {
-	if err := ctx.Err(); err != nil {
-		return "", err
-	}
-	if stdin == nil {
-		stdin = strings.NewReader("")
-	}
-	if stderr == nil {
-		stderr = io.Discard
-	}
-	fmt.Fprint(stderr, renderAttachRunPicker(runs))
-	type readResult struct {
-		line string
-		err  error
-	}
-	resultCh := make(chan readResult, 1)
-	go func() {
-		line, err := bufio.NewReader(stdin).ReadString('\n')
-		resultCh <- readResult{line: line, err: err}
-	}()
-	var line string
-	select {
-	case <-ctx.Done():
-		return "", ctx.Err()
-	case result := <-resultCh:
-		if result.err != nil && result.err != io.EOF {
-			return "", fmt.Errorf("read attach Run picker: %w", result.err)
-		}
-		line = result.line
-	}
-	choice := strings.TrimSpace(line)
-	if choice == "" || isAttachPickerCancelChoice(choice) {
-		return "", errAttachPickerCanceled
-	}
-	if index, err := strconv.Atoi(choice); err == nil {
-		if index >= 1 && index <= len(runs) {
-			return runs[index-1].ID, nil
-		}
-		return "", validationError{message: fmt.Sprintf("Run picker choice %d is out of range", index)}
-	}
-	for _, run := range runs {
-		if choice == run.ID {
-			return run.ID, nil
-		}
-	}
-	return "", validationError{message: fmt.Sprintf("Run picker choice %q is not a listed Run", choice)}
-}
-
-func renderAttachRunPicker(runs []store.Run) string {
-	var builder strings.Builder
-	builder.WriteString("Roundfix Interactive Input\n")
-	builder.WriteString("Command: attach\n")
-	builder.WriteString("Runs:\n")
-	for index, run := range runs {
-		fmt.Fprintf(&builder, "  %d. %s  %s  %s  %s\n", index+1, run.ID, runListState(run), run.Kind, runListTarget(run))
-	}
-	builder.WriteString("Pick a Run by number or run id.\n")
-	builder.WriteString("Press Enter to cancel.\n")
-	builder.WriteString("Run: ")
-	return builder.String()
-}
-
-func isAttachPickerCancelChoice(choice string) bool {
-	switch strings.ToLower(strings.TrimSpace(choice)) {
-	case "q", "quit", "cancel":
-		return true
-	default:
-		return false
-	}
-}
-
-var attachPickerInputReader = defaultAttachPickerInputReader
 var attachInteractiveInputAvailable = defaultAttachInteractiveInputAvailable
-
-func defaultAttachPickerInputReader() io.Reader {
-	return os.Stdin
-}
 
 func defaultAttachInteractiveInputAvailable() bool {
 	if strings.EqualFold(os.Getenv("TERM"), "dumb") {

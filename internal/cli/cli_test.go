@@ -548,9 +548,50 @@ func TestRunRunsWithoutSubcommandHonorsInteractivity(t *testing.T) {
 			t.Fatalf("expected non-interactive runs guidance, got %q", stderr.String())
 		}
 	})
-	t.Run("interactive prints usage", func(t *testing.T) {
+	t.Run("interactive stdin without a TTY exits 2 naming runs list", func(t *testing.T) {
 		withCLIWorkspace(t)
 		withRunsInteractiveInput(t, true)
+		t.Setenv("ROUNDFIX_TUI", "")
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := Run([]string{"runs"}, &stdout, &stderr)
+
+		if code != exitPreflight {
+			t.Fatalf("expected exit code 2, got %d", code)
+		}
+		if stdout.Len() != 0 {
+			t.Fatalf("expected no stdout, got %q", stdout.String())
+		}
+		if !strings.Contains(stderr.String(), "runs requires a subcommand in non-interactive mode; use 'roundfix runs list'") {
+			t.Fatalf("expected non-interactive runs guidance, got %q", stderr.String())
+		}
+	})
+	t.Run("interactive terminal opens the Run Browser over the repository's Runs", func(t *testing.T) {
+		homeDir, repoDir := withCLIWorkspace(t)
+		base := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
+		runs := seedRunsForList(t, homeDir, []runListSeed{
+			{
+				kind:        store.KindResolve,
+				state:       store.StateClean,
+				gitRoot:     repoDir,
+				branch:      "feature/terminal",
+				prNumber:    "201",
+				createdAt:   base,
+				completedAt: base.Add(time.Minute),
+			},
+			{
+				kind:      store.KindResolve,
+				state:     store.StateActive,
+				gitRoot:   repoDir,
+				branch:    "feature/active",
+				prNumber:  "202",
+				createdAt: base.Add(2 * time.Minute),
+			},
+		})
+		withRunsInteractiveInput(t, true)
+		t.Setenv("ROUNDFIX_TUI", "always")
+		sessionCalls := withRunBrowserSession(t, roundtui.BrowserOutcome{Cancelled: true})
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
@@ -559,11 +600,42 @@ func TestRunRunsWithoutSubcommandHonorsInteractivity(t *testing.T) {
 		if code != exitOK {
 			t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
 		}
-		if !strings.Contains(stdout.String(), "Usage:") {
-			t.Fatalf("expected usage output, got %q", stdout.String())
+		if stdout.Len() != 0 {
+			t.Fatalf("expected no stdout after browser cancel, got %q", stdout.String())
 		}
-		if stderr.Len() != 0 {
-			t.Fatalf("expected no stderr, got %q", stderr.String())
+		calls := *sessionCalls
+		if len(calls) != 1 {
+			t.Fatalf("expected one Run Browser session, got %d", len(calls))
+		}
+		if calls[0].repo != filepath.Base(repoDir) {
+			t.Fatalf("expected repository name %q, got %q", filepath.Base(repoDir), calls[0].repo)
+		}
+		if len(calls[0].active) != 1 || calls[0].active[0].ID != runs[1].ID {
+			t.Fatalf("expected the Active Run listed first, got %+v", calls[0].active)
+		}
+		if len(calls[0].all) != 2 || calls[0].all[0].ID != runs[1].ID || calls[0].all[1].ID != runs[0].ID {
+			t.Fatalf("expected all Runs newest first, got %+v", calls[0].all)
+		}
+	})
+	t.Run("interactive terminal without a Run Database opens the empty browser", func(t *testing.T) {
+		withCLIWorkspace(t)
+		withRunsInteractiveInput(t, true)
+		t.Setenv("ROUNDFIX_TUI", "always")
+		sessionCalls := withRunBrowserSession(t, roundtui.BrowserOutcome{Cancelled: true})
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := Run([]string{"runs"}, &stdout, &stderr)
+
+		if code != exitOK {
+			t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
+		}
+		calls := *sessionCalls
+		if len(calls) != 1 {
+			t.Fatalf("expected one Run Browser session, got %d", len(calls))
+		}
+		if len(calls[0].active) != 0 || len(calls[0].all) != 0 {
+			t.Fatalf("expected empty listings without a Run Database, got %+v", calls[0])
 		}
 	})
 }
@@ -6495,7 +6567,7 @@ func TestAttachReplaysCompletedRunReadOnly(t *testing.T) {
 	}
 }
 
-func TestAttachPickerSelectsRunByNumberActiveFirstNewestFirst(t *testing.T) {
+func TestAttachRunBrowserLoopOpensCockpitAndRefreshes(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	otherRepo := filepath.Join(t.TempDir(), "other-repo")
 	mustMkdir(t, filepath.Join(otherRepo, ".git"))
@@ -6507,14 +6579,6 @@ func TestAttachPickerSelectsRunByNumberActiveFirstNewestFirst(t *testing.T) {
 			gitRoot:   repoDir,
 			branch:    "feature/terminal",
 			prNumber:  "201",
-			createdAt: base.Add(4 * time.Minute),
-		},
-		{
-			kind:      store.KindResolve,
-			state:     store.StateActive,
-			gitRoot:   repoDir,
-			branch:    "feature/active-old",
-			prNumber:  "101",
 			createdAt: base.Add(time.Minute),
 		},
 		{
@@ -6531,82 +6595,93 @@ func TestAttachPickerSelectsRunByNumberActiveFirstNewestFirst(t *testing.T) {
 			gitRoot:   otherRepo,
 			branch:    "feature/other",
 			prNumber:  "999",
-			createdAt: base.Add(5 * time.Minute),
+			createdAt: base.Add(3 * time.Minute),
 		},
 	})
-	withAttachPickerInput(t, "3\n")
+	terminalRun, activeRun := runs[0], runs[1]
+	withAttachInteractiveInput(t, true)
+	t.Setenv("ROUNDFIX_TUI", "always")
+	var createdBehindCockpit store.Run
+	cockpitCalls := withBrowserAttachCockpit(t, func(run store.Run, concurrency int) int {
+		// Mutating the store while the cockpit is open proves the next
+		// browser pass re-queries instead of reusing stale listings.
+		createdBehindCockpit = seedRunsForList(t, homeDir, []runListSeed{{
+			kind:      store.KindResolve,
+			state:     store.StateActive,
+			gitRoot:   repoDir,
+			branch:    "feature/started-behind-cockpit",
+			prNumber:  "202",
+			createdAt: base.Add(4 * time.Minute),
+		}})[0]
+		return exitOK
+	})
+	sessionCalls := withRunBrowserSession(t,
+		roundtui.BrowserOutcome{RunID: activeRun.ID},
+		roundtui.BrowserOutcome{Cancelled: true},
+	)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
 	code := RunContext(context.Background(), []string{"attach"}, &stdout, &stderr)
 
 	if code != exitOK {
-		t.Fatalf("expected picker attach exit 0, got %d stderr=%q", code, stderr.String())
+		t.Fatalf("expected browser loop exit 0, got %d stderr=%q", code, stderr.String())
 	}
-	assertSetupLineOrder(t, stderr.String(), []string{
-		fmt.Sprintf("  1. %s  Verifying*  implement  spec:0017-run-discovery", runs[2].ID),
-		fmt.Sprintf("  2. %s  Active*  resolve  pr:101", runs[1].ID),
-		fmt.Sprintf("  3. %s  Clean  resolve  pr:201", runs[0].ID),
-	})
-	if strings.Contains(stderr.String(), runs[3].ID) {
-		t.Fatalf("expected picker to scope to current repository, got %q", stderr.String())
+	calls := *sessionCalls
+	if len(calls) != 2 {
+		t.Fatalf("expected browser sessions before and after the cockpit, got %d", len(calls))
 	}
-	for _, expected := range []string{
-		"ID: " + runs[0].ID,
-		"State: Clean",
-		"Run " + runs[0].ID + " reached Clean; timeline replayed read-only.",
-	} {
-		if !strings.Contains(stdout.String(), expected) {
-			t.Fatalf("expected selected Run attach output to contain %q, got:\n%s", expected, stdout.String())
-		}
+	first := calls[0]
+	if first.repo != filepath.Base(repoDir) {
+		t.Fatalf("expected repository name %q, got %q", filepath.Base(repoDir), first.repo)
 	}
-}
-
-func TestAttachPickerSelectsRunByIDWithExplicitAttachOutput(t *testing.T) {
-	_, repoDir := withCLIWorkspace(t)
-	runID, _ := runResolveForAttachTest(t, repoDir)
-	var explicitStdout bytes.Buffer
-	var explicitStderr bytes.Buffer
-	explicitCode := RunContext(context.Background(), []string{"attach", runID}, &explicitStdout, &explicitStderr)
-	if explicitCode != exitOK {
-		t.Fatalf("expected explicit attach exit 0, got %d stderr=%q", explicitCode, explicitStderr.String())
+	if len(first.active) != 1 || first.active[0].ID != activeRun.ID {
+		t.Fatalf("expected only the repository's Active Run, got %+v", first.active)
 	}
-	withAttachPickerInput(t, runID+"\n")
-	var pickerStdout bytes.Buffer
-	var pickerStderr bytes.Buffer
-
-	pickerCode := RunContext(context.Background(), []string{"attach"}, &pickerStdout, &pickerStderr)
-
-	if pickerCode != exitOK {
-		t.Fatalf("expected picker attach exit 0, got %d stderr=%q", pickerCode, pickerStderr.String())
+	if len(first.all) != 2 || first.all[0].ID != activeRun.ID || first.all[1].ID != terminalRun.ID {
+		t.Fatalf("expected the repository's Runs newest first, got %+v", first.all)
 	}
-	if pickerStdout.String() != explicitStdout.String() {
-		t.Fatalf("expected picker to reuse explicit attach output:\n got: %q\nwant: %q", pickerStdout.String(), explicitStdout.String())
+	cockpit := *cockpitCalls
+	if len(cockpit) != 1 || cockpit[0].runID != activeRun.ID {
+		t.Fatalf("expected one cockpit pass for the selected Run, got %+v", cockpit)
 	}
-	if !strings.Contains(pickerStderr.String(), "Pick a Run by number or run id.") {
-		t.Fatalf("expected picker guidance, got %q", pickerStderr.String())
+	if cockpit[0].concurrency != 2 {
+		t.Fatalf("expected the explicit-attach concurrency fallback, got %d", cockpit[0].concurrency)
+	}
+	second := calls[1]
+	if len(second.all) != 3 || second.all[0].ID != createdBehindCockpit.ID {
+		t.Fatalf("expected the refreshed browser to list the Run created behind the cockpit, got %+v", second.all)
 	}
 }
 
-func TestAttachPickerCancelExitsZeroWithoutAttaching(t *testing.T) {
+func TestBrowserAttachCockpitIsTheExplicitAttachCockpit(t *testing.T) {
+	if reflect.ValueOf(browserAttachCockpit).Pointer() != reflect.ValueOf(runAttachCockpit).Pointer() {
+		t.Fatal("expected the browser loop to open the same attach cockpit as explicit attach")
+	}
+}
+
+func TestAttachRunBrowserCancelExitsZeroWithoutAttaching(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	runID, _ := runResolveForAttachTest(t, repoDir)
 	dbPath := filepath.Join(homeDir, ".roundfix", "roundfix.db")
 	assertRunCount(t, dbPath, 1)
-	withAttachPickerInput(t, "\n")
+	withAttachInteractiveInput(t, true)
+	t.Setenv("ROUNDFIX_TUI", "always")
+	cockpitCalls := withBrowserAttachCockpit(t, nil)
+	withRunBrowserSession(t, roundtui.BrowserOutcome{Cancelled: true})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
 	code := RunContext(context.Background(), []string{"attach"}, &stdout, &stderr)
 
 	if code != exitOK {
-		t.Fatalf("expected cancelled picker exit 0, got %d stderr=%q", code, stderr.String())
+		t.Fatalf("expected cancelled browser exit 0, got %d stderr=%q", code, stderr.String())
 	}
 	if stdout.Len() != 0 {
-		t.Fatalf("expected no attach output after picker cancel, got %q", stdout.String())
+		t.Fatalf("expected no attach output after browser cancel, got %q", stdout.String())
 	}
-	if !strings.Contains(stderr.String(), "Press Enter to cancel.") {
-		t.Fatalf("expected cancel guidance, got %q", stderr.String())
+	if len(*cockpitCalls) != 0 {
+		t.Fatalf("expected no cockpit pass after cancel, got %+v", *cockpitCalls)
 	}
 	assertRunCount(t, dbPath, 1)
 	reader, err := store.OpenReader(context.Background(), homeDir)
@@ -6616,10 +6691,10 @@ func TestAttachPickerCancelExitsZeroWithoutAttaching(t *testing.T) {
 	defer func() { _ = reader.Close() }()
 	run, found, err := reader.Run(context.Background(), runID)
 	if err != nil || !found {
-		t.Fatalf("lookup run after picker cancel: found=%v err=%v", found, err)
+		t.Fatalf("lookup run after browser cancel: found=%v err=%v", found, err)
 	}
 	if run.State != store.StateClean {
-		t.Fatalf("expected picker cancel to leave Run untouched, got %q", run.State)
+		t.Fatalf("expected browser cancel to leave Run untouched, got %q", run.State)
 	}
 }
 
@@ -6897,63 +6972,6 @@ func (source *fakeAttachSource) complete(state string) {
 	source.version++
 }
 
-type blockingLineReader struct {
-	started     chan struct{}
-	release     chan struct{}
-	startOnce   sync.Once
-	releaseOnce sync.Once
-}
-
-func newBlockingLineReader() *blockingLineReader {
-	return &blockingLineReader{
-		started: make(chan struct{}),
-		release: make(chan struct{}),
-	}
-}
-
-func (reader *blockingLineReader) Read([]byte) (int, error) {
-	reader.startOnce.Do(func() {
-		close(reader.started)
-	})
-	<-reader.release
-	return 0, io.EOF
-}
-
-func (reader *blockingLineReader) releaseRead() {
-	reader.releaseOnce.Do(func() {
-		close(reader.release)
-	})
-}
-
-func TestCollectAttachRunSelectionReturnsWhenContextCanceledDuringRead(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	stdin := newBlockingLineReader()
-	defer stdin.releaseRead()
-	resultCh := make(chan error, 1)
-	go func() {
-		_, err := collectAttachRunSelection(ctx, []store.Run{{ID: "run-1", Kind: store.KindResolve, State: store.StateActive}}, stdin, io.Discard)
-		resultCh <- err
-	}()
-	select {
-	case <-stdin.started:
-	case <-time.After(2 * time.Second):
-		t.Fatal("attach Run picker did not start reading stdin")
-	}
-
-	cancel()
-
-	select {
-	case err := <-resultCh:
-		if !errors.Is(err, context.Canceled) {
-			t.Fatalf("expected context cancellation, got %v", err)
-		}
-	case <-time.After(2 * time.Second):
-		t.Fatal("attach Run picker did not return after context cancellation")
-	}
-	stdin.releaseRead()
-}
-
 func TestAttachFollowerAppendsOnlyNewerEventsWithoutDuplicates(t *testing.T) {
 	source := &fakeAttachSource{run: store.Run{ID: "run-1", State: store.StateActive}, version: 1}
 	source.appendEvent("backlog one\n")
@@ -7171,20 +7189,54 @@ func withAttachSleep(t *testing.T, sleep func(ctx context.Context) error) {
 	})
 }
 
-func withAttachPickerInput(t *testing.T, input string) {
+type browserSessionCall struct {
+	repo   string
+	active []store.Run
+	all    []store.Run
+}
+
+// withRunBrowserSession scripts Run Browser outcomes so entry-point tests
+// drive the browser loop through the model seam, not terminal emulation.
+func withRunBrowserSession(t *testing.T, outcomes ...roundtui.BrowserOutcome) *[]browserSessionCall {
 	t.Helper()
-	oldReader := attachPickerInputReader
-	oldInteractive := attachInteractiveInputAvailable
-	attachPickerInputReader = func() io.Reader {
-		return strings.NewReader(input)
-	}
-	attachInteractiveInputAvailable = func() bool {
-		return true
+	calls := &[]browserSessionCall{}
+	old := runBrowserSession
+	runBrowserSession = func(_ context.Context, _ io.Writer, repo string, active, all []store.Run) (roundtui.BrowserOutcome, error) {
+		index := len(*calls)
+		*calls = append(*calls, browserSessionCall{repo: repo, active: active, all: all})
+		if index >= len(outcomes) {
+			t.Fatalf("unexpected Run Browser session call %d", index+1)
+		}
+		return outcomes[index], nil
 	}
 	t.Cleanup(func() {
-		attachPickerInputReader = oldReader
-		attachInteractiveInputAvailable = oldInteractive
+		runBrowserSession = old
 	})
+	return calls
+}
+
+type browserCockpitCall struct {
+	runID       string
+	concurrency int
+}
+
+// withBrowserAttachCockpit replaces the browser loop's cockpit step and
+// records each pass; a nil handler just reports success.
+func withBrowserAttachCockpit(t *testing.T, handler func(run store.Run, concurrency int) int) *[]browserCockpitCall {
+	t.Helper()
+	calls := &[]browserCockpitCall{}
+	old := browserAttachCockpit
+	browserAttachCockpit = func(_ context.Context, _ roundconfig.Loaded, _ *store.Store, run store.Run, concurrency int, _ io.Writer, _ io.Writer) int {
+		*calls = append(*calls, browserCockpitCall{runID: run.ID, concurrency: concurrency})
+		if handler == nil {
+			return exitOK
+		}
+		return handler(run, concurrency)
+	}
+	t.Cleanup(func() {
+		browserAttachCockpit = old
+	})
+	return calls
 }
 
 func withAttachInteractiveInput(t *testing.T, available bool) {
