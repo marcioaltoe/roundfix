@@ -304,16 +304,19 @@ func settleTaskAndCommit(ctx context.Context, plan settlePlan, collaborators eng
 		return "", err
 	}
 	changed = ensureSettleCommitPath(changed, settleArtifactCommitPath(plan, taskPath))
+	stageable, _ := daemon.FilterStageablePaths(plan.workDir, changed)
 	if err := spec.SetStatus(taskPath, spec.StatusCompleted); err != nil {
 		return "", fmt.Errorf("settle Task %s completed: %w", plan.task.ID, err)
 	}
-	message := daemon.TaskCommitMessage(plan.graph.Spec.Slug, plan.task)
-	if err := collaborators.committer.Commit(ctx, daemon.CommitRequest{
-		WorkDir: plan.workDir,
-		Message: message,
-		Paths:   changed,
-	}); err != nil {
-		return "", err
+	if len(stageable) > 0 {
+		message := daemon.TaskCommitMessage(plan.graph.Spec.Slug, plan.task)
+		if err := collaborators.committer.Commit(ctx, daemon.CommitRequest{
+			WorkDir: plan.workDir,
+			Message: message,
+			Paths:   stageable,
+		}); err != nil {
+			return "", err
+		}
 	}
 	shortSHA, err := settleShortHEAD(ctx, plan.workDir)
 	if err != nil {

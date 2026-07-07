@@ -700,7 +700,7 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 		return err
 	}
 	changed := ensureCommitPath(diffSnapshots(before, after), artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, task.File)))
-	stageable, dropped := filterStageablePaths(plan.WorkDir, changed)
+	stageable, dropped := FilterStageablePaths(plan.WorkDir, changed)
 	for _, drop := range dropped {
 		if err := engine.publishDroppedStagePath(ctx, plan, ordinal, task.ID, "task file", drop); err != nil {
 			return err
@@ -728,23 +728,27 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 	return nil
 }
 
-type droppedPath struct {
+// DroppedStagePath records a path omitted from a commit request because Git
+// cannot safely stage it from the worktree.
+type DroppedStagePath struct {
 	Path   string
 	Reason string
 }
 
-func filterStageablePaths(workDir string, paths []string) ([]string, []droppedPath) {
+// FilterStageablePaths keeps only repository-relative paths that do not cross
+// symlinks and reports every omitted path with the reason.
+func FilterStageablePaths(workDir string, paths []string) ([]string, []DroppedStagePath) {
 	kept := make([]string, 0, len(paths))
 	seen := make(map[string]bool, len(paths))
-	var dropped []droppedPath
+	var dropped []DroppedStagePath
 	for _, path := range paths {
 		stagePath, ok := stagePathInWorktree(workDir, path)
 		if !ok {
-			dropped = append(dropped, droppedPath{Path: filepath.Clean(path), Reason: "external to repository"})
+			dropped = append(dropped, DroppedStagePath{Path: filepath.Clean(path), Reason: "external to repository"})
 			continue
 		}
 		if pathCrossesSymlink(workDir, stagePath) {
-			dropped = append(dropped, droppedPath{Path: stagePath, Reason: "crosses a symbolic link"})
+			dropped = append(dropped, DroppedStagePath{Path: stagePath, Reason: "crosses a symbolic link"})
 			continue
 		}
 		if !seen[stagePath] {
@@ -789,8 +793,8 @@ func pathCrossesSymlink(workDir string, relative string) bool {
 	return false
 }
 
-func (engine *Engine) publishDroppedStagePath(ctx context.Context, plan TaskPlan, ordinal int, taskID string, artifactLabel string, drop droppedPath) error {
-	fmt.Fprintf(engine.deps.Progress, "roundfix: %s %s kept outside the repository; committed without it\n", artifactLabel, drop.Path)
+func (engine *Engine) publishDroppedStagePath(ctx context.Context, plan TaskPlan, ordinal int, taskID string, artifactLabel string, drop DroppedStagePath) error {
+	fmt.Fprintf(engine.deps.Progress, "roundfix: %s %s kept outside the repository; omitted from the commit\n", artifactLabel, drop.Path)
 	payload := map[string]any{
 		"decision": "dropped",
 		"path":     drop.Path,
@@ -969,7 +973,7 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 		return err
 	}
 	changed := ensureCommitPath(diffSnapshots(before, after), reportPath)
-	stageable, dropped := filterStageablePaths(plan.WorkDir, changed)
+	stageable, dropped := FilterStageablePaths(plan.WorkDir, changed)
 	for _, drop := range dropped {
 		if err := engine.publishDroppedStagePath(ctx, plan, ordinal, "", "QA Report", drop); err != nil {
 			return err

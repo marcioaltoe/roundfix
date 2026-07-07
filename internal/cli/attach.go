@@ -239,9 +239,24 @@ func collectAttachRunSelection(ctx context.Context, runs []store.Run, stdin io.R
 		stderr = io.Discard
 	}
 	fmt.Fprint(stderr, renderAttachRunPicker(runs))
-	line, err := bufio.NewReader(stdin).ReadString('\n')
-	if err != nil && err != io.EOF {
-		return "", fmt.Errorf("read attach Run picker: %w", err)
+	type readResult struct {
+		line string
+		err  error
+	}
+	resultCh := make(chan readResult, 1)
+	go func() {
+		line, err := bufio.NewReader(stdin).ReadString('\n')
+		resultCh <- readResult{line: line, err: err}
+	}()
+	var line string
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	case result := <-resultCh:
+		if result.err != nil && result.err != io.EOF {
+			return "", fmt.Errorf("read attach Run picker: %w", result.err)
+		}
+		line = result.line
 	}
 	choice := strings.TrimSpace(line)
 	if choice == "" || isAttachPickerCancelChoice(choice) {

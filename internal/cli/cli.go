@@ -1096,7 +1096,7 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 		return exitPreflight
 	}
 	specsRoot := reviewArtifactSpecsRoot(loadedConfig, preflightResult.Git.Root)
-	if strings.TrimSpace(loadedConfig.Config.Specs.Root) != filepath.Join("docs", "specs") {
+	if !reviewArtifactUsesDefaultSpecsRoot(loadedConfig.Config.Specs.Root) {
 		specsRoot, err = roundconfig.ResolveSpecsRoot(loadedConfig, preflightResult.Git.Root)
 		if err != nil {
 			printPreflightFailure(name, err, stderr)
@@ -2402,6 +2402,10 @@ func reportNonDefaultSpecsRoot(stderr io.Writer, repoRoot string, resolved round
 
 func reviewArtifactSpecsRoot(loaded roundconfig.Loaded, repoRoot string) roundconfig.SpecsRoot {
 	return roundconfig.SpecsRoot{Path: filepath.Join(repoRoot, loaded.Config.Specs.Root)}
+}
+
+func reviewArtifactUsesDefaultSpecsRoot(configured string) bool {
+	return strings.TrimSpace(configured) == "docs/specs"
 }
 
 func resolveReviewArtifactRoot(ctx context.Context, req commandRequest, preflightResult preflight.Result, specsRoot roundconfig.SpecsRoot) (string, error) {

@@ -1903,7 +1903,7 @@ func TestTaskCommitDropsSymlinkCrossingTaskFileAndCommitsRepositoryPaths(t *test
 	if got := eventPayloadString(t, dropped[0], "path"); got != taskFileRel(taskCycleSlug, "task_01") {
 		t.Fatalf("expected dropped task path %q, got %q", taskFileRel(taskCycleSlug, "task_01"), got)
 	}
-	wantWarning := "roundfix: task file " + taskFileRel(taskCycleSlug, "task_01") + " kept outside the repository; committed without it\n"
+	wantWarning := "roundfix: task file " + taskFileRel(taskCycleSlug, "task_01") + " kept outside the repository; omitted from the commit\n"
 	if !strings.Contains(fixture.progress.String(), wantWarning) {
 		t.Fatalf("expected progress warning %q, got %q", wantWarning, fixture.progress.String())
 	}
@@ -1986,7 +1986,7 @@ func TestTaskCycleQAReportExternalProceedsWithoutStaging(t *testing.T) {
 	if got := eventPayloadString(t, dropped[0], "path"); got != wantReportPath {
 		t.Fatalf("expected dropped QA path %q, got %q", wantReportPath, got)
 	}
-	if !strings.Contains(fixture.progress.String(), "roundfix: QA Report "+wantReportPath+" kept outside the repository; committed without it\n") {
+	if !strings.Contains(fixture.progress.String(), "roundfix: QA Report "+wantReportPath+" kept outside the repository; omitted from the commit\n") {
 		t.Fatalf("expected external QA progress warning, got %q", fixture.progress.String())
 	}
 }

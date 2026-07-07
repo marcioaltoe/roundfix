@@ -599,8 +599,8 @@ outcome and never opens pull requests (ADR-0021).
    entry naming the path and reason. Progress prints warnings shaped like:
 
    ```text
-   roundfix: task file <path> kept outside the repository; committed without it
-   roundfix: QA Report <path> kept outside the repository; committed without it
+   roundfix: task file <path> kept outside the repository; omitted from the commit
+   roundfix: QA Report <path> kept outside the repository; omitted from the commit
    ```
 
    If no stageable paths remain for a Task, it still settles `completed`

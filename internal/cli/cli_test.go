@@ -1433,6 +1433,18 @@ func TestReviewSpecSlugAssociation(t *testing.T) {
 	}
 }
 
+func TestReviewArtifactUsesDefaultSpecsRootMatchesConfigString(t *testing.T) {
+	if !reviewArtifactUsesDefaultSpecsRoot("docs/specs") {
+		t.Fatal("expected built-in default Spec Root to match")
+	}
+	if !reviewArtifactUsesDefaultSpecsRoot("  docs/specs  ") {
+		t.Fatal("expected whitespace-trimmed built-in default Spec Root to match")
+	}
+	if reviewArtifactUsesDefaultSpecsRoot(`docs\specs`) {
+		t.Fatal("expected OS-specific path spelling to be treated as non-default config")
+	}
+}
+
 type fakeReviewSpecGitRunner struct {
 	message string
 	calls   int
@@ -4520,6 +4532,7 @@ func createRunRequestForList(seed runListSeed) store.CreateRunRequest {
 
 func setListedRunCreatedAt(t *testing.T, homeDir string, runID string, createdAt time.Time) {
 	t.Helper()
+	ctx := t.Context()
 	db, err := sql.Open("sqlite", "file:"+store.DatabasePath(homeDir)+"?_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)")
 	if err != nil {
 		t.Fatalf("open raw Run Database: %v", err)
@@ -4529,7 +4542,8 @@ func setListedRunCreatedAt(t *testing.T, homeDir string, runID string, createdAt
 			t.Fatalf("close raw Run Database: %v", err)
 		}
 	}()
-	result, err := db.Exec(
+	result, err := db.ExecContext(
+		ctx,
 		`UPDATE runs SET created_at = ?, updated_at = ? WHERE id = ?`,
 		createdAt.UTC().Format(time.RFC3339Nano),
 		createdAt.UTC().Format(time.RFC3339Nano),
@@ -6501,6 +6515,63 @@ func (source *fakeAttachSource) complete(state string) {
 	defer source.mu.Unlock()
 	source.run.State = state
 	source.version++
+}
+
+type blockingLineReader struct {
+	started     chan struct{}
+	release     chan struct{}
+	startOnce   sync.Once
+	releaseOnce sync.Once
+}
+
+func newBlockingLineReader() *blockingLineReader {
+	return &blockingLineReader{
+		started: make(chan struct{}),
+		release: make(chan struct{}),
+	}
+}
+
+func (reader *blockingLineReader) Read([]byte) (int, error) {
+	reader.startOnce.Do(func() {
+		close(reader.started)
+	})
+	<-reader.release
+	return 0, io.EOF
+}
+
+func (reader *blockingLineReader) releaseRead() {
+	reader.releaseOnce.Do(func() {
+		close(reader.release)
+	})
+}
+
+func TestCollectAttachRunSelectionReturnsWhenContextCanceledDuringRead(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	stdin := newBlockingLineReader()
+	defer stdin.releaseRead()
+	resultCh := make(chan error, 1)
+	go func() {
+		_, err := collectAttachRunSelection(ctx, []store.Run{{ID: "run-1", Kind: store.KindResolve, State: store.StateActive}}, stdin, io.Discard)
+		resultCh <- err
+	}()
+	select {
+	case <-stdin.started:
+	case <-time.After(2 * time.Second):
+		t.Fatal("attach Run picker did not start reading stdin")
+	}
+
+	cancel()
+
+	select {
+	case err := <-resultCh:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("expected context cancellation, got %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("attach Run picker did not return after context cancellation")
+	}
+	stdin.releaseRead()
 }
 
 func TestAttachFollowerAppendsOnlyNewerEventsWithoutDuplicates(t *testing.T) {

@@ -74,8 +74,7 @@ func TestRunSettleUsesConfiguredExternalSpecRoot(t *testing.T) {
 		},
 	})
 	configureExternalSpecsRoot(t, repoDir, externalRoot)
-	committer := &fakeCommitter{}
-	withCommitter(t, committer)
+	mustWrite(t, filepath.Join(repoDir, "recovered.txt"), "preserved work\n")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -97,8 +96,12 @@ func TestRunSettleUsesConfiguredExternalSpecRoot(t *testing.T) {
 	if content := mustRead(t, implementTaskPath(repoDir, "task_01")); !strings.Contains(content, "status: pending") {
 		t.Fatalf("expected default-layout fixture untouched, got:\n%s", content)
 	}
-	if committer.calls != 1 {
-		t.Fatalf("expected one settle commit request, got %d", committer.calls)
+	task := spec.Task{ID: "task_01", Title: "Recover external task", Type: "backend"}
+	if message := strings.TrimRight(gitSettleOutput(t, repoDir, "log", "-1", "--format=%B"), "\n"); message != daemon.TaskCommitMessage(implementTestSlug, task) {
+		t.Fatalf("expected daemon Task commit message %q, got %q", daemon.TaskCommitMessage(implementTestSlug, task), message)
+	}
+	if changed := settleCommitFiles(t, repoDir); strings.Join(changed, "|") != "recovered.txt" {
+		t.Fatalf("expected only repository recovery file committed, got %v", changed)
 	}
 	assertNoRunDatabase(t, homeDir)
 }
