@@ -187,6 +187,19 @@ func (fixture *taskCycleFixture) qaPlan() TaskPlan {
 	return plan
 }
 
+func (fixture *taskCycleFixture) useExternalSpecRoot(t *testing.T, seeds []taskSpecSeed) string {
+	t.Helper()
+	specsRoot := filepath.Join(t.TempDir(), "external-specs")
+	writeSpecDirAtRootForTest(t, specsRoot, taskCycleSlug, seeds)
+	graph, err := spec.Load(specsRoot, taskCycleSlug)
+	if err != nil {
+		t.Fatalf("load external spec: %v", err)
+	}
+	fixture.specsRoot = specsRoot
+	fixture.graph = graph
+	return specsRoot
+}
+
 func (fixture *taskCycleFixture) engine(t *testing.T, runner agent.Runner, verifier Verifier, committer Committer, worktree WorktreeSnapshotter) *Engine {
 	t.Helper()
 	return fixture.engineWithTaskWorktrees(t, runner, verifier, committer, worktree, nil)
@@ -214,7 +227,12 @@ func (fixture *taskCycleFixture) engineWithTaskWorktrees(t *testing.T, runner ag
 
 func writeSpecDirForTest(t *testing.T, gitRoot string, slug string, seeds []taskSpecSeed) {
 	t.Helper()
-	specDir := filepath.Join(gitRoot, "docs", "specs", slug)
+	writeSpecDirAtRootForTest(t, filepath.Join(gitRoot, "docs", "specs"), slug, seeds)
+}
+
+func writeSpecDirAtRootForTest(t *testing.T, specsRoot string, slug string, seeds []taskSpecSeed) {
+	t.Helper()
+	specDir := filepath.Join(specsRoot, slug)
 	if err := os.MkdirAll(specDir, 0o755); err != nil {
 		t.Fatalf("create spec dir: %v", err)
 	}
@@ -258,7 +276,11 @@ func writeSpecDirForTest(t *testing.T, gitRoot string, slug string, seeds []task
 }
 
 func taskPathFor(gitRoot string, slug string, id string) string {
-	return filepath.Join(gitRoot, "docs", "specs", slug, id+".md")
+	return taskPathInSpecRootFor(filepath.Join(gitRoot, "docs", "specs"), slug, id)
+}
+
+func taskPathInSpecRootFor(specsRoot string, slug string, id string) string {
+	return filepath.Join(specsRoot, slug, id+".md")
 }
 
 func taskFileRel(slug string, id string) string {
@@ -267,7 +289,12 @@ func taskFileRel(slug string, id string) string {
 
 func taskStatusOnDisk(t *testing.T, gitRoot string, id string) string {
 	t.Helper()
-	content, err := os.ReadFile(taskPathFor(gitRoot, taskCycleSlug, id))
+	return taskStatusInSpecRootOnDisk(t, filepath.Join(gitRoot, "docs", "specs"), id)
+}
+
+func taskStatusInSpecRootOnDisk(t *testing.T, specsRoot string, id string) string {
+	t.Helper()
+	content, err := os.ReadFile(taskPathInSpecRootFor(specsRoot, taskCycleSlug, id))
 	if err != nil {
 		t.Fatalf("read task file %s: %v", id, err)
 	}
@@ -321,7 +348,7 @@ func (runner *taskFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest,
 	if taskID == "" && strings.Contains(req.Prompt, "Spec QA gate") {
 		runner.qaPrompts = append(runner.qaPrompts, req.Prompt)
 		if runner.qaReport != "" {
-			reportPath := filepath.Join(runner.gitRoot, qaReportRelPathForTest())
+			reportPath := filepath.Join(qaSpecDirFromPromptForTest(req.Prompt, runner.gitRoot), "qa", qaReportNameForTest)
 			if err := os.MkdirAll(filepath.Dir(reportPath), 0o755); err != nil {
 				return agent.ExecuteResult{}, err
 			}
@@ -359,7 +386,7 @@ func (runner *taskFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest,
 		}
 	}
 	if status, ok := runner.statusByTask[taskID]; ok {
-		if err := spec.SetStatus(taskPathFor(runner.gitRoot, taskCycleSlug, taskID), status); err != nil {
+		if err := spec.SetStatus(taskPathFromPromptForTest(req.Prompt, runner.gitRoot, taskCycleSlug, taskID), status); err != nil {
 			return agent.ExecuteResult{}, err
 		}
 	}
@@ -377,6 +404,36 @@ func taskIDFromPrompt(prompt string) string {
 		}
 	}
 	return ""
+}
+
+func taskPathFromPromptForTest(prompt string, gitRoot string, slug string, taskID string) string {
+	for _, line := range strings.Split(prompt, "\n") {
+		path, ok := strings.CutPrefix(line, "Task file: ")
+		if !ok {
+			continue
+		}
+		path = strings.TrimSpace(path)
+		if filepath.IsAbs(path) {
+			return path
+		}
+		return filepath.Join(gitRoot, path)
+	}
+	return taskPathFor(gitRoot, slug, taskID)
+}
+
+func qaSpecDirFromPromptForTest(prompt string, gitRoot string) string {
+	for _, line := range strings.Split(prompt, "\n") {
+		path, ok := strings.CutPrefix(line, "Spec directory: ")
+		if !ok {
+			continue
+		}
+		path = strings.TrimSpace(path)
+		if filepath.IsAbs(path) {
+			return path
+		}
+		return filepath.Join(gitRoot, path)
+	}
+	return filepath.Join(gitRoot, "docs", "specs", taskCycleSlug)
 }
 
 const qaReportNameForTest = "qa-report-2026-01-01.md"
@@ -723,6 +780,30 @@ func taskStartedEvents(t *testing.T, sink *captureEventSink) []string {
 		}
 	}
 	return started
+}
+
+func droppedStageEvents(t *testing.T, sink *captureEventSink) []runevent.RunEvent {
+	t.Helper()
+	var dropped []runevent.RunEvent
+	for _, event := range taskEventsOfKind(sink, runevent.KindDaemonCommit) {
+		if eventPayloadString(t, event, "decision") == "dropped" {
+			dropped = append(dropped, event)
+		}
+	}
+	return dropped
+}
+
+func hasTaskSettlementEvent(t *testing.T, events []runevent.RunEvent, taskID string, status spec.Status) bool {
+	t.Helper()
+	for _, event := range events {
+		if event.ReviewIssue != taskID {
+			continue
+		}
+		if eventPayloadString(t, event, "phase") == "settled" && eventPayloadString(t, event, "status") == string(status) {
+			return true
+		}
+	}
+	return false
 }
 
 func copyTreeForSchedulerTest(source string, destination string) error {
@@ -1781,6 +1862,132 @@ func TestTaskCycleRealRepoCommitsPerTaskExcludingPreexistingDirt(t *testing.T) {
 	}
 	if got := taskStatusOnDisk(t, repoDir, "task_02"); got != string(spec.StatusCompleted) {
 		t.Fatalf("expected forgotten status settled completed, got %q", got)
+	}
+}
+
+func TestTaskCommitDropsSymlinkCrossingTaskFileAndCommitsRepositoryPaths(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
+	externalRoot := filepath.Join(t.TempDir(), "knowledge-specs")
+	writeSpecDirAtRootForTest(t, externalRoot, taskCycleSlug, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
+	linkPath := filepath.Join(fixture.gitRoot, "docs", "specs")
+	if err := os.RemoveAll(linkPath); err != nil {
+		t.Fatalf("remove default Spec Root fixture: %v", err)
+	}
+	if err := os.Symlink(externalRoot, linkPath); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+	fixture.worktree.snapshots = [][]string{{"src/agent-change.go"}}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+	plan := fixture.plan()
+	plan.SpecsRoot = linkPath
+
+	err := engine.commitTask(context.Background(), plan, fixture.graph.Tasks[0], 1, nil)
+
+	if err != nil {
+		t.Fatalf("commitTask: %v", err)
+	}
+	if len(committer.paths) != 1 {
+		t.Fatalf("expected one Task commit, got %d", len(committer.paths))
+	}
+	if got := strings.Join(committer.paths[0], "|"); got != "src/agent-change.go" {
+		t.Fatalf("expected only repository path staged, got %q", got)
+	}
+	dropped := droppedStageEvents(t, fixture.sink)
+	if len(dropped) != 1 {
+		t.Fatalf("expected one dropped-path event, got %+v", dropped)
+	}
+	if got := eventPayloadString(t, dropped[0], "reason"); got != "crosses a symbolic link" {
+		t.Fatalf("expected symlink reason, got %q", got)
+	}
+	if got := eventPayloadString(t, dropped[0], "path"); got != taskFileRel(taskCycleSlug, "task_01") {
+		t.Fatalf("expected dropped task path %q, got %q", taskFileRel(taskCycleSlug, "task_01"), got)
+	}
+	wantWarning := "roundfix: task file " + taskFileRel(taskCycleSlug, "task_01") + " kept outside the repository; committed without it\n"
+	if !strings.Contains(fixture.progress.String(), wantWarning) {
+		t.Fatalf("expected progress warning %q, got %q", wantWarning, fixture.progress.String())
+	}
+}
+
+func TestTaskCycleSettlesCompletedWithoutCommitWhenOnlyExternalTaskFileChanged(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "External artifact only"}})
+	externalRoot := fixture.useExternalSpecRoot(t, []taskSpecSeed{{id: "task_01", title: "External artifact only"}})
+	fixture.worktree.snapshots = [][]string{nil, nil}
+	runner := &taskFakeRunner{
+		calls:        fixture.calls,
+		gitRoot:      fixture.gitRoot,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 || result.Skipped != 0 {
+		t.Fatalf("expected the external-only Task completed, got %+v", result)
+	}
+	if len(committer.messages) != 0 {
+		t.Fatalf("expected no commit when only the external task file changed, got %v", committer.messages)
+	}
+	if got := taskStatusInSpecRootOnDisk(t, externalRoot, "task_01"); got != string(spec.StatusCompleted) {
+		t.Fatalf("expected external task settled completed, got %q", got)
+	}
+	taskEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonTask)
+	if !hasTaskSettlementEvent(t, taskEvents, "task_01", spec.StatusCompleted) {
+		t.Fatalf("expected normal settled event, got %+v", taskEvents)
+	}
+	dropped := droppedStageEvents(t, fixture.sink)
+	if len(dropped) != 1 {
+		t.Fatalf("expected one dropped-path event, got %+v", dropped)
+	}
+	if got := eventPayloadString(t, dropped[0], "reason"); got != "external to repository" {
+		t.Fatalf("expected external reason, got %q", got)
+	}
+	wantPath := taskPathInSpecRootFor(externalRoot, taskCycleSlug, "task_01")
+	if got := eventPayloadString(t, dropped[0], "path"); got != wantPath {
+		t.Fatalf("expected dropped external path %q, got %q", wantPath, got)
+	}
+}
+
+func TestTaskCycleQAReportExternalProceedsWithoutStaging(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	externalRoot := fixture.useExternalSpecRoot(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	fixture.worktree.snapshots = [][]string{nil, nil}
+	runner := &taskFakeRunner{
+		calls:    fixture.calls,
+		gitRoot:  fixture.gitRoot,
+		qaReport: qaReportForTest(spec.VerdictPass),
+	}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.qaPlan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	wantReportPath := filepath.Join(externalRoot, taskCycleSlug, "qa", qaReportNameForTest)
+	if result.QAVerdict != spec.VerdictPass || result.QAReportPath != wantReportPath {
+		t.Fatalf("expected external QA pass report %q, got %+v", wantReportPath, result)
+	}
+	if len(committer.messages) != 0 {
+		t.Fatalf("expected no commit for an external QA Report, got %v", committer.messages)
+	}
+	dropped := droppedStageEvents(t, fixture.sink)
+	if len(dropped) != 1 {
+		t.Fatalf("expected one dropped QA report event, got %+v", dropped)
+	}
+	if got := eventPayloadString(t, dropped[0], "reason"); got != "external to repository" {
+		t.Fatalf("expected external reason, got %q", got)
+	}
+	if got := eventPayloadString(t, dropped[0], "path"); got != wantReportPath {
+		t.Fatalf("expected dropped QA path %q, got %q", wantReportPath, got)
+	}
+	if !strings.Contains(fixture.progress.String(), "roundfix: QA Report "+wantReportPath+" kept outside the repository; committed without it\n") {
+		t.Fatalf("expected external QA progress warning, got %q", fixture.progress.String())
 	}
 }
 
