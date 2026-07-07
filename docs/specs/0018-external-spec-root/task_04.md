@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0018-external-spec-root
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -31,17 +31,17 @@ the drift check and by reading the docs against shipped behavior.
 
 ## Subtasks
 
-- [ ] README Config and Command Boundaries updates
-- [ ] Usage guide updates
-- [ ] roundfix SKILL.md update and `make skills-sync`
-- [ ] Drift and skills checks pass
+- [x] README Config and Command Boundaries updates
+- [x] Usage guide updates
+- [x] roundfix SKILL.md update and `make skills-sync`
+- [x] Drift and skills checks pass
 
 ## Acceptance Criteria
 
-- [ ] README documents `specs.root` with its default, precedence, resolution,
+- [x] README documents `specs.root` with its default, precedence, resolution,
       validation, and the external commit rule.
-- [ ] The usage guide no longer assumes an in-repository Spec Root.
-- [ ] `make skills-sync-check` reports no drift and `roundfix skills check`
+- [x] The usage guide no longer assumes an in-repository Spec Root.
+- [x] `make skills-sync-check` reports no drift and `roundfix skills check`
       passes.
 
 ## Verification
@@ -53,3 +53,35 @@ the drift check and by reading the docs against shipped behavior.
 
 `_prd.md` → Goals; User Experience. `_techspec.md` → Build Order 4; Risks
 (shim removal). ADR-0035. CLAUDE.md SKILL.md-matches-CLI HARD RULE.
+
+## Result
+
+Implemented the docs and skill-sync slice for External Spec Root.
+
+- README Config now documents `specs.root` with default `docs/specs`, Project
+  Config over User Config over built-in precedence, relative and absolute path
+  resolution, validation failures that name the resolved path, and the external
+  predicate. README Command Boundaries now documents non-default startup
+  reporting, external/symlink-crossing artifact drops, warning shapes, external
+  Task settle-without-commit behavior, external QA Report behavior, and the
+  requirement to remove temporary git shims that hid symlink pathspec failures.
+- `docs/usage.md` now describes Spec execution from the resolved Spec Root
+  instead of assuming an in-repository `docs/specs` root. Its remaining
+  `docs/specs` reference is explicitly the default layout.
+- `.agents/skills/roundfix/SKILL.md` now documents Spec Root resolution,
+  worktree stability, non-default startup reporting, Interactive Input listing
+  from the resolved root, external commit-boundary warnings, and archive/review
+  artifact locations. Ran `rtk make skills-sync`, which regenerated
+  `skills/roundfix/SKILL.md` from the canonical skill.
+
+Evidence:
+
+- `rtk make skills-sync-check` exited 0 with no drift output.
+- `rtk go run -buildvcs=false ./cmd/roundfix skills check` passed:
+  `Roundfix skill check passed: roundfix, write-idea, write-prd, write-techspec,
+  write-tasks, setup-workflow, implement-task, implement-spec, brainstorming,
+  council, business-analyst, archive-spec, qa-gate, evidence-gate`.
+- `rtk make verify` passed. It ran `rtk go test ./...` with
+  `859 passed in 18 packages`, `roundfix skills check`, and
+  `rtk go build -buildvcs=false -o bin/roundfix ./cmd/roundfix`; fmt-check and
+  skills-sync-check produced no failure output.

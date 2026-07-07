@@ -39,9 +39,15 @@ An Agent runtime is selected with `--agent`; supported values are `codex`,
 
 ## Loop 1 — context-driven implementation
 
-Execute a Spec's Task Graph (`docs/specs/<slug>/`) as one Run. Tasks run in
-dependency order by Wave, each Task's Verification commands gate one commit, and
-the Run never pushes unless `implement.auto_push: true` and the outcome is Clean.
+Execute a Spec's Task Graph from the resolved Spec Root as one Run. The default
+root is `docs/specs`, so the default Spec path is `docs/specs/<slug>/`.
+Configure `specs.root` in User Config or Project Config to use a different
+directory; relative values resolve against the repository root, and absolute
+values are used as-is. Roundfix resolves that root once from the user's checkout
+and carries it into Run and Task Worktrees, so every surface reads and writes the
+same Spec artifacts. Tasks run in dependency order by Wave, each Task's
+Verification commands gate one commit, and the Run never pushes unless
+`implement.auto_push: true` and the outcome is Clean.
 
 ### Foreground
 
@@ -67,6 +73,16 @@ All 2 Task(s) already completed; no Run was created.
 
 Add `--qa` to end the Run with the qa-gate step; only a `pass` verdict lets the
 Run end Clean, and the report gains a `qa <verdict> — <report path>` line.
+
+When the resolved Spec Root is outside the repository, or a task file or QA
+Report path crosses a symbolic link, Daemon commits leave that artifact out of
+the code-repository commit. The progress stream prints warnings such as
+`roundfix: task file <path> kept outside the repository; committed without it`,
+and the Run Event Journal records the dropped path and reason. If a Task's only
+change is its external task file, it still settles `completed` without a commit;
+an external QA Report likewise leaves the QA step free to proceed. Remove any
+temporary git shims that hid symlink pathspec failures after upgrading to a
+Roundfix build with this behavior.
 
 ### Detached, then monitor
 
@@ -132,7 +148,8 @@ Tasks are skipped.
 
 ### Advance
 
-When a Spec ends Clean and QA passes, archive it and move on:
+When a Spec ends Clean and QA passes, archive it inside the resolved Spec Root
+and move on:
 
 ```bash
 roundfix archive <slug>

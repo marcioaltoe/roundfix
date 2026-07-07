@@ -126,6 +126,22 @@ config: resolve.concurrent is deprecated and ignored; use worktree.concurrency
 Unknown keys that are not in the deprecation registry still fail strict
 validation.
 
+`specs.root` is a User Config and Project Config key that defaults to
+`docs/specs`. Project Config overrides User Config, which overrides the
+built-in default. Relative values resolve against the repository root of the
+user's checkout; absolute values are used as-is. Roundfix resolves the Spec
+Root once per command and carries that absolute path into Run and Task
+Worktrees, so Worktrees read and write the same Spec artifacts as the checkout.
+Validation rejects an empty root, a missing root, or a root that is not a
+directory, and the Preflight Validation message names the resolved path. When
+the resolved root is outside the repository working tree after symlink
+evaluation, Spec artifacts are external and stay out of code-repository
+commits. A non-default root at Implement Run startup prints one stderr line:
+
+```text
+Spec Root: <path>
+```
+
 `logs.agent` is a User Config and Project Config key that defaults to `false`.
 When it is false, Roundfix writes no per-Batch Agent log files. The Run Event
 Journal still records every Agent payload, and `--no-agent-console` only hides
@@ -445,12 +461,12 @@ which `round-*` is written with this ADR-0029 hierarchy:
 
 - Explicit `--artifact-dir` or `defaults.artifact_dir` preserves the legacy
   layout: `<artifact_dir>/reviews/pr-<number>/round-*`.
-- Otherwise, explicit `--spec <slug>` wins. If `docs/specs/<slug>/` exists,
-  artifacts go to `docs/specs/<slug>/reviews/round-*`.
+- Otherwise, explicit `--spec <slug>` wins. If `<specs.root>/<slug>/` exists,
+  artifacts go to `<specs.root>/<slug>/reviews/round-*`.
 - Otherwise, Roundfix uses the newest `Roundfix-Spec: <slug>` trailer on the
   PR head commit when that Spec folder exists.
 - Without a valid Spec association, artifacts go to
-  `docs/specs/_reviews/pr-<number>/round-*`.
+  `<specs.root>/_reviews/pr-<number>/round-*`.
 
 Unknown or invalid trailer slugs are treated as no association. Roundfix never
 commits or gitignores review artifacts; repository owners decide whether to
@@ -502,7 +518,8 @@ outcome and never opens pull requests (ADR-0021).
    ```
 
 2. Flags:
-   - `--spec` — Spec slug under `docs/specs/`.
+   - `--spec` — Spec slug under the resolved Spec Root (`docs/specs/` by
+     default).
    - `--qa` — end the Run with the qa-gate step once every Task is completed;
      only a `pass` verdict lets the Run end Clean. Any other verdict — or a
      missing or unreadable QA Report — ends the Run Unresolved.
@@ -533,6 +550,9 @@ outcome and never opens pull requests (ADR-0021).
      branch, one final line follows the outcome: `pushed <remote>/<branch>`.
      A tested example is `pushed origin/ma/widget-flow`.
 
+   When the resolved Spec Root is not the default `<repo>/docs/specs`, Run
+   startup prints `Spec Root: <path>` on stderr.
+
    The spec Run header names the effective concurrency with this shape:
 
    ```text
@@ -551,13 +571,30 @@ outcome and never opens pull requests (ADR-0021).
    checkout no longer blocks `implement`; stderr prints a note shaped like
    `roundfix: note: working tree <path> has N uncommitted change(s); implement will run in a Run Worktree, and overlapping local changes end the Run Integration Pending.`
 
+   Daemon Task and QA commits stage only repository paths that do not cross a
+   symbolic link. A task file or QA Report outside the repository, or reached
+   through a symlinked path, is dropped from staging with one Run Event Journal
+   entry naming the path and reason. Progress prints warnings shaped like:
+
+   ```text
+   roundfix: task file <path> kept outside the repository; committed without it
+   roundfix: QA Report <path> kept outside the repository; committed without it
+   ```
+
+   If no stageable paths remain for a Task, it still settles `completed`
+   without a commit and publishes the normal settled event. An external QA
+   Report is left uncommitted and the QA step proceeds. Remove temporary git
+   shims that hid symlink pathspec failures after upgrading to a Roundfix
+   build with this behavior; those shims can mask regressions in the real
+   commit boundary.
+
 6. Without `--spec`, Interactive Input lists the repository's active Specs
-   under an `Active Specs:` picker that accepts a number or a slug, and the
-   agent field suggests the remembered Agent. The final `QA gate [y/N]` field
-   enables the qa-gate step for that Run; when `--qa` was passed, the prompt is
-   `QA gate [Y/n]` and Enter keeps QA on. The Agent is remembered across runs;
-   the Spec slug and QA choice never are. `--no-input` fails instead of
-   opening Interactive Input.
+   from the resolved Spec Root under an `Active Specs:` picker that accepts a
+   number or a slug, and the agent field suggests the remembered Agent. The
+   final `QA gate [y/N]` field enables the qa-gate step for that Run; when
+   `--qa` was passed, the prompt is `QA gate [Y/n]` and Enter keeps QA on. The
+   Agent is remembered across runs; the Spec slug and QA choice never are.
+   `--no-input` fails instead of opening Interactive Input.
 
 7. Discover spec Runs with `roundfix runs list --active` or open the picker
    with `roundfix attach` when the Run ID was not captured. Attach directly
@@ -621,9 +658,9 @@ archived Spec without owning the Run's terminal in the foreground. It composes
 the Implement, Attach, Settle, Stop, and Archive commands documented above.
 
 1. **Prepare.** Work on a non-default branch and confirm readiness with
-   `roundfix doctor`. Pick the Spec slug under `docs/specs/`. Do not edit files
-   the Run will touch once it is Active; overlapping local edits end the Run
-   Integration Pending.
+   `roundfix doctor`. Pick the Spec slug under the resolved Spec Root
+   (`docs/specs/` by default). Do not edit files the Run will touch once it is
+   Active; overlapping local edits end the Run Integration Pending.
 
 2. **Start detached.** Launch the Run without owning its lifetime:
 
@@ -694,7 +731,8 @@ recorded on the latest kept Run, then the current repository.
 
 Flags:
 
-- `--spec` — Spec slug under `docs/specs/`.
+- `--spec` — Spec slug under the resolved Spec Root (`docs/specs/` by
+  default).
 - `--task` — Task id from the Spec Task Graph.
 
 Preflight Validation exits `2` with one actionable message when either flag is
@@ -755,8 +793,9 @@ Before touching the filesystem, it verifies every Task in the Spec's Task Graph
 has `status: completed` and that the newest QA Report has `verdict: pass`.
 
 On pass, archive stamps `_prd.md` with `status: archived`, `archived`, and
-`source_slug`, then moves `docs/specs/<slug>/` to
-`docs/specs/_archived/<slug>/`. stdout carries the deterministic report:
+`source_slug`, then moves `<specs.root>/<slug>/` to
+`<specs.root>/_archived/<slug>/`. With the default Spec Root, stdout carries
+the deterministic report:
 
 ```text
 archived <slug> -> docs/specs/_archived/<slug>

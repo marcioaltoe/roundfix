@@ -344,9 +344,23 @@ it, or set `NO_COLOR` to suppress color.
   scheduler executes the current Wave up to `worktree.concurrency` at a time
   (default `2`; `1` keeps sequential behavior), with concurrently running
   Tasks in Task Worktrees and one commit per completed Task on the Run Branch.
-  `implement.auto_push: true` makes a Clean spec Run push its branch upstream
-  and append `pushed <remote>/<branch>` to stdout. Integration Pending,
-  Unresolved Outcome, Failed, Stopped, and failing-QA Runs never push.
+  It resolves `specs.root` once from the user's checkout; when the resolved
+  path is not the default `<repo>/docs/specs`, startup prints
+  `Spec Root: <path>` on stderr. `implement.auto_push: true` makes a Clean spec
+  Run push its branch upstream and append `pushed <remote>/<branch>` to stdout.
+  Integration Pending, Unresolved Outcome, Failed, Stopped, and failing-QA
+  Runs never push.
+- Daemon Task and QA commits stage only repository paths that do not cross a
+  symbolic link. A task file or QA Report outside the repository, or reached
+  through a symlinked path, is dropped from staging with one Run Event Journal
+  entry naming the path and reason. The progress warning is shaped like
+  `roundfix: task file <path> kept outside the repository; committed without
+  it` or `roundfix: QA Report <path> kept outside the repository; committed
+  without it`. If no stageable paths remain for a Task, the Task still settles
+  `completed` without a commit. An external QA Report is likewise left
+  uncommitted and the QA step proceeds. Remove any temporary git shims that hid
+  symlink pathspec failures after upgrading to a Roundfix build with this
+  behavior; those shims can mask regressions in the real commit boundary.
 - `resolve`, `watch`, and `implement` accept `--detach` to start a Detached
   Run. The foreground command prints the four-line report, exits `0`, and
   leaves follow-up control to `roundfix attach <run-id>` and
@@ -363,9 +377,10 @@ it, or set `NO_COLOR` to suppress color.
   touching the filesystem, it verifies every Task in the Spec's Task Graph is
   `completed` and that the newest QA Report has `verdict: pass`. On pass, it
   stamps `_prd.md` with `status: archived`, `archived`, and `source_slug`, then
-  moves `docs/specs/<slug>/` to `docs/specs/_archived/<slug>/`. Refusals exit
-  `2`, write the Preflight Validation failure to stderr, and leave the folder
-  in place.
+  moves `<specs.root>/<slug>/` to `<specs.root>/_archived/<slug>/`. With the
+  default Spec Root, stdout reports `docs/specs/_archived/<slug>`. Refusals
+  exit `2`, write the Preflight Validation failure to stderr, and leave the
+  folder in place.
 - `gc` is non-interactive. It resolves `store.journal_retention`, computes the
   cutoff, prunes eligible terminal Runs' Run Event Journal rows and
   `<artifact-dir>/runs/<run-id>` directories, removes orphaned `runs/<id>`
@@ -373,7 +388,7 @@ it, or set `NO_COLOR` to suppress color.
   rows, and artifact bytes reclaimed on stdout. `--dry-run` lists the same
   eligible set without deleting anything. `journal_retention: 0` skips pruning
   and reports that no pruning was performed. Retention never deletes Active
-  Runs, `runs` rows, active-run locks, or Review artifacts under `docs/specs/`.
+  Runs, `runs` rows, active-run locks, or Review artifacts under the Spec Root.
 - `runs list` is read-only and writes only the listing report to stdout. By
   default it scopes to the current repository and exits `2` outside a Git
   repository, naming `--all` as the alternative. `--all` widens the listing to
@@ -422,6 +437,17 @@ replacement. The current deprecated key is `resolve.concurrent`, which prints
 and then continues. Unknown keys that are not registered as deprecated still
 fail strict validation.
 
+`specs.root` is the directory that holds Spec folders. It defaults to
+`docs/specs`; Project Config overrides User Config, which overrides the
+built-in default. Relative values resolve against the repository root, and
+absolute values are used as-is. Roundfix resolves the Spec Root once at command
+start and carries that absolute path into Run and Task Worktrees, so Worktrees
+read and write the same Spec artifacts as the user's checkout. Validation
+rejects an empty root, a missing root, or a root that is not a directory; the
+error names the resolved path. When the resolved root is outside the repository
+working tree after symlink evaluation, Spec artifacts are external and are not
+staged into code-repository commits.
+
 Example:
 
 ```yaml
@@ -446,6 +472,10 @@ watch:
 
 implement:
   auto_push: false
+
+specs:
+  # Directory holding Spec folders; relative values resolve against the repo root.
+  root: "docs/specs"
 
 worktree:
   # Parent directory; Roundfix always appends <repo-slug>/<run-id>[.<task_id>].
@@ -497,6 +527,8 @@ Use `roundfix gc --dry-run` to preview the same terminal Run set, and
 - Run Database: `~/.roundfix/roundfix.db`
 - Run Worktrees: `<worktree.location>/<repo-slug>/<run-id>`
 - Task Worktrees: `<worktree.location>/<repo-slug>/<run-id>.<task_id>`
+- Spec Root: `specs.root`, defaulting to `<repo>/docs/specs`. Relative values
+  resolve against the repository root; absolute values are used as-is.
 - Default Artifact Directory: Roundfix Home `artifacts/<repo-id>`, used for
   Artifact Directory-backed Run files and as the base when an explicit
   Artifact Directory is configured.
@@ -504,21 +536,20 @@ Use `roundfix gc --dry-run` to preview the same terminal Run set, and
   - Explicit `--artifact-dir` or `defaults.artifact_dir` preserves the legacy
     layout: `<artifact-dir>/reviews/pr-<number>/round-<nnn>/issue_<nnn>.md`.
   - Otherwise, a PR associated with a Spec writes
-    `docs/specs/<slug>/reviews/round-<nnn>/issue_<nnn>.md`.
+    `<specs.root>/<slug>/reviews/round-<nnn>/issue_<nnn>.md`.
   - Without a valid Spec association, review artifacts write to
-    `docs/specs/_reviews/pr-<number>/round-<nnn>/issue_<nnn>.md`.
+    `<specs.root>/_reviews/pr-<number>/round-<nnn>/issue_<nnn>.md`.
 - Per-Batch Agent logs, only when `logs.agent: true`:
   `<artifact-dir>/runs/<run-id>/agent/batch-<nnn>.log`
 - Detached Run console log, always written for Detached Runs:
   `<artifact-dir>/runs/<run-id>/console.log`
 - Journal Retention prunes only terminal Run Event Journal rows and
-  `<artifact-dir>/runs/<run-id>` directories. Review artifacts under
-  `docs/specs/<slug>/reviews/` or `docs/specs/_reviews/` are outside retention
-  scope.
+  `<artifact-dir>/runs/<run-id>` directories. Review artifacts under the Spec
+  Root are outside retention scope.
 
 For review commands, explicit `--spec <slug>` wins over trailer discovery. When
 `--spec` is absent, Roundfix uses the newest `Roundfix-Spec: <slug>` trailer on
-the PR head commit only if `docs/specs/<slug>/` exists; an unknown or invalid
+the PR head commit only if `<specs.root>/<slug>/` exists; an unknown or invalid
 slug falls back to the spec-less `_reviews` path. Roundfix never commits or
 gitignores review artifacts, so versioning them stays a repository decision.
 ADR-0030 keeps per-Batch Agent log files off by default because the Run Event
