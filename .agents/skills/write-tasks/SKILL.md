@@ -31,6 +31,8 @@ Turn `docs/specs/<slug>/_prd.md` (and `_techspec.md` when present) into the exec
 - **Sized for one fresh session.** A task an agent can complete in a single sitting with a fresh context. More than ~7 subtasks or files means split it.
 - **Tests embedded, never separated.** Every task's acceptance criteria include its own tests; a trailing "write the tests" task means the earlier tasks were never done.
 - **Independently implementable.** Once its `needs` are completed, a task must require no other unfinished work — that's what allows parallel execution across worktrees later.
+- **Verification must be hermetic.** Every task's `## Verification` commands must be satisfiable in a fresh worktree using only repository state, declared config, and task-owned setup. Do not depend on untracked local files, prior Runs, interactive prompts, pushed branches, or ambient machine state unless the task explicitly creates that state.
+- **Commit and push stay out of task criteria.** The Daemon owns Task commits, Run integration, and any configured push. Never put commit, push, PR creation, or branch-publishing requirements in task Requirements, Subtasks, Acceptance Criteria, or Verification commands.
 
 ## Process
 
@@ -44,7 +46,7 @@ Present the breakdown as a table (`id | title | type | complexity | needs`) plus
 
 ### 3. Write the files
 
-From the templates in [references/task-template.md](references/task-template.md), write `_tasks.md` and every `task_NN.md` (numbered from `01` in topological order). Acceptance criteria must be independently verifiable — a criterion nobody can check is a wish, not a criterion. Include a `## Verification` section with the exact commands that prove the task done; `implement-task` runs them verbatim.
+From the templates in [references/task-template.md](references/task-template.md), write `_tasks.md` and every `task_NN.md` (numbered from `01` in topological order). Acceptance criteria must be independently verifiable — a criterion nobody can check is a wish, not a criterion. Include a `## Verification` section with exact, hermetic commands that prove the task done in a fresh worktree; `implement-task` and the Daemon run them verbatim.
 
 Durability applies here too: describe behavior and interfaces, not repo file paths (relative references within the spec folder are fine — the folder moves as a unit).
 
@@ -67,6 +69,8 @@ Reply with the file list and the wave plan.
 - Horizontal slicing (a schema task, an API task, a UI task) — every task should cut through the stack.
 - Mega-tasks that "do the feature" — if it can't be verified alone, it isn't a task yet.
 - Vague criteria ("works correctly", "handles errors") — name the observable behavior.
+- Non-hermetic Verification that relies on local-only files, prior Run state, manual prompts, or remote branch state.
+- Commit, push, PR, or branch-publishing acceptance criteria — those are Daemon and delivery responsibilities, not task success criteria.
 - Editing the graph and the task files out of sync — regenerate both from the approved breakdown.
 - Writing files before the user approves the breakdown.
 

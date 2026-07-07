@@ -389,10 +389,16 @@ read/write artifact work only: it starts no Agent and creates no Run Worktree.
 - Run startup reports the execution workspace on stderr with
   `Run Worktree: <path>`. Terminal outcomes that keep the workspace report
   `Run Worktree kept: <path>`.
-- Integrated Clean outcomes remove the Run Worktree and delete the Run Branch.
-  Integration Pending, Unresolved, Failed, Stopped, BudgetExceeded,
-  TimedOut, and any other non-integrated outcome keep the Run Worktree and
-  Run Branch.
+- Integrated Clean outcomes remove the Run Worktree with
+  `git worktree remove --force` and delete the Run Branch. If cleanup fails
+  after integration, the Run stays Clean: stderr prints exactly one warning
+  shaped as
+  `roundfix: Run Worktree cleanup failed; kept <path>: <reason>`, the Daemon
+  journals one Run Event, and the exit code and stdout report stay unchanged.
+  The kept path remains available for manual inspection and later terminal
+  Worktree reaping. Integration Pending, Unresolved, Failed, Stopped,
+  BudgetExceeded, TimedOut, and any other non-integrated outcome keep the Run
+  Worktree and Run Branch.
 - `watch` reuses one Run Worktree across all Rounds in the Run.
 - A new Run Worktree starts from committed Git state. Untracked files in the
   user's checkout are not present unless they are listed in `worktree.copy`;
@@ -792,6 +798,12 @@ verify test -f done.txt — ok
 verify test -f missing.txt — failed
 task_01 stays failed — verification failed
 ```
+
+If a Task's Verification is unsatisfiable because the task file names a
+non-hermetic or impossible command, fix that task file's `## Verification`
+section and re-run Settle. Settle re-reads the task file on each invocation.
+There is no skip-verification flag: Verification is the only gate before
+settling, committing, or integrating Task work.
 
 Exit codes: `0` means settled completed and committed, `1` means verification
 failed or post-verification integration failed, and `2` means Preflight

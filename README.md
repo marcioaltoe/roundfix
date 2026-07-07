@@ -379,6 +379,13 @@ it, or set `NO_COLOR` to suppress color.
   child. Notification failures write one stderr warning shaped as
   `roundfix: outcome notification failed: <reason>` and one Daemon-source Run
   Event; they never change the Run report, terminal outcome, or exit code.
+- Clean Run cleanup and terminal Worktree reaping remove Roundfix-owned
+  worktrees with `git worktree remove --force`, so untracked bootstrap debris
+  does not block removal. If Run Worktree cleanup fails after successful
+  integration, the Run keeps its Clean outcome, stdout report, and exit code;
+  stderr prints exactly one warning shaped as
+  `roundfix: Run Worktree cleanup failed; kept <path>: <reason>`, and the
+  Daemon journals one Run Event.
 - `settle` targets one failed Task by resolving its kept Task Worktree first,
   then its kept Run Worktree, then the current repository. It re-runs the
   Task's Verification commands in the selected tree, changes nothing when
