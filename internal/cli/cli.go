@@ -52,7 +52,7 @@ Usage:
   roundfix doctor
   roundfix gc [--dry-run]
   roundfix upgrade [--check]
-  roundfix runs list [--all] [--active]
+  roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]
   roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
   roundfix attach [<run-id>] [--no-input]
   roundfix skills check
@@ -2971,17 +2971,21 @@ Options:
 `
 	case "runs":
 		return `Usage:
-  roundfix runs list [--all] [--active]
+  roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]
 
 Lists Runs from the Run Database newest first. By default the listing is
-scoped to the current repository.
+scoped to the current repository and shows the 20 newest Active Runs. When
+the state filter or the bound hides Runs, one trailing stderr note names the
+hidden count and the widening flag.
 
 Commands:
-  list  Print Run id, state, kind, and target columns
+  list  Print run id, state, kind, target, agent, start time (UTC), duration,
+        and local branch columns
 
 Options:
-  --all     List Runs from every repository and include the repository column
-  --active  List only Active Runs
+  --all    List Runs from every repository and include the repository column
+  --state  Filter by Run state: active (default), terminal, or all
+  --limit  Print at most N matching Runs, newest first; 0 lists all (default 20)
 `
 	case "fetch":
 		return `Usage:

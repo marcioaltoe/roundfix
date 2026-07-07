@@ -51,7 +51,7 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 	missingRunID := strings.TrimSpace(req.runID) == ""
 	if missingRunID && (req.noInput || !attachInteractiveInputAvailable()) {
-		printAttachFailure(validationError{message: "missing Run ID; run 'roundfix runs list' to discover Runs or pass a Run ID"}, stderr)
+		printAttachFailure(validationError{message: "missing run id in non-interactive mode; pass a run id or run 'roundfix runs list' to discover Runs"}, stderr)
 		return exitPreflight
 	}
 	loaded, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
@@ -86,7 +86,7 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitPreflight
 	}
 	if !found {
-		printAttachFailure(fmt.Errorf("Run %q does not exist", req.runID), stderr)
+		printAttachFailure(fmt.Errorf("Run %q does not exist; picker numbers are not stable Run ids — pass a run id or run 'roundfix attach' to pick interactively", req.runID), stderr)
 		return exitPreflight
 	}
 
