@@ -294,12 +294,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			outcome = store.StateIntegrationPending
 			integrationCommand = implementIntegrationCommand(runRef)
 		} else if err := cleanupCleanRunWorktree(ctx, runRef); err != nil {
-			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
-			markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
-			ui.Wait()
-			ui.Close()
-			printImplementRunFailureWithWorktree(err, runRef.Path, stderr)
-			return exitRunFailed
+			warnCleanRunWorktreeCleanupFailed(ctx, runStore, run.ID, runRef.Path, err, stderr)
 		}
 	}
 	pushResult := implementPushResult{}

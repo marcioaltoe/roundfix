@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0022-cleanup-robustness
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -28,22 +28,22 @@ worktree full of untracked files.
 
 ## Subtasks
 
-- [ ] `--force` on all removal call sites
-- [ ] Warn-and-continue on the post-integration clean paths (implement,
+- [x] `--force` on all removal call sites
+- [x] Warn-and-continue on the post-integration clean paths (implement,
       resolve/watch)
-- [ ] Journal event for the kept worktree
-- [ ] Tests: removal with untracked debris; failing cleanup after Clean
+- [x] Journal event for the kept worktree
+- [x] Tests: removal with untracked debris; failing cleanup after Clean
       leaves report and exit code identical and emits warning + event
 
 ## Acceptance Criteria
 
-- [ ] A worktree containing untracked files and a nested directory is
+- [x] A worktree containing untracked files and a nested directory is
       removed successfully on Clean cleanup.
-- [ ] With a cleanup failure injected after integration, the command's
+- [x] With a cleanup failure injected after integration, the command's
       stdout report and exit code are byte-identical to the success case,
       stderr carries the warning naming the kept path, and the journal has
       the event.
-- [ ] Existing kept-worktree behavior for non-integrated outcomes is
+- [x] Existing kept-worktree behavior for non-integrated outcomes is
       unchanged.
 
 ## Verification
@@ -57,3 +57,42 @@ worktree full of untracked files.
 
 `_prd.md` → Core Features 1-2. `_techspec.md` → System Architecture; API
 Contracts; Build Order 1; Risks.
+
+## Result
+
+Implemented forced removal for Roundfix-owned Run Worktree, Task Worktree,
+and terminal Worktree reap paths by adding `--force` to each
+`git worktree remove` call. Clean post-integration cleanup failures in
+Implement, Resolve, and Watch now warn, journal a Daemon status event, and
+continue to the existing Clean completion/report path.
+
+Evidence:
+
+- `rtk go test ./internal/worktree/ ./internal/cli/`: passed, 348 tests in
+  2 packages. Before the production fix, the new debris and cleanup-failure
+  tests failed against the old behavior.
+- `rtk make verify`: passed. It ran `rtk go test ./...` with 887 tests in
+  19 packages, `rtk go run -buildvcs=false ./cmd/roundfix skills check`
+  with all bundled skills passing, and
+  `rtk go build -buildvcs=false -o bin/roundfix ./cmd/roundfix`.
+
+Acceptance criteria:
+
+- Debris removal: `TestCleanupCleanRemovesRunWorktreeWithUntrackedDebris`
+  passed with an untracked file plus nested `node_modules/cache` directory.
+  `TestCleanupTaskRemovesTaskWorktreeWithUntrackedDebris` and
+  `TestPruneTerminalReapsOnlyEmptyTerminalRunAndTaskBranches` cover the
+  Task Worktree and terminal reap removal sites with the same debris shape.
+- Post-integration cleanup failure: `TestRunImplementCleanCleanupFailureWarnsAndJournalsWithoutChangingReportOrExit`,
+  `TestRunCleanCleanupFailureWarnsAndJournalsWithoutChangingReportOrExit`,
+  and `TestRunWatchCleanCleanupFailureWarnsAndJournalsWithoutChangingReportOrExit`
+  passed. Each compares stdout and exit code against a Clean success case,
+  checks exactly one warning naming the kept path, verifies the Run remains
+  Clean, and finds the Daemon-source journal event with the path and reason.
+- Kept-worktree behavior for non-integrated outcomes stayed covered by the
+  unchanged tests in the same focused gate, including
+  `TestRunImplementOverlapEndsIntegrationPendingAndPrintedCommandWorks`,
+  `TestRunImplementUnresolvedKeepsRealRunWorktreeAndPrintsPath`,
+  `TestRunImplementFailedTaskEndsUnresolvedAndKeepsWorktree`,
+  `TestRunResolveWorktreeIsolationExcludesConcurrentUserCommit`, and
+  `TestIntegrateTaskReturnsConflictAndLeavesRunBranchUnmoved`.

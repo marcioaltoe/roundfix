@@ -1780,6 +1780,65 @@ func TestRunOutcomeNotificationFailureWarnsAndJournalsWithoutChangingReportOrExi
 	t.Fatalf("expected Daemon-source notification failure event for Run %s, got %+v", runID, events)
 }
 
+func TestRunCleanCleanupFailureWarnsAndJournalsWithoutChangingReportOrExit(t *testing.T) {
+	wantStdout, _, wantCode, _, _ := runCleanResolveForCleanup(t, nil)
+	gotStdout, gotStderr, gotCode, homeDir, keptPath := runCleanResolveForCleanup(t, errors.New("forced cleanup failure"))
+
+	if gotCode != wantCode {
+		t.Fatalf("expected exit code to stay %d, got %d stderr=%q", wantCode, gotCode, gotStderr)
+	}
+	if gotStdout != wantStdout {
+		t.Fatalf("stdout changed after cleanup failure\nwant:\n%q\ngot:\n%q", wantStdout, gotStdout)
+	}
+	warning := fmt.Sprintf("roundfix: Run Worktree cleanup failed; kept %s: forced cleanup failure\n", keptPath)
+	if strings.Count(gotStderr, warning) != 1 {
+		t.Fatalf("expected one cleanup warning %q, got stderr=%q", warning, gotStderr)
+	}
+	assertCleanCleanupWarningEvent(t, homeDir, gotStderr, keptPath, "forced cleanup failure")
+	assertRunWorktreeExists(t, keptPath)
+}
+
+func TestRunWatchCleanCleanupFailureWarnsAndJournalsWithoutChangingReportOrExit(t *testing.T) {
+	wantStdout, _, wantCode, _, _ := runCleanWatchForCleanup(t, nil)
+	gotStdout, gotStderr, gotCode, homeDir, keptPath := runCleanWatchForCleanup(t, errors.New("forced cleanup failure"))
+
+	if gotCode != wantCode {
+		t.Fatalf("expected exit code to stay %d, got %d stderr=%q", wantCode, gotCode, gotStderr)
+	}
+	if gotStdout != wantStdout {
+		t.Fatalf("stdout changed after cleanup failure\nwant:\n%q\ngot:\n%q", wantStdout, gotStdout)
+	}
+	warning := fmt.Sprintf("roundfix: Run Worktree cleanup failed; kept %s: forced cleanup failure\n", keptPath)
+	if strings.Count(gotStderr, warning) != 1 {
+		t.Fatalf("expected one cleanup warning %q, got stderr=%q", warning, gotStderr)
+	}
+	assertCleanCleanupWarningEvent(t, homeDir, gotStderr, keptPath, "forced cleanup failure")
+	assertRunWorktreeExists(t, keptPath)
+}
+
+func assertCleanCleanupWarningEvent(t *testing.T, homeDir string, stderr string, keptPath string, reason string) {
+	t.Helper()
+	if strings.Contains(stderr, "failed after Run start") || strings.Contains(stderr, "Run Worktree kept:") {
+		t.Fatalf("cleanup warning must not turn Clean into failed/kept diagnostics, got stderr=%q", stderr)
+	}
+	runID, events := journaledRunEvents(t, homeDir, stderr)
+	run := runFromStore(t, homeDir, runID)
+	if run.State != store.StateClean {
+		t.Fatalf("expected cleanup failure to leave Run Clean, got %s", run.State)
+	}
+	for _, entry := range events {
+		event := entry.Event
+		if event.Source == runevent.SourceDaemon &&
+			event.Kind == runevent.KindDaemonStatus &&
+			strings.Contains(event.Summary, "Run Worktree cleanup failed") &&
+			strings.Contains(string(event.Payload), keptPath) &&
+			strings.Contains(string(event.Payload), reason) {
+			return
+		}
+	}
+	t.Fatalf("expected Daemon-source cleanup failure event for Run %s, got %+v", runID, events)
+}
+
 func TestRunOutcomeNotificationsDisabledSkipsNotifier(t *testing.T) {
 	_, repoDir := withCLIWorkspace(t)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "notify:\n  enabled: false\n")
@@ -4508,6 +4567,65 @@ func runCleanResolveForOutcomeNotification(t *testing.T, notifyErr error) (strin
 		t.Fatalf("expected one notification attempt, got %#v", notifier.recorded())
 	}
 	return stdout.String(), stderr.String(), code, homeDir
+}
+
+func runCleanResolveForCleanup(t *testing.T, cleanupErr error) (string, string, int, string, string) {
+	t.Helper()
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	cleanupPath := ""
+	if cleanupErr != nil {
+		oldCleanup := cleanupCleanRunWorktree
+		cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
+			cleanupPath = ref.Path
+			return cleanupErr
+		}
+		t.Cleanup(func() {
+			cleanupCleanRunWorktree = oldCleanup
+		})
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected clean resolve exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if cleanupErr != nil && strings.TrimSpace(cleanupPath) == "" {
+		t.Fatal("expected cleanup failure to capture the Run Worktree path")
+	}
+	return stdout.String(), stderr.String(), code, homeDir, cleanupPath
+}
+
+func runCleanWatchForCleanup(t *testing.T, cleanupErr error) (string, string, int, string, string) {
+	t.Helper()
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	cleanupPath := ""
+	if cleanupErr != nil {
+		oldCleanup := cleanupCleanRunWorktree
+		cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
+			cleanupPath = ref.Path
+			return cleanupErr
+		}
+		t.Cleanup(func() {
+			cleanupCleanRunWorktree = oldCleanup
+		})
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "1", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected clean watch exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if cleanupErr != nil && strings.TrimSpace(cleanupPath) == "" {
+		t.Fatal("expected cleanup failure to capture the Run Worktree path")
+	}
+	return stdout.String(), stderr.String(), code, homeDir, cleanupPath
 }
 
 func withCLIWorkspace(t *testing.T) (string, string) {

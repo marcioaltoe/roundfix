@@ -1331,11 +1331,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	}
 	if outcome == store.StateClean {
 		if err := cleanupCleanRunWorktree(ctx, runRef); err != nil {
-			ui.Close()
-			closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
-			markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
-			printResolveRunFailureWithWorktree(err, runRef.Path, stderr)
-			return exitRunFailed
+			warnCleanRunWorktreeCleanupFailed(ctx, runStore, run.ID, runRef.Path, err, stderr)
 		}
 	}
 	completed, err := runStore.CompleteRun(ctx, run.ID, outcome)
@@ -1767,11 +1763,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 	if terminal == store.StateClean {
 		if err := cleanupCleanRunWorktree(ctx, runRef); err != nil {
-			ui.Close()
-			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
-			markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
-			printWatchRunFailureWithWorktree(err, runRef.Path, stderr)
-			return exitRunFailed
+			warnCleanRunWorktreeCleanupFailed(ctx, runStore, run.ID, runRef.Path, err, stderr)
 		}
 	}
 	completeCtx := ctx
@@ -2807,6 +2799,30 @@ func publishRunOutcome(ctx context.Context, runStore *store.Store, runID string,
 	}); err != nil {
 		fmt.Fprintf(stderr, "Warning: terminal outcome event not journaled: %v\n", err)
 	}
+}
+
+func warnCleanRunWorktreeCleanupFailed(ctx context.Context, runStore *store.Store, runID string, worktreePath string, cleanupErr error, stderr io.Writer) {
+	if cleanupErr == nil {
+		return
+	}
+	reason := cleanupErr.Error()
+	summary := fmt.Sprintf("%s: Run Worktree cleanup failed; kept %s: %s", app.Name, worktreePath, reason)
+	fmt.Fprintln(stderr, summary)
+	payload, err := json.Marshal(map[string]string{
+		"path":   worktreePath,
+		"reason": reason,
+	})
+	if err != nil {
+		return
+	}
+	_ = (store.JournalSink{Store: runStore}).Publish(context.WithoutCancel(ctx), runevent.RunEvent{
+		RunID:   runID,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonStatus,
+		Summary: runevent.BoundSummary(summary),
+		Time:    time.Now().UTC(),
+		Payload: payload,
+	})
 }
 
 func outcomeNotifierFromConfig(config roundconfig.Config) roundnotify.Notifier {
