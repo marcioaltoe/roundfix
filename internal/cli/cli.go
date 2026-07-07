@@ -2708,11 +2708,14 @@ func outcomeNotifierFromConfig(config roundconfig.Config) roundnotify.Notifier {
 	return newOutcomeNotifier(config)
 }
 
+const outcomeNotificationTimeout = 30 * time.Second
+
 func notifyTerminalOutcome(ctx context.Context, runStore *store.Store, notifier roundnotify.Notifier, stderr io.Writer, run store.Run) {
 	if notifier == nil {
 		return
 	}
-	notifyCtx := withoutCancelOrBackground(ctx)
+	notifyCtx, cancel := context.WithTimeout(withoutCancelOrBackground(ctx), outcomeNotificationTimeout)
+	defer cancel()
 	if err := notifier.Notify(notifyCtx, outcomeFromRun(run)); err != nil {
 		reportOutcomeNotificationFailure(notifyCtx, runStore, run.ID, err, stderr)
 	}

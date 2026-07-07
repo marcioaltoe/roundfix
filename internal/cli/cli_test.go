@@ -1715,6 +1715,44 @@ func TestRunOutcomeNotificationsSkipFetch(t *testing.T) {
 	assertRecordedOutcomes(t, notifier, nil)
 }
 
+func TestNotifyTerminalOutcomeDetachesCanceledParentWithBoundedDeadline(t *testing.T) {
+	parent, cancel := context.WithCancel(context.Background())
+	cancel()
+	notifier := &deadlineRecordingOutcomeNotifier{}
+	run := store.Run{
+		ID:       "run-123",
+		Kind:     store.KindResolve,
+		State:    store.StateClean,
+		PRNumber: "123",
+	}
+	var stderr bytes.Buffer
+	start := time.Now()
+
+	notifyTerminalOutcome(parent, nil, notifier, &stderr, run)
+
+	if notifier.wasCanceled {
+		t.Fatal("expected terminal outcome notification context to ignore parent cancellation")
+	}
+	if !notifier.hadDeadline {
+		t.Fatal("expected terminal outcome notification context to have a deadline")
+	}
+	if !notifier.deadline.After(start) || notifier.deadline.After(start.Add(outcomeNotificationTimeout+time.Second)) {
+		t.Fatalf("expected deadline within notification timeout, got %s from start %s", notifier.deadline, start)
+	}
+	want := roundnotify.Outcome{
+		RunID:  "run-123",
+		State:  store.StateClean,
+		Kind:   store.KindResolve,
+		Target: "pr:123",
+	}
+	if !reflect.DeepEqual(notifier.outcome, want) {
+		t.Fatalf("notification outcome mismatch\nwant: %#v\ngot:  %#v", want, notifier.outcome)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+}
+
 func TestRunOutcomeNotificationFailureWarnsAndJournalsWithoutChangingReportOrExit(t *testing.T) {
 	wantStdout, _, wantCode, _ := runCleanResolveForOutcomeNotification(t, nil)
 	gotStdout, gotStderr, gotCode, homeDir := runCleanResolveForOutcomeNotification(t, errors.New("forced notifier failure"))
@@ -4399,6 +4437,26 @@ func (notifier *recordingOutcomeNotifier) recorded() []roundnotify.Outcome {
 	notifier.mu.Lock()
 	defer notifier.mu.Unlock()
 	return append([]roundnotify.Outcome(nil), notifier.outcomes...)
+}
+
+type deadlineRecordingOutcomeNotifier struct {
+	hadDeadline bool
+	deadline    time.Time
+	wasCanceled bool
+	outcome     roundnotify.Outcome
+}
+
+func (notifier *deadlineRecordingOutcomeNotifier) Notify(ctx context.Context, outcome roundnotify.Outcome) error {
+	deadline, ok := ctx.Deadline()
+	notifier.hadDeadline = ok
+	notifier.deadline = deadline
+	select {
+	case <-ctx.Done():
+		notifier.wasCanceled = true
+	default:
+	}
+	notifier.outcome = outcome
+	return nil
 }
 
 func withOutcomeNotifier(t *testing.T, notifier roundnotify.Notifier) {
