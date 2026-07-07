@@ -51,6 +51,7 @@ Usage:
   roundfix doctor
   roundfix gc [--dry-run]
   roundfix upgrade [--check]
+  roundfix runs list [--all] [--active]
   roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
   roundfix attach <run-id>
   roundfix skills check
@@ -69,6 +70,7 @@ Commands:
   doctor     Diagnose this machine's readiness for Roundfix Runs
   gc         Prune old terminal Run journals and run artifacts
   upgrade    Upgrade the Roundfix binary from GitHub Releases
+  runs       List Runs from the Run Database
   attach     Replay a Run's event timeline from the Run Database
   skills     List, check, or install the bundled Roundfix skills
 
@@ -190,6 +192,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runGCCommand(ctx, args[1:], stdout, stderr)
 	case "upgrade":
 		return runUpgradeCommand(ctx, args[1:], stdout, stderr)
+	case "runs":
+		return runRunsCommand(ctx, args[1:], stdout, stderr)
 	case "stop":
 		return runStopCommand(ctx, args[1:], stdout, stderr)
 	case "attach":
@@ -2692,6 +2696,20 @@ replaces the current executable. If no releases exist, reports that cleanly.
 
 Options:
   --check  Report the latest release outcome without installing it
+`
+	case "runs":
+		return `Usage:
+  roundfix runs list [--all] [--active]
+
+Lists Runs from the Run Database newest first. By default the listing is
+scoped to the current repository.
+
+Commands:
+  list  Print Run id, state, kind, and target columns
+
+Options:
+  --all     List Runs from every repository and include the repository column
+  --active  List only Active Runs
 `
 	case "fetch":
 		return `Usage:

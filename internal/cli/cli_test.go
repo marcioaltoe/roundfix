@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -44,6 +45,9 @@ func TestRunHelp(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "roundfix watch") {
 		t.Fatalf("expected help output, got %q", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "roundfix runs list") {
+		t.Fatalf("expected help output to list runs command, got %q", stdout.String())
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
@@ -247,6 +251,11 @@ func TestRunCommandHelp(t *testing.T) {
 			args:     []string{"upgrade", "--help"},
 			contains: []string{"roundfix upgrade [--check]", "--check", "atomically"},
 		},
+		{
+			name:     "runs",
+			args:     []string{"runs", "--help"},
+			contains: []string{"roundfix runs list [--all] [--active]", "--all", "--active"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -268,6 +277,212 @@ func TestRunCommandHelp(t *testing.T) {
 				t.Fatalf("expected no stderr, got %q", stderr.String())
 			}
 		})
+	}
+}
+
+func TestRunRunsListPrintsStableColumnsNewestFirst(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	otherRepo := filepath.Join(t.TempDir(), "other-repo")
+	mustMkdir(t, filepath.Join(otherRepo, ".git"))
+	base := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
+	runs := seedRunsForList(t, homeDir, []runListSeed{
+		{
+			kind:      store.KindResolve,
+			state:     store.StateClean,
+			gitRoot:   repoDir,
+			branch:    "feature/review",
+			prNumber:  "123",
+			createdAt: base,
+		},
+		{
+			kind:      store.KindImplement,
+			state:     store.StateActive,
+			gitRoot:   repoDir,
+			branch:    "ma/spec-run",
+			specSlug:  "0017-run-discovery",
+			createdAt: base.Add(2 * time.Minute),
+		},
+		{
+			kind:      store.KindWatch,
+			state:     store.StateActive,
+			gitRoot:   otherRepo,
+			branch:    "feature/other",
+			prNumber:  "999",
+			createdAt: base.Add(4 * time.Minute),
+		},
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"runs", "list"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
+	}
+	want := fmt.Sprintf("%s  Active*  implement  spec:0017-run-discovery\n%s  Clean  resolve  pr:123\n",
+		runs[1].ID,
+		runs[0].ID,
+	)
+	if stdout.String() != want {
+		t.Fatalf("unexpected runs list output:\n got: %q\nwant: %q", stdout.String(), want)
+	}
+	if strings.Contains(stdout.String(), runs[2].ID) {
+		t.Fatalf("expected repository scope to exclude other repository Run, got %q", stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+}
+
+func TestRunRunsListActiveAndAllFlagsCompose(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	otherRepo := filepath.Join(t.TempDir(), "other-repo")
+	mustMkdir(t, filepath.Join(otherRepo, ".git"))
+	base := time.Date(2026, 7, 6, 13, 0, 0, 0, time.UTC)
+	runs := seedRunsForList(t, homeDir, []runListSeed{
+		{
+			kind:      store.KindResolve,
+			state:     store.StateActive,
+			gitRoot:   repoDir,
+			branch:    "feature/current-active",
+			prNumber:  "101",
+			createdAt: base,
+		},
+		{
+			kind:      store.KindFetch,
+			state:     store.StateFetched,
+			gitRoot:   repoDir,
+			branch:    "feature/current-terminal",
+			prNumber:  "102",
+			createdAt: base.Add(time.Minute),
+		},
+		{
+			kind:      store.KindImplement,
+			state:     store.StateVerifying,
+			gitRoot:   otherRepo,
+			branch:    "ma/other-active",
+			specSlug:  "0002-other",
+			createdAt: base.Add(2 * time.Minute),
+		},
+	})
+
+	var activeStdout bytes.Buffer
+	var activeStderr bytes.Buffer
+	activeCode := Run([]string{"runs", "list", "--active"}, &activeStdout, &activeStderr)
+	if activeCode != exitOK {
+		t.Fatalf("expected active list exit 0, got %d stderr=%q", activeCode, activeStderr.String())
+	}
+	wantActive := fmt.Sprintf("%s  Active*  resolve  pr:101\n", runs[0].ID)
+	if activeStdout.String() != wantActive {
+		t.Fatalf("unexpected active output:\n got: %q\nwant: %q", activeStdout.String(), wantActive)
+	}
+	if activeStderr.Len() != 0 {
+		t.Fatalf("expected no active stderr, got %q", activeStderr.String())
+	}
+
+	var allStdout bytes.Buffer
+	var allStderr bytes.Buffer
+	allCode := Run([]string{"runs", "list", "--all"}, &allStdout, &allStderr)
+	if allCode != exitOK {
+		t.Fatalf("expected all list exit 0, got %d stderr=%q", allCode, allStderr.String())
+	}
+	wantAll := fmt.Sprintf(
+		"%s  Verifying*  implement  spec:0002-other  %s\n%s  Fetched  fetch  pr:102  %s\n%s  Active*  resolve  pr:101  %s\n",
+		runs[2].ID, otherRepo,
+		runs[1].ID, repoDir,
+		runs[0].ID, repoDir,
+	)
+	if allStdout.String() != wantAll {
+		t.Fatalf("unexpected all output:\n got: %q\nwant: %q", allStdout.String(), wantAll)
+	}
+	if allStderr.Len() != 0 {
+		t.Fatalf("expected no all stderr, got %q", allStderr.String())
+	}
+
+	var allActiveStdout bytes.Buffer
+	var allActiveStderr bytes.Buffer
+	allActiveCode := Run([]string{"runs", "list", "--all", "--active"}, &allActiveStdout, &allActiveStderr)
+	if allActiveCode != exitOK {
+		t.Fatalf("expected all active list exit 0, got %d stderr=%q", allActiveCode, allActiveStderr.String())
+	}
+	wantAllActive := fmt.Sprintf(
+		"%s  Verifying*  implement  spec:0002-other  %s\n%s  Active*  resolve  pr:101  %s\n",
+		runs[2].ID, otherRepo,
+		runs[0].ID, repoDir,
+	)
+	if allActiveStdout.String() != wantAllActive {
+		t.Fatalf("unexpected all active output:\n got: %q\nwant: %q", allActiveStdout.String(), wantAllActive)
+	}
+	if allActiveStderr.Len() != 0 {
+		t.Fatalf("expected no all active stderr, got %q", allActiveStderr.String())
+	}
+}
+
+func TestRunRunsListEmptyResultExitsZero(t *testing.T) {
+	withCLIWorkspace(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"runs", "list"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected empty list exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if stdout.String() != "No Runs found.\n" {
+		t.Fatalf("expected single empty-result line, got %q", stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+}
+
+func TestRunRunsListUsageErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{name: "unknown subcommand", args: []string{"runs", "bogus"}, want: "Run 'roundfix runs --help' for usage."},
+		{name: "unexpected list argument", args: []string{"runs", "list", "extra"}, want: "Run 'roundfix runs list --help' for usage."},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run(tt.args, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("expected exit code 2, got %d", code)
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("expected no stdout, got %q", stdout.String())
+			}
+			if !strings.Contains(stderr.String(), tt.want) {
+				t.Fatalf("expected usage pointer %q, got %q", tt.want, stderr.String())
+			}
+		})
+	}
+}
+
+func TestRunRunsListOutsideRepositoryRequiresAll(t *testing.T) {
+	homeDir := t.TempDir()
+	outsideRepo := t.TempDir()
+	t.Setenv("HOME", homeDir)
+	t.Chdir(outsideRepo)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"runs", "list"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected exit code 2 outside repository, got %d", code)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout, got %q", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "--all") {
+		t.Fatalf("expected --all guidance, got %q", stderr.String())
 	}
 }
 
@@ -3989,6 +4204,109 @@ func withCLIWorkspace(t *testing.T) (string, string) {
 	t.Setenv("HOME", homeDir)
 	t.Chdir(repoDir)
 	return homeDir, repoDir
+}
+
+type runListSeed struct {
+	kind      string
+	state     string
+	gitRoot   string
+	branch    string
+	prNumber  string
+	specSlug  string
+	createdAt time.Time
+}
+
+func seedRunsForList(t *testing.T, homeDir string, seeds []runListSeed) []store.Run {
+	t.Helper()
+	ctx := context.Background()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open run store: %v", err)
+	}
+	runs := make([]store.Run, 0, len(seeds))
+	for _, seed := range seeds {
+		run, err := runStore.CreateRun(ctx, createRunRequestForList(seed))
+		if err != nil {
+			t.Fatalf("create listed Run: %v", err)
+		}
+		switch {
+		case seed.state == "" || seed.state == store.StateActive:
+		case store.IsTerminalState(seed.state):
+			run, err = runStore.CompleteRun(ctx, run.ID, seed.state)
+			if err != nil {
+				t.Fatalf("complete listed Run as %s: %v", seed.state, err)
+			}
+		default:
+			if err := runStore.UpdateRunState(ctx, run.ID, seed.state); err != nil {
+				t.Fatalf("update listed Run state to %s: %v", seed.state, err)
+			}
+			var found bool
+			run, found, err = runStore.Run(ctx, run.ID)
+			if err != nil {
+				t.Fatalf("read updated listed Run: %v", err)
+			}
+			if !found {
+				t.Fatalf("expected listed Run %s to exist", run.ID)
+			}
+		}
+		runs = append(runs, run)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close run store: %v", err)
+	}
+	for index, seed := range seeds {
+		setListedRunCreatedAt(t, homeDir, runs[index].ID, seed.createdAt)
+	}
+	return runs
+}
+
+func createRunRequestForList(seed runListSeed) store.CreateRunRequest {
+	req := store.CreateRunRequest{
+		Kind:        seed.kind,
+		GitRoot:     seed.gitRoot,
+		LocalBranch: seed.branch,
+		HeadSHA:     "abc123",
+		ArtifactDir: filepath.Join(seed.gitRoot, ".roundfix"),
+		Agent:       "codex",
+	}
+	if req.Kind == store.KindImplement {
+		req.SpecSlug = seed.specSlug
+		return req
+	}
+	req.HeadRepository = "owner/project"
+	req.HeadBranch = seed.branch
+	req.BaseRepository = "owner/project"
+	req.PRNumber = seed.prNumber
+	return req
+}
+
+func setListedRunCreatedAt(t *testing.T, homeDir string, runID string, createdAt time.Time) {
+	t.Helper()
+	db, err := sql.Open("sqlite", "file:"+store.DatabasePath(homeDir)+"?_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)")
+	if err != nil {
+		t.Fatalf("open raw Run Database: %v", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Fatalf("close raw Run Database: %v", err)
+		}
+	}()
+	result, err := db.Exec(
+		`UPDATE runs SET created_at = ?, updated_at = ? WHERE id = ?`,
+		createdAt.UTC().Format(time.RFC3339Nano),
+		createdAt.UTC().Format(time.RFC3339Nano),
+		runID,
+	)
+	if err != nil {
+		t.Fatalf("set listed Run creation time: %v", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		t.Fatalf("read listed Run timestamp update result: %v", err)
+	}
+	if affected != 1 {
+		t.Fatalf("expected to update one listed Run timestamp, updated %d", affected)
+	}
 }
 
 func withReviewGitWorkspace(t *testing.T) (string, string) {

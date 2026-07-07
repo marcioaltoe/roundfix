@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0017-run-discovery
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -35,23 +35,23 @@ the command, read the report.
 
 ## Subtasks
 
-- [ ] `runs` dispatch and `list` flag parsing with usage text
-- [ ] Line formatting: columns, active marker, target derivation, `--all`
+- [x] `runs` dispatch and `list` flag parsing with usage text
+- [x] Line formatting: columns, active marker, target derivation, `--all`
       repository column
-- [ ] Repository resolution and the outside-a-repository failure
-- [ ] Empty-result line and exit code
-- [ ] CLI tests: format pinning, ordering, filters, empty, usage errors
+- [x] Repository resolution and the outside-a-repository failure
+- [x] Empty-result line and exit code
+- [x] CLI tests: format pinning, ordering, filters, empty, usage errors
 
 ## Acceptance Criteria
 
-- [ ] With seeded Runs of both kinds, `runs list` prints them newest first with
+- [x] With seeded Runs of both kinds, `runs list` prints them newest first with
       id, state, kind, and the correct per-kind target, and the byte shape is
       pinned by a CLI test.
-- [ ] `runs list --active` prints only Active Runs; `runs list --all` includes
+- [x] `runs list --active` prints only Active Runs; `runs list --all` includes
       other repositories' Runs and names each repository.
-- [ ] With no Runs, the command prints one line and exits `0`.
-- [ ] `runs bogus` and `runs list <extra>` exit `2` with a usage pointer.
-- [ ] `roundfix --help` lists the `runs` command.
+- [x] With no Runs, the command prints one line and exits `0`.
+- [x] `runs bogus` and `runs list <extra>` exit `2` with a usage pointer.
+- [x] `roundfix --help` lists the `runs` command.
 
 ## Verification
 
@@ -66,3 +66,34 @@ the command, read the report.
 
 `_prd.md` → User Stories 1-2; Core Features 1-4. `_techspec.md` → API
 Contracts: runs list; Build Order 2; Risks (column stability).
+
+## Result
+
+Implemented `roundfix runs list` through the new `runs` command namespace. The
+command scopes to the current Git repository by default, supports `--all` and
+`--active`, prints stable plain-text report rows with full Run ids, marks Active
+Runs with `*`, derives targets as `pr:<number>` or `spec:<slug>`, and keeps
+diagnostics on stderr.
+
+Acceptance evidence:
+
+- `TestRunRunsListPrintsStableColumnsNewestFirst` seeds review and spec Runs
+  and pins the exact byte output order and columns.
+- `TestRunRunsListActiveAndAllFlagsCompose` covers the active-only filter,
+  repository scoping, `--all`, and composed `--all --active` behavior.
+- `TestRunRunsListEmptyResultExitsZero` covers the single empty-result line and
+  exit `0`.
+- `TestRunRunsListUsageErrors` covers `runs bogus` and `runs list <extra>`
+  exiting `2` with usage pointers.
+- `TestRunHelp` and `TestRunCommandHelp/runs` cover top-level help and `runs`
+  usage text.
+- `TestRunRunsListOutsideRepositoryRequiresAll` covers the outside-repository
+  exit `2` error naming `--all`.
+
+Verification:
+
+- `rtk go test ./internal/cli/` passed: 303 CLI tests.
+- `rtk go run ./cmd/roundfix runs list` passed and printed `No Runs found.`
+  with exit `0`.
+- `rtk make verify` passed: `rtk go test ./...` reported 832 tests across 18
+  packages, `roundfix skills check` passed, and `go build` completed.
