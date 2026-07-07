@@ -66,9 +66,10 @@ type LiveRunView struct {
 	BatchTotal    int
 	TotalIssues   int
 	Issues        []rounds.Issue
-	// RunKind selects the Work Item vocabulary of the panes: implement Runs
-	// render Tasks where review Runs render Review Issues. Empty means a
-	// review Run, so existing callers keep their rendering unchanged.
+	// RunKind selects the Work Item vocabulary of the panes (implement Runs
+	// render Tasks where review Runs render Review Issues) and the empty
+	// states' explanatory copy. Empty means a review Run, so existing
+	// callers keep their rendering unchanged.
 	RunKind string
 	// SpecSlug, SpecsRoot, GitRoot, and WorkDir locate a spec Run's task files
 	// so the cockpit can refresh Task statuses by re-reading them. WorkDir is

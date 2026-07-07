@@ -3,13 +3,15 @@ ROUNDFIX // LIVE RUN VIEW // PR #123                                            
 │ FETCH [done]  >  TRIAGE [done]  >  AGENT [run]  >  VERIFY [wait]  >  PUSH [locked]                                   │
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ┌────────────────────────────────────────────┐┌─────────────────────────────────────────────────────────────────────┐
-│ WORK QUEUE (3)                             ││ SESSION.TIMELINE                                                    │
+│ WORK QUEUE (3)                             ││ SESSION.TIMELINE                               Live · detail hidden │
 │                                            ││                                                                     │
 │ BATCH 001/002                        01:23 ││ PLAN inspect current cockpit render                                 │
-│ > [done] MAJOR                          #1 ││ [TOOL] read_file * completed                                        │
-│   major: guard nil cache                   ││ THINK preserving the shipped layout                                 │
-│   internal/cache/cache.go:42               ││ Batch 001 executing.                                                │
-│                                            ││ SESSION running                                                     │
+│ ┌────────────────────────────────────────┐ ││ [TOOL] read_file * completed                                        │
+│ │> [done] MAJOR                        #1│ ││ THINK preserving the shipped layout                                 │
+│ │  major: guard nil cache                │ ││ ▼ BATCH 001/001 executing 00:00                                     │
+│ │  internal/cache/cache.go:42            │ ││ SESSION running                                                     │
+│ └────────────────────────────────────────┘ ││                                                                     │
+│                                            ││                                                                     │
 │   [run] MINOR                           #2 ││                                                                     │
 │   minor: trim stale TODO                   ││                                                                     │
 │   internal/cache/cache_test.go:17          ││                                                                     │
@@ -18,8 +20,6 @@ ROUNDFIX // LIVE RUN VIEW // PR #123                                            
 │   [wait] INFO                           #3 ││                                                                     │
 │   info: document cache eviction            ││                                                                     │
 │   internal/cache/cache.go:88               ││                                                                     │
-│                                            ││                                                                     │
-│                                            ││                                                                     │
 │                                            ││                                                                     │
 │                                            ││                                                                     │
 │                                            ││                                                                     │

@@ -306,7 +306,7 @@ func CleanupClean(ctx context.Context, ref Ref) error {
 		return err
 	}
 	runner := execGitRunner{}
-	if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "remove", ref.Path); err != nil {
+	if _, err := runner.Run(ctx, ref.UserRoot, "worktree", "remove", "--force", ref.Path); err != nil {
 		return fmt.Errorf("remove Run Worktree %q: %w", ref.Path, err)
 	}
 	if err := deleteRunBranch(ctx, runner, ref.UserRoot, ref.Branch); err != nil {
@@ -320,7 +320,7 @@ func CleanupTask(ctx context.Context, task TaskRef) error {
 		return err
 	}
 	runner := execGitRunner{}
-	if _, err := runner.Run(ctx, task.UserRoot, "worktree", "remove", task.Path); err != nil {
+	if _, err := runner.Run(ctx, task.UserRoot, "worktree", "remove", "--force", task.Path); err != nil {
 		return fmt.Errorf("remove Task Worktree %q: %w", task.Path, err)
 	}
 	if err := deleteRunBranch(ctx, runner, task.UserRoot, task.Branch); err != nil {
@@ -368,7 +368,7 @@ func PruneTerminalReport(ctx context.Context, userRoot string, location string, 
 			continue
 		}
 		if _, err := os.Stat(ref.Path); err == nil {
-			if _, err := runner.Run(ctx, userRoot, "worktree", "remove", ref.Path); err != nil {
+			if _, err := runner.Run(ctx, userRoot, "worktree", "remove", "--force", ref.Path); err != nil {
 				errs = append(errs, fmt.Errorf("remove terminal Worktree %q: %w", ref.Path, err))
 				continue
 			}

@@ -258,17 +258,22 @@ func TestListRunsScopesByRepositoryAndOrdersNewestFirst(t *testing.T) {
 	assertRunIDs(t, allRepos, []string{repoBRun.ID, repoANewer.ID, repoAOlder.ID})
 }
 
-func TestListRunsActiveOnlyKeepsEveryNonTerminalState(t *testing.T) {
+func TestListRunsStateFilterAndLimit(t *testing.T) {
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
 	defer closeStore(t, runStore)
 
-	gitRoot := filepath.Join("tmp", "active-filter")
+	gitRoot := filepath.Join("tmp", "state-filter")
 	base := time.Date(2026, 7, 6, 11, 0, 0, 0, time.UTC)
-	terminalStates := []string{
+	// Every Run state, interleaving non-terminal and terminal, oldest first.
+	seededStates := []string{
+		StateActive,
 		StateFetched,
+		StateResolvingWithAgent,
 		StateStopped,
+		StateVerifying,
 		StateClean,
+		StatePushing,
 		StateMaxRoundsReached,
 		StateBudgetExceeded,
 		StateTimedOut,
@@ -276,48 +281,90 @@ func TestListRunsActiveOnlyKeepsEveryNonTerminalState(t *testing.T) {
 		StateIntegrationPending,
 		StateUnresolved,
 	}
-	for index, state := range terminalStates {
-		createListedRun(t, ctx, runStore, listedRunSeed{
-			gitRoot:   gitRoot,
-			branch:    fmt.Sprintf("feature/terminal-%02d", index),
-			prNumber:  fmt.Sprintf("30%d", index),
-			createdAt: base.Add(time.Duration(index*2+1) * time.Minute),
-			state:     state,
-		})
-	}
-
-	nonTerminalStates := []string{
-		StateActive,
-		StateResolvingWithAgent,
-		StateVerifying,
-		StatePushing,
-	}
-	activeRuns := make([]Run, 0, len(nonTerminalStates))
-	for index, state := range nonTerminalStates {
+	newestFirstAll := make([]string, 0, len(seededStates))
+	newestFirstActive := []string{}
+	newestFirstTerminal := []string{}
+	for index, state := range seededStates {
 		run := createListedRun(t, ctx, runStore, listedRunSeed{
 			gitRoot:   gitRoot,
-			branch:    fmt.Sprintf("feature/active-%02d", index),
-			prNumber:  fmt.Sprintf("40%d", index),
+			branch:    fmt.Sprintf("feature/state-%02d", index),
+			prNumber:  fmt.Sprintf("3%02d", index),
 			createdAt: base.Add(time.Duration(index*2) * time.Minute),
 			state:     state,
 		})
-		activeRuns = append(activeRuns, run)
-	}
-
-	runs, err := runStore.ListRuns(ctx, ListRunsQuery{GitRoot: gitRoot, ActiveOnly: true})
-	if err != nil {
-		t.Fatalf("list Active Runs: %v", err)
-	}
-	assertRunIDs(t, runs, []string{
-		activeRuns[3].ID,
-		activeRuns[2].ID,
-		activeRuns[1].ID,
-		activeRuns[0].ID,
-	})
-	for _, run := range runs {
-		if IsTerminalState(run.State) {
-			t.Fatalf("expected Active-only listing to exclude terminal Run %s in state %s", run.ID, run.State)
+		newestFirstAll = append([]string{run.ID}, newestFirstAll...)
+		if IsTerminalState(state) {
+			newestFirstTerminal = append([]string{run.ID}, newestFirstTerminal...)
+		} else {
+			newestFirstActive = append([]string{run.ID}, newestFirstActive...)
 		}
+	}
+	activeOnlyRoot := filepath.Join("tmp", "state-filter-active-only")
+	createListedRun(t, ctx, runStore, listedRunSeed{
+		gitRoot:   activeOnlyRoot,
+		branch:    "feature/lone-active",
+		prNumber:  "400",
+		createdAt: base.Add(time.Hour),
+		state:     StateActive,
+	})
+
+	cases := []struct {
+		name  string
+		query ListRunsQuery
+		want  []string
+	}{
+		{
+			name:  "unset filter defaults to active",
+			query: ListRunsQuery{GitRoot: gitRoot},
+			want:  newestFirstActive,
+		},
+		{
+			name:  "active filter keeps only non-terminal Runs",
+			query: ListRunsQuery{GitRoot: gitRoot, States: StatesActive},
+			want:  newestFirstActive,
+		},
+		{
+			name:  "terminal filter keeps only terminal Runs",
+			query: ListRunsQuery{GitRoot: gitRoot, States: StatesTerminal},
+			want:  newestFirstTerminal,
+		},
+		{
+			name:  "all filter with zero limit keeps every Run",
+			query: ListRunsQuery{GitRoot: gitRoot, States: StatesAll},
+			want:  newestFirstAll,
+		},
+		{
+			name:  "limit bounds the newest Runs",
+			query: ListRunsQuery{GitRoot: gitRoot, States: StatesAll, Limit: 3},
+			want:  newestFirstAll[:3],
+		},
+		{
+			name:  "limit applies after the state filter",
+			query: ListRunsQuery{GitRoot: gitRoot, States: StatesTerminal, Limit: 2},
+			want:  newestFirstTerminal[:2],
+		},
+		{
+			name:  "limit above the match count keeps every match",
+			query: ListRunsQuery{GitRoot: gitRoot, States: StatesActive, Limit: len(newestFirstAll) + 1},
+			want:  newestFirstActive,
+		},
+		{
+			name:  "filter matching nothing returns an empty slice",
+			query: ListRunsQuery{GitRoot: activeOnlyRoot, States: StatesTerminal},
+			want:  []string{},
+		},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			runs, err := runStore.ListRuns(ctx, testCase.query)
+			if err != nil {
+				t.Fatalf("list Runs: %v", err)
+			}
+			if runs == nil {
+				t.Fatal("expected empty slice, got nil")
+			}
+			assertRunIDs(t, runs, testCase.want)
+		})
 	}
 }
 

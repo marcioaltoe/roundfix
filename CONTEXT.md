@@ -258,6 +258,10 @@ _Avoid_: Wizard, form, setup screen
 The TUI view that shows Review Issues and Run Events for a Run: streaming live while the Run is active, or replayed from the Run Event Journal during Attach.
 _Avoid_: Dashboard, report, log file
 
+**Run Browser**:
+The read-only, machine-wide TUI list for Run discovery: every repository's Runs with their state, kind, target, Agent, start, duration, branch, and repository — Active Runs by default — from which selecting a Run opens the Live Run View through Attach.
+_Avoid_: Run picker, run manager, dashboard
+
 **Cockpit**:
 The shared Live Run View composition made of the Phase Row, Work Queue, Session Timeline, footer, and optional Detail Modal.
 _Avoid_: Dashboard, reduced pane

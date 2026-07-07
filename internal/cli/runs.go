@@ -8,21 +8,49 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"roundfix/internal/app"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/store"
+	roundtui "roundfix/internal/tui"
+)
+
+const (
+	runsListStateActive   = "active"
+	runsListStateTerminal = "terminal"
+	runsListStateAll      = "all"
+
+	// runsListDefaultLimit bounds the default listing to the newest
+	// matching Runs so the agent surface never grows without limit.
+	runsListDefaultLimit = 20
 )
 
 type runsListOptions struct {
-	all    bool
-	active bool
+	all   bool
+	state string
+	limit int
 }
 
+// runsListNow is the listing clock seam; tests pin it so durations and
+// running-elapsed columns are byte-stable.
+var runsListNow = time.Now
+
+// runsInteractiveInputAvailable gates the bare `runs` interactive path;
+// tests override it to prove the non-interactive contract.
+var runsInteractiveInputAvailable = defaultAttachInteractiveInputAvailable
+
 func runRunsCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
-	if commandWantsHelp(args) || len(args) == 0 {
+	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("runs"))
 		return exitOK
+	}
+	if len(args) == 0 {
+		if !runsInteractiveInputAvailable() || !liveTUIEnabled(stdout) {
+			fmt.Fprintf(stderr, "%s: runs requires a subcommand in non-interactive mode; use 'roundfix runs list'\n", app.Name)
+			return exitPreflight
+		}
+		return runRunsBrowserCommand(ctx, stdout, stderr)
 	}
 
 	switch args[0] {
@@ -63,14 +91,17 @@ func runRunsListCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		return exitPreflight
 	}
 	if !found {
-		printRunsList(stdout, nil, opts)
+		printRunsList(stdout, nil, opts, runsListNow())
 		return exitOK
 	}
 	defer func() {
 		_ = reader.Close()
 	}()
 
-	query := store.ListRunsQuery{ActiveOnly: opts.active}
+	// One unbounded all-states query feeds both the visible rows and the
+	// hidden counts, so the trailing note is exact without a second data
+	// path.
+	query := store.ListRunsQuery{States: store.StatesAll}
 	if !opts.all {
 		query.GitRoot = gitRoot
 	}
@@ -79,7 +110,15 @@ func runRunsListCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		printRunsListFailure(err, stderr)
 		return exitPreflight
 	}
-	printRunsList(stdout, runs, opts)
+	matching := filterRunsListState(runs, opts.state)
+	visible := matching
+	if opts.limit > 0 && len(matching) > opts.limit {
+		visible = matching[:opts.limit]
+	}
+	printRunsList(stdout, visible, opts, runsListNow())
+	if note := runsListHiddenNote(opts.state, len(runs), len(matching), len(visible)); note != "" {
+		fmt.Fprintln(stderr, note)
+	}
 	return exitOK
 }
 
@@ -88,14 +127,59 @@ func parseRunsListOptions(args []string) (runsListOptions, error) {
 	fs := flag.NewFlagSet("runs list", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	fs.BoolVar(&opts.all, "all", false, "List Runs from every repository")
-	fs.BoolVar(&opts.active, "active", false, "List only Active Runs")
+	fs.StringVar(&opts.state, "state", runsListStateActive, "Filter by Run state: active, terminal, or all")
+	fs.IntVar(&opts.limit, "limit", runsListDefaultLimit, "Print at most N matching Runs; 0 lists all")
 	if err := fs.Parse(args); err != nil {
 		return opts, validationError{message: err.Error()}
 	}
 	if remaining := fs.Args(); len(remaining) > 0 {
 		return opts, validationError{message: fmt.Sprintf("unexpected argument %q", remaining[0])}
 	}
+	switch opts.state {
+	case runsListStateActive, runsListStateTerminal, runsListStateAll:
+	default:
+		return opts, validationError{message: fmt.Sprintf("unknown --state %q; use active, terminal, or all", opts.state)}
+	}
+	if opts.limit < 0 {
+		return opts, validationError{message: fmt.Sprintf("--limit must be 0 or a positive count, got %d", opts.limit)}
+	}
 	return opts, nil
+}
+
+func filterRunsListState(runs []store.Run, state string) []store.Run {
+	if state == runsListStateAll {
+		return runs
+	}
+	wantTerminal := state == runsListStateTerminal
+	matching := make([]store.Run, 0, len(runs))
+	for _, run := range runs {
+		if store.IsTerminalState(run.State) == wantTerminal {
+			matching = append(matching, run)
+		}
+	}
+	return matching
+}
+
+// runsListHiddenNote names what the listing hid and the flag that widens
+// the view. Exactly one note prints; when both the bound and the state
+// filter hide Runs, the bound wins because it truncates Runs the caller
+// asked for.
+func runsListHiddenNote(state string, total, matching, visible int) string {
+	if older := matching - visible; older > 0 {
+		return fmt.Sprintf("(%d older Run(s) hidden; use --limit 0)", older)
+	}
+	hidden := total - matching
+	if hidden <= 0 {
+		return ""
+	}
+	switch state {
+	case runsListStateActive:
+		return fmt.Sprintf("(%d terminal Run(s) hidden; use --state all)", hidden)
+	case runsListStateTerminal:
+		return fmt.Sprintf("(%d active Run(s) hidden; use --state all)", hidden)
+	default:
+		return ""
+	}
 }
 
 func openRunsListReader(ctx context.Context, homeDir string) (*store.Store, bool, error) {
@@ -109,38 +193,15 @@ func openRunsListReader(ctx context.Context, homeDir string) (*store.Store, bool
 	return nil, false, err
 }
 
-func printRunsList(stdout io.Writer, runs []store.Run, opts runsListOptions) {
+func printRunsList(stdout io.Writer, runs []store.Run, opts runsListOptions, now time.Time) {
 	if len(runs) == 0 {
 		fmt.Fprintln(stdout, "No Runs found.")
 		return
 	}
 	for _, run := range runs {
-		if opts.all {
-			fmt.Fprintf(stdout, "%s  %s  %s  %s  %s\n", run.ID, runListState(run), run.Kind, runListTarget(run), run.GitRoot)
-			continue
-		}
-		fmt.Fprintf(stdout, "%s  %s  %s  %s\n", run.ID, runListState(run), run.Kind, runListTarget(run))
+		fields := roundtui.FormatRunRow(run, now, false, opts.all)
+		fmt.Fprintln(stdout, strings.Join(fields, "  "))
 	}
-}
-
-func runListState(run store.Run) string {
-	if store.IsTerminalState(run.State) {
-		return run.State
-	}
-	return run.State + "*"
-}
-
-func runListTarget(run store.Run) string {
-	if run.Kind == store.KindImplement {
-		if strings.TrimSpace(run.SpecSlug) == "" {
-			return ""
-		}
-		return "spec:" + run.SpecSlug
-	}
-	if strings.TrimSpace(run.PRNumber) == "" {
-		return ""
-	}
-	return "pr:" + run.PRNumber
 }
 
 func printRunsListFailure(err error, stderr io.Writer) {

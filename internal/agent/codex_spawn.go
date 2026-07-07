@@ -120,15 +120,23 @@ func codexResultPath(result codex.Result) string {
 	return strings.TrimSpace(result.Hygiene.Path)
 }
 
+// claudeNestedGuardEnv is Claude Code's nested-session guard variable. A
+// Claude-driven orchestrator exports it, and an inherited copy makes the
+// spawned claude runtime refuse to start ("cannot be launched inside another
+// Claude Code session"). acpx-spawned Agent runtimes are independent
+// processes, not nested sessions, so the guard never applies to them.
+const claudeNestedGuardEnv = "CLAUDECODE"
+
+// acpxCommandEnv builds the acpx child environment: the caller's environment
+// minus variables that must not leak into Agent runtimes (the codex hygiene
+// path, re-added per session through overrides, and Claude Code's
+// nested-session guard), plus the per-runtime overrides.
 func acpxCommandEnv(overrides []string) []string {
-	if len(overrides) == 0 {
-		return nil
-	}
 	env := os.Environ()
 	filtered := make([]string, 0, len(env)+len(overrides))
 	for _, entry := range env {
 		key, _, _ := strings.Cut(entry, "=")
-		if key == codexPathEnv {
+		if key == codexPathEnv || key == claudeNestedGuardEnv {
 			continue
 		}
 		filtered = append(filtered, entry)

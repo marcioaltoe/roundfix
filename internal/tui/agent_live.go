@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"roundfix/internal/rounds"
-
-	"charm.land/lipgloss/v2"
 )
 
 func firstNonEmpty(values ...string) string {
@@ -230,19 +228,3 @@ func stripANSI(value string) string {
 	}
 	return builder.String()
 }
-
-// Roundfix uses a blue accent palette so the cockpit reads distinctly from
-// other terminal tools.
-var (
-	styleAccent       = lipgloss.NewStyle().Foreground(lipgloss.Color("39"))
-	styleBright       = lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
-	styleMuted        = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
-	styleTool         = lipgloss.NewStyle().Foreground(lipgloss.Color("75"))
-	styleBar          = lipgloss.NewStyle().Foreground(lipgloss.Color("250")).Background(lipgloss.Color("238"))
-	styleBarFill      = lipgloss.NewStyle().Foreground(lipgloss.Color("231")).Background(lipgloss.Color("27")).Bold(true)
-	styleBarRest      = lipgloss.NewStyle().Foreground(lipgloss.Color("17")).Background(lipgloss.Color("153"))
-	styleError        = lipgloss.NewStyle().Foreground(lipgloss.Color("203"))
-	styleFooter       = lipgloss.NewStyle().Foreground(lipgloss.Color("248")).Background(lipgloss.Color("234"))
-	styleBorder       = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("238")).Padding(0, 1)
-	styleActiveBorder = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("39")).Padding(0, 1)
-)

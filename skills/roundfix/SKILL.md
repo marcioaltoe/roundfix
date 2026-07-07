@@ -288,17 +288,29 @@ Event; they never change the Run report, terminal outcome, or exit code.
 ## Run discovery and Attach
 
 Use `roundfix runs list` to discover Runs recorded in the Run Database. By
-default it lists this repository's Runs newest first. Each line uses stable
-plain-text columns:
+default it lists this repository's 20 newest Active Runs, newest first. Each
+line uses stable plain-text columns:
 
 ```text
-<run-id>  <state>  <kind>  <target>
+<run-id>  <state>  <kind>  <target>  <agent>  <started-utc>  <duration>  <branch>
 ```
 
-Active Runs mark the state with `*`. Targets are `pr:<number>` for review Runs
-and `spec:<slug>` for Spec Runs. `--active` filters to non-terminal Runs.
-`--all` lists every repository and adds the repository path as a final column.
-The flags compose. With no matches, stdout is exactly:
+Run ids are full and untruncated; start times are absolute UTC (RFC 3339);
+durations render like `42m` / `1h12m`, with `running <elapsed>` for Active
+Runs; missing fields render `-`. Targets are `pr:<number>` for review Runs
+and `spec:<slug>` for Spec Runs. Agents widen the view with `--state
+<active|terminal|all>` (default `active`) and `--limit N` (default `20`, `0`
+unbounded, applied after the state filter). `--all` lists every repository
+and adds the repository path as a final column. The flags compose. When the
+state filter or the bound hides Runs, exactly one trailing stderr note names
+the hidden count and the widening flag:
+
+```text
+(23 terminal Run(s) hidden; use --state all)
+(15 older Run(s) hidden; use --limit 0)
+```
+
+With no matches, stdout is exactly:
 
 ```text
 No Runs found.
@@ -310,16 +322,27 @@ open/list failures exit `2` with diagnostics on stderr. Outside a Git
 repository, `runs list` without `--all` exits `2` and names `--all` as the
 alternative.
 
+At an interactive terminal, bare `roundfix runs` and `roundfix attach`
+without a Run ID open the Run Browser: machine-wide, every repository's Runs
+newest first, Active Runs only by default, with a header naming the
+`ACTIVE`/`ALL` state filter and rows showing short run id, state, kind,
+target, Agent, relative start, duration, branch, and repository. No git
+repository is required. `↑↓` moves, `Enter` attaches the selected Run
+through the read-only Live Run View — leaving it returns to a refreshed
+browser — `a` toggles active/all, and `q`/`Esc`/`Ctrl-C` quits with exit `0`
+and no side effects. The empty Active view really does mean nothing is
+running anywhere: `No active Runs — press a to include terminal Runs.` In a
+non-interactive context, bare `runs` exits `2` and names
+`roundfix runs list`; `attach` without a Run ID, including `--no-input`,
+exits `2` and names `roundfix runs list` as the discovery command. The Run
+Browser is the human surface — agents use the bounded `runs list`, which
+stays repository-scoped with `--all` for every repository.
+
 Use `roundfix attach <run-id>` to replay a Run's Run Event Journal and follow
 new Run Events read-only. Attach never creates Runs, fetches, starts Agents,
-commits, pushes, stops, or resolves Review Source threads.
-
-In an interactive terminal, `roundfix attach` without a Run ID opens
-Interactive Input listing the current repository's Runs. The picker lists
-Active Runs first, includes terminal Runs, shows state, kind, and target, and
-accepts a number or Run ID. Press Enter to cancel; cancellation exits `0` and
-does not attach. In non-interactive mode or with `--no-input`, missing Run ID
-exits `2` and names `roundfix runs list` as the discovery command.
+commits, pushes, stops, or resolves Review Source threads. An unknown Run ID
+exits `2` with an error stating that picker numbers are not stable Run ids —
+pass a run id or run `roundfix attach` to pick interactively.
 
 ## User-Facing Review Runs
 
@@ -335,8 +358,9 @@ exits `2` and names `roundfix runs list` as the discovery command.
 4. Let Roundfix own Review Source waits, CodeRabbit fetches, Round creation,
    Agent lifecycle, verification, Batch commits, Final Push, Review Source
    resolution, retries, timeouts, and Stop Request handling.
-5. Use `roundfix runs list --active` or `roundfix attach` without an argument
-   when the Run ID was not captured.
+5. Use the bounded `roundfix runs list` (Active Runs by default; widen with
+   `--state all` or `--limit 0`) or the Run Browser (`roundfix attach` with
+   no argument at an interactive terminal) when the Run ID was not captured.
 6. Report the Run ID, Open Pull Request, Review Source, Agent, and current Run
    state whenever you summarize progress.
 7. Prefer the Roundfix Live Run View or daemon output for long waits.
@@ -352,7 +376,8 @@ roundfix watch --source coderabbit --pr <number> --agent <agent> [--spec <slug>]
 roundfix implement --spec <slug> --agent <agent>
 roundfix implement --spec <slug> --agent <agent> --detach
 roundfix runs list
-roundfix runs list --active
+roundfix runs list --state all --limit 0
+roundfix runs
 roundfix attach
 roundfix attach <run-id>
 roundfix settle --spec <slug> --task <task_id>
@@ -389,10 +414,16 @@ read/write artifact work only: it starts no Agent and creates no Run Worktree.
 - Run startup reports the execution workspace on stderr with
   `Run Worktree: <path>`. Terminal outcomes that keep the workspace report
   `Run Worktree kept: <path>`.
-- Integrated Clean outcomes remove the Run Worktree and delete the Run Branch.
-  Integration Pending, Unresolved, Failed, Stopped, BudgetExceeded,
-  TimedOut, and any other non-integrated outcome keep the Run Worktree and
-  Run Branch.
+- Integrated Clean outcomes remove the Run Worktree with
+  `git worktree remove --force` and delete the Run Branch. If cleanup fails
+  after integration, the Run stays Clean: stderr prints exactly one warning
+  shaped as
+  `roundfix: Run Worktree cleanup failed; kept <path>: <reason>`, the Daemon
+  journals one Run Event, and the exit code and stdout report stay unchanged.
+  The kept path remains available for manual inspection and later terminal
+  Worktree reaping. Integration Pending, Unresolved, Failed, Stopped,
+  BudgetExceeded, TimedOut, and any other non-integrated outcome keep the Run
+  Worktree and Run Branch.
 - `watch` reuses one Run Worktree across all Rounds in the Run.
 - A new Run Worktree starts from committed Git state. Untracked files in the
   user's checkout are not present unless they are listed in `worktree.copy`;
@@ -517,6 +548,23 @@ Journal and then follows new Run Events without mutating or stopping the Run.
 - The `SESSION.TIMELINE` pane is the wider right pane. It groups Run Events by
   Batch and event kind, including Agent plan/tool/think/status events and
   Daemon milestones such as verification, commit, QA, push, and outcome.
+- Batch groups collapse automatically by state: a Batch whose state is
+  `completed`, `failed`, or `stopped` folds to one `▶` summary row, and every
+  other Batch renders expanded under `▼`. Collapse is state-driven; no key
+  toggles it.
+- Every structured event renders as exactly one bounded summary row behind an
+  aligned timestamp gutter. Raw payloads (tool JSON, diffs, markdown bodies)
+  never render inline; full content stays in the Detail Modal.
+- The timeline pane header carries a `Live · detail hidden` /
+  `Live · detail open` indicator that follows the Detail Modal state.
+- Empty panes explain themselves per Run kind, naming what would populate
+  them — a Fetch Run, for example, reports that it writes Review artifacts to
+  disk and starts no Agent.
+- State is color-coded in capable terminals: cyan section labels and active
+  borders, green done, amber running/waiting/pending, red locked, failed, or
+  blocking, and muted gray timestamps and paths. Under `ROUNDFIX_COLOR=never`
+  or `NO_COLOR`, the layout and text markers are unchanged, so every state
+  distinction survives without color.
 - The Phase Row stays above both panes. Review Runs show
   `FETCH > TRIAGE > AGENT > VERIFY > PUSH`; spec Runs show
   `AGENT > VERIFY > COMMIT`, plus `QA` only when the Run opted into QA. Status
@@ -629,10 +677,10 @@ outcome and never opens pull requests (ADR-0021).
    Agent is remembered across runs; the Spec slug and QA choice never are.
    `--no-input` fails instead of opening Interactive Input.
 
-7. Discover spec Runs with `roundfix runs list --active` or open the picker
-   with `roundfix attach` when the Run ID was not captured. Attach directly
-   with `roundfix attach <run-id>` when the id is known; the Live Run View
-   shows the Spec's Tasks as Work Items in the shared cockpit.
+7. Discover spec Runs with the bounded `roundfix runs list` or open the Run
+   Browser with `roundfix attach` when the Run ID was not captured. Attach
+   directly with `roundfix attach <run-id>` when the id is known; the Live
+   Run View shows the Spec's Tasks as Work Items in the shared cockpit.
 
 8. `implement.auto_push` is a bool in config, default `false`. User Config can
    provide a default, and Project Config can override it:
@@ -709,11 +757,11 @@ the Implement, Attach, Settle, Stop, and Archive commands documented above.
 3. **Monitor without owning.** If you captured the id, follow progress through
    the console log at `<artifact-dir>/runs/<run-id>/console.log`, or open the
    read-only Live Run View with `roundfix attach <run-id>`. From a fresh
-   terminal, discover the Run with `roundfix runs list --active` or open the
-   picker with `roundfix attach`. Attach replays the Run Event Journal and
-   follows new events; `q` or `Ctrl-C` detaches and never stops the Run. The
-   detached child sends the configured outcome notification at the terminal
-   outcome, which is the unattended-Run signal.
+   terminal, discover the Run with the bounded `roundfix runs list` or open
+   the Run Browser with `roundfix attach`. Attach replays the Run Event
+   Journal and follows new events; `q` or `Ctrl-C` detaches and never stops
+   the Run. The detached child sends the configured outcome notification at
+   the terminal outcome, which is the unattended-Run signal.
 
 4. **Detect the terminal outcome.** The Run ends with exactly one stdout outcome
    line in the console log:
@@ -792,6 +840,12 @@ verify test -f done.txt — ok
 verify test -f missing.txt — failed
 task_01 stays failed — verification failed
 ```
+
+If a Task's Verification is unsatisfiable because the task file names a
+non-hermetic or impossible command, fix that task file's `## Verification`
+section and re-run Settle. Settle re-reads the task file on each invocation.
+There is no skip-verification flag: Verification is the only gate before
+settling, committing, or integrating Task work.
 
 Exit codes: `0` means settled completed and committed, `1` means verification
 failed or post-verification integration failed, and `2` means Preflight

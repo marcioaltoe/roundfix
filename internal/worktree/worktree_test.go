@@ -377,6 +377,39 @@ func TestCleanupTaskRemovesTaskWorktreeAndBranch(t *testing.T) {
 	}
 }
 
+func TestCleanupTaskRemovesTaskWorktreeWithUntrackedDebris(t *testing.T) {
+	ctx := context.Background()
+	fixture := newIntegrationFixture(t, "task-debris-cleanup")
+	task, err := CreateTask(ctx, fixture.ref, "task_01", nil)
+	if err != nil {
+		t.Fatalf("create Task Worktree: %v", err)
+	}
+	mustWriteWorktreeTest(t, filepath.Join(task.Path, "task.txt"), "task\n")
+	gitWorktreeTest(t, task.Path, "add", "task.txt")
+	gitWorktreeTest(t, task.Path, "commit", "-m", "task commit")
+	result, err := IntegrateTask(ctx, fixture.ref, task)
+	if err != nil {
+		t.Fatalf("integrate task: %v", err)
+	}
+	if result.Mode != ModeTaskFastForward {
+		t.Fatalf("expected Task fast-forward, got %#v", result)
+	}
+	mustWriteWorktreeTest(t, filepath.Join(task.Path, ".env.local"), "secret=1\n")
+	mustMkdirWorktreeTest(t, filepath.Join(task.Path, "node_modules", "cache"))
+	mustWriteWorktreeTest(t, filepath.Join(task.Path, "node_modules", "cache", "entry.txt"), "cache\n")
+
+	if err := CleanupTask(ctx, task); err != nil {
+		t.Fatalf("cleanup Task Worktree with debris: %v", err)
+	}
+
+	if _, err := os.Stat(task.Path); !os.IsNotExist(err) {
+		t.Fatalf("expected Task Worktree removed, stat err=%v", err)
+	}
+	if branchExists(t, fixture.repoDir, task.Branch) {
+		t.Fatalf("expected Task Branch %q removed", task.Branch)
+	}
+}
+
 func TestPruneTerminalReapsOnlyEmptyTerminalRunAndTaskBranches(t *testing.T) {
 	ctx := context.Background()
 	homeDir := t.TempDir()
@@ -396,6 +429,12 @@ func TestPruneTerminalReapsOnlyEmptyTerminalRunAndTaskBranches(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create empty Task Worktree: %v", err)
 	}
+	mustWriteWorktreeTest(t, filepath.Join(emptyRun.Path, ".env.local"), "secret=1\n")
+	mustMkdirWorktreeTest(t, filepath.Join(emptyRun.Path, "node_modules", "cache"))
+	mustWriteWorktreeTest(t, filepath.Join(emptyRun.Path, "node_modules", "cache", "entry.txt"), "cache\n")
+	mustWriteWorktreeTest(t, filepath.Join(emptyTask.Path, ".env.local"), "secret=1\n")
+	mustMkdirWorktreeTest(t, filepath.Join(emptyTask.Path, "node_modules", "cache"))
+	mustWriteWorktreeTest(t, filepath.Join(emptyTask.Path, "node_modules", "cache", "entry.txt"), "cache\n")
 	valuableRun, err := Create(ctx, CreateOptions{UserRoot: repoDir, Location: location, RunID: "valuable-run", HeadSHA: headSHA})
 	if err != nil {
 		t.Fatalf("create valuable Run Worktree: %v", err)
@@ -602,21 +641,22 @@ func TestCleanupCleanRemovesCleanRunWorktreeAndBranch(t *testing.T) {
 	}
 }
 
-func TestCleanupCleanKeepsDirtyRunWorktreeAndBranch(t *testing.T) {
+func TestCleanupCleanRemovesRunWorktreeWithUntrackedDebris(t *testing.T) {
 	ctx := context.Background()
-	fixture := newIntegrationFixture(t, "dirty-cleanup")
-	mustWriteWorktreeTest(t, filepath.Join(fixture.ref.Path, "run.txt"), "dirty\n")
+	fixture := newIntegrationFixture(t, "debris-cleanup")
+	mustWriteWorktreeTest(t, filepath.Join(fixture.ref.Path, ".env.local"), "secret=1\n")
+	mustMkdirWorktreeTest(t, filepath.Join(fixture.ref.Path, "node_modules", "cache"))
+	mustWriteWorktreeTest(t, filepath.Join(fixture.ref.Path, "node_modules", "cache", "entry.txt"), "cache\n")
 
-	err := CleanupClean(ctx, fixture.ref)
+	if err := CleanupClean(ctx, fixture.ref); err != nil {
+		t.Fatalf("cleanup Clean with debris: %v", err)
+	}
 
-	if err == nil {
-		t.Fatal("expected dirty Run Worktree removal to fail")
+	if _, err := os.Stat(fixture.ref.Path); !os.IsNotExist(err) {
+		t.Fatalf("expected Run Worktree removed, stat err=%v", err)
 	}
-	if _, statErr := os.Stat(fixture.ref.Path); statErr != nil {
-		t.Fatalf("expected dirty Run Worktree kept, stat err=%v", statErr)
-	}
-	if !branchExists(t, fixture.repoDir, fixture.ref.Branch) {
-		t.Fatalf("expected Run Branch %q kept", fixture.ref.Branch)
+	if branchExists(t, fixture.repoDir, fixture.ref.Branch) {
+		t.Fatalf("expected Run Branch %q deleted", fixture.ref.Branch)
 	}
 }
 

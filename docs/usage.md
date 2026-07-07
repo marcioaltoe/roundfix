@@ -103,19 +103,25 @@ Stop: roundfix stop <run-id>
 ```
 
 Monitor without owning the Run. If you have the detached report, use the
-captured Run ID. From a fresh terminal, discover the repository's Runs first or
-open the Attach picker:
+captured Run ID. At an interactive terminal, browse with the Run Browser;
+from a script or agent, use the bounded plain-text listing:
 
 ```bash
-roundfix runs list --active       # stable report: id, state, kind, target
-roundfix attach                   # interactive picker; q or Ctrl-C detaches after attach
+roundfix runs                     # Run Browser: browse, Enter attaches read-only
+roundfix attach                   # same Run Browser, q or Esc quits with no side effects
+roundfix runs list                # agent report: 20 newest Active Runs, newest first
+roundfix runs list --state all --limit 0   # widen the filter and the bound
 roundfix attach <run-id>          # direct read-only Live Run View
 # or tail the console log at <artifact-dir>/runs/<run-id>/console.log
 ```
 
-`runs list` prints this repository's Runs newest first, and `--active` filters
-out terminal Runs. `attach` without a Run ID lists the repository's Runs in an
-interactive terminal and accepts a number or Run ID. The terminal outcome line
+The Run Browser is machine-wide: every repository's Runs newest first with a
+repository column, Active Runs only by default; `a` toggles active/all,
+`Enter` opens the read-only Live Run View, and leaving it returns to a
+refreshed browser. `runs list` defaults to
+the 20 newest Active Runs; widen with `--state <active|terminal|all>` and
+`--limit N` (`0` unbounded), and read the single trailing stderr note that
+names hidden Runs and the widening flag. The terminal outcome line
 lands in the console log, and the detached child sends the configured outcome
 notification when the Run reaches its terminal outcome. Treat that notification
 as the unattended-Run signal; use `attach` or the console log for details.
@@ -220,9 +226,11 @@ roundfix skills install    # writes to <repo>/.agents/skills
 An agent driving Roundfix should:
 
 - Prefer `roundfix` commands over manual GitHub scraping.
-- Detach the Run, then discover it with `roundfix runs list --active` and
+- Detach the Run, then discover it with the bounded `roundfix runs list`
+  (Active Runs by default; widen with `--state all` or `--limit 0`) and
   follow it with `roundfix attach <run-id>` or the console log rather than
-  blocking a foreground process.
+  blocking a foreground process. The Run Browser is the human surface; agents
+  stay on the plain-text listing.
 - Branch on the deterministic outcome line and exit code, not on log scraping.
 - Report the Run ID, the PR or Spec, the Agent, and the current Run state when
   summarizing progress.
@@ -259,8 +267,9 @@ a Run is Active.
 | `fetch` | Download Review Issue artifacts for a PR |
 | `resolve` | Resolve downloaded Review Issues once |
 | `watch` | Fetch and resolve in a watched loop |
-| `runs list` | List Runs from the Run Database |
-| `attach` | Pick or replay a Run's timeline, read-only |
+| `runs` | Browse Runs in the read-only Run Browser (interactive terminal) |
+| `runs list` | List Runs from the Run Database, bounded and plain-text |
+| `attach` | Browse or replay a Run's timeline, read-only |
 | `stop` | Request or force-stop an Active Run |
 | `gc` | Prune old terminal Run journals and artifacts |
 | `upgrade` | Upgrade the binary from GitHub Releases |

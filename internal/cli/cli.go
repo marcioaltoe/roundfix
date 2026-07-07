@@ -52,7 +52,8 @@ Usage:
   roundfix doctor
   roundfix gc [--dry-run]
   roundfix upgrade [--check]
-  roundfix runs list [--all] [--active]
+  roundfix runs
+  roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]
   roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
   roundfix attach [<run-id>] [--no-input]
   roundfix skills check
@@ -1331,11 +1332,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	}
 	if outcome == store.StateClean {
 		if err := cleanupCleanRunWorktree(ctx, runRef); err != nil {
-			ui.Close()
-			closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
-			markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
-			printResolveRunFailureWithWorktree(err, runRef.Path, stderr)
-			return exitRunFailed
+			warnCleanRunWorktreeCleanupFailed(ctx, runStore, run.ID, runRef.Path, err, stderr)
 		}
 	}
 	completed, err := runStore.CompleteRun(ctx, run.ID, outcome)
@@ -1767,11 +1764,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 	if terminal == store.StateClean {
 		if err := cleanupCleanRunWorktree(ctx, runRef); err != nil {
-			ui.Close()
-			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
-			markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
-			printWatchRunFailureWithWorktree(err, runRef.Path, stderr)
-			return exitRunFailed
+			warnCleanRunWorktreeCleanupFailed(ctx, runStore, run.ID, runRef.Path, err, stderr)
 		}
 	}
 	completeCtx := ctx
@@ -2809,6 +2802,30 @@ func publishRunOutcome(ctx context.Context, runStore *store.Store, runID string,
 	}
 }
 
+func warnCleanRunWorktreeCleanupFailed(ctx context.Context, runStore *store.Store, runID string, worktreePath string, cleanupErr error, stderr io.Writer) {
+	if cleanupErr == nil {
+		return
+	}
+	reason := cleanupErr.Error()
+	summary := fmt.Sprintf("%s: Run Worktree cleanup failed; kept %s: %s", app.Name, worktreePath, reason)
+	fmt.Fprintln(stderr, summary)
+	payload, err := json.Marshal(map[string]string{
+		"path":   worktreePath,
+		"reason": reason,
+	})
+	if err != nil {
+		return
+	}
+	_ = (store.JournalSink{Store: runStore}).Publish(context.WithoutCancel(ctx), runevent.RunEvent{
+		RunID:   runID,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonStatus,
+		Summary: runevent.BoundSummary(summary),
+		Time:    time.Now().UTC(),
+		Payload: payload,
+	})
+}
+
 func outcomeNotifierFromConfig(config roundconfig.Config) roundnotify.Notifier {
 	if !config.Notify.Enabled || newOutcomeNotifier == nil {
 		return nil
@@ -2892,11 +2909,13 @@ func commandUsage(name string) string {
 
 Replays the Run's event timeline from the Run Database, read-only.
 Attach never creates Runs, fetches, starts Agents, commits, pushes, or
-resolves Review Source threads.
+resolves Review Source threads. Without a Run ID at an interactive
+terminal, attach opens the Run Browser to pick a Run; leaving the Live
+Run View returns to a refreshed browser until you quit.
 
 Options:
   --run-id    Run ID to attach to (same as the positional argument)
-  --no-input  Fail instead of opening Interactive Input when no Run ID is passed
+  --no-input  Fail instead of opening the Run Browser when no Run ID is passed
 `
 	case "init":
 		return `Usage:
@@ -2955,17 +2974,24 @@ Options:
 `
 	case "runs":
 		return `Usage:
-  roundfix runs list [--all] [--active]
+  roundfix runs
+  roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]
 
 Lists Runs from the Run Database newest first. By default the listing is
-scoped to the current repository.
+scoped to the current repository and shows the 20 newest Active Runs. When
+the state filter or the bound hides Runs, one trailing stderr note names the
+hidden count and the widening flag. Without a subcommand at an interactive
+terminal, runs opens the Run Browser; non-interactive contexts must use
+'roundfix runs list'.
 
 Commands:
-  list  Print Run id, state, kind, and target columns
+  list  Print run id, state, kind, target, agent, start time (UTC), duration,
+        and local branch columns
 
 Options:
-  --all     List Runs from every repository and include the repository column
-  --active  List only Active Runs
+  --all    List Runs from every repository and include the repository column
+  --state  Filter by Run state: active (default), terminal, or all
+  --limit  Print at most N matching Runs, newest first; 0 lists all (default 20)
 `
 	case "fetch":
 		return `Usage:

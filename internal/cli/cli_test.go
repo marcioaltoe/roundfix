@@ -59,6 +59,9 @@ func TestRunHelp(t *testing.T) {
 	if !strings.Contains(stdout.String(), "roundfix watch") {
 		t.Fatalf("expected help output, got %q", stdout.String())
 	}
+	if !strings.Contains(stdout.String(), "roundfix runs\n") {
+		t.Fatalf("expected help output to list bare runs command, got %q", stdout.String())
+	}
 	if !strings.Contains(stdout.String(), "roundfix runs list") {
 		t.Fatalf("expected help output to list runs command, got %q", stdout.String())
 	}
@@ -267,7 +270,7 @@ func TestRunCommandHelp(t *testing.T) {
 		{
 			name:     "runs",
 			args:     []string{"runs", "--help"},
-			contains: []string{"roundfix runs list [--all] [--active]", "--all", "--active"},
+			contains: []string{"roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]", "--all", "--state", "--limit"},
 		},
 	}
 
@@ -293,19 +296,21 @@ func TestRunCommandHelp(t *testing.T) {
 	}
 }
 
-func TestRunRunsListPrintsStableColumnsNewestFirst(t *testing.T) {
-	homeDir, repoDir := withCLIWorkspace(t)
-	otherRepo := filepath.Join(t.TempDir(), "other-repo")
-	mustMkdir(t, filepath.Join(otherRepo, ".git"))
+// seedRunsForListColumns seeds one terminal and one Active Run in the
+// current repository plus one Active Run in another repository, and pins
+// the listing clock so durations are byte-stable.
+func seedRunsForListColumns(t *testing.T, homeDir, repoDir, otherRepo string) []store.Run {
+	t.Helper()
 	base := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
 	runs := seedRunsForList(t, homeDir, []runListSeed{
 		{
-			kind:      store.KindResolve,
-			state:     store.StateClean,
-			gitRoot:   repoDir,
-			branch:    "feature/review",
-			prNumber:  "123",
-			createdAt: base,
+			kind:        store.KindResolve,
+			state:       store.StateClean,
+			gitRoot:     repoDir,
+			branch:      "feature/review",
+			prNumber:    "123",
+			createdAt:   base,
+			completedAt: base.Add(42 * time.Minute),
 		},
 		{
 			kind:      store.KindImplement,
@@ -324,6 +329,15 @@ func TestRunRunsListPrintsStableColumnsNewestFirst(t *testing.T) {
 			createdAt: base.Add(4 * time.Minute),
 		},
 	})
+	withRunsListNow(t, base.Add(14*time.Minute))
+	return runs
+}
+
+func TestRunRunsListPrintsStableColumnsNewestFirst(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	otherRepo := filepath.Join(t.TempDir(), "other-repo")
+	mustMkdir(t, filepath.Join(otherRepo, ".git"))
+	runs := seedRunsForListColumns(t, homeDir, repoDir, otherRepo)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -332,103 +346,298 @@ func TestRunRunsListPrintsStableColumnsNewestFirst(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
 	}
-	want := fmt.Sprintf("%s  Active*  implement  spec:0017-run-discovery\n%s  Clean  resolve  pr:123\n",
+	want := fmt.Sprintf(
+		"%s  Active  implement  spec:0017-run-discovery  codex  2026-07-06T12:02:00Z  running 12m  ma/spec-run\n",
 		runs[1].ID,
-		runs[0].ID,
 	)
 	if stdout.String() != want {
 		t.Fatalf("unexpected runs list output:\n got: %q\nwant: %q", stdout.String(), want)
 	}
-	if strings.Contains(stdout.String(), runs[2].ID) {
-		t.Fatalf("expected repository scope to exclude other repository Run, got %q", stdout.String())
-	}
-	if stderr.Len() != 0 {
-		t.Fatalf("expected no stderr, got %q", stderr.String())
+	if stderr.String() != "(1 terminal Run(s) hidden; use --state all)\n" {
+		t.Fatalf("expected terminal-hidden note, got %q", stderr.String())
 	}
 }
 
-func TestRunRunsListActiveAndAllFlagsCompose(t *testing.T) {
+func TestRunRunsListStateFlagFiltersAndNotes(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	otherRepo := filepath.Join(t.TempDir(), "other-repo")
 	mustMkdir(t, filepath.Join(otherRepo, ".git"))
-	base := time.Date(2026, 7, 6, 13, 0, 0, 0, time.UTC)
-	runs := seedRunsForList(t, homeDir, []runListSeed{
+	runs := seedRunsForListColumns(t, homeDir, repoDir, otherRepo)
+	activeLine := fmt.Sprintf(
+		"%s  Active  implement  spec:0017-run-discovery  codex  2026-07-06T12:02:00Z  running 12m  ma/spec-run\n",
+		runs[1].ID,
+	)
+	terminalLine := fmt.Sprintf(
+		"%s  Clean  resolve  pr:123  codex  2026-07-06T12:00:00Z  42m  feature/review\n",
+		runs[0].ID,
+	)
+	tests := []struct {
+		name       string
+		args       []string
+		wantStdout string
+		wantStderr string
+	}{
 		{
+			name:       "state all includes terminal Runs without a note",
+			args:       []string{"runs", "list", "--state", "all"},
+			wantStdout: activeLine + terminalLine,
+			wantStderr: "",
+		},
+		{
+			name:       "state terminal excludes Active Runs and notes them",
+			args:       []string{"runs", "list", "--state", "terminal"},
+			wantStdout: terminalLine,
+			wantStderr: "(1 active Run(s) hidden; use --state all)\n",
+		},
+		{
+			name: "all flag appends the repository column",
+			args: []string{"runs", "list", "--all", "--state", "all"},
+			wantStdout: fmt.Sprintf(
+				"%s  Active  watch  pr:999  codex  2026-07-06T12:04:00Z  running 10m  feature/other  %s\n",
+				runs[2].ID, otherRepo,
+			) + fmt.Sprintf(
+				"%s  Active  implement  spec:0017-run-discovery  codex  2026-07-06T12:02:00Z  running 12m  ma/spec-run  %s\n",
+				runs[1].ID, repoDir,
+			) + fmt.Sprintf(
+				"%s  Clean  resolve  pr:123  codex  2026-07-06T12:00:00Z  42m  feature/review  %s\n",
+				runs[0].ID, repoDir,
+			),
+			wantStderr: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run(tt.args, &stdout, &stderr)
+
+			if code != exitOK {
+				t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
+			}
+			if stdout.String() != tt.wantStdout {
+				t.Fatalf("unexpected stdout:\n got: %q\nwant: %q", stdout.String(), tt.wantStdout)
+			}
+			if stderr.String() != tt.wantStderr {
+				t.Fatalf("unexpected stderr:\n got: %q\nwant: %q", stderr.String(), tt.wantStderr)
+			}
+		})
+	}
+}
+
+func TestRunRunsListLimitBoundsNewestMatches(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	base := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
+	seeds := make([]runListSeed, 0, 25)
+	for index := 0; index < 25; index++ {
+		seeds = append(seeds, runListSeed{
 			kind:      store.KindResolve,
 			state:     store.StateActive,
 			gitRoot:   repoDir,
-			branch:    "feature/current-active",
-			prNumber:  "101",
-			createdAt: base,
+			branch:    fmt.Sprintf("feature/run-%02d", index),
+			prNumber:  fmt.Sprintf("%d", 500+index),
+			createdAt: base.Add(time.Duration(index) * time.Minute),
+		})
+	}
+	runs := seedRunsForList(t, homeDir, seeds)
+	withRunsListNow(t, base.Add(40*time.Minute))
+	tests := []struct {
+		name       string
+		args       []string
+		wantLines  int
+		wantFirst  string
+		wantLast   string
+		wantStderr string
+	}{
+		{
+			name:       "default bounds to the 20 newest",
+			args:       []string{"runs", "list"},
+			wantLines:  20,
+			wantFirst:  runs[24].ID,
+			wantLast:   runs[5].ID,
+			wantStderr: "(5 older Run(s) hidden; use --limit 0)\n",
 		},
 		{
-			kind:      store.KindFetch,
-			state:     store.StateFetched,
-			gitRoot:   repoDir,
-			branch:    "feature/current-terminal",
-			prNumber:  "102",
-			createdAt: base.Add(time.Minute),
+			name:       "limit zero is unbounded",
+			args:       []string{"runs", "list", "--limit", "0"},
+			wantLines:  25,
+			wantFirst:  runs[24].ID,
+			wantLast:   runs[0].ID,
+			wantStderr: "",
 		},
 		{
-			kind:      store.KindImplement,
-			state:     store.StateVerifying,
-			gitRoot:   otherRepo,
-			branch:    "ma/other-active",
-			specSlug:  "0002-other",
-			createdAt: base.Add(2 * time.Minute),
+			name:       "explicit limit bounds the newest",
+			args:       []string{"runs", "list", "--limit", "3"},
+			wantLines:  3,
+			wantFirst:  runs[24].ID,
+			wantLast:   runs[22].ID,
+			wantStderr: "(22 older Run(s) hidden; use --limit 0)\n",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run(tt.args, &stdout, &stderr)
+
+			if code != exitOK {
+				t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
+			}
+			lines := strings.Split(strings.TrimSuffix(stdout.String(), "\n"), "\n")
+			if len(lines) != tt.wantLines {
+				t.Fatalf("expected %d lines, got %d:\n%s", tt.wantLines, len(lines), stdout.String())
+			}
+			if !strings.HasPrefix(lines[0], tt.wantFirst+"  ") {
+				t.Fatalf("expected first line for Run %s, got %q", tt.wantFirst, lines[0])
+			}
+			if !strings.HasPrefix(lines[len(lines)-1], tt.wantLast+"  ") {
+				t.Fatalf("expected last line for Run %s, got %q", tt.wantLast, lines[len(lines)-1])
+			}
+			if stderr.String() != tt.wantStderr {
+				t.Fatalf("unexpected stderr:\n got: %q\nwant: %q", stderr.String(), tt.wantStderr)
+			}
+		})
+	}
+}
+
+func TestRunRunsListAllRowsHiddenKeepsSingleEmptyLine(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	base := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
+	seedRunsForList(t, homeDir, []runListSeed{
+		{
+			kind:        store.KindResolve,
+			state:       store.StateClean,
+			gitRoot:     repoDir,
+			branch:      "feature/only-terminal",
+			prNumber:    "321",
+			createdAt:   base,
+			completedAt: base.Add(time.Minute),
 		},
 	})
+	withRunsListNow(t, base.Add(10*time.Minute))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
 
-	var activeStdout bytes.Buffer
-	var activeStderr bytes.Buffer
-	activeCode := Run([]string{"runs", "list", "--active"}, &activeStdout, &activeStderr)
-	if activeCode != exitOK {
-		t.Fatalf("expected active list exit 0, got %d stderr=%q", activeCode, activeStderr.String())
-	}
-	wantActive := fmt.Sprintf("%s  Active*  resolve  pr:101\n", runs[0].ID)
-	if activeStdout.String() != wantActive {
-		t.Fatalf("unexpected active output:\n got: %q\nwant: %q", activeStdout.String(), wantActive)
-	}
-	if activeStderr.Len() != 0 {
-		t.Fatalf("expected no active stderr, got %q", activeStderr.String())
-	}
+	code := Run([]string{"runs", "list"}, &stdout, &stderr)
 
-	var allStdout bytes.Buffer
-	var allStderr bytes.Buffer
-	allCode := Run([]string{"runs", "list", "--all"}, &allStdout, &allStderr)
-	if allCode != exitOK {
-		t.Fatalf("expected all list exit 0, got %d stderr=%q", allCode, allStderr.String())
+	if code != exitOK {
+		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
 	}
-	wantAll := fmt.Sprintf(
-		"%s  Verifying*  implement  spec:0002-other  %s\n%s  Fetched  fetch  pr:102  %s\n%s  Active*  resolve  pr:101  %s\n",
-		runs[2].ID, otherRepo,
-		runs[1].ID, repoDir,
-		runs[0].ID, repoDir,
-	)
-	if allStdout.String() != wantAll {
-		t.Fatalf("unexpected all output:\n got: %q\nwant: %q", allStdout.String(), wantAll)
+	if stdout.String() != "No Runs found.\n" {
+		t.Fatalf("expected single empty-result line, got %q", stdout.String())
 	}
-	if allStderr.Len() != 0 {
-		t.Fatalf("expected no all stderr, got %q", allStderr.String())
+	if stderr.String() != "(1 terminal Run(s) hidden; use --state all)\n" {
+		t.Fatalf("expected terminal-hidden note, got %q", stderr.String())
 	}
+}
 
-	var allActiveStdout bytes.Buffer
-	var allActiveStderr bytes.Buffer
-	allActiveCode := Run([]string{"runs", "list", "--all", "--active"}, &allActiveStdout, &allActiveStderr)
-	if allActiveCode != exitOK {
-		t.Fatalf("expected all active list exit 0, got %d stderr=%q", allActiveCode, allActiveStderr.String())
-	}
-	wantAllActive := fmt.Sprintf(
-		"%s  Verifying*  implement  spec:0002-other  %s\n%s  Active*  resolve  pr:101  %s\n",
-		runs[2].ID, otherRepo,
-		runs[0].ID, repoDir,
-	)
-	if allActiveStdout.String() != wantAllActive {
-		t.Fatalf("unexpected all active output:\n got: %q\nwant: %q", allActiveStdout.String(), wantAllActive)
-	}
-	if allActiveStderr.Len() != 0 {
-		t.Fatalf("expected no all active stderr, got %q", allActiveStderr.String())
-	}
+func TestRunRunsWithoutSubcommandHonorsInteractivity(t *testing.T) {
+	t.Run("non-interactive exits 2 naming runs list", func(t *testing.T) {
+		withCLIWorkspace(t)
+		withRunsInteractiveInput(t, false)
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := Run([]string{"runs"}, &stdout, &stderr)
+
+		if code != exitPreflight {
+			t.Fatalf("expected exit code 2, got %d", code)
+		}
+		if stdout.Len() != 0 {
+			t.Fatalf("expected no stdout, got %q", stdout.String())
+		}
+		if !strings.Contains(stderr.String(), "runs requires a subcommand in non-interactive mode; use 'roundfix runs list'") {
+			t.Fatalf("expected non-interactive runs guidance, got %q", stderr.String())
+		}
+	})
+	t.Run("interactive stdin without a TTY exits 2 naming runs list", func(t *testing.T) {
+		withCLIWorkspace(t)
+		withRunsInteractiveInput(t, true)
+		t.Setenv("ROUNDFIX_TUI", "")
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := Run([]string{"runs"}, &stdout, &stderr)
+
+		if code != exitPreflight {
+			t.Fatalf("expected exit code 2, got %d", code)
+		}
+		if stdout.Len() != 0 {
+			t.Fatalf("expected no stdout, got %q", stdout.String())
+		}
+		if !strings.Contains(stderr.String(), "runs requires a subcommand in non-interactive mode; use 'roundfix runs list'") {
+			t.Fatalf("expected non-interactive runs guidance, got %q", stderr.String())
+		}
+	})
+	t.Run("interactive terminal opens the Run Browser over the repository's Runs", func(t *testing.T) {
+		homeDir, repoDir := withCLIWorkspace(t)
+		base := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)
+		runs := seedRunsForList(t, homeDir, []runListSeed{
+			{
+				kind:        store.KindResolve,
+				state:       store.StateClean,
+				gitRoot:     repoDir,
+				branch:      "feature/terminal",
+				prNumber:    "201",
+				createdAt:   base,
+				completedAt: base.Add(time.Minute),
+			},
+			{
+				kind:      store.KindResolve,
+				state:     store.StateActive,
+				gitRoot:   repoDir,
+				branch:    "feature/active",
+				prNumber:  "202",
+				createdAt: base.Add(2 * time.Minute),
+			},
+		})
+		withRunsInteractiveInput(t, true)
+		t.Setenv("ROUNDFIX_TUI", "always")
+		sessionCalls := withRunBrowserSession(t, roundtui.BrowserOutcome{Cancelled: true})
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := Run([]string{"runs"}, &stdout, &stderr)
+
+		if code != exitOK {
+			t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
+		}
+		if stdout.Len() != 0 {
+			t.Fatalf("expected no stdout after browser cancel, got %q", stdout.String())
+		}
+		calls := *sessionCalls
+		if len(calls) != 1 {
+			t.Fatalf("expected one Run Browser session, got %d", len(calls))
+		}
+		if len(calls[0].active) != 1 || calls[0].active[0].ID != runs[1].ID {
+			t.Fatalf("expected the Active Run listed first, got %+v", calls[0].active)
+		}
+		if len(calls[0].all) != 2 || calls[0].all[0].ID != runs[1].ID || calls[0].all[1].ID != runs[0].ID {
+			t.Fatalf("expected all Runs newest first, got %+v", calls[0].all)
+		}
+	})
+	t.Run("interactive terminal without a Run Database opens the empty browser", func(t *testing.T) {
+		withCLIWorkspace(t)
+		withRunsInteractiveInput(t, true)
+		t.Setenv("ROUNDFIX_TUI", "always")
+		sessionCalls := withRunBrowserSession(t, roundtui.BrowserOutcome{Cancelled: true})
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := Run([]string{"runs"}, &stdout, &stderr)
+
+		if code != exitOK {
+			t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
+		}
+		calls := *sessionCalls
+		if len(calls) != 1 {
+			t.Fatalf("expected one Run Browser session, got %d", len(calls))
+		}
+		if len(calls[0].active) != 0 || len(calls[0].all) != 0 {
+			t.Fatalf("expected empty listings without a Run Database, got %+v", calls[0])
+		}
+	})
 }
 
 func TestRunRunsListEmptyResultExitsZero(t *testing.T) {
@@ -457,6 +666,9 @@ func TestRunRunsListUsageErrors(t *testing.T) {
 	}{
 		{name: "unknown subcommand", args: []string{"runs", "bogus"}, want: "Run 'roundfix runs --help' for usage."},
 		{name: "unexpected list argument", args: []string{"runs", "list", "extra"}, want: "Run 'roundfix runs list --help' for usage."},
+		{name: "unknown state value", args: []string{"runs", "list", "--state", "bogus"}, want: `unknown --state "bogus"; use active, terminal, or all`},
+		{name: "negative limit", args: []string{"runs", "list", "--limit", "-1"}, want: "--limit must be 0 or a positive count, got -1"},
+		{name: "removed active flag", args: []string{"runs", "list", "--active"}, want: "Run 'roundfix runs list --help' for usage."},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1778,6 +1990,65 @@ func TestRunOutcomeNotificationFailureWarnsAndJournalsWithoutChangingReportOrExi
 		}
 	}
 	t.Fatalf("expected Daemon-source notification failure event for Run %s, got %+v", runID, events)
+}
+
+func TestRunCleanCleanupFailureWarnsAndJournalsWithoutChangingReportOrExit(t *testing.T) {
+	wantStdout, _, wantCode, _, _ := runCleanResolveForCleanup(t, nil)
+	gotStdout, gotStderr, gotCode, homeDir, keptPath := runCleanResolveForCleanup(t, errors.New("forced cleanup failure"))
+
+	if gotCode != wantCode {
+		t.Fatalf("expected exit code to stay %d, got %d stderr=%q", wantCode, gotCode, gotStderr)
+	}
+	if gotStdout != wantStdout {
+		t.Fatalf("stdout changed after cleanup failure\nwant:\n%q\ngot:\n%q", wantStdout, gotStdout)
+	}
+	warning := fmt.Sprintf("roundfix: Run Worktree cleanup failed; kept %s: forced cleanup failure\n", keptPath)
+	if strings.Count(gotStderr, warning) != 1 {
+		t.Fatalf("expected one cleanup warning %q, got stderr=%q", warning, gotStderr)
+	}
+	assertCleanCleanupWarningEvent(t, homeDir, gotStderr, keptPath, "forced cleanup failure")
+	assertRunWorktreeExists(t, keptPath)
+}
+
+func TestRunWatchCleanCleanupFailureWarnsAndJournalsWithoutChangingReportOrExit(t *testing.T) {
+	wantStdout, _, wantCode, _, _ := runCleanWatchForCleanup(t, nil)
+	gotStdout, gotStderr, gotCode, homeDir, keptPath := runCleanWatchForCleanup(t, errors.New("forced cleanup failure"))
+
+	if gotCode != wantCode {
+		t.Fatalf("expected exit code to stay %d, got %d stderr=%q", wantCode, gotCode, gotStderr)
+	}
+	if gotStdout != wantStdout {
+		t.Fatalf("stdout changed after cleanup failure\nwant:\n%q\ngot:\n%q", wantStdout, gotStdout)
+	}
+	warning := fmt.Sprintf("roundfix: Run Worktree cleanup failed; kept %s: forced cleanup failure\n", keptPath)
+	if strings.Count(gotStderr, warning) != 1 {
+		t.Fatalf("expected one cleanup warning %q, got stderr=%q", warning, gotStderr)
+	}
+	assertCleanCleanupWarningEvent(t, homeDir, gotStderr, keptPath, "forced cleanup failure")
+	assertRunWorktreeExists(t, keptPath)
+}
+
+func assertCleanCleanupWarningEvent(t *testing.T, homeDir string, stderr string, keptPath string, reason string) {
+	t.Helper()
+	if strings.Contains(stderr, "failed after Run start") || strings.Contains(stderr, "Run Worktree kept:") {
+		t.Fatalf("cleanup warning must not turn Clean into failed/kept diagnostics, got stderr=%q", stderr)
+	}
+	runID, events := journaledRunEvents(t, homeDir, stderr)
+	run := runFromStore(t, homeDir, runID)
+	if run.State != store.StateClean {
+		t.Fatalf("expected cleanup failure to leave Run Clean, got %s", run.State)
+	}
+	for _, entry := range events {
+		event := entry.Event
+		if event.Source == runevent.SourceDaemon &&
+			event.Kind == runevent.KindDaemonStatus &&
+			strings.Contains(event.Summary, "Run Worktree cleanup failed") &&
+			strings.Contains(string(event.Payload), keptPath) &&
+			strings.Contains(string(event.Payload), reason) {
+			return
+		}
+	}
+	t.Fatalf("expected Daemon-source cleanup failure event for Run %s, got %+v", runID, events)
 }
 
 func TestRunOutcomeNotificationsDisabledSkipsNotifier(t *testing.T) {
@@ -4510,6 +4781,65 @@ func runCleanResolveForOutcomeNotification(t *testing.T, notifyErr error) (strin
 	return stdout.String(), stderr.String(), code, homeDir
 }
 
+func runCleanResolveForCleanup(t *testing.T, cleanupErr error) (string, string, int, string, string) {
+	t.Helper()
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	cleanupPath := ""
+	if cleanupErr != nil {
+		oldCleanup := cleanupCleanRunWorktree
+		cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
+			cleanupPath = ref.Path
+			return cleanupErr
+		}
+		t.Cleanup(func() {
+			cleanupCleanRunWorktree = oldCleanup
+		})
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected clean resolve exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if cleanupErr != nil && strings.TrimSpace(cleanupPath) == "" {
+		t.Fatal("expected cleanup failure to capture the Run Worktree path")
+	}
+	return stdout.String(), stderr.String(), code, homeDir, cleanupPath
+}
+
+func runCleanWatchForCleanup(t *testing.T, cleanupErr error) (string, string, int, string, string) {
+	t.Helper()
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	cleanupPath := ""
+	if cleanupErr != nil {
+		oldCleanup := cleanupCleanRunWorktree
+		cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
+			cleanupPath = ref.Path
+			return cleanupErr
+		}
+		t.Cleanup(func() {
+			cleanupCleanRunWorktree = oldCleanup
+		})
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "1", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected clean watch exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if cleanupErr != nil && strings.TrimSpace(cleanupPath) == "" {
+		t.Fatal("expected cleanup failure to capture the Run Worktree path")
+	}
+	return stdout.String(), stderr.String(), code, homeDir, cleanupPath
+}
+
 func withCLIWorkspace(t *testing.T) (string, string) {
 	t.Helper()
 	homeDir := t.TempDir()
@@ -4521,13 +4851,14 @@ func withCLIWorkspace(t *testing.T) (string, string) {
 }
 
 type runListSeed struct {
-	kind      string
-	state     string
-	gitRoot   string
-	branch    string
-	prNumber  string
-	specSlug  string
-	createdAt time.Time
+	kind        string
+	state       string
+	gitRoot     string
+	branch      string
+	prNumber    string
+	specSlug    string
+	createdAt   time.Time
+	completedAt time.Time
 }
 
 func seedRunsForList(t *testing.T, homeDir string, seeds []runListSeed) []store.Run {
@@ -4570,6 +4901,9 @@ func seedRunsForList(t *testing.T, homeDir string, seeds []runListSeed) []store.
 	}
 	for index, seed := range seeds {
 		setListedRunCreatedAt(t, homeDir, runs[index].ID, seed.createdAt)
+		if !seed.completedAt.IsZero() {
+			setListedRunCompletedAt(t, homeDir, runs[index].ID, seed.completedAt)
+		}
 	}
 	return runs
 }
@@ -4623,6 +4957,56 @@ func setListedRunCreatedAt(t *testing.T, homeDir string, runID string, createdAt
 	if affected != 1 {
 		t.Fatalf("expected to update one listed Run timestamp, updated %d", affected)
 	}
+}
+
+func setListedRunCompletedAt(t *testing.T, homeDir string, runID string, completedAt time.Time) {
+	t.Helper()
+	ctx := t.Context()
+	db, err := sql.Open("sqlite", "file:"+store.DatabasePath(homeDir)+"?_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)")
+	if err != nil {
+		t.Fatalf("open raw Run Database: %v", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Fatalf("close raw Run Database: %v", err)
+		}
+	}()
+	result, err := db.ExecContext(
+		ctx,
+		`UPDATE runs SET completed_at = ? WHERE id = ?`,
+		completedAt.UTC().Format(time.RFC3339Nano),
+		runID,
+	)
+	if err != nil {
+		t.Fatalf("set listed Run completion time: %v", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		t.Fatalf("read listed Run completion update result: %v", err)
+	}
+	if affected != 1 {
+		t.Fatalf("expected to update one listed Run completion time, updated %d", affected)
+	}
+}
+
+func withRunsListNow(t *testing.T, now time.Time) {
+	t.Helper()
+	old := runsListNow
+	runsListNow = func() time.Time { return now }
+	t.Cleanup(func() {
+		runsListNow = old
+	})
+}
+
+func withRunsInteractiveInput(t *testing.T, available bool) {
+	t.Helper()
+	old := runsInteractiveInputAvailable
+	runsInteractiveInputAvailable = func() bool {
+		return available
+	}
+	t.Cleanup(func() {
+		runsInteractiveInputAvailable = old
+	})
 }
 
 func withReviewGitWorkspace(t *testing.T) (string, string) {
@@ -6183,7 +6567,7 @@ func TestAttachReplaysCompletedRunReadOnly(t *testing.T) {
 	}
 }
 
-func TestAttachPickerSelectsRunByNumberActiveFirstNewestFirst(t *testing.T) {
+func TestAttachRunBrowserLoopOpensCockpitAndRefreshes(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	otherRepo := filepath.Join(t.TempDir(), "other-repo")
 	mustMkdir(t, filepath.Join(otherRepo, ".git"))
@@ -6195,14 +6579,6 @@ func TestAttachPickerSelectsRunByNumberActiveFirstNewestFirst(t *testing.T) {
 			gitRoot:   repoDir,
 			branch:    "feature/terminal",
 			prNumber:  "201",
-			createdAt: base.Add(4 * time.Minute),
-		},
-		{
-			kind:      store.KindResolve,
-			state:     store.StateActive,
-			gitRoot:   repoDir,
-			branch:    "feature/active-old",
-			prNumber:  "101",
 			createdAt: base.Add(time.Minute),
 		},
 		{
@@ -6219,82 +6595,92 @@ func TestAttachPickerSelectsRunByNumberActiveFirstNewestFirst(t *testing.T) {
 			gitRoot:   otherRepo,
 			branch:    "feature/other",
 			prNumber:  "999",
-			createdAt: base.Add(5 * time.Minute),
+			createdAt: base.Add(3 * time.Minute),
 		},
 	})
-	withAttachPickerInput(t, "3\n")
+	terminalRun, activeRun, otherRepoRun := runs[0], runs[1], runs[2]
+	withAttachInteractiveInput(t, true)
+	t.Setenv("ROUNDFIX_TUI", "always")
+	var createdBehindCockpit store.Run
+	cockpitCalls := withBrowserAttachCockpit(t, func(run store.Run, concurrency int) int {
+		// Mutating the store while the cockpit is open proves the next
+		// browser pass re-queries instead of reusing stale listings.
+		createdBehindCockpit = seedRunsForList(t, homeDir, []runListSeed{{
+			kind:      store.KindResolve,
+			state:     store.StateActive,
+			gitRoot:   repoDir,
+			branch:    "feature/started-behind-cockpit",
+			prNumber:  "202",
+			createdAt: base.Add(4 * time.Minute),
+		}})[0]
+		return exitOK
+	})
+	sessionCalls := withRunBrowserSession(t,
+		roundtui.BrowserOutcome{RunID: activeRun.ID},
+		roundtui.BrowserOutcome{Cancelled: true},
+	)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
 	code := RunContext(context.Background(), []string{"attach"}, &stdout, &stderr)
 
 	if code != exitOK {
-		t.Fatalf("expected picker attach exit 0, got %d stderr=%q", code, stderr.String())
+		t.Fatalf("expected browser loop exit 0, got %d stderr=%q", code, stderr.String())
 	}
-	assertSetupLineOrder(t, stderr.String(), []string{
-		fmt.Sprintf("  1. %s  Verifying*  implement  spec:0017-run-discovery", runs[2].ID),
-		fmt.Sprintf("  2. %s  Active*  resolve  pr:101", runs[1].ID),
-		fmt.Sprintf("  3. %s  Clean  resolve  pr:201", runs[0].ID),
-	})
-	if strings.Contains(stderr.String(), runs[3].ID) {
-		t.Fatalf("expected picker to scope to current repository, got %q", stderr.String())
+	calls := *sessionCalls
+	if len(calls) != 2 {
+		t.Fatalf("expected browser sessions before and after the cockpit, got %d", len(calls))
 	}
-	for _, expected := range []string{
-		"ID: " + runs[0].ID,
-		"State: Clean",
-		"Run " + runs[0].ID + " reached Clean; timeline replayed read-only.",
-	} {
-		if !strings.Contains(stdout.String(), expected) {
-			t.Fatalf("expected selected Run attach output to contain %q, got:\n%s", expected, stdout.String())
-		}
+	first := calls[0]
+	// The browser is machine-wide: Active Runs from every repository,
+	// newest first.
+	if len(first.active) != 2 || first.active[0].ID != otherRepoRun.ID || first.active[1].ID != activeRun.ID {
+		t.Fatalf("expected every repository's Active Runs newest first, got %+v", first.active)
 	}
-}
-
-func TestAttachPickerSelectsRunByIDWithExplicitAttachOutput(t *testing.T) {
-	_, repoDir := withCLIWorkspace(t)
-	runID, _ := runResolveForAttachTest(t, repoDir)
-	var explicitStdout bytes.Buffer
-	var explicitStderr bytes.Buffer
-	explicitCode := RunContext(context.Background(), []string{"attach", runID}, &explicitStdout, &explicitStderr)
-	if explicitCode != exitOK {
-		t.Fatalf("expected explicit attach exit 0, got %d stderr=%q", explicitCode, explicitStderr.String())
+	if len(first.all) != 3 || first.all[0].ID != otherRepoRun.ID || first.all[1].ID != activeRun.ID || first.all[2].ID != terminalRun.ID {
+		t.Fatalf("expected every repository's Runs newest first, got %+v", first.all)
 	}
-	withAttachPickerInput(t, runID+"\n")
-	var pickerStdout bytes.Buffer
-	var pickerStderr bytes.Buffer
-
-	pickerCode := RunContext(context.Background(), []string{"attach"}, &pickerStdout, &pickerStderr)
-
-	if pickerCode != exitOK {
-		t.Fatalf("expected picker attach exit 0, got %d stderr=%q", pickerCode, pickerStderr.String())
+	cockpit := *cockpitCalls
+	if len(cockpit) != 1 || cockpit[0].runID != activeRun.ID {
+		t.Fatalf("expected one cockpit pass for the selected Run, got %+v", cockpit)
 	}
-	if pickerStdout.String() != explicitStdout.String() {
-		t.Fatalf("expected picker to reuse explicit attach output:\n got: %q\nwant: %q", pickerStdout.String(), explicitStdout.String())
+	if cockpit[0].concurrency != 2 {
+		t.Fatalf("expected the explicit-attach concurrency fallback, got %d", cockpit[0].concurrency)
 	}
-	if !strings.Contains(pickerStderr.String(), "Pick a Run by number or run id.") {
-		t.Fatalf("expected picker guidance, got %q", pickerStderr.String())
+	second := calls[1]
+	if len(second.all) != 4 || second.all[0].ID != createdBehindCockpit.ID {
+		t.Fatalf("expected the refreshed browser to list the Run created behind the cockpit, got %+v", second.all)
 	}
 }
 
-func TestAttachPickerCancelExitsZeroWithoutAttaching(t *testing.T) {
+func TestBrowserAttachCockpitIsTheExplicitAttachCockpit(t *testing.T) {
+	if reflect.ValueOf(browserAttachCockpit).Pointer() != reflect.ValueOf(runAttachCockpit).Pointer() {
+		t.Fatal("expected the browser loop to open the same attach cockpit as explicit attach")
+	}
+}
+
+func TestAttachRunBrowserCancelExitsZeroWithoutAttaching(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	runID, _ := runResolveForAttachTest(t, repoDir)
 	dbPath := filepath.Join(homeDir, ".roundfix", "roundfix.db")
 	assertRunCount(t, dbPath, 1)
-	withAttachPickerInput(t, "\n")
+	withAttachInteractiveInput(t, true)
+	t.Setenv("ROUNDFIX_TUI", "always")
+	cockpitCalls := withBrowserAttachCockpit(t, nil)
+	withRunBrowserSession(t, roundtui.BrowserOutcome{Cancelled: true})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
 	code := RunContext(context.Background(), []string{"attach"}, &stdout, &stderr)
 
 	if code != exitOK {
-		t.Fatalf("expected cancelled picker exit 0, got %d stderr=%q", code, stderr.String())
+		t.Fatalf("expected cancelled browser exit 0, got %d stderr=%q", code, stderr.String())
 	}
 	if stdout.Len() != 0 {
-		t.Fatalf("expected no attach output after picker cancel, got %q", stdout.String())
+		t.Fatalf("expected no attach output after browser cancel, got %q", stdout.String())
 	}
-	if !strings.Contains(stderr.String(), "Press Enter to cancel.") {
-		t.Fatalf("expected cancel guidance, got %q", stderr.String())
+	if len(*cockpitCalls) != 0 {
+		t.Fatalf("expected no cockpit pass after cancel, got %+v", *cockpitCalls)
 	}
 	assertRunCount(t, dbPath, 1)
 	reader, err := store.OpenReader(context.Background(), homeDir)
@@ -6304,14 +6690,14 @@ func TestAttachPickerCancelExitsZeroWithoutAttaching(t *testing.T) {
 	defer func() { _ = reader.Close() }()
 	run, found, err := reader.Run(context.Background(), runID)
 	if err != nil || !found {
-		t.Fatalf("lookup run after picker cancel: found=%v err=%v", found, err)
+		t.Fatalf("lookup run after browser cancel: found=%v err=%v", found, err)
 	}
 	if run.State != store.StateClean {
-		t.Fatalf("expected picker cancel to leave Run untouched, got %q", run.State)
+		t.Fatalf("expected browser cancel to leave Run untouched, got %q", run.State)
 	}
 }
 
-func TestAttachWithoutRunIDNonInteractiveNamesRunsList(t *testing.T) {
+func TestAttachWithoutRunIDNonInteractiveNamesAllRunsList(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        []string
@@ -6335,8 +6721,11 @@ func TestAttachWithoutRunIDNonInteractiveNamesRunsList(t *testing.T) {
 			if stdout.Len() != 0 {
 				t.Fatalf("expected no stdout, got %q", stdout.String())
 			}
-			if !strings.Contains(stderr.String(), "roundfix runs list") {
+			if !strings.Contains(stderr.String(), "roundfix runs list --all") {
 				t.Fatalf("expected discovery command guidance, got %q", stderr.String())
+			}
+			if !strings.Contains(stderr.String(), "pass a run id") {
+				t.Fatalf("expected run id requirement, got %q", stderr.String())
 			}
 		})
 	}
@@ -6404,13 +6793,14 @@ func TestAttachUnknownRunFailsBeforeTUIStart(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"attach", "run_missing"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"attach", "41"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected preflight exit for unknown Run, got %d", code)
 	}
-	if !strings.Contains(stderr.String(), `Run "run_missing" does not exist`) {
-		t.Fatalf("expected unknown Run error, got %q", stderr.String())
+	want := `Run "41" does not exist; picker numbers are not stable Run ids — pass a run id or run 'roundfix attach' to pick interactively`
+	if !strings.Contains(stderr.String(), want) {
+		t.Fatalf("expected picker-number error %q, got %q", want, stderr.String())
 	}
 	if stdout.Len() != 0 {
 		t.Fatalf("expected no replay output before failure, got %q", stdout.String())
@@ -6579,63 +6969,6 @@ func (source *fakeAttachSource) complete(state string) {
 	defer source.mu.Unlock()
 	source.run.State = state
 	source.version++
-}
-
-type blockingLineReader struct {
-	started     chan struct{}
-	release     chan struct{}
-	startOnce   sync.Once
-	releaseOnce sync.Once
-}
-
-func newBlockingLineReader() *blockingLineReader {
-	return &blockingLineReader{
-		started: make(chan struct{}),
-		release: make(chan struct{}),
-	}
-}
-
-func (reader *blockingLineReader) Read([]byte) (int, error) {
-	reader.startOnce.Do(func() {
-		close(reader.started)
-	})
-	<-reader.release
-	return 0, io.EOF
-}
-
-func (reader *blockingLineReader) releaseRead() {
-	reader.releaseOnce.Do(func() {
-		close(reader.release)
-	})
-}
-
-func TestCollectAttachRunSelectionReturnsWhenContextCanceledDuringRead(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	stdin := newBlockingLineReader()
-	defer stdin.releaseRead()
-	resultCh := make(chan error, 1)
-	go func() {
-		_, err := collectAttachRunSelection(ctx, []store.Run{{ID: "run-1", Kind: store.KindResolve, State: store.StateActive}}, stdin, io.Discard)
-		resultCh <- err
-	}()
-	select {
-	case <-stdin.started:
-	case <-time.After(2 * time.Second):
-		t.Fatal("attach Run picker did not start reading stdin")
-	}
-
-	cancel()
-
-	select {
-	case err := <-resultCh:
-		if !errors.Is(err, context.Canceled) {
-			t.Fatalf("expected context cancellation, got %v", err)
-		}
-	case <-time.After(2 * time.Second):
-		t.Fatal("attach Run picker did not return after context cancellation")
-	}
-	stdin.releaseRead()
 }
 
 func TestAttachFollowerAppendsOnlyNewerEventsWithoutDuplicates(t *testing.T) {
@@ -6855,20 +7188,53 @@ func withAttachSleep(t *testing.T, sleep func(ctx context.Context) error) {
 	})
 }
 
-func withAttachPickerInput(t *testing.T, input string) {
+type browserSessionCall struct {
+	active []store.Run
+	all    []store.Run
+}
+
+// withRunBrowserSession scripts Run Browser outcomes so entry-point tests
+// drive the browser loop through the model seam, not terminal emulation.
+func withRunBrowserSession(t *testing.T, outcomes ...roundtui.BrowserOutcome) *[]browserSessionCall {
 	t.Helper()
-	oldReader := attachPickerInputReader
-	oldInteractive := attachInteractiveInputAvailable
-	attachPickerInputReader = func() io.Reader {
-		return strings.NewReader(input)
-	}
-	attachInteractiveInputAvailable = func() bool {
-		return true
+	calls := &[]browserSessionCall{}
+	old := runBrowserSession
+	runBrowserSession = func(_ context.Context, _ io.Writer, active, all []store.Run) (roundtui.BrowserOutcome, error) {
+		index := len(*calls)
+		*calls = append(*calls, browserSessionCall{active: active, all: all})
+		if index >= len(outcomes) {
+			t.Fatalf("unexpected Run Browser session call %d", index+1)
+		}
+		return outcomes[index], nil
 	}
 	t.Cleanup(func() {
-		attachPickerInputReader = oldReader
-		attachInteractiveInputAvailable = oldInteractive
+		runBrowserSession = old
 	})
+	return calls
+}
+
+type browserCockpitCall struct {
+	runID       string
+	concurrency int
+}
+
+// withBrowserAttachCockpit replaces the browser loop's cockpit step and
+// records each pass; a nil handler just reports success.
+func withBrowserAttachCockpit(t *testing.T, handler func(run store.Run, concurrency int) int) *[]browserCockpitCall {
+	t.Helper()
+	calls := &[]browserCockpitCall{}
+	old := browserAttachCockpit
+	browserAttachCockpit = func(_ context.Context, _ roundconfig.Loaded, _ *store.Store, run store.Run, concurrency int, _ io.Writer, _ io.Writer) int {
+		*calls = append(*calls, browserCockpitCall{runID: run.ID, concurrency: concurrency})
+		if handler == nil {
+			return exitOK
+		}
+		return handler(run, concurrency)
+	}
+	t.Cleanup(func() {
+		browserAttachCockpit = old
+	})
+	return calls
 }
 
 func withAttachInteractiveInput(t *testing.T, available bool) {
