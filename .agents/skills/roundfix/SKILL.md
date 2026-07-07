@@ -329,8 +329,12 @@ Active Runs only by default, with a header naming the repository and the
 Agent, relative start, duration, and branch. `↑↓` moves, `Enter` attaches
 the selected Run through the read-only Live Run View — leaving it returns to
 a refreshed browser — `a` toggles active/all, and `q`/`Esc`/`Ctrl-C` quits
-with exit `0` and no side effects. The empty Active view names the toggle:
-`No active Runs — press a to show all Runs.` In a non-interactive context,
+with exit `0` and no side effects. The empty Active view names the filter —
+`No active Runs in this repository — press a to include terminal Runs.` —
+and when other repositories have Active Runs it appends
+`N active Run(s) in other repositories — run 'roundfix runs list --all'.`
+(the browser is repository-scoped; the `a` toggle widens states, not
+repositories). In a non-interactive context,
 bare `runs` exits `2` and names `roundfix runs list`; `attach` without a Run
 ID, including `--no-input`, exits `2` and names `roundfix runs list` as the
 discovery command. The Run Browser is the human surface — agents use the
