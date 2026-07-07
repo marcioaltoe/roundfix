@@ -1,9 +1,12 @@
 ---
 spec: 0020-run-browser
-status: active
+status: archived
 created: 2026-07-07
 surfaces: [cli, docs]
+archived: "2026-07-07"
+source_slug: 0020-run-browser
 ---
+
 
 # Run Browser
 
