@@ -88,6 +88,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	if req.detach {
 		return runDetachedCommand(append([]string{"implement"}, args...), req, loadedConfig, stdout, stderr)
 	}
+	outcomeNotifier := outcomeNotifierFromConfig(loadedConfig.Config)
 
 	// Preflight Validation: every failure below exits 2 with one actionable
 	// message, and nothing is written to the Run Database until every check
@@ -185,7 +186,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitPreflight
 	}
 	if err := req.reportDetachedRunCreated(run.ID); err != nil {
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 		printImplementRunFailure(err, stderr)
 		return exitRunFailed
 	}
@@ -203,20 +204,20 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		BootstrapOutput: newBootstrapOutputWriter(ctx, run.ID, runStore, stderr),
 	})
 	if err != nil {
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 		printImplementRunFailure(err, stderr)
 		return exitRunFailed
 	}
 	run, err = runStore.SetRunWorkDir(ctx, run.ID, runRef.Path)
 	if err != nil {
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 		printImplementRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
 	executionSpecsRoot := specsRootForWorkDir(resolvedSpecsRoot, gitState.Root, runRef.Path)
 	executionGraph, err := spec.Load(executionSpecsRoot, graph.Spec.Slug)
 	if err != nil {
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 		printImplementRunFailureWithWorktree(fmt.Errorf("load Spec from Run Worktree: %w", err), runRef.Path, stderr)
 		return exitRunFailed
 	}
@@ -224,7 +225,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	session := agent.SessionRefForRun(run.ID, runRef.Path)
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
 		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 		printImplementRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
@@ -236,7 +237,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	ui, err := startRunUI(ctx, view, run.ID, loadedConfig.HomeDir, runStore, stderr, req.noAgentConsole)
 	if err != nil {
 		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 		printImplementRunFailure(err, stderr)
 		return exitRunFailed
 	}
@@ -246,7 +247,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	if err != nil {
 		if isStopRequest(ctx, err) {
 			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
-			code := completeStoppedRunRecord(runStore, run.ID)
+			code := completeStoppedRunRecord(runStore, run.ID, outcomeNotifier, stderr)
 			ui.Wait()
 			ui.Close()
 			if code != exitOK {
@@ -261,7 +262,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			return exitOK
 		}
 		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 		ui.Wait()
 		ui.Close()
 		printImplementRunFailureWithWorktree(err, runRef.Path, stderr)
@@ -283,7 +284,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		integration, err := integrateCleanImplementRun(ctx, runRef, gitState.Branch)
 		if err != nil {
 			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
-			markRunFailed(ctx, runStore, run.ID)
+			markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 			ui.Wait()
 			ui.Close()
 			printImplementRunFailureWithWorktree(err, runRef.Path, stderr)
@@ -294,7 +295,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			integrationCommand = implementIntegrationCommand(runRef)
 		} else if err := cleanupCleanRunWorktree(ctx, runRef); err != nil {
 			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
-			markRunFailed(ctx, runStore, run.ID)
+			markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 			ui.Wait()
 			ui.Close()
 			printImplementRunFailureWithWorktree(err, runRef.Path, stderr)
@@ -306,7 +307,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		pushResult, err = maybeRunImplementAutoPush(ctx, gitState, loadedConfig.Config, collaborators, runStore, ui, run.ID, stderr)
 		if err != nil {
 			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
-			markRunFailed(ctx, runStore, run.ID)
+			markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 			ui.Wait()
 			ui.Close()
 			printImplementRunPushFailure(err, stderr)
@@ -322,6 +323,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 	closeAgentSession(ctx, collaborators.runner, runtime, session, completed.ID, runStore)
 	publishRunOutcome(ctx, runStore, completed.ID, completed.State, cycleResult.Failed+cycleResult.Skipped, stderr)
+	notifyTerminalOutcome(ctx, runStore, outcomeNotifier, stderr, completed)
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
 	ui.Close()

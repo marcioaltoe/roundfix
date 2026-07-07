@@ -23,6 +23,7 @@ import (
 	"roundfix/internal/app"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/daemon"
+	roundnotify "roundfix/internal/notify"
 	"roundfix/internal/preflight"
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/reviewsource/coderabbit"
@@ -115,6 +116,7 @@ type commandRequest struct {
 
 var runCommandPreflight = defaultRunCommandPreflight
 var fetchReviewItems = defaultFetchReviewItems
+var newOutcomeNotifier = roundnotify.New
 
 // newEngineCollaborators is the single test seam for Run engine
 // collaborators; orchestration itself lives in the daemon Run engine and
@@ -1111,9 +1113,9 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 	case "fetch":
 		return runFetchCommand(ctx, req, loadedConfig, preflightResult, stdout, stderr)
 	case "resolve":
-		return runResolveCommand(ctx, req, loadedConfig, preflightResult, stdout, stderr)
+		return runResolveCommand(ctx, req, loadedConfig, preflightResult, outcomeNotifierFromConfig(loadedConfig.Config), stdout, stderr)
 	case "watch":
-		return runWatchCommand(ctx, req, loadedConfig, preflightResult, stdout, stderr)
+		return runWatchCommand(ctx, req, loadedConfig, preflightResult, outcomeNotifierFromConfig(loadedConfig.Config), stdout, stderr)
 	}
 
 	fmt.Fprintf(stderr, "%s: %s command input accepted, but execution is not wired in this MVP slice\n", app.Name, req.name)
@@ -1231,7 +1233,7 @@ type resolveBatchResult struct {
 	IntegrationCommand string
 }
 
-func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, stdout, stderr io.Writer) int {
+func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, notifier roundnotify.Notifier, stdout, stderr io.Writer) int {
 	resolvePlan, err := prepareResolveBatch(ctx, req, loaded, preflightResult)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
@@ -1258,13 +1260,13 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		return exitPreflight
 	}
 	if err := req.reportDetachedRunCreated(run.ID); err != nil {
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printRunFailure(req.name, err, stderr)
 		return exitRunFailed
 	}
 	run, runRef, err := createReviewRunWorktree(ctx, runStore, run, preflightResult, loaded, stderr)
 	if err != nil {
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printResolveRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
@@ -1272,7 +1274,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	session := agent.SessionRefForRun(run.ID, runRef.Path)
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
 		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printResolveRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
@@ -1289,7 +1291,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	ui, err := startRunUI(ctx, cockpitView, run.ID, loaded.HomeDir, runStore, stderr, req.noAgentConsole)
 	if err != nil {
 		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printResolveRunFailure(err, stderr)
 		return exitRunFailed
 	}
@@ -1299,7 +1301,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	if err != nil {
 		if isStopRequest(ctx, err) {
 			closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
-			code := completeStoppedRunRecord(runStore, run.ID)
+			code := completeStoppedRunRecord(runStore, run.ID, notifier, stderr)
 			ui.Wait()
 			ui.Close()
 			if code != exitOK {
@@ -1313,7 +1315,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 			return exitOK
 		}
 		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		ui.Wait()
 		ui.Close()
 		printResolveRunFailureWithWorktree(err, runRef.Path, stderr)
@@ -1331,7 +1333,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		if err := cleanupCleanRunWorktree(ctx, runRef); err != nil {
 			ui.Close()
 			closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
-			markRunFailed(ctx, runStore, run.ID)
+			markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 			printResolveRunFailureWithWorktree(err, runRef.Path, stderr)
 			return exitRunFailed
 		}
@@ -1345,6 +1347,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	}
 	closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, completed.ID, runStore)
 	publishRunOutcome(ctx, runStore, completed.ID, completed.State, cycleResult.Remaining, stderr)
+	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed)
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
 	ui.Close()
@@ -1368,7 +1371,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 // completeStoppedRunRecord finishes a stopped Run in the Run Database and
 // journals the outcome, without printing: callers print after the cockpit
 // leaves the screen.
-func completeStoppedRunRecord(runStore *store.Store, runID string) int {
+func completeStoppedRunRecord(runStore *store.Store, runID string, notifier roundnotify.Notifier, stderr io.Writer) int {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	completed, err := runStore.CompleteRun(ctx, runID, store.StateStopped)
@@ -1376,6 +1379,7 @@ func completeStoppedRunRecord(runStore *store.Store, runID string) int {
 		return exitRunFailed
 	}
 	publishRunOutcome(ctx, runStore, completed.ID, completed.State, 0, io.Discard)
+	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed)
 	return exitOK
 }
 
@@ -1611,7 +1615,7 @@ func cyclePlanFrom(req commandRequest, loaded roundconfig.Loaded, preflightResul
 	}
 }
 
-func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, stdout, stderr io.Writer) int {
+func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, notifier roundnotify.Notifier, stdout, stderr io.Writer) int {
 	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
 		Agent:            req.agent,
 		CommandOverride:  req.agentCmd,
@@ -1643,20 +1647,20 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		return exitPreflight
 	}
 	if err := req.reportDetachedRunCreated(run.ID); err != nil {
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printRunFailure(req.name, err, stderr)
 		return exitRunFailed
 	}
 	run, runRef, err := createReviewRunWorktree(ctx, runStore, run, preflightResult, loaded, stderr)
 	if err != nil {
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printWatchRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
 	session := agent.SessionRefForRun(run.ID, runRef.Path)
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
 		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printWatchRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
@@ -1679,7 +1683,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	ui, err := startRunUI(ctx, cockpitView, run.ID, loaded.HomeDir, runStore, stderr, req.noAgentConsole)
 	if err != nil {
 		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printWatchRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
@@ -1758,7 +1762,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		if err := cleanupCleanRunWorktree(ctx, runRef); err != nil {
 			ui.Close()
 			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
-			markRunFailed(ctx, runStore, run.ID)
+			markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 			printWatchRunFailureWithWorktree(err, runRef.Path, stderr)
 			return exitRunFailed
 		}
@@ -1778,6 +1782,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 	closeAgentSession(completeCtx, collaborators.runner, runtime, session, completed.ID, runStore)
 	publishRunOutcome(completeCtx, runStore, completed.ID, completed.State, result.Remaining, stderr)
+	notifyTerminalOutcome(completeCtx, runStore, notifier, stderr, completed)
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
 	ui.Close()
@@ -2625,10 +2630,25 @@ func maybeRunFinalPush(ctx context.Context, engine *daemon.Engine, sink runevent
 }
 
 func markRunFailed(ctx context.Context, runStore *store.Store, runID string) {
-	completeCtx := context.WithoutCancel(ctx)
-	if _, err := runStore.CompleteRun(completeCtx, runID, store.StateFailed); err == nil {
-		publishRunOutcome(completeCtx, runStore, runID, store.StateFailed, 0, io.Discard)
+	_, _ = completeFailedRun(ctx, runStore, runID)
+}
+
+func markRunFailedAndNotify(ctx context.Context, runStore *store.Store, runID string, notifier roundnotify.Notifier, stderr io.Writer) {
+	completed, ok := completeFailedRun(ctx, runStore, runID)
+	if !ok {
+		return
 	}
+	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed)
+}
+
+func completeFailedRun(ctx context.Context, runStore *store.Store, runID string) (store.Run, bool) {
+	completeCtx := withoutCancelOrBackground(ctx)
+	completed, err := runStore.CompleteRun(completeCtx, runID, store.StateFailed)
+	if err != nil {
+		return store.Run{}, false
+	}
+	publishRunOutcome(completeCtx, runStore, completed.ID, completed.State, 0, io.Discard)
+	return completed, true
 }
 
 func closeAgentSession(ctx context.Context, runner agent.Runner, runtime agent.RuntimeSpec, session agent.SessionRef, runID string, runStore *store.Store) {
@@ -2675,6 +2695,78 @@ func publishRunOutcome(ctx context.Context, runStore *store.Store, runID string,
 	}); err != nil {
 		fmt.Fprintf(stderr, "Warning: terminal outcome event not journaled: %v\n", err)
 	}
+}
+
+func outcomeNotifierFromConfig(config roundconfig.Config) roundnotify.Notifier {
+	if !config.Notify.Enabled || newOutcomeNotifier == nil {
+		return nil
+	}
+	return newOutcomeNotifier(config)
+}
+
+func notifyTerminalOutcome(ctx context.Context, runStore *store.Store, notifier roundnotify.Notifier, stderr io.Writer, run store.Run) {
+	if notifier == nil {
+		return
+	}
+	notifyCtx := withoutCancelOrBackground(ctx)
+	if err := notifier.Notify(notifyCtx, outcomeFromRun(run)); err != nil {
+		reportOutcomeNotificationFailure(notifyCtx, runStore, run.ID, err, stderr)
+	}
+}
+
+func outcomeFromRun(run store.Run) roundnotify.Outcome {
+	return roundnotify.Outcome{
+		RunID:  run.ID,
+		State:  run.State,
+		Kind:   run.Kind,
+		Target: outcomeTarget(run),
+	}
+}
+
+func outcomeTarget(run store.Run) string {
+	if run.Kind == store.KindImplement {
+		return "spec:" + strings.TrimSpace(run.SpecSlug)
+	}
+	if strings.TrimSpace(run.PRNumber) != "" {
+		return "pr:" + strings.TrimSpace(run.PRNumber)
+	}
+	return ""
+}
+
+func reportOutcomeNotificationFailure(ctx context.Context, runStore *store.Store, runID string, err error, stderr io.Writer) {
+	reason := strings.TrimSpace(err.Error())
+	if reason == "" {
+		reason = "unknown error"
+	}
+	warning := fmt.Sprintf("%s: outcome notification failed: %s", app.Name, reason)
+	if stderr != nil {
+		fmt.Fprintln(stderr, warning)
+	}
+	if runStore == nil {
+		return
+	}
+	payload, marshalErr := json.Marshal(map[string]string{
+		"event":  "outcome_notification_failed",
+		"reason": reason,
+	})
+	if marshalErr != nil {
+		return
+	}
+	_ = (store.JournalSink{Store: runStore}).Publish(withoutCancelOrBackground(ctx), runevent.RunEvent{
+		RunID:   runID,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonStatus,
+		Summary: runevent.BoundSummary(warning),
+		Time:    time.Now().UTC(),
+		Payload: payload,
+	})
+}
+
+func withoutCancelOrBackground(ctx context.Context) context.Context {
+	if ctx == nil {
+		return context.Background()
+	}
+	return context.WithoutCancel(ctx)
 }
 
 func commandUsage(name string) string {

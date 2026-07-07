@@ -23,6 +23,7 @@ import (
 	"roundfix/internal/codex"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/daemon"
+	roundnotify "roundfix/internal/notify"
 	"roundfix/internal/preflight"
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/rounds"
@@ -33,6 +34,18 @@ import (
 	"roundfix/internal/watch"
 	runworktree "roundfix/internal/worktree"
 )
+
+func init() {
+	newOutcomeNotifier = func(roundconfig.Config) roundnotify.Notifier {
+		return testNoopOutcomeNotifier{}
+	}
+}
+
+type testNoopOutcomeNotifier struct{}
+
+func (testNoopOutcomeNotifier) Notify(context.Context, roundnotify.Outcome) error {
+	return nil
+}
 
 func TestRunHelp(t *testing.T) {
 	var stdout bytes.Buffer
@@ -1584,6 +1597,164 @@ func TestRunResolvePrintsDeterministicStdoutReport(t *testing.T) {
 		"Clean after 1 Round(s): 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("stdout mismatch\nwant:\n%q\ngot:\n%q\nstderr:\n%s", wantStdout, stdout.String(), stderr.String())
+	}
+}
+
+func TestRunOutcomeNotificationsCaptureTerminalResolveWatchAndImplement(t *testing.T) {
+	tests := []struct {
+		name         string
+		args         []string
+		setup        func(t *testing.T) string
+		runID        func(t *testing.T, stderr string) string
+		wantState    string
+		wantKind     string
+		wantTarget   string
+		wantExitCode int
+	}{
+		{
+			name: "resolve",
+			args: []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"},
+			setup: func(t *testing.T) string {
+				t.Helper()
+				homeDir, repoDir := withCLIWorkspace(t)
+				withSuccessfulPreflight(t, repoDir)
+				persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+				return homeDir
+			},
+			runID:      reviewRunIDFromStderr,
+			wantState:  store.StateClean,
+			wantKind:   store.KindResolve,
+			wantTarget: "pr:123",
+		},
+		{
+			name: "watch",
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"},
+			setup: func(t *testing.T) string {
+				t.Helper()
+				homeDir, repoDir := withCLIWorkspace(t)
+				withSuccessfulPreflight(t, repoDir)
+				return homeDir
+			},
+			runID:      reviewRunIDFromStderr,
+			wantState:  store.StateClean,
+			wantKind:   store.KindWatch,
+			wantTarget: "pr:123",
+		},
+		{
+			name: "implement",
+			args: []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"},
+			setup: func(t *testing.T) string {
+				t.Helper()
+				homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+					{id: "task_01", title: "Wire notification outcome"},
+				})
+				withImplementCollaborators(t, &implementFakeRunner{
+					gitRoot: repoDir,
+					statusByTask: map[string]spec.Status{
+						"task_01": spec.StatusCompleted,
+					},
+				})
+				return homeDir
+			},
+			runID:      implementRunIDFromStderr,
+			wantState:  store.StateClean,
+			wantKind:   store.KindImplement,
+			wantTarget: "spec:" + implementTestSlug,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_ = tt.setup(t)
+			notifier := &recordingOutcomeNotifier{}
+			withOutcomeNotifier(t, notifier)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+
+			if code != tt.wantExitCode {
+				t.Fatalf("expected exit code %d, got %d stderr=%q stdout=%q", tt.wantExitCode, code, stderr.String(), stdout.String())
+			}
+			runID := tt.runID(t, stderr.String())
+			assertRecordedOutcomes(t, notifier, []roundnotify.Outcome{{
+				RunID:  runID,
+				State:  tt.wantState,
+				Kind:   tt.wantKind,
+				Target: tt.wantTarget,
+			}})
+		})
+	}
+}
+
+func TestRunOutcomeNotificationsSkipFetch(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	notifier := &recordingOutcomeNotifier{}
+	withOutcomeNotifier(t, notifier)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"fetch", "--source", "coderabbit", "--pr", "123", "--round", "auto", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected fetch exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	assertRecordedOutcomes(t, notifier, nil)
+}
+
+func TestRunOutcomeNotificationFailureWarnsAndJournalsWithoutChangingReportOrExit(t *testing.T) {
+	wantStdout, _, wantCode, _ := runCleanResolveForOutcomeNotification(t, nil)
+	gotStdout, gotStderr, gotCode, homeDir := runCleanResolveForOutcomeNotification(t, errors.New("forced notifier failure"))
+
+	if gotCode != wantCode {
+		t.Fatalf("expected exit code to stay %d, got %d stderr=%q", wantCode, gotCode, gotStderr)
+	}
+	if gotStdout != wantStdout {
+		t.Fatalf("stdout changed after notification failure\nwant:\n%q\ngot:\n%q", wantStdout, gotStdout)
+	}
+	warning := "roundfix: outcome notification failed: forced notifier failure\n"
+	if strings.Count(gotStderr, warning) != 1 {
+		t.Fatalf("expected one notification warning %q, got stderr=%q", warning, gotStderr)
+	}
+	runID, events := journaledRunEvents(t, homeDir, gotStderr)
+	for _, entry := range events {
+		event := entry.Event
+		if event.Source == runevent.SourceDaemon &&
+			event.Kind == runevent.KindDaemonStatus &&
+			strings.Contains(event.Summary, "outcome notification failed") &&
+			strings.Contains(string(event.Payload), "forced notifier failure") {
+			return
+		}
+	}
+	t.Fatalf("expected Daemon-source notification failure event for Run %s, got %+v", runID, events)
+}
+
+func TestRunOutcomeNotificationsDisabledSkipsNotifier(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "notify:\n  enabled: false\n")
+	withSuccessfulPreflight(t, repoDir)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	withOutcomeNotifierFactory(t, func(roundconfig.Config) roundnotify.Notifier {
+		t.Fatal("disabled notifications must not construct a notifier")
+		return nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected resolve exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	wantStdout := "" +
+		"issue 001 resolved — major: handle test issue\n" +
+		"Clean after 1 Round(s): 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n"
+	if stdout.String() != wantStdout {
+		t.Fatalf("stdout mismatch\nwant:\n%q\ngot:\n%q\nstderr:\n%s", wantStdout, stdout.String(), stderr.String())
+	}
+	if strings.Contains(stderr.String(), "outcome notification failed") {
+		t.Fatalf("disabled notifications must be silent, got stderr=%q", stderr.String())
 	}
 }
 
@@ -4194,6 +4365,73 @@ func assertSetupLineOrder(t *testing.T, output string, lines []string) {
 		}
 		last = index
 	}
+}
+
+type recordingOutcomeNotifier struct {
+	mu       sync.Mutex
+	err      error
+	outcomes []roundnotify.Outcome
+}
+
+func (notifier *recordingOutcomeNotifier) Notify(ctx context.Context, outcome roundnotify.Outcome) error {
+	if ctx == nil {
+		return errors.New("notification context is required")
+	}
+	notifier.mu.Lock()
+	defer notifier.mu.Unlock()
+	notifier.outcomes = append(notifier.outcomes, outcome)
+	return notifier.err
+}
+
+func (notifier *recordingOutcomeNotifier) recorded() []roundnotify.Outcome {
+	notifier.mu.Lock()
+	defer notifier.mu.Unlock()
+	return append([]roundnotify.Outcome(nil), notifier.outcomes...)
+}
+
+func withOutcomeNotifier(t *testing.T, notifier roundnotify.Notifier) {
+	t.Helper()
+	withOutcomeNotifierFactory(t, func(roundconfig.Config) roundnotify.Notifier {
+		return notifier
+	})
+}
+
+func withOutcomeNotifierFactory(t *testing.T, factory func(roundconfig.Config) roundnotify.Notifier) {
+	t.Helper()
+	old := newOutcomeNotifier
+	newOutcomeNotifier = factory
+	t.Cleanup(func() {
+		newOutcomeNotifier = old
+	})
+}
+
+func assertRecordedOutcomes(t *testing.T, notifier *recordingOutcomeNotifier, want []roundnotify.Outcome) {
+	t.Helper()
+	got := notifier.recorded()
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("recorded notification outcomes mismatch\nwant: %#v\ngot:  %#v", want, got)
+	}
+}
+
+func runCleanResolveForOutcomeNotification(t *testing.T, notifyErr error) (string, string, int, string) {
+	t.Helper()
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	notifier := &recordingOutcomeNotifier{err: notifyErr}
+	withOutcomeNotifier(t, notifier)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected clean resolve exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if len(notifier.recorded()) != 1 {
+		t.Fatalf("expected one notification attempt, got %#v", notifier.recorded())
+	}
+	return stdout.String(), stderr.String(), code, homeDir
 }
 
 func withCLIWorkspace(t *testing.T) (string, string) {
