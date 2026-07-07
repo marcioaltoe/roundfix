@@ -35,6 +35,8 @@ worktree:
     - certs/dev.pem
 resolve:
   batch_size: 2
+specs:
+  root: user-specs
 `)
 	mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), `
 defaults:
@@ -50,6 +52,8 @@ worktree:
     - project.env
 budget:
   max_run_duration: 3h
+specs:
+  root: project-specs
 `)
 
 	loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
@@ -89,6 +93,9 @@ budget:
 	}
 	if loaded.Config.Resolve.BatchSize != 2 {
 		t.Fatalf("expected user batch size, got %d", loaded.Config.Resolve.BatchSize)
+	}
+	if loaded.Config.Specs.Root != "project-specs" {
+		t.Fatalf("expected project specs.root to override user config, got %q", loaded.Config.Specs.Root)
 	}
 }
 
@@ -611,6 +618,22 @@ resolve:
 `,
 			contains: "resolve.concurent is not a supported config key",
 		},
+		{
+			name: "unknown specs key",
+			config: `
+specs:
+  directory: docs/specs
+`,
+			contains: "specs.directory is not a supported config key",
+		},
+		{
+			name: "empty specs root",
+			config: `
+specs:
+  root: ""
+`,
+			contains: "specs.root must not be empty",
+		},
 	}
 
 	for _, tt := range tests {
@@ -693,6 +716,7 @@ func TestInitCreatesUserConfig(t *testing.T) {
 	content := mustRead(t, expectedPath)
 	if !strings.Contains(content, "agent: codex") || !strings.Contains(content, "agent_full_access: false") ||
 		!strings.Contains(content, `artifact_dir: ""`) || !strings.Contains(content, "Roundfix Home artifacts/<repo-id>") ||
+		!strings.Contains(content, "specs:") || !strings.Contains(content, `root: "docs/specs"`) ||
 		!strings.Contains(content, "worktree:") || !strings.Contains(content, `location: "~/.roundfix/worktrees"`) ||
 		!strings.Contains(content, "concurrency: 2") || !strings.Contains(content, "copy: []") ||
 		!strings.Contains(content, "store:") || !strings.Contains(content, "journal_retention: 336h") ||
@@ -852,6 +876,153 @@ func TestValidateArtifactDirectoryRejectsInvalidPaths(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "is not a directory") {
 		t.Fatalf("expected not-directory error, got %q", err.Error())
+	}
+}
+
+func TestResolveSpecsRoot(t *testing.T) {
+	repoRoot := t.TempDir()
+	mustMkdir(t, filepath.Join(repoRoot, "docs", "specs"))
+	mustMkdir(t, filepath.Join(repoRoot, "configured-specs"))
+	absoluteInternal := filepath.Join(repoRoot, "absolute-specs")
+	mustMkdir(t, absoluteInternal)
+	externalRoot := filepath.Join(t.TempDir(), "external-specs")
+	mustMkdir(t, externalRoot)
+
+	tests := []struct {
+		name     string
+		root     string
+		wantPath string
+		wantExt  bool
+	}{
+		{
+			name:     "builtin default is internal docs specs",
+			root:     Builtin().Specs.Root,
+			wantPath: filepath.Join(repoRoot, "docs", "specs"),
+		},
+		{
+			name:     "relative root resolves against repository root",
+			root:     "configured-specs",
+			wantPath: filepath.Join(repoRoot, "configured-specs"),
+		},
+		{
+			name:     "absolute root is used as is",
+			root:     absoluteInternal,
+			wantPath: absoluteInternal,
+		},
+		{
+			name:     "absolute external root is classified external",
+			root:     externalRoot,
+			wantPath: externalRoot,
+			wantExt:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			loaded := Loaded{Config: Builtin(), GitRoot: repoRoot}
+			loaded.Config.Specs.Root = tt.root
+
+			got, err := ResolveSpecsRoot(loaded, repoRoot)
+			if err != nil {
+				t.Fatalf("ResolveSpecsRoot() error = %v", err)
+			}
+			if got.Path != tt.wantPath {
+				t.Fatalf("ResolveSpecsRoot().Path = %q, want %q", got.Path, tt.wantPath)
+			}
+			if got.External != tt.wantExt {
+				t.Fatalf("ResolveSpecsRoot().External = %t, want %t", got.External, tt.wantExt)
+			}
+		})
+	}
+}
+
+func TestResolveSpecsRootUsesLoadedDefault(t *testing.T) {
+	homeDir := t.TempDir()
+	repoRoot := t.TempDir()
+	mustMkdir(t, filepath.Join(repoRoot, ".git"))
+	mustMkdir(t, filepath.Join(repoRoot, "docs", "specs"))
+
+	loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: repoRoot})
+	if err != nil {
+		t.Fatalf("expected config to load, got %v", err)
+	}
+	got, err := ResolveSpecsRoot(loaded, loaded.GitRoot)
+	if err != nil {
+		t.Fatalf("ResolveSpecsRoot() error = %v", err)
+	}
+	wantPath := filepath.Join(repoRoot, "docs", "specs")
+	if got.Path != wantPath {
+		t.Fatalf("ResolveSpecsRoot().Path = %q, want %q", got.Path, wantPath)
+	}
+	if got.External {
+		t.Fatal("expected default Spec Root to be internal")
+	}
+}
+
+func TestResolveSpecsRootClassifiesExternalSymlink(t *testing.T) {
+	repoRoot := t.TempDir()
+	externalRoot := filepath.Join(t.TempDir(), "external-specs")
+	mustMkdir(t, filepath.Join(repoRoot, "docs"))
+	mustMkdir(t, externalRoot)
+	symlinkPath := filepath.Join(repoRoot, "docs", "specs")
+	if err := os.Symlink(externalRoot, symlinkPath); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+	loaded := Loaded{Config: Builtin(), GitRoot: repoRoot}
+
+	got, err := ResolveSpecsRoot(loaded, repoRoot)
+	if err != nil {
+		t.Fatalf("ResolveSpecsRoot() error = %v", err)
+	}
+	if got.Path != symlinkPath {
+		t.Fatalf("ResolveSpecsRoot().Path = %q, want %q", got.Path, symlinkPath)
+	}
+	if !got.External {
+		t.Fatal("expected symlinked external Spec Root to be classified external")
+	}
+}
+
+func TestResolveSpecsRootRejectsInvalidRoots(t *testing.T) {
+	repoRoot := t.TempDir()
+	filePath := filepath.Join(repoRoot, "spec-file")
+	mustWrite(t, filePath, "not a directory")
+
+	tests := []struct {
+		name     string
+		root     string
+		resolved string
+		contains string
+	}{
+		{
+			name:     "missing relative root",
+			root:     "missing-specs",
+			resolved: filepath.Join(repoRoot, "missing-specs"),
+			contains: "does not exist",
+		},
+		{
+			name:     "file root",
+			root:     filePath,
+			resolved: filePath,
+			contains: "is not a directory",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			loaded := Loaded{Config: Builtin(), GitRoot: repoRoot}
+			loaded.Config.Specs.Root = tt.root
+
+			_, err := ResolveSpecsRoot(loaded, repoRoot)
+			if err == nil {
+				t.Fatal("expected ResolveSpecsRoot to fail")
+			}
+			if !strings.Contains(err.Error(), tt.contains) {
+				t.Fatalf("expected error to contain %q, got %q", tt.contains, err.Error())
+			}
+			if !strings.Contains(err.Error(), tt.resolved) {
+				t.Fatalf("expected error to name resolved path %q, got %q", tt.resolved, err.Error())
+			}
+		})
 	}
 }
 
