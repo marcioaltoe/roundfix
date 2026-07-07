@@ -95,6 +95,12 @@ type CreateRunRequest struct {
 	Agent          string
 }
 
+// ListRunsQuery scopes a Run listing.
+type ListRunsQuery struct {
+	GitRoot    string
+	ActiveOnly bool
+}
+
 type ActiveRunError struct {
 	Existing Run
 }
@@ -462,6 +468,48 @@ LIMIT 1`, gitRoot)
 		return Run{}, false, err
 	}
 	return run, true, nil
+}
+
+// ListRuns returns matching Runs, newest first by creation time.
+func (store *Store) ListRuns(ctx context.Context, query ListRunsQuery) ([]Run, error) {
+	sqlQuery := `
+SELECT id, kind, state, head_repository, head_branch, base_repository,
+       pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
+       spec_slug, agent, created_at, updated_at, completed_at
+FROM runs`
+	args := []any{}
+	gitRoot := strings.TrimSpace(query.GitRoot)
+	if gitRoot != "" {
+		sqlQuery += `
+WHERE git_root = ?`
+		args = append(args, gitRoot)
+	}
+	sqlQuery += `
+ORDER BY created_at DESC, id DESC`
+
+	rows, err := store.db.QueryContext(ctx, sqlQuery, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list Runs: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	runs := []Run{}
+	for rows.Next() {
+		run, err := scanRun(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan Run listing: %w", err)
+		}
+		if query.ActiveOnly && IsTerminalState(run.State) {
+			continue
+		}
+		runs = append(runs, run)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate Run listing: %w", err)
+	}
+	return runs, nil
 }
 
 func (store *Store) Run(ctx context.Context, runID string) (Run, bool, error) {
@@ -851,6 +899,10 @@ type runQuerier interface {
 	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
 }
 
+type runScanner interface {
+	Scan(dest ...any) error
+}
+
 func selectActiveRunByTarget(ctx context.Context, querier runQuerier, targetKind string, targetKey string) (Run, bool, error) {
 	row := querier.QueryRowContext(ctx, `
 SELECT r.id, r.kind, r.state, r.head_repository, r.head_branch, r.base_repository,
@@ -886,7 +938,7 @@ WHERE id = ?`, runID)
 	return run, nil
 }
 
-func scanRun(row *sql.Row) (Run, error) {
+func scanRun(row runScanner) (Run, error) {
 	var run Run
 	var createdAt string
 	var updatedAt string

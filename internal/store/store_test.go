@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -206,6 +207,134 @@ func TestRunLooksUpExistingRunByID(t *testing.T) {
 	}
 	if ok {
 		t.Fatal("expected missing Run lookup")
+	}
+}
+
+func TestListRunsScopesByRepositoryAndOrdersNewestFirst(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	base := time.Date(2026, 7, 6, 10, 0, 0, 0, time.UTC)
+	repoA := filepath.Join("tmp", "repo-a")
+	repoB := filepath.Join("tmp", "repo-b")
+	repoAOlder := createListedRun(t, ctx, runStore, listedRunSeed{
+		gitRoot:   repoA,
+		branch:    "feature/repo-a-older",
+		prNumber:  "101",
+		createdAt: base,
+		state:     StateActive,
+	})
+	repoANewer := createListedRun(t, ctx, runStore, listedRunSeed{
+		gitRoot:   repoA,
+		branch:    "feature/repo-a-newer",
+		prNumber:  "102",
+		createdAt: base.Add(2 * time.Minute),
+		state:     StateResolvingWithAgent,
+	})
+	repoBRun := createListedRun(t, ctx, runStore, listedRunSeed{
+		gitRoot:   repoB,
+		branch:    "feature/repo-b",
+		prNumber:  "201",
+		createdAt: base.Add(4 * time.Minute),
+		state:     StateActive,
+	})
+
+	scoped, err := runStore.ListRuns(ctx, ListRunsQuery{GitRoot: repoA})
+	if err != nil {
+		t.Fatalf("list repository-scoped Runs: %v", err)
+	}
+	assertRunIDs(t, scoped, []string{repoANewer.ID, repoAOlder.ID})
+	for _, run := range scoped {
+		if run.GitRoot != repoA {
+			t.Fatalf("expected only repository %q, got Run %s in %q", repoA, run.ID, run.GitRoot)
+		}
+	}
+
+	allRepos, err := runStore.ListRuns(ctx, ListRunsQuery{})
+	if err != nil {
+		t.Fatalf("list Runs across repositories: %v", err)
+	}
+	assertRunIDs(t, allRepos, []string{repoBRun.ID, repoANewer.ID, repoAOlder.ID})
+}
+
+func TestListRunsActiveOnlyKeepsEveryNonTerminalState(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	gitRoot := filepath.Join("tmp", "active-filter")
+	base := time.Date(2026, 7, 6, 11, 0, 0, 0, time.UTC)
+	terminalStates := []string{
+		StateFetched,
+		StateStopped,
+		StateClean,
+		StateMaxRoundsReached,
+		StateBudgetExceeded,
+		StateTimedOut,
+		StateFailed,
+		StateIntegrationPending,
+		StateUnresolved,
+	}
+	for index, state := range terminalStates {
+		createListedRun(t, ctx, runStore, listedRunSeed{
+			gitRoot:   gitRoot,
+			branch:    fmt.Sprintf("feature/terminal-%02d", index),
+			prNumber:  fmt.Sprintf("30%d", index),
+			createdAt: base.Add(time.Duration(index*2+1) * time.Minute),
+			state:     state,
+		})
+	}
+
+	nonTerminalStates := []string{
+		StateActive,
+		StateResolvingWithAgent,
+		StateVerifying,
+		StatePushing,
+	}
+	activeRuns := make([]Run, 0, len(nonTerminalStates))
+	for index, state := range nonTerminalStates {
+		run := createListedRun(t, ctx, runStore, listedRunSeed{
+			gitRoot:   gitRoot,
+			branch:    fmt.Sprintf("feature/active-%02d", index),
+			prNumber:  fmt.Sprintf("40%d", index),
+			createdAt: base.Add(time.Duration(index*2) * time.Minute),
+			state:     state,
+		})
+		activeRuns = append(activeRuns, run)
+	}
+
+	runs, err := runStore.ListRuns(ctx, ListRunsQuery{GitRoot: gitRoot, ActiveOnly: true})
+	if err != nil {
+		t.Fatalf("list Active Runs: %v", err)
+	}
+	assertRunIDs(t, runs, []string{
+		activeRuns[3].ID,
+		activeRuns[2].ID,
+		activeRuns[1].ID,
+		activeRuns[0].ID,
+	})
+	for _, run := range runs {
+		if IsTerminalState(run.State) {
+			t.Fatalf("expected Active-only listing to exclude terminal Run %s in state %s", run.ID, run.State)
+		}
+	}
+}
+
+func TestListRunsEmptyDatabaseReturnsEmptySlice(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	runs, err := runStore.ListRuns(ctx, ListRunsQuery{})
+	if err != nil {
+		t.Fatalf("list empty Run Database: %v", err)
+	}
+	if runs == nil {
+		t.Fatal("expected empty slice, got nil")
+	}
+	if len(runs) != 0 {
+		t.Fatalf("expected no Runs, got %#v", runs)
 	}
 }
 
@@ -412,6 +541,73 @@ func closeStore(t *testing.T, store *Store) {
 	if err := store.Close(); err != nil {
 		t.Fatalf("close store: %v", err)
 	}
+}
+
+type listedRunSeed struct {
+	gitRoot   string
+	branch    string
+	prNumber  string
+	createdAt time.Time
+	state     string
+}
+
+func createListedRun(t *testing.T, ctx context.Context, store *Store, seed listedRunSeed) Run {
+	t.Helper()
+	store.now = func() time.Time { return seed.createdAt }
+	req := sampleCreateRunRequest()
+	req.GitRoot = seed.gitRoot
+	req.HeadBranch = seed.branch
+	req.LocalBranch = seed.branch
+	req.PRNumber = seed.prNumber
+	req.ArtifactDir = filepath.Join(seed.gitRoot, ".roundfix")
+	run, err := store.CreateRun(ctx, req)
+	if err != nil {
+		t.Fatalf("create listed Run: %v", err)
+	}
+
+	switch {
+	case seed.state == "" || seed.state == StateActive:
+		return run
+	case IsTerminalState(seed.state):
+		store.now = func() time.Time { return seed.createdAt.Add(time.Minute) }
+		completed, err := store.CompleteRun(ctx, run.ID, seed.state)
+		if err != nil {
+			t.Fatalf("complete listed Run as %s: %v", seed.state, err)
+		}
+		return completed
+	default:
+		if err := store.UpdateRunState(ctx, run.ID, seed.state); err != nil {
+			t.Fatalf("update listed Run state to %s: %v", seed.state, err)
+		}
+		updated, ok, err := store.Run(ctx, run.ID)
+		if err != nil {
+			t.Fatalf("read updated listed Run: %v", err)
+		}
+		if !ok {
+			t.Fatalf("expected updated listed Run %s to exist", run.ID)
+		}
+		return updated
+	}
+}
+
+func assertRunIDs(t *testing.T, runs []Run, want []string) {
+	t.Helper()
+	if len(runs) != len(want) {
+		t.Fatalf("expected Run IDs %v, got %v", want, runIDs(runs))
+	}
+	for index, run := range runs {
+		if run.ID != want[index] {
+			t.Fatalf("expected Run IDs %v, got %v", want, runIDs(runs))
+		}
+	}
+}
+
+func runIDs(runs []Run) []string {
+	ids := make([]string, 0, len(runs))
+	for _, run := range runs {
+		ids = append(ids, run.ID)
+	}
+	return ids
 }
 
 func sampleCreateRunRequest() CreateRunRequest {
