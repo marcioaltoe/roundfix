@@ -48,6 +48,10 @@ _Avoid_: Review Provider, Agent, ACP Runtime
 One feature's planning artifact set produced by the spec workflow: PRD, Task Graph, Task files, and QA evidence.
 _Avoid_: Feature folder, epic, project
 
+**Spec Root**:
+The configured directory holding Spec folders, `docs/specs` by default; it may resolve outside the repository working tree, such as a knowledge workspace repository.
+_Avoid_: Specs directory, docs folder, knowledge base
+
 **Task**:
 One implementable unit of work within a Spec. Its task file is the sole owner of its status.
 _Avoid_: Subtask, story, ticket
