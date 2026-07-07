@@ -86,15 +86,22 @@ Follow: roundfix attach <run-id>
 Stop: roundfix stop <run-id>
 ```
 
-Capture `<run-id>`, then monitor without owning the Run:
+Monitor without owning the Run. If you have the detached report, use the
+captured Run ID. From a fresh terminal, discover the repository's Runs first or
+open the Attach picker:
 
 ```bash
-roundfix attach <run-id>          # read-only Live Run View; q or Ctrl-C detaches
+roundfix runs list --active       # stable report: id, state, kind, target
+roundfix attach                   # interactive picker; q or Ctrl-C detaches after attach
+roundfix attach <run-id>          # direct read-only Live Run View
 # or tail the console log at <artifact-dir>/runs/<run-id>/console.log
 ```
 
-The terminal outcome line lands in the console log. `attach` never stops,
-commits, or mutates the Run; detaching leaves it running.
+`runs list` prints this repository's Runs newest first, and `--active` filters
+out terminal Runs. `attach` without a Run ID lists the repository's Runs in an
+interactive terminal and accepts a number or Run ID. The terminal outcome line
+lands in the console log. `attach` never stops, commits, or mutates the Run;
+detaching leaves it running.
 
 ### Read the outcome and act
 
@@ -191,8 +198,9 @@ roundfix skills install    # writes to <repo>/.agents/skills
 An agent driving Roundfix should:
 
 - Prefer `roundfix` commands over manual GitHub scraping.
-- Detach the Run, then poll `roundfix attach <run-id>` or the console log rather
-  than blocking a foreground process.
+- Detach the Run, then discover it with `roundfix runs list --active` and
+  follow it with `roundfix attach <run-id>` or the console log rather than
+  blocking a foreground process.
 - Branch on the deterministic outcome line and exit code, not on log scraping.
 - Report the Run ID, the PR or Spec, the Agent, and the current Run state when
   summarizing progress.
@@ -229,7 +237,8 @@ a Run is Active.
 | `fetch` | Download Review Issue artifacts for a PR |
 | `resolve` | Resolve downloaded Review Issues once |
 | `watch` | Fetch and resolve in a watched loop |
-| `attach` | Replay a Run's timeline, read-only |
+| `runs list` | List Runs from the Run Database |
+| `attach` | Pick or replay a Run's timeline, read-only |
 | `stop` | Request or force-stop an Active Run |
 | `gc` | Prune old terminal Run journals and artifacts |
 | `upgrade` | Upgrade the binary from GitHub Releases |

@@ -242,6 +242,35 @@ roundfix gc --dry-run
 roundfix gc
 ```
 
+Discover Runs in the current repository, or across every repository stored in
+the Run Database:
+
+```bash
+roundfix runs list
+roundfix runs list --active
+roundfix runs list --all
+```
+
+`runs list` prints one Run per line, newest first, as:
+`<run-id>  <state>  <kind>  <target>`. Active Runs mark the state with `*`;
+targets are `pr:<number>` for review Runs or `spec:<slug>` for Spec Runs.
+`--active` filters out terminal Runs. `--all` lists every repository and adds
+the repository path as a final column. With no matches, stdout is exactly
+`No Runs found.` and the command exits `0`.
+
+Attach by choosing from this repository's Runs, or attach directly by Run ID:
+
+```bash
+roundfix attach
+roundfix attach <run-id>
+```
+
+In an interactive terminal, `attach` without a Run ID opens a numbered picker
+over the same repository-scoped Run listing and accepts a number or Run ID.
+Press Enter to cancel without attaching. In non-interactive mode or with
+`--no-input`, missing Run ID exits `2` and names `roundfix runs list` as the
+discovery command.
+
 Stop a live Run gracefully, or force-stop a dead or runaway Run:
 
 ```bash
@@ -345,6 +374,21 @@ it, or set `NO_COLOR` to suppress color.
   eligible set without deleting anything. `journal_retention: 0` skips pruning
   and reports that no pruning was performed. Retention never deletes Active
   Runs, `runs` rows, active-run locks, or Review artifacts under `docs/specs/`.
+- `runs list` is read-only and writes only the listing report to stdout. By
+  default it scopes to the current repository and exits `2` outside a Git
+  repository, naming `--all` as the alternative. `--all` widens the listing to
+  every repository and adds a repository column. `--active` keeps only
+  non-terminal Runs. Empty results print `No Runs found.` and exit `0`; invalid
+  flags, unexpected arguments, repository-resolution failures, and Run Database
+  open/list failures exit `2` with diagnostics on stderr.
+- `attach` is read-only. With a Run ID, it replays that Run's Run Event Journal
+  and follows live events without creating Runs, fetching, starting Agents,
+  committing, pushing, stopping, or resolving Review Source threads. Without a
+  Run ID in an interactive terminal, it opens a repository-scoped picker that
+  lists Active Runs first and terminal Runs too, accepts a number or Run ID,
+  and then uses the same Attach path. Cancelling the picker exits `0` with no
+  side effects. Without a Run ID in non-interactive mode, including
+  `--no-input`, it exits `2` and names `roundfix runs list`.
 - `stop` is graceful by default. It records a Stop Request in the Run Database
   and reports `Stop Request recorded; the Run stops after the current Work Item
   settles.` Use `--force` only for a dead, stuck, or runaway Run; it cancels

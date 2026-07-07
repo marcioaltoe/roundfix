@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0017-run-discovery
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -30,18 +30,18 @@ updated docs against the shipped behavior.
 
 ## Subtasks
 
-- [ ] README Commands and Command Boundaries entries for `runs list` and the
+- [x] README Commands and Command Boundaries entries for `runs list` and the
       Attach picker
-- [ ] Usage guide monitoring flow update
-- [ ] roundfix SKILL.md update and `make skills-sync`
-- [ ] Drift and skills checks pass
+- [x] Usage guide monitoring flow update
+- [x] roundfix SKILL.md update and `make skills-sync`
+- [x] Drift and skills checks pass
 
 ## Acceptance Criteria
 
-- [ ] README documents the listing columns, both flags, the empty-result
+- [x] README documents the listing columns, both flags, the empty-result
       contract, and the no-argument Attach behavior.
-- [ ] The usage guide shows Run discovery without a captured run id.
-- [ ] `make skills-sync-check` reports no drift and `roundfix skills check`
+- [x] The usage guide shows Run discovery without a captured run id.
+- [x] `make skills-sync-check` reports no drift and `roundfix skills check`
       passes.
 
 ## Verification
@@ -53,3 +53,31 @@ updated docs against the shipped behavior.
 
 `_prd.md` → Goals; Success Metrics. `_techspec.md` → Build Order 4. CLAUDE.md
 SKILL.md-matches-CLI HARD RULE.
+
+## Result
+
+Updated the Run discovery documentation and skill bundle to match the shipped
+CLI behavior.
+
+Acceptance evidence:
+
+- `README.md` now documents `roundfix runs list`, the stable columns
+  (`run-id`, state, kind, target), `--active`, `--all`, the `No Runs found.`
+  empty-result line, exit-code behavior, and no-argument `roundfix attach`.
+- `docs/usage.md` now shows monitoring a Detached Run from a fresh terminal by
+  using `roundfix runs list --active` and the no-argument Attach picker instead
+  of requiring a previously captured Run id.
+- `.agents/skills/roundfix/SKILL.md` now includes the Run discovery and Attach
+  picker surface, and `rtk make skills-sync` regenerated the embedded
+  `skills/roundfix/SKILL.md` copy.
+- CLI help consistency was checked with `rtk go run -buildvcs=false
+  ./cmd/roundfix --help`, `rtk go run -buildvcs=false ./cmd/roundfix runs
+  --help`, and `rtk go run -buildvcs=false ./cmd/roundfix attach --help`.
+
+Verification:
+
+- `rtk make skills-sync-check` passed with no drift output.
+- `rtk go run -buildvcs=false ./cmd/roundfix skills check` passed and reported
+  all shipped Roundfix skills valid.
+- `rtk make verify` passed: `rtk go test ./...` reported 838 tests across 18
+  packages, `roundfix skills check` passed, and `go build` completed.
