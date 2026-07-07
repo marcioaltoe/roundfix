@@ -48,9 +48,14 @@ func runArchiveCommand(ctx context.Context, args []string, stdout, stderr io.Wri
 		printPreflightFailure("archive", err, stderr)
 		return exitPreflight
 	}
+	resolvedSpecsRoot, err := roundconfig.ResolveSpecsRoot(loaded, loaded.GitRoot)
+	if err != nil {
+		printPreflightFailure("archive", err, stderr)
+		return exitPreflight
+	}
 	result, err := spec.Archive(spec.ArchiveRequest{
-		GitRoot: loaded.GitRoot,
-		Slug:    slug,
+		SpecsRoot: resolvedSpecsRoot.Path,
+		Slug:      slug,
 	})
 	if err != nil {
 		printPreflightFailure("archive", err, stderr)
@@ -69,6 +74,9 @@ func filepathRelSlash(base string, target string) (string, error) {
 	rel, err := filepath.Rel(base, target)
 	if err != nil {
 		return "", err
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+		return filepath.ToSlash(target), nil
 	}
 	return filepath.ToSlash(rel), nil
 }

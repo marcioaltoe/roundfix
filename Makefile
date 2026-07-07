@@ -90,15 +90,22 @@ skills-update: ## Install missing skills and update existing ones to latest (rea
 skills-check: ## Validate shipped Roundfix skill artifacts
 	$(GO) run $(RUN_FLAGS) $(CMD) skills check
 
-skills-sync: ## Regenerate embedded skills/roundfix from the canonical .agents/skills/roundfix
-	rm -rf skills/roundfix
-	cp -R .agents/skills/roundfix skills/roundfix
+# The Roundfix-owned skill bundle shipped in the binary: the operational
+# roundfix skill plus the 13 authorial workflow skills. Everything else is
+# managed by the external skills-lock.json origin and is never embedded.
+OWNED_SKILLS := roundfix write-idea write-prd write-techspec write-tasks setup-workflow implement-task implement-spec brainstorming council business-analyst archive-spec qa-gate evidence-gate
 
-skills-sync-check: ## Fail when skills/roundfix drifts from the canonical .agents/skills/roundfix
-	@diff -r .agents/skills/roundfix skills/roundfix >/dev/null || { \
-		echo "skills/roundfix drifts from canonical .agents/skills/roundfix; run 'make skills-sync'"; \
-		exit 1; \
-	}
+skills-sync: ## Regenerate the embedded skills/ bundle from canonical .agents/skills/
+	@for s in $(OWNED_SKILLS); do rm -rf "skills/$$s"; cp -R ".agents/skills/$$s" "skills/$$s"; done
+	@python3 -c "import json; print('\n'.join(sorted(json.load(open('skills-lock.json'))['skills'].keys())))" > skills/recommended.txt
+
+skills-sync-check: ## Fail when the embedded bundle drifts from canonical .agents/skills/
+	@for s in $(OWNED_SKILLS); do \
+		diff -r ".agents/skills/$$s" "skills/$$s" >/dev/null || { \
+			echo "skills/$$s drifts from .agents/skills/$$s; run 'make skills-sync'"; exit 1; }; \
+	done
+	@python3 -c "import json; print('\n'.join(sorted(json.load(open('skills-lock.json'))['skills'].keys())))" | diff - skills/recommended.txt >/dev/null || { \
+		echo "skills/recommended.txt drifts from skills-lock.json; run 'make skills-sync'"; exit 1; }
 
 skills-install: ## Install shipped Roundfix skills; pass TARGET=project|codex|claude|opencode|all
 	$(GO) run $(RUN_FLAGS) $(CMD) skills install --target $(TARGET)

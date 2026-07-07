@@ -30,6 +30,7 @@ const (
 	defaultWorktreeLocation         = "~/.roundfix/worktrees"
 	defaultWorktreeConcurrency      = 2
 	defaultWorktreeBootstrapTimeout = 10 * time.Minute
+	defaultSpecsRoot                = "docs/specs"
 )
 
 const (
@@ -42,11 +43,13 @@ type Config struct {
 	ReviewSource ReviewSource
 	Watch        Watch
 	Implement    Implement
+	Notify       Notify
 	Worktree     Worktree
 	Budget       Budget
 	Resolve      Resolve
 	Logs         Logs
 	Store        Store
+	Specs        Specs
 }
 
 type Defaults struct {
@@ -78,6 +81,11 @@ type Implement struct {
 	AutoPush bool
 }
 
+type Notify struct {
+	Enabled bool
+	Command string
+}
+
 type Worktree struct {
 	Concurrency      int
 	Location         string
@@ -103,12 +111,21 @@ type Store struct {
 	JournalRetention time.Duration
 }
 
+type Specs struct {
+	Root string
+}
+
 type Loaded struct {
 	Config            Config
 	GitRoot           string
 	HomeDir           string
 	UserConfigPath    string
 	ProjectConfigPath string
+}
+
+type SpecsRoot struct {
+	Path     string
+	External bool
 }
 
 type LoadOptions struct {
@@ -156,11 +173,13 @@ type configOverlay struct {
 	ReviewSource *reviewSourceOverlay `yaml:"review_source"`
 	Watch        *watchOverlay        `yaml:"watch"`
 	Implement    *implementOverlay    `yaml:"implement"`
+	Notify       *notifyOverlay       `yaml:"notify"`
 	Worktree     *worktreeOverlay     `yaml:"worktree"`
 	Budget       *budgetOverlay       `yaml:"budget"`
 	Resolve      *resolveOverlay      `yaml:"resolve"`
 	Logs         *logsOverlay         `yaml:"logs"`
 	Store        *storeOverlay        `yaml:"store"`
+	Specs        *specsOverlay        `yaml:"specs"`
 }
 
 type defaultsOverlay struct {
@@ -192,6 +211,11 @@ type implementOverlay struct {
 	AutoPush *implementAutoPushValue `yaml:"auto_push"`
 }
 
+type notifyOverlay struct {
+	Enabled *bool   `yaml:"enabled"`
+	Command *string `yaml:"command"`
+}
+
 type implementAutoPushValue struct {
 	value bool
 }
@@ -205,6 +229,26 @@ func (value *implementAutoPushValue) UnmarshalYAML(node *yaml.Node) error {
 		return fmt.Errorf("implement.auto_push must be boolean: %w", err)
 	}
 	value.value = raw
+	return nil
+}
+
+func (overlay *notifyOverlay) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind == yaml.MappingNode {
+		for index := 0; index < len(node.Content); index += 2 {
+			key := node.Content[index].Value
+			switch key {
+			case "enabled", "command":
+			default:
+				return fmt.Errorf("notify.%s is not a supported config key", key)
+			}
+		}
+	}
+	type rawNotifyOverlay notifyOverlay
+	var raw rawNotifyOverlay
+	if err := node.Decode(&raw); err != nil {
+		return err
+	}
+	*overlay = notifyOverlay(raw)
 	return nil
 }
 
@@ -231,6 +275,10 @@ type logsOverlay struct {
 
 type storeOverlay struct {
 	JournalRetention *durationValue `yaml:"journal_retention"`
+}
+
+type specsOverlay struct {
+	Root *string `yaml:"root"`
 }
 
 func (overlay *resolveOverlay) UnmarshalYAML(node *yaml.Node) error {
@@ -270,6 +318,26 @@ func (overlay *storeOverlay) UnmarshalYAML(node *yaml.Node) error {
 		return err
 	}
 	*overlay = storeOverlay(raw)
+	return nil
+}
+
+func (overlay *specsOverlay) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind == yaml.MappingNode {
+		for index := 0; index < len(node.Content); index += 2 {
+			key := node.Content[index].Value
+			switch key {
+			case "root":
+			default:
+				return fmt.Errorf("specs.%s is not a supported config key", key)
+			}
+		}
+	}
+	type rawSpecsOverlay specsOverlay
+	var raw rawSpecsOverlay
+	if err := node.Decode(&raw); err != nil {
+		return err
+	}
+	*overlay = specsOverlay(raw)
 	return nil
 }
 
@@ -352,6 +420,9 @@ func Builtin() Config {
 		Implement: Implement{
 			AutoPush: false,
 		},
+		Notify: Notify{
+			Enabled: true,
+		},
 		Worktree: Worktree{
 			Concurrency:      defaultWorktreeConcurrency,
 			Location:         defaultWorktreeLocation,
@@ -369,6 +440,9 @@ func Builtin() Config {
 		},
 		Store: Store{
 			JournalRetention: defaultJournalRetention,
+		},
+		Specs: Specs{
+			Root: defaultSpecsRoot,
 		},
 	}
 }
@@ -464,6 +538,10 @@ defaults:
   artifact_dir: ""
   auto_commit: %t
 
+specs:
+  # Directory holding Spec folders; relative paths resolve against the repository root.
+  root: %q
+
 worktree:
   # Parent directory; Roundfix always appends <repo-slug>/<run-id>.
   location: %q
@@ -499,6 +577,12 @@ implement:
   # auto_push runs only after a Clean spec Run and never creates pull requests.
   auto_push: %t
 
+notify:
+  # false disables notifications entirely.
+  enabled: %t
+  # Shell command run on terminal outcome; empty uses the native desktop notification.
+  command: %q
+
 budget:
   enabled: %t
   max_run_duration: %s
@@ -510,6 +594,7 @@ resolve:
 		config.Defaults.AgentFullAccess,
 		config.Defaults.Verification,
 		config.Defaults.AutoCommit,
+		config.Specs.Root,
 		config.Worktree.Location,
 		config.Worktree.Concurrency,
 		formatConfigDuration(config.Worktree.BootstrapTimeout),
@@ -523,6 +608,8 @@ resolve:
 		formatConfigDuration(config.Watch.QuietPeriod),
 		config.Watch.AutoPush,
 		config.Implement.AutoPush,
+		config.Notify.Enabled,
+		config.Notify.Command,
 		config.Budget.Enabled,
 		formatConfigDuration(config.Budget.MaxRunDuration),
 		config.Resolve.BatchSize,
@@ -560,6 +647,9 @@ func Validate(config Config) error {
 	if config.Store.JournalRetention < 0 {
 		return errors.New("store.journal_retention must be greater than or equal to 0")
 	}
+	if strings.TrimSpace(config.Specs.Root) == "" {
+		return errors.New("specs.root must not be empty")
+	}
 	if config.Worktree.Concurrency < 1 {
 		return errors.New("worktree.concurrency must be greater than 0")
 	}
@@ -578,6 +668,54 @@ func Validate(config Config) error {
 		return errors.New("watch.auto_push requires defaults.auto_commit to be true")
 	}
 	return nil
+}
+
+func ResolveSpecsRoot(loaded Loaded, repoRoot string) (SpecsRoot, error) {
+	effectiveRepoRoot := strings.TrimSpace(repoRoot)
+	if effectiveRepoRoot == "" {
+		effectiveRepoRoot = strings.TrimSpace(loaded.GitRoot)
+	}
+	if effectiveRepoRoot == "" {
+		return SpecsRoot{}, errors.New("specs.root requires a Git root")
+	}
+	absoluteRepoRoot, err := filepath.Abs(effectiveRepoRoot)
+	if err != nil {
+		return SpecsRoot{}, fmt.Errorf("resolve repository root %q: %w", effectiveRepoRoot, err)
+	}
+
+	configuredRoot := strings.TrimSpace(loaded.Config.Specs.Root)
+	if configuredRoot == "" {
+		return SpecsRoot{}, errors.New("specs.root must not be empty")
+	}
+	resolved := filepath.Clean(configuredRoot)
+	if !filepath.IsAbs(resolved) {
+		resolved = filepath.Join(absoluteRepoRoot, resolved)
+	}
+
+	info, err := os.Stat(resolved)
+	if errors.Is(err, os.ErrNotExist) {
+		return SpecsRoot{}, fmt.Errorf("specs.root resolved to %q, which does not exist; create the directory or update specs.root", resolved)
+	}
+	if err != nil {
+		return SpecsRoot{}, fmt.Errorf("stat specs.root %q: %w", resolved, err)
+	}
+	if !info.IsDir() {
+		return SpecsRoot{}, fmt.Errorf("specs.root resolved to %q, which is not a directory; update specs.root to a directory", resolved)
+	}
+
+	evaluatedRoot, err := filepath.EvalSymlinks(resolved)
+	if err != nil {
+		return SpecsRoot{}, fmt.Errorf("evaluate specs.root %q: %w", resolved, err)
+	}
+	evaluatedRepoRoot, err := filepath.EvalSymlinks(absoluteRepoRoot)
+	if err != nil {
+		return SpecsRoot{}, fmt.Errorf("evaluate repository root %q: %w", absoluteRepoRoot, err)
+	}
+
+	return SpecsRoot{
+		Path:     resolved,
+		External: !pathInsideOrSame(evaluatedRoot, evaluatedRepoRoot),
+	}, nil
 }
 
 func writeDefaultConfig(ctx context.Context, path string, force bool) (bool, error) {
@@ -697,6 +835,7 @@ func ResolveArtifactDirectory(artifactDir string, gitRoot string, homeDir string
 type ReviewArtifactContext struct {
 	ExplicitArtifactDir string
 	RepoRoot            string
+	SpecsRoot           string
 	SpecSlug            string
 	PRNumber            int
 }
@@ -710,21 +849,25 @@ func ResolveReviewRoot(ctx ReviewArtifactContext) (string, error) {
 		return filepath.Join(explicit, "reviews", prDir), nil
 	}
 
-	repoRoot := strings.TrimSpace(ctx.RepoRoot)
-	if repoRoot == "" {
-		return "", errors.New("Git root is required to resolve Review artifact root")
+	specsRoot := strings.TrimSpace(ctx.SpecsRoot)
+	if specsRoot == "" {
+		repoRoot := strings.TrimSpace(ctx.RepoRoot)
+		if repoRoot == "" {
+			return "", errors.New("Spec Root is required to resolve Review artifact root")
+		}
+		specsRoot = filepath.Join(repoRoot, "docs", "specs")
 	}
-	if slug := strings.TrimSpace(ctx.SpecSlug); slug != "" && reviewSpecDirExists(repoRoot, slug) {
-		return filepath.Join(repoRoot, "docs", "specs", slug, "reviews"), nil
+	if slug := strings.TrimSpace(ctx.SpecSlug); slug != "" && reviewSpecDirExists(specsRoot, slug) {
+		return filepath.Join(specsRoot, slug, "reviews"), nil
 	}
-	return filepath.Join(repoRoot, "docs", "specs", "_reviews", prDir), nil
+	return filepath.Join(specsRoot, "_reviews", prDir), nil
 }
 
-func reviewSpecDirExists(repoRoot string, slug string) bool {
+func reviewSpecDirExists(specsRoot string, slug string) bool {
 	if !validReviewSpecSlug(slug) {
 		return false
 	}
-	info, err := os.Stat(filepath.Join(repoRoot, "docs", "specs", slug))
+	info, err := os.Stat(filepath.Join(specsRoot, slug))
 	return err == nil && info.IsDir()
 }
 
@@ -903,6 +1046,14 @@ func applyOverlay(config *Config, overlay configOverlay) {
 			config.Implement.AutoPush = overlay.Implement.AutoPush.value
 		}
 	}
+	if overlay.Notify != nil {
+		if overlay.Notify.Enabled != nil {
+			config.Notify.Enabled = *overlay.Notify.Enabled
+		}
+		if overlay.Notify.Command != nil {
+			config.Notify.Command = *overlay.Notify.Command
+		}
+	}
 	if overlay.Worktree != nil {
 		if overlay.Worktree.Concurrency != nil {
 			config.Worktree.Concurrency = *overlay.Worktree.Concurrency
@@ -941,6 +1092,11 @@ func applyOverlay(config *Config, overlay configOverlay) {
 	if overlay.Store != nil {
 		if overlay.Store.JournalRetention != nil {
 			config.Store.JournalRetention = overlay.Store.JournalRetention.value
+		}
+	}
+	if overlay.Specs != nil {
+		if overlay.Specs.Root != nil {
+			config.Specs.Root = *overlay.Specs.Root
 		}
 	}
 }

@@ -23,6 +23,7 @@ import (
 	"roundfix/internal/app"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/daemon"
+	roundnotify "roundfix/internal/notify"
 	"roundfix/internal/preflight"
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/reviewsource/coderabbit"
@@ -51,8 +52,9 @@ Usage:
   roundfix doctor
   roundfix gc [--dry-run]
   roundfix upgrade [--check]
+  roundfix runs list [--all] [--active]
   roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
-  roundfix attach <run-id>
+  roundfix attach [<run-id>] [--no-input]
   roundfix skills check
   roundfix skills install [--target <project|codex|claude|opencode|all>]
 
@@ -69,8 +71,9 @@ Commands:
   doctor     Diagnose this machine's readiness for Roundfix Runs
   gc         Prune old terminal Run journals and run artifacts
   upgrade    Upgrade the Roundfix binary from GitHub Releases
+  runs       List Runs from the Run Database
   attach     Replay a Run's event timeline from the Run Database
-  skills     Check or install the Roundfix agent skill
+  skills     List, check, or install the bundled Roundfix skills
 
 Options:
   -h, --help      Show help
@@ -113,6 +116,7 @@ type commandRequest struct {
 
 var runCommandPreflight = defaultRunCommandPreflight
 var fetchReviewItems = defaultFetchReviewItems
+var newOutcomeNotifier = roundnotify.New
 
 // newEngineCollaborators is the single test seam for Run engine
 // collaborators; orchestration itself lives in the daemon Run engine and
@@ -190,6 +194,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runGCCommand(ctx, args[1:], stdout, stderr)
 	case "upgrade":
 		return runUpgradeCommand(ctx, args[1:], stdout, stderr)
+	case "runs":
+		return runRunsCommand(ctx, args[1:], stdout, stderr)
 	case "stop":
 		return runStopCommand(ctx, args[1:], stdout, stderr)
 	case "attach":
@@ -282,6 +288,17 @@ func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		}
 		fmt.Fprintf(stdout, "Roundfix skill check passed: %s\n", strings.Join(roundskills.Names(), ", "))
 		return exitOK
+	case "list":
+		if commandWantsHelp(args[1:]) {
+			fmt.Fprint(stdout, commandUsage("skills"))
+			return exitOK
+		}
+		if len(args) > 1 {
+			fmt.Fprintf(stderr, "%s: unexpected argument %q\n", app.Name, args[1])
+			fmt.Fprintf(stderr, "Run '%s skills --help' for usage.\n", app.Name)
+			return exitPreflight
+		}
+		return runSkillsList(stdout)
 	case "install":
 		return runSkillsInstall(ctx, args[1:], stdout, stderr)
 	default:
@@ -289,6 +306,20 @@ func runSkillsCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		fmt.Fprintf(stderr, "Run '%s skills --help' for usage.\n", app.Name)
 		return exitPreflight
 	}
+}
+
+func runSkillsList(stdout io.Writer) int {
+	fmt.Fprintln(stdout, "Bundled skills (install with 'roundfix skills install'):")
+	for _, name := range roundskills.Names() {
+		fmt.Fprintf(stdout, "  %s\n", name)
+	}
+	if recommended := roundskills.Recommended(); len(recommended) > 0 {
+		fmt.Fprintln(stdout, "Recommended skills (managed by your skills tooling, not shipped):")
+		for _, name := range recommended {
+			fmt.Fprintf(stdout, "  %s\n", name)
+		}
+	}
+	return exitOK
 }
 
 type stopRequest struct {
@@ -911,7 +942,11 @@ func buildInteractiveInputRequest(ctx context.Context, req commandRequest, loade
 	if req.name == "implement" {
 		// List the picker's Specs before any Run Database access so a
 		// nothing-to-implement failure leaves no side effects behind.
-		options, skipped, err := implementSpecOptionsDetailed(loaded.GitRoot)
+		resolvedSpecsRoot, err := roundconfig.ResolveSpecsRoot(loaded, loaded.GitRoot)
+		if err != nil {
+			return roundtui.InputRequest{}, err
+		}
+		options, skipped, err := implementSpecOptionsDetailed(resolvedSpecsRoot.Path)
 		if err != nil {
 			return roundtui.InputRequest{}, err
 		}
@@ -1060,7 +1095,15 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 		printPreflightFailure(name, err, stderr)
 		return exitPreflight
 	}
-	reviewRoot, err := resolveReviewArtifactRoot(ctx, req, preflightResult)
+	specsRoot := reviewArtifactSpecsRoot(loadedConfig, preflightResult.Git.Root)
+	if !reviewArtifactUsesDefaultSpecsRoot(loadedConfig.Config.Specs.Root) {
+		specsRoot, err = roundconfig.ResolveSpecsRoot(loadedConfig, preflightResult.Git.Root)
+		if err != nil {
+			printPreflightFailure(name, err, stderr)
+			return exitPreflight
+		}
+	}
+	reviewRoot, err := resolveReviewArtifactRoot(ctx, req, preflightResult, specsRoot)
 	if err != nil {
 		printPreflightFailure(name, err, stderr)
 		return exitPreflight
@@ -1070,9 +1113,9 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 	case "fetch":
 		return runFetchCommand(ctx, req, loadedConfig, preflightResult, stdout, stderr)
 	case "resolve":
-		return runResolveCommand(ctx, req, loadedConfig, preflightResult, stdout, stderr)
+		return runResolveCommand(ctx, req, loadedConfig, preflightResult, outcomeNotifierFromConfig(loadedConfig.Config), stdout, stderr)
 	case "watch":
-		return runWatchCommand(ctx, req, loadedConfig, preflightResult, stdout, stderr)
+		return runWatchCommand(ctx, req, loadedConfig, preflightResult, outcomeNotifierFromConfig(loadedConfig.Config), stdout, stderr)
 	}
 
 	fmt.Fprintf(stderr, "%s: %s command input accepted, but execution is not wired in this MVP slice\n", app.Name, req.name)
@@ -1190,7 +1233,7 @@ type resolveBatchResult struct {
 	IntegrationCommand string
 }
 
-func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, stdout, stderr io.Writer) int {
+func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, notifier roundnotify.Notifier, stdout, stderr io.Writer) int {
 	resolvePlan, err := prepareResolveBatch(ctx, req, loaded, preflightResult)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
@@ -1217,13 +1260,13 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		return exitPreflight
 	}
 	if err := req.reportDetachedRunCreated(run.ID); err != nil {
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printRunFailure(req.name, err, stderr)
 		return exitRunFailed
 	}
 	run, runRef, err := createReviewRunWorktree(ctx, runStore, run, preflightResult, loaded, stderr)
 	if err != nil {
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printResolveRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
@@ -1231,7 +1274,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	session := agent.SessionRefForRun(run.ID, runRef.Path)
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
 		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printResolveRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
@@ -1248,7 +1291,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	ui, err := startRunUI(ctx, cockpitView, run.ID, loaded.HomeDir, runStore, stderr, req.noAgentConsole)
 	if err != nil {
 		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printResolveRunFailure(err, stderr)
 		return exitRunFailed
 	}
@@ -1258,7 +1301,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	if err != nil {
 		if isStopRequest(ctx, err) {
 			closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
-			code := completeStoppedRunRecord(runStore, run.ID)
+			code := completeStoppedRunRecord(runStore, run.ID, notifier, stderr)
 			ui.Wait()
 			ui.Close()
 			if code != exitOK {
@@ -1272,7 +1315,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 			return exitOK
 		}
 		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		ui.Wait()
 		ui.Close()
 		printResolveRunFailureWithWorktree(err, runRef.Path, stderr)
@@ -1290,7 +1333,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		if err := cleanupCleanRunWorktree(ctx, runRef); err != nil {
 			ui.Close()
 			closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
-			markRunFailed(ctx, runStore, run.ID)
+			markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 			printResolveRunFailureWithWorktree(err, runRef.Path, stderr)
 			return exitRunFailed
 		}
@@ -1304,6 +1347,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	}
 	closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, completed.ID, runStore)
 	publishRunOutcome(ctx, runStore, completed.ID, completed.State, cycleResult.Remaining, stderr)
+	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed)
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
 	ui.Close()
@@ -1327,7 +1371,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 // completeStoppedRunRecord finishes a stopped Run in the Run Database and
 // journals the outcome, without printing: callers print after the cockpit
 // leaves the screen.
-func completeStoppedRunRecord(runStore *store.Store, runID string) int {
+func completeStoppedRunRecord(runStore *store.Store, runID string, notifier roundnotify.Notifier, stderr io.Writer) int {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	completed, err := runStore.CompleteRun(ctx, runID, store.StateStopped)
@@ -1335,6 +1379,7 @@ func completeStoppedRunRecord(runStore *store.Store, runID string) int {
 		return exitRunFailed
 	}
 	publishRunOutcome(ctx, runStore, completed.ID, completed.State, 0, io.Discard)
+	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed)
 	return exitOK
 }
 
@@ -1523,7 +1568,14 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 		publishPushDecision(ctx, ui.sink, runID, "skipped", "Final Push skipped: Run integration pending.", 0)
 		return resolveBatchResult{Remaining: result.Remaining, CommitCreated: commitCreated, IntegrationPending: true, IntegrationCommand: command}, nil
 	}
-	if err := maybeRunFinalPush(ctx, engine, ui.sink, runID, loaded, preflightResult, runRef.Path, commitCreated, ui.progress); err != nil {
+	// The review artifact commit (ADR-0036) lands on the user's checkout after
+	// integration, so Final Push runs from the checkout: its HEAD is the
+	// integrated Run tip plus the review docs commit when one was created.
+	reviewCommitCreated, err := maybeCommitReviewArtifacts(ctx, req, loaded, preflightResult, collaborators.committer, ui.sink, runID, resolvePlan.roundNumber, runRef.Path, ui.progress)
+	if err != nil {
+		return resolveBatchResult{}, err
+	}
+	if err := maybeRunFinalPush(ctx, engine, ui.sink, runID, loaded, preflightResult, preflightResult.Git.Root, commitCreated || reviewCommitCreated, ui.progress); err != nil {
 		return resolveBatchResult{}, err
 	}
 	return resolveBatchResult{Remaining: result.Remaining, CommitCreated: commitCreated}, nil
@@ -1570,7 +1622,7 @@ func cyclePlanFrom(req commandRequest, loaded roundconfig.Loaded, preflightResul
 	}
 }
 
-func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, stdout, stderr io.Writer) int {
+func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, notifier roundnotify.Notifier, stdout, stderr io.Writer) int {
 	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
 		Agent:            req.agent,
 		CommandOverride:  req.agentCmd,
@@ -1602,20 +1654,20 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		return exitPreflight
 	}
 	if err := req.reportDetachedRunCreated(run.ID); err != nil {
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printRunFailure(req.name, err, stderr)
 		return exitRunFailed
 	}
 	run, runRef, err := createReviewRunWorktree(ctx, runStore, run, preflightResult, loaded, stderr)
 	if err != nil {
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printWatchRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
 	session := agent.SessionRefForRun(run.ID, runRef.Path)
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
 		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printWatchRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
@@ -1638,7 +1690,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	ui, err := startRunUI(ctx, cockpitView, run.ID, loaded.HomeDir, runStore, stderr, req.noAgentConsole)
 	if err != nil {
 		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
-		markRunFailed(ctx, runStore, run.ID)
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printWatchRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
@@ -1717,7 +1769,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		if err := cleanupCleanRunWorktree(ctx, runRef); err != nil {
 			ui.Close()
 			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
-			markRunFailed(ctx, runStore, run.ID)
+			markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 			printWatchRunFailureWithWorktree(err, runRef.Path, stderr)
 			return exitRunFailed
 		}
@@ -1737,6 +1789,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 	closeAgentSession(completeCtx, collaborators.runner, runtime, session, completed.ID, runStore)
 	publishRunOutcome(completeCtx, runStore, completed.ID, completed.State, result.Remaining, stderr)
+	notifyTerminalOutcome(completeCtx, runStore, notifier, stderr, completed)
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
 	ui.Close()
@@ -2325,10 +2378,44 @@ func validateAgent(agent string) error {
 type reviewSpecRequest struct {
 	ExplicitSlug string
 	RepoRoot     string
+	SpecsRoot    string
 	HeadSHA      string
 }
 
-func resolveReviewArtifactRoot(ctx context.Context, req commandRequest, preflightResult preflight.Result) (string, error) {
+func specsRootForWorkDir(resolved roundconfig.SpecsRoot, repoRoot string, workDir string) string {
+	if resolved.External {
+		return resolved.Path
+	}
+	if strings.TrimSpace(workDir) == "" {
+		return resolved.Path
+	}
+	rel, err := filepath.Rel(repoRoot, resolved.Path)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+		return resolved.Path
+	}
+	return filepath.Join(workDir, rel)
+}
+
+func specsRootIsDefault(repoRoot string, resolved roundconfig.SpecsRoot) bool {
+	return filepath.Clean(resolved.Path) == filepath.Join(filepath.Clean(repoRoot), "docs", "specs")
+}
+
+func reportNonDefaultSpecsRoot(stderr io.Writer, repoRoot string, resolved roundconfig.SpecsRoot) {
+	if specsRootIsDefault(repoRoot, resolved) {
+		return
+	}
+	fmt.Fprintf(stderr, "Spec Root: %s\n", resolved.Path)
+}
+
+func reviewArtifactSpecsRoot(loaded roundconfig.Loaded, repoRoot string) roundconfig.SpecsRoot {
+	return roundconfig.SpecsRoot{Path: filepath.Join(repoRoot, loaded.Config.Specs.Root)}
+}
+
+func reviewArtifactUsesDefaultSpecsRoot(configured string) bool {
+	return strings.TrimSpace(configured) == "docs/specs"
+}
+
+func resolveReviewArtifactRoot(ctx context.Context, req commandRequest, preflightResult preflight.Result, specsRoot roundconfig.SpecsRoot) (string, error) {
 	prNumber, err := strconv.Atoi(req.pr)
 	if err != nil {
 		return "", fmt.Errorf("parse Open Pull Request number %q: %w", req.pr, err)
@@ -2342,6 +2429,7 @@ func resolveReviewArtifactRoot(ctx context.Context, req commandRequest, prefligh
 		specSlug, err = reviewSpecSlug(ctx, reviewSpecRequest{
 			ExplicitSlug: req.spec,
 			RepoRoot:     preflightResult.Git.Root,
+			SpecsRoot:    specsRoot.Path,
 			HeadSHA:      preflightResult.Git.HEAD,
 		}, reviewSpecGitRunner)
 		if err != nil {
@@ -2351,14 +2439,19 @@ func resolveReviewArtifactRoot(ctx context.Context, req commandRequest, prefligh
 	return roundconfig.ResolveReviewRoot(roundconfig.ReviewArtifactContext{
 		ExplicitArtifactDir: explicitArtifactDir,
 		RepoRoot:            preflightResult.Git.Root,
+		SpecsRoot:           specsRoot.Path,
 		SpecSlug:            specSlug,
 		PRNumber:            prNumber,
 	})
 }
 
 func reviewSpecSlug(ctx context.Context, req reviewSpecRequest, runner preflight.GitRunner) (string, error) {
+	specsRoot := strings.TrimSpace(req.SpecsRoot)
+	if specsRoot == "" {
+		specsRoot = filepath.Join(req.RepoRoot, "docs", "specs")
+	}
 	if slug := strings.TrimSpace(req.ExplicitSlug); slug != "" {
-		if reviewSpecFolderExists(req.RepoRoot, slug) {
+		if reviewSpecFolderExists(specsRoot, slug) {
 			return slug, nil
 		}
 		return "", nil
@@ -2368,7 +2461,7 @@ func reviewSpecSlug(ctx context.Context, req reviewSpecRequest, runner preflight
 		return "", fmt.Errorf("read PR head commit trailers: %w", err)
 	}
 	slug := newestRoundfixSpecTrailer(message)
-	if slug == "" || !reviewSpecFolderExists(req.RepoRoot, slug) {
+	if slug == "" || !reviewSpecFolderExists(specsRoot, slug) {
 		return "", nil
 	}
 	return slug, nil
@@ -2388,11 +2481,11 @@ func newestRoundfixSpecTrailer(message string) string {
 	return slug
 }
 
-func reviewSpecFolderExists(repoRoot string, slug string) bool {
+func reviewSpecFolderExists(specsRoot string, slug string) bool {
 	if !validReviewSpecSlug(slug) {
 		return false
 	}
-	info, err := os.Stat(filepath.Join(repoRoot, "docs", "specs", slug))
+	info, err := os.Stat(filepath.Join(specsRoot, slug))
 	return err == nil && info.IsDir()
 }
 
@@ -2516,6 +2609,107 @@ func countBatchIssues(batches []rounds.Batch) int {
 	return count
 }
 
+// maybeCommitReviewArtifacts creates the ADR-0036 review artifact commit on
+// the user's checkout after a clean integration: one docs commit, separate
+// from Batch fix commits, carrying every dirty path under the Run's resolved
+// review artifact root. Roots outside the repository — an explicit external
+// Artifact Directory, an external Spec Root, or a root reached through a
+// symbolic link — are never staged; the Run proceeds without the commit.
+func maybeCommitReviewArtifacts(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, committer daemon.Committer, sink runevent.Sink, runID string, roundNumber int, runWorktree string, stderr io.Writer) (bool, error) {
+	if !loaded.Config.Defaults.AutoCommit {
+		return false, nil
+	}
+	specsRoot := reviewArtifactSpecsRoot(loaded, preflightResult.Git.Root)
+	if !reviewArtifactUsesDefaultSpecsRoot(loaded.Config.Specs.Root) {
+		resolved, err := roundconfig.ResolveSpecsRoot(loaded, preflightResult.Git.Root)
+		if err != nil {
+			return false, err
+		}
+		specsRoot = resolved
+	}
+	reviewRoot, err := resolveReviewArtifactRoot(ctx, req, preflightResult, specsRoot)
+	if err != nil {
+		return false, err
+	}
+	relative, stageable := stageableReviewRoot(preflightResult.Git.Root, reviewRoot)
+	if !stageable {
+		message := fmt.Sprintf("Review artifacts kept outside the repository (%s); no review artifact commit created.", reviewRoot)
+		fmt.Fprintln(stderr, message)
+		publishReviewArtifactCommitDecision(ctx, sink, runID, "skipped", message)
+		return false, nil
+	}
+	output, err := reviewSpecGitRunner.RunGit(ctx, preflightResult.Git.Root, "status", "--porcelain", "--", relative)
+	if err != nil {
+		return false, fmt.Errorf("inspect review artifact changes under %q: %w", relative, err)
+	}
+	if strings.TrimSpace(output) == "" {
+		return false, nil
+	}
+	message := daemon.ReviewArtifactsCommitMessage(roundNumber, req.pr)
+	if err := committer.Commit(ctx, daemon.CommitRequest{
+		WorkDir: preflightResult.Git.Root,
+		Message: message,
+		Paths:   []string{relative},
+	}); err != nil {
+		return false, fmt.Errorf("create review artifact commit: %w", err)
+	}
+	fmt.Fprintf(stderr, "Review artifacts commit created: %s\n", message)
+	publishReviewArtifactCommitDecision(ctx, sink, runID, "created", fmt.Sprintf("Review artifacts commit created: %s", message))
+	// The docs commit advanced the user branch past the Run Branch tip.
+	// Fast-forward the Run Branch so later Rounds in the same Run keep the
+	// ff-only integration contract.
+	if strings.TrimSpace(runWorktree) != "" {
+		head, err := reviewSpecGitRunner.RunGit(ctx, preflightResult.Git.Root, "rev-parse", "HEAD")
+		if err != nil {
+			return true, fmt.Errorf("resolve checkout HEAD after review artifact commit: %w", err)
+		}
+		if _, err := reviewSpecGitRunner.RunGit(ctx, runWorktree, "merge", "--ff-only", strings.TrimSpace(head)); err != nil {
+			return true, fmt.Errorf("fast-forward Run Branch over review artifact commit: %w", err)
+		}
+	}
+	return true, nil
+}
+
+// stageableReviewRoot reports the repo-relative review root when it can be
+// staged: inside the repository working tree and not reached through a
+// symbolic link component.
+func stageableReviewRoot(gitRoot string, reviewRoot string) (string, bool) {
+	relative, err := filepath.Rel(gitRoot, reviewRoot)
+	if err != nil || relative == "." || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return "", false
+	}
+	current := gitRoot
+	for _, part := range strings.Split(relative, string(filepath.Separator)) {
+		current = filepath.Join(current, part)
+		info, err := os.Lstat(current)
+		if err != nil {
+			// Missing segments cannot cross a symlink; git status decides next.
+			break
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return "", false
+		}
+	}
+	return filepath.ToSlash(relative), true
+}
+
+// publishReviewArtifactCommitDecision journals the review artifact commit
+// decision as a Daemon-source commit event.
+func publishReviewArtifactCommitDecision(ctx context.Context, sink runevent.Sink, runID string, decision string, summary string) {
+	payload, err := json.Marshal(map[string]any{"decision": decision, "artifacts": "review"})
+	if err != nil {
+		return
+	}
+	_ = sink.Publish(context.WithoutCancel(ctx), runevent.RunEvent{
+		RunID:   runID,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonCommit,
+		Summary: runevent.BoundSummary(summary),
+		Time:    time.Now().UTC(),
+		Payload: payload,
+	})
+}
+
 func maybeRunFinalPush(ctx context.Context, engine *daemon.Engine, sink runevent.Sink, runID string, loaded roundconfig.Loaded, preflightResult preflight.Result, workDir string, batchCommitCreated bool, stderr io.Writer) error {
 	if !preflightResult.PushPlan.Enabled {
 		fmt.Fprintln(stderr, "Final Push skipped: auto-push disabled or no push target configured.")
@@ -2548,10 +2742,25 @@ func maybeRunFinalPush(ctx context.Context, engine *daemon.Engine, sink runevent
 }
 
 func markRunFailed(ctx context.Context, runStore *store.Store, runID string) {
-	completeCtx := context.WithoutCancel(ctx)
-	if _, err := runStore.CompleteRun(completeCtx, runID, store.StateFailed); err == nil {
-		publishRunOutcome(completeCtx, runStore, runID, store.StateFailed, 0, io.Discard)
+	_, _ = completeFailedRun(ctx, runStore, runID)
+}
+
+func markRunFailedAndNotify(ctx context.Context, runStore *store.Store, runID string, notifier roundnotify.Notifier, stderr io.Writer) {
+	completed, ok := completeFailedRun(ctx, runStore, runID)
+	if !ok {
+		return
 	}
+	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed)
+}
+
+func completeFailedRun(ctx context.Context, runStore *store.Store, runID string) (store.Run, bool) {
+	completeCtx := withoutCancelOrBackground(ctx)
+	completed, err := runStore.CompleteRun(completeCtx, runID, store.StateFailed)
+	if err != nil {
+		return store.Run{}, false
+	}
+	publishRunOutcome(completeCtx, runStore, completed.ID, completed.State, 0, io.Discard)
+	return completed, true
 }
 
 func closeAgentSession(ctx context.Context, runner agent.Runner, runtime agent.RuntimeSpec, session agent.SessionRef, runID string, runStore *store.Store) {
@@ -2600,18 +2809,94 @@ func publishRunOutcome(ctx context.Context, runStore *store.Store, runID string,
 	}
 }
 
+func outcomeNotifierFromConfig(config roundconfig.Config) roundnotify.Notifier {
+	if !config.Notify.Enabled || newOutcomeNotifier == nil {
+		return nil
+	}
+	return newOutcomeNotifier(config)
+}
+
+const outcomeNotificationTimeout = 30 * time.Second
+
+func notifyTerminalOutcome(ctx context.Context, runStore *store.Store, notifier roundnotify.Notifier, stderr io.Writer, run store.Run) {
+	if notifier == nil {
+		return
+	}
+	notifyCtx, cancel := context.WithTimeout(withoutCancelOrBackground(ctx), outcomeNotificationTimeout)
+	defer cancel()
+	if err := notifier.Notify(notifyCtx, outcomeFromRun(run)); err != nil {
+		reportOutcomeNotificationFailure(notifyCtx, runStore, run.ID, err, stderr)
+	}
+}
+
+func outcomeFromRun(run store.Run) roundnotify.Outcome {
+	return roundnotify.Outcome{
+		RunID:  run.ID,
+		State:  run.State,
+		Kind:   run.Kind,
+		Target: outcomeTarget(run),
+	}
+}
+
+func outcomeTarget(run store.Run) string {
+	if run.Kind == store.KindImplement {
+		return "spec:" + strings.TrimSpace(run.SpecSlug)
+	}
+	if strings.TrimSpace(run.PRNumber) != "" {
+		return "pr:" + strings.TrimSpace(run.PRNumber)
+	}
+	return ""
+}
+
+func reportOutcomeNotificationFailure(ctx context.Context, runStore *store.Store, runID string, err error, stderr io.Writer) {
+	reason := strings.TrimSpace(err.Error())
+	if reason == "" {
+		reason = "unknown error"
+	}
+	warning := fmt.Sprintf("%s: outcome notification failed: %s", app.Name, reason)
+	if stderr != nil {
+		fmt.Fprintln(stderr, warning)
+	}
+	if runStore == nil {
+		return
+	}
+	payload, marshalErr := json.Marshal(map[string]string{
+		"event":  "outcome_notification_failed",
+		"reason": reason,
+	})
+	if marshalErr != nil {
+		return
+	}
+	_ = (store.JournalSink{Store: runStore}).Publish(withoutCancelOrBackground(ctx), runevent.RunEvent{
+		RunID:   runID,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonStatus,
+		Summary: runevent.BoundSummary(warning),
+		Time:    time.Now().UTC(),
+		Payload: payload,
+	})
+}
+
+func withoutCancelOrBackground(ctx context.Context) context.Context {
+	if ctx == nil {
+		return context.Background()
+	}
+	return context.WithoutCancel(ctx)
+}
+
 func commandUsage(name string) string {
 	switch name {
 	case "attach":
 		return `Usage:
-  roundfix attach <run-id>
+  roundfix attach [<run-id>] [--no-input]
 
 Replays the Run's event timeline from the Run Database, read-only.
 Attach never creates Runs, fetches, starts Agents, commits, pushes, or
 resolves Review Source threads.
 
 Options:
-  --run-id  Run ID to attach to (same as the positional argument)
+  --run-id    Run ID to attach to (same as the positional argument)
+  --no-input  Fail instead of opening Interactive Input when no Run ID is passed
 `
 	case "init":
 		return `Usage:
@@ -2667,6 +2952,20 @@ replaces the current executable. If no releases exist, reports that cleanly.
 
 Options:
   --check  Report the latest release outcome without installing it
+`
+	case "runs":
+		return `Usage:
+  roundfix runs list [--all] [--active]
+
+Lists Runs from the Run Database newest first. By default the listing is
+scoped to the current repository.
+
+Commands:
+  list  Print Run id, state, kind, and target columns
+
+Options:
+  --all     List Runs from every repository and include the repository column
+  --active  List only Active Runs
 `
 	case "fetch":
 		return `Usage:
@@ -2759,16 +3058,18 @@ reporting each reaped path and branch on stderr.
 `
 	case "skills":
 		return `Usage:
+  roundfix skills list
   roundfix skills check
   roundfix skills install [--target <project|codex|claude|opencode|all>] [--dir <path>]
 
 Commands:
+  list       List the bundled Roundfix skills and recommended external skills
   check      Validate shipped Roundfix skill artifacts
-  install    Install the Roundfix skill into this project or compatible Agent skill directories
+  install    Install the bundled Roundfix skills into this project or compatible Agent skill directories
 
 Options:
   --target   Install target. Supported: project, codex, claude, opencode, all
-             project writes <repo>/.agents/skills/roundfix and can link .claude/skills/roundfix
+             project writes <repo>/.agents/skills and can link .claude/skills
   --dir      Override the target skills directory for a single target
 `
 	default:

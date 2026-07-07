@@ -70,13 +70,14 @@ type LiveRunView struct {
 	// render Tasks where review Runs render Review Issues. Empty means a
 	// review Run, so existing callers keep their rendering unchanged.
 	RunKind string
-	// SpecSlug, GitRoot, and WorkDir locate a spec Run's task files
-	// (docs/specs/<slug>/ under the execution root) so the cockpit can
-	// refresh Task statuses by re-reading them. WorkDir is the Run Worktree;
-	// GitRoot is the user checkout fallback for legacy or pruned Runs.
-	SpecSlug string
-	GitRoot  string
-	WorkDir  string
+	// SpecSlug, SpecsRoot, GitRoot, and WorkDir locate a spec Run's task files
+	// so the cockpit can refresh Task statuses by re-reading them. WorkDir is
+	// the Run Worktree; GitRoot is the user checkout fallback for legacy or
+	// pruned Runs.
+	SpecSlug  string
+	SpecsRoot string
+	GitRoot   string
+	WorkDir   string
 	// Tasks lists the spec Run's Tasks in Task Graph order.
 	Tasks []spec.Task
 	// Concurrency is the effective worktree.concurrency value for spec Runs.
@@ -131,6 +132,12 @@ func specRunView(view LiveRunView) bool {
 }
 
 func taskReadRoot(view LiveRunView) string {
+	specsRoot := strings.TrimSpace(view.SpecsRoot)
+	if specsRoot != "" {
+		if info, err := os.Stat(specsRoot); err == nil && info.IsDir() {
+			return specsRoot
+		}
+	}
 	workDir := strings.TrimSpace(view.WorkDir)
 	if workDir != "" {
 		if info, err := os.Stat(workDir); err == nil && info.IsDir() {

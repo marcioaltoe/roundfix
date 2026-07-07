@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0012-npm-distribution
-status: pending
+status: completed
 type: infra
 complexity: medium
 ---
@@ -31,18 +31,18 @@ exit-code contract intact through Node.
 
 ## Subtasks
 
-- [ ] Launcher `package.json` with `optionalDependencies` and `bin`
-- [ ] Shim: platform→package resolution using the task_01 mapping
-- [ ] Exec with `stdio: 'inherit'`; propagate exit code and signal
-- [ ] Missing-platform-package error path
-- [ ] Shim test: exit code passthrough for success and a known failure
+- [x] Launcher `package.json` with `optionalDependencies` and `bin`
+- [x] Shim: platform→package resolution using the task_01 mapping
+- [x] Exec with `stdio: 'inherit'`; propagate exit code and signal
+- [x] Missing-platform-package error path
+- [x] Shim test: exit code passthrough for success and a known failure
 
 ## Acceptance Criteria
 
-- [ ] `roundfix <args>` through the shim runs the platform binary and returns its exit code unchanged for a success and a known non-zero failure.
-- [ ] The shim writes nothing of its own to stdout on success (output is the binary's verbatim).
-- [ ] A terminating signal to the child is reflected in the shim's termination.
-- [ ] With no platform package present, the shim errors with a clear unsupported-platform message.
+- [x] `roundfix <args>` through the shim runs the platform binary and returns its exit code unchanged for a success and a known non-zero failure.
+- [x] The shim writes nothing of its own to stdout on success (output is the binary's verbatim).
+- [x] A terminating signal to the child is reflected in the shim's termination.
+- [x] With no platform package present, the shim errors with a clear unsupported-platform message.
 
 ## Verification
 

@@ -124,6 +124,16 @@ func BatchCommitMessage(batchNumber int) string {
 	return fmt.Sprintf("fix: resolve Roundfix batch %03d", batchNumber)
 }
 
+// ReviewArtifactsCommitMessage is the review artifact commit contract
+// (ADR-0036): one docs commit per settled Round scope carrying the Review
+// Issue artifacts, separate from Batch fix commits.
+func ReviewArtifactsCommitMessage(roundNumber int, prNumber string) string {
+	if roundNumber > 0 {
+		return fmt.Sprintf("docs: review round %03d for pr %s", roundNumber, prNumber)
+	}
+	return fmt.Sprintf("docs: review rounds for pr %s", prNumber)
+}
+
 type PushRequest struct {
 	WorkDir string
 	Remote  string

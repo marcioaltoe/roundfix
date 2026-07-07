@@ -1,7 +1,10 @@
 ---
 spec: 0012-npm-distribution
-status: active
+status: archived
 created: 2026-07-06
+archived: 2026-07-06
+release: v0.1.0
+qa_override: true
 surfaces: [cli, infra, docs]
 ---
 

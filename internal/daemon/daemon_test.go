@@ -230,3 +230,12 @@ func mustReadUnisolatedGitConfigForCanary(t *testing.T, key string) string {
 	}
 	return string(output)
 }
+
+func TestReviewArtifactsCommitMessage(t *testing.T) {
+	if got := ReviewArtifactsCommitMessage(1, "18"); got != "docs: review round 001 for pr 18" {
+		t.Fatalf("expected single-round message, got %q", got)
+	}
+	if got := ReviewArtifactsCommitMessage(0, "18"); got != "docs: review rounds for pr 18" {
+		t.Fatalf("expected all-rounds message, got %q", got)
+	}
+}

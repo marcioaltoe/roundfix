@@ -51,6 +51,41 @@ func TestRunArchiveMovesCompletedSpecAndStampsMetadata(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
+func TestRunArchiveUsesConfiguredExternalSpecRoot(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Internal fixture should stay active", status: string(spec.StatusCompleted)},
+	})
+	externalRoot := filepath.Join(t.TempDir(), "external-specs")
+	writeImplementSpecAtRoot(t, externalRoot, implementTestSlug, []implementSeed{
+		{id: "task_01", title: "Archive external task", status: string(spec.StatusCompleted)},
+	})
+	reportPath := filepath.Join(externalRoot, implementTestSlug, "qa", "qa-report-2026-07-06.md")
+	mustMkdir(t, filepath.Dir(reportPath))
+	mustWrite(t, reportPath, implementQAReport(spec.VerdictPass))
+	configureExternalSpecsRoot(t, repoDir, externalRoot)
+	withNoEngineCollaborators(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"archive", implementTestSlug}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected archive exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	archivedDir := filepath.Join(externalRoot, "_archived", implementTestSlug)
+	wantStdout := "archived " + implementTestSlug + " -> " + filepath.ToSlash(archivedDir) + "\n"
+	if stdout.String() != wantStdout {
+		t.Fatalf("expected stdout %q, got %q", wantStdout, stdout.String())
+	}
+	if stderr.String() != "" {
+		t.Fatalf("expected archive stderr empty, got %q", stderr.String())
+	}
+	assertPathMissing(t, filepath.Join(externalRoot, implementTestSlug))
+	assertPathExists(t, filepath.Join(archivedDir, "task_01.md"))
+	assertPathExists(t, filepath.Join(repoDir, "docs", "specs", implementTestSlug))
+	assertNoRunDatabase(t, homeDir)
+}
+
 func TestRunArchiveRefusesIncompleteTask(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core", status: string(spec.StatusCompleted)},

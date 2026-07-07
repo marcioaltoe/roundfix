@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0012-npm-distribution
-status: pending
+status: completed
 type: test
 complexity: low
 ---
@@ -29,16 +29,16 @@ existing selection resolves each platform's asset.
 
 ## Subtasks
 
-- [ ] Test fixture of asset names per mapping row (Go tokens)
-- [ ] Assert `selectPlatformAsset` resolves each platform's asset
-- [ ] Assert checksum/other assets are skipped and no cross-platform match
-- [ ] Reference the fixture as the workflow's naming source of truth
+- [x] Test fixture of asset names per mapping row (Go tokens)
+- [x] Assert `selectPlatformAsset` resolves each platform's asset
+- [x] Assert checksum/other assets are skipped and no cross-platform match
+- [x] Reference the fixture as the workflow's naming source of truth
 
 ## Acceptance Criteria
 
-- [ ] For each of the five targets, the constructed asset name resolves via `selectPlatformAsset` for the matching `GOOS`/`GOARCH`.
-- [ ] A checksum asset and a wrong-platform asset are not selected.
-- [ ] The asset-name scheme lives in one fixture the release workflow reuses.
+- [x] For each of the five targets, the constructed asset name resolves via `selectPlatformAsset` for the matching `GOOS`/`GOARCH`.
+- [x] A checksum asset and a wrong-platform asset are not selected.
+- [x] The asset-name scheme lives in one fixture the release workflow reuses.
 
 ## Verification
 

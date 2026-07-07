@@ -30,6 +30,7 @@ type TaskPlan struct {
 	Session         agent.SessionRef
 	WorkDir         string
 	RunWorktree     runworktree.Ref
+	SpecsRoot       string
 	ArtifactDir     string
 	AgentLogs       bool
 	Spec            spec.Spec
@@ -474,14 +475,23 @@ func taskPlanForTaskWorktree(plan TaskPlan, task spec.Task, taskRef runworktree.
 	taskPlan := plan
 	taskPlan.WorkDir = taskRef.Path
 	taskPlan.Session = agent.SessionRefForTask(plan.RunID, task.ID, taskRef.Path)
-	taskPlan.Spec = specForWorkDir(plan, taskRef.Path)
+	taskSpecsRoot := specsRootForTaskWorkDir(plan, taskRef.Path)
+	taskPlan.Spec = specForSpecsRoot(plan, taskSpecsRoot)
+	taskPlan.SpecsRoot = taskSpecsRoot
 	return taskPlan
 }
 
-func specForWorkDir(plan TaskPlan, workDir string) spec.Spec {
+func specsRootForTaskWorkDir(plan TaskPlan, workDir string) string {
+	if rel, err := filepath.Rel(plan.WorkDir, plan.SpecsRoot); err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel) {
+		return filepath.Join(workDir, rel)
+	}
+	return plan.SpecsRoot
+}
+
+func specForSpecsRoot(plan TaskPlan, specsRoot string) spec.Spec {
 	specRef := plan.Spec
-	if rel, err := filepath.Rel(plan.WorkDir, plan.Spec.Dir); err == nil && rel != "." && !strings.HasPrefix(rel, "..") {
-		specRef.Dir = filepath.Join(workDir, rel)
+	if rel, err := filepath.Rel(plan.SpecsRoot, plan.Spec.Dir); err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel) {
+		specRef.Dir = filepath.Join(specsRoot, rel)
 	}
 	return specRef
 }
@@ -546,7 +556,7 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 	); err != nil {
 		return "", fmt.Errorf("publish start event for run %q Task %s: %w", plan.RunID, task.ID, err)
 	}
-	taskPath := filepath.Join(plan.WorkDir, task.File)
+	taskPath := filepath.Join(plan.SpecsRoot, task.File)
 	content, err := os.ReadFile(taskPath)
 	if err != nil {
 		return "", fmt.Errorf("read Task %q file %q before the Agent: %w", task.ID, taskPath, err)
@@ -554,7 +564,7 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 	prompt, err := agent.BuildTaskPrompt(agent.TaskPromptRequest{
 		SpecSlug:    plan.Spec.Slug,
 		TaskID:      task.ID,
-		TaskPath:    task.File,
+		TaskPath:    taskPromptPath(plan, taskPath),
 		TaskContent: string(content),
 	})
 	if err != nil {
@@ -598,7 +608,7 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 			return "", fmt.Errorf("publish transport anomaly event for run %q Task %s: %w", plan.RunID, task.ID, err)
 		}
 	}
-	if err := spec.ReloadTask(plan.WorkDir, task); err != nil {
+	if err := spec.ReloadTask(plan.SpecsRoot, task); err != nil {
 		// The Agent left the task file unreadable; the Task fails and the
 		// Daemon settles the status by rewriting the frontmatter value.
 		return fmt.Sprintf("reload task file after the Agent: %v", err), nil
@@ -658,7 +668,7 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
 // never settled without passing verification.
 func (engine *Engine) settleTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, status spec.Status, reason string) error {
 	if task.Status != status {
-		taskPath := filepath.Join(plan.WorkDir, task.File)
+		taskPath := filepath.Join(plan.SpecsRoot, task.File)
 		if err := spec.SetStatus(taskPath, status); err != nil {
 			return fmt.Errorf("settle Task %s status %q for run %q: %w", task.ID, status, plan.RunID, err)
 		}
@@ -689,12 +699,21 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 	if err != nil {
 		return err
 	}
-	changed := ensureCommitPath(diffSnapshots(before, after), task.File)
+	changed := ensureCommitPath(diffSnapshots(before, after), artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, task.File)))
+	stageable, dropped := FilterStageablePaths(plan.WorkDir, changed)
+	for _, drop := range dropped {
+		if err := engine.publishDroppedStagePath(ctx, plan, ordinal, task.ID, "task file", drop); err != nil {
+			return err
+		}
+	}
+	if len(stageable) == 0 {
+		return nil
+	}
 	message := TaskCommitMessage(plan.Spec.Slug, task)
 	if err := engine.deps.Committer.Commit(ctx, CommitRequest{
 		WorkDir: plan.WorkDir,
 		Message: message,
-		Paths:   changed,
+		Paths:   stageable,
 	}); err != nil {
 		return err
 	}
@@ -702,11 +721,115 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 	fmt.Fprintf(engine.deps.Progress, "Task commit created: %s\n", subject)
 	if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonCommit,
 		fmt.Sprintf("Task commit created: %s", subject),
-		map[string]any{"decision": "created", "task": task.ID, "paths": len(changed)},
+		map[string]any{"decision": "created", "task": task.ID, "paths": len(stageable)},
 	); err != nil {
 		return fmt.Errorf("publish commit event for run %q Task %s: %w", plan.RunID, task.ID, err)
 	}
 	return nil
+}
+
+// DroppedStagePath records a path omitted from a commit request because Git
+// cannot safely stage it from the worktree.
+type DroppedStagePath struct {
+	Path   string
+	Reason string
+}
+
+// FilterStageablePaths keeps only repository-relative paths that do not cross
+// symlinks and reports every omitted path with the reason.
+func FilterStageablePaths(workDir string, paths []string) ([]string, []DroppedStagePath) {
+	kept := make([]string, 0, len(paths))
+	seen := make(map[string]bool, len(paths))
+	var dropped []DroppedStagePath
+	for _, path := range paths {
+		stagePath, ok := stagePathInWorktree(workDir, path)
+		if !ok {
+			dropped = append(dropped, DroppedStagePath{Path: filepath.Clean(path), Reason: "external to repository"})
+			continue
+		}
+		if pathCrossesSymlink(workDir, stagePath) {
+			dropped = append(dropped, DroppedStagePath{Path: stagePath, Reason: "crosses a symbolic link"})
+			continue
+		}
+		if !seen[stagePath] {
+			kept = append(kept, stagePath)
+			seen[stagePath] = true
+		}
+	}
+	sort.Strings(kept)
+	return kept, dropped
+}
+
+func stagePathInWorktree(workDir string, path string) (string, bool) {
+	clean := filepath.Clean(path)
+	if filepath.IsAbs(clean) {
+		relative, err := filepath.Rel(workDir, clean)
+		if err != nil || !pathStaysInside(relative) {
+			return "", false
+		}
+		return filepath.Clean(relative), true
+	}
+	if !pathStaysInside(clean) {
+		return "", false
+	}
+	return clean, true
+}
+
+func pathCrossesSymlink(workDir string, relative string) bool {
+	current := filepath.Clean(workDir)
+	for _, part := range strings.Split(filepath.Clean(relative), string(filepath.Separator)) {
+		if part == "" || part == "." {
+			continue
+		}
+		current = filepath.Join(current, part)
+		info, err := os.Lstat(current)
+		if err != nil {
+			continue
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func (engine *Engine) publishDroppedStagePath(ctx context.Context, plan TaskPlan, ordinal int, taskID string, artifactLabel string, drop DroppedStagePath) error {
+	fmt.Fprintf(engine.deps.Progress, "roundfix: %s %s kept outside the repository; omitted from the commit\n", artifactLabel, drop.Path)
+	payload := map[string]any{
+		"decision": "dropped",
+		"path":     drop.Path,
+		"reason":   drop.Reason,
+	}
+	summary := fmt.Sprintf("%s %s kept outside the repository: %s.", artifactLabel, drop.Path, drop.Reason)
+	if taskID != "" {
+		payload["task"] = taskID
+		if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, taskID, runevent.KindDaemonCommit, summary, payload); err != nil {
+			return fmt.Errorf("publish dropped artifact event for run %q Task %s: %w", plan.RunID, taskID, err)
+		}
+		return nil
+	}
+	if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonCommit, summary, payload); err != nil {
+		return fmt.Errorf("publish dropped artifact event for run %q: %w", plan.RunID, err)
+	}
+	return nil
+}
+
+func taskPromptPath(plan TaskPlan, taskPath string) string {
+	if relative, err := filepath.Rel(plan.WorkDir, taskPath); err == nil && pathStaysInside(relative) {
+		return relative
+	}
+	return taskPath
+}
+
+func artifactCommitPath(plan TaskPlan, artifactPath string) string {
+	if relative, err := filepath.Rel(plan.WorkDir, artifactPath); err == nil && pathStaysInside(relative) {
+		return relative
+	}
+	return artifactPath
+}
+
+func pathStaysInside(relative string) bool {
+	return relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) && !filepath.IsAbs(relative)
 }
 
 // TaskCommitMessage derives the Task commit message from the task
@@ -828,7 +951,7 @@ func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string) {
 	reportPath := ""
 	if newest, err := spec.NewestQAReport(plan.Spec.Dir); err == nil {
 		reportPath = newest
-		if relative, relErr := filepath.Rel(plan.WorkDir, newest); relErr == nil {
+		if relative, relErr := filepath.Rel(plan.WorkDir, newest); relErr == nil && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) && !filepath.IsAbs(relative) {
 			reportPath = relative
 		}
 	}
@@ -850,11 +973,20 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 		return err
 	}
 	changed := ensureCommitPath(diffSnapshots(before, after), reportPath)
+	stageable, dropped := FilterStageablePaths(plan.WorkDir, changed)
+	for _, drop := range dropped {
+		if err := engine.publishDroppedStagePath(ctx, plan, ordinal, "", "QA Report", drop); err != nil {
+			return err
+		}
+	}
+	if len(stageable) == 0 {
+		return nil
+	}
 	message := QACommitMessage(plan.Spec.Slug, verdict)
 	if err := engine.deps.Committer.Commit(ctx, CommitRequest{
 		WorkDir: plan.WorkDir,
 		Message: message,
-		Paths:   changed,
+		Paths:   stageable,
 	}); err != nil {
 		return err
 	}
@@ -862,7 +994,7 @@ func (engine *Engine) commitQAReport(ctx context.Context, plan TaskPlan, ordinal
 	fmt.Fprintf(engine.deps.Progress, "QA Report commit created: %s\n", subject)
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonCommit,
 		fmt.Sprintf("QA Report commit created: %s", subject),
-		map[string]any{"decision": "created", "report": reportPath, "paths": len(changed)},
+		map[string]any{"decision": "created", "report": reportPath, "paths": len(stageable)},
 	); err != nil {
 		return fmt.Errorf("publish QA commit event for run %q: %w", plan.RunID, err)
 	}
@@ -947,6 +1079,7 @@ func validateTaskPlan(plan TaskPlan) error {
 		"Run ID":             plan.RunID,
 		"Agent Session":      plan.Session.Name,
 		"working tree":       plan.WorkDir,
+		"Spec Root":          plan.SpecsRoot,
 		"Artifact Directory": plan.ArtifactDir,
 		"Spec slug":          plan.Spec.Slug,
 	}

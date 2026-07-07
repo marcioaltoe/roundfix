@@ -60,6 +60,52 @@ func TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
+func TestRunSettleUsesConfiguredExternalSpecRoot(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Internal fixture should stay untouched"},
+	})
+	externalRoot := filepath.Join(t.TempDir(), "external-specs")
+	writeImplementSpecAtRoot(t, externalRoot, implementTestSlug, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "Recover external task",
+			status:       string(spec.StatusFailed),
+			verification: []string{"true"},
+		},
+	})
+	configureExternalSpecsRoot(t, repoDir, externalRoot)
+	mustWrite(t, filepath.Join(repoDir, "recovered.txt"), "preserved work\n")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected settle exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "verify true — ok\n") || !strings.Contains(stdout.String(), "settled task_01 completed — ") {
+		t.Fatalf("expected settle success output, got %q", stdout.String())
+	}
+	externalTask := implementTaskPathInRoot(externalRoot, implementTestSlug, "task_01")
+	if content := mustRead(t, externalTask); !strings.Contains(content, "status: completed") {
+		t.Fatalf("expected external task completed, got:\n%s", content)
+	}
+	if content := mustRead(t, implementTaskPath(repoDir, "task_01")); !strings.Contains(content, "status: pending") {
+		t.Fatalf("expected default-layout fixture untouched, got:\n%s", content)
+	}
+	task := spec.Task{ID: "task_01", Title: "Recover external task", Type: "backend"}
+	if message := strings.TrimRight(gitSettleOutput(t, repoDir, "log", "-1", "--format=%B"), "\n"); message != daemon.TaskCommitMessage(implementTestSlug, task) {
+		t.Fatalf("expected daemon Task commit message %q, got %q", daemon.TaskCommitMessage(implementTestSlug, task), message)
+	}
+	if changed := settleCommitFiles(t, repoDir); strings.Join(changed, "|") != "recovered.txt" {
+		t.Fatalf("expected only repository recovery file committed, got %v", changed)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
 func TestRunSettleRetargetsKeptRunWorktreeAndCleansUpAfterIntegration(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{

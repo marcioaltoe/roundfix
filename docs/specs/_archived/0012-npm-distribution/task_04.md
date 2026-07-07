@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0012-npm-distribution
-status: pending
+status: completed
 type: infra
 complexity: high
 ---
@@ -29,18 +29,18 @@ Upgrade Command can resolve. This is the one-tag-push release path.
 
 ## Subtasks
 
-- [ ] `v*` trigger and version-agreement guard job
-- [ ] `make verify` gate job
-- [ ] Matrix cross-compile staging binaries into per-platform packages
-- [ ] Publish order (platform packages → launcher) and Release-asset upload
-- [ ] Documented required secrets/tokens (npm publish, GitHub release)
+- [x] `v*` trigger and version-agreement guard job
+- [x] `make verify` gate job
+- [x] Matrix cross-compile staging binaries into per-platform packages
+- [x] Publish order (platform packages → launcher) and Release-asset upload
+- [x] Documented required secrets/tokens (npm publish, GitHub release)
 
 ## Acceptance Criteria
 
-- [ ] A `v*` tag with agreeing versions publishes all five per-platform packages and the launcher and uploads matching Release assets in one run.
-- [ ] A tag whose versions disagree fails the workflow before publishing anything.
-- [ ] Release-asset names match the task_03 fixture scheme (verified by that test staying green).
-- [ ] The workflow runs `make verify` and does not publish when it fails.
+- [x] A `v*` tag with agreeing versions publishes all five per-platform packages and the launcher and uploads matching Release assets in one run.
+- [x] A tag whose versions disagree fails the workflow before publishing anything.
+- [x] Release-asset names match the task_03 fixture scheme (verified by that test staying green).
+- [x] The workflow runs `make verify` and does not publish when it fails.
 
 ## Verification
 

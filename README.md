@@ -8,7 +8,41 @@ changes, creates Daemon-owned commits, and pushes only at configured clean
 boundaries.
 
 Roundfix is not a general workflow engine, CI healer, or task orchestration
-system. The MVP focuses on one review-resolution loop for an Open Pull Request.
+system. It runs two local-first loops — resolving CodeRabbit review feedback on
+an Open Pull Request, and executing a Spec's Task Graph — plus first-class
+supporting commands (`setup`, `doctor`, `upgrade`, `gc`, `settle`, `archive`,
+`stop`) that keep a machine Run-ready and manage Run lifecycle and storage.
+
+The spec pipeline it runs is CONTEXT-driven development. The method is adapted
+from Matt Pocock's **skills** work; see
+[Source and attribution](docs/context-driven-development.md#source-and-attribution).
+
+## Install
+
+Roundfix ships through npm as a `roundfix` launcher package with a per-platform
+binary package for each target (darwin, linux, and windows on both `x64` and
+`arm64`, except windows which is `x64` only). The launcher runs the binary for
+your platform, so `npx`, `bunx`, and global installs all behave identically to a
+locally built binary — same stdout, stderr, and exit codes.
+
+Run it once without installing:
+
+```bash
+npx roundfix --version
+bunx roundfix --version
+```
+
+Install it globally to put `roundfix` on `PATH`:
+
+```bash
+npm install -g roundfix
+# or: bun add -g roundfix
+```
+
+After installing, make the machine Run-ready with `roundfix setup` and verify
+readiness with `roundfix doctor`. Node.js is a hard prerequisite either way,
+since the ACP Agent layer runs through acpx. Building from source
+(`make build`, below) stays supported and produces the same CLI.
 
 ## Requirements
 
@@ -80,31 +114,10 @@ make install
 Make sure your Go bin directory, usually `~/go/bin`, is on `PATH` before
 running `roundfix` directly.
 
-Bootstrap a machine for Roundfix Runs:
-
-```bash
-roundfix setup
-```
-
-Use `roundfix setup --yes` to accept every offered install or file change, or
-`roundfix setup --no-input` to report missing pieces without prompting.
-
-Diagnose this machine for Roundfix Runs without changing it:
-
-```bash
-roundfix doctor
-```
-
-Update an installed Roundfix binary:
-
-```bash
-roundfix upgrade
-```
-
-Use `roundfix upgrade --check` to report the latest release outcome without
-installing it. Operational commands also emit one best-effort stderr note per
-day when the installed version is behind, using the shape
-`roundfix 1.0.0 is behind latest 1.1.0; run roundfix upgrade`.
+Once the binary is on `PATH`, use `roundfix setup` to make the machine
+Run-ready, `roundfix doctor` to diagnose readiness without changing anything,
+and `roundfix upgrade` to update the binary. The Commands and Command
+Boundaries sections below cover their flags and outcomes.
 
 ## GitHub Access
 
@@ -118,82 +131,86 @@ gh auth status
 
 ## Commands
 
+These examples call the installed `roundfix` binary. From a source checkout
+without installing, substitute `go run ./cmd/roundfix` for `roundfix`.
+
 Show help:
 
 ```bash
-go run ./cmd/roundfix --help
+roundfix --help
 ```
 
 Show version:
 
 ```bash
-go run ./cmd/roundfix --version
-go run ./cmd/roundfix -v
+roundfix --version
+roundfix -v
 ```
 
 Create a Project Config in the current repository:
 
 ```bash
-go run ./cmd/roundfix init
+roundfix init
 ```
 
 Create a User Config instead:
 
 ```bash
-go run ./cmd/roundfix init --scope user
+roundfix init --scope user
 ```
 
 Verify and prepare this machine for Roundfix Runs:
 
 ```bash
-go run ./cmd/roundfix setup
+roundfix setup
 ```
 
 Diagnose this machine for Roundfix Runs without installing or writing config:
 
 ```bash
-go run ./cmd/roundfix doctor
+roundfix doctor
 ```
 
 Upgrade Roundfix or check the release channel:
 
 ```bash
-go run ./cmd/roundfix upgrade
-go run ./cmd/roundfix upgrade --check
+roundfix upgrade
+roundfix upgrade --check
 ```
 
 Fetch unresolved CodeRabbit Review Issues into local Round artifacts:
 
 ```bash
-go run ./cmd/roundfix fetch --source coderabbit --pr <number> [--spec <slug>]
+roundfix fetch --source coderabbit --pr <number> [--spec <slug>]
 ```
 
 Resolve downloaded Compatible Artifacts with a selected Agent:
 
 ```bash
-go run ./cmd/roundfix resolve --pr <number> --agent codex [--spec <slug>]
+roundfix resolve --pr <number> --agent codex [--spec <slug>]
 ```
 
 Run the watched review-resolution loop:
 
 ```bash
-go run ./cmd/roundfix watch --source coderabbit --pr <number> --agent codex [--spec <slug>] --until-clean
+roundfix watch --source coderabbit --pr <number> --agent codex [--spec <slug>] --until-clean
 ```
 
 Execute a Spec's Task Graph:
 
 ```bash
-go run ./cmd/roundfix implement --spec <slug> --agent codex
+roundfix implement --spec <slug> --agent codex
 ```
 
 Start a Detached Run for scripts or CI. The `--detach` flag is available on
 `resolve`, `watch`, and `implement`:
 
 ```bash
-go run ./cmd/roundfix implement --spec <slug> --agent codex --detach
+roundfix implement --spec <slug> --agent codex --detach
 ```
 
-Detached Runs print exactly four stdout lines:
+Detached Runs print exactly four stdout lines — the Run ID, the console log
+path, and the `attach`/`stop` follow-up commands:
 
 ```text
 Run detached: <run-id>
@@ -202,49 +219,84 @@ Follow: roundfix attach <run-id>
 Stop: roundfix stop <run-id>
 ```
 
-Use the `Follow` command to attach to the Live Run View, and the `Stop` command
-to request a graceful stop. The console log lives at
-`<artifact-dir>/runs/<run-id>/console.log`. If startup fails before the Run is
-created, for example during Preflight Validation, the foreground command
-relays the same stderr and exit code a normal foreground Run would have used.
+The detached child owns the terminal outcome and fires the outcome
+notification, so unattended Runs can signal completion even after the caller
+exits. See Command Boundaries for the full detach contract.
 
 Settle one failed Spec Task whose completed work is already in a kept Task
 Worktree, kept Run Worktree, or the current repository:
 
 ```bash
-go run ./cmd/roundfix settle --spec <slug> --task <task_id>
+roundfix settle --spec <slug> --task <task_id>
 ```
 
 Archive a completed Spec after all Tasks are completed and the newest QA
 Report has `verdict: pass`:
 
 ```bash
-go run ./cmd/roundfix archive <slug>
+roundfix archive <slug>
 ```
 
 Preview or reclaim old terminal Run journal and run artifact storage:
 
 ```bash
-go run ./cmd/roundfix gc --dry-run
-go run ./cmd/roundfix gc
+roundfix gc --dry-run
+roundfix gc
 ```
+
+Discover Runs in the current repository, or across every repository stored in
+the Run Database:
+
+```bash
+roundfix runs list
+roundfix runs list --active
+roundfix runs list --all
+```
+
+`runs list` prints one Run per line, newest first, as:
+`<run-id>  <state>  <kind>  <target>`. Active Runs mark the state with `*`;
+targets are `pr:<number>` for review Runs or `spec:<slug>` for Spec Runs.
+`--active` filters out terminal Runs. `--all` lists every repository and adds
+the repository path as a final column. With no matches, stdout is exactly
+`No Runs found.` and the command exits `0`.
+
+Attach by choosing from this repository's Runs, or attach directly by Run ID:
+
+```bash
+roundfix attach
+roundfix attach <run-id>
+```
+
+In an interactive terminal, `attach` without a Run ID opens a numbered picker
+over the same repository-scoped Run listing and accepts a number or Run ID.
+Press Enter to cancel without attaching. In non-interactive mode or with
+`--no-input`, missing Run ID exits `2` and names `roundfix runs list` as the
+discovery command.
 
 Stop a live Run gracefully, or force-stop a dead or runaway Run:
 
 ```bash
-go run ./cmd/roundfix stop <run-id>
-go run ./cmd/roundfix stop --force <run-id>
+roundfix stop <run-id>
+roundfix stop --force <run-id>
 ```
 
-Validate or install the shipped Roundfix agent skill:
+List, validate, or install the bundled Roundfix skills:
 
 ```bash
-go run ./cmd/roundfix skills check
-go run ./cmd/roundfix skills install
+roundfix skills list
+roundfix skills check
+roundfix skills install
 ```
 
-By default, `skills install` writes the shipped skill to
-`<repo>/.agents/skills/roundfix`. Use `--target codex`, `--target claude`,
+The binary ships 14 Roundfix-owned skills: the operational `roundfix` skill plus
+the authorial workflow skills (`write-idea`, `write-prd`, `write-techspec`,
+`write-tasks`, `setup-workflow`, `implement-task`, `implement-spec`,
+`brainstorming`, `council`, `business-analyst`, `archive-spec`, `qa-gate`,
+`evidence-gate`). `skills list` also prints the recommended external skills,
+which install through your own skills tooling and are never shipped.
+
+By default, `skills install` writes all bundled skills to
+`<repo>/.agents/skills`. Use `--target codex`, `--target claude`,
 `--target opencode`, or `--target all` for user-scoped Agent skill directories.
 If the project already has `.claude/skills`, Roundfix asks whether to create
 `.claude/skills/roundfix` as a symlink to the project-local skill.
@@ -284,8 +336,13 @@ it, or set `NO_COLOR` to suppress color.
   Review Source issues. It assigns a bounded Batch, runs the selected Agent
   runtime, verifies terminal assigned issues, commits successful Batches when
   auto-commit is enabled, resolves source threads for `resolved` and `invalid`
-  assigned issues, integrates the Run Worktree, and runs Final Push only when
-  no Unresolved Review Issues remain.
+  assigned issues, integrates the Run Worktree, commits the Run's review
+  artifacts in one separate docs commit
+  (`docs: review round NNN for pr <n>`, ADR-0036), and runs Final Push from
+  the user checkout only when no Unresolved Review Issues remain. `watch`
+  shares the same review artifact commit and push boundary per clean Round.
+  Review artifact roots outside the repository, or reached through a symbolic
+  link, are reported and never staged.
 - `watch` waits for CodeRabbit status on the current PR HEAD, observes the
   configured quiet period, fetches unresolved issues, resolves Batches, and
   repeats until `Clean`, `MaxRoundsReached`, `BudgetExceeded`, `TimedOut`,
@@ -294,14 +351,34 @@ it, or set `NO_COLOR` to suppress color.
   scheduler executes the current Wave up to `worktree.concurrency` at a time
   (default `2`; `1` keeps sequential behavior), with concurrently running
   Tasks in Task Worktrees and one commit per completed Task on the Run Branch.
-  `implement.auto_push: true` makes a Clean spec Run push its branch upstream
-  and append `pushed <remote>/<branch>` to stdout. Integration Pending,
-  Unresolved Outcome, Failed, Stopped, and failing-QA Runs never push.
+  It resolves `specs.root` once from the user's checkout; when the resolved
+  path is not the default `<repo>/docs/specs`, startup prints
+  `Spec Root: <path>` on stderr. `implement.auto_push: true` makes a Clean spec
+  Run push its branch upstream and append `pushed <remote>/<branch>` to stdout.
+  Integration Pending, Unresolved Outcome, Failed, Stopped, and failing-QA
+  Runs never push.
+- Daemon Task and QA commits stage only repository paths that do not cross a
+  symbolic link. A task file or QA Report outside the repository, or reached
+  through a symlinked path, is dropped from staging with one Run Event Journal
+  entry naming the path and reason. The progress warning is shaped like
+  `roundfix: task file <path> kept outside the repository; committed without
+  it` or `roundfix: QA Report <path> kept outside the repository; committed
+  without it`. If no stageable paths remain for a Task, the Task still settles
+  `completed` without a commit. An external QA Report is likewise left
+  uncommitted and the QA step proceeds. Remove any temporary git shims that hid
+  symlink pathspec failures after upgrading to a Roundfix build with this
+  behavior; those shims can mask regressions in the real commit boundary.
 - `resolve`, `watch`, and `implement` accept `--detach` to start a Detached
   Run. The foreground command prints the four-line report, exits `0`, and
   leaves follow-up control to `roundfix attach <run-id>` and
   `roundfix stop <run-id>`. Detached startup failures before the handshake
   relay the child's stderr and exit code verbatim, with no stdout report.
+- `resolve`, `watch`, and `implement` fire one outcome notification after the
+  Run reaches a terminal outcome. `fetch`, `settle`, `archive`, and commands
+  that create no Run do not notify. Detached Runs notify from the detached
+  child. Notification failures write one stderr warning shaped as
+  `roundfix: outcome notification failed: <reason>` and one Daemon-source Run
+  Event; they never change the Run report, terminal outcome, or exit code.
 - `settle` targets one failed Task by resolving its kept Task Worktree first,
   then its kept Run Worktree, then the current repository. It re-runs the
   Task's Verification commands in the selected tree, changes nothing when
@@ -313,9 +390,10 @@ it, or set `NO_COLOR` to suppress color.
   touching the filesystem, it verifies every Task in the Spec's Task Graph is
   `completed` and that the newest QA Report has `verdict: pass`. On pass, it
   stamps `_prd.md` with `status: archived`, `archived`, and `source_slug`, then
-  moves `docs/specs/<slug>/` to `docs/specs/_archived/<slug>/`. Refusals exit
-  `2`, write the Preflight Validation failure to stderr, and leave the folder
-  in place.
+  moves `<specs.root>/<slug>/` to `<specs.root>/_archived/<slug>/`. With the
+  default Spec Root, stdout reports `docs/specs/_archived/<slug>`. Refusals
+  exit `2`, write the Preflight Validation failure to stderr, and leave the
+  folder in place.
 - `gc` is non-interactive. It resolves `store.journal_retention`, computes the
   cutoff, prunes eligible terminal Runs' Run Event Journal rows and
   `<artifact-dir>/runs/<run-id>` directories, removes orphaned `runs/<id>`
@@ -323,7 +401,22 @@ it, or set `NO_COLOR` to suppress color.
   rows, and artifact bytes reclaimed on stdout. `--dry-run` lists the same
   eligible set without deleting anything. `journal_retention: 0` skips pruning
   and reports that no pruning was performed. Retention never deletes Active
-  Runs, `runs` rows, active-run locks, or Review artifacts under `docs/specs/`.
+  Runs, `runs` rows, active-run locks, or Review artifacts under the Spec Root.
+- `runs list` is read-only and writes only the listing report to stdout. By
+  default it scopes to the current repository and exits `2` outside a Git
+  repository, naming `--all` as the alternative. `--all` widens the listing to
+  every repository and adds a repository column. `--active` keeps only
+  non-terminal Runs. Empty results print `No Runs found.` and exit `0`; invalid
+  flags, unexpected arguments, repository-resolution failures, and Run Database
+  open/list failures exit `2` with diagnostics on stderr.
+- `attach` is read-only. With a Run ID, it replays that Run's Run Event Journal
+  and follows live events without creating Runs, fetching, starting Agents,
+  committing, pushing, stopping, or resolving Review Source threads. Without a
+  Run ID in an interactive terminal, it opens a repository-scoped picker that
+  lists Active Runs first and terminal Runs too, accepts a number or Run ID,
+  and then uses the same Attach path. Cancelling the picker exits `0` with no
+  side effects. Without a Run ID in non-interactive mode, including
+  `--no-input`, it exits `2` and names `roundfix runs list`.
 - `stop` is graceful by default. It records a Stop Request in the Run Database
   and reports `Stop Request recorded; the Run stops after the current Work Item
   settles.` Use `--force` only for a dead, stuck, or runaway Run; it cancels
@@ -357,6 +450,17 @@ replacement. The current deprecated key is `resolve.concurrent`, which prints
 and then continues. Unknown keys that are not registered as deprecated still
 fail strict validation.
 
+`specs.root` is the directory that holds Spec folders. It defaults to
+`docs/specs`; Project Config overrides User Config, which overrides the
+built-in default. Relative values resolve against the repository root, and
+absolute values are used as-is. Roundfix resolves the Spec Root once at command
+start and carries that absolute path into Run and Task Worktrees, so Worktrees
+read and write the same Spec artifacts as the user's checkout. Validation
+rejects an empty root, a missing root, or a root that is not a directory; the
+error names the resolved path. When the resolved root is outside the repository
+working tree after symlink evaluation, Spec artifacts are external and are not
+staged into code-repository commits.
+
 Example:
 
 ```yaml
@@ -381,6 +485,16 @@ watch:
 
 implement:
   auto_push: false
+
+notify:
+  # Send one notification when resolve, watch, or implement reaches a terminal outcome.
+  enabled: true
+  # Empty uses the native desktop notifier when available.
+  command: ""
+
+specs:
+  # Directory holding Spec folders; relative values resolve against the repo root.
+  root: "docs/specs"
 
 worktree:
   # Parent directory; Roundfix always appends <repo-slug>/<run-id>[.<task_id>].
@@ -427,11 +541,31 @@ summary when it frees storage; failures are warnings and do not block the Run.
 Use `roundfix gc --dry-run` to preview the same terminal Run set, and
 `roundfix gc` to reclaim on demand.
 
+`notify.enabled` defaults to `true`; `notify.command` defaults to the empty
+string. User Config can override the built-in defaults, and Project Config can
+override User Config. With the default empty command, Roundfix uses the native
+desktop path when one is available: `osascript` on macOS, `notify-send` on
+Linux, and a silent no-op on other platforms or when the native tool is
+missing. A non-empty `notify.command` replaces the native path and runs through
+the shell with a 30s timeout. Successful command output is discarded; failed
+command output is captured into the warning reason. The command receives:
+
+- `ROUNDFIX_RUN_ID` — the completed Run id.
+- `ROUNDFIX_OUTCOME` — the terminal outcome, such as `Clean`, `Unresolved`,
+  `Failed`, or `Stopped`.
+- `ROUNDFIX_KIND` — `resolve`, `watch`, or `implement`.
+- `ROUNDFIX_TARGET` — `pr:<number>` for review Runs or `spec:<slug>` for Spec
+  Runs.
+
+Set `notify.enabled: false` to disable outcome notifications entirely.
+
 ## Local State
 
 - Run Database: `~/.roundfix/roundfix.db`
 - Run Worktrees: `<worktree.location>/<repo-slug>/<run-id>`
 - Task Worktrees: `<worktree.location>/<repo-slug>/<run-id>.<task_id>`
+- Spec Root: `specs.root`, defaulting to `<repo>/docs/specs`. Relative values
+  resolve against the repository root; absolute values are used as-is.
 - Default Artifact Directory: Roundfix Home `artifacts/<repo-id>`, used for
   Artifact Directory-backed Run files and as the base when an explicit
   Artifact Directory is configured.
@@ -439,23 +573,27 @@ Use `roundfix gc --dry-run` to preview the same terminal Run set, and
   - Explicit `--artifact-dir` or `defaults.artifact_dir` preserves the legacy
     layout: `<artifact-dir>/reviews/pr-<number>/round-<nnn>/issue_<nnn>.md`.
   - Otherwise, a PR associated with a Spec writes
-    `docs/specs/<slug>/reviews/round-<nnn>/issue_<nnn>.md`.
+    `<specs.root>/<slug>/reviews/round-<nnn>/issue_<nnn>.md`.
   - Without a valid Spec association, review artifacts write to
-    `docs/specs/_reviews/pr-<number>/round-<nnn>/issue_<nnn>.md`.
+    `<specs.root>/_reviews/pr-<number>/round-<nnn>/issue_<nnn>.md`.
 - Per-Batch Agent logs, only when `logs.agent: true`:
   `<artifact-dir>/runs/<run-id>/agent/batch-<nnn>.log`
 - Detached Run console log, always written for Detached Runs:
   `<artifact-dir>/runs/<run-id>/console.log`
 - Journal Retention prunes only terminal Run Event Journal rows and
-  `<artifact-dir>/runs/<run-id>` directories. Review artifacts under
-  `docs/specs/<slug>/reviews/` or `docs/specs/_reviews/` are outside retention
-  scope.
+  `<artifact-dir>/runs/<run-id>` directories. Review artifacts under the Spec
+  Root are outside retention scope.
 
 For review commands, explicit `--spec <slug>` wins over trailer discovery. When
 `--spec` is absent, Roundfix uses the newest `Roundfix-Spec: <slug>` trailer on
-the PR head commit only if `docs/specs/<slug>/` exists; an unknown or invalid
-slug falls back to the spec-less `_reviews` path. Roundfix never commits or
-gitignores review artifacts, so versioning them stays a repository decision.
+the PR head commit only if `<specs.root>/<slug>/` exists; an unknown or invalid
+slug falls back to the spec-less `_reviews` path. After a clean integration,
+`resolve` and `watch` commit the Run's review artifacts in one separate
+Daemon-owned docs commit (`docs: review round NNN for pr <n>`) that rides the
+Final Push (ADR-0036); `fetch` still never commits, `auto_commit: false`
+disables the commit with everything else, and artifact roots outside the
+repository — an explicit external Artifact Directory, an external Spec Root,
+or a path crossing a symbolic link — are never staged.
 ADR-0030 keeps per-Batch Agent log files off by default because the Run Event
 Journal already stores the raw payloads; the Detached Run console log remains
 unconditional for the ADR-0028 detach contract.
@@ -566,15 +704,17 @@ internal/tui/                    Interactive Input and ACP Live Run View
 internal/rounds/                 Round artifacts, issue parsing, batching
 internal/store/                  central Run Database
 internal/watch/                  watch state machine
-skills/                          shipped Roundfix agent skill
+skills/                          shipped Roundfix skill bundle (synced from .agents/skills)
 docs/                            product docs and architecture decisions
 ```
 
 Start with:
 
-- [Product brief](docs/product-brief.md)
+- [Operational guide](docs/usage.md)
+- [CONTEXT-driven development](docs/context-driven-development.md)
 - [Project glossary](CONTEXT.md)
 - [Architecture decisions](docs/adr/)
+- [Release runbook](docs/release-runbook.md)
 
 ## License
 

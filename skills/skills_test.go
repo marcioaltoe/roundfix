@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 )
@@ -54,26 +53,66 @@ runtime:
 	}
 }
 
-func TestFilesIncludesRoundfixSkillAndAgentMetadata(t *testing.T) {
+func TestFilesIncludeEveryOwnedSkill(t *testing.T) {
 	files, err := Files()
 	if err != nil {
 		t.Fatalf("read skill files: %v", err)
 	}
 
-	var paths []string
+	present := make(map[string]bool, len(files))
 	for _, file := range files {
-		paths = append(paths, file.Path)
+		present[file.Path] = true
 		if len(file.Data) == 0 {
 			t.Fatalf("expected embedded data for %s", file.Path)
 		}
 	}
 
-	expected := []string{
-		"roundfix/SKILL.md",
-		"roundfix/agents/openai.yaml",
+	// The operational roundfix skill ships its SKILL.md and OpenAI manifest,
+	// and every owned skill ships a SKILL.md.
+	required := []string{"roundfix/SKILL.md", "roundfix/agents/openai.yaml"}
+	for _, skill := range Names() {
+		required = append(required, skill+"/SKILL.md")
 	}
-	if !reflect.DeepEqual(paths, expected) {
-		t.Fatalf("expected embedded paths %#v, got %#v", expected, paths)
+	for _, path := range required {
+		if !present[path] {
+			t.Fatalf("expected embedded file %q, got %d files without it", path, len(files))
+		}
+	}
+}
+
+func TestFrontmatterName(t *testing.T) {
+	cases := []struct {
+		name string
+		text string
+		want string
+	}{
+		{"valid", "---\nname: write-prd\ndescription: x\n---\nbody", "write-prd"},
+		{"no frontmatter", "# Heading\nbody", ""},
+		{"unterminated", "---\nname: write-prd\nbody", ""},
+		{"missing name", "---\ndescription: x\n---\nbody", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := frontmatterName(tc.text); got != tc.want {
+				t.Fatalf("frontmatterName(%q) = %q, want %q", tc.text, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestRecommendedListsExternallyManagedSkills(t *testing.T) {
+	recommended := Recommended()
+	if len(recommended) == 0 {
+		t.Fatal("expected recommended skills from skills-lock.json, got none")
+	}
+	owned := make(map[string]bool, len(Names()))
+	for _, skill := range Names() {
+		owned[skill] = true
+	}
+	for _, skill := range recommended {
+		if owned[skill] {
+			t.Fatalf("recommended skill %q must not be an owned bundle skill", skill)
+		}
 	}
 }
 
@@ -95,19 +134,30 @@ func TestInstallCopiesSkillsToSupportedTargetDirectories(t *testing.T) {
 	if len(result.Targets) != 3 {
 		t.Fatalf("expected three install targets, got %#v", result.Targets)
 	}
+	wantFiles := embeddedFileCount(t)
 	for _, target := range result.Targets {
-		if target.Files != 2 {
-			t.Fatalf("expected two files for %s, got %d", target.Target, target.Files)
+		if target.Files != wantFiles {
+			t.Fatalf("expected %d files for %s, got %d", wantFiles, target.Target, target.Files)
 		}
 		for _, path := range []string{
 			"roundfix/SKILL.md",
 			"roundfix/agents/openai.yaml",
+			"write-prd/SKILL.md",
 		} {
 			if _, err := os.Stat(filepath.Join(target.Dir, path)); err != nil {
 				t.Fatalf("expected installed file %s for %s: %v", path, target.Target, err)
 			}
 		}
 	}
+}
+
+func embeddedFileCount(t *testing.T) int {
+	t.Helper()
+	files, err := Files()
+	if err != nil {
+		t.Fatalf("read skill files: %v", err)
+	}
+	return len(files)
 }
 
 func TestInstallCopiesSkillsToProjectDirectoryByDefault(t *testing.T) {
@@ -128,9 +178,13 @@ func TestInstallCopiesSkillsToProjectDirectoryByDefault(t *testing.T) {
 	if target.Dir != expectedDir {
 		t.Fatalf("expected project target dir %q, got %q", expectedDir, target.Dir)
 	}
+	if want := embeddedFileCount(t); target.Files != want {
+		t.Fatalf("expected %d installed files, got %d", want, target.Files)
+	}
 	for _, path := range []string{
 		"roundfix/SKILL.md",
 		"roundfix/agents/openai.yaml",
+		"write-prd/SKILL.md",
 	} {
 		if _, err := os.Stat(filepath.Join(expectedDir, path)); err != nil {
 			t.Fatalf("expected installed file %s: %v", path, err)

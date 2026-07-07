@@ -1,12 +1,17 @@
 package cli
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -25,8 +30,11 @@ const attachReplayPageSize = 200
 const attachTimelineLines = 300
 
 type attachRequest struct {
-	runID string
+	runID   string
+	noInput bool
 }
+
+var errAttachPickerCanceled = errors.New("attach picker canceled")
 
 // runAttachCommand replays a Run's event timeline from the Run Database.
 // Attach is non-mutating: it opens a read-only connection and never creates
@@ -39,6 +47,11 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	req, err := parseAttachCommand(args)
 	if err != nil {
 		printAttachFailure(err, stderr)
+		return exitPreflight
+	}
+	missingRunID := strings.TrimSpace(req.runID) == ""
+	if missingRunID && (req.noInput || !attachInteractiveInputAvailable()) {
+		printAttachFailure(validationError{message: "missing Run ID; run 'roundfix runs list' to discover Runs or pass a Run ID"}, stderr)
 		return exitPreflight
 	}
 	loaded, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
@@ -55,6 +68,18 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		_ = reader.Close()
 	}()
 
+	if missingRunID {
+		selectedRunID, err := pickAttachRun(ctx, reader, loaded.GitRoot, attachPickerInputReader(), stderr)
+		if errors.Is(err, errAttachPickerCanceled) {
+			return exitOK
+		}
+		if err != nil {
+			printAttachFailure(err, stderr)
+			return exitPreflight
+		}
+		req.runID = selectedRunID
+	}
+
 	run, found, err := reader.Run(ctx, req.runID)
 	if err != nil {
 		printAttachFailure(err, stderr)
@@ -67,7 +92,7 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 
 	concurrency := attachRunConcurrency(ctx, reader, run, loaded.Config.Worktree.Concurrency)
 	if liveTUIEnabled(stdout) {
-		return runAttachCockpit(ctx, reader, run, concurrency, stdout, stderr)
+		return runAttachCockpit(ctx, loaded, reader, run, concurrency, stdout, stderr)
 	}
 
 	timeline := roundtui.NewRunTimeline(attachTimelineLines)
@@ -77,7 +102,7 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitPreflight
 	}
 
-	view := attachRunView(run, attachIssues(ctx, run), timeline.Lines(), concurrency)
+	view := attachRunView(loaded, run, attachIssues(ctx, run), timeline.Lines(), concurrency)
 	fmt.Fprint(stdout, roundtui.RenderLiveRunView(view))
 	if store.IsTerminalState(run.State) {
 		fmt.Fprintf(stdout, "Run %s reached %s; timeline replayed read-only.\n", run.ID, run.State)
@@ -110,8 +135,8 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 
 // runAttachCockpit opens the interactive cockpit in the alternate screen.
 // Attach mode: q/Ctrl-C detach and never stop the Run; no stop key exists.
-func runAttachCockpit(ctx context.Context, reader *store.Store, run store.Run, concurrency int, stdout io.Writer, stderr io.Writer) int {
-	view := attachRunView(run, attachIssues(ctx, run), nil, concurrency)
+func runAttachCockpit(ctx context.Context, loaded roundconfig.Loaded, reader *store.Store, run store.Run, concurrency int, stdout io.Writer, stderr io.Writer) int {
+	view := attachRunView(loaded, run, attachIssues(ctx, run), nil, concurrency)
 	err := roundtui.RunCockpit(ctx, stdout, roundtui.CockpitConfig{
 		Mode:   roundtui.CockpitAttach,
 		View:   view,
@@ -158,6 +183,7 @@ func parseAttachCommand(args []string) (attachRequest, error) {
 	fs.SetOutput(io.Discard)
 	fs.StringVar(&req.runID, "run-id", "", "Run ID to attach to")
 	fs.StringVar(&req.runID, "run", "", "Run ID to attach to")
+	fs.BoolVar(&req.noInput, "no-input", false, "Fail instead of opening Interactive Input")
 	if err := fs.Parse(args); err != nil {
 		return req, validationError{message: err.Error()}
 	}
@@ -171,10 +197,121 @@ func parseAttachCommand(args []string) (attachRequest, error) {
 		}
 		req.runID = strings.TrimSpace(remaining[0])
 	}
-	if strings.TrimSpace(req.runID) == "" {
-		return req, validationError{message: "a Run ID is required to attach"}
-	}
+	req.runID = strings.TrimSpace(req.runID)
 	return req, nil
+}
+
+func pickAttachRun(ctx context.Context, reader *store.Store, gitRoot string, stdin io.Reader, stderr io.Writer) (string, error) {
+	gitRoot = strings.TrimSpace(gitRoot)
+	if gitRoot == "" {
+		return "", validationError{message: "attach without a Run ID requires a Git repository; run 'roundfix runs list' to discover Runs"}
+	}
+	runs, err := reader.ListRuns(ctx, store.ListRunsQuery{GitRoot: gitRoot})
+	if err != nil {
+		return "", fmt.Errorf("list attach Runs: %w", err)
+	}
+	orderAttachPickerRuns(runs)
+	if len(runs) == 0 {
+		return "", validationError{message: "no Runs found for this repository; run 'roundfix runs list' to discover Runs"}
+	}
+	return collectAttachRunSelection(ctx, runs, stdin, stderr)
+}
+
+func orderAttachPickerRuns(runs []store.Run) {
+	sort.SliceStable(runs, func(i, j int) bool {
+		leftTerminal := store.IsTerminalState(runs[i].State)
+		rightTerminal := store.IsTerminalState(runs[j].State)
+		if leftTerminal != rightTerminal {
+			return !leftTerminal
+		}
+		return false
+	})
+}
+
+func collectAttachRunSelection(ctx context.Context, runs []store.Run, stdin io.Reader, stderr io.Writer) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	if stdin == nil {
+		stdin = strings.NewReader("")
+	}
+	if stderr == nil {
+		stderr = io.Discard
+	}
+	fmt.Fprint(stderr, renderAttachRunPicker(runs))
+	type readResult struct {
+		line string
+		err  error
+	}
+	resultCh := make(chan readResult, 1)
+	go func() {
+		line, err := bufio.NewReader(stdin).ReadString('\n')
+		resultCh <- readResult{line: line, err: err}
+	}()
+	var line string
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	case result := <-resultCh:
+		if result.err != nil && result.err != io.EOF {
+			return "", fmt.Errorf("read attach Run picker: %w", result.err)
+		}
+		line = result.line
+	}
+	choice := strings.TrimSpace(line)
+	if choice == "" || isAttachPickerCancelChoice(choice) {
+		return "", errAttachPickerCanceled
+	}
+	if index, err := strconv.Atoi(choice); err == nil {
+		if index >= 1 && index <= len(runs) {
+			return runs[index-1].ID, nil
+		}
+		return "", validationError{message: fmt.Sprintf("Run picker choice %d is out of range", index)}
+	}
+	for _, run := range runs {
+		if choice == run.ID {
+			return run.ID, nil
+		}
+	}
+	return "", validationError{message: fmt.Sprintf("Run picker choice %q is not a listed Run", choice)}
+}
+
+func renderAttachRunPicker(runs []store.Run) string {
+	var builder strings.Builder
+	builder.WriteString("Roundfix Interactive Input\n")
+	builder.WriteString("Command: attach\n")
+	builder.WriteString("Runs:\n")
+	for index, run := range runs {
+		fmt.Fprintf(&builder, "  %d. %s  %s  %s  %s\n", index+1, run.ID, runListState(run), run.Kind, runListTarget(run))
+	}
+	builder.WriteString("Pick a Run by number or run id.\n")
+	builder.WriteString("Press Enter to cancel.\n")
+	builder.WriteString("Run: ")
+	return builder.String()
+}
+
+func isAttachPickerCancelChoice(choice string) bool {
+	switch strings.ToLower(strings.TrimSpace(choice)) {
+	case "q", "quit", "cancel":
+		return true
+	default:
+		return false
+	}
+}
+
+var attachPickerInputReader = defaultAttachPickerInputReader
+var attachInteractiveInputAvailable = defaultAttachInteractiveInputAvailable
+
+func defaultAttachPickerInputReader() io.Reader {
+	return os.Stdin
+}
+
+func defaultAttachInteractiveInputAvailable() bool {
+	if strings.EqualFold(os.Getenv("TERM"), "dumb") {
+		return false
+	}
+	info, err := os.Stdin.Stat()
+	return err == nil && info.Mode()&os.ModeCharDevice != 0
 }
 
 // attachIssues loads the Run's Review Issues for the left pane. Attach must
@@ -193,7 +330,7 @@ func attachIssues(ctx context.Context, run store.Run) []rounds.Issue {
 	return selection.Issues
 }
 
-func attachRunView(run store.Run, issues []rounds.Issue, console []string, concurrency int) roundtui.LiveRunView {
+func attachRunView(loaded roundconfig.Loaded, run store.Run, issues []rounds.Issue, console []string, concurrency int) roundtui.LiveRunView {
 	view := roundtui.LiveRunView{
 		Command:       "attach",
 		Repository:    run.HeadRepository,
@@ -208,12 +345,14 @@ func attachRunView(run store.Run, issues []rounds.Issue, console []string, concu
 		Width:         liveViewWidth(),
 	}
 	if run.Kind == store.KindImplement {
+		specsRoot := attachSpecsRoot(loaded, run)
 		view.RunKind = run.Kind
 		view.SpecSlug = run.SpecSlug
 		view.GitRoot = run.GitRoot
+		view.SpecsRoot = specsRoot
 		view.Concurrency = concurrency
 		view.HeadBranch = run.LocalBranch
-		view.Tasks = attachTasks(run)
+		view.Tasks = attachTasks(specsRoot, run)
 	}
 	return view
 }
@@ -254,12 +393,29 @@ func attachRunConcurrency(ctx context.Context, reader *store.Store, run store.Ru
 // Attach must stay usable when the Spec moved or was archived, so load
 // failures render an empty pane instead of failing the command — mirroring
 // attachIssues.
-func attachTasks(run store.Run) []spec.Task {
-	graph, err := spec.Load(attachTaskRoot(run), run.SpecSlug)
+func attachTasks(specsRoot string, run store.Run) []spec.Task {
+	graph, err := spec.Load(specsRoot, run.SpecSlug)
 	if err != nil {
 		return nil
 	}
 	return graph.Tasks
+}
+
+func attachSpecsRoot(loaded roundconfig.Loaded, run store.Run) string {
+	repoRoot := strings.TrimSpace(run.GitRoot)
+	if repoRoot == "" {
+		repoRoot = strings.TrimSpace(loaded.GitRoot)
+	}
+	if repoRoot != "" {
+		if resolved, err := roundconfig.ResolveSpecsRoot(loaded, repoRoot); err == nil {
+			specsRoot := specsRootForWorkDir(resolved, repoRoot, attachTaskRoot(run))
+			if info, statErr := os.Stat(specsRoot); statErr == nil && info.IsDir() {
+				return specsRoot
+			}
+			return specsRootForWorkDir(resolved, repoRoot, repoRoot)
+		}
+	}
+	return filepath.Join(attachTaskRoot(run), "docs", "specs")
 }
 
 func attachTaskRoot(run store.Run) string {

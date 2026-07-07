@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0012-npm-distribution
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -34,18 +34,18 @@ close the SKILL.md-matches-CLI gate.
 
 ## Subtasks
 
-- [ ] User install docs (npx/bunx/global; exit-code parity)
-- [ ] Maintainer release runbook (version agreement, secrets, tag flow, upgrade channel)
-- [ ] Skill-bundle docs: the 14 owned skills and the `skills check/install/list` surface
-- [ ] SKILL.md/skill manifest update if needed + `make skills-sync`
-- [ ] Verify no skill drift
+- [x] User install docs (npx/bunx/global; exit-code parity)
+- [x] Maintainer release runbook (version agreement, secrets, tag flow, upgrade channel)
+- [x] Skill-bundle docs: the 14 owned skills and the `skills check/install/list` surface
+- [x] SKILL.md/skill manifest update if needed + `make skills-sync`
+- [x] Verify no skill drift
 
 ## Acceptance Criteria
 
-- [ ] Install docs accurately describe the three npm install paths and exit-code parity.
-- [ ] The release runbook documents version agreement, required secrets, and the tag-triggered flow.
-- [ ] The docs describe the 14 owned skills and the `skills check/install/list` surface, and that external skills are recommendations only.
-- [ ] `roundfix skills check` passes and `skills-sync-check` reports no drift.
+- [x] Install docs accurately describe the three npm install paths and exit-code parity.
+- [x] The release runbook documents version agreement, required secrets, and the tag-triggered flow.
+- [x] The docs describe the 14 owned skills and the `skills check/install/list` surface, and that external skills are recommendations only.
+- [x] `roundfix skills check` passes and `skills-sync-check` reports no drift.
 
 ## Verification
 
