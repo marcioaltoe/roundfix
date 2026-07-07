@@ -3,48 +3,56 @@ package tui
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"roundfix/internal/runevent"
 )
 
-func renderedTimelineLines(entries []timelineEntry) []string {
-	if !hasBatchedTimelineEntries(entries) {
-		return splitRenderedLines(concatEntryText(entries))
-	}
+const (
+	timelineExpandedMarker  = "▼"
+	timelineCollapsedMarker = "▶"
+	// timelineGutterWidth is the aligned timestamp column: "HH:MM:SS "
+	// or blanks when the event carries no timestamp.
+	timelineGutterWidth = 9
+	// timelineSummaryBound caps a summary row at build time; the pane
+	// re-bounds every row to its own width at render time.
+	timelineSummaryBound = 512
+)
 
+func renderedTimelineLines(entries []timelineEntry) []string {
 	total := maxTimelineBatch(entries)
 	lines := []string{}
 	group := []timelineEntry{}
-	flush := func() {
+	plain := []timelineEntry{}
+	flushPlain := func() {
+		if len(plain) == 0 {
+			return
+		}
+		lines = append(lines, timelineEventRows(plain)...)
+		plain = nil
+	}
+	flushGroup := func() {
 		if len(group) == 0 {
 			return
 		}
 		lines = append(lines, renderTimelineBatch(group, total)...)
 		group = nil
 	}
-
 	for _, entry := range entries {
 		if entry.event.Batch <= 0 {
-			flush()
-			lines = append(lines, splitRenderedLines(entry.text)...)
+			flushGroup()
+			plain = append(plain, entry)
 			continue
 		}
+		flushPlain()
 		if len(group) > 0 && group[0].event.Batch != entry.event.Batch {
-			flush()
+			flushGroup()
 		}
 		group = append(group, entry)
 	}
-	flush()
+	flushPlain()
+	flushGroup()
 	return lines
-}
-
-func hasBatchedTimelineEntries(entries []timelineEntry) bool {
-	for _, entry := range entries {
-		if entry.event.Batch > 0 {
-			return true
-		}
-	}
-	return false
 }
 
 func maxTimelineBatch(entries []timelineEntry) int {
@@ -57,6 +65,11 @@ func maxTimelineBatch(entries []timelineEntry) int {
 	return total
 }
 
+// renderTimelineBatch renders one Batch group: a marker-carrying header
+// row folding the daemon.batch state and elapsed clock, then the Batch's
+// event rows. Settled Batches collapse to the header — their summary row —
+// while every other Batch renders expanded. Collapse is state-driven; no
+// key toggles it.
 func renderTimelineBatch(entries []timelineEntry, total int) []string {
 	if len(entries) == 0 {
 		return nil
@@ -67,12 +80,23 @@ func renderTimelineBatch(entries []timelineEntry, total int) []string {
 	}
 	state := timelineBatchState(entries)
 	elapsed := timelineBatchElapsed(entries)
-	body := timelineBatchBody(entries)
-	if state == "" && len(body) == 0 {
+	body := make([]timelineEntry, 0, len(entries))
+	for _, entry := range entries {
+		if entry.kind == runevent.KindDaemonBatch {
+			continue
+		}
+		body = append(body, entry)
+	}
+	rows := timelineEventRows(body)
+	if state == "" && len(rows) == 0 {
 		return nil
 	}
-
-	parts := []string{fmt.Sprintf("BATCH %03d/%03d", batch, total)}
+	settled := timelineBatchSettled(state)
+	marker := timelineExpandedMarker
+	if settled {
+		marker = timelineCollapsedMarker
+	}
+	parts := []string{marker, fmt.Sprintf("BATCH %03d/%03d", batch, total)}
 	if state != "" {
 		parts = append(parts, state)
 	}
@@ -80,40 +104,105 @@ func renderTimelineBatch(entries []timelineEntry, total int) []string {
 		parts = append(parts, elapsed)
 	}
 	lines := []string{strings.Join(parts, " ")}
-	lines = append(lines, body...)
-	return lines
+	if settled {
+		return lines
+	}
+	return append(lines, rows...)
 }
 
-func timelineBatchBody(entries []timelineEntry) []string {
-	lines := []string{}
-	lastSection := ""
-	var agentText strings.Builder
-	flushAgentText := func() {
-		if agentText.Len() == 0 {
+// timelineEventRows renders a run of entries: structured kinds render one
+// bounded summary row each behind the timestamp gutter, while chunked
+// message/raw text keeps coalescing into whole console lines so streaming
+// fragments never render as broken rows.
+func timelineEventRows(entries []timelineEntry) []string {
+	rows := []string{}
+	var stream strings.Builder
+	flushStream := func() {
+		if stream.Len() == 0 {
 			return
 		}
-		lines = append(lines, splitRenderedLines(agentText.String())...)
-		agentText.Reset()
+		rows = append(rows, splitRenderedLines(stream.String())...)
+		stream.Reset()
 	}
 	for _, entry := range entries {
-		if entry.text == "" || entry.kind == runevent.KindDaemonBatch {
+		if timelineStreamKind(entry.kind) {
+			stream.WriteString(entry.text)
 			continue
 		}
-		section := daemonTimelineSection(entry.kind)
-		if section != "" {
-			flushAgentText()
-			if section != lastSection {
-				lines = append(lines, section)
-				lastSection = section
-			}
-			lines = append(lines, splitRenderedLines(entry.text)...)
-		} else {
-			lastSection = ""
-			agentText.WriteString(entry.text)
+		row := timelineEventRow(entry)
+		if row == "" {
+			continue
 		}
+		flushStream()
+		rows = append(rows, row)
 	}
-	flushAgentText()
-	return lines
+	flushStream()
+	return rows
+}
+
+// timelineStreamKind reports the chunked streaming kinds whose text
+// coalesces across events; every other known kind renders as one bounded
+// summary row.
+func timelineStreamKind(kind runevent.Kind) bool {
+	return kind == runevent.KindAgentMessage || kind == runevent.KindAgentRaw
+}
+
+// timelineEventRow renders one structured event as its single bounded
+// summary row: timestamp gutter, kind label, summary line. Raw payloads
+// never render inline. Unknown kinds and suppressed console text (session
+// lifecycle statuses) keep the shipped skip policy.
+func timelineEventRow(entry timelineEntry) string {
+	event := entry.event
+	if runevent.IsDaemonKind(event.Kind) {
+		summary := timelineRowSummary(entry)
+		if summary == "" {
+			return ""
+		}
+		if label := daemonTimelineSection(event.Kind); label != "" {
+			summary = label + " " + summary
+		}
+		return timelineGutter(event.Time) + summary
+	}
+	if entry.text == "" {
+		return ""
+	}
+	summary := timelineRowSummary(entry)
+	if summary == "" {
+		return ""
+	}
+	return timelineGutter(event.Time) + summary
+}
+
+// timelineRowSummary bounds the row through the shared summary helper.
+// Events journaled without a summary fall back to their reconstructed
+// console text so older journals stay viewable, bounded the same way.
+func timelineRowSummary(entry timelineEntry) string {
+	if strings.TrimSpace(entry.event.Summary) != "" {
+		return EventSummary(entry.event, timelineSummaryBound)
+	}
+	fallback := entry.event
+	fallback.Summary = entry.text
+	return EventSummary(fallback, timelineSummaryBound)
+}
+
+// timelineGutter renders the aligned timestamp column; events without a
+// timestamp keep the column blank so rows stay aligned across kinds.
+func timelineGutter(at time.Time) string {
+	if at.IsZero() {
+		return strings.Repeat(" ", timelineGutterWidth)
+	}
+	return at.Format("15:04:05") + " "
+}
+
+// timelineBatchSettled reports whether the Batch's journaled state word
+// marks it settled; settled Batches collapse to their summary row.
+func timelineBatchSettled(state string) bool {
+	switch state {
+	case "completed", "failed", "stopped":
+		return true
+	default:
+		return false
+	}
 }
 
 func daemonTimelineSection(kind runevent.Kind) string {

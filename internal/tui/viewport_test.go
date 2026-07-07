@@ -384,18 +384,24 @@ func TestViewportGroupsReviewTimelineByBatchAndKind(t *testing.T) {
 
 	rendered := strings.Join(viewport.VisibleLines(), "\n")
 	assertContainsInOrder(t, rendered,
-		"BATCH 001/002 executing 00:38",
-		"PLAN",
-		"pending  Inspect current cockpit render",
-		"[TOOL] read_file",
-		"$ rtk read internal/tui/cockpit.go",
-		"loaded cockpit renderer",
-		"THINK checking error paths",
-		"SESSION RUNNING",
-		"BATCH 002/002 waiting 00:00",
+		"▼ BATCH 001/002 executing 00:38",
+		"12:00:05 PLAN",
+		"12:00:20 [TOOL] read_file · completed",
+		"12:00:32 THINK checking error paths",
+		"12:00:38 SESSION RUNNING",
+		"▼ BATCH 002/002 waiting 00:00",
 	)
 	if strings.Contains(rendered, "Batch 001 executing.") || strings.Contains(rendered, "Batch 002 waiting.") {
 		t.Fatalf("expected daemon.batch summaries folded into headers, got:\n%s", rendered)
+	}
+	for _, payload := range []string{
+		"pending  Inspect current cockpit render",
+		"$ rtk read internal/tui/cockpit.go",
+		"loaded cockpit renderer",
+	} {
+		if strings.Contains(rendered, payload) {
+			t.Fatalf("expected raw payload text %q to stay behind the summary row, got:\n%s", payload, rendered)
+		}
 	}
 }
 
