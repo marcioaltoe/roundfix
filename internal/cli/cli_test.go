@@ -7190,9 +7190,10 @@ func withAttachSleep(t *testing.T, sleep func(ctx context.Context) error) {
 }
 
 type browserSessionCall struct {
-	repo   string
-	active []store.Run
-	all    []store.Run
+	repo        string
+	active      []store.Run
+	all         []store.Run
+	otherActive int
 }
 
 // withRunBrowserSession scripts Run Browser outcomes so entry-point tests
@@ -7201,9 +7202,9 @@ func withRunBrowserSession(t *testing.T, outcomes ...roundtui.BrowserOutcome) *[
 	t.Helper()
 	calls := &[]browserSessionCall{}
 	old := runBrowserSession
-	runBrowserSession = func(_ context.Context, _ io.Writer, repo string, active, all []store.Run) (roundtui.BrowserOutcome, error) {
+	runBrowserSession = func(_ context.Context, _ io.Writer, repo string, active, all []store.Run, otherActive int) (roundtui.BrowserOutcome, error) {
 		index := len(*calls)
-		*calls = append(*calls, browserSessionCall{repo: repo, active: active, all: all})
+		*calls = append(*calls, browserSessionCall{repo: repo, active: active, all: all, otherActive: otherActive})
 		if index >= len(outcomes) {
 			t.Fatalf("unexpected Run Browser session call %d", index+1)
 		}

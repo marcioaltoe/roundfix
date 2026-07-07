@@ -234,8 +234,11 @@ func TestRunBrowserEmptyStatesNameTheFilter(t *testing.T) {
 	browser.now = browserTestNow
 
 	view := browserViewText(browser)
-	if !strings.Contains(view, "No active Runs — press a to show all Runs.") {
+	if !strings.Contains(view, "No active Runs in this repository — press a to include terminal Runs.") {
 		t.Fatalf("expected the toggle invitation, got:\n%s", view)
+	}
+	if strings.Contains(view, "other repositories") {
+		t.Fatalf("expected no cross-repository hint without other Active Runs, got:\n%s", view)
 	}
 
 	browser, cmd := pressBrowser(t, browser, "enter")
@@ -253,8 +256,25 @@ func TestRunBrowserEmptyStatesNameTheFilter(t *testing.T) {
 
 	empty := NewRunBrowser("roundfix", nil, nil)
 	empty, _ = pressBrowser(t, empty, "a")
-	if view := browserViewText(empty); !strings.Contains(view, "No Runs found.") {
+	if view := browserViewText(empty); !strings.Contains(view, "No Runs in this repository.") {
 		t.Fatalf("expected all-filter empty state, got:\n%s", view)
+	}
+}
+
+func TestRunBrowserEmptyStateNamesActiveRunsInOtherRepositories(t *testing.T) {
+	browser := NewRunBrowser("roundfix", nil, nil).WithOtherActive(2)
+
+	view := browserViewText(browser)
+	if !strings.Contains(view, "No active Runs in this repository — press a to include terminal Runs.") {
+		t.Fatalf("expected the filter line, got:\n%s", view)
+	}
+	if !strings.Contains(view, "2 active Run(s) in other repositories — run 'roundfix runs list --all'.") {
+		t.Fatalf("expected the cross-repository hint, got:\n%s", view)
+	}
+
+	browser, _ = pressBrowser(t, browser, "a")
+	if view := browserViewText(browser); !strings.Contains(view, "2 active Run(s) in other repositories") {
+		t.Fatalf("expected the hint under the all filter too, got:\n%s", view)
 	}
 }
 

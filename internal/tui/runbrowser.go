@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -65,6 +66,9 @@ type RunBrowser struct {
 	// whole browser session; the list has no live auto-refresh.
 	now     time.Time
 	outcome BrowserOutcome
+	// otherActive counts Active Runs in other repositories, so an empty
+	// view can say where the action is instead of looking dead.
+	otherActive int
 }
 
 // NewRunBrowser builds the browser over pre-queried listings, both newest
@@ -72,6 +76,13 @@ type RunBrowser struct {
 // `a` toggle.
 func NewRunBrowser(repo string, active []store.Run, all []store.Run) RunBrowser {
 	return RunBrowser{repo: repo, active: active, all: all, now: time.Now()}
+}
+
+// WithOtherActive records how many Active Runs live in other repositories;
+// the browser's empty states name them and point at `runs list --all`.
+func (browser RunBrowser) WithOtherActive(count int) RunBrowser {
+	browser.otherActive = count
+	return browser
 }
 
 // Outcome reports how the browser closed; zero while still browsing.
@@ -139,7 +150,10 @@ func (browser RunBrowser) View() string {
 
 	body := browser.renderRows(width)
 	if len(body) == 0 {
-		body = []string{truncateDisplay(browser.emptyState(), width)}
+		body = make([]string, 0, 2)
+		for _, line := range browser.emptyState() {
+			body = append(body, truncateDisplay(line, width))
+		}
 	}
 
 	lines := append([]string{header, ""}, body...)
@@ -147,11 +161,20 @@ func (browser RunBrowser) View() string {
 	return strings.Join(lines, "\n")
 }
 
-func (browser RunBrowser) emptyState() string {
+// emptyState names the current filter and, when other repositories have
+// Active Runs, says where the action is: the `a` toggle widens states, not
+// repositories, so an empty view must not read as "nothing is running".
+func (browser RunBrowser) emptyState() []string {
+	lines := make([]string, 0, 2)
 	if browser.showAll {
-		return "No Runs found."
+		lines = append(lines, "No Runs in this repository.")
+	} else {
+		lines = append(lines, "No active Runs in this repository — press a to include terminal Runs.")
 	}
-	return "No active Runs — press a to show all Runs."
+	if browser.otherActive > 0 {
+		lines = append(lines, fmt.Sprintf("%d active Run(s) in other repositories — run 'roundfix runs list --all'.", browser.otherActive))
+	}
+	return lines
 }
 
 // renderRows renders the visible window of Run rows: aligned columns, a

@@ -18,8 +18,8 @@ import (
 // and exercise the loop through the model, not terminal emulation.
 var runBrowserSession = defaultRunBrowserSession
 
-func defaultRunBrowserSession(ctx context.Context, stdout io.Writer, repo string, active, all []store.Run) (roundtui.BrowserOutcome, error) {
-	return roundtui.RunBrowserSession(ctx, stdout, roundtui.NewRunBrowser(repo, active, all))
+func defaultRunBrowserSession(ctx context.Context, stdout io.Writer, repo string, active, all []store.Run, otherActive int) (roundtui.BrowserOutcome, error) {
+	return roundtui.RunBrowserSession(ctx, stdout, roundtui.NewRunBrowser(repo, active, all).WithOtherActive(otherActive))
 }
 
 // browserAttachCockpit is the cockpit step of the browser loop. It is the
@@ -35,11 +35,11 @@ var browserAttachCockpit = runAttachCockpit
 func runRunBrowserLoop(ctx context.Context, loaded roundconfig.Loaded, reader *store.Store, gitRoot string, stdout, stderr io.Writer) (int, error) {
 	repo := filepath.Base(gitRoot)
 	for {
-		active, all, err := browserRunListings(ctx, reader, gitRoot)
+		active, all, otherActive, err := browserRunListings(ctx, reader, gitRoot)
 		if err != nil {
 			return exitPreflight, err
 		}
-		outcome, err := runBrowserSession(ctx, stdout, repo, active, all)
+		outcome, err := runBrowserSession(ctx, stdout, repo, active, all, otherActive)
 		if err != nil {
 			return exitRunFailed, fmt.Errorf("run the Run Browser: %w", err)
 		}
@@ -63,11 +63,13 @@ func runRunBrowserLoop(ctx context.Context, loaded roundconfig.Loaded, reader *s
 }
 
 // browserRunListings is the browser's fresh store query. One all-states
-// listing feeds both filters — the same single data path runs list uses.
-func browserRunListings(ctx context.Context, reader *store.Store, gitRoot string) (active []store.Run, all []store.Run, err error) {
+// listing feeds both filters — the same single data path runs list uses —
+// plus a cross-repository Active count so an empty browser can say where
+// the action is.
+func browserRunListings(ctx context.Context, reader *store.Store, gitRoot string) (active []store.Run, all []store.Run, otherActive int, err error) {
 	all, err = reader.ListRuns(ctx, store.ListRunsQuery{GitRoot: gitRoot, States: store.StatesAll})
 	if err != nil {
-		return nil, nil, fmt.Errorf("list Runs for the Run Browser: %w", err)
+		return nil, nil, 0, fmt.Errorf("list Runs for the Run Browser: %w", err)
 	}
 	active = make([]store.Run, 0, len(all))
 	for _, run := range all {
@@ -75,7 +77,16 @@ func browserRunListings(ctx context.Context, reader *store.Store, gitRoot string
 			active = append(active, run)
 		}
 	}
-	return active, all, nil
+	everyActive, err := reader.ListRuns(ctx, store.ListRunsQuery{States: store.StatesActive})
+	if err != nil {
+		return nil, nil, 0, fmt.Errorf("count Active Runs across repositories for the Run Browser: %w", err)
+	}
+	for _, run := range everyActive {
+		if run.GitRoot != gitRoot {
+			otherActive++
+		}
+	}
+	return active, all, otherActive, nil
 }
 
 // runRunsBrowserCommand is the bare `runs` interactive entry point: it
@@ -99,7 +110,7 @@ func runRunsBrowserCommand(ctx context.Context, stdout, stderr io.Writer) int {
 	if !found {
 		// No Run Database yet: one browser pass shows the empty state;
 		// with no rows, only cancel closes it.
-		if _, err := runBrowserSession(ctx, stdout, filepath.Base(gitRoot), nil, nil); err != nil {
+		if _, err := runBrowserSession(ctx, stdout, filepath.Base(gitRoot), nil, nil, 0); err != nil {
 			printRunsBrowserFailure(fmt.Errorf("run the Run Browser: %w", err), stderr)
 			return exitRunFailed
 		}
