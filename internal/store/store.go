@@ -95,10 +95,36 @@ type CreateRunRequest struct {
 	Agent          string
 }
 
+// RunStateFilter selects which Run states a listing includes. The zero
+// value is StatesActive, so an unset filter lists only non-terminal Runs.
+type RunStateFilter int
+
+const (
+	// StatesActive keeps only non-terminal Runs.
+	StatesActive RunStateFilter = iota
+	// StatesTerminal keeps only terminal Runs.
+	StatesTerminal
+	// StatesAll keeps every Run.
+	StatesAll
+)
+
+func (filter RunStateFilter) matches(state string) bool {
+	switch filter {
+	case StatesTerminal:
+		return IsTerminalState(state)
+	case StatesAll:
+		return true
+	default:
+		return !IsTerminalState(state)
+	}
+}
+
 // ListRunsQuery scopes a Run listing.
 type ListRunsQuery struct {
-	GitRoot    string
-	ActiveOnly bool
+	GitRoot string
+	States  RunStateFilter
+	// Limit bounds the listing to the newest matching Runs; 0 is unbounded.
+	Limit int
 }
 
 type ActiveRunError struct {
@@ -501,10 +527,13 @@ ORDER BY created_at DESC, id DESC`
 		if err != nil {
 			return nil, fmt.Errorf("scan Run listing: %w", err)
 		}
-		if query.ActiveOnly && IsTerminalState(run.State) {
+		if !query.States.matches(run.State) {
 			continue
 		}
 		runs = append(runs, run)
+		if query.Limit > 0 && len(runs) == query.Limit {
+			break
+		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate Run listing: %w", err)

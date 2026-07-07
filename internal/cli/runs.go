@@ -70,7 +70,10 @@ func runRunsListCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		_ = reader.Close()
 	}()
 
-	query := store.ListRunsQuery{ActiveOnly: opts.active}
+	query := store.ListRunsQuery{States: store.StatesAll}
+	if opts.active {
+		query.States = store.StatesActive
+	}
 	if !opts.all {
 		query.GitRoot = gitRoot
 	}

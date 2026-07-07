@@ -207,7 +207,7 @@ func pickAttachRun(ctx context.Context, reader *store.Store, gitRoot string, std
 	if gitRoot == "" {
 		return "", validationError{message: "attach without a Run ID requires a Git repository; run 'roundfix runs list' to discover Runs"}
 	}
-	runs, err := reader.ListRuns(ctx, store.ListRunsQuery{GitRoot: gitRoot})
+	runs, err := reader.ListRuns(ctx, store.ListRunsQuery{GitRoot: gitRoot, States: store.StatesAll})
 	if err != nil {
 		return "", fmt.Errorf("list attach Runs: %w", err)
 	}
