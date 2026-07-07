@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"path/filepath"
 	"strings"
@@ -63,6 +64,7 @@ type RunBrowser struct {
 	cursor  int
 	width   int
 	height  int
+	tokens  Tokens
 	// now anchors relative start times and running durations for the
 	// whole browser session; the list has no live auto-refresh.
 	now     time.Time
@@ -73,7 +75,14 @@ type RunBrowser struct {
 // both newest first: the Active Runs shown by default and the full history
 // behind the `a` toggle.
 func NewRunBrowser(active []store.Run, all []store.Run) RunBrowser {
-	return RunBrowser{active: active, all: all, now: time.Now()}
+	return NewRunBrowserWithTokens(active, all, ResolveTokens(true))
+}
+
+// NewRunBrowserWithTokens builds a Run Browser with the caller's effective
+// color-mode tokens, so interactive discovery follows the same color contract
+// as the command that opened it.
+func NewRunBrowserWithTokens(active []store.Run, all []store.Run, tokens Tokens) RunBrowser {
+	return RunBrowser{active: active, all: all, tokens: tokens, now: time.Now()}
 }
 
 // Outcome reports how the browser closed; zero while still browsing.
@@ -136,8 +145,8 @@ func (browser RunBrowser) View() string {
 	if browser.showAll {
 		filter = "ALL"
 	}
-	header := cockpitTokens.SectionLabel.Render(truncateDisplay("Run Browser — all repositories — "+filter, width))
-	footer := cockpitTokens.Muted.Render(truncateDisplay("↑↓ move  enter attach  a all/active  q quit", width))
+	header := browser.tokens.SectionLabel.Render(truncateDisplay("Run Browser — all repositories — "+filter, width))
+	footer := browser.tokens.Muted.Render(truncateDisplay("↑↓ move  enter attach  a all/active  q quit", width))
 
 	body := browser.renderRows(width)
 	if len(body) == 0 {
@@ -188,7 +197,7 @@ func (browser RunBrowser) renderRows(width int) []string {
 		}
 		line := truncateDisplay(strings.TrimRight(marker+strings.Join(cells, "  "), " "), width)
 		if browser.showAll && !store.IsTerminalState(runs[index].State) {
-			line = cockpitTokens.Running.Render(line)
+			line = browser.tokens.Running.Render(line)
 		}
 		lines = append(lines, line)
 	}
@@ -295,15 +304,26 @@ func RunBrowserSession(ctx context.Context, output io.Writer, browser RunBrowser
 	}()
 	final, err := prog.Run()
 	if err != nil {
+		return BrowserOutcome{}, fmt.Errorf("run browser session: %w", err)
+	}
+	outcome, err := browserOutcomeFromModel(final)
+	if err != nil {
 		return BrowserOutcome{}, err
 	}
-	outcome := final.(runBrowserProgram).browser.Outcome()
 	if outcome.RunID == "" && !outcome.Cancelled {
 		// The program ended without a key outcome: context cancellation
 		// quit it, which is a cancel, never a selection.
 		outcome.Cancelled = true
 	}
 	return outcome, nil
+}
+
+func browserOutcomeFromModel(final tea.Model) (BrowserOutcome, error) {
+	program, ok := final.(runBrowserProgram)
+	if !ok {
+		return BrowserOutcome{}, fmt.Errorf("run browser session: unexpected model type %T", final)
+	}
+	return program.browser.Outcome(), nil
 }
 
 // browserRepoName is the readable repository column: the git root's base

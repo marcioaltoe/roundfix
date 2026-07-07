@@ -17,7 +17,7 @@ import (
 var runBrowserSession = defaultRunBrowserSession
 
 func defaultRunBrowserSession(ctx context.Context, stdout io.Writer, active, all []store.Run) (roundtui.BrowserOutcome, error) {
-	return roundtui.RunBrowserSession(ctx, stdout, roundtui.NewRunBrowser(active, all))
+	return roundtui.RunBrowserSession(ctx, stdout, roundtui.NewRunBrowserWithTokens(active, all, roundtui.ResolveTokens(colorEnabled(stdout))))
 }
 
 // browserAttachCockpit is the cockpit step of the browser loop. It is the

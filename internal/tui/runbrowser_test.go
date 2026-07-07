@@ -172,6 +172,25 @@ func TestRunBrowserToggleShowsAllAndDistinguishesActive(t *testing.T) {
 	}
 }
 
+func TestRunBrowserUsesPerInstanceIdentityTokens(t *testing.T) {
+	active, all := browserTestRuns()
+	browser := NewRunBrowserWithTokens(active, all, ResolveTokens(false))
+	browser.now = browserTestNow
+	browser, _ = pressBrowser(t, browser, "a")
+
+	view := browser.View()
+
+	if strings.Contains(view, "\x1b") {
+		t.Fatalf("expected identity tokens to render without ANSI, got:\n%q", view)
+	}
+	if !strings.Contains(view, "Run Browser — all repositories — ALL") {
+		t.Fatalf("expected unstyled Run Browser header, got:\n%s", view)
+	}
+	if !strings.Contains(view, "cccccccccccccccc") {
+		t.Fatalf("expected terminal Run in all view, got:\n%s", view)
+	}
+}
+
 func TestRunBrowserNavigationMovesAndClamps(t *testing.T) {
 	browser := newTestRunBrowser(t)
 
@@ -347,6 +366,31 @@ func TestRunBrowserProgramDelegatesToTheModel(t *testing.T) {
 	outcome := next.(runBrowserProgram).browser.Outcome()
 	if outcome.Cancelled || outcome.RunID == "" {
 		t.Fatalf("expected the program to report the model selection, got %+v", outcome)
+	}
+}
+
+type unexpectedBrowserModel struct{}
+
+func (unexpectedBrowserModel) Init() tea.Cmd {
+	return nil
+}
+
+func (unexpectedBrowserModel) Update(tea.Msg) (tea.Model, tea.Cmd) {
+	return unexpectedBrowserModel{}, nil
+}
+
+func (unexpectedBrowserModel) View() tea.View {
+	return tea.NewView("")
+}
+
+func TestBrowserOutcomeFromModelRejectsUnexpectedModel(t *testing.T) {
+	_, err := browserOutcomeFromModel(unexpectedBrowserModel{})
+
+	if err == nil {
+		t.Fatal("expected unexpected model type error")
+	}
+	if !strings.Contains(err.Error(), "unexpected model type") {
+		t.Fatalf("expected model type in error, got %v", err)
 	}
 }
 

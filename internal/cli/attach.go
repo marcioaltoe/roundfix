@@ -45,7 +45,7 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 	missingRunID := strings.TrimSpace(req.runID) == ""
 	if missingRunID && (req.noInput || !attachInteractiveInputAvailable() || !liveTUIEnabled(stdout)) {
-		printAttachFailure(validationError{message: "missing run id in non-interactive mode; pass a run id or run 'roundfix runs list' to discover Runs"}, stderr)
+		printAttachFailure(validationError{message: "missing run id in non-interactive mode; pass a run id or run 'roundfix runs list --all' to discover Runs"}, stderr)
 		return exitPreflight
 	}
 	loaded, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})

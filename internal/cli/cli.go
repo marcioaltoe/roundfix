@@ -52,6 +52,7 @@ Usage:
   roundfix doctor
   roundfix gc [--dry-run]
   roundfix upgrade [--check]
+  roundfix runs
   roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]
   roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
   roundfix attach [<run-id>] [--no-input]

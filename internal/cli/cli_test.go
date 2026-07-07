@@ -59,6 +59,9 @@ func TestRunHelp(t *testing.T) {
 	if !strings.Contains(stdout.String(), "roundfix watch") {
 		t.Fatalf("expected help output, got %q", stdout.String())
 	}
+	if !strings.Contains(stdout.String(), "roundfix runs\n") {
+		t.Fatalf("expected help output to list bare runs command, got %q", stdout.String())
+	}
 	if !strings.Contains(stdout.String(), "roundfix runs list") {
 		t.Fatalf("expected help output to list runs command, got %q", stdout.String())
 	}
@@ -6694,7 +6697,7 @@ func TestAttachRunBrowserCancelExitsZeroWithoutAttaching(t *testing.T) {
 	}
 }
 
-func TestAttachWithoutRunIDNonInteractiveNamesRunsList(t *testing.T) {
+func TestAttachWithoutRunIDNonInteractiveNamesAllRunsList(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        []string
@@ -6718,7 +6721,7 @@ func TestAttachWithoutRunIDNonInteractiveNamesRunsList(t *testing.T) {
 			if stdout.Len() != 0 {
 				t.Fatalf("expected no stdout, got %q", stdout.String())
 			}
-			if !strings.Contains(stderr.String(), "roundfix runs list") {
+			if !strings.Contains(stderr.String(), "roundfix runs list --all") {
 				t.Fatalf("expected discovery command guidance, got %q", stderr.String())
 			}
 			if !strings.Contains(stderr.String(), "pass a run id") {
