@@ -63,12 +63,8 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}()
 
 	if missingRunID {
-		gitRoot := strings.TrimSpace(loaded.GitRoot)
-		if gitRoot == "" {
-			printAttachFailure(validationError{message: "attach without a Run ID requires a Git repository; run 'roundfix runs list' to discover Runs"}, stderr)
-			return exitPreflight
-		}
-		code, err := runRunBrowserLoop(ctx, loaded, reader, gitRoot, stdout, stderr)
+		// The Run Browser is machine-wide; no repository is required.
+		code, err := runRunBrowserLoop(ctx, loaded, reader, stdout, stderr)
 		if err != nil {
 			printAttachFailure(err, stderr)
 		}

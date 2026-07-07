@@ -259,7 +259,7 @@ The TUI view that shows Review Issues and Run Events for a Run: streaming live w
 _Avoid_: Dashboard, report, log file
 
 **Run Browser**:
-The read-only TUI list for Run discovery: the repository's Runs with their state, kind, target, Agent, start, duration, and branch — Active Runs by default — from which selecting a Run opens the Live Run View through Attach.
+The read-only, machine-wide TUI list for Run discovery: every repository's Runs with their state, kind, target, Agent, start, duration, branch, and repository — Active Runs by default — from which selecting a Run opens the Live Run View through Attach.
 _Avoid_: Run picker, run manager, dashboard
 
 **Cockpit**:

@@ -607,9 +607,6 @@ func TestRunRunsWithoutSubcommandHonorsInteractivity(t *testing.T) {
 		if len(calls) != 1 {
 			t.Fatalf("expected one Run Browser session, got %d", len(calls))
 		}
-		if calls[0].repo != filepath.Base(repoDir) {
-			t.Fatalf("expected repository name %q, got %q", filepath.Base(repoDir), calls[0].repo)
-		}
 		if len(calls[0].active) != 1 || calls[0].active[0].ID != runs[1].ID {
 			t.Fatalf("expected the Active Run listed first, got %+v", calls[0].active)
 		}
@@ -6598,7 +6595,7 @@ func TestAttachRunBrowserLoopOpensCockpitAndRefreshes(t *testing.T) {
 			createdAt: base.Add(3 * time.Minute),
 		},
 	})
-	terminalRun, activeRun := runs[0], runs[1]
+	terminalRun, activeRun, otherRepoRun := runs[0], runs[1], runs[2]
 	withAttachInteractiveInput(t, true)
 	t.Setenv("ROUNDFIX_TUI", "always")
 	var createdBehindCockpit store.Run
@@ -6632,14 +6629,13 @@ func TestAttachRunBrowserLoopOpensCockpitAndRefreshes(t *testing.T) {
 		t.Fatalf("expected browser sessions before and after the cockpit, got %d", len(calls))
 	}
 	first := calls[0]
-	if first.repo != filepath.Base(repoDir) {
-		t.Fatalf("expected repository name %q, got %q", filepath.Base(repoDir), first.repo)
+	// The browser is machine-wide: Active Runs from every repository,
+	// newest first.
+	if len(first.active) != 2 || first.active[0].ID != otherRepoRun.ID || first.active[1].ID != activeRun.ID {
+		t.Fatalf("expected every repository's Active Runs newest first, got %+v", first.active)
 	}
-	if len(first.active) != 1 || first.active[0].ID != activeRun.ID {
-		t.Fatalf("expected only the repository's Active Run, got %+v", first.active)
-	}
-	if len(first.all) != 2 || first.all[0].ID != activeRun.ID || first.all[1].ID != terminalRun.ID {
-		t.Fatalf("expected the repository's Runs newest first, got %+v", first.all)
+	if len(first.all) != 3 || first.all[0].ID != otherRepoRun.ID || first.all[1].ID != activeRun.ID || first.all[2].ID != terminalRun.ID {
+		t.Fatalf("expected every repository's Runs newest first, got %+v", first.all)
 	}
 	cockpit := *cockpitCalls
 	if len(cockpit) != 1 || cockpit[0].runID != activeRun.ID {
@@ -6649,7 +6645,7 @@ func TestAttachRunBrowserLoopOpensCockpitAndRefreshes(t *testing.T) {
 		t.Fatalf("expected the explicit-attach concurrency fallback, got %d", cockpit[0].concurrency)
 	}
 	second := calls[1]
-	if len(second.all) != 3 || second.all[0].ID != createdBehindCockpit.ID {
+	if len(second.all) != 4 || second.all[0].ID != createdBehindCockpit.ID {
 		t.Fatalf("expected the refreshed browser to list the Run created behind the cockpit, got %+v", second.all)
 	}
 }
@@ -7190,10 +7186,8 @@ func withAttachSleep(t *testing.T, sleep func(ctx context.Context) error) {
 }
 
 type browserSessionCall struct {
-	repo        string
-	active      []store.Run
-	all         []store.Run
-	otherActive int
+	active []store.Run
+	all    []store.Run
 }
 
 // withRunBrowserSession scripts Run Browser outcomes so entry-point tests
@@ -7202,9 +7196,9 @@ func withRunBrowserSession(t *testing.T, outcomes ...roundtui.BrowserOutcome) *[
 	t.Helper()
 	calls := &[]browserSessionCall{}
 	old := runBrowserSession
-	runBrowserSession = func(_ context.Context, _ io.Writer, repo string, active, all []store.Run, otherActive int) (roundtui.BrowserOutcome, error) {
+	runBrowserSession = func(_ context.Context, _ io.Writer, active, all []store.Run) (roundtui.BrowserOutcome, error) {
 		index := len(*calls)
-		*calls = append(*calls, browserSessionCall{repo: repo, active: active, all: all, otherActive: otherActive})
+		*calls = append(*calls, browserSessionCall{active: active, all: all})
 		if index >= len(outcomes) {
 			t.Fatalf("unexpected Run Browser session call %d", index+1)
 		}

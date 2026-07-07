@@ -254,9 +254,10 @@ roundfix runs list --state all --limit 0
 roundfix runs list --all
 ```
 
-At an interactive terminal, bare `roundfix runs` opens the Run Browser: the
-repository's Runs newest first, Active Runs only by default, with a header
-naming the repository and the `ACTIVE`/`ALL` filter. `↑↓` moves, `Enter`
+At an interactive terminal, bare `roundfix runs` opens the Run Browser:
+every repository's Runs newest first with a repository column, Active Runs
+only by default, under an `ACTIVE`/`ALL` state filter — the browser answers
+"what is running on this machine". No git repository is required. `↑↓` moves, `Enter`
 attaches the selected Run read-only, `a` toggles active/all, and
 `q`/`Esc`/`Ctrl-C` quits with exit `0` and no side effects. Leaving the Live
 Run View returns to a refreshed browser. In a non-interactive context, bare
@@ -460,9 +461,9 @@ it, or set `NO_COLOR` to suppress color.
 - `attach` is read-only. With a Run ID, it replays that Run's Run Event Journal
   and follows live events without creating Runs, fetching, starting Agents,
   committing, pushing, stopping, or resolving Review Source threads. Without a
-  Run ID in an interactive terminal, it opens the Run Browser over the
-  repository's Runs — newest first, Active only by default, `a` widens to
-  all — and attaches the selected Run through the same Attach path; leaving
+  Run ID in an interactive terminal, it opens the machine-wide Run Browser —
+  every repository's Runs newest first, Active only by default, `a` widens to
+  all states — and attaches the selected Run through the same Attach path; leaving
   the Live Run View returns to a refreshed browser. Cancelling the browser
   exits `0` with no side effects. Without a Run ID in non-interactive mode,
   including `--no-input`, it exits `2` and names `roundfix runs list`.

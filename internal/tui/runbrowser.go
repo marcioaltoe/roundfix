@@ -2,8 +2,8 @@ package tui
 
 import (
 	"context"
-	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -29,6 +29,7 @@ const (
 	browserColumnStart
 	browserColumnDuration
 	browserColumnBranch
+	browserColumnRepo
 	browserColumnCount
 )
 
@@ -39,6 +40,7 @@ var browserColumnDropOrder = []int{
 	browserColumnBranch,
 	browserColumnAgent,
 	browserColumnStart,
+	browserColumnRepo,
 	browserColumnTarget,
 	browserColumnKind,
 }
@@ -50,12 +52,11 @@ type BrowserOutcome struct {
 	Cancelled bool
 }
 
-// RunBrowser is the Run Browser model: the repository's Runs newest first,
-// Active Runs only by default, with an all/active toggle. It is read-only
-// Run discovery — the model never attaches, mutates, or stops anything; it
-// only reports the outcome the entry point acts on.
+// RunBrowser is the Run Browser model: every repository's Runs newest
+// first, Active Runs only by default, with an all/active state toggle. It
+// is read-only Run discovery — the model never attaches, mutates, or stops
+// anything; it only reports the outcome the entry point acts on.
 type RunBrowser struct {
-	repo    string
 	active  []store.Run
 	all     []store.Run
 	showAll bool
@@ -66,23 +67,13 @@ type RunBrowser struct {
 	// whole browser session; the list has no live auto-refresh.
 	now     time.Time
 	outcome BrowserOutcome
-	// otherActive counts Active Runs in other repositories, so an empty
-	// view can say where the action is instead of looking dead.
-	otherActive int
 }
 
-// NewRunBrowser builds the browser over pre-queried listings, both newest
-// first: the Active Runs shown by default and the full history behind the
-// `a` toggle.
-func NewRunBrowser(repo string, active []store.Run, all []store.Run) RunBrowser {
-	return RunBrowser{repo: repo, active: active, all: all, now: time.Now()}
-}
-
-// WithOtherActive records how many Active Runs live in other repositories;
-// the browser's empty states name them and point at `runs list --all`.
-func (browser RunBrowser) WithOtherActive(count int) RunBrowser {
-	browser.otherActive = count
-	return browser
+// NewRunBrowser builds the browser over pre-queried machine-wide listings,
+// both newest first: the Active Runs shown by default and the full history
+// behind the `a` toggle.
+func NewRunBrowser(active []store.Run, all []store.Run) RunBrowser {
+	return RunBrowser{active: active, all: all, now: time.Now()}
 }
 
 // Outcome reports how the browser closed; zero while still browsing.
@@ -145,15 +136,12 @@ func (browser RunBrowser) View() string {
 	if browser.showAll {
 		filter = "ALL"
 	}
-	header := cockpitTokens.SectionLabel.Render(truncateDisplay("Run Browser — "+browser.repo+" — "+filter, width))
+	header := cockpitTokens.SectionLabel.Render(truncateDisplay("Run Browser — all repositories — "+filter, width))
 	footer := cockpitTokens.Muted.Render(truncateDisplay("↑↓ move  enter attach  a all/active  q quit", width))
 
 	body := browser.renderRows(width)
 	if len(body) == 0 {
-		body = make([]string, 0, 2)
-		for _, line := range browser.emptyState() {
-			body = append(body, truncateDisplay(line, width))
-		}
+		body = []string{truncateDisplay(browser.emptyState(), width)}
 	}
 
 	lines := append([]string{header, ""}, body...)
@@ -161,20 +149,13 @@ func (browser RunBrowser) View() string {
 	return strings.Join(lines, "\n")
 }
 
-// emptyState names the current filter and, when other repositories have
-// Active Runs, says where the action is: the `a` toggle widens states, not
-// repositories, so an empty view must not read as "nothing is running".
-func (browser RunBrowser) emptyState() []string {
-	lines := make([]string, 0, 2)
+// emptyState names the current state filter. The browser is machine-wide,
+// so an empty Active view really does mean nothing is running anywhere.
+func (browser RunBrowser) emptyState() string {
 	if browser.showAll {
-		lines = append(lines, "No Runs in this repository.")
-	} else {
-		lines = append(lines, "No active Runs in this repository — press a to include terminal Runs.")
+		return "No Runs found."
 	}
-	if browser.otherActive > 0 {
-		lines = append(lines, fmt.Sprintf("%d active Run(s) in other repositories — run 'roundfix runs list --all'.", browser.otherActive))
-	}
-	return lines
+	return "No active Runs — press a to include terminal Runs."
 }
 
 // renderRows renders the visible window of Run rows: aligned columns, a
@@ -187,8 +168,9 @@ func (browser RunBrowser) renderRows(width int) []string {
 	}
 	fields := make([][]string, 0, len(runs))
 	for _, run := range runs {
-		row := FormatRunRow(run, browser.now, true, false)
+		row := FormatRunRow(run, browser.now, true, true)
 		row[browserColumnID] = browserShortRunID(run.ID)
+		row[browserColumnRepo] = browserRepoName(run.GitRoot)
 		fields = append(fields, row)
 	}
 	keep, widths := browser.fitColumns(fields, width)
@@ -322,6 +304,16 @@ func RunBrowserSession(ctx context.Context, output io.Writer, browser RunBrowser
 		outcome.Cancelled = true
 	}
 	return outcome, nil
+}
+
+// browserRepoName is the readable repository column: the git root's base
+// name; the full path stays on the text surface (`runs list --all`).
+func browserRepoName(gitRoot string) string {
+	gitRoot = strings.TrimSpace(gitRoot)
+	if gitRoot == "" {
+		return runRowEmptyField
+	}
+	return filepath.Base(gitRoot)
 }
 
 // browserShortRunID is the timestamp-less suffix of a run id

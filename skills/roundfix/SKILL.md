@@ -323,22 +323,20 @@ repository, `runs list` without `--all` exits `2` and names `--all` as the
 alternative.
 
 At an interactive terminal, bare `roundfix runs` and `roundfix attach`
-without a Run ID open the Run Browser: the repository's Runs newest first,
-Active Runs only by default, with a header naming the repository and the
-`ACTIVE`/`ALL` filter and rows showing short run id, state, kind, target,
-Agent, relative start, duration, and branch. `↑↓` moves, `Enter` attaches
-the selected Run through the read-only Live Run View — leaving it returns to
-a refreshed browser — `a` toggles active/all, and `q`/`Esc`/`Ctrl-C` quits
-with exit `0` and no side effects. The empty Active view names the filter —
-`No active Runs in this repository — press a to include terminal Runs.` —
-and when other repositories have Active Runs it appends
-`N active Run(s) in other repositories — run 'roundfix runs list --all'.`
-(the browser is repository-scoped; the `a` toggle widens states, not
-repositories). In a non-interactive context,
-bare `runs` exits `2` and names `roundfix runs list`; `attach` without a Run
-ID, including `--no-input`, exits `2` and names `roundfix runs list` as the
-discovery command. The Run Browser is the human surface — agents use the
-bounded `runs list`.
+without a Run ID open the Run Browser: machine-wide, every repository's Runs
+newest first, Active Runs only by default, with a header naming the
+`ACTIVE`/`ALL` state filter and rows showing short run id, state, kind,
+target, Agent, relative start, duration, branch, and repository. No git
+repository is required. `↑↓` moves, `Enter` attaches the selected Run
+through the read-only Live Run View — leaving it returns to a refreshed
+browser — `a` toggles active/all, and `q`/`Esc`/`Ctrl-C` quits with exit `0`
+and no side effects. The empty Active view really does mean nothing is
+running anywhere: `No active Runs — press a to include terminal Runs.` In a
+non-interactive context, bare `runs` exits `2` and names
+`roundfix runs list`; `attach` without a Run ID, including `--no-input`,
+exits `2` and names `roundfix runs list` as the discovery command. The Run
+Browser is the human surface — agents use the bounded `runs list`, which
+stays repository-scoped with `--all` for every repository.
 
 Use `roundfix attach <run-id>` to replay a Run's Run Event Journal and follow
 new Run Events read-only. Attach never creates Runs, fetches, starts Agents,

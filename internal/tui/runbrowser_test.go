@@ -50,7 +50,7 @@ func browserTestRuns() (active []store.Run, all []store.Run) {
 func newTestRunBrowser(t *testing.T) RunBrowser {
 	t.Helper()
 	active, all := browserTestRuns()
-	browser := NewRunBrowser("roundfix", active, all)
+	browser := NewRunBrowser(active, all)
 	browser.now = browserTestNow
 	return browser
 }
@@ -111,7 +111,7 @@ func TestRunBrowserDefaultShowsActiveRunsNewestFirst(t *testing.T) {
 
 	view := browserViewText(browser)
 
-	if !strings.Contains(view, "Run Browser — roundfix — ACTIVE") {
+	if !strings.Contains(view, "Run Browser — all repositories — ACTIVE") {
 		t.Fatalf("expected header with repository and ACTIVE filter, got:\n%s", view)
 	}
 	if !strings.Contains(view, "aaaaaaaaaaaaaaaa") || !strings.Contains(view, "bbbbbbbbbbbbbbbb") {
@@ -141,7 +141,7 @@ func TestRunBrowserToggleShowsAllAndDistinguishesActive(t *testing.T) {
 	browser, _ = pressBrowser(t, browser, "a")
 
 	view := browserViewText(browser)
-	if !strings.Contains(view, "Run Browser — roundfix — ALL") {
+	if !strings.Contains(view, "Run Browser — all repositories — ALL") {
 		t.Fatalf("expected ALL filter in header, got:\n%s", view)
 	}
 	if !strings.Contains(view, "cccccccccccccccc") || !strings.Contains(view, "42m") {
@@ -230,15 +230,12 @@ func TestRunBrowserCancelKeysReportCancel(t *testing.T) {
 
 func TestRunBrowserEmptyStatesNameTheFilter(t *testing.T) {
 	_, all := browserTestRuns()
-	browser := NewRunBrowser("roundfix", nil, all)
+	browser := NewRunBrowser(nil, all)
 	browser.now = browserTestNow
 
 	view := browserViewText(browser)
-	if !strings.Contains(view, "No active Runs in this repository — press a to include terminal Runs.") {
+	if !strings.Contains(view, "No active Runs — press a to include terminal Runs.") {
 		t.Fatalf("expected the toggle invitation, got:\n%s", view)
-	}
-	if strings.Contains(view, "other repositories") {
-		t.Fatalf("expected no cross-repository hint without other Active Runs, got:\n%s", view)
 	}
 
 	browser, cmd := pressBrowser(t, browser, "enter")
@@ -254,27 +251,10 @@ func TestRunBrowserEmptyStatesNameTheFilter(t *testing.T) {
 		t.Fatalf("expected history after toggle, got:\n%s", view)
 	}
 
-	empty := NewRunBrowser("roundfix", nil, nil)
+	empty := NewRunBrowser(nil, nil)
 	empty, _ = pressBrowser(t, empty, "a")
-	if view := browserViewText(empty); !strings.Contains(view, "No Runs in this repository.") {
+	if view := browserViewText(empty); !strings.Contains(view, "No Runs found.") {
 		t.Fatalf("expected all-filter empty state, got:\n%s", view)
-	}
-}
-
-func TestRunBrowserEmptyStateNamesActiveRunsInOtherRepositories(t *testing.T) {
-	browser := NewRunBrowser("roundfix", nil, nil).WithOtherActive(2)
-
-	view := browserViewText(browser)
-	if !strings.Contains(view, "No active Runs in this repository — press a to include terminal Runs.") {
-		t.Fatalf("expected the filter line, got:\n%s", view)
-	}
-	if !strings.Contains(view, "2 active Run(s) in other repositories — run 'roundfix runs list --all'.") {
-		t.Fatalf("expected the cross-repository hint, got:\n%s", view)
-	}
-
-	browser, _ = pressBrowser(t, browser, "a")
-	if view := browserViewText(browser); !strings.Contains(view, "2 active Run(s) in other repositories") {
-		t.Fatalf("expected the hint under the all filter too, got:\n%s", view)
 	}
 }
 
@@ -357,7 +337,7 @@ func TestRunBrowserProgramDelegatesToTheModel(t *testing.T) {
 	if !view.AltScreen {
 		t.Fatal("expected the browser program to render in the alternate screen")
 	}
-	if !strings.Contains(stripANSI(view.Content), "Run Browser — roundfix — ACTIVE") {
+	if !strings.Contains(stripANSI(view.Content), "Run Browser — all repositories — ACTIVE") {
 		t.Fatalf("expected the program view to carry the model view, got:\n%s", view.Content)
 	}
 
@@ -393,7 +373,7 @@ func TestFormatRunRowSharedByBothSurfaces(t *testing.T) {
 	if terminal[browserColumnDuration] != "42m" {
 		t.Fatalf("expected completion duration, got %q", terminal[browserColumnDuration])
 	}
-	if len(terminal) != browserColumnCount+1 {
-		t.Fatalf("expected repository as the extra column, got %d fields", len(terminal))
+	if len(terminal) != browserColumnCount {
+		t.Fatalf("expected the repository column included, got %d fields", len(terminal))
 	}
 }

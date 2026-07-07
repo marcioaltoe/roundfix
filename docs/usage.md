@@ -115,9 +115,10 @@ roundfix attach <run-id>          # direct read-only Live Run View
 # or tail the console log at <artifact-dir>/runs/<run-id>/console.log
 ```
 
-The Run Browser lists this repository's Runs newest first, Active Runs only
-by default; `a` toggles active/all, `Enter` opens the read-only Live Run
-View, and leaving it returns to a refreshed browser. `runs list` defaults to
+The Run Browser is machine-wide: every repository's Runs newest first with a
+repository column, Active Runs only by default; `a` toggles active/all,
+`Enter` opens the read-only Live Run View, and leaving it returns to a
+refreshed browser. `runs list` defaults to
 the 20 newest Active Runs; widen with `--state <active|terminal|all>` and
 `--limit N` (`0` unbounded), and read the single trailing stderr note that
 names hidden Runs and the widening flag. The terminal outcome line

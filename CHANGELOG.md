@@ -17,9 +17,10 @@ itself and on external repositories.
 ### Added
 
 - **Run Browser** — `roundfix runs` and no-argument `roundfix attach` open a
-  navigable TUI over the repository's Runs: Active Runs by default, `a`
-  toggles the full history, `Enter` opens the read-only Live Run View, and
-  closing it returns to a refreshed browser. Cancel is side-effect free.
+  machine-wide navigable TUI: every repository's Active Runs by default (with
+  a repository column), `a` toggles the full history, `Enter` opens the
+  read-only Live Run View, and closing it returns to a refreshed browser.
+  Cancel is side-effect free, and no git repository is required.
 - **`runs list`** — deterministic Run discovery for agents and scripts: eight
   stable columns (run id, state, kind, target, agent, UTC start, duration,
   local branch), an Active-only default bounded to the 20 newest,
