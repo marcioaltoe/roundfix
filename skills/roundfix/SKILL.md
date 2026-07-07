@@ -288,17 +288,29 @@ Event; they never change the Run report, terminal outcome, or exit code.
 ## Run discovery and Attach
 
 Use `roundfix runs list` to discover Runs recorded in the Run Database. By
-default it lists this repository's Runs newest first. Each line uses stable
-plain-text columns:
+default it lists this repository's 20 newest Active Runs, newest first. Each
+line uses stable plain-text columns:
 
 ```text
-<run-id>  <state>  <kind>  <target>
+<run-id>  <state>  <kind>  <target>  <agent>  <started-utc>  <duration>  <branch>
 ```
 
-Active Runs mark the state with `*`. Targets are `pr:<number>` for review Runs
-and `spec:<slug>` for Spec Runs. `--active` filters to non-terminal Runs.
-`--all` lists every repository and adds the repository path as a final column.
-The flags compose. With no matches, stdout is exactly:
+Run ids are full and untruncated; start times are absolute UTC (RFC 3339);
+durations render like `42m` / `1h12m`, with `running <elapsed>` for Active
+Runs; missing fields render `-`. Targets are `pr:<number>` for review Runs
+and `spec:<slug>` for Spec Runs. Agents widen the view with `--state
+<active|terminal|all>` (default `active`) and `--limit N` (default `20`, `0`
+unbounded, applied after the state filter). `--all` lists every repository
+and adds the repository path as a final column. The flags compose. When the
+state filter or the bound hides Runs, exactly one trailing stderr note names
+the hidden count and the widening flag:
+
+```text
+(23 terminal Run(s) hidden; use --state all)
+(15 older Run(s) hidden; use --limit 0)
+```
+
+With no matches, stdout is exactly:
 
 ```text
 No Runs found.
@@ -310,16 +322,25 @@ open/list failures exit `2` with diagnostics on stderr. Outside a Git
 repository, `runs list` without `--all` exits `2` and names `--all` as the
 alternative.
 
+At an interactive terminal, bare `roundfix runs` and `roundfix attach`
+without a Run ID open the Run Browser: the repository's Runs newest first,
+Active Runs only by default, with a header naming the repository and the
+`ACTIVE`/`ALL` filter and rows showing short run id, state, kind, target,
+Agent, relative start, duration, and branch. `↑↓` moves, `Enter` attaches
+the selected Run through the read-only Live Run View — leaving it returns to
+a refreshed browser — `a` toggles active/all, and `q`/`Esc`/`Ctrl-C` quits
+with exit `0` and no side effects. The empty Active view names the toggle:
+`No active Runs — press a to show all Runs.` In a non-interactive context,
+bare `runs` exits `2` and names `roundfix runs list`; `attach` without a Run
+ID, including `--no-input`, exits `2` and names `roundfix runs list` as the
+discovery command. The Run Browser is the human surface — agents use the
+bounded `runs list`.
+
 Use `roundfix attach <run-id>` to replay a Run's Run Event Journal and follow
 new Run Events read-only. Attach never creates Runs, fetches, starts Agents,
-commits, pushes, stops, or resolves Review Source threads.
-
-In an interactive terminal, `roundfix attach` without a Run ID opens
-Interactive Input listing the current repository's Runs. The picker lists
-Active Runs first, includes terminal Runs, shows state, kind, and target, and
-accepts a number or Run ID. Press Enter to cancel; cancellation exits `0` and
-does not attach. In non-interactive mode or with `--no-input`, missing Run ID
-exits `2` and names `roundfix runs list` as the discovery command.
+commits, pushes, stops, or resolves Review Source threads. An unknown Run ID
+exits `2` with an error stating that picker numbers are not stable Run ids —
+pass a run id or run `roundfix attach` to pick interactively.
 
 ## User-Facing Review Runs
 
@@ -335,8 +356,9 @@ exits `2` and names `roundfix runs list` as the discovery command.
 4. Let Roundfix own Review Source waits, CodeRabbit fetches, Round creation,
    Agent lifecycle, verification, Batch commits, Final Push, Review Source
    resolution, retries, timeouts, and Stop Request handling.
-5. Use `roundfix runs list --active` or `roundfix attach` without an argument
-   when the Run ID was not captured.
+5. Use the bounded `roundfix runs list` (Active Runs by default; widen with
+   `--state all` or `--limit 0`) or the Run Browser (`roundfix attach` with
+   no argument at an interactive terminal) when the Run ID was not captured.
 6. Report the Run ID, Open Pull Request, Review Source, Agent, and current Run
    state whenever you summarize progress.
 7. Prefer the Roundfix Live Run View or daemon output for long waits.
@@ -352,7 +374,8 @@ roundfix watch --source coderabbit --pr <number> --agent <agent> [--spec <slug>]
 roundfix implement --spec <slug> --agent <agent>
 roundfix implement --spec <slug> --agent <agent> --detach
 roundfix runs list
-roundfix runs list --active
+roundfix runs list --state all --limit 0
+roundfix runs
 roundfix attach
 roundfix attach <run-id>
 roundfix settle --spec <slug> --task <task_id>
@@ -652,10 +675,10 @@ outcome and never opens pull requests (ADR-0021).
    Agent is remembered across runs; the Spec slug and QA choice never are.
    `--no-input` fails instead of opening Interactive Input.
 
-7. Discover spec Runs with `roundfix runs list --active` or open the picker
-   with `roundfix attach` when the Run ID was not captured. Attach directly
-   with `roundfix attach <run-id>` when the id is known; the Live Run View
-   shows the Spec's Tasks as Work Items in the shared cockpit.
+7. Discover spec Runs with the bounded `roundfix runs list` or open the Run
+   Browser with `roundfix attach` when the Run ID was not captured. Attach
+   directly with `roundfix attach <run-id>` when the id is known; the Live
+   Run View shows the Spec's Tasks as Work Items in the shared cockpit.
 
 8. `implement.auto_push` is a bool in config, default `false`. User Config can
    provide a default, and Project Config can override it:
@@ -732,11 +755,11 @@ the Implement, Attach, Settle, Stop, and Archive commands documented above.
 3. **Monitor without owning.** If you captured the id, follow progress through
    the console log at `<artifact-dir>/runs/<run-id>/console.log`, or open the
    read-only Live Run View with `roundfix attach <run-id>`. From a fresh
-   terminal, discover the Run with `roundfix runs list --active` or open the
-   picker with `roundfix attach`. Attach replays the Run Event Journal and
-   follows new events; `q` or `Ctrl-C` detaches and never stops the Run. The
-   detached child sends the configured outcome notification at the terminal
-   outcome, which is the unattended-Run signal.
+   terminal, discover the Run with the bounded `roundfix runs list` or open
+   the Run Browser with `roundfix attach`. Attach replays the Run Event
+   Journal and follows new events; `q` or `Ctrl-C` detaches and never stops
+   the Run. The detached child sends the configured outcome notification at
+   the terminal outcome, which is the unattended-Run signal.
 
 4. **Detect the terminal outcome.** The Run ends with exactly one stdout outcome
    line in the console log:

@@ -244,34 +244,53 @@ roundfix gc --dry-run
 roundfix gc
 ```
 
-Discover Runs in the current repository, or across every repository stored in
-the Run Database:
+Discover Runs interactively with the Run Browser, or as a bounded plain-text
+listing:
 
 ```bash
+roundfix runs                     # Run Browser at an interactive terminal
 roundfix runs list
-roundfix runs list --active
+roundfix runs list --state all --limit 0
 roundfix runs list --all
 ```
 
+At an interactive terminal, bare `roundfix runs` opens the Run Browser: the
+repository's Runs newest first, Active Runs only by default, with a header
+naming the repository and the `ACTIVE`/`ALL` filter. `↑↓` moves, `Enter`
+attaches the selected Run read-only, `a` toggles active/all, and
+`q`/`Esc`/`Ctrl-C` quits with exit `0` and no side effects. Leaving the Live
+Run View returns to a refreshed browser. In a non-interactive context, bare
+`runs` exits `2` and names `roundfix runs list`.
+
 `runs list` prints one Run per line, newest first, as:
-`<run-id>  <state>  <kind>  <target>`. Active Runs mark the state with `*`;
-targets are `pr:<number>` for review Runs or `spec:<slug>` for Spec Runs.
-`--active` filters out terminal Runs. `--all` lists every repository and adds
-the repository path as a final column. With no matches, stdout is exactly
+`<run-id>  <state>  <kind>  <target>  <agent>  <started-utc>  <duration>
+<branch>`. Run ids are full and untruncated; start times are absolute UTC
+(RFC 3339); durations render like `42m` / `1h12m`, with `running <elapsed>`
+for Active Runs; missing fields render `-`. Targets are `pr:<number>` for
+review Runs or `spec:<slug>` for Spec Runs. By default the listing shows the
+20 newest Active Runs of the current repository: `--state
+<active|terminal|all>` widens the state filter, `--limit N` changes the
+bound (`0` lists all, applied after the state filter), and `--all` lists
+every repository and adds the repository path as a final column. When the
+filter or the bound hides Runs, exactly one trailing stderr note names the
+hidden count and the widening flag, shaped like
+`(23 terminal Run(s) hidden; use --state all)` or
+`(15 older Run(s) hidden; use --limit 0)`. With no matches, stdout is exactly
 `No Runs found.` and the command exits `0`.
 
-Attach by choosing from this repository's Runs, or attach directly by Run ID:
+Attach through the Run Browser, or attach directly by Run ID:
 
 ```bash
 roundfix attach
 roundfix attach <run-id>
 ```
 
-In an interactive terminal, `attach` without a Run ID opens a numbered picker
-over the same repository-scoped Run listing and accepts a number or Run ID.
-Press Enter to cancel without attaching. In non-interactive mode or with
+In an interactive terminal, `attach` without a Run ID opens the same Run
+Browser and attaches the selected Run. In non-interactive mode or with
 `--no-input`, missing Run ID exits `2` and names `roundfix runs list` as the
-discovery command.
+discovery command. An unknown Run ID exits `2` with an error stating that
+picker numbers are not stable Run ids and naming `roundfix attach` for
+interactive picking.
 
 Interactive Runs and `attach` render the Live Run View: a `WORK QUEUE` pane
 listing Work Items next to a wider `SESSION.TIMELINE` pane grouping Run
@@ -427,20 +446,26 @@ it, or set `NO_COLOR` to suppress color.
   and reports that no pruning was performed. Retention never deletes Active
   Runs, `runs` rows, active-run locks, or Review artifacts under the Spec Root.
 - `runs list` is read-only and writes only the listing report to stdout. By
-  default it scopes to the current repository and exits `2` outside a Git
-  repository, naming `--all` as the alternative. `--all` widens the listing to
-  every repository and adds a repository column. `--active` keeps only
-  non-terminal Runs. Empty results print `No Runs found.` and exit `0`; invalid
-  flags, unexpected arguments, repository-resolution failures, and Run Database
-  open/list failures exit `2` with diagnostics on stderr.
+  default it scopes to the current repository, shows the 20 newest Active
+  Runs, and exits `2` outside a Git repository, naming `--all` as the
+  alternative. `--state` widens to terminal or all Runs, `--limit` changes
+  the bound (`0` unbounded), and `--all` widens the listing to every
+  repository and adds a repository column. When Runs are hidden, exactly one
+  trailing stderr note names the hidden count and the widening flag. Empty
+  results print `No Runs found.` and exit `0`; invalid flags, unexpected
+  arguments, repository-resolution failures, and Run Database open/list
+  failures exit `2` with diagnostics on stderr. Bare `runs` opens the
+  read-only Run Browser at an interactive terminal and exits `2` naming
+  `runs list` in any non-interactive context.
 - `attach` is read-only. With a Run ID, it replays that Run's Run Event Journal
   and follows live events without creating Runs, fetching, starting Agents,
   committing, pushing, stopping, or resolving Review Source threads. Without a
-  Run ID in an interactive terminal, it opens a repository-scoped picker that
-  lists Active Runs first and terminal Runs too, accepts a number or Run ID,
-  and then uses the same Attach path. Cancelling the picker exits `0` with no
-  side effects. Without a Run ID in non-interactive mode, including
-  `--no-input`, it exits `2` and names `roundfix runs list`.
+  Run ID in an interactive terminal, it opens the Run Browser over the
+  repository's Runs — newest first, Active only by default, `a` widens to
+  all — and attaches the selected Run through the same Attach path; leaving
+  the Live Run View returns to a refreshed browser. Cancelling the browser
+  exits `0` with no side effects. Without a Run ID in non-interactive mode,
+  including `--no-input`, it exits `2` and names `roundfix runs list`.
 - `stop` is graceful by default. It records a Stop Request in the Run Database
   and reports `Stop Request recorded; the Run stops after the current Work Item
   settles.` Use `--force` only for a dead, stuck, or runaway Run; it cancels
