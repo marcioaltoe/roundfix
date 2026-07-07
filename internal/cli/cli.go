@@ -1568,7 +1568,14 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 		publishPushDecision(ctx, ui.sink, runID, "skipped", "Final Push skipped: Run integration pending.", 0)
 		return resolveBatchResult{Remaining: result.Remaining, CommitCreated: commitCreated, IntegrationPending: true, IntegrationCommand: command}, nil
 	}
-	if err := maybeRunFinalPush(ctx, engine, ui.sink, runID, loaded, preflightResult, runRef.Path, commitCreated, ui.progress); err != nil {
+	// The review artifact commit (ADR-0036) lands on the user's checkout after
+	// integration, so Final Push runs from the checkout: its HEAD is the
+	// integrated Run tip plus the review docs commit when one was created.
+	reviewCommitCreated, err := maybeCommitReviewArtifacts(ctx, req, loaded, preflightResult, collaborators.committer, ui.sink, runID, resolvePlan.roundNumber, runRef.Path, ui.progress)
+	if err != nil {
+		return resolveBatchResult{}, err
+	}
+	if err := maybeRunFinalPush(ctx, engine, ui.sink, runID, loaded, preflightResult, preflightResult.Git.Root, commitCreated || reviewCommitCreated, ui.progress); err != nil {
 		return resolveBatchResult{}, err
 	}
 	return resolveBatchResult{Remaining: result.Remaining, CommitCreated: commitCreated}, nil
@@ -2600,6 +2607,107 @@ func countBatchIssues(batches []rounds.Batch) int {
 		count += len(batch.Issues)
 	}
 	return count
+}
+
+// maybeCommitReviewArtifacts creates the ADR-0036 review artifact commit on
+// the user's checkout after a clean integration: one docs commit, separate
+// from Batch fix commits, carrying every dirty path under the Run's resolved
+// review artifact root. Roots outside the repository — an explicit external
+// Artifact Directory, an external Spec Root, or a root reached through a
+// symbolic link — are never staged; the Run proceeds without the commit.
+func maybeCommitReviewArtifacts(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, committer daemon.Committer, sink runevent.Sink, runID string, roundNumber int, runWorktree string, stderr io.Writer) (bool, error) {
+	if !loaded.Config.Defaults.AutoCommit {
+		return false, nil
+	}
+	specsRoot := reviewArtifactSpecsRoot(loaded, preflightResult.Git.Root)
+	if !reviewArtifactUsesDefaultSpecsRoot(loaded.Config.Specs.Root) {
+		resolved, err := roundconfig.ResolveSpecsRoot(loaded, preflightResult.Git.Root)
+		if err != nil {
+			return false, err
+		}
+		specsRoot = resolved
+	}
+	reviewRoot, err := resolveReviewArtifactRoot(ctx, req, preflightResult, specsRoot)
+	if err != nil {
+		return false, err
+	}
+	relative, stageable := stageableReviewRoot(preflightResult.Git.Root, reviewRoot)
+	if !stageable {
+		message := fmt.Sprintf("Review artifacts kept outside the repository (%s); no review artifact commit created.", reviewRoot)
+		fmt.Fprintln(stderr, message)
+		publishReviewArtifactCommitDecision(ctx, sink, runID, "skipped", message)
+		return false, nil
+	}
+	output, err := reviewSpecGitRunner.RunGit(ctx, preflightResult.Git.Root, "status", "--porcelain", "--", relative)
+	if err != nil {
+		return false, fmt.Errorf("inspect review artifact changes under %q: %w", relative, err)
+	}
+	if strings.TrimSpace(output) == "" {
+		return false, nil
+	}
+	message := daemon.ReviewArtifactsCommitMessage(roundNumber, req.pr)
+	if err := committer.Commit(ctx, daemon.CommitRequest{
+		WorkDir: preflightResult.Git.Root,
+		Message: message,
+		Paths:   []string{relative},
+	}); err != nil {
+		return false, fmt.Errorf("create review artifact commit: %w", err)
+	}
+	fmt.Fprintf(stderr, "Review artifacts commit created: %s\n", message)
+	publishReviewArtifactCommitDecision(ctx, sink, runID, "created", fmt.Sprintf("Review artifacts commit created: %s", message))
+	// The docs commit advanced the user branch past the Run Branch tip.
+	// Fast-forward the Run Branch so later Rounds in the same Run keep the
+	// ff-only integration contract.
+	if strings.TrimSpace(runWorktree) != "" {
+		head, err := reviewSpecGitRunner.RunGit(ctx, preflightResult.Git.Root, "rev-parse", "HEAD")
+		if err != nil {
+			return true, fmt.Errorf("resolve checkout HEAD after review artifact commit: %w", err)
+		}
+		if _, err := reviewSpecGitRunner.RunGit(ctx, runWorktree, "merge", "--ff-only", strings.TrimSpace(head)); err != nil {
+			return true, fmt.Errorf("fast-forward Run Branch over review artifact commit: %w", err)
+		}
+	}
+	return true, nil
+}
+
+// stageableReviewRoot reports the repo-relative review root when it can be
+// staged: inside the repository working tree and not reached through a
+// symbolic link component.
+func stageableReviewRoot(gitRoot string, reviewRoot string) (string, bool) {
+	relative, err := filepath.Rel(gitRoot, reviewRoot)
+	if err != nil || relative == "." || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return "", false
+	}
+	current := gitRoot
+	for _, part := range strings.Split(relative, string(filepath.Separator)) {
+		current = filepath.Join(current, part)
+		info, err := os.Lstat(current)
+		if err != nil {
+			// Missing segments cannot cross a symlink; git status decides next.
+			break
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return "", false
+		}
+	}
+	return filepath.ToSlash(relative), true
+}
+
+// publishReviewArtifactCommitDecision journals the review artifact commit
+// decision as a Daemon-source commit event.
+func publishReviewArtifactCommitDecision(ctx context.Context, sink runevent.Sink, runID string, decision string, summary string) {
+	payload, err := json.Marshal(map[string]any{"decision": decision, "artifacts": "review"})
+	if err != nil {
+		return
+	}
+	_ = sink.Publish(context.WithoutCancel(ctx), runevent.RunEvent{
+		RunID:   runID,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonCommit,
+		Summary: runevent.BoundSummary(summary),
+		Time:    time.Now().UTC(),
+		Payload: payload,
+	})
 }
 
 func maybeRunFinalPush(ctx context.Context, engine *daemon.Engine, sink runevent.Sink, runID string, loaded roundconfig.Loaded, preflightResult preflight.Result, workDir string, batchCommitCreated bool, stderr io.Writer) error {

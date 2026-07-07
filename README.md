@@ -336,8 +336,13 @@ it, or set `NO_COLOR` to suppress color.
   Review Source issues. It assigns a bounded Batch, runs the selected Agent
   runtime, verifies terminal assigned issues, commits successful Batches when
   auto-commit is enabled, resolves source threads for `resolved` and `invalid`
-  assigned issues, integrates the Run Worktree, and runs Final Push only when
-  no Unresolved Review Issues remain.
+  assigned issues, integrates the Run Worktree, commits the Run's review
+  artifacts in one separate docs commit
+  (`docs: review round NNN for pr <n>`, ADR-0036), and runs Final Push from
+  the user checkout only when no Unresolved Review Issues remain. `watch`
+  shares the same review artifact commit and push boundary per clean Round.
+  Review artifact roots outside the repository, or reached through a symbolic
+  link, are reported and never staged.
 - `watch` waits for CodeRabbit status on the current PR HEAD, observes the
   configured quiet period, fetches unresolved issues, resolves Batches, and
   repeats until `Clean`, `MaxRoundsReached`, `BudgetExceeded`, `TimedOut`,
@@ -582,8 +587,13 @@ Set `notify.enabled: false` to disable outcome notifications entirely.
 For review commands, explicit `--spec <slug>` wins over trailer discovery. When
 `--spec` is absent, Roundfix uses the newest `Roundfix-Spec: <slug>` trailer on
 the PR head commit only if `<specs.root>/<slug>/` exists; an unknown or invalid
-slug falls back to the spec-less `_reviews` path. Roundfix never commits or
-gitignores review artifacts, so versioning them stays a repository decision.
+slug falls back to the spec-less `_reviews` path. After a clean integration,
+`resolve` and `watch` commit the Run's review artifacts in one separate
+Daemon-owned docs commit (`docs: review round NNN for pr <n>`) that rides the
+Final Push (ADR-0036); `fetch` still never commits, `auto_commit: false`
+disables the commit with everything else, and artifact roots outside the
+repository — an explicit external Artifact Directory, an external Spec Root,
+or a path crossing a symbolic link — are never staged.
 ADR-0030 keeps per-Batch Agent log files off by default because the Run Event
 Journal already stores the raw payloads; the Detached Run console log remains
 unconditional for the ADR-0028 detach contract.

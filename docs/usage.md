@@ -162,7 +162,10 @@ roundfix archive <slug>
 Resolve unresolved CodeRabbit findings on an Open Pull Request. Roundfix fetches
 them as local Review Issue artifacts, assigns bounded Batches to the Agent,
 verifies changes, commits, resolves the source threads, and pushes only when no
-Unresolved Review Issues remain.
+Unresolved Review Issues remain. The Run's review artifacts ride the push in
+one separate docs commit (`docs: review round NNN for pr <n>`), so the review
+audit trail lands in the PR alongside the fixes; artifact roots outside the
+repository are never staged.
 
 ### One shot: watch until clean
 

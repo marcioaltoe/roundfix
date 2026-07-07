@@ -1877,8 +1877,10 @@ func TestRunResolvePushRunsAfterSuccessfulIntegrationAndCleansWorktree(t *testin
 	withSourceResolver(t, source)
 	pusher := &checkingPusher{
 		check: func(req daemon.PushRequest) error {
-			if req.WorkDir == repoDir {
-				return fmt.Errorf("push WorkDir stayed on user checkout %q", req.WorkDir)
+			// ADR-0036: Final Push runs from the user checkout after
+			// integration so the review artifact docs commit rides it.
+			if req.WorkDir != repoDir {
+				return fmt.Errorf("push WorkDir left the user checkout: %q", req.WorkDir)
 			}
 			if got := gitImplementOutput(t, repoDir, "show", "HEAD:agent.txt"); got != "agent work\n" {
 				return fmt.Errorf("push ran before integrated agent work reached HEAD, got %q", got)
@@ -1909,13 +1911,17 @@ func TestRunResolvePushRunsAfterSuccessfulIntegrationAndCleansWorktree(t *testin
 	if run.State != store.StateClean {
 		t.Fatalf("expected Clean Run, got %s", run.State)
 	}
-	if len(pusher.workDir) != 1 || pusher.workDir[0] != run.WorkDir {
-		t.Fatalf("expected Final Push from Run Worktree %q, got %v", run.WorkDir, pusher.workDir)
+	if len(pusher.workDir) != 1 || pusher.workDir[0] != repoDir {
+		t.Fatalf("expected Final Push from the user checkout %q, got %v", repoDir, pusher.workDir)
 	}
 	assertRunWorktreeRemoved(t, run.WorkDir)
 	assertRunBranchRemoved(t, repoDir, runworktree.BranchName(runID))
 	if got := mustRead(t, filepath.Join(repoDir, "agent.txt")); got != "agent work\n" {
 		t.Fatalf("expected integrated agent work in user checkout, got %q", got)
+	}
+	subject := gitImplementOutput(t, repoDir, "log", "-1", "--format=%s")
+	if !strings.HasPrefix(subject, "docs: review round") {
+		t.Fatalf("expected review artifact docs commit at HEAD, got %q", subject)
 	}
 }
 
@@ -7107,5 +7113,28 @@ func TestResolvePrintsIssueSummaryAfterCompletion(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "Resolve Run") || !strings.Contains(stderr.String(), "reached Clean") {
 		t.Fatalf("expected terminal daemon diagnostics on stderr, got %q", stderr.String())
+	}
+}
+
+func TestStageableReviewRootClassifiesInsideOutsideAndSymlink(t *testing.T) {
+	repoDir := t.TempDir()
+	external := t.TempDir()
+	mustMkdir(t, filepath.Join(repoDir, "docs", "specs", "_reviews", "pr-9"))
+	mustMkdir(t, filepath.Join(external, "specs", "_reviews", "pr-9"))
+
+	relative, ok := stageableReviewRoot(repoDir, filepath.Join(repoDir, "docs", "specs", "_reviews", "pr-9"))
+	if !ok || relative != "docs/specs/_reviews/pr-9" {
+		t.Fatalf("expected inside root to stage as docs/specs/_reviews/pr-9, got %q ok=%v", relative, ok)
+	}
+	if _, ok := stageableReviewRoot(repoDir, filepath.Join(external, "specs", "_reviews", "pr-9")); ok {
+		t.Fatal("expected external root to be unstageable")
+	}
+	linkRepo := t.TempDir()
+	mustMkdir(t, filepath.Join(linkRepo, "docs"))
+	if err := os.Symlink(filepath.Join(external, "specs"), filepath.Join(linkRepo, "docs", "specs")); err != nil {
+		t.Fatalf("create specs symlink: %v", err)
+	}
+	if _, ok := stageableReviewRoot(linkRepo, filepath.Join(linkRepo, "docs", "specs", "_reviews", "pr-9")); ok {
+		t.Fatal("expected symlink-crossing root to be unstageable")
 	}
 }

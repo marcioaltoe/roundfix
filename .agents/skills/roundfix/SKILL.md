@@ -490,9 +490,20 @@ which `round-*` is written with this ADR-0029 hierarchy:
 - Without a valid Spec association, artifacts go to
   `<specs.root>/_reviews/pr-<number>/round-*`.
 
-Unknown or invalid trailer slugs are treated as no association. Roundfix never
-commits or gitignores review artifacts; repository owners decide whether to
-version them.
+Unknown or invalid trailer slugs are treated as no association.
+
+After a clean integration, `resolve` and `watch` commit the Run's review
+artifacts in one separate Daemon-owned docs commit and run Final Push from the
+user checkout so the commit rides it (ADR-0036). The commit subject shape is
+`docs: review round NNN for pr <n>` for a single Round scope and
+`docs: review rounds for pr <n>` for an all-Rounds scope, and the progress
+line is `Review artifacts commit created: <subject>`. `fetch` still never
+commits; `auto_commit: false` disables the review artifact commit along with
+every other Daemon commit. Review artifact roots outside the repository — an
+explicit external Artifact Directory, an external Spec Root, or a path
+crossing a symbolic link — are never staged; the Run reports them kept
+outside the repository and proceeds. Agents never create this commit by hand;
+the Daemon owns it.
 
 ## Live Run View
 
