@@ -50,6 +50,7 @@ type settlePlan struct {
 	workDir      string
 	targetBranch string
 	homeDir      string
+	specsRoot    string
 	graph        *spec.Graph
 	task         spec.Task
 	run          store.Run
@@ -155,6 +156,10 @@ func preflightSettle(ctx context.Context, req settleRequest, stderr io.Writer) (
 		targetBranch: gitState.Branch,
 		homeDir:      loadedConfig.HomeDir,
 	}
+	resolvedSpecsRoot, err := roundconfig.ResolveSpecsRoot(loadedConfig, gitState.Root)
+	if err != nil {
+		return settlePlan{}, err
+	}
 	if run, found, err := latestKeptSettleRun(ctx, loadedConfig.HomeDir, gitState.Root, req.specSlug); err != nil {
 		return settlePlan{}, err
 	} else if found {
@@ -188,7 +193,8 @@ func preflightSettle(ctx context.Context, req settleRequest, stderr io.Writer) (
 			plan.hasRun = true
 		}
 	}
-	graph, err := spec.Load(plan.workDir, req.specSlug)
+	plan.specsRoot = specsRootForWorkDir(resolvedSpecsRoot, gitState.Root, plan.workDir)
+	graph, err := spec.Load(plan.specsRoot, req.specSlug)
 	if err != nil {
 		return settlePlan{}, validationError{message: fmt.Sprintf("Spec loads valid: %v", err)}
 	}
@@ -292,13 +298,13 @@ func ensureNoSettleActiveRun(ctx context.Context, homeDir string, gitRoot string
 }
 
 func settleTaskAndCommit(ctx context.Context, plan settlePlan, collaborators engineCollaborators) (string, error) {
-	taskPath := plan.task.File
+	taskPath := filepath.Join(plan.specsRoot, plan.task.File)
 	changed, err := collaborators.worktree.Snapshot(ctx, plan.workDir)
 	if err != nil {
 		return "", err
 	}
-	changed = ensureSettleCommitPath(changed, taskPath)
-	if err := spec.SetStatus(filepathInRoot(plan.workDir, taskPath), spec.StatusCompleted); err != nil {
+	changed = ensureSettleCommitPath(changed, settleArtifactCommitPath(plan, taskPath))
+	if err := spec.SetStatus(taskPath, spec.StatusCompleted); err != nil {
 		return "", fmt.Errorf("settle Task %s completed: %w", plan.task.ID, err)
 	}
 	message := daemon.TaskCommitMessage(plan.graph.Spec.Slug, plan.task)
@@ -389,4 +395,11 @@ func settleShortHEAD(ctx context.Context, gitRoot string) (string, error) {
 
 func filepathInRoot(root string, path string) string {
 	return filepath.Join(root, path)
+}
+
+func settleArtifactCommitPath(plan settlePlan, artifactPath string) string {
+	if relative, err := filepath.Rel(plan.workDir, artifactPath); err == nil && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) && !filepath.IsAbs(relative) {
+		return relative
+	}
+	return artifactPath
 }

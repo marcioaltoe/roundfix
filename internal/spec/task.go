@@ -24,11 +24,12 @@ type taskDocument struct {
 	Verification []string
 }
 
-// ReloadTask re-reads a Task's file — typically after an Agent has modified
-// it — refreshing Status, Title, Type, and Verification in place. The Task
-// Graph fields (ID, File, Needs) belong to the manifest and are left alone.
-func ReloadTask(gitRoot string, task *Task) error {
-	path := filepath.Join(gitRoot, task.File)
+// ReloadTask re-reads a Task's file from the Spec Root — typically after an
+// Agent has modified it — refreshing Status, Title, Type, and Verification in
+// place. The Task Graph fields (ID, File, Needs) belong to the manifest and
+// are left alone.
+func ReloadTask(specsRoot string, task *Task) error {
+	path := filepath.Join(specsRoot, task.File)
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("read Task %q file %q: %w", task.ID, path, err)

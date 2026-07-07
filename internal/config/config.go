@@ -792,6 +792,7 @@ func ResolveArtifactDirectory(artifactDir string, gitRoot string, homeDir string
 type ReviewArtifactContext struct {
 	ExplicitArtifactDir string
 	RepoRoot            string
+	SpecsRoot           string
 	SpecSlug            string
 	PRNumber            int
 }
@@ -805,21 +806,25 @@ func ResolveReviewRoot(ctx ReviewArtifactContext) (string, error) {
 		return filepath.Join(explicit, "reviews", prDir), nil
 	}
 
-	repoRoot := strings.TrimSpace(ctx.RepoRoot)
-	if repoRoot == "" {
-		return "", errors.New("Git root is required to resolve Review artifact root")
+	specsRoot := strings.TrimSpace(ctx.SpecsRoot)
+	if specsRoot == "" {
+		repoRoot := strings.TrimSpace(ctx.RepoRoot)
+		if repoRoot == "" {
+			return "", errors.New("Spec Root is required to resolve Review artifact root")
+		}
+		specsRoot = filepath.Join(repoRoot, "docs", "specs")
 	}
-	if slug := strings.TrimSpace(ctx.SpecSlug); slug != "" && reviewSpecDirExists(repoRoot, slug) {
-		return filepath.Join(repoRoot, "docs", "specs", slug, "reviews"), nil
+	if slug := strings.TrimSpace(ctx.SpecSlug); slug != "" && reviewSpecDirExists(specsRoot, slug) {
+		return filepath.Join(specsRoot, slug, "reviews"), nil
 	}
-	return filepath.Join(repoRoot, "docs", "specs", "_reviews", prDir), nil
+	return filepath.Join(specsRoot, "_reviews", prDir), nil
 }
 
-func reviewSpecDirExists(repoRoot string, slug string) bool {
+func reviewSpecDirExists(specsRoot string, slug string) bool {
 	if !validReviewSpecSlug(slug) {
 		return false
 	}
-	info, err := os.Stat(filepath.Join(repoRoot, "docs", "specs", slug))
+	info, err := os.Stat(filepath.Join(specsRoot, slug))
 	return err == nil && info.IsDir()
 }
 

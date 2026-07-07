@@ -103,7 +103,13 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitPreflight
 	}
 	req.artifactDir = artifactDir
-	graph, err := spec.Load(gitState.Root, req.spec)
+	resolvedSpecsRoot, err := roundconfig.ResolveSpecsRoot(loadedConfig, gitState.Root)
+	if err != nil {
+		printPreflightFailure("implement", err, stderr)
+		return exitPreflight
+	}
+	checkoutSpecsRoot := specsRootForWorkDir(resolvedSpecsRoot, gitState.Root, gitState.Root)
+	graph, err := spec.Load(checkoutSpecsRoot, req.spec)
 	if err != nil {
 		// spec.Load returns typed validation errors whose messages name the
 		// offending Task or check and the next useful action.
@@ -113,7 +119,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	if countNonCompletedTasks(graph.Tasks) == 0 && !req.qa {
 		// With --qa, an all-completed graph is not a no-op: the Run
 		// consists of the qa-gate step only (ADR 0015).
-		counts := printImplementTaskLines(stdout, gitState.Root, graph, true)
+		counts := printImplementTaskLines(stdout, checkoutSpecsRoot, graph, true)
 		fmt.Fprintf(stdout, "All %d Task(s) already completed; no Run was created.\n", counts.total())
 		return exitOK
 	}
@@ -186,6 +192,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	if len(gitState.Dirty) > 0 {
 		fmt.Fprintf(stderr, "%s: note: working tree %s has %d uncommitted change(s); implement will run in a Run Worktree, and overlapping local changes end the Run Integration Pending.\n", app.Name, gitState.Root, len(gitState.Dirty))
 	}
+	reportNonDefaultSpecsRoot(stderr, gitState.Root, resolvedSpecsRoot)
 	runRef, err := createRunWorktree(ctx, runworktree.CreateOptions{
 		UserRoot:        gitState.Root,
 		Location:        loadedConfig.Config.Worktree.Location,
@@ -206,7 +213,8 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printImplementRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
 	}
-	executionGraph, err := spec.Load(runRef.Path, graph.Spec.Slug)
+	executionSpecsRoot := specsRootForWorkDir(resolvedSpecsRoot, gitState.Root, runRef.Path)
+	executionGraph, err := spec.Load(executionSpecsRoot, graph.Spec.Slug)
 	if err != nil {
 		markRunFailed(ctx, runStore, run.ID)
 		printImplementRunFailureWithWorktree(fmt.Errorf("load Spec from Run Worktree: %w", err), runRef.Path, stderr)
@@ -221,7 +229,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitRunFailed
 	}
 
-	view := implementLiveRunView(req, loadedConfig, gitState, run.ID, runRef.Path, executionGraph)
+	view := implementLiveRunView(req, loadedConfig, gitState, run.ID, runRef.Path, executionSpecsRoot, executionGraph)
 	if !liveTUIEnabled(stderr) {
 		fmt.Fprint(stderr, roundtui.RenderLiveRunView(view))
 	}
@@ -234,7 +242,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 	defer ui.Close()
 
-	cycleResult, err := executeImplementCycle(ctx, gitState, runRef, session, executionGraph, req.artifactDir, loadedConfig.Config.Logs.Agent, req.qa, loadedConfig.Config.Worktree.Concurrency, loadedConfig.Config.Worktree.Copy, worktreeBootstrapSpec(loadedConfig.Config), newBootstrapOutputWriter(ctx, run.ID, runStore, ui.progress), runtime, collaborators, runStore, ui)
+	cycleResult, err := executeImplementCycle(ctx, gitState, runRef, session, executionSpecsRoot, executionGraph, req.artifactDir, loadedConfig.Config.Logs.Agent, req.qa, loadedConfig.Config.Worktree.Concurrency, loadedConfig.Config.Worktree.Copy, worktreeBootstrapSpec(loadedConfig.Config), newBootstrapOutputWriter(ctx, run.ID, runStore, ui.progress), runtime, collaborators, runStore, ui)
 	if err != nil {
 		if isStopRequest(ctx, err) {
 			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
@@ -247,7 +255,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			}
 			fmt.Fprintf(stderr, "Implement Run %s reached %s.\n", run.ID, store.StateStopped)
 			printKeptRunWorktree(stderr, runRef.Path)
-			report, counts := renderImplementTaskLines(runRef.Path, executionGraph, false)
+			report, counts := renderImplementTaskLines(executionSpecsRoot, executionGraph, false)
 			fmt.Fprint(stdout, report)
 			printImplementOutcomeLine(stdout, store.StateStopped, counts)
 			return exitOK
@@ -269,7 +277,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	if cycleResult.QAVerdict != "" && cycleResult.QAVerdict != spec.VerdictPass {
 		outcome = store.StateUnresolved
 	}
-	report, counts := renderImplementTaskLines(runRef.Path, executionGraph, true)
+	report, counts := renderImplementTaskLines(executionSpecsRoot, executionGraph, true)
 	integrationCommand := ""
 	if outcome == store.StateClean {
 		integration, err := integrateCleanImplementRun(ctx, runRef, gitState.Branch)
@@ -384,15 +392,15 @@ func validateImplementRequest(req commandRequest) error {
 }
 
 // implementSpecOptions lists the active Spec slugs the Interactive Input
-// Spec picker offers. An empty list fails with the fix instead of opening
-// an empty picker: there is nothing to implement.
-func implementSpecOptions(gitRoot string) ([]string, error) {
-	options, _, err := implementSpecOptionsDetailed(gitRoot)
+// Spec picker offers from the resolved Spec Root. An empty list fails with
+// the fix instead of opening an empty picker: there is nothing to implement.
+func implementSpecOptions(specsRoot string) ([]string, error) {
+	options, _, err := implementSpecOptionsDetailed(specsRoot)
 	return options, err
 }
 
-func implementSpecOptionsDetailed(gitRoot string) ([]string, []spec.SkippedSpec, error) {
-	active, skipped, err := spec.ListActiveDetailed(gitRoot)
+func implementSpecOptionsDetailed(specsRoot string) ([]string, []spec.SkippedSpec, error) {
+	active, skipped, err := spec.ListActiveDetailed(specsRoot)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -414,7 +422,7 @@ func printSkippedSpecDiagnostics(stderr io.Writer, skipped []spec.SkippedSpec) {
 
 // executeImplementCycle wires the Run engine exactly like the resolve path
 // and runs one Task cycle over the full graph.
-func executeImplementCycle(ctx context.Context, gitState preflight.GitState, runRef runworktree.Ref, session agent.SessionRef, graph *spec.Graph, artifactDir string, agentLogs bool, qa bool, concurrency int, copyList []string, bootstrap runworktree.BootstrapSpec, bootstrapOutput io.Writer, runtime agent.RuntimeSpec, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
+func executeImplementCycle(ctx context.Context, gitState preflight.GitState, runRef runworktree.Ref, session agent.SessionRef, specsRoot string, graph *spec.Graph, artifactDir string, agentLogs bool, qa bool, concurrency int, copyList []string, bootstrap runworktree.BootstrapSpec, bootstrapOutput io.Writer, runtime agent.RuntimeSpec, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
 	runID := runRef.RunID
 	fmt.Fprintf(ui.progress, "%s: implement selected Spec %s with %d Task(s); %d to execute this Run.\n", app.Name, graph.Spec.Slug, len(graph.Tasks), countNonCompletedTasks(graph.Tasks))
 	fmt.Fprintf(ui.progress, "Implement Run: %s\n", runID)
@@ -444,6 +452,7 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, run
 		Session:         session,
 		WorkDir:         runRef.Path,
 		RunWorktree:     runRef,
+		SpecsRoot:       specsRoot,
 		ArtifactDir:     artifactDir,
 		AgentLogs:       agentLogs,
 		Spec:            graph.Spec,
@@ -507,13 +516,14 @@ func maybeRunImplementAutoPush(ctx context.Context, gitState preflight.GitState,
 // the Work Items of the left pane, in Task Graph order, located through the
 // git root and Spec slug so the cockpit refreshes their statuses from the
 // task files.
-func implementLiveRunView(req commandRequest, loaded roundconfig.Loaded, gitState preflight.GitState, runID string, workDir string, graph *spec.Graph) roundtui.LiveRunView {
+func implementLiveRunView(req commandRequest, loaded roundconfig.Loaded, gitState preflight.GitState, runID string, workDir string, specsRoot string, graph *spec.Graph) roundtui.LiveRunView {
 	return roundtui.LiveRunView{
 		Command:       "implement",
 		RunKind:       store.KindImplement,
 		SpecSlug:      graph.Spec.Slug,
 		GitRoot:       gitState.Root,
 		WorkDir:       workDir,
+		SpecsRoot:     specsRoot,
 		Tasks:         graph.Tasks,
 		HeadBranch:    gitState.Branch,
 		Agent:         displayAgent(req.agent),
@@ -555,18 +565,18 @@ func (counts implementTaskCounts) total() int {
 // final status re-read from the task file. cycleFinished distinguishes
 // skipped (a finished cycle left the Task pending because a needed Task did
 // not complete) from pending (the cycle never reached the Task).
-func printImplementTaskLines(stdout io.Writer, gitRoot string, graph *spec.Graph, cycleFinished bool) implementTaskCounts {
-	report, counts := renderImplementTaskLines(gitRoot, graph, cycleFinished)
+func printImplementTaskLines(stdout io.Writer, specsRoot string, graph *spec.Graph, cycleFinished bool) implementTaskCounts {
+	report, counts := renderImplementTaskLines(specsRoot, graph, cycleFinished)
 	fmt.Fprint(stdout, report)
 	return counts
 }
 
-func renderImplementTaskLines(gitRoot string, graph *spec.Graph, cycleFinished bool) (string, implementTaskCounts) {
+func renderImplementTaskLines(specsRoot string, graph *spec.Graph, cycleFinished bool) (string, implementTaskCounts) {
 	counts := implementTaskCounts{}
 	var report bytes.Buffer
 	for _, task := range graph.Tasks {
 		current := task
-		if err := spec.ReloadTask(gitRoot, &current); err != nil {
+		if err := spec.ReloadTask(specsRoot, &current); err != nil {
 			// Keep the last known state when the task file is mid-write or
 			// broken; the closing report never fails the command.
 			current = task

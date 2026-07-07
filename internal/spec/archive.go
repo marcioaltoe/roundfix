@@ -13,7 +13,7 @@ import (
 
 // ArchiveRequest asks the Spec package to retire one completed Spec.
 type ArchiveRequest struct {
-	GitRoot    string
+	SpecsRoot  string
 	Slug       string
 	ArchivedAt time.Time
 }
@@ -26,9 +26,9 @@ type ArchiveResult struct {
 }
 
 // Archive verifies completion and QA evidence, stamps archive metadata in the
-// PRD frontmatter, and moves the Spec under docs/specs/_archived/.
+// PRD frontmatter, and moves the Spec under <Spec Root>/_archived/.
 func Archive(req ArchiveRequest) (ArchiveResult, error) {
-	graph, err := Load(req.GitRoot, req.Slug)
+	graph, err := Load(req.SpecsRoot, req.Slug)
 	if err != nil {
 		return ArchiveResult{}, err
 	}
@@ -48,7 +48,7 @@ func Archive(req ArchiveRequest) (ArchiveResult, error) {
 		return ArchiveResult{}, fmt.Errorf("no passing QA verdict: newest QA Report verdict is %q; expected %q", verdict, VerdictPass)
 	}
 
-	archiveRoot := filepath.Join(specsRoot(req.GitRoot), archivedDirName)
+	archiveRoot := filepath.Join(req.SpecsRoot, archivedDirName)
 	archivedDir := filepath.Join(archiveRoot, req.Slug)
 	if _, err := os.Stat(archivedDir); err == nil {
 		return ArchiveResult{}, fmt.Errorf("archived Spec destination %q already exists", archivedDir)

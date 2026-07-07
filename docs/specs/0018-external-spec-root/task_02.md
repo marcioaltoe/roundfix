@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0018-external-spec-root
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -36,25 +36,25 @@ root in a test repository.
 
 ## Subtasks
 
-- [ ] Spec loading signature shift and task-path resolution against the root
-- [ ] Implement Command threading: preflight, execution reload, status
+- [x] Spec loading signature shift and task-path resolution against the root
+- [x] Implement Command threading: preflight, execution reload, status
       writes, QA
-- [ ] Settle, Archive, Attach, and Interactive Input threading
-- [ ] Review artifact locations follow the root
-- [ ] Startup report line for a non-default root
-- [ ] Tests: spec package against an external temp root; CLI implement,
+- [x] Settle, Archive, Attach, and Interactive Input threading
+- [x] Review artifact locations follow the root
+- [x] Startup report line for a non-default root
+- [x] Tests: spec package against an external temp root; CLI implement,
       settle, and archive end to end with a configured external root
 
 ## Acceptance Criteria
 
-- [ ] The Implement Command completes a Run in a test repository whose Spec
+- [x] The Implement Command completes a Run in a test repository whose Spec
       Root is a directory outside the repository, reading the Task Graph and
       writing task statuses and QA Reports there — including from the Run
       Worktree.
-- [ ] Settle and Archive operate on the same external root.
-- [ ] The active-Spec interactive listing shows Specs from the external root.
-- [ ] With the default layout, the full existing test suite passes unchanged.
-- [ ] Run startup names the resolved root on stderr when it is not the
+- [x] Settle and Archive operate on the same external root.
+- [x] The active-Spec interactive listing shows Specs from the external root.
+- [x] With the default layout, the full existing test suite passes unchanged.
+- [x] Run startup names the resolved root on stderr when it is not the
       default.
 
 ## Verification
@@ -69,3 +69,33 @@ root in a test repository.
 `_prd.md` → User Story 2; Core Features 2-3. `_techspec.md` → System
 Architecture; Interfaces: Load; Build Order 2; Risks (signature shift).
 ADR-0035.
+
+## Result
+
+- Spec loading now accepts an explicit Spec Root, stores Task file paths
+  relative to that root, and reloads/writes task files by joining against the
+  threaded root. Evidence: `TestLoadUsesExplicitExternalSpecRoot`.
+- Implement resolves `specs.root` once from the user checkout, maps default
+  internal roots into Run/Task Worktrees, keeps external roots absolute, and
+  passes that root through preflight load, execution reload, status writes,
+  QA, Attach, and TUI task detail. Evidence:
+  `TestRunImplementUsesConfiguredExternalSpecRootEndToEnd`.
+- Settle and Archive use the configured external root for Spec loading and
+  artifact writes. Evidence: `TestRunSettleUsesConfiguredExternalSpecRoot`
+  and `TestRunArchiveUsesConfiguredExternalSpecRoot`.
+- Interactive Input lists active Specs from the configured external root.
+  Evidence: `TestRunImplementInteractiveInputListsConfiguredExternalSpecRoot`.
+- Spec-associated review artifacts resolve under the configured Spec Root.
+  Evidence: `TestResolveReviewRoot/existing_spec_under_external_root_stores_rounds_under_external_spec_reviews`.
+- Non-default Spec Root startup reporting is on stderr for Implement Runs.
+  Evidence: `TestRunImplementUsesConfiguredExternalSpecRootEndToEnd` asserts
+  `Spec Root: <external-root>`.
+- Verification passed:
+  - `rtk go test ./internal/spec/ ./internal/cli/` — 357 tests passed in 2
+    packages.
+  - `rtk make verify` — `rtk go test ./...` passed 856 tests in 18 packages;
+    `roundfix skills check` passed; build completed.
+
+Follow-up note for Task 03: external task and QA artifact paths are threaded
+to the commit boundary, but filtering external paths out of staging and the
+settle-without-commit behavior remain Task 03's slice.

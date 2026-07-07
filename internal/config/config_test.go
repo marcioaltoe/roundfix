@@ -1030,6 +1030,8 @@ func TestResolveReviewRoot(t *testing.T) {
 	repoRoot := t.TempDir()
 	specSlug := "0001-widget-flow"
 	mustMkdir(t, filepath.Join(repoRoot, "docs", "specs", specSlug))
+	externalSpecsRoot := filepath.Join(t.TempDir(), "external-specs")
+	mustMkdir(t, filepath.Join(externalSpecsRoot, specSlug))
 	explicitDir := filepath.Join(t.TempDir(), "artifacts")
 
 	tests := []struct {
@@ -1063,6 +1065,16 @@ func TestResolveReviewRoot(t *testing.T) {
 				PRNumber: 123,
 			},
 			want: filepath.Join(repoRoot, "docs", "specs", "_reviews", "pr-123"),
+		},
+		{
+			name: "existing spec under external root stores rounds under external spec reviews",
+			ctx: ReviewArtifactContext{
+				RepoRoot:  repoRoot,
+				SpecsRoot: externalSpecsRoot,
+				SpecSlug:  specSlug,
+				PRNumber:  123,
+			},
+			want: filepath.Join(externalSpecsRoot, specSlug, "reviews"),
 		},
 		{
 			name: "unknown spec falls back to spec-less root",

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -91,7 +92,7 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 
 	concurrency := attachRunConcurrency(ctx, reader, run, loaded.Config.Worktree.Concurrency)
 	if liveTUIEnabled(stdout) {
-		return runAttachCockpit(ctx, reader, run, concurrency, stdout, stderr)
+		return runAttachCockpit(ctx, loaded, reader, run, concurrency, stdout, stderr)
 	}
 
 	timeline := roundtui.NewRunTimeline(attachTimelineLines)
@@ -101,7 +102,7 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		return exitPreflight
 	}
 
-	view := attachRunView(run, attachIssues(ctx, run), timeline.Lines(), concurrency)
+	view := attachRunView(loaded, run, attachIssues(ctx, run), timeline.Lines(), concurrency)
 	fmt.Fprint(stdout, roundtui.RenderLiveRunView(view))
 	if store.IsTerminalState(run.State) {
 		fmt.Fprintf(stdout, "Run %s reached %s; timeline replayed read-only.\n", run.ID, run.State)
@@ -134,8 +135,8 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 
 // runAttachCockpit opens the interactive cockpit in the alternate screen.
 // Attach mode: q/Ctrl-C detach and never stop the Run; no stop key exists.
-func runAttachCockpit(ctx context.Context, reader *store.Store, run store.Run, concurrency int, stdout io.Writer, stderr io.Writer) int {
-	view := attachRunView(run, attachIssues(ctx, run), nil, concurrency)
+func runAttachCockpit(ctx context.Context, loaded roundconfig.Loaded, reader *store.Store, run store.Run, concurrency int, stdout io.Writer, stderr io.Writer) int {
+	view := attachRunView(loaded, run, attachIssues(ctx, run), nil, concurrency)
 	err := roundtui.RunCockpit(ctx, stdout, roundtui.CockpitConfig{
 		Mode:   roundtui.CockpitAttach,
 		View:   view,
@@ -314,7 +315,7 @@ func attachIssues(ctx context.Context, run store.Run) []rounds.Issue {
 	return selection.Issues
 }
 
-func attachRunView(run store.Run, issues []rounds.Issue, console []string, concurrency int) roundtui.LiveRunView {
+func attachRunView(loaded roundconfig.Loaded, run store.Run, issues []rounds.Issue, console []string, concurrency int) roundtui.LiveRunView {
 	view := roundtui.LiveRunView{
 		Command:       "attach",
 		Repository:    run.HeadRepository,
@@ -329,12 +330,14 @@ func attachRunView(run store.Run, issues []rounds.Issue, console []string, concu
 		Width:         liveViewWidth(),
 	}
 	if run.Kind == store.KindImplement {
+		specsRoot := attachSpecsRoot(loaded, run)
 		view.RunKind = run.Kind
 		view.SpecSlug = run.SpecSlug
 		view.GitRoot = run.GitRoot
+		view.SpecsRoot = specsRoot
 		view.Concurrency = concurrency
 		view.HeadBranch = run.LocalBranch
-		view.Tasks = attachTasks(run)
+		view.Tasks = attachTasks(specsRoot, run)
 	}
 	return view
 }
@@ -375,12 +378,29 @@ func attachRunConcurrency(ctx context.Context, reader *store.Store, run store.Ru
 // Attach must stay usable when the Spec moved or was archived, so load
 // failures render an empty pane instead of failing the command — mirroring
 // attachIssues.
-func attachTasks(run store.Run) []spec.Task {
-	graph, err := spec.Load(attachTaskRoot(run), run.SpecSlug)
+func attachTasks(specsRoot string, run store.Run) []spec.Task {
+	graph, err := spec.Load(specsRoot, run.SpecSlug)
 	if err != nil {
 		return nil
 	}
 	return graph.Tasks
+}
+
+func attachSpecsRoot(loaded roundconfig.Loaded, run store.Run) string {
+	repoRoot := strings.TrimSpace(run.GitRoot)
+	if repoRoot == "" {
+		repoRoot = strings.TrimSpace(loaded.GitRoot)
+	}
+	if repoRoot != "" {
+		if resolved, err := roundconfig.ResolveSpecsRoot(loaded, repoRoot); err == nil {
+			specsRoot := specsRootForWorkDir(resolved, repoRoot, attachTaskRoot(run))
+			if info, statErr := os.Stat(specsRoot); statErr == nil && info.IsDir() {
+				return specsRoot
+			}
+			return specsRootForWorkDir(resolved, repoRoot, repoRoot)
+		}
+	}
+	return filepath.Join(attachTaskRoot(run), "docs", "specs")
 }
 
 func attachTaskRoot(run store.Run) string {

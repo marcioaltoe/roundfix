@@ -940,7 +940,11 @@ func buildInteractiveInputRequest(ctx context.Context, req commandRequest, loade
 	if req.name == "implement" {
 		// List the picker's Specs before any Run Database access so a
 		// nothing-to-implement failure leaves no side effects behind.
-		options, skipped, err := implementSpecOptionsDetailed(loaded.GitRoot)
+		resolvedSpecsRoot, err := roundconfig.ResolveSpecsRoot(loaded, loaded.GitRoot)
+		if err != nil {
+			return roundtui.InputRequest{}, err
+		}
+		options, skipped, err := implementSpecOptionsDetailed(resolvedSpecsRoot.Path)
 		if err != nil {
 			return roundtui.InputRequest{}, err
 		}
@@ -1089,7 +1093,15 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 		printPreflightFailure(name, err, stderr)
 		return exitPreflight
 	}
-	reviewRoot, err := resolveReviewArtifactRoot(ctx, req, preflightResult)
+	specsRoot := reviewArtifactSpecsRoot(loadedConfig, preflightResult.Git.Root)
+	if strings.TrimSpace(loadedConfig.Config.Specs.Root) != filepath.Join("docs", "specs") {
+		specsRoot, err = roundconfig.ResolveSpecsRoot(loadedConfig, preflightResult.Git.Root)
+		if err != nil {
+			printPreflightFailure(name, err, stderr)
+			return exitPreflight
+		}
+	}
+	reviewRoot, err := resolveReviewArtifactRoot(ctx, req, preflightResult, specsRoot)
 	if err != nil {
 		printPreflightFailure(name, err, stderr)
 		return exitPreflight
@@ -2354,10 +2366,40 @@ func validateAgent(agent string) error {
 type reviewSpecRequest struct {
 	ExplicitSlug string
 	RepoRoot     string
+	SpecsRoot    string
 	HeadSHA      string
 }
 
-func resolveReviewArtifactRoot(ctx context.Context, req commandRequest, preflightResult preflight.Result) (string, error) {
+func specsRootForWorkDir(resolved roundconfig.SpecsRoot, repoRoot string, workDir string) string {
+	if resolved.External {
+		return resolved.Path
+	}
+	if strings.TrimSpace(workDir) == "" {
+		return resolved.Path
+	}
+	rel, err := filepath.Rel(repoRoot, resolved.Path)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+		return resolved.Path
+	}
+	return filepath.Join(workDir, rel)
+}
+
+func specsRootIsDefault(repoRoot string, resolved roundconfig.SpecsRoot) bool {
+	return filepath.Clean(resolved.Path) == filepath.Join(filepath.Clean(repoRoot), "docs", "specs")
+}
+
+func reportNonDefaultSpecsRoot(stderr io.Writer, repoRoot string, resolved roundconfig.SpecsRoot) {
+	if specsRootIsDefault(repoRoot, resolved) {
+		return
+	}
+	fmt.Fprintf(stderr, "Spec Root: %s\n", resolved.Path)
+}
+
+func reviewArtifactSpecsRoot(loaded roundconfig.Loaded, repoRoot string) roundconfig.SpecsRoot {
+	return roundconfig.SpecsRoot{Path: filepath.Join(repoRoot, loaded.Config.Specs.Root)}
+}
+
+func resolveReviewArtifactRoot(ctx context.Context, req commandRequest, preflightResult preflight.Result, specsRoot roundconfig.SpecsRoot) (string, error) {
 	prNumber, err := strconv.Atoi(req.pr)
 	if err != nil {
 		return "", fmt.Errorf("parse Open Pull Request number %q: %w", req.pr, err)
@@ -2371,6 +2413,7 @@ func resolveReviewArtifactRoot(ctx context.Context, req commandRequest, prefligh
 		specSlug, err = reviewSpecSlug(ctx, reviewSpecRequest{
 			ExplicitSlug: req.spec,
 			RepoRoot:     preflightResult.Git.Root,
+			SpecsRoot:    specsRoot.Path,
 			HeadSHA:      preflightResult.Git.HEAD,
 		}, reviewSpecGitRunner)
 		if err != nil {
@@ -2380,14 +2423,19 @@ func resolveReviewArtifactRoot(ctx context.Context, req commandRequest, prefligh
 	return roundconfig.ResolveReviewRoot(roundconfig.ReviewArtifactContext{
 		ExplicitArtifactDir: explicitArtifactDir,
 		RepoRoot:            preflightResult.Git.Root,
+		SpecsRoot:           specsRoot.Path,
 		SpecSlug:            specSlug,
 		PRNumber:            prNumber,
 	})
 }
 
 func reviewSpecSlug(ctx context.Context, req reviewSpecRequest, runner preflight.GitRunner) (string, error) {
+	specsRoot := strings.TrimSpace(req.SpecsRoot)
+	if specsRoot == "" {
+		specsRoot = filepath.Join(req.RepoRoot, "docs", "specs")
+	}
 	if slug := strings.TrimSpace(req.ExplicitSlug); slug != "" {
-		if reviewSpecFolderExists(req.RepoRoot, slug) {
+		if reviewSpecFolderExists(specsRoot, slug) {
 			return slug, nil
 		}
 		return "", nil
@@ -2397,7 +2445,7 @@ func reviewSpecSlug(ctx context.Context, req reviewSpecRequest, runner preflight
 		return "", fmt.Errorf("read PR head commit trailers: %w", err)
 	}
 	slug := newestRoundfixSpecTrailer(message)
-	if slug == "" || !reviewSpecFolderExists(req.RepoRoot, slug) {
+	if slug == "" || !reviewSpecFolderExists(specsRoot, slug) {
 		return "", nil
 	}
 	return slug, nil
@@ -2417,11 +2465,11 @@ func newestRoundfixSpecTrailer(message string) string {
 	return slug
 }
 
-func reviewSpecFolderExists(repoRoot string, slug string) bool {
+func reviewSpecFolderExists(specsRoot string, slug string) bool {
 	if !validReviewSpecSlug(slug) {
 		return false
 	}
-	info, err := os.Stat(filepath.Join(repoRoot, "docs", "specs", slug))
+	info, err := os.Stat(filepath.Join(specsRoot, slug))
 	return err == nil && info.IsDir()
 }
 

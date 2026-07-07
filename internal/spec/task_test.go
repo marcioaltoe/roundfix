@@ -142,12 +142,13 @@ spec: demo
 
 func TestReloadTaskPicksUpAgentEdits(t *testing.T) {
 	gitRoot := t.TempDir()
-	relFile := filepath.Join("docs", "specs", "demo", "task_01.md")
-	path := filepath.Join(gitRoot, relFile)
+	specsRoot := defaultSpecsRoot(gitRoot)
+	relFile := filepath.Join("demo", "task_01.md")
+	path := filepath.Join(specsRoot, relFile)
 	writeFile(t, path, taskFixture("task_01", "Build the parser", "pending", "backend", defaultVerificationSection))
 
 	task := &Task{ID: "task_01", File: relFile, Needs: []string{"task_00"}}
-	if err := ReloadTask(gitRoot, task); err != nil {
+	if err := ReloadTask(specsRoot, task); err != nil {
 		t.Fatalf("ReloadTask: %v", err)
 	}
 	if task.Status != StatusPending {
@@ -162,7 +163,7 @@ func TestReloadTaskPicksUpAgentEdits(t *testing.T) {
 `)
 	writeFile(t, path, edited)
 
-	if err := ReloadTask(gitRoot, task); err != nil {
+	if err := ReloadTask(specsRoot, task); err != nil {
 		t.Fatalf("ReloadTask after edit: %v", err)
 	}
 	if task.Status != StatusCompleted {
@@ -213,11 +214,12 @@ func TestReloadTaskReportsBrokenAgentEdits(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gitRoot := t.TempDir()
-			relFile := filepath.Join("docs", "specs", "demo", "task_01.md")
-			writeFile(t, filepath.Join(gitRoot, relFile), tt.content)
+			specsRoot := defaultSpecsRoot(gitRoot)
+			relFile := filepath.Join("demo", "task_01.md")
+			writeFile(t, filepath.Join(specsRoot, relFile), tt.content)
 
 			task := &Task{ID: "task_01", File: relFile}
-			err := ReloadTask(gitRoot, task)
+			err := ReloadTask(specsRoot, task)
 			if err == nil {
 				t.Fatal("ReloadTask succeeded, want error")
 			}

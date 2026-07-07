@@ -1,5 +1,5 @@
 // Package spec owns the on-disk Spec contract: discovering active Specs
-// under docs/specs/, loading and validating a Task Graph into deterministic
+// under a Spec Root, loading and validating a Task Graph into deterministic
 // topological order, parsing task files, rewriting task status, and reading
 // the QA Report verdict. Nothing outside this package touches spec markdown.
 package spec
@@ -42,7 +42,7 @@ func AllowedStatus(status Status) bool {
 	}
 }
 
-// Spec identifies one Spec directory under docs/specs/.
+// Spec identifies one Spec directory under a Spec Root.
 type Spec struct {
 	Slug string
 	Dir  string
@@ -56,8 +56,7 @@ type SkippedSpec struct {
 }
 
 // Task is one Task Graph node joined with its parsed task file. File is the
-// task file path relative to the repository root, so it can double as a git
-// pathspec and be re-resolved with ReloadTask.
+// task file path relative to the Spec Root.
 type Task struct {
 	ID           string
 	File         string
@@ -89,26 +88,26 @@ type manifestFrontmatter struct {
 }
 
 // ListActive discovers the Specs eligible for the Implement Command:
-// directories under docs/specs/ (excluding _archived/) whose _prd.md
+// directories under the Spec Root (excluding _archived/) whose _prd.md
 // frontmatter carries status active. Directories without a readable active
 // PRD are skipped; Load names the exact problem when a slug is requested
 // explicitly. The result is sorted by slug.
-func ListActive(gitRoot string) ([]Spec, error) {
-	specs, _, err := ListActiveDetailed(gitRoot)
+func ListActive(specsRoot string) ([]Spec, error) {
+	specs, _, err := ListActiveDetailed(specsRoot)
 	return specs, err
 }
 
 // ListActiveDetailed discovers active Specs and reports non-active Spec
 // directories skipped because their PRD is missing, unreadable, or inactive.
 // _archived/ is outside active discovery and is not reported as skipped.
-func ListActiveDetailed(gitRoot string) ([]Spec, []SkippedSpec, error) {
-	specsDir := specsRoot(gitRoot)
-	entries, err := os.ReadDir(specsDir)
+func ListActiveDetailed(specsRoot string) ([]Spec, []SkippedSpec, error) {
+	root := filepath.Clean(specsRoot)
+	entries, err := os.ReadDir(root)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, nil, nil
 	}
 	if err != nil {
-		return nil, nil, fmt.Errorf("read Spec root %q: %w", specsDir, err)
+		return nil, nil, fmt.Errorf("read Spec Root %q: %w", root, err)
 	}
 	var specs []Spec
 	var skipped []SkippedSpec
@@ -118,11 +117,11 @@ func ListActiveDetailed(gitRoot string) ([]Spec, []SkippedSpec, error) {
 		if !entry.IsDir() || entry.Name() == archivedDirName {
 			continue
 		}
-		dir := filepath.Join(specsDir, entry.Name())
+		dir := filepath.Join(root, entry.Name())
 		content, err := os.ReadFile(filepath.Join(dir, "_prd.md"))
 		if err != nil {
 			skipped = append(skipped, SkippedSpec{
-				Dir:    specDisplayDir(entry.Name()),
+				Dir:    specDisplayDir(root, entry.Name()),
 				Reason: prdReadSkipReason(err),
 			})
 			continue
@@ -130,14 +129,14 @@ func ListActiveDetailed(gitRoot string) ([]Spec, []SkippedSpec, error) {
 		status, err := prdStatus(content)
 		if err != nil {
 			skipped = append(skipped, SkippedSpec{
-				Dir:    specDisplayDir(entry.Name()),
+				Dir:    specDisplayDir(root, entry.Name()),
 				Reason: fmt.Sprintf("unreadable _prd.md frontmatter: %v", err),
 			})
 			continue
 		}
 		if status != prdStatusActive {
 			skipped = append(skipped, SkippedSpec{
-				Dir:    specDisplayDir(entry.Name()),
+				Dir:    specDisplayDir(root, entry.Name()),
 				Reason: fmt.Sprintf("status %q is not active", status),
 			})
 			continue
@@ -147,11 +146,12 @@ func ListActiveDetailed(gitRoot string) ([]Spec, []SkippedSpec, error) {
 	return specs, skipped, nil
 }
 
-// Load parses and validates one Spec's Task Graph and task files, returning
-// the Tasks in deterministic topological order. Every validation failure is a
-// typed error naming the offending Task or check.
-func Load(gitRoot string, slug string) (*Graph, error) {
-	dir := filepath.Join(specsRoot(gitRoot), slug)
+// Load parses and validates one Spec's Task Graph and task files from the
+// Spec Root, returning the Tasks in deterministic topological order. Every
+// validation failure is a typed error naming the offending Task or check.
+func Load(specsRoot string, slug string) (*Graph, error) {
+	root := filepath.Clean(specsRoot)
+	dir := filepath.Join(root, slug)
 	if err := requireActive(slug, dir); err != nil {
 		return nil, err
 	}
@@ -178,11 +178,13 @@ func Load(gitRoot string, slug string) (*Graph, error) {
 	return &Graph{Spec: Spec{Slug: slug, Dir: dir}, Tasks: tasks}, nil
 }
 
-func specsRoot(gitRoot string) string {
-	return filepath.Join(gitRoot, "docs", "specs")
-}
-
-func specDisplayDir(slug string) string {
+func specDisplayDir(specsRoot string, slug string) string {
+	if filepath.Base(specsRoot) == "specs" && filepath.Base(filepath.Dir(specsRoot)) == "docs" {
+		return filepath.ToSlash(filepath.Join("docs", "specs", slug))
+	}
+	if filepath.IsAbs(specsRoot) {
+		return filepath.ToSlash(filepath.Join(specsRoot, slug))
+	}
 	return filepath.ToSlash(filepath.Join("docs", "specs", slug))
 }
 
@@ -338,7 +340,7 @@ func loadTask(dir string, slug string, node manifestNode) (Task, error) {
 	}
 	return Task{
 		ID:           node.ID,
-		File:         filepath.Join("docs", "specs", slug, node.File),
+		File:         filepath.Join(slug, node.File),
 		Title:        document.Title,
 		Needs:        append([]string(nil), node.Needs...),
 		Status:       Status(document.Frontmatter.Status),

@@ -108,6 +108,7 @@ type taskCycleFixture struct {
 	store       *store.Store
 	run         store.Run
 	gitRoot     string
+	specsRoot   string
 	artifactDir string
 	graph       *spec.Graph
 	calls       *[]string
@@ -142,7 +143,8 @@ func newTaskCycleFixture(t *testing.T, seeds []taskSpecSeed) *taskCycleFixture {
 		t.Fatalf("create run: %v", err)
 	}
 
-	graph, err := spec.Load(gitRoot, taskCycleSlug)
+	specsRoot := filepath.Join(gitRoot, "docs", "specs")
+	graph, err := spec.Load(specsRoot, taskCycleSlug)
 	if err != nil {
 		t.Fatalf("load spec: %v", err)
 	}
@@ -152,6 +154,7 @@ func newTaskCycleFixture(t *testing.T, seeds []taskSpecSeed) *taskCycleFixture {
 		store:       runStore,
 		run:         run,
 		gitRoot:     gitRoot,
+		specsRoot:   specsRoot,
 		artifactDir: artifactDir,
 		graph:       graph,
 		calls:       &calls,
@@ -170,6 +173,7 @@ func (fixture *taskCycleFixture) plan() TaskPlan {
 		WorkDir:     fixture.gitRoot,
 		RunWorktree: runworktree.Ref{RunID: fixture.run.ID, Path: fixture.gitRoot, Branch: runworktree.BranchName(fixture.run.ID), UserRoot: fixture.gitRoot},
 		Spec:        fixture.graph.Spec,
+		SpecsRoot:   fixture.specsRoot,
 		Tasks:       fixture.graph.Tasks,
 		Runtime:     agent.RuntimeSpec{ID: "codex", DisplayName: "Codex"},
 		ArtifactDir: fixture.artifactDir,

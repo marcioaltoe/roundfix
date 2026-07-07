@@ -370,6 +370,13 @@ func configureImplementAutoPush(t *testing.T, repoDir string, enabled bool) {
 	gitImplement(t, repoDir, "commit", "-m", "configure implement auto push")
 }
 
+func configureExternalSpecsRoot(t *testing.T, repoDir string, specsRoot string) {
+	t.Helper()
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), fmt.Sprintf("specs:\n  root: %q\n", specsRoot))
+	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+	gitImplement(t, repoDir, "commit", "-m", "configure external Spec Root")
+}
+
 func configureWorktreeBootstrap(t *testing.T, repoDir string, command string, timeout string) {
 	t.Helper()
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), fmt.Sprintf("worktree:\n  bootstrap: %q\n  bootstrap_timeout: %s\n", command, timeout))
@@ -388,7 +395,12 @@ func configureImplementUpstream(t *testing.T, repoDir string, remote string, bra
 
 func writeImplementSpec(t *testing.T, repoDir string, slug string, seeds []implementSeed) {
 	t.Helper()
-	specDir := filepath.Join(repoDir, "docs", "specs", slug)
+	writeImplementSpecAtRoot(t, filepath.Join(repoDir, "docs", "specs"), slug, seeds)
+}
+
+func writeImplementSpecAtRoot(t *testing.T, specsRoot string, slug string, seeds []implementSeed) {
+	t.Helper()
+	specDir := filepath.Join(specsRoot, slug)
 	mustMkdir(t, specDir)
 	mustWrite(t, filepath.Join(specDir, "_prd.md"), "---\nstatus: active\n---\n\n# PRD\n")
 
@@ -404,7 +416,7 @@ func writeImplementSpec(t *testing.T, repoDir string, slug string, seeds []imple
 	mustWrite(t, filepath.Join(specDir, "_tasks.md"), manifest.String())
 
 	for _, seed := range seeds {
-		mustWrite(t, implementTaskPath(repoDir, seed.id), implementTaskContent(slug, seed))
+		mustWrite(t, implementTaskPathInRoot(specsRoot, slug, seed.id), implementTaskContent(slug, seed))
 	}
 }
 
@@ -434,7 +446,11 @@ func implementTaskContent(slug string, seed implementSeed) string {
 }
 
 func implementTaskPath(repoDir string, taskID string) string {
-	return filepath.Join(repoDir, "docs", "specs", implementTestSlug, taskID+".md")
+	return implementTaskPathInRoot(filepath.Join(repoDir, "docs", "specs"), implementTestSlug, taskID)
+}
+
+func implementTaskPathInRoot(specsRoot string, slug string, taskID string) string {
+	return filepath.Join(specsRoot, slug, taskID+".md")
 }
 
 // implementFakeRunner scripts per-Task Agent behavior keyed by the Task id
@@ -497,7 +513,7 @@ func (runner *implementFakeRunner) Run(ctx context.Context, req agent.ExecuteReq
 		runner.qaCalls++
 		runner.mu.Unlock()
 		if qaReport != "" {
-			reportPath := filepath.Join(executionRoot, implementQAReportRelPath())
+			reportPath := filepath.Join(implementSpecDirFromPrompt(req.Prompt, executionRoot), "qa", implementQAReportName)
 			if err := os.MkdirAll(filepath.Dir(reportPath), 0o755); err != nil {
 				return agent.ExecuteResult{}, err
 			}
@@ -519,7 +535,7 @@ func (runner *implementFakeRunner) Run(ctx context.Context, req agent.ExecuteReq
 		}
 	}
 	if status, ok := statusByTask[taskID]; ok {
-		if err := spec.SetStatus(implementTaskPath(executionRoot, taskID), status); err != nil {
+		if err := spec.SetStatus(implementTaskPathFromPrompt(req.Prompt, executionRoot, taskID), status); err != nil {
 			return agent.ExecuteResult{}, err
 		}
 	}
@@ -547,6 +563,36 @@ func implementTaskIDFromPrompt(prompt string) string {
 		}
 	}
 	return ""
+}
+
+func implementTaskPathFromPrompt(prompt string, executionRoot string, taskID string) string {
+	for _, line := range strings.Split(prompt, "\n") {
+		path, ok := strings.CutPrefix(line, "Task file: ")
+		if !ok {
+			continue
+		}
+		path = strings.TrimSpace(path)
+		if filepath.IsAbs(path) {
+			return path
+		}
+		return filepath.Join(executionRoot, path)
+	}
+	return implementTaskPath(executionRoot, taskID)
+}
+
+func implementSpecDirFromPrompt(prompt string, executionRoot string) string {
+	for _, line := range strings.Split(prompt, "\n") {
+		path, ok := strings.CutPrefix(line, "Spec directory: ")
+		if !ok {
+			continue
+		}
+		path = strings.TrimSpace(path)
+		if filepath.IsAbs(path) {
+			return path
+		}
+		return filepath.Join(executionRoot, path)
+	}
+	return filepath.Join(executionRoot, "docs", "specs", implementTestSlug)
 }
 
 // withImplementCollaborators wires the standard fake collaborators for an
@@ -970,11 +1016,11 @@ func TestRunImplementValidationFailures(t *testing.T) {
 		message string
 	}{
 		{
-			// The workspace has no docs/specs/, so the Spec picker has
-			// nothing to offer and fails with the fix instead.
+			// The workspace has no docs/specs/, so Spec Root validation fails
+			// before the Spec picker can offer choices.
 			name:    "missing spec without active Specs",
 			args:    []string{"implement", "--agent", "codex"},
-			message: "no active Specs to implement",
+			message: "specs.root resolved to",
 		},
 		{
 			name:    "missing spec with no-input",
@@ -984,7 +1030,7 @@ func TestRunImplementValidationFailures(t *testing.T) {
 		{
 			name:    "interactive without active Specs",
 			args:    []string{"implement", "--agent", "codex", "--interactive"},
-			message: "no active Specs to implement",
+			message: "specs.root resolved to",
 		},
 		{
 			name:    "interactive with no-input",
@@ -1105,6 +1151,95 @@ func TestRunImplementInteractiveInputPicksSpecThroughCollector(t *testing.T) {
 	}
 	if defaults.PRNumber != "" {
 		t.Fatalf("expected no PR default from a spec Run, got %#v", defaults)
+	}
+}
+
+func TestRunImplementUsesConfiguredExternalSpecRootEndToEnd(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Internal fixture should stay untouched"},
+	})
+	externalRoot := filepath.Join(t.TempDir(), "external-specs")
+	writeImplementSpecAtRoot(t, externalRoot, implementTestSlug, []implementSeed{
+		{id: "task_01", title: "Build from external root"},
+	})
+	configureExternalSpecsRoot(t, repoDir, externalRoot)
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		qaReport:     implementQAReport(spec.VerdictPass),
+	}
+	withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--qa", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected Clean exit, got %d (stderr %q stdout %q)", code, stderr.String(), stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "Spec Root: "+externalRoot+"\n") {
+		t.Fatalf("expected startup to name external Spec Root %q, got %q", externalRoot, stderr.String())
+	}
+	externalTask := implementTaskPathInRoot(externalRoot, implementTestSlug, "task_01")
+	if content := mustRead(t, externalTask); !strings.Contains(content, "status: completed") {
+		t.Fatalf("expected external task completed, got:\n%s", content)
+	}
+	if content := mustRead(t, implementTaskPath(repoDir, "task_01")); !strings.Contains(content, "status: pending") {
+		t.Fatalf("expected default-layout fixture untouched, got:\n%s", content)
+	}
+	externalReport := filepath.Join(externalRoot, implementTestSlug, "qa", implementQAReportName)
+	assertPathExists(t, externalReport)
+	if !strings.Contains(stdout.String(), "qa pass — "+externalReport+"\n") {
+		t.Fatalf("expected QA output to name external report, got %q", stdout.String())
+	}
+	run := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
+	if run.State != store.StateClean {
+		t.Fatalf("expected external-root Run Clean, got %s", run.State)
+	}
+}
+
+func TestRunImplementInteractiveInputListsConfiguredExternalSpecRoot(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Internal fixture should not be listed"},
+	})
+	externalRoot := filepath.Join(t.TempDir(), "external-specs")
+	externalSlug := "0002-external-only"
+	writeImplementSpecAtRoot(t, externalRoot, externalSlug, []implementSeed{
+		{id: "task_01", title: "Build from external picker"},
+	})
+	configureExternalSpecsRoot(t, repoDir, externalRoot)
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	withImplementCollaborators(t, runner)
+	var inputReq roundtui.InputRequest
+	var collected strings.Builder
+	withInteractiveInput(t, func(ctx context.Context, req roundtui.InputRequest) (roundtui.CommandValues, error) {
+		inputReq = req
+		return roundtui.CollectInput(ctx, req, strings.NewReader("1\ncodex\n"), &collected)
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected Clean exit, got %d (stderr %q stdout %q)", code, stderr.String(), stdout.String())
+	}
+	if len(inputReq.SpecOptions) != 1 || inputReq.SpecOptions[0] != externalSlug {
+		t.Fatalf("expected picker to list only external Spec %q, got %#v", externalSlug, inputReq.SpecOptions)
+	}
+	if !strings.Contains(collected.String(), "1. "+externalSlug) {
+		t.Fatalf("expected collected prompt to render external Spec, got:\n%s", collected.String())
+	}
+	externalTask := implementTaskPathInRoot(externalRoot, externalSlug, "task_01")
+	if content := mustRead(t, externalTask); !strings.Contains(content, "status: completed") {
+		t.Fatalf("expected selected external task completed, got:\n%s", content)
+	}
+	run := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
+	if run.SpecSlug != externalSlug {
+		t.Fatalf("expected Run to target external Spec %q, got %q", externalSlug, run.SpecSlug)
 	}
 }
 
@@ -1481,7 +1616,8 @@ func TestRenderImplementTaskLinesKeepsGraphOrderWhenCompletionReversed(t *testin
 		{id: "task_02", title: "Wire queue"},
 		{id: "task_03", title: "Write docs"},
 	})
-	graph, err := spec.Load(repoDir, implementTestSlug)
+	specsRoot := filepath.Join(repoDir, "docs", "specs")
+	graph, err := spec.Load(specsRoot, implementTestSlug)
 	if err != nil {
 		t.Fatalf("load spec: %v", err)
 	}
@@ -1491,7 +1627,7 @@ func TestRenderImplementTaskLinesKeepsGraphOrderWhenCompletionReversed(t *testin
 		}
 	}
 
-	report, counts := renderImplementTaskLines(repoDir, graph, true)
+	report, counts := renderImplementTaskLines(specsRoot, graph, true)
 
 	expected := "task_01 completed — Build scheduler\n" +
 		"task_02 completed — Wire queue\n" +

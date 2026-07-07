@@ -25,10 +25,14 @@ func writeFile(t *testing.T, path string, content string) {
 	}
 }
 
-func writeSpecDir(t *testing.T, gitRoot string, slug string, files map[string]string) {
+func defaultSpecsRoot(gitRoot string) string {
+	return filepath.Join(gitRoot, "docs", "specs")
+}
+
+func writeSpecDir(t *testing.T, specsRoot string, slug string, files map[string]string) {
 	t.Helper()
 	for name, content := range files {
-		writeFile(t, filepath.Join(gitRoot, "docs", "specs", slug, name), content)
+		writeFile(t, filepath.Join(specsRoot, slug, name), content)
 	}
 }
 
@@ -107,13 +111,14 @@ func diamondSpecFiles() map[string]string {
 
 func TestLoadReturnsTasksInDeterministicTopologicalOrder(t *testing.T) {
 	gitRoot := t.TempDir()
-	writeSpecDir(t, gitRoot, "demo", diamondSpecFiles())
+	specsRoot := defaultSpecsRoot(gitRoot)
+	writeSpecDir(t, specsRoot, "demo", diamondSpecFiles())
 
 	// Kahn with manifest-order tiebreak: task_01 is the only root; task_03
 	// beats task_02 because the manifest lists it first.
 	want := []string{"task_01", "task_03", "task_02", "task_04"}
 	for attempt := 0; attempt < 20; attempt++ {
-		graph, err := Load(gitRoot, "demo")
+		graph, err := Load(specsRoot, "demo")
 		if err != nil {
 			t.Fatalf("Load attempt %d: %v", attempt, err)
 		}
@@ -126,7 +131,7 @@ func TestLoadReturnsTasksInDeterministicTopologicalOrder(t *testing.T) {
 		}
 	}
 
-	graph, err := Load(gitRoot, "demo")
+	graph, err := Load(specsRoot, "demo")
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
@@ -141,6 +146,7 @@ func TestLoadReturnsTasksInDeterministicTopologicalOrder(t *testing.T) {
 
 func TestLoadParsesTaskFiles(t *testing.T) {
 	gitRoot := t.TempDir()
+	specsRoot := defaultSpecsRoot(gitRoot)
 	verification := md(`## Verification
 
 - 'go test ./internal/spec/' — expected: all tests pass.
@@ -151,7 +157,7 @@ func TestLoadParsesTaskFiles(t *testing.T) {
 
 - 'go vet ./...' outside the Verification section is not a command.
 `)
-	writeSpecDir(t, gitRoot, "demo", map[string]string{
+	writeSpecDir(t, specsRoot, "demo", map[string]string{
 		"_prd.md": prdFixture("active"),
 		"_tasks.md": manifestFixture("spec-tasks/v1", `    - id: task_01
       file: task_01.md
@@ -160,7 +166,7 @@ func TestLoadParsesTaskFiles(t *testing.T) {
 		"task_01.md": taskFixture("task_01", "Build the parser", "in_progress", "docs", verification),
 	})
 
-	graph, err := Load(gitRoot, "demo")
+	graph, err := Load(specsRoot, "demo")
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
@@ -171,8 +177,8 @@ func TestLoadParsesTaskFiles(t *testing.T) {
 	if task.ID != "task_01" {
 		t.Errorf("ID = %q, want %q", task.ID, "task_01")
 	}
-	if task.File != filepath.Join("docs", "specs", "demo", "task_01.md") {
-		t.Errorf("File = %q, want repository-relative task path", task.File)
+	if task.File != filepath.Join("demo", "task_01.md") {
+		t.Errorf("File = %q, want Spec Root-relative task path", task.File)
 	}
 	if task.Title != "Build the parser" {
 		t.Errorf("Title = %q, want %q", task.Title, "Build the parser")
@@ -466,10 +472,11 @@ graph:
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gitRoot := t.TempDir()
+			specsRoot := defaultSpecsRoot(gitRoot)
 			if tt.files != nil {
-				writeSpecDir(t, gitRoot, "demo", tt.files)
+				writeSpecDir(t, specsRoot, "demo", tt.files)
 			}
-			_, err := Load(gitRoot, "demo")
+			_, err := Load(specsRoot, "demo")
 			if err == nil {
 				t.Fatal("Load succeeded, want a typed validation error")
 			}
@@ -480,9 +487,10 @@ graph:
 
 func TestLoadAcceptsValidGraph(t *testing.T) {
 	gitRoot := t.TempDir()
-	writeSpecDir(t, gitRoot, "demo", diamondSpecFiles())
+	specsRoot := defaultSpecsRoot(gitRoot)
+	writeSpecDir(t, specsRoot, "demo", diamondSpecFiles())
 
-	graph, err := Load(gitRoot, "demo")
+	graph, err := Load(specsRoot, "demo")
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
@@ -499,19 +507,47 @@ func TestLoadAcceptsValidGraph(t *testing.T) {
 	}
 }
 
+func TestLoadUsesExplicitExternalSpecRoot(t *testing.T) {
+	specsRoot := filepath.Join(t.TempDir(), "external-specs")
+	writeSpecDir(t, specsRoot, "demo", diamondSpecFiles())
+
+	graph, err := Load(specsRoot, "demo")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if graph.Spec.Dir != filepath.Join(specsRoot, "demo") {
+		t.Errorf("Spec.Dir = %q, want external Spec Root path", graph.Spec.Dir)
+	}
+	if len(graph.Tasks) == 0 {
+		t.Fatal("Load returned no tasks")
+	}
+	if graph.Tasks[0].File != filepath.Join("demo", "task_01.md") {
+		t.Errorf("Task.File = %q, want Spec Root-relative path", graph.Tasks[0].File)
+	}
+
+	active, err := ListActive(specsRoot)
+	if err != nil {
+		t.Fatalf("ListActive: %v", err)
+	}
+	if len(active) != 1 || active[0].Dir != filepath.Join(specsRoot, "demo") {
+		t.Fatalf("ListActive = %+v, want demo from external Spec Root", active)
+	}
+}
+
 func TestListActiveFiltersInactiveArchivedAndNonSpecDirectories(t *testing.T) {
 	gitRoot := t.TempDir()
-	writeSpecDir(t, gitRoot, "0002-later", map[string]string{"_prd.md": prdFixture("active")})
-	writeSpecDir(t, gitRoot, "0001-early", map[string]string{"_prd.md": prdFixture("active")})
-	writeSpecDir(t, gitRoot, "0003-shipped", map[string]string{"_prd.md": prdFixture("shipped")})
-	writeSpecDir(t, gitRoot, "_archived", map[string]string{"_prd.md": prdFixture("active")})
-	writeSpecDir(t, gitRoot, "0004-broken", map[string]string{"_prd.md": "no frontmatter"})
-	if err := os.MkdirAll(filepath.Join(gitRoot, "docs", "specs", "0005-no-prd"), 0o755); err != nil {
+	specsRoot := defaultSpecsRoot(gitRoot)
+	writeSpecDir(t, specsRoot, "0002-later", map[string]string{"_prd.md": prdFixture("active")})
+	writeSpecDir(t, specsRoot, "0001-early", map[string]string{"_prd.md": prdFixture("active")})
+	writeSpecDir(t, specsRoot, "0003-shipped", map[string]string{"_prd.md": prdFixture("shipped")})
+	writeSpecDir(t, specsRoot, "_archived", map[string]string{"_prd.md": prdFixture("active")})
+	writeSpecDir(t, specsRoot, "0004-broken", map[string]string{"_prd.md": "no frontmatter"})
+	if err := os.MkdirAll(filepath.Join(specsRoot, "0005-no-prd"), 0o755); err != nil {
 		t.Fatalf("create directory: %v", err)
 	}
-	writeFile(t, filepath.Join(gitRoot, "docs", "specs", "notes.md"), "# not a spec\n")
+	writeFile(t, filepath.Join(specsRoot, "notes.md"), "# not a spec\n")
 
-	specs, err := ListActive(gitRoot)
+	specs, err := ListActive(specsRoot)
 	if err != nil {
 		t.Fatalf("ListActive: %v", err)
 	}
@@ -529,15 +565,16 @@ func TestListActiveFiltersInactiveArchivedAndNonSpecDirectories(t *testing.T) {
 
 func TestListActiveDetailedReportsSkippedSpecFolders(t *testing.T) {
 	gitRoot := t.TempDir()
-	writeSpecDir(t, gitRoot, "0001-active", map[string]string{"_prd.md": prdFixture("active")})
-	if err := os.MkdirAll(filepath.Join(gitRoot, "docs", "specs", "0002-missing-prd"), 0o755); err != nil {
+	specsRoot := defaultSpecsRoot(gitRoot)
+	writeSpecDir(t, specsRoot, "0001-active", map[string]string{"_prd.md": prdFixture("active")})
+	if err := os.MkdirAll(filepath.Join(specsRoot, "0002-missing-prd"), 0o755); err != nil {
 		t.Fatalf("create missing PRD fixture: %v", err)
 	}
-	writeSpecDir(t, gitRoot, "0003-broken-frontmatter", map[string]string{"_prd.md": "no frontmatter\n"})
-	writeSpecDir(t, gitRoot, "0004-archived-status", map[string]string{"_prd.md": prdFixture("archived")})
-	writeSpecDir(t, gitRoot, "_archived", map[string]string{"0005-old/_prd.md": prdFixture("broken")})
+	writeSpecDir(t, specsRoot, "0003-broken-frontmatter", map[string]string{"_prd.md": "no frontmatter\n"})
+	writeSpecDir(t, specsRoot, "0004-archived-status", map[string]string{"_prd.md": prdFixture("archived")})
+	writeSpecDir(t, specsRoot, "_archived", map[string]string{"0005-old/_prd.md": prdFixture("broken")})
 
-	specs, skipped, err := ListActiveDetailed(gitRoot)
+	specs, skipped, err := ListActiveDetailed(specsRoot)
 	if err != nil {
 		t.Fatalf("ListActiveDetailed: %v", err)
 	}
@@ -558,7 +595,7 @@ func TestListActiveDetailedReportsSkippedSpecFolders(t *testing.T) {
 		}
 	}
 
-	simple, err := ListActive(gitRoot)
+	simple, err := ListActive(specsRoot)
 	if err != nil {
 		t.Fatalf("ListActive: %v", err)
 	}

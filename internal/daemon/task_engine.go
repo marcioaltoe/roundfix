@@ -30,6 +30,7 @@ type TaskPlan struct {
 	Session         agent.SessionRef
 	WorkDir         string
 	RunWorktree     runworktree.Ref
+	SpecsRoot       string
 	ArtifactDir     string
 	AgentLogs       bool
 	Spec            spec.Spec
@@ -474,14 +475,23 @@ func taskPlanForTaskWorktree(plan TaskPlan, task spec.Task, taskRef runworktree.
 	taskPlan := plan
 	taskPlan.WorkDir = taskRef.Path
 	taskPlan.Session = agent.SessionRefForTask(plan.RunID, task.ID, taskRef.Path)
-	taskPlan.Spec = specForWorkDir(plan, taskRef.Path)
+	taskSpecsRoot := specsRootForTaskWorkDir(plan, taskRef.Path)
+	taskPlan.Spec = specForSpecsRoot(plan, taskSpecsRoot)
+	taskPlan.SpecsRoot = taskSpecsRoot
 	return taskPlan
 }
 
-func specForWorkDir(plan TaskPlan, workDir string) spec.Spec {
+func specsRootForTaskWorkDir(plan TaskPlan, workDir string) string {
+	if rel, err := filepath.Rel(plan.WorkDir, plan.SpecsRoot); err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel) {
+		return filepath.Join(workDir, rel)
+	}
+	return plan.SpecsRoot
+}
+
+func specForSpecsRoot(plan TaskPlan, specsRoot string) spec.Spec {
 	specRef := plan.Spec
-	if rel, err := filepath.Rel(plan.WorkDir, plan.Spec.Dir); err == nil && rel != "." && !strings.HasPrefix(rel, "..") {
-		specRef.Dir = filepath.Join(workDir, rel)
+	if rel, err := filepath.Rel(plan.SpecsRoot, plan.Spec.Dir); err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel) {
+		specRef.Dir = filepath.Join(specsRoot, rel)
 	}
 	return specRef
 }
@@ -546,7 +556,7 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 	); err != nil {
 		return "", fmt.Errorf("publish start event for run %q Task %s: %w", plan.RunID, task.ID, err)
 	}
-	taskPath := filepath.Join(plan.WorkDir, task.File)
+	taskPath := filepath.Join(plan.SpecsRoot, task.File)
 	content, err := os.ReadFile(taskPath)
 	if err != nil {
 		return "", fmt.Errorf("read Task %q file %q before the Agent: %w", task.ID, taskPath, err)
@@ -554,7 +564,7 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 	prompt, err := agent.BuildTaskPrompt(agent.TaskPromptRequest{
 		SpecSlug:    plan.Spec.Slug,
 		TaskID:      task.ID,
-		TaskPath:    task.File,
+		TaskPath:    taskPromptPath(plan, taskPath),
 		TaskContent: string(content),
 	})
 	if err != nil {
@@ -598,7 +608,7 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 			return "", fmt.Errorf("publish transport anomaly event for run %q Task %s: %w", plan.RunID, task.ID, err)
 		}
 	}
-	if err := spec.ReloadTask(plan.WorkDir, task); err != nil {
+	if err := spec.ReloadTask(plan.SpecsRoot, task); err != nil {
 		// The Agent left the task file unreadable; the Task fails and the
 		// Daemon settles the status by rewriting the frontmatter value.
 		return fmt.Sprintf("reload task file after the Agent: %v", err), nil
@@ -658,7 +668,7 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
 // never settled without passing verification.
 func (engine *Engine) settleTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, status spec.Status, reason string) error {
 	if task.Status != status {
-		taskPath := filepath.Join(plan.WorkDir, task.File)
+		taskPath := filepath.Join(plan.SpecsRoot, task.File)
 		if err := spec.SetStatus(taskPath, status); err != nil {
 			return fmt.Errorf("settle Task %s status %q for run %q: %w", task.ID, status, plan.RunID, err)
 		}
@@ -689,7 +699,7 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 	if err != nil {
 		return err
 	}
-	changed := ensureCommitPath(diffSnapshots(before, after), task.File)
+	changed := ensureCommitPath(diffSnapshots(before, after), artifactCommitPath(plan, filepath.Join(plan.SpecsRoot, task.File)))
 	message := TaskCommitMessage(plan.Spec.Slug, task)
 	if err := engine.deps.Committer.Commit(ctx, CommitRequest{
 		WorkDir: plan.WorkDir,
@@ -707,6 +717,24 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 		return fmt.Errorf("publish commit event for run %q Task %s: %w", plan.RunID, task.ID, err)
 	}
 	return nil
+}
+
+func taskPromptPath(plan TaskPlan, taskPath string) string {
+	if relative, err := filepath.Rel(plan.WorkDir, taskPath); err == nil && pathStaysInside(relative) {
+		return relative
+	}
+	return taskPath
+}
+
+func artifactCommitPath(plan TaskPlan, artifactPath string) string {
+	if relative, err := filepath.Rel(plan.WorkDir, artifactPath); err == nil && pathStaysInside(relative) {
+		return relative
+	}
+	return artifactPath
+}
+
+func pathStaysInside(relative string) bool {
+	return relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) && !filepath.IsAbs(relative)
 }
 
 // TaskCommitMessage derives the Task commit message from the task
@@ -828,7 +856,7 @@ func (engine *Engine) settleQAVerdict(plan TaskPlan) (string, string) {
 	reportPath := ""
 	if newest, err := spec.NewestQAReport(plan.Spec.Dir); err == nil {
 		reportPath = newest
-		if relative, relErr := filepath.Rel(plan.WorkDir, newest); relErr == nil {
+		if relative, relErr := filepath.Rel(plan.WorkDir, newest); relErr == nil && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) && !filepath.IsAbs(relative) {
 			reportPath = relative
 		}
 	}
@@ -947,6 +975,7 @@ func validateTaskPlan(plan TaskPlan) error {
 		"Run ID":             plan.RunID,
 		"Agent Session":      plan.Session.Name,
 		"working tree":       plan.WorkDir,
+		"Spec Root":          plan.SpecsRoot,
 		"Artifact Directory": plan.ArtifactDir,
 		"Spec slug":          plan.Spec.Slug,
 	}
