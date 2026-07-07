@@ -523,6 +523,23 @@ Journal and then follows new Run Events without mutating or stopping the Run.
 - The `SESSION.TIMELINE` pane is the wider right pane. It groups Run Events by
   Batch and event kind, including Agent plan/tool/think/status events and
   Daemon milestones such as verification, commit, QA, push, and outcome.
+- Batch groups collapse automatically by state: a Batch whose state is
+  `completed`, `failed`, or `stopped` folds to one `▶` summary row, and every
+  other Batch renders expanded under `▼`. Collapse is state-driven; no key
+  toggles it.
+- Every structured event renders as exactly one bounded summary row behind an
+  aligned timestamp gutter. Raw payloads (tool JSON, diffs, markdown bodies)
+  never render inline; full content stays in the Detail Modal.
+- The timeline pane header carries a `Live · detail hidden` /
+  `Live · detail open` indicator that follows the Detail Modal state.
+- Empty panes explain themselves per Run kind, naming what would populate
+  them — a Fetch Run, for example, reports that it writes Review artifacts to
+  disk and starts no Agent.
+- State is color-coded in capable terminals: cyan section labels and active
+  borders, green done, amber running/waiting/pending, red locked, failed, or
+  blocking, and muted gray timestamps and paths. Under `ROUNDFIX_COLOR=never`
+  or `NO_COLOR`, the layout and text markers are unchanged, so every state
+  distinction survives without color.
 - The Phase Row stays above both panes. Review Runs show
   `FETCH > TRIAGE > AGENT > VERIFY > PUSH`; spec Runs show
   `AGENT > VERIFY > COMMIT`, plus `QA` only when the Run opted into QA. Status

@@ -273,6 +273,23 @@ Press Enter to cancel without attaching. In non-interactive mode or with
 `--no-input`, missing Run ID exits `2` and names `roundfix runs list` as the
 discovery command.
 
+Interactive Runs and `attach` render the Live Run View: a `WORK QUEUE` pane
+listing Work Items next to a wider `SESSION.TIMELINE` pane grouping Run
+Events by Batch. Batch groups collapse automatically by state — a
+`completed`, `failed`, or `stopped` Batch folds to one `▶` summary row, every
+other Batch renders expanded under `▼`, and no key toggles it. Each
+structured event renders as one bounded summary row behind an aligned
+timestamp gutter; raw payloads (tool JSON, diffs, markdown bodies) never
+render inline, and full content stays in the Detail Modal. The timeline pane
+header carries a `Live · detail hidden` / `Live · detail open` indicator that
+follows the Detail Modal state. Empty panes explain themselves, naming the
+Run kind and what would populate them — a Fetch Run, for example, reports
+that it writes Review artifacts to disk and starts no Agent. State is
+color-coded in capable terminals — cyan section labels and active borders,
+green done, amber running or waiting, red locked or failed, muted gray
+timestamps and paths — and under `ROUNDFIX_COLOR=never` or `NO_COLOR` the
+same layout and text markers carry every state distinction without color.
+
 Stop a live Run gracefully, or force-stop a dead or runaway Run:
 
 ```bash
