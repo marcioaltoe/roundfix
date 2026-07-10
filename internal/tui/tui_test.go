@@ -2,6 +2,7 @@ package tui
 
 import (
 	"context"
+	"io"
 	"strconv"
 	"strings"
 	"testing"
@@ -44,7 +45,7 @@ func TestRenderInteractiveInputShowsCurrentAndConfiguredDefaults(t *testing.T) {
 }
 
 func TestCollectInputAppliesDefaultsAndUserOverrides(t *testing.T) {
-	input := strings.NewReader("\nclaude\n2\n\nsonnet\n")
+	input := strings.NewReader("\nclaude\nsonnet\nmaximum\n2\n\n")
 	var output strings.Builder
 
 	values, err := CollectInput(context.Background(), InputRequest{
@@ -54,7 +55,8 @@ func TestCollectInputAppliesDefaultsAndUserOverrides(t *testing.T) {
 			Round:       "all",
 			ArtifactDir: ".roundfix",
 		},
-		PRSuggestion: Suggestion{Value: "123", Source: "remembered"},
+		PRSuggestion:      Suggestion{Value: "123", Source: "remembered"},
+		SelectionDefaults: testSelectionDefaults(),
 	}, input, &output)
 	if err != nil {
 		t.Fatalf("collect input: %v", err)
@@ -75,8 +77,79 @@ func TestCollectInputAppliesDefaultsAndUserOverrides(t *testing.T) {
 	if values.Model != "sonnet" {
 		t.Fatalf("expected model override, got %q", values.Model)
 	}
+	if values.ReasoningEffort != "maximum" {
+		t.Fatalf("expected reasoning override, got %q", values.ReasoningEffort)
+	}
 	if !strings.Contains(output.String(), "Open Pull Request [123]:") {
 		t.Fatalf("expected prompted PR default, got %q", output.String())
+	}
+}
+
+func TestCollectInputRecomputesSelectionDefaultsWhenAgentChanges(t *testing.T) {
+	tests := []struct {
+		name             string
+		input            string
+		wantAgent        string
+		wantModel        string
+		wantReasoning    string
+		wantModelPrompt  string
+		wantEffortPrompt string
+	}{
+		{
+			name:             "same agent keeps seeded selection",
+			input:            "\n\n\n\n\n\n",
+			wantAgent:        "codex",
+			wantModel:        "configured-codex",
+			wantReasoning:    "configured-xhigh",
+			wantModelPrompt:  "Agent Model [configured-codex]:",
+			wantEffortPrompt: "Default Reasoning Effort [configured-xhigh]:",
+		},
+		{
+			name:             "changed agent uses selected runtime defaults",
+			input:            "\nclaude\n\n\n\n\n",
+			wantAgent:        "claude",
+			wantModel:        "opus",
+			wantReasoning:    "high",
+			wantModelPrompt:  "Agent Model [opus]:",
+			wantEffortPrompt: "Default Reasoning Effort [high]:",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var output strings.Builder
+
+			values, err := CollectInput(context.Background(), InputRequest{
+				Command: "resolve",
+				Values: CommandValues{
+					PRNumber:        "123",
+					Agent:           "codex",
+					Model:           "configured-codex",
+					ReasoningEffort: "configured-xhigh",
+					Round:           "all",
+					ArtifactDir:     ".roundfix",
+				},
+				SelectionDefaults: testSelectionDefaults(),
+			}, strings.NewReader(tt.input), &output)
+			if err != nil {
+				t.Fatalf("collect input: %v", err)
+			}
+
+			if values.Agent != tt.wantAgent {
+				t.Fatalf("expected agent %q, got %q", tt.wantAgent, values.Agent)
+			}
+			if values.Model != tt.wantModel {
+				t.Fatalf("expected model %q, got %q", tt.wantModel, values.Model)
+			}
+			if values.ReasoningEffort != tt.wantReasoning {
+				t.Fatalf("expected reasoning effort %q, got %q", tt.wantReasoning, values.ReasoningEffort)
+			}
+			if !strings.Contains(output.String(), tt.wantModelPrompt) {
+				t.Fatalf("expected model prompt %q, got:\n%s", tt.wantModelPrompt, output.String())
+			}
+			if !strings.Contains(output.String(), tt.wantEffortPrompt) {
+				t.Fatalf("expected reasoning prompt %q, got:\n%s", tt.wantEffortPrompt, output.String())
+			}
+		})
 	}
 }
 
@@ -86,18 +159,19 @@ func TestCollectInputSpecPickerSelectsListedSpec(t *testing.T) {
 		input    string
 		wantSpec string
 	}{
-		{name: "by number", input: "2\nclaude\n", wantSpec: "0002-other-flow"},
-		{name: "by slug", input: "0001-widget-flow\nclaude\n", wantSpec: "0001-widget-flow"},
-		{name: "out-of-range number passes through", input: "9\nclaude\n", wantSpec: "9"},
+		{name: "by number", input: "2\nclaude\n\n\n", wantSpec: "0002-other-flow"},
+		{name: "by slug", input: "0001-widget-flow\nclaude\n\n\n", wantSpec: "0001-widget-flow"},
+		{name: "out-of-range number passes through", input: "9\nclaude\n\n\n", wantSpec: "9"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var output strings.Builder
 
 			values, err := CollectInput(context.Background(), InputRequest{
-				Command:     "implement",
-				Values:      CommandValues{Agent: "codex"},
-				SpecOptions: []string{"0001-widget-flow", "0002-other-flow"},
+				Command:           "implement",
+				Values:            CommandValues{Agent: "codex"},
+				SelectionDefaults: testSelectionDefaults(),
+				SpecOptions:       []string{"0001-widget-flow", "0002-other-flow"},
 			}, strings.NewReader(tt.input), &output)
 			if err != nil {
 				t.Fatalf("collect input: %v", err)
@@ -116,6 +190,8 @@ func TestCollectInputSpecPickerSelectsListedSpec(t *testing.T) {
 				"Pick a Spec by number or slug.",
 				"Spec []:",
 				"Agent [codex]:",
+				"Agent Model [opus]:",
+				"Default Reasoning Effort [high]:",
 			} {
 				if !strings.Contains(output.String(), expected) {
 					t.Fatalf("expected the Spec picker to show %q, got:\n%s", expected, output.String())
@@ -133,9 +209,9 @@ func TestCollectInputImplementQAGate(t *testing.T) {
 		wantQA     bool
 		wantPrompt string
 	}{
-		{name: "yes enables QA", input: "\n\ny\n", wantQA: true, wantPrompt: "QA gate [y/N]:"},
-		{name: "empty keeps QA disabled", input: "\n\n\n", wantQA: false, wantPrompt: "QA gate [y/N]:"},
-		{name: "empty keeps QA flag default", input: "\n\n\n", defaultQA: true, wantQA: true, wantPrompt: "QA gate [Y/n]:"},
+		{name: "yes enables QA", input: "\n\n\n\ny\n", wantQA: true, wantPrompt: "QA gate [y/N]:"},
+		{name: "empty keeps QA disabled", input: "\n\n\n\n\n", wantQA: false, wantPrompt: "QA gate [y/N]:"},
+		{name: "empty keeps QA flag default", input: "\n\n\n\n\n", defaultQA: true, wantQA: true, wantPrompt: "QA gate [Y/n]:"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -148,6 +224,7 @@ func TestCollectInputImplementQAGate(t *testing.T) {
 					Agent: "codex",
 					QA:    tt.defaultQA,
 				},
+				SelectionDefaults: testSelectionDefaults(),
 			}, strings.NewReader(tt.input), &output)
 			if err != nil {
 				t.Fatalf("collect input: %v", err)
@@ -166,9 +243,10 @@ func TestCollectInputImplementQAGateInvalidInputRepromptsOnce(t *testing.T) {
 	var output strings.Builder
 
 	_, err := CollectInput(context.Background(), InputRequest{
-		Command: "implement",
-		Values:  CommandValues{Spec: "0001-widget-flow", Agent: "codex"},
-	}, strings.NewReader("\n\nmaybe\nlater\n"), &output)
+		Command:           "implement",
+		Values:            CommandValues{Spec: "0001-widget-flow", Agent: "codex"},
+		SelectionDefaults: testSelectionDefaults(),
+	}, strings.NewReader("\n\n\n\nmaybe\nlater\n"), &output)
 
 	if err == nil {
 		t.Fatal("expected invalid QA input to fail")
@@ -181,25 +259,168 @@ func TestCollectInputImplementQAGateInvalidInputRepromptsOnce(t *testing.T) {
 	}
 }
 
+func TestCollectInputDisplaysCodexCatalogAndMapsNumbers(t *testing.T) {
+	var output strings.Builder
+
+	values, err := CollectInput(context.Background(), InputRequest{
+		Command: "resolve",
+		Values: CommandValues{
+			PRNumber:    "123",
+			Agent:       "codex",
+			Round:       "all",
+			ArtifactDir: ".roundfix",
+		},
+		SelectionDefaults: testSelectionDefaults(),
+	}, strings.NewReader("\n\n1\n4\n\n\n"), &output)
+	if err != nil {
+		t.Fatalf("collect input: %v", err)
+	}
+
+	if values.Model != "gpt-5.6-sol" {
+		t.Fatalf("expected first Codex catalog model, got %q", values.Model)
+	}
+	if values.ReasoningEffort != "xhigh" {
+		t.Fatalf("expected fourth Codex reasoning choice, got %q", values.ReasoningEffort)
+	}
+	assertContainsInOrder(t, output.String(),
+		"Agent Model Choices (codex):",
+		"1. gpt-5.6-sol",
+		"2. gpt-5.6-terra",
+		"3. gpt-5.6-luna",
+		"4. gpt-5.5",
+		"5. gpt-5.4",
+		"6. gpt-5.4-mini",
+		"7. gpt-5.3-codex-spark",
+	)
+	if strings.Contains(output.String(), "Custom") {
+		t.Fatalf("expected no synthetic Custom catalog entry, got:\n%s", output.String())
+	}
+}
+
+func TestCollectInputDisplaysClaudeCatalogDefaultAsConcreteModel(t *testing.T) {
+	defaults := testSelectionDefaults()
+	claude := defaults["claude"]
+	claude.Model = "claude-project-default"
+	defaults["claude"] = claude
+	var output strings.Builder
+
+	values, err := CollectInput(context.Background(), InputRequest{
+		Command: "resolve",
+		Values: CommandValues{
+			PRNumber:    "123",
+			Agent:       "claude",
+			Round:       "all",
+			ArtifactDir: ".roundfix",
+		},
+		SelectionDefaults: defaults,
+	}, strings.NewReader("\n\n1\n2\n\n\n"), &output)
+	if err != nil {
+		t.Fatalf("collect input: %v", err)
+	}
+
+	if values.Model != "claude-project-default" {
+		t.Fatalf("expected Claude Default to resolve to configured model, got %q", values.Model)
+	}
+	if values.ReasoningEffort != "high" {
+		t.Fatalf("expected Claude reasoning choice, got %q", values.ReasoningEffort)
+	}
+	assertContainsInOrder(t, output.String(),
+		"Agent Model Choices (claude):",
+		"1. Default -> claude-project-default",
+		"2. Opus -> opus",
+		"3. Fable -> fable",
+		"4. Sonnet -> sonnet",
+		"5. Haiku -> haiku",
+	)
+	if strings.Contains(output.String(), "Custom") {
+		t.Fatalf("expected no synthetic Custom catalog entry, got:\n%s", output.String())
+	}
+}
+
+func TestCollectInputPreservesCustomModelAndReasoningValues(t *testing.T) {
+	values, err := CollectInput(context.Background(), InputRequest{
+		Command: "resolve",
+		Values: CommandValues{
+			PRNumber:    "123",
+			Agent:       "codex",
+			Round:       "all",
+			ArtifactDir: ".roundfix",
+		},
+		SelectionDefaults: testSelectionDefaults(),
+	}, strings.NewReader("\n\nfuture-model\nexperimental-reasoning\n\n\n"), io.Discard)
+	if err != nil {
+		t.Fatalf("collect input: %v", err)
+	}
+	if values.Model != "future-model" || values.ReasoningEffort != "experimental-reasoning" {
+		t.Fatalf("expected custom values to survive, got %#v", values)
+	}
+}
+
+func TestCollectInputOpenCodeRequiresTypedOrConfiguredSelectionValues(t *testing.T) {
+	tests := []struct {
+		name     string
+		defaults RuntimeSelectionDefaults
+		input    string
+		want     string
+	}{
+		{
+			name:  "missing model",
+			input: "\n\n\n",
+			want:  "Agent Model",
+		},
+		{
+			name:     "missing reasoning",
+			defaults: RuntimeSelectionDefaults{Model: "opencode-model"},
+			input:    "\n\n\n\n",
+			want:     "Default Reasoning Effort",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defaults := testSelectionDefaults()
+			defaults["opencode"] = tt.defaults
+			var output strings.Builder
+
+			_, err := CollectInput(context.Background(), InputRequest{
+				Command:           "implement",
+				Values:            CommandValues{Spec: "0001-widget-flow", Agent: "opencode"},
+				SelectionDefaults: defaults,
+			}, strings.NewReader(tt.input), &output)
+
+			if err == nil {
+				t.Fatal("expected missing OpenCode selection to fail")
+			}
+			if !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("expected error to name %q, got %v", tt.want, err)
+			}
+			if strings.Contains(output.String(), "Agent Model Choices (opencode):") {
+				t.Fatalf("expected no fabricated OpenCode catalog, got:\n%s", output.String())
+			}
+		})
+	}
+}
+
 func TestRenderLiveRunViewGroupsIssuesAndShowsStatusStrips(t *testing.T) {
 	view := RenderLiveRunView(LiveRunView{
-		Command:       "resolve",
-		Repository:    "owner/project",
-		PRNumber:      "123",
-		HeadBranch:    "feature/review",
-		ReviewSource:  "CodeRabbit",
-		Agent:         "Codex",
-		HEAD:          "abc123",
-		RunID:         "run_123",
-		PipelineState: "ResolvingWithAgent",
-		BudgetState:   "38m / 2h",
-		GitState:      "clean, 1 unpushed commit",
-		CurrentRound:  2,
-		MaxRounds:     6,
-		AutoCommit:    true,
-		AutoPush:      true,
-		LastPush:      "pending",
-		Width:         100,
+		Command:         "resolve",
+		Repository:      "owner/project",
+		PRNumber:        "123",
+		HeadBranch:      "feature/review",
+		ReviewSource:    "CodeRabbit",
+		Agent:           "Codex",
+		Model:           "gpt-5.5",
+		ReasoningEffort: "xhigh",
+		HEAD:            "abc123",
+		RunID:           "run_123",
+		PipelineState:   "ResolvingWithAgent",
+		BudgetState:     "38m / 2h",
+		GitState:        "clean, 1 unpushed commit",
+		CurrentRound:    2,
+		MaxRounds:       6,
+		AutoCommit:      true,
+		AutoPush:        true,
+		LastPush:        "pending",
+		Width:           100,
 		Issues: []rounds.Issue{
 			{Round: 2, Title: "fix stale readme", Severity: "minor", Status: rounds.StatusPending, File: "README.md", Line: 12},
 			{Round: 1, Title: "guard auth cache", Severity: "major", Status: rounds.StatusResolved, File: "api/auth.go", Line: 88},
@@ -218,6 +439,8 @@ func TestRenderLiveRunViewGroupsIssuesAndShowsStatusStrips(t *testing.T) {
 		"Branch: feature/review",
 		"Source: CodeRabbit",
 		"Agent: Codex",
+		"Agent Model: gpt-5.5",
+		"Default Reasoning Effort: xhigh",
 		"HEAD: abc123",
 		"Run:",
 		"ID: run_123",
@@ -259,25 +482,27 @@ func TestRenderLiveRunViewGroupsIssuesAndShowsStatusStrips(t *testing.T) {
 
 func TestRenderLiveRunViewSpecRunRendersTasksAsWorkItems(t *testing.T) {
 	view := RenderLiveRunView(LiveRunView{
-		Command:       "implement",
-		RunKind:       store.KindImplement,
-		SpecSlug:      "0001-widget-flow",
-		GitRoot:       "/repo",
-		WorkDir:       "/home/user/.roundfix/worktrees/repo/run_9",
-		HeadBranch:    "ma/widget-flow",
-		Agent:         "Codex",
-		HEAD:          "abc123",
-		RunID:         "run_9",
-		PipelineState: "ResolvingWithAgent",
-		Concurrency:   2,
-		BudgetState:   "38m / 2h",
-		GitState:      "clean, 1 unpushed commit",
-		CurrentRound:  2,
-		MaxRounds:     6,
-		AutoCommit:    true,
-		AutoPush:      false,
-		LastPush:      "disabled",
-		Width:         100,
+		Command:         "implement",
+		RunKind:         store.KindImplement,
+		SpecSlug:        "0001-widget-flow",
+		GitRoot:         "/repo",
+		WorkDir:         "/home/user/.roundfix/worktrees/repo/run_9",
+		HeadBranch:      "ma/widget-flow",
+		Agent:           "Codex",
+		Model:           "gpt-5.5",
+		ReasoningEffort: "xhigh",
+		HEAD:            "abc123",
+		RunID:           "run_9",
+		PipelineState:   "ResolvingWithAgent",
+		Concurrency:     2,
+		BudgetState:     "38m / 2h",
+		GitState:        "clean, 1 unpushed commit",
+		CurrentRound:    2,
+		MaxRounds:       6,
+		AutoCommit:      true,
+		AutoPush:        false,
+		LastPush:        "disabled",
+		Width:           100,
 		Tasks: []spec.Task{
 			{ID: "task_01", Title: "Build core", Status: spec.StatusCompleted},
 			{ID: "task_02", Title: "Wire API", Status: spec.StatusInProgress},
@@ -291,6 +516,8 @@ func TestRenderLiveRunViewSpecRunRendersTasksAsWorkItems(t *testing.T) {
 		"Spec: 0001-widget-flow",
 		"Branch: ma/widget-flow",
 		"Agent: Codex",
+		"Agent Model: gpt-5.5",
+		"Default Reasoning Effort: xhigh",
 		"Run:",
 		"ID: run_9",
 		"State: ResolvingWithAgent",
@@ -323,6 +550,44 @@ func TestRenderLiveRunViewSpecRunRendersTasksAsWorkItems(t *testing.T) {
 	}
 	if strings.Index(view, "task_01") > strings.Index(view, "task_02") || strings.Index(view, "task_02") > strings.Index(view, "task_03") {
 		t.Fatalf("expected Tasks rendered in Task Graph order, got:\n%s", view)
+	}
+}
+
+func TestRenderLiveRunViewShowsLegacyEmptySelectionAsDash(t *testing.T) {
+	view := RenderLiveRunView(LiveRunView{
+		Command:       "attach",
+		Repository:    "owner/project",
+		PRNumber:      "123",
+		HeadBranch:    "feature/review",
+		ReviewSource:  "CodeRabbit",
+		Agent:         "Codex",
+		RunID:         "run_legacy",
+		PipelineState: "Clean",
+	})
+
+	for _, expected := range []string{
+		"Agent: Codex",
+		"Agent Model: -",
+		"Default Reasoning Effort: -",
+	} {
+		if !strings.Contains(view, expected) {
+			t.Fatalf("expected legacy selection display %q, got:\n%s", expected, view)
+		}
+	}
+}
+
+func TestRenderAgentTimelineDoesNotRenderAutoModelPlaceholder(t *testing.T) {
+	timeline := stripANSI(renderAgentTimeline(LiveRunView{
+		Agent:           "Codex",
+		Model:           "",
+		ReasoningEffort: "",
+	}, nil, 80, 8))
+
+	if strings.Contains(timeline, "auto") {
+		t.Fatalf("expected empty selection to render as dash, got:\n%s", timeline)
+	}
+	if !strings.Contains(timeline, "0 entries · Codex · - · -") {
+		t.Fatalf("expected model and reasoning dash placeholders, got:\n%s", timeline)
 	}
 }
 
@@ -467,5 +732,37 @@ func TestRunTimelineRendersToolEventsFromRawPayloads(t *testing.T) {
 	}
 	if !strings.Contains(lines, "SESSION COMPLETED") {
 		t.Fatalf("expected session status rendered, got %q", lines)
+	}
+}
+
+func testSelectionDefaults() map[string]RuntimeSelectionDefaults {
+	return map[string]RuntimeSelectionDefaults{
+		"codex": {
+			Model:           "gpt-5.5",
+			ReasoningEffort: "xhigh",
+			ModelCatalog: []ModelChoice{
+				{Label: "gpt-5.6-sol", Value: "gpt-5.6-sol"},
+				{Label: "gpt-5.6-terra", Value: "gpt-5.6-terra"},
+				{Label: "gpt-5.6-luna", Value: "gpt-5.6-luna"},
+				{Label: "gpt-5.5", Value: "gpt-5.5"},
+				{Label: "gpt-5.4", Value: "gpt-5.4"},
+				{Label: "gpt-5.4-mini", Value: "gpt-5.4-mini"},
+				{Label: "gpt-5.3-codex-spark", Value: "gpt-5.3-codex-spark"},
+			},
+			ReasoningChoices: []string{"low", "medium", "high", "xhigh"},
+		},
+		"claude": {
+			Model:           "opus",
+			ReasoningEffort: "high",
+			ModelCatalog: []ModelChoice{
+				{Label: "Default", Value: "default"},
+				{Label: "Opus", Value: "opus"},
+				{Label: "Fable", Value: "fable"},
+				{Label: "Sonnet", Value: "sonnet"},
+				{Label: "Haiku", Value: "haiku"},
+			},
+			ReasoningChoices: []string{"default", "high", "maximum"},
+		},
+		"opencode": {},
 	}
 }

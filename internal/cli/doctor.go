@@ -78,11 +78,7 @@ func parseDoctorCommand(args []string) error {
 }
 
 func doctorAgentCheck(ctx context.Context, checker HealthChecker, loaded roundconfig.Loaded) CheckResult {
-	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
-		Agent:            loaded.Config.Defaults.Agent,
-		Model:            loaded.Config.Defaults.Model,
-		EnableFullAccess: loaded.Config.Defaults.AgentFullAccess,
-	})
+	runtime, err := runtimeForConfiguredAgent(loaded.Config)
 	if err != nil {
 		return CheckResult{
 			Name:   HealthCheckAgent,
@@ -90,7 +86,10 @@ func doctorAgentCheck(ctx context.Context, checker HealthChecker, loaded roundco
 			Detail: err.Error(),
 		}
 	}
-	return checker.Agent(ctx, runtime)
+	return checker.Agent(ctx, agent.ProbeRequest{
+		Runtime: runtime,
+		WorkDir: loaded.GitRoot,
+	})
 }
 
 func printDoctorResult(stdout io.Writer, result CheckResult) {

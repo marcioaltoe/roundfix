@@ -459,22 +459,24 @@ func implementTaskPathInRoot(specsRoot string, slug string, taskID string) strin
 // Spec's QA Report, the way the qa-gate Agent does; an empty qaReport
 // writes none.
 type implementFakeRunner struct {
-	mu           sync.Mutex
-	gitRoot      string
-	statusByTask map[string]spec.Status
-	errByTask    map[string]error
-	probeErr     error
-	calls        int
-	taskIDs      []string
-	qaReport     string
-	qaCalls      int
-	logPaths     []string
-	writeLogs    bool
-	agentOutput  string
-	onTask       func(req agent.ExecuteRequest, taskID string) error
+	mu            sync.Mutex
+	gitRoot       string
+	statusByTask  map[string]spec.Status
+	errByTask     map[string]error
+	probeErr      error
+	probeRequests []agent.ProbeRequest
+	calls         int
+	taskIDs       []string
+	qaReport      string
+	qaCalls       int
+	logPaths      []string
+	writeLogs     bool
+	agentOutput   string
+	onTask        func(req agent.ExecuteRequest, taskID string) error
 }
 
-func (runner *implementFakeRunner) Probe(context.Context, agent.RuntimeSpec) error {
+func (runner *implementFakeRunner) Probe(_ context.Context, req agent.ProbeRequest) error {
+	runner.probeRequests = append(runner.probeRequests, req)
 	return runner.probeErr
 }
 
@@ -894,6 +896,7 @@ func TestRunImplementHelpListsExactlyImplementedFlags(t *testing.T) {
 		"--qa":                true,
 		"--agent":             true,
 		"--model":             true,
+		"--reasoning-effort":  true,
 		"--agent-command":     true,
 		"--agent-full-access": true,
 		"--detach":            true,
@@ -1136,7 +1139,7 @@ func TestRunImplementInteractiveInputPicksSpecThroughCollector(t *testing.T) {
 		inputReq = req
 		// Drive the real collector synchronously: pick the first listed
 		// Spec by number and override the Agent.
-		return roundtui.CollectInput(ctx, req, strings.NewReader("1\nclaude\n"), &collected)
+		return roundtui.CollectInput(ctx, req, strings.NewReader("1\nclaude\n\n\n"), &collected)
 	})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -1252,7 +1255,7 @@ func TestRunImplementInteractiveInputListsConfiguredExternalSpecRoot(t *testing.
 	var collected strings.Builder
 	withInteractiveInput(t, func(ctx context.Context, req roundtui.InputRequest) (roundtui.CommandValues, error) {
 		inputReq = req
-		return roundtui.CollectInput(ctx, req, strings.NewReader("1\ncodex\n"), &collected)
+		return roundtui.CollectInput(ctx, req, strings.NewReader("1\ncodex\n\n\n"), &collected)
 	})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -1286,9 +1289,9 @@ func TestRunImplementInteractiveInputMergesQAGateChoice(t *testing.T) {
 		qaReport    string
 		wantQACalls int
 	}{
-		{name: "scripted yes produces QA Run", args: []string{"implement"}, input: "1\ncodex\ny\n", qaReport: implementQAReport("pass"), wantQACalls: 1},
-		{name: "empty input produces non-QA Run", args: []string{"implement"}, input: "1\ncodex\n\n", wantQACalls: 0},
-		{name: "qa flag preset keeps QA on with enter", args: []string{"implement", "--qa"}, input: "1\ncodex\n\n", qaReport: implementQAReport("pass"), wantQACalls: 1},
+		{name: "scripted yes produces QA Run", args: []string{"implement"}, input: "1\ncodex\n\n\ny\n", qaReport: implementQAReport("pass"), wantQACalls: 1},
+		{name: "empty input produces non-QA Run", args: []string{"implement"}, input: "1\ncodex\n\n\n\n", wantQACalls: 0},
+		{name: "qa flag preset keeps QA on with enter", args: []string{"implement", "--qa"}, input: "1\ncodex\n\n\n\n", qaReport: implementQAReport("pass"), wantQACalls: 1},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1359,7 +1362,7 @@ func TestRunImplementInteractiveInputRemembersAgentButNotSpecOrQA(t *testing.T) 
 	var secondCollected strings.Builder
 	withInteractiveInput(t, func(_ context.Context, req roundtui.InputRequest) (roundtui.CommandValues, error) {
 		secondReq = req
-		return roundtui.CollectInput(context.Background(), req, strings.NewReader("1\n\n\n"), &secondCollected)
+		return roundtui.CollectInput(context.Background(), req, strings.NewReader("1\n\n\n\n\n"), &secondCollected)
 	})
 	stdout.Reset()
 	stderr.Reset()
@@ -2713,7 +2716,8 @@ func TestRunImplementPreflightRejectsActiveRunInWorkingTree(t *testing.T) {
 
 func TestRunImplementPreflightProbeFailureCreatesNoRun(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
-	withImplementCollaborators(t, &implementFakeRunner{gitRoot: repoDir, probeErr: errors.New("codex-acp is not on PATH")})
+	runner := &implementFakeRunner{gitRoot: repoDir, probeErr: errors.New("codex-acp is not on PATH")}
+	withImplementCollaborators(t, runner)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -2725,7 +2729,116 @@ func TestRunImplementPreflightProbeFailureCreatesNoRun(t *testing.T) {
 	if !strings.Contains(stderr.String(), "codex-acp is not on PATH") {
 		t.Fatalf("expected the probe failure reason, got %q", stderr.String())
 	}
+	if len(runner.probeRequests) != 1 || runner.probeRequests[0].WorkDir != repoDir {
+		t.Fatalf("expected one selection preflight in git root %q, got %#v", repoDir, runner.probeRequests)
+	}
 	assertRunCount(t, store.DatabasePath(homeDir), 0)
+}
+
+func TestRunImplementPassesOneRunSelectionOverridesToPreflight(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	runner := &implementFakeRunner{gitRoot: repoDir, probeErr: errors.New("stop after selection preflight")}
+	withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{
+		"implement",
+		"--spec", implementTestSlug,
+		"--agent", "codex",
+		"--model", "future-model",
+		"--reasoning-effort", "experimental-reasoning",
+		"--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout diagnostics, got %q", stdout.String())
+	}
+	if len(runner.probeRequests) != 1 {
+		t.Fatalf("expected one selection preflight, got %#v", runner.probeRequests)
+	}
+	got := runner.probeRequests[0].Runtime
+	if got.Model != "future-model" || got.ReasoningEffort != "experimental-reasoning" {
+		t.Fatalf("expected one-Run selection overrides at preflight, got %#v", got)
+	}
+	assertRunCount(t, store.DatabasePath(homeDir), 0)
+}
+
+func TestRunImplementPersistsEffectiveSelection(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Store selection"}})
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{
+		"implement",
+		"--spec", implementTestSlug,
+		"--agent", "codex",
+		"--model", "stored-implement-model",
+		"--reasoning-effort", "stored-implement-reasoning",
+		"--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected clean implement exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	run := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
+	if run.Model != "stored-implement-model" || run.ReasoningEffort != "stored-implement-reasoning" {
+		t.Fatalf("expected stored implement selection, got %#v", run)
+	}
+	if !strings.Contains(stderr.String(), "Agent Model: stored-implement-model") ||
+		!strings.Contains(stderr.String(), "Default Reasoning Effort: stored-implement-reasoning") {
+		t.Fatalf("expected implement progress to show concrete selection, got %q", stderr.String())
+	}
+	if strings.Contains(stderr.String(), "auto") {
+		t.Fatalf("expected no auto selection placeholder, got %q", stderr.String())
+	}
+}
+
+func TestRunImplementRejectsExplicitEmptySelectionOverrides(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{
+			name: "model",
+			args: []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--model=", "--no-input"},
+			want: "--model cannot be empty",
+		},
+		{
+			name: "reasoning",
+			args: []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--reasoning-effort=", "--no-input"},
+			want: "--reasoning-effort cannot be empty",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, _ := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("expected no stdout diagnostics, got %q", stdout.String())
+			}
+			if !strings.Contains(stderr.String(), tt.want) {
+				t.Fatalf("expected stderr to contain %q, got %q", tt.want, stderr.String())
+			}
+			assertRunCount(t, store.DatabasePath(homeDir), 0)
+		})
+	}
 }
 
 func TestRunImplementAllTasksCompletedReportsWithoutRun(t *testing.T) {

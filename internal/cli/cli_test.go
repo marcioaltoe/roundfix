@@ -245,12 +245,12 @@ func TestRunCommandHelp(t *testing.T) {
 		{
 			name:     "resolve",
 			args:     []string{"resolve", "--help"},
-			contains: []string{"roundfix resolve --pr <number> --agent <agent>", "--no-agent-console", "--detach"},
+			contains: []string{"roundfix resolve --pr <number> --agent <agent>", "--reasoning-effort", "--no-agent-console", "--detach"},
 		},
 		{
 			name:     "watch",
 			args:     []string{"watch", "--help"},
-			contains: []string{"roundfix watch --source coderabbit --pr <number> --agent <agent>", "--until-clean", "Review Source check succeeds", "--no-agent-console", "--detach"},
+			contains: []string{"roundfix watch --source coderabbit --pr <number> --agent <agent>", "--reasoning-effort", "--until-clean", "Review Source check succeeds", "--no-agent-console", "--detach"},
 		},
 		{
 			name:     "setup",
@@ -780,13 +780,53 @@ func TestRunDoctorReportsReadinessChecks(t *testing.T) {
 			if stderr.Len() != 0 {
 				t.Fatalf("expected no stderr, got %q", stderr.String())
 			}
-			if len(tt.checker.agentRuntimes) != 1 || tt.checker.agentRuntimes[0].ID != "codex" {
-				t.Fatalf("expected configured codex runtime probe, got %#v", tt.checker.agentRuntimes)
+			if len(tt.checker.agentRequests) != 1 {
+				t.Fatalf("expected one configured codex probe, got %#v", tt.checker.agentRequests)
+			}
+			gotProbe := tt.checker.agentRequests[0]
+			if gotProbe.WorkDir != "/repo/project" ||
+				gotProbe.Runtime.ID != "codex" ||
+				gotProbe.Runtime.Model != "gpt-5.5" ||
+				gotProbe.Runtime.ReasoningEffort != "xhigh" {
+				t.Fatalf("expected configured codex selection probe in repo workdir, got %#v", gotProbe)
 			}
 			assertDoctorPathMissing(t, filepath.Join(homeDir, ".acpx"))
 			assertDoctorPathMissing(t, filepath.Join(homeDir, ".roundfix"))
 			assertDoctorPathMissing(t, filepath.Join(repoDir, ".roundfixrc.yml"))
 		})
+	}
+}
+
+func TestRunDoctorRejectsMissingConfiguredAgentSelection(t *testing.T) {
+	config := roundconfig.Builtin()
+	config.Runtimes.Codex.ReasoningEffort = ""
+	checker := newDoctorFakeHealthChecker(
+		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
+		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
+		CheckResult{Name: HealthCheckAgent, Status: CheckStatusOK, Detail: "should not run"},
+		CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK, Detail: "/home/roundfix/.local/bin/codex accepted"},
+	)
+	withDoctorFakeLoaded(t, checker, roundconfig.Loaded{
+		Config:  config,
+		GitRoot: "/repo/project",
+		HomeDir: "/home/roundfix-test",
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"doctor"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected doctor selection failure exit %d, got %d", exitRunFailed, code)
+	}
+	if !strings.Contains(stdout.String(), `agent: failed (agent selection for runtime "codex" missing reasoning_effort`) {
+		t.Fatalf("expected missing selection diagnostic, got %q", stdout.String())
+	}
+	if len(checker.agentRequests) != 0 {
+		t.Fatalf("expected invalid selection to skip readiness probe, got %#v", checker.agentRequests)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
 	}
 }
 
@@ -821,7 +861,7 @@ type doctorFakeHealthChecker struct {
 	acpx          CheckResult
 	agentResult   CheckResult
 	codex         CheckResult
-	agentRuntimes []agent.RuntimeSpec
+	agentRequests []agent.ProbeRequest
 }
 
 func (checker *doctorFakeHealthChecker) Node(context.Context) CheckResult {
@@ -832,8 +872,8 @@ func (checker *doctorFakeHealthChecker) ACPX(context.Context) CheckResult {
 	return checker.acpx
 }
 
-func (checker *doctorFakeHealthChecker) Agent(_ context.Context, runtime agent.RuntimeSpec) CheckResult {
-	checker.agentRuntimes = append(checker.agentRuntimes, runtime)
+func (checker *doctorFakeHealthChecker) Agent(_ context.Context, req agent.ProbeRequest) CheckResult {
+	checker.agentRequests = append(checker.agentRequests, req)
 	return checker.agentResult
 }
 
@@ -843,14 +883,19 @@ func (checker *doctorFakeHealthChecker) Codex(context.Context) CheckResult {
 
 func withDoctorFakeDeps(t *testing.T, checker HealthChecker) {
 	t.Helper()
+	withDoctorFakeLoaded(t, checker, roundconfig.Loaded{
+		Config:  roundconfig.Builtin(),
+		GitRoot: "/repo/project",
+		HomeDir: "/home/roundfix-test",
+	})
+}
+
+func withDoctorFakeLoaded(t *testing.T, checker HealthChecker, loaded roundconfig.Loaded) {
+	t.Helper()
 	old := doctorDeps
 	doctorDeps = doctorDependencies{
 		loadConfig: func(roundconfig.LoadOptions) (roundconfig.Loaded, error) {
-			return roundconfig.Loaded{
-				Config:  roundconfig.Builtin(),
-				GitRoot: "/repo/project",
-				HomeDir: "/home/roundfix-test",
-			}, nil
+			return loaded, nil
 		},
 		healthChecker: func(roundconfig.Loaded) HealthChecker {
 			return checker
@@ -968,6 +1013,64 @@ func TestRunSetupHealthyMachineIsIdempotent(t *testing.T) {
 	})
 	if len(fake.installCalls) != 0 || len(fake.initScopes) != 0 || len(fake.writeCalls) != 0 || len(fake.prompts) != 0 {
 		t.Fatalf("expected idempotent setup to avoid side effects, installs=%v init=%v writes=%v prompts=%v", fake.installCalls, fake.initScopes, fake.writeCalls, fake.prompts)
+	}
+	if len(fake.probeRequests) != 1 {
+		t.Fatalf("expected one Agent readiness probe, got %#v", fake.probeRequests)
+	}
+	gotProbe := fake.probeRequests[0]
+	if gotProbe.WorkDir != fake.gitRoot ||
+		gotProbe.Runtime.ID != "codex" ||
+		gotProbe.Runtime.Model != "gpt-5.5" ||
+		gotProbe.Runtime.ReasoningEffort != "xhigh" {
+		t.Fatalf("expected setup to probe the effective Codex selection in the repo workdir, got %#v", gotProbe)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+}
+
+func TestRunSetupAgentProbeUsesConfiguredSelectionAndWorkDir(t *testing.T) {
+	fake := newSetupFakeDeps()
+	fake.config.Runtimes.Codex.Model = "repo-codex"
+	fake.config.Runtimes.Codex.ReasoningEffort = "repo-xhigh"
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected setup exit 0, got %d (stdout %q stderr %q)", code, stdout.String(), stderr.String())
+	}
+	if len(fake.probeRequests) != 1 {
+		t.Fatalf("expected one Agent readiness probe, got %#v", fake.probeRequests)
+	}
+	gotProbe := fake.probeRequests[0]
+	if gotProbe.WorkDir != fake.gitRoot ||
+		gotProbe.Runtime.ID != "codex" ||
+		gotProbe.Runtime.Model != "repo-codex" ||
+		gotProbe.Runtime.ReasoningEffort != "repo-xhigh" {
+		t.Fatalf("expected setup probe to use configured Agent selection, got %#v", gotProbe)
+	}
+}
+
+func TestRunSetupRejectsMissingConfiguredAgentSelection(t *testing.T) {
+	fake := newSetupFakeDeps()
+	fake.config.Runtimes.Codex.Model = ""
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected setup selection failure exit %d, got %d", exitRunFailed, code)
+	}
+	if !strings.Contains(stdout.String(), `agent probe: failed (agent selection for runtime "codex" missing model`) {
+		t.Fatalf("expected missing selection diagnostic, got %q", stdout.String())
+	}
+	if len(fake.probeRequests) != 0 {
+		t.Fatalf("expected invalid selection to skip readiness probe, got %#v", fake.probeRequests)
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
@@ -1122,7 +1225,10 @@ func TestRunSetupExitCodes(t *testing.T) {
 
 func TestHealthCheckerReturnsStructuredReadOnlyResults(t *testing.T) {
 	ctx := context.Background()
-	runtime := agent.RuntimeSpec{ID: "codex"}
+	req := agent.ProbeRequest{
+		Runtime: agent.RuntimeSpec{ID: "codex", Model: "gpt-5.5", ReasoningEffort: "xhigh"},
+		WorkDir: "/repo/project",
+	}
 	probed := false
 	checker := newHealthChecker(healthCheckDependencies{
 		nodeVersion: func(context.Context) (string, error) {
@@ -1131,10 +1237,10 @@ func TestHealthCheckerReturnsStructuredReadOnlyResults(t *testing.T) {
 		acpxVersion: func(context.Context) (string, error) {
 			return agent.PinnedACPXVersion + "\n", nil
 		},
-		probeAgent: func(_ context.Context, got agent.RuntimeSpec) error {
+		probeAgent: func(_ context.Context, got agent.ProbeRequest) error {
 			probed = true
-			if got.ID != runtime.ID {
-				t.Fatalf("expected runtime %q, got %q", runtime.ID, got.ID)
+			if !reflect.DeepEqual(got, req) {
+				t.Fatalf("expected probe request %#v, got %#v", req, got)
 			}
 			return nil
 		},
@@ -1150,7 +1256,7 @@ func TestHealthCheckerReturnsStructuredReadOnlyResults(t *testing.T) {
 		Status: CheckStatusOK,
 		Detail: agent.PinnedACPXVersion,
 	})
-	assertCheckResult(t, checker.Agent(ctx, runtime), CheckResult{
+	assertCheckResult(t, checker.Agent(ctx, req), CheckResult{
 		Name:   HealthCheckAgent,
 		Status: CheckStatusOK,
 		Detail: "codex",
@@ -1169,7 +1275,7 @@ func TestHealthCheckerReportsFailedPrerequisitesWithNextActions(t *testing.T) {
 		acpxVersion: func(context.Context) (string, error) {
 			return "0.11.0", nil
 		},
-		probeAgent: func(context.Context, agent.RuntimeSpec) error {
+		probeAgent: func(context.Context, agent.ProbeRequest) error {
 			return errors.New("probe denied")
 		},
 	})
@@ -1186,7 +1292,7 @@ func TestHealthCheckerReportsFailedPrerequisitesWithNextActions(t *testing.T) {
 		Detail:     "found 0.11.0; required " + agent.PinnedACPXVersion + "; run " + setupACPXInstallCommand(),
 		NextAction: setupACPXInstallCommand(),
 	})
-	assertCheckResult(t, checker.Agent(ctx, agent.RuntimeSpec{ID: "codex"}), CheckResult{
+	assertCheckResult(t, checker.Agent(ctx, agent.ProbeRequest{Runtime: agent.RuntimeSpec{ID: "codex"}}), CheckResult{
 		Name:   HealthCheckAgent,
 		Status: CheckStatusFailed,
 		Detail: "probe denied",
@@ -1821,6 +1927,73 @@ func TestRunResolvePrintsDeterministicStdoutReport(t *testing.T) {
 		"Clean after 1 Round(s): 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("stdout mismatch\nwant:\n%q\ngot:\n%q\nstderr:\n%s", wantStdout, stdout.String(), stderr.String())
+	}
+}
+
+func TestRunResolvePersistsEffectiveSelection(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{
+		"resolve",
+		"--pr", "123",
+		"--agent", "codex",
+		"--model", "stored-resolve-model",
+		"--reasoning-effort", "stored-resolve-reasoning",
+		"--round", "all",
+		"--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected clean resolve exit code 0, got %d stderr=%q", code, stderr.String())
+	}
+	run := runFromStore(t, homeDir, reviewRunIDFromStderr(t, stderr.String()))
+	if run.Model != "stored-resolve-model" || run.ReasoningEffort != "stored-resolve-reasoning" {
+		t.Fatalf("expected stored resolve selection, got %#v", run)
+	}
+	if !strings.Contains(stderr.String(), "Agent Model: stored-resolve-model") ||
+		!strings.Contains(stderr.String(), "Default Reasoning Effort: stored-resolve-reasoning") {
+		t.Fatalf("expected resolve progress to show concrete selection, got %q", stderr.String())
+	}
+	if strings.Contains(stderr.String(), "auto") {
+		t.Fatalf("expected no auto selection placeholder, got %q", stderr.String())
+	}
+}
+
+func TestRunWatchPersistsEffectiveSelection(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{
+		"watch",
+		"--source", "coderabbit",
+		"--pr", "123",
+		"--agent", "codex",
+		"--model", "stored-watch-model",
+		"--reasoning-effort", "stored-watch-reasoning",
+		"--until-clean",
+		"--max-rounds", "6",
+		"--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected clean watch exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	run := runFromStore(t, homeDir, reviewRunIDFromStderr(t, stderr.String()))
+	if run.Model != "stored-watch-model" || run.ReasoningEffort != "stored-watch-reasoning" {
+		t.Fatalf("expected stored watch selection, got %#v", run)
+	}
+	if !strings.Contains(stderr.String(), "Agent Model: stored-watch-model") ||
+		!strings.Contains(stderr.String(), "Default Reasoning Effort: stored-watch-reasoning") {
+		t.Fatalf("expected watch progress to show concrete selection, got %q", stderr.String())
+	}
+	if strings.Contains(stderr.String(), "auto") {
+		t.Fatalf("expected no auto selection placeholder, got %q", stderr.String())
 	}
 }
 
@@ -3192,6 +3365,192 @@ func TestRunResolveProbeFailureDoesNotCreateRun(t *testing.T) {
 		t.Fatalf("expected probe diagnostic, got %q", stderr.String())
 	}
 	assertNoRunDatabase(t, homeDir)
+}
+
+func TestRunResolveSelectionPreflightRejectionReportsTupleAndCreatesNoRun(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	probeErr := &agent.SelectionPreflightError{
+		Runtime:         "codex",
+		Model:           "gpt-5.6-sol",
+		ReasoningEffort: "xhigh",
+		Err:             errors.New("missing model metadata"),
+	}
+	runner := &fakeAgentRunner{probeErr: probeErr}
+	withAgentRunner(t, runner)
+	withFakeWorktree(t)
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
+runtimes:
+  codex:
+    model: gpt-5.6-sol
+    reasoning_effort: xhigh
+`)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected selection preflight exit %d, got %d", exitPreflight, code)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout, got %q", stdout.String())
+	}
+	for _, want := range []string{
+		"codex",
+		"gpt-5.6-sol",
+		"xhigh",
+		"missing model metadata",
+		"update the ACP Runtime or adapter",
+		"choose supported Agent Model and Default Reasoning Effort values",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())
+		}
+	}
+	if runner.calls != 0 {
+		t.Fatalf("expected no durable Agent Session run, got %d run call(s)", runner.calls)
+	}
+	if len(runner.probeRequests) != 1 {
+		t.Fatalf("expected one selection preflight attempt, got %#v", runner.probeRequests)
+	}
+	if runner.probeRequests[0].WorkDir != repoDir {
+		t.Fatalf("expected preflight workdir %q, got %q", repoDir, runner.probeRequests[0].WorkDir)
+	}
+	if got := runner.probeRequests[0].Runtime; got.Model != "gpt-5.6-sol" || got.ReasoningEffort != "xhigh" {
+		t.Fatalf("expected exact selection without fallback, got %#v", got)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
+func TestRunWatchSelectionPreflightFailureCreatesNoRun(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	runner := &fakeAgentRunner{probeErr: &agent.SelectionPreflightError{
+		Runtime:         "codex",
+		Model:           "gpt-5.5",
+		ReasoningEffort: "unsupported",
+		Err:             errors.New("reasoning rejected"),
+	}}
+	withAgentRunner(t, runner)
+	withFakeWorktree(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected selection preflight exit %d, got %d", exitPreflight, code)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout, got %q", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "reasoning rejected") || !strings.Contains(stderr.String(), "unsupported") {
+		t.Fatalf("expected reasoning rejection diagnostic, got %q", stderr.String())
+	}
+	if runner.calls != 0 {
+		t.Fatalf("expected no durable Agent Session run, got %d run call(s)", runner.calls)
+	}
+	if len(runner.probeRequests) != 1 || runner.probeRequests[0].WorkDir != repoDir {
+		t.Fatalf("expected one selection preflight in git root %q, got %#v", repoDir, runner.probeRequests)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
+func TestRunReviewAgentCommandsPassOneRunSelectionOverridesToPreflight(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{
+			name: "resolve",
+			args: []string{"resolve", "--pr", "123", "--agent", "codex", "--model", "future-model", "--reasoning-effort", "experimental-reasoning", "--no-input"},
+		},
+		{
+			name: "watch",
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--model", "future-model", "--reasoning-effort", "experimental-reasoning", "--no-input"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			withSuccessfulPreflight(t, repoDir)
+			runner := &fakeAgentRunner{probeErr: errors.New("stop after selection preflight")}
+			withAgentRunner(t, runner)
+			if tt.name == "resolve" {
+				persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+			}
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run(tt.args, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("expected no stdout diagnostics, got %q", stdout.String())
+			}
+			if len(runner.probeRequests) != 1 {
+				t.Fatalf("expected one selection preflight, got %#v", runner.probeRequests)
+			}
+			got := runner.probeRequests[0].Runtime
+			if got.Model != "future-model" || got.ReasoningEffort != "experimental-reasoning" {
+				t.Fatalf("expected one-Run selection overrides at preflight, got %#v", got)
+			}
+			assertNoRunDatabase(t, homeDir)
+		})
+	}
+}
+
+func TestRunReviewAgentCommandsRejectExplicitEmptySelectionOverrides(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{
+			name: "resolve model",
+			args: []string{"resolve", "--pr", "123", "--agent", "codex", "--model=", "--no-input"},
+			want: "--model cannot be empty",
+		},
+		{
+			name: "resolve reasoning",
+			args: []string{"resolve", "--pr", "123", "--agent", "codex", "--reasoning-effort=", "--no-input"},
+			want: "--reasoning-effort cannot be empty",
+		},
+		{
+			name: "watch model",
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--model=", "--no-input"},
+			want: "--model cannot be empty",
+		},
+		{
+			name: "watch reasoning",
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--reasoning-effort=", "--no-input"},
+			want: "--reasoning-effort cannot be empty",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, _ := withCLIWorkspace(t)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run(tt.args, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("expected no stdout diagnostics, got %q", stdout.String())
+			}
+			if !strings.Contains(stderr.String(), tt.want) {
+				t.Fatalf("expected stderr to contain %q, got %q", tt.want, stderr.String())
+			}
+			assertNoRunDatabase(t, homeDir)
+		})
+	}
 }
 
 func TestRunResolveACPXProbeFailureReportsActionablePreflight(t *testing.T) {
@@ -4566,6 +4925,7 @@ func TestRunOperationalCommandRejectsInvalidConfigAndArtifactDirectory(t *testin
 type setupFakeDeps struct {
 	homeDir           string
 	gitRoot           string
+	config            roundconfig.Config
 	userConfigPath    string
 	projectConfigPath string
 	acpxConfigPath    string
@@ -4580,6 +4940,7 @@ type setupFakeDeps struct {
 	initScopes        []string
 	acpxInitCalls     int
 	writeCalls        []string
+	probeRequests     []agent.ProbeRequest
 	prompts           []string
 	confirm           func(context.Context, io.Writer, string) (bool, error)
 }
@@ -4590,6 +4951,7 @@ func newSetupFakeDeps() *setupFakeDeps {
 	return &setupFakeDeps{
 		homeDir:           homeDir,
 		gitRoot:           gitRoot,
+		config:            roundconfig.Builtin(),
 		userConfigPath:    filepath.Join(homeDir, ".roundfix", "config.yml"),
 		projectConfigPath: filepath.Join(gitRoot, ".roundfixrc.yml"),
 		acpxConfigPath:    filepath.Join(homeDir, ".acpx", "config.json"),
@@ -4606,7 +4968,7 @@ func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
 	setupDeps = setupDependencies{
 		loadConfig: func(roundconfig.LoadOptions) (roundconfig.Loaded, error) {
 			return roundconfig.Loaded{
-				Config:            roundconfig.Builtin(),
+				Config:            fake.config,
 				GitRoot:           fake.gitRoot,
 				HomeDir:           fake.homeDir,
 				UserConfigPath:    fake.userConfigPath,
@@ -4623,7 +4985,8 @@ func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
 			fake.installCalls = append(fake.installCalls, "npm install -g acpx@"+agent.PinnedACPXVersion)
 			return nil
 		},
-		probeAgent: func(context.Context, agent.RuntimeSpec) error {
+		probeAgent: func(_ context.Context, req agent.ProbeRequest) error {
+			fake.probeRequests = append(fake.probeRequests, req)
 			return fake.probeErr
 		},
 		lookPath: func(command string) (string, error) {
@@ -4910,12 +5273,14 @@ func seedRunsForList(t *testing.T, homeDir string, seeds []runListSeed) []store.
 
 func createRunRequestForList(seed runListSeed) store.CreateRunRequest {
 	req := store.CreateRunRequest{
-		Kind:        seed.kind,
-		GitRoot:     seed.gitRoot,
-		LocalBranch: seed.branch,
-		HeadSHA:     "abc123",
-		ArtifactDir: filepath.Join(seed.gitRoot, ".roundfix"),
-		Agent:       "codex",
+		Kind:            seed.kind,
+		GitRoot:         seed.gitRoot,
+		LocalBranch:     seed.branch,
+		HeadSHA:         "abc123",
+		ArtifactDir:     filepath.Join(seed.gitRoot, ".roundfix"),
+		Agent:           "codex",
+		Model:           "gpt-5.5",
+		ReasoningEffort: "xhigh",
 	}
 	if req.Kind == store.KindImplement {
 		req.SpecSlug = seed.specSlug
@@ -5951,12 +6316,14 @@ type fakeAgentRunner struct {
 	onRun          func(agent.ExecuteRequest) error
 	calls          int
 	gitRoots       []string
+	probeRequests  []agent.ProbeRequest
 	probedRuntimes []agent.RuntimeSpec
 	runRuntimes    []agent.RuntimeSpec
 }
 
-func (runner *fakeAgentRunner) Probe(_ context.Context, runtime agent.RuntimeSpec) error {
-	runner.probedRuntimes = append(runner.probedRuntimes, runtime)
+func (runner *fakeAgentRunner) Probe(_ context.Context, req agent.ProbeRequest) error {
+	runner.probeRequests = append(runner.probeRequests, req)
+	runner.probedRuntimes = append(runner.probedRuntimes, req.Runtime)
 	return runner.probeErr
 }
 
@@ -6005,7 +6372,7 @@ func (runner *fakeAgentRunner) EndSession(context.Context, agent.RuntimeSpec, ag
 
 type fakeStoppingAgentRunner struct{}
 
-func (runner *fakeStoppingAgentRunner) Probe(context.Context, agent.RuntimeSpec) error {
+func (runner *fakeStoppingAgentRunner) Probe(context.Context, agent.ProbeRequest) error {
 	return nil
 }
 
@@ -6056,8 +6423,8 @@ type sessionRecordingRunner struct {
 	seenSessions   map[string]bool
 }
 
-func (runner *sessionRecordingRunner) Probe(ctx context.Context, runtime agent.RuntimeSpec) error {
-	return runner.inner.Probe(ctx, runtime)
+func (runner *sessionRecordingRunner) Probe(ctx context.Context, req agent.ProbeRequest) error {
+	return runner.inner.Probe(ctx, req)
 }
 
 func (runner *sessionRecordingRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
@@ -6564,6 +6931,59 @@ func TestAttachReplaysCompletedRunReadOnly(t *testing.T) {
 	}
 	if run.State != store.StateClean {
 		t.Fatalf("expected attach to leave Run state untouched, got %q", run.State)
+	}
+}
+
+func TestAttachDisplaysStoredSelectionAfterConfigChanges(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var resolveStdout bytes.Buffer
+	var resolveStderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{
+		"resolve",
+		"--pr", "123",
+		"--agent", "codex",
+		"--model", "historical-model",
+		"--reasoning-effort", "historical-reasoning",
+		"--no-input",
+	}, &resolveStdout, &resolveStderr)
+	if code != exitOK {
+		t.Fatalf("seed resolve run failed: %d stderr=%q", code, resolveStderr.String())
+	}
+	runID := reviewRunIDFromStderr(t, resolveStderr.String())
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
+runtimes:
+  codex:
+    model: changed-config-model
+    reasoning_effort: changed-config-reasoning
+`)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code = RunContext(context.Background(), []string{"attach", runID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected attach exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	output := stdout.String()
+	for _, expected := range []string{
+		"Agent: Codex",
+		"Agent Model: historical-model",
+		"Default Reasoning Effort: historical-reasoning",
+	} {
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected attach output to contain stored value %q, got:\n%s", expected, output)
+		}
+	}
+	for _, unexpected := range []string{"changed-config-model", "changed-config-reasoning", "auto"} {
+		if strings.Contains(output, unexpected) {
+			t.Fatalf("expected attach output not to contain %q, got:\n%s", unexpected, output)
+		}
+	}
+	if run := runFromStore(t, homeDir, runID); run.Model != "historical-model" || run.ReasoningEffort != "historical-reasoning" {
+		t.Fatalf("expected stored historical selection to remain unchanged, got %#v", run)
 	}
 }
 

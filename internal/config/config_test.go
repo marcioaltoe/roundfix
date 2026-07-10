@@ -99,6 +99,66 @@ specs:
 	}
 }
 
+func TestBuiltinRuntimeDefaults(t *testing.T) {
+	config := Builtin()
+
+	if config.Runtimes.Codex.Model != "gpt-5.5" || config.Runtimes.Codex.ReasoningEffort != "xhigh" {
+		t.Fatalf("expected built-in Codex gpt-5.5/xhigh, got %#v", config.Runtimes.Codex)
+	}
+	if config.Runtimes.Claude.Model != "opus" || config.Runtimes.Claude.ReasoningEffort != "high" {
+		t.Fatalf("expected built-in Claude opus/high, got %#v", config.Runtimes.Claude)
+	}
+	if config.Runtimes.OpenCode.Model != "" || config.Runtimes.OpenCode.ReasoningEffort != "" {
+		t.Fatalf("expected built-in OpenCode to require explicit selection, got %#v", config.Runtimes.OpenCode)
+	}
+}
+
+func TestLoadAppliesRuntimeConfigHierarchy(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
+runtimes:
+  codex:
+    model: user-codex
+    reasoning_effort: user-xhigh
+  claude:
+    model: user-claude
+    reasoning_effort: user-high
+  opencode:
+    model: user-opencode
+`)
+	mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), `
+runtimes:
+  codex:
+    model: project-codex
+  opencode:
+    reasoning_effort: project-opencode-effort
+`)
+
+	loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+	if err != nil {
+		t.Fatalf("expected config to load, got %v", err)
+	}
+
+	if loaded.Config.Runtimes.Codex.Model != "project-codex" {
+		t.Fatalf("expected project Codex model override, got %q", loaded.Config.Runtimes.Codex.Model)
+	}
+	if loaded.Config.Runtimes.Codex.ReasoningEffort != "user-xhigh" {
+		t.Fatalf("expected user Codex reasoning to survive project model-only override, got %q", loaded.Config.Runtimes.Codex.ReasoningEffort)
+	}
+	if loaded.Config.Runtimes.Claude.Model != "user-claude" || loaded.Config.Runtimes.Claude.ReasoningEffort != "user-high" {
+		t.Fatalf("expected user Claude defaults to survive unrelated project config, got %#v", loaded.Config.Runtimes.Claude)
+	}
+	if loaded.Config.Runtimes.OpenCode.Model != "user-opencode" {
+		t.Fatalf("expected user OpenCode model to survive project reasoning-only override, got %q", loaded.Config.Runtimes.OpenCode.Model)
+	}
+	if loaded.Config.Runtimes.OpenCode.ReasoningEffort != "project-opencode-effort" {
+		t.Fatalf("expected project OpenCode reasoning override, got %q", loaded.Config.Runtimes.OpenCode.ReasoningEffort)
+	}
+}
+
 func TestLoadAppliesWorktreeConfigHierarchy(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -486,6 +546,39 @@ resolve:
 	}
 }
 
+func TestLoadWarnsAndIgnoresDeprecatedDefaultsModel(t *testing.T) {
+	const warning = "config: defaults.model is deprecated and ignored; use runtimes.<runtime>.model\n"
+
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
+defaults:
+  model: user-global-model
+`)
+	mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), `
+defaults:
+  model: project-global-model
+`)
+	var stderr bytes.Buffer
+
+	loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir, Stderr: &stderr})
+
+	if err != nil {
+		t.Fatalf("expected config to load, got %v", err)
+	}
+	if stderr.String() != warning {
+		t.Fatalf("expected warning %q, got %q", warning, stderr.String())
+	}
+	if loaded.Config.Defaults.Model != "" {
+		t.Fatalf("expected defaults.model to be ignored, got %q", loaded.Config.Defaults.Model)
+	}
+	if loaded.Config.Runtimes.Codex.Model != "gpt-5.5" {
+		t.Fatalf("expected Codex runtime model to keep built-in value, got %q", loaded.Config.Runtimes.Codex.Model)
+	}
+}
+
 func TestLoadRejectsUnknownConfigKeys(t *testing.T) {
 	const warning = "config: resolve.concurrent is deprecated and ignored; use worktree.concurrency\n"
 
@@ -545,6 +638,52 @@ resolve:
 			}
 			if stderr.String() != tt.wantStderr {
 				t.Fatalf("expected stderr %q, got %q", tt.wantStderr, stderr.String())
+			}
+		})
+	}
+}
+
+func TestLoadRejectsUnknownRuntimeConfigKeys(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   string
+		contains string
+	}{
+		{
+			name: "unknown runtime",
+			config: `
+runtimes:
+  local:
+    model: llama
+`,
+			contains: "runtimes.local is not a supported config key",
+		},
+		{
+			name: "unknown runtime default",
+			config: `
+runtimes:
+  codex:
+    effort: high
+`,
+			contains: "runtimes.codex.effort is not a supported config key",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir := t.TempDir()
+			workDir := t.TempDir()
+			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+			mustMkdir(t, filepath.Join(workDir, ".git"))
+			mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.config)
+
+			_, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+
+			if err == nil {
+				t.Fatal("expected config load to fail")
+			}
+			if !strings.Contains(err.Error(), tt.contains) {
+				t.Fatalf("expected error containing %q, got %q", tt.contains, err.Error())
 			}
 		})
 	}
@@ -801,6 +940,9 @@ func TestInitCreatesUserConfig(t *testing.T) {
 	content := mustRead(t, expectedPath)
 	if !strings.Contains(content, "agent: codex") || !strings.Contains(content, "agent_full_access: false") ||
 		!strings.Contains(content, `artifact_dir: ""`) || !strings.Contains(content, "Roundfix Home artifacts/<repo-id>") ||
+		!strings.Contains(content, "runtimes:") || !strings.Contains(content, "model: gpt-5.5") ||
+		!strings.Contains(content, "reasoning_effort: xhigh") || !strings.Contains(content, "model: opus") ||
+		!strings.Contains(content, "reasoning_effort: high") ||
 		!strings.Contains(content, "specs:") || !strings.Contains(content, `root: "docs/specs"`) ||
 		!strings.Contains(content, "worktree:") || !strings.Contains(content, `location: "~/.roundfix/worktrees"`) ||
 		!strings.Contains(content, "concurrency: 2") || !strings.Contains(content, "copy: []") ||
@@ -813,6 +955,9 @@ func TestInitCreatesUserConfig(t *testing.T) {
 	}
 	if strings.Contains(content, "resolve.concurrent") || strings.Contains(content, "  concurrent:") {
 		t.Fatalf("expected generated config to omit resolve.concurrent, got %s", content)
+	}
+	if strings.Contains(content, "defaults:\n  agent: codex\n  model:") {
+		t.Fatalf("expected generated config to omit defaults.model, got %s", content)
 	}
 	if _, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir}); err != nil {
 		t.Fatalf("expected generated User Config to load, got %v", err)

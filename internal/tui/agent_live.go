@@ -72,11 +72,7 @@ func renderAgentSidebar(view LiveRunView, startedAt time.Time, width int, height
 
 func renderAgentTimeline(view LiveRunView, lines []string, width int, height int) string {
 	header := styleAccent.Bold(true).Render("SESSION.TIMELINE")
-	model := strings.TrimSpace(view.Model)
-	if model == "" {
-		model = "auto"
-	}
-	meta := styleMuted.Render(fmt.Sprintf("%d entries · %s · %s", len(lines), emptyDash(view.Agent), model))
+	meta := styleMuted.Render(fmt.Sprintf("%d entries · %s · %s · %s", len(lines), emptyDash(view.Agent), emptyDash(view.Model), emptyDash(view.ReasoningEffort)))
 	contentLines := []string{header, meta, ""}
 	if len(lines) == 0 {
 		contentLines = append(contentLines, styleMuted.Render("Waiting for Agent output..."))

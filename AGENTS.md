@@ -38,9 +38,9 @@ unresolved remains. Stdlib `flag` dispatch and a Bubble Tea v2 TUI.
 - **HARD RULE — skill ownership**: repo-owned authorial workflow skills may
   be adapted locally; every other skill is upstream-managed and **MUST NOT**
   be modified here. Ownership split: `docs/agents/skill-governance.md`.
-- **HARD RULE — autonomous work model**: binding for every Fable-powered
-  session — Fable orchestrates only; implementation is delegated to an ACP
-  Runtime per `docs/agents/autonomous-work.md`.
+- **HARD RULE — autonomous work model**: binding for every autonomous
+  session — the Supervisor orchestrates only; implementation is delegated to an
+  ACP Runtime per `docs/agents/autonomous-work.md`.
 
 ## Agent docs
 
@@ -84,10 +84,10 @@ refactor/bugfix, or trivial. See `docs/agents/spec-routing.md`.
 
 ### Autonomous work
 
-Fable orchestrates and authors Specs; implementation is delegated to an ACP
-Runtime — Codex (`gpt-5.5` at `xhigh`) by default, Claude Code (Opus 4.8 at
+Supervisor orchestrates and authors Specs; implementation is delegated to an
+ACP Runtime — Codex (`gpt-5.5` with `xhigh`) by default, Claude (`opus` at
 `high`/`xhigh`) for design, UI, UX, and frontend Tasks. Binding for every
-Fable-powered session. See `docs/agents/autonomous-work.md`.
+autonomous session. See `docs/agents/autonomous-work.md`.
 
 ### Skill governance
 

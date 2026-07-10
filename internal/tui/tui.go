@@ -16,16 +16,17 @@ import (
 )
 
 type CommandValues struct {
-	PRNumber     string
-	Spec         string
-	ReviewSource string
-	Agent        string
-	Round        string
-	ArtifactDir  string
-	Model        string
-	MaxRounds    int
-	UntilClean   bool
-	QA           bool
+	PRNumber        string
+	Spec            string
+	ReviewSource    string
+	Agent           string
+	Round           string
+	ArtifactDir     string
+	Model           string
+	ReasoningEffort string
+	MaxRounds       int
+	UntilClean      bool
+	QA              bool
 }
 
 type Suggestion struct {
@@ -33,11 +34,25 @@ type Suggestion struct {
 	Source string
 }
 
+type ModelChoice struct {
+	Label       string
+	Value       string
+	Description string
+}
+
+type RuntimeSelectionDefaults struct {
+	Model            string
+	ReasoningEffort  string
+	ModelCatalog     []ModelChoice
+	ReasoningChoices []string
+}
+
 type InputRequest struct {
-	Command         string
-	Values          CommandValues
-	PRSuggestion    Suggestion
-	AgentSuggestion Suggestion
+	Command           string
+	Values            CommandValues
+	PRSuggestion      Suggestion
+	AgentSuggestion   Suggestion
+	SelectionDefaults map[string]RuntimeSelectionDefaults
 	// SpecOptions lists the active Spec slugs the Spec picker offers, in
 	// slug order. The spec field accepts a 1-based number into this list
 	// or a slug typed directly.
@@ -45,27 +60,28 @@ type InputRequest struct {
 }
 
 type LiveRunView struct {
-	Command       string
-	Repository    string
-	PRNumber      string
-	HeadBranch    string
-	ReviewSource  string
-	Agent         string
-	Model         string
-	HEAD          string
-	RunID         string
-	PipelineState string
-	BudgetState   string
-	GitState      string
-	CurrentRound  int
-	MaxRounds     int
-	AutoCommit    bool
-	AutoPush      bool
-	LastPush      string
-	BatchNumber   int
-	BatchTotal    int
-	TotalIssues   int
-	Issues        []rounds.Issue
+	Command         string
+	Repository      string
+	PRNumber        string
+	HeadBranch      string
+	ReviewSource    string
+	Agent           string
+	Model           string
+	ReasoningEffort string
+	HEAD            string
+	RunID           string
+	PipelineState   string
+	BudgetState     string
+	GitState        string
+	CurrentRound    int
+	MaxRounds       int
+	AutoCommit      bool
+	AutoPush        bool
+	LastPush        string
+	BatchNumber     int
+	BatchTotal      int
+	TotalIssues     int
+	Issues          []rounds.Issue
 	// RunKind selects the Work Item vocabulary of the panes (implement Runs
 	// render Tasks where review Runs render Review Issues) and the empty
 	// states' explanatory copy. Empty means a review Run, so existing
@@ -164,10 +180,7 @@ func CollectInput(ctx context.Context, req InputRequest, input io.Reader, output
 		if err := ctx.Err(); err != nil {
 			return CommandValues{}, err
 		}
-		current := getValue(values, field)
-		if current == "" || req.Values == values {
-			current = defaults[field]
-		}
+		current := currentInputDefault(req, values, defaults, field)
 		if field == "qa" {
 			qa, done, err := collectQAGateInput(reader, output, current == "yes")
 			if err != nil {
@@ -178,6 +191,9 @@ func CollectInput(ctx context.Context, req InputRequest, input io.Reader, output
 				break
 			}
 			continue
+		}
+		if field == "model" || field == "reasoning-effort" {
+			writeSelectionChoices(output, req, values, field, current)
 		}
 		fmt.Fprintf(output, "%s [%s]: ", inputLabel(field), current)
 		line, err := reader.ReadString('\n')
@@ -191,6 +207,18 @@ func CollectInput(ctx context.Context, req InputRequest, input io.Reader, output
 		if field == "spec" {
 			line = pickSpecOption(line, req.SpecOptions)
 		}
+		if field == "model" {
+			line = pickModelChoice(line, req, values)
+			if strings.TrimSpace(line) == "" {
+				return CommandValues{}, requiredSelectionError(req, values, "Agent Model", "model")
+			}
+		}
+		if field == "reasoning-effort" {
+			line = pickReasoningChoice(line, req, values)
+			if strings.TrimSpace(line) == "" {
+				return CommandValues{}, requiredSelectionError(req, values, "Default Reasoning Effort", "reasoning_effort")
+			}
+		}
 		if line != "" {
 			if err := setValue(&values, field, line); err != nil {
 				return CommandValues{}, err
@@ -200,20 +228,24 @@ func CollectInput(ctx context.Context, req InputRequest, input io.Reader, output
 			break
 		}
 	}
+	if err := validateCollectedSelections(req, values); err != nil {
+		return CommandValues{}, err
+	}
 	return values, nil
 }
 
 func DefaultsForInput(req InputRequest) map[string]string {
 	defaults := map[string]string{
-		"pr":           req.Values.PRNumber,
-		"spec":         req.Values.Spec,
-		"source":       req.Values.ReviewSource,
-		"agent":        req.Values.Agent,
-		"round":        req.Values.Round,
-		"artifact-dir": req.Values.ArtifactDir,
-		"model":        req.Values.Model,
-		"max-rounds":   "",
-		"qa":           "",
+		"pr":               req.Values.PRNumber,
+		"spec":             req.Values.Spec,
+		"source":           req.Values.ReviewSource,
+		"agent":            req.Values.Agent,
+		"round":            req.Values.Round,
+		"artifact-dir":     req.Values.ArtifactDir,
+		"model":            req.Values.Model,
+		"reasoning-effort": req.Values.ReasoningEffort,
+		"max-rounds":       "",
+		"qa":               "",
 	}
 	if req.Values.MaxRounds > 0 {
 		defaults["max-rounds"] = strconv.Itoa(req.Values.MaxRounds)
@@ -268,6 +300,159 @@ func RenderInteractiveInput(req InputRequest) string {
 	return builder.String()
 }
 
+func currentInputDefault(req InputRequest, values CommandValues, defaults map[string]string, field string) string {
+	current := getValue(values, field)
+	if field == "model" {
+		if current != "" && !runtimeChanged(req, values) {
+			return current
+		}
+		return runtimeSelection(req, values).Model
+	}
+	if field == "reasoning-effort" {
+		if current != "" && !runtimeChanged(req, values) {
+			return current
+		}
+		return runtimeSelection(req, values).ReasoningEffort
+	}
+	if current == "" || req.Values == values {
+		return defaults[field]
+	}
+	return current
+}
+
+func runtimeSelection(req InputRequest, values CommandValues) RuntimeSelectionDefaults {
+	runtime := selectedRuntime(req, values)
+	if runtime == "" {
+		return RuntimeSelectionDefaults{}
+	}
+	return req.SelectionDefaults[runtime]
+}
+
+func runtimeChanged(req InputRequest, values CommandValues) bool {
+	return selectedRuntime(req, values) != selectedRuntime(req, req.Values)
+}
+
+func selectedRuntime(req InputRequest, values CommandValues) string {
+	runtime := strings.TrimSpace(values.Agent)
+	if runtime == "" {
+		runtime = strings.TrimSpace(req.Values.Agent)
+	}
+	if runtime == "" {
+		runtime = strings.TrimSpace(req.AgentSuggestion.Value)
+	}
+	return runtime
+}
+
+func writeSelectionChoices(output io.Writer, req InputRequest, values CommandValues, field string, current string) {
+	runtime := selectedRuntime(req, values)
+	selection := runtimeSelection(req, values)
+	switch field {
+	case "model":
+		if len(selection.ModelCatalog) == 0 {
+			writeTypedSelectionHint(output, "Agent Model", runtime, current)
+			return
+		}
+		fmt.Fprintf(output, "Agent Model Choices (%s):\n", runtime)
+		for index, choice := range selection.ModelCatalog {
+			value := concreteModelChoiceValue(runtime, selection, choice)
+			fmt.Fprintf(output, "  %d. %s", index+1, choice.Label)
+			if value != "" && value != choice.Label {
+				fmt.Fprintf(output, " -> %s", value)
+			}
+			if choice.Description != "" {
+				fmt.Fprintf(output, " - %s", choice.Description)
+			}
+			fmt.Fprintln(output)
+		}
+	case "reasoning-effort":
+		if len(selection.ReasoningChoices) == 0 {
+			writeTypedSelectionHint(output, "Default Reasoning Effort", runtime, current)
+			return
+		}
+		fmt.Fprintf(output, "Default Reasoning Effort Choices (%s):\n", runtime)
+		for index, choice := range selection.ReasoningChoices {
+			fmt.Fprintf(output, "  %d. %s\n", index+1, choice)
+		}
+	}
+}
+
+func writeTypedSelectionHint(output io.Writer, label string, runtime string, current string) {
+	if runtime == "" {
+		runtime = "selected runtime"
+	}
+	if strings.TrimSpace(current) == "" {
+		fmt.Fprintf(output, "%s for %s: type a value.\n", label, runtime)
+		return
+	}
+	fmt.Fprintf(output, "%s for %s: press Enter for %s or type a value.\n", label, runtime, current)
+}
+
+func pickModelChoice(value string, req InputRequest, values CommandValues) string {
+	selection := runtimeSelection(req, values)
+	index, ok := pickerIndex(value, len(selection.ModelCatalog))
+	if !ok {
+		return value
+	}
+	return concreteModelChoiceValue(selectedRuntime(req, values), selection, selection.ModelCatalog[index])
+}
+
+func concreteModelChoiceValue(runtime string, selection RuntimeSelectionDefaults, choice ModelChoice) string {
+	if runtime == "claude" && strings.EqualFold(choice.Label, "Default") {
+		return strings.TrimSpace(selection.Model)
+	}
+	return strings.TrimSpace(choice.Value)
+}
+
+func pickReasoningChoice(value string, req InputRequest, values CommandValues) string {
+	selection := runtimeSelection(req, values)
+	index, ok := pickerIndex(value, len(selection.ReasoningChoices))
+	if !ok {
+		return value
+	}
+	return selection.ReasoningChoices[index]
+}
+
+func pickerIndex(value string, choices int) (int, bool) {
+	index, err := strconv.Atoi(strings.TrimSpace(value))
+	if err != nil || index < 1 || index > choices {
+		return 0, false
+	}
+	return index - 1, true
+}
+
+func validateCollectedSelections(req InputRequest, values CommandValues) error {
+	if !commandStartsAgent(req.Command) {
+		return nil
+	}
+	if strings.TrimSpace(selectedRuntime(req, values)) == "" {
+		return nil
+	}
+	if strings.TrimSpace(values.Model) == "" {
+		return requiredSelectionError(req, values, "Agent Model", "model")
+	}
+	if strings.TrimSpace(values.ReasoningEffort) == "" {
+		return requiredSelectionError(req, values, "Default Reasoning Effort", "reasoning_effort")
+	}
+	return nil
+}
+
+func requiredSelectionError(req InputRequest, values CommandValues, label string, key string) error {
+	runtime := selectedRuntime(req, values)
+	if runtime == "" {
+		runtime = "selected runtime"
+	}
+	return fmt.Errorf("%s for runtime %q is required; configure runtimes.%s.%s or type a value", label, runtime, runtime, key)
+}
+
+func commandStartsAgent(command string) bool {
+	switch command {
+	case "resolve", "watch", "implement":
+		return true
+	default:
+		return false
+	}
+}
+
 func RenderLiveRunView(view LiveRunView) string {
 	var builder strings.Builder
 	builder.WriteString(fmt.Sprintf("Roundfix %s\n\n", strings.ToLower(emptyDash(view.Command))))
@@ -282,6 +467,8 @@ func RenderLiveRunView(view LiveRunView) string {
 	}
 	if view.Agent != "" {
 		builder.WriteString(fmt.Sprintf("  Agent: %s\n", emptyDash(view.Agent)))
+		builder.WriteString(fmt.Sprintf("  Agent Model: %s\n", emptyDash(view.Model)))
+		builder.WriteString(fmt.Sprintf("  Default Reasoning Effort: %s\n", emptyDash(view.ReasoningEffort)))
 	}
 	if view.HEAD != "" {
 		builder.WriteString(fmt.Sprintf("  HEAD: %s\n", view.HEAD))
@@ -504,11 +691,11 @@ func fieldsForCommand(command string) []string {
 	case "fetch":
 		return []string{"pr", "source", "round", "artifact-dir"}
 	case "resolve":
-		return []string{"pr", "agent", "round", "artifact-dir", "model"}
+		return []string{"pr", "agent", "model", "reasoning-effort", "round", "artifact-dir"}
 	case "watch":
-		return []string{"pr", "source", "agent", "artifact-dir", "model", "max-rounds"}
+		return []string{"pr", "source", "agent", "model", "reasoning-effort", "artifact-dir", "max-rounds"}
 	case "implement":
-		return []string{"spec", "agent", "qa"}
+		return []string{"spec", "agent", "model", "reasoning-effort", "qa"}
 	default:
 		return []string{"pr"}
 	}
@@ -540,7 +727,9 @@ func inputLabel(field string) string {
 	case "artifact-dir":
 		return "Artifact Directory"
 	case "model":
-		return "Model"
+		return "Agent Model"
+	case "reasoning-effort":
+		return "Default Reasoning Effort"
 	case "max-rounds":
 		return "Max Rounds"
 	case "qa":
@@ -566,6 +755,8 @@ func getValue(values CommandValues, field string) string {
 		return values.ArtifactDir
 	case "model":
 		return values.Model
+	case "reasoning-effort":
+		return values.ReasoningEffort
 	case "max-rounds":
 		if values.MaxRounds > 0 {
 			return strconv.Itoa(values.MaxRounds)
@@ -594,6 +785,8 @@ func setValue(values *CommandValues, field string, value string) error {
 		values.ArtifactDir = value
 	case "model":
 		values.Model = value
+	case "reasoning-effort":
+		values.ReasoningEffort = value
 	case "max-rounds":
 		number, err := strconv.Atoi(value)
 		if err != nil {

@@ -26,8 +26,8 @@ func TestOpenCreatesRunDatabaseAndAppliesMigrations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected migration version, got %v", err)
 	}
-	if version != 6 {
-		t.Fatalf("expected migration version 6, got %d", version)
+	if version != 7 {
+		t.Fatalf("expected migration version 7, got %d", version)
 	}
 }
 
@@ -425,6 +425,50 @@ func TestCreateRunPersistsWorkDir(t *testing.T) {
 	}
 }
 
+func TestCreateRunPersistsAgentSelectionAcrossRunQueries(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	req := sampleCreateRunRequest()
+	req.Kind = KindResolve
+	req.Agent = "codex"
+	req.Model = "gpt-5.6-sol"
+	req.ReasoningEffort = "experimental-reasoning"
+	created, err := runStore.CreateRun(ctx, req)
+	if err != nil {
+		t.Fatalf("expected Resolve Run creation, got %v", err)
+	}
+	assertRunSelection(t, created, "gpt-5.6-sol", "experimental-reasoning")
+
+	found, ok, err := runStore.Run(ctx, created.ID)
+	if err != nil || !ok {
+		t.Fatalf("lookup persisted Run: ok=%v err=%v", ok, err)
+	}
+	assertRunSelection(t, found, "gpt-5.6-sol", "experimental-reasoning")
+
+	active, ok, err := runStore.ActiveRun(ctx, req.HeadRepository, req.HeadBranch)
+	if err != nil || !ok {
+		t.Fatalf("lookup active Run: ok=%v err=%v", ok, err)
+	}
+	assertRunSelection(t, active, "gpt-5.6-sol", "experimental-reasoning")
+
+	inGitRoot, ok, err := runStore.ActiveRunInGitRoot(ctx, req.GitRoot)
+	if err != nil || !ok {
+		t.Fatalf("lookup active Run in Git root: ok=%v err=%v", ok, err)
+	}
+	assertRunSelection(t, inGitRoot, "gpt-5.6-sol", "experimental-reasoning")
+
+	listed, err := runStore.ListRuns(ctx, ListRunsQuery{GitRoot: req.GitRoot})
+	if err != nil {
+		t.Fatalf("list Runs: %v", err)
+	}
+	if len(listed) != 1 {
+		t.Fatalf("expected one listed Run, got %#v", listed)
+	}
+	assertRunSelection(t, listed[0], "gpt-5.6-sol", "experimental-reasoning")
+}
+
 func TestCreateRunAllowsDifferentHeadBranch(t *testing.T) {
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
@@ -657,6 +701,13 @@ func runIDs(runs []Run) []string {
 	return ids
 }
 
+func assertRunSelection(t *testing.T, run Run, wantModel string, wantReasoning string) {
+	t.Helper()
+	if run.Model != wantModel || run.ReasoningEffort != wantReasoning {
+		t.Fatalf("expected Run %s selection %q/%q, got %q/%q", run.ID, wantModel, wantReasoning, run.Model, run.ReasoningEffort)
+	}
+}
+
 func sampleCreateRunRequest() CreateRunRequest {
 	return CreateRunRequest{
 		Kind:           KindFetch,
@@ -774,8 +825,8 @@ func TestOpenMigratesV3RunDatabasePreservingRunsAndRekeyingLocks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 6 {
-		t.Fatalf("expected user_version 6 after migration, got %d", version)
+	if version != 7 {
+		t.Fatalf("expected user_version 7 after migration, got %d", version)
 	}
 
 	count, err := store.RunCount(ctx)
@@ -929,8 +980,8 @@ func TestOpenMigratesV4RunDatabasePreservingRunsLocksAndAddingStopRequests(t *te
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 6 {
-		t.Fatalf("expected user_version 6 after migration, got %d", version)
+	if version != 7 {
+		t.Fatalf("expected user_version 7 after migration, got %d", version)
 	}
 	count, err := runStore.RunCount(ctx)
 	if err != nil {
@@ -1082,8 +1133,8 @@ func TestOpenMigratesV5RunDatabasePreservingRunsLocksAndAddingWorkDir(t *testing
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 6 {
-		t.Fatalf("expected user_version 6 after migration, got %d", version)
+	if version != 7 {
+		t.Fatalf("expected user_version 7 after migration, got %d", version)
 	}
 	count, err := runStore.RunCount(ctx)
 	if err != nil {
@@ -1139,6 +1190,142 @@ func TestOpenMigratesV5RunDatabasePreservingRunsLocksAndAddingWorkDir(t *testing
 	}
 	if lockCount != 2 {
 		t.Fatalf("expected both v5 locks to survive, got %d", lockCount)
+	}
+}
+
+// buildV6Fixture creates a populated schema v6 Run Database via raw SQL:
+// persisted rows have work_dir but no model or reasoning_effort columns.
+func buildV6Fixture(t *testing.T, homeDir string) {
+	t.Helper()
+	path := DatabasePath(homeDir)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("create fixture directory: %v", err)
+	}
+	db, err := sql.Open("sqlite", writerDSN(path))
+	if err != nil {
+		t.Fatalf("open fixture database: %v", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Fatalf("close fixture database: %v", err)
+		}
+	}()
+
+	statements := []string{
+		`CREATE TABLE runs (
+			id TEXT PRIMARY KEY,
+			kind TEXT NOT NULL,
+			state TEXT NOT NULL,
+			head_repository TEXT NOT NULL DEFAULT '',
+			head_branch TEXT NOT NULL DEFAULT '',
+			base_repository TEXT NOT NULL DEFAULT '',
+			pr_number TEXT NOT NULL DEFAULT '',
+			git_root TEXT NOT NULL,
+			local_branch TEXT NOT NULL,
+			head_sha TEXT NOT NULL DEFAULT '',
+			artifact_dir TEXT NOT NULL DEFAULT '',
+			work_dir TEXT,
+			spec_slug TEXT NOT NULL DEFAULT '',
+			agent TEXT NOT NULL DEFAULT '',
+			stop_requested_at TEXT,
+			created_at TEXT NOT NULL,
+			updated_at TEXT NOT NULL,
+			completed_at TEXT NOT NULL DEFAULT ''
+		)`,
+		`CREATE TABLE active_run_locks ` + activeRunLocksColumns,
+		`CREATE INDEX idx_runs_head ON runs (head_repository, head_branch)`,
+		`CREATE TABLE interactive_defaults (
+			key TEXT PRIMARY KEY,
+			value TEXT NOT NULL,
+			updated_at TEXT NOT NULL
+		)`,
+		`CREATE TABLE run_events (
+			run_id TEXT NOT NULL,
+			cursor INTEGER NOT NULL,
+			batch INTEGER NOT NULL DEFAULT 0,
+			source TEXT NOT NULL,
+			kind TEXT NOT NULL,
+			review_issue TEXT NOT NULL DEFAULT '',
+			tool_id TEXT NOT NULL DEFAULT '',
+			tool_state TEXT NOT NULL DEFAULT '',
+			summary TEXT NOT NULL DEFAULT '',
+			created_at TEXT NOT NULL,
+			payload TEXT NOT NULL DEFAULT '',
+			PRIMARY KEY (run_id, cursor),
+			FOREIGN KEY (run_id) REFERENCES runs(id) ON DELETE CASCADE
+		)`,
+		`INSERT INTO runs (id, kind, state, head_repository, head_branch, base_repository,
+			pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir, spec_slug, agent,
+			stop_requested_at, created_at, updated_at, completed_at)
+		 VALUES ('run_v6_active', 'resolve', 'ResolvingWithAgent', 'owner/project', 'feature/review', 'owner/project',
+			'123', 'tmp/repo', 'feature/review', 'abc123', 'tmp/repo/.roundfix', 'tmp/repo/.roundfix/worktrees/run_v6_active', '', 'codex',
+			NULL, '2026-07-01T10:00:00Z', '2026-07-01T10:06:00Z', '')`,
+		`INSERT INTO runs (id, kind, state, head_repository, head_branch, base_repository,
+			pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir, spec_slug, agent,
+			stop_requested_at, created_at, updated_at, completed_at)
+		 VALUES ('run_v6_implement', 'implement', 'Stopped', '', '', '',
+			'', 'tmp/spec-repo', 'ma/spec-work', '', '', 'tmp/spec-worktree', '0001-widget-flow', 'claude',
+			NULL, '2026-07-01T07:00:00Z', '2026-07-01T07:30:00Z', '2026-07-01T07:30:00Z')`,
+		`INSERT INTO active_run_locks (target_kind, target_key, run_id, created_at)
+		 VALUES ('pr', 'owner/project#feature/review', 'run_v6_active', '2026-07-01T10:00:00Z')`,
+		`PRAGMA user_version = 6`,
+	}
+	for _, statement := range statements {
+		if _, err := db.Exec(statement); err != nil {
+			t.Fatalf("build v6 fixture: %v", err)
+		}
+	}
+}
+
+func TestOpenMigratesV6RunDatabaseAddingSelectionDefaults(t *testing.T) {
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	buildV6Fixture(t, homeDir)
+
+	runStore := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, runStore)
+
+	version, err := runStore.MigrationVersion(ctx)
+	if err != nil {
+		t.Fatalf("read migration version: %v", err)
+	}
+	if version != 7 {
+		t.Fatalf("expected user_version 7 after migration, got %d", version)
+	}
+	count, err := runStore.RunCount(ctx)
+	if err != nil {
+		t.Fatalf("count runs: %v", err)
+	}
+	if count != 2 {
+		t.Fatalf("expected both v6 run rows to survive, got %d", count)
+	}
+
+	active, found, err := runStore.ActiveRun(ctx, "owner/project", "feature/review")
+	if err != nil {
+		t.Fatalf("active review Run lookup after migration: %v", err)
+	}
+	if !found || active.ID != "run_v6_active" || active.Agent != "codex" || active.WorkDir == "" {
+		t.Fatalf("expected v6 review lock and row to survive, found=%v active=%#v", found, active)
+	}
+	assertRunSelection(t, active, "", "")
+
+	implement, ok, err := runStore.Run(ctx, "run_v6_implement")
+	if err != nil || !ok {
+		t.Fatalf("expected run_v6_implement to survive, ok=%v err=%v", ok, err)
+	}
+	if implement.Kind != KindImplement || implement.Agent != "claude" || implement.WorkDir != "tmp/spec-worktree" ||
+		implement.CompletedAt == nil {
+		t.Fatalf("expected v6 implement fields preserved, got %#v", implement)
+	}
+	assertRunSelection(t, implement, "", "")
+
+	var rawModel string
+	var rawReasoning string
+	if err := runStore.db.QueryRowContext(ctx, `SELECT model, reasoning_effort FROM runs WHERE id = 'run_v6_active'`).Scan(&rawModel, &rawReasoning); err != nil {
+		t.Fatalf("read migrated selection columns: %v", err)
+	}
+	if rawModel != "" || rawReasoning != "" {
+		t.Fatalf("expected migrated legacy selection defaults to be empty strings, got %q/%q", rawModel, rawReasoning)
 	}
 }
 
@@ -1362,11 +1549,14 @@ func TestCreateRunValidatesRequiredFieldsByKind(t *testing.T) {
 
 func sampleImplementCreateRunRequest() CreateRunRequest {
 	return CreateRunRequest{
-		Kind:        KindImplement,
-		GitRoot:     "tmp/spec-repo",
-		LocalBranch: "ma/implement-spec",
-		SpecSlug:    "0001-implement-command",
-		ArtifactDir: "tmp/spec-repo/.roundfix",
+		Kind:            KindImplement,
+		GitRoot:         "tmp/spec-repo",
+		LocalBranch:     "ma/implement-spec",
+		SpecSlug:        "0001-implement-command",
+		ArtifactDir:     "tmp/spec-repo/.roundfix",
+		Agent:           "codex",
+		Model:           "gpt-5.5",
+		ReasoningEffort: "xhigh",
 	}
 }
 

@@ -37,6 +37,7 @@ Options:
                        completed; only a pass verdict lets the Run end Clean
   --agent              Agent runtime. Supported: codex, claude, opencode
   --model              Agent model override
+  --reasoning-effort   Default reasoning effort override
   --agent-command      Agent command override
   --agent-full-access  Opt into Agent runtime full-access mode
   --no-agent-console   Hide Agent-source console events from non-TTY stderr
@@ -140,16 +141,12 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	defer func() {
 		_ = runStore.Close()
 	}()
-	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
-		Agent:            req.agent,
-		CommandOverride:  req.agentCmd,
-		Model:            req.model,
-		EnableFullAccess: req.agentFullAccess,
-	})
+	runtime, err := runtimeForAgentWork(req, loadedConfig.Config)
 	if err != nil {
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
+	req = requestWithRuntimeSelection(req, runtime)
 	sweepRunRetention(ctx, runStore, req.artifactDir, loadedConfig.Config.Store.JournalRetention, stderr)
 	if err := pruneTerminalRunWorktreeDebris(ctx, gitState.Root, loadedConfig.Config.Worktree.Location, runtime, runStore, stderr); err != nil {
 		printPreflightFailure("implement", err, stderr)
@@ -166,18 +163,20 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 
 	collaborators := newEngineCollaborators()
-	if err := collaborators.runner.Probe(ctx, runtime); err != nil {
+	if err := collaborators.runner.Probe(ctx, agent.ProbeRequest{Runtime: runtime, WorkDir: gitState.Root}); err != nil {
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
 
 	run, err := runStore.CreateRun(ctx, store.CreateRunRequest{
-		Kind:        store.KindImplement,
-		GitRoot:     gitState.Root,
-		LocalBranch: gitState.Branch,
-		HeadSHA:     gitState.HEAD,
-		SpecSlug:    graph.Spec.Slug,
-		Agent:       runtime.ID,
+		Kind:            store.KindImplement,
+		GitRoot:         gitState.Root,
+		LocalBranch:     gitState.Branch,
+		HeadSHA:         gitState.HEAD,
+		SpecSlug:        graph.Spec.Slug,
+		Agent:           runtime.ID,
+		Model:           runtime.Model,
+		ReasoningEffort: runtime.ReasoningEffort,
 	})
 	if err != nil {
 		// A lost work-target race surfaces the store's ActiveRunError as-is;
@@ -347,7 +346,6 @@ func parseImplementCommand(args []string, config roundconfig.Config) (commandReq
 	req := commandRequest{
 		name:            "implement",
 		agent:           config.Defaults.Agent,
-		model:           config.Defaults.Model,
 		artifactDir:     config.Defaults.ArtifactDir,
 		agentFullAccess: config.Defaults.AgentFullAccess,
 	}
@@ -357,6 +355,7 @@ func parseImplementCommand(args []string, config roundconfig.Config) (commandReq
 	fs.BoolVar(&req.qa, "qa", false, "End the Run with the qa-gate step once every Task is completed")
 	fs.StringVar(&req.agent, "agent", req.agent, "Agent runtime")
 	fs.StringVar(&req.model, "model", req.model, "Agent model override")
+	fs.StringVar(&req.reasoningEffort, "reasoning-effort", req.reasoningEffort, "Default reasoning effort override")
 	fs.StringVar(&req.agentCmd, "agent-command", "", "Agent command override")
 	fs.BoolVar(&req.agentFullAccess, "agent-full-access", req.agentFullAccess, "Opt into Agent runtime full-access mode")
 	fs.BoolVar(&req.noAgentConsole, "no-agent-console", false, "Hide Agent-source console events from non-TTY stderr")
@@ -368,6 +367,10 @@ func parseImplementCommand(args []string, config roundconfig.Config) (commandReq
 	}
 	if remaining := fs.Args(); len(remaining) > 0 {
 		return req, validationError{message: fmt.Sprintf("unexpected argument %q", remaining[0])}
+	}
+	recordSelectionFlagPresence(fs, &req)
+	if err := validateExplicitSelectionFlags(req); err != nil {
+		return req, err
 	}
 	req.spec = strings.TrimSpace(req.spec)
 	return req, nil
@@ -426,6 +429,8 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, run
 	fmt.Fprintf(ui.progress, "User checkout: %s on branch %s\n", gitState.Root, gitState.Branch)
 	fmt.Fprintf(ui.progress, "Run Worktree: %s on branch %s\n", runRef.Path, runRef.Branch)
 	fmt.Fprintf(ui.progress, "Agent: %s\n", runtime.DisplayName)
+	fmt.Fprintf(ui.progress, "Agent Model: %s\n", runtime.Model)
+	fmt.Fprintf(ui.progress, "Default Reasoning Effort: %s\n", runtime.ReasoningEffort)
 
 	engine, err := daemon.NewEngine(daemon.Dependencies{
 		Runner:    collaborators.runner,
@@ -515,27 +520,28 @@ func maybeRunImplementAutoPush(ctx context.Context, gitState preflight.GitState,
 // task files.
 func implementLiveRunView(req commandRequest, loaded roundconfig.Loaded, gitState preflight.GitState, runID string, workDir string, specsRoot string, graph *spec.Graph) roundtui.LiveRunView {
 	return roundtui.LiveRunView{
-		Command:       "implement",
-		RunKind:       store.KindImplement,
-		SpecSlug:      graph.Spec.Slug,
-		GitRoot:       gitState.Root,
-		WorkDir:       workDir,
-		SpecsRoot:     specsRoot,
-		Tasks:         graph.Tasks,
-		HeadBranch:    gitState.Branch,
-		Agent:         displayAgent(req.agent),
-		Model:         req.model,
-		HEAD:          gitState.HEAD,
-		RunID:         runID,
-		PipelineState: "ResolvingWithAgent",
-		Concurrency:   loaded.Config.Worktree.Concurrency,
-		BudgetState:   formatBudgetState(loaded.Config),
-		GitState:      formatGitState(gitState),
-		AutoCommit:    true,
-		AutoPush:      loaded.Config.Implement.AutoPush,
-		LastPush:      implementPushState(loaded.Config.Implement.AutoPush),
-		Console:       []string{"Agent and verification output will stream below."},
-		Width:         liveViewWidth(),
+		Command:         "implement",
+		RunKind:         store.KindImplement,
+		SpecSlug:        graph.Spec.Slug,
+		GitRoot:         gitState.Root,
+		WorkDir:         workDir,
+		SpecsRoot:       specsRoot,
+		Tasks:           graph.Tasks,
+		HeadBranch:      gitState.Branch,
+		Agent:           displayAgent(req.agent),
+		Model:           req.model,
+		ReasoningEffort: req.reasoningEffort,
+		HEAD:            gitState.HEAD,
+		RunID:           runID,
+		PipelineState:   "ResolvingWithAgent",
+		Concurrency:     loaded.Config.Worktree.Concurrency,
+		BudgetState:     formatBudgetState(loaded.Config),
+		GitState:        formatGitState(gitState),
+		AutoCommit:      true,
+		AutoPush:        loaded.Config.Implement.AutoPush,
+		LastPush:        implementPushState(loaded.Config.Implement.AutoPush),
+		Console:         []string{"Agent and verification output will stream below."},
+		Width:           liveViewWidth(),
 	}
 }
 

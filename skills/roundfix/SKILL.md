@@ -33,6 +33,9 @@ Use the Doctor Command, `roundfix doctor`, to diagnose Run readiness without
 installing dependencies, writing config, or changing files. Doctor runs the
 shared Node.js, pinned acpx, configured Agent probe, and codex runtime hygiene
 checks and prints one line per check with status `ok`, `failed`, or `skipped`.
+The configured Agent probe resolves `defaults.agent` plus the runtime's
+effective `runtimes.<agent>.model` and `runtimes.<agent>.reasoning_effort`, then
+validates that selection from the repository Git root when one is available.
 Failed checks include `next: <action>` when Roundfix knows the remediation.
 On macOS, the codex hygiene check resolves `CODEX_PATH` first and then `codex`
 on `PATH`, inspects the `com.apple.quarantine` attribute (the real XProtect
@@ -69,6 +72,9 @@ Run-ready. It checks Node.js, pinned acpx, the configured Agent probe, acpx
 local adapter overrides, User Config, and Project Config. Each check prints one
 deterministic report line with status `ok`, `installed`, `skipped`,
 `offered: declined`, or `failed`. Tested report lines include:
+
+The Agent probe uses the effective Agent Model and Default Reasoning Effort
+from `runtimes.<agent>` and validates the same selection a later Run would use.
 
 ```text
 node: ok
@@ -115,16 +121,98 @@ outcome.
 ## Config compatibility
 
 Roundfix treats registered removed config keys as migrations, not Preflight
-Validation failures. The current deprecated key is `resolve.concurrent`; it is
-ignored and prints exactly once per User Config or Project Config load on
-stderr:
+Validation failures. The current deprecated keys are `resolve.concurrent` and
+`defaults.model`; each is ignored and prints exactly once per User Config or
+Project Config load on stderr:
 
 ```text
 config: resolve.concurrent is deprecated and ignored; use worktree.concurrency
+config: defaults.model is deprecated and ignored; use runtimes.<runtime>.model
 ```
 
 Unknown keys that are not in the deprecation registry still fail strict
 validation.
+
+## Agent selection
+
+Roundfix owns the Agent Model and Default Reasoning Effort for every Agent
+Session. It resolves each value independently in this order: built-in defaults,
+User Config, Project Config, then one-Run flags. It never reads or mutates
+runtime-owned model configuration.
+
+Built-in selections:
+
+- Codex: `model: gpt-5.5`, `reasoning_effort: xhigh`.
+- Claude: `model: opus`, `reasoning_effort: high`.
+- OpenCode: no built-in model or reasoning value; provide each value through
+  User Config, Project Config, its one-Run flag, or a mix of config and flags.
+
+Project Config and User Config use the per-runtime structure:
+
+```yaml
+runtimes:
+  codex:
+    model: gpt-5.5
+    reasoning_effort: xhigh
+  claude:
+    model: opus
+    reasoning_effort: high
+  opencode:
+    model: ""
+    reasoning_effort: ""
+```
+
+OpenCode has no Roundfix Model Catalog and no default. Replace any empty
+OpenCode values with adapter-supported values in config, or pass each missing
+value with its matching one-Run flag:
+
+```yaml
+runtimes:
+  opencode:
+    model: "<model-supported-by-opencode-acp>"
+    reasoning_effort: "<effort-supported-by-opencode-acp>"
+```
+
+Non-interactive Agent-starting commands (`resolve`, `watch`, and `implement`)
+accept both one-Run overrides:
+
+```bash
+roundfix resolve --pr 123 --agent codex --model gpt-5.6-sol --reasoning-effort xhigh --no-input
+roundfix implement --spec example-spec --agent claude --model opus --reasoning-effort high --qa --detach
+```
+
+Omitted flags use the selected runtime's effective Roundfix configuration.
+An explicit empty `--model` or `--reasoning-effort` is invalid and exits `2`;
+empty flags never request a hidden adapter value.
+
+Interactive Input asks for Agent, Agent Model, then Default Reasoning Effort.
+The Codex Model Catalog appears in this order: `gpt-5.6-sol`,
+`gpt-5.6-terra`, `gpt-5.6-luna`, `gpt-5.5`, `gpt-5.4`,
+`gpt-5.4-mini`, `gpt-5.3-codex-spark`. The Claude Model Catalog appears in
+this order: `Default`, `Opus`, `Fable`, `Sonnet`, `Haiku`; `Default` displays
+the concrete configured Claude model. Catalogs are picker data, not allowlists:
+typed custom Agent Model and Default Reasoning Effort values pass through to
+the installed ACP adapter for validation.
+
+Preflight Validation starts a disposable Agent Session in the Git root,
+assigns the selected Agent Model and runtime-specific reasoning option, closes
+the disposable session, and sends no prompt. If the runtime rejects the model
+or reasoning value, `resolve`, `watch`, and `implement` exit `2` before
+creating a Run. The stderr diagnostic names runtime, model, and reasoning
+value, then gives both recovery paths: update the runtime or adapter, or
+select supported values. Roundfix never falls back to another selection.
+
+Initial progress and the Live Run View show the concrete stored selection:
+
+```text
+Agent: Codex
+Agent Model: gpt-5.5
+Default Reasoning Effort: xhigh
+```
+
+Attach reads Agent, Agent Model, and Default Reasoning Effort from the Run row,
+not from current User Config or Project Config. Legacy Runs that predate stored
+selection render missing model or reasoning values as `-`.
 
 `specs.root` is a User Config and Project Config key that defaults to
 `docs/specs`. Project Config overrides User Config, which overrides the
@@ -362,7 +450,8 @@ pass a run id or run `roundfix attach` to pick interactively.
    `--state all` or `--limit 0`) or the Run Browser (`roundfix attach` with
    no argument at an interactive terminal) when the Run ID was not captured.
 6. Report the Run ID, Open Pull Request, Review Source, Agent, and current Run
-   state whenever you summarize progress.
+   state whenever you summarize progress. Include Agent Model and Default
+   Reasoning Effort when the Run starts Agent work.
 7. Prefer the Roundfix Live Run View or daemon output for long waits.
 
 Useful commands:
@@ -605,7 +694,8 @@ outcome and never opens pull requests (ADR-0021).
      only a `pass` verdict lets the Run end Clean. Any other verdict — or a
      missing or unreadable QA Report — ends the Run Unresolved.
    - `--agent` — Agent runtime. Supported: `codex`, `claude`, `opencode`.
-   - `--model` — Agent model override.
+   - `--model` — Agent Model override.
+   - `--reasoning-effort` — Default Reasoning Effort override.
    - `--agent-command` — Agent command override.
    - `--agent-full-access` — opt into Agent runtime full-access mode.
    - `--no-agent-console` — hide Agent-source console events from non-TTY
@@ -671,11 +761,13 @@ outcome and never opens pull requests (ADR-0021).
 
 6. Without `--spec`, Interactive Input lists the repository's active Specs
    from the resolved Spec Root under an `Active Specs:` picker that accepts a
-   number or a slug, and the agent field suggests the remembered Agent. The
-   final `QA gate [y/N]` field enables the qa-gate step for that Run; when
-   `--qa` was passed, the prompt is `QA gate [Y/n]` and Enter keeps QA on. The
-   Agent is remembered across runs; the Spec slug and QA choice never are.
-   `--no-input` fails instead of opening Interactive Input.
+   number or a slug, and the Agent field suggests the remembered Agent. Agent
+   selection then asks for Agent Model and Default Reasoning Effort using the
+   selected runtime's effective configuration as the default. The final
+   `QA gate [y/N]` field enables the qa-gate step for that Run; when `--qa`
+   was passed, the prompt is `QA gate [Y/n]` and Enter keeps QA on. The Agent
+   is remembered across runs; the Spec slug, selection overrides, and QA choice
+   never are. `--no-input` fails instead of opening Interactive Input.
 
 7. Discover spec Runs with the bounded `roundfix runs list` or open the Run
    Browser with `roundfix attach` when the Run ID was not captured. Attach

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -30,6 +31,11 @@ const (
 	acpxCodexSandboxUnavailable     = "codex_sandbox_full_access_unavailable"
 	acpxCodexSandboxModeKey         = "sandbox_mode"
 	acpxCodexFullAccessSandbox      = "danger-full-access"
+	acpxCodexReasoningEffortKey     = "reasoning_effort"
+	acpxGenericReasoningEffortKey   = "effort"
+	acpxPreflightSessionPrefix      = "roundfix-preflight-"
+	acpxPreflightSetupTimeout       = 30 * time.Second
+	acpxPreflightCleanupTimeout     = 5 * time.Second
 	infrastructureStderrTailLines   = 10
 	infrastructureStderrTailBytes   = 1024
 	infrastructureStderrDelimiter   = "\n--- acpx stderr tail ---\n"
@@ -156,6 +162,60 @@ func (err ACPXProbeError) Unwrap() error {
 	return err.Err
 }
 
+type SelectionPreflightError struct {
+	Runtime         string
+	Model           string
+	ReasoningEffort string
+	Operation       string
+	Err             error
+}
+
+func (err *SelectionPreflightError) Error() string {
+	if err == nil {
+		return ""
+	}
+	operation := strings.TrimSpace(err.Operation)
+	if operation == "" {
+		operation = "validate selection"
+	}
+	message := fmt.Sprintf("agent selection unavailable for runtime %q with model %q and reasoning %q during %s", err.Runtime, err.Model, err.ReasoningEffort, operation)
+	if err.Err != nil {
+		message += ": " + err.Err.Error()
+	}
+	message += "; recovery: update the ACP Runtime or adapter, or choose supported Agent Model and Default Reasoning Effort values"
+	return message
+}
+
+func (err *SelectionPreflightError) Unwrap() error {
+	if err == nil {
+		return nil
+	}
+	return err.Err
+}
+
+type AgentSessionCleanupError struct {
+	Session string
+	Err     error
+}
+
+func (err *AgentSessionCleanupError) Error() string {
+	if err == nil {
+		return ""
+	}
+	message := fmt.Sprintf("close disposable Agent Session %q", err.Session)
+	if err.Err != nil {
+		message += ": " + err.Err.Error()
+	}
+	return message
+}
+
+func (err *AgentSessionCleanupError) Unwrap() error {
+	if err == nil {
+		return nil
+	}
+	return err.Err
+}
+
 type acpxJSONRPCMessage struct {
 	Method string            `json:"method"`
 	Params json.RawMessage   `json:"params"`
@@ -175,7 +235,18 @@ type acpxStreamResult struct {
 	err                error
 }
 
-func (runner ACPXRunner) Probe(ctx context.Context, _ RuntimeSpec) error {
+func (runner ACPXRunner) Probe(ctx context.Context, req ProbeRequest) error {
+	if err := runner.probeACPX(ctx); err != nil {
+		return err
+	}
+	workDir := strings.TrimSpace(req.WorkDir)
+	if workDir == "" {
+		return nil
+	}
+	return runner.probeSelection(ctx, req.Runtime, workDir)
+}
+
+func (runner ACPXRunner) probeACPX(ctx context.Context) error {
 	command := runner.command()
 	if _, err := exec.LookPath(command); err != nil {
 		return ACPXProbeError{Command: command, RequiredVersion: PinnedACPXVersion, Missing: true, Err: err}
@@ -202,8 +273,98 @@ func (runner ACPXRunner) Probe(ctx context.Context, _ RuntimeSpec) error {
 	return nil
 }
 
+func (runner ACPXRunner) probeSelection(ctx context.Context, runtime RuntimeSpec, workDir string) error {
+	if err := validateRuntimeSelection(runtime); err != nil {
+		return err
+	}
+	sessionName, err := disposablePreflightSessionName()
+	if err != nil {
+		return err
+	}
+	setupCtx, setupCancel := context.WithTimeout(ctx, acpxPreflightSetupTimeout)
+	codexEnv, err := runner.codexEnvForSession(setupCtx, runtime, sessionName)
+	if err != nil {
+		setupCancel()
+		return err
+	}
+	setupErr := runner.applyDisposableSelection(setupCtx, runtime, sessionName, workDir, codexEnv)
+	setupCancel()
+
+	cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), acpxPreflightCleanupTimeout)
+	defer cancel()
+	cleanupErr := runner.closeDisposableSession(cleanupCtx, runtime, sessionName, workDir)
+	if setupErr != nil && cleanupErr != nil {
+		return errors.Join(setupErr, cleanupErr)
+	}
+	if setupErr != nil {
+		return setupErr
+	}
+	return cleanupErr
+}
+
+func disposablePreflightSessionName() (string, error) {
+	var entropy [8]byte
+	if _, err := rand.Read(entropy[:]); err != nil {
+		return "", fmt.Errorf("generate disposable Agent Session name: %w", err)
+	}
+	return fmt.Sprintf("%s%x", acpxPreflightSessionPrefix, entropy[:]), nil
+}
+
+func (runner ACPXRunner) applyDisposableSelection(ctx context.Context, runtime RuntimeSpec, sessionName string, workDir string, codexEnv []string) error {
+	args, err := acpxEnsureArgs(runtime, sessionName, workDir)
+	if err != nil {
+		return err
+	}
+	if err := runner.runACPXCommandWithEnv(ctx, args, codexEnv); err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return err
+		}
+		return selectionPreflightError(runtime, "set model", fmt.Errorf("ensure disposable acpx Agent Session %q with model %q: %w", sessionName, strings.TrimSpace(runtime.Model), err))
+	}
+	key, err := acpxReasoningEffortConfigKey(runtime)
+	if err != nil {
+		return err
+	}
+	value := strings.TrimSpace(runtime.ReasoningEffort)
+	args, err = acpxSetConfigArgs(runtime, key, value, sessionName, workDir)
+	if err != nil {
+		return err
+	}
+	if err := runner.runACPXCommandWithEnv(ctx, args, codexEnv); err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return err
+		}
+		return selectionPreflightError(runtime, "set "+key, fmt.Errorf("set disposable acpx Agent Session %s %q: %w", key, value, err))
+	}
+	return nil
+}
+
+func selectionPreflightError(runtime RuntimeSpec, operation string, err error) error {
+	return &SelectionPreflightError{
+		Runtime:         strings.TrimSpace(runtime.ID),
+		Model:           strings.TrimSpace(runtime.Model),
+		ReasoningEffort: strings.TrimSpace(runtime.ReasoningEffort),
+		Operation:       strings.TrimSpace(operation),
+		Err:             err,
+	}
+}
+
+func (runner ACPXRunner) closeDisposableSession(ctx context.Context, runtime RuntimeSpec, sessionName string, workDir string) error {
+	defer func() {
+		delete(runner.ensuredSessions, sessionName)
+		delete(runner.codexResolutions, sessionName)
+	}()
+	if err := runner.CloseSession(ctx, runtime, SessionRef{Name: sessionName, WorkDir: workDir}); err != nil {
+		return &AgentSessionCleanupError{Session: sessionName, Err: err}
+	}
+	return nil
+}
+
 func (runner *ACPXRunner) Run(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error) {
 	result := ExecuteResult{LogPath: req.LogPath}
+	if err := validateRuntimeSelection(req.Runtime); err != nil {
+		return result, err
+	}
 	if _, err := runner.codexEnvForSession(ctx, req.Runtime, req.Session.Name); err != nil {
 		return result, err
 	}
@@ -300,7 +461,10 @@ func (runner *ACPXRunner) ensureSession(ctx context.Context, req ExecuteRequest,
 		return err
 	}
 	if err := runner.runACPXCommandWithEnv(ctx, args, codexEnv); err != nil {
-		return fmt.Errorf("ensure acpx Agent Session %q: %w", sessionName, err)
+		return fmt.Errorf("ensure acpx Agent Session %q with model %q: %w", sessionName, strings.TrimSpace(req.Runtime.Model), err)
+	}
+	if err := runner.applySelection(ctx, req, codexEnv); err != nil {
+		return err
 	}
 	if err := runner.applyFullAccess(ctx, req, sink, codexEnv); err != nil {
 		return err
@@ -312,6 +476,23 @@ func (runner *ACPXRunner) ensureSession(ctx context.Context, req ExecuteRequest,
 		return err
 	}
 	runner.ensuredSessions[sessionName] = struct{}{}
+	return nil
+}
+
+func (runner *ACPXRunner) applySelection(ctx context.Context, req ExecuteRequest, codexEnv []string) error {
+	sessionName := strings.TrimSpace(req.Session.Name)
+	key, err := acpxReasoningEffortConfigKey(req.Runtime)
+	if err != nil {
+		return err
+	}
+	value := strings.TrimSpace(req.Runtime.ReasoningEffort)
+	args, err := acpxSetConfigArgs(req.Runtime, key, value, sessionName, req.GitRoot)
+	if err != nil {
+		return err
+	}
+	if err := runner.runACPXCommandWithEnv(ctx, args, codexEnv); err != nil {
+		return fmt.Errorf("set acpx Agent Session %s %q: %w", key, value, err)
+	}
 	return nil
 }
 
@@ -481,6 +662,19 @@ func validateACPXPromptRequest(req ACPXPromptRequest) error {
 	return nil
 }
 
+func validateRuntimeSelection(runtime RuntimeSpec) error {
+	if strings.TrimSpace(runtime.Model) == "" {
+		return errors.New("agent model is required")
+	}
+	if strings.TrimSpace(runtime.ReasoningEffort) == "" {
+		return errors.New("agent reasoning effort is required")
+	}
+	if _, err := acpxReasoningEffortConfigKey(runtime); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (runner ACPXRunner) command() string {
 	if strings.TrimSpace(runner.Command) != "" {
 		return strings.TrimSpace(runner.Command)
@@ -545,6 +739,9 @@ func (runner ACPXRunner) runACPXCommandOutputWithEnv(ctx context.Context, args [
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return stdout.String(), ctxErr
+		}
 		if exitCode, ok := commandExitCode(err); ok {
 			return stdout.String(), &InfrastructureError{ExitCode: exitCode, Reason: "acpx command failed", Stderr: stderr.String()}
 		}
@@ -581,7 +778,7 @@ func acpxPromptArgs(req ACPXPromptRequest) ([]string, error) {
 }
 
 func acpxEnsureArgs(runtime RuntimeSpec, sessionName string, workDir string) ([]string, error) {
-	args, err := acpxGlobalArgs(runtime, workDir)
+	args, err := acpxGlobalArgsWithModel(runtime, workDir)
 	if err != nil {
 		return nil, err
 	}
@@ -640,6 +837,22 @@ func acpxGlobalArgs(runtime RuntimeSpec, workDir string) ([]string, error) {
 	return append([]string{"--cwd", workDir}, agentArgs...), nil
 }
 
+func acpxGlobalArgsWithModel(runtime RuntimeSpec, workDir string) ([]string, error) {
+	workDir = strings.TrimSpace(workDir)
+	if workDir == "" {
+		return nil, errors.New("Agent working directory is required")
+	}
+	model := strings.TrimSpace(runtime.Model)
+	if model == "" {
+		return nil, errors.New("agent model is required")
+	}
+	agentArgs, err := acpxAgentArgs(runtime)
+	if err != nil {
+		return nil, err
+	}
+	return append([]string{"--cwd", workDir, "--model", model}, agentArgs...), nil
+}
+
 func acpxAgentArgs(runtime RuntimeSpec) ([]string, error) {
 	if runtime.Protocol == ProtocolStdio {
 		command := strings.TrimSpace(runtime.Command)
@@ -653,6 +866,19 @@ func acpxAgentArgs(runtime RuntimeSpec) ([]string, error) {
 		return nil, errors.New("ACP Runtime id is required")
 	}
 	return []string{agent}, nil
+}
+
+func acpxReasoningEffortConfigKey(runtime RuntimeSpec) (string, error) {
+	switch strings.TrimSuffix(strings.TrimSpace(runtime.ID), "-custom") {
+	case "codex":
+		return acpxCodexReasoningEffortKey, nil
+	case "claude", "opencode":
+		return acpxGenericReasoningEffortKey, nil
+	case "":
+		return "", errors.New("ACP Runtime id is required for Agent reasoning effort")
+	default:
+		return "", fmt.Errorf("unsupported ACP Runtime %q for Agent reasoning effort", runtime.ID)
+	}
 }
 
 func (runner ACPXRunner) handleStdoutLine(ctx context.Context, req ExecuteRequest, sink runevent.Sink, line []byte, stopReason *string, promptResultParsed *bool) error {

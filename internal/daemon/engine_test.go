@@ -103,7 +103,7 @@ type engineFakeRunner struct {
 	requests []agent.ExecuteRequest
 }
 
-func (runner *engineFakeRunner) Probe(context.Context, agent.RuntimeSpec) error { return nil }
+func (runner *engineFakeRunner) Probe(context.Context, agent.ProbeRequest) error { return nil }
 
 func (runner *engineFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
 	*runner.calls = append(*runner.calls, "agent")
@@ -788,7 +788,7 @@ type publishingFakeRunner struct {
 	calls *[]string
 }
 
-func (runner *publishingFakeRunner) Probe(context.Context, agent.RuntimeSpec) error { return nil }
+func (runner *publishingFakeRunner) Probe(context.Context, agent.ProbeRequest) error { return nil }
 
 func (runner *publishingFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
 	*runner.calls = append(*runner.calls, "agent")

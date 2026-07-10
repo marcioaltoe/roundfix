@@ -327,7 +327,7 @@ type taskFakeRunner struct {
 	writeLogs     bool
 }
 
-func (runner *taskFakeRunner) Probe(context.Context, agent.RuntimeSpec) error { return nil }
+func (runner *taskFakeRunner) Probe(context.Context, agent.ProbeRequest) error { return nil }
 
 func (runner *taskFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
 	*runner.calls = append(*runner.calls, "agent")
@@ -492,7 +492,7 @@ func newTaskSchedulerRunner(taskIDs ...string) *taskSchedulerRunner {
 	return runner
 }
 
-func (runner *taskSchedulerRunner) Probe(context.Context, agent.RuntimeSpec) error { return nil }
+func (runner *taskSchedulerRunner) Probe(context.Context, agent.ProbeRequest) error { return nil }
 
 func (runner *taskSchedulerRunner) Run(ctx context.Context, req agent.ExecuteRequest, _ runevent.Sink) (agent.ExecuteResult, error) {
 	taskID := taskIDFromPrompt(req.Prompt)

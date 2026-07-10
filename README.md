@@ -202,6 +202,14 @@ Execute a Spec's Task Graph:
 roundfix implement --spec <slug> --agent codex
 ```
 
+Override the Agent Model and Default Reasoning Effort for one Run without
+editing User Config or Project Config:
+
+```bash
+roundfix resolve --pr 123 --agent codex --model gpt-5.6-sol --reasoning-effort xhigh --no-input
+roundfix implement --spec example-spec --agent claude --model opus --reasoning-effort high --qa --detach
+```
+
 Start a Detached Run for scripts or CI. The `--detach` flag is available on
 `resolve`, `watch`, and `implement`:
 
@@ -495,10 +503,94 @@ Use `--force` to overwrite an existing config file.
 
 Removed keys that Roundfix registers as deprecated never break an existing
 config: Roundfix ignores them and prints one stderr warning naming the
-replacement. The current deprecated key is `resolve.concurrent`, which prints
-`config: resolve.concurrent is deprecated and ignored; use worktree.concurrency`
-and then continues. Unknown keys that are not registered as deprecated still
-fail strict validation.
+replacement. Current deprecated keys are:
+
+- `resolve.concurrent`, which prints
+  `config: resolve.concurrent is deprecated and ignored; use worktree.concurrency`.
+- `defaults.model`, which prints
+  `config: defaults.model is deprecated and ignored; use runtimes.<runtime>.model`.
+
+Unknown keys that are not registered as deprecated still fail strict
+validation.
+
+### Agent selection
+
+Roundfix owns the Agent Model and Default Reasoning Effort for every Agent
+Session. It resolves each value independently in this order: built-in defaults,
+User Config, Project Config, then one-Run flags. It never reads or mutates
+runtime-owned model configuration.
+
+Built-in selections:
+
+- Codex: `model: gpt-5.5`, `reasoning_effort: xhigh`.
+- Claude: `model: opus`, `reasoning_effort: high`.
+- OpenCode: no built-in model or reasoning value; provide each value through
+  User Config, Project Config, its one-Run flag, or a mix of config and flags.
+
+Project Config can pin per-runtime Roundfix defaults without affecting other
+runtimes:
+
+```yaml
+runtimes:
+  codex:
+    model: gpt-5.5
+    reasoning_effort: xhigh
+  claude:
+    model: opus
+    reasoning_effort: high
+  opencode:
+    model: ""
+    reasoning_effort: ""
+```
+
+For OpenCode, replace any empty strings with values supported by the installed
+OpenCode ACP adapter, or pass each missing value with its matching `--model` or
+`--reasoning-effort` flag before starting an OpenCode Run:
+
+```yaml
+runtimes:
+  opencode:
+    model: "<model-supported-by-opencode-acp>"
+    reasoning_effort: "<effort-supported-by-opencode-acp>"
+```
+
+Roundfix ships no OpenCode Model Catalog and no OpenCode default.
+
+Interactive Input asks for Agent, Agent Model, then Default Reasoning Effort.
+For Codex, the Model Catalog is ordered as:
+
+1. `gpt-5.6-sol`
+2. `gpt-5.6-terra`
+3. `gpt-5.6-luna`
+4. `gpt-5.5`
+5. `gpt-5.4`
+6. `gpt-5.4-mini`
+7. `gpt-5.3-codex-spark`
+
+For Claude, the Model Catalog is ordered as `Default`, `Opus`, `Fable`,
+`Sonnet`, and `Haiku`. `Default` shows the concrete configured Claude model.
+Catalogs are picker data, not allowlists: non-interactive flags and typed
+Interactive Input values can pass a custom Agent Model or Default Reasoning
+Effort. The installed ACP adapter validates the final pair during Preflight
+Validation.
+
+If a runtime rejects the selected Agent Model or Default Reasoning Effort,
+`resolve`, `watch`, and `implement` exit `2` before creating a Run. The
+diagnostic names the runtime, model, and reasoning value, then gives the two
+supported recovery paths: update the runtime or adapter, or select supported
+values. Roundfix does not fall back to another selection.
+
+Run startup and inspection surfaces show the stored selection:
+
+```text
+Agent: Codex
+Agent Model: gpt-5.5
+Default Reasoning Effort: xhigh
+```
+
+`attach` reads those values from the Run row, so changing User Config or
+Project Config later does not rewrite a historical Run. Legacy Runs that
+predate stored selection render missing model or reasoning values as `-`.
 
 `specs.root` is the directory that holds Spec folders. It defaults to
 `docs/specs`; Project Config overrides User Config, which overrides the
@@ -520,6 +612,17 @@ defaults:
   # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
   artifact_dir: ""
   auto_commit: true
+
+runtimes:
+  codex:
+    model: gpt-5.5
+    reasoning_effort: xhigh
+  claude:
+    model: opus
+    reasoning_effort: high
+  opencode:
+    model: ""
+    reasoning_effort: ""
 
 review_source:
   name: coderabbit
