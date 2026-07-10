@@ -353,7 +353,7 @@ func defaultSetupDependencies() setupDependencies {
 		acpxVersion: defaultSetupACPXVersion,
 		installACPX: defaultSetupInstallACPX,
 		probeAgent: func(ctx context.Context, runtime agent.RuntimeSpec) error {
-			return newEngineCollaborators().runner.Probe(ctx, runtime)
+			return newEngineCollaborators().runner.Probe(ctx, agent.ProbeRequest{Runtime: runtime})
 		},
 		lookPath: exec.LookPath,
 		exists: func(path string) (bool, error) {

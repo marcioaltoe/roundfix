@@ -161,7 +161,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 
 	collaborators := newEngineCollaborators()
-	if err := collaborators.runner.Probe(ctx, runtime); err != nil {
+	if err := collaborators.runner.Probe(ctx, agent.ProbeRequest{Runtime: runtime, WorkDir: gitState.Root}); err != nil {
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}

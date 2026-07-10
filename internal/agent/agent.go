@@ -77,8 +77,13 @@ type ExecuteResult struct {
 	TransportAnomaly string
 }
 
+type ProbeRequest struct {
+	Runtime RuntimeSpec
+	WorkDir string
+}
+
 type Runner interface {
-	Probe(ctx context.Context, runtime RuntimeSpec) error
+	Probe(ctx context.Context, req ProbeRequest) error
 	Run(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error)
 	EndSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error
 }
@@ -261,8 +266,8 @@ func NewDefaultRunner() *DefaultRunner {
 	return &DefaultRunner{acpx: &ACPXRunner{}}
 }
 
-func (runner *DefaultRunner) Probe(ctx context.Context, runtime RuntimeSpec) error {
-	return runner.acpxRunner().Probe(ctx, runtime)
+func (runner *DefaultRunner) Probe(ctx context.Context, req ProbeRequest) error {
+	return runner.acpxRunner().Probe(ctx, req)
 }
 
 func (runner *DefaultRunner) Run(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error) {

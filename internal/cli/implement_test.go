@@ -459,22 +459,24 @@ func implementTaskPathInRoot(specsRoot string, slug string, taskID string) strin
 // Spec's QA Report, the way the qa-gate Agent does; an empty qaReport
 // writes none.
 type implementFakeRunner struct {
-	mu           sync.Mutex
-	gitRoot      string
-	statusByTask map[string]spec.Status
-	errByTask    map[string]error
-	probeErr     error
-	calls        int
-	taskIDs      []string
-	qaReport     string
-	qaCalls      int
-	logPaths     []string
-	writeLogs    bool
-	agentOutput  string
-	onTask       func(req agent.ExecuteRequest, taskID string) error
+	mu            sync.Mutex
+	gitRoot       string
+	statusByTask  map[string]spec.Status
+	errByTask     map[string]error
+	probeErr      error
+	probeRequests []agent.ProbeRequest
+	calls         int
+	taskIDs       []string
+	qaReport      string
+	qaCalls       int
+	logPaths      []string
+	writeLogs     bool
+	agentOutput   string
+	onTask        func(req agent.ExecuteRequest, taskID string) error
 }
 
-func (runner *implementFakeRunner) Probe(context.Context, agent.RuntimeSpec) error {
+func (runner *implementFakeRunner) Probe(_ context.Context, req agent.ProbeRequest) error {
+	runner.probeRequests = append(runner.probeRequests, req)
 	return runner.probeErr
 }
 
@@ -2713,7 +2715,8 @@ func TestRunImplementPreflightRejectsActiveRunInWorkingTree(t *testing.T) {
 
 func TestRunImplementPreflightProbeFailureCreatesNoRun(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
-	withImplementCollaborators(t, &implementFakeRunner{gitRoot: repoDir, probeErr: errors.New("codex-acp is not on PATH")})
+	runner := &implementFakeRunner{gitRoot: repoDir, probeErr: errors.New("codex-acp is not on PATH")}
+	withImplementCollaborators(t, runner)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -2724,6 +2727,9 @@ func TestRunImplementPreflightProbeFailureCreatesNoRun(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "codex-acp is not on PATH") {
 		t.Fatalf("expected the probe failure reason, got %q", stderr.String())
+	}
+	if len(runner.probeRequests) != 1 || runner.probeRequests[0].WorkDir != repoDir {
+		t.Fatalf("expected one selection preflight in git root %q, got %#v", repoDir, runner.probeRequests)
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 0)
 }

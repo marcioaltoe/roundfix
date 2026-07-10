@@ -1241,7 +1241,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		return exitPreflight
 	}
 	collaborators := newEngineCollaborators()
-	if err := collaborators.runner.Probe(ctx, resolvePlan.runtime); err != nil {
+	if err := collaborators.runner.Probe(ctx, agent.ProbeRequest{Runtime: resolvePlan.runtime, WorkDir: preflightResult.Git.Root}); err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
@@ -1621,7 +1621,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		return exitPreflight
 	}
 	collaborators := newEngineCollaborators()
-	if err := collaborators.runner.Probe(ctx, runtime); err != nil {
+	if err := collaborators.runner.Probe(ctx, agent.ProbeRequest{Runtime: runtime, WorkDir: preflightResult.Git.Root}); err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}

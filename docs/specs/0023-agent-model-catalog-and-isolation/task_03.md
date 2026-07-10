@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0023-agent-model-catalog-and-isolation
-status: pending
+status: completed
 type: infra
 complexity: high
 ---
@@ -26,20 +26,20 @@ reasoning values with zero Run rows and zero durable Agent Sessions.
 
 ## Subtasks
 
-- [ ] Add the workdir-aware probe request and disposable-session lifecycle.
-- [ ] Distinguish selection rejection from runtime infrastructure failure.
-- [ ] Join cleanup failures without losing the original validation error.
-- [ ] Wire operational command preflight ahead of Run creation.
-- [ ] Add adapter and CLI regression coverage for every terminal path.
+- [x] Add the workdir-aware probe request and disposable-session lifecycle.
+- [x] Distinguish selection rejection from runtime infrastructure failure.
+- [x] Join cleanup failures without losing the original validation error.
+- [x] Wire operational command preflight ahead of Run creation.
+- [x] Add adapter and CLI regression coverage for every terminal path.
 
 ## Acceptance Criteria
 
-- [ ] A supported selection completes preflight, closes its disposable session, and permits normal Run creation.
-- [ ] A missing-model-metadata rejection creates no Run row and leaves no disposable or durable Agent Session.
-- [ ] A rejected reasoning value reports the exact runtime/model/reasoning tuple and no fallback attempt occurs.
-- [ ] The disposable session receives model then reasoning and receives no prompt.
-- [ ] Cancellation and cleanup failures preserve context/error identity and do not leak a session silently.
-- [ ] Existing Doctor/setup runtime readiness checks remain functional with the evolved probe contract.
+- [x] A supported selection completes preflight, closes its disposable session, and permits normal Run creation.
+- [x] A missing-model-metadata rejection creates no Run row and leaves no disposable or durable Agent Session.
+- [x] A rejected reasoning value reports the exact runtime/model/reasoning tuple and no fallback attempt occurs.
+- [x] The disposable session receives model then reasoning and receives no prompt.
+- [x] Cancellation and cleanup failures preserve context/error identity and do not leak a session silently.
+- [x] Existing Doctor/setup runtime readiness checks remain functional with the evolved probe contract.
 
 ## Verification
 
@@ -59,3 +59,21 @@ reasoning values with zero Run rows and zero durable Agent Sessions.
 ## References
 
 `_prd.md` -> User Story 6; Core Feature 4; User Experience; Success Metrics. `_techspec.md` -> System Architecture; Interfaces: Agent Runner preflight; API Contracts; Build Order 3. ADR-0037; ADR-0039.
+
+## Result
+
+Status: completed.
+
+Acceptance evidence:
+
+- Supported selection: `TestACPXProbeValidatesSelectionWithDisposableSession` proves version check, disposable `sessions ensure --model`, reasoning `set`, close, and no prompt; existing resolve/watch/implement happy-path tests still create Runs after the probe passes.
+- Missing model metadata: `TestACPXProbeModelRejectionSkipsReasoningAndClosesDisposableSession` proves model rejection closes the disposable session, skips reasoning and prompt; `TestRunResolveSelectionPreflightRejectionReportsTupleAndCreatesNoRun` proves zero Run database creation and zero durable Agent run calls.
+- Rejected reasoning: `TestRunResolveSelectionPreflightRejectionReportsTupleAndCreatesNoRun` and `TestRunWatchSelectionPreflightFailureCreatesNoRun` assert the runtime/model/reasoning tuple, recovery text, one preflight attempt, and no fallback Agent selection.
+- Disposable command stream: `TestACPXProbeValidatesSelectionWithDisposableSession` asserts `--model` precedes `set reasoning_effort`; `containsCommandKey(..., "prompt")` stays false.
+- Cancellation and cleanup: `TestACPXProbeCancellationStillClosesDisposableSession` preserves `context.Canceled` and closes the disposable session; `TestACPXProbeCleanupFailureJoinsSelectionError` preserves both `SelectionPreflightError` and `AgentSessionCleanupError`.
+- Doctor/setup compatibility: `TestACPXProbePassesWhenVersionMatchesPin` keeps workdir-less probes version-only; the existing doctor/setup health tests pass under the evolved probe bridge.
+
+Verification:
+
+- `rtk go test ./internal/agent ./internal/cli` passed: `Go test: 456 passed in 2 packages`.
+- `rtk make verify` passed: `Go test: 1013 passed in 19 packages`; `roundfix skills check` passed; `go build` completed.

@@ -3194,6 +3194,97 @@ func TestRunResolveProbeFailureDoesNotCreateRun(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
+func TestRunResolveSelectionPreflightRejectionReportsTupleAndCreatesNoRun(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	probeErr := &agent.SelectionPreflightError{
+		Runtime:         "codex",
+		Model:           "gpt-5.6-sol",
+		ReasoningEffort: "xhigh",
+		Err:             errors.New("missing model metadata"),
+	}
+	runner := &fakeAgentRunner{probeErr: probeErr}
+	withAgentRunner(t, runner)
+	withFakeWorktree(t)
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
+runtimes:
+  codex:
+    model: gpt-5.6-sol
+    reasoning_effort: xhigh
+`)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected selection preflight exit %d, got %d", exitPreflight, code)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout, got %q", stdout.String())
+	}
+	for _, want := range []string{
+		"codex",
+		"gpt-5.6-sol",
+		"xhigh",
+		"missing model metadata",
+		"update the ACP Runtime or adapter",
+		"choose supported Agent Model and Default Reasoning Effort values",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())
+		}
+	}
+	if runner.calls != 0 {
+		t.Fatalf("expected no durable Agent Session run, got %d run call(s)", runner.calls)
+	}
+	if len(runner.probeRequests) != 1 {
+		t.Fatalf("expected one selection preflight attempt, got %#v", runner.probeRequests)
+	}
+	if runner.probeRequests[0].WorkDir != repoDir {
+		t.Fatalf("expected preflight workdir %q, got %q", repoDir, runner.probeRequests[0].WorkDir)
+	}
+	if got := runner.probeRequests[0].Runtime; got.Model != "gpt-5.6-sol" || got.ReasoningEffort != "xhigh" {
+		t.Fatalf("expected exact selection without fallback, got %#v", got)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
+func TestRunWatchSelectionPreflightFailureCreatesNoRun(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	runner := &fakeAgentRunner{probeErr: &agent.SelectionPreflightError{
+		Runtime:         "codex",
+		Model:           "gpt-5.5",
+		ReasoningEffort: "unsupported",
+		Err:             errors.New("reasoning rejected"),
+	}}
+	withAgentRunner(t, runner)
+	withFakeWorktree(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected selection preflight exit %d, got %d", exitPreflight, code)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout, got %q", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "reasoning rejected") || !strings.Contains(stderr.String(), "unsupported") {
+		t.Fatalf("expected reasoning rejection diagnostic, got %q", stderr.String())
+	}
+	if runner.calls != 0 {
+		t.Fatalf("expected no durable Agent Session run, got %d run call(s)", runner.calls)
+	}
+	if len(runner.probeRequests) != 1 || runner.probeRequests[0].WorkDir != repoDir {
+		t.Fatalf("expected one selection preflight in git root %q, got %#v", repoDir, runner.probeRequests)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
 func TestRunResolveACPXProbeFailureReportsActionablePreflight(t *testing.T) {
 	installCommand := "npm install -g acpx@" + agent.PinnedACPXVersion
 	tests := []struct {
@@ -5951,12 +6042,14 @@ type fakeAgentRunner struct {
 	onRun          func(agent.ExecuteRequest) error
 	calls          int
 	gitRoots       []string
+	probeRequests  []agent.ProbeRequest
 	probedRuntimes []agent.RuntimeSpec
 	runRuntimes    []agent.RuntimeSpec
 }
 
-func (runner *fakeAgentRunner) Probe(_ context.Context, runtime agent.RuntimeSpec) error {
-	runner.probedRuntimes = append(runner.probedRuntimes, runtime)
+func (runner *fakeAgentRunner) Probe(_ context.Context, req agent.ProbeRequest) error {
+	runner.probeRequests = append(runner.probeRequests, req)
+	runner.probedRuntimes = append(runner.probedRuntimes, req.Runtime)
 	return runner.probeErr
 }
 
@@ -6005,7 +6098,7 @@ func (runner *fakeAgentRunner) EndSession(context.Context, agent.RuntimeSpec, ag
 
 type fakeStoppingAgentRunner struct{}
 
-func (runner *fakeStoppingAgentRunner) Probe(context.Context, agent.RuntimeSpec) error {
+func (runner *fakeStoppingAgentRunner) Probe(context.Context, agent.ProbeRequest) error {
 	return nil
 }
 
@@ -6056,8 +6149,8 @@ type sessionRecordingRunner struct {
 	seenSessions   map[string]bool
 }
 
-func (runner *sessionRecordingRunner) Probe(ctx context.Context, runtime agent.RuntimeSpec) error {
-	return runner.inner.Probe(ctx, runtime)
+func (runner *sessionRecordingRunner) Probe(ctx context.Context, req agent.ProbeRequest) error {
+	return runner.inner.Probe(ctx, req)
 }
 
 func (runner *sessionRecordingRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {

@@ -32,7 +32,7 @@ func TestRealACPXCommandOverrideRoundTripCancelCrashResume(t *testing.T) {
 	}
 
 	runner := &ACPXRunner{Command: acpxPath}
-	if err := runner.Probe(context.Background(), RuntimeSpec{}); err != nil {
+	if err := runner.Probe(context.Background(), ProbeRequest{}); err != nil {
 		t.Skipf("pinned acpx %s is required for real acpx integration: %v", PinnedACPXVersion, err)
 	}
 
