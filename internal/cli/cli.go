@@ -2610,22 +2610,24 @@ func defaultFetchReviewItems(ctx context.Context, req reviewsource.FetchRequest)
 }
 
 type engineCollaborators struct {
-	runner    agent.Runner
-	verifier  daemon.Verifier
-	committer daemon.Committer
-	pusher    daemon.Pusher
-	source    daemon.ReviewSourceResolver
-	worktree  daemon.WorktreeSnapshotter
+	runner       agent.Runner
+	verifier     daemon.Verifier
+	committer    daemon.Committer
+	pusher       daemon.Pusher
+	source       daemon.ReviewSourceResolver
+	worktree     daemon.WorktreeSnapshotter
+	priorChanges daemon.PriorChangedResolver
 }
 
 func defaultEngineCollaborators() engineCollaborators {
 	return engineCollaborators{
-		runner:    agent.NewDefaultRunner(),
-		verifier:  daemon.ExecVerifier{},
-		committer: daemon.GitCommitter{},
-		pusher:    daemon.GitPusher{},
-		source:    daemon.ReviewSourceResolverFunc(defaultResolveReviewSourceIssues),
-		worktree:  daemon.GitWorktreeSnapshotter{},
+		runner:       agent.NewDefaultRunner(),
+		verifier:     daemon.ExecVerifier{},
+		committer:    daemon.GitCommitter{},
+		pusher:       daemon.GitPusher{},
+		source:       daemon.ReviewSourceResolverFunc(defaultResolveReviewSourceIssues),
+		worktree:     daemon.GitWorktreeSnapshotter{},
+		priorChanges: daemon.GitPriorChangedResolver{},
 	}
 }
 

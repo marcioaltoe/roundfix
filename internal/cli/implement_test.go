@@ -610,9 +610,22 @@ func withImplementCollaborators(t *testing.T, runner agent.Runner) (*fakeCommitt
 	withVerifier(t, verifier)
 	withCommitter(t, committer)
 	withFakeWorktree(t)
+	withPriorChangedResolver(t, emptyPriorChangedResolver{})
 	withPusher(t, pusher)
 	withSourceResolver(t, sourceResolver)
 	return committer, verifier, pusher, sourceResolver
+}
+
+type emptyPriorChangedResolver struct{}
+
+func (emptyPriorChangedResolver) PriorChangedFiles(context.Context, string, string) ([]string, error) {
+	return nil, nil
+}
+
+func withPriorChangedResolver(t *testing.T, resolver daemon.PriorChangedResolver) {
+	overrideCollaborators(t, func(collaborators *engineCollaborators) {
+		collaborators.priorChanges = resolver
+	})
 }
 
 func runCleanImplementForCleanup(t *testing.T, cleanupErr error) (string, string, int, string, string) {

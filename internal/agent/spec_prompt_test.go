@@ -66,6 +66,62 @@ func TestBuildTaskPromptEmbedsTaskContentVerbatim(t *testing.T) {
 	}
 }
 
+func TestBuildTaskPromptRendersSpecContextBundlePathOnly(t *testing.T) {
+	req := sampleTaskPromptRequest()
+	req.Context = SpecContextBundle{
+		PRD:       "docs/specs/0001-implement-command/_prd.md",
+		TechSpec:  "docs/specs/0001-implement-command/_techspec.md",
+		TaskGraph: "docs/specs/0001-implement-command/_tasks.md",
+		Instructions: []string{
+			"AGENTS.md",
+			".agents/skills/implement-task/SKILL.md",
+			".agents/skills/golang-testing/SKILL.md",
+		},
+		Interfaces:        []string{"internal/spec/task.go"},
+		PriorChangedFiles: []string{"internal/agent/spec_prompt.go", "internal/daemon/task_engine.go"},
+		OmittedPriorFiles: 7,
+	}
+
+	prompt, err := BuildTaskPrompt(req)
+	if err != nil {
+		t.Fatalf("BuildTaskPrompt returned error: %v", err)
+	}
+	for _, expected := range []string{
+		"Spec Context Bundle:",
+		"- PRD: docs/specs/0001-implement-command/_prd.md",
+		"- TechSpec: docs/specs/0001-implement-command/_techspec.md",
+		"- Task Graph: docs/specs/0001-implement-command/_tasks.md",
+		"- Instructions:",
+		"  - AGENTS.md",
+		"  - .agents/skills/implement-task/SKILL.md",
+		"  - .agents/skills/golang-testing/SKILL.md",
+		"- Interfaces:",
+		"  - internal/spec/task.go",
+		"- Prior changed files:",
+		"  - internal/agent/spec_prompt.go",
+		"  - internal/daemon/task_engine.go",
+		"- Omitted prior files: 7",
+	} {
+		if !strings.Contains(prompt, expected) {
+			t.Fatalf("expected prompt to contain %q, got:\n%s", expected, prompt)
+		}
+	}
+	if got := strings.Count(prompt, sampleTaskContent); got != 1 {
+		t.Fatalf("expected exactly one complete task file embedding, got %d", got)
+	}
+	for _, forbidden := range []string{
+		"# Context-Efficient Runs",
+		"package daemon",
+		"diff --git",
+		"@@ -",
+		`{"kind":`,
+	} {
+		if strings.Contains(prompt, forbidden) {
+			t.Fatalf("prompt exposed non-manifest content marker %q:\n%s", forbidden, prompt)
+		}
+	}
+}
+
 func TestBuildTaskPromptDeterministicForIdenticalInput(t *testing.T) {
 	first, err := BuildTaskPrompt(sampleTaskPromptRequest())
 	if err != nil {
@@ -90,6 +146,7 @@ func TestBuildTaskPromptValidatesRequiredFields(t *testing.T) {
 		{name: "empty task path", mutate: func(req *TaskPromptRequest) { req.TaskPath = "" }},
 		{name: "empty task content", mutate: func(req *TaskPromptRequest) { req.TaskContent = "" }},
 		{name: "whitespace-only task content", mutate: func(req *TaskPromptRequest) { req.TaskContent = "  \n\t" }},
+		{name: "negative omitted prior file count", mutate: func(req *TaskPromptRequest) { req.Context.OmittedPriorFiles = -1 }},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -206,6 +206,10 @@ func (fixture *taskCycleFixture) engine(t *testing.T, runner agent.Runner, verif
 }
 
 func (fixture *taskCycleFixture) engineWithTaskWorktrees(t *testing.T, runner agent.Runner, verifier Verifier, committer Committer, worktree WorktreeSnapshotter, taskWorktrees TaskWorktreeManager) *Engine {
+	return fixture.engineWithTaskWorktreesAndPriorChanges(t, runner, verifier, committer, worktree, taskWorktrees, nil)
+}
+
+func (fixture *taskCycleFixture) engineWithTaskWorktreesAndPriorChanges(t *testing.T, runner agent.Runner, verifier Verifier, committer Committer, worktree WorktreeSnapshotter, taskWorktrees TaskWorktreeManager, priorChanges PriorChangedResolver) *Engine {
 	t.Helper()
 	engine, err := NewEngine(Dependencies{
 		Runner:        runner,
@@ -216,6 +220,7 @@ func (fixture *taskCycleFixture) engineWithTaskWorktrees(t *testing.T, runner ag
 		Runs:          fixture.store,
 		Worktree:      worktree,
 		TaskWorktrees: taskWorktrees,
+		PriorChanges:  priorChanges,
 		Sink:          fixture.sink,
 		Progress:      fixture.progress,
 	})
@@ -512,6 +517,38 @@ func (verifier *taskFakeVerifier) Verify(_ context.Context, req VerifyRequest) (
 		return VerifyResult{OutputPath: req.OutputPath}, &VerificationCommandError{Command: req.Command, OutputPath: req.OutputPath, Err: err}
 	}
 	return VerifyResult{OutputPath: req.OutputPath}, nil
+}
+
+type fakePriorChangedResolver struct {
+	mu       sync.Mutex
+	byWork   map[string][]string
+	calls    []priorChangedCall
+	resolve  func(workDir string) []string
+	errByDir map[string]error
+}
+
+type priorChangedCall struct {
+	workDir     string
+	initialHead string
+}
+
+func (resolver *fakePriorChangedResolver) PriorChangedFiles(_ context.Context, workDir string, initialHead string) ([]string, error) {
+	resolver.mu.Lock()
+	defer resolver.mu.Unlock()
+	resolver.calls = append(resolver.calls, priorChangedCall{workDir: workDir, initialHead: initialHead})
+	if err := resolver.errByDir[workDir]; err != nil {
+		return nil, err
+	}
+	if resolver.resolve != nil {
+		return append([]string(nil), resolver.resolve(workDir)...), nil
+	}
+	return append([]string(nil), resolver.byWork[workDir]...), nil
+}
+
+func (resolver *fakePriorChangedResolver) seenCalls() []priorChangedCall {
+	resolver.mu.Lock()
+	defer resolver.mu.Unlock()
+	return append([]priorChangedCall(nil), resolver.calls...)
 }
 
 type taskSchedulerRunner struct {

@@ -21,8 +21,11 @@ type taskFrontmatter struct {
 type taskDocument struct {
 	Frontmatter  taskFrontmatter
 	Title        string
+	Context      []TaskContextRef
 	Verification []string
 }
+
+const maxTaskContextRefs = 50
 
 // ReloadTask re-reads a Task's file from the Spec Root — typically after an
 // Agent has modified it — refreshing Status, Title, Type, and Verification in
@@ -44,6 +47,7 @@ func ReloadTask(specsRoot string, task *Task) error {
 	task.Title = document.Title
 	task.Status = Status(document.Frontmatter.Status)
 	task.Type = document.Frontmatter.Type
+	task.Context = append([]TaskContextRef(nil), document.Context...)
 	task.Verification = document.Verification
 	return nil
 }
@@ -84,9 +88,14 @@ func parseTaskDocument(content []byte) (taskDocument, error) {
 	if !AllowedStatus(Status(frontmatter.Status)) {
 		return taskDocument{}, fmt.Errorf("unsupported status %q", frontmatter.Status)
 	}
+	contextRefs, err := parseTaskContextRefs(body)
+	if err != nil {
+		return taskDocument{}, err
+	}
 	return taskDocument{
 		Frontmatter:  frontmatter,
 		Title:        parseTaskTitle(body),
+		Context:      contextRefs,
 		Verification: parseVerificationCommands(body),
 	}, nil
 }
@@ -146,6 +155,90 @@ func firstBacktickSpan(line string) (string, bool) {
 		return "", false
 	}
 	return line[start+1 : start+1+length], true
+}
+
+// parseTaskContextRefs extracts labeled repository-relative paths from the
+// optional ## Context section. Duplicate entries are ignored without changing
+// the order of first occurrence.
+func parseTaskContextRefs(body []byte) ([]TaskContextRef, error) {
+	var refs []TaskContextRef
+	seen := map[string]bool{}
+	inSection := false
+	for _, line := range strings.Split(string(body), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "# ") {
+			inSection = false
+			continue
+		}
+		if strings.HasPrefix(trimmed, "## ") {
+			inSection = strings.TrimSpace(strings.TrimPrefix(trimmed, "## ")) == "Context"
+			continue
+		}
+		if !inSection || trimmed == "" {
+			continue
+		}
+		if !strings.HasPrefix(trimmed, "- ") {
+			continue
+		}
+		ref, err := parseTaskContextLine(trimmed)
+		if err != nil {
+			return nil, err
+		}
+		key := string(ref.Kind) + "\x00" + ref.Path
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		refs = append(refs, ref)
+		if len(refs) > maxTaskContextRefs {
+			return nil, TaskContextError{Reason: fmt.Sprintf("declares more than %d unique entries", maxTaskContextRefs)}
+		}
+	}
+	return refs, nil
+}
+
+func parseTaskContextLine(line string) (TaskContextRef, error) {
+	entry := strings.TrimSpace(strings.TrimPrefix(line, "- "))
+	label, rest, ok := strings.Cut(entry, ":")
+	if !ok {
+		return TaskContextRef{}, TaskContextError{Kind: entry, Reason: `expected "instruction" or "interface" label`}
+	}
+	kind := ContextKind(strings.TrimSpace(label))
+	switch kind {
+	case ContextKindInstruction, ContextKindInterface:
+	default:
+		return TaskContextRef{}, TaskContextError{Kind: strings.TrimSpace(label), Reason: `expected "instruction" or "interface" label`}
+	}
+	path := strings.TrimSpace(rest)
+	if span, ok := firstBacktickSpan(path); ok {
+		path = span
+	}
+	clean, err := cleanTaskContextPath(path)
+	if err != nil {
+		return TaskContextRef{}, TaskContextError{Kind: string(kind), Path: path, Reason: err.Error()}
+	}
+	return TaskContextRef{Kind: kind, Path: clean}, nil
+}
+
+func cleanTaskContextPath(path string) (string, error) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return "", errors.New("path is required")
+	}
+	if filepath.IsAbs(path) {
+		return "", errors.New("path must be repository-relative")
+	}
+	if strings.Contains(path, `\`) {
+		return "", errors.New("path must use slash separators")
+	}
+	clean := filepath.Clean(path)
+	if clean == "." || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+		return "", errors.New("path must stay inside the repository")
+	}
+	if clean != path {
+		return "", errors.New("path must be clean")
+	}
+	return filepath.ToSlash(clean), nil
 }
 
 // rewriteStatus replaces the value of the first status field in the YAML

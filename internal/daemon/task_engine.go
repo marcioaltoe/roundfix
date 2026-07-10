@@ -30,6 +30,7 @@ type TaskPlan struct {
 	Session         agent.SessionRef
 	WorkDir         string
 	RunWorktree     runworktree.Ref
+	HeadSHA         string
 	SpecsRoot       string
 	ArtifactDir     string
 	AgentLogs       bool
@@ -577,11 +578,16 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 	if err != nil {
 		return "", fmt.Errorf("read Task %q file %q before the Agent: %w", task.ID, taskPath, err)
 	}
+	contextBundle, err := engine.buildTaskContextBundle(ctx, plan, *task)
+	if err != nil {
+		return "", fmt.Errorf("build Spec Context Bundle for run %q Task %s: %w", plan.RunID, task.ID, err)
+	}
 	prompt, err := agent.BuildTaskPrompt(agent.TaskPromptRequest{
 		SpecSlug:    plan.Spec.Slug,
 		TaskID:      task.ID,
 		TaskPath:    taskPromptPath(plan, taskPath),
 		TaskContent: string(content),
+		Context:     contextBundle,
 	})
 	if err != nil {
 		return "", fmt.Errorf("build Task prompt for run %q Task %s: %w", plan.RunID, task.ID, err)

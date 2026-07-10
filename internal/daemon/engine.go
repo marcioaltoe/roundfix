@@ -52,6 +52,7 @@ type Dependencies struct {
 	Runs          RunStateStore
 	Worktree      WorktreeSnapshotter
 	TaskWorktrees TaskWorktreeManager
+	PriorChanges  PriorChangedResolver
 	Sink          runevent.Sink
 	Now           func() time.Time
 	Progress      io.Writer
@@ -83,6 +84,16 @@ func (GitTaskWorktreeManager) IntegrateTask(ctx context.Context, run runworktree
 
 func (GitTaskWorktreeManager) CleanupTask(ctx context.Context, task runworktree.TaskRef) error {
 	return runworktree.CleanupTask(ctx, task)
+}
+
+type PriorChangedResolver interface {
+	PriorChangedFiles(ctx context.Context, workDir string, initialHead string) ([]string, error)
+}
+
+type GitPriorChangedResolver struct{}
+
+func (GitPriorChangedResolver) PriorChangedFiles(ctx context.Context, workDir string, initialHead string) ([]string, error) {
+	return runworktree.PriorChangedFiles(ctx, workDir, initialHead)
 }
 
 // PullRequestRef identifies the Open Pull Request a cycle works on.
@@ -323,6 +334,9 @@ func NewEngine(deps Dependencies) (*Engine, error) {
 	}
 	if deps.TaskWorktrees == nil {
 		deps.TaskWorktrees = GitTaskWorktreeManager{}
+	}
+	if deps.PriorChanges == nil {
+		deps.PriorChanges = GitPriorChangedResolver{}
 	}
 	if deps.Now == nil {
 		deps.Now = time.Now
