@@ -245,12 +245,12 @@ func TestRunCommandHelp(t *testing.T) {
 		{
 			name:     "resolve",
 			args:     []string{"resolve", "--help"},
-			contains: []string{"roundfix resolve --pr <number> --agent <agent>", "--no-agent-console", "--detach"},
+			contains: []string{"roundfix resolve --pr <number> --agent <agent>", "--reasoning-effort", "--no-agent-console", "--detach"},
 		},
 		{
 			name:     "watch",
 			args:     []string{"watch", "--help"},
-			contains: []string{"roundfix watch --source coderabbit --pr <number> --agent <agent>", "--until-clean", "Review Source check succeeds", "--no-agent-console", "--detach"},
+			contains: []string{"roundfix watch --source coderabbit --pr <number> --agent <agent>", "--reasoning-effort", "--until-clean", "Review Source check succeeds", "--no-agent-console", "--detach"},
 		},
 		{
 			name:     "setup",
@@ -3283,6 +3283,101 @@ func TestRunWatchSelectionPreflightFailureCreatesNoRun(t *testing.T) {
 		t.Fatalf("expected one selection preflight in git root %q, got %#v", repoDir, runner.probeRequests)
 	}
 	assertNoRunDatabase(t, homeDir)
+}
+
+func TestRunReviewAgentCommandsPassOneRunSelectionOverridesToPreflight(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{
+			name: "resolve",
+			args: []string{"resolve", "--pr", "123", "--agent", "codex", "--model", "future-model", "--reasoning-effort", "experimental-reasoning", "--no-input"},
+		},
+		{
+			name: "watch",
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--model", "future-model", "--reasoning-effort", "experimental-reasoning", "--no-input"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			withSuccessfulPreflight(t, repoDir)
+			runner := &fakeAgentRunner{probeErr: errors.New("stop after selection preflight")}
+			withAgentRunner(t, runner)
+			if tt.name == "resolve" {
+				persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+			}
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run(tt.args, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("expected no stdout diagnostics, got %q", stdout.String())
+			}
+			if len(runner.probeRequests) != 1 {
+				t.Fatalf("expected one selection preflight, got %#v", runner.probeRequests)
+			}
+			got := runner.probeRequests[0].Runtime
+			if got.Model != "future-model" || got.ReasoningEffort != "experimental-reasoning" {
+				t.Fatalf("expected one-Run selection overrides at preflight, got %#v", got)
+			}
+			assertNoRunDatabase(t, homeDir)
+		})
+	}
+}
+
+func TestRunReviewAgentCommandsRejectExplicitEmptySelectionOverrides(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{
+			name: "resolve model",
+			args: []string{"resolve", "--pr", "123", "--agent", "codex", "--model=", "--no-input"},
+			want: "--model cannot be empty",
+		},
+		{
+			name: "resolve reasoning",
+			args: []string{"resolve", "--pr", "123", "--agent", "codex", "--reasoning-effort=", "--no-input"},
+			want: "--reasoning-effort cannot be empty",
+		},
+		{
+			name: "watch model",
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--model=", "--no-input"},
+			want: "--model cannot be empty",
+		},
+		{
+			name: "watch reasoning",
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--reasoning-effort=", "--no-input"},
+			want: "--reasoning-effort cannot be empty",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, _ := withCLIWorkspace(t)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run(tt.args, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("expected no stdout diagnostics, got %q", stdout.String())
+			}
+			if !strings.Contains(stderr.String(), tt.want) {
+				t.Fatalf("expected stderr to contain %q, got %q", tt.want, stderr.String())
+			}
+			assertNoRunDatabase(t, homeDir)
+		})
+	}
 }
 
 func TestRunResolveACPXProbeFailureReportsActionablePreflight(t *testing.T) {

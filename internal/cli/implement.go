@@ -37,6 +37,7 @@ Options:
                        completed; only a pass verdict lets the Run end Clean
   --agent              Agent runtime. Supported: codex, claude, opencode
   --model              Agent model override
+  --reasoning-effort   Default reasoning effort override
   --agent-command      Agent command override
   --agent-full-access  Opt into Agent runtime full-access mode
   --no-agent-console   Hide Agent-source console events from non-TTY stderr
@@ -342,7 +343,6 @@ func parseImplementCommand(args []string, config roundconfig.Config) (commandReq
 	req := commandRequest{
 		name:            "implement",
 		agent:           config.Defaults.Agent,
-		model:           config.Defaults.Model,
 		artifactDir:     config.Defaults.ArtifactDir,
 		agentFullAccess: config.Defaults.AgentFullAccess,
 	}
@@ -352,6 +352,7 @@ func parseImplementCommand(args []string, config roundconfig.Config) (commandReq
 	fs.BoolVar(&req.qa, "qa", false, "End the Run with the qa-gate step once every Task is completed")
 	fs.StringVar(&req.agent, "agent", req.agent, "Agent runtime")
 	fs.StringVar(&req.model, "model", req.model, "Agent model override")
+	fs.StringVar(&req.reasoningEffort, "reasoning-effort", req.reasoningEffort, "Default reasoning effort override")
 	fs.StringVar(&req.agentCmd, "agent-command", "", "Agent command override")
 	fs.BoolVar(&req.agentFullAccess, "agent-full-access", req.agentFullAccess, "Opt into Agent runtime full-access mode")
 	fs.BoolVar(&req.noAgentConsole, "no-agent-console", false, "Hide Agent-source console events from non-TTY stderr")
@@ -363,6 +364,10 @@ func parseImplementCommand(args []string, config roundconfig.Config) (commandReq
 	}
 	if remaining := fs.Args(); len(remaining) > 0 {
 		return req, validationError{message: fmt.Sprintf("unexpected argument %q", remaining[0])}
+	}
+	recordSelectionFlagPresence(fs, &req)
+	if err := validateExplicitSelectionFlags(req); err != nil {
+		return req, err
 	}
 	req.spec = strings.TrimSpace(req.spec)
 	return req, nil

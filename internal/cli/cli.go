@@ -105,6 +105,9 @@ type commandRequest struct {
 	reviewRoot          string
 	baseRepo            string
 	model               string
+	modelSet            bool
+	reasoningEffort     string
+	reasoningEffortSet  bool
 	agentCmd            string
 	agentFullAccess     bool
 	noAgentConsole      bool
@@ -973,20 +976,22 @@ func buildInteractiveInputRequest(ctx context.Context, req commandRequest, loade
 	return roundtui.InputRequest{
 		Command: req.name,
 		Values: roundtui.CommandValues{
-			PRNumber:     req.pr,
-			Spec:         req.spec,
-			ReviewSource: req.source,
-			Agent:        req.agent,
-			Round:        req.round,
-			ArtifactDir:  req.artifactDir,
-			Model:        req.model,
-			MaxRounds:    req.maxRounds,
-			UntilClean:   req.untilClean,
-			QA:           req.qa,
+			PRNumber:        req.pr,
+			Spec:            req.spec,
+			ReviewSource:    req.source,
+			Agent:           req.agent,
+			Round:           req.round,
+			ArtifactDir:     req.artifactDir,
+			Model:           req.model,
+			ReasoningEffort: req.reasoningEffort,
+			MaxRounds:       req.maxRounds,
+			UntilClean:      req.untilClean,
+			QA:              req.qa,
 		},
-		PRSuggestion:    prSuggestion,
-		AgentSuggestion: agentSuggestion,
-		SpecOptions:     specOptions,
+		PRSuggestion:      prSuggestion,
+		AgentSuggestion:   agentSuggestion,
+		SelectionDefaults: tuiSelectionDefaults(loaded.Config),
+		SpecOptions:       specOptions,
 	}, nil
 }
 
@@ -997,13 +1002,62 @@ func applyInteractiveValues(req commandRequest, values roundtui.CommandValues) c
 	req.agent = strings.TrimSpace(values.Agent)
 	req.round = strings.TrimSpace(values.Round)
 	req.artifactDir = strings.TrimSpace(values.ArtifactDir)
-	req.model = strings.TrimSpace(values.Model)
+	if model := strings.TrimSpace(values.Model); model != "" {
+		req.model = model
+		req.modelSet = true
+	} else if !req.modelSet {
+		req.model = ""
+	}
+	if reasoningEffort := strings.TrimSpace(values.ReasoningEffort); reasoningEffort != "" {
+		req.reasoningEffort = reasoningEffort
+		req.reasoningEffortSet = true
+	} else if !req.reasoningEffortSet {
+		req.reasoningEffort = ""
+	}
 	if values.MaxRounds > 0 {
 		req.maxRounds = values.MaxRounds
 	}
 	req.untilClean = values.UntilClean
 	req.qa = values.QA
 	return req
+}
+
+func tuiSelectionDefaults(config roundconfig.Config) map[string]roundtui.RuntimeSelectionDefaults {
+	defaults := map[string]roundtui.RuntimeSelectionDefaults{}
+	for _, runtime := range []string{"codex", "claude", "opencode"} {
+		runtimeDefaults, _ := config.Runtimes.DefaultsFor(runtime)
+		defaults[runtime] = roundtui.RuntimeSelectionDefaults{
+			Model:            runtimeDefaults.Model,
+			ReasoningEffort:  runtimeDefaults.ReasoningEffort,
+			ModelCatalog:     tuiModelCatalog(runtime),
+			ReasoningChoices: reasoningEffortChoices(runtime),
+		}
+	}
+	return defaults
+}
+
+func tuiModelCatalog(runtime string) []roundtui.ModelChoice {
+	catalog := agent.ModelCatalog(runtime)
+	choices := make([]roundtui.ModelChoice, 0, len(catalog))
+	for _, choice := range catalog {
+		choices = append(choices, roundtui.ModelChoice{
+			Label:       choice.Label,
+			Value:       choice.Value,
+			Description: choice.Description,
+		})
+	}
+	return choices
+}
+
+func reasoningEffortChoices(runtime string) []string {
+	switch runtime {
+	case "codex":
+		return []string{"low", "medium", "high", "xhigh"}
+	case "claude":
+		return []string{"default", "high", "maximum"}
+	default:
+		return nil
+	}
 }
 
 func defaultCollectInteractiveInput(ctx context.Context, req roundtui.InputRequest) (roundtui.CommandValues, error) {
@@ -2211,7 +2265,6 @@ func parseOperationalCommand(name string, args []string, config roundconfig.Conf
 		untilClean:      config.Watch.UntilClean,
 		maxRounds:       config.Watch.MaxRounds,
 		artifactDir:     config.Defaults.ArtifactDir,
-		model:           config.Defaults.Model,
 		agentFullAccess: config.Defaults.AgentFullAccess,
 	}
 	if name == "fetch" {
@@ -2237,6 +2290,7 @@ func parseOperationalCommand(name string, args []string, config roundconfig.Conf
 		fs.BoolVar(&req.detach, "detach", false, "Start a Detached Run and print attach/stop commands")
 		fs.StringVar(&req.agent, "agent", req.agent, "Agent runtime")
 		fs.StringVar(&req.model, "model", req.model, "Agent model override")
+		fs.StringVar(&req.reasoningEffort, "reasoning-effort", req.reasoningEffort, "Default reasoning effort override")
 		fs.StringVar(&req.agentCmd, "agent-command", "", "Agent command override")
 		fs.BoolVar(&req.agentFullAccess, "agent-full-access", req.agentFullAccess, "Opt into Agent runtime full-access mode")
 		fs.BoolVar(&req.noAgentConsole, "no-agent-console", false, "Hide Agent-source console events from non-TTY stderr")
@@ -2246,6 +2300,7 @@ func parseOperationalCommand(name string, args []string, config roundconfig.Conf
 		fs.StringVar(&req.source, "source", req.source, "Review Source")
 		fs.StringVar(&req.agent, "agent", req.agent, "Agent runtime")
 		fs.StringVar(&req.model, "model", req.model, "Agent model override")
+		fs.StringVar(&req.reasoningEffort, "reasoning-effort", req.reasoningEffort, "Default reasoning effort override")
 		fs.StringVar(&req.agentCmd, "agent-command", "", "Agent command override")
 		fs.BoolVar(&req.agentFullAccess, "agent-full-access", req.agentFullAccess, "Opt into Agent runtime full-access mode")
 		fs.BoolVar(&req.noAgentConsole, "no-agent-console", false, "Hide Agent-source console events from non-TTY stderr")
@@ -2262,8 +2317,41 @@ func parseOperationalCommand(name string, args []string, config roundconfig.Conf
 	if remaining := fs.Args(); len(remaining) > 0 {
 		return req, validationError{message: fmt.Sprintf("unexpected argument %q", remaining[0])}
 	}
+	recordSelectionFlagPresence(fs, &req)
+	if err := validateExplicitSelectionFlags(req); err != nil {
+		return req, err
+	}
 
 	return req, nil
+}
+
+func recordSelectionFlagPresence(fs *flag.FlagSet, req *commandRequest) {
+	fs.Visit(func(flag *flag.Flag) {
+		switch flag.Name {
+		case "model":
+			req.modelSet = true
+		case "reasoning-effort":
+			req.reasoningEffortSet = true
+		}
+	})
+}
+
+func validateExplicitSelectionFlags(req commandRequest) error {
+	if req.modelSet && strings.TrimSpace(req.model) == "" {
+		return emptySelectionFlagError(req, "model", "model")
+	}
+	if req.reasoningEffortSet && strings.TrimSpace(req.reasoningEffort) == "" {
+		return emptySelectionFlagError(req, "reasoning-effort", "reasoning_effort")
+	}
+	return nil
+}
+
+func emptySelectionFlagError(req commandRequest, flagName string, configKey string) error {
+	runtime := strings.TrimSpace(req.agent)
+	if runtime == "" {
+		runtime = "<agent>"
+	}
+	return validationError{message: fmt.Sprintf("--%s cannot be empty; omit it to use runtimes.%s.%s or pass a concrete value", flagName, runtime, configKey)}
 }
 
 func validateCommandRequest(req commandRequest) error {
@@ -3008,6 +3096,7 @@ Options:
   --spec         Spec slug under docs/specs/
   --agent        Agent runtime. Supported: codex, claude, opencode
   --model        Agent model override
+  --reasoning-effort Default reasoning effort override
   --agent-command Agent command override
   --agent-full-access Opt into Agent runtime full-access mode
   --no-agent-console Hide Agent-source console events from non-TTY stderr
@@ -3030,6 +3119,7 @@ Options:
   --spec         Spec slug under docs/specs/
   --agent        Agent runtime. Supported: codex, claude, opencode
   --model        Agent model override
+  --reasoning-effort Default reasoning effort override
   --agent-command Agent command override
   --agent-full-access Opt into Agent runtime full-access mode
   --no-agent-console Hide Agent-source console events from non-TTY stderr

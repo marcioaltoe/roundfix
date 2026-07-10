@@ -56,10 +56,11 @@ func ResolveSelection(runtime string, defaults roundconfig.RuntimeDefaults, invo
 
 func runtimeForAgentWork(req commandRequest, config roundconfig.Config) (agent.RuntimeSpec, error) {
 	defaults, _ := config.Runtimes.DefaultsFor(req.agent)
-	invocation := InvocationSelection{}
-	if strings.TrimSpace(req.model) != "" {
-		invocation.Model = req.model
-		invocation.ModelSet = true
+	invocation := InvocationSelection{
+		Model:              req.model,
+		ReasoningEffort:    req.reasoningEffort,
+		ModelSet:           req.modelSet,
+		ReasoningEffortSet: req.reasoningEffortSet,
 	}
 	selection, err := ResolveSelection(req.agent, defaults, invocation)
 	if err != nil {

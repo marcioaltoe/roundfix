@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0023-agent-model-catalog-and-isolation
-status: pending
+status: completed
 type: frontend
 complexity: high
 ---
@@ -27,21 +27,21 @@ Agent-starting command and supported ACP Runtime.
 
 ## Subtasks
 
-- [ ] Add reasoning fields to command and Interactive Input values.
-- [ ] Parse flag presence and resolve one-Run overrides.
-- [ ] Render runtime-specific model and reasoning choices.
-- [ ] Support catalog numbers, configured defaults, and custom typed values.
-- [ ] Cover non-interactive and Interactive Input behavior for all runtimes.
+- [x] Add reasoning fields to command and Interactive Input values.
+- [x] Parse flag presence and resolve one-Run overrides.
+- [x] Render runtime-specific model and reasoning choices.
+- [x] Support catalog numbers, configured defaults, and custom typed values.
+- [x] Cover non-interactive and Interactive Input behavior for all runtimes.
 
 ## Acceptance Criteria
 
-- [ ] Each Agent-starting command accepts both one-Run overrides and passes their concrete values to preflight.
-- [ ] Omitted overrides use the selected runtime's effective configuration, while explicit empty overrides exit `2`.
-- [ ] Codex Interactive Input displays seven ordered models and Claude displays five, with no extra `Custom` catalog entry.
-- [ ] Claude `Default` visibly resolves to the configured concrete model.
-- [ ] A custom model or reasoning value reaches ACP validation unchanged.
-- [ ] OpenCode Interactive Input cannot proceed while either required value is empty.
-- [ ] Buffer-captured CLI tests find no diagnostics on stdout.
+- [x] Each Agent-starting command accepts both one-Run overrides and passes their concrete values to preflight.
+- [x] Omitted overrides use the selected runtime's effective configuration, while explicit empty overrides exit `2`.
+- [x] Codex Interactive Input displays seven ordered models and Claude displays five, with no extra `Custom` catalog entry.
+- [x] Claude `Default` visibly resolves to the configured concrete model.
+- [x] A custom model or reasoning value reaches ACP validation unchanged.
+- [x] OpenCode Interactive Input cannot proceed while either required value is empty.
+- [x] Buffer-captured CLI tests find no diagnostics on stdout.
 
 ## Verification
 
@@ -62,3 +62,19 @@ Agent-starting command and supported ACP Runtime.
 ## References
 
 `_prd.md` -> User Stories 3, 4, 5; Core Features 5-8; User Experience. `_techspec.md` -> API Contracts; Data Models: Model Catalogs; Build Order 4. ADR-0037; ADR-0039.
+
+## Result
+
+Status: completed.
+
+Evidence:
+- Agent-starting command overrides: `TestRunReviewAgentCommandsPassOneRunSelectionOverridesToPreflight` covers `resolve` and `watch`; `TestRunImplementPassesOneRunSelectionOverridesToPreflight` covers `implement`.
+- Omitted versus explicit empty: existing selection preflight coverage verifies omitted flags use runtime config; `TestRunReviewAgentCommandsRejectExplicitEmptySelectionOverrides` and `TestRunImplementRejectsExplicitEmptySelectionOverrides` verify explicit empty `--model` and `--reasoning-effort` exit `2`.
+- Catalog and custom Interactive Input: `TestCollectInputDisplaysCodexCatalogAndMapsNumbers`, `TestCollectInputDisplaysClaudeCatalogDefaultAsConcreteModel`, and `TestCollectInputPreservesCustomModelAndReasoningValues` verify ordered catalogs, no synthetic `Custom` entry, Claude `Default` concrete display, numeric picks, and typed custom values.
+- OpenCode: `TestCollectInputOpenCodeRequiresTypedOrConfiguredSelectionValues` verifies OpenCode cannot proceed with missing model or reasoning and receives no fabricated catalog.
+- Stdout/stderr: the new buffer-captured CLI tests assert no stdout diagnostics on validation/preflight failures.
+
+Verification:
+- `rtk go test ./internal/tui ./internal/cli` passed: 540 tests.
+- `rtk go run -buildvcs=false ./cmd/roundfix --help` passed and rendered root help.
+- `rtk make verify` passed: `go test ./...`, `roundfix skills check`, and build.
