@@ -23,6 +23,12 @@ Turn `docs/specs/<slug>/_prd.md` (and `_techspec.md` when present) into the exec
 - **Dependencies live only in the `_tasks.md` graph.** Never in task files. Two copies of an edge is how graphs drift.
 - **Status lives only in each task file's frontmatter.** `_tasks.md` owns topology, not progress — schedulers re-read task files for state.
 - **Content references, never duplicates.** Task files point at PRD/TechSpec sections by name; a task that restates the spec goes stale the first time the spec is amended.
+- **Context entries are labeled paths.** Add `## Context` only when the Task
+  needs specific instruction or interface paths beyond the standard Spec
+  bundle. Use bullets shaped as `- instruction: <path>` or
+  `- interface: <path>`. Paths must be clean, repository-relative, and unique;
+  a Task may declare at most 50 unique entries. The Daemon reserves those paths
+  before filling the 200-path Spec Context Bundle with prior changed files.
 
 ## Decomposition rules
 
@@ -31,7 +37,7 @@ Turn `docs/specs/<slug>/_prd.md` (and `_techspec.md` when present) into the exec
 - **Sized for one fresh session.** A task an agent can complete in a single sitting with a fresh context. More than ~7 subtasks or files means split it.
 - **Tests embedded, never separated.** Every task's acceptance criteria include its own tests; a trailing "write the tests" task means the earlier tasks were never done.
 - **Independently implementable.** Once its `needs` are completed, a task must require no other unfinished work — that's what allows parallel execution across worktrees later.
-- **Verification must be hermetic.** Every task's `## Verification` commands must be satisfiable in a fresh worktree using only repository state, declared config, and task-owned setup. Do not depend on untracked local files, prior Runs, interactive prompts, pushed branches, or ambient machine state unless the task explicitly creates that state.
+- **Verification must be hermetic and Daemon-owned.** Every task's `## Verification` commands must be satisfiable in a fresh worktree using only repository state, declared config, and task-owned setup. Do not depend on untracked local files, prior Runs, interactive prompts, pushed branches, or ambient machine state unless the task explicitly creates that state. The Daemon runs these commands after the Agent turn and may send one failure-only Verification Feedback prompt; do not tell the Agent to run the authoritative gate itself.
 - **Commit and push stay out of task criteria.** The Daemon owns Task commits, Run integration, and any configured push. Never put commit, push, PR creation, or branch-publishing requirements in task Requirements, Subtasks, Acceptance Criteria, or Verification commands.
 
 ## Process
@@ -46,7 +52,7 @@ Present the breakdown as a table (`id | title | type | complexity | needs`) plus
 
 ### 3. Write the files
 
-From the templates in [references/task-template.md](references/task-template.md), write `_tasks.md` and every `task_NN.md` (numbered from `01` in topological order). Acceptance criteria must be independently verifiable — a criterion nobody can check is a wish, not a criterion. Include a `## Verification` section with exact, hermetic commands that prove the task done in a fresh worktree; `implement-task` and the Daemon run them verbatim.
+From the templates in [references/task-template.md](references/task-template.md), write `_tasks.md` and every `task_NN.md` (numbered from `01` in topological order). Acceptance criteria must be independently verifiable — a criterion nobody can check is a wish, not a criterion. Include a `## Verification` section with exact, hermetic commands that prove the task done in a fresh worktree; the Daemon runs them verbatim after Agent work. Add `## Context` only for task-specific instruction or interface paths that the standard Spec Context Bundle would not make obvious.
 
 Durability applies here too: describe behavior and interfaces, not repo file paths (relative references within the spec folder are fine — the folder moves as a unit).
 
