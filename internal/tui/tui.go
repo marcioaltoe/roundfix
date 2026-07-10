@@ -303,13 +303,13 @@ func RenderInteractiveInput(req InputRequest) string {
 func currentInputDefault(req InputRequest, values CommandValues, defaults map[string]string, field string) string {
 	current := getValue(values, field)
 	if field == "model" {
-		if current != "" {
+		if current != "" && !runtimeChanged(req, values) {
 			return current
 		}
 		return runtimeSelection(req, values).Model
 	}
 	if field == "reasoning-effort" {
-		if current != "" {
+		if current != "" && !runtimeChanged(req, values) {
 			return current
 		}
 		return runtimeSelection(req, values).ReasoningEffort
@@ -326,6 +326,10 @@ func runtimeSelection(req InputRequest, values CommandValues) RuntimeSelectionDe
 		return RuntimeSelectionDefaults{}
 	}
 	return req.SelectionDefaults[runtime]
+}
+
+func runtimeChanged(req InputRequest, values CommandValues) bool {
+	return selectedRuntime(req, values) != selectedRuntime(req, req.Values)
 }
 
 func selectedRuntime(req InputRequest, values CommandValues) string {

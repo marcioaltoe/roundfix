@@ -144,8 +144,8 @@ Built-in selections:
 
 - Codex: `model: gpt-5.5`, `reasoning_effort: xhigh`.
 - Claude: `model: opus`, `reasoning_effort: high`.
-- OpenCode: no built-in model or reasoning value; configure both values or
-  pass both one-Run flags before starting an OpenCode Run.
+- OpenCode: no built-in model or reasoning value; provide each value through
+  User Config, Project Config, its one-Run flag, or a mix of config and flags.
 
 Project Config and User Config use the per-runtime structure:
 
@@ -162,8 +162,9 @@ runtimes:
     reasoning_effort: ""
 ```
 
-OpenCode has no Roundfix Model Catalog and no default. Replace both empty
-OpenCode values with adapter-supported values, or pass both one-Run flags:
+OpenCode has no Roundfix Model Catalog and no default. Replace any empty
+OpenCode values with adapter-supported values in config, or pass each missing
+value with its matching one-Run flag:
 
 ```yaml
 runtimes:

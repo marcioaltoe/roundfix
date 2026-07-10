@@ -143,6 +143,34 @@ func TestACPXProbeValidatesSelectionWithDisposableSession(t *testing.T) {
 	}
 }
 
+func TestACPXProbeSelectionSetupUsesBoundedContext(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(codexPathEnv, "/configured/clean/codex")
+	probe := &deadlineRecordingCodexProbe{}
+	harness.runner.codexSpawn = codexSpawnDependencies{
+		goos:       "darwin",
+		lookPath:   fakeCodexLookPath("/path/clean/codex", nil),
+		quarantine: probe,
+		acceptance: probe,
+	}
+	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.5", ReasoningEffort: "xhigh"}
+
+	err := harness.runner.Probe(context.Background(), ProbeRequest{Runtime: runtime, WorkDir: harness.gitRoot})
+
+	if err != nil {
+		t.Fatalf("expected selection preflight to pass, got %v", err)
+	}
+	if len(probe.deadlineSeen) == 0 {
+		t.Fatal("expected codex setup inspection to receive a context")
+	}
+	for index, sawDeadline := range probe.deadlineSeen {
+		if !sawDeadline {
+			t.Fatalf("expected setup context %d to have a deadline", index)
+		}
+	}
+}
+
 func TestACPXProbeSelectionRejectionClosesDisposableSession(t *testing.T) {
 	harness := newFakeACPXHarness(t)
 	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
@@ -1722,6 +1750,22 @@ func (probe *fakeCodexSpawnProbe) Accepted(_ context.Context, path string) (bool
 		return true, nil
 	}
 	return accepted, nil
+}
+
+type deadlineRecordingCodexProbe struct {
+	deadlineSeen []bool
+}
+
+func (probe *deadlineRecordingCodexProbe) Quarantined(ctx context.Context, _ string) (bool, error) {
+	_, ok := ctx.Deadline()
+	probe.deadlineSeen = append(probe.deadlineSeen, ok)
+	return false, nil
+}
+
+func (probe *deadlineRecordingCodexProbe) Accepted(ctx context.Context, _ string) (bool, error) {
+	_, ok := ctx.Deadline()
+	probe.deadlineSeen = append(probe.deadlineSeen, ok)
+	return true, nil
 }
 
 func fakeCodexLookPath(path string, err error) codex.LookPathFunc {

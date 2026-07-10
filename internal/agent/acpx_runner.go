@@ -34,6 +34,7 @@ const (
 	acpxCodexReasoningEffortKey     = "reasoning_effort"
 	acpxGenericReasoningEffortKey   = "effort"
 	acpxPreflightSessionPrefix      = "roundfix-preflight-"
+	acpxPreflightSetupTimeout       = 30 * time.Second
 	acpxPreflightCleanupTimeout     = 5 * time.Second
 	infrastructureStderrTailLines   = 10
 	infrastructureStderrTailBytes   = 1024
@@ -280,11 +281,14 @@ func (runner ACPXRunner) probeSelection(ctx context.Context, runtime RuntimeSpec
 	if err != nil {
 		return err
 	}
-	codexEnv, err := runner.codexEnvForSession(ctx, runtime, sessionName)
+	setupCtx, setupCancel := context.WithTimeout(ctx, acpxPreflightSetupTimeout)
+	codexEnv, err := runner.codexEnvForSession(setupCtx, runtime, sessionName)
 	if err != nil {
+		setupCancel()
 		return err
 	}
-	setupErr := runner.applyDisposableSelection(ctx, runtime, sessionName, workDir, codexEnv)
+	setupErr := runner.applyDisposableSelection(setupCtx, runtime, sessionName, workDir, codexEnv)
+	setupCancel()
 
 	cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), acpxPreflightCleanupTimeout)
 	defer cancel()

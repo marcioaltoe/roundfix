@@ -85,6 +85,74 @@ func TestCollectInputAppliesDefaultsAndUserOverrides(t *testing.T) {
 	}
 }
 
+func TestCollectInputRecomputesSelectionDefaultsWhenAgentChanges(t *testing.T) {
+	tests := []struct {
+		name             string
+		input            string
+		wantAgent        string
+		wantModel        string
+		wantReasoning    string
+		wantModelPrompt  string
+		wantEffortPrompt string
+	}{
+		{
+			name:             "same agent keeps seeded selection",
+			input:            "\n\n\n\n\n\n",
+			wantAgent:        "codex",
+			wantModel:        "configured-codex",
+			wantReasoning:    "configured-xhigh",
+			wantModelPrompt:  "Agent Model [configured-codex]:",
+			wantEffortPrompt: "Default Reasoning Effort [configured-xhigh]:",
+		},
+		{
+			name:             "changed agent uses selected runtime defaults",
+			input:            "\nclaude\n\n\n\n\n",
+			wantAgent:        "claude",
+			wantModel:        "opus",
+			wantReasoning:    "high",
+			wantModelPrompt:  "Agent Model [opus]:",
+			wantEffortPrompt: "Default Reasoning Effort [high]:",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var output strings.Builder
+
+			values, err := CollectInput(context.Background(), InputRequest{
+				Command: "resolve",
+				Values: CommandValues{
+					PRNumber:        "123",
+					Agent:           "codex",
+					Model:           "configured-codex",
+					ReasoningEffort: "configured-xhigh",
+					Round:           "all",
+					ArtifactDir:     ".roundfix",
+				},
+				SelectionDefaults: testSelectionDefaults(),
+			}, strings.NewReader(tt.input), &output)
+			if err != nil {
+				t.Fatalf("collect input: %v", err)
+			}
+
+			if values.Agent != tt.wantAgent {
+				t.Fatalf("expected agent %q, got %q", tt.wantAgent, values.Agent)
+			}
+			if values.Model != tt.wantModel {
+				t.Fatalf("expected model %q, got %q", tt.wantModel, values.Model)
+			}
+			if values.ReasoningEffort != tt.wantReasoning {
+				t.Fatalf("expected reasoning effort %q, got %q", tt.wantReasoning, values.ReasoningEffort)
+			}
+			if !strings.Contains(output.String(), tt.wantModelPrompt) {
+				t.Fatalf("expected model prompt %q, got:\n%s", tt.wantModelPrompt, output.String())
+			}
+			if !strings.Contains(output.String(), tt.wantEffortPrompt) {
+				t.Fatalf("expected reasoning prompt %q, got:\n%s", tt.wantEffortPrompt, output.String())
+			}
+		})
+	}
+}
+
 func TestCollectInputSpecPickerSelectsListedSpec(t *testing.T) {
 	tests := []struct {
 		name     string
