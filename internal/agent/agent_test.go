@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -88,6 +89,54 @@ func TestRuntimeForCodexFullAccessOptIn(t *testing.T) {
 
 	if runtime.FullAccessMode != "full-access" {
 		t.Fatalf("expected Codex full-access session mode, got %q", runtime.FullAccessMode)
+	}
+}
+
+func TestModelCatalogsExposeOrderedPickerData(t *testing.T) {
+	tests := []struct {
+		name    string
+		runtime string
+		want    []ModelChoice
+	}{
+		{
+			name:    "codex",
+			runtime: "codex",
+			want: []ModelChoice{
+				{Label: "gpt-5.6-sol", Value: "gpt-5.6-sol", Description: "latest frontier agentic coding model"},
+				{Label: "gpt-5.6-terra", Value: "gpt-5.6-terra", Description: "balanced everyday agentic coding"},
+				{Label: "gpt-5.6-luna", Value: "gpt-5.6-luna", Description: "fast and affordable agentic coding"},
+				{Label: "gpt-5.5", Value: "gpt-5.5", Description: "initial Default Agent Model"},
+				{Label: "gpt-5.4", Value: "gpt-5.4", Description: "everyday coding"},
+				{Label: "gpt-5.4-mini", Value: "gpt-5.4-mini", Description: "small and cost-efficient"},
+				{Label: "gpt-5.3-codex-spark", Value: "gpt-5.3-codex-spark", Description: "ultra-fast coding"},
+			},
+		},
+		{
+			name:    "claude",
+			runtime: "claude",
+			want: []ModelChoice{
+				{Label: "Default", Value: "default", Description: "effective configured Claude model"},
+				{Label: "Opus", Value: "opus", Description: "Opus 4.8 with a 1M context window"},
+				{Label: "Fable", Value: "fable", Description: "Fable 5"},
+				{Label: "Sonnet", Value: "sonnet", Description: "Sonnet 5"},
+				{Label: "Haiku", Value: "haiku", Description: "Haiku 4.5"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ModelCatalog(tt.runtime)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Fatalf("ModelCatalog(%q) mismatch\nwant: %#v\ngot:  %#v", tt.runtime, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestModelCatalogLeavesOpenCodeWithoutBuiltInChoices(t *testing.T) {
+	if got := ModelCatalog("opencode"); len(got) != 0 {
+		t.Fatalf("expected no OpenCode Model Catalog, got %#v", got)
 	}
 }
 

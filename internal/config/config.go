@@ -21,6 +21,10 @@ const (
 	projectConfigName               = ".roundfixrc.yml"
 	defaultReviewSource             = "coderabbit"
 	defaultAgent                    = "codex"
+	defaultCodexModel               = "gpt-5.5"
+	defaultCodexReasoningEffort     = "xhigh"
+	defaultClaudeModel              = "opus"
+	defaultClaudeReasoningEffort    = "high"
 	defaultVerification             = "make verify"
 	defaultPollInterval             = 30 * time.Second
 	defaultReviewTimeout            = 30 * time.Minute
@@ -40,6 +44,7 @@ const (
 
 type Config struct {
 	Defaults     Defaults
+	Runtimes     Runtimes
 	ReviewSource ReviewSource
 	Watch        Watch
 	Implement    Implement
@@ -59,6 +64,30 @@ type Defaults struct {
 	AutoCommit      bool
 	Verification    string
 	ArtifactDir     string
+}
+
+type RuntimeDefaults struct {
+	Model           string
+	ReasoningEffort string
+}
+
+type Runtimes struct {
+	Codex    RuntimeDefaults
+	Claude   RuntimeDefaults
+	OpenCode RuntimeDefaults
+}
+
+func (runtimes Runtimes) DefaultsFor(runtime string) (RuntimeDefaults, bool) {
+	switch strings.TrimSpace(runtime) {
+	case "codex":
+		return runtimes.Codex, true
+	case "claude":
+		return runtimes.Claude, true
+	case "opencode":
+		return runtimes.OpenCode, true
+	default:
+		return RuntimeDefaults{}, false
+	}
 }
 
 type ReviewSource struct {
@@ -170,6 +199,7 @@ func (duration *durationValue) UnmarshalYAML(node *yaml.Node) error {
 
 type configOverlay struct {
 	Defaults     *defaultsOverlay     `yaml:"defaults"`
+	Runtimes     *runtimesOverlay     `yaml:"runtimes"`
 	ReviewSource *reviewSourceOverlay `yaml:"review_source"`
 	Watch        *watchOverlay        `yaml:"watch"`
 	Implement    *implementOverlay    `yaml:"implement"`
@@ -184,11 +214,21 @@ type configOverlay struct {
 
 type defaultsOverlay struct {
 	Agent           *string `yaml:"agent"`
-	Model           *string `yaml:"model"`
 	AgentFullAccess *bool   `yaml:"agent_full_access"`
 	AutoCommit      *bool   `yaml:"auto_commit"`
 	Verification    *string `yaml:"verification"`
 	ArtifactDir     *string `yaml:"artifact_dir"`
+}
+
+type runtimeDefaultsOverlay struct {
+	Model           *string `yaml:"model"`
+	ReasoningEffort *string `yaml:"reasoning_effort"`
+}
+
+type runtimesOverlay struct {
+	Codex    *runtimeDefaultsOverlay `yaml:"codex"`
+	Claude   *runtimeDefaultsOverlay `yaml:"claude"`
+	OpenCode *runtimeDefaultsOverlay `yaml:"opencode"`
 }
 
 type reviewSourceOverlay struct {
@@ -281,6 +321,44 @@ type specsOverlay struct {
 	Root *string `yaml:"root"`
 }
 
+func (overlay *runtimesOverlay) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind == yaml.MappingNode {
+		for index := 0; index < len(node.Content); index += 2 {
+			key := node.Content[index].Value
+			switch key {
+			case "codex", "claude", "opencode":
+				if err := validateRuntimeDefaultsOverlay("runtimes."+key, node.Content[index+1]); err != nil {
+					return err
+				}
+			default:
+				return fmt.Errorf("runtimes.%s is not a supported config key", key)
+			}
+		}
+	}
+	type rawRuntimesOverlay runtimesOverlay
+	var raw rawRuntimesOverlay
+	if err := node.Decode(&raw); err != nil {
+		return err
+	}
+	*overlay = runtimesOverlay(raw)
+	return nil
+}
+
+func validateRuntimeDefaultsOverlay(prefix string, node *yaml.Node) error {
+	if node.Kind != yaml.MappingNode {
+		return nil
+	}
+	for index := 0; index < len(node.Content); index += 2 {
+		key := node.Content[index].Value
+		switch key {
+		case "model", "reasoning_effort":
+		default:
+			return fmt.Errorf("%s.%s is not a supported config key", prefix, key)
+		}
+	}
+	return nil
+}
+
 func (overlay *resolveOverlay) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind == yaml.MappingNode {
 		for index := 0; index < len(node.Content); index += 2 {
@@ -369,6 +447,11 @@ type deprecatedConfigKey struct {
 
 var deprecatedConfigKeys = []deprecatedConfigKey{
 	{
+		path:        []string{"defaults", "model"},
+		name:        "defaults.model",
+		replacement: "runtimes.<runtime>.model",
+	},
+	{
 		path:        []string{"resolve", "concurrent"},
 		name:        "resolve.concurrent",
 		replacement: "worktree.concurrency",
@@ -404,6 +487,16 @@ func Builtin() Config {
 			Agent:        defaultAgent,
 			AutoCommit:   true,
 			Verification: defaultVerification,
+		},
+		Runtimes: Runtimes{
+			Codex: RuntimeDefaults{
+				Model:           defaultCodexModel,
+				ReasoningEffort: defaultCodexReasoningEffort,
+			},
+			Claude: RuntimeDefaults{
+				Model:           defaultClaudeModel,
+				ReasoningEffort: defaultClaudeReasoningEffort,
+			},
 		},
 		ReviewSource: ReviewSource{
 			Name:            defaultReviewSource,
@@ -531,12 +624,22 @@ func DefaultConfigYAML() string {
 
 defaults:
   agent: %s
-  model: ""
   agent_full_access: %t
   verification: %s
   # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
   artifact_dir: ""
   auto_commit: %t
+
+runtimes:
+  codex:
+    model: %s
+    reasoning_effort: %s
+  claude:
+    model: %s
+    reasoning_effort: %s
+  opencode:
+    model: %q
+    reasoning_effort: %q
 
 specs:
   # Directory holding Spec folders; relative paths resolve against the repository root.
@@ -594,6 +697,12 @@ resolve:
 		config.Defaults.AgentFullAccess,
 		config.Defaults.Verification,
 		config.Defaults.AutoCommit,
+		config.Runtimes.Codex.Model,
+		config.Runtimes.Codex.ReasoningEffort,
+		config.Runtimes.Claude.Model,
+		config.Runtimes.Claude.ReasoningEffort,
+		config.Runtimes.OpenCode.Model,
+		config.Runtimes.OpenCode.ReasoningEffort,
 		config.Specs.Root,
 		config.Worktree.Location,
 		config.Worktree.Concurrency,
@@ -991,9 +1100,6 @@ func applyOverlay(config *Config, overlay configOverlay) {
 		if overlay.Defaults.Agent != nil {
 			config.Defaults.Agent = *overlay.Defaults.Agent
 		}
-		if overlay.Defaults.Model != nil {
-			config.Defaults.Model = *overlay.Defaults.Model
-		}
 		if overlay.Defaults.AgentFullAccess != nil {
 			config.Defaults.AgentFullAccess = *overlay.Defaults.AgentFullAccess
 		}
@@ -1005,6 +1111,17 @@ func applyOverlay(config *Config, overlay configOverlay) {
 		}
 		if overlay.Defaults.ArtifactDir != nil {
 			config.Defaults.ArtifactDir = *overlay.Defaults.ArtifactDir
+		}
+	}
+	if overlay.Runtimes != nil {
+		if overlay.Runtimes.Codex != nil {
+			applyRuntimeDefaultsOverlay(&config.Runtimes.Codex, *overlay.Runtimes.Codex)
+		}
+		if overlay.Runtimes.Claude != nil {
+			applyRuntimeDefaultsOverlay(&config.Runtimes.Claude, *overlay.Runtimes.Claude)
+		}
+		if overlay.Runtimes.OpenCode != nil {
+			applyRuntimeDefaultsOverlay(&config.Runtimes.OpenCode, *overlay.Runtimes.OpenCode)
 		}
 	}
 	if overlay.ReviewSource != nil {
@@ -1098,6 +1215,15 @@ func applyOverlay(config *Config, overlay configOverlay) {
 		if overlay.Specs.Root != nil {
 			config.Specs.Root = *overlay.Specs.Root
 		}
+	}
+}
+
+func applyRuntimeDefaultsOverlay(defaults *RuntimeDefaults, overlay runtimeDefaultsOverlay) {
+	if overlay.Model != nil {
+		defaults.Model = *overlay.Model
+	}
+	if overlay.ReasoningEffort != nil {
+		defaults.ReasoningEffort = *overlay.ReasoningEffort
 	}
 }
 
