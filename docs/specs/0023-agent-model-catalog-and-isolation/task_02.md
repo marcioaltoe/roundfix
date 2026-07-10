@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0023-agent-model-catalog-and-isolation
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -26,20 +26,20 @@ sessions and custom Agent Commands.
 
 ## Subtasks
 
-- [ ] Extend the runtime and execution contracts with reasoning effort.
-- [ ] Add the runtime-specific acpx config-option mapping.
-- [ ] Apply model and reasoning in deterministic session preparation order.
-- [ ] Preserve desired options across reconnect and resume paths.
-- [ ] Cover all runtimes and custom Agent Commands in the acpx harness.
+- [x] Extend the runtime and execution contracts with reasoning effort.
+- [x] Add the runtime-specific acpx config-option mapping.
+- [x] Apply model and reasoning in deterministic session preparation order.
+- [x] Preserve desired options across reconnect and resume paths.
+- [x] Cover all runtimes and custom Agent Commands in the acpx harness.
 
 ## Acceptance Criteria
 
-- [ ] Codex session preparation sends the selected model followed by `reasoning_effort` and its selected value.
-- [ ] Claude and OpenCode session preparation send the selected model followed by `effort` and its selected value.
-- [ ] Permission mode and Codex sandbox configuration still run after the selection is accepted.
-- [ ] A resumed session receives the same concrete selection instead of inheriting current runtime defaults.
-- [ ] An adapter rejection identifies the failed selection operation and preserves the original error for inspection.
-- [ ] A custom Agent Command that lacks the required ACP option contract fails instead of using hidden defaults.
+- [x] Codex session preparation sends the selected model followed by `reasoning_effort` and its selected value.
+- [x] Claude and OpenCode session preparation send the selected model followed by `effort` and its selected value.
+- [x] Permission mode and Codex sandbox configuration still run after the selection is accepted.
+- [x] A resumed session receives the same concrete selection instead of inheriting current runtime defaults.
+- [x] An adapter rejection identifies the failed selection operation and preserves the original error for inspection.
+- [x] A custom Agent Command that lacks the required ACP option contract fails instead of using hidden defaults.
 
 ## Verification
 
@@ -57,3 +57,21 @@ sessions and custom Agent Commands.
 ## References
 
 `_prd.md` -> User Story 1; Core Feature 3; Non-Goals. `_techspec.md` -> Interfaces: Agent Runner preflight; Integration Points; Build Order 2. ADR-0037.
+
+## Result
+
+Status: completed.
+
+Acceptance evidence:
+
+- Codex preparation: `TestACPXRunAppliesSelectionBeforePrompt/codex_reasoning_effort` asserts `sessions ensure --model gpt-5.5`, then `set reasoning_effort xhigh`, then `prompt --model gpt-5.5`.
+- Claude and OpenCode preparation: `TestACPXRunAppliesSelectionBeforePrompt/claude_effort` and `/opencode_effort` assert `set effort <value>` after model assignment.
+- Permission and sandbox ordering: `TestACPXRunAppliesFullAccessSessionSetup` asserts model and reasoning are accepted before `set-mode` and Codex `set sandbox_mode danger-full-access`.
+- Resume behavior: `TestACPXRunReappliesSelectionForFreshRunnerSessionResume` asserts a fresh runner reapplies the same concrete model and reasoning to an existing Agent Session.
+- Adapter rejection: `TestACPXRunSelectionSetupErrorsPreserveAdapterFailure` asserts the failure is wrapped with `set acpx Agent Session reasoning_effort` and preserves the original `InfrastructureError` stderr.
+- Custom Agent Command: `TestACPXRunCustomCommandRequiresSelectionOptionContract` asserts a command override uses `--agent`, attempts the explicit reasoning option, and fails when the ACP option contract rejects it.
+
+Verification:
+
+- `rtk go test ./internal/agent` passed: `Go test: 101 passed in 1 packages`.
+- `rtk make verify` passed: `Go test: 1006 passed in 19 packages`; `roundfix skills check` passed; `go build` completed.

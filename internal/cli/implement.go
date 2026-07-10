@@ -140,12 +140,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	defer func() {
 		_ = runStore.Close()
 	}()
-	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
-		Agent:            req.agent,
-		CommandOverride:  req.agentCmd,
-		Model:            req.model,
-		EnableFullAccess: req.agentFullAccess,
-	})
+	runtime, err := runtimeForAgentWork(req, loadedConfig.Config)
 	if err != nil {
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight

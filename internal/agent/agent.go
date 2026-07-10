@@ -13,18 +13,20 @@ import (
 )
 
 type RuntimeSpec struct {
-	ID             string
-	DisplayName    string
-	Protocol       string
-	Command        string
-	Model          string
-	FullAccessMode string
+	ID              string
+	DisplayName     string
+	Protocol        string
+	Command         string
+	Model           string
+	ReasoningEffort string
+	FullAccessMode  string
 }
 
 type RuntimeOptions struct {
 	Agent            string
 	CommandOverride  string
 	Model            string
+	ReasoningEffort  string
 	EnableFullAccess bool
 }
 
@@ -166,6 +168,7 @@ func RuntimeFor(opts RuntimeOptions) (RuntimeSpec, error) {
 		}
 	}
 	spec.Model = opts.Model
+	spec.ReasoningEffort = opts.ReasoningEffort
 	return spec, nil
 }
 

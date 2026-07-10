@@ -1495,12 +1495,7 @@ func prepareResolveBatch(ctx context.Context, req commandRequest, loaded roundco
 	if len(plan.Batches) == 0 {
 		return resolveBatchPlan{}, fmt.Errorf("no Batch assignments were produced for selected Compatible Artifacts")
 	}
-	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
-		Agent:            req.agent,
-		CommandOverride:  req.agentCmd,
-		Model:            req.model,
-		EnableFullAccess: req.agentFullAccess,
-	})
+	runtime, err := runtimeForAgentWork(req, loaded.Config)
 	if err != nil {
 		return resolveBatchPlan{}, err
 	}
@@ -1620,12 +1615,7 @@ func cyclePlanFrom(req commandRequest, loaded roundconfig.Loaded, preflightResul
 }
 
 func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, notifier roundnotify.Notifier, stdout, stderr io.Writer) int {
-	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
-		Agent:            req.agent,
-		CommandOverride:  req.agentCmd,
-		Model:            req.model,
-		EnableFullAccess: req.agentFullAccess,
-	})
+	runtime, err := runtimeForAgentWork(req, loaded.Config)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight

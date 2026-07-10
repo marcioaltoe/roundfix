@@ -369,6 +369,185 @@ func TestACPXRunPromptSendsPromptOnStdin(t *testing.T) {
 	}
 }
 
+func TestACPXRunRequiresConcreteSelection(t *testing.T) {
+	tests := []struct {
+		name     string
+		runtime  RuntimeSpec
+		contains string
+	}{
+		{
+			name:     "missing model",
+			runtime:  RuntimeSpec{ID: "codex", Protocol: ProtocolACP, ReasoningEffort: "xhigh"},
+			contains: "model",
+		},
+		{
+			name:     "missing reasoning effort",
+			runtime:  RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-test"},
+			contains: "reasoning effort",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			harness := newFakeACPXHarness(t)
+			_, err := harness.runner.Run(context.Background(), ExecuteRequest{
+				Runtime: tt.runtime,
+				RunID:   "run-acpx",
+				Batch:   rounds.Batch{Number: 7},
+				LogPath: filepath.Join(harness.gitRoot, "runs", "run-acpx", "agent", "batch-007.log"),
+				Prompt:  "prompt",
+				GitRoot: harness.gitRoot,
+				Session: SessionRef{Name: "roundfix-run-1"},
+			}, newCaptureSink(""))
+
+			if err == nil {
+				t.Fatal("expected missing selection to fail")
+			}
+			if !strings.Contains(err.Error(), tt.contains) {
+				t.Fatalf("expected error containing %q, got %q", tt.contains, err.Error())
+			}
+			if _, statErr := os.Stat(harness.invocationsPath); !errors.Is(statErr, os.ErrNotExist) {
+				t.Fatalf("expected no acpx invocation before selection validation, got stat error %v", statErr)
+			}
+		})
+	}
+}
+
+func TestACPXRunAppliesSelectionBeforePrompt(t *testing.T) {
+	tests := []struct {
+		name    string
+		runtime RuntimeSpec
+		want    func(gitRoot string) [][]string
+	}{
+		{
+			name:    "codex reasoning_effort",
+			runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.5", ReasoningEffort: "xhigh"},
+			want: func(gitRoot string) [][]string {
+				return [][]string{
+					{"--cwd", gitRoot, "--model", "gpt-5.5", "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+					{"--cwd", gitRoot, "codex", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-1"},
+					{"--cwd", gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "gpt-5.5", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
+				}
+			},
+		},
+		{
+			name:    "claude effort",
+			runtime: RuntimeSpec{ID: "claude", Protocol: ProtocolACP, Model: "opus", ReasoningEffort: "high"},
+			want: func(gitRoot string) [][]string {
+				return [][]string{
+					{"--cwd", gitRoot, "--model", "opus", "claude", "sessions", "ensure", "--name", "roundfix-run-1"},
+					{"--cwd", gitRoot, "claude", "set", "effort", "high", "-s", "roundfix-run-1"},
+					{"--cwd", gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "opus", "claude", "prompt", "-s", "roundfix-run-1", "-f", "-"},
+				}
+			},
+		},
+		{
+			name:    "opencode effort",
+			runtime: RuntimeSpec{ID: "opencode", Protocol: ProtocolACP, Model: "opencode-model", ReasoningEffort: "maximum"},
+			want: func(gitRoot string) [][]string {
+				return [][]string{
+					{"--cwd", gitRoot, "--model", "opencode-model", "opencode", "sessions", "ensure", "--name", "roundfix-run-1"},
+					{"--cwd", gitRoot, "opencode", "set", "effort", "maximum", "-s", "roundfix-run-1"},
+					{"--cwd", gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "opencode-model", "opencode", "prompt", "-s", "roundfix-run-1", "-f", "-"},
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			harness := newFakeACPXHarness(t)
+
+			if _, err := harness.run(context.Background(), tt.runtime, "roundfix-run-1"); err != nil {
+				t.Fatalf("run acpx: %v", err)
+			}
+
+			if got, want := readJSONInvocations(t, harness.invocationsPath), tt.want(harness.gitRoot); !reflect.DeepEqual(got, want) {
+				t.Fatalf("unexpected acpx invocations\nwant: %#v\ngot:  %#v", want, got)
+			}
+		})
+	}
+}
+
+func TestACPXRunReappliesSelectionForFreshRunnerSessionResume(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.5", ReasoningEffort: "xhigh"}
+
+	if _, err := harness.run(context.Background(), runtime, "roundfix-run-1"); err != nil {
+		t.Fatalf("first run: %v", err)
+	}
+	harness.runner = &ACPXRunner{Command: os.Args[0], codexSpawn: codexSpawnDependencies{goos: "linux"}}
+	if _, err := harness.run(context.Background(), runtime, "roundfix-run-1"); err != nil {
+		t.Fatalf("resumed run: %v", err)
+	}
+
+	want := [][]string{
+		{"--cwd", harness.gitRoot, "--model", "gpt-5.5", "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "codex", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "gpt-5.5", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
+		{"--cwd", harness.gitRoot, "--model", "gpt-5.5", "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "codex", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "gpt-5.5", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
+	}
+	if got := readJSONInvocations(t, harness.invocationsPath); !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected resume invocations\nwant: %#v\ngot:  %#v", want, got)
+	}
+}
+
+func TestACPXRunSelectionSetupErrorsPreserveAdapterFailure(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"set reasoning_effort": 2}))
+	t.Setenv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{"set reasoning_effort": "reasoning rejected\n"}))
+
+	_, err := harness.run(context.Background(), RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.5", ReasoningEffort: "xhigh"}, "roundfix-run-1")
+
+	if err == nil {
+		t.Fatal("expected reasoning setup failure")
+	}
+	var infraErr *InfrastructureError
+	if !errors.As(err, &infraErr) {
+		t.Fatalf("expected InfrastructureError in error chain, got %T %v", err, err)
+	}
+	if infraErr.Stderr != "reasoning rejected\n" {
+		t.Fatalf("expected adapter stderr preserved, got %q", infraErr.Stderr)
+	}
+	if !strings.Contains(err.Error(), "set acpx Agent Session reasoning_effort") || !strings.Contains(err.Error(), "reasoning rejected") {
+		t.Fatalf("expected reasoning operation context, got %v", err)
+	}
+	want := [][]string{
+		{"--cwd", harness.gitRoot, "--model", "gpt-5.5", "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "codex", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-1"},
+	}
+	if got := readJSONInvocations(t, harness.invocationsPath); !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected failed-selection invocations\nwant: %#v\ngot:  %#v", want, got)
+	}
+}
+
+func TestACPXRunCustomCommandRequiresSelectionOptionContract(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"set reasoning_effort": 2}))
+	t.Setenv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{
+		"set reasoning_effort": "ACP session session-id does not advertise config option 'reasoning_effort'. Supported config options: model.\n",
+	}))
+	runtime := RuntimeSpec{ID: "codex-custom", Protocol: ProtocolStdio, Command: "custom-acp --stdio", Model: "gpt-custom", ReasoningEffort: "xhigh"}
+
+	_, err := harness.run(context.Background(), runtime, "roundfix-run-1")
+
+	if err == nil {
+		t.Fatal("expected custom command without reasoning option contract to fail")
+	}
+	if !strings.Contains(err.Error(), "set acpx Agent Session reasoning_effort") || !strings.Contains(err.Error(), "does not advertise config option 'reasoning_effort'") {
+		t.Fatalf("expected custom command option-contract failure, got %v", err)
+	}
+	want := [][]string{
+		{"--cwd", harness.gitRoot, "--model", "gpt-custom", "--agent", "custom-acp --stdio", "sessions", "ensure", "--name", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "--agent", "custom-acp --stdio", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-1"},
+	}
+	if got := readJSONInvocations(t, harness.invocationsPath); !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected custom-command invocations\nwant: %#v\ngot:  %#v", want, got)
+	}
+}
+
 func TestACPXRunEnsuresSessionOncePerRunnerAndSessionName(t *testing.T) {
 	harness := newFakeACPXHarness(t)
 	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP}
@@ -385,11 +564,13 @@ func TestACPXRunEnsuresSessionOncePerRunnerAndSessionName(t *testing.T) {
 
 	invocations := readJSONInvocations(t, harness.invocationsPath)
 	want := [][]string{
-		{"--cwd", harness.gitRoot, "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
-		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
-		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
-		{"--cwd", harness.gitRoot, "codex", "sessions", "ensure", "--name", "roundfix-run-2"},
-		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "codex", "prompt", "-s", "roundfix-run-2", "-f", "-"},
+		{"--cwd", harness.gitRoot, "--model", "gpt-test", "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "codex", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "gpt-test", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
+		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "gpt-test", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
+		{"--cwd", harness.gitRoot, "--model", "gpt-test", "codex", "sessions", "ensure", "--name", "roundfix-run-2"},
+		{"--cwd", harness.gitRoot, "codex", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-2"},
+		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "gpt-test", "codex", "prompt", "-s", "roundfix-run-2", "-f", "-"},
 	}
 	if !reflect.DeepEqual(invocations, want) {
 		t.Fatalf("unexpected acpx invocations\nwant: %#v\ngot:  %#v", want, invocations)
@@ -421,7 +602,7 @@ func TestACPXRunCodexUsesConfiguredCleanPathOnDarwin(t *testing.T) {
 		t.Fatalf("run acpx with configured clean codex: %v", err)
 	}
 
-	wantEnv := []string{"/configured/clean/codex", "/configured/clean/codex"}
+	wantEnv := []string{"/configured/clean/codex", "/configured/clean/codex", "/configured/clean/codex"}
 	if got := readJSONStrings(t, envPath); !reflect.DeepEqual(got, wantEnv) {
 		t.Fatalf("unexpected CODEX_PATH values\nwant: %#v\ngot:  %#v", wantEnv, got)
 	}
@@ -455,7 +636,7 @@ func TestACPXRunCodexFallsBackToCleanPathWhenConfiguredPathIsQuarantined(t *test
 		t.Fatalf("run acpx with fallback clean codex: %v", err)
 	}
 
-	wantEnv := []string{"/path/clean/codex", "/path/clean/codex"}
+	wantEnv := []string{"/path/clean/codex", "/path/clean/codex", "/path/clean/codex"}
 	if got := readJSONStrings(t, envPath); !reflect.DeepEqual(got, wantEnv) {
 		t.Fatalf("unexpected CODEX_PATH values\nwant: %#v\ngot:  %#v", wantEnv, got)
 	}
@@ -545,8 +726,9 @@ func TestACPXRunCodexLeavesNonDarwinSpawnUnchanged(t *testing.T) {
 		t.Fatalf("expected non-darwin run not to inspect codex, got quarantine=%#v acceptance=%#v", probe.quarantineCalls, probe.acceptanceCalls)
 	}
 	want := [][]string{
-		{"--cwd", harness.gitRoot, "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
-		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
+		{"--cwd", harness.gitRoot, "--model", "gpt-test", "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "codex", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "gpt-test", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
 	}
 	if got := readJSONInvocations(t, harness.invocationsPath); !reflect.DeepEqual(got, want) {
 		t.Fatalf("unexpected non-darwin acpx invocations\nwant: %#v\ngot:  %#v", want, got)
@@ -586,10 +768,11 @@ func TestACPXRunAppliesFullAccessSessionSetup(t *testing.T) {
 			runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, FullAccessMode: "full-access"},
 			want: func(gitRoot string) [][]string {
 				return [][]string{
-					{"--cwd", gitRoot, "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+					{"--cwd", gitRoot, "--model", "gpt-test", "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+					{"--cwd", gitRoot, "codex", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-1"},
 					{"--cwd", gitRoot, "codex", "set-mode", "full-access", "-s", "roundfix-run-1"},
 					{"--cwd", gitRoot, "codex", "set", "sandbox_mode", "danger-full-access", "-s", "roundfix-run-1"},
-					{"--cwd", gitRoot, "--format", "json", "--json-strict", "--approve-all", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
+					{"--cwd", gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "gpt-test", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
 				}
 			},
 		},
@@ -598,9 +781,10 @@ func TestACPXRunAppliesFullAccessSessionSetup(t *testing.T) {
 			runtime: RuntimeSpec{ID: "claude", Protocol: ProtocolACP, FullAccessMode: "bypassPermissions"},
 			want: func(gitRoot string) [][]string {
 				return [][]string{
-					{"--cwd", gitRoot, "claude", "sessions", "ensure", "--name", "roundfix-run-1"},
+					{"--cwd", gitRoot, "--model", "opus-test", "claude", "sessions", "ensure", "--name", "roundfix-run-1"},
+					{"--cwd", gitRoot, "claude", "set", "effort", "high", "-s", "roundfix-run-1"},
 					{"--cwd", gitRoot, "claude", "set-mode", "bypassPermissions", "-s", "roundfix-run-1"},
-					{"--cwd", gitRoot, "--format", "json", "--json-strict", "--approve-all", "claude", "prompt", "-s", "roundfix-run-1", "-f", "-"},
+					{"--cwd", gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "opus-test", "claude", "prompt", "-s", "roundfix-run-1", "-f", "-"},
 				}
 			},
 		},
@@ -609,8 +793,9 @@ func TestACPXRunAppliesFullAccessSessionSetup(t *testing.T) {
 			runtime: RuntimeSpec{ID: "opencode", Protocol: ProtocolACP},
 			want: func(gitRoot string) [][]string {
 				return [][]string{
-					{"--cwd", gitRoot, "opencode", "sessions", "ensure", "--name", "roundfix-run-1"},
-					{"--cwd", gitRoot, "--format", "json", "--json-strict", "--approve-all", "opencode", "prompt", "-s", "roundfix-run-1", "-f", "-"},
+					{"--cwd", gitRoot, "--model", "opencode-test", "opencode", "sessions", "ensure", "--name", "roundfix-run-1"},
+					{"--cwd", gitRoot, "opencode", "set", "effort", "high", "-s", "roundfix-run-1"},
+					{"--cwd", gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "opencode-test", "opencode", "prompt", "-s", "roundfix-run-1", "-f", "-"},
 				}
 			},
 		},
@@ -645,7 +830,8 @@ func TestACPXRunFailsSetupWhenFullAccessModeFails(t *testing.T) {
 	}
 	invocations := readJSONInvocations(t, harness.invocationsPath)
 	want := [][]string{
-		{"--cwd", harness.gitRoot, "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "--model", "gpt-test", "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "codex", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-1"},
 		{"--cwd", harness.gitRoot, "codex", "set-mode", "full-access", "-s", "roundfix-run-1"},
 	}
 	if !reflect.DeepEqual(invocations, want) {
@@ -655,9 +841,9 @@ func TestACPXRunFailsSetupWhenFullAccessModeFails(t *testing.T) {
 
 func TestACPXRunWarnsWhenCodexSandboxPresetUnavailable(t *testing.T) {
 	harness := newFakeACPXHarness(t)
-	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"set": 2}))
+	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"set sandbox_mode": 2}))
 	t.Setenv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{
-		"set": "ACP session session-id does not advertise config option 'sandbox_mode'. Supported config options: mode, model.\n",
+		"set sandbox_mode": "ACP session session-id does not advertise config option 'sandbox_mode'. Supported config options: mode, model.\n",
 	}))
 	sink := newCaptureSink("")
 
@@ -671,10 +857,11 @@ func TestACPXRunWarnsWhenCodexSandboxPresetUnavailable(t *testing.T) {
 	}
 	invocations := readJSONInvocations(t, harness.invocationsPath)
 	want := [][]string{
-		{"--cwd", harness.gitRoot, "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "--model", "gpt-test", "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "codex", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-1"},
 		{"--cwd", harness.gitRoot, "codex", "set-mode", "full-access", "-s", "roundfix-run-1"},
 		{"--cwd", harness.gitRoot, "codex", "set", "sandbox_mode", "danger-full-access", "-s", "roundfix-run-1"},
-		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
+		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "gpt-test", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
 	}
 	if !reflect.DeepEqual(invocations, want) {
 		t.Fatalf("unexpected invocations\nwant: %#v\ngot:  %#v", want, invocations)
@@ -1210,13 +1397,43 @@ func newBlockingFakeACPXHarness(t *testing.T, exitAfterCancel bool) *fakeACPXHar
 	return harness
 }
 
+func selectedRuntime(runtime RuntimeSpec) RuntimeSpec {
+	if runtime.ID == "" && runtime.Protocol == "" && runtime.Command == "" {
+		runtime = RuntimeSpec{ID: "codex", Protocol: ProtocolACP}
+	}
+	switch {
+	case strings.HasPrefix(runtime.ID, "claude"):
+		if runtime.Model == "" {
+			runtime.Model = "opus-test"
+		}
+		if runtime.ReasoningEffort == "" {
+			runtime.ReasoningEffort = "high"
+		}
+	case strings.HasPrefix(runtime.ID, "opencode"):
+		if runtime.Model == "" {
+			runtime.Model = "opencode-test"
+		}
+		if runtime.ReasoningEffort == "" {
+			runtime.ReasoningEffort = "high"
+		}
+	default:
+		if runtime.Model == "" {
+			runtime.Model = "gpt-test"
+		}
+		if runtime.ReasoningEffort == "" {
+			runtime.ReasoningEffort = "xhigh"
+		}
+	}
+	return runtime
+}
+
 func (harness *fakeACPXHarness) run(ctx context.Context, runtime RuntimeSpec, sessionName string) (ExecuteResult, error) {
 	return harness.runWithSink(ctx, runtime, sessionName, newCaptureSink(""))
 }
 
 func (harness *fakeACPXHarness) runWithSink(ctx context.Context, runtime RuntimeSpec, sessionName string, sink runevent.Sink) (ExecuteResult, error) {
 	return harness.runner.Run(ctx, ExecuteRequest{
-		Runtime:   runtime,
+		Runtime:   selectedRuntime(runtime),
 		RunID:     "run-acpx",
 		Batch:     rounds.Batch{Number: 7},
 		LogPath:   filepath.Join(harness.gitRoot, "runs", "run-acpx", "agent", "batch-007.log"),
@@ -1597,6 +1814,9 @@ globals:
 	}
 	if args[index] == "sessions" && index+1 < len(args) {
 		return "sessions " + args[index+1]
+	}
+	if args[index] == "set" && index+1 < len(args) {
+		return "set " + args[index+1]
 	}
 	return args[index]
 }

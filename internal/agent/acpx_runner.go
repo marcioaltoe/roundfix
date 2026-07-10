@@ -30,6 +30,8 @@ const (
 	acpxCodexSandboxUnavailable     = "codex_sandbox_full_access_unavailable"
 	acpxCodexSandboxModeKey         = "sandbox_mode"
 	acpxCodexFullAccessSandbox      = "danger-full-access"
+	acpxCodexReasoningEffortKey     = "reasoning_effort"
+	acpxGenericReasoningEffortKey   = "effort"
 	infrastructureStderrTailLines   = 10
 	infrastructureStderrTailBytes   = 1024
 	infrastructureStderrDelimiter   = "\n--- acpx stderr tail ---\n"
@@ -204,6 +206,9 @@ func (runner ACPXRunner) Probe(ctx context.Context, _ RuntimeSpec) error {
 
 func (runner *ACPXRunner) Run(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error) {
 	result := ExecuteResult{LogPath: req.LogPath}
+	if err := validateRuntimeSelection(req.Runtime); err != nil {
+		return result, err
+	}
 	if _, err := runner.codexEnvForSession(ctx, req.Runtime, req.Session.Name); err != nil {
 		return result, err
 	}
@@ -300,7 +305,10 @@ func (runner *ACPXRunner) ensureSession(ctx context.Context, req ExecuteRequest,
 		return err
 	}
 	if err := runner.runACPXCommandWithEnv(ctx, args, codexEnv); err != nil {
-		return fmt.Errorf("ensure acpx Agent Session %q: %w", sessionName, err)
+		return fmt.Errorf("ensure acpx Agent Session %q with model %q: %w", sessionName, strings.TrimSpace(req.Runtime.Model), err)
+	}
+	if err := runner.applySelection(ctx, req, codexEnv); err != nil {
+		return err
 	}
 	if err := runner.applyFullAccess(ctx, req, sink, codexEnv); err != nil {
 		return err
@@ -312,6 +320,23 @@ func (runner *ACPXRunner) ensureSession(ctx context.Context, req ExecuteRequest,
 		return err
 	}
 	runner.ensuredSessions[sessionName] = struct{}{}
+	return nil
+}
+
+func (runner *ACPXRunner) applySelection(ctx context.Context, req ExecuteRequest, codexEnv []string) error {
+	sessionName := strings.TrimSpace(req.Session.Name)
+	key, err := acpxReasoningEffortConfigKey(req.Runtime)
+	if err != nil {
+		return err
+	}
+	value := strings.TrimSpace(req.Runtime.ReasoningEffort)
+	args, err := acpxSetConfigArgs(req.Runtime, key, value, sessionName, req.GitRoot)
+	if err != nil {
+		return err
+	}
+	if err := runner.runACPXCommandWithEnv(ctx, args, codexEnv); err != nil {
+		return fmt.Errorf("set acpx Agent Session %s %q: %w", key, value, err)
+	}
 	return nil
 }
 
@@ -481,6 +506,19 @@ func validateACPXPromptRequest(req ACPXPromptRequest) error {
 	return nil
 }
 
+func validateRuntimeSelection(runtime RuntimeSpec) error {
+	if strings.TrimSpace(runtime.Model) == "" {
+		return errors.New("agent model is required")
+	}
+	if strings.TrimSpace(runtime.ReasoningEffort) == "" {
+		return errors.New("agent reasoning effort is required")
+	}
+	if _, err := acpxReasoningEffortConfigKey(runtime); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (runner ACPXRunner) command() string {
 	if strings.TrimSpace(runner.Command) != "" {
 		return strings.TrimSpace(runner.Command)
@@ -581,7 +619,7 @@ func acpxPromptArgs(req ACPXPromptRequest) ([]string, error) {
 }
 
 func acpxEnsureArgs(runtime RuntimeSpec, sessionName string, workDir string) ([]string, error) {
-	args, err := acpxGlobalArgs(runtime, workDir)
+	args, err := acpxGlobalArgsWithModel(runtime, workDir)
 	if err != nil {
 		return nil, err
 	}
@@ -640,6 +678,22 @@ func acpxGlobalArgs(runtime RuntimeSpec, workDir string) ([]string, error) {
 	return append([]string{"--cwd", workDir}, agentArgs...), nil
 }
 
+func acpxGlobalArgsWithModel(runtime RuntimeSpec, workDir string) ([]string, error) {
+	workDir = strings.TrimSpace(workDir)
+	if workDir == "" {
+		return nil, errors.New("Agent working directory is required")
+	}
+	model := strings.TrimSpace(runtime.Model)
+	if model == "" {
+		return nil, errors.New("agent model is required")
+	}
+	agentArgs, err := acpxAgentArgs(runtime)
+	if err != nil {
+		return nil, err
+	}
+	return append([]string{"--cwd", workDir, "--model", model}, agentArgs...), nil
+}
+
 func acpxAgentArgs(runtime RuntimeSpec) ([]string, error) {
 	if runtime.Protocol == ProtocolStdio {
 		command := strings.TrimSpace(runtime.Command)
@@ -653,6 +707,19 @@ func acpxAgentArgs(runtime RuntimeSpec) ([]string, error) {
 		return nil, errors.New("ACP Runtime id is required")
 	}
 	return []string{agent}, nil
+}
+
+func acpxReasoningEffortConfigKey(runtime RuntimeSpec) (string, error) {
+	switch strings.TrimSuffix(strings.TrimSpace(runtime.ID), "-custom") {
+	case "codex":
+		return acpxCodexReasoningEffortKey, nil
+	case "claude", "opencode":
+		return acpxGenericReasoningEffortKey, nil
+	case "":
+		return "", errors.New("ACP Runtime id is required for Agent reasoning effort")
+	default:
+		return "", fmt.Errorf("unsupported ACP Runtime %q for Agent reasoning effort", runtime.ID)
+	}
 }
 
 func (runner ACPXRunner) handleStdoutLine(ctx context.Context, req ExecuteRequest, sink runevent.Sink, line []byte, stopReason *string, promptResultParsed *bool) error {

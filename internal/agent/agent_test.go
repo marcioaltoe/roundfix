@@ -35,6 +35,7 @@ func TestRuntimeForSupportsCommandOverrideAndModel(t *testing.T) {
 		Agent:            "codex",
 		CommandOverride:  "custom-acp",
 		Model:            "gpt-test",
+		ReasoningEffort:  "xhigh",
 		EnableFullAccess: true,
 	})
 	if err != nil {
@@ -52,6 +53,9 @@ func TestRuntimeForSupportsCommandOverrideAndModel(t *testing.T) {
 	}
 	if runtime.Model != "gpt-test" {
 		t.Fatalf("expected model override, got %q", runtime.Model)
+	}
+	if runtime.ReasoningEffort != "xhigh" {
+		t.Fatalf("expected reasoning effort, got %q", runtime.ReasoningEffort)
 	}
 	if runtime.FullAccessMode != "" {
 		t.Fatalf("custom command must not receive ACP full-access mode, got %q", runtime.FullAccessMode)

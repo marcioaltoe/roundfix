@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"roundfix/internal/agent"
 	roundconfig "roundfix/internal/config"
 )
 
@@ -51,4 +52,24 @@ func ResolveSelection(runtime string, defaults roundconfig.RuntimeDefaults, invo
 		Model:           model,
 		ReasoningEffort: reasoningEffort,
 	}, nil
+}
+
+func runtimeForAgentWork(req commandRequest, config roundconfig.Config) (agent.RuntimeSpec, error) {
+	defaults, _ := config.Runtimes.DefaultsFor(req.agent)
+	invocation := InvocationSelection{}
+	if strings.TrimSpace(req.model) != "" {
+		invocation.Model = req.model
+		invocation.ModelSet = true
+	}
+	selection, err := ResolveSelection(req.agent, defaults, invocation)
+	if err != nil {
+		return agent.RuntimeSpec{}, err
+	}
+	return agent.RuntimeFor(agent.RuntimeOptions{
+		Agent:            selection.Runtime,
+		CommandOverride:  req.agentCmd,
+		Model:            selection.Model,
+		ReasoningEffort:  selection.ReasoningEffort,
+		EnableFullAccess: req.agentFullAccess,
+	})
 }
