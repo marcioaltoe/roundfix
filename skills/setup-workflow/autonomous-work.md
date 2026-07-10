@@ -1,25 +1,25 @@
-# Autonomous work: orchestrator and implementation runtimes
+# Autonomous work: Supervisor and implementation runtimes
 
-Who does what when this repo works autonomously. One supervising Claude Code session — running
-Fable — orchestrates; implementation is delegated to an ACP Runtime, normally through a Roundfix
-Run. The split binds every Fable-powered session, interactive or autonomous: Fable's usage
-budget is reserved for orchestration and judgment, and operational work goes to the other
-models. The repo's agent instructions (`AGENTS.md`/`CLAUDE.md`) enforce this as a hard rule.
-Command contracts (flags, outcomes, monitoring) live in the `roundfix` skill; this doc fixes
-the role split, the runtime routing, and how the orchestrator authors Specs.
+Who does what when this repo works autonomously. One Supervisor session orchestrates;
+implementation is delegated to an ACP Runtime, normally through a Roundfix Run. The split binds
+every autonomous session, interactive or unattended: Supervisor capacity is reserved for
+orchestration and judgment, and operational work goes to implementation runtimes. The repo's
+agent instructions (`AGENTS.md`/`CLAUDE.md`) enforce this as a hard rule. Command contracts
+(flags, outcomes, monitoring) live in the `roundfix` skill; this doc fixes the role split,
+runtime routing, and how the Supervisor authors Specs.
 
 ## Roles
 
 | Role | Model | Job |
 | --- | --- | --- |
-| Orchestrator | Fable (the supervising Claude Code session) | Author Specs, launch and monitor Runs, integrate outcomes, run `qa-gate`, archive, boundary commits, route work to a runtime |
-| Default implementer | Codex `gpt-5.5` at `xhigh` reasoning effort | Every Spec Task and Review Issue Batch not routed below |
-| Design implementer | Claude Code with Opus 4.8 at `high` or `xhigh` | Tasks dominated by design, UI, UX, or frontend work |
+| Supervisor | Supervising Claude Code session | Author Specs, launch and monitor Runs, integrate outcomes, run `qa-gate`, archive, boundary commits, route work to a runtime |
+| Default implementer | Codex `gpt-5.5` with `xhigh` Default Reasoning Effort | Every Spec Task and Review Issue Batch not routed below |
+| Design implementer | Claude with `opus` at `high` or `xhigh` Default Reasoning Effort | Tasks dominated by design, UI, UX, or frontend work |
 
-## The orchestrator does not implement
+## The Supervisor does not implement
 
-Delegation is mandatory, not a preference: Fable capacity is limited and reserved for the work
-that needs its judgment. The orchestrator session:
+Delegation is mandatory, not a preference: Supervisor capacity is limited and reserved for the
+work that needs its judgment. The Supervisor session:
 
 - routes changes through the spec pipeline (`docs/agents/spec-routing.md`) and authors the
   planning artifacts
@@ -29,14 +29,15 @@ that needs its judgment. The orchestrator session:
 - keeps its own edits boundary-scoped: spec and doc fixes, Run recovery, boundary commits — it
   does not implement Spec Tasks itself while an ACP Runtime can do the work
 
-Writing feature code, tests, or any other operational implementation directly in the Fable
+Writing feature code, tests, or any other operational implementation directly in the Supervisor
 session violates the hard rule — delegate it, even when doing it inline looks faster.
 
-Fable is never an implementation runtime. Never point `--agent` at a Fable-backed runtime.
+Fable is an Agent Model label in the Claude catalog, not the supervising role. Never point
+`--agent` at a Supervisor-backed runtime.
 
 ## Authoring Specs
 
-The orchestrator authors every Spec through the pipeline skills (`write-idea`, `write-prd`,
+The Supervisor authors every Spec through the pipeline skills (`write-idea`, `write-prd`,
 `write-techspec`, `write-tasks`); which stages a change needs lives in
 `docs/agents/spec-routing.md`. Automated authoring keeps these behaviors:
 
@@ -58,7 +59,7 @@ The orchestrator authors every Spec through the pipeline skills (`write-idea`, `
   assumed build, link, or install state, and the repo's real build flags. Verifications that
   fit the repo's standard test and verify commands work; install-heavy verifications do not.
 - **Sequence the queue.** Keep one explicit, dependency-and-risk-ordered implementation
-  sequence across pending Specs. New Specs slot into that queue when approved; the orchestrator
+  sequence across pending Specs. New Specs slot into that queue when approved; the Supervisor
   advances it one Run at a time and re-plans the order at each Run boundary.
 
 ## Default implementer: Codex gpt-5.5 xhigh
@@ -67,16 +68,16 @@ The orchestrator authors every Spec through the pipeline skills (`write-idea`, `
 roundfix implement --spec <slug> --agent codex --qa --detach
 ```
 
-Review-surface Runs (`resolve`, `watch`) use the same default runtime. Model selection is
-delegated down the chain, and every link stays as-is:
+Review-surface Runs (`resolve`, `watch`) use the same default runtime. Roundfix owns the
+effective Agent Model and Default Reasoning Effort:
 
-1. The repo's Roundfix Project Config pins `defaults.agent: codex` and keeps
-   `defaults.model: ""` — empty means the runtime chain selects the model.
-2. acpx (`~/.acpx/config.json`) maps the `codex` agent to the local `codex-acp` adapter.
-3. `~/.codex/config.toml` selects `model = "gpt-5.5"` with `model_reasoning_effort = "xhigh"`.
+1. The repo's Roundfix Project Config pins `defaults.agent: codex`.
+2. The repo's Roundfix Project Config pins `runtimes.codex.model: gpt-5.5` and
+   `runtimes.codex.reasoning_effort: xhigh`.
+3. acpx (`~/.acpx/config.json`) maps the `codex` agent to the local `codex-acp` adapter.
 
-Do not pass `--model` on Codex Runs and do not set `defaults.model` in Roundfix config — either
-would override the chain.
+Do not set `defaults.model`; Roundfix ignores it and prints a deprecation warning. Use
+`--model` and `--reasoning-effort` together only for a one-Run exception.
 
 ## Design implementer: Claude Code with Opus 4.8
 
@@ -88,11 +89,13 @@ dominated by:
 - frontend — <this repo's design surface: its TUI, web frontend, or both>
 
 ```bash
-roundfix implement --spec <slug> --agent claude --model claude-opus-4-8 --qa --detach
+roundfix implement --spec <slug> --agent claude --model opus --reasoning-effort high --qa --detach
 ```
 
-The `claude` runtime launches through `claude-agent-acp`. Reasoning effort must be `high` or
-`xhigh`, configured on the Claude Code side — Roundfix forwards only the model override.
+The `claude` runtime launches through `claude-agent-acp`. Roundfix forwards both the Agent Model
+and Default Reasoning Effort. Use the one-Run flags above for a design-heavy exception, or pin
+`runtimes.claude.model` and `runtimes.claude.reasoning_effort` in Project Config when a whole
+repository should use that route.
 
 ## Routing rules
 

@@ -7,13 +7,17 @@
 
 defaults:
   agent: codex # dogfood and tests always drive codex
-  model: "" # empty -> the codex-acp / ~/.codex chain selects the model
   verification: make verify
   auto_commit: true
 
+runtimes:
+  codex:
+    model: gpt-5.5
+    reasoning_effort: xhigh
+
 review_source:
   name: coderabbit
-  include_nitpicks: false
+  include_nitpicks: true
 
 watch:
   until_clean: true

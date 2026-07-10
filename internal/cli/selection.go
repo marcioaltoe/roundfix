@@ -74,3 +74,18 @@ func runtimeForAgentWork(req commandRequest, config roundconfig.Config) (agent.R
 		EnableFullAccess: req.agentFullAccess,
 	})
 }
+
+func runtimeForConfiguredAgent(config roundconfig.Config) (agent.RuntimeSpec, error) {
+	agentID := strings.TrimSpace(config.Defaults.Agent)
+	defaults, _ := config.Runtimes.DefaultsFor(agentID)
+	selection, err := ResolveSelection(agentID, defaults, InvocationSelection{})
+	if err != nil {
+		return agent.RuntimeSpec{}, err
+	}
+	return agent.RuntimeFor(agent.RuntimeOptions{
+		Agent:            selection.Runtime,
+		Model:            selection.Model,
+		ReasoningEffort:  selection.ReasoningEffort,
+		EnableFullAccess: config.Defaults.AgentFullAccess,
+	})
+}

@@ -780,13 +780,53 @@ func TestRunDoctorReportsReadinessChecks(t *testing.T) {
 			if stderr.Len() != 0 {
 				t.Fatalf("expected no stderr, got %q", stderr.String())
 			}
-			if len(tt.checker.agentRuntimes) != 1 || tt.checker.agentRuntimes[0].ID != "codex" {
-				t.Fatalf("expected configured codex runtime probe, got %#v", tt.checker.agentRuntimes)
+			if len(tt.checker.agentRequests) != 1 {
+				t.Fatalf("expected one configured codex probe, got %#v", tt.checker.agentRequests)
+			}
+			gotProbe := tt.checker.agentRequests[0]
+			if gotProbe.WorkDir != "/repo/project" ||
+				gotProbe.Runtime.ID != "codex" ||
+				gotProbe.Runtime.Model != "gpt-5.5" ||
+				gotProbe.Runtime.ReasoningEffort != "xhigh" {
+				t.Fatalf("expected configured codex selection probe in repo workdir, got %#v", gotProbe)
 			}
 			assertDoctorPathMissing(t, filepath.Join(homeDir, ".acpx"))
 			assertDoctorPathMissing(t, filepath.Join(homeDir, ".roundfix"))
 			assertDoctorPathMissing(t, filepath.Join(repoDir, ".roundfixrc.yml"))
 		})
+	}
+}
+
+func TestRunDoctorRejectsMissingConfiguredAgentSelection(t *testing.T) {
+	config := roundconfig.Builtin()
+	config.Runtimes.Codex.ReasoningEffort = ""
+	checker := newDoctorFakeHealthChecker(
+		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
+		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
+		CheckResult{Name: HealthCheckAgent, Status: CheckStatusOK, Detail: "should not run"},
+		CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK, Detail: "/home/roundfix/.local/bin/codex accepted"},
+	)
+	withDoctorFakeLoaded(t, checker, roundconfig.Loaded{
+		Config:  config,
+		GitRoot: "/repo/project",
+		HomeDir: "/home/roundfix-test",
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"doctor"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected doctor selection failure exit %d, got %d", exitRunFailed, code)
+	}
+	if !strings.Contains(stdout.String(), `agent: failed (agent selection for runtime "codex" missing reasoning_effort`) {
+		t.Fatalf("expected missing selection diagnostic, got %q", stdout.String())
+	}
+	if len(checker.agentRequests) != 0 {
+		t.Fatalf("expected invalid selection to skip readiness probe, got %#v", checker.agentRequests)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
 	}
 }
 
@@ -821,7 +861,7 @@ type doctorFakeHealthChecker struct {
 	acpx          CheckResult
 	agentResult   CheckResult
 	codex         CheckResult
-	agentRuntimes []agent.RuntimeSpec
+	agentRequests []agent.ProbeRequest
 }
 
 func (checker *doctorFakeHealthChecker) Node(context.Context) CheckResult {
@@ -832,8 +872,8 @@ func (checker *doctorFakeHealthChecker) ACPX(context.Context) CheckResult {
 	return checker.acpx
 }
 
-func (checker *doctorFakeHealthChecker) Agent(_ context.Context, runtime agent.RuntimeSpec) CheckResult {
-	checker.agentRuntimes = append(checker.agentRuntimes, runtime)
+func (checker *doctorFakeHealthChecker) Agent(_ context.Context, req agent.ProbeRequest) CheckResult {
+	checker.agentRequests = append(checker.agentRequests, req)
 	return checker.agentResult
 }
 
@@ -843,14 +883,19 @@ func (checker *doctorFakeHealthChecker) Codex(context.Context) CheckResult {
 
 func withDoctorFakeDeps(t *testing.T, checker HealthChecker) {
 	t.Helper()
+	withDoctorFakeLoaded(t, checker, roundconfig.Loaded{
+		Config:  roundconfig.Builtin(),
+		GitRoot: "/repo/project",
+		HomeDir: "/home/roundfix-test",
+	})
+}
+
+func withDoctorFakeLoaded(t *testing.T, checker HealthChecker, loaded roundconfig.Loaded) {
+	t.Helper()
 	old := doctorDeps
 	doctorDeps = doctorDependencies{
 		loadConfig: func(roundconfig.LoadOptions) (roundconfig.Loaded, error) {
-			return roundconfig.Loaded{
-				Config:  roundconfig.Builtin(),
-				GitRoot: "/repo/project",
-				HomeDir: "/home/roundfix-test",
-			}, nil
+			return loaded, nil
 		},
 		healthChecker: func(roundconfig.Loaded) HealthChecker {
 			return checker
@@ -968,6 +1013,64 @@ func TestRunSetupHealthyMachineIsIdempotent(t *testing.T) {
 	})
 	if len(fake.installCalls) != 0 || len(fake.initScopes) != 0 || len(fake.writeCalls) != 0 || len(fake.prompts) != 0 {
 		t.Fatalf("expected idempotent setup to avoid side effects, installs=%v init=%v writes=%v prompts=%v", fake.installCalls, fake.initScopes, fake.writeCalls, fake.prompts)
+	}
+	if len(fake.probeRequests) != 1 {
+		t.Fatalf("expected one Agent readiness probe, got %#v", fake.probeRequests)
+	}
+	gotProbe := fake.probeRequests[0]
+	if gotProbe.WorkDir != fake.gitRoot ||
+		gotProbe.Runtime.ID != "codex" ||
+		gotProbe.Runtime.Model != "gpt-5.5" ||
+		gotProbe.Runtime.ReasoningEffort != "xhigh" {
+		t.Fatalf("expected setup to probe the effective Codex selection in the repo workdir, got %#v", gotProbe)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+}
+
+func TestRunSetupAgentProbeUsesConfiguredSelectionAndWorkDir(t *testing.T) {
+	fake := newSetupFakeDeps()
+	fake.config.Runtimes.Codex.Model = "repo-codex"
+	fake.config.Runtimes.Codex.ReasoningEffort = "repo-xhigh"
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected setup exit 0, got %d (stdout %q stderr %q)", code, stdout.String(), stderr.String())
+	}
+	if len(fake.probeRequests) != 1 {
+		t.Fatalf("expected one Agent readiness probe, got %#v", fake.probeRequests)
+	}
+	gotProbe := fake.probeRequests[0]
+	if gotProbe.WorkDir != fake.gitRoot ||
+		gotProbe.Runtime.ID != "codex" ||
+		gotProbe.Runtime.Model != "repo-codex" ||
+		gotProbe.Runtime.ReasoningEffort != "repo-xhigh" {
+		t.Fatalf("expected setup probe to use configured Agent selection, got %#v", gotProbe)
+	}
+}
+
+func TestRunSetupRejectsMissingConfiguredAgentSelection(t *testing.T) {
+	fake := newSetupFakeDeps()
+	fake.config.Runtimes.Codex.Model = ""
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected setup selection failure exit %d, got %d", exitRunFailed, code)
+	}
+	if !strings.Contains(stdout.String(), `agent probe: failed (agent selection for runtime "codex" missing model`) {
+		t.Fatalf("expected missing selection diagnostic, got %q", stdout.String())
+	}
+	if len(fake.probeRequests) != 0 {
+		t.Fatalf("expected invalid selection to skip readiness probe, got %#v", fake.probeRequests)
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
@@ -1122,7 +1225,10 @@ func TestRunSetupExitCodes(t *testing.T) {
 
 func TestHealthCheckerReturnsStructuredReadOnlyResults(t *testing.T) {
 	ctx := context.Background()
-	runtime := agent.RuntimeSpec{ID: "codex"}
+	req := agent.ProbeRequest{
+		Runtime: agent.RuntimeSpec{ID: "codex", Model: "gpt-5.5", ReasoningEffort: "xhigh"},
+		WorkDir: "/repo/project",
+	}
 	probed := false
 	checker := newHealthChecker(healthCheckDependencies{
 		nodeVersion: func(context.Context) (string, error) {
@@ -1131,10 +1237,10 @@ func TestHealthCheckerReturnsStructuredReadOnlyResults(t *testing.T) {
 		acpxVersion: func(context.Context) (string, error) {
 			return agent.PinnedACPXVersion + "\n", nil
 		},
-		probeAgent: func(_ context.Context, got agent.RuntimeSpec) error {
+		probeAgent: func(_ context.Context, got agent.ProbeRequest) error {
 			probed = true
-			if got.ID != runtime.ID {
-				t.Fatalf("expected runtime %q, got %q", runtime.ID, got.ID)
+			if !reflect.DeepEqual(got, req) {
+				t.Fatalf("expected probe request %#v, got %#v", req, got)
 			}
 			return nil
 		},
@@ -1150,7 +1256,7 @@ func TestHealthCheckerReturnsStructuredReadOnlyResults(t *testing.T) {
 		Status: CheckStatusOK,
 		Detail: agent.PinnedACPXVersion,
 	})
-	assertCheckResult(t, checker.Agent(ctx, runtime), CheckResult{
+	assertCheckResult(t, checker.Agent(ctx, req), CheckResult{
 		Name:   HealthCheckAgent,
 		Status: CheckStatusOK,
 		Detail: "codex",
@@ -1169,7 +1275,7 @@ func TestHealthCheckerReportsFailedPrerequisitesWithNextActions(t *testing.T) {
 		acpxVersion: func(context.Context) (string, error) {
 			return "0.11.0", nil
 		},
-		probeAgent: func(context.Context, agent.RuntimeSpec) error {
+		probeAgent: func(context.Context, agent.ProbeRequest) error {
 			return errors.New("probe denied")
 		},
 	})
@@ -1186,7 +1292,7 @@ func TestHealthCheckerReportsFailedPrerequisitesWithNextActions(t *testing.T) {
 		Detail:     "found 0.11.0; required " + agent.PinnedACPXVersion + "; run " + setupACPXInstallCommand(),
 		NextAction: setupACPXInstallCommand(),
 	})
-	assertCheckResult(t, checker.Agent(ctx, agent.RuntimeSpec{ID: "codex"}), CheckResult{
+	assertCheckResult(t, checker.Agent(ctx, agent.ProbeRequest{Runtime: agent.RuntimeSpec{ID: "codex"}}), CheckResult{
 		Name:   HealthCheckAgent,
 		Status: CheckStatusFailed,
 		Detail: "probe denied",
@@ -4819,6 +4925,7 @@ func TestRunOperationalCommandRejectsInvalidConfigAndArtifactDirectory(t *testin
 type setupFakeDeps struct {
 	homeDir           string
 	gitRoot           string
+	config            roundconfig.Config
 	userConfigPath    string
 	projectConfigPath string
 	acpxConfigPath    string
@@ -4833,6 +4940,7 @@ type setupFakeDeps struct {
 	initScopes        []string
 	acpxInitCalls     int
 	writeCalls        []string
+	probeRequests     []agent.ProbeRequest
 	prompts           []string
 	confirm           func(context.Context, io.Writer, string) (bool, error)
 }
@@ -4843,6 +4951,7 @@ func newSetupFakeDeps() *setupFakeDeps {
 	return &setupFakeDeps{
 		homeDir:           homeDir,
 		gitRoot:           gitRoot,
+		config:            roundconfig.Builtin(),
 		userConfigPath:    filepath.Join(homeDir, ".roundfix", "config.yml"),
 		projectConfigPath: filepath.Join(gitRoot, ".roundfixrc.yml"),
 		acpxConfigPath:    filepath.Join(homeDir, ".acpx", "config.json"),
@@ -4859,7 +4968,7 @@ func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
 	setupDeps = setupDependencies{
 		loadConfig: func(roundconfig.LoadOptions) (roundconfig.Loaded, error) {
 			return roundconfig.Loaded{
-				Config:            roundconfig.Builtin(),
+				Config:            fake.config,
 				GitRoot:           fake.gitRoot,
 				HomeDir:           fake.homeDir,
 				UserConfigPath:    fake.userConfigPath,
@@ -4876,7 +4985,8 @@ func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
 			fake.installCalls = append(fake.installCalls, "npm install -g acpx@"+agent.PinnedACPXVersion)
 			return nil
 		},
-		probeAgent: func(context.Context, agent.RuntimeSpec) error {
+		probeAgent: func(_ context.Context, req agent.ProbeRequest) error {
+			fake.probeRequests = append(fake.probeRequests, req)
 			return fake.probeErr
 		},
 		lookPath: func(command string) (string, error) {

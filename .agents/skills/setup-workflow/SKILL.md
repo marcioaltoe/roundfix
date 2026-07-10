@@ -18,7 +18,7 @@ Scaffold the per-repo configuration the CONTEXT-driven spec workflow assumes. Lo
 - **Spec routing** — how an agent picks the pipeline entry point for a given change (large initiative / feature / refactor-bugfix / trivial) and what marks a spec done
 - **Domain docs** — `CONTEXT.md` (glossary) and `docs/adr/`, and the consumer rules for reading them
 - **Triage labels** (conditional) — only when the repo receives external/incoming issues on its forge (e.g. a public GitHub repo) that the `triage` skill will process
-- **Autonomous work model** (conditional) — only when the repo delegates implementation to agent runtimes (e.g. through Roundfix): the orchestrator/implementer split (Fable orchestrates and authors Specs; implementation goes to an ACP Runtime), runtime routing, and the hard rule that makes the split binding
+- **Autonomous work model** (conditional) — only when the repo delegates implementation to agent runtimes (e.g. through Roundfix): the Supervisor/implementer split (the Supervisor orchestrates and authors Specs; implementation goes to an ACP Runtime), runtime routing, and the hard rule that makes the split binding
 
 These usage rules are seeded into the repo as `docs/agents/*.md` — the canonical, always-current explanation of how agents work inside the CONTEXT-driven workflow. This skill owns those files: a re-run regenerates them.
 
@@ -65,13 +65,13 @@ The five canonical roles: `needs-triage`, `needs-info`, `ready-for-agent`, `read
 
 **Section D — Autonomous work model (only when the repo delegates implementation to agent runtimes).**
 
-> Explainer: When a supervising Claude Code session (Fable) drives this repo autonomously — typically through Roundfix — the roles split hard: Fable orchestrates and authors Specs; implementation is delegated to an ACP Runtime. Fable's usage budget is reserved for judgment; operational work goes to the other models. The split binds every Fable-powered session, interactive or autonomous.
+> Explainer: When a supervising session drives this repo autonomously — typically through Roundfix — the roles split hard: the Supervisor orchestrates and authors Specs; implementation is delegated to an ACP Runtime. Supervisor capacity is reserved for judgment; operational work goes to implementation runtimes. The split binds every autonomous session, interactive or unattended.
 
 Confirm, one at a time:
 
 - Whether the repo works this way at all — if not, skip the section and don't seed the file.
-- The default implementer (default: Codex `gpt-5.5` at `xhigh`, model selection delegated down the acpx → codex chain).
-- The design implementer and its scope (default: Claude Code with Opus 4.8 at `high`/`xhigh` for design, UI, UX, and frontend Tasks) — and what this repo's design surface actually is (TUI, web frontend, both), which fills the placeholder in the seed.
+- The default implementer (default: Codex `gpt-5.5` with `xhigh` Default Reasoning Effort, pinned through Project Config `runtimes.codex`).
+- The design implementer and its scope (default: Claude with `opus` at `high`/`xhigh` Default Reasoning Effort for design, UI, UX, and frontend Tasks) — and what this repo's design surface actually is (TUI, web frontend, both), which fills the placeholder in the seed.
 - The repo's verification gate name, so the seed's runtime-independence section can name it.
 
 ### 3. Confirm and edit
@@ -123,14 +123,14 @@ When Section D applies, add this subsection to the block:
 ```markdown
 ### Autonomous work
 
-Fable orchestrates and authors Specs; implementation is delegated to an ACP Runtime — Codex (`gpt-5.5` at `xhigh`) by default, Claude Code (Opus 4.8 at `high`/`xhigh`) for design, UI, UX, and frontend Tasks. Binding for every Fable-powered session. See `docs/agents/autonomous-work.md`.
+Supervisor orchestrates and authors Specs; implementation is delegated to an ACP Runtime — Codex (`gpt-5.5` with `xhigh`) by default, Claude (`opus` at `high`/`xhigh`) for design, UI, UX, and frontend Tasks. Binding for every autonomous session. See `docs/agents/autonomous-work.md`.
 ```
 
 and add a one-line hard-rule pointer to the repo's high-priority rules (the section the repo uses for MUST-level rules), for example:
 
 ```markdown
-- **HARD RULE — autonomous work model**: binding for every Fable-powered
-  session — Fable orchestrates only; implementation is delegated to an ACP
+- **HARD RULE — autonomous work model**: binding for every autonomous
+  session — the Supervisor orchestrates only; implementation is delegated to an ACP
   Runtime per `docs/agents/autonomous-work.md`.
 ```
 
@@ -167,4 +167,4 @@ Then write the docs files using the seed templates in this skill folder as a sta
 
 ### 5. Done
 
-Tell the user the setup is complete and which skills now read from these files: the spec pipeline (`write-idea`, `write-prd`, `write-techspec`, `write-tasks`, `implement-task`, `implement-spec`, `qa-gate`, `archive-spec`), `triage` when external issues arrive on the forge, and — when Section D applies — every Fable-powered orchestrator session, which is bound by `docs/agents/autonomous-work.md`. Mention they can edit `docs/agents/*.md` and `CONTEXT.md` directly later, but that a re-run of this skill regenerates the seeded `docs/agents/` files and the `## Agent skills` block from the current templates — durable customizations belong in the confirmation answers, `CONTEXT.md`, or sections outside the owned block.
+Tell the user the setup is complete and which skills now read from these files: the spec pipeline (`write-idea`, `write-prd`, `write-techspec`, `write-tasks`, `implement-task`, `implement-spec`, `qa-gate`, `archive-spec`), `triage` when external issues arrive on the forge, and — when Section D applies — every Supervisor-powered orchestrator session, which is bound by `docs/agents/autonomous-work.md`. Mention they can edit `docs/agents/*.md` and `CONTEXT.md` directly later, but that a re-run of this skill regenerates the seeded `docs/agents/` files and the `## Agent skills` block from the current templates — durable customizations belong in the confirmation answers, `CONTEXT.md`, or sections outside the owned block.

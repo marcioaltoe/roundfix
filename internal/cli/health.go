@@ -33,14 +33,14 @@ type CheckResult struct {
 type HealthChecker interface {
 	Node(ctx context.Context) CheckResult
 	ACPX(ctx context.Context) CheckResult
-	Agent(ctx context.Context, runtime agent.RuntimeSpec) CheckResult
+	Agent(ctx context.Context, req agent.ProbeRequest) CheckResult
 	Codex(ctx context.Context) CheckResult
 }
 
 type healthCheckDependencies struct {
 	nodeVersion    func(context.Context) (string, error)
 	acpxVersion    func(context.Context) (string, error)
-	probeAgent     func(context.Context, agent.RuntimeSpec) error
+	probeAgent     func(context.Context, agent.ProbeRequest) error
 	codexInspector codexInspector
 }
 
@@ -103,8 +103,8 @@ func (checker runtimeHealthChecker) ACPX(ctx context.Context) CheckResult {
 	}
 }
 
-func (checker runtimeHealthChecker) Agent(ctx context.Context, runtime agent.RuntimeSpec) CheckResult {
-	if err := checker.deps.probeAgent(ctx, runtime); err != nil {
+func (checker runtimeHealthChecker) Agent(ctx context.Context, req agent.ProbeRequest) CheckResult {
+	if err := checker.deps.probeAgent(ctx, req); err != nil {
 		return CheckResult{
 			Name:   HealthCheckAgent,
 			Status: CheckStatusFailed,
@@ -114,7 +114,7 @@ func (checker runtimeHealthChecker) Agent(ctx context.Context, runtime agent.Run
 	return CheckResult{
 		Name:   HealthCheckAgent,
 		Status: CheckStatusOK,
-		Detail: runtime.ID,
+		Detail: req.Runtime.ID,
 	}
 }
 

@@ -33,6 +33,9 @@ Use the Doctor Command, `roundfix doctor`, to diagnose Run readiness without
 installing dependencies, writing config, or changing files. Doctor runs the
 shared Node.js, pinned acpx, configured Agent probe, and codex runtime hygiene
 checks and prints one line per check with status `ok`, `failed`, or `skipped`.
+The configured Agent probe resolves `defaults.agent` plus the runtime's
+effective `runtimes.<agent>.model` and `runtimes.<agent>.reasoning_effort`, then
+validates that selection from the repository Git root when one is available.
 Failed checks include `next: <action>` when Roundfix knows the remediation.
 On macOS, the codex hygiene check resolves `CODEX_PATH` first and then `codex`
 on `PATH`, inspects the `com.apple.quarantine` attribute (the real XProtect
@@ -69,6 +72,9 @@ Run-ready. It checks Node.js, pinned acpx, the configured Agent probe, acpx
 local adapter overrides, User Config, and Project Config. Each check prints one
 deterministic report line with status `ok`, `installed`, `skipped`,
 `offered: declined`, or `failed`. Tested report lines include:
+
+The Agent probe uses the effective Agent Model and Default Reasoning Effort
+from `runtimes.<agent>` and validates the same selection a later Run would use.
 
 ```text
 node: ok

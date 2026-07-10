@@ -31,7 +31,7 @@ type setupDependencies struct {
 	nodeVersion    func(context.Context) (string, error)
 	acpxVersion    func(context.Context) (string, error)
 	installACPX    func(context.Context) error
-	probeAgent     func(context.Context, agent.RuntimeSpec) error
+	probeAgent     func(context.Context, agent.ProbeRequest) error
 	lookPath       func(string) (string, error)
 	exists         func(string) (bool, error)
 	readFile       func(string) ([]byte, error)
@@ -167,16 +167,15 @@ func (runner *setupRunner) checkAgentProbe(ctx context.Context) {
 		})
 		return
 	}
-	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
-		Agent:            runner.loaded.Config.Defaults.Agent,
-		Model:            runner.loaded.Config.Defaults.Model,
-		EnableFullAccess: runner.loaded.Config.Defaults.AgentFullAccess,
-	})
+	runtime, err := runtimeForConfiguredAgent(runner.loaded.Config)
 	if err != nil {
 		runner.report("agent probe", "failed", err.Error())
 		return
 	}
-	runner.reportHealthResult(runner.health.Agent(ctx, runtime))
+	runner.reportHealthResult(runner.health.Agent(ctx, agent.ProbeRequest{
+		Runtime: runtime,
+		WorkDir: runner.loaded.GitRoot,
+	}))
 }
 
 func (runner *setupRunner) checkACPXAgentsOverride(ctx context.Context) {
@@ -352,8 +351,8 @@ func defaultSetupDependencies() setupDependencies {
 		nodeVersion: defaultSetupNodeVersion,
 		acpxVersion: defaultSetupACPXVersion,
 		installACPX: defaultSetupInstallACPX,
-		probeAgent: func(ctx context.Context, runtime agent.RuntimeSpec) error {
-			return newEngineCollaborators().runner.Probe(ctx, agent.ProbeRequest{Runtime: runtime})
+		probeAgent: func(ctx context.Context, req agent.ProbeRequest) error {
+			return newEngineCollaborators().runner.Probe(ctx, req)
 		},
 		lookPath: exec.LookPath,
 		exists: func(path string) (bool, error) {
