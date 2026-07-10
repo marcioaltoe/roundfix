@@ -221,16 +221,19 @@ func attachIssues(ctx context.Context, run store.Run) []rounds.Issue {
 
 func attachRunView(loaded roundconfig.Loaded, run store.Run, issues []rounds.Issue, console []string, concurrency int) roundtui.LiveRunView {
 	view := roundtui.LiveRunView{
-		Command:       "attach",
-		Repository:    run.HeadRepository,
-		PRNumber:      run.PRNumber,
-		HeadBranch:    run.HeadBranch,
-		HEAD:          run.HeadSHA,
-		RunID:         run.ID,
-		PipelineState: run.State,
-		WorkDir:       run.WorkDir,
-		Issues:        issues,
-		Console:       console,
+		Command:         "attach",
+		Repository:      run.HeadRepository,
+		PRNumber:        run.PRNumber,
+		HeadBranch:      run.HeadBranch,
+		Agent:           displayAgent(run.Agent),
+		Model:           run.Model,
+		ReasoningEffort: run.ReasoningEffort,
+		HEAD:            run.HeadSHA,
+		RunID:           run.ID,
+		PipelineState:   run.State,
+		WorkDir:         run.WorkDir,
+		Issues:          issues,
+		Console:         console,
 		// RunKind lets the cockpit's empty states explain the Run: a Fetch
 		// Run writes artifacts and starts no Agent.
 		RunKind: run.Kind,

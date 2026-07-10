@@ -2767,6 +2767,41 @@ func TestRunImplementPassesOneRunSelectionOverridesToPreflight(t *testing.T) {
 	assertRunCount(t, store.DatabasePath(homeDir), 0)
 }
 
+func TestRunImplementPersistsEffectiveSelection(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Store selection"}})
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{
+		"implement",
+		"--spec", implementTestSlug,
+		"--agent", "codex",
+		"--model", "stored-implement-model",
+		"--reasoning-effort", "stored-implement-reasoning",
+		"--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected clean implement exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	run := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
+	if run.Model != "stored-implement-model" || run.ReasoningEffort != "stored-implement-reasoning" {
+		t.Fatalf("expected stored implement selection, got %#v", run)
+	}
+	if !strings.Contains(stderr.String(), "Agent Model: stored-implement-model") ||
+		!strings.Contains(stderr.String(), "Default Reasoning Effort: stored-implement-reasoning") {
+		t.Fatalf("expected implement progress to show concrete selection, got %q", stderr.String())
+	}
+	if strings.Contains(stderr.String(), "auto") {
+		t.Fatalf("expected no auto selection placeholder, got %q", stderr.String())
+	}
+}
+
 func TestRunImplementRejectsExplicitEmptySelectionOverrides(t *testing.T) {
 	tests := []struct {
 		name string

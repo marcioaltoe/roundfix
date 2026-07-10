@@ -1824,6 +1824,73 @@ func TestRunResolvePrintsDeterministicStdoutReport(t *testing.T) {
 	}
 }
 
+func TestRunResolvePersistsEffectiveSelection(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{
+		"resolve",
+		"--pr", "123",
+		"--agent", "codex",
+		"--model", "stored-resolve-model",
+		"--reasoning-effort", "stored-resolve-reasoning",
+		"--round", "all",
+		"--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected clean resolve exit code 0, got %d stderr=%q", code, stderr.String())
+	}
+	run := runFromStore(t, homeDir, reviewRunIDFromStderr(t, stderr.String()))
+	if run.Model != "stored-resolve-model" || run.ReasoningEffort != "stored-resolve-reasoning" {
+		t.Fatalf("expected stored resolve selection, got %#v", run)
+	}
+	if !strings.Contains(stderr.String(), "Agent Model: stored-resolve-model") ||
+		!strings.Contains(stderr.String(), "Default Reasoning Effort: stored-resolve-reasoning") {
+		t.Fatalf("expected resolve progress to show concrete selection, got %q", stderr.String())
+	}
+	if strings.Contains(stderr.String(), "auto") {
+		t.Fatalf("expected no auto selection placeholder, got %q", stderr.String())
+	}
+}
+
+func TestRunWatchPersistsEffectiveSelection(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{
+		"watch",
+		"--source", "coderabbit",
+		"--pr", "123",
+		"--agent", "codex",
+		"--model", "stored-watch-model",
+		"--reasoning-effort", "stored-watch-reasoning",
+		"--until-clean",
+		"--max-rounds", "6",
+		"--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected clean watch exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	run := runFromStore(t, homeDir, reviewRunIDFromStderr(t, stderr.String()))
+	if run.Model != "stored-watch-model" || run.ReasoningEffort != "stored-watch-reasoning" {
+		t.Fatalf("expected stored watch selection, got %#v", run)
+	}
+	if !strings.Contains(stderr.String(), "Agent Model: stored-watch-model") ||
+		!strings.Contains(stderr.String(), "Default Reasoning Effort: stored-watch-reasoning") {
+		t.Fatalf("expected watch progress to show concrete selection, got %q", stderr.String())
+	}
+	if strings.Contains(stderr.String(), "auto") {
+		t.Fatalf("expected no auto selection placeholder, got %q", stderr.String())
+	}
+}
+
 func TestRunOutcomeNotificationsCaptureTerminalResolveWatchAndImplement(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -5096,12 +5163,14 @@ func seedRunsForList(t *testing.T, homeDir string, seeds []runListSeed) []store.
 
 func createRunRequestForList(seed runListSeed) store.CreateRunRequest {
 	req := store.CreateRunRequest{
-		Kind:        seed.kind,
-		GitRoot:     seed.gitRoot,
-		LocalBranch: seed.branch,
-		HeadSHA:     "abc123",
-		ArtifactDir: filepath.Join(seed.gitRoot, ".roundfix"),
-		Agent:       "codex",
+		Kind:            seed.kind,
+		GitRoot:         seed.gitRoot,
+		LocalBranch:     seed.branch,
+		HeadSHA:         "abc123",
+		ArtifactDir:     filepath.Join(seed.gitRoot, ".roundfix"),
+		Agent:           "codex",
+		Model:           "gpt-5.5",
+		ReasoningEffort: "xhigh",
 	}
 	if req.Kind == store.KindImplement {
 		req.SpecSlug = seed.specSlug
@@ -6752,6 +6821,59 @@ func TestAttachReplaysCompletedRunReadOnly(t *testing.T) {
 	}
 	if run.State != store.StateClean {
 		t.Fatalf("expected attach to leave Run state untouched, got %q", run.State)
+	}
+}
+
+func TestAttachDisplaysStoredSelectionAfterConfigChanges(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var resolveStdout bytes.Buffer
+	var resolveStderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{
+		"resolve",
+		"--pr", "123",
+		"--agent", "codex",
+		"--model", "historical-model",
+		"--reasoning-effort", "historical-reasoning",
+		"--no-input",
+	}, &resolveStdout, &resolveStderr)
+	if code != exitOK {
+		t.Fatalf("seed resolve run failed: %d stderr=%q", code, resolveStderr.String())
+	}
+	runID := reviewRunIDFromStderr(t, resolveStderr.String())
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
+runtimes:
+  codex:
+    model: changed-config-model
+    reasoning_effort: changed-config-reasoning
+`)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code = RunContext(context.Background(), []string{"attach", runID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected attach exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	output := stdout.String()
+	for _, expected := range []string{
+		"Agent: Codex",
+		"Agent Model: historical-model",
+		"Default Reasoning Effort: historical-reasoning",
+	} {
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected attach output to contain stored value %q, got:\n%s", expected, output)
+		}
+	}
+	for _, unexpected := range []string{"changed-config-model", "changed-config-reasoning", "auto"} {
+		if strings.Contains(output, unexpected) {
+			t.Fatalf("expected attach output not to contain %q, got:\n%s", unexpected, output)
+		}
+	}
+	if run := runFromStore(t, homeDir, runID); run.Model != "historical-model" || run.ReasoningEffort != "historical-reasoning" {
+		t.Fatalf("expected stored historical selection to remain unchanged, got %#v", run)
 	}
 }
 

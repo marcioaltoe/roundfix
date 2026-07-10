@@ -60,27 +60,28 @@ type InputRequest struct {
 }
 
 type LiveRunView struct {
-	Command       string
-	Repository    string
-	PRNumber      string
-	HeadBranch    string
-	ReviewSource  string
-	Agent         string
-	Model         string
-	HEAD          string
-	RunID         string
-	PipelineState string
-	BudgetState   string
-	GitState      string
-	CurrentRound  int
-	MaxRounds     int
-	AutoCommit    bool
-	AutoPush      bool
-	LastPush      string
-	BatchNumber   int
-	BatchTotal    int
-	TotalIssues   int
-	Issues        []rounds.Issue
+	Command         string
+	Repository      string
+	PRNumber        string
+	HeadBranch      string
+	ReviewSource    string
+	Agent           string
+	Model           string
+	ReasoningEffort string
+	HEAD            string
+	RunID           string
+	PipelineState   string
+	BudgetState     string
+	GitState        string
+	CurrentRound    int
+	MaxRounds       int
+	AutoCommit      bool
+	AutoPush        bool
+	LastPush        string
+	BatchNumber     int
+	BatchTotal      int
+	TotalIssues     int
+	Issues          []rounds.Issue
 	// RunKind selects the Work Item vocabulary of the panes (implement Runs
 	// render Tasks where review Runs render Review Issues) and the empty
 	// states' explanatory copy. Empty means a review Run, so existing
@@ -462,6 +463,8 @@ func RenderLiveRunView(view LiveRunView) string {
 	}
 	if view.Agent != "" {
 		builder.WriteString(fmt.Sprintf("  Agent: %s\n", emptyDash(view.Agent)))
+		builder.WriteString(fmt.Sprintf("  Agent Model: %s\n", emptyDash(view.Model)))
+		builder.WriteString(fmt.Sprintf("  Default Reasoning Effort: %s\n", emptyDash(view.ReasoningEffort)))
 	}
 	if view.HEAD != "" {
 		builder.WriteString(fmt.Sprintf("  HEAD: %s\n", view.HEAD))

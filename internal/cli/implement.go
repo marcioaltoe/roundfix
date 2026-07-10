@@ -146,6 +146,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
+	req = requestWithRuntimeSelection(req, runtime)
 	sweepRunRetention(ctx, runStore, req.artifactDir, loadedConfig.Config.Store.JournalRetention, stderr)
 	if err := pruneTerminalRunWorktreeDebris(ctx, gitState.Root, loadedConfig.Config.Worktree.Location, runtime, runStore, stderr); err != nil {
 		printPreflightFailure("implement", err, stderr)
@@ -168,12 +169,14 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 
 	run, err := runStore.CreateRun(ctx, store.CreateRunRequest{
-		Kind:        store.KindImplement,
-		GitRoot:     gitState.Root,
-		LocalBranch: gitState.Branch,
-		HeadSHA:     gitState.HEAD,
-		SpecSlug:    graph.Spec.Slug,
-		Agent:       runtime.ID,
+		Kind:            store.KindImplement,
+		GitRoot:         gitState.Root,
+		LocalBranch:     gitState.Branch,
+		HeadSHA:         gitState.HEAD,
+		SpecSlug:        graph.Spec.Slug,
+		Agent:           runtime.ID,
+		Model:           runtime.Model,
+		ReasoningEffort: runtime.ReasoningEffort,
 	})
 	if err != nil {
 		// A lost work-target race surfaces the store's ActiveRunError as-is;
@@ -426,6 +429,8 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, run
 	fmt.Fprintf(ui.progress, "User checkout: %s on branch %s\n", gitState.Root, gitState.Branch)
 	fmt.Fprintf(ui.progress, "Run Worktree: %s on branch %s\n", runRef.Path, runRef.Branch)
 	fmt.Fprintf(ui.progress, "Agent: %s\n", runtime.DisplayName)
+	fmt.Fprintf(ui.progress, "Agent Model: %s\n", runtime.Model)
+	fmt.Fprintf(ui.progress, "Default Reasoning Effort: %s\n", runtime.ReasoningEffort)
 
 	engine, err := daemon.NewEngine(daemon.Dependencies{
 		Runner:    collaborators.runner,
@@ -515,27 +520,28 @@ func maybeRunImplementAutoPush(ctx context.Context, gitState preflight.GitState,
 // task files.
 func implementLiveRunView(req commandRequest, loaded roundconfig.Loaded, gitState preflight.GitState, runID string, workDir string, specsRoot string, graph *spec.Graph) roundtui.LiveRunView {
 	return roundtui.LiveRunView{
-		Command:       "implement",
-		RunKind:       store.KindImplement,
-		SpecSlug:      graph.Spec.Slug,
-		GitRoot:       gitState.Root,
-		WorkDir:       workDir,
-		SpecsRoot:     specsRoot,
-		Tasks:         graph.Tasks,
-		HeadBranch:    gitState.Branch,
-		Agent:         displayAgent(req.agent),
-		Model:         req.model,
-		HEAD:          gitState.HEAD,
-		RunID:         runID,
-		PipelineState: "ResolvingWithAgent",
-		Concurrency:   loaded.Config.Worktree.Concurrency,
-		BudgetState:   formatBudgetState(loaded.Config),
-		GitState:      formatGitState(gitState),
-		AutoCommit:    true,
-		AutoPush:      loaded.Config.Implement.AutoPush,
-		LastPush:      implementPushState(loaded.Config.Implement.AutoPush),
-		Console:       []string{"Agent and verification output will stream below."},
-		Width:         liveViewWidth(),
+		Command:         "implement",
+		RunKind:         store.KindImplement,
+		SpecSlug:        graph.Spec.Slug,
+		GitRoot:         gitState.Root,
+		WorkDir:         workDir,
+		SpecsRoot:       specsRoot,
+		Tasks:           graph.Tasks,
+		HeadBranch:      gitState.Branch,
+		Agent:           displayAgent(req.agent),
+		Model:           req.model,
+		ReasoningEffort: req.reasoningEffort,
+		HEAD:            gitState.HEAD,
+		RunID:           runID,
+		PipelineState:   "ResolvingWithAgent",
+		Concurrency:     loaded.Config.Worktree.Concurrency,
+		BudgetState:     formatBudgetState(loaded.Config),
+		GitState:        formatGitState(gitState),
+		AutoCommit:      true,
+		AutoPush:        loaded.Config.Implement.AutoPush,
+		LastPush:        implementPushState(loaded.Config.Implement.AutoPush),
+		Console:         []string{"Agent and verification output will stream below."},
+		Width:           liveViewWidth(),
 	}
 }
 

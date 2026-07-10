@@ -334,23 +334,25 @@ func TestCollectInputOpenCodeRequiresTypedOrConfiguredSelectionValues(t *testing
 
 func TestRenderLiveRunViewGroupsIssuesAndShowsStatusStrips(t *testing.T) {
 	view := RenderLiveRunView(LiveRunView{
-		Command:       "resolve",
-		Repository:    "owner/project",
-		PRNumber:      "123",
-		HeadBranch:    "feature/review",
-		ReviewSource:  "CodeRabbit",
-		Agent:         "Codex",
-		HEAD:          "abc123",
-		RunID:         "run_123",
-		PipelineState: "ResolvingWithAgent",
-		BudgetState:   "38m / 2h",
-		GitState:      "clean, 1 unpushed commit",
-		CurrentRound:  2,
-		MaxRounds:     6,
-		AutoCommit:    true,
-		AutoPush:      true,
-		LastPush:      "pending",
-		Width:         100,
+		Command:         "resolve",
+		Repository:      "owner/project",
+		PRNumber:        "123",
+		HeadBranch:      "feature/review",
+		ReviewSource:    "CodeRabbit",
+		Agent:           "Codex",
+		Model:           "gpt-5.5",
+		ReasoningEffort: "xhigh",
+		HEAD:            "abc123",
+		RunID:           "run_123",
+		PipelineState:   "ResolvingWithAgent",
+		BudgetState:     "38m / 2h",
+		GitState:        "clean, 1 unpushed commit",
+		CurrentRound:    2,
+		MaxRounds:       6,
+		AutoCommit:      true,
+		AutoPush:        true,
+		LastPush:        "pending",
+		Width:           100,
 		Issues: []rounds.Issue{
 			{Round: 2, Title: "fix stale readme", Severity: "minor", Status: rounds.StatusPending, File: "README.md", Line: 12},
 			{Round: 1, Title: "guard auth cache", Severity: "major", Status: rounds.StatusResolved, File: "api/auth.go", Line: 88},
@@ -369,6 +371,8 @@ func TestRenderLiveRunViewGroupsIssuesAndShowsStatusStrips(t *testing.T) {
 		"Branch: feature/review",
 		"Source: CodeRabbit",
 		"Agent: Codex",
+		"Agent Model: gpt-5.5",
+		"Default Reasoning Effort: xhigh",
 		"HEAD: abc123",
 		"Run:",
 		"ID: run_123",
@@ -410,25 +414,27 @@ func TestRenderLiveRunViewGroupsIssuesAndShowsStatusStrips(t *testing.T) {
 
 func TestRenderLiveRunViewSpecRunRendersTasksAsWorkItems(t *testing.T) {
 	view := RenderLiveRunView(LiveRunView{
-		Command:       "implement",
-		RunKind:       store.KindImplement,
-		SpecSlug:      "0001-widget-flow",
-		GitRoot:       "/repo",
-		WorkDir:       "/home/user/.roundfix/worktrees/repo/run_9",
-		HeadBranch:    "ma/widget-flow",
-		Agent:         "Codex",
-		HEAD:          "abc123",
-		RunID:         "run_9",
-		PipelineState: "ResolvingWithAgent",
-		Concurrency:   2,
-		BudgetState:   "38m / 2h",
-		GitState:      "clean, 1 unpushed commit",
-		CurrentRound:  2,
-		MaxRounds:     6,
-		AutoCommit:    true,
-		AutoPush:      false,
-		LastPush:      "disabled",
-		Width:         100,
+		Command:         "implement",
+		RunKind:         store.KindImplement,
+		SpecSlug:        "0001-widget-flow",
+		GitRoot:         "/repo",
+		WorkDir:         "/home/user/.roundfix/worktrees/repo/run_9",
+		HeadBranch:      "ma/widget-flow",
+		Agent:           "Codex",
+		Model:           "gpt-5.5",
+		ReasoningEffort: "xhigh",
+		HEAD:            "abc123",
+		RunID:           "run_9",
+		PipelineState:   "ResolvingWithAgent",
+		Concurrency:     2,
+		BudgetState:     "38m / 2h",
+		GitState:        "clean, 1 unpushed commit",
+		CurrentRound:    2,
+		MaxRounds:       6,
+		AutoCommit:      true,
+		AutoPush:        false,
+		LastPush:        "disabled",
+		Width:           100,
 		Tasks: []spec.Task{
 			{ID: "task_01", Title: "Build core", Status: spec.StatusCompleted},
 			{ID: "task_02", Title: "Wire API", Status: spec.StatusInProgress},
@@ -442,6 +448,8 @@ func TestRenderLiveRunViewSpecRunRendersTasksAsWorkItems(t *testing.T) {
 		"Spec: 0001-widget-flow",
 		"Branch: ma/widget-flow",
 		"Agent: Codex",
+		"Agent Model: gpt-5.5",
+		"Default Reasoning Effort: xhigh",
 		"Run:",
 		"ID: run_9",
 		"State: ResolvingWithAgent",
@@ -474,6 +482,44 @@ func TestRenderLiveRunViewSpecRunRendersTasksAsWorkItems(t *testing.T) {
 	}
 	if strings.Index(view, "task_01") > strings.Index(view, "task_02") || strings.Index(view, "task_02") > strings.Index(view, "task_03") {
 		t.Fatalf("expected Tasks rendered in Task Graph order, got:\n%s", view)
+	}
+}
+
+func TestRenderLiveRunViewShowsLegacyEmptySelectionAsDash(t *testing.T) {
+	view := RenderLiveRunView(LiveRunView{
+		Command:       "attach",
+		Repository:    "owner/project",
+		PRNumber:      "123",
+		HeadBranch:    "feature/review",
+		ReviewSource:  "CodeRabbit",
+		Agent:         "Codex",
+		RunID:         "run_legacy",
+		PipelineState: "Clean",
+	})
+
+	for _, expected := range []string{
+		"Agent: Codex",
+		"Agent Model: -",
+		"Default Reasoning Effort: -",
+	} {
+		if !strings.Contains(view, expected) {
+			t.Fatalf("expected legacy selection display %q, got:\n%s", expected, view)
+		}
+	}
+}
+
+func TestRenderAgentTimelineDoesNotRenderAutoModelPlaceholder(t *testing.T) {
+	timeline := stripANSI(renderAgentTimeline(LiveRunView{
+		Agent:           "Codex",
+		Model:           "",
+		ReasoningEffort: "",
+	}, nil, 80, 8))
+
+	if strings.Contains(timeline, "auto") {
+		t.Fatalf("expected empty selection to render as dash, got:\n%s", timeline)
+	}
+	if !strings.Contains(timeline, "0 entries · Codex · - · -") {
+		t.Fatalf("expected model and reasoning dash placeholders, got:\n%s", timeline)
 	}
 }
 

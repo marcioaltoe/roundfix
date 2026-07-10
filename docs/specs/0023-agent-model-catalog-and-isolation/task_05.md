@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0023-agent-model-catalog-and-isolation
-status: pending
+status: completed
 type: data
 complexity: high
 ---
@@ -26,20 +26,20 @@ operational path, and attaching after configuration has changed.
 
 ## Subtasks
 
-- [ ] Add and migrate the Run selection columns.
-- [ ] Extend Run creation and query contracts.
-- [ ] Persist values from resolve, watch, and implement.
-- [ ] Render stored values in progress and Run inspection.
-- [ ] Cover migration, round-trip, legacy, and post-config-change behavior.
+- [x] Add and migrate the Run selection columns.
+- [x] Extend Run creation and query contracts.
+- [x] Persist values from resolve, watch, and implement.
+- [x] Render stored values in progress and Run inspection.
+- [x] Cover migration, round-trip, legacy, and post-config-change behavior.
 
 ## Acceptance Criteria
 
-- [ ] Opening a schema-v6 database upgrades it to v7 without losing existing Run data.
-- [ ] Legacy Runs return empty stored values and display `-` for model and reasoning.
-- [ ] New resolve, watch, and implement Runs persist the exact values accepted by preflight.
-- [ ] Attach displays the original stored selection after configuration changes.
-- [ ] New Agent Run output contains concrete model and reasoning values and no `auto` placeholder.
-- [ ] Store and CLI tests cover all insert/select/scan paths without column-order drift.
+- [x] Opening a schema-v6 database upgrades it to v7 without losing existing Run data.
+- [x] Legacy Runs return empty stored values and display `-` for model and reasoning.
+- [x] New resolve, watch, and implement Runs persist the exact values accepted by preflight.
+- [x] Attach displays the original stored selection after configuration changes.
+- [x] New Agent Run output contains concrete model and reasoning values and no `auto` placeholder.
+- [x] Store and CLI tests cover all insert/select/scan paths without column-order drift.
 
 ## Verification
 
@@ -59,3 +59,17 @@ operational path, and attaching after configuration has changed.
 ## References
 
 `_prd.md` -> User Story 1; Core Feature 9; Success Metrics. `_techspec.md` -> Data Models: SQLite schema version 7; API Contracts: inspection; Testing Approach; Build Order 5. ADR-0037.
+
+## Result
+
+- Added schema v7 `runs.model` and `runs.reasoning_effort` columns with non-null empty-string legacy defaults; v3, v4, v5, and v6 fixtures now migrate to user_version 7 with Run rows preserved.
+- Extended Run creation, selection, scan, active lookup, listing, and latest-spec lookup paths to round-trip stored Agent Model and Default Reasoning Effort.
+- Wired resolve, watch, and implement Run creation to persist the concrete selection accepted by preflight, and rendered those values in initial progress and Live Run View data.
+- Updated attach to read and display the stored Run selection, verified after Project Config changes that it keeps historical values instead of current config.
+- Rendered legacy empty model/reasoning values as `-` and removed the Live Run View model `auto` placeholder.
+- Added store, CLI, and TUI regression coverage for schema-v6 migration, insert/select/scan round trips, resolve/watch/implement persistence, attach-after-config-change behavior, legacy dash rendering, and no ambiguous `auto` output.
+
+Verification:
+
+- `rtk go test ./internal/store ./internal/cli ./internal/tui` passed: 601 tests in 3 packages.
+- `rtk make verify` passed: `go test ./...` reported 1039 tests in 19 packages, skill checks passed, and `go build` completed.

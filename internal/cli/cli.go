@@ -1294,6 +1294,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
+	req = requestWithRuntimeSelection(req, resolvePlan.runtime)
 	collaborators := newEngineCollaborators()
 	if err := collaborators.runner.Probe(ctx, agent.ProbeRequest{Runtime: resolvePlan.runtime, WorkDir: preflightResult.Git.Root}); err != nil {
 		printPreflightFailure(req.name, err, stderr)
@@ -1309,7 +1310,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		_ = runStore.Close()
 	}()
 	sweepRunRetention(ctx, runStore, req.artifactDir, loaded.Config.Store.JournalRetention, stderr)
-	run, err := createOperationalRun(ctx, runStore, store.KindResolve, preflightResult, req.artifactDir, resolvePlan.runtime.ID)
+	run, err := createOperationalRun(ctx, runStore, store.KindResolve, preflightResult, req.artifactDir, resolvePlan.runtime)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
@@ -1571,6 +1572,8 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 	fmt.Fprintf(ui.progress, "Round scope: %s\n", formatRoundScope(resolvePlan.roundNumber))
 	fmt.Fprintf(ui.progress, "Open Pull Request: #%s %s %s\n", preflightResult.PullRequest.Number, preflightResult.PullRequest.HeadRepository, preflightResult.PullRequest.HeadBranch)
 	fmt.Fprintf(ui.progress, "Agent: %s\n", resolvePlan.runtime.DisplayName)
+	fmt.Fprintf(ui.progress, "Agent Model: %s\n", resolvePlan.runtime.Model)
+	fmt.Fprintf(ui.progress, "Default Reasoning Effort: %s\n", resolvePlan.runtime.ReasoningEffort)
 
 	engine, err := daemon.NewEngine(daemon.Dependencies{
 		Runner:    collaborators.runner,
@@ -1674,6 +1677,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
+	req = requestWithRuntimeSelection(req, runtime)
 	collaborators := newEngineCollaborators()
 	if err := collaborators.runner.Probe(ctx, agent.ProbeRequest{Runtime: runtime, WorkDir: preflightResult.Git.Root}); err != nil {
 		printPreflightFailure(req.name, err, stderr)
@@ -1689,7 +1693,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		_ = runStore.Close()
 	}()
 	sweepRunRetention(ctx, runStore, req.artifactDir, loaded.Config.Store.JournalRetention, stderr)
-	run, err := createOperationalRun(ctx, runStore, store.KindWatch, preflightResult, req.artifactDir, runtime.ID)
+	run, err := createOperationalRun(ctx, runStore, store.KindWatch, preflightResult, req.artifactDir, runtime)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
@@ -1718,6 +1722,8 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	fmt.Fprintf(stderr, "Open Pull Request: #%s %s %s\n", preflightResult.PullRequest.Number, preflightResult.PullRequest.HeadRepository, preflightResult.PullRequest.HeadBranch)
 	fmt.Fprintf(stderr, "Review Source: %s\n", req.source)
 	fmt.Fprintf(stderr, "Agent: %s\n", runtime.DisplayName)
+	fmt.Fprintf(stderr, "Agent Model: %s\n", runtime.Model)
+	fmt.Fprintf(stderr, "Default Reasoning Effort: %s\n", runtime.ReasoningEffort)
 	fmt.Fprintf(stderr, "Max Rounds: %d\n", req.maxRounds)
 
 	// One cockpit for the entire Watch Run, across all Rounds and Batches.
@@ -1862,19 +1868,27 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	return exitForWatchOutcome(result.Outcome)
 }
 
-func createOperationalRun(ctx context.Context, runStore *store.Store, kind string, preflightResult preflight.Result, artifactDir string, agentID string) (store.Run, error) {
+func createOperationalRun(ctx context.Context, runStore *store.Store, kind string, preflightResult preflight.Result, artifactDir string, runtime agent.RuntimeSpec) (store.Run, error) {
 	return runStore.CreateRun(ctx, store.CreateRunRequest{
-		Kind:           kind,
-		HeadRepository: preflightResult.PullRequest.HeadRepository,
-		HeadBranch:     preflightResult.PullRequest.HeadBranch,
-		BaseRepository: preflightResult.PullRequest.BaseRepository,
-		PRNumber:       preflightResult.PullRequest.Number,
-		GitRoot:        preflightResult.Git.Root,
-		LocalBranch:    preflightResult.Git.Branch,
-		HeadSHA:        preflightResult.Git.HEAD,
-		ArtifactDir:    artifactDir,
-		Agent:          agentID,
+		Kind:            kind,
+		HeadRepository:  preflightResult.PullRequest.HeadRepository,
+		HeadBranch:      preflightResult.PullRequest.HeadBranch,
+		BaseRepository:  preflightResult.PullRequest.BaseRepository,
+		PRNumber:        preflightResult.PullRequest.Number,
+		GitRoot:         preflightResult.Git.Root,
+		LocalBranch:     preflightResult.Git.Branch,
+		HeadSHA:         preflightResult.Git.HEAD,
+		ArtifactDir:     artifactDir,
+		Agent:           runtime.ID,
+		Model:           runtime.Model,
+		ReasoningEffort: runtime.ReasoningEffort,
 	})
+}
+
+func requestWithRuntimeSelection(req commandRequest, runtime agent.RuntimeSpec) commandRequest {
+	req.model = runtime.Model
+	req.reasoningEffort = runtime.ReasoningEffort
+	return req
 }
 
 func worktreeBootstrapSpec(config roundconfig.Config) runworktree.BootstrapSpec {
@@ -2141,26 +2155,27 @@ func printLiveRunView(stderr io.Writer, req commandRequest, loaded roundconfig.L
 
 func buildLiveRunView(req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, pipelineState string, issues []rounds.Issue, console []string) roundtui.LiveRunView {
 	return roundtui.LiveRunView{
-		Command:       req.name,
-		Repository:    preflightResult.PullRequest.HeadRepository,
-		PRNumber:      preflightResult.PullRequest.Number,
-		HeadBranch:    preflightResult.PullRequest.HeadBranch,
-		ReviewSource:  displayReviewSource(req.source),
-		Agent:         displayAgent(req.agent),
-		Model:         req.model,
-		HEAD:          preflightResult.Git.HEAD,
-		RunID:         runID,
-		PipelineState: pipelineState,
-		BudgetState:   formatBudgetState(loaded.Config),
-		GitState:      formatGitState(preflightResult.Git),
-		CurrentRound:  0,
-		MaxRounds:     req.maxRounds,
-		AutoCommit:    loaded.Config.Defaults.AutoCommit,
-		AutoPush:      preflightResult.PushPlan.Enabled,
-		LastPush:      lastPushState(preflightResult.PushPlan),
-		Issues:        issues,
-		Console:       console,
-		Width:         liveViewWidth(),
+		Command:         req.name,
+		Repository:      preflightResult.PullRequest.HeadRepository,
+		PRNumber:        preflightResult.PullRequest.Number,
+		HeadBranch:      preflightResult.PullRequest.HeadBranch,
+		ReviewSource:    displayReviewSource(req.source),
+		Agent:           displayAgent(req.agent),
+		Model:           req.model,
+		ReasoningEffort: req.reasoningEffort,
+		HEAD:            preflightResult.Git.HEAD,
+		RunID:           runID,
+		PipelineState:   pipelineState,
+		BudgetState:     formatBudgetState(loaded.Config),
+		GitState:        formatGitState(preflightResult.Git),
+		CurrentRound:    0,
+		MaxRounds:       req.maxRounds,
+		AutoCommit:      loaded.Config.Defaults.AutoCommit,
+		AutoPush:        preflightResult.PushPlan.Enabled,
+		LastPush:        lastPushState(preflightResult.PushPlan),
+		Issues:          issues,
+		Console:         console,
+		Width:           liveViewWidth(),
 	}
 }
 
