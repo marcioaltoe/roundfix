@@ -2,8 +2,11 @@ package runevent
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestSpecRunKindsUseDaemonNamespace(t *testing.T) {
@@ -99,5 +102,117 @@ func TestSourceFilterSinkPropagatesWrappedSinkErrors(t *testing.T) {
 	}
 	if len(next.events) != 1 || next.events[0].Source != SourceDaemon {
 		t.Fatalf("expected only the daemon event forwarded, got %#v", next.events)
+	}
+}
+
+func TestProjectStreamEventCoversStableCategoriesAndRedactsPayload(t *testing.T) {
+	at := time.Date(2026, 7, 10, 12, 0, 0, 123, time.UTC)
+	events := []RunEvent{
+		{
+			RunID:       "run_123",
+			Batch:       4,
+			Source:      SourceDaemon,
+			Kind:        KindDaemonTask,
+			ReviewIssue: "task_03",
+			Summary:     "Task task_03 settled completed.",
+			Time:        at,
+			Payload:     []byte(`{"task":"task_03","phase":"settled","status":"completed"}`),
+		},
+		{
+			RunID:   "run_123",
+			Batch:   4,
+			Source:  SourceDaemon,
+			Kind:    KindDaemonBatch,
+			Summary: "Batch 004 completed.",
+			Time:    at,
+			Payload: []byte(`{"phase":"completed","batch":4}`),
+		},
+		{
+			RunID:       "run_123",
+			Batch:       4,
+			Source:      SourceDaemon,
+			Kind:        KindDaemonVerification,
+			ReviewIssue: "task_03",
+			Summary:     "Verification attempt 1 failed: make verify",
+			Time:        at,
+			Payload:     []byte(`{"attempt":1,"phase":"verdict","verdict":"failed","command":"make verify","diagnostic_path":"/tmp/log"}`),
+		},
+		{
+			RunID:   "run_123",
+			Source:  SourceDaemon,
+			Kind:    KindDaemonOutcome,
+			Summary: "Run reached Clean.",
+			Time:    at,
+			Payload: []byte(`{"state":"Clean","remaining":0}`),
+		},
+		{
+			RunID:   "run_123",
+			Source:  SourceAgent,
+			Kind:    KindAgentRaw,
+			Summary: "raw agent payload",
+			Time:    at,
+			Payload: []byte(`{"raw":"agent output"}`),
+		},
+	}
+	filter := AllStreamCategories()
+	categories := []string{}
+	for index, event := range events {
+		record, ok, err := ProjectStreamEvent(int64(index+1), event, filter)
+		if err != nil {
+			t.Fatalf("project event %d: %v", index, err)
+		}
+		if !ok {
+			continue
+		}
+		categories = append(categories, string(record.Category))
+		raw, err := json.Marshal(record)
+		if err != nil {
+			t.Fatalf("marshal projected record: %v", err)
+		}
+		encoded := string(raw)
+		for _, forbidden := range []string{"daemon.", "agent output", "make verify", "diagnostic_path", "/tmp/log"} {
+			if strings.Contains(encoded, forbidden) {
+				t.Fatalf("expected projection to omit %q, got %s", forbidden, encoded)
+			}
+		}
+		if record.Schema != StreamSchema || record.RunID != "run_123" || record.Cursor == 0 || record.Time == "" {
+			t.Fatalf("expected stable envelope fields, got %#v", record)
+		}
+	}
+	if got := strings.Join(categories, "|"); got != "task-status|batch|verification|outcome" {
+		t.Fatalf("expected stable categories only, got %s", got)
+	}
+}
+
+func TestProjectStreamEventRejectsMalformedRelevantDaemonPayload(t *testing.T) {
+	_, _, err := ProjectStreamEvent(1, RunEvent{
+		RunID:   "run_123",
+		Batch:   1,
+		Source:  SourceDaemon,
+		Kind:    KindDaemonBatch,
+		Summary: "Batch 001 completed.",
+		Time:    time.Date(2026, 7, 10, 12, 0, 0, 0, time.UTC),
+		Payload: []byte(`{"batch":1}`),
+	}, AllStreamCategories())
+	if err == nil {
+		t.Fatal("expected missing phase in relevant daemon payload to fail")
+	}
+}
+
+func TestParseStreamCategoryFilterValidatesAndDeduplicates(t *testing.T) {
+	filter, err := ParseStreamCategoryFilter("verification,outcome,verification")
+	if err != nil {
+		t.Fatalf("parse filter: %v", err)
+	}
+	if !filter.Includes(StreamCategoryVerification) || !filter.Includes(StreamCategoryOutcome) {
+		t.Fatalf("expected requested categories included, got %#v", filter)
+	}
+	if filter.Includes(StreamCategoryBatch) || filter.Includes(StreamCategoryTaskStatus) {
+		t.Fatalf("expected unrequested categories excluded, got %#v", filter)
+	}
+	for _, raw := range []string{"", "verification,,outcome", "raw"} {
+		if _, err := ParseStreamCategoryFilter(raw); err == nil {
+			t.Fatalf("expected invalid filter %q to fail", raw)
+		}
 	}
 }

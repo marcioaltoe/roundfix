@@ -18,9 +18,12 @@ import (
 	roundtui "roundfix/internal/tui"
 )
 
-// attachReplayPageSize bounds each journal read so attach pages through
+// journalReplayPageSize bounds each journal read so consumers page through
 // large histories instead of loading them at once.
-const attachReplayPageSize = 200
+const journalReplayPageSize = 200
+
+// attachReplayPageSize is kept for attach-specific tests and helpers.
+const attachReplayPageSize = journalReplayPageSize
 
 // attachTimelineLines bounds the rendered console ring during replay.
 const attachTimelineLines = 300
@@ -105,10 +108,11 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	follower := attachFollower{
 		source: reader,
 		sleep:  attachSleep,
-		accept: func(entry store.JournalEvent) {
+		accept: func(entry store.JournalEvent) error {
 			if text := timeline.Append(entry.Event); text != "" {
 				fmt.Fprint(stdout, text)
 			}
+			return nil
 		},
 	}
 	final, _, err := follower.follow(ctx, run.ID, cursor)
@@ -154,16 +158,27 @@ func runAttachCockpit(ctx context.Context, loaded roundconfig.Loaded, reader *st
 // replayRunEvents pages journal events after the cursor into the timeline
 // and returns the last accepted cursor.
 func replayRunEvents(ctx context.Context, reader *store.Store, runID string, cursor int64, timeline *roundtui.RunTimeline) (int64, error) {
+	return replayJournalEvents(ctx, reader, runID, cursor, func(entry store.JournalEvent) error {
+		timeline.Append(entry.Event)
+		return nil
+	})
+}
+
+func replayJournalEvents(ctx context.Context, source journalEventSource, runID string, cursor int64, accept func(store.JournalEvent) error) (int64, error) {
 	for {
-		page, err := reader.RunEventsAfter(ctx, runID, cursor, attachReplayPageSize)
+		page, err := source.RunEventsAfter(ctx, runID, cursor, journalReplayPageSize)
 		if err != nil {
 			return cursor, err
 		}
 		for _, entry := range page {
-			timeline.Append(entry.Event)
+			if accept != nil {
+				if err := accept(entry); err != nil {
+					return cursor, err
+				}
+			}
 			cursor = entry.Cursor
 		}
-		if len(page) < attachReplayPageSize {
+		if len(page) < journalReplayPageSize {
 			return cursor, nil
 		}
 	}
@@ -344,29 +359,32 @@ func defaultAttachSleep(ctx context.Context) error {
 	}
 }
 
-// attachEventSource is the read-only journal surface follow mode needs.
+// journalEventSource is the read-only journal surface follow mode needs.
 // *store.Store satisfies it.
-type attachEventSource interface {
+type journalEventSource interface {
 	Run(ctx context.Context, runID string) (store.Run, bool, error)
 	RunEventsAfter(ctx context.Context, runID string, cursor int64, limit int) ([]store.JournalEvent, error)
 	DataVersion(ctx context.Context) (int64, error)
 }
 
-// attachFollower follows newly appended Run Events for an Active Run.
+// journalFollower follows newly appended Run Events for an Active Run.
 // Polls use the journal's data-version change signal so idle polls read no
 // rows, and every read is a short autocommit query on the read-only
 // connection. The cursor advances only after an event is accepted, so
 // reconnects never duplicate output.
-type attachFollower struct {
-	source attachEventSource
+type journalFollower struct {
+	source journalEventSource
 	sleep  func(ctx context.Context) error
-	accept func(entry store.JournalEvent)
+	accept func(entry store.JournalEvent) error
 }
+
+type attachEventSource = journalEventSource
+type attachFollower = journalFollower
 
 // follow returns the terminal Run and the final cursor when the Run ends,
 // or the context error when the user detaches. Detaching never mutates or
 // stops the Run.
-func (follower attachFollower) follow(ctx context.Context, runID string, cursor int64) (store.Run, int64, error) {
+func (follower journalFollower) follow(ctx context.Context, runID string, cursor int64) (store.Run, int64, error) {
 	lastVersion := int64(-1)
 	for {
 		version, err := follower.source.DataVersion(ctx)
@@ -400,17 +418,21 @@ func (follower attachFollower) follow(ctx context.Context, runID string, cursor 
 	}
 }
 
-func (follower attachFollower) drain(ctx context.Context, runID string, cursor int64) (int64, error) {
+func (follower journalFollower) drain(ctx context.Context, runID string, cursor int64) (int64, error) {
 	for {
-		page, err := follower.source.RunEventsAfter(ctx, runID, cursor, attachReplayPageSize)
+		page, err := follower.source.RunEventsAfter(ctx, runID, cursor, journalReplayPageSize)
 		if err != nil {
 			return cursor, err
 		}
 		for _, entry := range page {
-			follower.accept(entry)
+			if follower.accept != nil {
+				if err := follower.accept(entry); err != nil {
+					return cursor, err
+				}
+			}
 			cursor = entry.Cursor
 		}
-		if len(page) < attachReplayPageSize {
+		if len(page) < journalReplayPageSize {
 			return cursor, nil
 		}
 	}
