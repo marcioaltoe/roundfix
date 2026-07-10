@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0023-agent-model-catalog-and-isolation
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -26,21 +26,21 @@ depends on runtime-owned model defaults.
 
 ## Subtasks
 
-- [ ] Update user-facing configuration and command documentation.
-- [ ] Migrate repository dogfood configuration and autonomous runtime guidance.
-- [ ] Update the canonical Roundfix Skill contract and examples.
-- [ ] Regenerate the embedded Skill bundle.
-- [ ] Audit glossary vocabulary and deprecated guidance.
-- [ ] Verify all examples and Skill governance checks.
+- [x] Update user-facing configuration and command documentation.
+- [x] Migrate repository dogfood configuration and autonomous runtime guidance.
+- [x] Update the canonical Roundfix Skill contract and examples.
+- [x] Regenerate the embedded Skill bundle.
+- [x] Audit glossary vocabulary and deprecated guidance.
+- [x] Verify all examples and Skill governance checks.
 
 ## Acceptance Criteria
 
-- [ ] Documentation contains valid Codex and Claude configuration plus one-Run override examples using model and reasoning together.
-- [ ] OpenCode documentation states that both values are required and provides no invented catalog/default.
-- [ ] Recovery guidance names runtime update and supported-value selection without suggesting fallback or home-config mutation.
-- [ ] `.roundfixrc.yml` pins the repository's effective Codex model and reasoning under the per-runtime structure.
-- [ ] Autonomous-work guidance uses Roundfix-owned selection and the canonical Supervisor role.
-- [ ] Canonical and embedded Roundfix Skills have zero sync drift and describe the shipped CLI exactly.
+- [x] Documentation contains valid Codex and Claude configuration plus one-Run override examples using model and reasoning together.
+- [x] OpenCode documentation states that both values are required and provides no invented catalog/default.
+- [x] Recovery guidance names runtime update and supported-value selection without suggesting fallback or home-config mutation.
+- [x] `.roundfixrc.yml` pins the repository's effective Codex model and reasoning under the per-runtime structure.
+- [x] Autonomous-work guidance uses Roundfix-owned selection and the canonical Supervisor role.
+- [x] Canonical and embedded Roundfix Skills have zero sync drift and describe the shipped CLI exactly.
 
 ## Verification
 
@@ -61,3 +61,17 @@ depends on runtime-owned model defaults.
 ## References
 
 `_prd.md` -> User Story 7; Core Feature 11; Success Metrics; Decisions. `_techspec.md` -> API Contracts; Integration Points; Build Order 6. ADR-0037; ADR-0039.
+
+## Result
+
+- Updated `README.md` with per-runtime `runtimes.<runtime>.model` and `runtimes.<runtime>.reasoning_effort` guidance, built-in Codex and Claude defaults, ordered Codex and Claude Model Catalogs, custom-value behavior, deprecated `defaults.model` migration, unsupported-selection recovery, and stored-selection inspection behavior.
+- Added Codex and Claude one-Run examples that pass `--model` and `--reasoning-effort` together, plus Project Config examples for Codex and Claude. OpenCode guidance states that both values are required and that Roundfix ships no OpenCode Model Catalog or default.
+- Updated `.roundfixrc.yml` to remove `defaults.model` and pin this repository's Codex selection under `runtimes.codex.model: gpt-5.5` and `runtimes.codex.reasoning_effort: xhigh`.
+- Updated `docs/agents/autonomous-work.md` to use the canonical Supervisor role and Roundfix-owned selection instead of `~/.codex/config.toml` or runtime-owned defaults.
+- Updated the canonical `.agents/skills/roundfix/SKILL.md` for new config keys, defaults, flags, Interactive Input ordering, preflight rejection recovery, inspection behavior, and examples; regenerated `skills/roundfix/SKILL.md` with `rtk make skills-sync`.
+
+Verification:
+
+- `rtk make skills-sync-check` passed with no drift output.
+- `rtk go run -buildvcs=false ./cmd/roundfix skills check` passed: every shipped Skill validated.
+- `rtk make verify` passed: `go test ./...` reported 1039 tests in 19 packages, skill checks passed, and `go build` completed.
