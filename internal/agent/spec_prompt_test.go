@@ -39,7 +39,7 @@ func TestBuildTaskPromptStatesExecutionInvariants(t *testing.T) {
 		"Task file: /repo/docs/specs/0001-implement-command/task_02.md",
 		"Implement only this Task's slice",
 		"Set status: in_progress in the task file frontmatter when you start.",
-		"Run the commands in the task file's ## Verification section while working; all must pass.",
+		"Run focused checks while working when useful; the Daemon runs the task file's ## Verification section after your turn.",
 		"Append a ## Result section to the task file with evidence",
 		"Settle the task file frontmatter to status: completed or status: failed",
 		"Never commit, push, or open a pull request.",
@@ -50,6 +50,9 @@ func TestBuildTaskPromptStatesExecutionInvariants(t *testing.T) {
 		if !strings.Contains(prompt, expected) {
 			t.Fatalf("expected task prompt to contain %q, got:\n%s", expected, prompt)
 		}
+	}
+	if strings.Contains(prompt, "Run the commands in the task file's ## Verification section while working; all must pass.") {
+		t.Fatalf("expected task prompt to remove authoritative Verification requirement, got:\n%s", prompt)
 	}
 }
 

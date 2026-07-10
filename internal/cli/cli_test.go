@@ -3103,8 +3103,8 @@ func TestRunResolveVerificationFailureDoesNotCommit(t *testing.T) {
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected failed stdout report %q, got %q", wantStdout, stdout.String())
 	}
-	if verifier.calls != 1 {
-		t.Fatalf("expected one verification call, got %d", verifier.calls)
+	if verifier.calls != 2 {
+		t.Fatalf("expected initial and final verification calls, got %d", verifier.calls)
 	}
 	if committer.calls != 0 {
 		t.Fatalf("expected no Batch commit after verification failure, got %d", committer.calls)

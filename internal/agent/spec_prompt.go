@@ -23,7 +23,7 @@ type TaskPromptRequest struct {
 const taskExecutionInvariants = `Execution invariants:
 - Implement only this Task's slice; work that belongs to another Task is a follow-up note, not part of this diff.
 - Set status: in_progress in the task file frontmatter when you start.
-- Run the commands in the task file's ## Verification section while working; all must pass.
+- Run focused checks while working when useful; the Daemon runs the task file's ## Verification section after your turn.
 - Append a ## Result section to the task file with evidence for each acceptance criterion.
 - Settle the task file frontmatter to status: completed or status: failed before you finish.
 - Never commit, push, or open a pull request.

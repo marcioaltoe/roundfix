@@ -167,6 +167,8 @@ func TestBuildPromptIncludesAssignedFilesAndForbiddenActions(t *testing.T) {
 		"Verification command: make verify",
 		"/repo/.roundfix/reviews/pr-123/round-001/issue_001.md",
 		"Read every assigned Review Issue file completely.",
+		"Run focused checks when useful; the Daemon runs the configured Verification command after this Agent turn.",
+		"the Daemon owns authoritative Verification",
 		"Do not create commits.",
 		"Do not push.",
 		"Do not call gh or any Review Source API",
@@ -187,6 +189,76 @@ func TestBuildPromptIncludesAssignedFilesAndForbiddenActions(t *testing.T) {
 		if !strings.Contains(prompt, expected) {
 			t.Fatalf("expected prompt to contain %q, got:\n%s", expected, prompt)
 		}
+	}
+	for _, forbidden := range []string{
+		"Run the configured verification command before marking any issue resolved.",
+		"configured verification command passed in this session",
+	} {
+		if strings.Contains(prompt, forbidden) {
+			t.Fatalf("expected prompt to remove authoritative verification requirement %q, got:\n%s", forbidden, prompt)
+		}
+	}
+}
+
+func TestBuildVerificationRepairPromptIncludesPathFailureAndNoOutputBody(t *testing.T) {
+	prompt, err := BuildVerificationRepairPrompt("task_02", VerificationFeedback{
+		Command:        "rtk go test ./internal/daemon",
+		DiagnosticPath: "/repo/.roundfix/runs/run_123/verification/batch-001-attempt-1.log",
+		Failure:        "verification failed: exit status 1",
+		Attempt:        1,
+	})
+	if err != nil {
+		t.Fatalf("BuildVerificationRepairPrompt returned error: %v", err)
+	}
+	for _, expected := range []string{
+		"Verification Feedback for the same Roundfix Agent Session.",
+		"Work Item: task_02",
+		"Attempt: 1",
+		"Failed command: rtk go test ./internal/daemon",
+		"Diagnostic artifact: /repo/.roundfix/runs/run_123/verification/batch-001-attempt-1.log",
+		"Failure: verification failed: exit status 1",
+		"Do not paste or embed the diagnostic log body",
+		"Daemon will rerun the full configured Verification sequence once",
+	} {
+		if !strings.Contains(prompt, expected) {
+			t.Fatalf("expected repair prompt to contain %q, got:\n%s", expected, prompt)
+		}
+	}
+	if strings.Contains(prompt, "PACKAGE PASS") || strings.Contains(prompt, "raw output bytes") {
+		t.Fatalf("expected repair prompt to omit command output body, got:\n%s", prompt)
+	}
+}
+
+func TestBuildVerificationRepairPromptValidatesRequiredFields(t *testing.T) {
+	base := VerificationFeedback{
+		Command:        "make verify",
+		DiagnosticPath: "/tmp/verification.log",
+		Failure:        "verification failed",
+		Attempt:        1,
+	}
+	tests := []struct {
+		name     string
+		workItem string
+		mutate   func(*VerificationFeedback)
+	}{
+		{name: "empty work item", workItem: "", mutate: func(*VerificationFeedback) {}},
+		{name: "empty command", workItem: "task_01", mutate: func(feedback *VerificationFeedback) { feedback.Command = "" }},
+		{name: "empty diagnostic path", workItem: "task_01", mutate: func(feedback *VerificationFeedback) { feedback.DiagnosticPath = "" }},
+		{name: "empty failure", workItem: "task_01", mutate: func(feedback *VerificationFeedback) { feedback.Failure = "" }},
+		{name: "missing attempt", workItem: "task_01", mutate: func(feedback *VerificationFeedback) { feedback.Attempt = 0 }},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			feedback := base
+			tt.mutate(&feedback)
+			prompt, err := BuildVerificationRepairPrompt(tt.workItem, feedback)
+			if err == nil {
+				t.Fatalf("expected error, got prompt:\n%s", prompt)
+			}
+			if prompt != "" {
+				t.Fatalf("expected empty prompt on error, got:\n%s", prompt)
+			}
+		})
 	}
 }
 

@@ -146,6 +146,11 @@ type verificationAttemptRequest struct {
 	Publish     func(context.Context, string, map[string]any) error
 }
 
+type verificationAttemptOutcome struct {
+	Failure        string
+	CommandFailure *VerificationCommandError
+}
+
 func (req verificationAttemptRequest) payload(phase runevent.VerificationPhase, command string) map[string]any {
 	payload := map[string]any{
 		"attempt": req.Attempt,
@@ -183,16 +188,16 @@ func (req verificationAttemptRequest) summary(phase runevent.VerificationPhase, 
 	}
 }
 
-func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificationAttemptRequest) (string, error) {
+func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificationAttemptRequest) (verificationAttemptOutcome, error) {
 	if req.Attempt < 1 {
-		return "", fmt.Errorf("run verification: attempt is required")
+		return verificationAttemptOutcome{}, fmt.Errorf("run verification: attempt is required")
 	}
 	if req.Publish == nil {
-		return "", fmt.Errorf("run verification attempt %d: event publisher is required", req.Attempt)
+		return verificationAttemptOutcome{}, fmt.Errorf("run verification attempt %d: event publisher is required", req.Attempt)
 	}
 	for _, command := range req.Commands {
 		if err := req.Publish(ctx, req.summary(runevent.VerificationPhaseStarted, command), req.payload(runevent.VerificationPhaseStarted, command)); err != nil {
-			return "", err
+			return verificationAttemptOutcome{}, err
 		}
 		outputPath := VerificationOutputPath(req.ArtifactDir, req.RunID, req.BatchNumber, req.Attempt)
 		_, err := engine.deps.Verifier.Verify(ctx, VerifyRequest{
@@ -202,30 +207,33 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 		})
 		if err != nil {
 			if isStop(ctx, err) {
-				return "", err
+				return verificationAttemptOutcome{}, err
 			}
 			var commandErr *VerificationCommandError
 			if errors.As(err, &commandErr) {
 				if err := req.publishFailedCommand(ctx, command, commandErr); err != nil {
-					return "", err
+					return verificationAttemptOutcome{}, err
 				}
 				fmt.Fprintf(engine.deps.Progress, "Verification failed (attempt %d); diagnostics: %s\n", req.Attempt, commandErr.OutputPath)
-				return fmt.Sprintf("verification failed: %v", err), nil
+				return verificationAttemptOutcome{
+					Failure:        fmt.Sprintf("verification failed: %v", err),
+					CommandFailure: commandErr,
+				}, nil
 			}
 			if err := req.publishInfrastructureFailure(ctx, command, err); err != nil {
-				return "", err
+				return verificationAttemptOutcome{}, err
 			}
-			return "", fmt.Errorf("run verification attempt %d: %w", req.Attempt, err)
+			return verificationAttemptOutcome{}, fmt.Errorf("run verification attempt %d: %w", req.Attempt, err)
 		}
 		if err := req.Publish(ctx, req.summary(runevent.VerificationPhaseCommandPassed, command), req.payload(runevent.VerificationPhaseCommandPassed, command)); err != nil {
-			return "", err
+			return verificationAttemptOutcome{}, err
 		}
 	}
 	if err := req.publishVerdict(ctx, runevent.VerificationVerdictPassed, "", ""); err != nil {
-		return "", err
+		return verificationAttemptOutcome{}, err
 	}
 	fmt.Fprintf(engine.deps.Progress, "Verification passed (attempt %d).\n", req.Attempt)
-	return "", nil
+	return verificationAttemptOutcome{}, nil
 }
 
 func (req verificationAttemptRequest) publishFailedCommand(ctx context.Context, command string, commandErr *VerificationCommandError) error {
@@ -425,9 +433,15 @@ func (engine *Engine) resolveBatch(ctx context.Context, plan CyclePlan, batch ro
 		return outcome, 0, err
 	}
 	if failure == "" {
-		failure, err = engine.verifyBatch(ctx, plan, batch)
-		if err != nil {
-			return outcome, 0, err
+		verification, verifyErr := engine.verifyBatch(ctx, plan, batch, 1)
+		if verifyErr != nil {
+			return outcome, 0, verifyErr
+		}
+		if verification.Failure != "" {
+			failure, err = engine.repairBatchVerification(ctx, plan, batch, verification)
+			if err != nil {
+				return outcome, 0, err
+			}
 		}
 	}
 	if failure != "" {
@@ -548,20 +562,19 @@ func (engine *Engine) runBatchAgent(ctx context.Context, plan CyclePlan, batch r
 	return "", nil
 }
 
-// verifyBatch runs the configured verification command. It returns a
-// non-empty failure reason when verification failed and the Batch issues
-// were marked failed; the returned error is reserved for Stop Requests
-// and infrastructure failures, which halt the cycle.
-func (engine *Engine) verifyBatch(ctx context.Context, plan CyclePlan, batch rounds.Batch) (string, error) {
+// verifyBatch runs one configured verification attempt. Command failures
+// return a typed outcome for the repair loop; the returned error is reserved
+// for Stop Requests and infrastructure failures, which halt the cycle.
+func (engine *Engine) verifyBatch(ctx context.Context, plan CyclePlan, batch rounds.Batch, attempt int) (verificationAttemptOutcome, error) {
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateVerifying); err != nil {
-		return "", fmt.Errorf("update run %q to state %q before Batch %03d verification: %w", plan.RunID, store.StateVerifying, batch.Number, err)
+		return verificationAttemptOutcome{}, fmt.Errorf("update run %q to state %q before Batch %03d verification: %w", plan.RunID, store.StateVerifying, batch.Number, err)
 	}
-	failure, err := engine.runVerificationAttempt(ctx, verificationAttemptRequest{
+	verification, err := engine.runVerificationAttempt(ctx, verificationAttemptRequest{
 		RunID:       plan.RunID,
 		WorkDir:     plan.GitRoot,
 		ArtifactDir: plan.ArtifactDir,
 		BatchNumber: batch.Number,
-		Attempt:     1,
+		Attempt:     attempt,
 		Commands:    []string{plan.Verification},
 		Publish: func(ctx context.Context, summary string, payload map[string]any) error {
 			if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonVerification, summary, payload); err != nil {
@@ -574,15 +587,113 @@ func (engine *Engine) verifyBatch(ctx context.Context, plan CyclePlan, batch rou
 		if isStop(ctx, err) {
 			// A Stop Request during verification keeps Agent statuses
 			// untouched; the run ends Stopped, not failed.
-			return "", fmt.Errorf("verify run %q batch %03d: %w", plan.RunID, batch.Number, err)
+			return verificationAttemptOutcome{}, fmt.Errorf("verify run %q batch %03d: %w", plan.RunID, batch.Number, err)
 		}
-		return "", fmt.Errorf("verify run %q batch %03d: %w", plan.RunID, batch.Number, err)
+		return verificationAttemptOutcome{}, fmt.Errorf("verify run %q batch %03d: %w", plan.RunID, batch.Number, err)
+	}
+	return verification, nil
+}
+
+func (engine *Engine) repairBatchVerification(ctx context.Context, plan CyclePlan, batch rounds.Batch, first verificationAttemptOutcome) (string, error) {
+	if first.CommandFailure == nil {
+		return first.Failure, nil
+	}
+	failure, err := engine.runBatchVerificationRepair(ctx, plan, batch, first)
+	if err != nil {
+		return "", err
 	}
 	if failure != "" {
+		return failure, nil
+	}
+	final, err := engine.verifyBatch(ctx, plan, batch, 2)
+	if err != nil {
+		return "", err
+	}
+	if final.Failure != "" {
 		if markErr := agent.MarkBatchFailed(batch); markErr != nil {
 			return "", fmt.Errorf("mark run %q batch %03d failed after verification error: %w", plan.RunID, batch.Number, markErr)
 		}
-		return failure, nil
+		return final.Failure, nil
+	}
+	return "", nil
+}
+
+func (engine *Engine) runBatchVerificationRepair(ctx context.Context, plan CyclePlan, batch rounds.Batch, first verificationAttemptOutcome) (string, error) {
+	if err := ctx.Err(); err != nil {
+		if publishErr := engine.publishStop(ctx, plan.RunID, batch.Number); publishErr != nil {
+			return "", fmt.Errorf("publish stop event for run %q before Batch %03d Verification Feedback: %w", plan.RunID, batch.Number, errors.Join(err, publishErr))
+		}
+		return "", fmt.Errorf("stop run %q before Batch %03d Verification Feedback: %w", plan.RunID, batch.Number, err)
+	}
+	if err := engine.stopIfRequested(ctx, plan.RunID, batch.Number); err != nil {
+		return "", fmt.Errorf("stop run %q before Batch %03d Verification Feedback: %w", plan.RunID, batch.Number, err)
+	}
+	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateResolvingWithAgent); err != nil {
+		return "", fmt.Errorf("update run %q to state %q before Batch %03d Verification Feedback: %w", plan.RunID, store.StateResolvingWithAgent, batch.Number, err)
+	}
+	prompt, err := agent.BuildVerificationRepairPrompt(fmt.Sprintf("Batch %03d", batch.Number), agent.VerificationFeedback{
+		Command:        first.CommandFailure.Command,
+		DiagnosticPath: first.CommandFailure.OutputPath,
+		Failure:        first.Failure,
+		Attempt:        1,
+	})
+	if err != nil {
+		return "", fmt.Errorf("build Verification Feedback prompt for run %q batch %03d: %w", plan.RunID, batch.Number, err)
+	}
+	logPath := agentLogPath(plan.AgentLogs, plan.ArtifactDir, plan.RunID, batch.Number)
+	fmt.Fprintf(engine.deps.Progress, "Verification Feedback: Batch %03d\n", batch.Number)
+	if logPath != "" {
+		fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
+	}
+	runResult, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
+		Runtime:      plan.Runtime,
+		Session:      plan.Session,
+		RunID:        plan.RunID,
+		Batch:        batch,
+		LogPath:      logPath,
+		Prompt:       prompt,
+		ArtifactDir:  plan.ArtifactDir,
+		GitRoot:      plan.GitRoot,
+		Verification: plan.Verification,
+	}, engine.deps.Sink)
+	if runErr != nil {
+		if isStop(ctx, runErr) {
+			return "", fmt.Errorf("run Verification Feedback Agent for run %q batch %03d: %w", plan.RunID, batch.Number, runErr)
+		}
+		if err := agent.MarkBatchFailed(batch); err != nil {
+			return "", fmt.Errorf("mark run %q batch %03d failed after Verification Feedback Agent error: %w", plan.RunID, batch.Number, err)
+		}
+		return fmt.Sprintf("Agent failed: %v", runErr), nil
+	}
+	if err := ctx.Err(); err != nil {
+		if publishErr := engine.publishStop(ctx, plan.RunID, batch.Number); publishErr != nil {
+			return "", fmt.Errorf("publish stop event for run %q after Batch %03d Verification Feedback: %w", plan.RunID, batch.Number, errors.Join(err, publishErr))
+		}
+		return "", fmt.Errorf("stop run %q after Batch %03d Verification Feedback: %w", plan.RunID, batch.Number, err)
+	}
+	if anomaly := strings.TrimSpace(runResult.TransportAnomaly); anomaly != "" {
+		if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonBatch,
+			fmt.Sprintf("Batch %03d Verification Feedback transport anomaly: %s", batch.Number, anomaly),
+			map[string]any{"phase": "verification_feedback_transport_anomaly", "batch": batch.Number, "anomaly": anomaly},
+		); err != nil {
+			return "", fmt.Errorf("publish Verification Feedback transport anomaly event for run %q batch %03d: %w", plan.RunID, batch.Number, err)
+		}
+	}
+	settled, err := agent.SettleAssignedIssues(ctx, batch)
+	if err != nil {
+		return "", fmt.Errorf("settle assigned Review Issues after Verification Feedback for run %q batch %03d: %w", plan.RunID, batch.Number, err)
+	}
+	if len(settled) > 0 {
+		fmt.Fprintf(engine.deps.Progress, "Marked %d assigned Review Issue(s) the Verification Feedback Agent left unsettled as failed.\n", len(settled))
+		if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonBatch,
+			fmt.Sprintf("Marked %d assigned Review Issue(s) the Verification Feedback Agent left unsettled as failed.", len(settled)),
+			map[string]any{"phase": "settled", "batch": batch.Number, "failed": len(settled)},
+		); err != nil {
+			return "", fmt.Errorf("publish Verification Feedback settlement event for run %q batch %03d: %w", plan.RunID, batch.Number, err)
+		}
+	}
+	if _, err := fmt.Fprintln(engine.deps.Progress, "Verification Feedback Agent finished with settled Review Issue statuses."); err != nil {
+		return "", fmt.Errorf("write Verification Feedback progress for run %q batch %03d: %w", plan.RunID, batch.Number, err)
 	}
 	return "", nil
 }
