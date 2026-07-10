@@ -60,6 +60,10 @@ _Avoid_: Subtask, story, ticket
 The Spec's manifest that declares its Tasks and their dependencies as a directed acyclic graph. Dependencies live only in the Task Graph, never in task files.
 _Avoid_: Task list, backlog, roadmap
 
+**Spec Context Bundle**:
+The bounded Task-start context that gives an Agent the full assigned Task and paths to larger Spec artifacts, relevant interfaces, and files changed by prior Tasks.
+_Avoid_: Repository dump, full Spec payload, cold-start exploration
+
 **QA Report**:
 The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict in its frontmatter.
 _Avoid_: Test report, QA log
@@ -67,6 +71,22 @@ _Avoid_: Test report, QA log
 **ACP Runtime**:
 A local coding runtime that Roundfix launches through the user's installed tool and authentication setup using Agent Client Protocol stdio. The MVP supports Codex through `codex-acp`, Claude through `claude-agent-acp`, and OpenCode through `opencode acp`; command overrides remain a stdio escape hatch for local testing.
 _Avoid_: Review Source, review provider
+
+**Agent Model**:
+A runtime-specific model choice that Roundfix explicitly assigns to every Agent Session.
+_Avoid_: ACP Runtime, Agent, free-form model override
+
+**Default Agent Model**:
+The concrete Agent Model Roundfix selects for an ACP Runtime when the user supplies no override. It never inherits the runtime's local model configuration.
+_Avoid_: Runtime default, automatic model, local Agent default
+
+**Default Reasoning Effort**:
+The runtime-specific reasoning level Roundfix assigns when the user supplies no override. It never inherits the runtime's local reasoning configuration.
+_Avoid_: Local Agent reasoning, automatic reasoning, reasoning hint
+
+**Model Catalog**:
+The ordered set of known Agent Models Roundfix offers for one ACP Runtime during Interactive Input. Its Default label resolves to the Default Agent Model, while non-interactive interfaces may supply a custom value.
+_Avoid_: Global model list, model allowlist
 
 **Agent Session**:
 The persistent acpx-backed session through which one Run drives its Agent across Work Items — created when the Run starts Agent work, named by the Run, and closed at the Run's terminal outcome.
@@ -125,8 +145,12 @@ The early checks Roundfix runs before starting a Run or work that would make the
 _Avoid_: Best-effort validation, late failure
 
 **Verification**:
-The command or commands Roundfix runs verbatim in the repository root to decide whether Agent or Settle Command work can be settled and committed. For Tasks, passing Verification is required before status `completed`.
+The authoritative command or commands the Daemon runs verbatim in the repository root to decide whether Agent or Settle Command work can be settled and committed. A failure returns only its diagnostics to the Agent Session; for Tasks, a pass is required before status `completed`.
 _Avoid_: CI, smoke test, best-effort check
+
+**Verification Feedback**:
+The failure diagnostics returned to an Agent Session after the Daemon runs Verification. Passing Verification produces no Agent feedback.
+_Avoid_: Full verification output, test log, progress stream
 
 **User Config**:
 Configuration that applies to Roundfix runs started by one developer across repositories.
@@ -145,6 +169,10 @@ The configured directory that overrides review-artifact placement and stores
 Artifact Directory-backed Run files such as Detached Run console logs and
 opt-in Agent logs. When unset, review artifacts use the Spec tree resolver.
 _Avoid_: Workspace, cache, output folder
+
+**Console Log**:
+The compact caller-visible text record of a Detached Run's progress. It summarizes Agent file reads and edits while the Run Event Journal retains their lossless payloads.
+_Avoid_: Agent log, Run Event Journal, audit log
 
 **Compatible Artifacts**:
 Downloaded markdown artifacts that match the Head Repository, PR Head Branch, and pull request number being resolved.
@@ -294,6 +322,10 @@ _Avoid_: Stream update, log line, message
 The append-only history of Run Events stored in the Run Database, ordered by a per-Run cursor so replay is deterministic and duplicate-free.
 _Avoid_: Agent log, log file, event broker
 
+**Run Event Stream**:
+A read-only JSONL projection of one Run's Run Event Journal, selected by an explicit Run ID and optionally followed until the Run reaches a terminal outcome. Its stable Supervisor filters are task status, Batch boundary, Verification verdict, and terminal outcome.
+_Avoid_: Attach, console log, global event bus
+
 **Attach**:
 Viewing a Run by replaying its Run Event Journal and then following new Run Events, without owning, mutating, or stopping the Run.
 _Avoid_: Resume, reconnect, takeover
@@ -301,6 +333,10 @@ _Avoid_: Resume, reconnect, takeover
 **Agent**:
 The local coding assistant invoked by Roundfix to triage and resolve an assigned Batch.
 _Avoid_: Review Source, review provider, worker, bot
+
+**Supervisor**:
+The external Claude Code role that authors Specs, starts and monitors Runs, and delegates every Work Item to an Agent.
+_Avoid_: Fable, Agent, ACP Runtime, Daemon, Orchestrator
 
 **Follow Mode**:
 The Live Run View state in which the timeline tail advances automatically as new Run Events arrive; suspended while the user scrolls back, resumed when the viewport returns to the bottom. Scrolling never affects the Run.
