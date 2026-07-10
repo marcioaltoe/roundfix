@@ -1956,7 +1956,7 @@ func TestRunImplementNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 	for _, want := range []string{
 		"Implement Run:",
 		"implement selected Spec",
-		"Verification command passed",
+		"Verification passed (attempt 1).",
 		"Task commit created",
 		"reached Clean",
 	} {

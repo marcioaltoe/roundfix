@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0024-context-efficient-runs
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -26,21 +26,21 @@ commands before any Agent repair behavior is added.
 
 ## Subtasks
 
-- [ ] Add the artifact-backed Verifier result and typed command error.
-- [ ] Create deterministic attempt paths with atomic failure retention.
-- [ ] Remove successful artifacts and preserve infrastructure error identity.
-- [ ] Add command-phase and aggregate-verdict Run Events.
-- [ ] Route Task and review Verification through the capture contract.
-- [ ] Cover real shell behavior and engine integration paths.
+- [x] Add the artifact-backed Verifier result and typed command error.
+- [x] Create deterministic attempt paths with atomic failure retention.
+- [x] Remove successful artifacts and preserve infrastructure error identity.
+- [x] Add command-phase and aggregate-verdict Run Events.
+- [x] Route Task and review Verification through the capture contract.
+- [x] Cover real shell behavior and engine integration paths.
 
 ## Acceptance Criteria
 
-- [ ] A successful command leaves no Verification output artifact and emits a passed aggregate verdict.
-- [ ] A non-zero command retains combined output at the expected attempt path and returns the typed command failure.
-- [ ] Cancellation, process-start failure, and artifact write failure remain infrastructure errors and are not typed as repairable command failures.
-- [ ] Run Events contain attempt, phase, verdict, and diagnostic path metadata without output bytes.
-- [ ] Multiple Task Verification commands stop on the first failure and produce one aggregate verdict for that attempt.
-- [ ] Caller progress contains verdict summaries but no dots, passing-package banners, timings, or raw command output.
+- [x] A successful command leaves no Verification output artifact and emits a passed aggregate verdict.
+- [x] A non-zero command retains combined output at the expected attempt path and returns the typed command failure.
+- [x] Cancellation, process-start failure, and artifact write failure remain infrastructure errors and are not typed as repairable command failures.
+- [x] Run Events contain attempt, phase, verdict, and diagnostic path metadata without output bytes.
+- [x] Multiple Task Verification commands stop on the first failure and produce one aggregate verdict for that attempt.
+- [x] Caller progress contains verdict summaries but no dots, passing-package banners, timings, or raw command output.
 
 ## Verification
 
@@ -60,3 +60,28 @@ commands before any Agent repair behavior is added.
 ## References
 
 `_prd.md` -> User Story 1; Core Features 1, 3; Success Metrics. `_techspec.md` -> Interfaces: Verification capture; Data Models: diagnostic artifacts; Build Order 1. ADR-0014; ADR-0038.
+
+## Result
+
+Implemented artifact-backed Verification capture for Daemon-owned Verification. `ExecVerifier` now writes combined stdout/stderr to a sibling temp file, removes successful output, atomically retains failed command output at `runs/<run-id>/verification/batch-<NNN>-attempt-<N>.log`, and returns `VerificationCommandError` only for commands that actually exit unsuccessfully. Cancellation, process-start failure, and artifact filesystem failures remain infrastructure errors.
+
+Task and review Batch Verification now use a shared attempt runner. It emits `daemon.verification` command phases (`started`, `command-passed`, `failed`) plus exactly one aggregate `verdict` event per attempt, includes attempt metadata and diagnostic paths, and keeps command output bytes out of Run Events and caller progress. `settle` was updated for the verifier interface and now prints only a diagnostic path for failed Verification.
+
+Evidence by acceptance criterion:
+
+- Successful command cleanup and passed aggregate verdict: covered by `TestExecVerifierRemovesSuccessfulOutputArtifact`, `TestTaskCycleSettlesForgottenAgentStatus/completed_on_passing_verification`, and the affected package run.
+- Non-zero command retention and typed failure: covered by `TestExecVerifierRetainsFailedOutputAsTypedCommandError` and `TestResolveCycleVerificationFailureRetainsDiagnosticsWithoutStreamingOutput`.
+- Infrastructure error classification: covered by `TestExecVerifierClassifiesCancellationAsInfrastructureError`, `TestExecVerifierClassifiesProcessStartFailureAsInfrastructureError`, `TestExecVerifierClassifiesArtifactRetentionFailureAsInfrastructureError`, `TestResolveCycleVerificationInfrastructureErrorHaltsWithoutFailedSettlement`, and `TestTaskCycleVerificationInfrastructureErrorHaltsWithoutTaskSettlement`.
+- Event metadata without output bytes: covered by `TestVerificationEventVocabulary`, `TestResolveCycleVerificationFailureRetainsDiagnosticsWithoutStreamingOutput`, and `TestTaskCycleVerificationSequenceStopsAtFirstFailureWithOneVerdict`.
+- Task command sequence stop/aggregate verdict: covered by `TestTaskCycleVerificationSequenceStopsAtFirstFailureWithOneVerdict`.
+- Caller progress summaries without raw command output: covered by `TestResolveCycleVerificationFailureRetainsDiagnosticsWithoutStreamingOutput`, the no-agent-console CLI tests, and `TestRunSettleVerificationFailureLeavesTaskAndTreeUntouched`.
+
+Verification:
+
+- `rtk go test ./internal/daemon ./internal/runevent`: passed, 86 tests.
+- `rtk go test ./internal/daemon ./internal/runevent ./internal/cli`: passed, 455 tests.
+- `rtk make verify`: passed; `rtk go test ./...` reported 1054 passed in 19 packages, `roundfix skills check` passed, and `go build` completed.
+
+Follow-up notes:
+
+- The one-repair Agent prompt behavior remains for the later repair-cycle task; this slice only exposes the typed command-failure contract and attempt artifacts.

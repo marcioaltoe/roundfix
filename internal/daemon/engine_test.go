@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -85,12 +86,18 @@ func (sink *captureEventSink) snapshot() []runevent.RunEvent {
 
 func eventPayloadString(t *testing.T, event runevent.RunEvent, key string) string {
 	t.Helper()
+	payload := eventPayloadMap(t, event)
+	value, _ := payload[key].(string)
+	return value
+}
+
+func eventPayloadMap(t *testing.T, event runevent.RunEvent) map[string]any {
+	t.Helper()
 	var payload map[string]any
 	if err := json.Unmarshal(event.Payload, &payload); err != nil {
 		t.Fatalf("decode event payload %s: %v", event.Payload, err)
 	}
-	value, _ := payload[key].(string)
-	return value
+	return payload
 }
 
 type engineFakeRunner struct {
@@ -158,13 +165,26 @@ type engineFakeVerifier struct {
 	seen      []string
 }
 
-func (verifier *engineFakeVerifier) Verify(context.Context, VerifyRequest) error {
+func (verifier *engineFakeVerifier) Verify(_ context.Context, req VerifyRequest) (VerifyResult, error) {
 	*verifier.calls = append(*verifier.calls, "verify")
 	verifier.seen = append(verifier.seen, runStateForTest(verifier.store, verifier.runID))
 	if verifier.failFirst && len(verifier.seen) == 1 {
-		return errors.New("verification failed")
+		return VerifyResult{OutputPath: req.OutputPath}, &VerificationCommandError{Command: req.Command, OutputPath: req.OutputPath, Err: errors.New("verification failed")}
 	}
-	return verifier.err
+	if verifier.err != nil {
+		return VerifyResult{OutputPath: req.OutputPath}, &VerificationCommandError{Command: req.Command, OutputPath: req.OutputPath, Err: verifier.err}
+	}
+	return VerifyResult{OutputPath: req.OutputPath}, nil
+}
+
+type engineInfrastructureVerifier struct {
+	calls *[]string
+	err   error
+}
+
+func (verifier *engineInfrastructureVerifier) Verify(_ context.Context, req VerifyRequest) (VerifyResult, error) {
+	*verifier.calls = append(*verifier.calls, "verify")
+	return VerifyResult{OutputPath: req.OutputPath}, verifier.err
 }
 
 type engineFakeCommitter struct {
@@ -524,6 +544,111 @@ func TestResolveCycleVerificationFailureFailsBatchAndContinues(t *testing.T) {
 	}
 	if issue.Status != rounds.StatusFailed {
 		t.Fatalf("expected failed Batch issue status, got %q", issue.Status)
+	}
+}
+
+func TestResolveCycleVerificationFailureRetainsDiagnosticsWithoutStreamingOutput(t *testing.T) {
+	fixture := newEngineFixture(t)
+	plan := fixture.plan()
+	plan.Verification = `printf '\117\125\124\120\125\124\137\102\117\104\131'; exit 7`
+	engine := fixture.engine(t, &engineFakeRunner{calls: fixture.calls, store: fixture.store}, ExecVerifier{}, &engineFakeCommitter{calls: fixture.calls}, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
+
+	result, err := engine.ResolveCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("expected command failure to fail only the Batch, got %v", err)
+	}
+	if len(result.Batches) != 1 || !result.Batches[0].Failed {
+		t.Fatalf("expected failed Batch outcome, got %+v", result.Batches)
+	}
+	outputPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 1)
+	content, readErr := os.ReadFile(outputPath)
+	if readErr != nil {
+		t.Fatalf("read verification artifact: %v", readErr)
+	}
+	if string(content) != "OUTPUT_BODY" {
+		t.Fatalf("expected failed command output retained, got %q", string(content))
+	}
+	progress := fixture.progress.String()
+	if !strings.Contains(progress, "Verification failed (attempt 1); diagnostics: "+outputPath) {
+		t.Fatalf("expected verdict summary with diagnostic path, got %q", progress)
+	}
+	if strings.Contains(progress, "OUTPUT_BODY") {
+		t.Fatalf("expected progress to omit raw command output, got %q", progress)
+	}
+	verificationEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification)
+	phases := []string{}
+	verdicts := 0
+	for _, event := range verificationEvents {
+		if strings.Contains(event.Summary, "OUTPUT_BODY") || strings.Contains(string(event.Payload), "OUTPUT_BODY") {
+			t.Fatalf("expected Run Events to omit output body, got summary=%q payload=%s", event.Summary, event.Payload)
+		}
+		payload := eventPayloadMap(t, event)
+		phase, _ := payload["phase"].(string)
+		phases = append(phases, phase)
+		if phase == string(runevent.VerificationPhaseVerdict) {
+			verdicts++
+			if payload["verdict"] != string(runevent.VerificationVerdictFailed) {
+				t.Fatalf("expected failed aggregate verdict, got %v", payload["verdict"])
+			}
+			if payload["diagnostic_path"] != outputPath {
+				t.Fatalf("expected verdict diagnostic path %q, got %v", outputPath, payload["diagnostic_path"])
+			}
+		}
+		if phase == string(runevent.VerificationPhaseFailed) {
+			if payload["diagnostic_path"] != outputPath {
+				t.Fatalf("expected failed command diagnostic path %q, got %v", outputPath, payload["diagnostic_path"])
+			}
+			if _, ok := payload["attempt"].(float64); !ok {
+				t.Fatalf("expected attempt metadata, got %s", event.Payload)
+			}
+		}
+	}
+	if got := strings.Join(phases, "|"); got != "started|failed|verdict" {
+		t.Fatalf("expected command phases and one aggregate verdict, got %s", got)
+	}
+	if verdicts != 1 {
+		t.Fatalf("expected exactly one aggregate verdict, got %d in %+v", verdicts, verificationEvents)
+	}
+}
+
+func TestResolveCycleVerificationInfrastructureErrorHaltsWithoutFailedSettlement(t *testing.T) {
+	fixture := newEngineFixture(t)
+	infraErr := errors.New("artifact filesystem unavailable")
+	verifier := &engineInfrastructureVerifier{calls: fixture.calls, err: infraErr}
+	engine := fixture.engine(t, &engineFakeRunner{calls: fixture.calls, store: fixture.store}, verifier, &engineFakeCommitter{calls: fixture.calls}, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
+
+	result, err := engine.ResolveCycle(context.Background(), fixture.plan())
+
+	if !errors.Is(err, infraErr) {
+		t.Fatalf("expected infrastructure error identity preserved, got %v", err)
+	}
+	if len(result.Batches) != 0 {
+		t.Fatalf("expected no Batch settlement on infrastructure error, got %+v", result.Batches)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify" {
+		t.Fatalf("expected cycle to halt after verification infrastructure error, got %q", got)
+	}
+	issue, parseErr := rounds.ParseIssue(fixture.issuePaths[0])
+	if parseErr != nil {
+		t.Fatalf("parse issue: %v", parseErr)
+	}
+	if issue.Status == rounds.StatusFailed {
+		t.Fatal("expected infrastructure error not to mark Review Issue failed")
+	}
+	verificationEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification)
+	verdicts := 0
+	for _, event := range verificationEvents {
+		payload := eventPayloadMap(t, event)
+		if payload["phase"] == string(runevent.VerificationPhaseVerdict) {
+			verdicts++
+			if payload["verdict"] != string(runevent.VerificationVerdictFailed) {
+				t.Fatalf("expected failed infrastructure verdict, got %v", payload["verdict"])
+			}
+		}
+	}
+	if verdicts != 1 {
+		t.Fatalf("expected one aggregate verdict before halting, got %d", verdicts)
 	}
 }
 

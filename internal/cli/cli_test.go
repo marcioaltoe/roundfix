@@ -1568,8 +1568,8 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 				if !strings.Contains(stderr.String(), "fake agent output") {
 					t.Fatalf("expected fake Agent output, got %q", stderr.String())
 				}
-				if !strings.Contains(stderr.String(), "fake verification output") {
-					t.Fatalf("expected fake verification output, got %q", stderr.String())
+				if !strings.Contains(stderr.String(), "Verification passed (attempt 1).") {
+					t.Fatalf("expected verification verdict summary, got %q", stderr.String())
 				}
 				if !strings.Contains(stderr.String(), "Batch commit created") {
 					t.Fatalf("expected Batch commit confirmation, got %q", stderr.String())
@@ -1592,8 +1592,8 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 				if !strings.Contains(stderr.String(), "fake agent output") {
 					t.Fatalf("expected fake Agent output, got %q", stderr.String())
 				}
-				if !strings.Contains(stderr.String(), "fake verification output") {
-					t.Fatalf("expected fake verification output, got %q", stderr.String())
+				if !strings.Contains(stderr.String(), "Verification passed (attempt 1).") {
+					t.Fatalf("expected verification verdict summary, got %q", stderr.String())
 				}
 				if !strings.Contains(stderr.String(), "Batch commit created") {
 					t.Fatalf("expected Batch commit confirmation, got %q", stderr.String())
@@ -6090,15 +6090,24 @@ type fakeVerifier struct {
 	commands []string
 }
 
-func (verifier *fakeVerifier) Verify(_ context.Context, req daemon.VerifyRequest) error {
+func (verifier *fakeVerifier) Verify(_ context.Context, req daemon.VerifyRequest) (daemon.VerifyResult, error) {
 	verifier.calls++
 	verifier.commands = append(verifier.commands, req.Command)
-	if req.Stream != nil {
-		if _, err := io.WriteString(req.Stream, "fake verification output\n"); err != nil {
-			return err
+	if req.OutputPath != "" {
+		if err := os.MkdirAll(filepath.Dir(req.OutputPath), 0o755); err != nil {
+			return daemon.VerifyResult{OutputPath: req.OutputPath}, err
+		}
+		if err := os.WriteFile(req.OutputPath, []byte("fake verification output\n"), 0o644); err != nil {
+			return daemon.VerifyResult{OutputPath: req.OutputPath}, err
 		}
 	}
-	return verifier.err
+	if verifier.err != nil {
+		return daemon.VerifyResult{OutputPath: req.OutputPath}, &daemon.VerificationCommandError{Command: req.Command, OutputPath: req.OutputPath, Err: verifier.err}
+	}
+	if req.OutputPath != "" {
+		_ = os.Remove(req.OutputPath)
+	}
+	return daemon.VerifyResult{OutputPath: req.OutputPath}, nil
 }
 
 type fakeCommitter struct {
@@ -6720,7 +6729,7 @@ func TestRunResolveNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 	for _, want := range []string{
 		"resolve selected 1 downloaded Unresolved Review Issue",
 		"Batch: 001/001 (1 Review Issue(s))",
-		"Verification command passed",
+		"Verification passed (attempt 1).",
 		"Batch commit created",
 		"Resolved 1 Review Source thread",
 		"Resolve Run",
@@ -6752,7 +6761,7 @@ func TestRunWatchNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 		"Review Source status: settled",
 		"Fetched Round 001 with 1 Review Issue",
 		"Batch: 001/001 (1 Review Issue(s))",
-		"Verification command passed",
+		"Verification passed (attempt 1).",
 		"Final Push completed",
 		"Watch Run",
 	} {
@@ -7868,7 +7877,7 @@ func TestAttachRendersWatchDaemonEventsInTimeline(t *testing.T) {
 	}
 	for _, expected := range []string{
 		"Review Source status: settled",
-		"Verification command passed:",
+		"Verification attempt 1 for Batch 001 verdict: passed",
 		"Batch commit created:",
 		"Final Push completed:",
 		"Run reached Clean.",

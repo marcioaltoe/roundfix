@@ -626,40 +626,30 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateVerifying); err != nil {
 		return "", fmt.Errorf("update run %q to state %q before Task %s verification: %w", plan.RunID, store.StateVerifying, task.ID, err)
 	}
-	for _, command := range task.Verification {
-		if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification,
-			fmt.Sprintf("Verification started: %s", command),
-			map[string]any{"phase": "started", "command": command, "task": task.ID},
-		); err != nil {
-			return "", fmt.Errorf("publish verification start event for run %q Task %s: %w", plan.RunID, task.ID, err)
-		}
-		if err := engine.deps.Verifier.Verify(ctx, VerifyRequest{
-			WorkDir: plan.WorkDir,
-			Command: command,
-			Stream:  engine.deps.Progress,
-		}); err != nil {
-			if isStop(ctx, err) {
-				// A Stop Request during verification keeps the Agent's task
-				// status untouched; the run ends Stopped, not failed.
-				return "", fmt.Errorf("verify run %q Task %s: %w", plan.RunID, task.ID, err)
+	failure, err := engine.runVerificationAttempt(ctx, verificationAttemptRequest{
+		RunID:       plan.RunID,
+		WorkDir:     plan.WorkDir,
+		ArtifactDir: plan.ArtifactDir,
+		BatchNumber: ordinal,
+		WorkItem:    task.ID,
+		Attempt:     1,
+		Commands:    task.Verification,
+		Publish: func(ctx context.Context, summary string, payload map[string]any) error {
+			if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification, summary, payload); err != nil {
+				return fmt.Errorf("publish verification event for run %q Task %s: %w", plan.RunID, task.ID, err)
 			}
-			if publishErr := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification,
-				fmt.Sprintf("Verification failed: %s", command),
-				map[string]any{"phase": "failed", "command": command, "task": task.ID, "error": err.Error()},
-			); publishErr != nil {
-				return "", fmt.Errorf("publish verification failure event for run %q Task %s: %w", plan.RunID, task.ID, publishErr)
-			}
-			return fmt.Sprintf("verification failed: %v", err), nil
+			return nil
+		},
+	})
+	if err != nil {
+		if isStop(ctx, err) {
+			// A Stop Request during verification keeps the Agent's task
+			// status untouched; the run ends Stopped, not failed.
+			return "", fmt.Errorf("verify run %q Task %s: %w", plan.RunID, task.ID, err)
 		}
-		if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification,
-			fmt.Sprintf("Verification command passed: %s", command),
-			map[string]any{"phase": "passed", "command": command, "task": task.ID},
-		); err != nil {
-			return "", fmt.Errorf("publish verification pass event for run %q Task %s: %w", plan.RunID, task.ID, err)
-		}
-		fmt.Fprintf(engine.deps.Progress, "Verification command passed: %s\n", command)
+		return "", fmt.Errorf("verify run %q Task %s: %w", plan.RunID, task.ID, err)
 	}
-	return "", nil
+	return failure, nil
 }
 
 // settleTask writes the Daemon-owned final status when the Agent left

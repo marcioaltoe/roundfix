@@ -135,6 +135,138 @@ func agentLogPath(enabled bool, artifactDir string, runID string, batchNumber in
 	return agent.LogPath(artifactDir, runID, batchNumber)
 }
 
+type verificationAttemptRequest struct {
+	RunID       string
+	WorkDir     string
+	ArtifactDir string
+	BatchNumber int
+	WorkItem    string
+	Attempt     int
+	Commands    []string
+	Publish     func(context.Context, string, map[string]any) error
+}
+
+func (req verificationAttemptRequest) payload(phase runevent.VerificationPhase, command string) map[string]any {
+	payload := map[string]any{
+		"attempt": req.Attempt,
+		"phase":   string(phase),
+	}
+	if req.BatchNumber > 0 {
+		payload["batch"] = req.BatchNumber
+	}
+	if req.WorkItem != "" {
+		payload["work_item"] = req.WorkItem
+		payload["task"] = req.WorkItem
+	}
+	if command != "" {
+		payload["command"] = command
+	}
+	return payload
+}
+
+func (req verificationAttemptRequest) summary(phase runevent.VerificationPhase, command string) string {
+	target := fmt.Sprintf("Batch %03d", req.BatchNumber)
+	if req.WorkItem != "" {
+		target = fmt.Sprintf("Task %s", req.WorkItem)
+	}
+	switch phase {
+	case runevent.VerificationPhaseStarted:
+		return fmt.Sprintf("Verification attempt %d for %s started: %s", req.Attempt, target, command)
+	case runevent.VerificationPhaseCommandPassed:
+		return fmt.Sprintf("Verification attempt %d for %s command passed: %s", req.Attempt, target, command)
+	case runevent.VerificationPhaseFailed:
+		return fmt.Sprintf("Verification attempt %d for %s failed: %s", req.Attempt, target, command)
+	case runevent.VerificationPhaseVerdict:
+		return fmt.Sprintf("Verification attempt %d for %s verdict recorded.", req.Attempt, target)
+	default:
+		return fmt.Sprintf("Verification attempt %d for %s phase %s.", req.Attempt, target, phase)
+	}
+}
+
+func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificationAttemptRequest) (string, error) {
+	if req.Attempt < 1 {
+		return "", fmt.Errorf("run verification: attempt is required")
+	}
+	if req.Publish == nil {
+		return "", fmt.Errorf("run verification attempt %d: event publisher is required", req.Attempt)
+	}
+	for _, command := range req.Commands {
+		if err := req.Publish(ctx, req.summary(runevent.VerificationPhaseStarted, command), req.payload(runevent.VerificationPhaseStarted, command)); err != nil {
+			return "", err
+		}
+		outputPath := VerificationOutputPath(req.ArtifactDir, req.RunID, req.BatchNumber, req.Attempt)
+		_, err := engine.deps.Verifier.Verify(ctx, VerifyRequest{
+			WorkDir:    req.WorkDir,
+			Command:    command,
+			OutputPath: outputPath,
+		})
+		if err != nil {
+			if isStop(ctx, err) {
+				return "", err
+			}
+			var commandErr *VerificationCommandError
+			if errors.As(err, &commandErr) {
+				if err := req.publishFailedCommand(ctx, command, commandErr); err != nil {
+					return "", err
+				}
+				fmt.Fprintf(engine.deps.Progress, "Verification failed (attempt %d); diagnostics: %s\n", req.Attempt, commandErr.OutputPath)
+				return fmt.Sprintf("verification failed: %v", err), nil
+			}
+			if err := req.publishInfrastructureFailure(ctx, command, err); err != nil {
+				return "", err
+			}
+			return "", fmt.Errorf("run verification attempt %d: %w", req.Attempt, err)
+		}
+		if err := req.Publish(ctx, req.summary(runevent.VerificationPhaseCommandPassed, command), req.payload(runevent.VerificationPhaseCommandPassed, command)); err != nil {
+			return "", err
+		}
+	}
+	if err := req.publishVerdict(ctx, runevent.VerificationVerdictPassed, "", ""); err != nil {
+		return "", err
+	}
+	fmt.Fprintf(engine.deps.Progress, "Verification passed (attempt %d).\n", req.Attempt)
+	return "", nil
+}
+
+func (req verificationAttemptRequest) publishFailedCommand(ctx context.Context, command string, commandErr *VerificationCommandError) error {
+	payload := req.payload(runevent.VerificationPhaseFailed, command)
+	payload["error"] = commandErr.Error()
+	if commandErr.OutputPath != "" {
+		payload["diagnostic_path"] = commandErr.OutputPath
+	}
+	if err := req.Publish(ctx, req.summary(runevent.VerificationPhaseFailed, command), payload); err != nil {
+		return err
+	}
+	return req.publishVerdict(ctx, runevent.VerificationVerdictFailed, commandErr.OutputPath, "")
+}
+
+func (req verificationAttemptRequest) publishInfrastructureFailure(ctx context.Context, command string, err error) error {
+	payload := req.payload(runevent.VerificationPhaseFailed, command)
+	payload["error"] = err.Error()
+	if publishErr := req.Publish(ctx, req.summary(runevent.VerificationPhaseFailed, command), payload); publishErr != nil {
+		return publishErr
+	}
+	return req.publishVerdict(ctx, runevent.VerificationVerdictFailed, "", "")
+}
+
+func (req verificationAttemptRequest) publishVerdict(ctx context.Context, verdict runevent.VerificationVerdict, diagnosticPath string, failure string) error {
+	payload := req.payload(runevent.VerificationPhaseVerdict, "")
+	payload["verdict"] = string(verdict)
+	if diagnosticPath != "" {
+		payload["diagnostic_path"] = diagnosticPath
+	}
+	if failure != "" {
+		payload["error"] = failure
+	}
+	summary := fmt.Sprintf("Verification attempt %d verdict: %s", req.Attempt, verdict)
+	if req.WorkItem != "" {
+		summary = fmt.Sprintf("Verification attempt %d for Task %s verdict: %s", req.Attempt, req.WorkItem, verdict)
+	} else if req.BatchNumber > 0 {
+		summary = fmt.Sprintf("Verification attempt %d for Batch %03d verdict: %s", req.Attempt, req.BatchNumber, verdict)
+	}
+	return req.Publish(ctx, summary, payload)
+}
+
 // CycleResult reports per-Batch outcomes and the remaining Unresolved
 // Review Issue count after the cycle.
 type CycleResult struct {
@@ -424,40 +556,34 @@ func (engine *Engine) verifyBatch(ctx context.Context, plan CyclePlan, batch rou
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateVerifying); err != nil {
 		return "", fmt.Errorf("update run %q to state %q before Batch %03d verification: %w", plan.RunID, store.StateVerifying, batch.Number, err)
 	}
-	if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonVerification,
-		fmt.Sprintf("Verification started: %s", plan.Verification),
-		map[string]any{"phase": "started", "command": plan.Verification},
-	); err != nil {
-		return "", fmt.Errorf("publish verification start event for run %q batch %03d: %w", plan.RunID, batch.Number, err)
-	}
-	if err := engine.deps.Verifier.Verify(ctx, VerifyRequest{
-		WorkDir: plan.GitRoot,
-		Command: plan.Verification,
-		Stream:  engine.deps.Progress,
-	}); err != nil {
+	failure, err := engine.runVerificationAttempt(ctx, verificationAttemptRequest{
+		RunID:       plan.RunID,
+		WorkDir:     plan.GitRoot,
+		ArtifactDir: plan.ArtifactDir,
+		BatchNumber: batch.Number,
+		Attempt:     1,
+		Commands:    []string{plan.Verification},
+		Publish: func(ctx context.Context, summary string, payload map[string]any) error {
+			if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonVerification, summary, payload); err != nil {
+				return fmt.Errorf("publish verification event for run %q batch %03d: %w", plan.RunID, batch.Number, err)
+			}
+			return nil
+		},
+	})
+	if err != nil {
 		if isStop(ctx, err) {
 			// A Stop Request during verification keeps Agent statuses
 			// untouched; the run ends Stopped, not failed.
 			return "", fmt.Errorf("verify run %q batch %03d: %w", plan.RunID, batch.Number, err)
 		}
+		return "", fmt.Errorf("verify run %q batch %03d: %w", plan.RunID, batch.Number, err)
+	}
+	if failure != "" {
 		if markErr := agent.MarkBatchFailed(batch); markErr != nil {
 			return "", fmt.Errorf("mark run %q batch %03d failed after verification error: %w", plan.RunID, batch.Number, markErr)
 		}
-		if publishErr := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonVerification,
-			fmt.Sprintf("Verification failed: %s", plan.Verification),
-			map[string]any{"phase": "failed", "command": plan.Verification, "error": err.Error()},
-		); publishErr != nil {
-			return "", fmt.Errorf("publish verification failure event for run %q batch %03d: %w", plan.RunID, batch.Number, publishErr)
-		}
-		return fmt.Sprintf("verification failed: %v", err), nil
+		return failure, nil
 	}
-	if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonVerification,
-		fmt.Sprintf("Verification command passed: %s", plan.Verification),
-		map[string]any{"phase": "passed", "command": plan.Verification},
-	); err != nil {
-		return "", fmt.Errorf("publish verification pass event for run %q batch %03d: %w", plan.RunID, batch.Number, err)
-	}
-	fmt.Fprintf(engine.deps.Progress, "Verification command passed: %s\n", plan.Verification)
 	return "", nil
 }
 

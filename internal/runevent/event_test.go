@@ -15,6 +15,27 @@ func TestSpecRunKindsUseDaemonNamespace(t *testing.T) {
 	}
 }
 
+func TestVerificationEventVocabulary(t *testing.T) {
+	if VerificationPhaseStarted != "started" {
+		t.Fatalf("expected started phase, got %q", VerificationPhaseStarted)
+	}
+	if VerificationPhaseCommandPassed != "command-passed" {
+		t.Fatalf("expected command-passed phase, got %q", VerificationPhaseCommandPassed)
+	}
+	if VerificationPhaseFailed != "failed" {
+		t.Fatalf("expected failed phase, got %q", VerificationPhaseFailed)
+	}
+	if VerificationPhaseVerdict != "verdict" {
+		t.Fatalf("expected verdict phase, got %q", VerificationPhaseVerdict)
+	}
+	if VerificationVerdictPassed != "passed" {
+		t.Fatalf("expected passed verdict, got %q", VerificationVerdictPassed)
+	}
+	if VerificationVerdictFailed != "failed" {
+		t.Fatalf("expected failed verdict, got %q", VerificationVerdictFailed)
+	}
+}
+
 func TestIsDaemonKindCoversSpecRunKindsAndSkipsUnknown(t *testing.T) {
 	tests := []struct {
 		name     string

@@ -50,6 +50,7 @@ type settlePlan struct {
 	workDir      string
 	targetBranch string
 	homeDir      string
+	artifactDir  string
 	specsRoot    string
 	graph        *spec.Graph
 	task         spec.Task
@@ -77,13 +78,20 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 
 	collaborators := newEngineCollaborators()
+	verificationRunID := settleVerificationRunID(plan)
 	for _, command := range plan.task.Verification {
-		if err := collaborators.verifier.Verify(ctx, daemon.VerifyRequest{
-			WorkDir: plan.workDir,
-			Command: command,
-			Stream:  stderr,
-		}); err != nil {
-			fmt.Fprintf(stdout, "verify %s — failed\n", command)
+		_, err := collaborators.verifier.Verify(ctx, daemon.VerifyRequest{
+			WorkDir:    plan.workDir,
+			Command:    command,
+			OutputPath: daemon.VerificationOutputPath(plan.artifactDir, verificationRunID, 1, 1),
+		})
+		if err != nil {
+			var commandErr *daemon.VerificationCommandError
+			if !errors.As(err, &commandErr) {
+				fmt.Fprintf(stderr, "%s: settle verification failed: %v\n", app.Name, err)
+				return exitRunFailed
+			}
+			fmt.Fprintf(stdout, "verify %s — failed (diagnostics: %s)\n", command, commandErr.OutputPath)
 			fmt.Fprintf(stdout, "%s stays failed — verification failed\n", plan.task.ID)
 			return exitRunFailed
 		}
@@ -116,6 +124,11 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 	fmt.Fprintf(stdout, "settled %s completed — %s\n", plan.task.ID, shortSHA)
 	return exitOK
+}
+
+func settleVerificationRunID(plan settlePlan) string {
+	replacer := strings.NewReplacer("/", "_", "\\", "_")
+	return "settle-" + replacer.Replace(plan.graph.Spec.Slug) + "-" + replacer.Replace(plan.task.ID)
 }
 
 func parseSettleCommand(args []string) (settleRequest, error) {
@@ -156,6 +169,11 @@ func preflightSettle(ctx context.Context, req settleRequest, stderr io.Writer) (
 		targetBranch: gitState.Branch,
 		homeDir:      loadedConfig.HomeDir,
 	}
+	artifactDir, err := roundconfig.ValidateArtifactDirectory(loadedConfig.Config.Defaults.ArtifactDir, gitState.Root, loadedConfig.HomeDir)
+	if err != nil {
+		return settlePlan{}, validationError{message: fmt.Sprintf("Artifact Directory resolves: %v", err)}
+	}
+	plan.artifactDir = artifactDir
 	resolvedSpecsRoot, err := roundconfig.ResolveSpecsRoot(loadedConfig, gitState.Root)
 	if err != nil {
 		return settlePlan{}, err
