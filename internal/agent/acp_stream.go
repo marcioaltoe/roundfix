@@ -36,17 +36,28 @@ type acpToolContentPayload struct {
 	Type       string                  `json:"type"`
 	Text       string                  `json:"text"`
 	Path       string                  `json:"path"`
+	OldText    string                  `json:"oldText"`
+	NewText    string                  `json:"newText"`
 	MimeType   string                  `json:"mimeType"`
 	URI        string                  `json:"uri"`
 	TerminalID string                  `json:"terminalId"`
 	Content    *acpContentBlockPayload `json:"content"`
 	Diff       *struct {
-		Path string `json:"path"`
+		Path    string `json:"path"`
+		OldText string `json:"oldText"`
+		NewText string `json:"newText"`
 	} `json:"diff"`
 	Terminal *struct {
 		TerminalID string `json:"terminalId"`
 	} `json:"terminal"`
 	ResourceLink *acpResourceLinkPayload `json:"resourceLink"`
+}
+
+type acpLocationPayload struct {
+	Path      string `json:"path"`
+	StartLine int    `json:"startLine"`
+	EndLine   int    `json:"endLine"`
+	Line      int    `json:"line"`
 }
 
 type acpPlanEntryPayload struct {
@@ -125,8 +136,10 @@ func streamUpdateFromSessionUpdate(payload json.RawMessage) (StreamUpdate, error
 	case "tool_call":
 		var update struct {
 			ToolCallID string                  `json:"toolCallId"`
+			Kind       string                  `json:"kind"`
 			Title      string                  `json:"title"`
 			Status     string                  `json:"status"`
+			Locations  []acpLocationPayload    `json:"locations"`
 			RawInput   any                     `json:"rawInput"`
 			Content    []acpToolContentPayload `json:"content"`
 			RawOutput  any                     `json:"rawOutput"`
@@ -134,20 +147,26 @@ func streamUpdateFromSessionUpdate(payload json.RawMessage) (StreamUpdate, error
 		if err := json.Unmarshal(payload, &update); err != nil {
 			return StreamUpdate{}, fmt.Errorf("parse ACP tool call update: %w", err)
 		}
-		blocks := toolContentBlocks(update.Content, update.RawInput, update.RawOutput)
+		locations := streamLocations(update.Locations)
+		locations = appendInputLocation(locations, update.RawInput)
+		blocks := toolContentBlocks(update.Content, update.RawInput, update.RawOutput, update.Kind, update.Title, locations)
 		return StreamUpdate{
 			Kind:      StreamUpdateToolStarted,
 			Title:     update.Title,
 			ToolID:    update.ToolCallID,
 			ToolState: update.Status,
+			ToolKind:  normalizedToolKind(update.Kind, update.Title),
+			Locations: locations,
 			Text:      streamBlockText(blocks),
 			Blocks:    blocks,
 		}, nil
 	case "tool_call_update":
 		var update struct {
 			ToolCallID string                  `json:"toolCallId"`
+			Kind       string                  `json:"kind"`
 			Title      *string                 `json:"title"`
 			Status     *string                 `json:"status"`
+			Locations  []acpLocationPayload    `json:"locations"`
 			RawInput   any                     `json:"rawInput"`
 			Content    []acpToolContentPayload `json:"content"`
 			RawOutput  any                     `json:"rawOutput"`
@@ -163,12 +182,16 @@ func streamUpdateFromSessionUpdate(payload json.RawMessage) (StreamUpdate, error
 		if update.Status != nil {
 			state = *update.Status
 		}
-		blocks := toolContentBlocks(update.Content, update.RawInput, update.RawOutput)
+		locations := streamLocations(update.Locations)
+		locations = appendInputLocation(locations, update.RawInput)
+		blocks := toolContentBlocks(update.Content, update.RawInput, update.RawOutput, update.Kind, title, locations)
 		return StreamUpdate{
 			Kind:      StreamUpdateToolUpdated,
 			Title:     title,
 			ToolID:    update.ToolCallID,
 			ToolState: state,
+			ToolKind:  normalizedToolKind(update.Kind, title),
+			Locations: locations,
 			Text:      streamBlockText(blocks),
 			Blocks:    blocks,
 		}, nil
@@ -210,39 +233,172 @@ func contentBlockText(block acpContentBlockPayload) string {
 	return string(raw)
 }
 
-func toolContentBlocks(content []acpToolContentPayload, rawInput any, rawOutput any) []StreamBlock {
-	blocks := []StreamBlock{}
-	if rawInput != nil {
-		blocks = append(blocks, StreamBlock{Kind: StreamBlockInput, Text: formatToolInput(rawInput)})
+func toolContentBlocks(content []acpToolContentPayload, rawInput any, rawOutput any, toolKind string, title string, locations []StreamLocation) []StreamBlock {
+	normalizedKind := normalizedToolKind(toolKind, title)
+	if block, ok := readContentBlock(content, rawInput, normalizedKind, locations); ok {
+		return []StreamBlock{block}
 	}
+	if blocks := editContentBlocks(content, rawInput, normalizedKind, locations); len(blocks) > 0 {
+		return blocks
+	}
+	if normalizedKind == "read" || normalizedKind == "edit" {
+		return nil
+	}
+	blocks := []StreamBlock{}
 	for _, item := range content {
 		switch {
-		case item.Content != nil && item.Content.Type == "text":
-			blocks = append(blocks, StreamBlock{Kind: StreamBlockText, Text: item.Content.Text})
 		case item.Content != nil && item.Content.Type == "image":
 			blocks = append(blocks, StreamBlock{Kind: StreamBlockImage, MimeType: item.Content.MimeType, URI: item.Content.URI})
 		case item.Content != nil && item.Content.ResourceLink != nil:
 			blocks = append(blocks, resourceBlock(item.Content.ResourceLink))
-		case item.Type == "text":
-			blocks = append(blocks, StreamBlock{Kind: StreamBlockText, Text: item.Text})
 		case item.Type == "image":
 			blocks = append(blocks, StreamBlock{Kind: StreamBlockImage, MimeType: item.MimeType, URI: item.URI})
 		case item.ResourceLink != nil:
 			blocks = append(blocks, resourceBlock(item.ResourceLink))
-		case item.Diff != nil:
-			blocks = append(blocks, StreamBlock{Kind: StreamBlockDiff, Path: item.Diff.Path})
-		case item.Type == "diff":
-			blocks = append(blocks, StreamBlock{Kind: StreamBlockDiff, Path: item.Path})
 		case item.Terminal != nil:
 			blocks = append(blocks, StreamBlock{Kind: StreamBlockTerminal, TerminalID: item.Terminal.TerminalID})
 		case item.Type == "terminal":
 			blocks = append(blocks, StreamBlock{Kind: StreamBlockTerminal, TerminalID: firstNonEmpty(item.TerminalID, item.URI)})
 		}
 	}
-	if rawOutput != nil {
-		blocks = append(blocks, StreamBlock{Kind: StreamBlockOutput, Text: formatToolOutput(rawOutput)})
+	return blocks
+}
+
+func readContentBlock(content []acpToolContentPayload, rawInput any, toolKind string, locations []StreamLocation) (StreamBlock, bool) {
+	if toolKind != "read" {
+		return StreamBlock{}, false
+	}
+	for _, item := range content {
+		path := firstNonEmpty(primaryLocationPath(locations), inputPath(rawInput), item.Path)
+		text, ok := itemText(item)
+		if !ok || path == "" {
+			continue
+		}
+		return StreamBlock{
+			Kind:      StreamBlockRead,
+			Path:      path,
+			ToolKind:  toolKind,
+			LineCount: contentLineCount(text),
+			Locations: locations,
+		}, true
+	}
+	return StreamBlock{}, false
+}
+
+func editContentBlocks(content []acpToolContentPayload, rawInput any, toolKind string, locations []StreamLocation) []StreamBlock {
+	blocks := []StreamBlock{}
+	for _, item := range content {
+		path, oldText, newText, ok := diffText(item)
+		if !ok {
+			continue
+		}
+		path = firstNonEmpty(path, primaryLocationPath(locations), inputPath(rawInput))
+		if path == "" {
+			continue
+		}
+		blockKind := toolKind
+		if blockKind == "" {
+			blockKind = "edit"
+		}
+		blocks = append(blocks, StreamBlock{
+			Kind:         StreamBlockEdit,
+			Path:         path,
+			ToolKind:     blockKind,
+			OldLineCount: contentLineCount(oldText),
+			NewLineCount: contentLineCount(newText),
+			Locations:    locations,
+		})
 	}
 	return blocks
+}
+
+func streamLocations(locations []acpLocationPayload) []StreamLocation {
+	result := make([]StreamLocation, 0, len(locations))
+	for _, location := range locations {
+		path := strings.TrimSpace(location.Path)
+		if path == "" {
+			continue
+		}
+		startLine := location.StartLine
+		if startLine == 0 {
+			startLine = location.Line
+		}
+		endLine := location.EndLine
+		if endLine == 0 {
+			endLine = startLine
+		}
+		result = append(result, StreamLocation{Path: path, StartLine: startLine, EndLine: endLine})
+	}
+	return result
+}
+
+func primaryLocationPath(locations []StreamLocation) string {
+	for _, location := range locations {
+		if path := strings.TrimSpace(location.Path); path != "" {
+			return path
+		}
+	}
+	return ""
+}
+
+func appendInputLocation(locations []StreamLocation, rawInput any) []StreamLocation {
+	if len(locations) > 0 {
+		return locations
+	}
+	if path := inputPath(rawInput); path != "" {
+		return []StreamLocation{{Path: path}}
+	}
+	return locations
+}
+
+func inputPath(rawInput any) string {
+	fields, ok := rawInput.(map[string]any)
+	if !ok {
+		return ""
+	}
+	for _, key := range []string{"path", "file", "file_path", "filename"} {
+		if value, ok := fields[key].(string); ok && strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
+}
+
+func itemText(item acpToolContentPayload) (string, bool) {
+	switch {
+	case item.Content != nil && item.Content.Type == "text":
+		return item.Content.Text, true
+	case item.Type == "text":
+		return item.Text, true
+	default:
+		return "", false
+	}
+}
+
+func diffText(item acpToolContentPayload) (string, string, string, bool) {
+	if item.Diff != nil && (item.Diff.OldText != "" || item.Diff.NewText != "") {
+		return item.Diff.Path, item.Diff.OldText, item.Diff.NewText, true
+	}
+	if item.Type == "diff" && (item.OldText != "" || item.NewText != "") {
+		return item.Path, item.OldText, item.NewText, true
+	}
+	return "", "", "", false
+}
+
+func normalizedToolKind(kind string, title string) string {
+	value := strings.ToLower(strings.TrimSpace(kind))
+	if value == "" {
+		value = strings.ToLower(strings.TrimSpace(title))
+	}
+	value = strings.ReplaceAll(value, "-", "_")
+	switch value {
+	case "read", "read_file", "file_read":
+		return "read"
+	case "edit", "write", "file_edit", "apply_patch":
+		return "edit"
+	default:
+		return value
+	}
 }
 
 func resourceBlock(link *acpResourceLinkPayload) StreamBlock {
@@ -350,6 +506,14 @@ func streamBlockText(blocks []StreamBlock) string {
 			if block.Path != "" {
 				parts = append(parts, "diff: "+block.Path)
 			}
+		case StreamBlockRead:
+			if block.Path != "" {
+				parts = append(parts, fmt.Sprintf("read %s (%d lines)", block.Path, block.LineCount))
+			}
+		case StreamBlockEdit:
+			if block.Path != "" {
+				parts = append(parts, fmt.Sprintf("edit %s (+%d/-%d)", block.Path, block.NewLineCount, block.OldLineCount))
+			}
 		case StreamBlockTerminal:
 			if block.TerminalID != "" {
 				parts = append(parts, "terminal: "+block.TerminalID)
@@ -376,4 +540,16 @@ func marshalCompact(value any) string {
 		return fmt.Sprint(value)
 	}
 	return string(raw)
+}
+
+func contentLineCount(text string) int {
+	if text == "" {
+		return 0
+	}
+	normalized := strings.ReplaceAll(text, "\r\n", "\n")
+	normalized = strings.TrimRight(normalized, "\n")
+	if normalized == "" {
+		return 0
+	}
+	return len(strings.Split(normalized, "\n"))
 }

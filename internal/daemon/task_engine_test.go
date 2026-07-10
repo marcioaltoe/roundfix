@@ -674,6 +674,7 @@ func (committer *taskSchedulerCommitter) commitCount() int {
 
 type fakeTaskWorktrees struct {
 	mu               sync.Mutex
+	fsMu             sync.Mutex
 	conflictByTask   map[string]string
 	createErrByTask  map[string]error
 	onCreate         func(taskID string, ref runworktree.TaskRef, opts runworktree.TaskCreateOptions) error
@@ -695,6 +696,8 @@ func newFakeTaskWorktrees() *fakeTaskWorktrees {
 
 func (worktrees *fakeTaskWorktrees) CreateTask(_ context.Context, run runworktree.Ref, taskID string, opts runworktree.TaskCreateOptions) (runworktree.TaskRef, error) {
 	path := filepath.Join(filepath.Dir(run.Path), run.RunID+"."+taskID)
+	worktrees.fsMu.Lock()
+	defer worktrees.fsMu.Unlock()
 	if err := os.RemoveAll(path); err != nil {
 		return runworktree.TaskRef{}, err
 	}
@@ -741,6 +744,8 @@ func (worktrees *fakeTaskWorktrees) IntegrateTask(_ context.Context, run runwork
 	if conflict != "" {
 		return runworktree.TaskIntegration{Mode: runworktree.ModeTaskConflict, Reason: conflict}, nil
 	}
+	worktrees.fsMu.Lock()
+	defer worktrees.fsMu.Unlock()
 	if err := copyTreeForSchedulerTest(task.Path, run.Path); err != nil {
 		return runworktree.TaskIntegration{}, err
 	}
