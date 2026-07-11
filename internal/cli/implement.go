@@ -430,7 +430,7 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, run
 	fmt.Fprintf(ui.progress, "Run Worktree: %s on branch %s\n", runRef.Path, runRef.Branch)
 	fmt.Fprintf(ui.progress, "Agent: %s\n", runtime.DisplayName)
 	fmt.Fprintf(ui.progress, "Agent Model: %s\n", runtime.Model)
-	fmt.Fprintf(ui.progress, "Default Reasoning Effort: %s\n", runtime.ReasoningEffort)
+	fmt.Fprintf(ui.progress, "Default Reasoning Effort: %s\n", displayReasoningEffort(runtime.ReasoningEffort))
 
 	engine, err := daemon.NewEngine(daemon.Dependencies{
 		Runner:    collaborators.runner,

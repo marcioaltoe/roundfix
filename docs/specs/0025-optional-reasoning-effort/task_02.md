@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0025-optional-reasoning-effort
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -35,26 +35,26 @@ buffer-captured CLI runs.
 
 ## Subtasks
 
-- [ ] Allow the explicit empty reasoning-effort flag through selection-flag
+- [x] Allow the explicit empty reasoning-effort flag through selection-flag
       validation.
-- [ ] Render the model-managed header line across the resolve, watch, and
+- [x] Render the model-managed header line across the resolve, watch, and
       implement headers.
-- [ ] Rework the Doctor and Setup configured-selection tests that expect an
+- [x] Rework the Doctor and Setup configured-selection tests that expect an
       empty configured effort to fail.
-- [ ] Cover flag acceptance, header rendering, and Run-row persistence with
+- [x] Cover flag acceptance, header rendering, and Run-row persistence with
       CLI tests.
 
 ## Acceptance Criteria
 
-- [ ] A run command invoked with an explicitly empty reasoning-effort flag
+- [x] A run command invoked with an explicitly empty reasoning-effort flag
       passes argument validation and creates its Run with an empty persisted
       reasoning effort.
-- [ ] The implement, resolve, and watch headers show
+- [x] The implement, resolve, and watch headers show
       `Default Reasoning Effort: model-managed` for an empty effective
       selection.
-- [ ] The Doctor Command reports `agent: ok` for a configured runtime with a
+- [x] The Doctor Command reports `agent: ok` for a configured runtime with a
       model and an empty reasoning effort when the runtime probe succeeds.
-- [ ] An explicitly empty model flag still fails argument validation.
+- [x] An explicitly empty model flag still fails argument validation.
 
 ## Verification
 
@@ -68,3 +68,49 @@ buffer-captured CLI runs.
 - `_prd.md` → Core Feature 3.
 - `_techspec.md` → API Contracts; Build Order 2.
 - ADR-0040.
+
+## Result
+
+Implemented the non-interactive CLI model-managed reasoning surface:
+
+- `--reasoning-effort=` now passes explicit selection flag validation for
+  resolve, watch, and implement commands; `--model=` remains invalid.
+- Resolve, watch, and implement Run headers render an empty effective
+  Default Reasoning Effort as `model-managed`.
+- Doctor and Setup configured-selection tests cover runtime probes with a
+  model and empty reasoning effort.
+- Resolve, watch, and implement CLI tests verify empty reasoning persists on
+  the Run row unchanged.
+
+Pre-change signal:
+
+- `rtk go test ./internal/cli` failed after adding the task tests:
+  `TestRunResolveAcceptsExplicitEmptyReasoningEffort`,
+  `TestRunWatchRendersModelManagedReasoningHeader`, and
+  `TestRunImplementAcceptsExplicitEmptyReasoningEffort` exited at Preflight
+  Validation because explicit empty reasoning was still rejected.
+
+Verification:
+
+- `rtk go test ./internal/cli`: passed (`370 passed in 1 packages`).
+- `rtk make verify`: passed (`1048 passed in 19 packages`,
+  `Roundfix skill check passed`, and `go build` completed).
+
+Acceptance evidence:
+
+- `TestRunResolveAcceptsExplicitEmptyReasoningEffort` verifies explicit empty
+  reasoning passes validation, creates a Run, persists `ReasoningEffort == ""`,
+  and renders `Default Reasoning Effort: model-managed`.
+- `TestRunWatchRendersModelManagedReasoningHeader` and
+  `TestRunImplementAcceptsExplicitEmptyReasoningEffort` verify the watch and
+  implement headers render `model-managed`, with empty reasoning persisted.
+- `TestRunDoctorAcceptsConfiguredEmptyReasoningEffort` verifies Doctor reports
+  `agent: ok` and probes the configured model with an empty reasoning effort.
+- Existing explicit-empty model rejection cases remain in
+  `TestRunReviewAgentCommandsRejectExplicitEmptySelectionOverrides` and
+  `TestRunImplementRejectsExplicitEmptySelectionOverrides`.
+
+Follow-up:
+
+- Interactive Input model-managed behavior remains in Task 03 and was not
+  changed here.

@@ -830,6 +830,47 @@ func TestRunDoctorRejectsMissingConfiguredAgentModel(t *testing.T) {
 	}
 }
 
+func TestRunDoctorAcceptsConfiguredEmptyReasoningEffort(t *testing.T) {
+	config := roundconfig.Builtin()
+	config.Runtimes.Codex.Model = "gpt-5.6-sol"
+	config.Runtimes.Codex.ReasoningEffort = ""
+	checker := newDoctorFakeHealthChecker(
+		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
+		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
+		CheckResult{Name: HealthCheckAgent, Status: CheckStatusOK, Detail: "codex"},
+		CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK, Detail: "/home/roundfix/.local/bin/codex accepted"},
+	)
+	withDoctorFakeLoaded(t, checker, roundconfig.Loaded{
+		Config:  config,
+		GitRoot: "/repo/project",
+		HomeDir: "/home/roundfix-test",
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"doctor"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected doctor success exit %d, got %d", exitOK, code)
+	}
+	if !strings.Contains(stdout.String(), "agent: ok (codex)") {
+		t.Fatalf("expected agent readiness success, got %q", stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+	if len(checker.agentRequests) != 1 {
+		t.Fatalf("expected one configured codex probe, got %#v", checker.agentRequests)
+	}
+	gotProbe := checker.agentRequests[0]
+	if gotProbe.WorkDir != "/repo/project" ||
+		gotProbe.Runtime.ID != "codex" ||
+		gotProbe.Runtime.Model != "gpt-5.6-sol" ||
+		gotProbe.Runtime.ReasoningEffort != "" {
+		t.Fatalf("expected model-managed codex selection probe in repo workdir, got %#v", gotProbe)
+	}
+}
+
 func TestRunDoctorRejectsArguments(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -1051,6 +1092,31 @@ func TestRunSetupAgentProbeUsesConfiguredSelectionAndWorkDir(t *testing.T) {
 		gotProbe.Runtime.Model != "repo-codex" ||
 		gotProbe.Runtime.ReasoningEffort != "repo-xhigh" {
 		t.Fatalf("expected setup probe to use configured Agent selection, got %#v", gotProbe)
+	}
+}
+
+func TestRunSetupAcceptsConfiguredEmptyReasoningEffort(t *testing.T) {
+	fake := newSetupFakeDeps()
+	fake.config.Runtimes.Codex.Model = "gpt-5.6-sol"
+	fake.config.Runtimes.Codex.ReasoningEffort = ""
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected setup exit 0, got %d (stdout %q stderr %q)", code, stdout.String(), stderr.String())
+	}
+	if len(fake.probeRequests) != 1 {
+		t.Fatalf("expected one Agent readiness probe, got %#v", fake.probeRequests)
+	}
+	gotProbe := fake.probeRequests[0]
+	if gotProbe.WorkDir != fake.gitRoot ||
+		gotProbe.Runtime.ID != "codex" ||
+		gotProbe.Runtime.Model != "gpt-5.6-sol" ||
+		gotProbe.Runtime.ReasoningEffort != "" {
+		t.Fatalf("expected setup probe to use model-managed Agent selection, got %#v", gotProbe)
 	}
 }
 
@@ -1963,6 +2029,36 @@ func TestRunResolvePersistsEffectiveSelection(t *testing.T) {
 	}
 }
 
+func TestRunResolveAcceptsExplicitEmptyReasoningEffort(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{
+		"resolve",
+		"--pr", "123",
+		"--agent", "codex",
+		"--model", "gpt-5.6-sol",
+		"--reasoning-effort=",
+		"--round", "all",
+		"--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected clean resolve exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	run := runFromStore(t, homeDir, reviewRunIDFromStderr(t, stderr.String()))
+	if run.Model != "gpt-5.6-sol" || run.ReasoningEffort != "" {
+		t.Fatalf("expected model-managed resolve selection persisted, got %#v", run)
+	}
+	if !strings.Contains(stderr.String(), "Agent Model: gpt-5.6-sol") ||
+		!strings.Contains(stderr.String(), "Default Reasoning Effort: model-managed") {
+		t.Fatalf("expected resolve progress to show model-managed selection, got %q", stderr.String())
+	}
+}
+
 func TestRunWatchPersistsEffectiveSelection(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
@@ -1994,6 +2090,36 @@ func TestRunWatchPersistsEffectiveSelection(t *testing.T) {
 	}
 	if strings.Contains(stderr.String(), "auto") {
 		t.Fatalf("expected no auto selection placeholder, got %q", stderr.String())
+	}
+}
+
+func TestRunWatchRendersModelManagedReasoningHeader(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{
+		"watch",
+		"--source", "coderabbit",
+		"--pr", "123",
+		"--agent", "codex",
+		"--model", "gpt-5.6-sol",
+		"--reasoning-effort=",
+		"--until-clean",
+		"--max-rounds", "1",
+		"--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected clean watch exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	run := runFromStore(t, homeDir, reviewRunIDFromStderr(t, stderr.String()))
+	if run.Model != "gpt-5.6-sol" || run.ReasoningEffort != "" {
+		t.Fatalf("expected model-managed watch selection persisted, got %#v", run)
+	}
+	if !strings.Contains(stderr.String(), "Default Reasoning Effort: model-managed") {
+		t.Fatalf("expected watch progress to show model-managed reasoning, got %q", stderr.String())
 	}
 }
 
@@ -3517,19 +3643,9 @@ func TestRunReviewAgentCommandsRejectExplicitEmptySelectionOverrides(t *testing.
 			want: "--model cannot be empty",
 		},
 		{
-			name: "resolve reasoning",
-			args: []string{"resolve", "--pr", "123", "--agent", "codex", "--reasoning-effort=", "--no-input"},
-			want: "--reasoning-effort cannot be empty",
-		},
-		{
 			name: "watch model",
 			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--model=", "--no-input"},
 			want: "--model cannot be empty",
-		},
-		{
-			name: "watch reasoning",
-			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--reasoning-effort=", "--no-input"},
-			want: "--reasoning-effort cannot be empty",
 		},
 	}
 	for _, tt := range tests {

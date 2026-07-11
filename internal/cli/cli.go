@@ -1573,7 +1573,7 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 	fmt.Fprintf(ui.progress, "Open Pull Request: #%s %s %s\n", preflightResult.PullRequest.Number, preflightResult.PullRequest.HeadRepository, preflightResult.PullRequest.HeadBranch)
 	fmt.Fprintf(ui.progress, "Agent: %s\n", resolvePlan.runtime.DisplayName)
 	fmt.Fprintf(ui.progress, "Agent Model: %s\n", resolvePlan.runtime.Model)
-	fmt.Fprintf(ui.progress, "Default Reasoning Effort: %s\n", resolvePlan.runtime.ReasoningEffort)
+	fmt.Fprintf(ui.progress, "Default Reasoning Effort: %s\n", displayReasoningEffort(resolvePlan.runtime.ReasoningEffort))
 
 	engine, err := daemon.NewEngine(daemon.Dependencies{
 		Runner:    collaborators.runner,
@@ -1723,7 +1723,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	fmt.Fprintf(stderr, "Review Source: %s\n", req.source)
 	fmt.Fprintf(stderr, "Agent: %s\n", runtime.DisplayName)
 	fmt.Fprintf(stderr, "Agent Model: %s\n", runtime.Model)
-	fmt.Fprintf(stderr, "Default Reasoning Effort: %s\n", runtime.ReasoningEffort)
+	fmt.Fprintf(stderr, "Default Reasoning Effort: %s\n", displayReasoningEffort(runtime.ReasoningEffort))
 	fmt.Fprintf(stderr, "Max Rounds: %d\n", req.maxRounds)
 
 	// One cockpit for the entire Watch Run, across all Rounds and Batches.
@@ -2355,10 +2355,15 @@ func validateExplicitSelectionFlags(req commandRequest) error {
 	if req.modelSet && strings.TrimSpace(req.model) == "" {
 		return emptySelectionFlagError(req, "model", "model")
 	}
-	if req.reasoningEffortSet && strings.TrimSpace(req.reasoningEffort) == "" {
-		return emptySelectionFlagError(req, "reasoning-effort", "reasoning_effort")
-	}
 	return nil
+}
+
+func displayReasoningEffort(reasoningEffort string) string {
+	reasoningEffort = strings.TrimSpace(reasoningEffort)
+	if reasoningEffort == "" {
+		return "model-managed"
+	}
+	return reasoningEffort
 }
 
 func emptySelectionFlagError(req commandRequest, flagName string, configKey string) error {
