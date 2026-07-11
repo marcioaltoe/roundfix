@@ -797,9 +797,9 @@ func TestRunDoctorReportsReadinessChecks(t *testing.T) {
 	}
 }
 
-func TestRunDoctorRejectsMissingConfiguredAgentSelection(t *testing.T) {
+func TestRunDoctorRejectsMissingConfiguredAgentModel(t *testing.T) {
 	config := roundconfig.Builtin()
-	config.Runtimes.Codex.ReasoningEffort = ""
+	config.Runtimes.Codex.Model = ""
 	checker := newDoctorFakeHealthChecker(
 		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
 		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
@@ -819,7 +819,7 @@ func TestRunDoctorRejectsMissingConfiguredAgentSelection(t *testing.T) {
 	if code != exitRunFailed {
 		t.Fatalf("expected doctor selection failure exit %d, got %d", exitRunFailed, code)
 	}
-	if !strings.Contains(stdout.String(), `agent: failed (agent selection for runtime "codex" missing reasoning_effort`) {
+	if !strings.Contains(stdout.String(), `agent: failed (agent selection for runtime "codex" missing model`) {
 		t.Fatalf("expected missing selection diagnostic, got %q", stdout.String())
 	}
 	if len(checker.agentRequests) != 0 {
@@ -3404,6 +3404,7 @@ runtimes:
 		"missing model metadata",
 		"update the ACP Runtime or adapter",
 		"choose supported Agent Model and Default Reasoning Effort values",
+		`set runtimes.codex.reasoning_effort "" when the model manages reasoning`,
 	} {
 		if !strings.Contains(stderr.String(), want) {
 			t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())

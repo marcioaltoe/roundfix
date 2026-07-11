@@ -174,15 +174,19 @@ func (err *SelectionPreflightError) Error() string {
 	if err == nil {
 		return ""
 	}
+	runtime := strings.TrimSpace(err.Runtime)
 	operation := strings.TrimSpace(err.Operation)
 	if operation == "" {
 		operation = "validate selection"
 	}
-	message := fmt.Sprintf("agent selection unavailable for runtime %q with model %q and reasoning %q during %s", err.Runtime, err.Model, err.ReasoningEffort, operation)
+	message := fmt.Sprintf("agent selection unavailable for runtime %q with model %q and reasoning %q during %s", runtime, err.Model, err.ReasoningEffort, operation)
 	if err.Err != nil {
 		message += ": " + err.Err.Error()
 	}
-	message += "; recovery: update the ACP Runtime or adapter, or choose supported Agent Model and Default Reasoning Effort values"
+	message += "; recovery: update the ACP Runtime or adapter, choose supported Agent Model and Default Reasoning Effort values"
+	if runtime != "" {
+		message += fmt.Sprintf(`, or set runtimes.%s.reasoning_effort "" when the model manages reasoning`, runtime)
+	}
 	return message
 }
 
@@ -321,11 +325,14 @@ func (runner ACPXRunner) applyDisposableSelection(ctx context.Context, runtime R
 		}
 		return selectionPreflightError(runtime, "set model", fmt.Errorf("ensure disposable acpx Agent Session %q with model %q: %w", sessionName, strings.TrimSpace(runtime.Model), err))
 	}
+	value := strings.TrimSpace(runtime.ReasoningEffort)
+	if value == "" {
+		return nil
+	}
 	key, err := acpxReasoningEffortConfigKey(runtime)
 	if err != nil {
 		return err
 	}
-	value := strings.TrimSpace(runtime.ReasoningEffort)
 	args, err = acpxSetConfigArgs(runtime, key, value, sessionName, workDir)
 	if err != nil {
 		return err
@@ -481,11 +488,14 @@ func (runner *ACPXRunner) ensureSession(ctx context.Context, req ExecuteRequest,
 
 func (runner *ACPXRunner) applySelection(ctx context.Context, req ExecuteRequest, codexEnv []string) error {
 	sessionName := strings.TrimSpace(req.Session.Name)
+	value := strings.TrimSpace(req.Runtime.ReasoningEffort)
+	if value == "" {
+		return nil
+	}
 	key, err := acpxReasoningEffortConfigKey(req.Runtime)
 	if err != nil {
 		return err
 	}
-	value := strings.TrimSpace(req.Runtime.ReasoningEffort)
 	args, err := acpxSetConfigArgs(req.Runtime, key, value, sessionName, req.GitRoot)
 	if err != nil {
 		return err
@@ -667,7 +677,7 @@ func validateRuntimeSelection(runtime RuntimeSpec) error {
 		return errors.New("agent model is required")
 	}
 	if strings.TrimSpace(runtime.ReasoningEffort) == "" {
-		return errors.New("agent reasoning effort is required")
+		return nil
 	}
 	if _, err := acpxReasoningEffortConfigKey(runtime); err != nil {
 		return err

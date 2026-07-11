@@ -143,6 +143,33 @@ func TestACPXProbeValidatesSelectionWithDisposableSession(t *testing.T) {
 	}
 }
 
+func TestACPXProbeSkipsEmptyReasoningEffort(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol"}
+
+	err := harness.runner.Probe(context.Background(), ProbeRequest{Runtime: runtime, WorkDir: harness.gitRoot})
+
+	if err != nil {
+		t.Fatalf("expected model-managed reasoning selection to pass, got %v", err)
+	}
+	invocations := readJSONInvocations(t, harness.invocationsPath)
+	if len(invocations) != 3 {
+		t.Fatalf("expected version, ensure, close invocations, got %#v", invocations)
+	}
+	if !reflect.DeepEqual(invocations[0], []string{"--version"}) {
+		t.Fatalf("expected version check first, got %#v", invocations[0])
+	}
+	sessionName := assertDisposableEnsureInvocation(t, invocations[1], harness.gitRoot, "codex", "gpt-5.6-sol")
+	wantClose := []string{"--cwd", harness.gitRoot, "codex", "sessions", "close", sessionName}
+	if !reflect.DeepEqual(invocations[2], wantClose) {
+		t.Fatalf("unexpected disposable close invocation\nwant: %#v\ngot:  %#v", wantClose, invocations[2])
+	}
+	if containsCommandKey(invocations, "set reasoning_effort") {
+		t.Fatalf("expected no reasoning set call for empty effort, got %#v", invocations)
+	}
+}
+
 func TestACPXProbeSelectionSetupUsesBoundedContext(t *testing.T) {
 	harness := newFakeACPXHarness(t)
 	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
@@ -196,6 +223,9 @@ func TestACPXProbeSelectionRejectionClosesDisposableSession(t *testing.T) {
 	}
 	if infraErr.Stderr != "reasoning value rejected\n" {
 		t.Fatalf("expected adapter stderr preserved, got %q", infraErr.Stderr)
+	}
+	if !strings.Contains(err.Error(), `set runtimes.codex.reasoning_effort "" when the model manages reasoning`) {
+		t.Fatalf("expected model-managed recovery guidance, got %v", err)
 	}
 	invocations := readJSONInvocations(t, harness.invocationsPath)
 	if len(invocations) != 4 {
@@ -557,47 +587,67 @@ func TestACPXRunPromptSendsPromptOnStdin(t *testing.T) {
 	}
 }
 
-func TestACPXRunRequiresConcreteSelection(t *testing.T) {
-	tests := []struct {
-		name     string
-		runtime  RuntimeSpec
-		contains string
-	}{
-		{
-			name:     "missing model",
-			runtime:  RuntimeSpec{ID: "codex", Protocol: ProtocolACP, ReasoningEffort: "xhigh"},
-			contains: "model",
-		},
-		{
-			name:     "missing reasoning effort",
-			runtime:  RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-test"},
-			contains: "reasoning effort",
-		},
+func TestACPXRunRequiresModelSelection(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	_, err := harness.runner.Run(context.Background(), ExecuteRequest{
+		Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, ReasoningEffort: "xhigh"},
+		RunID:   "run-acpx",
+		Batch:   rounds.Batch{Number: 7},
+		LogPath: filepath.Join(harness.gitRoot, "runs", "run-acpx", "agent", "batch-007.log"),
+		Prompt:  "prompt",
+		GitRoot: harness.gitRoot,
+		Session: SessionRef{Name: "roundfix-run-1"},
+	}, newCaptureSink(""))
+
+	if err == nil {
+		t.Fatal("expected missing model selection to fail")
+	}
+	if !strings.Contains(err.Error(), "model") {
+		t.Fatalf("expected error containing model, got %q", err.Error())
+	}
+	if _, statErr := os.Stat(harness.invocationsPath); !errors.Is(statErr, os.ErrNotExist) {
+		t.Fatalf("expected no acpx invocation before selection validation, got stat error %v", statErr)
+	}
+}
+
+func TestValidateRuntimeSelectionSkipsReasoningConfigKeyForEmptyEffort(t *testing.T) {
+	if err := validateRuntimeSelection(RuntimeSpec{ID: "future-runtime", Protocol: ProtocolACP, Model: "future-model"}); err != nil {
+		t.Fatalf("expected empty reasoning effort to skip config-key validation, got %v", err)
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			harness := newFakeACPXHarness(t)
-			_, err := harness.runner.Run(context.Background(), ExecuteRequest{
-				Runtime: tt.runtime,
-				RunID:   "run-acpx",
-				Batch:   rounds.Batch{Number: 7},
-				LogPath: filepath.Join(harness.gitRoot, "runs", "run-acpx", "agent", "batch-007.log"),
-				Prompt:  "prompt",
-				GitRoot: harness.gitRoot,
-				Session: SessionRef{Name: "roundfix-run-1"},
-			}, newCaptureSink(""))
+	err := validateRuntimeSelection(RuntimeSpec{ID: "future-runtime", Protocol: ProtocolACP, Model: "future-model", ReasoningEffort: "high"})
+	if err == nil {
+		t.Fatal("expected non-empty reasoning effort to require a config key")
+	}
+	if !strings.Contains(err.Error(), "unsupported ACP Runtime") {
+		t.Fatalf("expected unsupported runtime error, got %v", err)
+	}
+}
 
-			if err == nil {
-				t.Fatal("expected missing selection to fail")
-			}
-			if !strings.Contains(err.Error(), tt.contains) {
-				t.Fatalf("expected error containing %q, got %q", tt.contains, err.Error())
-			}
-			if _, statErr := os.Stat(harness.invocationsPath); !errors.Is(statErr, os.ErrNotExist) {
-				t.Fatalf("expected no acpx invocation before selection validation, got stat error %v", statErr)
-			}
-		})
+func TestACPXRunSkipsEmptyReasoningEffort(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol"}
+
+	_, err := harness.runner.Run(context.Background(), ExecuteRequest{
+		Runtime:   runtime,
+		RunID:     "run-acpx",
+		Batch:     rounds.Batch{Number: 7},
+		LogPath:   filepath.Join(harness.gitRoot, "runs", "run-acpx", "agent", "batch-007.log"),
+		Prompt:    "prompt",
+		GitRoot:   harness.gitRoot,
+		StopGrace: 20 * time.Millisecond,
+		Session:   SessionRef{Name: "roundfix-run-1"},
+	}, newCaptureSink(""))
+
+	if err != nil {
+		t.Fatalf("expected model-managed reasoning run to pass, got %v", err)
+	}
+	want := [][]string{
+		{"--cwd", harness.gitRoot, "--model", "gpt-5.6-sol", "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "gpt-5.6-sol", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
+	}
+	if got := readJSONInvocations(t, harness.invocationsPath); !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected acpx invocations\nwant: %#v\ngot:  %#v", want, got)
 	}
 }
 

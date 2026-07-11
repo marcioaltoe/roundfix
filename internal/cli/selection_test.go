@@ -22,8 +22,8 @@ func TestResolveSelectionUsesBuiltInRuntimeDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected Claude selection, got %v", err)
 	}
-	if claude.Model != "opus" || claude.ReasoningEffort != "high" {
-		t.Fatalf("expected Claude opus/high, got %#v", claude)
+	if claude.Model != "opus" || claude.ReasoningEffort != "" {
+		t.Fatalf("expected Claude opus with model-managed reasoning, got %#v", claude)
 	}
 
 	_, err = ResolveSelection("opencode", config.Runtimes.OpenCode, InvocationSelection{})
@@ -53,39 +53,41 @@ func TestResolveSelectionAppliesInvocationPrecedence(t *testing.T) {
 	}
 }
 
-func TestResolveSelectionRejectsExplicitEmptyInvocationValues(t *testing.T) {
+func TestResolveSelectionRejectsExplicitEmptyModel(t *testing.T) {
 	defaults := roundconfig.RuntimeDefaults{
 		Model:           "configured-model",
 		ReasoningEffort: "configured-reasoning",
 	}
 
-	tests := []struct {
-		name       string
-		invocation InvocationSelection
-		contains   string
-	}{
-		{
-			name:       "model",
-			invocation: InvocationSelection{ModelSet: true},
-			contains:   "model",
-		},
-		{
-			name:       "reasoning",
-			invocation: InvocationSelection{ReasoningEffortSet: true},
-			contains:   "reasoning_effort",
-		},
+	_, err := ResolveSelection("codex", defaults, InvocationSelection{ModelSet: true})
+	if err == nil {
+		t.Fatal("expected explicit empty model to fail")
+	}
+	if !strings.Contains(err.Error(), "model") {
+		t.Fatalf("expected error containing model, got %q", err.Error())
+	}
+}
+
+func TestResolveSelectionAllowsEmptyReasoningEffort(t *testing.T) {
+	defaults := roundconfig.RuntimeDefaults{Model: "configured-model"}
+
+	got, err := ResolveSelection("codex", defaults, InvocationSelection{})
+	if err != nil {
+		t.Fatalf("expected configured empty reasoning effort to pass, got %v", err)
+	}
+	if got.Model != "configured-model" || got.ReasoningEffort != "" {
+		t.Fatalf("expected configured model with empty reasoning effort, got %#v", got)
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := ResolveSelection("codex", defaults, tt.invocation)
-			if err == nil {
-				t.Fatal("expected explicit empty value to fail")
-			}
-			if !strings.Contains(err.Error(), tt.contains) {
-				t.Fatalf("expected error containing %q, got %q", tt.contains, err.Error())
-			}
-		})
+	got, err = ResolveSelection("codex", roundconfig.RuntimeDefaults{
+		Model:           "configured-model",
+		ReasoningEffort: "configured-reasoning",
+	}, InvocationSelection{ReasoningEffortSet: true})
+	if err != nil {
+		t.Fatalf("expected explicit empty reasoning effort to pass, got %v", err)
+	}
+	if got.Model != "configured-model" || got.ReasoningEffort != "" {
+		t.Fatalf("expected explicit empty reasoning effort to override config, got %#v", got)
 	}
 }
 

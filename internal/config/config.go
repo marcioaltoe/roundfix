@@ -24,7 +24,7 @@ const (
 	defaultCodexModel               = "gpt-5.5"
 	defaultCodexReasoningEffort     = "xhigh"
 	defaultClaudeModel              = "opus"
-	defaultClaudeReasoningEffort    = "high"
+	defaultClaudeReasoningEffort    = ""
 	defaultVerification             = "make verify"
 	defaultPollInterval             = 30 * time.Second
 	defaultReviewTimeout            = 30 * time.Minute
@@ -698,9 +698,9 @@ resolve:
 		config.Defaults.Verification,
 		config.Defaults.AutoCommit,
 		config.Runtimes.Codex.Model,
-		config.Runtimes.Codex.ReasoningEffort,
+		defaultConfigString(config.Runtimes.Codex.ReasoningEffort),
 		config.Runtimes.Claude.Model,
-		config.Runtimes.Claude.ReasoningEffort,
+		defaultConfigString(config.Runtimes.Claude.ReasoningEffort),
 		config.Runtimes.OpenCode.Model,
 		config.Runtimes.OpenCode.ReasoningEffort,
 		config.Specs.Root,
@@ -723,6 +723,13 @@ resolve:
 		formatConfigDuration(config.Budget.MaxRunDuration),
 		config.Resolve.BatchSize,
 	)
+}
+
+func defaultConfigString(value string) string {
+	if value == "" {
+		return `""`
+	}
+	return value
 }
 
 func Validate(config Config) error {

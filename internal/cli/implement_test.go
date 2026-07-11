@@ -370,6 +370,13 @@ func configureImplementAutoPush(t *testing.T, repoDir string, enabled bool) {
 	gitImplement(t, repoDir, "commit", "-m", "configure implement auto push")
 }
 
+func configureImplementClaudeReasoning(t *testing.T, repoDir string) {
+	t.Helper()
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "runtimes:\n  claude:\n    reasoning_effort: high\n")
+	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+	gitImplement(t, repoDir, "commit", "-m", "configure claude reasoning")
+}
+
 func configureExternalSpecsRoot(t *testing.T, repoDir string, specsRoot string) {
 	t.Helper()
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), fmt.Sprintf("specs:\n  root: %q\n", specsRoot))
@@ -1128,6 +1135,7 @@ func TestRunImplementInteractiveInputPicksSpecThroughCollector(t *testing.T) {
 	mustWrite(t, filepath.Join(repoDir, "docs", "specs", "0002-broken-prd", "_prd.md"), "no frontmatter\n")
 	gitImplement(t, repoDir, "add", "docs/specs/0002-broken-prd/_prd.md")
 	gitImplement(t, repoDir, "commit", "-m", "add broken spec fixture")
+	configureImplementClaudeReasoning(t, repoDir)
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
 		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
@@ -1335,6 +1343,7 @@ func TestRunImplementInteractiveInputRemembersAgentButNotSpecOrQA(t *testing.T) 
 		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
 		qaReport:     implementQAReport("pass"),
 	}
+	configureImplementClaudeReasoning(t, repoDir)
 	withImplementCollaborators(t, runner)
 	withInteractiveInput(t, func(_ context.Context, req roundtui.InputRequest) (roundtui.CommandValues, error) {
 		values := req.Values
