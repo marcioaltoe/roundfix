@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0025-optional-reasoning-effort
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -35,20 +35,20 @@ Skill validation gates plus the updated config content.
 
 ## Subtasks
 
-- [ ] Flip the Project Config codex runtime to gpt-5.6-sol with an explicitly
+- [x] Flip the Project Config codex runtime to gpt-5.6-sol with an explicitly
       empty reasoning effort and the explanatory comment.
-- [ ] Update the CONTEXT.md glossary entry.
-- [ ] Update the README selection and configuration guidance.
-- [ ] Update both Roundfix Skill copies with the optional-effort contract.
+- [x] Update the CONTEXT.md glossary entry.
+- [x] Update the README selection and configuration guidance.
+- [x] Update both Roundfix Skill copies with the optional-effort contract.
 
 ## Acceptance Criteria
 
-- [ ] The Project Config selects gpt-5.6-sol with an explicitly empty
+- [x] The Project Config selects gpt-5.6-sol with an explicitly empty
       reasoning effort and passes config validation.
-- [ ] CONTEXT.md defines the empty Default Reasoning Effort as model-managed.
-- [ ] The README documents the optional-effort semantics and the gpt-5.6
+- [x] CONTEXT.md defines the empty Default Reasoning Effort as model-managed.
+- [x] The README documents the optional-effort semantics and the gpt-5.6
       model-managed behavior.
-- [ ] The canonical and embedded Roundfix Skill copies document the
+- [x] The canonical and embedded Roundfix Skill copies document the
       optional-effort contract with zero drift.
 
 ## Verification
@@ -67,3 +67,48 @@ Skill validation gates plus the updated config content.
 - `_prd.md` → Goals; Core Feature 4.
 - `_techspec.md` → Coverage Map; Build Order 4; Risks & Considerations.
 - ADR-0040; `docs/agents/skill-governance.md`.
+
+## Result
+
+Shipped the project configuration and guidance updates for optional Default
+Reasoning Effort:
+
+- `.roundfixrc.yml` now pins Codex to `gpt-5.6-sol` with
+  `reasoning_effort: ""` and an explanatory comment that the explicit empty
+  value means model-managed reasoning and overrides User Config.
+- `CONTEXT.md` now defines empty Default Reasoning Effort as model-managed
+  while preserving the rule that Roundfix never inherits runtime-local
+  reasoning configuration.
+- `README.md` documents empty config values, explicit empty
+  `--reasoning-effort ""`, the `model-managed` header, the empty Claude
+  built-in default, and the Preflight Validation failure for rejected non-empty
+  reasoning values.
+- `.agents/skills/roundfix/SKILL.md` was updated and `rtk make skills-sync`
+  regenerated `skills/roundfix/SKILL.md`, keeping the embedded copy in sync.
+
+Pre-change signal:
+
+- Inspection showed stale guidance and config: `.roundfixrc.yml` used
+  `model: gpt-5.5` with `reasoning_effort: xhigh`, README and the Roundfix
+  Skill documented Claude `reasoning_effort: high`, and the Skill said
+  explicit empty `--reasoning-effort` was invalid.
+
+Verification:
+
+- `rtk make skills-sync-check`: passed with zero output.
+- `rtk go run -buildvcs=false ./cmd/roundfix skills check`: passed
+  (`Roundfix skill check passed: ...`).
+- `rtk go test ./internal/config`: passed (`76 passed in 1 packages`).
+- `rtk make verify`: passed (`1050 passed in 19 packages`,
+  `Roundfix skill check passed`, and `go build` completed).
+
+Acceptance evidence:
+
+- `.roundfixrc.yml` contains `model: gpt-5.6-sol` and `reasoning_effort: ""`
+  under `runtimes.codex`, with the model-managed override comment.
+- `CONTEXT.md` defines empty Default Reasoning Effort as meaning the Agent
+  Model manages reasoning.
+- `README.md` documents the optional-effort semantics and the gpt-5.6
+  model-managed behavior in the Agent selection and configuration sections.
+- `rtk make skills-sync-check` confirms `.agents/skills/roundfix/SKILL.md`
+  and `skills/roundfix/SKILL.md` have zero drift.

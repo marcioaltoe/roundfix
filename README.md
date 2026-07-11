@@ -206,8 +206,8 @@ Override the Agent Model and Default Reasoning Effort for one Run without
 editing User Config or Project Config:
 
 ```bash
-roundfix resolve --pr 123 --agent codex --model gpt-5.6-sol --reasoning-effort xhigh --no-input
-roundfix implement --spec example-spec --agent claude --model opus --reasoning-effort high --qa --detach
+roundfix resolve --pr 123 --agent codex --model gpt-5.6-sol --reasoning-effort "" --no-input
+roundfix implement --spec example-spec --agent claude --model opus --reasoning-effort "" --qa --detach
 ```
 
 Start a Detached Run for scripts or CI. The `--detach` flag is available on
@@ -523,9 +523,10 @@ runtime-owned model configuration.
 Built-in selections:
 
 - Codex: `model: gpt-5.5`, `reasoning_effort: xhigh`.
-- Claude: `model: opus`, `reasoning_effort: high`.
-- OpenCode: no built-in model or reasoning value; provide each value through
-  User Config, Project Config, its one-Run flag, or a mix of config and flags.
+- Claude: `model: opus`, `reasoning_effort: ""` (model-managed).
+- OpenCode: no built-in model. Provide a model through User Config, Project
+  Config, its one-Run flag, or Interactive Input; leave reasoning empty when
+  the selected model manages reasoning.
 
 Project Config can pin per-runtime Roundfix defaults without affecting other
 runtimes:
@@ -533,25 +534,34 @@ runtimes:
 ```yaml
 runtimes:
   codex:
-    model: gpt-5.5
-    reasoning_effort: xhigh
+    model: gpt-5.6-sol
+    # Empty reasoning_effort means the Agent Model manages reasoning and
+    # overrides any User Config effort.
+    reasoning_effort: ""
   claude:
     model: opus
-    reasoning_effort: high
+    reasoning_effort: ""
   opencode:
     model: ""
     reasoning_effort: ""
 ```
 
-For OpenCode, replace any empty strings with values supported by the installed
-OpenCode ACP adapter, or pass each missing value with its matching `--model` or
+An empty `reasoning_effort` is a deliberate model-managed selection. Roundfix
+assigns the Agent Model and skips the runtime-specific reasoning option; Run
+headers render it as `Default Reasoning Effort: model-managed`. This is the
+required shape for the codex `gpt-5.6` family, whose models manage reasoning
+and reject every `reasoning_effort` value exposed by codex-acp.
+
+For OpenCode, replace the empty model with a value supported by the installed
+OpenCode ACP adapter. Set a non-empty reasoning value only when the adapter and
+model support it, or pass each value with its matching `--model` or
 `--reasoning-effort` flag before starting an OpenCode Run:
 
 ```yaml
 runtimes:
   opencode:
     model: "<model-supported-by-opencode-acp>"
-    reasoning_effort: "<effort-supported-by-opencode-acp>"
+    reasoning_effort: ""
 ```
 
 Roundfix ships no OpenCode Model Catalog and no OpenCode default.
@@ -574,18 +584,21 @@ Interactive Input values can pass a custom Agent Model or Default Reasoning
 Effort. The installed ACP adapter validates the final pair during Preflight
 Validation.
 
-If a runtime rejects the selected Agent Model or Default Reasoning Effort,
+An explicit empty `--reasoning-effort ""` is the one-Run model-managed
+override; an explicit empty `--model ""` is invalid and exits `2`. If a runtime
+rejects the selected Agent Model or a non-empty Default Reasoning Effort,
 `resolve`, `watch`, and `implement` exit `2` before creating a Run. The
-diagnostic names the runtime, model, and reasoning value, then gives the two
-supported recovery paths: update the runtime or adapter, or select supported
-values. Roundfix does not fall back to another selection.
+diagnostic names the runtime, model, and reasoning value, then gives recovery
+paths: update the runtime or adapter, select supported values, or set
+`runtimes.<runtime>.reasoning_effort ""` when the model manages reasoning.
+Roundfix does not fall back to another selection.
 
 Run startup and inspection surfaces show the stored selection:
 
 ```text
 Agent: Codex
-Agent Model: gpt-5.5
-Default Reasoning Effort: xhigh
+Agent Model: gpt-5.6-sol
+Default Reasoning Effort: model-managed
 ```
 
 `attach` reads those values from the Run row, so changing User Config or
@@ -615,11 +628,12 @@ defaults:
 
 runtimes:
   codex:
-    model: gpt-5.5
-    reasoning_effort: xhigh
+    model: gpt-5.6-sol
+    # Empty reasoning_effort means the Agent Model manages reasoning.
+    reasoning_effort: ""
   claude:
     model: opus
-    reasoning_effort: high
+    reasoning_effort: ""
   opencode:
     model: ""
     reasoning_effort: ""

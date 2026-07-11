@@ -143,47 +143,57 @@ runtime-owned model configuration.
 Built-in selections:
 
 - Codex: `model: gpt-5.5`, `reasoning_effort: xhigh`.
-- Claude: `model: opus`, `reasoning_effort: high`.
-- OpenCode: no built-in model or reasoning value; provide each value through
-  User Config, Project Config, its one-Run flag, or a mix of config and flags.
+- Claude: `model: opus`, `reasoning_effort: ""` (model-managed).
+- OpenCode: no built-in model. Provide a model through User Config, Project
+  Config, its one-Run flag, or Interactive Input; leave reasoning empty when
+  the selected model manages reasoning.
 
 Project Config and User Config use the per-runtime structure:
 
 ```yaml
 runtimes:
   codex:
-    model: gpt-5.5
-    reasoning_effort: xhigh
+    model: gpt-5.6-sol
+    # Empty reasoning_effort means the Agent Model manages reasoning and
+    # overrides any User Config effort.
+    reasoning_effort: ""
   claude:
     model: opus
-    reasoning_effort: high
+    reasoning_effort: ""
   opencode:
     model: ""
     reasoning_effort: ""
 ```
 
-OpenCode has no Roundfix Model Catalog and no default. Replace any empty
-OpenCode values with adapter-supported values in config, or pass each missing
-value with its matching one-Run flag:
+An empty `reasoning_effort` is a deliberate model-managed selection. Roundfix
+assigns the Agent Model and skips the runtime-specific reasoning option; Run
+headers render it as `Default Reasoning Effort: model-managed`. This is the
+required shape for the codex `gpt-5.6` family, whose models manage reasoning
+and reject every `reasoning_effort` value exposed by codex-acp.
+
+OpenCode has no Roundfix Model Catalog and no default model. Replace the empty
+model with an adapter-supported value in config, or pass it with the matching
+one-Run flag. Set a non-empty reasoning value only when the adapter and model
+support it:
 
 ```yaml
 runtimes:
   opencode:
     model: "<model-supported-by-opencode-acp>"
-    reasoning_effort: "<effort-supported-by-opencode-acp>"
+    reasoning_effort: ""
 ```
 
 Non-interactive Agent-starting commands (`resolve`, `watch`, and `implement`)
 accept both one-Run overrides:
 
 ```bash
-roundfix resolve --pr 123 --agent codex --model gpt-5.6-sol --reasoning-effort xhigh --no-input
-roundfix implement --spec example-spec --agent claude --model opus --reasoning-effort high --qa --detach
+roundfix resolve --pr 123 --agent codex --model gpt-5.6-sol --reasoning-effort "" --no-input
+roundfix implement --spec example-spec --agent claude --model opus --reasoning-effort "" --qa --detach
 ```
 
 Omitted flags use the selected runtime's effective Roundfix configuration.
-An explicit empty `--model` or `--reasoning-effort` is invalid and exits `2`;
-empty flags never request a hidden adapter value.
+An explicit empty `--reasoning-effort ""` requests model-managed reasoning.
+An explicit empty `--model ""` is invalid and exits `2`.
 
 Interactive Input asks for Agent, Agent Model, then Default Reasoning Effort.
 The Codex Model Catalog appears in this order: `gpt-5.6-sol`,
@@ -195,19 +205,21 @@ typed custom Agent Model and Default Reasoning Effort values pass through to
 the installed ACP adapter for validation.
 
 Preflight Validation starts a disposable Agent Session in the Git root,
-assigns the selected Agent Model and runtime-specific reasoning option, closes
-the disposable session, and sends no prompt. If the runtime rejects the model
-or reasoning value, `resolve`, `watch`, and `implement` exit `2` before
+assigns the selected Agent Model, assigns the runtime-specific reasoning option
+only when the effective Default Reasoning Effort is non-empty, closes the
+disposable session, and sends no prompt. If the runtime rejects the model or a
+non-empty reasoning value, `resolve`, `watch`, and `implement` exit `2` before
 creating a Run. The stderr diagnostic names runtime, model, and reasoning
-value, then gives both recovery paths: update the runtime or adapter, or
-select supported values. Roundfix never falls back to another selection.
+value, then gives recovery paths: update the runtime or adapter, select
+supported values, or set `runtimes.<runtime>.reasoning_effort ""` when the
+model manages reasoning. Roundfix never falls back to another selection.
 
 Initial progress and the Live Run View show the concrete stored selection:
 
 ```text
 Agent: Codex
-Agent Model: gpt-5.5
-Default Reasoning Effort: xhigh
+Agent Model: gpt-5.6-sol
+Default Reasoning Effort: model-managed
 ```
 
 Attach reads Agent, Agent Model, and Default Reasoning Effort from the Run row,
