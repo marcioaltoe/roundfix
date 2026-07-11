@@ -40,9 +40,6 @@ func ResolveSelection(runtime string, defaults roundconfig.RuntimeDefaults, invo
 	if model == "" {
 		missing = append(missing, "model")
 	}
-	if reasoningEffort == "" {
-		missing = append(missing, "reasoning_effort")
-	}
 	if len(missing) > 0 {
 		return AgentSelection{}, fmt.Errorf("agent selection for runtime %q missing %s; configure runtimes.%s or pass invocation overrides", runtime, strings.Join(missing, " and "), runtime)
 	}

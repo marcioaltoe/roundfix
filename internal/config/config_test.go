@@ -105,8 +105,8 @@ func TestBuiltinRuntimeDefaults(t *testing.T) {
 	if config.Runtimes.Codex.Model != "gpt-5.5" || config.Runtimes.Codex.ReasoningEffort != "xhigh" {
 		t.Fatalf("expected built-in Codex gpt-5.5/xhigh, got %#v", config.Runtimes.Codex)
 	}
-	if config.Runtimes.Claude.Model != "opus" || config.Runtimes.Claude.ReasoningEffort != "high" {
-		t.Fatalf("expected built-in Claude opus/high, got %#v", config.Runtimes.Claude)
+	if config.Runtimes.Claude.Model != "opus" || config.Runtimes.Claude.ReasoningEffort != "" {
+		t.Fatalf("expected built-in Claude opus with model-managed reasoning, got %#v", config.Runtimes.Claude)
 	}
 	if config.Runtimes.OpenCode.Model != "" || config.Runtimes.OpenCode.ReasoningEffort != "" {
 		t.Fatalf("expected built-in OpenCode to require explicit selection, got %#v", config.Runtimes.OpenCode)
@@ -942,7 +942,7 @@ func TestInitCreatesUserConfig(t *testing.T) {
 		!strings.Contains(content, `artifact_dir: ""`) || !strings.Contains(content, "Roundfix Home artifacts/<repo-id>") ||
 		!strings.Contains(content, "runtimes:") || !strings.Contains(content, "model: gpt-5.5") ||
 		!strings.Contains(content, "reasoning_effort: xhigh") || !strings.Contains(content, "model: opus") ||
-		!strings.Contains(content, "reasoning_effort: high") ||
+		!strings.Contains(content, "claude:\n    model: opus\n    reasoning_effort: \"\"") ||
 		!strings.Contains(content, "specs:") || !strings.Contains(content, `root: "docs/specs"`) ||
 		!strings.Contains(content, "worktree:") || !strings.Contains(content, `location: "~/.roundfix/worktrees"`) ||
 		!strings.Contains(content, "concurrency: 2") || !strings.Contains(content, "copy: []") ||

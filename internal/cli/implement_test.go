@@ -370,6 +370,13 @@ func configureImplementAutoPush(t *testing.T, repoDir string, enabled bool) {
 	gitImplement(t, repoDir, "commit", "-m", "configure implement auto push")
 }
 
+func configureImplementClaudeReasoning(t *testing.T, repoDir string) {
+	t.Helper()
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "runtimes:\n  claude:\n    reasoning_effort: high\n")
+	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+	gitImplement(t, repoDir, "commit", "-m", "configure claude reasoning")
+}
+
 func configureExternalSpecsRoot(t *testing.T, repoDir string, specsRoot string) {
 	t.Helper()
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), fmt.Sprintf("specs:\n  root: %q\n", specsRoot))
@@ -1141,6 +1148,7 @@ func TestRunImplementInteractiveInputPicksSpecThroughCollector(t *testing.T) {
 	mustWrite(t, filepath.Join(repoDir, "docs", "specs", "0002-broken-prd", "_prd.md"), "no frontmatter\n")
 	gitImplement(t, repoDir, "add", "docs/specs/0002-broken-prd/_prd.md")
 	gitImplement(t, repoDir, "commit", "-m", "add broken spec fixture")
+	configureImplementClaudeReasoning(t, repoDir)
 	runner := &implementFakeRunner{
 		gitRoot:      repoDir,
 		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
@@ -1348,6 +1356,7 @@ func TestRunImplementInteractiveInputRemembersAgentButNotSpecOrQA(t *testing.T) 
 		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
 		qaReport:     implementQAReport("pass"),
 	}
+	configureImplementClaudeReasoning(t, repoDir)
 	withImplementCollaborators(t, runner)
 	withInteractiveInput(t, func(_ context.Context, req roundtui.InputRequest) (roundtui.CommandValues, error) {
 		values := req.Values
@@ -2815,6 +2824,38 @@ func TestRunImplementPersistsEffectiveSelection(t *testing.T) {
 	}
 }
 
+func TestRunImplementAcceptsExplicitEmptyReasoningEffort(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Store model-managed selection"}})
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{
+		"implement",
+		"--spec", implementTestSlug,
+		"--agent", "codex",
+		"--model", "gpt-5.6-sol",
+		"--reasoning-effort=",
+		"--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected clean implement exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	run := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
+	if run.Model != "gpt-5.6-sol" || run.ReasoningEffort != "" {
+		t.Fatalf("expected model-managed implement selection persisted, got %#v", run)
+	}
+	if !strings.Contains(stderr.String(), "Agent Model: gpt-5.6-sol") ||
+		!strings.Contains(stderr.String(), "Default Reasoning Effort: model-managed") {
+		t.Fatalf("expected implement progress to show model-managed selection, got %q", stderr.String())
+	}
+}
+
 func TestRunImplementRejectsExplicitEmptySelectionOverrides(t *testing.T) {
 	tests := []struct {
 		name string
@@ -2825,11 +2866,6 @@ func TestRunImplementRejectsExplicitEmptySelectionOverrides(t *testing.T) {
 			name: "model",
 			args: []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--model=", "--no-input"},
 			want: "--model cannot be empty",
-		},
-		{
-			name: "reasoning",
-			args: []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--reasoning-effort=", "--no-input"},
-			want: "--reasoning-effort cannot be empty",
 		},
 	}
 	for _, tt := range tests {

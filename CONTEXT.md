@@ -81,7 +81,7 @@ The concrete Agent Model Roundfix selects for an ACP Runtime when the user suppl
 _Avoid_: Runtime default, automatic model, local Agent default
 
 **Default Reasoning Effort**:
-The runtime-specific reasoning level Roundfix assigns when the user supplies no override. It never inherits the runtime's local reasoning configuration.
+The runtime-specific reasoning level Roundfix assigns when the value is non-empty. An empty value is valid and means the Agent Model manages reasoning, so Roundfix assigns no reasoning option. It never inherits the runtime's local reasoning configuration.
 _Avoid_: Local Agent reasoning, automatic reasoning, reasoning hint
 
 **Model Catalog**:
