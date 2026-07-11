@@ -32,7 +32,7 @@ Each pattern names a principle, gives cross-framework evidence (Playwright, Test
 
 - Playwright: "Locators are the central piece of Playwright's auto-waiting and retry-ability… resilient to changes in the DOM." (https://playwright.dev/docs/best-practices)
 - Testing Library: priority list ranks `getByRole` first; falls back to label, text, test-id as last resort. (https://testing-library.com/docs/queries/about)
-- Cypress: _"Don't target elements based on CSS attributes such as: `id`, `class`, `tag`."_ Use `data-*` attributes as a stable test contract. (https://docs.cypress.io/app/core-concepts/best-practices)
+- Cypress: *"Don't target elements based on CSS attributes such as: `id`, `class`, `tag`."* Use `data-*` attributes as a stable test contract. (https://docs.cypress.io/app/core-concepts/best-practices)
 
 **Pseudo-code.**
 
@@ -68,10 +68,10 @@ click(query.bySelector(".btn.btn-large.primary"))
 
 **Evidence.**
 
-- Playwright: _"Web-first assertions auto-retry."_ `expect(locator).toBeVisible()` is correct; `expect(await locator.isVisible()).toBe(true)` is not. (https://playwright.dev/docs/best-practices)
+- Playwright: *"Web-first assertions auto-retry."* `expect(locator).toBeVisible()` is correct; `expect(await locator.isVisible()).toBe(true)` is not. (https://playwright.dev/docs/best-practices)
 - Testing Library: `findBy*` (Promise + retry) replaces `getBy*` when timing is involved. (https://testing-library.com/docs/queries/about)
 - Cypress: avoid `cy.wait(timeout)`; use `cy.intercept().as('x'); cy.wait('@x')` to wait on a network event. (https://bugbug.io/blog/testing-frameworks/cypress-best-practices)
-- Empirical data: _"developers thought they 'fixed' the flaky tests by increasing some time values… these time values actually have no effect"_ (https://trunk.io/blog/the-ultimate-guide-to-flaky-tests)
+- Empirical data: *"developers thought they 'fixed' the flaky tests by increasing some time values… these time values actually have no effect"* (https://trunk.io/blog/the-ultimate-guide-to-flaky-tests)
 
 **Pseudo-code.**
 
@@ -91,7 +91,7 @@ assert(query.byText("Welcome").exists)
 
 **Evidence.**
 
-- Playwright: _"Each test should be completely isolated… with its own local storage, session storage, data, cookies."_ (https://playwright.dev/docs/best-practices)
+- Playwright: *"Each test should be completely isolated… with its own local storage, session storage, data, cookies."* (https://playwright.dev/docs/best-practices)
 - Cypress: change `it` to `it.only` — if it still passes, the test is good; otherwise refactor into one larger test or use `beforeEach`. (https://docs.cypress.io/app/core-concepts/best-practices)
 - Go: parallel subtests demand captured loop variables and zero shared state. (https://go.dev/wiki/TableDrivenTests)
 
@@ -101,7 +101,7 @@ assert(query.byText("Welcome").exists)
 
 **Principle.** "After" hooks aren't guaranteed to run (refresh, crash, abort). Before-hooks always do. State always starts known-good.
 
-**Evidence.** Cypress: _"Clean up state before tests run… `afterEach` has no guarantee."_ (https://docs.cypress.io/app/core-concepts/best-practices)
+**Evidence.** Cypress: *"Clean up state before tests run… `afterEach` has no guarantee."* (https://docs.cypress.io/app/core-concepts/best-practices)
 
 **Pseudo-code.**
 
@@ -112,7 +112,7 @@ beforeEach(() => db.reset(); seed(); login());
 afterEach(() => db.reset());
 ```
 
-**When to break it.** External resource leaks (sockets, temp files) must still be released via teardown. But _state for the next test_ belongs in setup.
+**When to break it.** External resource leaks (sockets, temp files) must still be released via teardown. But *state for the next test* belongs in setup.
 
 ## Pattern 6 — Test observable behavior, not implementation
 
@@ -120,8 +120,8 @@ afterEach(() => db.reset());
 
 **Evidence.**
 
-- Playwright: _"Tests should typically only see / interact with the same rendered output the user sees."_ (https://playwright.dev/docs/best-practices)
-- React Testing Library: _"Behavior-driven, with a focus on not testing implementation details of a component."_ (https://github.com/patternfly/patternfly-react/wiki/React-Testing-Library-Basics,-Best-Practices,-and-Guidelines)
+- Playwright: *"Tests should typically only see / interact with the same rendered output the user sees."* (https://playwright.dev/docs/best-practices)
+- React Testing Library: *"Behavior-driven, with a focus on not testing implementation details of a component."* (https://github.com/patternfly/patternfly-react/wiki/React-Testing-Library-Basics,-Best-Practices,-and-Guidelines)
 
 **When to break it.** Pure-function unit tests legitimately assert on outputs. The rule applies at the component / integration layer.
 
@@ -129,7 +129,7 @@ afterEach(() => db.reset());
 
 **Principle.** "One assertion per test" is a unit-test myth that misapplies to integration and E2E. The real rule: each test exercises one behavior; multiple assertions describing that behavior are encouraged.
 
-**Evidence.** Cypress: _"Writing integration tests is not the same as unit tests… any single command could implicitly fail."_ Chain multiple assertions in one test. (https://docs.cypress.io/app/core-concepts/best-practices)
+**Evidence.** Cypress: *"Writing integration tests is not the same as unit tests… any single command could implicitly fail."* Chain multiple assertions in one test. (https://docs.cypress.io/app/core-concepts/best-practices)
 
 **Pseudo-code.**
 
@@ -150,8 +150,8 @@ test("submits the form and shows confirmation", () => {
 
 **Evidence.**
 
-- Go table-driven tests: names should _"describe input AND expected behavior"_ — `"applies bulk discount when quantity exceeds 10"`, not `"100 dollars"`. (https://go.dev/wiki/TableDrivenTests)
-- Pact: _"Describe the client's intent, not just the request type."_ BDD-style given/when/then recommended. (https://docs.pact.io/consumer)
+- Go table-driven tests: names should *"describe input AND expected behavior"* — `"applies bulk discount when quantity exceeds 10"`, not `"100 dollars"`. (https://go.dev/wiki/TableDrivenTests)
+- Pact: *"Describe the client's intent, not just the request type."* BDD-style given/when/then recommended. (https://docs.pact.io/consumer)
 
 **Template.** `"should <outcome> when <condition> given <state>"`
 
@@ -182,7 +182,7 @@ for case in cases:
 
 **Principle.** Real domain objects often have ~20 fields; tests care about 1–2. Literal duplication breeds breakage on schema changes and obscures which field actually matters.
 
-**Evidence.** Pact: _"Use factories or fixtures to create the models for all your tests."_ (https://docs.pact.io/consumer) Go: named-struct test cases + setup helpers with `t.Helper()` for cleanup pairs. (https://go.dev/wiki/TableDrivenTests)
+**Evidence.** Pact: *"Use factories or fixtures to create the models for all your tests."* (https://docs.pact.io/consumer) Go: named-struct test cases + setup helpers with `t.Helper()` for cleanup pairs. (https://go.dev/wiki/TableDrivenTests)
 
 **Pseudo-code (builder).**
 
@@ -202,9 +202,9 @@ user = aUser()
 **Evidence.**
 
 - Playwright: route-mock third-party endpoints; test against staging for the team's DB. (https://playwright.dev/docs/best-practices)
-- Cypress: _"Only test websites that you control."_ Use `cy.request()` against the team's server for setup; stub OAuth. (https://docs.cypress.io/app/core-concepts/best-practices)
+- Cypress: *"Only test websites that you control."* Use `cy.request()` against the team's server for setup; stub OAuth. (https://docs.cypress.io/app/core-concepts/best-practices)
 - Pact: contract tests at the consumer / provider seam, not whole-stack. (https://docs.pact.io/consumer)
-- Kent C. Dodds (Testing Trophy): _"Write tests. Not too many. Mostly integration."_ (https://kentcdodds.com/blog/the-testing-trophy-and-testing-classifications)
+- Kent C. Dodds (Testing Trophy): *"Write tests. Not too many. Mostly integration."* (https://kentcdodds.com/blog/the-testing-trophy-and-testing-classifications)
 
 **When to break it.** Never mock pure logic the team owns — call it directly.
 
@@ -220,7 +220,7 @@ user = aUser()
 
 ### Arrange–Act–Assert (AAA) / Given–When–Then (GWT)
 
-Three-phase canonical shape. Cypress: _"You might also see this phrased as Given/When/Then, or Arrange/Act/Assert. The idea is the same."_ (https://docs.cypress.io/app/end-to-end-testing/writing-your-first-end-to-end-test)
+Three-phase canonical shape. Cypress: *"You might also see this phrased as Given/When/Then, or Arrange/Act/Assert. The idea is the same."* (https://docs.cypress.io/app/end-to-end-testing/writing-your-first-end-to-end-test)
 
 ```
 test("...", () => {
@@ -248,13 +248,13 @@ For real end-to-end flows (checkout, signup), one test with many assertions acro
 
 ## Test data tradeoffs
 
-| Pattern              | When to use                                  | Risk                                    |
-| -------------------- | -------------------------------------------- | --------------------------------------- |
-| Literal struct       | Simple, 1–2 fields, single use               | Drift if schema changes                 |
-| Named fixture (JSON) | Larger payloads, shared across many tests    | Hides which fields matter; opaque diffs |
-| Factory function     | Default-valid object with overrides per test | Indirection requires reading factory    |
-| Builder              | Many optional fields, fluent override needed | Boilerplate to maintain                 |
-| Object Mother        | Named canonical scenarios (`anAdminUser`)    | Combinatorial blowup if not curated     |
+| Pattern               | When to use                                       | Risk                                        |
+| --------------------- | ------------------------------------------------- | ------------------------------------------- |
+| Literal struct        | Simple, 1–2 fields, single use                    | Drift if schema changes                     |
+| Named fixture (JSON)  | Larger payloads, shared across many tests         | Hides which fields matter; opaque diffs     |
+| Factory function      | Default-valid object with overrides per test      | Indirection requires reading factory        |
+| Builder               | Many optional fields, fluent override needed      | Boilerplate to maintain                     |
+| Object Mother         | Named canonical scenarios (`anAdminUser`)         | Combinatorial blowup if not curated         |
 
 Default to factory or builder for any domain entity; reserve literals for the field the test is actually about.
 
@@ -268,17 +268,17 @@ Default to factory or builder for any domain entity; reserve literals for the fi
 
 ## Sources
 
-- Playwright — _Best Practices_ — https://playwright.dev/docs/best-practices
-- Testing Library — _About Queries_ — https://testing-library.com/docs/queries/about
-- Cypress — _Best Practices_ — https://docs.cypress.io/app/core-concepts/best-practices
-- Cypress — _Writing your first end-to-end test_ — https://docs.cypress.io/app/end-to-end-testing/writing-your-first-end-to-end-test
-- PatternFly — _React Testing Library Basics_ — https://github.com/patternfly/patternfly-react/wiki/React-Testing-Library-Basics,-Best-Practices,-and-Guidelines
-- Go Wiki — _Table-Driven Tests_ — https://go.dev/wiki/TableDrivenTests
-- OneUptime — _Go Table-Driven Tests_ — https://oneuptime.com/blog/post/2026-01-07-go-table-driven-tests/view
-- Kyrre — _Pragmatic Guide to Playwright Testing_ — https://www.kyrre.dev/blog/the-pragmatic-guide-to-playwright-testing
-- Pact — _Consumer guide_ — https://docs.pact.io/consumer
-- BugBug — _Cypress Best Practices_ — https://bugbug.io/blog/testing-frameworks/cypress-best-practices
-- Harness — _Flaky Tests: The Quiet Killer_ — https://www.harness.io/blog/flaky-tests-the-quiet-killer-of-productivity-in-your-ci-pipeline
-- Martin Fowler — _Practical Test Pyramid_ — https://martinfowler.com/articles/practical-test-pyramid.html
-- Kent C. Dodds — _The Testing Trophy_ — https://kentcdodds.com/blog/the-testing-trophy-and-testing-classifications
-- Trunk.io — _The Ultimate Guide to Flaky Tests_ — https://trunk.io/blog/the-ultimate-guide-to-flaky-tests
+- Playwright — *Best Practices* — https://playwright.dev/docs/best-practices
+- Testing Library — *About Queries* — https://testing-library.com/docs/queries/about
+- Cypress — *Best Practices* — https://docs.cypress.io/app/core-concepts/best-practices
+- Cypress — *Writing your first end-to-end test* — https://docs.cypress.io/app/end-to-end-testing/writing-your-first-end-to-end-test
+- PatternFly — *React Testing Library Basics* — https://github.com/patternfly/patternfly-react/wiki/React-Testing-Library-Basics,-Best-Practices,-and-Guidelines
+- Go Wiki — *Table-Driven Tests* — https://go.dev/wiki/TableDrivenTests
+- OneUptime — *Go Table-Driven Tests* — https://oneuptime.com/blog/post/2026-01-07-go-table-driven-tests/view
+- Kyrre — *Pragmatic Guide to Playwright Testing* — https://www.kyrre.dev/blog/the-pragmatic-guide-to-playwright-testing
+- Pact — *Consumer guide* — https://docs.pact.io/consumer
+- BugBug — *Cypress Best Practices* — https://bugbug.io/blog/testing-frameworks/cypress-best-practices
+- Harness — *Flaky Tests: The Quiet Killer* — https://www.harness.io/blog/flaky-tests-the-quiet-killer-of-productivity-in-your-ci-pipeline
+- Martin Fowler — *Practical Test Pyramid* — https://martinfowler.com/articles/practical-test-pyramid.html
+- Kent C. Dodds — *The Testing Trophy* — https://kentcdodds.com/blog/the-testing-trophy-and-testing-classifications
+- Trunk.io — *The Ultimate Guide to Flaky Tests* — https://trunk.io/blog/the-ultimate-guide-to-flaky-tests
