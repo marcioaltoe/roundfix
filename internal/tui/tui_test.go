@@ -153,6 +153,43 @@ func TestCollectInputRecomputesSelectionDefaultsWhenAgentChanges(t *testing.T) {
 	}
 }
 
+func TestCollectInputAcceptsModelManagedReasoningDefault(t *testing.T) {
+	defaults := testSelectionDefaults()
+	defaults["codex"] = RuntimeSelectionDefaults{
+		Model:           "gpt-5.6-sol",
+		ReasoningEffort: "",
+		ModelCatalog: []ModelChoice{
+			{Label: "gpt-5.6-sol", Value: "gpt-5.6-sol"},
+		},
+		ReasoningChoices: []string{"low", "medium", "high", "xhigh"},
+	}
+	var output strings.Builder
+
+	values, err := CollectInput(context.Background(), InputRequest{
+		Command: "resolve",
+		Values: CommandValues{
+			PRNumber:    "123",
+			Agent:       "codex",
+			Round:       "all",
+			ArtifactDir: ".roundfix",
+		},
+		SelectionDefaults: defaults,
+	}, strings.NewReader("\n\n\n\n\n\n"), &output)
+
+	if err != nil {
+		t.Fatalf("expected model-managed reasoning to pass Interactive Input, got %v", err)
+	}
+	if values.Model != "gpt-5.6-sol" {
+		t.Fatalf("expected configured Agent Model, got %q", values.Model)
+	}
+	if values.ReasoningEffort != "" {
+		t.Fatalf("expected empty reasoning effort, got %q", values.ReasoningEffort)
+	}
+	if !strings.Contains(output.String(), "Empty Default Reasoning Effort means the Agent Model manages reasoning.") {
+		t.Fatalf("expected model-managed reasoning hint, got:\n%s", output.String())
+	}
+}
+
 func TestCollectInputSpecPickerSelectsListedSpec(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -368,12 +405,6 @@ func TestCollectInputOpenCodeRequiresTypedOrConfiguredSelectionValues(t *testing
 			input: "\n\n\n",
 			want:  "Agent Model",
 		},
-		{
-			name:     "missing reasoning",
-			defaults: RuntimeSelectionDefaults{Model: "opencode-model"},
-			input:    "\n\n\n\n",
-			want:     "Default Reasoning Effort",
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -397,6 +428,41 @@ func TestCollectInputOpenCodeRequiresTypedOrConfiguredSelectionValues(t *testing
 				t.Fatalf("expected no fabricated OpenCode catalog, got:\n%s", output.String())
 			}
 		})
+	}
+}
+
+func TestCollectInputOpenCodeAcceptsTypedModelWithModelManagedReasoning(t *testing.T) {
+	defaults := testSelectionDefaults()
+	defaults["opencode"] = RuntimeSelectionDefaults{}
+
+	values, err := CollectInput(context.Background(), InputRequest{
+		Command:           "implement",
+		Values:            CommandValues{Spec: "0001-widget-flow", Agent: "opencode"},
+		SelectionDefaults: defaults,
+	}, strings.NewReader("\n\nopencode-model\n\n\n"), io.Discard)
+
+	if err != nil {
+		t.Fatalf("expected typed model with empty reasoning to pass, got %v", err)
+	}
+	if values.Model != "opencode-model" {
+		t.Fatalf("expected typed Agent Model, got %q", values.Model)
+	}
+	if values.ReasoningEffort != "" {
+		t.Fatalf("expected model-managed reasoning, got %q", values.ReasoningEffort)
+	}
+}
+
+func TestValidateCollectedSelectionsKeepsAgentModelRequired(t *testing.T) {
+	err := validateCollectedSelections(InputRequest{
+		Command: "resolve",
+		Values:  CommandValues{Agent: "codex"},
+	}, CommandValues{Agent: "codex", ReasoningEffort: ""})
+
+	if err == nil {
+		t.Fatal("expected empty Agent Model to fail validation")
+	}
+	if !strings.Contains(err.Error(), "Agent Model") {
+		t.Fatalf("expected Agent Model validation error, got %v", err)
 	}
 }
 

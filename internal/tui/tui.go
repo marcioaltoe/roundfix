@@ -215,9 +215,6 @@ func CollectInput(ctx context.Context, req InputRequest, input io.Reader, output
 		}
 		if field == "reasoning-effort" {
 			line = pickReasoningChoice(line, req, values)
-			if strings.TrimSpace(line) == "" {
-				return CommandValues{}, requiredSelectionError(req, values, "Default Reasoning Effort", "reasoning_effort")
-			}
 		}
 		if line != "" {
 			if err := setValue(&values, field, line); err != nil {
@@ -366,14 +363,31 @@ func writeSelectionChoices(output io.Writer, req InputRequest, values CommandVal
 		}
 	case "reasoning-effort":
 		if len(selection.ReasoningChoices) == 0 {
-			writeTypedSelectionHint(output, "Default Reasoning Effort", runtime, current)
+			writeReasoningEffortHint(output, runtime, current)
 			return
 		}
 		fmt.Fprintf(output, "Default Reasoning Effort Choices (%s):\n", runtime)
 		for index, choice := range selection.ReasoningChoices {
 			fmt.Fprintf(output, "  %d. %s\n", index+1, choice)
 		}
+		writeModelManagedReasoningHint(output)
 	}
+}
+
+func writeReasoningEffortHint(output io.Writer, runtime string, current string) {
+	if runtime == "" {
+		runtime = "selected runtime"
+	}
+	if strings.TrimSpace(current) == "" {
+		fmt.Fprintf(output, "Default Reasoning Effort for %s: press Enter for model-managed reasoning or type a value.\n", runtime)
+		return
+	}
+	fmt.Fprintf(output, "Default Reasoning Effort for %s: press Enter for %s or type a value.\n", runtime, current)
+	writeModelManagedReasoningHint(output)
+}
+
+func writeModelManagedReasoningHint(output io.Writer) {
+	fmt.Fprintln(output, "Empty Default Reasoning Effort means the Agent Model manages reasoning.")
 }
 
 func writeTypedSelectionHint(output io.Writer, label string, runtime string, current string) {
@@ -429,9 +443,6 @@ func validateCollectedSelections(req InputRequest, values CommandValues) error {
 	}
 	if strings.TrimSpace(values.Model) == "" {
 		return requiredSelectionError(req, values, "Agent Model", "model")
-	}
-	if strings.TrimSpace(values.ReasoningEffort) == "" {
-		return requiredSelectionError(req, values, "Default Reasoning Effort", "reasoning_effort")
 	}
 	return nil
 }

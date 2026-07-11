@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0025-optional-reasoning-effort
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -28,20 +28,20 @@ empty effort. The slice is verifiable through synchronous TUI model tests.
 
 ## Subtasks
 
-- [ ] Allow the empty effort value through the prompt loop and
+- [x] Allow the empty effort value through the prompt loop and
       collected-selection validation.
-- [ ] Add the model-managed meaning to the reasoning field's prompt copy.
-- [ ] Update the Interactive Input tests for empty-effort acceptance and
+- [x] Add the model-managed meaning to the reasoning field's prompt copy.
+- [x] Update the Interactive Input tests for empty-effort acceptance and
       unchanged model requirement.
 
 ## Acceptance Criteria
 
-- [ ] Interactive Input completes with an empty Default Reasoning Effort when
+- [x] Interactive Input completes with an empty Default Reasoning Effort when
       the configured default is empty, and the resulting selection carries the
       empty value.
-- [ ] The reasoning field's copy names the model-managed meaning of an empty
+- [x] The reasoning field's copy names the model-managed meaning of an empty
       value.
-- [ ] An empty Agent Model still fails Interactive Input validation.
+- [x] An empty Agent Model still fails Interactive Input validation.
 
 ## Verification
 
@@ -55,3 +55,38 @@ empty effort. The slice is verifiable through synchronous TUI model tests.
 - `_prd.md` → Core Feature 3.
 - `_techspec.md` → System Architecture; Build Order 3.
 - ADR-0040.
+
+## Result
+
+Implemented Interactive Input support for model-managed reasoning:
+
+- Empty Default Reasoning Effort no longer fails the prompt loop or collected
+  selection validation.
+- The reasoning field now tells users that an empty Default Reasoning Effort
+  means the Agent Model manages reasoning.
+- Agent Model remains required for commands that start an Agent.
+
+Pre-change signal:
+
+- `rtk go test ./internal/tui ./internal/cli` failed after adding the task
+  tests: `TestCollectInputAcceptsModelManagedReasoningDefault` and
+  `TestCollectInputOpenCodeAcceptsTypedModelWithModelManagedReasoning`
+  returned the old required Default Reasoning Effort error.
+
+Verification:
+
+- `rtk go test ./internal/tui ./internal/cli`: passed
+  (`555 passed in 2 packages`).
+- `rtk make verify`: passed (`1050 passed in 19 packages`,
+  `Roundfix skill check passed`, and `go build` completed).
+
+Acceptance evidence:
+
+- `TestCollectInputAcceptsModelManagedReasoningDefault` verifies Interactive
+  Input completes with empty reasoning when the configured default is empty,
+  preserves the empty value, and prints the model-managed meaning.
+- `TestCollectInputOpenCodeAcceptsTypedModelWithModelManagedReasoning`
+  verifies typed Agent Model plus empty reasoning passes collected selection
+  validation.
+- `TestValidateCollectedSelectionsKeepsAgentModelRequired` verifies empty
+  Agent Model still fails validation.
