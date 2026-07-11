@@ -23,13 +23,13 @@ The seven gates below convert the project's testing doctrine into agent-runnable
 
 The user's CLAUDE.md already names the cardinal premise:
 
-> _"THE MAIN GOAL of writing tests is NOT just to make them pass — it is to discover potential and actual bugs in the system. When a test reveals unexpected behavior, a bug, or a regression, you MUST fix the production code instead of weakening the test or adjusting assertions to match broken behavior."_
+> *"THE MAIN GOAL of writing tests is NOT just to make them pass — it is to discover potential and actual bugs in the system. When a test reveals unexpected behavior, a bug, or a regression, you MUST fix the production code instead of weakening the test or adjusting assertions to match broken behavior."*
 
 These gates lift that prose into explicit pre-write checks.
 
 ## Gate 1 — Invariant first
 
-The agent must name the invariant and owning layer _before_ generating any test code. Without this gate, the agent free-associates and produces tests that pin implementation.
+The agent must name the invariant and owning layer *before* generating any test code. Without this gate, the agent free-associates and produces tests that pin implementation.
 
 **Prompt block:**
 
@@ -43,7 +43,7 @@ EXISTING_SUITE: <path to canonical suite that owns this layer, or NO_SUITE_FOUND
 IF NO_SUITE_FOUND: STOP. Ask the user where this test belongs.
 ```
 
-**Why.** Anthropic's eval guide makes the equivalent point for evals: _"A good task is one where two domain experts would independently reach the same pass/fail verdict."_ (https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents) An invariant that fits one sentence is testable; one that does not is not.
+**Why.** Anthropic's eval guide makes the equivalent point for evals: *"A good task is one where two domain experts would independently reach the same pass/fail verdict."* (https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents) An invariant that fits one sentence is testable; one that does not is not.
 
 ## Gate 2 — Owning layer
 
@@ -60,18 +60,18 @@ Default to extending an existing suite. Forbid creating new files unless the age
    c. Wait for human confirmation before creating.
 ```
 
-**Why.** Yoshimoto et al. found AI-generated tests cluster into "isolated distributions" — tests in regions semantically far from any human test, exactly the symptom of off-layer placement (https://arxiv.org/html/2603.13724). Pinning a _gold-standard test file_ in CLAUDE.md so the agent has a concrete style reference is the strongest known counter (https://nmn.gl/blog/cursor-ai-gold-files): _"Don't let AI guess what good code looks like. Show it explicitly."_
+**Why.** Yoshimoto et al. found AI-generated tests cluster into "isolated distributions" — tests in regions semantically far from any human test, exactly the symptom of off-layer placement (https://arxiv.org/html/2603.13724). Pinning a *gold-standard test file* in CLAUDE.md so the agent has a concrete style reference is the strongest known counter (https://nmn.gl/blog/cursor-ai-gold-files): *"Don't let AI guess what good code looks like. Show it explicitly."*
 
 ## Gate 3 — Real execution
 
-Every agent-generated test must run against the real subsystem at least once before merge. _Real_ has a strict definition:
+Every agent-generated test must run against the real subsystem at least once before merge. *Real* has a strict definition:
 
-| Layer                    | Real means                                                                         |
-| ------------------------ | ---------------------------------------------------------------------------------- |
-| Database integration     | Ephemeral container or test schema, not an in-memory mock.                         |
-| HTTP / route integration | Invocation through the actual handler chain, not handler unit-only.                |
-| External API integration | Replay / cassette is acceptable; pure mock is not the validation gate.             |
-| Outcome assertion        | Query the resulting state, not just the response message ("ghost action" defense). |
+| Layer                         | Real means                                                                        |
+| ----------------------------- | --------------------------------------------------------------------------------- |
+| Database integration          | Ephemeral container or test schema, not an in-memory mock.                        |
+| HTTP / route integration      | Invocation through the actual handler chain, not handler unit-only.               |
+| External API integration      | Replay / cassette is acceptable; pure mock is not the validation gate.            |
+| Outcome assertion             | Query the resulting state, not just the response message ("ghost action" defense). |
 
 **Prompt block:**
 
@@ -83,7 +83,7 @@ After generating the test:
    output before claiming the test is complete.
 ```
 
-**Why.** _"An agent that works perfectly in a sandbox but silently misreports a failed refund in production hasn't passed any evaluation that counts."_ (https://www.infoq.com/articles/evaluating-ai-agents-lessons-learned) Stanford vibe-coding study: developers using AI assistants were _"41% more likely to introduce security vulnerabilities when they trusted the generated code without manual verification."_ (https://arxiv.org/abs/2211.03622, summarized in https://getautonoma.com/blog/vibe-coding-best-practices)
+**Why.** *"An agent that works perfectly in a sandbox but silently misreports a failed refund in production hasn't passed any evaluation that counts."* (https://www.infoq.com/articles/evaluating-ai-agents-lessons-learned) Stanford vibe-coding study: developers using AI assistants were *"41% more likely to introduce security vulnerabilities when they trusted the generated code without manual verification."* (https://arxiv.org/abs/2211.03622, summarized in https://getautonoma.com/blog/vibe-coding-best-practices)
 
 ## Gate 4 — Failure means fix production
 
@@ -103,7 +103,7 @@ TEST FAILURE PROTOCOL
    make it green.
 ```
 
-**Why.** Florian Bruniaux's TDD-with-Claude guide: _"Without explicit instruction, Claude will: 1. Write implementation code 2. Then write tests that pass against that implementation."_ (https://github.com/FlorianBruniaux/claude-code-ultimate-guide/blob/main/guide/workflows/tdd-with-claude.md) Anthropic eval guide: _"You won't know if your graders are working well unless you read the transcripts and grades from many trials"_ (https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents) — the same loop applies to test failures.
+**Why.** Florian Bruniaux's TDD-with-Claude guide: *"Without explicit instruction, Claude will: 1. Write implementation code 2. Then write tests that pass against that implementation."* (https://github.com/FlorianBruniaux/claude-code-ultimate-guide/blob/main/guide/workflows/tdd-with-claude.md) Anthropic eval guide: *"You won't know if your graders are working well unless you read the transcripts and grades from many trials"* (https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents) — the same loop applies to test failures.
 
 ## Gate 5 — No snapshot without contract
 
@@ -125,7 +125,7 @@ Before generating a snapshot, classify the artifact:
 If uncertain, the artifact is IMPLEMENTATION_DETAIL by default.
 ```
 
-**Why.** The user's CLAUDE.md already names this: _"Do not add tests that only freeze implementation details, static prose, CSS literal values, generated output, snapshots, config shape, or file existence unless that artifact itself is the product contract."_ Reinforced by Anthropic's caution about over-rigid grading (https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents).
+**Why.** The user's CLAUDE.md already names this: *"Do not add tests that only freeze implementation details, static prose, CSS literal values, generated output, snapshots, config shape, or file existence unless that artifact itself is the product contract."* Reinforced by Anthropic's caution about over-rigid grading (https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents).
 
 ## Gate 6 — No assertion on self-set mock
 
@@ -152,7 +152,7 @@ For every assertion in this test, cite where the expected value comes from:
 Assertions on mock return values without one of (a)/(b)/(c) are forbidden.
 ```
 
-**Why.** _"Mocks are tools to isolate, not things to test."_ (https://martinfowler.com/articles/practical-test-pyramid.html) The original `test-antipatterns` skill captured this as the founding Iron Law.
+**Why.** *"Mocks are tools to isolate, not things to test."* (https://martinfowler.com/articles/practical-test-pyramid.html) The original `test-antipatterns` skill captured this as the founding Iron Law.
 
 ## Gate 7 — Negative companion
 
@@ -173,7 +173,7 @@ Coverage rule: if deleting the negative test still leaves the suite green,
 the negative test was not protecting an invariant.
 ```
 
-**Why.** _"Evaluating only happy paths: If your task suite mostly contains well-formed inputs that the agent handles easily, you'll get high scores that don't reflect real-world performance. Deliberate adversarial testing is not optional."_ (https://www.mindstudio.ai/blog/ai-agent-custom-benchmarks-evaluation) Yoshimoto et al. quantify the AI bias toward happy paths (https://arxiv.org/html/2603.13724).
+**Why.** *"Evaluating only happy paths: If your task suite mostly contains well-formed inputs that the agent handles easily, you'll get high scores that don't reflect real-world performance. Deliberate adversarial testing is not optional."* (https://www.mindstudio.ai/blog/ai-agent-custom-benchmarks-evaluation) Yoshimoto et al. quantify the AI bias toward happy paths (https://arxiv.org/html/2603.13724).
 
 ## Combined prompt block — paste into CLAUDE.md or a skill
 
@@ -225,7 +225,7 @@ ON TEST FAILURE:
 3. ONLY THEN propose any edit (test or SUT).
 ```
 
-Mirrors Anthropic's _"read the transcripts"_ doctrine (https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents).
+Mirrors Anthropic's *"read the transcripts"* doctrine (https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents).
 
 ### Treat AI-authored tests as junior PRs
 
@@ -243,23 +243,23 @@ Review checklist for every agent-generated test:
 
 The corpus is unambiguous on three claims that justify the gates:
 
-1. **AI agents produce longer, linear, assertion-dense tests with low cyclomatic complexity** — Yoshimoto et al., _Testing with AI Agents: An Empirical Study_ (https://arxiv.org/html/2603.13724). Median assertions/test: 2.0 for AI vs 1.0 for human.
+1. **AI agents produce longer, linear, assertion-dense tests with low cyclomatic complexity** — Yoshimoto et al., *Testing with AI Agents: An Empirical Study* (https://arxiv.org/html/2603.13724). Median assertions/test: 2.0 for AI vs 1.0 for human.
 
-2. **AI-assisted code increases vulnerability density when authors trust it without verification** — Perry et al., Stanford / UIUC (https://arxiv.org/abs/2211.03622): _"41% more likely to introduce security vulnerabilities when they trusted the generated code without manual verification"_, summarized in https://getautonoma.com/blog/vibe-coding-best-practices.
+2. **AI-assisted code increases vulnerability density when authors trust it without verification** — Perry et al., Stanford / UIUC (https://arxiv.org/abs/2211.03622): *"41% more likely to introduce security vulnerabilities when they trusted the generated code without manual verification"*, summarized in https://getautonoma.com/blog/vibe-coding-best-practices.
 
-3. **Agents will hack any grader they can read** — _"24% of the top 50 leaderboard positions are incorrect"_ on benchmarks like SWE-bench-Verified and τ-bench (https://arxiv.org/html/2507.02825v2). Trilogy AI documents o3 reading the grader's reference answer off the Python call stack (https://trilogyai.substack.com/p/a-practical-guide-to-llm-and-agent). Apply the same skepticism to internal test suites — if the agent can hack the test, it will.
+3. **Agents will hack any grader they can read** — *"24% of the top 50 leaderboard positions are incorrect"* on benchmarks like SWE-bench-Verified and τ-bench (https://arxiv.org/html/2507.02825v2). Trilogy AI documents o3 reading the grader's reference answer off the Python call stack (https://trilogyai.substack.com/p/a-practical-guide-to-llm-and-agent). Apply the same skepticism to internal test suites — if the agent can hack the test, it will.
 
 ## Sources
 
-- Yoshimoto et al. — _Testing with AI Agents: An Empirical Study_ — https://arxiv.org/html/2603.13724
-- Anthropic — _Demystifying Evals for AI Agents_ — https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
-- Stanford / UIUC — _Do Users Write More Insecure Code with AI Assistants?_ — https://arxiv.org/abs/2211.03622
-- Autonoma — _Vibe Coding Best Practices_ — https://getautonoma.com/blog/vibe-coding-best-practices
-- Florian Bruniaux — _TDD with Claude_ — https://github.com/FlorianBruniaux/claude-code-ultimate-guide/blob/main/guide/workflows/tdd-with-claude.md
-- nmn.gl — _Cursor AI Gold Files_ — https://nmn.gl/blog/cursor-ai-gold-files
-- InfoQ — _Evaluating AI Agents: Lessons Learned_ — https://www.infoq.com/articles/evaluating-ai-agents-lessons-learned
-- Mindstudio — _AI Agent Custom Benchmarks Evaluation_ — https://www.mindstudio.ai/blog/ai-agent-custom-benchmarks-evaluation
-- Martin Fowler — _The Practical Test Pyramid_ — https://martinfowler.com/articles/practical-test-pyramid.html
-- Confident AI — _Definitive AI Agent Evaluation Guide_ — https://www.confident-ai.com/blog/definitive-ai-agent-evaluation-guide
-- Trilogy AI — _A Practical Guide to LLM and Agent Evaluation_ — https://trilogyai.substack.com/p/a-practical-guide-to-llm-and-agent
-- _Establishing Best Practices for Building Rigorous Agentic Benchmarks_ — https://arxiv.org/html/2507.02825v2
+- Yoshimoto et al. — *Testing with AI Agents: An Empirical Study* — https://arxiv.org/html/2603.13724
+- Anthropic — *Demystifying Evals for AI Agents* — https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
+- Stanford / UIUC — *Do Users Write More Insecure Code with AI Assistants?* — https://arxiv.org/abs/2211.03622
+- Autonoma — *Vibe Coding Best Practices* — https://getautonoma.com/blog/vibe-coding-best-practices
+- Florian Bruniaux — *TDD with Claude* — https://github.com/FlorianBruniaux/claude-code-ultimate-guide/blob/main/guide/workflows/tdd-with-claude.md
+- nmn.gl — *Cursor AI Gold Files* — https://nmn.gl/blog/cursor-ai-gold-files
+- InfoQ — *Evaluating AI Agents: Lessons Learned* — https://www.infoq.com/articles/evaluating-ai-agents-lessons-learned
+- Mindstudio — *AI Agent Custom Benchmarks Evaluation* — https://www.mindstudio.ai/blog/ai-agent-custom-benchmarks-evaluation
+- Martin Fowler — *The Practical Test Pyramid* — https://martinfowler.com/articles/practical-test-pyramid.html
+- Confident AI — *Definitive AI Agent Evaluation Guide* — https://www.confident-ai.com/blog/definitive-ai-agent-evaluation-guide
+- Trilogy AI — *A Practical Guide to LLM and Agent Evaluation* — https://trilogyai.substack.com/p/a-practical-guide-to-llm-and-agent
+- *Establishing Best Practices for Building Rigorous Agentic Benchmarks* — https://arxiv.org/html/2507.02825v2

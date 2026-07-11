@@ -194,6 +194,44 @@ func TaskRefFor(run Ref, taskID string) (TaskRef, error) {
 	}, nil
 }
 
+// PriorChangedFiles returns repository-relative paths changed between the
+// Run's persisted initial HEAD and the current worktree HEAD.
+func PriorChangedFiles(ctx context.Context, workDir string, initialHead string) ([]string, error) {
+	workDir = strings.TrimSpace(workDir)
+	if workDir == "" {
+		return nil, errors.New("resolve prior changed files: worktree root is required")
+	}
+	initialHead = strings.TrimSpace(initialHead)
+	if initialHead == "" {
+		return nil, errors.New("resolve prior changed files: initial HEAD is required")
+	}
+	runner := execGitRunner{}
+	output, err := runner.Run(ctx, workDir, "diff", "--name-only", initialHead+"..HEAD", "--")
+	if err != nil {
+		return nil, fmt.Errorf("resolve prior changed files: %w", err)
+	}
+	seen := map[string]bool{}
+	var paths []string
+	for _, line := range strings.Split(output, "\n") {
+		path := strings.TrimSpace(line)
+		if path == "" {
+			continue
+		}
+		clean := filepath.Clean(path)
+		if clean == "." || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) || filepath.IsAbs(clean) {
+			return nil, fmt.Errorf("resolve prior changed files: git returned invalid path %q", path)
+		}
+		clean = filepath.ToSlash(clean)
+		if seen[clean] {
+			continue
+		}
+		seen[clean] = true
+		paths = append(paths, clean)
+	}
+	sort.Strings(paths)
+	return paths, nil
+}
+
 func Integrate(ctx context.Context, ref Ref, targetBranch, runSHA string) (IntegrationResult, error) {
 	if err := validateRef(ref); err != nil {
 		return IntegrationResult{}, err

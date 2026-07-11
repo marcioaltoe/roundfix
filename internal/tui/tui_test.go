@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"roundfix/internal/agent"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
@@ -793,11 +794,40 @@ func TestRunTimelineRendersToolEventsFromRawPayloads(t *testing.T) {
 	})
 
 	lines := strings.Join(timeline.Lines(), "\n")
-	if !strings.Contains(lines, "[TOOL] rtk go test (call_1)") {
+	if !strings.Contains(lines, "[TOOL] rtk go test · pending") {
 		t.Fatalf("expected tool marker rendered from raw payload, got %q", lines)
 	}
 	if !strings.Contains(lines, "SESSION COMPLETED") {
 		t.Fatalf("expected session status rendered, got %q", lines)
+	}
+}
+
+func TestRunTimelineUsesConsoleTextForCompactReadEditSummaries(t *testing.T) {
+	payload := []byte(`{"sessionId":"s","update":{"sessionUpdate":"tool_call_update","toolCallId":"edit_1","kind":"edit","title":"edit","status":"completed","locations":[{"path":"internal/tui/timeline.go"}],"content":[{"type":"diff","path":"internal/tui/timeline.go","oldText":"old line 1\nold line 2\n","newText":"new line 1\n"}]}}`)
+	update, ok := agent.StreamUpdateFromEvent(runevent.RunEvent{
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentToolUpdated,
+		Payload: payload,
+	})
+	if !ok {
+		t.Fatal("expected compact edit payload to decode")
+	}
+	expected := strings.TrimSpace(agent.ConsoleText(update))
+	timeline := NewRunTimeline(20)
+	timeline.Append(runevent.RunEvent{
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentToolUpdated,
+		Payload: payload,
+	})
+
+	lines := timeline.Lines()
+	if len(lines) != 1 || lines[0] != expected {
+		t.Fatalf("expected timeline to use ConsoleText wording %q, got %v", expected, lines)
+	}
+	for _, hidden := range []string{"old line", "new line", "sessionUpdate", "toolCallId"} {
+		if strings.Contains(strings.Join(lines, "\n"), hidden) {
+			t.Fatalf("expected compact timeline to omit %q, got %v", hidden, lines)
+		}
 	}
 }
 

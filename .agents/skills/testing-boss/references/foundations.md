@@ -36,12 +36,12 @@ Force a one-sentence invariant before any test code. Example invariants:
 
 A fuzzy invariant ("the form works", "the discount applies correctly") guarantees a fuzzy test. The skill rejects test creation until the invariant fits one sentence with concrete nouns.
 
-The user's project doctrine (CLAUDE.md, MOST*CRITICAL section) requires this explicitly: *"Before adding, moving, or expanding any test, identify the invariant, the owning layer, and the existing canonical suite for that layer."\_
+The user's project doctrine (CLAUDE.md, MOST_CRITICAL section) requires this explicitly: *"Before adding, moving, or expanding any test, identify the invariant, the owning layer, and the existing canonical suite for that layer."*
 
 ## Principle 2 — Push every test to the lowest layer that can detect the failure
 
 > "If a higher-level test spots an error and there's no lower-level test failing, you need to write a lower-level test."
-> — Martin Fowler, _The Practical Test Pyramid_ (https://martinfowler.com/articles/practical-test-pyramid.html)
+> — Martin Fowler, *The Practical Test Pyramid* (https://martinfowler.com/articles/practical-test-pyramid.html)
 
 > "Push your tests as far down the test pyramid as you can."
 > — same source
@@ -49,43 +49,43 @@ The user's project doctrine (CLAUDE.md, MOST*CRITICAL section) requires this exp
 > "I delete high-level tests that are already covered on a lower level… Beware of the sunk cost fallacy and hit the delete key."
 > — same source
 
-Operational rule: when a higher-layer test fires _and_ no lower-layer test catches the same defect, that is a placement bug. Write the lower-layer test, verify it fails for the same reason, and delete the higher-layer test unless it covers additional behavior the lower layer cannot reach (e.g., wiring across processes).
+Operational rule: when a higher-layer test fires *and* no lower-layer test catches the same defect, that is a placement bug. Write the lower-layer test, verify it fails for the same reason, and delete the higher-layer test unless it covers additional behavior the lower layer cannot reach (e.g., wiring across processes).
 
 ## Principle 3 — Risk × likelihood drives effort
 
 > "Risk-based testing helps teams work smarter by testing what's most likely to break and cause serious problems."
-> — Tricentis, _A detailed guide to risk-based testing_ (https://www.tricentis.com/learn/risk-based-testing)
+> — Tricentis, *A detailed guide to risk-based testing* (https://www.tricentis.com/learn/risk-based-testing)
 
 > "Not all features in a software system are equally important or risky… Prioritization ensures you're testing what's most likely to fail and what would cause the most damage if anything fails."
 > — same source
 
-Score every candidate test on two axes: probability of bug × blast radius if shipped. Below a threshold, skip or absorb into a broader smoke test. Above it, the test must live at the _narrowest_ owning layer. Some code legitimately has no tests — the highest-leverage placement decision is sometimes "do not write this test."
+Score every candidate test on two axes: probability of bug × blast radius if shipped. Below a threshold, skip or absorb into a broader smoke test. Above it, the test must live at the *narrowest* owning layer. Some code legitimately has no tests — the highest-leverage placement decision is sometimes "do not write this test."
 
 ## Principle 4 — Test observable behavior, not implementation
 
 > "Don't reflect your internal code structure within your unit tests. Test for observable behaviour instead."
-> — Fowler, _The Practical Test Pyramid_ (https://martinfowler.com/articles/practical-test-pyramid.html)
+> — Fowler, *The Practical Test Pyramid* (https://martinfowler.com/articles/practical-test-pyramid.html)
 
 > "Private methods should generally be considered an implementation detail. That's why you shouldn't even have the urge to test them."
 > — same source
 
 > "Implementation-focused: `expect(page.locator('#error-message.visible')).toBeVisible();` ✅ User-focused: `expect(page.getByText('Please enter a valid email')).toBeVisible();`"
-> — Kyrre, _Pragmatic Guide to Playwright Testing_ (https://www.kyrre.dev/blog/the-pragmatic-guide-to-playwright-testing)
+> — Kyrre, *Pragmatic Guide to Playwright Testing* (https://www.kyrre.dev/blog/the-pragmatic-guide-to-playwright-testing)
 
 Reject any test whose name reads "calls method X" or "passes Y to internal helper". Replace with "given input → produces outcome / observable state change".
 
 ## Principle 5 — Coverage is a flashlight, not a target
 
 > "A high code coverage percentage isn't an indicator of success, and it doesn't imply high code quality."
-> — Microsoft, _Unit testing best practices for .NET_ (https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices)
+> — Microsoft, *Unit testing best practices for .NET* (https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices)
 
 > "Code coverage tells you what code was executed, but not how well your tests can actually detect problems."
-> — testRigor, _Understanding Mutation Testing_ (https://testrigor.com/blog/understanding-mutation-testing-a-comprehensive-guide)
+> — testRigor, *Understanding Mutation Testing* (https://testrigor.com/blog/understanding-mutation-testing-a-comprehensive-guide)
 
 > "No test is inherently useful just because it exists."
-> — Artem Zakharchenko, _The True Purpose of Testing_ (https://www.epicweb.dev/the-true-purpose-of-testing)
+> — Artem Zakharchenko, *The True Purpose of Testing* (https://www.epicweb.dev/the-true-purpose-of-testing)
 
-Use coverage to _find dark code_, not to score quality. For each uncovered region, decide "test or delete" — do not pad with assertion-free tests. Use mutation testing on the critical modules to measure suite _strength_ rather than presence:
+Use coverage to *find dark code*, not to score quality. For each uncovered region, decide "test or delete" — do not pad with assertion-free tests. Use mutation testing on the critical modules to measure suite *strength* rather than presence:
 
 ```
 mutation_score = killed_mutants / (killed + surviving - equivalent)
@@ -95,7 +95,7 @@ gate := mutation_score(critical_modules) >= 80
 ## Principle 6 — Declare the test boundary explicitly
 
 > "Automated tests rarely involve your entire system… There's often a place where you draw the line. The boundary."
-> — Artem Zakharchenko, _What is a test boundary_ (https://www.epicweb.dev/what-is-a-test-boundary)
+> — Artem Zakharchenko, *What is a test boundary* (https://www.epicweb.dev/what-is-a-test-boundary)
 
 Each test file (or `describe` block) names what is inside the boundary and what is outside. Implicit boundaries breed duplicate or contradictory tests across layers. The template:
 
@@ -111,30 +111,30 @@ This single comment block resolves about 80% of "why does this test cover that?"
 ## Principle 7 — Micro and macro, never only one
 
 > "Most teams focus only on macro-level testing, which usually results in multiple issues in production… when item prices in production are negative or show an unexpected number of decimals, order creation breaks."
-> — Thoughtworks, _Seven guiding principles in testing_ (https://www.thoughtworks.com/en-us/insights/blog/testing/seven-guiding-principles-testing)
+> — Thoughtworks, *Seven guiding principles in testing* (https://www.thoughtworks.com/en-us/insights/blog/testing/seven-guiding-principles-testing)
 
 Every feature ships with at least one micro test (a property / boundary / edge case) **and** one macro test (a real user flow). If only one feels affordable, the invariants are not yet sharp enough.
 
 ## The pyramid vs trophy debate is mostly semantic noise
 
 > "People love debating what percentage of which type of tests to write, but it's a distraction. Nearly zero teams write expressive tests that establish clear boundaries, run quickly & reliably, and only fail for useful reasons. Focus on that instead."
-> — Martin Fowler, _On the Diverse And Fantastical Shapes of Testing_ (https://martinfowler.com/articles/2021-test-shapes.html)
+> — Martin Fowler, *On the Diverse And Fantastical Shapes of Testing* (https://martinfowler.com/articles/2021-test-shapes.html)
 
 > "Honeycomb advocates' 'unit test' is what I'd call 'solitary' and their 'integration test' is what I'd call 'sociable' — so the pyramid-vs-honeycomb argument is largely moot."
 > — same source
 
 > "The more your tests resemble the way your software is used, the more confidence they can give you."
-> — Kent C. Dodds, _The Testing Trophy and Testing Classifications_ (https://kentcdodds.com/blog/the-testing-trophy-and-testing-classifications)
+> — Kent C. Dodds, *The Testing Trophy and Testing Classifications* (https://kentcdodds.com/blog/the-testing-trophy-and-testing-classifications)
 
-The trophy is the pyramid with the word "unit" redefined to mean _sociable_ (collaborators left in). Both shapes are healthy when:
+The trophy is the pyramid with the word "unit" redefined to mean *sociable* (collaborators left in). Both shapes are healthy when:
 
 - Lower layers are fast and isolated.
 - Higher layers prove integrations the lower layers cannot.
 - No invariant is duplicated across layers without an explicit reason.
 
-Argue about shape _only_ after the boundary contract for each suite is named. Otherwise the debate hides the real placement bugs.
+Argue about shape *only* after the boundary contract for each suite is named. Otherwise the debate hides the real placement bugs.
 
-Important caveat from Dodds himself: he restricts the Trophy framing to _single-codebase or monolith_ views. Do not invoke "trophy" to justify cross-microservice integration testing.
+Important caveat from Dodds himself: he restricts the Trophy framing to *single-codebase or monolith* views. Do not invoke "trophy" to justify cross-microservice integration testing.
 
 ## Placement decision tree
 
@@ -173,19 +173,19 @@ The sunk-cost fallacy is real in test suites. A redundant or implementation-coup
 - The test fails on every refactor unrelated to its invariant, OR
 - The test is permanently skipped or quarantined without an owner,
 
-delete it. Fowler is explicit: _"Beware of the sunk cost fallacy and hit the delete key."_ (https://martinfowler.com/articles/practical-test-pyramid.html)
+delete it. Fowler is explicit: *"Beware of the sunk cost fallacy and hit the delete key."* (https://martinfowler.com/articles/practical-test-pyramid.html)
 
 ## Sources
 
-- Martin Fowler — _The Practical Test Pyramid_ — https://martinfowler.com/articles/practical-test-pyramid.html
-- Martin Fowler — _On the Diverse And Fantastical Shapes of Testing_ — https://martinfowler.com/articles/2021-test-shapes.html
-- Kent C. Dodds — _The Testing Trophy and Testing Classifications_ — https://kentcdodds.com/blog/the-testing-trophy-and-testing-classifications
-- Microsoft — _Unit testing best practices for .NET_ — https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices
-- Tricentis — _A detailed guide to risk-based testing_ — https://www.tricentis.com/learn/risk-based-testing
-- Thoughtworks — _Seven guiding principles in testing_ — https://www.thoughtworks.com/en-us/insights/blog/testing/seven-guiding-principles-testing
-- Artem Zakharchenko — _The True Purpose of Testing_ — https://www.epicweb.dev/the-true-purpose-of-testing
-- Artem Zakharchenko — _What is a test boundary_ — https://www.epicweb.dev/what-is-a-test-boundary
-- testRigor — _Understanding Mutation Testing_ — https://testrigor.com/blog/understanding-mutation-testing-a-comprehensive-guide
-- Kyrre — _Pragmatic Guide to Playwright Testing_ — https://www.kyrre.dev/blog/the-pragmatic-guide-to-playwright-testing
-- LexingtonSoft — _Code Coverage Best Practices_ (PDF) — https://www.verifysoft.com/Code-Coverage-Best-Practices-LexingtonSoft-white-paper.pdf
-- QASphere — _Exploratory Testing: A Practical Guide_ — https://qasphere.com/blog/exploratory-testing-guide
+- Martin Fowler — *The Practical Test Pyramid* — https://martinfowler.com/articles/practical-test-pyramid.html
+- Martin Fowler — *On the Diverse And Fantastical Shapes of Testing* — https://martinfowler.com/articles/2021-test-shapes.html
+- Kent C. Dodds — *The Testing Trophy and Testing Classifications* — https://kentcdodds.com/blog/the-testing-trophy-and-testing-classifications
+- Microsoft — *Unit testing best practices for .NET* — https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices
+- Tricentis — *A detailed guide to risk-based testing* — https://www.tricentis.com/learn/risk-based-testing
+- Thoughtworks — *Seven guiding principles in testing* — https://www.thoughtworks.com/en-us/insights/blog/testing/seven-guiding-principles-testing
+- Artem Zakharchenko — *The True Purpose of Testing* — https://www.epicweb.dev/the-true-purpose-of-testing
+- Artem Zakharchenko — *What is a test boundary* — https://www.epicweb.dev/what-is-a-test-boundary
+- testRigor — *Understanding Mutation Testing* — https://testrigor.com/blog/understanding-mutation-testing-a-comprehensive-guide
+- Kyrre — *Pragmatic Guide to Playwright Testing* — https://www.kyrre.dev/blog/the-pragmatic-guide-to-playwright-testing
+- LexingtonSoft — *Code Coverage Best Practices* (PDF) — https://www.verifysoft.com/Code-Coverage-Best-Practices-LexingtonSoft-white-paper.pdf
+- QASphere — *Exploratory Testing: A Practical Guide* — https://qasphere.com/blog/exploratory-testing-guide

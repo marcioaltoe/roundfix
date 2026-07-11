@@ -17,7 +17,7 @@ interface DataPayload {
   items: Array<{ name: string; id: string }>;
 }
 function processData(data: DataPayload) {
-  return data.items.map(item => item.name);
+  return data.items.map((item) => item.name);
 }
 ```
 
@@ -44,11 +44,11 @@ const config: AppConfig = {
 
 ```typescript
 // WORKAROUND
-const user = users.find(u => u.id === id)!;
+const user = users.find((u) => u.id === id)!;
 // Crashes if user not found
 
 // PROPER FIX
-const user = users.find(u => u.id === id);
+const user = users.find((u) => u.id === id);
 if (!user) {
   throw new UserNotFoundError(id);
 }

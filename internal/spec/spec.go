@@ -64,7 +64,23 @@ type Task struct {
 	Needs        []string
 	Status       Status
 	Type         string
+	Context      []TaskContextRef
 	Verification []string
+}
+
+// ContextKind classifies a Task-authored context path.
+type ContextKind string
+
+const (
+	ContextKindInstruction ContextKind = "instruction"
+	ContextKindInterface   ContextKind = "interface"
+)
+
+// TaskContextRef is one labeled repository-relative path from a Task's
+// optional ## Context section.
+type TaskContextRef struct {
+	Kind ContextKind
+	Path string
 }
 
 // Graph is a validated Task Graph with Tasks in deterministic topological
@@ -345,6 +361,7 @@ func loadTask(dir string, slug string, node manifestNode) (Task, error) {
 		Needs:        append([]string(nil), node.Needs...),
 		Status:       Status(document.Frontmatter.Status),
 		Type:         document.Frontmatter.Type,
+		Context:      append([]TaskContextRef(nil), document.Context...),
 		Verification: document.Verification,
 	}, nil
 }

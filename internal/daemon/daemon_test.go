@@ -1,8 +1,8 @@
 package daemon
 
 import (
-	"bytes"
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -10,38 +10,120 @@ import (
 	"testing"
 )
 
-func TestExecVerifierRunsConfiguredCommand(t *testing.T) {
-	var stream bytes.Buffer
-	err := ExecVerifier{}.Verify(context.Background(), VerifyRequest{
-		WorkDir: t.TempDir(),
-		Command: "printf verified",
-		Stream:  &stream,
+func TestExecVerifierRemovesSuccessfulOutputArtifact(t *testing.T) {
+	outputPath := filepath.Join(t.TempDir(), "runs", "run-test", "verification", "batch-001-attempt-1.log")
+	result, err := ExecVerifier{}.Verify(context.Background(), VerifyRequest{
+		WorkDir:    t.TempDir(),
+		Command:    "printf verified",
+		OutputPath: outputPath,
 	})
 
 	if err != nil {
 		t.Fatalf("verify command: %v", err)
 	}
-	if stream.String() != "verified" {
-		t.Fatalf("expected verification output, got %q", stream.String())
+	if result.OutputPath != outputPath {
+		t.Fatalf("expected result output path %q, got %q", outputPath, result.OutputPath)
+	}
+	if _, statErr := os.Stat(outputPath); !errors.Is(statErr, os.ErrNotExist) {
+		t.Fatalf("expected successful verification artifact removed, stat err=%v", statErr)
 	}
 }
 
-func TestExecVerifierReportsFailedCommand(t *testing.T) {
-	var stream bytes.Buffer
-	err := ExecVerifier{}.Verify(context.Background(), VerifyRequest{
-		WorkDir: t.TempDir(),
-		Command: "printf broken; exit 7",
-		Stream:  &stream,
+func TestExecVerifierRetainsFailedOutputAsTypedCommandError(t *testing.T) {
+	outputPath := filepath.Join(t.TempDir(), "runs", "run-test", "verification", "batch-001-attempt-1.log")
+	command := `printf '\163\164\144\157\165\164'; printf '\163\164\144\145\162\162' >&2; exit 7`
+	_, err := ExecVerifier{}.Verify(context.Background(), VerifyRequest{
+		WorkDir:    t.TempDir(),
+		Command:    command,
+		OutputPath: outputPath,
 	})
 
 	if err == nil {
 		t.Fatal("expected verification failure")
 	}
-	if !strings.Contains(err.Error(), "verification command") {
-		t.Fatalf("expected verification error context, got %v", err)
+	var commandErr *VerificationCommandError
+	if !errors.As(err, &commandErr) {
+		t.Fatalf("expected typed command failure, got %T %[1]v", err)
 	}
-	if stream.String() != "broken" {
-		t.Fatalf("expected failed verification output, got %q", stream.String())
+	if commandErr.Command != command || commandErr.OutputPath != outputPath {
+		t.Fatalf("unexpected typed error metadata: %+v", commandErr)
+	}
+	content, readErr := os.ReadFile(outputPath)
+	if readErr != nil {
+		t.Fatalf("read failed verification artifact: %v", readErr)
+	}
+	if string(content) != "stdoutstderr" {
+		t.Fatalf("expected combined output artifact, got %q", string(content))
+	}
+	if strings.Contains(err.Error(), "stdout") || strings.Contains(err.Error(), "stderr") {
+		t.Fatalf("expected error to omit output body, got %v", err)
+	}
+}
+
+func TestExecVerifierClassifiesCancellationAsInfrastructureError(t *testing.T) {
+	outputPath := filepath.Join(t.TempDir(), "verification.log")
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := ExecVerifier{}.Verify(ctx, VerifyRequest{
+		WorkDir:    t.TempDir(),
+		Command:    "printf canceled",
+		OutputPath: outputPath,
+	})
+
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context cancellation, got %v", err)
+	}
+	var commandErr *VerificationCommandError
+	if errors.As(err, &commandErr) {
+		t.Fatalf("expected cancellation to stay infrastructure error, got %+v", commandErr)
+	}
+	if _, statErr := os.Stat(outputPath); !errors.Is(statErr, os.ErrNotExist) {
+		t.Fatalf("expected no retained artifact on cancellation, stat err=%v", statErr)
+	}
+}
+
+func TestExecVerifierClassifiesProcessStartFailureAsInfrastructureError(t *testing.T) {
+	outputPath := filepath.Join(t.TempDir(), "verification.log")
+	_, err := ExecVerifier{}.Verify(context.Background(), VerifyRequest{
+		WorkDir:    filepath.Join(t.TempDir(), "missing"),
+		Command:    "printf never-started",
+		OutputPath: outputPath,
+	})
+
+	if err == nil {
+		t.Fatal("expected process-start failure")
+	}
+	var commandErr *VerificationCommandError
+	if errors.As(err, &commandErr) {
+		t.Fatalf("expected process-start failure to stay infrastructure error, got %+v", commandErr)
+	}
+	if _, statErr := os.Stat(outputPath); !errors.Is(statErr, os.ErrNotExist) {
+		t.Fatalf("expected no retained artifact on process-start failure, stat err=%v", statErr)
+	}
+}
+
+func TestExecVerifierClassifiesArtifactRetentionFailureAsInfrastructureError(t *testing.T) {
+	outputPath := filepath.Join(t.TempDir(), "verification.log")
+	if err := os.MkdirAll(outputPath, 0o755); err != nil {
+		t.Fatalf("create conflicting output path: %v", err)
+	}
+
+	_, err := ExecVerifier{}.Verify(context.Background(), VerifyRequest{
+		WorkDir:    t.TempDir(),
+		Command:    "printf broken; exit 7",
+		OutputPath: outputPath,
+	})
+
+	if err == nil {
+		t.Fatal("expected artifact retention failure")
+	}
+	var commandErr *VerificationCommandError
+	if errors.As(err, &commandErr) {
+		t.Fatalf("expected artifact failure to stay infrastructure error, got %+v", commandErr)
+	}
+	if !strings.Contains(err.Error(), "retain failed verification diagnostics") {
+		t.Fatalf("expected artifact retention context, got %v", err)
 	}
 }
 

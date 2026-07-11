@@ -56,6 +56,26 @@ const (
 	KindDaemonQA   Kind = "daemon.qa"
 )
 
+// VerificationPhase names the daemon.verification payload phase. The
+// aggregate verdict is carried by the verdict phase only.
+type VerificationPhase string
+
+const (
+	VerificationPhaseStarted       VerificationPhase = "started"
+	VerificationPhaseCommandPassed VerificationPhase = "command-passed"
+	VerificationPhaseFailed        VerificationPhase = "failed"
+	VerificationPhaseVerdict       VerificationPhase = "verdict"
+)
+
+// VerificationVerdict names the aggregate outcome of one Verification
+// attempt.
+type VerificationVerdict string
+
+const (
+	VerificationVerdictPassed VerificationVerdict = "passed"
+	VerificationVerdictFailed VerificationVerdict = "failed"
+)
+
 // IsDaemonKind reports whether the kind belongs to the known daemon
 // vocabulary. Readers render these from the bounded summary; unknown kinds
 // stay skippable.
