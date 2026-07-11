@@ -231,14 +231,14 @@ func cleanTaskContextPath(path string) (string, error) {
 	if strings.Contains(path, `\`) {
 		return "", errors.New("path must use slash separators")
 	}
-	clean := filepath.Clean(path)
-	if clean == "." || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+	clean := filepath.ToSlash(filepath.Clean(path))
+	if clean == "." || clean == ".." || strings.HasPrefix(clean, "../") {
 		return "", errors.New("path must stay inside the repository")
 	}
 	if clean != path {
 		return "", errors.New("path must be clean")
 	}
-	return filepath.ToSlash(clean), nil
+	return clean, nil
 }
 
 // rewriteStatus replaces the value of the first status field in the YAML

@@ -184,6 +184,72 @@ func TestProjectStreamEventCoversStableCategoriesAndRedactsPayload(t *testing.T)
 	}
 }
 
+func TestProjectStreamEventNormalizesLegacyVerificationEvents(t *testing.T) {
+	tests := []struct {
+		name    string
+		summary string
+		payload string
+		phase   string
+	}{
+		{
+			name:    "started",
+			summary: "Verification started: make verify",
+			payload: `{"phase":"started","command":"make verify"}`,
+			phase:   "started",
+		},
+		{
+			name:    "failed",
+			summary: "Verification failed: make verify",
+			payload: `{"phase":"failed","command":"make verify","error":"exit status 1"}`,
+			phase:   "failed",
+		},
+		{
+			name:    "passed",
+			summary: "Verification command passed: make verify",
+			payload: `{"phase":"passed","command":"make verify"}`,
+			phase:   "passed",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			record, ok, err := ProjectStreamEvent(1, RunEvent{
+				RunID:   "run_legacy",
+				Batch:   1,
+				Source:  SourceDaemon,
+				Kind:    KindDaemonVerification,
+				Summary: tt.summary,
+				Time:    time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC),
+				Payload: []byte(tt.payload),
+			}, AllStreamCategories())
+			if err != nil {
+				t.Fatalf("ProjectStreamEvent: %v", err)
+			}
+			if !ok {
+				t.Fatal("expected legacy verification event to be projected")
+			}
+			if record.Attempt != 1 || record.Phase != tt.phase {
+				t.Fatalf("record = %#v, want attempt 1 phase %q", record, tt.phase)
+			}
+		})
+	}
+}
+
+func TestProjectStreamEventRejectsNewVerificationPayloadWithoutAttempt(t *testing.T) {
+	_, _, err := ProjectStreamEvent(1, RunEvent{
+		RunID:   "run_123",
+		Batch:   1,
+		Source:  SourceDaemon,
+		Kind:    KindDaemonVerification,
+		Summary: "Verification attempt 1 for Batch 001 started: make verify",
+		Time:    time.Date(2026, 7, 10, 12, 0, 0, 0, time.UTC),
+		Payload: []byte(`{"phase":"started","command":"make verify"}`),
+	}, AllStreamCategories())
+	if err == nil {
+		t.Fatal("expected new verification payload without attempt to fail")
+	}
+}
+
 func TestProjectStreamEventRejectsMalformedRelevantDaemonPayload(t *testing.T) {
 	_, _, err := ProjectStreamEvent(1, RunEvent{
 		RunID:   "run_123",

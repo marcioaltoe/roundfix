@@ -135,11 +135,11 @@ func ProjectStreamEvent(cursor int64, event RunEvent, filter StreamCategoryFilte
 		}
 		record.Summary = batchStreamSummary(record.Batch, record.Phase)
 	case StreamCategoryVerification:
-		record.Attempt, err = requiredPayloadInt(fields, event, "attempt")
+		record.Phase, err = requiredPayloadString(fields, event, "phase")
 		if err != nil {
 			return StreamRecord{}, false, err
 		}
-		record.Phase, err = requiredPayloadString(fields, event, "phase")
+		record.Attempt, err = verificationPayloadAttempt(fields, event, record.Phase)
 		if err != nil {
 			return StreamRecord{}, false, err
 		}
@@ -254,15 +254,57 @@ func firstPayloadString(fields map[string]json.RawMessage, keys ...string) (stri
 	return "", nil
 }
 
-func requiredPayloadInt(fields map[string]json.RawMessage, event RunEvent, key string) (int, error) {
-	value, err := optionalPayloadInt(fields, key)
+// verificationPayloadAttempt maps the three pre-repair Verification payload
+// shapes to their single historical attempt without accepting malformed events
+// emitted by the current attempt-aware producer.
+func verificationPayloadAttempt(fields map[string]json.RawMessage, event RunEvent, phase string) (int, error) {
+	attempt, err := optionalPayloadInt(fields, "attempt")
 	if err != nil {
-		return 0, fmt.Errorf("project %s event for Run %q: read payload field %q: %w", event.Kind, event.RunID, key, err)
+		return 0, fmt.Errorf("project %s event for Run %q: read payload field %q: %w", event.Kind, event.RunID, "attempt", err)
 	}
-	if value == 0 {
-		return 0, streamMissingField(event, key)
+	if attempt != 0 {
+		return attempt, nil
 	}
-	return value, nil
+	legacy, err := isLegacyVerificationPayload(fields, event, phase)
+	if err != nil {
+		return 0, err
+	}
+	if legacy {
+		return 1, nil
+	}
+	return 0, streamMissingField(event, "attempt")
+}
+
+func isLegacyVerificationPayload(fields map[string]json.RawMessage, event RunEvent, phase string) (bool, error) {
+	var summaryPrefix string
+	switch phase {
+	case "started":
+		summaryPrefix = "Verification started:"
+	case "failed":
+		summaryPrefix = "Verification failed:"
+	case "passed":
+		summaryPrefix = "Verification command passed:"
+	default:
+		return false, nil
+	}
+	if !strings.HasPrefix(event.Summary, summaryPrefix) {
+		return false, nil
+	}
+	command, err := optionalPayloadString(fields, "command")
+	if err != nil {
+		return false, fmt.Errorf("project %s event for Run %q: read payload field %q: %w", event.Kind, event.RunID, "command", err)
+	}
+	if command == "" {
+		return false, nil
+	}
+	if phase != "failed" {
+		return true, nil
+	}
+	failure, err := optionalPayloadString(fields, "error")
+	if err != nil {
+		return false, fmt.Errorf("project %s event for Run %q: read payload field %q: %w", event.Kind, event.RunID, "error", err)
+	}
+	return failure != "", nil
 }
 
 func optionalPayloadInt(fields map[string]json.RawMessage, key string) (int, error) {

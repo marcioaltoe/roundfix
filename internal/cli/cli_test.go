@@ -7422,6 +7422,34 @@ func TestEventsReplayDefaultAndFilterJSONLRecordsOnly(t *testing.T) {
 	}
 }
 
+func TestEventsReplayLegacyVerificationEvent(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	run := createEventsRun(t, homeDir, repoDir, store.StateClean)
+	appendEvents(t, homeDir, run.ID, runevent.RunEvent{
+		RunID:   run.ID,
+		Batch:   1,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonVerification,
+		Summary: "Verification command passed: make verify",
+		Payload: []byte(`{"phase":"passed","command":"make verify"}`),
+	})
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := RunContext(context.Background(), []string{"events", run.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected legacy replay exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr for legacy replay, got %q", stderr.String())
+	}
+	records := decodeEventRecords(t, stdout.String())
+	if len(records) != 1 || records[0]["category"] != "verification" || records[0]["attempt"] != float64(1) {
+		t.Fatalf("expected one normalized legacy verification record, got %v", records)
+	}
+}
+
 func TestEventsFollowDrainsTerminalWithoutDuplicateBoundary(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	run := createEventsRun(t, homeDir, repoDir, store.StateActive)
