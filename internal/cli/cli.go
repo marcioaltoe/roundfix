@@ -1295,12 +1295,14 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
-	req = requestWithRuntimeSelection(req, resolvePlan.runtime)
 	collaborators := newEngineCollaborators()
-	if err := probeRuntimeSelection(ctx, req, resolvePlan.runtime, preflightResult.Git.Root, collaborators.runner, stderr); err != nil {
+	effectiveRuntime, err := probeRuntimeSelection(ctx, req, resolvePlan.runtime, preflightResult.Git.Root, collaborators.runner, stderr)
+	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
+	resolvePlan.runtime = effectiveRuntime
+	req = requestWithRuntimeSelection(req, effectiveRuntime)
 
 	runStore, err := store.Open(ctx, loaded.HomeDir)
 	if err != nil {
@@ -1678,12 +1680,13 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
-	req = requestWithRuntimeSelection(req, runtime)
 	collaborators := newEngineCollaborators()
-	if err := probeRuntimeSelection(ctx, req, runtime, preflightResult.Git.Root, collaborators.runner, stderr); err != nil {
+	runtime, err = probeRuntimeSelection(ctx, req, runtime, preflightResult.Git.Root, collaborators.runner, stderr)
+	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
+	req = requestWithRuntimeSelection(req, runtime)
 
 	runStore, err := store.Open(ctx, loaded.HomeDir)
 	if err != nil {

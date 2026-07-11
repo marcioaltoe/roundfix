@@ -1,10 +1,12 @@
 package cli
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"roundfix/internal/agent"
@@ -29,6 +31,9 @@ type fallbackProber interface {
 	ProbeFallback(context.Context, agent.RuntimeSpec, agent.FallbackCandidateSet) (agent.FallbackSelection, bool, error)
 }
 
+var fallbackConfirmationInput = func() io.Reader { return os.Stdin }
+var fallbackConfirmationAvailable = func(stderr io.Writer) bool { return liveTUIEnabled(stderr) }
+
 type selectionFallbackReport struct {
 	failure    *agent.SelectionPreflightError
 	fallback   agent.FallbackSelection
@@ -40,10 +45,7 @@ type selectionFallbackReport struct {
 func (report selectionFallbackReport) Error() string {
 	var text strings.Builder
 	text.WriteString(report.failure.Error())
-	text.WriteString("\nFailed Selection:\n")
-	fmt.Fprintf(&text, "  ACP Runtime: %s\n", report.failure.Runtime)
-	fmt.Fprintf(&text, "  Agent Model: %s\n", report.failure.Model)
-	fmt.Fprintf(&text, "  Default Reasoning Effort: %s", displayReasoningEffort(report.failure.ReasoningEffort))
+	writeFailedSelection(&text, report.failure)
 	if report.probeErr != nil {
 		fmt.Fprintf(&text, "\nFallback probe failed: %v", report.probeErr)
 		writeProbedFallbackCandidates(&text, report.candidates)
@@ -54,9 +56,7 @@ func (report selectionFallbackReport) Error() string {
 		writeProbedFallbackCandidates(&text, report.candidates)
 		return text.String()
 	}
-	text.WriteString("\nFallback Selection:\n")
-	fmt.Fprintf(&text, "  Agent Model: %s\n", report.fallback.Model)
-	fmt.Fprintf(&text, "  Default Reasoning Effort: %s\n", displayReasoningEffort(report.fallback.ReasoningEffort))
+	writeFallbackSelection(&text, report.fallback)
 	fmt.Fprintf(&text, "Re-run: %s", report.rerun)
 	return text.String()
 }
@@ -78,20 +78,33 @@ func writeProbedFallbackCandidates(text *strings.Builder, candidates agent.Fallb
 	fmt.Fprintf(text, "\nProbed reasoning efforts (highest first): %s", efforts)
 }
 
-func probeRuntimeSelection(ctx context.Context, req commandRequest, runtime agent.RuntimeSpec, workDir string, runner agent.Runner, stderr io.Writer) error {
+func writeFailedSelection(text *strings.Builder, failure *agent.SelectionPreflightError) {
+	text.WriteString("\nFailed Selection:\n")
+	fmt.Fprintf(text, "  ACP Runtime: %s\n", failure.Runtime)
+	fmt.Fprintf(text, "  Agent Model: %s\n", failure.Model)
+	fmt.Fprintf(text, "  Default Reasoning Effort: %s", displayReasoningEffort(failure.ReasoningEffort))
+}
+
+func writeFallbackSelection(text *strings.Builder, fallback agent.FallbackSelection) {
+	text.WriteString("\nFallback Selection:\n")
+	fmt.Fprintf(text, "  Agent Model: %s\n", fallback.Model)
+	fmt.Fprintf(text, "  Default Reasoning Effort: %s\n", displayReasoningEffort(fallback.ReasoningEffort))
+}
+
+func probeRuntimeSelection(ctx context.Context, req commandRequest, runtime agent.RuntimeSpec, workDir string, runner agent.Runner, stderr io.Writer) (agent.RuntimeSpec, error) {
 	err := runner.Probe(ctx, agent.ProbeRequest{Runtime: runtime, WorkDir: workDir})
 	if err == nil {
-		return nil
+		return runtime, nil
 	}
 	var selectionErr *agent.SelectionPreflightError
 	if !errors.As(err, &selectionErr) {
-		return err
+		return runtime, err
 	}
 
 	candidates := fallbackCandidates(runtime)
 	prober, ok := runner.(fallbackProber)
 	if !ok {
-		return selectionFallbackReport{
+		return runtime, selectionFallbackReport{
 			failure:    selectionErr,
 			candidates: candidates,
 			probeErr:   errors.New("agent runner does not support fallback probes"),
@@ -99,20 +112,29 @@ func probeRuntimeSelection(ctx context.Context, req commandRequest, runtime agen
 	}
 	fallback, functional, probeErr := prober.ProbeFallback(ctx, runtime, candidates)
 	if probeErr != nil {
-		return selectionFallbackReport{failure: selectionErr, candidates: candidates, probeErr: probeErr}
+		return runtime, selectionFallbackReport{failure: selectionErr, candidates: candidates, probeErr: probeErr}
 	}
 	if !functional {
-		return selectionFallbackReport{failure: selectionErr, candidates: candidates}
+		return runtime, selectionFallbackReport{failure: selectionErr, candidates: candidates}
 	}
-	if !selectionFailureIsNonInteractive(req, stderr) {
-		return err
-	}
-	return selectionFallbackReport{
+	report := selectionFallbackReport{
 		failure:    selectionErr,
 		fallback:   fallback,
 		candidates: candidates,
 		rerun:      fallbackRerunCommand(req, fallback),
 	}
+	if !selectionFailureIsNonInteractive(req, stderr) {
+		confirmed, confirmErr := confirmFallbackSelection(ctx, fallbackConfirmationInput(), stderr, selectionErr, fallback)
+		if confirmErr != nil {
+			return runtime, fmt.Errorf("confirm fallback selection: %w", confirmErr)
+		}
+		if confirmed {
+			runtime.Model = fallback.Model
+			runtime.ReasoningEffort = fallback.ReasoningEffort
+			return runtime, nil
+		}
+	}
+	return runtime, report
 }
 
 func fallbackCandidates(runtime agent.RuntimeSpec) agent.FallbackCandidateSet {
@@ -137,7 +159,48 @@ func fallbackCandidates(runtime agent.RuntimeSpec) agent.FallbackCandidateSet {
 }
 
 func selectionFailureIsNonInteractive(req commandRequest, stderr io.Writer) bool {
-	return req.noInput || req.detach || req.detachChild != nil || !liveTUIEnabled(stderr)
+	return req.noInput || req.detach || req.detachChild != nil || !fallbackConfirmationAvailable(stderr)
+}
+
+func confirmFallbackSelection(ctx context.Context, stdin io.Reader, stderr io.Writer, failure *agent.SelectionPreflightError, fallback agent.FallbackSelection) (bool, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	var report strings.Builder
+	report.WriteString(failure.Error())
+	writeFailedSelection(&report, failure)
+	writeFallbackSelection(&report, fallback)
+	if _, err := fmt.Fprint(stderr, report.String()); err != nil {
+		return false, fmt.Errorf("write fallback report: %w", err)
+	}
+	if _, err := fmt.Fprintln(stderr, "A different Agent Model can consume tokens differently."); err != nil {
+		return false, fmt.Errorf("write fallback caveat: %w", err)
+	}
+	if _, err := fmt.Fprint(stderr, "Use this Fallback Selection for this Run? [y/N]: "); err != nil {
+		return false, fmt.Errorf("write fallback confirmation prompt: %w", err)
+	}
+	line, err := bufio.NewReader(stdin).ReadString('\n')
+	if err != nil && !errors.Is(err, io.EOF) {
+		return false, fmt.Errorf("read fallback confirmation prompt: %w", err)
+	}
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	return normalizeFallbackConfirmation(line)
+}
+
+func normalizeFallbackConfirmation(value string) (bool, error) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "y", "yes":
+		return true, nil
+	case "", "n", "no":
+		return false, nil
+	default:
+		return false, fmt.Errorf("unsupported fallback response %q; enter yes or no", strings.TrimSpace(value))
+	}
 }
 
 func fallbackRerunCommand(req commandRequest, fallback agent.FallbackSelection) string {

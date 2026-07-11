@@ -2801,6 +2801,62 @@ func TestRunImplementSelectionFailureReportsFallbackWithoutCreatingRun(t *testin
 	assertRunCount(t, store.DatabasePath(homeDir), 0)
 }
 
+func TestRunImplementConfirmsModelManagedFallbackAsEffectiveSelection(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Confirm fallback"}})
+	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+	configContent := "runtimes:\n  codex:\n    model: broken-model\n    reasoning_effort: unsupported\n"
+	mustWrite(t, configPath, configContent)
+	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+	gitImplement(t, repoDir, "commit", "-m", "configure broken selection")
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		probeErr: &agent.SelectionPreflightError{
+			Runtime:         "codex",
+			Model:           "broken-model",
+			ReasoningEffort: "unsupported",
+			Err:             errors.New("selection rejected"),
+		},
+		fallback:   agent.FallbackSelection{Model: "gpt-5.4-mini"},
+		fallbackOK: true,
+	}
+	withImplementCollaborators(t, runner)
+	withFallbackConfirmation(t, "y\n")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{
+		"implement",
+		"--spec", implementTestSlug,
+		"--agent", "codex",
+	}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected confirmed fallback implement Run to finish cleanly, got exit %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	for _, want := range []string{
+		"Fallback Selection:",
+		"Agent Model: gpt-5.4-mini",
+		"Default Reasoning Effort: model-managed",
+		"A different Agent Model can consume tokens differently.",
+		"Use this Fallback Selection for this Run? [y/N]: ",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("expected interactive fallback output to contain %q, got %q", want, stderr.String())
+		}
+	}
+	if got := strings.Count(stderr.String(), "Use this Fallback Selection for this Run?"); got != 1 {
+		t.Fatalf("expected one confirmation question, got %d in %q", got, stderr.String())
+	}
+	run := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
+	if run.Model != "gpt-5.4-mini" || run.ReasoningEffort != "" {
+		t.Fatalf("expected model-managed fallback in Run record, got %#v", run)
+	}
+	if got := mustRead(t, configPath); got != configContent {
+		t.Fatalf("confirmed fallback must not change Project Config\nwant: %q\n got: %q", configContent, got)
+	}
+}
+
 func TestRunImplementPassesOneRunSelectionOverridesToPreflight(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	runner := &implementFakeRunner{gitRoot: repoDir, probeErr: errors.New("stop after selection preflight")}

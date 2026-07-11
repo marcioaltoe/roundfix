@@ -146,7 +146,6 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
-	req = requestWithRuntimeSelection(req, runtime)
 	sweepRunRetention(ctx, runStore, req.artifactDir, loadedConfig.Config.Store.JournalRetention, stderr)
 	if err := pruneTerminalRunWorktreeDebris(ctx, gitState.Root, loadedConfig.Config.Worktree.Location, runtime, runStore, stderr); err != nil {
 		printPreflightFailure("implement", err, stderr)
@@ -163,10 +162,12 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 
 	collaborators := newEngineCollaborators()
-	if err := probeRuntimeSelection(ctx, req, runtime, gitState.Root, collaborators.runner, stderr); err != nil {
+	runtime, err = probeRuntimeSelection(ctx, req, runtime, gitState.Root, collaborators.runner, stderr)
+	if err != nil {
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
+	req = requestWithRuntimeSelection(req, runtime)
 
 	run, err := runStore.CreateRun(ctx, store.CreateRunRequest{
 		Kind:            store.KindImplement,
