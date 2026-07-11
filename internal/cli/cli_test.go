@@ -1634,8 +1634,8 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 				if !strings.Contains(stderr.String(), "fake agent output") {
 					t.Fatalf("expected fake Agent output, got %q", stderr.String())
 				}
-				if !strings.Contains(stderr.String(), "fake verification output") {
-					t.Fatalf("expected fake verification output, got %q", stderr.String())
+				if !strings.Contains(stderr.String(), "Verification passed (attempt 1).") {
+					t.Fatalf("expected verification verdict summary, got %q", stderr.String())
 				}
 				if !strings.Contains(stderr.String(), "Batch commit created") {
 					t.Fatalf("expected Batch commit confirmation, got %q", stderr.String())
@@ -1658,8 +1658,8 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 				if !strings.Contains(stderr.String(), "fake agent output") {
 					t.Fatalf("expected fake Agent output, got %q", stderr.String())
 				}
-				if !strings.Contains(stderr.String(), "fake verification output") {
-					t.Fatalf("expected fake verification output, got %q", stderr.String())
+				if !strings.Contains(stderr.String(), "Verification passed (attempt 1).") {
+					t.Fatalf("expected verification verdict summary, got %q", stderr.String())
 				}
 				if !strings.Contains(stderr.String(), "Batch commit created") {
 					t.Fatalf("expected Batch commit confirmation, got %q", stderr.String())
@@ -3229,8 +3229,8 @@ func TestRunResolveVerificationFailureDoesNotCommit(t *testing.T) {
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected failed stdout report %q, got %q", wantStdout, stdout.String())
 	}
-	if verifier.calls != 1 {
-		t.Fatalf("expected one verification call, got %d", verifier.calls)
+	if verifier.calls != 2 {
+		t.Fatalf("expected initial and final verification calls, got %d", verifier.calls)
 	}
 	if committer.calls != 0 {
 		t.Fatalf("expected no Batch commit after verification failure, got %d", committer.calls)
@@ -6572,15 +6572,24 @@ type fakeVerifier struct {
 	commands []string
 }
 
-func (verifier *fakeVerifier) Verify(_ context.Context, req daemon.VerifyRequest) error {
+func (verifier *fakeVerifier) Verify(_ context.Context, req daemon.VerifyRequest) (daemon.VerifyResult, error) {
 	verifier.calls++
 	verifier.commands = append(verifier.commands, req.Command)
-	if req.Stream != nil {
-		if _, err := io.WriteString(req.Stream, "fake verification output\n"); err != nil {
-			return err
+	if req.OutputPath != "" {
+		if err := os.MkdirAll(filepath.Dir(req.OutputPath), 0o755); err != nil {
+			return daemon.VerifyResult{OutputPath: req.OutputPath}, err
+		}
+		if err := os.WriteFile(req.OutputPath, []byte("fake verification output\n"), 0o644); err != nil {
+			return daemon.VerifyResult{OutputPath: req.OutputPath}, err
 		}
 	}
-	return verifier.err
+	if verifier.err != nil {
+		return daemon.VerifyResult{OutputPath: req.OutputPath}, &daemon.VerificationCommandError{Command: req.Command, OutputPath: req.OutputPath, Err: verifier.err}
+	}
+	if req.OutputPath != "" {
+		_ = os.Remove(req.OutputPath)
+	}
+	return daemon.VerifyResult{OutputPath: req.OutputPath}, nil
 }
 
 type fakeCommitter struct {
@@ -7213,7 +7222,7 @@ func TestRunResolveNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 	for _, want := range []string{
 		"resolve selected 1 downloaded Unresolved Review Issue",
 		"Batch: 001/001 (1 Review Issue(s))",
-		"Verification command passed",
+		"Verification passed (attempt 1).",
 		"Batch commit created",
 		"Resolved 1 Review Source thread",
 		"Resolve Run",
@@ -7245,7 +7254,7 @@ func TestRunWatchNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 		"Review Source status: settled",
 		"Fetched Round 001 with 1 Review Issue",
 		"Batch: 001/001 (1 Review Issue(s))",
-		"Verification command passed",
+		"Verification passed (attempt 1).",
 		"Final Push completed",
 		"Watch Run",
 	} {
@@ -7825,6 +7834,369 @@ func appendAttachConcurrencyEvent(t *testing.T, homeDir string, runID string, co
 	}
 }
 
+func TestEventsReplayDefaultAndFilterJSONLRecordsOnly(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	run := createEventsRun(t, homeDir, repoDir, store.StateClean)
+	appendEvents(t, homeDir, run.ID,
+		runevent.RunEvent{
+			RunID:   run.ID,
+			Batch:   2,
+			Source:  runevent.SourceDaemon,
+			Kind:    runevent.KindDaemonBatch,
+			Summary: "Batch 002 started.",
+			Payload: []byte(`{"phase":"started","batch":2}`),
+		},
+		runevent.RunEvent{
+			RunID:   run.ID,
+			Source:  runevent.SourceAgent,
+			Kind:    runevent.KindAgentRaw,
+			Summary: "raw agent payload",
+			Payload: []byte(`{"text":"agent output bytes"}`),
+		},
+		runevent.RunEvent{
+			RunID:       run.ID,
+			Batch:       2,
+			Source:      runevent.SourceDaemon,
+			Kind:        runevent.KindDaemonVerification,
+			ReviewIssue: "task_03",
+			Summary:     "Verification attempt 1 failed: make verify",
+			Payload:     []byte(`{"attempt":1,"phase":"verdict","verdict":"failed","command":"make verify","diagnostic_path":"/tmp/verification.log"}`),
+		},
+		runevent.RunEvent{
+			RunID:       run.ID,
+			Batch:       2,
+			Source:      runevent.SourceDaemon,
+			Kind:        runevent.KindDaemonTask,
+			ReviewIssue: "task_03",
+			Summary:     "Task task_03 settled completed.",
+			Payload:     []byte(`{"task":"task_03","phase":"settled","status":"completed"}`),
+		},
+		runevent.RunEvent{
+			RunID:   run.ID,
+			Source:  runevent.SourceDaemon,
+			Kind:    runevent.KindDaemonOutcome,
+			Summary: "Run reached Clean.",
+			Payload: []byte(`{"state":"Clean","remaining":0}`),
+		},
+	)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := RunContext(context.Background(), []string{"events", run.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected replay exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr for replay, got %q", stderr.String())
+	}
+	records := decodeEventRecords(t, stdout.String())
+	if got := eventRecordCategories(records); strings.Join(got, "|") != "batch|verification|task-status|outcome" {
+		t.Fatalf("expected stable categories in cursor order, got %v records=%v", got, records)
+	}
+	for _, raw := range strings.Split(strings.TrimSpace(stdout.String()), "\n") {
+		for _, forbidden := range []string{"daemon.", "agent output bytes", "make verify", "diagnostic_path", "/tmp/verification.log"} {
+			if strings.Contains(raw, forbidden) {
+				t.Fatalf("expected records to omit %q, got %s", forbidden, raw)
+			}
+		}
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	code = RunContext(context.Background(), []string{"events", run.ID, "--filter", "verification,outcome"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected filtered replay exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	records = decodeEventRecords(t, stdout.String())
+	if got := eventRecordCategories(records); strings.Join(got, "|") != "verification|outcome" {
+		t.Fatalf("expected filtered categories only, got %v records=%v", got, records)
+	}
+}
+
+func TestEventsReplayLegacyVerificationEvent(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	run := createEventsRun(t, homeDir, repoDir, store.StateClean)
+	appendEvents(t, homeDir, run.ID, runevent.RunEvent{
+		RunID:   run.ID,
+		Batch:   1,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonVerification,
+		Summary: "Verification command passed: make verify",
+		Payload: []byte(`{"phase":"passed","command":"make verify"}`),
+	})
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := RunContext(context.Background(), []string{"events", run.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected legacy replay exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr for legacy replay, got %q", stderr.String())
+	}
+	records := decodeEventRecords(t, stdout.String())
+	if len(records) != 1 || records[0]["category"] != "verification" || records[0]["attempt"] != float64(1) {
+		t.Fatalf("expected one normalized legacy verification record, got %v", records)
+	}
+}
+
+func TestEventsFollowDrainsTerminalWithoutDuplicateBoundary(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	run := createEventsRun(t, homeDir, repoDir, store.StateActive)
+	appendEvents(t, homeDir, run.ID, runevent.RunEvent{
+		RunID:   run.ID,
+		Batch:   1,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonBatch,
+		Summary: "Batch 001 started.",
+		Payload: []byte(`{"phase":"started","batch":1}`),
+	})
+
+	appendedTerminal := false
+	withAttachSleep(t, func(context.Context) error {
+		if !appendedTerminal {
+			appendEvents(t, homeDir, run.ID, runevent.RunEvent{
+				RunID:   run.ID,
+				Source:  runevent.SourceDaemon,
+				Kind:    runevent.KindDaemonOutcome,
+				Summary: "Run reached Clean.",
+				Payload: []byte(`{"state":"Clean","remaining":0}`),
+			})
+			completeEventsRun(t, homeDir, run.ID, store.StateClean)
+			appendedTerminal = true
+		}
+		return nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"events", run.ID, "--follow"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected follow exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	records := decodeEventRecords(t, stdout.String())
+	if got := eventRecordCategories(records); strings.Join(got, "|") != "batch|outcome" {
+		t.Fatalf("expected replay boundary and terminal event once, got %v records=%v", got, records)
+	}
+	if records[0]["cursor"] == records[1]["cursor"] {
+		t.Fatalf("expected distinct cursors without duplicate boundary records, got %v", records)
+	}
+}
+
+func TestEventsTerminalRunReplaysAndExitsImmediately(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	run := createEventsRun(t, homeDir, repoDir, store.StateClean)
+	appendEvents(t, homeDir, run.ID, runevent.RunEvent{
+		RunID:   run.ID,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonOutcome,
+		Summary: "Run reached Clean.",
+		Payload: []byte(`{"state":"Clean","remaining":0}`),
+	})
+	withAttachSleep(t, func(context.Context) error {
+		t.Fatal("terminal events follow must not poll")
+		return nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"events", run.ID, "--follow"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected terminal follow exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if got := eventRecordCategories(decodeEventRecords(t, stdout.String())); strings.Join(got, "|") != "outcome" {
+		t.Fatalf("expected terminal replay only, got %v", got)
+	}
+}
+
+func TestEventsValidationErrorsEmitNoStdout(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	run := createEventsRun(t, homeDir, repoDir, store.StateClean)
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "missing run id", args: []string{"events"}},
+		{name: "unknown run", args: []string{"events", "run_missing"}},
+		{name: "invalid filter", args: []string{"events", run.ID, "--filter", "raw"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("expected validation exit 2, got %d stderr=%q", code, stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("expected no stdout records, got %q", stdout.String())
+			}
+			if stderr.Len() == 0 {
+				t.Fatal("expected validation diagnostic on stderr")
+			}
+		})
+	}
+}
+
+func TestEventsMalformedRelevantPayloadFailsNoStdout(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	run := createEventsRun(t, homeDir, repoDir, store.StateClean)
+	appendEvents(t, homeDir, run.ID, runevent.RunEvent{
+		RunID:   run.ID,
+		Batch:   1,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonBatch,
+		Summary: "Batch 001 started.",
+		Payload: []byte(`{"batch":1}`),
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"events", run.ID}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected malformed payload exit 1, got %d stderr=%q", code, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout records, got %q", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "roundfix events failed") {
+		t.Fatalf("expected events failure diagnostic, got %q", stderr.String())
+	}
+}
+
+func TestEventsFollowCancellationExits130WithoutTrailer(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	run := createEventsRun(t, homeDir, repoDir, store.StateActive)
+	ctx, cancel := context.WithCancel(context.Background())
+	withAttachSleep(t, func(sleepCtx context.Context) error {
+		cancel()
+		return sleepCtx.Err()
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(ctx, []string{"events", run.ID, "--follow"}, &stdout, &stderr)
+
+	if code != exitSIGINT {
+		t.Fatalf("expected cancellation exit 130, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout trailer on cancellation, got %q", stdout.String())
+	}
+}
+
+func createEventsRun(t *testing.T, homeDir string, repoDir string, state string) store.Run {
+	t.Helper()
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open events store: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close events store: %v", err)
+		}
+	}()
+	run, err := runStore.CreateRun(context.Background(), store.CreateRunRequest{
+		Kind:            store.KindImplement,
+		GitRoot:         repoDir,
+		LocalBranch:     "ma/event-stream",
+		HeadSHA:         "abc123",
+		WorkDir:         repoDir,
+		ArtifactDir:     filepath.Join(repoDir, ".roundfix"),
+		SpecSlug:        "0024-context-efficient-runs",
+		Agent:           "codex",
+		Model:           "gpt-5.5",
+		ReasoningEffort: "xhigh",
+	})
+	if err != nil {
+		t.Fatalf("create events Run: %v", err)
+	}
+	if state == "" || state == store.StateActive {
+		return run
+	}
+	return completeEventsRun(t, homeDir, run.ID, state)
+}
+
+func completeEventsRun(t *testing.T, homeDir string, runID string, state string) store.Run {
+	t.Helper()
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open events store to complete Run: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close events complete store: %v", err)
+		}
+	}()
+	run, err := runStore.CompleteRun(context.Background(), runID, state)
+	if err != nil {
+		t.Fatalf("complete events Run: %v", err)
+	}
+	return run
+}
+
+func appendEvents(t *testing.T, homeDir string, runID string, events ...runevent.RunEvent) {
+	t.Helper()
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open events store to append: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close events append store: %v", err)
+		}
+	}()
+	now := time.Date(2026, 7, 10, 12, 0, 0, 0, time.UTC)
+	for index := range events {
+		events[index].RunID = runID
+		if events[index].Time.IsZero() {
+			events[index].Time = now.Add(time.Duration(index) * time.Second)
+		}
+	}
+	if _, err := runStore.AppendRunEvents(context.Background(), events); err != nil {
+		t.Fatalf("append events: %v", err)
+	}
+}
+
+func decodeEventRecords(t *testing.T, output string) []map[string]any {
+	t.Helper()
+	if strings.TrimSpace(output) == "" {
+		return nil
+	}
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	records := make([]map[string]any, 0, len(lines))
+	for _, line := range lines {
+		var record map[string]any
+		if err := json.Unmarshal([]byte(line), &record); err != nil {
+			t.Fatalf("decode JSONL record %q: %v", line, err)
+		}
+		if record["schema"] != runevent.StreamSchema {
+			t.Fatalf("expected schema %q, got %v in %v", runevent.StreamSchema, record["schema"], record)
+		}
+		records = append(records, record)
+	}
+	return records
+}
+
+func eventRecordCategories(records []map[string]any) []string {
+	categories := make([]string, 0, len(records))
+	for _, record := range records {
+		if category, ok := record["category"].(string); ok {
+			categories = append(categories, category)
+		}
+	}
+	return categories
+}
+
 type fakeAttachSource struct {
 	mu          sync.Mutex
 	run         store.Run
@@ -7902,8 +8274,9 @@ func TestAttachFollowerAppendsOnlyNewerEventsWithoutDuplicates(t *testing.T) {
 			}
 			return nil
 		},
-		accept: func(entry store.JournalEvent) {
+		accept: func(entry store.JournalEvent) error {
 			accepted = append(accepted, entry.Event.Summary)
+			return nil
 		},
 	}
 
@@ -7927,8 +8300,9 @@ func TestAttachFollowerAppendsOnlyNewerEventsWithoutDuplicates(t *testing.T) {
 	again := attachFollower{
 		source: source,
 		sleep:  func(context.Context) error { return nil },
-		accept: func(entry store.JournalEvent) {
+		accept: func(entry store.JournalEvent) error {
 			reaccepted = append(reaccepted, entry.Event.Summary)
+			return nil
 		},
 	}
 	if _, _, err := again.follow(context.Background(), "run-1", cursor); err != nil {
@@ -7953,7 +8327,7 @@ func TestAttachFollowerIdlePollsReadNoEventRows(t *testing.T) {
 			}
 			return ctx.Err()
 		},
-		accept: func(store.JournalEvent) {},
+		accept: func(store.JournalEvent) error { return nil },
 	}
 
 	_, _, err := follower.follow(ctx, "run-1", 0)
@@ -8361,7 +8735,7 @@ func TestAttachRendersWatchDaemonEventsInTimeline(t *testing.T) {
 	}
 	for _, expected := range []string{
 		"Review Source status: settled",
-		"Verification command passed:",
+		"Verification attempt 1 for Batch 001 verdict: passed",
 		"Batch commit created:",
 		"Final Push completed:",
 		"Run reached Clean.",

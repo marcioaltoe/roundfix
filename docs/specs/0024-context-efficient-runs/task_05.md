@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0024-context-efficient-runs
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -63,3 +63,19 @@ external Spec Roots, explicit context validation, and the 200-path ceiling.
 ## References
 
 `_prd.md` -> User Story 5; Core Features 10-11; Success Metrics. `_techspec.md` -> Data Models: Task Context references; API Contracts: Spec Context Bundle; Build Order 5. ADR-0035.
+
+## Result
+
+- Missing `## Context` remains valid and labeled entries load into instruction/interface categories: covered by `TestLoadParsesOptionalTaskContext`.
+- Invalid labels, external/escaping or unclean paths, and the 51st unique entry fail as typed Task-file validation errors: covered by `TestLoadRejectsInvalidTaskContext`.
+- Standard and explicit paths are retained before sorted prior files fill the 200-path capacity: covered by `TestAssembleTaskContextBundleReservesExplicitPathsAndCountsOmittedPriorFiles`.
+- The omitted prior-file count is exact when the ceiling is exceeded: covered by `TestAssembleTaskContextBundleReservesExplicitPathsAndCountsOmittedPriorFiles`.
+- A parallel Task sees files integrated before its Task Worktree base and excludes an unintegrated sibling diff: covered by `TestPriorChangedFilesUseCurrentWorktreeHeadAndIgnoreSiblingBranch` and `TestTaskCycleParallelTaskPromptUsesTaskWorktreeContextBase`.
+- The prompt contains one complete assigned Task and no complete larger documents, source files, or prior diffs: covered by `TestBuildTaskPromptRendersSpecContextBundlePathOnly` and `TestTaskCyclePromptContainsBundleWithoutReferencedBodies`.
+- A resumed or replacement session receives the same deterministic bundle for the same repository state: covered by `TestAssembleTaskContextBundleIsDeterministic`.
+
+Verification:
+
+- `rtk go test ./internal/spec ./internal/agent ./internal/daemon` passed: 251 tests in 3 packages.
+- `rtk go test -race ./internal/daemon` passed: 81 tests in 1 package.
+- `rtk make verify` passed: `go test ./...` reported 1097 tests in 19 packages, the Roundfix skill check passed, and the build completed.

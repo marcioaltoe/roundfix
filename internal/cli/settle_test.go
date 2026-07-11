@@ -462,11 +462,15 @@ func TestRunSettleVerificationFailureLeavesTaskAndTreeUntouched(t *testing.T) {
 	if code != exitRunFailed {
 		t.Fatalf("expected exit code 1, got %d (stderr %q)", code, stderr.String())
 	}
+	diagnosticPath := daemon.VerificationOutputPath(builtinArtifactDirForRepo(t, repoDir), "settle-"+implementTestSlug+"-task_01", 1, 1)
 	expectedStdout := "verify test -f done.txt — ok\n" +
-		"verify test -f missing.txt — failed\n" +
+		"verify test -f missing.txt — failed (diagnostics: " + diagnosticPath + ")\n" +
 		"task_01 stays failed — verification failed\n"
 	if stdout.String() != expectedStdout {
 		t.Fatalf("expected stdout:\n%q\ngot:\n%q", expectedStdout, stdout.String())
+	}
+	if _, err := os.Stat(diagnosticPath); err != nil {
+		t.Fatalf("expected failed verification diagnostic artifact: %v", err)
 	}
 	if got := mustRead(t, taskPath); got != beforeTask {
 		t.Fatalf("expected task file unchanged")

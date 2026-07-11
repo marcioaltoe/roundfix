@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -167,6 +169,8 @@ func TestBuildPromptIncludesAssignedFilesAndForbiddenActions(t *testing.T) {
 		"Verification command: make verify",
 		"/repo/.roundfix/reviews/pr-123/round-001/issue_001.md",
 		"Read every assigned Review Issue file completely.",
+		"Run focused checks when useful; the Daemon runs the configured Verification command after this Agent turn.",
+		"the Daemon owns authoritative Verification",
 		"Do not create commits.",
 		"Do not push.",
 		"Do not call gh or any Review Source API",
@@ -188,6 +192,76 @@ func TestBuildPromptIncludesAssignedFilesAndForbiddenActions(t *testing.T) {
 			t.Fatalf("expected prompt to contain %q, got:\n%s", expected, prompt)
 		}
 	}
+	for _, forbidden := range []string{
+		"Run the configured verification command before marking any issue resolved.",
+		"configured verification command passed in this session",
+	} {
+		if strings.Contains(prompt, forbidden) {
+			t.Fatalf("expected prompt to remove authoritative verification requirement %q, got:\n%s", forbidden, prompt)
+		}
+	}
+}
+
+func TestBuildVerificationRepairPromptIncludesPathFailureAndNoOutputBody(t *testing.T) {
+	prompt, err := BuildVerificationRepairPrompt("task_02", VerificationFeedback{
+		Command:        "rtk go test ./internal/daemon",
+		DiagnosticPath: "/repo/.roundfix/runs/run_123/verification/batch-001-attempt-1.log",
+		Failure:        "verification failed: exit status 1",
+		Attempt:        1,
+	})
+	if err != nil {
+		t.Fatalf("BuildVerificationRepairPrompt returned error: %v", err)
+	}
+	for _, expected := range []string{
+		"Verification Feedback for the same Roundfix Agent Session.",
+		"Work Item: task_02",
+		"Attempt: 1",
+		"Failed command: rtk go test ./internal/daemon",
+		"Diagnostic artifact: /repo/.roundfix/runs/run_123/verification/batch-001-attempt-1.log",
+		"Failure: verification failed: exit status 1",
+		"Do not paste or embed the diagnostic log body",
+		"Daemon will rerun the full configured Verification sequence once",
+	} {
+		if !strings.Contains(prompt, expected) {
+			t.Fatalf("expected repair prompt to contain %q, got:\n%s", expected, prompt)
+		}
+	}
+	if strings.Contains(prompt, "PACKAGE PASS") || strings.Contains(prompt, "raw output bytes") {
+		t.Fatalf("expected repair prompt to omit command output body, got:\n%s", prompt)
+	}
+}
+
+func TestBuildVerificationRepairPromptValidatesRequiredFields(t *testing.T) {
+	base := VerificationFeedback{
+		Command:        "make verify",
+		DiagnosticPath: "/tmp/verification.log",
+		Failure:        "verification failed",
+		Attempt:        1,
+	}
+	tests := []struct {
+		name     string
+		workItem string
+		mutate   func(*VerificationFeedback)
+	}{
+		{name: "empty work item", workItem: "", mutate: func(*VerificationFeedback) {}},
+		{name: "empty command", workItem: "task_01", mutate: func(feedback *VerificationFeedback) { feedback.Command = "" }},
+		{name: "empty diagnostic path", workItem: "task_01", mutate: func(feedback *VerificationFeedback) { feedback.DiagnosticPath = "" }},
+		{name: "empty failure", workItem: "task_01", mutate: func(feedback *VerificationFeedback) { feedback.Failure = "" }},
+		{name: "missing attempt", workItem: "task_01", mutate: func(feedback *VerificationFeedback) { feedback.Attempt = 0 }},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			feedback := base
+			tt.mutate(&feedback)
+			prompt, err := BuildVerificationRepairPrompt(tt.workItem, feedback)
+			if err == nil {
+				t.Fatalf("expected error, got prompt:\n%s", prompt)
+			}
+			if prompt != "" {
+				t.Fatalf("expected empty prompt on error, got:\n%s", prompt)
+			}
+		})
+	}
 }
 
 func TestStreamUpdateFromACPPreservesToolBlocks(t *testing.T) {
@@ -204,32 +278,148 @@ func TestStreamUpdateFromACPPreservesToolBlocks(t *testing.T) {
 	if update.ToolID != "call_123" || update.Title != "rtk git diff" || update.ToolState != "completed" {
 		t.Fatalf("unexpected update metadata: %#v", update)
 	}
-	if len(update.Blocks) != 5 {
-		t.Fatalf("expected 5 structured blocks, got %#v", update.Blocks)
+	if len(update.Blocks) != 1 {
+		t.Fatalf("expected one safe metadata block, got %#v", update.Blocks)
 	}
-	expectedKinds := []StreamBlockKind{
-		StreamBlockInput,
-		StreamBlockText,
-		StreamBlockDiff,
-		StreamBlockTerminal,
-		StreamBlockOutput,
-	}
-	for index, kind := range expectedKinds {
-		if update.Blocks[index].Kind != kind {
-			t.Fatalf("expected block %d to be %q, got %#v", index, kind, update.Blocks[index])
-		}
+	if update.Blocks[0].Kind != StreamBlockTerminal || update.Blocks[0].TerminalID != "term_001" {
+		t.Fatalf("expected terminal metadata retained, got %#v", update.Blocks)
 	}
 	rendered := formatStreamUpdate(update)
 	for _, expected := range []string{
-		"[TOOL] rtk git diff",
-		"completed",
-		"$ rtk git diff",
-		"diff: apps/api/server.go",
+		"[TOOL] rtk git diff · completed",
 		"terminal: term_001",
-		"output: ok",
 	} {
 		if !strings.Contains(rendered, expected) {
 			t.Fatalf("expected rendered update to contain %q, got:\n%s", expected, rendered)
+		}
+	}
+	for _, forbidden := range []string{"$ rtk git diff", "diff: apps/api/server.go", "output: ok"} {
+		if strings.Contains(rendered, forbidden) {
+			t.Fatalf("expected rendered update to omit %q, got:\n%s", forbidden, rendered)
+		}
+	}
+}
+
+func TestConsoleTextCompactsMeasuredReadEditFixtureAndPreservesPayload(t *testing.T) {
+	req := ExecuteRequest{RunID: "run_compact", Batch: rounds.Batch{Number: 1}}
+	rendered := strings.Builder{}
+	const reads = 330
+	const edits = 31
+
+	for index := 0; index < reads; index++ {
+		path := fmt.Sprintf("internal/fixture/read_%03d.go", index)
+		body := fmt.Sprintf("read body %03d line 1\nread body %03d line 2\nread body %03d line 3\n", index, index, index)
+		payload := compactReadPayload(path, body)
+		update, ok, err := streamUpdateFromSessionUpdatePayload(payload)
+		if err != nil || !ok {
+			t.Fatalf("parse read payload %d: ok=%v err=%v", index, ok, err)
+		}
+		rendered.WriteString(ConsoleText(update))
+		event := newAgentRunEvent(req, update, payload, time.Date(2026, 7, 10, 12, 0, 0, 0, time.UTC))
+		if string(event.Payload) != string(payload) {
+			t.Fatalf("expected read payload %d to stay byte-identical\nwant: %s\ngot:  %s", index, payload, event.Payload)
+		}
+	}
+	for index := 0; index < edits; index++ {
+		path := fmt.Sprintf("internal/fixture/edit_%02d.go", index)
+		oldText := fmt.Sprintf("old edit %02d line 1\nold edit %02d line 2\n", index, index)
+		newText := fmt.Sprintf("new edit %02d line 1\nnew edit %02d line 2\nnew edit %02d line 3\n", index, index, index)
+		payload := compactEditPayload(path, oldText, newText)
+		update, ok, err := streamUpdateFromSessionUpdatePayload(payload)
+		if err != nil || !ok {
+			t.Fatalf("parse edit payload %d: ok=%v err=%v", index, ok, err)
+		}
+		rendered.WriteString(ConsoleText(update))
+		event := newAgentRunEvent(req, update, payload, time.Date(2026, 7, 10, 12, 0, 0, 0, time.UTC))
+		if string(event.Payload) != string(payload) {
+			t.Fatalf("expected edit payload %d to stay byte-identical\nwant: %s\ngot:  %s", index, payload, event.Payload)
+		}
+	}
+
+	lines := compactOutputLines(rendered.String())
+	if got := countLinesWithPrefix(lines, "read "); got != reads {
+		t.Fatalf("expected %d read lines, got %d in %v", reads, got, lines[:min(len(lines), 5)])
+	}
+	if got := countLinesWithPrefix(lines, "edit "); got != edits {
+		t.Fatalf("expected %d edit lines, got %d", edits, got)
+	}
+	if len(lines) != reads+edits {
+		t.Fatalf("expected only compact read/edit lines, got %d lines", len(lines))
+	}
+	for _, required := range []string{
+		"read internal/fixture/read_000.go (3 lines)",
+		"edit internal/fixture/edit_00.go (+3/-2)",
+	} {
+		if !strings.Contains(rendered.String(), required) {
+			t.Fatalf("expected compact output to contain %q, got:\n%s", required, rendered.String())
+		}
+	}
+	for _, forbidden := range []string{
+		"read body",
+		"old edit",
+		"new edit",
+		"sessionUpdate",
+		"toolCallId",
+		"rawInput",
+		"rawOutput",
+		"diff --git",
+	} {
+		if strings.Contains(rendered.String(), forbidden) {
+			t.Fatalf("expected compact output to omit %q, got:\n%s", forbidden, rendered.String())
+		}
+	}
+}
+
+func TestStreamUpdateFromACPReadEditMetadata(t *testing.T) {
+	readPayload := compactReadPayload("internal/app/server.go", "one\ntwo\nthree\nfour\n")
+	readUpdate, ok, err := streamUpdateFromSessionUpdatePayload(readPayload)
+	if err != nil || !ok {
+		t.Fatalf("parse read payload: ok=%v err=%v", ok, err)
+	}
+	if readUpdate.ToolKind != "read" {
+		t.Fatalf("expected read tool kind retained, got %#v", readUpdate)
+	}
+	if len(readUpdate.Locations) != 1 || readUpdate.Locations[0].Path != "internal/app/server.go" {
+		t.Fatalf("expected read location retained, got %#v", readUpdate.Locations)
+	}
+	if len(readUpdate.Blocks) != 1 || readUpdate.Blocks[0].Kind != StreamBlockRead {
+		t.Fatalf("expected one read block, got %#v", readUpdate.Blocks)
+	}
+	if readUpdate.Blocks[0].Path != "internal/app/server.go" || readUpdate.Blocks[0].LineCount != 4 {
+		t.Fatalf("expected read path and line count retained, got %#v", readUpdate.Blocks[0])
+	}
+
+	editPayload := compactEditPayload("internal/app/server.go", "old one\nold two\n", "new one\n")
+	editUpdate, ok, err := streamUpdateFromSessionUpdatePayload(editPayload)
+	if err != nil || !ok {
+		t.Fatalf("parse edit payload: ok=%v err=%v", ok, err)
+	}
+	if editUpdate.ToolKind != "edit" {
+		t.Fatalf("expected edit tool kind retained, got %#v", editUpdate)
+	}
+	if len(editUpdate.Blocks) != 1 || editUpdate.Blocks[0].Kind != StreamBlockEdit {
+		t.Fatalf("expected one edit block, got %#v", editUpdate.Blocks)
+	}
+	if editUpdate.Blocks[0].NewLineCount != 1 || editUpdate.Blocks[0].OldLineCount != 2 {
+		t.Fatalf("expected edit old/new line counts retained, got %#v", editUpdate.Blocks[0])
+	}
+}
+
+func TestConsoleTextFallsBackToBoundedToolMarkerForIncompleteMetadata(t *testing.T) {
+	payload := []byte(`{"sessionId":"s","update":{"sessionUpdate":"tool_call_update","toolCallId":"read_1","kind":"read","title":"read","status":"completed","rawInput":{"path":"internal/app/secret.go"},"rawOutput":{"aggregated_output":"secret file body\nsecond secret line\n"}}}`)
+	update, ok, err := streamUpdateFromSessionUpdatePayload(payload)
+	if err != nil || !ok {
+		t.Fatalf("parse incomplete read payload: ok=%v err=%v", ok, err)
+	}
+
+	text := ConsoleText(update)
+
+	if text != "[TOOL] read internal/app/secret.go · completed\n" {
+		t.Fatalf("expected bounded marker, got %q", text)
+	}
+	for _, forbidden := range []string{"secret file body", "second secret line", "rawOutput", "aggregated_output", "sessionUpdate"} {
+		if strings.Contains(text, forbidden) {
+			t.Fatalf("expected fallback marker to omit %q, got %q", forbidden, text)
 		}
 	}
 }
@@ -434,7 +624,7 @@ func readFile(t *testing.T, path string) string {
 }
 
 func TestWriterSinkRendersConsoleTextContract(t *testing.T) {
-	payload := []byte(`{"sessionId":"sess-1","update":{"sessionUpdate":"tool_call_update","toolCallId":"call_123","title":"rtk make verify","status":"completed","content":[{"content":{"type":"text","text":"completed"}},{"diff":{"path":"apps/api/server.go"}},{"terminal":{"terminalId":"term_001"}}],"rawOutput":{"aggregated_output":"ok"}}}`)
+	payload := compactEditPayload("apps/api/server.go", "old\n", "new\nnewer\n")
 
 	var buffer strings.Builder
 	sink := WriterSink{Writer: &buffer}
@@ -451,10 +641,7 @@ func TestWriterSinkRendersConsoleTextContract(t *testing.T) {
 
 	text := buffer.String()
 	for _, expected := range []string{
-		"[TOOL] rtk make verify · completed",
-		"ok",
-		"diff: apps/api/server.go",
-		"terminal: term_001",
+		"edit apps/api/server.go (+2/-1)",
 		"raw line\n",
 		"SESSION COMPLETED\n",
 	} {
@@ -462,4 +649,33 @@ func TestWriterSinkRendersConsoleTextContract(t *testing.T) {
 			t.Fatalf("expected writer output to contain %q, got:\n%s", expected, text)
 		}
 	}
+}
+
+func compactReadPayload(path string, body string) []byte {
+	return []byte(`{"sessionId":"s","update":{"sessionUpdate":"tool_call_update","toolCallId":"read_1","kind":"read","title":"read","status":"completed","locations":[{"path":` + strconv.Quote(path) + `}],"content":[{"type":"text","path":` + strconv.Quote(path) + `,"text":` + strconv.Quote(body) + `}]}}`)
+}
+
+func compactEditPayload(path string, oldText string, newText string) []byte {
+	return []byte(`{"sessionId":"s","update":{"sessionUpdate":"tool_call_update","toolCallId":"edit_1","kind":"edit","title":"edit","status":"completed","locations":[{"path":` + strconv.Quote(path) + `}],"content":[{"type":"diff","path":` + strconv.Quote(path) + `,"oldText":` + strconv.Quote(oldText) + `,"newText":` + strconv.Quote(newText) + `}]}}`)
+}
+
+func compactOutputLines(text string) []string {
+	raw := strings.Split(strings.TrimSpace(text), "\n")
+	lines := make([]string, 0, len(raw))
+	for _, line := range raw {
+		if strings.TrimSpace(line) != "" {
+			lines = append(lines, line)
+		}
+	}
+	return lines
+}
+
+func countLinesWithPrefix(lines []string, prefix string) int {
+	count := 0
+	for _, line := range lines {
+		if strings.HasPrefix(line, prefix) {
+			count++
+		}
+	}
+	return count
 }

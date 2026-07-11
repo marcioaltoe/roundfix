@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0024-context-efficient-runs
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -27,22 +27,22 @@ independent Task scheduling and explicit failed-prerequisite settlement.
 
 ## Subtasks
 
-- [ ] Revise initial Task and review prompt contracts for Daemon-owned Verification.
-- [ ] Add the path-based Verification Feedback prompt builder.
-- [ ] Add the one-repair state transition to Task execution.
-- [ ] Add the same transition to review Batch execution.
-- [ ] Preserve Stop, infrastructure, prerequisite, and scheduler policies.
-- [ ] Cover all first/final verdict combinations and session identity.
+- [x] Revise initial Task and review prompt contracts for Daemon-owned Verification.
+- [x] Add the path-based Verification Feedback prompt builder.
+- [x] Add the one-repair state transition to Task execution.
+- [x] Add the same transition to review Batch execution.
+- [x] Preserve Stop, infrastructure, prerequisite, and scheduler policies.
+- [x] Cover all first/final verdict combinations and session identity.
 
 ## Acceptance Criteria
 
-- [ ] Attempt 1 pass settles normally and sends zero Verification output or feedback messages to the Agent.
-- [ ] Attempt 1 failure sends exactly one feedback prompt to the same SessionRef and attempt 2 reruns every configured command.
-- [ ] Attempt 2 pass settles completed/resolved; attempt 2 failure settles under the existing failed Work Item policy.
-- [ ] No path performs a third Verification attempt or second repair prompt.
-- [ ] Infrastructure failure or Stop Request never enters the repair loop.
-- [ ] A Task that records a missing credential as failed does not prevent an independent ready Task from starting, while its dependents remain blocked.
-- [ ] Review repair produces no duplicate Batch-start event.
+- [x] Attempt 1 pass settles normally and sends zero Verification output or feedback messages to the Agent.
+- [x] Attempt 1 failure sends exactly one feedback prompt to the same SessionRef and attempt 2 reruns every configured command.
+- [x] Attempt 2 pass settles completed/resolved; attempt 2 failure settles under the existing failed Work Item policy.
+- [x] No path performs a third Verification attempt or second repair prompt.
+- [x] Infrastructure failure or Stop Request never enters the repair loop.
+- [x] A Task that records a missing credential as failed does not prevent an independent ready Task from starting, while its dependents remain blocked.
+- [x] Review repair produces no duplicate Batch-start event.
 
 ## Verification
 
@@ -63,3 +63,13 @@ independent Task scheduling and explicit failed-prerequisite settlement.
 ## References
 
 `_prd.md` -> User Stories 1, 2, 6; Core Features 1-4; User Experience. `_techspec.md` -> System Architecture: Verification flow; API Contracts: repair prompts; Build Order 2. ADR-0014; ADR-0038.
+
+## Result
+
+- Initial Task and review prompts now assign authoritative Verification to the Daemon, while the new `BuildVerificationRepairPrompt` carries only the failed command, wrapped failure, attempt, and diagnostic artifact path.
+- Task and review Batch execution now run attempt 1, send one same-session Verification Feedback prompt only for a typed command failure, rerun the full configured sequence as attempt 2, and settle from that final verdict without a third attempt.
+- Tests cover attempt-1 pass without feedback, fail-then-pass repair, fail-then-fail final settlement, repair Agent error, infrastructure error, Stop Request before repair, Agent-authored failed Task status, independent Task continuation, dependent blocking, same `SessionRef`, and no duplicate review Batch-start event.
+- Verification passed:
+  - `rtk go test ./internal/agent ./internal/daemon` — 189 passed in 2 packages.
+  - `rtk go test -race ./internal/daemon` — 75 passed in 1 package.
+  - `rtk make verify` — `rtk go test ./...` 1066 passed in 19 packages; Roundfix skill check passed; `rtk go build -buildvcs=false -o bin/roundfix ./cmd/roundfix` passed.

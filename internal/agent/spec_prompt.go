@@ -14,6 +14,19 @@ type TaskPromptRequest struct {
 	TaskID      string
 	TaskPath    string
 	TaskContent string
+	Context     SpecContextBundle
+}
+
+// SpecContextBundle is the path-only Task-start manifest that orients an
+// Agent without embedding larger Spec, instruction, source, or diff content.
+type SpecContextBundle struct {
+	PRD               string
+	TechSpec          string
+	TaskGraph         string
+	Instructions      []string
+	Interfaces        []string
+	PriorChangedFiles []string
+	OmittedPriorFiles int
 }
 
 // taskExecutionInvariants states the execution contract the Agent must
@@ -23,7 +36,7 @@ type TaskPromptRequest struct {
 const taskExecutionInvariants = `Execution invariants:
 - Implement only this Task's slice; work that belongs to another Task is a follow-up note, not part of this diff.
 - Set status: in_progress in the task file frontmatter when you start.
-- Run the commands in the task file's ## Verification section while working; all must pass.
+- Run focused checks while working when useful; the Daemon runs the task file's ## Verification section after your turn.
 - Append a ## Result section to the task file with evidence for each acceptance criterion.
 - Settle the task file frontmatter to status: completed or status: failed before you finish.
 - Never commit, push, or open a pull request.
@@ -58,15 +71,63 @@ func BuildTaskPrompt(req TaskPromptRequest) (string, error) {
 	if strings.TrimSpace(req.TaskContent) == "" {
 		return "", errors.New("task file content is required")
 	}
+	if req.Context.OmittedPriorFiles < 0 {
+		return "", errors.New("omitted prior file count must not be negative")
+	}
 	var builder strings.Builder
 	builder.WriteString("You are the Roundfix child Agent for one Spec Task.\n\n")
 	builder.WriteString(fmt.Sprintf("Spec: %s\n", req.SpecSlug))
 	builder.WriteString(fmt.Sprintf("Task: %s\n", req.TaskID))
 	builder.WriteString(fmt.Sprintf("Task file: %s\n\n", req.TaskPath))
 	builder.WriteString(taskExecutionInvariants)
+	writeSpecContextBundle(&builder, req.Context)
 	builder.WriteString("\nTask file content, verbatim:\n\n")
 	builder.WriteString(req.TaskContent)
 	return builder.String(), nil
+}
+
+func writeSpecContextBundle(builder *strings.Builder, bundle SpecContextBundle) {
+	if !hasSpecContextBundle(bundle) {
+		return
+	}
+	builder.WriteString("\nSpec Context Bundle:\n")
+	writeNamedPath(builder, "PRD", bundle.PRD)
+	writeNamedPath(builder, "TechSpec", bundle.TechSpec)
+	writeNamedPath(builder, "Task Graph", bundle.TaskGraph)
+	writePathList(builder, "Instructions", bundle.Instructions)
+	writePathList(builder, "Interfaces", bundle.Interfaces)
+	writePathList(builder, "Prior changed files", bundle.PriorChangedFiles)
+	builder.WriteString(fmt.Sprintf("- Omitted prior files: %d\n", bundle.OmittedPriorFiles))
+}
+
+func hasSpecContextBundle(bundle SpecContextBundle) bool {
+	return strings.TrimSpace(bundle.PRD) != "" ||
+		strings.TrimSpace(bundle.TechSpec) != "" ||
+		strings.TrimSpace(bundle.TaskGraph) != "" ||
+		len(bundle.Instructions) > 0 ||
+		len(bundle.Interfaces) > 0 ||
+		len(bundle.PriorChangedFiles) > 0 ||
+		bundle.OmittedPriorFiles > 0
+}
+
+func writeNamedPath(builder *strings.Builder, label string, path string) {
+	if strings.TrimSpace(path) == "" {
+		return
+	}
+	builder.WriteString(fmt.Sprintf("- %s: %s\n", label, path))
+}
+
+func writePathList(builder *strings.Builder, label string, paths []string) {
+	if len(paths) == 0 {
+		return
+	}
+	builder.WriteString(fmt.Sprintf("- %s:\n", label))
+	for _, path := range paths {
+		if strings.TrimSpace(path) == "" {
+			continue
+		}
+		builder.WriteString(fmt.Sprintf("  - %s\n", path))
+	}
 }
 
 // BuildQAPrompt builds the prompt for one Spec QA gate: the Spec identity

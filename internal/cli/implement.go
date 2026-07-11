@@ -445,8 +445,12 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, run
 		Source:   collaborators.source,
 		Runs:     runStore,
 		Worktree: collaborators.worktree,
-		Sink:     ui.sink,
-		Progress: ui.progress,
+		// Production implement Runs use a real git resolver; CLI tests
+		// that fake Run Worktrees inject a path resolver alongside their
+		// other fake engine collaborators.
+		PriorChanges: collaborators.priorChanges,
+		Sink:         ui.sink,
+		Progress:     ui.progress,
 	})
 	if err != nil {
 		return daemon.TaskCycleResult{}, err
@@ -456,6 +460,7 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, run
 		Session:         session,
 		WorkDir:         runRef.Path,
 		RunWorktree:     runRef,
+		HeadSHA:         gitState.HEAD,
 		SpecsRoot:       specsRoot,
 		ArtifactDir:     artifactDir,
 		AgentLogs:       agentLogs,

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -85,32 +86,44 @@ func (sink *captureEventSink) snapshot() []runevent.RunEvent {
 
 func eventPayloadString(t *testing.T, event runevent.RunEvent, key string) string {
 	t.Helper()
-	var payload map[string]any
-	if err := json.Unmarshal(event.Payload, &payload); err != nil {
-		t.Fatalf("decode event payload %s: %v", event.Payload, err)
-	}
+	payload := eventPayloadMap(t, event)
 	value, _ := payload[key].(string)
 	return value
 }
 
+func eventPayloadMap(t *testing.T, event runevent.RunEvent) map[string]any {
+	t.Helper()
+	var payload map[string]any
+	if err := json.Unmarshal(event.Payload, &payload); err != nil {
+		t.Fatalf("decode event payload %s: %v", event.Payload, err)
+	}
+	return payload
+}
+
 type engineFakeRunner struct {
-	calls    *[]string
-	status   string
-	err      error
-	result   agent.ExecuteResult
-	store    *store.Store
-	seen     []string
-	requests []agent.ExecuteRequest
+	calls     *[]string
+	status    string
+	err       error
+	errByCall []error
+	result    agent.ExecuteResult
+	store     *store.Store
+	seen      []string
+	requests  []agent.ExecuteRequest
 }
 
 func (runner *engineFakeRunner) Probe(context.Context, agent.ProbeRequest) error { return nil }
 
 func (runner *engineFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
 	*runner.calls = append(*runner.calls, "agent")
+	callIndex := len(runner.requests)
 	runner.requests = append(runner.requests, req)
 	runner.seen = append(runner.seen, runStateForTest(runner.store, req.RunID))
-	if runner.err != nil {
-		if agent.IsStopError(runner.err) && sink != nil {
+	runErr := runner.err
+	if callIndex < len(runner.errByCall) {
+		runErr = runner.errByCall[callIndex]
+	}
+	if runErr != nil {
+		if agent.IsStopError(runErr) && sink != nil {
 			// Mirror the real runner: a stopped Agent publishes its status
 			// event before returning.
 			payload, _ := json.Marshal(struct {
@@ -125,7 +138,7 @@ func (runner *engineFakeRunner) Run(ctx context.Context, req agent.ExecuteReques
 				Payload: payload,
 			})
 		}
-		return agent.ExecuteResult{}, runner.err
+		return agent.ExecuteResult{}, runErr
 	}
 	status := runner.status
 	if status == "" {
@@ -148,8 +161,9 @@ func (runner *engineFakeRunner) EndSession(context.Context, agent.RuntimeSpec, a
 }
 
 type engineFakeVerifier struct {
-	calls *[]string
-	err   error
+	calls  *[]string
+	err    error
+	script []error
 	// failFirst fails only the first verification, so tests can prove a
 	// failed Batch does not stop later Batches from verifying cleanly.
 	failFirst bool
@@ -158,13 +172,52 @@ type engineFakeVerifier struct {
 	seen      []string
 }
 
-func (verifier *engineFakeVerifier) Verify(context.Context, VerifyRequest) error {
+func (verifier *engineFakeVerifier) Verify(_ context.Context, req VerifyRequest) (VerifyResult, error) {
 	*verifier.calls = append(*verifier.calls, "verify")
 	verifier.seen = append(verifier.seen, runStateForTest(verifier.store, verifier.runID))
-	if verifier.failFirst && len(verifier.seen) == 1 {
-		return errors.New("verification failed")
+	if len(verifier.script) > 0 {
+		err := verifier.script[0]
+		verifier.script = verifier.script[1:]
+		if err != nil {
+			return VerifyResult{OutputPath: req.OutputPath}, &VerificationCommandError{Command: req.Command, OutputPath: req.OutputPath, Err: err}
+		}
+		return VerifyResult{OutputPath: req.OutputPath}, nil
 	}
-	return verifier.err
+	if verifier.failFirst && len(verifier.seen) == 1 {
+		return VerifyResult{OutputPath: req.OutputPath}, &VerificationCommandError{Command: req.Command, OutputPath: req.OutputPath, Err: errors.New("verification failed")}
+	}
+	if verifier.err != nil {
+		return VerifyResult{OutputPath: req.OutputPath}, &VerificationCommandError{Command: req.Command, OutputPath: req.OutputPath, Err: verifier.err}
+	}
+	return VerifyResult{OutputPath: req.OutputPath}, nil
+}
+
+type engineInfrastructureVerifier struct {
+	calls *[]string
+	err   error
+}
+
+func (verifier *engineInfrastructureVerifier) Verify(_ context.Context, req VerifyRequest) (VerifyResult, error) {
+	*verifier.calls = append(*verifier.calls, "verify")
+	return VerifyResult{OutputPath: req.OutputPath}, verifier.err
+}
+
+type engineStopAfterCommandFailureVerifier struct {
+	calls *[]string
+	store *store.Store
+	runID string
+}
+
+func (verifier *engineStopAfterCommandFailureVerifier) Verify(ctx context.Context, req VerifyRequest) (VerifyResult, error) {
+	*verifier.calls = append(*verifier.calls, "verify")
+	if err := verifier.store.RequestStop(ctx, verifier.runID); err != nil {
+		return VerifyResult{OutputPath: req.OutputPath}, err
+	}
+	return VerifyResult{OutputPath: req.OutputPath}, &VerificationCommandError{
+		Command:    req.Command,
+		OutputPath: req.OutputPath,
+		Err:        errors.New("verification failed before stop"),
+	}
 }
 
 type engineFakeCommitter struct {
@@ -499,15 +552,16 @@ func TestResolveCycleVerificationFailureFailsBatchAndContinues(t *testing.T) {
 	fixture := newEngineFixture(t)
 	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID, err: errors.New("verification failed")}
 	committer := &engineFakeCommitter{calls: fixture.calls}
-	engine := fixture.engine(t, &engineFakeRunner{calls: fixture.calls, store: fixture.store}, verifier, committer, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
+	runner := &engineFakeRunner{calls: fixture.calls, store: fixture.store}
+	engine := fixture.engine(t, runner, verifier, committer, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
 
 	result, err := engine.ResolveCycle(context.Background(), fixture.plan())
 
 	if err != nil {
 		t.Fatalf("expected verification failure to fail only the Batch, got cycle error %v", err)
 	}
-	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify" {
-		t.Fatalf("expected no commit or source mutation after failed verification, got %q", got)
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>agent>verify" {
+		t.Fatalf("expected one repair attempt and no commit or source mutation after final failed verification, got %q", got)
 	}
 	if len(result.Batches) != 1 || !result.Batches[0].Failed {
 		t.Fatalf("expected failed Batch outcome, got %+v", result.Batches)
@@ -524,6 +578,222 @@ func TestResolveCycleVerificationFailureFailsBatchAndContinues(t *testing.T) {
 	}
 	if issue.Status != rounds.StatusFailed {
 		t.Fatalf("expected failed Batch issue status, got %q", issue.Status)
+	}
+	if len(runner.requests) != 2 {
+		t.Fatalf("expected initial Agent request plus one Verification Feedback request, got %d", len(runner.requests))
+	}
+	if !strings.Contains(runner.requests[1].Prompt, "Verification Feedback") {
+		t.Fatalf("expected second Agent request to be Verification Feedback, got:\n%s", runner.requests[1].Prompt)
+	}
+}
+
+func TestResolveCycleVerificationFailureRepairsSameSessionAndAvoidsDuplicateBatchStart(t *testing.T) {
+	fixture := newEngineFixture(t)
+	runner := &engineFakeRunner{calls: fixture.calls, store: fixture.store}
+	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID, failFirst: true}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	source := &engineFakeSource{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, committer, &engineFakePusher{calls: fixture.calls}, source)
+	plan := fixture.plan()
+
+	result, err := engine.ResolveCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("resolve cycle: %v", err)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>agent>verify>commit>source" {
+		t.Fatalf("expected initial Agent, attempt 1, repair, final attempt, commit, source; got %q", got)
+	}
+	if len(result.Batches) != 1 || result.Batches[0].Failed || !result.Batches[0].Committed || result.Batches[0].ResolvedSourceThreads != 1 {
+		t.Fatalf("expected repaired Batch to settle successfully, got %+v", result.Batches)
+	}
+	if len(runner.requests) != 2 {
+		t.Fatalf("expected initial prompt plus one Verification Feedback prompt, got %d", len(runner.requests))
+	}
+	if runner.requests[0].Session != plan.Session || runner.requests[1].Session != plan.Session {
+		t.Fatalf("expected repair to reuse SessionRef %#v, got %#v then %#v", plan.Session, runner.requests[0].Session, runner.requests[1].Session)
+	}
+	repairPrompt := runner.requests[1].Prompt
+	expectedPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 1)
+	for _, expected := range []string{
+		"Verification Feedback",
+		"Work Item: Batch 001",
+		"Failed command: make verify",
+		"Diagnostic artifact: " + expectedPath,
+		"verification failed",
+	} {
+		if !strings.Contains(repairPrompt, expected) {
+			t.Fatalf("expected repair prompt to contain %q, got:\n%s", expected, repairPrompt)
+		}
+	}
+	startedBatchEvents := 0
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonBatch) {
+		if eventPayloadString(t, event, "phase") == "started" {
+			startedBatchEvents++
+		}
+	}
+	if startedBatchEvents != 1 {
+		t.Fatalf("expected exactly one Batch-start boundary, got %d", startedBatchEvents)
+	}
+	verificationEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification)
+	verdicts := []string{}
+	for _, event := range verificationEvents {
+		payload := eventPayloadMap(t, event)
+		if payload["phase"] == string(runevent.VerificationPhaseVerdict) {
+			verdicts = append(verdicts, fmt.Sprintf("%v:%v", payload["attempt"], payload["verdict"]))
+		}
+	}
+	if got := strings.Join(verdicts, "|"); got != "1:failed|2:passed" {
+		t.Fatalf("expected failed attempt 1 and passed attempt 2 verdicts, got %s", got)
+	}
+}
+
+func TestResolveCycleVerificationFailureRetainsDiagnosticsWithoutStreamingOutput(t *testing.T) {
+	fixture := newEngineFixture(t)
+	plan := fixture.plan()
+	plan.Verification = `printf '\117\125\124\120\125\124\137\102\117\104\131'; exit 7`
+	engine := fixture.engine(t, &engineFakeRunner{calls: fixture.calls, store: fixture.store}, ExecVerifier{}, &engineFakeCommitter{calls: fixture.calls}, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
+
+	result, err := engine.ResolveCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("expected command failure to fail only the Batch, got %v", err)
+	}
+	if len(result.Batches) != 1 || !result.Batches[0].Failed {
+		t.Fatalf("expected failed Batch outcome, got %+v", result.Batches)
+	}
+	outputPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 1)
+	finalOutputPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 2)
+	content, readErr := os.ReadFile(outputPath)
+	if readErr != nil {
+		t.Fatalf("read verification artifact: %v", readErr)
+	}
+	if string(content) != "OUTPUT_BODY" {
+		t.Fatalf("expected failed command output retained, got %q", string(content))
+	}
+	finalContent, readErr := os.ReadFile(finalOutputPath)
+	if readErr != nil {
+		t.Fatalf("read final verification artifact: %v", readErr)
+	}
+	if string(finalContent) != "OUTPUT_BODY" {
+		t.Fatalf("expected final failed command output retained, got %q", string(finalContent))
+	}
+	progress := fixture.progress.String()
+	if !strings.Contains(progress, "Verification failed (attempt 1); diagnostics: "+outputPath) {
+		t.Fatalf("expected verdict summary with diagnostic path, got %q", progress)
+	}
+	if !strings.Contains(progress, "Verification failed (attempt 2); diagnostics: "+finalOutputPath) {
+		t.Fatalf("expected final verdict summary with diagnostic path, got %q", progress)
+	}
+	if strings.Contains(progress, "OUTPUT_BODY") {
+		t.Fatalf("expected progress to omit raw command output, got %q", progress)
+	}
+	verificationEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification)
+	phases := []string{}
+	verdicts := 0
+	for _, event := range verificationEvents {
+		if strings.Contains(event.Summary, "OUTPUT_BODY") || strings.Contains(string(event.Payload), "OUTPUT_BODY") {
+			t.Fatalf("expected Run Events to omit output body, got summary=%q payload=%s", event.Summary, event.Payload)
+		}
+		payload := eventPayloadMap(t, event)
+		phase, _ := payload["phase"].(string)
+		phases = append(phases, phase)
+		if phase == string(runevent.VerificationPhaseVerdict) {
+			verdicts++
+			if payload["verdict"] != string(runevent.VerificationVerdictFailed) {
+				t.Fatalf("expected failed aggregate verdict, got %v", payload["verdict"])
+			}
+			attempt := int(payload["attempt"].(float64))
+			expectedPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, attempt)
+			if payload["diagnostic_path"] != expectedPath {
+				t.Fatalf("expected verdict diagnostic path %q, got %v", expectedPath, payload["diagnostic_path"])
+			}
+		}
+		if phase == string(runevent.VerificationPhaseFailed) {
+			if _, ok := payload["attempt"].(float64); !ok {
+				t.Fatalf("expected attempt metadata, got %s", event.Payload)
+			}
+			attempt := int(payload["attempt"].(float64))
+			expectedPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, attempt)
+			if payload["diagnostic_path"] != expectedPath {
+				t.Fatalf("expected failed command diagnostic path %q, got %v", expectedPath, payload["diagnostic_path"])
+			}
+		}
+	}
+	if got := strings.Join(phases, "|"); got != "started|failed|verdict|started|failed|verdict" {
+		t.Fatalf("expected command phases and one aggregate verdict per attempt, got %s", got)
+	}
+	if verdicts != 2 {
+		t.Fatalf("expected exactly one aggregate verdict per attempt, got %d in %+v", verdicts, verificationEvents)
+	}
+}
+
+func TestResolveCycleVerificationInfrastructureErrorHaltsWithoutFailedSettlement(t *testing.T) {
+	fixture := newEngineFixture(t)
+	infraErr := errors.New("artifact filesystem unavailable")
+	verifier := &engineInfrastructureVerifier{calls: fixture.calls, err: infraErr}
+	engine := fixture.engine(t, &engineFakeRunner{calls: fixture.calls, store: fixture.store}, verifier, &engineFakeCommitter{calls: fixture.calls}, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
+
+	result, err := engine.ResolveCycle(context.Background(), fixture.plan())
+
+	if !errors.Is(err, infraErr) {
+		t.Fatalf("expected infrastructure error identity preserved, got %v", err)
+	}
+	if len(result.Batches) != 0 {
+		t.Fatalf("expected no Batch settlement on infrastructure error, got %+v", result.Batches)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify" {
+		t.Fatalf("expected cycle to halt after verification infrastructure error, got %q", got)
+	}
+	issue, parseErr := rounds.ParseIssue(fixture.issuePaths[0])
+	if parseErr != nil {
+		t.Fatalf("parse issue: %v", parseErr)
+	}
+	if issue.Status == rounds.StatusFailed {
+		t.Fatal("expected infrastructure error not to mark Review Issue failed")
+	}
+	verificationEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification)
+	verdicts := 0
+	for _, event := range verificationEvents {
+		payload := eventPayloadMap(t, event)
+		if payload["phase"] == string(runevent.VerificationPhaseVerdict) {
+			verdicts++
+			if payload["verdict"] != string(runevent.VerificationVerdictFailed) {
+				t.Fatalf("expected failed infrastructure verdict, got %v", payload["verdict"])
+			}
+		}
+	}
+	if verdicts != 1 {
+		t.Fatalf("expected one aggregate verdict before halting, got %d", verdicts)
+	}
+}
+
+func TestResolveCycleStopRequestAfterAttemptOneFailureDoesNotRepair(t *testing.T) {
+	fixture := newEngineFixture(t)
+	runner := &engineFakeRunner{calls: fixture.calls, store: fixture.store}
+	verifier := &engineStopAfterCommandFailureVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
+
+	result, err := engine.ResolveCycle(context.Background(), fixture.plan())
+
+	if !errors.Is(err, ErrStopRequested) {
+		t.Fatalf("expected ErrStopRequested, got %v", err)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify" {
+		t.Fatalf("expected Stop Request to prevent Verification Feedback repair, got %q", got)
+	}
+	if len(runner.requests) != 1 {
+		t.Fatalf("expected no repair Agent request after Stop Request, got %d", len(runner.requests))
+	}
+	if len(result.Batches) != 0 {
+		t.Fatalf("expected no Batch settlement after Stop Request, got %+v", result.Batches)
+	}
+	issue, parseErr := rounds.ParseIssue(fixture.issuePaths[0])
+	if parseErr != nil {
+		t.Fatalf("parse issue: %v", parseErr)
+	}
+	if issue.Status == rounds.StatusFailed {
+		t.Fatal("expected stopped Batch not to be marked failed")
 	}
 }
 
@@ -561,7 +831,16 @@ func TestResolveCycleContinuesToNextBatchAfterFailedBatch(t *testing.T) {
 		{"src/batch-one-residue.go"},
 		{"src/batch-one-residue.go", "src/batch-two-change.go"},
 	}}
-	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID, failFirst: true}
+	verifier := &engineFakeVerifier{
+		calls: fixture.calls,
+		store: fixture.store,
+		runID: fixture.run.ID,
+		script: []error{
+			errors.New("attempt 1 failed"),
+			errors.New("attempt 2 failed"),
+			nil,
+		},
+	}
 	committer := &engineFakeCommitter{calls: fixture.calls}
 	source := &engineFakeSource{calls: fixture.calls}
 	plan := fixture.plan()
@@ -578,7 +857,7 @@ func TestResolveCycleContinuesToNextBatchAfterFailedBatch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve cycle: %v", err)
 	}
-	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>agent>verify>commit>source" {
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>agent>verify>agent>verify>commit>source" {
 		t.Fatalf("expected second Batch to run after the first failed, got %q", got)
 	}
 	if len(result.Batches) != 2 {
@@ -610,8 +889,8 @@ func TestResolveCycleContinuesToNextBatchAfterFailedBatch(t *testing.T) {
 	if len(committer.paths) != 1 || strings.Join(committer.paths[0], ",") != "src/batch-two-change.go" {
 		t.Fatalf("expected second Batch commit to exclude first Batch residue, got %v", committer.paths)
 	}
-	if len(runner.requests) != 2 {
-		t.Fatalf("expected two Agent requests, got %d", len(runner.requests))
+	if len(runner.requests) != 3 {
+		t.Fatalf("expected initial+repair for first Batch and initial for second Batch, got %d", len(runner.requests))
 	}
 	for _, req := range runner.requests {
 		if req.Session != plan.Session {

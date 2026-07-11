@@ -200,6 +200,120 @@ func TestLoadParsesTaskFiles(t *testing.T) {
 	}
 }
 
+func TestLoadParsesOptionalTaskContext(t *testing.T) {
+	gitRoot := t.TempDir()
+	specsRoot := defaultSpecsRoot(gitRoot)
+	contextSection := md(`## Context
+
+- instruction: '.agents/skills/golang-testing/SKILL.md'
+- interface: 'internal/spec/task.go'
+- interface: 'internal/spec/task.go'
+
+`)
+	writeSpecDir(t, specsRoot, "demo", map[string]string{
+		"_prd.md": prdFixture("active"),
+		"_tasks.md": manifestFixture("spec-tasks/v1", `    - id: task_01
+      file: task_01.md
+      needs: []
+    - id: task_02
+      file: task_02.md
+      needs: [task_01]
+`),
+		"task_01.md": taskFixture("task_01", "No context", "pending", "backend", defaultVerificationSection),
+		"task_02.md": taskFixture("task_02", "With context", "pending", "backend", contextSection+defaultVerificationSection),
+	})
+
+	graph, err := Load(specsRoot, "demo")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if len(graph.Tasks[0].Context) != 0 {
+		t.Fatalf("missing ## Context should leave no refs, got %+v", graph.Tasks[0].Context)
+	}
+	got := graph.Tasks[1].Context
+	want := []TaskContextRef{
+		{Kind: ContextKindInstruction, Path: ".agents/skills/golang-testing/SKILL.md"},
+		{Kind: ContextKindInterface, Path: "internal/spec/task.go"},
+	}
+	if len(got) != len(want) {
+		t.Fatalf("Context = %+v, want %+v", got, want)
+	}
+	for index := range want {
+		if got[index] != want[index] {
+			t.Fatalf("Context[%d] = %+v, want %+v", index, got[index], want[index])
+		}
+	}
+}
+
+func TestLoadRejectsInvalidTaskContext(t *testing.T) {
+	tooMany := strings.Builder{}
+	tooMany.WriteString("## Context\n\n")
+	for index := 0; index < maxTaskContextRefs+1; index++ {
+		tooMany.WriteString(fmt.Sprintf("- interface: 'internal/file_%02d.go'\n", index))
+	}
+	tests := []struct {
+		name    string
+		context string
+		want    string
+	}{
+		{
+			name:    "unknown label",
+			context: "## Context\n\n- source: 'internal/spec/task.go'\n\n",
+			want:    "expected",
+		},
+		{
+			name:    "absolute path",
+			context: "## Context\n\n- interface: '/tmp/outside.go'\n\n",
+			want:    "repository-relative",
+		},
+		{
+			name:    "escaping path",
+			context: "## Context\n\n- interface: '../outside.go'\n\n",
+			want:    "inside the repository",
+		},
+		{
+			name:    "unclean path",
+			context: "## Context\n\n- interface: 'internal/../task.go'\n\n",
+			want:    "clean",
+		},
+		{
+			name:    "too many unique entries",
+			context: tooMany.String(),
+			want:    "more than 50",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gitRoot := t.TempDir()
+			specsRoot := defaultSpecsRoot(gitRoot)
+			writeSpecDir(t, specsRoot, "demo", map[string]string{
+				"_prd.md": prdFixture("active"),
+				"_tasks.md": manifestFixture("spec-tasks/v1", `    - id: task_01
+      file: task_01.md
+      needs: []
+`),
+				"task_01.md": taskFixture("task_01", "Invalid context", "pending", "backend", md(tt.context)+defaultVerificationSection),
+			})
+
+			_, err := Load(specsRoot, "demo")
+			if err == nil {
+				t.Fatal("Load succeeded, want Task Context validation error")
+			}
+			var taskErr TaskFileError
+			if !errors.As(err, &taskErr) {
+				t.Fatalf("error = %v, want TaskFileError", err)
+			}
+			var contextErr TaskContextError
+			if !errors.As(err, &contextErr) {
+				t.Fatalf("error = %v, want TaskContextError", err)
+			}
+			if !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("error %q does not contain %q", err, tt.want)
+			}
+		})
+	}
+}
+
 func TestLoadReturnsTypedValidationErrors(t *testing.T) {
 	tests := []struct {
 		name  string

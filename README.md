@@ -229,7 +229,9 @@ Stop: roundfix stop <run-id>
 
 The detached child owns the terminal outcome and fires the outcome
 notification, so unattended Runs can signal completion even after the caller
-exits. See Command Boundaries for the full detach contract.
+exits. Automation can monitor the same Run with
+`roundfix events <run-id> --follow` for JSONL records; the Console Log remains
+a compact text record. See Command Boundaries for the full detach contract.
 
 Settle one failed Spec Task whose completed work is already in a kept Task
 Worktree, kept Run Worktree, or the current repository:
@@ -292,6 +294,9 @@ Attach through the Run Browser, or attach directly by Run ID:
 ```bash
 roundfix attach
 roundfix attach <run-id>
+roundfix events <run-id>
+roundfix events <run-id> --follow
+roundfix events <run-id> --filter verification,outcome
 ```
 
 In an interactive terminal, `attach` without a Run ID opens the same Run
@@ -317,6 +322,46 @@ color-coded in capable terminals — cyan section labels and active borders,
 green done, amber running or waiting, red locked or failed, muted gray
 timestamps and paths — and under `ROUNDFIX_COLOR=never` or `NO_COLOR` the
 same layout and text markers carry every state distinction without color.
+
+Replay the Supervisor Run Event Stream for one explicit Run, or follow it
+until the terminal event drains:
+
+```bash
+roundfix events <run-id>
+roundfix events <run-id> --follow
+roundfix events <run-id> --filter verification,outcome
+```
+
+`events` writes only `roundfix-events/v1` JSONL records to stdout. Diagnostics
+and validation errors go to stderr. A missing Run ID, unknown Run ID, unknown
+filter, or empty filter exits `2`; malformed relevant Daemon payloads or store
+errors exit `1`; interrupting `--follow` exits `130` without a stdout trailer.
+A terminal Run replays and exits immediately with `0`.
+
+Each line is one JSON object. The default stream includes the four public
+Supervisor categories in journal cursor order: `task-status`, `batch`,
+`verification`, and `outcome`. `--filter` accepts a comma-separated subset of
+only those names; internal Run Event kinds and raw Agent payloads are not
+filter names.
+
+```json
+{"schema":"roundfix-events/v1","run_id":"run_20260710T120000Z_demo","category":"batch","time":"2026-07-10T12:00:00Z","cursor":1,"batch":1,"phase":"started","summary":"batch started"}
+{"schema":"roundfix-events/v1","run_id":"run_20260710T120000Z_demo","category":"verification","time":"2026-07-10T12:00:01Z","cursor":2,"batch":1,"attempt":1,"work_item":"task_01","phase":"verdict","verdict":"failed","summary":"verification attempt 1 verdict failed"}
+{"schema":"roundfix-events/v1","run_id":"run_20260710T120000Z_demo","category":"outcome","time":"2026-07-10T12:00:02Z","cursor":3,"outcome":"Unresolved","summary":"outcome Unresolved"}
+```
+
+Stable fields are:
+
+| category | fields |
+| --- | --- |
+| `task-status` | `schema`, `run_id`, `category`, `time`, `cursor`, `batch`, `work_item`, `phase`, `status`, `summary` |
+| `batch` | `schema`, `run_id`, `category`, `time`, `cursor`, `batch`, `phase`, `summary` |
+| `verification` | `schema`, `run_id`, `category`, `time`, `cursor`, `batch`, `work_item`, `attempt`, `phase`, `verdict`, `summary` |
+| `outcome` | `schema`, `run_id`, `category`, `time`, `cursor`, `outcome`, `summary` |
+
+Use `events` for automation and Supervisor monitoring. Use `attach` for the
+human Live Run View. Use the Detached Run Console Log as a compact text record,
+not as a state API.
 
 Stop a live Run gracefully, or force-stop a dead or runaway Run:
 
@@ -471,10 +516,15 @@ it, or set `NO_COLOR` to suppress color.
   committing, pushing, stopping, or resolving Review Source threads. Without a
   Run ID in an interactive terminal, it opens the machine-wide Run Browser —
   every repository's Runs newest first, Active only by default, `a` widens to
-  all states — and attaches the selected Run through the same Attach path; leaving
-  the Live Run View returns to a refreshed browser. Cancelling the browser
-  exits `0` with no side effects. Without a Run ID in non-interactive mode,
-  including `--no-input`, it exits `2` and names `roundfix runs list`.
+  all states — and attaches the selected Run through the same Attach path;
+  leaving the Live Run View returns to a refreshed browser. Cancelling the
+  browser exits `0` with no side effects. Without a Run ID in non-interactive
+  mode, including `--no-input`, it exits `2` and names `roundfix runs list`.
+- `events` is read-only. It replays one explicit Run as
+  `roundfix-events/v1` JSONL and, with `--follow`, waits until a terminal Run
+  drains. stdout contains records only; diagnostics go to stderr. Missing Run
+  IDs, unknown Runs, and invalid filters exit `2`; stream/store errors exit
+  `1`; follow cancellation exits `130`.
 - `stop` is graceful by default. It records a Stop Request in the Run Database
   and reports `Stop Request recorded; the Run stops after the current Work Item
   settles.` Use `--force` only for a dead, stuck, or runaway Run; it cancels
@@ -768,9 +818,42 @@ Set `notify.enabled: false` to disable outcome notifications entirely.
   `<artifact-dir>/runs/<run-id>/agent/batch-<nnn>.log`
 - Detached Run console log, always written for Detached Runs:
   `<artifact-dir>/runs/<run-id>/console.log`
+- Failed Verification diagnostics:
+  `<artifact-dir>/runs/<run-id>/verification/batch-<nnn>-attempt-<1|2>.log`
 - Journal Retention prunes only terminal Run Event Journal rows and
   `<artifact-dir>/runs/<run-id>` directories. Review artifacts under the Spec
   Root are outside retention scope.
+
+## Context-efficient Run evidence
+
+Roundfix separates the surfaces used by Agents, Supervisors, and humans:
+
+- Agent prompts receive the assigned Work Item contract and bounded guidance.
+  Successful Verification output never enters Agent context. On attempt-1
+  command failure, the Daemon sends exactly one Verification Feedback prompt to
+  the same Agent Session with the failed command, wrapped failure, and
+  diagnostic artifact path. The log body stays in the artifact. After the
+  repair turn, the Daemon reruns the complete Verification command sequence and
+  settles from that final verdict without a third attempt.
+- Verification cancellation, process-start failures, and artifact filesystem
+  failures are infrastructure errors, not repairable command failures. A Task
+  that records a missing prerequisite or credential as failed settles failed;
+  independent ready Tasks can continue, while dependents remain blocked.
+- Detached Run Console Logs and the Live Run View render ACP file reads and
+  edits as compact lines such as `read internal/spec/task.go (120 lines)` and
+  `edit internal/daemon/task_engine.go (+8/-3)`. They do not render file
+  bodies, raw ACP JSON, raw tool output, or unified diffs inline.
+- The Run Event Journal remains the lossless evidence boundary. Agent payloads
+  are stored exactly as the ACP Runtime produced them, and compact Console Log
+  or Live Run View rendering does not change journal bytes.
+- Spec Task prompts include one complete assigned Task plus a Spec Context
+  Bundle: paths for standard Spec artifacts, root instructions, the
+  implement-task skill, Task-authored `## Context` entries, and sorted files
+  changed by prior integrated Tasks. The bundle embeds no full PRD, TechSpec,
+  Skill document, source file, or prior diff. Task-authored Context entries
+  are capped at 50 unique paths; the complete manifest is capped at 200 paths,
+  reserving standard and explicit paths before prior changed files and
+  reporting the omitted prior-file count.
 
 For review commands, explicit `--spec <slug>` wins over trailer discovery. When
 `--spec` is absent, Roundfix uses the newest `Roundfix-Spec: <slug>` trailer on

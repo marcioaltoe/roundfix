@@ -62,7 +62,7 @@
       "ref": "main",
       "sourceType": "github",
       "skillPath": "skills/05-implementation-loop/golang-concurrency/SKILL.md",
-      "computedHash": "ea108cab6e74c483dbbeb5f9c2fb325940992fcf47be4032993896ab5885f8f3"
+      "computedHash": "599a74eed42371e5e82f8afe0eb42805a1807341d998c8d85cf8232303b66c46"
     },
     "golang-context": {
       "source": "marcioaltoe/skills",
@@ -76,21 +76,21 @@
       "ref": "main",
       "sourceType": "github",
       "skillPath": "skills/05-implementation-loop/golang-error-handling/SKILL.md",
-      "computedHash": "e75ea9f0b0a47fe591b647a8fffd3538303b604e4844a4f59d1e9d8ef7a80327"
+      "computedHash": "1601d92a30a221903d024d4ad470595c3c6141d14a5b274a446394adefc83a52"
     },
     "golang-lint": {
       "source": "marcioaltoe/skills",
       "ref": "main",
       "sourceType": "github",
       "skillPath": "skills/05-implementation-loop/golang-lint/SKILL.md",
-      "computedHash": "81a462768bbf77cef21743c95a086ab3554380e39d04e5be158c27b2dfc65e80"
+      "computedHash": "ea282d6b3a39d02fc468ef66615830de75f720c66ac72e899c4479868bea6c76"
     },
     "golang-testing": {
       "source": "marcioaltoe/skills",
       "ref": "main",
       "sourceType": "github",
       "skillPath": "skills/05-implementation-loop/golang-testing/SKILL.md",
-      "computedHash": "28a13faa42b4ae4623bb49994888dcf7f2a66d07587177db5fd5071b12f04a26"
+      "computedHash": "150dfb5fe4c56b8d3c141c4b3e70326743b591c1dedf9a32cfba64619bab8784"
     },
     "grill-with-docs": {
       "source": "marcioaltoe/skills",
@@ -104,21 +104,21 @@
       "ref": "main",
       "sourceType": "github",
       "skillPath": "skills/01-discovery/grilling/SKILL.md",
-      "computedHash": "bf1e75d96966edd298902d63348c828921b8b095d7306d0cdd56b4a591a7a82b"
+      "computedHash": "1de9e777a60b184b29412fadacb7bbde8c14bb7037e5c4d9d086c941281d1742"
     },
     "handoff": {
       "source": "marcioaltoe/skills",
       "ref": "main",
       "sourceType": "github",
       "skillPath": "skills/07-evidence-delivery/handoff/SKILL.md",
-      "computedHash": "5d0f81e38abe6b984e1feaa731927de5291d040982106ac513cf54ec240e00ec"
+      "computedHash": "87e353708ab36062eac54ddb593a97ca553c0cb4bfa1ed1fdaf68520700723f1"
     },
     "no-workarounds": {
       "source": "marcioaltoe/skills",
       "ref": "main",
       "sourceType": "github",
       "skillPath": "skills/05-implementation-loop/no-workarounds/SKILL.md",
-      "computedHash": "9b34a293a4a836612b1f8509c521b0ab163cec2105eafc270ebb347badea8471"
+      "computedHash": "c53eb07ae5e73781f2efe819f25f00fadbbd1d2ef18ab9983a31cf06b08ca7aa"
     },
     "review": {
       "source": "marcioaltoe/skills",
@@ -146,7 +146,7 @@
       "ref": "main",
       "sourceType": "github",
       "skillPath": "skills/05-implementation-loop/testing-boss/SKILL.md",
-      "computedHash": "36865bc741803fd1485d7b17789d583591ca2a6bcc3c249b42a3e0d294adb6c3"
+      "computedHash": "a20b323821306084166bce51d50b6d8f56506cc55785ca369e3597c4501e2176"
     },
     "the-fool": {
       "source": "marcioaltoe/skills",
