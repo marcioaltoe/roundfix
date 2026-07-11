@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0026-model-fallback-guardrail
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -34,18 +34,18 @@ validation gates.
 
 ## Subtasks
 
-- [ ] Update the canonical Roundfix Skill with the guardrail contract and
+- [x] Update the canonical Roundfix Skill with the guardrail contract and
       orchestrator relay rule, and sync the embedded copy.
-- [ ] Update the README Agent selection guidance with both flows.
-- [ ] Add the Fallback Selection glossary entry to CONTEXT.md.
+- [x] Update the README Agent selection guidance with both flows.
+- [x] Add the Fallback Selection glossary entry to CONTEXT.md.
 
 ## Acceptance Criteria
 
-- [ ] The Roundfix Skill names the orchestrator relay rule and the
+- [x] The Roundfix Skill names the orchestrator relay rule and the
       explicit-flags re-run recipe, and the embedded copy has zero drift.
-- [ ] The README documents the interactive confirmation and the
+- [x] The README documents the interactive confirmation and the
       non-interactive report.
-- [ ] CONTEXT.md defines Fallback Selection.
+- [x] CONTEXT.md defines Fallback Selection.
 
 ## Verification
 
@@ -61,3 +61,36 @@ validation gates.
 - `_prd.md` → User Story 3; Core Feature 5.
 - `_techspec.md` → Build Order 4.
 - ADR-0041; `docs/agents/skill-governance.md`.
+
+## Result
+
+Every guidance surface now describes the confirmation-gated Fallback
+Selection contract. The canonical and embedded Roundfix Skills name the exact
+interactive prompt, exit-2 non-interactive report, explicit model/effort
+re-run shape, model-managed rendering, and the hard rule that an orchestrating
+agent must relay the decision to the human user and never confirm
+autonomously. The README documents both user flows, and the glossary defines
+Fallback Selection with its same-runtime, one-Run-only boundary.
+
+Verification:
+
+- `rtk make skills-sync-check`: passed — canonical and embedded skill bundles
+  have zero drift.
+- `rtk go run -buildvcs=false ./cmd/roundfix skills check`: passed — all 14
+  shipped skills validated.
+- `rtk make verify`: passed — 1,070 tests across 19 packages, skill sync and
+  validation checks, and the CLI build.
+
+Acceptance evidence:
+
+1. `.agents/skills/roundfix/SKILL.md` and `skills/roundfix/SKILL.md` contain
+   the orchestrator relay prohibition and explicit `--model` plus
+   `--reasoning-effort` re-run recipe; the sync gate passed.
+2. `README.md` documents the interactive confirmation, token-cost caveat,
+   decline behavior, and prompt-free exit-2 report for no-input, detached,
+   and non-interactive stderr contexts.
+3. `CONTEXT.md` defines Fallback Selection as a proven same-runtime
+   alternative that applies to one Run after explicit human confirmation and
+   never changes configuration.
+
+Follow-ups: none.

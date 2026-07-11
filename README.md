@@ -587,11 +587,32 @@ Validation.
 An explicit empty `--reasoning-effort ""` is the one-Run model-managed
 override; an explicit empty `--model ""` is invalid and exits `2`. If a runtime
 rejects the selected Agent Model or a non-empty Default Reasoning Effort,
-`resolve`, `watch`, and `implement` exit `2` before creating a Run. The
-diagnostic names the runtime, model, and reasoning value, then gives recovery
-paths: update the runtime or adapter, select supported values, or set
-`runtimes.<runtime>.reasoning_effort ""` when the model manages reasoning.
-Roundfix does not fall back to another selection.
+Roundfix probes that runtime's Model Catalog newest-first and its reasoning
+vocabulary highest-first. It never crosses to another ACP Runtime or proposes
+the failed model. The first functional pair is the Fallback Selection; an
+empty effort is shown as `model-managed`.
+
+In an interactive terminal, `resolve`, `watch`, and `implement` print the
+failed selection, proven Fallback Selection, and a caveat that a different
+Agent Model can consume tokens differently. Roundfix then asks
+`Use this Fallback Selection for this Run? [y/N]: `. A yes answer starts the
+Run with the fallback as its effective selection. A no or empty answer exits
+`2` without creating a Run. The confirmation applies to that Run only and
+does not change User Config, Project Config, or runtime-owned configuration.
+
+With `--no-input`, `--detach`, or non-interactive stderr, Roundfix never
+prompts. It exits `2` before creating a Run and prints the failed selection,
+the proven Fallback Selection, and one concrete `Re-run:` line for the same
+command with explicit `--model` and `--reasoning-effort` flags:
+
+```bash
+roundfix <command> <same arguments> --model <proven-model> --reasoning-effort "<proven-effort>"
+```
+
+For model-managed reasoning, the re-run line contains
+`--reasoning-effort ""`. Roundfix has no flag or configuration key that
+pre-authorizes a fallback. If no candidate proves functional, the original
+actionable selection error remains and lists the probed candidates.
 
 Run startup and inspection surfaces show the stored selection:
 
