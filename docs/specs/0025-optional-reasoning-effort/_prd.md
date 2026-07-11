@@ -11,9 +11,12 @@ Roundfix cannot drive the codex gpt-5.6 Agent Model family. codex-acp exposes
 the `reasoning_effort` session config option only for model presets that
 support more than one effort; the gpt-5.6 family manages reasoning itself, so
 every `session/set_config_option "reasoning_effort"` value is rejected with
-ACP -32602. Roundfix hard-requires a non-empty Default Reasoning Effort and
-unconditionally issues the set call during Agent selection, so selection fails
-for any gpt-5.6 model regardless of configuration.
+ACP -32602. claude-code-acp does not implement `session/set_config_option` at
+all, so every effort value is rejected for every Claude model. Roundfix
+hard-requires a non-empty Default Reasoning Effort and unconditionally issues
+the set call during Agent selection, so selection fails for any gpt-5.6 model
+regardless of configuration, and the claude runtime's built-in defaults
+(`opus` + `high`) fail the same way.
 
 ## Goals
 
@@ -24,6 +27,9 @@ for any gpt-5.6 model regardless of configuration.
   runtime rejection fails Preflight Validation without fallback.
 - This repository's Project Config drives codex with `gpt-5.6-sol` as the
   Default Agent Model.
+- The claude runtime's built-in Default Reasoning Effort ships empty, so
+  `--agent claude` selects its Agent Model without a reasoning option on
+  adapters that do not implement the reasoning config option.
 
 ## Core Features
 
@@ -42,8 +48,8 @@ for any gpt-5.6 model regardless of configuration.
 
 ## Non-Goals / Out of Scope
 
-- Changing the built-in Default Agent Model or Default Reasoning Effort
-  constants for any runtime.
+- Changing any built-in Default Agent Model constant, or the codex built-in
+  Default Reasoning Effort.
 - Per-model effort metadata in the Model Catalog or any static claim about
   which models accept which efforts.
 - Tolerating or retrying a rejected non-empty reasoning value.

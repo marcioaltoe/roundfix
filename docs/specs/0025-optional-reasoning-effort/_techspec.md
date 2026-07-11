@@ -42,7 +42,10 @@ All changes extend existing modules; nothing new is created.
 - `internal/store` — unchanged: `runs.reasoning_effort` already defaults to
   `''`; an empty persisted value now means model-managed (legacy rows render
   the same way, which is truthful for both).
-- Config layer — unchanged mechanics: the `*string` overlay already
+- `internal/config/config.go` — `defaultClaudeReasoningEffort` becomes the
+  empty string (model-managed), because claude-code-acp implements no
+  reasoning config option; `defaultCodexReasoningEffort` stays `xhigh`.
+  Overlay mechanics are unchanged: the `*string` overlay already
   distinguishes an absent key (inherit) from a present-empty key (blank the
   inherited value), so `.roundfixrc.yml` can override the User Config's
   `xhigh` with `reasoning_effort: ""`.
@@ -102,6 +105,8 @@ empty state; no migration.
 - Goal "explicit values keep failing loudly" → unchanged set path plus the
   extended SelectionPreflightError recovery copy.
 - Goal "gpt-5.6-sol as this repo's default" → `.roundfixrc.yml` flip.
+- Goal "claude built-in defaults select without a reasoning option" →
+  `defaultClaudeReasoningEffort` empty in `Builtin()` plus the selection skip.
 - Core Feature 3 (honest surfaces) → Run headers, flag guard, Interactive
   Input field, persisted Run row.
 - Core Feature 4 (guidance) → README, CONTEXT.md glossary, ADR-0040, both
@@ -140,8 +145,9 @@ Existing seams only: the fake acpx runner in `internal/agent`
 1. Core selection change: relax `ResolveSelection` and
    `validateRuntimeSelection`, add the empty-effort skip to
    `applyDisposableSelection` and `applySelection`, extend the
-   `SelectionPreflightError` recovery copy, and update the
-   `internal/agent` + selection unit tests.
+   `SelectionPreflightError` recovery copy, ship the empty
+   `defaultClaudeReasoningEffort` builtin, and update the
+   `internal/agent` + `internal/config` + selection unit tests.
 2. CLI surfaces (depends on: 1): explicit-empty `--reasoning-effort` flag
    acceptance, `model-managed` header rendering across resolve/watch/
    implement, doctor/setup acceptance of empty configured effort, and the
@@ -163,10 +169,11 @@ Existing seams only: the fake acpx runner in `internal/agent`
   `gpt-5.6-sol`/`high` value; whichever PR merges second resolves a trivial
   two-line conflict, and `high` on gpt-5.6-sol fails preflight with the new
   actionable recovery text until amended.
-- The TUI codex effort choices (`low/medium/high/xhigh`) remain static and
-  model-agnostic; picking one for a gpt-5.6 model fails preflight with the
-  actionable message. Per-model choice filtering stays out of scope
-  (Non-Goals; ADR-0039 rejects static catalog claims).
+- The TUI effort choices (codex `low/medium/high/xhigh`, claude
+  `default/high/maximum`) remain static and model-agnostic; picking one for a
+  model that manages reasoning fails preflight with the actionable message.
+  Per-model choice filtering stays out of scope (Non-Goals; ADR-0039 rejects
+  static catalog claims).
 
 ## Decisions
 
@@ -177,5 +184,7 @@ Existing seams only: the fake acpx runner in `internal/agent`
 - The empty string is the sentinel (no named `model-managed` config value):
   it matches the existing empty-means-derive config keys and the `*string`
   overlay's absent-vs-present-empty semantics.
-- Built-in defaults are unchanged; only this repository's Project Config
-  moves to gpt-5.6-sol.
+- The claude built-in Default Reasoning Effort ships empty because
+  claude-code-acp implements no reasoning config option; built-in models and
+  the codex built-in effort are unchanged, and only this repository's Project
+  Config moves to gpt-5.6-sol. See ADR-0040.

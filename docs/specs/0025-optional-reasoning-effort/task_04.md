@@ -26,9 +26,9 @@ Skill validation gates plus the updated config content.
    value means the Agent Model manages reasoning, keeping the
    never-inherits-runtime-configuration stance for non-empty values.
 3. MUST document the optional reasoning semantics — empty config value,
-   explicit empty flag, model-managed header line, and the preflight failure
-   for rejected non-empty values — in the README selection and configuration
-   sections.
+   explicit empty flag, model-managed header line, the empty claude built-in
+   default, and the preflight failure for rejected non-empty values — in the
+   README selection and configuration sections.
 4. MUST update the canonical Roundfix Skill and its embedded copy together so
    the Skill documents the same optional-effort behavior with zero sync
    drift.

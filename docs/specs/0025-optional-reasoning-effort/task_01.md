@@ -32,6 +32,9 @@ record which acpx commands a selection issues.
    empty value) alongside choosing supported values.
 5. MUST resolve the runtime-specific reasoning config key only when a
    non-empty value will be assigned.
+6. MUST ship the claude runtime's built-in Default Reasoning Effort as the
+   empty (model-managed) value, keeping the built-in models and the codex
+   built-in effort unchanged.
 
 ## Subtasks
 
@@ -42,8 +45,9 @@ record which acpx commands a selection issues.
 - [ ] Add the empty-effort skip to the disposable preflight selection path and
       the live session selection path.
 - [ ] Extend the selection preflight error recovery copy.
-- [ ] Update the agent-layer and selection unit tests for the empty-effort
-      behavior, including the recorded-acpx-args assertions.
+- [ ] Ship the empty claude built-in Default Reasoning Effort.
+- [ ] Update the agent-layer, config, and selection unit tests for the
+      empty-effort behavior, including the recorded-acpx-args assertions.
 
 ## Acceptance Criteria
 
@@ -56,11 +60,15 @@ record which acpx commands a selection issues.
       rejection still produces the selection preflight failure whose recovery
       text names the model-managed remediation.
 - [ ] A RuntimeSpec without a model still fails selection validation.
+- [ ] The built-in claude runtime defaults resolve to a model with an empty
+      reasoning effort, and the built-in codex defaults keep a non-empty
+      effort.
 
 ## Verification
 
-- `rtk go test ./internal/agent ./internal/cli` - expected: selection,
-  probe-skip, live-session-skip, and recovery-copy tests pass.
+- `rtk go test ./internal/agent ./internal/cli ./internal/config` - expected:
+  selection, probe-skip, live-session-skip, recovery-copy, and builtin-default
+  tests pass.
 - `rtk make verify` - expected: formatting, all tests, Skill sync checks,
   Skill checks, and build pass.
 
