@@ -32,7 +32,7 @@ Specify success before writing the agent; iterate on prompt / model / tools agai
 
 **When.** Any LLM feature past the prototype stage. Mandatory once an agent is in production.
 
-**Evidence.** _"20–50 simple tasks drawn from real failures is a great start."_ (https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents) _"A small set of 10–20 prompts is enough to surface regressions and confirm improvements early."_ (https://developers.openai.com/blog/eval-skills) Promptfoo frames the goal as _"test-driven LLM development, not trial-and-error"_ (https://www.promptfoo.dev/docs/intro).
+**Evidence.** *"20–50 simple tasks drawn from real failures is a great start."* (https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents) *"A small set of 10–20 prompts is enough to surface regressions and confirm improvements early."* (https://developers.openai.com/blog/eval-skills) Promptfoo frames the goal as *"test-driven LLM development, not trial-and-error"* (https://www.promptfoo.dev/docs/intro).
 
 **Pitfalls.** Waiting for the dataset to be "big" before starting. Imbalanced sets that only test the positive direction.
 
@@ -57,7 +57,7 @@ Choose oracle by cost and signal. Cheaper oracles run first; expensive ones only
 5. **LLM-as-judge** — open-ended quality; calibrated against humans.
 6. **Human review** — gold standard, used to calibrate everything else.
 
-Evidence: _"Choose deterministic graders where possible, LLM graders where necessary or for additional flexibility, and use human graders judiciously."_ (https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents) _"Use deterministic checks for tool selection, argument construction, and format compliance. Use LLM-as-judge for response quality and goal alignment."_ (https://www.braintrust.dev/articles/ai-agent-evaluation-framework)
+Evidence: *"Choose deterministic graders where possible, LLM graders where necessary or for additional flexibility, and use human graders judiciously."* (https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents) *"Use deterministic checks for tool selection, argument construction, and format compliance. Use LLM-as-judge for response quality and goal alignment."* (https://www.braintrust.dev/articles/ai-agent-evaluation-framework)
 
 ## LLM-as-judge
 
@@ -65,7 +65,7 @@ A separate LLM scores outputs against a rubric — single-output (GEval / DAG) o
 
 **When.** Quality is semantic and not capturable by string match: tone, grounding, task completion, helpfulness.
 
-**Known biases.** Position bias, verbosity bias, self-enhancement bias, length bias, agreeableness bias. _"Error rates exceeding 50% on complex evaluation tasks."_ (https://galileo.ai/blog/agent-evaluation-framework-2026)
+**Known biases.** Position bias, verbosity bias, self-enhancement bias, length bias, agreeableness bias. *"Error rates exceeding 50% on complex evaluation tasks."* (https://galileo.ai/blog/agent-evaluation-framework-2026)
 
 **Discipline:**
 
@@ -73,7 +73,7 @@ A separate LLM scores outputs against a rubric — single-output (GEval / DAG) o
 - Give the judge an "Unknown" escape valve so it does not hallucinate verdicts.
 - Validate against humans before trusting in CI. Target ≥ 0.80 Spearman correlation with human judgment.
 
-Evidence: _"LLM-as-a-judge scoring achieves 81.3% human correlation."_ (https://openlayer.com/blog/post/llm-evaluation-metrics-complete-guide-for-march-2026) Three-technique split (G-Eval / DAGMetric / QAG): https://deepeval.com/guides/guides-llm-as-a-judge.
+Evidence: *"LLM-as-a-judge scoring achieves 81.3% human correlation."* (https://openlayer.com/blog/post/llm-evaluation-metrics-complete-guide-for-march-2026) Three-technique split (G-Eval / DAGMetric / QAG): https://deepeval.com/guides/guides-llm-as-a-judge.
 
 ## RAG-specific evaluation
 
@@ -93,7 +93,7 @@ Score both the path (tool selection, plan adherence, argument correctness, step 
 - **Trajectory-only grading** punishes valid creativity — the agent finds a shorter path and gets penalized.
 - **Outcome-only grading** misses ghost actions — the transcript claims success and nothing changed.
 
-Evidence: _"It's often better to grade what the agent produced, not the path it took."_ (https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents) Confident AI documents "ghost actions" (real vs claimed state divergence) and "metric green, user red" failure modes (https://www.confident-ai.com/blog/definitive-ai-agent-evaluation-guide). InfoQ: _"Treating multi-turn agents like single-turn LLMs — BLEU/ROUGE on text misses the entire failure surface."_ (https://www.infoq.com/articles/evaluating-ai-agents-lessons-learned)
+Evidence: *"It's often better to grade what the agent produced, not the path it took."* (https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents) Confident AI documents "ghost actions" (real vs claimed state divergence) and "metric green, user red" failure modes (https://www.confident-ai.com/blog/definitive-ai-agent-evaluation-guide). InfoQ: *"Treating multi-turn agents like single-turn LLMs — BLEU/ROUGE on text misses the entire failure surface."* (https://www.infoq.com/articles/evaluating-ai-agents-lessons-learned)
 
 Braintrust's layered approach: separate metrics for reasoning, action, and end-to-end (https://www.braintrust.dev/articles/ai-agent-evaluation-framework).
 
@@ -104,7 +104,7 @@ Two separate suites with different success bars.
 - **Capability evals** — start low (a hill to climb). Used to push the agent forward.
 - **Regression evals** — must be near 100%. Block releases. Production failures graduate into this suite.
 
-Re-run on every prompt change, model swap, or tool change. _"A prompt change that improves performance on one type of query can degrade performance on several others."_ — Braintrust, Anthropic eval guide.
+Re-run on every prompt change, model swap, or tool change. *"A prompt change that improves performance on one type of query can degrade performance on several others."* — Braintrust, Anthropic eval guide.
 
 ## Trace-based observability as the living eval
 
@@ -118,7 +118,7 @@ The principle: a static eval set is a snapshot. A trace-fed eval set is a moving
 
 Open problem. Survey-grade reading:
 
-- _"LLM Hallucination Survey"_ — https://arxiv.org/html/2510.06265v2
+- *"LLM Hallucination Survey"* — https://arxiv.org/html/2510.06265v2
 - HalluLens — https://aclanthology.org/2025.acl-long.1176/
 - SelfCheckGPT-style consistency, fact-verification, LLM-Check, HalluLens
 
@@ -128,8 +128,8 @@ None of these replace grounding-by-construction. The strongest defense is still 
 
 The strongest claim in this corpus: published benchmarks routinely over- or under-state agent capability by up to 100% relative because of outcome-validity and task-validity bugs.
 
-- _"SWE-bench-Verified uses insufficient test cases, while τ-bench counts empty responses as successful… 24% of the top 50 leaderboard positions are incorrect."_ (https://arxiv.org/html/2507.02825v2)
-- _"An agent can score 100% on SWE-Lancer without resolving any tasks."_ (same)
+- *"SWE-bench-Verified uses insufficient test cases, while τ-bench counts empty responses as successful… 24% of the top 50 leaderboard positions are incorrect."* (https://arxiv.org/html/2507.02825v2)
+- *"An agent can score 100% on SWE-Lancer without resolving any tasks."* (same)
 - Reward-hacking case: o3 located the grader's reference answer on the Python call stack and returned it on SWE-Bench. (https://trilogyai.substack.com/p/a-practical-guide-to-llm-and-agent)
 
 **Implication for the team.** Treat any internal eval suite the same way. If the grader can be hacked, the agent will hack it. Audit the grader before trusting its scores.
@@ -141,7 +141,7 @@ The strongest claim in this corpus: published benchmarks routinely over- or unde
 - Oracle quality dominates either world.
 - Regression gates work for both prompt changes and code changes.
 - Trace / observability is just instrumented integration testing.
-- _"Read the failure"_ (TDD red-step verification) and _"read the transcripts"_ (eval failure inspection) are the same loop.
+- *"Read the failure"* (TDD red-step verification) and *"read the transcripts"* (eval failure inspection) are the same loop.
 - Real-execution > mock-execution is the test-pyramid's integration tier reasserting itself in an LLM context.
 
 **Divergence:**
@@ -151,24 +151,24 @@ The strongest claim in this corpus: published benchmarks routinely over- or unde
 - Example-based tests dominate in LLM evals (curated golden tasks); the LLM analog of property-based tests is rubric assertions ("response is grounded in retrieved context").
 - Coverage means nothing for LLM behavior — you need explicit failure-mode coverage, not line coverage.
 
-The bottom line: classical testing discipline (invariants, layers, real-integration, repair-production) is the _correct_ defense against LLM and AI-coding-agent failure modes. Lifting those gates from CLAUDE.md prose into explicit agent-runnable checks is the operational task of any team shipping AI features.
+The bottom line: classical testing discipline (invariants, layers, real-integration, repair-production) is the *correct* defense against LLM and AI-coding-agent failure modes. Lifting those gates from CLAUDE.md prose into explicit agent-runnable checks is the operational task of any team shipping AI features.
 
 ## Sources
 
-- Anthropic — _Demystifying Evals for AI Agents_ — https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
-- OpenAI Developers — _Testing Agent Skills Systematically with Evals_ — https://developers.openai.com/blog/eval-skills
-- Promptfoo — _Intro_ — https://www.promptfoo.dev/docs/intro
-- Ragas — _RAG Evaluation Getting Started_ — https://docs.ragas.io/en/stable/getstarted/rag_eval
-- Ragas — _Evaluation_ — https://docs.ragas.io/en/v0.1.21/getstarted/evaluation.html
-- DeepEval — _Faithfulness Metric_ — https://deepeval.com/docs/metrics-faithfulness
-- DeepEval — _LLM as a Judge Guide_ — https://deepeval.com/guides/guides-llm-as-a-judge
-- Confident AI — _Definitive AI Agent Evaluation Guide_ — https://www.confident-ai.com/blog/definitive-ai-agent-evaluation-guide
-- Braintrust — _AI Agent Evaluation Framework_ — https://www.braintrust.dev/articles/ai-agent-evaluation-framework
-- Galileo — _Agent Evaluation Framework 2026_ — https://galileo.ai/blog/agent-evaluation-framework-2026
-- Openlayer — _LLM Evaluation Metrics Complete Guide_ — https://openlayer.com/blog/post/llm-evaluation-metrics-complete-guide-for-march-2026
-- Arize — _LLM Evaluation_ — https://arize.com/llm-evaluation
-- InfoQ — _Evaluating AI Agents: Lessons Learned_ — https://www.infoq.com/articles/evaluating-ai-agents-lessons-learned
-- Trilogy AI — _A Practical Guide to LLM and Agent Evaluation_ — https://trilogyai.substack.com/p/a-practical-guide-to-llm-and-agent
-- _Establishing Best Practices for Building Rigorous Agentic Benchmarks_ — https://arxiv.org/html/2507.02825v2
-- _LLM Hallucination Survey_ — https://arxiv.org/html/2510.06265v2
+- Anthropic — *Demystifying Evals for AI Agents* — https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
+- OpenAI Developers — *Testing Agent Skills Systematically with Evals* — https://developers.openai.com/blog/eval-skills
+- Promptfoo — *Intro* — https://www.promptfoo.dev/docs/intro
+- Ragas — *RAG Evaluation Getting Started* — https://docs.ragas.io/en/stable/getstarted/rag_eval
+- Ragas — *Evaluation* — https://docs.ragas.io/en/v0.1.21/getstarted/evaluation.html
+- DeepEval — *Faithfulness Metric* — https://deepeval.com/docs/metrics-faithfulness
+- DeepEval — *LLM as a Judge Guide* — https://deepeval.com/guides/guides-llm-as-a-judge
+- Confident AI — *Definitive AI Agent Evaluation Guide* — https://www.confident-ai.com/blog/definitive-ai-agent-evaluation-guide
+- Braintrust — *AI Agent Evaluation Framework* — https://www.braintrust.dev/articles/ai-agent-evaluation-framework
+- Galileo — *Agent Evaluation Framework 2026* — https://galileo.ai/blog/agent-evaluation-framework-2026
+- Openlayer — *LLM Evaluation Metrics Complete Guide* — https://openlayer.com/blog/post/llm-evaluation-metrics-complete-guide-for-march-2026
+- Arize — *LLM Evaluation* — https://arize.com/llm-evaluation
+- InfoQ — *Evaluating AI Agents: Lessons Learned* — https://www.infoq.com/articles/evaluating-ai-agents-lessons-learned
+- Trilogy AI — *A Practical Guide to LLM and Agent Evaluation* — https://trilogyai.substack.com/p/a-practical-guide-to-llm-and-agent
+- *Establishing Best Practices for Building Rigorous Agentic Benchmarks* — https://arxiv.org/html/2507.02825v2
+- *LLM Hallucination Survey* — https://arxiv.org/html/2510.06265v2
 - HalluLens — https://aclanthology.org/2025.acl-long.1176/

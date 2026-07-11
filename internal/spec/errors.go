@@ -103,6 +103,27 @@ func (err TaskFileError) Unwrap() error {
 	return err.Err
 }
 
+// TaskContextError reports an invalid Task-authored ## Context entry.
+type TaskContextError struct {
+	Kind   string
+	Path   string
+	Reason string
+}
+
+func (err TaskContextError) Error() string {
+	parts := []string{"Task Context entry"}
+	if err.Kind != "" {
+		parts = append(parts, fmt.Sprintf("kind %q", err.Kind))
+	}
+	if err.Path != "" {
+		parts = append(parts, fmt.Sprintf("path %q", err.Path))
+	}
+	if err.Reason != "" {
+		parts = append(parts, err.Reason)
+	}
+	return strings.Join(parts, ": ")
+}
+
 // MissingVerificationError reports a task file with no parseable Verification
 // command.
 type MissingVerificationError struct {

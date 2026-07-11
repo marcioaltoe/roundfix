@@ -39,8 +39,12 @@ Build exactly one task from a spec folder, end to end: load → plan → impleme
 
 Evidence before status, always in this order:
 
-1. Run every command in the task's `## Verification` section verbatim.
-2. Run the repository's verify pipeline (`make verify`, or the build/lint/typecheck/test equivalents this repo documents).
+1. In a standalone local task execution, run every command in the task's
+   `## Verification` section verbatim. In a Roundfix Daemon-assigned Agent turn,
+   run focused checks while working when useful; the Daemon runs the
+   authoritative `## Verification` commands after the turn and sends one
+   Verification Feedback prompt only for an attempt-1 command failure.
+2. Run the repository's verify pipeline (`make verify`, or the build/lint/typecheck/test equivalents this repo documents) when the current execution mode requires local completion evidence.
 3. Walk Acceptance Criteria one by one: each needs fresh evidence from this session — a command output, a test name that passes, an observed behavior. A green suite is not evidence for a criterion the suite doesn't cover.
 
 A narrow verification never supports a broad claim. If any check fails after honest root-cause attempts: set `status: failed`, record what was tried in `## Result`, and report — a loud failure the scheduler can retry beats a quiet "mostly done".

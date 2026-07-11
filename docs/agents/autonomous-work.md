@@ -23,8 +23,8 @@ work that needs its judgment. The Supervisor session:
 
 - routes changes through the spec pipeline (`docs/agents/spec-routing.md`) and authors the
   planning artifacts
-- launches Runs detached, monitors them to a terminal outcome, integrates, runs `qa-gate`, and
-  archives on pass
+- launches Runs detached, monitors them with `roundfix events <run-id> --follow` to a terminal
+  outcome, integrates, runs `qa-gate`, and archives on pass
 - picks the implementation runtime per Run (rules below)
 - keeps its own edits boundary-scoped: spec and doc fixes, Run recovery, boundary commits — it
   does not implement Spec Tasks itself while an ACP Runtime can do the work
@@ -54,11 +54,13 @@ The Supervisor authors every Spec through the pipeline skills (`write-idea`, `wr
 - **Hold shared-doc edits to Run boundaries.** CONTEXT.md, ADRs, AGENTS.md, and spec files are
   edited only while no Run is Active — uncommitted edits to files an Active Run also touches
   block its integration and leave the Run IntegrationPending.
-- **Author Tasks for the runtime that executes them.** Task Verification commands run verbatim
-  in a bare worktree: they must be fully self-contained — real paths, no `<placeholders>`, no
-  assumed build, link, or install state, and the repo's build flags
-  (`go build -buildvcs=false`). Pure `go test` and `make verify` fit; install-heavy
-  verifications do not.
+- **Author Tasks for the runtime that executes them.** The Daemon runs each Task's
+  `## Verification` commands verbatim after the Agent turn: commands must be fully
+  self-contained in a bare worktree — real paths, no `<placeholders>`, no assumed build, link,
+  or install state, and the repo's build flags (`go build -buildvcs=false`). Pure `go test` and
+  `make verify` fit; install-heavy verifications do not. Add a `## Context` section only for
+  task-specific instruction and interface paths the Agent must see in the path manifest; use
+  `- instruction: <path>` and `- interface: <path>` bullets with clean repository-relative paths.
 - **Sequence the queue.** Keep one explicit, dependency-and-risk-ordered implementation
   sequence across pending Specs. New Specs slot into that queue when approved; the Supervisor
   advances it one Run at a time and re-plans the order at each Run boundary.
@@ -111,7 +113,23 @@ repository should use that route.
 
 ## What this does not change
 
-- Verification is runtime-independent: every Task passes its Verification, `make verify` gates
-  every completion claim, and `qa-gate` runs after the last Task regardless of runtime.
+- Verification is runtime-independent and Daemon-owned: every Task must pass its
+  `## Verification` section, `make verify` gates every completion claim, and `qa-gate` runs
+  after the last Task regardless of runtime.
 - The spec workflow, issue-tracker conventions, and skill dispatch in AGENTS.md bind every
   runtime equally.
+
+## Monitoring Runs
+
+For unattended monitoring, use the Supervisor Run Event Stream instead of polling or grepping
+Console Log text:
+
+```bash
+roundfix events <run-id> --follow
+roundfix events <run-id> --filter verification,outcome
+```
+
+Each stdout line is one `roundfix-events/v1` JSON object. The stable categories are
+`task-status`, `batch`, `verification`, and `outcome`; diagnostics go to stderr. Use
+`roundfix attach <run-id>` only when a human needs the Live Run View. The Detached Run Console
+Log is a compact text record and is not a state API.

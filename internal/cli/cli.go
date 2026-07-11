@@ -56,6 +56,7 @@ Usage:
   roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]
   roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
   roundfix attach [<run-id>] [--no-input]
+  roundfix events <run-id> [--follow] [--filter <categories>]
   roundfix skills check
   roundfix skills install [--target <project|codex|claude|opencode|all>]
 
@@ -74,6 +75,7 @@ Commands:
   upgrade    Upgrade the Roundfix binary from GitHub Releases
   runs       List Runs from the Run Database
   attach     Replay a Run's event timeline from the Run Database
+  events     Replay or follow a Run's Supervisor event stream as JSONL
   skills     List, check, or install the bundled Roundfix skills
 
 Options:
@@ -204,6 +206,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runStopCommand(ctx, args[1:], stdout, stderr)
 	case "attach":
 		return runAttachCommand(ctx, args[1:], stdout, stderr)
+	case "events":
+		return runEventsCommand(ctx, args[1:], stdout, stderr)
 	case "skills":
 		return runSkillsCommand(ctx, args[1:], stdout, stderr)
 	case "fetch", "resolve", "watch":
@@ -2606,22 +2610,24 @@ func defaultFetchReviewItems(ctx context.Context, req reviewsource.FetchRequest)
 }
 
 type engineCollaborators struct {
-	runner    agent.Runner
-	verifier  daemon.Verifier
-	committer daemon.Committer
-	pusher    daemon.Pusher
-	source    daemon.ReviewSourceResolver
-	worktree  daemon.WorktreeSnapshotter
+	runner       agent.Runner
+	verifier     daemon.Verifier
+	committer    daemon.Committer
+	pusher       daemon.Pusher
+	source       daemon.ReviewSourceResolver
+	worktree     daemon.WorktreeSnapshotter
+	priorChanges daemon.PriorChangedResolver
 }
 
 func defaultEngineCollaborators() engineCollaborators {
 	return engineCollaborators{
-		runner:    agent.NewDefaultRunner(),
-		verifier:  daemon.ExecVerifier{},
-		committer: daemon.GitCommitter{},
-		pusher:    daemon.GitPusher{},
-		source:    daemon.ReviewSourceResolverFunc(defaultResolveReviewSourceIssues),
-		worktree:  daemon.GitWorktreeSnapshotter{},
+		runner:       agent.NewDefaultRunner(),
+		verifier:     daemon.ExecVerifier{},
+		committer:    daemon.GitCommitter{},
+		pusher:       daemon.GitPusher{},
+		source:       daemon.ReviewSourceResolverFunc(defaultResolveReviewSourceIssues),
+		worktree:     daemon.GitWorktreeSnapshotter{},
+		priorChanges: daemon.GitPriorChangedResolver{},
 	}
 }
 
@@ -2996,6 +3002,18 @@ func withoutCancelOrBackground(ctx context.Context) context.Context {
 
 func commandUsage(name string) string {
 	switch name {
+	case "events":
+		return `Usage:
+  roundfix events <run-id> [--follow] [--filter <categories>]
+
+Replays one Run's Supervisor event stream from the Run Database as
+roundfix-events/v1 JSONL. With --follow, continues until the Run reaches a
+terminal state or the command is interrupted.
+
+Options:
+  --follow  Continue after replay and exit after the terminal event drains
+  --filter  Comma-separated categories: task-status,batch,verification,outcome
+`
 	case "attach":
 		return `Usage:
   roundfix attach [<run-id>] [--no-input]

@@ -206,6 +206,10 @@ func (fixture *taskCycleFixture) engine(t *testing.T, runner agent.Runner, verif
 }
 
 func (fixture *taskCycleFixture) engineWithTaskWorktrees(t *testing.T, runner agent.Runner, verifier Verifier, committer Committer, worktree WorktreeSnapshotter, taskWorktrees TaskWorktreeManager) *Engine {
+	return fixture.engineWithTaskWorktreesAndPriorChanges(t, runner, verifier, committer, worktree, taskWorktrees, nil)
+}
+
+func (fixture *taskCycleFixture) engineWithTaskWorktreesAndPriorChanges(t *testing.T, runner agent.Runner, verifier Verifier, committer Committer, worktree WorktreeSnapshotter, taskWorktrees TaskWorktreeManager, priorChanges PriorChangedResolver) *Engine {
 	t.Helper()
 	engine, err := NewEngine(Dependencies{
 		Runner:        runner,
@@ -216,6 +220,7 @@ func (fixture *taskCycleFixture) engineWithTaskWorktrees(t *testing.T, runner ag
 		Runs:          fixture.store,
 		Worktree:      worktree,
 		TaskWorktrees: taskWorktrees,
+		PriorChanges:  priorChanges,
 		Sink:          fixture.sink,
 		Progress:      fixture.progress,
 	})
@@ -317,6 +322,8 @@ type taskFakeRunner struct {
 	store         *store.Store
 	statusByTask  map[string]spec.Status
 	errByTask     map[string]error
+	errByTaskCall map[string][]error
+	taskCalls     map[string]int
 	writeByTask   map[string]string
 	anomalyByTask map[string]string
 	qaReport      string
@@ -345,6 +352,11 @@ func (runner *taskFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest,
 		runner.seenStates = append(runner.seenStates, runStateForTest(runner.store, req.RunID))
 	}
 	taskID := taskIDFromPrompt(req.Prompt)
+	if runner.taskCalls == nil {
+		runner.taskCalls = map[string]int{}
+	}
+	taskCall := runner.taskCalls[taskID]
+	runner.taskCalls[taskID] = taskCall + 1
 	if taskID == "" && strings.Contains(req.Prompt, "Spec QA gate") {
 		runner.qaPrompts = append(runner.qaPrompts, req.Prompt)
 		if runner.qaReport != "" {
@@ -357,6 +369,25 @@ func (runner *taskFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest,
 			}
 		}
 		return agent.ExecuteResult{LogPath: req.LogPath}, nil
+	}
+	if taskErrs := runner.errByTaskCall[taskID]; taskCall < len(taskErrs) && taskErrs[taskCall] != nil {
+		err := taskErrs[taskCall]
+		if agent.IsStopError(err) && sink != nil {
+			// Mirror the real runner: a stopped Agent publishes its status
+			// event before returning.
+			payload, _ := json.Marshal(struct {
+				Status string `json:"status"`
+			}{Status: "stopped"})
+			_ = sink.Publish(ctx, runevent.RunEvent{
+				RunID:   req.RunID,
+				Batch:   req.Batch.Number,
+				Source:  runevent.SourceAgent,
+				Kind:    runevent.KindAgentStatus,
+				Summary: "SESSION STOPPED\n",
+				Payload: payload,
+			})
+		}
+		return agent.ExecuteResult{}, err
 	}
 	if err := runner.errByTask[taskID]; err != nil {
 		if agent.IsStopError(err) && sink != nil {
@@ -401,6 +432,12 @@ func taskIDFromPrompt(prompt string) string {
 	for _, line := range strings.Split(prompt, "\n") {
 		if strings.HasPrefix(line, "Task: ") {
 			return strings.TrimPrefix(line, "Task: ")
+		}
+		if strings.HasPrefix(line, "Work Item: ") {
+			value := strings.TrimSpace(strings.TrimPrefix(line, "Work Item: "))
+			if strings.HasPrefix(value, "task_") {
+				return value
+			}
 		}
 	}
 	return ""
@@ -449,23 +486,69 @@ func qaReportForTest(verdict string) string {
 // taskFakeVerifier records every verification command verbatim and fails
 // the commands scripted in failOn.
 type taskFakeVerifier struct {
-	calls      *[]string
-	store      *store.Store
-	runID      string
-	failOn     map[string]error
-	commands   []string
-	workDirs   []string
-	seenStates []string
+	calls       *[]string
+	store       *store.Store
+	runID       string
+	failOn      map[string]error
+	script      []error
+	commands    []string
+	workDirs    []string
+	outputPaths []string
+	seenStates  []string
 }
 
-func (verifier *taskFakeVerifier) Verify(_ context.Context, req VerifyRequest) error {
+func (verifier *taskFakeVerifier) Verify(_ context.Context, req VerifyRequest) (VerifyResult, error) {
 	*verifier.calls = append(*verifier.calls, "verify")
 	verifier.commands = append(verifier.commands, req.Command)
 	verifier.workDirs = append(verifier.workDirs, req.WorkDir)
+	verifier.outputPaths = append(verifier.outputPaths, req.OutputPath)
 	if verifier.store != nil {
 		verifier.seenStates = append(verifier.seenStates, runStateForTest(verifier.store, verifier.runID))
 	}
-	return verifier.failOn[req.Command]
+	if len(verifier.script) > 0 {
+		err := verifier.script[0]
+		verifier.script = verifier.script[1:]
+		if err != nil {
+			return VerifyResult{OutputPath: req.OutputPath}, &VerificationCommandError{Command: req.Command, OutputPath: req.OutputPath, Err: err}
+		}
+		return VerifyResult{OutputPath: req.OutputPath}, nil
+	}
+	if err := verifier.failOn[req.Command]; err != nil {
+		return VerifyResult{OutputPath: req.OutputPath}, &VerificationCommandError{Command: req.Command, OutputPath: req.OutputPath, Err: err}
+	}
+	return VerifyResult{OutputPath: req.OutputPath}, nil
+}
+
+type fakePriorChangedResolver struct {
+	mu       sync.Mutex
+	byWork   map[string][]string
+	calls    []priorChangedCall
+	resolve  func(workDir string) []string
+	errByDir map[string]error
+}
+
+type priorChangedCall struct {
+	workDir     string
+	initialHead string
+}
+
+func (resolver *fakePriorChangedResolver) PriorChangedFiles(_ context.Context, workDir string, initialHead string) ([]string, error) {
+	resolver.mu.Lock()
+	defer resolver.mu.Unlock()
+	resolver.calls = append(resolver.calls, priorChangedCall{workDir: workDir, initialHead: initialHead})
+	if err := resolver.errByDir[workDir]; err != nil {
+		return nil, err
+	}
+	if resolver.resolve != nil {
+		return append([]string(nil), resolver.resolve(workDir)...), nil
+	}
+	return append([]string(nil), resolver.byWork[workDir]...), nil
+}
+
+func (resolver *fakePriorChangedResolver) seenCalls() []priorChangedCall {
+	resolver.mu.Lock()
+	defer resolver.mu.Unlock()
+	return append([]priorChangedCall(nil), resolver.calls...)
 }
 
 type taskSchedulerRunner struct {
@@ -595,12 +678,15 @@ type taskSchedulerVerifier struct {
 	workDirs []string
 }
 
-func (verifier *taskSchedulerVerifier) Verify(_ context.Context, req VerifyRequest) error {
+func (verifier *taskSchedulerVerifier) Verify(_ context.Context, req VerifyRequest) (VerifyResult, error) {
 	verifier.mu.Lock()
 	verifier.commands = append(verifier.commands, req.Command)
 	verifier.workDirs = append(verifier.workDirs, req.WorkDir)
 	verifier.mu.Unlock()
-	return verifier.failOn[req.Command]
+	if err := verifier.failOn[req.Command]; err != nil {
+		return VerifyResult{OutputPath: req.OutputPath}, &VerificationCommandError{Command: req.Command, OutputPath: req.OutputPath, Err: err}
+	}
+	return VerifyResult{OutputPath: req.OutputPath}, nil
 }
 
 type taskSchedulerCommitter struct {
@@ -625,6 +711,7 @@ func (committer *taskSchedulerCommitter) commitCount() int {
 
 type fakeTaskWorktrees struct {
 	mu               sync.Mutex
+	fsMu             sync.Mutex
 	conflictByTask   map[string]string
 	createErrByTask  map[string]error
 	onCreate         func(taskID string, ref runworktree.TaskRef, opts runworktree.TaskCreateOptions) error
@@ -646,6 +733,8 @@ func newFakeTaskWorktrees() *fakeTaskWorktrees {
 
 func (worktrees *fakeTaskWorktrees) CreateTask(_ context.Context, run runworktree.Ref, taskID string, opts runworktree.TaskCreateOptions) (runworktree.TaskRef, error) {
 	path := filepath.Join(filepath.Dir(run.Path), run.RunID+"."+taskID)
+	worktrees.fsMu.Lock()
+	defer worktrees.fsMu.Unlock()
 	if err := os.RemoveAll(path); err != nil {
 		return runworktree.TaskRef{}, err
 	}
@@ -692,6 +781,8 @@ func (worktrees *fakeTaskWorktrees) IntegrateTask(_ context.Context, run runwork
 	if conflict != "" {
 		return runworktree.TaskIntegration{Mode: runworktree.ModeTaskConflict, Reason: conflict}, nil
 	}
+	worktrees.fsMu.Lock()
+	defer worktrees.fsMu.Unlock()
 	if err := copyTreeForSchedulerTest(task.Path, run.Path); err != nil {
 		return runworktree.TaskIntegration{}, err
 	}
@@ -1116,7 +1207,7 @@ func TestTaskCycleGatesDependenciesAndSkipsFailedDependencyChainsUnderConcurrenc
 	if result.Completed != 2 || result.Failed != 1 || result.Skipped != 2 {
 		t.Fatalf("expected dependency-gated counts 2 completed, 1 failed, 2 skipped, got %+v", result)
 	}
-	assertTaskSet(t, runner.startedTasks(), "task_01", "task_02", "task_03")
+	assertTaskSet(t, runner.startedTasks(), "task_01", "task_02", "task_03", "task_03")
 	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_04"); got != string(spec.StatusPending) {
 		t.Fatalf("expected skipped task_04 left pending on disk, got %q", got)
 	}
@@ -1409,8 +1500,8 @@ func TestTaskCycleTransportAnomalyStillLetsVerificationGateSettleFailure(t *test
 	if result.Completed != 0 || result.Failed != 1 || result.Skipped != 0 {
 		t.Fatalf("expected verification failure after anomaly to settle failed, got %+v", result)
 	}
-	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify" {
-		t.Fatalf("expected no commit after failed verification, got %q", got)
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>agent>verify" {
+		t.Fatalf("expected one repair attempt and no commit after final failed verification, got %q", got)
 	}
 	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusFailed) {
 		t.Fatalf("expected Daemon to settle failed after verification failure, got %q", got)
@@ -1419,6 +1510,139 @@ func TestTaskCycleTransportAnomalyStillLetsVerificationGateSettleFailure(t *test
 		t.Fatalf("expected no commit after failed verification, got %v", committer.messages)
 	}
 	assertTaskAnomalyBeforeVerification(t, fixture.sink.snapshot(), "task_01", anomaly)
+}
+
+func TestTaskCycleVerificationFailureRepairsSameSessionAndRerunsFullSequence(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"echo first", "echo second"}}})
+	runner := &taskFakeRunner{
+		calls:        fixture.calls,
+		gitRoot:      fixture.gitRoot,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	verifier := &taskFakeVerifier{
+		calls: fixture.calls,
+		script: []error{
+			nil,
+			errors.New("exit status 9"),
+			nil,
+			nil,
+		},
+	}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
+	plan := fixture.plan()
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 || result.Skipped != 0 {
+		t.Fatalf("expected repaired Task completed, got %+v", result)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>verify>agent>verify>verify>commit" {
+		t.Fatalf("expected initial Agent, attempt 1, repair, full final attempt, commit; got %q", got)
+	}
+	if got := strings.Join(verifier.commands, "|"); got != "echo first|echo second|echo first|echo second" {
+		t.Fatalf("expected final attempt to rerun every configured command, got %q", got)
+	}
+	if len(runner.requests) != 2 {
+		t.Fatalf("expected initial prompt plus one Verification Feedback prompt, got %d", len(runner.requests))
+	}
+	expectedSession := agent.SessionRefForRun(fixture.run.ID, fixture.gitRoot)
+	if runner.requests[0].Session != expectedSession || runner.requests[1].Session != expectedSession {
+		t.Fatalf("expected repair to reuse SessionRef %#v, got %#v then %#v", expectedSession, runner.requests[0].Session, runner.requests[1].Session)
+	}
+	repairPrompt := runner.requests[1].Prompt
+	expectedPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 1)
+	for _, expected := range []string{
+		"Verification Feedback",
+		"Work Item: task_01",
+		"Failed command: echo second",
+		"Diagnostic artifact: " + expectedPath,
+		"verification failed",
+	} {
+		if !strings.Contains(repairPrompt, expected) {
+			t.Fatalf("expected repair prompt to contain %q, got:\n%s", expected, repairPrompt)
+		}
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusCompleted) {
+		t.Fatalf("expected repaired Task settled completed, got %q", got)
+	}
+}
+
+func TestTaskCycleRepairAgentErrorFailsTaskWithoutFinalVerification(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"make verify"}}})
+	runner := &taskFakeRunner{
+		calls:         fixture.calls,
+		gitRoot:       fixture.gitRoot,
+		statusByTask:  map[string]spec.Status{"task_01": spec.StatusCompleted},
+		errByTaskCall: map[string][]error{"task_01": {nil, errors.New("repair crashed")}},
+	}
+	verifier := &taskFakeVerifier{calls: fixture.calls, script: []error{errors.New("gate broke")}}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("expected repair Agent error to fail only the Task, got %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 1 || result.Skipped != 0 {
+		t.Fatalf("expected one failed Task, got %+v", result)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>agent" {
+		t.Fatalf("expected no final Verification after repair Agent error, got %q", got)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusFailed) {
+		t.Fatalf("expected repair Agent error settled failed, got %q", got)
+	}
+	if len(committer.messages) != 0 {
+		t.Fatalf("expected no commit after repair Agent error, got %v", committer.messages)
+	}
+}
+
+func TestTaskCycleAgentAuthoredFailedTaskBlocksDependentsAndContinuesIndependent(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", title: "Needs unavailable credential"},
+		{id: "task_02", title: "Depends on credential", needs: []string{"task_01"}},
+		{id: "task_03", title: "Independent cleanup", taskType: "chore"},
+	})
+	runner := &taskFakeRunner{
+		calls:   fixture.calls,
+		gitRoot: fixture.gitRoot,
+		statusByTask: map[string]spec.Status{
+			"task_01": spec.StatusFailed,
+			"task_03": spec.StatusCompleted,
+		},
+	}
+	verifier := &taskFakeVerifier{calls: fixture.calls}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 1 || result.Skipped != 1 {
+		t.Fatalf("expected failed credential Task, skipped dependent, and completed independent, got %+v", result)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>agent>verify>commit" {
+		t.Fatalf("expected no Verification repair for Agent-authored failed Task and independent continuation, got %q", got)
+	}
+	if got := strings.Join(verifier.commands, "|"); got != "true" {
+		t.Fatalf("expected only the independent Task to verify, got %q", got)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusFailed) {
+		t.Fatalf("expected task_01 failed, got %q", got)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_02"); got != string(spec.StatusPending) {
+		t.Fatalf("expected dependent task_02 left pending, got %q", got)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_03"); got != string(spec.StatusCompleted) {
+		t.Fatalf("expected independent task_03 completed, got %q", got)
+	}
 }
 
 func TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents(t *testing.T) {
@@ -1449,7 +1673,7 @@ func TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents(t *testing.T
 	if result.Completed != 1 || result.Failed != 1 || result.Skipped != 1 {
 		t.Fatalf("expected 1 completed, 1 failed, 1 skipped, got %+v", result)
 	}
-	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>agent>verify>commit" {
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>agent>verify>agent>verify>commit" {
 		t.Fatalf("expected no commit for the failed Task and a full run for the independent Task, got %q", got)
 	}
 	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusFailed) {
@@ -1464,8 +1688,8 @@ func TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents(t *testing.T
 	if len(committer.messages) != 1 || !strings.HasPrefix(committer.messages[0], "chore: tidy the build files") {
 		t.Fatalf("expected only the independent Task committed with chore mapping, got %v", committer.messages)
 	}
-	if runner.requests[1].Batch.Number != 2 {
-		t.Fatalf("expected skipped Task to not consume an execution ordinal, got Batch %d", runner.requests[1].Batch.Number)
+	if runner.requests[2].Batch.Number != 2 {
+		t.Fatalf("expected skipped Task to not consume an execution ordinal, got Batch %d", runner.requests[2].Batch.Number)
 	}
 	var skipEvent *runevent.RunEvent
 	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonTask) {
@@ -1493,6 +1717,104 @@ func TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents(t *testing.T
 	last := taskEventsOfKind(fixture.sink, runevent.KindDaemonOutcome)
 	if kinds[len(kinds)-1] != runevent.KindDaemonOutcome || !strings.Contains(string(last[0].Payload), `"skipped":1`) {
 		t.Fatalf("expected outcome event with counts at cycle end, got %v", kinds)
+	}
+}
+
+func TestTaskCycleVerificationSequenceStopsAtFirstFailureWithOneVerdictPerAttempt(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", verification: []string{"echo first", "echo second", "echo third"}}})
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}
+	verifier := &taskFakeVerifier{calls: fixture.calls, failOn: map[string]error{"echo second": errors.New("exit status 9")}}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("expected command failure to fail only the Task, got %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 1 || result.Skipped != 0 {
+		t.Fatalf("expected one failed Task, got %+v", result)
+	}
+	if got := strings.Join(verifier.commands, "|"); got != "echo first|echo second|echo first|echo second" {
+		t.Fatalf("expected verification to stop on the first failing command, got %q", got)
+	}
+	expectedPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 1)
+	finalPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 2)
+	if len(verifier.outputPaths) != 4 ||
+		verifier.outputPaths[0] != expectedPath ||
+		verifier.outputPaths[1] != expectedPath ||
+		verifier.outputPaths[2] != finalPath ||
+		verifier.outputPaths[3] != finalPath {
+		t.Fatalf("expected attempt diagnostic paths %q then %q, got %v", expectedPath, finalPath, verifier.outputPaths)
+	}
+	if progress := fixture.progress.String(); !strings.Contains(progress, "Verification failed (attempt 1); diagnostics: "+expectedPath) {
+		t.Fatalf("expected bounded verdict summary without raw failure text, got %q", progress)
+	}
+	if progress := fixture.progress.String(); !strings.Contains(progress, "Verification failed (attempt 2); diagnostics: "+finalPath) {
+		t.Fatalf("expected final bounded verdict summary without raw failure text, got %q", progress)
+	}
+	verificationEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification)
+	phases := []string{}
+	verdicts := 0
+	for _, event := range verificationEvents {
+		if event.ReviewIssue != "task_01" || event.Batch != 1 {
+			t.Fatalf("expected task verification event to carry Work Item and Batch, got %+v", event)
+		}
+		payload := eventPayloadMap(t, event)
+		phase, _ := payload["phase"].(string)
+		phases = append(phases, phase)
+		attempt := int(payload["attempt"].(float64))
+		expectedDiagnosticPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, attempt)
+		if phase == string(runevent.VerificationPhaseFailed) && payload["diagnostic_path"] != expectedDiagnosticPath {
+			t.Fatalf("expected failed command diagnostic path %q, got %v", expectedDiagnosticPath, payload["diagnostic_path"])
+		}
+		if phase == string(runevent.VerificationPhaseVerdict) {
+			verdicts++
+			if payload["verdict"] != string(runevent.VerificationVerdictFailed) {
+				t.Fatalf("expected failed verdict, got %v", payload["verdict"])
+			}
+		}
+	}
+	if got := strings.Join(phases, "|"); got != "started|command-passed|started|failed|verdict|started|command-passed|started|failed|verdict" {
+		t.Fatalf("expected command phases and one aggregate verdict per attempt, got %s", got)
+	}
+	if verdicts != 2 {
+		t.Fatalf("expected exactly one aggregate verdict per attempt, got %d", verdicts)
+	}
+}
+
+func TestTaskCycleVerificationInfrastructureErrorHaltsWithoutTaskSettlement(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+	infraErr := errors.New("diagnostic artifact write failed")
+	runner := &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot, statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted}}
+	engine := fixture.engine(t, runner, &engineInfrastructureVerifier{calls: fixture.calls, err: infraErr}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if !errors.Is(err, infraErr) {
+		t.Fatalf("expected infrastructure error identity preserved, got %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 0 || result.Skipped != 0 {
+		t.Fatalf("expected no Task settlement on infrastructure error, got %+v", result)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify" {
+		t.Fatalf("expected Task cycle to halt after verification infrastructure error, got %q", got)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusCompleted) {
+		t.Fatalf("expected Daemon not to rewrite Agent-authored status on infrastructure error, got %q", got)
+	}
+	verificationEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonVerification)
+	verdicts := 0
+	for _, event := range verificationEvents {
+		payload := eventPayloadMap(t, event)
+		if payload["phase"] == string(runevent.VerificationPhaseVerdict) {
+			verdicts++
+			if payload["verdict"] != string(runevent.VerificationVerdictFailed) {
+				t.Fatalf("expected failed infrastructure verdict, got %v", payload["verdict"])
+			}
+		}
+	}
+	if verdicts != 1 {
+		t.Fatalf("expected one aggregate verdict before halting, got %d", verdicts)
 	}
 }
 
@@ -1541,7 +1863,7 @@ func TestTaskCycleSettlesForgottenAgentStatus(t *testing.T) {
 		if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusFailed) {
 			t.Fatalf("expected Daemon to settle the forgotten status failed, got %q", got)
 		}
-		if got := strings.Join(verifier.commands, "|"); got != "echo gamma" {
+		if got := strings.Join(verifier.commands, "|"); got != "echo gamma|echo gamma" {
 			t.Fatalf("expected verification to stop at the first failing command, got %q", got)
 		}
 		if len(committer.messages) != 0 {

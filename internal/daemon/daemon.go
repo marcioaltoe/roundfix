@@ -3,43 +3,123 @@ package daemon
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
-	"io"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 )
 
 type VerifyRequest struct {
-	WorkDir string
-	Command string
-	Stream  io.Writer
+	WorkDir    string
+	Command    string
+	OutputPath string
+}
+
+type VerifyResult struct {
+	OutputPath string
 }
 
 type Verifier interface {
-	Verify(context.Context, VerifyRequest) error
+	Verify(context.Context, VerifyRequest) (VerifyResult, error)
+}
+
+type VerificationCommandError struct {
+	Command    string
+	OutputPath string
+	Err        error
+}
+
+func (err *VerificationCommandError) Error() string {
+	if err == nil {
+		return ""
+	}
+	if strings.TrimSpace(err.OutputPath) == "" {
+		return fmt.Sprintf("verification command %q failed: %v", err.Command, err.Err)
+	}
+	return fmt.Sprintf("verification command %q failed; diagnostics: %s: %v", err.Command, err.OutputPath, err.Err)
+}
+
+func (err *VerificationCommandError) Unwrap() error {
+	if err == nil {
+		return nil
+	}
+	return err.Err
 }
 
 type ExecVerifier struct{}
 
-func (ExecVerifier) Verify(ctx context.Context, req VerifyRequest) error {
+func (ExecVerifier) Verify(ctx context.Context, req VerifyRequest) (VerifyResult, error) {
+	result := VerifyResult{OutputPath: req.OutputPath}
 	if strings.TrimSpace(req.WorkDir) == "" {
-		return fmt.Errorf("run verification: git root is required")
+		return result, fmt.Errorf("run verification: git root is required")
 	}
 	if strings.TrimSpace(req.Command) == "" {
-		return fmt.Errorf("run verification: command is required")
+		return result, fmt.Errorf("run verification: command is required")
 	}
+	if strings.TrimSpace(req.OutputPath) == "" {
+		return result, fmt.Errorf("run verification: diagnostic output path is required")
+	}
+	if err := ctx.Err(); err != nil {
+		return result, fmt.Errorf("run verification command %q: %w", req.Command, err)
+	}
+
+	outputPath := filepath.Clean(req.OutputPath)
+	outputDir := filepath.Dir(outputPath)
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		return result, fmt.Errorf("prepare verification diagnostics directory %q: %w", outputDir, err)
+	}
+	tempFile, err := os.CreateTemp(outputDir, filepath.Base(outputPath)+".tmp-*")
+	if err != nil {
+		return result, fmt.Errorf("create verification diagnostics temp file for %q: %w", outputPath, err)
+	}
+	tempPath := tempFile.Name()
 
 	cmd := exec.CommandContext(ctx, "sh", "-c", req.Command)
 	cmd.Dir = req.WorkDir
-	if req.Stream != nil {
-		cmd.Stdout = req.Stream
-		cmd.Stderr = req.Stream
+	cmd.Stdout = tempFile
+	cmd.Stderr = tempFile
+	runErr := cmd.Run()
+	closeErr := tempFile.Close()
+	if closeErr != nil {
+		_ = os.Remove(tempPath)
+		return result, fmt.Errorf("close verification diagnostics temp file %q: %w", tempPath, closeErr)
 	}
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("verification command %q failed: %w", req.Command, err)
+	if err := ctx.Err(); err != nil {
+		_ = os.Remove(tempPath)
+		return result, fmt.Errorf("run verification command %q: %w", req.Command, err)
+	}
+	if runErr == nil {
+		cleanupErr := errors.Join(removeIfExists(tempPath), removeIfExists(outputPath))
+		if cleanupErr != nil {
+			return result, fmt.Errorf("remove successful verification diagnostics for %q: %w", outputPath, cleanupErr)
+		}
+		return result, nil
+	}
+
+	var exitErr *exec.ExitError
+	if !errors.As(runErr, &exitErr) {
+		_ = os.Remove(tempPath)
+		return result, fmt.Errorf("start verification command %q: %w", req.Command, runErr)
+	}
+	if err := os.Rename(tempPath, outputPath); err != nil {
+		_ = os.Remove(tempPath)
+		return result, fmt.Errorf("retain failed verification diagnostics %q: %w", outputPath, err)
+	}
+	result.OutputPath = outputPath
+	return result, &VerificationCommandError{Command: req.Command, OutputPath: outputPath, Err: runErr}
+}
+
+func removeIfExists(path string) error {
+	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
 	}
 	return nil
+}
+
+func VerificationOutputPath(artifactDir string, runID string, batchNumber int, attempt int) string {
+	return filepath.Join(artifactDir, "runs", runID, "verification", fmt.Sprintf("batch-%03d-attempt-%d.log", batchNumber, attempt))
 }
 
 type CommitRequest struct {

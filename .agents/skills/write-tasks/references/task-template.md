@@ -77,10 +77,21 @@ complexity: medium # low | medium | high
 
 - [ ] ...
 
+## Context
+
+<!-- Optional. Include only task-specific path references that help a fresh Agent orient.
+     Use at most 50 unique clean repository-relative paths, labeled exactly as:
+     - instruction: `.agents/skills/<skill>/SKILL.md`
+     - interface: `internal/package/file.go`
+     The Daemon includes these paths in the 200-path Spec Context Bundle before prior changed files. -->
+
+- instruction: `<path>`
+- interface: `<path>`
+
 ## Verification
 
 <!-- The exact commands that prove this task done, with what to expect from each.
-     implement-task runs these verbatim and will not mark the task completed until they pass. -->
+     The Daemon runs these verbatim after the Agent turn and will not settle the task completed until they pass. -->
 
 - `<command>` — expected: ...
 

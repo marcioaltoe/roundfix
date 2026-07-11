@@ -187,22 +187,22 @@ func isSessionLifecycleStatus(status string) bool {
 }
 
 func consoleToolStartedText(update StreamUpdate) string {
-	title := strings.TrimSpace(update.Title)
-	if title == "" {
-		title = "tool call"
+	if lines := compactFileBlockLines(update.Blocks); len(lines) > 0 {
+		return strings.Join(lines, "\n") + "\n"
 	}
+	title := consoleToolName(update)
 	marker := "[TOOL] " + title
-	if update.ToolID != "" {
-		marker = fmt.Sprintf("[TOOL] %s (%s)", title, update.ToolID)
-	}
 	lines := []string{consoleToolMarker(marker, update.ToolState)}
 	lines = appendConsoleToolDetail(lines, update)
 	return strings.Join(lines, "\n") + "\n"
 }
 
 func consoleToolUpdatedText(update StreamUpdate) string {
+	if lines := compactFileBlockLines(update.Blocks); len(lines) > 0 {
+		return strings.Join(lines, "\n") + "\n"
+	}
 	lines := []string{}
-	if name := firstNonEmpty(update.Title, update.ToolID); name != "" {
+	if name := consoleToolName(update); name != "" {
 		lines = append(lines, consoleToolMarker("[TOOL] "+name, update.ToolState))
 	}
 	lines = appendConsoleToolDetail(lines, update)
@@ -221,9 +221,6 @@ func consoleToolMarker(marker string, state string) string {
 }
 
 func appendConsoleToolDetail(lines []string, update StreamUpdate) []string {
-	if strings.TrimSpace(update.Text) != "" && len(update.Blocks) == 0 {
-		lines = append(lines, strings.TrimRight(update.Text, "\r\n"))
-	}
 	return append(lines, consoleBlockLines(update.Blocks)...)
 }
 
@@ -232,21 +229,13 @@ func consoleBlockLines(blocks []StreamBlock) []string {
 	for _, block := range blocks {
 		switch block.Kind {
 		case StreamBlockText:
-			if text := strings.TrimRight(block.Text, "\r\n"); text != "" {
-				lines = append(lines, text)
-			}
 		case StreamBlockInput:
-			if text := strings.TrimRight(block.Text, "\r\n"); text != "" {
-				lines = append(lines, "$ "+text)
-			}
 		case StreamBlockOutput:
-			if text := strings.TrimRight(block.Text, "\r\n"); text != "" {
-				lines = append(lines, strings.Split(text, "\n")...)
-			}
 		case StreamBlockDiff:
-			if block.Path != "" {
-				lines = append(lines, "diff: "+block.Path)
-			}
+		case StreamBlockRead:
+			lines = append(lines, compactReadLine(block))
+		case StreamBlockEdit:
+			lines = append(lines, compactEditLine(block))
 		case StreamBlockTerminal:
 			if block.TerminalID != "" {
 				lines = append(lines, "terminal: "+block.TerminalID)
@@ -258,4 +247,47 @@ func consoleBlockLines(blocks []StreamBlock) []string {
 		}
 	}
 	return lines
+}
+
+func compactFileBlockLines(blocks []StreamBlock) []string {
+	lines := []string{}
+	for _, block := range blocks {
+		switch block.Kind {
+		case StreamBlockRead:
+			lines = append(lines, compactReadLine(block))
+		case StreamBlockEdit:
+			lines = append(lines, compactEditLine(block))
+		}
+	}
+	return lines
+}
+
+func compactReadLine(block StreamBlock) string {
+	return fmt.Sprintf("read %s (%d lines)", block.Path, block.LineCount)
+}
+
+func compactEditLine(block StreamBlock) string {
+	return fmt.Sprintf("edit %s (+%d/-%d)", block.Path, block.NewLineCount, block.OldLineCount)
+}
+
+func consoleToolName(update StreamUpdate) string {
+	name := firstNonEmpty(update.Title, update.ToolKind, update.ToolID, "tool call")
+	if path := primaryUpdatePath(update); path != "" && !strings.Contains(name, path) {
+		name += " " + path
+	}
+	return name
+}
+
+func primaryUpdatePath(update StreamUpdate) string {
+	for _, block := range update.Blocks {
+		if path := strings.TrimSpace(block.Path); path != "" {
+			return path
+		}
+	}
+	for _, location := range update.Locations {
+		if path := strings.TrimSpace(location.Path); path != "" {
+			return path
+		}
+	}
+	return ""
 }

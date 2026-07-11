@@ -24,7 +24,15 @@ type StreamUpdate struct {
 	Blocks    []StreamBlock
 	ToolID    string
 	ToolState string
+	ToolKind  string
+	Locations []StreamLocation
 	Status    string
+}
+
+type StreamLocation struct {
+	Path      string
+	StartLine int
+	EndLine   int
 }
 
 type StreamBlockKind string
@@ -34,22 +42,32 @@ const (
 	StreamBlockInput    StreamBlockKind = "input"
 	StreamBlockOutput   StreamBlockKind = "output"
 	StreamBlockDiff     StreamBlockKind = "diff"
+	StreamBlockRead     StreamBlockKind = "read"
+	StreamBlockEdit     StreamBlockKind = "edit"
 	StreamBlockTerminal StreamBlockKind = "terminal"
 	StreamBlockImage    StreamBlockKind = "image"
 	StreamBlockResource StreamBlockKind = "resource"
 )
 
 type StreamBlock struct {
-	Kind       StreamBlockKind
-	Text       string
-	Path       string
-	TerminalID string
-	MimeType   string
-	URI        string
-	Name       string
+	Kind         StreamBlockKind
+	Text         string
+	Path         string
+	ToolKind     string
+	LineCount    int
+	OldLineCount int
+	NewLineCount int
+	TerminalID   string
+	MimeType     string
+	URI          string
+	Name         string
+	Locations    []StreamLocation
 }
 
 func formatStreamUpdate(update StreamUpdate) string {
+	if text := ConsoleText(update); text != "" {
+		return text
+	}
 	title := strings.TrimSpace(update.Title)
 	text := strings.TrimRight(update.Text, "\r\n")
 	switch update.Kind {

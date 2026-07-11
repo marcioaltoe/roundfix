@@ -30,6 +30,7 @@ type TaskPlan struct {
 	Session         agent.SessionRef
 	WorkDir         string
 	RunWorktree     runworktree.Ref
+	HeadSHA         string
 	SpecsRoot       string
 	ArtifactDir     string
 	AgentLogs       bool
@@ -516,9 +517,25 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 		failure = "Agent settled the Task failed"
 	}
 	if failure == "" {
-		failure, err = engine.verifyTask(ctx, plan, task, ordinal)
-		if err != nil {
-			return "", err
+		verification, verifyErr := engine.verifyTask(ctx, plan, task, ordinal, 1)
+		if verifyErr != nil {
+			return "", verifyErr
+		}
+		if verification.Failure != "" {
+			failure, err = engine.repairTaskVerification(ctx, plan, &task, ordinal, verification)
+			if err != nil {
+				return "", err
+			}
+		}
+		if failure == "" && task.Status == spec.StatusFailed {
+			failure = "Agent settled the Task failed"
+		}
+		if failure == "" && verification.Failure != "" {
+			final, verifyErr := engine.verifyTask(ctx, plan, task, ordinal, 2)
+			if verifyErr != nil {
+				return "", verifyErr
+			}
+			failure = final.Failure
 		}
 	}
 	settled := spec.StatusCompleted
@@ -561,11 +578,16 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 	if err != nil {
 		return "", fmt.Errorf("read Task %q file %q before the Agent: %w", task.ID, taskPath, err)
 	}
+	contextBundle, err := engine.buildTaskContextBundle(ctx, plan, *task)
+	if err != nil {
+		return "", fmt.Errorf("build Spec Context Bundle for run %q Task %s: %w", plan.RunID, task.ID, err)
+	}
 	prompt, err := agent.BuildTaskPrompt(agent.TaskPromptRequest{
 		SpecSlug:    plan.Spec.Slug,
 		TaskID:      task.ID,
 		TaskPath:    taskPromptPath(plan, taskPath),
 		TaskContent: string(content),
+		Context:     contextBundle,
 	})
 	if err != nil {
 		return "", fmt.Errorf("build Task prompt for run %q Task %s: %w", plan.RunID, task.ID, err)
@@ -616,48 +638,104 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 	return "", nil
 }
 
-// verifyTask runs every Verification command of the Task sequentially and
-// verbatim through the Verifier, in WorkDir; the first failing command
-// fails the Task. defaults.verification is never appended: the Daemon gate
-// runs only the Task's own Verification commands (ADR 0014). It returns a
-// non-empty failure reason when verification failed; the returned error is
-// reserved for Stop Requests and infrastructure failures.
-func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int) (string, error) {
+// verifyTask runs one Verification attempt for every Task command
+// sequentially and verbatim through the Verifier, in WorkDir; the first
+// failing command ends that attempt. defaults.verification is never appended:
+// the Daemon gate runs only the Task's own Verification commands (ADR 0014).
+// Command failures return a typed outcome for the repair loop; the returned
+// error is reserved for Stop Requests and infrastructure failures.
+func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, attempt int) (verificationAttemptOutcome, error) {
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateVerifying); err != nil {
-		return "", fmt.Errorf("update run %q to state %q before Task %s verification: %w", plan.RunID, store.StateVerifying, task.ID, err)
+		return verificationAttemptOutcome{}, fmt.Errorf("update run %q to state %q before Task %s verification: %w", plan.RunID, store.StateVerifying, task.ID, err)
 	}
-	for _, command := range task.Verification {
-		if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification,
-			fmt.Sprintf("Verification started: %s", command),
-			map[string]any{"phase": "started", "command": command, "task": task.ID},
-		); err != nil {
-			return "", fmt.Errorf("publish verification start event for run %q Task %s: %w", plan.RunID, task.ID, err)
-		}
-		if err := engine.deps.Verifier.Verify(ctx, VerifyRequest{
-			WorkDir: plan.WorkDir,
-			Command: command,
-			Stream:  engine.deps.Progress,
-		}); err != nil {
-			if isStop(ctx, err) {
-				// A Stop Request during verification keeps the Agent's task
-				// status untouched; the run ends Stopped, not failed.
-				return "", fmt.Errorf("verify run %q Task %s: %w", plan.RunID, task.ID, err)
+	verification, err := engine.runVerificationAttempt(ctx, verificationAttemptRequest{
+		RunID:       plan.RunID,
+		WorkDir:     plan.WorkDir,
+		ArtifactDir: plan.ArtifactDir,
+		BatchNumber: ordinal,
+		WorkItem:    task.ID,
+		Attempt:     attempt,
+		Commands:    task.Verification,
+		Publish: func(ctx context.Context, summary string, payload map[string]any) error {
+			if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification, summary, payload); err != nil {
+				return fmt.Errorf("publish verification event for run %q Task %s: %w", plan.RunID, task.ID, err)
 			}
-			if publishErr := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification,
-				fmt.Sprintf("Verification failed: %s", command),
-				map[string]any{"phase": "failed", "command": command, "task": task.ID, "error": err.Error()},
-			); publishErr != nil {
-				return "", fmt.Errorf("publish verification failure event for run %q Task %s: %w", plan.RunID, task.ID, publishErr)
-			}
-			return fmt.Sprintf("verification failed: %v", err), nil
+			return nil
+		},
+	})
+	if err != nil {
+		if isStop(ctx, err) {
+			// A Stop Request during verification keeps the Agent's task
+			// status untouched; the run ends Stopped, not failed.
+			return verificationAttemptOutcome{}, fmt.Errorf("verify run %q Task %s: %w", plan.RunID, task.ID, err)
 		}
-		if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonVerification,
-			fmt.Sprintf("Verification command passed: %s", command),
-			map[string]any{"phase": "passed", "command": command, "task": task.ID},
+		return verificationAttemptOutcome{}, fmt.Errorf("verify run %q Task %s: %w", plan.RunID, task.ID, err)
+	}
+	return verification, nil
+}
+
+func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan, task *spec.Task, ordinal int, first verificationAttemptOutcome) (string, error) {
+	if first.CommandFailure == nil {
+		return first.Failure, nil
+	}
+	if err := ctx.Err(); err != nil {
+		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
+			return "", fmt.Errorf("publish stop event for run %q before Task %s Verification Feedback: %w", plan.RunID, task.ID, errors.Join(err, publishErr))
+		}
+		return "", fmt.Errorf("stop run %q before Task %s Verification Feedback: %w", plan.RunID, task.ID, err)
+	}
+	if err := engine.stopIfRequested(ctx, plan.RunID, ordinal); err != nil {
+		return "", fmt.Errorf("stop run %q before Task %s Verification Feedback: %w", plan.RunID, task.ID, err)
+	}
+	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateResolvingWithAgent); err != nil {
+		return "", fmt.Errorf("update run %q to state %q before Task %s Verification Feedback: %w", plan.RunID, store.StateResolvingWithAgent, task.ID, err)
+	}
+	prompt, err := agent.BuildVerificationRepairPrompt(task.ID, agent.VerificationFeedback{
+		Command:        first.CommandFailure.Command,
+		DiagnosticPath: first.CommandFailure.OutputPath,
+		Failure:        first.Failure,
+		Attempt:        1,
+	})
+	if err != nil {
+		return "", fmt.Errorf("build Verification Feedback prompt for run %q Task %s: %w", plan.RunID, task.ID, err)
+	}
+	logPath := agentLogPath(plan.AgentLogs, plan.ArtifactDir, plan.RunID, ordinal)
+	fmt.Fprintf(engine.deps.Progress, "Verification Feedback: Task %s (Batch %03d)\n", task.ID, ordinal)
+	if logPath != "" {
+		fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
+	}
+	runResult, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
+		Runtime:     plan.Runtime,
+		Session:     plan.Session,
+		RunID:       plan.RunID,
+		Batch:       rounds.Batch{Number: ordinal},
+		LogPath:     logPath,
+		ArtifactDir: plan.ArtifactDir,
+		Prompt:      prompt,
+		GitRoot:     plan.WorkDir,
+	}, engine.deps.Sink)
+	if runErr != nil {
+		if isStop(ctx, runErr) {
+			return "", fmt.Errorf("run Verification Feedback Agent for run %q Task %s: %w", plan.RunID, task.ID, runErr)
+		}
+		return fmt.Sprintf("Agent failed: %v", runErr), nil
+	}
+	if err := ctx.Err(); err != nil {
+		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
+			return "", fmt.Errorf("publish stop event for run %q after Task %s Verification Feedback: %w", plan.RunID, task.ID, errors.Join(err, publishErr))
+		}
+		return "", fmt.Errorf("stop run %q after Task %s Verification Feedback: %w", plan.RunID, task.ID, err)
+	}
+	if anomaly := strings.TrimSpace(runResult.TransportAnomaly); anomaly != "" {
+		if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, task.ID, runevent.KindDaemonTask,
+			fmt.Sprintf("Task %s Verification Feedback transport anomaly: %s", task.ID, anomaly),
+			map[string]any{"task": task.ID, "phase": "verification_feedback_transport_anomaly", "batch": ordinal, "anomaly": anomaly},
 		); err != nil {
-			return "", fmt.Errorf("publish verification pass event for run %q Task %s: %w", plan.RunID, task.ID, err)
+			return "", fmt.Errorf("publish Verification Feedback transport anomaly event for run %q Task %s: %w", plan.RunID, task.ID, err)
 		}
-		fmt.Fprintf(engine.deps.Progress, "Verification command passed: %s\n", command)
+	}
+	if err := spec.ReloadTask(plan.SpecsRoot, task); err != nil {
+		return fmt.Sprintf("reload task file after Verification Feedback: %v", err), nil
 	}
 	return "", nil
 }
