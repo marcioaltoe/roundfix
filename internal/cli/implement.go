@@ -163,7 +163,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 
 	collaborators := newEngineCollaborators()
-	if err := collaborators.runner.Probe(ctx, agent.ProbeRequest{Runtime: runtime, WorkDir: gitState.Root}); err != nil {
+	if err := probeRuntimeSelection(ctx, req, runtime, gitState.Root, collaborators.runner, stderr); err != nil {
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
@@ -345,6 +345,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 func parseImplementCommand(args []string, config roundconfig.Config) (commandRequest, error) {
 	req := commandRequest{
 		name:            "implement",
+		arguments:       append([]string(nil), args...),
 		agent:           config.Defaults.Agent,
 		artifactDir:     config.Defaults.ArtifactDir,
 		agentFullAccess: config.Defaults.AgentFullAccess,

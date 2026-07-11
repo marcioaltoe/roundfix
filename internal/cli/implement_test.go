@@ -472,6 +472,10 @@ type implementFakeRunner struct {
 	errByTask     map[string]error
 	probeErr      error
 	probeRequests []agent.ProbeRequest
+	fallback      agent.FallbackSelection
+	fallbackOK    bool
+	fallbackErr   error
+	fallbackSets  []agent.FallbackCandidateSet
 	calls         int
 	taskIDs       []string
 	qaReport      string
@@ -485,6 +489,11 @@ type implementFakeRunner struct {
 func (runner *implementFakeRunner) Probe(_ context.Context, req agent.ProbeRequest) error {
 	runner.probeRequests = append(runner.probeRequests, req)
 	return runner.probeErr
+}
+
+func (runner *implementFakeRunner) ProbeFallback(_ context.Context, _ agent.RuntimeSpec, candidates agent.FallbackCandidateSet) (agent.FallbackSelection, bool, error) {
+	runner.fallbackSets = append(runner.fallbackSets, candidates)
+	return runner.fallback, runner.fallbackOK, runner.fallbackErr
 }
 
 func (runner *implementFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
@@ -2740,6 +2749,54 @@ func TestRunImplementPreflightProbeFailureCreatesNoRun(t *testing.T) {
 	}
 	if len(runner.probeRequests) != 1 || runner.probeRequests[0].WorkDir != repoDir {
 		t.Fatalf("expected one selection preflight in git root %q, got %#v", repoDir, runner.probeRequests)
+	}
+	assertRunCount(t, store.DatabasePath(homeDir), 0)
+}
+
+func TestRunImplementSelectionFailureReportsFallbackWithoutCreatingRun(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	runner := &implementFakeRunner{
+		gitRoot: repoDir,
+		probeErr: &agent.SelectionPreflightError{
+			Runtime:         "codex",
+			Model:           "broken-model",
+			ReasoningEffort: "unsupported",
+			Err:             errors.New("selection rejected"),
+		},
+		fallback:   agent.FallbackSelection{Model: "gpt-5.5", ReasoningEffort: "high"},
+		fallbackOK: true,
+	}
+	withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{
+		"implement",
+		"--spec", implementTestSlug,
+		"--agent", "codex",
+		"--model", "broken-model",
+		"--reasoning-effort", "unsupported",
+		"--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected selection preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
+	}
+	for _, want := range []string{
+		"Fallback Selection:",
+		"Agent Model: gpt-5.5",
+		"Default Reasoning Effort: high",
+		"Re-run: roundfix implement --spec " + implementTestSlug + " --agent codex --no-input --model gpt-5.5 --reasoning-effort high",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())
+		}
+	}
+	if stdout.Len() != 0 || runner.calls != 0 {
+		t.Fatalf("expected no stdout or Agent work, stdout=%q calls=%d", stdout.String(), runner.calls)
+	}
+	if len(runner.fallbackSets) != 1 {
+		t.Fatalf("expected one fallback probe, got %#v", runner.fallbackSets)
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 0)
 }

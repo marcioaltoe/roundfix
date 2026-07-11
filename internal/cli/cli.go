@@ -90,6 +90,7 @@ const (
 
 type commandRequest struct {
 	name                string
+	arguments           []string
 	pr                  string
 	spec                string
 	source              string
@@ -1296,7 +1297,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	}
 	req = requestWithRuntimeSelection(req, resolvePlan.runtime)
 	collaborators := newEngineCollaborators()
-	if err := collaborators.runner.Probe(ctx, agent.ProbeRequest{Runtime: resolvePlan.runtime, WorkDir: preflightResult.Git.Root}); err != nil {
+	if err := probeRuntimeSelection(ctx, req, resolvePlan.runtime, preflightResult.Git.Root, collaborators.runner, stderr); err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
@@ -1679,7 +1680,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 	req = requestWithRuntimeSelection(req, runtime)
 	collaborators := newEngineCollaborators()
-	if err := collaborators.runner.Probe(ctx, agent.ProbeRequest{Runtime: runtime, WorkDir: preflightResult.Git.Root}); err != nil {
+	if err := probeRuntimeSelection(ctx, req, runtime, preflightResult.Git.Root, collaborators.runner, stderr); err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
@@ -2274,6 +2275,7 @@ func commandDisplayName(name string) string {
 func parseOperationalCommand(name string, args []string, config roundconfig.Config) (commandRequest, error) {
 	req := commandRequest{
 		name:            name,
+		arguments:       append([]string(nil), args...),
 		source:          config.ReviewSource.Name,
 		agent:           config.Defaults.Agent,
 		round:           "all",

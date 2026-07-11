@@ -270,6 +270,10 @@ func (runner *DefaultRunner) Probe(ctx context.Context, req ProbeRequest) error 
 	return runner.acpxRunner().Probe(ctx, req)
 }
 
+func (runner *DefaultRunner) ProbeFallback(ctx context.Context, runtime RuntimeSpec, candidates FallbackCandidateSet) (FallbackSelection, bool, error) {
+	return runner.acpxRunner().ProbeFallback(ctx, runtime, candidates)
+}
+
 func (runner *DefaultRunner) Run(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error) {
 	return runner.acpxRunner().Run(ctx, req, sink)
 }
