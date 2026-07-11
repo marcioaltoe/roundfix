@@ -209,11 +209,38 @@ Preflight Validation starts a disposable Agent Session in the Git root,
 assigns the selected Agent Model, assigns the runtime-specific reasoning option
 only when the effective Default Reasoning Effort is non-empty, closes the
 disposable session, and sends no prompt. If the runtime rejects the model or a
-non-empty reasoning value, `resolve`, `watch`, and `implement` exit `2` before
-creating a Run. The stderr diagnostic names runtime, model, and reasoning
-value, then gives recovery paths: update the runtime or adapter, select
-supported values, or set `runtimes.<runtime>.reasoning_effort ""` when the
-model manages reasoning. Roundfix never falls back to another selection.
+non-empty reasoning value, Roundfix probes that runtime's Model Catalog
+newest-first and its reasoning vocabulary highest-first. It never crosses to
+another ACP Runtime or proposes the failed Agent Model. The first proven pair
+is the Fallback Selection; an empty effort is rendered as `model-managed`.
+
+With interactive stderr and neither `--no-input` nor `--detach`, `resolve`,
+`watch`, and `implement` print the failed selection, the proven Fallback
+Selection, and `A different Agent Model can consume tokens differently.` They
+then ask exactly `Use this Fallback Selection for this Run? [y/N]: `. A `y` or
+`yes` applies the fallback to that Run only. A `no` or empty answer exits `2`
+without creating a Run. Roundfix never writes the confirmed selection to User
+Config, Project Config, or runtime-owned configuration.
+
+**HARD RULE:** An agent orchestrating Roundfix MUST relay the failed selection,
+Fallback Selection, and token-cost caveat to the human user and wait for their
+decision. The orchestrating agent MUST NOT answer the confirmation, choose the
+fallback, or run the explicit-flags re-run autonomously.
+
+With `--no-input`, `--detach`, or non-interactive stderr, the command never
+prompts. It exits `2` before creating a Run and prints the failed selection,
+the proven Fallback Selection, and one concrete `Re-run:` line for the same
+command. Copy that line only after the human user approves it. Its selection
+portion has this shape:
+
+```bash
+roundfix <command> <same arguments> --model <proven-model> --reasoning-effort "<proven-effort>"
+```
+
+For model-managed reasoning, the line contains `--reasoning-effort ""`. No
+flag or configuration key pre-authorizes a fallback. If no candidate proves
+functional, the original actionable selection error remains and lists the
+probed Agent Models and reasoning efforts.
 
 Initial progress and the Live Run View show the concrete stored selection:
 

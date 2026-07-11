@@ -88,6 +88,10 @@ _Avoid_: Local Agent reasoning, automatic reasoning, reasoning hint
 The ordered set of known Agent Models Roundfix offers for one ACP Runtime during Interactive Input. Its Default label resolves to the Default Agent Model, while non-interactive interfaces may supply a custom value.
 _Avoid_: Global model list, model allowlist
 
+**Fallback Selection**:
+The first functional alternative Agent Model from the failed ACP Runtime's Model Catalog, proven newest-first and paired with its highest functional reasoning effort. An empty effort means model-managed. It applies to one Run only after explicit human confirmation and never changes User Config, Project Config, or runtime-owned configuration.
+_Avoid_: Automatic fallback, silent model switch, cross-runtime fallback
+
 **Agent Session**:
 The persistent acpx-backed session through which one Run drives its Agent across Work Items — created when the Run starts Agent work, named by the Run, and closed at the Run's terminal outcome.
 _Avoid_: ACP session, chat, conversation, thread

@@ -3585,6 +3585,359 @@ func TestRunWatchSelectionPreflightFailureCreatesNoRun(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
+func TestRunReviewAgentCommandsReportProvenFallbackWithoutCreatingRun(t *testing.T) {
+	tests := []struct {
+		name             string
+		args             []string
+		fallback         agent.FallbackSelection
+		wantRerun        string
+		rerunArgs        []string
+		needsReviewIssue bool
+	}{
+		{
+			name:             "resolve with explicit reasoning",
+			args:             []string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--reasoning-effort", "unsupported", "--no-input"},
+			fallback:         agent.FallbackSelection{Model: "gpt-5.5", ReasoningEffort: "high"},
+			wantRerun:        "Re-run: roundfix resolve --pr 123 --agent codex --no-input --model gpt-5.5 --reasoning-effort high",
+			rerunArgs:        []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input", "--model", "gpt-5.5", "--reasoning-effort", "high"},
+			needsReviewIssue: true,
+		},
+		{
+			name:      "watch with model-managed reasoning",
+			args:      []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--reasoning-effort", "unsupported", "--no-input"},
+			fallback:  agent.FallbackSelection{Model: "gpt-5.4-mini"},
+			wantRerun: `Re-run: roundfix watch --source coderabbit --pr 123 --agent codex --no-input --model gpt-5.4-mini --reasoning-effort ""`,
+		},
+		{
+			name:             "resolve with non-interactive stderr",
+			args:             []string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--reasoning-effort", "unsupported"},
+			fallback:         agent.FallbackSelection{Model: "gpt-5.5", ReasoningEffort: "high"},
+			wantRerun:        "Re-run: roundfix resolve --pr 123 --agent codex --model gpt-5.5 --reasoning-effort high",
+			needsReviewIssue: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			withSuccessfulPreflight(t, repoDir)
+			runner := &fakeAgentRunner{
+				probeErr: &agent.SelectionPreflightError{
+					Runtime:         "codex",
+					Model:           "broken-model",
+					ReasoningEffort: "unsupported",
+					Err:             errors.New("selection rejected"),
+				},
+				fallback:   tt.fallback,
+				fallbackOK: true,
+			}
+			withAgentRunner(t, runner)
+			withFakeWorktree(t)
+			if tt.needsReviewIssue {
+				persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+			}
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run(tt.args, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("expected selection preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("fallback report must stay off stdout, got %q", stdout.String())
+			}
+			for _, want := range []string{
+				`model "broken-model" and reasoning "unsupported"`,
+				"Fallback Selection:",
+				"Agent Model: " + tt.fallback.Model,
+				"Default Reasoning Effort: " + displayReasoningEffort(tt.fallback.ReasoningEffort),
+				tt.wantRerun,
+			} {
+				if !strings.Contains(stderr.String(), want) {
+					t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())
+				}
+			}
+			if runner.calls != 0 {
+				t.Fatalf("expected no Agent work, got %d call(s)", runner.calls)
+			}
+			if len(runner.fallbackModels) != 1 {
+				t.Fatalf("expected one fallback probe, got %#v", runner.fallbackModels)
+			}
+			if got := strings.Join(runner.fallbackModels[0].Efforts, ","); got != "xhigh,high,medium,low" {
+				t.Fatalf("expected highest-first reasoning vocabulary, got %q", got)
+			}
+			if got := strings.Join(runner.fallbackModels[0].Models, ","); !strings.HasPrefix(got, "gpt-5.6-sol,gpt-5.6-terra") {
+				t.Fatalf("expected Model Catalog order, got %q", got)
+			}
+			assertNoRunDatabase(t, homeDir)
+			if len(tt.rerunArgs) > 0 {
+				runner.probeErr = nil
+				stdout.Reset()
+				stderr.Reset()
+				code = Run(tt.rerunArgs, &stdout, &stderr)
+				if code != exitOK {
+					t.Fatalf("expected printed fallback selection to pass preflight, got exit %d stderr=%q", code, stderr.String())
+				}
+				got := runner.probeRequests[len(runner.probeRequests)-1].Runtime
+				if got.Model != tt.fallback.Model || got.ReasoningEffort != tt.fallback.ReasoningEffort {
+					t.Fatalf("expected re-run to probe fallback selection %#v, got %#v", tt.fallback, got)
+				}
+			}
+		})
+	}
+}
+
+func TestRunResolveSelectionFailureReportsProbedCandidatesWhenNoFallbackWorks(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	runner := &fakeAgentRunner{probeErr: &agent.SelectionPreflightError{
+		Runtime:         "codex",
+		Model:           "gpt-5.6-sol",
+		ReasoningEffort: "unsupported",
+		Err:             errors.New("selection rejected"),
+	}}
+	withAgentRunner(t, runner)
+	withFakeWorktree(t)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--model", "gpt-5.6-sol", "--reasoning-effort", "unsupported", "--no-input"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected selection preflight exit %d, got %d", exitPreflight, code)
+	}
+	for _, want := range []string{
+		"selection rejected",
+		"recovery: update the ACP Runtime or adapter",
+		"Fallback probe found no functional selection.",
+		"Probed Agent Models (newest first): gpt-5.6-terra, gpt-5.6-luna",
+		"Probed reasoning efforts (highest first): xhigh, high, medium, low",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())
+		}
+	}
+	if stdout.Len() != 0 || runner.calls != 0 {
+		t.Fatalf("expected no output or Agent work, stdout=%q calls=%d", stdout.String(), runner.calls)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
+func TestRunReviewAgentCommandsConfirmFallbackAsEffectiveSelection(t *testing.T) {
+	tests := []struct {
+		name             string
+		args             []string
+		fallback         agent.FallbackSelection
+		needsReviewIssue bool
+	}{
+		{
+			name:             "resolve",
+			args:             []string{"resolve", "--pr", "123", "--agent", "codex"},
+			fallback:         agent.FallbackSelection{Model: "gpt-5.5", ReasoningEffort: "high"},
+			needsReviewIssue: true,
+		},
+		{
+			name:     "watch with model-managed reasoning",
+			args:     []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "1"},
+			fallback: agent.FallbackSelection{Model: "gpt-5.4-mini"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			withSuccessfulPreflight(t, repoDir)
+			configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+			configContent := "runtimes:\n  codex:\n    model: broken-model\n    reasoning_effort: unsupported\n"
+			mustWrite(t, configPath, configContent)
+			runner := &fakeAgentRunner{
+				probeErr: &agent.SelectionPreflightError{
+					Runtime:         "codex",
+					Model:           "broken-model",
+					ReasoningEffort: "unsupported",
+					Err:             errors.New("selection rejected"),
+				},
+				fallback:   tt.fallback,
+				fallbackOK: true,
+			}
+			withAgentRunner(t, runner)
+			withFallbackConfirmation(t, "yes\n")
+			if tt.needsReviewIssue {
+				persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+			}
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run(tt.args, &stdout, &stderr)
+
+			if code != exitOK {
+				t.Fatalf("expected confirmed fallback Run to finish cleanly, got exit %d stderr=%q", code, stderr.String())
+			}
+			for _, want := range []string{
+				"Failed Selection:",
+				"Agent Model: broken-model",
+				"Fallback Selection:",
+				"Agent Model: " + tt.fallback.Model,
+				"Default Reasoning Effort: " + displayReasoningEffort(tt.fallback.ReasoningEffort),
+				"A different Agent Model can consume tokens differently.",
+				"Use this Fallback Selection for this Run? [y/N]: ",
+			} {
+				if !strings.Contains(stderr.String(), want) {
+					t.Fatalf("expected interactive fallback output to contain %q, got %q", want, stderr.String())
+				}
+			}
+			if got := strings.Count(stderr.String(), "Use this Fallback Selection for this Run?"); got != 1 {
+				t.Fatalf("expected one confirmation question, got %d in %q", got, stderr.String())
+			}
+			run := runFromStore(t, homeDir, reviewRunIDFromStderr(t, stderr.String()))
+			if run.Model != tt.fallback.Model || run.ReasoningEffort != tt.fallback.ReasoningEffort {
+				t.Fatalf("expected Run record to carry fallback %#v, got %#v", tt.fallback, run)
+			}
+			if len(runner.runRuntimes) == 0 {
+				t.Fatal("expected confirmed fallback to start Agent work")
+			}
+			gotRuntime := runner.runRuntimes[0]
+			if gotRuntime.Model != tt.fallback.Model || gotRuntime.ReasoningEffort != tt.fallback.ReasoningEffort {
+				t.Fatalf("expected Agent work to use fallback %#v, got %#v", tt.fallback, gotRuntime)
+			}
+			if got := mustRead(t, configPath); got != configContent {
+				t.Fatalf("confirmed fallback must not change Project Config\nwant: %q\n got: %q", configContent, got)
+			}
+		})
+	}
+}
+
+func TestRunResolveDeclinesInteractiveFallbackWithoutCreatingRun(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{name: "no", input: "no\n"},
+		{name: "empty", input: "\n"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			withSuccessfulPreflight(t, repoDir)
+			configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+			configContent := "runtimes:\n  codex:\n    model: broken-model\n    reasoning_effort: unsupported\n"
+			mustWrite(t, configPath, configContent)
+			runner := &fakeAgentRunner{
+				probeErr: &agent.SelectionPreflightError{
+					Runtime:         "codex",
+					Model:           "broken-model",
+					ReasoningEffort: "unsupported",
+					Err:             errors.New("selection rejected"),
+				},
+				fallback:   agent.FallbackSelection{Model: "gpt-5.5", ReasoningEffort: "high"},
+				fallbackOK: true,
+			}
+			withAgentRunner(t, runner)
+			withFallbackConfirmation(t, tt.input)
+			persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"resolve", "--pr", "123", "--agent", "codex"}, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("expected declined fallback exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
+			}
+			if got := strings.Count(stderr.String(), "Use this Fallback Selection for this Run?"); got != 1 {
+				t.Fatalf("expected one confirmation question, got %d in %q", got, stderr.String())
+			}
+			for _, want := range []string{"Preflight failed", "Re-run: roundfix resolve", "Roundfix did not create a Run"} {
+				if !strings.Contains(stderr.String(), want) {
+					t.Fatalf("expected declined fallback output to contain %q, got %q", want, stderr.String())
+				}
+			}
+			if stdout.Len() != 0 || runner.calls != 0 {
+				t.Fatalf("declined fallback must start no work, stdout=%q Agent calls=%d", stdout.String(), runner.calls)
+			}
+			assertNoRunDatabase(t, homeDir)
+			if got := mustRead(t, configPath); got != configContent {
+				t.Fatalf("declined fallback must not change Project Config\nwant: %q\n got: %q", configContent, got)
+			}
+		})
+	}
+}
+
+func TestRunResolveNoInputSuppressesFallbackConfirmation(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	runner := &fakeAgentRunner{
+		probeErr: &agent.SelectionPreflightError{Runtime: "codex", Model: "broken-model", Err: errors.New("selection rejected")},
+		fallback: agent.FallbackSelection{Model: "gpt-5.5", ReasoningEffort: "high"}, fallbackOK: true,
+	}
+	withAgentRunner(t, runner)
+	withFallbackConfirmation(t, "yes\n")
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--no-input"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected no-input fallback exit %d, got %d", exitPreflight, code)
+	}
+	if strings.Contains(stderr.String(), "Use this Fallback Selection for this Run?") {
+		t.Fatalf("no-input fallback must not prompt, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "Re-run: roundfix resolve") {
+		t.Fatalf("expected task_02 non-interactive report, got %q", stderr.String())
+	}
+	if stdout.Len() != 0 || runner.calls != 0 {
+		t.Fatalf("no-input fallback must create no Run or Agent work, stdout=%q calls=%d", stdout.String(), runner.calls)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
+func TestRunResolveDetachedChildReportsFallbackWithDetachedRerun(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	runner := &fakeAgentRunner{
+		probeErr: &agent.SelectionPreflightError{
+			Runtime: "codex",
+			Model:   "broken-model",
+			Err:     errors.New("selection rejected"),
+		},
+		fallback:   agent.FallbackSelection{Model: "gpt-5.5", ReasoningEffort: "xhigh"},
+		fallbackOK: true,
+	}
+	withAgentRunner(t, runner)
+	withFallbackConfirmation(t, "yes\n")
+	withFakeWorktree(t)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	readPipe, writePipe, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("create detached child pipe: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = readPipe.Close()
+		_ = writePipe.Close()
+	})
+	t.Setenv(detachHandshakeFDEnv, strconv.Itoa(int(writePipe.Fd())))
+	t.Setenv(detachConsoleTempEnv, filepath.Join(t.TempDir(), "console.tmp"))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected detached preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "Re-run: roundfix resolve --pr 123 --agent codex --detach --model gpt-5.5 --reasoning-effort xhigh") {
+		t.Fatalf("expected detached explicit-selection re-run, got %q", stderr.String())
+	}
+	if strings.Contains(stderr.String(), "Use this Fallback Selection for this Run?") {
+		t.Fatalf("detached fallback must not prompt, got %q", stderr.String())
+	}
+	if stdout.Len() != 0 || runner.calls != 0 {
+		t.Fatalf("expected detached failure to create no Run or Agent work, stdout=%q calls=%d", stdout.String(), runner.calls)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
 func TestRunReviewAgentCommandsPassOneRunSelectionOverridesToPreflight(t *testing.T) {
 	tests := []struct {
 		name string
@@ -5729,6 +6082,18 @@ func withAgentRunner(t *testing.T, runner agent.Runner) {
 	})
 }
 
+func withFallbackConfirmation(t *testing.T, input string) {
+	t.Helper()
+	oldAvailable := fallbackConfirmationAvailable
+	oldInput := fallbackConfirmationInput
+	fallbackConfirmationAvailable = func(io.Writer) bool { return true }
+	fallbackConfirmationInput = func() io.Reader { return strings.NewReader(input) }
+	t.Cleanup(func() {
+		fallbackConfirmationAvailable = oldAvailable
+		fallbackConfirmationInput = oldInput
+	})
+}
+
 func withStopAgentSessionCanceler(t *testing.T, cancel func(context.Context, agent.RuntimeSpec, agent.SessionRef) error) {
 	t.Helper()
 	old := cancelStopAgentSession
@@ -6436,6 +6801,9 @@ func publishFakeAgentOutput(ctx context.Context, sink runevent.Sink, req agent.E
 
 type fakeAgentRunner struct {
 	probeErr       error
+	fallback       agent.FallbackSelection
+	fallbackOK     bool
+	fallbackErr    error
 	runErr         error
 	status         string
 	statuses       []string
@@ -6443,6 +6811,8 @@ type fakeAgentRunner struct {
 	calls          int
 	gitRoots       []string
 	probeRequests  []agent.ProbeRequest
+	fallbackModels []agent.FallbackCandidateSet
+	fallbackRuns   []agent.RuntimeSpec
 	probedRuntimes []agent.RuntimeSpec
 	runRuntimes    []agent.RuntimeSpec
 }
@@ -6451,6 +6821,12 @@ func (runner *fakeAgentRunner) Probe(_ context.Context, req agent.ProbeRequest) 
 	runner.probeRequests = append(runner.probeRequests, req)
 	runner.probedRuntimes = append(runner.probedRuntimes, req.Runtime)
 	return runner.probeErr
+}
+
+func (runner *fakeAgentRunner) ProbeFallback(_ context.Context, runtime agent.RuntimeSpec, candidates agent.FallbackCandidateSet) (agent.FallbackSelection, bool, error) {
+	runner.fallbackRuns = append(runner.fallbackRuns, runtime)
+	runner.fallbackModels = append(runner.fallbackModels, candidates)
+	return runner.fallback, runner.fallbackOK, runner.fallbackErr
 }
 
 func (runner *fakeAgentRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {

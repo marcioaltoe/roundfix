@@ -92,6 +92,7 @@ const (
 
 type commandRequest struct {
 	name                string
+	arguments           []string
 	pr                  string
 	spec                string
 	source              string
@@ -1298,12 +1299,14 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
-	req = requestWithRuntimeSelection(req, resolvePlan.runtime)
 	collaborators := newEngineCollaborators()
-	if err := collaborators.runner.Probe(ctx, agent.ProbeRequest{Runtime: resolvePlan.runtime, WorkDir: preflightResult.Git.Root}); err != nil {
+	effectiveRuntime, err := probeRuntimeSelection(ctx, req, resolvePlan.runtime, preflightResult.Git.Root, collaborators.runner, stderr)
+	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
+	resolvePlan.runtime = effectiveRuntime
+	req = requestWithRuntimeSelection(req, effectiveRuntime)
 
 	runStore, err := store.Open(ctx, loaded.HomeDir)
 	if err != nil {
@@ -1681,12 +1684,13 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
-	req = requestWithRuntimeSelection(req, runtime)
 	collaborators := newEngineCollaborators()
-	if err := collaborators.runner.Probe(ctx, agent.ProbeRequest{Runtime: runtime, WorkDir: preflightResult.Git.Root}); err != nil {
+	runtime, err = probeRuntimeSelection(ctx, req, runtime, preflightResult.Git.Root, collaborators.runner, stderr)
+	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
+	req = requestWithRuntimeSelection(req, runtime)
 
 	runStore, err := store.Open(ctx, loaded.HomeDir)
 	if err != nil {
@@ -2278,6 +2282,7 @@ func commandDisplayName(name string) string {
 func parseOperationalCommand(name string, args []string, config roundconfig.Config) (commandRequest, error) {
 	req := commandRequest{
 		name:            name,
+		arguments:       append([]string(nil), args...),
 		source:          config.ReviewSource.Name,
 		agent:           config.Defaults.Agent,
 		round:           "all",

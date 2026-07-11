@@ -30,6 +30,7 @@ const (
 	fakeACPXStdoutBy   = "ROUNDFIX_FAKE_ACPX_STDOUT_BY_COMMAND"
 	fakeACPXStderrBy   = "ROUNDFIX_FAKE_ACPX_STDERR_BY_COMMAND"
 	fakeACPXExitBy     = "ROUNDFIX_FAKE_ACPX_EXIT_BY_COMMAND"
+	fakeACPXExitByCall = "ROUNDFIX_FAKE_ACPX_EXIT_BY_CALL"
 	fakeACPXCanceled   = "ROUNDFIX_FAKE_ACPX_CANCELED"
 	fakeACPXClosed     = "ROUNDFIX_FAKE_ACPX_CLOSED"
 	fakeACPXStarted    = "ROUNDFIX_FAKE_ACPX_STARTED"
@@ -325,6 +326,138 @@ func TestACPXProbeCancellationStillClosesDisposableSession(t *testing.T) {
 	if !reflect.DeepEqual(invocations[2], wantClose) {
 		t.Fatalf("expected cleanup close after cancellation\nwant: %#v\ngot:  %#v", wantClose, invocations[2])
 	}
+}
+
+func TestACPXProbeFallbackUsesCandidateAndEffortOrder(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Chdir(harness.gitRoot)
+	t.Setenv(fakeACPXExitByCall, mustJSONForTest(t, map[string]int{
+		"sessions ensure model=gpt-newest": 2,
+		"set reasoning_effort value=xhigh": 2,
+	}))
+	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-failed", ReasoningEffort: "xhigh"}
+
+	selection, ok, err := harness.runner.ProbeFallback(context.Background(), runtime, FallbackCandidateSet{
+		Models:  []string{"gpt-failed", "gpt-newest", "gpt-working", "gpt-older"},
+		Efforts: []string{"xhigh", "high", "medium"},
+	})
+
+	if err != nil {
+		t.Fatalf("expected fallback probe to succeed, got %v", err)
+	}
+	if !ok {
+		t.Fatal("expected a proven Fallback Selection")
+	}
+	if want := (FallbackSelection{Model: "gpt-working", ReasoningEffort: "high"}); selection != want {
+		t.Fatalf("unexpected Fallback Selection\nwant: %#v\ngot:  %#v", want, selection)
+	}
+	invocations := readJSONInvocations(t, harness.invocationsPath)
+	assertFallbackCandidateSessions(t, invocations, []string{"gpt-newest", "gpt-working"})
+	if containsInvocationValue(invocations, "--model", "gpt-failed") {
+		t.Fatalf("failed Agent Model must not be probed: %#v", invocations)
+	}
+	if containsInvocationValue(invocations, "--model", "gpt-older") {
+		t.Fatalf("candidate walking must stop after the first proven model: %#v", invocations)
+	}
+	if containsCommandValue(invocations, "set reasoning_effort", "medium") {
+		t.Fatalf("effort probing must stop after the highest accepted value: %#v", invocations)
+	}
+}
+
+func TestACPXProbeFallbackClassifiesModelManagedReasoning(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Chdir(harness.gitRoot)
+	t.Setenv(fakeACPXExitByCall, mustJSONForTest(t, map[string]int{
+		"set reasoning_effort value=xhigh": 2,
+		"set reasoning_effort value=high":  2,
+	}))
+	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-failed", ReasoningEffort: "xhigh"}
+
+	selection, ok, err := harness.runner.ProbeFallback(context.Background(), runtime, FallbackCandidateSet{
+		Models:  []string{"gpt-managed"},
+		Efforts: []string{"xhigh", "high"},
+	})
+
+	if err != nil {
+		t.Fatalf("expected model-managed fallback probe to succeed, got %v", err)
+	}
+	if !ok {
+		t.Fatal("expected model assignment to prove a Fallback Selection")
+	}
+	if want := (FallbackSelection{Model: "gpt-managed"}); selection != want {
+		t.Fatalf("unexpected model-managed Fallback Selection\nwant: %#v\ngot:  %#v", want, selection)
+	}
+	assertFallbackCandidateSessions(t, readJSONInvocations(t, harness.invocationsPath), []string{"gpt-managed"})
+}
+
+func TestACPXProbeFallbackReportsNoFallbackWhenModelsAreRejected(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Chdir(harness.gitRoot)
+	t.Setenv(fakeACPXExitByCall, mustJSONForTest(t, map[string]int{
+		"sessions ensure model=gpt-newest": 2,
+		"sessions ensure model=gpt-older":  2,
+	}))
+	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-failed", ReasoningEffort: "xhigh"}
+
+	selection, ok, err := harness.runner.ProbeFallback(context.Background(), runtime, FallbackCandidateSet{
+		Models:  []string{"gpt-failed", "gpt-newest", "gpt-older"},
+		Efforts: []string{"xhigh", "high"},
+	})
+
+	if err != nil {
+		t.Fatalf("model rejection is not a probe infrastructure error: %v", err)
+	}
+	if ok || selection != (FallbackSelection{}) {
+		t.Fatalf("expected no fallback, got ok=%t selection=%#v", ok, selection)
+	}
+	assertFallbackCandidateSessions(t, readJSONInvocations(t, harness.invocationsPath), []string{"gpt-newest", "gpt-older"})
+}
+
+func TestACPXProbeFallbackReportsCleanupInfrastructureError(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Chdir(harness.gitRoot)
+	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"sessions close": 2}))
+	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-failed", ReasoningEffort: "xhigh"}
+
+	selection, ok, err := harness.runner.ProbeFallback(context.Background(), runtime, FallbackCandidateSet{
+		Models:  []string{"gpt-working"},
+		Efforts: []string{"high"},
+	})
+
+	if err == nil {
+		t.Fatal("expected disposable session cleanup failure")
+	}
+	var cleanupErr *AgentSessionCleanupError
+	if !errors.As(err, &cleanupErr) {
+		t.Fatalf("expected AgentSessionCleanupError, got %T %v", err, err)
+	}
+	if ok || selection != (FallbackSelection{}) {
+		t.Fatalf("infrastructure failure must not return a fallback, got ok=%t selection=%#v", ok, selection)
+	}
+	assertFallbackCandidateSessions(t, readJSONInvocations(t, harness.invocationsPath), []string{"gpt-working"})
+}
+
+func TestACPXProbeFallbackCancellationStillClosesCandidateSession(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Chdir(harness.gitRoot)
+	startedPath := filepath.Join(harness.gitRoot, "fallback-ensure-started")
+	t.Setenv(fakeACPXStarted, startedPath)
+	t.Setenv(fakeACPXBlockCmd, "sessions ensure")
+	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-failed", ReasoningEffort: "xhigh"}
+	ctx, cancel := context.WithCancel(context.Background())
+	resultCh := make(chan error, 1)
+	go func() {
+		_, _, err := harness.runner.ProbeFallback(ctx, runtime, FallbackCandidateSet{Models: []string{"gpt-working"}})
+		resultCh <- err
+	}()
+	waitForFile(t, startedPath)
+	cancel()
+
+	err := receiveError(t, resultCh)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled in error chain, got %T %v", err, err)
+	}
+	assertFallbackCandidateSessions(t, readJSONInvocations(t, harness.invocationsPath), []string{"gpt-working"})
 }
 
 func TestInfrastructureErrorErrorIncludesBoundedStderrTail(t *testing.T) {
@@ -1781,6 +1914,65 @@ func containsCommandKey(invocations [][]string, key string) bool {
 	return false
 }
 
+func containsInvocationValue(invocations [][]string, flag string, value string) bool {
+	for _, invocation := range invocations {
+		for index := 0; index+1 < len(invocation); index++ {
+			if invocation[index] == flag && invocation[index+1] == value {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func containsCommandValue(invocations [][]string, command string, value string) bool {
+	for _, invocation := range invocations {
+		if fakeACPXCommandKey(invocation) == command && fakeACPXCallKey(invocation) == command+" value="+value {
+			return true
+		}
+	}
+	return false
+}
+
+func assertFallbackCandidateSessions(t *testing.T, invocations [][]string, wantModels []string) {
+	t.Helper()
+	models := make([]string, 0, len(wantModels))
+	sessions := map[string]int{}
+	closed := map[string]int{}
+	for _, invocation := range invocations {
+		switch fakeACPXCommandKey(invocation) {
+		case "sessions ensure":
+			models = append(models, invocationValue(invocation, "--model"))
+			sessions[disposableSessionFromEnsure(t, invocation)]++
+		case "sessions close":
+			closed[invocation[len(invocation)-1]]++
+		}
+	}
+	if !reflect.DeepEqual(models, wantModels) {
+		t.Fatalf("unexpected candidate order\nwant: %#v\ngot:  %#v", wantModels, models)
+	}
+	if len(sessions) != len(wantModels) {
+		t.Fatalf("expected one unique disposable session per candidate, got %#v", sessions)
+	}
+	for session, count := range sessions {
+		if count != 1 || closed[session] != 1 {
+			t.Fatalf("expected disposable session %q to be ensured and closed once, ensured=%d closed=%d", session, count, closed[session])
+		}
+	}
+	if containsCommandKey(invocations, "prompt") {
+		t.Fatalf("fallback selection probes must not send prompts: %#v", invocations)
+	}
+}
+
+func invocationValue(args []string, flag string) string {
+	for index := 0; index+1 < len(args); index++ {
+		if args[index] == flag {
+			return args[index+1]
+		}
+	}
+	return ""
+}
+
 type fakeCodexSpawnProbe struct {
 	quarantined     map[string]bool
 	accepted        map[string]bool
@@ -2022,6 +2214,10 @@ func runFakeACPXProcess() int {
 	_, _ = io.WriteString(os.Stdout, firstFakeACPXString(stdoutByCommand[commandKey], os.Getenv(fakeACPXStdout)))
 	_, _ = io.WriteString(os.Stderr, firstFakeACPXString(stderrByCommand[commandKey], os.Getenv(fakeACPXStderr)))
 	exitByCommand := fakeACPXIntMap(os.Getenv(fakeACPXExitBy))
+	exitByCall := fakeACPXIntMap(os.Getenv(fakeACPXExitByCall))
+	if exitCode, ok := exitByCall[fakeACPXCallKey(args)]; ok {
+		return exitCode
+	}
 	if exitCode, ok := exitByCommand[commandKey]; ok {
 		return exitCode
 	}
@@ -2118,6 +2314,21 @@ globals:
 		return "set " + args[index+1]
 	}
 	return args[index]
+}
+
+func fakeACPXCallKey(args []string) string {
+	command := fakeACPXCommandKey(args)
+	switch command {
+	case "sessions ensure":
+		return command + " model=" + invocationValue(args, "--model")
+	case "set reasoning_effort", "set effort":
+		for index := 0; index+2 < len(args); index++ {
+			if args[index] == "set" {
+				return command + " value=" + args[index+2]
+			}
+		}
+	}
+	return command
 }
 
 func fakeACPXStringMap(raw string) map[string]string {
