@@ -1,0 +1,11 @@
+# What this repository publishes to its Tabularium mirror.
+# One path per line, directories recursive, `!pattern` excludes, `#` comments.
+
+# Documentation owned by this repository
+CONTEXT.md
+docs/
+
+# Project overview
+README.md
+AGENTS.md
+CHANGELOG.md
