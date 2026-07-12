@@ -1,0 +1,58 @@
+# Standalone variant: this repository lives outside the gesttione-solutions
+# org and cannot call the org's private reusable workflow. Requires the
+# repo-level variable TABULARIUM_APP_CLIENT_ID and secret
+# TABULARIUM_APP_PRIVATE_KEY.
+
+name: Tabularium sync
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    name: Mirror exported files into Tabularium
+    runs-on: ubuntu-latest
+    concurrency:
+      group: tabularium-sync-${{ github.repository }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout source repository
+        uses: actions/checkout@v7
+        with:
+          path: source
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Mint Tabularium token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.TABULARIUM_APP_CLIENT_ID }}
+          private-key: ${{ secrets.TABULARIUM_APP_PRIVATE_KEY }}
+          owner: gesttione-solutions
+          repositories: tabularium
+          permission-contents: write
+
+      - name: Checkout Tabularium
+        uses: actions/checkout@v7
+        with:
+          repository: gesttione-solutions/tabularium
+          ref: main
+          token: ${{ steps.app-token.outputs.token }}
+          path: tabularium
+          fetch-depth: 0
+
+      - name: Synchronize mirror
+        env:
+          SOURCE_REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+          SOURCE_REF: ${{ github.ref_name }}
+          SOURCE_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          bash tabularium/scripts/sync-project.sh \
+            source tabularium \
+            "$SOURCE_REPOSITORY" "$SOURCE_SHA" "$SOURCE_REF" "$SOURCE_RUN_URL"
