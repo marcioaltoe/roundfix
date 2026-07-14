@@ -240,17 +240,17 @@ func TestRunCommandHelp(t *testing.T) {
 		{
 			name:     "fetch",
 			args:     []string{"fetch", "--help"},
-			contains: []string{"roundfix fetch --source coderabbit --pr <number>"},
+			contains: []string{"roundfix fetch --source coderabbit --pr <number>", "Branch Integrity Preflight", "creates no Run Worktree"},
 		},
 		{
 			name:     "resolve",
 			args:     []string{"resolve", "--help"},
-			contains: []string{"roundfix resolve --pr <number> --agent <agent>", "--reasoning-effort", "--no-agent-console", "--detach"},
+			contains: []string{"roundfix resolve --pr <number> --agent <agent>", "Branch Integrity Preflight", "clean tracked checkout", "--reasoning-effort", "--no-agent-console", "--detach"},
 		},
 		{
 			name:     "watch",
 			args:     []string{"watch", "--help"},
-			contains: []string{"roundfix watch --source coderabbit --pr <number> --agent <agent>", "--reasoning-effort", "--until-clean", "Review Source check succeeds", "--no-agent-console", "--detach"},
+			contains: []string{"roundfix watch --source coderabbit --pr <number> --agent <agent>", "Branch Integrity Preflight", "CleanUnverified", "exits 3", "--reasoning-effort", "--until-clean", "Review Source check", "--no-agent-console", "--detach"},
 		},
 		{
 			name:     "setup",

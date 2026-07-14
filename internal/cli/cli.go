@@ -3527,6 +3527,11 @@ Options:
 		return `Usage:
   roundfix fetch --source coderabbit --pr <number> [--spec <slug>] [--round <number|auto>] [--no-input]
 
+Behavior:
+  Runs Branch Integrity Preflight before fetching. Fetch executes in the
+  user's checkout, creates no Run Worktree, starts no Agent, and never commits
+  or pushes.
+
 Options:
   --source       Review Source. Supported: coderabbit
   --pr           Open Pull Request number
@@ -3544,6 +3549,11 @@ Options:
 	case "resolve":
 		return `Usage:
   roundfix resolve --pr <number> --agent <agent> [--spec <slug>] [--round <number|all>] [--no-input]
+
+Behavior:
+  Runs Branch Integrity Preflight and clean tracked checkout validation before
+  Agent work. Resolve executes in the user's checkout and creates no Run
+  Worktree.
 
 Options:
   --pr           Open Pull Request number
@@ -3568,6 +3578,13 @@ Options:
 	case "watch":
 		return `Usage:
   roundfix watch --source coderabbit --pr <number> --agent <agent> [--spec <slug>] [--until-clean] [--max-rounds <number>] [--no-input]
+
+Behavior:
+  Runs Branch Integrity Preflight and clean tracked checkout validation before
+  Agent work. Watch executes in the user's checkout and creates no Run
+  Worktree. With --until-clean, Clean requires the Review Source check to
+  succeed on the pushed head; if the check never appears within the grace
+  period, watch ends CleanUnverified and exits 3.
 
 Options:
   --source       Review Source. Supported: coderabbit

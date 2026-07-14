@@ -9,7 +9,7 @@ A durable attempt to drive one target's Work Items — an Open Pull Request's Re
 _Avoid_: Session, execution, job
 
 **Fetch Run**:
-A short Run that fetches Review Source issues and persists markdown artifacts without starting an Agent.
+A short review Run that runs Branch Integrity Preflight, fetches Review Source issues, and persists markdown artifacts from the user's checkout without starting an Agent, creating a Run Worktree, committing, or pushing.
 _Avoid_: Standalone fetch, untracked fetch
 
 **Open Pull Request**:
@@ -113,15 +113,15 @@ A Run started with the detach flag: roundfix re-executes itself as a session lea
 _Avoid_: Background job, nohup run, daemon
 
 **Run Worktree**:
-The isolated git worktree a Run executes in — created on the Run Branch at Run start, recorded on the Run, removed after a Clean integrated outcome, and kept as the inspection and settle surface otherwise.
+The isolated git worktree a spec Run executes in — created on the Run Branch at Run start, recorded on the Run, removed after a Clean integrated spec outcome, and kept as the inspection and settle surface otherwise. Review Runs do not create Run Worktrees.
 _Avoid_: Sandbox, scratch dir, user checkout
 
 **Run Branch**:
-The named branch (`roundfix/run-<id>`) that carries a Run's commits inside its Run Worktree until integration moves them to the user's branch.
+The named branch (`roundfix/run-<id>`) that carries a spec Run's commits inside its Run Worktree until integration moves them to the user's branch. Review Runs use the user's checkout branch directly; older pending Run Branch work is handled by Branch Integrity Preflight before review work starts.
 _Avoid_: Temp branch, detached HEAD, feature branch
 
 **Integration Pending**:
-A terminal Run outcome where the Run's work completed but its commits could not be fast-forwarded onto the user's branch (local changes overlap or the branch diverged); the commits stay on the Run Branch and the report names the integration command.
+A terminal spec Run outcome where the spec Run's work completed but its commits could not be fast-forwarded onto the user's branch (local changes overlap or the branch diverged); the commits stay on the Run Branch and the report names the integration command. Review Runs do not end Integration Pending.
 _Avoid_: Failure, conflict, silent divergence
 
 **Max Rounds**:
@@ -141,7 +141,7 @@ A terminal Run outcome where the cycle completed with nothing unresolved remaini
 _Avoid_: Success, done, green
 
 **Clean Unverified**:
-A terminal Run outcome where the cycle completed with nothing unresolved and the Final Push succeeded, but the Review Source check for the pushed head never appeared within the grace period, so Merge-Ready was not confirmed. Distinct from Clean by outcome and exit code.
+A terminal review Run outcome where the cycle completed with nothing unresolved and the Final Push succeeded, but the Review Source check for the pushed head never appeared within the grace period, so Merge-Ready was not confirmed. Distinct from Clean by outcome and exit code `3`.
 _Avoid_: Clean, failure, timeout
 
 **Run Budget**:
@@ -153,7 +153,7 @@ The early checks Roundfix runs before starting a Run or work that would make the
 _Avoid_: Best-effort validation, late failure
 
 **Branch Integrity Preflight**:
-The deterministic Preflight Validation for review Runs that blocks fetch and watch while unintegrated Run Branch commits or another Run remain bound to the PR Head Branch, integrating fast-forwardable work automatically and otherwise naming each pending worktree, run id, and recovery command. Skippable only through an explicit bypass that publishes an audit comment on the pull request.
+The deterministic Preflight Validation for review Runs that blocks fetch, resolve, and watch while unintegrated Run Branch commits or another Run remain bound to the PR Head Branch, integrating fast-forwardable work automatically and otherwise naming each pending worktree, run id, and recovery command. Skippable only through an explicit bypass that publishes an audit comment on the pull request.
 _Avoid_: Advisory check, best-effort warning, soft gate
 
 **Verification**:

@@ -8,8 +8,21 @@ runtime_hints:
   spec_command: roundfix implement --spec <slug> --agent <agent>
   archive_command: roundfix archive <slug>
   gc_command: roundfix gc --dry-run
+  review_run_contract: >-
+    fetch, resolve, and watch execute in the user's checkout, create no Run
+    Worktree, and run Branch Integrity Preflight before side effects;
+    --skip-branch-integrity is allowed only when Roundfix publishes the pull
+    request audit comment.
+  watch_outcome_contract: >-
+    watch Clean means the Review Source check succeeded on the pushed head;
+    a missing check after the grace period ends CleanUnverified with exit code
+    3.
+  review_source_contract: >-
+    Roundfix publishes Outcome Comments for invalid, duplicated, failed, and
+    run-end unresolved Review Issues. A Verification Feedback retry stays in
+    the same Round and never counts as a new Review Source review.
   worktree_bootstrap_config: >-
-    worktree.bootstrap runs in each new Run or Task Worktree after
+    worktree.bootstrap runs in each new Spec Run or Task Worktree after
     worktree.copy and before Agent work; use worktree.copy for gitignored env
     files and worktree.concurrency: 1 for shared-database monorepos.
   owns:
