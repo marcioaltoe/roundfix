@@ -3063,13 +3063,16 @@ func TestExitForWatchOutcome(t *testing.T) {
 		outcome string
 		code    int
 	}{
-		{outcome: store.StateClean, code: 0},
-		{outcome: store.StateMaxRoundsReached, code: 0},
-		{outcome: store.StateStopped, code: 0},
-		{outcome: store.StateBudgetExceeded, code: 1},
-		{outcome: store.StateTimedOut, code: 1},
-		{outcome: store.StateFailed, code: 1},
-		{outcome: store.StateUnresolved, code: 1},
+		{outcome: store.StateClean, code: exitOK},
+		{outcome: store.StateCleanUnverified, code: exitUnverified},
+		{outcome: store.StateMaxRoundsReached, code: exitOK},
+		{outcome: store.StateStopped, code: exitOK},
+		{outcome: store.StateBudgetExceeded, code: exitRunFailed},
+		{outcome: store.StateTimedOut, code: exitRunFailed},
+		{outcome: store.StateFailed, code: exitRunFailed},
+		{outcome: store.StateUnresolved, code: exitRunFailed},
+		{outcome: store.StateIntegrationPending, code: exitRunFailed},
+		{outcome: store.StateFetched, code: exitRunFailed},
 	}
 
 	for _, tt := range tests {

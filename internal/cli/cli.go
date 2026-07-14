@@ -84,10 +84,11 @@ Options:
 `
 
 const (
-	exitOK        = 0
-	exitRunFailed = 1
-	exitPreflight = 2
-	exitSIGINT    = 130
+	exitOK         = 0
+	exitRunFailed  = 1
+	exitPreflight  = 2
+	exitUnverified = 3
+	exitSIGINT     = 130
 )
 
 type commandRequest struct {
@@ -2072,6 +2073,8 @@ func exitForWatchOutcome(outcome string) int {
 	switch outcome {
 	case store.StateClean, store.StateMaxRoundsReached, store.StateStopped:
 		return exitOK
+	case store.StateCleanUnverified:
+		return exitUnverified
 	case store.StateBudgetExceeded, store.StateTimedOut, store.StateFailed, store.StateUnresolved, store.StateIntegrationPending:
 		return exitRunFailed
 	default:

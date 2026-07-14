@@ -273,6 +273,7 @@ func TestListRunsStateFilterAndLimit(t *testing.T) {
 		StateStopped,
 		StateVerifying,
 		StateClean,
+		StateCleanUnverified,
 		StatePushing,
 		StateMaxRoundsReached,
 		StateBudgetExceeded,
@@ -631,6 +632,37 @@ func closeStore(t *testing.T, store *Store) {
 	t.Helper()
 	if err := store.Close(); err != nil {
 		t.Fatalf("close store: %v", err)
+	}
+}
+
+func TestIsTerminalState(t *testing.T) {
+	tests := []struct {
+		state string
+		want  bool
+	}{
+		{state: StateActive},
+		{state: StateResolvingWithAgent},
+		{state: StateVerifying},
+		{state: StatePushing},
+		{state: StateFetched, want: true},
+		{state: StateStopped, want: true},
+		{state: StateClean, want: true},
+		{state: StateCleanUnverified, want: true},
+		{state: StateMaxRoundsReached, want: true},
+		{state: StateBudgetExceeded, want: true},
+		{state: StateTimedOut, want: true},
+		{state: StateFailed, want: true},
+		{state: StateIntegrationPending, want: true},
+		{state: StateUnresolved, want: true},
+		{state: "unknown"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.state, func(t *testing.T) {
+			if got := IsTerminalState(tt.state); got != tt.want {
+				t.Fatalf("expected IsTerminalState(%q) = %v, got %v", tt.state, tt.want, got)
+			}
+		})
 	}
 }
 

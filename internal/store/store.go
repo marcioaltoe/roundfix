@@ -33,6 +33,7 @@ const (
 	StateFetched            = "Fetched"
 	StateStopped            = "Stopped"
 	StateClean              = "Clean"
+	StateCleanUnverified    = "CleanUnverified"
 	StateMaxRoundsReached   = "MaxRoundsReached"
 	StateBudgetExceeded     = "BudgetExceeded"
 	StateTimedOut           = "TimedOut"
@@ -689,7 +690,7 @@ ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.upd
 
 func IsTerminalState(state string) bool {
 	switch state {
-	case StateFetched, StateStopped, StateClean, StateMaxRoundsReached, StateBudgetExceeded, StateTimedOut, StateFailed, StateIntegrationPending, StateUnresolved:
+	case StateFetched, StateStopped, StateClean, StateCleanUnverified, StateMaxRoundsReached, StateBudgetExceeded, StateTimedOut, StateFailed, StateIntegrationPending, StateUnresolved:
 		return true
 	default:
 		return false
