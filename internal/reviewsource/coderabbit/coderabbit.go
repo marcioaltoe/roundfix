@@ -158,6 +158,61 @@ func (client Client) ResolveIssues(ctx context.Context, req reviewsource.Resolve
 	return nil
 }
 
+func (client Client) ResolveIssue(ctx context.Context, req reviewsource.IssueResolveRequest) error {
+	if strings.TrimSpace(req.BaseRepository) == "" {
+		return errors.New("CodeRabbit issue resolution requires base repository metadata")
+	}
+	threadID, ok := threadIDFromSourceRef(req.SourceRef)
+	if !ok {
+		return nil
+	}
+	gh := client.GitHub
+	if gh == nil {
+		gh = GHClient{}
+	}
+	if err := gh.ResolveReviewThread(ctx, threadID); err != nil {
+		return fmt.Errorf("resolve CodeRabbit review thread %s: %w", threadID, err)
+	}
+	return nil
+}
+
+func (client Client) ReplyToIssue(ctx context.Context, req reviewsource.IssueCommentRequest) (reviewsource.IssueCommentResult, error) {
+	if strings.TrimSpace(req.BaseRepository) == "" {
+		return reviewsource.IssueCommentResult{}, errors.New("CodeRabbit issue comment requires base repository metadata")
+	}
+	threadID, ok := threadIDFromSourceRef(req.SourceRef)
+	if !ok {
+		return reviewsource.IssueCommentResult{Skipped: true}, nil
+	}
+	marker := strings.TrimSpace(req.Marker)
+	if marker == "" {
+		return reviewsource.IssueCommentResult{}, errors.New("CodeRabbit issue comment requires idempotency marker")
+	}
+	gh := client.GitHub
+	if gh == nil {
+		gh = GHClient{}
+	}
+	threads, err := gh.ReviewThreads(ctx, req.BaseRepository, req.PRNumber)
+	if err != nil {
+		return reviewsource.IssueCommentResult{}, fmt.Errorf("fetch CodeRabbit review threads before comment: %w", err)
+	}
+	for _, thread := range threads {
+		if thread.ID != threadID {
+			continue
+		}
+		for _, comment := range thread.Comments {
+			if strings.Contains(comment.Body, marker) {
+				return reviewsource.IssueCommentResult{Skipped: true}, nil
+			}
+		}
+		break
+	}
+	if err := gh.ReplyToReviewThread(ctx, threadID, req.Body); err != nil {
+		return reviewsource.IssueCommentResult{}, fmt.Errorf("reply to CodeRabbit review thread %s: %w", threadID, err)
+	}
+	return reviewsource.IssueCommentResult{Posted: true}, nil
+}
+
 func (client Client) WatchStatus(ctx context.Context, req reviewsource.WatchStatusRequest) (reviewsource.WatchStatus, error) {
 	if err := ctx.Err(); err != nil {
 		return reviewsource.WatchStatus{}, err

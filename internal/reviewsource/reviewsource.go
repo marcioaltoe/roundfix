@@ -45,6 +45,27 @@ type ResolvedIssue struct {
 	SourceRef string
 }
 
+type IssueResolveRequest struct {
+	Source         string
+	PRNumber       string
+	BaseRepository string
+	SourceRef      string
+}
+
+type IssueCommentRequest struct {
+	Source         string
+	PRNumber       string
+	BaseRepository string
+	SourceRef      string
+	Marker         string
+	Body           string
+}
+
+type IssueCommentResult struct {
+	Posted  bool
+	Skipped bool
+}
+
 type WatchStatusRequest struct {
 	Source         string
 	PRNumber       string

@@ -1780,7 +1780,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 			}
 			fmt.Fprintf(stderr, "%s Run %s reached %s.\n", commandDisplayName(req.name), run.ID, store.StateStopped)
 			printStopSummary(req, preflightResult, stderr)
-			printReviewIssueReport(stdout, store.StateStopped, 1, reviewIssueReportIssues(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues))
+			printReviewIssueReport(stdout, store.StateStopped, 1, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues))
 			return exitOK
 		}
 		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
@@ -1813,7 +1813,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		fmt.Fprintf(stderr, "%d Unresolved Review Issue(s) remain; failed issues are retried by the next fetched Round.\n", cycleResult.Remaining)
 		printAgentCheckoutChangesNotice(stderr)
 	}
-	printReviewIssueReport(stdout, completed.State, 1, reviewIssueReportIssues(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues))
+	printReviewIssueReport(stdout, completed.State, 1, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues))
 	if completed.State == store.StateUnresolved {
 		return exitRunFailed
 	}
@@ -1842,33 +1842,46 @@ type reviewIssueReportCounts struct {
 	unresolved int
 }
 
+type reviewIssueReport struct {
+	runIssues        []rounds.Issue
+	cumulativeIssues []rounds.Issue
+}
+
 // printReviewIssueReport prints the deterministic stdout contract for review
 // Runs after the terminal outcome is known.
-func printReviewIssueReport(stdout io.Writer, outcome string, roundsCompleted int, issues []rounds.Issue) {
-	counts := reviewIssueReportCounts{}
-	for index, listed := range issues {
-		current := listed
-		if parsed, err := rounds.ParseIssue(listed.Path); err == nil {
-			current = parsed
-			if strings.TrimSpace(current.Title) == "" {
-				current.Title = listed.Title
-			}
-		}
+func printReviewIssueReport(stdout io.Writer, outcome string, roundsCompleted int, report reviewIssueReport) {
+	runCounts := reviewIssueReportCounts{}
+	for index, current := range report.runIssues {
 		status := reviewIssueDisplayStatus(current.Status)
-		switch status {
-		case rounds.StatusResolved:
-			counts.resolved++
-		case rounds.StatusInvalid:
-			counts.invalid++
-		case rounds.StatusFailed:
-			counts.failed++
-		case "unresolved":
-			counts.unresolved++
-		}
-		fmt.Fprintf(stdout, "issue %03d %s — %s\n", index+1, status, strings.TrimSpace(current.Title))
+		runCounts.add(status)
+		fmt.Fprintf(stdout, "issue %03d %s — %s%s\n", index+1, status, strings.TrimSpace(current.Title), reviewIssueReasonSuffix(current, status))
 	}
-	fmt.Fprintf(stdout, "%s after %d Round(s): %d resolved, %d invalid, %d failed, %d unresolved.\n",
-		outcome, roundsCompleted, counts.resolved, counts.invalid, counts.failed, counts.unresolved)
+	cumulativeCounts := countReviewIssueReportStatuses(report.cumulativeIssues)
+	fmt.Fprintf(stdout, "This Run (%s after %d Round(s)): %d resolved, %d invalid, %d failed, %d unresolved.\n",
+		reviewIssueOutcomeDisplay(outcome), roundsCompleted, runCounts.resolved, runCounts.invalid, runCounts.failed, runCounts.unresolved)
+	fmt.Fprintf(stdout, "Pull Request cumulative: %d resolved, %d invalid, %d failed, %d unresolved.\n",
+		cumulativeCounts.resolved, cumulativeCounts.invalid, cumulativeCounts.failed, cumulativeCounts.unresolved)
+}
+
+func (counts *reviewIssueReportCounts) add(status string) {
+	switch status {
+	case rounds.StatusResolved:
+		counts.resolved++
+	case rounds.StatusInvalid:
+		counts.invalid++
+	case rounds.StatusFailed:
+		counts.failed++
+	case "unresolved":
+		counts.unresolved++
+	}
+}
+
+func countReviewIssueReportStatuses(issues []rounds.Issue) reviewIssueReportCounts {
+	counts := reviewIssueReportCounts{}
+	for _, issue := range issues {
+		counts.add(reviewIssueDisplayStatus(issue.Status))
+	}
+	return counts
 }
 
 func reviewIssueDisplayStatus(status string) string {
@@ -1880,12 +1893,48 @@ func reviewIssueDisplayStatus(status string) string {
 	}
 }
 
-func reviewIssueReportIssues(ctx context.Context, req commandRequest, preflightResult preflight.Result, fallback []rounds.Issue) []rounds.Issue {
-	issues, err := loadReviewIssueReportIssues(ctx, req, preflightResult)
-	if err != nil {
-		return fallback
+func reviewIssueOutcomeDisplay(outcome string) string {
+	if outcome == store.StateCleanUnverified {
+		return "Clean Unverified"
 	}
-	return issues
+	return outcome
+}
+
+func reviewIssueReasonSuffix(issue rounds.Issue, status string) string {
+	switch status {
+	case rounds.StatusFailed, rounds.StatusInvalid, "unresolved":
+	default:
+		return ""
+	}
+	reason := strings.Join(strings.Fields(issue.TerminalReason), " ")
+	if reason == "" {
+		return ""
+	}
+	return " — reason: " + reason
+}
+
+func reviewIssueReportData(ctx context.Context, req commandRequest, preflightResult preflight.Result, runIssues []rounds.Issue) reviewIssueReport {
+	refreshedRunIssues := refreshReviewIssueReportIssues(runIssues)
+	cumulativeIssues, err := loadReviewIssueReportIssues(ctx, req, preflightResult)
+	if err != nil {
+		cumulativeIssues = refreshedRunIssues
+	}
+	return reviewIssueReport{runIssues: refreshedRunIssues, cumulativeIssues: cumulativeIssues}
+}
+
+func refreshReviewIssueReportIssues(issues []rounds.Issue) []rounds.Issue {
+	refreshed := make([]rounds.Issue, 0, len(issues))
+	for _, listed := range issues {
+		current := listed
+		if parsed, err := rounds.ParseIssue(listed.Path); err == nil {
+			current = parsed
+			if strings.TrimSpace(current.Title) == "" {
+				current.Title = listed.Title
+			}
+		}
+		refreshed = append(refreshed, current)
+	}
+	return refreshed
 }
 
 func loadReviewIssueReportIssues(ctx context.Context, req commandRequest, preflightResult preflight.Result) ([]rounds.Issue, error) {
@@ -2229,7 +2278,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	if result.Outcome == store.StateCleanUnverified {
 		fmt.Fprintln(stderr, "CleanUnverified: Merge-Ready was not confirmed because the Review Source check never appeared within the grace period. Next: confirm the pull request's Review Source check before merging.")
 	}
-	printReviewIssueReport(stdout, completed.State, result.Rounds, reviewIssueReportIssues(context.WithoutCancel(ctx), req, preflightResult, watchReportIssues))
+	printReviewIssueReport(stdout, completed.State, result.Rounds, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, watchReportIssues))
 	if stopped {
 		printStopSummary(req, preflightResult, stderr)
 		return exitOK
@@ -2991,17 +3040,33 @@ func defaultEngineCollaborators() engineCollaborators {
 		verifier:     daemon.ExecVerifier{},
 		committer:    daemon.GitCommitter{},
 		pusher:       daemon.GitPusher{},
-		source:       daemon.ReviewSourceResolverFunc(defaultResolveReviewSourceIssues),
+		source:       defaultReviewSourceResolver{},
 		worktree:     daemon.GitWorktreeSnapshotter{},
 		priorChanges: daemon.GitPriorChangedResolver{},
 	}
 }
 
-func defaultResolveReviewSourceIssues(ctx context.Context, req reviewsource.ResolveRequest) error {
+type defaultReviewSourceResolver struct{}
+
+func (defaultReviewSourceResolver) ResolveIssues(ctx context.Context, req reviewsource.ResolveRequest) error {
 	if req.Source != reviewsource.SourceCodeRabbit {
 		return fmt.Errorf("unsupported Review Source %q; supported value: coderabbit", req.Source)
 	}
 	return coderabbit.Client{}.ResolveIssues(ctx, req)
+}
+
+func (defaultReviewSourceResolver) ResolveIssue(ctx context.Context, req reviewsource.IssueResolveRequest) error {
+	if req.Source != reviewsource.SourceCodeRabbit {
+		return fmt.Errorf("unsupported Review Source %q; supported value: coderabbit", req.Source)
+	}
+	return coderabbit.Client{}.ResolveIssue(ctx, req)
+}
+
+func (defaultReviewSourceResolver) ReplyToIssue(ctx context.Context, req reviewsource.IssueCommentRequest) (reviewsource.IssueCommentResult, error) {
+	if req.Source != reviewsource.SourceCodeRabbit {
+		return reviewsource.IssueCommentResult{}, fmt.Errorf("unsupported Review Source %q; supported value: coderabbit", req.Source)
+	}
+	return coderabbit.Client{}.ReplyToIssue(ctx, req)
 }
 
 func defaultWatchReviewStatus(ctx context.Context, req reviewsource.WatchStatusRequest) (reviewsource.WatchStatus, error) {

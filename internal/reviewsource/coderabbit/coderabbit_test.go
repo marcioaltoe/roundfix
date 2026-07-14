@@ -270,6 +270,81 @@ func TestResolveIssuesResolvesUniqueReviewThreads(t *testing.T) {
 	}
 }
 
+func TestResolveIssueResolvesOneReviewThread(t *testing.T) {
+	gh := &fakeGitHubClient{}
+	client := Client{GitHub: gh}
+
+	err := client.ResolveIssue(context.Background(), reviewsource.IssueResolveRequest{
+		BaseRepository: "owner/project",
+		PRNumber:       "123",
+		SourceRef:      "thread:PRRT_thread,comment:PRRC_1",
+	})
+	if err != nil {
+		t.Fatalf("resolve issue: %v", err)
+	}
+
+	if strings.Join(gh.resolvedThreads, ",") != "PRRT_thread" {
+		t.Fatalf("expected single thread resolution, got %#v", gh.resolvedThreads)
+	}
+}
+
+func TestReplyToIssueUsesMarkerForIdempotency(t *testing.T) {
+	const marker = "<!-- roundfix:outcome run=run_1 issue=abc action=invalid -->"
+	tests := []struct {
+		name        string
+		threads     []ReviewThread
+		wantPosted  bool
+		wantSkipped bool
+		wantReplies int
+	}{
+		{
+			name: "posts when marker absent",
+			threads: []ReviewThread{{
+				ID: "PRRT_thread",
+				Comments: []ThreadComment{
+					{Body: "previous human reply"},
+				},
+			}},
+			wantPosted:  true,
+			wantReplies: 1,
+		},
+		{
+			name: "skips when marker already present",
+			threads: []ReviewThread{{
+				ID: "PRRT_thread",
+				Comments: []ThreadComment{
+					{Body: "already handled\n" + marker},
+				},
+			}},
+			wantSkipped: true,
+		},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			gh := &fakeGitHubClient{threads: testCase.threads}
+			client := Client{GitHub: gh}
+
+			result, err := client.ReplyToIssue(context.Background(), reviewsource.IssueCommentRequest{
+				BaseRepository: "owner/project",
+				PRNumber:       "123",
+				SourceRef:      "thread:PRRT_thread,comment:PRRC_1",
+				Marker:         marker,
+				Body:           marker + "\n\nRoundfix outcome: invalid.",
+			})
+			if err != nil {
+				t.Fatalf("reply to issue: %v", err)
+			}
+
+			if result.Posted != testCase.wantPosted || result.Skipped != testCase.wantSkipped {
+				t.Fatalf("unexpected result: %+v", result)
+			}
+			if len(gh.replies) != testCase.wantReplies {
+				t.Fatalf("expected %d replies, got %+v", testCase.wantReplies, gh.replies)
+			}
+		})
+	}
+}
+
 func TestGHClientWriteMutationsInvokeGHOnce(t *testing.T) {
 	tests := []struct {
 		name     string
