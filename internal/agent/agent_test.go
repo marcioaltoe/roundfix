@@ -441,7 +441,7 @@ func TestSettleAssignedIssues(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			artifactDir := t.TempDir()
 			result := persistTestRound(t, artifactDir)
-			if err := rounds.SetIssueStatus(result.IssuePaths[0], test.status, ""); err != nil {
+			if err := rounds.SetIssueStatus(result.IssuePaths[0], test.status, "", ""); err != nil {
 				t.Fatalf("set issue status: %v", err)
 			}
 			batch := rounds.Batch{Number: 1, Issues: []rounds.Issue{{Path: result.IssuePaths[0]}}}
@@ -468,7 +468,7 @@ func TestSettleAssignedIssues(t *testing.T) {
 func TestSettleAssignedIssuesStopsOnCanceledContext(t *testing.T) {
 	artifactDir := t.TempDir()
 	result := persistTestRound(t, artifactDir)
-	if err := rounds.SetIssueStatus(result.IssuePaths[0], rounds.StatusPending, ""); err != nil {
+	if err := rounds.SetIssueStatus(result.IssuePaths[0], rounds.StatusPending, "", ""); err != nil {
 		t.Fatalf("set issue status: %v", err)
 	}
 	batch := rounds.Batch{Number: 1, Issues: []rounds.Issue{{Path: result.IssuePaths[0]}}}

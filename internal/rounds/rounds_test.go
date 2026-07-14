@@ -504,7 +504,7 @@ func TestMarkDuplicatedAfterTerminalDefersUntilNewestResolvedOrInvalid(t *testin
 		t.Fatalf("expected old issue to stay pending before newest terminal, got %#v", oldBefore)
 	}
 
-	if err := SetIssueStatus(second.IssuePaths[0], StatusResolved, ""); err != nil {
+	if err := SetIssueStatus(second.IssuePaths[0], StatusResolved, "", ""); err != nil {
 		t.Fatalf("mark newest resolved: %v", err)
 	}
 	marked, err = MarkDuplicatedAfterTerminal(context.Background(), plan.Duplicates)
@@ -523,6 +523,101 @@ func TestMarkDuplicatedAfterTerminalDefersUntilNewestResolvedOrInvalid(t *testin
 	}
 	if oldAfter.DuplicateOf != second.IssuePaths[0] {
 		t.Fatalf("expected duplicate_of newest path %q, got %q", second.IssuePaths[0], oldAfter.DuplicateOf)
+	}
+}
+
+func TestSetIssueStatusRoundTripsTerminalReason(t *testing.T) {
+	base := time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)
+	tests := []struct {
+		name             string
+		status           string
+		duplicateOf      string
+		terminalReason   string
+		seedStaleReason  string
+		wantReasonField  bool
+		wantReasonAbsent string
+	}{
+		{
+			name:            "failed status persists terminal reason",
+			status:          StatusFailed,
+			terminalReason:  "verification failed: go test ./...",
+			wantReasonField: true,
+		},
+		{
+			name:            "duplicated status persists reason and duplicate path",
+			status:          StatusDuplicated,
+			duplicateOf:     "round-002/issue_001.md",
+			terminalReason:  "canonical thread: round-002/issue_001.md",
+			wantReasonField: true,
+		},
+		{
+			name:             "empty reason clears stale terminal reason",
+			status:           StatusResolved,
+			seedStaleReason:  "stale verification failure",
+			wantReasonAbsent: "stale verification failure",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			artifactDir := t.TempDir()
+			result := persistTestRound(t, artifactDir, PersistRequest{
+				PRNumber:       "123",
+				HeadRepository: "owner/project",
+				HeadBranch:     "feature/review",
+				Round:          1,
+				CreatedAt:      base,
+			})
+			path := result.IssuePaths[0]
+			before, err := ParseIssue(path)
+			if err != nil {
+				t.Fatalf("parse issue before status update: %v", err)
+			}
+			if before.TerminalReason != "" {
+				t.Fatalf("expected artifact without terminal_reason to parse empty reason, got %q", before.TerminalReason)
+			}
+			if content := readFile(t, path); strings.Contains(content, "terminal_reason:") {
+				t.Fatalf("expected initial artifact to omit terminal_reason, got:\n%s", content)
+			}
+
+			if tt.seedStaleReason != "" {
+				if err := SetIssueStatus(path, StatusFailed, "", tt.seedStaleReason); err != nil {
+					t.Fatalf("seed stale terminal reason: %v", err)
+				}
+			}
+			if err := SetIssueStatus(path, tt.status, tt.duplicateOf, tt.terminalReason); err != nil {
+				t.Fatalf("set issue status: %v", err)
+			}
+
+			after, err := ParseIssue(path)
+			if err != nil {
+				t.Fatalf("parse issue after status update: %v", err)
+			}
+			if after.Status != tt.status {
+				t.Fatalf("expected status %q, got %q", tt.status, after.Status)
+			}
+			if after.DuplicateOf != tt.duplicateOf {
+				t.Fatalf("expected duplicate_of %q, got %q", tt.duplicateOf, after.DuplicateOf)
+			}
+			if after.TerminalReason != tt.terminalReason {
+				t.Fatalf("expected terminal reason %q, got %q", tt.terminalReason, after.TerminalReason)
+			}
+			if after.SourceRef != before.SourceRef || after.SourceReviewID != before.SourceReviewID || !after.RoundCreatedAt.Equal(before.RoundCreatedAt) {
+				t.Fatalf("expected neighboring frontmatter fields to survive rewrite, before=%#v after=%#v", before, after)
+			}
+
+			content := readFile(t, path)
+			if tt.wantReasonField {
+				if !strings.Contains(content, "terminal_reason:") || !strings.Contains(content, tt.terminalReason) {
+					t.Fatalf("expected terminal_reason %q in artifact, got:\n%s", tt.terminalReason, content)
+				}
+			} else if strings.Contains(content, "terminal_reason:") {
+				t.Fatalf("expected empty terminal reason to omit field, got:\n%s", content)
+			}
+			if tt.wantReasonAbsent != "" && strings.Contains(content, tt.wantReasonAbsent) {
+				t.Fatalf("expected stale terminal reason %q to be cleared, got:\n%s", tt.wantReasonAbsent, content)
+			}
+		})
 	}
 }
 

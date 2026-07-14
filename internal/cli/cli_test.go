@@ -6849,7 +6849,7 @@ func (runner *fakeAgentRunner) Run(ctx context.Context, req agent.ExecuteRequest
 		}
 	}
 	for _, issue := range req.Batch.Issues {
-		if err := rounds.SetIssueStatus(issue.Path, status, ""); err != nil {
+		if err := rounds.SetIssueStatus(issue.Path, status, "", ""); err != nil {
 			return agent.ExecuteResult{}, err
 		}
 	}

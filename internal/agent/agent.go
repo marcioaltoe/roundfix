@@ -289,7 +289,7 @@ func SettleAssignedIssues(ctx context.Context, batch rounds.Batch) ([]string, er
 		if err := ctx.Err(); err != nil {
 			return changed, err
 		}
-		if err := rounds.SetIssueStatus(assigned.Path, rounds.StatusFailed, ""); err != nil {
+		if err := rounds.SetIssueStatus(assigned.Path, rounds.StatusFailed, "", ""); err != nil {
 			return changed, err
 		}
 		changed = append(changed, assigned.Path)
@@ -299,7 +299,7 @@ func SettleAssignedIssues(ctx context.Context, batch rounds.Batch) ([]string, er
 
 func MarkBatchFailed(batch rounds.Batch) error {
 	for _, issue := range batch.Issues {
-		if err := rounds.SetIssueStatus(issue.Path, rounds.StatusFailed, ""); err != nil {
+		if err := rounds.SetIssueStatus(issue.Path, rounds.StatusFailed, "", ""); err != nil {
 			return err
 		}
 	}

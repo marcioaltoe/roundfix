@@ -145,7 +145,7 @@ func (runner *engineFakeRunner) Run(ctx context.Context, req agent.ExecuteReques
 		status = rounds.StatusResolved
 	}
 	for _, issue := range req.Batch.Issues {
-		if err := rounds.SetIssueStatus(issue.Path, status, ""); err != nil {
+		if err := rounds.SetIssueStatus(issue.Path, status, "", ""); err != nil {
 			return agent.ExecuteResult{}, err
 		}
 	}
@@ -1084,7 +1084,7 @@ func (runner *publishingFakeRunner) Run(ctx context.Context, req agent.ExecuteRe
 		return agent.ExecuteResult{}, fmt.Errorf("publish Run Events: %w", err)
 	}
 	for _, issue := range req.Batch.Issues {
-		if err := rounds.SetIssueStatus(issue.Path, rounds.StatusResolved, ""); err != nil {
+		if err := rounds.SetIssueStatus(issue.Path, rounds.StatusResolved, "", ""); err != nil {
 			return agent.ExecuteResult{}, err
 		}
 	}
