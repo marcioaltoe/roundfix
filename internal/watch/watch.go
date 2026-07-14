@@ -55,11 +55,10 @@ type FetchResult struct {
 }
 
 type ResolveResult struct {
-	Remaining          int
-	Progress           bool
-	HeadSHA            string
-	Outcome            string
-	IntegrationCommand string
+	Remaining int
+	Progress  bool
+	HeadSHA   string
+	Outcome   string
 }
 
 type Result struct {

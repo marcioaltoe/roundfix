@@ -723,6 +723,7 @@ func (engine *Engine) completeFailedBatch(ctx context.Context, plan CyclePlan, b
 		return outcome, 0, fmt.Errorf("compute remaining unresolved issues for run %q after failed Batch %03d: %w", plan.RunID, batch.Number, err)
 	}
 	fmt.Fprintf(engine.deps.Progress, "Batch %03d failed: %s\n", batch.Number, failure)
+	fmt.Fprintln(engine.deps.Progress, "Uncommitted changes in the checkout are Agent work from this Run because Preflight started from a clean tracked tree.")
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonBatch,
 		fmt.Sprintf("Batch %03d failed; %d Unresolved Review Issue(s) remain.", batch.Number, remaining),
 		map[string]any{"phase": "failed", "batch": batch.Number, "remaining": remaining, "error": failure},

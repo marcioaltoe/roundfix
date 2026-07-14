@@ -88,9 +88,10 @@ type LiveRunView struct {
 	// callers keep their rendering unchanged.
 	RunKind string
 	// SpecSlug, SpecsRoot, GitRoot, and WorkDir locate a spec Run's task files
-	// so the cockpit can refresh Task statuses by re-reading them. WorkDir is
-	// the Run Worktree; GitRoot is the user checkout fallback for legacy or
-	// pruned Runs.
+	// so the cockpit can refresh Task statuses by re-reading them. For spec
+	// Runs, WorkDir is the Run Worktree and GitRoot is the user checkout
+	// fallback for legacy or pruned Runs. For review Runs, WorkDir is the user
+	// checkout.
 	SpecSlug  string
 	SpecsRoot string
 	GitRoot   string
@@ -146,6 +147,13 @@ func TaskWorkItems(tasks []spec.Task) []WorkItem {
 // other Run Kind keeps the Review Issue rendering byte-identical.
 func specRunView(view LiveRunView) bool {
 	return view.RunKind == store.KindImplement
+}
+
+func workDirDisplayLabel(view LiveRunView) string {
+	if specRunView(view) {
+		return "Run Worktree"
+	}
+	return "User checkout"
 }
 
 func taskReadRoot(view LiveRunView) string {
@@ -492,7 +500,7 @@ func RenderLiveRunView(view LiveRunView) string {
 		builder.WriteString(fmt.Sprintf("  Concurrency: %d\n", view.Concurrency))
 	}
 	if strings.TrimSpace(view.WorkDir) != "" {
-		builder.WriteString(fmt.Sprintf("  Run Worktree: %s\n", view.WorkDir))
+		builder.WriteString(fmt.Sprintf("  %s: %s\n", workDirDisplayLabel(view), view.WorkDir))
 	}
 	if !specRunView(view) {
 		builder.WriteString(fmt.Sprintf("  Round: %s\n", formatRound(view.CurrentRound, view.MaxRounds)))

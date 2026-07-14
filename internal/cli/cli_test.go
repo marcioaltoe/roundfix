@@ -2291,42 +2291,6 @@ func TestRunOutcomeNotificationFailureWarnsAndJournalsWithoutChangingReportOrExi
 	t.Fatalf("expected Daemon-source notification failure event for Run %s, got %+v", runID, events)
 }
 
-func TestRunCleanCleanupFailureWarnsAndJournalsWithoutChangingReportOrExit(t *testing.T) {
-	wantStdout, _, wantCode, _, _ := runCleanResolveForCleanup(t, nil)
-	gotStdout, gotStderr, gotCode, homeDir, keptPath := runCleanResolveForCleanup(t, errors.New("forced cleanup failure"))
-
-	if gotCode != wantCode {
-		t.Fatalf("expected exit code to stay %d, got %d stderr=%q", wantCode, gotCode, gotStderr)
-	}
-	if gotStdout != wantStdout {
-		t.Fatalf("stdout changed after cleanup failure\nwant:\n%q\ngot:\n%q", wantStdout, gotStdout)
-	}
-	warning := fmt.Sprintf("roundfix: Run Worktree cleanup failed; kept %s: forced cleanup failure\n", keptPath)
-	if strings.Count(gotStderr, warning) != 1 {
-		t.Fatalf("expected one cleanup warning %q, got stderr=%q", warning, gotStderr)
-	}
-	assertCleanCleanupWarningEvent(t, homeDir, gotStderr, keptPath, "forced cleanup failure")
-	assertRunWorktreeExists(t, keptPath)
-}
-
-func TestRunWatchCleanCleanupFailureWarnsAndJournalsWithoutChangingReportOrExit(t *testing.T) {
-	wantStdout, _, wantCode, _, _ := runCleanWatchForCleanup(t, nil)
-	gotStdout, gotStderr, gotCode, homeDir, keptPath := runCleanWatchForCleanup(t, errors.New("forced cleanup failure"))
-
-	if gotCode != wantCode {
-		t.Fatalf("expected exit code to stay %d, got %d stderr=%q", wantCode, gotCode, gotStderr)
-	}
-	if gotStdout != wantStdout {
-		t.Fatalf("stdout changed after cleanup failure\nwant:\n%q\ngot:\n%q", wantStdout, gotStdout)
-	}
-	warning := fmt.Sprintf("roundfix: Run Worktree cleanup failed; kept %s: forced cleanup failure\n", keptPath)
-	if strings.Count(gotStderr, warning) != 1 {
-		t.Fatalf("expected one cleanup warning %q, got stderr=%q", warning, gotStderr)
-	}
-	assertCleanCleanupWarningEvent(t, homeDir, gotStderr, keptPath, "forced cleanup failure")
-	assertRunWorktreeExists(t, keptPath)
-}
-
 func assertCleanCleanupWarningEvent(t *testing.T, homeDir string, stderr string, keptPath string, reason string) {
 	t.Helper()
 	if strings.Contains(stderr, "failed after Run start") || strings.Contains(stderr, "Run Worktree kept:") {
@@ -2378,7 +2342,70 @@ func TestRunOutcomeNotificationsDisabledSkipsNotifier(t *testing.T) {
 	}
 }
 
-func TestRunResolveWorktreeIsolationExcludesConcurrentUserCommit(t *testing.T) {
+func TestRunReviewCommandsRefuseDirtyTrackedCheckout(t *testing.T) {
+	for _, command := range []string{"resolve", "watch"} {
+		t.Run(command, func(t *testing.T) {
+			homeDir, repoDir := withReviewGitWorkspace(t)
+			withRealReviewPreflight(t, repoDir, true)
+			withBranchIntegrity(t, nil, nil)
+			mustWrite(t, filepath.Join(repoDir, "README.md"), "dirty tracked change\n")
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), branchIntegrityCommandArgs(command), &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("expected preflight exit 2, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+			}
+			if !strings.Contains(stderr.String(), "README.md") {
+				t.Fatalf("expected dirty tracked path in stderr, got %q", stderr.String())
+			}
+			if !strings.Contains(stderr.String(), "stash or commit tracked changes") {
+				t.Fatalf("expected stash-or-commit next action, got %q", stderr.String())
+			}
+			assertNoRunDatabase(t, homeDir)
+		})
+	}
+}
+
+func TestRunResolveAllowsUntrackedCheckoutFiles(t *testing.T) {
+	homeDir, repoDir := withReviewGitWorkspace(t)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+	withRealReviewPreflight(t, repoDir, true)
+	withBranchIntegrity(t, nil, nil)
+	source := &fakeSourceResolver{}
+	withSourceResolver(t, source)
+	pusher := &checkingPusher{}
+	withPusher(t, pusher)
+	runner := &fakeAgentRunner{
+		onRun: func(req agent.ExecuteRequest) error {
+			return os.WriteFile(filepath.Join(req.GitRoot, "agent.txt"), []byte("agent work\n"), 0o644)
+		},
+	}
+	withAgentRunner(t, runner)
+	mustWrite(t, filepath.Join(repoDir, "scratch.txt"), "local notes\n")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected clean resolve exit with untracked file, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	runID := reviewRunIDFromStderr(t, stderr.String())
+	run := runFromStore(t, homeDir, runID)
+	if run.WorkDir != repoDir {
+		t.Fatalf("expected Run work_dir to be user checkout %q, got %q", repoDir, run.WorkDir)
+	}
+	if gitImplementOutput(t, repoDir, "ls-files", "scratch.txt") != "" {
+		t.Fatalf("expected pre-existing untracked scratch.txt to remain uncommitted")
+	}
+	if got := mustRead(t, filepath.Join(repoDir, "scratch.txt")); got != "local notes\n" {
+		t.Fatalf("expected untracked file to remain unchanged, got %q", got)
+	}
+}
+
+func TestRunResolveCommitsOnUserBranchWithoutRunBranch(t *testing.T) {
 	homeDir, repoDir := withReviewGitWorkspace(t)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	withRealReviewPreflight(t, repoDir, true)
@@ -2388,13 +2415,7 @@ func TestRunResolveWorktreeIsolationExcludesConcurrentUserCommit(t *testing.T) {
 	withPusher(t, pusher)
 	runner := &fakeAgentRunner{
 		onRun: func(req agent.ExecuteRequest) error {
-			if err := os.WriteFile(filepath.Join(req.GitRoot, "agent.txt"), []byte("agent work\n"), 0o644); err != nil {
-				return err
-			}
-			mustWrite(t, filepath.Join(repoDir, "user.txt"), "user work\n")
-			gitImplement(t, repoDir, "add", "user.txt")
-			gitImplement(t, repoDir, "commit", "-m", "user work during resolve")
-			return nil
+			return os.WriteFile(filepath.Join(req.GitRoot, "agent.txt"), []byte("agent work\n"), 0o644)
 		},
 	}
 	withAgentRunner(t, runner)
@@ -2403,43 +2424,34 @@ func TestRunResolveWorktreeIsolationExcludesConcurrentUserCommit(t *testing.T) {
 
 	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
 
-	if code != exitRunFailed {
-		t.Fatalf("expected IntegrationPending exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	if code != exitOK {
+		t.Fatalf("expected clean resolve exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
 	}
 	runID := reviewRunIDFromStderr(t, stderr.String())
 	run := runFromStore(t, homeDir, runID)
-	if run.State != store.StateIntegrationPending {
-		t.Fatalf("expected IntegrationPending Run, got %s", run.State)
+	if run.State != store.StateClean {
+		t.Fatalf("expected Clean Run, got %s", run.State)
 	}
-	if pusher.calls != 0 {
-		t.Fatalf("expected Final Push skipped on IntegrationPending, got %d calls", pusher.calls)
+	if run.WorkDir != repoDir {
+		t.Fatalf("expected Run work_dir to be user checkout %q, got %q", repoDir, run.WorkDir)
 	}
-	if len(runner.gitRoots) != 1 || runner.gitRoots[0] != run.WorkDir {
-		t.Fatalf("expected Agent to run in Run Worktree %q, got %v", run.WorkDir, runner.gitRoots)
+	if len(runner.gitRoots) != 1 || runner.gitRoots[0] != repoDir {
+		t.Fatalf("expected Agent to run in user checkout %q, got %v", repoDir, runner.gitRoots)
 	}
 	branch := runworktree.BranchName(runID)
-	assertRunWorktreeExists(t, run.WorkDir)
-	assertRunBranchExists(t, repoDir, branch)
-	taskCommitFiles := gitImplementOutput(t, repoDir, "diff-tree", "--no-commit-id", "--name-only", "-r", branch)
-	if !strings.Contains(taskCommitFiles, "agent.txt") {
-		t.Fatalf("expected Run Branch commit to contain agent work, got %q", taskCommitFiles)
+	assertRunBranchRemoved(t, repoDir, branch)
+	if strings.Contains(stderr.String(), "Run Worktree:") || strings.Contains(stderr.String(), "Integration command:") {
+		t.Fatalf("resolve must not report a Run Worktree or integration command, got %q", stderr.String())
 	}
-	if strings.Contains(taskCommitFiles, "user.txt") {
-		t.Fatalf("expected Run Branch commit to exclude concurrent user file, got %q", taskCommitFiles)
+	if got := mustRead(t, filepath.Join(repoDir, "agent.txt")); got != "agent work\n" {
+		t.Fatalf("expected agent work in user checkout, got %q", got)
 	}
-	userFiles := gitImplementOutput(t, repoDir, "ls-tree", "-r", "--name-only", "HEAD")
-	if !strings.Contains(userFiles, "user.txt") {
-		t.Fatalf("expected user commit to survive on user branch, got %q", userFiles)
-	}
-	if strings.Contains(userFiles, "agent.txt") {
-		t.Fatalf("expected unintegrated agent work to stay off user branch, got %q", userFiles)
-	}
-	if !strings.Contains(stderr.String(), "Integration command: git merge --ff-only "+branch) {
-		t.Fatalf("expected integration command on stderr, got %q", stderr.String())
+	if subjects := gitImplementOutput(t, repoDir, "log", "--format=%s", "--", "agent.txt"); !strings.Contains(subjects, daemon.BatchCommitMessage(1)) {
+		t.Fatalf("expected batch commit on user branch, got subjects %q", subjects)
 	}
 }
 
-func TestRunResolvePushRunsAfterSuccessfulIntegrationAndCleansWorktree(t *testing.T) {
+func TestRunResolvePushRunsFromUserCheckoutWithoutRunWorktree(t *testing.T) {
 	homeDir, repoDir := withReviewGitWorkspace(t)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	withRealReviewPreflight(t, repoDir, true)
@@ -2447,8 +2459,6 @@ func TestRunResolvePushRunsAfterSuccessfulIntegrationAndCleansWorktree(t *testin
 	withSourceResolver(t, source)
 	pusher := &checkingPusher{
 		check: func(req daemon.PushRequest) error {
-			// ADR-0036: Final Push runs from the user checkout after
-			// integration so the review artifact docs commit rides it.
 			if req.WorkDir != repoDir {
 				return fmt.Errorf("push WorkDir left the user checkout: %q", req.WorkDir)
 			}
@@ -2481,11 +2491,19 @@ func TestRunResolvePushRunsAfterSuccessfulIntegrationAndCleansWorktree(t *testin
 	if run.State != store.StateClean {
 		t.Fatalf("expected Clean Run, got %s", run.State)
 	}
+	if run.WorkDir != repoDir {
+		t.Fatalf("expected Run work_dir to be user checkout %q, got %q", repoDir, run.WorkDir)
+	}
+	if len(runner.gitRoots) != 1 || runner.gitRoots[0] != repoDir {
+		t.Fatalf("expected Agent to run in user checkout %q, got %v", repoDir, runner.gitRoots)
+	}
 	if len(pusher.workDir) != 1 || pusher.workDir[0] != repoDir {
 		t.Fatalf("expected Final Push from the user checkout %q, got %v", repoDir, pusher.workDir)
 	}
-	assertRunWorktreeRemoved(t, run.WorkDir)
 	assertRunBranchRemoved(t, repoDir, runworktree.BranchName(runID))
+	if strings.Contains(stderr.String(), "Run Worktree:") || strings.Contains(stderr.String(), "Integration command:") {
+		t.Fatalf("resolve must not report a Run Worktree or integration command, got %q", stderr.String())
+	}
 	if got := mustRead(t, filepath.Join(repoDir, "agent.txt")); got != "agent work\n" {
 		t.Fatalf("expected integrated agent work in user checkout, got %q", got)
 	}
@@ -2495,7 +2513,7 @@ func TestRunResolvePushRunsAfterSuccessfulIntegrationAndCleansWorktree(t *testin
 	}
 }
 
-func TestRunWatchReusesOneRealWorktreeAcrossRoundsAndCleansOnIntegratedClean(t *testing.T) {
+func TestRunWatchReusesUserCheckoutAcrossRoundsWithoutRunBranch(t *testing.T) {
 	homeDir, repoDir := withReviewGitWorkspace(t)
 	withRealReviewPreflight(t, repoDir, true)
 	withWatchStatus(t, (&fakeWatchStatus{
@@ -2547,8 +2565,8 @@ func TestRunWatchReusesOneRealWorktreeAcrossRoundsAndCleansOnIntegratedClean(t *
 	if runner.calls != 2 {
 		t.Fatalf("expected two watched resolve rounds, got %d", runner.calls)
 	}
-	if len(runner.gitRoots) != 2 || runner.gitRoots[0] == "" || runner.gitRoots[0] != runner.gitRoots[1] {
-		t.Fatalf("expected one Run Worktree reused across rounds, got %v", runner.gitRoots)
+	if len(runner.gitRoots) != 2 || runner.gitRoots[0] != repoDir || runner.gitRoots[1] != repoDir {
+		t.Fatalf("expected user checkout reused across rounds %q, got %v", repoDir, runner.gitRoots)
 	}
 	if pusher.calls != 2 {
 		t.Fatalf("expected Final Push after each integrated clean round, got %d", pusher.calls)
@@ -2558,11 +2576,13 @@ func TestRunWatchReusesOneRealWorktreeAcrossRoundsAndCleansOnIntegratedClean(t *
 	if run.State != store.StateClean {
 		t.Fatalf("expected Clean watch Run, got %s", run.State)
 	}
-	if run.WorkDir != runner.gitRoots[0] {
-		t.Fatalf("expected recorded work_dir %q to match Agent WorkDir %q", run.WorkDir, runner.gitRoots[0])
+	if run.WorkDir != repoDir {
+		t.Fatalf("expected recorded work_dir to be user checkout %q, got %q", repoDir, run.WorkDir)
 	}
-	assertRunWorktreeRemoved(t, run.WorkDir)
 	assertRunBranchRemoved(t, repoDir, runworktree.BranchName(runID))
+	if strings.Contains(stderr.String(), "Run Worktree:") || strings.Contains(stderr.String(), "Integration command:") {
+		t.Fatalf("watch must not report a Run Worktree or integration command, got %q", stderr.String())
+	}
 	if got := mustRead(t, filepath.Join(repoDir, "agent.txt")); got != "agent round 2\n" {
 		t.Fatalf("expected latest integrated watch work in user checkout, got %q", got)
 	}
@@ -2988,7 +3008,7 @@ func TestRunResolveStopRequestDuringAgentPreservesWorkAndSkipsDaemonMutations(t 
 	withPusher(t, pusher)
 	withAgentRunner(t, &fakeStoppingAgentRunner{})
 	withFakeWorktree(t)
-	withChangedPaths(t, []preflight.ChangedPath{{Status: "M", Path: "src/app.go"}})
+	withChangedPathSnapshots(t, nil, []preflight.ChangedPath{{Status: "M", Path: "src/app.go"}})
 	result := persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -3071,7 +3091,6 @@ func TestExitForWatchOutcome(t *testing.T) {
 		{outcome: store.StateTimedOut, code: exitRunFailed},
 		{outcome: store.StateFailed, code: exitRunFailed},
 		{outcome: store.StateUnresolved, code: exitRunFailed},
-		{outcome: store.StateIntegrationPending, code: exitRunFailed},
 		{outcome: store.StateFetched, code: exitRunFailed},
 	}
 
@@ -5906,65 +5925,6 @@ func runCleanResolveForOutcomeNotification(t *testing.T, notifyErr error) (strin
 	return stdout.String(), stderr.String(), code, homeDir
 }
 
-func runCleanResolveForCleanup(t *testing.T, cleanupErr error) (string, string, int, string, string) {
-	t.Helper()
-	homeDir, repoDir := withCLIWorkspace(t)
-	withSuccessfulPreflight(t, repoDir)
-	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
-	cleanupPath := ""
-	if cleanupErr != nil {
-		oldCleanup := cleanupCleanRunWorktree
-		cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
-			cleanupPath = ref.Path
-			return cleanupErr
-		}
-		t.Cleanup(func() {
-			cleanupCleanRunWorktree = oldCleanup
-		})
-	}
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
-
-	if code != exitOK {
-		t.Fatalf("expected clean resolve exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
-	}
-	if cleanupErr != nil && strings.TrimSpace(cleanupPath) == "" {
-		t.Fatal("expected cleanup failure to capture the Run Worktree path")
-	}
-	return stdout.String(), stderr.String(), code, homeDir, cleanupPath
-}
-
-func runCleanWatchForCleanup(t *testing.T, cleanupErr error) (string, string, int, string, string) {
-	t.Helper()
-	homeDir, repoDir := withCLIWorkspace(t)
-	withSuccessfulPreflight(t, repoDir)
-	cleanupPath := ""
-	if cleanupErr != nil {
-		oldCleanup := cleanupCleanRunWorktree
-		cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
-			cleanupPath = ref.Path
-			return cleanupErr
-		}
-		t.Cleanup(func() {
-			cleanupCleanRunWorktree = oldCleanup
-		})
-	}
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "1", "--no-input"}, &stdout, &stderr)
-
-	if code != exitOK {
-		t.Fatalf("expected clean watch exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
-	}
-	if cleanupErr != nil && strings.TrimSpace(cleanupPath) == "" {
-		t.Fatal("expected cleanup failure to capture the Run Worktree path")
-	}
-	return stdout.String(), stderr.String(), code, homeDir, cleanupPath
-}
-
 func withCLIWorkspace(t *testing.T) (string, string) {
 	t.Helper()
 	homeDir := t.TempDir()
@@ -6167,19 +6127,18 @@ watch:
 
 func withRealReviewPreflight(t *testing.T, repoDir string, pushEnabled bool) {
 	t.Helper()
-	withPreflight(t, func(_ context.Context, req commandRequest, _ roundconfig.Loaded) (preflight.Result, error) {
+	withPreflight(t, func(ctx context.Context, req commandRequest, _ roundconfig.Loaded) (preflight.Result, error) {
 		if req.pr == "" {
 			return preflight.Result{}, errors.New("missing pr in test preflight")
 		}
-		head := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+		gitState, err := preflight.InspectGit(ctx, repoDir, preflight.ExecGitRunner{})
+		if err != nil {
+			return preflight.Result{}, err
+		}
+		gitState.UpstreamRemote = "origin"
+		gitState.UpstreamBranch = "feature/review"
 		return preflight.Result{
-			Git: preflight.GitState{
-				Root:           repoDir,
-				Branch:         "feature/review",
-				HEAD:           head,
-				UpstreamRemote: "origin",
-				UpstreamBranch: "feature/review",
-			},
+			Git: gitState,
 			PullRequest: preflight.PullRequest{
 				Number:         req.pr,
 				State:          "OPEN",
@@ -6214,7 +6173,7 @@ func mustWrite(t *testing.T, path string, content string) {
 func withSuccessfulPreflight(t *testing.T, repoDir string) {
 	t.Helper()
 	withAgentRunner(t, &fakeAgentRunner{})
-	withFakeReviewRunWorktrees(t)
+	withNoReviewRunWorktrees(t)
 	withFakeWorktree(t)
 	withVerifier(t, &fakeVerifier{})
 	withCommitter(t, &fakeCommitter{})
@@ -6233,6 +6192,7 @@ func withSuccessfulPreflight(t *testing.T, repoDir string) {
 	withWatchHeadSHA(t, func(context.Context, string) (string, error) {
 		return "abc123", nil
 	})
+	withChangedPaths(t, nil)
 	withReviewSpecGitRunner(t, &fakeReviewSpecGitRunner{})
 	withFetchReviewItems(t, []reviewsource.ReviewItem{
 		{
@@ -6278,34 +6238,20 @@ func withSuccessfulPreflight(t *testing.T, repoDir string) {
 	})
 }
 
-func withFakeReviewRunWorktrees(t *testing.T) {
+func withNoReviewRunWorktrees(t *testing.T) {
 	t.Helper()
 	oldCreate := createRunWorktree
 	oldIntegrate := integrateRunWorktree
 	oldCleanup := cleanupCleanRunWorktree
 	oldPrune := pruneTerminalRunWorktrees
 	createRunWorktree = func(_ context.Context, opts runworktree.CreateOptions) (runworktree.Ref, error) {
-		userRoot := opts.UserRoot
-		runID := opts.RunID
-		path := filepath.Join(os.Getenv("HOME"), ".roundfix", "worktrees", "fake-review", runID)
-		if err := os.MkdirAll(path, 0o755); err != nil {
-			return runworktree.Ref{}, err
-		}
-		gitImplement(t, path, "init", "--initial-branch=main")
-		gitImplement(t, path, "commit", "--allow-empty", "-m", "seed fake review run worktree")
-		gitImplement(t, path, "branch", "-m", runworktree.BranchName(runID))
-		return runworktree.Ref{
-			RunID:    runID,
-			Path:     path,
-			Branch:   runworktree.BranchName(runID),
-			UserRoot: userRoot,
-		}, nil
+		return runworktree.Ref{}, fmt.Errorf("review command unexpectedly created a Run Worktree for run %s", opts.RunID)
 	}
 	integrateRunWorktree = func(context.Context, runworktree.Ref, string, string) (runworktree.IntegrationResult, error) {
-		return runworktree.IntegrationResult{Mode: runworktree.ModeFastForwardMerge}, nil
+		return runworktree.IntegrationResult{}, errors.New("review command unexpectedly integrated a Run Worktree")
 	}
 	cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
-		return os.RemoveAll(ref.Path)
+		return fmt.Errorf("review command unexpectedly cleaned a Run Worktree %s", ref.Path)
 	}
 	pruneTerminalRunWorktrees = func(context.Context, string, string, func(string) bool) ([]runworktree.PrunedRef, error) {
 		return nil, nil
@@ -6650,6 +6596,26 @@ func withChangedPaths(t *testing.T, changes []preflight.ChangedPath) {
 	t.Helper()
 	old := inspectChangedPaths
 	inspectChangedPaths = func(context.Context, string) ([]preflight.ChangedPath, error) {
+		return changes, nil
+	}
+	t.Cleanup(func() {
+		inspectChangedPaths = old
+	})
+}
+
+func withChangedPathSnapshots(t *testing.T, snapshots ...[]preflight.ChangedPath) {
+	t.Helper()
+	old := inspectChangedPaths
+	index := 0
+	inspectChangedPaths = func(context.Context, string) ([]preflight.ChangedPath, error) {
+		if len(snapshots) == 0 {
+			return nil, nil
+		}
+		if index >= len(snapshots) {
+			return snapshots[len(snapshots)-1], nil
+		}
+		changes := snapshots[index]
+		index++
 		return changes, nil
 	}
 	t.Cleanup(func() {
@@ -7648,7 +7614,7 @@ func TestStoppedResolveJournalsStoppedEventBeforeReturning(t *testing.T) {
 	withPusher(t, &fakePusher{})
 	withAgentRunner(t, &fakeStoppingAgentRunner{})
 	withFakeWorktree(t)
-	withChangedPaths(t, []preflight.ChangedPath{{Status: "M", Path: "src/app.go"}})
+	withChangedPathSnapshots(t, nil, []preflight.ChangedPath{{Status: "M", Path: "src/app.go"}})
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -8977,7 +8943,7 @@ func TestStoppedRunJournalsStopWithoutLaterUnsafeDaemonEvents(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withAgentRunner(t, &fakeStoppingAgentRunner{})
-	withChangedPaths(t, []preflight.ChangedPath{{Status: "M", Path: "src/app.go"}})
+	withChangedPathSnapshots(t, nil, []preflight.ChangedPath{{Status: "M", Path: "src/app.go"}})
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

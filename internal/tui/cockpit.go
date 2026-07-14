@@ -938,7 +938,11 @@ func cockpitTargetLabel(view LiveRunView) string {
 		if target != "" {
 			target += " // "
 		}
-		target += "WORKTREE " + workDir
+		if specRunView(view) {
+			target += "WORKTREE " + workDir
+		} else {
+			target += "USER CHECKOUT " + workDir
+		}
 	}
 	return target
 }
