@@ -35,6 +35,27 @@ deveria reportar ao menos o exit code e o caminho de qualquer log parcial; hoje 
 sem qualquer pista. Investigar por que o preflight do filho detached falha onde o foreground
 passa (possível interação com o probe do modelo/reasoning na re-execução self-detach).
 
+## 3. Settle resolve o worktree kept errado como superfície
+
+Com dois Runs kept do mesmo Spec (um force-stopped antigo com worktree presente, um recém-Clean
+com worktree removido), `roundfix settle` resolveu o worktree **antigo e obsoleto** como
+superfície e recusou a task como `pending` (naquele worktree a task nunca tinha rodado), embora o
+task file autoritativo no checkout estivesse `failed`. Contorno: remover o worktree/branch
+integrados do run antigo (`git worktree remove --force` + `git branch -d`) e reexecutar o settle,
+que então caiu na superfície do repositório atual e passou. Sugestão upstream: a resolução de
+superfície deveria preferir a superfície cujo task file está `failed` (ou ao menos avisar qual
+superfície foi selecionada e por quê).
+
+## 4. Reproduções confirmadas de findings anteriores
+
+- **Settle agrupa o worktree inteiro** (findings 2026-07-14 §5): o settle da task_09 levou junto
+  toda a implementação da task_10 sob a mensagem da task_09.
+- **Verificação não-hermética custa ciclos** (§6): `go build ./...` sem `-buildvcs=false` falha
+  nos worktrees sob `~/.roundfix` (marcador `.git` inválido em `/Users/marcio`); tasks 09/10
+  falharam com o trabalho 100% pronto. Os agentes das tasks 01–08 emendaram o comando no task
+  file; o da 09/10 recusou corretamente e settlou failed. Regra de autoria reforçada: sempre
+  `go build -buildvcs=false ./...` e `grep` (não `rg`) em comandos de Verification.
+
 ## Estado
 
 - Run produtivo em andamento: `run_20260714T181454Z_6cb742028a8d0658` (foreground em shell de
