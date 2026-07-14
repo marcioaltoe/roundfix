@@ -33,6 +33,8 @@ type GitHubClient interface {
 	CommitStatuses(ctx context.Context, repo string, headSHA string) ([]CommitStatus, error)
 	PullRequestReviews(ctx context.Context, repo string, prNumber string) ([]PullRequestReview, error)
 	ResolveReviewThread(ctx context.Context, threadID string) error
+	ReplyToReviewThread(ctx context.Context, threadID string, body string) error
+	CommentOnPullRequest(ctx context.Context, prNumber int, body string) error
 }
 
 type ReviewComment struct {
@@ -55,6 +57,7 @@ type ReviewThread struct {
 type ThreadComment struct {
 	DatabaseID              int64
 	NodeID                  string
+	Body                    string
 	Author                  string
 	SourceReviewID          string
 	SourceReviewSubmittedAt time.Time
@@ -209,6 +212,12 @@ func (client Client) HeadCheck(ctx context.Context, req reviewsource.HeadCheckRe
 
 type GHClient struct{}
 
+const replyToReviewThreadMutation = `mutation($threadId:ID!, $body:String!) {
+  addPullRequestReviewThreadReply(input: {pullRequestReviewThreadId: $threadId, body: $body}) {
+    comment { id }
+  }
+}`
+
 func (client GHClient) ReviewComments(ctx context.Context, repo string, prNumber string) ([]ReviewComment, error) {
 	output, err := runGH(ctx, "api", "--paginate", fmt.Sprintf("repos/%s/pulls/%s/comments", repo, prNumber))
 	if err != nil {
@@ -284,6 +293,22 @@ func (client GHClient) ResolveReviewThread(ctx context.Context, threadID string)
 }`
 	_, err := runGH(ctx, "api", "graphql", "-f", "query="+query, "-f", "threadId="+threadID)
 	return err
+}
+
+func (client GHClient) ReplyToReviewThread(ctx context.Context, threadID string, body string) error {
+	_, err := runGH(ctx, "api", "graphql", "-f", "query="+replyToReviewThreadMutation, "-f", "threadId="+threadID, "-f", "body="+body)
+	if err != nil {
+		return fmt.Errorf("reply to review thread %s: %w", threadID, err)
+	}
+	return nil
+}
+
+func (client GHClient) CommentOnPullRequest(ctx context.Context, prNumber int, body string) error {
+	_, err := runGH(ctx, "api", "-X", "POST", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments", prNumber), "-f", "body="+body)
+	if err != nil {
+		return fmt.Errorf("comment on pull request %d: %w", prNumber, err)
+	}
+	return nil
 }
 
 func (client GHClient) CheckRuns(ctx context.Context, repo string, headSHA string) ([]CheckRun, error) {
@@ -401,6 +426,7 @@ func (client GHClient) reviewThreadsPage(ctx context.Context, owner string, name
             nodes {
               databaseId
               id
+              body
               author { login }
               pullRequestReview { databaseId submittedAt }
             }
@@ -441,6 +467,7 @@ func (client GHClient) reviewThreadsPage(ctx context.Context, owner string, name
 								Nodes []struct {
 									DatabaseID int64  `json:"databaseId"`
 									ID         string `json:"id"`
+									Body       string `json:"body"`
 									Author     struct {
 										Login string `json:"login"`
 									} `json:"author"`
@@ -472,6 +499,7 @@ func (client GHClient) reviewThreadsPage(ctx context.Context, owner string, name
 			threadComment := ThreadComment{
 				DatabaseID: comment.DatabaseID,
 				NodeID:     comment.ID,
+				Body:       comment.Body,
 				Author:     comment.Author.Login,
 			}
 			if comment.PullRequestReview != nil {
@@ -625,6 +653,49 @@ func classifyPullRequestReviews(headSHA string, reviews []PullRequestReview) (re
 	return reviewsource.WatchStatus{}, false
 }
 
+const roundfixCommentMarkerPrefix = "<!-- roundfix:"
+
+// RoundfixCommentMarker builds the stable marker line used for idempotent comments.
+func RoundfixCommentMarker(parts ...string) string {
+	cleaned := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			cleaned = append(cleaned, part)
+		}
+	}
+	return roundfixCommentMarkerPrefix + " " + strings.Join(cleaned, " ") + " -->"
+}
+
+// RoundfixCommentBody appends the marker line to a Roundfix-authored comment body.
+func RoundfixCommentBody(body string, marker string) string {
+	body = strings.TrimRight(body, "\n")
+	marker = strings.TrimSpace(marker)
+	if marker == "" {
+		return body
+	}
+	if body == "" {
+		return marker
+	}
+	return body + "\n\n" + marker
+}
+
+// HasRoundfixCommentMarker reports whether any comment body contains marker as its own line.
+func HasRoundfixCommentMarker(marker string, bodies ...string) bool {
+	marker = strings.TrimSpace(marker)
+	if marker == "" {
+		return false
+	}
+	for _, body := range bodies {
+		for _, line := range strings.Split(body, "\n") {
+			if strings.TrimSpace(line) == marker {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func isCodeRabbitSignal(values ...string) bool {
 	for _, value := range values {
 		normalized := strings.ToLower(strings.TrimSpace(value))
@@ -644,7 +715,9 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
-func runGH(ctx context.Context, args ...string) ([]byte, error) {
+var runGH = defaultRunGH
+
+func defaultRunGH(ctx context.Context, args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, "gh", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
