@@ -101,14 +101,15 @@ func eventPayloadMap(t *testing.T, event runevent.RunEvent) map[string]any {
 }
 
 type engineFakeRunner struct {
-	calls     *[]string
-	status    string
-	err       error
-	errByCall []error
-	result    agent.ExecuteResult
-	store     *store.Store
-	seen      []string
-	requests  []agent.ExecuteRequest
+	calls          *[]string
+	status         string
+	terminalReason string
+	err            error
+	errByCall      []error
+	result         agent.ExecuteResult
+	store          *store.Store
+	seen           []string
+	requests       []agent.ExecuteRequest
 }
 
 func (runner *engineFakeRunner) Probe(context.Context, agent.ProbeRequest) error { return nil }
@@ -145,7 +146,7 @@ func (runner *engineFakeRunner) Run(ctx context.Context, req agent.ExecuteReques
 		status = rounds.StatusResolved
 	}
 	for _, issue := range req.Batch.Issues {
-		if err := rounds.SetIssueStatus(issue.Path, status, "", ""); err != nil {
+		if err := rounds.SetIssueStatus(issue.Path, status, "", runner.terminalReason); err != nil {
 			return agent.ExecuteResult{}, err
 		}
 	}
@@ -422,6 +423,16 @@ func TestResolveCycleExecutesResolveVerifyCommitSourceContract(t *testing.T) {
 	if result.Remaining != 0 {
 		t.Fatalf("expected no remaining Unresolved Review Issues, got %d", result.Remaining)
 	}
+	issue, parseErr := rounds.ParseIssue(fixture.issuePaths[0])
+	if parseErr != nil {
+		t.Fatalf("parse issue: %v", parseErr)
+	}
+	if issue.Status != rounds.StatusResolved {
+		t.Fatalf("expected resolved Review Issue, got %q", issue.Status)
+	}
+	if issue.TerminalReason != "" {
+		t.Fatalf("expected resolved Review Issue without terminal reason, got %q", issue.TerminalReason)
+	}
 	if committer.messages[0] != BatchCommitMessage(1) {
 		t.Fatalf("expected Batch commit message, got %q", committer.messages[0])
 	}
@@ -493,6 +504,38 @@ func TestResolveCycleJournalsTransportAnomalyBeforeVerification(t *testing.T) {
 	}
 }
 
+func TestResolveCycleKeepsAgentProvidedTerminalReason(t *testing.T) {
+	fixture := newEngineFixture(t)
+	const reason = "invalid: reviewer asked for generated code"
+	runner := &engineFakeRunner{
+		calls:          fixture.calls,
+		store:          fixture.store,
+		status:         rounds.StatusInvalid,
+		terminalReason: reason,
+	}
+	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
+
+	result, err := engine.ResolveCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("resolve cycle: %v", err)
+	}
+	if len(result.Batches) != 1 || result.Batches[0].Failed {
+		t.Fatalf("expected invalid triage to complete the Batch, got %+v", result.Batches)
+	}
+	issue, parseErr := rounds.ParseIssue(fixture.issuePaths[0])
+	if parseErr != nil {
+		t.Fatalf("parse issue: %v", parseErr)
+	}
+	if issue.Status != rounds.StatusInvalid {
+		t.Fatalf("expected invalid Review Issue, got %q", issue.Status)
+	}
+	if issue.TerminalReason != reason {
+		t.Fatalf("expected agent terminal reason %q, got %q", reason, issue.TerminalReason)
+	}
+}
+
 func TestFinalPushIsASeparateExplicitOperation(t *testing.T) {
 	fixture := newEngineFixture(t)
 	pusher := &engineFakePusher{calls: fixture.calls}
@@ -546,11 +589,19 @@ func TestResolveCycleAgentFailureFailsBatchAndContinues(t *testing.T) {
 	if issue.Status != rounds.StatusFailed {
 		t.Fatalf("expected failed Batch issue status, got %q", issue.Status)
 	}
+	for _, expected := range []string{"Agent failed", "agent crashed"} {
+		if !strings.Contains(issue.TerminalReason, expected) {
+			t.Fatalf("expected terminal reason to contain %q, got %q", expected, issue.TerminalReason)
+		}
+	}
+	if strings.Contains(issue.TerminalReason, "\n") {
+		t.Fatalf("expected single-line terminal reason, got %q", issue.TerminalReason)
+	}
 }
 
 func TestResolveCycleVerificationFailureFailsBatchAndContinues(t *testing.T) {
 	fixture := newEngineFixture(t)
-	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID, err: errors.New("verification failed")}
+	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID, err: errors.New("exit status 7")}
 	committer := &engineFakeCommitter{calls: fixture.calls}
 	runner := &engineFakeRunner{calls: fixture.calls, store: fixture.store}
 	engine := fixture.engine(t, runner, verifier, committer, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
@@ -566,7 +617,7 @@ func TestResolveCycleVerificationFailureFailsBatchAndContinues(t *testing.T) {
 	if len(result.Batches) != 1 || !result.Batches[0].Failed {
 		t.Fatalf("expected failed Batch outcome, got %+v", result.Batches)
 	}
-	if !strings.Contains(result.Batches[0].FailureReason, "verification failed") {
+	if !strings.Contains(result.Batches[0].FailureReason, "exit status 7") {
 		t.Fatalf("expected verification failure reason, got %q", result.Batches[0].FailureReason)
 	}
 	if result.Remaining != 1 {
@@ -578,6 +629,15 @@ func TestResolveCycleVerificationFailureFailsBatchAndContinues(t *testing.T) {
 	}
 	if issue.Status != rounds.StatusFailed {
 		t.Fatalf("expected failed Batch issue status, got %q", issue.Status)
+	}
+	finalOutputPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 2)
+	for _, expected := range []string{"Verification failed", "make verify", "exit status 7", finalOutputPath} {
+		if !strings.Contains(issue.TerminalReason, expected) {
+			t.Fatalf("expected terminal reason to contain %q, got %q", expected, issue.TerminalReason)
+		}
+	}
+	if strings.Contains(issue.TerminalReason, "\n") {
+		t.Fatalf("expected single-line terminal reason, got %q", issue.TerminalReason)
 	}
 	if len(runner.requests) != 2 {
 		t.Fatalf("expected initial Agent request plus one Verification Feedback request, got %d", len(runner.requests))

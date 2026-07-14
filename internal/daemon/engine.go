@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os/exec"
 	"sort"
 	"strings"
 	"sync"
@@ -160,6 +161,48 @@ type verificationAttemptRequest struct {
 type verificationAttemptOutcome struct {
 	Failure        string
 	CommandFailure *VerificationCommandError
+}
+
+func terminalReasonLine(reason string) string {
+	return strings.Join(strings.Fields(reason), " ")
+}
+
+func agentTerminalReason(step string, err error) string {
+	return terminalReasonLine(fmt.Sprintf("%s failed: %v", step, err))
+}
+
+func unsettledTerminalReason(step string) string {
+	return terminalReasonLine(fmt.Sprintf("%s left issue unsettled after Batch", step))
+}
+
+func verificationTerminalReason(commandErr *VerificationCommandError) string {
+	if commandErr == nil {
+		return ""
+	}
+	command := strings.TrimSpace(commandErr.Command)
+	if command == "" {
+		command = "<unknown>"
+	}
+	diagnostics := strings.TrimSpace(commandErr.OutputPath)
+	if diagnostics == "" {
+		diagnostics = "unavailable"
+	}
+	return terminalReasonLine(fmt.Sprintf("Verification failed: command %q exited with %s; diagnostics: %s", command, verificationExitStatus(commandErr), diagnostics))
+}
+
+func verificationExitStatus(commandErr *VerificationCommandError) string {
+	if commandErr == nil || commandErr.Err == nil {
+		return "unknown exit status"
+	}
+	var exitErr *exec.ExitError
+	if errors.As(commandErr.Err, &exitErr) {
+		return fmt.Sprintf("exit status %d", exitErr.ExitCode())
+	}
+	status := strings.TrimSpace(commandErr.Err.Error())
+	if status == "" {
+		return "unknown exit status"
+	}
+	return status
 }
 
 func (req verificationAttemptRequest) payload(phase runevent.VerificationPhase, command string) map[string]any {
@@ -538,10 +581,11 @@ func (engine *Engine) runBatchAgent(ctx context.Context, plan CyclePlan, batch r
 			// Agent-created worktree changes stay untouched.
 			return "", fmt.Errorf("run Agent for run %q batch %03d: %w", plan.RunID, batch.Number, runErr)
 		}
-		if err := agent.MarkBatchFailed(batch); err != nil {
+		reason := agentTerminalReason("Agent", runErr)
+		if err := agent.MarkBatchFailed(batch, reason); err != nil {
 			return "", fmt.Errorf("mark run %q batch %03d failed after Agent error: %w", plan.RunID, batch.Number, err)
 		}
-		return fmt.Sprintf("Agent failed: %v", runErr), nil
+		return reason, nil
 	}
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, batch.Number); publishErr != nil {
@@ -557,7 +601,7 @@ func (engine *Engine) runBatchAgent(ctx context.Context, plan CyclePlan, batch r
 			return "", fmt.Errorf("publish transport anomaly event for run %q batch %03d: %w", plan.RunID, batch.Number, err)
 		}
 	}
-	settled, err := agent.SettleAssignedIssues(ctx, batch)
+	settled, err := agent.SettleAssignedIssues(ctx, batch, unsettledTerminalReason("Agent"))
 	if err != nil {
 		return "", fmt.Errorf("settle assigned Review Issues for run %q batch %03d: %w", plan.RunID, batch.Number, err)
 	}
@@ -624,7 +668,11 @@ func (engine *Engine) repairBatchVerification(ctx context.Context, plan CyclePla
 		return "", err
 	}
 	if final.Failure != "" {
-		if markErr := agent.MarkBatchFailed(batch); markErr != nil {
+		reason := verificationTerminalReason(final.CommandFailure)
+		if reason == "" {
+			reason = terminalReasonLine(final.Failure)
+		}
+		if markErr := agent.MarkBatchFailed(batch, reason); markErr != nil {
 			return "", fmt.Errorf("mark run %q batch %03d failed after verification error: %w", plan.RunID, batch.Number, markErr)
 		}
 		return final.Failure, nil
@@ -674,10 +722,11 @@ func (engine *Engine) runBatchVerificationRepair(ctx context.Context, plan Cycle
 		if isStop(ctx, runErr) {
 			return "", fmt.Errorf("run Verification Feedback Agent for run %q batch %03d: %w", plan.RunID, batch.Number, runErr)
 		}
-		if err := agent.MarkBatchFailed(batch); err != nil {
+		reason := agentTerminalReason("Verification Feedback Agent", runErr)
+		if err := agent.MarkBatchFailed(batch, reason); err != nil {
 			return "", fmt.Errorf("mark run %q batch %03d failed after Verification Feedback Agent error: %w", plan.RunID, batch.Number, err)
 		}
-		return fmt.Sprintf("Agent failed: %v", runErr), nil
+		return reason, nil
 	}
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, batch.Number); publishErr != nil {
@@ -693,7 +742,7 @@ func (engine *Engine) runBatchVerificationRepair(ctx context.Context, plan Cycle
 			return "", fmt.Errorf("publish Verification Feedback transport anomaly event for run %q batch %03d: %w", plan.RunID, batch.Number, err)
 		}
 	}
-	settled, err := agent.SettleAssignedIssues(ctx, batch)
+	settled, err := agent.SettleAssignedIssues(ctx, batch, unsettledTerminalReason("Verification Feedback Agent"))
 	if err != nil {
 		return "", fmt.Errorf("settle assigned Review Issues after Verification Feedback for run %q batch %03d: %w", plan.RunID, batch.Number, err)
 	}

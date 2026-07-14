@@ -477,9 +477,16 @@ func SetIssueStatus(path string, status string, duplicateOf string, terminalReas
 	if err := yaml.Unmarshal(frontmatterBytes, &frontmatter); err != nil {
 		return fmt.Errorf("parse Review Issue frontmatter %q: %w", path, err)
 	}
+	nextReason := terminalReason
+	if strings.TrimSpace(nextReason) == "" {
+		nextReason = frontmatter.TerminalReason
+	}
+	if status == StatusResolved {
+		nextReason = ""
+	}
 	frontmatter.Status = status
 	frontmatter.DuplicateOf = duplicateOf
-	frontmatter.TerminalReason = terminalReason
+	frontmatter.TerminalReason = nextReason
 	updated, err := renderMarkdown(frontmatter, string(body))
 	if err != nil {
 		return err

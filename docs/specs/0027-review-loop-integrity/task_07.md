@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0027-review-loop-integrity
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -21,16 +21,16 @@ Fill the terminal-reason field from the Daemon side: whenever the engine settles
 
 ## Subtasks
 
-- [ ] Thread reasons through the batch-failure settle paths (agent error, post-agent unsettled sweep, verify failure, repair failure)
-- [ ] Preserve pre-existing non-empty reasons on settle
-- [ ] Engine tests: after a failed Verification, the assigned issues' artifacts carry the command, exit status, and diagnostics location; after an agent error, the reason names the failed step
+- [x] Thread reasons through the batch-failure settle paths (agent error, post-agent unsettled sweep, verify failure, repair failure)
+- [x] Preserve pre-existing non-empty reasons on settle
+- [x] Engine tests: after a failed Verification, the assigned issues' artifacts carry the command, exit status, and diagnostics location; after an agent error, the reason names the failed step
 
 ## Acceptance Criteria
 
-- [ ] A batch failing Verification leaves every assigned issue artifact with a terminal reason naming the command and exit status
-- [ ] An issue the agent triaged with its own reason keeps that reason through Daemon settlement
-- [ ] Resolved issues carry no terminal reason
-- [ ] The full test suite passes
+- [x] A batch failing Verification leaves every assigned issue artifact with a terminal reason naming the command and exit status
+- [x] An issue the agent triaged with its own reason keeps that reason through Daemon settlement
+- [x] Resolved issues carry no terminal reason
+- [x] The full test suite passes
 
 ## Context
 
@@ -41,8 +41,20 @@ Fill the terminal-reason field from the Daemon side: whenever the engine settles
 ## Verification
 
 - `go test ./internal/daemon/... ./internal/agent/...` — expected: all tests pass
-- `go build ./...` — expected: clean build
+- `go build -buildvcs=false ./...` — expected: clean build
 
 ## References
 
 `_prd.md` → Goal 5, User Story 7, Core Feature 8; `_techspec.md` → Build Order 8, Data Models (Issue artifact frontmatter), Risks (comment content sourcing).
+
+## Result
+
+- Threaded terminal reasons through Daemon failed-settle paths: Agent failure, post-Agent unsettled sweep, final Verification failure, Verification Feedback Agent failure, and post-repair unsettled sweep.
+- Preserved non-empty agent-provided terminal reasons when a later settle call supplies an empty reason; resolved issues still clear terminal reasons.
+- Added engine coverage proving Verification failure reasons include `make verify`, `exit status 7`, and the final diagnostics path; Agent failure reasons name the failed step.
+- Added engine coverage proving an Agent-triaged invalid issue keeps its terminal reason and a resolved issue carries no terminal reason.
+- Verification: `go test ./internal/daemon/... ./internal/agent/...` passed.
+- Verification: `go test ./...` passed.
+- Verification: `go build -buildvcs=false ./...` passed; raw VCS-stamped `go build ./...` cannot read VCS status in this Roundfix worktree.
+- Verification: `make verify` passed.
+- Verification: `git diff --check` passed.

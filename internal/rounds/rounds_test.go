@@ -621,6 +621,34 @@ func TestSetIssueStatusRoundTripsTerminalReason(t *testing.T) {
 	}
 }
 
+func TestSetIssueStatusPreservesExistingTerminalReasonWhenEmpty(t *testing.T) {
+	artifactDir := t.TempDir()
+	result := persistTestRound(t, artifactDir, PersistRequest{
+		PRNumber:       "123",
+		HeadRepository: "owner/project",
+		HeadBranch:     "feature/review",
+		Round:          1,
+		CreatedAt:      time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC),
+	})
+	path := result.IssuePaths[0]
+	reason := "invalid: reviewer asked for generated code"
+	if err := SetIssueStatus(path, StatusInvalid, "", reason); err != nil {
+		t.Fatalf("seed terminal reason: %v", err)
+	}
+
+	if err := SetIssueStatus(path, StatusInvalid, "", ""); err != nil {
+		t.Fatalf("settle with empty terminal reason: %v", err)
+	}
+
+	after, err := ParseIssue(path)
+	if err != nil {
+		t.Fatalf("parse issue after empty reason settle: %v", err)
+	}
+	if after.TerminalReason != reason {
+		t.Fatalf("expected existing terminal reason %q to survive empty update, got %q", reason, after.TerminalReason)
+	}
+}
+
 func readFile(t *testing.T, path string) string {
 	t.Helper()
 	content, err := os.ReadFile(path)
