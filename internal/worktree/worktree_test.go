@@ -476,6 +476,127 @@ func TestPruneTerminalReapsOnlyEmptyTerminalRunAndTaskBranches(t *testing.T) {
 	assertRunBranchExists(t, repoDir, nonTerminalTask.Branch)
 }
 
+func TestListPendingRunWorkReportsAheadRunBranches(t *testing.T) {
+	ctx := context.Background()
+	repoDir := initWorktreeRepo(t)
+	mustWriteWorktreeTest(t, filepath.Join(repoDir, "base.txt"), "base\n")
+	gitWorktreeTest(t, repoDir, "add", "base.txt")
+	gitWorktreeTest(t, repoDir, "commit", "-m", "initial")
+
+	pending, err := ListPendingRunWork(ctx, repoDir, "main")
+	if err != nil {
+		t.Fatalf("list pending Run Branch work with no Run Branches: %v", err)
+	}
+	if len(pending) != 0 {
+		t.Fatalf("expected no pending Run Branch work, got %#v", pending)
+	}
+
+	zeroBranch := BranchName("zero")
+	gitWorktreeTest(t, repoDir, "branch", zeroBranch, "main")
+	divergedBranch := BranchName("diverged")
+	gitWorktreeTest(t, repoDir, "checkout", "-b", divergedBranch, "main")
+	commitWorktreeFile(t, repoDir, "diverged.txt", "diverged\n", "diverged change")
+	gitWorktreeTest(t, repoDir, "checkout", "main")
+	commitWorktreeFile(t, repoDir, "main.txt", "main\n", "main change")
+	fastForwardBranch := BranchName("ff")
+	fastForwardPath := filepath.Join(t.TempDir(), "ff-worktree")
+	gitWorktreeTest(t, repoDir, "worktree", "add", "-b", fastForwardBranch, fastForwardPath, "main")
+	commitWorktreeFile(t, fastForwardPath, "ff.txt", "ff\n", "ff change")
+
+	pending, err = ListPendingRunWork(ctx, repoDir, "main")
+	if err != nil {
+		t.Fatalf("list pending Run Branch work: %v", err)
+	}
+
+	if len(pending) != 2 {
+		t.Fatalf("expected two pending Run Branches, got %#v", pending)
+	}
+	want := map[string]PendingRunWork{
+		divergedBranch: {
+			Branch:       divergedBranch,
+			WorktreePath: "",
+			AheadCommits: 1,
+			FastForward:  false,
+		},
+		fastForwardBranch: {
+			Branch:       fastForwardBranch,
+			WorktreePath: canonicalPath(fastForwardPath),
+			AheadCommits: 1,
+			FastForward:  true,
+		},
+	}
+	for _, got := range pending {
+		if got.Branch == zeroBranch {
+			t.Fatalf("expected zero-ahead Run Branch %q to be omitted, got %#v", zeroBranch, pending)
+		}
+		expected, ok := want[got.Branch]
+		if !ok {
+			t.Fatalf("unexpected pending Run Branch %#v", got)
+		}
+		if got != expected {
+			t.Fatalf("pending Run Branch %q = %#v, want %#v", got.Branch, got, expected)
+		}
+		delete(want, got.Branch)
+	}
+	if len(want) != 0 {
+		t.Fatalf("missing pending Run Branches: %#v", want)
+	}
+}
+
+func TestIntegratePendingRunWorkFastForwardsBaseBranch(t *testing.T) {
+	ctx := context.Background()
+	repoDir := initWorktreeRepo(t)
+	mustWriteWorktreeTest(t, filepath.Join(repoDir, "base.txt"), "base\n")
+	gitWorktreeTest(t, repoDir, "add", "base.txt")
+	gitWorktreeTest(t, repoDir, "commit", "-m", "initial")
+	runBranch := BranchName("ready")
+	gitWorktreeTest(t, repoDir, "checkout", "-b", runBranch, "main")
+	runSHA := commitWorktreeFile(t, repoDir, "run.txt", "run\n", "run change")
+	gitWorktreeTest(t, repoDir, "checkout", "main")
+
+	if err := IntegratePendingRunWork(ctx, repoDir, "main", runBranch); err != nil {
+		t.Fatalf("integrate pending Run Branch work: %v", err)
+	}
+
+	if head := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", "main")); head != runSHA {
+		t.Fatalf("expected main at Run Branch SHA %s, got %s", runSHA, head)
+	}
+	if status := gitStatus(t, repoDir); status != "" {
+		t.Fatalf("expected clean checkout after pending Run Branch integration, got %q", status)
+	}
+}
+
+func TestIntegratePendingRunWorkRefusesDivergedBranch(t *testing.T) {
+	ctx := context.Background()
+	repoDir := initWorktreeRepo(t)
+	mustWriteWorktreeTest(t, filepath.Join(repoDir, "base.txt"), "base\n")
+	gitWorktreeTest(t, repoDir, "add", "base.txt")
+	gitWorktreeTest(t, repoDir, "commit", "-m", "initial")
+	runBranch := BranchName("diverged")
+	gitWorktreeTest(t, repoDir, "checkout", "-b", runBranch, "main")
+	runSHA := commitWorktreeFile(t, repoDir, "run.txt", "run\n", "run change")
+	gitWorktreeTest(t, repoDir, "checkout", "main")
+	userSHA := commitWorktreeFile(t, repoDir, "user.txt", "user\n", "user change")
+
+	err := IntegratePendingRunWork(ctx, repoDir, "main", runBranch)
+
+	if err == nil {
+		t.Fatal("expected divergence refusal, got nil")
+	}
+	if !strings.Contains(err.Error(), "fast-forward is impossible") || !strings.Contains(err.Error(), runBranch) {
+		t.Fatalf("expected descriptive fast-forward refusal naming branch, got %v", err)
+	}
+	if head := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", "main")); head != userSHA {
+		t.Fatalf("expected main to stay at user SHA %s, got %s", userSHA, head)
+	}
+	if head := strings.TrimSpace(gitWorktreeTest(t, repoDir, "rev-parse", runBranch)); head != runSHA {
+		t.Fatalf("expected Run Branch to stay at SHA %s, got %s", runSHA, head)
+	}
+	if status := gitStatus(t, repoDir); status != "" {
+		t.Fatalf("expected clean checkout after divergence refusal, got %q", status)
+	}
+}
+
 func TestIntegrateFastForwardsCleanCheckout(t *testing.T) {
 	ctx := context.Background()
 	fixture := newIntegrationFixture(t, "ff-clean")
@@ -741,6 +862,16 @@ func commitTaskChange(t *testing.T, task TaskRef, path string, content string, m
 	mustWriteWorktreeTest(t, messagePath, message)
 	gitWorktreeTest(t, task.Path, "commit", "--cleanup=verbatim", "-F", messagePath)
 	return strings.TrimSpace(gitWorktreeTest(t, task.Path, "rev-parse", "HEAD"))
+}
+
+func commitWorktreeFile(t *testing.T, workDir string, path string, content string, message string) string {
+	t.Helper()
+	fullPath := filepath.Join(workDir, path)
+	mustMkdirWorktreeTest(t, filepath.Dir(fullPath))
+	mustWriteWorktreeTest(t, fullPath, content)
+	gitWorktreeTest(t, workDir, "add", path)
+	gitWorktreeTest(t, workDir, "commit", "-m", message)
+	return strings.TrimSpace(gitWorktreeTest(t, workDir, "rev-parse", "HEAD"))
 }
 
 func gitCommitMessages(t *testing.T, workDir string, base string, branch string) []string {
