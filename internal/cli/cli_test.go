@@ -2834,9 +2834,14 @@ watch:
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
 }
 
-func TestRunWatchMissingHeadCheckPrintsCleanNote(t *testing.T) {
+func TestRunWatchMissingHeadCheckEndsCleanUnverified(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
+watch:
+  poll_interval: 1ns
+  check_grace_period: 1ns
+`)
 	withWatchHeadCheck(t, (&fakeWatchHeadCheck{
 		states: []watch.HeadCheckState{watch.CheckMissing},
 	}).Check)
@@ -2845,26 +2850,20 @@ func TestRunWatchMissingHeadCheckPrintsCleanNote(t *testing.T) {
 
 	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
-	if code != exitOK {
-		t.Fatalf("expected clean watch exit 0, got %d stderr=%q", code, stderr.String())
+	if code != exitUnverified {
+		t.Fatalf("expected CleanUnverified watch exit %d, got %d stderr=%q", exitUnverified, code, stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "Review Source check missing for the pushed HEAD; treating Run as Clean.") {
-		t.Fatalf("expected missing-check stderr note, got %q", stderr.String())
+	if !strings.Contains(stderr.String(), "reached CleanUnverified") {
+		t.Fatalf("expected CleanUnverified terminal outcome, got %q", stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "Expected: Watch Run Clean normally means the Review Source check on the pushed HEAD reports success.") {
-		t.Fatalf("expected missing-check documentation expectation, got %q", stderr.String())
-	}
-	if !strings.Contains(stderr.String(), "Next: confirm the PR's Review Source check before merging.") {
-		t.Fatalf("expected missing-check next action, got %q", stderr.String())
-	}
-	if strings.Count(stderr.String(), "Review Source check missing for the pushed HEAD") != 1 {
-		t.Fatalf("expected one missing-check stderr note, got %q", stderr.String())
+	if !strings.Contains(stderr.String(), "Next: confirm the pull request's Review Source check before merging.") {
+		t.Fatalf("expected CleanUnverified next action, got %q", stderr.String())
 	}
 	wantStdout := "" +
 		"issue 001 resolved — major: handle test issue\n" +
-		"Clean after 1 Round(s): 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n"
+		"CleanUnverified after 1 Round(s): 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n"
 	if stdout.String() != wantStdout {
-		t.Fatalf("expected Clean stdout report %q, got %q", wantStdout, stdout.String())
+		t.Fatalf("expected CleanUnverified stdout report %q, got %q", wantStdout, stdout.String())
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")

@@ -27,16 +27,17 @@ const (
 )
 
 type Request struct {
-	RunID          string
-	PRNumber       string
-	HeadSHA        string
-	UntilClean     bool
-	MaxRounds      int
-	PollInterval   time.Duration
-	QuietPeriod    time.Duration
-	ReviewTimeout  time.Duration
-	BudgetEnabled  bool
-	MaxRunDuration time.Duration
+	RunID            string
+	PRNumber         string
+	HeadSHA          string
+	UntilClean       bool
+	MaxRounds        int
+	PollInterval     time.Duration
+	QuietPeriod      time.Duration
+	ReviewTimeout    time.Duration
+	CheckGracePeriod time.Duration
+	BudgetEnabled    bool
+	MaxRunDuration   time.Duration
 }
 
 type StatusRequest struct {
@@ -66,7 +67,6 @@ type Result struct {
 	Rounds              int
 	Remaining           int
 	ManualReviewCommand string
-	CheckMissing        bool
 }
 
 type StatusSource interface {
@@ -227,7 +227,10 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 				return Result{Outcome: store.StateFailed, Rounds: round}, err
 			}
 			if confirm.ready {
-				return Result{Outcome: store.StateClean, Rounds: round, CheckMissing: confirm.missing}, nil
+				return Result{Outcome: store.StateClean, Rounds: round}, nil
+			}
+			if confirm.unverified {
+				return Result{Outcome: store.StateCleanUnverified, Rounds: round}, nil
 			}
 			if confirm.timedOut {
 				return Result{
@@ -258,7 +261,10 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 				return Result{Outcome: store.StateFailed, Rounds: round}, err
 			}
 			if confirm.ready {
-				return Result{Outcome: store.StateClean, Rounds: round, CheckMissing: confirm.missing}, nil
+				return Result{Outcome: store.StateClean, Rounds: round}, nil
+			}
+			if confirm.unverified {
+				return Result{Outcome: store.StateCleanUnverified, Rounds: round}, nil
 			}
 			if confirm.timedOut {
 				return Result{
@@ -329,9 +335,9 @@ func waitForSettled(ctx context.Context, req Request, headSHA string, source Sta
 }
 
 type confirmResult struct {
-	ready    bool
-	missing  bool
-	timedOut bool
+	ready      bool
+	unverified bool
+	timedOut   bool
 }
 
 func confirmMergeReady(ctx context.Context, req Request, source CheckSource, headSHA string, clock Clock, sleeper Sleeper, publisher watchEventPublisher) (confirmResult, error) {
@@ -343,6 +349,7 @@ func confirmMergeReady(ctx context.Context, req Request, source CheckSource, hea
 		if err := ctx.Err(); err != nil {
 			return confirmResult{}, err
 		}
+		missingCheck := false
 		state, err := source.Check(ctx, headSHA)
 		if err == nil {
 			if err := publisher.publish(ctx, runevent.KindDaemonReviewStatus,
@@ -355,7 +362,10 @@ func confirmMergeReady(ctx context.Context, req Request, source CheckSource, hea
 			case CheckSuccess:
 				return confirmResult{ready: true}, nil
 			case CheckMissing:
-				return confirmResult{ready: true, missing: true}, nil
+				missingCheck = true
+				if clock.Now().Sub(startedAt) >= req.CheckGracePeriod {
+					return confirmResult{unverified: true}, nil
+				}
 			case CheckFailure:
 				return confirmResult{}, nil
 			case CheckPending:
@@ -368,7 +378,7 @@ func confirmMergeReady(ctx context.Context, req Request, source CheckSource, hea
 		); err != nil {
 			return confirmResult{}, err
 		}
-		if clock.Now().Sub(startedAt) >= req.ReviewTimeout {
+		if !missingCheck && clock.Now().Sub(startedAt) >= req.ReviewTimeout {
 			return confirmResult{timedOut: true}, nil
 		}
 		if err := sleeper.Sleep(ctx, req.PollInterval); err != nil {
@@ -395,6 +405,9 @@ func validateRequest(req Request, deps Dependencies) error {
 	}
 	if req.ReviewTimeout <= 0 {
 		return errors.New("watch review timeout must be greater than 0")
+	}
+	if req.UntilClean && deps.CheckSource != nil && req.CheckGracePeriod <= 0 {
+		return errors.New("watch check grace period must be greater than 0")
 	}
 	if req.BudgetEnabled && req.MaxRunDuration <= 0 {
 		return errors.New("watch max run duration must be greater than 0 when Run Budget is enabled")

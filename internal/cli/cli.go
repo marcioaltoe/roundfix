@@ -2132,16 +2132,17 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	watchReportIssues := []rounds.Issue{}
 	lastReviewStatusLine := ""
 	result, err := watch.Run(ctx, watch.Request{
-		RunID:          run.ID,
-		PRNumber:       preflightResult.PullRequest.Number,
-		HeadSHA:        preflightResult.Git.HEAD,
-		UntilClean:     req.untilClean,
-		MaxRounds:      req.maxRounds,
-		PollInterval:   loaded.Config.Watch.PollInterval,
-		QuietPeriod:    loaded.Config.Watch.QuietPeriod,
-		ReviewTimeout:  loaded.Config.Watch.ReviewTimeout,
-		BudgetEnabled:  loaded.Config.Budget.Enabled,
-		MaxRunDuration: loaded.Config.Budget.MaxRunDuration,
+		RunID:            run.ID,
+		PRNumber:         preflightResult.PullRequest.Number,
+		HeadSHA:          preflightResult.Git.HEAD,
+		UntilClean:       req.untilClean,
+		MaxRounds:        req.maxRounds,
+		PollInterval:     loaded.Config.Watch.PollInterval,
+		QuietPeriod:      loaded.Config.Watch.QuietPeriod,
+		ReviewTimeout:    loaded.Config.Watch.ReviewTimeout,
+		CheckGracePeriod: loaded.Config.Watch.CheckGracePeriod,
+		BudgetEnabled:    loaded.Config.Budget.Enabled,
+		MaxRunDuration:   loaded.Config.Budget.MaxRunDuration,
 	}, watch.Dependencies{
 		StatusSource: watch.StatusFunc(func(ctx context.Context, statusReq watch.StatusRequest) (watch.Status, error) {
 			status, err := watchReviewStatus(ctx, reviewsource.WatchStatusRequest{
@@ -2225,8 +2226,8 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	if result.Outcome == store.StateTimedOut {
 		fmt.Fprintf(stderr, "Review Source timed out. To request another CodeRabbit review manually, comment: %s\n", result.ManualReviewCommand)
 	}
-	if result.CheckMissing {
-		fmt.Fprintln(stderr, "Review Source check missing for the pushed HEAD; treating Run as Clean. Expected: Watch Run Clean normally means the Review Source check on the pushed HEAD reports success. Next: confirm the PR's Review Source check before merging.")
+	if result.Outcome == store.StateCleanUnverified {
+		fmt.Fprintln(stderr, "CleanUnverified: Merge-Ready was not confirmed because the Review Source check never appeared within the grace period. Next: confirm the pull request's Review Source check before merging.")
 	}
 	printReviewIssueReport(stdout, completed.State, result.Rounds, reviewIssueReportIssues(context.WithoutCancel(ctx), req, preflightResult, watchReportIssues))
 	if stopped {

@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0027-review-loop-integrity
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -22,19 +22,19 @@ Close the false-Clean race: after the Final Push, a missing Review Source check 
 
 ## Subtasks
 
-- [ ] Add the config key across builtin defaults, overlay, and default YAML
-- [ ] Rework the missing-check branch of merge-ready confirmation into the polling loop with grace-window expiry
-- [ ] Thread the unverified result through the watch result to the new terminal outcome and exit code
-- [ ] Update report/stderr wording for the new outcome
-- [ ] Table-test the confirmation matrix with the fake clock: missing→appears-success, missing→appears-failure, missing→window exhausted, pending→timeout
+- [x] Add the config key across builtin defaults, overlay, and default YAML
+- [x] Rework the missing-check branch of merge-ready confirmation into the polling loop with grace-window expiry
+- [x] Thread the unverified result through the watch result to the new terminal outcome and exit code
+- [x] Update report/stderr wording for the new outcome
+- [x] Table-test the confirmation matrix with the fake clock: missing→appears-success, missing→appears-failure, missing→window exhausted, pending→timeout
 
 ## Acceptance Criteria
 
-- [ ] A check that never appears ends the Run Clean Unverified with exit code 3 and a report naming the next action
-- [ ] A check that appears late (within the window) and succeeds ends the Run Clean with exit code 0
-- [ ] The grace period is configurable and defaults to 5 minutes
-- [ ] The old missing-check warning path no longer exists
-- [ ] The full test suite passes
+- [x] A check that never appears ends the Run Clean Unverified with exit code 3 and a report naming the next action
+- [x] A check that appears late (within the window) and succeeds ends the Run Clean with exit code 0
+- [x] The grace period is configurable and defaults to 5 minutes
+- [x] The old missing-check warning path no longer exists
+- [x] The full test suite passes
 
 ## Context
 
@@ -44,10 +44,28 @@ Close the false-Clean race: after the Final Push, a missing Review Source check 
 
 ## Verification
 
-- `rg -q "check_grace_period" internal/config` — expected: exit 0 (config key exists)
+- `rtk grep -q "check_grace_period" internal/config/*.go` — expected: exit 0 (config key exists; local `rg` binary unavailable)
 - `go test ./internal/watch/... ./internal/config/... ./internal/cli/...` — expected: all tests pass
-- `go build ./...` — expected: clean build
+- `go build -buildvcs=false ./...` — expected: clean build
 
 ## References
 
 `_prd.md` → Goal 2, User Story 5, Core Feature 5; `_techspec.md` → Build Order 6, Interfaces (confirmResult), Data Models (Config), Decisions (grace period key); ADR-0043.
+
+## Result
+
+- Added `watch.check_grace_period` with a 5 minute builtin default, YAML overlay support, default-config rendering, and validation.
+- Changed Merge-Ready confirmation so `CheckMissing` polls on the existing poll interval until the grace window expires; `CheckPending` still uses the review timeout.
+- Threaded grace exhaustion to `CleanUnverified`, preserving exit code 3 and reporting the next action: confirm the pull request's Review Source check before merging.
+- Removed the old missing-check Clean warning path.
+- Added table coverage for success, missing→success, missing→failure, missing→CleanUnverified, and pending→TimedOut with a fake clock.
+- Acceptance evidence: `TestRunWatchMissingHeadCheckEndsCleanUnverified` passed, covering CleanUnverified exit 3 and next-action report.
+- Acceptance evidence: `TestRunConfirmsMergeReadyThroughGraceWindow` passed, covering late success within the grace window and unchanged failure/timeout behavior.
+- Acceptance evidence: `TestBuiltinWatchDefaultsIncludeCheckGracePeriod` and `TestLoadAppliesConfigPrecedence` passed, covering default 5m and YAML overlay.
+- Acceptance evidence: `rtk grep -n "treating Run as Clean" internal/**/*.go` returned no matches.
+- Verification: `rtk grep -q "check_grace_period" internal/config/*.go` passed.
+- Verification: `go test ./internal/watch/... ./internal/config/... ./internal/cli/...` passed.
+- Verification: `go test ./...` passed.
+- Verification: `go build -buildvcs=false ./...` passed.
+- Verification: `make verify` passed.
+- Verification: `git diff --check` passed.
