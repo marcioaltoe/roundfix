@@ -140,6 +140,10 @@ _Avoid_: Failure, crash, partial success
 A terminal Run outcome where the cycle completed with nothing unresolved remaining: no Unresolved Review Issues for review work, or every Task completed — and a passing QA verdict when requested — for spec work.
 _Avoid_: Success, done, green
 
+**Clean Unverified**:
+A terminal Run outcome where the cycle completed with nothing unresolved and the Final Push succeeded, but the Review Source check for the pushed head never appeared within the grace period, so Merge-Ready was not confirmed. Distinct from Clean by outcome and exit code.
+_Avoid_: Clean, failure, timeout
+
 **Run Budget**:
 A safeguard that stops a Run before it can continue indefinitely and indirectly consume unbounded resources.
 _Avoid_: Max rounds, review round limit
@@ -147,6 +151,10 @@ _Avoid_: Max rounds, review round limit
 **Preflight Validation**:
 The early checks Roundfix runs before starting a Run or work that would make the developer wait.
 _Avoid_: Best-effort validation, late failure
+
+**Branch Integrity Preflight**:
+The deterministic Preflight Validation for review Runs that blocks fetch and watch while unintegrated Run Branch commits or another Run remain bound to the PR Head Branch, integrating fast-forwardable work automatically and otherwise naming each pending worktree, run id, and recovery command. Skippable only through an explicit bypass that publishes an audit comment on the pull request.
+_Avoid_: Advisory check, best-effort warning, soft gate
 
 **Verification**:
 The authoritative command or commands the Daemon runs verbatim in the repository root to decide whether Agent or Settle Command work can be settled and committed. A failure returns only its diagnostics to the Agent Session; for Tasks, a pass is required before status `completed`.
@@ -225,6 +233,10 @@ _Avoid_: Open issue, pending task
 **Batch**:
 A bounded subset of Work Items assigned to one agent invocation.
 _Avoid_: Chunk, group, task
+
+**Outcome Comment**:
+The idempotent comment Roundfix publishes on a Review Source thread whose local outcome is not resolved — the triage reason for invalid, the failed step for failed, the canonical thread for duplicated, the revisit plan for unresolved — so the pull request stays auditable without local artifacts.
+_Avoid_: Silent resolve, status flip, reply thread
 
 **Final Push**:
 The Run-ending push that sends the PR Head Branch after no Unresolved Review Issues remain.
