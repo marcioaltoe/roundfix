@@ -31,7 +31,8 @@ watch:
 
 budget:
   enabled: true
-  max_run_duration: 2h
+  # 2h is not enough for 10+-task spec Runs (docs/findings/2026-07-07, incident 5).
+  max_run_duration: 8h
 
 resolve:
   batch_size: 20
