@@ -228,6 +228,15 @@ func (store *Store) CreateFetchRun(ctx context.Context, req CreateRunRequest) (R
 }
 
 func (store *Store) CreateRun(ctx context.Context, req CreateRunRequest) (Run, error) {
+	return store.createRun(ctx, req, true)
+}
+
+// CreateRunSkippingActiveLock creates a Run without acquiring the target lock.
+func (store *Store) CreateRunSkippingActiveLock(ctx context.Context, req CreateRunRequest) (Run, error) {
+	return store.createRun(ctx, req, false)
+}
+
+func (store *Store) createRun(ctx context.Context, req CreateRunRequest, acquireActiveLock bool) (Run, error) {
 	if err := validateCreateRunRequest(req); err != nil {
 		return Run{}, err
 	}
@@ -244,12 +253,14 @@ func (store *Store) CreateRun(ctx context.Context, req CreateRunRequest) (Run, e
 	defer rollbackUnlessCommitted(tx)
 
 	targetKind, targetKey := lockTarget(req)
-	existing, found, err := selectActiveRunByTarget(ctx, tx, targetKind, targetKey)
-	if err != nil {
-		return Run{}, err
-	}
-	if found {
-		return Run{}, ActiveRunError{Existing: existing}
+	if acquireActiveLock {
+		existing, found, err := selectActiveRunByTarget(ctx, tx, targetKind, targetKey)
+		if err != nil {
+			return Run{}, err
+		}
+		if found {
+			return Run{}, ActiveRunError{Existing: existing}
+		}
 	}
 
 	_, err = tx.ExecContext(ctx, `
@@ -281,20 +292,22 @@ INSERT INTO runs (
 		return Run{}, fmt.Errorf("insert Run record: %w", err)
 	}
 
-	_, err = tx.ExecContext(ctx, `
+	if acquireActiveLock {
+		_, err = tx.ExecContext(ctx, `
 INSERT INTO active_run_locks (target_kind, target_key, run_id, created_at)
 VALUES (?, ?, ?, ?)`,
-		targetKind,
-		targetKey,
-		runID,
-		formatTime(now),
-	)
-	if err != nil {
-		existing, found, selectErr := selectActiveRunByTarget(ctx, tx, targetKind, targetKey)
-		if selectErr == nil && found {
-			return Run{}, ActiveRunError{Existing: existing}
+			targetKind,
+			targetKey,
+			runID,
+			formatTime(now),
+		)
+		if err != nil {
+			existing, found, selectErr := selectActiveRunByTarget(ctx, tx, targetKind, targetKey)
+			if selectErr == nil && found {
+				return Run{}, ActiveRunError{Existing: existing}
+			}
+			return Run{}, fmt.Errorf("acquire Active Run lock: %w", err)
 		}
-		return Run{}, fmt.Errorf("acquire Active Run lock: %w", err)
 	}
 
 	run, err := selectRun(ctx, tx, runID)

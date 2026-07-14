@@ -4674,10 +4674,299 @@ func TestRunFetchRejectsDuplicateActiveRun(t *testing.T) {
 	if stdout.Len() != 0 {
 		t.Fatalf("expected no stdout, got %q", stdout.String())
 	}
-	if !strings.Contains(stderr.String(), "existing run_id="+active.ID) {
+	if !strings.Contains(stderr.String(), "Active Run "+active.ID) ||
+		!strings.Contains(stderr.String(), "roundfix stop "+active.ID) ||
+		!strings.Contains(stderr.String(), "roundfix stop --force "+active.ID) {
 		t.Fatalf("expected existing run id in stderr, got %q", stderr.String())
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
+}
+
+func TestBranchIntegrityPreflightRejectsPendingRunBranchForReviewCommands(t *testing.T) {
+	for _, command := range []string{"fetch", "resolve", "watch"} {
+		t.Run(command, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			withSuccessfulPreflight(t, repoDir)
+			pending := []runworktree.PendingRunWork{{
+				Branch:       "roundfix/run-stranded",
+				WorktreePath: filepath.Join(repoDir, "..", "run-stranded"),
+				AheadCommits: 2,
+				FastForward:  false,
+			}}
+			recorder := withBranchIntegrity(t, pending, nil)
+			withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
+				t.Fatal("fetch must not run after Branch Integrity Preflight refusal")
+				return nil, nil
+			})
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run(branchIntegrityCommandArgs(command), &stdout, &stderr)
+
+			if code != 2 {
+				t.Fatalf("expected Branch Integrity Preflight exit 2, got %d", code)
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("expected no stdout, got %q", stdout.String())
+			}
+			for _, want := range []string{
+				"Branch Integrity Preflight refused pending Run Branch work",
+				"roundfix/run-stranded",
+				"ahead_commits=2",
+				`integration_command="git merge --ff-only roundfix/run-stranded"`,
+				"did not create a Run",
+			} {
+				if !strings.Contains(stderr.String(), want) {
+					t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())
+				}
+			}
+			if len(recorder.integrations) != 0 {
+				t.Fatalf("expected no integration attempts on refusal, got %#v", recorder.integrations)
+			}
+			assertRunCount(t, store.DatabasePath(homeDir), 0)
+		})
+	}
+}
+
+func TestBranchIntegrityPreflightIntegratesFastForwardRunBranchAndJournals(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	pending := []runworktree.PendingRunWork{{
+		Branch:       "roundfix/run-ready",
+		WorktreePath: filepath.Join(repoDir, "..", "run-ready"),
+		AheadCommits: 1,
+		FastForward:  true,
+	}}
+	recorder := withBranchIntegrity(t, pending, nil)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected fetch to proceed after auto-integration, got %d stderr=%q", code, stderr.String())
+	}
+	if len(recorder.integrations) != 1 || recorder.integrations[0] != "roundfix/run-ready" {
+		t.Fatalf("expected one integration of roundfix/run-ready, got %#v", recorder.integrations)
+	}
+	if !strings.Contains(stderr.String(), "Branch Integrity Preflight: integrated roundfix/run-ready") ||
+		!strings.Contains(stderr.String(), "git merge --ff-only roundfix/run-ready") {
+		t.Fatalf("expected integration report, got %q", stderr.String())
+	}
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	if !journalPayloadContains(events, "branch_integrity_auto_integration") {
+		t.Fatalf("expected auto-integration Run Event, got %+v", events)
+	}
+	if !strings.Contains(stdout.String(), "Fetch complete") {
+		t.Fatalf("expected fetch success, got %q", stdout.String())
+	}
+}
+
+func TestBranchIntegrityPreflightRejectsActiveRunForReviewCommands(t *testing.T) {
+	for _, command := range []string{"fetch", "resolve", "watch"} {
+		t.Run(command, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			withSuccessfulPreflight(t, repoDir)
+			withBranchIntegrity(t, nil, nil)
+			runStore, err := store.Open(context.Background(), homeDir)
+			if err != nil {
+				t.Fatalf("open store: %v", err)
+			}
+			active, err := runStore.CreateRun(context.Background(), store.CreateRunRequest{
+				Kind:           store.KindWatch,
+				HeadRepository: "owner/project",
+				HeadBranch:     "feature/review",
+				BaseRepository: "owner/project",
+				PRNumber:       "123",
+				GitRoot:        repoDir,
+				LocalBranch:    "feature/review",
+				HeadSHA:        "abc123",
+				ArtifactDir:    filepath.Join(repoDir, ".roundfix"),
+				Agent:          "codex",
+			})
+			if err != nil {
+				t.Fatalf("create active Run: %v", err)
+			}
+			if err := runStore.Close(); err != nil {
+				t.Fatalf("close store: %v", err)
+			}
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run(branchIntegrityCommandArgs(command), &stdout, &stderr)
+
+			if code != 2 {
+				t.Fatalf("expected active Run refusal exit 2, got %d", code)
+			}
+			for _, want := range []string{
+				active.ID,
+				"roundfix stop " + active.ID,
+				"roundfix stop --force " + active.ID,
+				"did not create a Run",
+			} {
+				if !strings.Contains(stderr.String(), want) {
+					t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())
+				}
+			}
+			assertRunCount(t, store.DatabasePath(homeDir), 1)
+		})
+	}
+}
+
+func TestBranchIntegrityBypassPublishesAuditBeforeFetch(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	pending := []runworktree.PendingRunWork{{
+		Branch:       "roundfix/run-ignored",
+		WorktreePath: filepath.Join(repoDir, "..", "run-ignored"),
+		AheadCommits: 3,
+		FastForward:  false,
+	}}
+	recorder := withBranchIntegrity(t, pending, nil)
+	comments := withPullRequestComments(t, nil)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected bypassed fetch to proceed, got %d stderr=%q", code, stderr.String())
+	}
+	if len(recorder.integrations) != 0 {
+		t.Fatalf("expected bypass to skip integrations, got %#v", recorder.integrations)
+	}
+	if len(comments.calls) != 1 {
+		t.Fatalf("expected one bypass audit comment, got %#v", comments.calls)
+	}
+	body := comments.calls[0].body
+	for _, want := range []string{
+		"<!-- roundfix: run:",
+		"bypass:branch-integrity",
+		"pr:123",
+		"Run:",
+		"Skipped guardrails:",
+		"Pending Run Branch work",
+		"Active Run bound to target",
+		"roundfix/run-ignored",
+		"ahead_commits=3",
+		`integration_command="git merge --ff-only roundfix/run-ignored"`,
+		"Ignored Active Runs:\n- none",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected audit body to contain %q, got %q", want, body)
+		}
+	}
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	if !journalPayloadContains(events, "branch_integrity_bypass") {
+		t.Fatalf("expected bypass Run Event, got %+v", events)
+	}
+}
+
+func TestBranchIntegrityBypassAuditsActiveRunAndProceeds(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withBranchIntegrity(t, nil, nil)
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	active, err := runStore.CreateRun(context.Background(), store.CreateRunRequest{
+		Kind:           store.KindWatch,
+		HeadRepository: "owner/project",
+		HeadBranch:     "feature/review",
+		BaseRepository: "owner/project",
+		PRNumber:       "123",
+		GitRoot:        repoDir,
+		LocalBranch:    "feature/review",
+		HeadSHA:        "abc123",
+		ArtifactDir:    filepath.Join(repoDir, ".roundfix"),
+		Agent:          "codex",
+	})
+	if err != nil {
+		t.Fatalf("create active Run: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close store: %v", err)
+	}
+	comments := withPullRequestComments(t, nil)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected bypassed fetch to proceed despite active Run, got %d stderr=%q", code, stderr.String())
+	}
+	if len(comments.calls) != 1 {
+		t.Fatalf("expected one bypass audit comment, got %#v", comments.calls)
+	}
+	for _, want := range []string{
+		"run_id=" + active.ID,
+		`stop_command="roundfix stop ` + active.ID + `"`,
+		`force_stop_command="roundfix stop --force ` + active.ID + `"`,
+	} {
+		if !strings.Contains(comments.calls[0].body, want) {
+			t.Fatalf("expected audit body to contain %q, got %q", want, comments.calls[0].body)
+		}
+	}
+	assertRunCount(t, store.DatabasePath(homeDir), 2)
+	assertActiveRun(t, homeDir, "owner/project", "feature/review", active.ID)
+}
+
+func TestBranchIntegrityBypassFailsWhenAuditCommentPublishFails(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withBranchIntegrity(t, []runworktree.PendingRunWork{{
+		Branch:       "roundfix/run-ignored",
+		WorktreePath: filepath.Join(repoDir, "..", "run-ignored"),
+		AheadCommits: 1,
+		FastForward:  false,
+	}}, nil)
+	withPullRequestComments(t, errors.New("comment denied"))
+	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
+		t.Fatal("fetch must not run when bypass audit publish fails")
+		return nil, nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
+
+	if code != 2 {
+		t.Fatalf("expected audit publish failure exit 2, got %d", code)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout, got %q", stdout.String())
+	}
+	for _, want := range []string{
+		"publish Branch Integrity Preflight bypass audit",
+		"comment denied",
+		"did not fetch Review Source issues",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())
+		}
+	}
+	assertRunCount(t, store.DatabasePath(homeDir), 1)
+	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
+}
+
+func TestReviewCommandHelpDocumentsSkipBranchIntegrity(t *testing.T) {
+	for _, command := range []string{"fetch", "resolve", "watch"} {
+		t.Run(command, func(t *testing.T) {
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{command, "--help"}, &stdout, &stderr)
+
+			if code != 0 {
+				t.Fatalf("expected help exit 0, got %d", code)
+			}
+			if !strings.Contains(stdout.String(), "skip-branch-integrity") {
+				t.Fatalf("expected help to document skip-branch-integrity, got %q", stdout.String())
+			}
+		})
+	}
 }
 
 func TestRunStopByRunIDRecordsStopRequest(t *testing.T) {
@@ -5932,6 +6221,7 @@ func withSuccessfulPreflight(t *testing.T, repoDir string) {
 	withFakeWorktree(t)
 	withSourceResolver(t, &fakeSourceResolver{})
 	withPusher(t, &fakePusher{})
+	withBranchIntegrity(t, nil, nil)
 	clock := &fakeWatchClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
 	withWatchTiming(t, clock, &fakeWatchSleeper{clock: clock})
 	withWatchStatus(t, (&fakeWatchStatus{
@@ -6051,6 +6341,81 @@ func withPreflight(t *testing.T, fn func(context.Context, commandRequest, roundc
 	t.Cleanup(func() {
 		runCommandPreflight = old
 	})
+}
+
+type branchIntegrityRecorder struct {
+	integrations []string
+}
+
+func withBranchIntegrity(t *testing.T, pending []runworktree.PendingRunWork, integrateErr error) *branchIntegrityRecorder {
+	t.Helper()
+	recorder := &branchIntegrityRecorder{}
+	oldList := listPendingRunWork
+	oldIntegrate := integratePendingRunWork
+	oldRefresh := refreshBranchIntegrityHead
+	listPendingRunWork = func(context.Context, string, string) ([]runworktree.PendingRunWork, error) {
+		return append([]runworktree.PendingRunWork(nil), pending...), nil
+	}
+	integratePendingRunWork = func(_ context.Context, _ string, _ string, runBranch string) error {
+		recorder.integrations = append(recorder.integrations, runBranch)
+		return integrateErr
+	}
+	refreshBranchIntegrityHead = func(_ context.Context, result preflight.Result) (preflight.Result, error) {
+		result.Git.HEAD = "integrated-head"
+		return result, nil
+	}
+	t.Cleanup(func() {
+		listPendingRunWork = oldList
+		integratePendingRunWork = oldIntegrate
+		refreshBranchIntegrityHead = oldRefresh
+	})
+	return recorder
+}
+
+type pullRequestCommentRecorder struct {
+	calls []pullRequestCommentRecord
+}
+
+type pullRequestCommentRecord struct {
+	source string
+	pr     int
+	body   string
+}
+
+func withPullRequestComments(t *testing.T, publishErr error) *pullRequestCommentRecorder {
+	t.Helper()
+	recorder := &pullRequestCommentRecorder{}
+	old := commentOnPullRequest
+	commentOnPullRequest = func(_ context.Context, source string, prNumber int, body string) error {
+		recorder.calls = append(recorder.calls, pullRequestCommentRecord{source: source, pr: prNumber, body: body})
+		return publishErr
+	}
+	t.Cleanup(func() {
+		commentOnPullRequest = old
+	})
+	return recorder
+}
+
+func branchIntegrityCommandArgs(command string) []string {
+	switch command {
+	case "fetch":
+		return []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}
+	case "resolve":
+		return []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}
+	case "watch":
+		return []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--no-input"}
+	default:
+		return []string{command}
+	}
+}
+
+func journalPayloadContains(events []store.JournalEvent, text string) bool {
+	for _, event := range events {
+		if strings.Contains(string(event.Event.Payload), text) {
+			return true
+		}
+	}
+	return false
 }
 
 func withReviewSpecGitRunner(t *testing.T, runner preflight.GitRunner) {
@@ -7047,6 +7412,10 @@ func journaledRunEvents(t *testing.T, homeDir string, stderr string) (string, []
 			break
 		}
 		if value, ok := strings.CutPrefix(trimmed, "Watch Run: "); ok {
+			runID = strings.TrimSpace(value)
+			break
+		}
+		if value, ok := strings.CutPrefix(trimmed, "ID: "); ok {
 			runID = strings.TrimSpace(value)
 			break
 		}

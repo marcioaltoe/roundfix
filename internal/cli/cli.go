@@ -117,6 +117,8 @@ type commandRequest struct {
 	noAgentConsole      bool
 	headBranch          string
 	headRepo            string
+	skipBranchIntegrity bool
+	branchIntegrity     branchIntegrityReport
 	qa                  bool
 	detach              bool
 	detachChild         *detachChild
@@ -133,6 +135,10 @@ var newEngineCollaborators = defaultEngineCollaborators
 var watchReviewStatus = defaultWatchReviewStatus
 var watchHeadCheck = defaultWatchHeadCheck
 var watchHeadSHA = defaultWatchHeadSHA
+var listPendingRunWork = runworktree.ListPendingRunWork
+var integratePendingRunWork = runworktree.IntegratePendingRunWork
+var refreshBranchIntegrityHead = defaultRefreshBranchIntegrityHead
+var commentOnPullRequest = defaultCommentOnPullRequest
 var reviewSpecGitRunner preflight.GitRunner = preflight.ExecGitRunner{}
 var watchClock watch.Clock
 var watchSleeper watch.Sleeper
@@ -1170,6 +1176,13 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 		return exitPreflight
 	}
 	req.reviewRoot = reviewRoot
+	branchIntegrity, updatedPreflightResult, err := runBranchIntegrityPreflight(ctx, req, loadedConfig, preflightResult, stderr)
+	if err != nil {
+		printPreflightFailure(name, err, stderr)
+		return exitPreflight
+	}
+	req.branchIntegrity = branchIntegrity
+	preflightResult = updatedPreflightResult
 	switch req.name {
 	case "fetch":
 		return runFetchCommand(ctx, req, loadedConfig, preflightResult, stdout, stderr)
@@ -1190,6 +1203,341 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 	return exitRunFailed
 }
 
+type branchIntegrityReport struct {
+	Pending    []runworktree.PendingRunWork
+	Integrated []runworktree.PendingRunWork
+	ActiveRun  *store.Run
+}
+
+type branchIntegrityPendingError struct {
+	HeadBranch string
+	Pending    []runworktree.PendingRunWork
+}
+
+func (err branchIntegrityPendingError) Error() string {
+	var builder strings.Builder
+	headBranch := strings.TrimSpace(err.HeadBranch)
+	if headBranch == "" {
+		headBranch = "<unknown>"
+	}
+	fmt.Fprintf(&builder, "Branch Integrity Preflight refused pending Run Branch work for PR Head Branch %q.", headBranch)
+	for _, pending := range err.Pending {
+		fmt.Fprintf(&builder, "\n- branch=%s worktree=%s ahead_commits=%d integration_command=%q",
+			pending.Branch, branchIntegrityWorktreePath(pending.WorktreePath), pending.AheadCommits, branchIntegrityIntegrationCommand(pending.Branch))
+	}
+	builder.WriteString("\nNext action: inspect each pending Run Worktree, then run the listed integration command from the repository root when it is safe.")
+	return builder.String()
+}
+
+type branchIntegrityActiveRunError struct {
+	HeadRepository string
+	HeadBranch     string
+	Run            store.Run
+}
+
+func (err branchIntegrityActiveRunError) Error() string {
+	return fmt.Sprintf(
+		"Branch Integrity Preflight refused because Active Run %s is bound to Head Repository %q and PR Head Branch %q. Next action: %s. If the owning process is dead or runaway: %s.",
+		err.Run.ID,
+		err.HeadRepository,
+		err.HeadBranch,
+		branchIntegrityStopCommand(err.Run.ID, false),
+		branchIntegrityStopCommand(err.Run.ID, true),
+	)
+}
+
+func runBranchIntegrityPreflight(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, stderr io.Writer) (branchIntegrityReport, preflight.Result, error) {
+	report, err := inspectBranchIntegrity(ctx, loaded.HomeDir, preflightResult)
+	if err != nil {
+		return report, preflightResult, err
+	}
+	if req.skipBranchIntegrity {
+		return report, preflightResult, nil
+	}
+	if report.ActiveRun != nil {
+		return report, preflightResult, branchIntegrityActiveRunError{
+			HeadRepository: preflightResult.PullRequest.HeadRepository,
+			HeadBranch:     preflightResult.PullRequest.HeadBranch,
+			Run:            *report.ActiveRun,
+		}
+	}
+	if len(report.Pending) == 0 {
+		return report, preflightResult, nil
+	}
+	var blocked []runworktree.PendingRunWork
+	for _, pending := range report.Pending {
+		if !pending.FastForward {
+			blocked = append(blocked, pending)
+		}
+	}
+	if len(blocked) > 0 {
+		return report, preflightResult, branchIntegrityPendingError{
+			HeadBranch: preflightResult.PullRequest.HeadBranch,
+			Pending:    blocked,
+		}
+	}
+	integrationPlan, err := branchIntegrityIntegrationPlan(ctx, preflightResult.Git.Root, preflightResult.PullRequest.HeadBranch, report.Pending)
+	if err != nil {
+		return report, preflightResult, err
+	}
+	for _, pending := range integrationPlan {
+		if err := integratePendingRunWork(ctx, preflightResult.Git.Root, preflightResult.PullRequest.HeadBranch, pending.Branch); err != nil {
+			return report, preflightResult, fmt.Errorf("Branch Integrity Preflight integrate %s: %w", pending.Branch, err)
+		}
+		report.Integrated = append(report.Integrated, pending)
+		fmt.Fprintf(stderr, "Branch Integrity Preflight: integrated %s with %s (%d commit(s), worktree %s).\n",
+			pending.Branch, branchIntegrityIntegrationCommand(pending.Branch), pending.AheadCommits, branchIntegrityWorktreePath(pending.WorktreePath))
+	}
+	updated, err := refreshBranchIntegrityHead(ctx, preflightResult)
+	if err != nil {
+		return report, preflightResult, err
+	}
+	return report, updated, nil
+}
+
+func branchIntegrityIntegrationPlan(ctx context.Context, gitRoot string, headBranch string, pending []runworktree.PendingRunWork) ([]runworktree.PendingRunWork, error) {
+	planned := append([]runworktree.PendingRunWork(nil), pending...)
+	sort.SliceStable(planned, func(i, j int) bool {
+		if planned[i].AheadCommits == planned[j].AheadCommits {
+			return planned[i].Branch < planned[j].Branch
+		}
+		return planned[i].AheadCommits < planned[j].AheadCommits
+	})
+	for index := 1; index < len(planned); index++ {
+		ancestor := planned[index-1].Branch
+		descendant := planned[index].Branch
+		isAncestor, err := branchIntegrityIsAncestor(ctx, gitRoot, ancestor, descendant)
+		if err != nil {
+			return nil, err
+		}
+		if !isAncestor {
+			return nil, branchIntegrityPendingError{HeadBranch: headBranch, Pending: pending}
+		}
+	}
+	return planned, nil
+}
+
+func branchIntegrityIsAncestor(ctx context.Context, gitRoot string, ancestor string, descendant string) (bool, error) {
+	if _, err := (preflight.ExecGitRunner{}).RunGit(ctx, gitRoot, "merge-base", "--is-ancestor", ancestor, descendant); err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+			return false, nil
+		}
+		return false, fmt.Errorf("check pending Run Branch ancestry %s..%s: %w", ancestor, descendant, err)
+	}
+	return true, nil
+}
+
+func inspectBranchIntegrity(ctx context.Context, homeDir string, preflightResult preflight.Result) (branchIntegrityReport, error) {
+	report := branchIntegrityReport{}
+	pending, err := listPendingRunWork(ctx, preflightResult.Git.Root, preflightResult.PullRequest.HeadBranch)
+	if err != nil {
+		return report, err
+	}
+	report.Pending = pending
+	active, found, err := activeReviewRun(ctx, homeDir, preflightResult.PullRequest.HeadRepository, preflightResult.PullRequest.HeadBranch)
+	if err != nil {
+		return report, err
+	}
+	if found {
+		report.ActiveRun = &active
+	}
+	return report, nil
+}
+
+func activeReviewRun(ctx context.Context, homeDir string, headRepository string, headBranch string) (store.Run, bool, error) {
+	reader, err := store.OpenReader(ctx, homeDir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return store.Run{}, false, nil
+		}
+		return store.Run{}, false, err
+	}
+	defer func() {
+		_ = reader.Close()
+	}()
+	return reader.ActiveRun(ctx, headRepository, headBranch)
+}
+
+func defaultRefreshBranchIntegrityHead(ctx context.Context, preflightResult preflight.Result) (preflight.Result, error) {
+	if len(preflightResult.Git.Root) == 0 {
+		return preflightResult, nil
+	}
+	head, err := preflight.ExecGitRunner{}.RunGit(ctx, preflightResult.Git.Root, "rev-parse", "HEAD")
+	if err != nil {
+		return preflightResult, fmt.Errorf("refresh HEAD after Branch Integrity Preflight: %w", err)
+	}
+	preflightResult.Git.HEAD = strings.TrimSpace(head)
+	return preflightResult, nil
+}
+
+func branchIntegrityIntegrationCommand(branch string) string {
+	return "git merge --ff-only " + strings.TrimSpace(branch)
+}
+
+func branchIntegrityStopCommand(runID string, force bool) string {
+	if force {
+		return "roundfix stop --force " + strings.TrimSpace(runID)
+	}
+	return "roundfix stop " + strings.TrimSpace(runID)
+}
+
+func branchIntegrityWorktreePath(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return "-"
+	}
+	return path
+}
+
+func publishBranchIntegrityBypassAudit(ctx context.Context, req commandRequest, preflightResult preflight.Result, runStore *store.Store, runID string) error {
+	if !req.skipBranchIntegrity {
+		return nil
+	}
+	prNumber, err := strconv.Atoi(preflightResult.PullRequest.Number)
+	if err != nil {
+		return fmt.Errorf("parse Open Pull Request number %q for Branch Integrity bypass audit: %w", preflightResult.PullRequest.Number, err)
+	}
+	marker := branchIntegrityBypassMarker(runID, preflightResult.PullRequest.Number)
+	body := branchIntegrityBypassAuditBody(runID, preflightResult, req.branchIntegrity, marker, time.Now().UTC())
+	if err := commentOnPullRequest(ctx, req.source, prNumber, body); err != nil {
+		return fmt.Errorf("publish Branch Integrity Preflight bypass audit comment: %w", err)
+	}
+	journalBranchIntegrityBypass(ctx, runStore, runID, req.branchIntegrity, marker)
+	return nil
+}
+
+func branchIntegrityBypassMarker(runID string, prNumber string) string {
+	return coderabbit.RoundfixCommentMarker("run:"+strings.TrimSpace(runID), "bypass:branch-integrity", "pr:"+strings.TrimSpace(prNumber))
+}
+
+func branchIntegrityBypassAuditBody(runID string, preflightResult preflight.Result, report branchIntegrityReport, marker string, now time.Time) string {
+	var builder strings.Builder
+	builder.WriteString("Roundfix Branch Integrity Preflight bypassed.\n\n")
+	fmt.Fprintf(&builder, "Run: %s\n", runID)
+	fmt.Fprintf(&builder, "Actor: %s\n", branchIntegrityAuditActor())
+	fmt.Fprintf(&builder, "Time: %s\n", now.UTC().Format(time.RFC3339))
+	fmt.Fprintf(&builder, "Open Pull Request: #%s\n", preflightResult.PullRequest.Number)
+	fmt.Fprintf(&builder, "Head Repository: %s\n", preflightResult.PullRequest.HeadRepository)
+	fmt.Fprintf(&builder, "PR Head Branch: %s\n\n", preflightResult.PullRequest.HeadBranch)
+	builder.WriteString("Skipped guardrails:\n")
+	builder.WriteString("- Pending Run Branch work\n")
+	builder.WriteString("- Active Run bound to target\n\n")
+	builder.WriteString("Ignored pending Run Branch work:\n")
+	if len(report.Pending) == 0 {
+		builder.WriteString("- none\n")
+	} else {
+		for _, pending := range report.Pending {
+			fmt.Fprintf(&builder, "- branch=%s worktree=%s ahead_commits=%d fast_forward=%s integration_command=%q\n",
+				pending.Branch,
+				branchIntegrityWorktreePath(pending.WorktreePath),
+				pending.AheadCommits,
+				yesNo(pending.FastForward),
+				branchIntegrityIntegrationCommand(pending.Branch),
+			)
+		}
+	}
+	builder.WriteString("\nIgnored Active Runs:\n")
+	if report.ActiveRun == nil {
+		builder.WriteString("- none\n")
+	} else {
+		fmt.Fprintf(&builder, "- run_id=%s state=%s stop_command=%q force_stop_command=%q\n",
+			report.ActiveRun.ID,
+			report.ActiveRun.State,
+			branchIntegrityStopCommand(report.ActiveRun.ID, false),
+			branchIntegrityStopCommand(report.ActiveRun.ID, true),
+		)
+	}
+	return coderabbit.RoundfixCommentBody(builder.String(), marker)
+}
+
+func branchIntegrityAuditActor() string {
+	for _, key := range []string{"GITHUB_ACTOR", "GIT_AUTHOR_NAME", "USER", "USERNAME"} {
+		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+			return value
+		}
+	}
+	return "unknown"
+}
+
+func journalBranchIntegrityIntegrations(ctx context.Context, runStore *store.Store, runID string, integrated []runworktree.PendingRunWork) {
+	if runStore == nil || len(integrated) == 0 {
+		return
+	}
+	sink := store.JournalSink{Store: runStore}
+	for _, item := range integrated {
+		payload, err := json.Marshal(map[string]any{
+			"event":         "branch_integrity_auto_integration",
+			"branch":        item.Branch,
+			"worktree_path": item.WorktreePath,
+			"ahead_commits": item.AheadCommits,
+			"fast_forward":  item.FastForward,
+			"command":       branchIntegrityIntegrationCommand(item.Branch),
+		})
+		if err != nil {
+			continue
+		}
+		_ = sink.Publish(context.WithoutCancel(ctx), runevent.RunEvent{
+			RunID:   runID,
+			Source:  runevent.SourceGit,
+			Kind:    runevent.KindDaemonStatus,
+			Summary: runevent.BoundSummary(fmt.Sprintf("Branch Integrity Preflight integrated %s.", item.Branch)),
+			Time:    time.Now().UTC(),
+			Payload: payload,
+		})
+	}
+}
+
+func journalBranchIntegrityBypass(ctx context.Context, runStore *store.Store, runID string, report branchIntegrityReport, marker string) {
+	if runStore == nil {
+		return
+	}
+	payload, err := json.Marshal(map[string]any{
+		"event":              "branch_integrity_bypass",
+		"marker":             marker,
+		"skipped_guardrails": []string{"pending_run_branch_work", "active_run_bound_to_target"},
+		"pending":            branchIntegrityPendingPayload(report.Pending),
+		"active_run":         branchIntegrityActiveRunPayload(report.ActiveRun),
+	})
+	if err != nil {
+		return
+	}
+	_ = (store.JournalSink{Store: runStore}).Publish(context.WithoutCancel(ctx), runevent.RunEvent{
+		RunID:   runID,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonStatus,
+		Summary: runevent.BoundSummary("Branch Integrity Preflight bypass audited on the pull request."),
+		Time:    time.Now().UTC(),
+		Payload: payload,
+	})
+}
+
+func branchIntegrityPendingPayload(pending []runworktree.PendingRunWork) []map[string]any {
+	payload := make([]map[string]any, 0, len(pending))
+	for _, item := range pending {
+		payload = append(payload, map[string]any{
+			"branch":        item.Branch,
+			"worktree_path": item.WorktreePath,
+			"ahead_commits": item.AheadCommits,
+			"fast_forward":  item.FastForward,
+			"command":       branchIntegrityIntegrationCommand(item.Branch),
+		})
+	}
+	return payload
+}
+
+func branchIntegrityActiveRunPayload(active *store.Run) map[string]any {
+	if active == nil {
+		return nil
+	}
+	return map[string]any{
+		"run_id":             active.ID,
+		"state":              active.State,
+		"stop_command":       branchIntegrityStopCommand(active.ID, false),
+		"force_stop_command": branchIntegrityStopCommand(active.ID, true),
+	}
+}
+
 func runFetchCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, stdout, stderr io.Writer) int {
 	runStore, err := store.Open(ctx, loaded.HomeDir)
 	if err != nil {
@@ -1200,18 +1548,15 @@ func runFetchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		_ = runStore.Close()
 	}()
 
-	run, err := runStore.CreateFetchRun(ctx, store.CreateRunRequest{
-		HeadRepository: preflightResult.PullRequest.HeadRepository,
-		HeadBranch:     preflightResult.PullRequest.HeadBranch,
-		BaseRepository: preflightResult.PullRequest.BaseRepository,
-		PRNumber:       preflightResult.PullRequest.Number,
-		GitRoot:        preflightResult.Git.Root,
-		LocalBranch:    preflightResult.Git.Branch,
-		HeadSHA:        preflightResult.Git.HEAD,
-		ArtifactDir:    req.artifactDir,
-	})
+	run, err := createFetchRun(ctx, runStore, req, preflightResult)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
+		return exitPreflight
+	}
+	journalBranchIntegrityIntegrations(ctx, runStore, run.ID, req.branchIntegrity.Integrated)
+	if err := publishBranchIntegrityBypassAudit(ctx, req, preflightResult, runStore, run.ID); err != nil {
+		markRunFailed(ctx, runStore, run.ID)
+		printBranchIntegrityAuditFailure(req.name, run.ID, err, stderr)
 		return exitPreflight
 	}
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
@@ -1280,6 +1625,21 @@ func runFetchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	return exitOK
 }
 
+func createFetchRun(ctx context.Context, runStore *store.Store, req commandRequest, preflightResult preflight.Result) (store.Run, error) {
+	createReq := store.CreateRunRequest{
+		Kind:           store.KindFetch,
+		HeadRepository: preflightResult.PullRequest.HeadRepository,
+		HeadBranch:     preflightResult.PullRequest.HeadBranch,
+		BaseRepository: preflightResult.PullRequest.BaseRepository,
+		PRNumber:       preflightResult.PullRequest.Number,
+		GitRoot:        preflightResult.Git.Root,
+		LocalBranch:    preflightResult.Git.Branch,
+		HeadSHA:        preflightResult.Git.HEAD,
+		ArtifactDir:    req.artifactDir,
+	}
+	return createReviewRun(ctx, runStore, req, createReq)
+}
+
 type resolveBatchPlan struct {
 	roundNumber int
 	selection   rounds.SelectResult
@@ -1318,9 +1678,15 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		_ = runStore.Close()
 	}()
 	sweepRunRetention(ctx, runStore, req.artifactDir, loaded.Config.Store.JournalRetention, stderr)
-	run, err := createOperationalRun(ctx, runStore, store.KindResolve, preflightResult, req.artifactDir, resolvePlan.runtime)
+	run, err := createOperationalRun(ctx, runStore, store.KindResolve, req, preflightResult, resolvePlan.runtime)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
+		return exitPreflight
+	}
+	journalBranchIntegrityIntegrations(ctx, runStore, run.ID, req.branchIntegrity.Integrated)
+	if err := publishBranchIntegrityBypassAudit(ctx, req, preflightResult, runStore, run.ID); err != nil {
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
+		printBranchIntegrityAuditFailure(req.name, run.ID, err, stderr)
 		return exitPreflight
 	}
 	if err := req.reportDetachedRunCreated(run.ID); err != nil {
@@ -1702,9 +2068,15 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		_ = runStore.Close()
 	}()
 	sweepRunRetention(ctx, runStore, req.artifactDir, loaded.Config.Store.JournalRetention, stderr)
-	run, err := createOperationalRun(ctx, runStore, store.KindWatch, preflightResult, req.artifactDir, runtime)
+	run, err := createOperationalRun(ctx, runStore, store.KindWatch, req, preflightResult, runtime)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
+		return exitPreflight
+	}
+	journalBranchIntegrityIntegrations(ctx, runStore, run.ID, req.branchIntegrity.Integrated)
+	if err := publishBranchIntegrityBypassAudit(ctx, req, preflightResult, runStore, run.ID); err != nil {
+		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
+		printBranchIntegrityAuditFailure(req.name, run.ID, err, stderr)
 		return exitPreflight
 	}
 	if err := req.reportDetachedRunCreated(run.ID); err != nil {
@@ -1877,8 +2249,8 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	return exitForWatchOutcome(result.Outcome)
 }
 
-func createOperationalRun(ctx context.Context, runStore *store.Store, kind string, preflightResult preflight.Result, artifactDir string, runtime agent.RuntimeSpec) (store.Run, error) {
-	return runStore.CreateRun(ctx, store.CreateRunRequest{
+func createOperationalRun(ctx context.Context, runStore *store.Store, kind string, req commandRequest, preflightResult preflight.Result, runtime agent.RuntimeSpec) (store.Run, error) {
+	createReq := store.CreateRunRequest{
 		Kind:            kind,
 		HeadRepository:  preflightResult.PullRequest.HeadRepository,
 		HeadBranch:      preflightResult.PullRequest.HeadBranch,
@@ -1887,11 +2259,19 @@ func createOperationalRun(ctx context.Context, runStore *store.Store, kind strin
 		GitRoot:         preflightResult.Git.Root,
 		LocalBranch:     preflightResult.Git.Branch,
 		HeadSHA:         preflightResult.Git.HEAD,
-		ArtifactDir:     artifactDir,
+		ArtifactDir:     req.artifactDir,
 		Agent:           runtime.ID,
 		Model:           runtime.Model,
 		ReasoningEffort: runtime.ReasoningEffort,
-	})
+	}
+	return createReviewRun(ctx, runStore, req, createReq)
+}
+
+func createReviewRun(ctx context.Context, runStore *store.Store, req commandRequest, createReq store.CreateRunRequest) (store.Run, error) {
+	if req.skipBranchIntegrity && req.branchIntegrity.ActiveRun != nil {
+		return runStore.CreateRunSkippingActiveLock(ctx, createReq)
+	}
+	return runStore.CreateRun(ctx, createReq)
 }
 
 func requestWithRuntimeSelection(req commandRequest, runtime agent.RuntimeSpec) commandRequest {
@@ -2308,6 +2688,7 @@ func parseOperationalCommand(name string, args []string, config roundconfig.Conf
 	fs.StringVar(&req.baseRepo, "base-repo", "", "Base repository, owner/name")
 	fs.StringVar(&req.headRepo, "head-repo", "", "Head Repository, owner/name")
 	fs.StringVar(&req.headBranch, "head-branch", "", "PR Head Branch")
+	fs.BoolVar(&req.skipBranchIntegrity, "skip-branch-integrity", false, "Skip pending Run Branch and Active Run guardrails after publishing a PR audit comment")
 
 	switch name {
 	case "fetch":
@@ -2620,6 +3001,13 @@ func defaultFetchReviewItems(ctx context.Context, req reviewsource.FetchRequest)
 		return nil, fmt.Errorf("unsupported Review Source %q; supported value: coderabbit", req.Source)
 	}
 	return coderabbit.Client{}.FetchReviews(ctx, req)
+}
+
+func defaultCommentOnPullRequest(ctx context.Context, source string, prNumber int, body string) error {
+	if source != reviewsource.SourceCodeRabbit {
+		return fmt.Errorf("unsupported Review Source %q; supported value: coderabbit", source)
+	}
+	return coderabbit.GHClient{}.CommentOnPullRequest(ctx, prNumber, body)
 }
 
 type engineCollaborators struct {
@@ -3130,6 +3518,8 @@ Options:
   --base-repo    Explicit base repository, owner/name
   --head-repo    Explicit Head Repository, owner/name
   --head-branch  Explicit PR Head Branch
+  --skip-branch-integrity
+                 Skip pending Run Branch and Active Run guardrails after publishing a PR audit comment
   --interactive  Open Interactive Input before starting
   --no-input     Fail instead of opening Interactive Input
 `
@@ -3152,6 +3542,8 @@ Options:
   --base-repo    Explicit base repository, owner/name
   --head-repo    Explicit Head Repository, owner/name
   --head-branch  Explicit PR Head Branch
+  --skip-branch-integrity
+                 Skip pending Run Branch and Active Run guardrails after publishing a PR audit comment
   --interactive  Open Interactive Input before starting
   --no-input     Fail instead of opening Interactive Input
 `
@@ -3176,6 +3568,8 @@ Options:
   --base-repo    Explicit base repository, owner/name
   --head-repo    Explicit Head Repository, owner/name
   --head-branch  Explicit PR Head Branch
+  --skip-branch-integrity
+                 Skip pending Run Branch and Active Run guardrails after publishing a PR audit comment
   --interactive  Open Interactive Input before starting
   --no-input     Fail instead of opening Interactive Input
 `
@@ -3252,6 +3646,22 @@ func printPreflightNoSideEffects(stderr io.Writer, style terminalStyle) {
 	fmt.Fprintf(stderr, "%s\n", style.cyan("No side effects:"))
 	fmt.Fprintln(stderr, "  Roundfix did not create a Run, fetch Review Source issues, start an Agent, commit, or push.")
 	fmt.Fprintln(stderr)
+}
+
+func printBranchIntegrityAuditFailure(name string, runID string, err error, stderr io.Writer) {
+	style := styleFor(stderr)
+	fmt.Fprintf(stderr, "%s\n\n", style.red(style.bold("Preflight failed")))
+	fmt.Fprintf(stderr, "%s\n", style.cyan("Reason:"))
+	fmt.Fprintf(stderr, "  publish Branch Integrity Preflight bypass audit for Run %s: %v\n\n", runID, err)
+	fmt.Fprintf(stderr, "%s\n", style.cyan("No further side effects:"))
+	fmt.Fprintf(stderr, "  Roundfix created Run %s and attempted the mandatory audit comment.\n", runID)
+	fmt.Fprintln(stderr, "  Roundfix did not fetch Review Source issues, start an Agent, commit, or push.")
+	fmt.Fprintln(stderr)
+	fmt.Fprintf(stderr, "%s\n", style.cyan("Next:"))
+	fmt.Fprintln(stderr, "  Fix pull request comment publishing, or rerun without --skip-branch-integrity and resolve the Branch Integrity Preflight refusal.")
+	fmt.Fprintln(stderr)
+	fmt.Fprintf(stderr, "%s\n", style.cyan("Usage:"))
+	fmt.Fprintf(stderr, "  Run '%s %s --help' for usage.\n", app.Name, name)
 }
 
 func printInitSuccess(result roundconfig.InitResult, stdout io.Writer) {
