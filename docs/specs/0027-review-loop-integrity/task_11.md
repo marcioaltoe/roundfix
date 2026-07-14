@@ -48,10 +48,10 @@ The skill-sync hard rule: behavior and its teaching material ship together. This
 ## Verification
 
 - `go run -buildvcs=false ./cmd/roundfix skills check` — expected: skill check passes
-- `rg -q "Branch Integrity Preflight" skills/roundfix/SKILL.md` — expected: exit 0
-- `rg -c "Run Worktree" skills/roundfix/SKILL.md` — expected: exit 0 (remaining mentions are spec-Run-scoped; reviewed in acceptance criteria)
+- `grep -q "Branch Integrity Preflight" skills/roundfix/SKILL.md` — expected: exit 0
+- `grep -c "Run Worktree" skills/roundfix/SKILL.md` — expected: exit 0 (remaining mentions are spec-Run-scoped; reviewed in acceptance criteria)
 - `go test ./...` — expected: all tests pass
-- `go build ./...` — expected: clean build
+- `go build -buildvcs=false ./...` — expected: clean build
 
 ## References
 
