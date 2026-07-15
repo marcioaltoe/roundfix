@@ -196,7 +196,7 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		fmt.Fprint(stdout, usage)
 		return exitOK
 	case "-v", "--version", "version":
-		fmt.Fprintf(stdout, "%s %s\n", app.Name, app.Version)
+		fmt.Fprintf(stdout, "%s %s\n", app.Name, app.VersionLine())
 		return exitOK
 	case "init":
 		return runInitCommand(ctx, args[1:], stdout, stderr)

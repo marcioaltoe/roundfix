@@ -70,6 +70,11 @@ live during the same cycle.
   gains `adapter:` and `model:` check lines — the model line reports the
   effective Agent Model probe and, on failure, the runtime's currently
   advertised models.
+- **Dev build identity** — `make build` and `make install` stamp the binary
+  with the short commit (plus `-dirty` on a changed tree) and the local build
+  time, so `roundfix --version` proves which dev build is installed:
+  `roundfix 0.0.0-dev (a1b2c3d, built 2026-07-15 14:32:05 -0300)`. Release
+  binaries keep the plain tag-stamped line.
 - **CONTEXT-driven setup refresh** — the setup skill is now
   `setup-context-driven`: it scaffolds the full `docs/` layout (inbox, ADRs,
   agent guides, design, findings, handoffs, references, specs, user guide)

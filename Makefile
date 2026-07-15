@@ -12,7 +12,13 @@ CMD := ./cmd/roundfix
 BIN_DIR := bin
 BIN := $(BIN_DIR)/$(APP)
 PKGS := ./...
-BUILD_FLAGS ?= -buildvcs=false
+# Local build identity for `roundfix --version`: short commit (plus -dirty
+# when the tree has changes) and local build time. The release workflow
+# stamps only app.Version from the tag and leaves these empty.
+BUILD_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null)$(shell git diff --quiet HEAD 2>/dev/null || echo -dirty)
+BUILD_TIME := $(shell date '+%Y-%m-%d %H:%M:%S %z')
+STAMP_LDFLAGS := -X 'roundfix/internal/app.BuildCommit=$(BUILD_COMMIT)' -X 'roundfix/internal/app.BuildTime=$(BUILD_TIME)'
+BUILD_FLAGS ?= -buildvcs=false -ldflags "$(STAMP_LDFLAGS)"
 RUN_FLAGS ?= -buildvcs=false
 TARGET ?= project
 GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')

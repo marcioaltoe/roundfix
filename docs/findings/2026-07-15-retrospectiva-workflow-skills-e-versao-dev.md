@@ -34,6 +34,11 @@ Mantendo a primeira linha estável para parsing e a identidade extra na mesma li
 adicional — decidir no techspec respeitando o contrato de saída (`agentic-cli-design`:
 introspecção honesta; a string de versão é API pública).
 
+**Shipped (2026-07-15, direto — sem spec):** `make build`/`make install` estampam
+`app.BuildCommit` (short SHA + `-dirty`) e `app.BuildTime` (hora local) via ldflags;
+`--version` imprime `roundfix 0.0.0-dev (43147cd-dirty, built 2026-07-15 12:59:07 -0300)`.
+Builds de release seguem com a linha limpa da tag.
+
 ## 2. Cópia global obsoleta da skill roundfix shadowing a do repositório
 
 `~/.claude/skills/roundfix` existe como cópia global e foi a versão servida ao Supervisor nesta
