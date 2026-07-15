@@ -2036,6 +2036,9 @@ func TestTaskCycleAgentErrorSettlesTaskFailedAndContinues(t *testing.T) {
 	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusFailed) {
 		t.Fatalf("expected Agent error settled failed, got %q", got)
 	}
+	if len(result.Outcomes) != 2 || result.Outcomes[0].Reason != "Agent failed: agent crashed" {
+		t.Fatalf("expected existing Agent failure reason to stay unchanged, got %+v", result.Outcomes)
+	}
 	var journaled bool
 	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonTask) {
 		if event.ReviewIssue == "task_01" && strings.Contains(string(event.Payload), "agent crashed") {
@@ -2045,6 +2048,46 @@ func TestTaskCycleAgentErrorSettlesTaskFailedAndContinues(t *testing.T) {
 	if !journaled {
 		t.Fatal("expected the Agent failure reason journaled in the settlement event")
 	}
+}
+
+func TestTaskCycleModelNotAdvertisedFailureSettlesAndReportsReason(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", title: "Use the selected Agent Model"},
+	})
+	runner := &taskFakeRunner{
+		calls:     fixture.calls,
+		gitRoot:   fixture.gitRoot,
+		errByTask: map[string]error{"task_01": modelNotAdvertisedBatchErrorForTest()},
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("expected model rejection to fail only the Task, got %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 1 || result.Skipped != 0 {
+		t.Fatalf("expected one failed Task, got %+v", result)
+	}
+	if len(result.Outcomes) != 1 {
+		t.Fatalf("expected one Task outcome, got %+v", result.Outcomes)
+	}
+	outcome := result.Outcomes[0]
+	if outcome.Task != "task_01" || outcome.Status != string(spec.StatusFailed) || outcome.Reason != modelNotAdvertisedReasonForTest {
+		t.Fatalf("expected model rejection report outcome, got %+v", outcome)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusFailed) {
+		t.Fatalf("expected model rejection settled failed, got %q", got)
+	}
+	if !strings.Contains(fixture.progress.String(), "Task task_01 failed: "+modelNotAdvertisedReasonForTest+"\n") {
+		t.Fatalf("expected progress report to include model rejection reason, got %q", fixture.progress.String())
+	}
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonTask) {
+		if event.ReviewIssue == "task_01" && eventPayloadString(t, event, "reason") == modelNotAdvertisedReasonForTest {
+			return
+		}
+	}
+	t.Fatalf("expected Task settlement event to journal reason %q", modelNotAdvertisedReasonForTest)
 }
 
 func TestTaskCycleSpecRootOnlyTaskCommitWarnsAndStillCommits(t *testing.T) {

@@ -1966,6 +1966,46 @@ func TestRunImplementReportPrintsVerificationFailureReason(t *testing.T) {
 	}
 }
 
+func TestRunImplementReportPrintsModelNotAdvertisedReason(t *testing.T) {
+	const reason = `Agent Model "gpt-5.6-sol" not advertised by runtime "codex"; advertised: gpt-5.5, gpt-5.1`
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build the widget core", verification: []string{"make verify"}},
+	})
+	runner := &implementFakeRunner{
+		gitRoot: repoDir,
+		errByTask: map[string]error{
+			"task_01": &agent.BatchFailureError{
+				ExitCode: 1,
+				Reason:   "agent/protocol error",
+				Err: &agent.ModelNotAdvertisedError{
+					Runtime:    "codex",
+					Model:      "gpt-5.6-sol",
+					Advertised: []string{"gpt-5.5", "gpt-5.1"},
+				},
+			},
+		},
+	}
+	withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--model", "gpt-5.6-sol", "--no-input"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected unresolved implement exit %d, got %d stderr=%q stdout=%q", exitRunFailed, code, stderr.String(), stdout.String())
+	}
+	want := "task_01 failed — Build the widget core\n" +
+		"  reason: " + reason + "\n"
+	if !strings.Contains(stdout.String(), want) {
+		t.Fatalf("expected model rejection reason line %q, got stdout=%q", want, stdout.String())
+	}
+	runID := implementRunIDFromStderr(t, stderr.String())
+	run := implementRunFromStore(t, homeDir, runID)
+	if run.State != store.StateUnresolved {
+		t.Fatalf("expected Run state %q, got %q", store.StateUnresolved, run.State)
+	}
+}
+
 func TestRunImplementAutoPushMissingUpstreamWarnsAndStaysClean(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},

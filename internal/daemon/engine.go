@@ -165,7 +165,37 @@ func terminalReasonLine(reason string) string {
 }
 
 func agentTerminalReason(step string, err error) string {
-	return terminalReasonLine(fmt.Sprintf("%s failed: %v", step, err))
+	return agentFailureReason(err, terminalReasonLine(fmt.Sprintf("%s failed: %v", step, err)))
+}
+
+func agentFailureReason(err error, fallback string) string {
+	if reason, ok := modelNotAdvertisedTerminalReason(err); ok {
+		return terminalReasonLine(reason)
+	}
+	return fallback
+}
+
+func modelNotAdvertisedTerminalReason(err error) (string, bool) {
+	var modelErr *agent.ModelNotAdvertisedError
+	if !errors.As(err, &modelErr) || modelErr == nil {
+		return "", false
+	}
+	advertised := advertisedModelsReason(modelErr.Advertised)
+	return fmt.Sprintf("Agent Model %q not advertised by runtime %q; advertised: %s", strings.TrimSpace(modelErr.Model), strings.TrimSpace(modelErr.Runtime), advertised), true
+}
+
+func advertisedModelsReason(models []string) string {
+	advertised := make([]string, 0, len(models))
+	for _, model := range models {
+		model = strings.TrimSpace(model)
+		if model != "" {
+			advertised = append(advertised, model)
+		}
+	}
+	if len(advertised) == 0 {
+		return "unavailable"
+	}
+	return strings.Join(advertised, ", ")
 }
 
 func unsettledTerminalReason(step string) string {

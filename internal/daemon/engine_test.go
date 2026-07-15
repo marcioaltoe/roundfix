@@ -100,6 +100,20 @@ func eventPayloadMap(t *testing.T, event runevent.RunEvent) map[string]any {
 	return payload
 }
 
+const modelNotAdvertisedReasonForTest = `Agent Model "gpt-5.6-sol" not advertised by runtime "codex"; advertised: gpt-5.5, gpt-5.1`
+
+func modelNotAdvertisedBatchErrorForTest() error {
+	return &agent.BatchFailureError{
+		ExitCode: 1,
+		Reason:   "agent/protocol error",
+		Err: &agent.ModelNotAdvertisedError{
+			Runtime:    "codex",
+			Model:      "gpt-5.6-sol",
+			Advertised: []string{"gpt-5.5", "gpt-5.1"},
+		},
+	}
+}
+
 func assertCommentContains(t *testing.T, actions []engineSourceAction, sourceRef string, expected ...string) {
 	t.Helper()
 	for _, action := range actions {
@@ -873,7 +887,7 @@ func TestResolveCycleAgentFailureFailsBatchAndContinues(t *testing.T) {
 	if len(result.Batches) != 1 || !result.Batches[0].Failed {
 		t.Fatalf("expected failed Batch outcome, got %+v", result.Batches)
 	}
-	if !strings.Contains(result.Batches[0].FailureReason, "agent crashed") {
+	if result.Batches[0].FailureReason != "Agent failed: agent crashed" {
 		t.Fatalf("expected Agent failure reason, got %q", result.Batches[0].FailureReason)
 	}
 	if result.Remaining != 1 {
@@ -893,6 +907,51 @@ func TestResolveCycleAgentFailureFailsBatchAndContinues(t *testing.T) {
 	}
 	if strings.Contains(issue.TerminalReason, "\n") {
 		t.Fatalf("expected single-line terminal reason, got %q", issue.TerminalReason)
+	}
+}
+
+func TestResolveCycleModelNotAdvertisedFailureSettlesReviewIssueReason(t *testing.T) {
+	fixture := newEngineFixture(t)
+	runner := &engineFakeRunner{calls: fixture.calls, store: fixture.store, err: modelNotAdvertisedBatchErrorForTest()}
+	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}
+	source := &engineFakeSource{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, &engineFakePusher{calls: fixture.calls}, source)
+
+	result, err := engine.ResolveCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("expected model rejection to fail only the Batch, got cycle error %v", err)
+	}
+	if len(result.Batches) != 1 || !result.Batches[0].Failed {
+		t.Fatalf("expected failed Batch outcome, got %+v", result.Batches)
+	}
+	if result.Batches[0].FailureReason != modelNotAdvertisedReasonForTest {
+		t.Fatalf("expected model rejection Batch reason %q, got %q", modelNotAdvertisedReasonForTest, result.Batches[0].FailureReason)
+	}
+	issue, parseErr := rounds.ParseIssue(fixture.issuePaths[0])
+	if parseErr != nil {
+		t.Fatalf("parse issue: %v", parseErr)
+	}
+	if issue.Status != rounds.StatusFailed {
+		t.Fatalf("expected failed Batch issue status, got %q", issue.Status)
+	}
+	if issue.TerminalReason != modelNotAdvertisedReasonForTest {
+		t.Fatalf("expected model rejection terminal reason %q, got %q", modelNotAdvertisedReasonForTest, issue.TerminalReason)
+	}
+	assertCommentContains(t, source.actions, issue.SourceRef, modelNotAdvertisedReasonForTest)
+
+	var journaled bool
+	for _, event := range fixture.sink.snapshot() {
+		if event.Kind != runevent.KindDaemonBatch || event.Batch != 1 {
+			continue
+		}
+		payload := eventPayloadMap(t, event)
+		if payload["phase"] == "failed" && payload["error"] == modelNotAdvertisedReasonForTest {
+			journaled = true
+		}
+	}
+	if !journaled {
+		t.Fatalf("expected failed Batch event to journal reason %q", modelNotAdvertisedReasonForTest)
 	}
 }
 

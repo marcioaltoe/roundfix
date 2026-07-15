@@ -649,7 +649,7 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 			// Agent-created worktree changes stay untouched.
 			return "", fmt.Errorf("run Agent for run %q Task %s: %w", plan.RunID, task.ID, runErr)
 		}
-		return fmt.Sprintf("Agent failed: %v", runErr), nil
+		return agentFailureReason(runErr, fmt.Sprintf("Agent failed: %v", runErr)), nil
 	}
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
@@ -756,7 +756,7 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 		if isStop(ctx, runErr) {
 			return "", fmt.Errorf("run Verification Feedback Agent for run %q Task %s: %w", plan.RunID, task.ID, runErr)
 		}
-		return fmt.Sprintf("Agent failed: %v", runErr), nil
+		return agentFailureReason(runErr, fmt.Sprintf("Agent failed: %v", runErr)), nil
 	}
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
