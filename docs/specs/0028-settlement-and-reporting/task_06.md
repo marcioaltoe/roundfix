@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0028-settlement-and-reporting
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -44,3 +44,17 @@ Make the Settle Command honest about what it sweeps: before the settled line, se
 ## References
 
 `_prd.md` → Goal 4, User Story 4, Core Feature 4, Decisions (transparency over pathspec restriction); `_techspec.md` → Build Order 6, API Contracts (settle report), Risks (report consumers / skill sync).
+
+## Result
+
+- Added settle commit reporting in `internal/cli/settle.go`: successful commits now print sorted `commit <path>` lines before the existing settled line.
+- Added a shared-worktree warning sourced from the loaded Task Graph when other failed Tasks exist and a settle commit is created.
+- Acceptance evidence:
+  - `TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage` asserts exactly three sorted commit path lines before the settled line.
+  - `TestRunSettleWarnsWhenOtherSpecTasksAreFailed` asserts stderr names `task_02` and states work may be included; existing no-sibling paths assert empty stderr.
+  - `TestRunSettleNoCommitPrintsNoCommitPathsOrSharedWarning` asserts no commit lines or shared warning when nothing is stageable.
+  - Exact stdout assertions keep existing verification and settled lines byte-identical around the inserted commit lines.
+- Verification:
+  - `rtk go test ./internal/cli/...` — passed, 423 tests.
+  - `rtk go build -buildvcs=false ./...` — passed.
+  - `rtk make verify` — passed: `go test ./...` 1227 tests, skill check passed, build passed.

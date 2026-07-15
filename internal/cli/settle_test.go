@@ -28,6 +28,7 @@ func TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage(t *testing.T) {
 		},
 	})
 	mustWrite(t, filepath.Join(repoDir, "done.txt"), "preserved work\n")
+	mustWrite(t, filepath.Join(repoDir, "recovered.txt"), "sibling work\n")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -41,6 +42,9 @@ func TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage(t *testing.T) {
 	}
 	shortSHA := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "--short", "HEAD"))
 	expectedStdout := "verify test -f done.txt — ok\n" +
+		"commit " + filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "task_01.md")) + "\n" +
+		"commit done.txt\n" +
+		"commit recovered.txt\n" +
 		"settled task_01 completed — " + shortSHA + "\n"
 	if stdout.String() != expectedStdout {
 		t.Fatalf("expected stdout:\n%q\ngot:\n%q", expectedStdout, stdout.String())
@@ -56,7 +60,70 @@ func TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage(t *testing.T) {
 	}
 	changed := settleCommitFiles(t, repoDir)
 	assertContainsString(t, changed, "done.txt")
+	assertContainsString(t, changed, "recovered.txt")
 	assertContainsString(t, changed, filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "task_01.md")))
+	assertNoRunDatabase(t, homeDir)
+}
+
+func TestRunSettleWarnsWhenOtherSpecTasksAreFailed(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Recover the completed work", status: string(spec.StatusFailed), verification: []string{"true"}},
+		{id: "task_02", title: "Other failed work", status: string(spec.StatusFailed)},
+		{id: "task_03", title: "Completed sibling", status: string(spec.StatusCompleted)},
+	})
+	mustWrite(t, filepath.Join(repoDir, "done.txt"), "preserved work\n")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
+	}
+	for _, expected := range []string{"warning: other failed Tasks", "task_02", "may have work included in this settle commit"} {
+		if !strings.Contains(stderr.String(), expected) {
+			t.Fatalf("expected stderr to contain %q, got %q", expected, stderr.String())
+		}
+	}
+	if strings.Contains(stderr.String(), "task_01") || strings.Contains(stderr.String(), "task_03") {
+		t.Fatalf("expected warning to name only other failed Tasks, got %q", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "commit done.txt\n") || !strings.Contains(stdout.String(), "settled task_01 completed — ") {
+		t.Fatalf("expected settle success report with commit path, got %q", stdout.String())
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
+func TestRunSettleNoCommitPrintsNoCommitPathsOrSharedWarning(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Internal fixture should stay untouched"},
+	})
+	externalRoot := filepath.Join(t.TempDir(), "external-specs")
+	writeImplementSpecAtRoot(t, externalRoot, implementTestSlug, []implementSeed{
+		{id: "task_01", title: "Recover external task", status: string(spec.StatusFailed), verification: []string{"true"}},
+		{id: "task_02", title: "Other failed work", status: string(spec.StatusFailed)},
+	})
+	configureExternalSpecsRoot(t, repoDir, externalRoot)
+	beforeSHA := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "--short", "HEAD"))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected settle exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr when no commit is created, got %q", stderr.String())
+	}
+	expectedStdout := "verify true — ok\n" +
+		"settled task_01 completed — " + beforeSHA + "\n"
+	if stdout.String() != expectedStdout {
+		t.Fatalf("expected stdout:\n%q\ngot:\n%q", expectedStdout, stdout.String())
+	}
+	if got := gitSettleOutput(t, repoDir, "status", "--porcelain=v1"); got != "" {
+		t.Fatalf("expected no repository changes, got %q", got)
+	}
 	assertNoRunDatabase(t, homeDir)
 }
 
@@ -204,6 +271,8 @@ func TestRunSettleRetargetsKeptTaskWorktreeAndCleansUpAfterIntegration(t *testin
 	}
 	shortSHA := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "--short", "HEAD"))
 	expectedStdout := "verify test -f done.txt — ok\n" +
+		"commit " + filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "task_01.md")) + "\n" +
+		"commit done.txt\n" +
 		"settled task_01 completed — " + shortSHA + "\n"
 	if stdout.String() != expectedStdout {
 		t.Fatalf("expected stdout:\n%q\ngot:\n%q", expectedStdout, stdout.String())

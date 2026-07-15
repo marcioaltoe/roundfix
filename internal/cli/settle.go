@@ -98,11 +98,12 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		fmt.Fprintf(stdout, "verify %s — ok\n", command)
 	}
 
-	shortSHA, err := settleTaskAndCommit(ctx, plan, collaborators)
+	commitResult, err := settleTaskAndCommit(ctx, plan, collaborators)
 	if err != nil {
 		fmt.Fprintf(stderr, "%s: settle failed after verification: %v\n", app.Name, err)
 		return exitRunFailed
 	}
+	shortSHA := commitResult.shortSHA
 	if plan.taskSurface {
 		if integratedSHA, err := integrateSettledTaskWorktree(ctx, plan); err != nil {
 			fmt.Fprintf(stderr, "%s: settle failed after verification: %v\n", app.Name, err)
@@ -120,6 +121,12 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 		if integrationCommand != "" {
 			fmt.Fprintf(stdout, "integration pending — %s\n", integrationCommand)
 			return exitRunFailed
+		}
+	}
+	if len(commitResult.paths) > 0 {
+		emitSettleSharedFailedWarning(stderr, plan)
+		for _, path := range commitResult.paths {
+			fmt.Fprintf(stdout, "commit %s\n", path)
 		}
 	}
 	fmt.Fprintf(stdout, "settled %s completed — %s\n", plan.task.ID, shortSHA)
@@ -325,32 +332,58 @@ func ensureNoSettleActiveRun(ctx context.Context, homeDir string, gitRoot string
 	return nil
 }
 
-func settleTaskAndCommit(ctx context.Context, plan settlePlan, collaborators engineCollaborators) (string, error) {
+type settleCommitResult struct {
+	shortSHA string
+	paths    []string
+}
+
+func settleTaskAndCommit(ctx context.Context, plan settlePlan, collaborators engineCollaborators) (settleCommitResult, error) {
 	taskPath := filepath.Join(plan.specsRoot, plan.task.File)
 	changed, err := collaborators.worktree.Snapshot(ctx, plan.workDir)
 	if err != nil {
-		return "", err
+		return settleCommitResult{}, err
 	}
 	changed = ensureSettleCommitPath(changed, settleArtifactCommitPath(plan, taskPath))
 	stageable, _ := daemon.FilterStageablePaths(plan.workDir, changed)
 	if err := spec.SetStatus(taskPath, spec.StatusCompleted); err != nil {
-		return "", fmt.Errorf("settle Task %s completed: %w", plan.task.ID, err)
+		return settleCommitResult{}, fmt.Errorf("settle Task %s completed: %w", plan.task.ID, err)
 	}
+	committedPaths := []string(nil)
 	if len(stageable) > 0 {
+		committedPaths = append([]string(nil), stageable...)
 		message := daemon.TaskCommitMessage(plan.graph.Spec.Slug, plan.task)
 		if err := collaborators.committer.Commit(ctx, daemon.CommitRequest{
 			WorkDir: plan.workDir,
 			Message: message,
 			Paths:   stageable,
 		}); err != nil {
-			return "", err
+			return settleCommitResult{}, err
 		}
 	}
 	shortSHA, err := settleShortHEAD(ctx, plan.workDir)
 	if err != nil {
-		return "", err
+		return settleCommitResult{}, err
 	}
-	return shortSHA, nil
+	return settleCommitResult{shortSHA: shortSHA, paths: committedPaths}, nil
+}
+
+func emitSettleSharedFailedWarning(stderr io.Writer, plan settlePlan) {
+	failed := otherFailedSettleTasks(plan.graph.Tasks, plan.task.ID)
+	if len(failed) == 0 {
+		return
+	}
+	fmt.Fprintf(stderr, "%s: warning: other failed Tasks in Spec %q may have work included in this settle commit: %s\n", app.Name, plan.graph.Spec.Slug, strings.Join(failed, ", "))
+}
+
+func otherFailedSettleTasks(tasks []spec.Task, settledTaskID string) []string {
+	var failed []string
+	for _, task := range tasks {
+		if task.ID != settledTaskID && task.Status == spec.StatusFailed {
+			failed = append(failed, task.ID)
+		}
+	}
+	sort.Strings(failed)
+	return failed
 }
 
 func integrateSettledTaskWorktree(ctx context.Context, plan settlePlan) (string, error) {
