@@ -265,7 +265,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			}
 			fmt.Fprintf(stderr, "Implement Run %s reached %s.\n", run.ID, store.StateStopped)
 			printKeptRunWorktree(stderr, runRef.Path)
-			report, counts := renderImplementTaskLines(executionSpecsRoot, executionGraph, false)
+			report, counts := renderImplementTaskLinesWithOutcomes(executionSpecsRoot, executionGraph, false, cycleResult.Outcomes)
 			fmt.Fprint(stdout, report)
 			printImplementOutcomeLine(stdout, store.StateStopped, counts)
 			return exitOK
@@ -287,7 +287,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	if cycleResult.QAVerdict != "" && cycleResult.QAVerdict != spec.VerdictPass {
 		outcome = store.StateUnresolved
 	}
-	report, counts := renderImplementTaskLines(executionSpecsRoot, executionGraph, true)
+	report, counts := renderImplementTaskLinesWithOutcomes(executionSpecsRoot, executionGraph, true, cycleResult.Outcomes)
 	integrationCommand := ""
 	if outcome == store.StateClean {
 		integration, err := integrateCleanImplementRun(ctx, runRef, gitState.Branch)
@@ -591,8 +591,13 @@ func printImplementTaskLines(stdout io.Writer, specsRoot string, graph *spec.Gra
 }
 
 func renderImplementTaskLines(specsRoot string, graph *spec.Graph, cycleFinished bool) (string, implementTaskCounts) {
+	return renderImplementTaskLinesWithOutcomes(specsRoot, graph, cycleFinished, nil)
+}
+
+func renderImplementTaskLinesWithOutcomes(specsRoot string, graph *spec.Graph, cycleFinished bool, outcomes []daemon.TaskOutcome) (string, implementTaskCounts) {
 	counts := implementTaskCounts{}
 	var report bytes.Buffer
+	reasons := taskOutcomeReasons(outcomes)
 	for _, task := range graph.Tasks {
 		current := task
 		if err := spec.ReloadTask(specsRoot, &current); err != nil {
@@ -616,8 +621,27 @@ func renderImplementTaskLines(specsRoot string, graph *spec.Graph, cycleFinished
 			title = task.Title
 		}
 		fmt.Fprintf(&report, "%s %s — %s\n", task.ID, status, title)
+		if reason := reasons[task.ID]; reason != "" && (status == "failed" || status == "skipped") {
+			fmt.Fprintf(&report, "  reason: %s\n", reason)
+		}
 	}
 	return report.String(), counts
+}
+
+func taskOutcomeReasons(outcomes []daemon.TaskOutcome) map[string]string {
+	reasons := make(map[string]string, len(outcomes))
+	for _, outcome := range outcomes {
+		status := strings.TrimSpace(outcome.Status)
+		if status != "failed" && status != "skipped" {
+			continue
+		}
+		reason := strings.TrimSpace(outcome.Reason)
+		if reason == "" {
+			continue
+		}
+		reasons[outcome.Task] = reason
+	}
+	return reasons
 }
 
 func implementDisplayStatus(status spec.Status, cycleFinished bool) string {

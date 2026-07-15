@@ -1727,6 +1727,55 @@ func TestRenderImplementTaskLinesKeepsGraphOrderWhenCompletionReversed(t *testin
 	}
 }
 
+func TestRenderImplementTaskLinesAddsReasonsForFailedAndSkippedTasks(t *testing.T) {
+	_, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build scheduler"},
+		{id: "task_02", title: "Wire queue", needs: []string{"task_01"}},
+		{id: "task_03", title: "Write docs"},
+	})
+	specsRoot := filepath.Join(repoDir, "docs", "specs")
+	graph, err := spec.Load(specsRoot, implementTestSlug)
+	if err != nil {
+		t.Fatalf("load spec: %v", err)
+	}
+	if err := spec.SetStatus(implementTaskPath(repoDir, "task_01"), spec.StatusFailed); err != nil {
+		t.Fatalf("settle task_01 failed: %v", err)
+	}
+	if err := spec.SetStatus(implementTaskPath(repoDir, "task_03"), spec.StatusCompleted); err != nil {
+		t.Fatalf("settle task_03 completed: %v", err)
+	}
+	outcomes := []daemon.TaskOutcome{
+		{
+			Task:   "task_01",
+			Status: string(spec.StatusFailed),
+			Reason: `Verification failed: command "make verify" exited with exit status 7; diagnostics: .roundfix/verification.log`,
+		},
+		{
+			Task:   "task_02",
+			Status: "skipped",
+			Reason: "needs not completed: task_01",
+		},
+		{
+			Task:   "task_03",
+			Status: string(spec.StatusCompleted),
+		},
+	}
+
+	report, counts := renderImplementTaskLinesWithOutcomes(specsRoot, graph, true, outcomes)
+
+	expected := "task_01 failed — Build scheduler\n" +
+		"  reason: Verification failed: command \"make verify\" exited with exit status 7; diagnostics: .roundfix/verification.log\n" +
+		"task_02 skipped — Wire queue\n" +
+		"  reason: needs not completed: task_01\n" +
+		"task_03 completed — Write docs\n"
+	if report != expected {
+		t.Fatalf("expected report with failed/skipped reasons:\n%q\ngot:\n%q", expected, report)
+	}
+	if counts.completed != 1 || counts.failed != 1 || counts.skipped != 1 || counts.pending != 0 {
+		t.Fatalf("expected mixed counts, got %+v", counts)
+	}
+}
+
 func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -1874,6 +1923,39 @@ func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 			}
 			assertNoActiveRunInGitRoot(t, homeDir, repoDir)
 		})
+	}
+}
+
+func TestRunImplementReportPrintsVerificationFailureReason(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build the widget core", verification: []string{"make verify"}},
+	})
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	_, verifier, _, _ := withImplementCollaborators(t, runner)
+	verifier.err = errors.New("exit status 7")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected unresolved implement exit %d, got %d stderr=%q stdout=%q", exitRunFailed, code, stderr.String(), stdout.String())
+	}
+	wantPrefix := "task_01 failed — Build the widget core\n" +
+		"  reason: Verification failed: command \"make verify\" exited with exit status 7; diagnostics: "
+	if !strings.Contains(stdout.String(), wantPrefix) {
+		t.Fatalf("expected verification reason prefix %q, got stdout=%q", wantPrefix, stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "Unresolved: 0 completed, 1 failed, 0 skipped, 0 pending.\n") {
+		t.Fatalf("expected unresolved outcome line, got stdout=%q", stdout.String())
+	}
+	runID := implementRunIDFromStderr(t, stderr.String())
+	run := implementRunFromStore(t, homeDir, runID)
+	if run.State != store.StateUnresolved {
+		t.Fatalf("expected Run state %q, got %q", store.StateUnresolved, run.State)
 	}
 }
 
@@ -3063,7 +3145,9 @@ func TestRunImplementFailedTaskEndsUnresolvedAndKeepsWorktree(t *testing.T) {
 	}
 	expected := "task_01 completed — Build the widget core\n" +
 		"task_02 failed — Wire the widget API\n" +
+		"  reason: Agent settled the Task failed\n" +
 		"task_03 skipped — Document the widget\n" +
+		"  reason: needs not completed: task_02\n" +
 		"Unresolved: 1 completed, 1 failed, 1 skipped, 0 pending.\n"
 	if stdout.String() != expected {
 		t.Fatalf("expected Unresolved report:\n%q\ngot:\n%q", expected, stdout.String())
@@ -3343,7 +3427,9 @@ func TestRunImplementQAStepSkippedWhenAnyTaskFails(t *testing.T) {
 		t.Fatalf("expected exit code 1, got %d (stderr %q)", code, stderr.String())
 	}
 	expected := "task_01 failed — Build the widget core\n" +
+		"  reason: Agent settled the Task failed\n" +
 		"task_02 skipped — Wire the widget API\n" +
+		"  reason: needs not completed: task_01\n" +
 		"Unresolved: 0 completed, 1 failed, 1 skipped, 0 pending.\n"
 	if stdout.String() != expected {
 		t.Fatalf("expected no QA verdict line with a failed Task:\n%q\ngot:\n%q", expected, stdout.String())

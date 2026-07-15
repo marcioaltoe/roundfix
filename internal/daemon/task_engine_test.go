@@ -960,6 +960,15 @@ func hasTaskSettlementEvent(t *testing.T, events []runevent.RunEvent, taskID str
 	return false
 }
 
+func taskOutcomeByID(outcomes []TaskOutcome, taskID string) (TaskOutcome, bool) {
+	for _, outcome := range outcomes {
+		if outcome.Task == taskID {
+			return outcome, true
+		}
+	}
+	return TaskOutcome{}, false
+}
+
 func copyTreeForSchedulerTest(source string, destination string) error {
 	if err := os.MkdirAll(destination, 0o755); err != nil {
 		return err
@@ -1754,7 +1763,7 @@ func TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents(t *testing.T
 			"task_03": spec.StatusCompleted,
 		},
 	}
-	verifier := &taskFakeVerifier{calls: fixture.calls, failOn: map[string]error{"echo t1": errors.New("gate broke")}}
+	verifier := &taskFakeVerifier{calls: fixture.calls, failOn: map[string]error{"echo t1": errors.New("exit status 7")}}
 	committer := &engineFakeCommitter{calls: fixture.calls}
 	engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
 
@@ -1781,6 +1790,27 @@ func TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents(t *testing.T
 	if len(committer.messages) != 1 || !strings.HasPrefix(committer.messages[0], "chore: tidy the build files") {
 		t.Fatalf("expected only the independent Task committed with chore mapping, got %v", committer.messages)
 	}
+	taskOneOutcome, ok := taskOutcomeByID(result.Outcomes, "task_01")
+	if !ok {
+		t.Fatalf("expected task_01 outcome, got %+v", result.Outcomes)
+	}
+	if taskOneOutcome.Status != string(spec.StatusFailed) {
+		t.Fatalf("expected task_01 failed outcome, got %+v", taskOneOutcome)
+	}
+	taskTwoOutcome, ok := taskOutcomeByID(result.Outcomes, "task_02")
+	if !ok {
+		t.Fatalf("expected task_02 outcome, got %+v", result.Outcomes)
+	}
+	if taskTwoOutcome.Status != string(taskRunSkipped) || taskTwoOutcome.Reason != "needs not completed: task_01" {
+		t.Fatalf("expected task_02 skipped outcome with unmet need reason, got %+v", taskTwoOutcome)
+	}
+	taskThreeOutcome, ok := taskOutcomeByID(result.Outcomes, "task_03")
+	if !ok {
+		t.Fatalf("expected task_03 outcome, got %+v", result.Outcomes)
+	}
+	if taskThreeOutcome.Status != string(spec.StatusCompleted) || taskThreeOutcome.Reason != "" {
+		t.Fatalf("expected task_03 completed outcome without reason, got %+v", taskThreeOutcome)
+	}
 	if runner.requests[2].Batch.Number != 2 {
 		t.Fatalf("expected skipped Task to not consume an execution ordinal, got Batch %d", runner.requests[2].Batch.Number)
 	}
@@ -1797,14 +1827,26 @@ func TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents(t *testing.T
 	if skipEvent.ReviewIssue != "task_02" || skipEvent.Batch != 0 || !strings.Contains(string(skipEvent.Payload), "task_01") {
 		t.Fatalf("expected skip event naming the unmet need, got %+v payload %s", skipEvent, skipEvent.Payload)
 	}
-	var settledFailed bool
+	if got := eventPayloadString(t, *skipEvent, "reason"); got != taskTwoOutcome.Reason {
+		t.Fatalf("expected skipped outcome reason to match journal payload %q, got %q", got, taskTwoOutcome.Reason)
+	}
+	var failedEvent *runevent.RunEvent
 	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonTask) {
-		if event.ReviewIssue == "task_01" && strings.Contains(string(event.Payload), "verification failed") {
-			settledFailed = true
+		if event.ReviewIssue == "task_01" && eventPayloadString(t, event, "phase") == "settled" {
+			matched := event
+			failedEvent = &matched
 		}
 	}
-	if !settledFailed {
+	if failedEvent == nil {
 		t.Fatal("expected failed settlement event journaling the verification failure reason")
+	}
+	if got := eventPayloadString(t, *failedEvent, "reason"); got != taskOneOutcome.Reason {
+		t.Fatalf("expected failed outcome reason to match journal payload %q, got %q", got, taskOneOutcome.Reason)
+	}
+	for _, expected := range []string{`Verification failed: command "echo t1"`, "exit status", "diagnostics:"} {
+		if !strings.Contains(taskOneOutcome.Reason, expected) {
+			t.Fatalf("expected verification outcome reason to contain %q, got %q", expected, taskOneOutcome.Reason)
+		}
 	}
 	kinds := fixture.sink.kinds()
 	last := taskEventsOfKind(fixture.sink, runevent.KindDaemonOutcome)

@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0028-settlement-and-reporting
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -21,17 +21,17 @@ Make the implement report diagnostic on its own: the Daemon's cycle result carri
 
 ## Subtasks
 
-- [ ] Accumulate per-Task outcomes in the engine at settle and skip points
-- [ ] Extend the cycle result and thread it to the implement report renderer
-- [ ] Render the indented reason lines for failed and skipped Tasks
-- [ ] Tests: engine test asserting outcomes match journaled reasons for failed, skipped, and completed Tasks; report rendering fixtures with reasons present and absent
+- [x] Accumulate per-Task outcomes in the engine at settle and skip points
+- [x] Extend the cycle result and thread it to the implement report renderer
+- [x] Render the indented reason lines for failed and skipped Tasks
+- [x] Tests: engine test asserting outcomes match journaled reasons for failed, skipped, and completed Tasks; report rendering fixtures with reasons present and absent
 
 ## Acceptance Criteria
 
-- [ ] A Run with a failed Task prints the failed line followed by an indented reason naming the failed step (command and exit status for Verification failures)
-- [ ] A skipped Task's reason names the unmet needs, matching the journal payload
-- [ ] Completed Task lines are byte-identical to today
-- [ ] The full test suite passes
+- [x] A Run with a failed Task prints the failed line followed by an indented reason naming the failed step (command and exit status for Verification failures)
+- [x] A skipped Task's reason names the unmet needs, matching the journal payload
+- [x] Completed Task lines are byte-identical to today
+- [x] The full test suite passes
 
 ## Context
 
@@ -47,3 +47,12 @@ Make the implement report diagnostic on its own: the Daemon's cycle result carri
 ## References
 
 `_prd.md` → Goal 3, User Story 5, Core Feature 5; `_techspec.md` → Build Order 5, Interfaces (TaskOutcome, TaskCycleResult), API Contracts (implement report), Decisions (in-memory result, additive line).
+
+## Result
+
+- Added `TaskOutcome` to the daemon task-cycle result with task id, status, and the same one-line reason used in settlement/skip Run Events.
+- Threaded in-memory outcomes into the Implement Command report renderer; failed and skipped Task lines now get an additive `  reason: ...` line, while completed Task lines keep the existing byte shape.
+- Verification failures now use the existing terminal verification reason format with command, exit status, and diagnostics path.
+- Evidence: `TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents` asserts failed/skipped/completed outcomes and verifies failed/skipped reasons match journal payloads.
+- Evidence: `TestRenderImplementTaskLinesAddsReasonsForFailedAndSkippedTasks` covers report reason rendering and completed-line stability; `TestRunImplementReportPrintsVerificationFailureReason` covers the buffer-captured CLI Verification failure report.
+- Verification passed: `rtk grep -q "TaskOutcome" internal/daemon/task_engine.go`; `rtk go test ./internal/daemon/... ./internal/cli/...` (509 passed); `rtk go build -buildvcs=false ./...`; `rtk make verify` (1225 passed, skills check passed, build clean).
