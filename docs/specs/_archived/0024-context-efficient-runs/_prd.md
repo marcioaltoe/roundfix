@@ -1,9 +1,12 @@
 ---
 spec: 0024-context-efficient-runs
-status: active
+status: archived
 created: 2026-07-10
 surfaces: [cli, backend, data, infra, docs]
+archived: "2026-07-15"
+source_slug: 0024-context-efficient-runs
 ---
+
 
 # Context-Efficient Runs
 

@@ -1,9 +1,12 @@
 ---
 spec: 0026-model-fallback-guardrail
-status: active
+status: archived
 created: 2026-07-11
 surfaces: [cli, backend, docs]
+archived: "2026-07-15"
+source_slug: 0026-model-fallback-guardrail
 ---
+
 
 # Model Fallback Guardrail
 

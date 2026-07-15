@@ -1,9 +1,12 @@
 ---
 spec: 0023-agent-model-catalog-and-isolation
-status: active
+status: archived
 created: 2026-07-10
 surfaces: [frontend, cli, data, infra, docs]
+archived: "2026-07-15"
+source_slug: 0023-agent-model-catalog-and-isolation
 ---
+
 
 # Agent Model Catalog and Isolation
 

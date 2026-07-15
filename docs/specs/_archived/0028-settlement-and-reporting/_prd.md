@@ -1,9 +1,12 @@
 ---
 spec: 0028-settlement-and-reporting
-status: active
+status: archived
 created: 2026-07-14
 surfaces: [cli, docs]
+archived: "2026-07-15"
+source_slug: 0028-settlement-and-reporting
 ---
+
 
 # Settlement and Reporting Robustness
 

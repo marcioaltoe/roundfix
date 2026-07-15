@@ -1,9 +1,12 @@
 ---
 spec: 0025-optional-reasoning-effort
-status: active
+status: archived
 created: 2026-07-11
 surfaces: [cli, backend, docs]
+archived: "2026-07-15"
+source_slug: 0025-optional-reasoning-effort
 ---
+
 
 # Optional Reasoning Effort
 

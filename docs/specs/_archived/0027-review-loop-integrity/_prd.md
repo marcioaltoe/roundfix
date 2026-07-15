@@ -1,9 +1,12 @@
 ---
 spec: 0027-review-loop-integrity
-status: active
+status: archived
 created: 2026-07-14
 surfaces: [cli, docs]
+archived: "2026-07-15"
+source_slug: 0027-review-loop-integrity
 ---
+
 
 # Review Loop Integrity
 
