@@ -741,8 +741,8 @@ Review Run output and completion contract:
 
   ```text
   issue 001 resolved — major: handle test issue
-  This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 failed, 0 unresolved.
-  Pull Request cumulative: 1 resolved, 0 invalid, 0 failed, 0 unresolved.
+  This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.
+  Pull Request cumulative: 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.
   ```
 
   Review Issue statuses in the first line are `resolved`, `invalid`,
@@ -753,8 +753,8 @@ Review Run output and completion contract:
   lines; for example:
 
   ```text
-  This Run (TimedOut after 0 Round(s)): 0 resolved, 0 invalid, 0 failed, 0 unresolved.
-  Pull Request cumulative: 0 resolved, 0 invalid, 0 failed, 0 unresolved.
+  This Run (TimedOut after 0 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.
+  Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.
   ```
 
 - Roundfix publishes Outcome Comments on Review Source threads for
@@ -1238,8 +1238,13 @@ status updates.
 4. Make valid fixes in the working tree and update or add focused tests.
 5. Update only assigned Review Issue statuses:
    - `resolved` for valid issues fixed by the Batch.
-   - `invalid` for false positives or findings that do not apply.
-   - `failed` only when the assigned issue cannot be safely completed.
+   - `invalid` for false positives or findings that do not apply. Also set
+     `terminal_reason` in the issue frontmatter to a one-line verifiable
+     triage reason — Roundfix publishes it in the thread's Outcome Comment,
+     so a missing reason leaves the reviewer with a generic message.
+   - `failed` only when the assigned issue cannot be safely completed. Set
+     `terminal_reason` to the blocking cause when known; the Daemon fills it
+     from Verification diagnostics otherwise.
 6. Run focused checks while working when they help prove the edit. The Daemon
    runs the authoritative Verification after the Agent turn and sends one
    Verification Feedback prompt only on an attempt-1 command failure.

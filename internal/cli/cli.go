@@ -1869,6 +1869,7 @@ func completeStoppedRunRecord(runStore *store.Store, runID string, notifier roun
 type reviewIssueReportCounts struct {
 	resolved   int
 	invalid    int
+	duplicated int
 	failed     int
 	unresolved int
 }
@@ -1888,10 +1889,10 @@ func printReviewIssueReport(stdout io.Writer, outcome string, roundsCompleted in
 		fmt.Fprintf(stdout, "issue %03d %s — %s%s\n", index+1, status, strings.TrimSpace(current.Title), reviewIssueReasonSuffix(current, status))
 	}
 	cumulativeCounts := countReviewIssueReportStatuses(report.cumulativeIssues)
-	fmt.Fprintf(stdout, "This Run (%s after %d Round(s)): %d resolved, %d invalid, %d failed, %d unresolved.\n",
-		reviewIssueOutcomeDisplay(outcome), roundsCompleted, runCounts.resolved, runCounts.invalid, runCounts.failed, runCounts.unresolved)
-	fmt.Fprintf(stdout, "Pull Request cumulative: %d resolved, %d invalid, %d failed, %d unresolved.\n",
-		cumulativeCounts.resolved, cumulativeCounts.invalid, cumulativeCounts.failed, cumulativeCounts.unresolved)
+	fmt.Fprintf(stdout, "This Run (%s after %d Round(s)): %d resolved, %d invalid, %d duplicated, %d failed, %d unresolved.\n",
+		reviewIssueOutcomeDisplay(outcome), roundsCompleted, runCounts.resolved, runCounts.invalid, runCounts.duplicated, runCounts.failed, runCounts.unresolved)
+	fmt.Fprintf(stdout, "Pull Request cumulative: %d resolved, %d invalid, %d duplicated, %d failed, %d unresolved.\n",
+		cumulativeCounts.resolved, cumulativeCounts.invalid, cumulativeCounts.duplicated, cumulativeCounts.failed, cumulativeCounts.unresolved)
 }
 
 func (counts *reviewIssueReportCounts) add(status string) {
@@ -1900,6 +1901,8 @@ func (counts *reviewIssueReportCounts) add(status string) {
 		counts.resolved++
 	case rounds.StatusInvalid:
 		counts.invalid++
+	case rounds.StatusDuplicated:
+		counts.duplicated++
 	case rounds.StatusFailed:
 		counts.failed++
 	case "unresolved":

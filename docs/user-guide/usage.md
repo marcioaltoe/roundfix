@@ -205,8 +205,8 @@ history:
 
 ```text
 issue 001 resolved — major: handle test issue
-This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 failed, 0 unresolved.
-Pull Request cumulative: 1 resolved, 0 invalid, 0 failed, 0 unresolved.
+This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.
+Pull Request cumulative: 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.
 ```
 
 Review Issue statuses are `resolved`, `invalid`, `failed`, `duplicated`, or

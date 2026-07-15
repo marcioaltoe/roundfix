@@ -1992,8 +1992,8 @@ func TestRunWatchPrintsDeterministicStdoutReport(t *testing.T) {
 			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"},
 			wantStdout: "" +
 				"issue 001 resolved — major: handle test issue\n" +
-				"This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n" +
-				"Pull Request cumulative: 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n",
+				"This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
+				"Pull Request cumulative: 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n",
 		},
 		{
 			name: "unresolved",
@@ -2005,8 +2005,8 @@ func TestRunWatchPrintsDeterministicStdoutReport(t *testing.T) {
 			wantCode: exitRunFailed,
 			wantStdout: "" +
 				"issue 001 failed — major: handle test issue\n" +
-				"This Run (Unresolved after 1 Round(s)): 0 resolved, 0 invalid, 1 failed, 0 unresolved.\n" +
-				"Pull Request cumulative: 0 resolved, 0 invalid, 1 failed, 0 unresolved.\n",
+				"This Run (Unresolved after 1 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 1 failed, 0 unresolved.\n" +
+				"Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 1 failed, 0 unresolved.\n",
 		},
 		{
 			name: "max rounds reached",
@@ -2048,8 +2048,8 @@ resolve:
 			wantStdout: "" +
 				"issue 001 resolved — major: handle first issue\n" +
 				"issue 002 failed — major: handle second issue\n" +
-				"This Run (MaxRoundsReached after 1 Round(s)): 1 resolved, 0 invalid, 1 failed, 0 unresolved.\n" +
-				"Pull Request cumulative: 1 resolved, 0 invalid, 1 failed, 0 unresolved.\n",
+				"This Run (MaxRoundsReached after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 1 failed, 0 unresolved.\n" +
+				"Pull Request cumulative: 1 resolved, 0 invalid, 0 duplicated, 1 failed, 0 unresolved.\n",
 		},
 		{
 			name: "stopped after fetch",
@@ -2061,8 +2061,8 @@ resolve:
 			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"},
 			wantStdout: "" +
 				"issue 001 unresolved — major: handle test issue\n" +
-				"This Run (Stopped after 1 Round(s)): 0 resolved, 0 invalid, 0 failed, 1 unresolved.\n" +
-				"Pull Request cumulative: 0 resolved, 0 invalid, 0 failed, 1 unresolved.\n",
+				"This Run (Stopped after 1 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 0 failed, 1 unresolved.\n" +
+				"Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 0 failed, 1 unresolved.\n",
 		},
 	}
 
@@ -2102,8 +2102,8 @@ func TestRunResolvePrintsDeterministicStdoutReport(t *testing.T) {
 	}
 	wantStdout := "" +
 		"issue 001 resolved — major: handle test issue\n" +
-		"This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n" +
-		"Pull Request cumulative: 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n"
+		"This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
+		"Pull Request cumulative: 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("stdout mismatch\nwant:\n%q\ngot:\n%q\nstderr:\n%s", wantStdout, stdout.String(), stderr.String())
 	}
@@ -2131,8 +2131,8 @@ func TestPrintReviewIssueReportSplitsRunAndCumulativeCountsAndReasons(t *testing
 		"issue 001 invalid — major: generated file — reason: invalid: generated file\n" +
 		"issue 002 failed — major: failing verification — reason: Verification failed: make verify exit status 1\n" +
 		"issue 003 unresolved — major: still open\n" +
-		"This Run (Clean Unverified after 2 Round(s)): 0 resolved, 1 invalid, 1 failed, 1 unresolved.\n" +
-		"Pull Request cumulative: 1 resolved, 1 invalid, 1 failed, 1 unresolved.\n"
+		"This Run (Clean Unverified after 2 Round(s)): 0 resolved, 1 invalid, 0 duplicated, 1 failed, 1 unresolved.\n" +
+		"Pull Request cumulative: 1 resolved, 1 invalid, 0 duplicated, 1 failed, 1 unresolved.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("stdout mismatch\nwant:\n%q\ngot:\n%q", wantStdout, stdout.String())
 	}
@@ -2475,8 +2475,8 @@ func TestRunOutcomeNotificationsDisabledSkipsNotifier(t *testing.T) {
 	}
 	wantStdout := "" +
 		"issue 001 resolved — major: handle test issue\n" +
-		"This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n" +
-		"Pull Request cumulative: 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n"
+		"This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
+		"Pull Request cumulative: 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("stdout mismatch\nwant:\n%q\ngot:\n%q\nstderr:\n%s", wantStdout, stdout.String(), stderr.String())
 	}
@@ -2763,8 +2763,8 @@ budget:
 		t.Fatalf("expected BudgetExceeded exit %d, got %d stderr=%q", exitRunFailed, code, stderr.String())
 	}
 	wantStdout := "" +
-		"This Run (BudgetExceeded after 0 Round(s)): 0 resolved, 0 invalid, 0 failed, 0 unresolved.\n" +
-		"Pull Request cumulative: 0 resolved, 0 invalid, 0 failed, 0 unresolved.\n"
+		"This Run (BudgetExceeded after 0 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
+		"Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected BudgetExceeded stdout report %q, got %q", wantStdout, stdout.String())
 	}
@@ -2790,8 +2790,8 @@ func TestOperationalStdoutReportStartsAfterTerminalRunLine(t *testing.T) {
 			terminalNeedle: "reached Clean",
 			wantStdout: "" +
 				"issue 001 resolved — major: handle test issue\n" +
-				"This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n" +
-				"Pull Request cumulative: 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n",
+				"This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
+				"Pull Request cumulative: 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n",
 		},
 		{
 			name: "resolve",
@@ -2803,8 +2803,8 @@ func TestOperationalStdoutReportStartsAfterTerminalRunLine(t *testing.T) {
 			terminalNeedle: "reached Clean",
 			wantStdout: "" +
 				"issue 001 resolved — major: handle test issue\n" +
-				"This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n" +
-				"Pull Request cumulative: 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n",
+				"This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
+				"Pull Request cumulative: 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n",
 		},
 	}
 
@@ -2959,8 +2959,8 @@ watch:
 		t.Fatalf("expected watch timeout exit 1, got %d", code)
 	}
 	wantStdout := "" +
-		"This Run (TimedOut after 0 Round(s)): 0 resolved, 0 invalid, 0 failed, 0 unresolved.\n" +
-		"Pull Request cumulative: 0 resolved, 0 invalid, 0 failed, 0 unresolved.\n"
+		"This Run (TimedOut after 0 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
+		"Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected timeout stdout report %q, got %q", wantStdout, stdout.String())
 	}
@@ -3010,8 +3010,8 @@ watch:
 	}
 	wantStdout := "" +
 		"issue 001 resolved — major: handle test issue\n" +
-		"This Run (Clean Unverified after 1 Round(s)): 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n" +
-		"Pull Request cumulative: 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n"
+		"This Run (Clean Unverified after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
+		"Pull Request cumulative: 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected CleanUnverified stdout report %q, got %q", wantStdout, stdout.String())
 	}
@@ -3127,8 +3127,8 @@ func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
 		t.Fatalf("expected clean Stop Request exit 0, got %d", code)
 	}
 	wantStdout := "" +
-		"This Run (Stopped after 0 Round(s)): 0 resolved, 0 invalid, 0 failed, 0 unresolved.\n" +
-		"Pull Request cumulative: 0 resolved, 0 invalid, 0 failed, 0 unresolved.\n"
+		"This Run (Stopped after 0 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
+		"Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected stopped stdout report %q, got %q", wantStdout, stdout.String())
 	}
@@ -3171,8 +3171,8 @@ func TestRunResolveStopRequestDuringAgentPreservesWorkAndSkipsDaemonMutations(t 
 	}
 	wantStdout := "" +
 		"issue 001 unresolved — major: handle test issue\n" +
-		"This Run (Stopped after 1 Round(s)): 0 resolved, 0 invalid, 0 failed, 1 unresolved.\n" +
-		"Pull Request cumulative: 0 resolved, 0 invalid, 0 failed, 1 unresolved.\n"
+		"This Run (Stopped after 1 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 0 failed, 1 unresolved.\n" +
+		"Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 0 failed, 1 unresolved.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected stopped stdout report %q, got %q", wantStdout, stdout.String())
 	}
@@ -3304,8 +3304,8 @@ func TestRunResolveHonorsRoundSelector(t *testing.T) {
 	}
 	wantStdout := "" +
 		"issue 001 resolved — major: handle test issue\n" +
-		"This Run (Unresolved after 1 Round(s)): 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n" +
-		"Pull Request cumulative: 1 resolved, 0 invalid, 0 failed, 1 unresolved.\n"
+		"This Run (Unresolved after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
+		"Pull Request cumulative: 1 resolved, 0 invalid, 0 duplicated, 0 failed, 1 unresolved.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected Unresolved stdout report %q, got %q", wantStdout, stdout.String())
 	}
@@ -3342,8 +3342,8 @@ func TestRunResolveDeduplicatesBeforeBatching(t *testing.T) {
 	wantStdout := "" +
 		"issue 001 duplicated — major: handle test issue\n" +
 		"issue 002 resolved — major: handle test issue\n" +
-		"This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n" +
-		"Pull Request cumulative: 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n"
+		"This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 1 duplicated, 0 failed, 0 unresolved.\n" +
+		"Pull Request cumulative: 1 resolved, 0 invalid, 1 duplicated, 0 failed, 0 unresolved.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected duplicate stdout report %q, got %q", wantStdout, stdout.String())
 	}
@@ -3403,8 +3403,8 @@ func TestRunResolveVerificationFailureDoesNotCommit(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "issue 001 failed — major: handle test issue — reason: Verification failed") ||
 		!strings.Contains(stdout.String(), "tests failed") ||
-		!strings.Contains(stdout.String(), "This Run (Unresolved after 1 Round(s)): 0 resolved, 0 invalid, 1 failed, 0 unresolved.") ||
-		!strings.Contains(stdout.String(), "Pull Request cumulative: 0 resolved, 0 invalid, 1 failed, 0 unresolved.") {
+		!strings.Contains(stdout.String(), "This Run (Unresolved after 1 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 1 failed, 0 unresolved.") ||
+		!strings.Contains(stdout.String(), "Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 1 failed, 0 unresolved.") {
 		t.Fatalf("expected failed stdout report with reason, got %q", stdout.String())
 	}
 	if verifier.calls != 2 {
@@ -3492,8 +3492,8 @@ resolve:
 	wantStdout := "" +
 		"issue 001 resolved — major: handle first issue\n" +
 		"issue 002 resolved — major: handle second issue\n" +
-		"This Run (Clean after 1 Round(s)): 2 resolved, 0 invalid, 0 failed, 0 unresolved.\n" +
-		"Pull Request cumulative: 2 resolved, 0 invalid, 0 failed, 0 unresolved.\n"
+		"This Run (Clean after 1 Round(s)): 2 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
+		"Pull Request cumulative: 2 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected clean stdout report %q, got %q", wantStdout, stdout.String())
 	}
@@ -4272,8 +4272,8 @@ func TestRunResolveAgentFailureMarksBatchFailed(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "issue 001 failed — major: handle test issue — reason: Agent failed") ||
 		!strings.Contains(stdout.String(), "agent crashed") ||
-		!strings.Contains(stdout.String(), "This Run (Unresolved after 1 Round(s)): 0 resolved, 0 invalid, 1 failed, 0 unresolved.") ||
-		!strings.Contains(stdout.String(), "Pull Request cumulative: 0 resolved, 0 invalid, 1 failed, 0 unresolved.") {
+		!strings.Contains(stdout.String(), "This Run (Unresolved after 1 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 1 failed, 0 unresolved.") ||
+		!strings.Contains(stdout.String(), "Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 1 failed, 0 unresolved.") {
 		t.Fatalf("expected failed stdout report with reason, got %q", stdout.String())
 	}
 	if !strings.Contains(stderr.String(), "agent crashed") {
@@ -9271,8 +9271,8 @@ func TestResolvePrintsIssueSummaryAfterCompletion(t *testing.T) {
 	}
 	wantStdout := "" +
 		"issue 001 resolved — major: handle test issue\n" +
-		"This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n" +
-		"Pull Request cumulative: 1 resolved, 0 invalid, 0 failed, 0 unresolved.\n"
+		"This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
+		"Pull Request cumulative: 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected stdout report %q, got %q", wantStdout, stdout.String())
 	}
