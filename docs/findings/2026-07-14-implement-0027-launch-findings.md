@@ -21,6 +21,12 @@ sessão, antes do Run produtivo `run_20260714T181454Z_6cb742028a8d0658`.
   do Roundfix.
 - Contorno: exceção one-Run `--model gpt-5.5 --reasoning-effort xhigh` (cadeia comprovada).
   Repin do config para a família 5.6 só quando o codex-acp anunciá-la.
+- **Diagnóstico adicional (2026-07-15):** a lista anunciada é montada por sessão (fetch dinâmico
+  com fallback) — em 15/07 ela passou a incluir `gpt-5.6-sol` e o preflight voltou a rejeitar
+  modelos inválidos corretamente. Sessões criadas com minutos de diferença podem ver listas
+  diferentes, então o probe nunca garante a visão da sessão do Batch; o fix durável é a rejeição
+  em tempo de Batch virar falha acionável (modelo + lista anunciada + recovery) em vez de
+  `agent/protocol error`. Specado em `docs/specs/0029-launch-and-recovery-fixes/`.
 
 ## 2. `--detach` morre no preflight sem stderr
 
@@ -34,6 +40,12 @@ Sugestão upstream: quando o filho detached morre antes do handshake com stderr 
 deveria reportar ao menos o exit code e o caminho de qualquer log parcial; hoje o chamador fica
 sem qualquer pista. Investigar por que o preflight do filho detached falha onde o foreground
 passa (possível interação com o probe do modelo/reasoning na re-execução self-detach).
+
+**Root cause (2026-07-15, repro mínimo de spawn):** `detachHandshakeTimeout = 10s` é menor que
+o Preflight Validation real — o probe de modelo mediu 11.4s nesta máquina. O pai estoura o
+timeout, mata o filho no meio do preflight (que ainda não escreveu nada no console temp) e
+retransmite um arquivo vazio, silenciosamente. O branch de timeout nem imprime diagnóstico.
+Fix specado em `docs/specs/0029-launch-and-recovery-fixes/` (handshake em duas fases).
 
 ## 3. Settle resolve o worktree kept errado como superfície
 
