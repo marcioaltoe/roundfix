@@ -73,12 +73,14 @@ Evidence by acceptance criterion:
 - Audit does not remove skills or edit `skills-lock.json`, and no finding action emits an executable removal command: `test_extra_locked_skills_are_informational_only_when_requested`, `test_local_and_untracked_skills_are_not_removal_candidates`, and `test_malformed_lockfile_is_invalid_input_without_writes`.
 - Unchanged canonical setup snapshots produce no diff: `test_check_succeeds_when_canonical_snapshots_match`.
 - Snapshot check reports drift and matching snapshots pass: `test_check_reports_drift_when_canonical_content_differs` and `test_check_succeeds_when_canonical_snapshots_match`.
+- Canonical repository paths remain ordered and portable while digests resolve from the sibling skill tree: `test_text_setup_sources_accept_canonical_repository_paths` and `test_sync_preserves_canonical_path_and_hashes_skill_file`.
 - Normal audit remains portable without a canonical setups directory: `test_audit_is_portable_without_canonical_setups_directory`.
 
 Verification:
 
 - `rtk python3 -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_skills*.py'` — passed, 6 tests.
-- `rtk python3 -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_sync_setups*.py'` — passed, 4 tests.
+- `rtk python3 -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_sync_setups*.py'` — passed, 6 tests.
+- `rtk env PYTHONDONTWRITEBYTECODE=1 python3 .agents/skills/setup-context-driven/scripts/context_setup.py sync-setups --source-dir /Users/marcio/dev/skills/setups --check --format json` — passed with zero findings against the canonical TypeScript/Bun, Go CLI, and Rust CLI presets.
 - `rtk git diff --check` — passed.
 - `rtk python3 -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_audit*.py'` — passed, 6 tests.
 - `rtk python3 -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_apply*.py'` — passed, 8 tests.

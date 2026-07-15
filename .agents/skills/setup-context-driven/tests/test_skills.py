@@ -41,8 +41,8 @@ class SkillAuditTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = Path(temp_dir)
             write_compliant_repository(repo, "rust-cli")
-            write_skill(repo, "the-fool")
-            write_lockfile(repo, ["the-fool"])
+            write_skill(repo, "autoresearch")
+            write_lockfile(repo, ["autoresearch"])
             before = snapshot_files(repo)
 
             hidden = run_audit(repo, "--format", "json")

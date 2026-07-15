@@ -6,7 +6,7 @@
   "title": "Autonomous Supervisor and ACP Runtime model",
   "dependsOn": ["context-workflow"],
   "conflictsWith": [],
-  "requiredSkills": ["roundfix", "implement-task", "implement-spec", "evidence-gate"],
+  "requiredSkills": ["implement-task", "implement-spec", "evidence-gate"],
   "requiredDecisions": [
     "autonomous.enabled",
     "runtime.backend",

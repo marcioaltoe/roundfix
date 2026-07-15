@@ -1271,6 +1271,11 @@ def build_source_setup_snapshot(
         for skill in current_snapshot.get("skills", [])
         if isinstance(skill, dict) and isinstance(skill.get("path"), str)
     }
+    current_by_name = {
+        skill.get("name"): skill
+        for skill in current_snapshot.get("skills", [])
+        if isinstance(skill, dict) and isinstance(skill.get("name"), str)
+    }
     skills: list[dict] = []
     seen_names: set[str] = set()
     seen_paths: set[str] = set()
@@ -1279,6 +1284,7 @@ def build_source_setup_snapshot(
             raw_skill=raw_skill,
             source_dir=source_dir,
             current_by_path=current_by_path,
+            current_by_name=current_by_name,
             source_path=source_path,
         )
         findings.extend(skill_findings)
@@ -1391,6 +1397,7 @@ def normalize_source_skill(
     raw_skill: object,
     source_dir: Path,
     current_by_path: dict[str, dict],
+    current_by_name: dict[str, dict],
     source_path: Path,
 ) -> tuple[dict | None, list[Finding]]:
     findings: list[Finding] = []
@@ -1429,10 +1436,10 @@ def normalize_source_skill(
         )
         return None, findings
 
-    current_skill = current_by_path.get(normalized_path, {})
     name = raw_data.get("name")
     if not isinstance(name, str) or not name.strip():
         name = infer_skill_name(normalized_path)
+    current_skill = current_by_path.get(normalized_path) or current_by_name.get(str(name), {})
     source = raw_data.get("source")
     if not isinstance(source, dict):
         source = lock_style_source(raw_data)
@@ -1440,8 +1447,8 @@ def normalize_source_skill(
         source = current_skill["source"]
     digest = raw_data.get("contentDigest") or raw_data.get("computedHash")
     if not isinstance(digest, str) or not digest:
-        source_skill_path = source_dir / normalized_path
-        if source_skill_path.is_file():
+        source_skill_path = resolve_canonical_skill_file(source_dir, raw_path)
+        if source_skill_path is not None and source_skill_path.is_file():
             digest = managed_digest(source_skill_path.read_text(encoding="utf-8"))
         elif isinstance(current_skill.get("contentDigest"), str):
             digest = current_skill["contentDigest"]
@@ -1467,12 +1474,26 @@ def normalize_skill_path(raw_path: str) -> str | None:
     value = raw_path.strip().replace("\\", "/")
     if not value:
         return None
-    if "/" not in value:
-        value = f".agents/skills/{value}/SKILL.md"
     candidate = Path(value)
     if candidate.is_absolute() or ".." in candidate.parts:
         return None
+    if "/" not in value:
+        return f".agents/skills/{value}/SKILL.md"
     return candidate.as_posix()
+
+
+def resolve_canonical_skill_file(source_dir: Path, raw_path: str) -> Path | None:
+    value = raw_path.strip().replace("\\", "/")
+    candidate = Path(value)
+    if not value or candidate.is_absolute() or ".." in candidate.parts:
+        return None
+    if candidate.parts and candidate.parts[0] == "skills":
+        source_path = source_dir.parent / candidate
+    else:
+        source_path = source_dir / candidate
+    if source_path.is_dir():
+        return source_path / "SKILL.md"
+    return source_path
 
 
 def infer_skill_name(path: str) -> str:

@@ -56,8 +56,8 @@ class ProfileMacroFlowTests(unittest.TestCase):
             install_profile_skills(repo, "rust-cli", omit={"agentic-cli-design"})
             missing_required = run_audit(repo)
             write_skill(repo, "agentic-cli-design")
-            write_skill(repo, "the-fool")
-            write_lockfile(repo, ["the-fool"])
+            write_skill(repo, "autoresearch")
+            write_lockfile(repo, ["autoresearch"])
             compliant_without_extras = run_audit(repo)
             extras_visible = run_audit_cli(repo, "--show-extra-skills")
 
