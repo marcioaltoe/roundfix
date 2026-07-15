@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0028-settlement-and-reporting
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -22,18 +22,18 @@ Ship the teaching material with the behavior (skill-sync hard rule): the repo-ow
 
 ## Subtasks
 
-- [ ] Write-tasks authoring guidance: portability, build flags, effect-proving Verification
-- [ ] Roundfix Skill: settle, implement report, stop/lock, status vocabulary, doctor sections
-- [ ] Skill-check anchors updated with the text they anchor
-- [ ] Cross-read the PRD's Core Features and confirm each shipped behavior is described accurately
+- [x] Write-tasks authoring guidance: portability, build flags, effect-proving Verification
+- [x] Roundfix Skill: settle, implement report, stop/lock, status vocabulary, doctor sections
+- [x] Skill-check anchors updated with the text they anchor
+- [x] Cross-read the PRD's Core Features and confirm each shipped behavior is described accurately
 
 ## Acceptance Criteria
 
-- [ ] The skills check passes with the updated anchors
-- [ ] The skill's settle example includes the `commit <path>` line shape and the implement section documents the reason line
-- [ ] The skill no longer implies a dead owner always requires a manual force stop
-- [ ] The write-tasks guidance names the portable-forms and effect-proving rules
-- [ ] The full test suite passes
+- [x] The skills check passes with the updated anchors
+- [x] The skill's settle example includes the `commit <path>` line shape and the implement section documents the reason line
+- [x] The skill no longer implies a dead owner always requires a manual force stop
+- [x] The write-tasks guidance names the portable-forms and effect-proving rules
+- [x] The full test suite passes
 
 ## Context
 
@@ -54,3 +54,16 @@ Ship the teaching material with the behavior (skill-sync hard rule): the repo-ow
 ## References
 
 `_prd.md` → Core Feature 7, Goals 3–4; `_techspec.md` → Build Order 8, Risks (report consumers), Coverage Map (Core Feature 7); `docs/agents/skill-governance.md`.
+
+## Result
+
+- Updated the repo-owned write-tasks guidance and task template to require portable Verification forms, `go build -buildvcs=false` for Go build checks, and executable checks that prove the Task's effect.
+- Updated the canonical Roundfix Skill and regenerated the embedded `skills/` mirror with settle `commit <path>` lines, implement `reason:` lines, orphan-lock reclamation guidance, status synonym normalization, no-op Task commit warnings, and adapter readiness diagnostics.
+- Added required phrase anchors in `skills/skills.go` for the new Roundfix Skill contracts.
+- Acceptance evidence:
+  - `rtk go run -buildvcs=false ./cmd/roundfix skills check` passed with the updated anchors.
+  - `rtk grep -q "buildvcs" .agents/skills/write-tasks/SKILL.md` passed.
+  - `rtk grep -q "commit <path>" skills/roundfix/SKILL.md` passed.
+  - `rtk go test ./...` passed, 1235 tests.
+  - `rtk go build -buildvcs=false ./...` passed.
+  - `rtk make verify` passed: `go test ./...` 1235 tests, skill check passed, build passed.
