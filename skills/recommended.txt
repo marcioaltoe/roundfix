@@ -1,4 +1,5 @@
 agentic-cli-design
+autoresearch
 bubbletea
 coding-guidelines
 context7
