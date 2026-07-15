@@ -8,6 +8,7 @@ import hashlib
 import json
 import re
 import sys
+from datetime import date
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -77,6 +78,27 @@ class ManagedBlock:
 
 
 @dataclass(frozen=True)
+class ManagedBlockSpan:
+    managed_id: str
+    version: int
+    body: str
+    start: int
+    end: int
+
+
+@dataclass(frozen=True)
+class FileChange:
+    path: Path
+    content: str | None
+
+
+@dataclass(frozen=True)
+class ChangePlan:
+    changes: list[FileChange]
+    manifest: dict
+
+
+@dataclass(frozen=True)
 class AuditResult:
     findings: list[Finding]
 
@@ -99,6 +121,7 @@ class AuditResult:
             "ok": self.ok,
             "summary": self.summary,
             "findings": [finding.to_json() for finding in sorted_findings(self.findings)],
+            "plannedChanges": planned_changes_for_findings(self.findings),
         }
 
 
@@ -108,7 +131,8 @@ def main(argv: list[str] | None = None) -> int:
         print_top_level_help()
         return 0
     if args and args[0] == "apply":
-        return parse_unimplemented_command("apply", args[1:])
+        parser = apply_parser()
+        return run_apply_command(parser.parse_args(args[1:]))
     if args and args[0] == "sync-setups":
         return parse_unimplemented_command("sync-setups", args[1:])
     if args and args[0] == "audit":
@@ -139,6 +163,73 @@ def run_audit_command(options: argparse.Namespace) -> int:
     result, invalid_input = audit_repository(repo, catalog, options.profile)
     render_result(result, options.format)
     return exit_code_for(result, invalid_input)
+
+
+def run_apply_command(options: argparse.Namespace) -> int:
+    repo = resolve_repo(options.repo)
+    if not repo.is_dir():
+        print(f"Repository root is not a directory: {repo}", file=sys.stderr)
+        return 2
+
+    skill_root = Path(__file__).resolve().parents[1]
+    try:
+        catalog = load_asset_catalog(skill_root)
+    except AssetValidationError as error:
+        for diagnostic in error.diagnostics:
+            print(diagnostic, file=sys.stderr)
+        return 2
+
+    result, invalid_input, plan = plan_apply(
+        repo=repo,
+        catalog=catalog,
+        profile_override=options.profile,
+        decision_args=options.decision,
+    )
+    if result.summary["errors"] or result.summary["decisions"] or invalid_input:
+        render_result(result, options.format)
+        return exit_code_for(result, invalid_input)
+
+    try:
+        apply_change_plan(repo, plan)
+    except OSError as error:
+        failure = AuditResult(
+            sorted_findings(
+                [
+                    finding(
+                        "managed.apply.failed",
+                        "error",
+                        ".",
+                        "apply",
+                        f"Atomic apply failed: {error}.",
+                        "Fix filesystem permissions and rerun apply.",
+                    )
+                ]
+            )
+        )
+        render_result(failure, options.format)
+        return 1
+
+    applied = AuditResult(
+        [
+            finding(
+                "managed.apply.completed",
+                "info",
+                ".",
+                "apply",
+                "Managed setup content matches the selected profile.",
+                "No action needed.",
+            )
+        ]
+    )
+    render_result(applied, options.format)
+    return 0
+
+
+def resolve_repo(repo_arg: str) -> Path:
+    repo = Path(repo_arg).expanduser()
+    if not repo.is_absolute():
+        repo = Path.cwd() / repo
+    return repo.resolve(strict=False)
 
 
 def audit_repository(
@@ -172,6 +263,601 @@ def audit_repository(
     validate_documents(repo, expected_artifacts, findings)
 
     return AuditResult(sorted_findings(findings)), invalid_input
+
+
+def plan_apply(
+    repo: Path,
+    catalog: AssetCatalog,
+    profile_override: str | None,
+    decision_args: list[str],
+) -> tuple[AuditResult, bool, ChangePlan]:
+    findings: list[Finding] = []
+    existing_manifest, invalid_input = load_manifest_for_apply(repo, findings)
+    if invalid_input:
+        return empty_apply_result(findings, invalid_input)
+
+    if existing_manifest is not None and existing_manifest.get("schemaVersion") != 1:
+        findings.append(
+            finding(
+                "manifest.migration-required",
+                "error",
+                str(MANIFEST_PATH),
+                "manifest",
+                "Setup Manifest schemaVersion is not supported by apply.",
+                "Run a manifest migration before applying managed content.",
+            )
+        )
+        return empty_apply_result(findings, False)
+
+    profile_id = profile_override or (
+        existing_manifest.get("profile") if isinstance(existing_manifest, dict) else None
+    )
+    if not isinstance(profile_id, str) or profile_id not in catalog.profiles:
+        findings.append(
+            finding(
+                "profile.unknown",
+                "error",
+                str(MANIFEST_PATH),
+                str(profile_id),
+                "Apply requires one bundled profile.",
+                "Pass --profile with a bundled profile id.",
+            )
+        )
+        return empty_apply_result(findings, False)
+
+    cli_decisions, parse_findings = parse_decision_args(decision_args, catalog)
+    findings.extend(parse_findings)
+    if parse_findings:
+        return empty_apply_result(findings, True)
+
+    ordered_modules = catalog.ordered_modules_by_profile[profile_id]
+    expected_artifacts = expected_artifacts_for_profile(catalog, profile_id)
+    decisions = resolve_decisions(
+        catalog=catalog,
+        ordered_modules=ordered_modules,
+        existing_manifest=existing_manifest,
+        cli_decisions=cli_decisions,
+        findings=findings,
+    )
+    if findings:
+        return empty_apply_result(findings, False)
+
+    expected_by_id = {artifact.managed_id: artifact for artifact in expected_artifacts}
+    current_files = load_current_files(repo, expected_artifacts, existing_manifest, findings)
+    if findings:
+        return empty_apply_result(findings, False)
+
+    adoption_findings = require_adoption_decisions(
+        current_files=current_files,
+        expected_artifacts=expected_artifacts,
+        decisions=decisions,
+    )
+    findings.extend(adoption_findings)
+    if adoption_findings:
+        return empty_apply_result(findings, False)
+
+    changed_contents: dict[Path, str | None] = {}
+    for relative_path, artifacts in artifacts_by_path(expected_artifacts).items():
+        current = current_files.get(relative_path, "")
+        changed_contents[relative_path] = render_expected_path(
+            current=current,
+            artifacts=artifacts,
+        )
+
+    remove_obsolete_artifacts(
+        existing_manifest=existing_manifest,
+        expected_by_id=expected_by_id,
+        current_files=current_files,
+        changed_contents=changed_contents,
+    )
+
+    manifest = build_manifest(profile_id, ordered_modules, expected_artifacts, decisions, existing_manifest)
+    changed_contents[MANIFEST_PATH] = json.dumps(manifest, indent=2, sort_keys=False) + "\n"
+    changes = [
+        FileChange(path=path, content=content)
+        for path, content in sorted(changed_contents.items(), key=lambda item: item[0].as_posix())
+        if current_file_bytes(repo, path) != content_bytes(content)
+    ]
+    plan = ChangePlan(changes=changes, manifest=manifest)
+    validation_findings = validate_change_plan(repo, plan, expected_artifacts)
+    findings.extend(validation_findings)
+    return AuditResult(sorted_findings(findings)), False, plan
+
+
+def empty_apply_result(
+    findings: list[Finding],
+    invalid_input: bool,
+) -> tuple[AuditResult, bool, ChangePlan]:
+    return AuditResult(sorted_findings(findings)), invalid_input, ChangePlan([], {})
+
+
+def load_manifest_for_apply(
+    repo: Path,
+    findings: list[Finding],
+) -> tuple[dict | None, bool]:
+    manifest_path = repo / MANIFEST_PATH
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None, False
+    except json.JSONDecodeError as error:
+        findings.append(
+            finding(
+                "manifest.invalid",
+                "error",
+                str(MANIFEST_PATH),
+                "manifest",
+                f"Setup Manifest is not valid JSON: {error.msg}.",
+                "Fix the JSON syntax before applying managed content.",
+            )
+        )
+        return None, True
+    if not isinstance(manifest, dict):
+        findings.append(
+            finding(
+                "manifest.invalid",
+                "error",
+                str(MANIFEST_PATH),
+                "manifest",
+                "Setup Manifest must be a JSON object.",
+                "Replace it with the versioned manifest object.",
+            )
+        )
+        return None, True
+    return manifest, False
+
+
+def parse_decision_args(
+    decision_args: list[str],
+    catalog: AssetCatalog,
+) -> tuple[dict[str, object], list[Finding]]:
+    decisions: dict[str, object] = {}
+    findings: list[Finding] = []
+    for raw in decision_args:
+        if "=" not in raw:
+            findings.append(
+                finding(
+                    "manifest.invalid",
+                    "error",
+                    str(MANIFEST_PATH),
+                    "decision",
+                    f"Decision argument {raw!r} must use ID=VALUE.",
+                    "Pass decisions as --decision decision.id=value.",
+                )
+            )
+            continue
+        decision_id, raw_value = raw.split("=", 1)
+        decision_id = decision_id.strip()
+        if not decision_id:
+            findings.append(
+                finding(
+                    "manifest.invalid",
+                    "error",
+                    str(MANIFEST_PATH),
+                    "decision",
+                    "Decision argument is missing an id.",
+                    "Pass decisions as --decision decision.id=value.",
+                )
+            )
+            continue
+        decisions[decision_id] = parse_decision_value(decision_id, raw_value, catalog)
+    return decisions, findings
+
+
+def parse_decision_value(decision_id: str, raw_value: str, catalog: AssetCatalog) -> object:
+    value = raw_value.strip()
+    if decision_id.startswith("adoption."):
+        return parse_bool_value(value)
+    contract = catalog.decisions.get(decision_id)
+    if contract and contract.get("type") == "boolean":
+        return parse_bool_value(value)
+    return value
+
+
+def parse_bool_value(value: str) -> object:
+    normalized = value.lower()
+    if normalized in {"1", "true", "yes", "y"}:
+        return True
+    if normalized in {"0", "false", "no", "n"}:
+        return False
+    return value
+
+
+def resolve_decisions(
+    catalog: AssetCatalog,
+    ordered_modules: list[str],
+    existing_manifest: dict | None,
+    cli_decisions: dict[str, object],
+    findings: list[Finding],
+) -> dict[str, dict]:
+    today = date.today().isoformat()
+    existing = existing_manifest.get("decisions", {}) if isinstance(existing_manifest, dict) else {}
+    if not isinstance(existing, dict):
+        existing = {}
+    resolved: dict[str, dict] = {}
+    for decision_id in required_decisions(catalog, ordered_modules):
+        contract = catalog.decisions[decision_id]
+        value = cli_decisions.get(decision_id)
+        if value is not None:
+            if not is_decision_value_valid(contract, value):
+                findings.append(invalid_decision_finding(decision_id))
+                continue
+            resolved[decision_id] = {"value": value, "confirmedAt": today}
+            continue
+        existing_decision = existing.get(decision_id)
+        if isinstance(existing_decision, dict) and "value" in existing_decision:
+            if is_decision_value_valid(contract, existing_decision["value"]):
+                confirmed_at = existing_decision.get("confirmedAt")
+                if not isinstance(confirmed_at, str) or not confirmed_at:
+                    confirmed_at = today
+                resolved[decision_id] = {
+                    "value": existing_decision["value"],
+                    "confirmedAt": confirmed_at,
+                }
+                continue
+        findings.append(
+            finding(
+                "decision.required",
+                "decision",
+                str(MANIFEST_PATH),
+                decision_id,
+                f"Decision {decision_id} has no compatible durable answer.",
+                "Pass --decision with a valid value before applying.",
+            )
+        )
+
+    for decision_id, existing_decision in sorted(existing.items()):
+        if decision_id.startswith("adoption.") and isinstance(existing_decision, dict):
+            resolved[decision_id] = existing_decision
+    for decision_id, value in sorted(cli_decisions.items()):
+        if decision_id.startswith("adoption."):
+            resolved[decision_id] = {"value": value, "confirmedAt": today}
+    return resolved
+
+
+def is_decision_value_valid(decision_contract: dict, value: object) -> bool:
+    decision_type = decision_contract.get("type")
+    if decision_type == "boolean":
+        return isinstance(value, bool)
+    if decision_type == "string":
+        return isinstance(value, str) and bool(value.strip())
+    if decision_type == "enum":
+        return value in decision_contract.get("values", [])
+    return True
+
+
+def invalid_decision_finding(decision_id: str) -> Finding:
+    return finding(
+        "decision.required",
+        "decision",
+        str(MANIFEST_PATH),
+        decision_id,
+        f"Decision {decision_id} has an incompatible value.",
+        "Pass --decision with a value accepted by the decision contract.",
+    )
+
+
+def load_current_files(
+    repo: Path,
+    expected_artifacts: list[ExpectedArtifact],
+    existing_manifest: dict | None,
+    findings: list[Finding],
+) -> dict[Path, str]:
+    paths = {artifact.path for artifact in expected_artifacts}
+    paths.update(manifest_artifact_paths(existing_manifest))
+    current: dict[Path, str] = {}
+    for relative_path in sorted(paths, key=lambda item: item.as_posix()):
+        path = repo / relative_path
+        if not path.exists():
+            continue
+        if path.is_dir():
+            findings.append(
+                finding(
+                    "manifest.invalid",
+                    "error",
+                    str(relative_path),
+                    "document",
+                    "Managed destination is a directory.",
+                    "Move the directory before applying managed content.",
+                )
+            )
+            continue
+        try:
+            content = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            findings.append(
+                finding(
+                    "manifest.invalid",
+                    "error",
+                    str(relative_path),
+                    "document",
+                    "Managed destination is not UTF-8 text.",
+                    "Rewrite the file as UTF-8 Markdown before applying.",
+                )
+            )
+            continue
+        _, marker_findings = parse_managed_blocks(relative_path, content)
+        findings.extend(marker_findings)
+        current[relative_path] = content
+    return current
+
+
+def manifest_artifact_paths(existing_manifest: dict | None) -> set[Path]:
+    if not isinstance(existing_manifest, dict):
+        return set()
+    paths: set[Path] = set()
+    for artifact in existing_manifest.get("managedArtifacts", []):
+        if isinstance(artifact, dict) and isinstance(artifact.get("path"), str):
+            paths.add(Path(artifact["path"]))
+    return paths
+
+
+def require_adoption_decisions(
+    current_files: dict[Path, str],
+    expected_artifacts: list[ExpectedArtifact],
+    decisions: dict[str, dict],
+) -> list[Finding]:
+    findings: list[Finding] = []
+    for artifact in expected_artifacts:
+        if artifact.kind != "guide":
+            continue
+        content = current_files.get(artifact.path)
+        if content is None or not content.strip():
+            continue
+        blocks, marker_findings = parse_managed_blocks(artifact.path, content)
+        if marker_findings or artifact.managed_id in blocks:
+            continue
+        adoption_id = f"adoption.{artifact.managed_id}"
+        decision = decisions.get(adoption_id)
+        if not isinstance(decision, dict) or decision.get("value") is not True:
+            findings.append(
+                finding(
+                    "decision.required",
+                    "decision",
+                    artifact.path.as_posix(),
+                    adoption_id,
+                    "Existing unmarked content needs an adoption decision before setup can own it.",
+                    f"Pass --decision {adoption_id}=true after reviewing the file.",
+                )
+            )
+    return findings
+
+
+def artifacts_by_path(
+    expected_artifacts: list[ExpectedArtifact],
+) -> dict[Path, list[ExpectedArtifact]]:
+    grouped: dict[Path, list[ExpectedArtifact]] = {}
+    for artifact in expected_artifacts:
+        grouped.setdefault(artifact.path, []).append(artifact)
+    return grouped
+
+
+def render_expected_path(current: str, artifacts: list[ExpectedArtifact]) -> str:
+    if all(artifact.kind == "guide" for artifact in artifacts):
+        return render_guide_path(current, artifacts)
+    return render_shared_path(current, artifacts)
+
+
+def render_guide_path(current: str, artifacts: list[ExpectedArtifact]) -> str:
+    content = current
+    for artifact in artifacts:
+        replacement = managed_block(artifact.managed_id, artifact.version, artifact.content)
+        spans, _ = parse_managed_block_spans(artifact.path, content)
+        span = spans.get(artifact.managed_id)
+        if span is None:
+            if content.strip() and not spans:
+                content = replacement
+            else:
+                content = append_block(content, replacement)
+        else:
+            content = content[: span.start] + replacement + content[span.end :]
+    return content
+
+
+def render_shared_path(current: str, artifacts: list[ExpectedArtifact]) -> str:
+    content = current
+    for artifact in artifacts:
+        replacement = managed_block(artifact.managed_id, artifact.version, artifact.content)
+        spans, _ = parse_managed_block_spans(artifact.path, content)
+        span = spans.get(artifact.managed_id)
+        if span is None:
+            content = append_block(content, replacement)
+        else:
+            content = content[: span.start] + replacement + content[span.end :]
+    return content
+
+
+def append_block(content: str, block: str) -> str:
+    if not content:
+        return block
+    separator = "" if content.endswith("\n") else "\n"
+    return content + separator + "\n" + block
+
+
+def remove_obsolete_artifacts(
+    existing_manifest: dict | None,
+    expected_by_id: dict[str, ExpectedArtifact],
+    current_files: dict[Path, str],
+    changed_contents: dict[Path, str | None],
+) -> None:
+    if not isinstance(existing_manifest, dict):
+        return
+    for artifact in existing_manifest.get("managedArtifacts", []):
+        if not isinstance(artifact, dict):
+            continue
+        managed_id = artifact.get("id")
+        path_value = artifact.get("path")
+        if not isinstance(managed_id, str) or not isinstance(path_value, str):
+            continue
+        if managed_id in expected_by_id:
+            continue
+        relative_path = Path(path_value)
+        content = changed_contents.get(relative_path, current_files.get(relative_path))
+        if content is None:
+            continue
+        spans, marker_findings = parse_managed_block_spans(relative_path, content)
+        if marker_findings:
+            continue
+        span = spans.get(managed_id)
+        if span is None:
+            continue
+        remaining = content[: span.start] + content[span.end :]
+        if artifact.get("kind") == "guide" and not remaining.strip():
+            changed_contents[relative_path] = None
+        else:
+            changed_contents[relative_path] = remaining
+
+
+def build_manifest(
+    profile_id: str,
+    ordered_modules: list[str],
+    expected_artifacts: list[ExpectedArtifact],
+    decisions: dict[str, dict],
+    existing_manifest: dict | None,
+) -> dict:
+    local_skills = []
+    if isinstance(existing_manifest, dict) and isinstance(existing_manifest.get("localSkills"), list):
+        local_skills = existing_manifest["localSkills"]
+    return {
+        "schemaVersion": 1,
+        "generator": {"skill": "setup-context-driven", "version": 1},
+        "profile": profile_id,
+        "modules": ordered_modules,
+        "decisions": decisions,
+        "managedArtifacts": [
+            {
+                "id": artifact.managed_id,
+                "path": artifact.path.as_posix(),
+                "kind": artifact.kind,
+                "module": artifact.module_id,
+                "template": artifact.template_id,
+                "version": artifact.version,
+                "digest": artifact.digest,
+            }
+            for artifact in expected_artifacts
+        ],
+        "localSkills": local_skills,
+    }
+
+
+def validate_change_plan(
+    repo: Path,
+    plan: ChangePlan,
+    expected_artifacts: list[ExpectedArtifact],
+) -> list[Finding]:
+    findings: list[Finding] = []
+    planned = {change.path: change.content for change in plan.changes}
+    for artifact in expected_artifacts:
+        content = planned.get(artifact.path)
+        if content is None:
+            path = repo / artifact.path
+            if path.exists() and path.is_file():
+                content = path.read_text(encoding="utf-8")
+        if content is None:
+            findings.append(
+                finding(
+                    "managed.block.missing",
+                    "error",
+                    artifact.path.as_posix(),
+                    artifact.managed_id,
+                    "Change plan does not produce the expected managed block.",
+                    "Rebuild the apply plan before writing.",
+                )
+            )
+            continue
+        blocks, marker_findings = parse_managed_blocks(artifact.path, content)
+        findings.extend(marker_findings)
+        block = blocks.get(artifact.managed_id)
+        if block is None:
+            findings.append(
+                finding(
+                    "managed.block.missing",
+                    "error",
+                    artifact.path.as_posix(),
+                    artifact.managed_id,
+                    "Change plan omits an expected managed block.",
+                    "Rebuild the apply plan before writing.",
+                )
+            )
+        elif managed_digest(block.body) != artifact.digest:
+            findings.append(
+                finding(
+                    "managed.content.modified",
+                    "warning",
+                    artifact.path.as_posix(),
+                    artifact.managed_id,
+                    "Change plan does not match the bundled template digest.",
+                    "Rebuild the apply plan from bundled assets.",
+                )
+            )
+    return findings
+
+
+def apply_change_plan(repo: Path, plan: ChangePlan) -> None:
+    temp_paths: list[Path] = []
+    originals: dict[Path, bytes | None] = {}
+    created_dirs: list[Path] = []
+    try:
+        for change in plan.changes:
+            target = repo / change.path
+            originals[target] = target.read_bytes() if target.exists() and target.is_file() else None
+            if change.content is None:
+                continue
+            ensure_parent_dir(target.parent, created_dirs)
+            temp_path = target.with_name(f".{target.name}.setup-context.tmp")
+            temp_path.write_text(change.content, encoding="utf-8")
+            temp_paths.append(temp_path)
+
+        for change in plan.changes:
+            target = repo / change.path
+            if change.content is None:
+                if target.exists() and target.is_file():
+                    target.unlink()
+                continue
+            temp_path = target.with_name(f".{target.name}.setup-context.tmp")
+            temp_path.replace(target)
+    except OSError:
+        for target, original in originals.items():
+            if original is None:
+                if target.exists() and target.is_file():
+                    target.unlink()
+            else:
+                ensure_parent_dir(target.parent, created_dirs)
+                target.write_bytes(original)
+        raise
+    finally:
+        for temp_path in temp_paths:
+            if temp_path.exists():
+                temp_path.unlink()
+        for directory in reversed(created_dirs):
+            try:
+                directory.rmdir()
+            except OSError:
+                pass
+
+
+def ensure_parent_dir(directory: Path, created_dirs: list[Path]) -> None:
+    missing: list[Path] = []
+    current = directory
+    while not current.exists():
+        missing.append(current)
+        current = current.parent
+    for item in reversed(missing):
+        item.mkdir()
+        created_dirs.append(item)
+
+
+def current_file_bytes(repo: Path, path: Path) -> bytes | None:
+    target = repo / path
+    if not target.exists() or not target.is_file():
+        return None
+    return target.read_bytes()
+
+
+def content_bytes(content: str | None) -> bytes | None:
+    if content is None:
+        return None
+    return content.encode("utf-8")
 
 
 def load_manifest(repo: Path, findings: list[Finding]) -> tuple[dict | None, bool]:
@@ -491,9 +1177,24 @@ def parse_managed_blocks(
     relative_path: Path,
     content: str,
 ) -> tuple[dict[str, ManagedBlock], list[Finding]]:
+    spans, findings = parse_managed_block_spans(relative_path, content)
+    return {
+        managed_id: ManagedBlock(
+            managed_id=span.managed_id,
+            version=span.version,
+            body=span.body,
+        )
+        for managed_id, span in spans.items()
+    }, findings
+
+
+def parse_managed_block_spans(
+    relative_path: Path,
+    content: str,
+) -> tuple[dict[str, ManagedBlockSpan], list[Finding]]:
     findings: list[Finding] = []
-    blocks: dict[str, ManagedBlock] = {}
-    open_marker: tuple[str, int, int] | None = None
+    blocks: dict[str, ManagedBlockSpan] = {}
+    open_marker: tuple[str, int, int, int] | None = None
 
     for marker in MARKER.finditer(content):
         text = marker.group(0)
@@ -511,7 +1212,7 @@ def parse_managed_blocks(
                     )
                 )
                 continue
-            open_marker = (managed_id, version, marker.end())
+            open_marker = (managed_id, version, marker.start(), marker.end())
             continue
         if end:
             managed_id = end.group(1)
@@ -524,7 +1225,7 @@ def parse_managed_blocks(
                     )
                 )
                 continue
-            open_id, version, body_start = open_marker
+            open_id, version, marker_start, body_start = open_marker
             if managed_id != open_id:
                 findings.append(
                     marker_invalid_finding(
@@ -546,10 +1247,17 @@ def parse_managed_blocks(
                         "Keep one block for each managed identifier.",
                     )
                 )
-            blocks[managed_id] = ManagedBlock(
+            block_end = marker.end()
+            if content.startswith("\r\n", block_end):
+                block_end += 2
+            elif content.startswith("\n", block_end):
+                block_end += 1
+            blocks[managed_id] = ManagedBlockSpan(
                 managed_id=managed_id,
                 version=version,
                 body=content[body_start:marker.start()],
+                start=marker_start,
+                end=block_end,
             )
             open_marker = None
             continue
@@ -562,7 +1270,7 @@ def parse_managed_blocks(
         )
 
     if open_marker is not None:
-        managed_id, _, _ = open_marker
+        managed_id, _, _, _ = open_marker
         findings.append(
             marker_invalid_finding(
                 relative_path,
@@ -696,7 +1404,44 @@ def render_text(result: AuditResult) -> str:
                 location = f"{location} [{finding_item.managed_id}]"
             lines.append(f"- {finding_item.code} {location}: {finding_item.message}")
             lines.append(f"  action: {finding_item.action}")
+    planned_changes = planned_changes_for_findings(result.findings)
+    if planned_changes:
+        lines.append("planned changes:")
+        for change in planned_changes:
+            lines.append(
+                f"- {change['action']} {change['path']} [{change['managedId']}]"
+            )
     return "\n".join(lines)
+
+
+def planned_changes_for_findings(findings: Iterable[Finding]) -> list[dict[str, str]]:
+    actions = {
+        "manifest.missing": "create manifest",
+        "managed.block.missing": "create managed block",
+        "docs.guide.missing": "create guide",
+        "managed.template.stale": "refresh managed content",
+        "managed.content.modified": "refresh managed content",
+        "docs.language.non-english": "refresh managed content",
+        "docs.reference.broken": "refresh managed content",
+    }
+    planned: list[dict[str, str]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for finding_item in sorted_findings(findings):
+        action = actions.get(finding_item.code)
+        if action is None:
+            continue
+        key = (action, finding_item.path, finding_item.managed_id)
+        if key in seen:
+            continue
+        seen.add(key)
+        planned.append(
+            {
+                "action": action,
+                "path": finding_item.path,
+                "managedId": finding_item.managed_id,
+            }
+        )
+    return planned
 
 
 def exit_code_for(result: AuditResult, invalid_input: bool) -> int:
@@ -807,7 +1552,7 @@ def print_top_level_help() -> None:
                 "",
                 "Subcommands:",
                 "  audit        Read bundled assets and repository state without writes.",
-                "  apply        Planned safe correction command; not implemented in this slice.",
+                "  apply        Write confirmed managed content through an atomic change plan.",
                 "  sync-setups  Planned snapshot authoring command; not implemented in this slice.",
             ]
         )
@@ -839,20 +1584,36 @@ def audit_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def apply_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="context_setup.py apply",
+        description="Apply setup-context-driven managed agent instructions after decisions are confirmed.",
+    )
+    parser.add_argument("--repo", default=".", help="Repository root. Defaults to cwd.")
+    parser.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Result format written to stdout.",
+    )
+    parser.add_argument("--profile", help="Bundled profile id to apply.")
+    parser.add_argument(
+        "--decision",
+        action="append",
+        default=[],
+        help="Confirmed decision in ID=VALUE form. Repeat for multiple decisions.",
+    )
+    return parser
+
+
 def parse_unimplemented_command(command: str, args: list[str]) -> int:
     parser = argparse.ArgumentParser(
         prog=f"context_setup.py {command}",
         description=f"{command} is documented for the setup workflow but not implemented in this slice.",
     )
-    if command == "apply":
-        parser.add_argument("--repo", default=".")
-        parser.add_argument("--format", choices=["text", "json"], default="text")
-        parser.add_argument("--profile")
-        parser.add_argument("--decision", action="append", default=[])
-    else:
-        parser.add_argument("--source-dir", required="--help" not in args and "-h" not in args)
-        parser.add_argument("--check", action="store_true")
-        parser.add_argument("--format", choices=["text", "json"], default="text")
+    parser.add_argument("--source-dir", required="--help" not in args and "-h" not in args)
+    parser.add_argument("--check", action="store_true")
+    parser.add_argument("--format", choices=["text", "json"], default="text")
     parser.parse_args(args)
     print(f"{command} is not implemented by this task.", file=sys.stderr)
     return 2
