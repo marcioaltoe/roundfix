@@ -151,6 +151,13 @@ exit 0
 	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
 		t.Fatalf("write fake acpx: %v", err)
 	}
+	// The adapter preflight probe LookPaths the agent-command binary; ship a
+	// fake codex-acp next to the fake acpx so detach children pass preflight
+	// on machines without the real adapter installed (CI runners).
+	adapterPath := filepath.Join(filepath.Dir(path), "codex-acp")
+	if err := os.WriteFile(adapterPath, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatalf("write fake codex-acp: %v", err)
+	}
 	return path
 }
 
