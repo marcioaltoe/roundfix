@@ -1,18 +1,18 @@
 ---
-name: setup-workflow
-description: Configure a repo for the CONTEXT-driven spec workflow — scaffold docs/specs/, docs/adr/, and the CONTEXT.md glossary, and seed the docs/agents/ usage guides (issue tracker, spec routing, domain docs, triage labels, autonomous work model). Run when preparing a repo for the write-prd/write-tasks/implement pipeline or for Roundfix-driven autonomous work; re-run to refresh — it overwrites the skill-owned docs/agents/ files and prunes deprecated content.
+name: setup-context-driven
+description: Configure a repo for CONTEXT-driven development (the method explained in docs/user-guide/context-driven-development.md) — scaffold the full docs/ layout (_inbox, adr, agents, design, findings, handoffs, references, specs, user-guide) and the CONTEXT.md glossary, and seed the docs/agents/ usage guides (docs layout with the findings template, issue tracker, spec routing, domain docs, triage labels, autonomous work model). Run when preparing a repo for the write-prd/write-tasks/implement pipeline or for Roundfix-driven autonomous work; re-run to refresh — it overwrites the skill-owned docs/agents/ files and prunes deprecated content.
 disable-model-invocation: true
 metadata:
   category: setup
   tags: [workflow, prd, issues, planning, triage, repository-context, agents]
-  version: 0.6.0
+  version: 0.7.0
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---
 
-# Setup Workflow
+# Setup Context-Driven
 
-Scaffold the per-repo configuration the CONTEXT-driven spec workflow assumes. Local markdown under `docs/specs/` is the **only home of planning artifacts** — there is no external tracker.
+Scaffold the per-repo configuration CONTEXT-driven development assumes — the method itself (glossary-first vocabulary, ADRs, the spec pipeline, and the docs layout that carries them) is explained in `docs/user-guide/context-driven-development.md`, including its source attribution. Local markdown under `docs/specs/` is the **only home of planning artifacts** — there is no external tracker.
 
 - **Spec artifacts** — `docs/specs/<feature-slug>/`, read and written by `write-idea`, `write-prd`, `write-techspec`, `write-tasks`, `implement-task`, `implement-spec`, `qa-gate`, and `archive-spec`
 - **Spec routing** — how an agent picks the pipeline entry point for a given change (large initiative / feature / refactor-bugfix / trivial) and what marks a spec done
@@ -35,6 +35,7 @@ Look at the current repo to understand its starting state. Read whatever exists;
 - `docs/specs/` and `docs/specs/_archived/` — layout already in place? Any active specs?
 - `docs/adr/` and any `src/*/docs/adr/` directories
 - `docs/agents/` — does this skill's prior output already exist?
+- The rest of the docs layout — which of `docs/_inbox/`, `docs/design/`, `docs/findings/`, `docs/handoffs/`, `docs/references/`, `docs/user-guide/` exist, and whether stray content lives where another folder's job says it belongs (see [docs-layout.md](./docs-layout.md))
 - Legacy planning locations (`.scratch/`, `.compozy/`, `docs/tasks/`, `docs/plans/`) — note them as read-only history; new work goes to `docs/specs/`.
 - `git remote -v` — a public forge remote means external issues may arrive (Section C).
 
@@ -80,7 +81,7 @@ Show the user a draft of:
 
 - The scaffold actions for spec artifacts (directories to create, `CONTEXT.md` skeleton if missing)
 - The `## Agent skills` block to add to whichever of `CLAUDE.md` / `AGENTS.md` is being edited (see step 4 for selection rules)
-- The contents of `docs/agents/issue-tracker.md`, `docs/agents/spec-routing.md`, and `docs/agents/domain.md` (plus `docs/agents/triage-labels.md` when Section C applies, and `docs/agents/autonomous-work.md` when Section D applies)
+- The contents of `docs/agents/docs-layout.md`, `docs/agents/issue-tracker.md`, `docs/agents/spec-routing.md`, and `docs/agents/domain.md` (plus `docs/agents/triage-labels.md` when Section C applies, and `docs/agents/autonomous-work.md` when Section D applies)
 
 Let them edit before writing. On a re-run, existing `docs/agents/` files found in step 1 are inputs to the draft, not something to preserve verbatim: carry forward repo-specific answers (like custom label strings), regenerate the rest from the current seeds.
 
@@ -114,6 +115,10 @@ Feature specs live under `docs/specs/<feature-slug>/` (`_idea.md`, `_prd.md`, `_
 ### Spec routing
 
 Pick the pipeline entry point by the change — large initiative, feature, refactor/bugfix, or trivial. See `docs/agents/spec-routing.md`.
+
+### Docs layout
+
+Every `docs/` folder has one job — inbox triage, ADRs, agent guides, design artifacts, dated findings (with a template), handoffs, external references, specs, and the user guide. See `docs/agents/docs-layout.md`.
 ```
 
 Add a `### Triage labels` line only when Section C applies.
@@ -140,7 +145,7 @@ Rule bodies live in the seeded doc and in the workflow skills — the agent-inst
 
 Then scaffold the spec artifacts:
 
-- Create `docs/specs/` and `docs/adr/` if missing (add a `.gitkeep` to empty directories so the layout survives a clone). `docs/specs/_archived/` can wait for the first archive.
+- Create the full docs layout if missing — `docs/_inbox/`, `docs/adr/`, `docs/agents/`, `docs/design/`, `docs/findings/`, `docs/handoffs/`, `docs/references/`, `docs/specs/`, and `docs/user-guide/` (add a `.gitkeep` to empty directories so the layout survives a clone). `docs/specs/_archived/` can wait for the first archive. Folder jobs, lifecycles, and the findings template live in the [docs-layout.md](./docs-layout.md) seed.
 - If `CONTEXT.md` is missing, create the glossary skeleton below. Do **not** pre-fill terms — a glossary written by hand during real grilling sessions is worth more than a generated one, and generated context files measurably hurt agent output.
 
 ```markdown
@@ -159,6 +164,7 @@ _Avoid_: rejected synonyms
 
 Then write the docs files using the seed templates in this skill folder as a starting point:
 
+- [docs-layout.md](./docs-layout.md) — every `docs/` folder's job and lifecycle, plus the findings template
 - [issue-tracker-local.md](./issue-tracker-local.md) — the canonical local `docs/specs/` conventions
 - [spec-routing.md](./spec-routing.md) — pipeline entry-point routing and the definition of done
 - [triage-labels.md](./triage-labels.md) — label mapping (Section C only)

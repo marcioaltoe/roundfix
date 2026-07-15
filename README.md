@@ -380,7 +380,7 @@ roundfix skills install
 
 The binary ships 14 Roundfix-owned skills: the operational `roundfix` skill plus
 the authorial workflow skills (`write-idea`, `write-prd`, `write-techspec`,
-`write-tasks`, `setup-workflow`, `implement-task`, `implement-spec`,
+`write-tasks`, `setup-context-driven`, `implement-task`, `implement-spec`,
 `brainstorming`, `council`, `business-analyst`, `archive-spec`, `qa-gate`,
 `evidence-gate`). `skills list` also prints the recommended external skills,
 which install through your own skills tooling and are never shipped.

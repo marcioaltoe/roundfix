@@ -82,6 +82,12 @@ specs are archived to `docs/specs/_archived/`.
 Pick the pipeline entry point by the change — large initiative, feature,
 refactor/bugfix, or trivial. See `docs/agents/spec-routing.md`.
 
+### Docs layout
+
+Every `docs/` folder has one job — inbox triage, ADRs, agent guides, design
+artifacts, dated findings (with a template), handoffs, external references,
+specs, and the user guide. See `docs/agents/docs-layout.md`.
+
 ### Autonomous work
 
 Supervisor orchestrates and authors Specs; implementation is delegated to an

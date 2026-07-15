@@ -93,7 +93,7 @@ skills-check: ## Validate shipped Roundfix skill artifacts
 # The Roundfix-owned skill bundle shipped in the binary: the operational
 # roundfix skill plus the 13 authorial workflow skills. Everything else is
 # managed by the external skills-lock.json origin and is never embedded.
-OWNED_SKILLS := roundfix write-idea write-prd write-techspec write-tasks setup-workflow implement-task implement-spec brainstorming council business-analyst archive-spec qa-gate evidence-gate
+OWNED_SKILLS := roundfix write-idea write-prd write-techspec write-tasks setup-context-driven implement-task implement-spec brainstorming council business-analyst archive-spec qa-gate evidence-gate
 
 skills-sync: ## Regenerate the embedded skills/ bundle from canonical .agents/skills/
 	@for s in $(OWNED_SKILLS); do rm -rf "skills/$$s"; cp -R ".agents/skills/$$s" "skills/$$s"; done

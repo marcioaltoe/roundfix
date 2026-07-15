@@ -14,7 +14,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed roundfix write-idea write-prd write-techspec write-tasks setup-workflow implement-task implement-spec brainstorming council business-analyst archive-spec qa-gate evidence-gate recommended.txt
+//go:embed roundfix write-idea write-prd write-techspec write-tasks setup-context-driven implement-task implement-spec brainstorming council business-analyst archive-spec qa-gate evidence-gate recommended.txt
 var embedded embed.FS
 
 // skillNames is the Roundfix-owned skill bundle shipped in the binary: the
@@ -23,7 +23,7 @@ var embedded embed.FS
 var skillNames = []string{
 	"roundfix",
 	"write-idea", "write-prd", "write-techspec", "write-tasks",
-	"setup-workflow", "implement-task", "implement-spec",
+	"setup-context-driven", "implement-task", "implement-spec",
 	"brainstorming", "council", "business-analyst",
 	"archive-spec", "qa-gate", "evidence-gate",
 }

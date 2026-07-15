@@ -32,7 +32,7 @@ changes any of those, the skill update ships in the same PR.
 ## Skill ownership
 
 The authorial context-workflow skills are vendored in this repository and owned by it:
-`write-idea`, `write-prd`, `write-techspec`, `write-tasks`, `setup-workflow`, `implement-task`,
+`write-idea`, `write-prd`, `write-techspec`, `write-tasks`, `setup-context-driven`, `implement-task`,
 `implement-spec`, `brainstorming`, `council`, `business-analyst`, `archive-spec`, `qa-gate`,
 and `evidence-gate`.
 
