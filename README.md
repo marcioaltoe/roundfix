@@ -15,7 +15,7 @@ supporting commands (`setup`, `doctor`, `upgrade`, `gc`, `settle`, `archive`,
 
 The spec pipeline it runs is CONTEXT-driven development. The method is adapted
 from Matt Pocock's **skills** work; see
-[Source and attribution](docs/context-driven-development.md#source-and-attribution).
+[Source and attribution](docs/user-guide/context-driven-development.md#source-and-attribution).
 
 ## Install
 
@@ -981,11 +981,11 @@ docs/                            product docs and architecture decisions
 
 Start with:
 
-- [Operational guide](docs/usage.md)
-- [CONTEXT-driven development](docs/context-driven-development.md)
+- [Operational guide](docs/user-guide/usage.md)
+- [CONTEXT-driven development](docs/user-guide/context-driven-development.md)
 - [Project glossary](CONTEXT.md)
 - [Architecture decisions](docs/adr/)
-- [Release runbook](docs/release-runbook.md)
+- [Release runbook](docs/user-guide/release-runbook.md)
 
 ## License
 
