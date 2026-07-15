@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -178,6 +179,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		Agent:           runtime.ID,
 		Model:           runtime.Model,
 		ReasoningEffort: runtime.ReasoningEffort,
+		OwnerPID:        os.Getpid(),
 	})
 	if err != nil {
 		// A lost work-target race surfaces the store's ActiveRunError as-is;

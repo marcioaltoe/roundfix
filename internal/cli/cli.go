@@ -2310,6 +2310,7 @@ func createOperationalRun(ctx context.Context, runStore *store.Store, kind strin
 }
 
 func createReviewRun(ctx context.Context, runStore *store.Store, req commandRequest, createReq store.CreateRunRequest) (store.Run, error) {
+	createReq.OwnerPID = os.Getpid()
 	if req.skipBranchIntegrity && req.branchIntegrity.ActiveRun != nil {
 		return runStore.CreateRunSkippingActiveLock(ctx, createReq)
 	}
