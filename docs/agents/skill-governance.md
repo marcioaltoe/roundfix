@@ -24,6 +24,10 @@ changes any of those, the skill update ships in the same PR.
   skill version.
 - The embedded `skills/roundfix/` is generated from it with `make skills-sync`; `make verify`
   fails on drift.
+- Never keep a detached global copy (for example `~/.claude/skills/roundfix/`) — a stale copy
+  shadows the canonical one and teaches agents a contract that no longer exists (observed
+  2026-07-15, findings retrospective §2). If a machine-global install is wanted, symlink it to
+  this repository's `skills/roundfix/`.
 
 ## Skill ownership
 

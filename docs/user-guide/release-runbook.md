@@ -36,7 +36,9 @@ section matches.
 
 1. Land all release content on `main` and confirm `make verify` is green
    locally. The workflow re-runs the full gate and refuses to publish if it
-   fails.
+   fails. No Spec merges without a passing QA Report in its `qa/` directory —
+   `roundfix archive` enforces the same rule later, but the gap must be caught
+   at merge time, not at archive time.
 2. Add or finalize the `## [<version>]` section in `CHANGELOG.md`.
 3. Tag and push:
 
