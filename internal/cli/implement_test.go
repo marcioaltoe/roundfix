@@ -2721,6 +2721,7 @@ func TestRunImplementPreflightRejectsActiveRunInWorkingTree(t *testing.T) {
 		GitRoot:     repoDir,
 		LocalBranch: "ma/other-work",
 		SpecSlug:    "0002-other-spec",
+		OwnerPID:    os.Getpid(),
 	})
 	if err != nil {
 		t.Fatalf("seed blocking run: %v", err)
@@ -2739,8 +2740,16 @@ func TestRunImplementPreflightRejectsActiveRunInWorkingTree(t *testing.T) {
 	if stdout.Len() != 0 {
 		t.Fatalf("expected no stdout, got %q", stdout.String())
 	}
-	if !strings.Contains(stderr.String(), blocking.ID) || !strings.Contains(stderr.String(), "roundfix stop "+blocking.ID) {
-		t.Fatalf("expected the blocking run id and stop command, got %q", stderr.String())
+	wantBlock := fmt.Sprintf(
+		"an Active Run already holds working tree %s: run_id=%s kind=%s state=%s; stop it with: roundfix stop %s",
+		repoDir,
+		blocking.ID,
+		blocking.Kind,
+		blocking.State,
+		blocking.ID,
+	)
+	if !strings.Contains(stderr.String(), wantBlock) {
+		t.Fatalf("expected unchanged live-owner block %q, got %q", wantBlock, stderr.String())
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
 }

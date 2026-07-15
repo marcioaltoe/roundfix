@@ -223,7 +223,7 @@ func preflightSettle(ctx context.Context, req settleRequest, stderr io.Writer) (
 	if task.Status != spec.StatusFailed {
 		return settlePlan{}, settleStatusError(req.specSlug, task)
 	}
-	if err := ensureNoSettleActiveRun(ctx, loadedConfig.HomeDir, gitState.Root, req.specSlug); err != nil {
+	if err := ensureNoSettleActiveRun(ctx, loadedConfig.HomeDir, gitState.Root, req.specSlug, stderr); err != nil {
 		return settlePlan{}, err
 	}
 	plan.graph = graph
@@ -289,13 +289,13 @@ func settleStatusError(slug string, task spec.Task) error {
 	}
 }
 
-func ensureNoSettleActiveRun(ctx context.Context, homeDir string, gitRoot string, specSlug string) error {
+func ensureNoSettleActiveRun(ctx context.Context, homeDir string, gitRoot string, specSlug string, stderr io.Writer) error {
 	if _, err := os.Stat(store.DatabasePath(homeDir)); errors.Is(err, os.ErrNotExist) {
 		return nil
 	} else if err != nil {
 		return validationError{message: fmt.Sprintf("inspect Run Database before settle: %v", err)}
 	}
-	runStore, err := store.OpenReader(ctx, homeDir)
+	runStore, err := store.Open(ctx, homeDir)
 	if err != nil {
 		return validationError{message: fmt.Sprintf("open Run Database before settle: %v", err)}
 	}
@@ -305,11 +305,21 @@ func ensureNoSettleActiveRun(ctx context.Context, homeDir string, gitRoot string
 	if active, found, err := runStore.ActiveSpecRun(ctx, gitRoot, specSlug); err != nil {
 		return validationError{message: fmt.Sprintf("check Active Run for Spec target: %v", err)}
 	} else if found {
+		if _, reclaimed, err := reclaimOrphanedActiveRun(ctx, runStore, active, stderr); err != nil {
+			return err
+		} else if reclaimed {
+			return nil
+		}
 		return validationError{message: fmt.Sprintf("Active Run %s already holds Spec target %q in working tree %q; stop it with: roundfix stop %s", active.ID, specSlug, gitRoot, active.ID)}
 	}
 	if active, found, err := runStore.ActiveRunInGitRoot(ctx, gitRoot); err != nil {
 		return validationError{message: fmt.Sprintf("check Active Run for working tree: %v", err)}
 	} else if found {
+		if _, reclaimed, err := reclaimOrphanedActiveRun(ctx, runStore, active, stderr); err != nil {
+			return err
+		} else if reclaimed {
+			return nil
+		}
 		return validationError{message: fmt.Sprintf("Active Run %s already holds working tree %q; stop it with: roundfix stop %s", active.ID, gitRoot, active.ID)}
 	}
 	return nil

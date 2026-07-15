@@ -5,12 +5,15 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"roundfix/internal/runevent"
 
 	_ "modernc.org/sqlite"
 )
@@ -367,6 +370,90 @@ WHERE id = ?`,
 		return Run{}, fmt.Errorf("commit Run completion: %w", err)
 	}
 	return run, nil
+}
+
+func (store *Store) ReclaimOrphanedRun(ctx context.Context, run Run, reason string) error {
+	runID := strings.TrimSpace(run.ID)
+	if runID == "" {
+		return errors.New("reclaim orphaned Run: Run ID is required")
+	}
+	if run.OwnerPID == nil || *run.OwnerPID <= 0 || ProcessAlive(*run.OwnerPID) {
+		return nil
+	}
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		reason = fmt.Sprintf("owner process %d not running; lock reclaimed", *run.OwnerPID)
+	}
+	now := store.now()
+
+	tx, err := store.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin orphaned Run reclamation: %w", err)
+	}
+	defer rollbackUnlessCommitted(tx)
+
+	var currentState string
+	if err := tx.QueryRowContext(ctx, `SELECT state FROM runs WHERE id = ?`, runID).Scan(&currentState); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("reclaim orphaned Run: Run %q does not exist", runID)
+		}
+		return fmt.Errorf("read Run %q before orphaned Run reclamation: %w", runID, err)
+	}
+	if IsTerminalState(currentState) {
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("commit orphaned Run reclamation no-op: %w", err)
+		}
+		return nil
+	}
+
+	result, err := tx.ExecContext(ctx, `
+UPDATE runs
+SET state = ?, updated_at = ?, completed_at = ?
+WHERE id = ? AND state = ?`,
+		StateFailed,
+		formatTime(now),
+		formatTime(now),
+		runID,
+		currentState,
+	)
+	if err != nil {
+		return fmt.Errorf("mark orphaned Run %q Failed: %w", runID, err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("read orphaned Run reclamation result: %w", err)
+	}
+	if affected == 0 {
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("commit orphaned Run reclamation no-op: %w", err)
+		}
+		return nil
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM active_run_locks WHERE run_id = ?`, runID); err != nil {
+		return fmt.Errorf("release orphaned Active Run lock: %w", err)
+	}
+	payload, err := json.Marshal(map[string]any{
+		"state":     StateFailed,
+		"reason":    reason,
+		"owner_pid": *run.OwnerPID,
+	})
+	if err != nil {
+		return fmt.Errorf("encode orphaned Run reclamation event: %w", err)
+	}
+	if _, err := appendRunEvent(ctx, tx, runevent.RunEvent{
+		RunID:   runID,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonOutcome,
+		Summary: runevent.BoundSummary(fmt.Sprintf("Run reclaimed orphaned Active Run lock: %s.", reason)),
+		Time:    now,
+		Payload: payload,
+	}); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit orphaned Run reclamation: %w", err)
+	}
+	return nil
 }
 
 func (store *Store) RequestStop(ctx context.Context, runID string) error {

@@ -548,6 +548,13 @@ func TestRunSettleActiveRunOnSameWorkingTreeBlocks(t *testing.T) {
 	if len(events) != 0 {
 		t.Fatalf("expected settle to write no Run Event Journal entries, got %#v", events)
 	}
+	stillActive, found, err := reader.Run(context.Background(), active.ID)
+	if err != nil || !found {
+		t.Fatalf("read legacy active Run: found=%v err=%v", found, err)
+	}
+	if stillActive.State != store.StateActive {
+		t.Fatalf("expected pid-less legacy Run to stay Active, got %#v", stillActive)
+	}
 }
 
 func TestRunSettleHelpDocumentsContract(t *testing.T) {

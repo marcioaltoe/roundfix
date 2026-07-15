@@ -156,10 +156,15 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	} else if found {
-		printPreflightFailure("implement", validationError{message: fmt.Sprintf(
-			"an Active Run already holds working tree %s: run_id=%s kind=%s state=%s; stop it with: roundfix stop %s",
-			gitState.Root, blocking.ID, blocking.Kind, blocking.State, blocking.ID)}, stderr)
-		return exitPreflight
+		if _, reclaimed, err := reclaimOrphanedActiveRun(ctx, runStore, blocking, stderr); err != nil {
+			printPreflightFailure("implement", err, stderr)
+			return exitPreflight
+		} else if !reclaimed {
+			printPreflightFailure("implement", validationError{message: fmt.Sprintf(
+				"an Active Run already holds working tree %s: run_id=%s kind=%s state=%s; stop it with: roundfix stop %s",
+				gitState.Root, blocking.ID, blocking.Kind, blocking.State, blocking.ID)}, stderr)
+			return exitPreflight
+		}
 	}
 
 	collaborators := newEngineCollaborators()
@@ -170,16 +175,18 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 	req = requestWithRuntimeSelection(req, runtime)
 
-	run, err := runStore.CreateRun(ctx, store.CreateRunRequest{
-		Kind:            store.KindImplement,
-		GitRoot:         gitState.Root,
-		LocalBranch:     gitState.Branch,
-		HeadSHA:         gitState.HEAD,
-		SpecSlug:        graph.Spec.Slug,
-		Agent:           runtime.ID,
-		Model:           runtime.Model,
-		ReasoningEffort: runtime.ReasoningEffort,
-		OwnerPID:        os.Getpid(),
+	run, err := createRunReclaimingOrphan(ctx, runStore, stderr, func() (store.Run, error) {
+		return runStore.CreateRun(ctx, store.CreateRunRequest{
+			Kind:            store.KindImplement,
+			GitRoot:         gitState.Root,
+			LocalBranch:     gitState.Branch,
+			HeadSHA:         gitState.HEAD,
+			SpecSlug:        graph.Spec.Slug,
+			Agent:           runtime.ID,
+			Model:           runtime.Model,
+			ReasoningEffort: runtime.ReasoningEffort,
+			OwnerPID:        os.Getpid(),
+		})
 	})
 	if err != nil {
 		// A lost work-target race surfaces the store's ActiveRunError as-is;

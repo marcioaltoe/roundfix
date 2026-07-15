@@ -379,7 +379,7 @@ func runStopCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 		_ = runStore.Close()
 	}()
 
-	result, err := stopTargetRun(ctx, req, loaded, runStore)
+	result, err := stopTargetRun(ctx, req, loaded, runStore, stderr)
 	if err != nil {
 		printStopFailure(err, stderr)
 		return exitPreflight
@@ -441,7 +441,7 @@ func parseStopCommand(args []string) (stopRequest, error) {
 	return req, nil
 }
 
-func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Loaded, runStore *store.Store) (stopResult, error) {
+func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Loaded, runStore *store.Store, stderr io.Writer) (stopResult, error) {
 	if req.runID != "" {
 		current, found, err := runStore.Run(ctx, req.runID)
 		if err != nil {
@@ -451,6 +451,11 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 		}
 		if req.force {
 			return forceStopRun(ctx, runStore, current, loaded.Config.Worktree.Location)
+		}
+		if reclaimed, ok, err := reclaimOrphanedActiveRun(ctx, runStore, current, stderr); err != nil {
+			return stopResult{}, err
+		} else if ok {
+			return stopResult{Run: reclaimed}, nil
 		}
 		if err := runStore.RequestStop(ctx, current.ID); err != nil {
 			return stopResult{}, err
@@ -473,6 +478,11 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 		}
 		if req.force {
 			return forceStopRun(ctx, runStore, active, loaded.Config.Worktree.Location)
+		}
+		if reclaimed, ok, err := reclaimOrphanedActiveRun(ctx, runStore, active, stderr); err != nil {
+			return stopResult{}, err
+		} else if ok {
+			return stopResult{Run: reclaimed}, nil
 		}
 		if err := runStore.RequestStop(ctx, active.ID); err != nil {
 			return stopResult{}, err
@@ -508,6 +518,11 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 	}
 	if req.force {
 		return forceStopRun(ctx, runStore, active, loaded.Config.Worktree.Location)
+	}
+	if reclaimed, ok, err := reclaimOrphanedActiveRun(ctx, runStore, active, stderr); err != nil {
+		return stopResult{}, err
+	} else if ok {
+		return stopResult{Run: reclaimed}, nil
 	}
 	if err := runStore.RequestStop(ctx, active.ID); err != nil {
 		return stopResult{}, err
@@ -1274,10 +1289,26 @@ func runBranchIntegrityPreflight(ctx context.Context, req commandRequest, loaded
 		return report, preflightResult, nil
 	}
 	if report.ActiveRun != nil {
-		return report, preflightResult, branchIntegrityActiveRunError{
-			HeadRepository: preflightResult.PullRequest.HeadRepository,
-			HeadBranch:     preflightResult.PullRequest.HeadBranch,
-			Run:            *report.ActiveRun,
+		runStore, err := store.Open(ctx, loaded.HomeDir)
+		if err != nil {
+			return report, preflightResult, err
+		}
+		_, ok, reclaimErr := reclaimOrphanedActiveRun(ctx, runStore, *report.ActiveRun, stderr)
+		closeErr := runStore.Close()
+		if reclaimErr != nil {
+			return report, preflightResult, reclaimErr
+		}
+		if closeErr != nil {
+			return report, preflightResult, closeErr
+		}
+		if ok {
+			report.ActiveRun = nil
+		} else {
+			return report, preflightResult, branchIntegrityActiveRunError{
+				HeadRepository: preflightResult.PullRequest.HeadRepository,
+				HeadBranch:     preflightResult.PullRequest.HeadBranch,
+				Run:            *report.ActiveRun,
+			}
 		}
 	}
 	if len(report.Pending) == 0 {
@@ -1596,7 +1627,7 @@ func runFetchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		_ = runStore.Close()
 	}()
 
-	run, err := createFetchRun(ctx, runStore, req, preflightResult)
+	run, err := createFetchRun(ctx, runStore, req, preflightResult, stderr)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
@@ -1673,7 +1704,7 @@ func runFetchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	return exitOK
 }
 
-func createFetchRun(ctx context.Context, runStore *store.Store, req commandRequest, preflightResult preflight.Result) (store.Run, error) {
+func createFetchRun(ctx context.Context, runStore *store.Store, req commandRequest, preflightResult preflight.Result, stderr io.Writer) (store.Run, error) {
 	createReq := store.CreateRunRequest{
 		Kind:           store.KindFetch,
 		HeadRepository: preflightResult.PullRequest.HeadRepository,
@@ -1686,7 +1717,7 @@ func createFetchRun(ctx context.Context, runStore *store.Store, req commandReque
 		ArtifactDir:    req.artifactDir,
 		WorkDir:        preflightResult.Git.Root,
 	}
-	return createReviewRun(ctx, runStore, req, createReq)
+	return createReviewRun(ctx, runStore, req, createReq, stderr)
 }
 
 type resolveBatchPlan struct {
@@ -1725,7 +1756,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		_ = runStore.Close()
 	}()
 	sweepRunRetention(ctx, runStore, req.artifactDir, loaded.Config.Store.JournalRetention, stderr)
-	run, err := createOperationalRun(ctx, runStore, store.KindResolve, req, preflightResult, resolvePlan.runtime)
+	run, err := createOperationalRun(ctx, runStore, store.KindResolve, req, preflightResult, resolvePlan.runtime, stderr)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
@@ -2128,7 +2159,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		_ = runStore.Close()
 	}()
 	sweepRunRetention(ctx, runStore, req.artifactDir, loaded.Config.Store.JournalRetention, stderr)
-	run, err := createOperationalRun(ctx, runStore, store.KindWatch, req, preflightResult, runtime)
+	run, err := createOperationalRun(ctx, runStore, store.KindWatch, req, preflightResult, runtime, stderr)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
@@ -2290,7 +2321,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	return exitForWatchOutcome(result.Outcome)
 }
 
-func createOperationalRun(ctx context.Context, runStore *store.Store, kind string, req commandRequest, preflightResult preflight.Result, runtime agent.RuntimeSpec) (store.Run, error) {
+func createOperationalRun(ctx context.Context, runStore *store.Store, kind string, req commandRequest, preflightResult preflight.Result, runtime agent.RuntimeSpec, stderr io.Writer) (store.Run, error) {
 	createReq := store.CreateRunRequest{
 		Kind:            kind,
 		HeadRepository:  preflightResult.PullRequest.HeadRepository,
@@ -2306,15 +2337,72 @@ func createOperationalRun(ctx context.Context, runStore *store.Store, kind strin
 		Model:           runtime.Model,
 		ReasoningEffort: runtime.ReasoningEffort,
 	}
-	return createReviewRun(ctx, runStore, req, createReq)
+	return createReviewRun(ctx, runStore, req, createReq, stderr)
 }
 
-func createReviewRun(ctx context.Context, runStore *store.Store, req commandRequest, createReq store.CreateRunRequest) (store.Run, error) {
+func createReviewRun(ctx context.Context, runStore *store.Store, req commandRequest, createReq store.CreateRunRequest, stderr io.Writer) (store.Run, error) {
 	createReq.OwnerPID = os.Getpid()
 	if req.skipBranchIntegrity && req.branchIntegrity.ActiveRun != nil {
 		return runStore.CreateRunSkippingActiveLock(ctx, createReq)
 	}
-	return runStore.CreateRun(ctx, createReq)
+	return createRunReclaimingOrphan(ctx, runStore, stderr, func() (store.Run, error) {
+		return runStore.CreateRun(ctx, createReq)
+	})
+}
+
+func createRunReclaimingOrphan(ctx context.Context, runStore *store.Store, stderr io.Writer, create func() (store.Run, error)) (store.Run, error) {
+	run, err := create()
+	if err == nil {
+		return run, nil
+	}
+	var activeErr store.ActiveRunError
+	if !errors.As(err, &activeErr) {
+		return store.Run{}, err
+	}
+	if _, ok, reclaimErr := reclaimOrphanedActiveRun(ctx, runStore, activeErr.Existing, stderr); reclaimErr != nil {
+		return store.Run{}, reclaimErr
+	} else if !ok {
+		return store.Run{}, err
+	}
+	return create()
+}
+
+func reclaimOrphanedActiveRun(ctx context.Context, runStore *store.Store, active store.Run, stderr io.Writer) (store.Run, bool, error) {
+	pid, ok := activeOwnerPID(active)
+	if !ok || store.ProcessAlive(pid) {
+		return active, false, nil
+	}
+	reason := orphanedActiveRunReason(pid)
+	if err := runStore.ReclaimOrphanedRun(ctx, active, reason); err != nil {
+		return active, false, fmt.Errorf("reclaim orphaned Active Run %s: %w", active.ID, err)
+	}
+	reclaimed, found, err := runStore.Run(ctx, active.ID)
+	if err != nil {
+		return active, false, fmt.Errorf("read reclaimed Active Run %s: %w", active.ID, err)
+	}
+	if !found || reclaimed.State != store.StateFailed {
+		return active, false, nil
+	}
+	printOrphanedActiveRunReclaimed(stderr, reclaimed.ID, reason)
+	return reclaimed, true, nil
+}
+
+func activeOwnerPID(run store.Run) (int, bool) {
+	if run.OwnerPID == nil || *run.OwnerPID <= 0 {
+		return 0, false
+	}
+	return *run.OwnerPID, true
+}
+
+func orphanedActiveRunReason(pid int) string {
+	return fmt.Sprintf("owner process %d not running; lock reclaimed", pid)
+}
+
+func printOrphanedActiveRunReclaimed(stderr io.Writer, runID string, reason string) {
+	if stderr == nil {
+		return
+	}
+	fmt.Fprintf(stderr, "%s: reclaimed orphaned Active Run %s: %s\n", app.Name, runID, reason)
 }
 
 func requestWithRuntimeSelection(req commandRequest, runtime agent.RuntimeSpec) commandRequest {
