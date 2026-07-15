@@ -70,11 +70,20 @@ source — no external tracker). See `docs/agents/issue-tracker.md`.
 This is a single-context repo: root `CONTEXT.md` plus ADRs in `docs/adr/`. See
 `docs/agents/domain.md`.
 
+### Secondbrain
+
+When work depends on business context, prior decisions, cross-project
+documentation, fiscal or tax concepts, Vortex, Tax, Visio, Gesttione, or shared
+architecture patterns, read `docs/agents/secondbrain.md` before acting. Skip it
+for self-contained repository work that the local code and docs fully answer.
+The Secondbrain is read-only from this repo, and responses must cite every
+Secondbrain file used.
+
 ### Spec artifacts
 
 Feature specs live under `docs/specs/<feature-slug>/` (`_idea.md`, `_prd.md`,
 `_techspec.md`, `_tasks.md`, `task_NN.md`, `qa/`). Dependencies live only in
-`_tasks.md`; task status lives only in each task file's frontmatter. Shipped
+`_tasks.md`; task status lives only in each task file's frontmatter. Completed
 specs are archived to `docs/specs/_archived/`.
 
 ### Spec routing
@@ -85,15 +94,22 @@ refactor/bugfix, or trivial. See `docs/agents/spec-routing.md`.
 ### Docs layout
 
 Every `docs/` folder has one job — inbox triage, ADRs, agent guides, design
-artifacts, dated findings (with a template), handoffs, external references,
-specs, and the user guide. See `docs/agents/docs-layout.md`.
+artifacts, dated findings, handoffs, external references, specs, and the user
+guide. See `docs/agents/docs-layout.md`.
+
+### Triage labels
+
+External GitHub issues use the five canonical triage labels defined in
+`docs/agents/triage-labels.md`. Spec Tasks use task-file status instead.
 
 ### Autonomous work
 
 Supervisor orchestrates and authors Specs; implementation is delegated to an
-ACP Runtime — Codex (`gpt-5.5` with `xhigh`) by default, Claude (`opus` at
-`high`/`xhigh`) for design, UI, UX, and frontend Tasks. Binding for every
-autonomous session. See `docs/agents/autonomous-work.md`.
+ACP Runtime. Codex (`gpt-5.5` with `xhigh`) handles CLI, backend,
+infrastructure, documentation, and other non-frontend Tasks. Claude
+(`opus`/Opus 4.8 with `xhigh`) handles design, UI, UX, TUI, and web frontend
+Tasks. Binding for every autonomous session. See
+`docs/agents/autonomous-work.md`.
 
 ### Skill governance
 
