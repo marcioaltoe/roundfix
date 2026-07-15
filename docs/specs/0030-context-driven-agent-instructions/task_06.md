@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0030-context-driven-agent-instructions
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -24,21 +24,21 @@ Turn the completed feature into a repository-enforced contract. This slice adds 
 
 ## Subtasks
 
-- [ ] Add the focused setup-context validation target and wire it into `make verify`.
-- [ ] Add or finalize macro fixtures for every supported profile and critical migration path.
-- [ ] Run the skill's structural validator against the canonical skill directory.
-- [ ] Regenerate the embedded owned-skill bundle using `make skills-sync`.
-- [ ] Run embedded drift checks and the complete Python suite from a clean process.
-- [ ] Run the full repository verification gate and record any residual risks in the Task result.
+- [x] Add the focused setup-context validation target and wire it into `make verify`.
+- [x] Add or finalize macro fixtures for every supported profile and critical migration path.
+- [x] Run the skill's structural validator against the canonical skill directory.
+- [x] Regenerate the embedded owned-skill bundle using `make skills-sync`.
+- [x] Run embedded drift checks and the complete Python suite from a clean process.
+- [x] Run the full repository verification gate and record any residual risks in the Task result.
 
 ## Acceptance Criteria
 
-- [ ] The focused setup-context validation target passes independently.
-- [ ] All three initial profiles complete apply → clean audit → no-op apply in macro tests.
-- [ ] Required-skill failures and optional extras retain their documented blocking semantics.
-- [ ] The canonical and embedded `setup-context-driven` skill trees are identical.
-- [ ] Skill structure validation accepts the revised skill with its scripts and assets.
-- [ ] `make verify` passes completely with no skipped required check.
+- [x] The focused setup-context validation target passes independently.
+- [x] All three initial profiles complete apply → clean audit → no-op apply in macro tests.
+- [x] Required-skill failures and optional extras retain their documented blocking semantics.
+- [x] The canonical and embedded `setup-context-driven` skill trees are identical.
+- [x] Skill structure validation accepts the revised skill with its scripts and assets.
+- [x] `make verify` passes completely with no skipped required check.
 
 ## Context
 
@@ -60,3 +60,13 @@ Turn the completed feature into a repository-enforced contract. This slice adds 
 
 - `_prd.md` → all Success Metrics; User Story 8.
 - `_techspec.md` → Testing Approach; Integration Points: Roundfix skill bundle; Build Order 5; Risks & Considerations.
+
+## Result
+
+- Added `setup-context-check` to `Makefile` and wired it into `make verify`; it runs the complete setup-context Python suite plus bundled asset validation for canonical and embedded skill trees.
+- Added macro CLI coverage for TypeScript/Bun monorepo, Go CLI/TUI, and Rust CLI profile flows, including apply → clean audit → no-op apply, required-skill blocking, optional extra-skill info, and Secondbrain opt-in.
+- Regenerated `skills/setup-context-driven/` with `rtk make skills-sync` and preserved `skills-sync-check` as the drift gate.
+- Evidence: `rtk make setup-context-check` passed with 42 Python tests and asset validation.
+- Evidence: `rtk make skills-sync-check` passed with no canonical/embedded drift.
+- Evidence: `rtk make verify` passed after rerunning with Go build-cache filesystem approval; Go tests, setup-context validation, skill checks, and build all completed.
+- Residual risks: none identified.
