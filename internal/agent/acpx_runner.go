@@ -42,6 +42,19 @@ const (
 	infrastructureStderrTruncated   = "[stderr truncated]\n"
 )
 
+var defaultAdapterCommands = map[string]string{
+	"codex":    "codex-acp",
+	"claude":   "claude-code-acp",
+	"opencode": "opencode",
+}
+
+var adapterInstallCommands = map[string]string{
+	"codex-acp":        "npm install -g @agentclientprotocol/codex-acp",
+	"claude-code-acp":  "npm install -g @zed-industries/claude-code-acp",
+	"claude-agent-acp": "npm install -g @zed-industries/claude-agent-acp",
+	"opencode":         "npm install -g opencode-ai",
+}
+
 // ACPXRunner is the acpx-backed invocation core. Later migration tasks wire
 // this into Runner after Agent Session lifecycle is available.
 type ACPXRunner struct {
@@ -162,6 +175,27 @@ func (err ACPXProbeError) Unwrap() error {
 	return err.Err
 }
 
+type AdapterProbeError struct {
+	Command string
+	Err     error
+}
+
+func (err AdapterProbeError) Error() string {
+	command := strings.TrimSpace(err.Command)
+	if command == "" {
+		command = "adapter"
+	}
+	return fmt.Sprintf("%s is required but was not found on PATH; install it with: %s", command, err.InstallCommand())
+}
+
+func (err AdapterProbeError) InstallCommand() string {
+	return adapterInstallCommand(err.Command)
+}
+
+func (err AdapterProbeError) Unwrap() error {
+	return err.Err
+}
+
 type SelectionPreflightError struct {
 	Runtime         string
 	Model           string
@@ -247,7 +281,95 @@ func (runner ACPXRunner) Probe(ctx context.Context, req ProbeRequest) error {
 	if workDir == "" {
 		return nil
 	}
+	if _, err := CheckAdapter(ctx, req.Runtime); err != nil {
+		return err
+	}
 	return runner.probeSelection(ctx, req.Runtime, workDir)
+}
+
+func CheckAdapter(ctx context.Context, runtime RuntimeSpec) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	command, err := resolveAdapterCommand(runtime)
+	if err != nil {
+		return "", err
+	}
+	if _, err := exec.LookPath(command); err != nil {
+		return "", AdapterProbeError{Command: command, Err: err}
+	}
+	return command, nil
+}
+
+// resolveAdapterCommand returns the adapter binary acpx will spawn for the
+// selected runtime: stdio overrides first, then acpx's agents map, then
+// Roundfix's built-in defaults.
+func resolveAdapterCommand(runtime RuntimeSpec) (string, error) {
+	if runtime.Protocol == ProtocolStdio {
+		if command := adapterBinary(runtime.Command); command != "" {
+			return command, nil
+		}
+	}
+	runtimeID := strings.TrimSpace(runtime.ID)
+	if command, ok := configuredAdapterCommand(runtimeID); ok {
+		return command, nil
+	}
+	if command, ok := defaultAdapterCommands[runtimeID]; ok {
+		return command, nil
+	}
+	return "", fmt.Errorf("unsupported Agent %q; supported values: codex, claude, opencode", runtimeID)
+}
+
+func configuredAdapterCommand(runtimeID string) (string, bool) {
+	path, err := acpxConfigPath()
+	if err != nil {
+		return "", false
+	}
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", false
+	}
+	var config struct {
+		Agents map[string]struct {
+			Command string `json:"command"`
+		} `json:"agents"`
+	}
+	if err := json.Unmarshal(content, &config); err != nil {
+		return "", false
+	}
+	agentConfig, ok := config.Agents[runtimeID]
+	if !ok {
+		return "", false
+	}
+	command := adapterBinary(agentConfig.Command)
+	return command, command != ""
+}
+
+func acpxConfigPath() (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(homeDir, ".acpx", "config.json"), nil
+}
+
+func adapterBinary(command string) string {
+	fields := strings.Fields(strings.TrimSpace(command))
+	if len(fields) == 0 {
+		return ""
+	}
+	return fields[0]
+}
+
+func adapterInstallCommand(command string) string {
+	command = strings.TrimSpace(command)
+	if install, ok := adapterInstallCommands[command]; ok {
+		return install
+	}
+	if command == "" {
+		return "install the adapter and ensure it is on PATH"
+	}
+	return "install " + command + " and ensure it is on PATH"
 }
 
 func (runner ACPXRunner) probeACPX(ctx context.Context) error {

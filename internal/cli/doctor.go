@@ -45,10 +45,23 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 
 	checker := doctorDeps.healthChecker(loaded)
+	runtime, runtimeErr := runtimeForConfiguredAgent(loaded.Config)
+	adapterResult := doctorAdapterCheck(ctx, checker, runtime, runtimeErr)
+	var agentResult CheckResult
+	if runtimeErr == nil && adapterResult.Status == CheckStatusFailed {
+		agentResult = CheckResult{
+			Name:   HealthCheckAgent,
+			Status: CheckStatusSkipped,
+			Detail: "adapter failed",
+		}
+	} else {
+		agentResult = doctorAgentCheck(ctx, checker, loaded)
+	}
 	results := []CheckResult{
 		checker.Node(ctx),
 		checker.ACPX(ctx),
-		doctorAgentCheck(ctx, checker, loaded),
+		adapterResult,
+		agentResult,
 		checker.Codex(ctx),
 	}
 
@@ -75,6 +88,17 @@ func parseDoctorCommand(args []string) error {
 		return validationError{message: fmt.Sprintf("unexpected argument %q", remaining[0])}
 	}
 	return nil
+}
+
+func doctorAdapterCheck(ctx context.Context, checker HealthChecker, runtime agent.RuntimeSpec, runtimeErr error) CheckResult {
+	if runtimeErr != nil {
+		return CheckResult{
+			Name:   HealthCheckAdapter,
+			Status: CheckStatusFailed,
+			Detail: runtimeErr.Error(),
+		}
+	}
+	return checker.Adapter(ctx, runtime)
 }
 
 func doctorAgentCheck(ctx context.Context, checker HealthChecker, loaded roundconfig.Loaded) CheckResult {

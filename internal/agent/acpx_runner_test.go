@@ -113,6 +113,97 @@ func TestACPXProbeCommandOverrideStillChecksACPXClient(t *testing.T) {
 	}
 }
 
+func TestResolveAdapterCommandUsesConfigFallbacksAndOverrides(t *testing.T) {
+	tests := []struct {
+		name    string
+		runtime RuntimeSpec
+		config  string
+		want    string
+	}{
+		{
+			name:    "configured agent command",
+			runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP},
+			config:  `{"agents":{"codex":{"command":"local-codex-acp","args":["--stdio"]}}}`,
+			want:    "local-codex-acp",
+		},
+		{
+			name:    "missing config falls back to default",
+			runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP},
+			want:    "codex-acp",
+		},
+		{
+			name:    "malformed config falls back to default",
+			runtime: RuntimeSpec{ID: "claude", Protocol: ProtocolACP},
+			config:  `{not json`,
+			want:    "claude-code-acp",
+		},
+		{
+			name:    "stdio command override",
+			runtime: RuntimeSpec{ID: "codex-custom", Protocol: ProtocolStdio, Command: "custom-acp --stdio"},
+			config:  `{"agents":{"codex-custom":{"command":"ignored-acp"}}}`,
+			want:    "custom-acp",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.config != "" {
+				writeACPXConfigForTest(t, tt.config)
+			} else {
+				t.Setenv("HOME", t.TempDir())
+			}
+
+			got, err := resolveAdapterCommand(tt.runtime)
+
+			if err != nil {
+				t.Fatalf("resolve adapter command: %v", err)
+			}
+			if got != tt.want {
+				t.Fatalf("expected adapter %q, got %q", tt.want, got)
+			}
+		})
+	}
+}
+
+func TestACPXProbeMissingAdapterNamesInstallCommandBeforeSession(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Setenv("PATH", t.TempDir())
+	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+
+	err := harness.runner.Probe(context.Background(), ProbeRequest{
+		Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.5"},
+		WorkDir: harness.gitRoot,
+	})
+
+	if err == nil {
+		t.Fatal("expected missing adapter to fail")
+	}
+	message := err.Error()
+	for _, want := range []string{"codex-acp is required but was not found on PATH", "npm install -g @agentclientprotocol/codex-acp"} {
+		if !strings.Contains(message, want) {
+			t.Fatalf("expected probe error to contain %q, got %q", want, message)
+		}
+	}
+	invocations := readJSONInvocations(t, harness.invocationsPath)
+	wantInvocations := [][]string{{"--version"}}
+	if !reflect.DeepEqual(invocations, wantInvocations) {
+		t.Fatalf("expected adapter failure before disposable Agent Session\nwant: %#v\ngot:  %#v", wantInvocations, invocations)
+	}
+}
+
+func TestACPXProbeMalformedConfigFallsBackToDefaultAdapter(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	writeACPXConfigForTest(t, `{not json`)
+	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.5"}
+
+	err := harness.runner.Probe(context.Background(), ProbeRequest{Runtime: runtime, WorkDir: harness.gitRoot})
+
+	if err != nil {
+		t.Fatalf("expected malformed config to fall back to default adapter, got %v", err)
+	}
+}
+
 func TestACPXProbeValidatesSelectionWithDisposableSession(t *testing.T) {
 	harness := newFakeACPXHarness(t)
 	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
@@ -1738,6 +1829,19 @@ func newFakeACPXHarness(t *testing.T) *fakeACPXHarness {
 	t.Helper()
 	dir := t.TempDir()
 	invocationsPath := filepath.Join(dir, "invocations.jsonl")
+	homeDir := filepath.Join(dir, "home")
+	if err := os.MkdirAll(homeDir, 0o755); err != nil {
+		t.Fatalf("create fake HOME: %v", err)
+	}
+	adapterDir := filepath.Join(dir, "adapters")
+	if err := os.MkdirAll(adapterDir, 0o755); err != nil {
+		t.Fatalf("create fake adapter dir: %v", err)
+	}
+	for _, command := range []string{"codex-acp", "claude-code-acp", "opencode"} {
+		installFakeAdapter(t, adapterDir, command)
+	}
+	t.Setenv("HOME", homeDir)
+	t.Setenv("PATH", adapterDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	t.Setenv(fakeACPXEnv, "1")
 	t.Setenv(fakeACPXInvokes, invocationsPath)
 	t.Setenv(fakeACPXStdoutBy, mustJSONForTest(t, map[string]string{"prompt": acpxPromptResponseLine("end_turn")}))
@@ -1752,6 +1856,27 @@ func newFakeACPXHarness(t *testing.T) *fakeACPXHarness {
 		gitRoot:         dir,
 		invocationsPath: invocationsPath,
 	}
+}
+
+func installFakeAdapter(t *testing.T, dir string, command string) {
+	t.Helper()
+	path := filepath.Join(dir, command)
+	if err := os.WriteFile(path, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatalf("write fake adapter %s: %v", command, err)
+	}
+}
+
+func writeACPXConfigForTest(t *testing.T, content string) {
+	t.Helper()
+	homeDir := t.TempDir()
+	configPath := filepath.Join(homeDir, ".acpx", "config.json")
+	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+		t.Fatalf("create acpx config dir: %v", err)
+	}
+	if err := os.WriteFile(configPath, []byte(content), 0o644); err != nil {
+		t.Fatalf("write acpx config: %v", err)
+	}
+	t.Setenv("HOME", homeDir)
 }
 
 func newBlockingFakeACPXHarness(t *testing.T, exitAfterCancel bool) *fakeACPXHarness {

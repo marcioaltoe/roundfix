@@ -729,6 +729,7 @@ func TestRunDoctorReportsReadinessChecks(t *testing.T) {
 			wantCode: exitOK,
 			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
 				"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
+				"adapter: ok (codex-acp)\n" +
 				"agent: ok (codex)\n" +
 				"codex: ok (/home/roundfix/.local/bin/codex accepted)\n",
 		},
@@ -743,6 +744,7 @@ func TestRunDoctorReportsReadinessChecks(t *testing.T) {
 			wantCode: exitRunFailed,
 			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
 				"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
+				"adapter: ok (codex-acp)\n" +
 				"agent: ok (codex)\n" +
 				"codex: failed (/tmp/codex is quarantined; next: " + codex.ReinstallNextAction + ")\n",
 		},
@@ -757,6 +759,7 @@ func TestRunDoctorReportsReadinessChecks(t *testing.T) {
 			wantCode: exitOK,
 			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
 				"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
+				"adapter: ok (codex-acp)\n" +
 				"agent: ok (codex)\n" +
 				"codex: skipped (not-applicable on linux)\n",
 		},
@@ -794,6 +797,46 @@ func TestRunDoctorReportsReadinessChecks(t *testing.T) {
 			assertDoctorPathMissing(t, filepath.Join(homeDir, ".roundfix"))
 			assertDoctorPathMissing(t, filepath.Join(repoDir, ".roundfixrc.yml"))
 		})
+	}
+}
+
+func TestRunDoctorReportsAdapterFailureWithNextAction(t *testing.T) {
+	checker := newDoctorFakeHealthChecker(
+		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
+		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
+		CheckResult{Name: HealthCheckAgent, Status: CheckStatusOK, Detail: "should not run before adapter failure"},
+		CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK, Detail: "/home/roundfix/.local/bin/codex accepted"},
+	)
+	checker.adapter = CheckResult{
+		Name:       HealthCheckAdapter,
+		Status:     CheckStatusFailed,
+		Detail:     "codex-acp is required but was not found on PATH; install it with: npm install -g @agentclientprotocol/codex-acp",
+		NextAction: "npm install -g @agentclientprotocol/codex-acp",
+	}
+	withDoctorFakeDeps(t, checker)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"doctor"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected doctor adapter failure exit %d, got %d", exitRunFailed, code)
+	}
+	for _, want := range []string{
+		"adapter: failed",
+		"codex-acp is required but was not found on PATH",
+		"next: npm install -g @agentclientprotocol/codex-acp",
+		"agent: skipped (adapter failed)",
+	} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("expected stdout to contain %q, got %q", want, stdout.String())
+		}
+	}
+	if len(checker.agentRequests) != 0 {
+		t.Fatalf("expected adapter failure to skip Agent probe, got %#v", checker.agentRequests)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
 	}
 }
 
@@ -892,6 +935,7 @@ func newDoctorFakeHealthChecker(node, acpx, agentResult, codex CheckResult) *doc
 	return &doctorFakeHealthChecker{
 		node:        node,
 		acpx:        acpx,
+		adapter:     CheckResult{Name: HealthCheckAdapter, Status: CheckStatusOK, Detail: "codex-acp"},
 		agentResult: agentResult,
 		codex:       codex,
 	}
@@ -900,6 +944,7 @@ func newDoctorFakeHealthChecker(node, acpx, agentResult, codex CheckResult) *doc
 type doctorFakeHealthChecker struct {
 	node          CheckResult
 	acpx          CheckResult
+	adapter       CheckResult
 	agentResult   CheckResult
 	codex         CheckResult
 	agentRequests []agent.ProbeRequest
@@ -911,6 +956,10 @@ func (checker *doctorFakeHealthChecker) Node(context.Context) CheckResult {
 
 func (checker *doctorFakeHealthChecker) ACPX(context.Context) CheckResult {
 	return checker.acpx
+}
+
+func (checker *doctorFakeHealthChecker) Adapter(context.Context, agent.RuntimeSpec) CheckResult {
+	return checker.adapter
 }
 
 func (checker *doctorFakeHealthChecker) Agent(_ context.Context, req agent.ProbeRequest) CheckResult {

@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0028-settlement-and-reporting
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -47,3 +47,19 @@ Turn the opaque adapter spawn failure into an actionable preflight diagnosis: Ro
 ## References
 
 `_prd.md` → Goal 5, User Story 6, Core Feature 6; `_techspec.md` → Build Order 7, Interfaces (resolveAdapterCommand), Integration Points (acpx configuration), Risks (acpx config drift), Decisions (no parallel adapter registry).
+
+## Result
+
+- Added adapter-command resolution in `internal/agent/acpx_runner.go`: stdio overrides resolve first, then `~/.acpx/config.json` `agents.<runtime>.command`, then built-in defaults.
+- Added the adapter PATH check before disposable Agent Session setup, with install hints for known adapters and a generic fallback hint for unknown commands.
+- Added `adapter: ok|failed` Doctor output through the health checker; Doctor skips the Agent probe when the adapter check already failed.
+- Acceptance evidence:
+  - `TestACPXProbeMissingAdapterNamesInstallCommandBeforeSession` asserts a missing `codex-acp` fails with its install command after only the `acpx --version` probe.
+  - `TestResolveAdapterCommandUsesConfigFallbacksAndOverrides` covers present config, missing config, malformed config, and stdio override resolution.
+  - `TestACPXProbeMalformedConfigFallsBackToDefaultAdapter` proves malformed acpx config does not fail preflight by itself.
+  - `TestRunDoctorReportsReadinessChecks` and `TestRunDoctorReportsAdapterFailureWithNextAction` cover Doctor `adapter: ok` and `adapter: failed` output with next action.
+- Verification:
+  - `rtk grep -q "resolveAdapterCommand" internal/agent/acpx_runner.go` — passed.
+  - `rtk go test ./internal/agent/... ./internal/cli/...` — passed, 556 tests.
+  - `rtk go build -buildvcs=false ./...` — passed.
+  - `rtk make verify` — passed: `go test ./...` 1235 tests, skill check passed, build passed.
