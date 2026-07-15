@@ -916,6 +916,29 @@ func noOpTaskCommitWarningEvents(t *testing.T, sink *captureEventSink) []runeven
 	return warnings
 }
 
+func TestPublishNoOpTaskCommitWarningReturnsProgressWriteError(t *testing.T) {
+	engine := &Engine{deps: Dependencies{Progress: failingProgressWriter{err: errors.New("progress closed")}}}
+
+	err := engine.publishNoOpTaskCommitWarning(context.Background(), TaskPlan{RunID: "run_1"}, "task_01", 1, "spec-only")
+
+	if err == nil {
+		t.Fatal("expected progress write error")
+	}
+	for _, want := range []string{"write no-op Task commit warning", "run_1", "task_01", "progress closed"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("expected error to contain %q, got %v", want, err)
+		}
+	}
+}
+
+type failingProgressWriter struct {
+	err error
+}
+
+func (writer failingProgressWriter) Write([]byte) (int, error) {
+	return 0, writer.err
+}
+
 func assertNoOpTaskCommitWarning(t *testing.T, fixture *taskCycleFixture, taskID string, shape string) {
 	t.Helper()
 	warnings := noOpTaskCommitWarningEvents(t, fixture.sink)

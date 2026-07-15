@@ -541,7 +541,7 @@ func selectionRecoveryAction(runtime string, includeReasoning bool) string {
 	if includeReasoning {
 		message += " with --reasoning-effort when needed"
 	}
-	if runtime != "" {
+	if includeReasoning && runtime != "" {
 		message += fmt.Sprintf(`, or set runtimes.%s.reasoning_effort "" when the model manages reasoning`, runtime)
 	}
 	return message

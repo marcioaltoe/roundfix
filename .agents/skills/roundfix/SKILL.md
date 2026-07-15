@@ -747,7 +747,7 @@ Review Run output and completion contract:
 
   Review Issue statuses in the first line are `resolved`, `invalid`,
   `failed`, `duplicated`, or `unresolved`. Failed, invalid, and unresolved
-  lines include ` — reason: <terminal_reason>` when the issue artifact carries
+  lines include — `reason: <terminal_reason>` when the issue artifact carries
   one. `resolve` uses the same report shape with `1 Round(s)`.
 - A terminal Run with no fetched Review Issues still prints the two count
   lines; for example:
@@ -915,7 +915,7 @@ outcome and never opens pull requests (ADR-0021).
    - One line per Task in Task Graph order: `task_NN <status> — <title>`,
      with status `completed`, `failed`, `skipped`, or `pending`.
      Failed and skipped Task lines are followed by one indented reason line:
-     `  reason: <one line>`. Verification failure reasons name the failed
+     two spaces followed by `reason: <one line>`. Verification failure reasons name the failed
      command and exit status and point to diagnostics. Completed Task lines do
      not gain an extra line.
    - With `--qa`, one verdict line after the Task lines:

@@ -201,7 +201,7 @@ func (client Client) ReplyToIssue(ctx context.Context, req reviewsource.IssueCom
 			continue
 		}
 		for _, comment := range thread.Comments {
-			if strings.Contains(comment.Body, marker) {
+			if HasRoundfixCommentMarker(marker, comment.Body) {
 				return reviewsource.IssueCommentResult{Skipped: true}, nil
 			}
 		}

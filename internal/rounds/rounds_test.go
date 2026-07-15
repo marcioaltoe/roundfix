@@ -556,6 +556,13 @@ func TestSetIssueStatusRoundTripsTerminalReason(t *testing.T) {
 			seedStaleReason:  "stale verification failure",
 			wantReasonAbsent: "stale verification failure",
 		},
+		{
+			name:             "empty reason clears stale terminal reason when status changes",
+			status:           StatusDuplicated,
+			duplicateOf:      "round-002/issue_001.md",
+			seedStaleReason:  "stale verification failure",
+			wantReasonAbsent: "stale verification failure",
+		},
 	}
 
 	for _, tt := range tests {

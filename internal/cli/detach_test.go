@@ -17,6 +17,8 @@ const (
 	detachTestChildSleepBeforeLiveness = "sleep-before-liveness"
 	detachTestChildSlowRunCreation     = "slow-run-creation"
 	detachTestChildRunCreated          = "run-created"
+	detachTestChildInvalidLiveness     = "invalid-liveness"
+	detachTestChildMalformedRunCreated = "malformed-run-created"
 	detachTestChildExitTwoWithOutput   = "exit-two-with-output"
 	detachTestChildExitOneSilently     = "exit-one-silently"
 	detachTestRunID                    = "run-detach-test"
@@ -42,7 +44,7 @@ func TestRunDetachedCommandTimesOutWaitingForLiveness(t *testing.T) {
 }
 
 func TestRunDetachedCommandAllowsRunCreationPastLivenessDeadline(t *testing.T) {
-	stdout, stderr, code := runDetachParentForTest(t, detachTestChildRunCreated, 20*time.Millisecond, time.Second)
+	stdout, stderr, code := runDetachParentForTest(t, detachTestChildRunCreated, 500*time.Millisecond, 2*time.Second)
 
 	if code != exitOK {
 		t.Fatalf("expected detach success exit %d, got %d stdout=%q stderr=%q", exitOK, code, stdout, stderr)
@@ -61,7 +63,7 @@ func TestRunDetachedCommandAllowsRunCreationPastLivenessDeadline(t *testing.T) {
 }
 
 func TestRunDetachedCommandTimesOutWaitingForRunCreation(t *testing.T) {
-	stdout, stderr, code := runDetachParentForTest(t, detachTestChildSlowRunCreation, 50*time.Millisecond, 50*time.Millisecond)
+	stdout, stderr, code := runDetachParentForTest(t, detachTestChildSlowRunCreation, 500*time.Millisecond, 50*time.Millisecond)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected Run-creation timeout exit %d, got %d stdout=%q stderr=%q", exitRunFailed, code, stdout, stderr)
@@ -79,6 +81,44 @@ func TestRunDetachedCommandTimesOutWaitingForRunCreation(t *testing.T) {
 	}
 }
 
+func TestRunDetachedCommandReportsInvalidLivenessHandshake(t *testing.T) {
+	stdout, stderr, code := runDetachParentForTest(t, detachTestChildInvalidLiveness, time.Second, time.Second)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected invalid liveness exit %d, got %d stdout=%q stderr=%q", exitRunFailed, code, stdout, stderr)
+	}
+	if stdout != "" {
+		t.Fatalf("expected no stdout, got %q", stdout)
+	}
+	for _, want := range []string{
+		"Detached Run child failed liveness handshake",
+		"invalid Detached Run liveness marker",
+	} {
+		if !strings.Contains(stderr, want) {
+			t.Fatalf("expected liveness failure diagnostic containing %q, got %q", want, stderr)
+		}
+	}
+}
+
+func TestRunDetachedCommandReportsMalformedRunCreationHandshake(t *testing.T) {
+	stdout, stderr, code := runDetachParentForTest(t, detachTestChildMalformedRunCreated, time.Second, time.Second)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected malformed run creation exit %d, got %d stdout=%q stderr=%q", exitRunFailed, code, stdout, stderr)
+	}
+	if stdout != "" {
+		t.Fatalf("expected no stdout, got %q", stdout)
+	}
+	for _, want := range []string{
+		"Detached Run child failed Run creation handshake",
+		"invalid Detached Run handshake",
+	} {
+		if !strings.Contains(stderr, want) {
+			t.Fatalf("expected Run creation failure diagnostic containing %q, got %q", want, stderr)
+		}
+	}
+}
+
 func TestRunDetachedCommandReportsChildExitBeforeHandshakeWithOutput(t *testing.T) {
 	stdout, stderr, code := runDetachParentForTest(t, detachTestChildExitTwoWithOutput, time.Second, time.Second)
 
@@ -89,7 +129,7 @@ func TestRunDetachedCommandReportsChildExitBeforeHandshakeWithOutput(t *testing.
 		t.Fatalf("expected no stdout, got %q", stdout)
 	}
 	for _, want := range []string{
-		"Detached Run child exited before the handshake (exit status 2); console output follows",
+		"Detached Run child failed liveness handshake: EOF; child exited (exit status 2); console output follows",
 		"detached child wrote a pre-handshake failure",
 	} {
 		if !strings.Contains(stderr, want) {
@@ -107,7 +147,7 @@ func TestRunDetachedCommandReportsSilentChildExitBeforeHandshake(t *testing.T) {
 	if stdout != "" {
 		t.Fatalf("expected no stdout, got %q", stdout)
 	}
-	if !strings.Contains(stderr, "Detached Run child exited before the handshake (exit status 1) and produced no output") {
+	if !strings.Contains(stderr, "Detached Run child failed liveness handshake: EOF; child exited (exit status 1) and produced no output") {
 		t.Fatalf("expected silent child diagnostic, got %q", stderr)
 	}
 }
@@ -159,13 +199,37 @@ func runDetachTestChild(mode string) int {
 		defer func() {
 			_ = handshake.Close()
 		}()
-		time.Sleep(75 * time.Millisecond)
+		time.Sleep(750 * time.Millisecond)
 		consoleLog := filepath.Join(filepath.Dir(os.Getenv(detachConsoleTempEnv)), detachTestRunID, "console.log")
 		if _, err := fmt.Fprintf(handshake, "%s\t%s\n", detachTestRunID, consoleLog); err != nil {
 			return exitRunFailed
 		}
 		time.Sleep(75 * time.Millisecond)
 		return exitOK
+	case detachTestChildInvalidLiveness:
+		handshake, ok := openDetachTestHandshake()
+		if !ok {
+			return exitRunFailed
+		}
+		defer func() {
+			_ = handshake.Close()
+		}()
+		if _, err := handshake.Write([]byte{'x'}); err != nil {
+			return exitRunFailed
+		}
+		return exitRunFailed
+	case detachTestChildMalformedRunCreated:
+		handshake, ok := writeDetachTestLiveness()
+		if !ok {
+			return exitRunFailed
+		}
+		defer func() {
+			_ = handshake.Close()
+		}()
+		if _, err := fmt.Fprintln(handshake, "malformed"); err != nil {
+			return exitRunFailed
+		}
+		return exitRunFailed
 	case detachTestChildExitTwoWithOutput:
 		fmt.Fprintln(os.Stderr, "detached child wrote a pre-handshake failure")
 		return exitPreflight
@@ -178,6 +242,19 @@ func runDetachTestChild(mode string) int {
 }
 
 func writeDetachTestLiveness() (*os.File, bool) {
+	handshake, ok := openDetachTestHandshake()
+	if !ok {
+		return nil, false
+	}
+	if _, err := handshake.Write([]byte{detachLivenessMarker}); err != nil {
+		fmt.Fprintf(os.Stderr, "write detach test liveness marker: %v\n", err)
+		_ = handshake.Close()
+		return nil, false
+	}
+	return handshake, true
+}
+
+func openDetachTestHandshake() (*os.File, bool) {
 	fd, err := strconv.Atoi(strings.TrimSpace(os.Getenv(detachHandshakeFDEnv)))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "invalid detach test handshake fd: %v\n", err)
@@ -186,11 +263,6 @@ func writeDetachTestLiveness() (*os.File, bool) {
 	handshake := os.NewFile(uintptr(fd), "roundfix-detach-test-handshake")
 	if handshake == nil {
 		fmt.Fprintf(os.Stderr, "open detach test handshake fd %d failed\n", fd)
-		return nil, false
-	}
-	if _, err := handshake.Write([]byte{detachLivenessMarker}); err != nil {
-		fmt.Fprintf(os.Stderr, "write detach test liveness marker: %v\n", err)
-		_ = handshake.Close()
 		return nil, false
 	}
 	return handshake, true

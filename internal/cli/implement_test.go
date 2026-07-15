@@ -1003,7 +1003,7 @@ func TestRunImplementDetachReportsAndRelaysPreflightFailure(t *testing.T) {
 	if stdout != "" {
 		t.Fatalf("expected detached preflight stdout empty, got %q", stdout)
 	}
-	if !strings.Contains(stderr, "Detached Run child exited before the handshake (exit status 2); console output follows") {
+	if !strings.Contains(stderr, "Detached Run child failed Run creation handshake: EOF; child exited (exit status 2); console output follows") {
 		t.Fatalf("expected detached preflight diagnostic, got %q", stderr)
 	}
 	if !strings.Contains(stderr, foregroundStderr.String()) {
@@ -1780,6 +1780,36 @@ func TestRenderImplementTaskLinesAddsReasonsForFailedAndSkippedTasks(t *testing.
 	}
 	if counts.completed != 1 || counts.failed != 1 || counts.skipped != 1 || counts.pending != 0 {
 		t.Fatalf("expected mixed counts, got %+v", counts)
+	}
+}
+
+func TestRenderImplementTaskLinesNormalizesMultilineReasons(t *testing.T) {
+	_, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build scheduler"},
+	})
+	specsRoot := filepath.Join(repoDir, "docs", "specs")
+	graph, err := spec.Load(specsRoot, implementTestSlug)
+	if err != nil {
+		t.Fatalf("load spec: %v", err)
+	}
+	if err := spec.SetStatus(implementTaskPath(repoDir, "task_01"), spec.StatusFailed); err != nil {
+		t.Fatalf("settle task_01 failed: %v", err)
+	}
+	outcomes := []daemon.TaskOutcome{{
+		Task:   "task_01",
+		Status: string(spec.StatusFailed),
+		Reason: "Verification failed:\ncommand \"make verify\" exited\nwith exit status 7",
+	}}
+
+	report, counts := renderImplementTaskLinesWithOutcomes(specsRoot, graph, true, outcomes)
+
+	expected := "task_01 failed — Build scheduler\n" +
+		"  reason: Verification failed: command \"make verify\" exited with exit status 7\n"
+	if report != expected {
+		t.Fatalf("expected single-line reason:\n%q\ngot:\n%q", expected, report)
+	}
+	if counts.failed != 1 || counts.completed != 0 || counts.skipped != 0 || counts.pending != 0 {
+		t.Fatalf("expected one failed count, got %+v", counts)
 	}
 }
 

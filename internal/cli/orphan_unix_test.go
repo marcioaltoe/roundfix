@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -82,6 +83,31 @@ func TestReviewFetchReclaimsDeadOwnerActiveRun(t *testing.T) {
 		t.Fatalf("expected fetch success, got %q", stdout.String())
 	}
 	assertReclaimedRunInCLI(t, homeDir, blocking.ID, pid)
+}
+
+func TestReviewFetchBlocksOlderLiveRunAfterReclaimingNewerOrphan(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	live := seedReviewActiveRun(t, homeDir, repoDir, store.KindWatch, os.Getpid())
+	pid := reapedCLIProcessPID(t)
+	orphan := seedReviewActiveRunSkippingLock(t, homeDir, repoDir, store.KindResolve, pid)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected fetch to block on older live Run after reclaim, got %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout, got %q", stdout.String())
+	}
+	assertOrphanWarning(t, stderr.String(), orphan.ID, pid)
+	if !strings.Contains(stderr.String(), "Active Run "+live.ID) {
+		t.Fatalf("expected Branch Integrity Preflight to block on live Run %s, got %q", live.ID, stderr.String())
+	}
+	assertReclaimedRunInCLI(t, homeDir, orphan.ID, pid)
+	assertRunState(t, homeDir, live.ID, store.StateActive)
 }
 
 // A terminal Run with a dead owner must never be "reclaimed" by stop: the
@@ -165,6 +191,35 @@ func seedReviewActiveRun(t *testing.T, homeDir string, repoDir string, kind stri
 	})
 	if err != nil {
 		t.Fatalf("seed review active Run: %v", err)
+	}
+	return run
+}
+
+func seedReviewActiveRunSkippingLock(t *testing.T, homeDir string, repoDir string, kind string, pid int) store.Run {
+	t.Helper()
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close Run Database: %v", err)
+		}
+	}()
+	run, err := runStore.CreateRunSkippingActiveLock(context.Background(), store.CreateRunRequest{
+		Kind:           kind,
+		HeadRepository: "owner/project",
+		HeadBranch:     "feature/review",
+		BaseRepository: "owner/project",
+		PRNumber:       "123",
+		GitRoot:        repoDir,
+		LocalBranch:    "feature/review",
+		HeadSHA:        "abc123",
+		ArtifactDir:    filepath.Join(repoDir, ".roundfix"),
+		OwnerPID:       pid,
+	})
+	if err != nil {
+		t.Fatalf("seed bypassed review active Run: %v", err)
 	}
 	return run
 }

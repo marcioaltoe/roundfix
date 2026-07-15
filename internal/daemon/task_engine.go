@@ -915,7 +915,9 @@ func (engine *Engine) publishNoOpTaskCommitWarning(ctx context.Context, plan Tas
 		return nil
 	}
 	warning := fmt.Sprintf("roundfix: warning: Task %s completed with no changes outside the Spec Root (%s)\n", taskID, shape)
-	fmt.Fprint(engine.deps.Progress, warning)
+	if _, err := fmt.Fprint(engine.deps.Progress, warning); err != nil {
+		return fmt.Errorf("write no-op Task commit warning for run %q Task %s: %w", plan.RunID, taskID, err)
+	}
 	summary := fmt.Sprintf("Task %s completed with no changes outside the Spec Root (%s).", taskID, shape)
 	payload := map[string]any{
 		"decision": "warning",

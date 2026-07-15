@@ -318,6 +318,17 @@ func TestReplyToIssueUsesMarkerForIdempotency(t *testing.T) {
 			}},
 			wantSkipped: true,
 		},
+		{
+			name: "posts when marker is embedded in quoted text",
+			threads: []ReviewThread{{
+				ID: "PRRT_thread",
+				Comments: []ThreadComment{
+					{Body: "quoted previous reply: " + marker},
+				},
+			}},
+			wantPosted:  true,
+			wantReplies: 1,
+		},
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {

@@ -1295,22 +1295,44 @@ func runBranchIntegrityPreflight(ctx context.Context, req commandRequest, loaded
 		if err != nil {
 			return report, preflightResult, err
 		}
-		_, ok, reclaimErr := reclaimOrphanedActiveRun(ctx, runStore, *report.ActiveRun, stderr)
-		closeErr := runStore.Close()
-		if reclaimErr != nil {
-			return report, preflightResult, reclaimErr
+		for report.ActiveRun != nil {
+			_, ok, reclaimErr := reclaimOrphanedActiveRun(ctx, runStore, *report.ActiveRun, stderr)
+			if reclaimErr != nil {
+				closeErr := runStore.Close()
+				if closeErr != nil {
+					return report, preflightResult, errors.Join(reclaimErr, closeErr)
+				}
+				return report, preflightResult, reclaimErr
+			}
+			if !ok {
+				active := *report.ActiveRun
+				closeErr := runStore.Close()
+				if closeErr != nil {
+					return report, preflightResult, closeErr
+				}
+				return report, preflightResult, branchIntegrityActiveRunError{
+					HeadRepository: preflightResult.PullRequest.HeadRepository,
+					HeadBranch:     preflightResult.PullRequest.HeadBranch,
+					Run:            active,
+				}
+			}
+			active, found, err := runStore.ActiveReviewRunByTarget(ctx, preflightResult.PullRequest.HeadRepository, preflightResult.PullRequest.HeadBranch)
+			if err != nil {
+				closeErr := runStore.Close()
+				if closeErr != nil {
+					return report, preflightResult, errors.Join(err, closeErr)
+				}
+				return report, preflightResult, err
+			}
+			if !found {
+				report.ActiveRun = nil
+				break
+			}
+			report.ActiveRun = &active
 		}
+		closeErr := runStore.Close()
 		if closeErr != nil {
 			return report, preflightResult, closeErr
-		}
-		if ok {
-			report.ActiveRun = nil
-		} else {
-			return report, preflightResult, branchIntegrityActiveRunError{
-				HeadRepository: preflightResult.PullRequest.HeadRepository,
-				HeadBranch:     preflightResult.PullRequest.HeadBranch,
-				Run:            *report.ActiveRun,
-			}
 		}
 	}
 	if len(report.Pending) == 0 {
@@ -1870,7 +1892,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 			}
 			fmt.Fprintf(stderr, "%s Run %s reached %s.\n", commandDisplayName(req.name), run.ID, store.StateStopped)
 			printStopSummary(req, preflightResult, stderr)
-			printReviewIssueReport(stdout, store.StateStopped, 1, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues))
+			printReviewIssueReport(stdout, store.StateStopped, 1, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues, stderr))
 			return exitOK
 		}
 		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
@@ -1903,7 +1925,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		fmt.Fprintf(stderr, "%d Unresolved Review Issue(s) remain; failed issues are retried by the next fetched Round.\n", cycleResult.Remaining)
 		printAgentCheckoutChangesNotice(stderr)
 	}
-	printReviewIssueReport(stdout, completed.State, 1, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues))
+	printReviewIssueReport(stdout, completed.State, 1, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues, stderr))
 	if completed.State == store.StateUnresolved {
 		return exitRunFailed
 	}
@@ -1934,8 +1956,9 @@ type reviewIssueReportCounts struct {
 }
 
 type reviewIssueReport struct {
-	runIssues        []rounds.Issue
-	cumulativeIssues []rounds.Issue
+	runIssues             []rounds.Issue
+	cumulativeIssues      []rounds.Issue
+	cumulativeUnavailable bool
 }
 
 // printReviewIssueReport prints the deterministic stdout contract for review
@@ -1947,9 +1970,13 @@ func printReviewIssueReport(stdout io.Writer, outcome string, roundsCompleted in
 		runCounts.add(status)
 		fmt.Fprintf(stdout, "issue %03d %s — %s%s\n", index+1, status, strings.TrimSpace(current.Title), reviewIssueReasonSuffix(current, status))
 	}
-	cumulativeCounts := countReviewIssueReportStatuses(report.cumulativeIssues)
 	fmt.Fprintf(stdout, "This Run (%s after %d Round(s)): %d resolved, %d invalid, %d duplicated, %d failed, %d unresolved.\n",
 		reviewIssueOutcomeDisplay(outcome), roundsCompleted, runCounts.resolved, runCounts.invalid, runCounts.duplicated, runCounts.failed, runCounts.unresolved)
+	if report.cumulativeUnavailable {
+		fmt.Fprintln(stdout, "Pull Request cumulative: unavailable.")
+		return
+	}
+	cumulativeCounts := countReviewIssueReportStatuses(report.cumulativeIssues)
 	fmt.Fprintf(stdout, "Pull Request cumulative: %d resolved, %d invalid, %d duplicated, %d failed, %d unresolved.\n",
 		cumulativeCounts.resolved, cumulativeCounts.invalid, cumulativeCounts.duplicated, cumulativeCounts.failed, cumulativeCounts.unresolved)
 }
@@ -2006,11 +2033,14 @@ func reviewIssueReasonSuffix(issue rounds.Issue, status string) string {
 	return " — reason: " + reason
 }
 
-func reviewIssueReportData(ctx context.Context, req commandRequest, preflightResult preflight.Result, runIssues []rounds.Issue) reviewIssueReport {
+func reviewIssueReportData(ctx context.Context, req commandRequest, preflightResult preflight.Result, runIssues []rounds.Issue, stderr io.Writer) reviewIssueReport {
 	refreshedRunIssues := refreshReviewIssueReportIssues(runIssues)
 	cumulativeIssues, err := loadReviewIssueReportIssues(ctx, req, preflightResult)
 	if err != nil {
-		cumulativeIssues = refreshedRunIssues
+		if stderr != nil {
+			fmt.Fprintf(stderr, "%s: Pull Request cumulative Review Issue report unavailable: %v\n", app.Name, err)
+		}
+		return reviewIssueReport{runIssues: refreshedRunIssues, cumulativeUnavailable: true}
 	}
 	return reviewIssueReport{runIssues: refreshedRunIssues, cumulativeIssues: cumulativeIssues}
 }
@@ -2388,7 +2418,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	if result.Outcome == store.StateCleanUnverified {
 		fmt.Fprintln(stderr, "CleanUnverified: Merge-Ready was not confirmed because the Review Source check never appeared within the grace period. Next: confirm the pull request's Review Source check before merging.")
 	}
-	printReviewIssueReport(stdout, completed.State, result.Rounds, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, watchReportIssues))
+	printReviewIssueReport(stdout, completed.State, result.Rounds, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, watchReportIssues, stderr))
 	if stopped {
 		printStopSummary(req, preflightResult, stderr)
 		return exitOK
@@ -2455,6 +2485,7 @@ func reclaimOrphanedActiveRun(ctx context.Context, runStore *store.Store, active
 		return active, false, nil
 	}
 	reason := orphanedActiveRunReason(pid)
+	printForceStopAgentSessionWarnings(stderr, bestEffortForceStopAgentSessions(ctx, active))
 	if err := runStore.ReclaimOrphanedRun(ctx, active, reason); err != nil {
 		return active, false, fmt.Errorf("reclaim orphaned Active Run %s: %w", active.ID, err)
 	}
@@ -2467,6 +2498,15 @@ func reclaimOrphanedActiveRun(ctx context.Context, runStore *store.Store, active
 	}
 	printOrphanedActiveRunReclaimed(stderr, reclaimed.ID, reason)
 	return reclaimed, true, nil
+}
+
+func printForceStopAgentSessionWarnings(stderr io.Writer, warnings []string) {
+	if stderr == nil {
+		return
+	}
+	for _, warning := range warnings {
+		fmt.Fprintf(stderr, "%s: %s\n", app.Name, warning)
+	}
 }
 
 func activeOwnerPID(run store.Run) (int, bool) {
@@ -3973,5 +4013,5 @@ func printWatchRunFailure(err error, stderr io.Writer) {
 }
 
 func printAgentCheckoutChangesNotice(stderr io.Writer) {
-	fmt.Fprintln(stderr, "Uncommitted changes in the checkout are Agent work from this Run because Preflight started from a clean tracked tree.")
+	fmt.Fprintln(stderr, "The tracked checkout was clean at Preflight; inspect current tracked and untracked changes before retrying.")
 }

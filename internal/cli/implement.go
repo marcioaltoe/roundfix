@@ -635,7 +635,7 @@ func taskOutcomeReasons(outcomes []daemon.TaskOutcome) map[string]string {
 		if status != "failed" && status != "skipped" {
 			continue
 		}
-		reason := strings.TrimSpace(outcome.Reason)
+		reason := strings.Join(strings.Fields(outcome.Reason), " ")
 		if reason == "" {
 			continue
 		}

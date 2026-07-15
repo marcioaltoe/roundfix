@@ -211,7 +211,7 @@ func runDetachedCommand(args []string, req commandRequest, loaded roundconfig.Lo
 		return handleDetachedHandshakeTimeout(cmd, stderr, tempPath, detachPhaseLiveness, detachTimeouts.liveness)
 	}
 	if liveness.phase != detachPhaseLiveness || liveness.handshake.err != nil {
-		return handleDetachedHandshakeFailure(cmd, stderr, tempPath)
+		return handleDetachedHandshakeFailure(cmd, stderr, tempPath, detachPhaseLiveness, detachHandshakeFailureCause(detachPhaseLiveness, liveness))
 	}
 
 	created, ok := waitDetachedHandshakeEvent(handshakeCh, detachTimeouts.runCreation)
@@ -219,7 +219,7 @@ func runDetachedCommand(args []string, req commandRequest, loaded roundconfig.Lo
 		return handleDetachedHandshakeTimeout(cmd, stderr, tempPath, detachPhaseRunCreation, detachTimeouts.runCreation)
 	}
 	if created.phase != detachPhaseRunCreation || created.handshake.err != nil {
-		return handleDetachedHandshakeFailure(cmd, stderr, tempPath)
+		return handleDetachedHandshakeFailure(cmd, stderr, tempPath, detachPhaseRunCreation, detachHandshakeFailureCause(detachPhaseRunCreation, created))
 	}
 	if err := cmd.Process.Release(); err != nil {
 		printPreflightFailure(req.name, fmt.Errorf("release Detached Run child: %w", err), stderr)
@@ -288,6 +288,24 @@ func readDetachedRunCreated(reader *bufio.Reader) detachHandshake {
 	return detachHandshake{runID: strings.TrimSpace(runID), consoleLog: strings.TrimSpace(consoleLog)}
 }
 
+func detachHandshakeFailureCause(expected detachHandshakePhase, event detachHandshakeEvent) error {
+	if event.handshake.err != nil {
+		return event.handshake.err
+	}
+	return fmt.Errorf("expected %s handshake, got %s handshake", detachPhaseName(expected), detachPhaseName(event.phase))
+}
+
+func detachPhaseName(phase detachHandshakePhase) string {
+	switch phase {
+	case detachPhaseLiveness:
+		return "liveness"
+	case detachPhaseRunCreation:
+		return "Run creation"
+	default:
+		return "unknown"
+	}
+}
+
 func printDetachedReport(stdout io.Writer, runID string, consoleLog string) {
 	fmt.Fprintf(stdout, "Run detached: %s\n", runID)
 	fmt.Fprintf(stdout, "Console log: %s\n", consoleLog)
@@ -296,12 +314,16 @@ func printDetachedReport(stdout io.Writer, runID string, consoleLog string) {
 }
 
 func handleDetachedHandshakeTimeout(cmd *exec.Cmd, stderr io.Writer, tempPath string, phase detachHandshakePhase, timeout time.Duration) int {
+	waitCh := startDetachedProcessWait(cmd)
 	killDetachedProcess(cmd)
-	waitErr, _ := waitDetachedProcess(cmd, detachWaitTimeout)
+	waitErr, waited := waitDetachedProcess(waitCh, detachWaitTimeout)
+	if !waited {
+		waitErr = errors.New("child did not exit after kill")
+	}
 	printDetachedHandshakeTimeout(stderr, phase, timeout, waitErr)
 	relayDetachedConsole(stderr, tempPath)
 	_ = os.Remove(tempPath)
-	if waitErr != nil {
+	if waited && waitErr != nil {
 		return exitCodeFromWait(waitErr)
 	}
 	return exitRunFailed
@@ -316,29 +338,33 @@ func printDetachedHandshakeTimeout(stderr io.Writer, phase detachHandshakePhase,
 	}
 }
 
-func handleDetachedHandshakeFailure(cmd *exec.Cmd, stderr io.Writer, tempPath string) int {
-	waitErr, waited := waitDetachedProcess(cmd, detachWaitTimeout)
+func handleDetachedHandshakeFailure(cmd *exec.Cmd, stderr io.Writer, tempPath string, phase detachHandshakePhase, cause error) int {
+	waitCh := startDetachedProcessWait(cmd)
+	waitErr, waited := waitDetachedProcess(waitCh, detachWaitTimeout)
 	if !waited {
 		killDetachedProcess(cmd)
-		waitErr = errors.New("closed handshake without exiting")
-		fmt.Fprintf(stderr, "%s: Detached Run child closed the handshake before creating a Run; killed (exit: %s)\n", app.Name, detachedExitDescription(waitErr))
+		waitErr, waited = waitDetachedProcess(waitCh, detachWaitTimeout)
+		if !waited {
+			waitErr = errors.New("child did not exit after kill")
+		}
+		fmt.Fprintf(stderr, "%s: Detached Run child failed %s handshake: %v; killed (exit: %s)\n", app.Name, detachPhaseName(phase), cause, detachedExitDescription(waitErr))
 		relayDetachedConsole(stderr, tempPath)
 		_ = os.Remove(tempPath)
 		return exitRunFailed
 	}
-	printDetachedChildExitBeforeHandshake(stderr, tempPath, waitErr)
+	printDetachedChildExitBeforeHandshake(stderr, tempPath, phase, cause, waitErr)
 	_ = os.Remove(tempPath)
 	return exitCodeFromWait(waitErr)
 }
 
-func printDetachedChildExitBeforeHandshake(stderr io.Writer, path string, waitErr error) {
+func printDetachedChildExitBeforeHandshake(stderr io.Writer, path string, phase detachHandshakePhase, cause error, waitErr error) {
 	content := readDetachedConsole(path, stderr)
 	if len(content) > 0 {
-		fmt.Fprintf(stderr, "%s: Detached Run child exited before the handshake (%s); console output follows\n", app.Name, detachedExitDescription(waitErr))
+		fmt.Fprintf(stderr, "%s: Detached Run child failed %s handshake: %v; child exited (%s); console output follows\n", app.Name, detachPhaseName(phase), cause, detachedExitDescription(waitErr))
 		_, _ = stderr.Write(content)
 		return
 	}
-	fmt.Fprintf(stderr, "%s: Detached Run child exited before the handshake (%s) and produced no output\n", app.Name, detachedExitDescription(waitErr))
+	fmt.Fprintf(stderr, "%s: Detached Run child failed %s handshake: %v; child exited (%s) and produced no output\n", app.Name, detachPhaseName(phase), cause, detachedExitDescription(waitErr))
 }
 
 func detachedExitDescription(waitErr error) string {
@@ -368,11 +394,15 @@ func readDetachedConsole(path string, stderr io.Writer) []byte {
 	return content
 }
 
-func waitDetachedProcess(cmd *exec.Cmd, timeout time.Duration) (error, bool) {
+func startDetachedProcessWait(cmd *exec.Cmd) <-chan error {
 	waitCh := make(chan error, 1)
 	go func() {
 		waitCh <- cmd.Wait()
 	}()
+	return waitCh
+}
+
+func waitDetachedProcess(waitCh <-chan error, timeout time.Duration) (error, bool) {
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
 	select {

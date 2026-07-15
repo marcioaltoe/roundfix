@@ -958,7 +958,7 @@ func TestRunDoctorReportsModelRejectionWithNextAction(t *testing.T) {
 		"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
 		"adapter: ok (codex-acp)\n" +
 		"agent: failed (" + rejection.Error() + ")\n" +
-		`model: failed (Agent Model "gpt-5.6-sol" not advertised by runtime "codex"; advertised: gpt-5.5, gpt-5.1; next: update the ACP Runtime or adapter, choose an advertised Agent Model, or pass a one-Run --model override, or set runtimes.codex.reasoning_effort "" when the model manages reasoning)` + "\n" +
+		`model: failed (Agent Model "gpt-5.6-sol" not advertised by runtime "codex"; advertised: gpt-5.5, gpt-5.1; next: update the ACP Runtime or adapter, choose an advertised Agent Model, or pass a one-Run --model override)` + "\n" +
 		"codex: ok (/home/roundfix/.local/bin/codex accepted)\n"
 	if got := stdout.String(); got != wantStdout {
 		t.Fatalf("unexpected stdout:\n got: %q\nwant: %q", got, wantStdout)
@@ -2135,6 +2135,39 @@ func TestPrintReviewIssueReportSplitsRunAndCumulativeCountsAndReasons(t *testing
 		"Pull Request cumulative: 1 resolved, 1 invalid, 0 duplicated, 1 failed, 1 unresolved.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("stdout mismatch\nwant:\n%q\ngot:\n%q", wantStdout, stdout.String())
+	}
+}
+
+func TestReviewIssueReportDataMarksCumulativeUnavailableOnLoadFailure(t *testing.T) {
+	req := commandRequest{reviewRoot: "["}
+	preflightResult := preflight.Result{
+		PullRequest: preflight.PullRequest{
+			Number:         "123",
+			HeadRepository: "owner/project",
+			HeadBranch:     "feature/review",
+		},
+	}
+	var stderr bytes.Buffer
+
+	report := reviewIssueReportData(context.Background(), req, preflightResult, []rounds.Issue{{
+		Title:  "major: handled issue",
+		Status: rounds.StatusResolved,
+	}}, &stderr)
+
+	if !report.cumulativeUnavailable {
+		t.Fatalf("expected cumulative data unavailable, got %+v", report)
+	}
+	var stdout bytes.Buffer
+	printReviewIssueReport(&stdout, store.StateClean, 1, report)
+	wantStdout := "" +
+		"issue 001 resolved — major: handled issue\n" +
+		"This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
+		"Pull Request cumulative: unavailable.\n"
+	if stdout.String() != wantStdout {
+		t.Fatalf("stdout mismatch\nwant:\n%q\ngot:\n%q", wantStdout, stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "Pull Request cumulative Review Issue report unavailable") {
+		t.Fatalf("expected load diagnostic on stderr, got %q", stderr.String())
 	}
 }
 

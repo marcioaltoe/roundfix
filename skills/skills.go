@@ -128,7 +128,7 @@ func Check() []Diagnostic {
 			"commit <path>",
 			"Settle surface: <path>",
 			"not advertised by runtime",
-			"`  reason: <one line>`",
+			"two spaces followed by `reason: <one line>`",
 			"owner PID is provably dead",
 			"`done` becomes `completed`",
 			"This Verification Feedback retry never consumes a Round",

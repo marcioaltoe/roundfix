@@ -33,7 +33,7 @@ The scope is complete when every promise and explicit exclusion in the spec maps
 
 ## 2. Build the QA matrix and open the report
 
-Create `docs/specs/<slug>/qa/qa-report-YYYY-MM-DD.md` before execution. If today's report exists with `status: in-progress` for the same build and scope, resume it; otherwise create a new report and preserve older reports as history.
+Create a collision-safe report path before execution: `docs/specs/<slug>/qa/qa-report-YYYY-MM-DD-<scope-or-build>.md`, or `qa-report-YYYY-MM-DD-NN.md` when no stable scope or build slug exists. If today's report exists with `status: in-progress` for the same build and scope, resume it; otherwise create a new report and preserve older reports as history.
 
 Add a row for:
 
@@ -48,7 +48,7 @@ The plan is complete when every story and criterion has coverage, every chosen p
 
 ## 3. Run static gates first
 
-Run the repository's documented verification pipeline (`make verify`, or its build, lint, typecheck, and test equivalents) and record the exact commands and results.
+Run the repository's full verification pipeline, `make verify`, and record the exact command and result. Do not substitute build, lint, typecheck, or test equivalents. If `make verify` cannot run, or if any formatting, test, or build check fails, record the verification gate as blocked.
 
 When a command fails, diagnose its source before continuing:
 

@@ -22,6 +22,8 @@ import (
 	runworktree "roundfix/internal/worktree"
 )
 
+const publicOutcomeReasonMaxRunes = 240
+
 // ReviewSourceResolver propagates settled Review Issue outcomes to the Review
 // Source after verification or terminal Batch failure.
 type ReviewSourceResolver interface {
@@ -558,14 +560,24 @@ func (engine *Engine) resolveBatch(ctx context.Context, plan CyclePlan, batch ro
 		return outcome, 0, err
 	}
 	outcome.ResolvedSourceThreads = propagated.Resolved
+	if propagated.Failed > 0 {
+		outcome.Failed = true
+		outcome.FailureReason = fmt.Sprintf("Review Source propagation failed for %d Review Issue(s)", propagated.Failed)
+	}
 	remaining, err := remainingUnresolvedIssues(ctx, plan)
 	if err != nil {
 		return outcome, 0, fmt.Errorf("compute remaining unresolved issues for run %q after Batch %03d: %w", plan.RunID, batch.Number, err)
 	}
-	if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonBatch,
-		fmt.Sprintf("Batch %03d completed; %d Unresolved Review Issue(s) remain.", batch.Number, remaining),
-		map[string]any{"phase": "completed", "batch": batch.Number, "remaining": remaining},
-	); err != nil {
+	phase := "completed"
+	summary := fmt.Sprintf("Batch %03d completed; %d Unresolved Review Issue(s) remain.", batch.Number, remaining)
+	payload := map[string]any{"phase": phase, "batch": batch.Number, "remaining": remaining}
+	if propagated.Failed > 0 {
+		phase = "failed"
+		summary = fmt.Sprintf("Batch %03d completed with Review Source propagation failure; %d Unresolved Review Issue(s) remain.", batch.Number, remaining)
+		payload["phase"] = phase
+		payload["source_propagation_failed"] = propagated.Failed
+	}
+	if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonBatch, summary, payload); err != nil {
 		return outcome, 0, fmt.Errorf("publish completion event for run %q batch %03d: %w", plan.RunID, batch.Number, err)
 	}
 	return outcome, remaining, nil
@@ -811,7 +823,7 @@ func (engine *Engine) completeFailedBatch(ctx context.Context, plan CyclePlan, b
 		return outcome, 0, fmt.Errorf("compute remaining unresolved issues for run %q after failed Batch %03d: %w", plan.RunID, batch.Number, err)
 	}
 	fmt.Fprintf(engine.deps.Progress, "Batch %03d failed: %s\n", batch.Number, failure)
-	fmt.Fprintln(engine.deps.Progress, "Uncommitted changes in the checkout are Agent work from this Run because Preflight started from a clean tracked tree.")
+	fmt.Fprintln(engine.deps.Progress, "The tracked checkout was clean at Preflight; inspect current tracked and untracked changes before retrying.")
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, batch.Number, runevent.KindDaemonBatch,
 		fmt.Sprintf("Batch %03d failed; %d Unresolved Review Issue(s) remain.", batch.Number, remaining),
 		map[string]any{"phase": "failed", "batch": batch.Number, "remaining": remaining, "error": failure},
@@ -944,6 +956,7 @@ func (engine *Engine) propagateRunEndUnresolved(ctx context.Context, plan CycleP
 type sourceIssueAction struct {
 	Action   string
 	Comment  bool
+	Resolve  bool
 	Resolved bool
 	Failed   bool
 }
@@ -968,6 +981,9 @@ func (engine *Engine) propagateSourceIssue(ctx context.Context, plan CyclePlan, 
 		})
 		if err != nil {
 			action.Failed = true
+			if markErr := markSourcePropagationFailed(issue, action.Action, err); markErr != nil {
+				return action, markErr
+			}
 			engine.reportSourcePropagationFailure(issue, action.Action, err)
 			if eventErr := engine.publishSourcePropagationEvent(ctx, plan, batchNumber, issue, phase, action.Action, false, false, err); eventErr != nil {
 				return action, eventErr
@@ -978,13 +994,12 @@ func (engine *Engine) propagateSourceIssue(ctx context.Context, plan CyclePlan, 
 			return action, eventErr
 		}
 	}
-	if action.Resolved {
+	if action.Resolve {
 		sourceRef := strings.TrimSpace(issue.SourceRef)
 		if resolvedRefs != nil && resolvedRefs[sourceRef] {
 			if eventErr := engine.publishSourcePropagationEvent(ctx, plan, batchNumber, issue, phase, "resolve_skipped_already_resolved", false, false, nil); eventErr != nil {
 				return action, eventErr
 			}
-			action.Resolved = false
 			return action, nil
 		}
 		if err := engine.deps.Source.ResolveIssue(ctx, reviewsource.IssueResolveRequest{
@@ -994,6 +1009,9 @@ func (engine *Engine) propagateSourceIssue(ctx context.Context, plan CyclePlan, 
 			SourceRef:      issue.SourceRef,
 		}); err != nil {
 			action.Failed = true
+			if markErr := markSourcePropagationFailed(issue, "resolve", err); markErr != nil {
+				return action, markErr
+			}
 			engine.reportSourcePropagationFailure(issue, "resolve", err)
 			if eventErr := engine.publishSourcePropagationEvent(ctx, plan, batchNumber, issue, phase, "resolve", false, false, err); eventErr != nil {
 				return action, eventErr
@@ -1003,11 +1021,26 @@ func (engine *Engine) propagateSourceIssue(ctx context.Context, plan CyclePlan, 
 		if resolvedRefs != nil {
 			resolvedRefs[sourceRef] = true
 		}
+		action.Resolved = true
 		if eventErr := engine.publishSourcePropagationEvent(ctx, plan, batchNumber, issue, phase, "resolve", false, true, nil); eventErr != nil {
 			return action, eventErr
 		}
 	}
 	return action, nil
+}
+
+func markSourcePropagationFailed(issue rounds.Issue, action string, cause error) error {
+	if strings.TrimSpace(issue.Path) == "" {
+		return nil
+	}
+	if issue.Status == rounds.StatusFailed {
+		return nil
+	}
+	reason := terminalReasonLine(fmt.Sprintf("Review Source propagation failed during %s: %v", action, cause))
+	if err := rounds.SetIssueStatus(issue.Path, rounds.StatusFailed, "", reason); err != nil {
+		return fmt.Errorf("mark Review Issue %q failed after Review Source propagation failure: %w", issue.Path, err)
+	}
+	return nil
 }
 
 func sourceActionForIssue(issue rounds.Issue, phase string) sourceIssueAction {
@@ -1016,17 +1049,17 @@ func sourceActionForIssue(issue rounds.Issue, phase string) sourceIssueAction {
 		if phase == "run_end" {
 			return sourceIssueAction{}
 		}
-		return sourceIssueAction{Action: "resolved", Resolved: true}
+		return sourceIssueAction{Action: "resolved", Resolve: true}
 	case rounds.StatusInvalid:
 		if phase == "run_end" {
 			return sourceIssueAction{}
 		}
-		return sourceIssueAction{Action: "invalid", Comment: true, Resolved: true}
+		return sourceIssueAction{Action: "invalid", Comment: true, Resolve: true}
 	case rounds.StatusDuplicated:
 		if phase == "run_end" {
 			return sourceIssueAction{}
 		}
-		return sourceIssueAction{Action: "duplicated", Comment: true, Resolved: true}
+		return sourceIssueAction{Action: "duplicated", Comment: true, Resolve: true}
 	case rounds.StatusFailed:
 		return sourceIssueAction{Action: "failed", Comment: true}
 	default:
@@ -1098,17 +1131,17 @@ func outcomeCommentBody(runID string, issue rounds.Issue, action string, marker 
 	switch action {
 	case "invalid":
 		lines = append(lines,
-			"Reason: "+nonEmpty(issue.TerminalReason, "The Review Issue was triaged invalid."),
+			"Reason: "+publicOutcomeReason(issue.TerminalReason, "The Review Issue was triaged invalid."),
 			"Next action: this thread is resolved after recording the triage outcome.",
 		)
 	case "duplicated":
 		lines = append(lines,
-			"Canonical Review Issue: "+nonEmpty(issue.DuplicateOf, "another Review Issue in this Run"),
+			"Canonical Review Issue: "+publicDuplicateReference(issue),
 			"Next action: this duplicate thread is resolved after recording the canonical issue.",
 		)
 	case "failed":
 		lines = append(lines,
-			"Reason: "+nonEmpty(issue.TerminalReason, "The Batch failed before this Review Issue could settle."),
+			"Reason: "+publicOutcomeReason(issue.TerminalReason, "The Batch failed before this Review Issue could settle."),
 			"Next action: this thread stays open; a later Round retries it after the failed step is addressed.",
 		)
 	case "unresolved":
@@ -1120,11 +1153,73 @@ func outcomeCommentBody(runID string, issue rounds.Issue, action string, marker 
 	return strings.Join(lines, "\n\n")
 }
 
-func nonEmpty(value string, fallback string) string {
-	if strings.TrimSpace(value) == "" {
+func publicDuplicateReference(issue rounds.Issue) string {
+	duplicateOf := strings.TrimSpace(issue.DuplicateOf)
+	if duplicateOf == "" {
+		return "another Review Issue in this Run"
+	}
+	if canonical, err := rounds.ParseIssue(duplicateOf); err == nil {
+		if sourceRef := strings.TrimSpace(canonical.SourceRef); sourceRef != "" {
+			return sourceRef
+		}
+		return "another Review Issue in this Run"
+	}
+	if isPublicSourceRef(duplicateOf) {
+		return duplicateOf
+	}
+	return "another Review Issue in this Run"
+}
+
+func isPublicSourceRef(value string) bool {
+	return strings.HasPrefix(value, "thread:") || strings.HasPrefix(value, "comment:")
+}
+
+func publicOutcomeReason(value string, fallback string) string {
+	reason := strings.Join(strings.Fields(value), " ")
+	if reason == "" {
 		return fallback
 	}
-	return strings.TrimSpace(value)
+	fields := strings.Fields(reason)
+	for index, field := range fields {
+		fields[index] = publicOutcomeReasonToken(field)
+	}
+	reason = strings.Join(fields, " ")
+	reason = strings.ReplaceAll(reason, "@", "＠")
+	reason = strings.ReplaceAll(reason, "`", "'")
+	if reason == "" {
+		return fallback
+	}
+	runes := []rune(reason)
+	if len(runes) > publicOutcomeReasonMaxRunes {
+		reason = string(runes[:publicOutcomeReasonMaxRunes-1]) + "…"
+	}
+	return reason
+}
+
+func publicOutcomeReasonToken(token string) string {
+	trimmed := strings.Trim(token, `"'(),.;:[]{}<>`)
+	if looksLikeLocalPath(trimmed) {
+		return "<path>"
+	}
+	return token
+}
+
+func looksLikeLocalPath(value string) bool {
+	if value == "" || strings.Contains(value, "://") {
+		return false
+	}
+	if strings.HasPrefix(value, "/") ||
+		strings.HasPrefix(value, "~/") ||
+		strings.HasPrefix(value, "./") ||
+		strings.HasPrefix(value, "../") ||
+		strings.HasPrefix(value, ".roundfix/") ||
+		strings.Contains(value, "\\") {
+		return true
+	}
+	if len(value) >= 3 && value[1] == ':' && (value[2] == '\\' || value[2] == '/') {
+		return true
+	}
+	return strings.Contains(value, "/")
 }
 
 // publishDaemonEvent appends one daemon-owned Run Event. Publication is

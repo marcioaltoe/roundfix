@@ -722,11 +722,18 @@ func TestResolveCycleSourcePropagationFailureContinues(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve cycle should continue after source propagation failure: %v", err)
 	}
-	if len(result.Batches) != 1 || result.Batches[0].Failed {
-		t.Fatalf("expected completed Batch despite source propagation failure, got %+v", result.Batches)
+	if len(result.Batches) != 1 || !result.Batches[0].Failed || result.Batches[0].ResolvedSourceThreads != 1 || result.Remaining != 1 {
+		t.Fatalf("expected retryable source propagation failure and one resolved source thread, got result=%+v batches=%+v", result, result.Batches)
 	}
 	if len(source.resolveRequests) != 1 || source.resolveRequests[0].SourceRef != secondRef {
 		t.Fatalf("expected only the second issue resolved after first comment failed, got %+v", source.resolveRequests)
+	}
+	first, err := rounds.ParseIssue(fixture.issuePaths[0])
+	if err != nil {
+		t.Fatalf("parse first issue: %v", err)
+	}
+	if first.Status != rounds.StatusFailed || !strings.Contains(first.TerminalReason, "Review Source propagation failed during invalid") {
+		t.Fatalf("expected first issue failed for retry, got status=%q reason=%q", first.Status, first.TerminalReason)
 	}
 	assertCommentContains(t, source.actions, secondRef, "invalid: second")
 	if !strings.Contains(fixture.progress.String(), "Review Source propagation failed") {
@@ -740,6 +747,56 @@ func TestResolveCycleSourcePropagationFailureContinues(t *testing.T) {
 	}
 	if !foundFailureEvent {
 		t.Fatalf("expected propagation failure event, got %+v", fixture.sink.snapshot())
+	}
+}
+
+func TestOutcomeCommentBodyUsesPublicDuplicateReference(t *testing.T) {
+	canonicalPath := filepath.Join(t.TempDir(), "issue_001.md")
+	content := `---
+source: coderabbit
+pr: "123"
+round: 1
+round_created_at: "2026-07-15T16:07:28Z"
+status: resolved
+head_repository: owner/project
+head_branch: feature/review
+source_ref: "thread:PRRT_public,comment:PRRC_public"
+---
+
+# Issue 001
+`
+	if err := os.WriteFile(canonicalPath, []byte(content), 0o644); err != nil {
+		t.Fatalf("write canonical issue: %v", err)
+	}
+
+	body := outcomeCommentBody("run_1", rounds.Issue{
+		Status:      rounds.StatusDuplicated,
+		DuplicateOf: canonicalPath,
+	}, "duplicated", "<!-- marker -->")
+
+	if !strings.Contains(body, "Canonical Review Issue: thread:PRRT_public,comment:PRRC_public") {
+		t.Fatalf("expected public Source Reference in comment body, got %q", body)
+	}
+	if strings.Contains(body, canonicalPath) {
+		t.Fatalf("comment body leaked local artifact path %q: %q", canonicalPath, body)
+	}
+}
+
+func TestOutcomeCommentBodySanitizesPublicReasons(t *testing.T) {
+	body := outcomeCommentBody("run_1", rounds.Issue{
+		Status:         rounds.StatusFailed,
+		TerminalReason: "Verification failed:\nsee /Users/alice/dev/roundfix/.roundfix/verification.log and ping @team for details",
+	}, "failed", "<!-- marker -->")
+
+	for _, forbidden := range []string{"/Users/alice", ".roundfix/verification.log", "@team"} {
+		if strings.Contains(body, forbidden) {
+			t.Fatalf("comment body leaked %q: %q", forbidden, body)
+		}
+	}
+	for _, want := range []string{"Reason: Verification failed: see <path>", "＠team"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected sanitized comment body to contain %q, got %q", want, body)
+		}
 	}
 }
 

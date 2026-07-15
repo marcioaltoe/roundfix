@@ -1,8 +1,8 @@
-//go:build !unix
+//go:build !unix && !windows
 
 package store
 
-// ProcessAlive reports alive when the platform cannot prove process liveness.
+// ProcessAlive reports alive on platforms where orphan recovery is unsupported.
 func ProcessAlive(pid int) bool {
 	return true
 }

@@ -648,6 +648,9 @@ func TestModelNotAdvertisedPromptExitYieldsTypedError(t *testing.T) {
 			t.Fatalf("expected recovery guidance containing %q, got %q", want, modelErr.Error())
 		}
 	}
+	if strings.Contains(modelErr.Error(), "reasoning_effort") {
+		t.Fatalf("model-advertisement recovery must not suggest reasoning changes, got %q", modelErr.Error())
+	}
 }
 
 func TestModelNotAdvertisedSelectionPreflightYieldsTypedErrorThroughWrapChain(t *testing.T) {
