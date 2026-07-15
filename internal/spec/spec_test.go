@@ -72,6 +72,32 @@ Fixture task.
 %s`, id, status, taskType, number, title, tail))
 }
 
+func TestNormalizeStatus(t *testing.T) {
+	tests := []struct {
+		raw  string
+		want string
+	}{
+		{raw: "pending", want: "pending"},
+		{raw: "in_progress", want: "in_progress"},
+		{raw: "completed", want: "completed"},
+		{raw: "failed", want: "failed"},
+		{raw: "done", want: "completed"},
+		{raw: "in-progress", want: "in_progress"},
+		{raw: "in progress", want: "in_progress"},
+		{raw: "  done\t", want: "completed"},
+		{raw: "finished", want: "finished"},
+		{raw: "Done", want: "Done"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.raw, func(t *testing.T) {
+			if got := NormalizeStatus(tt.raw); got != tt.want {
+				t.Fatalf("NormalizeStatus(%q) = %q, want %q", tt.raw, got, tt.want)
+			}
+		})
+	}
+}
+
 func manifestFixture(schema string, nodes string) string {
 	return fmt.Sprintf(`---
 schema: %s
@@ -569,15 +595,18 @@ graph:
       file: task_01.md
       needs: []
 `),
-				"task_01.md": taskFixture("task_01", "Fixture", "done", "backend", defaultVerificationSection),
+				"task_01.md": taskFixture("task_01", "Fixture", "finished", "backend", defaultVerificationSection),
 			},
 			check: func(t *testing.T, err error) {
 				var taskErr TaskFileError
 				if !errors.As(err, &taskErr) {
 					t.Fatalf("error = %v, want TaskFileError", err)
 				}
-				if !strings.Contains(err.Error(), `"done"`) {
+				if !strings.Contains(err.Error(), `"finished"`) {
 					t.Errorf("message %q does not name the unsupported status", err)
+				}
+				if !strings.Contains(err.Error(), "pending, in_progress, completed, failed") {
+					t.Errorf("message %q does not name allowed statuses", err)
 				}
 			},
 		},

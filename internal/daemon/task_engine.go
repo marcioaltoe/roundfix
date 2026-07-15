@@ -635,6 +635,9 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 		// Daemon settles the status by rewriting the frontmatter value.
 		return fmt.Sprintf("reload task file after the Agent: %v", err), nil
 	}
+	if err := canonicalizeReloadedTaskStatus(plan, task); err != nil {
+		return "", fmt.Errorf("canonicalize Task %s status after the Agent: %w", task.ID, err)
+	}
 	return "", nil
 }
 
@@ -737,7 +740,22 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 	if err := spec.ReloadTask(plan.SpecsRoot, task); err != nil {
 		return fmt.Sprintf("reload task file after Verification Feedback: %v", err), nil
 	}
+	if err := canonicalizeReloadedTaskStatus(plan, task); err != nil {
+		return "", fmt.Errorf("canonicalize Task %s status after Verification Feedback: %w", task.ID, err)
+	}
 	return "", nil
+}
+
+func canonicalizeReloadedTaskStatus(plan TaskPlan, task *spec.Task) error {
+	if !task.StatusNormalized {
+		return nil
+	}
+	taskPath := filepath.Join(plan.SpecsRoot, task.File)
+	if err := spec.SetStatus(taskPath, task.Status); err != nil {
+		return err
+	}
+	task.StatusNormalized = false
+	return nil
 }
 
 // settleTask writes the Daemon-owned final status when the Agent left

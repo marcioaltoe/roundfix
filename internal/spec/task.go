@@ -19,10 +19,11 @@ type taskFrontmatter struct {
 }
 
 type taskDocument struct {
-	Frontmatter  taskFrontmatter
-	Title        string
-	Context      []TaskContextRef
-	Verification []string
+	Frontmatter      taskFrontmatter
+	Title            string
+	StatusNormalized bool
+	Context          []TaskContextRef
+	Verification     []string
 }
 
 const maxTaskContextRefs = 50
@@ -46,6 +47,7 @@ func ReloadTask(specsRoot string, task *Task) error {
 	}
 	task.Title = document.Title
 	task.Status = Status(document.Frontmatter.Status)
+	task.StatusNormalized = document.StatusNormalized
 	task.Type = document.Frontmatter.Type
 	task.Context = append([]TaskContextRef(nil), document.Context...)
 	task.Verification = document.Verification
@@ -56,7 +58,7 @@ func ReloadTask(specsRoot string, task *Task) error {
 // preserving every other byte of the file exactly.
 func SetStatus(taskPath string, status Status) error {
 	if !AllowedStatus(status) {
-		return fmt.Errorf("Task status %q is not allowed", status)
+		return fmt.Errorf("Task status %q is not allowed (allowed: %s)", status, allowedStatusValues())
 	}
 	info, err := os.Stat(taskPath)
 	if err != nil {
@@ -85,18 +87,22 @@ func parseTaskDocument(content []byte) (taskDocument, error) {
 	if err := yaml.Unmarshal(frontmatterBytes, &frontmatter); err != nil {
 		return taskDocument{}, fmt.Errorf("parse frontmatter: %w", err)
 	}
-	if !AllowedStatus(Status(frontmatter.Status)) {
-		return taskDocument{}, fmt.Errorf("unsupported status %q", frontmatter.Status)
+	rawStatus := frontmatter.Status
+	normalizedStatus := NormalizeStatus(rawStatus)
+	if !AllowedStatus(Status(normalizedStatus)) {
+		return taskDocument{}, fmt.Errorf("unsupported status %q (allowed: %s)", frontmatter.Status, allowedStatusValues())
 	}
+	frontmatter.Status = normalizedStatus
 	contextRefs, err := parseTaskContextRefs(body)
 	if err != nil {
 		return taskDocument{}, err
 	}
 	return taskDocument{
-		Frontmatter:  frontmatter,
-		Title:        parseTaskTitle(body),
-		Context:      contextRefs,
-		Verification: parseVerificationCommands(body),
+		Frontmatter:      frontmatter,
+		Title:            parseTaskTitle(body),
+		StatusNormalized: strings.TrimSpace(rawStatus) != normalizedStatus,
+		Context:          contextRefs,
+		Verification:     parseVerificationCommands(body),
 	}, nil
 }
 

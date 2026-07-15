@@ -180,6 +180,43 @@ func TestReloadTaskPicksUpAgentEdits(t *testing.T) {
 	}
 }
 
+func TestReloadTaskNormalizesStatusValues(t *testing.T) {
+	tests := []struct {
+		name           string
+		rawStatus      string
+		wantStatus     Status
+		wantNormalized bool
+	}{
+		{name: "pending canonical", rawStatus: "pending", wantStatus: StatusPending},
+		{name: "in progress canonical", rawStatus: "in_progress", wantStatus: StatusInProgress},
+		{name: "completed canonical", rawStatus: "completed", wantStatus: StatusCompleted},
+		{name: "failed canonical", rawStatus: "failed", wantStatus: StatusFailed},
+		{name: "done synonym", rawStatus: "done", wantStatus: StatusCompleted, wantNormalized: true},
+		{name: "hyphen in progress synonym", rawStatus: "in-progress", wantStatus: StatusInProgress, wantNormalized: true},
+		{name: "space in progress synonym", rawStatus: "in progress", wantStatus: StatusInProgress, wantNormalized: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gitRoot := t.TempDir()
+			specsRoot := defaultSpecsRoot(gitRoot)
+			relFile := filepath.Join("demo", "task_01.md")
+			writeFile(t, filepath.Join(specsRoot, relFile), taskFixture("task_01", "Fixture", tt.rawStatus, "backend", defaultVerificationSection))
+
+			task := &Task{ID: "task_01", File: relFile}
+			if err := ReloadTask(specsRoot, task); err != nil {
+				t.Fatalf("ReloadTask: %v", err)
+			}
+			if task.Status != tt.wantStatus {
+				t.Fatalf("Status = %q, want %q", task.Status, tt.wantStatus)
+			}
+			if task.StatusNormalized != tt.wantNormalized {
+				t.Fatalf("StatusNormalized = %v, want %v", task.StatusNormalized, tt.wantNormalized)
+			}
+		})
+	}
+}
+
 func TestReloadTaskReportsBrokenAgentEdits(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -188,7 +225,7 @@ func TestReloadTaskReportsBrokenAgentEdits(t *testing.T) {
 	}{
 		{
 			name:    "unsupported status written by the Agent",
-			content: taskFixture("task_01", "Fixture", "resolved", "backend", defaultVerificationSection),
+			content: taskFixture("task_01", "Fixture", "finished", "backend", defaultVerificationSection),
 			check: func(t *testing.T, err error) {
 				var taskErr TaskFileError
 				if !errors.As(err, &taskErr) {
@@ -196,6 +233,12 @@ func TestReloadTaskReportsBrokenAgentEdits(t *testing.T) {
 				}
 				if taskErr.TaskID != "task_01" {
 					t.Errorf("TaskID = %q, want %q", taskErr.TaskID, "task_01")
+				}
+				if !strings.Contains(err.Error(), `unsupported status "finished"`) {
+					t.Errorf("error = %q, want unsupported status diagnostic", err)
+				}
+				if !strings.Contains(err.Error(), "pending, in_progress, completed, failed") {
+					t.Errorf("error = %q, want allowed statuses", err)
 				}
 			},
 		},

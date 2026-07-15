@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0028-settlement-and-reporting
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -22,17 +22,17 @@ Stop voiding finished work over wording: task-file parsing normalizes a small do
 
 ## Subtasks
 
-- [ ] Add the normalization function with its documented map
-- [ ] Apply it in task parsing/reload before validation
-- [ ] Daemon reload rewrites normalized values to canonical in the task file
-- [ ] Table tests: every synonym, every canonical value, rejected garbage; engine test proving a `done` task file settles completed and ends up rewritten canonical
+- [x] Add the normalization function with its documented map
+- [x] Apply it in task parsing/reload before validation
+- [x] Daemon reload rewrites normalized values to canonical in the task file
+- [x] Table tests: every synonym, every canonical value, rejected garbage; engine test proving a `done` task file settles completed and ends up rewritten canonical
 
 ## Acceptance Criteria
 
-- [ ] A task file with `status: done` reloads as completed and the file afterward reads `status: completed`
-- [ ] A task file with `status: finished` still fails with the unsupported-status diagnostics
-- [ ] Canonical statuses round-trip untouched
-- [ ] The full test suite passes
+- [x] A task file with `status: done` reloads as completed and the file afterward reads `status: completed`
+- [x] A task file with `status: finished` still fails with the unsupported-status diagnostics
+- [x] Canonical statuses round-trip untouched
+- [x] The full test suite passes
 
 ## Context
 
@@ -49,3 +49,12 @@ Stop voiding finished work over wording: task-file parsing normalizes a small do
 ## References
 
 `_prd.md` → Goal 2, User Story 2, Core Feature 2, Decisions; `_techspec.md` → Build Order 3, Interfaces (NormalizeStatus), Decisions (synonym set).
+
+## Result
+
+- Added `NormalizeStatus` with the documented exact synonym map: `done` → `completed`, `in-progress`/`in progress` → `in_progress`; pre-change signal was `rtk grep -q "NormalizeStatus" internal/spec/spec.go` exiting 1.
+- Applied normalization before task-status validation and carried a `StatusNormalized` marker so daemon post-agent reloads rewrite only synonym-authored frontmatter through `spec.SetStatus`.
+- Evidence: `TestTaskCycleRewritesNormalizedStatusAfterAgentReload` proves `status: done` settles completed and the file reads `status: completed`.
+- Evidence: `TestReloadTaskReportsBrokenAgentEdits` and the invalid-load fixture prove `status: finished` still fails with the unsupported-status diagnostic naming `pending, in_progress, completed, failed`.
+- Evidence: `TestNormalizeStatus` and `TestReloadTaskNormalizesStatusValues` cover every canonical status, every synonym, and garbage passthrough.
+- Verification passed: `rtk grep -q "NormalizeStatus" internal/spec/spec.go`; `rtk go test ./internal/spec/... ./internal/daemon/...` (157 passed); `rtk go build -buildvcs=false ./...`; `rtk make verify` (1222 passed, skills check passed, build clean).

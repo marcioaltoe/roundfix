@@ -14,7 +14,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Task status values; the task file is the sole owner of its status.
+// Task status values; the task file is the sole owner of its status. The
+// accepted synonym set is intentionally exact after trimming: "done" maps to
+// completed, and "in-progress"/"in progress" map to in_progress.
 const (
 	StatusPending    Status = "pending"
 	StatusInProgress Status = "in_progress"
@@ -30,6 +32,32 @@ const (
 
 // Status is the lifecycle state a task file carries in its frontmatter.
 type Status string
+
+var statusSynonyms = map[string]Status{
+	"done":        StatusCompleted,
+	"in-progress": StatusInProgress,
+	"in progress": StatusInProgress,
+}
+
+var canonicalStatuses = []Status{StatusPending, StatusInProgress, StatusCompleted, StatusFailed}
+
+// NormalizeStatus maps documented synonyms to canonical statuses. Unknown
+// values pass through trimmed and fail AllowedStatus as today.
+func NormalizeStatus(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if status, ok := statusSynonyms[trimmed]; ok {
+		return string(status)
+	}
+	return trimmed
+}
+
+func allowedStatusValues() string {
+	values := make([]string, 0, len(canonicalStatuses))
+	for _, status := range canonicalStatuses {
+		values = append(values, string(status))
+	}
+	return strings.Join(values, ", ")
+}
 
 // AllowedStatus reports whether the status is one of the four task lifecycle
 // states.
@@ -58,14 +86,15 @@ type SkippedSpec struct {
 // Task is one Task Graph node joined with its parsed task file. File is the
 // task file path relative to the Spec Root.
 type Task struct {
-	ID           string
-	File         string
-	Title        string
-	Needs        []string
-	Status       Status
-	Type         string
-	Context      []TaskContextRef
-	Verification []string
+	ID               string
+	File             string
+	Title            string
+	Needs            []string
+	Status           Status
+	StatusNormalized bool
+	Type             string
+	Context          []TaskContextRef
+	Verification     []string
 }
 
 // ContextKind classifies a Task-authored context path.
@@ -355,14 +384,15 @@ func loadTask(dir string, slug string, node manifestNode) (Task, error) {
 		return Task{}, MissingVerificationError{TaskID: node.ID, Path: path}
 	}
 	return Task{
-		ID:           node.ID,
-		File:         filepath.Join(slug, node.File),
-		Title:        document.Title,
-		Needs:        append([]string(nil), node.Needs...),
-		Status:       Status(document.Frontmatter.Status),
-		Type:         document.Frontmatter.Type,
-		Context:      append([]TaskContextRef(nil), document.Context...),
-		Verification: document.Verification,
+		ID:               node.ID,
+		File:             filepath.Join(slug, node.File),
+		Title:            document.Title,
+		Needs:            append([]string(nil), node.Needs...),
+		Status:           Status(document.Frontmatter.Status),
+		StatusNormalized: document.StatusNormalized,
+		Type:             document.Frontmatter.Type,
+		Context:          append([]TaskContextRef(nil), document.Context...),
+		Verification:     document.Verification,
 	}, nil
 }
 

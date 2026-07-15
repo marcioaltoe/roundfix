@@ -317,21 +317,22 @@ func taskStatusInSpecRootOnDisk(t *testing.T, specsRoot string, id string) strin
 // from the prompt contract. A QA prompt writes qaReport as the Spec's QA
 // Report, the way the qa-gate Agent does; an empty qaReport writes none.
 type taskFakeRunner struct {
-	calls         *[]string
-	gitRoot       string
-	store         *store.Store
-	statusByTask  map[string]spec.Status
-	errByTask     map[string]error
-	errByTaskCall map[string][]error
-	taskCalls     map[string]int
-	writeByTask   map[string]string
-	anomalyByTask map[string]string
-	qaReport      string
-	qaPrompts     []string
-	seenStates    []string
-	prompts       []string
-	requests      []agent.ExecuteRequest
-	writeLogs     bool
+	calls           *[]string
+	gitRoot         string
+	store           *store.Store
+	statusByTask    map[string]spec.Status
+	errByTask       map[string]error
+	errByTaskCall   map[string][]error
+	taskCalls       map[string]int
+	writeByTask     map[string]string
+	rawStatusByTask map[string]string
+	anomalyByTask   map[string]string
+	qaReport        string
+	qaPrompts       []string
+	seenStates      []string
+	prompts         []string
+	requests        []agent.ExecuteRequest
+	writeLogs       bool
 }
 
 func (runner *taskFakeRunner) Probe(context.Context, agent.ProbeRequest) error { return nil }
@@ -416,6 +417,11 @@ func (runner *taskFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest,
 			return agent.ExecuteResult{}, err
 		}
 	}
+	if rawStatus, ok := runner.rawStatusByTask[taskID]; ok {
+		if err := setRawTaskStatusForTest(taskPathFromPromptForTest(req.Prompt, runner.gitRoot, taskCycleSlug, taskID), rawStatus); err != nil {
+			return agent.ExecuteResult{}, err
+		}
+	}
 	if status, ok := runner.statusByTask[taskID]; ok {
 		if err := spec.SetStatus(taskPathFromPromptForTest(req.Prompt, runner.gitRoot, taskCycleSlug, taskID), status); err != nil {
 			return agent.ExecuteResult{}, err
@@ -471,6 +477,21 @@ func qaSpecDirFromPromptForTest(prompt string, gitRoot string) string {
 		return filepath.Join(gitRoot, path)
 	}
 	return filepath.Join(gitRoot, "docs", "specs", taskCycleSlug)
+}
+
+func setRawTaskStatusForTest(path string, status string) error {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(string(content), "\n")
+	for index, line := range lines {
+		if strings.HasPrefix(line, "status:") {
+			lines[index] = "status: " + status
+			return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644)
+		}
+	}
+	return fmt.Errorf("task file %q has no status line", path)
 }
 
 const qaReportNameForTest = "qa-report-2026-01-01.md"
@@ -1437,6 +1458,36 @@ func TestTaskCycleExecutesAgentVerifySettleCommitContract(t *testing.T) {
 	}
 	if len(fixture.pusher.remotes) != 0 || len(fixture.source.requests) != 0 {
 		t.Fatal("expected Pusher and Review Source resolver never invoked for spec Runs")
+	}
+}
+
+func TestTaskCycleRewritesNormalizedStatusAfterAgentReload(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Normalize the task status"}})
+	runner := &taskFakeRunner{
+		calls:           fixture.calls,
+		gitRoot:         fixture.gitRoot,
+		rawStatusByTask: map[string]string{"task_01": "done"},
+	}
+	verifier := &taskFakeVerifier{calls: fixture.calls}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 || result.Skipped != 0 {
+		t.Fatalf("expected synonym-authored Task completed, got %+v", result)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusCompleted) {
+		t.Fatalf("expected status synonym rewritten canonical on disk, got %q", got)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>commit" {
+		t.Fatalf("expected normal Agent flow after synonym normalization, got %q", got)
+	}
+	if len(committer.paths) != 1 || strings.Join(committer.paths[0], "|") != taskFileRel(taskCycleSlug, "task_01") {
+		t.Fatalf("expected only the canonicalized task file committed, got %v", committer.paths)
 	}
 }
 
