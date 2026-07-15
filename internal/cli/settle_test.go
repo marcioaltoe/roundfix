@@ -37,9 +37,7 @@ func TestRunSettleCommitsFailedTaskWorktreeWithDaemonMessage(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
 	}
-	if stderr.Len() != 0 {
-		t.Fatalf("expected no stderr, got %q", stderr.String())
-	}
+	assertOnlySettleSurfaceLine(t, stderr.String(), repoDir)
 	shortSHA := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "--short", "HEAD"))
 	expectedStdout := "verify test -f done.txt — ok\n" +
 		"commit " + filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "task_01.md")) + "\n" +
@@ -80,6 +78,7 @@ func TestRunSettleWarnsWhenOtherSpecTasksAreFailed(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
 	}
+	assertSettleSurfaceLine(t, stderr.String(), repoDir)
 	for _, expected := range []string{"warning: other failed Tasks", "task_02", "may have work included in this settle commit"} {
 		if !strings.Contains(stderr.String(), expected) {
 			t.Fatalf("expected stderr to contain %q, got %q", expected, stderr.String())
@@ -113,9 +112,7 @@ func TestRunSettleNoCommitPrintsNoCommitPathsOrSharedWarning(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("expected settle exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
 	}
-	if stderr.Len() != 0 {
-		t.Fatalf("expected no stderr when no commit is created, got %q", stderr.String())
-	}
+	assertOnlySettleSurfaceLine(t, stderr.String(), repoDir)
 	expectedStdout := "verify true — ok\n" +
 		"settled task_01 completed — " + beforeSHA + "\n"
 	if stdout.String() != expectedStdout {
@@ -150,9 +147,7 @@ func TestRunSettleUsesConfiguredExternalSpecRoot(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("expected settle exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
 	}
-	if stderr.Len() != 0 {
-		t.Fatalf("expected no stderr, got %q", stderr.String())
-	}
+	assertOnlySettleSurfaceLine(t, stderr.String(), repoDir)
 	if !strings.Contains(stdout.String(), "verify true — ok\n") || !strings.Contains(stdout.String(), "settled task_01 completed — ") {
 		t.Fatalf("expected settle success output, got %q", stdout.String())
 	}
@@ -213,9 +208,7 @@ func TestRunSettleRetargetsKeptRunWorktreeAndCleansUpAfterIntegration(t *testing
 	if code != exitOK {
 		t.Fatalf("expected settle exit 0, got %d stderr=%q", code, stderr.String())
 	}
-	if stderr.Len() != 0 {
-		t.Fatalf("expected no stderr, got %q", stderr.String())
-	}
+	assertOnlySettleSurfaceLine(t, stderr.String(), run.WorkDir)
 	if !strings.Contains(stdout.String(), "verify test -f done.txt — ok\n") {
 		t.Fatalf("expected verification line, got %q", stdout.String())
 	}
@@ -238,6 +231,46 @@ func TestRunSettleRetargetsKeptRunWorktreeAndCleansUpAfterIntegration(t *testing
 		t.Fatalf("expected clean user checkout after settle integration, got %q", status)
 	}
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+func TestRunSettleSkipsStaleKeptRunWorktreeAndUsesFailedCheckout(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "Recover checkout work",
+			taskType:     "backend",
+			status:       string(spec.StatusFailed),
+			verification: []string{"test -f done.txt"},
+		},
+	})
+	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
+	_, olderRef, _ := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "", store.StateUnresolved)
+	if err := spec.SetStatus(implementTaskPath(olderRef.Path, "task_01"), spec.StatusFailed); err != nil {
+		t.Fatalf("set older Run Worktree task failed: %v", err)
+	}
+	_, latestRef, _ := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "", store.StateUnresolved)
+	if err := spec.SetStatus(implementTaskPath(latestRef.Path, "task_01"), spec.StatusPending); err != nil {
+		t.Fatalf("set stale Run Worktree task pending: %v", err)
+	}
+	mustWrite(t, filepath.Join(repoDir, "done.txt"), "checkout work\n")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected settle exit 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	assertOnlySettleSurfaceLine(t, stderr.String(), repoDir)
+	if !strings.Contains(stdout.String(), "verify test -f done.txt — ok\n") || !strings.Contains(stdout.String(), "settled task_01 completed — ") {
+		t.Fatalf("expected settle success from checkout, got stdout=%q", stdout.String())
+	}
+	if content := mustRead(t, implementTaskPath(repoDir, "task_01")); !strings.Contains(content, "status: completed") {
+		t.Fatalf("expected checkout task settled completed, got:\n%s", content)
+	}
+	if content := mustRead(t, implementTaskPath(latestRef.Path, "task_01")); !strings.Contains(content, "status: pending") {
+		t.Fatalf("expected stale Run Worktree task to remain pending, got:\n%s", content)
+	}
 }
 
 func TestRunSettleRetargetsKeptTaskWorktreeAndCleansUpAfterIntegration(t *testing.T) {
@@ -266,9 +299,7 @@ func TestRunSettleRetargetsKeptTaskWorktreeAndCleansUpAfterIntegration(t *testin
 	if code != exitOK {
 		t.Fatalf("expected settle exit 0, got %d stderr=%q", code, stderr.String())
 	}
-	if stderr.Len() != 0 {
-		t.Fatalf("expected no stderr, got %q", stderr.String())
-	}
+	assertOnlySettleSurfaceLine(t, stderr.String(), taskRef.Path)
 	shortSHA := strings.TrimSpace(gitSettleOutput(t, repoDir, "rev-parse", "--short", "HEAD"))
 	expectedStdout := "verify test -f done.txt — ok\n" +
 		"commit " + filepath.ToSlash(filepath.Join("docs", "specs", implementTestSlug, "task_01.md")) + "\n" +
@@ -353,6 +384,48 @@ func TestRunSettleTaskWorktreeIntegrationConflictKeepsSurfaces(t *testing.T) {
 	current := implementRunFromStore(t, homeDir, run.ID)
 	if current.State != store.StateUnresolved {
 		t.Fatalf("expected Run to remain Unresolved, got %s", current.State)
+	}
+}
+
+func TestRunSettleRefusalEnumeratesCandidateStatuses(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{
+			id:           "task_01",
+			title:        "No failed surface",
+			status:       string(spec.StatusCompleted),
+			verification: []string{"true"},
+		},
+	})
+	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
+	_, runRef, _ := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "", store.StateUnresolved)
+	if err := spec.SetStatus(implementTaskPath(runRef.Path, "task_01"), spec.StatusPending); err != nil {
+		t.Fatalf("set Run Worktree task pending: %v", err)
+	}
+	missingTaskRef, err := runworktree.TaskRefFor(runRef, "task_01")
+	if err != nil {
+		t.Fatalf("derive Task Worktree path: %v", err)
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"settle", "--spec", implementTestSlug, "--task", "task_01"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected preflight exit 2, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout, got %q", stdout.String())
+	}
+	for _, expected := range []string{
+		"no failed settle surface",
+		missingTaskRef.Path + ": path does not exist",
+		runRef.Path + ": status pending",
+		repoDir + ": status completed",
+		"status is pending; run the Implement Command",
+	} {
+		if !strings.Contains(stderr.String(), expected) {
+			t.Fatalf("expected stderr to contain %q, got %q", expected, stderr.String())
+		}
 	}
 }
 
@@ -706,6 +779,22 @@ func assertContainsString(t *testing.T, values []string, expected string) {
 		}
 	}
 	t.Fatalf("expected %q in %v", expected, values)
+}
+
+func assertSettleSurfaceLine(t *testing.T, stderr string, surface string) {
+	t.Helper()
+	want := "Settle surface: " + surface + "\n"
+	if !strings.Contains(stderr, want) {
+		t.Fatalf("expected stderr to contain %q, got %q", want, stderr)
+	}
+}
+
+func assertOnlySettleSurfaceLine(t *testing.T, stderr string, surface string) {
+	t.Helper()
+	want := "Settle surface: " + surface + "\n"
+	if stderr != want {
+		t.Fatalf("expected stderr %q, got %q", want, stderr)
+	}
 }
 
 func configureSettleWorktreeLocation(t *testing.T, repoDir string, location string) string {

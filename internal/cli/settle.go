@@ -61,6 +61,30 @@ type settlePlan struct {
 	taskSurface  bool
 }
 
+type settleSurfaceCandidate struct {
+	workDir      string
+	targetBranch string
+	run          store.Run
+	runRef       runworktree.Ref
+	taskRef      runworktree.TaskRef
+	hasRun       bool
+	taskSurface  bool
+	current      bool
+}
+
+type settleSurfaceChoice struct {
+	candidate settleSurfaceCandidate
+	specsRoot string
+	graph     *spec.Graph
+	task      spec.Task
+	found     bool
+}
+
+type settleSurfaceReport struct {
+	path   string
+	status string
+}
+
 func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, settleUsage)
@@ -79,6 +103,7 @@ func runSettleCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 
 	collaborators := newEngineCollaborators()
 	verificationRunID := settleVerificationRunID(plan)
+	fmt.Fprintf(stderr, "Settle surface: %s\n", plan.workDir)
 	for _, command := range plan.task.Verification {
 		_, err := collaborators.verifier.Verify(ctx, daemon.VerifyRequest{
 			WorkDir:    plan.workDir,
@@ -198,44 +223,148 @@ func preflightSettle(ctx context.Context, req settleRequest, stderr io.Writer) (
 		if err != nil {
 			return settlePlan{}, err
 		}
-		if ok, err := settlePathExists(taskRef.Path); err != nil {
-			return settlePlan{}, err
-		} else if ok {
-			plan.workDir = taskRef.Path
-			plan.targetBranch = run.LocalBranch
-			plan.run = run
-			plan.runRef = runRef
-			plan.taskRef = taskRef
-			plan.hasRun = true
-			plan.taskSurface = true
-		} else if ok, err := settlePathExists(run.WorkDir); err != nil {
-			return settlePlan{}, err
-		} else if ok {
-			plan.workDir = run.WorkDir
-			plan.targetBranch = run.LocalBranch
-			plan.run = run
-			plan.runRef = runRef
-			plan.hasRun = true
+		plan.run = run
+		plan.runRef = runRef
+		candidates := []settleSurfaceCandidate{
+			{
+				workDir:      taskRef.Path,
+				targetBranch: run.LocalBranch,
+				run:          run,
+				runRef:       runRef,
+				taskRef:      taskRef,
+				hasRun:       true,
+				taskSurface:  true,
+			},
+			{
+				workDir:      run.WorkDir,
+				targetBranch: run.LocalBranch,
+				run:          run,
+				runRef:       runRef,
+				hasRun:       true,
+			},
 		}
+		choice, reports, err := resolveSettleSurface(req, resolvedSpecsRoot, gitState.Root, candidatesWithCurrent(candidates, gitState.Root, gitState.Branch))
+		if err != nil {
+			return settlePlan{}, err
+		}
+		if !choice.found {
+			return settlePlan{}, settleNoFailedSurfaceError(req.specSlug, req.taskID, reports)
+		}
+		applySettleSurfaceChoice(&plan, choice)
 	}
-	plan.specsRoot = specsRootForWorkDir(resolvedSpecsRoot, gitState.Root, plan.workDir)
-	graph, err := spec.Load(plan.specsRoot, req.specSlug)
-	if err != nil {
-		return settlePlan{}, validationError{message: fmt.Sprintf("Spec loads valid: %v", err)}
-	}
-	task, found := findSettleTask(graph.Tasks, req.taskID)
-	if !found {
-		return settlePlan{}, validationError{message: fmt.Sprintf("Task %q does not exist in Task Graph for Spec %q; choose a task id from docs/specs/%s/_tasks.md", req.taskID, req.specSlug, req.specSlug)}
-	}
-	if task.Status != spec.StatusFailed {
-		return settlePlan{}, settleStatusError(req.specSlug, task)
+	if plan.graph == nil {
+		choice, reports, err := resolveSettleSurface(req, resolvedSpecsRoot, gitState.Root, candidatesWithCurrent(nil, gitState.Root, gitState.Branch))
+		if err != nil {
+			return settlePlan{}, err
+		}
+		if !choice.found {
+			return settlePlan{}, settleNoFailedSurfaceError(req.specSlug, req.taskID, reports)
+		}
+		applySettleSurfaceChoice(&plan, choice)
 	}
 	if err := ensureNoSettleActiveRun(ctx, loadedConfig.HomeDir, gitState.Root, req.specSlug, stderr); err != nil {
 		return settlePlan{}, err
 	}
-	plan.graph = graph
-	plan.task = task
 	return plan, nil
+}
+
+func candidatesWithCurrent(candidates []settleSurfaceCandidate, gitRoot string, branch string) []settleSurfaceCandidate {
+	result := append([]settleSurfaceCandidate(nil), candidates...)
+	result = append(result, settleSurfaceCandidate{
+		workDir:      gitRoot,
+		targetBranch: branch,
+		current:      true,
+	})
+	return result
+}
+
+func applySettleSurfaceChoice(plan *settlePlan, choice settleSurfaceChoice) {
+	candidate := choice.candidate
+	plan.workDir = candidate.workDir
+	plan.targetBranch = candidate.targetBranch
+	plan.specsRoot = choice.specsRoot
+	plan.graph = choice.graph
+	plan.task = choice.task
+	plan.run = candidate.run
+	plan.runRef = candidate.runRef
+	plan.taskRef = candidate.taskRef
+	plan.hasRun = candidate.hasRun
+	plan.taskSurface = candidate.taskSurface
+}
+
+func resolveSettleSurface(req settleRequest, resolvedSpecsRoot roundconfig.SpecsRoot, gitRoot string, candidates []settleSurfaceCandidate) (settleSurfaceChoice, []settleSurfaceReport, error) {
+	var reports []settleSurfaceReport
+	for _, candidate := range candidates {
+		report := settleSurfaceReport{path: candidate.workDir}
+		ok, err := settlePathExists(candidate.workDir)
+		if err != nil {
+			return settleSurfaceChoice{}, reports, err
+		}
+		if !ok {
+			report.status = "path does not exist"
+			reports = append(reports, report)
+			continue
+		}
+		specsRoot := specsRootForWorkDir(resolvedSpecsRoot, gitRoot, candidate.workDir)
+		graph, err := spec.Load(specsRoot, req.specSlug)
+		if err != nil {
+			if candidate.current {
+				return settleSurfaceChoice{}, reports, validationError{message: fmt.Sprintf("Spec loads valid: %v", err)}
+			}
+			report.status = "Spec loads invalid: " + err.Error()
+			reports = append(reports, report)
+			continue
+		}
+		task, found := findSettleTask(graph.Tasks, req.taskID)
+		if !found {
+			if candidate.current {
+				return settleSurfaceChoice{}, reports, validationError{message: fmt.Sprintf("Task %q does not exist in Task Graph for Spec %q; choose a task id from docs/specs/%s/_tasks.md", req.taskID, req.specSlug, req.specSlug)}
+			}
+			report.status = "task not found"
+			reports = append(reports, report)
+			continue
+		}
+		report.status = string(task.Status)
+		reports = append(reports, report)
+		if task.Status == spec.StatusFailed {
+			return settleSurfaceChoice{
+				candidate: candidate,
+				specsRoot: specsRoot,
+				graph:     graph,
+				task:      task,
+				found:     true,
+			}, reports, nil
+		}
+	}
+	return settleSurfaceChoice{}, reports, nil
+}
+
+func settleNoFailedSurfaceError(slug string, taskID string, reports []settleSurfaceReport) error {
+	return validationError{message: fmt.Sprintf("Task %s has no failed settle surface; candidates: %s; %s", taskID, formatSettleSurfaceReports(reports), settleStatusGuidance(slug, taskID, reports))}
+}
+
+func formatSettleSurfaceReports(reports []settleSurfaceReport) string {
+	parts := make([]string, 0, len(reports))
+	for _, report := range reports {
+		status := strings.TrimSpace(report.status)
+		if status == "" {
+			status = "status unavailable"
+		} else if spec.AllowedStatus(spec.Status(status)) {
+			status = "status " + status
+		}
+		parts = append(parts, fmt.Sprintf("%s: %s", report.path, status))
+	}
+	return strings.Join(parts, "; ")
+}
+
+func settleStatusGuidance(slug string, taskID string, reports []settleSurfaceReport) string {
+	for _, report := range reports {
+		status := spec.Status(strings.TrimSpace(report.status))
+		if spec.AllowedStatus(status) {
+			return settleStatusMessage(slug, spec.Task{ID: taskID, Status: status})
+		}
+	}
+	return fmt.Sprintf("Task %s status is unavailable; settle requires failed", taskID)
 }
 
 func latestKeptSettleRun(ctx context.Context, homeDir string, gitRoot string, specSlug string) (store.Run, bool, error) {
@@ -286,13 +415,17 @@ func findSettleTask(tasks []spec.Task, taskID string) (spec.Task, bool) {
 }
 
 func settleStatusError(slug string, task spec.Task) error {
+	return validationError{message: settleStatusMessage(slug, task)}
+}
+
+func settleStatusMessage(slug string, task spec.Task) string {
 	switch task.Status {
 	case spec.StatusPending, spec.StatusInProgress:
-		return validationError{message: fmt.Sprintf("Task %s status is %s; run the Implement Command instead: roundfix implement --spec %s --agent <agent>", task.ID, task.Status, slug)}
+		return fmt.Sprintf("Task %s status is %s; run the Implement Command instead: roundfix implement --spec %s --agent <agent>", task.ID, task.Status, slug)
 	case spec.StatusCompleted:
-		return validationError{message: fmt.Sprintf("Task %s status is completed; nothing to do", task.ID)}
+		return fmt.Sprintf("Task %s status is completed; nothing to do", task.ID)
 	default:
-		return validationError{message: fmt.Sprintf("Task %s status is %s; settle requires failed", task.ID, task.Status)}
+		return fmt.Sprintf("Task %s status is %s; settle requires failed", task.ID, task.Status)
 	}
 }
 
