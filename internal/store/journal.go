@@ -114,13 +114,14 @@ func terminalRunPruneCandidates(ctx context.Context, querier queryContextRunner,
 SELECT r.id, r.completed_at, COUNT(e.run_id)
 FROM runs r
 LEFT JOIN run_events e ON e.run_id = r.id
-WHERE r.state IN (?, ?, ?, ?, ?, ?, ?, ?, ?)
+WHERE r.state IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   AND TRIM(r.completed_at) <> ''
 GROUP BY r.id, r.completed_at
 ORDER BY r.completed_at, r.id`,
 		StateFetched,
 		StateStopped,
 		StateClean,
+		StateCleanUnverified,
 		StateMaxRoundsReached,
 		StateBudgetExceeded,
 		StateTimedOut,

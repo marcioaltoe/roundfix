@@ -5,12 +5,15 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"roundfix/internal/runevent"
 
 	_ "modernc.org/sqlite"
 )
@@ -33,6 +36,7 @@ const (
 	StateFetched            = "Fetched"
 	StateStopped            = "Stopped"
 	StateClean              = "Clean"
+	StateCleanUnverified    = "CleanUnverified"
 	StateMaxRoundsReached   = "MaxRoundsReached"
 	StateBudgetExceeded     = "BudgetExceeded"
 	StateTimedOut           = "TimedOut"
@@ -72,6 +76,7 @@ type Run struct {
 	Agent           string
 	Model           string
 	ReasoningEffort string
+	OwnerPID        *int
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 	CompletedAt     *time.Time
@@ -97,6 +102,7 @@ type CreateRunRequest struct {
 	Agent           string
 	Model           string
 	ReasoningEffort string
+	OwnerPID        int
 }
 
 // RunStateFilter selects which Run states a listing includes. The zero
@@ -227,6 +233,15 @@ func (store *Store) CreateFetchRun(ctx context.Context, req CreateRunRequest) (R
 }
 
 func (store *Store) CreateRun(ctx context.Context, req CreateRunRequest) (Run, error) {
+	return store.createRun(ctx, req, true)
+}
+
+// CreateRunSkippingActiveLock creates a Run without acquiring the target lock.
+func (store *Store) CreateRunSkippingActiveLock(ctx context.Context, req CreateRunRequest) (Run, error) {
+	return store.createRun(ctx, req, false)
+}
+
+func (store *Store) createRun(ctx context.Context, req CreateRunRequest, acquireActiveLock bool) (Run, error) {
 	if err := validateCreateRunRequest(req); err != nil {
 		return Run{}, err
 	}
@@ -243,20 +258,22 @@ func (store *Store) CreateRun(ctx context.Context, req CreateRunRequest) (Run, e
 	defer rollbackUnlessCommitted(tx)
 
 	targetKind, targetKey := lockTarget(req)
-	existing, found, err := selectActiveRunByTarget(ctx, tx, targetKind, targetKey)
-	if err != nil {
-		return Run{}, err
-	}
-	if found {
-		return Run{}, ActiveRunError{Existing: existing}
+	if acquireActiveLock {
+		existing, found, err := selectActiveRunByTarget(ctx, tx, targetKind, targetKey)
+		if err != nil {
+			return Run{}, err
+		}
+		if found {
+			return Run{}, ActiveRunError{Existing: existing}
+		}
 	}
 
 	_, err = tx.ExecContext(ctx, `
 INSERT INTO runs (
 	id, kind, state, head_repository, head_branch, base_repository,
 	pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
-	spec_slug, agent, model, reasoning_effort, created_at, updated_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	spec_slug, agent, model, reasoning_effort, owner_pid, created_at, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		runID,
 		req.Kind,
 		StateActive,
@@ -273,6 +290,7 @@ INSERT INTO runs (
 		req.Agent,
 		req.Model,
 		req.ReasoningEffort,
+		nullableOwnerPID(req.OwnerPID),
 		formatTime(now),
 		formatTime(now),
 	)
@@ -280,20 +298,22 @@ INSERT INTO runs (
 		return Run{}, fmt.Errorf("insert Run record: %w", err)
 	}
 
-	_, err = tx.ExecContext(ctx, `
+	if acquireActiveLock {
+		_, err = tx.ExecContext(ctx, `
 INSERT INTO active_run_locks (target_kind, target_key, run_id, created_at)
 VALUES (?, ?, ?, ?)`,
-		targetKind,
-		targetKey,
-		runID,
-		formatTime(now),
-	)
-	if err != nil {
-		existing, found, selectErr := selectActiveRunByTarget(ctx, tx, targetKind, targetKey)
-		if selectErr == nil && found {
-			return Run{}, ActiveRunError{Existing: existing}
+			targetKind,
+			targetKey,
+			runID,
+			formatTime(now),
+		)
+		if err != nil {
+			existing, found, selectErr := selectActiveRunByTarget(ctx, tx, targetKind, targetKey)
+			if selectErr == nil && found {
+				return Run{}, ActiveRunError{Existing: existing}
+			}
+			return Run{}, fmt.Errorf("acquire Active Run lock: %w", err)
 		}
-		return Run{}, fmt.Errorf("acquire Active Run lock: %w", err)
 	}
 
 	run, err := selectRun(ctx, tx, runID)
@@ -350,6 +370,90 @@ WHERE id = ?`,
 		return Run{}, fmt.Errorf("commit Run completion: %w", err)
 	}
 	return run, nil
+}
+
+func (store *Store) ReclaimOrphanedRun(ctx context.Context, run Run, reason string) error {
+	runID := strings.TrimSpace(run.ID)
+	if runID == "" {
+		return errors.New("reclaim orphaned Run: Run ID is required")
+	}
+	if run.OwnerPID == nil || *run.OwnerPID <= 0 || ProcessAlive(*run.OwnerPID) {
+		return nil
+	}
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		reason = fmt.Sprintf("owner process %d not running; lock reclaimed", *run.OwnerPID)
+	}
+	now := store.now()
+
+	tx, err := store.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin orphaned Run reclamation: %w", err)
+	}
+	defer rollbackUnlessCommitted(tx)
+
+	var currentState string
+	if err := tx.QueryRowContext(ctx, `SELECT state FROM runs WHERE id = ?`, runID).Scan(&currentState); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("reclaim orphaned Run: Run %q does not exist", runID)
+		}
+		return fmt.Errorf("read Run %q before orphaned Run reclamation: %w", runID, err)
+	}
+	if IsTerminalState(currentState) {
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("commit orphaned Run reclamation no-op: %w", err)
+		}
+		return nil
+	}
+
+	result, err := tx.ExecContext(ctx, `
+UPDATE runs
+SET state = ?, updated_at = ?, completed_at = ?
+WHERE id = ? AND state = ?`,
+		StateFailed,
+		formatTime(now),
+		formatTime(now),
+		runID,
+		currentState,
+	)
+	if err != nil {
+		return fmt.Errorf("mark orphaned Run %q Failed: %w", runID, err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("read orphaned Run reclamation result: %w", err)
+	}
+	if affected == 0 {
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("commit orphaned Run reclamation no-op: %w", err)
+		}
+		return nil
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM active_run_locks WHERE run_id = ?`, runID); err != nil {
+		return fmt.Errorf("release orphaned Active Run lock: %w", err)
+	}
+	payload, err := json.Marshal(map[string]any{
+		"state":     StateFailed,
+		"reason":    reason,
+		"owner_pid": *run.OwnerPID,
+	})
+	if err != nil {
+		return fmt.Errorf("encode orphaned Run reclamation event: %w", err)
+	}
+	if _, err := appendRunEvent(ctx, tx, runevent.RunEvent{
+		RunID:   runID,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonOutcome,
+		Summary: runevent.BoundSummary(fmt.Sprintf("Run reclaimed orphaned Active Run lock: %s.", reason)),
+		Time:    now,
+		Payload: payload,
+	}); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit orphaned Run reclamation: %w", err)
+	}
+	return nil
 }
 
 func (store *Store) RequestStop(ctx context.Context, runID string) error {
@@ -474,6 +578,40 @@ func (store *Store) ActiveRun(ctx context.Context, headRepository string, headBr
 	return selectActiveRunByTarget(ctx, store.db, targetKindPR, prTargetKey(headRepository, headBranch))
 }
 
+// ActiveReviewRunByTarget returns the newest non-terminal Run bound to the
+// Head Repository and PR Head Branch, regardless of Active Run lock
+// ownership. Runs created with the Branch Integrity bypass hold no lock, so
+// target guards must scan the runs table instead of the lock table.
+func (store *Store) ActiveReviewRunByTarget(ctx context.Context, headRepository string, headBranch string) (Run, bool, error) {
+	sqlQuery := `
+SELECT id, kind, state, head_repository, head_branch, base_repository,
+       pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
+       spec_slug, agent, model, reasoning_effort, owner_pid, created_at, updated_at, completed_at
+FROM runs
+WHERE head_repository = ? AND head_branch = ?
+ORDER BY created_at DESC, id DESC`
+	rows, err := store.db.QueryContext(ctx, sqlQuery, strings.TrimSpace(headRepository), strings.TrimSpace(headBranch))
+	if err != nil {
+		return Run{}, false, fmt.Errorf("scan Active Runs by review target: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+	for rows.Next() {
+		run, err := scanRun(rows)
+		if err != nil {
+			return Run{}, false, fmt.Errorf("scan Active Run by review target: %w", err)
+		}
+		if !IsTerminalState(run.State) {
+			return run, true, nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return Run{}, false, fmt.Errorf("iterate Active Runs by review target: %w", err)
+	}
+	return Run{}, false, nil
+}
+
 // ActiveSpecRun returns the Active Run for one Spec work target, if any.
 func (store *Store) ActiveSpecRun(ctx context.Context, gitRoot string, specSlug string) (Run, bool, error) {
 	return selectActiveRunByTarget(ctx, store.db, targetKindSpec, specTargetKey(gitRoot, specSlug))
@@ -486,7 +624,7 @@ func (store *Store) ActiveRunInGitRoot(ctx context.Context, gitRoot string) (Run
 	row := store.db.QueryRowContext(ctx, `
 SELECT r.id, r.kind, r.state, r.head_repository, r.head_branch, r.base_repository,
        r.pr_number, r.git_root, r.local_branch, r.head_sha, r.artifact_dir, r.work_dir,
-       r.spec_slug, r.agent, r.model, r.reasoning_effort, r.created_at, r.updated_at, r.completed_at
+       r.spec_slug, r.agent, r.model, r.reasoning_effort, r.owner_pid, r.created_at, r.updated_at, r.completed_at
 FROM active_run_locks l
 JOIN runs r ON r.id = l.run_id
 WHERE r.git_root = ?
@@ -507,7 +645,7 @@ func (store *Store) ListRuns(ctx context.Context, query ListRunsQuery) ([]Run, e
 	sqlQuery := `
 SELECT id, kind, state, head_repository, head_branch, base_repository,
        pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
-       spec_slug, agent, model, reasoning_effort, created_at, updated_at, completed_at
+       spec_slug, agent, model, reasoning_effort, owner_pid, created_at, updated_at, completed_at
 FROM runs`
 	args := []any{}
 	gitRoot := strings.TrimSpace(query.GitRoot)
@@ -566,7 +704,7 @@ func (store *Store) LatestKeptSpecRun(ctx context.Context, gitRoot string, specS
 	row := store.db.QueryRowContext(ctx, `
 SELECT id, kind, state, head_repository, head_branch, base_repository,
        pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
-       spec_slug, agent, model, reasoning_effort, created_at, updated_at, completed_at
+       spec_slug, agent, model, reasoning_effort, owner_pid, created_at, updated_at, completed_at
 FROM runs
 WHERE kind = ? AND git_root = ? AND spec_slug = ?
   AND work_dir IS NOT NULL AND TRIM(work_dir) <> ''
@@ -689,14 +827,14 @@ ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.upd
 
 func IsTerminalState(state string) bool {
 	switch state {
-	case StateFetched, StateStopped, StateClean, StateMaxRoundsReached, StateBudgetExceeded, StateTimedOut, StateFailed, StateIntegrationPending, StateUnresolved:
+	case StateFetched, StateStopped, StateClean, StateCleanUnverified, StateMaxRoundsReached, StateBudgetExceeded, StateTimedOut, StateFailed, StateIntegrationPending, StateUnresolved:
 		return true
 	default:
 		return false
 	}
 }
 
-const schemaVersion = 7
+const schemaVersion = 8
 
 // activeRunLocksColumns is the schema v4 lock-table shape (ADR 0016): one
 // Active Run per work target, keyed by (target_kind, target_key).
@@ -726,19 +864,25 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements := append(migrateV3ToV4Statements(), migrateV4ToV5Statements()...)
 		statements = append(statements, migrateV5ToV6Statements()...)
 		statements = append(statements, migrateV6ToV7Statements()...)
+		statements = append(statements, migrateV7ToV8Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 4:
 		statements := append(migrateV4ToV5Statements(), migrateV5ToV6Statements()...)
 		statements = append(statements, migrateV6ToV7Statements()...)
+		statements = append(statements, migrateV7ToV8Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 5:
 		if err := store.ensureAgentColumn(ctx); err != nil {
 			return err
 		}
 		statements := append(migrateV5ToV6Statements(), migrateV6ToV7Statements()...)
+		statements = append(statements, migrateV7ToV8Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 6:
-		return store.applyMigration(ctx, migrateV6ToV7Statements())
+		statements := append(migrateV6ToV7Statements(), migrateV7ToV8Statements()...)
+		return store.applyMigration(ctx, statements)
+	case 7:
+		return store.applyMigration(ctx, migrateV7ToV8Statements())
 	default:
 		return fmt.Errorf("migrate Run Database: schema version %d is not supported", version)
 	}
@@ -761,7 +905,7 @@ func (store *Store) applyMigration(ctx context.Context, statements []string) err
 	return nil
 }
 
-// createSchemaStatements creates schema v7 directly on a fresh Run Database.
+// createSchemaStatements creates schema v8 directly on a fresh Run Database.
 // spec_slug and the PR-shaped columns use the empty string for "not set";
 // which fields a Run must carry is enforced by Kind in CreateRun.
 func createSchemaStatements() []string {
@@ -783,6 +927,7 @@ func createSchemaStatements() []string {
 			agent TEXT NOT NULL DEFAULT '',
 			model TEXT NOT NULL DEFAULT '',
 			reasoning_effort TEXT NOT NULL DEFAULT '',
+			owner_pid INTEGER,
 			stop_requested_at TEXT,
 			created_at TEXT NOT NULL,
 			updated_at TEXT NOT NULL,
@@ -810,7 +955,7 @@ func createSchemaStatements() []string {
 			PRIMARY KEY (run_id, cursor),
 			FOREIGN KEY (run_id) REFERENCES runs(id) ON DELETE CASCADE
 		)`,
-		`PRAGMA user_version = 7`,
+		`PRAGMA user_version = 8`,
 	}
 }
 
@@ -850,6 +995,13 @@ func migrateV6ToV7Statements() []string {
 		`ALTER TABLE runs ADD COLUMN model TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE runs ADD COLUMN reasoning_effort TEXT NOT NULL DEFAULT ''`,
 		`PRAGMA user_version = 7`,
+	}
+}
+
+func migrateV7ToV8Statements() []string {
+	return []string{
+		`ALTER TABLE runs ADD COLUMN owner_pid INTEGER`,
+		`PRAGMA user_version = 8`,
 	}
 }
 
@@ -928,6 +1080,13 @@ func validateCreateRunRequest(req CreateRunRequest) error {
 	return nil
 }
 
+func nullableOwnerPID(pid int) any {
+	if pid <= 0 {
+		return nil
+	}
+	return pid
+}
+
 // lockTarget derives the Active Run lock key for a create request (ADR
 // 0016): review Kinds lock the Open Pull Request, implement locks the Spec.
 func lockTarget(req CreateRunRequest) (string, string) {
@@ -957,7 +1116,7 @@ func selectActiveRunByTarget(ctx context.Context, querier runQuerier, targetKind
 	row := querier.QueryRowContext(ctx, `
 SELECT r.id, r.kind, r.state, r.head_repository, r.head_branch, r.base_repository,
        r.pr_number, r.git_root, r.local_branch, r.head_sha, r.artifact_dir, r.work_dir,
-       r.spec_slug, r.agent, r.model, r.reasoning_effort, r.created_at, r.updated_at, r.completed_at
+       r.spec_slug, r.agent, r.model, r.reasoning_effort, r.owner_pid, r.created_at, r.updated_at, r.completed_at
 FROM active_run_locks l
 JOIN runs r ON r.id = l.run_id
 WHERE l.target_kind = ? AND l.target_key = ?`,
@@ -978,7 +1137,7 @@ func selectRun(ctx context.Context, querier runQuerier, runID string) (Run, erro
 	row := querier.QueryRowContext(ctx, `
 SELECT id, kind, state, head_repository, head_branch, base_repository,
        pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
-       spec_slug, agent, model, reasoning_effort, created_at, updated_at, completed_at
+       spec_slug, agent, model, reasoning_effort, owner_pid, created_at, updated_at, completed_at
 FROM runs
 WHERE id = ?`, runID)
 	run, err := scanRun(row)
@@ -994,6 +1153,7 @@ func scanRun(row runScanner) (Run, error) {
 	var updatedAt string
 	var completedAt string
 	var workDir sql.NullString
+	var ownerPID sql.NullInt64
 	err := row.Scan(
 		&run.ID,
 		&run.Kind,
@@ -1011,6 +1171,7 @@ func scanRun(row runScanner) (Run, error) {
 		&run.Agent,
 		&run.Model,
 		&run.ReasoningEffort,
+		&ownerPID,
 		&createdAt,
 		&updatedAt,
 		&completedAt,
@@ -1020,6 +1181,10 @@ func scanRun(row runScanner) (Run, error) {
 	}
 	if workDir.Valid {
 		run.WorkDir = workDir.String
+	}
+	if ownerPID.Valid {
+		pid := int(ownerPID.Int64)
+		run.OwnerPID = &pid
 	}
 	parsedCreatedAt, err := parseTime(createdAt)
 	if err != nil {

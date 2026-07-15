@@ -4,7 +4,7 @@ description: Use Roundfix to clean CodeRabbit pull request feedback, diagnose ru
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.0
+  version: 0.3.0
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
 ---
@@ -23,8 +23,9 @@ Supervisor or script needs JSONL progress for one explicit Run.
 Roundfix drives ACP Runtimes through acpx `0.12.0`. Node.js 22.13 or
 newer with npm/npx is a prerequisite. Prefer the Setup Command after
 installing Roundfix; it verifies Node, installs the pinned acpx on
-confirmation or `--yes`, probes the configured Agent, offers local adapter
-overrides, and offers User Config and Project Config creation. Review Runs and
+confirmation or `--yes`, checks the configured Agent adapter binary, probes the
+configured Agent, offers local adapter overrides, and offers User Config and
+Project Config creation. Review Runs and
 sequential Spec Runs drive the selected ACP Runtime through one acpx-backed
 Agent Session across the Run's Work Items. Concurrent Spec Tasks run through
 per-Task Agent Sessions named `roundfix-<run-id>-<task_id>` in their Task
@@ -32,12 +33,19 @@ Worktrees.
 
 Use the Doctor Command, `roundfix doctor`, to diagnose Run readiness without
 installing dependencies, writing config, or changing files. Doctor runs the
-shared Node.js, pinned acpx, configured Agent probe, and codex runtime hygiene
-checks and prints one line per check with status `ok`, `failed`, or `skipped`.
+shared Node.js, pinned acpx, configured Agent adapter, configured Agent probe,
+the effective Agent Model check, and codex runtime hygiene checks and prints
+one line per check with status `ok`, `failed`, or `skipped`. The adapter check
+resolves the binary acpx will spawn from `~/.acpx/config.json` or the built-in
+runtime default and fails with
+`<adapter> is required but was not found on PATH; install it with: <command>`.
 The configured Agent probe resolves `defaults.agent` plus the runtime's
 effective `runtimes.<agent>.model` and `runtimes.<agent>.reasoning_effort`, then
 validates that selection from the repository Git root when one is available.
-Failed checks include `next: <action>` when Roundfix knows the remediation.
+The `model:` line reports whether that runtime accepted the effective Agent
+Model; a not-advertised failure includes the advertised Agent Models and
+`next: <action>` recovery guidance. Failed checks include `next: <action>` when
+Roundfix knows the remediation.
 On macOS, the codex hygiene check resolves `CODEX_PATH` first and then `codex`
 on `PATH`, inspects the `com.apple.quarantine` attribute (the real XProtect
 trigger), and verifies the binary's code signature (not `spctl --assess`, which
@@ -58,19 +66,26 @@ Large docs-task payloads, especially turns that print or return large
 skill/docs file content, can trigger `-32603 Message buffer exceeded 10485760
 bytes`. Treat this as an upstream acpx limit: keep payloads smaller when
 practical, and rely on the ADR-0020 classification and the Settle Command for
-completed work preserved in the Run Worktree.
+completed Task work preserved in a spec Run Worktree.
 
 ADR-0020 classification: when acpx has delivered a valid
 `session/prompt` result for a Batch before a later nonzero acpx exit, Roundfix
 journals the anomaly with the stderr tail and proceeds to the Daemon's
 verification. Without that parsed result, the nonzero exit remains a Batch
-failure. Verification remains the only gate for settling and committing.
+failure. If acpx rejects the selected Agent Model with its not-advertised
+stderr, Roundfix reports the terminal reason as
+`Agent Model "<model>" not advertised by runtime "<runtime>"; advertised: <list>`
+in Work Item reasons, Run Events, and final report reason lines instead of a
+generic `agent/protocol error`. Verification remains the only gate for settling
+and committing.
 
 ## Setup, doctor, and upgrade
 
 Use `roundfix setup [--yes] [--no-input]` to take a machine from fresh to
 Run-ready. It checks Node.js, pinned acpx, the configured Agent probe, acpx
-local adapter overrides, User Config, and Project Config. Each check prints one
+local adapter overrides, User Config, and Project Config. The Agent probe
+includes the same adapter-binary preflight used by Runs, so a missing adapter is
+reported before any disposable Agent Session is created. Each check prints one
 deterministic report line with status `ok`, `installed`, `skipped`,
 `offered: declined`, or `failed`. Tested report lines include:
 
@@ -92,8 +107,23 @@ such as `acpx: skipped`, `agent probe: skipped`, and `Project Config: skipped`.
 When acpx is missing or mismatched, setup offers `npm install -g acpx@0.12.0`.
 
 Use `roundfix doctor` when you only need a read-only readiness report. It runs
-the Node.js, pinned acpx, configured Agent probe, and codex runtime hygiene
-checks and exits nonzero if any check fails. The command has no flags.
+the Node.js, pinned acpx, configured adapter, configured Agent probe, effective
+Agent Model check, and codex runtime hygiene checks and exits nonzero if any
+check fails. Adapter failures print the adapter binary name and
+`next: <install command>`. A rejected Agent Model prints
+`model: failed (...)` with the advertised list and the same `next:` action used
+by Run Preflight Validation: update the ACP Runtime or adapter, choose an
+advertised Agent Model, or pass a one-Run model override. The command has no
+flags.
+
+```text
+node: ok
+acpx: ok
+adapter: ok (codex-acp)
+agent: ok (codex)
+model: ok (gpt-5.5)
+codex: ok
+```
 
 Use `roundfix upgrade [--check]` to resolve the latest Roundfix release through
 the GitHub CLI. Without `--check`, it downloads the platform asset, verifies
@@ -363,6 +393,14 @@ The force-stop report title includes:
 Roundfix Run force-stopped
 ```
 
+When an Active-Run lock records an owner PID and Roundfix can prove that owner
+process no longer exists, preflight reclaims the orphan automatically: the Run
+settles Failed, the Run Event Journal records the reclamation, one stderr
+warning names the Run id and PID, and the blocked command proceeds. A live
+owner, a PID-less legacy Run, or any liveness result short of proof still
+blocks with the existing `roundfix stop <id>` guidance; `stop --force` remains
+the manual path for those cases.
+
 Force stop also reaps kept Run or Task Worktrees and branches for terminal Runs
 whose branch has no commits beyond its base. Each removed pair is reported on
 stderr with this shape:
@@ -404,9 +442,22 @@ follow `roundfix events <run-id> --follow` for JSONL state changes, use
 log as a compact text record rather than a state API.
 
 Detach implies non-interactive mode. `--interactive` is rejected before Run
-creation, and `--no-input` is implied. If the child exits before the startup
-handshake, such as during Preflight Validation, the foreground command writes
-no stdout and relays the child's stderr and exit code verbatim.
+creation, and `--no-input` is implied. Startup uses a two-phase handshake: the
+child writes a liveness marker immediately on entering child mode, before
+configuration load and Preflight Validation, then writes the Run id after the
+Run exists. The foreground command waits 10 seconds only for liveness; Run
+creation has its own 5-minute ceiling. A slow but live Preflight Validation no
+longer fails detach startup only because it takes more than 10 seconds.
+
+Detached startup failures write no stdout and always print an explicit stderr
+diagnostic before the console relay or empty-output note:
+
+```text
+roundfix: Detached Run child produced no liveness signal within 10s; killed (exit: <exit or signal>)
+roundfix: Detached Run child did not create a Run within 5m0s; killed (exit: <exit or signal>)
+roundfix: Detached Run child exited before the handshake (<exit or signal>); console output follows
+roundfix: Detached Run child exited before the handshake (<exit or signal>) and produced no output
+```
 
 Operational Runs that reach a terminal outcome through `resolve`, `watch`, or
 `implement` send exactly one outcome notification. `fetch`, `settle`,
@@ -533,9 +584,10 @@ record, not a stable state API.
    roundfix watch --source coderabbit --pr <number> --agent <agent> [--spec <slug>] --until-clean
    ```
 
-4. Let Roundfix own Review Source waits, CodeRabbit fetches, Round creation,
-   Agent lifecycle, verification, Batch commits, Final Push, Review Source
-   resolution, retries, timeouts, and Stop Request handling.
+4. Let Roundfix own Branch Integrity Preflight, Review Source waits,
+   CodeRabbit fetches, Round creation, Agent lifecycle, verification, Batch
+   commits, Final Push, Review Source resolution, Outcome Comments, retries,
+   timeouts, and Stop Request handling.
 5. Use the bounded `roundfix runs list` (Active Runs by default; widen with
    `--state all` or `--limit 0`) or the Run Browser (`roundfix attach` with
    no argument at an interactive terminal) when the Run ID was not captured.
@@ -577,16 +629,49 @@ roundfix skills list
 roundfix skills check
 ```
 
-## Run Worktree Isolation
+## Review checkout and spec worktree isolation
 
-Operational Runs that start an Agent (`resolve`, `watch`, and `implement`)
-execute in a Run Worktree, not in the user's checkout. `fetch` remains
-read/write artifact work only: it starts no Agent and creates no Run Worktree.
+Review Runs (`fetch`, `resolve`, and `watch`) execute in the user's checkout on
+the checked-out PR Head Branch and create no Run Worktree. `fetch` starts no
+Agent. `resolve` and `watch` start the Agent from the same checkout, so a
+review fix is always a delta over the pull request branch that Final Push
+updates.
+
+Branch Integrity Preflight runs before any fetch, Agent Session, Review Source
+comment, code change, commit, or push for `fetch`, `resolve`, and `watch`.
+
+- The preflight enumerates pending `roundfix/run-*` Run Branch work and kept
+  worktrees bound to the PR Head Branch. Fast-forwardable work is integrated
+  automatically and journaled before the review Run continues.
+- Non-fast-forward pending work refuses the command with exit `2`, names each
+  pending Run Branch and worktree, and prints the recovery command
+  `git merge --ff-only <branch>`.
+- Another Active Run bound to the Head Repository and PR Head Branch refuses
+  the command with exit `2` and names both `roundfix stop --run-id <id>` and
+  `roundfix stop --force --run-id <id>`.
+- `--skip-branch-integrity` is the only bypass. It skips pending Run Branch
+  and Active Run guardrails only after Roundfix publishes a pull request audit
+  comment naming the run id, actor, time, skipped guardrails, ignored pending
+  work, and ignored Active Runs. If that comment cannot be published, the
+  command fails preflight with exit `2`.
+- `resolve` and `watch` also require a clean tracked working tree before Agent
+  work starts. Dirty tracked paths refuse with exit `2`; untracked files are
+  allowed because Batch commits stage only paths changed since the Batch
+  snapshot. After a failed Batch, dirty tracked files in the checkout are
+  Agent work by construction.
+
+Review Runs have no Integration Pending outcome. They either mutate the user's
+checkout directly, stop before side effects through Preflight Validation, or
+end with a review outcome such as Clean, CleanUnverified, MaxRoundsReached,
+TimedOut, Failed, Stopped, or Unresolved.
+
+Spec Runs (`implement`) keep worktree isolation because Task concurrency needs
+it:
 
 - `worktree.location` sets the parent directory with Project Config > User
   Config > built-in default precedence. The built-in default is
   `~/.roundfix/worktrees`.
-- Each Run Worktree is created at
+- Each spec Run Worktree is created at
   `<worktree.location>/<repo-slug>/<run-id>` on a Run Branch named
   `roundfix/run-<id>`. The Run row records the path as `work_dir`.
 - Each concurrent Task runs in a sibling Task Worktree at
@@ -594,33 +679,26 @@ read/write artifact work only: it starts no Agent and creates no Run Worktree.
   `roundfix/run-<id>-<task_id>`. Roundfix always appends the repo slug and Run
   ID segments plus the Task suffix; those final path segments are not
   configurable.
-- Run startup reports the execution workspace on stderr with
+- Spec Run startup reports the execution workspace on stderr with
   `Run Worktree: <path>`. Terminal outcomes that keep the workspace report
   `Run Worktree kept: <path>`.
-- Integrated Clean outcomes remove the Run Worktree with
+- Integrated Clean spec outcomes remove the Run Worktree with
   `git worktree remove --force` and delete the Run Branch. If cleanup fails
   after integration, the Run stays Clean: stderr prints exactly one warning
   shaped as
   `roundfix: Run Worktree cleanup failed; kept <path>: <reason>`, the Daemon
   journals one Run Event, and the exit code and stdout report stay unchanged.
   The kept path remains available for manual inspection and later terminal
-  Worktree reaping. Integration Pending, Unresolved, Failed, Stopped,
-  BudgetExceeded, TimedOut, and any other non-integrated outcome keep the Run
-  Worktree and Run Branch.
-- `watch` reuses one Run Worktree across all Rounds in the Run.
-- A new Run Worktree starts from committed Git state. Untracked files in the
-  user's checkout are not present unless they are listed in `worktree.copy`;
-  each entry must be a repository-relative path that stays inside the
-  repository. Copied environment files must already be gitignored; Roundfix
-  does not add ignore rules for arbitrary copied files.
-- Worktree Bootstrap runs `worktree.bootstrap` once in each newly created Run
-  or Task Worktree after `worktree.copy` and before Agent work and
+  Worktree reaping. Integration Pending, Unresolved, Failed, Stopped, and any
+  other non-integrated spec outcome keep the Run Worktree and Run Branch.
+- Worktree Bootstrap runs `worktree.bootstrap` once in each newly created spec
+  Run or Task Worktree after `worktree.copy` and before Agent work and
   Verification. Empty `worktree.bootstrap` skips the step. The command runs in
   the worktree root and is bounded by `worktree.bootstrap_timeout`, which
   defaults to `10m`.
 - A Worktree Bootstrap start failure, non-zero exit, or timeout fails the
-  owning Run for a Run Worktree or settles only the owning Task failed for a
-  Task Worktree. The failure reason is shaped as
+  owning spec Run for a Run Worktree or settles only the owning Task failed for
+  a Task Worktree. The failure reason is shaped as
   `worktree bootstrap failed: <command>: <reason>`, and bootstrap output
   streams to stderr and the Run Event Journal.
 - Roundfix owns invoking and timing the Worktree Bootstrap command. Dependency
@@ -631,59 +709,60 @@ read/write artifact work only: it starts no Agent and creates no Run Worktree.
   repository-relative values, continue to override the built-in default and
   the review-artifact Spec tree resolver.
 
-Integration uses porcelain git only. When integration cannot fast-forward the
-user's branch, the Run ends Integration Pending, exits `1`, keeps the Run
-Worktree and Run Branch, and prints the manual command shape:
-
-```text
-Integration command: git merge --ff-only roundfix/run-<id>
-```
-
-For Implement Runs, the stdout outcome line is:
+Spec Run integration uses porcelain git only. When spec Run integration cannot
+fast-forward the user's branch, the Run ends Integration Pending, exits `1`,
+keeps the Run Worktree and Run Branch, and prints:
 
 ```text
 IntegrationPending: X completed, Y failed, Z skipped, W pending; integrate with git merge --ff-only roundfix/run-<id>
 ```
 
-For review Runs, Final Push is skipped until integration succeeds, so a pushed
-branch is never ahead of an unintegrated local branch.
-
-For Spec Runs, completed Task Worktree commits integrate onto the Run Branch
-through a serialized queue. The first compatible Task can fast-forward; later
-compatible Tasks cherry-pick onto the Run Branch. A conflict settles that Task
-`failed`, keeps its Task Worktree and Task Branch, and records a reason shaped
-like `integration conflict: <path>`.
+Completed Task Worktree commits integrate onto the Run Branch through a
+serialized queue. The first compatible Task can fast-forward; later compatible
+Tasks cherry-pick onto the Run Branch. A conflict settles that Task `failed`,
+keeps its Task Worktree and Task Branch, and records a reason shaped like
+`integration conflict: <path>`.
 
 Review Run output and completion contract:
 
 - With `--until-clean`, a Watch Run ends Clean only after there are no
   Unresolved Review Issues and the Review Source check on the final pushed
-  commit reports success. If no matching Review Source check exists for the
-  pushed HEAD, watch ends Clean and writes this stderr note:
-  `Review Source check missing for the pushed HEAD; treating Run as Clean. Expected: Watch Run Clean normally means the Review Source check on the pushed HEAD reports success. Next: confirm the PR's Review Source check before merging.`
-  Pending or failing checks keep the Run inside the existing review timeout
-  and Max Rounds bounds.
+  commit reports success. If the Review Source check never appears within the
+  grace period after Final Push, watch ends CleanUnverified, exits `3`, and
+  reports the next action: confirm the pull request's Review Source check
+  before merging. Pending or failing checks keep the Run inside the existing
+  review timeout and Max Rounds bounds.
 - `watch` and `resolve` write diagnostics, progress, the Run ID, and Agent
   output to stderr. stdout is reserved for the deterministic report at Run
   end.
 - The report has one line per Review Issue in Round/fetch order, followed by
-  one outcome line. The CLI fixtures assert this byte shape:
+  this-Run counts and pull request cumulative counts. The CLI fixtures assert
+  this shape:
 
   ```text
   issue 001 resolved — major: handle test issue
-  Clean after 1 Round(s): 1 resolved, 0 invalid, 0 failed, 0 unresolved.
+  This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.
+  Pull Request cumulative: 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.
   ```
 
   Review Issue statuses in the first line are `resolved`, `invalid`,
-  `failed`, `duplicated`, or `unresolved`. `resolve` uses the same report
-  shape with `1 Round(s)`.
-- A terminal Run with no fetched Review Issues prints only the outcome line;
-  for example:
+  `failed`, `duplicated`, or `unresolved`. Failed, invalid, and unresolved
+  lines include — `reason: <terminal_reason>` when the issue artifact carries
+  one. `resolve` uses the same report shape with `1 Round(s)`.
+- A terminal Run with no fetched Review Issues still prints the two count
+  lines; for example:
 
   ```text
-  TimedOut after 0 Round(s): 0 resolved, 0 invalid, 0 failed, 0 unresolved.
+  This Run (TimedOut after 0 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.
+  Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.
   ```
 
+- Roundfix publishes Outcome Comments on Review Source threads for
+  non-resolved outcomes. Invalid and duplicated issues get the comment before
+  the thread resolves. Failed issues stay open with the failed-step comment.
+  Run-end unresolved issues stay open with the revisit-plan comment. Each
+  comment carries an idempotency marker and each propagation is journaled with
+  the Review Issue reference.
 - `--no-agent-console` is available on `resolve`, `watch`, and `implement`.
   In non-TTY mode it hides Agent-source console events from stderr while
   keeping Daemon/progress lines. The Run Event Journal still records both
@@ -776,8 +855,7 @@ Roundfix keeps lossless evidence while giving each reader a compact surface:
   sends one Verification Feedback prompt to the same Agent Session with the
   failed command, wrapped failure, and diagnostic path. The prompt never embeds
   the log body. After that repair, the Daemon reruns the complete Verification
-  sequence as attempt 2 and settles from the final verdict. There is no third
-  attempt and no second repair prompt.
+  sequence as attempt 2 and settles from the final verdict. This Verification Feedback retry never consumes a Round and never counts as a new Review Source review. There is no third attempt and no second repair prompt.
 - Cancellation, process-start failure, and artifact filesystem failure remain
   infrastructure errors. They do not enter the repair loop. A Task that records
   a missing credential or prerequisite as failed settles failed under the Task
@@ -836,6 +914,10 @@ outcome and never opens pull requests (ADR-0021).
    and the agent log go to stderr:
    - One line per Task in Task Graph order: `task_NN <status> — <title>`,
      with status `completed`, `failed`, `skipped`, or `pending`.
+     Failed and skipped Task lines are followed by one indented reason line:
+     two spaces followed by `reason: <one line>`. Verification failure reasons name the failed
+     command and exit status and point to diagnostics. Completed Task lines do
+     not gain an extra line.
    - With `--qa`, one verdict line after the Task lines:
      `qa <verdict> — <report path>`; a missing report prints
      `qa missing — no QA Report found`.
@@ -865,7 +947,8 @@ outcome and never opens pull requests (ADR-0021).
    or its Task Graph is invalid (each failure names the offending Task or
    check), the current branch is the repository default branch, another Active
    Run holds the work target or working tree (the error names the run id and
-   `roundfix stop <id>`), or the Agent runtime probe fails. A dirty user
+   `roundfix stop <id>` unless the owner is proven dead and reclaimed
+   automatically), or the Agent runtime probe fails. A dirty user
    checkout no longer blocks `implement`; stderr prints a note shaped like
    `roundfix: note: working tree <path> has N uncommitted change(s); implement will run in a Run Worktree, and overlapping local changes end the Run Integration Pending.`
 
@@ -879,8 +962,9 @@ outcome and never opens pull requests (ADR-0021).
    roundfix: QA Report <path> kept outside the repository; omitted from the commit
    ```
 
-   If no stageable paths remain for a Task, it still settles `completed`
-   without a commit and publishes the normal settled event. An external QA
+   If a Task commit has no change outside the Spec Root, including an empty
+   stageable set, the Daemon still settles the Task `completed` but emits one
+   stderr warning and one Run Event warning for the no-op shape. An external QA
    Report is left uncommitted and the QA step proceeds. Remove temporary git
    shims that hid symlink pathspec failures after upgrading to a Roundfix
    build with this behavior; those shims can mask regressions in the real
@@ -997,9 +1081,9 @@ the Implement, Attach, Settle, Stop, and Archive commands documented above.
      Tasks did not settle. Go to recovery.
 
 5. **Recover failed Tasks.** Read the per-Task status lines
-   (`task_NN failed — <title>`). For each failed Task, inspect its kept Task
-   Worktree or the kept Run Worktree, then recover only that Task once its
-   Verification passes there:
+   (`task_NN failed — <title>`) and the following indented `reason:` line when
+   present. For each failed Task, inspect its kept Task Worktree or the kept Run
+   Worktree, then recover only that Task once its Verification passes there:
 
    ```bash
    roundfix settle --spec <slug> --task <task_id>
@@ -1010,10 +1094,13 @@ the Implement, Attach, Settle, Stop, and Archive commands documented above.
    to pick up any still-pending Tasks; completed Tasks are skipped.
 
 6. **Stop when needed.** Prefer graceful `roundfix stop --spec <slug>`; the Run
-   ends after the current Work Item settles. Use `roundfix stop --force --spec
-   <slug>` only for a dead, stuck, or runaway Run. Never kill Agent or acpx
-   processes directly while a Run is Active — force stop reaps sessions and
-   terminal Worktree debris for you.
+   ends after the current Work Item settles. If a later command finds an
+   Active-Run lock whose recorded owner PID is provably dead, Roundfix reclaims
+   that orphan automatically with a stderr warning and proceeds. Use
+   `roundfix stop --force --spec <slug>` only when the owner still appears
+   live, the Run has no recorded PID, or the Run is otherwise stuck or runaway.
+   Never kill Agent or acpx processes directly while a Run is Active — force
+   stop reaps sessions and terminal Worktree debris for you.
 
 7. **Advance.** When the Spec ends Clean and its QA Report has `verdict: pass`,
    archive it with `roundfix archive <slug>`, then start the loop again on the
@@ -1021,16 +1108,18 @@ the Implement, Attach, Settle, Stop, and Archive commands documented above.
 
 Failure recovery stays clean when you keep two invariants: never edit
 Run-touched files while a Run is Active, and never reap sessions or Worktrees by
-hand — let `roundfix stop --force` and the Implement Command preflight sweep
-close terminal sessions and Worktrees.
+hand — let automatic orphan reclamation, `roundfix stop --force`, and the
+Implement Command preflight sweep close terminal sessions and Worktrees.
 
 ## Settle Command
 
 Use `roundfix settle --spec <slug> --task <task_id>` only as a local recovery
 command for one failed Task whose completed work is already in a kept Task
 Worktree, a kept Run Worktree, or the current repository. Settle resolves that
-surface in order: the deterministic Task Worktree path, then the Run Worktree
-recorded on the latest kept Run, then the current repository.
+surface by loading the target Task status in order from the deterministic Task
+Worktree path, the Run Worktree recorded on the latest kept Run, and the
+current repository. It selects the first candidate whose task file is
+`failed`.
 
 Flags:
 
@@ -1040,24 +1129,39 @@ Flags:
 
 Preflight Validation exits `2` with one actionable message when either flag is
 missing, the repository does not resolve, the Spec or Task Graph does not load,
-the Task id is absent from the Task Graph, the target Task is not `failed`, a
-settle surface path exists but is unusable, or another Active Run owns the Spec
-target or working tree. `pending` and `in_progress` Tasks belong to the
-Implement Command; completed Tasks have nothing to do.
+the Task id is absent from the Task Graph, no candidate surface has the target
+Task `failed`, a settle surface path exists but is unusable, or another Active
+Run owns the Spec target or working tree. When no surface qualifies, the
+refusal names every candidate path and the status found there, or that the path
+does not exist. `pending` and `in_progress` Tasks belong to the Implement
+Command; completed Tasks have nothing to do.
+
+On every settle that proceeds, stderr prints the selected surface before
+Verification starts:
+
+```text
+Settle surface: <path>
+```
 
 stdout carries only deterministic report lines:
 
 ```text
 verify test -f done.txt — ok
+commit <path>
 settled task_01 completed — <short sha>
 ```
+
+On pass, settle prints one sorted `commit <path>` line for each path included
+in the commit, between the verification lines and the settled line. When
+nothing is stageable and settle creates no commit, it prints no `commit <path>`
+lines.
 
 If verification fails, the command stops at the first failed Verification
 command, leaves the Task and tree unchanged, and prints:
 
 ```text
 verify test -f done.txt — ok
-verify test -f missing.txt — failed
+verify test -f missing.txt — failed (diagnostics: <path>)
 task_01 stays failed — verification failed
 ```
 
@@ -1073,12 +1177,18 @@ Validation failed.
 
 On pass, settle verifies in the selected surface, stages that surface's changes
 plus the task file, creates the standard Task commit, creates no Run, writes no
-Run Event Journal entries, and never pushes. When the selected surface is a
-Task Worktree, settle integrates that commit onto the Run Branch through the
-same queue mechanics as `implement`; success removes the Task Worktree and Task
-Branch. A Task Worktree integration conflict exits `1`, keeps both the Run and
-Task worktrees and branches, leaves stdout with only verification lines, and
-prints stderr shaped like:
+Run Event Journal entries, and never pushes. If other Tasks in the same Spec
+are failed at settle time and a commit is created, stderr prints one warning:
+
+```text
+roundfix: warning: other failed Tasks in Spec "<slug>" may have work included in this settle commit: task_02, task_03
+```
+
+When the selected surface is a Task Worktree, settle integrates that commit
+onto the Run Branch through the same queue mechanics as `implement`; success
+removes the Task Worktree and Task Branch. A Task Worktree integration conflict
+exits `1`, keeps both the Run and Task worktrees and branches, leaves stdout
+with only verification lines, and prints stderr shaped like:
 
 ```text
 roundfix: settle failed after verification: task worktree integration conflict on <path>
@@ -1128,8 +1238,13 @@ status updates.
 4. Make valid fixes in the working tree and update or add focused tests.
 5. Update only assigned Review Issue statuses:
    - `resolved` for valid issues fixed by the Batch.
-   - `invalid` for false positives or findings that do not apply.
-   - `failed` only when the assigned issue cannot be safely completed.
+   - `invalid` for false positives or findings that do not apply. Also set
+     `terminal_reason` in the issue frontmatter to a one-line verifiable
+     triage reason — Roundfix publishes it in the thread's Outcome Comment,
+     so a missing reason leaves the reviewer with a generic message.
+   - `failed` only when the assigned issue cannot be safely completed. Set
+     `terminal_reason` to the blocking cause when known; the Daemon fills it
+     from Verification diagnostics otherwise.
 6. Run focused checks while working when they help prove the edit. The Daemon
    runs the authoritative Verification after the Agent turn and sends one
    Verification Feedback prompt only on an attempt-1 command failure.
@@ -1145,9 +1260,14 @@ status updates.
 
 Inside a Roundfix-assigned spec Run, each Task is one Batch of one. A Task's
 status is `pending`, `in_progress`, `completed`, or `failed`, and its task
-file is the sole owner of that status. Concurrent spec Runs assign each Task to
-its Task Worktree; sequential Runs (`worktree.concurrency: 1`) use the Run
-Worktree. The assigned working tree is never the user's checkout.
+file is the sole owner of that status. The Daemon normalizes only the
+documented synonyms on reload — `done` becomes `completed`, and hyphen or space
+variants of canonical statuses such as `in-progress` and `in progress` become
+`in_progress` — then rewrites the frontmatter to the canonical value. Agents
+must still write canonical statuses; anything outside the canonical and synonym
+sets fails validation. Concurrent spec Runs assign each Task to its Task
+Worktree; sequential Runs (`worktree.concurrency: 1`) use the Run Worktree. The
+assigned working tree is never the user's checkout.
 
 The Agent owns the assigned task file and the working tree:
 

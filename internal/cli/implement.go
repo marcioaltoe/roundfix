@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -155,10 +156,15 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	} else if found {
-		printPreflightFailure("implement", validationError{message: fmt.Sprintf(
-			"an Active Run already holds working tree %s: run_id=%s kind=%s state=%s; stop it with: roundfix stop %s",
-			gitState.Root, blocking.ID, blocking.Kind, blocking.State, blocking.ID)}, stderr)
-		return exitPreflight
+		if _, reclaimed, err := reclaimOrphanedActiveRun(ctx, runStore, blocking, stderr); err != nil {
+			printPreflightFailure("implement", err, stderr)
+			return exitPreflight
+		} else if !reclaimed {
+			printPreflightFailure("implement", validationError{message: fmt.Sprintf(
+				"an Active Run already holds working tree %s: run_id=%s kind=%s state=%s; stop it with: roundfix stop %s",
+				gitState.Root, blocking.ID, blocking.Kind, blocking.State, blocking.ID)}, stderr)
+			return exitPreflight
+		}
 	}
 
 	collaborators := newEngineCollaborators()
@@ -169,15 +175,18 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 	req = requestWithRuntimeSelection(req, runtime)
 
-	run, err := runStore.CreateRun(ctx, store.CreateRunRequest{
-		Kind:            store.KindImplement,
-		GitRoot:         gitState.Root,
-		LocalBranch:     gitState.Branch,
-		HeadSHA:         gitState.HEAD,
-		SpecSlug:        graph.Spec.Slug,
-		Agent:           runtime.ID,
-		Model:           runtime.Model,
-		ReasoningEffort: runtime.ReasoningEffort,
+	run, err := createRunReclaimingOrphan(ctx, runStore, stderr, func() (store.Run, error) {
+		return runStore.CreateRun(ctx, store.CreateRunRequest{
+			Kind:            store.KindImplement,
+			GitRoot:         gitState.Root,
+			LocalBranch:     gitState.Branch,
+			HeadSHA:         gitState.HEAD,
+			SpecSlug:        graph.Spec.Slug,
+			Agent:           runtime.ID,
+			Model:           runtime.Model,
+			ReasoningEffort: runtime.ReasoningEffort,
+			OwnerPID:        os.Getpid(),
+		})
 	})
 	if err != nil {
 		// A lost work-target race surfaces the store's ActiveRunError as-is;
@@ -256,7 +265,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			}
 			fmt.Fprintf(stderr, "Implement Run %s reached %s.\n", run.ID, store.StateStopped)
 			printKeptRunWorktree(stderr, runRef.Path)
-			report, counts := renderImplementTaskLines(executionSpecsRoot, executionGraph, false)
+			report, counts := renderImplementTaskLinesWithOutcomes(executionSpecsRoot, executionGraph, false, cycleResult.Outcomes)
 			fmt.Fprint(stdout, report)
 			printImplementOutcomeLine(stdout, store.StateStopped, counts)
 			return exitOK
@@ -278,7 +287,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	if cycleResult.QAVerdict != "" && cycleResult.QAVerdict != spec.VerdictPass {
 		outcome = store.StateUnresolved
 	}
-	report, counts := renderImplementTaskLines(executionSpecsRoot, executionGraph, true)
+	report, counts := renderImplementTaskLinesWithOutcomes(executionSpecsRoot, executionGraph, true, cycleResult.Outcomes)
 	integrationCommand := ""
 	if outcome == store.StateClean {
 		integration, err := integrateCleanImplementRun(ctx, runRef, gitState.Branch)
@@ -582,8 +591,13 @@ func printImplementTaskLines(stdout io.Writer, specsRoot string, graph *spec.Gra
 }
 
 func renderImplementTaskLines(specsRoot string, graph *spec.Graph, cycleFinished bool) (string, implementTaskCounts) {
+	return renderImplementTaskLinesWithOutcomes(specsRoot, graph, cycleFinished, nil)
+}
+
+func renderImplementTaskLinesWithOutcomes(specsRoot string, graph *spec.Graph, cycleFinished bool, outcomes []daemon.TaskOutcome) (string, implementTaskCounts) {
 	counts := implementTaskCounts{}
 	var report bytes.Buffer
+	reasons := taskOutcomeReasons(outcomes)
 	for _, task := range graph.Tasks {
 		current := task
 		if err := spec.ReloadTask(specsRoot, &current); err != nil {
@@ -607,8 +621,27 @@ func renderImplementTaskLines(specsRoot string, graph *spec.Graph, cycleFinished
 			title = task.Title
 		}
 		fmt.Fprintf(&report, "%s %s — %s\n", task.ID, status, title)
+		if reason := reasons[task.ID]; reason != "" && (status == "failed" || status == "skipped") {
+			fmt.Fprintf(&report, "  reason: %s\n", reason)
+		}
 	}
 	return report.String(), counts
+}
+
+func taskOutcomeReasons(outcomes []daemon.TaskOutcome) map[string]string {
+	reasons := make(map[string]string, len(outcomes))
+	for _, outcome := range outcomes {
+		status := strings.TrimSpace(outcome.Status)
+		if status != "failed" && status != "skipped" {
+			continue
+		}
+		reason := strings.Join(strings.Fields(outcome.Reason), " ")
+		if reason == "" {
+			continue
+		}
+		reasons[outcome.Task] = reason
+	}
+	return reasons
 }
 
 func implementDisplayStatus(status spec.Status, cycleFinished bool) string {

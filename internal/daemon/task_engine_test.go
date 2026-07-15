@@ -317,21 +317,22 @@ func taskStatusInSpecRootOnDisk(t *testing.T, specsRoot string, id string) strin
 // from the prompt contract. A QA prompt writes qaReport as the Spec's QA
 // Report, the way the qa-gate Agent does; an empty qaReport writes none.
 type taskFakeRunner struct {
-	calls         *[]string
-	gitRoot       string
-	store         *store.Store
-	statusByTask  map[string]spec.Status
-	errByTask     map[string]error
-	errByTaskCall map[string][]error
-	taskCalls     map[string]int
-	writeByTask   map[string]string
-	anomalyByTask map[string]string
-	qaReport      string
-	qaPrompts     []string
-	seenStates    []string
-	prompts       []string
-	requests      []agent.ExecuteRequest
-	writeLogs     bool
+	calls           *[]string
+	gitRoot         string
+	store           *store.Store
+	statusByTask    map[string]spec.Status
+	errByTask       map[string]error
+	errByTaskCall   map[string][]error
+	taskCalls       map[string]int
+	writeByTask     map[string]string
+	rawStatusByTask map[string]string
+	anomalyByTask   map[string]string
+	qaReport        string
+	qaPrompts       []string
+	seenStates      []string
+	prompts         []string
+	requests        []agent.ExecuteRequest
+	writeLogs       bool
 }
 
 func (runner *taskFakeRunner) Probe(context.Context, agent.ProbeRequest) error { return nil }
@@ -416,6 +417,11 @@ func (runner *taskFakeRunner) Run(ctx context.Context, req agent.ExecuteRequest,
 			return agent.ExecuteResult{}, err
 		}
 	}
+	if rawStatus, ok := runner.rawStatusByTask[taskID]; ok {
+		if err := setRawTaskStatusForTest(taskPathFromPromptForTest(req.Prompt, runner.gitRoot, taskCycleSlug, taskID), rawStatus); err != nil {
+			return agent.ExecuteResult{}, err
+		}
+	}
 	if status, ok := runner.statusByTask[taskID]; ok {
 		if err := spec.SetStatus(taskPathFromPromptForTest(req.Prompt, runner.gitRoot, taskCycleSlug, taskID), status); err != nil {
 			return agent.ExecuteResult{}, err
@@ -471,6 +477,21 @@ func qaSpecDirFromPromptForTest(prompt string, gitRoot string) string {
 		return filepath.Join(gitRoot, path)
 	}
 	return filepath.Join(gitRoot, "docs", "specs", taskCycleSlug)
+}
+
+func setRawTaskStatusForTest(path string, status string) error {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(string(content), "\n")
+	for index, line := range lines {
+		if strings.HasPrefix(line, "status:") {
+			lines[index] = "status: " + status
+			return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644)
+		}
+	}
+	return fmt.Errorf("task file %q has no status line", path)
 }
 
 const qaReportNameForTest = "qa-report-2026-01-01.md"
@@ -884,6 +905,71 @@ func droppedStageEvents(t *testing.T, sink *captureEventSink) []runevent.RunEven
 	return dropped
 }
 
+func noOpTaskCommitWarningEvents(t *testing.T, sink *captureEventSink) []runevent.RunEvent {
+	t.Helper()
+	var warnings []runevent.RunEvent
+	for _, event := range taskEventsOfKind(sink, runevent.KindDaemonCommit) {
+		if eventPayloadString(t, event, "decision") == "warning" && eventPayloadString(t, event, "warning") == "no_op_task_commit" {
+			warnings = append(warnings, event)
+		}
+	}
+	return warnings
+}
+
+func TestPublishNoOpTaskCommitWarningReturnsProgressWriteError(t *testing.T) {
+	engine := &Engine{deps: Dependencies{Progress: failingProgressWriter{err: errors.New("progress closed")}}}
+
+	err := engine.publishNoOpTaskCommitWarning(context.Background(), TaskPlan{RunID: "run_1"}, "task_01", 1, "spec-only")
+
+	if err == nil {
+		t.Fatal("expected progress write error")
+	}
+	for _, want := range []string{"write no-op Task commit warning", "run_1", "task_01", "progress closed"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("expected error to contain %q, got %v", want, err)
+		}
+	}
+}
+
+type failingProgressWriter struct {
+	err error
+}
+
+func (writer failingProgressWriter) Write([]byte) (int, error) {
+	return 0, writer.err
+}
+
+func assertNoOpTaskCommitWarning(t *testing.T, fixture *taskCycleFixture, taskID string, shape string) {
+	t.Helper()
+	warnings := noOpTaskCommitWarningEvents(t, fixture.sink)
+	if len(warnings) != 1 {
+		t.Fatalf("expected one no-op Task commit warning event, got %+v", warnings)
+	}
+	if warnings[0].ReviewIssue != taskID {
+		t.Fatalf("expected warning event for %s, got %+v", taskID, warnings[0])
+	}
+	if got := eventPayloadString(t, warnings[0], "task"); got != taskID {
+		t.Fatalf("expected warning payload task %q, got %q", taskID, got)
+	}
+	if got := eventPayloadString(t, warnings[0], "shape"); got != shape {
+		t.Fatalf("expected warning shape %q, got %q", shape, got)
+	}
+	wantLine := fmt.Sprintf("roundfix: warning: Task %s completed with no changes outside the Spec Root (%s)\n", taskID, shape)
+	if count := strings.Count(fixture.progress.String(), wantLine); count != 1 {
+		t.Fatalf("expected one warning line %q, count=%d progress=%q", wantLine, count, fixture.progress.String())
+	}
+}
+
+func assertNoNoOpTaskCommitWarning(t *testing.T, fixture *taskCycleFixture) {
+	t.Helper()
+	if warnings := noOpTaskCommitWarningEvents(t, fixture.sink); len(warnings) != 0 {
+		t.Fatalf("expected no no-op Task commit warning events, got %+v", warnings)
+	}
+	if strings.Contains(fixture.progress.String(), "no changes outside the Spec Root") {
+		t.Fatalf("expected no no-op warning line, got progress=%q", fixture.progress.String())
+	}
+}
+
 func hasTaskSettlementEvent(t *testing.T, events []runevent.RunEvent, taskID string, status spec.Status) bool {
 	t.Helper()
 	for _, event := range events {
@@ -895,6 +981,15 @@ func hasTaskSettlementEvent(t *testing.T, events []runevent.RunEvent, taskID str
 		}
 	}
 	return false
+}
+
+func taskOutcomeByID(outcomes []TaskOutcome, taskID string) (TaskOutcome, bool) {
+	for _, outcome := range outcomes {
+		if outcome.Task == taskID {
+			return outcome, true
+		}
+	}
+	return TaskOutcome{}, false
 }
 
 func copyTreeForSchedulerTest(source string, destination string) error {
@@ -1440,6 +1535,36 @@ func TestTaskCycleExecutesAgentVerifySettleCommitContract(t *testing.T) {
 	}
 }
 
+func TestTaskCycleRewritesNormalizedStatusAfterAgentReload(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Normalize the task status"}})
+	runner := &taskFakeRunner{
+		calls:           fixture.calls,
+		gitRoot:         fixture.gitRoot,
+		rawStatusByTask: map[string]string{"task_01": "done"},
+	}
+	verifier := &taskFakeVerifier{calls: fixture.calls}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 || result.Skipped != 0 {
+		t.Fatalf("expected synonym-authored Task completed, got %+v", result)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusCompleted) {
+		t.Fatalf("expected status synonym rewritten canonical on disk, got %q", got)
+	}
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>commit" {
+		t.Fatalf("expected normal Agent flow after synonym normalization, got %q", got)
+	}
+	if len(committer.paths) != 1 || strings.Join(committer.paths[0], "|") != taskFileRel(taskCycleSlug, "task_01") {
+		t.Fatalf("expected only the canonicalized task file committed, got %v", committer.paths)
+	}
+}
+
 func TestTaskCycleCommitsAfterTransportAnomalyAndPassingVerification(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Classify by parsed result"}})
 	fixture.worktree.snapshots = [][]string{nil, {"internal/agent/fix.go"}}
@@ -1661,7 +1786,7 @@ func TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents(t *testing.T
 			"task_03": spec.StatusCompleted,
 		},
 	}
-	verifier := &taskFakeVerifier{calls: fixture.calls, failOn: map[string]error{"echo t1": errors.New("gate broke")}}
+	verifier := &taskFakeVerifier{calls: fixture.calls, failOn: map[string]error{"echo t1": errors.New("exit status 7")}}
 	committer := &engineFakeCommitter{calls: fixture.calls}
 	engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
 
@@ -1688,6 +1813,27 @@ func TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents(t *testing.T
 	if len(committer.messages) != 1 || !strings.HasPrefix(committer.messages[0], "chore: tidy the build files") {
 		t.Fatalf("expected only the independent Task committed with chore mapping, got %v", committer.messages)
 	}
+	taskOneOutcome, ok := taskOutcomeByID(result.Outcomes, "task_01")
+	if !ok {
+		t.Fatalf("expected task_01 outcome, got %+v", result.Outcomes)
+	}
+	if taskOneOutcome.Status != string(spec.StatusFailed) {
+		t.Fatalf("expected task_01 failed outcome, got %+v", taskOneOutcome)
+	}
+	taskTwoOutcome, ok := taskOutcomeByID(result.Outcomes, "task_02")
+	if !ok {
+		t.Fatalf("expected task_02 outcome, got %+v", result.Outcomes)
+	}
+	if taskTwoOutcome.Status != string(taskRunSkipped) || taskTwoOutcome.Reason != "needs not completed: task_01" {
+		t.Fatalf("expected task_02 skipped outcome with unmet need reason, got %+v", taskTwoOutcome)
+	}
+	taskThreeOutcome, ok := taskOutcomeByID(result.Outcomes, "task_03")
+	if !ok {
+		t.Fatalf("expected task_03 outcome, got %+v", result.Outcomes)
+	}
+	if taskThreeOutcome.Status != string(spec.StatusCompleted) || taskThreeOutcome.Reason != "" {
+		t.Fatalf("expected task_03 completed outcome without reason, got %+v", taskThreeOutcome)
+	}
 	if runner.requests[2].Batch.Number != 2 {
 		t.Fatalf("expected skipped Task to not consume an execution ordinal, got Batch %d", runner.requests[2].Batch.Number)
 	}
@@ -1704,14 +1850,26 @@ func TestTaskCycleFailedTaskSkipsDependentsAndContinuesIndependents(t *testing.T
 	if skipEvent.ReviewIssue != "task_02" || skipEvent.Batch != 0 || !strings.Contains(string(skipEvent.Payload), "task_01") {
 		t.Fatalf("expected skip event naming the unmet need, got %+v payload %s", skipEvent, skipEvent.Payload)
 	}
-	var settledFailed bool
+	if got := eventPayloadString(t, *skipEvent, "reason"); got != taskTwoOutcome.Reason {
+		t.Fatalf("expected skipped outcome reason to match journal payload %q, got %q", got, taskTwoOutcome.Reason)
+	}
+	var failedEvent *runevent.RunEvent
 	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonTask) {
-		if event.ReviewIssue == "task_01" && strings.Contains(string(event.Payload), "verification failed") {
-			settledFailed = true
+		if event.ReviewIssue == "task_01" && eventPayloadString(t, event, "phase") == "settled" {
+			matched := event
+			failedEvent = &matched
 		}
 	}
-	if !settledFailed {
+	if failedEvent == nil {
 		t.Fatal("expected failed settlement event journaling the verification failure reason")
+	}
+	if got := eventPayloadString(t, *failedEvent, "reason"); got != taskOneOutcome.Reason {
+		t.Fatalf("expected failed outcome reason to match journal payload %q, got %q", got, taskOneOutcome.Reason)
+	}
+	for _, expected := range []string{`Verification failed: command "echo t1"`, "exit status", "diagnostics:"} {
+		if !strings.Contains(taskOneOutcome.Reason, expected) {
+			t.Fatalf("expected verification outcome reason to contain %q, got %q", expected, taskOneOutcome.Reason)
+		}
 	}
 	kinds := fixture.sink.kinds()
 	last := taskEventsOfKind(fixture.sink, runevent.KindDaemonOutcome)
@@ -1901,6 +2059,9 @@ func TestTaskCycleAgentErrorSettlesTaskFailedAndContinues(t *testing.T) {
 	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusFailed) {
 		t.Fatalf("expected Agent error settled failed, got %q", got)
 	}
+	if len(result.Outcomes) != 2 || result.Outcomes[0].Reason != "Agent failed: agent crashed" {
+		t.Fatalf("expected existing Agent failure reason to stay unchanged, got %+v", result.Outcomes)
+	}
 	var journaled bool
 	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonTask) {
 		if event.ReviewIssue == "task_01" && strings.Contains(string(event.Payload), "agent crashed") {
@@ -1910,6 +2071,77 @@ func TestTaskCycleAgentErrorSettlesTaskFailedAndContinues(t *testing.T) {
 	if !journaled {
 		t.Fatal("expected the Agent failure reason journaled in the settlement event")
 	}
+}
+
+func TestTaskCycleModelNotAdvertisedFailureSettlesAndReportsReason(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", title: "Use the selected Agent Model"},
+	})
+	runner := &taskFakeRunner{
+		calls:     fixture.calls,
+		gitRoot:   fixture.gitRoot,
+		errByTask: map[string]error{"task_01": modelNotAdvertisedBatchErrorForTest()},
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("expected model rejection to fail only the Task, got %v", err)
+	}
+	if result.Completed != 0 || result.Failed != 1 || result.Skipped != 0 {
+		t.Fatalf("expected one failed Task, got %+v", result)
+	}
+	if len(result.Outcomes) != 1 {
+		t.Fatalf("expected one Task outcome, got %+v", result.Outcomes)
+	}
+	outcome := result.Outcomes[0]
+	if outcome.Task != "task_01" || outcome.Status != string(spec.StatusFailed) || outcome.Reason != modelNotAdvertisedReasonForTest {
+		t.Fatalf("expected model rejection report outcome, got %+v", outcome)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusFailed) {
+		t.Fatalf("expected model rejection settled failed, got %q", got)
+	}
+	if !strings.Contains(fixture.progress.String(), "Task task_01 failed: "+modelNotAdvertisedReasonForTest+"\n") {
+		t.Fatalf("expected progress report to include model rejection reason, got %q", fixture.progress.String())
+	}
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonTask) {
+		if event.ReviewIssue == "task_01" && eventPayloadString(t, event, "reason") == modelNotAdvertisedReasonForTest {
+			return
+		}
+	}
+	t.Fatalf("expected Task settlement event to journal reason %q", modelNotAdvertisedReasonForTest)
+}
+
+func TestTaskCycleSpecRootOnlyTaskCommitWarnsAndStillCommits(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Only settle the task file"}})
+	fixture.worktree.snapshots = [][]string{nil, nil}
+	runner := &taskFakeRunner{
+		calls:        fixture.calls,
+		gitRoot:      fixture.gitRoot,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 || result.Skipped != 0 {
+		t.Fatalf("expected one completed Task, got %+v", result)
+	}
+	if len(committer.paths) != 1 {
+		t.Fatalf("expected one spec-root-only Task commit, got %v", committer.paths)
+	}
+	if got := strings.Join(committer.paths[0], "|"); got != taskFileRel(taskCycleSlug, "task_01") {
+		t.Fatalf("expected only the task file committed, got %q", got)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusCompleted) {
+		t.Fatalf("expected Task settled completed, got %q", got)
+	}
+	assertNoOpTaskCommitWarning(t, fixture, "task_01", taskNoOpShapeSpecRootOnly)
 }
 
 func TestTaskCycleCommitStagesSnapshotDiffPlusTaskFile(t *testing.T) {
@@ -1935,6 +2167,7 @@ func TestTaskCycleCommitStagesSnapshotDiffPlusTaskFile(t *testing.T) {
 	if got := strings.Join(committer.paths[0], "|"); got != taskFile+"|src/x.go" {
 		t.Fatalf("expected the task file ensured and the pre-existing change excluded, got %q", got)
 	}
+	assertNoNoOpTaskCommitWarning(t, fixture)
 }
 
 func TestTaskCycleStopBeforeTaskPublishesStopAndDoesNothing(t *testing.T) {
@@ -2272,6 +2505,7 @@ func TestTaskCycleSettlesCompletedWithoutCommitWhenOnlyExternalTaskFileChanged(t
 	if got := eventPayloadString(t, dropped[0], "path"); got != wantPath {
 		t.Fatalf("expected dropped external path %q, got %q", wantPath, got)
 	}
+	assertNoOpTaskCommitWarning(t, fixture, "task_01", taskNoOpShapeEmptyStageable)
 }
 
 func TestTaskCycleQAReportExternalProceedsWithoutStaging(t *testing.T) {

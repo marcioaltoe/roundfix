@@ -425,14 +425,16 @@ func TestConsoleTextFallsBackToBoundedToolMarkerForIncompleteMetadata(t *testing
 }
 
 func TestSettleAssignedIssues(t *testing.T) {
+	const reason = "Agent left issue unsettled after Batch"
 	tests := []struct {
 		name        string
 		status      string
 		wantStatus  string
+		wantReason  string
 		wantChanged bool
 	}{
-		{name: "marks pending issue failed", status: rounds.StatusPending, wantStatus: rounds.StatusFailed, wantChanged: true},
-		{name: "marks valid issue failed", status: rounds.StatusValid, wantStatus: rounds.StatusFailed, wantChanged: true},
+		{name: "marks pending issue failed", status: rounds.StatusPending, wantStatus: rounds.StatusFailed, wantReason: reason, wantChanged: true},
+		{name: "marks valid issue failed", status: rounds.StatusValid, wantStatus: rounds.StatusFailed, wantReason: reason, wantChanged: true},
 		{name: "keeps resolved issue untouched", status: rounds.StatusResolved, wantStatus: rounds.StatusResolved},
 		{name: "keeps invalid issue untouched", status: rounds.StatusInvalid, wantStatus: rounds.StatusInvalid},
 		{name: "keeps failed issue untouched", status: rounds.StatusFailed, wantStatus: rounds.StatusFailed},
@@ -441,12 +443,12 @@ func TestSettleAssignedIssues(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			artifactDir := t.TempDir()
 			result := persistTestRound(t, artifactDir)
-			if err := rounds.SetIssueStatus(result.IssuePaths[0], test.status, ""); err != nil {
+			if err := rounds.SetIssueStatus(result.IssuePaths[0], test.status, "", ""); err != nil {
 				t.Fatalf("set issue status: %v", err)
 			}
 			batch := rounds.Batch{Number: 1, Issues: []rounds.Issue{{Path: result.IssuePaths[0]}}}
 
-			changed, err := SettleAssignedIssues(context.Background(), batch)
+			changed, err := SettleAssignedIssues(context.Background(), batch, reason)
 
 			if err != nil {
 				t.Fatalf("settle assigned issues: %v", err)
@@ -461,6 +463,9 @@ func TestSettleAssignedIssues(t *testing.T) {
 			if issue.Status != test.wantStatus {
 				t.Fatalf("expected status %q, got %q", test.wantStatus, issue.Status)
 			}
+			if issue.TerminalReason != test.wantReason {
+				t.Fatalf("expected terminal reason %q, got %q", test.wantReason, issue.TerminalReason)
+			}
 		})
 	}
 }
@@ -468,14 +473,14 @@ func TestSettleAssignedIssues(t *testing.T) {
 func TestSettleAssignedIssuesStopsOnCanceledContext(t *testing.T) {
 	artifactDir := t.TempDir()
 	result := persistTestRound(t, artifactDir)
-	if err := rounds.SetIssueStatus(result.IssuePaths[0], rounds.StatusPending, ""); err != nil {
+	if err := rounds.SetIssueStatus(result.IssuePaths[0], rounds.StatusPending, "", ""); err != nil {
 		t.Fatalf("set issue status: %v", err)
 	}
 	batch := rounds.Batch{Number: 1, Issues: []rounds.Issue{{Path: result.IssuePaths[0]}}}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	changed, err := SettleAssignedIssues(ctx, batch)
+	changed, err := SettleAssignedIssues(ctx, batch, "Agent left issue unsettled after Batch")
 
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("expected context cancellation, got %v", err)
@@ -493,6 +498,7 @@ func TestSettleAssignedIssuesStopsOnCanceledContext(t *testing.T) {
 }
 
 func TestMarkBatchFailed(t *testing.T) {
+	const reason = "Agent failed: runtime crashed"
 	artifactDir := t.TempDir()
 	result := persistTestRound(t, artifactDir)
 	batch := rounds.Batch{
@@ -502,7 +508,7 @@ func TestMarkBatchFailed(t *testing.T) {
 		},
 	}
 
-	if err := MarkBatchFailed(batch); err != nil {
+	if err := MarkBatchFailed(batch, reason); err != nil {
 		t.Fatalf("mark batch failed: %v", err)
 	}
 	issue, err := rounds.ParseIssue(result.IssuePaths[0])
@@ -511,6 +517,9 @@ func TestMarkBatchFailed(t *testing.T) {
 	}
 	if issue.Status != rounds.StatusFailed {
 		t.Fatalf("expected failed status, got %q", issue.Status)
+	}
+	if issue.TerminalReason != reason {
+		t.Fatalf("expected terminal reason %q, got %q", reason, issue.TerminalReason)
 	}
 }
 

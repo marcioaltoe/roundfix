@@ -91,7 +91,8 @@ complexity: medium # low | medium | high
 ## Verification
 
 <!-- The exact commands that prove this task done, with what to expect from each.
-     The Daemon runs these verbatim after the Agent turn and will not settle the task completed until they pass. -->
+     The Daemon runs these verbatim after the Agent turn and will not settle the task completed until they pass.
+     Use portable shell forms: use rg or rg --files for repository searches, avoid wc-pipeline shape checks, use repository build flags such as go build -buildvcs=false ./... when a build is required, and include executable checks that prove the Task's effect. -->
 
 - `<command>` — expected: ...
 

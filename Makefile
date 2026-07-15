@@ -12,7 +12,13 @@ CMD := ./cmd/roundfix
 BIN_DIR := bin
 BIN := $(BIN_DIR)/$(APP)
 PKGS := ./...
-BUILD_FLAGS ?= -buildvcs=false
+# Local build identity for `roundfix --version`: short commit (plus -dirty
+# when the tree has changes) and local build time. The release workflow
+# stamps only app.Version from the tag and leaves these empty.
+BUILD_COMMIT := $(shell commit=$$(git rev-parse --short HEAD 2>/dev/null) || exit 0; dirty=$$(git status --porcelain --untracked-files=all 2>/dev/null); if test -n "$$dirty"; then dirty=-dirty; else dirty=; fi; printf '%s%s' "$$commit" "$$dirty")
+BUILD_TIME := $(shell date '+%Y-%m-%d %H:%M:%S %z')
+STAMP_LDFLAGS := -X 'roundfix/internal/app.BuildCommit=$(BUILD_COMMIT)' -X 'roundfix/internal/app.BuildTime=$(BUILD_TIME)'
+BUILD_FLAGS ?= -buildvcs=false -ldflags "$(STAMP_LDFLAGS)"
 RUN_FLAGS ?= -buildvcs=false
 TARGET ?= project
 GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')
@@ -93,7 +99,7 @@ skills-check: ## Validate shipped Roundfix skill artifacts
 # The Roundfix-owned skill bundle shipped in the binary: the operational
 # roundfix skill plus the 13 authorial workflow skills. Everything else is
 # managed by the external skills-lock.json origin and is never embedded.
-OWNED_SKILLS := roundfix write-idea write-prd write-techspec write-tasks setup-workflow implement-task implement-spec brainstorming council business-analyst archive-spec qa-gate evidence-gate
+OWNED_SKILLS := roundfix write-idea write-prd write-techspec write-tasks setup-context-driven implement-task implement-spec brainstorming council business-analyst archive-spec qa-gate evidence-gate
 
 skills-sync: ## Regenerate the embedded skills/ bundle from canonical .agents/skills/
 	@for s in $(OWNED_SKILLS); do rm -rf "skills/$$s"; cp -R ".agents/skills/$$s" "skills/$$s"; done

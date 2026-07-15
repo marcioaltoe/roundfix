@@ -272,30 +272,82 @@ func TestRunReturnsUnresolvedWhenResolveMakesNoProgress(t *testing.T) {
 	}
 }
 
-func TestRunConfirmsSuccessAndMissingHeadCheckAsClean(t *testing.T) {
+func TestRunConfirmsMergeReadyThroughGraceWindow(t *testing.T) {
 	tests := []struct {
-		name        string
-		checkState  HeadCheckState
-		wantMissing bool
+		name             string
+		states           []HeadCheckState
+		maxRounds        int
+		reviewTimeout    time.Duration
+		checkGracePeriod time.Duration
+		wantOutcome      string
+		wantManualReview bool
+		wantCheckCalls   int
+		wantSleeps       []time.Duration
 	}{
-		{name: "success", checkState: CheckSuccess},
-		{name: "missing", checkState: CheckMissing, wantMissing: true},
+		{
+			name:           "success is clean immediately",
+			states:         []HeadCheckState{CheckSuccess},
+			wantOutcome:    store.StateClean,
+			wantCheckCalls: 1,
+		},
+		{
+			name:           "missing check appears late and succeeds within grace window",
+			states:         []HeadCheckState{CheckMissing, CheckMissing, CheckSuccess},
+			wantOutcome:    store.StateClean,
+			wantCheckCalls: 3,
+			wantSleeps:     []time.Duration{time.Second, time.Second},
+		},
+		{
+			name:           "missing check appears late and fails within grace window",
+			states:         []HeadCheckState{CheckMissing, CheckFailure},
+			maxRounds:      1,
+			wantOutcome:    store.StateMaxRoundsReached,
+			wantCheckCalls: 2,
+			wantSleeps:     []time.Duration{time.Second},
+		},
+		{
+			name:             "missing check exhausts grace window as clean unverified",
+			states:           []HeadCheckState{CheckMissing},
+			reviewTimeout:    time.Second,
+			checkGracePeriod: 2 * time.Second,
+			wantOutcome:      store.StateCleanUnverified,
+			wantCheckCalls:   3,
+			wantSleeps:       []time.Duration{time.Second, time.Second},
+		},
+		{
+			name:             "pending check still uses review timeout",
+			states:           []HeadCheckState{CheckPending},
+			reviewTimeout:    2 * time.Second,
+			checkGracePeriod: 5 * time.Second,
+			wantOutcome:      store.StateTimedOut,
+			wantManualReview: true,
+			wantCheckCalls:   3,
+			wantSleeps:       []time.Duration{time.Second, time.Second},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := validRequest()
+			if tt.maxRounds > 0 {
+				req.MaxRounds = tt.maxRounds
+			}
+			if tt.reviewTimeout > 0 {
+				req.ReviewTimeout = tt.reviewTimeout
+			}
+			if tt.checkGracePeriod > 0 {
+				req.CheckGracePeriod = tt.checkGracePeriod
+			}
 			clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
 			sleeper := &fakeSleeper{clock: clock}
 			status := &fakeStatusSource{statuses: []Status{{State: StatusSettled}}}
-			fetcher := &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 1}}}
-			resolver := &fakeResolver{results: []ResolveResult{{Remaining: 0, Progress: true}}}
-			check := &fakeCheckSource{states: []HeadCheckState{tt.checkState}}
+			fetcher := &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 0}}}
+			check := &fakeCheckSource{states: tt.states}
 
 			result, err := Run(context.Background(), req, Dependencies{
 				StatusSource: status,
 				Fetcher:      fetcher,
-				Resolver:     resolver,
+				Resolver:     &fakeResolver{},
 				CheckSource:  check,
 				Clock:        clock,
 				Sleeper:      sleeper,
@@ -304,19 +356,19 @@ func TestRunConfirmsSuccessAndMissingHeadCheckAsClean(t *testing.T) {
 			if err != nil {
 				t.Fatalf("watch run: %v", err)
 			}
-			if result.Outcome != store.StateClean {
-				t.Fatalf("expected Clean, got %q", result.Outcome)
+			if result.Outcome != tt.wantOutcome {
+				t.Fatalf("expected %s, got %q", tt.wantOutcome, result.Outcome)
 			}
 			if result.Rounds != 1 {
 				t.Fatalf("expected 1 Round, got %d", result.Rounds)
 			}
-			if result.CheckMissing != tt.wantMissing {
-				t.Fatalf("expected CheckMissing %t, got %t", tt.wantMissing, result.CheckMissing)
+			if tt.wantManualReview && result.ManualReviewCommand != "@coderabbitai review" {
+				t.Fatalf("expected manual review trigger guidance, got %q", result.ManualReviewCommand)
 			}
-			if check.calls != 1 {
-				t.Fatalf("expected one check call, got %d", check.calls)
+			if check.calls != tt.wantCheckCalls {
+				t.Fatalf("expected %d check calls, got %d", tt.wantCheckCalls, check.calls)
 			}
-			assertSleeps(t, sleeper.sleeps)
+			assertSleeps(t, sleeper.sleeps, tt.wantSleeps...)
 		})
 	}
 }
@@ -521,15 +573,16 @@ func TestRunDoesNotConfirmMergeReadinessWithoutUntilClean(t *testing.T) {
 
 func validRequest() Request {
 	return Request{
-		PRNumber:       "123",
-		HeadSHA:        "abc123",
-		UntilClean:     true,
-		MaxRounds:      3,
-		PollInterval:   time.Second,
-		QuietPeriod:    2 * time.Second,
-		ReviewTimeout:  5 * time.Second,
-		BudgetEnabled:  true,
-		MaxRunDuration: time.Minute,
+		PRNumber:         "123",
+		HeadSHA:          "abc123",
+		UntilClean:       true,
+		MaxRounds:        3,
+		PollInterval:     time.Second,
+		QuietPeriod:      2 * time.Second,
+		ReviewTimeout:    5 * time.Second,
+		CheckGracePeriod: 3 * time.Second,
+		BudgetEnabled:    true,
+		MaxRunDuration:   time.Minute,
 	}
 }
 

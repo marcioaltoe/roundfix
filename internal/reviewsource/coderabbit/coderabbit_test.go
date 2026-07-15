@@ -2,6 +2,7 @@ package coderabbit
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -269,6 +270,214 @@ func TestResolveIssuesResolvesUniqueReviewThreads(t *testing.T) {
 	}
 }
 
+func TestResolveIssueResolvesOneReviewThread(t *testing.T) {
+	gh := &fakeGitHubClient{}
+	client := Client{GitHub: gh}
+
+	err := client.ResolveIssue(context.Background(), reviewsource.IssueResolveRequest{
+		BaseRepository: "owner/project",
+		PRNumber:       "123",
+		SourceRef:      "thread:PRRT_thread,comment:PRRC_1",
+	})
+	if err != nil {
+		t.Fatalf("resolve issue: %v", err)
+	}
+
+	if strings.Join(gh.resolvedThreads, ",") != "PRRT_thread" {
+		t.Fatalf("expected single thread resolution, got %#v", gh.resolvedThreads)
+	}
+}
+
+func TestReplyToIssueUsesMarkerForIdempotency(t *testing.T) {
+	const marker = "<!-- roundfix:outcome run=run_1 issue=abc action=invalid -->"
+	tests := []struct {
+		name        string
+		threads     []ReviewThread
+		wantPosted  bool
+		wantSkipped bool
+		wantReplies int
+	}{
+		{
+			name: "posts when marker absent",
+			threads: []ReviewThread{{
+				ID: "PRRT_thread",
+				Comments: []ThreadComment{
+					{Body: "previous human reply"},
+				},
+			}},
+			wantPosted:  true,
+			wantReplies: 1,
+		},
+		{
+			name: "skips when marker already present",
+			threads: []ReviewThread{{
+				ID: "PRRT_thread",
+				Comments: []ThreadComment{
+					{Body: "already handled\n" + marker},
+				},
+			}},
+			wantSkipped: true,
+		},
+		{
+			name: "posts when marker is embedded in quoted text",
+			threads: []ReviewThread{{
+				ID: "PRRT_thread",
+				Comments: []ThreadComment{
+					{Body: "quoted previous reply: " + marker},
+				},
+			}},
+			wantPosted:  true,
+			wantReplies: 1,
+		},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			gh := &fakeGitHubClient{threads: testCase.threads}
+			client := Client{GitHub: gh}
+
+			result, err := client.ReplyToIssue(context.Background(), reviewsource.IssueCommentRequest{
+				BaseRepository: "owner/project",
+				PRNumber:       "123",
+				SourceRef:      "thread:PRRT_thread,comment:PRRC_1",
+				Marker:         marker,
+				Body:           marker + "\n\nRoundfix outcome: invalid.",
+			})
+			if err != nil {
+				t.Fatalf("reply to issue: %v", err)
+			}
+
+			if result.Posted != testCase.wantPosted || result.Skipped != testCase.wantSkipped {
+				t.Fatalf("unexpected result: %+v", result)
+			}
+			if len(gh.replies) != testCase.wantReplies {
+				t.Fatalf("expected %d replies, got %+v", testCase.wantReplies, gh.replies)
+			}
+		})
+	}
+}
+
+func TestGHClientWriteMutationsInvokeGHOnce(t *testing.T) {
+	tests := []struct {
+		name     string
+		act      func(context.Context, GHClient) error
+		wantArgs []string
+	}{
+		{
+			name: "reply to review thread",
+			act: func(ctx context.Context, client GHClient) error {
+				return client.ReplyToReviewThread(ctx, "PRRT_thread", "failed verification details")
+			},
+			wantArgs: []string{
+				"api",
+				"graphql",
+				"-f",
+				"query=" + replyToReviewThreadMutation,
+				"-f",
+				"threadId=PRRT_thread",
+				"-f",
+				"body=failed verification details",
+			},
+		},
+		{
+			name: "comment on pull request",
+			act: func(ctx context.Context, client GHClient) error {
+				return client.CommentOnPullRequest(ctx, "octo/base", 123, "bypass audit details")
+			},
+			wantArgs: []string{
+				"api",
+				"-X",
+				"POST",
+				"repos/octo/base/issues/123/comments",
+				"-f",
+				"body=bypass audit details",
+			},
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			var calls [][]string
+			withRunGH(t, func(_ context.Context, args ...string) ([]byte, error) {
+				calls = append(calls, append([]string(nil), args...))
+				return []byte(`{}`), nil
+			})
+
+			if err := testCase.act(context.Background(), GHClient{}); err != nil {
+				t.Fatalf("write mutation failed: %v", err)
+			}
+
+			if len(calls) != 1 {
+				t.Fatalf("expected one gh invocation, got %#v", calls)
+			}
+			assertStringSlicesEqual(t, calls[0], testCase.wantArgs)
+			if testCase.name == "reply to review thread" && !strings.Contains(calls[0][3], "addPullRequestReviewThreadReply") {
+				t.Fatalf("expected reply mutation name in args, got %#v", calls[0])
+			}
+		})
+	}
+}
+
+func TestGHClientWriteMutationFailuresWrapCause(t *testing.T) {
+	cause := errors.New("gh failed")
+	tests := []struct {
+		name          string
+		act           func(context.Context, GHClient) error
+		wantOperation string
+	}{
+		{
+			name: "reply failure",
+			act: func(ctx context.Context, client GHClient) error {
+				return client.ReplyToReviewThread(ctx, "PRRT_thread", "body")
+			},
+			wantOperation: "reply to review thread",
+		},
+		{
+			name: "comment failure",
+			act: func(ctx context.Context, client GHClient) error {
+				return client.CommentOnPullRequest(ctx, "octo/base", 123, "body")
+			},
+			wantOperation: "comment on pull request",
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			withRunGH(t, func(context.Context, ...string) ([]byte, error) {
+				return nil, cause
+			})
+
+			err := testCase.act(context.Background(), GHClient{})
+
+			if err == nil {
+				t.Fatal("expected write mutation failure")
+			}
+			if !errors.Is(err, cause) {
+				t.Fatalf("expected error to wrap cause, got %v", err)
+			}
+			if !strings.Contains(err.Error(), testCase.wantOperation) {
+				t.Fatalf("expected error to name operation %q, got %v", testCase.wantOperation, err)
+			}
+		})
+	}
+}
+
+func TestRoundfixCommentMarkerHelpers(t *testing.T) {
+	marker := RoundfixCommentMarker("run:run_123", "issue:abc")
+	if marker != "<!-- roundfix: run:run_123 issue:abc -->" {
+		t.Fatalf("unexpected marker %q", marker)
+	}
+	body := RoundfixCommentBody("failed verification details", marker)
+	if body != "failed verification details\n\n<!-- roundfix: run:run_123 issue:abc -->" {
+		t.Fatalf("unexpected marker body %q", body)
+	}
+	if !HasRoundfixCommentMarker(marker, "unrelated\n  "+marker+"  \nmore") {
+		t.Fatal("expected marker helper to detect marker line")
+	}
+	if HasRoundfixCommentMarker(marker, "unrelated comment", "prefix "+marker+" suffix") {
+		t.Fatal("expected marker helper to require a standalone marker line")
+	}
+}
+
 func TestWatchStatusReportsReviewingFromPendingCodeRabbitCheck(t *testing.T) {
 	client := Client{
 		GitHub: &fakeGitHubClient{
@@ -492,12 +701,15 @@ func watchStatusRequest() reviewsource.WatchStatusRequest {
 }
 
 type fakeGitHubClient struct {
-	comments        []ReviewComment
-	threads         []ReviewThread
-	checkRuns       []CheckRun
-	statuses        []CommitStatus
-	reviews         []PullRequestReview
-	resolvedThreads []string
+	comments          []ReviewComment
+	threads           []ReviewThread
+	checkRuns         []CheckRun
+	statuses          []CommitStatus
+	reviews           []PullRequestReview
+	resolvedThreads   []string
+	replies           []reviewThreadReplyCall
+	prComments        []pullRequestCommentCall
+	commentRepository string
 }
 
 func (client fakeGitHubClient) ReviewComments(context.Context, string, string) ([]ReviewComment, error) {
@@ -523,4 +735,46 @@ func (client fakeGitHubClient) PullRequestReviews(context.Context, string, strin
 func (client *fakeGitHubClient) ResolveReviewThread(_ context.Context, threadID string) error {
 	client.resolvedThreads = append(client.resolvedThreads, threadID)
 	return nil
+}
+
+type reviewThreadReplyCall struct {
+	ThreadID string
+	Body     string
+}
+
+type pullRequestCommentCall struct {
+	PRNumber int
+	Body     string
+}
+
+func (client *fakeGitHubClient) ReplyToReviewThread(_ context.Context, threadID string, body string) error {
+	client.replies = append(client.replies, reviewThreadReplyCall{ThreadID: threadID, Body: body})
+	return nil
+}
+
+func (client *fakeGitHubClient) CommentOnPullRequest(_ context.Context, repository string, prNumber int, body string) error {
+	client.commentRepository = repository
+	client.prComments = append(client.prComments, pullRequestCommentCall{PRNumber: prNumber, Body: body})
+	return nil
+}
+
+func withRunGH(t *testing.T, runner func(context.Context, ...string) ([]byte, error)) {
+	t.Helper()
+	previous := runGH
+	runGH = runner
+	t.Cleanup(func() {
+		runGH = previous
+	})
+}
+
+func assertStringSlicesEqual(t *testing.T, got []string, want []string) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("expected args %#v, got %#v", want, got)
+	}
+	for index := range want {
+		if got[index] != want[index] {
+			t.Fatalf("expected args %#v, got %#v", want, got)
+		}
+	}
 }

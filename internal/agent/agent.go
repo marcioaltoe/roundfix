@@ -271,9 +271,10 @@ func LogPath(artifactDir string, runID string, batchNumber int) string {
 }
 
 // SettleAssignedIssues marks assigned Review Issues the Agent left
-// unsettled (pending, valid) as failed, so every assigned issue ends the
-// Batch in resolved, invalid, or failed. It returns the paths it changed.
-func SettleAssignedIssues(ctx context.Context, batch rounds.Batch) ([]string, error) {
+// unsettled (pending, valid) as failed with terminalReason, so every
+// assigned issue ends the Batch in resolved, invalid, or failed. It returns
+// the paths it changed.
+func SettleAssignedIssues(ctx context.Context, batch rounds.Batch, terminalReason string) ([]string, error) {
 	changed := []string{}
 	for _, assigned := range batch.Issues {
 		if err := ctx.Err(); err != nil {
@@ -289,7 +290,7 @@ func SettleAssignedIssues(ctx context.Context, batch rounds.Batch) ([]string, er
 		if err := ctx.Err(); err != nil {
 			return changed, err
 		}
-		if err := rounds.SetIssueStatus(assigned.Path, rounds.StatusFailed, ""); err != nil {
+		if err := rounds.SetIssueStatus(assigned.Path, rounds.StatusFailed, "", terminalReason); err != nil {
 			return changed, err
 		}
 		changed = append(changed, assigned.Path)
@@ -297,9 +298,9 @@ func SettleAssignedIssues(ctx context.Context, batch rounds.Batch) ([]string, er
 	return changed, nil
 }
 
-func MarkBatchFailed(batch rounds.Batch) error {
+func MarkBatchFailed(batch rounds.Batch, terminalReason string) error {
 	for _, issue := range batch.Issues {
-		if err := rounds.SetIssueStatus(issue.Path, rounds.StatusFailed, ""); err != nil {
+		if err := rounds.SetIssueStatus(issue.Path, rounds.StatusFailed, "", terminalReason); err != nil {
 			return err
 		}
 	}

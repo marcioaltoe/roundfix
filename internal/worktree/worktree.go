@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -86,6 +87,13 @@ func (err *BootstrapError) Unwrap() error {
 type IntegrationResult struct {
 	Mode   string
 	Reason string
+}
+
+type PendingRunWork struct {
+	Branch       string
+	WorktreePath string
+	AheadCommits int
+	FastForward  bool
 }
 
 type TaskRef struct {
@@ -232,6 +240,16 @@ func PriorChangedFiles(ctx context.Context, workDir string, initialHead string) 
 	return paths, nil
 }
 
+func ListPendingRunWork(ctx context.Context, userRoot, baseBranch string) ([]PendingRunWork, error) {
+	runner := execGitRunner{}
+	return listPendingRunWork(ctx, runner, userRoot, baseBranch)
+}
+
+func IntegratePendingRunWork(ctx context.Context, userRoot, baseBranch, runBranch string) error {
+	runner := execGitRunner{}
+	return integratePendingRunWork(ctx, runner, userRoot, baseBranch, runBranch)
+}
+
 func Integrate(ctx context.Context, ref Ref, targetBranch, runSHA string) (IntegrationResult, error) {
 	if err := validateRef(ref); err != nil {
 		return IntegrationResult{}, err
@@ -270,6 +288,103 @@ func Integrate(ctx context.Context, ref Ref, targetBranch, runSHA string) (Integ
 		return IntegrationResult{}, fmt.Errorf("move target branch: %w", err)
 	}
 	return IntegrationResult{Mode: ModeBranchMove}, nil
+}
+
+func listPendingRunWork(ctx context.Context, runner gitRunner, userRoot, baseBranch string) ([]PendingRunWork, error) {
+	userRoot = filepath.Clean(strings.TrimSpace(userRoot))
+	if userRoot == "." || userRoot == "" {
+		return nil, errors.New("list pending Run Branch work: user root is required")
+	}
+	baseBranch = strings.TrimSpace(baseBranch)
+	if baseBranch == "" {
+		return nil, errors.New("list pending Run Branch work: base branch is required")
+	}
+
+	worktreePaths, err := worktreePathsByBranch(ctx, runner, userRoot)
+	if err != nil {
+		return nil, fmt.Errorf("list pending Run Branch work: %w", err)
+	}
+	output, err := runner.Run(ctx, userRoot, "for-each-ref", "--format=%(refname:short)", "refs/heads/roundfix/run-*")
+	if err != nil {
+		return nil, fmt.Errorf("list pending Run Branch work: list Run Branches: %w", err)
+	}
+
+	var pending []PendingRunWork
+	for _, line := range strings.Split(output, "\n") {
+		branch := strings.TrimSpace(line)
+		if branch == "" || !strings.HasPrefix(branch, runBranchPrefix) || isTaskBranch(branch) {
+			continue
+		}
+		ahead, err := branchAheadCommits(ctx, runner, userRoot, baseBranch, branch)
+		if err != nil {
+			return nil, fmt.Errorf("list pending Run Branch work: %w", err)
+		}
+		if ahead == 0 {
+			continue
+		}
+		fastForward, err := branchCanFastForward(ctx, runner, userRoot, baseBranch, branch)
+		if err != nil {
+			return nil, fmt.Errorf("list pending Run Branch work: %w", err)
+		}
+		pending = append(pending, PendingRunWork{
+			Branch:       branch,
+			WorktreePath: worktreePaths[branch],
+			AheadCommits: ahead,
+			FastForward:  fastForward,
+		})
+	}
+	sort.Slice(pending, func(i, j int) bool {
+		return pending[i].Branch < pending[j].Branch
+	})
+	return pending, nil
+}
+
+func integratePendingRunWork(ctx context.Context, runner gitRunner, userRoot, baseBranch, runBranch string) error {
+	userRoot = filepath.Clean(strings.TrimSpace(userRoot))
+	if userRoot == "." || userRoot == "" {
+		return errors.New("integrate pending Run Branch work: user root is required")
+	}
+	baseBranch = strings.TrimSpace(baseBranch)
+	if baseBranch == "" {
+		return errors.New("integrate pending Run Branch work: base branch is required")
+	}
+	runBranch = strings.TrimSpace(runBranch)
+	if runBranch == "" {
+		return errors.New("integrate pending Run Branch work: Run Branch is required")
+	}
+	if !strings.HasPrefix(runBranch, runBranchPrefix) || isTaskBranch(runBranch) {
+		return fmt.Errorf("integrate pending Run Branch work: %q is not a Run Branch", runBranch)
+	}
+
+	fastForward, err := branchCanFastForward(ctx, runner, userRoot, baseBranch, runBranch)
+	if err != nil {
+		return fmt.Errorf("integrate pending Run Branch %q into %q: %w", runBranch, baseBranch, err)
+	}
+	if !fastForward {
+		return fmt.Errorf("integrate pending Run Branch %q into %q: fast-forward is impossible", runBranch, baseBranch)
+	}
+	checkedOutPath, err := checkedOutBranchPath(ctx, runner, userRoot, baseBranch)
+	if err != nil {
+		return fmt.Errorf("integrate pending Run Branch %q into %q: %w", runBranch, baseBranch, err)
+	}
+	if samePath(checkedOutPath, userRoot) {
+		if _, err := runner.Run(ctx, userRoot, "merge", "--ff-only", runBranch); err != nil {
+			return fmt.Errorf("integrate pending Run Branch %q into %q: git merge --ff-only: %w", runBranch, baseBranch, err)
+		}
+		return nil
+	}
+	if checkedOutPath != "" {
+		return fmt.Errorf("integrate pending Run Branch %q into %q: base branch is checked out at %s", runBranch, baseBranch, checkedOutPath)
+	}
+
+	runTip, err := gitRevision(ctx, runner, userRoot, runBranch)
+	if err != nil {
+		return fmt.Errorf("integrate pending Run Branch %q into %q: resolve Run Branch tip: %w", runBranch, baseBranch, err)
+	}
+	if _, err := runner.Run(ctx, userRoot, "branch", "-f", baseBranch, runTip); err != nil {
+		return fmt.Errorf("integrate pending Run Branch %q into %q: git branch -f: %w", runBranch, baseBranch, err)
+	}
+	return nil
 }
 
 func IntegrateTask(ctx context.Context, run Ref, task TaskRef) (TaskIntegration, error) {
@@ -742,10 +857,19 @@ func (tail *boundedTail) String() string {
 }
 
 func checkedOutBranchPath(ctx context.Context, runner gitRunner, userRoot, targetBranch string) (string, error) {
+	paths, err := worktreePathsByBranch(ctx, runner, userRoot)
+	if err != nil {
+		return "", err
+	}
+	return paths[targetBranch], nil
+}
+
+func worktreePathsByBranch(ctx context.Context, runner gitRunner, userRoot string) (map[string]string, error) {
 	output, err := runner.Run(ctx, userRoot, "worktree", "list", "--porcelain")
 	if err != nil {
-		return "", fmt.Errorf("list git worktrees: %w", err)
+		return nil, fmt.Errorf("list git worktrees: %w", err)
 	}
+	paths := map[string]string{}
 	var currentPath string
 	for _, line := range strings.Split(output, "\n") {
 		line = strings.TrimSpace(line)
@@ -759,12 +883,44 @@ func checkedOutBranchPath(ctx context.Context, runner gitRunner, userRoot, targe
 		}
 		if value, ok := strings.CutPrefix(line, "branch "); ok {
 			branch := strings.TrimPrefix(value, "refs/heads/")
-			if branch == targetBranch {
-				return currentPath, nil
+			if branch != "" && currentPath != "" {
+				paths[branch] = currentPath
 			}
 		}
 	}
-	return "", nil
+	return paths, nil
+}
+
+func branchAheadCommits(ctx context.Context, runner gitRunner, userRoot, baseBranch, branch string) (int, error) {
+	output, err := runner.Run(ctx, userRoot, "rev-list", "--count", baseBranch+".."+branch)
+	if err != nil {
+		return 0, fmt.Errorf("count commits on Run Branch %q ahead of %q: %w", branch, baseBranch, err)
+	}
+	countText := strings.TrimSpace(output)
+	if countText == "" {
+		return 0, fmt.Errorf("count commits on Run Branch %q ahead of %q: git returned an empty count", branch, baseBranch)
+	}
+	count, err := strconv.Atoi(countText)
+	if err != nil {
+		return 0, fmt.Errorf("count commits on Run Branch %q ahead of %q: parse count %q: %w", branch, baseBranch, countText, err)
+	}
+	return count, nil
+}
+
+func branchCanFastForward(ctx context.Context, runner gitRunner, userRoot, baseBranch, branch string) (bool, error) {
+	if _, err := runner.Run(ctx, userRoot, "merge-base", "--is-ancestor", baseBranch, branch); err != nil {
+		if isAncestryMiss(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("check whether %q can fast-forward to %q: %w", baseBranch, branch, err)
+	}
+	return true, nil
+}
+
+func isTaskBranch(branch string) bool {
+	suffix := strings.TrimPrefix(strings.TrimSpace(branch), runBranchPrefix)
+	idx := strings.LastIndex(suffix, "-")
+	return idx > 0 && idx < len(suffix)-1 && strings.HasPrefix(suffix[idx+1:], "task_")
 }
 
 func classifyMergeRefusal(err error) string {

@@ -100,15 +100,49 @@ func eventPayloadMap(t *testing.T, event runevent.RunEvent) map[string]any {
 	return payload
 }
 
+const modelNotAdvertisedReasonForTest = `Agent Model "gpt-5.6-sol" not advertised by runtime "codex"; advertised: gpt-5.5, gpt-5.1`
+
+func modelNotAdvertisedBatchErrorForTest() error {
+	return &agent.BatchFailureError{
+		ExitCode: 1,
+		Reason:   "agent/protocol error",
+		Err: &agent.ModelNotAdvertisedError{
+			Runtime:    "codex",
+			Model:      "gpt-5.6-sol",
+			Advertised: []string{"gpt-5.5", "gpt-5.1"},
+		},
+	}
+}
+
+func assertCommentContains(t *testing.T, actions []engineSourceAction, sourceRef string, expected ...string) {
+	t.Helper()
+	for _, action := range actions {
+		if action.Kind != "comment" || action.SourceRef != sourceRef || !action.Posted {
+			continue
+		}
+		for _, fragment := range expected {
+			if !strings.Contains(action.Body, fragment) {
+				t.Fatalf("expected comment for %s to contain %q, got %q", sourceRef, fragment, action.Body)
+			}
+		}
+		return
+	}
+	t.Fatalf("expected posted comment for %s, got actions %+v", sourceRef, actions)
+}
+
 type engineFakeRunner struct {
-	calls     *[]string
-	status    string
-	err       error
-	errByCall []error
-	result    agent.ExecuteResult
-	store     *store.Store
-	seen      []string
-	requests  []agent.ExecuteRequest
+	calls                     *[]string
+	status                    string
+	statusBySourceRef         map[string]string
+	terminalReason            string
+	terminalReasonBySourceRef map[string]string
+	duplicateOfBySourceRef    map[string]string
+	err                       error
+	errByCall                 []error
+	result                    agent.ExecuteResult
+	store                     *store.Store
+	seen                      []string
+	requests                  []agent.ExecuteRequest
 }
 
 func (runner *engineFakeRunner) Probe(context.Context, agent.ProbeRequest) error { return nil }
@@ -145,7 +179,27 @@ func (runner *engineFakeRunner) Run(ctx context.Context, req agent.ExecuteReques
 		status = rounds.StatusResolved
 	}
 	for _, issue := range req.Batch.Issues {
-		if err := rounds.SetIssueStatus(issue.Path, status, ""); err != nil {
+		current, err := rounds.ParseIssue(issue.Path)
+		if err != nil {
+			return agent.ExecuteResult{}, err
+		}
+		nextStatus := status
+		if runner.statusBySourceRef != nil {
+			if override := runner.statusBySourceRef[current.SourceRef]; override != "" {
+				nextStatus = override
+			}
+		}
+		reason := runner.terminalReason
+		if runner.terminalReasonBySourceRef != nil {
+			if override := runner.terminalReasonBySourceRef[current.SourceRef]; override != "" {
+				reason = override
+			}
+		}
+		duplicateOf := ""
+		if runner.duplicateOfBySourceRef != nil {
+			duplicateOf = runner.duplicateOfBySourceRef[current.SourceRef]
+		}
+		if err := rounds.SetIssueStatus(issue.Path, nextStatus, duplicateOf, reason); err != nil {
 			return agent.ExecuteResult{}, err
 		}
 	}
@@ -253,9 +307,15 @@ func (pusher *engineFakePusher) Push(_ context.Context, req PushRequest) error {
 }
 
 type engineFakeSource struct {
-	calls        *[]string
-	afterResolve func(context.Context, reviewsource.ResolveRequest) error
-	requests     []reviewsource.ResolveRequest
+	calls             *[]string
+	afterResolve      func(context.Context, reviewsource.ResolveRequest) error
+	afterIssueResolve func(context.Context, reviewsource.IssueResolveRequest) error
+	errByAction       map[string]error
+	requests          []reviewsource.ResolveRequest
+	resolveRequests   []reviewsource.IssueResolveRequest
+	commentRequests   []reviewsource.IssueCommentRequest
+	actions           []engineSourceAction
+	postedMarkers     map[string]bool
 }
 
 func (source *engineFakeSource) ResolveIssues(ctx context.Context, req reviewsource.ResolveRequest) error {
@@ -265,6 +325,64 @@ func (source *engineFakeSource) ResolveIssues(ctx context.Context, req reviewsou
 		return source.afterResolve(ctx, req)
 	}
 	return nil
+}
+
+func (source *engineFakeSource) ResolveIssue(ctx context.Context, req reviewsource.IssueResolveRequest) error {
+	*source.calls = append(*source.calls, "source")
+	source.resolveRequests = append(source.resolveRequests, req)
+	source.actions = append(source.actions, engineSourceAction{Kind: "resolve", SourceRef: req.SourceRef, Resolved: true})
+	if source.afterIssueResolve != nil {
+		return source.afterIssueResolve(ctx, req)
+	}
+	if source.afterResolve != nil {
+		return source.afterResolve(ctx, reviewsource.ResolveRequest{
+			Source:         req.Source,
+			PRNumber:       req.PRNumber,
+			BaseRepository: req.BaseRepository,
+			Issues: []reviewsource.ResolvedIssue{{
+				SourceRef: req.SourceRef,
+			}},
+		})
+	}
+	return source.errFor("resolve", req.SourceRef)
+}
+
+func (source *engineFakeSource) ReplyToIssue(_ context.Context, req reviewsource.IssueCommentRequest) (reviewsource.IssueCommentResult, error) {
+	*source.calls = append(*source.calls, "source")
+	source.commentRequests = append(source.commentRequests, req)
+	if err := source.errFor("comment", req.SourceRef); err != nil {
+		source.actions = append(source.actions, engineSourceAction{Kind: "comment", SourceRef: req.SourceRef, Marker: req.Marker, Body: req.Body})
+		return reviewsource.IssueCommentResult{}, err
+	}
+	if source.postedMarkers == nil {
+		source.postedMarkers = map[string]bool{}
+	}
+	if source.postedMarkers[req.Marker] {
+		source.actions = append(source.actions, engineSourceAction{Kind: "comment", SourceRef: req.SourceRef, Marker: req.Marker, Body: req.Body})
+		return reviewsource.IssueCommentResult{Skipped: true}, nil
+	}
+	source.postedMarkers[req.Marker] = true
+	source.actions = append(source.actions, engineSourceAction{Kind: "comment", SourceRef: req.SourceRef, Marker: req.Marker, Body: req.Body, Posted: true})
+	return reviewsource.IssueCommentResult{Posted: true}, nil
+}
+
+func (source *engineFakeSource) errFor(kind string, sourceRef string) error {
+	if source.errByAction == nil {
+		return nil
+	}
+	if err := source.errByAction[kind+":"+sourceRef]; err != nil {
+		return err
+	}
+	return source.errByAction[kind]
+}
+
+type engineSourceAction struct {
+	Kind      string
+	SourceRef string
+	Marker    string
+	Body      string
+	Posted    bool
+	Resolved  bool
 }
 
 func runStateForTest(runStore *store.Store, runID string) string {
@@ -278,19 +396,23 @@ func runStateForTest(runStore *store.Store, runID string) string {
 func newEngineFixture(t *testing.T) *engineFixture {
 	t.Helper()
 	return newEngineFixtureWithItems(t, []reviewsource.ReviewItem{
-		{
-			Title:                   "major: handle nil cache",
-			File:                    "internal/cache/cache.go",
-			Line:                    42,
-			Severity:                "major",
-			Author:                  "coderabbitai[bot]",
-			Body:                    "review body",
-			SourceRef:               "thread:PRRT_1,comment:PRRC_1",
-			ReviewHash:              "abc",
-			SourceReviewID:          "9001",
-			SourceReviewSubmittedAt: time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC),
-		},
+		reviewItemForTest("major: handle nil cache", "internal/cache/cache.go", 42, "thread:PRRT_1,comment:PRRC_1", "abc", "9001"),
 	})
+}
+
+func reviewItemForTest(title string, file string, line int, sourceRef string, reviewHash string, reviewID string) reviewsource.ReviewItem {
+	return reviewsource.ReviewItem{
+		Title:                   title,
+		File:                    file,
+		Line:                    line,
+		Severity:                "major",
+		Author:                  "coderabbitai[bot]",
+		Body:                    "review body",
+		SourceRef:               sourceRef,
+		ReviewHash:              reviewHash,
+		SourceReviewID:          reviewID,
+		SourceReviewSubmittedAt: time.Date(2026, 6, 10, 12, 0, 0, 0, time.UTC),
+	}
 }
 
 func newEngineFixtureWithItems(t *testing.T, items []reviewsource.ReviewItem) *engineFixture {
@@ -422,11 +544,21 @@ func TestResolveCycleExecutesResolveVerifyCommitSourceContract(t *testing.T) {
 	if result.Remaining != 0 {
 		t.Fatalf("expected no remaining Unresolved Review Issues, got %d", result.Remaining)
 	}
+	issue, parseErr := rounds.ParseIssue(fixture.issuePaths[0])
+	if parseErr != nil {
+		t.Fatalf("parse issue: %v", parseErr)
+	}
+	if issue.Status != rounds.StatusResolved {
+		t.Fatalf("expected resolved Review Issue, got %q", issue.Status)
+	}
+	if issue.TerminalReason != "" {
+		t.Fatalf("expected resolved Review Issue without terminal reason, got %q", issue.TerminalReason)
+	}
 	if committer.messages[0] != BatchCommitMessage(1) {
 		t.Fatalf("expected Batch commit message, got %q", committer.messages[0])
 	}
-	if source.requests[0].Issues[0].SourceRef != "thread:PRRT_1,comment:PRRC_1" {
-		t.Fatalf("expected Source Reference forwarded, got %+v", source.requests[0])
+	if source.resolveRequests[0].SourceRef != "thread:PRRT_1,comment:PRRC_1" {
+		t.Fatalf("expected Source Reference forwarded, got %+v", source.resolveRequests[0])
 	}
 	// Intermediate Run states observed by collaborators during the cycle.
 	if runner.seen[0] != store.StateResolvingWithAgent {
@@ -442,6 +574,249 @@ func TestResolveCycleExecutesResolveVerifyCommitSourceContract(t *testing.T) {
 	// Final Push is a separate operation: the cycle never pushes.
 	if len(pusher.remotes) != 0 {
 		t.Fatalf("expected no push during cycle, got %v", pusher.remotes)
+	}
+}
+
+func TestResolveCyclePropagatesSettledIssueOutcomesIndividually(t *testing.T) {
+	const (
+		resolvedRef   = "thread:PRRT_resolved,comment:PRRC_resolved"
+		invalidRef    = "thread:PRRT_invalid,comment:PRRC_invalid"
+		duplicatedRef = "thread:PRRT_duplicate,comment:PRRC_duplicate"
+		failedRef     = "thread:PRRT_failed,comment:PRRC_failed"
+	)
+	fixture := newEngineFixtureWithItems(t, []reviewsource.ReviewItem{
+		reviewItemForTest("major: resolved", "internal/one.go", 1, resolvedRef, "hash-resolved", "9001"),
+		reviewItemForTest("major: invalid", "internal/two.go", 2, invalidRef, "hash-invalid", "9002"),
+		reviewItemForTest("major: duplicated", "internal/three.go", 3, duplicatedRef, "hash-duplicated", "9003"),
+		reviewItemForTest("major: failed", "internal/four.go", 4, failedRef, "hash-failed", "9004"),
+	})
+	runner := &engineFakeRunner{
+		calls: fixture.calls,
+		store: fixture.store,
+		statusBySourceRef: map[string]string{
+			resolvedRef:   rounds.StatusResolved,
+			invalidRef:    rounds.StatusInvalid,
+			duplicatedRef: rounds.StatusDuplicated,
+			failedRef:     rounds.StatusFailed,
+		},
+		terminalReasonBySourceRef: map[string]string{
+			invalidRef: "invalid: generated file",
+			failedRef:  "Verification failed: command make verify exit status 7; diagnostics: /tmp/roundfix.log",
+		},
+		duplicateOfBySourceRef: map[string]string{
+			duplicatedRef: "thread:PRRT_resolved",
+		},
+	}
+	source := &engineFakeSource{calls: fixture.calls}
+	engine := fixture.engine(t, runner, &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}, &engineFakeCommitter{calls: fixture.calls}, &engineFakePusher{calls: fixture.calls}, source)
+
+	result, err := engine.ResolveCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("resolve cycle: %v", err)
+	}
+	if len(result.Batches) != 1 || result.Batches[0].ResolvedSourceThreads != 3 {
+		t.Fatalf("expected three resolved source threads, got %+v", result.Batches)
+	}
+	gotPrefix := []string{}
+	for index, action := range source.actions {
+		if index == 6 {
+			break
+		}
+		gotPrefix = append(gotPrefix, action.Kind+":"+action.SourceRef)
+	}
+	wantPrefix := []string{
+		"resolve:" + resolvedRef,
+		"comment:" + invalidRef,
+		"resolve:" + invalidRef,
+		"comment:" + duplicatedRef,
+		"resolve:" + duplicatedRef,
+		"comment:" + failedRef,
+	}
+	if strings.Join(gotPrefix, "|") != strings.Join(wantPrefix, "|") {
+		t.Fatalf("expected per-status source action order %v, got %v", wantPrefix, gotPrefix)
+	}
+	for _, action := range source.actions {
+		if action.SourceRef == failedRef && action.Kind == "resolve" {
+			t.Fatalf("expected failed Review Issue to stay open, got source actions %+v", source.actions)
+		}
+	}
+	assertCommentContains(t, source.actions, invalidRef, "roundfix:outcome", "invalid: generated file")
+	assertCommentContains(t, source.actions, duplicatedRef, "roundfix:outcome", "Canonical Review Issue: thread:PRRT_resolved")
+	assertCommentContains(t, source.actions, failedRef, "roundfix:outcome", "make verify", "exit status 7", "later Round retries")
+	calls := strings.Join(*fixture.calls, ">")
+	sourceIndex := strings.Index(calls, "source")
+	if sourceIndex < 0 {
+		t.Fatalf("expected source propagation call, got %q", calls)
+	}
+	if strings.Index(calls, "verify") > sourceIndex || strings.Index(calls, "commit") > sourceIndex {
+		t.Fatalf("expected source propagation after verification and commit, got %q", calls)
+	}
+}
+
+func TestResolveCycleOutcomeCommentsAreIdempotent(t *testing.T) {
+	const sourceRef = "thread:PRRT_invalid,comment:PRRC_invalid"
+	fixture := newEngineFixtureWithItems(t, []reviewsource.ReviewItem{
+		reviewItemForTest("major: invalid", "internal/invalid.go", 5, sourceRef, "hash-invalid", "9001"),
+	})
+	if err := rounds.SetIssueStatus(fixture.issuePaths[0], rounds.StatusInvalid, "", "invalid: not actionable"); err != nil {
+		t.Fatalf("set issue status: %v", err)
+	}
+	issue, err := rounds.ParseIssue(fixture.issuePaths[0])
+	if err != nil {
+		t.Fatalf("parse issue: %v", err)
+	}
+	source := &engineFakeSource{calls: fixture.calls}
+	engine := fixture.engine(t, &engineFakeRunner{calls: fixture.calls, store: fixture.store}, &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}, &engineFakeCommitter{calls: fixture.calls}, &engineFakePusher{calls: fixture.calls}, source)
+	plan := fixture.plan()
+
+	if _, err := engine.propagateSourceIssue(context.Background(), plan, 1, issue, "batch", nil); err != nil {
+		t.Fatalf("first propagation: %v", err)
+	}
+	if _, err := engine.propagateSourceIssue(context.Background(), plan, 1, issue, "batch", nil); err != nil {
+		t.Fatalf("second propagation: %v", err)
+	}
+
+	posted := 0
+	for _, action := range source.actions {
+		if action.Kind == "comment" && action.Posted {
+			posted++
+		}
+	}
+	if posted != 1 {
+		t.Fatalf("expected one posted idempotent comment, got %d actions %+v", posted, source.actions)
+	}
+}
+
+func TestResolveCycleSourcePropagationFailureContinues(t *testing.T) {
+	const (
+		firstRef  = "thread:PRRT_first,comment:PRRC_first"
+		secondRef = "thread:PRRT_second,comment:PRRC_second"
+	)
+	fixture := newEngineFixtureWithItems(t, []reviewsource.ReviewItem{
+		reviewItemForTest("major: first", "internal/first.go", 1, firstRef, "hash-first", "9001"),
+		reviewItemForTest("major: second", "internal/second.go", 2, secondRef, "hash-second", "9002"),
+	})
+	runner := &engineFakeRunner{
+		calls: fixture.calls,
+		store: fixture.store,
+		statusBySourceRef: map[string]string{
+			firstRef:  rounds.StatusInvalid,
+			secondRef: rounds.StatusInvalid,
+		},
+		terminalReasonBySourceRef: map[string]string{
+			firstRef:  "invalid: first",
+			secondRef: "invalid: second",
+		},
+	}
+	source := &engineFakeSource{
+		calls: fixture.calls,
+		errByAction: map[string]error{
+			"comment:" + firstRef: errors.New("review source unavailable"),
+		},
+	}
+	engine := fixture.engine(t, runner, &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}, &engineFakeCommitter{calls: fixture.calls}, &engineFakePusher{calls: fixture.calls}, source)
+
+	result, err := engine.ResolveCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("resolve cycle should continue after source propagation failure: %v", err)
+	}
+	if len(result.Batches) != 1 || !result.Batches[0].Failed || result.Batches[0].ResolvedSourceThreads != 1 || result.Remaining != 1 {
+		t.Fatalf("expected retryable source propagation failure and one resolved source thread, got result=%+v batches=%+v", result, result.Batches)
+	}
+	if len(source.resolveRequests) != 1 || source.resolveRequests[0].SourceRef != secondRef {
+		t.Fatalf("expected only the second issue resolved after first comment failed, got %+v", source.resolveRequests)
+	}
+	first, err := rounds.ParseIssue(fixture.issuePaths[0])
+	if err != nil {
+		t.Fatalf("parse first issue: %v", err)
+	}
+	if first.Status != rounds.StatusFailed || !strings.Contains(first.TerminalReason, "Review Source propagation failed during invalid") {
+		t.Fatalf("expected first issue failed for retry, got status=%q reason=%q", first.Status, first.TerminalReason)
+	}
+	assertCommentContains(t, source.actions, secondRef, "invalid: second")
+	if !strings.Contains(fixture.progress.String(), "Review Source propagation failed") {
+		t.Fatalf("expected propagation failure reported, got %q", fixture.progress.String())
+	}
+	foundFailureEvent := false
+	for _, event := range taskEventsOfKind(fixture.sink, runevent.KindDaemonSourceResolution) {
+		if strings.Contains(eventPayloadString(t, event, "error"), "review source unavailable") {
+			foundFailureEvent = true
+		}
+	}
+	if !foundFailureEvent {
+		t.Fatalf("expected propagation failure event, got %+v", fixture.sink.snapshot())
+	}
+}
+
+func TestOutcomeCommentBodyUsesPublicDuplicateReference(t *testing.T) {
+	canonicalPath := filepath.Join(t.TempDir(), "issue_001.md")
+	content := `---
+source: coderabbit
+pr: "123"
+round: 1
+round_created_at: "2026-07-15T16:07:28Z"
+status: resolved
+head_repository: owner/project
+head_branch: feature/review
+source_ref: "thread:PRRT_public,comment:PRRC_public"
+---
+
+# Issue 001
+`
+	if err := os.WriteFile(canonicalPath, []byte(content), 0o644); err != nil {
+		t.Fatalf("write canonical issue: %v", err)
+	}
+
+	body := outcomeCommentBody("run_1", rounds.Issue{
+		Status:      rounds.StatusDuplicated,
+		DuplicateOf: canonicalPath,
+	}, "duplicated", "<!-- marker -->")
+
+	if !strings.Contains(body, "Canonical Review Issue: thread:PRRT_public,comment:PRRC_public") {
+		t.Fatalf("expected public Source Reference in comment body, got %q", body)
+	}
+	if strings.Contains(body, canonicalPath) {
+		t.Fatalf("comment body leaked local artifact path %q: %q", canonicalPath, body)
+	}
+}
+
+func TestOutcomeCommentBodySanitizesPublicReasons(t *testing.T) {
+	body := outcomeCommentBody("run_1", rounds.Issue{
+		Status:         rounds.StatusFailed,
+		TerminalReason: "Verification failed:\nsee /Users/alice/dev/roundfix/.roundfix/verification.log and ping @team for details",
+	}, "failed", "<!-- marker -->")
+
+	for _, forbidden := range []string{"/Users/alice", ".roundfix/verification.log", "@team"} {
+		if strings.Contains(body, forbidden) {
+			t.Fatalf("comment body leaked %q: %q", forbidden, body)
+		}
+	}
+	for _, want := range []string{"Reason: Verification failed: see <path>", "＠team"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected sanitized comment body to contain %q, got %q", want, body)
+		}
+	}
+}
+
+func TestResolveCycleRunEndLeavesUnresolvedIssuesCommented(t *testing.T) {
+	fixture := newEngineFixture(t)
+	source := &engineFakeSource{calls: fixture.calls}
+	runner := &engineFakeRunner{calls: fixture.calls, store: fixture.store, err: errors.New("agent crashed")}
+	engine := fixture.engine(t, runner, &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}, &engineFakeCommitter{calls: fixture.calls}, &engineFakePusher{calls: fixture.calls}, source)
+
+	result, err := engine.ResolveCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("resolve cycle: %v", err)
+	}
+	if result.Remaining != 1 {
+		t.Fatalf("expected failed issue to remain open for later Round, got %d", result.Remaining)
+	}
+	assertCommentContains(t, source.actions, "thread:PRRT_1,comment:PRRC_1", "Agent failed", "later Round retries")
+	if len(source.resolveRequests) != 0 {
+		t.Fatalf("expected failed issue to remain unresolved on Review Source, got %+v", source.resolveRequests)
 	}
 }
 
@@ -493,6 +868,38 @@ func TestResolveCycleJournalsTransportAnomalyBeforeVerification(t *testing.T) {
 	}
 }
 
+func TestResolveCycleKeepsAgentProvidedTerminalReason(t *testing.T) {
+	fixture := newEngineFixture(t)
+	const reason = "invalid: reviewer asked for generated code"
+	runner := &engineFakeRunner{
+		calls:          fixture.calls,
+		store:          fixture.store,
+		status:         rounds.StatusInvalid,
+		terminalReason: reason,
+	}
+	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
+
+	result, err := engine.ResolveCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("resolve cycle: %v", err)
+	}
+	if len(result.Batches) != 1 || result.Batches[0].Failed {
+		t.Fatalf("expected invalid triage to complete the Batch, got %+v", result.Batches)
+	}
+	issue, parseErr := rounds.ParseIssue(fixture.issuePaths[0])
+	if parseErr != nil {
+		t.Fatalf("parse issue: %v", parseErr)
+	}
+	if issue.Status != rounds.StatusInvalid {
+		t.Fatalf("expected invalid Review Issue, got %q", issue.Status)
+	}
+	if issue.TerminalReason != reason {
+		t.Fatalf("expected agent terminal reason %q, got %q", reason, issue.TerminalReason)
+	}
+}
+
 func TestFinalPushIsASeparateExplicitOperation(t *testing.T) {
 	fixture := newEngineFixture(t)
 	pusher := &engineFakePusher{calls: fixture.calls}
@@ -520,20 +927,24 @@ func TestResolveCycleAgentFailureFailsBatchAndContinues(t *testing.T) {
 	fixture := newEngineFixture(t)
 	runner := &engineFakeRunner{calls: fixture.calls, store: fixture.store, err: errors.New("agent crashed")}
 	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}
-	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
+	source := &engineFakeSource{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, &engineFakePusher{calls: fixture.calls}, source)
 
 	result, err := engine.ResolveCycle(context.Background(), fixture.plan())
 
 	if err != nil {
 		t.Fatalf("expected Agent failure to fail only the Batch, got cycle error %v", err)
 	}
-	if got := strings.Join(*fixture.calls, ">"); got != "agent" {
-		t.Fatalf("expected no daemon actions after Agent failure, got %q", got)
+	if got := strings.Join(*fixture.calls, ">"); strings.Contains(got, "verify") || strings.Contains(got, "commit") {
+		t.Fatalf("expected no verification or commit after Agent failure, got %q", got)
+	}
+	if len(source.commentRequests) == 0 {
+		t.Fatal("expected failed Review Issue propagation comment after Agent failure")
 	}
 	if len(result.Batches) != 1 || !result.Batches[0].Failed {
 		t.Fatalf("expected failed Batch outcome, got %+v", result.Batches)
 	}
-	if !strings.Contains(result.Batches[0].FailureReason, "agent crashed") {
+	if result.Batches[0].FailureReason != "Agent failed: agent crashed" {
 		t.Fatalf("expected Agent failure reason, got %q", result.Batches[0].FailureReason)
 	}
 	if result.Remaining != 1 {
@@ -546,27 +957,84 @@ func TestResolveCycleAgentFailureFailsBatchAndContinues(t *testing.T) {
 	if issue.Status != rounds.StatusFailed {
 		t.Fatalf("expected failed Batch issue status, got %q", issue.Status)
 	}
+	for _, expected := range []string{"Agent failed", "agent crashed"} {
+		if !strings.Contains(issue.TerminalReason, expected) {
+			t.Fatalf("expected terminal reason to contain %q, got %q", expected, issue.TerminalReason)
+		}
+	}
+	if strings.Contains(issue.TerminalReason, "\n") {
+		t.Fatalf("expected single-line terminal reason, got %q", issue.TerminalReason)
+	}
+}
+
+func TestResolveCycleModelNotAdvertisedFailureSettlesReviewIssueReason(t *testing.T) {
+	fixture := newEngineFixture(t)
+	runner := &engineFakeRunner{calls: fixture.calls, store: fixture.store, err: modelNotAdvertisedBatchErrorForTest()}
+	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}
+	source := &engineFakeSource{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, &engineFakeCommitter{calls: fixture.calls}, &engineFakePusher{calls: fixture.calls}, source)
+
+	result, err := engine.ResolveCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("expected model rejection to fail only the Batch, got cycle error %v", err)
+	}
+	if len(result.Batches) != 1 || !result.Batches[0].Failed {
+		t.Fatalf("expected failed Batch outcome, got %+v", result.Batches)
+	}
+	if result.Batches[0].FailureReason != modelNotAdvertisedReasonForTest {
+		t.Fatalf("expected model rejection Batch reason %q, got %q", modelNotAdvertisedReasonForTest, result.Batches[0].FailureReason)
+	}
+	issue, parseErr := rounds.ParseIssue(fixture.issuePaths[0])
+	if parseErr != nil {
+		t.Fatalf("parse issue: %v", parseErr)
+	}
+	if issue.Status != rounds.StatusFailed {
+		t.Fatalf("expected failed Batch issue status, got %q", issue.Status)
+	}
+	if issue.TerminalReason != modelNotAdvertisedReasonForTest {
+		t.Fatalf("expected model rejection terminal reason %q, got %q", modelNotAdvertisedReasonForTest, issue.TerminalReason)
+	}
+	assertCommentContains(t, source.actions, issue.SourceRef, modelNotAdvertisedReasonForTest)
+
+	var journaled bool
+	for _, event := range fixture.sink.snapshot() {
+		if event.Kind != runevent.KindDaemonBatch || event.Batch != 1 {
+			continue
+		}
+		payload := eventPayloadMap(t, event)
+		if payload["phase"] == "failed" && payload["error"] == modelNotAdvertisedReasonForTest {
+			journaled = true
+		}
+	}
+	if !journaled {
+		t.Fatalf("expected failed Batch event to journal reason %q", modelNotAdvertisedReasonForTest)
+	}
 }
 
 func TestResolveCycleVerificationFailureFailsBatchAndContinues(t *testing.T) {
 	fixture := newEngineFixture(t)
-	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID, err: errors.New("verification failed")}
+	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID, err: errors.New("exit status 7")}
 	committer := &engineFakeCommitter{calls: fixture.calls}
 	runner := &engineFakeRunner{calls: fixture.calls, store: fixture.store}
-	engine := fixture.engine(t, runner, verifier, committer, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
+	source := &engineFakeSource{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, committer, &engineFakePusher{calls: fixture.calls}, source)
 
 	result, err := engine.ResolveCycle(context.Background(), fixture.plan())
 
 	if err != nil {
 		t.Fatalf("expected verification failure to fail only the Batch, got cycle error %v", err)
 	}
-	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>agent>verify" {
-		t.Fatalf("expected one repair attempt and no commit or source mutation after final failed verification, got %q", got)
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>agent>verify>source>source" {
+		t.Fatalf("expected one repair attempt, failed-thread comment, and run-end idempotency check after final failed verification, got %q", got)
+	}
+	if len(source.resolveRequests) != 0 {
+		t.Fatalf("expected failed Review Issue to remain unresolved, got resolves %+v", source.resolveRequests)
 	}
 	if len(result.Batches) != 1 || !result.Batches[0].Failed {
 		t.Fatalf("expected failed Batch outcome, got %+v", result.Batches)
 	}
-	if !strings.Contains(result.Batches[0].FailureReason, "verification failed") {
+	if !strings.Contains(result.Batches[0].FailureReason, "exit status 7") {
 		t.Fatalf("expected verification failure reason, got %q", result.Batches[0].FailureReason)
 	}
 	if result.Remaining != 1 {
@@ -578,6 +1046,15 @@ func TestResolveCycleVerificationFailureFailsBatchAndContinues(t *testing.T) {
 	}
 	if issue.Status != rounds.StatusFailed {
 		t.Fatalf("expected failed Batch issue status, got %q", issue.Status)
+	}
+	finalOutputPath := VerificationOutputPath(fixture.artifactDir, fixture.run.ID, 1, 2)
+	for _, expected := range []string{"Verification failed", "make verify", "exit status 7", finalOutputPath} {
+		if !strings.Contains(issue.TerminalReason, expected) {
+			t.Fatalf("expected terminal reason to contain %q, got %q", expected, issue.TerminalReason)
+		}
+	}
+	if strings.Contains(issue.TerminalReason, "\n") {
+		t.Fatalf("expected single-line terminal reason, got %q", issue.TerminalReason)
 	}
 	if len(runner.requests) != 2 {
 		t.Fatalf("expected initial Agent request plus one Verification Feedback request, got %d", len(runner.requests))
@@ -857,14 +1334,14 @@ func TestResolveCycleContinuesToNextBatchAfterFailedBatch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve cycle: %v", err)
 	}
-	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>agent>verify>agent>verify>commit>source" {
+	if got := strings.Join(*fixture.calls, ">"); got != "agent>verify>agent>verify>source>agent>verify>commit>source>source" {
 		t.Fatalf("expected second Batch to run after the first failed, got %q", got)
 	}
 	if len(result.Batches) != 2 {
 		t.Fatalf("expected two Batch outcomes, got %+v", result.Batches)
 	}
 	if !result.Batches[0].Failed || result.Batches[0].Committed || result.Batches[0].ResolvedSourceThreads != 0 {
-		t.Fatalf("expected first Batch failed without commit or source resolution, got %+v", result.Batches[0])
+		t.Fatalf("expected first Batch failed without commit or thread resolution, got %+v", result.Batches[0])
 	}
 	if result.Batches[1].Failed || !result.Batches[1].Committed || result.Batches[1].ResolvedSourceThreads != 1 {
 		t.Fatalf("expected second Batch committed with one resolved thread, got %+v", result.Batches[1])
@@ -1084,7 +1561,7 @@ func (runner *publishingFakeRunner) Run(ctx context.Context, req agent.ExecuteRe
 		return agent.ExecuteResult{}, fmt.Errorf("publish Run Events: %w", err)
 	}
 	for _, issue := range req.Batch.Issues {
-		if err := rounds.SetIssueStatus(issue.Path, rounds.StatusResolved, ""); err != nil {
+		if err := rounds.SetIssueStatus(issue.Path, rounds.StatusResolved, "", ""); err != nil {
 			return agent.ExecuteResult{}, err
 		}
 	}

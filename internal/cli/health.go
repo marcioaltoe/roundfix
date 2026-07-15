@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -17,10 +18,12 @@ const (
 	CheckStatusSkipped CheckStatus = "skipped"
 	CheckStatusFailed  CheckStatus = "failed"
 
-	HealthCheckNode  = "node"
-	HealthCheckACPX  = "acpx"
-	HealthCheckAgent = "agent"
-	HealthCheckCodex = "codex"
+	HealthCheckNode    = "node"
+	HealthCheckACPX    = "acpx"
+	HealthCheckAdapter = "adapter"
+	HealthCheckAgent   = "agent"
+	HealthCheckModel   = "model"
+	HealthCheckCodex   = "codex"
 )
 
 type CheckResult struct {
@@ -28,11 +31,13 @@ type CheckResult struct {
 	Status     CheckStatus
 	Detail     string
 	NextAction string
+	Err        error
 }
 
 type HealthChecker interface {
 	Node(ctx context.Context) CheckResult
 	ACPX(ctx context.Context) CheckResult
+	Adapter(ctx context.Context, runtime agent.RuntimeSpec) CheckResult
 	Agent(ctx context.Context, req agent.ProbeRequest) CheckResult
 	Codex(ctx context.Context) CheckResult
 }
@@ -103,12 +108,34 @@ func (checker runtimeHealthChecker) ACPX(ctx context.Context) CheckResult {
 	}
 }
 
+func (checker runtimeHealthChecker) Adapter(ctx context.Context, runtime agent.RuntimeSpec) CheckResult {
+	command, err := agent.CheckAdapter(ctx, runtime)
+	if err == nil {
+		return CheckResult{
+			Name:   HealthCheckAdapter,
+			Status: CheckStatusOK,
+			Detail: command,
+		}
+	}
+	result := CheckResult{
+		Name:   HealthCheckAdapter,
+		Status: CheckStatusFailed,
+		Detail: err.Error(),
+	}
+	var adapterErr agent.AdapterProbeError
+	if errors.As(err, &adapterErr) {
+		result.NextAction = adapterErr.InstallCommand()
+	}
+	return result
+}
+
 func (checker runtimeHealthChecker) Agent(ctx context.Context, req agent.ProbeRequest) CheckResult {
 	if err := checker.deps.probeAgent(ctx, req); err != nil {
 		return CheckResult{
 			Name:   HealthCheckAgent,
 			Status: CheckStatusFailed,
 			Detail: err.Error(),
+			Err:    err,
 		}
 	}
 	return CheckResult{

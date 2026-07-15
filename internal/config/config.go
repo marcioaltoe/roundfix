@@ -28,6 +28,7 @@ const (
 	defaultVerification             = "make verify"
 	defaultPollInterval             = 30 * time.Second
 	defaultReviewTimeout            = 30 * time.Minute
+	defaultCheckGracePeriod         = 5 * time.Minute
 	defaultQuietPeriod              = 30 * time.Second
 	defaultRunDuration              = 2 * time.Hour
 	defaultJournalRetention         = 336 * time.Hour
@@ -96,14 +97,15 @@ type ReviewSource struct {
 }
 
 type Watch struct {
-	UntilClean    bool
-	MaxRounds     int
-	PollInterval  time.Duration
-	ReviewTimeout time.Duration
-	QuietPeriod   time.Duration
-	AutoPush      bool
-	PushRemote    string
-	PushBranch    string
+	UntilClean       bool
+	MaxRounds        int
+	PollInterval     time.Duration
+	ReviewTimeout    time.Duration
+	CheckGracePeriod time.Duration
+	QuietPeriod      time.Duration
+	AutoPush         bool
+	PushRemote       string
+	PushBranch       string
 }
 
 type Implement struct {
@@ -237,14 +239,15 @@ type reviewSourceOverlay struct {
 }
 
 type watchOverlay struct {
-	UntilClean    *bool          `yaml:"until_clean"`
-	MaxRounds     *int           `yaml:"max_rounds"`
-	PollInterval  *durationValue `yaml:"poll_interval"`
-	ReviewTimeout *durationValue `yaml:"review_timeout"`
-	QuietPeriod   *durationValue `yaml:"quiet_period"`
-	AutoPush      *bool          `yaml:"auto_push"`
-	PushRemote    *string        `yaml:"push_remote"`
-	PushBranch    *string        `yaml:"push_branch"`
+	UntilClean       *bool          `yaml:"until_clean"`
+	MaxRounds        *int           `yaml:"max_rounds"`
+	PollInterval     *durationValue `yaml:"poll_interval"`
+	ReviewTimeout    *durationValue `yaml:"review_timeout"`
+	CheckGracePeriod *durationValue `yaml:"check_grace_period"`
+	QuietPeriod      *durationValue `yaml:"quiet_period"`
+	AutoPush         *bool          `yaml:"auto_push"`
+	PushRemote       *string        `yaml:"push_remote"`
+	PushBranch       *string        `yaml:"push_branch"`
 }
 
 type implementOverlay struct {
@@ -503,12 +506,13 @@ func Builtin() Config {
 			IncludeNitpicks: true,
 		},
 		Watch: Watch{
-			UntilClean:    true,
-			MaxRounds:     6,
-			PollInterval:  defaultPollInterval,
-			ReviewTimeout: defaultReviewTimeout,
-			QuietPeriod:   defaultQuietPeriod,
-			AutoPush:      true,
+			UntilClean:       true,
+			MaxRounds:        6,
+			PollInterval:     defaultPollInterval,
+			ReviewTimeout:    defaultReviewTimeout,
+			CheckGracePeriod: defaultCheckGracePeriod,
+			QuietPeriod:      defaultQuietPeriod,
+			AutoPush:         true,
 		},
 		Implement: Implement{
 			AutoPush: false,
@@ -669,6 +673,7 @@ watch:
   max_rounds: %d
   poll_interval: %s
   review_timeout: %s
+  check_grace_period: %s
   quiet_period: %s
   # auto_push runs only after no Unresolved Review Issues remain.
   auto_push: %t
@@ -714,6 +719,7 @@ resolve:
 		config.Watch.MaxRounds,
 		formatConfigDuration(config.Watch.PollInterval),
 		formatConfigDuration(config.Watch.ReviewTimeout),
+		formatConfigDuration(config.Watch.CheckGracePeriod),
 		formatConfigDuration(config.Watch.QuietPeriod),
 		config.Watch.AutoPush,
 		config.Implement.AutoPush,
@@ -750,6 +756,9 @@ func Validate(config Config) error {
 	}
 	if config.Watch.ReviewTimeout <= 0 {
 		return errors.New("watch.review_timeout must be greater than 0")
+	}
+	if config.Watch.CheckGracePeriod <= 0 {
+		return errors.New("watch.check_grace_period must be greater than 0")
 	}
 	if config.Watch.QuietPeriod <= 0 {
 		return errors.New("watch.quiet_period must be greater than 0")
@@ -1151,6 +1160,9 @@ func applyOverlay(config *Config, overlay configOverlay) {
 		}
 		if overlay.Watch.ReviewTimeout != nil {
 			config.Watch.ReviewTimeout = overlay.Watch.ReviewTimeout.value
+		}
+		if overlay.Watch.CheckGracePeriod != nil {
+			config.Watch.CheckGracePeriod = overlay.Watch.CheckGracePeriod.value
 		}
 		if overlay.Watch.QuietPeriod != nil {
 			config.Watch.QuietPeriod = overlay.Watch.QuietPeriod.value

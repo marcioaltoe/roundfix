@@ -14,7 +14,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed roundfix write-idea write-prd write-techspec write-tasks setup-workflow implement-task implement-spec brainstorming council business-analyst archive-spec qa-gate evidence-gate recommended.txt
+//go:embed roundfix write-idea write-prd write-techspec write-tasks setup-context-driven implement-task implement-spec brainstorming council business-analyst archive-spec qa-gate evidence-gate recommended.txt
 var embedded embed.FS
 
 // skillNames is the Roundfix-owned skill bundle shipped in the binary: the
@@ -23,7 +23,7 @@ var embedded embed.FS
 var skillNames = []string{
 	"roundfix",
 	"write-idea", "write-prd", "write-techspec", "write-tasks",
-	"setup-workflow", "implement-task", "implement-spec",
+	"setup-context-driven", "implement-task", "implement-spec",
 	"brainstorming", "council", "business-analyst",
 	"archive-spec", "qa-gate", "evidence-gate",
 }
@@ -117,6 +117,21 @@ func Check() []Diagnostic {
 			"Prefer `roundfix` commands over manual GitHub scraping.",
 			"Report the Run ID",
 			"state whenever you summarize progress.",
+			"Review Runs (`fetch`, `resolve`, and `watch`) execute in the user's checkout",
+			"Branch Integrity Preflight runs before any fetch, Agent Session",
+			"`--skip-branch-integrity` is the only bypass",
+			"watch ends CleanUnverified, exits `3`",
+			"Roundfix publishes Outcome Comments",
+			"adapter: ok",
+			"model: ok",
+			"no liveness signal",
+			"commit <path>",
+			"Settle surface: <path>",
+			"not advertised by runtime",
+			"two spaces followed by `reason: <one line>`",
+			"owner PID is provably dead",
+			"`done` becomes `completed`",
+			"This Verification Feedback retry never consumes a Round",
 			"Do not manually resolve CodeRabbit threads",
 			"Read every assigned Review Issue file completely",
 			"Update only assigned Review Issue statuses",
@@ -131,6 +146,10 @@ func Check() []Diagnostic {
 			"name: roundfix",
 			"entrypoint: SKILL.md",
 			"command: roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean",
+			"review_run_contract:",
+			"watch_outcome_contract:",
+			"CleanUnverified with exit code",
+			"review_source_contract:",
 			"assigned Review Issue files during Batch runs",
 			"Run state",
 		},

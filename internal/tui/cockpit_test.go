@@ -268,7 +268,7 @@ func newReviewSnapshotCockpit(t *testing.T, mode CockpitMode, runState string, o
 	if err != nil {
 		t.Fatalf("persist round: %v", err)
 	}
-	if err := rounds.SetIssueStatus(persisted.IssuePaths[0], rounds.StatusResolved, ""); err != nil {
+	if err := rounds.SetIssueStatus(persisted.IssuePaths[0], rounds.StatusResolved, "", ""); err != nil {
 		t.Fatalf("set issue status: %v", err)
 	}
 	issues := make([]rounds.Issue, 0, len(persisted.IssuePaths))
@@ -1282,7 +1282,7 @@ func TestCockpitAttachReplaysFinishedReviewRunThroughRedesignedCockpit(t *testin
 		t.Fatalf("persist round: %v", err)
 	}
 	for _, path := range persisted.IssuePaths {
-		if err := rounds.SetIssueStatus(path, rounds.StatusResolved, ""); err != nil {
+		if err := rounds.SetIssueStatus(path, rounds.StatusResolved, "", ""); err != nil {
 			t.Fatalf("set issue status: %v", err)
 		}
 	}
@@ -1722,7 +1722,7 @@ func TestCockpitSidebarShowsBatchesStatusAndElapsed(t *testing.T) {
 		t.Fatalf("persist round: %v", err)
 	}
 	// First issue resolved on disk; the other two stay pending.
-	if err := rounds.SetIssueStatus(persisted.IssuePaths[0], rounds.StatusResolved, ""); err != nil {
+	if err := rounds.SetIssueStatus(persisted.IssuePaths[0], rounds.StatusResolved, "", ""); err != nil {
 		t.Fatalf("set status: %v", err)
 	}
 	issues := []rounds.Issue{}

@@ -98,6 +98,7 @@ type Issue struct {
 	SourceRef               string
 	ReviewHash              string
 	DuplicateOf             string
+	TerminalReason          string
 	SourceReviewID          string
 	SourceReviewSubmittedAt time.Time
 }
@@ -146,6 +147,7 @@ type issueFrontmatter struct {
 	SourceRef               string `yaml:"source_ref"`
 	ReviewHash              string `yaml:"review_hash"`
 	DuplicateOf             string `yaml:"duplicate_of"`
+	TerminalReason          string `yaml:"terminal_reason,omitempty"`
 	SourceReviewID          string `yaml:"source_review_id"`
 	SourceReviewSubmittedAt string `yaml:"source_review_submitted_at"`
 }
@@ -313,6 +315,7 @@ func ParseIssue(path string) (Issue, error) {
 		SourceRef:               frontmatter.SourceRef,
 		ReviewHash:              frontmatter.ReviewHash,
 		DuplicateOf:             frontmatter.DuplicateOf,
+		TerminalReason:          frontmatter.TerminalReason,
 		SourceReviewID:          frontmatter.SourceReviewID,
 		SourceReviewSubmittedAt: sourceReviewSubmittedAt,
 	}, nil
@@ -450,7 +453,7 @@ func MarkDuplicatedAfterTerminal(ctx context.Context, associations []DuplicateAs
 		if newest.Status != StatusResolved && newest.Status != StatusInvalid {
 			continue
 		}
-		if err := SetIssueStatus(association.Older.Path, StatusDuplicated, association.Newest.Path); err != nil {
+		if err := SetIssueStatus(association.Older.Path, StatusDuplicated, association.Newest.Path, ""); err != nil {
 			return marked, err
 		}
 		marked++
@@ -458,7 +461,7 @@ func MarkDuplicatedAfterTerminal(ctx context.Context, associations []DuplicateAs
 	return marked, nil
 }
 
-func SetIssueStatus(path string, status string, duplicateOf string) error {
+func SetIssueStatus(path string, status string, duplicateOf string, terminalReason string) error {
 	if !AllowedStatus(status) {
 		return fmt.Errorf("Review Issue status %q is not allowed", status)
 	}
@@ -474,8 +477,16 @@ func SetIssueStatus(path string, status string, duplicateOf string) error {
 	if err := yaml.Unmarshal(frontmatterBytes, &frontmatter); err != nil {
 		return fmt.Errorf("parse Review Issue frontmatter %q: %w", path, err)
 	}
+	nextReason := strings.TrimSpace(terminalReason)
+	if nextReason == "" && status == frontmatter.Status {
+		nextReason = frontmatter.TerminalReason
+	}
+	if status == StatusResolved {
+		nextReason = ""
+	}
 	frontmatter.Status = status
 	frontmatter.DuplicateOf = duplicateOf
+	frontmatter.TerminalReason = nextReason
 	updated, err := renderMarkdown(frontmatter, string(body))
 	if err != nil {
 		return err

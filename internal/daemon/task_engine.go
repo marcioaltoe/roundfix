@@ -44,6 +44,15 @@ type TaskPlan struct {
 	BootstrapOutput io.Writer
 }
 
+// TaskOutcome reports one Task's terminal cycle outcome. Reason is empty for
+// completed Tasks and matches the one-line reason journaled for failed and
+// skipped Tasks.
+type TaskOutcome struct {
+	Task   string
+	Status string
+	Reason string
+}
+
 // TaskCycleResult reports what one Task cycle settled. Skipped counts
 // Tasks left pending because a needed Task did not end completed.
 // QAVerdict stays empty when the QA step did not run; when it ran it is
@@ -54,6 +63,7 @@ type TaskCycleResult struct {
 	Completed, Failed, Skipped int
 	QAVerdict                  string
 	QAReportPath               string
+	Outcomes                   []TaskOutcome
 }
 
 // QA verdict settlements the Daemon adds beyond the report-authored
@@ -126,10 +136,16 @@ const (
 	taskRunSkipped   taskRunStatus = "skipped"
 )
 
+const (
+	taskNoOpShapeEmptyStageable = "empty_stageable"
+	taskNoOpShapeSpecRootOnly   = "spec_root_only"
+)
+
 type taskWorkerResult struct {
 	task             spec.Task
 	ordinal          int
 	status           spec.Status
+	reason           string
 	taskPlan         TaskPlan
 	taskRef          runworktree.TaskRef
 	usesTaskWorktree bool
@@ -201,7 +217,7 @@ func (engine *Engine) runTaskScheduler(ctx context.Context, plan TaskPlan, statu
 		if fatalErr != nil {
 			continue
 		}
-		settled, err := engine.integrateTaskSettlement(ctx, plan, workerResult)
+		settled, reason, err := engine.integrateTaskSettlement(ctx, plan, workerResult)
 		if err != nil {
 			if fatalErr == nil {
 				fatalErr = err
@@ -215,6 +231,11 @@ func (engine *Engine) runTaskScheduler(ctx context.Context, plan TaskPlan, statu
 			statuses[workerResult.task.ID] = taskRunFailed
 			result.Failed++
 		}
+		result.Outcomes = append(result.Outcomes, TaskOutcome{
+			Task:   workerResult.task.ID,
+			Status: string(settled),
+			Reason: reason,
+		})
 		if stopErr == nil {
 			if err := engine.stopIfRequested(ctx, plan.RunID, workerResult.ordinal); err != nil {
 				stopErr = fmt.Errorf("stop run %q after Task %s settlement: %w", plan.RunID, workerResult.task.ID, err)
@@ -246,6 +267,7 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 					task:             task,
 					ordinal:          ordinal,
 					status:           spec.StatusFailed,
+					reason:           reason,
 					taskPlan:         taskPlan,
 					taskRef:          taskRef,
 					usesTaskWorktree: true,
@@ -255,7 +277,7 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 		}
 		taskPlan = taskPlanForTaskWorktree(plan, task, taskRef)
 	}
-	settled, err := engine.executeTask(ctx, taskPlan, task, ordinal)
+	settled, reason, err := engine.executeTask(ctx, taskPlan, task, ordinal)
 	if usesTaskWorktree {
 		if closeErr := engine.deps.Runner.EndSession(context.WithoutCancel(ctx), taskPlan.Runtime, taskPlan.Session); closeErr != nil {
 			err = errors.Join(err, fmt.Errorf("close Agent Session for run %q Task %s: %w", plan.RunID, task.ID, closeErr))
@@ -265,6 +287,7 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 		task:             task,
 		ordinal:          ordinal,
 		status:           settled,
+		reason:           reason,
 		taskPlan:         taskPlan,
 		taskRef:          taskRef,
 		usesTaskWorktree: usesTaskWorktree,
@@ -272,13 +295,13 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 	}
 }
 
-func (engine *Engine) integrateTaskSettlement(ctx context.Context, plan TaskPlan, result taskWorkerResult) (spec.Status, error) {
+func (engine *Engine) integrateTaskSettlement(ctx context.Context, plan TaskPlan, result taskWorkerResult) (spec.Status, string, error) {
 	if result.status != spec.StatusCompleted || !result.usesTaskWorktree {
-		return result.status, nil
+		return result.status, result.reason, nil
 	}
 	integration, err := engine.deps.TaskWorktrees.IntegrateTask(ctx, plan.RunWorktree, result.taskRef)
 	if err != nil {
-		return "", fmt.Errorf("integrate Task %s into Run Branch: %w", result.task.ID, err)
+		return "", "", fmt.Errorf("integrate Task %s into Run Branch: %w", result.task.ID, err)
 	}
 	if integration.Mode == runworktree.ModeTaskConflict {
 		reason := strings.TrimSpace(integration.Reason)
@@ -287,15 +310,15 @@ func (engine *Engine) integrateTaskSettlement(ctx context.Context, plan TaskPlan
 		}
 		reason = "integration conflict: " + reason
 		if err := engine.settleTask(ctx, result.taskPlan, result.task, result.ordinal, spec.StatusFailed, reason); err != nil {
-			return "", err
+			return "", "", err
 		}
 		fmt.Fprintf(engine.deps.Progress, "Task %s failed: %s\n", result.task.ID, reason)
-		return spec.StatusFailed, nil
+		return spec.StatusFailed, reason, nil
 	}
 	if err := engine.deps.TaskWorktrees.CleanupTask(ctx, result.taskRef); err != nil {
-		return "", fmt.Errorf("cleanup Task Worktree for %s: %w", result.task.ID, err)
+		return "", "", fmt.Errorf("cleanup Task Worktree for %s: %w", result.task.ID, err)
 	}
-	return spec.StatusCompleted, nil
+	return spec.StatusCompleted, "", nil
 }
 
 func initialTaskRunStatuses(tasks []spec.Task) map[string]taskRunStatus {
@@ -405,10 +428,12 @@ func (engine *Engine) skipBlockedTasks(ctx context.Context, plan TaskPlan, statu
 			if !hasTerminalFailedNeed(task, statuses) {
 				continue
 			}
-			if err := engine.skipTask(ctx, plan.RunID, task, statuses); err != nil {
+			reason, err := engine.skipTask(ctx, plan.RunID, task, statuses)
+			if err != nil {
 				return skippedAny, err
 			}
 			result.Skipped++
+			result.Outcomes = append(result.Outcomes, TaskOutcome{Task: task.ID, Status: string(taskRunSkipped), Reason: reason})
 			skippedPass = true
 			skippedAny = true
 		}
@@ -423,20 +448,22 @@ func (engine *Engine) skipPendingTasks(ctx context.Context, plan TaskPlan, statu
 		if statuses[task.ID] != taskRunPending {
 			continue
 		}
-		if err := engine.skipTask(ctx, plan.RunID, task, statuses); err != nil {
+		reason, err := engine.skipTask(ctx, plan.RunID, task, statuses)
+		if err != nil {
 			return err
 		}
 		result.Skipped++
+		result.Outcomes = append(result.Outcomes, TaskOutcome{Task: task.ID, Status: string(taskRunSkipped), Reason: reason})
 	}
 	return nil
 }
 
-func (engine *Engine) skipTask(ctx context.Context, runID string, task spec.Task, statuses map[string]taskRunStatus) error {
+func (engine *Engine) skipTask(ctx context.Context, runID string, task spec.Task, statuses map[string]taskRunStatus) (string, error) {
 	unmet := unmetRunNeeds(task, statuses)
 	reason := fmt.Sprintf("needs not completed: %s", strings.Join(unmet, ", "))
 	statuses[task.ID] = taskRunSkipped
 	fmt.Fprintf(engine.deps.Progress, "Task %s skipped: %s\n", task.ID, reason)
-	return engine.publishTaskEvent(ctx, runID, 0, task.ID, runevent.KindDaemonTask,
+	return reason, engine.publishTaskEvent(ctx, runID, 0, task.ID, runevent.KindDaemonTask,
 		fmt.Sprintf("Task %s skipped: %s", task.ID, reason),
 		map[string]any{"task": task.ID, "phase": "skipped", "reason": reason},
 	)
@@ -501,17 +528,17 @@ func specForSpecsRoot(plan TaskPlan, specsRoot string) spec.Spec {
 // Verification, settlement, and the Task commit on success. It returns
 // the settled status; the returned error is reserved for Stop Requests
 // and infrastructure failures, which halt the cycle.
-func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int) (spec.Status, error) {
+func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int) (spec.Status, string, error) {
 	// The before-snapshot is taken before the Agent starts, so anything
 	// already dirty — pre-existing user work or a failed Task's preserved
 	// changes — never reaches this Task's commit.
 	before, err := engine.deps.Worktree.Snapshot(ctx, plan.WorkDir)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	failure, err := engine.runTaskAgent(ctx, plan, &task, ordinal)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	if failure == "" && task.Status == spec.StatusFailed {
 		failure = "Agent settled the Task failed"
@@ -519,12 +546,12 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 	if failure == "" {
 		verification, verifyErr := engine.verifyTask(ctx, plan, task, ordinal, 1)
 		if verifyErr != nil {
-			return "", verifyErr
+			return "", "", verifyErr
 		}
 		if verification.Failure != "" {
 			failure, err = engine.repairTaskVerification(ctx, plan, &task, ordinal, verification)
 			if err != nil {
-				return "", err
+				return "", "", err
 			}
 		}
 		if failure == "" && task.Status == spec.StatusFailed {
@@ -533,9 +560,9 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 		if failure == "" && verification.Failure != "" {
 			final, verifyErr := engine.verifyTask(ctx, plan, task, ordinal, 2)
 			if verifyErr != nil {
-				return "", verifyErr
+				return "", "", verifyErr
 			}
-			failure = final.Failure
+			failure = taskVerificationFailureReason(final)
 		}
 	}
 	settled := spec.StatusCompleted
@@ -543,19 +570,27 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 		settled = spec.StatusFailed
 	}
 	if err := engine.settleTask(ctx, plan, task, ordinal, settled, failure); err != nil {
-		return "", err
+		return "", "", err
 	}
 	if failure != "" {
 		// No commit for a failed Task; its worktree changes are preserved
 		// and the cycle continues with independent Tasks.
 		fmt.Fprintf(engine.deps.Progress, "Task %s failed: %s\n", task.ID, failure)
-		return settled, nil
+		return settled, failure, nil
 	}
 	if err := engine.commitTask(ctx, plan, task, ordinal, before); err != nil {
-		return "", err
+		return "", "", err
 	}
 	fmt.Fprintf(engine.deps.Progress, "Task %s completed.\n", task.ID)
-	return settled, nil
+	return settled, "", nil
+}
+
+func taskVerificationFailureReason(outcome verificationAttemptOutcome) string {
+	reason := verificationTerminalReason(outcome.CommandFailure)
+	if reason != "" {
+		return reason
+	}
+	return terminalReasonLine(outcome.Failure)
 }
 
 // runTaskAgent runs the Agent over one Task as a Batch of one, reading the
@@ -614,7 +649,7 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 			// Agent-created worktree changes stay untouched.
 			return "", fmt.Errorf("run Agent for run %q Task %s: %w", plan.RunID, task.ID, runErr)
 		}
-		return fmt.Sprintf("Agent failed: %v", runErr), nil
+		return agentFailureReason(runErr, fmt.Sprintf("Agent failed: %v", runErr)), nil
 	}
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
@@ -634,6 +669,9 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 		// The Agent left the task file unreadable; the Task fails and the
 		// Daemon settles the status by rewriting the frontmatter value.
 		return fmt.Sprintf("reload task file after the Agent: %v", err), nil
+	}
+	if err := canonicalizeReloadedTaskStatus(plan, task); err != nil {
+		return "", fmt.Errorf("canonicalize Task %s status after the Agent: %w", task.ID, err)
 	}
 	return "", nil
 }
@@ -718,7 +756,7 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 		if isStop(ctx, runErr) {
 			return "", fmt.Errorf("run Verification Feedback Agent for run %q Task %s: %w", plan.RunID, task.ID, runErr)
 		}
-		return fmt.Sprintf("Agent failed: %v", runErr), nil
+		return agentFailureReason(runErr, fmt.Sprintf("Agent failed: %v", runErr)), nil
 	}
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
@@ -737,7 +775,22 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 	if err := spec.ReloadTask(plan.SpecsRoot, task); err != nil {
 		return fmt.Sprintf("reload task file after Verification Feedback: %v", err), nil
 	}
+	if err := canonicalizeReloadedTaskStatus(plan, task); err != nil {
+		return "", fmt.Errorf("canonicalize Task %s status after Verification Feedback: %w", task.ID, err)
+	}
 	return "", nil
+}
+
+func canonicalizeReloadedTaskStatus(plan TaskPlan, task *spec.Task) error {
+	if !task.StatusNormalized {
+		return nil
+	}
+	taskPath := filepath.Join(plan.SpecsRoot, task.File)
+	if err := spec.SetStatus(taskPath, task.Status); err != nil {
+		return err
+	}
+	task.StatusNormalized = false
+	return nil
 }
 
 // settleTask writes the Daemon-owned final status when the Agent left
@@ -784,8 +837,9 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 			return err
 		}
 	}
+	noOpShape := taskNoOpCommitShape(plan, stageable)
 	if len(stageable) == 0 {
-		return nil
+		return engine.publishNoOpTaskCommitWarning(ctx, plan, task.ID, ordinal, noOpShape)
 	}
 	message := TaskCommitMessage(plan.Spec.Slug, task)
 	if err := engine.deps.Committer.Commit(ctx, CommitRequest{
@@ -802,6 +856,77 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 		map[string]any{"decision": "created", "task": task.ID, "paths": len(stageable)},
 	); err != nil {
 		return fmt.Errorf("publish commit event for run %q Task %s: %w", plan.RunID, task.ID, err)
+	}
+	if noOpShape != "" {
+		return engine.publishNoOpTaskCommitWarning(ctx, plan, task.ID, ordinal, noOpShape)
+	}
+	return nil
+}
+
+func taskNoOpCommitShape(plan TaskPlan, stageable []string) string {
+	if len(stageable) == 0 {
+		return taskNoOpShapeEmptyStageable
+	}
+	if allStageablePathsInSpecRoot(plan, stageable) {
+		return taskNoOpShapeSpecRootOnly
+	}
+	return ""
+}
+
+func allStageablePathsInSpecRoot(plan TaskPlan, stageable []string) bool {
+	specRoot, ok := specRootStagePath(plan)
+	if !ok {
+		return false
+	}
+	for _, path := range stageable {
+		if !pathInStageRoot(path, specRoot) {
+			return false
+		}
+	}
+	return true
+}
+
+func specRootStagePath(plan TaskPlan) (string, bool) {
+	specsRoot := filepath.Clean(plan.SpecsRoot)
+	if filepath.IsAbs(specsRoot) {
+		relative, err := filepath.Rel(plan.WorkDir, specsRoot)
+		if err != nil || !pathStaysInside(relative) {
+			return "", false
+		}
+		return filepath.Clean(relative), true
+	}
+	if !pathStaysInside(specsRoot) {
+		return "", false
+	}
+	return specsRoot, true
+}
+
+func pathInStageRoot(path string, root string) bool {
+	cleanPath := filepath.Clean(path)
+	cleanRoot := filepath.Clean(root)
+	if cleanRoot == "." {
+		return true
+	}
+	return cleanPath == cleanRoot || strings.HasPrefix(cleanPath, cleanRoot+string(filepath.Separator))
+}
+
+func (engine *Engine) publishNoOpTaskCommitWarning(ctx context.Context, plan TaskPlan, taskID string, ordinal int, shape string) error {
+	if shape == "" {
+		return nil
+	}
+	warning := fmt.Sprintf("roundfix: warning: Task %s completed with no changes outside the Spec Root (%s)\n", taskID, shape)
+	if _, err := fmt.Fprint(engine.deps.Progress, warning); err != nil {
+		return fmt.Errorf("write no-op Task commit warning for run %q Task %s: %w", plan.RunID, taskID, err)
+	}
+	summary := fmt.Sprintf("Task %s completed with no changes outside the Spec Root (%s).", taskID, shape)
+	payload := map[string]any{
+		"decision": "warning",
+		"warning":  "no_op_task_commit",
+		"task":     taskID,
+		"shape":    shape,
+	}
+	if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, taskID, runevent.KindDaemonCommit, summary, payload); err != nil {
+		return fmt.Errorf("publish no-op Task commit warning for run %q Task %s: %w", plan.RunID, taskID, err)
 	}
 	return nil
 }

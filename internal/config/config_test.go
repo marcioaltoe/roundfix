@@ -25,6 +25,7 @@ defaults:
 watch:
   max_rounds: 4
   poll_interval: 10s
+  check_grace_period: 90s
 implement:
   auto_push: true
 worktree:
@@ -76,6 +77,9 @@ specs:
 	if loaded.Config.Watch.PollInterval != 10*time.Second {
 		t.Fatalf("expected user poll interval, got %s", loaded.Config.Watch.PollInterval)
 	}
+	if loaded.Config.Watch.CheckGracePeriod != 90*time.Second {
+		t.Fatalf("expected user check grace period, got %s", loaded.Config.Watch.CheckGracePeriod)
+	}
 	if loaded.Config.Implement.AutoPush {
 		t.Fatal("expected project implement.auto_push to override user default")
 	}
@@ -110,6 +114,17 @@ func TestBuiltinRuntimeDefaults(t *testing.T) {
 	}
 	if config.Runtimes.OpenCode.Model != "" || config.Runtimes.OpenCode.ReasoningEffort != "" {
 		t.Fatalf("expected built-in OpenCode to require explicit selection, got %#v", config.Runtimes.OpenCode)
+	}
+}
+
+func TestBuiltinWatchDefaultsIncludeCheckGracePeriod(t *testing.T) {
+	config := Builtin()
+
+	if config.Watch.CheckGracePeriod != 5*time.Minute {
+		t.Fatalf("expected built-in check grace period 5m, got %s", config.Watch.CheckGracePeriod)
+	}
+	if !strings.Contains(DefaultConfigYAML(), "check_grace_period: 5m") {
+		t.Fatalf("expected default config YAML to document check_grace_period, got:\n%s", DefaultConfigYAML())
 	}
 }
 
@@ -775,6 +790,14 @@ watch:
   poll_interval: soon
 `,
 			contains: "invalid duration",
+		},
+		{
+			name: "invalid check grace period",
+			config: `
+watch:
+  check_grace_period: 0
+`,
+			contains: "watch.check_grace_period must be greater than 0",
 		},
 		{
 			name: "negative journal retention",

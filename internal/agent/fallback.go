@@ -123,7 +123,7 @@ func (runner ACPXRunner) applyDisposableEffort(ctx context.Context, runtime Runt
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return err
 		}
-		return selectionPreflightError(runtime, "set "+key, fmt.Errorf("set disposable acpx Agent Session %s %q: %w", key, runtime.ReasoningEffort, err))
+		return selectionPreflightError(runtime, "set "+key, fmt.Errorf("set disposable acpx Agent Session %s %q: %w", key, runtime.ReasoningEffort, classifyModelNotAdvertised(runtime, err)))
 	}
 	return nil
 }

@@ -42,6 +42,19 @@ const (
 	infrastructureStderrTruncated   = "[stderr truncated]\n"
 )
 
+var defaultAdapterCommands = map[string]string{
+	"codex":    "codex-acp",
+	"claude":   "claude-code-acp",
+	"opencode": "opencode",
+}
+
+var adapterInstallCommands = map[string]string{
+	"codex-acp":        "npm install -g @agentclientprotocol/codex-acp",
+	"claude-code-acp":  "npm install -g @zed-industries/claude-code-acp",
+	"claude-agent-acp": "npm install -g @zed-industries/claude-agent-acp",
+	"opencode":         "npm install -g opencode-ai",
+}
+
 // ACPXRunner is the acpx-backed invocation core. Later migration tasks wire
 // this into Runner after Agent Session lifecycle is available.
 type ACPXRunner struct {
@@ -66,6 +79,7 @@ type BatchFailureError struct {
 	ExitCode int
 	Reason   string
 	Stderr   string
+	Err      error
 }
 
 func (err *BatchFailureError) Error() string {
@@ -79,10 +93,21 @@ func (err *BatchFailureError) Error() string {
 	if err.Reason != "" {
 		message += ": " + err.Reason
 	}
+	if err.Err != nil {
+		message += ": " + err.Err.Error()
+		return message
+	}
 	if detail := strings.TrimSpace(err.Stderr); detail != "" {
 		message += ": " + detail
 	}
 	return message
+}
+
+func (err *BatchFailureError) Unwrap() error {
+	if err == nil {
+		return nil
+	}
+	return err.Err
 }
 
 // InfrastructureError is returned when acpx reports a Roundfix/environment
@@ -135,6 +160,44 @@ func infrastructureStderrTail(stderr string) (string, bool) {
 	return tail, truncated
 }
 
+// ModelNotAdvertisedError is returned when acpx reports that the selected
+// Agent Model is absent from the runtime-advertised model list.
+type ModelNotAdvertisedError struct {
+	Runtime    string
+	Model      string
+	Advertised []string
+	Err        error
+}
+
+func (err *ModelNotAdvertisedError) Error() string {
+	if err == nil {
+		return ""
+	}
+	runtime := strings.TrimSpace(err.Runtime)
+	model := strings.TrimSpace(err.Model)
+	message := fmt.Sprintf("Agent Model %q not advertised by runtime %q", model, runtime)
+	if len(err.Advertised) > 0 {
+		message += "; advertised Agent Models: " + strings.Join(err.Advertised, ", ")
+	}
+	message += "; recovery: " + err.RecoveryAction()
+	return message
+}
+
+func (err *ModelNotAdvertisedError) RecoveryAction() string {
+	runtime := ""
+	if err != nil {
+		runtime = strings.TrimSpace(err.Runtime)
+	}
+	return selectionRecoveryAction(runtime, false)
+}
+
+func (err *ModelNotAdvertisedError) Unwrap() error {
+	if err == nil {
+		return nil
+	}
+	return err.Err
+}
+
 type ACPXProbeError struct {
 	Command         string
 	FoundVersion    string
@@ -162,6 +225,27 @@ func (err ACPXProbeError) Unwrap() error {
 	return err.Err
 }
 
+type AdapterProbeError struct {
+	Command string
+	Err     error
+}
+
+func (err AdapterProbeError) Error() string {
+	command := strings.TrimSpace(err.Command)
+	if command == "" {
+		command = "adapter"
+	}
+	return fmt.Sprintf("%s is required but was not found on PATH; install it with: %s", command, err.InstallCommand())
+}
+
+func (err AdapterProbeError) InstallCommand() string {
+	return adapterInstallCommand(err.Command)
+}
+
+func (err AdapterProbeError) Unwrap() error {
+	return err.Err
+}
+
 type SelectionPreflightError struct {
 	Runtime         string
 	Model           string
@@ -183,10 +267,7 @@ func (err *SelectionPreflightError) Error() string {
 	if err.Err != nil {
 		message += ": " + err.Err.Error()
 	}
-	message += "; recovery: update the ACP Runtime or adapter, choose supported Agent Model and Default Reasoning Effort values"
-	if runtime != "" {
-		message += fmt.Sprintf(`, or set runtimes.%s.reasoning_effort "" when the model manages reasoning`, runtime)
-	}
+	message += "; " + selectionRecoveryGuidance(runtime, true)
 	return message
 }
 
@@ -247,7 +328,95 @@ func (runner ACPXRunner) Probe(ctx context.Context, req ProbeRequest) error {
 	if workDir == "" {
 		return nil
 	}
+	if _, err := CheckAdapter(ctx, req.Runtime); err != nil {
+		return err
+	}
 	return runner.probeSelection(ctx, req.Runtime, workDir)
+}
+
+func CheckAdapter(ctx context.Context, runtime RuntimeSpec) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	command, err := resolveAdapterCommand(runtime)
+	if err != nil {
+		return "", err
+	}
+	if _, err := exec.LookPath(command); err != nil {
+		return "", AdapterProbeError{Command: command, Err: err}
+	}
+	return command, nil
+}
+
+// resolveAdapterCommand returns the adapter binary acpx will spawn for the
+// selected runtime: stdio overrides first, then acpx's agents map, then
+// Roundfix's built-in defaults.
+func resolveAdapterCommand(runtime RuntimeSpec) (string, error) {
+	if runtime.Protocol == ProtocolStdio {
+		if command := adapterBinary(runtime.Command); command != "" {
+			return command, nil
+		}
+	}
+	runtimeID := strings.TrimSpace(runtime.ID)
+	if command, ok := configuredAdapterCommand(runtimeID); ok {
+		return command, nil
+	}
+	if command, ok := defaultAdapterCommands[runtimeID]; ok {
+		return command, nil
+	}
+	return "", fmt.Errorf("unsupported Agent %q; supported values: codex, claude, opencode", runtimeID)
+}
+
+func configuredAdapterCommand(runtimeID string) (string, bool) {
+	path, err := acpxConfigPath()
+	if err != nil {
+		return "", false
+	}
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", false
+	}
+	var config struct {
+		Agents map[string]struct {
+			Command string `json:"command"`
+		} `json:"agents"`
+	}
+	if err := json.Unmarshal(content, &config); err != nil {
+		return "", false
+	}
+	agentConfig, ok := config.Agents[runtimeID]
+	if !ok {
+		return "", false
+	}
+	command := adapterBinary(agentConfig.Command)
+	return command, command != ""
+}
+
+func acpxConfigPath() (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(homeDir, ".acpx", "config.json"), nil
+}
+
+func adapterBinary(command string) string {
+	fields := strings.Fields(strings.TrimSpace(command))
+	if len(fields) == 0 {
+		return ""
+	}
+	return fields[0]
+}
+
+func adapterInstallCommand(command string) string {
+	command = strings.TrimSpace(command)
+	if install, ok := adapterInstallCommands[command]; ok {
+		return install
+	}
+	if command == "" {
+		return "install the adapter and ensure it is on PATH"
+	}
+	return "install " + command + " and ensure it is on PATH"
 }
 
 func (runner ACPXRunner) probeACPX(ctx context.Context) error {
@@ -323,7 +492,7 @@ func (runner ACPXRunner) applyDisposableSelection(ctx context.Context, runtime R
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return err
 		}
-		return selectionPreflightError(runtime, "set model", fmt.Errorf("ensure disposable acpx Agent Session %q with model %q: %w", sessionName, strings.TrimSpace(runtime.Model), err))
+		return selectionPreflightError(runtime, "set model", fmt.Errorf("ensure disposable acpx Agent Session %q with model %q: %w", sessionName, strings.TrimSpace(runtime.Model), classifyModelNotAdvertised(runtime, err)))
 	}
 	value := strings.TrimSpace(runtime.ReasoningEffort)
 	if value == "" {
@@ -341,7 +510,7 @@ func (runner ACPXRunner) applyDisposableSelection(ctx context.Context, runtime R
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return err
 		}
-		return selectionPreflightError(runtime, "set "+key, fmt.Errorf("set disposable acpx Agent Session %s %q: %w", key, value, err))
+		return selectionPreflightError(runtime, "set "+key, fmt.Errorf("set disposable acpx Agent Session %s %q: %w", key, value, classifyModelNotAdvertised(runtime, err)))
 	}
 	return nil
 }
@@ -354,6 +523,110 @@ func selectionPreflightError(runtime RuntimeSpec, operation string, err error) e
 		Operation:       strings.TrimSpace(operation),
 		Err:             err,
 	}
+}
+
+func selectionRecoveryGuidance(runtime string, includeReasoning bool) string {
+	return "recovery: " + selectionRecoveryAction(runtime, includeReasoning)
+}
+
+func selectionRecoveryAction(runtime string, includeReasoning bool) string {
+	runtime = strings.TrimSpace(runtime)
+	message := "update the ACP Runtime or adapter"
+	if includeReasoning {
+		message += ", choose supported Agent Model and Default Reasoning Effort values, choose an advertised Agent Model"
+	} else {
+		message += ", choose an advertised Agent Model"
+	}
+	message += ", or pass a one-Run --model override"
+	if includeReasoning {
+		message += " with --reasoning-effort when needed"
+	}
+	if includeReasoning && runtime != "" {
+		message += fmt.Sprintf(`, or set runtimes.%s.reasoning_effort "" when the model manages reasoning`, runtime)
+	}
+	return message
+}
+
+func classifyModelNotAdvertised(runtime RuntimeSpec, err error) error {
+	var infraErr *InfrastructureError
+	if !errors.As(err, &infraErr) {
+		return err
+	}
+	modelErr, ok := modelNotAdvertisedFromStderr(runtime, infraErr.Stderr, infraErr)
+	if !ok {
+		return err
+	}
+	return modelErr
+}
+
+func modelNotAdvertisedFromStderr(runtime RuntimeSpec, stderr string, cause error) (*ModelNotAdvertisedError, bool) {
+	if !strings.Contains(stderr, "did not advertise that model") {
+		return nil, false
+	}
+	model := rejectedModelFromACPXStderr(stderr)
+	if model == "" {
+		model = strings.TrimSpace(runtime.Model)
+	}
+	return &ModelNotAdvertisedError{
+		Runtime:    strings.TrimSpace(runtime.ID),
+		Model:      model,
+		Advertised: advertisedModelsFromACPXStderr(stderr),
+		Err:        cause,
+	}, true
+}
+
+func rejectedModelFromACPXStderr(stderr string) string {
+	const marker = "--model"
+	index := strings.Index(stderr, marker)
+	if index < 0 {
+		return ""
+	}
+	rest := strings.TrimSpace(stderr[index+len(marker):])
+	rest = strings.TrimSpace(strings.TrimPrefix(rest, "="))
+	if rest == "" {
+		return ""
+	}
+	if rest[0] == '"' || rest[0] == '\'' {
+		quote := rest[0]
+		if end := strings.IndexByte(rest[1:], quote); end >= 0 {
+			return strings.TrimSpace(rest[1 : 1+end])
+		}
+		return strings.Trim(strings.TrimSpace(rest[1:]), `"' :;,`)
+	}
+	if end := strings.IndexAny(rest, " \t\r\n:;,"); end >= 0 {
+		rest = rest[:end]
+	}
+	return strings.Trim(strings.TrimSpace(rest), `"'`)
+}
+
+func advertisedModelsFromACPXStderr(stderr string) []string {
+	const marker = "Available models:"
+	index := strings.Index(stderr, marker)
+	if index < 0 {
+		return nil
+	}
+	value := stderr[index+len(marker):]
+	if line, _, ok := strings.Cut(value, "\n"); ok {
+		value = line
+	}
+	value = strings.Trim(strings.TrimSpace(value), "[]")
+	if value == "" {
+		return nil
+	}
+	var fields []string
+	if strings.Contains(value, ",") {
+		fields = strings.Split(value, ",")
+	} else {
+		fields = strings.Fields(value)
+	}
+	models := make([]string, 0, len(fields))
+	for _, field := range fields {
+		model := strings.Trim(strings.TrimSpace(field), `"'[]`)
+		if model != "" {
+			models = append(models, model)
+		}
+	}
+	return models
 }
 
 func (runner ACPXRunner) closeDisposableSession(ctx context.Context, runtime RuntimeSpec, sessionName string, workDir string) error {
@@ -946,6 +1219,9 @@ func (runner ACPXRunner) mapExitCode(ctx context.Context, req ExecuteRequest, si
 	case 0:
 		return nil
 	case 1:
+		if modelErr, ok := modelNotAdvertisedFromStderr(req.Runtime, stderr, nil); ok {
+			return &BatchFailureError{ExitCode: exitCode, Reason: acpxExitReasonAgentProtocol, Stderr: stderr, Err: modelErr}
+		}
 		return &BatchFailureError{ExitCode: exitCode, Reason: acpxExitReasonAgentProtocol, Stderr: stderr}
 	case 3:
 		return &BatchFailureError{ExitCode: exitCode, Reason: acpxExitReasonTimeout, Stderr: stderr}
