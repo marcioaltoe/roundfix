@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "setup-context-driven/module-v1",
+  "id": "rust",
+  "version": 1,
+  "kind": "language-runtime",
+  "title": "Rust repository guidance",
+  "dependsOn": ["core"],
+  "conflictsWith": [],
+  "requiredSkills": [
+    "context7",
+    "testing-boss",
+    "agentic-cli-design",
+    "systematic-debugging"
+  ],
+  "requiredDecisions": [],
+  "rootBlocks": [
+    {
+      "id": "root.rust",
+      "version": 1,
+      "template": "template.root.rust",
+      "rules": [
+        "rule.rust.current-docs",
+        "rule.rust.cargo-gates"
+      ]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.rust",
+      "version": 1,
+      "path": "docs/agents/rust.md",
+      "template": "template.guide.rust",
+      "rules": [
+        "rule.rust.current-docs",
+        "rule.rust.cargo-gates"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.rust.current-docs",
+      "version": 1,
+      "summary": "Use current crate and toolchain documentation before changing Rust APIs."
+    },
+    {
+      "id": "rule.rust.cargo-gates",
+      "version": 1,
+      "summary": "Prefer focused cargo checks and tests that exercise public behavior."
+    }
+  ]
+}

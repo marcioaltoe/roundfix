@@ -1,0 +1,162 @@
+{
+  "schemaVersion": "setup-context-driven/templates-v1",
+  "version": 1,
+  "templates": [
+    {
+      "id": "template.root.core",
+      "version": 1,
+      "kind": "root-block",
+      "path": "root/core.md"
+    },
+    {
+      "id": "template.root.context-workflow",
+      "version": 1,
+      "kind": "root-block",
+      "path": "root/context-workflow.md"
+    },
+    {
+      "id": "template.root.typescript",
+      "version": 1,
+      "kind": "root-block",
+      "path": "root/typescript.md"
+    },
+    {
+      "id": "template.root.bun",
+      "version": 1,
+      "kind": "root-block",
+      "path": "root/bun.md"
+    },
+    {
+      "id": "template.root.monorepo",
+      "version": 1,
+      "kind": "root-block",
+      "path": "root/monorepo.md"
+    },
+    {
+      "id": "template.root.backend",
+      "version": 1,
+      "kind": "root-block",
+      "path": "root/backend.md"
+    },
+    {
+      "id": "template.root.frontend",
+      "version": 1,
+      "kind": "root-block",
+      "path": "root/frontend.md"
+    },
+    {
+      "id": "template.root.go",
+      "version": 1,
+      "kind": "root-block",
+      "path": "root/go.md"
+    },
+    {
+      "id": "template.root.cli-surface",
+      "version": 1,
+      "kind": "root-block",
+      "path": "root/cli-surface.md"
+    },
+    {
+      "id": "template.root.tui-surface",
+      "version": 1,
+      "kind": "root-block",
+      "path": "root/tui-surface.md"
+    },
+    {
+      "id": "template.root.rust",
+      "version": 1,
+      "kind": "root-block",
+      "path": "root/rust.md"
+    },
+    {
+      "id": "template.root.autonomous-work",
+      "version": 1,
+      "kind": "root-block",
+      "path": "root/autonomous-work.md"
+    },
+    {
+      "id": "template.guide.agent-instructions",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/agent-instructions.md"
+    },
+    {
+      "id": "template.guide.docs-layout",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/docs-layout.md"
+    },
+    {
+      "id": "template.guide.domain",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/domain.md"
+    },
+    {
+      "id": "template.guide.spec-routing",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/spec-routing.md"
+    },
+    {
+      "id": "template.guide.issue-tracker",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/issue-tracker.md"
+    },
+    {
+      "id": "template.guide.typescript-bun",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/typescript-bun.md"
+    },
+    {
+      "id": "template.guide.monorepo",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/monorepo.md"
+    },
+    {
+      "id": "template.guide.backend",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/backend.md"
+    },
+    {
+      "id": "template.guide.frontend",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/frontend.md"
+    },
+    {
+      "id": "template.guide.go",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/go.md"
+    },
+    {
+      "id": "template.guide.cli-surface",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/cli-surface.md"
+    },
+    {
+      "id": "template.guide.tui-surface",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/tui-surface.md"
+    },
+    {
+      "id": "template.guide.rust",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/rust.md"
+    },
+    {
+      "id": "template.guide.autonomous-work",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/autonomous-work.md"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "setup-context-driven/profile-v1",
+  "id": "go-cli-tui",
+  "version": 1,
+  "title": "Go CLI/TUI repository",
+  "setup": "go-cli",
+  "modules": [
+    "core",
+    "context-workflow",
+    "go",
+    "cli-surface",
+    "tui-surface",
+    "autonomous-work"
+  ]
+}

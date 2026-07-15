@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "setup-context-driven/module-v1",
+  "id": "autonomous-work",
+  "version": 1,
+  "kind": "workflow",
+  "title": "Autonomous Supervisor and ACP Runtime model",
+  "dependsOn": ["context-workflow"],
+  "conflictsWith": [],
+  "requiredSkills": ["roundfix", "implement-task", "implement-spec", "evidence-gate"],
+  "requiredDecisions": [
+    "autonomous.enabled",
+    "runtime.backend",
+    "runtime.design",
+    "verification.gate"
+  ],
+  "rootBlocks": [
+    {
+      "id": "root.autonomous-work",
+      "version": 1,
+      "template": "template.root.autonomous-work",
+      "rules": [
+        "rule.autonomous.supervisor-delegates",
+        "rule.autonomous.verification-gate"
+      ]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.autonomous-work",
+      "version": 1,
+      "path": "docs/agents/autonomous-work.md",
+      "template": "template.guide.autonomous-work",
+      "rules": [
+        "rule.autonomous.supervisor-delegates",
+        "rule.autonomous.verification-gate"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.autonomous.supervisor-delegates",
+      "version": 1,
+      "summary": "The Supervisor orchestrates; implementation is delegated to an ACP Runtime."
+    },
+    {
+      "id": "rule.autonomous.verification-gate",
+      "version": 1,
+      "summary": "Every autonomous Task must satisfy its Verification and repository gate before completion."
+    }
+  ]
+}

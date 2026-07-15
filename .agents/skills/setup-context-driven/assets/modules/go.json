@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "setup-context-driven/module-v1",
+  "id": "go",
+  "version": 1,
+  "kind": "language-runtime",
+  "title": "Go repository guidance",
+  "dependsOn": ["core"],
+  "conflictsWith": [],
+  "requiredSkills": [
+    "golang-cli",
+    "golang-testing",
+    "golang-error-handling",
+    "golang-context",
+    "golang-lint",
+    "golang-concurrency"
+  ],
+  "requiredDecisions": [],
+  "rootBlocks": [
+    {
+      "id": "root.go",
+      "version": 1,
+      "template": "template.root.go",
+      "rules": [
+        "rule.go.stdlib-first",
+        "rule.go.context-errors",
+        "rule.go.observable-tests"
+      ]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.go",
+      "version": 1,
+      "path": "docs/agents/go.md",
+      "template": "template.guide.go",
+      "rules": [
+        "rule.go.stdlib-first",
+        "rule.go.context-errors",
+        "rule.go.observable-tests"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.go.stdlib-first",
+      "version": 1,
+      "summary": "Prefer the Go standard library and justify every new dependency."
+    },
+    {
+      "id": "rule.go.context-errors",
+      "version": 1,
+      "summary": "Use context-first IO boundaries and wrapped errors."
+    },
+    {
+      "id": "rule.go.observable-tests",
+      "version": 1,
+      "summary": "Go tests assert observable CLI and package behavior with stdlib testing."
+    }
+  ]
+}

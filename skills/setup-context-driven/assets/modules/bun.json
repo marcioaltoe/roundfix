@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "setup-context-driven/module-v1",
+  "id": "bun",
+  "version": 1,
+  "kind": "language-runtime",
+  "title": "Bun runtime guidance",
+  "dependsOn": ["typescript"],
+  "conflictsWith": [],
+  "requiredSkills": ["context7"],
+  "requiredDecisions": [],
+  "rootBlocks": [
+    {
+      "id": "root.bun",
+      "version": 1,
+      "template": "template.root.bun",
+      "rules": ["rule.bun.package-manager"]
+    }
+  ],
+  "supportingGuides": [],
+  "rules": [
+    {
+      "id": "rule.bun.package-manager",
+      "version": 1,
+      "summary": "Use Bun commands and lockfiles when the repository is Bun-owned."
+    }
+  ]
+}

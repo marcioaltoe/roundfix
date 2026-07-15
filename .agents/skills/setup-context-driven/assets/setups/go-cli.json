@@ -1,0 +1,169 @@
+{
+  "schemaVersion": "setup-context-driven/setup-snapshot-v1",
+  "id": "go-cli",
+  "version": 1,
+  "source": {
+    "name": "go-cli",
+    "type": "canonical-skill-setup",
+    "revision": "pinned-2026-07-15"
+  },
+  "digest": "e71793f1bc55c110b7839d5413722256ee02da833ed1d386b05376387eb41e1d",
+  "skills": [
+    {
+      "name": "setup-context-driven",
+      "path": ".agents/skills/setup-context-driven/SKILL.md",
+      "source": {"type": "repo", "name": "roundfix"},
+      "contentDigest": "c09f291e8dd4516bf94c33d51e91170d3fc6ed39cb7e59b69dd6f6f820268913"
+    },
+    {
+      "name": "brainstorming",
+      "path": ".agents/skills/brainstorming/SKILL.md",
+      "source": {"type": "repo", "name": "roundfix"},
+      "contentDigest": "7039307717e9edcfe3097dfa29038347bd229fe9cde504bab358bad349402513"
+    },
+    {
+      "name": "write-idea",
+      "path": ".agents/skills/write-idea/SKILL.md",
+      "source": {"type": "repo", "name": "roundfix"},
+      "contentDigest": "2a9fc0d53d8614a667969abbd718537e18d6e159daacda76ba66d787a4532f1c"
+    },
+    {
+      "name": "write-prd",
+      "path": ".agents/skills/write-prd/SKILL.md",
+      "source": {"type": "repo", "name": "roundfix"},
+      "contentDigest": "0efde176dfde67ff7dcd32109c5969547d1634598ccd4541ec88bda8c8bb3ed9"
+    },
+    {
+      "name": "write-techspec",
+      "path": ".agents/skills/write-techspec/SKILL.md",
+      "source": {"type": "repo", "name": "roundfix"},
+      "contentDigest": "a69d70adbd40b1bc79a62b42a0529557d030e7fb0a4cf5175ca350635dda868e"
+    },
+    {
+      "name": "write-tasks",
+      "path": ".agents/skills/write-tasks/SKILL.md",
+      "source": {"type": "repo", "name": "roundfix"},
+      "contentDigest": "6721678b5c0aa1454da252385ebdcf5753639ccb7ddb33aaa4c51aa6474ce5b6"
+    },
+    {
+      "name": "implement-task",
+      "path": ".agents/skills/implement-task/SKILL.md",
+      "source": {"type": "repo", "name": "roundfix"},
+      "contentDigest": "07cbabaec37c02b09ad593497329e73e20d91420ac484b3519570e86740f8cb9"
+    },
+    {
+      "name": "implement-spec",
+      "path": ".agents/skills/implement-spec/SKILL.md",
+      "source": {"type": "repo", "name": "roundfix"},
+      "contentDigest": "3ac60d9d6d1a93201a7f26317524310f119ea41f907331c0d2a73b53ab613812"
+    },
+    {
+      "name": "qa-gate",
+      "path": ".agents/skills/qa-gate/SKILL.md",
+      "source": {"type": "repo", "name": "roundfix"},
+      "contentDigest": "b3222cdf557f2cf5ff559705982da48e9e7304ba2f30cfeb86c02f028fec51ac"
+    },
+    {
+      "name": "archive-spec",
+      "path": ".agents/skills/archive-spec/SKILL.md",
+      "source": {"type": "repo", "name": "roundfix"},
+      "contentDigest": "58267d93f2f2d067ecc0548f109660da9c6830877e21a5a0c28ddbf33ca1f20c"
+    },
+    {
+      "name": "evidence-gate",
+      "path": ".agents/skills/evidence-gate/SKILL.md",
+      "source": {"type": "repo", "name": "roundfix"},
+      "contentDigest": "2d55edc780e679659f108bb2f38113b24c6cbad8e466d1396871163b38f66875"
+    },
+    {
+      "name": "roundfix",
+      "path": ".agents/skills/roundfix/SKILL.md",
+      "source": {"type": "repo", "name": "roundfix"},
+      "contentDigest": "9d5f117db9afffa08807377b5710b8408f53c3787e7225b286b892e892a8de55"
+    },
+    {
+      "name": "coding-guidelines",
+      "path": ".agents/skills/coding-guidelines/SKILL.md",
+      "source": {"type": "github", "name": "marcioaltoe/skills", "path": "skills/05-implementation-loop/coding-guidelines/SKILL.md", "ref": "main"},
+      "contentDigest": "28a414c715d3c41aae28a25e2f109813ec3f246f76b5567c1e7d6a128cd289ff"
+    },
+    {
+      "name": "testing-boss",
+      "path": ".agents/skills/testing-boss/SKILL.md",
+      "source": {"type": "github", "name": "marcioaltoe/skills", "path": "skills/05-implementation-loop/testing-boss/SKILL.md", "ref": "main"},
+      "contentDigest": "a20b323821306084166bce51d50b6d8f56506cc55785ca369e3597c4501e2176"
+    },
+    {
+      "name": "tech-writer",
+      "path": ".agents/skills/tech-writer/SKILL.md",
+      "source": {"type": "github", "name": "marcioaltoe/skills", "path": "skills/07-evidence-delivery/tech-writer/SKILL.md", "ref": "main"},
+      "contentDigest": "3025976c9db7da53a50ee59f95b6720d6fcdd132516107e69e719fae60ce5330"
+    },
+    {
+      "name": "no-workarounds",
+      "path": ".agents/skills/no-workarounds/SKILL.md",
+      "source": {"type": "github", "name": "marcioaltoe/skills", "path": "skills/05-implementation-loop/no-workarounds/SKILL.md", "ref": "main"},
+      "contentDigest": "c53eb07ae5e73781f2efe819f25f00fadbbd1d2ef18ab9983a31cf06b08ca7aa"
+    },
+    {
+      "name": "systematic-debugging",
+      "path": ".agents/skills/systematic-debugging/SKILL.md",
+      "source": {"type": "github", "name": "marcioaltoe/skills", "path": "skills/06-review-repair/systematic-debugging/SKILL.md", "ref": "main"},
+      "contentDigest": "7527b8f518cf265cc3f63345885bca98b095d2836ece773dadd3e8ca76315583"
+    },
+    {
+      "name": "golang-cli",
+      "path": ".agents/skills/golang-cli/SKILL.md",
+      "source": {"type": "github", "name": "marcioaltoe/skills", "path": "skills/05-implementation-loop/golang-cli/SKILL.md", "ref": "main"},
+      "contentDigest": "aa2c96ef782ce9ff185a74dfa51fe14e9e845473897a8f12b735a994dff7096d"
+    },
+    {
+      "name": "golang-testing",
+      "path": ".agents/skills/golang-testing/SKILL.md",
+      "source": {"type": "github", "name": "marcioaltoe/skills", "path": "skills/05-implementation-loop/golang-testing/SKILL.md", "ref": "main"},
+      "contentDigest": "150dfb5fe4c56b8d3c141c4b3e70326743b591c1dedf9a32cfba64619bab8784"
+    },
+    {
+      "name": "golang-error-handling",
+      "path": ".agents/skills/golang-error-handling/SKILL.md",
+      "source": {"type": "github", "name": "marcioaltoe/skills", "path": "skills/05-implementation-loop/golang-error-handling/SKILL.md", "ref": "main"},
+      "contentDigest": "1601d92a30a221903d024d4ad470595c3c6141d14a5b274a446394adefc83a52"
+    },
+    {
+      "name": "golang-context",
+      "path": ".agents/skills/golang-context/SKILL.md",
+      "source": {"type": "github", "name": "marcioaltoe/skills", "path": "skills/05-implementation-loop/golang-context/SKILL.md", "ref": "main"},
+      "contentDigest": "17351f3065a9857759db7f279f693eeacb9a4d6c84ddac5c9c74a08ca1d04b62"
+    },
+    {
+      "name": "golang-lint",
+      "path": ".agents/skills/golang-lint/SKILL.md",
+      "source": {"type": "github", "name": "marcioaltoe/skills", "path": "skills/05-implementation-loop/golang-lint/SKILL.md", "ref": "main"},
+      "contentDigest": "ea282d6b3a39d02fc468ef66615830de75f720c66ac72e899c4479868bea6c76"
+    },
+    {
+      "name": "golang-concurrency",
+      "path": ".agents/skills/golang-concurrency/SKILL.md",
+      "source": {"type": "github", "name": "marcioaltoe/skills", "path": "skills/05-implementation-loop/golang-concurrency/SKILL.md", "ref": "main"},
+      "contentDigest": "599a74eed42371e5e82f8afe0eb42805a1807341d998c8d85cf8232303b66c46"
+    },
+    {
+      "name": "agentic-cli-design",
+      "path": ".agents/skills/agentic-cli-design/SKILL.md",
+      "source": {"type": "github", "name": "marcioaltoe/skills", "path": "skills/03-engineering-design/agentic-cli-design/SKILL.md", "ref": "main"},
+      "contentDigest": "76efd87702573d94f0140801085893ca6d4e26af2ee104aaeccf96304e562e4b"
+    },
+    {
+      "name": "bubbletea",
+      "path": ".agents/skills/bubbletea/SKILL.md",
+      "source": {"type": "github", "name": "marcioaltoe/skills", "path": "skills/05-implementation-loop/bubbletea/SKILL.md", "ref": "main"},
+      "contentDigest": "612d0739d4cac8c4a9af51be6cf9c6d6459522c9f0840a414dc272927a950ad3"
+    },
+    {
+      "name": "tui-design",
+      "path": ".agents/skills/tui-design/SKILL.md",
+      "source": {"type": "github", "name": "marcioaltoe/skills", "path": "skills/03-engineering-design/tui-design/SKILL.md", "ref": "main"},
+      "contentDigest": "92b969f3473842ee731e0c7a5c571e3b89e5dac7da81be5e635e1715b0084e6e"
+    }
+  ]
+}

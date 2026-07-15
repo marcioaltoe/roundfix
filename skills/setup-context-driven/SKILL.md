@@ -24,6 +24,18 @@ These usage rules are seeded into the repo as `docs/agents/*.md` — the canonic
 
 This is a prompt-driven skill, not a deterministic script. Explore, present what you found, confirm with the user, then write.
 
+## Portable asset catalog
+
+The portable setup contract lives under `assets/`:
+
+- `contract-v1.json`, `decisions.json`, and `templates/index.json` define the versioned public identifiers the workflow can persist in `docs/agents/setup-context.json`.
+- `profiles/` selects one ordered module composition and one canonical setup snapshot. The initial profiles are `typescript-bun-monorepo`, `go-cli-tui`, and `rust-cli`.
+- `modules/` owns rules, compact root blocks, supporting guides, required decisions, dependencies, conflicts, and required skills.
+- `setups/` stores pinned canonical skill-setup snapshots. Normal setup loads these bundled snapshots only; it never reads `~/dev/skills`, the network, or third-party packages.
+- `templates/` stores reusable generated output. `references/` remains agent-readable workflow guidance, not reusable generated content.
+
+Load assets before planning any generated change. Validation fails on unknown profile references, missing module dependencies, dependency cycles, conflicting modules, duplicate rule IDs, duplicate managed root block IDs, unknown decisions/templates, and profile-required skills that are absent from the selected setup snapshot. Root blocks must stay short pointers; stack-specific and conditional bodies belong in supporting `docs/agents/` guides.
+
 ## Process
 
 ### 1. Explore

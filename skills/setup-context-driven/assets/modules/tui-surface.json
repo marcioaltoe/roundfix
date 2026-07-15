@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "setup-context-driven/module-v1",
+  "id": "tui-surface",
+  "version": 1,
+  "kind": "application-surface",
+  "title": "Terminal UI surface guidance",
+  "dependsOn": ["cli-surface"],
+  "conflictsWith": [],
+  "requiredSkills": ["bubbletea", "tui-design", "testing-boss"],
+  "requiredDecisions": [],
+  "rootBlocks": [
+    {
+      "id": "root.tui-surface",
+      "version": 1,
+      "template": "template.root.tui-surface",
+      "rules": ["rule.tui.synchronous-model-tests"]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.tui-surface",
+      "version": 1,
+      "path": "docs/agents/tui.md",
+      "template": "template.guide.tui-surface",
+      "rules": ["rule.tui.synchronous-model-tests"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.tui.synchronous-model-tests",
+      "version": 1,
+      "summary": "Test TUI models synchronously and keep layout behavior observable."
+    }
+  ]
+}

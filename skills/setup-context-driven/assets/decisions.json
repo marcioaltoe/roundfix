@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "setup-context-driven/decisions-v1",
+  "version": 1,
+  "decisions": [
+    {
+      "id": "spec.scaffold",
+      "version": 1,
+      "type": "boolean",
+      "summary": "Whether the repository uses local docs/specs artifacts as its planning source."
+    },
+    {
+      "id": "domain.layout",
+      "version": 1,
+      "type": "enum",
+      "values": ["single-context", "multi-context"],
+      "summary": "The CONTEXT.md layout agents must read before naming domain concepts."
+    },
+    {
+      "id": "triage.external",
+      "version": 1,
+      "type": "boolean",
+      "summary": "Whether external forge issues require triage-label guidance."
+    },
+    {
+      "id": "autonomous.enabled",
+      "version": 1,
+      "type": "boolean",
+      "summary": "Whether autonomous Supervisor and ACP Runtime delegation applies."
+    },
+    {
+      "id": "verification.gate",
+      "version": 1,
+      "type": "string",
+      "summary": "The repository verification command named by generated guidance."
+    },
+    {
+      "id": "runtime.backend",
+      "version": 1,
+      "type": "string",
+      "summary": "The default implementation ACP Runtime and model for backend Tasks."
+    },
+    {
+      "id": "runtime.design",
+      "version": 1,
+      "type": "string",
+      "summary": "The design, UI, UX, or frontend ACP Runtime and model."
+    },
+    {
+      "id": "language.generated",
+      "version": 1,
+      "type": "enum",
+      "values": ["English"],
+      "summary": "The language used for generated repository content."
+    },
+    {
+      "id": "secondbrain.enabled",
+      "version": 1,
+      "type": "boolean",
+      "summary": "Whether read-only Secondbrain guidance is generated."
+    }
+  ]
+}
