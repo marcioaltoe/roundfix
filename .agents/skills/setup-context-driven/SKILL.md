@@ -35,7 +35,7 @@ Look at the current repo to understand its starting state. Read whatever exists;
 - `docs/specs/` and `docs/specs/_archived/` — layout already in place? Any active specs?
 - `docs/adr/` and any `src/*/docs/adr/` directories
 - `docs/agents/` — does this skill's prior output already exist?
-- The rest of the docs layout — which of `docs/_inbox/`, `docs/design/`, `docs/findings/`, `docs/handoffs/`, `docs/references/`, `docs/user-guide/` exist, and whether stray content lives where another folder's job says it belongs (see [docs-layout.md](./docs-layout.md))
+- The rest of the docs layout — which of `docs/_inbox/`, `docs/design/`, `docs/findings/`, `docs/handoffs/`, `docs/references/`, `docs/user-guide/` exist, and whether stray content lives where another folder's job says it belongs (see [docs-layout.md](./resources/docs-layout.md))
 - Legacy planning locations (`.scratch/`, `.compozy/`, `docs/tasks/`, `docs/plans/`) — note them as read-only history; new work goes to `docs/specs/`.
 - `git remote -v` — a public forge remote means external issues may arrive (Section C).
 
@@ -145,7 +145,7 @@ Rule bodies live in the seeded doc and in the workflow skills — the agent-inst
 
 Then scaffold the spec artifacts:
 
-- Create the full docs layout if missing — `docs/_inbox/`, `docs/adr/`, `docs/agents/`, `docs/design/`, `docs/findings/`, `docs/handoffs/`, `docs/references/`, `docs/specs/`, and `docs/user-guide/` (add a `.gitkeep` to empty directories so the layout survives a clone). `docs/specs/_archived/` can wait for the first archive. Folder jobs, lifecycles, and the findings template live in the [docs-layout.md](./docs-layout.md) seed.
+- Create the full docs layout if missing — `docs/_inbox/`, `docs/adr/`, `docs/agents/`, `docs/design/`, `docs/findings/`, `docs/handoffs/`, `docs/references/`, `docs/specs/`, and `docs/user-guide/` (add a `.gitkeep` to empty directories so the layout survives a clone). `docs/specs/_archived/` can wait for the first archive. Folder jobs, lifecycles, and the findings template live in the [docs-layout.md](./resources/docs-layout.md) seed.
 - If `CONTEXT.md` is missing, create the glossary skeleton below. Do **not** pre-fill terms — a glossary written by hand during real grilling sessions is worth more than a generated one, and generated context files measurably hurt agent output.
 
 ```markdown
@@ -164,12 +164,12 @@ _Avoid_: rejected synonyms
 
 Then write the docs files using the seed templates in this skill folder as a starting point:
 
-- [docs-layout.md](./docs-layout.md) — every `docs/` folder's job and lifecycle, plus the findings template
-- [issue-tracker-local.md](./issue-tracker-local.md) — the canonical local `docs/specs/` conventions
-- [spec-routing.md](./spec-routing.md) — pipeline entry-point routing and the definition of done
-- [triage-labels.md](./triage-labels.md) — label mapping (Section C only)
-- [domain.md](./domain.md) — domain doc consumer rules + layout
-- [autonomous-work.md](./autonomous-work.md) — orchestrator/implementer split, runtime routing, and Spec-authoring behaviors (Section D only; fill the design-surface and verification-gate placeholders with the confirmed answers)
+- [docs-layout.md](./resources/docs-layout.md) — every `docs/` folder's job and lifecycle, plus the findings template
+- [issue-tracker-local.md](./resources/issue-tracker-local.md) — the canonical local `docs/specs/` conventions
+- [spec-routing.md](./resources/spec-routing.md) — pipeline entry-point routing and the definition of done
+- [triage-labels.md](./resources/triage-labels.md) — label mapping (Section C only)
+- [domain.md](./resources/domain.md) — domain doc consumer rules + layout
+- [autonomous-work.md](./resources/autonomous-work.md) — orchestrator/implementer split, runtime routing, and Spec-authoring behaviors (Section D only; fill the design-surface and verification-gate placeholders with the confirmed answers)
 
 ### 5. Done
 
