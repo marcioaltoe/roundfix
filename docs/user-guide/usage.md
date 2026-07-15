@@ -3,10 +3,10 @@
 Roundfix runs two local-first loops from the terminal: implementing a Spec's
 Task Graph, and resolving CodeRabbit review feedback on a pull request. This
 guide is the operational path for each — for a human at a prompt and for an
-agent driving Roundfix. For flags and outcomes per command, see the
-[README Commands](../README.md#commands) and
-[Command Boundaries](../README.md#command-boundaries) sections; for install, see
-[README Install](../README.md#install).
+agent driving Roundfix. For flags, outputs, and boundaries per command, see the
+[command reference](commands.md); for config keys and local state, see
+[configuration](configuration.md); for install, see the
+[README](../../README.md#install).
 
 ## Before you start
 
@@ -31,7 +31,7 @@ Both loops keep the same contract, which is what lets an agent drive them:
 - **stderr** carries diagnostics, progress, the Run ID, and Agent output.
 - **Exit codes**: `0` Clean, Stopped, or an already-complete no-op; `1`
   Unresolved, Failed, or Integration Pending; `2` Preflight Validation failure;
-  `130` for an in-terminal Ctrl-C.
+  `3` Clean Unverified (watch only); `130` for an in-terminal Ctrl-C.
 - **Outcomes are fixed strings** you can branch on — see each loop below.
 
 An Agent runtime is selected with `--agent`; supported values are `codex`,
@@ -149,10 +149,14 @@ once its Verification passes there:
 roundfix settle --spec <slug> --task <task_id>
 ```
 
-`settle` re-runs the Task's Verification in the kept surface, commits on pass,
-and integrates onto the Run Branch. It creates no Run and never pushes. Re-run
-`roundfix implement --spec <slug>` to pick up still-pending Tasks; completed
-Tasks are skipped.
+`settle` picks the first surface where the Task is actually `failed` (Task
+Worktree, then Run Worktree, then the current repository), reports the choice
+as `Settle surface: <path>`, re-runs the Task's Verification there, and on
+pass prints one `commit <path>` line per committed path before committing and
+integrating onto the Run Branch — warning when other failed Tasks share the
+worktree, since their work is swept into the same commit. It creates no Run
+and never pushes. Re-run `roundfix implement --spec <slug>` to pick up
+still-pending Tasks; completed Tasks are skipped.
 
 ### Advance
 
@@ -168,9 +172,16 @@ roundfix archive <slug>
 Resolve unresolved CodeRabbit findings on an Open Pull Request. Roundfix fetches
 them as local Review Issue artifacts, assigns bounded Batches to the Agent,
 verifies changes, commits, resolves the source threads, and pushes only when no
-Unresolved Review Issues remain. The Run's review artifacts ride the push in
-one separate docs commit (`docs: review round NNN for pr <n>`), so the review
-audit trail lands in the PR alongside the fixes; artifact roots outside the
+Unresolved Review Issues remain. Review Runs execute in your checkout on the PR
+Head Branch — no Run Worktree, so fixes are always a delta over the published
+HEAD — and Preflight Validation requires a clean tracked working tree
+(untracked files are allowed). Before any fetch or Agent work, the Branch
+Integrity Preflight integrates or refuses pending `roundfix/run-*` work and
+blocks while another Active Run holds the branch; `--skip-branch-integrity`
+bypasses it only by publishing a PR audit comment. Each settled issue
+propagates to GitHub individually — non-resolved outcomes get an explanatory
+Outcome Comment. The Run's review artifacts ride the push in one separate docs
+commit (`docs: review round NNN for pr <n>`); artifact roots outside the
 repository are never staged.
 
 ### One shot: watch until clean
@@ -182,18 +193,25 @@ roundfix watch --source coderabbit --pr <number> --agent codex --until-clean
 `watch` owns the waits, fetches, Rounds, Agent lifecycle, verification, commits,
 Final Push, source resolution, retries, and timeouts. With `--until-clean` it
 ends Clean only after no Unresolved Review Issues remain and the Review Source
-check on the pushed HEAD succeeds. Bound it with `--max-rounds <number>`.
+check on the pushed HEAD succeeds; a check that never appears within
+`watch.check_grace_period` (default `5m`) ends `CleanUnverified` with exit
+code `3` — confirm the check yourself before merging. Bound the loop with
+`--max-rounds <number>`.
 
-stdout is one line per Review Issue in Round order, then one outcome line:
+stdout is one line per Review Issue in Round order — failed, unresolved, and
+invalid lines carry a ` — reason: <terminal_reason>` suffix when the artifact
+has one — then two summary lines separating this Run from the PR's cumulative
+history:
 
 ```text
 issue 001 resolved — major: handle test issue
-Clean after 1 Round(s): 1 resolved, 0 invalid, 0 failed, 0 unresolved.
+This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 failed, 0 unresolved.
+Pull Request cumulative: 1 resolved, 0 invalid, 0 failed, 0 unresolved.
 ```
 
 Review Issue statuses are `resolved`, `invalid`, `failed`, `duplicated`, or
-`unresolved`. Non-clean outcomes include `MaxRoundsReached`, `BudgetExceeded`,
-`TimedOut`, `Failed`, and `Stopped`.
+`unresolved`. Non-clean outcomes include `CleanUnverified`,
+`MaxRoundsReached`, `BudgetExceeded`, `TimedOut`, `Failed`, and `Stopped`.
 
 ### Step by step
 
@@ -275,6 +293,7 @@ a Run is Active.
 | `upgrade` | Upgrade the binary from GitHub Releases |
 | `skills` | List, check, or install the bundled skills |
 
-Run `roundfix <command> --help` for the full flag list of any command. Local
-state locations (Run Database, Worktrees, Artifact Directory) are documented in
-[README Local State](../README.md#local-state).
+Run `roundfix <command> --help` for the full flag list of any command, or read
+the [command reference](commands.md) for output shapes and boundaries. Local
+state locations (Run Database, Worktrees, Artifact Directory) are documented
+in [configuration](configuration.md#local-state).
