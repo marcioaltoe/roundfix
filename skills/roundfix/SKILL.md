@@ -34,14 +34,18 @@ Worktrees.
 Use the Doctor Command, `roundfix doctor`, to diagnose Run readiness without
 installing dependencies, writing config, or changing files. Doctor runs the
 shared Node.js, pinned acpx, configured Agent adapter, configured Agent probe,
-and codex runtime hygiene checks and prints one line per check with status
-`ok`, `failed`, or `skipped`. The adapter check resolves the binary acpx will
-spawn from `~/.acpx/config.json` or the built-in runtime default and fails with
+the effective Agent Model check, and codex runtime hygiene checks and prints
+one line per check with status `ok`, `failed`, or `skipped`. The adapter check
+resolves the binary acpx will spawn from `~/.acpx/config.json` or the built-in
+runtime default and fails with
 `<adapter> is required but was not found on PATH; install it with: <command>`.
 The configured Agent probe resolves `defaults.agent` plus the runtime's
 effective `runtimes.<agent>.model` and `runtimes.<agent>.reasoning_effort`, then
 validates that selection from the repository Git root when one is available.
-Failed checks include `next: <action>` when Roundfix knows the remediation.
+The `model:` line reports whether that runtime accepted the effective Agent
+Model; a not-advertised failure includes the advertised Agent Models and
+`next: <action>` recovery guidance. Failed checks include `next: <action>` when
+Roundfix knows the remediation.
 On macOS, the codex hygiene check resolves `CODEX_PATH` first and then `codex`
 on `PATH`, inspects the `com.apple.quarantine` attribute (the real XProtect
 trigger), and verifies the binary's code signature (not `spctl --assess`, which
@@ -68,7 +72,12 @@ ADR-0020 classification: when acpx has delivered a valid
 `session/prompt` result for a Batch before a later nonzero acpx exit, Roundfix
 journals the anomaly with the stderr tail and proceeds to the Daemon's
 verification. Without that parsed result, the nonzero exit remains a Batch
-failure. Verification remains the only gate for settling and committing.
+failure. If acpx rejects the selected Agent Model with its not-advertised
+stderr, Roundfix reports the terminal reason as
+`Agent Model "<model>" not advertised by runtime "<runtime>"; advertised: <list>`
+in Work Item reasons, Run Events, and final report reason lines instead of a
+generic `agent/protocol error`. Verification remains the only gate for settling
+and committing.
 
 ## Setup, doctor, and upgrade
 
@@ -98,9 +107,13 @@ such as `acpx: skipped`, `agent probe: skipped`, and `Project Config: skipped`.
 When acpx is missing or mismatched, setup offers `npm install -g acpx@0.12.0`.
 
 Use `roundfix doctor` when you only need a read-only readiness report. It runs
-the Node.js, pinned acpx, configured adapter, configured Agent probe, and codex
-runtime hygiene checks and exits nonzero if any check fails. Adapter failures
-print the adapter binary name and `next: <install command>`. The command has no
+the Node.js, pinned acpx, configured adapter, configured Agent probe, effective
+Agent Model check, and codex runtime hygiene checks and exits nonzero if any
+check fails. Adapter failures print the adapter binary name and
+`next: <install command>`. A rejected Agent Model prints
+`model: failed (...)` with the advertised list and the same `next:` action used
+by Run Preflight Validation: update the ACP Runtime or adapter, choose an
+advertised Agent Model, or pass a one-Run model override. The command has no
 flags.
 
 ```text
@@ -108,6 +121,7 @@ node: ok
 acpx: ok
 adapter: ok (codex-acp)
 agent: ok (codex)
+model: ok (gpt-5.5)
 codex: ok
 ```
 
@@ -428,9 +442,22 @@ follow `roundfix events <run-id> --follow` for JSONL state changes, use
 log as a compact text record rather than a state API.
 
 Detach implies non-interactive mode. `--interactive` is rejected before Run
-creation, and `--no-input` is implied. If the child exits before the startup
-handshake, such as during Preflight Validation, the foreground command writes
-no stdout and relays the child's stderr and exit code verbatim.
+creation, and `--no-input` is implied. Startup uses a two-phase handshake: the
+child writes a liveness marker immediately on entering child mode, before
+configuration load and Preflight Validation, then writes the Run id after the
+Run exists. The foreground command waits 10 seconds only for liveness; Run
+creation has its own 5-minute ceiling. A slow but live Preflight Validation no
+longer fails detach startup only because it takes more than 10 seconds.
+
+Detached startup failures write no stdout and always print an explicit stderr
+diagnostic before the console relay or empty-output note:
+
+```text
+roundfix: Detached Run child produced no liveness signal within 10s; killed (exit: <exit or signal>)
+roundfix: Detached Run child did not create a Run within 5m0s; killed (exit: <exit or signal>)
+roundfix: Detached Run child exited before the handshake (<exit or signal>); console output follows
+roundfix: Detached Run child exited before the handshake (<exit or signal>) and produced no output
+```
 
 Operational Runs that reach a terminal outcome through `resolve`, `watch`, or
 `implement` send exactly one outcome notification. `fetch`, `settle`,
@@ -1089,8 +1116,10 @@ Implement Command preflight sweep close terminal sessions and Worktrees.
 Use `roundfix settle --spec <slug> --task <task_id>` only as a local recovery
 command for one failed Task whose completed work is already in a kept Task
 Worktree, a kept Run Worktree, or the current repository. Settle resolves that
-surface in order: the deterministic Task Worktree path, then the Run Worktree
-recorded on the latest kept Run, then the current repository.
+surface by loading the target Task status in order from the deterministic Task
+Worktree path, the Run Worktree recorded on the latest kept Run, and the
+current repository. It selects the first candidate whose task file is
+`failed`.
 
 Flags:
 
@@ -1100,10 +1129,19 @@ Flags:
 
 Preflight Validation exits `2` with one actionable message when either flag is
 missing, the repository does not resolve, the Spec or Task Graph does not load,
-the Task id is absent from the Task Graph, the target Task is not `failed`, a
-settle surface path exists but is unusable, or another Active Run owns the Spec
-target or working tree. `pending` and `in_progress` Tasks belong to the
-Implement Command; completed Tasks have nothing to do.
+the Task id is absent from the Task Graph, no candidate surface has the target
+Task `failed`, a settle surface path exists but is unusable, or another Active
+Run owns the Spec target or working tree. When no surface qualifies, the
+refusal names every candidate path and the status found there, or that the path
+does not exist. `pending` and `in_progress` Tasks belong to the Implement
+Command; completed Tasks have nothing to do.
+
+On every settle that proceeds, stderr prints the selected surface before
+Verification starts:
+
+```text
+Settle surface: <path>
+```
 
 stdout carries only deterministic report lines:
 
