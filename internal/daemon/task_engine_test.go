@@ -905,6 +905,48 @@ func droppedStageEvents(t *testing.T, sink *captureEventSink) []runevent.RunEven
 	return dropped
 }
 
+func noOpTaskCommitWarningEvents(t *testing.T, sink *captureEventSink) []runevent.RunEvent {
+	t.Helper()
+	var warnings []runevent.RunEvent
+	for _, event := range taskEventsOfKind(sink, runevent.KindDaemonCommit) {
+		if eventPayloadString(t, event, "decision") == "warning" && eventPayloadString(t, event, "warning") == "no_op_task_commit" {
+			warnings = append(warnings, event)
+		}
+	}
+	return warnings
+}
+
+func assertNoOpTaskCommitWarning(t *testing.T, fixture *taskCycleFixture, taskID string, shape string) {
+	t.Helper()
+	warnings := noOpTaskCommitWarningEvents(t, fixture.sink)
+	if len(warnings) != 1 {
+		t.Fatalf("expected one no-op Task commit warning event, got %+v", warnings)
+	}
+	if warnings[0].ReviewIssue != taskID {
+		t.Fatalf("expected warning event for %s, got %+v", taskID, warnings[0])
+	}
+	if got := eventPayloadString(t, warnings[0], "task"); got != taskID {
+		t.Fatalf("expected warning payload task %q, got %q", taskID, got)
+	}
+	if got := eventPayloadString(t, warnings[0], "shape"); got != shape {
+		t.Fatalf("expected warning shape %q, got %q", shape, got)
+	}
+	wantLine := fmt.Sprintf("roundfix: warning: Task %s completed with no changes outside the Spec Root (%s)\n", taskID, shape)
+	if count := strings.Count(fixture.progress.String(), wantLine); count != 1 {
+		t.Fatalf("expected one warning line %q, count=%d progress=%q", wantLine, count, fixture.progress.String())
+	}
+}
+
+func assertNoNoOpTaskCommitWarning(t *testing.T, fixture *taskCycleFixture) {
+	t.Helper()
+	if warnings := noOpTaskCommitWarningEvents(t, fixture.sink); len(warnings) != 0 {
+		t.Fatalf("expected no no-op Task commit warning events, got %+v", warnings)
+	}
+	if strings.Contains(fixture.progress.String(), "no changes outside the Spec Root") {
+		t.Fatalf("expected no no-op warning line, got progress=%q", fixture.progress.String())
+	}
+}
+
 func hasTaskSettlementEvent(t *testing.T, events []runevent.RunEvent, taskID string, status spec.Status) bool {
 	t.Helper()
 	for _, event := range events {
@@ -1963,6 +2005,37 @@ func TestTaskCycleAgentErrorSettlesTaskFailedAndContinues(t *testing.T) {
 	}
 }
 
+func TestTaskCycleSpecRootOnlyTaskCommitWarnsAndStillCommits(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Only settle the task file"}})
+	fixture.worktree.snapshots = [][]string{nil, nil}
+	runner := &taskFakeRunner{
+		calls:        fixture.calls,
+		gitRoot:      fixture.gitRoot,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.plan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 || result.Skipped != 0 {
+		t.Fatalf("expected one completed Task, got %+v", result)
+	}
+	if len(committer.paths) != 1 {
+		t.Fatalf("expected one spec-root-only Task commit, got %v", committer.paths)
+	}
+	if got := strings.Join(committer.paths[0], "|"); got != taskFileRel(taskCycleSlug, "task_01") {
+		t.Fatalf("expected only the task file committed, got %q", got)
+	}
+	if got := taskStatusOnDisk(t, fixture.gitRoot, "task_01"); got != string(spec.StatusCompleted) {
+		t.Fatalf("expected Task settled completed, got %q", got)
+	}
+	assertNoOpTaskCommitWarning(t, fixture, "task_01", taskNoOpShapeSpecRootOnly)
+}
+
 func TestTaskCycleCommitStagesSnapshotDiffPlusTaskFile(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	taskFile := taskFileRel(taskCycleSlug, "task_01")
@@ -1986,6 +2059,7 @@ func TestTaskCycleCommitStagesSnapshotDiffPlusTaskFile(t *testing.T) {
 	if got := strings.Join(committer.paths[0], "|"); got != taskFile+"|src/x.go" {
 		t.Fatalf("expected the task file ensured and the pre-existing change excluded, got %q", got)
 	}
+	assertNoNoOpTaskCommitWarning(t, fixture)
 }
 
 func TestTaskCycleStopBeforeTaskPublishesStopAndDoesNothing(t *testing.T) {
@@ -2323,6 +2397,7 @@ func TestTaskCycleSettlesCompletedWithoutCommitWhenOnlyExternalTaskFileChanged(t
 	if got := eventPayloadString(t, dropped[0], "path"); got != wantPath {
 		t.Fatalf("expected dropped external path %q, got %q", wantPath, got)
 	}
+	assertNoOpTaskCommitWarning(t, fixture, "task_01", taskNoOpShapeEmptyStageable)
 }
 
 func TestTaskCycleQAReportExternalProceedsWithoutStaging(t *testing.T) {

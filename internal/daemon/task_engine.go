@@ -126,6 +126,11 @@ const (
 	taskRunSkipped   taskRunStatus = "skipped"
 )
 
+const (
+	taskNoOpShapeEmptyStageable = "empty_stageable"
+	taskNoOpShapeSpecRootOnly   = "spec_root_only"
+)
+
 type taskWorkerResult struct {
 	task             spec.Task
 	ordinal          int
@@ -802,8 +807,9 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 			return err
 		}
 	}
+	noOpShape := taskNoOpCommitShape(plan, stageable)
 	if len(stageable) == 0 {
-		return nil
+		return engine.publishNoOpTaskCommitWarning(ctx, plan, task.ID, ordinal, noOpShape)
 	}
 	message := TaskCommitMessage(plan.Spec.Slug, task)
 	if err := engine.deps.Committer.Commit(ctx, CommitRequest{
@@ -820,6 +826,75 @@ func (engine *Engine) commitTask(ctx context.Context, plan TaskPlan, task spec.T
 		map[string]any{"decision": "created", "task": task.ID, "paths": len(stageable)},
 	); err != nil {
 		return fmt.Errorf("publish commit event for run %q Task %s: %w", plan.RunID, task.ID, err)
+	}
+	if noOpShape != "" {
+		return engine.publishNoOpTaskCommitWarning(ctx, plan, task.ID, ordinal, noOpShape)
+	}
+	return nil
+}
+
+func taskNoOpCommitShape(plan TaskPlan, stageable []string) string {
+	if len(stageable) == 0 {
+		return taskNoOpShapeEmptyStageable
+	}
+	if allStageablePathsInSpecRoot(plan, stageable) {
+		return taskNoOpShapeSpecRootOnly
+	}
+	return ""
+}
+
+func allStageablePathsInSpecRoot(plan TaskPlan, stageable []string) bool {
+	specRoot, ok := specRootStagePath(plan)
+	if !ok {
+		return false
+	}
+	for _, path := range stageable {
+		if !pathInStageRoot(path, specRoot) {
+			return false
+		}
+	}
+	return true
+}
+
+func specRootStagePath(plan TaskPlan) (string, bool) {
+	specsRoot := filepath.Clean(plan.SpecsRoot)
+	if filepath.IsAbs(specsRoot) {
+		relative, err := filepath.Rel(plan.WorkDir, specsRoot)
+		if err != nil || !pathStaysInside(relative) {
+			return "", false
+		}
+		return filepath.Clean(relative), true
+	}
+	if !pathStaysInside(specsRoot) {
+		return "", false
+	}
+	return specsRoot, true
+}
+
+func pathInStageRoot(path string, root string) bool {
+	cleanPath := filepath.Clean(path)
+	cleanRoot := filepath.Clean(root)
+	if cleanRoot == "." {
+		return true
+	}
+	return cleanPath == cleanRoot || strings.HasPrefix(cleanPath, cleanRoot+string(filepath.Separator))
+}
+
+func (engine *Engine) publishNoOpTaskCommitWarning(ctx context.Context, plan TaskPlan, taskID string, ordinal int, shape string) error {
+	if shape == "" {
+		return nil
+	}
+	warning := fmt.Sprintf("roundfix: warning: Task %s completed with no changes outside the Spec Root (%s)\n", taskID, shape)
+	fmt.Fprint(engine.deps.Progress, warning)
+	summary := fmt.Sprintf("Task %s completed with no changes outside the Spec Root (%s).", taskID, shape)
+	payload := map[string]any{
+		"decision": "warning",
+		"warning":  "no_op_task_commit",
+		"task":     taskID,
+		"shape":    shape,
+	}
+	if err := engine.publishTaskEvent(ctx, plan.RunID, ordinal, taskID, runevent.KindDaemonCommit, summary, payload); err != nil {
+		return fmt.Errorf("publish no-op Task commit warning for run %q Task %s: %w", plan.RunID, taskID, err)
 	}
 	return nil
 }

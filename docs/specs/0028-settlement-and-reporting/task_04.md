@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0028-settlement-and-reporting
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -21,16 +21,16 @@ Make silent no-op completions visible while the Run is still observable: when a 
 
 ## Subtasks
 
-- [ ] Path classification against the Spec Root at the commit step
-- [ ] Warning Run Event + stderr line for both no-op shapes
-- [ ] Engine tests: a spec-tree-only Task commit warns and still commits; an empty stageable set warns and still settles; a Task with code changes does not warn
+- [x] Path classification against the Spec Root at the commit step
+- [x] Warning Run Event + stderr line for both no-op shapes
+- [x] Engine tests: a spec-tree-only Task commit warns and still commits; an empty stageable set warns and still settles; a Task with code changes does not warn
 
 ## Acceptance Criteria
 
-- [ ] A Task whose only change is its own task file settles completed with the warning event and stderr line
-- [ ] A Task with an empty stageable set settles completed with the warning event and stderr line
-- [ ] A Task with changes outside the Spec Root produces no warning
-- [ ] The full test suite passes
+- [x] A Task whose only change is its own task file settles completed with the warning event and stderr line
+- [x] A Task with an empty stageable set settles completed with the warning event and stderr line
+- [x] A Task with changes outside the Spec Root produces no warning
+- [x] The full test suite passes
 
 ## Context
 
@@ -45,3 +45,12 @@ Make silent no-op completions visible while the Run is still observable: when a 
 ## References
 
 `_prd.md` → Goal 4, User Story 3, Core Feature 3, Decisions (warn, don't block); `_techspec.md` → Build Order 4, System Architecture (internal/daemon), API Contracts (no-op Task commit).
+
+## Result
+
+- Added no-op Task commit classification at the daemon commit step: `empty_stageable` for no stageable paths, `spec_root_only` when every stageable path is under the Spec Root.
+- Added a `daemon.commit` warning Run Event with `task` and `shape` payload fields plus one `roundfix: warning:` progress/stderr line; commit creation and dropped-path reporting remain unchanged.
+- Evidence: `TestTaskCycleSpecRootOnlyTaskCommitWarnsAndStillCommits` proves a task-file-only commit settles completed, creates the commit, and emits the warning event/line.
+- Evidence: `TestTaskCycleSettlesCompletedWithoutCommitWhenOnlyExternalTaskFileChanged` proves an empty stageable set settles completed, preserves the dropped-path event, and emits the warning event/line.
+- Evidence: `TestTaskCycleCommitStagesSnapshotDiffPlusTaskFile` proves a Task with a non-Spec-Root code path produces no no-op warning.
+- Verification passed: `rtk go test ./internal/daemon/...` (88 passed); `rtk go build -buildvcs=false ./...`; `rtk make verify` (1223 passed, skills check passed, build clean).
