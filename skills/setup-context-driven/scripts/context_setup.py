@@ -36,6 +36,20 @@ NON_ENGLISH_MARKERS = [
     " configuración",
     " repositorio",
 ]
+OPTIONAL_MODULE_DECISIONS = {
+    "secondbrain": ("secondbrain.enabled", True),
+}
+SECONDBRAIN_REQUIRED_GUIDE_PHRASES = [
+    "wiki/index.md",
+    "qmd query",
+    "projects/<project>/mirror",
+    "Cite every Secondbrain file",
+    "Do not write to the Secondbrain",
+    "Do not edit raw/",
+    "Do not edit projects/*/mirror/",
+    "Hermes",
+    "Never read, copy, or expose",
+]
 
 
 @dataclass(frozen=True)
@@ -292,7 +306,11 @@ def audit_repository(
         )
         return AuditResult(sorted_findings(findings)), invalid_input
 
-    ordered_modules = catalog.ordered_modules_by_profile[profile_id]
+    ordered_modules = ordered_modules_for_decisions(
+        catalog,
+        profile_id,
+        manifest.get("decisions", {}),
+    )
     validate_manifest_shape(manifest, profile_id, ordered_modules, catalog, findings)
     validate_profile_skill_references(catalog, profile_id, ordered_modules, findings)
     skills_invalid_input = validate_installed_skills(
@@ -315,9 +333,10 @@ def audit_repository(
             findings=findings,
         )
         invalid_input = invalid_input or setups_invalid_input
-    expected_artifacts = expected_artifacts_for_profile(catalog, profile_id)
+    expected_artifacts = expected_artifacts_for_profile(catalog, profile_id, ordered_modules)
     validate_manifest_artifacts(manifest, expected_artifacts, findings)
     validate_documents(repo, expected_artifacts, findings)
+    validate_secondbrain_documents(repo, ordered_modules, findings)
 
     return AuditResult(sorted_findings(findings)), invalid_input
 
@@ -510,6 +529,29 @@ def validate_selected_setup_snapshot(
     return False
 
 
+def ordered_modules_for_decisions(
+    catalog: AssetCatalog,
+    profile_id: str,
+    decisions: dict,
+) -> list[str]:
+    ordered_modules = list(catalog.ordered_modules_by_profile[profile_id])
+    for module_id, (decision_id, enabled_value) in OPTIONAL_MODULE_DECISIONS.items():
+        if module_id not in catalog.modules:
+            continue
+        if decision_value(decisions, decision_id) == enabled_value and module_id not in ordered_modules:
+            ordered_modules.append(module_id)
+    return ordered_modules
+
+
+def decision_value(decisions: dict, decision_id: str) -> object:
+    if not isinstance(decisions, dict):
+        return None
+    decision = decisions.get(decision_id)
+    if isinstance(decision, dict):
+        return decision.get("value")
+    return None
+
+
 def plan_apply(
     repo: Path,
     catalog: AssetCatalog,
@@ -555,17 +597,23 @@ def plan_apply(
     if parse_findings:
         return empty_apply_result(findings, True)
 
-    ordered_modules = catalog.ordered_modules_by_profile[profile_id]
-    expected_artifacts = expected_artifacts_for_profile(catalog, profile_id)
+    base_ordered_modules = catalog.ordered_modules_by_profile[profile_id]
     decisions = resolve_decisions(
         catalog=catalog,
-        ordered_modules=ordered_modules,
+        ordered_modules=base_ordered_modules,
         existing_manifest=existing_manifest,
         cli_decisions=cli_decisions,
         findings=findings,
     )
     if findings:
         return empty_apply_result(findings, False)
+
+    ordered_modules = ordered_modules_for_decisions(
+        catalog,
+        profile_id,
+        decisions,
+    )
+    expected_artifacts = expected_artifacts_for_profile(catalog, profile_id, ordered_modules)
 
     expected_by_id = {artifact.managed_id: artifact for artifact in expected_artifacts}
     current_files = load_current_files(repo, expected_artifacts, existing_manifest, findings)
@@ -1820,6 +1868,92 @@ def validate_documents(
             findings.extend(validate_internal_references(repo, relative_path, block.body, artifact.managed_id))
 
 
+def validate_secondbrain_documents(
+    repo: Path,
+    ordered_modules: list[str],
+    findings: list[Finding],
+) -> None:
+    if "secondbrain" not in ordered_modules:
+        return
+
+    root_blocks, root_findings = read_document_blocks(repo, ROOT_INSTRUCTIONS_PATH)
+    guide_blocks, guide_findings = read_document_blocks(repo, Path("docs/agents/secondbrain.md"))
+    if root_findings or guide_findings:
+        return
+
+    pointer = root_blocks.get("root.secondbrain")
+    if pointer is None:
+        findings.append(
+            finding(
+                "secondbrain.pointer.missing",
+                "error",
+                str(ROOT_INSTRUCTIONS_PATH),
+                "root.secondbrain",
+                "Secondbrain is enabled but the root pointer is missing.",
+                "Restore the compact Secondbrain root pointer.",
+            )
+        )
+    elif "docs/agents/secondbrain.md" not in pointer.body:
+        findings.append(
+            finding(
+                "secondbrain.pointer.missing",
+                "error",
+                str(ROOT_INSTRUCTIONS_PATH),
+                "root.secondbrain",
+                "Secondbrain root pointer does not reference its supporting guide.",
+                "Point the root block to docs/agents/secondbrain.md.",
+            )
+        )
+
+    guide = guide_blocks.get("guide.secondbrain")
+    if guide is None:
+        findings.append(
+            finding(
+                "secondbrain.guide.missing",
+                "error",
+                "docs/agents/secondbrain.md",
+                "guide.secondbrain",
+                "Secondbrain is enabled but the read-only supporting guide is missing.",
+                "Restore docs/agents/secondbrain.md from the bundled template.",
+            )
+        )
+        return
+    for phrase in SECONDBRAIN_REQUIRED_GUIDE_PHRASES:
+        if phrase not in guide.body:
+            findings.append(
+                finding(
+                    "secondbrain.safety-rule.missing",
+                    "error",
+                    "docs/agents/secondbrain.md",
+                    "guide.secondbrain",
+                    f"Secondbrain guide is missing required guidance: {phrase}.",
+                    "Restore the complete read-only Secondbrain guide from the bundled template.",
+                )
+            )
+
+
+def read_document_blocks(
+    repo: Path,
+    relative_path: Path,
+) -> tuple[dict[str, ManagedBlock], list[Finding]]:
+    try:
+        content = (repo / relative_path).read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return {}, []
+    except UnicodeDecodeError:
+        return {}, [
+            finding(
+                "manifest.invalid",
+                "error",
+                str(relative_path),
+                "document",
+                "Managed document is not UTF-8 text.",
+                "Rewrite the document as UTF-8 Markdown.",
+            )
+        ]
+    return parse_managed_blocks(relative_path, content)
+
+
 def parse_managed_blocks(
     relative_path: Path,
     content: str,
@@ -1962,10 +2096,12 @@ def validate_internal_references(
 def expected_artifacts_for_profile(
     catalog: AssetCatalog,
     profile_id: str,
+    ordered_modules: list[str] | None = None,
 ) -> list[ExpectedArtifact]:
     artifacts: list[ExpectedArtifact] = []
     templates_root = Path(__file__).resolve().parents[1] / "assets" / "templates"
-    for module_id in catalog.ordered_modules_by_profile[profile_id]:
+    modules = ordered_modules or catalog.ordered_modules_by_profile[profile_id]
+    for module_id in modules:
         module = catalog.modules[module_id]
         for block in module.get("rootBlocks", []):
             template_id = block["template"]

@@ -24,6 +24,7 @@ BASE_DECISIONS = [
     "runtime.design=claude opus xhigh",
     "verification.gate=make verify",
     "language.generated=English",
+    "secondbrain.enabled=false",
 ]
 
 

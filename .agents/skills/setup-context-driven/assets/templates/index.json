@@ -75,6 +75,12 @@
       "path": "root/autonomous-work.md"
     },
     {
+      "id": "template.root.secondbrain",
+      "version": 1,
+      "kind": "root-block",
+      "path": "root/secondbrain.md"
+    },
+    {
       "id": "template.guide.agent-instructions",
       "version": 1,
       "kind": "guide",
@@ -157,6 +163,12 @@
       "version": 1,
       "kind": "guide",
       "path": "guides/autonomous-work.md"
+    },
+    {
+      "id": "template.guide.secondbrain",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/secondbrain.md"
     }
   ]
 }

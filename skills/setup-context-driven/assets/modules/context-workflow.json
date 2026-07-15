@@ -19,7 +19,12 @@
     "archive-spec",
     "tech-writer"
   ],
-  "requiredDecisions": ["spec.scaffold", "domain.layout", "triage.external"],
+  "requiredDecisions": [
+    "spec.scaffold",
+    "domain.layout",
+    "triage.external",
+    "secondbrain.enabled"
+  ],
   "rootBlocks": [
     {
       "id": "root.context-workflow",

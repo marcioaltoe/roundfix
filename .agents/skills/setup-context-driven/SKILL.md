@@ -1,188 +1,108 @@
 ---
 name: setup-context-driven
-description: Configure a repo for CONTEXT-driven development (the method explained in docs/user-guide/context-driven-development.md) — scaffold the full docs/ layout (_inbox, adr, agents, design, findings, handoffs, references, specs, user-guide) and the CONTEXT.md glossary, and seed the docs/agents/ usage guides (docs layout with the findings template, issue tracker, spec routing, domain docs, triage labels, autonomous work model). Run when preparing a repo for the write-prd/write-tasks/implement pipeline or for Roundfix-driven autonomous work; re-run to refresh — it overwrites the skill-owned docs/agents/ files and prunes deprecated content.
+description: Configure a repo for CONTEXT-driven development (the method explained in docs/user-guide/context-driven-development.md) — scaffold the full docs/ layout (_inbox, adr, agents, design, findings, handoffs, references, specs, user-guide) and the CONTEXT.md glossary, and seed the docs/agents/ usage guides (docs layout with the findings template, issue tracker, spec routing, domain docs, triage labels, autonomous work model, and optional Secondbrain guidance). Run when preparing a repo for the write-prd/write-tasks/implement pipeline or for Roundfix-driven autonomous work; re-run to audit and refresh only setup-owned managed content.
 disable-model-invocation: true
 metadata:
   category: setup
   tags: [workflow, prd, issues, planning, triage, repository-context, agents]
-  version: 0.7.0
+  version: 0.8.0
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---
 
 # Setup Context-Driven
 
-Scaffold the per-repo configuration CONTEXT-driven development assumes — the method itself (glossary-first vocabulary, ADRs, the spec pipeline, and the docs layout that carries them) is explained in `docs/user-guide/context-driven-development.md`, including its source attribution. Local markdown under `docs/specs/` is the **only home of planning artifacts** — there is no external tracker.
+Configure a repository for CONTEXT-driven development through the portable asset catalog and `scripts/context_setup.py`. The script is the source of truth for audit, apply, setup snapshots, managed markers, decisions, and finding codes.
 
-- **Spec artifacts** — `docs/specs/<feature-slug>/`, read and written by `write-idea`, `write-prd`, `write-techspec`, `write-tasks`, `implement-task`, `implement-spec`, `qa-gate`, and `archive-spec`
-- **Spec routing** — how an agent picks the pipeline entry point for a given change (large initiative / feature / refactor-bugfix / trivial) and what marks a spec done
-- **Domain docs** — `CONTEXT.md` (glossary) and `docs/adr/`, and the consumer rules for reading them
-- **Triage labels** (conditional) — only when the repo receives external/incoming issues on its forge (e.g. a public GitHub repo) that the `triage` skill will process
-- **Autonomous work model** (conditional) — only when the repo delegates implementation to agent runtimes (e.g. through Roundfix): the Supervisor/implementer split (the Supervisor orchestrates and authors Specs; implementation goes to an ACP Runtime), runtime routing, and the hard rule that makes the split binding
+## Asset map
 
-These usage rules are seeded into the repo as `docs/agents/*.md` — the canonical, always-current explanation of how agents work inside the CONTEXT-driven workflow. This skill owns those files: a re-run regenerates them.
+- `assets/profiles/` selects a supported profile and canonical skill setup snapshot: `typescript-bun-monorepo`, `go-cli-tui`, or `rust-cli`.
+- `assets/modules/` owns compact root pointers, supporting guides, rule IDs, required decisions, and required skills.
+- `assets/templates/` stores generated repository content. Root blocks must stay short and point to `docs/agents/` guides.
+- `assets/setups/` stores bundled canonical skill setup snapshots. Normal audit/apply uses only these bundled files; it never needs `~/dev/skills`, the network, or third-party Python packages.
+- `references/` is workflow guidance for agents, not generated output.
 
-This is a prompt-driven skill, not a deterministic script. Explore, present what you found, confirm with the user, then write.
+## Audit-first workflow
 
-## Portable asset catalog
+1. Inspect the repository just enough to pick the likely profile. Use local files only: root instructions, `CONTEXT.md`, `docs/`, package files, and language/runtime markers.
+2. Run audit before asking setup questions:
 
-The portable setup contract lives under `assets/`:
+   ```bash
+   python3 .agents/skills/setup-context-driven/scripts/context_setup.py audit --repo <repo> --format json
+   ```
 
-- `contract-v1.json`, `decisions.json`, and `templates/index.json` define the versioned public identifiers the workflow can persist in `docs/agents/setup-context.json`.
-- `profiles/` selects one ordered module composition and one canonical setup snapshot. The initial profiles are `typescript-bun-monorepo`, `go-cli-tui`, and `rust-cli`.
-- `modules/` owns rules, compact root blocks, supporting guides, required decisions, dependencies, conflicts, and required skills.
-- `setups/` stores pinned canonical skill-setup snapshots. Normal setup loads these bundled snapshots only; it never reads `~/dev/skills`, the network, or third-party packages.
-- `templates/` stores reusable generated output. `references/` remains agent-readable workflow guidance, not reusable generated content.
+   If a profile is known but the manifest is missing or stale, rerun with `--profile <profile-id>` to preview the selected composition.
+3. Read the JSON result. Present only:
+   - selected profile and ordered modules;
+   - selected canonical skill setup name;
+   - blocking findings by code/path/action;
+   - `plannedChanges`;
+   - optional cleanup information only when audit was run with `--show-extra-skills`.
+4. Do not dump generated Markdown by default. Mention that full templates live under `assets/templates/` if the user asks to inspect them.
 
-Load assets before planning any generated change. Validation fails on unknown profile references, missing module dependencies, dependency cycles, conflicting modules, duplicate rule IDs, duplicate managed root block IDs, unknown decisions/templates, and profile-required skills that are absent from the selected setup snapshot. Root blocks must stay short pointers; stack-specific and conditional bodies belong in supporting `docs/agents/` guides.
+## Decisions
 
-## Process
+Use stored compatible decisions from `docs/agents/setup-context.json` first. Ask only for `decision.required` findings, one decision code at a time. Do not ask again for a stored compatible value.
 
-### 1. Explore
+Question routing:
 
-Look at the current repo to understand its starting state. Read whatever exists; don't assume:
+- `spec.scaffold` — confirm local `docs/specs/<feature-slug>/` is the planning source.
+- `domain.layout` — ask whether the repository is `single-context` or `multi-context`.
+- `triage.external` — ask only when external forge issues are relevant.
+- `autonomous.enabled` — ask whether Supervisor-to-ACP Runtime delegation applies.
+- `runtime.backend` — ask for the backend/default implementation runtime and model.
+- `runtime.design` — ask for the design, UI, UX, or frontend runtime and model.
+- `verification.gate` — ask for the command agents must run before completion claims.
+- `language.generated` — generated repository content must be `English`.
+- `secondbrain.enabled` — ask whether read-only local Secondbrain guidance must be generated.
+- `adoption.*` — ask only after showing the existing unmarked file that would become setup-owned.
 
-- `AGENTS.md` and `CLAUDE.md` at the repo root — does either exist? Is there already an `## Agent skills` section? Is `CLAUDE.md` a symlink to `AGENTS.md` (the usual convention)?
-- `CONTEXT.md` / `CONTEXT-MAP.md` at the repo root
-- `docs/specs/` and `docs/specs/_archived/` — layout already in place? Any active specs?
-- `docs/adr/` and any `src/*/docs/adr/` directories
-- `docs/agents/` — does this skill's prior output already exist?
-- The rest of the docs layout — which of `docs/_inbox/`, `docs/design/`, `docs/findings/`, `docs/handoffs/`, `docs/references/`, `docs/user-guide/` exist, and whether stray content lives where another folder's job says it belongs (see [docs-layout.md](./references/docs-layout.md))
-- Legacy planning locations (`.scratch/`, `.compozy/`, `docs/tasks/`, `docs/plans/`) — note them as read-only history; new work goes to `docs/specs/`.
-- `git remote -v` — a public forge remote means external issues may arrive (Section C).
+Record each answer by passing `--decision ID=VALUE` to apply. For newly introduced decisions, ask the new code once, then let the manifest carry it on later runs.
 
-### 2. Present findings and ask
+## Preview and apply
 
-Summarise what's present and what's missing. Then walk the user through the decisions **one at a time** — present a section, get the answer, move on (use the AskUserQuestion tool or the CLI's equivalent). Assume the user may not know the terms: open each section with a short explainer.
+Apply is explicit and never runs before the user sees the managed change summary.
 
-**Section A — Spec artifacts (the core; a confirmation, not a choice).**
+Before applying, tell the user:
 
-> Explainer: The spec workflow skills coordinate through per-feature folders. Each feature gets `docs/specs/<feature-slug>/` holding `_idea.md` (optional), `_prd.md`, `_techspec.md` (optional), the `_tasks.md` dependency graph, one `task_NN.md` per task, and `qa/` evidence. Dependencies live only in `_tasks.md`; task status lives only in each task file's frontmatter. Completed specs (all tasks done, QA passed) move to `docs/specs/_archived/` so the active folder shows only live work.
+- the profile, ordered modules, and canonical skill setup;
+- every managed file or block that will be created, refreshed, or removed;
+- that only `docs/agents/setup-context.json` and declared setup-owned Markdown boundaries can change;
+- that repository-authored bytes outside managed markers remain untouched;
+- that extra installed skills are informational only and this workflow never removes skills.
 
-The layout is a fixed convention the skills share — confirm the user wants it scaffolded, and whether any legacy planning artifacts found in step 1 should be flagged as read-only history in the summary.
+Ask for confirmation. After confirmation, run:
 
-**Section B — Domain docs.**
-
-> Explainer: The skills read `CONTEXT.md` (the glossary — pure ubiquitous language) before writing specs, code names, or test names, and `docs/adr/` for past decisions. They need to know whether the repo has one global context or multiple (a monorepo with separate bounded contexts).
-
-Confirm the layout:
-
-- **Single-context** — one `CONTEXT.md` + `docs/adr/` at the repo root. Most repos are this.
-- **Multi-context** — `CONTEXT-MAP.md` at the root pointing to per-context `CONTEXT.md` files (typically a monorepo).
-
-**Section C — Triage labels (only when the repo receives external issues on its forge).**
-
-> Explainer: When outsiders (users, teammates, bots) file issues on the forge (e.g. GitHub issues of a public repo), the `triage` skill moves them through a state machine using five canonical roles. It needs the label strings this repo actually uses. If nothing external lands on the forge, skip this section entirely — spec tasks carry their own status lifecycle (`pending`/`in_progress`/`completed`/`failed`) and never need triage labels.
-
-The five canonical roles: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. Default: each role's string equals its name; ask only if the repo's labels differ.
-
-**Section D — Autonomous work model (only when the repo delegates implementation to agent runtimes).**
-
-> Explainer: When a supervising session drives this repo autonomously — typically through Roundfix — the roles split hard: the Supervisor orchestrates and authors Specs; implementation is delegated to an ACP Runtime. Supervisor capacity is reserved for judgment; operational work goes to implementation runtimes. The split binds every autonomous session, interactive or unattended.
-
-Confirm, one at a time:
-
-- Whether the repo works this way at all — if not, skip the section and don't seed the file.
-- The default implementer (default: Codex `gpt-5.5` with `xhigh` Default Reasoning Effort, pinned through Project Config `runtimes.codex`).
-- The design implementer and its scope (default: Claude with `opus` at `high`/`xhigh` Default Reasoning Effort for design, UI, UX, and frontend Tasks) — and what this repo's design surface actually is (TUI, web frontend, both), which fills the placeholder in the seed.
-- The repo's verification gate name, so the seed's runtime-independence section can name it.
-
-### 3. Confirm and edit
-
-Show the user a draft of:
-
-- The scaffold actions for spec artifacts (directories to create, `CONTEXT.md` skeleton if missing)
-- The `## Agent skills` block to add to whichever of `CLAUDE.md` / `AGENTS.md` is being edited (see step 4 for selection rules)
-- The contents of `docs/agents/docs-layout.md`, `docs/agents/issue-tracker.md`, `docs/agents/spec-routing.md`, and `docs/agents/domain.md` (plus `docs/agents/triage-labels.md` when Section C applies, and `docs/agents/autonomous-work.md` when Section D applies)
-
-Let them edit before writing. On a re-run, existing `docs/agents/` files found in step 1 are inputs to the draft, not something to preserve verbatim: carry forward repo-specific answers (like custom label strings), regenerate the rest from the current seeds.
-
-### 4. Write
-
-**Pick the file to edit:**
-
-- If `CLAUDE.md` exists as a real file, edit it. If it is a symlink to `AGENTS.md`, edit `AGENTS.md`.
-- Else if `AGENTS.md` exists, edit it.
-- If neither exists, ask the user which one to create — don't pick for them.
-
-If an `## Agent skills` block already exists in the chosen file, update it in place rather than appending a duplicate. Don't overwrite user edits to surrounding sections.
-
-The block:
-
-```markdown
-## Agent skills
-
-### Issue tracker
-
-Tasks live as local markdown under `docs/specs/<feature-slug>/` (the canonical source — no external tracker). See `docs/agents/issue-tracker.md`.
-
-### Domain docs
-
-[one-line summary of layout — "single-context" or "multi-context"]. See `docs/agents/domain.md`.
-
-### Spec artifacts
-
-Feature specs live under `docs/specs/<feature-slug>/` (`_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, `task_NN.md`, `qa/`). Dependencies live only in `_tasks.md`; task status lives only in each task file's frontmatter. Completed specs (all tasks done, QA passed) are archived to `docs/specs/_archived/`.
-
-### Spec routing
-
-Pick the pipeline entry point by the change — large initiative, feature, refactor/bugfix, or trivial. See `docs/agents/spec-routing.md`.
-
-### Docs layout
-
-Every `docs/` folder has one job — inbox triage, ADRs, agent guides, design artifacts, dated findings (with a template), handoffs, external references, specs, and the user guide. See `docs/agents/docs-layout.md`.
+```bash
+python3 .agents/skills/setup-context-driven/scripts/context_setup.py apply --repo <repo> --format json --profile <profile-id> --decision <id=value> ...
 ```
 
-Add a `### Triage labels` line only when Section C applies.
+If apply returns `decision.required`, stop and ask the next unresolved decision. If it returns blocking findings, report the code, path, and action; do not patch around the finding manually.
 
-When Section D applies, add this subsection to the block:
+## Optional reports
 
-```markdown
-### Autonomous work
+Use `--show-extra-skills` only when the user asks to review installed skills outside the selected setup:
 
-Supervisor orchestrates and authors Specs; implementation is delegated to an ACP Runtime — Codex (`gpt-5.5` with `xhigh`) by default, Claude (`opus` at `high`/`xhigh`) for design, UI, UX, and frontend Tasks. Binding for every autonomous session. See `docs/agents/autonomous-work.md`.
+```bash
+python3 .agents/skills/setup-context-driven/scripts/context_setup.py audit --repo <repo> --format json --show-extra-skills
 ```
 
-and add a one-line hard-rule pointer to the repo's high-priority rules (the section the repo uses for MUST-level rules), for example:
+Report `skills.extra.installed` and `skills.local.untracked` as review information. Never suggest a removal command.
 
-```markdown
-- **HARD RULE — autonomous work model**: binding for every autonomous
-  session — the Supervisor orchestrates only; implementation is delegated to an ACP
-  Runtime per `docs/agents/autonomous-work.md`.
+Use `sync-setups` only as a maintainer operation with an explicit canonical setups directory:
+
+```bash
+python3 .agents/skills/setup-context-driven/scripts/context_setup.py sync-setups --source-dir <canonical-setups> --check --format json
 ```
 
-Rule bodies live in the seeded doc and in the workflow skills — the agent-instructions file holds only short mandatory pointers, never the full rule text.
+Normal repository setup does not require this checkout.
 
-**Re-run semantics — this skill owns its seeded `docs/agents/` files and the `## Agent skills` block.** When either already exists, rewrite rather than append: overwrite each seeded `docs/agents/*.md` with the freshly confirmed draft (carrying forward repo-specific answers), delete previously seeded `docs/agents/` files this skill no longer seeds (deprecated guides must not linger and contradict current ones), and regenerate the `## Agent skills` block in place, dropping subsections that no longer apply while carrying forward repo-authored subsections that point at `docs/agents/` files this skill does not seed. Ownership covers only the block and the files seeded from this skill's templates — repo-authored `docs/agents/` files it never seeded and user content elsewhere in `AGENTS.md`/`CLAUDE.md` stay untouched.
+## Secondbrain
 
-Then scaffold the spec artifacts:
+Secondbrain is opt-in through `secondbrain.enabled=true`. When enabled, apply creates one compact root pointer and `docs/agents/secondbrain.md`. When disabled, apply creates neither; if a previous setup owned those artifacts, apply removes only the marked managed Secondbrain block or guide content.
 
-- Create the full docs layout if missing — `docs/_inbox/`, `docs/adr/`, `docs/agents/`, `docs/design/`, `docs/findings/`, `docs/handoffs/`, `docs/references/`, `docs/specs/`, and `docs/user-guide/` (add a `.gitkeep` to empty directories so the layout survives a clone). `docs/specs/_archived/` can wait for the first archive. Folder jobs, lifecycles, and the findings template live in the [docs-layout.md](./references/docs-layout.md) seed.
-- If `CONTEXT.md` is missing, create the glossary skeleton below. Do **not** pre-fill terms — a glossary written by hand during real grilling sessions is worth more than a generated one, and generated context files measurably hurt agent output.
+Generated Secondbrain guidance must remain read-only. It must require index-first lookup, `qmd query`, project-mirror caution, file citations, Hermes escalation for durable updates, and secret safety. It must forbid writes to the Secondbrain, `raw/`, and `projects/*/mirror/`.
 
-```markdown
-# <Project name>
+## Completion
 
-<!-- One or two sentences: what this project is and why it exists. -->
-
-## Language
-
-<!-- One entry per project-specific term, added as each term is resolved during grilling/domain-modeling:
-**Term**:
-One-sentence definition of what it IS.
-_Avoid_: rejected synonyms
--->
-```
-
-Then write the docs files using the seed templates in this skill folder as a starting point:
-
-- [docs-layout.md](./references/docs-layout.md) — every `docs/` folder's job and lifecycle, plus the findings template
-- [issue-tracker-local.md](./references/issue-tracker-local.md) — the canonical local `docs/specs/` conventions
-- [spec-routing.md](./references/spec-routing.md) — pipeline entry-point routing and the definition of done
-- [triage-labels.md](./references/triage-labels.md) — label mapping (Section C only)
-- [domain.md](./references/domain.md) — domain doc consumer rules + layout
-- [autonomous-work.md](./references/autonomous-work.md) — orchestrator/implementer split, runtime routing, and Spec-authoring behaviors (Section D only; fill the design-surface and verification-gate placeholders with the confirmed answers)
-
-### 5. Done
-
-Tell the user the setup is complete and which skills now read from these files: the spec pipeline (`write-idea`, `write-prd`, `write-techspec`, `write-tasks`, `implement-task`, `implement-spec`, `qa-gate`, `archive-spec`), `triage` when external issues arrive on the forge, and — when Section D applies — every Supervisor-powered orchestrator session, which is bound by `docs/agents/autonomous-work.md`. Mention they can edit `docs/agents/*.md` and `CONTEXT.md` directly later, but that a re-run of this skill regenerates the seeded `docs/agents/` files and the `## Agent skills` block from the current templates — durable customizations belong in the confirmation answers, `CONTEXT.md`, or sections outside the owned block.
+After apply, rerun audit in JSON mode. A clean setup has exit code `0`. Report remaining findings by code and path. Do not claim setup is complete without fresh audit evidence.
