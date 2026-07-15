@@ -1,9 +1,12 @@
 ---
 spec: 0029-launch-and-recovery-fixes
-status: active
+status: archived
 created: 2026-07-15
 surfaces: [cli, docs]
+archived: "2026-07-15"
+source_slug: 0029-launch-and-recovery-fixes
 ---
+
 
 # Launch and Recovery Fixes
 
