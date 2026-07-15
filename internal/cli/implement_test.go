@@ -30,8 +30,12 @@ import (
 const implementTestSlug = "0001-widget-flow"
 
 const cliTestHelperEnv = "ROUNDFIX_CLI_TEST_HELPER"
+const detachTestChildModeEnv = "ROUNDFIX_DETACH_TEST_CHILD"
 
 func TestMain(m *testing.M) {
+	if mode := os.Getenv(detachTestChildModeEnv); mode != "" {
+		os.Exit(runDetachTestChild(mode))
+	}
 	if os.Getenv(cliTestHelperEnv) == "1" {
 		os.Exit(Run(os.Args[1:], os.Stdout, os.Stderr))
 	}
@@ -981,7 +985,7 @@ func TestRunImplementDetachPrintsReportAndCompletesRun(t *testing.T) {
 	waitForCleanOutcomeEvent(t, homeDir, runID, 90*time.Second)
 }
 
-func TestRunImplementDetachRelaysPreflightFailureVerbatim(t *testing.T) {
+func TestRunImplementDetachReportsAndRelaysPreflightFailure(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	var foregroundStdout bytes.Buffer
 	var foregroundStderr bytes.Buffer
@@ -999,8 +1003,11 @@ func TestRunImplementDetachRelaysPreflightFailureVerbatim(t *testing.T) {
 	if stdout != "" {
 		t.Fatalf("expected detached preflight stdout empty, got %q", stdout)
 	}
-	if stderr != foregroundStderr.String() {
-		t.Fatalf("detached preflight stderr was not relayed verbatim\nwant: %q\ngot:  %q", foregroundStderr.String(), stderr)
+	if !strings.Contains(stderr, "Detached Run child exited before the handshake (exit status 2); console output follows") {
+		t.Fatalf("expected detached preflight diagnostic, got %q", stderr)
+	}
+	if !strings.Contains(stderr, foregroundStderr.String()) {
+		t.Fatalf("detached preflight stderr did not relay child output\nwant output containing: %q\ngot: %q", foregroundStderr.String(), stderr)
 	}
 	assertNoRunDatabase(t, homeDir)
 }

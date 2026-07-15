@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0029-launch-and-recovery-fixes
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -22,19 +22,19 @@ Fix the root cause of the silent `--detach` failure: the single 10-second handsh
 
 ## Subtasks
 
-- [ ] Child-side liveness marker before config load, run-id line unchanged after Run creation
-- [ ] Parent-side two-phase wait with per-phase deadlines and child-exit short-circuit
-- [ ] Failure-branch diagnostics for all four shapes
-- [ ] Tests with injectable timings: slow-before-liveness, liveness-then-slow-preflight (passes under the ceiling, fails past a shrunk ceiling), child exits 2 with output, child exits silently
-- [ ] Existing detach success test still passes unchanged
+- [x] Child-side liveness marker before config load, run-id line unchanged after Run creation
+- [x] Parent-side two-phase wait with per-phase deadlines and child-exit short-circuit
+- [x] Failure-branch diagnostics for all four shapes
+- [x] Tests with injectable timings: slow-before-liveness, liveness-then-slow-preflight (passes under the ceiling, fails past a shrunk ceiling), child exits 2 with output, child exits silently
+- [x] Existing detach success test still passes unchanged
 
 ## Acceptance Criteria
 
-- [ ] A child stub that sleeps past the liveness deadline is killed and the parent prints the liveness-timeout diagnostic naming the exit or signal
-- [ ] A child that signals liveness and then takes longer than the old 10s (but under the ceiling) produces the normal four-line success report
-- [ ] A child that exits before the handshake has its exit code named and its output relayed; a silent child produces the "produced no output" line
-- [ ] The success path output is byte-identical to the current contract
-- [ ] The full test suite passes
+- [x] A child stub that sleeps past the liveness deadline is killed and the parent prints the liveness-timeout diagnostic naming the exit or signal
+- [x] A child that signals liveness and then takes longer than the old 10s (but under the ceiling) produces the normal four-line success report
+- [x] A child that exits before the handshake has its exit code named and its output relayed; a silent child produces the "produced no output" line
+- [x] The success path output is byte-identical to the current contract
+- [x] The full test suite passes
 
 ## Context
 
@@ -51,3 +51,23 @@ Fix the root cause of the silent `--detach` failure: the single 10-second handsh
 ## References
 
 `_prd.md` → Goals 1–2, Core Feature 1, Problem 1; `_techspec.md` → Build Order 1, Interfaces (two-phase handshake, failure diagnostics), Risks (phase-2 ceiling); ADR-0028.
+
+## Result
+
+Implemented the two-phase Detached Run handshake. The child writes a liveness marker as soon as child mode is detected, before configuration load and Preflight Validation. The parent now waits for liveness with the existing 10s deadline, then waits separately for Run creation with a 5m ceiling. The existing run-id/console-log line, console-log rename flow, success report, and exit-code behavior are preserved.
+
+Added explicit failure diagnostics for liveness timeout, Run-creation timeout, child exit with console output, and silent child exit. Added phase-matrix tests with injectable liveness and Run-creation durations, plus updated the detached preflight-failure test to expect the new diagnostic before relayed console output.
+
+Evidence:
+
+- Red signal before implementation: `rtk proxy grep -q "liveness" internal/cli/detach.go` exited 1.
+- Regression matrix: `rtk go test ./internal/cli/ -run 'TestRunDetachedCommand'` failed before the two-phase implementation, then passed with 5 tests.
+- Task verification: `rtk proxy grep -q "liveness" internal/cli/detach.go` passed.
+- Task verification: `rtk go test ./internal/cli/ -run 'Detach'` passed with 15 tests.
+- Task verification: `rtk go test ./internal/cli/...` passed with 429 tests.
+- Task verification: `rtk go build -buildvcs=false ./...` passed.
+- Full gate: `rtk make verify` passed: `rtk go test ./...` reported 1240 tests passed in 19 packages, `roundfix skills check` passed, and `go build -buildvcs=false -o bin/roundfix ./cmd/roundfix` passed.
+
+Follow-ups:
+
+- None for this task slice.
