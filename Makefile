@@ -15,7 +15,7 @@ PKGS := ./...
 # Local build identity for `roundfix --version`: short commit (plus -dirty
 # when the tree has changes) and local build time. The release workflow
 # stamps only app.Version from the tag and leaves these empty.
-BUILD_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null)$(shell git diff --quiet HEAD 2>/dev/null || echo -dirty)
+BUILD_COMMIT := $(shell commit=$$(git rev-parse --short HEAD 2>/dev/null) || exit 0; dirty=$$(git status --porcelain --untracked-files=all 2>/dev/null); if test -n "$$dirty"; then dirty=-dirty; else dirty=; fi; printf '%s%s' "$$commit" "$$dirty")
 BUILD_TIME := $(shell date '+%Y-%m-%d %H:%M:%S %z')
 STAMP_LDFLAGS := -X 'roundfix/internal/app.BuildCommit=$(BUILD_COMMIT)' -X 'roundfix/internal/app.BuildTime=$(BUILD_TIME)'
 BUILD_FLAGS ?= -buildvcs=false -ldflags "$(STAMP_LDFLAGS)"
