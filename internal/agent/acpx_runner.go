@@ -861,11 +861,13 @@ func (runner *ACPXRunner) RunPrompt(ctx context.Context, req ACPXPromptRequest, 
 	}
 
 	streamCh := make(chan acpxStreamResult, 1)
-	go func() {
-		streamCh <- runner.readPromptStream(ctx, req.ExecuteRequest, sink, stdout, logWriter)
-	}()
 	waitCh := make(chan error, 1)
 	go func() {
+		// Drain stdout to EOF before Wait: Wait closes the pipe, so calling
+		// it while the reader is mid-read races into "file already closed"
+		// and can drop tail output (observed on slow CI runners). Both
+		// channels are buffered, so this goroutine never blocks on delivery.
+		streamCh <- runner.readPromptStream(ctx, req.ExecuteRequest, sink, stdout, logWriter)
 		waitCh <- cmd.Wait()
 	}()
 
