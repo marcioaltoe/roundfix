@@ -12,7 +12,7 @@ sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from context_setup import parse_managed_blocks  # noqa: E402
-from test_audit import snapshot_files, write_compliant_repository  # noqa: E402
+from test_audit import install_profile_skills, snapshot_files, write_compliant_repository  # noqa: E402
 
 
 BASE_DECISIONS = [
@@ -47,6 +47,7 @@ class ApplyCliTests(unittest.TestCase):
             self.assertTrue(manifest["managedArtifacts"])
             self.assertIn("<!-- setup-context-driven:begin id=root.rust version=1 -->", (repo / "AGENTS.md").read_text(encoding="utf-8"))
             self.assertTrue((repo / "docs" / "agents" / "rust.md").is_file())
+            install_profile_skills(repo, "rust-cli")
             self.assertEqual(run_audit(repo).returncode, 0)
 
     def test_apply_preserves_custom_content_and_is_idempotent(self):

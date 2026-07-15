@@ -99,6 +99,14 @@ class ChangePlan:
 
 
 @dataclass(frozen=True)
+class InstalledSkill:
+    name: str
+    path: Path
+    locked: bool
+    origin: dict
+
+
+@dataclass(frozen=True)
 class AuditResult:
     findings: list[Finding]
 
@@ -134,7 +142,8 @@ def main(argv: list[str] | None = None) -> int:
         parser = apply_parser()
         return run_apply_command(parser.parse_args(args[1:]))
     if args and args[0] == "sync-setups":
-        return parse_unimplemented_command("sync-setups", args[1:])
+        parser = sync_setups_parser()
+        return run_sync_setups_command(parser.parse_args(args[1:]))
     if args and args[0] == "audit":
         args = args[1:]
 
@@ -160,7 +169,13 @@ def run_audit_command(options: argparse.Namespace) -> int:
             print(diagnostic, file=sys.stderr)
         return 2
 
-    result, invalid_input = audit_repository(repo, catalog, options.profile)
+    result, invalid_input = audit_repository(
+        repo=repo,
+        catalog=catalog,
+        profile_override=options.profile,
+        show_extra_skills=options.show_extra_skills,
+        setups_dir=options.setups_dir,
+    )
     render_result(result, options.format)
     return exit_code_for(result, invalid_input)
 
@@ -225,6 +240,25 @@ def run_apply_command(options: argparse.Namespace) -> int:
     return 0
 
 
+def run_sync_setups_command(options: argparse.Namespace) -> int:
+    source_dir = Path(options.source_dir).expanduser()
+    if not source_dir.is_absolute():
+        source_dir = Path.cwd() / source_dir
+    source_dir = source_dir.resolve(strict=False)
+    if not source_dir.is_dir():
+        print(f"Canonical setups directory is not a directory: {source_dir}", file=sys.stderr)
+        return 2
+
+    skill_root = Path(__file__).resolve().parents[1]
+    result, invalid_input = sync_setup_snapshots(
+        skill_root=skill_root,
+        source_dir=source_dir,
+        check=options.check,
+    )
+    render_result(result, options.format)
+    return exit_code_for(result, invalid_input)
+
+
 def resolve_repo(repo_arg: str) -> Path:
     repo = Path(repo_arg).expanduser()
     if not repo.is_absolute():
@@ -236,6 +270,8 @@ def audit_repository(
     repo: Path,
     catalog: AssetCatalog,
     profile_override: str | None = None,
+    show_extra_skills: bool = False,
+    setups_dir: str | None = None,
 ) -> tuple[AuditResult, bool]:
     findings: list[Finding] = []
     manifest, invalid_input = load_manifest(repo, findings)
@@ -258,11 +294,220 @@ def audit_repository(
 
     ordered_modules = catalog.ordered_modules_by_profile[profile_id]
     validate_manifest_shape(manifest, profile_id, ordered_modules, catalog, findings)
+    validate_profile_skill_references(catalog, profile_id, ordered_modules, findings)
+    skills_invalid_input = validate_installed_skills(
+        repo=repo,
+        catalog=catalog,
+        manifest=manifest,
+        profile_id=profile_id,
+        show_extra_skills=show_extra_skills,
+        findings=findings,
+    )
+    invalid_input = invalid_input or skills_invalid_input
+    if setups_dir is not None:
+        setups_path = Path(setups_dir).expanduser()
+        if not setups_path.is_absolute():
+            setups_path = Path.cwd() / setups_path
+        setups_invalid_input = validate_selected_setup_snapshot(
+            catalog=catalog,
+            profile_id=profile_id,
+            source_dir=setups_path.resolve(strict=False),
+            findings=findings,
+        )
+        invalid_input = invalid_input or setups_invalid_input
     expected_artifacts = expected_artifacts_for_profile(catalog, profile_id)
     validate_manifest_artifacts(manifest, expected_artifacts, findings)
     validate_documents(repo, expected_artifacts, findings)
 
     return AuditResult(sorted_findings(findings)), invalid_input
+
+
+def validate_profile_skill_references(
+    catalog: AssetCatalog,
+    profile_id: str,
+    ordered_modules: list[str],
+    findings: list[Finding],
+) -> None:
+    setup = catalog.setups[catalog.profiles[profile_id]["setup"]]
+    setup_skills = {skill["name"] for skill in setup.get("skills", []) if isinstance(skill.get("name"), str)}
+    for module_id in ordered_modules:
+        for skill_name in catalog.modules[module_id].get("requiredSkills", []):
+            if skill_name in setup_skills:
+                continue
+            findings.append(
+                finding(
+                    "skills.reference.outside-setup",
+                    "error",
+                    f"assets/modules/{module_id}.json",
+                    skill_name,
+                    f"Module {module_id} requires skill {skill_name}, but the selected setup snapshot does not include it.",
+                    "Update the module or selected setup snapshot so generated rules reference available capabilities.",
+                )
+            )
+
+
+def validate_installed_skills(
+    repo: Path,
+    catalog: AssetCatalog,
+    manifest: dict,
+    profile_id: str,
+    show_extra_skills: bool,
+    findings: list[Finding],
+) -> bool:
+    lock_entries, invalid_input = load_skills_lock(repo, findings)
+    installed = discover_installed_skills(repo, lock_entries)
+    installed_names = set(installed)
+    setup_id = catalog.profiles[profile_id]["setup"]
+    setup = catalog.setups[setup_id]
+    required_names = [
+        skill["name"]
+        for skill in setup.get("skills", [])
+        if isinstance(skill.get("name"), str) and skill["name"]
+    ]
+    for skill_name in required_names:
+        if skill_name in installed_names:
+            continue
+        findings.append(
+            finding(
+                "skills.required.missing",
+                "error",
+                f".agents/skills/{skill_name}",
+                f"profile.{profile_id}",
+                f"Required skill {skill_name} is not installed.",
+                f"Install the {setup_id} canonical skill setup or add .agents/skills/{skill_name}/SKILL.md.",
+            )
+        )
+
+    if not show_extra_skills:
+        return invalid_input
+
+    local_skills = manifest_local_skills(manifest)
+    setup_names = set(required_names)
+    for skill_name, installed_skill in sorted(installed.items()):
+        if skill_name in setup_names or skill_name in local_skills:
+            continue
+        if installed_skill.locked:
+            findings.append(
+                finding(
+                    "skills.extra.installed",
+                    "info",
+                    installed_skill.path.as_posix(),
+                    skill_name,
+                    "Installed locked skill is outside the selected setup.",
+                    "Review whether this locked skill is still useful; no file changes are performed.",
+                )
+            )
+        else:
+            findings.append(
+                finding(
+                    "skills.local.untracked",
+                    "info",
+                    installed_skill.path.as_posix(),
+                    skill_name,
+                    "Installed skill is not locked, setup-required, or manifest-declared repository-owned.",
+                    "Review this untracked skill manually; the workflow will not modify it.",
+                )
+            )
+    return invalid_input
+
+
+def load_skills_lock(repo: Path, findings: list[Finding]) -> tuple[dict[str, dict], bool]:
+    lock_path = repo / "skills-lock.json"
+    try:
+        lock = json.loads(lock_path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {}, False
+    except json.JSONDecodeError as error:
+        findings.append(
+            finding(
+                "skills.lockfile.invalid",
+                "error",
+                "skills-lock.json",
+                "skills-lock",
+                f"skills-lock.json is not valid JSON: {error.msg}.",
+                "Fix skills-lock.json before auditing installed skills.",
+            )
+        )
+        return {}, True
+    if not isinstance(lock, dict) or not isinstance(lock.get("skills"), dict):
+        findings.append(
+            finding(
+                "skills.lockfile.invalid",
+                "error",
+                "skills-lock.json",
+                "skills-lock",
+                "skills-lock.json must be an object with a skills object.",
+                "Fix skills-lock.json before auditing installed skills.",
+            )
+        )
+        return {}, True
+    entries: dict[str, dict] = {}
+    for skill_name, entry in lock["skills"].items():
+        if isinstance(skill_name, str) and isinstance(entry, dict):
+            entries[skill_name] = entry
+    return entries, False
+
+
+def discover_installed_skills(
+    repo: Path,
+    lock_entries: dict[str, dict],
+) -> dict[str, InstalledSkill]:
+    skills_root = repo / ".agents" / "skills"
+    installed: dict[str, InstalledSkill] = {}
+    if not skills_root.is_dir():
+        return installed
+    for skill_file in sorted(skills_root.glob("*/SKILL.md")):
+        skill_name = skill_file.parent.name
+        lock_entry = lock_entries.get(skill_name)
+        installed[skill_name] = InstalledSkill(
+            name=skill_name,
+            path=skill_file.relative_to(repo),
+            locked=lock_entry is not None,
+            origin=lock_entry or {},
+        )
+    return installed
+
+
+def manifest_local_skills(manifest: dict) -> set[str]:
+    local_skills: set[str] = set()
+    for item in manifest.get("localSkills", []):
+        if isinstance(item, str) and item:
+            local_skills.add(item)
+        elif isinstance(item, dict) and isinstance(item.get("name"), str) and item["name"]:
+            local_skills.add(item["name"])
+    return local_skills
+
+
+def validate_selected_setup_snapshot(
+    catalog: AssetCatalog,
+    profile_id: str,
+    source_dir: Path,
+    findings: list[Finding],
+) -> bool:
+    if not source_dir.is_dir():
+        findings.append(
+            finding(
+                "skills.setup-snapshot.drift",
+                "error",
+                str(source_dir),
+                f"profile.{profile_id}",
+                "Canonical setups directory is not available.",
+                "Pass an existing --setups-dir or omit the optional drift check.",
+            )
+        )
+        return True
+    setup_id = catalog.profiles[profile_id]["setup"]
+    snapshot, snapshot_findings, invalid_input = build_source_setup_snapshot(
+        setup_id=setup_id,
+        source_dir=source_dir,
+        current_snapshot=catalog.setups[setup_id],
+    )
+    findings.extend(snapshot_findings)
+    if invalid_input or snapshot is None:
+        return invalid_input
+    if snapshot != catalog.setups[setup_id]:
+        findings.append(setup_snapshot_drift_finding(setup_id))
+    return False
 
 
 def plan_apply(
@@ -858,6 +1103,408 @@ def content_bytes(content: str | None) -> bytes | None:
     if content is None:
         return None
     return content.encode("utf-8")
+
+
+def sync_setup_snapshots(
+    skill_root: Path,
+    source_dir: Path,
+    check: bool,
+) -> tuple[AuditResult, bool]:
+    findings: list[Finding] = []
+    current_snapshots, invalid_input = load_current_setup_snapshots(skill_root, findings)
+    if invalid_input:
+        return AuditResult(sorted_findings(findings)), True
+
+    planned: dict[Path, str] = {}
+    changed_setup_ids: list[str] = []
+    for setup_id, current_snapshot in sorted(current_snapshots.items()):
+        snapshot, snapshot_findings, snapshot_invalid = build_source_setup_snapshot(
+            setup_id=setup_id,
+            source_dir=source_dir,
+            current_snapshot=current_snapshot,
+        )
+        findings.extend(snapshot_findings)
+        invalid_input = invalid_input or snapshot_invalid
+        if snapshot is None:
+            continue
+        if snapshot == current_snapshot:
+            continue
+        changed_setup_ids.append(setup_id)
+        if check:
+            findings.append(setup_snapshot_drift_finding(setup_id))
+        else:
+            target = skill_root / "assets" / "setups" / f"{setup_id}.json"
+            planned[target] = snapshot_json(snapshot)
+
+    if invalid_input or check:
+        return AuditResult(sorted_findings(findings)), invalid_input
+
+    try:
+        write_atomic_text_changes(planned)
+    except OSError as error:
+        findings.append(
+            finding(
+                "skills.setup-snapshot.drift",
+                "error",
+                "assets/setups",
+                "setups",
+                f"Could not update setup snapshots atomically: {error}.",
+                "Fix filesystem permissions and rerun sync-setups.",
+            )
+        )
+        return AuditResult(sorted_findings(findings)), False
+
+    for setup_id in changed_setup_ids:
+        findings.append(
+            finding(
+                "skills.setup-snapshot.updated",
+                "info",
+                f"assets/setups/{setup_id}.json",
+                f"setup.{setup_id}",
+                "Setup snapshot was synchronized from the canonical source.",
+                "Review the snapshot diff and run asset validation.",
+            )
+        )
+    return AuditResult(sorted_findings(findings)), False
+
+
+def load_current_setup_snapshots(
+    skill_root: Path,
+    findings: list[Finding],
+) -> tuple[dict[str, dict], bool]:
+    setups_root = skill_root / "assets" / "setups"
+    snapshots: dict[str, dict] = {}
+    invalid_input = False
+    for path in sorted(setups_root.glob("*.json")):
+        try:
+            snapshot = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as error:
+            findings.append(
+                finding(
+                    "skills.setup-snapshot.drift",
+                    "error",
+                    path.relative_to(skill_root).as_posix(),
+                    path.stem,
+                    f"Bundled setup snapshot is not valid JSON: {error.msg}.",
+                    "Fix the bundled setup snapshot before synchronizing.",
+                )
+            )
+            invalid_input = True
+            continue
+        if not isinstance(snapshot, dict) or snapshot.get("id") != path.stem:
+            findings.append(
+                finding(
+                    "skills.setup-snapshot.drift",
+                    "error",
+                    path.relative_to(skill_root).as_posix(),
+                    path.stem,
+                    "Bundled setup snapshot id does not match its filename.",
+                    "Fix the bundled setup snapshot before synchronizing.",
+                )
+            )
+            invalid_input = True
+            continue
+        snapshots[path.stem] = snapshot
+    return snapshots, invalid_input
+
+
+def build_source_setup_snapshot(
+    setup_id: str,
+    source_dir: Path,
+    current_snapshot: dict,
+) -> tuple[dict | None, list[Finding], bool]:
+    findings: list[Finding] = []
+    source_doc, source_path, invalid_input = load_source_setup_doc(setup_id, source_dir, findings)
+    if invalid_input or source_doc is None or source_path is None:
+        return None, findings, invalid_input
+
+    current_by_path = {
+        skill.get("path"): skill
+        for skill in current_snapshot.get("skills", [])
+        if isinstance(skill, dict) and isinstance(skill.get("path"), str)
+    }
+    skills: list[dict] = []
+    seen_names: set[str] = set()
+    seen_paths: set[str] = set()
+    for raw_skill in source_doc.get("skills", []):
+        skill, skill_findings = normalize_source_skill(
+            raw_skill=raw_skill,
+            source_dir=source_dir,
+            current_by_path=current_by_path,
+            source_path=source_path,
+        )
+        findings.extend(skill_findings)
+        if skill is None:
+            invalid_input = True
+            continue
+        if skill["name"] in seen_names:
+            findings.append(
+                setup_snapshot_invalid_finding(
+                    source_path,
+                    setup_id,
+                    f"Canonical setup contains duplicate skill name {skill['name']}.",
+                )
+            )
+            invalid_input = True
+        if skill["path"] in seen_paths:
+            findings.append(
+                setup_snapshot_invalid_finding(
+                    source_path,
+                    setup_id,
+                    f"Canonical setup contains duplicate skill path {skill['path']}.",
+                )
+            )
+            invalid_input = True
+        seen_names.add(skill["name"])
+        seen_paths.add(skill["path"])
+        skills.append(skill)
+
+    if not isinstance(source_doc.get("skills"), list) or not skills:
+        findings.append(
+            setup_snapshot_invalid_finding(
+                source_path,
+                setup_id,
+                "Canonical setup must contain a non-empty skills list.",
+            )
+        )
+        invalid_input = True
+
+    source_metadata = source_doc.get("source")
+    if not isinstance(source_metadata, dict):
+        source_metadata = current_snapshot.get("source")
+    if not isinstance(source_metadata, dict):
+        source_metadata = {
+            "name": setup_id,
+            "type": "canonical-skill-setup",
+            "revision": "unknown",
+        }
+
+    snapshot = {
+        "schemaVersion": "setup-context-driven/setup-snapshot-v1",
+        "id": setup_id,
+        "version": current_snapshot.get("version", 1),
+        "source": source_metadata,
+        "digest": setup_paths_digest([skill["path"] for skill in skills]),
+        "skills": skills,
+    }
+    return snapshot, findings, invalid_input
+
+
+def load_source_setup_doc(
+    setup_id: str,
+    source_dir: Path,
+    findings: list[Finding],
+) -> tuple[dict | None, Path | None, bool]:
+    json_path = source_dir / f"{setup_id}.json"
+    if json_path.is_file():
+        try:
+            doc = json.loads(json_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as error:
+            findings.append(
+                setup_snapshot_invalid_finding(
+                    json_path,
+                    setup_id,
+                    f"Canonical setup JSON is invalid: {error.msg}.",
+                )
+            )
+            return None, json_path, True
+        if not isinstance(doc, dict):
+            findings.append(
+                setup_snapshot_invalid_finding(
+                    json_path,
+                    setup_id,
+                    "Canonical setup JSON must be an object.",
+                )
+            )
+            return None, json_path, True
+        return doc, json_path, False
+
+    for suffix in (".txt", ".md"):
+        path = source_dir / f"{setup_id}{suffix}"
+        if path.is_file():
+            skills = [
+                {"path": line.strip()}
+                for line in path.read_text(encoding="utf-8").splitlines()
+                if line.strip() and not line.lstrip().startswith("#")
+            ]
+            return {"skills": skills}, path, False
+
+    findings.append(
+        setup_snapshot_invalid_finding(
+            source_dir / f"{setup_id}.json",
+            setup_id,
+            "Canonical setup source file is missing.",
+        )
+    )
+    return None, None, True
+
+
+def normalize_source_skill(
+    raw_skill: object,
+    source_dir: Path,
+    current_by_path: dict[str, dict],
+    source_path: Path,
+) -> tuple[dict | None, list[Finding]]:
+    findings: list[Finding] = []
+    if isinstance(raw_skill, str):
+        raw_data: dict[str, object] = {"path": raw_skill}
+    elif isinstance(raw_skill, dict):
+        raw_data = raw_skill
+    else:
+        findings.append(
+            setup_snapshot_invalid_finding(
+                source_path,
+                "setup",
+                "Each canonical setup skill must be a string or object.",
+            )
+        )
+        return None, findings
+
+    raw_path = raw_data.get("path") or raw_data.get("skillPath") or raw_data.get("name")
+    if not isinstance(raw_path, str) or not raw_path.strip():
+        findings.append(
+            setup_snapshot_invalid_finding(
+                source_path,
+                "setup",
+                "Canonical setup skill is missing a path.",
+            )
+        )
+        return None, findings
+    normalized_path = normalize_skill_path(raw_path)
+    if normalized_path is None:
+        findings.append(
+            setup_snapshot_invalid_finding(
+                source_path,
+                "setup",
+                f"Canonical setup skill path {raw_path!r} is not portable.",
+            )
+        )
+        return None, findings
+
+    current_skill = current_by_path.get(normalized_path, {})
+    name = raw_data.get("name")
+    if not isinstance(name, str) or not name.strip():
+        name = infer_skill_name(normalized_path)
+    source = raw_data.get("source")
+    if not isinstance(source, dict):
+        source = lock_style_source(raw_data)
+    if not source and isinstance(current_skill.get("source"), dict):
+        source = current_skill["source"]
+    digest = raw_data.get("contentDigest") or raw_data.get("computedHash")
+    if not isinstance(digest, str) or not digest:
+        source_skill_path = source_dir / normalized_path
+        if source_skill_path.is_file():
+            digest = managed_digest(source_skill_path.read_text(encoding="utf-8"))
+        elif isinstance(current_skill.get("contentDigest"), str):
+            digest = current_skill["contentDigest"]
+    if not isinstance(digest, str) or not digest:
+        findings.append(
+            setup_snapshot_invalid_finding(
+                source_path,
+                str(name),
+                f"Canonical setup skill {name} is missing a content digest.",
+            )
+        )
+        return None, findings
+
+    return {
+        "name": str(name).strip(),
+        "path": normalized_path,
+        "source": source,
+        "contentDigest": digest,
+    }, findings
+
+
+def normalize_skill_path(raw_path: str) -> str | None:
+    value = raw_path.strip().replace("\\", "/")
+    if not value:
+        return None
+    if "/" not in value:
+        value = f".agents/skills/{value}/SKILL.md"
+    candidate = Path(value)
+    if candidate.is_absolute() or ".." in candidate.parts:
+        return None
+    return candidate.as_posix()
+
+
+def infer_skill_name(path: str) -> str:
+    candidate = Path(path)
+    if candidate.name == "SKILL.md" and candidate.parent.name:
+        return candidate.parent.name
+    return candidate.stem
+
+
+def lock_style_source(raw_data: dict[str, object]) -> dict:
+    source_name = raw_data.get("source")
+    source_type = raw_data.get("sourceType")
+    if not isinstance(source_name, str) and not isinstance(source_type, str):
+        return {}
+    source: dict[str, str] = {}
+    if isinstance(source_type, str):
+        source["type"] = source_type
+    if isinstance(source_name, str):
+        source["name"] = source_name
+    if isinstance(raw_data.get("skillPath"), str):
+        source["path"] = raw_data["skillPath"]
+    if isinstance(raw_data.get("ref"), str):
+        source["ref"] = raw_data["ref"]
+    return source
+
+
+def setup_paths_digest(paths: list[str]) -> str:
+    payload = "\n".join(paths) + "\n"
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def snapshot_json(snapshot: dict) -> str:
+    return json.dumps(snapshot, indent=2, sort_keys=False) + "\n"
+
+
+def write_atomic_text_changes(changes: dict[Path, str]) -> None:
+    temp_paths: list[Path] = []
+    originals: dict[Path, bytes | None] = {}
+    try:
+        for target, content in sorted(changes.items(), key=lambda item: item[0].as_posix()):
+            originals[target] = target.read_bytes() if target.exists() and target.is_file() else None
+            temp_path = target.with_name(f".{target.name}.setup-context.tmp")
+            temp_path.write_text(content, encoding="utf-8")
+            temp_paths.append(temp_path)
+        for target in sorted(changes, key=lambda item: item.as_posix()):
+            temp_path = target.with_name(f".{target.name}.setup-context.tmp")
+            temp_path.replace(target)
+    except OSError:
+        for target, original in originals.items():
+            if original is not None:
+                target.write_bytes(original)
+            elif target.exists() and target.is_file():
+                target.unlink()
+        raise
+    finally:
+        for temp_path in temp_paths:
+            if temp_path.exists():
+                temp_path.unlink()
+
+
+def setup_snapshot_invalid_finding(path: Path, setup_id: str, message: str) -> Finding:
+    return finding(
+        "skills.setup-snapshot.drift",
+        "error",
+        path.as_posix(),
+        f"setup.{setup_id}",
+        message,
+        "Fix the canonical setup source before synchronizing snapshots.",
+    )
+
+
+def setup_snapshot_drift_finding(setup_id: str) -> Finding:
+    return finding(
+        "skills.setup-snapshot.drift",
+        "error",
+        f"assets/setups/{setup_id}.json",
+        f"setup.{setup_id}",
+        "Bundled setup snapshot differs from the canonical source.",
+        "Run sync-setups without --check to refresh the bundled snapshot.",
+    )
 
 
 def load_manifest(repo: Path, findings: list[Finding]) -> tuple[dict | None, bool]:
@@ -1553,7 +2200,7 @@ def print_top_level_help() -> None:
                 "Subcommands:",
                 "  audit        Read bundled assets and repository state without writes.",
                 "  apply        Write confirmed managed content through an atomic change plan.",
-                "  sync-setups  Planned snapshot authoring command; not implemented in this slice.",
+                "  sync-setups  Check or refresh bundled canonical skill setup snapshots.",
             ]
         )
     )
@@ -1602,6 +2249,26 @@ def apply_parser() -> argparse.ArgumentParser:
         action="append",
         default=[],
         help="Confirmed decision in ID=VALUE form. Repeat for multiple decisions.",
+    )
+    return parser
+
+
+def sync_setups_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="context_setup.py sync-setups",
+        description="Check or refresh bundled setup snapshots from an explicit canonical setups directory.",
+    )
+    parser.add_argument("--source-dir", required=True, help="Canonical setups directory.")
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Report snapshot drift without writing bundled assets.",
+    )
+    parser.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Result format written to stdout.",
     )
     return parser
 

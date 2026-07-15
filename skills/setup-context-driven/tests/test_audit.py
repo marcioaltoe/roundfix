@@ -146,7 +146,7 @@ def run_context_setup(*args):
     )
 
 
-def write_compliant_repository(repo, profile_id, omit_decision=None):
+def write_compliant_repository(repo, profile_id, omit_decision=None, install_skills=True):
     repo.mkdir(parents=True, exist_ok=True)
     catalog = load_asset_catalog(SKILL_ROOT)
     modules = catalog.ordered_modules_by_profile[profile_id]
@@ -202,6 +202,28 @@ def write_compliant_repository(repo, profile_id, omit_decision=None):
     manifest_path = repo / "docs" / "agents" / "setup-context.json"
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    if install_skills:
+        install_profile_skills(repo, profile_id)
+
+
+def install_profile_skills(repo, profile_id, omit=None):
+    omitted = set(omit or [])
+    catalog = load_asset_catalog(SKILL_ROOT)
+    setup_id = catalog.profiles[profile_id]["setup"]
+    for skill in catalog.setups[setup_id]["skills"]:
+        name = skill["name"]
+        if name in omitted:
+            continue
+        write_skill(repo, name)
+
+
+def write_skill(repo, name):
+    skill_path = repo / ".agents" / "skills" / name / "SKILL.md"
+    skill_path.parent.mkdir(parents=True, exist_ok=True)
+    skill_path.write_text(
+        f"---\nname: {name}\ndescription: test skill\n---\n# {name}\n",
+        encoding="utf-8",
+    )
 
 
 def snapshot_files(repo):
