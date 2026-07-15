@@ -8,6 +8,114 @@ Cocogitto). The tag drives the release: pushing `vX.Y.Z` runs the release
 workflow, which publishes the npm packages and creates the GitHub Release from
 this file's matching section.
 
+## [0.3.0] - 2026-07-15
+
+Roundfix-owned model selection, review-loop integrity, settlement robustness,
+and launch/recovery fixes — a week of dogfooding Roundfix on itself (specs
+0023–0029), where three of the shipped fixes closed failure modes reproduced
+live during the same cycle.
+
+### Added
+
+- **Agent Model ownership** — Roundfix selects the Agent Model and Default
+  Reasoning Effort for every Agent Session explicitly; runtime-owned local
+  configuration never participates. Per-runtime Project/User Config keys
+  (`runtimes.<runtime>.model`, `runtimes.<runtime>.reasoning_effort`), ordered
+  Codex and Claude Model Catalogs in Interactive Input, a `--reasoning-effort`
+  override next to `--model`, and an availability preflight that fails before
+  a Run exists, naming the rejected values and the recovery paths.
+- **Model fallback guardrail** — when the selected model fails its probe, the
+  preflight offers a probe-discovered Fallback Selection gated on explicit
+  confirmation (or a copy-paste re-run command in non-interactive mode); no
+  silent substitution, ever.
+- **Optional reasoning effort** — an empty reasoning value is valid and means
+  the Agent Model manages reasoning; Roundfix assigns the option only when
+  configured non-empty.
+- **Context-efficient Spec Runs** — the Spec Context Bundle gives each Task a
+  bounded start context (the assigned Task, declared `## Context` paths, and
+  prior changed files) instead of cold-start repository exploration.
+- **Branch Integrity Preflight** — `fetch`, `resolve`, and `watch` refuse to
+  start while unintegrated `roundfix/run-*` work or another Active Run is
+  bound to the PR Head Branch: fast-forwardable pending work is integrated
+  automatically and reported, anything else blocks naming the branch, ahead
+  count, and the exact command. `--skip-branch-integrity` bypasses both
+  guardrails only after publishing a PR audit comment — a failed publish
+  fails the command.
+- **Clean Unverified outcome** — after the Final Push, watch polls for the
+  Review Source check through a grace window (`watch.check_grace_period`,
+  default 5m); a check that never appears ends the Run `CleanUnverified` with
+  its own exit code `3` instead of a silently-noted Clean.
+- **Outcome Comments** — Review Issue outcomes propagate to GitHub per issue
+  at Batch settlement: invalid and duplicated issues get an explanatory
+  comment before their thread resolves, failed issues get the failure reason
+  and stay open, and still-unresolved issues receive a run-end comment. All
+  comments carry an idempotency marker, so retries never duplicate.
+- **Terminal reasons everywhere** — Review Issue artifacts persist a
+  `terminal_reason`, failed and skipped Tasks print an indented `reason:` line
+  in the implement report, and the review report separates this Run's counts
+  from the pull request's cumulative counts.
+- **Orphaned-lock reclamation** — Runs record their owner process id; a lock
+  whose owner is provably dead is reclaimed automatically (Run completed
+  Failed with the reason journaled, one stderr warning) instead of blocking
+  every relaunch until a manual force stop.
+- **Task status synonym normalization** — `done` and hyphen/space variants of
+  the canonical statuses normalize instead of voiding a finished Batch; the
+  task file is rewritten to canonical form.
+- **Settlement transparency** — settle prints one `commit <path>` line per
+  committed path and warns when other failed Tasks share the worktree; the
+  Daemon warns (Run Event + stderr) when a Task commit contains no change
+  outside the Spec Root.
+- **Runtime diagnostics** — preflight names a missing ACP adapter binary with
+  its install command instead of a raw spawn failure, and `roundfix doctor`
+  gains `adapter:` and `model:` check lines — the model line reports the
+  effective Agent Model probe and, on failure, the runtime's currently
+  advertised models.
+- **CONTEXT-driven setup refresh** — the setup skill is now
+  `setup-context-driven`: it scaffolds the full `docs/` layout (inbox, ADRs,
+  agent guides, design, findings, handoffs, references, specs, user guide)
+  and seeds `docs/agents/docs-layout.md` with each folder's job and a dated
+  findings template.
+
+### Changed
+
+- **Review Runs execute in the user's checkout** — `fetch`, `resolve`, and
+  `watch` no longer create a Run Worktree or Run Branch: review fixes are a
+  delta over the published HEAD, batch commits land directly on the PR Head
+  Branch, and Integration Pending no longer exists as a review outcome.
+  Preflight requires a clean tracked working tree (untracked files allowed);
+  after a failed batch, everything dirty is Agent work by construction.
+  Worktree isolation remains the contract for spec Runs.
+- **Actionable model rejections** — a Batch that dies because the Agent
+  Session rejects the Agent Model settles with
+  `Agent Model "<model>" not advertised by runtime "<runtime>"; advertised: <list>`
+  in artifacts, journal, and report, replacing the opaque
+  `agent/protocol error`.
+- **Settle surface selection** — settle picks the first surface (Task
+  Worktree, Run Worktree, current repository) where the target Task is
+  actually `failed`, always prints `Settle surface: <path>`, and a refusal
+  enumerates every candidate with the status found there.
+
+### Fixed
+
+- **Silent `--detach` death** — the Detached Run handshake is now two-phase
+  (liveness within 10s, Run creation within a 5-minute ceiling), so a slow
+  but healthy Preflight Validation no longer gets killed mid-flight with an
+  empty stderr relay; every failure branch prints an explicit diagnostic
+  naming the phase, exit code or signal, and the child's output or its
+  absence.
+- **Stale settle surfaces** — settle no longer resolves a kept worktree where
+  the target Task never ran (refusing with a misleading `pending` status)
+  while the authoritative checkout holds the Task `failed`.
+- **Blocked relaunches after a killed Run** — covered by orphaned-lock
+  reclamation above; a dead owning process no longer requires
+  `roundfix stop --force` before a new Run can start.
+
+### Deprecated
+
+- **`defaults.model`** — ignored with exactly one stderr warning pointing at
+  the per-runtime replacement (`runtimes.<runtime>.model`), following the
+  removed-config-keys contract.
+
 ## [0.2.0] - 2026-07-07
 
 Run discovery, a redesigned cockpit, first-class knowledge-workspace support,

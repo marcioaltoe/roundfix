@@ -4,7 +4,7 @@ description: Use Roundfix to clean CodeRabbit pull request feedback, diagnose ru
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.1.0
+  version: 0.3.0
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
 ---
