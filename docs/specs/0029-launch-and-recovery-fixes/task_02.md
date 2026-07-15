@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0029-launch-and-recovery-fixes
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -21,17 +21,17 @@ Turn the opaque `agent/protocol error` into a typed, actionable failure: when ac
 
 ## Subtasks
 
-- [ ] Typed error with runtime, model, advertised list, and recovery rendering
-- [ ] Best-effort stderr-tail parser for the rejection message and the advertised list
-- [ ] Classification hook where acpx failures are currently wrapped
-- [ ] Unit tests: exact message, wrapped/multi-line tail, list parsing, unparseable garbage falling back to the existing error
+- [x] Typed error with runtime, model, advertised list, and recovery rendering
+- [x] Best-effort stderr-tail parser for the rejection message and the advertised list
+- [x] Classification hook where acpx failures are currently wrapped
+- [x] Unit tests: exact message, wrapped/multi-line tail, list parsing, unparseable garbage falling back to the existing error
 
 ## Acceptance Criteria
 
-- [ ] A fixture stderr tail with the rejection yields the typed error with the correct model and advertised list, and its message names the recovery paths
-- [ ] A garbage stderr tail yields exactly the current infrastructure error
-- [ ] `errors.As` extracts the typed error through the existing wrap chain
-- [ ] The full test suite passes
+- [x] A fixture stderr tail with the rejection yields the typed error with the correct model and advertised list, and its message names the recovery paths
+- [x] A garbage stderr tail yields exactly the current infrastructure error
+- [x] `errors.As` extracts the typed error through the existing wrap chain
+- [x] The full test suite passes
 
 ## Context
 
@@ -46,3 +46,23 @@ Turn the opaque `agent/protocol error` into a typed, actionable failure: when ac
 ## References
 
 `_prd.md` → Goal 3, Core Feature 2, Problem 2; `_techspec.md` → Build Order 2, Interfaces (ModelNotAdvertisedError), Integration Points (acpx), Risks (stderr parsing); ADR-0037, ADR-0039, ADR-0041.
+
+## Result
+
+Implemented `ModelNotAdvertisedError` in the agent layer. The classifier recognizes acpx stderr containing `did not advertise that model`, carries the ACP Runtime, rejected Agent Model, and a best-effort `Available models:` list, and renders recovery guidance covering runtime/adapter updates, advertised Agent Model selection, and one-Run `--model` overrides.
+
+The classification is applied at the existing acpx failure seams without changing acpx invocation arguments. Prompt exit-code 1 keeps the existing `BatchFailureError` shape while wrapping the typed error for `errors.As`. Selection Preflight command failures keep `SelectionPreflightError` while wrapping `ModelNotAdvertisedError`, which preserves the original `InfrastructureError` in the chain. Non-matching stderr remains the existing infrastructure error.
+
+Evidence:
+
+- Red signal before implementation: `rtk proxy grep -q "ModelNotAdvertisedError" internal/agent/acpx_runner.go` exited 1.
+- Regression fixtures: `rtk go test ./internal/agent/... -run 'ModelNotAdvertised'` initially failed to compile because `ModelNotAdvertisedError` was undefined; after implementation it passed with 3 tests.
+- Task verification: `rtk proxy grep -q "ModelNotAdvertisedError" internal/agent/acpx_runner.go` passed.
+- Task verification: `rtk go test ./internal/agent/...` passed with 135 tests.
+- Task verification: `rtk go build -buildvcs=false ./...` passed.
+- Full gate: `rtk make verify` passed: `rtk go test ./...` reported 1243 tests passed in 19 packages, `roundfix skills check` passed, and `go build -buildvcs=false -o bin/roundfix ./cmd/roundfix` passed.
+
+Follow-ups:
+
+- Batch settlement/report wiring remains in task_03.
+- Doctor model-line reporting remains in task_04.

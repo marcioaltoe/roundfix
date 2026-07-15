@@ -621,6 +621,89 @@ func TestInfrastructureErrorErrorIncludesBoundedStderrTail(t *testing.T) {
 	}
 }
 
+func TestModelNotAdvertisedPromptExitYieldsTypedError(t *testing.T) {
+	stderr := "Cannot apply --model gpt-5.6-sol: the ACP agent did not advertise that model.\nAvailable models: gpt-5.5, gpt-5.1\n"
+	run := runFakeACPXPrompt(t, fakeACPXPrompt{
+		runtime:  RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "xhigh"},
+		stderr:   stderr,
+		exitCode: 1,
+	})
+
+	var batchErr *BatchFailureError
+	if !errors.As(run.err, &batchErr) {
+		t.Fatalf("expected BatchFailureError, got %T %v", run.err, run.err)
+	}
+	var modelErr *ModelNotAdvertisedError
+	if !errors.As(run.err, &modelErr) {
+		t.Fatalf("expected ModelNotAdvertisedError in chain, got %T %v", run.err, run.err)
+	}
+	if modelErr.Runtime != "codex" || modelErr.Model != "gpt-5.6-sol" {
+		t.Fatalf("unexpected rejection tuple: %#v", modelErr)
+	}
+	if !reflect.DeepEqual(modelErr.Advertised, []string{"gpt-5.5", "gpt-5.1"}) {
+		t.Fatalf("unexpected advertised list: %#v", modelErr.Advertised)
+	}
+	for _, want := range []string{"update the ACP Runtime or adapter", "choose an advertised Agent Model", "one-Run --model override"} {
+		if !strings.Contains(modelErr.Error(), want) {
+			t.Fatalf("expected recovery guidance containing %q, got %q", want, modelErr.Error())
+		}
+	}
+}
+
+func TestModelNotAdvertisedSelectionPreflightYieldsTypedErrorThroughWrapChain(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"sessions ensure": 2}))
+	t.Setenv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{
+		"sessions ensure": "adapter stderr prefix\nCannot apply --model gpt-5.6-sol: the ACP agent did not advertise that model.\nAvailable models: gpt-5.5, gpt-5.1, opus\nadapter stderr suffix\n",
+	}))
+	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "xhigh"}
+
+	err := harness.runner.Probe(context.Background(), ProbeRequest{Runtime: runtime, WorkDir: harness.gitRoot})
+
+	var selectionErr *SelectionPreflightError
+	if !errors.As(err, &selectionErr) {
+		t.Fatalf("expected SelectionPreflightError, got %T %v", err, err)
+	}
+	var modelErr *ModelNotAdvertisedError
+	if !errors.As(err, &modelErr) {
+		t.Fatalf("expected ModelNotAdvertisedError through wrap chain, got %T %v", err, err)
+	}
+	if modelErr.Runtime != "codex" || modelErr.Model != "gpt-5.6-sol" {
+		t.Fatalf("unexpected rejection tuple: %#v", modelErr)
+	}
+	if !reflect.DeepEqual(modelErr.Advertised, []string{"gpt-5.5", "gpt-5.1", "opus"}) {
+		t.Fatalf("unexpected advertised list: %#v", modelErr.Advertised)
+	}
+	var infraErr *InfrastructureError
+	if !errors.As(err, &infraErr) {
+		t.Fatalf("expected original InfrastructureError in chain, got %T %v", err, err)
+	}
+}
+
+func TestModelNotAdvertisedGarbageStderrKeepsInfrastructureError(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"sessions ensure": 2}))
+	t.Setenv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{"sessions ensure": "unparseable garbage\n"}))
+	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "xhigh"}
+
+	err := harness.runner.Probe(context.Background(), ProbeRequest{Runtime: runtime, WorkDir: harness.gitRoot})
+
+	var modelErr *ModelNotAdvertisedError
+	if errors.As(err, &modelErr) {
+		t.Fatalf("garbage stderr must not become ModelNotAdvertisedError: %#v", modelErr)
+	}
+	var infraErr *InfrastructureError
+	if !errors.As(err, &infraErr) {
+		t.Fatalf("expected InfrastructureError in chain, got %T %v", err, err)
+	}
+	want := "acpx infrastructure error after exit code 2: acpx command failed\n--- acpx stderr tail ---\nunparseable garbage"
+	if got := infraErr.Error(); got != want {
+		t.Fatalf("expected existing infrastructure error unchanged\nwant: %q\ngot:  %q", want, got)
+	}
+}
+
 func TestACPXPromptArgsPlaceGlobalsBeforeAgentAndSubcommand(t *testing.T) {
 	tests := []struct {
 		name    string
