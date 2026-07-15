@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -57,11 +58,13 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	} else {
 		agentResult = doctorAgentCheck(ctx, checker, loaded)
 	}
+	modelResult := doctorModelCheck(runtime, runtimeErr, adapterResult, agentResult)
 	results := []CheckResult{
 		checker.Node(ctx),
 		checker.ACPX(ctx),
 		adapterResult,
 		agentResult,
+		modelResult,
 		checker.Codex(ctx),
 	}
 
@@ -108,12 +111,74 @@ func doctorAgentCheck(ctx context.Context, checker HealthChecker, loaded roundco
 			Name:   HealthCheckAgent,
 			Status: CheckStatusFailed,
 			Detail: err.Error(),
+			Err:    err,
 		}
 	}
 	return checker.Agent(ctx, agent.ProbeRequest{
 		Runtime: runtime,
 		WorkDir: loaded.GitRoot,
 	})
+}
+
+func doctorModelCheck(runtime agent.RuntimeSpec, runtimeErr error, adapterResult CheckResult, agentResult CheckResult) CheckResult {
+	// Doctor renders this check as the public "model:" line.
+	result := CheckResult{Name: HealthCheckModel}
+	if runtimeErr != nil {
+		result.Status = CheckStatusSkipped
+		result.Detail = "agent selection failed"
+		return result
+	}
+	if adapterResult.Status == CheckStatusFailed {
+		result.Status = CheckStatusSkipped
+		result.Detail = "adapter failed"
+		return result
+	}
+	if agentResult.Status == CheckStatusOK {
+		result.Status = CheckStatusOK
+		result.Detail = strings.TrimSpace(runtime.Model)
+		return result
+	}
+	var modelErr *agent.ModelNotAdvertisedError
+	if errors.As(agentResult.Err, &modelErr) {
+		result.Status = CheckStatusFailed
+		result.Detail = doctorModelNotAdvertisedDetail(runtime, modelErr)
+		result.NextAction = modelErr.RecoveryAction()
+		return result
+	}
+	result.Status = CheckStatusSkipped
+	result.Detail = "agent probe failed"
+	return result
+}
+
+func doctorModelNotAdvertisedDetail(runtime agent.RuntimeSpec, modelErr *agent.ModelNotAdvertisedError) string {
+	model := strings.TrimSpace(runtime.Model)
+	runtimeID := strings.TrimSpace(runtime.ID)
+	if modelErr != nil {
+		if rejected := strings.TrimSpace(modelErr.Model); rejected != "" {
+			model = rejected
+		}
+		if rejectedRuntime := strings.TrimSpace(modelErr.Runtime); rejectedRuntime != "" {
+			runtimeID = rejectedRuntime
+		}
+	}
+	return fmt.Sprintf("Agent Model %q not advertised by runtime %q; advertised: %s", model, runtimeID, doctorAdvertisedModels(modelErr))
+}
+
+func doctorAdvertisedModels(modelErr *agent.ModelNotAdvertisedError) string {
+	if modelErr == nil {
+		return "unavailable"
+	}
+	advertised := make([]string, 0, len(modelErr.Advertised))
+	for _, model := range modelErr.Advertised {
+		model = strings.TrimSpace(model)
+		if model != "" {
+			advertised = append(advertised, model)
+		}
+	}
+	if len(advertised) == 0 {
+		return "unavailable"
+	}
+	return strings.Join(advertised, ", ")
 }
 
 func printDoctorResult(stdout io.Writer, result CheckResult) {

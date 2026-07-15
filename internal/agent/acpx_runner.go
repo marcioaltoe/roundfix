@@ -179,8 +179,16 @@ func (err *ModelNotAdvertisedError) Error() string {
 	if len(err.Advertised) > 0 {
 		message += "; advertised Agent Models: " + strings.Join(err.Advertised, ", ")
 	}
-	message += "; " + selectionRecoveryGuidance(runtime, false)
+	message += "; recovery: " + err.RecoveryAction()
 	return message
+}
+
+func (err *ModelNotAdvertisedError) RecoveryAction() string {
+	runtime := ""
+	if err != nil {
+		runtime = strings.TrimSpace(err.Runtime)
+	}
+	return selectionRecoveryAction(runtime, false)
 }
 
 func (err *ModelNotAdvertisedError) Unwrap() error {
@@ -518,8 +526,12 @@ func selectionPreflightError(runtime RuntimeSpec, operation string, err error) e
 }
 
 func selectionRecoveryGuidance(runtime string, includeReasoning bool) string {
+	return "recovery: " + selectionRecoveryAction(runtime, includeReasoning)
+}
+
+func selectionRecoveryAction(runtime string, includeReasoning bool) string {
 	runtime = strings.TrimSpace(runtime)
-	message := "recovery: update the ACP Runtime or adapter"
+	message := "update the ACP Runtime or adapter"
 	if includeReasoning {
 		message += ", choose supported Agent Model and Default Reasoning Effort values, choose an advertised Agent Model"
 	} else {

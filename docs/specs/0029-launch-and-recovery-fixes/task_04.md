@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0029-launch-and-recovery-fixes
-status: pending
+status: completed
 type: backend
 complexity: low
 ---
@@ -21,16 +21,16 @@ Give the advertised-list drift a self-service diagnostic: `roundfix doctor` gain
 
 ## Subtasks
 
-- [ ] Model check wired into the doctor check sequence after the agent probe
-- [ ] Failure rendering with advertised list and next action from the typed error
-- [ ] Doctor tests with fake probes: success line, failure line with list and next action, exit-code behavior
+- [x] Model check wired into the doctor check sequence after the agent probe
+- [x] Failure rendering with advertised list and next action from the typed error
+- [x] Doctor tests with fake probes: success line, failure line with list and next action, exit-code behavior
 
 ## Acceptance Criteria
 
-- [ ] Doctor with a passing probe prints `model: ok (<model>)` for the configured runtime's effective model
-- [ ] Doctor with a rejected model prints the failure line including the advertised list and a `next:` action, and exits nonzero
-- [ ] All pre-existing doctor lines are unchanged
-- [ ] The full test suite passes
+- [x] Doctor with a passing probe prints `model: ok (<model>)` for the configured runtime's effective model
+- [x] Doctor with a rejected model prints the failure line including the advertised list and a `next:` action, and exits nonzero
+- [x] All pre-existing doctor lines are unchanged
+- [x] The full test suite passes
 
 ## Context
 
@@ -47,3 +47,19 @@ Give the advertised-list drift a self-service diagnostic: `roundfix doctor` gain
 ## References
 
 `_prd.md` → Goal 3, Core Feature 3; `_techspec.md` → Build Order 4, API Contracts (doctor line), Decisions (batch-time classification over probe hardening).
+
+## Result
+
+Implemented the Doctor Command model check line. `roundfix doctor` now prints `model: ok (<model>)` immediately after the existing `agent:` line when the configured Agent probe succeeds, and prints a failed `model:` line with the rejected Agent Model, advertised list, and `next:` action when the existing probe returns `agent.ModelNotAdvertisedError`. Other Agent probe failures skip the model line, so unrelated Doctor failure behavior remains owned by the existing checks.
+
+Evidence:
+- Pre-change signal: `rtk proxy grep -q "model:" internal/cli/doctor.go` exited 1 before the implementation.
+- Regression signal: `rtk go test ./internal/cli/ -run 'Doctor'` failed before implementation because the new Doctor model-line test contract was absent.
+- Task verification: `rtk proxy grep -q "model:" internal/cli/doctor.go && rtk go test ./internal/cli/ -run 'Doctor' && rtk go test ./internal/cli/... && rtk go build -buildvcs=false ./...` passed with 9 Doctor tests and 431 CLI tests.
+- Full gate: `rtk make verify` passed with `go test ./...` reporting 1247 tests, `roundfix skills check` passing, and `go build -buildvcs=false -o bin/roundfix ./cmd/roundfix` passing.
+
+Acceptance evidence:
+- Passing probe: `TestRunDoctorReportsReadinessChecks` and `TestRunDoctorAcceptsConfiguredEmptyReasoningEffort` assert `model: ok (gpt-5.5)` and `model: ok (gpt-5.6-sol)`.
+- Rejected model: `TestRunDoctorReportsModelRejectionWithNextAction` asserts the failed `model:` line includes `advertised: gpt-5.5, gpt-5.1`, a `next:` action from the typed error, exit code `1`, and exactly one configured Agent probe.
+- Existing lines unchanged: the exact stdout fixtures in `TestRunDoctorReportsReadinessChecks` keep the existing `node:`, `acpx:`, `adapter:`, `agent:`, and `codex:` lines byte-identical with only the inserted `model:` line.
+- Full suite: `rtk make verify` passed after all edits.

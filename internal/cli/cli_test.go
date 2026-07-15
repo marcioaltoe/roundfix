@@ -731,6 +731,7 @@ func TestRunDoctorReportsReadinessChecks(t *testing.T) {
 				"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
 				"adapter: ok (codex-acp)\n" +
 				"agent: ok (codex)\n" +
+				"model: ok (gpt-5.5)\n" +
 				"codex: ok (/home/roundfix/.local/bin/codex accepted)\n",
 		},
 		{
@@ -746,6 +747,7 @@ func TestRunDoctorReportsReadinessChecks(t *testing.T) {
 				"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
 				"adapter: ok (codex-acp)\n" +
 				"agent: ok (codex)\n" +
+				"model: ok (gpt-5.5)\n" +
 				"codex: failed (/tmp/codex is quarantined; next: " + codex.ReinstallNextAction + ")\n",
 		},
 		{
@@ -761,6 +763,7 @@ func TestRunDoctorReportsReadinessChecks(t *testing.T) {
 				"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
 				"adapter: ok (codex-acp)\n" +
 				"agent: ok (codex)\n" +
+				"model: ok (gpt-5.5)\n" +
 				"codex: skipped (not-applicable on linux)\n",
 		},
 	}
@@ -835,6 +838,9 @@ func TestRunDoctorReportsAdapterFailureWithNextAction(t *testing.T) {
 	if len(checker.agentRequests) != 0 {
 		t.Fatalf("expected adapter failure to skip Agent probe, got %#v", checker.agentRequests)
 	}
+	if !strings.Contains(stdout.String(), "model: skipped (adapter failed)") {
+		t.Fatalf("expected model check skipped after adapter failure, got %q", stdout.String())
+	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
 	}
@@ -864,6 +870,9 @@ func TestRunDoctorRejectsMissingConfiguredAgentModel(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), `agent: failed (agent selection for runtime "codex" missing model`) {
 		t.Fatalf("expected missing selection diagnostic, got %q", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "model: skipped (agent selection failed)") {
+		t.Fatalf("expected model check skipped after selection failure, got %q", stdout.String())
 	}
 	if len(checker.agentRequests) != 0 {
 		t.Fatalf("expected invalid selection to skip readiness probe, got %#v", checker.agentRequests)
@@ -899,6 +908,9 @@ func TestRunDoctorAcceptsConfiguredEmptyReasoningEffort(t *testing.T) {
 	if !strings.Contains(stdout.String(), "agent: ok (codex)") {
 		t.Fatalf("expected agent readiness success, got %q", stdout.String())
 	}
+	if !strings.Contains(stdout.String(), "model: ok (gpt-5.6-sol)") {
+		t.Fatalf("expected model readiness success, got %q", stdout.String())
+	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
 	}
@@ -911,6 +923,51 @@ func TestRunDoctorAcceptsConfiguredEmptyReasoningEffort(t *testing.T) {
 		gotProbe.Runtime.Model != "gpt-5.6-sol" ||
 		gotProbe.Runtime.ReasoningEffort != "" {
 		t.Fatalf("expected model-managed codex selection probe in repo workdir, got %#v", gotProbe)
+	}
+}
+
+func TestRunDoctorReportsModelRejectionWithNextAction(t *testing.T) {
+	config := roundconfig.Builtin()
+	config.Runtimes.Codex.Model = "gpt-5.6-sol"
+	config.Runtimes.Codex.ReasoningEffort = ""
+	rejection := &agent.ModelNotAdvertisedError{
+		Runtime:    "codex",
+		Model:      "gpt-5.6-sol",
+		Advertised: []string{"gpt-5.5", "gpt-5.1"},
+	}
+	checker := newDoctorFakeHealthChecker(
+		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
+		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
+		CheckResult{Name: HealthCheckAgent, Status: CheckStatusFailed, Detail: rejection.Error(), Err: rejection},
+		CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK, Detail: "/home/roundfix/.local/bin/codex accepted"},
+	)
+	withDoctorFakeLoaded(t, checker, roundconfig.Loaded{
+		Config:  config,
+		GitRoot: "/repo/project",
+		HomeDir: "/home/roundfix-test",
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"doctor"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("expected rejected model exit %d, got %d", exitRunFailed, code)
+	}
+	wantStdout := "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
+		"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
+		"adapter: ok (codex-acp)\n" +
+		"agent: failed (" + rejection.Error() + ")\n" +
+		`model: failed (Agent Model "gpt-5.6-sol" not advertised by runtime "codex"; advertised: gpt-5.5, gpt-5.1; next: update the ACP Runtime or adapter, choose an advertised Agent Model, or pass a one-Run --model override, or set runtimes.codex.reasoning_effort "" when the model manages reasoning)` + "\n" +
+		"codex: ok (/home/roundfix/.local/bin/codex accepted)\n"
+	if got := stdout.String(); got != wantStdout {
+		t.Fatalf("unexpected stdout:\n got: %q\nwant: %q", got, wantStdout)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+	if len(checker.agentRequests) != 1 {
+		t.Fatalf("expected one configured codex probe, got %#v", checker.agentRequests)
 	}
 }
 
@@ -1383,6 +1440,7 @@ func TestHealthCheckerReturnsStructuredReadOnlyResults(t *testing.T) {
 
 func TestHealthCheckerReportsFailedPrerequisitesWithNextActions(t *testing.T) {
 	ctx := context.Background()
+	probeErr := errors.New("probe denied")
 	checker := newHealthChecker(healthCheckDependencies{
 		nodeVersion: func(context.Context) (string, error) {
 			return "v20.0.0", nil
@@ -1391,7 +1449,7 @@ func TestHealthCheckerReportsFailedPrerequisitesWithNextActions(t *testing.T) {
 			return "0.11.0", nil
 		},
 		probeAgent: func(context.Context, agent.ProbeRequest) error {
-			return errors.New("probe denied")
+			return probeErr
 		},
 	})
 
@@ -1411,6 +1469,7 @@ func TestHealthCheckerReportsFailedPrerequisitesWithNextActions(t *testing.T) {
 		Name:   HealthCheckAgent,
 		Status: CheckStatusFailed,
 		Detail: "probe denied",
+		Err:    probeErr,
 	})
 }
 

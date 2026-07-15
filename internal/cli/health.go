@@ -22,6 +22,7 @@ const (
 	HealthCheckACPX    = "acpx"
 	HealthCheckAdapter = "adapter"
 	HealthCheckAgent   = "agent"
+	HealthCheckModel   = "model"
 	HealthCheckCodex   = "codex"
 )
 
@@ -30,6 +31,7 @@ type CheckResult struct {
 	Status     CheckStatus
 	Detail     string
 	NextAction string
+	Err        error
 }
 
 type HealthChecker interface {
@@ -133,6 +135,7 @@ func (checker runtimeHealthChecker) Agent(ctx context.Context, req agent.ProbeRe
 			Name:   HealthCheckAgent,
 			Status: CheckStatusFailed,
 			Detail: err.Error(),
+			Err:    err,
 		}
 	}
 	return CheckResult{
