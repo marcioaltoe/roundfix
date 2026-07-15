@@ -5008,6 +5008,9 @@ func TestBranchIntegrityBypassPublishesAuditBeforeFetch(t *testing.T) {
 	if len(comments.calls) != 1 {
 		t.Fatalf("expected one bypass audit comment, got %#v", comments.calls)
 	}
+	if comments.calls[0].repository != "owner/project" {
+		t.Fatalf("expected audit posted to the PR's Base Repository, got %q", comments.calls[0].repository)
+	}
 	body := comments.calls[0].body
 	for _, want := range []string{
 		"<!-- roundfix: run:",
@@ -6474,17 +6477,18 @@ type pullRequestCommentRecorder struct {
 }
 
 type pullRequestCommentRecord struct {
-	source string
-	pr     int
-	body   string
+	source     string
+	repository string
+	pr         int
+	body       string
 }
 
 func withPullRequestComments(t *testing.T, publishErr error) *pullRequestCommentRecorder {
 	t.Helper()
 	recorder := &pullRequestCommentRecorder{}
 	old := commentOnPullRequest
-	commentOnPullRequest = func(_ context.Context, source string, prNumber int, body string) error {
-		recorder.calls = append(recorder.calls, pullRequestCommentRecord{source: source, pr: prNumber, body: body})
+	commentOnPullRequest = func(_ context.Context, source string, repository string, prNumber int, body string) error {
+		recorder.calls = append(recorder.calls, pullRequestCommentRecord{source: source, repository: repository, pr: prNumber, body: body})
 		return publishErr
 	}
 	t.Cleanup(func() {

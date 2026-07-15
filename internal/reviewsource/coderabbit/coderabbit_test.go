@@ -370,13 +370,13 @@ func TestGHClientWriteMutationsInvokeGHOnce(t *testing.T) {
 		{
 			name: "comment on pull request",
 			act: func(ctx context.Context, client GHClient) error {
-				return client.CommentOnPullRequest(ctx, 123, "bypass audit details")
+				return client.CommentOnPullRequest(ctx, "octo/base", 123, "bypass audit details")
 			},
 			wantArgs: []string{
 				"api",
 				"-X",
 				"POST",
-				"repos/{owner}/{repo}/issues/123/comments",
+				"repos/octo/base/issues/123/comments",
 				"-f",
 				"body=bypass audit details",
 			},
@@ -423,7 +423,7 @@ func TestGHClientWriteMutationFailuresWrapCause(t *testing.T) {
 		{
 			name: "comment failure",
 			act: func(ctx context.Context, client GHClient) error {
-				return client.CommentOnPullRequest(ctx, 123, "body")
+				return client.CommentOnPullRequest(ctx, "octo/base", 123, "body")
 			},
 			wantOperation: "comment on pull request",
 		},
@@ -690,14 +690,15 @@ func watchStatusRequest() reviewsource.WatchStatusRequest {
 }
 
 type fakeGitHubClient struct {
-	comments        []ReviewComment
-	threads         []ReviewThread
-	checkRuns       []CheckRun
-	statuses        []CommitStatus
-	reviews         []PullRequestReview
-	resolvedThreads []string
-	replies         []reviewThreadReplyCall
-	prComments      []pullRequestCommentCall
+	comments          []ReviewComment
+	threads           []ReviewThread
+	checkRuns         []CheckRun
+	statuses          []CommitStatus
+	reviews           []PullRequestReview
+	resolvedThreads   []string
+	replies           []reviewThreadReplyCall
+	prComments        []pullRequestCommentCall
+	commentRepository string
 }
 
 func (client fakeGitHubClient) ReviewComments(context.Context, string, string) ([]ReviewComment, error) {
@@ -740,7 +741,8 @@ func (client *fakeGitHubClient) ReplyToReviewThread(_ context.Context, threadID 
 	return nil
 }
 
-func (client *fakeGitHubClient) CommentOnPullRequest(_ context.Context, prNumber int, body string) error {
+func (client *fakeGitHubClient) CommentOnPullRequest(_ context.Context, repository string, prNumber int, body string) error {
+	client.commentRepository = repository
 	client.prComments = append(client.prComments, pullRequestCommentCall{PRNumber: prNumber, Body: body})
 	return nil
 }

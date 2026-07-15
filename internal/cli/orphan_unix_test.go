@@ -84,6 +84,38 @@ func TestReviewFetchReclaimsDeadOwnerActiveRun(t *testing.T) {
 	assertReclaimedRunInCLI(t, homeDir, blocking.ID, pid)
 }
 
+// A terminal Run with a dead owner must never be "reclaimed" by stop: the
+// existing terminal-Run error stands, and no state or lock changes.
+func TestStopTerminalRunWithDeadOwnerKeepsTerminalError(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	pid := reapedCLIProcessPID(t)
+	seeded := seedReviewActiveRun(t, homeDir, repoDir, store.KindResolve, pid)
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	if _, err := runStore.CompleteRun(context.Background(), seeded.ID, store.StateFailed); err != nil {
+		t.Fatalf("complete seeded Run: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close store: %v", err)
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"stop", seeded.ID}, &stdout, &stderr)
+
+	if code != 2 {
+		t.Fatalf("expected terminal-Run stop refusal exit 2, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if strings.Contains(stderr.String(), "reclaimed orphaned Active Run") {
+		t.Fatalf("expected no reclamation of a terminal Run, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "cannot record Stop Request for terminal Run") {
+		t.Fatalf("expected the terminal-Run stop error, got %q", stderr.String())
+	}
+}
+
 func seedImplementActiveRun(t *testing.T, homeDir string, repoDir string, specSlug string, pid int) store.Run {
 	t.Helper()
 	runStore, err := store.Open(context.Background(), homeDir)

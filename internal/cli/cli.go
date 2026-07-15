@@ -1191,6 +1191,12 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 		return exitPreflight
 	}
 	req.reviewRoot = reviewRoot
+	// Clean-tree validation runs before Branch Integrity so a refusal never
+	// follows a fast-forward that already moved the user's branch.
+	if err := requireCleanTrackedReviewTree(ctx, req.name, preflightResult); err != nil {
+		printPreflightFailure(name, err, stderr)
+		return exitPreflight
+	}
 	branchIntegrity, updatedPreflightResult, err := runBranchIntegrityPreflight(ctx, req, loadedConfig, preflightResult, stderr)
 	if err != nil {
 		printPreflightFailure(name, err, stderr)
@@ -1198,10 +1204,6 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 	}
 	req.branchIntegrity = branchIntegrity
 	preflightResult = updatedPreflightResult
-	if err := requireCleanTrackedReviewTree(ctx, req.name, preflightResult); err != nil {
-		printPreflightFailure(name, err, stderr)
-		return exitPreflight
-	}
 	switch req.name {
 	case "fetch":
 		return runFetchCommand(ctx, req, loadedConfig, preflightResult, stdout, stderr)
@@ -1413,8 +1415,27 @@ func inspectBranchIntegrity(ctx context.Context, homeDir string, preflightResult
 	if err != nil {
 		return report, err
 	}
-	report.Pending = pending
-	active, found, err := activeReviewRun(ctx, homeDir, preflightResult.PullRequest.HeadRepository, preflightResult.PullRequest.HeadBranch)
+	reader, err := store.OpenReader(ctx, homeDir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			// No Run Database yet: no Run can attribute the branches, and no
+			// Active Run can exist. Keep every pending branch conservatively.
+			report.Pending = pending
+			return report, nil
+		}
+		return report, err
+	}
+	defer func() {
+		_ = reader.Close()
+	}()
+	report.Pending, err = filterPendingRunWorkByTarget(ctx, reader, pending, preflightResult.PullRequest.HeadBranch)
+	if err != nil {
+		return report, err
+	}
+	// Scan the runs table instead of the lock table: Runs created with the
+	// Branch Integrity bypass hold no Active Run lock but must stay visible
+	// to subsequent guard checks.
+	active, found, err := reader.ActiveReviewRunByTarget(ctx, preflightResult.PullRequest.HeadRepository, preflightResult.PullRequest.HeadBranch)
 	if err != nil {
 		return report, err
 	}
@@ -1424,18 +1445,32 @@ func inspectBranchIntegrity(ctx context.Context, homeDir string, preflightResult
 	return report, nil
 }
 
-func activeReviewRun(ctx context.Context, homeDir string, headRepository string, headBranch string) (store.Run, bool, error) {
-	reader, err := store.OpenReader(ctx, homeDir)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return store.Run{}, false, nil
+// filterPendingRunWorkByTarget drops Run Branches whose recorded Run belongs
+// to a different branch: git topology alone cannot tell a Run Branch based on
+// the PR Head Branch from one based on another feature branch. Branches with
+// no Run row are kept conservatively.
+func filterPendingRunWorkByTarget(ctx context.Context, reader *store.Store, pending []runworktree.PendingRunWork, headBranch string) ([]runworktree.PendingRunWork, error) {
+	headBranch = strings.TrimSpace(headBranch)
+	filtered := make([]runworktree.PendingRunWork, 0, len(pending))
+	for _, work := range pending {
+		runID := strings.TrimPrefix(work.Branch, "roundfix/run-")
+		if runID == work.Branch || strings.TrimSpace(runID) == "" {
+			filtered = append(filtered, work)
+			continue
 		}
-		return store.Run{}, false, err
+		row, found, err := reader.Run(ctx, runID)
+		if err != nil {
+			return nil, fmt.Errorf("attribute pending Run Branch %s: %w", work.Branch, err)
+		}
+		if found && strings.TrimSpace(row.LocalBranch) != headBranch && strings.TrimSpace(row.HeadBranch) != headBranch {
+			continue
+		}
+		filtered = append(filtered, work)
 	}
-	defer func() {
-		_ = reader.Close()
-	}()
-	return reader.ActiveRun(ctx, headRepository, headBranch)
+	if len(filtered) == 0 {
+		return nil, nil
+	}
+	return filtered, nil
 }
 
 func defaultRefreshBranchIntegrityHead(ctx context.Context, preflightResult preflight.Result) (preflight.Result, error) {
@@ -1477,9 +1512,13 @@ func publishBranchIntegrityBypassAudit(ctx context.Context, req commandRequest, 
 	if err != nil {
 		return fmt.Errorf("parse Open Pull Request number %q for Branch Integrity bypass audit: %w", preflightResult.PullRequest.Number, err)
 	}
+	baseRepository := strings.TrimSpace(preflightResult.PullRequest.BaseRepository)
+	if baseRepository == "" {
+		return fmt.Errorf("publish Branch Integrity Preflight bypass audit comment: Base Repository is unknown for Open Pull Request #%d", prNumber)
+	}
 	marker := branchIntegrityBypassMarker(runID, preflightResult.PullRequest.Number)
 	body := branchIntegrityBypassAuditBody(runID, preflightResult, req.branchIntegrity, marker, time.Now().UTC())
-	if err := commentOnPullRequest(ctx, req.source, prNumber, body); err != nil {
+	if err := commentOnPullRequest(ctx, req.source, baseRepository, prNumber, body); err != nil {
 		return fmt.Errorf("publish Branch Integrity Preflight bypass audit comment: %w", err)
 	}
 	journalBranchIntegrityBypass(ctx, runStore, runID, req.branchIntegrity, marker)
@@ -1739,13 +1778,17 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		return exitPreflight
 	}
 	collaborators := newEngineCollaborators()
-	effectiveRuntime, err := probeRuntimeSelection(ctx, req, resolvePlan.runtime, preflightResult.Git.Root, collaborators.runner, stderr)
-	if err != nil {
-		printPreflightFailure(req.name, err, stderr)
-		return exitPreflight
+	if !req.skipBranchIntegrity {
+		effectiveRuntime, err := probeRuntimeSelection(ctx, req, resolvePlan.runtime, preflightResult.Git.Root, collaborators.runner, stderr)
+		if err != nil {
+			printPreflightFailure(req.name, err, stderr)
+			return exitPreflight
+		}
+		resolvePlan.runtime = effectiveRuntime
+		req = requestWithRuntimeSelection(req, effectiveRuntime)
+	} else {
+		req = requestWithRuntimeSelection(req, resolvePlan.runtime)
 	}
-	resolvePlan.runtime = effectiveRuntime
-	req = requestWithRuntimeSelection(req, effectiveRuntime)
 
 	runStore, err := store.Open(ctx, loaded.HomeDir)
 	if err != nil {
@@ -1766,6 +1809,22 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printBranchIntegrityAuditFailure(req.name, run.ID, err, stderr)
 		return exitPreflight
+	}
+	if req.skipBranchIntegrity {
+		// Bypass contract: the audit publishes before any Agent Session,
+		// including the disposable model probe, so the probe runs after Run
+		// creation. Non-interactive probe semantics apply — a rejected
+		// selection fails the audited Run instead of prompting for fallback.
+		probeReq := req
+		probeReq.noInput = true
+		effectiveRuntime, err := probeRuntimeSelection(ctx, probeReq, resolvePlan.runtime, preflightResult.Git.Root, collaborators.runner, stderr)
+		if err != nil {
+			markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
+			printPreflightFailure(req.name, err, stderr)
+			return exitPreflight
+		}
+		resolvePlan.runtime = effectiveRuntime
+		req = requestWithRuntimeSelection(req, effectiveRuntime)
 	}
 	if err := req.reportDetachedRunCreated(run.ID); err != nil {
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
@@ -2146,10 +2205,12 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		return exitPreflight
 	}
 	collaborators := newEngineCollaborators()
-	runtime, err = probeRuntimeSelection(ctx, req, runtime, preflightResult.Git.Root, collaborators.runner, stderr)
-	if err != nil {
-		printPreflightFailure(req.name, err, stderr)
-		return exitPreflight
+	if !req.skipBranchIntegrity {
+		runtime, err = probeRuntimeSelection(ctx, req, runtime, preflightResult.Git.Root, collaborators.runner, stderr)
+		if err != nil {
+			printPreflightFailure(req.name, err, stderr)
+			return exitPreflight
+		}
 	}
 	req = requestWithRuntimeSelection(req, runtime)
 
@@ -2172,6 +2233,21 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printBranchIntegrityAuditFailure(req.name, run.ID, err, stderr)
 		return exitPreflight
+	}
+	if req.skipBranchIntegrity {
+		// Bypass contract: the audit publishes before any Agent Session,
+		// including the disposable model probe, so the probe runs after Run
+		// creation. Non-interactive probe semantics apply — a rejected
+		// selection fails the audited Run instead of prompting for fallback.
+		probeReq := req
+		probeReq.noInput = true
+		runtime, err = probeRuntimeSelection(ctx, probeReq, runtime, preflightResult.Git.Root, collaborators.runner, stderr)
+		if err != nil {
+			markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
+			printPreflightFailure(req.name, err, stderr)
+			return exitPreflight
+		}
+		req = requestWithRuntimeSelection(req, runtime)
 	}
 	if err := req.reportDetachedRunCreated(run.ID); err != nil {
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
@@ -2371,6 +2447,9 @@ func createRunReclaimingOrphan(ctx context.Context, runStore *store.Store, stder
 }
 
 func reclaimOrphanedActiveRun(ctx context.Context, runStore *store.Store, active store.Run, stderr io.Writer) (store.Run, bool, error) {
+	if store.IsTerminalState(active.State) {
+		return active, false, nil
+	}
 	pid, ok := activeOwnerPID(active)
 	if !ok || store.ProcessAlive(pid) {
 		return active, false, nil
@@ -3109,11 +3188,11 @@ func defaultFetchReviewItems(ctx context.Context, req reviewsource.FetchRequest)
 	return coderabbit.Client{}.FetchReviews(ctx, req)
 }
 
-func defaultCommentOnPullRequest(ctx context.Context, source string, prNumber int, body string) error {
+func defaultCommentOnPullRequest(ctx context.Context, source string, repository string, prNumber int, body string) error {
 	if source != reviewsource.SourceCodeRabbit {
 		return fmt.Errorf("unsupported Review Source %q; supported value: coderabbit", source)
 	}
-	return coderabbit.GHClient{}.CommentOnPullRequest(ctx, prNumber, body)
+	return coderabbit.GHClient{}.CommentOnPullRequest(ctx, repository, prNumber, body)
 }
 
 type engineCollaborators struct {

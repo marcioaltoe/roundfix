@@ -578,6 +578,40 @@ func (store *Store) ActiveRun(ctx context.Context, headRepository string, headBr
 	return selectActiveRunByTarget(ctx, store.db, targetKindPR, prTargetKey(headRepository, headBranch))
 }
 
+// ActiveReviewRunByTarget returns the newest non-terminal Run bound to the
+// Head Repository and PR Head Branch, regardless of Active Run lock
+// ownership. Runs created with the Branch Integrity bypass hold no lock, so
+// target guards must scan the runs table instead of the lock table.
+func (store *Store) ActiveReviewRunByTarget(ctx context.Context, headRepository string, headBranch string) (Run, bool, error) {
+	sqlQuery := `
+SELECT id, kind, state, head_repository, head_branch, base_repository,
+       pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
+       spec_slug, agent, model, reasoning_effort, owner_pid, created_at, updated_at, completed_at
+FROM runs
+WHERE head_repository = ? AND head_branch = ?
+ORDER BY created_at DESC, id DESC`
+	rows, err := store.db.QueryContext(ctx, sqlQuery, strings.TrimSpace(headRepository), strings.TrimSpace(headBranch))
+	if err != nil {
+		return Run{}, false, fmt.Errorf("scan Active Runs by review target: %w", err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+	for rows.Next() {
+		run, err := scanRun(rows)
+		if err != nil {
+			return Run{}, false, fmt.Errorf("scan Active Run by review target: %w", err)
+		}
+		if !IsTerminalState(run.State) {
+			return run, true, nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return Run{}, false, fmt.Errorf("iterate Active Runs by review target: %w", err)
+	}
+	return Run{}, false, nil
+}
+
 // ActiveSpecRun returns the Active Run for one Spec work target, if any.
 func (store *Store) ActiveSpecRun(ctx context.Context, gitRoot string, specSlug string) (Run, bool, error) {
 	return selectActiveRunByTarget(ctx, store.db, targetKindSpec, specTargetKey(gitRoot, specSlug))

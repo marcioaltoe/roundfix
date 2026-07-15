@@ -34,7 +34,7 @@ type GitHubClient interface {
 	PullRequestReviews(ctx context.Context, repo string, prNumber string) ([]PullRequestReview, error)
 	ResolveReviewThread(ctx context.Context, threadID string) error
 	ReplyToReviewThread(ctx context.Context, threadID string, body string) error
-	CommentOnPullRequest(ctx context.Context, prNumber int, body string) error
+	CommentOnPullRequest(ctx context.Context, repository string, prNumber int, body string) error
 }
 
 type ReviewComment struct {
@@ -358,10 +358,14 @@ func (client GHClient) ReplyToReviewThread(ctx context.Context, threadID string,
 	return nil
 }
 
-func (client GHClient) CommentOnPullRequest(ctx context.Context, prNumber int, body string) error {
-	_, err := runGH(ctx, "api", "-X", "POST", fmt.Sprintf("repos/{owner}/{repo}/issues/%d/comments", prNumber), "-f", "body="+body)
+func (client GHClient) CommentOnPullRequest(ctx context.Context, repository string, prNumber int, body string) error {
+	repository = strings.TrimSpace(repository)
+	if repository == "" {
+		return fmt.Errorf("comment on pull request %d: repository is required", prNumber)
+	}
+	_, err := runGH(ctx, "api", "-X", "POST", fmt.Sprintf("repos/%s/issues/%d/comments", repository, prNumber), "-f", "body="+body)
 	if err != nil {
-		return fmt.Errorf("comment on pull request %d: %w", prNumber, err)
+		return fmt.Errorf("comment on pull request %s#%d: %w", repository, prNumber, err)
 	}
 	return nil
 }
