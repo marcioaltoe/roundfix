@@ -61,7 +61,11 @@ class Scenario:
         result = subprocess.run(
             command,
             cwd=cwd or self.repo_root,
-            env={**os.environ, "HOME": str(self.fixture / "home")},
+            env={
+                **os.environ,
+                "HOME": str(self.fixture / "home"),
+                "PYTHONDONTWRITEBYTECODE": "1",
+            },
             text=True,
             capture_output=True,
             check=False,
