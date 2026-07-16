@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
-from context_assets import AssetCatalog, AssetValidationError, load_asset_catalog
+from context_assets import AssetCatalog, AssetValidationError, TEMPLATE_TOKEN, load_asset_catalog
 
 
 AUDIT_SCHEMA_VERSION = "setup-context-driven/audit-v1"
@@ -759,6 +759,7 @@ def resolve_decision_plan(
         active_modules=active_order,
         matched_effects=matched_effects,
         unresolved_effects=unresolved_effects,
+        resolved_decisions=resolved,
     )
     return DecisionPlan(
         profile_id=profile_id,
@@ -893,6 +894,7 @@ def planned_artifacts_for_decision_plan(
     active_modules: list[str],
     matched_effects: list,
     unresolved_effects: list,
+    resolved_decisions: dict[str, dict],
 ) -> tuple[PlannedArtifact, ...]:
     artifact_modules = list(active_modules)
     for effect in [*matched_effects, *unresolved_effects]:
@@ -908,7 +910,14 @@ def planned_artifacts_for_decision_plan(
 
     artifacts = {
         artifact.managed_id: artifact
-        for artifact in expected_artifacts_for_profile(catalog, profile_id, artifact_modules)
+        for artifact in expected_artifacts_for_profile(
+            catalog,
+            profile_id,
+            artifact_modules,
+            template_overrides=template_overrides_for_effects(matched_effects),
+            render_values=render_values_for_effects(matched_effects, resolved_decisions),
+            strict_tokens=False,
+        )
     }
     module_artifacts = artifacts_by_module(artifacts.values())
     controlled_artifacts = controlled_artifact_ids(catalog)
@@ -979,6 +988,37 @@ def expected_artifacts_for_plan(decision_plan: DecisionPlan) -> list[ExpectedArt
         for planned_artifact in decision_plan.artifacts
         if planned_artifact.present and planned_artifact.state == "definite"
     ]
+
+
+def template_overrides_for_effects(effects: Iterable) -> dict[str, str]:
+    overrides: dict[str, str] = {}
+    for effect in effects:
+        for selection in effect.template_selections:
+            overrides[selection.artifact_id] = selection.template_id
+    return overrides
+
+
+def render_values_for_effects(
+    effects: Iterable,
+    resolved_decisions: dict[str, dict],
+) -> dict[str, dict[str, str]]:
+    values: dict[str, dict[str, str]] = {}
+    for effect in effects:
+        decision = resolved_decisions.get(effect.decision_id)
+        if not isinstance(decision, dict) or "value" not in decision:
+            continue
+        rendered_value = render_inline_code(str(decision["value"]))
+        for binding in effect.render_bindings:
+            values.setdefault(binding.artifact_id, {})[binding.token] = rendered_value
+    return values
+
+
+def render_inline_code(value: str) -> str:
+    runs = re.findall(r"`+", value)
+    delimiter = "`" * (max((len(run) for run in runs), default=0) + 1)
+    if value.startswith("`") or value.endswith("`"):
+        return f"{delimiter} {value} {delimiter}"
+    return f"{delimiter}{value}{delimiter}"
 
 
 def artifact_owner_modules(catalog: AssetCatalog, managed_ids: Iterable[str]) -> list[str]:
@@ -1288,7 +1328,17 @@ def parse_decision_args(
                 )
             )
             continue
-        decisions[decision_id] = parse_decision_value(decision_id, raw_value, catalog)
+        value = parse_decision_value(decision_id, raw_value, catalog)
+        contract = catalog.decisions.get(decision_id)
+        if (
+            contract is not None
+            and contract.get("type") == "string"
+            and isinstance(value, str)
+            and is_unsafe_inline_decision_value(value)
+        ):
+            findings.append(unsafe_decision_value_finding(decision_id))
+            continue
+        decisions[decision_id] = value
     return decisions, findings
 
 
@@ -1309,6 +1359,24 @@ def parse_bool_value(value: str) -> object:
     if normalized in {"0", "false", "no", "n"}:
         return False
     return value
+
+
+def is_unsafe_inline_decision_value(value: str) -> bool:
+    return (
+        any(ord(character) < 32 or ord(character) == 127 for character in value)
+        or MARKER.search(value) is not None
+    )
+
+
+def unsafe_decision_value_finding(decision_id: str) -> Finding:
+    return finding(
+        "decision.value.unsafe",
+        "error",
+        str(MANIFEST_PATH),
+        decision_id,
+        f"Decision {decision_id} contains unsafe inline Markdown.",
+        "Use a single-line value without control characters or setup ownership markers.",
+    )
 
 
 def resolve_decisions(
@@ -1368,7 +1436,11 @@ def is_decision_value_valid(decision_contract: dict, value: object) -> bool:
     if decision_type == "boolean":
         return isinstance(value, bool)
     if decision_type == "string":
-        return isinstance(value, str) and bool(value.strip())
+        return (
+            isinstance(value, str)
+            and bool(value.strip())
+            and not is_unsafe_inline_decision_value(value)
+        )
     if decision_type == "enum":
         return value in decision_contract.get("values", [])
     return True
@@ -1631,7 +1703,7 @@ def validate_change_plan(
             findings.append(
                 finding(
                     "managed.content.modified",
-                    "warning",
+                    "error",
                     artifact.path.as_posix(),
                     artifact.managed_id,
                     "Change plan does not match the bundled template digest.",
@@ -2423,7 +2495,7 @@ def validate_documents(
                 findings.append(
                     finding(
                         "managed.content.modified",
-                        "warning",
+                        "error",
                         str(relative_path),
                         artifact.managed_id,
                         "Managed content digest differs from the bundled template.",
@@ -2673,15 +2745,26 @@ def expected_artifacts_for_profile(
     catalog: AssetCatalog,
     profile_id: str,
     ordered_modules: list[str] | None = None,
+    template_overrides: dict[str, str] | None = None,
+    render_values: dict[str, dict[str, str]] | None = None,
+    strict_tokens: bool = True,
 ) -> list[ExpectedArtifact]:
     artifacts: list[ExpectedArtifact] = []
     templates_root = Path(__file__).resolve().parents[1] / "assets" / "templates"
     modules = ordered_modules or catalog.ordered_modules_by_profile[profile_id]
+    template_overrides = template_overrides or {}
+    render_values = render_values or {}
     for module_id in modules:
         module = catalog.modules[module_id]
         for block in module.get("rootBlocks", []):
-            template_id = block["template"]
-            content = template_content(templates_root, catalog, template_id)
+            template_id = template_overrides.get(block["id"], block["template"])
+            content = template_content(
+                templates_root,
+                catalog,
+                template_id,
+                render_values.get(block["id"], {}),
+                strict_tokens,
+            )
             artifacts.append(
                 ExpectedArtifact(
                     managed_id=block["id"],
@@ -2695,8 +2778,14 @@ def expected_artifacts_for_profile(
                 )
             )
         for guide in module.get("supportingGuides", []):
-            template_id = guide["template"]
-            content = template_content(templates_root, catalog, template_id)
+            template_id = template_overrides.get(guide["id"], guide["template"])
+            content = template_content(
+                templates_root,
+                catalog,
+                template_id,
+                render_values.get(guide["id"], {}),
+                strict_tokens,
+            )
             artifacts.append(
                 ExpectedArtifact(
                     managed_id=guide["id"],
@@ -2716,9 +2805,23 @@ def template_content(
     templates_root: Path,
     catalog: AssetCatalog,
     template_id: str,
+    render_values: dict[str, str] | None = None,
+    strict_tokens: bool = True,
 ) -> str:
     template = catalog.templates[template_id]
-    return (templates_root / template["path"]).read_text(encoding="utf-8")
+    content = (templates_root / template["path"]).read_text(encoding="utf-8")
+    render_values = render_values or {}
+
+    def replace_token(match: re.Match) -> str:
+        token = match.group(1)
+        rendered = render_values.get(token)
+        if rendered is not None:
+            return rendered
+        if strict_tokens:
+            raise ValueError(f"missing render value for {template_id}:{token}")
+        return match.group(0)
+
+    return TEMPLATE_TOKEN.sub(replace_token, content)
 
 
 def required_decisions(catalog: AssetCatalog, ordered_modules: Iterable[str]) -> list[str]:

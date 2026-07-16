@@ -117,6 +117,18 @@
       "path": "guides/domain.md"
     },
     {
+      "id": "template.guide.domain.single-context",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/domain-single-context.md"
+    },
+    {
+      "id": "template.guide.domain.multi-context",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/domain-multi-context.md"
+    },
+    {
       "id": "template.guide.spec-routing",
       "version": 1,
       "kind": "guide",

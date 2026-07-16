@@ -42,7 +42,7 @@
           "selectTemplates": [
             {
               "artifact": "guide.domain",
-              "template": "template.guide.domain"
+              "template": "template.guide.domain.single-context"
             }
           ]
         },
@@ -55,7 +55,7 @@
           "selectTemplates": [
             {
               "artifact": "guide.domain",
-              "template": "template.guide.domain"
+              "template": "template.guide.domain.multi-context"
             },
             {
               "artifact": "guide.monorepo",
