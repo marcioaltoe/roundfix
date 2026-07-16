@@ -36,9 +36,6 @@ NON_ENGLISH_MARKERS = [
     " configuración",
     " repositorio",
 ]
-OPTIONAL_MODULE_DECISIONS = {
-    "secondbrain": ("secondbrain.enabled", True),
-}
 SECONDBRAIN_REQUIRED_GUIDE_PHRASES = [
     "wiki/index.md",
     "qmd query",
@@ -630,29 +627,6 @@ def validate_selected_setup_snapshot(
     if snapshot != catalog.setups[setup_id]:
         findings.append(setup_snapshot_drift_finding(setup_id))
     return False
-
-
-def ordered_modules_for_decisions(
-    catalog: AssetCatalog,
-    profile_id: str,
-    decisions: dict,
-) -> list[str]:
-    ordered_modules = list(catalog.ordered_modules_by_profile[profile_id])
-    for module_id, (decision_id, enabled_value) in OPTIONAL_MODULE_DECISIONS.items():
-        if module_id not in catalog.modules:
-            continue
-        if decision_value(decisions, decision_id) == enabled_value and module_id not in ordered_modules:
-            ordered_modules.append(module_id)
-    return ordered_modules
-
-
-def decision_value(decisions: dict, decision_id: str) -> object:
-    if not isinstance(decisions, dict):
-        return None
-    decision = decisions.get(decision_id)
-    if isinstance(decision, dict):
-        return decision.get("value")
-    return None
 
 
 def preview_result(

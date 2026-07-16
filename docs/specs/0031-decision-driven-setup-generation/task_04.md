@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0031-decision-driven-setup-generation
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -32,29 +32,29 @@ without weakening Secondbrain safety or managed-removal boundaries.
 
 ## Subtasks
 
-- [ ] Move autonomous module activation and dependent decisions into catalog
+- [x] Move autonomous module activation and dependent decisions into catalog
       effects.
-- [ ] Resolve enabled and disabled autonomous branches prospectively and
+- [x] Resolve enabled and disabled autonomous branches prospectively and
       concretely.
-- [ ] Route Secondbrain through the same optional-module effect mechanism.
-- [ ] Remove the dedicated Secondbrain activation branch from the generator.
-- [ ] Add enable/disable, dependent-question, removal, and safety regressions.
-- [ ] Prove surrounding repository-authored content survives both opt-outs.
+- [x] Route Secondbrain through the same optional-module effect mechanism.
+- [x] Remove the dedicated Secondbrain activation branch from the generator.
+- [x] Add enable/disable, dependent-question, removal, and safety regressions.
+- [x] Prove surrounding repository-authored content survives both opt-outs.
 
 ## Acceptance Criteria
 
-- [ ] `autonomous.enabled=false` generates no autonomous root block or guide and
+- [x] `autonomous.enabled=false` generates no autonomous root block or guide and
       asks for none of its three dependent values.
-- [ ] `autonomous.enabled=true` reports exactly the missing runtime and
+- [x] `autonomous.enabled=true` reports exactly the missing runtime and
       Verification decisions, then generates autonomous guidance after they are
       supplied.
-- [ ] Unanswered autonomous and Secondbrain decisions appear as conditional
+- [x] Unanswered autonomous and Secondbrain decisions appear as conditional
       modules and operations in preview without repository writes.
-- [ ] Secondbrain enablement still produces the compact pointer and complete
+- [x] Secondbrain enablement still produces the compact pointer and complete
       safety guide; disablement produces neither managed artifact.
-- [ ] Changing either decision from true to false removes only marked managed
+- [x] Changing either decision from true to false removes only marked managed
       content and preserves surrounding owner bytes.
-- [ ] Repeated concrete apply and audit are idempotent and deterministic for
+- [x] Repeated concrete apply and audit are idempotent and deterministic for
       every tested branch.
 
 ## Context
@@ -81,3 +81,13 @@ without weakening Secondbrain safety or managed-removal boundaries.
 - `_prd.md` → Goals 1, 3, 5; Core Features 2–3, 6; Success Criteria QA-07.
 - `_techspec.md` → Data models: Decision effects; API contracts: Apply; Integration points: Secondbrain; Build Order 3.
 - ADR-0047.
+
+## Result
+
+- Removed the obsolete Secondbrain-specific optional-module helper so optional activation now flows through the shared Decision Plan.
+- Added real-process coverage for autonomous enable/disable, dependent runtime and Verification questions, conditional autonomous and Secondbrain preview, Secondbrain safety guidance, setup-owned removal, owner-byte preservation, and idempotent apply/audit branches.
+- Mirrored the canonical skill changes into the embedded `skills/setup-context-driven` copy.
+- Evidence: `PYTHONDONTWRITEBYTECODE=1 rtk python3 -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_autonomous_secondbrain_decisions*.py'` passed with 6 tests.
+- Evidence: `PYTHONDONTWRITEBYTECODE=1 rtk python3 -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_secondbrain*.py'` passed with 5 tests.
+- Evidence: `rtk git diff --check` passed.
+- Evidence: `rtk make verify` passed, including 62 Python tests, `rtk go test ./...`, canonical and embedded asset loading, `roundfix skills check`, and Go build.
