@@ -1,0 +1,521 @@
+{
+  "schemaVersion": "roundfix-qa-evidence-v1",
+  "scenario": "decision rendering and semantic audit",
+  "status": "pass",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "rust-cli",
+        "--decision",
+        "spec.scaffold=true",
+        "--decision",
+        "domain.layout=single-context",
+        "--decision",
+        "triage.external=false",
+        "--decision",
+        "autonomous.enabled=false",
+        "--decision",
+        "runtime.backend=codex gpt-5.5 xhigh",
+        "--decision",
+        "runtime.design=claude opus xhigh",
+        "--decision",
+        "verification.gate=make verify",
+        "--decision",
+        "language.generated=English",
+        "--decision",
+        "secondbrain.enabled=false"
+      ],
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "audit",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json"
+      ],
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "rust-cli"
+      ],
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "rust-cli",
+        "--decision",
+        "spec.scaffold=true",
+        "--decision",
+        "domain.layout=multi-context",
+        "--decision",
+        "triage.external=false",
+        "--decision",
+        "autonomous.enabled=false",
+        "--decision",
+        "runtime.backend=codex gpt-5.5 xhigh",
+        "--decision",
+        "runtime.design=claude opus xhigh",
+        "--decision",
+        "verification.gate=make verify",
+        "--decision",
+        "language.generated=English",
+        "--decision",
+        "secondbrain.enabled=false"
+      ],
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "audit",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json"
+      ],
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "rust-cli"
+      ],
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "rust-cli",
+        "--decision",
+        "spec.scaffold=true",
+        "--decision",
+        "domain.layout=single-context",
+        "--decision",
+        "triage.external=false",
+        "--decision",
+        "autonomous.enabled=true",
+        "--decision",
+        "runtime.backend=codex\nmarker",
+        "--decision",
+        "runtime.design=claude opus xhigh",
+        "--decision",
+        "verification.gate=make verify",
+        "--decision",
+        "language.generated=English",
+        "--decision",
+        "secondbrain.enabled=false"
+      ],
+      "exitCode": 2,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": false,\n  \"summary\": {\n    \"errors\": 1,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [\n    {\n      \"code\": \"decision.value.unsafe\",\n      \"severity\": \"error\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"runtime.backend\",\n      \"message\": \"Decision runtime.backend contains unsafe inline Markdown.\",\n      \"action\": \"Use a single-line value without control characters or setup ownership markers.\"\n    }\n  ],\n  \"plannedChanges\": [\n    {\n      \"action\": \"create manifest\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"manifest\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create managed block\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.context-workflow\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create guide\",\n      \"path\": \"docs/agents/docs-layout.md\",\n      \"managedId\": \"guide.docs-layout\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create managed block\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.rust\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create guide\",\n      \"path\": \"docs/agents/rust.md\",\n      \"managedId\": \"guide.rust\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create managed block\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.cli-surface\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create guide\",\n      \"path\": \"docs/agents/cli.md\",\n      \"managedId\": \"guide.cli-surface\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create managed block\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.core\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create guide\",\n      \"path\": \"docs/agents/agent-instructions.md\",\n      \"managedId\": \"guide.agent-instructions\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create managed block\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.spec-workflow\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create guide\",\n      \"path\": \"docs/agents/spec-routing.md\",\n      \"managedId\": \"guide.spec-routing\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create guide\",\n      \"path\": \"docs/agents/issue-tracker.md\",\n      \"managedId\": \"guide.issue-tracker\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create guide\",\n      \"path\": \"docs/agents/docs-layout.md\",\n      \"managedId\": \"guide.spec-docs-layout\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create guide\",\n      \"path\": \"docs/agents/domain.md\",\n      \"managedId\": \"guide.domain\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create managed block\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.autonomous-work\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create guide\",\n      \"path\": \"docs/agents/autonomous-work.md\",\n      \"managedId\": \"guide.autonomous-work\",\n      \"state\": \"definite\"\n    }\n  ],\n  \"selection\": {\n    \"profile\": \"rust-cli\",\n    \"setup\": \"rust-cli\",\n    \"modules\": [\n      {\n        \"id\": \"core\",\n        \"state\": \"active\"\n      },\n      {\n        \"id\": \"context-workflow\",\n        \"state\": \"active\"\n      },\n      {\n        \"id\": \"rust\",\n        \"state\": \"active\"\n      },\n      {\n        \"id\": \"cli-surface\",\n        \"state\": \"active\"\n      },\n      {\n        \"id\": \"autonomous-work\",\n        \"state\": \"active\"\n      }\n    ]\n  }\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "rust-cli",
+        "--decision",
+        "spec.scaffold=true",
+        "--decision",
+        "domain.layout=single-context",
+        "--decision",
+        "triage.external=false",
+        "--decision",
+        "autonomous.enabled=true",
+        "--decision",
+        "runtime.backend=codex `tick` xhigh",
+        "--decision",
+        "runtime.design=claude opus xhigh",
+        "--decision",
+        "verification.gate=make verify",
+        "--decision",
+        "language.generated=English",
+        "--decision",
+        "secondbrain.enabled=false"
+      ],
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "audit",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json"
+      ],
+      "exitCode": 1,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": false,\n  \"summary\": {\n    \"errors\": 1,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.content.modified\",\n      \"severity\": \"error\",\n      \"path\": \"docs/agents/autonomous-work.md\",\n      \"managedId\": \"guide.autonomous-work\",\n      \"message\": \"Managed content digest differs from the bundled template.\",\n      \"action\": \"Review the local edit or refresh the setup-owned block.\"\n    }\n  ],\n  \"plannedChanges\": [\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"docs/agents/autonomous-work.md\",\n      \"managedId\": \"guide.autonomous-work\"\n    }\n  ]\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "rust-cli"
+      ],
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    }
+  ],
+  "checks": [
+    {
+      "message": "rust-cli apply exits 0",
+      "passed": true,
+      "actual": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n"
+    },
+    {
+      "message": "rust-cli audit exits 0",
+      "passed": true,
+      "actual": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [],\n  \"plannedChanges\": []\n}\n"
+    },
+    {
+      "message": "rust-cli reapply exits 0",
+      "passed": true,
+      "actual": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n"
+    },
+    {
+      "message": "rust-cli reapply is idempotent",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "rust-cli apply exits 0",
+      "passed": true,
+      "actual": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n"
+    },
+    {
+      "message": "rust-cli audit exits 0",
+      "passed": true,
+      "actual": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [],\n  \"plannedChanges\": []\n}\n"
+    },
+    {
+      "message": "rust-cli reapply exits 0",
+      "passed": true,
+      "actual": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n"
+    },
+    {
+      "message": "rust-cli reapply is idempotent",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "multi-context guide differs from single-context",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "multi-context guide references CONTEXT-MAP",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "unsafe string exits 2",
+      "passed": true,
+      "actual": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": false,\n  \"summary\": {\n    \"errors\": 1,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [\n    {\n      \"code\": \"decision.value.unsafe\",\n      \"severity\": \"error\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"runtime.backend\",\n      \"message\": \"Decision runtime.backend contains unsafe inline Markdown.\",\n      \"action\": \"Use a single-line value without control characters or setup ownership markers.\"\n    }\n  ],\n  \"plannedChanges\": [\n    {\n      \"action\": \"create manifest\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"manifest\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create managed block\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.context-workflow\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create guide\",\n      \"path\": \"docs/agents/docs-layout.md\",\n      \"managedId\": \"guide.docs-layout\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create managed block\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.rust\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create guide\",\n      \"path\": \"docs/agents/rust.md\",\n      \"managedId\": \"guide.rust\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create managed block\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.cli-surface\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create guide\",\n      \"path\": \"docs/agents/cli.md\",\n      \"managedId\": \"guide.cli-surface\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create managed block\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.core\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create guide\",\n      \"path\": \"docs/agents/agent-instructions.md\",\n      \"managedId\": \"guide.agent-instructions\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create managed block\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.spec-workflow\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create guide\",\n      \"path\": \"docs/agents/spec-routing.md\",\n      \"managedId\": \"guide.spec-routing\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create guide\",\n      \"path\": \"docs/agents/issue-tracker.md\",\n      \"managedId\": \"guide.issue-tracker\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create guide\",\n      \"path\": \"docs/agents/docs-layout.md\",\n      \"managedId\": \"guide.spec-docs-layout\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create guide\",\n      \"path\": \"docs/agents/domain.md\",\n      \"managedId\": \"guide.domain\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create managed block\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.autonomous-work\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create guide\",\n      \"path\": \"docs/agents/autonomous-work.md\",\n      \"managedId\": \"guide.autonomous-work\",\n      \"state\": \"definite\"\n    }\n  ],\n  \"selection\": {\n    \"profile\": \"rust-cli\",\n    \"setup\": \"rust-cli\",\n    \"modules\": [\n      {\n        \"id\": \"core\",\n        \"state\": \"active\"\n      },\n      {\n        \"id\": \"context-workflow\",\n        \"state\": \"active\"\n      },\n      {\n        \"id\": \"rust\",\n        \"state\": \"active\"\n      },\n      {\n        \"id\": \"cli-surface\",\n        \"state\": \"active\"\n      },\n      {\n        \"id\": \"autonomous-work\",\n        \"state\": \"active\"\n      }\n    ]\n  }\n}\n"
+    },
+    {
+      "message": "unsafe finding names runtime.backend",
+      "passed": true,
+      "actual": {
+        "schemaVersion": "setup-context-driven/audit-v1",
+        "ok": false,
+        "summary": {
+          "errors": 1,
+          "decisions": 0,
+          "warnings": 0,
+          "info": 0
+        },
+        "findings": [
+          {
+            "code": "decision.value.unsafe",
+            "severity": "error",
+            "path": "docs/agents/setup-context.json",
+            "managedId": "runtime.backend",
+            "message": "Decision runtime.backend contains unsafe inline Markdown.",
+            "action": "Use a single-line value without control characters or setup ownership markers."
+          }
+        ],
+        "plannedChanges": [
+          {
+            "action": "create manifest",
+            "path": "docs/agents/setup-context.json",
+            "managedId": "manifest",
+            "state": "definite"
+          },
+          {
+            "action": "create managed block",
+            "path": "AGENTS.md",
+            "managedId": "root.context-workflow",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "path": "docs/agents/docs-layout.md",
+            "managedId": "guide.docs-layout",
+            "state": "definite"
+          },
+          {
+            "action": "create managed block",
+            "path": "AGENTS.md",
+            "managedId": "root.rust",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "path": "docs/agents/rust.md",
+            "managedId": "guide.rust",
+            "state": "definite"
+          },
+          {
+            "action": "create managed block",
+            "path": "AGENTS.md",
+            "managedId": "root.cli-surface",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "path": "docs/agents/cli.md",
+            "managedId": "guide.cli-surface",
+            "state": "definite"
+          },
+          {
+            "action": "create managed block",
+            "path": "AGENTS.md",
+            "managedId": "root.core",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "path": "docs/agents/agent-instructions.md",
+            "managedId": "guide.agent-instructions",
+            "state": "definite"
+          },
+          {
+            "action": "create managed block",
+            "path": "AGENTS.md",
+            "managedId": "root.spec-workflow",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "path": "docs/agents/spec-routing.md",
+            "managedId": "guide.spec-routing",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "path": "docs/agents/issue-tracker.md",
+            "managedId": "guide.issue-tracker",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "path": "docs/agents/docs-layout.md",
+            "managedId": "guide.spec-docs-layout",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "path": "docs/agents/domain.md",
+            "managedId": "guide.domain",
+            "state": "definite"
+          },
+          {
+            "action": "create managed block",
+            "path": "AGENTS.md",
+            "managedId": "root.autonomous-work",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "path": "docs/agents/autonomous-work.md",
+            "managedId": "guide.autonomous-work",
+            "state": "definite"
+          }
+        ],
+        "selection": {
+          "profile": "rust-cli",
+          "setup": "rust-cli",
+          "modules": [
+            {
+              "id": "core",
+              "state": "active"
+            },
+            {
+              "id": "context-workflow",
+              "state": "active"
+            },
+            {
+              "id": "rust",
+              "state": "active"
+            },
+            {
+              "id": "cli-surface",
+              "state": "active"
+            },
+            {
+              "id": "autonomous-work",
+              "state": "active"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "message": "unsafe input performs no writes",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "backtick value is inside a longer inline-code delimiter",
+      "passed": true,
+      "actual": "<!-- setup-context-driven:begin id=guide.autonomous-work version=1 -->\n# Autonomous work\n\nThe Supervisor orchestrates and authors Specs. Implementation goes to the\nselected ACP Runtime, normally through Roundfix. The Supervisor does not write\nfeature code or tests while a runtime can execute the Task.\n\nDefault backend work uses ``codex `tick` xhigh``. Design, UI, UX, and\nfrontend-dominant work uses `claude opus xhigh` when the Task Graph routes that\nsurface.\n\nEvery autonomous Task must pass `make verify` and the repository gate\nbefore status changes to completed.\n<!-- setup-context-driven:end id=guide.autonomous-work -->\n"
+    },
+    {
+      "message": "semantic drift audit exits 1",
+      "passed": true,
+      "actual": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": false,\n  \"summary\": {\n    \"errors\": 1,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.content.modified\",\n      \"severity\": \"error\",\n      \"path\": \"docs/agents/autonomous-work.md\",\n      \"managedId\": \"guide.autonomous-work\",\n      \"message\": \"Managed content digest differs from the bundled template.\",\n      \"action\": \"Review the local edit or refresh the setup-owned block.\"\n    }\n  ],\n  \"plannedChanges\": [\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"docs/agents/autonomous-work.md\",\n      \"managedId\": \"guide.autonomous-work\"\n    }\n  ]\n}\n"
+    },
+    {
+      "message": "semantic drift reports managed.content.modified",
+      "passed": true,
+      "actual": {
+        "schemaVersion": "setup-context-driven/audit-v1",
+        "ok": false,
+        "summary": {
+          "errors": 1,
+          "decisions": 0,
+          "warnings": 0,
+          "info": 0
+        },
+        "findings": [
+          {
+            "code": "managed.content.modified",
+            "severity": "error",
+            "path": "docs/agents/autonomous-work.md",
+            "managedId": "guide.autonomous-work",
+            "message": "Managed content digest differs from the bundled template.",
+            "action": "Review the local edit or refresh the setup-owned block."
+          }
+        ],
+        "plannedChanges": [
+          {
+            "action": "refresh managed content",
+            "path": "docs/agents/autonomous-work.md",
+            "managedId": "guide.autonomous-work"
+          }
+        ]
+      }
+    },
+    {
+      "message": "semantic drift previews refresh",
+      "passed": true,
+      "actual": {
+        "schemaVersion": "setup-context-driven/audit-v1",
+        "ok": false,
+        "summary": {
+          "errors": 1,
+          "decisions": 0,
+          "warnings": 0,
+          "info": 0
+        },
+        "findings": [
+          {
+            "code": "managed.content.modified",
+            "severity": "error",
+            "path": "docs/agents/autonomous-work.md",
+            "managedId": "guide.autonomous-work",
+            "message": "Managed content digest differs from the bundled template.",
+            "action": "Review the local edit or refresh the setup-owned block."
+          }
+        ],
+        "plannedChanges": [
+          {
+            "action": "refresh managed content",
+            "path": "docs/agents/autonomous-work.md",
+            "managedId": "guide.autonomous-work"
+          }
+        ]
+      }
+    },
+    {
+      "message": "apply refreshes drift",
+      "passed": true,
+      "actual": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n"
+    }
+  ],
+  "notes": []
+}

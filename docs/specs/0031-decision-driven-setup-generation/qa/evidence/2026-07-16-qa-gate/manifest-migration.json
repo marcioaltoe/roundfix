@@ -1,0 +1,407 @@
+{
+  "schemaVersion": "roundfix-qa-evidence-v1",
+  "scenario": "manifest migration",
+  "status": "pass",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "typescript-bun-monorepo"
+      ],
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "audit",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json"
+      ],
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "typescript-bun-monorepo"
+      ],
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "rust-cli"
+      ],
+      "exitCode": 1,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": false,\n  \"summary\": {\n    \"errors\": 1,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.ownership.ambiguous\",\n      \"severity\": \"error\",\n      \"path\": \"docs/agents/autonomous-work.md\",\n      \"managedId\": \"guide.autonomous-work\",\n      \"message\": \"Legacy managed artifact is stale but no ownership marker proves setup owns the content.\",\n      \"action\": \"Restore the setup marker or remove the stale manifest entry after manual review.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    }
+  ],
+  "checks": [
+    {
+      "message": "migration apply exits 0",
+      "passed": true,
+      "actual": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n"
+    },
+    {
+      "message": "migration has no decision finding",
+      "passed": true,
+      "actual": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n"
+    },
+    {
+      "message": "migrated audit exits 0",
+      "passed": true,
+      "actual": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [],\n  \"plannedChanges\": []\n}\n"
+    },
+    {
+      "message": "manifest schema remains version 1",
+      "passed": true,
+      "actual": {
+        "schemaVersion": 1,
+        "generator": {
+          "skill": "setup-context-driven",
+          "version": 1
+        },
+        "profile": "typescript-bun-monorepo",
+        "modules": [
+          "core",
+          "context-workflow",
+          "typescript",
+          "bun",
+          "monorepo",
+          "backend",
+          "frontend"
+        ],
+        "decisions": {
+          "language.generated": {
+            "value": "English",
+            "confirmedAt": "2026-07-01"
+          },
+          "spec.scaffold": {
+            "value": false,
+            "confirmedAt": "2026-07-01"
+          },
+          "domain.layout": {
+            "value": "multi-context",
+            "confirmedAt": "2026-07-01"
+          },
+          "triage.external": {
+            "value": false,
+            "confirmedAt": "2026-07-01"
+          },
+          "autonomous.enabled": {
+            "value": false,
+            "confirmedAt": "2026-07-01"
+          },
+          "secondbrain.enabled": {
+            "value": false,
+            "confirmedAt": "2026-07-01"
+          },
+          "runtime.backend": {
+            "value": "codex legacy-backend xhigh",
+            "confirmedAt": "2026-07-01"
+          },
+          "runtime.design": {
+            "value": "claude legacy-design xhigh",
+            "confirmedAt": "2026-07-01"
+          },
+          "verification.gate": {
+            "value": "make legacy-verify",
+            "confirmedAt": "2026-07-01"
+          }
+        },
+        "managedArtifacts": [
+          {
+            "id": "root.context-workflow",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "context-workflow",
+            "template": "template.root.context-workflow",
+            "version": 1,
+            "digest": "663a9a3167cdad9ef1396a7e6491e56ea5a53a6495622ac164f00fd125e330f3"
+          },
+          {
+            "id": "guide.docs-layout",
+            "path": "docs/agents/docs-layout.md",
+            "kind": "guide",
+            "module": "context-workflow",
+            "template": "template.guide.docs-layout",
+            "version": 1,
+            "digest": "344d93608e1599354e85f398167a480a42c827c1350af1dcc983450ea8347f1d"
+          },
+          {
+            "id": "root.typescript",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "typescript",
+            "template": "template.root.typescript",
+            "version": 1,
+            "digest": "107c1c8f7d1783a4f6660d46e2653ad164c6977b3101f988eabab1fdb8770309"
+          },
+          {
+            "id": "guide.typescript-bun",
+            "path": "docs/agents/typescript-bun.md",
+            "kind": "guide",
+            "module": "typescript",
+            "template": "template.guide.typescript-bun",
+            "version": 1,
+            "digest": "176e8d995984b5af0ac7bea339358eb60e6a74b866c92ee279b7c4428436852e"
+          },
+          {
+            "id": "root.bun",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "bun",
+            "template": "template.root.bun",
+            "version": 1,
+            "digest": "a84e707be2e5b18b677746220459fb89c895165dc1b80d8eb07ef22fccbef6f2"
+          },
+          {
+            "id": "root.monorepo",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "monorepo",
+            "template": "template.root.monorepo",
+            "version": 1,
+            "digest": "98bdb258e934ff46f19890078260c3fd3d7ead834c8c379776dc42cbcde5bdd2"
+          },
+          {
+            "id": "root.backend",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "backend",
+            "template": "template.root.backend",
+            "version": 1,
+            "digest": "7d5b093cbd1db44a70d8d08293aab16684c9fd0a5da2bf742bf128b91b0c815c"
+          },
+          {
+            "id": "guide.backend",
+            "path": "docs/agents/backend.md",
+            "kind": "guide",
+            "module": "backend",
+            "template": "template.guide.backend",
+            "version": 1,
+            "digest": "8943b0c758020ae6f184556f8f518b11120f7355219f160b6f99681b1219f6b3"
+          },
+          {
+            "id": "root.frontend",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "frontend",
+            "template": "template.root.frontend",
+            "version": 1,
+            "digest": "fea0809e0322db857ada597bf91930dac4146ce2472289d13cc8fbc5b4c7baeb"
+          },
+          {
+            "id": "guide.frontend",
+            "path": "docs/agents/frontend.md",
+            "kind": "guide",
+            "module": "frontend",
+            "template": "template.guide.frontend",
+            "version": 1,
+            "digest": "b04fd0e012f860533534c04f85e5e89b9d04ff7139c8b9863ab637743d624409"
+          },
+          {
+            "id": "root.core",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "core",
+            "template": "template.root.core",
+            "version": 1,
+            "digest": "fad40553ed0ffc4ce2540054dfd48ac2ae2d0fa6a691c0aa0d187275b78ad4c7"
+          },
+          {
+            "id": "guide.agent-instructions",
+            "path": "docs/agents/agent-instructions.md",
+            "kind": "guide",
+            "module": "core",
+            "template": "template.guide.agent-instructions",
+            "version": 1,
+            "digest": "90b41205e8085d7cabd41a293ea69ccd233c91595c1f5ada986fe5c694a2c7db"
+          },
+          {
+            "id": "guide.domain",
+            "path": "docs/agents/domain.md",
+            "kind": "guide",
+            "module": "context-workflow",
+            "template": "template.guide.domain.multi-context",
+            "version": 1,
+            "digest": "2474793ce77a2469a226c44fa09bc3fc28ae1363edde1b0c1dd91b816f7f7b50"
+          },
+          {
+            "id": "guide.monorepo",
+            "path": "docs/agents/monorepo.md",
+            "kind": "guide",
+            "module": "monorepo",
+            "template": "template.guide.monorepo",
+            "version": 1,
+            "digest": "0f270b4944e30e04d73dbb7dcc7d0dbbbf37441f0b6275a96aabacd563cfed88"
+          }
+        ],
+        "localSkills": []
+      }
+    },
+    {
+      "message": "spec.scaffold confirmation date is preserved",
+      "passed": true,
+      "actual": {
+        "value": false,
+        "confirmedAt": "2026-07-01"
+      }
+    },
+    {
+      "message": "domain.layout confirmation date is preserved",
+      "passed": true,
+      "actual": {
+        "value": "multi-context",
+        "confirmedAt": "2026-07-01"
+      }
+    },
+    {
+      "message": "triage.external confirmation date is preserved",
+      "passed": true,
+      "actual": {
+        "value": false,
+        "confirmedAt": "2026-07-01"
+      }
+    },
+    {
+      "message": "autonomous.enabled confirmation date is preserved",
+      "passed": true,
+      "actual": {
+        "value": false,
+        "confirmedAt": "2026-07-01"
+      }
+    },
+    {
+      "message": "runtime.backend confirmation date is preserved",
+      "passed": true,
+      "actual": {
+        "value": "codex legacy-backend xhigh",
+        "confirmedAt": "2026-07-01"
+      }
+    },
+    {
+      "message": "runtime.design confirmation date is preserved",
+      "passed": true,
+      "actual": {
+        "value": "claude legacy-design xhigh",
+        "confirmedAt": "2026-07-01"
+      }
+    },
+    {
+      "message": "verification.gate confirmation date is preserved",
+      "passed": true,
+      "actual": {
+        "value": "make legacy-verify",
+        "confirmedAt": "2026-07-01"
+      }
+    },
+    {
+      "message": "language.generated confirmation date is preserved",
+      "passed": true,
+      "actual": {
+        "value": "English",
+        "confirmedAt": "2026-07-01"
+      }
+    },
+    {
+      "message": "secondbrain.enabled confirmation date is preserved",
+      "passed": true,
+      "actual": {
+        "value": false,
+        "confirmedAt": "2026-07-01"
+      }
+    },
+    {
+      "message": "owner bytes before migrated blocks remain",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "owner bytes between migrated blocks remain",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "owner bytes after migrated blocks remain",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "migrated reapply exits 0",
+      "passed": true,
+      "actual": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n"
+    },
+    {
+      "message": "migrated reapply is idempotent",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "ambiguous migration exits 1",
+      "passed": true,
+      "actual": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": false,\n  \"summary\": {\n    \"errors\": 1,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.ownership.ambiguous\",\n      \"severity\": \"error\",\n      \"path\": \"docs/agents/autonomous-work.md\",\n      \"managedId\": \"guide.autonomous-work\",\n      \"message\": \"Legacy managed artifact is stale but no ownership marker proves setup owns the content.\",\n      \"action\": \"Restore the setup marker or remove the stale manifest entry after manual review.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n"
+    },
+    {
+      "message": "ambiguous migration reports ownership finding",
+      "passed": true,
+      "actual": {
+        "schemaVersion": "setup-context-driven/audit-v1",
+        "ok": false,
+        "summary": {
+          "errors": 1,
+          "decisions": 0,
+          "warnings": 0,
+          "info": 0
+        },
+        "findings": [
+          {
+            "code": "managed.ownership.ambiguous",
+            "severity": "error",
+            "path": "docs/agents/autonomous-work.md",
+            "managedId": "guide.autonomous-work",
+            "message": "Legacy managed artifact is stale but no ownership marker proves setup owns the content.",
+            "action": "Restore the setup marker or remove the stale manifest entry after manual review."
+          }
+        ],
+        "plannedChanges": []
+      }
+    },
+    {
+      "message": "ambiguous migration performs no writes",
+      "passed": true,
+      "actual": null
+    }
+  ],
+  "notes": []
+}

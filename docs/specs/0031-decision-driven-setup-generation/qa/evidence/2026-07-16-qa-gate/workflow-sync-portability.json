@@ -1,0 +1,109 @@
+{
+  "schemaVersion": "roundfix-qa-evidence-v1",
+  "scenario": "workflow sync and portability",
+  "status": "pass",
+  "commands": [
+    {
+      "argv": [
+        "rtk",
+        "make",
+        "skills-sync-check"
+      ],
+      "exitCode": 0,
+      "stdout": "\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "go-cli-tui",
+        "--decision",
+        "spec.scaffold=true",
+        "--decision",
+        "domain.layout=single-context",
+        "--decision",
+        "triage.external=false",
+        "--decision",
+        "autonomous.enabled=false",
+        "--decision",
+        "runtime.backend=codex gpt-5.5 xhigh",
+        "--decision",
+        "runtime.design=claude opus xhigh",
+        "--decision",
+        "verification.gate=make verify",
+        "--decision",
+        "language.generated=English",
+        "--decision",
+        "secondbrain.enabled=false"
+      ],
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "audit",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json"
+      ],
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    }
+  ],
+  "checks": [
+    {
+      "message": "skills-sync-check exits 0",
+      "passed": true,
+      "actual": "\n"
+    },
+    {
+      "message": "normal audit exits 0 without --setups-dir",
+      "passed": true,
+      "actual": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [],\n  \"plannedChanges\": []\n}\n"
+    },
+    {
+      "message": "normal audit has no setup snapshot drift finding",
+      "passed": true,
+      "actual": {
+        "schemaVersion": "setup-context-driven/audit-v1",
+        "ok": true,
+        "summary": {
+          "errors": 0,
+          "decisions": 0,
+          "warnings": 0,
+          "info": 0
+        },
+        "findings": [],
+        "plannedChanges": []
+      }
+    },
+    {
+      "message": "canonical and embedded workflow docs match",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "workflow documents conditional preview",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "workflow documents one-question routing",
+      "passed": true,
+      "actual": null
+    }
+  ],
+  "notes": []
+}

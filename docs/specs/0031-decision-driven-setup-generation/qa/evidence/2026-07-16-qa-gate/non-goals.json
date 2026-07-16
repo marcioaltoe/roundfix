@@ -1,0 +1,313 @@
+{
+  "schemaVersion": "roundfix-qa-evidence-v1",
+  "scenario": "non-goals",
+  "status": "pass",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "--help"
+      ],
+      "exitCode": 0,
+      "stdout": "usage: context_setup.py [audit] [--repo PATH] [--format text|json]\n       context_setup.py apply --repo PATH [--format text|json]\n       context_setup.py sync-setups --source-dir PATH [--check] [--format text|json]\n\nAudit is the read-only default when no subcommand is supplied.\nOutput formats: text, json. Results go to stdout; diagnostics go to stderr.\nExit codes: 0 ok, 1 blocking findings, 2 invalid input, 3 decisions required.\n\nSubcommands:\n  audit        Read bundled assets and repository state without writes.\n  apply        Write confirmed managed content through an atomic change plan.\n  sync-setups  Check or refresh bundled canonical skill setup snapshots.\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "rust-cli",
+        "--decision",
+        "spec.scaffold=true",
+        "--decision",
+        "domain.layout=single-context",
+        "--decision",
+        "triage.external=false",
+        "--decision",
+        "autonomous.enabled=true",
+        "--decision",
+        "runtime.backend=codex gpt-5.5 xhigh",
+        "--decision",
+        "runtime.design=claude opus xhigh",
+        "--decision",
+        "verification.gate=make verify",
+        "--decision",
+        "language.generated=English",
+        "--decision",
+        "secondbrain.enabled=true"
+      ],
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    }
+  ],
+  "checks": [
+    {
+      "message": "no new profiles exist",
+      "passed": true,
+      "actual": [
+        "go-cli-tui",
+        "rust-cli",
+        "typescript-bun-monorepo"
+      ]
+    },
+    {
+      "message": "no new decision ids exist",
+      "passed": true,
+      "actual": [
+        "autonomous.enabled",
+        "domain.layout",
+        "language.generated",
+        "runtime.backend",
+        "runtime.design",
+        "secondbrain.enabled",
+        "spec.scaffold",
+        "triage.external",
+        "verification.gate"
+      ]
+    },
+    {
+      "message": "help exits 0 without prompt",
+      "passed": true,
+      "actual": "usage: context_setup.py [audit] [--repo PATH] [--format text|json]\n       context_setup.py apply --repo PATH [--format text|json]\n       context_setup.py sync-setups --source-dir PATH [--check] [--format text|json]\n\nAudit is the read-only default when no subcommand is supplied.\nOutput formats: text, json. Results go to stdout; diagnostics go to stderr.\nExit codes: 0 ok, 1 blocking findings, 2 invalid input, 3 decisions required.\n\nSubcommands:\n  audit        Read bundled assets and repository state without writes.\n  apply        Write confirmed managed content through an atomic change plan.\n  sync-setups  Check or refresh bundled canonical skill setup snapshots.\n"
+    },
+    {
+      "message": "apply with nested and Secondbrain fixture exits 0",
+      "passed": true,
+      "actual": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n"
+    },
+    {
+      "message": "nested AGENTS.md is untouched",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "Secondbrain-like workspace is untouched",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "manifest schema remains 1",
+      "passed": true,
+      "actual": {
+        "schemaVersion": 1,
+        "generator": {
+          "skill": "setup-context-driven",
+          "version": 1
+        },
+        "profile": "rust-cli",
+        "modules": [
+          "core",
+          "context-workflow",
+          "rust",
+          "cli-surface",
+          "autonomous-work",
+          "secondbrain",
+          "spec-workflow"
+        ],
+        "decisions": {
+          "language.generated": {
+            "value": "English",
+            "confirmedAt": "2026-07-16"
+          },
+          "spec.scaffold": {
+            "value": true,
+            "confirmedAt": "2026-07-16"
+          },
+          "domain.layout": {
+            "value": "single-context",
+            "confirmedAt": "2026-07-16"
+          },
+          "triage.external": {
+            "value": false,
+            "confirmedAt": "2026-07-16"
+          },
+          "autonomous.enabled": {
+            "value": true,
+            "confirmedAt": "2026-07-16"
+          },
+          "secondbrain.enabled": {
+            "value": true,
+            "confirmedAt": "2026-07-16"
+          },
+          "runtime.backend": {
+            "value": "codex gpt-5.5 xhigh",
+            "confirmedAt": "2026-07-16"
+          },
+          "runtime.design": {
+            "value": "claude opus xhigh",
+            "confirmedAt": "2026-07-16"
+          },
+          "verification.gate": {
+            "value": "make verify",
+            "confirmedAt": "2026-07-16"
+          }
+        },
+        "managedArtifacts": [
+          {
+            "id": "root.context-workflow",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "context-workflow",
+            "template": "template.root.context-workflow",
+            "version": 1,
+            "digest": "663a9a3167cdad9ef1396a7e6491e56ea5a53a6495622ac164f00fd125e330f3"
+          },
+          {
+            "id": "guide.docs-layout",
+            "path": "docs/agents/docs-layout.md",
+            "kind": "guide",
+            "module": "context-workflow",
+            "template": "template.guide.docs-layout",
+            "version": 1,
+            "digest": "344d93608e1599354e85f398167a480a42c827c1350af1dcc983450ea8347f1d"
+          },
+          {
+            "id": "root.rust",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "rust",
+            "template": "template.root.rust",
+            "version": 1,
+            "digest": "8406b97bf1fab9b48d4631bc45b716b3e0d2ae96afae33331d5d61ba0e564996"
+          },
+          {
+            "id": "guide.rust",
+            "path": "docs/agents/rust.md",
+            "kind": "guide",
+            "module": "rust",
+            "template": "template.guide.rust",
+            "version": 1,
+            "digest": "107e8f221283e27322f4efe0b4890af73396a90f8d99405bbf92e3ec6e7b5e77"
+          },
+          {
+            "id": "root.cli-surface",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "cli-surface",
+            "template": "template.root.cli-surface",
+            "version": 1,
+            "digest": "3f680596c258e6a528cca614287e51291fddfa958f0c3543d75c0e60d2b24882"
+          },
+          {
+            "id": "guide.cli-surface",
+            "path": "docs/agents/cli.md",
+            "kind": "guide",
+            "module": "cli-surface",
+            "template": "template.guide.cli-surface",
+            "version": 1,
+            "digest": "ef6fafe28caeda5eeffcfc6326d80acd8e7465679ebc531e48e92fd6b4da43a0"
+          },
+          {
+            "id": "root.core",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "core",
+            "template": "template.root.core",
+            "version": 1,
+            "digest": "fad40553ed0ffc4ce2540054dfd48ac2ae2d0fa6a691c0aa0d187275b78ad4c7"
+          },
+          {
+            "id": "guide.agent-instructions",
+            "path": "docs/agents/agent-instructions.md",
+            "kind": "guide",
+            "module": "core",
+            "template": "template.guide.agent-instructions",
+            "version": 1,
+            "digest": "90b41205e8085d7cabd41a293ea69ccd233c91595c1f5ada986fe5c694a2c7db"
+          },
+          {
+            "id": "root.spec-workflow",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "spec-workflow",
+            "template": "template.root.spec-workflow",
+            "version": 1,
+            "digest": "7c815abdebd56eeb1aae723de4474bfa84802ebcc2deb949b38363d55b2bf9d2"
+          },
+          {
+            "id": "guide.spec-routing",
+            "path": "docs/agents/spec-routing.md",
+            "kind": "guide",
+            "module": "spec-workflow",
+            "template": "template.guide.spec-routing",
+            "version": 1,
+            "digest": "779356d9cb7a17b6e950f11bdb5986880c30123cf753b82784d4a734c4965e6b"
+          },
+          {
+            "id": "guide.issue-tracker",
+            "path": "docs/agents/issue-tracker.md",
+            "kind": "guide",
+            "module": "spec-workflow",
+            "template": "template.guide.issue-tracker",
+            "version": 1,
+            "digest": "dc40794964d3eb9aa7697ef524dac2a8930742aa81b8da6be3dba3960771dc29"
+          },
+          {
+            "id": "guide.spec-docs-layout",
+            "path": "docs/agents/docs-layout.md",
+            "kind": "guide",
+            "module": "spec-workflow",
+            "template": "template.guide.spec-docs-layout",
+            "version": 1,
+            "digest": "23d369af1d63ed3882569e92130c9364130166d163040011993dcf5038774711"
+          },
+          {
+            "id": "guide.domain",
+            "path": "docs/agents/domain.md",
+            "kind": "guide",
+            "module": "context-workflow",
+            "template": "template.guide.domain.single-context",
+            "version": 1,
+            "digest": "4b520d693f2545bfd67f1f3881d8a23fe71ca3a357c0cf6ba50f571ba9eab05c"
+          },
+          {
+            "id": "root.autonomous-work",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "autonomous-work",
+            "template": "template.root.autonomous-work",
+            "version": 1,
+            "digest": "99bd3783bfc1a070bf1afa02d7b730bd0488da41e948007de940f50f3aa5a7c6"
+          },
+          {
+            "id": "guide.autonomous-work",
+            "path": "docs/agents/autonomous-work.md",
+            "kind": "guide",
+            "module": "autonomous-work",
+            "template": "template.guide.autonomous-work",
+            "version": 1,
+            "digest": "a7e4b0973273ac7898668b4bb52609575c2637ea7179dc673d66c238a16705fd"
+          },
+          {
+            "id": "root.secondbrain",
+            "path": "AGENTS.md",
+            "kind": "root-block",
+            "module": "secondbrain",
+            "template": "template.root.secondbrain",
+            "version": 1,
+            "digest": "61f49ae4595bdc0b0778a0e2cae94b5815abca32f9498cf1a1cd47219ed172f9"
+          },
+          {
+            "id": "guide.secondbrain",
+            "path": "docs/agents/secondbrain.md",
+            "kind": "guide",
+            "module": "secondbrain",
+            "template": "template.guide.secondbrain",
+            "version": 1,
+            "digest": "0c26fde8408499e08e03a9a84e47e7050ba2478cb621cb9e3e087af2afcf0743"
+          }
+        ],
+        "localSkills": []
+      }
+    }
+  ],
+  "notes": []
+}

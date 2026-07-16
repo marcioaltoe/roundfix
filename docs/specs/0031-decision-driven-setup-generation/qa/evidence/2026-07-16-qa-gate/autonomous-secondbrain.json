@@ -1,0 +1,391 @@
+{
+  "schemaVersion": "roundfix-qa-evidence-v1",
+  "scenario": "autonomous and Secondbrain decisions",
+  "status": "pass",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "rust-cli",
+        "--decision",
+        "spec.scaffold=true",
+        "--decision",
+        "domain.layout=single-context",
+        "--decision",
+        "triage.external=false",
+        "--decision",
+        "autonomous.enabled=false",
+        "--decision",
+        "language.generated=English",
+        "--decision",
+        "secondbrain.enabled=false"
+      ],
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "rust-cli",
+        "--decision",
+        "autonomous.enabled=true",
+        "--decision",
+        "runtime.backend=codex qa-backend xhigh",
+        "--decision",
+        "runtime.design=claude qa-design xhigh"
+      ],
+      "exitCode": 3,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": false,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 1,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [\n    {\n      \"code\": \"decision.required\",\n      \"severity\": \"decision\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"verification.gate\",\n      \"message\": \"Decision verification.gate has no compatible durable answer.\",\n      \"action\": \"Pass --decision with a valid value before applying.\"\n    }\n  ],\n  \"plannedChanges\": [\n    {\n      \"action\": \"create manifest\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"manifest\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.context-workflow\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"docs/agents/docs-layout.md\",\n      \"managedId\": \"guide.docs-layout\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.rust\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"docs/agents/rust.md\",\n      \"managedId\": \"guide.rust\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.cli-surface\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"docs/agents/cli.md\",\n      \"managedId\": \"guide.cli-surface\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.core\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"docs/agents/agent-instructions.md\",\n      \"managedId\": \"guide.agent-instructions\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.spec-workflow\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"docs/agents/spec-routing.md\",\n      \"managedId\": \"guide.spec-routing\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"docs/agents/issue-tracker.md\",\n      \"managedId\": \"guide.issue-tracker\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"docs/agents/docs-layout.md\",\n      \"managedId\": \"guide.spec-docs-layout\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"docs/agents/domain.md\",\n      \"managedId\": \"guide.domain\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"remove managed content\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.external-triage\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.autonomous-work\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create guide\",\n      \"path\": \"docs/agents/autonomous-work.md\",\n      \"managedId\": \"guide.autonomous-work\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"remove managed content\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.secondbrain\",\n      \"state\": \"definite\"\n    }\n  ],\n  \"selection\": {\n    \"profile\": \"rust-cli\",\n    \"setup\": \"rust-cli\",\n    \"modules\": [\n      {\n        \"id\": \"core\",\n        \"state\": \"active\"\n      },\n      {\n        \"id\": \"context-workflow\",\n        \"state\": \"active\"\n      },\n      {\n        \"id\": \"rust\",\n        \"state\": \"active\"\n      },\n      {\n        \"id\": \"cli-surface\",\n        \"state\": \"active\"\n      },\n      {\n        \"id\": \"autonomous-work\",\n        \"state\": \"active\"\n      }\n    ]\n  }\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "rust-cli",
+        "--decision",
+        "autonomous.enabled=true",
+        "--decision",
+        "runtime.backend=codex qa-backend xhigh",
+        "--decision",
+        "runtime.design=claude qa-design xhigh",
+        "--decision",
+        "verification.gate=make qa-verify"
+      ],
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "go-cli-tui",
+        "--decision",
+        "spec.scaffold=true",
+        "--decision",
+        "domain.layout=single-context",
+        "--decision",
+        "triage.external=false",
+        "--decision",
+        "autonomous.enabled=true",
+        "--decision",
+        "runtime.backend=codex gpt-5.5 xhigh",
+        "--decision",
+        "runtime.design=claude opus xhigh",
+        "--decision",
+        "verification.gate=make verify",
+        "--decision",
+        "language.generated=English",
+        "--decision",
+        "secondbrain.enabled=true"
+      ],
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "go-cli-tui",
+        "--decision",
+        "secondbrain.enabled=false"
+      ],
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    }
+  ],
+  "checks": [
+    {
+      "message": "autonomous disabled apply exits 0",
+      "passed": true,
+      "actual": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n"
+    },
+    {
+      "message": "enabling autonomous with missing gate exits 3",
+      "passed": true,
+      "actual": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": false,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 1,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [\n    {\n      \"code\": \"decision.required\",\n      \"severity\": \"decision\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"verification.gate\",\n      \"message\": \"Decision verification.gate has no compatible durable answer.\",\n      \"action\": \"Pass --decision with a valid value before applying.\"\n    }\n  ],\n  \"plannedChanges\": [\n    {\n      \"action\": \"create manifest\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"manifest\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.context-workflow\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"docs/agents/docs-layout.md\",\n      \"managedId\": \"guide.docs-layout\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.rust\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"docs/agents/rust.md\",\n      \"managedId\": \"guide.rust\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.cli-surface\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"docs/agents/cli.md\",\n      \"managedId\": \"guide.cli-surface\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.core\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"docs/agents/agent-instructions.md\",\n      \"managedId\": \"guide.agent-instructions\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.spec-workflow\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"docs/agents/spec-routing.md\",\n      \"managedId\": \"guide.spec-routing\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"docs/agents/issue-tracker.md\",\n      \"managedId\": \"guide.issue-tracker\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"docs/agents/docs-layout.md\",\n      \"managedId\": \"guide.spec-docs-layout\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"docs/agents/domain.md\",\n      \"managedId\": \"guide.domain\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"remove managed content\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.external-triage\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"refresh managed content\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.autonomous-work\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"create guide\",\n      \"path\": \"docs/agents/autonomous-work.md\",\n      \"managedId\": \"guide.autonomous-work\",\n      \"state\": \"definite\"\n    },\n    {\n      \"action\": \"remove managed content\",\n      \"path\": \"AGENTS.md\",\n      \"managedId\": \"root.secondbrain\",\n      \"state\": \"definite\"\n    }\n  ],\n  \"selection\": {\n    \"profile\": \"rust-cli\",\n    \"setup\": \"rust-cli\",\n    \"modules\": [\n      {\n        \"id\": \"core\",\n        \"state\": \"active\"\n      },\n      {\n        \"id\": \"context-workflow\",\n        \"state\": \"active\"\n      },\n      {\n        \"id\": \"rust\",\n        \"state\": \"active\"\n      },\n      {\n        \"id\": \"cli-surface\",\n        \"state\": \"active\"\n      },\n      {\n        \"id\": \"autonomous-work\",\n        \"state\": \"active\"\n      }\n    ]\n  }\n}\n"
+    },
+    {
+      "message": "only verification gate is requested",
+      "passed": true,
+      "actual": {
+        "schemaVersion": "setup-context-driven/audit-v1",
+        "ok": false,
+        "summary": {
+          "errors": 0,
+          "decisions": 1,
+          "warnings": 0,
+          "info": 0
+        },
+        "findings": [
+          {
+            "code": "decision.required",
+            "severity": "decision",
+            "path": "docs/agents/setup-context.json",
+            "managedId": "verification.gate",
+            "message": "Decision verification.gate has no compatible durable answer.",
+            "action": "Pass --decision with a valid value before applying."
+          }
+        ],
+        "plannedChanges": [
+          {
+            "action": "create manifest",
+            "path": "docs/agents/setup-context.json",
+            "managedId": "manifest",
+            "state": "definite"
+          },
+          {
+            "action": "refresh managed content",
+            "path": "AGENTS.md",
+            "managedId": "root.context-workflow",
+            "state": "definite"
+          },
+          {
+            "action": "refresh managed content",
+            "path": "docs/agents/docs-layout.md",
+            "managedId": "guide.docs-layout",
+            "state": "definite"
+          },
+          {
+            "action": "refresh managed content",
+            "path": "AGENTS.md",
+            "managedId": "root.rust",
+            "state": "definite"
+          },
+          {
+            "action": "refresh managed content",
+            "path": "docs/agents/rust.md",
+            "managedId": "guide.rust",
+            "state": "definite"
+          },
+          {
+            "action": "refresh managed content",
+            "path": "AGENTS.md",
+            "managedId": "root.cli-surface",
+            "state": "definite"
+          },
+          {
+            "action": "refresh managed content",
+            "path": "docs/agents/cli.md",
+            "managedId": "guide.cli-surface",
+            "state": "definite"
+          },
+          {
+            "action": "refresh managed content",
+            "path": "AGENTS.md",
+            "managedId": "root.core",
+            "state": "definite"
+          },
+          {
+            "action": "refresh managed content",
+            "path": "docs/agents/agent-instructions.md",
+            "managedId": "guide.agent-instructions",
+            "state": "definite"
+          },
+          {
+            "action": "refresh managed content",
+            "path": "AGENTS.md",
+            "managedId": "root.spec-workflow",
+            "state": "definite"
+          },
+          {
+            "action": "refresh managed content",
+            "path": "docs/agents/spec-routing.md",
+            "managedId": "guide.spec-routing",
+            "state": "definite"
+          },
+          {
+            "action": "refresh managed content",
+            "path": "docs/agents/issue-tracker.md",
+            "managedId": "guide.issue-tracker",
+            "state": "definite"
+          },
+          {
+            "action": "refresh managed content",
+            "path": "docs/agents/docs-layout.md",
+            "managedId": "guide.spec-docs-layout",
+            "state": "definite"
+          },
+          {
+            "action": "refresh managed content",
+            "path": "docs/agents/domain.md",
+            "managedId": "guide.domain",
+            "state": "definite"
+          },
+          {
+            "action": "remove managed content",
+            "path": "AGENTS.md",
+            "managedId": "root.external-triage",
+            "state": "definite"
+          },
+          {
+            "action": "refresh managed content",
+            "path": "AGENTS.md",
+            "managedId": "root.autonomous-work",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "path": "docs/agents/autonomous-work.md",
+            "managedId": "guide.autonomous-work",
+            "state": "definite"
+          },
+          {
+            "action": "remove managed content",
+            "path": "AGENTS.md",
+            "managedId": "root.secondbrain",
+            "state": "definite"
+          }
+        ],
+        "selection": {
+          "profile": "rust-cli",
+          "setup": "rust-cli",
+          "modules": [
+            {
+              "id": "core",
+              "state": "active"
+            },
+            {
+              "id": "context-workflow",
+              "state": "active"
+            },
+            {
+              "id": "rust",
+              "state": "active"
+            },
+            {
+              "id": "cli-surface",
+              "state": "active"
+            },
+            {
+              "id": "autonomous-work",
+              "state": "active"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "message": "blocked autonomous enable performs no writes",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "autonomous enabled apply exits 0",
+      "passed": true,
+      "actual": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n"
+    },
+    {
+      "message": "autonomous guide renders backend runtime",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "autonomous guide renders design runtime",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "autonomous guide renders verification gate",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "Secondbrain guide contains wiki/index.md",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "Secondbrain guide contains qmd query",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "Secondbrain guide contains projects/<project>/mirror",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "Secondbrain guide contains Cite every Secondbrain file",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "Secondbrain guide contains Do not write to the Secondbrain",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "Secondbrain guide contains Do not edit raw/",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "Secondbrain guide contains Do not edit projects/*/mirror/",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "Secondbrain guide contains Hermes",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "Secondbrain guide contains Never read, copy, or expose",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "Secondbrain disable exits 0",
+      "passed": true,
+      "actual": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n"
+    },
+    {
+      "message": "Secondbrain root owner bytes survive",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "Secondbrain guide owner bytes survive",
+      "passed": true,
+      "actual": null
+    }
+  ],
+  "notes": []
+}
