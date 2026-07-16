@@ -15,6 +15,15 @@ from context_setup import expected_artifacts_for_profile, managed_block  # noqa:
 
 
 class AuditCliTests(unittest.TestCase):
+    def test_audit_help_describes_implemented_optional_checks(self):
+        result = run_context_setup("audit", "--help")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stderr, "")
+        self.assertNotIn("Reserved", result.stdout)
+        self.assertIn("Show informational findings", result.stdout)
+        self.assertIn("Compare the bundled setup snapshot", result.stdout)
+
     def test_compliant_repository_returns_zero_in_text_and_json_modes(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = Path(temp_dir)

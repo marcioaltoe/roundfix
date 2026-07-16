@@ -2379,11 +2379,11 @@ def audit_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--show-extra-skills",
         action="store_true",
-        help="Reserved for optional skill cleanup reporting.",
+        help="Show informational findings for installed skills outside the selected setup.",
     )
     parser.add_argument(
         "--setups-dir",
-        help="Reserved for explicit canonical setup drift checks.",
+        help="Compare the bundled setup snapshot with a canonical setups directory.",
     )
     return parser
 
