@@ -1,0 +1,132 @@
+{
+  "schemaVersion": "setup-context-driven/manual-qa-v1",
+  "qaId": "QA-09",
+  "name": "Secondbrain opt out cleanup",
+  "status": "pass",
+  "recordedAt": "2026-07-16T10:38:40.806664+00:00",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<source-repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "rust-cli",
+        "--decision",
+        "spec.scaffold=true",
+        "--decision",
+        "domain.layout=single-context",
+        "--decision",
+        "triage.external=false",
+        "--decision",
+        "autonomous.enabled=true",
+        "--decision",
+        "runtime.backend=codex gpt-5.5 xhigh",
+        "--decision",
+        "runtime.design=claude opus-4.8 xhigh",
+        "--decision",
+        "verification.gate=make verify",
+        "--decision",
+        "language.generated=English",
+        "--decision",
+        "secondbrain.enabled=true"
+      ],
+      "cwd": "<source-repo>",
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<source-repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "audit",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json"
+      ],
+      "cwd": "<source-repo>",
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<source-repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "rust-cli",
+        "--decision",
+        "secondbrain.enabled=false"
+      ],
+      "cwd": "<source-repo>",
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    }
+  ],
+  "checks": [
+    {
+      "message": "apply exits successfully",
+      "passed": true,
+      "actual": {
+        "expected": 0,
+        "actual": 0
+      }
+    },
+    {
+      "message": "audit exits successfully after skills are installed",
+      "passed": true,
+      "actual": {
+        "expected": 0,
+        "actual": 0
+      }
+    },
+    {
+      "message": "clean audit has no findings",
+      "passed": true,
+      "actual": {
+        "expected": [],
+        "actual": []
+      }
+    },
+    {
+      "message": "disabling a stored opt-in succeeds",
+      "passed": true,
+      "actual": {
+        "expected": 0,
+        "actual": 0
+      }
+    },
+    {
+      "message": "root owner bytes survive opt out",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "guide retains only owner-authored bytes",
+      "passed": true,
+      "actual": {
+        "expected": "owner guide prefix\n",
+        "actual": "owner guide prefix\n"
+      }
+    },
+    {
+      "message": "managed pointer is removed",
+      "passed": true,
+      "actual": null
+    }
+  ],
+  "notes": [],
+  "error": null
+}

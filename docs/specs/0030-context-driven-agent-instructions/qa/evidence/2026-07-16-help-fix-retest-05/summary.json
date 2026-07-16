@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "setup-context-driven/manual-qa-summary-v1",
+  "recordedAt": "2026-07-16T10:42:44.148646+00:00",
+  "results": [
+    {
+      "qaId": "QA-01",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-02",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-16",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-18",
+      "status": "pass",
+      "error": null
+    }
+  ],
+  "counts": {
+    "pass": 4,
+    "fail": 0
+  }
+}

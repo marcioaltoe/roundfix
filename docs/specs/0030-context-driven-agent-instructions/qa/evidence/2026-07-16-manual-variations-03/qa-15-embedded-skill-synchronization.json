@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "setup-context-driven/manual-qa-v1",
+  "qaId": "QA-15",
+  "name": "Embedded skill synchronization",
+  "status": "pass",
+  "recordedAt": "2026-07-16T10:38:41.652172+00:00",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/bin/rtk",
+        "make",
+        "skills-sync-check"
+      ],
+      "cwd": "<source-repo>",
+      "exitCode": 0,
+      "stdout": "\n",
+      "stderr": ""
+    }
+  ],
+  "checks": [
+    {
+      "message": "canonical and embedded skill copies are synchronized",
+      "passed": true,
+      "actual": {
+        "expected": 0,
+        "actual": 0
+      }
+    }
+  ],
+  "notes": [],
+  "error": null
+}

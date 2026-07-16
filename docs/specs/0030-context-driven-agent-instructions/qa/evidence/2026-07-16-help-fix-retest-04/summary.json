@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "setup-context-driven/manual-qa-summary-v1",
+  "recordedAt": "2026-07-16T10:41:48.405012+00:00",
+  "results": [
+    {
+      "qaId": "QA-01",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-02",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-16",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-18",
+      "status": "fail",
+      "error": "production source changed during fixture execution"
+    }
+  ],
+  "counts": {
+    "pass": 3,
+    "fail": 1
+  }
+}

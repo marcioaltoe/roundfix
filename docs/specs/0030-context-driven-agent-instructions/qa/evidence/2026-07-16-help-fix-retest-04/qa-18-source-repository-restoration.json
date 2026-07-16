@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "setup-context-driven/manual-qa-v1",
+  "qaId": "QA-18",
+  "name": "Source repository restoration",
+  "status": "fail",
+  "recordedAt": "2026-07-16T10:41:48.404877+00:00",
+  "commands": [],
+  "checks": [
+    {
+      "message": "production skill trees match their pre-run hashes",
+      "passed": false,
+      "actual": {
+        "beforeFiles": 134,
+        "afterFiles": 135,
+        "changed": [
+          ".agents/skills/setup-context-driven/scripts/__pycache__/context_assets.cpython-314.pyc"
+        ]
+      }
+    }
+  ],
+  "notes": [
+    "Disposable target repositories were removed by TemporaryDirectory cleanup."
+  ],
+  "error": "production source changed during fixture execution"
+}
