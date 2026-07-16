@@ -736,6 +736,13 @@ def resolve_decision_plan(
     for decision_id, value in sorted(cli_decisions.items()):
         if decision_id.startswith("adoption."):
             resolved[decision_id] = {"value": value, "confirmedAt": today}
+    preserve_compatible_catalog_decisions(
+        catalog=catalog,
+        existing=existing,
+        cli_decisions=cli_decisions,
+        today=today,
+        resolved=resolved,
+    )
 
     conditional_modules = conditional_module_conditions(
         catalog=catalog,
@@ -794,6 +801,27 @@ def compatible_decision_answer(
                 confirmed_at = today
             return {"value": value, "confirmedAt": confirmed_at}
     return None
+
+
+def preserve_compatible_catalog_decisions(
+    catalog: AssetCatalog,
+    existing: dict,
+    cli_decisions: dict[str, object],
+    today: str,
+    resolved: dict[str, dict],
+) -> None:
+    for decision_id in sorted(catalog.decisions):
+        if decision_id in resolved:
+            continue
+        decision = compatible_decision_answer(
+            contract=catalog.decisions[decision_id],
+            decision_id=decision_id,
+            existing=existing,
+            cli_decisions=cli_decisions,
+            today=today,
+        )
+        if decision is not None:
+            resolved[decision_id] = decision
 
 
 def plan_condition_matches(condition, value: object) -> bool:
@@ -1205,6 +1233,15 @@ def plan_apply(
     if findings:
         return empty_apply_result(findings, False)
 
+    ownership_findings = validate_obsolete_artifact_ownership(
+        existing_manifest=existing_manifest,
+        expected_by_id=expected_by_id,
+        current_files=current_files,
+    )
+    findings.extend(ownership_findings)
+    if ownership_findings:
+        return empty_apply_result(findings, False)
+
     adoption_findings = require_adoption_decisions(
         current_files=current_files,
         expected_artifacts=expected_artifacts,
@@ -1525,7 +1562,7 @@ def require_adoption_decisions(
         if content is None or not content.strip():
             continue
         blocks, marker_findings = parse_managed_blocks(artifact.path, content)
-        if marker_findings or artifact.managed_id in blocks:
+        if marker_findings or blocks:
             continue
         adoption_id = f"adoption.{artifact.managed_id}"
         decision = decisions.get(adoption_id)
@@ -1540,6 +1577,45 @@ def require_adoption_decisions(
                     f"Pass --decision {adoption_id}=true after reviewing the file.",
                 )
             )
+    return findings
+
+
+def validate_obsolete_artifact_ownership(
+    existing_manifest: dict | None,
+    expected_by_id: dict[str, ExpectedArtifact],
+    current_files: dict[Path, str],
+) -> list[Finding]:
+    findings: list[Finding] = []
+    if not isinstance(existing_manifest, dict):
+        return findings
+    for artifact in existing_manifest.get("managedArtifacts", []):
+        if not isinstance(artifact, dict):
+            continue
+        managed_id = artifact.get("id")
+        path_value = artifact.get("path")
+        if not isinstance(managed_id, str) or not isinstance(path_value, str):
+            continue
+        if managed_id in expected_by_id:
+            continue
+        relative_path = Path(path_value)
+        content = current_files.get(relative_path)
+        if content is None:
+            continue
+        spans, marker_findings = parse_managed_block_spans(relative_path, content)
+        if marker_findings:
+            continue
+        if managed_id in spans:
+            continue
+        findings.append(
+            finding(
+                "managed.ownership.ambiguous",
+                "error",
+                relative_path.as_posix(),
+                managed_id,
+                "Legacy managed artifact is stale but no ownership marker proves setup owns the content.",
+                "Restore the setup marker or remove the stale manifest entry after manual review.",
+            )
+        )
     return findings
 
 

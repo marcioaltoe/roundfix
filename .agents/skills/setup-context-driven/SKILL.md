@@ -35,14 +35,15 @@ Configure a repository for CONTEXT-driven development through the portable asset
 3. Read the JSON result. Present only:
    - selected profile and ordered modules;
    - selected canonical skill setup name;
+   - active or conditional modules and their trigger decisions;
    - blocking findings by code/path/action;
-   - `plannedChanges`;
+   - `plannedChanges`, including `state` and `condition` for conditional operations;
    - optional cleanup information only when audit was run with `--show-extra-skills`.
 4. Do not dump generated Markdown by default. Mention that full templates live under `assets/templates/` if the user asks to inspect them.
 
 ## Decisions
 
-Use stored compatible decisions from `docs/agents/setup-context.json` first. Ask only for `decision.required` findings, one decision code at a time. Do not ask again for a stored compatible value.
+Use stored compatible decisions from `docs/agents/setup-context.json` first. Ask only for `decision.required` findings, one decision code at a time, in the order the CLI reports them. This includes dependent questions introduced after an enabled capability changes the Decision Plan, such as `runtime.backend`, `runtime.design`, and `verification.gate` after `autonomous.enabled=true`. Do not ask again for a stored compatible value.
 
 Question routing:
 
@@ -77,7 +78,7 @@ Ask for confirmation. After confirmation, run:
 python3 .agents/skills/setup-context-driven/scripts/context_setup.py apply --repo <repo> --format json --profile <profile-id> --decision <id=value> ...
 ```
 
-If apply returns `decision.required`, stop and ask the next unresolved decision. If it returns blocking findings, report the code, path, and action; do not patch around the finding manually.
+If apply returns `decision.required`, stop, present the unchanged selection and preview from the response, and ask only the next unresolved decision. If it returns blocking findings, report the code, path, and action; do not patch around the finding manually.
 
 ## Optional reports
 

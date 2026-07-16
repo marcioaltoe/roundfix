@@ -60,6 +60,61 @@ class SetupWorkflowTests(unittest.TestCase):
                 False,
             )
 
+    def test_enabled_autonomous_work_routes_one_missing_dependent_question(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir)
+            disabled = run_apply(
+                repo,
+                "rust-cli",
+                [
+                    "spec.scaffold=true",
+                    "domain.layout=single-context",
+                    "triage.external=false",
+                    "autonomous.enabled=false",
+                    "language.generated=English",
+                    "secondbrain.enabled=false",
+                ],
+            )
+            before = snapshot_files(repo)
+
+            blocked = run_apply(
+                repo,
+                "rust-cli",
+                [
+                    "autonomous.enabled=true",
+                    "runtime.backend=codex workflow-backend xhigh",
+                    "runtime.design=claude workflow-design xhigh",
+                ],
+            )
+            blocked_payload = json.loads(blocked.stdout)
+            required = [
+                finding["managedId"]
+                for finding in blocked_payload["findings"]
+                if finding["code"] == "decision.required"
+            ]
+
+            self.assertEqual(disabled.returncode, 0, disabled.stderr)
+            self.assertEqual(blocked.returncode, 3)
+            self.assertEqual(required, ["verification.gate"], blocked_payload)
+            self.assertEqual(snapshot_files(repo), before)
+
+            answered = run_apply(
+                repo,
+                "rust-cli",
+                [
+                    "autonomous.enabled=true",
+                    "runtime.backend=codex workflow-backend xhigh",
+                    "runtime.design=claude workflow-design xhigh",
+                    "verification.gate=make workflow-verify",
+                ],
+            )
+
+            self.assertEqual(answered.returncode, 0, answered.stderr)
+            manifest = json.loads(
+                (repo / "docs" / "agents" / "setup-context.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(manifest["decisions"]["verification.gate"]["value"], "make workflow-verify")
+
     def test_skill_workflow_requires_preview_and_confirmation_before_apply(self):
         skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
 

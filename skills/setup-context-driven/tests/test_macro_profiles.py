@@ -48,6 +48,80 @@ class ProfileMacroFlowTests(unittest.TestCase):
                     self.assertEqual(second_apply.returncode, 0, second_apply.stderr)
                     self.assertEqual(snapshot_files(repo), after_audit)
 
+    def test_supported_profiles_cover_representative_decision_combinations(self):
+        cases = [
+            (
+                "typescript-bun-monorepo",
+                decisions_with(
+                    domain_layout="multi-context",
+                    triage_external=True,
+                    runtime_backend="codex macro-backend xhigh",
+                    runtime_design="claude macro-design xhigh",
+                    secondbrain=True,
+                ),
+                ["root.spec-workflow", "root.external-triage", "root.autonomous-work", "root.secondbrain"],
+                [],
+            ),
+            (
+                "go-cli-tui",
+                decisions_with(
+                    spec_scaffold=False,
+                    autonomous=False,
+                ),
+                [],
+                ["root.spec-workflow", "root.external-triage", "root.autonomous-work", "root.secondbrain"],
+            ),
+            (
+                "rust-cli",
+                decisions_with(
+                    domain_layout="multi-context",
+                    triage_external=True,
+                    autonomous=False,
+                    secondbrain=True,
+                ),
+                ["root.external-triage", "root.secondbrain"],
+                ["root.autonomous-work"],
+            ),
+        ]
+        for profile_id, decisions, present_markers, absent_markers in cases:
+            with self.subTest(profile=profile_id):
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    repo = Path(temp_dir)
+
+                    first_apply = run_apply(repo, profile_id, decisions)
+                    install_profile_skills(repo, profile_id)
+                    clean_audit = run_audit(repo)
+                    after_audit = snapshot_files(repo)
+                    second_apply = run_apply(repo, profile_id, [])
+
+                    self.assertEqual(first_apply.returncode, 0, first_apply.stderr)
+                    self.assertEqual(clean_audit.returncode, 0, clean_audit.stderr)
+                    self.assertEqual(second_apply.returncode, 0, second_apply.stderr)
+                    self.assertEqual(snapshot_files(repo), after_audit)
+                    generated = generated_text(repo)
+                    for marker in present_markers:
+                        self.assertIn(marker, generated)
+                    for marker in absent_markers:
+                        self.assertNotIn(marker, generated)
+                    manifest = json.loads(
+                        (repo / "docs" / "agents" / "setup-context.json").read_text(encoding="utf-8")
+                    )
+                    for decision_id in [
+                        "spec.scaffold",
+                        "domain.layout",
+                        "triage.external",
+                        "autonomous.enabled",
+                        "runtime.backend",
+                        "runtime.design",
+                        "verification.gate",
+                        "language.generated",
+                        "secondbrain.enabled",
+                    ]:
+                        self.assertIn(decision_id, manifest["decisions"])
+                    if profile_id == "typescript-bun-monorepo":
+                        self.assertIn("macro-backend", generated)
+                        self.assertIn("macro-design", generated)
+
     def test_required_skill_failure_and_extra_reporting_keep_exit_semantics(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = Path(temp_dir)
@@ -117,6 +191,36 @@ def secondbrain_decisions():
         else decision
         for decision in BASE_DECISIONS
     ]
+
+
+def decisions_with(
+    *,
+    spec_scaffold=True,
+    domain_layout="single-context",
+    triage_external=False,
+    autonomous=True,
+    runtime_backend="codex gpt-5.5 xhigh",
+    runtime_design="claude opus xhigh",
+    verification_gate="make verify",
+    secondbrain=False,
+):
+    values = {
+        "spec.scaffold": str(spec_scaffold).lower(),
+        "domain.layout": domain_layout,
+        "triage.external": str(triage_external).lower(),
+        "autonomous.enabled": str(autonomous).lower(),
+        "runtime.backend": runtime_backend,
+        "runtime.design": runtime_design,
+        "verification.gate": verification_gate,
+        "language.generated": "English",
+        "secondbrain.enabled": str(secondbrain).lower(),
+    }
+    return [f"{key}={value}" for key, value in values.items()]
+
+
+def generated_text(repo):
+    paths = [repo / "AGENTS.md", *sorted((repo / "docs" / "agents").glob("*.md"))]
+    return "\n".join(path.read_text(encoding="utf-8") for path in paths if path.exists())
 
 
 def run_audit_cli(repo, *extra_args):

@@ -20,7 +20,14 @@ class AutonomousSecondbrainDecisionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = Path(temp_dir)
 
-            result = run_apply(repo, decisions_for(autonomous=False, secondbrain=False))
+            result = run_apply(
+                repo,
+                decisions_for(
+                    autonomous=False,
+                    secondbrain=False,
+                    include_runtime=False,
+                ),
+            )
 
             self.assertEqual(result.returncode, 0, result.stderr)
             manifest = read_manifest(repo)

@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0031-decision-driven-setup-generation
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -36,30 +36,30 @@ idempotently while the skill asks only newly activated dependent questions.
 
 ## Subtasks
 
-- [ ] Implement schema-v1 inventory and managed-artifact migration from spec
+- [x] Implement schema-v1 inventory and managed-artifact migration from spec
       0030 output.
-- [ ] Preserve compatible answers and route only missing dependent decisions.
-- [ ] Add ambiguous-ownership failure and owner-byte preservation coverage.
-- [ ] Update the setup skill's preview, question, confirmation, and apply flow.
-- [ ] Add cross-profile and every-decision macro regression cases.
-- [ ] Regenerate the embedded skill and keep snapshot checks portable.
-- [ ] Ensure the repository gate includes the focused migration coverage.
+- [x] Preserve compatible answers and route only missing dependent decisions.
+- [x] Add ambiguous-ownership failure and owner-byte preservation coverage.
+- [x] Update the setup skill's preview, question, confirmation, and apply flow.
+- [x] Add cross-profile and every-decision macro regression cases.
+- [x] Regenerate the embedded skill and keep snapshot checks portable.
+- [x] Ensure the repository gate includes the focused migration coverage.
 
 ## Acceptance Criteria
 
-- [ ] A spec 0030 manifest with all compatible answers migrates without a
+- [x] A spec 0030 manifest with all compatible answers migrates without a
       decision finding, preserves confirmation dates, and reaches a clean audit.
-- [ ] Enabling a capability whose dependent value is absent requests only that
+- [x] Enabling a capability whose dependent value is absent requests only that
       missing decision and persists it for the next run.
-- [ ] Legacy mixed blocks are removed or replaced only when ownership is proven;
+- [x] Legacy mixed blocks are removed or replaced only when ownership is proven;
       ambiguous markers block migration without partial writes.
-- [ ] Repository-authored bytes before, between, and after migrated managed
+- [x] Repository-authored bytes before, between, and after migrated managed
       blocks remain byte-for-byte unchanged.
-- [ ] TypeScript/Bun, Go CLI/TUI, and Rust CLI repositories each apply, audit,
+- [x] TypeScript/Bun, Go CLI/TUI, and Rust CLI repositories each apply, audit,
       and reapply successfully with representative decision combinations.
-- [ ] Missing required skills remain blocking, extra skills remain opt-in
+- [x] Missing required skills remain blocking, extra skills remain opt-in
       information, and no removal command or file deletion is introduced.
-- [ ] Canonical and embedded skill copies match, the normal workflow needs no
+- [x] Canonical and embedded skill copies match, the normal workflow needs no
       developer-specific checkout, and the full repository gate passes.
 
 ## Context
@@ -90,3 +90,47 @@ idempotently while the skill asks only newly activated dependent questions.
 - `_prd.md` → Goals 4–5; Core Feature 7; Success Criteria for spec 0030 migration, idempotency, and owner-byte preservation; Non-goals.
 - `_techspec.md` → Data models: Setup Manifest compatibility; Integration points; Testing approach; Build Order 5–6; Risks and considerations.
 - ADR-0046 and ADR-0047.
+
+## Result
+
+- Implemented schema-version 1 migration behavior that preserves every
+  compatible catalog decision already stored in the manifest, including
+  inactive dependent answers and their `confirmedAt` dates.
+- Added stale managed-artifact ownership validation so obsolete inventory is
+  removed only when the target file still contains the matching setup marker;
+  ambiguous legacy ownership blocks before writes.
+- Adjusted guide adoption so split setup-owned guides can be appended to files
+  that already contain setup-managed blocks without adopting repository-authored
+  bytes.
+- Updated the setup workflow skill to report active or conditional modules,
+  conditional planned-change triggers, and one unresolved decision at a time,
+  including dependent questions introduced by enabled capabilities.
+- Synchronized the canonical `.agents/skills/setup-context-driven` skill and
+  embedded `skills/setup-context-driven` copy.
+
+Acceptance evidence:
+
+- Compatible spec 0030 migration, preserved confirmation dates, obsolete
+  inventory removal, clean audit, and idempotent reapply are covered by
+  `test_spec0030_manifest_migrates_answers_inventory_and_owned_blocks`.
+- Missing dependent decision routing and persistence are covered by
+  `test_enabled_capability_routes_only_missing_dependent_decision` and
+  `test_enabled_autonomous_work_routes_one_missing_dependent_question`.
+- Ambiguous legacy ownership and no-partial-write behavior are covered by
+  `test_ambiguous_legacy_ownership_blocks_without_partial_writes`.
+- Cross-profile apply, audit, reapply, representative decision combinations,
+  required-skill blocking, and extra-skill opt-in reporting are covered by
+  `test_supported_profiles_cover_representative_decision_combinations` and
+  `test_required_skill_failure_and_extra_reporting_keep_exit_semantics`.
+- Canonical/embedded sync and portable execution are covered by
+  `rtk make skills-sync-check` and the bundled asset load inside
+  `rtk make verify`.
+
+Verification evidence:
+
+- `PYTHONDONTWRITEBYTECODE=1 rtk python3 -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_manifest_migration*.py'` — passed, 3 tests.
+- `PYTHONDONTWRITEBYTECODE=1 rtk python3 -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_macro_profiles*.py'` — passed, 4 tests.
+- `PYTHONDONTWRITEBYTECODE=1 rtk python3 -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_workflow*.py'` — passed, 5 tests.
+- `rtk make skills-sync-check` — passed.
+- `rtk make verify` — passed: setup-context-driven Python suite, `rtk go test ./...`, bundled asset validation for both skill copies, `roundfix skills check`, and Go build.
+- `rtk git diff --check` — passed.
