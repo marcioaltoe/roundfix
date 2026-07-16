@@ -1,9 +1,12 @@
 ---
 spec: 0031-decision-driven-setup-generation
-status: active
+status: archived
 created: 2026-07-16
 surfaces: [cli, docs]
+archived: "2026-07-16"
+source_slug: 0031-decision-driven-setup-generation
 ---
+
 
 # Decision-driven setup generation
 
