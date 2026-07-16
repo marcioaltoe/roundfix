@@ -1,0 +1,100 @@
+{
+  "schemaVersion": "setup-context-driven/manual-qa-summary-v1",
+  "recordedAt": "2026-07-16T16:12:49.120703+00:00",
+  "results": [
+    {
+      "qaId": "QA-01",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-02",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-03",
+      "status": "fail",
+      "error": "CheckFailure: only required durable questions are returned; actual={'expected': {'verification.gate', 'spec.scaffold', 'triage.external', 'domain.layout', 'secondbrain.enabled', 'language.generated', 'runtime.design', 'autonomous.enabled', 'runtime.backend'}, 'actual': {'spec.scaffold', 'triage.external', 'domain.layout', 'secondbrain.enabled', 'language.generated', 'autonomous.enabled'}}"
+    },
+    {
+      "qaId": "QA-04",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-05",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-06",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-07",
+      "status": "fail",
+      "error": "CheckFailure: verification answer is reflected in generated guidance; actual=None"
+    },
+    {
+      "qaId": "QA-08",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-09",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-10",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-11",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-12",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-13",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-14",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-15",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-16",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-17",
+      "status": "pass",
+      "error": null
+    },
+    {
+      "qaId": "QA-18",
+      "status": "pass",
+      "error": null
+    }
+  ],
+  "counts": {
+    "pass": 16,
+    "fail": 2
+  }
+}

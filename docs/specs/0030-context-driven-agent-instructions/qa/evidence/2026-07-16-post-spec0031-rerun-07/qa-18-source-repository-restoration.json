@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "setup-context-driven/manual-qa-v1",
+  "qaId": "QA-18",
+  "name": "Source repository restoration",
+  "status": "pass",
+  "recordedAt": "2026-07-16T16:17:22.404824+00:00",
+  "commands": [],
+  "checks": [
+    {
+      "message": "production skill trees match their pre-run hashes",
+      "passed": true,
+      "actual": {
+        "beforeFiles": 162,
+        "afterFiles": 162,
+        "changed": []
+      }
+    }
+  ],
+  "notes": [
+    "Disposable target repositories were removed by TemporaryDirectory cleanup."
+  ],
+  "error": null
+}

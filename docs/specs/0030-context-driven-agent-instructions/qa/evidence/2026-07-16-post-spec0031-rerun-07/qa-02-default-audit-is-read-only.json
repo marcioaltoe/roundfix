@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "setup-context-driven/manual-qa-v1",
+  "qaId": "QA-02",
+  "name": "Default audit is read only",
+  "status": "pass",
+  "recordedAt": "2026-07-16T16:17:20.258404+00:00",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<source-repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json"
+      ],
+      "cwd": "<source-repo>",
+      "exitCode": 1,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": false,\n  \"summary\": {\n    \"errors\": 1,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [\n    {\n      \"code\": \"manifest.missing\",\n      \"severity\": \"error\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"manifest\",\n      \"message\": \"Setup Manifest is missing.\",\n      \"action\": \"Run apply after selecting a profile.\"\n    }\n  ],\n  \"plannedChanges\": [\n    {\n      \"action\": \"create manifest\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"manifest\"\n    }\n  ]\n}\n",
+      "stderr": ""
+    }
+  ],
+  "checks": [
+    {
+      "message": "default audit exits 1 for missing manifest",
+      "passed": true,
+      "actual": {
+        "expected": 1,
+        "actual": 1
+      }
+    },
+    {
+      "message": "default audit reports stable missing-manifest code",
+      "passed": true,
+      "actual": {
+        "expected": [
+          "manifest.missing"
+        ],
+        "actual": [
+          "manifest.missing"
+        ]
+      }
+    },
+    {
+      "message": "default audit performs no writes",
+      "passed": true,
+      "actual": {
+        "expected": {},
+        "actual": {}
+      }
+    }
+  ],
+  "notes": [],
+  "error": null
+}

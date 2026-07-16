@@ -1,0 +1,96 @@
+{
+  "schemaVersion": "setup-context-driven/manual-qa-v1",
+  "qaId": "QA-17",
+  "name": "Safety non goals",
+  "status": "pass",
+  "recordedAt": "2026-07-16T16:12:49.112915+00:00",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<source-repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "rust-cli",
+        "--decision",
+        "spec.scaffold=true",
+        "--decision",
+        "domain.layout=single-context",
+        "--decision",
+        "triage.external=false",
+        "--decision",
+        "autonomous.enabled=true",
+        "--decision",
+        "runtime.backend=codex gpt-5.5 xhigh",
+        "--decision",
+        "runtime.design=claude opus-4.8 xhigh",
+        "--decision",
+        "verification.gate=make verify",
+        "--decision",
+        "language.generated=English",
+        "--decision",
+        "secondbrain.enabled=true"
+      ],
+      "cwd": "<source-repo>",
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    }
+  ],
+  "checks": [
+    {
+      "message": "safety fixture apply succeeds",
+      "passed": true,
+      "actual": {
+        "expected": 0,
+        "actual": 0
+      }
+    },
+    {
+      "message": "nested AGENTS.md is untouched",
+      "passed": true,
+      "actual": {
+        "expected": {
+          "bytes": 26,
+          "sha256": "c755a4f3c7258b69f5cb123b44fc4f0769b846aaadd449b8e12f554c99f1bf0e"
+        },
+        "actual": {
+          "bytes": 26,
+          "sha256": "c755a4f3c7258b69f5cb123b44fc4f0769b846aaadd449b8e12f554c99f1bf0e"
+        }
+      }
+    },
+    {
+      "message": "Secondbrain workspace is untouched",
+      "passed": true,
+      "actual": {
+        "expected": {
+          "sentinel.md": "a38da576d779802bc245eadef2498a8ed1aa4a04a2a927519943a14f4a8ec8b7"
+        },
+        "actual": {
+          "sentinel.md": "a38da576d779802bc245eadef2498a8ed1aa4a04a2a927519943a14f4a8ec8b7"
+        }
+      }
+    },
+    {
+      "message": "installed extra skill is untouched",
+      "passed": true,
+      "actual": {
+        "expected": {
+          "bytes": 33,
+          "sha256": "a65ad45832170196cbd4eedc6dbdb64b75d868808d66fa3f7bf0c7d6e56456a6"
+        },
+        "actual": {
+          "bytes": 33,
+          "sha256": "a65ad45832170196cbd4eedc6dbdb64b75d868808d66fa3f7bf0c7d6e56456a6"
+        }
+      }
+    }
+  ],
+  "notes": [],
+  "error": null
+}

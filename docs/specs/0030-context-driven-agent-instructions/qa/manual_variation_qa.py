@@ -301,14 +301,14 @@ def qa_03(s: Scenario) -> None:
         "domain.layout",
         "triage.external",
         "autonomous.enabled",
-        "runtime.backend",
-        "runtime.design",
-        "verification.gate",
         "language.generated",
         "secondbrain.enabled",
     }
+    dependent = {"runtime.backend", "runtime.design", "verification.gate"}
     s.check_equal(result.returncode, 3, "unanswered first apply exits 3")
-    s.check_equal(set(managed_ids(payload, "decision.required")), expected, "only required durable questions are returned")
+    requested = set(managed_ids(payload, "decision.required"))
+    s.check_equal(requested, expected, "only entry decisions are returned before capabilities are enabled")
+    s.check(requested.isdisjoint(dependent), "autonomous dependent decisions are deferred until autonomous work is enabled")
     s.check(len(payload.get("plannedChanges", [])) > 1, "first-run response previews all managed files and blocks", payload.get("plannedChanges"))
     s.check_equal(tree_snapshot(s.fixture), before, "unanswered apply performs no writes")
 
@@ -351,7 +351,7 @@ def qa_07(s: Scenario) -> None:
         spec_scaffold=False,
         domain_layout="multi-context",
         triage_external=True,
-        autonomous=False,
+        autonomous=True,
         verification="cargo test --all-targets",
         backend="codex alternate-backend xhigh",
         design="claude alternate-design xhigh",
@@ -367,7 +367,7 @@ def qa_07(s: Scenario) -> None:
     s.check("alternate-backend" in generated, "backend runtime answer is reflected in generated guidance")
     s.check("alternate-design" in generated, "design runtime answer is reflected in generated guidance")
     s.check("docs/specs/<feature-slug>" not in generated, "spec guidance does not contradict spec.scaffold=false")
-    s.check("root.autonomous-work" not in generated, "autonomous guidance does not contradict autonomous.enabled=false")
+    s.check("root.autonomous-work" in generated, "autonomous guidance reflects autonomous.enabled=true")
 
 
 def qa_08(s: Scenario) -> None:
