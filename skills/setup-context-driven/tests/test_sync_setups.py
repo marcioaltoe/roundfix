@@ -2,6 +2,7 @@ import json
 import sys
 import tempfile
 import unittest
+from hashlib import sha256
 from pathlib import Path
 
 
@@ -103,6 +104,25 @@ class SyncSetupsTests(unittest.TestCase):
                 ["setup.go-cli", "setup.rust-cli", "setup.typescript-bun"],
             )
 
+    def test_json_setup_source_rejects_non_list_skills_without_crashing(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            skill_root = temp_root / "skill"
+            source_dir = temp_root / "canonical"
+            clone_assets_to(SKILL_ROOT, skill_root)
+            copy_setup_sources(source_dir)
+            source_path = source_dir / "rust-cli.json"
+            source = json.loads(source_path.read_text(encoding="utf-8"))
+            source["skills"] = None
+            source_path.write_text(json.dumps(source, indent=2) + "\n", encoding="utf-8")
+
+            result, invalid_input = sync_setup_snapshots(skill_root, source_dir, check=True)
+
+            self.assertTrue(invalid_input)
+            matches = [finding for finding in result.findings if finding.code == "skills.setup-snapshot.drift"]
+            self.assertEqual(len(matches), 1)
+            self.assertIn("non-empty skills list", matches[0].message)
+
     def test_sync_preserves_canonical_path_and_hashes_skill_file(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
@@ -130,7 +150,27 @@ class SyncSetupsTests(unittest.TestCase):
             )
             added = next(skill for skill in snapshot["skills"] if skill["name"] == "canonical-example")
             self.assertEqual(added["path"], canonical_path)
-            self.assertTrue(added["contentDigest"])
+            self.assertEqual(
+                added["contentDigest"],
+                sha256(skill_file.read_bytes()).hexdigest(),
+            )
+
+    def test_sync_preserves_existing_predictable_temp_named_user_file(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            skill_root = temp_root / "skill"
+            source_dir = temp_root / "canonical"
+            clone_assets_to(SKILL_ROOT, skill_root)
+            copy_setup_sources(source_dir)
+            add_source_skill(source_dir / "rust-cli.json", "preserve-temp")
+            existing_temp = skill_root / "assets" / "setups" / ".rust-cli.json.setup-context.tmp"
+            existing_temp.write_text("user-owned temp file\n", encoding="utf-8")
+
+            result, invalid_input = sync_setup_snapshots(skill_root, source_dir, check=False)
+
+            self.assertFalse(invalid_input)
+            self.assertTrue(result.ok)
+            self.assertEqual(existing_temp.read_text(encoding="utf-8"), "user-owned temp file\n")
 
 
 def copy_setup_sources(source_dir):

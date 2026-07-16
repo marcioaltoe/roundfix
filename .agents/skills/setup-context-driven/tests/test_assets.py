@@ -142,6 +142,9 @@ class AssetContractTests(unittest.TestCase):
                 self._missing_setup_skill,
                 "skills.reference.outside-setup",
             ),
+            ("malformed module document", self._malformed_module_document, "module.document.invalid"),
+            ("malformed template item", self._malformed_template_item, "template.item.invalid"),
+            ("malformed template collection", self._malformed_template_collection, "template.collection.invalid"),
         ]
 
         for name, mutator, expected_code in cases:
@@ -221,6 +224,22 @@ class AssetContractTests(unittest.TestCase):
             skill for skill in setup["skills"] if skill["name"] != "golang-cli"
         ]
         write_json(setup_path, setup)
+
+    def _malformed_module_document(self, temp_root):
+        module_path = temp_root / "assets" / "modules" / "rust.json"
+        write_json(module_path, ["not", "an", "object"])
+
+    def _malformed_template_item(self, temp_root):
+        templates_path = temp_root / "assets" / "templates" / "index.json"
+        templates = read_json_copy(templates_path)
+        templates["templates"].append(None)
+        write_json(templates_path, templates)
+
+    def _malformed_template_collection(self, temp_root):
+        templates_path = temp_root / "assets" / "templates" / "index.json"
+        templates = read_json_copy(templates_path)
+        templates["templates"] = {"id": "template.not-a-list"}
+        write_json(templates_path, templates)
 
 
 if __name__ == "__main__":

@@ -34,7 +34,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "c09f291e8dd4516bf94c33d51e91170d3fc6ed39cb7e59b69dd6f6f820268913"
+      "contentDigest": "da96f9222418f9c5b27aa20782ba10ea4773cec39bc2026a5dfd423c997cdb9a"
     },
     {
       "name": "turborepo",
@@ -63,7 +63,7 @@
       "name": "grilling",
       "path": "skills/01-discovery/grilling",
       "source": {},
-      "contentDigest": "44331dda57f461db4fec3f2efb6ddabe7aaaa0a57ae0f88a883bc61aed8a0587"
+      "contentDigest": "5a35925d03a391bcfa46940868b649b72dba89ec9c19525e785bbb6bd3a7f478"
     },
     {
       "name": "write-prd",
@@ -173,7 +173,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "7d8ef4ba8d9c9dc00e7dfa221cafc87c54fc180217a548b30a4d4104157853e1"
+      "contentDigest": "586bda2339d76d319e4b5be5648fa66523f3e26acbf8d39fd9777b34cf82236a"
     },
     {
       "name": "ai-sdk",
@@ -485,7 +485,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "0ecf13eb20937a22d190fca4f2a266414566bf969aa6c31ba448f37a115f7f81"
+      "contentDigest": "b3222cdf557f2cf5ff559705982da48e9e7304ba2f30cfeb86c02f028fec51ac"
     },
     {
       "name": "review",
@@ -645,7 +645,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "2901a8fff18b9dbeb67fe9c2f0fdb7e45250d95229687e4f14af5e616b721bcc"
+      "contentDigest": "9d5f117db9afffa08807377b5710b8408f53c3787e7225b286b892e892a8de55"
     },
     {
       "name": "the-fool",

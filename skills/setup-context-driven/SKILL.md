@@ -28,7 +28,7 @@ Configure a repository for CONTEXT-driven development through the portable asset
 2. Run audit before asking setup questions:
 
    ```bash
-   python3 .agents/skills/setup-context-driven/scripts/context_setup.py audit --repo <repo> --format json
+   rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py audit --repo <repo> --format json
    ```
 
    If a profile is known but the manifest is missing or stale, rerun with `--profile <profile-id>` to preview the selected composition.
@@ -75,7 +75,7 @@ Before applying, tell the user:
 Ask for confirmation. After confirmation, run:
 
 ```bash
-python3 .agents/skills/setup-context-driven/scripts/context_setup.py apply --repo <repo> --format json --profile <profile-id> --decision <id=value> ...
+rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py apply --repo <repo> --format json --profile <profile-id> --decision <id=value> ...
 ```
 
 If apply returns `decision.required`, stop, present the unchanged selection and preview from the response, and ask only the next unresolved decision. If it returns blocking findings, report the code, path, and action; do not patch around the finding manually.
@@ -85,7 +85,7 @@ If apply returns `decision.required`, stop, present the unchanged selection and 
 Use `--show-extra-skills` only when the user asks to review installed skills outside the selected setup:
 
 ```bash
-python3 .agents/skills/setup-context-driven/scripts/context_setup.py audit --repo <repo> --format json --show-extra-skills
+rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py audit --repo <repo> --format json --show-extra-skills
 ```
 
 Report `skills.extra.installed` and `skills.local.untracked` as review information. Never suggest a removal command.
@@ -93,7 +93,7 @@ Report `skills.extra.installed` and `skills.local.untracked` as review informati
 Use `sync-setups` only as a maintainer operation with an explicit canonical setups directory:
 
 ```bash
-python3 .agents/skills/setup-context-driven/scripts/context_setup.py sync-setups --source-dir <canonical-setups> --check --format json
+rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py sync-setups --source-dir <canonical-setups> --check --format json
 ```
 
 Normal repository setup does not require this checkout.

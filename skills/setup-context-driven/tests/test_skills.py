@@ -37,6 +37,20 @@ class SkillAuditTests(unittest.TestCase):
             self.assertEqual(finding["path"], ".agents/skills/agentic-cli-design")
             self.assertIn("Install the rust-cli canonical skill setup", finding["action"])
 
+    def test_required_skill_digest_drift_blocks_compliance(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir)
+            write_compliant_repository(repo, "rust-cli")
+            skill_path = repo / ".agents" / "skills" / "agentic-cli-design" / "SKILL.md"
+            skill_path.write_text(skill_path.read_text(encoding="utf-8") + "\n# drift\n", encoding="utf-8")
+
+            result = run_audit(repo, "--format", "json")
+
+            self.assertEqual(result.returncode, 1)
+            finding = self.finding(result, "skills.required.drift")
+            self.assertEqual(finding["severity"], "error")
+            self.assertEqual(finding["path"], ".agents/skills/agentic-cli-design/SKILL.md")
+
     def test_extra_locked_skills_are_informational_only_when_requested(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = Path(temp_dir)

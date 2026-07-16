@@ -103,8 +103,9 @@ class SecondbrainSetupTests(unittest.TestCase):
             self.assertEqual(matches[0]["managedId"], "guide.secondbrain")
 
     def test_secondbrain_generated_content_is_english_and_root_is_index_only(self):
-        root_template = Path(".agents/skills/setup-context-driven/assets/templates/root/secondbrain.md")
-        guide_template = Path(".agents/skills/setup-context-driven/assets/templates/guides/secondbrain.md")
+        repo_root = Path(__file__).resolve().parents[4]
+        root_template = repo_root / ".agents/skills/setup-context-driven/assets/templates/root/secondbrain.md"
+        guide_template = repo_root / ".agents/skills/setup-context-driven/assets/templates/guides/secondbrain.md"
         root = root_template.read_text(encoding="utf-8")
         guide = guide_template.read_text(encoding="utf-8")
 

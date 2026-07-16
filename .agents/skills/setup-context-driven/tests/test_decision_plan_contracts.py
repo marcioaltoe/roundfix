@@ -98,6 +98,8 @@ class DecisionPlanContractTests(unittest.TestCase):
 
     def test_invalid_effect_contracts_fail_with_stable_diagnostics(self):
         cases = [
+            ("unsupported decision type", self._unsupported_decision_type, "decision.type.invalid"),
+            ("enum values must be strings", self._non_string_enum_value, "decision.values.invalid"),
             ("unknown module target", self._unknown_module_target, "decision.effect.module.unknown"),
             ("unknown artifact target", self._unknown_artifact_target, "decision.effect.artifact.unknown"),
             ("unknown template target", self._unknown_template_target, "decision.effect.template.unknown"),
@@ -150,6 +152,18 @@ class DecisionPlanContractTests(unittest.TestCase):
         self._decision(decisions, "autonomous.enabled")["effects"][0][
             "activateModules"
         ].append("module.missing")
+        write_json(decisions_path, decisions)
+
+    def _unsupported_decision_type(self, temp_root):
+        decisions_path = temp_root / "assets" / "decisions.json"
+        decisions = read_json_copy(decisions_path)
+        self._decision(decisions, "runtime.backend")["type"] = "bool"
+        write_json(decisions_path, decisions)
+
+    def _non_string_enum_value(self, temp_root):
+        decisions_path = temp_root / "assets" / "decisions.json"
+        decisions = read_json_copy(decisions_path)
+        self._decision(decisions, "domain.layout")["values"].append(True)
         write_json(decisions_path, decisions)
 
     def _unknown_artifact_target(self, temp_root):

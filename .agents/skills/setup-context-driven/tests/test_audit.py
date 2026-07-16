@@ -235,10 +235,15 @@ def install_profile_skills(repo, profile_id, omit=None):
 def write_skill(repo, name):
     skill_path = repo / ".agents" / "skills" / name / "SKILL.md"
     skill_path.parent.mkdir(parents=True, exist_ok=True)
-    skill_path.write_text(
-        f"---\nname: {name}\ndescription: test skill\n---\n# {name}\n",
-        encoding="utf-8",
-    )
+    repo_root = repository_root()
+    canonical = repo_root / ".agents" / "skills" / name / "SKILL.md"
+    if canonical.is_file():
+        skill_path.write_text(canonical.read_text(encoding="utf-8"), encoding="utf-8")
+    else:
+        skill_path.write_text(
+            f"---\nname: {name}\ndescription: test skill\n---\n# {name}\n",
+            encoding="utf-8",
+        )
 
 
 def snapshot_files(repo):
@@ -247,6 +252,15 @@ def snapshot_files(repo):
         for path in sorted(repo.rglob("*"))
         if path.is_file()
     }
+
+
+def repository_root():
+    for parent in [SKILL_ROOT, *SKILL_ROOT.parents]:
+        if (parent / ".agents" / "skills" / "setup-context-driven").is_dir() and (
+            parent / "skills" / "setup-context-driven"
+        ).is_dir():
+            return parent
+    raise AssertionError("could not locate repository root")
 
 
 def corrupt_marker(repo):

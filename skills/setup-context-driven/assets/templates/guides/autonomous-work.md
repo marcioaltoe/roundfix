@@ -1,8 +1,9 @@
 # Autonomous work
 
 The Supervisor orchestrates and authors Specs. Implementation goes to the
-selected ACP Runtime, normally through Roundfix. The Supervisor does not write
-feature code or tests while a runtime can execute the Task.
+selected ACP Runtime, normally through Roundfix. The Supervisor never writes
+feature code or tests. Implementation is always delegated to the selected ACP
+Runtime.
 
 Default backend work uses {{runtime.backend}}. Design, UI, UX, and
 frontend-dominant work uses {{runtime.design}} when the Task Graph routes that

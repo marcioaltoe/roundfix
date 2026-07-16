@@ -123,7 +123,7 @@ class DecisionRenderingTests(unittest.TestCase):
 
             result = run_apply(repo, decisions_for(autonomous=False, language="Portuguese"))
 
-            self.assertEqual(result.returncode, 3)
+            self.assertEqual(result.returncode, 2)
             self.assertEqual(snapshot_files(repo), before)
             payload = json.loads(result.stdout)
             findings = [
@@ -132,7 +132,8 @@ class DecisionRenderingTests(unittest.TestCase):
                 if finding["managedId"] == "language.generated"
             ]
             self.assertEqual(len(findings), 1, payload)
-            self.assertEqual(findings[0]["code"], "decision.required")
+            self.assertEqual(findings[0]["code"], "decision.value.invalid")
+            self.assertEqual(findings[0]["severity"], "error")
 
     def test_audit_reports_rendered_drift_and_apply_refreshes_same_artifact(self):
         with tempfile.TemporaryDirectory() as temp_dir:

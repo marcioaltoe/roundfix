@@ -27,6 +27,7 @@ EFFECT_FIELDS = {
     "renderBindings",
 }
 CONDITION_OPERATORS = {"equals", "present"}
+DECISION_TYPES = {"boolean", "enum", "string"}
 
 
 class AssetValidationError(Exception):
@@ -138,6 +139,7 @@ def load_asset_catalog(skill_root: str | Path) -> AssetCatalog:
     profile_entry_decisions = _validate_profile_entry_decisions(
         profiles, decisions, diagnostics
     )
+    _validate_decision_contracts(decisions, diagnostics)
     decision_effects = _validate_decision_effects(
         decisions,
         modules,
@@ -218,6 +220,9 @@ def _read_collection(
     collection: dict[str, dict] = {}
     for path in sorted(directory.glob("*.json")):
         data = _read_json(path, diagnostics)
+        if not isinstance(data, dict):
+            diagnostics.append(f"{kind}.document.invalid: {path.name}: expected object")
+            continue
         if not data:
             continue
         if data.get("schemaVersion") != schema_version:
@@ -240,7 +245,7 @@ def _read_collection(
 
 
 def _index_assets(
-    data: dict,
+    data: object,
     key: str,
     schema_version: str,
     kind: str,
@@ -248,10 +253,20 @@ def _index_assets(
 ) -> dict[str, dict]:
     if not data:
         return {}
+    if not isinstance(data, dict):
+        diagnostics.append(f"{kind}.document.invalid: expected object")
+        return {}
     if data.get("schemaVersion") != schema_version:
         diagnostics.append(f"{kind}.schemaVersion: expected {schema_version}")
     indexed: dict[str, dict] = {}
-    for item in data.get(key, []):
+    raw_items = data.get(key, [])
+    if not isinstance(raw_items, list):
+        diagnostics.append(f"{kind}.collection.invalid: expected list")
+        return {}
+    for index, item in enumerate(raw_items):
+        if not isinstance(item, dict):
+            diagnostics.append(f"{kind}.item.invalid: {index}")
+            continue
         asset_id = item.get("id")
         if not isinstance(asset_id, str) or not asset_id:
             diagnostics.append(f"{kind}.id.missing")
@@ -429,6 +444,32 @@ def _validate_profile_entry_decisions(
             ordered_entries.append(decision_id)
         entry_decisions[profile_id] = tuple(ordered_entries)
     return entry_decisions
+
+
+def _validate_decision_contracts(
+    decisions: dict[str, dict],
+    diagnostics: list[str],
+) -> None:
+    for decision_id, decision in sorted(decisions.items()):
+        decision_type = decision.get("type")
+        if decision_type not in DECISION_TYPES:
+            diagnostics.append(f"decision.type.invalid: {decision_id}: {decision_type}")
+            continue
+
+        values = decision.get("values")
+        if decision_type != "enum":
+            if "values" in decision:
+                diagnostics.append(f"decision.values.invalid: {decision_id}")
+            continue
+        if (
+            not isinstance(values, list)
+            or not values
+            or not all(isinstance(value, str) and value for value in values)
+        ):
+            diagnostics.append(f"decision.values.invalid: {decision_id}")
+            continue
+        if len(set(values)) != len(values):
+            diagnostics.append(f"decision.values.duplicate: {decision_id}")
 
 
 def _validate_decision_effects(

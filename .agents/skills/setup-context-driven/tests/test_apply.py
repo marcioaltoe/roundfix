@@ -1,9 +1,12 @@
 import json
+import io
 import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
@@ -11,7 +14,8 @@ SCRIPT = SKILL_ROOT / "scripts" / "context_setup.py"
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from context_setup import parse_managed_blocks  # noqa: E402
+import context_setup  # noqa: E402
+from context_setup import managed_block, parse_managed_blocks  # noqa: E402
 from test_audit import install_profile_skills, snapshot_files, write_compliant_repository  # noqa: E402
 
 
@@ -115,16 +119,79 @@ class ApplyCliTests(unittest.TestCase):
             docs_agents.mkdir(parents=True)
             (repo / "AGENTS.md").write_text("custom root\n", encoding="utf-8")
             before = snapshot_files(repo)
-            original_mode = docs_agents.stat().st_mode
-            docs_agents.chmod(0o500)
-            try:
-                result = run_apply(repo, "rust-cli", BASE_DECISIONS)
-            finally:
-                docs_agents.chmod(original_mode)
+
+            with mock.patch.object(context_setup.Path, "replace", side_effect=OSError("injected replace failure")):
+                result = run_apply_in_process(repo, "rust-cli", BASE_DECISIONS)
 
             self.assertEqual(result.returncode, 1)
             self.assertFinding(result, "managed.apply.failed", "error")
             self.assertEqual(snapshot_files(repo), before)
+
+    def test_apply_preserves_existing_predictable_temp_named_user_file(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir)
+            existing_temp = repo / ".AGENTS.md.setup-context.tmp"
+            existing_temp.write_text("user-owned temp file\n", encoding="utf-8")
+
+            result = run_apply(repo, "rust-cli", BASE_DECISIONS)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(existing_temp.read_text(encoding="utf-8"), "user-owned temp file\n")
+
+    def test_manifest_artifact_paths_must_stay_inside_repo_before_writes(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir) / "repo"
+            outside = Path(temp_dir) / "outside.md"
+            write_compliant_repository(repo, "rust-cli")
+            outside.write_text(
+                managed_block("stale.outside", 1, "setup-owned stale outside file\n"),
+                encoding="utf-8",
+            )
+            manifest_path = repo / "docs" / "agents" / "setup-context.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["managedArtifacts"].append(
+                {
+                    "id": "stale.outside",
+                    "path": "../outside.md",
+                    "kind": "guide",
+                    "module": "stale",
+                    "template": "template.stale",
+                    "version": 1,
+                    "digest": "0" * 64,
+                }
+            )
+            manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+            repo_before = snapshot_files(repo)
+            outside_before = outside.read_text(encoding="utf-8")
+
+            result = run_apply(repo, "rust-cli", BASE_DECISIONS)
+
+            self.assertEqual(result.returncode, 1)
+            self.assertFinding(result, "manifest.invalid", "error")
+            self.assertEqual(snapshot_files(repo), repo_before)
+            self.assertEqual(outside.read_text(encoding="utf-8"), outside_before)
+
+    def test_invalid_explicit_decisions_are_invalid_input_without_writes(self):
+        cases = [
+            ("domain.layout=dual-context", "enum"),
+            ("autonomous.enabled=maybe", "boolean"),
+        ]
+
+        for decision, name in cases:
+            with self.subTest(name=name):
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    repo = Path(temp_dir)
+                    before = snapshot_files(repo)
+                    decisions = [
+                        decision if item.split("=", 1)[0] == decision.split("=", 1)[0] else item
+                        for item in BASE_DECISIONS
+                    ]
+
+                    result = run_apply(repo, "rust-cli", decisions)
+
+                    self.assertEqual(result.returncode, 2)
+                    self.assertFinding(result, "decision.value.invalid", "error")
+                    self.assertEqual(snapshot_files(repo), before)
 
     def test_obsolete_managed_artifacts_are_removed_without_unowned_deletions(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -209,6 +276,13 @@ def run_apply(repo, profile, decisions):
     return run_context_setup(*args)
 
 
+def run_apply_in_process(repo, profile, decisions):
+    args = ["apply", "--repo", str(repo), "--format", "json", "--profile", profile]
+    for decision in decisions:
+        args.extend(["--decision", decision])
+    return run_context_setup_in_process(*args)
+
+
 def run_audit(repo):
     return run_context_setup("audit", "--repo", str(repo), "--format", "json")
 
@@ -220,6 +294,14 @@ def run_context_setup(*args):
         capture_output=True,
         check=False,
     )
+
+
+def run_context_setup_in_process(*args):
+    stdout = io.StringIO()
+    stderr = io.StringIO()
+    with redirect_stdout(stdout), redirect_stderr(stderr):
+        returncode = context_setup.main(list(args))
+    return subprocess.CompletedProcess(args, returncode, stdout.getvalue(), stderr.getvalue())
 
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ import hashlib
 import json
 import re
 import sys
+import tempfile
 from datetime import date
 from dataclasses import dataclass
 from pathlib import Path
@@ -191,6 +192,7 @@ class InstalledSkill:
     path: Path
     locked: bool
     origin: dict
+    content_digest: str
 
 
 @dataclass(frozen=True)
@@ -434,7 +436,7 @@ def audit_repository(
         )
         invalid_input = invalid_input or setups_invalid_input
     expected_artifacts = expected_artifacts_for_plan(decision_plan)
-    validate_manifest_artifacts(manifest, expected_artifacts, findings)
+    validate_manifest_artifacts(repo, manifest, expected_artifacts, findings)
     validate_documents(repo, expected_artifacts, findings)
     validate_secondbrain_documents(repo, ordered_modules, findings)
 
@@ -475,27 +477,46 @@ def validate_installed_skills(
 ) -> bool:
     lock_entries, invalid_input = load_skills_lock(repo, findings)
     installed = discover_installed_skills(repo, lock_entries)
-    installed_names = set(installed)
     setup_id = catalog.profiles[profile_id]["setup"]
     setup = catalog.setups[setup_id]
-    required_names = [
-        skill["name"]
+    required_skills = [
+        skill
         for skill in setup.get("skills", [])
         if isinstance(skill.get("name"), str) and skill["name"]
     ]
-    for skill_name in required_names:
-        if skill_name in installed_names:
-            continue
-        findings.append(
-            finding(
-                "skills.required.missing",
-                "error",
-                f".agents/skills/{skill_name}",
-                f"profile.{profile_id}",
-                f"Required skill {skill_name} is not installed.",
-                f"Install the {setup_id} canonical skill setup or add .agents/skills/{skill_name}/SKILL.md.",
+    required_names = [skill["name"] for skill in required_skills]
+    for skill in required_skills:
+        skill_name = skill["name"]
+        installed_skill = installed.get(skill_name)
+        if installed_skill is None:
+            findings.append(
+                finding(
+                    "skills.required.missing",
+                    "error",
+                    f".agents/skills/{skill_name}",
+                    f"profile.{profile_id}",
+                    f"Required skill {skill_name} is not installed.",
+                    f"Install the {setup_id} canonical skill setup or add .agents/skills/{skill_name}/SKILL.md.",
+                )
             )
-        )
+            continue
+        expected_digest = skill.get("contentDigest")
+        canonical_skill_file = local_canonical_skill_file(skill_name)
+        if (
+            canonical_skill_file is not None
+            and isinstance(expected_digest, str)
+            and installed_skill.content_digest != expected_digest
+        ):
+            findings.append(
+                finding(
+                    "skills.required.drift",
+                    "error",
+                    installed_skill.path.as_posix(),
+                    skill_name,
+                    f"Required skill {skill_name} content differs from the selected setup snapshot.",
+                    f"Refresh .agents/skills/{skill_name}/SKILL.md from the {setup_id} canonical skill setup.",
+                )
+            )
 
     if not show_extra_skills:
         return invalid_input
@@ -528,6 +549,15 @@ def validate_installed_skills(
                 )
             )
     return invalid_input
+
+
+def local_canonical_skill_file(skill_name: str) -> Path | None:
+    script_path = Path(__file__).resolve()
+    for parent in script_path.parents:
+        candidate = parent / ".agents" / "skills" / skill_name / "SKILL.md"
+        if candidate.is_file():
+            return candidate
+    return None
 
 
 def load_skills_lock(repo: Path, findings: list[Finding]) -> tuple[dict[str, dict], bool]:
@@ -583,6 +613,7 @@ def discover_installed_skills(
             path=skill_file.relative_to(repo),
             locked=lock_entry is not None,
             origin=lock_entry or {},
+            content_digest=managed_digest(skill_file.read_text(encoding="utf-8")),
         )
     return installed
 
@@ -1234,6 +1265,7 @@ def plan_apply(
         return empty_apply_result(findings, False)
 
     ownership_findings = validate_obsolete_artifact_ownership(
+        repo=repo,
         existing_manifest=existing_manifest,
         expected_by_id=expected_by_id,
         current_files=current_files,
@@ -1260,6 +1292,7 @@ def plan_apply(
         )
 
     remove_obsolete_artifacts(
+        repo=repo,
         existing_manifest=existing_manifest,
         expected_by_id=expected_by_id,
         current_files=current_files,
@@ -1375,6 +1408,9 @@ def parse_decision_args(
         ):
             findings.append(unsafe_decision_value_finding(decision_id))
             continue
+        if contract is not None and not is_decision_value_valid(contract, value):
+            findings.append(invalid_decision_finding(decision_id))
+            continue
         decisions[decision_id] = value
     return decisions, findings
 
@@ -1485,8 +1521,8 @@ def is_decision_value_valid(decision_contract: dict, value: object) -> bool:
 
 def invalid_decision_finding(decision_id: str) -> Finding:
     return finding(
-        "decision.required",
-        "decision",
+        "decision.value.invalid",
+        "error",
         str(MANIFEST_PATH),
         decision_id,
         f"Decision {decision_id} has an incompatible value.",
@@ -1501,7 +1537,7 @@ def load_current_files(
     findings: list[Finding],
 ) -> dict[Path, str]:
     paths = {artifact.path for artifact in expected_artifacts}
-    paths.update(manifest_artifact_paths(existing_manifest))
+    paths.update(manifest_artifact_paths(existing_manifest, repo, findings))
     current: dict[Path, str] = {}
     for relative_path in sorted(paths, key=lambda item: item.as_posix()):
         path = repo / relative_path
@@ -1539,14 +1575,68 @@ def load_current_files(
     return current
 
 
-def manifest_artifact_paths(existing_manifest: dict | None) -> set[Path]:
+def manifest_artifact_paths(
+    existing_manifest: dict | None,
+    repo: Path,
+    findings: list[Finding],
+) -> set[Path]:
     if not isinstance(existing_manifest, dict):
         return set()
     paths: set[Path] = set()
     for artifact in existing_manifest.get("managedArtifacts", []):
-        if isinstance(artifact, dict) and isinstance(artifact.get("path"), str):
-            paths.add(Path(artifact["path"]))
+        if not isinstance(artifact, dict):
+            continue
+        managed_id = artifact.get("id")
+        if not isinstance(managed_id, str) or not managed_id:
+            managed_id = "managedArtifacts"
+        path_value = artifact.get("path")
+        if not isinstance(path_value, str):
+            continue
+        relative_path = validate_manifest_artifact_path(path_value, repo, managed_id, findings)
+        if relative_path is not None:
+            paths.add(relative_path)
     return paths
+
+
+def validate_manifest_artifact_path(
+    path_value: str,
+    repo: Path,
+    managed_id: str,
+    findings: list[Finding],
+) -> Path | None:
+    relative_path = safe_relative_path(path_value)
+    if relative_path is None or not path_is_inside_repo(repo, relative_path):
+        findings.append(
+            finding(
+                "manifest.invalid",
+                "error",
+                str(MANIFEST_PATH),
+                managed_id,
+                "Managed artifact path must be a safe repository-relative path.",
+                "Refresh the managed artifact inventory before applying setup changes.",
+            )
+        )
+        return None
+    return relative_path
+
+
+def safe_relative_path(path_value: str) -> Path | None:
+    if not path_value or "\\" in path_value:
+        return None
+    candidate = Path(path_value)
+    if candidate.is_absolute() or ".." in candidate.parts:
+        return None
+    return candidate
+
+
+def path_is_inside_repo(repo: Path, relative_path: Path) -> bool:
+    repo_root = repo.resolve(strict=False)
+    target = (repo_root / relative_path).resolve(strict=False)
+    try:
+        target.relative_to(repo_root)
+    except ValueError:
+        return False
+    return True
 
 
 def require_adoption_decisions(
@@ -1581,6 +1671,7 @@ def require_adoption_decisions(
 
 
 def validate_obsolete_artifact_ownership(
+    repo: Path,
     existing_manifest: dict | None,
     expected_by_id: dict[str, ExpectedArtifact],
     current_files: dict[Path, str],
@@ -1597,7 +1688,9 @@ def validate_obsolete_artifact_ownership(
             continue
         if managed_id in expected_by_id:
             continue
-        relative_path = Path(path_value)
+        relative_path = safe_relative_path(path_value)
+        if relative_path is None or not path_is_inside_repo(repo, relative_path):
+            continue
         content = current_files.get(relative_path)
         if content is None:
             continue
@@ -1671,6 +1764,7 @@ def append_block(content: str, block: str) -> str:
 
 
 def remove_obsolete_artifacts(
+    repo: Path,
     existing_manifest: dict | None,
     expected_by_id: dict[str, ExpectedArtifact],
     current_files: dict[Path, str],
@@ -1687,7 +1781,9 @@ def remove_obsolete_artifacts(
             continue
         if managed_id in expected_by_id:
             continue
-        relative_path = Path(path_value)
+        relative_path = safe_relative_path(path_value)
+        if relative_path is None or not path_is_inside_repo(repo, relative_path):
+            continue
         content = changed_contents.get(relative_path, current_files.get(relative_path))
         if content is None:
             continue
@@ -1793,24 +1889,23 @@ def apply_change_plan(repo: Path, plan: ChangePlan) -> None:
     temp_paths: list[Path] = []
     originals: dict[Path, bytes | None] = {}
     created_dirs: list[Path] = []
+    temp_by_target: dict[Path, Path] = {}
     try:
         for change in plan.changes:
-            target = repo / change.path
+            target = safe_repo_target(repo, change.path)
             originals[target] = target.read_bytes() if target.exists() and target.is_file() else None
             if change.content is None:
                 continue
             ensure_parent_dir(target.parent, created_dirs)
-            temp_path = target.with_name(f".{target.name}.setup-context.tmp")
-            temp_path.write_text(change.content, encoding="utf-8")
-            temp_paths.append(temp_path)
+            temp_by_target[target] = write_unique_temp_text(target, change.content, temp_paths)
 
         for change in plan.changes:
-            target = repo / change.path
+            target = safe_repo_target(repo, change.path)
             if change.content is None:
                 if target.exists() and target.is_file():
                     target.unlink()
                 continue
-            temp_path = target.with_name(f".{target.name}.setup-context.tmp")
+            temp_path = temp_by_target[target]
             temp_path.replace(target)
     except OSError:
         for target, original in originals.items():
@@ -1830,6 +1925,33 @@ def apply_change_plan(repo: Path, plan: ChangePlan) -> None:
                 directory.rmdir()
             except OSError:
                 pass
+
+
+def safe_repo_target(repo: Path, relative_path: Path) -> Path:
+    if relative_path.is_absolute() or ".." in relative_path.parts:
+        raise OSError(f"refusing to write outside repository: {relative_path}")
+    repo_root = repo.resolve(strict=False)
+    target = (repo_root / relative_path).resolve(strict=False)
+    try:
+        target.relative_to(repo_root)
+    except ValueError as error:
+        raise OSError(f"refusing to write outside repository: {relative_path}") from error
+    return target
+
+
+def write_unique_temp_text(target: Path, content: str, temp_paths: list[Path]) -> Path:
+    with tempfile.NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        dir=target.parent,
+        prefix=f".{target.name}.setup-context.",
+        suffix=".tmp",
+        delete=False,
+    ) as handle:
+        temp_path = Path(handle.name)
+        temp_paths.append(temp_path)
+        handle.write(content)
+    return temp_path
 
 
 def ensure_parent_dir(directory: Path, created_dirs: list[Path]) -> None:
@@ -1982,7 +2104,18 @@ def build_source_setup_snapshot(
     skills: list[dict] = []
     seen_names: set[str] = set()
     seen_paths: set[str] = set()
-    for raw_skill in source_doc.get("skills", []):
+    raw_skills = source_doc.get("skills")
+    if not isinstance(raw_skills, list) or not raw_skills:
+        findings.append(
+            setup_snapshot_invalid_finding(
+                source_path,
+                setup_id,
+                "Canonical setup must contain a non-empty skills list.",
+            )
+        )
+        return None, findings, True
+
+    for raw_skill in raw_skills:
         skill, skill_findings = normalize_source_skill(
             raw_skill=raw_skill,
             source_dir=source_dir,
@@ -2016,7 +2149,7 @@ def build_source_setup_snapshot(
         seen_paths.add(skill["path"])
         skills.append(skill)
 
-    if not isinstance(source_doc.get("skills"), list) or not skills:
+    if not skills:
         findings.append(
             setup_snapshot_invalid_finding(
                 source_path,
@@ -2235,14 +2368,13 @@ def snapshot_json(snapshot: dict) -> str:
 def write_atomic_text_changes(changes: dict[Path, str]) -> None:
     temp_paths: list[Path] = []
     originals: dict[Path, bytes | None] = {}
+    temp_by_target: dict[Path, Path] = {}
     try:
         for target, content in sorted(changes.items(), key=lambda item: item[0].as_posix()):
             originals[target] = target.read_bytes() if target.exists() and target.is_file() else None
-            temp_path = target.with_name(f".{target.name}.setup-context.tmp")
-            temp_path.write_text(content, encoding="utf-8")
-            temp_paths.append(temp_path)
+            temp_by_target[target] = write_unique_temp_text(target, content, temp_paths)
         for target in sorted(changes, key=lambda item: item.as_posix()):
-            temp_path = target.with_name(f".{target.name}.setup-context.tmp")
+            temp_path = temp_by_target[target]
             temp_path.replace(target)
     except OSError:
         for target, original in originals.items():
@@ -2415,6 +2547,7 @@ def validate_decision_value(
 
 
 def validate_manifest_artifacts(
+    repo: Path,
     manifest: dict,
     expected_artifacts: list[ExpectedArtifact],
     findings: list[Finding],
@@ -2473,6 +2606,15 @@ def validate_manifest_artifacts(
                 )
             )
         seen.add(managed_id)
+
+        path_value = artifact.get("path")
+        if not isinstance(path_value, str) or validate_manifest_artifact_path(
+            path_value,
+            repo,
+            managed_id,
+            findings,
+        ) is None:
+            continue
 
         expected = expected_by_id.get(managed_id)
         if expected is None:
