@@ -140,6 +140,11 @@ def slug(value: str) -> str:
 def json_fallback(value: object) -> object:
     if isinstance(value, set):
         return sorted(value)
+    if isinstance(value, bytes):
+        return {
+            "bytes": len(value),
+            "sha256": hashlib.sha256(value).hexdigest(),
+        }
     raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
 
 
