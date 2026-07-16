@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-16
 updated_at: 2026-07-16
 ---
@@ -11,7 +11,7 @@ Roundfix implemented Spec `0031-decision-driven-setup-generation` in detached Ru
 `ma/setup-context-driven-validator`. The Run completed all six Tasks, passed its QA gate, and
 integrated seven commits. This report records two Roundfix issues observed while supervising that
 Run; it does not duplicate the detached-notification findings in
-[the Vortex PR #87 report](2026-07-16-vortex-pr87-detached-watch-notification.md).
+the earlier Vortex PR #87 detached-watch notification observation.
 
 ## 1. The detached Console Log repeated identical edit summaries
 
@@ -60,3 +60,8 @@ Run; it does not duplicate the detached-notification findings in
 - Every Task passed daemon-owned verification before its commit, and the final QA gate exercised
   ten public CLI scenarios before producing a `pass` verdict.
 - The Run integrated cleanly without modifying the user checkout while it was active.
+
+## Follow-up specs
+
+- The repeated compact Console Log summaries are routed to [Spec 0033 — Console Log tool-summary deduplication](../specs/0033-console-log-tool-summary-deduplication/_prd.md).
+- The transient cancellation grace-period test is routed to [Spec 0032 — Deterministic Agent Session cancellation](../specs/0032-deterministic-agent-session-cancellation/_prd.md).

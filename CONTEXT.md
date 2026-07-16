@@ -56,6 +56,10 @@ _Avoid_: Specs directory, docs folder, knowledge base
 One implementable unit of work within a Spec. Its task file is the sole owner of its status.
 _Avoid_: Subtask, story, ticket
 
+**Task Type**:
+The required classification that routes a Task to its Agent Selection Profile. The valid values are `backend`, `frontend`, `data`, `infra`, `docs`, `test`, and `chore`; use the dominant implementation surface when a Task crosses more than one.
+_Avoid_: Task category, work type, inferred type
+
 **Task Graph**:
 The Spec's manifest that declares its Tasks and their dependencies as a directed acyclic graph. Dependencies live only in the Task Graph, never in task files.
 _Avoid_: Task list, backlog, roadmap
@@ -76,6 +80,26 @@ _Avoid_: Review Source, review provider
 A runtime-specific model choice that Roundfix explicitly assigns to every Agent Session.
 _Avoid_: ACP Runtime, Agent, free-form model override
 
+**Agent Work Category**:
+The routing key Roundfix uses to resolve an Agent Selection Profile: `general`, one Task Type, `qa`, or `review`.
+_Avoid_: Agent role, benchmark category, automatic route
+
+**Agent Selection**:
+One exact ACP Runtime, Agent Model, and reasoning-effort tuple that Roundfix can prove and assign to an Agent Session.
+_Avoid_: Model name, runtime default, partial selection
+
+**Agent Selection Profile**:
+The atomic policy for one Agent Work Category, containing one Preferred Selection and a non-empty ordered Fallback Chain. A higher-precedence profile replaces the complete lower-precedence profile rather than merging individual fields.
+_Avoid_: Runtime defaults, model preset, partial override
+
+**Preferred Selection**:
+The first Agent Selection Roundfix proves and attempts for an Agent Work Category.
+_Avoid_: Default model, primary runtime, recommendation winner
+
+**Fallback Chain**:
+The non-empty ordered Agent Selection list Roundfix proves with the Preferred Selection before a Run and may activate after notifying the user and Supervisor that the preceding selection failed before Agent work began.
+_Avoid_: Dynamic fallback, silent retry, unproven selection
+
 **Default Agent Model**:
 The concrete Agent Model Roundfix selects for an ACP Runtime when the user supplies no override. It never inherits the runtime's local model configuration.
 _Avoid_: Runtime default, automatic model, local Agent default
@@ -88,9 +112,13 @@ _Avoid_: Local Agent reasoning, automatic reasoning, reasoning hint
 The ordered set of known Agent Models Roundfix offers for one ACP Runtime during Interactive Input. Its Default label resolves to the Default Agent Model, while non-interactive interfaces may supply a custom value.
 _Avoid_: Global model list, model allowlist
 
+**Model Recommendation Ranking**:
+The versioned, advisory top-five Agent Selection list Roundfix shows for an Agent Work Category to help configure a profile. It never selects, routes, or changes an Agent Selection automatically.
+_Avoid_: Model router, benchmark policy, automatic selection
+
 **Fallback Selection**:
-The first functional alternative Agent Model from the failed ACP Runtime's Model Catalog, proven newest-first and paired with its highest functional reasoning effort. An empty effort means model-managed. It applies to one Run only after explicit human confirmation and never changes User Config, Project Config, or runtime-owned configuration.
-_Avoid_: Automatic fallback, silent model switch, cross-runtime fallback
+The next configured Agent Selection in a profile's Fallback Chain. Roundfix proves it before the Run, emits a notification before activation, and may switch ACP Runtime automatically only while Agent work has not begun.
+_Avoid_: Dynamic fallback, silent model switch, catalog probe winner
 
 **Agent Session**:
 The persistent acpx-backed session through which one Run drives its Agent across Work Items — created when the Run starts Agent work, named by the Run, and closed at the Run's terminal outcome.
@@ -269,6 +297,14 @@ _Avoid_: Manual bootstrap checklist, environment wizard
 **Upgrade Command**:
 The support command that checks or installs the latest released Roundfix binary for the current platform.
 _Avoid_: Package manager update, version check only
+
+**Release Plan**:
+A read-only classification of committed changes between a base release and a target revision that identifies the required semantic-version increment, proposes the next version, cites its evidence, and states whether explicit human approval or manual impact classification is required.
+_Avoid_: Release execution, automatic release, version guess
+
+**Release Plan Command**:
+The support command that produces a Release Plan without editing release files, creating or pushing tags, publishing packages, or creating a GitHub Release.
+_Avoid_: Release Command, publish command, cut-release command
 
 **Doctor Command**:
 The support command that diagnoses a machine's readiness for Roundfix Runs — Node, pinned acpx, configured Agent probe, and codex runtime hygiene — reporting each check with a next action and mutating nothing. Distinct from the Setup Command, which prepares the machine.

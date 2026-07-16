@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-16
 updated_at: 2026-07-16
 ---
@@ -123,3 +123,7 @@ rules for commits, pushes, and external publication still apply independently.
    and explains the mismatch.
 8. The existing tag-driven version agreement, verification, package publishing,
    asset naming, and GitHub Release workflow remain unchanged.
+
+## Follow-up spec
+
+Routed to [Spec 0034 — Release Plan](../specs/0034-release-plan/_prd.md), with the read-only and confirmation-gated authority boundary recorded in [ADR-0048](../adr/0048-release-planning-is-read-only-and-confirmation-gated.md).
