@@ -30,10 +30,10 @@ graph:
 
 | id      | title                            | type    | complexity | needs            |
 | ------- | -------------------------------- | ------- | ---------- | ---------------- |
-| task_01 | <title>                          | chore   | low        | —                |
-| task_02 | <title>                          | backend | medium     | task_01          |
-| task_03 | <title>                          | frontend| medium     | task_01          |
-| task_04 | <title>                          | backend | high       | task_02, task_03 |
+| task_01 | <title>                          | chore    | low        | —                |
+| task_02 | <title>                          | backend  | medium     | task_01          |
+| task_03 | <title>                          | frontend | medium     | task_01          |
+| task_04 | <title>                          | backend  | high       | task_02, task_03 |
 
 Waves: 1 → task_01 · 2 → task_02, task_03 · 3 → task_04
 ```
@@ -47,7 +47,7 @@ A fresh agent session must be able to build this with no context beyond the spec
 task: task_02
 spec: <feature-slug>
 status: pending # pending | in_progress | completed | failed — only implement-task changes this
-type: backend # frontend | backend | data | infra | docs | test | chore
+type: backend # REQUIRED: backend | frontend | data | infra | docs | test | chore
 complexity: medium # low | medium | high
 ---
 
@@ -92,7 +92,7 @@ complexity: medium # low | medium | high
 
 <!-- The exact commands that prove this task done, with what to expect from each.
      The Daemon runs these verbatim after the Agent turn and will not settle the task completed until they pass.
-     Use portable shell forms: use rg or rg --files for repository searches, avoid wc-pipeline shape checks, use repository build flags such as go build -buildvcs=false ./... when a build is required, and include executable checks that prove the Task's effect. -->
+     Use portable shell forms: prefer grep over rg in Task gates, avoid wc-pipeline shape checks, use repository build flags such as go build -buildvcs=false ./... when a build is required, and include executable checks that prove the Task's effect. -->
 
 - `<command>` — expected: ...
 
