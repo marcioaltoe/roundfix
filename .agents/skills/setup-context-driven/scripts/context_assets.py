@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -15,6 +16,17 @@ MODULE_SCHEMA_VERSION = "setup-context-driven/module-v1"
 PROFILE_SCHEMA_VERSION = "setup-context-driven/profile-v1"
 SETUP_SCHEMA_VERSION = "setup-context-driven/setup-snapshot-v1"
 TEMPLATES_SCHEMA_VERSION = "setup-context-driven/templates-v1"
+TEMPLATE_TOKEN = re.compile(r"\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}")
+EFFECT_FIELDS = {
+    "when",
+    "activateModules",
+    "requireDecisions",
+    "includeArtifacts",
+    "excludeArtifacts",
+    "selectTemplates",
+    "renderBindings",
+}
+CONDITION_OPERATORS = {"equals", "present"}
 
 
 class AssetValidationError(Exception):
@@ -26,6 +38,38 @@ class AssetValidationError(Exception):
 
 
 @dataclass(frozen=True)
+class DecisionCondition:
+    decision_id: str
+    operator: str
+    value: object
+
+
+@dataclass(frozen=True)
+class TemplateSelection:
+    artifact_id: str
+    template_id: str
+
+
+@dataclass(frozen=True)
+class RenderBinding:
+    artifact_id: str
+    template_id: str
+    token: str
+
+
+@dataclass(frozen=True)
+class DecisionEffect:
+    decision_id: str
+    condition: DecisionCondition
+    activate_modules: tuple[str, ...]
+    require_decisions: tuple[str, ...]
+    include_artifacts: tuple[str, ...]
+    exclude_artifacts: tuple[str, ...]
+    template_selections: tuple[TemplateSelection, ...]
+    render_bindings: tuple[RenderBinding, ...]
+
+
+@dataclass(frozen=True)
 class AssetCatalog:
     decisions: dict[str, dict]
     modules: dict[str, dict]
@@ -33,6 +77,14 @@ class AssetCatalog:
     setups: dict[str, dict]
     templates: dict[str, dict]
     ordered_modules_by_profile: dict[str, list[str]]
+    profile_entry_decisions: dict[str, tuple[str, ...]]
+    decision_effects: dict[str, tuple[DecisionEffect, ...]]
+
+
+@dataclass(frozen=True)
+class _ArtifactTarget:
+    module_id: str
+    kind: str
 
 
 def load_asset_catalog(skill_root: str | Path) -> AssetCatalog:
@@ -80,9 +132,19 @@ def load_asset_catalog(skill_root: str | Path) -> AssetCatalog:
     _validate_versions(modules, "module", diagnostics)
     _validate_versions(profiles, "profile", diagnostics)
     _validate_versions(setups, "setup", diagnostics)
-    _validate_templates(assets_root / "templates", templates, diagnostics)
+    template_tokens = _validate_templates(assets_root / "templates", templates, diagnostics)
     _validate_modules(modules, decisions, templates, diagnostics)
     _validate_setups(setups, diagnostics)
+    profile_entry_decisions = _validate_profile_entry_decisions(
+        profiles, decisions, diagnostics
+    )
+    decision_effects = _validate_decision_effects(
+        decisions,
+        modules,
+        templates,
+        template_tokens,
+        diagnostics,
+    )
 
     ordered_modules_by_profile: dict[str, list[str]] = {}
     for profile_id, profile in sorted(profiles.items()):
@@ -107,6 +169,8 @@ def load_asset_catalog(skill_root: str | Path) -> AssetCatalog:
         setups=setups,
         templates=templates,
         ordered_modules_by_profile=ordered_modules_by_profile,
+        profile_entry_decisions=profile_entry_decisions,
+        decision_effects=decision_effects,
     )
 
 
@@ -211,14 +275,44 @@ def _validate_templates(
     templates_root: Path,
     templates: dict[str, dict],
     diagnostics: list[str],
-) -> None:
+) -> dict[str, set[str]]:
+    template_tokens: dict[str, set[str]] = {}
     for template_id, template in sorted(templates.items()):
+        declared_tokens = _declared_template_tokens(template_id, template, diagnostics)
+        template_tokens[template_id] = declared_tokens
         path = template.get("path")
         if not isinstance(path, str) or _is_unsafe_relative_path(path):
             diagnostics.append(f"template.path.invalid: {template_id}")
             continue
-        if not (templates_root / path).is_file():
+        template_path = templates_root / path
+        if not template_path.is_file():
             diagnostics.append(f"template.file.missing: {template_id}: {path}")
+            continue
+        content = template_path.read_text(encoding="utf-8")
+        for token in sorted(set(TEMPLATE_TOKEN.findall(content))):
+            if token not in declared_tokens:
+                diagnostics.append(f"template.token.undeclared: {template_id} -> {token}")
+    return template_tokens
+
+
+def _declared_template_tokens(
+    template_id: str,
+    template: dict,
+    diagnostics: list[str],
+) -> set[str]:
+    raw_tokens = template.get("tokens", [])
+    if not isinstance(raw_tokens, list) or not all(
+        isinstance(token, str) and token for token in raw_tokens
+    ):
+        diagnostics.append(f"template.tokens.invalid: {template_id}")
+        return set()
+
+    tokens: set[str] = set()
+    for token in raw_tokens:
+        if token in tokens:
+            diagnostics.append(f"template.token.duplicate: {template_id} -> {token}")
+        tokens.add(token)
+    return tokens
 
 
 def _validate_modules(
@@ -302,6 +396,414 @@ def _validate_modules(
             _validate_rule_references(
                 guide.get("rules", []), module, diagnostics, guide_id
             )
+
+
+def _validate_profile_entry_decisions(
+    profiles: dict[str, dict],
+    decisions: dict[str, dict],
+    diagnostics: list[str],
+) -> dict[str, tuple[str, ...]]:
+    entry_decisions: dict[str, tuple[str, ...]] = {}
+    for profile_id, profile in sorted(profiles.items()):
+        raw_entries = profile.get("entryDecisions")
+        if not isinstance(raw_entries, list) or not all(
+            isinstance(decision_id, str) and decision_id for decision_id in raw_entries
+        ):
+            diagnostics.append(f"profile.entryDecisions.invalid: {profile_id}")
+            entry_decisions[profile_id] = ()
+            continue
+
+        seen: set[str] = set()
+        ordered_entries: list[str] = []
+        for decision_id in raw_entries:
+            if decision_id in seen:
+                diagnostics.append(
+                    f"profile.entryDecision.duplicate: {profile_id} -> {decision_id}"
+                )
+                continue
+            seen.add(decision_id)
+            if decision_id not in decisions:
+                diagnostics.append(
+                    f"profile.entryDecision.unknown: {profile_id} -> {decision_id}"
+                )
+            ordered_entries.append(decision_id)
+        entry_decisions[profile_id] = tuple(ordered_entries)
+    return entry_decisions
+
+
+def _validate_decision_effects(
+    decisions: dict[str, dict],
+    modules: dict[str, dict],
+    templates: dict[str, dict],
+    template_tokens: dict[str, set[str]],
+    diagnostics: list[str],
+) -> dict[str, tuple[DecisionEffect, ...]]:
+    artifacts = _index_artifact_targets(modules)
+    effects_by_decision: dict[str, tuple[DecisionEffect, ...]] = {}
+    dependency_graph: dict[str, list[str]] = {decision_id: [] for decision_id in decisions}
+    binding_owners: dict[tuple[str, str], str] = {}
+
+    for decision_id, decision in decisions.items():
+        raw_effects = decision.get("effects")
+        if not isinstance(raw_effects, list) or not raw_effects:
+            diagnostics.append(f"decision.effects.invalid: {decision_id}")
+            effects_by_decision[decision_id] = ()
+            continue
+
+        validated_effects: list[DecisionEffect] = []
+        for index, raw_effect in enumerate(raw_effects):
+            if not isinstance(raw_effect, dict):
+                diagnostics.append(f"decision.effect.invalid: {decision_id}[{index}]")
+                continue
+            for field in sorted(set(raw_effect) - EFFECT_FIELDS):
+                diagnostics.append(
+                    f"decision.effect.field.unknown: {decision_id}[{index}] -> {field}"
+                )
+
+            condition = _validate_condition(
+                decision_id,
+                decision,
+                raw_effect.get("when"),
+                diagnostics,
+            )
+            activate_modules = _validate_module_targets(
+                decision_id,
+                raw_effect.get("activateModules", []),
+                modules,
+                diagnostics,
+            )
+            require_decisions = _validate_decision_targets(
+                decision_id,
+                raw_effect.get("requireDecisions", []),
+                decisions,
+                diagnostics,
+            )
+            include_artifacts = _validate_artifact_targets(
+                decision_id,
+                raw_effect.get("includeArtifacts", []),
+                artifacts,
+                modules,
+                diagnostics,
+            )
+            exclude_artifacts = _validate_artifact_targets(
+                decision_id,
+                raw_effect.get("excludeArtifacts", []),
+                artifacts,
+                modules,
+                diagnostics,
+            )
+            template_selections = _validate_template_selections(
+                decision_id,
+                raw_effect.get("selectTemplates", []),
+                artifacts,
+                modules,
+                templates,
+                diagnostics,
+            )
+            render_bindings = _validate_render_bindings(
+                decision_id,
+                raw_effect.get("renderBindings", []),
+                artifacts,
+                modules,
+                templates,
+                template_tokens,
+                binding_owners,
+                diagnostics,
+            )
+            dependency_graph[decision_id].extend(require_decisions)
+
+            if condition is None:
+                continue
+            validated_effects.append(
+                DecisionEffect(
+                    decision_id=decision_id,
+                    condition=condition,
+                    activate_modules=activate_modules,
+                    require_decisions=require_decisions,
+                    include_artifacts=include_artifacts,
+                    exclude_artifacts=exclude_artifacts,
+                    template_selections=template_selections,
+                    render_bindings=render_bindings,
+                )
+            )
+        effects_by_decision[decision_id] = tuple(validated_effects)
+
+    _validate_decision_dependency_cycles(dependency_graph, diagnostics)
+    return effects_by_decision
+
+
+def _validate_condition(
+    decision_id: str,
+    decision: dict,
+    condition: object,
+    diagnostics: list[str],
+) -> DecisionCondition | None:
+    if not isinstance(condition, dict) or len(condition) != 1:
+        diagnostics.append(f"decision.condition.invalid: {decision_id}")
+        return None
+
+    operator, value = next(iter(condition.items()))
+    if operator not in CONDITION_OPERATORS:
+        diagnostics.append(f"decision.condition.operator.unknown: {decision_id} -> {operator}")
+        return None
+    if operator == "present":
+        if not isinstance(value, bool):
+            diagnostics.append(f"decision.condition.type.invalid: {decision_id}: present")
+            return None
+        return DecisionCondition(decision_id=decision_id, operator=operator, value=value)
+
+    if not _condition_value_matches_decision(decision, value):
+        diagnostics.append(f"decision.condition.type.invalid: {decision_id}: equals")
+        return None
+    return DecisionCondition(decision_id=decision_id, operator=operator, value=value)
+
+
+def _condition_value_matches_decision(decision: dict, value: object) -> bool:
+    decision_type = decision.get("type")
+    if decision_type == "boolean":
+        return isinstance(value, bool)
+    if decision_type == "string":
+        return isinstance(value, str)
+    if decision_type == "enum":
+        return isinstance(value, str) and value in decision.get("values", [])
+    return False
+
+
+def _validate_module_targets(
+    decision_id: str,
+    raw_targets: object,
+    modules: dict[str, dict],
+    diagnostics: list[str],
+) -> tuple[str, ...]:
+    module_ids = _validate_string_list(
+        raw_targets, f"decision.effect.modules.invalid: {decision_id}", diagnostics
+    )
+    for module_id in module_ids:
+        module = modules.get(module_id)
+        if module is None:
+            diagnostics.append(f"decision.effect.module.unknown: {decision_id} -> {module_id}")
+            continue
+        if decision_id not in module.get("requiredDecisions", []):
+            diagnostics.append(f"decision.effect.module.unowned: {decision_id} -> {module_id}")
+    return tuple(module_ids)
+
+
+def _validate_decision_targets(
+    decision_id: str,
+    raw_targets: object,
+    decisions: dict[str, dict],
+    diagnostics: list[str],
+) -> tuple[str, ...]:
+    target_ids = _validate_string_list(
+        raw_targets, f"decision.effect.decisions.invalid: {decision_id}", diagnostics
+    )
+    for target_id in target_ids:
+        if target_id not in decisions:
+            diagnostics.append(f"decision.effect.decision.unknown: {decision_id} -> {target_id}")
+    return tuple(target_ids)
+
+
+def _validate_artifact_targets(
+    decision_id: str,
+    raw_targets: object,
+    artifacts: dict[str, _ArtifactTarget],
+    modules: dict[str, dict],
+    diagnostics: list[str],
+) -> tuple[str, ...]:
+    artifact_ids = _validate_string_list(
+        raw_targets, f"decision.effect.artifacts.invalid: {decision_id}", diagnostics
+    )
+    for artifact_id in artifact_ids:
+        artifact = artifacts.get(artifact_id)
+        if artifact is None:
+            diagnostics.append(f"decision.effect.artifact.unknown: {decision_id} -> {artifact_id}")
+            continue
+        _validate_artifact_owner(decision_id, artifact_id, artifact, modules, diagnostics)
+    return tuple(artifact_ids)
+
+
+def _validate_template_selections(
+    decision_id: str,
+    raw_selections: object,
+    artifacts: dict[str, _ArtifactTarget],
+    modules: dict[str, dict],
+    templates: dict[str, dict],
+    diagnostics: list[str],
+) -> tuple[TemplateSelection, ...]:
+    if not isinstance(raw_selections, list):
+        diagnostics.append(f"decision.effect.templateSelections.invalid: {decision_id}")
+        return ()
+
+    selections: list[TemplateSelection] = []
+    for index, raw_selection in enumerate(raw_selections):
+        if not isinstance(raw_selection, dict):
+            diagnostics.append(
+                f"decision.effect.templateSelection.invalid: {decision_id}[{index}]"
+            )
+            continue
+        artifact_id = raw_selection.get("artifact")
+        template_id = raw_selection.get("template")
+        if not isinstance(artifact_id, str) or not isinstance(template_id, str):
+            diagnostics.append(
+                f"decision.effect.templateSelection.invalid: {decision_id}[{index}]"
+            )
+            continue
+        artifact = artifacts.get(artifact_id)
+        if artifact is None:
+            diagnostics.append(f"decision.effect.artifact.unknown: {decision_id} -> {artifact_id}")
+            continue
+        _validate_artifact_owner(decision_id, artifact_id, artifact, modules, diagnostics)
+        if _validate_template_target(decision_id, artifact, template_id, templates, diagnostics):
+            selections.append(
+                TemplateSelection(artifact_id=artifact_id, template_id=template_id)
+            )
+    return tuple(selections)
+
+
+def _validate_render_bindings(
+    decision_id: str,
+    raw_bindings: object,
+    artifacts: dict[str, _ArtifactTarget],
+    modules: dict[str, dict],
+    templates: dict[str, dict],
+    template_tokens: dict[str, set[str]],
+    binding_owners: dict[tuple[str, str], str],
+    diagnostics: list[str],
+) -> tuple[RenderBinding, ...]:
+    if not isinstance(raw_bindings, list):
+        diagnostics.append(f"decision.effect.renderBindings.invalid: {decision_id}")
+        return ()
+
+    bindings: list[RenderBinding] = []
+    for index, raw_binding in enumerate(raw_bindings):
+        if not isinstance(raw_binding, dict):
+            diagnostics.append(f"decision.effect.renderBinding.invalid: {decision_id}[{index}]")
+            continue
+        artifact_id = raw_binding.get("artifact")
+        template_id = raw_binding.get("template")
+        token = raw_binding.get("token")
+        if not all(isinstance(value, str) and value for value in [artifact_id, template_id, token]):
+            diagnostics.append(f"decision.effect.renderBinding.invalid: {decision_id}[{index}]")
+            continue
+        artifact = artifacts.get(artifact_id)
+        if artifact is None:
+            diagnostics.append(f"decision.effect.artifact.unknown: {decision_id} -> {artifact_id}")
+            continue
+        _validate_artifact_owner(decision_id, artifact_id, artifact, modules, diagnostics)
+        if not _validate_template_target(decision_id, artifact, template_id, templates, diagnostics):
+            continue
+        if token not in template_tokens.get(template_id, set()):
+            diagnostics.append(
+                f"decision.effect.binding.token.unknown: {decision_id} -> {template_id}: {token}"
+            )
+            continue
+        binding_key = (template_id, token)
+        owner = binding_owners.get(binding_key)
+        if owner is not None:
+            diagnostics.append(
+                f"decision.effect.binding.duplicate: {template_id}:{token}: {owner}, {decision_id}"
+            )
+            continue
+        binding_owners[binding_key] = decision_id
+        bindings.append(
+            RenderBinding(
+                artifact_id=artifact_id,
+                template_id=template_id,
+                token=token,
+            )
+        )
+    return tuple(bindings)
+
+
+def _validate_template_target(
+    decision_id: str,
+    artifact: _ArtifactTarget,
+    template_id: str,
+    templates: dict[str, dict],
+    diagnostics: list[str],
+) -> bool:
+    template = templates.get(template_id)
+    if template is None:
+        diagnostics.append(f"decision.effect.template.unknown: {decision_id} -> {template_id}")
+        return False
+    if template.get("kind") != artifact.kind:
+        diagnostics.append(
+            f"decision.effect.template.kind: {decision_id} -> {template_id}: expected {artifact.kind}"
+        )
+        return False
+    return True
+
+
+def _validate_artifact_owner(
+    decision_id: str,
+    artifact_id: str,
+    artifact: _ArtifactTarget,
+    modules: dict[str, dict],
+    diagnostics: list[str],
+) -> None:
+    module = modules.get(artifact.module_id, {})
+    if decision_id not in module.get("requiredDecisions", []):
+        diagnostics.append(f"decision.effect.artifact.unowned: {decision_id} -> {artifact_id}")
+
+
+def _validate_string_list(
+    raw_items: object,
+    diagnostic: str,
+    diagnostics: list[str],
+) -> list[str]:
+    if raw_items is None:
+        return []
+    if not isinstance(raw_items, list) or not all(
+        isinstance(item, str) and item for item in raw_items
+    ):
+        diagnostics.append(diagnostic)
+        return []
+    return list(raw_items)
+
+
+def _index_artifact_targets(modules: dict[str, dict]) -> dict[str, _ArtifactTarget]:
+    artifacts: dict[str, _ArtifactTarget] = {}
+    for module_id, module in sorted(modules.items()):
+        for block in module.get("rootBlocks", []):
+            artifact_id = block.get("id")
+            if isinstance(artifact_id, str) and artifact_id:
+                artifacts[artifact_id] = _ArtifactTarget(
+                    module_id=module_id,
+                    kind="root-block",
+                )
+        for guide in module.get("supportingGuides", []):
+            artifact_id = guide.get("id")
+            if isinstance(artifact_id, str) and artifact_id:
+                artifacts[artifact_id] = _ArtifactTarget(
+                    module_id=module_id,
+                    kind="guide",
+                )
+    return artifacts
+
+
+def _validate_decision_dependency_cycles(
+    dependency_graph: dict[str, list[str]],
+    diagnostics: list[str],
+) -> None:
+    visiting: list[str] = []
+    visited: set[str] = set()
+
+    def visit(decision_id: str) -> None:
+        if decision_id in visited:
+            return
+        if decision_id in visiting:
+            cycle = visiting[visiting.index(decision_id) :] + [decision_id]
+            diagnostics.append(f"decision.dependency.cycle: {' -> '.join(cycle)}")
+            return
+        visiting.append(decision_id)
+        for dependent_id in dependency_graph.get(decision_id, []):
+            if dependent_id in dependency_graph:
+                visit(dependent_id)
+        visiting.pop()
+        visited.add(decision_id)
+
+    for decision_id in dependency_graph:
+        visit(decision_id)
 
 
 def _validate_template_reference(

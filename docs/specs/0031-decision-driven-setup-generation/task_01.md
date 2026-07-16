@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0031-decision-driven-setup-generation
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -33,27 +33,27 @@ effect graph before any repository state is inspected.
 
 ## Subtasks
 
-- [ ] Define the decision-effect and profile-entry-decision asset shapes.
-- [ ] Add immutable models for validated conditions, effects, and bindings.
-- [ ] Validate target ownership, value types, tokens, duplicates, and cycles.
-- [ ] Declare effects for all nine existing decision IDs without adding new
+- [x] Define the decision-effect and profile-entry-decision asset shapes.
+- [x] Add immutable models for validated conditions, effects, and bindings.
+- [x] Validate target ownership, value types, tokens, duplicates, and cycles.
+- [x] Declare effects for all nine existing decision IDs without adding new
       user-facing decisions.
-- [ ] Add mutation-based contract tests and deterministic ordering tests.
-- [ ] Keep the canonical and existing portable assets loadable together.
+- [x] Add mutation-based contract tests and deterministic ordering tests.
+- [x] Keep the canonical and existing portable assets loadable together.
 
 ## Acceptance Criteria
 
-- [ ] Loading the canonical catalog yields one validated effect contract for
+- [x] Loading the canonical catalog yields one validated effect contract for
       every existing decision and the expected entry decisions for every
       profile.
-- [ ] Unknown effect targets, incompatible conditions, duplicate bindings,
+- [x] Unknown effect targets, incompatible conditions, duplicate bindings,
       undeclared tokens, and dependency cycles each produce a stable diagnostic
       before repository inspection.
-- [ ] Loading the same assets twice produces the same ordered profiles,
+- [x] Loading the same assets twice produces the same ordered profiles,
       modules, decisions, and effects.
-- [ ] Existing setup snapshot validation and module-skill reference validation
+- [x] Existing setup snapshot validation and module-skill reference validation
       remain unchanged and passing.
-- [ ] Tests exercise the contracts through public catalog loading rather than
+- [x] Tests exercise the contracts through public catalog loading rather than
       test-only production branches.
 
 ## Context
@@ -78,3 +78,32 @@ effect graph before any repository state is inspected.
 - `_prd.md` → Goals 1, 3, 5; Core Features 1, 7; Non-goals.
 - `_techspec.md` → System architecture; Interfaces; Data models: Decision effects; Build Order 1.
 - ADR-0047.
+
+## Result
+
+Implemented the asset-level Decision Plan contract slice:
+
+- Added immutable validated models for decision conditions, effects, template selections, and render bindings.
+- Extended profiles with ordered entry decisions and decisions with declarative effects for the nine existing decision IDs.
+- Validated effect target ownership, condition value types, module and artifact targets, dependent decisions, template selections, render tokens, duplicate bindings, and dependency cycles during public catalog loading.
+- Kept the canonical `.agents/skills/setup-context-driven` assets and embedded `skills/setup-context-driven` bundle loadable with the same contract.
+- Added mutation-based public loader tests and deterministic ordering coverage in `test_decision_plan_contracts.py`.
+
+Acceptance evidence:
+
+- Canonical catalog effects and profile entry decisions: `test_canonical_catalog_declares_entry_decisions_and_effects` passed.
+- Stable invalid-contract diagnostics: `test_invalid_effect_contracts_fail_with_stable_diagnostics` passed for unknown module, artifact, template, and dependent-decision targets; incompatible conditions; duplicate bindings; undeclared template tokens; and dependency cycles.
+- Deterministic load order: `test_loading_same_assets_twice_is_deterministic` passed.
+- Existing setup snapshot and module-skill validation: `test_assets*.py` passed, and `rtk make verify` loaded both canonical and embedded portable assets.
+- Public loader coverage: all new tests call `load_asset_catalog(...)`; no test-only production branch was added.
+
+Verification:
+
+- `PYTHONDONTWRITEBYTECODE=1 rtk python3 -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_decision_plan*.py'`: passed, 5 tests.
+- `PYTHONDONTWRITEBYTECODE=1 rtk python3 -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_assets*.py'`: passed, 6 tests.
+- `rtk git diff --check`: passed.
+- `rtk make verify`: passed after rerun with filesystem approval for the Go build cache; 50 Python tests, 1272 Go tests, setup-context asset loading, Roundfix skill check, and build all passed.
+
+Follow-up:
+
+- Decision Plan resolution, generated-artifact splitting, safe string rendering, and audit/apply consumption remain in later task slices.

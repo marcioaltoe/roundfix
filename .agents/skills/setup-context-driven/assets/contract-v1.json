@@ -6,9 +6,10 @@
       "id": "contract.profile",
       "version": 1,
       "path": "assets/profiles/*.json",
-      "requires": ["id", "version", "setup", "modules"],
+      "requires": ["id", "version", "setup", "entryDecisions", "modules"],
       "rules": [
         "Profiles reference known modules and one known setup snapshot.",
+        "Profiles declare ordered entry decisions before dependent decisions are resolved.",
         "Profiles list every required module dependency explicitly.",
         "Profile module order resolves deterministically through dependency order."
       ]
@@ -39,9 +40,11 @@
       "id": "contract.decision",
       "version": 1,
       "path": "assets/decisions.json",
-      "requires": ["id", "version", "type", "summary"],
+      "requires": ["id", "version", "type", "summary", "effects"],
       "rules": [
         "Decision identifiers are stable public data.",
+        "Decision effects declare typed conditions, activated modules, dependent decisions, artifact inclusion or exclusion, template selections, and render bindings.",
+        "Decision effect targets reference catalog-owned modules, decisions, artifacts, templates, and template tokens.",
         "A meaning change requires a new version or manifest migration."
       ]
     },
@@ -52,6 +55,7 @@
       "requires": ["id", "version", "kind", "path"],
       "rules": [
         "Template paths are relative to assets/templates.",
+        "Templates may contain only declared decision tokens.",
         "Root-block templates stay compact and point to supporting guides."
       ]
     },
@@ -74,6 +78,20 @@
     "profile.module.unknown",
     "profile.setup.unknown",
     "profile.dependency.missing",
+    "profile.entryDecision.unknown",
+    "profile.entryDecision.duplicate",
+    "decision.effects.invalid",
+    "decision.condition.type.invalid",
+    "decision.effect.module.unknown",
+    "decision.effect.module.unowned",
+    "decision.effect.decision.unknown",
+    "decision.effect.artifact.unknown",
+    "decision.effect.artifact.unowned",
+    "decision.effect.template.unknown",
+    "decision.effect.binding.duplicate",
+    "decision.effect.binding.token.unknown",
+    "decision.dependency.cycle",
+    "template.token.undeclared",
     "rule.id.duplicate",
     "managed.block.id.duplicate",
     "skills.reference.outside-setup"

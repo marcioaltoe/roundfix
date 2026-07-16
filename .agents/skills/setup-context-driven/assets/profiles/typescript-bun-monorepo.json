@@ -4,6 +4,14 @@
   "version": 1,
   "title": "TypeScript/Bun monorepo",
   "setup": "typescript-bun",
+  "entryDecisions": [
+    "language.generated",
+    "spec.scaffold",
+    "domain.layout",
+    "triage.external",
+    "autonomous.enabled",
+    "secondbrain.enabled"
+  ],
   "modules": [
     "core",
     "context-workflow",

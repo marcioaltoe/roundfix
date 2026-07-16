@@ -162,7 +162,12 @@
       "id": "template.guide.autonomous-work",
       "version": 1,
       "kind": "guide",
-      "path": "guides/autonomous-work.md"
+      "path": "guides/autonomous-work.md",
+      "tokens": [
+        "runtime.backend",
+        "runtime.design",
+        "verification.gate"
+      ]
     },
     {
       "id": "template.guide.secondbrain",
