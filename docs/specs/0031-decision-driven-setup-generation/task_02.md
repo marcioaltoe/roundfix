@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0031-decision-driven-setup-generation
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -32,27 +32,27 @@ operations without allowing audit or blocked apply to write any file.
 
 ## Subtasks
 
-- [ ] Implement fixed-point resolution for entry and dependent decisions.
-- [ ] Build prospective artifact plans for definite and conditional branches.
-- [ ] Add additive selection and planned-change fields to text and JSON output.
-- [ ] Route missing-manifest audit through prospective profile resolution.
-- [ ] Reuse the prospective plan in blocked apply without a second planner.
-- [ ] Add real-process preview, determinism, exit-code, and no-write tests.
+- [x] Implement fixed-point resolution for entry and dependent decisions.
+- [x] Build prospective artifact plans for definite and conditional branches.
+- [x] Add additive selection and planned-change fields to text and JSON output.
+- [x] Route missing-manifest audit through prospective profile resolution.
+- [x] Reuse the prospective plan in blocked apply without a second planner.
+- [x] Add real-process preview, determinism, exit-code, and no-write tests.
 
 ## Acceptance Criteria
 
-- [ ] The QA-03 TypeScript/Bun first-run command returns exit code `3`, all
+- [x] The QA-03 TypeScript/Bun first-run command returns exit code `3`, all
       unresolved entry decisions, and a non-empty managed-change preview.
-- [ ] A conditional artifact reports `state: conditional` and the exact
+- [x] A conditional artifact reports `state: conditional` and the exact
       decision/value that would activate it; definite artifacts omit a
       condition.
-- [ ] Audit and blocked apply report semantically identical selection and
+- [x] Audit and blocked apply report semantically identical selection and
       planned operations for the same profile and answers.
-- [ ] Repeating preview against unchanged input produces identical semantic
+- [x] Repeating preview against unchanged input produces identical semantic
       output.
-- [ ] File snapshots taken before missing-manifest audit and unanswered apply
+- [x] File snapshots taken before missing-manifest audit and unanswered apply
       match byte-for-byte afterward.
-- [ ] Existing text/JSON finding fields and exit codes remain compatible.
+- [x] Existing text/JSON finding fields and exit codes remain compatible.
 
 ## Context
 
@@ -77,3 +77,33 @@ operations without allowing audit or blocked apply to write any file.
 - `_prd.md` → Goals 2, 3, 5; Core Features 5–6; Success Criteria QA-03.
 - `_techspec.md` → Interfaces: DecisionPlan; API contracts: Read-only preview and Apply; Build Order 2.
 - ADR-0047.
+
+## Result
+
+Implemented the CLI-visible conditional setup preview slice:
+
+- Added a shared Decision Plan resolver that starts from profile entry decisions, adds dependent decisions only after activating effects match confirmed answers, and returns deterministic active or conditional module selection.
+- Added prospective planned changes for definite artifacts and conditional branches, including `state` and branch conditions in JSON.
+- Routed `audit --profile` with a missing manifest through profile resolution instead of returning `manifest.missing`.
+- Reused the same Decision Plan and planned-change builder for blocked `apply`, so missing-answer audit and apply previews agree and perform no writes.
+- Preserved existing finding objects, JSON envelope fields, and exit-code precedence.
+
+Acceptance evidence:
+
+- QA-03 first-run behavior: `test_typescript_first_apply_returns_entry_decisions_and_preview` passed with exit code `3`, six unresolved entry decisions, and non-empty planned changes.
+- Conditional and definite planned changes: the same test verified `guide.autonomous-work` reports `state: conditional` with `{"decisionId": "autonomous.enabled", "equals": true}`, and a definite change omits `condition`.
+- Audit/apply agreement and no writes: `test_audit_and_blocked_apply_share_preview_without_writes` passed and compared file snapshots before and after both commands.
+- Determinism: `test_preview_output_is_deterministic` passed by comparing repeated JSON payloads.
+- Text output: `test_text_preview_names_selection_and_planned_changes` passed for profile/setup/module and planned-change rendering.
+- Existing audit compatibility: `test_audit*.py` passed without changing existing finding shapes or exit-code assertions.
+
+Verification:
+
+- `PYTHONDONTWRITEBYTECODE=1 rtk python3 -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_preview*.py'`: passed, 4 tests.
+- `PYTHONDONTWRITEBYTECODE=1 rtk python3 -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_audit*.py'`: passed, 7 tests.
+- `rtk git diff --check`: passed.
+- `rtk make verify`: passed; 54 setup-context Python tests, 1272 Go tests, canonical and embedded asset loading, Roundfix skill check, and build passed.
+
+Follow-up:
+
+- Concrete omission/removal of decision-controlled artifacts, template rendering, rendered digests, and semantic audit repair remain in later task slices.

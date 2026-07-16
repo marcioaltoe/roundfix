@@ -85,6 +85,82 @@ class ExpectedArtifact:
 
 
 @dataclass(frozen=True)
+class PlanCondition:
+    decision_id: str
+    operator: str
+    value: object
+
+    def to_json(self) -> dict[str, object]:
+        return {"decisionId": self.decision_id, self.operator: self.value}
+
+
+@dataclass(frozen=True)
+class PlannedArtifact:
+    artifact: ExpectedArtifact
+    present: bool
+    state: str
+    condition: PlanCondition | None = None
+
+
+@dataclass(frozen=True)
+class PlannedChange:
+    action: str
+    path: Path
+    managed_id: str
+    state: str
+    condition: PlanCondition | None = None
+
+    def to_json(self) -> dict[str, object]:
+        data: dict[str, object] = {
+            "action": self.action,
+            "path": self.path.as_posix(),
+            "managedId": self.managed_id,
+            "state": self.state,
+        }
+        if self.condition is not None:
+            data["condition"] = self.condition.to_json()
+        return data
+
+
+@dataclass(frozen=True)
+class SelectionModule:
+    module_id: str
+    state: str
+    condition: PlanCondition | None = None
+
+    def to_json(self) -> dict[str, object]:
+        data: dict[str, object] = {"id": self.module_id, "state": self.state}
+        if self.condition is not None:
+            data["condition"] = self.condition.to_json()
+        return data
+
+
+@dataclass(frozen=True)
+class PreviewSelection:
+    profile_id: str
+    setup_id: str
+    modules: tuple[SelectionModule, ...]
+
+    def to_json(self) -> dict[str, object]:
+        return {
+            "profile": self.profile_id,
+            "setup": self.setup_id,
+            "modules": [module.to_json() for module in self.modules],
+        }
+
+
+@dataclass(frozen=True)
+class DecisionPlan:
+    profile_id: str
+    setup_id: str
+    active_modules: tuple[str, ...]
+    resolved_decisions: dict[str, dict]
+    unresolved_decisions: tuple[str, ...]
+    selection: PreviewSelection
+    artifacts: tuple[PlannedArtifact, ...]
+
+
+@dataclass(frozen=True)
 class ManagedBlock:
     managed_id: str
     version: int
@@ -123,6 +199,8 @@ class InstalledSkill:
 @dataclass(frozen=True)
 class AuditResult:
     findings: list[Finding]
+    selection: PreviewSelection | None = None
+    planned_changes: tuple[PlannedChange, ...] = ()
 
     @property
     def ok(self) -> bool:
@@ -138,13 +216,16 @@ class AuditResult:
         }
 
     def to_json(self) -> dict:
-        return {
+        data = {
             "schemaVersion": AUDIT_SCHEMA_VERSION,
             "ok": self.ok,
             "summary": self.summary,
             "findings": [finding.to_json() for finding in sorted_findings(self.findings)],
-            "plannedChanges": planned_changes_for_findings(self.findings),
+            "plannedChanges": planned_changes_for_result(self),
         }
+        if self.selection is not None:
+            data["selection"] = self.selection.to_json()
+        return data
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -290,6 +371,17 @@ def audit_repository(
     findings: list[Finding] = []
     manifest, invalid_input = load_manifest(repo, findings)
     if manifest is None:
+        if profile_override is not None and not invalid_input:
+            findings.clear()
+            return preview_result(
+                repo=repo,
+                catalog=catalog,
+                profile_id=profile_override,
+                existing_manifest=None,
+                cli_decisions={},
+                findings=findings,
+                invalid_input=invalid_input,
+            )
         return AuditResult(sorted_findings(findings)), invalid_input
 
     profile_id = profile_override or manifest.get("profile")
@@ -306,11 +398,22 @@ def audit_repository(
         )
         return AuditResult(sorted_findings(findings)), invalid_input
 
-    ordered_modules = ordered_modules_for_decisions(
+    decision_plan = resolve_decision_plan(
         catalog,
         profile_id,
-        manifest.get("decisions", {}),
+        manifest,
+        {},
     )
+    decision_findings = decision_required_findings(decision_plan)
+    if decision_findings:
+        findings.extend(decision_findings)
+        return AuditResult(
+            sorted_findings(findings),
+            selection=decision_plan.selection,
+            planned_changes=planned_changes_for_plan(repo, decision_plan),
+        ), invalid_input
+
+    ordered_modules = list(decision_plan.active_modules)
     validate_manifest_shape(manifest, profile_id, ordered_modules, catalog, findings)
     validate_profile_skill_references(catalog, profile_id, ordered_modules, findings)
     skills_invalid_input = validate_installed_skills(
@@ -552,6 +655,432 @@ def decision_value(decisions: dict, decision_id: str) -> object:
     return None
 
 
+def preview_result(
+    repo: Path,
+    catalog: AssetCatalog,
+    profile_id: str,
+    existing_manifest: dict | None,
+    cli_decisions: dict[str, object],
+    findings: list[Finding],
+    invalid_input: bool,
+) -> tuple[AuditResult, bool]:
+    if profile_id not in catalog.profiles:
+        findings.append(
+            finding(
+                "profile.unknown",
+                "error",
+                str(MANIFEST_PATH),
+                str(profile_id),
+                f"Profile {profile_id!r} is not bundled.",
+                "Select one bundled profile or update the manifest.",
+            )
+        )
+        return AuditResult(sorted_findings(findings)), invalid_input
+
+    decision_plan = resolve_decision_plan(
+        catalog=catalog,
+        profile_id=profile_id,
+        existing_manifest=existing_manifest,
+        cli_decisions=cli_decisions,
+    )
+    findings.extend(decision_required_findings(decision_plan))
+    return (
+        AuditResult(
+            sorted_findings(findings),
+            selection=decision_plan.selection,
+            planned_changes=planned_changes_for_plan(repo, decision_plan),
+        ),
+        invalid_input,
+    )
+
+
+def resolve_decision_plan(
+    catalog: AssetCatalog,
+    profile_id: str,
+    existing_manifest: dict | None,
+    cli_decisions: dict[str, object],
+) -> DecisionPlan:
+    today = date.today().isoformat()
+    existing = existing_manifest.get("decisions", {}) if isinstance(existing_manifest, dict) else {}
+    if not isinstance(existing, dict):
+        existing = {}
+
+    required = list(catalog.profile_entry_decisions.get(profile_id, ()))
+    if not required:
+        required = required_decisions(catalog, catalog.ordered_modules_by_profile[profile_id])
+    required_set = set(required)
+    resolved: dict[str, dict] = {}
+    unresolved: list[str] = []
+    matched_effects = []
+    unresolved_effects = []
+    controlled_modules = controlled_module_ids(catalog)
+    active_modules = {
+        module_id
+        for module_id in catalog.ordered_modules_by_profile[profile_id]
+        if module_id not in controlled_modules
+    }
+
+    index = 0
+    while index < len(required):
+        decision_id = required[index]
+        index += 1
+        contract = catalog.decisions.get(decision_id)
+        if contract is None:
+            continue
+        decision = compatible_decision_answer(
+            contract=contract,
+            decision_id=decision_id,
+            existing=existing,
+            cli_decisions=cli_decisions,
+            today=today,
+        )
+        if decision is None:
+            if decision_id not in unresolved:
+                unresolved.append(decision_id)
+            unresolved_effects.extend(catalog.decision_effects.get(decision_id, ()))
+            continue
+
+        resolved[decision_id] = decision
+        for effect in catalog.decision_effects.get(decision_id, ()):
+            if not plan_condition_matches(effect.condition, decision["value"]):
+                continue
+            matched_effects.append(effect)
+            for module_id in effect.activate_modules:
+                active_modules.add(module_id)
+                for module_decision_id in catalog.modules[module_id].get("requiredDecisions", []):
+                    if module_decision_id not in required_set:
+                        required.append(module_decision_id)
+                        required_set.add(module_decision_id)
+            for dependent_decision_id in effect.require_decisions:
+                if dependent_decision_id not in required_set:
+                    required.append(dependent_decision_id)
+                    required_set.add(dependent_decision_id)
+
+    for decision_id, existing_decision in sorted(existing.items()):
+        if decision_id.startswith("adoption.") and isinstance(existing_decision, dict):
+            resolved[decision_id] = existing_decision
+    for decision_id, value in sorted(cli_decisions.items()):
+        if decision_id.startswith("adoption."):
+            resolved[decision_id] = {"value": value, "confirmedAt": today}
+
+    conditional_modules = conditional_module_conditions(
+        catalog=catalog,
+        unresolved_effects=unresolved_effects,
+        active_modules=active_modules,
+    )
+    active_order = ordered_module_ids(catalog, profile_id, active_modules)
+    selection = PreviewSelection(
+        profile_id=profile_id,
+        setup_id=catalog.profiles[profile_id]["setup"],
+        modules=selection_modules(
+            catalog=catalog,
+            profile_id=profile_id,
+            active_modules=set(active_order),
+            conditional_modules=conditional_modules,
+        ),
+    )
+    artifacts = planned_artifacts_for_decision_plan(
+        catalog=catalog,
+        profile_id=profile_id,
+        active_modules=active_order,
+        matched_effects=matched_effects,
+        unresolved_effects=unresolved_effects,
+    )
+    return DecisionPlan(
+        profile_id=profile_id,
+        setup_id=catalog.profiles[profile_id]["setup"],
+        active_modules=tuple(active_order),
+        resolved_decisions=resolved,
+        unresolved_decisions=tuple(unresolved),
+        selection=selection,
+        artifacts=artifacts,
+    )
+
+
+def compatible_decision_answer(
+    contract: dict,
+    decision_id: str,
+    existing: dict,
+    cli_decisions: dict[str, object],
+    today: str,
+) -> dict | None:
+    if decision_id in cli_decisions:
+        value = cli_decisions[decision_id]
+        if is_decision_value_valid(contract, value):
+            return {"value": value, "confirmedAt": today}
+        return None
+
+    existing_decision = existing.get(decision_id)
+    if isinstance(existing_decision, dict) and "value" in existing_decision:
+        value = existing_decision["value"]
+        if is_decision_value_valid(contract, value):
+            confirmed_at = existing_decision.get("confirmedAt")
+            if not isinstance(confirmed_at, str) or not confirmed_at:
+                confirmed_at = today
+            return {"value": value, "confirmedAt": confirmed_at}
+    return None
+
+
+def plan_condition_matches(condition, value: object) -> bool:
+    if condition.operator == "equals":
+        return value == condition.value
+    if condition.operator == "present":
+        return (value is not None) == condition.value
+    return False
+
+
+def to_plan_condition(condition) -> PlanCondition:
+    return PlanCondition(
+        decision_id=condition.decision_id,
+        operator=condition.operator,
+        value=condition.value,
+    )
+
+
+def controlled_module_ids(catalog: AssetCatalog) -> set[str]:
+    return {
+        module_id
+        for effects in catalog.decision_effects.values()
+        for effect in effects
+        for module_id in effect.activate_modules
+    }
+
+
+def controlled_artifact_ids(catalog: AssetCatalog) -> set[str]:
+    controlled: set[str] = set()
+    for effects in catalog.decision_effects.values():
+        for effect in effects:
+            controlled.update(effect.include_artifacts)
+            controlled.update(effect.exclude_artifacts)
+            controlled.update(selection.artifact_id for selection in effect.template_selections)
+    return controlled
+
+
+def conditional_module_conditions(
+    catalog: AssetCatalog,
+    unresolved_effects: list,
+    active_modules: set[str],
+) -> dict[str, PlanCondition]:
+    conditions: dict[str, PlanCondition] = {}
+    for effect in unresolved_effects:
+        condition = to_plan_condition(effect.condition)
+        for module_id in effect.activate_modules:
+            if module_id in active_modules or module_id in conditions:
+                continue
+            conditions[module_id] = condition
+    return conditions
+
+
+def ordered_module_ids(
+    catalog: AssetCatalog,
+    profile_id: str,
+    module_ids: set[str],
+) -> list[str]:
+    ordered: list[str] = []
+    for module_id in catalog.ordered_modules_by_profile[profile_id]:
+        if module_id in module_ids:
+            ordered.append(module_id)
+    for module_id in sorted(module_ids):
+        if module_id not in ordered:
+            ordered.append(module_id)
+    return ordered
+
+
+def selection_modules(
+    catalog: AssetCatalog,
+    profile_id: str,
+    active_modules: set[str],
+    conditional_modules: dict[str, PlanCondition],
+) -> tuple[SelectionModule, ...]:
+    module_order = list(catalog.ordered_modules_by_profile[profile_id])
+    module_order.extend(
+        module_id
+        for module_id in sorted(conditional_modules)
+        if module_id not in module_order
+    )
+    modules: list[SelectionModule] = []
+    for module_id in module_order:
+        if module_id in active_modules:
+            modules.append(SelectionModule(module_id=module_id, state="active"))
+        elif module_id in conditional_modules:
+            modules.append(
+                SelectionModule(
+                    module_id=module_id,
+                    state="conditional",
+                    condition=conditional_modules[module_id],
+                )
+            )
+    return tuple(modules)
+
+
+def planned_artifacts_for_decision_plan(
+    catalog: AssetCatalog,
+    profile_id: str,
+    active_modules: list[str],
+    matched_effects: list,
+    unresolved_effects: list,
+) -> tuple[PlannedArtifact, ...]:
+    artifact_modules = list(active_modules)
+    for effect in [*matched_effects, *unresolved_effects]:
+        for module_id in effect.activate_modules:
+            if module_id not in artifact_modules:
+                artifact_modules.append(module_id)
+
+    artifacts = {
+        artifact.managed_id: artifact
+        for artifact in expected_artifacts_for_profile(catalog, profile_id, artifact_modules)
+    }
+    module_artifacts = artifacts_by_module(artifacts.values())
+    controlled_artifacts = controlled_artifact_ids(catalog)
+    planned: list[PlannedArtifact] = []
+    seen: set[tuple[str, bool, str, str, object]] = set()
+
+    def add_artifact(
+        managed_id: str,
+        present: bool,
+        state: str,
+        condition: PlanCondition | None = None,
+    ) -> None:
+        artifact = artifacts.get(managed_id)
+        if artifact is None:
+            return
+        condition_key = (
+            condition.decision_id if condition else "",
+            condition.operator if condition else "",
+            condition.value if condition else "",
+        )
+        key = (managed_id, present, state, *condition_key)
+        if key in seen:
+            return
+        seen.add(key)
+        planned.append(
+            PlannedArtifact(
+                artifact=artifact,
+                present=present,
+                state=state,
+                condition=condition,
+            )
+        )
+
+    for module_id in active_modules:
+        for artifact in module_artifacts.get(module_id, []):
+            if artifact.managed_id not in controlled_artifacts:
+                add_artifact(artifact.managed_id, True, "definite")
+
+    for effect in matched_effects:
+        for module_id in effect.activate_modules:
+            for artifact in module_artifacts.get(module_id, []):
+                add_artifact(artifact.managed_id, True, "definite")
+        for managed_id in effect.include_artifacts:
+            add_artifact(managed_id, True, "definite")
+        for selection in effect.template_selections:
+            add_artifact(selection.artifact_id, True, "definite")
+        for managed_id in effect.exclude_artifacts:
+            add_artifact(managed_id, False, "definite")
+
+    for effect in unresolved_effects:
+        condition = to_plan_condition(effect.condition)
+        for module_id in effect.activate_modules:
+            for artifact in module_artifacts.get(module_id, []):
+                add_artifact(artifact.managed_id, True, "conditional", condition)
+        for managed_id in effect.include_artifacts:
+            add_artifact(managed_id, True, "conditional", condition)
+        for selection in effect.template_selections:
+            add_artifact(selection.artifact_id, True, "conditional", condition)
+        for managed_id in effect.exclude_artifacts:
+            add_artifact(managed_id, False, "conditional", condition)
+
+    return tuple(planned)
+
+
+def artifacts_by_module(artifacts: Iterable[ExpectedArtifact]) -> dict[str, list[ExpectedArtifact]]:
+    grouped: dict[str, list[ExpectedArtifact]] = {}
+    for artifact in artifacts:
+        grouped.setdefault(artifact.module_id, []).append(artifact)
+    return grouped
+
+
+def decision_required_findings(decision_plan: DecisionPlan) -> list[Finding]:
+    return [
+        finding(
+            "decision.required",
+            "decision",
+            str(MANIFEST_PATH),
+            decision_id,
+            f"Decision {decision_id} has no compatible durable answer.",
+            "Pass --decision with a valid value before applying.",
+        )
+        for decision_id in decision_plan.unresolved_decisions
+    ]
+
+
+def planned_changes_for_plan(
+    repo: Path,
+    decision_plan: DecisionPlan,
+) -> tuple[PlannedChange, ...]:
+    changes: list[PlannedChange] = [
+        PlannedChange(
+            action="create manifest",
+            path=MANIFEST_PATH,
+            managed_id="manifest",
+            state="definite",
+        )
+    ]
+    seen: set[tuple[str, str, str, str, object]] = {
+        ("create manifest", MANIFEST_PATH.as_posix(), "manifest", "", "")
+    }
+    for planned_artifact in decision_plan.artifacts:
+        change = planned_change_for_artifact(repo, planned_artifact)
+        if change is None:
+            continue
+        condition = change.condition
+        condition_key = (
+            condition.decision_id if condition else "",
+            condition.operator if condition else "",
+            condition.value if condition else "",
+        )
+        key = (
+            change.action,
+            change.path.as_posix(),
+            change.managed_id,
+            change.state,
+            *condition_key,
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        changes.append(change)
+    return tuple(changes)
+
+
+def planned_change_for_artifact(
+    repo: Path,
+    planned_artifact: PlannedArtifact,
+) -> PlannedChange | None:
+    artifact = planned_artifact.artifact
+    target = repo / artifact.path
+    if not planned_artifact.present:
+        if not target.exists():
+            return None
+        return PlannedChange(
+            action="remove managed content",
+            path=artifact.path,
+            managed_id=artifact.managed_id,
+            state=planned_artifact.state,
+            condition=planned_artifact.condition,
+        )
+    action = "create guide" if artifact.kind == "guide" else "create managed block"
+    if target.exists():
+        action = "refresh managed content"
+    return PlannedChange(
+        action=action,
+        path=artifact.path,
+        managed_id=artifact.managed_id,
+        state=planned_artifact.state,
+        condition=planned_artifact.condition,
+    )
+
+
 def plan_apply(
     repo: Path,
     catalog: AssetCatalog,
@@ -594,25 +1123,32 @@ def plan_apply(
 
     cli_decisions, parse_findings = parse_decision_args(decision_args, catalog)
     findings.extend(parse_findings)
-    if parse_findings:
-        return empty_apply_result(findings, True)
-
-    base_ordered_modules = catalog.ordered_modules_by_profile[profile_id]
-    decisions = resolve_decisions(
-        catalog=catalog,
-        ordered_modules=base_ordered_modules,
-        existing_manifest=existing_manifest,
-        cli_decisions=cli_decisions,
-        findings=findings,
-    )
-    if findings:
-        return empty_apply_result(findings, False)
-
-    ordered_modules = ordered_modules_for_decisions(
+    decision_plan = resolve_decision_plan(
         catalog,
         profile_id,
-        decisions,
+        existing_manifest,
+        cli_decisions,
     )
+    preview_changes = planned_changes_for_plan(repo, decision_plan)
+    if parse_findings:
+        return empty_apply_result(
+            findings,
+            True,
+            selection=decision_plan.selection,
+            planned_changes=preview_changes,
+        )
+
+    findings.extend(decision_required_findings(decision_plan))
+    if findings:
+        return empty_apply_result(
+            findings,
+            False,
+            selection=decision_plan.selection,
+            planned_changes=preview_changes,
+        )
+
+    decisions = decision_plan.resolved_decisions
+    ordered_modules = list(decision_plan.active_modules)
     expected_artifacts = expected_artifacts_for_profile(catalog, profile_id, ordered_modules)
 
     expected_by_id = {artifact.managed_id: artifact for artifact in expected_artifacts}
@@ -660,8 +1196,18 @@ def plan_apply(
 def empty_apply_result(
     findings: list[Finding],
     invalid_input: bool,
+    selection: PreviewSelection | None = None,
+    planned_changes: tuple[PlannedChange, ...] = (),
 ) -> tuple[AuditResult, bool, ChangePlan]:
-    return AuditResult(sorted_findings(findings)), invalid_input, ChangePlan([], {})
+    return (
+        AuditResult(
+            sorted_findings(findings),
+            selection=selection,
+            planned_changes=planned_changes,
+        ),
+        invalid_input,
+        ChangePlan([], {}),
+    )
 
 
 def load_manifest_for_apply(
@@ -2185,7 +2731,7 @@ def render_result(result: AuditResult, output_format: str) -> None:
 
 
 def render_text(result: AuditResult) -> str:
-    if not result.findings:
+    if not result.findings and result.selection is None and not result.planned_changes:
         return "setup-context-driven audit: ok"
 
     lines = [
@@ -2195,6 +2741,15 @@ def render_text(result: AuditResult) -> str:
             f"warnings={result.summary['warnings']} info={result.summary['info']}"
         ),
     ]
+    if result.selection is not None:
+        lines.append("selection:")
+        lines.append(
+            f"- profile {result.selection.profile_id} setup {result.selection.setup_id}"
+        )
+        module_summary = ", ".join(
+            f"{module.module_id}({module.state})" for module in result.selection.modules
+        )
+        lines.append(f"- modules {module_summary}")
     grouped: dict[str, list[Finding]] = {severity: [] for severity in SEVERITY_ORDER}
     for finding_item in sorted_findings(result.findings):
         grouped[finding_item.severity].append(finding_item)
@@ -2208,17 +2763,33 @@ def render_text(result: AuditResult) -> str:
                 location = f"{location} [{finding_item.managed_id}]"
             lines.append(f"- {finding_item.code} {location}: {finding_item.message}")
             lines.append(f"  action: {finding_item.action}")
-    planned_changes = planned_changes_for_findings(result.findings)
+    planned_changes = planned_changes_for_result(result)
     if planned_changes:
         lines.append("planned changes:")
         for change in planned_changes:
+            condition = change.get("condition")
+            suffix = ""
+            if isinstance(condition, dict):
+                condition_items = [
+                    f"{key}={value}"
+                    for key, value in condition.items()
+                    if key != "decisionId"
+                ]
+                suffix = f" if {condition.get('decisionId')} {' '.join(condition_items)}"
             lines.append(
-                f"- {change['action']} {change['path']} [{change['managedId']}]"
+                f"- {change['action']} {change['path']} [{change['managedId']}] "
+                f"state={change.get('state', 'unknown')}{suffix}"
             )
     return "\n".join(lines)
 
 
-def planned_changes_for_findings(findings: Iterable[Finding]) -> list[dict[str, str]]:
+def planned_changes_for_result(result: AuditResult) -> list[dict[str, object]]:
+    planned = [change.to_json() for change in result.planned_changes]
+    planned.extend(planned_changes_for_findings(result.findings))
+    return planned
+
+
+def planned_changes_for_findings(findings: Iterable[Finding]) -> list[dict[str, object]]:
     actions = {
         "manifest.missing": "create manifest",
         "managed.block.missing": "create managed block",
@@ -2228,7 +2799,7 @@ def planned_changes_for_findings(findings: Iterable[Finding]) -> list[dict[str, 
         "docs.language.non-english": "refresh managed content",
         "docs.reference.broken": "refresh managed content",
     }
-    planned: list[dict[str, str]] = []
+    planned: list[dict[str, object]] = []
     seen: set[tuple[str, str, str]] = set()
     for finding_item in sorted_findings(findings):
         action = actions.get(finding_item.code)
