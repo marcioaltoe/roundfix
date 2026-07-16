@@ -1,9 +1,12 @@
 ---
 spec: 0030-context-driven-agent-instructions
-status: active
+status: archived
 created: 2026-07-15
 surfaces: [cli, docs]
+archived: "2026-07-16"
+source_slug: 0030-context-driven-agent-instructions
 ---
+
 
 # Context-driven agent instructions
 
