@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "setup-context-driven/module-v1",
+  "id": "external-triage",
+  "version": 1,
+  "kind": "workflow",
+  "title": "External triage guidance",
+  "dependsOn": ["context-workflow"],
+  "conflictsWith": [],
+  "requiredSkills": [],
+  "requiredDecisions": ["triage.external"],
+  "rootBlocks": [
+    {
+      "id": "root.external-triage",
+      "version": 1,
+      "template": "template.root.external-triage",
+      "rules": ["rule.external-triage"]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.external-triage",
+      "version": 1,
+      "path": "docs/agents/external-triage.md",
+      "template": "template.guide.external-triage",
+      "rules": ["rule.external-triage"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.external-triage",
+      "version": 1,
+      "summary": "External forge issue triage uses the generated English supporting guide."
+    }
+  ]
+}

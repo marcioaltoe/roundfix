@@ -42,7 +42,14 @@ class ApplyCliTests(unittest.TestCase):
             self.assertEqual(manifest["profile"], "rust-cli")
             self.assertEqual(
                 manifest["modules"],
-                ["core", "context-workflow", "rust", "cli-surface", "autonomous-work"],
+                [
+                    "core",
+                    "context-workflow",
+                    "rust",
+                    "cli-surface",
+                    "autonomous-work",
+                    "spec-workflow",
+                ],
             )
             self.assertIn("runtime.design", manifest["decisions"])
             self.assertTrue(manifest["managedArtifacts"])

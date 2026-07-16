@@ -436,7 +436,7 @@ def audit_repository(
             findings=findings,
         )
         invalid_input = invalid_input or setups_invalid_input
-    expected_artifacts = expected_artifacts_for_profile(catalog, profile_id, ordered_modules)
+    expected_artifacts = expected_artifacts_for_plan(decision_plan)
     validate_manifest_artifacts(manifest, expected_artifacts, findings)
     validate_documents(repo, expected_artifacts, findings)
     validate_secondbrain_documents(repo, ordered_modules, findings)
@@ -925,6 +925,12 @@ def planned_artifacts_for_decision_plan(
         for module_id in effect.activate_modules:
             if module_id not in artifact_modules:
                 artifact_modules.append(module_id)
+        effect_artifacts = list(effect.include_artifacts)
+        effect_artifacts.extend(effect.exclude_artifacts)
+        effect_artifacts.extend(selection.artifact_id for selection in effect.template_selections)
+        for module_id in artifact_owner_modules(catalog, effect_artifacts):
+            if module_id not in artifact_modules:
+                artifact_modules.append(module_id)
 
     artifacts = {
         artifact.managed_id: artifact
@@ -991,6 +997,35 @@ def planned_artifacts_for_decision_plan(
             add_artifact(managed_id, False, "conditional", condition)
 
     return tuple(planned)
+
+
+def expected_artifacts_for_plan(decision_plan: DecisionPlan) -> list[ExpectedArtifact]:
+    return [
+        planned_artifact.artifact
+        for planned_artifact in decision_plan.artifacts
+        if planned_artifact.present and planned_artifact.state == "definite"
+    ]
+
+
+def artifact_owner_modules(catalog: AssetCatalog, managed_ids: Iterable[str]) -> list[str]:
+    wanted = set(managed_ids)
+    owner_modules: list[str] = []
+    if not wanted:
+        return owner_modules
+    for module_id, module in sorted(catalog.modules.items()):
+        module_artifact_ids = {
+            block.get("id")
+            for block in module.get("rootBlocks", [])
+            if isinstance(block.get("id"), str)
+        }
+        module_artifact_ids.update(
+            guide.get("id")
+            for guide in module.get("supportingGuides", [])
+            if isinstance(guide.get("id"), str)
+        )
+        if wanted.intersection(module_artifact_ids):
+            owner_modules.append(module_id)
+    return owner_modules
 
 
 def artifacts_by_module(artifacts: Iterable[ExpectedArtifact]) -> dict[str, list[ExpectedArtifact]]:
@@ -1149,7 +1184,7 @@ def plan_apply(
 
     decisions = decision_plan.resolved_decisions
     ordered_modules = list(decision_plan.active_modules)
-    expected_artifacts = expected_artifacts_for_profile(catalog, profile_id, ordered_modules)
+    expected_artifacts = expected_artifacts_for_plan(decision_plan)
 
     expected_by_id = {artifact.managed_id: artifact for artifact in expected_artifacts}
     current_files = load_current_files(repo, expected_artifacts, existing_manifest, findings)

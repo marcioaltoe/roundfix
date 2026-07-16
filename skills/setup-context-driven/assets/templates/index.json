@@ -15,6 +15,18 @@
       "path": "root/context-workflow.md"
     },
     {
+      "id": "template.root.spec-workflow",
+      "version": 1,
+      "kind": "root-block",
+      "path": "root/spec-workflow.md"
+    },
+    {
+      "id": "template.root.external-triage",
+      "version": 1,
+      "kind": "root-block",
+      "path": "root/external-triage.md"
+    },
+    {
       "id": "template.root.typescript",
       "version": 1,
       "kind": "root-block",
@@ -93,6 +105,12 @@
       "path": "guides/docs-layout.md"
     },
     {
+      "id": "template.guide.spec-docs-layout",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/spec-docs-layout.md"
+    },
+    {
       "id": "template.guide.domain",
       "version": 1,
       "kind": "guide",
@@ -109,6 +127,12 @@
       "version": 1,
       "kind": "guide",
       "path": "guides/issue-tracker.md"
+    },
+    {
+      "id": "template.guide.external-triage",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/external-triage.md"
     },
     {
       "id": "template.guide.typescript-bun",

@@ -3,7 +3,7 @@
   "id": "context-workflow",
   "version": 1,
   "kind": "workflow",
-  "title": "CONTEXT-driven spec workflow",
+  "title": "CONTEXT-driven workflow",
   "dependsOn": ["core"],
   "conflictsWith": [],
   "requiredSkills": [
@@ -20,10 +20,7 @@
     "tech-writer"
   ],
   "requiredDecisions": [
-    "spec.scaffold",
-    "domain.layout",
-    "triage.external",
-    "secondbrain.enabled"
+    "domain.layout"
   ],
   "rootBlocks": [
     {
@@ -31,7 +28,6 @@
       "version": 1,
       "template": "template.root.context-workflow",
       "rules": [
-        "rule.context.spec-artifacts",
         "rule.context.domain-docs",
         "rule.context.docs-layout"
       ]
@@ -51,28 +47,9 @@
       "path": "docs/agents/domain.md",
       "template": "template.guide.domain",
       "rules": ["rule.context.domain-docs"]
-    },
-    {
-      "id": "guide.spec-routing",
-      "version": 1,
-      "path": "docs/agents/spec-routing.md",
-      "template": "template.guide.spec-routing",
-      "rules": ["rule.context.spec-artifacts"]
-    },
-    {
-      "id": "guide.issue-tracker",
-      "version": 1,
-      "path": "docs/agents/issue-tracker.md",
-      "template": "template.guide.issue-tracker",
-      "rules": ["rule.context.spec-artifacts"]
     }
   ],
   "rules": [
-    {
-      "id": "rule.context.spec-artifacts",
-      "version": 1,
-      "summary": "Specs live under docs/specs and task status lives only in task files."
-    },
     {
       "id": "rule.context.domain-docs",
       "version": 1,

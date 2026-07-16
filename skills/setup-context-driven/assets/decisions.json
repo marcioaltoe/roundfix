@@ -10,18 +10,21 @@
       "effects": [
         {
           "when": {"equals": true},
+          "activateModules": ["spec-workflow"],
           "includeArtifacts": [
-            "root.context-workflow",
-            "guide.docs-layout",
+            "root.spec-workflow",
             "guide.spec-routing",
-            "guide.issue-tracker"
+            "guide.issue-tracker",
+            "guide.spec-docs-layout"
           ]
         },
         {
           "when": {"equals": false},
           "excludeArtifacts": [
+            "root.spec-workflow",
             "guide.spec-routing",
-            "guide.issue-tracker"
+            "guide.issue-tracker",
+            "guide.spec-docs-layout"
           ]
         }
       ]
@@ -70,11 +73,18 @@
       "effects": [
         {
           "when": {"equals": true},
-          "includeArtifacts": ["guide.issue-tracker"]
+          "activateModules": ["external-triage"],
+          "includeArtifacts": [
+            "root.external-triage",
+            "guide.external-triage"
+          ]
         },
         {
           "when": {"equals": false},
-          "excludeArtifacts": ["guide.issue-tracker"]
+          "excludeArtifacts": [
+            "root.external-triage",
+            "guide.external-triage"
+          ]
         }
       ]
     },

@@ -11,7 +11,7 @@ SCRIPT = SKILL_ROOT / "scripts" / "context_setup.py"
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 from context_assets import load_asset_catalog  # noqa: E402
-from context_setup import expected_artifacts_for_profile, managed_block  # noqa: E402
+from context_setup import expected_artifacts_for_plan, managed_block, resolve_decision_plan  # noqa: E402
 
 
 class AuditCliTests(unittest.TestCase):
@@ -158,8 +158,25 @@ def run_context_setup(*args):
 def write_compliant_repository(repo, profile_id, omit_decision=None, install_skills=True):
     repo.mkdir(parents=True, exist_ok=True)
     catalog = load_asset_catalog(SKILL_ROOT)
-    modules = catalog.ordered_modules_by_profile[profile_id]
-    artifacts = expected_artifacts_for_profile(catalog, profile_id)
+    decisions = {
+        "spec.scaffold": {"value": True, "confirmedAt": "2026-07-15"},
+        "domain.layout": {"value": "single-context", "confirmedAt": "2026-07-15"},
+        "triage.external": {"value": False, "confirmedAt": "2026-07-15"},
+        "autonomous.enabled": {"value": True, "confirmedAt": "2026-07-15"},
+        "runtime.backend": {"value": "codex gpt-5.5 xhigh", "confirmedAt": "2026-07-15"},
+        "runtime.design": {"value": "claude opus xhigh", "confirmedAt": "2026-07-15"},
+        "verification.gate": {"value": "make verify", "confirmedAt": "2026-07-15"},
+        "language.generated": {"value": "English", "confirmedAt": "2026-07-15"},
+        "secondbrain.enabled": {"value": False, "confirmedAt": "2026-07-15"},
+    }
+    plan = resolve_decision_plan(
+        catalog,
+        profile_id,
+        {"decisions": decisions},
+        {},
+    )
+    modules = list(plan.active_modules)
+    artifacts = expected_artifacts_for_plan(plan)
 
     grouped = {}
     for artifact in artifacts:
@@ -174,17 +191,6 @@ def write_compliant_repository(repo, profile_id, omit_decision=None, install_ski
         )
         target.write_text(content, encoding="utf-8")
 
-    decisions = {
-        "spec.scaffold": {"value": True, "confirmedAt": "2026-07-15"},
-        "domain.layout": {"value": "single-context", "confirmedAt": "2026-07-15"},
-        "triage.external": {"value": False, "confirmedAt": "2026-07-15"},
-        "autonomous.enabled": {"value": True, "confirmedAt": "2026-07-15"},
-        "runtime.backend": {"value": "codex gpt-5.5 xhigh", "confirmedAt": "2026-07-15"},
-        "runtime.design": {"value": "claude opus xhigh", "confirmedAt": "2026-07-15"},
-        "verification.gate": {"value": "make verify", "confirmedAt": "2026-07-15"},
-        "language.generated": {"value": "English", "confirmedAt": "2026-07-15"},
-        "secondbrain.enabled": {"value": False, "confirmedAt": "2026-07-15"},
-    }
     if omit_decision is not None:
         decisions.pop(omit_decision)
 
