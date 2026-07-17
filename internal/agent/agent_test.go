@@ -943,8 +943,12 @@ func TestConsoleDisplaySinkDoesNotAdvanceStateWhenWriteFails(t *testing.T) {
 		writer := &failOnceWriter{err: writeErr}
 		sink := NewConsoleDisplaySink(writer)
 
-		if err := sink.Publish(context.Background(), event); !errors.Is(err, writeErr) {
+		err := sink.Publish(context.Background(), event)
+		if !errors.Is(err, writeErr) {
 			t.Fatalf("expected first publish to fail with write error, got %v", err)
+		}
+		if !strings.Contains(err.Error(), "write Agent console output") {
+			t.Fatalf("expected write error context, got %v", err)
 		}
 		if err := sink.Publish(context.Background(), event); err != nil {
 			t.Fatalf("expected retry to publish after failed write, got %v", err)
@@ -959,8 +963,12 @@ func TestConsoleDisplaySinkDoesNotAdvanceStateWhenWriteFails(t *testing.T) {
 		writer := &shortOnceWriter{}
 		sink := NewConsoleDisplaySink(writer)
 
-		if err := sink.Publish(context.Background(), event); !errors.Is(err, io.ErrShortWrite) {
+		err := sink.Publish(context.Background(), event)
+		if !errors.Is(err, io.ErrShortWrite) {
 			t.Fatalf("expected first publish to fail with short write, got %v", err)
+		}
+		if !strings.Contains(err.Error(), "write Agent console output") {
+			t.Fatalf("expected short write context, got %v", err)
 		}
 		if err := sink.Publish(context.Background(), event); err != nil {
 			t.Fatalf("expected retry to publish after short write, got %v", err)

@@ -212,10 +212,10 @@ func (sink *ConsoleDisplaySink) ensureToolState() {
 func (sink *ConsoleDisplaySink) writeComplete(text string) error {
 	written, err := io.WriteString(sink.Writer, text)
 	if err != nil {
-		return err
+		return fmt.Errorf("write Agent console output: %w", err)
 	}
 	if written != len(text) {
-		return io.ErrShortWrite
+		return fmt.Errorf("write Agent console output: %w", io.ErrShortWrite)
 	}
 	return nil
 }
