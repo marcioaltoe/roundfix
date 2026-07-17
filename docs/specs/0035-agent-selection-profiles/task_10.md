@@ -1,7 +1,7 @@
 ---
 task: task_10
 spec: 0035-agent-selection-profiles
-status: completed
+status: pending
 type: test
 complexity: high
 ---
@@ -31,6 +31,7 @@ Add the cross-boundary macro harness that proves the individually tested profile
 - [x] Assert database and Run Event Stream selection history.
 - [x] Prove invalid Task Type has zero side effects.
 - [x] Run focused race and full repository verification.
+- [ ] Preserve a valid signed Codex executable boundary in the macOS macro fixture.
 
 ## Acceptance Criteria
 
@@ -41,6 +42,7 @@ Add the cross-boundary macro harness that proves the individually tested profile
 - [x] Recommendation ordering never changes configuration or fallback order during the flow.
 - [x] No fallback occurs after the first prompt in the negative companion.
 - [x] Focused race verification and `make verify` pass without retries or skipped assertions.
+- [ ] A cold-cache macro run passes macOS Codex hygiene without copying away the executable signature.
 
 ## Context
 
