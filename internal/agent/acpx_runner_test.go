@@ -34,6 +34,7 @@ const (
 	fakeACPXExitByCall = "ROUNDFIX_FAKE_ACPX_EXIT_BY_CALL"
 	fakeACPXCanceled   = "ROUNDFIX_FAKE_ACPX_CANCELED"
 	fakeACPXClosed     = "ROUNDFIX_FAKE_ACPX_CLOSED"
+	fakeACPXPromptDone = "ROUNDFIX_FAKE_ACPX_PROMPT_DONE"
 	fakeACPXStarted    = "ROUNDFIX_FAKE_ACPX_STARTED"
 	fakeACPXBlock      = "ROUNDFIX_FAKE_ACPX_BLOCK_PROMPT"
 	fakeACPXBlockCmd   = "ROUNDFIX_FAKE_ACPX_BLOCK_COMMAND"
@@ -1420,6 +1421,8 @@ func TestACPXRunWarnsWhenCodexSandboxPresetUnavailable(t *testing.T) {
 func TestACPXRunCancelsPromptCooperatively(t *testing.T) {
 	harness := newBlockingFakeACPXHarness(t, true)
 	assertCancellationFixturePaths(t, harness)
+	clock := newFakeCancellationClock()
+	harness.runner.cancelClock = clock
 	ctx, cancel := context.WithCancel(context.Background())
 	resultCh := make(chan error, 1)
 	go func() {
@@ -1429,6 +1432,8 @@ func TestACPXRunCancelsPromptCooperatively(t *testing.T) {
 	harness.waitForMilestone(t, "prompt start", harness.milestones.promptStarted)
 	cancel()
 	harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted)
+	graceTimer := clock.waitForTimer(t, 0)
+	harness.waitForMilestone(t, "prompt completion", harness.milestones.promptCompleted)
 
 	err := receiveError(t, resultCh)
 	if !IsStopError(err) {
@@ -1441,9 +1446,25 @@ func TestACPXRunCancelsPromptCooperatively(t *testing.T) {
 	if stopErr.Killed {
 		t.Fatalf("expected cooperative stop without kill, got %#v", stopErr)
 	}
+	if graceTimer.Fired() {
+		t.Fatal("expected cooperative prompt completion before grace timer fired")
+	}
+	if !graceTimer.Stopped() {
+		t.Fatal("expected cooperative prompt completion to stop grace timer")
+	}
+	if timers := clock.timersSnapshot(); len(timers) != 1 {
+		t.Fatalf("expected only the cooperative grace timer, got %d timers", len(timers))
+	}
+	assertNoFile(t, "close completion", harness.milestones.closeCompleted)
 	invocations := readJSONInvocations(t, harness.invocationsPath)
-	if !containsInvocation(invocations, []string{"--cwd", harness.gitRoot, "codex", "cancel", "-s", "roundfix-run-1"}) {
-		t.Fatalf("expected cancel invocation, got %#v", invocations)
+	want := [][]string{
+		{"--cwd", harness.gitRoot, "--model", "gpt-test", "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "codex", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "gpt-test", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
+		{"--cwd", harness.gitRoot, "codex", "cancel", "-s", "roundfix-run-1"},
+	}
+	if !reflect.DeepEqual(invocations, want) {
+		t.Fatalf("unexpected cooperative cancellation invocation order\nwant: %#v\ngot:  %#v", want, invocations)
 	}
 }
 
@@ -2164,6 +2185,7 @@ func newBlockingFakeACPXHarness(t *testing.T, exitAfterCancel bool) *fakeACPXHar
 	t.Setenv(fakeACPXStarted, harness.startedPath)
 	t.Setenv(fakeACPXCanceled, harness.milestones.cancelCompleted)
 	t.Setenv(fakeACPXClosed, harness.milestones.closeCompleted)
+	t.Setenv(fakeACPXPromptDone, harness.milestones.promptCompleted)
 	if exitAfterCancel {
 		t.Setenv(fakeACPXExitCancel, "1")
 	}
@@ -2172,6 +2194,7 @@ func newBlockingFakeACPXHarness(t *testing.T, exitAfterCancel bool) *fakeACPXHar
 
 type fakeACPXMilestones struct {
 	promptStarted   string
+	promptCompleted string
 	cancelCompleted string
 	closeCompleted  string
 }
@@ -2184,6 +2207,7 @@ func newFakeACPXMilestones(t *testing.T, dir string) fakeACPXMilestones {
 	}
 	return fakeACPXMilestones{
 		promptStarted:   filepath.Join(milestoneDir, "prompt-started"),
+		promptCompleted: filepath.Join(milestoneDir, "prompt-completed"),
 		cancelCompleted: filepath.Join(milestoneDir, "cancel-completed"),
 		closeCompleted:  filepath.Join(milestoneDir, "close-completed"),
 	}
@@ -2199,6 +2223,7 @@ func assertCancellationFixturePaths(t *testing.T, harness *fakeACPXHarness) {
 	paths := map[string]string{
 		"invocation log":   harness.invocationsPath,
 		"prompt milestone": harness.milestones.promptStarted,
+		"prompt complete":  harness.milestones.promptCompleted,
 		"cancel milestone": harness.milestones.cancelCompleted,
 		"close milestone":  harness.milestones.closeCompleted,
 	}
@@ -2222,6 +2247,15 @@ func containsWarning(warnings []string, want string) bool {
 		}
 	}
 	return false
+}
+
+func assertNoFile(t *testing.T, name string, path string) {
+	t.Helper()
+	if _, err := os.Stat(path); err == nil {
+		t.Fatalf("expected no fake acpx %s marker at %s", name, path)
+	} else if !os.IsNotExist(err) {
+		t.Fatalf("stat fake acpx %s marker %s: %v", name, path, err)
+	}
 }
 
 type fakeCancellationClock struct {
@@ -2322,6 +2356,12 @@ func (timer *fakeCancellationTimer) Duration() time.Duration {
 	timer.mu.Lock()
 	defer timer.mu.Unlock()
 	return timer.duration
+}
+
+func (timer *fakeCancellationTimer) Fired() bool {
+	timer.mu.Lock()
+	defer timer.mu.Unlock()
+	return timer.fired
 }
 
 func (timer *fakeCancellationTimer) Stopped() bool {
@@ -2785,11 +2825,19 @@ func runFakeACPXProcess() int {
 		for {
 			if canceled := os.Getenv(fakeACPXCanceled); canceled != "" {
 				if _, err := os.Stat(canceled); err == nil && os.Getenv(fakeACPXExitCancel) == "1" {
+					if err := writeFakeACPXPromptCompletion(); err != nil {
+						_, _ = fmt.Fprintf(os.Stderr, "write prompt completion marker: %v\n", err)
+						return 2
+					}
 					return 130
 				}
 			}
 			if closed := os.Getenv(fakeACPXClosed); closed != "" {
 				if _, err := os.Stat(closed); err == nil {
+					if err := writeFakeACPXPromptCompletion(); err != nil {
+						_, _ = fmt.Fprintf(os.Stderr, "write prompt completion marker: %v\n", err)
+						return 2
+					}
 					return 130
 				}
 			}
@@ -2853,6 +2901,14 @@ func appendFakeACPXString(path string, value string) error {
 		return err
 	}
 	return nil
+}
+
+func writeFakeACPXPromptCompletion() error {
+	path := os.Getenv(fakeACPXPromptDone)
+	if path == "" {
+		return nil
+	}
+	return os.WriteFile(path, []byte("completed\n"), 0o644)
 }
 
 // fakeACPXCommandKey mirrors the real acpx grammar: program-level global

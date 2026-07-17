@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0032-deterministic-agent-session-cancellation
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -22,20 +22,20 @@ Lock the cooperative Agent Session cancellation path to its close-free contract 
 
 ## Subtasks
 
-- [ ] Rewrite the cooperative scenario around completed milestones.
-- [ ] Assert the exact cancel-only invocation sequence and absent close marker.
-- [ ] Assert prompt completion and the cooperative `StopError` result.
-- [ ] Exercise both cancellation outcomes repeatedly.
-- [ ] Run race-enabled Agent package verification.
-- [ ] Run the full repository verification gate.
+- [x] Rewrite the cooperative scenario around completed milestones.
+- [x] Assert the exact cancel-only invocation sequence and absent close marker.
+- [x] Assert prompt completion and the cooperative `StopError` result.
+- [x] Exercise both cancellation outcomes repeatedly.
+- [x] Run race-enabled Agent package verification.
+- [x] Run the full repository verification gate.
 
 ## Acceptance Criteria
 
-- [ ] Cooperative cancellation records cancel and no Agent Session close invocation or marker.
-- [ ] The cooperative result is a `StopError` with `Killed=false`, and the blocked prompt terminates.
-- [ ] The first controlled grace timer remains unfired when the prompt exits cooperatively.
-- [ ] Both cancellation scenarios pass 100 independent executions in one command.
-- [ ] The complete Agent package reports no race, and the repository verification gate passes without retries.
+- [x] Cooperative cancellation records cancel and no Agent Session close invocation or marker.
+- [x] The cooperative result is a `StopError` with `Killed=false`, and the blocked prompt terminates.
+- [x] The first controlled grace timer remains unfired when the prompt exits cooperatively.
+- [x] Both cancellation scenarios pass 100 independent executions in one command.
+- [x] The complete Agent package reports no race, and the repository verification gate passes without retries.
 
 ## Context
 
@@ -54,3 +54,14 @@ Lock the cooperative Agent Session cancellation path to its close-free contract 
 - `_techspec.md` → API Contracts; Coverage Map; Testing Approach; Build Order 3-4; Risks & Considerations; Decisions.
 - `docs/adr/0018-one-agent-session-per-run.md` → Agent Session lifecycle ownership.
 - `docs/adr/0022-stop-requests-travel-through-the-run-database.md` → cooperative cancel and forced-stop boundary.
+
+## Result
+
+- Cooperative cancellation now waits for prompt start, completed cancel invocation, controlled grace timer creation, and prompt completion milestones before asserting the result.
+- The cooperative scenario asserts the exact cancel-only invocation sequence and verifies that no Agent Session close completion marker exists.
+- The cooperative result is asserted as `StopError` with `Killed=false`; the controlled grace timer is asserted unfired and stopped, with no post-close timer created.
+- Evidence: `rtk go test ./internal/agent -run 'TestACPXRunCancelsPromptCooperatively$' -count=1` passed with 1 scenario.
+- Evidence: `rtk go test ./internal/agent -run 'TestACPXRun(CancelsPromptCooperatively|ClosesSessionAfterCancelGracePeriod)$' -count=100` passed with 200 scenario executions.
+- Evidence: `rtk go test -race ./internal/agent` passed with 143 tests and no race report.
+- Evidence: `rtk make verify` passed formatting, all Go tests, skill synchronization, and build.
+- Evidence: `rtk git diff --check` passed.
