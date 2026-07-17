@@ -46,6 +46,7 @@ Usage:
   roundfix watch --source coderabbit --pr <number> --agent <agent> [--spec <slug>] --until-clean
   roundfix implement --spec <slug> --agent <agent>
   roundfix settle --spec <slug> --task <task_id>
+  roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
   roundfix archive <slug>
   roundfix init [--scope <project|user>]
   roundfix setup [--yes] [--no-input]
@@ -67,6 +68,7 @@ Commands:
   watch      Fetch and resolve in a watched loop
   implement  Execute a Spec's Task Graph as one Run
   settle     Verify and commit all current worktree changes for one failed Task
+  release    Plan the next release version without mutating repository or release state
   archive    Archive a completed Spec
   stop       Request or force-stop an Active Run
   setup      Verify and prepare this machine for Roundfix Runs
@@ -224,6 +226,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runImplementCommand(ctx, args[1:], stdout, stderr, detachChild)
 	case "settle":
 		return runSettleCommand(ctx, args[1:], stdout, stderr)
+	case "release":
+		return runReleaseCommand(ctx, args[1:], stdout, stderr)
 	case "archive":
 		return runArchiveCommand(ctx, args[1:], stdout, stderr)
 	default:
@@ -3823,6 +3827,47 @@ Options:
 		return implementUsage
 	case "settle":
 		return settleUsage
+	case "release":
+		return `Usage:
+  roundfix release plan [--from <tag>] [--to <revision>] [--impact <none|patch|minor|major> --reason <text>] [--format <text|json>]
+
+Commands:
+  plan  Analyze committed changes and propose the next semantic version.
+
+Release planning is read-only: it creates no Run, reads no Roundfix config,
+contacts no external service, and never edits files, refs, tags, packages,
+releases, remotes, or configuration.
+`
+	case "release plan":
+		return `Usage:
+  roundfix release plan [--from <tag>] [--to <revision>] [--impact <none|patch|minor|major> --reason <text>] [--format <text|json>]
+
+Builds a read-only Release Plan from a stable vMAJOR.MINOR.PATCH base through
+a committed target revision. --from defaults to the latest reachable stable
+tag; --to defaults to committed HEAD.
+
+Decision states:
+  ready                           Patch release can proceed without version approval.
+  approval_required               Minor, major, or breaking version decision needs approval.
+  manual_classification_required  Ambiguous commits need --impact and --reason.
+  no_release                      Maintenance-only changes require no release.
+
+Exit codes:
+  0  ready or no_release
+  2  invalid flags, dirty tree, invalid range, or repository failure
+  3  approval_required or manual_classification_required
+
+Options:
+  --from    Stable release tag to use as the base, for example v1.2.3
+  --to      Target revision to analyze; defaults to HEAD
+  --impact  Manual impact for ambiguous changes: none, patch, minor, or major
+  --reason  Non-empty reason required with --impact
+  --format  Output format: text or json (default text)
+
+The command creates no Run, reads no Roundfix configuration, contacts no
+external service, and never mutates files, refs, tags, remotes, packages,
+releases, or configuration.
+`
 	case "archive":
 		return archiveUsage
 	case "stop":
