@@ -918,7 +918,7 @@ func TestProfilesValidateDeduplicatesProofsAndReportsEveryReference(t *testing.T
 	if len(runner.probeRequests) != 3 {
 		t.Fatalf("expected three unique tuple probes, got %#v", runner.probeRequests)
 	}
-	wantModels := []string{"gpt-5.6-sol", "gpt-5.6-terra", "claude-fable-5"}
+	wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "claude-fable-5"}
 	for index, want := range wantModels {
 		if runner.probeRequests[index].Runtime.Model != want {
 			t.Fatalf("probe %d model = %q, want %q", index, runner.probeRequests[index].Runtime.Model, want)
@@ -1156,7 +1156,7 @@ func TestInvocationProfileOverrideOmittedUsesTaskQAAndReviewProfiles(t *testing.
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no warning without invocation override, got %q", stderr.String())
 	}
-	wantModels := []string{"gpt-5.6-sol", "gpt-5.6-terra", "claude-fable-5"}
+	wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "claude-fable-5"}
 	if got := probeRequestModels(runner.probeRequests); !reflect.DeepEqual(got, wantModels) {
 		t.Fatalf("probe models = %v, want %v", got, wantModels)
 	}
@@ -1212,7 +1212,7 @@ func TestInvocationProfileOverrideAppliesAcrossCategoriesPreservesFallbacksAndWa
 	if result.Override == nil || result.Override.Model != "gpt-5.6-sol" || result.Override.ReasoningEffort != "high" {
 		t.Fatalf("unexpected invocation override: %+v", result.Override)
 	}
-	wantModels := []string{"gpt-5.6-sol", "gpt-5.6-terra"}
+	wantModels := []string{"gpt-5.6-sol", "gpt-5.5"}
 	if got := probeRequestModels(runner.probeRequests); !reflect.DeepEqual(got, wantModels) {
 		t.Fatalf("probe models = %v, want %v", got, wantModels)
 	}
@@ -2268,7 +2268,7 @@ func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 		"node: ok",
 		"acpx: installed",
 		"adapter: ok",
-		"agent probe: ok",
+		"profile readiness: passed",
 		"acpx agents override: installed",
 		"User Config: installed",
 		"Project Config: installed",
@@ -2279,8 +2279,8 @@ func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 	if got := strings.Join(fake.initScopes, ","); got != "user,project" {
 		t.Fatalf("expected User and Project Config init flows, got %q", got)
 	}
-	if fake.acpxInitCalls != 1 {
-		t.Fatalf("expected one acpx config init call, got %d", fake.acpxInitCalls)
+	if fake.acpxInitCalls != 0 {
+		t.Fatalf("expected in-memory ACPX proposal without config init side effects, got %d init calls", fake.acpxInitCalls)
 	}
 	acpxConfig := fake.files[fake.acpxConfigPath]
 	if strings.Contains(acpxConfig, `"codex"`) || !strings.Contains(acpxConfig, `"command": "claude-agent-acp"`) {
@@ -2299,8 +2299,8 @@ func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 func TestRunSetupHealthyMachineIsIdempotent(t *testing.T) {
 	fake := newSetupFakeDeps()
 	fake.paths["codex-acp"] = "/bin/codex-acp"
-	fake.files[fake.userConfigPath] = "defaults:\n  agent: codex\n"
-	fake.files[fake.projectConfigPath] = "defaults:\n  verification: make verify\n"
+	fake.files[fake.userConfigPath] = roundconfig.DefaultConfigYAML()
+	fake.files[fake.projectConfigPath] = roundconfig.DefaultConfigYAML()
 	fake.files[fake.acpxConfigPath] = "{\n  \"agents\": {\n    \"codex\": {\n      \"command\": \"codex-acp\"\n    }\n  }\n}\n"
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
@@ -2315,7 +2315,7 @@ func TestRunSetupHealthyMachineIsIdempotent(t *testing.T) {
 		"node: ok",
 		"acpx: ok",
 		"adapter: ok",
-		"agent probe: ok",
+		"profile readiness: passed",
 		"acpx agents override: ok",
 		"User Config: ok",
 		"Project Config: ok",
@@ -2323,15 +2323,8 @@ func TestRunSetupHealthyMachineIsIdempotent(t *testing.T) {
 	if len(fake.installCalls) != 0 || len(fake.initScopes) != 0 || len(fake.writeCalls) != 0 || len(fake.prompts) != 0 {
 		t.Fatalf("expected idempotent setup to avoid side effects, installs=%v init=%v writes=%v prompts=%v", fake.installCalls, fake.initScopes, fake.writeCalls, fake.prompts)
 	}
-	if len(fake.probeRequests) != 1 {
-		t.Fatalf("expected one Agent readiness probe, got %#v", fake.probeRequests)
-	}
-	gotProbe := fake.probeRequests[0]
-	if gotProbe.WorkDir != fake.gitRoot ||
-		gotProbe.Runtime.ID != "codex" ||
-		gotProbe.Runtime.Model != "gpt-5.5" ||
-		gotProbe.Runtime.ReasoningEffort != "xhigh" {
-		t.Fatalf("expected setup to probe the effective Codex selection in the repo workdir, got %#v", gotProbe)
+	if len(fake.probeRequests) != 3 {
+		t.Fatalf("expected three distinct exact profile proofs, got %#v", fake.probeRequests)
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
@@ -2370,7 +2363,7 @@ func TestRunSetupReportsAdapterFailuresWithoutWrites(t *testing.T) {
 			fake := newSetupFakeDeps()
 			fake.files[fake.userConfigPath] = "user config sentinel\n"
 			fake.files[fake.projectConfigPath] = "project config sentinel\n"
-			fake.files[fake.acpxConfigPath] = "acpx config sentinel\n"
+			fake.files[fake.acpxConfigPath] = "{}\n"
 			fake.adapterErr = tt.adapterErr
 			before := make(map[string]string, len(fake.files))
 			for path, content := range fake.files {
@@ -2390,7 +2383,6 @@ func TestRunSetupReportsAdapterFailuresWithoutWrites(t *testing.T) {
 				"command \"codex-acp\"",
 				tt.want,
 				agent.CodexAdapterInstallCommand(),
-				"agent probe: skipped (adapter failed)",
 			} {
 				if !strings.Contains(stdout.String(), want) {
 					t.Fatalf("expected setup output to contain %q, got %q", want, stdout.String())
@@ -2412,7 +2404,245 @@ func TestRunSetupReportsAdapterFailuresWithoutWrites(t *testing.T) {
 	}
 }
 
-func TestRunSetupAgentProbeUsesConfiguredSelectionAndWorkDir(t *testing.T) {
+func TestRunSetupProfileProofsEveryDistinctTupleOnceBeforePersistence(t *testing.T) {
+	fake := newSetupFakeDeps()
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+	}
+	want := map[roundconfig.AgentSelection]int{
+		{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"}:       1,
+		{Runtime: "codex", Model: "gpt-5.5", ReasoningEffort: "xhigh"}:          1,
+		{Runtime: "claude", Model: "claude-fable-5", ReasoningEffort: "medium"}: 1,
+	}
+	got := map[roundconfig.AgentSelection]int{}
+	for _, request := range fake.probeRequests {
+		got[roundconfig.AgentSelection{
+			Runtime:         strings.TrimSuffix(request.Runtime.ID, "-custom"),
+			Model:           request.Runtime.Model,
+			ReasoningEffort: request.Runtime.ReasoningEffort,
+		}]++
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("profile proof requests = %#v, want %#v", got, want)
+	}
+	if len(fake.initScopes) != 2 {
+		t.Fatalf("expected proof to precede both config writes, init scopes=%v", fake.initScopes)
+	}
+}
+
+func TestRunSetupProfileProofFailurePreservesAllTargets(t *testing.T) {
+	fake := newSetupFakeDeps()
+	fake.files[fake.acpxConfigPath] = "{\n  \"theme\": \"sentinel\"\n}\n"
+	fake.probeErr = &agent.SelectionUnsupportedError{
+		Kind:                agent.SelectionReasoningControlNotAdvertised,
+		Runtime:             "codex",
+		Model:               "gpt-5.6-sol",
+		ReasoningEffort:     "high",
+		AdvertisedModels:    []string{"gpt-5.6-sol"},
+		AdvertisedReasoning: []string{"medium"},
+	}
+	before := cloneSetupFiles(fake.files)
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "profile readiness: failed") {
+		t.Fatalf("expected profile readiness failure, got %q", stdout.String())
+	}
+	if !reflect.DeepEqual(fake.files, before) || len(fake.writeCalls) != 0 || len(fake.initScopes) != 0 {
+		t.Fatalf("proof failure mutated targets: before=%v after=%v writes=%v init=%v", before, fake.files, fake.writeCalls, fake.initScopes)
+	}
+}
+
+func TestRunSetupProfileCleanupAndInvalidEvidencePreserveAllTargets(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want string
+	}{
+		{
+			name: "cleanup failure",
+			err:  &agent.AgentSessionCleanupError{Session: "roundfix-preflight-test", Err: errors.New("close denied")},
+			want: agent.SessionCleanupFailed,
+		},
+		{
+			name: "invalid evidence",
+			err:  &agent.CapabilityEvidenceError{Issues: []string{agent.CapabilityIssueInvalidOption}},
+			want: agent.CapabilityEvidenceInvalid,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fake := newSetupFakeDeps()
+			fake.probeErr = tt.err
+			before := cloneSetupFiles(fake.files)
+			withSetupFakeDeps(t, fake)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+
+			if code != exitRunFailed {
+				t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
+			}
+			if !strings.Contains(stdout.String(), "profile readiness: failed") || !strings.Contains(stdout.String(), tt.want) {
+				t.Fatalf("expected classified profile failure %q, got %q", tt.want, stdout.String())
+			}
+			if !reflect.DeepEqual(fake.files, before) || len(fake.writeCalls) != 0 {
+				t.Fatalf("profile failure mutated targets: before=%v after=%v writes=%v", before, fake.files, fake.writeCalls)
+			}
+		})
+	}
+}
+
+func TestRunSetupProfileWriteFailurePreservesNotYetCommittedTargets(t *testing.T) {
+	fake := newSetupFakeDeps()
+	fake.writeErrors = map[string]error{fake.userConfigPath: errors.New("disk full")}
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "User Config: failed") || !strings.Contains(stdout.String(), "disk full") {
+		t.Fatalf("expected User Config write failure, got %q", stdout.String())
+	}
+	if _, ok := fake.files[fake.userConfigPath]; ok {
+		t.Fatalf("failed User Config write created target: %v", fake.files)
+	}
+	if _, ok := fake.files[fake.projectConfigPath]; ok {
+		t.Fatalf("later Project Config target changed after User Config failure: %v", fake.files)
+	}
+}
+
+func TestRunSetupProfilePersistenceMatchesSubsequentValidation(t *testing.T) {
+	fake := newSetupFakeDeps()
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+	}
+	resolved, err := roundconfig.ResolveConfigProposal(
+		[]byte(fake.files[fake.userConfigPath]),
+		[]byte(fake.files[fake.projectConfigPath]),
+	)
+	if err != nil {
+		t.Fatalf("resolve persisted config: %v", err)
+	}
+	validationRunner := &profileReadinessExactRunner{
+		prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
+			return agent.SelectionProof{
+				Runtime: req.Runtime.ID, Model: req.Runtime.Model, ReasoningEffort: req.Runtime.ReasoningEffort,
+				Assignment: agent.SelectionAssignment{Encoding: agent.SelectionEncodingIndependent},
+				Adapter:    fake.adapterEvidence,
+				Status:     agent.SelectionProofStatusProven,
+			}, nil
+		},
+	}
+	result := proveProfileSelections(context.Background(), resolved, roundconfig.RequiredWorkCategories(), fake.gitRoot, validationRunner)
+	if result.Err != nil {
+		t.Fatalf("subsequent profile validation: %v", result.Err)
+	}
+	if len(result.Proofs) != 3 || len(validationRunner.exactRequests) != 3 {
+		t.Fatalf("subsequent validation proofs=%d requests=%d, want three distinct tuples", len(result.Proofs), len(validationRunner.exactRequests))
+	}
+}
+
+func TestRunSetupNoInputProfileProofCreatesNoTargets(t *testing.T) {
+	fake := newSetupFakeDeps()
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+	}
+	if len(fake.probeRequests) != 3 || len(fake.files) != 0 || len(fake.writeCalls) != 0 || len(fake.prompts) != 0 {
+		t.Fatalf("--no-input proof/mutation mismatch: proofs=%d files=%v writes=%v prompts=%v", len(fake.probeRequests), fake.files, fake.writeCalls, fake.prompts)
+	}
+}
+
+func TestRunSetupAdapterMigrationDeclinePreservesAllTargets(t *testing.T) {
+	fake := newSetupFakeDeps()
+	fake.files[fake.acpxConfigPath] = "{\n  \"agents\": {\n    \"codex\": {\n      \"command\": \"codex-acp\"\n    }\n  }\n}\n"
+	fake.files[fake.userConfigPath] = "# user config sentinel\n{}\n"
+	fake.files[fake.projectConfigPath] = "# project config sentinel\n{}\n"
+	fake.adapterErr = &agent.AdapterLineageError{
+		Command: "codex-acp",
+		Package: "@zed-industries/codex-acp",
+		Version: "0.16.0",
+	}
+	fake.confirm = func(context.Context, io.Writer, string) (bool, error) { return false, nil }
+	before := cloneSetupFiles(fake.files)
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("declined migration exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+	}
+	if len(fake.prompts) != 1 || !strings.Contains(fake.prompts[0], "Migrate") {
+		t.Fatalf("migration prompts = %v, want one explicit migration offer", fake.prompts)
+	}
+	if !reflect.DeepEqual(fake.files, before) || len(fake.writeCalls) != 0 || len(fake.initScopes) != 0 {
+		t.Fatalf("declined migration mutated targets: before=%v after=%v writes=%v init=%v", before, fake.files, fake.writeCalls, fake.initScopes)
+	}
+}
+
+func TestRunSetupAdapterMigrationPersistsSupportedCommand(t *testing.T) {
+	fake := newSetupFakeDeps()
+	fake.files[fake.acpxConfigPath] = "{\n  \"agents\": {\n    \"codex\": {\n      \"command\": \"codex-acp\"\n    }\n  }\n}\n"
+	fake.adapterErr = &agent.AdapterLineageError{
+		Command: "codex-acp",
+		Package: "@zed-industries/codex-acp",
+		Version: "0.16.0",
+	}
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+	}
+	content := fake.files[fake.acpxConfigPath]
+	for _, want := range []string{`"command": "npx"`, `"args": ["-y","` + agent.CodexAdapterPackage + `@` + agent.PinnedCodexAdapterVersion + `"]`} {
+		if !strings.Contains(content, want) {
+			t.Fatalf("migrated ACPX config missing %q:\n%s", want, content)
+		}
+	}
+	if strings.Contains(content, `"command": "codex-acp"`) {
+		t.Fatalf("migrated ACPX config retained bare PATH override:\n%s", content)
+	}
+	if len(fake.adapterRequests) != 2 || fake.adapterRequests[1].Command != agent.CodexAdapterCommand() {
+		t.Fatalf("adapter proof requests = %#v, want current then deterministic proposal", fake.adapterRequests)
+	}
+}
+
+func TestRunSetupProfileProofUsesProposedProfilesAndWorkDir(t *testing.T) {
 	fake := newSetupFakeDeps()
 	fake.config.Runtimes.Codex.Model = "repo-codex"
 	fake.config.Runtimes.Codex.ReasoningEffort = "repo-xhigh"
@@ -2425,22 +2655,21 @@ func TestRunSetupAgentProbeUsesConfiguredSelectionAndWorkDir(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("expected setup exit 0, got %d (stdout %q stderr %q)", code, stdout.String(), stderr.String())
 	}
-	if len(fake.probeRequests) != 1 {
-		t.Fatalf("expected one Agent readiness probe, got %#v", fake.probeRequests)
+	if len(fake.probeRequests) != 3 {
+		t.Fatalf("expected three generated profile proofs, got %#v", fake.probeRequests)
 	}
-	gotProbe := fake.probeRequests[0]
-	if gotProbe.WorkDir != fake.gitRoot ||
-		gotProbe.Runtime.ID != "codex" ||
-		gotProbe.Runtime.Model != "repo-codex" ||
-		gotProbe.Runtime.ReasoningEffort != "repo-xhigh" {
-		t.Fatalf("expected setup probe to use configured Agent selection, got %#v", gotProbe)
+	for _, gotProbe := range fake.probeRequests {
+		if gotProbe.WorkDir != fake.gitRoot {
+			t.Fatalf("expected Setup proof in repository workdir, got %#v", gotProbe)
+		}
 	}
 }
 
 func TestRunSetupAcceptsConfiguredEmptyReasoningEffort(t *testing.T) {
 	fake := newSetupFakeDeps()
-	fake.config.Runtimes.Codex.Model = "gpt-5.6-sol"
-	fake.config.Runtimes.Codex.ReasoningEffort = ""
+	customConfig := strings.ReplaceAll(roundconfig.DefaultConfigYAML(), "reasoning_effort: high", `reasoning_effort: ""`)
+	fake.files[fake.userConfigPath] = customConfig
+	fake.files[fake.projectConfigPath] = customConfig
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -2450,15 +2679,14 @@ func TestRunSetupAcceptsConfiguredEmptyReasoningEffort(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("expected setup exit 0, got %d (stdout %q stderr %q)", code, stdout.String(), stderr.String())
 	}
-	if len(fake.probeRequests) != 1 {
-		t.Fatalf("expected one Agent readiness probe, got %#v", fake.probeRequests)
+	found := false
+	for _, gotProbe := range fake.probeRequests {
+		if gotProbe.Runtime.ID == "codex" && gotProbe.Runtime.Model == "gpt-5.6-sol" && gotProbe.Runtime.ReasoningEffort == "" {
+			found = true
+		}
 	}
-	gotProbe := fake.probeRequests[0]
-	if gotProbe.WorkDir != fake.gitRoot ||
-		gotProbe.Runtime.ID != "codex" ||
-		gotProbe.Runtime.Model != "gpt-5.6-sol" ||
-		gotProbe.Runtime.ReasoningEffort != "" {
-		t.Fatalf("expected setup probe to use model-managed Agent selection, got %#v", gotProbe)
+	if !found {
+		t.Fatalf("expected exact model-managed Agent Selection proof, got %#v", fake.probeRequests)
 	}
 }
 
@@ -2474,7 +2702,7 @@ func TestRunSetupRejectsMissingConfiguredAgentSelection(t *testing.T) {
 	if code != exitRunFailed {
 		t.Fatalf("expected setup selection failure exit %d, got %d", exitRunFailed, code)
 	}
-	if !strings.Contains(stdout.String(), `agent probe: failed (agent selection for runtime "codex" missing model`) {
+	if !strings.Contains(stdout.String(), `adapter: failed (agent selection for runtime "codex" missing model`) {
 		t.Fatalf("expected missing selection diagnostic, got %q", stdout.String())
 	}
 	if len(fake.probeRequests) != 0 {
@@ -2488,8 +2716,8 @@ func TestRunSetupRejectsMissingConfiguredAgentSelection(t *testing.T) {
 func TestRunSetupMismatchedACPXUpgradeOffer(t *testing.T) {
 	fake := newSetupFakeDeps()
 	fake.acpxVersion = "0.11.0"
-	fake.files[fake.userConfigPath] = "defaults:\n  agent: codex\n"
-	fake.files[fake.projectConfigPath] = "defaults:\n  verification: make verify\n"
+	fake.files[fake.userConfigPath] = roundconfig.DefaultConfigYAML()
+	fake.files[fake.projectConfigPath] = roundconfig.DefaultConfigYAML()
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -2510,8 +2738,8 @@ func TestRunSetupMismatchedACPXUpgradeOffer(t *testing.T) {
 func TestRunSetupMergesACPXAgentsOverridePreservingUnrelatedBytes(t *testing.T) {
 	fake := newSetupFakeDeps()
 	fake.paths["claude-agent-acp"] = "/bin/claude-agent-acp"
-	fake.files[fake.userConfigPath] = "defaults:\n  agent: codex\n"
-	fake.files[fake.projectConfigPath] = "defaults:\n  verification: make verify\n"
+	fake.files[fake.userConfigPath] = roundconfig.DefaultConfigYAML()
+	fake.files[fake.projectConfigPath] = roundconfig.DefaultConfigYAML()
 	unrelated := "  \"theme\": {\n    \"color\": \"blue\",\n    \"nested\": [1, 2, 3]\n  }"
 	existingAgent := "    \"custom\": {\n      \"command\": \"existing-custom\"\n    }"
 	fake.files[fake.acpxConfigPath] = "{\n" + unrelated + ",\n  \"agents\": {\n" + existingAgent + "\n  }\n}\n"
@@ -2555,16 +2783,13 @@ func TestRunSetupDeclinedOffersReportNoWrites(t *testing.T) {
 		"node: ok",
 		"acpx: offered: declined",
 		"adapter: skipped",
-		"agent probe: skipped",
-		"acpx agents override: offered: declined",
-		"User Config: offered: declined",
-		"Project Config: offered: declined",
+		"profile readiness: skipped",
 	})
 	if len(fake.installCalls) != 0 || len(fake.initScopes) != 0 || len(fake.writeCalls) != 0 || fake.acpxInitCalls != 0 {
 		t.Fatalf("expected no writes after declined offers, installs=%v init=%v writes=%v acpxInit=%d", fake.installCalls, fake.initScopes, fake.writeCalls, fake.acpxInitCalls)
 	}
-	if len(fake.prompts) != 4 {
-		t.Fatalf("expected four confirmation prompts, got %d: %v", len(fake.prompts), fake.prompts)
+	if len(fake.prompts) != 1 {
+		t.Fatalf("expected one prerequisite confirmation prompt, got %d: %v", len(fake.prompts), fake.prompts)
 	}
 }
 
@@ -2585,10 +2810,7 @@ func TestRunSetupNoInputSkipsOffers(t *testing.T) {
 		"node: ok",
 		"acpx: skipped",
 		"adapter: skipped",
-		"agent probe: skipped",
-		"acpx agents override: skipped",
-		"User Config: skipped",
-		"Project Config: skipped",
+		"profile readiness: skipped",
 	})
 	if len(fake.installCalls) != 0 || len(fake.initScopes) != 0 || len(fake.writeCalls) != 0 || len(fake.prompts) != 0 {
 		t.Fatalf("expected --no-input to avoid side effects, installs=%v init=%v writes=%v prompts=%v", fake.installCalls, fake.initScopes, fake.writeCalls, fake.prompts)
@@ -7258,6 +7480,7 @@ type setupFakeDeps struct {
 	initScopes        []string
 	acpxInitCalls     int
 	writeCalls        []string
+	writeErrors       map[string]error
 	adapterRequests   []agent.RuntimeSpec
 	probeRequests     []agent.ProbeRequest
 	prompts           []string
@@ -7286,9 +7509,33 @@ func newSetupFakeDeps() *setupFakeDeps {
 	}
 }
 
+func cloneSetupFiles(files map[string]string) map[string]string {
+	cloned := make(map[string]string, len(files))
+	for path, content := range files {
+		cloned[path] = content
+	}
+	return cloned
+}
+
 func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
 	t.Helper()
 	old := setupDeps
+	profileRunner := &profileReadinessExactRunner{
+		prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
+			fake.probeRequests = append(fake.probeRequests, req)
+			if fake.probeErr != nil {
+				return agent.SelectionProof{}, fake.probeErr
+			}
+			return agent.SelectionProof{
+				Runtime:         req.Runtime.ID,
+				Model:           req.Runtime.Model,
+				ReasoningEffort: req.Runtime.ReasoningEffort,
+				Assignment:      agent.SelectionAssignment{Encoding: agent.SelectionEncodingIndependent},
+				Adapter:         fake.adapterEvidence,
+				Status:          agent.SelectionProofStatusProven,
+			}, nil
+		},
+	}
 	setupDeps = setupDependencies{
 		loadConfig: func(roundconfig.LoadOptions) (roundconfig.Loaded, error) {
 			return roundconfig.Loaded{
@@ -7311,8 +7558,16 @@ func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
 		},
 		checkAdapter: func(_ context.Context, runtime agent.RuntimeSpec) (agent.AdapterEvidence, error) {
 			fake.adapterRequests = append(fake.adapterRequests, runtime)
-			return fake.adapterEvidence, fake.adapterErr
+			if fake.adapterErr != nil && strings.TrimSpace(runtime.Command) == "" {
+				return agent.AdapterEvidence{}, fake.adapterErr
+			}
+			evidence := fake.adapterEvidence
+			if strings.TrimSpace(runtime.Command) != "" {
+				evidence.Command = runtime.Command
+			}
+			return evidence, nil
 		},
+		profileRunner: profileRunner,
 		probeAgent: func(_ context.Context, req agent.ProbeRequest) error {
 			fake.probeRequests = append(fake.probeRequests, req)
 			return fake.probeErr
@@ -7336,26 +7591,22 @@ func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
 			return []byte(content), nil
 		},
 		writeFile: func(path string, content []byte) error {
+			if err := fake.writeErrors[path]; err != nil {
+				fake.writeCalls = append(fake.writeCalls, path)
+				return err
+			}
 			fake.files[path] = string(content)
 			fake.writeCalls = append(fake.writeCalls, path)
+			switch path {
+			case fake.userConfigPath:
+				fake.initScopes = append(fake.initScopes, roundconfig.InitScopeUser)
+			case fake.projectConfigPath:
+				fake.initScopes = append(fake.initScopes, roundconfig.InitScopeProject)
+			}
 			return nil
 		},
 		mkdirAll: func(string) error {
 			return nil
-		},
-		initACPXConfig: func(context.Context, string) error {
-			fake.acpxInitCalls++
-			fake.files[fake.acpxConfigPath] = "{\n}\n"
-			return nil
-		},
-		initConfig: func(_ context.Context, opts roundconfig.InitOptions) (roundconfig.InitResult, error) {
-			fake.initScopes = append(fake.initScopes, opts.Scope)
-			path := fake.userConfigPath
-			if opts.Scope == roundconfig.InitScopeProject {
-				path = fake.projectConfigPath
-			}
-			fake.files[path] = roundconfig.DefaultConfigYAML()
-			return roundconfig.InitResult{Scope: opts.Scope, Path: path}, nil
 		},
 		confirm: func(ctx context.Context, stderr io.Writer, prompt string) (bool, error) {
 			fake.prompts = append(fake.prompts, prompt)

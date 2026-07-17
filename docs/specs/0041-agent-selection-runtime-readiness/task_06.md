@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0041-agent-selection-runtime-readiness
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -35,27 +35,27 @@ the established frontend policy and official model catalog.
 
 ## Subtasks
 
-- [ ] Update built-in and rendered generated profile defaults.
-- [ ] Build effective Setup proposals before persistence.
-- [ ] Prove adapter identity and each distinct proposed selection.
-- [ ] Replace bare adapter override generation with supported provenance.
-- [ ] Add explicit stale-override migration authorization.
-- [ ] Enforce no-input, decline, failure, and cleanup no-mutation behavior.
-- [ ] Cover successful User and Project Config persistence.
+- [x] Update built-in and rendered generated profile defaults.
+- [x] Build effective Setup proposals before persistence.
+- [x] Prove adapter identity and each distinct proposed selection.
+- [x] Replace bare adapter override generation with supported provenance.
+- [x] Add explicit stale-override migration authorization.
+- [x] Enforce no-input, decline, failure, and cleanup no-mutation behavior.
+- [x] Cover successful User and Project Config persistence.
 
 ## Acceptance Criteria
 
-- [ ] Built-ins and rendered default YAML use Sol/high plus GPT-5.5/xhigh for
+- [x] Built-ins and rendered default YAML use Sol/high plus GPT-5.5/xhigh for
       all required Codex profiles and never emit Terra/max.
-- [ ] Terra and Luna remain valid Model Catalog and recommendation identifiers.
-- [ ] Setup proves every distinct effective tuple once before writing ACPX,
+- [x] Terra and Luna remain valid Model Catalog and recommendation identifiers.
+- [x] Setup proves every distinct effective tuple once before writing ACPX,
       User Config, or Project Config.
-- [ ] A legacy override produces one migration offer; declining it leaves the
+- [x] A legacy override produces one migration offer; declining it leaves the
       ACPX config and both Roundfix config scopes byte-identical.
-- [ ] `--no-input`, unsupported tuple, invalid evidence, and cleanup failure
+- [x] `--no-input`, unsupported tuple, invalid evidence, and cleanup failure
       create or change no target file.
-- [ ] `--yes` cannot bypass adapter or exact profile proof.
-- [ ] A successful proven proposal writes the authorized scopes and subsequent
+- [x] `--yes` cannot bypass adapter or exact profile proof.
+- [x] A successful proven proposal writes the authorized scopes and subsequent
       profile validation observes the same effective tuples.
 
 ## Context
@@ -81,3 +81,42 @@ the established frontend policy and official model catalog.
   Provisioning and Identity; Setup Transaction Boundary; Build Order 6.
 - `references/validation.md` → proven official adapter and model evidence.
 
+## Result
+
+Setup now resolves ACPX, User Config, and Project Config proposals entirely in
+memory, proves the effective adapter and three distinct generated Agent
+Selections, collects authorization, and then persists each authorized target
+atomically. Legacy Codex overrides migrate only after one explicit offer to the
+pinned official command; decline, `--no-input`, unsupported tuples, malformed
+capability evidence, Agent Session cleanup failure, and write failure preserve
+every not-yet-committed target.
+
+Acceptance evidence:
+
+- Built-in and rendered `general`, `backend`, `qa`, and `review` profiles use
+  Sol/high with GPT-5.5/xhigh fallback. Generated YAML contains no Terra, Luna,
+  or `max` operational default, while the Model Catalog still contains Sol,
+  Terra, and Luna.
+- `TestRunSetupProfileProofsEveryDistinctTupleOnceBeforePersistence` observes
+  one proof each for Sol/high, GPT-5.5/xhigh, and Claude Fable/medium before
+  User Config or Project Config persistence.
+- `TestRunSetupAdapterMigrationDeclinePreservesAllTargets` observes one
+  migration prompt and byte-identical ACPX, User Config, and Project Config
+  state after decline. `TestRunSetupAdapterMigrationPersistsSupportedCommand`
+  proves and writes `npx -y @agentclientprotocol/codex-acp@1.1.4` rather than a
+  bare PATH override.
+- Setup failure tests cover `--yes`, `--no-input`, unsupported selection,
+  invalid capability evidence, cleanup failure, and atomic write failure with
+  no unauthorized target mutation.
+- `TestRunSetupProfilePersistenceMatchesSubsequentValidation` writes User
+  Config and Project Config proposals, resolves the persisted precedence, and
+  observes the same three distinct tuples through the shared validation path.
+
+Verification:
+
+- `rtk go test ./internal/config -run 'Test(BuiltinProfiles|DefaultConfigYAML|ModelCatalog)' -count=1` — passed, 3 tests.
+- `rtk go test ./internal/cli -run 'TestRunSetup.*(Profile|Adapter|NoInput|Decline|Cleanup|NoMutation)' -count=1` — passed, 16 tests.
+- `rtk go test -race ./internal/cli ./internal/config -run 'Test(RunSetup|BuiltinProfiles|DefaultConfigYAML)' -count=1` — passed, 27 tests.
+- `rtk make verify` — passed.
+
+Follow-ups: none.

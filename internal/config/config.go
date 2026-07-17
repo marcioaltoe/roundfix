@@ -586,6 +586,27 @@ func Load(opts LoadOptions) (Loaded, error) {
 	return loaded, nil
 }
 
+// ResolveConfigProposal resolves proposed User Config and Project Config bytes
+// with the same precedence and validation as Load. A nil scope is absent.
+func ResolveConfigProposal(userContent []byte, projectContent []byte) (Config, error) {
+	config := Builtin()
+	warnings := newDeprecatedConfigWarnings(io.Discard)
+	if userContent != nil {
+		if err := applyConfigContent(&config, "User Config proposal", userContent, warnings, ProfileSourceUser); err != nil {
+			return Config{}, err
+		}
+	}
+	if projectContent != nil {
+		if err := applyConfigContent(&config, "Project Config proposal", projectContent, warnings, ProfileSourceProject); err != nil {
+			return Config{}, err
+		}
+	}
+	if err := Validate(config); err != nil {
+		return Config{}, err
+	}
+	return config, nil
+}
+
 func Init(ctx context.Context, opts InitOptions) (InitResult, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -646,8 +667,8 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: max
+        model: gpt-5.5
+        reasoning_effort: xhigh
   backend:
     preferred:
       runtime: codex
@@ -655,8 +676,8 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: max
+        model: gpt-5.5
+        reasoning_effort: xhigh
   frontend:
     preferred:
       runtime: claude
@@ -673,8 +694,8 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: max
+        model: gpt-5.5
+        reasoning_effort: xhigh
   review:
     preferred:
       runtime: codex
@@ -682,8 +703,8 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: max
+        model: gpt-5.5
+        reasoning_effort: xhigh
 
 specs:
   # Directory holding Spec folders; relative paths resolve against the repository root.
@@ -1061,24 +1082,27 @@ func applyConfigFile(config *Config, path string, warnings *deprecatedConfigWarn
 	if err != nil {
 		return fmt.Errorf("read config %q: %w", path, err)
 	}
+	return applyConfigContent(config, path, content, warnings, source)
+}
 
+func applyConfigContent(config *Config, label string, content []byte, warnings *deprecatedConfigWarnings, source ProfileSource) error {
 	var document yaml.Node
 	decoder := yaml.NewDecoder(bytes.NewReader(content))
 	if err := decoder.Decode(&document); err != nil {
 		if errors.Is(err, io.EOF) {
 			return nil
 		}
-		return fmt.Errorf("parse config %q: %w", path, err)
+		return fmt.Errorf("parse config %q: %w", label, err)
 	}
 	stripDeprecatedConfigKeys(&document, warnings)
 	hasProfiles := configHasProfilesSection(&document)
 	hasLegacyRuntimeDefaults := configHasLegacyRuntimeDefaults(&document)
 	if hasProfiles && hasLegacyRuntimeDefaults {
-		return fmt.Errorf("parse config %q: %w", path, profileSchemaConflictError(source))
+		return fmt.Errorf("parse config %q: %w", label, profileSchemaConflictError(source))
 	}
 	cleaned, err := encodeYAMLNode(&document)
 	if err != nil {
-		return fmt.Errorf("parse config %q: %w", path, err)
+		return fmt.Errorf("parse config %q: %w", label, err)
 	}
 
 	var overlay configOverlay
@@ -1088,7 +1112,7 @@ func applyConfigFile(config *Config, path string, warnings *deprecatedConfigWarn
 		if errors.Is(err, io.EOF) {
 			return nil
 		}
-		return fmt.Errorf("parse config %q: %w", path, err)
+		return fmt.Errorf("parse config %q: %w", label, err)
 	}
 	applyOverlay(config, overlay)
 	if overlay.Profiles != nil {

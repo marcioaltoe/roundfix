@@ -1389,7 +1389,7 @@ func TestRunImplementInteractiveInputListsConfiguredExternalSpecRoot(t *testing.
 	var collected strings.Builder
 	withInteractiveInput(t, func(ctx context.Context, req roundtui.InputRequest) (roundtui.CommandValues, error) {
 		inputReq = req
-		return roundtui.CollectInput(ctx, req, strings.NewReader("1\ncodex\n\n\n"), &collected)
+		return roundtui.CollectInput(ctx, req, strings.NewReader("1\ncodex\ngpt-5.6-sol\nhigh\n"), &collected)
 	})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -1423,9 +1423,9 @@ func TestRunImplementInteractiveInputMergesQAGateChoice(t *testing.T) {
 		qaReport    string
 		wantQACalls int
 	}{
-		{name: "scripted yes produces QA Run", args: []string{"implement"}, input: "1\ncodex\n\n\ny\n", qaReport: implementQAReport("pass"), wantQACalls: 1},
-		{name: "empty input produces non-QA Run", args: []string{"implement"}, input: "1\ncodex\n\n\n\n", wantQACalls: 0},
-		{name: "qa flag preset keeps QA on with enter", args: []string{"implement", "--qa"}, input: "1\ncodex\n\n\n\n", qaReport: implementQAReport("pass"), wantQACalls: 1},
+		{name: "scripted yes produces QA Run", args: []string{"implement"}, input: "1\ncodex\ngpt-5.6-sol\nhigh\ny\n", qaReport: implementQAReport("pass"), wantQACalls: 1},
+		{name: "empty input produces non-QA Run", args: []string{"implement"}, input: "1\ncodex\ngpt-5.6-sol\nhigh\n\n", wantQACalls: 0},
+		{name: "qa flag preset keeps QA on with enter", args: []string{"implement", "--qa"}, input: "1\ncodex\ngpt-5.6-sol\nhigh\n\n", qaReport: implementQAReport("pass"), wantQACalls: 1},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

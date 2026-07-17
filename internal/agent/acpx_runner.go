@@ -78,6 +78,12 @@ func CodexAdapterInstallCommand() string {
 	return "npm install -g " + CodexAdapterPackage + "@" + PinnedCodexAdapterVersion
 }
 
+// CodexAdapterCommand returns the deterministic official adapter command that
+// Setup persists when migrating an ACPX override.
+func CodexAdapterCommand() string {
+	return "npx -y " + CodexAdapterPackage + "@" + PinnedCodexAdapterVersion
+}
+
 // ACPXRunner is the acpx-backed invocation core. Later migration tasks wire
 // this into Runner after Agent Session lifecycle is available.
 type ACPXRunner struct {
@@ -485,9 +491,10 @@ func CheckAdapter(ctx context.Context, runtime RuntimeSpec) (AdapterEvidence, er
 	if err != nil {
 		return AdapterEvidence{}, err
 	}
+	runtimeID := strings.TrimSuffix(strings.TrimSpace(runtime.ID), "-custom")
 	if _, err := exec.LookPath(invocation.executable()); err != nil {
 		install := ""
-		if strings.TrimSpace(runtime.ID) == "codex" {
+		if runtimeID == "codex" {
 			install = CodexAdapterInstallCommand()
 		}
 		return AdapterEvidence{}, AdapterProbeError{
@@ -498,7 +505,7 @@ func CheckAdapter(ctx context.Context, runtime RuntimeSpec) (AdapterEvidence, er
 		}
 	}
 	evidence := AdapterEvidence{Command: invocation.display()}
-	if strings.TrimSpace(runtime.ID) != "codex" {
+	if runtimeID != "codex" {
 		return evidence, nil
 	}
 	return inspectCodexAdapter(ctx, invocation)

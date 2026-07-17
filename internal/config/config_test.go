@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"roundfix/internal/agent"
 )
 
 func TestLoadAppliesConfigPrecedence(t *testing.T) {
@@ -120,6 +122,55 @@ func TestBuiltinRuntimeDefaults(t *testing.T) {
 	}
 }
 
+func TestBuiltinProfilesGeneratedCodexPolicy(t *testing.T) {
+	config := Builtin()
+	wantPreferred := selectionForTest("codex", "gpt-5.6-sol", "high")
+	wantFallback := selectionForTest("codex", "gpt-5.5", "xhigh")
+	for _, category := range []WorkCategory{CategoryGeneral, CategoryBackend, CategoryQA, CategoryReview} {
+		resolved, err := ResolveProfile(config, category, nil)
+		if err != nil {
+			t.Fatalf("ResolveProfile(%q) error = %v", category, err)
+		}
+		if resolved.Profile.Preferred != wantPreferred {
+			t.Fatalf("%s preferred = %#v, want %#v", category, resolved.Profile.Preferred, wantPreferred)
+		}
+		if len(resolved.Profile.Fallbacks) != 1 || resolved.Profile.Fallbacks[0] != wantFallback {
+			t.Fatalf("%s fallbacks = %#v, want [%#v]", category, resolved.Profile.Fallbacks, wantFallback)
+		}
+	}
+}
+
+func TestDefaultConfigYAMLGeneratedCodexPolicy(t *testing.T) {
+	content := DefaultConfigYAML()
+	if got := strings.Count(content, "model: gpt-5.6-sol"); got != 5 {
+		t.Fatalf("Sol occurrence count = %d, want 5:\n%s", got, content)
+	}
+	if got := strings.Count(content, "model: gpt-5.5"); got != 4 {
+		t.Fatalf("GPT-5.5 occurrence count = %d, want 4:\n%s", got, content)
+	}
+	for _, forbidden := range []string{"model: gpt-5.6-terra", "model: gpt-5.6-luna", "reasoning_effort: max"} {
+		if strings.Contains(content, forbidden) {
+			t.Fatalf("generated config contains operational default %q:\n%s", forbidden, content)
+		}
+	}
+}
+
+func TestModelCatalogRetainsOfficialCodexIdentifiers(t *testing.T) {
+	catalog := agent.ModelCatalog("codex")
+	for _, identifier := range []string{"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"} {
+		found := false
+		for _, choice := range catalog {
+			if choice.Value == identifier {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("Codex Model Catalog is missing official identifier %q: %#v", identifier, catalog)
+		}
+	}
+}
+
 func TestAgentSelectionProfileBuiltinsResolveRequiredCategories(t *testing.T) {
 	config := Builtin()
 	tests := []struct {
@@ -132,7 +183,7 @@ func TestAgentSelectionProfileBuiltinsResolveRequiredCategories(t *testing.T) {
 			category: CategoryGeneral,
 			want: profileForTest(
 				selectionForTest("codex", "gpt-5.6-sol", "high"),
-				selectionForTest("codex", "gpt-5.6-terra", "max"),
+				selectionForTest("codex", "gpt-5.5", "xhigh"),
 			),
 		},
 		{
@@ -140,7 +191,7 @@ func TestAgentSelectionProfileBuiltinsResolveRequiredCategories(t *testing.T) {
 			category: CategoryBackend,
 			want: profileForTest(
 				selectionForTest("codex", "gpt-5.6-sol", "high"),
-				selectionForTest("codex", "gpt-5.6-terra", "max"),
+				selectionForTest("codex", "gpt-5.5", "xhigh"),
 			),
 		},
 		{
@@ -156,7 +207,7 @@ func TestAgentSelectionProfileBuiltinsResolveRequiredCategories(t *testing.T) {
 			category: CategoryQA,
 			want: profileForTest(
 				selectionForTest("codex", "gpt-5.6-sol", "high"),
-				selectionForTest("codex", "gpt-5.6-terra", "max"),
+				selectionForTest("codex", "gpt-5.5", "xhigh"),
 			),
 		},
 		{
@@ -164,7 +215,7 @@ func TestAgentSelectionProfileBuiltinsResolveRequiredCategories(t *testing.T) {
 			category: CategoryReview,
 			want: profileForTest(
 				selectionForTest("codex", "gpt-5.6-sol", "high"),
-				selectionForTest("codex", "gpt-5.6-terra", "max"),
+				selectionForTest("codex", "gpt-5.5", "xhigh"),
 			),
 		},
 	}
@@ -465,13 +516,40 @@ runtimes:
 
 	want := profileForTest(
 		selectionForTest("claude", "fable", ""),
-		selectionForTest("codex", "gpt-5.6-terra", "max"),
+		selectionForTest("codex", "gpt-5.5", "xhigh"),
 	)
 	if got.Source != ProfileSourceUser {
 		t.Fatalf("expected user source, got %q", got.Source)
 	}
 	if !profilesEqual(got.Profile, want) {
 		t.Fatalf("expected legacy runtime defaults to convert into profile\nwant: %#v\ngot:  %#v", want, got.Profile)
+	}
+}
+
+func TestProfileLegacyDefaultCodexKeepsDistinctBuiltInFallback(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), `
+runtimes:
+  claude:
+    reasoning_effort: high
+`)
+
+	loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+	if err != nil {
+		t.Fatalf("load partial legacy runtime config: %v", err)
+	}
+	resolved, err := ResolveProfile(loaded.Config, CategoryGeneral, nil)
+	if err != nil {
+		t.Fatalf("ResolveProfile(general): %v", err)
+	}
+	want := profileForTest(
+		selectionForTest("codex", "gpt-5.5", "xhigh"),
+		selectionForTest("codex", "gpt-5.6-sol", "high"),
+	)
+	if !profilesEqual(resolved.Profile, want) {
+		t.Fatalf("legacy default Codex profile mismatch\nwant: %#v\n got: %#v", want, resolved.Profile)
 	}
 }
 
@@ -490,7 +568,7 @@ func TestProfileResolverPreferredOverridePreservesFallbackChain(t *testing.T) {
 	if got.Profile.Preferred != override {
 		t.Fatalf("expected preferred override %#v, got %#v", override, got.Profile.Preferred)
 	}
-	wantFallbacks := []AgentSelection{selectionForTest("codex", "gpt-5.6-terra", "max")}
+	wantFallbacks := []AgentSelection{selectionForTest("codex", "gpt-5.5", "xhigh")}
 	if !selectionsEqual(got.Profile.Fallbacks, wantFallbacks) {
 		t.Fatalf("expected configured fallbacks to survive override\nwant: %#v\ngot:  %#v", wantFallbacks, got.Profile.Fallbacks)
 	}
@@ -1666,7 +1744,7 @@ func TestInitCreatesUserConfig(t *testing.T) {
 	if !strings.Contains(content, "agent_full_access: false") ||
 		!strings.Contains(content, `artifact_dir: ""`) || !strings.Contains(content, "Roundfix Home artifacts/<repo-id>") ||
 		!strings.Contains(content, "profiles:") || !strings.Contains(content, "model: gpt-5.6-sol") ||
-		!strings.Contains(content, "model: gpt-5.6-terra") || !strings.Contains(content, "model: claude-fable-5") ||
+		!strings.Contains(content, "model: gpt-5.5") || !strings.Contains(content, "model: claude-fable-5") ||
 		!strings.Contains(content, "fallbacks:") ||
 		!strings.Contains(content, "specs:") || !strings.Contains(content, `root: "docs/specs"`) ||
 		!strings.Contains(content, "worktree:") || !strings.Contains(content, `location: "~/.roundfix/worktrees"`) ||
@@ -1681,7 +1759,7 @@ func TestInitCreatesUserConfig(t *testing.T) {
 	if strings.Contains(content, "resolve.concurrent") || strings.Contains(content, "  concurrent:") {
 		t.Fatalf("expected generated config to omit resolve.concurrent, got %s", content)
 	}
-	for _, forbidden := range []string{"defaults:\n  agent:", "runtimes:", "model: gpt-5.5", "model: opus"} {
+	for _, forbidden := range []string{"defaults:\n  agent:", "runtimes:", "model: opus"} {
 		if strings.Contains(content, forbidden) {
 			t.Fatalf("expected generated config to omit legacy selection key %q, got %s", forbidden, content)
 		}
@@ -1713,7 +1791,7 @@ func TestProfileGeneratedConfigUsesCompleteProfilesSchema(t *testing.T) {
 		"qa:",
 		"review:",
 		"model: gpt-5.6-sol",
-		"model: gpt-5.6-terra",
+		"model: gpt-5.5",
 		"model: claude-fable-5",
 		"fallbacks:",
 	} {

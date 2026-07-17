@@ -182,6 +182,20 @@ func TestCheckAdapterProvesOfficialCodexPackageAndVersion(t *testing.T) {
 	}
 }
 
+func TestCheckAdapterProvesCustomCodexCommandIdentity(t *testing.T) {
+	command := installFakeVersionAdapter(t, "@agentclientprotocol/codex-acp 1.1.4")
+	runtime := RuntimeSpec{ID: "codex-custom", Protocol: ProtocolStdio, Command: command}
+
+	evidence, err := CheckAdapter(context.Background(), runtime)
+
+	if err != nil {
+		t.Fatalf("check custom official Codex adapter: %v", err)
+	}
+	if evidence.Command != command || evidence.Package != CodexAdapterPackage || evidence.Version != PinnedCodexAdapterVersion {
+		t.Fatalf("unexpected custom adapter evidence: %#v", evidence)
+	}
+}
+
 func TestCheckAdapterClassifiesUnreadyCodexAdapters(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -1527,32 +1541,24 @@ func TestACPXRunSelectionSetupErrorsPreserveAdapterFailure(t *testing.T) {
 	}
 }
 
-func TestACPXRunCustomCommandRequiresSelectionOptionContract(t *testing.T) {
+func TestACPXRunCustomCodexCommandRequiresOfficialAdapterIdentity(t *testing.T) {
 	harness := newFakeACPXHarness(t)
-	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"set reasoning_effort": 2}))
-	t.Setenv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{
-		"set reasoning_effort": "ACP session session-id does not advertise config option 'reasoning_effort'. Supported config options: model.\n",
-	}))
 	runtime := RuntimeSpec{ID: "codex-custom", Protocol: ProtocolStdio, Command: "custom-acp --stdio", Model: "gpt-custom", ReasoningEffort: "xhigh"}
 
 	_, err := harness.run(context.Background(), runtime, "roundfix-run-1")
 
 	if err == nil {
-		t.Fatal("expected custom command without reasoning option contract to fail")
+		t.Fatal("expected unproven custom Codex adapter identity to fail")
 	}
-	if !strings.Contains(err.Error(), "apply Agent Selection") || !strings.Contains(err.Error(), "set reasoning_effort") {
-		t.Fatalf("expected custom command option-contract failure, got %v", err)
+	var lineageErr *AdapterLineageError
+	if !errors.As(err, &lineageErr) || lineageErr.Command != runtime.Command {
+		t.Fatalf("expected custom command lineage failure, got %T %v", err, err)
 	}
-	var infraErr *InfrastructureError
-	if !errors.As(err, &infraErr) || !strings.Contains(infraErr.Stderr, "does not advertise config option 'reasoning_effort'") {
-		t.Fatalf("expected adapter rejection evidence in error chain, got %T %v", err, err)
+	if !strings.Contains(err.Error(), CodexAdapterInstallCommand()) {
+		t.Fatalf("expected deterministic official adapter action, got %v", err)
 	}
-	want := [][]string{
-		{"--cwd", harness.gitRoot, "--model", "gpt-custom", "--agent", "custom-acp --stdio", "sessions", "ensure", "--name", "roundfix-run-1"},
-		{"--cwd", harness.gitRoot, "--agent", "custom-acp --stdio", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-1"},
-	}
-	if got := readJSONInvocations(t, harness.invocationsPath); !reflect.DeepEqual(got, exactSelectionInvocations(want)) {
-		t.Fatalf("unexpected custom-command invocations\nwant: %#v\ngot:  %#v", want, got)
+	if _, statErr := os.Stat(harness.invocationsPath); !errors.Is(statErr, os.ErrNotExist) {
+		t.Fatalf("adapter identity failure reached acpx session mutation: stat error %v", statErr)
 	}
 }
 

@@ -163,7 +163,7 @@ func isOptionalWorkCategory(category WorkCategory) bool {
 func builtinProfiles() Profiles {
 	general := AgentSelectionProfile{
 		Preferred: AgentSelection{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"},
-		Fallbacks: []AgentSelection{{Runtime: "codex", Model: "gpt-5.6-terra", ReasoningEffort: "max"}},
+		Fallbacks: []AgentSelection{{Runtime: "codex", Model: "gpt-5.5", ReasoningEffort: "xhigh"}},
 	}
 	frontend := AgentSelectionProfile{
 		Preferred: AgentSelection{Runtime: "claude", Model: "claude-fable-5", ReasoningEffort: "medium"},
@@ -239,6 +239,11 @@ func applyLegacyRuntimeProfiles(config *Config, source ProfileSource) {
 	for _, category := range requiredWorkCategories {
 		base := cloneProfile(builtins[category].Profile)
 		base.Preferred = selection
+		for index, fallback := range base.Fallbacks {
+			if fallback == selection {
+				base.Fallbacks[index] = builtins[category].Profile.Preferred
+			}
+		}
 		config.Profiles[category] = ProfileEntry{Profile: base, Source: source}
 	}
 }

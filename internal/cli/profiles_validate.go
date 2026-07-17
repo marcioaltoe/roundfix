@@ -59,6 +59,7 @@ type profileProofResult = profileReadiness
 type profileProofOptions struct {
 	PreferredOverride *roundconfig.AgentSelection
 	CommandOverride   string
+	CommandOverrides  map[string]string
 	EnableFullAccess  bool
 }
 
@@ -339,9 +340,13 @@ func runtimeForProfileSelection(selection roundconfig.AgentSelection) (agent.Run
 }
 
 func runtimeForProfileSelectionWithOptions(selection roundconfig.AgentSelection, options profileProofOptions) (agent.RuntimeSpec, error) {
+	commandOverride := options.CommandOverride
+	if command := strings.TrimSpace(options.CommandOverrides[strings.TrimSpace(selection.Runtime)]); command != "" {
+		commandOverride = command
+	}
 	return agent.RuntimeFor(agent.RuntimeOptions{
 		Agent:            strings.TrimSpace(selection.Runtime),
-		CommandOverride:  options.CommandOverride,
+		CommandOverride:  commandOverride,
 		Model:            strings.TrimSpace(selection.Model),
 		ReasoningEffort:  strings.TrimSpace(selection.ReasoningEffort),
 		EnableFullAccess: options.EnableFullAccess,
