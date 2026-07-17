@@ -51,7 +51,7 @@ func workCategoryForTaskType(taskType spec.TaskType) roundconfig.WorkCategory {
 }
 
 func runProfileOperationalPreflight(ctx context.Context, req commandRequest, config roundconfig.Config, categories []roundconfig.WorkCategory, workDir string, runner agent.Runner, stderr io.Writer) (profileOperationalPreflightResult, error) {
-	override, err := invocationProfileOverride(req, config)
+	override, err := invocationProfileOverride(req)
 	if err != nil {
 		return profileOperationalPreflightResult{Err: err}, err
 	}
@@ -79,18 +79,17 @@ func runProfileOperationalPreflight(ctx context.Context, req commandRequest, con
 	}, nil
 }
 
-func invocationProfileOverride(req commandRequest, config roundconfig.Config) (*roundconfig.AgentSelection, error) {
+func invocationProfileOverride(req commandRequest) (*roundconfig.AgentSelection, error) {
+	if err := validateExplicitSelectionFlags(req); err != nil {
+		return nil, err
+	}
 	if !req.agentSet && !req.modelSet && !req.reasoningEffortSet {
 		return nil, nil
 	}
-	runtime, err := runtimeForAgentWork(req, config)
-	if err != nil {
-		return nil, err
-	}
 	return &roundconfig.AgentSelection{
 		Runtime:         strings.TrimSpace(req.agent),
-		Model:           strings.TrimSpace(runtime.Model),
-		ReasoningEffort: strings.TrimSpace(runtime.ReasoningEffort),
+		Model:           strings.TrimSpace(req.model),
+		ReasoningEffort: strings.TrimSpace(req.reasoningEffort),
 	}, nil
 }
 

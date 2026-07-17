@@ -29,7 +29,7 @@ func TestRunImplementReclaimsDeadOwnerActiveRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected implement to proceed after reclaim, got %d stderr=%q", code, stderr.String())

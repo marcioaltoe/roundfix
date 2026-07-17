@@ -161,7 +161,7 @@ func TestBranchIntegrityBypassAuditFollowsProfileProof(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
+		code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
 
 		if code != exitPreflight {
 			t.Fatalf("expected probe failure exit 2, got %d stderr=%q", code, stderr.String())
@@ -186,7 +186,7 @@ func TestBranchIntegrityBypassAuditFollowsProfileProof(t *testing.T) {
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
 
-		code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
+		code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--skip-branch-integrity", "--no-input"}, &stdout, &stderr)
 
 		if code != exitPreflight {
 			t.Fatalf("expected audit publish failure exit 2, got %d stderr=%q", code, stderr.String())

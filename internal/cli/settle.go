@@ -421,7 +421,7 @@ func settleStatusError(slug string, task spec.Task) error {
 func settleStatusMessage(slug string, task spec.Task) string {
 	switch task.Status {
 	case spec.StatusPending, spec.StatusInProgress:
-		return fmt.Sprintf("Task %s status is %s; run the Implement Command instead: roundfix implement --spec %s --agent <agent>", task.ID, task.Status, slug)
+		return fmt.Sprintf("Task %s status is %s; run the Implement Command instead: roundfix implement --spec %s", task.ID, task.Status, slug)
 	case spec.StatusCompleted:
 		return fmt.Sprintf("Task %s status is completed; nothing to do", task.ID)
 	default:

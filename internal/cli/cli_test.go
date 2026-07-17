@@ -249,12 +249,12 @@ func TestRunCommandHelp(t *testing.T) {
 		{
 			name:     "resolve",
 			args:     []string{"resolve", "--help"},
-			contains: []string{"roundfix resolve --pr <number> --agent <agent>", "Branch Integrity Preflight", "clean tracked checkout", "--reasoning-effort", "--no-agent-console", "--detach"},
+			contains: []string{"roundfix resolve --pr <number> [--spec <slug>]", "--agent <agent> --model <model> --reasoning-effort <effort>", "use the review profile", "Branch Integrity Preflight", "clean tracked checkout", "--reasoning-effort", "--no-agent-console", "--detach"},
 		},
 		{
 			name:     "watch",
 			args:     []string{"watch", "--help"},
-			contains: []string{"roundfix watch --source coderabbit --pr <number> --agent <agent>", "Branch Integrity Preflight", "CleanUnverified", "exits 3", "--reasoning-effort", "--until-clean", "Review Source check", "--no-agent-console", "--detach"},
+			contains: []string{"roundfix watch --source coderabbit --pr <number> [--spec <slug>]", "--agent <agent> --model <model> --reasoning-effort <effort>", "use the review profile", "Branch Integrity Preflight", "CleanUnverified", "exits 3", "--reasoning-effort", "--until-clean", "Review Source check", "--no-agent-console", "--detach"},
 		},
 		{
 			name:     "setup",
@@ -307,6 +307,30 @@ func TestRunCommandHelp(t *testing.T) {
 				t.Fatalf("expected no stderr, got %q", stderr.String())
 			}
 		})
+	}
+}
+
+func TestCommandUsageDocumentsProfileLedAndCompleteSelectionOverrides(t *testing.T) {
+	for _, name := range []string{"resolve", "watch", "implement"} {
+		t.Run(name, func(t *testing.T) {
+			got := commandUsage(name)
+			for _, want := range []string{
+				"Omit all Agent Selection flags",
+				"--agent <agent> --model <model> --reasoning-effort <effort>",
+				"requires --agent, --model, and --reasoning-effort together",
+			} {
+				if !strings.Contains(got, want) {
+					t.Fatalf("%s help missing %q:\n%s", name, want, got)
+				}
+			}
+		})
+	}
+
+	fetchHelp := commandUsage("fetch")
+	for _, forbidden := range []string{"--agent", "--model", "--reasoning-effort", "Agent Selection flags"} {
+		if strings.Contains(fetchHelp, forbidden) {
+			t.Fatalf("fetch help changed to include Agent selection term %q:\n%s", forbidden, fetchHelp)
+		}
 	}
 }
 
@@ -1115,7 +1139,7 @@ func TestProfileOperationalPreflightMatchesProfilesValidateClassifiedFailure(t *
 	}
 }
 
-func TestProfileOperationalPreflightMixedTaskGraphWithQADeduplicatesStableOrder(t *testing.T) {
+func TestInvocationProfileOverrideOmittedUsesTaskQAAndReviewProfiles(t *testing.T) {
 	runner := &fakeAgentRunner{}
 	var stderr bytes.Buffer
 	graph := &spec.Graph{Tasks: []spec.Task{
@@ -1150,6 +1174,17 @@ func TestProfileOperationalPreflightMixedTaskGraphWithQADeduplicatesStableOrder(
 	if runner.calls != 0 || len(runner.fallbackModels) != 0 {
 		t.Fatalf("profile preflight must not prompt or discover fallbacks, calls=%d fallback=%#v", runner.calls, runner.fallbackModels)
 	}
+
+	reviewRunner := &fakeAgentRunner{}
+	reviewResult, err := runProfileOperationalPreflight(context.Background(), commandRequest{name: "resolve"}, roundconfig.Builtin(), reviewProfileCategories(), "/workspace", reviewRunner, io.Discard)
+	if err != nil {
+		t.Fatalf("review profile preflight error = %v", err)
+	}
+	if reviewResult.Override != nil {
+		t.Fatalf("review profile preflight override = %+v, want nil", reviewResult.Override)
+	}
+	assertProofReferences(t, reviewResult.Proofs[0], []string{"review/preferred"})
+	assertProofReferences(t, reviewResult.Proofs[1], []string{"review/fallback"})
 }
 
 func TestInvocationProfileOverrideAppliesAcrossCategoriesPreservesFallbacksAndWarns(t *testing.T) {
@@ -1157,15 +1192,14 @@ func TestInvocationProfileOverrideAppliesAcrossCategoriesPreservesFallbacksAndWa
 	var stderr bytes.Buffer
 	graph := &spec.Graph{Tasks: []spec.Task{
 		{ID: "task_backend", Status: spec.StatusPending, Type: spec.TaskTypeBackend},
-		{ID: "task_frontend", Status: spec.StatusPending, Type: spec.TaskTypeFrontend},
 	}}
 	req := commandRequest{
 		name:               "implement",
 		agent:              "codex",
 		agentSet:           true,
-		model:              "one-run-model",
+		model:              "gpt-5.6-sol",
 		modelSet:           true,
-		reasoningEffort:    "one-run-reasoning",
+		reasoningEffort:    "high",
 		reasoningEffortSet: true,
 	}
 	categories := implementProfileCategories(graph, true)
@@ -1175,20 +1209,33 @@ func TestInvocationProfileOverrideAppliesAcrossCategoriesPreservesFallbacksAndWa
 	if err != nil {
 		t.Fatalf("operational profile preflight error = %v", err)
 	}
-	if result.Override == nil || result.Override.Model != "one-run-model" || result.Override.ReasoningEffort != "one-run-reasoning" {
+	if result.Override == nil || result.Override.Model != "gpt-5.6-sol" || result.Override.ReasoningEffort != "high" {
 		t.Fatalf("unexpected invocation override: %+v", result.Override)
 	}
-	wantModels := []string{"one-run-model", "gpt-5.6-terra", "gpt-5.6-sol"}
+	wantModels := []string{"gpt-5.6-sol", "gpt-5.6-terra"}
 	if got := probeRequestModels(runner.probeRequests); !reflect.DeepEqual(got, wantModels) {
 		t.Fatalf("probe models = %v, want %v", got, wantModels)
 	}
-	assertProofReferences(t, result.Proofs[0], []string{"backend/preferred", "frontend/preferred", "qa/preferred"})
-	if !strings.Contains(stderr.String(), "one invocation Agent Selection override applies to Agent Work Categories backend, frontend, qa") ||
+	assertProofReferences(t, result.Proofs[0], []string{"backend/preferred", "qa/preferred"})
+	if !strings.Contains(stderr.String(), "one invocation Agent Selection override applies to Agent Work Categories backend, qa") ||
 		!strings.Contains(stderr.String(), "Fallback Chains are preserved") {
 		t.Fatalf("expected cross-category warning, got %q", stderr.String())
 	}
 	if len(result.Warnings) != 1 || result.Warnings[0] != strings.TrimSpace(stderr.String()) {
 		t.Fatalf("warning metadata = %#v, stderr=%q", result.Warnings, stderr.String())
+	}
+	profiles, err := operationalAgentSelectionProfiles(roundconfig.Builtin(), categories, result.Override)
+	if err != nil {
+		t.Fatalf("operationalAgentSelectionProfiles() error = %v", err)
+	}
+	for _, category := range categories {
+		withoutOverride, err := roundconfig.ResolveProfile(roundconfig.Builtin(), category, nil)
+		if err != nil {
+			t.Fatalf("ResolveProfile(%s) error = %v", category, err)
+		}
+		if got := profiles[category]; !reflect.DeepEqual(got.Profile.Fallbacks, withoutOverride.Profile.Fallbacks) {
+			t.Fatalf("%s fallback chain = %+v, want %+v", category, got.Profile.Fallbacks, withoutOverride.Profile.Fallbacks)
+		}
 	}
 }
 
@@ -2885,13 +2932,13 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 		},
 		{
 			name:           "resolve",
-			args:           []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"},
+			args:           []string{"resolve", "--pr", "123", "--round", "all", "--no-input"},
 			expectedCode:   0,
 			expectedOutput: "resolve selected 1 downloaded Unresolved Review Issue",
 		},
 		{
 			name:           "watch",
-			args:           []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"},
+			args:           []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"},
 			expectedCode:   0,
 			expectedOutput: "Watch Run",
 		},
@@ -3192,7 +3239,7 @@ func TestRunWatchPrintsDeterministicStdoutReport(t *testing.T) {
 	}{
 		{
 			name: "clean",
-			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"},
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"},
 			wantStdout: "" +
 				"issue 001 resolved — major: handle test issue\n" +
 				"This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
@@ -3204,7 +3251,7 @@ func TestRunWatchPrintsDeterministicStdoutReport(t *testing.T) {
 				t.Helper()
 				withAgentRunner(t, &fakeAgentRunner{status: rounds.StatusFailed})
 			},
-			args:     []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"},
+			args:     []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"},
 			wantCode: exitRunFailed,
 			wantStdout: "" +
 				"issue 001 failed — major: handle test issue\n" +
@@ -3247,7 +3294,7 @@ resolve:
 					},
 				})
 			},
-			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "1", "--no-input"},
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "1", "--no-input"},
 			wantStdout: "" +
 				"issue 001 resolved — major: handle first issue\n" +
 				"issue 002 failed — major: handle second issue\n" +
@@ -3261,7 +3308,7 @@ resolve:
 				withAgentRunner(t, &fakeStoppingAgentRunner{})
 				withChangedPaths(t, nil)
 			},
-			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"},
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"},
 			wantStdout: "" +
 				"issue 001 unresolved — major: handle test issue\n" +
 				"This Run (Stopped after 1 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 0 failed, 1 unresolved.\n" +
@@ -3298,7 +3345,7 @@ func TestRunResolvePrintsDeterministicStdoutReport(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean resolve exit code 0, got %d stderr=%q", code, stderr.String())
@@ -3586,7 +3633,7 @@ func TestRunOutcomeNotificationsCaptureTerminalResolveWatchAndImplement(t *testi
 	}{
 		{
 			name: "resolve",
-			args: []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"},
+			args: []string{"resolve", "--pr", "123", "--round", "all", "--no-input"},
 			setup: func(t *testing.T) string {
 				t.Helper()
 				homeDir, repoDir := withCLIWorkspace(t)
@@ -3601,7 +3648,7 @@ func TestRunOutcomeNotificationsCaptureTerminalResolveWatchAndImplement(t *testi
 		},
 		{
 			name: "watch",
-			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"},
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"},
 			setup: func(t *testing.T) string {
 				t.Helper()
 				homeDir, repoDir := withCLIWorkspace(t)
@@ -3615,7 +3662,7 @@ func TestRunOutcomeNotificationsCaptureTerminalResolveWatchAndImplement(t *testi
 		},
 		{
 			name: "implement",
-			args: []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"},
+			args: []string{"implement", "--spec", implementTestSlug, "--no-input"},
 			setup: func(t *testing.T) string {
 				t.Helper()
 				homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
@@ -3776,7 +3823,7 @@ func TestRunOutcomeNotificationsDisabledSkipsNotifier(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected resolve exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -3838,7 +3885,7 @@ func TestRunResolveAllowsUntrackedCheckoutFiles(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean resolve exit with untracked file, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -3873,7 +3920,7 @@ func TestRunResolveCommitsOnUserBranchWithoutRunBranch(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -3929,7 +3976,7 @@ func TestRunResolvePushRunsFromUserCheckoutWithoutRunWorktree(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -4008,7 +4055,7 @@ func TestRunWatchReusesUserCheckoutAcrossRoundsWithoutRunBranch(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "2", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "2", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean watch exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -4065,7 +4112,7 @@ budget:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected BudgetExceeded exit %d, got %d stderr=%q", exitRunFailed, code, stderr.String())
@@ -4094,7 +4141,7 @@ func TestOperationalStdoutReportStartsAfterTerminalRunLine(t *testing.T) {
 	}{
 		{
 			name:           "watch",
-			args:           []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"},
+			args:           []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"},
 			terminalNeedle: "reached Clean",
 			wantStdout: "" +
 				"issue 001 resolved — major: handle test issue\n" +
@@ -4103,7 +4150,7 @@ func TestOperationalStdoutReportStartsAfterTerminalRunLine(t *testing.T) {
 		},
 		{
 			name: "resolve",
-			args: []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"},
+			args: []string{"resolve", "--pr", "123", "--round", "all", "--no-input"},
 			setup: func(t *testing.T, repoDir string) {
 				t.Helper()
 				persistCLIReviewIssue(t, repoDir, 1, "feature/review")
@@ -4157,12 +4204,12 @@ func TestRunResolveAgentFullAccessIsExplicitOptIn(t *testing.T) {
 	}{
 		{
 			name:       "default sandboxed",
-			args:       []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"},
+			args:       []string{"resolve", "--pr", "123", "--round", "all", "--no-input"},
 			wantAccess: "",
 		},
 		{
 			name:       "command flag opts in",
-			args:       []string{"resolve", "--pr", "123", "--agent", "codex", "--agent-full-access", "--round", "all", "--no-input"},
+			args:       []string{"resolve", "--pr", "123", "--agent-full-access", "--round", "all", "--no-input"},
 			wantAccess: "full-access",
 		},
 		{
@@ -4171,7 +4218,7 @@ func TestRunResolveAgentFullAccessIsExplicitOptIn(t *testing.T) {
 defaults:
   agent_full_access: true
 `,
-			args:       []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"},
+			args:       []string{"resolve", "--pr", "123", "--round", "all", "--no-input"},
 			wantAccess: "full-access",
 		},
 	}
@@ -4263,7 +4310,7 @@ watch:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected watch timeout exit 1, got %d", code)
@@ -4307,7 +4354,7 @@ watch:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != exitUnverified {
 		t.Fatalf("expected CleanUnverified watch exit %d, got %d stderr=%q", exitUnverified, code, stderr.String())
@@ -4397,7 +4444,7 @@ resolve:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "2", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "2", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean watch exit 0, got %d stderr=%q", code, stderr.String())
@@ -4431,7 +4478,7 @@ func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := RunContext(ctx, []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean Stop Request exit 0, got %d", code)
@@ -4474,7 +4521,7 @@ func TestRunResolveStopRequestDuringAgentPreservesWorkAndSkipsDaemonMutations(t 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean Stop Request exit 0, got %d", code)
@@ -4529,7 +4576,7 @@ func TestRunResolveSIGINTStopReturns130(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	stoppedCode := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	stoppedCode := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 	code := exitForInterrupt(stoppedCode, true)
 
 	if code != 130 {
@@ -4575,7 +4622,7 @@ func TestRunResolveRejectsMissingCompatibleArtifactsBeforeRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d", code)
@@ -4607,7 +4654,7 @@ func TestRunResolveHonorsRoundSelector(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--round", "2", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--round", "2", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected Unresolved resolve exit code 1, got %d", code)
@@ -4644,7 +4691,7 @@ func TestRunResolveDeduplicatesBeforeBatching(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful resolve exit code 0, got %d", code)
@@ -4706,7 +4753,7 @@ func TestRunResolveVerificationFailureDoesNotCommit(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected Run failure exit 1, got %d", code)
@@ -4794,7 +4841,7 @@ resolve:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful resolve exit 0, got %d", code)
@@ -4898,7 +4945,7 @@ func TestRunResolveFinalPushRunsOnceAfterAllUnresolvedTerminal(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful resolve exit 0, got %d", code)
@@ -4939,7 +4986,7 @@ func TestRunResolveResolvesInvalidAssignedIssueSourceThread(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful resolve exit 0, got %d", code)
@@ -4962,7 +5009,7 @@ func TestRunResolveProbeFailureDoesNotCreateRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected probe preflight exit 2, got %d", code)
@@ -4998,7 +5045,7 @@ runtimes:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected selection preflight exit %d, got %d", exitPreflight, code)
@@ -5048,7 +5095,7 @@ func TestRunWatchSelectionPreflightFailureCreatesNoRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected selection preflight exit %d, got %d", exitPreflight, code)
@@ -5199,12 +5246,12 @@ func TestRunReviewAgentCommandsDoNotPromptForDynamicFallback(t *testing.T) {
 	}{
 		{
 			name:             "resolve",
-			args:             []string{"resolve", "--pr", "123", "--agent", "codex"},
+			args:             []string{"resolve", "--pr", "123"},
 			needsReviewIssue: true,
 		},
 		{
 			name: "watch with model-managed reasoning",
-			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "1"},
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "1"},
 		},
 	}
 	for _, tt := range tests {
@@ -5285,7 +5332,7 @@ func TestRunResolveProfileProofFailureIgnoresFallbackConfirmationInput(t *testin
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"resolve", "--pr", "123", "--agent", "codex"}, &stdout, &stderr)
+			code := Run([]string{"resolve", "--pr", "123"}, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected profile proof preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -5322,7 +5369,7 @@ func TestRunResolveNoInputProfileProofFailureReportsRemediation(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--reasoning-effort", "xhigh", "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected profile proof preflight exit %d, got %d", exitPreflight, code)
@@ -5368,7 +5415,7 @@ func TestRunResolveDetachedChildReportsProfileProofFailure(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--reasoning-effort", "xhigh"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected detached preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -5439,12 +5486,12 @@ func TestRunReviewAgentCommandsRejectExplicitEmptySelectionOverrides(t *testing.
 	}{
 		{
 			name: "resolve model",
-			args: []string{"resolve", "--pr", "123", "--agent", "codex", "--model=", "--no-input"},
+			args: []string{"resolve", "--pr", "123", "--agent", "codex", "--model=", "--reasoning-effort", "high", "--no-input"},
 			want: "--model cannot be empty",
 		},
 		{
 			name: "watch model",
-			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--model=", "--no-input"},
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--model=", "--reasoning-effort", "high", "--no-input"},
 			want: "--model cannot be empty",
 		},
 	}
@@ -5467,6 +5514,66 @@ func TestRunReviewAgentCommandsRejectExplicitEmptySelectionOverrides(t *testing.
 			}
 			assertNoRunDatabase(t, homeDir)
 		})
+	}
+}
+
+func TestRunResolveSelectionOverrideRejectsPartialBeforeConfigLoad(t *testing.T) {
+	partials := []struct {
+		name string
+		args []string
+	}{
+		{name: "agent only detached", args: []string{"--detach", "--agent", "codex"}},
+		{name: "model only", args: []string{"--model", "gpt-5.6-sol"}},
+		{name: "reasoning only", args: []string{"--reasoning-effort", "high"}},
+		{name: "agent and model", args: []string{"--agent", "codex", "--model", "gpt-5.6-sol"}},
+		{name: "agent and reasoning", args: []string{"--agent", "codex", "--reasoning-effort", "high"}},
+		{name: "model and reasoning", args: []string{"--model", "gpt-5.6-sol", "--reasoning-effort", "high"}},
+	}
+	for _, tt := range partials {
+		t.Run(tt.name, func(t *testing.T) {
+			args := []string{"resolve", "--pr", "123", "--no-input"}
+			args = append(args, tt.args...)
+			assertRunReviewSelectionOverrideRejectsPartialBeforeConfigLoad(t, args)
+		})
+	}
+}
+
+func TestRunWatchSelectionOverrideRejectsPartialBeforeConfigLoad(t *testing.T) {
+	assertRunReviewSelectionOverrideRejectsPartialBeforeConfigLoad(t, []string{
+		"watch", "--source", "coderabbit", "--pr", "123", "--model", "gpt-5.6-sol", "--no-input",
+	})
+}
+
+func assertRunReviewSelectionOverrideRejectsPartialBeforeConfigLoad(t *testing.T, args []string) {
+	t.Helper()
+	homeDir, _ := withCLIWorkspace(t)
+	configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
+	const invalidConfig = "defaults:\n  agent: [\n"
+	mustMkdir(t, filepath.Dir(configPath))
+	mustWrite(t, configPath, invalidConfig)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run(args, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout diagnostics, got %q", stdout.String())
+	}
+	const wantGrammar = "--agent, --model, and --reasoning-effort must be provided together for a one-Run Agent Selection override; omit all three to use Agent Selection Profiles"
+	if !strings.Contains(stderr.String(), wantGrammar) {
+		t.Fatalf("expected selection grammar error before config load, got %q", stderr.String())
+	}
+	if got := mustRead(t, configPath); got != invalidConfig {
+		t.Fatalf("partial override changed User Config\nwant: %q\n got: %q", invalidConfig, got)
+	}
+	assertNoRunDatabase(t, homeDir)
+	if _, err := os.Stat(filepath.Join(homeDir, ".roundfix", "worktrees")); err == nil {
+		t.Fatalf("partial override created a Run Worktree root")
+	} else if !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("stat Run Worktree root: %v", err)
 	}
 }
 
@@ -5506,7 +5613,7 @@ func TestRunResolveACPXProbeFailureReportsActionablePreflight(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+			code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 			if code != 2 {
 				t.Fatalf("expected probe preflight exit 2, got %d", code)
@@ -5539,7 +5646,7 @@ func TestRunResolveAgentFailureMarksBatchFailed(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected Run failure exit 1, got %d", code)
@@ -5606,7 +5713,7 @@ resolve:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected Unresolved exit 1, got %d", code)
@@ -5678,7 +5785,7 @@ resolve:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit 0, got %d stderr=%q", code, stderr.String())
@@ -5744,7 +5851,7 @@ func TestRunResolveClosesAgentSessionForTerminalOutcomes(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+			code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 			if code != tt.wantCode {
 				t.Fatalf("expected exit code %d, got %d stderr=%q", tt.wantCode, code, stderr.String())
@@ -5766,7 +5873,7 @@ func TestRunResolveRejectsIncompatibleArtifacts(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d", code)
@@ -5800,22 +5907,22 @@ func TestRunOperationalCommandRejectsInvalidInput(t *testing.T) {
 		},
 		{
 			name:     "unsupported agent",
-			args:     []string{"resolve", "--pr", "123", "--agent", "other", "--no-input"},
+			args:     []string{"resolve", "--pr", "123", "--agent", "other", "--model", "other-model", "--reasoning-effort", "high", "--no-input"},
 			contains: "unsupported Agent",
 		},
 		{
 			name:     "invalid max rounds",
-			args:     []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--max-rounds", "0", "--no-input"},
+			args:     []string{"watch", "--source", "coderabbit", "--pr", "123", "--max-rounds", "0", "--no-input"},
 			contains: "--max-rounds must be greater than 0",
 		},
 		{
 			name:     "resolve agent console suppression conflicts with interactive input",
-			args:     []string{"resolve", "--pr", "123", "--agent", "codex", "--interactive", "--no-agent-console"},
+			args:     []string{"resolve", "--pr", "123", "--interactive", "--no-agent-console"},
 			contains: "--interactive cannot be used with --no-agent-console",
 		},
 		{
 			name:     "watch agent console suppression conflicts with interactive input",
-			args:     []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--interactive", "--no-agent-console"},
+			args:     []string{"watch", "--source", "coderabbit", "--pr", "123", "--interactive", "--no-agent-console"},
 			contains: "--interactive cannot be used with --no-agent-console",
 		},
 		{
@@ -5862,15 +5969,15 @@ func TestRunNoAgentConsoleRejectsInteractiveCockpit(t *testing.T) {
 	}{
 		{
 			name: "resolve",
-			args: []string{"resolve", "--pr", "123", "--agent", "codex", "--no-agent-console", "--no-input"},
+			args: []string{"resolve", "--pr", "123", "--no-agent-console", "--no-input"},
 		},
 		{
 			name: "watch",
-			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--no-agent-console", "--no-input"},
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--no-agent-console", "--no-input"},
 		},
 		{
 			name: "implement",
-			args: []string{"implement", "--spec", "0001-widget-flow", "--agent", "codex", "--no-agent-console", "--no-input"},
+			args: []string{"implement", "--spec", "0001-widget-flow", "--no-agent-console", "--no-input"},
 		},
 	}
 
@@ -7354,7 +7461,7 @@ func runCleanResolveForOutcomeNotification(t *testing.T, notifyErr error) (strin
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean resolve exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -7788,9 +7895,9 @@ func branchIntegrityCommandArgs(command string) []string {
 	case "fetch":
 		return []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}
 	case "resolve":
-		return []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}
+		return []string{"resolve", "--pr", "123", "--no-input"}
 	case "watch":
-		return []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--no-input"}
+		return []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--no-input"}
 	default:
 		return []string{command}
 	}
@@ -9149,7 +9256,7 @@ func TestResolveJournalsAgentRunEventsDurably(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
@@ -9189,7 +9296,7 @@ func TestRunResolveSkipsAgentLogFilesByDefaultAndStillJournals(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
@@ -9210,7 +9317,7 @@ logs:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
@@ -9234,7 +9341,7 @@ func TestRunResolveNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-agent-console", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-agent-console", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
@@ -9264,7 +9371,7 @@ func TestRunWatchNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-agent-console", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-agent-console", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean watch exit, got %d stderr=%q", code, stderr.String())
@@ -9304,7 +9411,7 @@ func TestStoppedResolveJournalsStoppedEventBeforeReturning(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean Stop Request exit, got %d stderr=%q", code, stderr.String())
@@ -9352,7 +9459,7 @@ func TestWatchSkipsFinalPushWhenAutoPushDisabled(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean watch exit, got %d stderr=%q", code, stderr.String())
@@ -9376,7 +9483,7 @@ func TestWatchFinalPushRunsOncePerCleanRoundThroughEngine(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean watch exit, got %d stderr=%q", code, stderr.String())
@@ -9398,7 +9505,7 @@ func runResolveForAttachTest(t *testing.T, repoDir string) (string, *bytes.Buffe
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 	if code != 0 {
 		t.Fatalf("seed resolve run failed: %d stderr=%q", code, stderr.String())
 	}
@@ -10765,7 +10872,7 @@ func TestWatchRunJournalsOrderedLoopNarrative(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean watch exit, got %d stderr=%q", code, stderr.String())
@@ -10810,7 +10917,7 @@ func TestStoppedRunJournalsStopWithoutLaterUnsafeDaemonEvents(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean Stop Request exit, got %d", code)
@@ -10845,7 +10952,7 @@ func TestFailedVerificationJournalsFailureWithoutCommitEvents(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code == 0 {
 		t.Fatal("expected failed verification to fail the Run")
@@ -10883,7 +10990,7 @@ func TestTriageOnlyBatchJournalsCommitSkipDecision(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected triage-only Batch to succeed, got %d stderr=%q", code, stderr.String())
@@ -10911,7 +11018,7 @@ func TestAttachRendersWatchDaemonEventsInTimeline(t *testing.T) {
 	withSuccessfulPreflight(t, repoDir)
 	var watchStdout bytes.Buffer
 	var watchStderr bytes.Buffer
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &watchStdout, &watchStderr)
+	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &watchStdout, &watchStderr)
 	if code != 0 {
 		t.Fatalf("seed watch run failed: %d stderr=%q", code, watchStderr.String())
 	}
@@ -10953,7 +11060,7 @@ func TestResolvePrintsIssueSummaryAfterCompletion(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())

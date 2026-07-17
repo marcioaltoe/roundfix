@@ -106,3 +106,88 @@ func TestResolveSelectionPreservesCustomValues(t *testing.T) {
 		t.Fatalf("expected custom values to survive resolution, got %#v", got)
 	}
 }
+
+func TestInvocationProfileOverrideRequiresCompleteTuple(t *testing.T) {
+	const wantGrammar = "--agent, --model, and --reasoning-effort must be provided together for a one-Run Agent Selection override; omit all three to use Agent Selection Profiles"
+	tests := []struct {
+		name    string
+		req     commandRequest
+		wantErr string
+	}{
+		{name: "no flags", req: commandRequest{}},
+		{name: "agent only", req: commandRequest{agentSet: true}, wantErr: wantGrammar},
+		{name: "model only", req: commandRequest{modelSet: true}, wantErr: wantGrammar},
+		{name: "reasoning only", req: commandRequest{reasoningEffortSet: true}, wantErr: wantGrammar},
+		{name: "agent and model", req: commandRequest{agentSet: true, modelSet: true}, wantErr: wantGrammar},
+		{name: "agent and reasoning", req: commandRequest{agentSet: true, reasoningEffortSet: true}, wantErr: wantGrammar},
+		{name: "model and reasoning", req: commandRequest{modelSet: true, reasoningEffortSet: true}, wantErr: wantGrammar},
+		{
+			name: "complete tuple",
+			req: commandRequest{
+				agent:              "codex",
+				agentSet:           true,
+				model:              "gpt-5.6-sol",
+				modelSet:           true,
+				reasoningEffort:    "high",
+				reasoningEffortSet: true,
+			},
+		},
+		{
+			name: "complete tuple with model-managed reasoning",
+			req: commandRequest{
+				agent:              "codex",
+				agentSet:           true,
+				model:              "gpt-5.6-sol",
+				modelSet:           true,
+				reasoningEffortSet: true,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateExplicitSelectionFlags(tt.req)
+			if tt.wantErr == "" {
+				if err != nil {
+					t.Fatalf("validateExplicitSelectionFlags() error = %v", err)
+				}
+				return
+			}
+			if err == nil || err.Error() != tt.wantErr {
+				t.Fatalf("validateExplicitSelectionFlags() error = %v, want %q", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestInvocationProfileOverrideParsingPreservesExplicitEmptyReasoning(t *testing.T) {
+	req, err := parseOperationalCommand("resolve", []string{
+		"--agent", "codex",
+		"--model", "gpt-5.6-sol",
+		"--reasoning-effort=",
+	}, roundconfig.Builtin())
+	if err != nil {
+		t.Fatalf("parseOperationalCommand() error = %v", err)
+	}
+	if !req.agentSet || !req.modelSet || !req.reasoningEffortSet {
+		t.Fatalf("selection flag presence = agent:%t model:%t reasoning:%t, want all present", req.agentSet, req.modelSet, req.reasoningEffortSet)
+	}
+	override, err := invocationProfileOverride(req)
+	if err != nil {
+		t.Fatalf("invocationProfileOverride() error = %v", err)
+	}
+	if override == nil || override.Runtime != "codex" || override.Model != "gpt-5.6-sol" || override.ReasoningEffort != "" {
+		t.Fatalf("invocationProfileOverride() = %+v, want explicit model-managed selection", override)
+	}
+}
+
+func TestInvocationProfileOverridePresenceIgnoresFlagLikeValues(t *testing.T) {
+	presence := selectionFlagPresence([]string{
+		"--spec", "--agent",
+		"--agent-command", "--model",
+		"--artifact-dir=--reasoning-effort",
+	})
+	if !presence.empty() {
+		t.Fatalf("selection flag presence = %+v, want no selection flags", presence)
+	}
+}
