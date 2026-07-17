@@ -113,6 +113,9 @@ authorization, and rerun Doctor to prove the result.
   installation.
 - Replacing `skills-lock.json` with a Roundfix-specific lock format.
 - Validating global Agent Skill installations outside the current repository.
+- Validating `AGENTS.md`, Context Documents, agent guides, or Baseline ADRs;
+  those repository-document contracts belong to `setup-context-driven audit`
+  and Spec 0040.
 
 ## Success Metrics
 

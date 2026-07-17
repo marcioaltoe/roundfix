@@ -42,6 +42,9 @@ content matches the repository lock without executing third-party tooling.
   commands. `make skills-sync` regenerates the embedded Roundfix Skill.
 - No Run Store, configuration schema, Agent Session, TUI, network, or daemon
   changes.
+- No Context-Driven artifact inspection: Doctor proves the installed skill
+  version, while `setup-context-driven audit` validates generated repository
+  instructions and Baseline ADRs under Spec 0040.
 
 ## Implementation Design
 

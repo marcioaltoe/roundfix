@@ -84,3 +84,11 @@ The investigation generated snapshots and a local regression test. Those
 changes are not part of this finding and were discarded at the user's request.
 This document preserves the diagnosis so the correction can be incorporated
 into the existing Roundfix spec.
+
+## Planned resolution
+
+Spec [0036 Doctor skill readiness](../specs/0036-doctor-skill-readiness/_prd.md)
+owns this correction. Its first Task requires source-type-aware digest
+precedence, the conflicting external-content regression, validation of both
+Roundfix-owned skill copies, and the full verification gate. This finding
+remains pending until that Task and the Spec QA pass.

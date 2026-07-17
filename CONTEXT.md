@@ -350,6 +350,18 @@ _Avoid_: Log rotation, TTL, expiry
 The configured command Roundfix runs once in a newly created Run or Task Worktree, after copying `worktree.copy` files and before Agent work and Verification, to prepare the environment (install dependencies, migrate and seed databases, warm caches). A bootstrap failure ends the Run or settles the Task with a bootstrap-failed outcome. See ADR-0034.
 _Avoid_: Setup command, provisioning, install step
 
+**Context-Driven Baseline**:
+The portable, versioned set of required project instructions and architectural decisions that makes a repository ready for the CONTEXT-driven workflow.
+_Avoid_: Sample docs, optional setup, repository template
+
+**Baseline ADR**:
+An Architecture Decision Record whose reserved identity and invariant belong to the Context-Driven Baseline while project-specific notes remain repository-owned.
+_Avoid_: Example ADR, project ADR, template copy
+
+**Internal Identifier**:
+A technical identity for an entity or resource that is generated and controlled by the project.
+_Avoid_: External identifier, natural key, business code
+
 **Roundfix Skill**:
 A shipped agent skill that teaches an external Agent how to start Roundfix or how to resolve one assigned Batch.
 _Avoid_: Runtime, Review Source, plugin
