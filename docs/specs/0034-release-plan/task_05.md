@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0034-release-plan
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -24,20 +24,20 @@ Make the implemented Release Plan Command the mandatory first step for maintaine
 
 ## Subtasks
 
-- [ ] Add the mandatory planning step and approval boundaries to the release runbook.
-- [ ] Add the root Agent pointer for release work.
-- [ ] Add `release plan` to the user-facing command documentation.
-- [ ] Update the canonical Roundfix skill command recipe.
-- [ ] Regenerate the embedded Roundfix skill copy.
-- [ ] Pin the documentation and skill-sync contract with tests.
+- [x] Add the mandatory planning step and approval boundaries to the release runbook.
+- [x] Add the root Agent pointer for release work.
+- [x] Add `release plan` to the user-facing command documentation.
+- [x] Update the canonical Roundfix skill command recipe.
+- [x] Regenerate the embedded Roundfix skill copy.
+- [x] Pin the documentation and skill-sync contract with tests.
 
 ## Acceptance Criteria
 
-- [ ] Maintainer and Agent instructions start release work with the read-only Release Plan Command.
-- [ ] Patch, minor, major, version-zero breaking, and manual-classification approval boundaries are explicit and consistent.
-- [ ] Existing publication steps remain intact and occur only after the plan's required decision is satisfied.
-- [ ] Root help, command help, runbook, command index, root Agent pointer, and both Roundfix skill copies use the same canonical terms and command shape.
-- [ ] Canonical and embedded Roundfix skills are byte-identical after regeneration.
+- [x] Maintainer and Agent instructions start release work with the read-only Release Plan Command.
+- [x] Patch, minor, major, version-zero breaking, and manual-classification approval boundaries are explicit and consistent.
+- [x] Existing publication steps remain intact and occur only after the plan's required decision is satisfied.
+- [x] Root help, command help, runbook, command index, root Agent pointer, and both Roundfix skill copies use the same canonical terms and command shape.
+- [x] Canonical and embedded Roundfix skills are byte-identical after regeneration.
 
 ## Context
 
@@ -61,3 +61,16 @@ Make the implemented Release Plan Command the mandatory first step for maintaine
 - `_prd.md` → Goal 5; User Story 2; Core Feature 9; Decisions.
 - `_techspec.md` → System Architecture: documentation and skill surfaces; Integration Points; Testing Approach; Build Order 5-6.
 - ADR-0048 → Release planning is read-only and confirmation-gated.
+
+## Result
+
+- Added `roundfix release plan` as the mandatory first release step in the maintainer runbook, root Agent instructions, user-facing command index, and canonical Roundfix skill.
+- Documented the approval boundary consistently: a generic release request authorizes only a conclusive patch plan; minor, major, and version-zero breaking plans require explicit human approval; manual `--impact` plus `--reason` classifies ambiguity but does not approve the resulting version.
+- Preserved the existing tag-triggered publication path after approval: tag validation, artifact version agreement, npm publication, GitHub Release assets, and Upgrade Command asset compatibility remain downstream of the plan.
+- Updated `.agents/skills/roundfix/SKILL.md` first, then ran `make skills-sync` to regenerate `skills/roundfix/SKILL.md`; updated the setup-context TypeScript-Bun skill snapshot digest so profile audits accept the synchronized Roundfix skill.
+- Added `TestReleasePlanDocumentationContract` to pin root help, command help, the runbook, command index, root Agent pointer, and both Roundfix skill copies.
+- Verification passed: `grep -F 'roundfix release plan' ...` across runbook, usage guide, `AGENTS.md`, and canonical skill.
+- Verification passed: `cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md`.
+- Verification passed: `make skills-sync-check`.
+- Verification passed: `go test ./internal/cli -run 'TestReleasePlanDocumentationContract' -count=1` (`6 passed`).
+- Full gate passed: `make verify` (`79` setup-context tests passed, `go test ./...` reported `1443 passed`, skill check passed, build passed).

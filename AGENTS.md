@@ -38,6 +38,12 @@ unresolved remains. Stdlib `flag` dispatch and a Bubble Tea v2 TUI.
 - **HARD RULE — skill ownership**: repo-owned authorial workflow skills may
   be adapted locally; every other skill is upstream-managed and **MUST NOT**
   be modified here. Ownership split: `docs/agents/skill-governance.md`.
+- **HARD RULE — release planning**: release work starts with the read-only
+  `roundfix release plan` before changelog, version, tag, push, package, asset,
+  or GitHub Release mutation. A generic release request authorizes only a
+  conclusive patch plan; minor, major, version-zero breaking, and manual
+  classification outcomes require the decisions in
+  `docs/user-guide/release-runbook.md`.
 - **HARD RULE — autonomous work model**: binding for every autonomous
   session — the Supervisor orchestrates only; implementation is delegated to an
   ACP Runtime per `docs/agents/autonomous-work.md`.

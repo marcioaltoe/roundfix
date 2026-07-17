@@ -1,6 +1,6 @@
 ---
 name: roundfix
-description: Use Roundfix to clean CodeRabbit pull request feedback, diagnose runtime readiness with the Doctor Command, execute a Spec's Task Graph with the Implement Command, monitor Runs through the Supervisor Run Event Stream, reclaim Run storage with the GC Command, archive completed Specs, and, inside daemon-assigned Batch runs, follow the bounded Review Issue or Task resolution contract.
+description: Use Roundfix to plan releases with the read-only Release Plan Command, clean CodeRabbit pull request feedback, diagnose runtime readiness with the Doctor Command, execute a Spec's Task Graph with the Implement Command, monitor Runs through the Supervisor Run Event Stream, reclaim Run storage with the GC Command, archive completed Specs, and, inside daemon-assigned Batch runs, follow the bounded Review Issue or Task resolution contract.
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
@@ -148,6 +148,36 @@ roundfix 1.0.0 is behind latest 1.1.0; run roundfix upgrade
 
 Freshness failures and offline checks stay silent and do not change the Run
 outcome.
+
+## Release planning
+
+When the user asks to cut, prepare, or validate a release, start with the
+read-only Release Plan Command:
+
+```bash
+roundfix release plan
+```
+
+Run it before changelog edits, version-file edits, tags, pushes, package
+publication, asset uploads, or GitHub Release creation. The command creates no
+Run, reads no Roundfix configuration, contacts no external service, and
+mutates no repository or release state.
+
+A generic release request authorizes only a conclusive patch plan: state
+`ready` with a patch proposed version. State `approval_required` for a minor,
+major, or version-zero breaking proposal requires explicit human approval of
+the printed approval question before any release mutation. State
+`manual_classification_required` requires a rerun with
+`--impact <none|patch|minor|major> --reason <text>`; that classification
+records the impact and reason, but it does not approve a resulting minor,
+major, or version-zero breaking version. State `no_release` means no release
+is required for the committed range.
+
+After the plan's required decision is satisfied, follow the repository release
+runbook. Preserve the existing tag-triggered workflow: validate the tag, keep
+artifact versions in agreement, publish npm packages through the release
+workflow, upload GitHub Release assets, and leave the Upgrade Command asset
+contract unchanged.
 
 ## Config compatibility
 
@@ -617,6 +647,8 @@ roundfix events <run-id> --follow
 roundfix events <run-id> --filter verification,outcome
 roundfix settle --spec <slug> --task <task_id>
 roundfix archive <slug>
+roundfix release plan
+roundfix release plan --impact <none|patch|minor|major> --reason "<classification reason>"
 roundfix gc --dry-run
 roundfix gc
 roundfix stop --spec <slug>

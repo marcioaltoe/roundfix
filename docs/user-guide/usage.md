@@ -37,6 +37,22 @@ Both loops keep the same contract, which is what lets an agent drive them:
 An Agent runtime is selected with `--agent`; supported values are `codex`,
 `claude`, and `opencode`. The Review Source is `coderabbit`.
 
+## Release planning before publication
+
+Release work starts with the read-only Release Plan Command:
+
+```bash
+roundfix release plan
+```
+
+Run it before changelog edits, version-file edits, tags, pushes, package
+publication, asset uploads, or GitHub Release creation. A generic release
+request authorizes only a conclusive patch plan. Minor, major, and version-zero
+breaking plans require explicit human approval of the printed question. If the
+plan reports `manual_classification_required`, rerun it with
+`--impact <none|patch|minor|major> --reason <text>`; that classification records
+the impact and reason, but it does not approve the resulting version.
+
 ## Loop 1 — context-driven implementation
 
 Execute a Spec's Task Graph from the resolved Spec Root as one Run. The default
@@ -282,6 +298,7 @@ a Run is Active.
 | `implement` | Execute a Spec's Task Graph as one Run |
 | `settle` | Recover one failed Task from its kept worktree |
 | `archive` | Archive a completed, QA-passed Spec |
+| `release plan` | Classify committed release changes without mutating release state |
 | `fetch` | Download Review Issue artifacts for a PR |
 | `resolve` | Resolve downloaded Review Issues once |
 | `watch` | Fetch and resolve in a watched loop |
