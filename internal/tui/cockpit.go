@@ -1471,7 +1471,7 @@ func (model *cockpitModel) detailMetaLine(detail *issueDetailView, width int) st
 
 func detailMetaParts(detail *issueDetailView) (string, string, string) {
 	if detail.kind == detailTask {
-		return emptyDash(detail.task.Type), emptyDash(string(detail.task.Status)), emptyDash(detail.task.File)
+		return emptyDash(string(detail.task.Type)), emptyDash(string(detail.task.Status)), emptyDash(detail.task.File)
 	}
 	issue := detail.issue
 	return emptyDash(issue.Severity), emptyDash(issue.Status), emptyDash(issueLocation(issue))

@@ -26,43 +26,43 @@ const taskCycleSlug = "0001-sample-feature"
 func TestTaskCommitMessageDerivesSubjectAndTrailers(t *testing.T) {
 	tests := []struct {
 		name     string
-		taskType string
+		taskType spec.TaskType
 		title    string
 		want     string
 	}{
 		{
 			name:     "default type lowercases ascii letter",
-			taskType: "backend",
+			taskType: spec.TaskTypeBackend,
 			title:    "Build the acpx invocation core",
 			want:     "feat: build the acpx invocation core\n\nRoundfix-Spec: 0003-dogfood-polish\nRoundfix-Task: task_01",
 		},
 		{
 			name:     "docs type passes through",
-			taskType: "docs",
+			taskType: spec.TaskTypeDocs,
 			title:    "Write the usage docs",
 			want:     "docs: write the usage docs\n\nRoundfix-Spec: 0003-dogfood-polish\nRoundfix-Task: task_01",
 		},
 		{
 			name:     "test type passes through",
-			taskType: "test",
+			taskType: spec.TaskTypeTest,
 			title:    "Add commit-message tests",
 			want:     "test: add commit-message tests\n\nRoundfix-Spec: 0003-dogfood-polish\nRoundfix-Task: task_01",
 		},
 		{
 			name:     "chore type passes through",
-			taskType: "chore",
+			taskType: spec.TaskTypeChore,
 			title:    "Refresh fixtures",
 			want:     "chore: refresh fixtures\n\nRoundfix-Spec: 0003-dogfood-polish\nRoundfix-Task: task_01",
 		},
 		{
 			name:     "digit first title passes through",
-			taskType: "backend",
+			taskType: spec.TaskTypeBackend,
 			title:    "2FA setup",
 			want:     "feat: 2FA setup\n\nRoundfix-Spec: 0003-dogfood-polish\nRoundfix-Task: task_01",
 		},
 		{
 			name:     "unicode first title lowercases",
-			taskType: "backend",
+			taskType: spec.TaskTypeBackend,
 			title:    "Über tracing",
 			want:     "feat: über tracing\n\nRoundfix-Spec: 0003-dogfood-polish\nRoundfix-Task: task_01",
 		},

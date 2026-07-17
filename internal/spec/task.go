@@ -22,6 +22,7 @@ type taskDocument struct {
 	Frontmatter      taskFrontmatter
 	Title            string
 	StatusNormalized bool
+	Type             TaskType
 	Context          []TaskContextRef
 	Verification     []string
 }
@@ -38,7 +39,7 @@ func ReloadTask(specsRoot string, task *Task) error {
 	if err != nil {
 		return fmt.Errorf("read Task %q file %q: %w", task.ID, path, err)
 	}
-	document, err := parseTaskDocument(content)
+	document, err := parseTaskDocument(content, path)
 	if err != nil {
 		return TaskFileError{TaskID: task.ID, Path: path, Err: err}
 	}
@@ -48,7 +49,7 @@ func ReloadTask(specsRoot string, task *Task) error {
 	task.Title = document.Title
 	task.Status = Status(document.Frontmatter.Status)
 	task.StatusNormalized = document.StatusNormalized
-	task.Type = document.Frontmatter.Type
+	task.Type = document.Type
 	task.Context = append([]TaskContextRef(nil), document.Context...)
 	task.Verification = document.Verification
 	return nil
@@ -78,7 +79,7 @@ func SetStatus(taskPath string, status Status) error {
 	return nil
 }
 
-func parseTaskDocument(content []byte) (taskDocument, error) {
+func parseTaskDocument(content []byte, taskPath string) (taskDocument, error) {
 	frontmatterBytes, body, err := splitFrontmatter(content)
 	if err != nil {
 		return taskDocument{}, err
@@ -93,6 +94,10 @@ func parseTaskDocument(content []byte) (taskDocument, error) {
 		return taskDocument{}, fmt.Errorf("unsupported status %q (allowed: %s)", frontmatter.Status, allowedStatusValues())
 	}
 	frontmatter.Status = normalizedStatus
+	taskType, err := ParseTaskType(taskPath, frontmatter.Type)
+	if err != nil {
+		return taskDocument{}, err
+	}
 	contextRefs, err := parseTaskContextRefs(body)
 	if err != nil {
 		return taskDocument{}, err
@@ -101,6 +106,7 @@ func parseTaskDocument(content []byte) (taskDocument, error) {
 		Frontmatter:      frontmatter,
 		Title:            parseTaskTitle(body),
 		StatusNormalized: strings.TrimSpace(rawStatus) != normalizedStatus,
+		Type:             taskType,
 		Context:          contextRefs,
 		Verification:     parseVerificationCommands(body),
 	}, nil

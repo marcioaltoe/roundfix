@@ -92,7 +92,7 @@ type Task struct {
 	Needs            []string
 	Status           Status
 	StatusNormalized bool
-	Type             string
+	Type             TaskType
 	Context          []TaskContextRef
 	Verification     []string
 }
@@ -202,7 +202,7 @@ func Load(specsRoot string, slug string) (*Graph, error) {
 	}
 
 	manifestPath := filepath.Join(dir, "_tasks.md")
-	nodes, err := loadManifestNodes(manifestPath)
+	nodes, projections, err := loadManifestNodes(manifestPath)
 	if err != nil {
 		return nil, err
 	}
@@ -214,9 +214,28 @@ func Load(specsRoot string, slug string) (*Graph, error) {
 
 	tasks := make([]Task, 0, len(nodes))
 	for _, index := range order {
-		task, err := loadTask(dir, slug, nodes[index])
+		node := nodes[index]
+		task, err := loadTask(dir, slug, node)
 		if err != nil {
 			return nil, err
+		}
+		if len(projections) > 0 {
+			projected, ok := projections[task.ID]
+			if !ok {
+				return nil, ManifestError{
+					Path:   manifestPath,
+					Reason: fmt.Sprintf("projection table has no row for Task %q; add a type cell matching the task frontmatter", task.ID),
+				}
+			}
+			if projected != task.Type {
+				return nil, TaskTypeProjectionError{
+					TaskID:       task.ID,
+					ManifestPath: manifestPath,
+					TaskPath:     filepath.Join(dir, node.File),
+					ManifestType: projected,
+					FileType:     task.Type,
+				}
+			}
 		}
 		tasks = append(tasks, task)
 	}
@@ -277,48 +296,94 @@ func prdStatus(content []byte) (string, error) {
 	return prd.Status, nil
 }
 
-func loadManifestNodes(manifestPath string) ([]manifestNode, error) {
+func loadManifestNodes(manifestPath string) ([]manifestNode, map[string]TaskType, error) {
 	content, err := os.ReadFile(manifestPath)
 	if errors.Is(err, os.ErrNotExist) {
-		return nil, ManifestError{Path: manifestPath, Reason: "file does not exist; run the write-tasks workflow to create the Task Graph"}
+		return nil, nil, ManifestError{Path: manifestPath, Reason: "file does not exist; run the write-tasks workflow to create the Task Graph"}
 	}
 	if err != nil {
-		return nil, fmt.Errorf("read Task Graph manifest %q: %w", manifestPath, err)
+		return nil, nil, fmt.Errorf("read Task Graph manifest %q: %w", manifestPath, err)
 	}
-	frontmatterBytes, _, err := splitFrontmatter(content)
+	frontmatterBytes, body, err := splitFrontmatter(content)
 	if err != nil {
-		return nil, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}
+		return nil, nil, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}
 	}
 	var manifest manifestFrontmatter
 	if err := yaml.Unmarshal(frontmatterBytes, &manifest); err != nil {
-		return nil, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}
+		return nil, nil, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}
 	}
 	if manifest.Schema != manifestSchema {
-		return nil, ManifestSchemaError{Path: manifestPath, Schema: manifest.Schema}
+		return nil, nil, ManifestSchemaError{Path: manifestPath, Schema: manifest.Schema}
 	}
 	nodes := manifest.Graph.Nodes
 	if len(nodes) == 0 {
-		return nil, ManifestError{Path: manifestPath, Reason: "graph has no nodes"}
+		return nil, nil, ManifestError{Path: manifestPath, Reason: "graph has no nodes"}
 	}
 
 	known := make(map[string]bool, len(nodes))
 	for index, node := range nodes {
 		if node.ID == "" || node.File == "" {
-			return nil, ManifestError{Path: manifestPath, Reason: fmt.Sprintf("graph node %d is missing id or file", index+1)}
+			return nil, nil, ManifestError{Path: manifestPath, Reason: fmt.Sprintf("graph node %d is missing id or file", index+1)}
 		}
 		if known[node.ID] {
-			return nil, ManifestError{Path: manifestPath, Reason: fmt.Sprintf("duplicate Task id %q", node.ID)}
+			return nil, nil, ManifestError{Path: manifestPath, Reason: fmt.Sprintf("duplicate Task id %q", node.ID)}
 		}
 		known[node.ID] = true
 	}
 	for _, node := range nodes {
 		for _, need := range node.Needs {
 			if !known[need] {
-				return nil, UnknownNeedError{TaskID: node.ID, Need: need}
+				return nil, nil, UnknownNeedError{TaskID: node.ID, Need: need}
 			}
 		}
 	}
-	return nodes, nil
+	projections, err := parseTaskTypeProjections(manifestPath, body)
+	if err != nil {
+		return nil, nil, err
+	}
+	for taskID := range projections {
+		if !known[taskID] {
+			return nil, nil, ManifestError{
+				Path:   manifestPath,
+				Reason: fmt.Sprintf("projection table row names unknown Task %q; remove it or add a matching graph node", taskID),
+			}
+		}
+	}
+	return nodes, projections, nil
+}
+
+func parseTaskTypeProjections(manifestPath string, body []byte) (map[string]TaskType, error) {
+	projections := make(map[string]TaskType)
+	for _, line := range strings.Split(string(body), "\n") {
+		cells := markdownTableCells(line)
+		if len(cells) < 5 || !strings.HasPrefix(cells[0], "task_") {
+			continue
+		}
+		taskType, err := ParseTaskType(manifestPath, cells[2])
+		if err != nil {
+			return nil, ManifestError{
+				Path:   manifestPath,
+				Reason: fmt.Sprintf("projection row for Task %q has invalid type %q (allowed: %s); update the _tasks.md type cell to one allowed value", cells[0], cells[2], allowedTaskTypeValues()),
+				Err:    err,
+			}
+		}
+		projections[cells[0]] = taskType
+	}
+	return projections, nil
+}
+
+func markdownTableCells(line string) []string {
+	trimmed := strings.TrimSpace(line)
+	if !strings.HasPrefix(trimmed, "|") || !strings.HasSuffix(trimmed, "|") {
+		return nil
+	}
+	trimmed = strings.TrimPrefix(strings.TrimSuffix(trimmed, "|"), "|")
+	parts := strings.Split(trimmed, "|")
+	cells := make([]string, 0, len(parts))
+	for _, part := range parts {
+		cells = append(cells, strings.TrimSpace(part))
+	}
+	return cells
 }
 
 // topologicalOrder runs Kahn's algorithm over the manifest nodes, always
@@ -376,7 +441,7 @@ func loadTask(dir string, slug string, node manifestNode) (Task, error) {
 	if err != nil {
 		return Task{}, fmt.Errorf("read Task %q file %q: %w", node.ID, path, err)
 	}
-	document, err := parseTaskDocument(content)
+	document, err := parseTaskDocument(content, path)
 	if err != nil {
 		return Task{}, TaskFileError{TaskID: node.ID, Path: path, Err: err}
 	}
@@ -390,7 +455,7 @@ func loadTask(dir string, slug string, node manifestNode) (Task, error) {
 		Needs:            append([]string(nil), node.Needs...),
 		Status:           Status(document.Frontmatter.Status),
 		StatusNormalized: document.StatusNormalized,
-		Type:             document.Frontmatter.Type,
+		Type:             document.Type,
 		Context:          append([]TaskContextRef(nil), document.Context...),
 		Verification:     document.Verification,
 	}, nil

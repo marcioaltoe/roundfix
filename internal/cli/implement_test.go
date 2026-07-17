@@ -2410,6 +2410,55 @@ func TestRunImplementPreflightFailures(t *testing.T) {
 	}
 }
 
+func TestImplementRejectsInvalidTaskTypeBeforeSideEffects(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Build the widget core", taskType: "Backend"},
+	})
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != 2 {
+		t.Fatalf("expected exit code 2, got %d (stderr %q)", code, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout, got %q", stdout.String())
+	}
+	for _, want := range []string{
+		filepath.Join(repoDir, "docs", "specs", implementTestSlug, "task_01.md"),
+		`"Backend"`,
+		"backend, frontend, data, infra, docs, test, chore",
+		"frontmatter",
+		"type",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("expected invalid Task Type diagnostic to contain %q, got %q", want, stderr.String())
+		}
+	}
+	if len(runner.probeRequests) != 0 {
+		t.Fatalf("expected invalid Task Type to skip selection probes, got %#v", runner.probeRequests)
+	}
+	if len(runner.fallbackSets) != 0 {
+		t.Fatalf("expected invalid Task Type to skip fallback probes, got %#v", runner.fallbackSets)
+	}
+	if runner.calls != 0 {
+		t.Fatalf("expected invalid Task Type to skip Agent invocation, got %d call(s)", runner.calls)
+	}
+	assertNoRunDatabase(t, homeDir)
+	worktreeRoot := filepath.Join(homeDir, ".roundfix", "worktrees")
+	if _, err := os.Stat(worktreeRoot); err == nil {
+		t.Fatalf("expected no Run Worktree root at %s", worktreeRoot)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("stat Run Worktree root: %v", err)
+	}
+}
+
 func TestRunImplementDirtyWorkingTreePrintsNoteAndRuns(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	withImplementCollaborators(t, &implementFakeRunner{

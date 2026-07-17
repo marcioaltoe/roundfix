@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0035-agent-selection-profiles
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -23,21 +23,21 @@ Make Task Type a closed authoring and runtime-routing contract before any profil
 
 ## Subtasks
 
-- [ ] Introduce the closed Task Type parser and actionable error contract.
-- [ ] Expose the parsed type on loaded Tasks.
-- [ ] Validate the complete Task Graph before operational side effects.
-- [ ] Pin all accepted and rejected authoring cases.
-- [ ] Align the `write-tasks` approval and template contracts.
-- [ ] Regenerate and verify the embedded skill copy.
+- [x] Introduce the closed Task Type parser and actionable error contract.
+- [x] Expose the parsed type on loaded Tasks.
+- [x] Validate the complete Task Graph before operational side effects.
+- [x] Pin all accepted and rejected authoring cases.
+- [x] Align the `write-tasks` approval and template contracts.
+- [x] Regenerate and verify the embedded skill copy.
 
 ## Acceptance Criteria
 
-- [ ] All seven canonical values load and remain stable through the Task Graph.
-- [ ] Missing, padded, mixed-case, and unknown values fail with the exact file and allowed values.
-- [ ] Invalid Task Type produces zero model probes, Run rows, branches, worktrees, and Agent invocations.
-- [ ] Generated task frontmatter and the `_tasks.md` projection contain one identical allowed type.
-- [ ] The `write-tasks` skill contains no recommendation, runtime id, model id, or profile configuration logic.
-- [ ] Canonical and embedded `write-tasks` copies are byte-identical.
+- [x] All seven canonical values load and remain stable through the Task Graph.
+- [x] Missing, padded, mixed-case, and unknown values fail with the exact file and allowed values.
+- [x] Invalid Task Type produces zero model probes, Run rows, branches, worktrees, and Agent invocations.
+- [x] Generated task frontmatter and the `_tasks.md` projection contain one identical allowed type.
+- [x] The `write-tasks` skill contains no recommendation, runtime id, model id, or profile configuration logic.
+- [x] Canonical and embedded `write-tasks` copies are byte-identical.
 
 ## Context
 
@@ -57,3 +57,22 @@ Make Task Type a closed authoring and runtime-routing contract before any profil
 
 - `_prd.md` → Goals 7; User Stories 1 and 5; Core Feature 7; Success Metrics.
 - `_techspec.md` → Domain types: TaskType; `write-tasks` contract; Operational preflight steps 1-3; Build Order 2.
+
+## Result
+
+Implemented the closed Task Type contract in `internal/spec`: loaded tasks now expose a parsed `TaskType`, task file frontmatter rejects missing, empty, padded, mixed-case, and unknown values with the file path, invalid value, full allowed set, and frontmatter correction action, and `_tasks.md` projection rows are validated against task file types when present. Implement preflight now fails invalid Task Types before selection probes, Run persistence, worktree creation, or Agent execution because `spec.Load` rejects the graph before those operational steps.
+
+Updated the repo-owned `write-tasks` skill and task template so Task Type remains based on the dominant delivered outcome, dependencies remain only in `_tasks.md`, status/type remain task-frontmatter owned, and the projection table must carry the identical allowed value. Synchronized `.agents/skills/write-tasks` with `skills/write-tasks`, and refreshed setup-context-driven skill snapshot digests so the full skill audit accepts the updated authoring contract.
+
+Evidence:
+
+- Canonical values: `TestTaskTypeCanonicalValuesLoadThroughTaskGraph` covers `backend`, `frontend`, `data`, `infra`, `docs`, `test`, and `chore` through graph loading.
+- Invalid values: `TestTaskTypeRejectsInvalidFrontmatterValues` covers missing, empty, padded, mixed-case, and unknown values with actionable diagnostics.
+- Zero side effects: `TestImplementRejectsInvalidTaskTypeBeforeSideEffects` asserts no probes, fallback probes, Run Database, Run Worktree root, or Agent calls.
+- Projection identity: `TestTaskTypeProjectionMustMatchTaskFile` rejects mismatched `_tasks.md` type projection versus task frontmatter.
+- Skill policy: `rtk rg -n "codex|claude|gpt|opus|model|runtime|recommend|profile" .agents/skills/write-tasks skills/write-tasks` returned no matches.
+- Verification passed: `GOCACHE=/private/tmp/roundfix-gocache rtk go test ./internal/spec ./internal/cli -run 'Test(TaskType|ImplementRejectsInvalidTaskType)' -count=1` → 10 tests passed.
+- Verification passed: `cmp .agents/skills/write-tasks/SKILL.md skills/write-tasks/SKILL.md && cmp .agents/skills/write-tasks/references/task-template.md skills/write-tasks/references/task-template.md` → no diff.
+- Verification passed: `rtk make skills-sync-check` → no drift output.
+- Additional package check passed: `GOCACHE=/private/tmp/roundfix-gocache rtk go test ./internal/spec ./internal/cli -count=1` → 578 tests passed.
+- Full gate passed: `GOCACHE=/private/tmp/roundfix-gocache rtk make verify` → Go tests, setup-context checks, skills check, and build passed.

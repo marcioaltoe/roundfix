@@ -1045,10 +1045,10 @@ func TaskCommitMessage(slug string, task spec.Task) string {
 	return fmt.Sprintf("%s: %s\n\nRoundfix-Spec: %s\nRoundfix-Task: %s", taskCommitType(task.Type), lowerFirstRune(task.Title), slug, task.ID)
 }
 
-func taskCommitType(taskType string) string {
+func taskCommitType(taskType spec.TaskType) string {
 	switch taskType {
-	case "docs", "test", "chore":
-		return taskType
+	case spec.TaskTypeDocs, spec.TaskTypeTest, spec.TaskTypeChore:
+		return string(taskType)
 	default:
 		return "feat"
 	}

@@ -99,6 +99,10 @@ func TestNormalizeStatus(t *testing.T) {
 }
 
 func manifestFixture(schema string, nodes string) string {
+	return manifestFixtureWithBody(schema, nodes, "")
+}
+
+func manifestFixtureWithBody(schema string, nodes string, body string) string {
 	return fmt.Sprintf(`---
 schema: %s
 spec: demo
@@ -107,7 +111,7 @@ graph:
 %s---
 
 # Tasks — Demo
-`, schema, nodes)
+%s`, schema, nodes, body)
 }
 
 const diamondNodes = `    - id: task_04
@@ -222,6 +226,154 @@ func TestLoadParsesTaskFiles(t *testing.T) {
 	for index, command := range wantCommands {
 		if task.Verification[index] != command {
 			t.Errorf("Verification[%d] = %q, want %q", index, task.Verification[index], command)
+		}
+	}
+}
+
+func TestTaskTypeCanonicalValuesLoadThroughTaskGraph(t *testing.T) {
+	gitRoot := t.TempDir()
+	specsRoot := defaultSpecsRoot(gitRoot)
+	taskTypes := []string{"backend", "frontend", "data", "infra", "docs", "test", "chore"}
+	files := map[string]string{"_prd.md": prdFixture("active")}
+	var nodes strings.Builder
+	var table strings.Builder
+	table.WriteString("\n| id      | title   | type    | complexity | needs |\n")
+	table.WriteString("| ------- | ------- | ------- | ---------- | ----- |\n")
+	for index, taskType := range taskTypes {
+		id := fmt.Sprintf("task_%02d", index+1)
+		nodes.WriteString(fmt.Sprintf("    - id: %s\n      file: %s.md\n      needs: []\n", id, id))
+		table.WriteString(fmt.Sprintf("| %s | Fixture | %s | low | — |\n", id, taskType))
+		files[id+".md"] = taskFixture(id, "Fixture", "pending", taskType, defaultVerificationSection)
+	}
+	files["_tasks.md"] = manifestFixtureWithBody("spec-tasks/v1", nodes.String(), table.String())
+	writeSpecDir(t, specsRoot, "demo", files)
+
+	graph, err := Load(specsRoot, "demo")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if len(graph.Tasks) != len(taskTypes) {
+		t.Fatalf("len(Tasks) = %d, want %d", len(graph.Tasks), len(taskTypes))
+	}
+	for index, task := range graph.Tasks {
+		if string(task.Type) != taskTypes[index] {
+			t.Fatalf("Task %q Type = %q, want %q", task.ID, task.Type, taskTypes[index])
+		}
+	}
+}
+
+func TestTaskTypeRejectsInvalidFrontmatterValues(t *testing.T) {
+	tests := []struct {
+		name      string
+		taskFile  string
+		wantValue string
+	}{
+		{
+			name:      "missing",
+			taskFile:  strings.Replace(taskFixture("task_01", "Fixture", "pending", "backend", defaultVerificationSection), "type: backend\n", "", 1),
+			wantValue: "",
+		},
+		{
+			name:      "empty",
+			taskFile:  taskFixture("task_01", "Fixture", "pending", "", defaultVerificationSection),
+			wantValue: "",
+		},
+		{
+			name:      "leading whitespace",
+			taskFile:  taskFixture("task_01", "Fixture", "pending", `" backend"`, defaultVerificationSection),
+			wantValue: " backend",
+		},
+		{
+			name:      "trailing whitespace",
+			taskFile:  taskFixture("task_01", "Fixture", "pending", `"backend "`, defaultVerificationSection),
+			wantValue: "backend ",
+		},
+		{
+			name:      "mixed case",
+			taskFile:  taskFixture("task_01", "Fixture", "pending", "Backend", defaultVerificationSection),
+			wantValue: "Backend",
+		},
+		{
+			name:      "unknown",
+			taskFile:  taskFixture("task_01", "Fixture", "pending", "api", defaultVerificationSection),
+			wantValue: "api",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gitRoot := t.TempDir()
+			specsRoot := defaultSpecsRoot(gitRoot)
+			writeSpecDir(t, specsRoot, "demo", map[string]string{
+				"_prd.md": prdFixture("active"),
+				"_tasks.md": manifestFixture("spec-tasks/v1", `    - id: task_01
+      file: task_01.md
+      needs: []
+`),
+				"task_01.md": tt.taskFile,
+			})
+
+			_, err := Load(specsRoot, "demo")
+			if err == nil {
+				t.Fatal("Load succeeded, want Task Type validation error")
+			}
+			var taskErr TaskFileError
+			if !errors.As(err, &taskErr) {
+				t.Fatalf("error = %v, want TaskFileError", err)
+			}
+			var taskTypeErr TaskTypeError
+			if !errors.As(err, &taskTypeErr) {
+				t.Fatalf("error = %v, want TaskTypeError", err)
+			}
+			wantPath := filepath.Join(specsRoot, "demo", "task_01.md")
+			message := err.Error()
+			for _, want := range []string{
+				wantPath,
+				fmt.Sprintf("%q", tt.wantValue),
+				"backend, frontend, data, infra, docs, test, chore",
+				"frontmatter",
+				"type",
+			} {
+				if !strings.Contains(message, want) {
+					t.Fatalf("error %q does not contain %q", message, want)
+				}
+			}
+		})
+	}
+}
+
+func TestTaskTypeProjectionMustMatchTaskFile(t *testing.T) {
+	gitRoot := t.TempDir()
+	specsRoot := defaultSpecsRoot(gitRoot)
+	writeSpecDir(t, specsRoot, "demo", map[string]string{
+		"_prd.md": prdFixture("active"),
+		"_tasks.md": manifestFixtureWithBody("spec-tasks/v1", `    - id: task_01
+      file: task_01.md
+      needs: []
+`, `
+| id      | title   | type     | complexity | needs |
+| ------- | ------- | -------- | ---------- | ----- |
+| task_01 | Fixture | frontend | low        | —     |
+`),
+		"task_01.md": taskFixture("task_01", "Fixture", "pending", "backend", defaultVerificationSection),
+	})
+
+	_, err := Load(specsRoot, "demo")
+	if err == nil {
+		t.Fatal("Load succeeded, want Task Type projection mismatch")
+	}
+	var projectionErr TaskTypeProjectionError
+	if !errors.As(err, &projectionErr) {
+		t.Fatalf("error = %v, want TaskTypeProjectionError", err)
+	}
+	message := err.Error()
+	for _, want := range []string{
+		filepath.Join(specsRoot, "demo", "_tasks.md"),
+		filepath.Join(specsRoot, "demo", "task_01.md"),
+		"frontend",
+		"backend",
+	} {
+		if !strings.Contains(message, want) {
+			t.Fatalf("error %q does not contain %q", message, want)
 		}
 	}
 }

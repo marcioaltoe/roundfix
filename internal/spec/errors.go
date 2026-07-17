@@ -103,6 +103,20 @@ func (err TaskFileError) Unwrap() error {
 	return err.Err
 }
 
+// TaskTypeProjectionError reports a human-readable _tasks.md projection row
+// whose type no longer matches the task file frontmatter.
+type TaskTypeProjectionError struct {
+	TaskID       string
+	ManifestPath string
+	TaskPath     string
+	ManifestType TaskType
+	FileType     TaskType
+}
+
+func (err TaskTypeProjectionError) Error() string {
+	return fmt.Sprintf("Task %q Type projection in %q is %q but task file %q frontmatter type is %q; update the _tasks.md projection type to match the task frontmatter", err.TaskID, err.ManifestPath, err.ManifestType, err.TaskPath, err.FileType)
+}
+
 // TaskContextError reports an invalid Task-authored ## Context entry.
 type TaskContextError struct {
 	Kind   string
