@@ -307,7 +307,7 @@ The support command that produces a Release Plan without editing release files, 
 _Avoid_: Release Command, publish command, cut-release command
 
 **Doctor Command**:
-The support command that diagnoses a machine's readiness for Roundfix Runs — Node, pinned acpx, configured Agent probe, and codex runtime hygiene — reporting each check with a next action and mutating nothing. Distinct from the Setup Command, which prepares the machine.
+The support command that diagnoses a repository and machine's readiness for Roundfix Runs — Repository Skill Set, Node, pinned acpx, configured Agent probe, and codex runtime hygiene — reporting each check with a next action and mutating nothing. Distinct from the Setup Command, which prepares the machine.
 _Avoid_: Health check run, setup run, environment wizard
 
 **Archive Command**:
@@ -329,6 +329,10 @@ _Avoid_: Setup command, provisioning, install step
 **Roundfix Skill**:
 A shipped agent skill that teaches an external Agent how to start Roundfix or how to resolve one assigned Batch.
 _Avoid_: Runtime, Review Source, plugin
+
+**Repository Skill Set**:
+The complete set of Roundfix-owned and externally managed Agent Skills a repository declares for its workflow, with every installed artifact matching its authoritative local source.
+_Avoid_: Installed skills, plugin set, global skill set
 
 **Interactive Input**:
 The TUI flow that collects command parameters before a Run starts.
