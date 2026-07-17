@@ -312,17 +312,17 @@ render inline and full content stays in the Detail Modal.
 ### events
 
 ```bash
-roundfix events <run-id> [--follow] [--filter task-status,batch,verification,outcome]
+roundfix events <run-id> [--follow] [--filter task-status,batch,verification,outcome,agent-selection]
 ```
 
 Writes only `roundfix-events/v1` JSONL records to stdout; diagnostics go to
-stderr. The four public Supervisor categories, in journal cursor order, are
-`task-status`, `batch`, `verification`, and `outcome`; `--filter` accepts a
-comma-separated subset of those names only. Missing or unknown Run IDs and
-invalid filters exit `2`; stream/store errors exit `1`; interrupting
-`--follow` exits `130`. A terminal Run replays and exits `0`. Use `events` for
-automation, `attach` for the human view, and the Detached Run Console Log as a
-compact text record — not a state API.
+stderr. The public Supervisor categories, in journal cursor order, are
+`task-status`, `batch`, `verification`, `outcome`, and `agent-selection`;
+`--filter` accepts a comma-separated subset of those names only. Missing or
+unknown Run IDs and invalid filters exit `2`; stream/store errors exit `1`;
+interrupting `--follow` exits `130`. A terminal Run replays and exits `0`. Use
+`events` for automation, `attach` for the human view, and the Detached Run
+Console Log as a compact text record — not a state API.
 
 ## stop
 

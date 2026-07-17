@@ -310,6 +310,37 @@ func TestRunCommandHelp(t *testing.T) {
 	}
 }
 
+func TestEventsHelpDocumentsAgentSelectionFilter(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"events", "--help"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("events help exit = %d, want 0 stderr=%q", code, stderr.String())
+	}
+	if stderr.String() != "" {
+		t.Fatalf("events help stderr = %q, want empty", stderr.String())
+	}
+	wantCategories := "task-status,batch,verification,outcome,agent-selection"
+	if !strings.Contains(stdout.String(), wantCategories) {
+		t.Fatalf("events help missing filter categories %q, got %q", wantCategories, stdout.String())
+	}
+
+	req, err := parseEventsCommand([]string{"run_123", "--filter", "agent-selection"})
+	if err != nil {
+		t.Fatalf("parse agent-selection filter: %v", err)
+	}
+	if !req.filter.Includes(runevent.StreamCategorySelection) {
+		t.Fatalf("parsed filter excludes %q: %#v", runevent.StreamCategorySelection, req.filter)
+	}
+
+	guide := mustRead(t, filepath.Join(cliTestRepoRoot(t), "docs", "user-guide", "commands.md"))
+	if !strings.Contains(guide, wantCategories) || !strings.Contains(guide, "`agent-selection`") {
+		t.Fatalf("user guide does not document agent-selection filter")
+	}
+}
+
 func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 	repoRoot := cliTestRepoRoot(t)
 	usage := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "usage.md"))

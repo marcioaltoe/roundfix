@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0035-agent-selection-profiles
-status: pending
+status: completed
 type: frontend
 complexity: high
 ---
@@ -30,7 +30,7 @@ Make actual Task, QA, and review selections observable through stderr, the Live 
 - [x] Replay identical state through Attach.
 - [x] Preserve compatibility summaries and legacy Run rendering.
 - [x] Add ordering, no-color, bounded-output, and privacy tests.
-- [ ] Document `agent-selection` in the public `events --filter` help and user guidance.
+- [x] Document `agent-selection` in the public `events --filter` help and user guidance.
 
 ## Acceptance Criteria
 
@@ -40,7 +40,7 @@ Make actual Task, QA, and review selections observable through stderr, the Live 
 - [x] Legacy Runs render missing selection history explicitly and do not fail Attach or Run Browser views.
 - [x] Text, TUI, Attach, and JSON projection agree on selection, role, status, and reason.
 - [x] No prompt, raw ACP payload, credential, or secret appears in the new projections.
-- [ ] `roundfix events --help` lists `agent-selection` as an accepted filter, and the user guide documents the same value.
+- [x] `roundfix events --help` lists `agent-selection` as an accepted filter, and the user guide documents the same value.
 
 ## Context
 
@@ -71,4 +71,9 @@ Make actual Task, QA, and review selections observable through stderr, the Live 
 - Machine-readable and privacy contract: the Supervisor stream exposes selection scope, category, source, role, status, reason, failed tuple, and next tuple fields while omitting prompt, transcript, credential, token, cookie, and secret data. Evidence: `TestAgentSelectionStreamProjectsScopedLifecycleWithoutSensitivePayload`.
 - Verification: `rtk go test ./internal/runevent ./internal/tui ./internal/cli -run 'Test(AgentSelectionStream|AgentSelectionLiveRunView|AgentSelectionAttachReplay|FallbackNotificationOrdering|LegacyRunSelectionView)' -count=1` passed with 7 tests in 3 packages.
 - Verification: `rtk go test -race ./internal/runevent ./internal/tui ./internal/cli -run 'Test(AgentSelectionLiveRunView|AgentSelectionAttachReplay|FallbackNotificationOrdering)' -count=1` passed with 5 tests in 3 packages.
+- Full gate: `rtk make verify` passed, including `rtk go test ./...`, setup-context-driven skill tests, `roundfix skills check`, and the Roundfix build.
+- Public `agent-selection` filter guidance: `roundfix events --help` now lists `task-status,batch,verification,outcome,agent-selection`, and `docs/user-guide/commands.md` documents the same accepted `--filter` value set. Evidence: `TestEventsHelpDocumentsAgentSelectionFilter` asserts command help, parser acceptance, and user guide text.
+- Verification: `rtk go test ./internal/runevent ./internal/tui ./internal/cli -run 'Test(AgentSelectionStream|AgentSelectionLiveRunView|AgentSelectionAttachReplay|FallbackNotificationOrdering|LegacyRunSelectionView)' -count=1` passed with 7 tests in 3 packages.
+- Verification: `rtk go test -race ./internal/runevent ./internal/tui ./internal/cli -run 'Test(AgentSelectionLiveRunView|AgentSelectionAttachReplay|FallbackNotificationOrdering)' -count=1` passed with 5 tests in 3 packages.
+- Verification: `rtk go test ./internal/cli -run 'TestEvents.*Help|TestAgentSelection.*Event' -count=1` passed with 1 test in 1 package.
 - Full gate: `rtk make verify` passed, including `rtk go test ./...`, setup-context-driven skill tests, `roundfix skills check`, and the Roundfix build.
