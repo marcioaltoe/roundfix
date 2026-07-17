@@ -61,9 +61,44 @@ type ACPXRunner struct {
 	Command          string
 	Now              func() time.Time
 	warnf            func(string, ...any)
+	cancelClock      cancellationClock
 	ensuredSessions  map[string]struct{}
 	codexSpawn       codexSpawnDependencies
 	codexResolutions map[string]codexSpawnResolution
+}
+
+type cancellationTimer interface {
+	C() <-chan time.Time
+	Stop() bool
+}
+
+type cancellationClock interface {
+	NewTimer(time.Duration) cancellationTimer
+}
+
+type realCancellationClock struct{}
+
+func (realCancellationClock) NewTimer(duration time.Duration) cancellationTimer {
+	return realCancellationTimer{timer: time.NewTimer(duration)}
+}
+
+type realCancellationTimer struct {
+	timer *time.Timer
+}
+
+func (timer realCancellationTimer) C() <-chan time.Time {
+	return timer.timer.C
+}
+
+func (timer realCancellationTimer) Stop() bool {
+	return timer.timer.Stop()
+}
+
+func (runner ACPXRunner) cancellationClock() cancellationClock {
+	if runner.cancelClock != nil {
+		return runner.cancelClock
+	}
+	return realCancellationClock{}
 }
 
 // ACPXPromptRequest carries the explicit Agent Session needed by acpx prompt
@@ -1256,12 +1291,13 @@ func (runner ACPXRunner) cancelPrompt(ctx context.Context, req ACPXPromptRequest
 	} else {
 		runner.warningf("build acpx cancel command for Agent Session %q: %v", req.Session, err)
 	}
-	timer := time.NewTimer(grace)
+	clock := runner.cancellationClock()
+	timer := clock.NewTimer(grace)
 	defer timer.Stop()
 	select {
 	case <-waitCh:
 		return false
-	case <-timer.C:
+	case <-timer.C():
 		closeCtx, closeCancel := context.WithTimeout(ctx, grace)
 		defer closeCancel()
 		if args, err := acpxCloseArgs(req.Runtime, req.Session, req.GitRoot); err == nil {
@@ -1271,11 +1307,11 @@ func (runner ACPXRunner) cancelPrompt(ctx context.Context, req ACPXPromptRequest
 		} else {
 			runner.warningf("build acpx close command for Agent Session %q: %v", req.Session, err)
 		}
-		closeTimer := time.NewTimer(grace)
+		closeTimer := clock.NewTimer(grace)
 		defer closeTimer.Stop()
 		select {
 		case <-waitCh:
-		case <-closeTimer.C:
+		case <-closeTimer.C():
 		}
 		return true
 	}

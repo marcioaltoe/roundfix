@@ -1660,6 +1660,15 @@ func TestOwningCockpitPollsJournalWhileOwnProcessWrites(t *testing.T) {
 
 	const total = 25
 	written := make(chan error, 1)
+	firstWritten := make(chan struct{})
+	resumeWriter := make(chan struct{})
+	t.Cleanup(func() {
+		select {
+		case <-resumeWriter:
+		default:
+			close(resumeWriter)
+		}
+	})
 	go func() {
 		for index := 0; index < total; index++ {
 			if _, err := writer.AppendRunEvent(ctx, runevent.RunEvent{
@@ -1672,6 +1681,10 @@ func TestOwningCockpitPollsJournalWhileOwnProcessWrites(t *testing.T) {
 				written <- err
 				return
 			}
+			if index == 0 {
+				close(firstWritten)
+				<-resumeWriter
+			}
 		}
 		_, err := writer.CompleteRun(ctx, run.ID, store.StateStopped)
 		written <- err
@@ -1679,25 +1692,31 @@ func TestOwningCockpitPollsJournalWhileOwnProcessWrites(t *testing.T) {
 
 	// The owning cockpit polls its read-only connection while the same
 	// process writes — a Stop Request mid-poll must keep working.
-	sawAll := false
-	for tick := 0; tick < 10_000 && !sawAll; tick++ {
-		model.Update(cockpitTickMsg{})
-		if tick == 5 {
-			pressKey(t, model, "ctrl+c")
-		}
-		rendered := viewText(model)
-		sawAll = strings.Contains(rendered, fmt.Sprintf("live line %02d", total-1)) && strings.Contains(rendered, "READ-ONLY")
+	select {
+	case <-firstWritten:
+	case err := <-written:
+		t.Fatalf("writer before first event: %v", err)
 	}
+	model.Update(cockpitTickMsg{})
+	pressKey(t, model, "ctrl+c")
+	close(resumeWriter)
 	if err := <-written; err != nil {
 		t.Fatalf("writer: %v", err)
 	}
 	model.Update(cockpitTickMsg{})
+	if !stopRequested {
+		t.Fatal("expected ctrl+c during active polling to trigger the Stop Request callback")
+	}
+
+	sawAll := false
+	for tick := 0; tick < 10_000 && !sawAll; tick++ {
+		model.Update(cockpitTickMsg{})
+		rendered := viewText(model)
+		sawAll = strings.Contains(rendered, fmt.Sprintf("live line %02d", total-1)) && strings.Contains(rendered, "READ-ONLY")
+	}
 
 	if !sawAll {
 		t.Fatalf("expected the owning cockpit to render journal writes and the terminal state, got:\n%s", viewText(model))
-	}
-	if !stopRequested {
-		t.Fatal("expected ctrl+c during active polling to trigger the Stop Request callback")
 	}
 }
 

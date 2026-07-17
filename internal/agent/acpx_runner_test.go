@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -33,6 +34,7 @@ const (
 	fakeACPXExitByCall = "ROUNDFIX_FAKE_ACPX_EXIT_BY_CALL"
 	fakeACPXCanceled   = "ROUNDFIX_FAKE_ACPX_CANCELED"
 	fakeACPXClosed     = "ROUNDFIX_FAKE_ACPX_CLOSED"
+	fakeACPXPromptDone = "ROUNDFIX_FAKE_ACPX_PROMPT_DONE"
 	fakeACPXStarted    = "ROUNDFIX_FAKE_ACPX_STARTED"
 	fakeACPXBlock      = "ROUNDFIX_FAKE_ACPX_BLOCK_PROMPT"
 	fakeACPXBlockCmd   = "ROUNDFIX_FAKE_ACPX_BLOCK_COMMAND"
@@ -1418,14 +1420,20 @@ func TestACPXRunWarnsWhenCodexSandboxPresetUnavailable(t *testing.T) {
 
 func TestACPXRunCancelsPromptCooperatively(t *testing.T) {
 	harness := newBlockingFakeACPXHarness(t, true)
+	assertCancellationFixturePaths(t, harness)
+	clock := newFakeCancellationClock()
+	harness.runner.cancelClock = clock
 	ctx, cancel := context.WithCancel(context.Background())
 	resultCh := make(chan error, 1)
 	go func() {
 		_, err := harness.run(ctx, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1")
 		resultCh <- err
 	}()
-	waitForFile(t, harness.startedPath)
+	harness.waitForMilestone(t, "prompt start", harness.milestones.promptStarted)
 	cancel()
+	harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted)
+	graceTimer := clock.waitForTimer(t, 0)
+	harness.waitForMilestone(t, "prompt completion", harness.milestones.promptCompleted)
 
 	err := receiveError(t, resultCh)
 	if !IsStopError(err) {
@@ -1438,22 +1446,51 @@ func TestACPXRunCancelsPromptCooperatively(t *testing.T) {
 	if stopErr.Killed {
 		t.Fatalf("expected cooperative stop without kill, got %#v", stopErr)
 	}
+	if graceTimer.Fired() {
+		t.Fatal("expected cooperative prompt completion before grace timer fired")
+	}
+	if !graceTimer.Stopped() {
+		t.Fatal("expected cooperative prompt completion to stop grace timer")
+	}
+	if timers := clock.timersSnapshot(); len(timers) != 1 {
+		t.Fatalf("expected only the cooperative grace timer, got %d timers", len(timers))
+	}
+	assertNoFile(t, "close completion", harness.milestones.closeCompleted)
 	invocations := readJSONInvocations(t, harness.invocationsPath)
-	if !containsInvocation(invocations, []string{"--cwd", harness.gitRoot, "codex", "cancel", "-s", "roundfix-run-1"}) {
-		t.Fatalf("expected cancel invocation, got %#v", invocations)
+	want := [][]string{
+		{"--cwd", harness.gitRoot, "--model", "gpt-test", "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "codex", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "gpt-test", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
+		{"--cwd", harness.gitRoot, "codex", "cancel", "-s", "roundfix-run-1"},
+	}
+	if !reflect.DeepEqual(invocations, want) {
+		t.Fatalf("unexpected cooperative cancellation invocation order\nwant: %#v\ngot:  %#v", want, invocations)
 	}
 }
 
 func TestACPXRunClosesSessionAfterCancelGracePeriod(t *testing.T) {
 	harness := newBlockingFakeACPXHarness(t, false)
+	assertCancellationFixturePaths(t, harness)
+	clock := newFakeCancellationClock()
+	harness.runner.cancelClock = clock
 	ctx, cancel := context.WithCancel(context.Background())
 	resultCh := make(chan error, 1)
 	go func() {
 		_, err := harness.run(ctx, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1")
 		resultCh <- err
 	}()
-	waitForFile(t, harness.startedPath)
+	harness.waitForMilestone(t, "prompt start", harness.milestones.promptStarted)
 	cancel()
+	harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted)
+	graceTimer := clock.waitForTimer(t, 0)
+	if graceTimer.Duration() != harness.stopGrace {
+		t.Fatalf("expected grace timer duration %s, got %s", harness.stopGrace, graceTimer.Duration())
+	}
+	if !graceTimer.Fire(time.Date(2026, 7, 16, 12, 0, 0, 0, time.UTC)) {
+		t.Fatal("expected first grace timer fire to trigger fallback close")
+	}
+	harness.waitForMilestone(t, "close completion", harness.milestones.closeCompleted)
+	postCloseTimer := clock.waitForTimer(t, 1)
 
 	err := receiveError(t, resultCh)
 	var stopErr StopError
@@ -1463,13 +1500,184 @@ func TestACPXRunClosesSessionAfterCancelGracePeriod(t *testing.T) {
 	if !stopErr.Killed {
 		t.Fatalf("expected fallback close after cancel, got %#v", stopErr)
 	}
+	if !postCloseTimer.Stopped() {
+		t.Fatal("expected close milestone to release blocked prompt before post-close timer fired")
+	}
 	invocations := readJSONInvocations(t, harness.invocationsPath)
-	if !containsInvocation(invocations, []string{"--cwd", harness.gitRoot, "codex", "cancel", "-s", "roundfix-run-1"}) {
-		t.Fatalf("expected cancel invocation before close, got %#v", invocations)
+	want := [][]string{
+		{"--cwd", harness.gitRoot, "--model", "gpt-test", "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "codex", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "gpt-test", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
+		{"--cwd", harness.gitRoot, "codex", "cancel", "-s", "roundfix-run-1"},
+		{"--cwd", harness.gitRoot, "codex", "sessions", "close", "roundfix-run-1"},
 	}
-	if !containsInvocation(invocations, []string{"--cwd", harness.gitRoot, "codex", "sessions", "close", "roundfix-run-1"}) {
-		t.Fatalf("expected close invocation after cancel grace, got %#v", invocations)
+	if !reflect.DeepEqual(invocations, want) {
+		t.Fatalf("unexpected cancellation invocation order\nwant: %#v\ngot:  %#v", want, invocations)
 	}
+}
+
+func TestACPXRunCancellationCommandFailuresWarnAndContinue(t *testing.T) {
+	tests := []struct {
+		name        string
+		exitBy      map[string]int
+		stderrBy    map[string]string
+		wantWarning string
+	}{
+		{
+			name:        "cancel failure still reaches fallback close",
+			exitBy:      map[string]int{"cancel": 2},
+			stderrBy:    map[string]string{"cancel": "cancel rejected\n"},
+			wantWarning: "cancel acpx Agent Session",
+		},
+		{
+			name:        "close failure still waits for prompt termination",
+			exitBy:      map[string]int{"sessions close": 2},
+			stderrBy:    map[string]string{"sessions close": "close rejected\n"},
+			wantWarning: "close acpx Agent Session",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			harness := newBlockingFakeACPXHarness(t, false)
+			clock := newFakeCancellationClock()
+			harness.runner.cancelClock = clock
+			var warnings []string
+			harness.runner.warnf = func(format string, args ...any) {
+				warnings = append(warnings, fmt.Sprintf(format, args...))
+			}
+			t.Setenv(fakeACPXExitBy, mustJSONForTest(t, tt.exitBy))
+			t.Setenv(fakeACPXStderrBy, mustJSONForTest(t, tt.stderrBy))
+			ctx, cancel := context.WithCancel(context.Background())
+			resultCh := make(chan error, 1)
+			go func() {
+				_, err := harness.run(ctx, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1")
+				resultCh <- err
+			}()
+			harness.waitForMilestone(t, "prompt start", harness.milestones.promptStarted)
+			cancel()
+			harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted)
+			if !clock.waitForTimer(t, 0).Fire(time.Date(2026, 7, 16, 12, 0, 0, 0, time.UTC)) {
+				t.Fatal("expected grace timer fire to trigger fallback close")
+			}
+			harness.waitForMilestone(t, "close completion", harness.milestones.closeCompleted)
+			postCloseTimer := clock.waitForTimer(t, 1)
+
+			err := receiveError(t, resultCh)
+			var stopErr StopError
+			if !errors.As(err, &stopErr) {
+				t.Fatalf("expected StopError, got %T %v", err, err)
+			}
+			if !stopErr.Killed {
+				t.Fatalf("expected fallback close result, got %#v", stopErr)
+			}
+			if !postCloseTimer.Stopped() {
+				t.Fatal("expected prompt termination to stop post-close timer")
+			}
+			if !containsWarning(warnings, tt.wantWarning) {
+				t.Fatalf("expected warning containing %q, got %#v", tt.wantWarning, warnings)
+			}
+			if !containsInvocation(readJSONInvocations(t, harness.invocationsPath), []string{"--cwd", harness.gitRoot, "codex", "sessions", "close", "roundfix-run-1"}) {
+				t.Fatalf("expected fallback close invocation after warning, got %#v", readJSONInvocations(t, harness.invocationsPath))
+			}
+		})
+	}
+}
+
+func TestACPXRunnerCancellationClockDefaultsToRealTimer(t *testing.T) {
+	if got := stopGrace(0); got != 10*time.Second {
+		t.Fatalf("expected default stop grace to remain 10s, got %s", got)
+	}
+	timer := (ACPXRunner{}).cancellationClock().NewTimer(time.Hour)
+	defer timer.Stop()
+	select {
+	case firedAt := <-timer.C():
+		t.Fatalf("expected real default cancellation timer not to fire immediately, got %s", firedAt)
+	default:
+	}
+}
+
+func TestFakeCancellationClock(t *testing.T) {
+	t.Run("records creation order and waits without firing", func(t *testing.T) {
+		clock := newFakeCancellationClock()
+		createFirst := make(chan struct{})
+		go func() {
+			<-createFirst
+			clock.NewTimer(10 * time.Second)
+		}()
+
+		close(createFirst)
+		first := clock.waitForTimer(t, 0)
+		clock.NewTimer(20 * time.Second)
+		second := clock.waitForTimer(t, 1)
+		timers := clock.timersSnapshot()
+
+		if len(timers) != 2 {
+			t.Fatalf("expected two created timers, got %d", len(timers))
+		}
+		if timers[0] != first || timers[1] != second {
+			t.Fatalf("timers were not recorded in creation order")
+		}
+		if first.Duration() != 10*time.Second || second.Duration() != 20*time.Second {
+			t.Fatalf("unexpected timer durations: first=%s second=%s", first.Duration(), second.Duration())
+		}
+		select {
+		case firedAt := <-first.C():
+			t.Fatalf("waitForTimer fired timer unexpectedly at %s", firedAt)
+		default:
+		}
+	})
+
+	t.Run("fires each timer at most once", func(t *testing.T) {
+		clock := newFakeCancellationClock()
+		clock.NewTimer(time.Second)
+		timer := clock.waitForTimer(t, 0)
+		firedAt := time.Date(2026, 7, 16, 12, 0, 0, 0, time.UTC)
+
+		if !timer.Fire(firedAt) {
+			t.Fatal("expected first fire to report active timer")
+		}
+		select {
+		case got := <-timer.C():
+			if !got.Equal(firedAt) {
+				t.Fatalf("unexpected fire time: got %s want %s", got, firedAt)
+			}
+		default:
+			t.Fatal("expected first fire to emit one event")
+		}
+		if timer.Fire(firedAt.Add(time.Second)) {
+			t.Fatal("expected second fire to report inactive timer")
+		}
+		select {
+		case got := <-timer.C():
+			t.Fatalf("expected no second timer event, got %s", got)
+		default:
+		}
+	})
+
+	t.Run("stopped timer cannot be fired as active", func(t *testing.T) {
+		clock := newFakeCancellationClock()
+		clock.NewTimer(time.Second)
+		timer := clock.waitForTimer(t, 0)
+
+		if !timer.Stop() {
+			t.Fatal("expected first stop to report active timer")
+		}
+		if !timer.Stopped() {
+			t.Fatal("expected stopped timer state")
+		}
+		if timer.Fire(time.Date(2026, 7, 16, 12, 0, 0, 0, time.UTC)) {
+			t.Fatal("expected stopped timer fire to report inactive timer")
+		}
+		if timer.Stop() {
+			t.Fatal("expected second stop to report inactive timer")
+		}
+		select {
+		case got := <-timer.C():
+			t.Fatalf("expected stopped timer to emit no event, got %s", got)
+		default:
+		}
+	})
 }
 
 func TestACPXEndSessionClosesBestEffort(t *testing.T) {
@@ -1909,6 +2117,8 @@ type fakeACPXHarness struct {
 	gitRoot         string
 	invocationsPath string
 	startedPath     string
+	stopGrace       time.Duration
+	milestones      fakeACPXMilestones
 }
 
 func newFakeACPXHarness(t *testing.T) *fakeACPXHarness {
@@ -1968,15 +2178,196 @@ func writeACPXConfigForTest(t *testing.T, content string) {
 func newBlockingFakeACPXHarness(t *testing.T, exitAfterCancel bool) *fakeACPXHarness {
 	t.Helper()
 	harness := newFakeACPXHarness(t)
-	harness.startedPath = filepath.Join(harness.gitRoot, "prompt-started")
+	harness.milestones = newFakeACPXMilestones(t, harness.gitRoot)
+	harness.startedPath = harness.milestones.promptStarted
+	harness.stopGrace = 2 * time.Second
 	t.Setenv(fakeACPXBlock, "1")
 	t.Setenv(fakeACPXStarted, harness.startedPath)
-	t.Setenv(fakeACPXCanceled, filepath.Join(harness.gitRoot, "canceled"))
-	t.Setenv(fakeACPXClosed, filepath.Join(harness.gitRoot, "closed"))
+	t.Setenv(fakeACPXCanceled, harness.milestones.cancelCompleted)
+	t.Setenv(fakeACPXClosed, harness.milestones.closeCompleted)
+	t.Setenv(fakeACPXPromptDone, harness.milestones.promptCompleted)
 	if exitAfterCancel {
 		t.Setenv(fakeACPXExitCancel, "1")
 	}
 	return harness
+}
+
+type fakeACPXMilestones struct {
+	promptStarted   string
+	promptCompleted string
+	cancelCompleted string
+	closeCompleted  string
+}
+
+func newFakeACPXMilestones(t *testing.T, dir string) fakeACPXMilestones {
+	t.Helper()
+	milestoneDir := filepath.Join(dir, "milestones")
+	if err := os.MkdirAll(milestoneDir, 0o755); err != nil {
+		t.Fatalf("create fake acpx milestone dir: %v", err)
+	}
+	return fakeACPXMilestones{
+		promptStarted:   filepath.Join(milestoneDir, "prompt-started"),
+		promptCompleted: filepath.Join(milestoneDir, "prompt-completed"),
+		cancelCompleted: filepath.Join(milestoneDir, "cancel-completed"),
+		closeCompleted:  filepath.Join(milestoneDir, "close-completed"),
+	}
+}
+
+func (harness *fakeACPXHarness) waitForMilestone(t *testing.T, name string, path string) {
+	t.Helper()
+	waitForACPXMilestone(t, name, path, harness.invocationsPath)
+}
+
+func assertCancellationFixturePaths(t *testing.T, harness *fakeACPXHarness) {
+	t.Helper()
+	paths := map[string]string{
+		"invocation log":   harness.invocationsPath,
+		"prompt milestone": harness.milestones.promptStarted,
+		"prompt complete":  harness.milestones.promptCompleted,
+		"cancel milestone": harness.milestones.cancelCompleted,
+		"close milestone":  harness.milestones.closeCompleted,
+	}
+	seen := map[string]string{}
+	for name, path := range paths {
+		rel, err := filepath.Rel(harness.gitRoot, path)
+		if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) || filepath.IsAbs(rel) {
+			t.Fatalf("%s path %q is not isolated under temp dir %q", name, path, harness.gitRoot)
+		}
+		if previous, ok := seen[path]; ok {
+			t.Fatalf("%s path duplicates %s path: %q", name, previous, path)
+		}
+		seen[path] = name
+	}
+}
+
+func containsWarning(warnings []string, want string) bool {
+	for _, warning := range warnings {
+		if strings.Contains(warning, want) {
+			return true
+		}
+	}
+	return false
+}
+
+func assertNoFile(t *testing.T, name string, path string) {
+	t.Helper()
+	if _, err := os.Stat(path); err == nil {
+		t.Fatalf("expected no fake acpx %s marker at %s", name, path)
+	} else if !os.IsNotExist(err) {
+		t.Fatalf("stat fake acpx %s marker %s: %v", name, path, err)
+	}
+}
+
+type fakeCancellationClock struct {
+	mu      sync.Mutex
+	timers  []*fakeCancellationTimer
+	created chan struct{}
+}
+
+func newFakeCancellationClock() *fakeCancellationClock {
+	return &fakeCancellationClock{
+		created: make(chan struct{}, 16),
+	}
+}
+
+func (clock *fakeCancellationClock) NewTimer(duration time.Duration) cancellationTimer {
+	clock.mu.Lock()
+	timer := &fakeCancellationTimer{
+		duration: duration,
+		c:        make(chan time.Time, 1),
+	}
+	clock.timers = append(clock.timers, timer)
+	clock.mu.Unlock()
+
+	select {
+	case clock.created <- struct{}{}:
+	default:
+	}
+	return timer
+}
+
+func (clock *fakeCancellationClock) waitForTimer(t *testing.T, index int) *fakeCancellationTimer {
+	t.Helper()
+	deadline := time.NewTimer(5 * time.Second)
+	defer deadline.Stop()
+	for {
+		clock.mu.Lock()
+		if index < len(clock.timers) {
+			timer := clock.timers[index]
+			clock.mu.Unlock()
+			return timer
+		}
+		created := len(clock.timers)
+		clock.mu.Unlock()
+
+		select {
+		case <-clock.created:
+		case <-deadline.C:
+			t.Fatalf("timed out waiting for cancellation timer %d; created timers: %d", index+1, created)
+		}
+	}
+}
+
+func (clock *fakeCancellationClock) timersSnapshot() []*fakeCancellationTimer {
+	clock.mu.Lock()
+	defer clock.mu.Unlock()
+	timers := make([]*fakeCancellationTimer, len(clock.timers))
+	copy(timers, clock.timers)
+	return timers
+}
+
+type fakeCancellationTimer struct {
+	mu       sync.Mutex
+	duration time.Duration
+	c        chan time.Time
+	fired    bool
+	stopped  bool
+}
+
+func (timer *fakeCancellationTimer) C() <-chan time.Time {
+	return timer.c
+}
+
+func (timer *fakeCancellationTimer) Stop() bool {
+	timer.mu.Lock()
+	defer timer.mu.Unlock()
+	if timer.fired || timer.stopped {
+		return false
+	}
+	timer.stopped = true
+	return true
+}
+
+func (timer *fakeCancellationTimer) Fire(firedAt time.Time) bool {
+	timer.mu.Lock()
+	if timer.fired || timer.stopped {
+		timer.mu.Unlock()
+		return false
+	}
+	timer.fired = true
+	timerC := timer.c
+	timer.mu.Unlock()
+
+	timerC <- firedAt
+	return true
+}
+
+func (timer *fakeCancellationTimer) Duration() time.Duration {
+	timer.mu.Lock()
+	defer timer.mu.Unlock()
+	return timer.duration
+}
+
+func (timer *fakeCancellationTimer) Fired() bool {
+	timer.mu.Lock()
+	defer timer.mu.Unlock()
+	return timer.fired
+}
+
+func (timer *fakeCancellationTimer) Stopped() bool {
+	timer.mu.Lock()
+	defer timer.mu.Unlock()
+	return timer.stopped
 }
 
 func selectedRuntime(runtime RuntimeSpec) RuntimeSpec {
@@ -2014,6 +2405,10 @@ func (harness *fakeACPXHarness) run(ctx context.Context, runtime RuntimeSpec, se
 }
 
 func (harness *fakeACPXHarness) runWithSink(ctx context.Context, runtime RuntimeSpec, sessionName string, sink runevent.Sink) (ExecuteResult, error) {
+	stopGrace := harness.stopGrace
+	if stopGrace <= 0 {
+		stopGrace = 20 * time.Millisecond
+	}
 	return harness.runner.Run(ctx, ExecuteRequest{
 		Runtime:   selectedRuntime(runtime),
 		RunID:     "run-acpx",
@@ -2021,7 +2416,7 @@ func (harness *fakeACPXHarness) runWithSink(ctx context.Context, runtime Runtime
 		LogPath:   filepath.Join(harness.gitRoot, "runs", "run-acpx", "agent", "batch-007.log"),
 		Prompt:    "prompt",
 		GitRoot:   harness.gitRoot,
-		StopGrace: 20 * time.Millisecond,
+		StopGrace: stopGrace,
 		Session:   SessionRef{Name: sessionName},
 	}, sink)
 }
@@ -2298,6 +2693,27 @@ func waitForFile(t *testing.T, path string) {
 	}
 }
 
+func waitForACPXMilestone(t *testing.T, name string, path string, invocationsPath string) {
+	t.Helper()
+	deadline := time.After(5 * time.Second)
+	ticker := time.NewTicker(5 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		if _, err := os.Stat(path); err == nil {
+			return
+		}
+		select {
+		case <-deadline:
+			invocations := "unavailable"
+			if content, err := os.ReadFile(invocationsPath); err == nil {
+				invocations = string(content)
+			}
+			t.Fatalf("timed out waiting for fake acpx %s milestone at %s; invocations so far:\n%s", name, path, invocations)
+		case <-ticker.C:
+		}
+	}
+}
+
 func receiveError(t *testing.T, resultCh <-chan error) error {
 	t.Helper()
 	select {
@@ -2409,11 +2825,19 @@ func runFakeACPXProcess() int {
 		for {
 			if canceled := os.Getenv(fakeACPXCanceled); canceled != "" {
 				if _, err := os.Stat(canceled); err == nil && os.Getenv(fakeACPXExitCancel) == "1" {
+					if err := writeFakeACPXPromptCompletion(); err != nil {
+						_, _ = fmt.Fprintf(os.Stderr, "write prompt completion marker: %v\n", err)
+						return 2
+					}
 					return 130
 				}
 			}
 			if closed := os.Getenv(fakeACPXClosed); closed != "" {
 				if _, err := os.Stat(closed); err == nil {
+					if err := writeFakeACPXPromptCompletion(); err != nil {
+						_, _ = fmt.Fprintf(os.Stderr, "write prompt completion marker: %v\n", err)
+						return 2
+					}
 					return 130
 				}
 			}
@@ -2477,6 +2901,14 @@ func appendFakeACPXString(path string, value string) error {
 		return err
 	}
 	return nil
+}
+
+func writeFakeACPXPromptCompletion() error {
+	path := os.Getenv(fakeACPXPromptDone)
+	if path == "" {
+		return nil
+	}
+	return os.WriteFile(path, []byte("completed\n"), 0o644)
 }
 
 // fakeACPXCommandKey mirrors the real acpx grammar: program-level global
