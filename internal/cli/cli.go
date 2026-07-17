@@ -48,6 +48,8 @@ Usage:
   roundfix settle --spec <slug> --task <task_id>
   roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
   roundfix profiles show [--category <category>] [--json]
+  roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--json]
+  roundfix profiles validate [--category <category>] [--json]
   roundfix archive <slug>
   roundfix init [--scope <project|user>]
   roundfix setup [--yes] [--no-input]
@@ -231,7 +233,7 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 	case "release":
 		return runReleaseCommand(ctx, args[1:], stdout, stderr)
 	case "profiles":
-		return runProfilesCommand(args[1:], stdout, stderr)
+		return runProfilesCommand(ctx, args[1:], stdout, stderr)
 	case "archive":
 		return runArchiveCommand(ctx, args[1:], stdout, stderr)
 	default:
@@ -3875,13 +3877,16 @@ releases, or configuration.
 	case "profiles":
 		return `Usage:
   roundfix profiles show [--category <category>] [--json]
+  roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--json]
+  roundfix profiles validate [--category <category>] [--json]
 
 Commands:
-  show  Render effective Agent Selection Profiles and advisory recommendations.
+  show       Render effective Agent Selection Profiles and advisory recommendations.
+  configure  Write complete Agent Selection Profiles after validation and confirmation.
+  validate   Prove effective Agent Selection Profiles through disposable sessions.
 
-Profile commands are read-only unless a future configure action is explicitly
-invoked. show never probes runtimes, creates Runs, writes config, or routes by
-recommendation rank.
+Profile recommendations are advisory. They never route selections or mutate
+configuration unless configure is explicitly invoked and confirmed.
 `
 	case "profiles show":
 		return `Usage:
@@ -3894,6 +3899,32 @@ categories. Recommendations are read-only guidance and never change routing.
 Options:
   --category  Agent Work Category: general, backend, frontend, data, infra, docs, test, chore, qa, or review
   --json      Print roundfix/profiles/v1 JSON
+`
+	case "profiles configure":
+		return `Usage:
+  roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--json]
+
+Writes complete Agent Selection Profiles to User Config or Project Config.
+Without --file, collects one profile through Interactive Input, shows the
+normalized profile and target scope, then asks for confirmation before writing.
+
+Options:
+  --scope    Required config scope: user or project
+  --file     Strict profile fragment YAML; omitted opens Interactive Input
+  --dry-run  Validate and render the normalized result without writing
+  --json     Print deterministic JSON report
+`
+	case "profiles validate":
+		return `Usage:
+  roundfix profiles validate [--category <category>] [--json]
+
+Read-only validation resolves effective profiles, deduplicates exact Agent
+Selections, proves each distinct tuple through a disposable ACP Runtime session,
+and closes every disposable session on success or error.
+
+Options:
+  --category  Agent Work Category: general, backend, frontend, data, infra, docs, test, chore, qa, or review
+  --json      Print deterministic validation JSON
 `
 	case "archive":
 		return archiveUsage

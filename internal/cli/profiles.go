@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -38,7 +39,7 @@ type profilesShowRecommendationOutput struct {
 	UnavailableReason string `json:"unavailable_reason,omitempty"`
 }
 
-func runProfilesCommand(args []string, stdout, stderr io.Writer) int {
+func runProfilesCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
 		fmt.Fprint(stdout, commandUsage("profiles"))
 		return exitOK
@@ -50,6 +51,10 @@ func runProfilesCommand(args []string, stdout, stderr io.Writer) int {
 	switch args[0] {
 	case "show":
 		return runProfilesShowCommand(args[1:], stdout, stderr)
+	case "configure":
+		return runProfilesConfigureCommand(ctx, args[1:], stdout, stderr)
+	case "validate":
+		return runProfilesValidateCommand(ctx, args[1:], stdout, stderr)
 	default:
 		printProfilesFailure(validationError{message: fmt.Sprintf("unknown profiles command %q", args[0])}, stderr)
 		return exitPreflight

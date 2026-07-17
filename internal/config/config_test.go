@@ -496,6 +496,220 @@ func TestProfileResolverPreferredOverridePreservesFallbackChain(t *testing.T) {
 	}
 }
 
+func TestProfileConfigAtomicWritesUserAndProjectProfiles(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
+watch:
+  max_rounds: 4
+`)
+	userProfile := profileForTest(
+		selectionForTest("codex", "user-backend", "high"),
+		selectionForTest("claude", "user-fallback", ""),
+	)
+
+	userResult, err := WriteProfilesConfig(context.Background(), ProfileConfigOptions{
+		Scope:    InitScopeUser,
+		HomeDir:  homeDir,
+		WorkDir:  workDir,
+		Profiles: Profiles{CategoryBackend: {Profile: userProfile}},
+	})
+	if err != nil {
+		t.Fatalf("write user profiles: %v", err)
+	}
+	if !userResult.Changed || userResult.Scope != InitScopeUser {
+		t.Fatalf("unexpected user write result: %+v", userResult)
+	}
+	userContent := mustRead(t, userResult.Path)
+	if !strings.Contains(userContent, "watch:") || !strings.Contains(userContent, "profiles:") {
+		t.Fatalf("expected profiles write to preserve unrelated watch config, got:\n%s", userContent)
+	}
+	loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+	if err != nil {
+		t.Fatalf("load after user profile write: %v", err)
+	}
+	resolved, err := ResolveProfile(loaded.Config, CategoryBackend, nil)
+	if err != nil {
+		t.Fatalf("resolve user backend: %v", err)
+	}
+	if resolved.Source != ProfileSourceUser || !profilesEqual(resolved.Profile, userProfile) {
+		t.Fatalf("expected backend to resolve from user profile\nsource=%s profile=%#v", resolved.Source, resolved.Profile)
+	}
+
+	projectProfile := profileForTest(
+		selectionForTest("claude", "project-backend", "medium"),
+		selectionForTest("codex", "project-fallback", "max"),
+	)
+	projectResult, err := WriteProfilesConfig(context.Background(), ProfileConfigOptions{
+		Scope:    InitScopeProject,
+		HomeDir:  homeDir,
+		WorkDir:  workDir,
+		Profiles: Profiles{CategoryBackend: {Profile: projectProfile}},
+	})
+	if err != nil {
+		t.Fatalf("write project profiles: %v", err)
+	}
+	if !projectResult.Changed || projectResult.Scope != InitScopeProject {
+		t.Fatalf("unexpected project write result: %+v", projectResult)
+	}
+	loaded, err = Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+	if err != nil {
+		t.Fatalf("load after project profile write: %v", err)
+	}
+	resolved, err = ResolveProfile(loaded.Config, CategoryBackend, nil)
+	if err != nil {
+		t.Fatalf("resolve project backend: %v", err)
+	}
+	if resolved.Source != ProfileSourceProject || !profilesEqual(resolved.Profile, projectProfile) {
+		t.Fatalf("expected backend to resolve from project profile\nsource=%s profile=%#v", resolved.Source, resolved.Profile)
+	}
+}
+
+func TestProfileConfigAtomicDryRunAndFailuresLeaveBytesUnchanged(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+	configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
+	original := "watch:\n  max_rounds: 4\n"
+	mustWrite(t, configPath, original)
+	validProfiles := Profiles{
+		CategoryBackend: {
+			Profile: profileForTest(
+				selectionForTest("codex", "dry-run-backend", "high"),
+				selectionForTest("codex", "dry-run-fallback", "max"),
+			),
+		},
+	}
+
+	result, err := WriteProfilesConfig(context.Background(), ProfileConfigOptions{
+		Scope:    InitScopeUser,
+		HomeDir:  homeDir,
+		WorkDir:  workDir,
+		Profiles: validProfiles,
+		DryRun:   true,
+	})
+	if err != nil {
+		t.Fatalf("dry-run profiles write: %v", err)
+	}
+	if result.Changed {
+		t.Fatalf("dry-run changed = true, want false: %+v", result)
+	}
+	if got := mustRead(t, configPath); got != original {
+		t.Fatalf("dry-run mutated config\nwant: %q\n got: %q", original, got)
+	}
+
+	invalidProfiles := Profiles{
+		CategoryBackend: {
+			Profile: AgentSelectionProfile{Preferred: selectionForTest("codex", "broken", "high")},
+		},
+	}
+	if _, err := WriteProfilesConfig(context.Background(), ProfileConfigOptions{
+		Scope:    InitScopeUser,
+		HomeDir:  homeDir,
+		WorkDir:  workDir,
+		Profiles: invalidProfiles,
+	}); err == nil || !strings.Contains(err.Error(), "fallbacks must include at least one") {
+		t.Fatalf("expected invalid profile failure, got %v", err)
+	}
+	if got := mustRead(t, configPath); got != original {
+		t.Fatalf("invalid profile mutated config\nwant: %q\n got: %q", original, got)
+	}
+
+	mustWrite(t, configPath, "defaults:\n  agent: codex\n")
+	legacyBytes := mustRead(t, configPath)
+	if _, err := WriteProfilesConfig(context.Background(), ProfileConfigOptions{
+		Scope:    InitScopeUser,
+		HomeDir:  homeDir,
+		WorkDir:  workDir,
+		Profiles: validProfiles,
+	}); err == nil || !strings.Contains(err.Error(), "legacy runtime defaults") {
+		t.Fatalf("expected legacy conflict failure, got %v", err)
+	}
+	if got := mustRead(t, configPath); got != legacyBytes {
+		t.Fatalf("legacy conflict mutated config\nwant: %q\n got: %q", legacyBytes, got)
+	}
+
+	mustWrite(t, configPath, `
+defaults:
+  agent: codex
+profiles:
+  backend:
+    preferred:
+      runtime: codex
+      model: existing
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: existing-fallback
+        reasoning_effort: max
+`)
+	mixedBytes := mustRead(t, configPath)
+	if _, err := WriteProfilesConfig(context.Background(), ProfileConfigOptions{
+		Scope:    InitScopeUser,
+		HomeDir:  homeDir,
+		WorkDir:  workDir,
+		Profiles: validProfiles,
+	}); err == nil || !strings.Contains(err.Error(), "config mixes legacy runtime defaults with profiles") {
+		t.Fatalf("expected same-scope legacy/new conflict failure, got %v", err)
+	}
+	if got := mustRead(t, configPath); got != mixedBytes {
+		t.Fatalf("same-scope conflict mutated config\nwant: %q\n got: %q", mixedBytes, got)
+	}
+
+	mustWrite(t, configPath, "watch: [")
+	malformedBytes := mustRead(t, configPath)
+	if _, err := WriteProfilesConfig(context.Background(), ProfileConfigOptions{
+		Scope:    InitScopeUser,
+		HomeDir:  homeDir,
+		WorkDir:  workDir,
+		Profiles: validProfiles,
+	}); err == nil || !strings.Contains(err.Error(), "parse config") {
+		t.Fatalf("expected malformed config failure, got %v", err)
+	}
+	if got := mustRead(t, configPath); got != malformedBytes {
+		t.Fatalf("malformed config mutated bytes\nwant: %q\n got: %q", malformedBytes, got)
+	}
+}
+
+func TestProfileConfigAtomicParsesStrictProfileFragments(t *testing.T) {
+	profiles, err := ParseProfilesFragment([]byte(`
+profiles:
+  backend:
+    preferred:
+      runtime: codex
+      model: custom-backend
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: custom-fallback
+        reasoning_effort: ""
+`))
+	if err != nil {
+		t.Fatalf("parse wrapped profile fragment: %v", err)
+	}
+	if _, ok := profiles[CategoryBackend]; !ok {
+		t.Fatalf("expected backend profile in parsed fragment: %#v", profiles)
+	}
+
+	_, err = ParseProfilesFragment([]byte(`
+profiles:
+  backend:
+    preferred:
+      runtime: codex
+      model: custom-backend
+      reasoning_effort: high
+    fallbacks: []
+watch:
+  max_rounds: 4
+`))
+	if err == nil || !strings.Contains(err.Error(), "must not include other top-level keys") {
+		t.Fatalf("expected strict fragment rejection, got %v", err)
+	}
+}
+
 func TestBuiltinWatchDefaultsIncludeCheckGracePeriod(t *testing.T) {
 	config := Builtin()
 

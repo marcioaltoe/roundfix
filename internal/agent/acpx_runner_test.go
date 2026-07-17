@@ -264,6 +264,58 @@ func TestACPXProbeSkipsEmptyReasoningEffort(t *testing.T) {
 	}
 }
 
+func TestProfileProofAppliesExactReasoningAndClosesDisposableSession(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"}
+
+	err := harness.runner.Probe(context.Background(), ProbeRequest{Runtime: runtime, WorkDir: harness.gitRoot})
+
+	if err != nil {
+		t.Fatalf("profile proof failed: %v", err)
+	}
+	invocations := readJSONInvocations(t, harness.invocationsPath)
+	if containsCommandKey(invocations, "prompt") {
+		t.Fatalf("profile proof must not send prompts, got %#v", invocations)
+	}
+	sessionName := assertDisposableEnsureInvocation(t, invocations[1], harness.gitRoot, "codex", "gpt-5.6-sol")
+	wantReasoning := []string{"--cwd", harness.gitRoot, "codex", "set", "reasoning_effort", "high", "-s", sessionName}
+	if !reflect.DeepEqual(invocations[2], wantReasoning) {
+		t.Fatalf("profile proof did not apply exact reasoning\nwant: %#v\ngot:  %#v", wantReasoning, invocations[2])
+	}
+	wantClose := []string{"--cwd", harness.gitRoot, "codex", "sessions", "close", sessionName}
+	if !reflect.DeepEqual(invocations[3], wantClose) {
+		t.Fatalf("profile proof did not close disposable session\nwant: %#v\ngot:  %#v", wantClose, invocations[3])
+	}
+}
+
+func TestProfileProofClosesDisposableSessionOnSelectionFailure(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"set reasoning_effort": 2}))
+	t.Setenv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{"set reasoning_effort": "reasoning rejected\n"}))
+	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"}
+
+	err := harness.runner.Probe(context.Background(), ProbeRequest{Runtime: runtime, WorkDir: harness.gitRoot})
+
+	if err == nil {
+		t.Fatal("expected profile proof selection failure")
+	}
+	var selectionErr *SelectionPreflightError
+	if !errors.As(err, &selectionErr) {
+		t.Fatalf("expected SelectionPreflightError, got %T %v", err, err)
+	}
+	invocations := readJSONInvocations(t, harness.invocationsPath)
+	sessionName := disposableSessionFromEnsure(t, invocations[1])
+	wantClose := []string{"--cwd", harness.gitRoot, "codex", "sessions", "close", sessionName}
+	if !reflect.DeepEqual(invocations[len(invocations)-1], wantClose) {
+		t.Fatalf("profile proof did not close disposable session after failure\nwant: %#v\ngot:  %#v", wantClose, invocations[len(invocations)-1])
+	}
+	if containsCommandKey(invocations, "prompt") {
+		t.Fatalf("profile proof must not send prompts after failure, got %#v", invocations)
+	}
+}
+
 func TestACPXProbeSelectionSetupUsesBoundedContext(t *testing.T) {
 	harness := newFakeACPXHarness(t)
 	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")

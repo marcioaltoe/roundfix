@@ -540,6 +540,253 @@ profiles:
 	assertNoRunDatabase(t, homeDir)
 }
 
+func TestProfilesConfigureFileWritesProjectProfileJSON(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	fragmentPath := filepath.Join(repoDir, "backend-profile.yml")
+	mustWrite(t, fragmentPath, `
+profiles:
+  backend:
+    preferred:
+      runtime: claude
+      model: configured-backend
+      reasoning_effort: medium
+    fallbacks:
+      - runtime: codex
+        model: configured-fallback
+        reasoning_effort: high
+`)
+	var preview string
+	withProfilesConfigureConfirm(t, func(_ context.Context, _ io.Writer, got string) (bool, error) {
+		preview = got
+		return true, nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("profiles configure exit = %d stderr=%q", code, stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr from stubbed confirmation, got %q", stderr.String())
+	}
+	response := decodeProfilesConfigureResponse(t, stdout.String())
+	if response.Schema != "roundfix/profiles-configure/v1" || !response.Changed || response.Scope != "project" {
+		t.Fatalf("unexpected configure response: %+v", response)
+	}
+	if response.Path != filepath.Join(repoDir, ".roundfixrc.yml") {
+		t.Fatalf("path = %q, want project config", response.Path)
+	}
+	if len(response.Profiles) != 1 || response.Profiles[0].Category != roundconfig.CategoryBackend {
+		t.Fatalf("profiles = %+v, want one backend profile", response.Profiles)
+	}
+	for _, want := range []string{"Profile Configure Preview", "Scope: project", "Category: backend", "configured-backend", "configured-fallback"} {
+		if !strings.Contains(preview, want) {
+			t.Fatalf("preview missing %q in:\n%s", want, preview)
+		}
+	}
+	loaded, err := roundconfig.Load(roundconfig.LoadOptions{HomeDir: homeDir, WorkDir: repoDir})
+	if err != nil {
+		t.Fatalf("load config after configure: %v", err)
+	}
+	resolved, err := roundconfig.ResolveProfile(loaded.Config, roundconfig.CategoryBackend, nil)
+	if err != nil {
+		t.Fatalf("resolve backend after configure: %v", err)
+	}
+	if resolved.Source != roundconfig.ProfileSourceProject {
+		t.Fatalf("source = %q, want project", resolved.Source)
+	}
+	if resolved.Profile.Preferred.Model != "configured-backend" || resolved.Profile.Fallbacks[0].Model != "configured-fallback" {
+		t.Fatalf("unexpected resolved profile: %+v", resolved.Profile)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
+func TestProfilesConfigureDryRunAndFailedConfigurationLeaveBytesUnchanged(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+	original := "watch:\n  max_rounds: 4\n"
+	mustWrite(t, configPath, original)
+	validFragment := filepath.Join(repoDir, "valid-profile.yml")
+	mustWrite(t, validFragment, `
+backend:
+  preferred:
+    runtime: codex
+    model: dry-run-backend
+    reasoning_effort: high
+  fallbacks:
+    - runtime: codex
+      model: dry-run-fallback
+      reasoning_effort: max
+`)
+	withProfilesConfigureConfirm(t, func(context.Context, io.Writer, string) (bool, error) {
+		t.Fatal("dry-run must not ask for write confirmation")
+		return false, nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", validFragment, "--dry-run", "--json"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("dry-run exit = %d stderr=%q", code, stderr.String())
+	}
+	response := decodeProfilesConfigureResponse(t, stdout.String())
+	if response.Changed {
+		t.Fatalf("dry-run changed = true, response=%+v", response)
+	}
+	if got := mustRead(t, configPath); got != original {
+		t.Fatalf("dry-run mutated config\nwant: %q\n got: %q", original, got)
+	}
+
+	invalidFragment := filepath.Join(repoDir, "invalid-profile.yml")
+	mustWrite(t, invalidFragment, `
+backend:
+  preferred:
+    runtime: codex
+    model: broken
+    reasoning_effort: high
+`)
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"profiles", "configure", "--scope", "project", "--file", invalidFragment, "--json"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("invalid configure exit = %d, want %d", code, exitPreflight)
+	}
+	response = decodeProfilesConfigureResponse(t, stdout.String())
+	if response.Changed || !strings.Contains(response.Error, "fallbacks is required") {
+		t.Fatalf("unexpected invalid configure response: %+v", response)
+	}
+	if got := mustRead(t, configPath); got != original {
+		t.Fatalf("invalid configure mutated config\nwant: %q\n got: %q", original, got)
+	}
+}
+
+func TestProfilesConfigureInteractiveRequiresCompleteFallbackBeforeConfirm(t *testing.T) {
+	homeDir, _ := withCLIWorkspace(t)
+	withProfilesConfigureInput(t, "backend\ncodex\ninteractive-backend\nhigh\n\n")
+	confirmCalls := 0
+	withProfilesConfigureConfirm(t, func(context.Context, io.Writer, string) (bool, error) {
+		confirmCalls++
+		return true, nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"profiles", "configure", "--scope", "user", "--json"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("interactive configure exit = %d, want %d", code, exitPreflight)
+	}
+	if confirmCalls != 0 {
+		t.Fatalf("confirmation called %d time(s) before fallback completed", confirmCalls)
+	}
+	response := decodeProfilesConfigureResponse(t, stdout.String())
+	if response.Changed || !strings.Contains(response.Error, "fallbacks must include at least one complete Agent Selection before confirmation") {
+		t.Fatalf("unexpected interactive failure response: %+v", response)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
+func TestProfilesValidateDeduplicatesProofsAndReportsEveryReference(t *testing.T) {
+	homeDir, _ := withCLIWorkspace(t)
+	runner := &fakeAgentRunner{}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"profiles", "validate", "--json"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("profiles validate exit = %d stderr=%q", code, stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+	response := decodeProfilesValidateResponse(t, stdout.String())
+	if response.Schema != "roundfix/profiles-validate/v1" || !response.OK {
+		t.Fatalf("unexpected validate response: %+v", response)
+	}
+	if len(runner.probeRequests) != 3 {
+		t.Fatalf("expected three unique tuple probes, got %#v", runner.probeRequests)
+	}
+	wantModels := []string{"gpt-5.6-sol", "gpt-5.6-terra", "claude-fable-5"}
+	for index, want := range wantModels {
+		if runner.probeRequests[index].Runtime.Model != want {
+			t.Fatalf("probe %d model = %q, want %q", index, runner.probeRequests[index].Runtime.Model, want)
+		}
+	}
+	if len(response.Proofs) != 3 {
+		t.Fatalf("len(proofs) = %d, want 3", len(response.Proofs))
+	}
+	assertProofReferences(t, response.Proofs[0], []string{"general/preferred", "backend/preferred", "frontend/fallback", "qa/preferred", "review/preferred"})
+	if runner.calls != 0 {
+		t.Fatalf("profiles validate must not send Agent prompts, calls=%d", runner.calls)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
+func TestProfilesValidateFailedProofNamesTupleAffectedCategoriesAndRecovery(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+	mustWrite(t, configPath, `
+profiles:
+  backend:
+    preferred:
+      runtime: codex
+      model: broken-backend
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: backup-backend
+        reasoning_effort: ""
+`)
+	before := mustRead(t, configPath)
+	runner := &fakeAgentRunner{
+		probe: func(req agent.ProbeRequest) error {
+			if req.Runtime.Model == "broken-backend" {
+				return &agent.SelectionPreflightError{
+					Runtime:         req.Runtime.ID,
+					Model:           req.Runtime.Model,
+					ReasoningEffort: req.Runtime.ReasoningEffort,
+					Err:             errors.New("adapter rejected tuple"),
+				}
+			}
+			return nil
+		},
+	}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"profiles", "validate", "--category", "backend", "--json"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("profiles validate exit = %d, want %d", code, exitPreflight)
+	}
+	response := decodeProfilesValidateResponse(t, stdout.String())
+	if response.OK || !strings.Contains(response.Error, "broken-backend") || !strings.Contains(response.Error, "backend preferred") || !strings.Contains(response.Error, "adapter rejected tuple") || !strings.Contains(response.Error, "roundfix profiles configure") {
+		t.Fatalf("unexpected failed validation response: %+v", response)
+	}
+	if len(response.Proofs) == 0 || response.Proofs[0].Status != "failed" || !strings.Contains(response.Proofs[0].Error, "adapter rejected tuple") {
+		t.Fatalf("expected failed proof details, got %+v", response.Proofs)
+	}
+	for _, want := range []string{"broken-backend", "backend preferred", "adapter rejected tuple", "roundfix profiles validate"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("stderr missing %q in %q", want, stderr.String())
+		}
+	}
+	if got := mustRead(t, configPath); got != before {
+		t.Fatalf("profiles validate mutated Project Config\nwant: %q\n got: %q", before, got)
+	}
+	if runner.calls != 0 {
+		t.Fatalf("profiles validate must not send Agent prompts, calls=%d", runner.calls)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
 func TestProfilesShowReportsUnavailableRecommendationWithoutReordering(t *testing.T) {
 	unavailableSelection := roundconfig.AgentSelection{
 		Runtime:         "codex",
@@ -628,6 +875,41 @@ func decodeProfilesShowResponse(t *testing.T, output string) profilesShowTestRes
 		t.Fatalf("expected one JSON object, got trailing content in %q", output)
 	}
 	return response
+}
+
+func decodeProfilesConfigureResponse(t *testing.T, output string) profilesConfigureResponse {
+	t.Helper()
+	var response profilesConfigureResponse
+	decoder := json.NewDecoder(strings.NewReader(output))
+	if err := decoder.Decode(&response); err != nil {
+		t.Fatalf("decode profiles configure JSON %q: %v", output, err)
+	}
+	return response
+}
+
+func decodeProfilesValidateResponse(t *testing.T, output string) profilesValidateResponse {
+	t.Helper()
+	var response profilesValidateResponse
+	decoder := json.NewDecoder(strings.NewReader(output))
+	if err := decoder.Decode(&response); err != nil {
+		t.Fatalf("decode profiles validate JSON %q: %v", output, err)
+	}
+	return response
+}
+
+func assertProofReferences(t *testing.T, proof profileProofReport, want []string) {
+	t.Helper()
+	got := make([]string, 0, len(proof.References))
+	for _, reference := range proof.References {
+		value := string(reference.Category) + "/" + reference.Role
+		if reference.Role == "fallback" {
+			value = string(reference.Category) + "/fallback"
+		}
+		got = append(got, value)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("proof references = %v, want %v", got, want)
+	}
 }
 
 func runProfilesShowTwice(t *testing.T, args []string) (string, string) {
@@ -7013,6 +7295,24 @@ func withFallbackConfirmation(t *testing.T, input string) {
 	})
 }
 
+func withProfilesConfigureInput(t *testing.T, input string) {
+	t.Helper()
+	old := profilesConfigureInput
+	profilesConfigureInput = func() io.Reader { return strings.NewReader(input) }
+	t.Cleanup(func() {
+		profilesConfigureInput = old
+	})
+}
+
+func withProfilesConfigureConfirm(t *testing.T, confirm func(context.Context, io.Writer, string) (bool, error)) {
+	t.Helper()
+	old := confirmProfilesConfigure
+	confirmProfilesConfigure = confirm
+	t.Cleanup(func() {
+		confirmProfilesConfigure = old
+	})
+}
+
 func withStopAgentSessionCanceler(t *testing.T, cancel func(context.Context, agent.RuntimeSpec, agent.SessionRef) error) {
 	t.Helper()
 	old := cancelStopAgentSession
@@ -7761,6 +8061,7 @@ func publishFakeAgentOutput(ctx context.Context, sink runevent.Sink, req agent.E
 
 type fakeAgentRunner struct {
 	probeErr       error
+	probe          func(agent.ProbeRequest) error
 	fallback       agent.FallbackSelection
 	fallbackOK     bool
 	fallbackErr    error
@@ -7781,6 +8082,9 @@ type fakeAgentRunner struct {
 func (runner *fakeAgentRunner) Probe(_ context.Context, req agent.ProbeRequest) error {
 	runner.probeRequests = append(runner.probeRequests, req)
 	runner.probedRuntimes = append(runner.probedRuntimes, req.Runtime)
+	if runner.probe != nil {
+		return runner.probe(req)
+	}
 	return runner.probeErr
 }
 
