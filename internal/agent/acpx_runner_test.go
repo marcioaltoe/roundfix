@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -1418,14 +1419,16 @@ func TestACPXRunWarnsWhenCodexSandboxPresetUnavailable(t *testing.T) {
 
 func TestACPXRunCancelsPromptCooperatively(t *testing.T) {
 	harness := newBlockingFakeACPXHarness(t, true)
+	assertCancellationFixturePaths(t, harness)
 	ctx, cancel := context.WithCancel(context.Background())
 	resultCh := make(chan error, 1)
 	go func() {
 		_, err := harness.run(ctx, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1")
 		resultCh <- err
 	}()
-	waitForFile(t, harness.startedPath)
+	harness.waitForMilestone(t, "prompt start", harness.milestones.promptStarted)
 	cancel()
+	harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted)
 
 	err := receiveError(t, resultCh)
 	if !IsStopError(err) {
@@ -1446,14 +1449,17 @@ func TestACPXRunCancelsPromptCooperatively(t *testing.T) {
 
 func TestACPXRunClosesSessionAfterCancelGracePeriod(t *testing.T) {
 	harness := newBlockingFakeACPXHarness(t, false)
+	assertCancellationFixturePaths(t, harness)
 	ctx, cancel := context.WithCancel(context.Background())
 	resultCh := make(chan error, 1)
 	go func() {
 		_, err := harness.run(ctx, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, "roundfix-run-1")
 		resultCh <- err
 	}()
-	waitForFile(t, harness.startedPath)
+	harness.waitForMilestone(t, "prompt start", harness.milestones.promptStarted)
 	cancel()
+	harness.waitForMilestone(t, "cancel completion", harness.milestones.cancelCompleted)
+	harness.waitForMilestone(t, "close completion", harness.milestones.closeCompleted)
 
 	err := receiveError(t, resultCh)
 	var stopErr StopError
@@ -1470,6 +1476,86 @@ func TestACPXRunClosesSessionAfterCancelGracePeriod(t *testing.T) {
 	if !containsInvocation(invocations, []string{"--cwd", harness.gitRoot, "codex", "sessions", "close", "roundfix-run-1"}) {
 		t.Fatalf("expected close invocation after cancel grace, got %#v", invocations)
 	}
+}
+
+func TestFakeCancellationClock(t *testing.T) {
+	t.Run("records creation order and waits without firing", func(t *testing.T) {
+		clock := newFakeCancellationClock()
+		createFirst := make(chan struct{})
+		go func() {
+			<-createFirst
+			clock.NewTimer(10 * time.Second)
+		}()
+
+		close(createFirst)
+		first := clock.waitForTimer(t, 0)
+		second := clock.NewTimer(20 * time.Second)
+		timers := clock.timersSnapshot()
+
+		if len(timers) != 2 {
+			t.Fatalf("expected two created timers, got %d", len(timers))
+		}
+		if timers[0] != first || timers[1] != second {
+			t.Fatalf("timers were not recorded in creation order")
+		}
+		if first.Duration() != 10*time.Second || second.Duration() != 20*time.Second {
+			t.Fatalf("unexpected timer durations: first=%s second=%s", first.Duration(), second.Duration())
+		}
+		select {
+		case firedAt := <-first.C():
+			t.Fatalf("waitForTimer fired timer unexpectedly at %s", firedAt)
+		default:
+		}
+	})
+
+	t.Run("fires each timer at most once", func(t *testing.T) {
+		clock := newFakeCancellationClock()
+		timer := clock.NewTimer(time.Second)
+		firedAt := time.Date(2026, 7, 16, 12, 0, 0, 0, time.UTC)
+
+		if !timer.Fire(firedAt) {
+			t.Fatal("expected first fire to report active timer")
+		}
+		select {
+		case got := <-timer.C():
+			if !got.Equal(firedAt) {
+				t.Fatalf("unexpected fire time: got %s want %s", got, firedAt)
+			}
+		default:
+			t.Fatal("expected first fire to emit one event")
+		}
+		if timer.Fire(firedAt.Add(time.Second)) {
+			t.Fatal("expected second fire to report inactive timer")
+		}
+		select {
+		case got := <-timer.C():
+			t.Fatalf("expected no second timer event, got %s", got)
+		default:
+		}
+	})
+
+	t.Run("stopped timer cannot be fired as active", func(t *testing.T) {
+		clock := newFakeCancellationClock()
+		timer := clock.NewTimer(time.Second)
+
+		if !timer.Stop() {
+			t.Fatal("expected first stop to report active timer")
+		}
+		if !timer.Stopped() {
+			t.Fatal("expected stopped timer state")
+		}
+		if timer.Fire(time.Date(2026, 7, 16, 12, 0, 0, 0, time.UTC)) {
+			t.Fatal("expected stopped timer fire to report inactive timer")
+		}
+		if timer.Stop() {
+			t.Fatal("expected second stop to report inactive timer")
+		}
+		select {
+		case got := <-timer.C():
+			t.Fatalf("expected stopped timer to emit no event, got %s", got)
+		default:
+		}
+	})
 }
 
 func TestACPXEndSessionClosesBestEffort(t *testing.T) {
@@ -1909,6 +1995,7 @@ type fakeACPXHarness struct {
 	gitRoot         string
 	invocationsPath string
 	startedPath     string
+	milestones      fakeACPXMilestones
 }
 
 func newFakeACPXHarness(t *testing.T) *fakeACPXHarness {
@@ -1968,15 +2055,167 @@ func writeACPXConfigForTest(t *testing.T, content string) {
 func newBlockingFakeACPXHarness(t *testing.T, exitAfterCancel bool) *fakeACPXHarness {
 	t.Helper()
 	harness := newFakeACPXHarness(t)
-	harness.startedPath = filepath.Join(harness.gitRoot, "prompt-started")
+	harness.milestones = newFakeACPXMilestones(t, harness.gitRoot)
+	harness.startedPath = harness.milestones.promptStarted
 	t.Setenv(fakeACPXBlock, "1")
 	t.Setenv(fakeACPXStarted, harness.startedPath)
-	t.Setenv(fakeACPXCanceled, filepath.Join(harness.gitRoot, "canceled"))
-	t.Setenv(fakeACPXClosed, filepath.Join(harness.gitRoot, "closed"))
+	t.Setenv(fakeACPXCanceled, harness.milestones.cancelCompleted)
+	t.Setenv(fakeACPXClosed, harness.milestones.closeCompleted)
 	if exitAfterCancel {
 		t.Setenv(fakeACPXExitCancel, "1")
 	}
 	return harness
+}
+
+type fakeACPXMilestones struct {
+	promptStarted   string
+	cancelCompleted string
+	closeCompleted  string
+}
+
+func newFakeACPXMilestones(t *testing.T, dir string) fakeACPXMilestones {
+	t.Helper()
+	milestoneDir := filepath.Join(dir, "milestones")
+	if err := os.MkdirAll(milestoneDir, 0o755); err != nil {
+		t.Fatalf("create fake acpx milestone dir: %v", err)
+	}
+	return fakeACPXMilestones{
+		promptStarted:   filepath.Join(milestoneDir, "prompt-started"),
+		cancelCompleted: filepath.Join(milestoneDir, "cancel-completed"),
+		closeCompleted:  filepath.Join(milestoneDir, "close-completed"),
+	}
+}
+
+func (harness *fakeACPXHarness) waitForMilestone(t *testing.T, name string, path string) {
+	t.Helper()
+	waitForACPXMilestone(t, name, path, harness.invocationsPath)
+}
+
+func assertCancellationFixturePaths(t *testing.T, harness *fakeACPXHarness) {
+	t.Helper()
+	paths := map[string]string{
+		"invocation log":   harness.invocationsPath,
+		"prompt milestone": harness.milestones.promptStarted,
+		"cancel milestone": harness.milestones.cancelCompleted,
+		"close milestone":  harness.milestones.closeCompleted,
+	}
+	seen := map[string]string{}
+	for name, path := range paths {
+		rel, err := filepath.Rel(harness.gitRoot, path)
+		if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) || filepath.IsAbs(rel) {
+			t.Fatalf("%s path %q is not isolated under temp dir %q", name, path, harness.gitRoot)
+		}
+		if previous, ok := seen[path]; ok {
+			t.Fatalf("%s path duplicates %s path: %q", name, previous, path)
+		}
+		seen[path] = name
+	}
+}
+
+type fakeCancellationClock struct {
+	mu      sync.Mutex
+	timers  []*fakeCancellationTimer
+	created chan struct{}
+}
+
+func newFakeCancellationClock() *fakeCancellationClock {
+	return &fakeCancellationClock{
+		created: make(chan struct{}, 16),
+	}
+}
+
+func (clock *fakeCancellationClock) NewTimer(duration time.Duration) *fakeCancellationTimer {
+	clock.mu.Lock()
+	timer := &fakeCancellationTimer{
+		duration: duration,
+		c:        make(chan time.Time, 1),
+	}
+	clock.timers = append(clock.timers, timer)
+	clock.mu.Unlock()
+
+	select {
+	case clock.created <- struct{}{}:
+	default:
+	}
+	return timer
+}
+
+func (clock *fakeCancellationClock) waitForTimer(t *testing.T, index int) *fakeCancellationTimer {
+	t.Helper()
+	deadline := time.NewTimer(5 * time.Second)
+	defer deadline.Stop()
+	for {
+		clock.mu.Lock()
+		if index < len(clock.timers) {
+			timer := clock.timers[index]
+			clock.mu.Unlock()
+			return timer
+		}
+		created := len(clock.timers)
+		clock.mu.Unlock()
+
+		select {
+		case <-clock.created:
+		case <-deadline.C:
+			t.Fatalf("timed out waiting for cancellation timer %d; created timers: %d", index+1, created)
+		}
+	}
+}
+
+func (clock *fakeCancellationClock) timersSnapshot() []*fakeCancellationTimer {
+	clock.mu.Lock()
+	defer clock.mu.Unlock()
+	timers := make([]*fakeCancellationTimer, len(clock.timers))
+	copy(timers, clock.timers)
+	return timers
+}
+
+type fakeCancellationTimer struct {
+	mu       sync.Mutex
+	duration time.Duration
+	c        chan time.Time
+	fired    bool
+	stopped  bool
+}
+
+func (timer *fakeCancellationTimer) C() <-chan time.Time {
+	return timer.c
+}
+
+func (timer *fakeCancellationTimer) Stop() bool {
+	timer.mu.Lock()
+	defer timer.mu.Unlock()
+	if timer.fired || timer.stopped {
+		return false
+	}
+	timer.stopped = true
+	return true
+}
+
+func (timer *fakeCancellationTimer) Fire(firedAt time.Time) bool {
+	timer.mu.Lock()
+	if timer.fired || timer.stopped {
+		timer.mu.Unlock()
+		return false
+	}
+	timer.fired = true
+	timerC := timer.c
+	timer.mu.Unlock()
+
+	timerC <- firedAt
+	return true
+}
+
+func (timer *fakeCancellationTimer) Duration() time.Duration {
+	timer.mu.Lock()
+	defer timer.mu.Unlock()
+	return timer.duration
+}
+
+func (timer *fakeCancellationTimer) Stopped() bool {
+	timer.mu.Lock()
+	defer timer.mu.Unlock()
+	return timer.stopped
 }
 
 func selectedRuntime(runtime RuntimeSpec) RuntimeSpec {
@@ -2293,6 +2532,27 @@ func waitForFile(t *testing.T, path string) {
 		select {
 		case <-deadline:
 			t.Fatalf("timed out waiting for %s", path)
+		case <-ticker.C:
+		}
+	}
+}
+
+func waitForACPXMilestone(t *testing.T, name string, path string, invocationsPath string) {
+	t.Helper()
+	deadline := time.After(5 * time.Second)
+	ticker := time.NewTicker(5 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		if _, err := os.Stat(path); err == nil {
+			return
+		}
+		select {
+		case <-deadline:
+			invocations := "unavailable"
+			if content, err := os.ReadFile(invocationsPath); err == nil {
+				invocations = string(content)
+			}
+			t.Fatalf("timed out waiting for fake acpx %s milestone at %s; invocations so far:\n%s", name, path, invocations)
 		case <-ticker.C:
 		}
 	}

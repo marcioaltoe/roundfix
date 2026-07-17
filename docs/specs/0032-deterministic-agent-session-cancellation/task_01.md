@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0032-deterministic-agent-session-cancellation
-status: pending
+status: completed
 type: test
 complexity: medium
 ---
@@ -22,19 +22,19 @@ Create the test-only controls that let Agent Session cancellation tests observe 
 
 ## Subtasks
 
-- [ ] Add the controllable cancellation clock and timer fixtures.
-- [ ] Cover timer creation order, single fire, and stop behavior.
-- [ ] Record completed cancellation milestones from the helper process.
-- [ ] Add milestone waits with actionable deadlock failures.
-- [ ] Keep the existing cancellation scenarios passing through the prefactored harness.
+- [x] Add the controllable cancellation clock and timer fixtures.
+- [x] Cover timer creation order, single fire, and stop behavior.
+- [x] Record completed cancellation milestones from the helper process.
+- [x] Add milestone waits with actionable deadlock failures.
+- [x] Keep the existing cancellation scenarios passing through the prefactored harness.
 
 ## Acceptance Criteria
 
-- [ ] Tests can wait for a created timer without firing it or depending on a short sleep.
-- [ ] A timer cannot emit more than one event, and a stopped timer cannot be fired as active.
-- [ ] Prompt start, cancel completion, and close completion are distinguishable observable milestones.
-- [ ] Cancellation fixtures use unique temporary paths and retain the append-only invocation record.
-- [ ] Existing Agent package cancellation tests pass after the test-harness prefactor.
+- [x] Tests can wait for a created timer without firing it or depending on a short sleep.
+- [x] A timer cannot emit more than one event, and a stopped timer cannot be fired as active.
+- [x] Prompt start, cancel completion, and close completion are distinguishable observable milestones.
+- [x] Cancellation fixtures use unique temporary paths and retain the append-only invocation record.
+- [x] Existing Agent package cancellation tests pass after the test-harness prefactor.
 
 ## Context
 
@@ -49,3 +49,26 @@ Create the test-only controls that let Agent Session cancellation tests observe 
 
 - `_prd.md` → Goals 1-2; User Stories 1-2; Core Features 2 and 6; Non-Goals / Out of Scope; Decisions.
 - `_techspec.md` → Interfaces; Data Models; Integration Points; Testing Approach; Build Order 1; Risks & Considerations.
+
+## Result
+
+Implemented the deterministic cancellation test controls for this slice:
+
+- Added `fakeCancellationClock` and `fakeCancellationTimer` fixtures that record timer creation order, expose created timers without firing them, fire each timer at most once, and expose stopped state.
+- Moved blocking fake-acpx cancellation markers into an isolated per-test milestone set under the harness temporary directory: prompt start, cancel completion, and close completion.
+- Updated the existing cooperative and forced-close cancellation scenarios to wait on named milestone files with deadlock failures that identify the missing milestone and include invocations recorded so far.
+- Kept the helper-process boundary and append-only `invocations.jsonl` record intact; cancellation scenarios still execute real subprocesses through the fake acpx process.
+
+Evidence:
+
+- `rtk gofmt -w internal/agent/acpx_runner_test.go` — passed.
+- `rtk go test ./internal/agent -run 'TestFakeCancellationClock' -count=1` — passed; output: `Go test: 4 passed in 1 packages`.
+- `rtk go test ./internal/agent -run 'TestACPXRun(CancelsPromptCooperatively|ClosesSessionAfterCancelGracePeriod)$' -count=1` — passed; output: `Go test: 2 passed in 1 packages`.
+
+Acceptance evidence:
+
+- Created-timer wait without sleep: covered by `TestFakeCancellationClock/records creation order and waits without firing`.
+- Single fire and stopped timer behavior: covered by `TestFakeCancellationClock/fires each timer at most once` and `TestFakeCancellationClock/stopped timer cannot be fired as active`.
+- Distinguishable prompt/cancel/close milestones: the cancellation scenarios now wait for separate prompt-start, cancel-completed, and close-completed paths.
+- Temporary path isolation and append-only invocation record: `assertCancellationFixturePaths` validates unique paths under the harness temp directory, while the unchanged fake acpx invocation log remains JSONL append-only.
+- Existing cancellation scenarios: both existing Agent package cancellation tests passed through the prefactored harness.
