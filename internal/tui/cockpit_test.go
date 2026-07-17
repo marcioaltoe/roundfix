@@ -1700,6 +1700,10 @@ func TestOwningCockpitPollsJournalWhileOwnProcessWrites(t *testing.T) {
 	model.Update(cockpitTickMsg{})
 	pressKey(t, model, "ctrl+c")
 	close(resumeWriter)
+	if err := <-written; err != nil {
+		t.Fatalf("writer: %v", err)
+	}
+	model.Update(cockpitTickMsg{})
 	if !stopRequested {
 		t.Fatal("expected ctrl+c during active polling to trigger the Stop Request callback")
 	}
@@ -1710,10 +1714,6 @@ func TestOwningCockpitPollsJournalWhileOwnProcessWrites(t *testing.T) {
 		rendered := viewText(model)
 		sawAll = strings.Contains(rendered, fmt.Sprintf("live line %02d", total-1)) && strings.Contains(rendered, "READ-ONLY")
 	}
-	if err := <-written; err != nil {
-		t.Fatalf("writer: %v", err)
-	}
-	model.Update(cockpitTickMsg{})
 
 	if !sawAll {
 		t.Fatalf("expected the owning cockpit to render journal writes and the terminal state, got:\n%s", viewText(model))
