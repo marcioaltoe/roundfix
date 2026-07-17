@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -4021,9 +4022,13 @@ func newMacroFakeACPX(t *testing.T) macroFakeACPX {
 			t.Fatalf("write fake adapter %s: %v", adapter, err)
 		}
 	}
-	cleanExecutable, err := exec.LookPath("true")
-	if err != nil {
-		t.Fatalf("resolve signed fixture executable: %v", err)
+	cleanExecutable := "/usr/bin/true"
+	if runtime.GOOS != "darwin" {
+		var err error
+		cleanExecutable, err = exec.LookPath("true")
+		if err != nil {
+			t.Fatalf("resolve fixture executable: %v", err)
+		}
 	}
 	cleanExecutableBytes, err := os.ReadFile(cleanExecutable)
 	if err != nil {
