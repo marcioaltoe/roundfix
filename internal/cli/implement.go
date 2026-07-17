@@ -372,15 +372,54 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 
 func defaultLoadCommittedSpecGraph(ctx context.Context, gitRoot string, resolvedSpecsRoot roundconfig.SpecsRoot, revision string, slug string) (*spec.Graph, string, error) {
 	checkoutSpecsRoot := specsRootForWorkDir(resolvedSpecsRoot, gitRoot, gitRoot)
+	if resolvedSpecsRoot.External {
+		return loadCommittedExternalSpecGraph(ctx, checkoutSpecsRoot, slug)
+	}
 	repoRelativeSpecsRoot, ok := repositoryRelativePath(gitRoot, checkoutSpecsRoot)
 	if !ok {
-		graph, err := spec.Load(checkoutSpecsRoot, slug)
-		return graph, checkoutSpecsRoot, err
+		return nil, "", validationError{message: fmt.Sprintf("specs.root %q is outside repository %q; move specs.root inside the repository or configure it as an external Specs Git repository", checkoutSpecsRoot, gitRoot)}
 	}
 	revision = strings.TrimSpace(revision)
 	if revision == "" {
 		revision = "HEAD"
 	}
+	return loadCommittedSpecGraphFromGitArchive(ctx, gitRoot, revision, repoRelativeSpecsRoot, slug)
+}
+
+func loadCommittedExternalSpecGraph(ctx context.Context, specsRoot string, slug string) (*spec.Graph, string, error) {
+	externalGitRoot, err := gitOutput(ctx, specsRoot, "rev-parse", "--show-toplevel")
+	if err != nil {
+		return nil, "", validationError{message: fmt.Sprintf("external specs.root %q is outside the project repository and must be committed in its own Git repository before implement can choose Agent profiles from a committed Task Graph; move specs.root inside the project repository or initialize and commit the external Specs repository", specsRoot)}
+	}
+	revision, err := gitOutput(ctx, specsRoot, "rev-parse", "HEAD")
+	if err != nil {
+		return nil, "", validationError{message: fmt.Sprintf("external specs.root %q has no committed HEAD; commit the external Specs repository before running implement", specsRoot)}
+	}
+	repoRelativeSpecsRoot, err := gitOutput(ctx, specsRoot, "rev-parse", "--show-prefix")
+	if err != nil {
+		return nil, "", fmt.Errorf("resolve external specs.root path in Git repository %q: %w", externalGitRoot, err)
+	}
+	return loadCommittedSpecGraphFromGitArchive(ctx, externalGitRoot, revision, strings.TrimSuffix(filepath.ToSlash(repoRelativeSpecsRoot), "/"), slug)
+}
+
+func gitOutput(ctx context.Context, workDir string, args ...string) (string, error) {
+	cmdArgs := append([]string{"-C", workDir, "-c", "core.fsmonitor=false"}, args...)
+	cmd := exec.CommandContext(ctx, "git", cmdArgs...)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		detail := strings.TrimSpace(stderr.String())
+		if detail == "" {
+			detail = err.Error()
+		}
+		return "", fmt.Errorf("%s: %w", detail, err)
+	}
+	return strings.TrimSpace(stdout.String()), nil
+}
+
+func loadCommittedSpecGraphFromGitArchive(ctx context.Context, gitRoot string, revision string, repoRelativeSpecsRoot string, slug string) (*spec.Graph, string, error) {
 	repoSpecDir := filepath.ToSlash(filepath.Join(repoRelativeSpecsRoot, slug))
 	tempRoot, err := os.MkdirTemp("", "roundfix-committed-spec-*")
 	if err != nil {
@@ -459,7 +498,7 @@ func unpackTarArchive(content []byte, destination string) error {
 			if err := os.MkdirAll(target, 0o755); err != nil {
 				return fmt.Errorf("create archive directory %q: %w", target, err)
 			}
-		case tar.TypeReg, tar.TypeRegA:
+		case tar.TypeReg:
 			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				return fmt.Errorf("create archive file parent %q: %w", filepath.Dir(target), err)
 			}

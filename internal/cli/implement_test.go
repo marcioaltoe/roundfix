@@ -390,6 +390,39 @@ func TestLoadCommittedSpecGraphIgnoresDirtyCheckoutTaskMetadata(t *testing.T) {
 	}
 }
 
+func TestLoadCommittedExternalSpecGraphIgnoresDirtyCheckoutTaskMetadata(t *testing.T) {
+	_, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	_, externalRoot := newExternalSpecsRoot(t, implementTestSlug, []implementSeed{{id: "task_01", taskType: "backend", status: string(spec.StatusPending)}})
+	taskPath := implementTaskPathInRoot(externalRoot, implementTestSlug, "task_01")
+	dirty := strings.ReplaceAll(mustRead(t, taskPath), "status: pending\ntype: backend", "status: completed\ntype: frontend")
+	mustWrite(t, taskPath, dirty)
+
+	graph, _, err := defaultLoadCommittedSpecGraph(context.Background(), repoDir, roundconfig.SpecsRoot{Path: externalRoot, External: true}, "project-revision-is-ignored", implementTestSlug)
+	if err != nil {
+		t.Fatalf("load committed external graph: %v", err)
+	}
+	if len(graph.Tasks) != 1 {
+		t.Fatalf("len(tasks) = %d, want 1", len(graph.Tasks))
+	}
+	if graph.Tasks[0].Type != spec.TaskTypeBackend || graph.Tasks[0].Status != spec.StatusPending {
+		t.Fatalf("external committed graph used dirty task metadata: %+v", graph.Tasks[0])
+	}
+}
+
+func TestLoadCommittedExternalSpecGraphRequiresExternalGitRepository(t *testing.T) {
+	_, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	externalRoot := filepath.Join(t.TempDir(), "external-specs")
+	writeImplementSpecAtRoot(t, externalRoot, implementTestSlug, []implementSeed{{id: "task_01"}})
+
+	_, _, err := defaultLoadCommittedSpecGraph(context.Background(), repoDir, roundconfig.SpecsRoot{Path: externalRoot, External: true}, "HEAD", implementTestSlug)
+	if err == nil {
+		t.Fatal("expected external specs.root without a Git repository to fail")
+	}
+	if !strings.Contains(err.Error(), "must be committed in its own Git repository") {
+		t.Fatalf("expected actionable external Git repository error, got %v", err)
+	}
+}
+
 func writeUserConfig(t *testing.T, homeDir string, content string) {
 	t.Helper()
 	path := filepath.Join(homeDir, ".roundfix", "config.yml")
@@ -416,6 +449,17 @@ func configureExternalSpecsRoot(t *testing.T, repoDir string, specsRoot string) 
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), fmt.Sprintf("specs:\n  root: %q\n", specsRoot))
 	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
 	gitImplement(t, repoDir, "commit", "-m", "configure external Spec Root")
+}
+
+func newExternalSpecsRoot(t *testing.T, slug string, seeds []implementSeed) (string, string) {
+	t.Helper()
+	externalRepo := t.TempDir()
+	gitImplement(t, externalRepo, "init", "--initial-branch=main")
+	specsRoot := filepath.Join(externalRepo, "docs", "specs")
+	writeImplementSpecAtRoot(t, specsRoot, slug, seeds)
+	gitImplement(t, externalRepo, "add", "-A")
+	gitImplement(t, externalRepo, "commit", "-m", "seed external spec")
+	return externalRepo, specsRoot
 }
 
 func configureWorktreeBootstrap(t *testing.T, repoDir string, command string, timeout string) {
@@ -1263,8 +1307,7 @@ func TestRunImplementUsesConfiguredExternalSpecRootEndToEnd(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Internal fixture should stay untouched"},
 	})
-	externalRoot := filepath.Join(t.TempDir(), "external-specs")
-	writeImplementSpecAtRoot(t, externalRoot, implementTestSlug, []implementSeed{
+	_, externalRoot := newExternalSpecsRoot(t, implementTestSlug, []implementSeed{
 		{id: "task_01", title: "Build from external root"},
 	})
 	configureExternalSpecsRoot(t, repoDir, externalRoot)
@@ -1307,9 +1350,8 @@ func TestRunImplementInteractiveInputListsConfiguredExternalSpecRoot(t *testing.
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Internal fixture should not be listed"},
 	})
-	externalRoot := filepath.Join(t.TempDir(), "external-specs")
 	externalSlug := "0002-external-only"
-	writeImplementSpecAtRoot(t, externalRoot, externalSlug, []implementSeed{
+	_, externalRoot := newExternalSpecsRoot(t, externalSlug, []implementSeed{
 		{id: "task_01", title: "Build from external picker"},
 	})
 	configureExternalSpecsRoot(t, repoDir, externalRoot)

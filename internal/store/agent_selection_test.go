@@ -269,6 +269,25 @@ func TestAgentSelectionAttemptLifecycleUpdatesSameAttempt(t *testing.T) {
 	if _, err := runStore.AppendAgentSelectionAttempt(ctx, failed); err != nil {
 		t.Fatalf("append failed update: %v", err)
 	}
+	qaAttempts, err := runStore.AgentSelectionAttemptsForScope(ctx, run.ID, AgentSelectionScopeQA, "qa:default")
+	if err != nil {
+		t.Fatalf("read QA attempts: %v", err)
+	}
+	if len(qaAttempts) != 1 {
+		t.Fatalf("expected one persisted failed QA attempt, got %#v", qaAttempts)
+	}
+	if qaAttempts[0].Status != AgentSelectionStatusFailed ||
+		qaAttempts[0].ReasonCode != "runtime_unavailable" ||
+		qaAttempts[0].Reason != "runtime failed before start" {
+		t.Fatalf("expected persisted failed QA attempt with reason, got %#v", qaAttempts[0])
+	}
+	events, err = runStore.RunEventsAfter(ctx, run.ID, 0, 10)
+	if err != nil {
+		t.Fatalf("read Run Events after failed QA attempt: %v", err)
+	}
+	if len(events) == 0 || events[len(events)-1].Event.Kind != runevent.KindDaemonAgentSelectionFallback {
+		t.Fatalf("expected latest Run Event to be fallback, got %#v", events)
+	}
 }
 
 func TestAgentSelectionAttemptLifecycleRejectsImmutableFieldChanges(t *testing.T) {
