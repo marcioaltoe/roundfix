@@ -7638,6 +7638,26 @@ func TestAgentConsoleDisplaySinkKeepsWriterBytesByDefault(t *testing.T) {
 	}
 }
 
+func TestAgentConsoleDisplaySinkKeepsDistinctToolCallsVisible(t *testing.T) {
+	var buffer bytes.Buffer
+	sink := agentConsoleDisplaySink(&buffer, false)
+	events := []runevent.RunEvent{
+		cliToolLifecycleEvent("run-1", runevent.KindAgentToolUpdated, "edit_call_1", "running", compactCLIEditLifecyclePayload("tool_call_update", "edit_call_1", "internal/app/server.go", "old\n", "new\n", "running")),
+		cliToolLifecycleEvent("run-1", runevent.KindAgentToolUpdated, "edit_call_2", "running", compactCLIEditLifecyclePayload("tool_call_update", "edit_call_2", "internal/app/server.go", "old\n", "new\n", "running")),
+	}
+
+	for _, event := range events {
+		if err := sink.Publish(context.Background(), event); err != nil {
+			t.Fatalf("publish distinct tool call: %v", err)
+		}
+	}
+
+	want := "edit internal/app/server.go (+1/-1)\nedit internal/app/server.go (+1/-1)\n"
+	if buffer.String() != want {
+		t.Fatalf("expected distinct tool calls to remain visible\nwant: %q\n got: %q", want, buffer.String())
+	}
+}
+
 func TestAgentConsoleDisplaySinkUsesStatefulSinkForNonTTYAndDetachedLogWriter(t *testing.T) {
 	ctx := context.Background()
 	homeDir, repoDir := withCLIWorkspace(t)
@@ -7676,9 +7696,10 @@ func TestAgentConsoleDisplaySinkUsesStatefulSinkForNonTTYAndDetachedLogWriter(t 
 		t.Fatalf("start non-TTY Run UI: %v", err)
 	}
 
+	payload := compactCLIEditLifecyclePayload("tool_call_update", "edit_call_1", "internal/app/server.go", "old\n", "new\n", "running")
 	events := []runevent.RunEvent{
-		cliToolLifecycleEvent(run.ID, runevent.KindAgentToolStarted, "edit_call_1", "pending", compactCLIEditLifecyclePayload("tool_call", "edit_call_1", "internal/app/server.go", "old\n", "new\n", "pending")),
-		cliToolLifecycleEvent(run.ID, runevent.KindAgentToolUpdated, "edit_call_1", "completed", compactCLIEditLifecyclePayload("tool_call_update", "edit_call_1", "internal/app/server.go", "old\n", "new\n", "completed")),
+		cliToolLifecycleEvent(run.ID, runevent.KindAgentToolStarted, "edit_call_1", "running", payload),
+		cliToolLifecycleEvent(run.ID, runevent.KindAgentToolUpdated, "edit_call_1", "completed", payload),
 	}
 	for _, event := range events {
 		if err := ui.sink.Publish(ctx, event); err != nil {
@@ -7705,9 +7726,40 @@ func TestAgentConsoleDisplaySinkUsesStatefulSinkForNonTTYAndDetachedLogWriter(t 
 		t.Fatalf("expected both lifecycle events to stay journaled, got %d", len(journaled))
 	}
 	for index, entry := range journaled {
-		if string(entry.Event.Payload) != string(events[index].Payload) {
+		if entry.Event.Kind != events[index].Kind {
+			t.Fatalf("expected journal kind %d unchanged, got %s", index, entry.Event.Kind)
+		}
+		if entry.Event.ToolID != events[index].ToolID {
+			t.Fatalf("expected journal tool id %d unchanged, got %q", index, entry.Event.ToolID)
+		}
+		if entry.Event.ToolState != events[index].ToolState {
+			t.Fatalf("expected journal tool state %d unchanged, got %q", index, entry.Event.ToolState)
+		}
+		if !bytes.Equal(entry.Event.Payload, events[index].Payload) {
 			t.Fatalf("expected journal payload %d unchanged\nwant: %s\ngot:  %s", index, events[index].Payload, entry.Event.Payload)
 		}
+	}
+	if journaled[0].Cursor == 0 || journaled[1].Cursor == 0 || journaled[0].Cursor == journaled[1].Cursor {
+		t.Fatalf("expected distinct non-zero journal cursors, got %d and %d", journaled[0].Cursor, journaled[1].Cursor)
+	}
+	if !bytes.Equal(journaled[0].Event.Payload, journaled[1].Event.Payload) {
+		t.Fatalf("expected sanitized lifecycle pair to keep byte-identical payloads")
+	}
+
+	timeline := roundtui.NewRunTimeline(10)
+	cursor, err := replayRunEvents(ctx, runStore, run.ID, 0, timeline)
+	if err != nil {
+		t.Fatalf("replay Run Events into Live Run View timeline: %v", err)
+	}
+	if cursor != journaled[1].Cursor {
+		t.Fatalf("expected replay cursor %d, got %d", journaled[1].Cursor, cursor)
+	}
+	wantLines := []string{
+		"edit internal/app/server.go (+1/-1)",
+		"edit internal/app/server.go (+1/-1)",
+	}
+	if got := timeline.Lines(); !reflect.DeepEqual(got, wantLines) {
+		t.Fatalf("expected Attach/Live Run View replay to retain duplicate events\nwant: %#v\n got: %#v", wantLines, got)
 	}
 }
 

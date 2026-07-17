@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -807,10 +809,128 @@ func TestConsoleDisplaySinkDeduplicatesToolSummaries(t *testing.T) {
 	})
 }
 
-func TestConsoleDisplaySinkDoesNotAdvanceStateWhenWriteFails(t *testing.T) {
-	writeErr := errors.New("write failed")
-	writer := &failOnceWriter{err: writeErr}
+func TestConsoleDisplaySinkReleasesTerminalToolStateAfterProcessing(t *testing.T) {
+	const path = "internal/app/server.go"
+	const line = "edit internal/app/server.go (+1/-1)\n"
+	terminalStates := []string{"completed", "failed", "stopped"}
+
+	for _, terminalState := range terminalStates {
+		t.Run(terminalState, func(t *testing.T) {
+			var buffer strings.Builder
+			sink := NewConsoleDisplaySink(&buffer)
+
+			publishConsoleEvent(t, sink, toolLifecycleEvent(
+				runevent.KindAgentToolUpdated,
+				"edit_call_1",
+				"running",
+				compactEditLifecyclePayload("tool_call_update", "edit_call_1", path, "old\n", "new\n", "running"),
+			))
+			publishConsoleEvent(t, sink, toolLifecycleEvent(
+				runevent.KindAgentToolUpdated,
+				"edit_call_1",
+				terminalState,
+				compactEditLifecyclePayload("tool_call_update", "edit_call_1", path, "old\n", "new\n", terminalState),
+			))
+			publishConsoleEvent(t, sink, toolLifecycleEvent(
+				runevent.KindAgentToolUpdated,
+				"edit_call_1",
+				"running",
+				compactEditLifecyclePayload("tool_call_update", "edit_call_1", path, "old\n", "new\n", "running"),
+			))
+
+			if buffer.String() != line+line {
+				t.Fatalf("expected terminal state to suppress before release and then allow reuse, got %q", buffer.String())
+			}
+		})
+	}
+}
+
+func TestConsoleDisplaySinkClearsSessionStateAfterTerminalStatus(t *testing.T) {
+	const firstLine = "edit internal/app/server.go (+1/-1)\n"
+	const secondLine = "edit internal/app/worker.go (+1/-1)\n"
+	var buffer strings.Builder
+	sink := NewConsoleDisplaySink(&buffer)
+	firstEvent := toolLifecycleEvent(
+		runevent.KindAgentToolUpdated,
+		"edit_call_1",
+		"future-active-state",
+		compactEditLifecyclePayload("tool_call_update", "edit_call_1", "internal/app/server.go", "old\n", "new\n", "future-active-state"),
+	)
+	secondEvent := toolLifecycleEvent(
+		runevent.KindAgentToolUpdated,
+		"edit_call_2",
+		"another-future-state",
+		compactEditLifecyclePayload("tool_call_update", "edit_call_2", "internal/app/worker.go", "old\n", "new\n", "another-future-state"),
+	)
+
+	publishConsoleEvent(t, sink, firstEvent)
+	publishConsoleEvent(t, sink, secondEvent)
+	publishConsoleEvent(t, sink, firstEvent)
+	publishConsoleEvent(t, sink, secondEvent)
+	publishConsoleEvent(t, sink, runevent.RunEvent{
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentStatus,
+		Payload: []byte(`{"status":"session_closed"}`),
+	})
+	publishConsoleEvent(t, sink, firstEvent)
+	publishConsoleEvent(t, sink, secondEvent)
+
+	want := firstLine + secondLine + firstLine + secondLine
+	if buffer.String() != want {
+		t.Fatalf("expected session terminal status to clear active tool state\nwant: %q\n got: %q", want, buffer.String())
+	}
+}
+
+func TestConsoleDisplaySinkSerializesConcurrentPublish(t *testing.T) {
+	writer := newBlockingSerialWriter()
 	sink := NewConsoleDisplaySink(writer)
+	first := toolLifecycleEvent(
+		runevent.KindAgentToolUpdated,
+		"edit_call_1",
+		"running",
+		compactEditLifecyclePayload("tool_call_update", "edit_call_1", "internal/app/first.go", "old\n", "new\n", "running"),
+	)
+	second := toolLifecycleEvent(
+		runevent.KindAgentToolUpdated,
+		"edit_call_2",
+		"running",
+		compactEditLifecyclePayload("tool_call_update", "edit_call_2", "internal/app/second.go", "old\n", "new\n", "running"),
+	)
+	releaseFirst := sync.OnceFunc(writer.releaseFirst)
+	t.Cleanup(releaseFirst)
+
+	firstDone := make(chan error, 1)
+	go func() {
+		firstDone <- sink.Publish(context.Background(), first)
+	}()
+
+	select {
+	case <-writer.firstEntered:
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for first write")
+	}
+
+	secondDone := make(chan error, 1)
+	go func() {
+		secondDone <- sink.Publish(context.Background(), second)
+	}()
+
+	releaseFirst()
+	if err := <-firstDone; err != nil {
+		t.Fatalf("first publish: %v", err)
+	}
+	if err := <-secondDone; err != nil {
+		t.Fatalf("second publish: %v", err)
+	}
+
+	want := "edit internal/app/first.go (+1/-1)\nedit internal/app/second.go (+1/-1)\n"
+	if writer.String() != want {
+		t.Fatalf("expected serialized writer output\nwant: %q\n got: %q", want, writer.String())
+	}
+}
+
+func TestConsoleDisplaySinkDoesNotAdvanceStateWhenWriteFails(t *testing.T) {
+	const line = "edit internal/app/server.go (+1/-1)\n"
 	event := toolLifecycleEvent(
 		runevent.KindAgentToolUpdated,
 		"edit_call_1",
@@ -818,16 +938,58 @@ func TestConsoleDisplaySinkDoesNotAdvanceStateWhenWriteFails(t *testing.T) {
 		compactEditLifecyclePayload("tool_call_update", "edit_call_1", "internal/app/server.go", "old\n", "new\n", "running"),
 	)
 
-	if err := sink.Publish(context.Background(), event); !errors.Is(err, writeErr) {
-		t.Fatalf("expected first publish to fail with write error, got %v", err)
-	}
-	if err := sink.Publish(context.Background(), event); err != nil {
-		t.Fatalf("expected retry to publish after failed write, got %v", err)
-	}
+	t.Run("writer error remains retryable", func(t *testing.T) {
+		writeErr := errors.New("write failed")
+		writer := &failOnceWriter{err: writeErr}
+		sink := NewConsoleDisplaySink(writer)
 
-	if writer.buffer.String() != "edit internal/app/server.go (+1/-1)\n" {
-		t.Fatalf("expected retry to write the summary, got %q", writer.buffer.String())
-	}
+		if err := sink.Publish(context.Background(), event); !errors.Is(err, writeErr) {
+			t.Fatalf("expected first publish to fail with write error, got %v", err)
+		}
+		if err := sink.Publish(context.Background(), event); err != nil {
+			t.Fatalf("expected retry to publish after failed write, got %v", err)
+		}
+
+		if writer.buffer.String() != line {
+			t.Fatalf("expected retry to write the summary, got %q", writer.buffer.String())
+		}
+	})
+
+	t.Run("short write remains retryable", func(t *testing.T) {
+		writer := &shortOnceWriter{}
+		sink := NewConsoleDisplaySink(writer)
+
+		if err := sink.Publish(context.Background(), event); !errors.Is(err, io.ErrShortWrite) {
+			t.Fatalf("expected first publish to fail with short write, got %v", err)
+		}
+		if err := sink.Publish(context.Background(), event); err != nil {
+			t.Fatalf("expected retry to publish after short write, got %v", err)
+		}
+
+		want := line[:len(line)-1] + line
+		if writer.buffer.String() != want {
+			t.Fatalf("expected retry after partial write\nwant: %q\n got: %q", want, writer.buffer.String())
+		}
+	})
+
+	t.Run("critical fanout propagates writer error", func(t *testing.T) {
+		writeErr := errors.New("display failed")
+		writer := &failOnceWriter{err: writeErr}
+		sink := NewConsoleDisplaySink(writer)
+		fanout := runevent.NewFanout([]runevent.Sink{sink}, nil)
+		t.Cleanup(fanout.Close)
+
+		if err := fanout.Publish(context.Background(), event); !errors.Is(err, writeErr) {
+			t.Fatalf("expected critical fanout to return display writer error, got %v", err)
+		}
+		if err := fanout.Publish(context.Background(), event); err != nil {
+			t.Fatalf("expected retry through critical fanout to publish, got %v", err)
+		}
+
+		if writer.buffer.String() != line {
+			t.Fatalf("expected retry to write the summary, got %q", writer.buffer.String())
+		}
+	})
 }
 
 type failOnceWriter struct {
@@ -842,6 +1004,66 @@ func (writer *failOnceWriter) Write(p []byte) (int, error) {
 		return 0, writer.err
 	}
 	return writer.buffer.Write(p)
+}
+
+type shortOnceWriter struct {
+	writes int
+	buffer strings.Builder
+}
+
+func (writer *shortOnceWriter) Write(p []byte) (int, error) {
+	writer.writes++
+	if writer.writes == 1 {
+		short := len(p) - 1
+		if short < 0 {
+			short = 0
+		}
+		if _, err := writer.buffer.Write(p[:short]); err != nil {
+			return 0, err
+		}
+		return short, nil
+	}
+	return writer.buffer.Write(p)
+}
+
+type blockingSerialWriter struct {
+	active       atomic.Bool
+	firstBlocked atomic.Bool
+	firstEntered chan struct{}
+	release      chan struct{}
+	mu           sync.Mutex
+	buffer       strings.Builder
+}
+
+func newBlockingSerialWriter() *blockingSerialWriter {
+	return &blockingSerialWriter{
+		firstEntered: make(chan struct{}),
+		release:      make(chan struct{}),
+	}
+}
+
+func (writer *blockingSerialWriter) Write(p []byte) (int, error) {
+	if !writer.active.CompareAndSwap(false, true) {
+		return 0, errors.New("concurrent write")
+	}
+	defer writer.active.Store(false)
+	if writer.firstBlocked.CompareAndSwap(false, true) {
+		close(writer.firstEntered)
+		<-writer.release
+	}
+	writer.mu.Lock()
+	defer writer.mu.Unlock()
+	return writer.buffer.Write(p)
+}
+
+func (writer *blockingSerialWriter) releaseFirst() {
+	close(writer.release)
+}
+
+func (writer *blockingSerialWriter) String() string {
+	writer.mu.Lock()
+	defer writer.mu.Unlock()
+	return writer.buffer.String()
 }
 
 func publishConsoleEvent(t *testing.T, sink runevent.Sink, event runevent.RunEvent) {

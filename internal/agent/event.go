@@ -177,7 +177,13 @@ func (sink *ConsoleDisplaySink) Publish(_ context.Context, event runevent.RunEve
 		return nil
 	}
 	if !isToolLifecycleKind(update.Kind) || strings.TrimSpace(event.ToolID) == "" {
-		return sink.writeComplete(text)
+		if err := sink.writeComplete(text); err != nil {
+			return err
+		}
+		if isSessionTerminalStatus(update) {
+			sink.lastByTool = nil
+		}
+		return nil
 	}
 
 	sink.ensureToolState()
