@@ -1,0 +1,19 @@
+Category: backend
+Profile source: project
+Profile inherited from: —
+Preferred Selection: codex / qa-backend / high
+Fallback Chain:
+  1. claude / claude-fable-5 / medium
+Recommendation source: backend
+Recommendations snapshot: 2026-07-16
+Recommendations:
+  1. codex / gpt-5.6-sol / high — DeepSWE v1.1 69%, average cost $3.47, source 2026-07-16, category_specific=false
+     rationale: Best default for complex repository changes, debugging, and multi-file implementation.
+  2. codex / gpt-5.6-terra / max — DeepSWE v1.1 70%, average cost $4.95, source 2026-07-16, category_specific=false
+     rationale: Quality-preserving alternative with a strong long-horizon result.
+  3. claude / claude-fable-5 / high — DeepSWE v1.1 69%, average cost $9.18, source 2026-07-16, category_specific=false
+     rationale: Cross-runtime option for architecture-heavy or broad refactoring work.
+  4. codex / gpt-5.5 / xhigh — DeepSWE v1.1 67%, average cost $7.23, source 2026-07-16, category_specific=false
+     rationale: Stable legacy choice when a repository has already validated it.
+  5. codex / gpt-5.6-luna / max — DeepSWE v1.1 67%, average cost $3.03, source 2026-07-16, category_specific=false
+     rationale: Lower-cost option for bounded backend slices.

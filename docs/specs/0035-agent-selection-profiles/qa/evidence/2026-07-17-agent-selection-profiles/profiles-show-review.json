@@ -1,0 +1,100 @@
+{
+  "schema": "roundfix/profiles/v1",
+  "profiles": [
+    {
+      "category": "review",
+      "source": "built-in",
+      "inherited_from": "",
+      "recommendation_source": "review",
+      "preferred": {
+        "runtime": "codex",
+        "model": "gpt-5.6-sol",
+        "reasoning_effort": "high"
+      },
+      "fallbacks": [
+        {
+          "runtime": "codex",
+          "model": "gpt-5.6-terra",
+          "reasoning_effort": "max"
+        }
+      ],
+      "recommendations": [
+        {
+          "category": "review",
+          "rank": 1,
+          "selection": {
+            "runtime": "codex",
+            "model": "gpt-5.6-sol",
+            "reasoning_effort": "high"
+          },
+          "benchmark": "DeepSWE v1.1",
+          "result_percent": 69,
+          "average_cost_usd": 3.47,
+          "source_as_of": "2026-07-16",
+          "rationale": "Matches the OpenClaw autoreview default and balances review depth with cost.",
+          "category_specific": false
+        },
+        {
+          "category": "review",
+          "rank": 2,
+          "selection": {
+            "runtime": "codex",
+            "model": "gpt-5.6-terra",
+            "reasoning_effort": "max"
+          },
+          "benchmark": "DeepSWE v1.1",
+          "result_percent": 70,
+          "average_cost_usd": 4.95,
+          "source_as_of": "2026-07-16",
+          "rationale": "Strong alternative when Sol cannot start or a quality-preserving fallback is required.",
+          "category_specific": false
+        },
+        {
+          "category": "review",
+          "rank": 3,
+          "selection": {
+            "runtime": "claude",
+            "model": "claude-fable-5",
+            "reasoning_effort": "high"
+          },
+          "benchmark": "DeepSWE v1.1",
+          "result_percent": 69,
+          "average_cost_usd": 9.18,
+          "source_as_of": "2026-07-16",
+          "rationale": "Cross-runtime review option with a competitive general coding result.",
+          "category_specific": false
+        },
+        {
+          "category": "review",
+          "rank": 4,
+          "selection": {
+            "runtime": "codex",
+            "model": "gpt-5.5",
+            "reasoning_effort": "xhigh"
+          },
+          "benchmark": "DeepSWE v1.1",
+          "result_percent": 67,
+          "average_cost_usd": 7.23,
+          "source_as_of": "2026-07-16",
+          "rationale": "Established predecessor for repositories that prefer a validated older generation.",
+          "category_specific": false
+        },
+        {
+          "category": "review",
+          "rank": 5,
+          "selection": {
+            "runtime": "claude",
+            "model": "claude-opus-4-8",
+            "reasoning_effort": "high"
+          },
+          "benchmark": "DeepSWE v1.1",
+          "result_percent": 52,
+          "average_cost_usd": 4.28,
+          "source_as_of": "2026-07-16",
+          "rationale": "Design- and architecture-oriented alternative; lower general benchmark result keeps it fifth.",
+          "category_specific": false
+        }
+      ]
+    }
+  ]
+}
