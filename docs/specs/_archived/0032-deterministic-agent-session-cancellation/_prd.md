@@ -1,9 +1,12 @@
 ---
 spec: 0032-deterministic-agent-session-cancellation
-status: active
+status: archived
 created: 2026-07-16
 surfaces: [backend]
+archived: "2026-07-16"
+source_slug: 0032-deterministic-agent-session-cancellation
 ---
+
 
 # Deterministic Agent Session cancellation
 
