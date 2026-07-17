@@ -220,7 +220,11 @@ func TestRunInitForceOverwritesExistingConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read config: %v", err)
 	}
-	if !strings.Contains(string(content), "agent: codex") || strings.Contains(string(content), "agent: claude") {
+	if !strings.Contains(string(content), "profiles:") ||
+		!strings.Contains(string(content), "model: gpt-5.6-sol") ||
+		!strings.Contains(string(content), "model: claude-fable-5") ||
+		strings.Contains(string(content), "agent: claude") ||
+		strings.Contains(string(content), "runtimes:") {
 		t.Fatalf("expected generated config to replace old content, got %s", string(content))
 	}
 	if !strings.Contains(stdout.String(), "Roundfix config updated") {
@@ -303,6 +307,92 @@ func TestRunCommandHelp(t *testing.T) {
 				t.Fatalf("expected no stderr, got %q", stderr.String())
 			}
 		})
+	}
+}
+
+func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
+	repoRoot := cliTestRepoRoot(t)
+	usage := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "usage.md"))
+	configuration := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "configuration.md"))
+	roundfixSkill := mustRead(t, filepath.Join(repoRoot, ".agents", "skills", "roundfix", "SKILL.md"))
+
+	for _, doc := range []struct {
+		name    string
+		content string
+	}{
+		{name: "usage", content: usage},
+		{name: "configuration", content: configuration},
+		{name: "roundfix skill", content: roundfixSkill},
+	} {
+		for _, want := range []string{
+			"roundfix profiles show",
+			"roundfix profiles configure",
+			"roundfix profiles validate",
+			"gpt-5.6-sol",
+			"gpt-5.6-terra",
+			"claude-fable-5",
+			"2026-07-16",
+			"category_specific: false",
+			"agent_work_started",
+			"defaults.agent",
+			"runtimes",
+		} {
+			if !strings.Contains(doc.content, want) {
+				t.Fatalf("%s documentation is missing %q", doc.name, want)
+			}
+		}
+	}
+
+	for _, want := range []string{
+		"roundfix/profiles/v1",
+		"roundfix/profiles-configure/v1",
+		"roundfix/profiles-validate/v1",
+		"notification-first",
+		"only then activates",
+		"no fallback",
+	} {
+		if !strings.Contains(roundfixSkill, want) {
+			t.Fatalf("roundfix skill is missing %q", want)
+		}
+	}
+
+	for _, path := range []string{
+		filepath.Join(repoRoot, ".agents", "skills", "write-tasks", "SKILL.md"),
+		filepath.Join(repoRoot, "skills", "write-tasks", "SKILL.md"),
+	} {
+		content := mustRead(t, path)
+		for _, forbidden := range []string{
+			"gpt-5.6",
+			"claude-fable",
+			"roundfix profiles",
+			"profiles:",
+			"recommendation",
+			"ranking",
+			"runtime:",
+			"model:",
+		} {
+			if strings.Contains(content, forbidden) {
+				t.Fatalf("%s must not contain profile policy term %q", path, forbidden)
+			}
+		}
+	}
+}
+
+func cliTestRepoRoot(t *testing.T) string {
+	t.Helper()
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("get working directory: %v", err)
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			t.Fatalf("could not find repository root from %q", dir)
+		}
+		dir = parent
 	}
 }
 

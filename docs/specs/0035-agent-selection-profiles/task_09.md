@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0035-agent-selection-profiles
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -24,21 +24,21 @@ Document complete profile configuration, official identifiers, category inherita
 
 ## Subtasks
 
-- [ ] Update profile configuration and CLI user guidance.
-- [ ] Document official ids, fallback activation, and migration boundaries.
-- [ ] Add recommendation limitations and source-date language.
-- [ ] Update generated Project/User Config examples.
-- [ ] Update the canonical Roundfix skill command recipes.
-- [ ] Regenerate embedded owned skills and pin contract tests.
+- [x] Update profile configuration and CLI user guidance.
+- [x] Document official ids, fallback activation, and migration boundaries.
+- [x] Add recommendation limitations and source-date language.
+- [x] Update generated Project/User Config examples.
+- [x] Update the canonical Roundfix skill command recipes.
+- [x] Regenerate embedded owned skills and pin contract tests.
 
 ## Acceptance Criteria
 
-- [ ] User guidance provides complete copy-paste profile examples with at least one fallback per required category.
-- [ ] Optional categories, atomic precedence, one-Run overrides, and legacy migration are unambiguous.
-- [ ] Recommendation documentation states the snapshot date, cost/result caveat, `category_specific: false`, and non-routing boundary.
-- [ ] Fallback documentation states notification-before-activation and no fallback after work starts.
-- [ ] The Roundfix skill matches every shipped public command and synchronized copies are byte-identical.
-- [ ] No `write-tasks` skill file contains runtime ids, model ids, rankings, or profile configuration instructions.
+- [x] User guidance provides complete copy-paste profile examples with at least one fallback per required category.
+- [x] Optional categories, atomic precedence, one-Run overrides, and legacy migration are unambiguous.
+- [x] Recommendation documentation states the snapshot date, cost/result caveat, `category_specific: false`, and non-routing boundary.
+- [x] Fallback documentation states notification-before-activation and no fallback after work starts.
+- [x] The Roundfix skill matches every shipped public command and synchronized copies are byte-identical.
+- [x] No `write-tasks` skill file contains runtime ids, model ids, rankings, or profile configuration instructions.
 
 ## Context
 
@@ -63,3 +63,30 @@ Document complete profile configuration, official identifiers, category inherita
 - `_techspec.md` → Configuration schema; Profile CLI; Recommendation data; `write-tasks` contract; Skill ownership risk; Build Order 8.
 - `references/model-ranking.md` → recommendation source and interpretation rules.
 - `references/openclaw-skill-analysis.md` → CLI ownership and fallback guardrails.
+
+## Result
+
+Implemented the documentation and owned-skill synchronization slice:
+
+- Updated `docs/user-guide/usage.md` and `docs/user-guide/configuration.md` with complete required profile YAML, official identifiers, optional-category inheritance, atomic Project/User/built-in precedence, one-Run Preferred Selection overrides, profile CLI text/JSON flows, advisory recommendation boundaries, notification-first fallback, no fallback after `agent_work_started`, and legacy migration guidance.
+- Updated generated config examples in `.roundfixrc.yml` and `internal/config.DefaultConfigYAML()` to emit only the new `profiles` schema with at least one fallback for each required category.
+- Updated `.agents/skills/roundfix/SKILL.md`, regenerated `skills/roundfix/SKILL.md`, and refreshed the setup-context snapshot digest for the Roundfix skill so owned skill audits remain clean.
+- Added `TestProfileGeneratedConfigUsesCompleteProfilesSchema` and `TestProfilesDocumentationContractMatchesPublicGuidance` to pin generated config and public documentation contracts, including the `write-tasks` no-policy boundary.
+
+Acceptance evidence:
+
+- Complete copy-paste examples: `rtk grep -F 'claude-fable-5' docs/user-guide/usage.md` found official frontend examples, and `TestProfileGeneratedConfigUsesCompleteProfilesSchema` passed with required profiles and fallbacks.
+- Optional categories, atomic precedence, overrides, and migration: documented in usage/configuration guides and covered by `TestProfilesDocumentationContractMatchesPublicGuidance`.
+- Recommendations: usage/configuration/skill docs state `2026-07-16`, cost/result evidence, `category_specific: false`, and advisory non-routing/non-mutating boundaries; contract test passed.
+- Fallback boundaries: docs and skill state notification-before-activation and no fallback after `agent_work_started`; contract test passed.
+- Skill sync: `rtk cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md && rtk cmp .agents/skills/write-tasks/SKILL.md skills/write-tasks/SKILL.md` passed, and `rtk make skills-sync-check` passed.
+- `write-tasks` boundary: `TestProfilesDocumentationContractMatchesPublicGuidance` passed, asserting no runtime ids, model ids, rankings, or profile configuration terms in canonical or embedded `write-tasks`.
+
+Verification:
+
+- `rtk grep -F 'roundfix profiles show' docs/user-guide/usage.md && rtk grep -F 'roundfix profiles configure' docs/user-guide/usage.md && rtk grep -F 'roundfix profiles validate' docs/user-guide/usage.md && rtk grep -F 'claude-fable-5' docs/user-guide/usage.md` — passed.
+- `rtk cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md && rtk cmp .agents/skills/write-tasks/SKILL.md skills/write-tasks/SKILL.md` — passed.
+- `rtk make skills-sync-check` — passed.
+- `rtk go test ./internal/config ./internal/cli -run 'Test(ProfileGeneratedConfig|ProfilesDocumentationContract)' -count=1` — passed, 2 tests in 2 packages.
+- `rtk make setup-context-check` — passed, 79 tests.
+- `rtk make verify` — passed, including `rtk go test ./...` with 1544 tests, setup-context checks, `roundfix skills check`, and build.

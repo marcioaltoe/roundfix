@@ -21,7 +21,7 @@ Removed keys that Roundfix registers as deprecated never break an existing
 config — they are ignored with one stderr warning naming the replacement:
 
 - `resolve.concurrent` → `worktree.concurrency`
-- `defaults.model` → `runtimes.<runtime>.model`
+- `defaults.model` → `profiles.<category>.preferred.model`
 
 Unknown keys that are not registered as deprecated fail strict validation.
 
@@ -29,23 +29,57 @@ Unknown keys that are not registered as deprecated fail strict validation.
 
 ```yaml
 defaults:
-  agent: codex
   verification: make verify
   # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
   artifact_dir: ""
   auto_commit: true
 
-runtimes:
-  codex:
-    model: gpt-5.6-sol
-    # Empty reasoning_effort means the Agent Model manages reasoning.
-    reasoning_effort: ""
-  claude:
-    model: opus
-    reasoning_effort: ""
-  opencode:
-    model: ""
-    reasoning_effort: ""
+profiles:
+  general:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
+  backend:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
+  frontend:
+    preferred:
+      runtime: claude
+      model: claude-fable-5
+      reasoning_effort: medium
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-sol
+        reasoning_effort: high
+  qa:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
+  review:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
 
 review_source:
   name: coderabbit
@@ -100,62 +134,68 @@ resolve:
   batch_size: 3
 ```
 
-## Agent selection
+## Agent selection profiles
 
-Roundfix owns the Agent Model and Default Reasoning Effort for every Agent
-Session. It resolves each value independently — built-in defaults, User
-Config, Project Config, then one-Run flags — and never reads or mutates
-runtime-owned model configuration.
+Roundfix owns Agent Selection Profiles in Project Config, User Config, and
+built-ins. Each profile is one atomic object: a complete Preferred Selection
+plus a non-empty ordered Fallback Chain. Project Config replaces User Config,
+User Config replaces built-ins, and no tuple field or fallback entry merges
+across scopes.
 
-Built-in selections:
+Required profiles are `general`, `backend`, `frontend`, `qa`, and `review`.
+Optional Task Type profiles `data`, `infra`, `docs`, `test`, and `chore`
+inherit the effective `general` profile when absent. `roundfix profiles show`
+labels that inherited recommendation source instead of duplicating stored
+config.
 
-- Codex: `model: gpt-5.5`, `reasoning_effort: xhigh`.
-- Claude: `model: opus`, `reasoning_effort: ""` (model-managed).
-- OpenCode: no built-in model. Provide one through config, its one-Run flag,
-  or Interactive Input.
+Built-in required profiles use these official identifiers:
 
-An empty `reasoning_effort` is a deliberate model-managed selection: Roundfix
-assigns the Agent Model and skips the runtime-specific reasoning option, and
-Run headers render `Default Reasoning Effort: model-managed`. This is the
-required shape for the codex `gpt-5.6` family, whose models manage reasoning
-and reject every `reasoning_effort` value exposed by codex-acp.
+- `general`, `backend`, `qa`, `review`: preferred `codex / gpt-5.6-sol / high`;
+  fallback `codex / gpt-5.6-terra / max`.
+- `frontend`: preferred `claude / claude-fable-5 / medium`; fallback
+  `codex / gpt-5.6-sol / high`.
 
-Interactive Input asks for Agent, Agent Model, then Default Reasoning Effort.
-The Codex Model Catalog is ordered `gpt-5.6-sol`, `gpt-5.6-terra`,
-`gpt-5.6-luna`, `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex-spark`;
-the Claude catalog is `Default`, `Opus`, `Fable`, `Sonnet`, `Haiku`, with
-`Default` showing the concrete configured model. Catalogs are picker data, not
-allowlists: non-interactive flags and typed values can pass a custom pair,
-which the installed ACP adapter validates during Preflight Validation. A Batch
-that later fails because the Agent Session rejects the model reports
-`Agent Model "<model>" not advertised by runtime "<runtime>"; advertised: <list>`
-— and `roundfix doctor` shows the same probe as its `model:` line.
+Custom model strings are accepted verbatim for forward-compatible ACP proof.
+They are not added to an allowlist, and the installed runtime adapter proves
+them before any Run mutation. An explicit empty `reasoning_effort: ""` means
+model-managed reasoning; omitted `reasoning_effort` is invalid because the
+runtime would not receive a complete tuple.
 
-Override both values for one Run without touching config:
+Manage profiles with:
 
 ```bash
-roundfix resolve --pr 123 --agent codex --model gpt-5.6-sol --reasoning-effort "" --no-input
-roundfix implement --spec example-spec --agent claude --model opus --reasoning-effort "" --qa --detach
+roundfix profiles show --category backend
+roundfix profiles show --all --json
+roundfix profiles configure --scope project --file profiles.yml --dry-run --json
+roundfix profiles validate --category review --json
 ```
 
-An explicit empty `--reasoning-effort ""` is the one-Run model-managed
-override; an explicit empty `--model ""` is invalid and exits `2`.
+`profiles configure` writes only the `profiles` schema after strict validation
+and confirmation. `--dry-run` leaves config bytes unchanged and reports
+`changed: false` in JSON. `profiles validate` proves the selected tuples
+through disposable ACP sessions, deduplicates exact tuples, and closes every
+session without creating a Run, worktree, prompt, credential, or runtime-owned
+setting.
 
-### Fallback Selection
+One-Run flags such as `--agent`, `--model`, and `--reasoning-effort` replace
+only the Preferred Selection for each relevant category and preserve that
+category's Fallback Chain. When one override spans multiple Task or QA
+categories, text and JSON output include a cross-category warning.
 
-If a runtime rejects the selected Agent Model or a non-empty reasoning value,
-Roundfix probes that runtime's catalog newest-first and its reasoning
-vocabulary highest-first — never crossing to another runtime and never
-re-proposing the failed model. Interactively, it presents the proven Fallback
-Selection and asks `Use this Fallback Selection for this Run? [y/N]:`; the
-confirmation applies to that Run only. With `--no-input`, `--detach`, or
-non-interactive stderr, it exits `2` before creating a Run and prints one
-concrete `Re-run:` line with explicit `--model` and `--reasoning-effort`
-flags. There is no flag or key that pre-authorizes a fallback.
+Recommendations shown by `profiles show` are a dated advisory snapshot
+(`2026-07-16`) with five entries per category, benchmark/result/cost evidence,
+rationale, and `category_specific: false`. Recommendation rank never changes
+configuration, proof order, Preferred Selection, Fallback Chain, or routing.
 
-Run startup and inspection surfaces show the stored selection
-(`Agent Model: …`, `Default Reasoning Effort: …`); `attach` reads those values
-from the Run row, so later config changes never rewrite a historical Run.
+Automatic fallback is pre-prompt only. Roundfix records and shows the fallback
+notification before activating the next configured tuple. Once
+`agent_work_started` is recorded, no prompt, tool, verification, cancellation,
+rate-limit, or session-loss failure can start a replacement session.
+
+Legacy configs with `defaults.agent` or top-level `runtimes` still load during
+the compatibility window only when the same file has no `profiles` section.
+Do not edit runtime-owned settings or credentials for migration; write complete
+profiles with `roundfix profiles configure --scope user|project`.
 
 ## Spec Root
 

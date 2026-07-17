@@ -37,6 +37,177 @@ Both loops keep the same contract, which is what lets an agent drive them:
 An Agent runtime is selected with `--agent`; supported values are `codex`,
 `claude`, and `opencode`. The Review Source is `coderabbit`.
 
+## Agent Selection Profiles
+
+Roundfix routes Agent work through Agent Selection Profiles. Each profile is an
+atomic object: one Preferred Selection plus a non-empty ordered Fallback Chain.
+Project Config wins over User Config, which wins over built-ins; when a higher
+scope defines a profile, Roundfix uses that whole object and never merges tuple
+fields or fallback entries across scopes.
+
+The required built-in categories are `general`, `backend`, `frontend`, `qa`,
+and `review`. Optional Task Type categories `data`, `infra`, `docs`, `test`,
+and `chore` inherit the effective `general` profile when absent; if you define
+one, it must be complete. Built-ins use official model identifiers:
+
+- `general`, `backend`, `qa`, and `review`: preferred
+  `codex / gpt-5.6-sol / high`, fallback
+  `codex / gpt-5.6-terra / max`.
+- `frontend`: preferred `claude / claude-fable-5 / medium`, fallback
+  `codex / gpt-5.6-sol / high`.
+
+Use this complete Project Config or User Config shape when you want explicit
+profiles for every required category:
+
+```yaml
+profiles:
+  general:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
+  backend:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
+  frontend:
+    preferred:
+      runtime: claude
+      model: claude-fable-5
+      reasoning_effort: medium
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-sol
+        reasoning_effort: high
+  qa:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
+  review:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
+```
+
+`model` values you type explicitly are forward-compatible custom values. For
+example, an adapter-specific alias is accepted as user configuration and sent to
+the ACP Runtime verbatim; Roundfix labels only the built-in identifiers above as
+official.
+
+### Inspect profiles
+
+`profiles show` is read-only and prints the effective source, inherited source,
+Preferred Selection, fallback order, and five advisory recommendations:
+
+```bash
+roundfix profiles show
+roundfix profiles show --category backend
+roundfix profiles show --category backend --json
+```
+
+JSON uses schema `roundfix/profiles/v1`. Recommendations come from a
+2026-07-16 five-entry snapshot. Each row includes benchmark, result, average
+cost, source date, rationale, and `category_specific: false`. They are advisory
+only: the list is not category-specific proof, not automatic routing input, and
+never mutates User Config or Project Config.
+
+### Configure profiles
+
+`profiles configure` writes only the new `profiles` schema after strict
+validation and confirmation:
+
+```bash
+roundfix profiles configure --scope project
+roundfix profiles configure --scope user --file profiles.yml --dry-run --json
+roundfix profiles configure --scope project --file profiles.yml --json
+```
+
+Without `--file`, Roundfix collects one complete profile through Interactive
+Input, including at least one fallback, then shows the normalized profile and
+target scope before asking for confirmation. With `--file`, the input can be a
+strict fragment such as:
+
+```yaml
+backend:
+  preferred:
+    runtime: codex
+    model: gpt-5.6-sol
+    reasoning_effort: high
+  fallbacks:
+    - runtime: claude
+      model: claude-fable-5
+      reasoning_effort: high
+```
+
+`--dry-run` reports `changed: false` and leaves files unchanged. `--json` uses
+schema `roundfix/profiles-configure/v1`. Configuration failures name the file,
+category, invalid value, and next action; successful writes preserve unrelated
+config keys and never edit runtime-owned settings, credentials, or adapter
+configuration.
+
+### Validate profiles
+
+`profiles validate` is read-only proof through disposable ACP sessions:
+
+```bash
+roundfix profiles validate
+roundfix profiles validate --category review --json
+```
+
+The command proves each distinct runtime/model/reasoning tuple once, reports
+every category reference that uses it, sends no prompt, creates no Run, and
+closes every disposable session on success or error. JSON uses schema
+`roundfix/profiles-validate/v1`. A failed proof names the runtime, model,
+reasoning effort, affected categories, adapter cause, and the next
+`roundfix profiles configure` or `roundfix profiles validate` action.
+
+### One-Run overrides and fallback boundaries
+
+Agent-starting commands still accept one-Run `--agent`, `--model`, and
+`--reasoning-effort` flags. Those flags replace only the Preferred Selection for
+each relevant category in that invocation; each category keeps its configured
+Fallback Chain. If one override applies across multiple Task or QA categories,
+Roundfix emits a warning in text output and JSON metadata.
+
+Operational Runs prove every relevant preferred and fallback tuple before Run
+creation. If a session cannot start after the Run exists, Roundfix records and
+renders the fallback notification before creating or preparing the next fallback
+session. Automatic fallback is allowed only before the first prompt. After
+`agent_work_started`, prompt, tool, verification, cancellation, rate-limit, or
+session-loss failures use normal Task or Run failure semantics; Roundfix never
+starts a replacement session over possibly changed state.
+
+### Legacy migration
+
+The legacy `defaults.agent` and `runtimes.<runtime>.model` /
+`runtimes.<runtime>.reasoning_effort` keys remain readable only while a scope
+has no `profiles` section. A same-scope mix fails with migration guidance. To
+migrate, remove `defaults.agent` and `runtimes`, then write complete profiles:
+
+```bash
+roundfix profiles configure --scope project --file profiles.yml
+roundfix profiles validate --json
+```
+
 ## Release planning before publication
 
 Release work starts with the read-only Release Plan Command:
@@ -299,6 +470,7 @@ a Run is Active.
 | `settle` | Recover one failed Task from its kept worktree |
 | `archive` | Archive a completed, QA-passed Spec |
 | `release plan` | Classify committed release changes without mutating release state |
+| `profiles` | Show, configure, and validate Agent Selection Profiles |
 | `fetch` | Download Review Issue artifacts for a PR |
 | `resolve` | Resolve downloaded Review Issues once |
 | `watch` | Fetch and resolve in a watched loop |

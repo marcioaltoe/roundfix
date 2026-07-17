@@ -1155,7 +1155,7 @@ resolve:
 }
 
 func TestLoadWarnsAndIgnoresDeprecatedDefaultsModel(t *testing.T) {
-	const warning = "config: defaults.model is deprecated and ignored; use runtimes.<runtime>.model\n"
+	const warning = "config: defaults.model is deprecated and ignored; use profiles.<category>.preferred.model\n"
 
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
@@ -1554,11 +1554,11 @@ func TestInitCreatesUserConfig(t *testing.T) {
 		t.Fatalf("expected user result at %q, got %#v", expectedPath, result)
 	}
 	content := mustRead(t, expectedPath)
-	if !strings.Contains(content, "agent: codex") || !strings.Contains(content, "agent_full_access: false") ||
+	if !strings.Contains(content, "agent_full_access: false") ||
 		!strings.Contains(content, `artifact_dir: ""`) || !strings.Contains(content, "Roundfix Home artifacts/<repo-id>") ||
-		!strings.Contains(content, "runtimes:") || !strings.Contains(content, "model: gpt-5.5") ||
-		!strings.Contains(content, "reasoning_effort: xhigh") || !strings.Contains(content, "model: opus") ||
-		!strings.Contains(content, "claude:\n    model: opus\n    reasoning_effort: \"\"") ||
+		!strings.Contains(content, "profiles:") || !strings.Contains(content, "model: gpt-5.6-sol") ||
+		!strings.Contains(content, "model: gpt-5.6-terra") || !strings.Contains(content, "model: claude-fable-5") ||
+		!strings.Contains(content, "fallbacks:") ||
 		!strings.Contains(content, "specs:") || !strings.Contains(content, `root: "docs/specs"`) ||
 		!strings.Contains(content, "worktree:") || !strings.Contains(content, `location: "~/.roundfix/worktrees"`) ||
 		!strings.Contains(content, "concurrency: 2") || !strings.Contains(content, "copy: []") ||
@@ -1572,11 +1572,66 @@ func TestInitCreatesUserConfig(t *testing.T) {
 	if strings.Contains(content, "resolve.concurrent") || strings.Contains(content, "  concurrent:") {
 		t.Fatalf("expected generated config to omit resolve.concurrent, got %s", content)
 	}
-	if strings.Contains(content, "defaults:\n  agent: codex\n  model:") {
-		t.Fatalf("expected generated config to omit defaults.model, got %s", content)
+	for _, forbidden := range []string{"defaults:\n  agent:", "runtimes:", "model: gpt-5.5", "model: opus"} {
+		if strings.Contains(content, forbidden) {
+			t.Fatalf("expected generated config to omit legacy selection key %q, got %s", forbidden, content)
+		}
 	}
 	if _, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir}); err != nil {
 		t.Fatalf("expected generated User Config to load, got %v", err)
+	}
+}
+
+func TestProfileGeneratedConfigUsesCompleteProfilesSchema(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+
+	result, err := Init(context.Background(), InitOptions{
+		Scope:   InitScopeProject,
+		HomeDir: homeDir,
+		WorkDir: workDir,
+	})
+	if err != nil {
+		t.Fatalf("init project config: %v", err)
+	}
+	content := mustRead(t, result.Path)
+	for _, want := range []string{
+		"profiles:",
+		"general:",
+		"backend:",
+		"frontend:",
+		"qa:",
+		"review:",
+		"model: gpt-5.6-sol",
+		"model: gpt-5.6-terra",
+		"model: claude-fable-5",
+		"fallbacks:",
+	} {
+		if !strings.Contains(content, want) {
+			t.Fatalf("generated config missing %q:\n%s", want, content)
+		}
+	}
+	for _, forbidden := range []string{"defaults:\n  agent:", "runtimes:", "defaults.model"} {
+		if strings.Contains(content, forbidden) {
+			t.Fatalf("generated config contains legacy selection key %q:\n%s", forbidden, content)
+		}
+	}
+	loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+	if err != nil {
+		t.Fatalf("load generated config: %v", err)
+	}
+	for _, category := range []WorkCategory{CategoryGeneral, CategoryBackend, CategoryFrontend, CategoryQA, CategoryReview} {
+		resolved, err := ResolveProfile(loaded.Config, category, nil)
+		if err != nil {
+			t.Fatalf("resolve generated profile %s: %v", category, err)
+		}
+		if resolved.Source != ProfileSourceProject {
+			t.Fatalf("%s source = %q, want project", category, resolved.Source)
+		}
+		if len(resolved.Profile.Fallbacks) == 0 {
+			t.Fatalf("%s generated profile has no fallback: %#v", category, resolved.Profile)
+		}
 	}
 }
 
@@ -1658,7 +1713,11 @@ func TestInitForceOverwritesExistingConfig(t *testing.T) {
 	if !result.Overwritten {
 		t.Fatalf("expected overwritten result, got %#v", result)
 	}
-	if content := mustRead(t, path); !strings.Contains(content, "agent: codex") || strings.Contains(content, "agent: claude") {
+	if content := mustRead(t, path); !strings.Contains(content, "profiles:") ||
+		!strings.Contains(content, "model: gpt-5.6-sol") ||
+		!strings.Contains(content, "model: claude-fable-5") ||
+		strings.Contains(content, "agent: claude") ||
+		strings.Contains(content, "runtimes:") {
 		t.Fatalf("expected default config to replace old content, got %s", content)
 	}
 }

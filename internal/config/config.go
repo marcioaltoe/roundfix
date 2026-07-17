@@ -454,7 +454,7 @@ var deprecatedConfigKeys = []deprecatedConfigKey{
 	{
 		path:        []string{"defaults", "model"},
 		name:        "defaults.model",
-		replacement: "runtimes.<runtime>.model",
+		replacement: "profiles.<category>.preferred.model",
 	},
 	{
 		path:        []string{"resolve", "concurrent"},
@@ -630,23 +630,58 @@ func DefaultConfigYAML() string {
 # Project Config: <repo>/.roundfixrc.yml
 
 defaults:
-  agent: %s
   agent_full_access: %t
   verification: %s
   # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
   artifact_dir: ""
   auto_commit: %t
 
-runtimes:
-  codex:
-    model: %s
-    reasoning_effort: %s
-  claude:
-    model: %s
-    reasoning_effort: %s
-  opencode:
-    model: %q
-    reasoning_effort: %q
+profiles:
+  general:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
+  backend:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
+  frontend:
+    preferred:
+      runtime: claude
+      model: claude-fable-5
+      reasoning_effort: medium
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-sol
+        reasoning_effort: high
+  qa:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
+  review:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
 
 specs:
   # Directory holding Spec folders; relative paths resolve against the repository root.
@@ -701,16 +736,9 @@ budget:
 resolve:
   batch_size: %d
 `,
-		config.Defaults.Agent,
 		config.Defaults.AgentFullAccess,
 		config.Defaults.Verification,
 		config.Defaults.AutoCommit,
-		config.Runtimes.Codex.Model,
-		defaultConfigString(config.Runtimes.Codex.ReasoningEffort),
-		config.Runtimes.Claude.Model,
-		defaultConfigString(config.Runtimes.Claude.ReasoningEffort),
-		config.Runtimes.OpenCode.Model,
-		config.Runtimes.OpenCode.ReasoningEffort,
 		config.Specs.Root,
 		config.Worktree.Location,
 		config.Worktree.Concurrency,
@@ -732,13 +760,6 @@ resolve:
 		formatConfigDuration(config.Budget.MaxRunDuration),
 		config.Resolve.BatchSize,
 	)
-}
-
-func defaultConfigString(value string) string {
-	if value == "" {
-		return `""`
-	}
-	return value
 }
 
 func Validate(config Config) error {
