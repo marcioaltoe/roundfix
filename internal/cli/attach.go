@@ -97,6 +97,7 @@ func runAttachCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 
 	view := attachRunView(loaded, run, attachIssues(ctx, run), timeline.Lines(), concurrency)
+	view.Selections = timeline.Selections()
 	fmt.Fprint(stdout, roundtui.RenderLiveRunView(view))
 	if store.IsTerminalState(run.State) {
 		fmt.Fprintf(stdout, "Run %s reached %s; timeline replayed read-only.\n", run.ID, run.State)

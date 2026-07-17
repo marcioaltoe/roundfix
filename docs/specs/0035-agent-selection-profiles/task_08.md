@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0035-agent-selection-profiles
-status: pending
+status: completed
 type: frontend
 complexity: high
 ---
@@ -24,21 +24,21 @@ Make actual Task, QA, and review selections observable through stderr, the Live 
 
 ## Subtasks
 
-- [ ] Project selection lifecycle events into the Supervisor stream.
-- [ ] Render scoped selection and fallback rows in stderr and Console Logs.
-- [ ] Add Live Run View and Detail Modal selection state.
-- [ ] Replay identical state through Attach.
-- [ ] Preserve compatibility summaries and legacy Run rendering.
-- [ ] Add ordering, no-color, bounded-output, and privacy tests.
+- [x] Project selection lifecycle events into the Supervisor stream.
+- [x] Render scoped selection and fallback rows in stderr and Console Logs.
+- [x] Add Live Run View and Detail Modal selection state.
+- [x] Replay identical state through Attach.
+- [x] Preserve compatibility summaries and legacy Run rendering.
+- [x] Add ordering, no-color, bounded-output, and privacy tests.
 
 ## Acceptance Criteria
 
-- [ ] Task, QA, and review selection attempts are attributable to their category and scope in every Run surface.
-- [ ] Fallback notification is ordered before fallback activation and first prompt in live and replayed views.
-- [ ] Mixed-profile Runs display actual per-work selections while stable legacy summary columns remain available.
-- [ ] Legacy Runs render missing selection history explicitly and do not fail Attach or Run Browser views.
-- [ ] Text, TUI, Attach, and JSON projection agree on selection, role, status, and reason.
-- [ ] No prompt, raw ACP payload, credential, or secret appears in the new projections.
+- [x] Task, QA, and review selection attempts are attributable to their category and scope in every Run surface.
+- [x] Fallback notification is ordered before fallback activation and first prompt in live and replayed views.
+- [x] Mixed-profile Runs display actual per-work selections while stable legacy summary columns remain available.
+- [x] Legacy Runs render missing selection history explicitly and do not fail Attach or Run Browser views.
+- [x] Text, TUI, Attach, and JSON projection agree on selection, role, status, and reason.
+- [x] No prompt, raw ACP payload, credential, or secret appears in the new projections.
 
 ## Context
 
@@ -59,3 +59,13 @@ Make actual Task, QA, and review selections observable through stderr, the Live 
 
 - `_prd.md` → Goals 3 and 9; User Stories 3, 6, and 7; Core Features 9-10; Success Metrics.
 - `_techspec.md` → Persistence and Run Events; Agent Session lifecycle notification payload; JSON profile output; Build Order 7.
+
+## Result
+
+- Task, QA, and review scope attribution: `internal/runevent/selection.go` projects structured lifecycle payloads; `internal/tui/tui.go`, `internal/tui/cockpit.go`, `internal/cli/attach.go`, and `internal/cli/runui.go` render those records without using compatibility summaries as actual per-work selections. Evidence: `TestAgentSelectionStreamProjectsScopedLifecycleWithoutSensitivePayload`, `TestAgentSelectionLiveRunViewRendersActualPerWorkSelections`, `TestAgentSelectionLiveRunViewDetailModalShowsScopedSelection`, and `TestAgentSelectionAttachReplayRendersPerScopeSelectionState`.
+- Fallback ordering: stderr, timeline, and attach replay render `agent_selection_fallback` before fallback active and `agent_work_started`. Evidence: `TestFallbackNotificationOrderingSelectionConsoleSink` and `TestFallbackNotificationOrderingInTimeline`.
+- Legacy compatibility: existing Agent/Model/Reasoning columns remain rendered, and Runs without per-scope selection history show `per-scope history: unavailable` instead of inventing records. Evidence: `TestLegacyRunSelectionViewRendersUnavailableHistory`.
+- Machine-readable and privacy contract: the Supervisor stream exposes selection scope, category, source, role, status, reason, failed tuple, and next tuple fields while omitting prompt, transcript, credential, token, cookie, and secret data. Evidence: `TestAgentSelectionStreamProjectsScopedLifecycleWithoutSensitivePayload`.
+- Verification: `rtk go test ./internal/runevent ./internal/tui ./internal/cli -run 'Test(AgentSelectionStream|AgentSelectionLiveRunView|AgentSelectionAttachReplay|FallbackNotificationOrdering|LegacyRunSelectionView)' -count=1` passed with 7 tests in 3 packages.
+- Verification: `rtk go test -race ./internal/runevent ./internal/tui ./internal/cli -run 'Test(AgentSelectionLiveRunView|AgentSelectionAttachReplay|FallbackNotificationOrdering)' -count=1` passed with 5 tests in 3 packages.
+- Full gate: `rtk make verify` passed, including `rtk go test ./...`, setup-context-driven skill tests, `roundfix skills check`, and the Roundfix build.

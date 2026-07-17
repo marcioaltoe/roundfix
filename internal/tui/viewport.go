@@ -286,6 +286,18 @@ func (viewport *TimelineViewport) HasKind(kind runevent.Kind) bool {
 	return false
 }
 
+func (viewport *TimelineViewport) SelectionRecords() []runevent.SelectionLifecycleRecord {
+	records := []runevent.SelectionLifecycleRecord{}
+	for _, entry := range viewport.entries {
+		record, ok, err := runevent.ProjectSelectionLifecycle(entry.event)
+		if !ok || err != nil {
+			continue
+		}
+		records = append(records, record)
+	}
+	return records
+}
+
 func (viewport *TimelineViewport) enterTailState() {
 	if viewport.terminal {
 		viewport.state = FollowTerminal

@@ -177,6 +177,12 @@ func timelineEventRow(entry timelineEntry) string {
 // Events journaled without a summary fall back to their reconstructed
 // console text so older journals stay viewable, bounded the same way.
 func timelineRowSummary(entry timelineEntry) string {
+	if record, ok, err := runevent.ProjectSelectionLifecycle(entry.event); ok {
+		if err != nil {
+			return ""
+		}
+		return runevent.SelectionLifecycleSummary(record)
+	}
 	if strings.TrimSpace(entry.event.Summary) != "" {
 		return EventSummary(entry.event, timelineSummaryBound)
 	}
@@ -228,6 +234,10 @@ func daemonTimelineSection(kind runevent.Kind) string {
 		return "TASK"
 	case runevent.KindDaemonQA:
 		return "QA"
+	case runevent.KindDaemonAgentSelectionAttempt, runevent.KindDaemonAgentSelectionActive,
+		runevent.KindDaemonAgentSelectionFallback, runevent.KindDaemonAgentSelectionExhausted,
+		runevent.KindDaemonAgentSelectionClosed:
+		return "SELECTION"
 	default:
 		return ""
 	}

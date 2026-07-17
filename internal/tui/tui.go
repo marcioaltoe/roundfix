@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"roundfix/internal/rounds"
+	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
 )
@@ -68,6 +69,7 @@ type LiveRunView struct {
 	Agent           string
 	Model           string
 	ReasoningEffort string
+	Selections      []runevent.SelectionLifecycleRecord
 	HEAD            string
 	RunID           string
 	PipelineState   string
@@ -489,6 +491,12 @@ func RenderLiveRunView(view LiveRunView) string {
 		builder.WriteString(fmt.Sprintf("  Agent Model: %s\n", emptyDash(view.Model)))
 		builder.WriteString(fmt.Sprintf("  Default Reasoning Effort: %s\n", emptyDash(view.ReasoningEffort)))
 	}
+	if lines := selectionViewLines(view); len(lines) > 0 {
+		builder.WriteString("  Selections:\n")
+		for _, line := range lines {
+			builder.WriteString(fmt.Sprintf("    %s\n", line))
+		}
+	}
 	if view.HEAD != "" {
 		builder.WriteString(fmt.Sprintf("  HEAD: %s\n", view.HEAD))
 	}
@@ -515,6 +523,35 @@ func RenderLiveRunView(view LiveRunView) string {
 	builder.WriteString(renderSplitPanes(view))
 	builder.WriteByte('\n')
 	return builder.String()
+}
+
+func selectionViewLines(view LiveRunView) []string {
+	if len(view.Selections) == 0 {
+		if viewHasAgentWork(view) {
+			return []string{"per-scope history: unavailable"}
+		}
+		return nil
+	}
+	lines := make([]string, 0, len(view.Selections))
+	for _, record := range view.Selections {
+		line := runevent.SelectionLifecycleSummary(record)
+		if line != "" {
+			lines = append(lines, line)
+		}
+	}
+	return lines
+}
+
+func viewHasAgentWork(view LiveRunView) bool {
+	if commandStartsAgent(view.Command) {
+		return true
+	}
+	switch view.RunKind {
+	case store.KindResolve, store.KindWatch, store.KindImplement:
+		return true
+	default:
+		return strings.TrimSpace(view.Agent) != ""
+	}
 }
 
 func renderSplitPanes(view LiveRunView) string {

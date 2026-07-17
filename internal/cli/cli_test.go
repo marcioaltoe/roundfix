@@ -9053,6 +9053,183 @@ runtimes:
 	}
 }
 
+func TestAgentSelectionAttachReplayRendersPerScopeSelectionState(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	ctx := context.Background()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open run store: %v", err)
+	}
+	run, err := runStore.CreateRun(ctx, store.CreateRunRequest{
+		Kind:            store.KindResolve,
+		HeadRepository:  "owner/project",
+		HeadBranch:      "feature/review",
+		BaseRepository:  "owner/project",
+		PRNumber:        "123",
+		GitRoot:         repoDir,
+		LocalBranch:     "feature/review",
+		HeadSHA:         "abc123",
+		ArtifactDir:     filepath.Join(repoDir, ".roundfix", "reviews"),
+		Agent:           "Codex",
+		Model:           "compat-summary-model",
+		ReasoningEffort: "compat-summary-reasoning",
+	})
+	if err != nil {
+		t.Fatalf("create run: %v", err)
+	}
+	fallback := runevent.RunEvent{
+		RunID:  run.ID,
+		Batch:  1,
+		Source: runevent.SourceDaemon,
+		Kind:   runevent.KindDaemonAgentSelectionFallback,
+		Payload: []byte(`{
+			"event":"agent_selection_fallback",
+			"category":"review",
+			"scope_kind":"review",
+			"scope_id":"batch-001",
+			"scope_identity":"review:batch-001",
+			"failed_selection":{"runtime":"codex","model":"gpt-5.6-sol","reasoning_effort":"high"},
+			"next_selection":{"runtime":"claude","model":"claude-fable-5","reasoning_effort":"xhigh"},
+			"fallback_index":1,
+			"reason_code":"runtime_unavailable",
+			"reason":"runtime unavailable",
+			"automatic":true
+		}`),
+	}
+	active := runevent.RunEvent{
+		RunID:  run.ID,
+		Batch:  1,
+		Source: runevent.SourceDaemon,
+		Kind:   runevent.KindDaemonAgentSelectionActive,
+		Payload: []byte(`{
+			"event":"agent_selection_active",
+			"scope_kind":"review",
+			"scope_id":"batch-001",
+			"scope_identity":"review:batch-001",
+			"category":"review",
+			"profile_source":"project",
+			"attempt":2,
+			"selection_role":"fallback",
+			"fallback_index":1,
+			"runtime":"claude",
+			"model":"claude-fable-5",
+			"reasoning_effort":"xhigh",
+			"status":"active"
+		}`),
+	}
+	if _, err := runStore.AppendRunEvents(ctx, []runevent.RunEvent{fallback, active}); err != nil {
+		t.Fatalf("append selection events: %v", err)
+	}
+	if _, err := runStore.CompleteRun(ctx, run.ID, store.StateClean); err != nil {
+		t.Fatalf("complete run: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close run store: %v", err)
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(ctx, []string{"attach", run.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected attach exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	output := stdout.String()
+	for _, expected := range []string{
+		"Agent Model: compat-summary-model",
+		"Selections:",
+		"review batch-001 (review) fallback failed source unavailable codex/gpt-5.6-sol/high -> fallback 1 claude/claude-fable-5/xhigh reason runtime_unavailable: runtime unavailable",
+		"review batch-001 (review) attempt 2 fallback active source project claude/claude-fable-5/xhigh",
+		"SELECTION review batch-001 (review) fallback failed...",
+		"SELECTION review batch-001 (review) attempt 2 fallb...",
+		"Run " + run.ID + " reached Clean; timeline replayed read-only.",
+	} {
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected attach replay to contain %q, got:\n%s", expected, output)
+		}
+	}
+	for _, forbidden := range []string{"prompt", "credential", "token", "cookie", "secret"} {
+		if strings.Contains(strings.ToLower(output), forbidden) {
+			t.Fatalf("expected attach replay to omit %q, got:\n%s", forbidden, output)
+		}
+	}
+}
+
+func TestFallbackNotificationOrderingSelectionConsoleSink(t *testing.T) {
+	var stderr bytes.Buffer
+	fanout := runevent.NewFanout([]runevent.Sink{
+		selectionConsoleDisplaySink(&stderr),
+		agent.NewConsoleDisplaySink(&stderr),
+	}, nil)
+	fallback := runevent.RunEvent{
+		RunID:  "run_9",
+		Source: runevent.SourceDaemon,
+		Kind:   runevent.KindDaemonAgentSelectionFallback,
+		Payload: []byte(`{
+			"event":"agent_selection_fallback",
+			"category":"backend",
+			"scope_kind":"task",
+			"scope_id":"task_01",
+			"scope_identity":"task:task_01",
+			"failed_selection":{"runtime":"codex","model":"gpt-5.6-sol","reasoning_effort":"high"},
+			"next_selection":{"runtime":"claude","model":"claude-fable-5","reasoning_effort":"xhigh"},
+			"fallback_index":1,
+			"reason_code":"runtime_unavailable",
+			"reason":"runtime unavailable",
+			"automatic":true
+		}`),
+	}
+	active := runevent.RunEvent{
+		RunID:  "run_9",
+		Source: runevent.SourceDaemon,
+		Kind:   runevent.KindDaemonAgentSelectionActive,
+		Payload: []byte(`{
+			"event":"agent_selection_active",
+			"scope_kind":"task",
+			"scope_id":"task_01",
+			"scope_identity":"task:task_01",
+			"category":"backend",
+			"profile_source":"project",
+			"attempt":2,
+			"selection_role":"fallback",
+			"fallback_index":1,
+			"runtime":"claude",
+			"model":"claude-fable-5",
+			"reasoning_effort":"xhigh",
+			"status":"active"
+		}`),
+	}
+	workStarted := runevent.RunEvent{
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentStatus,
+		Payload: []byte(`{"status":"agent_work_started"}`),
+	}
+	for _, event := range []runevent.RunEvent{fallback, active, workStarted} {
+		if err := fanout.Publish(context.Background(), event); err != nil {
+			t.Fatalf("publish event: %v", err)
+		}
+	}
+
+	output := stderr.String()
+	assertCLIContainsInOrder(t, output,
+		"SELECTION task task_01 (backend) fallback failed source unavailable codex/gpt-5.6-sol/high -> fallback 1 claude/claude-fable-5/xhigh reason runtime_unavailable: runtime unavailable",
+		"SELECTION task task_01 (backend) attempt 2 fallback active source project claude/claude-fable-5/xhigh",
+		"SESSION AGENT_WORK_STARTED",
+	)
+}
+
+func assertCLIContainsInOrder(t *testing.T, haystack string, needles ...string) {
+	t.Helper()
+	offset := 0
+	for _, needle := range needles {
+		index := strings.Index(haystack[offset:], needle)
+		if index < 0 {
+			t.Fatalf("expected %q after byte offset %d in:\n%s", needle, offset, haystack)
+		}
+		offset += index + len(needle)
+	}
+}
+
 func TestAttachRunBrowserLoopOpensCockpitAndRefreshes(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	otherRepo := filepath.Join(t.TempDir(), "other-repo")

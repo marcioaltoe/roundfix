@@ -436,6 +436,55 @@ func TestCockpitReviewPhaseRowAndTwoPaneStructure(t *testing.T) {
 	}
 }
 
+func TestAgentSelectionLiveRunViewDetailModalShowsScopedSelection(t *testing.T) {
+	source := &cockpitFakeSource{run: store.Run{State: store.StateResolvingWithAgent}}
+	source.addEvent(runevent.RunEvent{
+		Batch:  1,
+		Source: runevent.SourceDaemon,
+		Kind:   runevent.KindDaemonAgentSelectionActive,
+		Payload: []byte(`{
+			"event":"agent_selection_active",
+			"scope_kind":"review",
+			"scope_id":"batch-001",
+			"scope_identity":"review:batch-001",
+			"category":"review",
+			"profile_source":"project",
+			"attempt":1,
+			"selection_role":"preferred",
+			"fallback_index":0,
+			"runtime":"codex",
+			"model":"gpt-5.6-luna",
+			"reasoning_effort":"",
+			"status":"active"
+		}`),
+	})
+	model := newTestCockpit(t, source, LiveRunView{
+		Command:       "attach",
+		RunKind:       store.KindResolve,
+		Agent:         "Codex",
+		RunID:         "run-1",
+		PipelineState: store.StateResolvingWithAgent,
+		BatchSizes:    []int{1},
+		Issues: []rounds.Issue{
+			{Title: "Review API state", SourceRef: "coderabbit:001", Path: filepath.Join(t.TempDir(), "missing.md")},
+		},
+	})
+	model.openDetail()
+
+	rendered := stripANSI(model.renderDetail(180, 24))
+	for _, expected := range []string{
+		"selection: review batch-001 (review) attempt 1 preferred active source project codex/gpt-5.6-luna/<model-managed>",
+		"artifact not available",
+	} {
+		if !strings.Contains(rendered, expected) {
+			t.Fatalf("expected detail modal to contain %q, got:\n%s", expected, rendered)
+		}
+	}
+	if !strings.Contains(strings.Join(model.viewport.VisibleLines(), "\n"), "SELECTION review batch-001 (review)") {
+		t.Fatalf("expected cockpit timeline to render selection event, got:\n%s", strings.Join(model.viewport.VisibleLines(), "\n"))
+	}
+}
+
 func TestCockpitSpecPhaseRowCoversQAOmittedAndLocked(t *testing.T) {
 	tests := []struct {
 		name       string

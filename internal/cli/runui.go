@@ -34,7 +34,7 @@ type runUI struct {
 func startRunUI(ctx context.Context, view roundtui.LiveRunView, runID string, homeDir string, runStore *store.Store, stderr io.Writer, noAgentConsole bool) (*runUI, error) {
 	journal := store.JournalSink{Store: runStore}
 	if !liveTUIEnabled(stderr) {
-		fanout := runevent.NewFanout([]runevent.Sink{journal, agentConsoleDisplaySink(stderr, noAgentConsole)}, nil)
+		fanout := runevent.NewFanout([]runevent.Sink{journal, selectionConsoleDisplaySink(stderr), agentConsoleDisplaySink(stderr, noAgentConsole)}, nil)
 		return &runUI{sink: fanout, progress: stderr, fanout: fanout}, nil
 	}
 
@@ -74,6 +74,30 @@ func agentConsoleDisplaySink(stderr io.Writer, noAgentConsole bool) runevent.Sin
 		return runevent.NewSourceFilterSink(sink, runevent.SourceAgent)
 	}
 	return sink
+}
+
+func selectionConsoleDisplaySink(stderr io.Writer) runevent.Sink {
+	return selectionDisplaySink{writer: stderr}
+}
+
+type selectionDisplaySink struct {
+	writer io.Writer
+}
+
+func (sink selectionDisplaySink) Publish(_ context.Context, event runevent.RunEvent) error {
+	record, ok, err := runevent.ProjectSelectionLifecycle(event)
+	if !ok {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	line := runevent.SelectionLifecycleLine(record)
+	if line == "" {
+		return nil
+	}
+	_, err = io.WriteString(sink.writer, line+"\n")
+	return err
 }
 
 // Wait keeps the cockpit on screen until the user closes it (q after the

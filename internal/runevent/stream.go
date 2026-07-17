@@ -24,29 +24,34 @@ const (
 
 // StreamRecord is one JSONL record in the Supervisor Run Event Stream.
 type StreamRecord struct {
-	Schema          string         `json:"schema"`
-	RunID           string         `json:"run_id"`
-	Category        StreamCategory `json:"category"`
-	Time            string         `json:"time"`
-	Cursor          int64          `json:"cursor"`
-	Batch           int            `json:"batch,omitempty"`
-	Attempt         int            `json:"attempt,omitempty"`
-	WorkItem        string         `json:"work_item,omitempty"`
-	Phase           string         `json:"phase,omitempty"`
-	Status          string         `json:"status,omitempty"`
-	Verdict         string         `json:"verdict,omitempty"`
-	Outcome         string         `json:"outcome,omitempty"`
-	Summary         string         `json:"summary,omitempty"`
-	ScopeKind       string         `json:"scope_kind,omitempty"`
-	ScopeID         string         `json:"scope_id,omitempty"`
-	WorkCategory    string         `json:"work_category,omitempty"`
-	SelectionRole   string         `json:"selection_role,omitempty"`
-	FallbackIndex   int            `json:"fallback_index,omitempty"`
-	Runtime         string         `json:"runtime,omitempty"`
-	Model           string         `json:"model,omitempty"`
-	ReasoningEffort string         `json:"reasoning_effort,omitempty"`
-	ReasonCode      string         `json:"reason_code,omitempty"`
-	Reason          string         `json:"reason,omitempty"`
+	Schema              string         `json:"schema"`
+	RunID               string         `json:"run_id"`
+	Category            StreamCategory `json:"category"`
+	Time                string         `json:"time"`
+	Cursor              int64          `json:"cursor"`
+	Batch               int            `json:"batch,omitempty"`
+	Attempt             int            `json:"attempt,omitempty"`
+	WorkItem            string         `json:"work_item,omitempty"`
+	Phase               string         `json:"phase,omitempty"`
+	Status              string         `json:"status,omitempty"`
+	Verdict             string         `json:"verdict,omitempty"`
+	Outcome             string         `json:"outcome,omitempty"`
+	Summary             string         `json:"summary,omitempty"`
+	ScopeKind           string         `json:"scope_kind,omitempty"`
+	ScopeID             string         `json:"scope_id,omitempty"`
+	ScopeIdentity       string         `json:"scope_identity,omitempty"`
+	WorkCategory        string         `json:"work_category,omitempty"`
+	ProfileSource       string         `json:"profile_source,omitempty"`
+	SelectionRole       string         `json:"selection_role,omitempty"`
+	FallbackIndex       int            `json:"fallback_index,omitempty"`
+	Runtime             string         `json:"runtime,omitempty"`
+	Model               string         `json:"model,omitempty"`
+	ReasoningEffort     string         `json:"reasoning_effort,omitempty"`
+	NextRuntime         string         `json:"next_runtime,omitempty"`
+	NextModel           string         `json:"next_model,omitempty"`
+	NextReasoningEffort string         `json:"next_reasoning_effort,omitempty"`
+	ReasonCode          string         `json:"reason_code,omitempty"`
+	Reason              string         `json:"reason,omitempty"`
 }
 
 // StreamCategoryFilter selects public Run Event Stream categories.
@@ -186,112 +191,33 @@ func ProjectStreamEvent(cursor int64, event RunEvent, filter StreamCategoryFilte
 		}
 		record.Summary = outcomeStreamSummary(record.Outcome)
 	case StreamCategorySelection:
-		if _, ok := fields["attempt"]; !ok {
-			record, err = projectSelectionNotificationRecord(record, event, fields)
-			if err != nil {
-				return StreamRecord{}, false, err
-			}
-			return record, true, nil
-		}
-		record.ScopeKind, err = requiredPayloadString(fields, event, "scope_kind")
+		selection, ok, err := ProjectSelectionLifecycle(event)
 		if err != nil {
 			return StreamRecord{}, false, err
 		}
-		record.ScopeID, err = requiredPayloadString(fields, event, "scope_id")
-		if err != nil {
-			return StreamRecord{}, false, err
+		if !ok {
+			return StreamRecord{}, false, nil
 		}
-		record.WorkCategory, err = requiredPayloadString(fields, event, "category")
-		if err != nil {
-			return StreamRecord{}, false, err
-		}
-		record.Attempt, err = optionalPayloadInt(fields, "attempt")
-		if err != nil {
-			return StreamRecord{}, false, fmt.Errorf("project %s event for Run %q: read payload field %q: %w", event.Kind, event.RunID, "attempt", err)
-		}
-		if record.Attempt <= 0 {
-			return StreamRecord{}, false, streamMissingField(event, "attempt")
-		}
-		record.SelectionRole, err = requiredPayloadString(fields, event, "selection_role")
-		if err != nil {
-			return StreamRecord{}, false, err
-		}
-		record.FallbackIndex, err = optionalPayloadInt(fields, "fallback_index")
-		if err != nil {
-			return StreamRecord{}, false, fmt.Errorf("project %s event for Run %q: read payload field %q: %w", event.Kind, event.RunID, "fallback_index", err)
-		}
-		record.Status, err = requiredPayloadString(fields, event, "status")
-		if err != nil {
-			return StreamRecord{}, false, err
-		}
-		record.Runtime, err = requiredPayloadString(fields, event, "runtime")
-		if err != nil {
-			return StreamRecord{}, false, err
-		}
-		record.Model, err = requiredPayloadString(fields, event, "model")
-		if err != nil {
-			return StreamRecord{}, false, err
-		}
-		record.ReasoningEffort, err = optionalPayloadString(fields, "reasoning_effort")
-		if err != nil {
-			return StreamRecord{}, false, fmt.Errorf("project %s event for Run %q: read payload field %q: %w", event.Kind, event.RunID, "reasoning_effort", err)
-		}
-		record.ReasonCode, err = optionalPayloadString(fields, "reason_code")
-		if err != nil {
-			return StreamRecord{}, false, fmt.Errorf("project %s event for Run %q: read payload field %q: %w", event.Kind, event.RunID, "reason_code", err)
-		}
-		record.Reason, err = optionalPayloadString(fields, "reason")
-		if err != nil {
-			return StreamRecord{}, false, fmt.Errorf("project %s event for Run %q: read payload field %q: %w", event.Kind, event.RunID, "reason", err)
-		}
-		record.Summary = selectionStreamSummary(record.ScopeKind, record.ScopeID, record.WorkCategory, record.Status, record.Attempt)
+		record.ScopeKind = selection.ScopeKind
+		record.ScopeID = selection.ScopeID
+		record.ScopeIdentity = selection.ScopeIdentity
+		record.WorkCategory = selection.Category
+		record.ProfileSource = selection.ProfileSource
+		record.Attempt = selection.Attempt
+		record.SelectionRole = selection.SelectionRole
+		record.FallbackIndex = selection.FallbackIndex
+		record.Status = selection.Status
+		record.Runtime = selection.Runtime
+		record.Model = selection.Model
+		record.ReasoningEffort = selection.ReasoningEffort
+		record.NextRuntime = selection.NextRuntime
+		record.NextModel = selection.NextModel
+		record.NextReasoningEffort = selection.NextReasoningEffort
+		record.ReasonCode = selection.ReasonCode
+		record.Reason = selection.Reason
+		record.Summary = SelectionLifecycleLine(selection)
 	}
 	return record, true, nil
-}
-
-func projectSelectionNotificationRecord(record StreamRecord, event RunEvent, fields map[string]json.RawMessage) (StreamRecord, error) {
-	var err error
-	record.ScopeKind, err = requiredPayloadString(fields, event, "scope_kind")
-	if err != nil {
-		return StreamRecord{}, err
-	}
-	record.ScopeID, err = requiredPayloadString(fields, event, "scope_id")
-	if err != nil {
-		return StreamRecord{}, err
-	}
-	record.WorkCategory, err = requiredPayloadString(fields, event, "category")
-	if err != nil {
-		return StreamRecord{}, err
-	}
-	record.FallbackIndex, err = optionalPayloadInt(fields, "fallback_index")
-	if err != nil {
-		return StreamRecord{}, fmt.Errorf("project %s event for Run %q: read payload field %q: %w", event.Kind, event.RunID, "fallback_index", err)
-	}
-	record.ReasonCode, err = optionalPayloadString(fields, "reason_code")
-	if err != nil {
-		return StreamRecord{}, fmt.Errorf("project %s event for Run %q: read payload field %q: %w", event.Kind, event.RunID, "reason_code", err)
-	}
-	record.Reason, err = optionalPayloadString(fields, "reason")
-	if err != nil {
-		return StreamRecord{}, fmt.Errorf("project %s event for Run %q: read payload field %q: %w", event.Kind, event.RunID, "reason", err)
-	}
-	record.Status = selectionNotificationStatus(event.Kind)
-	if event.Kind == KindDaemonAgentSelectionFallback {
-		record.Runtime, err = nestedPayloadString(fields, "failed_selection", "runtime")
-		if err != nil {
-			return StreamRecord{}, fmt.Errorf("project %s event for Run %q: read failed selection runtime: %w", event.Kind, event.RunID, err)
-		}
-		record.Model, err = nestedPayloadString(fields, "failed_selection", "model")
-		if err != nil {
-			return StreamRecord{}, fmt.Errorf("project %s event for Run %q: read failed selection model: %w", event.Kind, event.RunID, err)
-		}
-		record.ReasoningEffort, err = nestedPayloadString(fields, "failed_selection", "reasoning_effort")
-		if err != nil {
-			return StreamRecord{}, fmt.Errorf("project %s event for Run %q: read failed selection reasoning: %w", event.Kind, event.RunID, err)
-		}
-	}
-	record.Summary = selectionNotificationStreamSummary(record.ScopeKind, record.ScopeID, record.WorkCategory, record.Status)
-	return record, nil
 }
 
 func isStreamCategory(category StreamCategory) bool {
@@ -373,21 +299,6 @@ func firstPayloadString(fields map[string]json.RawMessage, keys ...string) (stri
 		}
 	}
 	return "", nil
-}
-
-func nestedPayloadString(fields map[string]json.RawMessage, objectKey string, key string) (string, error) {
-	raw, ok := fields[objectKey]
-	if !ok {
-		return "", nil
-	}
-	var nested map[string]json.RawMessage
-	if err := json.Unmarshal(raw, &nested); err != nil {
-		return "", err
-	}
-	if nested == nil {
-		return "", nil
-	}
-	return optionalPayloadString(nested, key)
 }
 
 // verificationPayloadAttempt maps the three pre-repair Verification payload
@@ -489,23 +400,4 @@ func outcomeStreamSummary(outcome string) string {
 		return fmt.Sprintf("Run reached %s.", outcome)
 	}
 	return "Run outcome recorded."
-}
-
-func selectionStreamSummary(scopeKind string, scopeID string, workCategory string, status string, attempt int) string {
-	return fmt.Sprintf("Agent Selection attempt %d for %s %s (%s) is %s.", attempt, scopeKind, scopeID, workCategory, status)
-}
-
-func selectionNotificationStatus(kind Kind) string {
-	switch kind {
-	case KindDaemonAgentSelectionFallback:
-		return "failed"
-	case KindDaemonAgentSelectionExhausted:
-		return "exhausted"
-	default:
-		return "notified"
-	}
-}
-
-func selectionNotificationStreamSummary(scopeKind string, scopeID string, workCategory string, status string) string {
-	return fmt.Sprintf("Agent Selection for %s %s (%s) is %s.", scopeKind, scopeID, workCategory, status)
 }

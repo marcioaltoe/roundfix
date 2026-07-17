@@ -379,7 +379,81 @@ func TestAgentSelectionEventProjectsFallbackNotificationPayload(t *testing.T) {
 		record.Runtime != "codex" ||
 		record.Model != "gpt-5.6-sol" ||
 		record.ReasoningEffort != "" ||
+		record.NextRuntime != "claude" ||
+		record.NextModel != "claude-fable-5" ||
+		record.NextReasoningEffort != "xhigh" ||
 		record.ReasonCode != "model_not_advertised" {
 		t.Fatalf("expected projected fallback fields, got %#v", record)
+	}
+}
+
+func TestAgentSelectionStreamProjectsScopedLifecycleWithoutSensitivePayload(t *testing.T) {
+	record, ok, err := ProjectStreamEvent(9, RunEvent{
+		RunID:   "run_456",
+		Batch:   3,
+		Source:  SourceDaemon,
+		Kind:    KindDaemonAgentSelectionActive,
+		Summary: "legacy summary must not drive selection projection",
+		Time:    time.Date(2026, 7, 17, 9, 15, 0, 0, time.UTC),
+		Payload: []byte(`{
+			"event":"agent_selection_active",
+			"scope_kind":"qa",
+			"scope_id":"qa",
+			"scope_identity":"qa:qa",
+			"category":"qa",
+			"profile_source":"user",
+			"attempt":2,
+			"selection_role":"fallback",
+			"fallback_index":1,
+			"runtime":"claude",
+			"model":"claude-fable-5",
+			"reasoning_effort":"xhigh",
+			"status":"active",
+			"reason_code":"runtime_unavailable",
+			"reason":"primary runtime was unavailable",
+			"prompt":"do not expose",
+			"credential":"do not expose",
+			"token":"do not expose"
+		}`),
+	}, AllStreamCategories())
+	if err != nil {
+		t.Fatalf("project stream event: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected Agent Selection stream record")
+	}
+	if record.Schema != StreamSchema ||
+		record.RunID != "run_456" ||
+		record.Category != StreamCategorySelection ||
+		record.ScopeKind != "qa" ||
+		record.ScopeID != "qa" ||
+		record.ScopeIdentity != "qa:qa" ||
+		record.WorkCategory != "qa" ||
+		record.ProfileSource != "user" ||
+		record.Attempt != 2 ||
+		record.SelectionRole != "fallback" ||
+		record.FallbackIndex != 1 ||
+		record.Runtime != "claude" ||
+		record.Model != "claude-fable-5" ||
+		record.ReasoningEffort != "xhigh" ||
+		record.Status != "active" ||
+		record.ReasonCode != "runtime_unavailable" ||
+		record.Reason != "primary runtime was unavailable" {
+		t.Fatalf("unexpected stream record: %#v", record)
+	}
+	if !strings.Contains(record.Summary, "qa qa (qa)") ||
+		!strings.Contains(record.Summary, "source user") ||
+		!strings.Contains(record.Summary, "claude/claude-fable-5/xhigh") {
+		t.Fatalf("expected structured selection summary, got %q", record.Summary)
+	}
+	raw, err := json.Marshal(record)
+	if err != nil {
+		t.Fatalf("marshal stream record: %v", err)
+	}
+	encoded := strings.ToLower(string(raw))
+	for _, forbidden := range []string{"prompt", "credential", "token", "secret", "cookie", "do not expose"} {
+		if strings.Contains(encoded, forbidden) {
+			t.Fatalf("expected stream record to omit %q, got %s", forbidden, raw)
+		}
 	}
 }

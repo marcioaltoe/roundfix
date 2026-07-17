@@ -12,7 +12,8 @@ import (
 // bounded by the ring buffer, and high-frequency message chunks coalesce
 // into whole lines before rendering.
 type RunTimeline struct {
-	console StreamBuffer
+	console    StreamBuffer
+	selections []runevent.SelectionLifecycleRecord
 }
 
 func NewRunTimeline(maxLines int) *RunTimeline {
@@ -24,6 +25,9 @@ func NewRunTimeline(maxLines int) *RunTimeline {
 // are skipped (empty return), never fatal, so journals written by newer ACP
 // Runtime versions stay viewable.
 func (timeline *RunTimeline) Append(event runevent.RunEvent) string {
+	if record, ok, err := runevent.ProjectSelectionLifecycle(event); ok && err == nil {
+		timeline.selections = append(timeline.selections, record)
+	}
 	text := timelineText(event)
 	if text == "" {
 		return ""
@@ -39,6 +43,16 @@ func timelineText(event runevent.RunEvent) string {
 	if update, ok := agent.StreamUpdateFromEvent(event); ok {
 		return agent.ConsoleText(update)
 	}
+	if record, ok, err := runevent.ProjectSelectionLifecycle(event); ok {
+		if err != nil {
+			return ""
+		}
+		line := runevent.SelectionLifecycleLine(record)
+		if line == "" {
+			return ""
+		}
+		return line + "\n"
+	}
 	if !runevent.IsDaemonKind(event.Kind) {
 		return ""
 	}
@@ -52,4 +66,10 @@ func timelineText(event runevent.RunEvent) string {
 // Lines returns the rendered timeline, oldest first, bounded by the ring.
 func (timeline *RunTimeline) Lines() []string {
 	return timeline.console.Lines()
+}
+
+func (timeline *RunTimeline) Selections() []runevent.SelectionLifecycleRecord {
+	selections := make([]runevent.SelectionLifecycleRecord, len(timeline.selections))
+	copy(selections, timeline.selections)
+	return selections
 }

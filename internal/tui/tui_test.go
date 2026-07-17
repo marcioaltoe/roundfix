@@ -636,10 +636,98 @@ func TestRenderLiveRunViewShowsLegacyEmptySelectionAsDash(t *testing.T) {
 		"Agent: Codex",
 		"Agent Model: -",
 		"Default Reasoning Effort: -",
+		"Selections:",
+		"per-scope history: unavailable",
 	} {
 		if !strings.Contains(view, expected) {
 			t.Fatalf("expected legacy selection display %q, got:\n%s", expected, view)
 		}
+	}
+}
+
+func TestAgentSelectionLiveRunViewRendersActualPerWorkSelections(t *testing.T) {
+	view := RenderLiveRunView(LiveRunView{
+		Command:         "implement",
+		RunKind:         store.KindImplement,
+		SpecSlug:        "0035-agent-selection-profiles",
+		HeadBranch:      "ma/agent-selection",
+		Agent:           "Codex",
+		Model:           "compat-summary-model",
+		ReasoningEffort: "compat-summary-reasoning",
+		RunID:           "run_9",
+		PipelineState:   store.StateResolvingWithAgent,
+		GitState:        "clean",
+		LastPush:        "disabled",
+		Width:           100,
+		Selections: []runevent.SelectionLifecycleRecord{
+			{
+				ScopeKind:       "task",
+				ScopeID:         "task_01",
+				ScopeIdentity:   "task:task_01",
+				Category:        "backend",
+				ProfileSource:   "project",
+				Attempt:         1,
+				SelectionRole:   "preferred",
+				Runtime:         "codex",
+				Model:           "gpt-5.6-sol",
+				ReasoningEffort: "high",
+				Status:          "active",
+			},
+			{
+				ScopeKind:           "qa",
+				ScopeID:             "qa",
+				ScopeIdentity:       "qa:qa",
+				Category:            "qa",
+				ProfileSource:       "user",
+				Attempt:             2,
+				SelectionRole:       "fallback",
+				FallbackIndex:       1,
+				Runtime:             "codex",
+				Model:               "gpt-5.6-terra",
+				Status:              "failed",
+				NextRuntime:         "claude",
+				NextModel:           "claude-fable-5",
+				NextReasoningEffort: "xhigh",
+				ReasonCode:          "runtime_unavailable",
+				Reason:              "primary runtime was unavailable",
+			},
+		},
+	})
+
+	for _, expected := range []string{
+		"Agent Model: compat-summary-model",
+		"Default Reasoning Effort: compat-summary-reasoning",
+		"Selections:",
+		"task task_01 (backend) attempt 1 preferred active source project codex/gpt-5.6-sol/high",
+		"qa qa (qa) attempt 2 fallback failed source user codex/gpt-5.6-terra/<model-managed> -> fallback 1 claude/claude-fable-5/xhigh reason runtime_unavailable: primary runtime was unavailable",
+	} {
+		if !strings.Contains(view, expected) {
+			t.Fatalf("expected live selection view to contain %q, got:\n%s", expected, view)
+		}
+	}
+	for _, forbidden := range []string{"prompt", "credential", "secret", "cookie"} {
+		if strings.Contains(strings.ToLower(view), forbidden) {
+			t.Fatalf("expected live selection view to omit %q, got:\n%s", forbidden, view)
+		}
+	}
+}
+
+func TestLegacyRunSelectionViewRendersUnavailableHistory(t *testing.T) {
+	view := RenderLiveRunView(LiveRunView{
+		Command:       "attach",
+		RunKind:       store.KindResolve,
+		Repository:    "owner/project",
+		PRNumber:      "123",
+		Agent:         "Codex",
+		RunID:         "run_legacy",
+		PipelineState: store.StateClean,
+	})
+
+	if !strings.Contains(view, "per-scope history: unavailable") {
+		t.Fatalf("expected legacy Run selection history to render unavailable, got:\n%s", view)
+	}
+	if strings.Contains(view, "task task_") || strings.Contains(view, "review batch-") {
+		t.Fatalf("expected legacy Run not to invent per-scope selections, got:\n%s", view)
 	}
 }
 
@@ -799,6 +887,64 @@ func TestRunTimelineRendersToolEventsFromRawPayloads(t *testing.T) {
 	}
 	if !strings.Contains(lines, "SESSION COMPLETED") {
 		t.Fatalf("expected session status rendered, got %q", lines)
+	}
+}
+
+func TestFallbackNotificationOrderingInTimeline(t *testing.T) {
+	timeline := NewRunTimeline(20)
+	timeline.Append(runevent.RunEvent{
+		RunID:  "run_9",
+		Source: runevent.SourceDaemon,
+		Kind:   runevent.KindDaemonAgentSelectionFallback,
+		Payload: []byte(`{
+			"event":"agent_selection_fallback",
+			"category":"backend",
+			"scope_kind":"task",
+			"scope_id":"task_01",
+			"scope_identity":"task:task_01",
+			"failed_selection":{"runtime":"codex","model":"gpt-5.6-sol","reasoning_effort":"high"},
+			"next_selection":{"runtime":"claude","model":"claude-fable-5","reasoning_effort":"xhigh"},
+			"fallback_index":1,
+			"reason_code":"runtime_unavailable",
+			"reason":"runtime unavailable",
+			"automatic":true
+		}`),
+	})
+	timeline.Append(runevent.RunEvent{
+		RunID:  "run_9",
+		Source: runevent.SourceDaemon,
+		Kind:   runevent.KindDaemonAgentSelectionActive,
+		Payload: []byte(`{
+			"event":"agent_selection_active",
+			"scope_kind":"task",
+			"scope_id":"task_01",
+			"scope_identity":"task:task_01",
+			"category":"backend",
+			"profile_source":"project",
+			"attempt":2,
+			"selection_role":"fallback",
+			"fallback_index":1,
+			"runtime":"claude",
+			"model":"claude-fable-5",
+			"reasoning_effort":"xhigh",
+			"status":"active"
+		}`),
+	})
+	timeline.Append(runevent.RunEvent{
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentStatus,
+		Payload: []byte(`{"status":"agent_work_started"}`),
+	})
+
+	rendered := strings.Join(timeline.Lines(), "\n")
+	assertContainsInOrder(t, rendered,
+		"SELECTION task task_01 (backend) fallback failed source unavailable codex/gpt-5.6-sol/high -> fallback 1 claude/claude-fable-5/xhigh reason runtime_unavailable: runtime unavailable",
+		"SELECTION task task_01 (backend) attempt 2 fallback active source project claude/claude-fable-5/xhigh",
+		"SESSION AGENT_WORK_STARTED",
+	)
+	records := timeline.Selections()
+	if len(records) != 2 || records[0].Status != "failed" || records[1].Status != "active" {
+		t.Fatalf("expected ordered selection records retained, got %#v", records)
 	}
 }
 
