@@ -687,6 +687,7 @@ profiles:
 
 func TestProfilesConfigureFileWritesProjectProfileJSON(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
+	runner := withSuccessfulProfilesConfigureProof(t)
 	fragmentPath := filepath.Join(repoDir, "backend-profile.yml")
 	mustWrite(t, fragmentPath, `
 profiles:
@@ -726,6 +727,9 @@ profiles:
 	if len(response.Profiles) != 1 || response.Profiles[0].Category != roundconfig.CategoryBackend {
 		t.Fatalf("profiles = %+v, want one backend profile", response.Profiles)
 	}
+	if len(runner.exactRequests) != 2 {
+		t.Fatalf("file configure exact proofs = %#v, want preferred and fallback", runner.exactRequests)
+	}
 	for _, want := range []string{"Profile Configure Preview", "Scope: project", "Category: backend", "configured-backend", "configured-fallback"} {
 		if !strings.Contains(preview, want) {
 			t.Fatalf("preview missing %q in:\n%s", want, preview)
@@ -750,6 +754,7 @@ profiles:
 
 func TestProfilesConfigureYesSkipsConfirmation(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
+	runner := withSuccessfulProfilesConfigureProof(t)
 	fragmentPath := filepath.Join(repoDir, "backend-profile.yml")
 	mustWrite(t, fragmentPath, `
 backend:
@@ -781,6 +786,9 @@ backend:
 	if !response.Changed {
 		t.Fatalf("expected --yes write to report changed, got %+v", response)
 	}
+	if len(runner.exactRequests) != 2 {
+		t.Fatalf("--yes exact proofs = %#v, want preferred and fallback", runner.exactRequests)
+	}
 	loaded, err := roundconfig.Load(roundconfig.LoadOptions{HomeDir: homeDir, WorkDir: repoDir})
 	if err != nil {
 		t.Fatalf("load config after --yes configure: %v", err)
@@ -811,6 +819,7 @@ func TestProfilesJSONSuccessReturnsEncoderFailures(t *testing.T) {
 
 func TestProfilesConfigureDryRunAndFailedConfigurationLeaveBytesUnchanged(t *testing.T) {
 	_, repoDir := withCLIWorkspace(t)
+	runner := withSuccessfulProfilesConfigureProof(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	original := "watch:\n  max_rounds: 4\n"
 	mustWrite(t, configPath, original)
@@ -842,6 +851,9 @@ backend:
 	if response.Changed {
 		t.Fatalf("dry-run changed = true, response=%+v", response)
 	}
+	if len(runner.exactRequests) != 2 {
+		t.Fatalf("dry-run exact proofs = %#v, want preferred and fallback", runner.exactRequests)
+	}
 	if got := mustRead(t, configPath); got != original {
 		t.Fatalf("dry-run mutated config\nwant: %q\n got: %q", original, got)
 	}
@@ -867,6 +879,279 @@ backend:
 	}
 	if got := mustRead(t, configPath); got != original {
 		t.Fatalf("invalid configure mutated config\nwant: %q\n got: %q", original, got)
+	}
+}
+
+func TestProfilesConfigureProofRunsBeforeConfirmationAndWrite(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+	original := "watch:\n  max_rounds: 4\n"
+	mustWrite(t, configPath, original)
+	fragmentPath := filepath.Join(repoDir, "backend-profile.yml")
+	mustWrite(t, fragmentPath, `
+backend:
+  preferred:
+    runtime: codex
+    model: exact-preferred
+    reasoning_effort: high
+  fallbacks:
+    - runtime: claude
+      model: exact-fallback
+      reasoning_effort: ""
+`)
+	runner := withSuccessfulProfilesConfigureProof(t)
+	withProfilesConfigureConfirm(t, func(context.Context, io.Writer, string) (bool, error) {
+		if len(runner.exactRequests) != 2 {
+			t.Fatalf("confirmation reached after %d exact proofs, want 2", len(runner.exactRequests))
+		}
+		if got := mustRead(t, configPath); got != original {
+			t.Fatalf("config mutated before confirmation\nwant: %q\n got: %q", original, got)
+		}
+		return true, nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("configure exit = %d stderr=%q", code, stderr.String())
+	}
+	if len(runner.exactRequests) != 2 {
+		t.Fatalf("exact proof requests = %#v, want preferred and fallback", runner.exactRequests)
+	}
+	if got := runner.exactRequests[0].Runtime; got.Model != "exact-preferred" || got.ReasoningEffort != "high" {
+		t.Fatalf("preferred proof = %+v", got)
+	}
+	if got := runner.exactRequests[1].Runtime; got.ID != "claude" || got.Model != "exact-fallback" || got.ReasoningEffort != "" {
+		t.Fatalf("fallback proof = %+v", got)
+	}
+	if response := decodeProfilesConfigureResponse(t, stdout.String()); !response.Changed {
+		t.Fatalf("configure response = %+v, want changed", response)
+	}
+}
+
+func TestProfilesConfigureInteractiveProofKeepsRecommendationsAdvisory(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+	original := "watch:\n  max_rounds: 4\n"
+	mustWrite(t, configPath, original)
+	withProfilesConfigureInput(t, "backend\ncodex\ninteractive-choice\nhigh\nclaude\ninteractive-fallback\nmedium\n\n")
+	runner := withSuccessfulProfilesConfigureProof(t)
+	withProfilesConfigureConfirm(t, func(context.Context, io.Writer, string) (bool, error) { return false, nil })
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"profiles", "configure", "--scope", "project", "--json"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("interactive configure exit = %d stderr=%q", code, stderr.String())
+	}
+	if len(runner.exactRequests) != 2 {
+		t.Fatalf("interactive exact proofs = %#v, want preferred and fallback", runner.exactRequests)
+	}
+	if got := runner.exactRequests[0].Runtime; got.Model != "interactive-choice" || got.ReasoningEffort != "high" {
+		t.Fatalf("interactive preferred proof = %+v", got)
+	}
+	if got := runner.exactRequests[1].Runtime; got.ID != "claude" || got.Model != "interactive-fallback" || got.ReasoningEffort != "medium" {
+		t.Fatalf("interactive fallback proof = %+v", got)
+	}
+	response := decodeProfilesConfigureResponse(t, stdout.String())
+	if response.Changed || len(response.Profiles) != 1 || response.Profiles[0].Preferred.Model != "interactive-choice" || response.Profiles[0].Fallbacks[0].Model != "interactive-fallback" {
+		t.Fatalf("interactive response inserted or changed a selection: %+v", response)
+	}
+	if got := mustRead(t, configPath); got != original {
+		t.Fatalf("interactive decline mutated config\nwant: %q\n got: %q", original, got)
+	}
+}
+
+func TestProfilesConfigureFallbackFailurePrecedesProofAndPreservesBytes(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+	original := "watch:\n  max_rounds: 4\n"
+	mustWrite(t, configPath, original)
+	runner := withSuccessfulProfilesConfigureProof(t)
+	withProfilesConfigureConfirm(t, func(context.Context, io.Writer, string) (bool, error) {
+		t.Fatal("invalid fallback must fail before confirmation")
+		return false, nil
+	})
+
+	tests := []struct {
+		name     string
+		fragment string
+	}{
+		{
+			name: "missing fallback",
+			fragment: `
+backend:
+  preferred:
+    runtime: codex
+    model: only-selection
+    reasoning_effort: high
+`,
+		},
+		{
+			name: "fallback duplicates preferred",
+			fragment: `
+backend:
+  preferred:
+    runtime: codex
+    model: only-selection
+    reasoning_effort: high
+  fallbacks:
+    - runtime: codex
+      model: only-selection
+      reasoning_effort: high
+`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fragmentPath := filepath.Join(repoDir, strings.ReplaceAll(tt.name, " ", "-")+".yml")
+			mustWrite(t, fragmentPath, tt.fragment)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json", "--yes"}, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("configure exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
+			}
+			response := decodeProfilesConfigureResponse(t, stdout.String())
+			if response.Changed || !strings.Contains(response.Error, "one additional distinct authorized and proven Agent Selection is required") {
+				t.Fatalf("fallback response = %+v", response)
+			}
+			if got := mustRead(t, configPath); got != original {
+				t.Fatalf("fallback failure mutated config\nwant: %q\n got: %q", original, got)
+			}
+		})
+	}
+	if len(runner.exactRequests) != 0 {
+		t.Fatalf("structural fallback failures created disposable Sessions: %#v", runner.exactRequests)
+	}
+}
+
+func TestProfilesConfigureProofFailureYesJSONPreservesBytes(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+	original := "watch:\n  max_rounds: 4\n"
+	mustWrite(t, configPath, original)
+	fragmentPath := filepath.Join(repoDir, "unsupported-profile.yml")
+	mustWrite(t, fragmentPath, `
+backend:
+  preferred:
+    runtime: codex
+    model: unavailable-model
+    reasoning_effort: high
+  fallbacks:
+    - runtime: codex
+      model: proven-fallback
+      reasoning_effort: xhigh
+`)
+	runner := &profileReadinessExactRunner{
+		prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
+			return agent.SelectionProof{}, &agent.SelectionUnsupportedError{
+				Kind:            agent.SelectionModelNotAdvertised,
+				Runtime:         req.Runtime.ID,
+				Model:           req.Runtime.Model,
+				ReasoningEffort: req.Runtime.ReasoningEffort,
+			}
+		},
+	}
+	withAgentRunner(t, runner)
+	withProfilesConfigureConfirm(t, func(context.Context, io.Writer, string) (bool, error) {
+		t.Fatal("--yes proof failure must not confirm")
+		return false, nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--yes", "--json"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("proof failure exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
+	}
+	response := decodeProfilesConfigureResponse(t, stdout.String())
+	if response.Changed || !strings.Contains(response.Error, agent.SelectionModelNotAdvertised) {
+		t.Fatalf("proof failure response = %+v", response)
+	}
+	if got := mustRead(t, configPath); got != original {
+		t.Fatalf("proof failure mutated config\nwant: %q\n got: %q", original, got)
+	}
+}
+
+func TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes(t *testing.T) {
+	t.Run("cleanup failure", func(t *testing.T) {
+		_, repoDir := withCLIWorkspace(t)
+		configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+		original := "watch:\n  max_rounds: 4\n"
+		mustWrite(t, configPath, original)
+		fragmentPath := filepath.Join(repoDir, "cleanup-profile.yml")
+		mustWrite(t, fragmentPath, profilesConfigureTestFragment("cleanup-preferred", "cleanup-fallback"))
+		withAgentRunner(t, &profileReadinessExactRunner{prove: func(agent.ProbeRequest) (agent.SelectionProof, error) {
+			return agent.SelectionProof{}, &agent.AgentSessionCleanupError{Session: "disposable", Err: errors.New("close failed")}
+		}})
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json", "--yes"}, &stdout, &stderr)
+
+		if code != exitPreflight {
+			t.Fatalf("cleanup failure exit = %d stderr=%q", code, stderr.String())
+		}
+		response := decodeProfilesConfigureResponse(t, stdout.String())
+		if response.Changed || !strings.Contains(response.Error, agent.SessionCleanupFailed) {
+			t.Fatalf("cleanup response = %+v", response)
+		}
+		if got := mustRead(t, configPath); got != original {
+			t.Fatalf("cleanup failure mutated config\nwant: %q\n got: %q", original, got)
+		}
+	})
+
+	t.Run("decline", func(t *testing.T) {
+		_, repoDir := withCLIWorkspace(t)
+		configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+		original := "watch:\n  max_rounds: 4\n"
+		mustWrite(t, configPath, original)
+		fragmentPath := filepath.Join(repoDir, "decline-profile.yml")
+		mustWrite(t, fragmentPath, profilesConfigureTestFragment("decline-preferred", "decline-fallback"))
+		withSuccessfulProfilesConfigureProof(t)
+		withProfilesConfigureConfirm(t, func(context.Context, io.Writer, string) (bool, error) { return false, nil })
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
+
+		if code != exitOK {
+			t.Fatalf("decline exit = %d stderr=%q", code, stderr.String())
+		}
+		if response := decodeProfilesConfigureResponse(t, stdout.String()); response.Changed {
+			t.Fatalf("decline response = %+v", response)
+		}
+		if got := mustRead(t, configPath); got != original {
+			t.Fatalf("decline mutated config\nwant: %q\n got: %q", original, got)
+		}
+	})
+}
+
+func TestProfilesConfigureJSONOutputFailureDoesNotMutateConfig(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+	original := "watch:\n  max_rounds: 4\n"
+	mustWrite(t, configPath, original)
+	fragmentPath := filepath.Join(repoDir, "output-profile.yml")
+	mustWrite(t, fragmentPath, profilesConfigureTestFragment("output-preferred", "output-fallback"))
+	withSuccessfulProfilesConfigureProof(t)
+	writeErr := errors.New("stdout failed")
+	var stderr bytes.Buffer
+
+	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json", "--yes"}, failingWriter{err: writeErr}, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("output failure exit = %d, want %d stderr=%q", code, exitRunFailed, stderr.String())
+	}
+	if got := mustRead(t, configPath); got != original {
+		t.Fatalf("output failure mutated config\nwant: %q\n got: %q", original, got)
 	}
 }
 
@@ -8223,6 +8508,36 @@ func withProfilesConfigureConfirm(t *testing.T, confirm func(context.Context, io
 	t.Cleanup(func() {
 		confirmProfilesConfigure = old
 	})
+}
+
+func withSuccessfulProfilesConfigureProof(t *testing.T) *profileReadinessExactRunner {
+	t.Helper()
+	runner := &profileReadinessExactRunner{
+		prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
+			return agent.SelectionProof{
+				Runtime:         req.Runtime.ID,
+				Model:           req.Runtime.Model,
+				ReasoningEffort: req.Runtime.ReasoningEffort,
+				Status:          agent.SelectionProofStatusProven,
+			}, nil
+		},
+	}
+	withAgentRunner(t, runner)
+	return runner
+}
+
+func profilesConfigureTestFragment(preferredModel string, fallbackModel string) string {
+	return fmt.Sprintf(`
+backend:
+  preferred:
+    runtime: codex
+    model: %s
+    reasoning_effort: high
+  fallbacks:
+    - runtime: codex
+      model: %s
+      reasoning_effort: xhigh
+`, preferredModel, fallbackModel)
 }
 
 func withStopAgentSessionCanceler(t *testing.T, cancel func(context.Context, agent.RuntimeSpec, agent.SessionRef) error) {

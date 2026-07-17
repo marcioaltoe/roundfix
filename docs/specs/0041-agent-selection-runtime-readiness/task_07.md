@@ -1,7 +1,7 @@
 ---
 task: task_07
 spec: 0041-agent-selection-runtime-readiness
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -33,27 +33,27 @@ configuration scope byte-identical.
 
 ## Subtasks
 
-- [ ] Separate candidate construction from persistence.
-- [ ] Run structural fallback validation before Agent Session work.
-- [ ] Prove candidate tuples through the shared readiness coordinator.
-- [ ] Align interactive, file, dry-run, JSON, and yes modes.
-- [ ] Add distinct-fallback remediation without automatic substitution.
-- [ ] Snapshot config bytes across every non-persisted outcome.
+- [x] Separate candidate construction from persistence.
+- [x] Run structural fallback validation before Agent Session work.
+- [x] Prove candidate tuples through the shared readiness coordinator.
+- [x] Align interactive, file, dry-run, JSON, and yes modes.
+- [x] Add distinct-fallback remediation without automatic substitution.
+- [x] Snapshot config bytes across every non-persisted outcome.
 
 ## Acceptance Criteria
 
-- [ ] A complete proven candidate reaches confirmation and writes only after
+- [x] A complete proven candidate reaches confirmation and writes only after
       authorization.
-- [ ] Missing or duplicate fallback fails before any disposable Session and
+- [x] Missing or duplicate fallback fails before any disposable Session and
       names the required distinct proof or authorization.
-- [ ] Unsupported adapter, model, or reasoning capability fails before
+- [x] Unsupported adapter, model, or reasoning capability fails before
       confirmation and reports the shared classification.
-- [ ] `--dry-run` performs exact proof but writes nothing.
-- [ ] `--yes` bypasses confirmation only; it cannot bypass structural or
+- [x] `--dry-run` performs exact proof but writes nothing.
+- [x] `--yes` bypasses confirmation only; it cannot bypass structural or
       runtime proof.
-- [ ] Decline, proof failure, cleanup failure, and JSON output failure leave
+- [x] Decline, proof failure, cleanup failure, and JSON output failure leave
       the target bytes unchanged and report `changed: false` when JSON applies.
-- [ ] No recommendation is inserted automatically into Preferred Selection or
+- [x] No recommendation is inserted automatically into Preferred Selection or
       the Fallback Chain.
 
 ## Context
@@ -80,3 +80,42 @@ configuration scope byte-identical.
 - `../../adr/0055-agent-selection-encoding-follows-advertised-acp-capabilities.md`
   → exact advertised selection proof.
 
+## Result
+
+Implemented profile configuration as a proposal transaction: Roundfix builds
+and validates the candidate config without mutation, proves every distinct
+candidate Preferred Selection and fallback through the shared readiness
+coordinator, asks for confirmation when required, and only then persists the
+proposal. Output failures roll the proposal back to the exact pre-command
+snapshot.
+
+Acceptance evidence:
+
+- `TestProfilesConfigureProofRunsBeforeConfirmationAndWrite` proves both
+  candidate tuples before confirmation observes the unchanged target, then
+  verifies the authorized write.
+- `TestProfilesConfigureFallbackFailurePrecedesProofAndPreservesBytes` and
+  `TestNormalizeProfilesFragmentRequiresDistinctFallback` prove missing and
+  duplicate fallbacks fail before any proof call and name the additional
+  distinct authorized and proven Agent Selection requirement.
+- `TestProfilesConfigureProofFailureYesJSONPreservesBytes` and
+  `TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes` prove
+  classified readiness, cleanup, `--yes`, and decline paths preserve bytes and
+  report `changed: false` in JSON.
+- `TestProfilesConfigureDryRunAndFailedConfigurationLeaveBytesUnchanged`
+  proves `--dry-run` executes both exact candidate proofs without writing.
+- `TestProfilesConfigureJSONOutputFailureDoesNotMutateConfig` proves a JSON
+  writer failure restores the byte-identical pre-command config.
+- `TestProfilesConfigureInteractiveProofKeepsRecommendationsAdvisory` proves
+  Interactive Input sends only the entered preferred and fallback selections
+  to readiness and inserts no recommendation.
+
+Verification:
+
+- `rtk go test ./internal/cli -run 'TestProfilesConfigure.*(Proof|Fallback|DryRun|JSON|Yes|Decline|NoMutation)' -count=1` — passed, 14 tests.
+- `rtk go test ./internal/config -run 'Test(WriteProfilesConfig|NormalizeProfilesFragment).*Fallback' -count=1` — passed, 3 tests.
+- `rtk go test -race ./internal/cli -run 'TestProfilesConfigure.*(Proof|NoMutation)' -count=1` — passed, 9 tests.
+- `rtk go test ./internal/config ./internal/cli -count=1` — passed.
+- `rtk make verify` — passed.
+
+Follow-ups: none.

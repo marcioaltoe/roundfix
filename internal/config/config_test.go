@@ -752,6 +752,39 @@ profiles:
 	}
 }
 
+func TestNormalizeProfilesFragmentRequiresDistinctFallback(t *testing.T) {
+	preferred := selectionForTest("codex", "only-selection", "high")
+	tests := []struct {
+		name     string
+		profile  AgentSelectionProfile
+		contains string
+	}{
+		{
+			name:     "missing fallback",
+			profile:  AgentSelectionProfile{Preferred: preferred},
+			contains: "one additional distinct authorized and proven Agent Selection is required",
+		},
+		{
+			name: "duplicate fallback",
+			profile: AgentSelectionProfile{
+				Preferred: preferred,
+				Fallbacks: []AgentSelection{preferred},
+			},
+			contains: "one additional distinct authorized and proven Agent Selection is required",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NormalizeProfilesFragment(Profiles{
+				CategoryBackend: {Profile: tt.profile},
+			})
+			if err == nil || !strings.Contains(err.Error(), tt.contains) {
+				t.Fatalf("NormalizeProfilesFragment error = %v, want %q", err, tt.contains)
+			}
+		})
+	}
+}
+
 func TestProfileConfigAtomicParsesStrictProfileFragments(t *testing.T) {
 	profiles, err := ParseProfilesFragment([]byte(`
 profiles:
