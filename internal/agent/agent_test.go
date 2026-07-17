@@ -660,12 +660,217 @@ func TestWriterSinkRendersConsoleTextContract(t *testing.T) {
 	}
 }
 
+func TestConsoleDisplaySinkDeduplicatesToolSummaries(t *testing.T) {
+	const path = "internal/app/server.go"
+	const line = "edit internal/app/server.go (+1/-1)\n"
+
+	t.Run("same identifier exact bytes collapse", func(t *testing.T) {
+		var buffer strings.Builder
+		sink := NewConsoleDisplaySink(&buffer)
+
+		publishConsoleEvent(t, sink, toolLifecycleEvent(
+			runevent.KindAgentToolStarted,
+			"edit_call_1",
+			"pending",
+			compactEditLifecyclePayload("tool_call", "edit_call_1", path, "old\n", "new\n", "pending"),
+		))
+		publishConsoleEvent(t, sink, toolLifecycleEvent(
+			runevent.KindAgentToolUpdated,
+			"edit_call_1",
+			"completed",
+			compactEditLifecyclePayload("tool_call_update", "edit_call_1", path, "old\n", "new\n", "completed"),
+		))
+
+		if buffer.String() != line {
+			t.Fatalf("expected duplicate lifecycle pair to render once, got %q", buffer.String())
+		}
+	})
+
+	t.Run("distinct identifiers keep byte-identical summaries", func(t *testing.T) {
+		var buffer strings.Builder
+		sink := NewConsoleDisplaySink(&buffer)
+
+		publishConsoleEvent(t, sink, toolLifecycleEvent(
+			runevent.KindAgentToolUpdated,
+			"edit_call_1",
+			"running",
+			compactEditLifecyclePayload("tool_call_update", "edit_call_1", path, "old\n", "new\n", "running"),
+		))
+		publishConsoleEvent(t, sink, toolLifecycleEvent(
+			runevent.KindAgentToolUpdated,
+			"edit_call_2",
+			"running",
+			compactEditLifecyclePayload("tool_call_update", "edit_call_2", path, "old\n", "new\n", "running"),
+		))
+
+		if buffer.String() != line+line {
+			t.Fatalf("expected distinct tool calls to render twice, got %q", buffer.String())
+		}
+	})
+
+	t.Run("same identifier renders changed summaries in order", func(t *testing.T) {
+		var buffer strings.Builder
+		sink := NewConsoleDisplaySink(&buffer)
+
+		publishConsoleEvent(t, sink, toolLifecycleEvent(
+			runevent.KindAgentToolUpdated,
+			"edit_call_1",
+			"running",
+			compactEditLifecyclePayload("tool_call_update", "edit_call_1", path, "old\n", "new\n", "running"),
+		))
+		publishConsoleEvent(t, sink, toolLifecycleEvent(
+			runevent.KindAgentToolUpdated,
+			"edit_call_1",
+			"running",
+			compactEditLifecyclePayload("tool_call_update", "edit_call_1", path, "old\n", "new\nnewer\n", "running"),
+		))
+
+		want := line + "edit internal/app/server.go (+2/-1)\n"
+		if buffer.String() != want {
+			t.Fatalf("expected changed summaries in order\nwant: %q\n got: %q", want, buffer.String())
+		}
+	})
+
+	t.Run("missing identifiers and non-tool events match writer sink bytes", func(t *testing.T) {
+		payload := compactEditLifecyclePayload("tool_call_update", "payload_only_id", path, "old\n", "new\n", "running")
+		events := []runevent.RunEvent{
+			{Source: runevent.SourceAgent, Kind: runevent.KindAgentToolUpdated, Payload: payload},
+			{Source: runevent.SourceAgent, Kind: runevent.KindAgentToolUpdated, Payload: payload},
+			{Source: runevent.SourceAgent, Kind: runevent.KindAgentRaw, Payload: []byte(`{"text":"raw line\n"}`)},
+		}
+		var direct strings.Builder
+		writer := WriterSink{Writer: &direct}
+		var displayed strings.Builder
+		sink := NewConsoleDisplaySink(&displayed)
+
+		for _, event := range events {
+			publishConsoleEvent(t, writer, event)
+			publishConsoleEvent(t, sink, event)
+		}
+
+		if displayed.String() != direct.String() {
+			t.Fatalf("expected missing-ID and non-tool bytes to match WriterSink\nwant: %q\n got: %q", direct.String(), displayed.String())
+		}
+	})
+
+	t.Run("silent events do not change deduplication state", func(t *testing.T) {
+		var buffer strings.Builder
+		sink := NewConsoleDisplaySink(&buffer)
+		event := toolLifecycleEvent(
+			runevent.KindAgentToolUpdated,
+			"edit_call_1",
+			"running",
+			compactEditLifecyclePayload("tool_call_update", "edit_call_1", path, "old\n", "new\n", "running"),
+		)
+
+		publishConsoleEvent(t, sink, event)
+		publishConsoleEvent(t, sink, runevent.RunEvent{Source: runevent.SourceAgent, Kind: "future.unknown", ToolID: "edit_call_1", Payload: []byte(`{}`)})
+		publishConsoleEvent(t, sink, runevent.RunEvent{Source: runevent.SourceAgent, Kind: runevent.KindAgentToolUpdated, ToolID: "edit_call_1", Payload: []byte(`{`)})
+		publishConsoleEvent(t, sink, runevent.RunEvent{
+			Source:  runevent.SourceAgent,
+			Kind:    runevent.KindAgentThought,
+			Payload: []byte(`{"sessionId":"s","update":{"sessionUpdate":"agent_thought_chunk","content":{"type":"text","text":"   \n"}}}`),
+		})
+		publishConsoleEvent(t, sink, event)
+
+		if buffer.String() != line {
+			t.Fatalf("expected silent events to leave deduplication state unchanged, got %q", buffer.String())
+		}
+	})
+
+	t.Run("terminal tool states release the identifier", func(t *testing.T) {
+		var buffer strings.Builder
+		sink := NewConsoleDisplaySink(&buffer)
+
+		publishConsoleEvent(t, sink, toolLifecycleEvent(
+			runevent.KindAgentToolStarted,
+			"edit_call_1",
+			"running",
+			compactEditLifecyclePayload("tool_call", "edit_call_1", path, "old\n", "new\n", "running"),
+		))
+		publishConsoleEvent(t, sink, toolLifecycleEvent(
+			runevent.KindAgentToolUpdated,
+			"edit_call_1",
+			"completed",
+			compactEditLifecyclePayload("tool_call_update", "edit_call_1", path, "old\n", "new\n", "completed"),
+		))
+		publishConsoleEvent(t, sink, toolLifecycleEvent(
+			runevent.KindAgentToolUpdated,
+			"edit_call_1",
+			"running",
+			compactEditLifecyclePayload("tool_call_update", "edit_call_1", path, "old\n", "new\n", "running"),
+		))
+
+		if buffer.String() != line+line {
+			t.Fatalf("expected terminal state to release identifier, got %q", buffer.String())
+		}
+	})
+}
+
+func TestConsoleDisplaySinkDoesNotAdvanceStateWhenWriteFails(t *testing.T) {
+	writeErr := errors.New("write failed")
+	writer := &failOnceWriter{err: writeErr}
+	sink := NewConsoleDisplaySink(writer)
+	event := toolLifecycleEvent(
+		runevent.KindAgentToolUpdated,
+		"edit_call_1",
+		"running",
+		compactEditLifecyclePayload("tool_call_update", "edit_call_1", "internal/app/server.go", "old\n", "new\n", "running"),
+	)
+
+	if err := sink.Publish(context.Background(), event); !errors.Is(err, writeErr) {
+		t.Fatalf("expected first publish to fail with write error, got %v", err)
+	}
+	if err := sink.Publish(context.Background(), event); err != nil {
+		t.Fatalf("expected retry to publish after failed write, got %v", err)
+	}
+
+	if writer.buffer.String() != "edit internal/app/server.go (+1/-1)\n" {
+		t.Fatalf("expected retry to write the summary, got %q", writer.buffer.String())
+	}
+}
+
+type failOnceWriter struct {
+	err    error
+	writes int
+	buffer strings.Builder
+}
+
+func (writer *failOnceWriter) Write(p []byte) (int, error) {
+	writer.writes++
+	if writer.writes == 1 {
+		return 0, writer.err
+	}
+	return writer.buffer.Write(p)
+}
+
+func publishConsoleEvent(t *testing.T, sink runevent.Sink, event runevent.RunEvent) {
+	t.Helper()
+	if err := sink.Publish(context.Background(), event); err != nil {
+		t.Fatalf("publish console event: %v", err)
+	}
+}
+
+func toolLifecycleEvent(kind runevent.Kind, toolID string, toolState string, payload []byte) runevent.RunEvent {
+	return runevent.RunEvent{
+		Source:    runevent.SourceAgent,
+		Kind:      kind,
+		ToolID:    toolID,
+		ToolState: toolState,
+		Payload:   payload,
+	}
+}
+
 func compactReadPayload(path string, body string) []byte {
 	return []byte(`{"sessionId":"s","update":{"sessionUpdate":"tool_call_update","toolCallId":"read_1","kind":"read","title":"read","status":"completed","locations":[{"path":` + strconv.Quote(path) + `}],"content":[{"type":"text","path":` + strconv.Quote(path) + `,"text":` + strconv.Quote(body) + `}]}}`)
 }
 
 func compactEditPayload(path string, oldText string, newText string) []byte {
-	return []byte(`{"sessionId":"s","update":{"sessionUpdate":"tool_call_update","toolCallId":"edit_1","kind":"edit","title":"edit","status":"completed","locations":[{"path":` + strconv.Quote(path) + `}],"content":[{"type":"diff","path":` + strconv.Quote(path) + `,"oldText":` + strconv.Quote(oldText) + `,"newText":` + strconv.Quote(newText) + `}]}}`)
+	return compactEditLifecyclePayload("tool_call_update", "edit_1", path, oldText, newText, "completed")
+}
+
+func compactEditLifecyclePayload(sessionUpdate string, toolID string, path string, oldText string, newText string, status string) []byte {
+	return []byte(`{"sessionId":"s","update":{"sessionUpdate":` + strconv.Quote(sessionUpdate) + `,"toolCallId":` + strconv.Quote(toolID) + `,"kind":"edit","title":"edit","status":` + strconv.Quote(status) + `,"locations":[{"path":` + strconv.Quote(path) + `}],"content":[{"type":"diff","path":` + strconv.Quote(path) + `,"oldText":` + strconv.Quote(oldText) + `,"newText":` + strconv.Quote(newText) + `}]}}`)
 }
 
 func compactOutputLines(text string) []string {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 	"time"
 
 	"roundfix/internal/runevent"
@@ -145,6 +146,89 @@ func (sink WriterSink) Publish(_ context.Context, event runevent.RunEvent) error
 	}
 	_, err := io.WriteString(sink.Writer, text)
 	return err
+}
+
+// ConsoleDisplaySink renders plain-text Agent console output and suppresses
+// byte-identical repeated summaries for one active tool call identifier.
+type ConsoleDisplaySink struct {
+	Writer io.Writer
+
+	mu         sync.Mutex
+	lastByTool map[string]string
+}
+
+func NewConsoleDisplaySink(writer io.Writer) *ConsoleDisplaySink {
+	return &ConsoleDisplaySink{Writer: writer, lastByTool: map[string]string{}}
+}
+
+func (sink *ConsoleDisplaySink) Publish(_ context.Context, event runevent.RunEvent) error {
+	sink.mu.Lock()
+	defer sink.mu.Unlock()
+
+	update, ok := StreamUpdateFromEvent(event)
+	if !ok {
+		return nil
+	}
+	text := ConsoleText(update)
+	if text == "" {
+		if isSessionTerminalStatus(update) {
+			sink.lastByTool = nil
+		}
+		return nil
+	}
+	if !isToolLifecycleKind(update.Kind) || strings.TrimSpace(event.ToolID) == "" {
+		return sink.writeComplete(text)
+	}
+
+	sink.ensureToolState()
+	if previous, ok := sink.lastByTool[event.ToolID]; ok && previous == text {
+		if isTerminalToolState(event.ToolState) {
+			delete(sink.lastByTool, event.ToolID)
+		}
+		return nil
+	}
+	if err := sink.writeComplete(text); err != nil {
+		return err
+	}
+	sink.lastByTool[event.ToolID] = text
+	if isTerminalToolState(event.ToolState) {
+		delete(sink.lastByTool, event.ToolID)
+	}
+	return nil
+}
+
+func (sink *ConsoleDisplaySink) ensureToolState() {
+	if sink.lastByTool == nil {
+		sink.lastByTool = map[string]string{}
+	}
+}
+
+func (sink *ConsoleDisplaySink) writeComplete(text string) error {
+	written, err := io.WriteString(sink.Writer, text)
+	if err != nil {
+		return err
+	}
+	if written != len(text) {
+		return io.ErrShortWrite
+	}
+	return nil
+}
+
+func isToolLifecycleKind(kind StreamUpdateKind) bool {
+	return kind == StreamUpdateToolStarted || kind == StreamUpdateToolUpdated
+}
+
+func isTerminalToolState(state string) bool {
+	switch strings.TrimSpace(state) {
+	case "completed", "failed", "stopped":
+		return true
+	default:
+		return false
+	}
+}
+
+func isSessionTerminalStatus(update StreamUpdate) bool {
+	return update.Kind == StreamUpdateStatus && update.Status == AgentSessionClosedStatus
 }
 
 // ConsoleText renders one stream update as console text. It is the shared

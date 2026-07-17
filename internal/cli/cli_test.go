@@ -7638,6 +7638,112 @@ func TestAgentConsoleDisplaySinkKeepsWriterBytesByDefault(t *testing.T) {
 	}
 }
 
+func TestAgentConsoleDisplaySinkUsesStatefulSinkForNonTTYAndDetachedLogWriter(t *testing.T) {
+	ctx := context.Background()
+	homeDir, repoDir := withCLIWorkspace(t)
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = runStore.Close()
+	})
+	run, err := runStore.CreateRun(ctx, store.CreateRunRequest{
+		Kind:           store.KindResolve,
+		HeadRepository: "owner/project",
+		HeadBranch:     "feature/review",
+		BaseRepository: "owner/project",
+		PRNumber:       "123",
+		GitRoot:        repoDir,
+		LocalBranch:    "feature/review",
+		HeadSHA:        "abc123",
+		ArtifactDir:    filepath.Join(repoDir, ".roundfix"),
+		WorkDir:        repoDir,
+		Agent:          "codex",
+	})
+	if err != nil {
+		t.Fatalf("create Run: %v", err)
+	}
+	consoleLog, err := os.CreateTemp(t.TempDir(), "console-*.log")
+	if err != nil {
+		t.Fatalf("create Console Log file: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = consoleLog.Close()
+	})
+	ui, err := startRunUI(ctx, roundtui.LiveRunView{}, run.ID, homeDir, runStore, consoleLog, false)
+	if err != nil {
+		t.Fatalf("start non-TTY Run UI: %v", err)
+	}
+
+	events := []runevent.RunEvent{
+		cliToolLifecycleEvent(run.ID, runevent.KindAgentToolStarted, "edit_call_1", "pending", compactCLIEditLifecyclePayload("tool_call", "edit_call_1", "internal/app/server.go", "old\n", "new\n", "pending")),
+		cliToolLifecycleEvent(run.ID, runevent.KindAgentToolUpdated, "edit_call_1", "completed", compactCLIEditLifecyclePayload("tool_call_update", "edit_call_1", "internal/app/server.go", "old\n", "new\n", "completed")),
+	}
+	for _, event := range events {
+		if err := ui.sink.Publish(ctx, event); err != nil {
+			t.Fatalf("publish Run Event through non-TTY UI: %v", err)
+		}
+	}
+	ui.Close()
+
+	if err := consoleLog.Close(); err != nil {
+		t.Fatalf("close Console Log file: %v", err)
+	}
+	consoleBytes, err := os.ReadFile(consoleLog.Name())
+	if err != nil {
+		t.Fatalf("read Console Log file: %v", err)
+	}
+	if string(consoleBytes) != "edit internal/app/server.go (+1/-1)\n" {
+		t.Fatalf("expected non-TTY Console Log writer to collapse duplicate summary, got %q", string(consoleBytes))
+	}
+	journaled, err := runStore.RunEventsAfter(ctx, run.ID, 0, 10)
+	if err != nil {
+		t.Fatalf("read journaled Run Events: %v", err)
+	}
+	if len(journaled) != 2 {
+		t.Fatalf("expected both lifecycle events to stay journaled, got %d", len(journaled))
+	}
+	for index, entry := range journaled {
+		if string(entry.Event.Payload) != string(events[index].Payload) {
+			t.Fatalf("expected journal payload %d unchanged\nwant: %s\ngot:  %s", index, events[index].Payload, entry.Event.Payload)
+		}
+	}
+}
+
+func TestAgentConsoleDisplaySinkKeepsNoAgentConsoleSuppression(t *testing.T) {
+	event := runevent.RunEvent{
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentRaw,
+		Payload: []byte(`{"text":"fake agent output\n"}`),
+	}
+	var buffer bytes.Buffer
+
+	if err := agentConsoleDisplaySink(&buffer, true).Publish(context.Background(), event); err != nil {
+		t.Fatalf("publish through suppressed display sink: %v", err)
+	}
+
+	if buffer.Len() != 0 {
+		t.Fatalf("expected --no-agent-console to suppress Agent output, got %q", buffer.String())
+	}
+}
+
+func cliToolLifecycleEvent(runID string, kind runevent.Kind, toolID string, toolState string, payload []byte) runevent.RunEvent {
+	return runevent.RunEvent{
+		RunID:     runID,
+		Batch:     1,
+		Source:    runevent.SourceAgent,
+		Kind:      kind,
+		ToolID:    toolID,
+		ToolState: toolState,
+		Payload:   payload,
+	}
+}
+
+func compactCLIEditLifecyclePayload(sessionUpdate string, toolID string, path string, oldText string, newText string, status string) []byte {
+	return []byte(`{"sessionId":"s","update":{"sessionUpdate":` + strconv.Quote(sessionUpdate) + `,"toolCallId":` + strconv.Quote(toolID) + `,"kind":"edit","title":"edit","status":` + strconv.Quote(status) + `,"locations":[{"path":` + strconv.Quote(path) + `}],"content":[{"type":"diff","path":` + strconv.Quote(path) + `,"oldText":` + strconv.Quote(oldText) + `,"newText":` + strconv.Quote(newText) + `}]}}`)
+}
+
 func assertJournalContainsAgentAndDaemonEvents(t *testing.T, events []store.JournalEvent, agentText string) {
 	t.Helper()
 	agentSeen := false
