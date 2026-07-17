@@ -1793,10 +1793,12 @@ func createFetchRun(ctx context.Context, runStore *store.Store, req commandReque
 }
 
 type resolveBatchPlan struct {
-	roundNumber int
-	selection   rounds.SelectResult
-	plan        rounds.BatchPlan
-	runtime     agent.RuntimeSpec
+	roundNumber     int
+	selection       rounds.SelectResult
+	plan            rounds.BatchPlan
+	runtime         agent.RuntimeSpec
+	agentSelections daemon.AgentSelectionProfiles
+	runtimeFactory  daemon.AgentRuntimeFactory
 }
 
 type resolveBatchResult struct {
@@ -1822,6 +1824,12 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
+	resolvePlan.agentSelections, err = operationalAgentSelectionProfiles(loaded.Config, categories, profilePreflight.Override)
+	if err != nil {
+		printPreflightFailure(req.name, err, stderr)
+		return exitPreflight
+	}
+	resolvePlan.runtimeFactory = operationalRuntimeFactory(req)
 	req = requestWithRuntimeSelection(req, resolvePlan.runtime)
 
 	runStore, err := store.Open(ctx, loaded.HomeDir)
@@ -1850,8 +1858,12 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		return exitRunFailed
 	}
 	session := agent.SessionRefForRun(run.ID, preflightResult.Git.Root)
+	sessionForClose := session
+	if len(resolvePlan.agentSelections) > 0 {
+		sessionForClose = agent.SessionRef{}
+	}
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
-		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
+		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printResolveRunFailure(err, stderr)
 		return exitRunFailed
@@ -1868,7 +1880,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	}
 	ui, err := startRunUI(ctx, cockpitView, run.ID, loaded.HomeDir, runStore, stderr, req.noAgentConsole)
 	if err != nil {
-		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
+		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printResolveRunFailure(err, stderr)
 		return exitRunFailed
@@ -1878,7 +1890,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	cycleResult, err := executeResolveCycle(ctx, req, loaded, preflightResult, run.ID, session, resolvePlan, collaborators, runStore, ui)
 	if err != nil {
 		if isStopRequest(ctx, err) {
-			closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
+			closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
 			code := completeStoppedRunRecord(runStore, run.ID, notifier, stderr)
 			ui.Wait()
 			ui.Close()
@@ -1891,7 +1903,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 			printReviewIssueReport(stdout, store.StateStopped, 1, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues, stderr))
 			return exitOK
 		}
-		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
+		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		ui.Wait()
 		ui.Close()
@@ -1906,11 +1918,11 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	completed, err := runStore.CompleteRun(ctx, run.ID, outcome)
 	if err != nil {
 		ui.Close()
-		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
+		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
 		printResolveRunFailureAfterBatchCommit(err, stderr)
 		return exitRunFailed
 	}
-	closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, completed.ID, runStore)
+	closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, completed.ID, runStore)
 	publishRunOutcome(ctx, runStore, completed.ID, completed.State, cycleResult.Remaining, stderr)
 	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed)
 	// The cockpit stays on screen, read-only, until the user closes it.
@@ -2201,17 +2213,19 @@ func publishPushDecision(ctx context.Context, sink runevent.Sink, runID string, 
 
 func cyclePlanFrom(req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, gitRoot string, session agent.SessionRef, resolvePlan resolveBatchPlan) daemon.CyclePlan {
 	return daemon.CyclePlan{
-		RunID:        runID,
-		Session:      session,
-		GitRoot:      gitRoot,
-		ArtifactDir:  req.artifactDir,
-		ReviewRoot:   req.reviewRoot,
-		AgentLogs:    loaded.Config.Logs.Agent,
-		SourceName:   req.source,
-		AgentName:    req.agent,
-		Runtime:      resolvePlan.runtime,
-		Verification: loaded.Config.Defaults.Verification,
-		AutoCommit:   loaded.Config.Defaults.AutoCommit,
+		RunID:           runID,
+		Session:         session,
+		GitRoot:         gitRoot,
+		ArtifactDir:     req.artifactDir,
+		ReviewRoot:      req.reviewRoot,
+		AgentLogs:       loaded.Config.Logs.Agent,
+		SourceName:      req.source,
+		AgentName:       req.agent,
+		Runtime:         resolvePlan.runtime,
+		AgentSelections: resolvePlan.agentSelections,
+		RuntimeFactory:  resolvePlan.runtimeFactory,
+		Verification:    loaded.Config.Defaults.Verification,
+		AutoCommit:      loaded.Config.Defaults.AutoCommit,
 		PullRequest: daemon.PullRequestRef{
 			Number:         preflightResult.PullRequest.Number,
 			BaseRepository: preflightResult.PullRequest.BaseRepository,
@@ -2237,6 +2251,12 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
+	agentSelections, err := operationalAgentSelectionProfiles(loaded.Config, categories, profilePreflight.Override)
+	if err != nil {
+		printPreflightFailure(req.name, err, stderr)
+		return exitPreflight
+	}
+	runtimeFactory := operationalRuntimeFactory(req)
 	req = requestWithRuntimeSelection(req, runtime)
 
 	runStore, err := store.Open(ctx, loaded.HomeDir)
@@ -2265,8 +2285,12 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		return exitRunFailed
 	}
 	session := agent.SessionRefForRun(run.ID, preflightResult.Git.Root)
+	sessionForClose := session
+	if len(agentSelections) > 0 {
+		sessionForClose = agent.SessionRef{}
+	}
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
-		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
+		closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printWatchRunFailure(err, stderr)
 		return exitRunFailed
@@ -2291,7 +2315,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 	ui, err := startRunUI(ctx, cockpitView, run.ID, loaded.HomeDir, runStore, stderr, req.noAgentConsole)
 	if err != nil {
-		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
+		closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printWatchRunFailure(err, stderr)
 		return exitRunFailed
@@ -2339,7 +2363,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 			return fetchResult, err
 		}),
 		Resolver: watch.ResolveFunc(func(ctx context.Context) (watch.ResolveResult, error) {
-			return resolveWatchBatches(ctx, req, loaded, preflightResult, runtime, run.ID, session, collaborators, runStore, ui)
+			return resolveWatchBatches(ctx, req, loaded, preflightResult, runtime, agentSelections, runtimeFactory, run.ID, session, collaborators, runStore, ui)
 		}),
 		CheckSource: watch.CheckFunc(func(ctx context.Context, headSHA string) (watch.HeadCheckState, error) {
 			return watchHeadCheck(ctx, reviewsource.HeadCheckRequest{
@@ -2372,11 +2396,11 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	completed, completeErr := runStore.CompleteRun(completeCtx, run.ID, terminal)
 	if completeErr != nil {
 		ui.Close()
-		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
+		closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 		printRunFailure(req.name, completeErr, stderr)
 		return exitRunFailed
 	}
-	closeAgentSession(completeCtx, collaborators.runner, runtime, session, completed.ID, runStore)
+	closeAgentSession(completeCtx, collaborators.runner, runtime, sessionForClose, completed.ID, runStore)
 	publishRunOutcome(completeCtx, runStore, completed.ID, completed.State, result.Remaining, stderr)
 	notifyTerminalOutcome(completeCtx, runStore, notifier, stderr, completed)
 	// The cockpit stays on screen, read-only, until the user closes it.
@@ -2626,7 +2650,7 @@ func fetchWatchRound(ctx context.Context, req commandRequest, loaded roundconfig
 // next fetched Round re-downloads their still-open Review Source threads
 // as fresh occurrences. Progress means the cycle settled at least one
 // selected issue, so the watch loop can stop Rounds that change nothing.
-func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runtime agent.RuntimeSpec, runID string, session agent.SessionRef, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (watch.ResolveResult, error) {
+func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runtime agent.RuntimeSpec, agentSelections daemon.AgentSelectionProfiles, runtimeFactory daemon.AgentRuntimeFactory, runID string, session agent.SessionRef, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (watch.ResolveResult, error) {
 	resolvePlan, err := prepareResolveBatch(ctx, req, loaded, preflightResult)
 	if err != nil {
 		var noArtifacts rounds.NoCompatibleArtifactsError
@@ -2636,6 +2660,8 @@ func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundco
 		return watch.ResolveResult{}, err
 	}
 	resolvePlan.runtime = runtime
+	resolvePlan.agentSelections = agentSelections
+	resolvePlan.runtimeFactory = runtimeFactory
 	result, err := executeResolveCycle(ctx, req, loaded, preflightResult, runID, session, resolvePlan, collaborators, runStore, ui)
 	if err != nil {
 		return watch.ResolveResult{}, err

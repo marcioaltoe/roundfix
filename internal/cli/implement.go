@@ -146,6 +146,11 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		printPreflightFailure("implement", err, stderr)
 		return exitPreflight
 	}
+	agentSelections, err := operationalAgentSelectionProfiles(loadedConfig.Config, categories, profilePreflight.Override)
+	if err != nil {
+		printPreflightFailure("implement", err, stderr)
+		return exitPreflight
+	}
 	req = requestWithRuntimeSelection(req, runtime)
 
 	runStore, err := store.Open(ctx, loadedConfig.HomeDir)
@@ -233,8 +238,12 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 	fmt.Fprintf(stderr, "Run Worktree: %s\n", runRef.Path)
 	session := agent.SessionRefForRun(run.ID, runRef.Path)
+	sessionForClose := session
+	if len(agentSelections) > 0 {
+		sessionForClose = agent.SessionRef{}
+	}
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
-		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
+		closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 		markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 		printImplementRunFailureWithWorktree(err, runRef.Path, stderr)
 		return exitRunFailed
@@ -246,17 +255,17 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	}
 	ui, err := startRunUI(ctx, view, run.ID, loadedConfig.HomeDir, runStore, stderr, req.noAgentConsole)
 	if err != nil {
-		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
+		closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 		markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 		printImplementRunFailure(err, stderr)
 		return exitRunFailed
 	}
 	defer ui.Close()
 
-	cycleResult, err := executeImplementCycle(ctx, gitState, runRef, session, executionSpecsRoot, executionGraph, req.artifactDir, loadedConfig.Config.Logs.Agent, req.qa, loadedConfig.Config.Worktree.Concurrency, loadedConfig.Config.Worktree.Copy, worktreeBootstrapSpec(loadedConfig.Config), newBootstrapOutputWriter(ctx, run.ID, runStore, ui.progress), runtime, collaborators, runStore, ui)
+	cycleResult, err := executeImplementCycle(ctx, gitState, runRef, session, executionSpecsRoot, executionGraph, req.artifactDir, loadedConfig.Config.Logs.Agent, req.qa, loadedConfig.Config.Worktree.Concurrency, loadedConfig.Config.Worktree.Copy, worktreeBootstrapSpec(loadedConfig.Config), newBootstrapOutputWriter(ctx, run.ID, runStore, ui.progress), runtime, agentSelections, operationalRuntimeFactory(req), collaborators, runStore, ui)
 	if err != nil {
 		if isStopRequest(ctx, err) {
-			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
+			closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 			code := completeStoppedRunRecord(runStore, run.ID, outcomeNotifier, stderr)
 			ui.Wait()
 			ui.Close()
@@ -271,7 +280,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			printImplementOutcomeLine(stdout, store.StateStopped, counts)
 			return exitOK
 		}
-		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
+		closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 		markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 		ui.Wait()
 		ui.Close()
@@ -293,7 +302,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	if outcome == store.StateClean {
 		integration, err := integrateCleanImplementRun(ctx, runRef, gitState.Branch)
 		if err != nil {
-			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
+			closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 			markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 			ui.Wait()
 			ui.Close()
@@ -311,7 +320,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	if outcome == store.StateClean {
 		pushResult, err = maybeRunImplementAutoPush(ctx, gitState, loadedConfig.Config, collaborators, runStore, ui, run.ID, stderr)
 		if err != nil {
-			closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
+			closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 			markRunFailedAndNotify(ctx, runStore, run.ID, outcomeNotifier, stderr)
 			ui.Wait()
 			ui.Close()
@@ -322,11 +331,11 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	completed, err := runStore.CompleteRun(ctx, run.ID, outcome)
 	if err != nil {
 		ui.Close()
-		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
+		closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 		printImplementRunFailure(err, stderr)
 		return exitRunFailed
 	}
-	closeAgentSession(ctx, collaborators.runner, runtime, session, completed.ID, runStore)
+	closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, completed.ID, runStore)
 	publishRunOutcome(ctx, runStore, completed.ID, completed.State, cycleResult.Failed+cycleResult.Skipped, stderr)
 	notifyTerminalOutcome(ctx, runStore, outcomeNotifier, stderr, completed)
 	// The cockpit stays on screen, read-only, until the user closes it.
@@ -434,7 +443,7 @@ func printSkippedSpecDiagnostics(stderr io.Writer, skipped []spec.SkippedSpec) {
 
 // executeImplementCycle wires the Run engine exactly like the resolve path
 // and runs one Task cycle over the full graph.
-func executeImplementCycle(ctx context.Context, gitState preflight.GitState, runRef runworktree.Ref, session agent.SessionRef, specsRoot string, graph *spec.Graph, artifactDir string, agentLogs bool, qa bool, concurrency int, copyList []string, bootstrap runworktree.BootstrapSpec, bootstrapOutput io.Writer, runtime agent.RuntimeSpec, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
+func executeImplementCycle(ctx context.Context, gitState preflight.GitState, runRef runworktree.Ref, session agent.SessionRef, specsRoot string, graph *spec.Graph, artifactDir string, agentLogs bool, qa bool, concurrency int, copyList []string, bootstrap runworktree.BootstrapSpec, bootstrapOutput io.Writer, runtime agent.RuntimeSpec, agentSelections daemon.AgentSelectionProfiles, runtimeFactory daemon.AgentRuntimeFactory, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (daemon.TaskCycleResult, error) {
 	runID := runRef.RunID
 	fmt.Fprintf(ui.progress, "%s: implement selected Spec %s with %d Task(s); %d to execute this Run.\n", app.Name, graph.Spec.Slug, len(graph.Tasks), countNonCompletedTasks(graph.Tasks))
 	fmt.Fprintf(ui.progress, "Implement Run: %s\n", runID)
@@ -477,6 +486,8 @@ func executeImplementCycle(ctx context.Context, gitState preflight.GitState, run
 		Spec:            graph.Spec,
 		Tasks:           graph.Tasks,
 		Runtime:         runtime,
+		AgentSelections: agentSelections,
+		RuntimeFactory:  runtimeFactory,
 		QA:              qa,
 		Concurrency:     concurrency,
 		CopyList:        copyList,

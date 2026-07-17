@@ -37,6 +37,8 @@ type TaskPlan struct {
 	Spec            spec.Spec
 	Tasks           []spec.Task
 	Runtime         agent.RuntimeSpec
+	AgentSelections AgentSelectionProfiles
+	RuntimeFactory  AgentRuntimeFactory
 	QA              bool
 	Concurrency     int
 	CopyList        []string
@@ -277,8 +279,16 @@ func (engine *Engine) executeTaskWorker(ctx context.Context, plan TaskPlan, task
 		}
 		taskPlan = taskPlanForTaskWorktree(plan, task, taskRef)
 	}
-	settled, reason, err := engine.executeTask(ctx, taskPlan, task, ordinal)
-	if usesTaskWorktree {
+	owner, ownerErr := engine.taskAgentSessionOwner(taskPlan, task, ordinal)
+	if ownerErr != nil {
+		return taskWorkerResult{task: task, ordinal: ordinal, usesTaskWorktree: usesTaskWorktree, taskRef: taskRef, err: ownerErr}
+	}
+	settled, reason, err := engine.executeTask(ctx, taskPlan, task, ordinal, owner)
+	if owner != nil {
+		if closeErr := owner.Close(context.WithoutCancel(ctx)); closeErr != nil {
+			err = errors.Join(err, fmt.Errorf("close Agent Session for run %q Task %s: %w", plan.RunID, task.ID, closeErr))
+		}
+	} else if usesTaskWorktree {
 		if closeErr := engine.deps.Runner.EndSession(context.WithoutCancel(ctx), taskPlan.Runtime, taskPlan.Session); closeErr != nil {
 			err = errors.Join(err, fmt.Errorf("close Agent Session for run %q Task %s: %w", plan.RunID, task.ID, closeErr))
 		}
@@ -528,7 +538,7 @@ func specForSpecsRoot(plan TaskPlan, specsRoot string) spec.Spec {
 // Verification, settlement, and the Task commit on success. It returns
 // the settled status; the returned error is reserved for Stop Requests
 // and infrastructure failures, which halt the cycle.
-func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int) (spec.Status, string, error) {
+func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, owner *agentSessionOwner) (spec.Status, string, error) {
 	// The before-snapshot is taken before the Agent starts, so anything
 	// already dirty — pre-existing user work or a failed Task's preserved
 	// changes — never reaches this Task's commit.
@@ -536,7 +546,7 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 	if err != nil {
 		return "", "", err
 	}
-	failure, err := engine.runTaskAgent(ctx, plan, &task, ordinal)
+	failure, err := engine.runTaskAgent(ctx, plan, &task, ordinal, owner)
 	if err != nil {
 		return "", "", err
 	}
@@ -549,7 +559,7 @@ func (engine *Engine) executeTask(ctx context.Context, plan TaskPlan, task spec.
 			return "", "", verifyErr
 		}
 		if verification.Failure != "" {
-			failure, err = engine.repairTaskVerification(ctx, plan, &task, ordinal, verification)
+			failure, err = engine.repairTaskVerification(ctx, plan, &task, ordinal, verification, owner)
 			if err != nil {
 				return "", "", err
 			}
@@ -598,7 +608,7 @@ func taskVerificationFailureReason(outcome verificationAttemptOutcome) string {
 // non-empty failure reason when the Task failed but the cycle should
 // continue; the returned error is reserved for Stop Requests and
 // infrastructure failures, which halt the cycle.
-func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spec.Task, ordinal int) (string, error) {
+func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spec.Task, ordinal int, owner *agentSessionOwner) (string, error) {
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateResolvingWithAgent); err != nil {
 		return "", fmt.Errorf("update run %q to state %q before Task %s: %w", plan.RunID, store.StateResolvingWithAgent, task.ID, err)
 	}
@@ -633,7 +643,7 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 		fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
 	}
 
-	runResult, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
+	runResult, runErr := engine.runAgentSession(ctx, owner, agent.ExecuteRequest{
 		Runtime:     plan.Runtime,
 		Session:     plan.Session,
 		RunID:       plan.RunID,
@@ -642,7 +652,7 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 		ArtifactDir: plan.ArtifactDir,
 		Prompt:      prompt,
 		GitRoot:     plan.WorkDir,
-	}, engine.deps.Sink)
+	})
 	if runErr != nil {
 		if isStop(ctx, runErr) {
 			// The runner already published the stopped status event;
@@ -712,7 +722,7 @@ func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.T
 	return verification, nil
 }
 
-func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan, task *spec.Task, ordinal int, first verificationAttemptOutcome) (string, error) {
+func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan, task *spec.Task, ordinal int, first verificationAttemptOutcome, owner *agentSessionOwner) (string, error) {
 	if first.CommandFailure == nil {
 		return first.Failure, nil
 	}
@@ -742,7 +752,7 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 	if logPath != "" {
 		fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
 	}
-	runResult, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
+	runResult, runErr := engine.runAgentSession(ctx, owner, agent.ExecuteRequest{
 		Runtime:     plan.Runtime,
 		Session:     plan.Session,
 		RunID:       plan.RunID,
@@ -751,7 +761,7 @@ func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan,
 		ArtifactDir: plan.ArtifactDir,
 		Prompt:      prompt,
 		GitRoot:     plan.WorkDir,
-	}, engine.deps.Sink)
+	})
 	if runErr != nil {
 		if isStop(ctx, runErr) {
 			return "", fmt.Errorf("run Verification Feedback Agent for run %q Task %s: %w", plan.RunID, task.ID, runErr)
@@ -1074,7 +1084,7 @@ func lowerFirstRune(value string) string {
 // to the working tree; the returned error is reserved for Stop Requests
 // and infrastructure failures. Unlike a Task, the QA step has no per-item
 // settlement to fall back on, so a non-stop Agent failure halts the cycle.
-func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, ordinal int) (string, string, error) {
+func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, ordinal int) (verdict string, reportPath string, err error) {
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, ordinal); publishErr != nil {
 			return "", "", fmt.Errorf("publish stop event for run %q before the QA step: %w", plan.RunID, errors.Join(err, publishErr))
@@ -1099,7 +1109,16 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, ordinal int)
 	if logPath != "" {
 		fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
 	}
-	if _, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
+	owner, err := engine.qaAgentSessionOwner(plan, ordinal)
+	if err != nil {
+		return "", "", err
+	}
+	defer func() {
+		if closeErr := owner.Close(context.WithoutCancel(ctx)); closeErr != nil && err == nil {
+			err = fmt.Errorf("close Agent Session for run %q QA step: %w", plan.RunID, closeErr)
+		}
+	}()
+	if _, runErr := engine.runAgentSession(ctx, owner, agent.ExecuteRequest{
 		Runtime:     plan.Runtime,
 		Session:     plan.Session,
 		RunID:       plan.RunID,
@@ -1108,7 +1127,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, ordinal int)
 		ArtifactDir: plan.ArtifactDir,
 		Prompt:      prompt,
 		GitRoot:     plan.WorkDir,
-	}, engine.deps.Sink); runErr != nil {
+	}); runErr != nil {
 		return "", "", fmt.Errorf("run Agent for run %q QA step: %w", plan.RunID, runErr)
 	}
 	if err := ctx.Err(); err != nil {
@@ -1117,7 +1136,7 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, ordinal int)
 		}
 		return "", "", fmt.Errorf("stop run %q after the QA step Agent: %w", plan.RunID, err)
 	}
-	verdict, reportPath := engine.settleQAVerdict(plan)
+	verdict, reportPath = engine.settleQAVerdict(plan)
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, ordinal, runevent.KindDaemonQA,
 		fmt.Sprintf("QA verdict %s for Spec %s.", verdict, plan.Spec.Slug),
 		map[string]any{"verdict": verdict, "report": reportPath},

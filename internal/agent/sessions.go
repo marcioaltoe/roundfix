@@ -3,6 +3,7 @@ package agent
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"strings"
 )
 
@@ -13,6 +14,25 @@ type RoundfixSession struct {
 	Name   string
 	RunID  string
 	TaskID string
+}
+
+func SessionRefForQA(runID string, workDir string) SessionRef {
+	runID = strings.TrimSpace(runID)
+	if runID == "" {
+		return SessionRef{}
+	}
+	return SessionRef{Name: "roundfix-" + runID + "-qa", WorkDir: strings.TrimSpace(workDir)}
+}
+
+func SessionRefForReview(runID string, batchNumber int, workDir string) SessionRef {
+	runID = strings.TrimSpace(runID)
+	if runID == "" {
+		return SessionRef{}
+	}
+	if batchNumber > 0 {
+		return SessionRef{Name: fmt.Sprintf("roundfix-%s-review-%03d", runID, batchNumber), WorkDir: strings.TrimSpace(workDir)}
+	}
+	return SessionRef{Name: "roundfix-" + runID + "-review", WorkDir: strings.TrimSpace(workDir)}
 }
 
 // ParseRoundfixSessions extracts roundfix-named Agent Sessions from acpx

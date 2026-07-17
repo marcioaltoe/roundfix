@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"roundfix/internal/agent"
+	roundconfig "roundfix/internal/config"
 	"roundfix/internal/reviewsource"
 	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
@@ -574,6 +575,34 @@ func TestResolveCycleExecutesResolveVerifyCommitSourceContract(t *testing.T) {
 	// Final Push is a separate operation: the cycle never pushes.
 	if len(pusher.remotes) != 0 {
 		t.Fatalf("expected no push during cycle, got %v", pusher.remotes)
+	}
+}
+
+func TestPerWorkAgentSessionReviewUsesReviewProfile(t *testing.T) {
+	fixture := newEngineFixture(t)
+	runner := &selectionLifecycleRunner{}
+	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, committer, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
+	plan := fixture.plan()
+	plan.AgentSelections = selectionProfilesForTest(map[roundconfig.WorkCategory]roundconfig.AgentSelectionProfile{
+		roundconfig.CategoryReview: selectionProfileForTest(selectionForTest("claude", "review-model", "medium"), selectionForTest("codex", "review-fallback", "high")),
+	})
+	plan.RuntimeFactory = runtimeFactoryForLifecycleTest(nil)
+
+	result, err := engine.ResolveCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("ResolveCycle returned error: %v", err)
+	}
+	if result.Remaining != 0 {
+		t.Fatalf("expected review cycle to resolve all issues, got %+v", result)
+	}
+	if got := lifecycleRequestSummary(runner.runRequests()); strings.Join(got, "\n") != "roundfix-"+fixture.run.ID+"-review-001|claude|review-model" {
+		t.Fatalf("expected review profile session and selection, got %v", got)
+	}
+	if got := strings.Join(runner.closedSessions(), "\n"); got != "roundfix-"+fixture.run.ID+"-review-001" {
+		t.Fatalf("expected review session closed once, got %q", got)
 	}
 }
 

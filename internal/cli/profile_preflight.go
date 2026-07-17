@@ -8,6 +8,7 @@ import (
 
 	"roundfix/internal/agent"
 	roundconfig "roundfix/internal/config"
+	"roundfix/internal/daemon"
 	"roundfix/internal/spec"
 )
 
@@ -115,6 +116,27 @@ func runtimeForOperationalProfileRun(req commandRequest, config roundconfig.Conf
 		CommandOverride:  req.agentCmd,
 		EnableFullAccess: req.agentFullAccess,
 	})
+}
+
+func operationalAgentSelectionProfiles(config roundconfig.Config, categories []roundconfig.WorkCategory, override *roundconfig.AgentSelection) (daemon.AgentSelectionProfiles, error) {
+	profiles := daemon.AgentSelectionProfiles{}
+	for _, category := range categories {
+		resolved, err := roundconfig.ResolveProfile(config, category, override)
+		if err != nil {
+			return nil, err
+		}
+		profiles[category] = resolved
+	}
+	return profiles, nil
+}
+
+func operationalRuntimeFactory(req commandRequest) daemon.AgentRuntimeFactory {
+	return func(selection roundconfig.AgentSelection) (agent.RuntimeSpec, error) {
+		return runtimeForProfileSelectionWithOptions(selection, profileProofOptions{
+			CommandOverride:  req.agentCmd,
+			EnableFullAccess: req.agentFullAccess,
+		})
+	}
 }
 
 func formatWorkCategories(categories []roundconfig.WorkCategory) string {

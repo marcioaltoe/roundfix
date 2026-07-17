@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"roundfix/internal/rounds"
@@ -88,12 +89,21 @@ type Runner interface {
 	EndSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error
 }
 
+type SessionPreparer interface {
+	PrepareSession(ctx context.Context, req ExecuteRequest, sink runevent.Sink) error
+}
+
+type PreparedPromptRunner interface {
+	RunPrepared(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error)
+}
+
 const (
 	ProtocolACP   = "acp"
 	ProtocolStdio = "stdio"
 
 	AgentSessionStartedStatus = "session_started"
 	AgentSessionClosedStatus  = "session_closed"
+	AgentWorkStartedStatus    = "agent_work_started"
 )
 
 // DefaultRunner dispatches real Agent work through acpx. Now overrides the
@@ -323,6 +333,14 @@ func (runner *DefaultRunner) Run(ctx context.Context, req ExecuteRequest, sink r
 	return runner.acpxRunner().Run(ctx, req, sink)
 }
 
+func (runner *DefaultRunner) PrepareSession(ctx context.Context, req ExecuteRequest, sink runevent.Sink) error {
+	return runner.acpxRunner().PrepareSession(ctx, req, sink)
+}
+
+func (runner *DefaultRunner) RunPrepared(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error) {
+	return runner.acpxRunner().RunPrepared(ctx, req, sink)
+}
+
 func (runner *DefaultRunner) EndSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error {
 	return runner.acpxRunner().EndSession(ctx, runtime, session)
 }
@@ -342,6 +360,9 @@ func (runner *DefaultRunner) CancelSession(ctx context.Context, runtime RuntimeS
 func (runner *DefaultRunner) acpxRunner() *ACPXRunner {
 	if runner.acpx == nil {
 		runner.acpx = &ACPXRunner{}
+	}
+	if runner.acpx.stateMu == nil {
+		runner.acpx.stateMu = &sync.Mutex{}
 	}
 	runner.acpx.Now = runner.Now
 	return runner.acpx

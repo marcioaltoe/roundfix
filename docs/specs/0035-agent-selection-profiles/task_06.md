@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0035-agent-selection-profiles
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -24,22 +24,22 @@ Replace the Run-wide session assumption with one owned session per Task, QA acti
 
 ## Subtasks
 
-- [ ] Introduce runtime-keyed Agent Session factories.
-- [ ] Move Task, QA, and review work to scoped session owners.
-- [ ] Add pre-prompt selection-start classification.
-- [ ] Publish notification before fallback activation.
-- [ ] Add the hard `agent_work_started` boundary.
-- [ ] Implement ordered exhaustion and cleanup reporting.
-- [ ] Cover same-runtime, cross-runtime, cancellation, and post-start negatives.
+- [x] Introduce runtime-keyed Agent Session factories.
+- [x] Move Task, QA, and review work to scoped session owners.
+- [x] Add pre-prompt selection-start classification.
+- [x] Publish notification before fallback activation.
+- [x] Add the hard `agent_work_started` boundary.
+- [x] Implement ordered exhaustion and cleanup reporting.
+- [x] Cover same-runtime, cross-runtime, cancellation, and post-start negatives.
 
 ## Acceptance Criteria
 
-- [ ] Mixed Task Types and QA use separate sessions with the exact resolved category selections.
-- [ ] The notification Run Event and caller-visible message precede fallback session creation and first prompt.
-- [ ] A cross-runtime fallback uses the configured runtime factory and selection verbatim.
-- [ ] No production or test path starts a replacement session after `agent_work_started`.
-- [ ] Fallback exhaustion lists every failed tuple and settles the owning Task/action through existing failure semantics.
-- [ ] Every created session has one owner and closes under success, failure, cancellation, and early-return tests.
+- [x] Mixed Task Types and QA use separate sessions with the exact resolved category selections.
+- [x] The notification Run Event and caller-visible message precede fallback session creation and first prompt.
+- [x] A cross-runtime fallback uses the configured runtime factory and selection verbatim.
+- [x] No production or test path starts a replacement session after `agent_work_started`.
+- [x] Fallback exhaustion lists every failed tuple and settles the owning Task/action through existing failure semantics.
+- [x] Every created session has one owner and closes under success, failure, cancellation, and early-return tests.
 
 ## Context
 
@@ -61,3 +61,13 @@ Replace the Run-wide session assumption with one owned session per Task, QA acti
 - `_prd.md` → Goals 1-3 and 9; User Stories 1-3 and 6; Core Features 9-10; Success Metrics.
 - `_techspec.md` → Agent Session lifecycle and fallback activation; System Architecture; Risks: mixed-session lifecycle and unsafe replay; Build Order 6.
 - `references/openclaw-skill-analysis.md` → fallback reasons are classified and visible; proof is not work quality.
+
+## Result
+
+- Added scoped Agent Session owners for Task, QA, and review actions, with runtime-keyed profile activation and per-work session refs.
+- Added `agent_selection_fallback`, `agent_selection_exhausted`, and `agent_work_started` event paths with ordered pre-prompt fallback activation.
+- Added fallback exhaustion reporting with every attempted tuple and profile validation recovery guidance.
+- Added same-runtime, cross-runtime, cancellation, post-start no-fallback, review-profile, and cleanup tests.
+- Verification: `GOCACHE=/tmp/roundfix-gocache rtk go test ./internal/agent ./internal/daemon ./internal/cli -run 'Test(PerWorkAgentSession|AgentSelectionFallback|CrossRuntimeFallback|NoFallbackAfterAgentWorkStarted|AgentSessionOwnerCleanup)' -count=1` passed: 7 tests.
+- Verification: `GOCACHE=/tmp/roundfix-gocache rtk go test -race ./internal/agent ./internal/daemon ./internal/cli -run 'Test(PerWorkAgentSession|AgentSelectionFallback|AgentSessionOwnerCleanup)' -count=1` passed: 5 tests.
+- Full gate: `GOCACHE=/tmp/roundfix-gocache rtk make verify` passed.

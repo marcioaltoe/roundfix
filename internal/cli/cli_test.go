@@ -8337,6 +8337,9 @@ func (runner *sessionRecordingRunner) Run(ctx context.Context, req agent.Execute
 
 func (runner *sessionRecordingRunner) EndSession(ctx context.Context, runtime agent.RuntimeSpec, session agent.SessionRef) error {
 	runner.closeSessions = append(runner.closeSessions, session)
+	if runner.seenSessions != nil {
+		delete(runner.seenSessions, strings.TrimSpace(session.Name))
+	}
 	if err := runner.inner.EndSession(ctx, runtime, session); err != nil {
 		return err
 	}
@@ -8365,20 +8368,31 @@ func publishFakeSessionStatus(ctx context.Context, sink runevent.Sink, req agent
 
 func assertRecordedOneSessionForRun(t *testing.T, runner *sessionRecordingRunner, runID string, wantRunCalls int) {
 	t.Helper()
-	wantName := "roundfix-" + runID
-	if len(runner.ensureSessions) != 1 || runner.ensureSessions[0].Name != wantName || strings.TrimSpace(runner.ensureSessions[0].WorkDir) == "" {
-		t.Fatalf("expected exactly one ensure named %q with a working directory, got %#v", wantName, runner.ensureSessions)
+	if len(runner.ensureSessions) != wantRunCalls {
+		t.Fatalf("expected %d owned session ensure record(s), got %#v", wantRunCalls, runner.ensureSessions)
 	}
-	want := runner.ensureSessions[0]
-	if len(runner.closeSessions) != 1 || runner.closeSessions[0] != want {
-		t.Fatalf("expected exactly one close for %#v, got %#v", want, runner.closeSessions)
+	for _, session := range runner.ensureSessions {
+		if strings.TrimSpace(session.WorkDir) == "" {
+			t.Fatalf("expected owned session %q to include a working directory, got %#v", session.Name, runner.ensureSessions)
+		}
+		if session.Name == "roundfix-"+runID || !strings.HasPrefix(session.Name, "roundfix-"+runID+"-") {
+			t.Fatalf("expected owned per-work session for run %s, got %#v", runID, runner.ensureSessions)
+		}
+	}
+	if len(runner.closeSessions) != len(runner.ensureSessions) {
+		t.Fatalf("expected one close per owned session %#v, got %#v", runner.ensureSessions, runner.closeSessions)
+	}
+	for index, ensured := range runner.ensureSessions {
+		if runner.closeSessions[index] != ensured {
+			t.Fatalf("expected close %d to match ensure %#v, got %#v", index, ensured, runner.closeSessions)
+		}
 	}
 	if len(runner.runSessions) != wantRunCalls {
 		t.Fatalf("expected %d Agent run session records, got %#v", wantRunCalls, runner.runSessions)
 	}
-	for _, session := range runner.runSessions {
-		if session != want {
-			t.Fatalf("expected every Agent run to use %#v, got %#v", want, runner.runSessions)
+	for index, session := range runner.runSessions {
+		if session != runner.ensureSessions[index] {
+			t.Fatalf("expected Agent run %d to use owned session %#v, got %#v", index, runner.ensureSessions[index], runner.runSessions)
 		}
 	}
 }
