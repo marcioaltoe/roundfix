@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0033-console-log-tool-summary-deduplication
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -24,23 +24,23 @@ Complete the display lifecycle and prove that Console Log cleanup cannot alter d
 
 ## Subtasks
 
-- [ ] Bound per-tool and session-level deduplication state at terminal lifecycle boundaries.
-- [ ] Preserve retry behavior across writer failures and short writes.
-- [ ] Exercise concurrent publication under the race detector.
-- [ ] Prove journal fanout retains both duplicate lifecycle events byte-for-byte and cursor-by-cursor.
-- [ ] Cover Agent-console suppression, Attach, Live Run View, and sanitized dogfood replay boundaries.
-- [ ] Run the repository verification and full race gates.
+- [x] Bound per-tool and session-level deduplication state at terminal lifecycle boundaries.
+- [x] Preserve retry behavior across writer failures and short writes.
+- [x] Exercise concurrent publication under the race detector.
+- [x] Prove journal fanout retains both duplicate lifecycle events byte-for-byte and cursor-by-cursor.
+- [x] Cover Agent-console suppression, Attach, Live Run View, and sanitized dogfood replay boundaries.
+- [x] Run the repository verification and full race gates.
 
 ## Acceptance Criteria
 
-- [ ] A terminal tool event is compared and rendered or suppressed before its identifier is removed, and later identifier reuse begins with empty display state.
-- [ ] A session terminal event clears every active identifier without changing its own existing console behavior.
-- [ ] A failed or short write leaves comparison state unchanged and returns an error that the critical fanout can propagate.
-- [ ] Concurrent publication completes without data races and preserves serialized writer output.
-- [ ] The duplicate lifecycle pair produces two byte-identical journal payloads with distinct cursors and one Console Log summary.
-- [ ] Distinct tool calls, `--no-agent-console`, Attach, and Live Run View retain their existing observable behavior.
-- [ ] The reported dogfood event shape passes as a sanitized bounded regression fixture.
-- [ ] The full verification and race gates pass without retries or relaxed assertions.
+- [x] A terminal tool event is compared and rendered or suppressed before its identifier is removed, and later identifier reuse begins with empty display state.
+- [x] A session terminal event clears every active identifier without changing its own existing console behavior.
+- [x] A failed or short write leaves comparison state unchanged and returns an error that the critical fanout can propagate.
+- [x] Concurrent publication completes without data races and preserves serialized writer output.
+- [x] The duplicate lifecycle pair produces two byte-identical journal payloads with distinct cursors and one Console Log summary.
+- [x] Distinct tool calls, `--no-agent-console`, Attach, and Live Run View retain their existing observable behavior.
+- [x] The reported dogfood event shape passes as a sanitized bounded regression fixture.
+- [x] The full verification and race gates pass without retries or relaxed assertions.
 
 ## Context
 
@@ -66,3 +66,28 @@ Complete the display lifecycle and prove that Console Log cleanup cannot alter d
 - `docs/adr/0008-run-event-payload-stores-raw-producer-json.md` → lossless Agent payload preservation.
 - `docs/adr/0009-cockpit-reads-the-journal-never-the-sink.md` → Attach and Live Run View replay boundary.
 - `docs/adr/0030-agent-run-logs-are-opt-in.md` → unconditional Detached Run Console Log boundary.
+
+## Result
+
+Implemented the remaining display lifecycle safeguards and regression coverage for lossless Run evidence:
+
+- `ConsoleDisplaySink` now clears remembered summaries after any successfully processed session-terminal status path, preserving writer-error retry behavior.
+- Agent tests cover terminal tool cleanup for `completed`, `failed`, and `stopped`, session-terminal cleanup across multiple active identifiers, writer errors, short writes, critical fanout propagation, and serialized concurrent publication.
+- CLI tests cover distinct tool-call visibility, `--no-agent-console` suppression, byte-identical duplicate lifecycle payloads with distinct journal cursors, one Console Log summary, and replay through the Attach/Live Run View timeline.
+
+Evidence:
+
+- Terminal tool cleanup: `TestConsoleDisplaySinkReleasesTerminalToolStateAfterProcessing` passed in `rtk go test ./internal/agent -run 'TestConsoleDisplaySink' -count=100`.
+- Session terminal cleanup: `TestConsoleDisplaySinkClearsSessionStateAfterTerminalStatus` passed in `rtk go test ./internal/agent -run 'TestConsoleDisplaySink' -count=100`.
+- Retry safety and critical fanout propagation: `TestConsoleDisplaySinkDoesNotAdvanceStateWhenWriteFails` passed in `rtk go test ./internal/agent -run 'TestConsoleDisplaySink' -count=100`.
+- Concurrent publication: `TestConsoleDisplaySinkSerializesConcurrentPublish` passed in `rtk go test -race ./internal/agent ./internal/cli -run 'TestConsoleDisplaySink|TestAgentConsoleDisplaySink' -count=1`.
+- Journal losslessness and sanitized dogfood replay: `TestAgentConsoleDisplaySinkUsesStatefulSinkForNonTTYAndDetachedLogWriter` passed in `rtk go test ./internal/cli -run 'TestAgentConsoleDisplaySink' -count=1`.
+- Distinct tool calls and Agent-console suppression: `TestAgentConsoleDisplaySinkKeepsDistinctToolCallsVisible` and `TestAgentConsoleDisplaySinkKeepsNoAgentConsoleSuppression` passed in `rtk go test ./internal/cli -run 'TestAgentConsoleDisplaySink' -count=1`.
+- Full gates passed:
+  - `GOCACHE="/private/tmp/roundfix-go-cache-task-02" rtk go test ./internal/agent -run 'TestConsoleDisplaySink' -count=100`
+  - `GOCACHE="/private/tmp/roundfix-go-cache-task-02" rtk go test ./internal/cli -run 'TestAgentConsoleDisplaySink' -count=1`
+  - `GOCACHE="/private/tmp/roundfix-go-cache-task-02" rtk go test -race ./internal/agent ./internal/cli -run 'TestConsoleDisplaySink|TestAgentConsoleDisplaySink' -count=1`
+  - `GOCACHE="/private/tmp/roundfix-go-cache-task-02" rtk go test -race ./...`
+  - `GOCACHE="/private/tmp/roundfix-go-cache-task-02" rtk make verify`
+
+Follow-ups: none.

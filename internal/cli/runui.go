@@ -69,7 +69,7 @@ func startRunUI(ctx context.Context, view roundtui.LiveRunView, runID string, ho
 }
 
 func agentConsoleDisplaySink(stderr io.Writer, noAgentConsole bool) runevent.Sink {
-	sink := agent.WriterSink{Writer: stderr}
+	sink := agent.NewConsoleDisplaySink(stderr)
 	if noAgentConsole {
 		return runevent.NewSourceFilterSink(sink, runevent.SourceAgent)
 	}

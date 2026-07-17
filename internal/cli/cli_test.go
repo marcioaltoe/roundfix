@@ -7638,6 +7638,164 @@ func TestAgentConsoleDisplaySinkKeepsWriterBytesByDefault(t *testing.T) {
 	}
 }
 
+func TestAgentConsoleDisplaySinkKeepsDistinctToolCallsVisible(t *testing.T) {
+	var buffer bytes.Buffer
+	sink := agentConsoleDisplaySink(&buffer, false)
+	events := []runevent.RunEvent{
+		cliToolLifecycleEvent("run-1", runevent.KindAgentToolUpdated, "edit_call_1", "running", compactCLIEditLifecyclePayload("tool_call_update", "edit_call_1", "internal/app/server.go", "old\n", "new\n", "running")),
+		cliToolLifecycleEvent("run-1", runevent.KindAgentToolUpdated, "edit_call_2", "running", compactCLIEditLifecyclePayload("tool_call_update", "edit_call_2", "internal/app/server.go", "old\n", "new\n", "running")),
+	}
+
+	for _, event := range events {
+		if err := sink.Publish(context.Background(), event); err != nil {
+			t.Fatalf("publish distinct tool call: %v", err)
+		}
+	}
+
+	want := "edit internal/app/server.go (+1/-1)\nedit internal/app/server.go (+1/-1)\n"
+	if buffer.String() != want {
+		t.Fatalf("expected distinct tool calls to remain visible\nwant: %q\n got: %q", want, buffer.String())
+	}
+}
+
+func TestAgentConsoleDisplaySinkUsesStatefulSinkForNonTTYAndDetachedLogWriter(t *testing.T) {
+	ctx := context.Background()
+	homeDir, repoDir := withCLIWorkspace(t)
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = runStore.Close()
+	})
+	run, err := runStore.CreateRun(ctx, store.CreateRunRequest{
+		Kind:           store.KindResolve,
+		HeadRepository: "owner/project",
+		HeadBranch:     "feature/review",
+		BaseRepository: "owner/project",
+		PRNumber:       "123",
+		GitRoot:        repoDir,
+		LocalBranch:    "feature/review",
+		HeadSHA:        "abc123",
+		ArtifactDir:    filepath.Join(repoDir, ".roundfix"),
+		WorkDir:        repoDir,
+		Agent:          "codex",
+	})
+	if err != nil {
+		t.Fatalf("create Run: %v", err)
+	}
+	consoleLog, err := os.CreateTemp(t.TempDir(), "console-*.log")
+	if err != nil {
+		t.Fatalf("create Console Log file: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = consoleLog.Close()
+	})
+	ui, err := startRunUI(ctx, roundtui.LiveRunView{}, run.ID, homeDir, runStore, consoleLog, false)
+	if err != nil {
+		t.Fatalf("start non-TTY Run UI: %v", err)
+	}
+
+	payload := compactCLIEditLifecyclePayload("tool_call_update", "edit_call_1", "internal/app/server.go", "old\n", "new\n", "running")
+	events := []runevent.RunEvent{
+		cliToolLifecycleEvent(run.ID, runevent.KindAgentToolStarted, "edit_call_1", "running", payload),
+		cliToolLifecycleEvent(run.ID, runevent.KindAgentToolUpdated, "edit_call_1", "completed", payload),
+	}
+	for _, event := range events {
+		if err := ui.sink.Publish(ctx, event); err != nil {
+			t.Fatalf("publish Run Event through non-TTY UI: %v", err)
+		}
+	}
+	ui.Close()
+
+	if err := consoleLog.Close(); err != nil {
+		t.Fatalf("close Console Log file: %v", err)
+	}
+	consoleBytes, err := os.ReadFile(consoleLog.Name())
+	if err != nil {
+		t.Fatalf("read Console Log file: %v", err)
+	}
+	if string(consoleBytes) != "edit internal/app/server.go (+1/-1)\n" {
+		t.Fatalf("expected non-TTY Console Log writer to collapse duplicate summary, got %q", string(consoleBytes))
+	}
+	journaled, err := runStore.RunEventsAfter(ctx, run.ID, 0, 10)
+	if err != nil {
+		t.Fatalf("read journaled Run Events: %v", err)
+	}
+	if len(journaled) != 2 {
+		t.Fatalf("expected both lifecycle events to stay journaled, got %d", len(journaled))
+	}
+	for index, entry := range journaled {
+		if entry.Event.Kind != events[index].Kind {
+			t.Fatalf("expected journal kind %d unchanged, got %s", index, entry.Event.Kind)
+		}
+		if entry.Event.ToolID != events[index].ToolID {
+			t.Fatalf("expected journal tool id %d unchanged, got %q", index, entry.Event.ToolID)
+		}
+		if entry.Event.ToolState != events[index].ToolState {
+			t.Fatalf("expected journal tool state %d unchanged, got %q", index, entry.Event.ToolState)
+		}
+		if !bytes.Equal(entry.Event.Payload, events[index].Payload) {
+			t.Fatalf("expected journal payload %d unchanged\nwant: %s\ngot:  %s", index, events[index].Payload, entry.Event.Payload)
+		}
+	}
+	if journaled[0].Cursor == 0 || journaled[1].Cursor == 0 || journaled[0].Cursor == journaled[1].Cursor {
+		t.Fatalf("expected distinct non-zero journal cursors, got %d and %d", journaled[0].Cursor, journaled[1].Cursor)
+	}
+	if !bytes.Equal(journaled[0].Event.Payload, journaled[1].Event.Payload) {
+		t.Fatalf("expected sanitized lifecycle pair to keep byte-identical payloads")
+	}
+
+	timeline := roundtui.NewRunTimeline(10)
+	cursor, err := replayRunEvents(ctx, runStore, run.ID, 0, timeline)
+	if err != nil {
+		t.Fatalf("replay Run Events into Live Run View timeline: %v", err)
+	}
+	if cursor != journaled[1].Cursor {
+		t.Fatalf("expected replay cursor %d, got %d", journaled[1].Cursor, cursor)
+	}
+	wantLines := []string{
+		"edit internal/app/server.go (+1/-1)",
+		"edit internal/app/server.go (+1/-1)",
+	}
+	if got := timeline.Lines(); !reflect.DeepEqual(got, wantLines) {
+		t.Fatalf("expected Attach/Live Run View replay to retain duplicate events\nwant: %#v\n got: %#v", wantLines, got)
+	}
+}
+
+func TestAgentConsoleDisplaySinkKeepsNoAgentConsoleSuppression(t *testing.T) {
+	event := runevent.RunEvent{
+		Source:  runevent.SourceAgent,
+		Kind:    runevent.KindAgentRaw,
+		Payload: []byte(`{"text":"fake agent output\n"}`),
+	}
+	var buffer bytes.Buffer
+
+	if err := agentConsoleDisplaySink(&buffer, true).Publish(context.Background(), event); err != nil {
+		t.Fatalf("publish through suppressed display sink: %v", err)
+	}
+
+	if buffer.Len() != 0 {
+		t.Fatalf("expected --no-agent-console to suppress Agent output, got %q", buffer.String())
+	}
+}
+
+func cliToolLifecycleEvent(runID string, kind runevent.Kind, toolID string, toolState string, payload []byte) runevent.RunEvent {
+	return runevent.RunEvent{
+		RunID:     runID,
+		Batch:     1,
+		Source:    runevent.SourceAgent,
+		Kind:      kind,
+		ToolID:    toolID,
+		ToolState: toolState,
+		Payload:   payload,
+	}
+}
+
+func compactCLIEditLifecyclePayload(sessionUpdate string, toolID string, path string, oldText string, newText string, status string) []byte {
+	return []byte(`{"sessionId":"s","update":{"sessionUpdate":` + strconv.Quote(sessionUpdate) + `,"toolCallId":` + strconv.Quote(toolID) + `,"kind":"edit","title":"edit","status":` + strconv.Quote(status) + `,"locations":[{"path":` + strconv.Quote(path) + `}],"content":[{"type":"diff","path":` + strconv.Quote(path) + `,"oldText":` + strconv.Quote(oldText) + `,"newText":` + strconv.Quote(newText) + `}]}}`)
+}
+
 func assertJournalContainsAgentAndDaemonEvents(t *testing.T, events []store.JournalEvent, agentText string) {
 	t.Helper()
 	agentSeen := false
