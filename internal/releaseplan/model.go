@@ -1,5 +1,7 @@
 package releaseplan
 
+import "context"
+
 const SchemaVersion = "roundfix.release-plan/v1"
 
 // State is the final Release Plan decision state.
@@ -44,8 +46,9 @@ const (
 
 // VersionRef identifies the release base used by the plan.
 type VersionRef struct {
-	Tag     string
-	Version Version
+	Tag       string
+	Version   Version
+	CommitSHA string
 }
 
 // RevisionRef identifies the target revision analyzed by the plan.
@@ -82,6 +85,27 @@ type Commit struct {
 	Subject      string
 	Body         string
 	ChangedPaths []string
+}
+
+// Range identifies one committed release range after Git ref resolution.
+type Range struct {
+	Base   VersionRef
+	Target RevisionRef
+}
+
+// Request is the Release Plan build request before Git range resolution.
+type Request struct {
+	From         string
+	To           string
+	ManualImpact Impact
+	ManualReason string
+}
+
+// GitSource supplies committed release ranges and normalized commits to the
+// Release Plan domain. Implementations live at repository boundaries.
+type GitSource interface {
+	ResolveRange(context.Context, string, string) (Range, error)
+	Commits(context.Context, Range) ([]Commit, error)
 }
 
 // ClassifyRequest is the normalized input for conservative release-impact
