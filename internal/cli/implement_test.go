@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"roundfix/internal/agent"
+	"roundfix/internal/codex"
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/daemon"
 	"roundfix/internal/runevent"
@@ -4022,22 +4023,9 @@ func newMacroFakeACPX(t *testing.T) macroFakeACPX {
 			t.Fatalf("write fake adapter %s: %v", adapter, err)
 		}
 	}
-	cleanExecutable := "/usr/bin/true"
-	if runtime.GOOS != "darwin" {
-		var err error
-		cleanExecutable, err = exec.LookPath("true")
-		if err != nil {
-			t.Fatalf("resolve fixture executable: %v", err)
-		}
-	}
-	cleanExecutableBytes, err := os.ReadFile(cleanExecutable)
-	if err != nil {
-		t.Fatalf("read signed fixture executable %s: %v", cleanExecutable, err)
-	}
 	codexPath := filepath.Join(binDir, "codex")
-	if err := os.WriteFile(codexPath, cleanExecutableBytes, 0o755); err != nil {
-		t.Fatalf("write fake codex: %v", err)
-	}
+	buildMacroCodexExecutable(t, codexPath)
+	assertMacroCodexExecutableHygiene(t, codexPath)
 	return macroFakeACPX{binDir: binDir, codexPath: codexPath, logPath: logPath}
 }
 
@@ -4045,6 +4033,43 @@ func (fake macroFakeACPX) env() map[string]string {
 	return map[string]string{
 		"CODEX_PATH":             fake.codexPath,
 		"ROUNDFIX_FAKE_ACPX_LOG": fake.logPath,
+	}
+}
+
+func buildMacroCodexExecutable(t *testing.T, destination string) {
+	t.Helper()
+	if runtime.GOOS != "darwin" {
+		if err := os.WriteFile(destination, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+			t.Fatalf("write fake codex executable: %v", err)
+		}
+		return
+	}
+	sourceDir := t.TempDir()
+	sourcePath := filepath.Join(sourceDir, "main.go")
+	if err := os.WriteFile(sourcePath, []byte("package main\n\nfunc main() {}\n"), 0o644); err != nil {
+		t.Fatalf("write codex fixture source: %v", err)
+	}
+	cmd := exec.Command("go", "build", "-buildvcs=false", "-o", destination, sourcePath)
+	cmd.Env = isolatedGitEnvForTest()
+	var output bytes.Buffer
+	cmd.Stdout = &output
+	cmd.Stderr = &output
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("build signed codex fixture executable: %v\n%s", err, output.String())
+	}
+}
+
+func assertMacroCodexExecutableHygiene(t *testing.T, path string) {
+	t.Helper()
+	result := codex.Inspector{ConfiguredPath: path}.Inspect(context.Background())
+	if runtime.GOOS != "darwin" {
+		if result.Status != codex.StatusSkipped {
+			t.Fatalf("expected non-macOS codex hygiene to be skipped, got %#v", result)
+		}
+		return
+	}
+	if result.Status != codex.StatusOK {
+		t.Fatalf("macro codex fixture must pass production hygiene, got status=%s detail=%q next=%q", result.Status, result.Detail, result.NextAction)
 	}
 }
 

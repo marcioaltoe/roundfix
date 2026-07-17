@@ -1,7 +1,7 @@
 ---
 task: task_10
 spec: 0035-agent-selection-profiles
-status: pending
+status: completed
 type: test
 complexity: high
 ---
@@ -31,7 +31,7 @@ Add the cross-boundary macro harness that proves the individually tested profile
 - [x] Assert database and Run Event Stream selection history.
 - [x] Prove invalid Task Type has zero side effects.
 - [x] Run focused race and full repository verification.
-- [ ] Preserve a valid signed Codex executable boundary in the macOS macro fixture.
+- [x] Preserve a valid signed Codex executable boundary in the macOS macro fixture.
 
 ## Acceptance Criteria
 
@@ -42,7 +42,7 @@ Add the cross-boundary macro harness that proves the individually tested profile
 - [x] Recommendation ordering never changes configuration or fallback order during the flow.
 - [x] No fallback occurs after the first prompt in the negative companion.
 - [x] Focused race verification and `make verify` pass without retries or skipped assertions.
-- [ ] A cold-cache macro run passes macOS Codex hygiene without copying away the executable signature.
+- [x] A cold-cache macro run passes macOS Codex hygiene without copying away the executable signature.
 
 ## Context
 
@@ -74,6 +74,7 @@ Implemented the end-to-end macro proof and closed the persistence gaps it expose
 - Added `TestAgentSelectionProfilesMacro`, which builds the real `roundfix` binary, creates temporary git repositories, runs fake pinned `acpx` plus adapter executables through `PATH`, configures project profiles from YAML, shows and validates profiles, executes backend/frontend Tasks plus QA, and exercises invalid Task Type and post-start failure companions.
 - Persisted live Agent Selection lifecycle rows from owned sessions into `run_agent_selections`, including active, failed, and closed statuses, profile source, role, fallback index, exact tuple, normalized reason, and continued monotonic attempt numbering when review scope IDs repeat across watch rounds.
 - Fixed Spec Run compatibility summaries to store the effective `general` Preferred Selection while leaving actual per-work Task/QA selections in the per-scope history.
+- Completed the remaining macOS executable-boundary proof by replacing the macro fixture's `/usr/bin/true` byte copy with a Go-built executable named `codex` and asserting it passes production `codex.Inspector` hygiene before any macro Run uses it as `CODEX_PATH`.
 
 Acceptance evidence:
 
@@ -83,10 +84,11 @@ Acceptance evidence:
 - Invalid Task Type side effects: the companion invalid frontmatter run exits before proofs and asserts zero fake `acpx` calls, no Run Database, no Run Worktree root, and no `roundfix/*` branch.
 - No unauthorized mutation: the macro snapshots Project Config, fake runtime-owned files, fake credential files, recommendations, and fallback order before/after the flow.
 - No fallback after work starts: the post-start failure companion asserts no live fallback session, no fallback notification, and no persisted fallback attempt after the first prompt.
+- Cold-cache macOS hygiene: direct reproduction of the old byte-copy fixture returned `codesign --verify` status `1` with `CSSMERR_TP_NOT_TRUSTED`; the updated macro fixture builds a fresh executable and fails immediately unless production hygiene returns `ok`, so the macro no longer depends on a cached or copied-away signature.
 
 Verification:
 
 - `rtk go test ./internal/cli -run 'TestAgentSelectionProfilesMacro' -count=1` — passed, 4 macro subtests.
 - `rtk go test -race ./internal/config ./internal/spec ./internal/agent ./internal/store ./internal/runevent ./internal/cli ./internal/daemon ./internal/tui -run 'Test(AgentSelection|Profile|TaskType)' -count=1` — passed, 62 tests in 8 packages.
 - `rtk go run -buildvcs=false ./cmd/roundfix skills check` — passed.
-- `rtk make verify` — passed, including `rtk go test ./...` with 1548 tests, setup-context checks, `roundfix skills check`, and build.
+- `rtk make verify` — passed, including `rtk go test ./...` with 1549 tests, setup-context checks, `roundfix skills check`, and build.
