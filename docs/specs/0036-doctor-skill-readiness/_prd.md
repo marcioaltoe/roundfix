@@ -20,6 +20,11 @@ their authoritative local sources, reports exactly which skills are missing or
 outdated, and tells the user how to update them. The check is deterministic,
 offline, read-only, and part of the normal `roundfix doctor` result.
 
+Spec 0041 Agent Selection Runtime Readiness is a prerequisite. It replaces
+Doctor's legacy runtime probe with the shared effective-adapter and exact
+Agent Selection Profile proof. This Spec appends only the independent
+Repository Skill Set result and must not recreate or bypass profile proof.
+
 ## Goals
 
 - Make `roundfix doctor` prove that every required repository skill is
@@ -152,6 +157,14 @@ authorization, and rerun Doctor to prove the result.
   checkout.
 - This change extends the existing Doctor Command and skill-governance
   contracts; it does not require a new architectural decision record.
+
+## Dependencies
+
+- Implement Spec 0041 Agent Selection Runtime Readiness first.
+- Append `skills:` after the profile-aware readiness result delivered by Spec
+  0041 while preserving all other deterministic Doctor results.
+- Reuse Doctor's dependency-injection and aggregate-result boundaries; do not
+  retain a parallel legacy model probe or add a second profile prover here.
 
 ## Open Questions
 

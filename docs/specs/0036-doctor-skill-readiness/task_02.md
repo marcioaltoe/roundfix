@@ -37,6 +37,8 @@ failure, and remediation contract as the shipped CLI.
    ignored and that Doctor never deletes or updates skills automatically.
 8. MUST keep all repository content in English and use only canonical terms
    from `CONTEXT.md`.
+9. MUST describe Repository Skill Set readiness after, and independently from,
+   the Agent Selection Profile readiness delivered by Spec 0041.
 
 ## Subtasks
 
@@ -99,6 +101,8 @@ failure, and remediation contract as the shipped CLI.
 - `_techspec.md` → Documentation and skill synchronization; Coverage Map; Build
   Order 3; Risks & Considerations.
 - `task_01.md` → the shipped Doctor behavior this guidance must describe.
+- `docs/specs/0041-agent-selection-runtime-readiness/_prd.md` → profile-aware
+  Doctor prerequisite and separation of readiness concerns.
 - `docs/agents/skill-governance.md` → canonical/embedded sync and external
   ownership rules.
 

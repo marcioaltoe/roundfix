@@ -100,7 +100,7 @@
     },
     {
       "id": "template.guide.docs-layout",
-      "version": 1,
+      "version": 2,
       "kind": "guide",
       "path": "guides/docs-layout.md"
     },

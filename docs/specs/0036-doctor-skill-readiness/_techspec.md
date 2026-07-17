@@ -22,6 +22,11 @@ Instead, Roundfix reproduces the installed skills tool's small hash contract:
 SHA-256 over sorted relative path and file-byte pairs. This proves that local
 content matches the repository lock without executing third-party tooling.
 
+This design assumes Spec 0041 lands first. Its profile-aware Doctor boundary
+proves the effective adapter and exact required Agent Selection Profiles. The
+work below injects one independent Repository Skill Set result into that
+boundary and does not preserve or recreate the legacy single-model probe.
+
 ## System Architecture
 
 - `skills` — add repository readiness types, `skills-lock.json` decoding,
@@ -41,7 +46,7 @@ content matches the repository lock without executing third-party tooling.
   Repository Skill Set vocabulary and describe the new Doctor line and update
   commands. `make skills-sync` regenerates the embedded Roundfix Skill.
 - No Run Store, configuration schema, Agent Session, TUI, network, or daemon
-  changes.
+  changes. Agent adapter and profile proof belongs exclusively to Spec 0041.
 - No Context-Driven artifact inspection: Doctor proves the installed skill
   version, while `setup-context-driven audit` validates generated repository
   instructions and Baseline ADRs under Spec 0040.
@@ -144,8 +149,9 @@ checkSkills func(root string) (skills.RepositoryReadiness, error)
 ```
 
 The default calls `skills.CheckRepository`; tests inject fixed results. Doctor
-runs the skill check independently of runtime probe outcomes and appends its
-result after `codex`, preserving every existing line and its order.
+runs the skill check independently of Agent Selection Profile proof outcomes
+and appends its result after the profile-readiness result introduced by Spec
+0041, preserving every other line and its order.
 
 Success detail is deterministic:
 
@@ -242,12 +248,14 @@ refreshes normally. This closes the failure recorded in
 
 ## Build Order
 
-1. Ownership-safe setup synchronization and its focused regression tests (no
-   dependencies).
+Cross-Spec prerequisite: implement Spec 0041 through its profile-aware Doctor
+integration before starting this graph.
+
+1. Ownership-safe setup synchronization and its focused regression tests.
 2. Repository skill readiness types, lock validation, owned comparison,
-   external hash compatibility, and focused package tests (no dependencies).
-3. Doctor dependency injection, rendering, failure semantics, command tests,
-   and CLI help (depends on 2).
+   external hash compatibility, and focused package tests.
+3. Doctor dependency injection, rendering after profile readiness, failure
+   semantics, command tests, and CLI help (depends on 2 and Spec 0041).
 4. Canonical vocabulary, user docs, canonical Roundfix Skill update, embedded
    sync, and contract verification (depends on 1, 3).
 
@@ -264,6 +272,9 @@ refreshes normally. This closes the failure recorded in
   declared value can escape `.agents/skills`.
 - Doctor must report runtime checks even when skill readiness fails; one failed
   local subsystem must not suppress evidence from the others.
+- Spec 0041 and this Spec both touch Doctor dependencies and output. Implement
+  Spec 0041 first and extend its coordinator; do not maintain competing legacy
+  and profile-aware runtime checks.
 - The project currently declares 38 required skills. Counts are derived at
   runtime and must not be hard-coded in production behavior.
 - External setup checkouts may contain divergent copies of repo-owned skills;

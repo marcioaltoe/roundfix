@@ -13,6 +13,10 @@ graph:
 
 # Tasks — Doctor Skill Readiness
 
+Cross-Spec prerequisite: Spec 0041 Agent Selection Runtime Readiness must land
+before `task_01`; it owns the profile-aware Doctor proof that this graph
+extends.
+
 | id      | title                                            | type    | complexity | needs   |
 | ------- | ------------------------------------------------ | ------- | ---------- | ------- |
 | task_01 | Diagnose Repository Skill Set readiness          | backend | high       | —       |

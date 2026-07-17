@@ -31,9 +31,9 @@ filesystem mutation.
 5. MUST reproduce the external skills CLI hash contract exactly: slash-normalized
    relative paths sorted lexically, SHA-256 over each path followed immediately
    by its file bytes, excluding `.git` and `node_modules` directories.
-6. MUST add exactly one `skills: ok|failed` Doctor line after the existing
-   readiness lines, with derived owned/external counts and lexically sorted
-   missing/outdated names.
+6. MUST add exactly one `skills: ok|failed` Doctor line after the Agent
+   Selection Profile readiness line delivered by Spec 0041, with derived
+   owned/external counts and lexically sorted missing/outdated names.
 7. MUST make missing, outdated, malformed-lock, and unreadable-artifact results
    fail Doctor with `exitRunFailed`, while preserving every existing usage,
    stdout, stderr, and other readiness-check contract.
@@ -87,6 +87,7 @@ filesystem mutation.
 
 - instruction: `CONTEXT.md`
 - instruction: `docs/agents/skill-governance.md`
+- instruction: `docs/specs/0041-agent-selection-runtime-readiness/_techspec.md`
 - interface: `skills/skills.go`
 - interface: `skills/skills_test.go`
 - interface: `internal/cli/doctor.go`
@@ -113,6 +114,8 @@ filesystem mutation.
 - `_techspec.md` → Repository readiness contract; Owned-skill comparison;
   External lock and hash comparison; Doctor integration and output; Build Order
   1–3.
+- `docs/specs/0041-agent-selection-runtime-readiness/_techspec.md` → prerequisite
+  profile-aware Doctor coordinator and output order.
 - `CONTEXT.md` → Doctor Command; Repository Skill Set; Roundfix Skill.
 - `docs/agents/skill-governance.md` → owned versus external authority and
   synchronization boundaries.

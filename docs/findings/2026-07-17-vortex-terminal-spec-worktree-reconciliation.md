@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-17
 updated_at: 2026-07-17
 ---
@@ -108,3 +108,6 @@ visibility in Run discovery, and the dry-run-first Reconcile Command. It
 depends on spec
 [0037 Terminal outcome integrity](../specs/0037-terminal-outcome-integrity/_prd.md)
 for guarded Integration Pending reconciliation.
+
+This finding is `done` because the implementation Spec exists. Task and QA
+progress belong to the Specs rather than this finding status.
