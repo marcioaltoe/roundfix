@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0035-agent-selection-profiles
-status: completed
+status: pending
 type: frontend
 complexity: high
 ---
@@ -30,6 +30,7 @@ Make actual Task, QA, and review selections observable through stderr, the Live 
 - [x] Replay identical state through Attach.
 - [x] Preserve compatibility summaries and legacy Run rendering.
 - [x] Add ordering, no-color, bounded-output, and privacy tests.
+- [ ] Document `agent-selection` in the public `events --filter` help and user guidance.
 
 ## Acceptance Criteria
 
@@ -39,6 +40,7 @@ Make actual Task, QA, and review selections observable through stderr, the Live 
 - [x] Legacy Runs render missing selection history explicitly and do not fail Attach or Run Browser views.
 - [x] Text, TUI, Attach, and JSON projection agree on selection, role, status, and reason.
 - [x] No prompt, raw ACP payload, credential, or secret appears in the new projections.
+- [ ] `roundfix events --help` lists `agent-selection` as an accepted filter, and the user guide documents the same value.
 
 ## Context
 
@@ -54,6 +56,7 @@ Make actual Task, QA, and review selections observable through stderr, the Live 
 
 - `rtk go test ./internal/runevent ./internal/tui ./internal/cli -run 'Test(AgentSelectionStream|AgentSelectionLiveRunView|AgentSelectionAttachReplay|FallbackNotificationOrdering|LegacyRunSelectionView)' -count=1` — expected: scoped projection, ordering, replay, compatibility, no-color, and privacy cases pass.
 - `rtk go test -race ./internal/runevent ./internal/tui ./internal/cli -run 'Test(AgentSelectionLiveRunView|AgentSelectionAttachReplay|FallbackNotificationOrdering)' -count=1` — expected: live and replayed selection state is race-free.
+- `rtk go test ./internal/cli -run 'TestEvents.*Help|TestAgentSelection.*Event' -count=1` — expected: the public help contract includes the accepted `agent-selection` filter.
 
 ## References
 
