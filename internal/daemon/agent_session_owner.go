@@ -11,6 +11,7 @@ import (
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
+	"roundfix/internal/store"
 )
 
 type AgentRuntimeFactory func(roundconfig.AgentSelection) (agent.RuntimeSpec, error)
@@ -36,6 +37,7 @@ type agentSessionOwner struct {
 	activeSession agent.SessionRef
 	active        bool
 	workStarted   bool
+	attemptNumber int
 	attempts      []agentSelectionAttempt
 }
 
@@ -214,6 +216,11 @@ func (owner *agentSessionOwner) activate(ctx context.Context, req agent.ExecuteR
 			owner.closeAttempt(context.WithoutCancel(ctx), runtime, session)
 			if !isSelectionStartFailure(err) || index == len(candidates)-1 {
 				owner.attempts = append(owner.attempts, agentSelectionAttempt{Candidate: candidate, Err: err})
+				if isSelectionStartFailure(err) {
+					if persistErr := owner.persistSelectionAttempt(context.WithoutCancel(ctx), candidate, store.AgentSelectionStatusFailed, err); persistErr != nil {
+						return persistErr
+					}
+				}
 				if isSelectionStartFailure(err) && index == len(candidates)-1 {
 					if publishErr := owner.publishExhausted(context.WithoutCancel(ctx)); publishErr != nil {
 						return publishErr
@@ -228,10 +235,17 @@ func (owner *agentSessionOwner) activate(ctx context.Context, req agent.ExecuteR
 				return err
 			}
 			owner.attempts = append(owner.attempts, agentSelectionAttempt{Candidate: candidate, Err: err})
+			if persistErr := owner.persistSelectionAttempt(context.WithoutCancel(ctx), candidate, store.AgentSelectionStatusFailed, err); persistErr != nil {
+				return persistErr
+			}
 			if err := owner.publishFallback(ctx, candidate, candidates[index+1], err); err != nil {
 				return err
 			}
 			continue
+		}
+		if err := owner.persistSelectionAttempt(ctx, candidate, store.AgentSelectionStatusActive, nil); err != nil {
+			owner.closeAttempt(context.WithoutCancel(ctx), runtime, session)
+			return err
 		}
 		owner.activeRuntime = runtime
 		owner.activeSession = session
@@ -406,10 +420,102 @@ func (owner *agentSessionOwner) closeActive(ctx context.Context) error {
 	}
 	err := owner.engine.deps.Runner.EndSession(ctx, owner.activeRuntime, owner.activeSession)
 	if err == nil {
+		if persistErr := owner.persistSelectionAttempt(ctx, owner.activeCandidate(), store.AgentSelectionStatusClosed, nil); persistErr != nil {
+			owner.active = false
+			return persistErr
+		}
 		_ = owner.publishSessionClosed(ctx)
 	}
 	owner.active = false
 	return nil
+}
+
+type agentSelectionAttemptAppender interface {
+	AppendAgentSelectionAttempt(context.Context, store.AgentSelectionAttemptRequest) (store.AgentSelectionAttempt, error)
+}
+
+type agentSelectionAttemptReader interface {
+	AgentSelectionAttemptsForScope(context.Context, string, store.AgentSelectionScopeKind, string) ([]store.AgentSelectionAttempt, error)
+}
+
+func (owner *agentSessionOwner) persistSelectionAttempt(ctx context.Context, candidate agentSelectionCandidate, status store.AgentSelectionStatus, cause error) error {
+	appender, ok := owner.engine.deps.Runs.(agentSelectionAttemptAppender)
+	if !ok || appender == nil {
+		return nil
+	}
+	attemptNumber, err := owner.nextSelectionAttemptNumber(ctx)
+	if err != nil {
+		return err
+	}
+	req := store.AgentSelectionAttemptRequest{
+		RunID:           owner.scope.RunID,
+		ScopeKind:       store.AgentSelectionScopeKind(owner.scope.Kind),
+		ScopeID:         owner.scope.ID,
+		Category:        string(owner.scope.Category),
+		ProfileSource:   string(owner.profile.Source),
+		Attempt:         attemptNumber,
+		SelectionRole:   store.AgentSelectionRole(candidate.Role),
+		FallbackIndex:   candidate.FallbackIndex,
+		Runtime:         strings.TrimSpace(candidate.Selection.Runtime),
+		Model:           strings.TrimSpace(candidate.Selection.Model),
+		ReasoningEffort: strings.TrimSpace(candidate.Selection.ReasoningEffort),
+		Status:          status,
+		Time:            owner.engine.deps.Now(),
+	}
+	if cause != nil {
+		req.ReasonCode = selectionReasonCode(cause)
+		req.Reason = strings.TrimSpace(cause.Error())
+	}
+	if _, err := appender.AppendAgentSelectionAttempt(ctx, req); err != nil {
+		return fmt.Errorf("persist Agent Selection %s for %s %s (%s): %w", status, owner.scope.Kind, owner.scope.ID, owner.scope.Category, err)
+	}
+	owner.attemptNumber = attemptNumber
+	return nil
+}
+
+func (owner *agentSessionOwner) nextSelectionAttemptNumber(ctx context.Context) (int, error) {
+	if owner.attemptNumber > 0 {
+		return owner.attemptNumber + 1, nil
+	}
+	reader, ok := owner.engine.deps.Runs.(agentSelectionAttemptReader)
+	if !ok || reader == nil {
+		return 1, nil
+	}
+	attempts, err := reader.AgentSelectionAttemptsForScope(ctx, owner.scope.RunID, store.AgentSelectionScopeKind(owner.scope.Kind), owner.scope.ID)
+	if err != nil {
+		return 0, fmt.Errorf("read Agent Selection history for %s %s (%s): %w", owner.scope.Kind, owner.scope.ID, owner.scope.Category, err)
+	}
+	for _, attempt := range attempts {
+		if attempt.Attempt > owner.attemptNumber {
+			owner.attemptNumber = attempt.Attempt
+		}
+	}
+	return owner.attemptNumber + 1, nil
+}
+
+func (owner *agentSessionOwner) activeCandidate() agentSelectionCandidate {
+	candidates := owner.candidates()
+	active := selectionPayload(roundconfig.AgentSelection{
+		Runtime:         owner.activeRuntime.ID,
+		Model:           owner.activeRuntime.Model,
+		ReasoningEffort: owner.activeRuntime.ReasoningEffort,
+	})
+	for _, candidate := range candidates {
+		if equalSelectionPayload(selectionPayload(candidate.Selection), active) {
+			return candidate
+		}
+	}
+	return agentSelectionCandidate{Role: "preferred", Selection: roundconfig.AgentSelection{
+		Runtime:         owner.activeRuntime.ID,
+		Model:           owner.activeRuntime.Model,
+		ReasoningEffort: owner.activeRuntime.ReasoningEffort,
+	}}
+}
+
+func equalSelectionPayload(left map[string]string, right map[string]string) bool {
+	return left["runtime"] == right["runtime"] &&
+		left["model"] == right["model"] &&
+		left["reasoning_effort"] == right["reasoning_effort"]
 }
 
 func (owner *agentSessionOwner) publishSessionClosed(ctx context.Context) error {

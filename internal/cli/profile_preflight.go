@@ -108,7 +108,11 @@ func runtimeForOperationalProfileRun(req commandRequest, config roundconfig.Conf
 	if len(categories) == 0 {
 		return runtimeForAgentWork(req, config)
 	}
-	resolved, err := roundconfig.ResolveProfile(config, categories[0], override)
+	category := categories[0]
+	if req.name == "implement" {
+		category = roundconfig.CategoryGeneral
+	}
+	resolved, err := roundconfig.ResolveProfile(config, category, override)
 	if err != nil {
 		return agent.RuntimeSpec{}, err
 	}

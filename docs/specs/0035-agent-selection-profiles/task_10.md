@@ -1,7 +1,7 @@
 ---
 task: task_10
 spec: 0035-agent-selection-profiles
-status: pending
+status: completed
 type: test
 complexity: high
 ---
@@ -24,23 +24,23 @@ Add the cross-boundary macro harness that proves the individually tested profile
 
 ## Subtasks
 
-- [ ] Build the temporary-repository and fake-adapter macro fixture.
-- [ ] Exercise file configuration, show, and validation flows.
-- [ ] Execute mixed backend/frontend Tasks and QA.
-- [ ] Force and observe notification-first cross-runtime fallback.
-- [ ] Assert database and Run Event Stream selection history.
-- [ ] Prove invalid Task Type has zero side effects.
-- [ ] Run focused race and full repository verification.
+- [x] Build the temporary-repository and fake-adapter macro fixture.
+- [x] Exercise file configuration, show, and validation flows.
+- [x] Execute mixed backend/frontend Tasks and QA.
+- [x] Force and observe notification-first cross-runtime fallback.
+- [x] Assert database and Run Event Stream selection history.
+- [x] Prove invalid Task Type has zero side effects.
+- [x] Run focused race and full repository verification.
 
 ## Acceptance Criteria
 
-- [ ] Backend, frontend, and QA actions each use their configured exact selection and independently owned session.
-- [ ] A pre-prompt Preferred failure continues through the configured cross-runtime fallback only after notification is durable and visible.
-- [ ] Stored attempts and streamed events reproduce the exact category, source, order, tuple, status, and reason history.
-- [ ] Invalid Task Type fails before every proof and Run side effect.
-- [ ] Recommendation ordering never changes configuration or fallback order during the flow.
-- [ ] No fallback occurs after the first prompt in the negative companion.
-- [ ] Focused race verification and `make verify` pass without retries or skipped assertions.
+- [x] Backend, frontend, and QA actions each use their configured exact selection and independently owned session.
+- [x] A pre-prompt Preferred failure continues through the configured cross-runtime fallback only after notification is durable and visible.
+- [x] Stored attempts and streamed events reproduce the exact category, source, order, tuple, status, and reason history.
+- [x] Invalid Task Type fails before every proof and Run side effect.
+- [x] Recommendation ordering never changes configuration or fallback order during the flow.
+- [x] No fallback occurs after the first prompt in the negative companion.
+- [x] Focused race verification and `make verify` pass without retries or skipped assertions.
 
 ## Context
 
@@ -64,3 +64,27 @@ Add the cross-boundary macro harness that proves the individually tested profile
 - `_techspec.md` → Testing Approach: Macro QA; Required verification; Build Order 8; Risks and Decisions.
 - `references/model-ranking.md` → ranking is advisory and never routing input.
 - `references/openclaw-skill-analysis.md` → proof, review, and QA remain distinct concerns.
+
+## Result
+
+Implemented the end-to-end macro proof and closed the persistence gaps it exposed:
+
+- Added `TestAgentSelectionProfilesMacro`, which builds the real `roundfix` binary, creates temporary git repositories, runs fake pinned `acpx` plus adapter executables through `PATH`, configures project profiles from YAML, shows and validates profiles, executes backend/frontend Tasks plus QA, and exercises invalid Task Type and post-start failure companions.
+- Persisted live Agent Selection lifecycle rows from owned sessions into `run_agent_selections`, including active, failed, and closed statuses, profile source, role, fallback index, exact tuple, normalized reason, and continued monotonic attempt numbering when review scope IDs repeat across watch rounds.
+- Fixed Spec Run compatibility summaries to store the effective `general` Preferred Selection while leaving actual per-work Task/QA selections in the per-scope history.
+
+Acceptance evidence:
+
+- Backend/frontend/QA exact selections and owned sessions: the macro asserts backend `codex/macro-backend/high`, frontend failed Preferred `codex/macro-frontend-preferred/high` then cross-runtime fallback `claude/claude-fable-5/xhigh`, QA `codex/macro-qa/high`, and one close per owned session.
+- Notification-first fallback: fake `acpx` refuses to create the fallback session unless the durable fallback notification already exists in SQLite, while the test also asserts the caller-visible fallback message and Run Event order before fallback active and `agent_work_started`.
+- Stored and streamed history: the macro reads `run_agent_selections` and `roundfix events --filter agent-selection`, asserting category, source `project`, attempt order, role, fallback index, status, tuple, `model_unavailable`, and sanitized reason values.
+- Invalid Task Type side effects: the companion invalid frontmatter run exits before proofs and asserts zero fake `acpx` calls, no Run Database, no Run Worktree root, and no `roundfix/*` branch.
+- No unauthorized mutation: the macro snapshots Project Config, fake runtime-owned files, fake credential files, recommendations, and fallback order before/after the flow.
+- No fallback after work starts: the post-start failure companion asserts no live fallback session, no fallback notification, and no persisted fallback attempt after the first prompt.
+
+Verification:
+
+- `rtk go test ./internal/cli -run 'TestAgentSelectionProfilesMacro' -count=1` — passed, 4 macro subtests.
+- `rtk go test -race ./internal/config ./internal/spec ./internal/agent ./internal/store ./internal/runevent ./internal/cli ./internal/daemon ./internal/tui -run 'Test(AgentSelection|Profile|TaskType)' -count=1` — passed, 62 tests in 8 packages.
+- `rtk go run -buildvcs=false ./cmd/roundfix skills check` — passed.
+- `rtk make verify` — passed, including `rtk go test ./...` with 1548 tests, setup-context checks, `roundfix skills check`, and build.

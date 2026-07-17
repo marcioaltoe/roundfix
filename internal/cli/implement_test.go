@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -19,6 +20,7 @@ import (
 	"time"
 
 	"roundfix/internal/agent"
+	roundconfig "roundfix/internal/config"
 	"roundfix/internal/daemon"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
@@ -3743,4 +3745,878 @@ func TestRunImplementInfrastructureFailureEndsFailed(t *testing.T) {
 		t.Fatalf("expected Failed, got %q", run.State)
 	}
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+func TestAgentSelectionProfilesMacro(t *testing.T) {
+	binary := buildRoundfixBinaryForMacro(t)
+
+	t.Run("mixed profiles configure validate fallback persist and stream", func(t *testing.T) {
+		fake := newMacroFakeACPX(t)
+		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+			{id: "task_backend", title: "Build backend API", taskType: "backend"},
+			{id: "task_frontend", title: "Build frontend view", taskType: "frontend"},
+		})
+		sentinels := seedMacroRuntimeOwnedFiles(t, homeDir)
+		configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+		mustWrite(t, configPath, "worktree:\n  concurrency: 1\n")
+		fragmentPath := filepath.Join(t.TempDir(), "profiles.yml")
+		mustWrite(t, fragmentPath, macroProfilesYAML())
+
+		stdout, stderr, code := runRoundfixBinaryMacro(t, binary, repoDir, homeDir, fake.binDir, "y\n", fake.env(), "profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json")
+		if code != exitOK {
+			t.Fatalf("profiles configure failed: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+		}
+		configure := decodeMacroConfigureResponse(t, stdout)
+		if configure.Schema != profilesConfigureSchema || !configure.Changed || configure.Scope != "project" {
+			t.Fatalf("unexpected configure response: %#v stderr=%q", configure, stderr)
+		}
+		gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+		gitImplement(t, repoDir, "commit", "-m", "configure agent selection profiles")
+		configBeforeRun := mustRead(t, configPath)
+
+		showBefore := runProfilesShowMacro(t, binary, repoDir, homeDir, fake, "frontend")
+		assertMacroFrontendProfileShow(t, showBefore)
+
+		stdout, stderr, code = runRoundfixBinaryMacro(t, binary, repoDir, homeDir, fake.binDir, "", fake.env(), "profiles", "validate", "--json")
+		if code != exitOK {
+			t.Fatalf("profiles validate failed: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+		}
+		validate := decodeMacroValidateResponse(t, stdout)
+		if validate.Schema != profilesValidateSchema || !validate.OK {
+			t.Fatalf("unexpected validate response: %#v stderr=%q", validate, stderr)
+		}
+		for _, invocation := range readMacroACPXLog(t, fake.logPath) {
+			if invocation.Command == "prompt" {
+				t.Fatalf("profiles validate must not prompt, got invocation %#v", invocation)
+			}
+		}
+
+		env := fake.env()
+		env["ROUNDFIX_FAKE_ACPX_FAIL_PREPARE_MODEL"] = "macro-frontend-preferred"
+		stdout, stderr, code = runRoundfixBinaryMacro(t, binary, repoDir, homeDir, fake.binDir, "", env, "implement", "--spec", implementTestSlug, "--qa", "--no-input")
+		if code != exitOK {
+			t.Fatalf("implement macro failed: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+		}
+		runID := implementRunIDFromStderr(t, stderr)
+		for _, expected := range []string{
+			"task_backend completed — Build backend API",
+			"task_frontend completed — Build frontend view",
+			"qa pass — docs/specs/0001-widget-flow/qa/qa-report-2026-01-01.md",
+			"Clean: all 2 Task(s) completed.",
+		} {
+			if !strings.Contains(stdout, expected) {
+				t.Fatalf("implement stdout missing %q:\n%s", expected, stdout)
+			}
+		}
+		if !strings.Contains(stderr, "task task_frontend (frontend) Agent Selection failed") ||
+			!strings.Contains(stderr, "activating fallback 1 claude/claude-fable-5/xhigh") {
+			t.Fatalf("expected caller-visible fallback notification, got stderr:\n%s", stderr)
+		}
+
+		run := implementRunFromStore(t, homeDir, runID)
+		if run.Agent != "codex" || run.Model != "macro-general" || run.ReasoningEffort != "high" {
+			t.Fatalf("expected spec Run compatibility summary from general profile, got %#v", run)
+		}
+		assertMacroSelectionAttempts(t, homeDir, runID)
+		assertMacroSelectionEventOrder(t, homeDir, runID)
+		assertMacroSelectionStream(t, binary, repoDir, homeDir, fake, runID)
+		assertMacroACPXActionLog(t, fake.logPath, runID)
+
+		showAfter := runProfilesShowMacro(t, binary, repoDir, homeDir, fake, "frontend")
+		if got, want := macroRecommendationSignature(showAfter), macroRecommendationSignature(showBefore); got != want {
+			t.Fatalf("recommendations changed during run\nwant: %s\n got: %s", want, got)
+		}
+		if got, want := macroFallbackSignature(showAfter), macroFallbackSignature(showBefore); got != want {
+			t.Fatalf("fallback order changed during run\nwant: %s\n got: %s", want, got)
+		}
+		if got := mustRead(t, configPath); got != configBeforeRun {
+			t.Fatalf("implement mutated Project Config\nwant: %q\n got: %q", configBeforeRun, got)
+		}
+		assertMacroFilesUnchanged(t, sentinels)
+	})
+
+	t.Run("invalid task type blocks every proof and run side effect", func(t *testing.T) {
+		fake := newMacroFakeACPX(t)
+		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+			{id: "task_01", title: "Invalid authoring", taskType: "Backend"},
+		})
+
+		stdout, stderr, code := runRoundfixBinaryMacro(t, binary, repoDir, homeDir, fake.binDir, "", fake.env(), "implement", "--spec", implementTestSlug, "--no-input")
+
+		if code != exitPreflight {
+			t.Fatalf("expected preflight exit %d, got %d stdout=%q stderr=%q", exitPreflight, code, stdout, stderr)
+		}
+		taskPath := implementTaskPath(repoDir, "task_01")
+		for _, expected := range []string{taskPath, "Backend", "backend, frontend, data, infra, docs, test, chore", "update the task frontmatter type"} {
+			if !strings.Contains(stderr, expected) {
+				t.Fatalf("invalid Task Type stderr missing %q:\n%s", expected, stderr)
+			}
+		}
+		if stdout != "" {
+			t.Fatalf("expected no stdout for invalid Task Type, got %q", stdout)
+		}
+		if invocations := readMacroACPXLog(t, fake.logPath); len(invocations) != 0 {
+			t.Fatalf("invalid Task Type must not probe or invoke Agent, got %#v", invocations)
+		}
+		assertNoRunDatabase(t, homeDir)
+		assertNoMacroRunWorktreeOrBranch(t, homeDir, repoDir)
+	})
+
+	t.Run("post start failure never activates fallback", func(t *testing.T) {
+		fake := newMacroFakeACPX(t)
+		homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+			{id: "task_backend", title: "Backend fails after start", taskType: "backend"},
+		})
+		configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+		mustWrite(t, configPath, "worktree:\n  concurrency: 1\n")
+		fragmentPath := filepath.Join(t.TempDir(), "profiles.yml")
+		mustWrite(t, fragmentPath, macroProfilesYAML())
+		stdout, stderr, code := runRoundfixBinaryMacro(t, binary, repoDir, homeDir, fake.binDir, "y\n", fake.env(), "profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json")
+		if code != exitOK {
+			t.Fatalf("profiles configure failed: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+		}
+		gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+		gitImplement(t, repoDir, "commit", "-m", "configure agent selection profiles")
+
+		env := fake.env()
+		env["ROUNDFIX_FAKE_ACPX_FAIL_PROMPT_MODEL"] = "macro-backend"
+		stdout, stderr, code = runRoundfixBinaryMacro(t, binary, repoDir, homeDir, fake.binDir, "", env, "implement", "--spec", implementTestSlug, "--no-input")
+
+		if code != exitRunFailed {
+			t.Fatalf("expected unresolved exit %d, got %d stdout=%q stderr=%q", exitRunFailed, code, stdout, stderr)
+		}
+		runID := implementRunIDFromStderr(t, stderr)
+		if !strings.Contains(stdout, "task_backend failed — Backend fails after start") ||
+			!strings.Contains(stdout, "Unresolved: 0 completed, 1 failed, 0 skipped, 0 pending.") {
+			t.Fatalf("expected task failure report without fallback recovery, got stdout:\n%s", stdout)
+		}
+		for _, invocation := range readMacroACPXLog(t, fake.logPath) {
+			if strings.HasPrefix(invocation.Session, "roundfix-preflight-") {
+				continue
+			}
+			if invocation.Model == "macro-backend-fallback" || strings.Contains(invocation.Session, "fallback") {
+				t.Fatalf("post-start failure must not activate fallback, got invocation %#v", invocation)
+			}
+		}
+		for _, entry := range runEventsForRun(t, homeDir, runID) {
+			if entry.Event.Kind == runevent.KindDaemonAgentSelectionFallback &&
+				strings.Contains(string(entry.Event.Payload), `"scope_id":"task_backend"`) &&
+				strings.Contains(string(entry.Event.Payload), `"next_selection"`) {
+				t.Fatalf("post-start failure must not publish fallback notification, got event payload %s", string(entry.Event.Payload))
+			}
+		}
+		attempts := agentSelectionAttemptsForRun(t, homeDir, runID)
+		for _, attempt := range attempts {
+			if attempt.ScopeID == "task_backend" && attempt.SelectionRole == store.AgentSelectionRoleFallback {
+				t.Fatalf("post-start failure must not persist fallback attempt, got %#v", attempt)
+			}
+		}
+	})
+}
+
+type macroFakeACPX struct {
+	binDir  string
+	logPath string
+}
+
+type macroACPXInvocation struct {
+	Command    string   `json:"command"`
+	Agent      string   `json:"agent"`
+	Model      string   `json:"model"`
+	Session    string   `json:"session"`
+	CWD        string   `json:"cwd"`
+	PromptKind string   `json:"prompt_kind"`
+	PromptTask string   `json:"prompt_task"`
+	Outcome    string   `json:"outcome"`
+	Args       []string `json:"args"`
+}
+
+type macroCommandResult struct {
+	Schema  string `json:"schema"`
+	Changed bool   `json:"changed"`
+	Scope   string `json:"scope"`
+	OK      bool   `json:"ok"`
+}
+
+type macroProfilesShowResponse struct {
+	Schema   string                     `json:"schema"`
+	Profiles []macroProfilesShowProfile `json:"profiles"`
+}
+
+type macroProfilesShowProfile struct {
+	Category        string                        `json:"category"`
+	Preferred       roundconfig.AgentSelection    `json:"preferred"`
+	Fallbacks       []roundconfig.AgentSelection  `json:"fallbacks"`
+	Recommendations []macroProfilesRecommendation `json:"recommendations"`
+}
+
+type macroProfilesRecommendation struct {
+	Rank      int                        `json:"rank"`
+	Selection roundconfig.AgentSelection `json:"selection"`
+}
+
+type macroStreamRecord struct {
+	Schema              string `json:"schema"`
+	Category            string `json:"category"`
+	Cursor              int64  `json:"cursor"`
+	ScopeKind           string `json:"scope_kind"`
+	ScopeID             string `json:"scope_id"`
+	WorkCategory        string `json:"work_category"`
+	ProfileSource       string `json:"profile_source"`
+	Attempt             int    `json:"attempt"`
+	SelectionRole       string `json:"selection_role"`
+	FallbackIndex       int    `json:"fallback_index"`
+	Runtime             string `json:"runtime"`
+	Model               string `json:"model"`
+	ReasoningEffort     string `json:"reasoning_effort"`
+	NextRuntime         string `json:"next_runtime"`
+	NextModel           string `json:"next_model"`
+	NextReasoningEffort string `json:"next_reasoning_effort"`
+	Status              string `json:"status"`
+	ReasonCode          string `json:"reason_code"`
+	Reason              string `json:"reason"`
+}
+
+func buildRoundfixBinaryForMacro(t *testing.T) string {
+	t.Helper()
+	repoRoot := repoRootForMacro(t)
+	binary := filepath.Join(t.TempDir(), "roundfix")
+	cmd := exec.Command("go", "build", "-buildvcs=false", "-o", binary, "./cmd/roundfix")
+	cmd.Dir = repoRoot
+	cmd.Env = isolatedGitEnvForTest()
+	var output bytes.Buffer
+	cmd.Stdout = &output
+	cmd.Stderr = &output
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("build roundfix binary: %v\n%s", err, output.String())
+	}
+	return binary
+}
+
+func repoRootForMacro(t *testing.T) string {
+	t.Helper()
+	cmd := exec.Command("git", append(gitConfigArgsForTest(), "rev-parse", "--show-toplevel")...)
+	cmd.Env = isolatedGitEnvForTest()
+	var output bytes.Buffer
+	cmd.Stdout = &output
+	cmd.Stderr = &output
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("resolve repo root: %v\n%s", err, output.String())
+	}
+	return strings.TrimSpace(output.String())
+}
+
+func newMacroFakeACPX(t *testing.T) macroFakeACPX {
+	t.Helper()
+	binDir := t.TempDir()
+	logPath := filepath.Join(t.TempDir(), "acpx.jsonl")
+	script := strings.ReplaceAll(macroFakeACPXScript, "__PINNED_ACPX_VERSION__", agent.PinnedACPXVersion)
+	acpxPath := filepath.Join(binDir, "acpx")
+	if err := os.WriteFile(acpxPath, []byte(script), 0o755); err != nil {
+		t.Fatalf("write fake acpx: %v", err)
+	}
+	for _, adapter := range []string{"codex-acp", "claude-code-acp", "opencode"} {
+		if err := os.WriteFile(filepath.Join(binDir, adapter), []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+			t.Fatalf("write fake adapter %s: %v", adapter, err)
+		}
+	}
+	return macroFakeACPX{binDir: binDir, logPath: logPath}
+}
+
+func (fake macroFakeACPX) env() map[string]string {
+	return map[string]string{"ROUNDFIX_FAKE_ACPX_LOG": fake.logPath}
+}
+
+const macroFakeACPXScript = `#!/usr/bin/env python3
+import json
+import os
+import re
+import sqlite3
+import sys
+
+PINNED = "__PINNED_ACPX_VERSION__"
+AGENTS = {"codex", "claude", "opencode"}
+
+def arg_value(argv, flag):
+    for index, value in enumerate(argv):
+        if value == flag and index + 1 < len(argv):
+            return argv[index + 1]
+    return ""
+
+def parse(argv):
+    if argv == ["--version"]:
+        return {"command": "version", "args": argv}
+    agent = ""
+    agent_index = -1
+    for index, value in enumerate(argv):
+        if value in AGENTS:
+            agent = value
+            agent_index = index
+            break
+    tail = argv[agent_index + 1:] if agent_index >= 0 else []
+    command = "unknown"
+    session = ""
+    if len(tail) >= 2 and tail[0] == "sessions" and tail[1] == "ensure":
+        command = "sessions ensure"
+        session = arg_value(tail, "--name")
+    elif len(tail) >= 2 and tail[0] == "sessions" and tail[1] == "close":
+        command = "sessions close"
+        session = tail[2] if len(tail) > 2 else ""
+    elif tail and tail[0] == "set":
+        command = "set"
+        session = arg_value(tail, "-s")
+    elif tail and tail[0] == "prompt":
+        command = "prompt"
+        session = arg_value(tail, "-s")
+    return {
+        "command": command,
+        "agent": agent,
+        "model": arg_value(argv, "--model"),
+        "session": session,
+        "cwd": arg_value(argv, "--cwd") or os.getcwd(),
+        "args": argv,
+    }
+
+def log(event):
+    path = os.environ.get("ROUNDFIX_FAKE_ACPX_LOG", "")
+    if not path:
+        return
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "a", encoding="utf-8") as handle:
+        handle.write(json.dumps(event, sort_keys=True) + "\n")
+
+def prompt_field(prompt, label):
+    match = re.search(r"^" + re.escape(label) + r":\s*(.+)$", prompt, re.M)
+    return match.group(1).strip() if match else ""
+
+def resolve_path(cwd, value):
+    value = value.strip()
+    if os.path.isabs(value):
+        return value
+    return os.path.join(cwd, value)
+
+def set_status(path, status):
+    with open(path, "r", encoding="utf-8") as handle:
+        lines = handle.readlines()
+    if not lines or lines[0].strip() != "---":
+        raise RuntimeError("missing task frontmatter")
+    end = None
+    for index in range(1, len(lines)):
+        if lines[index].strip() == "---":
+            end = index
+            break
+    if end is None:
+        raise RuntimeError("missing task frontmatter terminator")
+    replaced = False
+    for index in range(1, end):
+        if lines[index].startswith("status:"):
+            lines[index] = "status: " + status + "\n"
+            replaced = True
+            break
+    if not replaced:
+        lines.insert(end, "status: " + status + "\n")
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.writelines(lines)
+
+def write_qa_report(spec_dir):
+    report = os.path.join(spec_dir, "qa", "qa-report-2026-01-01.md")
+    os.makedirs(os.path.dirname(report), exist_ok=True)
+    with open(report, "w", encoding="utf-8") as handle:
+        handle.write("---\nverdict: pass\n---\n\n# QA Report\n")
+
+def require_durable_fallback_notification(event):
+    session = event.get("session", "")
+    if "-fallback-" not in session:
+        return
+    home = os.environ.get("HOME", "")
+    db_path = os.path.join(home, ".roundfix", "roundfix.db")
+    if not os.path.exists(db_path):
+        sys.stderr.write("missing durable fallback notification database\n")
+        sys.exit(1)
+    try:
+        connection = sqlite3.connect("file:" + db_path + "?mode=ro", uri=True, timeout=5)
+        try:
+            cursor = connection.execute(
+                "SELECT COUNT(*) FROM run_events WHERE kind = ? AND payload LIKE ? AND payload LIKE ?",
+                ("daemon.agent_selection_fallback", "%task_frontend%", "%claude-fable-5%"),
+            )
+            count = cursor.fetchone()[0]
+        finally:
+            connection.close()
+    except Exception as exc:
+        sys.stderr.write("read durable fallback notification failed: " + str(exc) + "\n")
+        sys.exit(1)
+    if count < 1:
+        sys.stderr.write("fallback session prepared before durable fallback notification\n")
+        sys.exit(1)
+
+argv = sys.argv[1:]
+event = parse(argv)
+if event["command"] == "version":
+    event["outcome"] = "ok"
+    log(event)
+    print(PINNED)
+    sys.exit(0)
+
+stdin_data = ""
+if event["command"] == "prompt":
+    stdin_data = sys.stdin.read()
+    task = prompt_field(stdin_data, "Task")
+    event["prompt_task"] = task
+    event["prompt_kind"] = "task" if task else ("qa" if "Spec QA gate" in stdin_data else "unknown")
+
+if event["command"] == "sessions ensure":
+    require_durable_fallback_notification(event)
+    fail_model = os.environ.get("ROUNDFIX_FAKE_ACPX_FAIL_PREPARE_MODEL", "")
+    if event.get("model") == fail_model and not event.get("session", "").startswith("roundfix-preflight-"):
+        event["outcome"] = "failed"
+        log(event)
+        sys.stderr.write("selection start rejected\n")
+        sys.exit(1)
+
+if event["command"] == "prompt":
+    fail_model = os.environ.get("ROUNDFIX_FAKE_ACPX_FAIL_PROMPT_MODEL", "")
+    if event.get("model") == fail_model:
+        event["outcome"] = "failed"
+        log(event)
+        sys.stderr.write("agent work rejected\n")
+        sys.exit(1)
+    if event["prompt_kind"] == "task":
+        task_path = resolve_path(event["cwd"], prompt_field(stdin_data, "Task file"))
+        set_status(task_path, "completed")
+    elif event["prompt_kind"] == "qa":
+        spec_dir = resolve_path(event["cwd"], prompt_field(stdin_data, "Spec directory"))
+        write_qa_report(spec_dir)
+    event["outcome"] = "ok"
+    log(event)
+    print('{"jsonrpc":"2.0","id":1,"result":{"stopReason":"end_turn"}}')
+    sys.exit(0)
+
+event["outcome"] = "ok"
+log(event)
+sys.exit(0)
+`
+
+func macroProfilesYAML() string {
+	return `profiles:
+  general:
+    preferred:
+      runtime: codex
+      model: macro-general
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: macro-general-fallback
+        reasoning_effort: max
+  backend:
+    preferred:
+      runtime: codex
+      model: macro-backend
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: macro-backend-fallback
+        reasoning_effort: max
+  frontend:
+    preferred:
+      runtime: codex
+      model: macro-frontend-preferred
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: claude-fable-5
+        reasoning_effort: xhigh
+  qa:
+    preferred:
+      runtime: codex
+      model: macro-qa
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: macro-qa-fallback
+        reasoning_effort: max
+  review:
+    preferred:
+      runtime: codex
+      model: macro-review
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: macro-review-fallback
+        reasoning_effort: max
+`
+}
+
+func runRoundfixBinaryMacro(t *testing.T, binary string, dir string, homeDir string, fakeBinDir string, stdin string, extraEnv map[string]string, args ...string) (string, string, int) {
+	t.Helper()
+	cmd := exec.Command(binary, args...)
+	cmd.Dir = dir
+	env := isolatedGitEnvForTest()
+	env = withEnvValue(env, "HOME", homeDir)
+	env = withEnvValue(env, "PATH", fakeBinDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	env = withEnvValue(env, "ROUNDFIX_TUI", "never")
+	env = withEnvValue(env, "ROUNDFIX_COLOR", "never")
+	env = withEnvValue(env, "NO_COLOR", "1")
+	env = withEnvValue(env, "TERM", "dumb")
+	for key, value := range extraEnv {
+		env = withEnvValue(env, key, value)
+	}
+	cmd.Env = env
+	if stdin != "" {
+		cmd.Stdin = strings.NewReader(stdin)
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	return stdout.String(), stderr.String(), exitCodeFromWait(err)
+}
+
+func decodeMacroConfigureResponse(t *testing.T, raw string) macroCommandResult {
+	t.Helper()
+	var response macroCommandResult
+	if err := json.Unmarshal([]byte(raw), &response); err != nil {
+		t.Fatalf("decode configure response %q: %v", raw, err)
+	}
+	return response
+}
+
+func decodeMacroValidateResponse(t *testing.T, raw string) macroCommandResult {
+	t.Helper()
+	var response macroCommandResult
+	if err := json.Unmarshal([]byte(raw), &response); err != nil {
+		t.Fatalf("decode validate response %q: %v", raw, err)
+	}
+	return response
+}
+
+func runProfilesShowMacro(t *testing.T, binary string, repoDir string, homeDir string, fake macroFakeACPX, category string) macroProfilesShowResponse {
+	t.Helper()
+	stdout, stderr, code := runRoundfixBinaryMacro(t, binary, repoDir, homeDir, fake.binDir, "", fake.env(), "profiles", "show", "--category", category, "--json")
+	if code != exitOK {
+		t.Fatalf("profiles show failed: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	var response macroProfilesShowResponse
+	if err := json.Unmarshal([]byte(stdout), &response); err != nil {
+		t.Fatalf("decode profiles show response %q: %v", stdout, err)
+	}
+	return response
+}
+
+func assertMacroFrontendProfileShow(t *testing.T, response macroProfilesShowResponse) {
+	t.Helper()
+	if response.Schema != profilesShowSchema || len(response.Profiles) != 1 {
+		t.Fatalf("unexpected profiles show response: %#v", response)
+	}
+	profile := response.Profiles[0]
+	if profile.Category != "frontend" {
+		t.Fatalf("expected frontend profile, got %#v", profile)
+	}
+	if profile.Preferred.Runtime != "codex" || profile.Preferred.Model != "macro-frontend-preferred" || profile.Preferred.ReasoningEffort != "high" {
+		t.Fatalf("unexpected frontend preferred selection: %#v", profile.Preferred)
+	}
+	if len(profile.Fallbacks) != 1 || profile.Fallbacks[0].Runtime != "claude" || profile.Fallbacks[0].Model != "claude-fable-5" || profile.Fallbacks[0].ReasoningEffort != "xhigh" {
+		t.Fatalf("unexpected frontend fallback chain: %#v", profile.Fallbacks)
+	}
+	if len(profile.Recommendations) != 5 {
+		t.Fatalf("expected exactly five recommendations, got %#v", profile.Recommendations)
+	}
+	seen := map[string]bool{}
+	for index, recommendation := range profile.Recommendations {
+		if recommendation.Rank != index+1 {
+			t.Fatalf("recommendation rank order changed at index %d: %#v", index, recommendation)
+		}
+		key := recommendation.Selection.Runtime + "/" + recommendation.Selection.Model
+		if seen[key] {
+			t.Fatalf("duplicate recommendation tuple %s in %#v", key, profile.Recommendations)
+		}
+		seen[key] = true
+	}
+}
+
+func macroRecommendationSignature(response macroProfilesShowResponse) string {
+	if len(response.Profiles) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(response.Profiles[0].Recommendations))
+	for _, recommendation := range response.Profiles[0].Recommendations {
+		selection := recommendation.Selection
+		parts = append(parts, fmt.Sprintf("%d:%s/%s/%s", recommendation.Rank, selection.Runtime, selection.Model, selection.ReasoningEffort))
+	}
+	return strings.Join(parts, ",")
+}
+
+func macroFallbackSignature(response macroProfilesShowResponse) string {
+	if len(response.Profiles) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(response.Profiles[0].Fallbacks))
+	for _, selection := range response.Profiles[0].Fallbacks {
+		parts = append(parts, selection.Runtime+"/"+selection.Model+"/"+selection.ReasoningEffort)
+	}
+	return strings.Join(parts, ",")
+}
+
+func readMacroACPXLog(t *testing.T, path string) []macroACPXInvocation {
+	t.Helper()
+	content, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		t.Fatalf("read fake acpx log: %v", err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(content)), "\n")
+	if len(lines) == 1 && strings.TrimSpace(lines[0]) == "" {
+		return nil
+	}
+	invocations := make([]macroACPXInvocation, 0, len(lines))
+	for _, line := range lines {
+		var invocation macroACPXInvocation
+		if err := json.Unmarshal([]byte(line), &invocation); err != nil {
+			t.Fatalf("decode fake acpx log line %q: %v", line, err)
+		}
+		invocations = append(invocations, invocation)
+	}
+	return invocations
+}
+
+func assertMacroACPXActionLog(t *testing.T, path string, runID string) {
+	t.Helper()
+	invocations := readMacroACPXLog(t, path)
+	prompts := map[string]macroACPXInvocation{}
+	closed := map[string]bool{}
+	for _, invocation := range invocations {
+		if invocation.Command == "prompt" {
+			prompts[invocation.PromptKind+":"+invocation.PromptTask] = invocation
+		}
+		if invocation.Command == "sessions close" {
+			closed[invocation.Session] = true
+		}
+	}
+	expectedPrompts := map[string]string{
+		"task:task_backend":  "codex/macro-backend",
+		"task:task_frontend": "claude/claude-fable-5",
+		"qa:":                "codex/macro-qa",
+	}
+	for key, selection := range expectedPrompts {
+		invocation, ok := prompts[key]
+		if !ok {
+			t.Fatalf("missing prompt invocation for %s in %#v", key, prompts)
+		}
+		if got := invocation.Agent + "/" + invocation.Model; got != selection {
+			t.Fatalf("prompt %s used %s, want %s", key, got, selection)
+		}
+	}
+	for _, session := range []string{
+		"roundfix-" + runID + "-task_backend",
+		"roundfix-" + runID + "-task_frontend",
+		"roundfix-" + runID + "-task_frontend-fallback-01",
+		"roundfix-" + runID + "-qa",
+	} {
+		if !closed[session] {
+			t.Fatalf("expected session %s closed; closed sessions=%#v", session, closed)
+		}
+	}
+}
+
+func agentSelectionAttemptsForRun(t *testing.T, homeDir string, runID string) []store.AgentSelectionAttempt {
+	t.Helper()
+	runStore, err := store.OpenReader(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database reader: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close Run Database reader: %v", err)
+		}
+	}()
+	attempts, err := runStore.AgentSelectionAttempts(context.Background(), runID)
+	if err != nil {
+		t.Fatalf("read Agent Selection attempts: %v", err)
+	}
+	return attempts
+}
+
+func assertMacroSelectionAttempts(t *testing.T, homeDir string, runID string) {
+	t.Helper()
+	attempts := agentSelectionAttemptsForRun(t, homeDir, runID)
+	byScope := map[string][]store.AgentSelectionAttempt{}
+	for _, attempt := range attempts {
+		byScope[string(attempt.ScopeKind)+":"+attempt.ScopeID] = append(byScope[string(attempt.ScopeKind)+":"+attempt.ScopeID], attempt)
+	}
+	assertMacroAttemptSequence(t, byScope["task:task_backend"], []string{
+		"1|backend|project|preferred|0|codex|macro-backend|high|active||",
+		"2|backend|project|preferred|0|codex|macro-backend|high|closed||",
+	})
+	assertMacroAttemptSequence(t, byScope["task:task_frontend"], []string{
+		"1|frontend|project|preferred|0|codex|macro-frontend-preferred|high|failed|model_unavailable|selection start rejected",
+		"2|frontend|project|fallback|1|claude|claude-fable-5|xhigh|active||",
+		"3|frontend|project|fallback|1|claude|claude-fable-5|xhigh|closed||",
+	})
+	assertMacroAttemptSequence(t, byScope["qa:qa"], []string{
+		"1|qa|project|preferred|0|codex|macro-qa|high|active||",
+		"2|qa|project|preferred|0|codex|macro-qa|high|closed||",
+	})
+}
+
+func assertMacroAttemptSequence(t *testing.T, attempts []store.AgentSelectionAttempt, expected []string) {
+	t.Helper()
+	got := make([]string, 0, len(attempts))
+	for _, attempt := range attempts {
+		reason := attempt.Reason
+		if strings.Contains(reason, "selection start rejected") {
+			reason = "selection start rejected"
+		}
+		got = append(got, fmt.Sprintf("%d|%s|%s|%s|%d|%s|%s|%s|%s|%s|%s",
+			attempt.Attempt,
+			attempt.Category,
+			attempt.ProfileSource,
+			attempt.SelectionRole,
+			attempt.FallbackIndex,
+			attempt.Runtime,
+			attempt.Model,
+			attempt.ReasoningEffort,
+			attempt.Status,
+			attempt.ReasonCode,
+			reason,
+		))
+	}
+	if strings.Join(got, "\n") != strings.Join(expected, "\n") {
+		t.Fatalf("selection attempts mismatch\nwant:\n%s\n got:\n%s", strings.Join(expected, "\n"), strings.Join(got, "\n"))
+	}
+}
+
+func assertMacroSelectionEventOrder(t *testing.T, homeDir string, runID string) {
+	t.Helper()
+	events := runEventsForRun(t, homeDir, runID)
+	failedAttempt := -1
+	notification := -1
+	fallbackActive := -1
+	workStarted := -1
+	for index, entry := range events {
+		payload := string(entry.Event.Payload)
+		switch {
+		case entry.Event.Kind == runevent.KindDaemonAgentSelectionFallback &&
+			strings.Contains(payload, `"scope_id":"task_frontend"`) &&
+			strings.Contains(payload, `"attempt":1`) &&
+			strings.Contains(payload, `"status":"failed"`):
+			failedAttempt = index
+		case entry.Event.Kind == runevent.KindDaemonAgentSelectionFallback &&
+			strings.Contains(payload, `"scope_id":"task_frontend"`) &&
+			strings.Contains(payload, `"next_selection"`):
+			notification = index
+		case entry.Event.Kind == runevent.KindDaemonAgentSelectionActive &&
+			strings.Contains(payload, `"scope_id":"task_frontend"`) &&
+			strings.Contains(payload, `"model":"claude-fable-5"`):
+			fallbackActive = index
+		case entry.Event.Kind == runevent.KindAgentStatus &&
+			entry.Event.Batch == 2 &&
+			strings.Contains(payload, agent.AgentWorkStartedStatus):
+			workStarted = index
+		}
+	}
+	if failedAttempt < 0 || notification < 0 || fallbackActive < 0 || workStarted < 0 {
+		t.Fatalf("missing selection ordering events: failed=%d notification=%d active=%d workStarted=%d", failedAttempt, notification, fallbackActive, workStarted)
+	}
+	if !(failedAttempt < notification && notification < fallbackActive && fallbackActive < workStarted) {
+		t.Fatalf("unexpected fallback ordering: failed=%d notification=%d active=%d workStarted=%d", failedAttempt, notification, fallbackActive, workStarted)
+	}
+}
+
+func assertMacroSelectionStream(t *testing.T, binary string, repoDir string, homeDir string, fake macroFakeACPX, runID string) {
+	t.Helper()
+	stdout, stderr, code := runRoundfixBinaryMacro(t, binary, repoDir, homeDir, fake.binDir, "", fake.env(), "events", runID, "--filter", "agent-selection")
+	if code != exitOK {
+		t.Fatalf("events command failed: code=%d stdout=%q stderr=%q", code, stdout, stderr)
+	}
+	records := decodeMacroStreamRecords(t, stdout)
+	if len(records) == 0 {
+		t.Fatalf("expected Agent Selection stream records, got none")
+	}
+	forbidden := []string{"prompt", "credential", "token", "cookie", "secret"}
+	lower := strings.ToLower(stdout)
+	for _, value := range forbidden {
+		if strings.Contains(lower, value) {
+			t.Fatalf("selection stream leaked forbidden term %q:\n%s", value, stdout)
+		}
+	}
+	notification := -1
+	active := -1
+	for index, record := range records {
+		if record.Schema != runevent.StreamSchema || record.Category != string(runevent.StreamCategorySelection) {
+			t.Fatalf("unexpected stream record: %#v", record)
+		}
+		if record.ScopeID == "task_frontend" && record.Attempt == 0 && record.NextModel == "claude-fable-5" {
+			notification = index
+			if record.Runtime != "codex" || record.Model != "macro-frontend-preferred" || record.NextRuntime != "claude" || record.Status != "failed" || record.ReasonCode != "model_unavailable" {
+				t.Fatalf("unexpected fallback notification stream record: %#v", record)
+			}
+		}
+		if record.ScopeID == "task_frontend" && record.Attempt == 2 && record.SelectionRole == "fallback" && record.Status == "active" {
+			active = index
+			if record.Runtime != "claude" || record.Model != "claude-fable-5" || record.ProfileSource != "project" || record.FallbackIndex != 1 {
+				t.Fatalf("unexpected fallback active stream record: %#v", record)
+			}
+		}
+	}
+	if notification < 0 || active < 0 || notification >= active {
+		t.Fatalf("expected notification before fallback active in stream, notification=%d active=%d records=%#v", notification, active, records)
+	}
+}
+
+func decodeMacroStreamRecords(t *testing.T, raw string) []macroStreamRecord {
+	t.Helper()
+	lines := strings.Split(strings.TrimSpace(raw), "\n")
+	if len(lines) == 1 && strings.TrimSpace(lines[0]) == "" {
+		return nil
+	}
+	records := make([]macroStreamRecord, 0, len(lines))
+	for _, line := range lines {
+		var record macroStreamRecord
+		if err := json.Unmarshal([]byte(line), &record); err != nil {
+			t.Fatalf("decode stream line %q: %v", line, err)
+		}
+		records = append(records, record)
+	}
+	return records
+}
+
+func seedMacroRuntimeOwnedFiles(t *testing.T, homeDir string) map[string]string {
+	t.Helper()
+	files := map[string]string{
+		filepath.Join(homeDir, ".acpx", "runtime-owned.json"):    `{"runtime":"owned"}` + "\n",
+		filepath.Join(homeDir, ".codex", "credentials.json"):     `{"credential":"sentinel"}` + "\n",
+		filepath.Join(homeDir, ".claude", "credentials.json"):    `{"credential":"sentinel"}` + "\n",
+		filepath.Join(homeDir, ".opencode", "credentials.json"):  `{"credential":"sentinel"}` + "\n",
+		filepath.Join(homeDir, ".config", "roundfix-secret.txt"): "secret-sentinel\n",
+	}
+	for path, content := range files {
+		mustMkdir(t, filepath.Dir(path))
+		mustWrite(t, path, content)
+	}
+	return files
+}
+
+func assertMacroFilesUnchanged(t *testing.T, files map[string]string) {
+	t.Helper()
+	for path, expected := range files {
+		if got := mustRead(t, path); got != expected {
+			t.Fatalf("file %s changed\nwant: %q\n got: %q", path, expected, got)
+		}
+	}
+}
+
+func assertNoMacroRunWorktreeOrBranch(t *testing.T, homeDir string, repoDir string) {
+	t.Helper()
+	if _, err := os.Stat(filepath.Join(homeDir, ".roundfix", "worktrees")); err == nil {
+		t.Fatalf("expected no Run Worktree root under %s", homeDir)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("stat Run Worktree root: %v", err)
+	}
+	branches := gitImplementOutput(t, repoDir, "branch", "--list", "roundfix/*")
+	if strings.TrimSpace(branches) != "" {
+		t.Fatalf("expected no roundfix Run branches, got %q", branches)
+	}
 }
