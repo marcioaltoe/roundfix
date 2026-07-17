@@ -3915,8 +3915,9 @@ func TestAgentSelectionProfilesMacro(t *testing.T) {
 }
 
 type macroFakeACPX struct {
-	binDir  string
-	logPath string
+	binDir    string
+	codexPath string
+	logPath   string
 }
 
 type macroACPXInvocation struct {
@@ -4020,11 +4021,26 @@ func newMacroFakeACPX(t *testing.T) macroFakeACPX {
 			t.Fatalf("write fake adapter %s: %v", adapter, err)
 		}
 	}
-	return macroFakeACPX{binDir: binDir, logPath: logPath}
+	cleanExecutable, err := exec.LookPath("true")
+	if err != nil {
+		t.Fatalf("resolve signed fixture executable: %v", err)
+	}
+	cleanExecutableBytes, err := os.ReadFile(cleanExecutable)
+	if err != nil {
+		t.Fatalf("read signed fixture executable %s: %v", cleanExecutable, err)
+	}
+	codexPath := filepath.Join(binDir, "codex")
+	if err := os.WriteFile(codexPath, cleanExecutableBytes, 0o755); err != nil {
+		t.Fatalf("write fake codex: %v", err)
+	}
+	return macroFakeACPX{binDir: binDir, codexPath: codexPath, logPath: logPath}
 }
 
 func (fake macroFakeACPX) env() map[string]string {
-	return map[string]string{"ROUNDFIX_FAKE_ACPX_LOG": fake.logPath}
+	return map[string]string{
+		"CODEX_PATH":             fake.codexPath,
+		"ROUNDFIX_FAKE_ACPX_LOG": fake.logPath,
+	}
 }
 
 const macroFakeACPXScript = `#!/usr/bin/env python3
