@@ -9,9 +9,9 @@ import (
 )
 
 type AgentSelection struct {
-	Runtime         string
-	Model           string
-	ReasoningEffort string
+	Runtime         string `json:"runtime"`
+	Model           string `json:"model"`
+	ReasoningEffort string `json:"reasoning_effort"`
 }
 
 type AgentSelectionProfile struct {
@@ -102,6 +102,10 @@ func RequiredWorkCategories() []WorkCategory {
 
 func OptionalWorkCategories() []WorkCategory {
 	return append([]WorkCategory(nil), optionalWorkCategories...)
+}
+
+func AllWorkCategories() []WorkCategory {
+	return append([]WorkCategory(nil), allWorkCategories...)
 }
 
 func ResolveProfile(config Config, category WorkCategory, preferredOverride *AgentSelection) (ResolvedProfile, error) {

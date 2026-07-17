@@ -47,6 +47,7 @@ Usage:
   roundfix implement --spec <slug> --agent <agent>
   roundfix settle --spec <slug> --task <task_id>
   roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
+  roundfix profiles show [--category <category>] [--json]
   roundfix archive <slug>
   roundfix init [--scope <project|user>]
   roundfix setup [--yes] [--no-input]
@@ -69,6 +70,7 @@ Commands:
   implement  Execute a Spec's Task Graph as one Run
   settle     Verify and commit all current worktree changes for one failed Task
   release    Plan the next release version without mutating repository or release state
+  profiles   Show Agent Selection Profiles and advisory recommendations
   archive    Archive a completed Spec
   stop       Request or force-stop an Active Run
   setup      Verify and prepare this machine for Roundfix Runs
@@ -228,6 +230,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runSettleCommand(ctx, args[1:], stdout, stderr)
 	case "release":
 		return runReleaseCommand(ctx, args[1:], stdout, stderr)
+	case "profiles":
+		return runProfilesCommand(args[1:], stdout, stderr)
 	case "archive":
 		return runArchiveCommand(ctx, args[1:], stdout, stderr)
 	default:
@@ -3867,6 +3871,29 @@ Options:
 The command creates no Run, reads no Roundfix configuration, contacts no
 external service, and never mutates files, refs, tags, remotes, packages,
 releases, or configuration.
+`
+	case "profiles":
+		return `Usage:
+  roundfix profiles show [--category <category>] [--json]
+
+Commands:
+  show  Render effective Agent Selection Profiles and advisory recommendations.
+
+Profile commands are read-only unless a future configure action is explicitly
+invoked. show never probes runtimes, creates Runs, writes config, or routes by
+recommendation rank.
+`
+	case "profiles show":
+		return `Usage:
+  roundfix profiles show [--category <category>] [--json]
+
+Renders the effective Agent Selection Profile source, Preferred Selection,
+Fallback Chain, and advisory top-five recommendations for one category or all
+categories. Recommendations are read-only guidance and never change routing.
+
+Options:
+  --category  Agent Work Category: general, backend, frontend, data, infra, docs, test, chore, qa, or review
+  --json      Print roundfix/profiles/v1 JSON
 `
 	case "archive":
 		return archiveUsage

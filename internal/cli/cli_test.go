@@ -272,6 +272,16 @@ func TestRunCommandHelp(t *testing.T) {
 			args:     []string{"runs", "--help"},
 			contains: []string{"roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]", "--all", "--state", "--limit"},
 		},
+		{
+			name:     "profiles",
+			args:     []string{"profiles", "--help"},
+			contains: []string{"roundfix profiles show [--category <category>] [--json]", "show"},
+		},
+		{
+			name:     "profiles show",
+			args:     []string{"profiles", "show", "--help"},
+			contains: []string{"roundfix profiles show [--category <category>] [--json]", "--category", "--json", "read-only"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -294,6 +304,413 @@ func TestRunCommandHelp(t *testing.T) {
 			}
 		})
 	}
+}
+
+type profilesShowTestResponse struct {
+	Schema   string                    `json:"schema"`
+	Profiles []profilesShowTestProfile `json:"profiles"`
+}
+
+type profilesShowTestProfile struct {
+	Category             string                           `json:"category"`
+	Source               string                           `json:"source"`
+	InheritedFrom        string                           `json:"inherited_from"`
+	RecommendationSource string                           `json:"recommendation_source"`
+	Preferred            profilesShowTestSelection        `json:"preferred"`
+	Fallbacks            []profilesShowTestSelection      `json:"fallbacks"`
+	Recommendations      []profilesShowTestRecommendation `json:"recommendations"`
+}
+
+type profilesShowTestSelection struct {
+	Runtime         string `json:"runtime"`
+	Model           string `json:"model"`
+	ReasoningEffort string `json:"reasoning_effort"`
+}
+
+type profilesShowTestRecommendation struct {
+	Category          string                    `json:"category"`
+	Rank              int                       `json:"rank"`
+	Selection         profilesShowTestSelection `json:"selection"`
+	Benchmark         string                    `json:"benchmark"`
+	ResultPercent     float64                   `json:"result_percent"`
+	AverageCostUSD    float64                   `json:"average_cost_usd"`
+	SourceAsOf        string                    `json:"source_as_of"`
+	Rationale         string                    `json:"rationale"`
+	CategorySpecific  bool                      `json:"category_specific"`
+	UnavailableReason string                    `json:"unavailable_reason,omitempty"`
+}
+
+func TestProfilesShowJSONRendersProfileAndRecommendations(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
+profiles:
+  backend:
+    preferred:
+      runtime: claude
+      model: project-backend
+      reasoning_effort: medium
+    fallbacks:
+      - runtime: codex
+        model: project-fallback
+        reasoning_effort: high
+`)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"profiles", "show", "--category", "backend", "--json"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("profiles show exit = %d, stderr=%q", code, stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no diagnostics on stderr, got %q", stderr.String())
+	}
+	response := decodeProfilesShowResponse(t, stdout.String())
+	if response.Schema != "roundfix/profiles/v1" {
+		t.Fatalf("schema = %q, want roundfix/profiles/v1", response.Schema)
+	}
+	if len(response.Profiles) != 1 {
+		t.Fatalf("len(profiles) = %d, want 1", len(response.Profiles))
+	}
+	profile := response.Profiles[0]
+	if profile.Category != "backend" || profile.Source != "project" || profile.InheritedFrom != "" {
+		t.Fatalf("unexpected backend profile metadata: %+v", profile)
+	}
+	wantPreferred := profilesShowTestSelection{Runtime: "claude", Model: "project-backend", ReasoningEffort: "medium"}
+	if profile.Preferred != wantPreferred {
+		t.Fatalf("preferred = %+v, want %+v", profile.Preferred, wantPreferred)
+	}
+	wantFallback := profilesShowTestSelection{Runtime: "codex", Model: "project-fallback", ReasoningEffort: "high"}
+	if len(profile.Fallbacks) != 1 || profile.Fallbacks[0] != wantFallback {
+		t.Fatalf("fallbacks = %+v, want [%+v]", profile.Fallbacks, wantFallback)
+	}
+	if profile.RecommendationSource != "backend" {
+		t.Fatalf("recommendation_source = %q, want backend", profile.RecommendationSource)
+	}
+	if len(profile.Recommendations) != 5 {
+		t.Fatalf("len(recommendations) = %d, want 5", len(profile.Recommendations))
+	}
+	first := profile.Recommendations[0]
+	if first.Rank != 1 || first.Category != "backend" {
+		t.Fatalf("first recommendation identity = %+v, want backend rank 1", first)
+	}
+	if first.Selection != (profilesShowTestSelection{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"}) {
+		t.Fatalf("first recommendation selection = %+v", first.Selection)
+	}
+	if first.Benchmark != "DeepSWE v1.1" || first.ResultPercent != 69 || first.AverageCostUSD != 3.47 || first.SourceAsOf != "2026-07-16" {
+		t.Fatalf("first recommendation evidence = %+v", first)
+	}
+	if first.CategorySpecific {
+		t.Fatalf("category_specific = true, want false")
+	}
+	if !strings.Contains(first.Rationale, "complex repository changes") {
+		t.Fatalf("first recommendation rationale missing backend context: %q", first.Rationale)
+	}
+	if profile.Preferred.Model == first.Selection.Model {
+		t.Fatalf("configured preferred must remain primary; recommendation rank one replaced it")
+	}
+}
+
+func TestProfilesShowOptionalCategoryReportsGeneralRecommendationSource(t *testing.T) {
+	withCLIWorkspace(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"profiles", "show", "--category", "data", "--json"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("profiles show exit = %d, stderr=%q", code, stderr.String())
+	}
+	response := decodeProfilesShowResponse(t, stdout.String())
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+	profile := response.Profiles[0]
+	if profile.Category != "data" {
+		t.Fatalf("category = %q, want data", profile.Category)
+	}
+	if profile.InheritedFrom != "general" {
+		t.Fatalf("inherited_from = %q, want general", profile.InheritedFrom)
+	}
+	if profile.RecommendationSource != "general" {
+		t.Fatalf("recommendation_source = %q, want general", profile.RecommendationSource)
+	}
+	if len(profile.Recommendations) != 5 {
+		t.Fatalf("len(recommendations) = %d, want 5", len(profile.Recommendations))
+	}
+	if profile.Recommendations[0].Category != "data" || profile.Recommendations[0].Selection.Model != "gpt-5.6-sol" {
+		t.Fatalf("optional recommendation should label data while reusing general order, got %+v", profile.Recommendations[0])
+	}
+}
+
+func TestProfilesShowTextAndJSONAreByteStableAndConsistent(t *testing.T) {
+	withCLIWorkspace(t)
+	textFirst, textSecond := runProfilesShowTwice(t, []string{"profiles", "show"})
+	if textFirst != textSecond {
+		t.Fatalf("text output is not byte-stable\nfirst:\n%s\nsecond:\n%s", textFirst, textSecond)
+	}
+	jsonFirst, jsonSecond := runProfilesShowTwice(t, []string{"profiles", "show", "--json"})
+	if jsonFirst != jsonSecond {
+		t.Fatalf("JSON output is not byte-stable\nfirst:\n%s\nsecond:\n%s", jsonFirst, jsonSecond)
+	}
+	response := decodeProfilesShowResponse(t, jsonFirst)
+	wantCategories := []string{"general", "backend", "frontend", "data", "infra", "docs", "test", "chore", "qa", "review"}
+	if got := profileCategoriesForTest(response.Profiles); !reflect.DeepEqual(got, wantCategories) {
+		t.Fatalf("categories = %v, want %v", got, wantCategories)
+	}
+	for _, profile := range response.Profiles {
+		assertProfilesShowTextContainsProfile(t, textFirst, profile)
+	}
+}
+
+func TestProfilesShowRejectsUnknownCategory(t *testing.T) {
+	withCLIWorkspace(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"profiles", "show", "--category", "design", "--json"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("exit = %d, want %d", code, exitPreflight)
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout on usage error, got %q", stdout.String())
+	}
+	for _, want := range []string{"unknown profile category", "design", "general, backend, frontend, data, infra, docs, test, chore, qa, review"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("stderr %q does not contain %q", stderr.String(), want)
+		}
+	}
+}
+
+func TestProfilesShowDoesNotMutateConfigOrRunState(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	userConfig := filepath.Join(homeDir, ".roundfix", "config.yml")
+	projectConfig := filepath.Join(repoDir, ".roundfixrc.yml")
+	mustMkdir(t, filepath.Dir(userConfig))
+	mustWrite(t, userConfig, `
+profiles:
+  backend:
+    preferred:
+      runtime: codex
+      model: user-backend
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: user-fallback
+        reasoning_effort: max
+`)
+	mustWrite(t, projectConfig, `
+profiles:
+  frontend:
+    preferred:
+      runtime: claude
+      model: project-frontend
+      reasoning_effort: medium
+    fallbacks:
+      - runtime: codex
+        model: project-fallback
+        reasoning_effort: high
+`)
+	userBefore := mustRead(t, userConfig)
+	projectBefore := mustRead(t, projectConfig)
+
+	for _, args := range [][]string{
+		{"profiles", "show", "--category", "backend"},
+		{"profiles", "show", "--json"},
+	} {
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+		if code := Run(args, &stdout, &stderr); code != exitOK {
+			t.Fatalf("Run(%v) exit = %d stderr=%q", args, code, stderr.String())
+		}
+		if stdout.Len() == 0 {
+			t.Fatalf("Run(%v) produced no stdout", args)
+		}
+		if stderr.Len() != 0 {
+			t.Fatalf("Run(%v) stderr = %q, want empty", args, stderr.String())
+		}
+	}
+	if got := mustRead(t, userConfig); got != userBefore {
+		t.Fatalf("User Config mutated\nbefore:\n%s\nafter:\n%s", userBefore, got)
+	}
+	if got := mustRead(t, projectConfig); got != projectBefore {
+		t.Fatalf("Project Config mutated\nbefore:\n%s\nafter:\n%s", projectBefore, got)
+	}
+	assertNoRunDatabase(t, homeDir)
+}
+
+func TestProfilesShowReportsUnavailableRecommendationWithoutReordering(t *testing.T) {
+	unavailableSelection := roundconfig.AgentSelection{
+		Runtime:         "codex",
+		Model:           "gpt-5.6-terra",
+		ReasoningEffort: "max",
+	}
+	response, err := buildProfilesShowResponseWithAvailability(roundconfig.Builtin(), []roundconfig.WorkCategory{roundconfig.CategoryBackend}, map[roundconfig.AgentSelection]string{
+		unavailableSelection: "adapter proof rejected tuple",
+	})
+	if err != nil {
+		t.Fatalf("build profiles show response: %v", err)
+	}
+	if len(response.Profiles) != 1 {
+		t.Fatalf("len(profiles) = %d, want 1", len(response.Profiles))
+	}
+	recommendations := response.Profiles[0].Recommendations
+	if len(recommendations) != 5 {
+		t.Fatalf("len(recommendations) = %d, want 5", len(recommendations))
+	}
+	for index, recommendation := range recommendations {
+		if recommendation.Rank != index+1 {
+			t.Fatalf("rank at index %d = %d, want %d", index, recommendation.Rank, index+1)
+		}
+	}
+	if recommendations[0].Selection.Model != "gpt-5.6-sol" || recommendations[1].Selection.Model != "gpt-5.6-terra" || recommendations[2].Selection.Model != "claude-fable-5" {
+		t.Fatalf("recommendation order changed: %+v", recommendations)
+	}
+	if recommendations[1].UnavailableReason != "adapter proof rejected tuple" {
+		t.Fatalf("unavailable_reason = %q, want proof rejection", recommendations[1].UnavailableReason)
+	}
+	if recommendations[0].UnavailableReason != "" || recommendations[2].UnavailableReason != "" {
+		t.Fatalf("unexpected unavailable marker outside rejected tuple: %+v", recommendations)
+	}
+}
+
+func TestModelRecommendationsUseOfficialCatalogModels(t *testing.T) {
+	for _, category := range roundconfig.AllWorkCategories() {
+		t.Run(string(category), func(t *testing.T) {
+			recommendations, source, ok := roundconfig.ModelRecommendations(category)
+			if !ok {
+				t.Fatalf("ModelRecommendations(%q) missing", category)
+			}
+			if len(recommendations) != 5 {
+				t.Fatalf("len(recommendations) = %d, want 5", len(recommendations))
+			}
+			if source == "" {
+				t.Fatal("recommendation source is empty")
+			}
+			seenModels := map[string]bool{}
+			for index, recommendation := range recommendations {
+				if recommendation.Category != category {
+					t.Fatalf("recommendation category = %q, want %q", recommendation.Category, category)
+				}
+				if recommendation.Rank != index+1 {
+					t.Fatalf("rank = %d, want %d", recommendation.Rank, index+1)
+				}
+				if seenModels[recommendation.Selection.Model] {
+					t.Fatalf("duplicate model %q in %q recommendations", recommendation.Selection.Model, category)
+				}
+				seenModels[recommendation.Selection.Model] = true
+				if !modelCatalogContainsSelection(recommendation.Selection) {
+					t.Fatalf("recommendation uses non-catalog official model: %+v", recommendation.Selection)
+				}
+				if recommendation.Benchmark == "" || recommendation.SourceAsOf != roundconfig.ModelRecommendationSnapshotDate {
+					t.Fatalf("recommendation has incomplete source evidence: %+v", recommendation)
+				}
+				if recommendation.Rationale == "" {
+					t.Fatalf("recommendation rationale is empty: %+v", recommendation)
+				}
+				if recommendation.CategorySpecific {
+					t.Fatalf("category_specific = true, want false for initial snapshot")
+				}
+			}
+		})
+	}
+}
+
+func decodeProfilesShowResponse(t *testing.T, output string) profilesShowTestResponse {
+	t.Helper()
+	var response profilesShowTestResponse
+	decoder := json.NewDecoder(strings.NewReader(output))
+	if err := decoder.Decode(&response); err != nil {
+		t.Fatalf("decode profiles JSON %q: %v", output, err)
+	}
+	if decoder.More() {
+		t.Fatalf("expected one JSON object, got trailing content in %q", output)
+	}
+	return response
+}
+
+func runProfilesShowTwice(t *testing.T, args []string) (string, string) {
+	t.Helper()
+	var firstStdout bytes.Buffer
+	var firstStderr bytes.Buffer
+	if code := Run(args, &firstStdout, &firstStderr); code != exitOK {
+		t.Fatalf("first Run(%v) exit = %d stderr=%q", args, code, firstStderr.String())
+	}
+	if firstStderr.Len() != 0 {
+		t.Fatalf("first Run(%v) stderr = %q, want empty", args, firstStderr.String())
+	}
+	var secondStdout bytes.Buffer
+	var secondStderr bytes.Buffer
+	if code := Run(args, &secondStdout, &secondStderr); code != exitOK {
+		t.Fatalf("second Run(%v) exit = %d stderr=%q", args, code, secondStderr.String())
+	}
+	if secondStderr.Len() != 0 {
+		t.Fatalf("second Run(%v) stderr = %q, want empty", args, secondStderr.String())
+	}
+	return firstStdout.String(), secondStdout.String()
+}
+
+func profileCategoriesForTest(profiles []profilesShowTestProfile) []string {
+	categories := make([]string, 0, len(profiles))
+	for _, profile := range profiles {
+		categories = append(categories, profile.Category)
+	}
+	return categories
+}
+
+func assertProfilesShowTextContainsProfile(t *testing.T, output string, profile profilesShowTestProfile) {
+	t.Helper()
+	for _, want := range []string{
+		"Category: " + profile.Category,
+		"Profile source: " + profile.Source,
+		"Profile inherited from: " + emptyDashForTest(profile.InheritedFrom),
+		"Preferred Selection: " + selectionStringForTest(profile.Preferred),
+		"Recommendation source: " + profile.RecommendationSource,
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("profiles text missing %q in:\n%s", want, output)
+		}
+	}
+	for index, fallback := range profile.Fallbacks {
+		want := fmt.Sprintf("%d. %s", index+1, selectionStringForTest(fallback))
+		if !strings.Contains(output, want) {
+			t.Fatalf("profiles text missing fallback %q in:\n%s", want, output)
+		}
+	}
+	for _, recommendation := range profile.Recommendations {
+		want := fmt.Sprintf("%d. %s — %s %s, average cost $%.2f, source %s, category_specific=%t", recommendation.Rank, selectionStringForTest(recommendation.Selection), recommendation.Benchmark, formatPercentForTest(recommendation.ResultPercent), recommendation.AverageCostUSD, recommendation.SourceAsOf, recommendation.CategorySpecific)
+		if !strings.Contains(output, want) {
+			t.Fatalf("profiles text missing recommendation %q in:\n%s", want, output)
+		}
+	}
+}
+
+func selectionStringForTest(selection profilesShowTestSelection) string {
+	return selection.Runtime + " / " + selection.Model + " / " + selection.ReasoningEffort
+}
+
+func emptyDashForTest(value string) string {
+	if value == "" {
+		return "—"
+	}
+	return value
+}
+
+func formatPercentForTest(value float64) string {
+	if value == float64(int(value)) {
+		return fmt.Sprintf("%d%%", int(value))
+	}
+	return fmt.Sprintf("%.1f%%", value)
+}
+
+func modelCatalogContainsSelection(selection roundconfig.AgentSelection) bool {
+	for _, choice := range agent.ModelCatalog(selection.Runtime) {
+		if choice.Value == selection.Model {
+			return true
+		}
+	}
+	return false
 }
 
 // seedRunsForListColumns seeds one terminal and one Active Run in the
