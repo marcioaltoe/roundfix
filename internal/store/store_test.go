@@ -26,8 +26,8 @@ func TestOpenCreatesRunDatabaseAndAppliesMigrations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected migration version, got %v", err)
 	}
-	if version != 8 {
-		t.Fatalf("expected migration version 8, got %d", version)
+	if version != 9 {
+		t.Fatalf("expected migration version 9, got %d", version)
 	}
 }
 
@@ -918,8 +918,8 @@ func TestOpenMigratesV3RunDatabasePreservingRunsAndRekeyingLocks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 8 {
-		t.Fatalf("expected user_version 8 after migration, got %d", version)
+	if version != 9 {
+		t.Fatalf("expected user_version 9 after migration, got %d", version)
 	}
 
 	count, err := store.RunCount(ctx)
@@ -1073,8 +1073,8 @@ func TestOpenMigratesV4RunDatabasePreservingRunsLocksAndAddingStopRequests(t *te
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 8 {
-		t.Fatalf("expected user_version 8 after migration, got %d", version)
+	if version != 9 {
+		t.Fatalf("expected user_version 9 after migration, got %d", version)
 	}
 	count, err := runStore.RunCount(ctx)
 	if err != nil {
@@ -1226,8 +1226,8 @@ func TestOpenMigratesV5RunDatabasePreservingRunsLocksAndAddingWorkDir(t *testing
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 8 {
-		t.Fatalf("expected user_version 8 after migration, got %d", version)
+	if version != 9 {
+		t.Fatalf("expected user_version 9 after migration, got %d", version)
 	}
 	count, err := runStore.RunCount(ctx)
 	if err != nil {
@@ -1382,8 +1382,8 @@ func TestOpenMigratesV6RunDatabaseAddingSelectionDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 8 {
-		t.Fatalf("expected user_version 8 after migration, got %d", version)
+	if version != 9 {
+		t.Fatalf("expected user_version 9 after migration, got %d", version)
 	}
 	count, err := runStore.RunCount(ctx)
 	if err != nil {
@@ -1514,8 +1514,8 @@ func TestOpenMigratesV7RunDatabaseAddingOwnerPID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 8 {
-		t.Fatalf("expected user_version 8 after migration, got %d", version)
+	if version != 9 {
+		t.Fatalf("expected user_version 9 after migration, got %d", version)
 	}
 
 	active, found, err := runStore.ActiveRun(ctx, "owner/project", "feature/review")

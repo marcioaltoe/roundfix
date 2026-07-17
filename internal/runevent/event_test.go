@@ -47,6 +47,11 @@ func TestIsDaemonKindCoversSpecRunKindsAndSkipsUnknown(t *testing.T) {
 	}{
 		{name: "task kind is daemon vocabulary", kind: KindDaemonTask, expected: true},
 		{name: "qa kind is daemon vocabulary", kind: KindDaemonQA, expected: true},
+		{name: "selection attempt kind is daemon vocabulary", kind: KindDaemonAgentSelectionAttempt, expected: true},
+		{name: "selection active kind is daemon vocabulary", kind: KindDaemonAgentSelectionActive, expected: true},
+		{name: "selection fallback kind is daemon vocabulary", kind: KindDaemonAgentSelectionFallback, expected: true},
+		{name: "selection exhausted kind is daemon vocabulary", kind: KindDaemonAgentSelectionExhausted, expected: true},
+		{name: "selection closed kind is daemon vocabulary", kind: KindDaemonAgentSelectionClosed, expected: true},
 		{name: "agent kind is not daemon vocabulary", kind: KindAgentMessage, expected: false},
 		{name: "unknown daemon-prefixed kind stays skippable", kind: Kind("daemon.unknown"), expected: false},
 	}
@@ -280,5 +285,101 @@ func TestParseStreamCategoryFilterValidatesAndDeduplicates(t *testing.T) {
 		if _, err := ParseStreamCategoryFilter(raw); err == nil {
 			t.Fatalf("expected invalid filter %q to fail", raw)
 		}
+	}
+}
+
+func TestAgentSelectionEventProjectsStablePayloadAndKeepsReasoningEmpty(t *testing.T) {
+	record, ok, err := ProjectStreamEvent(7, RunEvent{
+		RunID:   "run_123",
+		Batch:   2,
+		Source:  SourceDaemon,
+		Kind:    KindDaemonAgentSelectionAttempt,
+		Summary: "Agent Selection attempt 1 for task task_01 (backend) attempting.",
+		Time:    time.Date(2026, 7, 17, 8, 1, 0, 0, time.UTC),
+		Payload: []byte(`{
+			"event":"agent_selection_attempt",
+			"scope_kind":"task",
+			"scope_id":"task_01",
+			"scope_identity":"task:task_01",
+			"category":"backend",
+			"profile_source":"project",
+			"attempt":1,
+			"selection_role":"preferred",
+			"fallback_index":0,
+			"runtime":"codex",
+			"model":"gpt-5.6-sol",
+			"reasoning_effort":"",
+			"status":"attempting",
+			"reason_code":"",
+			"reason":""
+		}`),
+	}, AllStreamCategories())
+	if err != nil {
+		t.Fatalf("project selection event: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected selection event to project")
+	}
+	if record.Category != StreamCategorySelection ||
+		record.ScopeKind != "task" ||
+		record.ScopeID != "task_01" ||
+		record.WorkCategory != "backend" ||
+		record.Attempt != 1 ||
+		record.SelectionRole != "preferred" ||
+		record.Runtime != "codex" ||
+		record.Model != "gpt-5.6-sol" ||
+		record.ReasoningEffort != "" ||
+		record.Status != "attempting" {
+		t.Fatalf("expected projected selection fields, got %#v", record)
+	}
+	raw, err := json.Marshal(record)
+	if err != nil {
+		t.Fatalf("marshal projected selection record: %v", err)
+	}
+	for _, forbidden := range []string{"prompt", "transcript", "credential", "token", "cookie", "secret"} {
+		if strings.Contains(strings.ToLower(string(raw)), forbidden) {
+			t.Fatalf("expected projected selection record to omit %q, got %s", forbidden, raw)
+		}
+	}
+}
+
+func TestAgentSelectionEventProjectsFallbackNotificationPayload(t *testing.T) {
+	record, ok, err := ProjectStreamEvent(8, RunEvent{
+		RunID:   "run_123",
+		Source:  SourceDaemon,
+		Kind:    KindDaemonAgentSelectionFallback,
+		Summary: "Agent Selection fallback for task task_01 (backend).",
+		Time:    time.Date(2026, 7, 17, 8, 2, 0, 0, time.UTC),
+		Payload: []byte(`{
+			"event":"agent_selection_fallback",
+			"category":"backend",
+			"scope_kind":"task",
+			"scope_id":"task_01",
+			"scope_identity":"task:task_01",
+			"failed_selection":{"runtime":"codex","model":"gpt-5.6-sol","reasoning_effort":""},
+			"next_selection":{"runtime":"claude","model":"claude-fable-5","reasoning_effort":"xhigh"},
+			"fallback_index":1,
+			"reason_code":"model_not_advertised",
+			"reason":"model was not advertised",
+			"automatic":true
+		}`),
+	}, AllStreamCategories())
+	if err != nil {
+		t.Fatalf("project fallback notification: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected fallback notification to project")
+	}
+	if record.Category != StreamCategorySelection ||
+		record.ScopeKind != "task" ||
+		record.ScopeID != "task_01" ||
+		record.WorkCategory != "backend" ||
+		record.Status != "failed" ||
+		record.FallbackIndex != 1 ||
+		record.Runtime != "codex" ||
+		record.Model != "gpt-5.6-sol" ||
+		record.ReasoningEffort != "" ||
+		record.ReasonCode != "model_not_advertised" {
+		t.Fatalf("expected projected fallback fields, got %#v", record)
 	}
 }

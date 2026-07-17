@@ -48,8 +48,11 @@ const (
 	KindDaemonSourceResolution        Kind = "daemon.source_resolution"
 	KindDaemonRetry                   Kind = "daemon.retry"
 	KindDaemonOutcome                 Kind = "daemon.outcome"
+	KindDaemonAgentSelectionAttempt   Kind = "daemon.agent_selection_attempt"
+	KindDaemonAgentSelectionActive    Kind = "daemon.agent_selection_active"
 	KindDaemonAgentSelectionFallback  Kind = "daemon.agent_selection_fallback"
 	KindDaemonAgentSelectionExhausted Kind = "daemon.agent_selection_exhausted"
+	KindDaemonAgentSelectionClosed    Kind = "daemon.agent_selection_closed"
 
 	// Spec Run kinds: daemon.task records one Task's phase transitions
 	// (started, skipped, settled) and daemon.qa records the QA step. The
@@ -87,7 +90,9 @@ func IsDaemonKind(kind Kind) bool {
 		KindDaemonFetch, KindDaemonSelection, KindDaemonBatch,
 		KindDaemonVerification, KindDaemonCommit, KindDaemonPush,
 		KindDaemonSourceResolution, KindDaemonRetry, KindDaemonOutcome,
+		KindDaemonAgentSelectionAttempt, KindDaemonAgentSelectionActive,
 		KindDaemonAgentSelectionFallback, KindDaemonAgentSelectionExhausted,
+		KindDaemonAgentSelectionClosed,
 		KindDaemonTask, KindDaemonQA:
 		return true
 	default:

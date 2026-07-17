@@ -1,0 +1,562 @@
+package store
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"strings"
+	"time"
+
+	"roundfix/internal/runevent"
+)
+
+type AgentSelectionScopeKind string
+
+const (
+	AgentSelectionScopeTask   AgentSelectionScopeKind = "task"
+	AgentSelectionScopeQA     AgentSelectionScopeKind = "qa"
+	AgentSelectionScopeReview AgentSelectionScopeKind = "review"
+)
+
+type AgentSelectionRole string
+
+const (
+	AgentSelectionRolePreferred AgentSelectionRole = "preferred"
+	AgentSelectionRoleFallback  AgentSelectionRole = "fallback"
+)
+
+type AgentSelectionStatus string
+
+const (
+	AgentSelectionStatusAttempting AgentSelectionStatus = "attempting"
+	AgentSelectionStatusActive     AgentSelectionStatus = "active"
+	AgentSelectionStatusFailed     AgentSelectionStatus = "failed"
+	AgentSelectionStatusClosed     AgentSelectionStatus = "closed"
+)
+
+type AgentSelectionAttemptRequest struct {
+	RunID           string
+	ScopeKind       AgentSelectionScopeKind
+	ScopeID         string
+	Category        string
+	ProfileSource   string
+	Attempt         int
+	SelectionRole   AgentSelectionRole
+	FallbackIndex   int
+	Runtime         string
+	Model           string
+	ReasoningEffort string
+	Status          AgentSelectionStatus
+	ReasonCode      string
+	Reason          string
+	Time            time.Time
+}
+
+type AgentSelectionAttempt struct {
+	ID              int64
+	RunID           string
+	ScopeKind       AgentSelectionScopeKind
+	ScopeID         string
+	Category        string
+	ProfileSource   string
+	Attempt         int
+	SelectionRole   AgentSelectionRole
+	FallbackIndex   int
+	Runtime         string
+	Model           string
+	ReasoningEffort string
+	Status          AgentSelectionStatus
+	ReasonCode      string
+	Reason          string
+	CreatedAt       time.Time
+}
+
+type AgentSelectionExhaustedRequest struct {
+	RunID          string
+	ScopeKind      AgentSelectionScopeKind
+	ScopeID        string
+	Category       string
+	RecoveryAction string
+	Time           time.Time
+}
+
+// AppendAgentSelectionAttempt appends one durable Agent Selection attempt and
+// its matching Run Event in the same transaction. Attempts are strictly
+// contiguous per Run scope: the first attempt is 1 and each next attempt is
+// exactly previous+1.
+func (store *Store) AppendAgentSelectionAttempt(ctx context.Context, req AgentSelectionAttemptRequest) (AgentSelectionAttempt, error) {
+	if err := validateAgentSelectionAttemptRequest(req); err != nil {
+		return AgentSelectionAttempt{}, err
+	}
+	createdAt := req.Time
+	if createdAt.IsZero() {
+		createdAt = store.now()
+	}
+	attempt := agentSelectionAttemptFromRequest(req, createdAt)
+
+	tx, err := store.db.BeginTx(ctx, nil)
+	if err != nil {
+		return AgentSelectionAttempt{}, fmt.Errorf("begin Agent Selection attempt append: %w", err)
+	}
+	defer rollbackUnlessCommitted(tx)
+
+	if err := ensureRunExists(ctx, tx, attempt.RunID, "append Agent Selection attempt"); err != nil {
+		return AgentSelectionAttempt{}, err
+	}
+	if err := ensureNextAgentSelectionAttempt(ctx, tx, attempt); err != nil {
+		return AgentSelectionAttempt{}, err
+	}
+	if err := insertAgentSelectionAttempt(ctx, tx, &attempt); err != nil {
+		return AgentSelectionAttempt{}, err
+	}
+	event, err := agentSelectionAttemptEvent(attempt)
+	if err != nil {
+		return AgentSelectionAttempt{}, err
+	}
+	if _, err := appendRunEvent(ctx, tx, event); err != nil {
+		return AgentSelectionAttempt{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return AgentSelectionAttempt{}, fmt.Errorf("commit Agent Selection attempt append: %w", err)
+	}
+	return attempt, nil
+}
+
+func (store *Store) AppendAgentSelectionExhausted(ctx context.Context, req AgentSelectionExhaustedRequest) (int64, error) {
+	if err := validateAgentSelectionExhaustedRequest(req); err != nil {
+		return 0, err
+	}
+	createdAt := req.Time
+	if createdAt.IsZero() {
+		createdAt = store.now()
+	}
+	runID := strings.TrimSpace(req.RunID)
+
+	tx, err := store.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, fmt.Errorf("begin Agent Selection exhausted event append: %w", err)
+	}
+	defer rollbackUnlessCommitted(tx)
+
+	if err := ensureRunExists(ctx, tx, runID, "append Agent Selection exhausted event"); err != nil {
+		return 0, err
+	}
+	attempts, err := selectAgentSelectionAttemptsForScope(ctx, tx, runID, req.ScopeKind, req.ScopeID)
+	if err != nil {
+		return 0, err
+	}
+	if len(attempts) == 0 {
+		return 0, fmt.Errorf("append Agent Selection exhausted event for Run %q scope %s:%s: at least one persisted attempt is required", runID, req.ScopeKind, req.ScopeID)
+	}
+	event, err := agentSelectionExhaustedEvent(req, attempts, createdAt.UTC())
+	if err != nil {
+		return 0, err
+	}
+	cursor, err := appendRunEvent(ctx, tx, event)
+	if err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("commit Agent Selection exhausted event append: %w", err)
+	}
+	return cursor, nil
+}
+
+func (store *Store) AgentSelectionAttempts(ctx context.Context, runID string) ([]AgentSelectionAttempt, error) {
+	runID = strings.TrimSpace(runID)
+	if runID == "" {
+		return nil, errors.New("list Agent Selection attempts: Run ID is required")
+	}
+	rows, err := store.db.QueryContext(ctx, `
+SELECT id, run_id, scope_kind, scope_id, category, profile_source, attempt,
+       selection_role, fallback_index, runtime, model, reasoning_effort,
+       status, reason_code, reason, created_at
+FROM run_agent_selections
+WHERE run_id = ?
+ORDER BY scope_kind, scope_id, attempt`, runID)
+	if err != nil {
+		return nil, fmt.Errorf("list Agent Selection attempts for Run %q: %w", runID, err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+	return scanAgentSelectionAttempts(rows, runID)
+}
+
+func (store *Store) AgentSelectionAttemptsForScope(ctx context.Context, runID string, scopeKind AgentSelectionScopeKind, scopeID string) ([]AgentSelectionAttempt, error) {
+	runID = strings.TrimSpace(runID)
+	if runID == "" {
+		return nil, errors.New("list Agent Selection attempts: Run ID is required")
+	}
+	if !validAgentSelectionScopeKind(scopeKind) {
+		return nil, fmt.Errorf("list Agent Selection attempts for Run %q: scope kind %q is invalid", runID, scopeKind)
+	}
+	if strings.TrimSpace(scopeID) == "" {
+		return nil, fmt.Errorf("list Agent Selection attempts for Run %q: scope ID is required", runID)
+	}
+	return selectAgentSelectionAttemptsForScope(ctx, store.db, runID, scopeKind, scopeID)
+}
+
+func validateAgentSelectionExhaustedRequest(req AgentSelectionExhaustedRequest) error {
+	if strings.TrimSpace(req.RunID) == "" {
+		return errors.New("append Agent Selection exhausted event: Run ID is required")
+	}
+	if !validAgentSelectionScopeKind(req.ScopeKind) {
+		return fmt.Errorf("append Agent Selection exhausted event for Run %q: scope kind %q is invalid; allowed: task, qa, review", strings.TrimSpace(req.RunID), req.ScopeKind)
+	}
+	if strings.TrimSpace(req.ScopeID) == "" {
+		return fmt.Errorf("append Agent Selection exhausted event for Run %q: scope ID is required", strings.TrimSpace(req.RunID))
+	}
+	if strings.TrimSpace(req.Category) == "" {
+		return fmt.Errorf("append Agent Selection exhausted event for Run %q: category is required", strings.TrimSpace(req.RunID))
+	}
+	return nil
+}
+
+type agentSelectionQuerier interface {
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+}
+
+func selectAgentSelectionAttemptsForScope(ctx context.Context, querier agentSelectionQuerier, runID string, scopeKind AgentSelectionScopeKind, scopeID string) ([]AgentSelectionAttempt, error) {
+	rows, err := querier.QueryContext(ctx, `
+SELECT id, run_id, scope_kind, scope_id, category, profile_source, attempt,
+       selection_role, fallback_index, runtime, model, reasoning_effort,
+       status, reason_code, reason, created_at
+FROM run_agent_selections
+WHERE run_id = ? AND scope_kind = ? AND scope_id = ?
+ORDER BY attempt`, runID, string(scopeKind), scopeID)
+	if err != nil {
+		return nil, fmt.Errorf("list Agent Selection attempts for Run %q scope %s:%s: %w", runID, scopeKind, scopeID, err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+	return scanAgentSelectionAttempts(rows, runID)
+}
+
+func validateAgentSelectionAttemptRequest(req AgentSelectionAttemptRequest) error {
+	if strings.TrimSpace(req.RunID) == "" {
+		return errors.New("append Agent Selection attempt: Run ID is required")
+	}
+	if !validAgentSelectionScopeKind(req.ScopeKind) {
+		return fmt.Errorf("append Agent Selection attempt for Run %q: scope kind %q is invalid; allowed: task, qa, review", strings.TrimSpace(req.RunID), req.ScopeKind)
+	}
+	if strings.TrimSpace(req.ScopeID) == "" {
+		return fmt.Errorf("append Agent Selection attempt for Run %q: scope ID is required", strings.TrimSpace(req.RunID))
+	}
+	if strings.TrimSpace(req.Category) == "" {
+		return fmt.Errorf("append Agent Selection attempt for Run %q: category is required", strings.TrimSpace(req.RunID))
+	}
+	if strings.TrimSpace(req.ProfileSource) == "" {
+		return fmt.Errorf("append Agent Selection attempt for Run %q: profile source is required", strings.TrimSpace(req.RunID))
+	}
+	if req.Attempt <= 0 {
+		return fmt.Errorf("append Agent Selection attempt for Run %q: attempt must be greater than zero", strings.TrimSpace(req.RunID))
+	}
+	if !validAgentSelectionRole(req.SelectionRole) {
+		return fmt.Errorf("append Agent Selection attempt for Run %q: selection role %q is invalid; allowed: preferred, fallback", strings.TrimSpace(req.RunID), req.SelectionRole)
+	}
+	if req.SelectionRole == AgentSelectionRolePreferred && req.FallbackIndex != 0 {
+		return fmt.Errorf("append Agent Selection attempt for Run %q: preferred selection fallback index must be 0", strings.TrimSpace(req.RunID))
+	}
+	if req.SelectionRole == AgentSelectionRoleFallback && req.FallbackIndex <= 0 {
+		return fmt.Errorf("append Agent Selection attempt for Run %q: fallback selection requires a positive fallback index", strings.TrimSpace(req.RunID))
+	}
+	if strings.TrimSpace(req.Runtime) == "" {
+		return fmt.Errorf("append Agent Selection attempt for Run %q: runtime is required", strings.TrimSpace(req.RunID))
+	}
+	if strings.TrimSpace(req.Model) == "" {
+		return fmt.Errorf("append Agent Selection attempt for Run %q: model is required", strings.TrimSpace(req.RunID))
+	}
+	if !validAgentSelectionStatus(req.Status) {
+		return fmt.Errorf("append Agent Selection attempt for Run %q: status %q is invalid; allowed: attempting, active, failed, closed", strings.TrimSpace(req.RunID), req.Status)
+	}
+	return nil
+}
+
+func validAgentSelectionScopeKind(scopeKind AgentSelectionScopeKind) bool {
+	switch scopeKind {
+	case AgentSelectionScopeTask, AgentSelectionScopeQA, AgentSelectionScopeReview:
+		return true
+	default:
+		return false
+	}
+}
+
+func validAgentSelectionRole(role AgentSelectionRole) bool {
+	switch role {
+	case AgentSelectionRolePreferred, AgentSelectionRoleFallback:
+		return true
+	default:
+		return false
+	}
+}
+
+func validAgentSelectionStatus(status AgentSelectionStatus) bool {
+	switch status {
+	case AgentSelectionStatusAttempting, AgentSelectionStatusActive, AgentSelectionStatusFailed, AgentSelectionStatusClosed:
+		return true
+	default:
+		return false
+	}
+}
+
+func agentSelectionAttemptFromRequest(req AgentSelectionAttemptRequest, createdAt time.Time) AgentSelectionAttempt {
+	return AgentSelectionAttempt{
+		RunID:           strings.TrimSpace(req.RunID),
+		ScopeKind:       req.ScopeKind,
+		ScopeID:         req.ScopeID,
+		Category:        req.Category,
+		ProfileSource:   req.ProfileSource,
+		Attempt:         req.Attempt,
+		SelectionRole:   req.SelectionRole,
+		FallbackIndex:   req.FallbackIndex,
+		Runtime:         req.Runtime,
+		Model:           req.Model,
+		ReasoningEffort: req.ReasoningEffort,
+		Status:          req.Status,
+		ReasonCode:      req.ReasonCode,
+		Reason:          req.Reason,
+		CreatedAt:       createdAt.UTC(),
+	}
+}
+
+func ensureRunExists(ctx context.Context, tx *sql.Tx, runID string, operation string) error {
+	var exists int
+	err := tx.QueryRowContext(ctx, `SELECT 1 FROM runs WHERE id = ?`, runID).Scan(&exists)
+	if errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("%s: Run %q does not exist", operation, runID)
+	}
+	if err != nil {
+		return fmt.Errorf("%s: check Run %q: %w", operation, runID, err)
+	}
+	return nil
+}
+
+func ensureNextAgentSelectionAttempt(ctx context.Context, tx *sql.Tx, attempt AgentSelectionAttempt) error {
+	var previous sql.NullInt64
+	if err := tx.QueryRowContext(ctx, `
+SELECT MAX(attempt)
+FROM run_agent_selections
+WHERE run_id = ? AND scope_kind = ? AND scope_id = ?`,
+		attempt.RunID,
+		string(attempt.ScopeKind),
+		attempt.ScopeID,
+	).Scan(&previous); err != nil {
+		return fmt.Errorf("read previous Agent Selection attempt for Run %q scope %s:%s: %w", attempt.RunID, attempt.ScopeKind, attempt.ScopeID, err)
+	}
+	next := 1
+	if previous.Valid {
+		next = int(previous.Int64) + 1
+	}
+	if attempt.Attempt != next {
+		return fmt.Errorf("append Agent Selection attempt for Run %q scope %s:%s: attempt must be %d, got %d", attempt.RunID, attempt.ScopeKind, attempt.ScopeID, next, attempt.Attempt)
+	}
+	return nil
+}
+
+func insertAgentSelectionAttempt(ctx context.Context, tx *sql.Tx, attempt *AgentSelectionAttempt) error {
+	row := tx.QueryRowContext(ctx, `
+INSERT INTO run_agent_selections (
+	run_id, scope_kind, scope_id, category, profile_source, attempt,
+	selection_role, fallback_index, runtime, model, reasoning_effort,
+	status, reason_code, reason, created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id`,
+		attempt.RunID,
+		string(attempt.ScopeKind),
+		attempt.ScopeID,
+		attempt.Category,
+		attempt.ProfileSource,
+		attempt.Attempt,
+		string(attempt.SelectionRole),
+		attempt.FallbackIndex,
+		attempt.Runtime,
+		attempt.Model,
+		attempt.ReasoningEffort,
+		string(attempt.Status),
+		attempt.ReasonCode,
+		attempt.Reason,
+		formatTime(attempt.CreatedAt),
+	)
+	if err := row.Scan(&attempt.ID); err != nil {
+		return fmt.Errorf("insert Agent Selection attempt for Run %q scope %s:%s attempt %d: %w", attempt.RunID, attempt.ScopeKind, attempt.ScopeID, attempt.Attempt, err)
+	}
+	return nil
+}
+
+func agentSelectionAttemptEvent(attempt AgentSelectionAttempt) (runevent.RunEvent, error) {
+	payload, err := agentSelectionAttemptPayload(attempt)
+	if err != nil {
+		return runevent.RunEvent{}, err
+	}
+	return runevent.RunEvent{
+		RunID:   attempt.RunID,
+		Source:  runevent.SourceDaemon,
+		Kind:    agentSelectionEventKind(attempt.Status),
+		Summary: runevent.BoundSummary(agentSelectionSummary(attempt)),
+		Time:    attempt.CreatedAt,
+		Payload: payload,
+	}, nil
+}
+
+func agentSelectionEventKind(status AgentSelectionStatus) runevent.Kind {
+	switch status {
+	case AgentSelectionStatusAttempting:
+		return runevent.KindDaemonAgentSelectionAttempt
+	case AgentSelectionStatusActive:
+		return runevent.KindDaemonAgentSelectionActive
+	case AgentSelectionStatusFailed:
+		return runevent.KindDaemonAgentSelectionFallback
+	case AgentSelectionStatusClosed:
+		return runevent.KindDaemonAgentSelectionClosed
+	default:
+		return runevent.KindDaemonAgentSelectionAttempt
+	}
+}
+
+func agentSelectionPayloadEventName(status AgentSelectionStatus) string {
+	switch status {
+	case AgentSelectionStatusAttempting:
+		return "agent_selection_attempt"
+	case AgentSelectionStatusActive:
+		return "agent_selection_active"
+	case AgentSelectionStatusFailed:
+		return "agent_selection_fallback"
+	case AgentSelectionStatusClosed:
+		return "agent_selection_closed"
+	default:
+		return "agent_selection_attempt"
+	}
+}
+
+func agentSelectionAttemptPayload(attempt AgentSelectionAttempt) (json.RawMessage, error) {
+	payload, err := json.Marshal(map[string]any{
+		"event":            agentSelectionPayloadEventName(attempt.Status),
+		"scope_kind":       string(attempt.ScopeKind),
+		"scope_id":         attempt.ScopeID,
+		"scope_identity":   string(attempt.ScopeKind) + ":" + attempt.ScopeID,
+		"category":         attempt.Category,
+		"profile_source":   attempt.ProfileSource,
+		"attempt":          attempt.Attempt,
+		"selection_role":   string(attempt.SelectionRole),
+		"fallback_index":   attempt.FallbackIndex,
+		"runtime":          attempt.Runtime,
+		"model":            attempt.Model,
+		"reasoning_effort": attempt.ReasoningEffort,
+		"status":           string(attempt.Status),
+		"reason_code":      attempt.ReasonCode,
+		"reason":           attempt.Reason,
+		"selection": map[string]string{
+			"runtime":          attempt.Runtime,
+			"model":            attempt.Model,
+			"reasoning_effort": attempt.ReasoningEffort,
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("encode Agent Selection attempt event: %w", err)
+	}
+	return payload, nil
+}
+
+func agentSelectionExhaustedEvent(req AgentSelectionExhaustedRequest, attempts []AgentSelectionAttempt, createdAt time.Time) (runevent.RunEvent, error) {
+	runID := strings.TrimSpace(req.RunID)
+	payloadAttempts := make([]map[string]any, 0, len(attempts))
+	for _, attempt := range attempts {
+		payloadAttempts = append(payloadAttempts, map[string]any{
+			"attempt":          attempt.Attempt,
+			"selection_role":   string(attempt.SelectionRole),
+			"fallback_index":   attempt.FallbackIndex,
+			"runtime":          attempt.Runtime,
+			"model":            attempt.Model,
+			"reasoning_effort": attempt.ReasoningEffort,
+			"status":           string(attempt.Status),
+			"reason_code":      attempt.ReasonCode,
+			"reason":           attempt.Reason,
+		})
+	}
+	payload, err := json.Marshal(map[string]any{
+		"event":           "agent_selection_exhausted",
+		"scope_kind":      string(req.ScopeKind),
+		"scope_id":        req.ScopeID,
+		"scope_identity":  string(req.ScopeKind) + ":" + req.ScopeID,
+		"category":        req.Category,
+		"attempts":        payloadAttempts,
+		"recovery_action": req.RecoveryAction,
+	})
+	if err != nil {
+		return runevent.RunEvent{}, fmt.Errorf("encode Agent Selection exhausted event: %w", err)
+	}
+	return runevent.RunEvent{
+		RunID:   runID,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonAgentSelectionExhausted,
+		Summary: runevent.BoundSummary(fmt.Sprintf("Agent Selection exhausted for %s %s (%s).", req.ScopeKind, req.ScopeID, req.Category)),
+		Time:    createdAt,
+		Payload: payload,
+	}, nil
+}
+
+func agentSelectionSummary(attempt AgentSelectionAttempt) string {
+	return fmt.Sprintf("Agent Selection attempt %d for %s %s (%s) %s.",
+		attempt.Attempt,
+		attempt.ScopeKind,
+		attempt.ScopeID,
+		attempt.Category,
+		attempt.Status,
+	)
+}
+
+func scanAgentSelectionAttempts(rows *sql.Rows, runID string) ([]AgentSelectionAttempt, error) {
+	attempts := []AgentSelectionAttempt{}
+	for rows.Next() {
+		attempt, err := scanAgentSelectionAttempt(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan Agent Selection attempt for Run %q: %w", runID, err)
+		}
+		attempts = append(attempts, attempt)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate Agent Selection attempts for Run %q: %w", runID, err)
+	}
+	return attempts, nil
+}
+
+func scanAgentSelectionAttempt(rows *sql.Rows) (AgentSelectionAttempt, error) {
+	var attempt AgentSelectionAttempt
+	var scopeKind string
+	var selectionRole string
+	var status string
+	var createdAt string
+	if err := rows.Scan(
+		&attempt.ID,
+		&attempt.RunID,
+		&scopeKind,
+		&attempt.ScopeID,
+		&attempt.Category,
+		&attempt.ProfileSource,
+		&attempt.Attempt,
+		&selectionRole,
+		&attempt.FallbackIndex,
+		&attempt.Runtime,
+		&attempt.Model,
+		&attempt.ReasoningEffort,
+		&status,
+		&attempt.ReasonCode,
+		&attempt.Reason,
+		&createdAt,
+	); err != nil {
+		return AgentSelectionAttempt{}, err
+	}
+	parsedAt, err := parseTime(createdAt)
+	if err != nil {
+		return AgentSelectionAttempt{}, err
+	}
+	attempt.ScopeKind = AgentSelectionScopeKind(scopeKind)
+	attempt.SelectionRole = AgentSelectionRole(selectionRole)
+	attempt.Status = AgentSelectionStatus(status)
+	attempt.CreatedAt = parsedAt
+	return attempt, nil
+}
