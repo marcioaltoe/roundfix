@@ -107,21 +107,23 @@ type PullRequestRef struct {
 // CyclePlan is the validated input for one resolve cycle: deduplicated
 // Review Issues already assembled into Batches for an already-created Run.
 type CyclePlan struct {
-	RunID        string
-	Session      agent.SessionRef
-	GitRoot      string
-	ArtifactDir  string
-	ReviewRoot   string
-	AgentLogs    bool
-	SourceName   string
-	AgentName    string
-	Runtime      agent.RuntimeSpec
-	Verification string
-	AutoCommit   bool
-	PullRequest  PullRequestRef
-	Batches      []rounds.Batch
-	Duplicates   []rounds.DuplicateAssociation
-	TotalIssues  int
+	RunID           string
+	Session         agent.SessionRef
+	GitRoot         string
+	ArtifactDir     string
+	ReviewRoot      string
+	AgentLogs       bool
+	SourceName      string
+	AgentName       string
+	Runtime         agent.RuntimeSpec
+	AgentSelections AgentSelectionProfiles
+	RuntimeFactory  AgentRuntimeFactory
+	Verification    string
+	AutoCommit      bool
+	PullRequest     PullRequestRef
+	Batches         []rounds.Batch
+	Duplicates      []rounds.DuplicateAssociation
+	TotalIssues     int
 }
 
 // BatchOutcome reports what one Batch produced. CommitSkipped means
@@ -506,8 +508,19 @@ func (engine *Engine) FinalPush(ctx context.Context, req FinalPushRequest) error
 	)
 }
 
-func (engine *Engine) resolveBatch(ctx context.Context, plan CyclePlan, batch rounds.Batch, batchIndex int, batchTotal int) (BatchOutcome, int, error) {
-	outcome := BatchOutcome{Batch: batch.Number, Issues: len(batch.Issues)}
+func (engine *Engine) resolveBatch(ctx context.Context, plan CyclePlan, batch rounds.Batch, batchIndex int, batchTotal int) (outcome BatchOutcome, remaining int, err error) {
+	outcome = BatchOutcome{Batch: batch.Number, Issues: len(batch.Issues)}
+	owner, err := engine.reviewAgentSessionOwner(plan, batch.Number)
+	if err != nil {
+		return outcome, 0, err
+	}
+	defer func() {
+		if owner != nil {
+			if closeErr := owner.Close(context.WithoutCancel(ctx)); closeErr != nil {
+				err = errors.Join(err, fmt.Errorf("close Agent Session for run %q Batch %03d: %w", plan.RunID, batch.Number, closeErr))
+			}
+		}
+	}()
 	// The before-snapshot is taken at Batch start, so anything already
 	// dirty — pre-existing user work or edits from earlier in the Run —
 	// never reaches a Batch commit.
@@ -519,7 +532,7 @@ func (engine *Engine) resolveBatch(ctx context.Context, plan CyclePlan, batch ro
 		}
 		before = snapshot
 	}
-	failure, err := engine.runBatchAgent(ctx, plan, batch, batchIndex, batchTotal)
+	failure, err := engine.runBatchAgent(ctx, plan, batch, batchIndex, batchTotal, owner)
 	if err != nil {
 		return outcome, 0, err
 	}
@@ -529,7 +542,7 @@ func (engine *Engine) resolveBatch(ctx context.Context, plan CyclePlan, batch ro
 			return outcome, 0, verifyErr
 		}
 		if verification.Failure != "" {
-			failure, err = engine.repairBatchVerification(ctx, plan, batch, verification)
+			failure, err = engine.repairBatchVerification(ctx, plan, batch, verification, owner)
 			if err != nil {
 				return outcome, 0, err
 			}
@@ -564,7 +577,7 @@ func (engine *Engine) resolveBatch(ctx context.Context, plan CyclePlan, batch ro
 		outcome.Failed = true
 		outcome.FailureReason = fmt.Sprintf("Review Source propagation failed for %d Review Issue(s)", propagated.Failed)
 	}
-	remaining, err := remainingUnresolvedIssues(ctx, plan)
+	remaining, err = remainingUnresolvedIssues(ctx, plan)
 	if err != nil {
 		return outcome, 0, fmt.Errorf("compute remaining unresolved issues for run %q after Batch %03d: %w", plan.RunID, batch.Number, err)
 	}
@@ -587,7 +600,7 @@ func (engine *Engine) resolveBatch(ctx context.Context, plan CyclePlan, batch ro
 // failure reason when the Batch failed but the cycle should continue;
 // the returned error is reserved for Stop Requests and infrastructure
 // failures, which halt the cycle.
-func (engine *Engine) runBatchAgent(ctx context.Context, plan CyclePlan, batch rounds.Batch, batchIndex int, batchTotal int) (string, error) {
+func (engine *Engine) runBatchAgent(ctx context.Context, plan CyclePlan, batch rounds.Batch, batchIndex int, batchTotal int, owner *agentSessionOwner) (string, error) {
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateResolvingWithAgent); err != nil {
 		return "", fmt.Errorf("update run %q to state %q before Batch %03d: %w", plan.RunID, store.StateResolvingWithAgent, batch.Number, err)
 	}
@@ -612,7 +625,7 @@ func (engine *Engine) runBatchAgent(ctx context.Context, plan CyclePlan, batch r
 		fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
 	}
 
-	runResult, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
+	runResult, runErr := engine.runAgentSession(ctx, owner, agent.ExecuteRequest{
 		Runtime:      plan.Runtime,
 		Session:      plan.Session,
 		RunID:        plan.RunID,
@@ -622,7 +635,7 @@ func (engine *Engine) runBatchAgent(ctx context.Context, plan CyclePlan, batch r
 		ArtifactDir:  plan.ArtifactDir,
 		GitRoot:      plan.GitRoot,
 		Verification: plan.Verification,
-	}, engine.deps.Sink)
+	})
 	if runErr != nil {
 		if isStop(ctx, runErr) {
 			// The runner already published the stopped status event;
@@ -700,11 +713,11 @@ func (engine *Engine) verifyBatch(ctx context.Context, plan CyclePlan, batch rou
 	return verification, nil
 }
 
-func (engine *Engine) repairBatchVerification(ctx context.Context, plan CyclePlan, batch rounds.Batch, first verificationAttemptOutcome) (string, error) {
+func (engine *Engine) repairBatchVerification(ctx context.Context, plan CyclePlan, batch rounds.Batch, first verificationAttemptOutcome, owner *agentSessionOwner) (string, error) {
 	if first.CommandFailure == nil {
 		return first.Failure, nil
 	}
-	failure, err := engine.runBatchVerificationRepair(ctx, plan, batch, first)
+	failure, err := engine.runBatchVerificationRepair(ctx, plan, batch, first, owner)
 	if err != nil {
 		return "", err
 	}
@@ -728,7 +741,7 @@ func (engine *Engine) repairBatchVerification(ctx context.Context, plan CyclePla
 	return "", nil
 }
 
-func (engine *Engine) runBatchVerificationRepair(ctx context.Context, plan CyclePlan, batch rounds.Batch, first verificationAttemptOutcome) (string, error) {
+func (engine *Engine) runBatchVerificationRepair(ctx context.Context, plan CyclePlan, batch rounds.Batch, first verificationAttemptOutcome, owner *agentSessionOwner) (string, error) {
 	if err := ctx.Err(); err != nil {
 		if publishErr := engine.publishStop(ctx, plan.RunID, batch.Number); publishErr != nil {
 			return "", fmt.Errorf("publish stop event for run %q before Batch %03d Verification Feedback: %w", plan.RunID, batch.Number, errors.Join(err, publishErr))
@@ -755,7 +768,7 @@ func (engine *Engine) runBatchVerificationRepair(ctx context.Context, plan Cycle
 	if logPath != "" {
 		fmt.Fprintf(engine.deps.Progress, "Agent log: %s\n", logPath)
 	}
-	runResult, runErr := engine.deps.Runner.Run(ctx, agent.ExecuteRequest{
+	runResult, runErr := engine.runAgentSession(ctx, owner, agent.ExecuteRequest{
 		Runtime:      plan.Runtime,
 		Session:      plan.Session,
 		RunID:        plan.RunID,
@@ -765,7 +778,7 @@ func (engine *Engine) runBatchVerificationRepair(ctx context.Context, plan Cycle
 		ArtifactDir:  plan.ArtifactDir,
 		GitRoot:      plan.GitRoot,
 		Verification: plan.Verification,
-	}, engine.deps.Sink)
+	})
 	if runErr != nil {
 		if isStop(ctx, runErr) {
 			return "", fmt.Errorf("run Verification Feedback Agent for run %q batch %03d: %w", plan.RunID, batch.Number, runErr)

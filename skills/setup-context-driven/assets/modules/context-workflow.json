@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v1",
   "id": "context-workflow",
-  "version": 1,
+  "version": 2,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": ["core"],
@@ -36,7 +36,7 @@
   "supportingGuides": [
     {
       "id": "guide.docs-layout",
-      "version": 1,
+      "version": 2,
       "path": "docs/agents/docs-layout.md",
       "template": "template.guide.docs-layout",
       "rules": ["rule.context.docs-layout"]
@@ -57,8 +57,8 @@
     },
     {
       "id": "rule.context.docs-layout",
-      "version": 1,
-      "summary": "Each docs directory has one job and generated guides live under docs/agents."
+      "version": 2,
+      "summary": "Each docs directory has one job, generated guides live under docs/agents, and finding status closes on Spec routing rather than implementation progress."
     }
   ]
 }

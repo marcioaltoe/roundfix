@@ -6,18 +6,59 @@
 # this repo regardless of the developer's global settings.
 
 defaults:
-  agent: codex # dogfood and tests always drive codex
   verification: make verify
   auto_commit: true
 
-runtimes:
-  codex:
-    model: gpt-5.5
-    reasoning_effort: xhigh
+profiles:
+  general:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.5
+        reasoning_effort: xhigh
+  backend:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.5
+        reasoning_effort: xhigh
+  frontend:
+    preferred:
+      runtime: claude
+      model: claude-fable-5
+      reasoning_effort: medium
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-sol
+        reasoning_effort: high
+  qa:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.5
+        reasoning_effort: xhigh
+  review:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.5
+        reasoning_effort: xhigh
 
 review_source:
   name: coderabbit
-  include_nitpicks: true
+  include_nitpicks: false
 
 watch:
   until_clean: true

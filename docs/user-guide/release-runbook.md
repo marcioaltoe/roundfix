@@ -7,6 +7,32 @@ run. This runbook is for maintainers cutting a release; end users install with
 `npx`/`bunx`/global npm (see the README **Install** section). See ADR-0031 for
 why distribution goes through npm platform packages.
 
+Every release starts with the read-only Release Plan Command:
+
+```bash
+roundfix release plan
+```
+
+Run it before changelog edits, version-file edits, tags, pushes, package
+publication, asset uploads, or GitHub Release creation. The command creates no
+Run, reads no Roundfix configuration, contacts no external service, and
+mutates no repository or release state.
+
+The plan's state controls what a generic release request authorizes:
+
+- `ready` with a patch proposal can proceed without another version approval.
+- `approval_required` for a minor, major, or version-zero breaking proposal
+  requires the human to answer the printed approval question before any release
+  mutation.
+- `manual_classification_required` requires a rerun with
+  `--impact <none|patch|minor|major> --reason <text>`. Manual classification
+  records the release impact and reason, but it does not approve a resulting
+  minor, major, or version-zero breaking version.
+- `no_release` means there is no release to cut for the committed range.
+
+After the plan's required decision is satisfied, keep using the tag-triggered
+publication workflow below.
+
 ## Version agreement
 
 The pushed tag is the single source of truth for the release version. The
@@ -34,20 +60,23 @@ section matches.
 
 ## Cutting a release
 
-1. Land all release content on `main` and confirm `make verify` is green
+1. Run `roundfix release plan` from a clean checkout and satisfy the decision
+   boundary described above. Use the proposed version as `<version>` only after
+   the plan is `ready` or the required human approval has been given.
+2. Land all release content on `main` and confirm `make verify` is green
    locally. The workflow re-runs the full gate and refuses to publish if it
    fails. No Spec merges without a passing QA Report in its `qa/` directory —
    `roundfix archive` enforces the same rule later, but the gap must be caught
    at merge time, not at archive time.
-2. Add or finalize the `## [<version>]` section in `CHANGELOG.md`.
-3. Tag and push:
+3. Add or finalize the `## [<version>]` section in `CHANGELOG.md`.
+4. Tag and push:
 
    ```bash
    git tag v<version>
    git push origin v<version>
    ```
 
-4. Watch the `release` workflow. In order it: validates the tag, runs
+5. Watch the `release` workflow. In order it: validates the tag, runs
    `make verify`, cross-compiles and stages every target, publishes the
    per-platform packages first and then the launcher, and creates the GitHub
    Release with the matching binary assets.

@@ -834,7 +834,7 @@ func IsTerminalState(state string) bool {
 	}
 }
 
-const schemaVersion = 8
+const schemaVersion = 9
 
 // activeRunLocksColumns is the schema v4 lock-table shape (ADR 0016): one
 // Active Run per work target, keyed by (target_kind, target_key).
@@ -865,11 +865,13 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV5ToV6Statements()...)
 		statements = append(statements, migrateV6ToV7Statements()...)
 		statements = append(statements, migrateV7ToV8Statements()...)
+		statements = append(statements, migrateV8ToV9Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 4:
 		statements := append(migrateV4ToV5Statements(), migrateV5ToV6Statements()...)
 		statements = append(statements, migrateV6ToV7Statements()...)
 		statements = append(statements, migrateV7ToV8Statements()...)
+		statements = append(statements, migrateV8ToV9Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 5:
 		if err := store.ensureAgentColumn(ctx); err != nil {
@@ -877,12 +879,17 @@ func (store *Store) migrate(ctx context.Context) error {
 		}
 		statements := append(migrateV5ToV6Statements(), migrateV6ToV7Statements()...)
 		statements = append(statements, migrateV7ToV8Statements()...)
+		statements = append(statements, migrateV8ToV9Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 6:
 		statements := append(migrateV6ToV7Statements(), migrateV7ToV8Statements()...)
+		statements = append(statements, migrateV8ToV9Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 7:
-		return store.applyMigration(ctx, migrateV7ToV8Statements())
+		statements := append(migrateV7ToV8Statements(), migrateV8ToV9Statements()...)
+		return store.applyMigration(ctx, statements)
+	case 8:
+		return store.applyMigration(ctx, migrateV8ToV9Statements())
 	default:
 		return fmt.Errorf("migrate Run Database: schema version %d is not supported", version)
 	}
@@ -905,7 +912,7 @@ func (store *Store) applyMigration(ctx context.Context, statements []string) err
 	return nil
 }
 
-// createSchemaStatements creates schema v8 directly on a fresh Run Database.
+// createSchemaStatements creates schema v9 directly on a fresh Run Database.
 // spec_slug and the PR-shaped columns use the empty string for "not set";
 // which fields a Run must carry is enforced by Kind in CreateRun.
 func createSchemaStatements() []string {
@@ -955,9 +962,38 @@ func createSchemaStatements() []string {
 			PRIMARY KEY (run_id, cursor),
 			FOREIGN KEY (run_id) REFERENCES runs(id) ON DELETE CASCADE
 		)`,
-		`PRAGMA user_version = 8`,
+		`CREATE TABLE IF NOT EXISTS run_agent_selections ` + runAgentSelectionsColumns,
+		`CREATE INDEX IF NOT EXISTS idx_run_agent_selections_scope
+			ON run_agent_selections (run_id, scope_kind, scope_id, attempt)`,
+		`PRAGMA user_version = 9`,
 	}
 }
+
+const runAgentSelectionsColumns = `(
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	run_id TEXT NOT NULL,
+	scope_kind TEXT NOT NULL,
+	scope_id TEXT NOT NULL,
+	category TEXT NOT NULL,
+	profile_source TEXT NOT NULL,
+	attempt INTEGER NOT NULL,
+	selection_role TEXT NOT NULL,
+	fallback_index INTEGER NOT NULL DEFAULT 0,
+	runtime TEXT NOT NULL,
+	model TEXT NOT NULL,
+	reasoning_effort TEXT NOT NULL,
+	status TEXT NOT NULL,
+	reason_code TEXT NOT NULL DEFAULT '',
+	reason TEXT NOT NULL DEFAULT '',
+	created_at TEXT NOT NULL,
+	FOREIGN KEY (run_id) REFERENCES runs(id) ON DELETE CASCADE,
+	CHECK (scope_kind IN ('task', 'qa', 'review')),
+	CHECK (selection_role IN ('preferred', 'fallback')),
+	CHECK (status IN ('attempting', 'active', 'failed', 'closed')),
+	CHECK (attempt > 0),
+	CHECK ((selection_role = 'preferred' AND fallback_index = 0) OR (selection_role = 'fallback' AND fallback_index > 0)),
+	UNIQUE (run_id, scope_kind, scope_id, attempt)
+)`
 
 // migrateV3ToV4Statements rewrites a v3 Run Database in place (ADR 0016):
 // every run row survives, and each existing lock row — always a review
@@ -1002,6 +1038,15 @@ func migrateV7ToV8Statements() []string {
 	return []string{
 		`ALTER TABLE runs ADD COLUMN owner_pid INTEGER`,
 		`PRAGMA user_version = 8`,
+	}
+}
+
+func migrateV8ToV9Statements() []string {
+	return []string{
+		`CREATE TABLE IF NOT EXISTS run_agent_selections ` + runAgentSelectionsColumns,
+		`CREATE INDEX IF NOT EXISTS idx_run_agent_selections_scope
+			ON run_agent_selections (run_id, scope_kind, scope_id, attempt)`,
+		`PRAGMA user_version = 9`,
 	}
 }
 

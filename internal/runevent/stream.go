@@ -19,23 +19,39 @@ const (
 	StreamCategoryBatch        StreamCategory = "batch"
 	StreamCategoryVerification StreamCategory = "verification"
 	StreamCategoryOutcome      StreamCategory = "outcome"
+	StreamCategorySelection    StreamCategory = "agent-selection"
 )
 
 // StreamRecord is one JSONL record in the Supervisor Run Event Stream.
 type StreamRecord struct {
-	Schema   string         `json:"schema"`
-	RunID    string         `json:"run_id"`
-	Category StreamCategory `json:"category"`
-	Time     string         `json:"time"`
-	Cursor   int64          `json:"cursor"`
-	Batch    int            `json:"batch,omitempty"`
-	Attempt  int            `json:"attempt,omitempty"`
-	WorkItem string         `json:"work_item,omitempty"`
-	Phase    string         `json:"phase,omitempty"`
-	Status   string         `json:"status,omitempty"`
-	Verdict  string         `json:"verdict,omitempty"`
-	Outcome  string         `json:"outcome,omitempty"`
-	Summary  string         `json:"summary,omitempty"`
+	Schema              string         `json:"schema"`
+	RunID               string         `json:"run_id"`
+	Category            StreamCategory `json:"category"`
+	Time                string         `json:"time"`
+	Cursor              int64          `json:"cursor"`
+	Batch               int            `json:"batch,omitempty"`
+	Attempt             int            `json:"attempt,omitempty"`
+	WorkItem            string         `json:"work_item,omitempty"`
+	Phase               string         `json:"phase,omitempty"`
+	Status              string         `json:"status,omitempty"`
+	Verdict             string         `json:"verdict,omitempty"`
+	Outcome             string         `json:"outcome,omitempty"`
+	Summary             string         `json:"summary,omitempty"`
+	ScopeKind           string         `json:"scope_kind,omitempty"`
+	ScopeID             string         `json:"scope_id,omitempty"`
+	ScopeIdentity       string         `json:"scope_identity,omitempty"`
+	WorkCategory        string         `json:"work_category,omitempty"`
+	ProfileSource       string         `json:"profile_source,omitempty"`
+	SelectionRole       string         `json:"selection_role,omitempty"`
+	FallbackIndex       int            `json:"fallback_index,omitempty"`
+	Runtime             string         `json:"runtime,omitempty"`
+	Model               string         `json:"model,omitempty"`
+	ReasoningEffort     string         `json:"reasoning_effort,omitempty"`
+	NextRuntime         string         `json:"next_runtime,omitempty"`
+	NextModel           string         `json:"next_model,omitempty"`
+	NextReasoningEffort string         `json:"next_reasoning_effort,omitempty"`
+	ReasonCode          string         `json:"reason_code,omitempty"`
+	Reason              string         `json:"reason,omitempty"`
 }
 
 // StreamCategoryFilter selects public Run Event Stream categories.
@@ -48,6 +64,7 @@ func AllStreamCategories() StreamCategoryFilter {
 		StreamCategoryBatch:        {},
 		StreamCategoryVerification: {},
 		StreamCategoryOutcome:      {},
+		StreamCategorySelection:    {},
 	}
 }
 
@@ -173,13 +190,39 @@ func ProjectStreamEvent(cursor int64, event RunEvent, filter StreamCategoryFilte
 			return StreamRecord{}, false, err
 		}
 		record.Summary = outcomeStreamSummary(record.Outcome)
+	case StreamCategorySelection:
+		selection, ok, err := ProjectSelectionLifecycle(event)
+		if err != nil {
+			return StreamRecord{}, false, err
+		}
+		if !ok {
+			return StreamRecord{}, false, nil
+		}
+		record.ScopeKind = selection.ScopeKind
+		record.ScopeID = selection.ScopeID
+		record.ScopeIdentity = selection.ScopeIdentity
+		record.WorkCategory = selection.Category
+		record.ProfileSource = selection.ProfileSource
+		record.Attempt = selection.Attempt
+		record.SelectionRole = selection.SelectionRole
+		record.FallbackIndex = selection.FallbackIndex
+		record.Status = selection.Status
+		record.Runtime = selection.Runtime
+		record.Model = selection.Model
+		record.ReasoningEffort = selection.ReasoningEffort
+		record.NextRuntime = selection.NextRuntime
+		record.NextModel = selection.NextModel
+		record.NextReasoningEffort = selection.NextReasoningEffort
+		record.ReasonCode = selection.ReasonCode
+		record.Reason = selection.Reason
+		record.Summary = SelectionLifecycleLine(selection)
 	}
 	return record, true, nil
 }
 
 func isStreamCategory(category StreamCategory) bool {
 	switch category {
-	case StreamCategoryTaskStatus, StreamCategoryBatch, StreamCategoryVerification, StreamCategoryOutcome:
+	case StreamCategoryTaskStatus, StreamCategoryBatch, StreamCategoryVerification, StreamCategoryOutcome, StreamCategorySelection:
 		return true
 	default:
 		return false
@@ -199,6 +242,10 @@ func streamCategoryForEvent(event RunEvent) (StreamCategory, bool) {
 		return StreamCategoryVerification, true
 	case KindDaemonOutcome:
 		return StreamCategoryOutcome, true
+	case KindDaemonAgentSelectionAttempt, KindDaemonAgentSelectionActive,
+		KindDaemonAgentSelectionFallback, KindDaemonAgentSelectionExhausted,
+		KindDaemonAgentSelectionClosed:
+		return StreamCategorySelection, true
 	default:
 		return "", false
 	}

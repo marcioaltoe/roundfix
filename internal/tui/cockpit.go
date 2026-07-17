@@ -1296,7 +1296,7 @@ func (model *cockpitModel) styleTimelineKindRow(line string) string {
 func cutTimelineKindLabel(line string) (string, string, bool) {
 	for _, label := range []string{
 		"[TOOL]", "PLAN", "THINK", "SESSION",
-		"STATUS", "FETCH", "VERIFY", "COMMIT", "PUSH", "SOURCE", "RETRY", "OUTCOME", "TASK", "QA",
+		"STATUS", "FETCH", "VERIFY", "COMMIT", "PUSH", "SOURCE", "RETRY", "OUTCOME", "TASK", "QA", "SELECTION",
 	} {
 		if line == label {
 			return label, "", true
@@ -1421,6 +1421,9 @@ func (model *cockpitModel) detailHeaderLines(detail *issueDetailView, width int)
 		model.detailMetaLine(detail, width),
 		model.tokens.Muted.Render(truncateDisplay(detailSource(detail), width)),
 	}
+	if selectionLine := model.detailSelectionLine(detail); selectionLine != "" {
+		lines = append(lines, model.tokens.Muted.Render(truncateDisplay(selectionLine, width)))
+	}
 	if detail.stale {
 		lines = append(lines, model.tokens.Failed.Render(truncateDisplay("STALE: keeping last readable task file", width)))
 	}
@@ -1471,7 +1474,7 @@ func (model *cockpitModel) detailMetaLine(detail *issueDetailView, width int) st
 
 func detailMetaParts(detail *issueDetailView) (string, string, string) {
 	if detail.kind == detailTask {
-		return emptyDash(detail.task.Type), emptyDash(string(detail.task.Status)), emptyDash(detail.task.File)
+		return emptyDash(string(detail.task.Type)), emptyDash(string(detail.task.Status)), emptyDash(detail.task.File)
 	}
 	issue := detail.issue
 	return emptyDash(issue.Severity), emptyDash(issue.Status), emptyDash(issueLocation(issue))
@@ -1499,6 +1502,26 @@ func detailSource(detail *issueDetailView) string {
 		return "source: " + emptyDash(detail.task.File) + " (read-only)"
 	}
 	return "source: " + emptyDash(detail.issue.SourceRef)
+}
+
+func (model *cockpitModel) detailSelectionLine(detail *issueDetailView) string {
+	record, ok := model.selectionForDetail(detail)
+	if !ok {
+		return ""
+	}
+	return "selection: " + runevent.SelectionLifecycleSummary(record)
+}
+
+func (model *cockpitModel) selectionForDetail(detail *issueDetailView) (runevent.SelectionLifecycleRecord, bool) {
+	if detail.kind == detailTask {
+		return model.latestSelection("task", detail.task.ID)
+	}
+	if batch := model.batchOf(detail.ordinal - 1); batch > 0 {
+		if record, ok := model.latestSelection("review", fmt.Sprintf("batch-%03d", batch)); ok {
+			return record, true
+		}
+	}
+	return model.latestReviewSelection()
 }
 
 func (model *cockpitModel) detailBodyHeight(detail *issueDetailView, innerHeight int) int {
@@ -1683,6 +1706,9 @@ func (model *cockpitModel) workItemBlock(item WorkItem, label string, index int,
 	if location := strings.TrimSpace(item.Location); location != "" {
 		lines = append(lines, model.tokens.Muted.Render(truncateDisplay("  "+location, contentWidth)))
 	}
+	if record, ok := model.selectionForWorkItem(index, item); ok {
+		lines = append(lines, model.tokens.Muted.Render(truncateDisplay("  selection: "+runevent.SelectionLifecycleSummary(record), contentWidth)))
+	}
 	if selected {
 		card := model.tokens.Selection.Width(rowWidth).Render(strings.Join(lines, "\n"))
 		return append(strings.Split(card, "\n"), "")
@@ -1718,6 +1744,51 @@ func workItemOrdinal(item WorkItem) string {
 		return fmt.Sprintf("#%d", item.Ordinal)
 	}
 	return strings.TrimSpace(item.Name)
+}
+
+func (model *cockpitModel) selectionForWorkItem(index int, item WorkItem) (runevent.SelectionLifecycleRecord, bool) {
+	if model.specRun() {
+		return model.latestSelection("task", item.Name)
+	}
+	if batch := model.batchOf(index); batch > 0 {
+		return model.latestSelection("review", fmt.Sprintf("batch-%03d", batch))
+	}
+	return model.latestReviewSelection()
+}
+
+func (model *cockpitModel) latestSelection(scopeKind string, scopeID string) (runevent.SelectionLifecycleRecord, bool) {
+	scopeKind = strings.TrimSpace(scopeKind)
+	scopeID = strings.TrimSpace(scopeID)
+	if scopeKind == "" || scopeID == "" {
+		return runevent.SelectionLifecycleRecord{}, false
+	}
+	records := model.selectionRecords()
+	for index := len(records) - 1; index >= 0; index-- {
+		record := records[index]
+		if record.ScopeKind == scopeKind && record.ScopeID == scopeID {
+			return record, true
+		}
+	}
+	return runevent.SelectionLifecycleRecord{}, false
+}
+
+func (model *cockpitModel) latestReviewSelection() (runevent.SelectionLifecycleRecord, bool) {
+	records := model.selectionRecords()
+	for index := len(records) - 1; index >= 0; index-- {
+		record := records[index]
+		if record.ScopeKind == "review" {
+			return record, true
+		}
+	}
+	return runevent.SelectionLifecycleRecord{}, false
+}
+
+func (model *cockpitModel) selectionRecords() []runevent.SelectionLifecycleRecord {
+	records := append([]runevent.SelectionLifecycleRecord{}, model.cfg.View.Selections...)
+	if model.viewport != nil {
+		records = append(records, model.viewport.SelectionRecords()...)
+	}
+	return records
 }
 
 func workItemStatusMarker(label string) string {

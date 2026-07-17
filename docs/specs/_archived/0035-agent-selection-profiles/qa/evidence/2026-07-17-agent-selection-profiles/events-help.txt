@@ -1,0 +1,10 @@
+Usage:
+  roundfix events <run-id> [--follow] [--filter <categories>]
+
+Replays one Run's Supervisor event stream from the Run Database as
+roundfix-events/v1 JSONL. With --follow, continues until the Run reaches a
+terminal state or the command is interrupted.
+
+Options:
+  --follow  Continue after replay and exit after the terminal event drains
+  --filter  Comma-separated categories: task-status,batch,verification,outcome,agent-selection

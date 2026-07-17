@@ -21,35 +21,94 @@ Removed keys that Roundfix registers as deprecated never break an existing
 config — they are ignored with one stderr warning naming the replacement:
 
 - `resolve.concurrent` → `worktree.concurrency`
-- `defaults.model` → `runtimes.<runtime>.model`
+- `defaults.model` → `profiles.<category>.preferred.model`
 
 Unknown keys that are not registered as deprecated fail strict validation.
+
+### Omitted and empty values
+
+An omitted key inherits the value from the next lower-precedence source. For
+example, a Project Config that omits `notify.command` keeps the User Config
+value when one exists, then falls back to the built-in default.
+
+An explicit empty string (`""`) or empty list (`[]`) overrides the lower
+source. Empty values are valid only where this page defines their behavior:
+
+| Explicit empty value | Behavior |
+| --- | --- |
+| `defaults.artifact_dir: ""` | Uses `~/.roundfix/artifacts/<repo-id>` |
+| `worktree.copy: []` | Copies no ignored files into Run or Task Worktrees |
+| `worktree.bootstrap: ""` | Disables Worktree Bootstrap |
+| `watch.push_remote: ""` and `watch.push_branch: ""` | Uses the upstream remote and branch detected by Preflight Validation |
+| `notify.command: ""` | Uses the native desktop notifier when available |
+| `profiles.<category>.*.reasoning_effort: ""` | Lets the model manage reasoning effort |
+
+Do not use a bare YAML value such as `command:` to mean an empty string. Use
+the explicit value shown above or omit the key to inherit it.
 
 ## Full example
 
 ```yaml
 defaults:
-  agent: codex
+  # false keeps each ACP Runtime's normal sandbox or permission mode.
+  agent_full_access: false
+  # Verification command for review Batches; Spec Tasks use their task file commands.
   verification: make verify
   # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
   artifact_dir: ""
   auto_commit: true
 
-runtimes:
-  codex:
-    model: gpt-5.6-sol
-    # Empty reasoning_effort means the Agent Model manages reasoning.
-    reasoning_effort: ""
-  claude:
-    model: opus
-    reasoning_effort: ""
-  opencode:
-    model: ""
-    reasoning_effort: ""
+profiles:
+  general:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
+  backend:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
+  frontend:
+    preferred:
+      runtime: claude
+      model: claude-fable-5
+      reasoning_effort: medium
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-sol
+        reasoning_effort: high
+  qa:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
+  review:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
 
 review_source:
   name: coderabbit
-  include_nitpicks: true
+  # false excludes CodeRabbit findings whose severity is nitpick.
+  include_nitpicks: false
 
 watch:
   until_clean: true
@@ -60,7 +119,10 @@ watch:
   # How long watch polls for the Review Source check on the pushed HEAD
   # before ending CleanUnverified instead of Clean.
   check_grace_period: 5m
+  # Final Push uses the detected upstream when both values are empty.
   auto_push: true
+  push_remote: ""
+  push_branch: ""
 
 implement:
   auto_push: false
@@ -82,6 +144,7 @@ worktree:
   concurrency: 2
   # Repository-relative untracked files copied into each new Run or Task Worktree.
   # List only files that are already gitignored.
+  # Empty copies no files.
   copy: []
   # Command run in each new worktree after copy and before Agent work; empty disables it.
   bootstrap: ""
@@ -92,6 +155,10 @@ store:
   # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
   journal_retention: 336h
 
+logs:
+  # false keeps Agent payloads only in the lossless Run Event Journal.
+  agent: false
+
 budget:
   enabled: true
   max_run_duration: 2h
@@ -100,62 +167,117 @@ resolve:
   batch_size: 3
 ```
 
-## Agent selection
+## Key reference
 
-Roundfix owns the Agent Model and Default Reasoning Effort for every Agent
-Session. It resolves each value independently — built-in defaults, User
-Config, Project Config, then one-Run flags — and never reads or mutates
-runtime-owned model configuration.
+The defaults below apply when neither User Config nor Project Config sets the
+key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 
-Built-in selections:
+### General settings
 
-- Codex: `model: gpt-5.5`, `reasoning_effort: xhigh`.
-- Claude: `model: opus`, `reasoning_effort: ""` (model-managed).
-- OpenCode: no built-in model. Provide one through config, its one-Run flag,
-  or Interactive Input.
+| Key | Built-in default | Effect |
+| --- | --- | --- |
+| `defaults.agent_full_access` | `false` | Keeps the ACP Runtime's normal sandbox or permission mode. `true` requests its full-access mode before Agent work. |
+| `defaults.verification` | `make verify` | Verification command for review Batches. Spec Tasks use the commands in each task file. |
+| `defaults.artifact_dir` | `""` | Uses `~/.roundfix/artifacts/<repo-id>`. An absolute or repository-relative value overrides it. |
+| `defaults.auto_commit` | `true` | Enables Daemon-owned review commits. `watch.auto_push: true` requires it. |
+| `specs.root` | `docs/specs` | Locates active and archived Specs. Relative paths resolve from the repository root. |
 
-An empty `reasoning_effort` is a deliberate model-managed selection: Roundfix
-assigns the Agent Model and skips the runtime-specific reasoning option, and
-Run headers render `Default Reasoning Effort: model-managed`. This is the
-required shape for the codex `gpt-5.6` family, whose models manage reasoning
-and reject every `reasoning_effort` value exposed by codex-acp.
+### Review and Run settings
 
-Interactive Input asks for Agent, Agent Model, then Default Reasoning Effort.
-The Codex Model Catalog is ordered `gpt-5.6-sol`, `gpt-5.6-terra`,
-`gpt-5.6-luna`, `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex-spark`;
-the Claude catalog is `Default`, `Opus`, `Fable`, `Sonnet`, `Haiku`, with
-`Default` showing the concrete configured model. Catalogs are picker data, not
-allowlists: non-interactive flags and typed values can pass a custom pair,
-which the installed ACP adapter validates during Preflight Validation. A Batch
-that later fails because the Agent Session rejects the model reports
-`Agent Model "<model>" not advertised by runtime "<runtime>"; advertised: <list>`
-— and `roundfix doctor` shows the same probe as its `model:` line.
+| Key | Built-in default | Effect |
+| --- | --- | --- |
+| `review_source.name` | `coderabbit` | Selects the Review Source. CodeRabbit is the only supported value. |
+| `review_source.include_nitpicks` | `false` | Excludes CodeRabbit findings whose severity is `nitpick`. Set `true` to include them. |
+| `watch.until_clean` | `true` | Continues the watch cycle until its clean-outcome contract or another bound ends the Run. |
+| `watch.max_rounds` | `6` | Limits the number of review Rounds in one watch Run. |
+| `watch.poll_interval` | `30s` | Sets the delay between Review Source polls. |
+| `watch.review_timeout` | `30m` | Bounds the review wait across the watch Run. |
+| `watch.check_grace_period` | `5m` | Bounds the final wait for Review Source evidence on the pushed head. |
+| `watch.quiet_period` | `30s` | Requires this quiet interval before Roundfix fetches a settled review. |
+| `watch.auto_push` | `true` | Runs Final Push after no Unresolved Review Issues remain. |
+| `watch.push_remote` | `""` | Uses the upstream remote detected by Preflight Validation. |
+| `watch.push_branch` | `""` | Uses the upstream branch detected by Preflight Validation. |
+| `implement.auto_push` | `false` | Leaves a Clean Spec Run local. `true` pushes its upstream branch but never opens a pull request. |
+| `notify.enabled` | `true` | Sends one terminal outcome notification for `resolve`, `watch`, and `implement`. |
+| `notify.command` | `""` | Uses the native desktop notifier. A non-empty shell command replaces it. |
+| `budget.enabled` | `true` | Enforces the configured Run duration budget. |
+| `budget.max_run_duration` | `2h` | Sets the maximum duration of a budgeted Run. |
+| `resolve.batch_size` | `3` | Limits how many Review Issues one Agent Batch receives. |
 
-Override both values for one Run without touching config:
+### Worktree, log, and retention settings
+
+| Key | Built-in default | Effect |
+| --- | --- | --- |
+| `worktree.location` | `~/.roundfix/worktrees` | Sets the parent directory for Run and Task Worktrees. |
+| `worktree.concurrency` | `2` | Limits concurrent Task Worktrees. `1` keeps Task execution sequential. |
+| `worktree.copy` | `[]` | Copies no ignored files. Entries must be repository-relative and already ignored by Git. |
+| `worktree.bootstrap` | `""` | Disables Worktree Bootstrap. A non-empty command runs after copy and before Agent work. |
+| `worktree.bootstrap_timeout` | `10m` | Bounds each Worktree Bootstrap command. |
+| `logs.agent` | `false` | Writes no per-Batch Agent log files; the Run Event Journal remains lossless. |
+| `store.journal_retention` | `336h` | Keeps terminal Run journals and Run artifacts for 14 days. `0` disables pruning. |
+
+## Agent selection profiles
+
+Roundfix owns Agent Selection Profiles in Project Config, User Config, and
+built-ins. Each profile is one atomic object: a complete Preferred Selection
+plus a non-empty ordered Fallback Chain. Project Config replaces User Config,
+User Config replaces built-ins, and no tuple field or fallback entry merges
+across scopes.
+
+Required profiles are `general`, `backend`, `frontend`, `qa`, and `review`.
+Optional Task Type profiles `data`, `infra`, `docs`, `test`, and `chore`
+inherit the effective `general` profile when absent. `roundfix profiles show`
+labels that inherited recommendation source instead of duplicating stored
+config.
+
+Built-in required profiles use these official identifiers:
+
+- `general`, `backend`, `qa`, `review`: preferred `codex / gpt-5.6-sol / high`;
+  fallback `codex / gpt-5.6-terra / max`.
+- `frontend`: preferred `claude / claude-fable-5 / medium`; fallback
+  `codex / gpt-5.6-sol / high`.
+
+Custom model strings are accepted verbatim for forward-compatible ACP proof.
+They are not added to an allowlist, and the installed runtime adapter proves
+them before any Run mutation. An explicit empty `reasoning_effort: ""` means
+model-managed reasoning; omitted `reasoning_effort` is invalid because the
+runtime would not receive a complete tuple.
+
+Manage profiles with:
 
 ```bash
-roundfix resolve --pr 123 --agent codex --model gpt-5.6-sol --reasoning-effort "" --no-input
-roundfix implement --spec example-spec --agent claude --model opus --reasoning-effort "" --qa --detach
+roundfix profiles show --category backend
+roundfix profiles show --all --json
+roundfix profiles configure --scope project --file profiles.yml --dry-run --json
+roundfix profiles validate --category review --json
 ```
 
-An explicit empty `--reasoning-effort ""` is the one-Run model-managed
-override; an explicit empty `--model ""` is invalid and exits `2`.
+`profiles configure` writes only the `profiles` schema after strict validation
+and confirmation. `--dry-run` leaves config bytes unchanged and reports
+`changed: false` in JSON. `profiles validate` proves the selected tuples
+through disposable ACP sessions, deduplicates exact tuples, and closes every
+session without creating a Run, worktree, prompt, credential, or runtime-owned
+setting.
 
-### Fallback Selection
+One-Run flags such as `--agent`, `--model`, and `--reasoning-effort` replace
+only the Preferred Selection for each relevant category and preserve that
+category's Fallback Chain. When one override spans multiple Task or QA
+categories, text and JSON output include a cross-category warning.
 
-If a runtime rejects the selected Agent Model or a non-empty reasoning value,
-Roundfix probes that runtime's catalog newest-first and its reasoning
-vocabulary highest-first — never crossing to another runtime and never
-re-proposing the failed model. Interactively, it presents the proven Fallback
-Selection and asks `Use this Fallback Selection for this Run? [y/N]:`; the
-confirmation applies to that Run only. With `--no-input`, `--detach`, or
-non-interactive stderr, it exits `2` before creating a Run and prints one
-concrete `Re-run:` line with explicit `--model` and `--reasoning-effort`
-flags. There is no flag or key that pre-authorizes a fallback.
+Recommendations shown by `profiles show` are a dated advisory snapshot
+(`2026-07-16`) with five entries per category, benchmark/result/cost evidence,
+rationale, and `category_specific: false`. Recommendation rank never changes
+configuration, proof order, Preferred Selection, Fallback Chain, or routing.
 
-Run startup and inspection surfaces show the stored selection
-(`Agent Model: …`, `Default Reasoning Effort: …`); `attach` reads those values
-from the Run row, so later config changes never rewrite a historical Run.
+Automatic fallback is pre-prompt only. Roundfix records and shows the fallback
+notification before activating the next configured tuple. Once
+`agent_work_started` is recorded, no prompt, tool, verification, cancellation,
+rate-limit, or session-loss failure can start a replacement session.
+
+Legacy configs with `defaults.agent` or top-level `runtimes` still load during
+the compatibility window only when the same file has no `profiles` section.
+Do not edit runtime-owned settings or credentials for migration; write complete
+profiles with `roundfix profiles configure --scope user|project`.
 
 ## Spec Root
 

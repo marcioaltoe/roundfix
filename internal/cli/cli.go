@@ -46,6 +46,10 @@ Usage:
   roundfix watch --source coderabbit --pr <number> --agent <agent> [--spec <slug>] --until-clean
   roundfix implement --spec <slug> --agent <agent>
   roundfix settle --spec <slug> --task <task_id>
+  roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
+  roundfix profiles show [--category <category>] [--json]
+  roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--yes] [--json]
+  roundfix profiles validate [--category <category>] [--json]
   roundfix archive <slug>
   roundfix init [--scope <project|user>]
   roundfix setup [--yes] [--no-input]
@@ -67,6 +71,8 @@ Commands:
   watch      Fetch and resolve in a watched loop
   implement  Execute a Spec's Task Graph as one Run
   settle     Verify and commit all current worktree changes for one failed Task
+  release    Plan the next release version without mutating repository or release state
+  profiles   Show Agent Selection Profiles and advisory recommendations
   archive    Archive a completed Spec
   stop       Request or force-stop an Active Run
   setup      Verify and prepare this machine for Roundfix Runs
@@ -98,6 +104,7 @@ type commandRequest struct {
 	spec                string
 	source              string
 	agent               string
+	agentSet            bool
 	round               string
 	noInput             bool
 	interactive         bool
@@ -224,6 +231,10 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runImplementCommand(ctx, args[1:], stdout, stderr, detachChild)
 	case "settle":
 		return runSettleCommand(ctx, args[1:], stdout, stderr)
+	case "release":
+		return runReleaseCommand(ctx, args[1:], stdout, stderr)
+	case "profiles":
+		return runProfilesCommand(ctx, args[1:], stdout, stderr)
 	case "archive":
 		return runArchiveCommand(ctx, args[1:], stdout, stderr)
 	default:
@@ -1782,10 +1793,12 @@ func createFetchRun(ctx context.Context, runStore *store.Store, req commandReque
 }
 
 type resolveBatchPlan struct {
-	roundNumber int
-	selection   rounds.SelectResult
-	plan        rounds.BatchPlan
-	runtime     agent.RuntimeSpec
+	roundNumber     int
+	selection       rounds.SelectResult
+	plan            rounds.BatchPlan
+	runtime         agent.RuntimeSpec
+	agentSelections daemon.AgentSelectionProfiles
+	runtimeFactory  daemon.AgentRuntimeFactory
 }
 
 type resolveBatchResult struct {
@@ -1800,17 +1813,24 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		return exitPreflight
 	}
 	collaborators := newEngineCollaborators()
-	if !req.skipBranchIntegrity {
-		effectiveRuntime, err := probeRuntimeSelection(ctx, req, resolvePlan.runtime, preflightResult.Git.Root, collaborators.runner, stderr)
-		if err != nil {
-			printPreflightFailure(req.name, err, stderr)
-			return exitPreflight
-		}
-		resolvePlan.runtime = effectiveRuntime
-		req = requestWithRuntimeSelection(req, effectiveRuntime)
-	} else {
-		req = requestWithRuntimeSelection(req, resolvePlan.runtime)
+	categories := reviewProfileCategories()
+	profilePreflight, err := runProfileOperationalPreflight(ctx, req, loaded.Config, categories, preflightResult.Git.Root, collaborators.runner, stderr)
+	if err != nil {
+		printPreflightFailure(req.name, err, stderr)
+		return exitPreflight
 	}
+	resolvePlan.runtime, err = runtimeForOperationalProfileRun(req, loaded.Config, categories, profilePreflight.Override)
+	if err != nil {
+		printPreflightFailure(req.name, err, stderr)
+		return exitPreflight
+	}
+	resolvePlan.agentSelections, err = operationalAgentSelectionProfiles(loaded.Config, categories, profilePreflight.Override)
+	if err != nil {
+		printPreflightFailure(req.name, err, stderr)
+		return exitPreflight
+	}
+	resolvePlan.runtimeFactory = operationalRuntimeFactory(req)
+	req = requestWithRuntimeSelection(req, resolvePlan.runtime)
 
 	runStore, err := store.Open(ctx, loaded.HomeDir)
 	if err != nil {
@@ -1832,30 +1852,18 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		printBranchIntegrityAuditFailure(req.name, run.ID, err, stderr)
 		return exitPreflight
 	}
-	if req.skipBranchIntegrity {
-		// Bypass contract: the audit publishes before any Agent Session,
-		// including the disposable model probe, so the probe runs after Run
-		// creation. Non-interactive probe semantics apply — a rejected
-		// selection fails the audited Run instead of prompting for fallback.
-		probeReq := req
-		probeReq.noInput = true
-		effectiveRuntime, err := probeRuntimeSelection(ctx, probeReq, resolvePlan.runtime, preflightResult.Git.Root, collaborators.runner, stderr)
-		if err != nil {
-			markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
-			printPreflightFailure(req.name, err, stderr)
-			return exitPreflight
-		}
-		resolvePlan.runtime = effectiveRuntime
-		req = requestWithRuntimeSelection(req, effectiveRuntime)
-	}
 	if err := req.reportDetachedRunCreated(run.ID); err != nil {
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printRunFailure(req.name, err, stderr)
 		return exitRunFailed
 	}
 	session := agent.SessionRefForRun(run.ID, preflightResult.Git.Root)
+	sessionForClose := session
+	if len(resolvePlan.agentSelections) > 0 {
+		sessionForClose = agent.SessionRef{}
+	}
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
-		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
+		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printResolveRunFailure(err, stderr)
 		return exitRunFailed
@@ -1872,7 +1880,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	}
 	ui, err := startRunUI(ctx, cockpitView, run.ID, loaded.HomeDir, runStore, stderr, req.noAgentConsole)
 	if err != nil {
-		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
+		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printResolveRunFailure(err, stderr)
 		return exitRunFailed
@@ -1882,7 +1890,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	cycleResult, err := executeResolveCycle(ctx, req, loaded, preflightResult, run.ID, session, resolvePlan, collaborators, runStore, ui)
 	if err != nil {
 		if isStopRequest(ctx, err) {
-			closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
+			closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
 			code := completeStoppedRunRecord(runStore, run.ID, notifier, stderr)
 			ui.Wait()
 			ui.Close()
@@ -1895,7 +1903,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 			printReviewIssueReport(stdout, store.StateStopped, 1, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues, stderr))
 			return exitOK
 		}
-		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
+		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		ui.Wait()
 		ui.Close()
@@ -1910,11 +1918,11 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	completed, err := runStore.CompleteRun(ctx, run.ID, outcome)
 	if err != nil {
 		ui.Close()
-		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, run.ID, runStore)
+		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
 		printResolveRunFailureAfterBatchCommit(err, stderr)
 		return exitRunFailed
 	}
-	closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, session, completed.ID, runStore)
+	closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, completed.ID, runStore)
 	publishRunOutcome(ctx, runStore, completed.ID, completed.State, cycleResult.Remaining, stderr)
 	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed)
 	// The cockpit stays on screen, read-only, until the user closes it.
@@ -2205,17 +2213,19 @@ func publishPushDecision(ctx context.Context, sink runevent.Sink, runID string, 
 
 func cyclePlanFrom(req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runID string, gitRoot string, session agent.SessionRef, resolvePlan resolveBatchPlan) daemon.CyclePlan {
 	return daemon.CyclePlan{
-		RunID:        runID,
-		Session:      session,
-		GitRoot:      gitRoot,
-		ArtifactDir:  req.artifactDir,
-		ReviewRoot:   req.reviewRoot,
-		AgentLogs:    loaded.Config.Logs.Agent,
-		SourceName:   req.source,
-		AgentName:    req.agent,
-		Runtime:      resolvePlan.runtime,
-		Verification: loaded.Config.Defaults.Verification,
-		AutoCommit:   loaded.Config.Defaults.AutoCommit,
+		RunID:           runID,
+		Session:         session,
+		GitRoot:         gitRoot,
+		ArtifactDir:     req.artifactDir,
+		ReviewRoot:      req.reviewRoot,
+		AgentLogs:       loaded.Config.Logs.Agent,
+		SourceName:      req.source,
+		AgentName:       req.agent,
+		Runtime:         resolvePlan.runtime,
+		AgentSelections: resolvePlan.agentSelections,
+		RuntimeFactory:  resolvePlan.runtimeFactory,
+		Verification:    loaded.Config.Defaults.Verification,
+		AutoCommit:      loaded.Config.Defaults.AutoCommit,
 		PullRequest: daemon.PullRequestRef{
 			Number:         preflightResult.PullRequest.Number,
 			BaseRepository: preflightResult.PullRequest.BaseRepository,
@@ -2229,19 +2239,24 @@ func cyclePlanFrom(req commandRequest, loaded roundconfig.Loaded, preflightResul
 }
 
 func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, notifier roundnotify.Notifier, stdout, stderr io.Writer) int {
-	runtime, err := runtimeForAgentWork(req, loaded.Config)
+	collaborators := newEngineCollaborators()
+	categories := reviewProfileCategories()
+	profilePreflight, err := runProfileOperationalPreflight(ctx, req, loaded.Config, categories, preflightResult.Git.Root, collaborators.runner, stderr)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
-	collaborators := newEngineCollaborators()
-	if !req.skipBranchIntegrity {
-		runtime, err = probeRuntimeSelection(ctx, req, runtime, preflightResult.Git.Root, collaborators.runner, stderr)
-		if err != nil {
-			printPreflightFailure(req.name, err, stderr)
-			return exitPreflight
-		}
+	runtime, err := runtimeForOperationalProfileRun(req, loaded.Config, categories, profilePreflight.Override)
+	if err != nil {
+		printPreflightFailure(req.name, err, stderr)
+		return exitPreflight
 	}
+	agentSelections, err := operationalAgentSelectionProfiles(loaded.Config, categories, profilePreflight.Override)
+	if err != nil {
+		printPreflightFailure(req.name, err, stderr)
+		return exitPreflight
+	}
+	runtimeFactory := operationalRuntimeFactory(req)
 	req = requestWithRuntimeSelection(req, runtime)
 
 	runStore, err := store.Open(ctx, loaded.HomeDir)
@@ -2264,29 +2279,18 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printBranchIntegrityAuditFailure(req.name, run.ID, err, stderr)
 		return exitPreflight
 	}
-	if req.skipBranchIntegrity {
-		// Bypass contract: the audit publishes before any Agent Session,
-		// including the disposable model probe, so the probe runs after Run
-		// creation. Non-interactive probe semantics apply — a rejected
-		// selection fails the audited Run instead of prompting for fallback.
-		probeReq := req
-		probeReq.noInput = true
-		runtime, err = probeRuntimeSelection(ctx, probeReq, runtime, preflightResult.Git.Root, collaborators.runner, stderr)
-		if err != nil {
-			markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
-			printPreflightFailure(req.name, err, stderr)
-			return exitPreflight
-		}
-		req = requestWithRuntimeSelection(req, runtime)
-	}
 	if err := req.reportDetachedRunCreated(run.ID); err != nil {
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printRunFailure(req.name, err, stderr)
 		return exitRunFailed
 	}
 	session := agent.SessionRefForRun(run.ID, preflightResult.Git.Root)
+	sessionForClose := session
+	if len(agentSelections) > 0 {
+		sessionForClose = agent.SessionRef{}
+	}
 	if err := rememberInteractiveDefaults(ctx, runStore, req); err != nil {
-		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
+		closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printWatchRunFailure(err, stderr)
 		return exitRunFailed
@@ -2311,7 +2315,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 	ui, err := startRunUI(ctx, cockpitView, run.ID, loaded.HomeDir, runStore, stderr, req.noAgentConsole)
 	if err != nil {
-		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
+		closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printWatchRunFailure(err, stderr)
 		return exitRunFailed
@@ -2359,7 +2363,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 			return fetchResult, err
 		}),
 		Resolver: watch.ResolveFunc(func(ctx context.Context) (watch.ResolveResult, error) {
-			return resolveWatchBatches(ctx, req, loaded, preflightResult, runtime, run.ID, session, collaborators, runStore, ui)
+			return resolveWatchBatches(ctx, req, loaded, preflightResult, runtime, agentSelections, runtimeFactory, run.ID, session, collaborators, runStore, ui)
 		}),
 		CheckSource: watch.CheckFunc(func(ctx context.Context, headSHA string) (watch.HeadCheckState, error) {
 			return watchHeadCheck(ctx, reviewsource.HeadCheckRequest{
@@ -2392,11 +2396,11 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	completed, completeErr := runStore.CompleteRun(completeCtx, run.ID, terminal)
 	if completeErr != nil {
 		ui.Close()
-		closeAgentSession(ctx, collaborators.runner, runtime, session, run.ID, runStore)
+		closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, run.ID, runStore)
 		printRunFailure(req.name, completeErr, stderr)
 		return exitRunFailed
 	}
-	closeAgentSession(completeCtx, collaborators.runner, runtime, session, completed.ID, runStore)
+	closeAgentSession(completeCtx, collaborators.runner, runtime, sessionForClose, completed.ID, runStore)
 	publishRunOutcome(completeCtx, runStore, completed.ID, completed.State, result.Remaining, stderr)
 	notifyTerminalOutcome(completeCtx, runStore, notifier, stderr, completed)
 	// The cockpit stays on screen, read-only, until the user closes it.
@@ -2646,7 +2650,7 @@ func fetchWatchRound(ctx context.Context, req commandRequest, loaded roundconfig
 // next fetched Round re-downloads their still-open Review Source threads
 // as fresh occurrences. Progress means the cycle settled at least one
 // selected issue, so the watch loop can stop Rounds that change nothing.
-func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runtime agent.RuntimeSpec, runID string, session agent.SessionRef, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (watch.ResolveResult, error) {
+func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, runtime agent.RuntimeSpec, agentSelections daemon.AgentSelectionProfiles, runtimeFactory daemon.AgentRuntimeFactory, runID string, session agent.SessionRef, collaborators engineCollaborators, runStore *store.Store, ui *runUI) (watch.ResolveResult, error) {
 	resolvePlan, err := prepareResolveBatch(ctx, req, loaded, preflightResult)
 	if err != nil {
 		var noArtifacts rounds.NoCompatibleArtifactsError
@@ -2656,6 +2660,8 @@ func resolveWatchBatches(ctx context.Context, req commandRequest, loaded roundco
 		return watch.ResolveResult{}, err
 	}
 	resolvePlan.runtime = runtime
+	resolvePlan.agentSelections = agentSelections
+	resolvePlan.runtimeFactory = runtimeFactory
 	result, err := executeResolveCycle(ctx, req, loaded, preflightResult, runID, session, resolvePlan, collaborators, runStore, ui)
 	if err != nil {
 		return watch.ResolveResult{}, err
@@ -2961,6 +2967,8 @@ func parseOperationalCommand(name string, args []string, config roundconfig.Conf
 func recordSelectionFlagPresence(fs *flag.FlagSet, req *commandRequest) {
 	fs.Visit(func(flag *flag.Flag) {
 		switch flag.Name {
+		case "agent":
+			req.agentSet = true
 		case "model":
 			req.modelSet = true
 		case "reasoning-effort":
@@ -3642,7 +3650,7 @@ terminal state or the command is interrupted.
 
 Options:
   --follow  Continue after replay and exit after the terminal event drains
-  --filter  Comma-separated categories: task-status,batch,verification,outcome
+  --filter  Comma-separated categories: task-status,batch,verification,outcome,agent-selection
 `
 	case "attach":
 		return `Usage:
@@ -3823,6 +3831,100 @@ Options:
 		return implementUsage
 	case "settle":
 		return settleUsage
+	case "release":
+		return `Usage:
+  roundfix release plan [--from <tag>] [--to <revision>] [--impact <none|patch|minor|major> --reason <text>] [--format <text|json>]
+
+Commands:
+  plan  Analyze committed changes and propose the next semantic version.
+
+Release planning is read-only: it creates no Run, reads no Roundfix config,
+contacts no external service, and never edits files, refs, tags, packages,
+releases, remotes, or configuration.
+`
+	case "release plan":
+		return `Usage:
+  roundfix release plan [--from <tag>] [--to <revision>] [--impact <none|patch|minor|major> --reason <text>] [--format <text|json>]
+
+Builds a read-only Release Plan from a stable vMAJOR.MINOR.PATCH base through
+a committed target revision. --from defaults to the latest reachable stable
+tag; --to defaults to committed HEAD.
+
+Decision states:
+  ready                           Patch release can proceed without version approval.
+  approval_required               Minor, major, or breaking version decision needs approval.
+  manual_classification_required  Ambiguous commits need --impact and --reason.
+  no_release                      Maintenance-only changes require no release.
+
+Exit codes:
+  0  ready or no_release
+  2  invalid flags, dirty tree, invalid range, or repository failure
+  3  approval_required or manual_classification_required
+
+Options:
+  --from    Stable release tag to use as the base, for example v1.2.3
+  --to      Target revision to analyze; defaults to HEAD
+  --impact  Manual impact for ambiguous changes: none, patch, minor, or major
+  --reason  Non-empty reason required with --impact
+  --format  Output format: text or json (default text)
+
+The command creates no Run, reads no Roundfix configuration, contacts no
+external service, and never mutates files, refs, tags, remotes, packages,
+releases, or configuration.
+`
+	case "profiles":
+		return `Usage:
+  roundfix profiles show [--category <category>] [--json]
+  roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--yes] [--json]
+  roundfix profiles validate [--category <category>] [--json]
+
+Commands:
+  show       Render effective Agent Selection Profiles and advisory recommendations.
+  configure  Write complete Agent Selection Profiles after validation and confirmation.
+  validate   Prove effective Agent Selection Profiles through disposable sessions.
+
+Profile recommendations are advisory. They never route selections or mutate
+configuration unless configure is explicitly invoked and confirmed.
+`
+	case "profiles show":
+		return `Usage:
+  roundfix profiles show [--category <category>] [--json]
+
+Renders the effective Agent Selection Profile source, Preferred Selection,
+Fallback Chain, and advisory top-five recommendations for one category or all
+categories. Recommendations are read-only guidance and never change routing.
+
+Options:
+  --category  Agent Work Category: general, backend, frontend, data, infra, docs, test, chore, qa, or review
+  --json      Print roundfix/profiles/v1 JSON
+`
+	case "profiles configure":
+		return `Usage:
+  roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--yes] [--json]
+
+Writes complete Agent Selection Profiles to User Config or Project Config.
+Without --file, collects one profile through Interactive Input, shows the
+normalized profile and target scope, then asks for confirmation before writing.
+
+Options:
+  --scope    Required config scope: user or project
+  --file     Strict profile fragment YAML; omitted opens Interactive Input
+  --dry-run  Validate and render the normalized result without writing
+  --yes      Write without confirmation after validation
+  --json     Print deterministic JSON report
+`
+	case "profiles validate":
+		return `Usage:
+  roundfix profiles validate [--category <category>] [--json]
+
+Read-only validation resolves effective profiles, deduplicates exact Agent
+Selections, proves each distinct tuple through a disposable ACP Runtime session,
+and closes every disposable session on success or error.
+
+Options:
+  --category  Agent Work Category: general, backend, frontend, data, infra, docs, test, chore, qa, or review
+  --json      Print deterministic validation JSON
+`
 	case "archive":
 		return archiveUsage
 	case "stop":

@@ -1,0 +1,2 @@
+roundfix: profiles failed: unknown profile category "unknown"; supported values: general, backend, frontend, data, infra, docs, test, chore, qa, review
+Run 'roundfix profiles --help' for usage.

@@ -146,11 +146,11 @@ func TestReviewCleanTreeRefusalPrecedesAutoIntegration(t *testing.T) {
 	}
 }
 
-// The bypass audit must publish before the disposable Agent Model probe:
-// a probe failure after the audit fails the audited Run, and an audit
-// publish failure prevents any probe from starting an Agent Session.
-func TestBranchIntegrityBypassAuditPrecedesModelProbe(t *testing.T) {
-	t.Run("probe failure still leaves the audit published", func(t *testing.T) {
+// Profile proof runs before the bypass audit and every Run mutation boundary:
+// a proof failure publishes no audit and creates no Run, while an audit publish
+// failure happens only after the configured review profile has been proven.
+func TestBranchIntegrityBypassAuditFollowsProfileProof(t *testing.T) {
+	t.Run("proof failure prevents audit and Run creation", func(t *testing.T) {
 		homeDir, repoDir := withReviewGitWorkspace(t)
 		persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 		withRealReviewPreflight(t, repoDir, true)
@@ -166,16 +166,16 @@ func TestBranchIntegrityBypassAuditPrecedesModelProbe(t *testing.T) {
 		if code != exitPreflight {
 			t.Fatalf("expected probe failure exit 2, got %d stderr=%q", code, stderr.String())
 		}
-		if len(comments.calls) != 1 {
-			t.Fatalf("expected the bypass audit to publish before the probe, got %#v", comments.calls)
+		if len(comments.calls) != 0 {
+			t.Fatalf("expected profile proof failure before bypass audit, got %#v", comments.calls)
 		}
 		if len(runner.probeRequests) == 0 {
-			t.Fatalf("expected the probe to run after the audit")
+			t.Fatalf("expected profile proof to run before the audit")
 		}
-		assertRunCount(t, store.DatabasePath(homeDir), 1)
+		assertNoRunDatabase(t, homeDir)
 	})
 
-	t.Run("audit publish failure prevents the probe", func(t *testing.T) {
+	t.Run("audit publish failure follows successful proof", func(t *testing.T) {
 		_, repoDir := withReviewGitWorkspace(t)
 		persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 		withRealReviewPreflight(t, repoDir, true)
@@ -191,8 +191,11 @@ func TestBranchIntegrityBypassAuditPrecedesModelProbe(t *testing.T) {
 		if code != exitPreflight {
 			t.Fatalf("expected audit publish failure exit 2, got %d stderr=%q", code, stderr.String())
 		}
-		if len(runner.probeRequests) != 0 {
-			t.Fatalf("expected no Agent Session probe after audit publish failure, got %d", len(runner.probeRequests))
+		if len(runner.probeRequests) != 2 {
+			t.Fatalf("expected successful review profile preferred and fallback proof before audit failure, got %#v", runner.probeRequests)
+		}
+		if runner.calls != 0 {
+			t.Fatalf("audit failure must prevent durable Agent work, got %d call(s)", runner.calls)
 		}
 	})
 }

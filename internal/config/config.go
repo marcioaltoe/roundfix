@@ -46,6 +46,7 @@ const (
 type Config struct {
 	Defaults     Defaults
 	Runtimes     Runtimes
+	Profiles     Profiles
 	ReviewSource ReviewSource
 	Watch        Watch
 	Implement    Implement
@@ -202,6 +203,7 @@ func (duration *durationValue) UnmarshalYAML(node *yaml.Node) error {
 type configOverlay struct {
 	Defaults     *defaultsOverlay     `yaml:"defaults"`
 	Runtimes     *runtimesOverlay     `yaml:"runtimes"`
+	Profiles     *profilesOverlay     `yaml:"profiles"`
 	ReviewSource *reviewSourceOverlay `yaml:"review_source"`
 	Watch        *watchOverlay        `yaml:"watch"`
 	Implement    *implementOverlay    `yaml:"implement"`
@@ -452,7 +454,7 @@ var deprecatedConfigKeys = []deprecatedConfigKey{
 	{
 		path:        []string{"defaults", "model"},
 		name:        "defaults.model",
-		replacement: "runtimes.<runtime>.model",
+		replacement: "profiles.<category>.preferred.model",
 	},
 	{
 		path:        []string{"resolve", "concurrent"},
@@ -501,9 +503,10 @@ func Builtin() Config {
 				ReasoningEffort: defaultClaudeReasoningEffort,
 			},
 		},
+		Profiles: builtinProfiles(),
 		ReviewSource: ReviewSource{
 			Name:            defaultReviewSource,
-			IncludeNitpicks: true,
+			IncludeNitpicks: false,
 		},
 		Watch: Watch{
 			UntilClean:       true,
@@ -561,13 +564,13 @@ func Load(opts LoadOptions) (Loaded, error) {
 		UserConfigPath: filepath.Join(homeDir, userConfigRelPath),
 	}
 	warnings := newDeprecatedConfigWarnings(opts.Stderr)
-	if err := applyConfigFile(&loaded.Config, loaded.UserConfigPath, warnings); err != nil {
+	if err := applyConfigFile(&loaded.Config, loaded.UserConfigPath, warnings, ProfileSourceUser); err != nil {
 		return Loaded{}, err
 	}
 
 	if loaded.GitRoot != "" {
 		loaded.ProjectConfigPath = filepath.Join(loaded.GitRoot, projectConfigName)
-		if err := applyConfigFile(&loaded.Config, loaded.ProjectConfigPath, warnings); err != nil {
+		if err := applyConfigFile(&loaded.Config, loaded.ProjectConfigPath, warnings, ProfileSourceProject); err != nil {
 			return Loaded{}, err
 		}
 	}
@@ -627,23 +630,60 @@ func DefaultConfigYAML() string {
 # Project Config: <repo>/.roundfixrc.yml
 
 defaults:
-  agent: %s
+  # false keeps each ACP Runtime's normal sandbox or permission mode.
   agent_full_access: %t
+  # Verification command for review Batches; Spec Tasks use their task file commands.
   verification: %s
   # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
   artifact_dir: ""
   auto_commit: %t
 
-runtimes:
-  codex:
-    model: %s
-    reasoning_effort: %s
-  claude:
-    model: %s
-    reasoning_effort: %s
-  opencode:
-    model: %q
-    reasoning_effort: %q
+profiles:
+  general:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
+  backend:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
+  frontend:
+    preferred:
+      runtime: claude
+      model: claude-fable-5
+      reasoning_effort: medium
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-sol
+        reasoning_effort: high
+  qa:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
+  review:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
 
 specs:
   # Directory holding Spec folders; relative paths resolve against the repository root.
@@ -655,9 +695,11 @@ worktree:
   # Maximum concurrent Task Worktrees for spec Runs; 1 keeps sequential behavior.
   concurrency: %d
   # Repository-relative untracked files copied into each Run Worktree.
+  # Empty copies no files.
   copy: []
   # Command run once after copy before Agent work; empty disables bootstrap.
   bootstrap: ""
+  # Maximum time allowed for each worktree bootstrap command.
   bootstrap_timeout: %s
 
 store:
@@ -666,6 +708,7 @@ store:
 
 review_source:
   name: %s
+  # false excludes CodeRabbit findings whose severity is nitpick.
   include_nitpicks: %t
 
 watch:
@@ -698,16 +741,9 @@ budget:
 resolve:
   batch_size: %d
 `,
-		config.Defaults.Agent,
 		config.Defaults.AgentFullAccess,
 		config.Defaults.Verification,
 		config.Defaults.AutoCommit,
-		config.Runtimes.Codex.Model,
-		defaultConfigString(config.Runtimes.Codex.ReasoningEffort),
-		config.Runtimes.Claude.Model,
-		defaultConfigString(config.Runtimes.Claude.ReasoningEffort),
-		config.Runtimes.OpenCode.Model,
-		config.Runtimes.OpenCode.ReasoningEffort,
 		config.Specs.Root,
 		config.Worktree.Location,
 		config.Worktree.Concurrency,
@@ -731,16 +767,12 @@ resolve:
 	)
 }
 
-func defaultConfigString(value string) string {
-	if value == "" {
-		return `""`
-	}
-	return value
-}
-
 func Validate(config Config) error {
 	if config.Defaults.Agent != "" && !isSupportedAgent(config.Defaults.Agent) {
 		return fmt.Errorf("defaults.agent %q is invalid; supported values: codex, claude, opencode", config.Defaults.Agent)
+	}
+	if err := validateProfiles(config.Profiles); err != nil {
+		return err
 	}
 	if strings.TrimSpace(config.Defaults.Verification) == "" {
 		return errors.New("defaults.verification must not be empty")
@@ -1021,7 +1053,7 @@ func ResolveWorktreeLocation(location string, gitRoot string, homeDir string) (s
 	return resolved, nil
 }
 
-func applyConfigFile(config *Config, path string, warnings *deprecatedConfigWarnings) error {
+func applyConfigFile(config *Config, path string, warnings *deprecatedConfigWarnings, source ProfileSource) error {
 	content, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
@@ -1039,6 +1071,11 @@ func applyConfigFile(config *Config, path string, warnings *deprecatedConfigWarn
 		return fmt.Errorf("parse config %q: %w", path, err)
 	}
 	stripDeprecatedConfigKeys(&document, warnings)
+	hasProfiles := configHasProfilesSection(&document)
+	hasLegacyRuntimeDefaults := configHasLegacyRuntimeDefaults(&document)
+	if hasProfiles && hasLegacyRuntimeDefaults {
+		return fmt.Errorf("parse config %q: %w", path, profileSchemaConflictError(source))
+	}
 	cleaned, err := encodeYAMLNode(&document)
 	if err != nil {
 		return fmt.Errorf("parse config %q: %w", path, err)
@@ -1054,6 +1091,11 @@ func applyConfigFile(config *Config, path string, warnings *deprecatedConfigWarn
 		return fmt.Errorf("parse config %q: %w", path, err)
 	}
 	applyOverlay(config, overlay)
+	if overlay.Profiles != nil {
+		applyProfilesOverlay(config, overlay.Profiles, source)
+	} else if hasLegacyRuntimeDefaults {
+		applyLegacyRuntimeProfiles(config, source)
+	}
 	return nil
 }
 

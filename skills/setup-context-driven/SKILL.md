@@ -5,7 +5,7 @@ disable-model-invocation: true
 metadata:
   category: setup
   tags: [workflow, prd, issues, planning, triage, repository-context, agents]
-  version: 0.8.0
+  version: 0.8.1
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---

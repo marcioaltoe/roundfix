@@ -110,6 +110,24 @@ func TestTimelineGutterAlignsAcrossKinds(t *testing.T) {
 	}
 }
 
+func TestTimelineSelectionProjectionErrorFallsBackToPersistedSummary(t *testing.T) {
+	startedAt := time.Date(2026, 7, 5, 12, 0, 5, 0, time.UTC)
+	entries := timelineJournal(runevent.RunEvent{
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonAgentSelectionActive,
+		Summary: "Agent Selection active from legacy summary.",
+		Time:    startedAt,
+		Payload: []byte(`{"attempt":1}`),
+	})
+
+	lines := renderedTimelineLines(entries)
+
+	want := "12:00:05 SELECTION Agent Selection active from legacy summary."
+	if len(lines) != 1 || lines[0] != want {
+		t.Fatalf("timeline lines = %#v, want %q", lines, want)
+	}
+}
+
 func TestTimelineRowsStyledThroughTokensAndNoColorTwin(t *testing.T) {
 	tokens := ResolveTokens(true)
 	styled := &cockpitModel{tokens: tokens}

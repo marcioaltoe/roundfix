@@ -1,0 +1,13 @@
+...............................................................................
+----------------------------------------------------------------------
+Ran 79 tests in 10.739s
+
+OK
+rtk go test ./...
+Go test: 1443 passed in 20 packages
+PYTHONDONTWRITEBYTECODE=1 rtk python3 -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test*.py'
+PYTHONDONTWRITEBYTECODE=1 rtk python3 -c "import sys; from pathlib import Path; sys.path.insert(0, '.agents/skills/setup-context-driven/scripts'); from context_assets import load_asset_catalog; load_asset_catalog(Path('.agents/skills/setup-context-driven')); load_asset_catalog(Path('skills/setup-context-driven')); print('setup-context-driven assets: ok')"
+setup-context-driven assets: ok
+rtk go run -buildvcs=false ./cmd/roundfix skills check
+Roundfix skill check passed: roundfix, write-idea, write-prd, write-techspec, write-tasks, setup-context-driven, implement-task, implement-spec, brainstorming, council, business-analyst, archive-spec, qa-gate, evidence-gate
+rtk go build -buildvcs=false -ldflags "-X 'roundfix/internal/app.BuildCommit=25173eb-dirty' -X 'roundfix/internal/app.BuildTime=2026-07-17 01:48:36 -0300'" -o bin/roundfix ./cmd/roundfix

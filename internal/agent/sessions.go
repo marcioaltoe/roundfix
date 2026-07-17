@@ -3,6 +3,7 @@ package agent
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"strings"
 )
 
@@ -13,6 +14,25 @@ type RoundfixSession struct {
 	Name   string
 	RunID  string
 	TaskID string
+}
+
+func SessionRefForQA(runID string, workDir string) SessionRef {
+	runID = strings.TrimSpace(runID)
+	if runID == "" {
+		return SessionRef{}
+	}
+	return SessionRef{Name: "roundfix-" + runID + "-qa", WorkDir: strings.TrimSpace(workDir)}
+}
+
+func SessionRefForReview(runID string, batchNumber int, workDir string) SessionRef {
+	runID = strings.TrimSpace(runID)
+	if runID == "" {
+		return SessionRef{}
+	}
+	if batchNumber > 0 {
+		return SessionRef{Name: fmt.Sprintf("roundfix-%s-review-%03d", runID, batchNumber), WorkDir: strings.TrimSpace(workDir)}
+	}
+	return SessionRef{Name: "roundfix-" + runID + "-review", WorkDir: strings.TrimSpace(workDir)}
 }
 
 // ParseRoundfixSessions extracts roundfix-named Agent Sessions from acpx
@@ -69,8 +89,33 @@ func ParseRoundfixSessionName(name string) (RoundfixSession, bool) {
 		session.TaskID = taskID
 		return session, true
 	}
+	switch {
+	case strings.HasSuffix(rest, "-qa"):
+		rest = strings.TrimSuffix(rest, "-qa")
+	case strings.HasSuffix(rest, "-review"):
+		rest = strings.TrimSuffix(rest, "-review")
+	default:
+		if index := strings.LastIndex(rest, "-review-"); index >= 0 {
+			suffix := rest[index+len("-review-"):]
+			if len(suffix) == 3 && allDigits(suffix) {
+				rest = rest[:index]
+			}
+		}
+	}
+	if rest == "" {
+		return RoundfixSession{}, false
+	}
 	session.RunID = rest
 	return session, true
+}
+
+func allDigits(value string) bool {
+	for _, char := range value {
+		if char < '0' || char > '9' {
+			return false
+		}
+	}
+	return value != ""
 }
 
 func collectRoundfixSessionNames(value any, add func(string), allowString bool) {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"roundfix/internal/rounds"
@@ -88,12 +89,21 @@ type Runner interface {
 	EndSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error
 }
 
+type SessionPreparer interface {
+	PrepareSession(ctx context.Context, req ExecuteRequest, sink runevent.Sink) error
+}
+
+type PreparedPromptRunner interface {
+	RunPrepared(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error)
+}
+
 const (
 	ProtocolACP   = "acp"
 	ProtocolStdio = "stdio"
 
 	AgentSessionStartedStatus = "session_started"
 	AgentSessionClosedStatus  = "session_closed"
+	AgentWorkStartedStatus    = "agent_work_started"
 )
 
 // DefaultRunner dispatches real Agent work through acpx. Now overrides the
@@ -101,7 +111,8 @@ const (
 type DefaultRunner struct {
 	Now func() time.Time
 
-	acpx *ACPXRunner
+	acpxOnce sync.Once
+	acpx     *ACPXRunner
 }
 
 type StopError struct {
@@ -308,7 +319,7 @@ func MarkBatchFailed(batch rounds.Batch, terminalReason string) error {
 }
 
 func NewDefaultRunner() *DefaultRunner {
-	return &DefaultRunner{acpx: &ACPXRunner{}}
+	return &DefaultRunner{}
 }
 
 func (runner *DefaultRunner) Probe(ctx context.Context, req ProbeRequest) error {
@@ -321,6 +332,14 @@ func (runner *DefaultRunner) ProbeFallback(ctx context.Context, runtime RuntimeS
 
 func (runner *DefaultRunner) Run(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error) {
 	return runner.acpxRunner().Run(ctx, req, sink)
+}
+
+func (runner *DefaultRunner) PrepareSession(ctx context.Context, req ExecuteRequest, sink runevent.Sink) error {
+	return runner.acpxRunner().PrepareSession(ctx, req, sink)
+}
+
+func (runner *DefaultRunner) RunPrepared(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error) {
+	return runner.acpxRunner().RunPrepared(ctx, req, sink)
 }
 
 func (runner *DefaultRunner) EndSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error {
@@ -340,10 +359,9 @@ func (runner *DefaultRunner) CancelSession(ctx context.Context, runtime RuntimeS
 }
 
 func (runner *DefaultRunner) acpxRunner() *ACPXRunner {
-	if runner.acpx == nil {
-		runner.acpx = &ACPXRunner{}
-	}
-	runner.acpx.Now = runner.Now
+	runner.acpxOnce.Do(func() {
+		runner.acpx = &ACPXRunner{Now: runner.Now}
+	})
 	return runner.acpx
 }
 

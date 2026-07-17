@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"roundfix/internal/agent"
+	roundconfig "roundfix/internal/config"
+	"roundfix/internal/rounds"
 	"roundfix/internal/runevent"
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
@@ -26,43 +28,43 @@ const taskCycleSlug = "0001-sample-feature"
 func TestTaskCommitMessageDerivesSubjectAndTrailers(t *testing.T) {
 	tests := []struct {
 		name     string
-		taskType string
+		taskType spec.TaskType
 		title    string
 		want     string
 	}{
 		{
 			name:     "default type lowercases ascii letter",
-			taskType: "backend",
+			taskType: spec.TaskTypeBackend,
 			title:    "Build the acpx invocation core",
 			want:     "feat: build the acpx invocation core\n\nRoundfix-Spec: 0003-dogfood-polish\nRoundfix-Task: task_01",
 		},
 		{
 			name:     "docs type passes through",
-			taskType: "docs",
+			taskType: spec.TaskTypeDocs,
 			title:    "Write the usage docs",
 			want:     "docs: write the usage docs\n\nRoundfix-Spec: 0003-dogfood-polish\nRoundfix-Task: task_01",
 		},
 		{
 			name:     "test type passes through",
-			taskType: "test",
+			taskType: spec.TaskTypeTest,
 			title:    "Add commit-message tests",
 			want:     "test: add commit-message tests\n\nRoundfix-Spec: 0003-dogfood-polish\nRoundfix-Task: task_01",
 		},
 		{
 			name:     "chore type passes through",
-			taskType: "chore",
+			taskType: spec.TaskTypeChore,
 			title:    "Refresh fixtures",
 			want:     "chore: refresh fixtures\n\nRoundfix-Spec: 0003-dogfood-polish\nRoundfix-Task: task_01",
 		},
 		{
 			name:     "digit first title passes through",
-			taskType: "backend",
+			taskType: spec.TaskTypeBackend,
 			title:    "2FA setup",
 			want:     "feat: 2FA setup\n\nRoundfix-Spec: 0003-dogfood-polish\nRoundfix-Task: task_01",
 		},
 		{
 			name:     "unicode first title lowercases",
-			taskType: "backend",
+			taskType: spec.TaskTypeBackend,
 			title:    "Über tracing",
 			want:     "feat: über tracing\n\nRoundfix-Spec: 0003-dogfood-polish\nRoundfix-Task: task_01",
 		},
@@ -502,6 +504,423 @@ func qaReportRelPathForTest() string {
 
 func qaReportForTest(verdict string) string {
 	return fmt.Sprintf("---\nverdict: %s\n---\n\n# QA Report\n", verdict)
+}
+
+func TestPerWorkAgentSessionMixedTaskTypesAndQA(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", title: "Backend work", taskType: string(spec.TaskTypeBackend)},
+		{id: "task_02", title: "Frontend work", taskType: string(spec.TaskTypeFrontend)},
+	})
+	runner := &selectionLifecycleRunner{
+		gitRoot: fixture.gitRoot,
+		statusByTask: map[string]spec.Status{
+			"task_01": spec.StatusCompleted,
+			"task_02": spec.StatusCompleted,
+		},
+		qaReport: qaReportForTest(spec.VerdictPass),
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.qaPlan()
+	plan.AgentSelections = selectionProfilesForTest(map[roundconfig.WorkCategory]roundconfig.AgentSelectionProfile{
+		roundconfig.CategoryBackend:  selectionProfileForTest(selectionForTest("codex", "backend-model", "high"), selectionForTest("codex", "backend-fallback", "high")),
+		roundconfig.CategoryFrontend: selectionProfileForTest(selectionForTest("claude", "frontend-model", "medium"), selectionForTest("codex", "frontend-fallback", "high")),
+		roundconfig.CategoryQA:       selectionProfileForTest(selectionForTest("codex", "qa-model", "high"), selectionForTest("codex", "qa-fallback", "high")),
+	})
+	plan.RuntimeFactory = runtimeFactoryForLifecycleTest(nil)
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if result.Completed != 2 || result.QAVerdict != spec.VerdictPass {
+		t.Fatalf("expected two completed Tasks and passing QA, got %+v", result)
+	}
+	requests := runner.runRequests()
+	if got, want := lifecycleRequestSummary(requests), []string{
+		"roundfix-" + fixture.run.ID + "-task_01|codex|backend-model",
+		"roundfix-" + fixture.run.ID + "-task_02|claude|frontend-model",
+		"roundfix-" + fixture.run.ID + "-qa|codex|qa-model",
+	}; strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("expected per-work run selections %v, got %v", want, got)
+	}
+	if got := runner.closedSessions(); strings.Join(got, "\n") != strings.Join([]string{
+		"roundfix-" + fixture.run.ID + "-task_01",
+		"roundfix-" + fixture.run.ID + "-task_02",
+		"roundfix-" + fixture.run.ID + "-qa",
+	}, "\n") {
+		t.Fatalf("expected every owned session closed once, got %v", got)
+	}
+	if got := countAgentStatusEvents(fixture.sink, agent.AgentWorkStartedStatus); got != 3 {
+		t.Fatalf("expected one agent_work_started marker per work action, got %d", got)
+	}
+}
+
+func TestAgentSelectionFallbackPublishesBeforeNextSession(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", taskType: string(spec.TaskTypeBackend)}})
+	runner := &selectionLifecycleRunner{
+		gitRoot:           fixture.gitRoot,
+		statusByTask:      map[string]spec.Status{"task_01": spec.StatusCompleted},
+		prepareErrByModel: map[string]error{"bad-model": selectionStartErrForTest("codex", "bad-model")},
+		sink:              fixture.sink,
+		progress:          fixture.progress,
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.AgentSelections = selectionProfilesForTest(map[roundconfig.WorkCategory]roundconfig.AgentSelectionProfile{
+		roundconfig.CategoryBackend: selectionProfileForTest(selectionForTest("codex", "bad-model", "high"), selectionForTest("codex", "good-model", "high")),
+	})
+	plan.RuntimeFactory = runtimeFactoryForLifecycleTest(nil)
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if result.Completed != 1 {
+		t.Fatalf("expected fallback Task to complete, got %+v", result)
+	}
+	if !runner.fallbackPreparedAfterNotification() {
+		t.Fatal("expected fallback notification event to be committed before fallback session preparation")
+	}
+	if !runner.fallbackPreparedAfterVisibleMessage() {
+		t.Fatal("expected caller-visible fallback message before fallback session preparation")
+	}
+	event := singleEventOfKind(t, fixture.sink, runevent.KindDaemonAgentSelectionFallback)
+	payload := eventPayloadMap(t, event)
+	if payload["category"] != "backend" || payload["scope_kind"] != "task" || payload["scope_id"] != "task_01" || payload["automatic"] != true {
+		t.Fatalf("unexpected fallback payload: %+v", payload)
+	}
+	if payload["fallback_index"].(float64) != 1 {
+		t.Fatalf("expected fallback index 1, got %+v", payload)
+	}
+	if got := lifecycleRequestSummary(runner.runRequests()); strings.Join(got, "\n") != "roundfix-"+fixture.run.ID+"-task_01-fallback-01|codex|good-model" {
+		t.Fatalf("expected only fallback prompt to run, got %v", got)
+	}
+}
+
+func TestCrossRuntimeFallbackUsesRuntimeFactory(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", taskType: string(spec.TaskTypeBackend)}})
+	seenSelections := []string{}
+	runner := &selectionLifecycleRunner{
+		gitRoot:           fixture.gitRoot,
+		statusByTask:      map[string]spec.Status{"task_01": spec.StatusCompleted},
+		prepareErrByModel: map[string]error{"codex-bad": selectionStartErrForTest("codex", "codex-bad")},
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.AgentSelections = selectionProfilesForTest(map[roundconfig.WorkCategory]roundconfig.AgentSelectionProfile{
+		roundconfig.CategoryBackend: selectionProfileForTest(selectionForTest("codex", "codex-bad", "high"), selectionForTest("claude", "claude-good", "medium")),
+	})
+	plan.RuntimeFactory = runtimeFactoryForLifecycleTest(&seenSelections)
+
+	_, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if got, want := strings.Join(seenSelections, ","), "codex/codex-bad/high,claude/claude-good/medium"; got != want {
+		t.Fatalf("expected runtime factory to receive preferred then cross-runtime fallback, got %q", got)
+	}
+	if got := lifecycleRequestSummary(runner.runRequests()); strings.Join(got, "\n") != "roundfix-"+fixture.run.ID+"-task_01-fallback-01|claude|claude-good" {
+		t.Fatalf("expected Claude fallback prompt, got %v", got)
+	}
+}
+
+func TestNoFallbackAfterAgentWorkStarted(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", taskType: string(spec.TaskTypeBackend)}})
+	runner := &selectionLifecycleRunner{
+		gitRoot:       fixture.gitRoot,
+		runErrByModel: map[string]error{"preferred-model": selectionStartErrForTest("codex", "preferred-model")},
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.AgentSelections = selectionProfilesForTest(map[roundconfig.WorkCategory]roundconfig.AgentSelectionProfile{
+		roundconfig.CategoryBackend: selectionProfileForTest(selectionForTest("codex", "preferred-model", "high"), selectionForTest("codex", "fallback-model", "high")),
+	})
+	plan.RuntimeFactory = runtimeFactoryForLifecycleTest(nil)
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if result.Failed != 1 {
+		t.Fatalf("expected post-start selection-looking error to fail Task, got %+v", result)
+	}
+	if got := lifecycleRequestSummary(runner.prepareRequests()); strings.Join(got, "\n") != "roundfix-"+fixture.run.ID+"-task_01|codex|preferred-model" {
+		t.Fatalf("expected no fallback preparation after agent_work_started, got %v", got)
+	}
+	if events := eventsOfKind(fixture.sink, runevent.KindDaemonAgentSelectionFallback); len(events) != 0 {
+		t.Fatalf("expected no fallback event after work started, got %+v", events)
+	}
+}
+
+func TestAgentSessionOwnerCleanup(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", taskType: string(spec.TaskTypeBackend)}})
+	runner := &selectionLifecycleRunner{
+		gitRoot: fixture.gitRoot,
+		prepareErrByModel: map[string]error{
+			"bad-preferred": selectionStartErrForTest("codex", "bad-preferred"),
+			"bad-fallback":  selectionStartErrForTest("claude", "bad-fallback"),
+		},
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.AgentSelections = selectionProfilesForTest(map[roundconfig.WorkCategory]roundconfig.AgentSelectionProfile{
+		roundconfig.CategoryBackend: selectionProfileForTest(selectionForTest("codex", "bad-preferred", "high"), selectionForTest("claude", "bad-fallback", "medium")),
+	})
+	plan.RuntimeFactory = runtimeFactoryForLifecycleTest(nil)
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("TaskCycle returned error: %v", err)
+	}
+	if result.Failed != 1 {
+		t.Fatalf("expected exhausted selection to settle Task failed, got %+v", result)
+	}
+	if got := strings.Join(runner.closedSessions(), "\n"); got != strings.Join([]string{
+		"roundfix-" + fixture.run.ID + "-task_01",
+		"roundfix-" + fixture.run.ID + "-task_01-fallback-01",
+	}, "\n") {
+		t.Fatalf("expected failed preferred and fallback sessions closed, got %q", got)
+	}
+	event := singleEventOfKind(t, fixture.sink, runevent.KindDaemonAgentSelectionExhausted)
+	payload := eventPayloadMap(t, event)
+	attempts, ok := payload["attempts"].([]any)
+	if !ok || len(attempts) != 2 {
+		t.Fatalf("expected exhausted event to list two attempts, got %+v", payload)
+	}
+	if !strings.Contains(result.Outcomes[0].Reason, "bad-preferred") || !strings.Contains(result.Outcomes[0].Reason, "bad-fallback") || !strings.Contains(result.Outcomes[0].Reason, "roundfix profiles validate --category backend") {
+		t.Fatalf("expected failure reason to list attempts and recovery, got %q", result.Outcomes[0].Reason)
+	}
+}
+
+func TestAgentSessionOwnerCleanupClosesOnCancellation(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", taskType: string(spec.TaskTypeBackend)}})
+	runner := &selectionLifecycleRunner{
+		gitRoot:       fixture.gitRoot,
+		runErrByModel: map[string]error{"preferred-model": agent.StopError{Err: context.Canceled}},
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.AgentSelections = selectionProfilesForTest(map[roundconfig.WorkCategory]roundconfig.AgentSelectionProfile{
+		roundconfig.CategoryBackend: selectionProfileForTest(selectionForTest("codex", "preferred-model", "high"), selectionForTest("codex", "fallback-model", "high")),
+	})
+	plan.RuntimeFactory = runtimeFactoryForLifecycleTest(nil)
+
+	_, err := engine.TaskCycle(context.Background(), plan)
+
+	if !agent.IsStopError(err) {
+		t.Fatalf("expected StopError from canceled Agent work, got %v", err)
+	}
+	if got := strings.Join(runner.closedSessions(), "\n"); got != "roundfix-"+fixture.run.ID+"-task_01" {
+		t.Fatalf("expected active session closed on cancellation, got %q", got)
+	}
+	if got := lifecycleRequestSummary(runner.prepareRequests()); strings.Join(got, "\n") != "roundfix-"+fixture.run.ID+"-task_01|codex|preferred-model" {
+		t.Fatalf("expected cancellation not to prepare fallback, got %v", got)
+	}
+}
+
+type selectionLifecycleRunner struct {
+	mu                                   sync.Mutex
+	gitRoot                              string
+	statusByTask                         map[string]spec.Status
+	qaReport                             string
+	prepareErrByModel                    map[string]error
+	runErrByModel                        map[string]error
+	closeErr                             error
+	prepared                             []agent.ExecuteRequest
+	ran                                  []agent.ExecuteRequest
+	closed                               []agent.SessionRef
+	sink                                 *captureEventSink
+	progress                             *bytes.Buffer
+	sawFallbackNotificationBeforePrepare bool
+	sawFallbackMessageBeforePrepare      bool
+}
+
+func (runner *selectionLifecycleRunner) Probe(context.Context, agent.ProbeRequest) error { return nil }
+
+func (runner *selectionLifecycleRunner) PrepareSession(_ context.Context, req agent.ExecuteRequest, _ runevent.Sink) error {
+	runner.mu.Lock()
+	runner.prepared = append(runner.prepared, req)
+	if strings.Contains(req.Session.Name, "fallback") {
+		runner.sawFallbackNotificationBeforePrepare = runner.sink == nil || len(eventsOfKind(runner.sink, runevent.KindDaemonAgentSelectionFallback)) > 0
+		runner.sawFallbackMessageBeforePrepare = runner.progress == nil || strings.Contains(runner.progress.String(), "activating fallback")
+	}
+	err := runner.prepareErrByModel[req.Runtime.Model]
+	runner.mu.Unlock()
+	return err
+}
+
+func (runner *selectionLifecycleRunner) Run(ctx context.Context, req agent.ExecuteRequest, sink runevent.Sink) (agent.ExecuteResult, error) {
+	return runner.RunPrepared(ctx, req, sink)
+}
+
+func (runner *selectionLifecycleRunner) RunPrepared(_ context.Context, req agent.ExecuteRequest, _ runevent.Sink) (agent.ExecuteResult, error) {
+	runner.mu.Lock()
+	runner.ran = append(runner.ran, req)
+	err := runner.runErrByModel[req.Runtime.Model]
+	runner.mu.Unlock()
+	if err != nil {
+		return agent.ExecuteResult{LogPath: req.LogPath}, err
+	}
+	taskID := taskIDFromPrompt(req.Prompt)
+	if taskID == "" && strings.Contains(req.Prompt, "Spec QA gate") {
+		if runner.qaReport != "" {
+			reportPath := filepath.Join(qaSpecDirFromPromptForTest(req.Prompt, runner.gitRoot), "qa", qaReportNameForTest)
+			if err := os.MkdirAll(filepath.Dir(reportPath), 0o755); err != nil {
+				return agent.ExecuteResult{}, err
+			}
+			if err := os.WriteFile(reportPath, []byte(runner.qaReport), 0o644); err != nil {
+				return agent.ExecuteResult{}, err
+			}
+		}
+		return agent.ExecuteResult{LogPath: req.LogPath}, nil
+	}
+	if taskID == "" && len(req.Batch.Issues) > 0 {
+		for _, issue := range req.Batch.Issues {
+			if err := rounds.SetIssueStatus(issue.Path, rounds.StatusResolved, "", ""); err != nil {
+				return agent.ExecuteResult{}, err
+			}
+		}
+		return agent.ExecuteResult{LogPath: req.LogPath}, nil
+	}
+	if status, ok := runner.statusByTask[taskID]; ok {
+		if err := spec.SetStatus(taskPathFromPromptForTest(req.Prompt, runner.gitRoot, taskCycleSlug, taskID), status); err != nil {
+			return agent.ExecuteResult{}, err
+		}
+	}
+	return agent.ExecuteResult{LogPath: req.LogPath}, nil
+}
+
+func (runner *selectionLifecycleRunner) EndSession(_ context.Context, _ agent.RuntimeSpec, session agent.SessionRef) error {
+	runner.mu.Lock()
+	defer runner.mu.Unlock()
+	runner.closed = append(runner.closed, session)
+	return runner.closeErr
+}
+
+func (runner *selectionLifecycleRunner) prepareRequests() []agent.ExecuteRequest {
+	runner.mu.Lock()
+	defer runner.mu.Unlock()
+	return append([]agent.ExecuteRequest(nil), runner.prepared...)
+}
+
+func (runner *selectionLifecycleRunner) runRequests() []agent.ExecuteRequest {
+	runner.mu.Lock()
+	defer runner.mu.Unlock()
+	return append([]agent.ExecuteRequest(nil), runner.ran...)
+}
+
+func (runner *selectionLifecycleRunner) closedSessions() []string {
+	runner.mu.Lock()
+	defer runner.mu.Unlock()
+	sessions := make([]string, 0, len(runner.closed))
+	for _, session := range runner.closed {
+		sessions = append(sessions, session.Name)
+	}
+	return sessions
+}
+
+func (runner *selectionLifecycleRunner) fallbackPreparedAfterNotification() bool {
+	runner.mu.Lock()
+	defer runner.mu.Unlock()
+	return runner.sawFallbackNotificationBeforePrepare
+}
+
+func (runner *selectionLifecycleRunner) fallbackPreparedAfterVisibleMessage() bool {
+	runner.mu.Lock()
+	defer runner.mu.Unlock()
+	return runner.sawFallbackMessageBeforePrepare
+}
+
+func selectionForTest(runtime string, model string, effort string) roundconfig.AgentSelection {
+	return roundconfig.AgentSelection{Runtime: runtime, Model: model, ReasoningEffort: effort}
+}
+
+func selectionProfileForTest(preferred roundconfig.AgentSelection, fallbacks ...roundconfig.AgentSelection) roundconfig.AgentSelectionProfile {
+	return roundconfig.AgentSelectionProfile{Preferred: preferred, Fallbacks: append([]roundconfig.AgentSelection(nil), fallbacks...)}
+}
+
+func selectionProfilesForTest(profiles map[roundconfig.WorkCategory]roundconfig.AgentSelectionProfile) AgentSelectionProfiles {
+	resolved := AgentSelectionProfiles{}
+	for category, profile := range profiles {
+		resolved[category] = roundconfig.ResolvedProfile{
+			Category: category,
+			Source:   roundconfig.ProfileSourceProject,
+			Profile:  profile,
+		}
+	}
+	return resolved
+}
+
+func runtimeFactoryForLifecycleTest(seen *[]string) AgentRuntimeFactory {
+	return func(selection roundconfig.AgentSelection) (agent.RuntimeSpec, error) {
+		if seen != nil {
+			*seen = append(*seen, selection.Runtime+"/"+selection.Model+"/"+selection.ReasoningEffort)
+		}
+		return agent.RuntimeSpec{
+			ID:              selection.Runtime,
+			DisplayName:     selection.Runtime,
+			Model:           selection.Model,
+			ReasoningEffort: selection.ReasoningEffort,
+		}, nil
+	}
+}
+
+func selectionStartErrForTest(runtime string, model string) error {
+	return &agent.SelectionPreflightError{
+		Runtime:         runtime,
+		Model:           model,
+		ReasoningEffort: "high",
+		Operation:       "set model",
+		Err:             errors.New("adapter rejected " + model),
+	}
+}
+
+func lifecycleRequestSummary(requests []agent.ExecuteRequest) []string {
+	summary := make([]string, 0, len(requests))
+	for _, req := range requests {
+		summary = append(summary, req.Session.Name+"|"+req.Runtime.ID+"|"+req.Runtime.Model)
+	}
+	return summary
+}
+
+func countAgentStatusEvents(sink *captureEventSink, status string) int {
+	count := 0
+	for _, event := range eventsOfKind(sink, runevent.KindAgentStatus) {
+		var payload struct {
+			Status string `json:"status"`
+		}
+		if json.Unmarshal(event.Payload, &payload) == nil && payload.Status == status {
+			count++
+		}
+	}
+	return count
+}
+
+func singleEventOfKind(t *testing.T, sink *captureEventSink, kind runevent.Kind) runevent.RunEvent {
+	t.Helper()
+	events := eventsOfKind(sink, kind)
+	if len(events) != 1 {
+		t.Fatalf("expected one %s event, got %d: %+v", kind, len(events), events)
+	}
+	return events[0]
+}
+
+func eventsOfKind(sink *captureEventSink, kind runevent.Kind) []runevent.RunEvent {
+	if sink == nil {
+		return nil
+	}
+	var events []runevent.RunEvent
+	for _, event := range sink.snapshot() {
+		if event.Kind == kind {
+			events = append(events, event)
+		}
+	}
+	return events
 }
 
 // taskFakeVerifier records every verification command verbatim and fails

@@ -1,0 +1,100 @@
+{
+  "schema": "roundfix/profiles/v1",
+  "profiles": [
+    {
+      "category": "frontend",
+      "source": "built-in",
+      "inherited_from": "",
+      "recommendation_source": "frontend",
+      "preferred": {
+        "runtime": "claude",
+        "model": "claude-fable-5",
+        "reasoning_effort": "medium"
+      },
+      "fallbacks": [
+        {
+          "runtime": "codex",
+          "model": "gpt-5.6-sol",
+          "reasoning_effort": "high"
+        }
+      ],
+      "recommendations": [
+        {
+          "category": "frontend",
+          "rank": 1,
+          "selection": {
+            "runtime": "claude",
+            "model": "claude-fable-5",
+            "reasoning_effort": "medium"
+          },
+          "benchmark": "DeepSWE v1.1",
+          "result_percent": 65,
+          "average_cost_usd": 6.09,
+          "source_as_of": "2026-07-16",
+          "rationale": "Preferred balanced frontend profile; task-fit is qualitative because the benchmark has no UI-specific slice.",
+          "category_specific": false
+        },
+        {
+          "category": "frontend",
+          "rank": 2,
+          "selection": {
+            "runtime": "codex",
+            "model": "gpt-5.6-sol",
+            "reasoning_effort": "high"
+          },
+          "benchmark": "DeepSWE v1.1",
+          "result_percent": 69,
+          "average_cost_usd": 3.47,
+          "source_as_of": "2026-07-16",
+          "rationale": "Strong cross-runtime fallback for implementation and integration correctness.",
+          "category_specific": false
+        },
+        {
+          "category": "frontend",
+          "rank": 3,
+          "selection": {
+            "runtime": "claude",
+            "model": "claude-opus-4-8",
+            "reasoning_effort": "high"
+          },
+          "benchmark": "DeepSWE v1.1",
+          "result_percent": 52,
+          "average_cost_usd": 4.28,
+          "source_as_of": "2026-07-16",
+          "rationale": "Design-heavy alternative retained for repositories that have validated Opus; general benchmark result is weaker.",
+          "category_specific": false
+        },
+        {
+          "category": "frontend",
+          "rank": 4,
+          "selection": {
+            "runtime": "codex",
+            "model": "gpt-5.6-terra",
+            "reasoning_effort": "max"
+          },
+          "benchmark": "DeepSWE v1.1",
+          "result_percent": 70,
+          "average_cost_usd": 4.95,
+          "source_as_of": "2026-07-16",
+          "rationale": "Quality-focused Codex alternative when visual specialization is less important than repository completion.",
+          "category_specific": false
+        },
+        {
+          "category": "frontend",
+          "rank": 5,
+          "selection": {
+            "runtime": "codex",
+            "model": "gpt-5.6-luna",
+            "reasoning_effort": "max"
+          },
+          "benchmark": "DeepSWE v1.1",
+          "result_percent": 67,
+          "average_cost_usd": 3.03,
+          "source_as_of": "2026-07-16",
+          "rationale": "Cost-conscious option for small, well-specified UI slices.",
+          "category_specific": false
+        }
+      ]
+    }
+  ]
+}

@@ -107,6 +107,11 @@ class SpecTriageDecisionTests(unittest.TestCase):
         self.assertTrue(docs_layout_path.is_file())
         self.assertIn("docs/_inbox/", docs_layout)
         self.assertIn("docs/agents/", docs_layout)
+        self.assertIn("pending | partial | deferred | done", docs_layout)
+        self.assertIn(
+            "Set `status: done` as soon as the Spec",
+            docs_layout,
+        )
 
         manifest = json.loads(
             (repo / "docs" / "agents" / "setup-context.json").read_text(

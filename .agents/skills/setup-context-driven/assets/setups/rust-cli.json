@@ -22,7 +22,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "da96f9222418f9c5b27aa20782ba10ea4773cec39bc2026a5dfd423c997cdb9a"
+      "contentDigest": "5b91440b8e4993dbdd294fa839ee7e0a330883072d01276967a36f38acceece7"
     },
     {
       "name": "brainstorming",
@@ -66,7 +66,7 @@
       "name": "grilling",
       "path": "skills/01-discovery/grilling",
       "source": {},
-      "contentDigest": "5a35925d03a391bcfa46940868b649b72dba89ec9c19525e785bbb6bd3a7f478"
+      "contentDigest": "44331dda57f461db4fec3f2efb6ddabe7aaaa0a57ae0f88a883bc61aed8a0587"
     },
     {
       "name": "the-fool",
@@ -125,7 +125,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "586bda2339d76d319e4b5be5648fa66523f3e26acbf8d39fd9777b34cf82236a"
+      "contentDigest": "7bb9f37cf08a6d48bfa5c41a821d864f5d4a234adaf63be46b887d226d0c4f12"
     },
     {
       "name": "clap-rust",

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "roundfix.release-plan/v1",
+  "state": "no_release",
+  "base": {
+    "tag": "v0.4.1",
+    "version": "v0.4.1",
+    "commitSHA": "37646081289c4e150036f7af5d78ac518a74fcb5"
+  },
+  "target": {
+    "name": "HEAD",
+    "commitSHA": "5f12bf2103930fb5d8ad653ccbcda89b1c307ab2"
+  },
+  "classification": {
+    "source": "maintenance_only",
+    "impact": "none",
+    "breaking": false,
+    "manualClassificationRequired": false
+  },
+  "approval": {
+    "required": false,
+    "increment": ""
+  },
+  "changes": [
+    {
+      "commitSHA": "cca3343b3b89bfeec24f8be5bcdfff6bd2a45ab0",
+      "subject": "docs: record release plan evidence",
+      "conventionalType": "docs",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "a198d78f10d89dde16b7480e1eda91b25166e62b",
+      "subject": "test: add release fixture",
+      "conventionalType": "test",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    },
+    {
+      "commitSHA": "5f12bf2103930fb5d8ad653ccbcda89b1c307ab2",
+      "subject": "ci: verify release plan",
+      "conventionalType": "ci",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": false
+    }
+  ]
+}

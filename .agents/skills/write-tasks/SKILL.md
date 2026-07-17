@@ -16,7 +16,7 @@ Turn `docs/specs/<slug>/_prd.md` (and `_techspec.md` when present) into the exec
 
 ## Preconditions
 
-`$ARGUMENTS` names the spec. `_prd.md` must exist. If `_techspec.md` is missing on a feature with real architectural surface, call that out and recommend `write-techspec` first; proceed only if the user accepts the trade-off, compensating with deeper codebase exploration before decomposing.
+`$ARGUMENTS` names the spec. `_prd.md` must exist. If `_techspec.md` is missing on a feature with real architectural surface, call that out and say `write-techspec` should run first; use `AskUserQuestion` to get explicit user acceptance before proceeding without the tech spec. Continue only after acceptance, compensating with deeper codebase exploration before decomposing.
 
 ## Ownership rules (what lives where, and why)
 
@@ -24,8 +24,8 @@ Turn `docs/specs/<slug>/_prd.md` (and `_techspec.md` when present) into the exec
 - **Status lives only in each task file's frontmatter.** `_tasks.md` owns topology, not progress — schedulers re-read task files for state.
 - **Task Type is required in every task file.** Use exactly one of `backend`,
   `frontend`, `data`, `infra`, `docs`, `test`, or `chore`. The Implement
-  Command routes Agent Selection Profiles from this value and rejects missing
-  or unknown values; never leave a placeholder or infer the type later.
+  Command consumes this value for routing and rejects missing or unknown
+  values; never leave a placeholder or infer the type later.
 - **Content references, never duplicates.** Task files point at PRD/TechSpec sections by name; a task that restates the spec goes stale the first time the spec is amended.
 - **Context entries are labeled paths.** Add `## Context` only when the Task
   needs specific instruction or interface paths beyond the standard Spec
@@ -46,12 +46,12 @@ Turn `docs/specs/<slug>/_prd.md` (and `_techspec.md` when present) into the exec
 
 ### Task Type selection
 
-Choose the type from the Task's dominant delivered outcome, not from the skill,
-runtime, or Agent Model expected to implement it:
+Choose the type from the Task's dominant delivered outcome, not from who will
+implement it, the tool used, or configuration choices:
 
-- `backend` — CLI, daemon, service, API, domain, or core runtime behavior;
+- `backend` — CLI, daemon, service, API, domain, or core application behavior;
 - `frontend` — browser UI, TUI, visual, interaction, accessibility, or UX behavior;
-- `data` — persistence model, query, migration, import, or data-pipeline behavior;
+- `data` — persistence schema, query, migration, import, or data-pipeline behavior;
 - `infra` — build, CI/CD, packaging, deployment, environment, or operational infrastructure;
 - `docs` — documentation-only behavior or durable knowledge artifacts;
 - `test` — test harness, fixture, evaluation, or coverage work without a product behavior change;

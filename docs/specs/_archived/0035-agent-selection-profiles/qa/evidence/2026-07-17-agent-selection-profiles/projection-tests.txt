@@ -1,0 +1,3 @@
+ok  	roundfix/internal/runevent	0.347s
+ok  	roundfix/internal/tui	0.544s
+ok  	roundfix/internal/cli	1.236s

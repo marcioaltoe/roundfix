@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "roundfix.release-plan/v1",
+  "state": "approval_required",
+  "base": {
+    "tag": "v1.4.2",
+    "version": "v1.4.2",
+    "commitSHA": "538e84c40b5043236444d1c213b9651482ce39e2"
+  },
+  "target": {
+    "name": "HEAD",
+    "commitSHA": "1f0a4f8fd65fa278ca2ec481480025aaf6a5c1e7"
+  },
+  "classification": {
+    "source": "conventional_commit",
+    "impact": "major",
+    "breaking": true,
+    "manualClassificationRequired": false
+  },
+  "proposedVersion": "v2.0.0",
+  "approval": {
+    "required": true,
+    "increment": "major",
+    "proposedVersion": "v2.0.0",
+    "question": "Approve the major increment to v2.0.0?"
+  },
+  "changes": [
+    {
+      "commitSHA": "1f0a4f8fd65fa278ca2ec481480025aaf6a5c1e7",
+      "subject": "feat!: remove legacy release command",
+      "conventionalType": "feat",
+      "breaking": true,
+      "automaticImpact": "major",
+      "crossesMaintenanceOnlyBoundary": true
+    }
+  ]
+}

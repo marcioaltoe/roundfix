@@ -1,0 +1,1 @@
+roundfix: release plan failed: manual impact "patch" is invalid for automatic minimum "minor": choose an impact that is at least the automatic minimum

@@ -1,7 +1,7 @@
 ---
 status: pending
 created_at: 2026-07-16
-updated_at: 2026-07-16
+updated_at: 2026-07-17
 ---
 
 # Detached watch — terminal failure notification lacked actionable context (2026-07-16)
@@ -111,6 +111,40 @@ Environment:
   the same distinction into notifications and machine-readable Run Events so monitors cannot
   interpret `0 unresolved` as a clean review.
 
+## 6. `CleanUnverified` ignored an explicit CodeRabbit approval
+
+- **Symptom / evidence**: Oraculum PR #16 Run
+  `run_20260717T071458Z_8558af5f879de4fe` resolved 24 issues, marked one invalid, passed
+  `make verify`, pushed all commits, and ended with zero unresolved issues. GitHub showed 2/2
+  checks passing, and CodeRabbit submitted an `APPROVED` review at
+  `2026-07-17T08:03:30Z`. The Run still ended as `CleanUnverified` because a Review Source
+  status-check did not appear within the grace period.
+- **Root cause**: merge-ready verification appears to depend on the provider status-check and does
+  not accept an explicit approval review as equivalent provider evidence when the check is absent.
+  The resulting outcome understates stronger evidence already available through the same GitHub
+  Review Source.
+- **Action / suggestion**: define a provider-specific evidence hierarchy. For CodeRabbit, accept a
+  review on the current head with state `APPROVED` and no unresolved provider threads as verified
+  clean evidence when the status-check is absent. Record which evidence closed verification
+  (`commit status`, `check run`, or `review approval`) in the terminal outcome.
+
+## 7. The review-artifact commit triggered a redundant, rate-limited re-review
+
+- **Symptom / evidence**: the same Oraculum watch pushed the code fixes, received CodeRabbit
+  approval, then created and pushed a separate `docs: review rounds for pr 16` commit containing
+  Roundfix review artifacts. CodeRabbit attempted another incremental review and replaced its
+  summary with `Review limit reached`, reporting a ten-minute wait. The code had already been
+  approved; only generated review documentation changed.
+- **Root cause**: the two-commit publish sequence exposes the generated review-artifact commit as a
+  new PR head after code approval. Without a provider ignore rule or a way to attach artifacts to
+  the verified code commit, the artifact-only push consumes another review cycle and can erase the
+  status signal Roundfix needs.
+- **Action / suggestion**: prevent review-artifact-only commits from requesting another provider
+  review. Options include committing settled issue artifacts with the code fix before the provider
+  re-review, configuring provider path exclusions for `docs/specs/**/reviews/**`, or teaching the
+  watch to recognize that the post-approval head differs only by Roundfix-owned artifacts. Preserve
+  the artifact commit if desired, but do not let it invalidate the verified code review.
+
 ## What worked — keep
 
 - Detached startup named the Run ID, Console Log, Attach command, and Stop command.
@@ -120,3 +154,19 @@ Environment:
   Issues without manual GitHub mutation.
 - The terminal state was `Failed`, not `Clean`; the Run outcome itself did not hide the broken
   Review Source request.
+
+## Planned resolution
+
+- Spec [0037 Terminal outcome integrity](../specs/0037-terminal-outcome-integrity/_prd.md)
+  owns finding 4: registered Agent Session cleanup, primary-before-secondary
+  diagnostics, and winner-only terminal completion.
+- Spec
+  [0039 Review Source evidence and Detached Run outcomes](../specs/0039-review-source-evidence-and-detached-outcomes/_prd.md)
+  owns findings 1–3 and 5–7: the Supervisor monitor contract, actionable
+  notification context and receipts, transient retry, unknown issue counts,
+  approval evidence, and artifact-only evidence inheritance.
+
+All seven items remain pending until the corresponding Spec Tasks and QA
+pass. The existing Run Event Stream partially addresses Supervisor
+subscription, but successful notification receipts and actionable terminal
+context are not implemented yet.

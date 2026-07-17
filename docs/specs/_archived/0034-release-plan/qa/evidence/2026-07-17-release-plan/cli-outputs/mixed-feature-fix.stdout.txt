@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "roundfix.release-plan/v1",
+  "state": "approval_required",
+  "base": {
+    "tag": "v0.4.1",
+    "version": "v0.4.1",
+    "commitSHA": "022d55124182019c1729995226c24721f5e1eccd"
+  },
+  "target": {
+    "name": "HEAD",
+    "commitSHA": "879259da4c53f192e937aacfa9f0708722b59f77"
+  },
+  "classification": {
+    "source": "conventional_commit",
+    "impact": "minor",
+    "breaking": false,
+    "manualClassificationRequired": false
+  },
+  "proposedVersion": "v0.5.0",
+  "approval": {
+    "required": true,
+    "increment": "minor",
+    "proposedVersion": "v0.5.0",
+    "question": "Approve the minor increment to v0.5.0?"
+  },
+  "changes": [
+    {
+      "commitSHA": "90e591d0b09c6615ba5d613ff0693fea1ba9e053",
+      "subject": "feat: expose release plan",
+      "conventionalType": "feat",
+      "breaking": false,
+      "automaticImpact": "minor",
+      "crossesMaintenanceOnlyBoundary": true
+    },
+    {
+      "commitSHA": "879259da4c53f192e937aacfa9f0708722b59f77",
+      "subject": "fix: correct release output",
+      "conventionalType": "fix",
+      "breaking": false,
+      "automaticImpact": "patch",
+      "crossesMaintenanceOnlyBoundary": true
+    }
+  ]
+}

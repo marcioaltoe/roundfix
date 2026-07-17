@@ -4,7 +4,7 @@ Two templates: the `_tasks.md` manifest and the per-task `task_NN.md` file. Guid
 
 ## `_tasks.md` — the DAG manifest
 
-Machine-parseable. Dependencies live **only** here; status lives **only** in task files. The body table is a human-readable projection of the frontmatter graph — regenerate it whenever the graph changes.
+Machine-parseable. Dependencies live **only** here; status and type live **only** in task file frontmatter. The body table is a human-readable projection of the frontmatter graph; every `type` cell must be byte-identical to the matching task file's `type` value. Regenerate it whenever the graph changes.
 
 ```markdown
 ---

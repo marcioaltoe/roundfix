@@ -1,6 +1,6 @@
 ---
 name: roundfix
-description: Use Roundfix to clean CodeRabbit pull request feedback, diagnose runtime readiness with the Doctor Command, execute a Spec's Task Graph with the Implement Command, monitor Runs through the Supervisor Run Event Stream, reclaim Run storage with the GC Command, archive completed Specs, and, inside daemon-assigned Batch runs, follow the bounded Review Issue or Task resolution contract.
+description: Use Roundfix to plan releases with the read-only Release Plan Command, clean CodeRabbit pull request feedback, diagnose runtime readiness with the Doctor Command, execute a Spec's Task Graph with the Implement Command, monitor Runs through the Supervisor Run Event Stream, reclaim Run storage with the GC Command, archive completed Specs, and, inside daemon-assigned Batch runs, follow the bounded Review Issue or Task resolution contract.
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
@@ -25,11 +25,9 @@ newer with npm/npx is a prerequisite. Prefer the Setup Command after
 installing Roundfix; it verifies Node, installs the pinned acpx on
 confirmation or `--yes`, checks the configured Agent adapter binary, probes the
 configured Agent, offers local adapter overrides, and offers User Config and
-Project Config creation. Review Runs and
-sequential Spec Runs drive the selected ACP Runtime through one acpx-backed
-Agent Session across the Run's Work Items. Concurrent Spec Tasks run through
-per-Task Agent Sessions named `roundfix-<run-id>-<task_id>` in their Task
-Worktrees.
+Project Config creation. Review work uses owned review Agent Sessions, Spec
+Tasks use per-Task Agent Sessions named `roundfix-<run-id>-<task_id>` in their
+Task Worktrees, and QA uses its own Agent Session after Tasks settle.
 
 Use the Doctor Command, `roundfix doctor`, to diagnose Run readiness without
 installing dependencies, writing config, or changing files. Doctor runs the
@@ -149,6 +147,36 @@ roundfix 1.0.0 is behind latest 1.1.0; run roundfix upgrade
 Freshness failures and offline checks stay silent and do not change the Run
 outcome.
 
+## Release planning
+
+When the user asks to cut, prepare, or validate a release, start with the
+read-only Release Plan Command:
+
+```bash
+roundfix release plan
+```
+
+Run it before changelog edits, version-file edits, tags, pushes, package
+publication, asset uploads, or GitHub Release creation. The command creates no
+Run, reads no Roundfix configuration, contacts no external service, and
+mutates no repository or release state.
+
+A generic release request authorizes only a conclusive patch plan: state
+`ready` with a patch proposed version. State `approval_required` for a minor,
+major, or version-zero breaking proposal requires explicit human approval of
+the printed approval question before any release mutation. State
+`manual_classification_required` requires a rerun with
+`--impact <none|patch|minor|major> --reason <text>`; that classification
+records the impact and reason, but it does not approve a resulting minor,
+major, or version-zero breaking version. State `no_release` means no release
+is required for the committed range.
+
+After the plan's required decision is satisfied, follow the repository release
+runbook. Preserve the existing tag-triggered workflow: validate the tag, keep
+artifact versions in agreement, publish npm packages through the release
+workflow, upload GitHub Release assets, and leave the Upgrade Command asset
+contract unchanged.
+
 ## Config compatibility
 
 Roundfix treats registered removed config keys as migrations, not Preflight
@@ -158,131 +186,136 @@ Project Config load on stderr:
 
 ```text
 config: resolve.concurrent is deprecated and ignored; use worktree.concurrency
-config: defaults.model is deprecated and ignored; use runtimes.<runtime>.model
+config: defaults.model is deprecated and ignored; use profiles.<category>.preferred.model
 ```
 
 Unknown keys that are not in the deprecation registry still fail strict
 validation.
 
+`review_source.include_nitpicks` defaults to `false`, so CodeRabbit findings
+whose severity is `nitpick` do not become Review Issues unless User Config or
+Project Config explicitly sets the key to `true`.
+
 ## Agent selection
 
-Roundfix owns the Agent Model and Default Reasoning Effort for every Agent
-Session. It resolves each value independently in this order: built-in defaults,
-User Config, Project Config, then one-Run flags. It never reads or mutates
-runtime-owned model configuration.
+Roundfix routes Agent work through Agent Selection Profiles. A profile is one
+Preferred Selection plus a required ordered Fallback Chain. Project Config wins
+over User Config, which wins over built-ins; a higher-scope profile replaces a
+lower-scope profile as one object. Roundfix never reads or mutates
+runtime-owned model configuration, credentials, or adapter settings.
 
-Built-in selections:
+Required built-ins:
 
-- Codex: `model: gpt-5.5`, `reasoning_effort: xhigh`.
-- Claude: `model: opus`, `reasoning_effort: ""` (model-managed).
-- OpenCode: no built-in model. Provide a model through User Config, Project
-  Config, its one-Run flag, or Interactive Input; leave reasoning empty when
-  the selected model manages reasoning.
+- `general`, `backend`, `qa`, and `review`: preferred
+  `codex / gpt-5.6-sol / high`, fallback
+  `codex / gpt-5.6-terra / max`.
+- `frontend`: preferred `claude / claude-fable-5 / medium`, fallback
+  `codex / gpt-5.6-sol / high`.
 
-Project Config and User Config use the per-runtime structure:
+Optional Task Type categories `data`, `infra`, `docs`, `test`, and `chore`
+inherit the effective `general` profile when absent. If configured, they must
+be complete. Explicit custom model strings, including adapter aliases, are sent
+to the ACP Runtime verbatim; only the built-in identifiers above are official
+Roundfix examples.
 
-```yaml
-runtimes:
-  codex:
-    model: gpt-5.6-sol
-    # Empty reasoning_effort means the Agent Model manages reasoning and
-    # overrides any User Config effort.
-    reasoning_effort: ""
-  claude:
-    model: opus
-    reasoning_effort: ""
-  opencode:
-    model: ""
-    reasoning_effort: ""
-```
-
-An empty `reasoning_effort` is a deliberate model-managed selection. Roundfix
-assigns the Agent Model and skips the runtime-specific reasoning option; Run
-headers render it as `Default Reasoning Effort: model-managed`. This is the
-required shape for the codex `gpt-5.6` family, whose models manage reasoning
-and reject every `reasoning_effort` value exposed by codex-acp.
-
-OpenCode has no Roundfix Model Catalog and no default model. Replace the empty
-model with an adapter-supported value in config, or pass it with the matching
-one-Run flag. Set a non-empty reasoning value only when the adapter and model
-support it:
+Project Config and User Config use the profile structure:
 
 ```yaml
-runtimes:
-  opencode:
-    model: "<model-supported-by-opencode-acp>"
-    reasoning_effort: ""
+profiles:
+  backend:
+    preferred:
+      runtime: codex
+      model: gpt-5.6-sol
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-terra
+        reasoning_effort: max
+  frontend:
+    preferred:
+      runtime: claude
+      model: claude-fable-5
+      reasoning_effort: medium
+    fallbacks:
+      - runtime: codex
+        model: gpt-5.6-sol
+        reasoning_effort: high
 ```
+
+Use the profile management commands for inspection, writes, and disposable
+proof:
+
+```bash
+roundfix profiles show --category backend --json
+roundfix profiles configure --scope project --file profiles.yml --dry-run --json
+roundfix profiles validate --json
+```
+
+`profiles show` is read-only and returns `roundfix/profiles/v1` JSON with the
+effective source, inherited source, Preferred Selection, ordered fallbacks, and
+five recommendations. Recommendations are dated `2026-07-16`, include
+benchmark/result/cost/rationale evidence, set `category_specific: false`, and
+are advisory only. They never route, prove availability, or mutate config.
+
+`profiles configure` writes only the new `profiles` schema after validation and
+confirmation. `--file` reads a strict profile fragment, Interactive Input
+collects one complete profile, `--dry-run` reports `changed: false`, and
+`--json` returns `roundfix/profiles-configure/v1`. It preserves unrelated
+config and never edits runtime-owned settings or credentials.
+
+`profiles validate` is read-only proof through disposable ACP Sessions. It
+deduplicates exact tuples, reports every category reference, closes every
+disposable session on success or error, sends no prompt, creates no Run, and
+returns `roundfix/profiles-validate/v1` JSON with tuple-level status.
 
 Non-interactive Agent-starting commands (`resolve`, `watch`, and `implement`)
-accept both one-Run overrides:
+accept one-Run Preferred Selection overrides:
 
 ```bash
-roundfix resolve --pr 123 --agent codex --model gpt-5.6-sol --reasoning-effort "" --no-input
-roundfix implement --spec example-spec --agent claude --model opus --reasoning-effort "" --qa --detach
+roundfix resolve --pr 123 --agent codex --model gpt-5.6-sol --reasoning-effort high --no-input
+roundfix implement --spec example-spec --agent claude --model claude-fable-5 --reasoning-effort medium --qa --detach
 ```
 
-Omitted flags use the selected runtime's effective Roundfix configuration.
-An explicit empty `--reasoning-effort ""` requests model-managed reasoning.
-An explicit empty `--model ""` is invalid and exits `2`.
+Those flags replace only the Preferred Selection for every relevant category in
+that invocation and preserve each configured Fallback Chain. If one override
+applies across multiple Task or QA categories, Roundfix emits a warning.
+Omitted flags use the effective profile. An explicit empty
+`--reasoning-effort ""` requests model-managed reasoning; an explicit empty
+`--model ""` is invalid and exits `2`.
 
-Interactive Input asks for Agent, Agent Model, then Default Reasoning Effort.
-The Codex Model Catalog appears in this order: `gpt-5.6-sol`,
-`gpt-5.6-terra`, `gpt-5.6-luna`, `gpt-5.5`, `gpt-5.4`,
-`gpt-5.4-mini`, `gpt-5.3-codex-spark`. The Claude Model Catalog appears in
-this order: `Default`, `Opus`, `Fable`, `Sonnet`, `Haiku`; `Default` displays
-the concrete configured Claude model. Catalogs are picker data, not allowlists:
-typed custom Agent Model and Default Reasoning Effort values pass through to
-the installed ACP adapter for validation.
+Before an operational Run mutates state, Roundfix validates Task Types, resolves
+the relevant profiles, deduplicates exact preferred/fallback tuples, proves
+them sequentially through disposable sessions, and closes those sessions.
+`fetch` remains Agent-free. `resolve` and `watch` use only `review`; `implement`
+uses the Task categories and adds `qa` only when requested.
 
-Preflight Validation starts a disposable Agent Session in the Git root,
-assigns the selected Agent Model, assigns the runtime-specific reasoning option
-only when the effective Default Reasoning Effort is non-empty, closes the
-disposable session, and sends no prompt. If the runtime rejects the model or a
-non-empty reasoning value, Roundfix probes that runtime's Model Catalog
-newest-first and its reasoning vocabulary highest-first. It never crosses to
-another ACP Runtime or proposes the failed Agent Model. The first proven pair
-is the Fallback Selection; an empty effort is rendered as `model-managed`.
+After Run creation, automatic fallback is notification-first and pre-prompt
+only. If selection start fails before the first prompt, Roundfix records the
+failed attempt, publishes `agent_selection_fallback`, renders the same notice on
+stderr/TUI/Attach/Run Event Stream, and only then activates the next configured
+fallback in order. Once `agent_work_started` is recorded, there is no fallback
+for prompt, tool, verification, cancellation, rate-limit, or session-loss
+failure.
 
-With interactive stderr and neither `--no-input` nor `--detach`, `resolve`,
-`watch`, and `implement` print the failed selection, the proven Fallback
-Selection, and `A different Agent Model can consume tokens differently.` They
-then ask exactly `Use this Fallback Selection for this Run? [y/N]: `. A `y` or
-`yes` applies the fallback to that Run only. A `no` or empty answer exits `2`
-without creating a Run. Roundfix never writes the confirmed selection to User
-Config, Project Config, or runtime-owned configuration.
-
-**HARD RULE:** An agent orchestrating Roundfix MUST relay the failed selection,
-Fallback Selection, and token-cost caveat to the human user and wait for their
-decision. The orchestrating agent MUST NOT answer the confirmation, choose the
-fallback, or run the explicit-flags re-run autonomously.
-
-With `--no-input`, `--detach`, or non-interactive stderr, the command never
-prompts. It exits `2` before creating a Run and prints the failed selection,
-the proven Fallback Selection, and one concrete `Re-run:` line for the same
-command. Copy that line only after the human user approves it. Its selection
-portion has this shape:
-
-```bash
-roundfix <command> <same arguments> --model <proven-model> --reasoning-effort "<proven-effort>"
-```
-
-For model-managed reasoning, the line contains `--reasoning-effort ""`. No
-flag or configuration key pre-authorizes a fallback. If no candidate proves
-functional, the original actionable selection error remains and lists the
-probed Agent Models and reasoning efforts.
+Legacy `defaults.agent` and `runtimes.<runtime>.model` /
+`runtimes.<runtime>.reasoning_effort` remain readable only for scopes without a
+`profiles` section. A same-scope mix fails with migration guidance. Migrate by
+removing `defaults.agent` and `runtimes`, writing complete profiles with
+`roundfix profiles configure --scope user|project --file <path>`, then running
+`roundfix profiles validate`.
 
 Initial progress and the Live Run View show the concrete stored selection:
 
 ```text
 Agent: Codex
 Agent Model: gpt-5.6-sol
-Default Reasoning Effort: model-managed
+Default Reasoning Effort: high
 ```
 
-Attach reads Agent, Agent Model, and Default Reasoning Effort from the Run row,
-not from current User Config or Project Config. Legacy Runs that predate stored
-selection render missing model or reasoning values as `-`.
+Attach reads compatibility summary values and per-scope selection history from
+the Run Database, not from current User Config or Project Config. Legacy Runs
+that predate per-scope selection history render it as unavailable instead of
+inventing records.
 
 `specs.root` is a User Config and Project Config key that defaults to
 `docs/specs`. Project Config overrides User Config, which overrides the
@@ -617,6 +650,8 @@ roundfix events <run-id> --follow
 roundfix events <run-id> --filter verification,outcome
 roundfix settle --spec <slug> --task <task_id>
 roundfix archive <slug>
+roundfix release plan
+roundfix release plan --impact <none|patch|minor|major> --reason "<classification reason>"
 roundfix gc --dry-run
 roundfix gc
 roundfix stop --spec <slug>
