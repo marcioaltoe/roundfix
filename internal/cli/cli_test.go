@@ -1779,8 +1779,8 @@ func TestRunDoctorReportsAdapterFailureWithNextAction(t *testing.T) {
 	checker.adapter = CheckResult{
 		Name:       HealthCheckAdapter,
 		Status:     CheckStatusFailed,
-		Detail:     "codex-acp is required but was not found on PATH; install it with: npm install -g @agentclientprotocol/codex-acp",
-		NextAction: "npm install -g @agentclientprotocol/codex-acp",
+		Detail:     "effective Codex adapter command \"codex-acp\" reported legacy package @zed-industries/codex-acp version 0.16.0; required @agentclientprotocol/codex-acp 1.1.4 or newer; update with: " + agent.CodexAdapterInstallCommand(),
+		NextAction: agent.CodexAdapterInstallCommand(),
 	}
 	withDoctorFakeDeps(t, checker)
 	var stdout bytes.Buffer
@@ -1793,8 +1793,9 @@ func TestRunDoctorReportsAdapterFailureWithNextAction(t *testing.T) {
 	}
 	for _, want := range []string{
 		"adapter: failed",
-		"codex-acp is required but was not found on PATH",
-		"next: npm install -g @agentclientprotocol/codex-acp",
+		"command \"codex-acp\"",
+		"legacy package @zed-industries/codex-acp version 0.16.0",
+		"next: " + agent.CodexAdapterInstallCommand(),
 		"agent: skipped (adapter failed)",
 	} {
 		if !strings.Contains(stdout.String(), want) {
@@ -2060,7 +2061,7 @@ func TestRunDetachRejectsInteractiveWithExistingConflictShape(t *testing.T) {
 func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 	fake := newSetupFakeDeps()
 	fake.acpxErr = errors.New("acpx not found")
-	fake.paths["codex-acp"] = "/bin/codex-acp"
+	fake.paths["claude-agent-acp"] = "/bin/claude-agent-acp"
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -2073,6 +2074,7 @@ func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 	assertSetupLineOrder(t, stdout.String(), []string{
 		"node: ok",
 		"acpx: installed",
+		"adapter: ok",
 		"agent probe: ok",
 		"acpx agents override: installed",
 		"User Config: installed",
@@ -2088,8 +2090,8 @@ func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 		t.Fatalf("expected one acpx config init call, got %d", fake.acpxInitCalls)
 	}
 	acpxConfig := fake.files[fake.acpxConfigPath]
-	if !strings.Contains(acpxConfig, `"codex"`) || !strings.Contains(acpxConfig, `"command": "codex-acp"`) {
-		t.Fatalf("expected codex direct adapter override, got %s", acpxConfig)
+	if strings.Contains(acpxConfig, `"codex"`) || !strings.Contains(acpxConfig, `"command": "claude-agent-acp"`) {
+		t.Fatalf("expected only the non-Codex local adapter override, got %s", acpxConfig)
 	}
 	for _, want := range []string{"acpx agents override diff:", "--- ", "+++ ", "+  \"agents\""} {
 		if !strings.Contains(stdout.String(), want) {
@@ -2119,6 +2121,7 @@ func TestRunSetupHealthyMachineIsIdempotent(t *testing.T) {
 	assertSetupLineOrder(t, stdout.String(), []string{
 		"node: ok",
 		"acpx: ok",
+		"adapter: ok",
 		"agent probe: ok",
 		"acpx agents override: ok",
 		"User Config: ok",
@@ -2139,6 +2142,80 @@ func TestRunSetupHealthyMachineIsIdempotent(t *testing.T) {
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+}
+
+func TestRunSetupReportsAdapterFailuresWithoutWrites(t *testing.T) {
+	tests := []struct {
+		name       string
+		adapterErr error
+		want       string
+	}{
+		{
+			name: "legacy lineage",
+			adapterErr: &agent.AdapterLineageError{
+				Command: "codex-acp",
+				Package: "@zed-industries/codex-acp",
+				Version: "0.16.0",
+			},
+			want: "legacy package @zed-industries/codex-acp version 0.16.0",
+		},
+		{
+			name: "unsupported official version",
+			adapterErr: &agent.AdapterVersionError{
+				Command:         "codex-acp",
+				Package:         agent.CodexAdapterPackage,
+				FoundVersion:    "1.1.3",
+				RequiredVersion: agent.PinnedCodexAdapterVersion,
+			},
+			want: "package @agentclientprotocol/codex-acp version 1.1.3; required version 1.1.4 or newer",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fake := newSetupFakeDeps()
+			fake.files[fake.userConfigPath] = "user config sentinel\n"
+			fake.files[fake.projectConfigPath] = "project config sentinel\n"
+			fake.files[fake.acpxConfigPath] = "acpx config sentinel\n"
+			fake.adapterErr = tt.adapterErr
+			before := make(map[string]string, len(fake.files))
+			for path, content := range fake.files {
+				before[path] = content
+			}
+			withSetupFakeDeps(t, fake)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+
+			if code != exitRunFailed {
+				t.Fatalf("expected adapter failure exit %d, got %d", exitRunFailed, code)
+			}
+			for _, want := range []string{
+				"adapter: failed",
+				"command \"codex-acp\"",
+				tt.want,
+				agent.CodexAdapterInstallCommand(),
+				"agent probe: skipped (adapter failed)",
+			} {
+				if !strings.Contains(stdout.String(), want) {
+					t.Fatalf("expected setup output to contain %q, got %q", want, stdout.String())
+				}
+			}
+			if strings.Contains(stdout.String(), "acpx agents override:") || strings.Contains(stdout.String(), "User Config:") || strings.Contains(stdout.String(), "Project Config:") {
+				t.Fatalf("adapter failure continued into mutation surfaces: %q", stdout.String())
+			}
+			if !reflect.DeepEqual(fake.files, before) || len(fake.writeCalls) != 0 || len(fake.initScopes) != 0 || fake.acpxInitCalls != 0 {
+				t.Fatalf("adapter failure changed config state: before=%v after=%v writes=%v init=%v acpxInit=%d", before, fake.files, fake.writeCalls, fake.initScopes, fake.acpxInitCalls)
+			}
+			if len(fake.probeRequests) != 0 {
+				t.Fatalf("adapter failure started profile proof: %#v", fake.probeRequests)
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no stderr, got %q", stderr.String())
+			}
+		})
 	}
 }
 
@@ -2239,11 +2316,11 @@ func TestRunSetupMismatchedACPXUpgradeOffer(t *testing.T) {
 
 func TestRunSetupMergesACPXAgentsOverridePreservingUnrelatedBytes(t *testing.T) {
 	fake := newSetupFakeDeps()
-	fake.paths["codex-acp"] = "/bin/codex-acp"
+	fake.paths["claude-agent-acp"] = "/bin/claude-agent-acp"
 	fake.files[fake.userConfigPath] = "defaults:\n  agent: codex\n"
 	fake.files[fake.projectConfigPath] = "defaults:\n  verification: make verify\n"
 	unrelated := "  \"theme\": {\n    \"color\": \"blue\",\n    \"nested\": [1, 2, 3]\n  }"
-	existingAgent := "    \"claude\": {\n      \"command\": \"existing-claude\"\n    }"
+	existingAgent := "    \"custom\": {\n      \"command\": \"existing-custom\"\n    }"
 	fake.files[fake.acpxConfigPath] = "{\n" + unrelated + ",\n  \"agents\": {\n" + existingAgent + "\n  }\n}\n"
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
@@ -2255,12 +2332,12 @@ func TestRunSetupMergesACPXAgentsOverridePreservingUnrelatedBytes(t *testing.T) 
 		t.Fatalf("expected setup exit 0, got %d (stderr %q)", code, stderr.String())
 	}
 	acpxConfig := fake.files[fake.acpxConfigPath]
-	for _, want := range []string{unrelated, existingAgent, `"codex"`, `"command": "codex-acp"`} {
+	for _, want := range []string{unrelated, existingAgent, `"claude"`, `"command": "claude-agent-acp"`} {
 		if !strings.Contains(acpxConfig, want) {
 			t.Fatalf("expected merged config to preserve/include %q, got %s", want, acpxConfig)
 		}
 	}
-	if !strings.Contains(stdout.String(), "acpx agents override diff:") || !strings.Contains(stdout.String(), "+    \"codex\"") {
+	if !strings.Contains(stdout.String(), "acpx agents override diff:") || !strings.Contains(stdout.String(), "+    \"claude\"") {
 		t.Fatalf("expected before/after diff for override, got %q", stdout.String())
 	}
 }
@@ -2268,7 +2345,7 @@ func TestRunSetupMergesACPXAgentsOverridePreservingUnrelatedBytes(t *testing.T) 
 func TestRunSetupDeclinedOffersReportNoWrites(t *testing.T) {
 	fake := newSetupFakeDeps()
 	fake.acpxErr = errors.New("acpx not found")
-	fake.paths["codex-acp"] = "/bin/codex-acp"
+	fake.paths["claude-agent-acp"] = "/bin/claude-agent-acp"
 	fake.confirm = func(context.Context, io.Writer, string) (bool, error) {
 		return false, nil
 	}
@@ -2284,6 +2361,7 @@ func TestRunSetupDeclinedOffersReportNoWrites(t *testing.T) {
 	assertSetupLineOrder(t, stdout.String(), []string{
 		"node: ok",
 		"acpx: offered: declined",
+		"adapter: skipped",
 		"agent probe: skipped",
 		"acpx agents override: offered: declined",
 		"User Config: offered: declined",
@@ -2300,7 +2378,7 @@ func TestRunSetupDeclinedOffersReportNoWrites(t *testing.T) {
 func TestRunSetupNoInputSkipsOffers(t *testing.T) {
 	fake := newSetupFakeDeps()
 	fake.acpxErr = errors.New("acpx not found")
-	fake.paths["codex-acp"] = "/bin/codex-acp"
+	fake.paths["claude-agent-acp"] = "/bin/claude-agent-acp"
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -2313,6 +2391,7 @@ func TestRunSetupNoInputSkipsOffers(t *testing.T) {
 	assertSetupLineOrder(t, stdout.String(), []string{
 		"node: ok",
 		"acpx: skipped",
+		"adapter: skipped",
 		"agent probe: skipped",
 		"acpx agents override: skipped",
 		"User Config: skipped",
@@ -2375,6 +2454,13 @@ func TestHealthCheckerReturnsStructuredReadOnlyResults(t *testing.T) {
 		acpxVersion: func(context.Context) (string, error) {
 			return agent.PinnedACPXVersion + "\n", nil
 		},
+		checkAdapter: func(context.Context, agent.RuntimeSpec) (agent.AdapterEvidence, error) {
+			return agent.AdapterEvidence{
+				Command: "npx -y " + agent.CodexAdapterPackage,
+				Package: agent.CodexAdapterPackage,
+				Version: agent.PinnedCodexAdapterVersion,
+			}, nil
+		},
 		probeAgent: func(_ context.Context, got agent.ProbeRequest) error {
 			probed = true
 			if !reflect.DeepEqual(got, req) {
@@ -2393,6 +2479,11 @@ func TestHealthCheckerReturnsStructuredReadOnlyResults(t *testing.T) {
 		Name:   HealthCheckACPX,
 		Status: CheckStatusOK,
 		Detail: agent.PinnedACPXVersion,
+	})
+	assertCheckResult(t, checker.Adapter(ctx, req.Runtime), CheckResult{
+		Name:   HealthCheckAdapter,
+		Status: CheckStatusOK,
+		Detail: "command=\"npx -y " + agent.CodexAdapterPackage + "\"; package=" + agent.CodexAdapterPackage + "; version=" + agent.PinnedCodexAdapterVersion,
 	})
 	assertCheckResult(t, checker.Agent(ctx, req), CheckResult{
 		Name:   HealthCheckAgent,
@@ -6905,6 +6996,8 @@ type setupFakeDeps struct {
 	nodeErr           error
 	acpxVersion       string
 	acpxErr           error
+	adapterEvidence   agent.AdapterEvidence
+	adapterErr        error
 	probeErr          error
 	paths             map[string]string
 	files             map[string]string
@@ -6912,6 +7005,7 @@ type setupFakeDeps struct {
 	initScopes        []string
 	acpxInitCalls     int
 	writeCalls        []string
+	adapterRequests   []agent.RuntimeSpec
 	probeRequests     []agent.ProbeRequest
 	prompts           []string
 	confirm           func(context.Context, io.Writer, string) (bool, error)
@@ -6929,8 +7023,13 @@ func newSetupFakeDeps() *setupFakeDeps {
 		acpxConfigPath:    filepath.Join(homeDir, ".acpx", "config.json"),
 		nodeVersion:       "v25.6.1",
 		acpxVersion:       agent.PinnedACPXVersion,
-		paths:             map[string]string{},
-		files:             map[string]string{},
+		adapterEvidence: agent.AdapterEvidence{
+			Command: "npx -y " + agent.CodexAdapterPackage,
+			Package: agent.CodexAdapterPackage,
+			Version: agent.PinnedCodexAdapterVersion,
+		},
+		paths: map[string]string{},
+		files: map[string]string{},
 	}
 }
 
@@ -6956,6 +7055,10 @@ func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
 		installACPX: func(context.Context) error {
 			fake.installCalls = append(fake.installCalls, "npm install -g acpx@"+agent.PinnedACPXVersion)
 			return nil
+		},
+		checkAdapter: func(_ context.Context, runtime agent.RuntimeSpec) (agent.AdapterEvidence, error) {
+			fake.adapterRequests = append(fake.adapterRequests, runtime)
+			return fake.adapterEvidence, fake.adapterErr
 		},
 		probeAgent: func(_ context.Context, req agent.ProbeRequest) error {
 			fake.probeRequests = append(fake.probeRequests, req)

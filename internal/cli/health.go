@@ -45,6 +45,7 @@ type HealthChecker interface {
 type healthCheckDependencies struct {
 	nodeVersion    func(context.Context) (string, error)
 	acpxVersion    func(context.Context) (string, error)
+	checkAdapter   func(context.Context, agent.RuntimeSpec) (agent.AdapterEvidence, error)
 	probeAgent     func(context.Context, agent.ProbeRequest) error
 	codexInspector codexInspector
 }
@@ -109,12 +110,16 @@ func (checker runtimeHealthChecker) ACPX(ctx context.Context) CheckResult {
 }
 
 func (checker runtimeHealthChecker) Adapter(ctx context.Context, runtime agent.RuntimeSpec) CheckResult {
-	command, err := agent.CheckAdapter(ctx, runtime)
+	checkAdapter := checker.deps.checkAdapter
+	if checkAdapter == nil {
+		checkAdapter = agent.CheckAdapter
+	}
+	evidence, err := checkAdapter(ctx, runtime)
 	if err == nil {
 		return CheckResult{
 			Name:   HealthCheckAdapter,
 			Status: CheckStatusOK,
-			Detail: command,
+			Detail: adapterEvidenceDetail(evidence),
 		}
 	}
 	result := CheckResult{
@@ -122,11 +127,22 @@ func (checker runtimeHealthChecker) Adapter(ctx context.Context, runtime agent.R
 		Status: CheckStatusFailed,
 		Detail: err.Error(),
 	}
-	var adapterErr agent.AdapterProbeError
-	if errors.As(err, &adapterErr) {
-		result.NextAction = adapterErr.InstallCommand()
+	var installErr interface {
+		error
+		InstallCommand() string
+	}
+	if errors.As(err, &installErr) {
+		result.NextAction = installErr.InstallCommand()
 	}
 	return result
+}
+
+func adapterEvidenceDetail(evidence agent.AdapterEvidence) string {
+	command := strings.TrimSpace(evidence.Command)
+	if evidence.Package == "" && evidence.Version == "" {
+		return command
+	}
+	return fmt.Sprintf("command=%q; package=%s; version=%s", command, strings.TrimSpace(evidence.Package), strings.TrimSpace(evidence.Version))
 }
 
 func (checker runtimeHealthChecker) Agent(ctx context.Context, req agent.ProbeRequest) CheckResult {

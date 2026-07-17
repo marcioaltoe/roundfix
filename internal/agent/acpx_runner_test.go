@@ -126,12 +126,12 @@ func TestResolveAdapterCommandUsesConfigFallbacksAndOverrides(t *testing.T) {
 			name:    "configured agent command",
 			runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP},
 			config:  `{"agents":{"codex":{"command":"local-codex-acp","args":["--stdio"]}}}`,
-			want:    "local-codex-acp",
+			want:    "local-codex-acp --stdio",
 		},
 		{
 			name:    "missing config falls back to default",
 			runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP},
-			want:    "codex-acp",
+			want:    "npx -y @agentclientprotocol/codex-acp",
 		},
 		{
 			name:    "malformed config falls back to default",
@@ -143,7 +143,7 @@ func TestResolveAdapterCommandUsesConfigFallbacksAndOverrides(t *testing.T) {
 			name:    "stdio command override",
 			runtime: RuntimeSpec{ID: "codex-custom", Protocol: ProtocolStdio, Command: "custom-acp --stdio"},
 			config:  `{"agents":{"codex-custom":{"command":"ignored-acp"}}}`,
-			want:    "custom-acp",
+			want:    "custom-acp --stdio",
 		},
 	}
 
@@ -167,8 +167,109 @@ func TestResolveAdapterCommandUsesConfigFallbacksAndOverrides(t *testing.T) {
 	}
 }
 
+func TestCheckAdapterProvesOfficialCodexPackageAndVersion(t *testing.T) {
+	command := installFakeVersionAdapter(t, "@agentclientprotocol/codex-acp 1.1.4")
+	writeACPXConfigForTest(t, fmt.Sprintf(`{"agents":{"codex":{"command":%q}}}`, command))
+
+	evidence, err := CheckAdapter(context.Background(), RuntimeSpec{ID: "codex", Protocol: ProtocolACP})
+
+	if err != nil {
+		t.Fatalf("check official Codex adapter: %v", err)
+	}
+	if evidence.Command != command || evidence.Package != CodexAdapterPackage || evidence.Version != PinnedCodexAdapterVersion {
+		t.Fatalf("unexpected adapter evidence: %#v", evidence)
+	}
+}
+
+func TestCheckAdapterClassifiesUnreadyCodexAdapters(t *testing.T) {
+	tests := []struct {
+		name           string
+		output         string
+		wantPackage    string
+		wantVersion    string
+		wantLineageErr bool
+		wantVersionErr bool
+	}{
+		{
+			name:           "legacy lineage",
+			output:         "@zed-industries/codex-acp 0.16.0",
+			wantPackage:    "@zed-industries/codex-acp",
+			wantVersion:    "0.16.0",
+			wantLineageErr: true,
+		},
+		{
+			name:           "unknown same-named executable",
+			output:         "codex-acp 1.1.4 SECRET_TOKEN=must-not-leak",
+			wantPackage:    "",
+			wantVersion:    "",
+			wantLineageErr: true,
+		},
+		{
+			name:           "unsupported official version",
+			output:         "@agentclientprotocol/codex-acp 1.1.3",
+			wantPackage:    CodexAdapterPackage,
+			wantVersion:    "1.1.3",
+			wantVersionErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			command := installFakeVersionAdapter(t, tt.output)
+			writeACPXConfigForTest(t, fmt.Sprintf(`{"agents":{"codex":{"command":%q}}}`, command))
+
+			_, err := CheckAdapter(context.Background(), RuntimeSpec{ID: "codex", Protocol: ProtocolACP})
+
+			if err == nil {
+				t.Fatal("expected adapter readiness failure")
+			}
+			var lineageErr *AdapterLineageError
+			if got := errors.As(err, &lineageErr); got != tt.wantLineageErr {
+				t.Fatalf("lineage error = %t, want %t: %v", got, tt.wantLineageErr, err)
+			}
+			if lineageErr != nil && lineageErr.Classification() != AdapterLineageUnknown {
+				t.Fatalf("unexpected lineage classification %q", lineageErr.Classification())
+			}
+			var versionErr *AdapterVersionError
+			if got := errors.As(err, &versionErr); got != tt.wantVersionErr {
+				t.Fatalf("version error = %t, want %t: %v", got, tt.wantVersionErr, err)
+			}
+			if versionErr != nil && versionErr.Classification() != AdapterVersionUnsupported {
+				t.Fatalf("unexpected version classification %q", versionErr.Classification())
+			}
+			if !strings.Contains(err.Error(), command) || !strings.Contains(err.Error(), CodexAdapterInstallCommand()) {
+				t.Fatalf("expected effective command and deterministic action, got %q", err)
+			}
+			if tt.wantPackage != "" && !strings.Contains(err.Error(), tt.wantPackage) {
+				t.Fatalf("expected observed package %q, got %q", tt.wantPackage, err)
+			}
+			if tt.wantVersion != "" && !strings.Contains(err.Error(), tt.wantVersion) {
+				t.Fatalf("expected observed version %q, got %q", tt.wantVersion, err)
+			}
+			if strings.Contains(err.Error(), "SECRET_TOKEN") {
+				t.Fatalf("adapter output leaked into diagnostic: %q", err)
+			}
+		})
+	}
+}
+
+func TestCheckAdapterPreservesNonCodexResolutionWithoutVersionExecution(t *testing.T) {
+	command := installFakeVersionAdapter(t, "must not be inspected")
+	runtime := RuntimeSpec{ID: "claude-custom", Protocol: ProtocolStdio, Command: command + " --stdio"}
+
+	evidence, err := CheckAdapter(context.Background(), runtime)
+
+	if err != nil {
+		t.Fatalf("check non-Codex adapter: %v", err)
+	}
+	if evidence.Command != runtime.Command || evidence.Package != "" || evidence.Version != "" {
+		t.Fatalf("unexpected non-Codex evidence: %#v", evidence)
+	}
+}
+
 func TestACPXProbeMissingAdapterNamesInstallCommandBeforeSession(t *testing.T) {
 	harness := newFakeACPXHarness(t)
+	writeACPXConfigForTest(t, `{"agents":{"codex":{"command":"codex-acp"}}}`)
 	t.Setenv("PATH", t.TempDir())
 	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
 
@@ -181,7 +282,7 @@ func TestACPXProbeMissingAdapterNamesInstallCommandBeforeSession(t *testing.T) {
 		t.Fatal("expected missing adapter to fail")
 	}
 	message := err.Error()
-	for _, want := range []string{"codex-acp is required but was not found on PATH", "npm install -g @agentclientprotocol/codex-acp"} {
+	for _, want := range []string{"codex-acp is required but was not found on PATH", CodexAdapterInstallCommand()} {
 		if !strings.Contains(message, want) {
 			t.Fatalf("expected probe error to contain %q, got %q", want, message)
 		}
@@ -2207,7 +2308,7 @@ func newFakeACPXHarness(t *testing.T) *fakeACPXHarness {
 	if err := os.MkdirAll(adapterDir, 0o755); err != nil {
 		t.Fatalf("create fake adapter dir: %v", err)
 	}
-	for _, command := range []string{"codex-acp", "claude-code-acp", "opencode"} {
+	for _, command := range []string{"codex-acp", "claude-code-acp", "opencode", "npx"} {
 		installFakeAdapter(t, adapterDir, command)
 	}
 	t.Setenv("HOME", homeDir)
@@ -2231,9 +2332,24 @@ func newFakeACPXHarness(t *testing.T) *fakeACPXHarness {
 func installFakeAdapter(t *testing.T, dir string, command string) {
 	t.Helper()
 	path := filepath.Join(dir, command)
-	if err := os.WriteFile(path, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+	content := "#!/bin/sh\nexit 0\n"
+	if command == "codex-acp" || command == "npx" {
+		content = "#!/bin/sh\nprintf '%s\\n' '@agentclientprotocol/codex-acp 1.1.4'\n"
+	}
+	if err := os.WriteFile(path, []byte(content), 0o755); err != nil {
 		t.Fatalf("write fake adapter %s: %v", command, err)
 	}
+}
+
+func installFakeVersionAdapter(t *testing.T, output string) string {
+	t.Helper()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "codex-acp")
+	content := "#!/bin/sh\nprintf '%s\\n' '" + output + "'\n"
+	if err := os.WriteFile(path, []byte(content), 0o755); err != nil {
+		t.Fatalf("write fake version adapter: %v", err)
+	}
+	return path
 }
 
 func writeACPXConfigForTest(t *testing.T, content string) {

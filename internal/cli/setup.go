@@ -31,6 +31,7 @@ type setupDependencies struct {
 	nodeVersion    func(context.Context) (string, error)
 	acpxVersion    func(context.Context) (string, error)
 	installACPX    func(context.Context) error
+	checkAdapter   func(context.Context, agent.RuntimeSpec) (agent.AdapterEvidence, error)
 	probeAgent     func(context.Context, agent.ProbeRequest) error
 	lookPath       func(string) (string, error)
 	exists         func(string) (bool, error)
@@ -48,14 +49,17 @@ type setupRequest struct {
 }
 
 type setupRunner struct {
-	req       setupRequest
-	deps      setupDependencies
-	health    HealthChecker
-	loaded    roundconfig.Loaded
-	stdout    io.Writer
-	stderr    io.Writer
-	failed    bool
-	acpxReady bool
+	req           setupRequest
+	deps          setupDependencies
+	health        HealthChecker
+	loaded        roundconfig.Loaded
+	stdout        io.Writer
+	stderr        io.Writer
+	failed        bool
+	acpxReady     bool
+	adapterFailed bool
+	runtime       agent.RuntimeSpec
+	runtimeReady  bool
 }
 
 type acpxAgentOverride struct {
@@ -90,7 +94,11 @@ func runSetupCommand(ctx context.Context, args []string, stdout, stderr io.Write
 	}
 	runner.checkNode(ctx)
 	runner.checkACPX(ctx)
+	runner.checkAdapter(ctx)
 	runner.checkAgentProbe(ctx)
+	if runner.adapterFailed {
+		return exitRunFailed
+	}
 	runner.checkACPXAgentsOverride(ctx)
 	runner.checkRoundfixConfig(ctx, roundconfig.InitScopeUser)
 	runner.checkRoundfixConfig(ctx, roundconfig.InitScopeProject)
@@ -98,6 +106,34 @@ func runSetupCommand(ctx context.Context, args []string, stdout, stderr io.Write
 		return exitRunFailed
 	}
 	return exitOK
+}
+
+func (runner *setupRunner) checkAdapter(ctx context.Context) {
+	if !runner.acpxReady {
+		runner.reportHealthResult(CheckResult{
+			Name:   HealthCheckAdapter,
+			Status: CheckStatusSkipped,
+			Detail: "acpx is not at the pinned version",
+		})
+		return
+	}
+	runtime, err := runtimeForConfiguredAgent(runner.loaded.Config)
+	if err != nil {
+		runner.reportHealthResult(CheckResult{
+			Name:   HealthCheckAdapter,
+			Status: CheckStatusSkipped,
+			Detail: "agent selection failed",
+		})
+		return
+	}
+	runner.runtime = runtime
+	runner.runtimeReady = true
+	result := runner.health.Adapter(ctx, runtime)
+	runner.reportHealthResult(result)
+	if result.Status == CheckStatusOK {
+		return
+	}
+	runner.adapterFailed = true
 }
 
 func parseSetupCommand(args []string) (setupRequest, error) {
@@ -167,10 +203,22 @@ func (runner *setupRunner) checkAgentProbe(ctx context.Context) {
 		})
 		return
 	}
-	runtime, err := runtimeForConfiguredAgent(runner.loaded.Config)
-	if err != nil {
-		runner.report("agent probe", "failed", err.Error())
+	if runner.adapterFailed {
+		runner.reportHealthResult(CheckResult{
+			Name:   HealthCheckAgent,
+			Status: CheckStatusSkipped,
+			Detail: "adapter failed",
+		})
 		return
+	}
+	runtime := runner.runtime
+	if !runner.runtimeReady {
+		var err error
+		runtime, err = runtimeForConfiguredAgent(runner.loaded.Config)
+		if err != nil {
+			runner.report("agent probe", "failed", err.Error())
+			return
+		}
 	}
 	runner.reportHealthResult(runner.health.Agent(ctx, agent.ProbeRequest{
 		Runtime: runtime,
@@ -302,7 +350,6 @@ func (runner *setupRunner) checkRoundfixConfig(ctx context.Context, scope string
 
 func (runner *setupRunner) localACPXAgentOverrides() []acpxAgentOverride {
 	candidates := []acpxAgentOverride{
-		{Agent: "codex", Command: "codex-acp"},
 		{Agent: "claude", Command: "claude-agent-acp"},
 		{Agent: "opencode", Command: "opencode", Args: []string{"acp"}},
 	}
@@ -339,18 +386,20 @@ func setupHealthCheckLabel(name string) string {
 
 func (deps setupDependencies) healthChecker() HealthChecker {
 	return newHealthChecker(healthCheckDependencies{
-		nodeVersion: deps.nodeVersion,
-		acpxVersion: deps.acpxVersion,
-		probeAgent:  deps.probeAgent,
+		nodeVersion:  deps.nodeVersion,
+		acpxVersion:  deps.acpxVersion,
+		checkAdapter: deps.checkAdapter,
+		probeAgent:   deps.probeAgent,
 	})
 }
 
 func defaultSetupDependencies() setupDependencies {
 	return setupDependencies{
-		loadConfig:  roundconfig.Load,
-		nodeVersion: defaultSetupNodeVersion,
-		acpxVersion: defaultSetupACPXVersion,
-		installACPX: defaultSetupInstallACPX,
+		loadConfig:   roundconfig.Load,
+		nodeVersion:  defaultSetupNodeVersion,
+		acpxVersion:  defaultSetupACPXVersion,
+		installACPX:  defaultSetupInstallACPX,
+		checkAdapter: agent.CheckAdapter,
 		probeAgent: func(ctx context.Context, req agent.ProbeRequest) error {
 			return newEngineCollaborators().runner.Probe(ctx, req)
 		},
