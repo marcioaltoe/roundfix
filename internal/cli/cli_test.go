@@ -969,6 +969,152 @@ profiles:
 	assertNoRunDatabase(t, homeDir)
 }
 
+func TestProveProfileSelectionsDeduplicatesReferencesAndStartsFreshProofPass(t *testing.T) {
+	runner := &profileReadinessExactRunner{
+		prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
+			return agent.SelectionProof{
+				Runtime:         req.Runtime.ID,
+				Model:           req.Runtime.Model,
+				ReasoningEffort: req.Runtime.ReasoningEffort,
+				Assignment: agent.SelectionAssignment{
+					Encoding: agent.SelectionEncodingIndependent,
+				},
+				Adapter: agent.AdapterEvidence{
+					Command: "official-adapter",
+					Version: "1.1.4",
+				},
+				Status: agent.SelectionProofStatusProven,
+			}, nil
+		},
+	}
+	categories := roundconfig.RequiredWorkCategories()
+
+	first := proveProfileSelections(context.Background(), roundconfig.Builtin(), categories, "/workspace", runner)
+	second := proveProfileSelections(context.Background(), roundconfig.Builtin(), categories, "/workspace", runner)
+
+	if first.Err != nil || second.Err != nil {
+		t.Fatalf("profile readiness errors: first=%v second=%v", first.Err, second.Err)
+	}
+	if len(runner.exactRequests) != 6 {
+		t.Fatalf("exact proof requests = %d, want two fresh passes of three tuples", len(runner.exactRequests))
+	}
+	if runner.probeCalls != 0 {
+		t.Fatalf("legacy error-only probes = %d, want exact proof results", runner.probeCalls)
+	}
+	if len(first.Proofs) != 3 {
+		t.Fatalf("proofs = %d, want three deduplicated tuples", len(first.Proofs))
+	}
+	proof := first.Proofs[0]
+	if proof.Encoding != agent.SelectionEncodingIndependent || proof.AdapterCommand != "official-adapter" || proof.AdapterVersion != "1.1.4" {
+		t.Fatalf("proof metadata = %+v", proof)
+	}
+	assertProofReferences(t, proof, []string{"general/preferred", "backend/preferred", "frontend/fallback", "qa/preferred", "review/preferred"})
+}
+
+func TestProveProfileSelectionsRetainsStableFallbackPositions(t *testing.T) {
+	config := roundconfig.Builtin()
+	shared := config.Profiles[roundconfig.CategoryBackend].Profile.Fallbacks[0]
+	frontend := config.Profiles[roundconfig.CategoryFrontend]
+	frontend.Profile.Fallbacks = []roundconfig.AgentSelection{
+		{Runtime: "claude", Model: "frontend-first-fallback", ReasoningEffort: ""},
+		shared,
+	}
+	config.Profiles[roundconfig.CategoryFrontend] = frontend
+	runner := &profileReadinessExactRunner{
+		prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
+			return agent.SelectionProof{Runtime: req.Runtime.ID, Model: req.Runtime.Model, ReasoningEffort: req.Runtime.ReasoningEffort}, nil
+		},
+	}
+
+	result := proveProfileSelections(context.Background(), config, []roundconfig.WorkCategory{
+		roundconfig.CategoryBackend,
+		roundconfig.CategoryFrontend,
+	}, "/workspace", runner)
+
+	if result.Err != nil {
+		t.Fatalf("profile readiness error = %v", result.Err)
+	}
+	if len(runner.exactRequests) != 4 {
+		t.Fatalf("exact proof requests = %d, want four unique tuples", len(runner.exactRequests))
+	}
+	sharedProof := result.Proofs[1]
+	if sharedProof.Selection != shared || len(sharedProof.References) != 2 {
+		t.Fatalf("shared fallback proof = %+v", sharedProof)
+	}
+	if got := sharedProof.References[0]; got.Category != roundconfig.CategoryBackend || got.Role != "fallback" || got.FallbackIndex != 1 || got.Source != roundconfig.ProfileSourceBuiltIn {
+		t.Fatalf("backend fallback reference = %+v", got)
+	}
+	if got := sharedProof.References[1]; got.Category != roundconfig.CategoryFrontend || got.Role != "fallback" || got.FallbackIndex != 2 || got.Source != roundconfig.ProfileSourceBuiltIn {
+		t.Fatalf("frontend fallback reference = %+v", got)
+	}
+}
+
+func TestProfileOperationalPreflightMatchesProfilesValidateClassifiedFailure(t *testing.T) {
+	classified := &agent.SelectionUnsupportedError{
+		Kind:                agent.SelectionReasoningControlNotAdvertised,
+		Runtime:             "codex",
+		Model:               "gpt-5.6-sol",
+		ReasoningEffort:     "high",
+		AdvertisedModels:    []string{"gpt-5.6-sol", "gpt-5.5"},
+		AdvertisedReasoning: []string{"low", "medium"},
+	}
+	newRunner := func() *profileReadinessExactRunner {
+		return &profileReadinessExactRunner{
+			prove: func(agent.ProbeRequest) (agent.SelectionProof, error) {
+				return agent.SelectionProof{}, classified
+			},
+		}
+	}
+	config := roundconfig.Builtin()
+	categories := []roundconfig.WorkCategory{roundconfig.CategoryBackend}
+
+	validation := proveProfileSelections(context.Background(), config, categories, "/workspace", newRunner())
+	operational, operationalErr := runProfileOperationalPreflight(context.Background(), commandRequest{name: "implement"}, config, categories, "/workspace", newRunner(), io.Discard)
+
+	if validation.Err == nil || operationalErr == nil {
+		t.Fatalf("expected classified failures: validation=%v operational=%v", validation.Err, operationalErr)
+	}
+	if len(validation.Proofs) == 0 || len(operational.Proofs) == 0 {
+		t.Fatalf("missing failed proof evidence: validation=%+v operational=%+v", validation.Proofs, operational.Proofs)
+	}
+	validateProof := validation.Proofs[0]
+	preflightProof := operational.Proofs[0]
+	if !reflect.DeepEqual(validateProof, preflightProof) {
+		t.Fatalf("consumer proof evidence differs:\nvalidate:   %+v\noperational: %+v", validateProof, preflightProof)
+	}
+	if validateProof.Classification != agent.SelectionReasoningControlNotAdvertised {
+		t.Fatalf("classification = %q", validateProof.Classification)
+	}
+	if validateProof.NextAction == "" || len(validateProof.AdvertisedModels) != 2 || len(validateProof.AdvertisedReasoning) != 2 {
+		t.Fatalf("incomplete bounded failure evidence: %+v", validateProof)
+	}
+
+	var jsonStdout bytes.Buffer
+	var jsonStderr bytes.Buffer
+	if code := printProfilesValidateError(profilesValidateRequest{json: true}, validation, validation.Err, &jsonStdout, &jsonStderr); code != exitPreflight {
+		t.Fatalf("JSON failure exit = %d", code)
+	}
+	response := decodeProfilesValidateResponse(t, jsonStdout.String())
+	if response.Schema != profilesValidateSchema || len(response.Proofs) == 0 || !reflect.DeepEqual(response.Proofs[0], validateProof) {
+		t.Fatalf("unexpected JSON failure response: %+v", response)
+	}
+	for _, want := range []string{validateProof.Classification, "backend preferred", validateProof.NextAction} {
+		if !strings.Contains(jsonStderr.String(), want) {
+			t.Fatalf("JSON stderr missing %q in %q", want, jsonStderr.String())
+		}
+	}
+
+	var textStderr bytes.Buffer
+	if code := printProfilesValidateError(profilesValidateRequest{}, validation, validation.Err, io.Discard, &textStderr); code != exitPreflight {
+		t.Fatalf("text failure exit = %d", code)
+	}
+	for _, want := range []string{validateProof.Classification, "backend preferred", validateProof.NextAction} {
+		if !strings.Contains(textStderr.String(), want) {
+			t.Fatalf("text stderr missing %q in %q", want, textStderr.String())
+		}
+	}
+}
+
 func TestProfileOperationalPreflightMixedTaskGraphWithQADeduplicatesStableOrder(t *testing.T) {
 	runner := &fakeAgentRunner{}
 	var stderr bytes.Buffer
@@ -8493,6 +8639,26 @@ type fakeAgentRunner struct {
 	fallbackRuns   []agent.RuntimeSpec
 	probedRuntimes []agent.RuntimeSpec
 	runRuntimes    []agent.RuntimeSpec
+}
+
+type profileReadinessExactRunner struct {
+	fakeAgentRunner
+	prove         func(agent.ProbeRequest) (agent.SelectionProof, error)
+	exactRequests []agent.ProbeRequest
+	probeCalls    int
+}
+
+func (runner *profileReadinessExactRunner) ProveProfileSelection(_ context.Context, req agent.ProbeRequest) (agent.SelectionProof, error) {
+	runner.exactRequests = append(runner.exactRequests, req)
+	if runner.prove == nil {
+		return agent.SelectionProof{}, nil
+	}
+	return runner.prove(req)
+}
+
+func (runner *profileReadinessExactRunner) Probe(ctx context.Context, req agent.ProbeRequest) error {
+	runner.probeCalls++
+	return runner.fakeAgentRunner.Probe(ctx, req)
 }
 
 func (runner *fakeAgentRunner) Probe(_ context.Context, req agent.ProbeRequest) error {

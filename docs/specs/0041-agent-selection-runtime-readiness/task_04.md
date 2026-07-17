@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0041-agent-selection-runtime-readiness
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -34,26 +34,26 @@ and produce the same proof classification before any Run-side mutation.
 
 ## Subtasks
 
-- [ ] Define the shared profile-readiness result and coordinator.
-- [ ] Centralize tuple collection, deduplication, and stable references.
-- [ ] Migrate `profiles validate` to the coordinator.
-- [ ] Migrate operational Preflight Validation to the coordinator.
-- [ ] Add bounded additive JSON and aligned text diagnostics.
-- [ ] Prove no-mutation ordering and per-invocation proof behavior.
+- [x] Define the shared profile-readiness result and coordinator.
+- [x] Centralize tuple collection, deduplication, and stable references.
+- [x] Migrate `profiles validate` to the coordinator.
+- [x] Migrate operational Preflight Validation to the coordinator.
+- [x] Add bounded additive JSON and aligned text diagnostics.
+- [x] Prove no-mutation ordering and per-invocation proof behavior.
 
 ## Acceptance Criteria
 
-- [ ] Shared tuples across categories and fallback positions are proved once
+- [x] Shared tuples across categories and fallback positions are proved once
       and report every stable reference.
-- [ ] `profiles validate` and operational preflight return the same
+- [x] `profiles validate` and operational preflight return the same
       classification and category evidence for the same failing config.
-- [ ] Validation JSON remains `roundfix/profiles-validate/v1` and adds only
+- [x] Validation JSON remains `roundfix/profiles-validate/v1` and adds only
       optional bounded proof fields.
-- [ ] A failed tuple creates no Run, worktree, artifact, prompt, commit, or
+- [x] A failed tuple creates no Run, worktree, artifact, prompt, commit, or
       repository change.
-- [ ] Repeating the command creates fresh disposable proof rather than using a
+- [x] Repeating the command creates fresh disposable proof rather than using a
       prior invocation's result.
-- [ ] Successful readiness preserves each profile's configured fallback order
+- [x] Successful readiness preserves each profile's configured fallback order
       for later notification-first activation.
 
 ## Context
@@ -78,3 +78,52 @@ and produce the same proof classification before any Run-side mutation.
   Proof; Error Taxonomy and Diagnostics; Build Order 4.
 - `../../adr/0050-configured-fallbacks-activate-after-notification.md` →
   notification-first fallback boundary.
+
+## Result
+
+Implemented one profile-readiness coordinator that resolves effective Agent
+Selection Profiles, deduplicates exact tuples in stable order, and returns the
+exact disposable-session proof evidence to both `profiles validate` and
+operational Preflight Validation. The existing
+`roundfix/profiles-validate/v1` response now has optional classification,
+encoding, adapter command/version, bounded advertised-value, and next-action
+fields. Text and JSON failures use the same failed proof record.
+
+Acceptance evidence:
+
+- Shared tuple and stable-reference coverage: `TestProveProfileSelectionsDeduplicatesReferencesAndStartsFreshProofPass`
+  proves one request per unique tuple across required categories;
+  `TestProveProfileSelectionsRetainsStableFallbackPositions` preserves
+  `backend` fallback index 1 and `frontend` fallback index 2 on one shared
+  proof.
+- Consumer alignment and schema compatibility:
+  `TestProfileOperationalPreflightMatchesProfilesValidateClassifiedFailure`
+  compares the complete failed proof returned to both consumers, verifies the
+  `reasoning_control_not_advertised` classification and bounded advertised
+  values, and confirms the schema remains
+  `roundfix/profiles-validate/v1` with aligned text and JSON next actions.
+- No proof cache: the fresh-proof test invokes readiness twice and observes
+  two complete proof passes rather than a reused result.
+- No mutation before readiness: the passing CLI regression suite includes the
+  existing Run database, Run/Task worktree, artifact, prompt, bypass-audit,
+  commit, and repository-mutation guards for failed operational profile proof.
+- Fallback preservation: the focused operational and daemon fallback tests
+  pass with the configured order unchanged and ADR-0050's notification-first,
+  pre-prompt activation boundary intact.
+
+Verification:
+
+- `rtk go test ./internal/cli -run 'Test(ProveProfileSelections|ProfilesValidate|ProfileOperationalPreflight)' -count=1`
+  — passed, 6 tests in 1 package.
+- `rtk go test ./internal/cli ./internal/daemon -run 'Test(ProfileOperationalPreflight|Fallback).*' -count=1`
+  — passed, 3 tests in 2 packages.
+- `rtk go test -race ./internal/cli ./internal/daemon -run 'Test(ProveProfileSelections|ProfilesValidate|ProfileOperationalPreflight|Fallback)' -count=1`
+  — passed, 7 tests in 2 packages.
+- `rtk go test ./internal/agent -count=1` — passed, 214 tests in 1
+  package.
+- `rtk go test ./internal/cli ./internal/daemon -count=1` — passed, 649
+  tests in 2 packages.
+- `rtk make verify` — passed: 1,628 Go tests in 20 packages, 79
+  setup-context-driven tests, Repository Skill Set check, and Roundfix build.
+
+Follow-ups: none discovered within Task 04's slice.

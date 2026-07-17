@@ -28,10 +28,17 @@ type profilesValidateResponse struct {
 }
 
 type profileProofReport struct {
-	Selection  roundconfig.AgentSelection `json:"selection"`
-	Status     string                     `json:"status"`
-	References []profileProofReference    `json:"references"`
-	Error      string                     `json:"error,omitempty"`
+	Selection           roundconfig.AgentSelection `json:"selection"`
+	Status              string                     `json:"status"`
+	References          []profileProofReference    `json:"references"`
+	Classification      string                     `json:"classification,omitempty"`
+	Encoding            string                     `json:"encoding,omitempty"`
+	AdapterCommand      string                     `json:"adapter_command,omitempty"`
+	AdapterVersion      string                     `json:"adapter_version,omitempty"`
+	AdvertisedModels    []string                   `json:"advertised_models,omitempty"`
+	AdvertisedReasoning []string                   `json:"advertised_reasoning,omitempty"`
+	NextAction          string                     `json:"next_action,omitempty"`
+	Error               string                     `json:"error,omitempty"`
 }
 
 type profileProofReference struct {
@@ -42,10 +49,12 @@ type profileProofReference struct {
 	FallbackIndex int                       `json:"fallback_index,omitempty"`
 }
 
-type profileProofResult struct {
+type profileReadiness struct {
 	Proofs []profileProofReport
 	Err    error
 }
+
+type profileProofResult = profileReadiness
 
 type profileProofOptions struct {
 	PreferredOverride *roundconfig.AgentSelection
@@ -54,19 +63,26 @@ type profileProofOptions struct {
 }
 
 type profileProofError struct {
-	Selection  roundconfig.AgentSelection
-	References []profileProofReference
-	Err        error
+	Selection      roundconfig.AgentSelection
+	References     []profileProofReference
+	Classification string
+	NextAction     string
+	Err            error
 }
 
 func (err profileProofError) Error() string {
 	var builder strings.Builder
 	fmt.Fprintf(&builder, "profile proof failed for runtime %q, model %q, reasoning_effort %q", err.Selection.Runtime, err.Selection.Model, err.Selection.ReasoningEffort)
 	fmt.Fprintf(&builder, "; affected categories: %s", formatProfileProofReferences(err.References))
+	if err.Classification != "" {
+		fmt.Fprintf(&builder, "; classification: %s", err.Classification)
+	}
 	if err.Err != nil {
 		fmt.Fprintf(&builder, "; adapter error: %v", err.Err)
 	}
-	builder.WriteString("; next: update the profile with `roundfix profiles configure --scope user|project` or rerun `roundfix profiles validate` after fixing the ACP Runtime")
+	if err.NextAction != "" {
+		fmt.Fprintf(&builder, "; next: %s", err.NextAction)
+	}
 	return builder.String()
 }
 
@@ -155,18 +171,123 @@ func proveProfileSelectionsWithOptions(ctx context.Context, config roundconfig.C
 		}
 		runtime, err := runtimeForProfileSelectionWithOptions(proofs[index].Selection, options)
 		if err != nil {
-			proofs[index].Status = "failed"
-			proofs[index].Error = err.Error()
-			return profileProofResult{Proofs: proofs, Err: profileProofError{Selection: proofs[index].Selection, References: proofs[index].References, Err: err}}
+			applyProfileProofFailure(&proofs[index], err)
+			return profileProofResult{Proofs: proofs, Err: profileProofError{
+				Selection:      proofs[index].Selection,
+				References:     proofs[index].References,
+				Classification: proofs[index].Classification,
+				NextAction:     proofs[index].NextAction,
+				Err:            err,
+			}}
 		}
-		if err := runner.Probe(ctx, agent.ProbeRequest{Runtime: runtime, WorkDir: workDir}); err != nil {
-			proofs[index].Status = "failed"
-			proofs[index].Error = err.Error()
-			return profileProofResult{Proofs: proofs, Err: profileProofError{Selection: proofs[index].Selection, References: proofs[index].References, Err: err}}
+		proof, err := proveProfileSelection(ctx, runner, agent.ProbeRequest{Runtime: runtime, WorkDir: workDir})
+		if err != nil {
+			applyProfileProofFailure(&proofs[index], err)
+			return profileProofResult{Proofs: proofs, Err: profileProofError{
+				Selection:      proofs[index].Selection,
+				References:     proofs[index].References,
+				Classification: proofs[index].Classification,
+				NextAction:     proofs[index].NextAction,
+				Err:            err,
+			}}
 		}
 		proofs[index].Status = "passed"
+		proofs[index].Encoding = strings.TrimSpace(proof.Assignment.Encoding)
+		proofs[index].AdapterCommand = strings.TrimSpace(proof.Adapter.Command)
+		proofs[index].AdapterVersion = strings.TrimSpace(proof.Adapter.Version)
 	}
 	return profileProofResult{Proofs: proofs}
+}
+
+func proveProfileSelection(ctx context.Context, runner agent.Runner, request agent.ProbeRequest) (agent.SelectionProof, error) {
+	if prover, ok := runner.(agent.SelectionProver); ok {
+		return prover.ProveProfileSelection(ctx, request)
+	}
+	if err := runner.Probe(ctx, request); err != nil {
+		return agent.SelectionProof{}, err
+	}
+	return agent.SelectionProof{}, nil
+}
+
+const (
+	maxProfileProofAdvertisedValues = 16
+	maxProfileProofValueBytes       = 160
+)
+
+func applyProfileProofFailure(report *profileProofReport, err error) {
+	report.Status = "failed"
+	report.Error = err.Error()
+	report.Classification = profileProofClassification(err)
+	report.NextAction = profileProofNextAction(err)
+
+	var unsupported *agent.SelectionUnsupportedError
+	if errors.As(err, &unsupported) {
+		report.AdvertisedModels = boundedProfileProofValues(unsupported.AdvertisedModels)
+		report.AdvertisedReasoning = boundedProfileProofValues(unsupported.AdvertisedReasoning)
+	}
+	var rejected *agent.SelectionRejectedError
+	if errors.As(err, &rejected) {
+		report.Encoding = strings.TrimSpace(rejected.Assignment.Encoding)
+	}
+	var mismatch *agent.EffectiveSelectionError
+	if errors.As(err, &mismatch) {
+		report.Encoding = strings.TrimSpace(mismatch.Assignment.Encoding)
+	}
+	var lineage *agent.AdapterLineageError
+	if errors.As(err, &lineage) {
+		report.AdapterCommand = strings.TrimSpace(lineage.Command)
+		report.AdapterVersion = strings.TrimSpace(lineage.Version)
+	}
+	var version *agent.AdapterVersionError
+	if errors.As(err, &version) {
+		report.AdapterCommand = strings.TrimSpace(version.Command)
+		report.AdapterVersion = strings.TrimSpace(version.FoundVersion)
+	}
+}
+
+func profileProofClassification(err error) string {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return ""
+	}
+	var classified interface{ Classification() string }
+	if errors.As(err, &classified) {
+		return strings.TrimSpace(classified.Classification())
+	}
+	return agent.SelectionRejected
+}
+
+func profileProofNextAction(err error) string {
+	const configureAction = "update the profile with `roundfix profiles configure --scope user|project`"
+	var installer interface{ InstallCommand() string }
+	if errors.As(err, &installer) {
+		if command := strings.TrimSpace(installer.InstallCommand()); command != "" {
+			return "run `" + command + "`, then rerun `roundfix profiles validate`; if the tuple remains unavailable, " + configureAction
+		}
+	}
+	var cleanup *agent.AgentSessionCleanupError
+	if errors.As(err, &cleanup) {
+		return "restore Agent Session cleanup, then rerun `roundfix profiles validate`; if the tuple remains unavailable, " + configureAction
+	}
+	var unsupported *agent.SelectionUnsupportedError
+	if errors.As(err, &unsupported) {
+		return "update the ACP Runtime or adapter, or " + configureAction + " with a different exact Agent Selection, then rerun `roundfix profiles validate`"
+	}
+	return configureAction + " or update the ACP Runtime or adapter, then rerun `roundfix profiles validate`"
+}
+
+func boundedProfileProofValues(values []string) []string {
+	bounded := make([]string, 0, min(len(values), maxProfileProofAdvertisedValues))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" || len(value) > maxProfileProofValueBytes {
+			continue
+		}
+		bounded = append(bounded, value)
+		if len(bounded) == maxProfileProofAdvertisedValues {
+			break
+		}
+	}
+	return bounded
 }
 
 func buildProfileProofReports(config roundconfig.Config, categories []roundconfig.WorkCategory) ([]profileProofReport, error) {
