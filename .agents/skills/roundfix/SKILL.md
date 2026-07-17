@@ -192,6 +192,10 @@ config: defaults.model is deprecated and ignored; use profiles.<category>.prefer
 Unknown keys that are not in the deprecation registry still fail strict
 validation.
 
+`review_source.include_nitpicks` defaults to `false`, so CodeRabbit findings
+whose severity is `nitpick` do not become Review Issues unless User Config or
+Project Config explicitly sets the key to `true`.
+
 ## Agent selection
 
 Roundfix routes Agent work through Agent Selection Profiles. A profile is one

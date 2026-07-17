@@ -721,6 +721,62 @@ func TestBuiltinWatchDefaultsIncludeCheckGracePeriod(t *testing.T) {
 	}
 }
 
+func TestBuiltinReviewSourceExcludesNitpicks(t *testing.T) {
+	config := Builtin()
+
+	if config.ReviewSource.IncludeNitpicks {
+		t.Fatal("expected built-in review source to exclude nitpicks")
+	}
+	if !strings.Contains(DefaultConfigYAML(), "include_nitpicks: false") {
+		t.Fatalf("expected default config YAML to exclude nitpicks, got:\n%s", DefaultConfigYAML())
+	}
+}
+
+func TestLoadAppliesReviewSourceIncludeNitpicksHierarchy(t *testing.T) {
+	tests := []struct {
+		name          string
+		userConfig    string
+		projectConfig string
+		want          bool
+	}{
+		{name: "built-in excludes nitpicks", want: false},
+		{
+			name:       "user config includes nitpicks",
+			userConfig: "review_source:\n  include_nitpicks: true\n",
+			want:       true,
+		},
+		{
+			name:          "project config excludes user nitpicks",
+			userConfig:    "review_source:\n  include_nitpicks: true\n",
+			projectConfig: "review_source:\n  include_nitpicks: false\n",
+			want:          false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir := t.TempDir()
+			workDir := t.TempDir()
+			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+			mustMkdir(t, filepath.Join(workDir, ".git"))
+			if tt.userConfig != "" {
+				mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.userConfig)
+			}
+			if tt.projectConfig != "" {
+				mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), tt.projectConfig)
+			}
+
+			loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+			if err != nil {
+				t.Fatalf("load config: %v", err)
+			}
+			if loaded.Config.ReviewSource.IncludeNitpicks != tt.want {
+				t.Fatalf("include_nitpicks = %t, want %t", loaded.Config.ReviewSource.IncludeNitpicks, tt.want)
+			}
+		})
+	}
+}
+
 func TestLoadAppliesRuntimeConfigHierarchy(t *testing.T) {
 	homeDir := t.TempDir()
 	workDir := t.TempDir()

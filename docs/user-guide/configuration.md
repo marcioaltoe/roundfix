@@ -25,10 +25,34 @@ config — they are ignored with one stderr warning naming the replacement:
 
 Unknown keys that are not registered as deprecated fail strict validation.
 
+### Omitted and empty values
+
+An omitted key inherits the value from the next lower-precedence source. For
+example, a Project Config that omits `notify.command` keeps the User Config
+value when one exists, then falls back to the built-in default.
+
+An explicit empty string (`""`) or empty list (`[]`) overrides the lower
+source. Empty values are valid only where this page defines their behavior:
+
+| Explicit empty value | Behavior |
+| --- | --- |
+| `defaults.artifact_dir: ""` | Uses `~/.roundfix/artifacts/<repo-id>` |
+| `worktree.copy: []` | Copies no ignored files into Run or Task Worktrees |
+| `worktree.bootstrap: ""` | Disables Worktree Bootstrap |
+| `watch.push_remote: ""` and `watch.push_branch: ""` | Uses the upstream remote and branch detected by Preflight Validation |
+| `notify.command: ""` | Uses the native desktop notifier when available |
+| `profiles.<category>.*.reasoning_effort: ""` | Lets the model manage reasoning effort |
+
+Do not use a bare YAML value such as `command:` to mean an empty string. Use
+the explicit value shown above or omit the key to inherit it.
+
 ## Full example
 
 ```yaml
 defaults:
+  # false keeps each ACP Runtime's normal sandbox or permission mode.
+  agent_full_access: false
+  # Verification command for review Batches; Spec Tasks use their task file commands.
   verification: make verify
   # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
   artifact_dir: ""
@@ -83,7 +107,8 @@ profiles:
 
 review_source:
   name: coderabbit
-  include_nitpicks: true
+  # false excludes CodeRabbit findings whose severity is nitpick.
+  include_nitpicks: false
 
 watch:
   until_clean: true
@@ -94,7 +119,10 @@ watch:
   # How long watch polls for the Review Source check on the pushed HEAD
   # before ending CleanUnverified instead of Clean.
   check_grace_period: 5m
+  # Final Push uses the detected upstream when both values are empty.
   auto_push: true
+  push_remote: ""
+  push_branch: ""
 
 implement:
   auto_push: false
@@ -116,6 +144,7 @@ worktree:
   concurrency: 2
   # Repository-relative untracked files copied into each new Run or Task Worktree.
   # List only files that are already gitignored.
+  # Empty copies no files.
   copy: []
   # Command run in each new worktree after copy and before Agent work; empty disables it.
   bootstrap: ""
@@ -126,6 +155,10 @@ store:
   # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
   journal_retention: 336h
 
+logs:
+  # false keeps Agent payloads only in the lossless Run Event Journal.
+  agent: false
+
 budget:
   enabled: true
   max_run_duration: 2h
@@ -133,6 +166,55 @@ budget:
 resolve:
   batch_size: 3
 ```
+
+## Key reference
+
+The defaults below apply when neither User Config nor Project Config sets the
+key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
+
+### General settings
+
+| Key | Built-in default | Effect |
+| --- | --- | --- |
+| `defaults.agent_full_access` | `false` | Keeps the ACP Runtime's normal sandbox or permission mode. `true` requests its full-access mode before Agent work. |
+| `defaults.verification` | `make verify` | Verification command for review Batches. Spec Tasks use the commands in each task file. |
+| `defaults.artifact_dir` | `""` | Uses `~/.roundfix/artifacts/<repo-id>`. An absolute or repository-relative value overrides it. |
+| `defaults.auto_commit` | `true` | Enables Daemon-owned review commits. `watch.auto_push: true` requires it. |
+| `specs.root` | `docs/specs` | Locates active and archived Specs. Relative paths resolve from the repository root. |
+
+### Review and Run settings
+
+| Key | Built-in default | Effect |
+| --- | --- | --- |
+| `review_source.name` | `coderabbit` | Selects the Review Source. CodeRabbit is the only supported value. |
+| `review_source.include_nitpicks` | `false` | Excludes CodeRabbit findings whose severity is `nitpick`. Set `true` to include them. |
+| `watch.until_clean` | `true` | Continues the watch cycle until its clean-outcome contract or another bound ends the Run. |
+| `watch.max_rounds` | `6` | Limits the number of review Rounds in one watch Run. |
+| `watch.poll_interval` | `30s` | Sets the delay between Review Source polls. |
+| `watch.review_timeout` | `30m` | Bounds the review wait across the watch Run. |
+| `watch.check_grace_period` | `5m` | Bounds the final wait for Review Source evidence on the pushed head. |
+| `watch.quiet_period` | `30s` | Requires this quiet interval before Roundfix fetches a settled review. |
+| `watch.auto_push` | `true` | Runs Final Push after no Unresolved Review Issues remain. |
+| `watch.push_remote` | `""` | Uses the upstream remote detected by Preflight Validation. |
+| `watch.push_branch` | `""` | Uses the upstream branch detected by Preflight Validation. |
+| `implement.auto_push` | `false` | Leaves a Clean Spec Run local. `true` pushes its upstream branch but never opens a pull request. |
+| `notify.enabled` | `true` | Sends one terminal outcome notification for `resolve`, `watch`, and `implement`. |
+| `notify.command` | `""` | Uses the native desktop notifier. A non-empty shell command replaces it. |
+| `budget.enabled` | `true` | Enforces the configured Run duration budget. |
+| `budget.max_run_duration` | `2h` | Sets the maximum duration of a budgeted Run. |
+| `resolve.batch_size` | `3` | Limits how many Review Issues one Agent Batch receives. |
+
+### Worktree, log, and retention settings
+
+| Key | Built-in default | Effect |
+| --- | --- | --- |
+| `worktree.location` | `~/.roundfix/worktrees` | Sets the parent directory for Run and Task Worktrees. |
+| `worktree.concurrency` | `2` | Limits concurrent Task Worktrees. `1` keeps Task execution sequential. |
+| `worktree.copy` | `[]` | Copies no ignored files. Entries must be repository-relative and already ignored by Git. |
+| `worktree.bootstrap` | `""` | Disables Worktree Bootstrap. A non-empty command runs after copy and before Agent work. |
+| `worktree.bootstrap_timeout` | `10m` | Bounds each Worktree Bootstrap command. |
+| `logs.agent` | `false` | Writes no per-Batch Agent log files; the Run Event Journal remains lossless. |
+| `store.journal_retention` | `336h` | Keeps terminal Run journals and Run artifacts for 14 days. `0` disables pruning. |
 
 ## Agent selection profiles
 

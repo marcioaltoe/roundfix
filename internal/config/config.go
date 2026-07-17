@@ -506,7 +506,7 @@ func Builtin() Config {
 		Profiles: builtinProfiles(),
 		ReviewSource: ReviewSource{
 			Name:            defaultReviewSource,
-			IncludeNitpicks: true,
+			IncludeNitpicks: false,
 		},
 		Watch: Watch{
 			UntilClean:       true,
@@ -630,7 +630,9 @@ func DefaultConfigYAML() string {
 # Project Config: <repo>/.roundfixrc.yml
 
 defaults:
+  # false keeps each ACP Runtime's normal sandbox or permission mode.
   agent_full_access: %t
+  # Verification command for review Batches; Spec Tasks use their task file commands.
   verification: %s
   # Empty uses Roundfix Home artifacts/<repo-id>; set a path to override.
   artifact_dir: ""
@@ -693,9 +695,11 @@ worktree:
   # Maximum concurrent Task Worktrees for spec Runs; 1 keeps sequential behavior.
   concurrency: %d
   # Repository-relative untracked files copied into each Run Worktree.
+  # Empty copies no files.
   copy: []
   # Command run once after copy before Agent work; empty disables bootstrap.
   bootstrap: ""
+  # Maximum time allowed for each worktree bootstrap command.
   bootstrap_timeout: %s
 
 store:
@@ -704,6 +708,7 @@ store:
 
 review_source:
   name: %s
+  # false excludes CodeRabbit findings whose severity is nitpick.
   include_nitpicks: %t
 
 watch:
