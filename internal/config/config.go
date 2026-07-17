@@ -46,6 +46,7 @@ const (
 type Config struct {
 	Defaults     Defaults
 	Runtimes     Runtimes
+	Profiles     Profiles
 	ReviewSource ReviewSource
 	Watch        Watch
 	Implement    Implement
@@ -202,6 +203,7 @@ func (duration *durationValue) UnmarshalYAML(node *yaml.Node) error {
 type configOverlay struct {
 	Defaults     *defaultsOverlay     `yaml:"defaults"`
 	Runtimes     *runtimesOverlay     `yaml:"runtimes"`
+	Profiles     *profilesOverlay     `yaml:"profiles"`
 	ReviewSource *reviewSourceOverlay `yaml:"review_source"`
 	Watch        *watchOverlay        `yaml:"watch"`
 	Implement    *implementOverlay    `yaml:"implement"`
@@ -501,6 +503,7 @@ func Builtin() Config {
 				ReasoningEffort: defaultClaudeReasoningEffort,
 			},
 		},
+		Profiles: builtinProfiles(),
 		ReviewSource: ReviewSource{
 			Name:            defaultReviewSource,
 			IncludeNitpicks: true,
@@ -561,13 +564,13 @@ func Load(opts LoadOptions) (Loaded, error) {
 		UserConfigPath: filepath.Join(homeDir, userConfigRelPath),
 	}
 	warnings := newDeprecatedConfigWarnings(opts.Stderr)
-	if err := applyConfigFile(&loaded.Config, loaded.UserConfigPath, warnings); err != nil {
+	if err := applyConfigFile(&loaded.Config, loaded.UserConfigPath, warnings, ProfileSourceUser); err != nil {
 		return Loaded{}, err
 	}
 
 	if loaded.GitRoot != "" {
 		loaded.ProjectConfigPath = filepath.Join(loaded.GitRoot, projectConfigName)
-		if err := applyConfigFile(&loaded.Config, loaded.ProjectConfigPath, warnings); err != nil {
+		if err := applyConfigFile(&loaded.Config, loaded.ProjectConfigPath, warnings, ProfileSourceProject); err != nil {
 			return Loaded{}, err
 		}
 	}
@@ -741,6 +744,9 @@ func defaultConfigString(value string) string {
 func Validate(config Config) error {
 	if config.Defaults.Agent != "" && !isSupportedAgent(config.Defaults.Agent) {
 		return fmt.Errorf("defaults.agent %q is invalid; supported values: codex, claude, opencode", config.Defaults.Agent)
+	}
+	if err := validateProfiles(config.Profiles); err != nil {
+		return err
 	}
 	if strings.TrimSpace(config.Defaults.Verification) == "" {
 		return errors.New("defaults.verification must not be empty")
@@ -1021,7 +1027,7 @@ func ResolveWorktreeLocation(location string, gitRoot string, homeDir string) (s
 	return resolved, nil
 }
 
-func applyConfigFile(config *Config, path string, warnings *deprecatedConfigWarnings) error {
+func applyConfigFile(config *Config, path string, warnings *deprecatedConfigWarnings, source ProfileSource) error {
 	content, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
@@ -1039,6 +1045,11 @@ func applyConfigFile(config *Config, path string, warnings *deprecatedConfigWarn
 		return fmt.Errorf("parse config %q: %w", path, err)
 	}
 	stripDeprecatedConfigKeys(&document, warnings)
+	hasProfiles := configHasProfilesSection(&document)
+	hasLegacyRuntimeDefaults := configHasLegacyRuntimeDefaults(&document)
+	if hasProfiles && hasLegacyRuntimeDefaults {
+		return fmt.Errorf("parse config %q: %w", path, profileSchemaConflictError(source))
+	}
 	cleaned, err := encodeYAMLNode(&document)
 	if err != nil {
 		return fmt.Errorf("parse config %q: %w", path, err)
@@ -1054,6 +1065,11 @@ func applyConfigFile(config *Config, path string, warnings *deprecatedConfigWarn
 		return fmt.Errorf("parse config %q: %w", path, err)
 	}
 	applyOverlay(config, overlay)
+	if overlay.Profiles != nil {
+		applyProfilesOverlay(config, overlay.Profiles, source)
+	} else if hasLegacyRuntimeDefaults {
+		applyLegacyRuntimeProfiles(config, source)
+	}
 	return nil
 }
 

@@ -42,6 +42,9 @@ specs:
 	mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), `
 defaults:
   agent: opencode
+runtimes:
+  opencode:
+    model: project-opencode
 watch:
   max_rounds: 8
 implement:
@@ -114,6 +117,382 @@ func TestBuiltinRuntimeDefaults(t *testing.T) {
 	}
 	if config.Runtimes.OpenCode.Model != "" || config.Runtimes.OpenCode.ReasoningEffort != "" {
 		t.Fatalf("expected built-in OpenCode to require explicit selection, got %#v", config.Runtimes.OpenCode)
+	}
+}
+
+func TestAgentSelectionProfileBuiltinsResolveRequiredCategories(t *testing.T) {
+	config := Builtin()
+	tests := []struct {
+		name     string
+		category WorkCategory
+		want     AgentSelectionProfile
+	}{
+		{
+			name:     "general",
+			category: CategoryGeneral,
+			want: profileForTest(
+				selectionForTest("codex", "gpt-5.6-sol", "high"),
+				selectionForTest("codex", "gpt-5.6-terra", "max"),
+			),
+		},
+		{
+			name:     "backend",
+			category: CategoryBackend,
+			want: profileForTest(
+				selectionForTest("codex", "gpt-5.6-sol", "high"),
+				selectionForTest("codex", "gpt-5.6-terra", "max"),
+			),
+		},
+		{
+			name:     "frontend",
+			category: CategoryFrontend,
+			want: profileForTest(
+				selectionForTest("claude", "claude-fable-5", "medium"),
+				selectionForTest("codex", "gpt-5.6-sol", "high"),
+			),
+		},
+		{
+			name:     "qa",
+			category: CategoryQA,
+			want: profileForTest(
+				selectionForTest("codex", "gpt-5.6-sol", "high"),
+				selectionForTest("codex", "gpt-5.6-terra", "max"),
+			),
+		},
+		{
+			name:     "review",
+			category: CategoryReview,
+			want: profileForTest(
+				selectionForTest("codex", "gpt-5.6-sol", "high"),
+				selectionForTest("codex", "gpt-5.6-terra", "max"),
+			),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ResolveProfile(config, tt.category, nil)
+			if err != nil {
+				t.Fatalf("ResolveProfile(%q) error = %v", tt.category, err)
+			}
+			if got.Source != ProfileSourceBuiltIn {
+				t.Fatalf("expected built-in source, got %q", got.Source)
+			}
+			if got.InheritedFrom != "" {
+				t.Fatalf("expected no inheritance, got %q", got.InheritedFrom)
+			}
+			if !profilesEqual(got.Profile, tt.want) {
+				t.Fatalf("ResolveProfile(%q) mismatch\nwant: %#v\ngot:  %#v", tt.category, tt.want, got.Profile)
+			}
+		})
+	}
+}
+
+func TestAgentSelectionProfileOptionalCategoryInheritsGeneral(t *testing.T) {
+	config := Builtin()
+	general, err := ResolveProfile(config, CategoryGeneral, nil)
+	if err != nil {
+		t.Fatalf("ResolveProfile(general) error = %v", err)
+	}
+
+	got, err := ResolveProfile(config, CategoryData, nil)
+	if err != nil {
+		t.Fatalf("ResolveProfile(data) error = %v", err)
+	}
+
+	if got.InheritedFrom != CategoryGeneral {
+		t.Fatalf("expected data to inherit general, got %q", got.InheritedFrom)
+	}
+	if got.Source != general.Source {
+		t.Fatalf("expected inherited source %q, got %q", general.Source, got.Source)
+	}
+	if !profilesEqual(got.Profile, general.Profile) {
+		t.Fatalf("expected data profile to equal general profile\nwant: %#v\ngot:  %#v", general.Profile, got.Profile)
+	}
+	if _, stored := config.Profiles[CategoryData]; stored {
+		t.Fatalf("expected optional data profile not to be stored in built-ins")
+	}
+}
+
+func TestProfileResolverUsesAtomicProjectOverUserPrecedence(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
+profiles:
+  backend:
+    preferred:
+      runtime: claude
+      model: user-preferred
+      reasoning_effort: medium
+    fallbacks:
+      - runtime: codex
+        model: user-fallback
+        reasoning_effort: high
+`)
+	mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), `
+profiles:
+  backend:
+    preferred:
+      runtime: codex
+      model: project-preferred
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: project-fallback
+        reasoning_effort: ""
+`)
+
+	loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+	if err != nil {
+		t.Fatalf("expected config to load, got %v", err)
+	}
+	got, err := ResolveProfile(loaded.Config, CategoryBackend, nil)
+	if err != nil {
+		t.Fatalf("ResolveProfile(backend) error = %v", err)
+	}
+
+	want := profileForTest(
+		selectionForTest("codex", "project-preferred", "high"),
+		selectionForTest("claude", "project-fallback", ""),
+	)
+	if got.Source != ProfileSourceProject {
+		t.Fatalf("expected project source, got %q", got.Source)
+	}
+	if !profilesEqual(got.Profile, want) {
+		t.Fatalf("expected project profile to replace user profile atomically\nwant: %#v\ngot:  %#v", want, got.Profile)
+	}
+}
+
+func TestAgentSelectionProfileRejectsInvalidConfiguredProfiles(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   string
+		contains string
+	}{
+		{
+			name: "empty profiles section",
+			config: `
+profiles: {}
+`,
+			contains: "profiles must define at least one Agent Selection Profile",
+		},
+		{
+			name: "missing fallback chain",
+			config: `
+profiles:
+  backend:
+    preferred:
+      runtime: codex
+      model: gpt-custom
+      reasoning_effort: high
+`,
+			contains: "profiles.backend.fallbacks is required",
+		},
+		{
+			name: "partial preferred selection",
+			config: `
+profiles:
+  backend:
+    preferred:
+      runtime: codex
+      model: gpt-custom
+    fallbacks:
+      - runtime: codex
+        model: fallback
+        reasoning_effort: high
+`,
+			contains: "profiles.backend.preferred.reasoning_effort is required",
+		},
+		{
+			name: "empty fallback chain",
+			config: `
+profiles:
+  backend:
+    preferred:
+      runtime: codex
+      model: gpt-custom
+      reasoning_effort: high
+    fallbacks: []
+`,
+			contains: "profiles.backend.fallbacks must include at least one Agent Selection",
+		},
+		{
+			name: "duplicate tuple",
+			config: `
+profiles:
+  backend:
+    preferred:
+      runtime: codex
+      model: gpt-custom
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: gpt-custom
+        reasoning_effort: high
+`,
+			contains: `profiles.backend contains duplicate Agent Selection "codex / gpt-custom / high"`,
+		},
+		{
+			name: "unknown runtime",
+			config: `
+profiles:
+  backend:
+    preferred:
+      runtime: local
+      model: llama
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: fallback
+        reasoning_effort: high
+`,
+			contains: `profiles.backend.preferred.runtime "local" is invalid; supported values: codex, claude, opencode`,
+		},
+		{
+			name: "empty model",
+			config: `
+profiles:
+  backend:
+    preferred:
+      runtime: codex
+      model: ""
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: fallback
+        reasoning_effort: high
+`,
+			contains: "profiles.backend.preferred.model must not be empty",
+		},
+		{
+			name: "mixed legacy and profiles",
+			config: `
+defaults:
+  agent: codex
+profiles:
+  backend:
+    preferred:
+      runtime: codex
+      model: gpt-custom
+      reasoning_effort: high
+    fallbacks:
+      - runtime: codex
+        model: fallback
+        reasoning_effort: high
+`,
+			contains: "config mixes legacy runtime defaults with profiles; migrate with `roundfix profiles configure --scope user`",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir := t.TempDir()
+			workDir := t.TempDir()
+			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+			mustMkdir(t, filepath.Join(workDir, ".git"))
+			mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.config)
+
+			_, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+
+			if err == nil {
+				t.Fatal("expected config load to fail")
+			}
+			if !strings.Contains(err.Error(), tt.contains) {
+				t.Fatalf("expected error containing %q, got %q", tt.contains, err.Error())
+			}
+		})
+	}
+}
+
+func TestAgentSelectionProfileDistinguishesMissingReasoningFromEmptyReasoning(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
+profiles:
+  backend:
+    preferred:
+      runtime: claude
+      model: custom-fable
+      reasoning_effort: ""
+    fallbacks:
+      - runtime: codex
+        model: custom-sol
+        reasoning_effort: ""
+`)
+
+	loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+	if err != nil {
+		t.Fatalf("expected explicit empty reasoning to load, got %v", err)
+	}
+	got, err := ResolveProfile(loaded.Config, CategoryBackend, nil)
+	if err != nil {
+		t.Fatalf("ResolveProfile(backend) error = %v", err)
+	}
+	if got.Profile.Preferred.ReasoningEffort != "" || got.Profile.Fallbacks[0].ReasoningEffort != "" {
+		t.Fatalf("expected explicit empty reasoning to survive unchanged, got %#v", got.Profile)
+	}
+	if got.Profile.Preferred.Model != "custom-fable" || got.Profile.Fallbacks[0].Model != "custom-sol" {
+		t.Fatalf("expected custom model strings to survive unchanged, got %#v", got.Profile)
+	}
+}
+
+func TestProfileLegacyMigrationConvertsRuntimeDefaults(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), `
+defaults:
+  agent: claude
+runtimes:
+  claude:
+    model: fable
+    reasoning_effort: ""
+`)
+
+	loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+	if err != nil {
+		t.Fatalf("expected legacy config to load, got %v", err)
+	}
+	got, err := ResolveProfile(loaded.Config, CategoryBackend, nil)
+	if err != nil {
+		t.Fatalf("ResolveProfile(backend) error = %v", err)
+	}
+
+	want := profileForTest(
+		selectionForTest("claude", "fable", ""),
+		selectionForTest("codex", "gpt-5.6-terra", "max"),
+	)
+	if got.Source != ProfileSourceUser {
+		t.Fatalf("expected user source, got %q", got.Source)
+	}
+	if !profilesEqual(got.Profile, want) {
+		t.Fatalf("expected legacy runtime defaults to convert into profile\nwant: %#v\ngot:  %#v", want, got.Profile)
+	}
+}
+
+func TestProfileResolverPreferredOverridePreservesFallbackChain(t *testing.T) {
+	config := Builtin()
+	override := selectionForTest("claude", "custom-frontier", "")
+
+	got, err := ResolveProfile(config, CategoryBackend, &override)
+	if err != nil {
+		t.Fatalf("ResolveProfile(backend) with override error = %v", err)
+	}
+
+	if got.Source != ProfileSourceInvocation {
+		t.Fatalf("expected invocation source, got %q", got.Source)
+	}
+	if got.Profile.Preferred != override {
+		t.Fatalf("expected preferred override %#v, got %#v", override, got.Profile.Preferred)
+	}
+	wantFallbacks := []AgentSelection{selectionForTest("codex", "gpt-5.6-terra", "max")}
+	if !selectionsEqual(got.Profile.Fallbacks, wantFallbacks) {
+		t.Fatalf("expected configured fallbacks to survive override\nwant: %#v\ngot:  %#v", wantFallbacks, got.Profile.Fallbacks)
 	}
 }
 
@@ -1387,4 +1766,35 @@ func assertDir(t *testing.T, path string) {
 	if !info.IsDir() {
 		t.Fatalf("expected %s to be a directory", path)
 	}
+}
+
+func selectionForTest(runtime string, model string, reasoningEffort string) AgentSelection {
+	return AgentSelection{
+		Runtime:         runtime,
+		Model:           model,
+		ReasoningEffort: reasoningEffort,
+	}
+}
+
+func profileForTest(preferred AgentSelection, fallbacks ...AgentSelection) AgentSelectionProfile {
+	return AgentSelectionProfile{
+		Preferred: preferred,
+		Fallbacks: append([]AgentSelection(nil), fallbacks...),
+	}
+}
+
+func profilesEqual(left AgentSelectionProfile, right AgentSelectionProfile) bool {
+	return left.Preferred == right.Preferred && selectionsEqual(left.Fallbacks, right.Fallbacks)
+}
+
+func selectionsEqual(left []AgentSelection, right []AgentSelection) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for index := range left {
+		if left[index] != right[index] {
+			return false
+		}
+	}
+	return true
 }

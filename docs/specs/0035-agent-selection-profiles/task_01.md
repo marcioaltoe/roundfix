@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0035-agent-selection-profiles
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -24,22 +24,22 @@ Establish the immutable selection, profile, category, catalog, and configuration
 
 ## Subtasks
 
-- [ ] Define Agent Selection, Profile, Work Category, and source values.
-- [ ] Normalize official built-in Model Catalog entries and labels.
-- [ ] Add strict profile YAML decoding and validation.
-- [ ] Add atomic precedence and optional-category inheritance.
-- [ ] Preserve fallbacks under one-Run Preferred Selection overrides.
-- [ ] Add legacy conversion and conflict diagnostics.
-- [ ] Cover positive, negative, inheritance, and migration cases with table tests.
+- [x] Define Agent Selection, Profile, Work Category, and source values.
+- [x] Normalize official built-in Model Catalog entries and labels.
+- [x] Add strict profile YAML decoding and validation.
+- [x] Add atomic precedence and optional-category inheritance.
+- [x] Preserve fallbacks under one-Run Preferred Selection overrides.
+- [x] Add legacy conversion and conflict diagnostics.
+- [x] Cover positive, negative, inheritance, and migration cases with table tests.
 
 ## Acceptance Criteria
 
-- [ ] Every required category resolves to the specified built-in Preferred Selection and Fallback Chain when no config exists.
-- [ ] An absent optional profile is byte-equivalent to the effective `general` profile and reports inheritance without duplicating stored config.
-- [ ] A present higher-precedence profile replaces the lower profile as one object; no tuple field or fallback entry merges across scopes.
-- [ ] Missing keys, partial profiles, empty fallbacks, duplicate tuples, and mixed legacy/new schemas fail with actionable diagnostics.
-- [ ] Official built-ins render official identifiers, while explicit custom model strings survive unchanged for ACP proof.
-- [ ] Invocation overrides replace only the relevant Preferred Selection and retain the configured Fallback Chain.
+- [x] Every required category resolves to the specified built-in Preferred Selection and Fallback Chain when no config exists.
+- [x] An absent optional profile is byte-equivalent to the effective `general` profile and reports inheritance without duplicating stored config.
+- [x] A present higher-precedence profile replaces the lower profile as one object; no tuple field or fallback entry merges across scopes.
+- [x] Missing keys, partial profiles, empty fallbacks, duplicate tuples, and mixed legacy/new schemas fail with actionable diagnostics.
+- [x] Official built-ins render official identifiers, while explicit custom model strings survive unchanged for ACP proof.
+- [x] Invocation overrides replace only the relevant Preferred Selection and retain the configured Fallback Chain.
 
 ## Context
 
@@ -60,3 +60,22 @@ Establish the immutable selection, profile, category, catalog, and configuration
 - `_techspec.md` → Domain types; Configuration schema and precedence; Official Model Catalog and adapter proof; Build Order 1.
 - `references/model-ranking.md` → official model identifiers used by built-in selections.
 - ADR-0040 → reasoning effort must be applied exactly as displayed and persisted.
+
+## Result
+
+Implemented atomic Agent Selection Profile contracts in `internal/config` with required Work Categories, source-aware resolution, optional Task Type inheritance from effective `general`, strict profile YAML decoding, complete-selection validation, legacy runtime-default conversion, and invocation Preferred Selection overrides that retain the resolved Fallback Chain. Normalized Claude Model Catalog output to official identifiers while retaining custom configured model strings unchanged.
+
+Evidence by acceptance criterion:
+
+- Required built-ins: `TestAgentSelectionProfileBuiltinsResolveRequiredCategories` verifies `general`, `backend`, `frontend`, `qa`, and `review` Preferred Selection and Fallback Chain values from built-ins.
+- Optional inheritance: `TestAgentSelectionProfileOptionalCategoryInheritsGeneral` verifies absent `data` resolves byte-equivalent to effective `general`, reports `inherited_from: general`, and is not stored as a duplicate built-in profile.
+- Atomic precedence: `TestProfileResolverUsesAtomicProjectOverUserPrecedence` verifies a Project Config profile replaces the User Config profile as one object, including fallback chain.
+- Strict diagnostics: `TestAgentSelectionProfileRejectsInvalidConfiguredProfiles` covers empty profiles, missing fallbacks, missing reasoning keys, empty fallback chains, duplicate tuples, invalid runtime, empty model, and same-scope legacy/new schema conflicts with a migration command.
+- Official/custom identifiers: `TestModelCatalogsExposeOrderedPickerData` verifies official `claude-fable-5` and `claude-opus-4-8` catalog entries; `TestAgentSelectionProfileDistinguishesMissingReasoningFromEmptyReasoning` verifies explicit custom model strings survive unchanged and explicit empty reasoning survives as model-managed.
+- Preferred override: `TestProfileResolverPreferredOverridePreservesFallbackChain` verifies invocation overrides replace only the Preferred Selection and preserve the configured fallback chain.
+
+Verification run:
+
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-gocache go test ./internal/config ./internal/agent -run 'Test(AgentSelectionProfile|ProfileResolver|ProfileLegacyMigration|ModelCatalog)' -count=1` — passed.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-gocache go test ./internal/config ./internal/agent -count=1` — passed.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-gocache make verify` — passed.
