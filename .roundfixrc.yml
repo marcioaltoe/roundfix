@@ -17,8 +17,8 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: max
+        model: gpt-5.4
+        reasoning_effort: xhigh
   backend:
     preferred:
       runtime: codex
@@ -26,8 +26,8 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: max
+        model: gpt-5.4
+        reasoning_effort: xhigh
   frontend:
     preferred:
       runtime: claude
@@ -44,8 +44,8 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: max
+        model: gpt-5.4
+        reasoning_effort: xhigh
   review:
     preferred:
       runtime: codex
