@@ -29,6 +29,7 @@ const (
 	fakeACPXStderr     = "ROUNDFIX_FAKE_ACPX_STDERR"
 	fakeACPXExitCode   = "ROUNDFIX_FAKE_ACPX_EXIT_CODE"
 	fakeACPXStdoutBy   = "ROUNDFIX_FAKE_ACPX_STDOUT_BY_COMMAND"
+	fakeACPXStdoutCall = "ROUNDFIX_FAKE_ACPX_STDOUT_BY_CALL"
 	fakeACPXStderrBy   = "ROUNDFIX_FAKE_ACPX_STDERR_BY_COMMAND"
 	fakeACPXExitBy     = "ROUNDFIX_FAKE_ACPX_EXIT_BY_COMMAND"
 	fakeACPXExitByCall = "ROUNDFIX_FAKE_ACPX_EXIT_BY_CALL"
@@ -298,6 +299,9 @@ func TestACPXProbeMalformedConfigFallsBackToDefaultAdapter(t *testing.T) {
 	harness := newFakeACPXHarness(t)
 	writeACPXConfigForTest(t, `{not json`)
 	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"set model value=gpt-5.5": selectionStateFixture(t, "model", "gpt-5.5", "gpt-5.5", []string{"gpt-5.5"}, "", "", nil),
+	}))
 	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.5"}
 
 	err := harness.runner.Probe(context.Background(), ProbeRequest{Runtime: runtime, WorkDir: harness.gitRoot})
@@ -318,20 +322,20 @@ func TestACPXProbeValidatesSelectionWithDisposableSession(t *testing.T) {
 		t.Fatalf("expected supported selection to pass, got %v", err)
 	}
 	invocations := readJSONInvocations(t, harness.invocationsPath)
-	if len(invocations) != 4 {
-		t.Fatalf("expected version, ensure, reasoning, close invocations, got %#v", invocations)
+	if len(invocations) != 5 {
+		t.Fatalf("expected version, ensure, model state, reasoning, close invocations, got %#v", invocations)
 	}
 	if !reflect.DeepEqual(invocations[0], []string{"--version"}) {
 		t.Fatalf("expected version check first, got %#v", invocations[0])
 	}
 	sessionName := assertDisposableEnsureInvocation(t, invocations[1], harness.gitRoot, "codex", "gpt-5.5")
-	wantReasoning := []string{"--cwd", harness.gitRoot, "codex", "set", "reasoning_effort", "xhigh", "-s", sessionName}
-	if !reflect.DeepEqual(invocations[2], wantReasoning) {
-		t.Fatalf("unexpected reasoning invocation\nwant: %#v\ngot:  %#v", wantReasoning, invocations[2])
+	wantReasoning := []string{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "codex", "set", "reasoning_effort", "xhigh", "-s", sessionName}
+	if !reflect.DeepEqual(invocations[3], wantReasoning) {
+		t.Fatalf("unexpected reasoning invocation\nwant: %#v\ngot:  %#v", wantReasoning, invocations[3])
 	}
 	wantClose := []string{"--cwd", harness.gitRoot, "codex", "sessions", "close", sessionName}
-	if !reflect.DeepEqual(invocations[3], wantClose) {
-		t.Fatalf("unexpected disposable close invocation\nwant: %#v\ngot:  %#v", wantClose, invocations[3])
+	if !reflect.DeepEqual(invocations[4], wantClose) {
+		t.Fatalf("unexpected disposable close invocation\nwant: %#v\ngot:  %#v", wantClose, invocations[4])
 	}
 	if containsCommandKey(invocations, "prompt") {
 		t.Fatalf("selection preflight must not send prompts, got %#v", invocations)
@@ -341,6 +345,9 @@ func TestACPXProbeValidatesSelectionWithDisposableSession(t *testing.T) {
 func TestACPXProbeSkipsEmptyReasoningEffort(t *testing.T) {
 	harness := newFakeACPXHarness(t)
 	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"set model value=gpt-5.6-sol": selectionStateFixture(t, "model", "gpt-5.6-sol", "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "", "", nil),
+	}))
 	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol"}
 
 	err := harness.runner.Probe(context.Background(), ProbeRequest{Runtime: runtime, WorkDir: harness.gitRoot})
@@ -349,16 +356,16 @@ func TestACPXProbeSkipsEmptyReasoningEffort(t *testing.T) {
 		t.Fatalf("expected model-managed reasoning selection to pass, got %v", err)
 	}
 	invocations := readJSONInvocations(t, harness.invocationsPath)
-	if len(invocations) != 3 {
-		t.Fatalf("expected version, ensure, close invocations, got %#v", invocations)
+	if len(invocations) != 4 {
+		t.Fatalf("expected version, ensure, model state, close invocations, got %#v", invocations)
 	}
 	if !reflect.DeepEqual(invocations[0], []string{"--version"}) {
 		t.Fatalf("expected version check first, got %#v", invocations[0])
 	}
 	sessionName := assertDisposableEnsureInvocation(t, invocations[1], harness.gitRoot, "codex", "gpt-5.6-sol")
 	wantClose := []string{"--cwd", harness.gitRoot, "codex", "sessions", "close", sessionName}
-	if !reflect.DeepEqual(invocations[2], wantClose) {
-		t.Fatalf("unexpected disposable close invocation\nwant: %#v\ngot:  %#v", wantClose, invocations[2])
+	if !reflect.DeepEqual(invocations[3], wantClose) {
+		t.Fatalf("unexpected disposable close invocation\nwant: %#v\ngot:  %#v", wantClose, invocations[3])
 	}
 	if containsCommandKey(invocations, "set reasoning_effort") {
 		t.Fatalf("expected no reasoning set call for empty effort, got %#v", invocations)
@@ -380,13 +387,13 @@ func TestProfileProofAppliesExactReasoningAndClosesDisposableSession(t *testing.
 		t.Fatalf("profile proof must not send prompts, got %#v", invocations)
 	}
 	sessionName := assertDisposableEnsureInvocation(t, invocations[1], harness.gitRoot, "codex", "gpt-5.6-sol")
-	wantReasoning := []string{"--cwd", harness.gitRoot, "codex", "set", "reasoning_effort", "high", "-s", sessionName}
-	if !reflect.DeepEqual(invocations[2], wantReasoning) {
-		t.Fatalf("profile proof did not apply exact reasoning\nwant: %#v\ngot:  %#v", wantReasoning, invocations[2])
+	wantReasoning := []string{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "codex", "set", "reasoning_effort", "high", "-s", sessionName}
+	if !reflect.DeepEqual(invocations[3], wantReasoning) {
+		t.Fatalf("profile proof did not apply exact reasoning\nwant: %#v\ngot:  %#v", wantReasoning, invocations[3])
 	}
 	wantClose := []string{"--cwd", harness.gitRoot, "codex", "sessions", "close", sessionName}
-	if !reflect.DeepEqual(invocations[3], wantClose) {
-		t.Fatalf("profile proof did not close disposable session\nwant: %#v\ngot:  %#v", wantClose, invocations[3])
+	if !reflect.DeepEqual(invocations[4], wantClose) {
+		t.Fatalf("profile proof did not close disposable session\nwant: %#v\ngot:  %#v", wantClose, invocations[4])
 	}
 }
 
@@ -402,9 +409,9 @@ func TestProfileProofClosesDisposableSessionOnSelectionFailure(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected profile proof selection failure")
 	}
-	var selectionErr *SelectionPreflightError
+	var selectionErr *SelectionRejectedError
 	if !errors.As(err, &selectionErr) {
-		t.Fatalf("expected SelectionPreflightError, got %T %v", err, err)
+		t.Fatalf("expected SelectionRejectedError, got %T %v", err, err)
 	}
 	invocations := readJSONInvocations(t, harness.invocationsPath)
 	sessionName := disposableSessionFromEnsure(t, invocations[1])
@@ -414,6 +421,276 @@ func TestProfileProofClosesDisposableSessionOnSelectionFailure(t *testing.T) {
 	}
 	if containsCommandKey(invocations, "prompt") {
 		t.Fatalf("profile proof must not send prompts after failure, got %#v", invocations)
+	}
+}
+
+func TestApplySessionSelection(t *testing.T) {
+	tests := []struct {
+		name           string
+		runtime        RuntimeSpec
+		initial        string
+		stdoutByCall   map[string]string
+		exitBy         map[string]int
+		wantCalls      []string
+		classification string
+	}{
+		{
+			name:    "independent controls apply model before reasoning",
+			runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"},
+			initial: selectionStateFixture(t, "model", "gpt-5.5", "gpt-5.5", []string{"gpt-5.6-sol", "gpt-5.5"}, "reasoning_effort", "medium", []string{"medium", "high", "xhigh"}),
+			stdoutByCall: map[string]string{
+				"set model value=gpt-5.6-sol":     selectionStateFixture(t, "model", "gpt-5.6-sol", "gpt-5.6-sol", []string{"gpt-5.6-sol", "gpt-5.5"}, "reasoning_effort", "medium", []string{"medium", "high", "xhigh"}),
+				"set reasoning_effort value=high": selectionStateFixture(t, "reasoning_effort", "high", "gpt-5.6-sol", []string{"gpt-5.6-sol", "gpt-5.5"}, "reasoning_effort", "high", []string{"medium", "high", "xhigh"}),
+			},
+			wantCalls: []string{"set model value=gpt-5.6-sol", "set reasoning_effort value=high"},
+		},
+		{
+			name:    "model variant applies only advertised variant",
+			runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "future-model", ReasoningEffort: "high"},
+			initial: selectionStateFixture(t, "model", "future-model", "future-model", []string{"future-model", "future-model[high]", "future-model[xhigh]"}, "", "", nil),
+			stdoutByCall: map[string]string{
+				"set model value=future-model[high]": selectionStateFixture(t, "model", "future-model[high]", "future-model[high]", []string{"future-model", "future-model[high]", "future-model[xhigh]"}, "", "", nil),
+			},
+			wantCalls: []string{"set model value=future-model[high]"},
+		},
+		{
+			name:    "zero exit mismatched state fails",
+			runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"},
+			initial: selectionStateFixture(t, "model", "gpt-5.6-sol", "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "medium", []string{"medium", "high"}),
+			stdoutByCall: map[string]string{
+				"set reasoning_effort value=high": selectionStateFixture(t, "reasoning_effort", "high", "gpt-5.5", []string{"gpt-5.6-sol", "gpt-5.5"}, "reasoning_effort", "high", []string{"medium", "high"}),
+			},
+			wantCalls:      []string{"set reasoning_effort value=high"},
+			classification: EffectiveSelectionMismatch,
+		},
+		{
+			name:           "rejected effort never retries model managed",
+			runtime:        RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"},
+			initial:        selectionStateFixture(t, "model", "gpt-5.6-sol", "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "medium", []string{"medium", "high"}),
+			exitBy:         map[string]int{"set reasoning_effort": 2},
+			wantCalls:      []string{"set reasoning_effort value=high"},
+			classification: SelectionRejected,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			harness := newFakeACPXHarness(t)
+			t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, tt.stdoutByCall))
+			if tt.exitBy != nil {
+				t.Setenv(fakeACPXExitBy, mustJSONForTest(t, tt.exitBy))
+			}
+			capabilities, err := ParseSessionConfigOptions([]byte(tt.initial), AdapterEvidence{Command: "adapter"})
+			if err != nil {
+				t.Fatalf("parse initial capabilities: %v", err)
+			}
+			proof, err := harness.runner.ApplySessionSelection(context.Background(), SessionSelectionRequest{
+				Runtime:      tt.runtime,
+				Session:      SessionRef{Name: "roundfix-live", WorkDir: harness.gitRoot},
+				Capabilities: capabilities,
+			})
+			if tt.classification == "" {
+				if err != nil {
+					t.Fatalf("apply selection: %v", err)
+				}
+				if proof.Status != SelectionProofStatusProven || proof.Model != tt.runtime.Model || proof.ReasoningEffort != tt.runtime.ReasoningEffort {
+					t.Fatalf("unexpected proof: %#v", proof)
+				}
+			} else {
+				if err == nil {
+					t.Fatal("expected selection application failure")
+				}
+				classified, ok := err.(interface{ Classification() string })
+				if !ok || classified.Classification() != tt.classification {
+					t.Fatalf("classification = %T %v, want %q", err, err, tt.classification)
+				}
+			}
+			if got := selectionCallKeys(readJSONInvocations(t, harness.invocationsPath)); !reflect.DeepEqual(got, tt.wantCalls) {
+				t.Fatalf("selection calls = %#v, want %#v", got, tt.wantCalls)
+			}
+		})
+	}
+}
+
+func TestProveExactSelectionOfficialFixturesNoPrompt(t *testing.T) {
+	tests := []struct {
+		name   string
+		model  string
+		effort string
+	}{
+		{name: "Sol high", model: "gpt-5.6-sol", effort: "high"},
+		{name: "GPT 5.5 xhigh", model: "gpt-5.5", effort: "xhigh"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			harness := newFakeACPXHarness(t)
+			models := []string{"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.5"}
+			efforts := []string{"low", "medium", "high", "xhigh", "max", "ultra"}
+			t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+				"set model value=" + tt.model:             selectionStateFixture(t, "model", tt.model, tt.model, models, "reasoning_effort", "medium", efforts),
+				"set reasoning_effort value=" + tt.effort: selectionStateFixture(t, "reasoning_effort", tt.effort, tt.model, models, "reasoning_effort", tt.effort, efforts),
+			}))
+
+			proof, err := harness.runner.ProveExactSelection(context.Background(), ProbeRequest{
+				Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: tt.model, ReasoningEffort: tt.effort},
+				WorkDir: harness.gitRoot,
+			})
+			if err != nil {
+				t.Fatalf("prove exact selection: %v", err)
+			}
+			if proof.Status != SelectionProofStatusProven || proof.Model != tt.model || proof.ReasoningEffort != tt.effort {
+				t.Fatalf("unexpected proof: %#v", proof)
+			}
+			invocations := readJSONInvocations(t, harness.invocationsPath)
+			if containsCommandKey(invocations, "prompt") {
+				t.Fatalf("proof sent an Agent prompt: %#v", invocations)
+			}
+			if got, want := selectionCallKeys(invocations), []string{"sessions ensure model=" + tt.model, "set model value=" + tt.model, "set reasoning_effort value=" + tt.effort, "sessions close"}; !reflect.DeepEqual(got, want) {
+				t.Fatalf("proof calls = %#v, want %#v", got, want)
+			}
+		})
+	}
+}
+
+func TestProveExactSelectionModelVariant(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	models := []string{"future-model", "future-model[high]", "future-model[xhigh]"}
+	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"set model value=future-model":       selectionStateFixture(t, "model", "future-model", "future-model", models, "", "", nil),
+		"set model value=future-model[high]": selectionStateFixture(t, "model", "future-model[high]", "future-model[high]", models, "", "", nil),
+	}))
+
+	proof, err := harness.runner.ProveExactSelection(context.Background(), ProbeRequest{
+		Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "future-model", ReasoningEffort: "high"},
+		WorkDir: harness.gitRoot,
+	})
+	if err != nil {
+		t.Fatalf("prove model variant: %v", err)
+	}
+	if proof.Assignment.Encoding != SelectionEncodingModelVariant || proof.Assignment.AdapterModel != "future-model[high]" {
+		t.Fatalf("unexpected variant proof: %#v", proof)
+	}
+	if containsCommandKey(readJSONInvocations(t, harness.invocationsPath), "set reasoning_effort") {
+		t.Fatal("model variant proof must not send an independent reasoning operation")
+	}
+}
+
+func TestProveExactSelectionEffectiveMismatchCleanup(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	efforts := []string{"medium", "high"}
+	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"set model value=gpt-5.6-sol":     selectionStateFixture(t, "model", "gpt-5.6-sol", "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "medium", efforts),
+		"set reasoning_effort value=high": selectionStateFixture(t, "reasoning_effort", "high", "gpt-5.5", []string{"gpt-5.6-sol", "gpt-5.5"}, "reasoning_effort", "high", efforts),
+	}))
+
+	_, err := harness.runner.ProveExactSelection(context.Background(), ProbeRequest{Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"}, WorkDir: harness.gitRoot})
+	var mismatch *EffectiveSelectionError
+	if !errors.As(err, &mismatch) {
+		t.Fatalf("error = %T %v, want *EffectiveSelectionError", err, err)
+	}
+	assertLastInvocationClosesDisposable(t, harness)
+}
+
+func TestProveExactSelectionMalformedEvidenceCleanup(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{"set model value=gpt-5.6-sol": `{`}))
+
+	_, err := harness.runner.ProveExactSelection(context.Background(), ProbeRequest{Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"}, WorkDir: harness.gitRoot})
+	var evidence *CapabilityEvidenceError
+	if !errors.As(err, &evidence) {
+		t.Fatalf("error = %T %v, want *CapabilityEvidenceError", err, err)
+	}
+	assertLastInvocationClosesDisposable(t, harness)
+}
+
+func TestProveExactSelectionCleanupJoinedFailure(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"set model value=gpt-5.6-sol": selectionStateFixture(t, "model", "gpt-5.6-sol", "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "medium", []string{"medium", "high"}),
+	}))
+	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"set reasoning_effort": 2, "sessions close": 2}))
+
+	_, err := harness.runner.ProveExactSelection(context.Background(), ProbeRequest{Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"}, WorkDir: harness.gitRoot})
+	var rejected *SelectionRejectedError
+	if !errors.As(err, &rejected) {
+		t.Fatalf("joined error lacks selection rejection: %T %v", err, err)
+	}
+	var cleanup *AgentSessionCleanupError
+	if !errors.As(err, &cleanup) {
+		t.Fatalf("joined error lacks cleanup failure: %T %v", err, err)
+	}
+}
+
+func TestProveExactSelectionCancelCleanup(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	started := filepath.Join(harness.gitRoot, "reasoning-started")
+	t.Setenv(fakeACPXStarted, started)
+	t.Setenv(fakeACPXBlockCmd, "set reasoning_effort")
+	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"set model value=gpt-5.6-sol": selectionStateFixture(t, "model", "gpt-5.6-sol", "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "medium", []string{"medium", "high"}),
+	}))
+	ctx, cancel := context.WithCancel(context.Background())
+	result := make(chan error, 1)
+	go func() {
+		_, err := harness.runner.ProveExactSelection(ctx, ProbeRequest{Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"}, WorkDir: harness.gitRoot})
+		result <- err
+	}()
+	waitForFile(t, started)
+	cancel()
+
+	if err := receiveError(t, result); !errors.Is(err, context.Canceled) {
+		t.Fatalf("error = %T %v, want context.Canceled", err, err)
+	}
+	assertLastInvocationClosesDisposable(t, harness)
+}
+
+func TestProveExactSelectionTimeoutCleanup(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	started := filepath.Join(harness.gitRoot, "model-state-started")
+	t.Setenv(fakeACPXStarted, started)
+	t.Setenv(fakeACPXBlockCmd, "set model")
+	ctx := newTestDeadlineContext()
+	defer ctx.expire()
+	result := make(chan error, 1)
+	go func() {
+		_, err := harness.runner.ProveExactSelection(ctx, ProbeRequest{Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"}, WorkDir: harness.gitRoot})
+		result <- err
+	}()
+	waitForFile(t, started)
+	ctx.expire()
+	err := receiveError(t, result)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("error = %T %v, want context.DeadlineExceeded", err, err)
+	}
+	assertLastInvocationClosesDisposable(t, harness)
+}
+
+func TestApplySessionSelectionDisposableAndLiveOrder(t *testing.T) {
+	newHarness := func(t *testing.T) *fakeACPXHarness {
+		harness := newFakeACPXHarness(t)
+		efforts := []string{"medium", "high"}
+		t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+			"set model value=gpt-5.6-sol":     selectionStateFixture(t, "model", "gpt-5.6-sol", "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "medium", efforts),
+			"set reasoning_effort value=high": selectionStateFixture(t, "reasoning_effort", "high", "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "reasoning_effort", "high", efforts),
+		}))
+		return harness
+	}
+	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"}
+	disposable := newHarness(t)
+	if _, err := disposable.runner.ProveExactSelection(context.Background(), ProbeRequest{Runtime: runtime, WorkDir: disposable.gitRoot}); err != nil {
+		t.Fatalf("prove disposable selection: %v", err)
+	}
+	live := newHarness(t)
+	if err := live.runner.PrepareSession(context.Background(), ExecuteRequest{Runtime: runtime, Session: SessionRef{Name: "roundfix-live"}, GitRoot: live.gitRoot}, runevent.Discard); err != nil {
+		t.Fatalf("prepare live selection: %v", err)
+	}
+
+	want := []string{"sessions ensure model=gpt-5.6-sol", "set model value=gpt-5.6-sol", "set reasoning_effort value=high"}
+	if got := selectionCallKeys(readJSONInvocations(t, disposable.invocationsPath)); !reflect.DeepEqual(got[:len(want)], want) {
+		t.Fatalf("disposable calls = %#v, want prefix %#v", got, want)
+	}
+	if got := selectionCallKeys(readJSONInvocations(t, live.invocationsPath)); !reflect.DeepEqual(got, want) {
+		t.Fatalf("live calls = %#v, want %#v", got, want)
 	}
 }
 
@@ -448,6 +725,9 @@ func TestACPXProbeSelectionSetupUsesBoundedContext(t *testing.T) {
 func TestACPXProbeSelectionRejectionClosesDisposableSession(t *testing.T) {
 	harness := newFakeACPXHarness(t)
 	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"set model value=gpt-5.5": selectionStateFixture(t, "model", "gpt-5.5", "gpt-5.5", []string{"gpt-5.5"}, "reasoning_effort", "medium", []string{"medium", "extreme"}),
+	}))
 	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"set reasoning_effort": 2}))
 	t.Setenv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{"set reasoning_effort": "reasoning value rejected\n"}))
 	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.5", ReasoningEffort: "extreme"}
@@ -457,11 +737,11 @@ func TestACPXProbeSelectionRejectionClosesDisposableSession(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected rejected reasoning to fail")
 	}
-	var selectionErr *SelectionPreflightError
+	var selectionErr *SelectionRejectedError
 	if !errors.As(err, &selectionErr) {
-		t.Fatalf("expected SelectionPreflightError, got %T %v", err, err)
+		t.Fatalf("expected SelectionRejectedError, got %T %v", err, err)
 	}
-	if selectionErr.Runtime != "codex" || selectionErr.Model != "gpt-5.5" || selectionErr.ReasoningEffort != "extreme" {
+	if selectionErr.Assignment.Runtime != "codex" || selectionErr.Assignment.Model != "gpt-5.5" || selectionErr.Assignment.ReasoningEffort != "extreme" {
 		t.Fatalf("unexpected selection tuple: %#v", selectionErr)
 	}
 	var infraErr *InfrastructureError
@@ -471,17 +751,14 @@ func TestACPXProbeSelectionRejectionClosesDisposableSession(t *testing.T) {
 	if infraErr.Stderr != "reasoning value rejected\n" {
 		t.Fatalf("expected adapter stderr preserved, got %q", infraErr.Stderr)
 	}
-	if !strings.Contains(err.Error(), `set runtimes.codex.reasoning_effort "" when the model manages reasoning`) {
-		t.Fatalf("expected model-managed recovery guidance, got %v", err)
-	}
 	invocations := readJSONInvocations(t, harness.invocationsPath)
-	if len(invocations) != 4 {
-		t.Fatalf("expected version, ensure, reasoning, close invocations, got %#v", invocations)
+	if len(invocations) != 5 {
+		t.Fatalf("expected version, ensure, model state, reasoning, close invocations, got %#v", invocations)
 	}
 	sessionName := disposableSessionFromEnsure(t, invocations[1])
 	wantClose := []string{"--cwd", harness.gitRoot, "codex", "sessions", "close", sessionName}
-	if !reflect.DeepEqual(invocations[3], wantClose) {
-		t.Fatalf("expected cleanup close after rejection\nwant: %#v\ngot:  %#v", wantClose, invocations[3])
+	if !reflect.DeepEqual(invocations[4], wantClose) {
+		t.Fatalf("expected cleanup close after rejection\nwant: %#v\ngot:  %#v", wantClose, invocations[4])
 	}
 }
 
@@ -497,9 +774,9 @@ func TestACPXProbeModelRejectionSkipsReasoningAndClosesDisposableSession(t *test
 	if err == nil {
 		t.Fatal("expected unavailable model to fail")
 	}
-	var selectionErr *SelectionPreflightError
+	var selectionErr *SelectionRejectedError
 	if !errors.As(err, &selectionErr) {
-		t.Fatalf("expected SelectionPreflightError, got %T %v", err, err)
+		t.Fatalf("expected SelectionRejectedError, got %T %v", err, err)
 	}
 	if !strings.Contains(err.Error(), "gpt-5.6-sol") || !strings.Contains(err.Error(), "xhigh") {
 		t.Fatalf("expected selection tuple in error, got %v", err)
@@ -516,6 +793,9 @@ func TestACPXProbeModelRejectionSkipsReasoningAndClosesDisposableSession(t *test
 func TestACPXProbeCleanupFailureJoinsSelectionError(t *testing.T) {
 	harness := newFakeACPXHarness(t)
 	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"set model value=gpt-5.5": selectionStateFixture(t, "model", "gpt-5.5", "gpt-5.5", []string{"gpt-5.5"}, "reasoning_effort", "medium", []string{"medium", "extreme"}),
+	}))
 	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{
 		"set reasoning_effort": 2,
 		"sessions close":       2,
@@ -531,7 +811,7 @@ func TestACPXProbeCleanupFailureJoinsSelectionError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected selection and cleanup failure")
 	}
-	var selectionErr *SelectionPreflightError
+	var selectionErr *SelectionRejectedError
 	if !errors.As(err, &selectionErr) {
 		t.Fatalf("expected selection error in joined chain, got %T %v", err, err)
 	}
@@ -539,8 +819,8 @@ func TestACPXProbeCleanupFailureJoinsSelectionError(t *testing.T) {
 	if !errors.As(err, &cleanupErr) {
 		t.Fatalf("expected cleanup error in joined chain, got %T %v", err, err)
 	}
-	if !strings.Contains(err.Error(), "reasoning value rejected") || !strings.Contains(err.Error(), "close rejected") {
-		t.Fatalf("expected both selection and cleanup context, got %v", err)
+	if selectionErr.Classification() != SelectionRejected || cleanupErr.Classification() != SessionCleanupFailed {
+		t.Fatalf("unexpected joined classifications: selection=%q cleanup=%q", selectionErr.Classification(), cleanupErr.Classification())
 	}
 }
 
@@ -819,10 +1099,6 @@ func TestModelNotAdvertisedSelectionPreflightYieldsTypedErrorThroughWrapChain(t 
 
 	err := harness.runner.Probe(context.Background(), ProbeRequest{Runtime: runtime, WorkDir: harness.gitRoot})
 
-	var selectionErr *SelectionPreflightError
-	if !errors.As(err, &selectionErr) {
-		t.Fatalf("expected SelectionPreflightError, got %T %v", err, err)
-	}
 	var modelErr *ModelNotAdvertisedError
 	if !errors.As(err, &modelErr) {
 		t.Fatalf("expected ModelNotAdvertisedError through wrap chain, got %T %v", err, err)
@@ -1113,6 +1389,9 @@ func TestValidateRuntimeSelectionSkipsReasoningConfigKeyForEmptyEffort(t *testin
 
 func TestACPXRunSkipsEmptyReasoningEffort(t *testing.T) {
 	harness := newFakeACPXHarness(t)
+	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"set model value=gpt-5.6-sol": selectionStateFixture(t, "model", "gpt-5.6-sol", "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "", "", nil),
+	}))
 	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol"}
 
 	_, err := harness.runner.Run(context.Background(), ExecuteRequest{
@@ -1133,7 +1412,7 @@ func TestACPXRunSkipsEmptyReasoningEffort(t *testing.T) {
 		{"--cwd", harness.gitRoot, "--model", "gpt-5.6-sol", "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
 		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "gpt-5.6-sol", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
 	}
-	if got := readJSONInvocations(t, harness.invocationsPath); !reflect.DeepEqual(got, want) {
+	if got := readJSONInvocations(t, harness.invocationsPath); !reflect.DeepEqual(got, exactSelectionInvocations(want)) {
 		t.Fatalf("unexpected acpx invocations\nwant: %#v\ngot:  %#v", want, got)
 	}
 }
@@ -1187,7 +1466,7 @@ func TestACPXRunAppliesSelectionBeforePrompt(t *testing.T) {
 				t.Fatalf("run acpx: %v", err)
 			}
 
-			if got, want := readJSONInvocations(t, harness.invocationsPath), tt.want(harness.gitRoot); !reflect.DeepEqual(got, want) {
+			if got, want := readJSONInvocations(t, harness.invocationsPath), exactSelectionInvocations(tt.want(harness.gitRoot)); !reflect.DeepEqual(got, want) {
 				t.Fatalf("unexpected acpx invocations\nwant: %#v\ngot:  %#v", want, got)
 			}
 		})
@@ -1214,7 +1493,7 @@ func TestACPXRunReappliesSelectionForFreshRunnerSessionResume(t *testing.T) {
 		{"--cwd", harness.gitRoot, "codex", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-1"},
 		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "gpt-5.5", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
 	}
-	if got := readJSONInvocations(t, harness.invocationsPath); !reflect.DeepEqual(got, want) {
+	if got := readJSONInvocations(t, harness.invocationsPath); !reflect.DeepEqual(got, exactSelectionInvocations(want)) {
 		t.Fatalf("unexpected resume invocations\nwant: %#v\ngot:  %#v", want, got)
 	}
 }
@@ -1236,14 +1515,14 @@ func TestACPXRunSelectionSetupErrorsPreserveAdapterFailure(t *testing.T) {
 	if infraErr.Stderr != "reasoning rejected\n" {
 		t.Fatalf("expected adapter stderr preserved, got %q", infraErr.Stderr)
 	}
-	if !strings.Contains(err.Error(), "set acpx Agent Session reasoning_effort") || !strings.Contains(err.Error(), "reasoning rejected") {
+	if !strings.Contains(err.Error(), "apply Agent Selection") || !strings.Contains(err.Error(), "set reasoning_effort") {
 		t.Fatalf("expected reasoning operation context, got %v", err)
 	}
 	want := [][]string{
 		{"--cwd", harness.gitRoot, "--model", "gpt-5.5", "codex", "sessions", "ensure", "--name", "roundfix-run-1"},
 		{"--cwd", harness.gitRoot, "codex", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-1"},
 	}
-	if got := readJSONInvocations(t, harness.invocationsPath); !reflect.DeepEqual(got, want) {
+	if got := readJSONInvocations(t, harness.invocationsPath); !reflect.DeepEqual(got, exactSelectionInvocations(want)) {
 		t.Fatalf("unexpected failed-selection invocations\nwant: %#v\ngot:  %#v", want, got)
 	}
 }
@@ -1261,14 +1540,18 @@ func TestACPXRunCustomCommandRequiresSelectionOptionContract(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected custom command without reasoning option contract to fail")
 	}
-	if !strings.Contains(err.Error(), "set acpx Agent Session reasoning_effort") || !strings.Contains(err.Error(), "does not advertise config option 'reasoning_effort'") {
+	if !strings.Contains(err.Error(), "apply Agent Selection") || !strings.Contains(err.Error(), "set reasoning_effort") {
 		t.Fatalf("expected custom command option-contract failure, got %v", err)
+	}
+	var infraErr *InfrastructureError
+	if !errors.As(err, &infraErr) || !strings.Contains(infraErr.Stderr, "does not advertise config option 'reasoning_effort'") {
+		t.Fatalf("expected adapter rejection evidence in error chain, got %T %v", err, err)
 	}
 	want := [][]string{
 		{"--cwd", harness.gitRoot, "--model", "gpt-custom", "--agent", "custom-acp --stdio", "sessions", "ensure", "--name", "roundfix-run-1"},
 		{"--cwd", harness.gitRoot, "--agent", "custom-acp --stdio", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-1"},
 	}
-	if got := readJSONInvocations(t, harness.invocationsPath); !reflect.DeepEqual(got, want) {
+	if got := readJSONInvocations(t, harness.invocationsPath); !reflect.DeepEqual(got, exactSelectionInvocations(want)) {
 		t.Fatalf("unexpected custom-command invocations\nwant: %#v\ngot:  %#v", want, got)
 	}
 }
@@ -1297,7 +1580,7 @@ func TestACPXRunEnsuresSessionOncePerRunnerAndSessionName(t *testing.T) {
 		{"--cwd", harness.gitRoot, "codex", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-2"},
 		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "gpt-test", "codex", "prompt", "-s", "roundfix-run-2", "-f", "-"},
 	}
-	if !reflect.DeepEqual(invocations, want) {
+	if !reflect.DeepEqual(invocations, exactSelectionInvocations(want)) {
 		t.Fatalf("unexpected acpx invocations\nwant: %#v\ngot:  %#v", want, invocations)
 	}
 }
@@ -1327,7 +1610,7 @@ func TestACPXRunCodexUsesConfiguredCleanPathOnDarwin(t *testing.T) {
 		t.Fatalf("run acpx with configured clean codex: %v", err)
 	}
 
-	wantEnv := []string{"/configured/clean/codex", "/configured/clean/codex", "/configured/clean/codex"}
+	wantEnv := []string{"/configured/clean/codex", "/configured/clean/codex", "/configured/clean/codex", "/configured/clean/codex"}
 	if got := readJSONStrings(t, envPath); !reflect.DeepEqual(got, wantEnv) {
 		t.Fatalf("unexpected CODEX_PATH values\nwant: %#v\ngot:  %#v", wantEnv, got)
 	}
@@ -1361,7 +1644,7 @@ func TestACPXRunCodexFallsBackToCleanPathWhenConfiguredPathIsQuarantined(t *test
 		t.Fatalf("run acpx with fallback clean codex: %v", err)
 	}
 
-	wantEnv := []string{"/path/clean/codex", "/path/clean/codex", "/path/clean/codex"}
+	wantEnv := []string{"/path/clean/codex", "/path/clean/codex", "/path/clean/codex", "/path/clean/codex"}
 	if got := readJSONStrings(t, envPath); !reflect.DeepEqual(got, wantEnv) {
 		t.Fatalf("unexpected CODEX_PATH values\nwant: %#v\ngot:  %#v", wantEnv, got)
 	}
@@ -1455,7 +1738,7 @@ func TestACPXRunCodexLeavesNonDarwinSpawnUnchanged(t *testing.T) {
 		{"--cwd", harness.gitRoot, "codex", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-1"},
 		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "gpt-test", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
 	}
-	if got := readJSONInvocations(t, harness.invocationsPath); !reflect.DeepEqual(got, want) {
+	if got := readJSONInvocations(t, harness.invocationsPath); !reflect.DeepEqual(got, exactSelectionInvocations(want)) {
 		t.Fatalf("unexpected non-darwin acpx invocations\nwant: %#v\ngot:  %#v", want, got)
 	}
 }
@@ -1477,7 +1760,7 @@ func TestACPXRunFailsEnsureWithStderrTail(t *testing.T) {
 	if infraErr.Stderr != "ensure rejected\n" {
 		t.Fatalf("expected captured ensure stderr, got %q", infraErr.Stderr)
 	}
-	if !strings.Contains(err.Error(), "ensure acpx Agent Session") || !strings.Contains(err.Error(), "--- acpx stderr tail ---\nensure rejected") {
+	if !strings.Contains(err.Error(), "ensure live Agent Session") || !strings.Contains(err.Error(), "--- acpx stderr tail ---\nensure rejected") {
 		t.Fatalf("expected ensure error with delimited stderr tail, got %q", err.Error())
 	}
 }
@@ -1533,7 +1816,7 @@ func TestACPXRunAppliesFullAccessSessionSetup(t *testing.T) {
 				t.Fatalf("run acpx: %v", err)
 			}
 
-			if got, want := readJSONInvocations(t, harness.invocationsPath), tt.want(harness.gitRoot); !reflect.DeepEqual(got, want) {
+			if got, want := readJSONInvocations(t, harness.invocationsPath), exactSelectionInvocations(tt.want(harness.gitRoot)); !reflect.DeepEqual(got, want) {
 				t.Fatalf("unexpected acpx invocations\nwant: %#v\ngot:  %#v", want, got)
 			}
 		})
@@ -1559,7 +1842,7 @@ func TestACPXRunFailsSetupWhenFullAccessModeFails(t *testing.T) {
 		{"--cwd", harness.gitRoot, "codex", "set", "reasoning_effort", "xhigh", "-s", "roundfix-run-1"},
 		{"--cwd", harness.gitRoot, "codex", "set-mode", "full-access", "-s", "roundfix-run-1"},
 	}
-	if !reflect.DeepEqual(invocations, want) {
+	if !reflect.DeepEqual(invocations, exactSelectionInvocations(want)) {
 		t.Fatalf("unexpected invocations after setup failure\nwant: %#v\ngot:  %#v", want, invocations)
 	}
 }
@@ -1588,7 +1871,7 @@ func TestACPXRunWarnsWhenCodexSandboxPresetUnavailable(t *testing.T) {
 		{"--cwd", harness.gitRoot, "codex", "set", "sandbox_mode", "danger-full-access", "-s", "roundfix-run-1"},
 		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "gpt-test", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
 	}
-	if !reflect.DeepEqual(invocations, want) {
+	if !reflect.DeepEqual(invocations, exactSelectionInvocations(want)) {
 		t.Fatalf("unexpected invocations\nwant: %#v\ngot:  %#v", want, invocations)
 	}
 }
@@ -1638,8 +1921,8 @@ func TestACPXRunCancelsPromptCooperatively(t *testing.T) {
 		{"--cwd", harness.gitRoot, "--format", "json", "--json-strict", "--approve-all", "--model", "gpt-test", "codex", "prompt", "-s", "roundfix-run-1", "-f", "-"},
 		{"--cwd", harness.gitRoot, "codex", "cancel", "-s", "roundfix-run-1"},
 	}
-	if !reflect.DeepEqual(invocations, want) {
-		t.Fatalf("unexpected cooperative cancellation invocation order\nwant: %#v\ngot:  %#v", want, invocations)
+	if !reflect.DeepEqual(invocations, exactSelectionInvocations(want)) {
+		t.Fatalf("unexpected cooperative cancellation invocation order\nwant: %#v\ngot:  %#v", exactSelectionInvocations(want), invocations)
 	}
 }
 
@@ -1686,8 +1969,8 @@ func TestACPXRunClosesSessionAfterCancelGracePeriod(t *testing.T) {
 		{"--cwd", harness.gitRoot, "codex", "cancel", "-s", "roundfix-run-1"},
 		{"--cwd", harness.gitRoot, "codex", "sessions", "close", "roundfix-run-1"},
 	}
-	if !reflect.DeepEqual(invocations, want) {
-		t.Fatalf("unexpected cancellation invocation order\nwant: %#v\ngot:  %#v", want, invocations)
+	if !reflect.DeepEqual(invocations, exactSelectionInvocations(want)) {
+		t.Fatalf("unexpected cancellation invocation order\nwant: %#v\ngot:  %#v", exactSelectionInvocations(want), invocations)
 	}
 }
 
@@ -2308,7 +2591,7 @@ func newFakeACPXHarness(t *testing.T) *fakeACPXHarness {
 	if err := os.MkdirAll(adapterDir, 0o755); err != nil {
 		t.Fatalf("create fake adapter dir: %v", err)
 	}
-	for _, command := range []string{"codex-acp", "claude-code-acp", "opencode", "npx"} {
+	for _, command := range []string{"codex-acp", "claude-code-acp", "custom-acp", "opencode", "npx"} {
 		installFakeAdapter(t, adapterDir, command)
 	}
 	t.Setenv("HOME", homeDir)
@@ -2915,6 +3198,38 @@ func receiveError(t *testing.T, resultCh <-chan error) error {
 	}
 }
 
+type testDeadlineContext struct {
+	context.Context
+	done chan struct{}
+	once sync.Once
+}
+
+func newTestDeadlineContext() *testDeadlineContext {
+	return &testDeadlineContext{
+		Context: context.Background(),
+		done:    make(chan struct{}),
+	}
+}
+
+func (ctx *testDeadlineContext) Done() <-chan struct{} {
+	return ctx.done
+}
+
+func (ctx *testDeadlineContext) Err() error {
+	select {
+	case <-ctx.done:
+		return context.DeadlineExceeded
+	default:
+		return nil
+	}
+}
+
+func (ctx *testDeadlineContext) expire() {
+	ctx.once.Do(func() {
+		close(ctx.done)
+	})
+}
+
 func mustJSONForTest[T any](t *testing.T, value T) string {
 	t.Helper()
 	payload, err := json.Marshal(value)
@@ -2922,6 +3237,93 @@ func mustJSONForTest[T any](t *testing.T, value T) string {
 		t.Fatalf("marshal test JSON: %v", err)
 	}
 	return string(payload)
+}
+
+func selectionStateFixture(t *testing.T, configID string, value string, currentModel string, models []string, reasoningID string, currentReasoning string, efforts []string) string {
+	t.Helper()
+	modelValues := make([]map[string]string, 0, len(models))
+	for _, model := range models {
+		modelValues = append(modelValues, map[string]string{"value": model})
+	}
+	options := []map[string]any{{
+		"id":           "model",
+		"category":     "model",
+		"type":         "select",
+		"currentValue": currentModel,
+		"options":      modelValues,
+	}}
+	if reasoningID != "" {
+		reasoningValues := make([]map[string]string, 0, len(efforts))
+		for _, effort := range efforts {
+			reasoningValues = append(reasoningValues, map[string]string{"value": effort})
+		}
+		options = append(options, map[string]any{
+			"id":           reasoningID,
+			"type":         "select",
+			"currentValue": currentReasoning,
+			"options":      reasoningValues,
+		})
+	}
+	return mustJSONForTest(t, map[string]any{
+		"action":        "config_set",
+		"configId":      configID,
+		"value":         value,
+		"configOptions": options,
+	})
+}
+
+func selectionCallKeys(invocations [][]string) []string {
+	keys := make([]string, 0, len(invocations))
+	for _, invocation := range invocations {
+		switch fakeACPXCommandKey(invocation) {
+		case "sessions ensure", "set model", "set reasoning_effort", "set effort":
+			keys = append(keys, fakeACPXCallKey(invocation))
+		case "sessions close":
+			keys = append(keys, "sessions close")
+		}
+	}
+	return keys
+}
+
+func assertLastInvocationClosesDisposable(t *testing.T, harness *fakeACPXHarness) {
+	t.Helper()
+	invocations := readJSONInvocations(t, harness.invocationsPath)
+	if len(invocations) == 0 || fakeACPXCommandKey(invocations[len(invocations)-1]) != "sessions close" {
+		t.Fatalf("last invocation did not close disposable Agent Session: %#v", invocations)
+	}
+}
+
+func exactSelectionInvocations(legacy [][]string) [][]string {
+	updated := make([][]string, 0, len(legacy)+2)
+	for _, invocation := range legacy {
+		command := fakeACPXCommandKey(invocation)
+		if command == "set reasoning_effort" || command == "set effort" {
+			strict := []string{"--cwd", invocationValue(invocation, "--cwd"), "--format", "json", "--json-strict"}
+			strict = append(strict, invocation[2:]...)
+			updated = append(updated, strict)
+			continue
+		}
+		updated = append(updated, invocation)
+		if command != "sessions ensure" {
+			continue
+		}
+		agentArgs := []string{}
+		if commandOverride := invocationValue(invocation, "--agent"); commandOverride != "" {
+			agentArgs = []string{"--agent", commandOverride}
+		} else {
+			for index, value := range invocation {
+				if value == "sessions" && index > 0 {
+					agentArgs = []string{invocation[index-1]}
+					break
+				}
+			}
+		}
+		modelSet := []string{"--cwd", invocationValue(invocation, "--cwd"), "--format", "json", "--json-strict"}
+		modelSet = append(modelSet, agentArgs...)
+		modelSet = append(modelSet, "set", "model", invocationValue(invocation, "--model"), "-s", invocationValue(invocation, "--name"))
+		updated = append(updated, modelSet)
+	}
+	return updated
 }
 
 func readJSONArgs(t *testing.T, path string) []string {
@@ -3035,8 +3437,9 @@ func runFakeACPXProcess() int {
 		}
 	}
 	stdoutByCommand := fakeACPXStringMap(os.Getenv(fakeACPXStdoutBy))
+	stdoutByCall := fakeACPXStringMap(os.Getenv(fakeACPXStdoutCall))
 	stderrByCommand := fakeACPXStringMap(os.Getenv(fakeACPXStderrBy))
-	_, _ = io.WriteString(os.Stdout, firstFakeACPXString(stdoutByCommand[commandKey], os.Getenv(fakeACPXStdout)))
+	_, _ = io.WriteString(os.Stdout, firstFakeACPXString(stdoutByCall[fakeACPXCallKey(args)], stdoutByCommand[commandKey], fakeSelectionStateOutput(args, os.Getenv(fakeACPXInvokes)), os.Getenv(fakeACPXStdout)))
 	_, _ = io.WriteString(os.Stderr, firstFakeACPXString(stderrByCommand[commandKey], os.Getenv(fakeACPXStderr)))
 	exitByCommand := fakeACPXIntMap(os.Getenv(fakeACPXExitBy))
 	exitByCall := fakeACPXIntMap(os.Getenv(fakeACPXExitByCall))
@@ -3154,7 +3557,7 @@ func fakeACPXCallKey(args []string) string {
 	switch command {
 	case "sessions ensure":
 		return command + " model=" + invocationValue(args, "--model")
-	case "set reasoning_effort", "set effort":
+	case "set model", "set reasoning_effort", "set effort":
 		for index := 0; index+2 < len(args); index++ {
 			if args[index] == "set" {
 				return command + " value=" + args[index+2]
@@ -3193,6 +3596,80 @@ func firstFakeACPXString(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func fakeSelectionStateOutput(args []string, invocationsPath string) string {
+	command := fakeACPXCommandKey(args)
+	if !containsArg(args, "--json-strict") || (command != "set model" && command != "set reasoning_effort" && command != "set effort") {
+		return ""
+	}
+	configID := strings.TrimPrefix(command, "set ")
+	value := ""
+	for index := 0; index+2 < len(args); index++ {
+		if args[index] == "set" {
+			value = args[index+2]
+			break
+		}
+	}
+	model := value
+	if configID != "model" {
+		model = fakeSessionModel(invocationsPath, invocationValue(args, "-s"))
+	}
+	if model == "" || value == "" {
+		return ""
+	}
+	reasoningID := configID
+	currentReasoning := value
+	if configID == "model" {
+		reasoningID = "reasoning_effort"
+		if strings.Contains(strings.Join(args, " "), " claude ") || strings.Contains(strings.Join(args, " "), " opencode ") {
+			reasoningID = "effort"
+		}
+		currentReasoning = "medium"
+	}
+	response := map[string]any{
+		"action":   "config_set",
+		"configId": configID,
+		"value":    value,
+		"configOptions": []any{
+			map[string]any{"id": "model", "category": "model", "type": "select", "currentValue": model, "options": []any{map[string]string{"value": model}}},
+			map[string]any{"id": reasoningID, "type": "select", "currentValue": currentReasoning, "options": []any{
+				map[string]string{"value": "low"}, map[string]string{"value": "medium"}, map[string]string{"value": "high"}, map[string]string{"value": "xhigh"}, map[string]string{"value": "maximum"}, map[string]string{"value": "max"}, map[string]string{"value": "ultra"},
+			}},
+		},
+	}
+	payload, err := json.Marshal(response)
+	if err != nil {
+		return ""
+	}
+	return string(payload)
+}
+
+func fakeSessionModel(invocationsPath string, sessionName string) string {
+	content, err := os.ReadFile(invocationsPath)
+	if err != nil {
+		return ""
+	}
+	lines := strings.Split(strings.TrimSpace(string(content)), "\n")
+	for index := len(lines) - 1; index >= 0; index-- {
+		var args []string
+		if json.Unmarshal([]byte(lines[index]), &args) != nil || fakeACPXCommandKey(args) != "sessions ensure" {
+			continue
+		}
+		if invocationValue(args, "--name") == sessionName {
+			return invocationValue(args, "--model")
+		}
+	}
+	return ""
+}
+
+func containsArg(args []string, want string) bool {
+	for _, arg := range args {
+		if arg == want {
+			return true
+		}
+	}
+	return false
 }
 
 func numberedLinesForTest(count int) string {

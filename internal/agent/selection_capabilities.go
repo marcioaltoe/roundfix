@@ -257,6 +257,10 @@ func ParseSessionConfigOptions(payload []byte, adapter AdapterEvidence) (Selecti
 // boundary. It does not open ACPX Session files, Codex caches, or other
 // runtime-private persistence.
 func (runner ACPXRunner) AcquireSelectionCapabilities(ctx context.Context, request CapabilityAcquisitionRequest) (SelectionCapabilities, error) {
+	return runner.acquireSelectionCapabilities(ctx, request, nil)
+}
+
+func (runner ACPXRunner) acquireSelectionCapabilities(ctx context.Context, request CapabilityAcquisitionRequest, env []string) (SelectionCapabilities, error) {
 	if ctx == nil {
 		return SelectionCapabilities{}, errors.New("capability acquisition context is required")
 	}
@@ -270,14 +274,22 @@ func (runner ACPXRunner) AcquireSelectionCapabilities(ctx context.Context, reque
 	if err != nil {
 		return SelectionCapabilities{}, err
 	}
-	output, err := runner.runACPXCommandOutput(ctx, args)
+	output, err := runner.runACPXCommandOutputWithEnv(ctx, args, env)
 	if err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return SelectionCapabilities{}, ctxErr
 		}
 		return SelectionCapabilities{}, &CapabilityAcquisitionError{Err: err}
 	}
-	return ParseSessionConfigOptions([]byte(output), request.Adapter)
+	capabilities, err := ParseSessionConfigOptions([]byte(output), request.Adapter)
+	if err != nil {
+		return SelectionCapabilities{}, err
+	}
+	var response acpxCapabilityResponse
+	if err := json.Unmarshal([]byte(output), &response); err != nil || response.ConfigID != request.ConfigID || response.Value != request.Value {
+		return SelectionCapabilities{}, newCapabilityEvidenceError(CapabilityIssueContradictoryResponse)
+	}
+	return capabilities, nil
 }
 
 func acpxCapabilityResponseArgs(runtime RuntimeSpec, configID string, value string, session SessionRef) ([]string, error) {

@@ -133,6 +133,33 @@ if [ "$1" = "--version" ]; then
   exit 0
 fi
 case " $* " in
+  *" set model "*|*" set reasoning_effort "*|*" set effort "*)
+    config_id=""
+    config_value=""
+    session=""
+    previous=""
+    for argument in "$@"; do
+      if [ "$previous" = "set" ]; then
+        config_id="$argument"
+      elif [ -n "$config_id" ] && [ -z "$config_value" ]; then
+        config_value="$argument"
+      elif [ "$previous" = "-s" ]; then
+        session="$argument"
+      fi
+      previous="$argument"
+    done
+    state_path="$0.$session.model"
+    model="$config_value"
+    if [ "$config_id" = "model" ]; then
+      printf '%%s' "$model" > "$state_path"
+      current_reasoning="medium"
+    else
+      model=$(cat "$state_path")
+      current_reasoning="$config_value"
+    fi
+    printf '{"action":"config_set","configId":"%%s","value":"%%s","configOptions":[{"id":"model","category":"model","type":"select","currentValue":"%%s","options":[{"value":"%%s"}]},{"id":"reasoning_effort","type":"select","currentValue":"%%s","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"maximum"},{"value":"ultra"}]}]}\n' "$config_id" "$config_value" "$model" "$model" "$current_reasoning"
+    exit 0
+    ;;
   *" sessions ensure "*|*" sessions close "*)
     exit 0
     ;;
@@ -159,7 +186,7 @@ exit 0
 	// fake codex-acp next to the fake acpx so detach children pass preflight
 	// on machines without the real adapter installed (CI runners).
 	adapterPath := filepath.Join(filepath.Dir(path), "codex-acp")
-	if err := os.WriteFile(adapterPath, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+	if err := os.WriteFile(adapterPath, []byte("#!/bin/sh\nprintf '%s\\n' '@agentclientprotocol/codex-acp "+agent.PinnedCodexAdapterVersion+"'\n"), 0o755); err != nil {
 		t.Fatalf("write fake codex-acp: %v", err)
 	}
 	return path
@@ -4185,6 +4212,8 @@ def parse(argv):
         "model": arg_value(argv, "--model"),
         "session": session,
         "cwd": arg_value(argv, "--cwd") or os.getcwd(),
+        "config_id": tail[1] if command == "set" and len(tail) > 1 else "",
+        "config_value": tail[2] if command == "set" and len(tail) > 2 else "",
         "args": argv,
     }
 
@@ -4195,6 +4224,18 @@ def log(event):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "a", encoding="utf-8") as handle:
         handle.write(json.dumps(event, sort_keys=True) + "\n")
+
+def session_model(session):
+    path = os.environ.get("ROUNDFIX_FAKE_ACPX_LOG", "")
+    if not path or not os.path.exists(path):
+        return ""
+    with open(path, "r", encoding="utf-8") as handle:
+        records = handle.readlines()
+    for raw in reversed(records):
+        record = json.loads(raw)
+        if record.get("session") == session and record.get("model"):
+            return record["model"]
+    return ""
 
 def prompt_field(prompt, label):
     match = re.search(r"^" + re.escape(label) + r":\s*(.+)$", prompt, re.M)
@@ -4284,6 +4325,26 @@ if event["command"] == "sessions ensure":
         log(event)
         sys.stderr.write("selection start rejected\n")
         sys.exit(1)
+
+if event["command"] == "set":
+    config_id = event.get("config_id", "")
+    config_value = event.get("config_value", "")
+    model = config_value if config_id == "model" else session_model(event.get("session", ""))
+    reasoning_id = config_id if config_id in {"reasoning_effort", "effort"} else ("reasoning_effort" if event.get("agent") == "codex" else "effort")
+    current_reasoning = config_value if config_id == reasoning_id else "medium"
+    event["model"] = model
+    event["outcome"] = "ok"
+    log(event)
+    print(json.dumps({
+        "action": "config_set",
+        "configId": config_id,
+        "value": config_value,
+        "configOptions": [
+            {"id": "model", "category": "model", "type": "select", "currentValue": model, "options": [{"value": model}]},
+            {"id": reasoning_id, "type": "select", "currentValue": current_reasoning, "options": [{"value": value} for value in ["low", "medium", "high", "xhigh", "max", "maximum", "ultra"]]},
+        ],
+    }, sort_keys=True))
+    sys.exit(0)
 
 if event["command"] == "prompt":
     fail_model = os.environ.get("ROUNDFIX_FAKE_ACPX_FAIL_PROMPT_MODEL", "")
@@ -4562,7 +4623,7 @@ func assertMacroSelectionAttempts(t *testing.T, homeDir string, runID string) {
 		"2|backend|project|preferred|0|codex|macro-backend|high|closed||",
 	})
 	assertMacroAttemptSequence(t, byScope["task:task_frontend"], []string{
-		"1|frontend|project|preferred|0|codex|macro-frontend-preferred|high|failed|model_unavailable|selection start rejected",
+		"1|frontend|project|preferred|0|codex|macro-frontend-preferred|high|failed|selection_start_failed|selection start rejected",
 		"2|frontend|project|fallback|1|claude|claude-fable-5|xhigh|active||",
 		"3|frontend|project|fallback|1|claude|claude-fable-5|xhigh|closed||",
 	})
@@ -4661,7 +4722,7 @@ func assertMacroSelectionStream(t *testing.T, binary string, repoDir string, hom
 		}
 		if record.ScopeID == "task_frontend" && record.Attempt == 0 && record.NextModel == "claude-fable-5" {
 			notification = index
-			if record.Runtime != "codex" || record.Model != "macro-frontend-preferred" || record.NextRuntime != "claude" || record.Status != "failed" || record.ReasonCode != "model_unavailable" {
+			if record.Runtime != "codex" || record.Model != "macro-frontend-preferred" || record.NextRuntime != "claude" || record.Status != "failed" || record.ReasonCode != "selection_start_failed" {
 				t.Fatalf("unexpected fallback notification stream record: %#v", record)
 			}
 		}

@@ -81,14 +81,15 @@ func CodexAdapterInstallCommand() string {
 // ACPXRunner is the acpx-backed invocation core. Later migration tasks wire
 // this into Runner after Agent Session lifecycle is available.
 type ACPXRunner struct {
-	Command          string
-	Now              func() time.Time
-	warnf            func(string, ...any)
-	cancelClock      cancellationClock
-	stateMu          sync.Mutex
-	ensuredSessions  map[string]struct{}
-	codexSpawn       codexSpawnDependencies
-	codexResolutions map[string]codexSpawnResolution
+	Command           string
+	Now               func() time.Time
+	warnf             func(string, ...any)
+	cancelClock       cancellationClock
+	stateMu           sync.Mutex
+	ensuredSessions   map[string]struct{}
+	sessionSelections map[string]SelectionAssignment
+	codexSpawn        codexSpawnDependencies
+	codexResolutions  map[string]codexSpawnResolution
 }
 
 type cancellationTimer interface {
@@ -257,6 +258,10 @@ func (err *ModelNotAdvertisedError) Unwrap() error {
 	return err.Err
 }
 
+func (err *ModelNotAdvertisedError) Classification() string {
+	return SelectionModelNotAdvertised
+}
+
 type ACPXProbeError struct {
 	Command         string
 	FoundVersion    string
@@ -399,6 +404,10 @@ func (err *SelectionPreflightError) Error() string {
 	if err.Err != nil {
 		message += ": " + err.Err.Error()
 	}
+	var classified interface{ Classification() string }
+	if errors.As(err.Err, &classified) {
+		return message
+	}
 	message += "; " + selectionRecoveryGuidance(runtime, true)
 	return message
 }
@@ -423,7 +432,7 @@ func (err *AgentSessionCleanupError) Error() string {
 	if err.Err != nil {
 		message += ": " + err.Err.Error()
 	}
-	return message
+	return message + "; recovery: rerun Agent Selection readiness after the Session can be closed"
 }
 
 func (err *AgentSessionCleanupError) Unwrap() error {
@@ -431,6 +440,10 @@ func (err *AgentSessionCleanupError) Unwrap() error {
 		return nil
 	}
 	return err.Err
+}
+
+func (err *AgentSessionCleanupError) Classification() string {
+	return SessionCleanupFailed
 }
 
 type acpxJSONRPCMessage struct {
@@ -460,10 +473,8 @@ func (runner ACPXRunner) Probe(ctx context.Context, req ProbeRequest) error {
 	if workDir == "" {
 		return nil
 	}
-	if _, err := CheckAdapter(ctx, req.Runtime); err != nil {
-		return err
-	}
-	return runner.probeSelection(ctx, req.Runtime, workDir)
+	_, err := runner.ProveExactSelection(ctx, ProbeRequest{Runtime: req.Runtime, WorkDir: workDir})
+	return err
 }
 
 func CheckAdapter(ctx context.Context, runtime RuntimeSpec) (AdapterEvidence, error) {
@@ -726,35 +737,6 @@ func (runner ACPXRunner) probeACPX(ctx context.Context) error {
 	return nil
 }
 
-func (runner ACPXRunner) probeSelection(ctx context.Context, runtime RuntimeSpec, workDir string) error {
-	if err := validateRuntimeSelection(runtime); err != nil {
-		return err
-	}
-	sessionName, err := disposablePreflightSessionName()
-	if err != nil {
-		return err
-	}
-	setupCtx, setupCancel := context.WithTimeout(ctx, acpxPreflightSetupTimeout)
-	codexEnv, err := runner.codexEnvForSession(setupCtx, runtime, sessionName)
-	if err != nil {
-		setupCancel()
-		return err
-	}
-	setupErr := runner.applyDisposableSelection(setupCtx, runtime, sessionName, workDir, codexEnv)
-	setupCancel()
-
-	cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), acpxPreflightCleanupTimeout)
-	defer cancel()
-	cleanupErr := runner.closeDisposableSession(cleanupCtx, runtime, sessionName, workDir)
-	if setupErr != nil && cleanupErr != nil {
-		return errors.Join(setupErr, cleanupErr)
-	}
-	if setupErr != nil {
-		return setupErr
-	}
-	return cleanupErr
-}
-
 func disposablePreflightSessionName() (string, error) {
 	var entropy [8]byte
 	if _, err := rand.Read(entropy[:]); err != nil {
@@ -944,6 +926,9 @@ func (runner *ACPXRunner) PrepareSession(ctx context.Context, req ExecuteRequest
 }
 
 func (runner *ACPXRunner) RunPrepared(ctx context.Context, req ExecuteRequest, sink runevent.Sink) (ExecuteResult, error) {
+	if assignment, ok := runner.sessionSelection(req.Session.Name); ok {
+		req.Runtime.Model = assignment.AdapterModel
+	}
 	return runner.RunPrompt(ctx, ACPXPromptRequest{
 		ExecuteRequest: req,
 		Session:        req.Session.Name,
@@ -1024,22 +1009,28 @@ func (runner *ACPXRunner) ensureSession(ctx context.Context, req ExecuteRequest,
 	if runner.sessionEnsured(sessionName) {
 		return nil
 	}
+	adapter, err := CheckAdapter(ctx, req.Runtime)
+	if err != nil {
+		return err
+	}
 	codexEnv, err := runner.codexEnvForSession(ctx, req.Runtime, sessionName)
 	if err != nil {
 		return err
 	}
-	args, err := acpxEnsureArgs(req.Runtime, sessionName, workDir)
+	session := SessionRef{Name: sessionName, WorkDir: workDir}
+	capabilities, err := runner.startSessionSelection(ctx, req.Runtime, session, adapter, codexEnv, false)
 	if err != nil {
-		return err
-	}
-	if err := runner.runACPXCommandWithEnv(ctx, args, codexEnv); err != nil {
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return err
 		}
-		return selectionPreflightError(req.Runtime, "set model", fmt.Errorf("ensure acpx Agent Session %q with model %q: %w", sessionName, strings.TrimSpace(req.Runtime.Model), classifyModelNotAdvertised(req.Runtime, err)))
+		return selectionPreflightError(req.Runtime, "apply advertised selection", err)
 	}
-	if err := runner.applySelection(ctx, req, codexEnv); err != nil {
-		return err
+	proof, err := runner.applySessionSelection(ctx, SessionSelectionRequest{Runtime: req.Runtime, Session: session, Capabilities: capabilities}, codexEnv)
+	if err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return err
+		}
+		return selectionPreflightError(req.Runtime, "apply advertised selection", err)
 	}
 	if err := runner.applyFullAccess(ctx, req, sink, codexEnv); err != nil {
 		return err
@@ -1047,30 +1038,7 @@ func (runner *ACPXRunner) ensureSession(ctx context.Context, req ExecuteRequest,
 	if err := runner.publishStatus(ctx, req, sink, AgentSessionStartedStatus); err != nil {
 		return err
 	}
-	runner.markSessionEnsured(sessionName)
-	return nil
-}
-
-func (runner *ACPXRunner) applySelection(ctx context.Context, req ExecuteRequest, codexEnv []string) error {
-	sessionName := strings.TrimSpace(req.Session.Name)
-	value := strings.TrimSpace(req.Runtime.ReasoningEffort)
-	if value == "" {
-		return nil
-	}
-	key, err := acpxReasoningEffortConfigKey(req.Runtime)
-	if err != nil {
-		return err
-	}
-	args, err := acpxSetConfigArgs(req.Runtime, key, value, sessionName, req.GitRoot)
-	if err != nil {
-		return err
-	}
-	if err := runner.runACPXCommandWithEnv(ctx, args, codexEnv); err != nil {
-		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-			return err
-		}
-		return selectionPreflightError(req.Runtime, "set "+key, fmt.Errorf("set acpx Agent Session %s %q: %w", key, value, classifyModelNotAdvertised(req.Runtime, err)))
-	}
+	runner.markSessionEnsured(sessionName, proof.Assignment)
 	return nil
 }
 
@@ -1298,19 +1266,31 @@ func (runner *ACPXRunner) sessionEnsured(sessionName string) bool {
 	return ok
 }
 
-func (runner *ACPXRunner) markSessionEnsured(sessionName string) {
+func (runner *ACPXRunner) markSessionEnsured(sessionName string, selection SelectionAssignment) {
 	unlock := runner.lockState()
 	defer unlock()
 	if runner.ensuredSessions == nil {
 		runner.ensuredSessions = map[string]struct{}{}
 	}
+	if runner.sessionSelections == nil {
+		runner.sessionSelections = map[string]SelectionAssignment{}
+	}
 	runner.ensuredSessions[sessionName] = struct{}{}
+	runner.sessionSelections[sessionName] = selection
+}
+
+func (runner *ACPXRunner) sessionSelection(sessionName string) (SelectionAssignment, bool) {
+	unlock := runner.lockState()
+	defer unlock()
+	selection, ok := runner.sessionSelections[sessionName]
+	return selection, ok
 }
 
 func (runner *ACPXRunner) clearSessionState(sessionName string) {
 	unlock := runner.lockState()
 	defer unlock()
 	delete(runner.ensuredSessions, sessionName)
+	delete(runner.sessionSelections, sessionName)
 	delete(runner.codexResolutions, sessionName)
 }
 

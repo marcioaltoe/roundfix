@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0041-agent-selection-runtime-readiness
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -33,28 +33,28 @@ preflight cannot approve a tuple that Agent work applies differently.
 
 ## Subtasks
 
-- [ ] Build deterministic canonical-to-adapter assignment plans.
-- [ ] Apply model and reasoning operations in the required order.
-- [ ] Compare the complete effective state with the requested tuple.
-- [ ] Reuse assignment semantics for live Agent Session setup.
-- [ ] Add typed selection and effective-state failures.
-- [ ] Prove cleanup ownership on every terminal path.
-- [ ] Cover exact, unsupported, rejected, cancelled, and mismatched cases.
+- [x] Build deterministic canonical-to-adapter assignment plans.
+- [x] Apply model and reasoning operations in the required order.
+- [x] Compare the complete effective state with the requested tuple.
+- [x] Reuse assignment semantics for live Agent Session setup.
+- [x] Add typed selection and effective-state failures.
+- [x] Prove cleanup ownership on every terminal path.
+- [x] Cover exact, unsupported, rejected, cancelled, and mismatched cases.
 
 ## Acceptance Criteria
 
-- [ ] The official fixture proves `gpt-5.6-sol / high` and
+- [x] The official fixture proves `gpt-5.6-sol / high` and
       `gpt-5.5 / xhigh` exactly.
-- [ ] Independent-control and model-variant fixtures can prove the same
+- [x] Independent-control and model-variant fixtures can prove the same
       canonical tuple without storing transport-specific IDs in profiles.
-- [ ] A requested non-empty effort never retries as model-managed or with a
+- [x] A requested non-empty effort never retries as model-managed or with a
       different model.
-- [ ] A zero-exit application with mismatched effective state fails proof.
-- [ ] Disposable and live Session tests issue the same ordered selection
+- [x] A zero-exit application with mismatched effective state fails proof.
+- [x] Disposable and live Session tests issue the same ordered selection
       operations for equivalent requests.
-- [ ] Every terminal path closes the disposable Session with bounded cleanup,
+- [x] Every terminal path closes the disposable Session with bounded cleanup,
       including cancellation and joined failures.
-- [ ] Proof records no Agent prompt and no model-token activity.
+- [x] Proof records no Agent prompt and no model-token activity.
 
 ## Context
 
@@ -80,3 +80,60 @@ preflight cannot approve a tuple that Agent work applies differently.
 - `../../adr/0055-agent-selection-encoding-follows-advertised-acp-capabilities.md`
   → exact tuple intent and adapter-specific assignment.
 
+## Result
+
+Added deterministic `SelectionAssignment` planning in the documented order:
+advertised model, independent reasoning control, exact model variant, then a
+typed unsupported result. Empty reasoning remains explicit model-managed
+intent; a rejected non-empty effort is never retried with another effort or
+model.
+
+Both disposable proof and live Agent Session setup now use the same ordered
+application path. Each strict ACPX operation consumes and validates the
+complete returned configuration state, and the final effective model and
+reasoning must equal the canonical requested tuple. The live prompt path keeps
+the planned adapter model, including model variants, instead of reapplying the
+canonical profile model.
+
+Added bounded typed failures for unsupported controls, rejected selections,
+effective-state mismatches, invalid capability evidence, and Session cleanup.
+Disposable proof owns bounded cleanup independently of caller cancellation and
+joins setup and cleanup failures when both occur. Proof invokes only Session
+setup/configuration/close operations; it never invokes `prompt`.
+
+Acceptance evidence:
+
+- `TestProveExactSelectionOfficialFixturesNoPrompt` proves
+  `gpt-5.6-sol / high` and `gpt-5.5 / xhigh` exactly and observes no prompt.
+- `TestPlanSelectionAssignment` and the independent/model-variant proof tests
+  prove canonical requests without transport-specific profile identifiers.
+- Rejection tests assert the exact operation list, with no model-managed or
+  alternate-model retry for a requested non-empty effort.
+- `TestProveExactSelectionMismatchClosesSession` proves a successful ACPX
+  command with mismatched effective state fails proof and still closes the
+  disposable Session.
+- `TestApplySessionSelectionDisposableAndLiveOrder` proves equivalent
+  disposable and live requests emit the same ordered selection operations.
+- Cleanup, cancellation, timeout, malformed-evidence, and joined-failure tests
+  prove every terminal path closes with bounded cleanup ownership.
+- No-prompt assertions and the fake ACPX action logs prove proof performs no
+  Agent prompt or model-token-producing operation.
+
+Verification:
+
+- `rtk go test ./internal/agent -run 'Test(PlanSelectionAssignment|ProveExactSelection|ApplySessionSelection)' -count=1`: passed, 23 tests.
+- `rtk go test ./internal/agent -run 'TestProveExactSelection.*(Cleanup|Cancel|Timeout|NoPrompt)' -count=1`: passed, 8 tests.
+- `rtk go test -race ./internal/agent -run 'Test(PlanSelectionAssignment|ProveExactSelection|ApplySessionSelection)' -count=1`: passed.
+- `rtk make verify`: passed with 1,625 Go tests, 79
+  setup-context-driven tests, Roundfix skill synchronization, and the CLI
+  build.
+
+Verification Feedback repair (attempt 1):
+
+- Replaced the timeout test's setup-wide one-second wall-clock deadline with a
+  test-controlled deadline that expires only after the blocked selection
+  operation reports readiness. This preserves the `context.DeadlineExceeded`
+  and cleanup assertions while making the test independent of subprocess
+  startup overhead under race instrumentation.
+- `rtk go test -race ./internal/agent -run '^TestProveExactSelectionTimeoutCleanup$' -count=1`: passed, 1 test.
+- `rtk go test -race ./internal/agent -run 'Test(PlanSelectionAssignment|ProveExactSelection|ApplySessionSelection)' -count=1`: passed, 23 tests.

@@ -122,6 +122,129 @@ func TestSelectionCapabilitiesIndependentAndVariantOptions(t *testing.T) {
 	}
 }
 
+func TestPlanSelectionAssignment(t *testing.T) {
+	t.Parallel()
+
+	official, err := ParseSessionConfigOptions([]byte(officialAdapterCapabilityFixture()), AdapterEvidence{Command: "official-adapter"})
+	if err != nil {
+		t.Fatalf("parse official capabilities: %v", err)
+	}
+	variant, err := ParseSessionConfigOptions([]byte(modelVariantCapabilityFixture()), AdapterEvidence{Command: "variant-adapter"})
+	if err != nil {
+		t.Fatalf("parse variant capabilities: %v", err)
+	}
+	legacy, err := ParseSessionConfigOptions([]byte(legacyAdapterCapabilityFixture()), AdapterEvidence{Command: "legacy-adapter"})
+	if err != nil {
+		t.Fatalf("parse legacy capabilities: %v", err)
+	}
+
+	tests := []struct {
+		name           string
+		runtime        RuntimeSpec
+		capabilities   SelectionCapabilities
+		want           SelectionAssignment
+		classification string
+	}{
+		{
+			name:         "official Sol high uses independent control",
+			runtime:      RuntimeSpec{ID: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"},
+			capabilities: official,
+			want: SelectionAssignment{
+				Runtime:         "codex",
+				Model:           "gpt-5.6-sol",
+				ReasoningEffort: "high",
+				AdapterModel:    "gpt-5.6-sol",
+				ReasoningKey:    "reasoning_effort",
+				ReasoningValue:  "high",
+				Encoding:        SelectionEncodingIndependent,
+			},
+		},
+		{
+			name:         "official GPT 5.5 xhigh uses independent control",
+			runtime:      RuntimeSpec{ID: "codex", Model: "gpt-5.5", ReasoningEffort: "xhigh"},
+			capabilities: official,
+			want: SelectionAssignment{
+				Runtime:         "codex",
+				Model:           "gpt-5.5",
+				ReasoningEffort: "xhigh",
+				AdapterModel:    "gpt-5.5",
+				ReasoningKey:    "reasoning_effort",
+				ReasoningValue:  "xhigh",
+				Encoding:        SelectionEncodingIndependent,
+			},
+		},
+		{
+			name:         "advertised variant preserves canonical tuple",
+			runtime:      RuntimeSpec{ID: "codex", Model: "future-model", ReasoningEffort: "high"},
+			capabilities: variant,
+			want: SelectionAssignment{
+				Runtime:         "codex",
+				Model:           "future-model",
+				ReasoningEffort: "high",
+				AdapterModel:    "future-model[high]",
+				Encoding:        SelectionEncodingModelVariant,
+			},
+		},
+		{
+			name:         "empty effort is explicit model managed intent",
+			runtime:      RuntimeSpec{ID: "codex", Model: "gpt-5.6-sol"},
+			capabilities: legacy,
+			want: SelectionAssignment{
+				Runtime:      "codex",
+				Model:        "gpt-5.6-sol",
+				AdapterModel: "gpt-5.6-sol",
+				Encoding:     SelectionEncodingModelManaged,
+			},
+		},
+		{
+			name:           "missing model is unsupported",
+			runtime:        RuntimeSpec{ID: "codex", Model: "gpt-missing", ReasoningEffort: "high"},
+			capabilities:   official,
+			classification: SelectionModelNotAdvertised,
+		},
+		{
+			name:           "missing independent control is unsupported",
+			runtime:        RuntimeSpec{ID: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"},
+			capabilities:   legacy,
+			classification: SelectionReasoningControlNotAdvertised,
+		},
+		{
+			name:           "missing advertised variant is unsupported",
+			runtime:        RuntimeSpec{ID: "codex", Model: "future-model", ReasoningEffort: "ultra"},
+			capabilities:   variant,
+			classification: SelectionModelVariantNotAdvertised,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := PlanSelectionAssignment(tt.runtime, tt.capabilities)
+			if tt.classification == "" {
+				if err != nil {
+					t.Fatalf("plan selection: %v", err)
+				}
+				if got != tt.want {
+					t.Fatalf("assignment = %#v, want %#v", got, tt.want)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatal("expected unsupported selection")
+			}
+			var unsupported *SelectionUnsupportedError
+			if !errors.As(err, &unsupported) {
+				t.Fatalf("error type = %T, want *SelectionUnsupportedError", err)
+			}
+			if unsupported.Classification() != tt.classification {
+				t.Fatalf("classification = %q, want %q", unsupported.Classification(), tt.classification)
+			}
+		})
+	}
+}
+
 func TestParseSessionConfigOptionsRejectsInvalidEvidence(t *testing.T) {
 	t.Parallel()
 
@@ -232,7 +355,9 @@ func TestCapabilityEvidenceIsBounded(t *testing.T) {
 
 func TestCapabilityAcquisitionDoesNotReadPrivateRuntimeState(t *testing.T) {
 	harness := newFakeACPXHarness(t)
-	t.Setenv(fakeACPXStdoutBy, mustJSONForTest(t, map[string]string{"set model": officialAdapterCapabilityFixture()}))
+	t.Setenv(fakeACPXStdoutBy, mustJSONForTest(t, map[string]string{
+		"set model": selectionStateFixture(t, "model", "gpt-5.6-sol", "gpt-5.6-sol", []string{"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.5"}, "reasoning_effort", "high", []string{"low", "medium", "high", "xhigh", "max", "ultra"}),
+	}))
 
 	guard := filepath.Join(t.TempDir(), "private-runtime-state-is-not-a-directory")
 	if err := os.WriteFile(guard, []byte("guard"), 0o600); err != nil {
