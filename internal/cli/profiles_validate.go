@@ -47,6 +47,12 @@ type profileProofResult struct {
 	Err    error
 }
 
+type profileProofOptions struct {
+	PreferredOverride *roundconfig.AgentSelection
+	CommandOverride   string
+	EnableFullAccess  bool
+}
+
 type profileProofError struct {
 	Selection  roundconfig.AgentSelection
 	References []profileProofReference
@@ -127,10 +133,14 @@ func profilesValidateCategories(req profilesValidateRequest) ([]roundconfig.Work
 }
 
 func proveProfileSelections(ctx context.Context, config roundconfig.Config, categories []roundconfig.WorkCategory, workDir string, runner agent.Runner) profileProofResult {
+	return proveProfileSelectionsWithOptions(ctx, config, categories, workDir, runner, profileProofOptions{})
+}
+
+func proveProfileSelectionsWithOptions(ctx context.Context, config roundconfig.Config, categories []roundconfig.WorkCategory, workDir string, runner agent.Runner, options profileProofOptions) profileProofResult {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	proofs, err := buildProfileProofReports(config, categories)
+	proofs, err := buildProfileProofReportsWithOptions(config, categories, options)
 	if err != nil {
 		return profileProofResult{Err: err}
 	}
@@ -141,7 +151,7 @@ func proveProfileSelections(ctx context.Context, config roundconfig.Config, cate
 		if err := ctx.Err(); err != nil {
 			return profileProofResult{Proofs: proofs, Err: err}
 		}
-		runtime, err := runtimeForProfileSelection(proofs[index].Selection)
+		runtime, err := runtimeForProfileSelectionWithOptions(proofs[index].Selection, options)
 		if err != nil {
 			proofs[index].Status = "failed"
 			proofs[index].Error = err.Error()
@@ -158,10 +168,14 @@ func proveProfileSelections(ctx context.Context, config roundconfig.Config, cate
 }
 
 func buildProfileProofReports(config roundconfig.Config, categories []roundconfig.WorkCategory) ([]profileProofReport, error) {
+	return buildProfileProofReportsWithOptions(config, categories, profileProofOptions{})
+}
+
+func buildProfileProofReportsWithOptions(config roundconfig.Config, categories []roundconfig.WorkCategory, options profileProofOptions) ([]profileProofReport, error) {
 	proofs := []profileProofReport{}
 	bySelection := map[roundconfig.AgentSelection]int{}
 	for _, category := range categories {
-		resolved, err := roundconfig.ResolveProfile(config, category, nil)
+		resolved, err := roundconfig.ResolveProfile(config, category, options.PreferredOverride)
 		if err != nil {
 			return nil, err
 		}
@@ -198,10 +212,16 @@ func addProfileProofReference(proofs *[]profileProofReport, bySelection map[roun
 }
 
 func runtimeForProfileSelection(selection roundconfig.AgentSelection) (agent.RuntimeSpec, error) {
+	return runtimeForProfileSelectionWithOptions(selection, profileProofOptions{})
+}
+
+func runtimeForProfileSelectionWithOptions(selection roundconfig.AgentSelection, options profileProofOptions) (agent.RuntimeSpec, error) {
 	return agent.RuntimeFor(agent.RuntimeOptions{
-		Agent:           strings.TrimSpace(selection.Runtime),
-		Model:           strings.TrimSpace(selection.Model),
-		ReasoningEffort: strings.TrimSpace(selection.ReasoningEffort),
+		Agent:            strings.TrimSpace(selection.Runtime),
+		CommandOverride:  options.CommandOverride,
+		Model:            strings.TrimSpace(selection.Model),
+		ReasoningEffort:  strings.TrimSpace(selection.ReasoningEffort),
+		EnableFullAccess: options.EnableFullAccess,
 	})
 }
 

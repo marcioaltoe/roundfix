@@ -104,6 +104,7 @@ type commandRequest struct {
 	spec                string
 	source              string
 	agent               string
+	agentSet            bool
 	round               string
 	noInput             bool
 	interactive         bool
@@ -1810,17 +1811,18 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		return exitPreflight
 	}
 	collaborators := newEngineCollaborators()
-	if !req.skipBranchIntegrity {
-		effectiveRuntime, err := probeRuntimeSelection(ctx, req, resolvePlan.runtime, preflightResult.Git.Root, collaborators.runner, stderr)
-		if err != nil {
-			printPreflightFailure(req.name, err, stderr)
-			return exitPreflight
-		}
-		resolvePlan.runtime = effectiveRuntime
-		req = requestWithRuntimeSelection(req, effectiveRuntime)
-	} else {
-		req = requestWithRuntimeSelection(req, resolvePlan.runtime)
+	categories := reviewProfileCategories()
+	profilePreflight, err := runProfileOperationalPreflight(ctx, req, loaded.Config, categories, preflightResult.Git.Root, collaborators.runner, stderr)
+	if err != nil {
+		printPreflightFailure(req.name, err, stderr)
+		return exitPreflight
 	}
+	resolvePlan.runtime, err = runtimeForOperationalProfileRun(req, loaded.Config, categories, profilePreflight.Override)
+	if err != nil {
+		printPreflightFailure(req.name, err, stderr)
+		return exitPreflight
+	}
+	req = requestWithRuntimeSelection(req, resolvePlan.runtime)
 
 	runStore, err := store.Open(ctx, loaded.HomeDir)
 	if err != nil {
@@ -1841,22 +1843,6 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printBranchIntegrityAuditFailure(req.name, run.ID, err, stderr)
 		return exitPreflight
-	}
-	if req.skipBranchIntegrity {
-		// Bypass contract: the audit publishes before any Agent Session,
-		// including the disposable model probe, so the probe runs after Run
-		// creation. Non-interactive probe semantics apply — a rejected
-		// selection fails the audited Run instead of prompting for fallback.
-		probeReq := req
-		probeReq.noInput = true
-		effectiveRuntime, err := probeRuntimeSelection(ctx, probeReq, resolvePlan.runtime, preflightResult.Git.Root, collaborators.runner, stderr)
-		if err != nil {
-			markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
-			printPreflightFailure(req.name, err, stderr)
-			return exitPreflight
-		}
-		resolvePlan.runtime = effectiveRuntime
-		req = requestWithRuntimeSelection(req, effectiveRuntime)
 	}
 	if err := req.reportDetachedRunCreated(run.ID); err != nil {
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
@@ -2239,18 +2225,17 @@ func cyclePlanFrom(req commandRequest, loaded roundconfig.Loaded, preflightResul
 }
 
 func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig.Loaded, preflightResult preflight.Result, notifier roundnotify.Notifier, stdout, stderr io.Writer) int {
-	runtime, err := runtimeForAgentWork(req, loaded.Config)
+	collaborators := newEngineCollaborators()
+	categories := reviewProfileCategories()
+	profilePreflight, err := runProfileOperationalPreflight(ctx, req, loaded.Config, categories, preflightResult.Git.Root, collaborators.runner, stderr)
 	if err != nil {
 		printPreflightFailure(req.name, err, stderr)
 		return exitPreflight
 	}
-	collaborators := newEngineCollaborators()
-	if !req.skipBranchIntegrity {
-		runtime, err = probeRuntimeSelection(ctx, req, runtime, preflightResult.Git.Root, collaborators.runner, stderr)
-		if err != nil {
-			printPreflightFailure(req.name, err, stderr)
-			return exitPreflight
-		}
+	runtime, err := runtimeForOperationalProfileRun(req, loaded.Config, categories, profilePreflight.Override)
+	if err != nil {
+		printPreflightFailure(req.name, err, stderr)
+		return exitPreflight
 	}
 	req = requestWithRuntimeSelection(req, runtime)
 
@@ -2273,21 +2258,6 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
 		printBranchIntegrityAuditFailure(req.name, run.ID, err, stderr)
 		return exitPreflight
-	}
-	if req.skipBranchIntegrity {
-		// Bypass contract: the audit publishes before any Agent Session,
-		// including the disposable model probe, so the probe runs after Run
-		// creation. Non-interactive probe semantics apply — a rejected
-		// selection fails the audited Run instead of prompting for fallback.
-		probeReq := req
-		probeReq.noInput = true
-		runtime, err = probeRuntimeSelection(ctx, probeReq, runtime, preflightResult.Git.Root, collaborators.runner, stderr)
-		if err != nil {
-			markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
-			printPreflightFailure(req.name, err, stderr)
-			return exitPreflight
-		}
-		req = requestWithRuntimeSelection(req, runtime)
 	}
 	if err := req.reportDetachedRunCreated(run.ID); err != nil {
 		markRunFailedAndNotify(ctx, runStore, run.ID, notifier, stderr)
@@ -2971,6 +2941,8 @@ func parseOperationalCommand(name string, args []string, config roundconfig.Conf
 func recordSelectionFlagPresence(fs *flag.FlagSet, req *commandRequest) {
 	fs.Visit(func(flag *flag.Flag) {
 		switch flag.Name {
+		case "agent":
+			req.agentSet = true
 		case "model":
 			req.modelSet = true
 		case "reasoning-effort":

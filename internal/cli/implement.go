@@ -134,6 +134,20 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitPreflight
 	}
 
+	categories := implementProfileCategories(graph, req.qa)
+	collaborators := newEngineCollaborators()
+	profilePreflight, err := runProfileOperationalPreflight(ctx, req, loadedConfig.Config, categories, gitState.Root, collaborators.runner, stderr)
+	if err != nil {
+		printPreflightFailure("implement", err, stderr)
+		return exitPreflight
+	}
+	runtime, err := runtimeForOperationalProfileRun(req, loadedConfig.Config, categories, profilePreflight.Override)
+	if err != nil {
+		printPreflightFailure("implement", err, stderr)
+		return exitPreflight
+	}
+	req = requestWithRuntimeSelection(req, runtime)
+
 	runStore, err := store.Open(ctx, loadedConfig.HomeDir)
 	if err != nil {
 		printPreflightFailure("implement", err, stderr)
@@ -142,11 +156,6 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	defer func() {
 		_ = runStore.Close()
 	}()
-	runtime, err := runtimeForAgentWork(req, loadedConfig.Config)
-	if err != nil {
-		printPreflightFailure("implement", err, stderr)
-		return exitPreflight
-	}
 	sweepRunRetention(ctx, runStore, req.artifactDir, loadedConfig.Config.Store.JournalRetention, stderr)
 	if err := pruneTerminalRunWorktreeDebris(ctx, gitState.Root, loadedConfig.Config.Worktree.Location, runtime, runStore, stderr); err != nil {
 		printPreflightFailure("implement", err, stderr)
@@ -166,14 +175,6 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			return exitPreflight
 		}
 	}
-
-	collaborators := newEngineCollaborators()
-	runtime, err = probeRuntimeSelection(ctx, req, runtime, gitState.Root, collaborators.runner, stderr)
-	if err != nil {
-		printPreflightFailure("implement", err, stderr)
-		return exitPreflight
-	}
-	req = requestWithRuntimeSelection(req, runtime)
 
 	run, err := createRunReclaimingOrphan(ctx, runStore, stderr, func() (store.Run, error) {
 		return runStore.CreateRun(ctx, store.CreateRunRequest{

@@ -2990,7 +2990,41 @@ func TestRunImplementPreflightProbeFailureCreatesNoRun(t *testing.T) {
 	assertRunCount(t, store.DatabasePath(homeDir), 0)
 }
 
-func TestRunImplementSelectionFailureReportsFallbackWithoutCreatingRun(t *testing.T) {
+func TestImplementProfilePreflightFailureCreatesNoRunWorktreeOrAgentPrompt(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", taskType: "backend"}})
+	runner := &implementFakeRunner{gitRoot: repoDir, probeErr: errors.New("adapter rejected configured tuple")}
+	withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
+	}
+	for _, want := range []string{"adapter rejected configured tuple", "backend preferred", "roundfix profiles configure"} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("stderr missing %q in %q", want, stderr.String())
+		}
+	}
+	if stdout.Len() != 0 || runner.calls != 0 {
+		t.Fatalf("expected no stdout or Agent work, stdout=%q calls=%d", stdout.String(), runner.calls)
+	}
+	if len(runner.probeRequests) != 1 || runner.probeRequests[0].WorkDir != repoDir {
+		t.Fatalf("expected one profile proof in git root %q, got %#v", repoDir, runner.probeRequests)
+	}
+	if len(runner.fallbackSets) != 0 {
+		t.Fatalf("profile preflight must not discover fallback candidates, got %#v", runner.fallbackSets)
+	}
+	assertNoRunDatabase(t, homeDir)
+	if _, err := os.Stat(filepath.Join(homeDir, ".roundfix", "worktrees")); err == nil {
+		t.Fatalf("expected no Run Worktree root under %s", homeDir)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("stat worktree root: %v", err)
+	}
+}
+
+func TestRunImplementSelectionFailureReportsProfileRemediationWithoutCreatingRun(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	runner := &implementFakeRunner{
 		gitRoot: repoDir,
@@ -3000,8 +3034,6 @@ func TestRunImplementSelectionFailureReportsFallbackWithoutCreatingRun(t *testin
 			ReasoningEffort: "unsupported",
 			Err:             errors.New("selection rejected"),
 		},
-		fallback:   agent.FallbackSelection{Model: "gpt-5.5", ReasoningEffort: "high"},
-		fallbackOK: true,
 	}
 	withImplementCollaborators(t, runner)
 	var stdout bytes.Buffer
@@ -3020,10 +3052,10 @@ func TestRunImplementSelectionFailureReportsFallbackWithoutCreatingRun(t *testin
 		t.Fatalf("expected selection preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
 	}
 	for _, want := range []string{
-		"Fallback Selection:",
-		"Agent Model: gpt-5.5",
-		"Default Reasoning Effort: high",
-		"Re-run: roundfix implement --spec " + implementTestSlug + " --agent codex --no-input --model gpt-5.5 --reasoning-effort high",
+		`profile proof failed for runtime "codex", model "broken-model", reasoning_effort "unsupported"`,
+		"backend preferred",
+		"adapter error: agent selection unavailable",
+		"roundfix profiles configure --scope user|project",
 	} {
 		if !strings.Contains(stderr.String(), want) {
 			t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())
@@ -3032,13 +3064,13 @@ func TestRunImplementSelectionFailureReportsFallbackWithoutCreatingRun(t *testin
 	if stdout.Len() != 0 || runner.calls != 0 {
 		t.Fatalf("expected no stdout or Agent work, stdout=%q calls=%d", stdout.String(), runner.calls)
 	}
-	if len(runner.fallbackSets) != 1 {
-		t.Fatalf("expected one fallback probe, got %#v", runner.fallbackSets)
+	if len(runner.fallbackSets) != 0 {
+		t.Fatalf("profile preflight must not probe dynamic fallback candidates, got %#v", runner.fallbackSets)
 	}
-	assertRunCount(t, store.DatabasePath(homeDir), 0)
+	assertNoRunDatabase(t, homeDir)
 }
 
-func TestRunImplementConfirmsModelManagedFallbackAsEffectiveSelection(t *testing.T) {
+func TestRunImplementSelectionFailureDoesNotPromptForDynamicFallback(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Confirm fallback"}})
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	configContent := "runtimes:\n  codex:\n    model: broken-model\n    reasoning_effort: unsupported\n"
@@ -3054,8 +3086,6 @@ func TestRunImplementConfirmsModelManagedFallbackAsEffectiveSelection(t *testing
 			ReasoningEffort: "unsupported",
 			Err:             errors.New("selection rejected"),
 		},
-		fallback:   agent.FallbackSelection{Model: "gpt-5.4-mini"},
-		fallbackOK: true,
 	}
 	withImplementCollaborators(t, runner)
 	withFallbackConfirmation(t, "y\n")
@@ -3068,30 +3098,22 @@ func TestRunImplementConfirmsModelManagedFallbackAsEffectiveSelection(t *testing
 		"--agent", "codex",
 	}, &stdout, &stderr)
 
-	if code != exitOK {
-		t.Fatalf("expected confirmed fallback implement Run to finish cleanly, got exit %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	if code != exitPreflight {
+		t.Fatalf("expected selection preflight exit %d, got exit %d stderr=%q stdout=%q", exitPreflight, code, stderr.String(), stdout.String())
 	}
-	for _, want := range []string{
-		"Fallback Selection:",
-		"Agent Model: gpt-5.4-mini",
-		"Default Reasoning Effort: model-managed",
-		"A different Agent Model can consume tokens differently.",
-		"Use this Fallback Selection for this Run? [y/N]: ",
-	} {
-		if !strings.Contains(stderr.String(), want) {
-			t.Fatalf("expected interactive fallback output to contain %q, got %q", want, stderr.String())
-		}
+	if strings.Contains(stderr.String(), "Fallback Selection:") || strings.Contains(stderr.String(), "Use this Fallback Selection for this Run?") {
+		t.Fatalf("pre-Run profile proof must not prompt for dynamic fallback candidates, got %q", stderr.String())
 	}
-	if got := strings.Count(stderr.String(), "Use this Fallback Selection for this Run?"); got != 1 {
-		t.Fatalf("expected one confirmation question, got %d in %q", got, stderr.String())
-	}
-	run := implementRunFromStore(t, homeDir, implementRunIDFromStderr(t, stderr.String()))
-	if run.Model != "gpt-5.4-mini" || run.ReasoningEffort != "" {
-		t.Fatalf("expected model-managed fallback in Run record, got %#v", run)
+	if !strings.Contains(stderr.String(), "roundfix profiles configure") || !strings.Contains(stderr.String(), "roundfix profiles validate") {
+		t.Fatalf("expected profile remediation guidance, got %q", stderr.String())
 	}
 	if got := mustRead(t, configPath); got != configContent {
-		t.Fatalf("confirmed fallback must not change Project Config\nwant: %q\n got: %q", configContent, got)
+		t.Fatalf("failed profile proof must not change Project Config\nwant: %q\n got: %q", configContent, got)
 	}
+	if stdout.Len() != 0 || runner.calls != 0 || len(runner.fallbackSets) != 0 {
+		t.Fatalf("expected no output, Agent work, or dynamic fallback probes; stdout=%q calls=%d fallback=%#v", stdout.String(), runner.calls, runner.fallbackSets)
+	}
+	assertNoRunDatabase(t, homeDir)
 }
 
 func TestRunImplementPassesOneRunSelectionOverridesToPreflight(t *testing.T) {

@@ -787,6 +787,83 @@ profiles:
 	assertNoRunDatabase(t, homeDir)
 }
 
+func TestProfileOperationalPreflightMixedTaskGraphWithQADeduplicatesStableOrder(t *testing.T) {
+	runner := &fakeAgentRunner{}
+	var stderr bytes.Buffer
+	graph := &spec.Graph{Tasks: []spec.Task{
+		{ID: "task_frontend", Status: spec.StatusPending, Type: spec.TaskTypeFrontend},
+		{ID: "task_backend", Status: spec.StatusPending, Type: spec.TaskTypeBackend},
+	}}
+	categories := implementProfileCategories(graph, true)
+
+	result, err := runProfileOperationalPreflight(context.Background(), commandRequest{name: "implement"}, roundconfig.Builtin(), categories, "/workspace", runner, &stderr)
+
+	if err != nil {
+		t.Fatalf("operational profile preflight error = %v", err)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no warning without invocation override, got %q", stderr.String())
+	}
+	wantModels := []string{"gpt-5.6-sol", "gpt-5.6-terra", "claude-fable-5"}
+	if got := probeRequestModels(runner.probeRequests); !reflect.DeepEqual(got, wantModels) {
+		t.Fatalf("probe models = %v, want %v", got, wantModels)
+	}
+	if len(result.Proofs) != 3 {
+		t.Fatalf("len(proofs) = %d, want 3", len(result.Proofs))
+	}
+	assertProofReferences(t, result.Proofs[0], []string{"backend/preferred", "frontend/fallback", "qa/preferred"})
+	assertProofReferences(t, result.Proofs[1], []string{"backend/fallback", "qa/fallback"})
+	assertProofReferences(t, result.Proofs[2], []string{"frontend/preferred"})
+	for _, request := range runner.probeRequests {
+		if request.WorkDir != "/workspace" {
+			t.Fatalf("probe WorkDir = %q, want /workspace", request.WorkDir)
+		}
+	}
+	if runner.calls != 0 || len(runner.fallbackModels) != 0 {
+		t.Fatalf("profile preflight must not prompt or discover fallbacks, calls=%d fallback=%#v", runner.calls, runner.fallbackModels)
+	}
+}
+
+func TestInvocationProfileOverrideAppliesAcrossCategoriesPreservesFallbacksAndWarns(t *testing.T) {
+	runner := &fakeAgentRunner{}
+	var stderr bytes.Buffer
+	graph := &spec.Graph{Tasks: []spec.Task{
+		{ID: "task_backend", Status: spec.StatusPending, Type: spec.TaskTypeBackend},
+		{ID: "task_frontend", Status: spec.StatusPending, Type: spec.TaskTypeFrontend},
+	}}
+	req := commandRequest{
+		name:               "implement",
+		agent:              "codex",
+		agentSet:           true,
+		model:              "one-run-model",
+		modelSet:           true,
+		reasoningEffort:    "one-run-reasoning",
+		reasoningEffortSet: true,
+	}
+	categories := implementProfileCategories(graph, true)
+
+	result, err := runProfileOperationalPreflight(context.Background(), req, roundconfig.Builtin(), categories, "/workspace", runner, &stderr)
+
+	if err != nil {
+		t.Fatalf("operational profile preflight error = %v", err)
+	}
+	if result.Override == nil || result.Override.Model != "one-run-model" || result.Override.ReasoningEffort != "one-run-reasoning" {
+		t.Fatalf("unexpected invocation override: %+v", result.Override)
+	}
+	wantModels := []string{"one-run-model", "gpt-5.6-terra", "gpt-5.6-sol"}
+	if got := probeRequestModels(runner.probeRequests); !reflect.DeepEqual(got, wantModels) {
+		t.Fatalf("probe models = %v, want %v", got, wantModels)
+	}
+	assertProofReferences(t, result.Proofs[0], []string{"backend/preferred", "frontend/preferred", "qa/preferred"})
+	if !strings.Contains(stderr.String(), "one invocation Agent Selection override applies to Agent Work Categories backend, frontend, qa") ||
+		!strings.Contains(stderr.String(), "Fallback Chains are preserved") {
+		t.Fatalf("expected cross-category warning, got %q", stderr.String())
+	}
+	if len(result.Warnings) != 1 || result.Warnings[0] != strings.TrimSpace(stderr.String()) {
+		t.Fatalf("warning metadata = %#v, stderr=%q", result.Warnings, stderr.String())
+	}
+}
+
 func TestProfilesShowReportsUnavailableRecommendationWithoutReordering(t *testing.T) {
 	unavailableSelection := roundconfig.AgentSelection{
 		Runtime:         "codex",
@@ -910,6 +987,14 @@ func assertProofReferences(t *testing.T, proof profileProofReport, want []string
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("proof references = %v, want %v", got, want)
 	}
+}
+
+func probeRequestModels(requests []agent.ProbeRequest) []string {
+	models := make([]string, 0, len(requests))
+	for _, request := range requests {
+		models = append(models, request.Runtime.Model)
+	}
+	return models
 }
 
 func runProfilesShowTwice(t *testing.T, args []string) (string, string) {
@@ -2808,6 +2893,78 @@ func TestRunResolvePrintsDeterministicStdoutReport(t *testing.T) {
 	}
 }
 
+func TestReviewProfilePreflightResolveAndWatchUseOnlyReviewProfile(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{
+			name: "resolve",
+			args: []string{"resolve", "--pr", "123", "--round", "all", "--no-input"},
+		},
+		{
+			name: "watch",
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "1", "--no-input"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, repoDir := withCLIWorkspace(t)
+			withSuccessfulPreflight(t, repoDir)
+			if tt.name == "resolve" {
+				persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+			}
+			mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
+profiles:
+  review:
+    preferred:
+      runtime: claude
+      model: review-preferred
+      reasoning_effort: medium
+    fallbacks:
+      - runtime: codex
+        model: review-fallback
+        reasoning_effort: high
+`)
+			runner := &fakeAgentRunner{}
+			withAgentRunner(t, runner)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), tt.args, &stdout, &stderr)
+
+			if code != exitOK {
+				t.Fatalf("%s exit = %d stderr=%q stdout=%q", tt.name, code, stderr.String(), stdout.String())
+			}
+			wantModels := []string{"review-preferred", "review-fallback"}
+			if got := probeRequestModels(runner.probeRequests); !reflect.DeepEqual(got, wantModels) {
+				t.Fatalf("%s probe models = %v, want %v", tt.name, got, wantModels)
+			}
+			if len(runner.runRuntimes) == 0 || runner.runRuntimes[0].Model != "review-preferred" {
+				t.Fatalf("%s run runtime = %#v, want review-preferred", tt.name, runner.runRuntimes)
+			}
+		})
+	}
+}
+
+func TestReviewProfilePreflightFetchCreatesNoAgentSession(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	runner := &fakeAgentRunner{}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"fetch", "--source", "coderabbit", "--pr", "123", "--round", "auto", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("fetch exit = %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if len(runner.probeRequests) != 0 || runner.calls != 0 {
+		t.Fatalf("fetch must not prove or invoke Agent sessions, probes=%#v calls=%d", runner.probeRequests, runner.calls)
+	}
+}
+
 func TestPrintReviewIssueReportSplitsRunAndCumulativeCountsAndReasons(t *testing.T) {
 	report := reviewIssueReport{
 		runIssues: []rounds.Issue{
@@ -3618,11 +3775,13 @@ defaults:
 			if code != 0 {
 				t.Fatalf("expected exit code 0, got %d, stdout=%q stderr=%q", code, stdout.String(), stderr.String())
 			}
-			if len(runner.probedRuntimes) != 1 {
-				t.Fatalf("expected one runtime probe, got %#v", runner.probedRuntimes)
+			if len(runner.probedRuntimes) != 2 {
+				t.Fatalf("expected preferred and fallback profile probes, got %#v", runner.probedRuntimes)
 			}
-			if runner.probedRuntimes[0].FullAccessMode != tt.wantAccess {
-				t.Fatalf("expected probe full-access mode %q, got %q", tt.wantAccess, runner.probedRuntimes[0].FullAccessMode)
+			for _, runtime := range runner.probedRuntimes {
+				if runtime.FullAccessMode != tt.wantAccess {
+					t.Fatalf("expected probe full-access mode %q, got runtime %#v", tt.wantAccess, runtime)
+				}
 			}
 			if len(runner.runRuntimes) != 1 {
 				t.Fatalf("expected one Agent run, got %#v", runner.runRuntimes)
@@ -4490,34 +4649,24 @@ func TestRunWatchSelectionPreflightFailureCreatesNoRun(t *testing.T) {
 	assertNoRunDatabase(t, homeDir)
 }
 
-func TestRunReviewAgentCommandsReportProvenFallbackWithoutCreatingRun(t *testing.T) {
+func TestRunReviewAgentCommandsReportProfileProofFailureWithoutCreatingRun(t *testing.T) {
 	tests := []struct {
 		name             string
 		args             []string
-		fallback         agent.FallbackSelection
-		wantRerun        string
-		rerunArgs        []string
 		needsReviewIssue bool
 	}{
 		{
 			name:             "resolve with explicit reasoning",
 			args:             []string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--reasoning-effort", "unsupported", "--no-input"},
-			fallback:         agent.FallbackSelection{Model: "gpt-5.5", ReasoningEffort: "high"},
-			wantRerun:        "Re-run: roundfix resolve --pr 123 --agent codex --no-input --model gpt-5.5 --reasoning-effort high",
-			rerunArgs:        []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input", "--model", "gpt-5.5", "--reasoning-effort", "high"},
 			needsReviewIssue: true,
 		},
 		{
-			name:      "watch with model-managed reasoning",
-			args:      []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--reasoning-effort", "unsupported", "--no-input"},
-			fallback:  agent.FallbackSelection{Model: "gpt-5.4-mini"},
-			wantRerun: `Re-run: roundfix watch --source coderabbit --pr 123 --agent codex --no-input --model gpt-5.4-mini --reasoning-effort ""`,
+			name: "watch with model-managed reasoning",
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--reasoning-effort", "unsupported", "--no-input"},
 		},
 		{
 			name:             "resolve with non-interactive stderr",
 			args:             []string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--reasoning-effort", "unsupported"},
-			fallback:         agent.FallbackSelection{Model: "gpt-5.5", ReasoningEffort: "high"},
-			wantRerun:        "Re-run: roundfix resolve --pr 123 --agent codex --model gpt-5.5 --reasoning-effort high",
 			needsReviewIssue: true,
 		},
 	}
@@ -4532,7 +4681,7 @@ func TestRunReviewAgentCommandsReportProvenFallbackWithoutCreatingRun(t *testing
 					ReasoningEffort: "unsupported",
 					Err:             errors.New("selection rejected"),
 				},
-				fallback:   tt.fallback,
+				fallback:   agent.FallbackSelection{Model: "should-not-be-used", ReasoningEffort: "high"},
 				fallbackOK: true,
 			}
 			withAgentRunner(t, runner)
@@ -4549,50 +4698,36 @@ func TestRunReviewAgentCommandsReportProvenFallbackWithoutCreatingRun(t *testing
 				t.Fatalf("expected selection preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
 			}
 			if stdout.Len() != 0 {
-				t.Fatalf("fallback report must stay off stdout, got %q", stdout.String())
+				t.Fatalf("profile proof report must stay off stdout, got %q", stdout.String())
 			}
 			for _, want := range []string{
-				`model "broken-model" and reasoning "unsupported"`,
-				"Fallback Selection:",
-				"Agent Model: " + tt.fallback.Model,
-				"Default Reasoning Effort: " + displayReasoningEffort(tt.fallback.ReasoningEffort),
-				tt.wantRerun,
+				`profile proof failed for runtime "codex", model "broken-model", reasoning_effort "unsupported"`,
+				"review preferred",
+				"selection rejected",
+				"roundfix profiles configure --scope user|project",
+				"roundfix profiles validate",
 			} {
 				if !strings.Contains(stderr.String(), want) {
 					t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())
 				}
 			}
+			for _, forbidden := range []string{"Fallback Selection:", "Probed Agent Models", "Re-run:"} {
+				if strings.Contains(stderr.String(), forbidden) {
+					t.Fatalf("profile proof must not report dynamic fallback %q in %q", forbidden, stderr.String())
+				}
+			}
 			if runner.calls != 0 {
 				t.Fatalf("expected no Agent work, got %d call(s)", runner.calls)
 			}
-			if len(runner.fallbackModels) != 1 {
-				t.Fatalf("expected one fallback probe, got %#v", runner.fallbackModels)
-			}
-			if got := strings.Join(runner.fallbackModels[0].Efforts, ","); got != "xhigh,high,medium,low" {
-				t.Fatalf("expected highest-first reasoning vocabulary, got %q", got)
-			}
-			if got := strings.Join(runner.fallbackModels[0].Models, ","); !strings.HasPrefix(got, "gpt-5.6-sol,gpt-5.6-terra") {
-				t.Fatalf("expected Model Catalog order, got %q", got)
+			if len(runner.fallbackModels) != 0 {
+				t.Fatalf("profile proof must not discover dynamic fallback candidates, got %#v", runner.fallbackModels)
 			}
 			assertNoRunDatabase(t, homeDir)
-			if len(tt.rerunArgs) > 0 {
-				runner.probeErr = nil
-				stdout.Reset()
-				stderr.Reset()
-				code = Run(tt.rerunArgs, &stdout, &stderr)
-				if code != exitOK {
-					t.Fatalf("expected printed fallback selection to pass preflight, got exit %d stderr=%q", code, stderr.String())
-				}
-				got := runner.probeRequests[len(runner.probeRequests)-1].Runtime
-				if got.Model != tt.fallback.Model || got.ReasoningEffort != tt.fallback.ReasoningEffort {
-					t.Fatalf("expected re-run to probe fallback selection %#v, got %#v", tt.fallback, got)
-				}
-			}
 		})
 	}
 }
 
-func TestRunResolveSelectionFailureReportsProbedCandidatesWhenNoFallbackWorks(t *testing.T) {
+func TestRunResolveSelectionFailureDoesNotProbeDynamicCandidates(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	runner := &fakeAgentRunner{probeErr: &agent.SelectionPreflightError{
@@ -4615,37 +4750,42 @@ func TestRunResolveSelectionFailureReportsProbedCandidatesWhenNoFallbackWorks(t 
 	for _, want := range []string{
 		"selection rejected",
 		"recovery: update the ACP Runtime or adapter",
-		"Fallback probe found no functional selection.",
-		"Probed Agent Models (newest first): gpt-5.6-terra, gpt-5.6-luna",
-		"Probed reasoning efforts (highest first): xhigh, high, medium, low",
+		"profile proof failed",
+		"review preferred",
+		"roundfix profiles configure",
 	} {
 		if !strings.Contains(stderr.String(), want) {
 			t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())
 		}
 	}
+	for _, forbidden := range []string{"Fallback probe", "Probed Agent Models", "Probed reasoning efforts"} {
+		if strings.Contains(stderr.String(), forbidden) {
+			t.Fatalf("profile proof must not report dynamic candidates %q in %q", forbidden, stderr.String())
+		}
+	}
 	if stdout.Len() != 0 || runner.calls != 0 {
 		t.Fatalf("expected no output or Agent work, stdout=%q calls=%d", stdout.String(), runner.calls)
+	}
+	if len(runner.fallbackModels) != 0 {
+		t.Fatalf("profile proof must not discover dynamic fallback candidates, got %#v", runner.fallbackModels)
 	}
 	assertNoRunDatabase(t, homeDir)
 }
 
-func TestRunReviewAgentCommandsConfirmFallbackAsEffectiveSelection(t *testing.T) {
+func TestRunReviewAgentCommandsDoNotPromptForDynamicFallback(t *testing.T) {
 	tests := []struct {
 		name             string
 		args             []string
-		fallback         agent.FallbackSelection
 		needsReviewIssue bool
 	}{
 		{
 			name:             "resolve",
 			args:             []string{"resolve", "--pr", "123", "--agent", "codex"},
-			fallback:         agent.FallbackSelection{Model: "gpt-5.5", ReasoningEffort: "high"},
 			needsReviewIssue: true,
 		},
 		{
-			name:     "watch with model-managed reasoning",
-			args:     []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "1"},
-			fallback: agent.FallbackSelection{Model: "gpt-5.4-mini"},
+			name: "watch with model-managed reasoning",
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "1"},
 		},
 	}
 	for _, tt := range tests {
@@ -4662,7 +4802,7 @@ func TestRunReviewAgentCommandsConfirmFallbackAsEffectiveSelection(t *testing.T)
 					ReasoningEffort: "unsupported",
 					Err:             errors.New("selection rejected"),
 				},
-				fallback:   tt.fallback,
+				fallback:   agent.FallbackSelection{Model: "should-not-be-used", ReasoningEffort: "high"},
 				fallbackOK: true,
 			}
 			withAgentRunner(t, runner)
@@ -4675,44 +4815,27 @@ func TestRunReviewAgentCommandsConfirmFallbackAsEffectiveSelection(t *testing.T)
 
 			code := Run(tt.args, &stdout, &stderr)
 
-			if code != exitOK {
-				t.Fatalf("expected confirmed fallback Run to finish cleanly, got exit %d stderr=%q", code, stderr.String())
+			if code != exitPreflight {
+				t.Fatalf("expected profile proof preflight exit %d, got exit %d stderr=%q", exitPreflight, code, stderr.String())
 			}
-			for _, want := range []string{
-				"Failed Selection:",
-				"Agent Model: broken-model",
-				"Fallback Selection:",
-				"Agent Model: " + tt.fallback.Model,
-				"Default Reasoning Effort: " + displayReasoningEffort(tt.fallback.ReasoningEffort),
-				"A different Agent Model can consume tokens differently.",
-				"Use this Fallback Selection for this Run? [y/N]: ",
-			} {
-				if !strings.Contains(stderr.String(), want) {
-					t.Fatalf("expected interactive fallback output to contain %q, got %q", want, stderr.String())
-				}
+			if strings.Contains(stderr.String(), "Fallback Selection:") || strings.Contains(stderr.String(), "Use this Fallback Selection for this Run?") {
+				t.Fatalf("profile proof must not prompt for dynamic fallback candidates, got %q", stderr.String())
 			}
-			if got := strings.Count(stderr.String(), "Use this Fallback Selection for this Run?"); got != 1 {
-				t.Fatalf("expected one confirmation question, got %d in %q", got, stderr.String())
-			}
-			run := runFromStore(t, homeDir, reviewRunIDFromStderr(t, stderr.String()))
-			if run.Model != tt.fallback.Model || run.ReasoningEffort != tt.fallback.ReasoningEffort {
-				t.Fatalf("expected Run record to carry fallback %#v, got %#v", tt.fallback, run)
-			}
-			if len(runner.runRuntimes) == 0 {
-				t.Fatal("expected confirmed fallback to start Agent work")
-			}
-			gotRuntime := runner.runRuntimes[0]
-			if gotRuntime.Model != tt.fallback.Model || gotRuntime.ReasoningEffort != tt.fallback.ReasoningEffort {
-				t.Fatalf("expected Agent work to use fallback %#v, got %#v", tt.fallback, gotRuntime)
+			if !strings.Contains(stderr.String(), "roundfix profiles configure") || !strings.Contains(stderr.String(), "roundfix profiles validate") {
+				t.Fatalf("expected profile remediation guidance, got %q", stderr.String())
 			}
 			if got := mustRead(t, configPath); got != configContent {
-				t.Fatalf("confirmed fallback must not change Project Config\nwant: %q\n got: %q", configContent, got)
+				t.Fatalf("failed profile proof must not change Project Config\nwant: %q\n got: %q", configContent, got)
 			}
+			if stdout.Len() != 0 || runner.calls != 0 || len(runner.fallbackModels) != 0 {
+				t.Fatalf("expected no output, Agent work, or dynamic fallback probes; stdout=%q calls=%d fallback=%#v", stdout.String(), runner.calls, runner.fallbackModels)
+			}
+			assertNoRunDatabase(t, homeDir)
 		})
 	}
 }
 
-func TestRunResolveDeclinesInteractiveFallbackWithoutCreatingRun(t *testing.T) {
+func TestRunResolveProfileProofFailureIgnoresFallbackConfirmationInput(t *testing.T) {
 	tests := []struct {
 		name  string
 		input string
@@ -4746,28 +4869,28 @@ func TestRunResolveDeclinesInteractiveFallbackWithoutCreatingRun(t *testing.T) {
 			code := Run([]string{"resolve", "--pr", "123", "--agent", "codex"}, &stdout, &stderr)
 
 			if code != exitPreflight {
-				t.Fatalf("expected declined fallback exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
+				t.Fatalf("expected profile proof preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
 			}
-			if got := strings.Count(stderr.String(), "Use this Fallback Selection for this Run?"); got != 1 {
-				t.Fatalf("expected one confirmation question, got %d in %q", got, stderr.String())
-			}
-			for _, want := range []string{"Preflight failed", "Re-run: roundfix resolve", "Roundfix did not create a Run"} {
+			for _, want := range []string{"Preflight failed", "profile proof failed", "roundfix profiles configure", "roundfix profiles validate"} {
 				if !strings.Contains(stderr.String(), want) {
-					t.Fatalf("expected declined fallback output to contain %q, got %q", want, stderr.String())
+					t.Fatalf("expected profile proof output to contain %q, got %q", want, stderr.String())
 				}
 			}
-			if stdout.Len() != 0 || runner.calls != 0 {
-				t.Fatalf("declined fallback must start no work, stdout=%q Agent calls=%d", stdout.String(), runner.calls)
+			if strings.Contains(stderr.String(), "Use this Fallback Selection for this Run?") || strings.Contains(stderr.String(), "Fallback Selection:") {
+				t.Fatalf("profile proof failure must not prompt for dynamic fallback candidates, got %q", stderr.String())
+			}
+			if stdout.Len() != 0 || runner.calls != 0 || len(runner.fallbackModels) != 0 {
+				t.Fatalf("profile proof failure must start no work or dynamic fallback, stdout=%q Agent calls=%d fallback=%#v", stdout.String(), runner.calls, runner.fallbackModels)
 			}
 			assertNoRunDatabase(t, homeDir)
 			if got := mustRead(t, configPath); got != configContent {
-				t.Fatalf("declined fallback must not change Project Config\nwant: %q\n got: %q", configContent, got)
+				t.Fatalf("failed profile proof must not change Project Config\nwant: %q\n got: %q", configContent, got)
 			}
 		})
 	}
 }
 
-func TestRunResolveNoInputSuppressesFallbackConfirmation(t *testing.T) {
+func TestRunResolveNoInputProfileProofFailureReportsRemediation(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	runner := &fakeAgentRunner{
@@ -4783,21 +4906,21 @@ func TestRunResolveNoInputSuppressesFallbackConfirmation(t *testing.T) {
 	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
-		t.Fatalf("expected no-input fallback exit %d, got %d", exitPreflight, code)
+		t.Fatalf("expected profile proof preflight exit %d, got %d", exitPreflight, code)
 	}
 	if strings.Contains(stderr.String(), "Use this Fallback Selection for this Run?") {
-		t.Fatalf("no-input fallback must not prompt, got %q", stderr.String())
+		t.Fatalf("profile proof failure must not prompt, got %q", stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "Re-run: roundfix resolve") {
-		t.Fatalf("expected task_02 non-interactive report, got %q", stderr.String())
+	if !strings.Contains(stderr.String(), "roundfix profiles configure") || !strings.Contains(stderr.String(), "roundfix profiles validate") {
+		t.Fatalf("expected profile remediation guidance, got %q", stderr.String())
 	}
-	if stdout.Len() != 0 || runner.calls != 0 {
-		t.Fatalf("no-input fallback must create no Run or Agent work, stdout=%q calls=%d", stdout.String(), runner.calls)
+	if stdout.Len() != 0 || runner.calls != 0 || len(runner.fallbackModels) != 0 {
+		t.Fatalf("profile proof failure must create no Run, Agent work, or dynamic fallback; stdout=%q calls=%d fallback=%#v", stdout.String(), runner.calls, runner.fallbackModels)
 	}
 	assertNoRunDatabase(t, homeDir)
 }
 
-func TestRunResolveDetachedChildReportsFallbackWithDetachedRerun(t *testing.T) {
+func TestRunResolveDetachedChildReportsProfileProofFailure(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	runner := &fakeAgentRunner{
@@ -4831,14 +4954,14 @@ func TestRunResolveDetachedChildReportsFallbackWithDetachedRerun(t *testing.T) {
 	if code != exitPreflight {
 		t.Fatalf("expected detached preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "Re-run: roundfix resolve --pr 123 --agent codex --detach --model gpt-5.5 --reasoning-effort xhigh") {
-		t.Fatalf("expected detached explicit-selection re-run, got %q", stderr.String())
+	if !strings.Contains(stderr.String(), "profile proof failed") || !strings.Contains(stderr.String(), "roundfix profiles configure") {
+		t.Fatalf("expected profile proof remediation, got %q", stderr.String())
 	}
-	if strings.Contains(stderr.String(), "Use this Fallback Selection for this Run?") {
-		t.Fatalf("detached fallback must not prompt, got %q", stderr.String())
+	if strings.Contains(stderr.String(), "Use this Fallback Selection for this Run?") || strings.Contains(stderr.String(), "Re-run:") {
+		t.Fatalf("detached profile proof failure must not prompt or suggest dynamic fallback rerun, got %q", stderr.String())
 	}
-	if stdout.Len() != 0 || runner.calls != 0 {
-		t.Fatalf("expected detached failure to create no Run or Agent work, stdout=%q calls=%d", stdout.String(), runner.calls)
+	if stdout.Len() != 0 || runner.calls != 0 || len(runner.fallbackModels) != 0 {
+		t.Fatalf("expected detached failure to create no Run, Agent work, or dynamic fallback, stdout=%q calls=%d fallback=%#v", stdout.String(), runner.calls, runner.fallbackModels)
 	}
 	assertNoRunDatabase(t, homeDir)
 }
