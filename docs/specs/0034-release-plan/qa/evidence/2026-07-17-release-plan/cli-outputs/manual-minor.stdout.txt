@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "roundfix.release-plan/v1",
+  "state": "approval_required",
+  "base": {
+    "tag": "v0.4.1",
+    "version": "v0.4.1",
+    "commitSHA": "37646081289c4e150036f7af5d78ac518a74fcb5"
+  },
+  "target": {
+    "name": "HEAD",
+    "commitSHA": "b6bdb7eb19baff588ed2c168da7f470b6f518cea"
+  },
+  "classification": {
+    "source": "manual",
+    "impact": "minor",
+    "breaking": false,
+    "manualReason": "public release command behavior changed",
+    "manualClassificationRequired": false,
+    "blockingCommits": [
+      "b6bdb7eb19baff588ed2c168da7f470b6f518cea"
+    ]
+  },
+  "proposedVersion": "v0.5.0",
+  "approval": {
+    "required": true,
+    "increment": "minor",
+    "proposedVersion": "v0.5.0",
+    "question": "Approve the minor increment to v0.5.0?"
+  },
+  "changes": [
+    {
+      "commitSHA": "b6bdb7eb19baff588ed2c168da7f470b6f518cea",
+      "subject": "chore: tune release command",
+      "conventionalType": "chore",
+      "breaking": false,
+      "automaticImpact": "none",
+      "crossesMaintenanceOnlyBoundary": true
+    }
+  ]
+}

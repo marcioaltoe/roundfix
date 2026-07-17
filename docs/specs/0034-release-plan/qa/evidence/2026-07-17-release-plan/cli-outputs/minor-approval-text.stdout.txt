@@ -1,0 +1,11 @@
+Decision: approval_required
+Base: v0.4.1 (538e84c40b50)
+Target: HEAD (8fe5bc4fc3b2)
+Impact: minor
+Breaking: false
+Proposed version: v0.5.0
+Approval required: yes
+Approval question: Approve the minor increment to v0.5.0?
+Next action: answer the approval question before any release mutation.
+Determining commits:
+- 8fe5bc4fc3b2 feat: expose release plan [impact=minor, type=feat]

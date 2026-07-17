@@ -1,0 +1,10 @@
+Decision: manual_classification_required
+Base: v0.4.1 (37646081289c)
+Target: HEAD (b6bdb7eb19ba)
+Impact: none
+Breaking: false
+Proposed version: none
+Approval required: no
+Next action: rerun roundfix release plan --from v0.4.1 --to HEAD --impact <none|patch|minor|major> --reason <text>
+Blocking commits:
+- b6bdb7eb19ba chore: tune release command [impact=none, type=chore, manual]

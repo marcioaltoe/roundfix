@@ -1,0 +1,606 @@
+{
+  "binary": "/Users/marcio/.roundfix/worktrees/roundfix-339f8dac/run_20260717T034621Z_5f84d6a9aa6c41a6/bin/roundfix",
+  "flows": [
+    {
+      "command": "roundfix release plan --format json",
+      "configHash": "e1e97365d49e2803f290701d4fb04a6e0d9279ed427ec154273adf331a6265e8",
+      "exitCode": 0,
+      "fileHash": {
+        "internal/cli/release.txt": "8a9ccf1d5379018c6b40ef7064a1d68bd7f7c269f5265a5306495324badb9809",
+        "seed.txt": "4a6689419b00b11700c9b6246bcfa8936c8f5e1e824db3a7e57030e2d1c1a684"
+      },
+      "name": "patch-ready",
+      "plan": {
+        "approval": {
+          "increment": "",
+          "required": false
+        },
+        "base": {
+          "commitSHA": "538e84c40b5043236444d1c213b9651482ce39e2",
+          "tag": "v0.4.0",
+          "version": "v0.4.0"
+        },
+        "changes": [
+          {
+            "automaticImpact": "patch",
+            "breaking": false,
+            "commitSHA": "8271ce85714aab217c86b52ebf780943f34e1dac",
+            "conventionalType": "fix",
+            "crossesMaintenanceOnlyBoundary": true,
+            "subject": "fix: correct release output"
+          }
+        ],
+        "classification": {
+          "breaking": false,
+          "impact": "patch",
+          "manualClassificationRequired": false,
+          "source": "conventional_commit"
+        },
+        "proposedVersion": "v0.4.1",
+        "schemaVersion": "roundfix.release-plan/v1",
+        "state": "ready",
+        "target": {
+          "commitSHA": "8271ce85714aab217c86b52ebf780943f34e1dac",
+          "name": "HEAD"
+        }
+      },
+      "refsHash": "75a87410d5233107325f03643f5601336bea0237ac46fda62b02473ca1bb5b22",
+      "remotesHash": "f3cb2d6c558837abfc5d125a326eac5948467ba86cd5663ca40f3b3d2b4ba341",
+      "repo": "cli-repos/patch-ready",
+      "repoUnchanged": true,
+      "statusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrPath": "cli-outputs/patch-ready.stderr.txt",
+      "stdoutPath": "cli-outputs/patch-ready.stdout.txt"
+    },
+    {
+      "command": "roundfix release plan",
+      "configHash": "e1e97365d49e2803f290701d4fb04a6e0d9279ed427ec154273adf331a6265e8",
+      "exitCode": 3,
+      "fileHash": {
+        "internal/cli/release.txt": "d0931f2017969f2fd9d0d0cb745530a4144e2d6ef43a2258b048fe9a9e0a600e",
+        "seed.txt": "4a6689419b00b11700c9b6246bcfa8936c8f5e1e824db3a7e57030e2d1c1a684"
+      },
+      "name": "minor-approval-text",
+      "refsHash": "4efafd12cad45eaae82fb5e51ed23d4b0ba3f854cdf58bb64c901037542e3adf",
+      "remotesHash": "f3cb2d6c558837abfc5d125a326eac5948467ba86cd5663ca40f3b3d2b4ba341",
+      "repo": "cli-repos/minor-approval",
+      "repoUnchanged": true,
+      "statusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrPath": "cli-outputs/minor-approval-text.stderr.txt",
+      "stdoutPath": "cli-outputs/minor-approval-text.stdout.txt"
+    },
+    {
+      "command": "roundfix release plan --format json",
+      "configHash": "e1e97365d49e2803f290701d4fb04a6e0d9279ed427ec154273adf331a6265e8",
+      "exitCode": 3,
+      "fileHash": {
+        "internal/cli/release.txt": "c8782def622c210a7fd1c21ab7adbd9bcb9dca6602b8d5bc3b3f418979b956e0",
+        "seed.txt": "4a6689419b00b11700c9b6246bcfa8936c8f5e1e824db3a7e57030e2d1c1a684"
+      },
+      "name": "major-breaking",
+      "plan": {
+        "approval": {
+          "increment": "major",
+          "proposedVersion": "v2.0.0",
+          "question": "Approve the major increment to v2.0.0?",
+          "required": true
+        },
+        "base": {
+          "commitSHA": "538e84c40b5043236444d1c213b9651482ce39e2",
+          "tag": "v1.4.2",
+          "version": "v1.4.2"
+        },
+        "changes": [
+          {
+            "automaticImpact": "major",
+            "breaking": true,
+            "commitSHA": "1f0a4f8fd65fa278ca2ec481480025aaf6a5c1e7",
+            "conventionalType": "feat",
+            "crossesMaintenanceOnlyBoundary": true,
+            "subject": "feat!: remove legacy release command"
+          }
+        ],
+        "classification": {
+          "breaking": true,
+          "impact": "major",
+          "manualClassificationRequired": false,
+          "source": "conventional_commit"
+        },
+        "proposedVersion": "v2.0.0",
+        "schemaVersion": "roundfix.release-plan/v1",
+        "state": "approval_required",
+        "target": {
+          "commitSHA": "1f0a4f8fd65fa278ca2ec481480025aaf6a5c1e7",
+          "name": "HEAD"
+        }
+      },
+      "refsHash": "e5938aff480a529a843ac6f31a648af16e3bd26debab52ccf4b3bb18368b7628",
+      "remotesHash": "f3cb2d6c558837abfc5d125a326eac5948467ba86cd5663ca40f3b3d2b4ba341",
+      "repo": "cli-repos/major-breaking",
+      "repoUnchanged": true,
+      "statusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrPath": "cli-outputs/major-breaking.stderr.txt",
+      "stdoutPath": "cli-outputs/major-breaking.stdout.txt"
+    },
+    {
+      "command": "roundfix release plan --format json",
+      "configHash": "e1e97365d49e2803f290701d4fb04a6e0d9279ed427ec154273adf331a6265e8",
+      "exitCode": 3,
+      "fileHash": {
+        "internal/cli/release.txt": "398ce145ed3579ba86b1c0a14d6831a5c41441c5fe0676e45cac54f7bbd82b7e",
+        "seed.txt": "4a6689419b00b11700c9b6246bcfa8936c8f5e1e824db3a7e57030e2d1c1a684"
+      },
+      "name": "version-zero-breaking",
+      "plan": {
+        "approval": {
+          "increment": "minor",
+          "proposedVersion": "v0.8.0",
+          "question": "Approve the minor increment to v0.8.0?",
+          "required": true
+        },
+        "base": {
+          "commitSHA": "022d55124182019c1729995226c24721f5e1eccd",
+          "tag": "v0.7.3",
+          "version": "v0.7.3"
+        },
+        "changes": [
+          {
+            "automaticImpact": "major",
+            "breaking": true,
+            "commitSHA": "adf6551edf745bc496d94b5eca23ecb8a463b4a0",
+            "conventionalType": "fix",
+            "crossesMaintenanceOnlyBoundary": true,
+            "subject": "fix!: change agent contract"
+          }
+        ],
+        "classification": {
+          "breaking": true,
+          "impact": "major",
+          "manualClassificationRequired": false,
+          "source": "conventional_commit"
+        },
+        "proposedVersion": "v0.8.0",
+        "schemaVersion": "roundfix.release-plan/v1",
+        "state": "approval_required",
+        "target": {
+          "commitSHA": "adf6551edf745bc496d94b5eca23ecb8a463b4a0",
+          "name": "HEAD"
+        }
+      },
+      "refsHash": "5d7b2be3f1c901efa199cd34c47c7d9004b579e58fba841290bee3644fe5aed2",
+      "remotesHash": "f3cb2d6c558837abfc5d125a326eac5948467ba86cd5663ca40f3b3d2b4ba341",
+      "repo": "cli-repos/version-zero-breaking",
+      "repoUnchanged": true,
+      "statusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrPath": "cli-outputs/version-zero-breaking.stderr.txt",
+      "stdoutPath": "cli-outputs/version-zero-breaking.stdout.txt"
+    },
+    {
+      "command": "roundfix release plan --format json",
+      "configHash": "e1e97365d49e2803f290701d4fb04a6e0d9279ed427ec154273adf331a6265e8",
+      "exitCode": 3,
+      "fileHash": {
+        "internal/cli/feature.txt": "d0931f2017969f2fd9d0d0cb745530a4144e2d6ef43a2258b048fe9a9e0a600e",
+        "internal/cli/fix.txt": "8a9ccf1d5379018c6b40ef7064a1d68bd7f7c269f5265a5306495324badb9809",
+        "seed.txt": "4a6689419b00b11700c9b6246bcfa8936c8f5e1e824db3a7e57030e2d1c1a684"
+      },
+      "name": "mixed-fix-feature",
+      "plan": {
+        "approval": {
+          "increment": "minor",
+          "proposedVersion": "v0.5.0",
+          "question": "Approve the minor increment to v0.5.0?",
+          "required": true
+        },
+        "base": {
+          "commitSHA": "022d55124182019c1729995226c24721f5e1eccd",
+          "tag": "v0.4.1",
+          "version": "v0.4.1"
+        },
+        "changes": [
+          {
+            "automaticImpact": "patch",
+            "breaking": false,
+            "commitSHA": "4d4e23695eff628a11f1d35253085739c43455bd",
+            "conventionalType": "fix",
+            "crossesMaintenanceOnlyBoundary": true,
+            "subject": "fix: correct release output"
+          },
+          {
+            "automaticImpact": "minor",
+            "breaking": false,
+            "commitSHA": "9713397e2ac005a3df42005b17a1e047e33a85ac",
+            "conventionalType": "feat",
+            "crossesMaintenanceOnlyBoundary": true,
+            "subject": "feat: expose release plan"
+          }
+        ],
+        "classification": {
+          "breaking": false,
+          "impact": "minor",
+          "manualClassificationRequired": false,
+          "source": "conventional_commit"
+        },
+        "proposedVersion": "v0.5.0",
+        "schemaVersion": "roundfix.release-plan/v1",
+        "state": "approval_required",
+        "target": {
+          "commitSHA": "9713397e2ac005a3df42005b17a1e047e33a85ac",
+          "name": "HEAD"
+        }
+      },
+      "refsHash": "b17633ec3508685bac4cdb10f251b86d8388a6b152413f3554e5485a77094f80",
+      "remotesHash": "f3cb2d6c558837abfc5d125a326eac5948467ba86cd5663ca40f3b3d2b4ba341",
+      "repo": "cli-repos/mixed-fix-feature",
+      "repoUnchanged": true,
+      "statusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrPath": "cli-outputs/mixed-fix-feature.stderr.txt",
+      "stdoutPath": "cli-outputs/mixed-fix-feature.stdout.txt"
+    },
+    {
+      "command": "roundfix release plan --format json",
+      "configHash": "e1e97365d49e2803f290701d4fb04a6e0d9279ed427ec154273adf331a6265e8",
+      "exitCode": 3,
+      "fileHash": {
+        "internal/cli/feature.txt": "d0931f2017969f2fd9d0d0cb745530a4144e2d6ef43a2258b048fe9a9e0a600e",
+        "internal/cli/fix.txt": "8a9ccf1d5379018c6b40ef7064a1d68bd7f7c269f5265a5306495324badb9809",
+        "seed.txt": "4a6689419b00b11700c9b6246bcfa8936c8f5e1e824db3a7e57030e2d1c1a684"
+      },
+      "name": "mixed-feature-fix",
+      "plan": {
+        "approval": {
+          "increment": "minor",
+          "proposedVersion": "v0.5.0",
+          "question": "Approve the minor increment to v0.5.0?",
+          "required": true
+        },
+        "base": {
+          "commitSHA": "022d55124182019c1729995226c24721f5e1eccd",
+          "tag": "v0.4.1",
+          "version": "v0.4.1"
+        },
+        "changes": [
+          {
+            "automaticImpact": "minor",
+            "breaking": false,
+            "commitSHA": "90e591d0b09c6615ba5d613ff0693fea1ba9e053",
+            "conventionalType": "feat",
+            "crossesMaintenanceOnlyBoundary": true,
+            "subject": "feat: expose release plan"
+          },
+          {
+            "automaticImpact": "patch",
+            "breaking": false,
+            "commitSHA": "879259da4c53f192e937aacfa9f0708722b59f77",
+            "conventionalType": "fix",
+            "crossesMaintenanceOnlyBoundary": true,
+            "subject": "fix: correct release output"
+          }
+        ],
+        "classification": {
+          "breaking": false,
+          "impact": "minor",
+          "manualClassificationRequired": false,
+          "source": "conventional_commit"
+        },
+        "proposedVersion": "v0.5.0",
+        "schemaVersion": "roundfix.release-plan/v1",
+        "state": "approval_required",
+        "target": {
+          "commitSHA": "879259da4c53f192e937aacfa9f0708722b59f77",
+          "name": "HEAD"
+        }
+      },
+      "refsHash": "b11bc1bca364015dd80d4fcf1e9e4826f240e2f5c342cd0bd0099e8c3370af6c",
+      "remotesHash": "f3cb2d6c558837abfc5d125a326eac5948467ba86cd5663ca40f3b3d2b4ba341",
+      "repo": "cli-repos/mixed-feature-fix",
+      "repoUnchanged": true,
+      "statusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrPath": "cli-outputs/mixed-feature-fix.stderr.txt",
+      "stdoutPath": "cli-outputs/mixed-feature-fix.stdout.txt"
+    },
+    {
+      "command": "roundfix release plan --format json",
+      "configHash": "e1e97365d49e2803f290701d4fb04a6e0d9279ed427ec154273adf331a6265e8",
+      "exitCode": 0,
+      "fileHash": {
+        ".github/workflows/ci-conventions.yml": "5b1e4f26c3b6c7c9e1e1dff510cc05da00e169091695ef76939a6da2cdfa289a",
+        "docs/specs/0034-release-plan/task_04.md": "92deabc86531e5b5a5fb538edd1c5e8c4c0d869cbd8f563188ed0c63727bf1cd",
+        "internal/releaseplan/testdata/plan.json": "c5453c797794f5d0d254f8b8c06ccd07a775ea340356ad570eec5e96d96d913f",
+        "seed.txt": "4a6689419b00b11700c9b6246bcfa8936c8f5e1e824db3a7e57030e2d1c1a684"
+      },
+      "name": "no-release",
+      "plan": {
+        "approval": {
+          "increment": "",
+          "required": false
+        },
+        "base": {
+          "commitSHA": "37646081289c4e150036f7af5d78ac518a74fcb5",
+          "tag": "v0.4.1",
+          "version": "v0.4.1"
+        },
+        "changes": [
+          {
+            "automaticImpact": "none",
+            "breaking": false,
+            "commitSHA": "cca3343b3b89bfeec24f8be5bcdfff6bd2a45ab0",
+            "conventionalType": "docs",
+            "crossesMaintenanceOnlyBoundary": false,
+            "subject": "docs: record release plan evidence"
+          },
+          {
+            "automaticImpact": "none",
+            "breaking": false,
+            "commitSHA": "a198d78f10d89dde16b7480e1eda91b25166e62b",
+            "conventionalType": "test",
+            "crossesMaintenanceOnlyBoundary": false,
+            "subject": "test: add release fixture"
+          },
+          {
+            "automaticImpact": "none",
+            "breaking": false,
+            "commitSHA": "5f12bf2103930fb5d8ad653ccbcda89b1c307ab2",
+            "conventionalType": "ci",
+            "crossesMaintenanceOnlyBoundary": false,
+            "subject": "ci: verify release plan"
+          }
+        ],
+        "classification": {
+          "breaking": false,
+          "impact": "none",
+          "manualClassificationRequired": false,
+          "source": "maintenance_only"
+        },
+        "schemaVersion": "roundfix.release-plan/v1",
+        "state": "no_release",
+        "target": {
+          "commitSHA": "5f12bf2103930fb5d8ad653ccbcda89b1c307ab2",
+          "name": "HEAD"
+        }
+      },
+      "refsHash": "0fc02b1338417004e9eafb823635d0b4bc33802a17454214f5afa9dfbbc0ea76",
+      "remotesHash": "f3cb2d6c558837abfc5d125a326eac5948467ba86cd5663ca40f3b3d2b4ba341",
+      "repo": "cli-repos/no-release",
+      "repoUnchanged": true,
+      "statusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrPath": "cli-outputs/no-release.stderr.txt",
+      "stdoutPath": "cli-outputs/no-release.stdout.txt"
+    },
+    {
+      "command": "roundfix release plan",
+      "configHash": "e1e97365d49e2803f290701d4fb04a6e0d9279ed427ec154273adf331a6265e8",
+      "exitCode": 3,
+      "fileHash": {
+        "internal/cli/release.txt": "5f6739001fb879643971982a57d39fdbd5dbf67d78a8d6b39c683ad7aa8f71f3",
+        "seed.txt": "4a6689419b00b11700c9b6246bcfa8936c8f5e1e824db3a7e57030e2d1c1a684"
+      },
+      "name": "manual-required",
+      "refsHash": "07d14140ad9fcacdc5f2ee3b6e5f621d15f7820adac42a8334470734c35985fc",
+      "remotesHash": "f3cb2d6c558837abfc5d125a326eac5948467ba86cd5663ca40f3b3d2b4ba341",
+      "repo": "cli-repos/manual-required",
+      "repoUnchanged": true,
+      "statusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrPath": "cli-outputs/manual-required.stderr.txt",
+      "stdoutPath": "cli-outputs/manual-required.stdout.txt"
+    },
+    {
+      "command": "roundfix release plan --format json --impact minor --reason public release command behavior changed",
+      "configHash": "e1e97365d49e2803f290701d4fb04a6e0d9279ed427ec154273adf331a6265e8",
+      "exitCode": 3,
+      "fileHash": {
+        "internal/cli/release.txt": "5f6739001fb879643971982a57d39fdbd5dbf67d78a8d6b39c683ad7aa8f71f3",
+        "seed.txt": "4a6689419b00b11700c9b6246bcfa8936c8f5e1e824db3a7e57030e2d1c1a684"
+      },
+      "name": "manual-minor",
+      "plan": {
+        "approval": {
+          "increment": "minor",
+          "proposedVersion": "v0.5.0",
+          "question": "Approve the minor increment to v0.5.0?",
+          "required": true
+        },
+        "base": {
+          "commitSHA": "37646081289c4e150036f7af5d78ac518a74fcb5",
+          "tag": "v0.4.1",
+          "version": "v0.4.1"
+        },
+        "changes": [
+          {
+            "automaticImpact": "none",
+            "breaking": false,
+            "commitSHA": "b6bdb7eb19baff588ed2c168da7f470b6f518cea",
+            "conventionalType": "chore",
+            "crossesMaintenanceOnlyBoundary": true,
+            "subject": "chore: tune release command"
+          }
+        ],
+        "classification": {
+          "blockingCommits": [
+            "b6bdb7eb19baff588ed2c168da7f470b6f518cea"
+          ],
+          "breaking": false,
+          "impact": "minor",
+          "manualClassificationRequired": false,
+          "manualReason": "public release command behavior changed",
+          "source": "manual"
+        },
+        "proposedVersion": "v0.5.0",
+        "schemaVersion": "roundfix.release-plan/v1",
+        "state": "approval_required",
+        "target": {
+          "commitSHA": "b6bdb7eb19baff588ed2c168da7f470b6f518cea",
+          "name": "HEAD"
+        }
+      },
+      "refsHash": "07d14140ad9fcacdc5f2ee3b6e5f621d15f7820adac42a8334470734c35985fc",
+      "remotesHash": "f3cb2d6c558837abfc5d125a326eac5948467ba86cd5663ca40f3b3d2b4ba341",
+      "repo": "cli-repos/manual-minor",
+      "repoUnchanged": true,
+      "statusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrPath": "cli-outputs/manual-minor.stderr.txt",
+      "stdoutPath": "cli-outputs/manual-minor.stdout.txt"
+    },
+    {
+      "command": "roundfix release plan --impact patch --reason try to lower feature impact",
+      "configHash": "e1e97365d49e2803f290701d4fb04a6e0d9279ed427ec154273adf331a6265e8",
+      "exitCode": 2,
+      "fileHash": {
+        "internal/cli/feature.txt": "d0931f2017969f2fd9d0d0cb745530a4144e2d6ef43a2258b048fe9a9e0a600e",
+        "seed.txt": "4a6689419b00b11700c9b6246bcfa8936c8f5e1e824db3a7e57030e2d1c1a684"
+      },
+      "name": "manual-downgrade",
+      "refsHash": "ef982fdaa2bf2f7b7578209d47ac7c447ff2d247b7e65b50dd48f5bd48ec0d04",
+      "remotesHash": "f3cb2d6c558837abfc5d125a326eac5948467ba86cd5663ca40f3b3d2b4ba341",
+      "repo": "cli-repos/manual-downgrade",
+      "repoUnchanged": true,
+      "statusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrPath": "cli-outputs/manual-downgrade.stderr.txt",
+      "stdoutPath": "cli-outputs/manual-downgrade.stdout.txt"
+    },
+    {
+      "command": "roundfix release plan --format json",
+      "configHash": "e1e97365d49e2803f290701d4fb04a6e0d9279ed427ec154273adf331a6265e8",
+      "exitCode": 2,
+      "fileHash": {
+        "internal/cli/fix.txt": "adc773fc3f19a62f5c6b94218c75837ec1195a736ac6e352da67ce8ce2e7af6f",
+        "scratch.txt": "6d3e056919411333d9d98761bea1b0c061c0104f70a536d9d64c34f5e9a57d29",
+        "seed.txt": "4a6689419b00b11700c9b6246bcfa8936c8f5e1e824db3a7e57030e2d1c1a684"
+      },
+      "name": "dirty-tree",
+      "refsHash": "95170eeba76fc4620d428add79dd61b7fe74cd7815f8fe9e04807a8550611d46",
+      "remotesHash": "f3cb2d6c558837abfc5d125a326eac5948467ba86cd5663ca40f3b3d2b4ba341",
+      "repo": "cli-repos/dirty-tree",
+      "repoUnchanged": true,
+      "statusHash": "8d3ad692cffe81d0fbda7427286a6e7ef5069f59d7247158eafcd5f3ea9242d2",
+      "stderrPath": "cli-outputs/dirty-tree.stderr.txt",
+      "stdoutPath": "cli-outputs/dirty-tree.stdout.txt"
+    },
+    {
+      "command": "roundfix release plan --from v0.2.0-rc.1",
+      "configHash": "e1e97365d49e2803f290701d4fb04a6e0d9279ed427ec154273adf331a6265e8",
+      "exitCode": 2,
+      "fileHash": {
+        "internal/cli/fix.txt": "8a9ccf1d5379018c6b40ef7064a1d68bd7f7c269f5265a5306495324badb9809",
+        "seed.txt": "4a6689419b00b11700c9b6246bcfa8936c8f5e1e824db3a7e57030e2d1c1a684"
+      },
+      "name": "pre-release-base",
+      "refsHash": "a319c48b765c64f37065df4f70c52b96e6ca4ce429801bc0ed431fd5af35c22c",
+      "remotesHash": "f3cb2d6c558837abfc5d125a326eac5948467ba86cd5663ca40f3b3d2b4ba341",
+      "repo": "cli-repos/pre-release-base",
+      "repoUnchanged": true,
+      "statusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrPath": "cli-outputs/pre-release-base.stderr.txt",
+      "stdoutPath": "cli-outputs/pre-release-base.stdout.txt"
+    },
+    {
+      "command": "roundfix release plan --format json --from v0.1.0 --to 88da43ccd7d7efc2713c1ffc84bafae1aaa6641c",
+      "configHash": "e1e97365d49e2803f290701d4fb04a6e0d9279ed427ec154273adf331a6265e8",
+      "exitCode": 3,
+      "fileHash": {
+        "internal/cli/feature.txt": "d0931f2017969f2fd9d0d0cb745530a4144e2d6ef43a2258b048fe9a9e0a600e",
+        "internal/cli/fix.txt": "8a9ccf1d5379018c6b40ef7064a1d68bd7f7c269f5265a5306495324badb9809",
+        "seed.txt": "4a6689419b00b11700c9b6246bcfa8936c8f5e1e824db3a7e57030e2d1c1a684"
+      },
+      "name": "explicit-endpoints",
+      "plan": {
+        "approval": {
+          "increment": "minor",
+          "proposedVersion": "v0.2.0",
+          "question": "Approve the minor increment to v0.2.0?",
+          "required": true
+        },
+        "base": {
+          "commitSHA": "7a417d731a612a55ca7182914db940ba3e4150f4",
+          "tag": "v0.1.0",
+          "version": "v0.1.0"
+        },
+        "changes": [
+          {
+            "automaticImpact": "minor",
+            "breaking": false,
+            "commitSHA": "88da43ccd7d7efc2713c1ffc84bafae1aaa6641c",
+            "conventionalType": "feat",
+            "crossesMaintenanceOnlyBoundary": true,
+            "subject": "feat: expose release plan"
+          }
+        ],
+        "classification": {
+          "breaking": false,
+          "impact": "minor",
+          "manualClassificationRequired": false,
+          "source": "conventional_commit"
+        },
+        "proposedVersion": "v0.2.0",
+        "schemaVersion": "roundfix.release-plan/v1",
+        "state": "approval_required",
+        "target": {
+          "commitSHA": "88da43ccd7d7efc2713c1ffc84bafae1aaa6641c",
+          "name": "88da43ccd7d7efc2713c1ffc84bafae1aaa6641c"
+        }
+      },
+      "refsHash": "794f8e4b937019956267c6ecee726d0627d903806d7fa8361f972d02408be2fe",
+      "remotesHash": "f3cb2d6c558837abfc5d125a326eac5948467ba86cd5663ca40f3b3d2b4ba341",
+      "repo": "cli-repos/explicit-endpoints",
+      "repoUnchanged": true,
+      "statusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrPath": "cli-outputs/explicit-endpoints.stderr.txt",
+      "stdoutPath": "cli-outputs/explicit-endpoints.stdout.txt"
+    },
+    {
+      "command": "roundfix release plan --format json",
+      "configHash": "e1e97365d49e2803f290701d4fb04a6e0d9279ed427ec154273adf331a6265e8",
+      "exitCode": 0,
+      "fileHash": {
+        ".roundfixrc.yml": "c5cf44066f86cf839a3541249c44dd90b807ec3be2fcd64f6b941b5cd6ca1a83",
+        "CHANGELOG.md": "517c6f4e3809e424e4994eb658e5aee58dc88d779bbb87b16eccfaed5d9ae62d",
+        "internal/cli/fix.txt": "8a9ccf1d5379018c6b40ef7064a1d68bd7f7c269f5265a5306495324badb9809",
+        "package.json": "74207982bb25deca28222549f7cbdec342c39059fa9d78abf81d8b94b36ee022",
+        "seed.txt": "4a6689419b00b11700c9b6246bcfa8936c8f5e1e824db3a7e57030e2d1c1a684"
+      },
+      "name": "invalid-roundfix-config",
+      "plan": {
+        "approval": {
+          "increment": "",
+          "required": false
+        },
+        "base": {
+          "commitSHA": "731e230dd39c69f07cb7e471286f037f5b0c112f",
+          "tag": "v0.4.1",
+          "version": "v0.4.1"
+        },
+        "changes": [
+          {
+            "automaticImpact": "patch",
+            "breaking": false,
+            "commitSHA": "fe378c645f77306c633b886616f3ba128c9abc4f",
+            "conventionalType": "fix",
+            "crossesMaintenanceOnlyBoundary": true,
+            "subject": "fix: correct release output"
+          }
+        ],
+        "classification": {
+          "breaking": false,
+          "impact": "patch",
+          "manualClassificationRequired": false,
+          "source": "conventional_commit"
+        },
+        "proposedVersion": "v0.4.2",
+        "schemaVersion": "roundfix.release-plan/v1",
+        "state": "ready",
+        "target": {
+          "commitSHA": "fe378c645f77306c633b886616f3ba128c9abc4f",
+          "name": "HEAD"
+        }
+      },
+      "refsHash": "0074b913b2dd2cb0504055964a4d93c15d44d2d44fd2b03cfff1d06ca0b875c5",
+      "remotesHash": "f3cb2d6c558837abfc5d125a326eac5948467ba86cd5663ca40f3b3d2b4ba341",
+      "repo": "cli-repos/invalid-roundfix-config",
+      "repoUnchanged": true,
+      "statusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrPath": "cli-outputs/invalid-roundfix-config.stderr.txt",
+      "stdoutPath": "cli-outputs/invalid-roundfix-config.stdout.txt"
+    }
+  ],
+  "schemaVersion": "roundfix-release-plan-qa/v1"
+}

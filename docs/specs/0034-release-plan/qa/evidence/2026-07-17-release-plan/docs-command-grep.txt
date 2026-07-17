@@ -1,0 +1,10 @@
+docs/user-guide/release-runbook.md:13:roundfix release plan
+docs/user-guide/release-runbook.md:63:1. Run `roundfix release plan` from a clean checkout and satisfy the decision
+docs/user-guide/usage.md:45:roundfix release plan
+AGENTS.md:42:  `roundfix release plan` before changelog, version, tag, push, package, asset,
+.agents/skills/roundfix/SKILL.md:158:roundfix release plan
+.agents/skills/roundfix/SKILL.md:650:roundfix release plan
+.agents/skills/roundfix/SKILL.md:651:roundfix release plan --impact <none|patch|minor|major> --reason "<classification reason>"
+skills/roundfix/SKILL.md:158:roundfix release plan
+skills/roundfix/SKILL.md:650:roundfix release plan
+skills/roundfix/SKILL.md:651:roundfix release plan --impact <none|patch|minor|major> --reason "<classification reason>"

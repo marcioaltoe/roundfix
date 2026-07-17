@@ -1,0 +1,14 @@
+patch-ready: exit=0 state=ready proposed=v0.4.1 unchanged=True stdout=cli-outputs/patch-ready.stdout.txt stderr=cli-outputs/patch-ready.stderr.txt
+minor-approval-text: exit=3 state=text/diagnostic proposed=none unchanged=True stdout=cli-outputs/minor-approval-text.stdout.txt stderr=cli-outputs/minor-approval-text.stderr.txt
+major-breaking: exit=3 state=approval_required proposed=v2.0.0 unchanged=True stdout=cli-outputs/major-breaking.stdout.txt stderr=cli-outputs/major-breaking.stderr.txt
+version-zero-breaking: exit=3 state=approval_required proposed=v0.8.0 unchanged=True stdout=cli-outputs/version-zero-breaking.stdout.txt stderr=cli-outputs/version-zero-breaking.stderr.txt
+mixed-fix-feature: exit=3 state=approval_required proposed=v0.5.0 unchanged=True stdout=cli-outputs/mixed-fix-feature.stdout.txt stderr=cli-outputs/mixed-fix-feature.stderr.txt
+mixed-feature-fix: exit=3 state=approval_required proposed=v0.5.0 unchanged=True stdout=cli-outputs/mixed-feature-fix.stdout.txt stderr=cli-outputs/mixed-feature-fix.stderr.txt
+no-release: exit=0 state=no_release proposed=none unchanged=True stdout=cli-outputs/no-release.stdout.txt stderr=cli-outputs/no-release.stderr.txt
+manual-required: exit=3 state=text/diagnostic proposed=none unchanged=True stdout=cli-outputs/manual-required.stdout.txt stderr=cli-outputs/manual-required.stderr.txt
+manual-minor: exit=3 state=approval_required proposed=v0.5.0 unchanged=True stdout=cli-outputs/manual-minor.stdout.txt stderr=cli-outputs/manual-minor.stderr.txt
+manual-downgrade: exit=2 state=text/diagnostic proposed=none unchanged=True stdout=cli-outputs/manual-downgrade.stdout.txt stderr=cli-outputs/manual-downgrade.stderr.txt
+dirty-tree: exit=2 state=text/diagnostic proposed=none unchanged=True stdout=cli-outputs/dirty-tree.stdout.txt stderr=cli-outputs/dirty-tree.stderr.txt
+pre-release-base: exit=2 state=text/diagnostic proposed=none unchanged=True stdout=cli-outputs/pre-release-base.stdout.txt stderr=cli-outputs/pre-release-base.stderr.txt
+explicit-endpoints: exit=3 state=approval_required proposed=v0.2.0 unchanged=True stdout=cli-outputs/explicit-endpoints.stdout.txt stderr=cli-outputs/explicit-endpoints.stderr.txt
+invalid-roundfix-config: exit=0 state=ready proposed=v0.4.2 unchanged=True stdout=cli-outputs/invalid-roundfix-config.stdout.txt stderr=cli-outputs/invalid-roundfix-config.stderr.txt

@@ -1,0 +1,47 @@
+Roundfix
+
+Usage:
+  roundfix --help
+  roundfix --version
+  roundfix fetch --source coderabbit --pr <number> [--spec <slug>]
+  roundfix resolve --pr <number> --agent <agent> [--spec <slug>]
+  roundfix watch --source coderabbit --pr <number> --agent <agent> [--spec <slug>] --until-clean
+  roundfix implement --spec <slug> --agent <agent>
+  roundfix settle --spec <slug> --task <task_id>
+  roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
+  roundfix archive <slug>
+  roundfix init [--scope <project|user>]
+  roundfix setup [--yes] [--no-input]
+  roundfix doctor
+  roundfix gc [--dry-run]
+  roundfix upgrade [--check]
+  roundfix runs
+  roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]
+  roundfix stop [<run-id>|--run-id <id>|--pr <number>|--spec <slug>]
+  roundfix attach [<run-id>] [--no-input]
+  roundfix events <run-id> [--follow] [--filter <categories>]
+  roundfix skills check
+  roundfix skills install [--target <project|codex|claude|opencode|all>]
+
+Commands:
+  init       Create User Config or Project Config
+  fetch      Download review issues for an Open Pull Request
+  resolve    Resolve downloaded Unresolved Review Issues
+  watch      Fetch and resolve in a watched loop
+  implement  Execute a Spec's Task Graph as one Run
+  settle     Verify and commit all current worktree changes for one failed Task
+  release    Plan the next release version without mutating repository or release state
+  archive    Archive a completed Spec
+  stop       Request or force-stop an Active Run
+  setup      Verify and prepare this machine for Roundfix Runs
+  doctor     Diagnose this machine's readiness for Roundfix Runs
+  gc         Prune old terminal Run journals and run artifacts
+  upgrade    Upgrade the Roundfix binary from GitHub Releases
+  runs       List Runs from the Run Database
+  attach     Replay a Run's event timeline from the Run Database
+  events     Replay or follow a Run's Supervisor event stream as JSONL
+  skills     List, check, or install the bundled Roundfix skills
+
+Options:
+  -h, --help      Show help
+  -v, --version   Show version

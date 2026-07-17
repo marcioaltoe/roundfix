@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "roundfix.release-plan/v1",
+  "state": "approval_required",
+  "base": {
+    "tag": "v0.7.3",
+    "version": "v0.7.3",
+    "commitSHA": "022d55124182019c1729995226c24721f5e1eccd"
+  },
+  "target": {
+    "name": "HEAD",
+    "commitSHA": "adf6551edf745bc496d94b5eca23ecb8a463b4a0"
+  },
+  "classification": {
+    "source": "conventional_commit",
+    "impact": "major",
+    "breaking": true,
+    "manualClassificationRequired": false
+  },
+  "proposedVersion": "v0.8.0",
+  "approval": {
+    "required": true,
+    "increment": "minor",
+    "proposedVersion": "v0.8.0",
+    "question": "Approve the minor increment to v0.8.0?"
+  },
+  "changes": [
+    {
+      "commitSHA": "adf6551edf745bc496d94b5eca23ecb8a463b4a0",
+      "subject": "fix!: change agent contract",
+      "conventionalType": "fix",
+      "breaking": true,
+      "automaticImpact": "major",
+      "crossesMaintenanceOnlyBoundary": true
+    }
+  ]
+}

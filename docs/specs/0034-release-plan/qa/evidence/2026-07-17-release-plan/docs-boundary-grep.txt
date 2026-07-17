@@ -1,0 +1,96 @@
+108 matches in 5 files:
+
+.agents/skills/roundfix/SKILL.md:6:tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, ...
+.agents/skills/roundfix/SKILL.md:24:newer with npm/npx is a prerequisite. Prefer the Setup Command after
+.agents/skills/roundfix/SKILL.md:82:## Setup, doctor, and upgrade
+.agents/skills/roundfix/SKILL.md:107:When acpx is missing or mismatched, setup offers `npm install -g acpx@0.12.0`.
+.agents/skills/roundfix/SKILL.md:128:Use `roundfix upgrade [--check]` to resolve the latest Roundfix release through
+.agents/skills/roundfix/SKILL.md:129:the GitHub CLI. Without `--check`, it downloads the platform asset, verifies
+.agents/skills/roundfix/SKILL.md:134:upgraded 1.0.0 → 1.1.0
+.agents/skills/roundfix/SKILL.md:137:upgrade available 1.0.0 → 1.1.0
+.agents/skills/roundfix/SKILL.md:146:roundfix 1.0.0 is behind latest 1.1.0; run roundfix upgrade
+.agents/skills/roundfix/SKILL.md:161:Run it before changelog edits, version-file edits, tags, pushes, package
+.agents/skills/roundfix/SKILL.md:162:publication, asset uploads, or GitHub Release creation. The command creates no
+.agents/skills/roundfix/SKILL.md:166:A generic release request authorizes only a conclusive patch plan: state
+.agents/skills/roundfix/SKILL.md:167:`ready` with a patch proposed version. State `approval_required` for a minor,
+.agents/skills/roundfix/SKILL.md:168:major, or version-zero breaking proposal requires explicit human approval of
+.agents/skills/roundfix/SKILL.md:171:`--impact <none|patch|minor|major> --reason <text>`; that classification
+.agents/skills/roundfix/SKILL.md:172:records the impact and reason, but it does not approve a resulting minor,
+.agents/skills/roundfix/SKILL.md:173:major, or version-zero breaking version. State `no_release` means no release
+.agents/skills/roundfix/SKILL.md:177:runbook. Preserve the existing tag-triggered workflow: validate the tag, keep
+.agents/skills/roundfix/SKILL.md:178:artifact versions in agreement, publish npm packages through the release
+.agents/skills/roundfix/SKILL.md:179:workflow, upload GitHub Release assets, and leave the Upgrade Command asset
+.agents/skills/roundfix/SKILL.md:651:roundfix release plan --impact <none|patch|minor|major> --reason "<classifica...
+.agents/skills/roundfix/SKILL.md:659:roundfix upgrade --check
+.agents/skills/roundfix/SKILL.md:691:allowed because Batch commits stage only paths changed since the Batch
+.agents/skills/roundfix/SKILL.md:775:issue 001 resolved — major: handle test issue
+.agents/skills/roundfix/SKILL.md:829:crossing a symbolic link — are never staged; the Run reports them kept
+  +5 more in .agents/skills/roundfix/SKILL.md
+AGENTS.md:6:unresolved remains. Stdlib `flag` dispatch and a Bubble Tea v2 TUI.
+AGENTS.md:42:`roundfix release plan` before changelog, version, tag, push, package, asset,
+AGENTS.md:43:or GitHub Release mutation. A generic release request authorizes only a
+AGENTS.md:44:conclusive patch plan; minor, major, version-zero breaking, and manual
+AGENTS.md:125:## Skill dispatch
+AGENTS.md:143:dispatch with a `Run() int` exit-code contract — **no Cobra**.
+AGENTS.md:226:- **MUST** check `git status --short` before staging; keep unrelated user
+docs/user-guide/release-runbook.md:3:Roundfix releases are cut by pushing a `v*` git tag. The tag-triggered workflow
+docs/user-guide/release-runbook.md:5:npm launcher and per-platform packages, and uploads GitHub Release assets in one
+docs/user-guide/release-runbook.md:7:`npx`/`bunx`/global npm (see the README **Install** section). See ADR-0031 for
+docs/user-guide/release-runbook.md:8:why distribution goes through npm platform packages.
+docs/user-guide/release-runbook.md:16:Run it before changelog edits, version-file edits, tags, pushes, package
+docs/user-guide/release-runbook.md:17:publication, asset uploads, or GitHub Release creation. The command creates no
+docs/user-guide/release-runbook.md:23:- `ready` with a patch proposal can proceed without another version approval.
+docs/user-guide/release-runbook.md:24:- `approval_required` for a minor, major, or version-zero breaking proposal
+docs/user-guide/release-runbook.md:28:`--impact <none|patch|minor|major> --reason <text>`. Manual classification
+docs/user-guide/release-runbook.md:30:minor, major, or version-zero breaking version.
+docs/user-guide/release-runbook.md:33:After the plan's required decision is satisfied, keep using the tag-triggered
+docs/user-guide/release-runbook.md:38:The pushed tag is the single source of truth for the release version. The
+docs/user-guide/release-runbook.md:41:- injects it into the binary via `-ldflags "-X roundfix/internal/app.Version=...
+docs/user-guide/release-runbook.md:43:`npm version <tag> --no-git-tag-version`;
+docs/user-guide/release-runbook.md:46:Nothing can disagree because every artifact is stamped from the one tag. The
+docs/user-guide/release-runbook.md:47:`Validate tag` step fails the run before any build when the tag is not a semver
+docs/user-guide/release-runbook.md:49:`CHANGELOG.md` ahead of the tag: the GitHub Release notes are extracted from the
+docs/user-guide/release-runbook.md:50:`## [<version>]` section, falling back to a bare `Release <tag>` line when no
+docs/user-guide/release-runbook.md:55:- `NPM_TOKEN` — an npm **Automation** token for the `roundfix` org, exposed to
+docs/user-guide/release-runbook.md:59:permission to create the GitHub Release and upload assets. No manual setup.
+docs/user-guide/release-runbook.md:75:git tag v<version>
+docs/user-guide/release-runbook.md:79:5. Watch the `release` workflow. In order it: validates the tag, runs
+docs/user-guide/release-runbook.md:80:`make verify`, cross-compiles and stages every target, publishes the
+docs/user-guide/release-runbook.md:82:Release with the matching binary assets.
+docs/user-guide/release-runbook.md:86:or a disagreeing tag stops the run before anything is published.
+  +7 more in docs/user-guide/release-runbook.md
+docs/user-guide/usage.md:13:1. Install Roundfix (npm launcher or `make build`) and put it on `PATH`.
+docs/user-guide/usage.md:48:Run it before changelog edits, version-file edits, tags, pushes, package
+docs/user-guide/usage.md:49:publication, asset uploads, or GitHub Release creation. A generic release
+docs/user-guide/usage.md:50:request authorizes only a conclusive patch plan. Minor, major, and version-zero
+docs/user-guide/usage.md:53:`--impact <none|patch|minor|major> --reason <text>`; that classification records
+docs/user-guide/usage.md:201:repository are never staged.
+docs/user-guide/usage.md:223:issue 001 resolved — major: handle test issue
+docs/user-guide/usage.md:234:Split the loop when you want to inspect artifacts between stages:
+docs/user-guide/usage.md:310:| `upgrade` | Upgrade the binary from GitHub Releases |
+skills/roundfix/SKILL.md:6:tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, ...
+skills/roundfix/SKILL.md:24:newer with npm/npx is a prerequisite. Prefer the Setup Command after
+skills/roundfix/SKILL.md:82:## Setup, doctor, and upgrade
+skills/roundfix/SKILL.md:107:When acpx is missing or mismatched, setup offers `npm install -g acpx@0.12.0`.
+skills/roundfix/SKILL.md:128:Use `roundfix upgrade [--check]` to resolve the latest Roundfix release through
+skills/roundfix/SKILL.md:129:the GitHub CLI. Without `--check`, it downloads the platform asset, verifies
+skills/roundfix/SKILL.md:134:upgraded 1.0.0 → 1.1.0
+skills/roundfix/SKILL.md:137:upgrade available 1.0.0 → 1.1.0
+skills/roundfix/SKILL.md:146:roundfix 1.0.0 is behind latest 1.1.0; run roundfix upgrade
+skills/roundfix/SKILL.md:161:Run it before changelog edits, version-file edits, tags, pushes, package
+skills/roundfix/SKILL.md:162:publication, asset uploads, or GitHub Release creation. The command creates no
+skills/roundfix/SKILL.md:166:A generic release request authorizes only a conclusive patch plan: state
+skills/roundfix/SKILL.md:167:`ready` with a patch proposed version. State `approval_required` for a minor,
+skills/roundfix/SKILL.md:168:major, or version-zero breaking proposal requires explicit human approval of
+skills/roundfix/SKILL.md:171:`--impact <none|patch|minor|major> --reason <text>`; that classification
+skills/roundfix/SKILL.md:172:records the impact and reason, but it does not approve a resulting minor,
+skills/roundfix/SKILL.md:173:major, or version-zero breaking version. State `no_release` means no release
+skills/roundfix/SKILL.md:177:runbook. Preserve the existing tag-triggered workflow: validate the tag, keep
+skills/roundfix/SKILL.md:178:artifact versions in agreement, publish npm packages through the release
+skills/roundfix/SKILL.md:179:workflow, upload GitHub Release assets, and leave the Upgrade Command asset
+skills/roundfix/SKILL.md:651:roundfix release plan --impact <none|patch|minor|major> --reason "<classifica...
+skills/roundfix/SKILL.md:659:roundfix upgrade --check
+skills/roundfix/SKILL.md:691:allowed because Batch commits stage only paths changed since the Batch
+skills/roundfix/SKILL.md:775:issue 001 resolved — major: handle test issue
+skills/roundfix/SKILL.md:829:crossing a symbolic link — are never staged; the Run reports them kept
+  +5 more in skills/roundfix/SKILL.md
