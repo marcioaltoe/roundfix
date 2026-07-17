@@ -1,0 +1,99 @@
+{
+  "schemaVersion": "setup-context-driven/assets-v1",
+  "version": 1,
+  "contracts": [
+    {
+      "id": "contract.profile",
+      "version": 1,
+      "path": "assets/profiles/*.json",
+      "requires": ["id", "version", "setup", "entryDecisions", "modules"],
+      "rules": [
+        "Profiles reference known modules and one known setup snapshot.",
+        "Profiles declare ordered entry decisions before dependent decisions are resolved.",
+        "Profiles list every required module dependency explicitly.",
+        "Profile module order resolves deterministically through dependency order."
+      ]
+    },
+    {
+      "id": "contract.module",
+      "version": 1,
+      "path": "assets/modules/*.json",
+      "requires": [
+        "id",
+        "version",
+        "dependsOn",
+        "conflictsWith",
+        "rootBlocks",
+        "supportingGuides",
+        "rules",
+        "requiredSkills",
+        "requiredDecisions"
+      ],
+      "rules": [
+        "Module dependencies and conflicts reference known modules.",
+        "Rule identifiers are unique across the catalog.",
+        "Managed root block identifiers are unique across the catalog.",
+        "Supporting guide identifiers are unique across the catalog."
+      ]
+    },
+    {
+      "id": "contract.decision",
+      "version": 1,
+      "path": "assets/decisions.json",
+      "requires": ["id", "version", "type", "summary", "effects"],
+      "rules": [
+        "Decision identifiers are stable public data.",
+        "Decision effects declare typed conditions, activated modules, dependent decisions, artifact inclusion or exclusion, template selections, and render bindings.",
+        "Decision effect targets reference catalog-owned modules, decisions, artifacts, templates, and template tokens.",
+        "A meaning change requires a new version or manifest migration."
+      ]
+    },
+    {
+      "id": "contract.template",
+      "version": 1,
+      "path": "assets/templates/index.json",
+      "requires": ["id", "version", "kind", "path"],
+      "rules": [
+        "Template paths are relative to assets/templates.",
+        "Templates may contain only declared decision tokens.",
+        "Root-block templates stay compact and point to supporting guides."
+      ]
+    },
+    {
+      "id": "contract.setup-snapshot",
+      "version": 1,
+      "path": "assets/setups/*.json",
+      "requires": ["id", "version", "source", "digest", "skills"],
+      "rules": [
+        "Skill paths are normalized relative paths.",
+        "Skill names are unique within a snapshot.",
+        "The snapshot digest is the sha256 of ordered normalized paths."
+      ]
+    }
+  ],
+  "diagnostics": [
+    "module.dependency.unknown",
+    "module.dependency.cycle",
+    "module.conflict",
+    "profile.module.unknown",
+    "profile.setup.unknown",
+    "profile.dependency.missing",
+    "profile.entryDecision.unknown",
+    "profile.entryDecision.duplicate",
+    "decision.effects.invalid",
+    "decision.condition.type.invalid",
+    "decision.effect.module.unknown",
+    "decision.effect.module.unowned",
+    "decision.effect.decision.unknown",
+    "decision.effect.artifact.unknown",
+    "decision.effect.artifact.unowned",
+    "decision.effect.template.unknown",
+    "decision.effect.binding.duplicate",
+    "decision.effect.binding.token.unknown",
+    "decision.dependency.cycle",
+    "template.token.undeclared",
+    "rule.id.duplicate",
+    "managed.block.id.duplicate",
+    "skills.reference.outside-setup"
+  ]
+}

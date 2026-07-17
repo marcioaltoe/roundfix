@@ -1,0 +1,130 @@
+{
+  "schemaVersion": "setup-context-driven/manual-qa-v1",
+  "qaId": "QA-08",
+  "name": "Unmarked guide adoption",
+  "status": "pass",
+  "recordedAt": "2026-07-16T16:17:21.007521+00:00",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<source-repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "rust-cli",
+        "--decision",
+        "spec.scaffold=true",
+        "--decision",
+        "domain.layout=single-context",
+        "--decision",
+        "triage.external=false",
+        "--decision",
+        "autonomous.enabled=true",
+        "--decision",
+        "runtime.backend=codex gpt-5.5 xhigh",
+        "--decision",
+        "runtime.design=claude opus-4.8 xhigh",
+        "--decision",
+        "verification.gate=make verify",
+        "--decision",
+        "language.generated=English",
+        "--decision",
+        "secondbrain.enabled=false"
+      ],
+      "cwd": "<source-repo>",
+      "exitCode": 3,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": false,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 1,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [\n    {\n      \"code\": \"decision.required\",\n      \"severity\": \"decision\",\n      \"path\": \"docs/agents/rust.md\",\n      \"managedId\": \"adoption.guide.rust\",\n      \"message\": \"Existing unmarked content needs an adoption decision before setup can own it.\",\n      \"action\": \"Pass --decision adoption.guide.rust=true after reviewing the file.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<source-repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "rust-cli",
+        "--decision",
+        "spec.scaffold=true",
+        "--decision",
+        "domain.layout=single-context",
+        "--decision",
+        "triage.external=false",
+        "--decision",
+        "autonomous.enabled=true",
+        "--decision",
+        "runtime.backend=codex gpt-5.5 xhigh",
+        "--decision",
+        "runtime.design=claude opus-4.8 xhigh",
+        "--decision",
+        "verification.gate=make verify",
+        "--decision",
+        "language.generated=English",
+        "--decision",
+        "secondbrain.enabled=false",
+        "--decision",
+        "adoption.guide.rust=true"
+      ],
+      "cwd": "<source-repo>",
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    }
+  ],
+  "checks": [
+    {
+      "message": "unmarked guide requires adoption",
+      "passed": true,
+      "actual": {
+        "expected": 3,
+        "actual": 3
+      }
+    },
+    {
+      "message": "adoption question identifies the exact guide",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "blocked adoption performs no writes",
+      "passed": true,
+      "actual": {
+        "expected": {
+          "AGENTS.md": "060f446ca5a59ca2d876fcc386470cd42f81d6705b325ddd0aec61821dc415fb",
+          "docs/agents/rust.md": "167b1b7d581bbee39b3ec8dfc0ca046515d178f35d39ac80ee32f6e8da213696"
+        },
+        "actual": {
+          "AGENTS.md": "060f446ca5a59ca2d876fcc386470cd42f81d6705b325ddd0aec61821dc415fb",
+          "docs/agents/rust.md": "167b1b7d581bbee39b3ec8dfc0ca046515d178f35d39ac80ee32f6e8da213696"
+        }
+      }
+    },
+    {
+      "message": "explicit adoption succeeds",
+      "passed": true,
+      "actual": {
+        "expected": 0,
+        "actual": 0
+      }
+    },
+    {
+      "message": "unrelated root bytes survive adoption",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "adopted guide receives stable ownership markers",
+      "passed": true,
+      "actual": null
+    }
+  ],
+  "notes": [],
+  "error": null
+}

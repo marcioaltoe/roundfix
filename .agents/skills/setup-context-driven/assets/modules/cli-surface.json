@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "setup-context-driven/module-v1",
+  "id": "cli-surface",
+  "version": 1,
+  "kind": "application-surface",
+  "title": "Agentic CLI surface guidance",
+  "dependsOn": ["core"],
+  "conflictsWith": [],
+  "requiredSkills": ["agentic-cli-design", "testing-boss"],
+  "requiredDecisions": [],
+  "rootBlocks": [
+    {
+      "id": "root.cli-surface",
+      "version": 1,
+      "template": "template.root.cli-surface",
+      "rules": [
+        "rule.cli.output-contract",
+        "rule.cli.non-interactive"
+      ]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.cli-surface",
+      "version": 1,
+      "path": "docs/agents/cli.md",
+      "template": "template.guide.cli-surface",
+      "rules": [
+        "rule.cli.output-contract",
+        "rule.cli.non-interactive"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.cli.output-contract",
+      "version": 1,
+      "summary": "Keep stdout for command output and stderr for diagnostics."
+    },
+    {
+      "id": "rule.cli.non-interactive",
+      "version": 1,
+      "summary": "Design write operations to be explicit, replayable, and safe by default."
+    }
+  ]
+}

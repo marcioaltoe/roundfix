@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "setup-context-driven/manual-qa-v1",
+  "qaId": "QA-03",
+  "name": "First apply questions and preview",
+  "status": "fail",
+  "recordedAt": "2026-07-16T10:38:40.038529+00:00",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<source-repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "typescript-bun-monorepo"
+      ],
+      "cwd": "<source-repo>",
+      "exitCode": 3,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": false,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 9,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [\n    {\n      \"code\": \"decision.required\",\n      \"severity\": \"decision\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"autonomous.enabled\",\n      \"message\": \"Decision autonomous.enabled has no compatible durable answer.\",\n      \"action\": \"Pass --decision with a valid value before applying.\"\n    },\n    {\n      \"code\": \"decision.required\",\n      \"severity\": \"decision\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"domain.layout\",\n      \"message\": \"Decision domain.layout has no compatible durable answer.\",\n      \"action\": \"Pass --decision with a valid value before applying.\"\n    },\n    {\n      \"code\": \"decision.required\",\n      \"severity\": \"decision\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"language.generated\",\n      \"message\": \"Decision language.generated has no compatible durable answer.\",\n      \"action\": \"Pass --decision with a valid value before applying.\"\n    },\n    {\n      \"code\": \"decision.required\",\n      \"severity\": \"decision\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"runtime.backend\",\n      \"message\": \"Decision runtime.backend has no compatible durable answer.\",\n      \"action\": \"Pass --decision with a valid value before applying.\"\n    },\n    {\n      \"code\": \"decision.required\",\n      \"severity\": \"decision\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"runtime.design\",\n      \"message\": \"Decision runtime.design has no compatible durable answer.\",\n      \"action\": \"Pass --decision with a valid value before applying.\"\n    },\n    {\n      \"code\": \"decision.required\",\n      \"severity\": \"decision\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"secondbrain.enabled\",\n      \"message\": \"Decision secondbrain.enabled has no compatible durable answer.\",\n      \"action\": \"Pass --decision with a valid value before applying.\"\n    },\n    {\n      \"code\": \"decision.required\",\n      \"severity\": \"decision\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"spec.scaffold\",\n      \"message\": \"Decision spec.scaffold has no compatible durable answer.\",\n      \"action\": \"Pass --decision with a valid value before applying.\"\n    },\n    {\n      \"code\": \"decision.required\",\n      \"severity\": \"decision\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"triage.external\",\n      \"message\": \"Decision triage.external has no compatible durable answer.\",\n      \"action\": \"Pass --decision with a valid value before applying.\"\n    },\n    {\n      \"code\": \"decision.required\",\n      \"severity\": \"decision\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"verification.gate\",\n      \"message\": \"Decision verification.gate has no compatible durable answer.\",\n      \"action\": \"Pass --decision with a valid value before applying.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    }
+  ],
+  "checks": [
+    {
+      "message": "unanswered first apply exits 3",
+      "passed": true,
+      "actual": {
+        "expected": 3,
+        "actual": 3
+      }
+    },
+    {
+      "message": "only required durable questions are returned",
+      "passed": true,
+      "actual": {
+        "expected": [
+          "autonomous.enabled",
+          "domain.layout",
+          "language.generated",
+          "runtime.backend",
+          "runtime.design",
+          "secondbrain.enabled",
+          "spec.scaffold",
+          "triage.external",
+          "verification.gate"
+        ],
+        "actual": [
+          "autonomous.enabled",
+          "domain.layout",
+          "language.generated",
+          "runtime.backend",
+          "runtime.design",
+          "secondbrain.enabled",
+          "spec.scaffold",
+          "triage.external",
+          "verification.gate"
+        ]
+      }
+    },
+    {
+      "message": "first-run response previews all managed files and blocks",
+      "passed": false,
+      "actual": []
+    }
+  ],
+  "notes": [],
+  "error": "CheckFailure: first-run response previews all managed files and blocks; actual=[]"
+}

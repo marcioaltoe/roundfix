@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "setup-context-driven/manual-qa-v1",
+  "qaId": "QA-13",
+  "name": "Canonical setup snapshot comparison",
+  "status": "pass",
+  "recordedAt": "2026-07-16T16:17:21.841539+00:00",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<source-repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "sync-setups",
+        "--source-dir",
+        "/Users/marcio/dev/skills/setups",
+        "--check",
+        "--format",
+        "json"
+      ],
+      "cwd": "<source-repo>",
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    }
+  ],
+  "checks": [
+    {
+      "message": "canonical setup checkout exists for maintainer drift check",
+      "passed": true,
+      "actual": "/Users/marcio/dev/skills/setups"
+    },
+    {
+      "message": "canonical setup snapshot check succeeds",
+      "passed": true,
+      "actual": {
+        "expected": 0,
+        "actual": 0
+      }
+    },
+    {
+      "message": "canonical setup snapshots have zero drift",
+      "passed": true,
+      "actual": {
+        "expected": [],
+        "actual": []
+      }
+    }
+  ],
+  "notes": [],
+  "error": null
+}

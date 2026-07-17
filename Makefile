@@ -6,6 +6,7 @@ endif
 RTK := $(shell command -v rtk >/dev/null 2>&1 && echo rtk)
 GO := $(RTK) go
 GOFMT := $(RTK) gofmt
+PYTHON := $(RTK) python3
 
 APP := roundfix
 CMD := ./cmd/roundfix
@@ -25,7 +26,7 @@ GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')
 
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap verify fmt fmt-check test test-race build install run version clean deps skills-check skills-install skills-link skills-sync skills-sync-check
+.PHONY: help bootstrap verify fmt fmt-check test test-race setup-context-check build install run version clean deps skills-check skills-install skills-link skills-sync skills-sync-check
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n"} \
@@ -45,7 +46,7 @@ deps: ## Download, tidy, and verify Go modules
 
 ##@ Quality & Testing
 
-verify: fmt-check test skills-sync-check skills-check build ## Run the required local verification gate
+verify: fmt-check test setup-context-check skills-sync-check skills-check build ## Run the required local verification gate
 
 fmt: ## Format Go files
 	$(GOFMT) -w $(GO_FILES)
@@ -62,6 +63,10 @@ test: ## Run Go tests
 
 test-race: ## Run Go tests with the race detector
 	$(GO) test -race $(PKGS)
+
+setup-context-check: ## Validate setup-context-driven Python suite and bundled assets
+	PYTHONDONTWRITEBYTECODE=1 $(PYTHON) -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test*.py'
+	PYTHONDONTWRITEBYTECODE=1 $(PYTHON) -c "import sys; from pathlib import Path; sys.path.insert(0, '.agents/skills/setup-context-driven/scripts'); from context_assets import load_asset_catalog; load_asset_catalog(Path('.agents/skills/setup-context-driven')); load_asset_catalog(Path('skills/setup-context-driven')); print('setup-context-driven assets: ok')"
 
 
 ##@ Build & Run

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "setup-context-driven/manual-qa-v1",
+  "qaId": "QA-01",
+  "name": "Static repository verification gate",
+  "status": "pass",
+  "recordedAt": "2026-07-16T10:38:39.941824+00:00",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/bin/rtk",
+        "make",
+        "verify"
+      ],
+      "cwd": "<source-repo>",
+      "exitCode": 0,
+      "stdout": "rtk go test ./...\nGo test: 1272 passed in 19 packages\nPYTHONDONTWRITEBYTECODE=1 rtk python3 -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test*.py'\nPYTHONDONTWRITEBYTECODE=1 rtk python3 -c \"import sys; from pathlib import Path; sys.path.insert(0, '.agents/skills/setup-context-driven/scripts'); from context_assets import load_asset_catalog; load_asset_catalog(Path('.agents/skills/setup-context-driven')); load_asset_catalog(Path('skills/setup-context-driven')); print('setup-context-driven assets: ok')\"\nsetup-context-driven assets: ok\nrtk go run -buildvcs=false ./cmd/roundfix skills check\nRoundfix skill check passed: roundfix, write-idea, write-prd, write-techspec, write-tasks, setup-context-driven, implement-task, implement-spec, brainstorming, council, business-analyst, archive-spec, qa-gate, evidence-gate\nrtk go build -buildvcs=false -ldflags \"-X 'roundfix/internal/app.BuildCommit=0a422af-dirty' -X 'roundfix/internal/app.BuildTime=2026-07-16 07:38:34 -0300'\" -o bin/roundfix ./cmd/roundfix\n",
+      "stderr": "............................................\n----------------------------------------------------------------------\nRan 44 tests in 3.531s\n\nOK\n"
+    }
+  ],
+  "checks": [
+    {
+      "message": "make verify passes without skipped checks",
+      "passed": true,
+      "actual": 0
+    }
+  ],
+  "notes": [],
+  "error": null
+}

@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "setup-context-driven/manual-qa-abort-v1",
+  "run": "2026-07-16-manual-variations-01",
+  "status": "aborted",
+  "reason": "The evidence writer could not serialize set-valued assertion details.",
+  "lastCompleted": "QA-02",
+  "supersededBy": "2026-07-16-manual-variations-03"
+}

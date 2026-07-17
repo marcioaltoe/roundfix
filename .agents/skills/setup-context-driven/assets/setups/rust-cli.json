@@ -1,0 +1,279 @@
+{
+  "schemaVersion": "setup-context-driven/setup-snapshot-v1",
+  "id": "rust-cli",
+  "version": 1,
+  "source": {
+    "name": "rust-cli",
+    "type": "canonical-skill-setup",
+    "revision": "pinned-2026-07-15"
+  },
+  "digest": "f192914ae24b59d343778c8b80b9908c74e446358354793067d2cbce40abe334",
+  "skills": [
+    {
+      "name": "knowledge-workspace",
+      "path": "skills/00-setup/knowledge-workspace",
+      "source": {},
+      "contentDigest": "c09eb96261a0c9108f95bbab4d6dff68d1eb698ec4e59359b72fed369e086768"
+    },
+    {
+      "name": "setup-context-driven",
+      "path": "skills/00-setup/setup-context-driven",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "da96f9222418f9c5b27aa20782ba10ea4773cec39bc2026a5dfd423c997cdb9a"
+    },
+    {
+      "name": "brainstorming",
+      "path": "skills/01-discovery/brainstorming",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "7039307717e9edcfe3097dfa29038347bd229fe9cde504bab358bad349402513"
+    },
+    {
+      "name": "business-analyst",
+      "path": "skills/01-discovery/business-analyst",
+      "source": {},
+      "contentDigest": "5bac46ce17c5521dde5cfbbf875645a52077ebe346fdea4e15b6ab603b95895d"
+    },
+    {
+      "name": "context7",
+      "path": "skills/01-discovery/context7",
+      "source": {
+        "type": "github",
+        "name": "marcioaltoe/skills",
+        "path": "skills/01-discovery/context7/SKILL.md",
+        "ref": "main"
+      },
+      "contentDigest": "355ab3da666c3873d8ba175a96859f3a93eceb223d828bfe775f52f881b4a598"
+    },
+    {
+      "name": "council",
+      "path": "skills/01-discovery/council",
+      "source": {},
+      "contentDigest": "608222d288d5d4f5cc10fd2d96f2a81baa187366236c7cc19e9b73fbaeac8cb3"
+    },
+    {
+      "name": "grill-with-docs",
+      "path": "skills/01-discovery/grill-with-docs",
+      "source": {},
+      "contentDigest": "610d091047bcfb9db0f75c057d15538481a721111579fc5ec7f83ad9131a2165"
+    },
+    {
+      "name": "grilling",
+      "path": "skills/01-discovery/grilling",
+      "source": {},
+      "contentDigest": "5a35925d03a391bcfa46940868b649b72dba89ec9c19525e785bbb6bd3a7f478"
+    },
+    {
+      "name": "the-fool",
+      "path": "skills/01-discovery/the-fool",
+      "source": {},
+      "contentDigest": "db7d40b13a4aa6a78d75b7bbe42babf0b47c0aa365db02404cfe57cc92e09dcb"
+    },
+    {
+      "name": "write-idea",
+      "path": "skills/01-discovery/write-idea",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "2a9fc0d53d8614a667969abbd718537e18d6e159daacda76ba66d787a4532f1c"
+    },
+    {
+      "name": "write-prd",
+      "path": "skills/02-planning/write-prd",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "0efde176dfde67ff7dcd32109c5969547d1634598ccd4541ec88bda8c8bb3ed9"
+    },
+    {
+      "name": "agentic-cli-design",
+      "path": "skills/03-engineering-design/agentic-cli-design",
+      "source": {
+        "type": "github",
+        "name": "marcioaltoe/skills",
+        "path": "skills/03-engineering-design/agentic-cli-design/SKILL.md",
+        "ref": "main"
+      },
+      "contentDigest": "d37fe741b087aa87ed27b4b1797cc34954f3271e5764ccf361b0d42166cc82ec"
+    },
+    {
+      "name": "domain-modeling",
+      "path": "skills/03-engineering-design/domain-modeling",
+      "source": {},
+      "contentDigest": "152e2c97239affb12a60c5f4a7e74ab546a49ae169688c81f4e2ccc42dafa579"
+    },
+    {
+      "name": "write-techspec",
+      "path": "skills/03-engineering-design/write-techspec",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "a69d70adbd40b1bc79a62b42a0529557d030e7fb0a4cf5175ca350635dda868e"
+    },
+    {
+      "name": "write-tasks",
+      "path": "skills/04-issue-decomposition/write-tasks",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "586bda2339d76d319e4b5be5648fa66523f3e26acbf8d39fd9777b34cf82236a"
+    },
+    {
+      "name": "clap-rust",
+      "path": "skills/05-implementation-loop/clap-rust",
+      "source": {},
+      "contentDigest": "812f78650bbd6cef8e1388fd10b31a070d2359b28563cdd370602fd8e0f227dd"
+    },
+    {
+      "name": "coding-guidelines",
+      "path": "skills/05-implementation-loop/coding-guidelines",
+      "source": {
+        "type": "github",
+        "name": "marcioaltoe/skills",
+        "path": "skills/05-implementation-loop/coding-guidelines/SKILL.md",
+        "ref": "main"
+      },
+      "contentDigest": "ccf8e60fa3300e7d6b685cb113d33ae267e48ff238f07c15cff90be801e7db1f"
+    },
+    {
+      "name": "implement-spec",
+      "path": "skills/05-implementation-loop/implement-spec",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "3ac60d9d6d1a93201a7f26317524310f119ea41f907331c0d2a73b53ab613812"
+    },
+    {
+      "name": "implement-task",
+      "path": "skills/05-implementation-loop/implement-task",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "07cbabaec37c02b09ad593497329e73e20d91420ac484b3519570e86740f8cb9"
+    },
+    {
+      "name": "no-workarounds",
+      "path": "skills/05-implementation-loop/no-workarounds",
+      "source": {
+        "type": "github",
+        "name": "marcioaltoe/skills",
+        "path": "skills/05-implementation-loop/no-workarounds/SKILL.md",
+        "ref": "main"
+      },
+      "contentDigest": "99a3587ee64012f4d8339b694739587d7a80ccbc0363c61af1a4363a814a8eb7"
+    },
+    {
+      "name": "rust",
+      "path": "skills/05-implementation-loop/rust",
+      "source": {},
+      "contentDigest": "eb95db2bee44b1eb272f3b4fd5bd73a9399c903e7be25e80d4be68ce1fbcd323"
+    },
+    {
+      "name": "rust-cli",
+      "path": "skills/05-implementation-loop/rust-cli",
+      "source": {},
+      "contentDigest": "0d77637a3e1dd0e5845efbbb352c3ebfc29078a8ba4575e615e2a90f05a57316"
+    },
+    {
+      "name": "testing-boss",
+      "path": "skills/05-implementation-loop/testing-boss",
+      "source": {
+        "type": "github",
+        "name": "marcioaltoe/skills",
+        "path": "skills/05-implementation-loop/testing-boss/SKILL.md",
+        "ref": "main"
+      },
+      "contentDigest": "d65310e9f9f6696cc8b52b7b14587a6e5016e03986d7a5027d1fd5308f5b87ec"
+    },
+    {
+      "name": "evidence-gate",
+      "path": "skills/06-review-repair/evidence-gate",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "2d55edc780e679659f108bb2f38113b24c6cbad8e466d1396871163b38f66875"
+    },
+    {
+      "name": "qa-gate",
+      "path": "skills/06-review-repair/qa-gate",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "b3222cdf557f2cf5ff559705982da48e9e7304ba2f30cfeb86c02f028fec51ac"
+    },
+    {
+      "name": "review",
+      "path": "skills/06-review-repair/review",
+      "source": {},
+      "contentDigest": "5700f30d3f06706ee56c099adceec222fef26dbcf82817ff604962634e246b2e"
+    },
+    {
+      "name": "systematic-debugging",
+      "path": "skills/06-review-repair/systematic-debugging",
+      "source": {
+        "type": "github",
+        "name": "marcioaltoe/skills",
+        "path": "skills/06-review-repair/systematic-debugging/SKILL.md",
+        "ref": "main"
+      },
+      "contentDigest": "0c2f7480f0ed64fa0df6a9a609e6286f0d7a2b6131dce3c4e3b7dd74527fd675"
+    },
+    {
+      "name": "archive-spec",
+      "path": "skills/07-evidence-delivery/archive-spec",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "58267d93f2f2d067ecc0548f109660da9c6830877e21a5a0c28ddbf33ca1f20c"
+    },
+    {
+      "name": "conventional-commits",
+      "path": "skills/07-evidence-delivery/conventional-commits",
+      "source": {},
+      "contentDigest": "a98490f28d8a8b7b54012036f95584a692dc9e50f3860e1461130b4903acc20f"
+    },
+    {
+      "name": "github-pr-workflow",
+      "path": "skills/07-evidence-delivery/github-pr-workflow",
+      "source": {},
+      "contentDigest": "f498ec4ebb1779dea37adeb1db8a8b22316282798e35ee02e2fc5ff627d7e261"
+    },
+    {
+      "name": "handoff",
+      "path": "skills/07-evidence-delivery/handoff",
+      "source": {},
+      "contentDigest": "57c9f1f392d7352cdc85b1e39ca49eddc70ce1dc278bd9653fb4f23dfc2560fc"
+    },
+    {
+      "name": "tech-writer",
+      "path": "skills/07-evidence-delivery/tech-writer",
+      "source": {
+        "type": "github",
+        "name": "marcioaltoe/skills",
+        "path": "skills/07-evidence-delivery/tech-writer/SKILL.md",
+        "ref": "main"
+      },
+      "contentDigest": "6f8257bbd33f52b06b1fc6bd00c008c2f014c3f116ba8b4c37f8e96feb4a8238"
+    },
+    {
+      "name": "cut-release",
+      "path": "skills/08-release/cut-release",
+      "source": {},
+      "contentDigest": "5e78f96895fc0bd95f27fc539888cf0814e86b10e8ba2facd69b05ca82742cbe"
+    }
+  ]
+}

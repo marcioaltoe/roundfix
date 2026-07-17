@@ -1,0 +1,129 @@
+{
+  "schemaVersion": "setup-context-driven/manual-qa-v1",
+  "qaId": "QA-16",
+  "name": "CLI public contract",
+  "status": "pass",
+  "recordedAt": "2026-07-16T10:38:41.828971+00:00",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<source-repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "--help"
+      ],
+      "cwd": "<source-repo>",
+      "exitCode": 0,
+      "stdout": "usage: context_setup.py [audit] [--repo PATH] [--format text|json]\n       context_setup.py apply --repo PATH [--format text|json]\n       context_setup.py sync-setups --source-dir PATH [--check] [--format text|json]\n\nAudit is the read-only default when no subcommand is supplied.\nOutput formats: text, json. Results go to stdout; diagnostics go to stderr.\nExit codes: 0 ok, 1 blocking findings, 2 invalid input, 3 decisions required.\n\nSubcommands:\n  audit        Read bundled assets and repository state without writes.\n  apply        Write confirmed managed content through an atomic change plan.\n  sync-setups  Check or refresh bundled canonical skill setup snapshots.\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<source-repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "unknown-command"
+      ],
+      "cwd": "<source-repo>",
+      "exitCode": 2,
+      "stdout": "",
+      "stderr": "usage: context_setup.py audit [-h] [--repo REPO] [--format {text,json}]\n                              [--profile PROFILE] [--show-extra-skills]\n                              [--setups-dir SETUPS_DIR]\ncontext_setup.py audit: error: unrecognized arguments: unknown-command\n"
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<source-repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "audit",
+        "--help"
+      ],
+      "cwd": "<source-repo>",
+      "exitCode": 0,
+      "stdout": "usage: context_setup.py audit [-h] [--repo REPO] [--format {text,json}]\n                              [--profile PROFILE] [--show-extra-skills]\n                              [--setups-dir SETUPS_DIR]\n\nAudit setup-context-driven managed agent instructions without writes.\n\noptions:\n  -h, --help            show this help message and exit\n  --repo REPO           Repository root. Defaults to cwd.\n  --format {text,json}  Result format written to stdout.\n  --profile PROFILE     Override the manifest profile for audit.\n  --show-extra-skills   Reserved for optional skill cleanup reporting.\n  --setups-dir SETUPS_DIR\n                        Reserved for explicit canonical setup drift checks.\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<source-repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json"
+      ],
+      "cwd": "<source-repo>",
+      "exitCode": 1,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": false,\n  \"summary\": {\n    \"errors\": 1,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [\n    {\n      \"code\": \"manifest.missing\",\n      \"severity\": \"error\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"manifest\",\n      \"message\": \"Setup Manifest is missing.\",\n      \"action\": \"Run apply after selecting a profile.\"\n    }\n  ],\n  \"plannedChanges\": [\n    {\n      \"action\": \"create manifest\",\n      \"path\": \"docs/agents/setup-context.json\",\n      \"managedId\": \"manifest\"\n    }\n  ]\n}\n",
+      "stderr": ""
+    }
+  ],
+  "checks": [
+    {
+      "message": "top-level help exits 0",
+      "passed": true,
+      "actual": {
+        "expected": 0,
+        "actual": 0
+      }
+    },
+    {
+      "message": "help lists all public commands",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "help writes no diagnostics",
+      "passed": true,
+      "actual": {
+        "expected": "",
+        "actual": ""
+      }
+    },
+    {
+      "message": "unknown invocation exits 2",
+      "passed": true,
+      "actual": {
+        "expected": 2,
+        "actual": 2
+      }
+    },
+    {
+      "message": "unknown invocation keeps stdout empty",
+      "passed": true,
+      "actual": {
+        "expected": "",
+        "actual": ""
+      }
+    },
+    {
+      "message": "unknown invocation writes argparse diagnostic to stderr",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "audit help truthfully describes implemented extra-skill report",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "audit help truthfully describes implemented setup drift check",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "JSON schema id is stable",
+      "passed": true,
+      "actual": {
+        "expected": "setup-context-driven/audit-v1",
+        "actual": "setup-context-driven/audit-v1"
+      }
+    },
+    {
+      "message": "JSON findings do not leak diagnostics to stderr",
+      "passed": true,
+      "actual": {
+        "expected": "",
+        "actual": ""
+      }
+    }
+  ],
+  "notes": [],
+  "error": null
+}

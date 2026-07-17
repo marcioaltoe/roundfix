@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "setup-context-driven/profile-v1",
+  "id": "rust-cli",
+  "version": 1,
+  "title": "Rust CLI repository",
+  "setup": "rust-cli",
+  "entryDecisions": [
+    "language.generated",
+    "spec.scaffold",
+    "domain.layout",
+    "triage.external",
+    "autonomous.enabled",
+    "secondbrain.enabled"
+  ],
+  "modules": [
+    "core",
+    "context-workflow",
+    "rust",
+    "cli-surface",
+    "autonomous-work"
+  ]
+}

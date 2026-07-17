@@ -1,39 +1,36 @@
 # Domain docs
 
-How the engineering skills should consume this repo's domain documentation when exploring the
-codebase.
+Every pipeline stage reads the shared domain documentation before writing
+Specs, code names, test names, prompts, or TUI copy.
 
 ## Before exploring, read these
 
-- `CONTEXT.md` at the repo root
-- `docs/adr/` at the repo root, especially ADRs that touch the area being changed
+- `CONTEXT.md` at the repository root.
+- Relevant ADRs under `docs/adr/`.
 
-If a file does not exist, proceed silently. Do not suggest creating it upfront. Producer workflows
-such as `grill-with-docs` create domain docs when terms or decisions are resolved.
+If either location is absent, proceed silently. Domain-producing workflows add
+terms and decisions when they are resolved.
 
-## File structure
+## Layout
 
-This repo uses a single-context layout:
+Roundfix uses one context:
 
 ```text
 /
-|-- CONTEXT.md
-|-- docs/adr/
-|-- cmd/
-`-- internal/
+├── CONTEXT.md
+├── docs/adr/
+├── cmd/
+└── internal/
 ```
 
-## Use the glossary's vocabulary
+## Use glossary vocabulary
 
-When output names a domain concept in an issue title, refactor proposal, hypothesis, or test name,
-use the term defined in `CONTEXT.md`. Do not drift to synonyms the glossary explicitly avoids.
+Use the terms defined in `CONTEXT.md`. Do not replace them with synonyms the
+glossary rejects.
 
-If a needed concept is missing from the glossary, treat that as a signal. Either the output is
-inventing language the project does not use, or there is a real gap to resolve with
-`grill-with-docs`.
+If a required concept is missing, reconsider whether the output is inventing
+language. Record a genuine vocabulary gap for `domain-modeling`.
 
 ## Flag ADR conflicts
 
-If output contradicts an existing ADR, surface it explicitly rather than silently overriding it:
-
-> Contradicts ADR-0007 (Sync Operation Language), but worth reopening because...
+Surface any conflict with an accepted ADR instead of silently overriding it.

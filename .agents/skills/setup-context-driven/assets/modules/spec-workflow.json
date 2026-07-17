@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "setup-context-driven/module-v1",
+  "id": "spec-workflow",
+  "version": 1,
+  "kind": "workflow",
+  "title": "Local Spec workflow",
+  "dependsOn": ["context-workflow"],
+  "conflictsWith": [],
+  "requiredSkills": [
+    "setup-context-driven",
+    "brainstorming",
+    "write-idea",
+    "write-prd",
+    "write-techspec",
+    "write-tasks",
+    "implement-task",
+    "implement-spec",
+    "qa-gate",
+    "archive-spec",
+    "tech-writer"
+  ],
+  "requiredDecisions": ["spec.scaffold"],
+  "rootBlocks": [
+    {
+      "id": "root.spec-workflow",
+      "version": 1,
+      "template": "template.root.spec-workflow",
+      "rules": ["rule.spec.artifacts"]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.spec-routing",
+      "version": 1,
+      "path": "docs/agents/spec-routing.md",
+      "template": "template.guide.spec-routing",
+      "rules": ["rule.spec.artifacts"]
+    },
+    {
+      "id": "guide.issue-tracker",
+      "version": 1,
+      "path": "docs/agents/issue-tracker.md",
+      "template": "template.guide.issue-tracker",
+      "rules": ["rule.spec.artifacts"]
+    },
+    {
+      "id": "guide.spec-docs-layout",
+      "version": 1,
+      "path": "docs/agents/docs-layout.md",
+      "template": "template.guide.spec-docs-layout",
+      "rules": ["rule.spec.docs-layout"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.spec.artifacts",
+      "version": 1,
+      "summary": "Specs live under docs/specs and task status lives only in task files."
+    },
+    {
+      "id": "rule.spec.docs-layout",
+      "version": 1,
+      "summary": "Spec-specific docs layout is generated only for repositories that use local Specs."
+    }
+  ]
+}

@@ -1,0 +1,684 @@
+{
+  "schemaVersion": "setup-context-driven/setup-snapshot-v1",
+  "id": "typescript-bun",
+  "version": 1,
+  "source": {
+    "name": "typescript-bun",
+    "type": "canonical-skill-setup",
+    "revision": "pinned-2026-07-15"
+  },
+  "digest": "8b7d4e0d2b01a0d7ecef3e75093fd5f16a0d57445eb0103bbee6b1c0d65dc3e8",
+  "skills": [
+    {
+      "name": "find-rules",
+      "path": "skills/00-setup/find-rules",
+      "source": {},
+      "contentDigest": "eda1262c91cc12e08ea85854084eed981307900890bb1ff862216c5edbdc2838"
+    },
+    {
+      "name": "find-skills",
+      "path": "skills/00-setup/find-skills",
+      "source": {},
+      "contentDigest": "52309be121b6082e333dc87e0c82f37c0316410ec025a1a1f42dad574e660cee"
+    },
+    {
+      "name": "knowledge-workspace",
+      "path": "skills/00-setup/knowledge-workspace",
+      "source": {},
+      "contentDigest": "c09eb96261a0c9108f95bbab4d6dff68d1eb698ec4e59359b72fed369e086768"
+    },
+    {
+      "name": "setup-context-driven",
+      "path": "skills/00-setup/setup-context-driven",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "da96f9222418f9c5b27aa20782ba10ea4773cec39bc2026a5dfd423c997cdb9a"
+    },
+    {
+      "name": "turborepo",
+      "path": "skills/00-setup/turborepo",
+      "source": {},
+      "contentDigest": "61c777ee33b9258916d511cb99e8561a43baee542d25949e07049cb664d3057e"
+    },
+    {
+      "name": "context7",
+      "path": "skills/01-discovery/context7",
+      "source": {
+        "type": "github",
+        "name": "marcioaltoe/skills",
+        "path": "skills/01-discovery/context7/SKILL.md",
+        "ref": "main"
+      },
+      "contentDigest": "355ab3da666c3873d8ba175a96859f3a93eceb223d828bfe775f52f881b4a598"
+    },
+    {
+      "name": "grill-with-docs",
+      "path": "skills/01-discovery/grill-with-docs",
+      "source": {},
+      "contentDigest": "610d091047bcfb9db0f75c057d15538481a721111579fc5ec7f83ad9131a2165"
+    },
+    {
+      "name": "grilling",
+      "path": "skills/01-discovery/grilling",
+      "source": {},
+      "contentDigest": "5a35925d03a391bcfa46940868b649b72dba89ec9c19525e785bbb6bd3a7f478"
+    },
+    {
+      "name": "write-prd",
+      "path": "skills/02-planning/write-prd",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "0efde176dfde67ff7dcd32109c5969547d1634598ccd4541ec88bda8c8bb3ed9"
+    },
+    {
+      "name": "architectural-analysis",
+      "path": "skills/03-engineering-design/architectural-analysis",
+      "source": {},
+      "contentDigest": "6064f2c4de070eb3c29b5203fae3c41f9369f03395e05e3f6e3739e52c791569"
+    },
+    {
+      "name": "backend-docs",
+      "path": "skills/03-engineering-design/backend-docs",
+      "source": {},
+      "contentDigest": "fe51529f33028ba6a35f6e61c5f14b6ef889c85eb84b62f600caf91cd756f5bd"
+    },
+    {
+      "name": "clean-architecture",
+      "path": "skills/03-engineering-design/clean-architecture",
+      "source": {},
+      "contentDigest": "fc9fe201ae040df80164bc7a407507882783e2c8cdbc0379a1fbdcf3719e4446"
+    },
+    {
+      "name": "codebase-design",
+      "path": "skills/03-engineering-design/codebase-design",
+      "source": {},
+      "contentDigest": "a8d50abac5a4018f60e1d911d4b6f4e36454ca14d6c390c0695a578c7de65dad"
+    },
+    {
+      "name": "data-sync-workflows",
+      "path": "skills/03-engineering-design/data-sync-workflows",
+      "source": {},
+      "contentDigest": "bf10aa1d39b027f8cd4c67eef3d6013ad9d58dc0500f652ea44c95dce6fc4f86"
+    },
+    {
+      "name": "design-patterns",
+      "path": "skills/03-engineering-design/design-patterns",
+      "source": {},
+      "contentDigest": "0b5b96e9adbb8d081edb6a19c32519a5bc5cdf84b161bd36be5a607bf4ca6b65"
+    },
+    {
+      "name": "domain-modeling",
+      "path": "skills/03-engineering-design/domain-modeling",
+      "source": {
+        "type": "github",
+        "name": "marcioaltoe/skills",
+        "path": "skills/03-engineering-design/domain-modeling/SKILL.md",
+        "ref": "main"
+      },
+      "contentDigest": "152e2c97239affb12a60c5f4a7e74ab546a49ae169688c81f4e2ccc42dafa579"
+    },
+    {
+      "name": "frontend-docs",
+      "path": "skills/03-engineering-design/frontend-docs",
+      "source": {},
+      "contentDigest": "d811801510b1ebfe58e3d17598b217d05cf5dcbc4f495eb91380ac077632c2b8"
+    },
+    {
+      "name": "security-best-practices",
+      "path": "skills/03-engineering-design/security-best-practices",
+      "source": {},
+      "contentDigest": "1b7cb8305d030c7bd25f571f185ae1c499791f379dffdc9a0369129699566e4f"
+    },
+    {
+      "name": "security-threat-model",
+      "path": "skills/03-engineering-design/security-threat-model",
+      "source": {},
+      "contentDigest": "f4310efb41fba14d80fd69d08cc97a92535fc8f1ccfdbe9201a655c2c28fc412"
+    },
+    {
+      "name": "tactical-ddd",
+      "path": "skills/03-engineering-design/tactical-ddd",
+      "source": {},
+      "contentDigest": "5b33c56d4fc869913ab3551e5a9c96b761b9835c695a4286aa269a02f654bbe8"
+    },
+    {
+      "name": "ui-ux-pro-max",
+      "path": "skills/03-engineering-design/ui-ux-pro-max",
+      "source": {},
+      "contentDigest": "485e00c93759d7ef1d2ae22c4f46c68a1151f8cb8b2ebc9765907c74e6bca9e8"
+    },
+    {
+      "name": "vertical-slice-architecture",
+      "path": "skills/03-engineering-design/vertical-slice-architecture",
+      "source": {},
+      "contentDigest": "a495ecc9094cff163198842aa77f1a53ebce1c8cf12ed73995e26fcda4ce47d9"
+    },
+    {
+      "name": "write-techspec",
+      "path": "skills/03-engineering-design/write-techspec",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "a69d70adbd40b1bc79a62b42a0529557d030e7fb0a4cf5175ca350635dda868e"
+    },
+    {
+      "name": "write-tasks",
+      "path": "skills/04-issue-decomposition/write-tasks",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "586bda2339d76d319e4b5be5648fa66523f3e26acbf8d39fd9777b34cf82236a"
+    },
+    {
+      "name": "ai-sdk",
+      "path": "skills/05-implementation-loop/ai-sdk",
+      "source": {},
+      "contentDigest": "864e110a36c00975e5c5ddec68163dd0b5347b126a46d84d7369a2bbdbdb7754"
+    },
+    {
+      "name": "baseline-ui",
+      "path": "skills/05-implementation-loop/baseline-ui",
+      "source": {},
+      "contentDigest": "9bb2f868098a9d28ce7d10383039a28169d838cea6299f9df3706ecda7932949"
+    },
+    {
+      "name": "better-auth",
+      "path": "skills/05-implementation-loop/better-auth",
+      "source": {},
+      "contentDigest": "0ca9c40bb51be10c1a31f15a115b779fdbd0a6ee3ed603ed5a6407394c822ef2"
+    },
+    {
+      "name": "bun",
+      "path": "skills/05-implementation-loop/bun",
+      "source": {},
+      "contentDigest": "0cd8671fb74b272791f8220f18680cfd92d857f9efa92892fa7bfc15d8c62d04"
+    },
+    {
+      "name": "building-components",
+      "path": "skills/05-implementation-loop/building-components",
+      "source": {},
+      "contentDigest": "c26a17c53e59d119df99eade77bd608f864f888ac877979bfc4ffbba25792eb8"
+    },
+    {
+      "name": "coding-guidelines",
+      "path": "skills/05-implementation-loop/coding-guidelines",
+      "source": {
+        "type": "github",
+        "name": "marcioaltoe/skills",
+        "path": "skills/05-implementation-loop/coding-guidelines/SKILL.md",
+        "ref": "main"
+      },
+      "contentDigest": "ccf8e60fa3300e7d6b685cb113d33ae267e48ff238f07c15cff90be801e7db1f"
+    },
+    {
+      "name": "drizzle-orm",
+      "path": "skills/05-implementation-loop/drizzle-orm",
+      "source": {},
+      "contentDigest": "d793f3abaca230bbea3f614cd3dc0183eab2c560afc78e493633ee10eb30b12d"
+    },
+    {
+      "name": "external-api-adapters",
+      "path": "skills/05-implementation-loop/external-api-adapters",
+      "source": {},
+      "contentDigest": "1ebdfbdb0609568f02348509414fe885350472fdd9b9daeae8cbe2e9297a13d9"
+    },
+    {
+      "name": "frontend-design",
+      "path": "skills/05-implementation-loop/frontend-design",
+      "source": {},
+      "contentDigest": "8bf9905dbcd9b1edb47f2a44cadbb9bb66314f73a8e3631ec7feee913777ceb8"
+    },
+    {
+      "name": "hono",
+      "path": "skills/05-implementation-loop/hono",
+      "source": {},
+      "contentDigest": "205b6c5d9bed5031f25827b5da90982a90f7b4e5818f1cac04864b2c01956207"
+    },
+    {
+      "name": "hono-api-best-practices",
+      "path": "skills/05-implementation-loop/hono-api-best-practices",
+      "source": {},
+      "contentDigest": "fea9ebb02b8fbd83d0aa10cb4f5e5a69b03caa6b8f05540566384b7404a996f6"
+    },
+    {
+      "name": "implement-spec",
+      "path": "skills/05-implementation-loop/implement-spec",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "3ac60d9d6d1a93201a7f26317524310f119ea41f907331c0d2a73b53ab613812"
+    },
+    {
+      "name": "implement-task",
+      "path": "skills/05-implementation-loop/implement-task",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "07cbabaec37c02b09ad593497329e73e20d91420ac484b3519570e86740f8cb9"
+    },
+    {
+      "name": "inngest",
+      "path": "skills/05-implementation-loop/inngest",
+      "source": {},
+      "contentDigest": "8d7b9d951781e253a1271224bd40184f2373a119f334ff895fa37ae68a3c6166"
+    },
+    {
+      "name": "integration-contract-testing",
+      "path": "skills/05-implementation-loop/integration-contract-testing",
+      "source": {},
+      "contentDigest": "24fe9d0f3aec39c73649f5356b85054f297a3673b2c1594e03dc96eb4895910e"
+    },
+    {
+      "name": "interface-design",
+      "path": "skills/05-implementation-loop/interface-design",
+      "source": {},
+      "contentDigest": "9bfdf30dcc1734541a87100dbc6c6eeb33249c6ccd09be85857e686aed6b8b97"
+    },
+    {
+      "name": "interaction-design",
+      "path": "skills/05-implementation-loop/interaction-design",
+      "source": {},
+      "contentDigest": "87f2765ed1deeef3f1c06f9e4338ff103c391c6c4adcdffc885f3516b7c34ff2"
+    },
+    {
+      "name": "logtape",
+      "path": "skills/05-implementation-loop/logtape",
+      "source": {},
+      "contentDigest": "8f2fae28159f957ece9b92683fb16f85f492e032ede6d69b5779747db9604d86"
+    },
+    {
+      "name": "motion",
+      "path": "skills/05-implementation-loop/motion",
+      "source": {},
+      "contentDigest": "eebc884f4cc5886a20d84b33d792e5466e63a26f5d1792e705e218182678c954"
+    },
+    {
+      "name": "no-workarounds",
+      "path": "skills/05-implementation-loop/no-workarounds",
+      "source": {
+        "type": "github",
+        "name": "marcioaltoe/skills",
+        "path": "skills/05-implementation-loop/no-workarounds/SKILL.md",
+        "ref": "main"
+      },
+      "contentDigest": "99a3587ee64012f4d8339b694739587d7a80ccbc0363c61af1a4363a814a8eb7"
+    },
+    {
+      "name": "react",
+      "path": "skills/05-implementation-loop/react",
+      "source": {},
+      "contentDigest": "ff8fefdbb07ac3c3170368fa389cb8d135dc85d35023902667c565d08ee4f352"
+    },
+    {
+      "name": "react-best-practices",
+      "path": "skills/05-implementation-loop/react-best-practices",
+      "source": {},
+      "contentDigest": "770b3390609f51d09ed26fd801caaf96094dfd538f2a98d46403ee649ed0cbd7"
+    },
+    {
+      "name": "react-composition-patterns",
+      "path": "skills/05-implementation-loop/react-composition-patterns",
+      "source": {},
+      "contentDigest": "c25c903b716769ec5b897a95bf36adb82ea03a8c7b595bff2fd6458fbc6b2f51"
+    },
+    {
+      "name": "react-hook-form-zod",
+      "path": "skills/05-implementation-loop/react-hook-form-zod",
+      "source": {},
+      "contentDigest": "7daa0078e9158812790e3a51f24159d7fc441f3666b8d1b742d503ed16061df6"
+    },
+    {
+      "name": "shadcn",
+      "path": "skills/05-implementation-loop/shadcn",
+      "source": {},
+      "contentDigest": "a45cddd4511f8262df05b20506f4d52be8210a9ee05a13d9e36d4ee321bab593"
+    },
+    {
+      "name": "solid",
+      "path": "skills/05-implementation-loop/solid",
+      "source": {},
+      "contentDigest": "0f2dc05cb70f85d6649a344e47839d71ec62acddfa6ce21c26fd93c7a9c9e14e"
+    },
+    {
+      "name": "tailwindcss",
+      "path": "skills/05-implementation-loop/tailwindcss",
+      "source": {},
+      "contentDigest": "fa4a4503aa2b56a988d454226aa31a6be943803578291e4d46db00fc94c961a4"
+    },
+    {
+      "name": "tanstack-query",
+      "path": "skills/05-implementation-loop/tanstack-query",
+      "source": {},
+      "contentDigest": "f9ce94a48c04e46a6aa99457ff23b4228fbf1e091b05702771cad604d48f2cf2"
+    },
+    {
+      "name": "tanstack-router",
+      "path": "skills/05-implementation-loop/tanstack-router",
+      "source": {},
+      "contentDigest": "aa6360f385f1235f1e95e405da29ba7e26d68b3b0b76ce08ef4aa7d6647808c9"
+    },
+    {
+      "name": "tanstack-table",
+      "path": "skills/05-implementation-loop/tanstack-table",
+      "source": {},
+      "contentDigest": "fe2d4dee303764e5558bd2fbdbf6916d57828649634b2d334f1d6f88a1b7bdc4"
+    },
+    {
+      "name": "tdd",
+      "path": "skills/05-implementation-loop/tdd",
+      "source": {},
+      "contentDigest": "5363bb2775679fe9311fbb67947f95359169c6e7f1fac77c0f25e190bca6cf2f"
+    },
+    {
+      "name": "testing-boss",
+      "path": "skills/05-implementation-loop/testing-boss",
+      "source": {
+        "type": "github",
+        "name": "marcioaltoe/skills",
+        "path": "skills/05-implementation-loop/testing-boss/SKILL.md",
+        "ref": "main"
+      },
+      "contentDigest": "d65310e9f9f6696cc8b52b7b14587a6e5016e03986d7a5027d1fd5308f5b87ec"
+    },
+    {
+      "name": "typescript-advanced",
+      "path": "skills/05-implementation-loop/typescript-advanced",
+      "source": {},
+      "contentDigest": "ce6f6dea6c77209fbc232d751ead22fdbc7cbaf3880c5795c19a9aa5ba857bcf"
+    },
+    {
+      "name": "vite",
+      "path": "skills/05-implementation-loop/vite",
+      "source": {},
+      "contentDigest": "9c371bd8a23a9a44cbaa911471ccf55651744b17979c8365e5bf228a7640ac42"
+    },
+    {
+      "name": "vitest",
+      "path": "skills/05-implementation-loop/vitest",
+      "source": {},
+      "contentDigest": "2da9b15c28b9be17d545751b0e0813de306331b3c4dccb748934f4fdd2298968"
+    },
+    {
+      "name": "zod",
+      "path": "skills/05-implementation-loop/zod",
+      "source": {},
+      "contentDigest": "7e4fef6e008aedfa511c9c723f2ff60246d8c3d764bdb75c65d97f4cd51d006d"
+    },
+    {
+      "name": "zustand",
+      "path": "skills/05-implementation-loop/zustand",
+      "source": {},
+      "contentDigest": "6297bc73d32ced41019f06bc6f262f08932004bf047aaca58350d75314d7ec31"
+    },
+    {
+      "name": "agent-browser",
+      "path": "skills/06-review-repair/agent-browser",
+      "source": {},
+      "contentDigest": "b2e54fa784581734c689611860de39916364d4e4b9cf17472b8e2afdaaa9d320"
+    },
+    {
+      "name": "clean-code",
+      "path": "skills/06-review-repair/clean-code",
+      "source": {},
+      "contentDigest": "e6c795dd3c277d12aef7edb70095012183ccdc8f48e9d5581cee2aefeef09f79"
+    },
+    {
+      "name": "core-web-vitals",
+      "path": "skills/06-review-repair/core-web-vitals",
+      "source": {},
+      "contentDigest": "c2d043789e33bd25b76c3b3756deb2e124237de25b1e30944c2eb2e624f0927e"
+    },
+    {
+      "name": "diagnosing-bugs",
+      "path": "skills/06-review-repair/diagnosing-bugs",
+      "source": {},
+      "contentDigest": "7a0779480f323a66d109404646bcc1a14bf0232b45b3e3ea93b652a035718acb"
+    },
+    {
+      "name": "fixing-accessibility",
+      "path": "skills/06-review-repair/fixing-accessibility",
+      "source": {},
+      "contentDigest": "8ccc8ff441a832a78a77f9b0006f3e1420ced8ed2187f6464dc89d9e07fed506"
+    },
+    {
+      "name": "fixing-metadata",
+      "path": "skills/06-review-repair/fixing-metadata",
+      "source": {},
+      "contentDigest": "b8315ff95a92dcfa48c33e2b4838a31d9448bd46252aab45726549ce865d6547"
+    },
+    {
+      "name": "fixing-motion-performance",
+      "path": "skills/06-review-repair/fixing-motion-performance",
+      "source": {},
+      "contentDigest": "0a2d654902bc04263ce68c8c02967ef03f17b482e855360a5463211d99d7baa9"
+    },
+    {
+      "name": "git-rebase",
+      "path": "skills/06-review-repair/git-rebase",
+      "source": {},
+      "contentDigest": "32ac3369092df6fdff0ac51dc6ebe50178952e41ac96b4e6307cd36dd7986cee"
+    },
+    {
+      "name": "observability-audit",
+      "path": "skills/06-review-repair/observability-audit",
+      "source": {},
+      "contentDigest": "10853fe99871aa9e1e7d16553cffb74785a994af10a40220d5230c046e420bd6"
+    },
+    {
+      "name": "onioncry",
+      "path": "skills/06-review-repair/onioncry",
+      "source": {},
+      "contentDigest": "9033805c98d9e6b2107348366678318141c9cf803942fa7943afaa89d74dc6d6"
+    },
+    {
+      "name": "qa-gate",
+      "path": "skills/06-review-repair/qa-gate",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "b3222cdf557f2cf5ff559705982da48e9e7304ba2f30cfeb86c02f028fec51ac"
+    },
+    {
+      "name": "review",
+      "path": "skills/06-review-repair/review",
+      "source": {},
+      "contentDigest": "5700f30d3f06706ee56c099adceec222fef26dbcf82817ff604962634e246b2e"
+    },
+    {
+      "name": "systematic-debugging",
+      "path": "skills/06-review-repair/systematic-debugging",
+      "source": {
+        "type": "github",
+        "name": "marcioaltoe/skills",
+        "path": "skills/06-review-repair/systematic-debugging/SKILL.md",
+        "ref": "main"
+      },
+      "contentDigest": "0c2f7480f0ed64fa0df6a9a609e6286f0d7a2b6131dce3c4e3b7dd74527fd675"
+    },
+    {
+      "name": "evidence-gate",
+      "path": "skills/06-review-repair/evidence-gate",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "2d55edc780e679659f108bb2f38113b24c6cbad8e466d1396871163b38f66875"
+    },
+    {
+      "name": "wcag-audit-patterns",
+      "path": "skills/06-review-repair/wcag-audit-patterns",
+      "source": {},
+      "contentDigest": "0f4bfe3e3ef6305637b0a295286eaa3b1159fe9ecefa028db2cf96a21a49787f"
+    },
+    {
+      "name": "web-design-guidelines",
+      "path": "skills/06-review-repair/web-design-guidelines",
+      "source": {},
+      "contentDigest": "f4647ca866a3accf763777f83e7682954f0187cd6bea7eea0399796652414e8f"
+    },
+    {
+      "name": "archive-spec",
+      "path": "skills/07-evidence-delivery/archive-spec",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "58267d93f2f2d067ecc0548f109660da9c6830877e21a5a0c28ddbf33ca1f20c"
+    },
+    {
+      "name": "conventional-commits",
+      "path": "skills/07-evidence-delivery/conventional-commits",
+      "source": {},
+      "contentDigest": "a98490f28d8a8b7b54012036f95584a692dc9e50f3860e1461130b4903acc20f"
+    },
+    {
+      "name": "crafting-effective-readmes",
+      "path": "skills/07-evidence-delivery/crafting-effective-readmes",
+      "source": {},
+      "contentDigest": "b64057f8457170247e2482c48c5c462b084509b385d7dbabf222d887beb9d535"
+    },
+    {
+      "name": "github-pr-workflow",
+      "path": "skills/07-evidence-delivery/github-pr-workflow",
+      "source": {},
+      "contentDigest": "f498ec4ebb1779dea37adeb1db8a8b22316282798e35ee02e2fc5ff627d7e261"
+    },
+    {
+      "name": "handoff",
+      "path": "skills/07-evidence-delivery/handoff",
+      "source": {},
+      "contentDigest": "57c9f1f392d7352cdc85b1e39ca49eddc70ce1dc278bd9653fb4f23dfc2560fc"
+    },
+    {
+      "name": "tech-writer",
+      "path": "skills/07-evidence-delivery/tech-writer",
+      "source": {
+        "type": "github",
+        "name": "marcioaltoe/skills",
+        "path": "skills/07-evidence-delivery/tech-writer/SKILL.md",
+        "ref": "main"
+      },
+      "contentDigest": "6f8257bbd33f52b06b1fc6bd00c008c2f014c3f116ba8b4c37f8e96feb4a8238"
+    },
+    {
+      "name": "docker",
+      "path": "skills/08-release/docker",
+      "source": {},
+      "contentDigest": "f3635a22900c42549de111a18b95dc776b320360e445e861f33cf5056724807b"
+    },
+    {
+      "name": "brainstorming",
+      "path": "skills/01-discovery/brainstorming",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "7039307717e9edcfe3097dfa29038347bd229fe9cde504bab358bad349402513"
+    },
+    {
+      "name": "business-storyteller",
+      "path": "skills/10-marketing/business-storyteller",
+      "source": {},
+      "contentDigest": "a2fd95d86982754f57cd969e05d792900615d26fa4156904132d4761369f3d83"
+    },
+    {
+      "name": "business-analyst",
+      "path": "skills/01-discovery/business-analyst",
+      "source": {},
+      "contentDigest": "5bac46ce17c5521dde5cfbbf875645a52077ebe346fdea4e15b6ab603b95895d"
+    },
+    {
+      "name": "council",
+      "path": "skills/01-discovery/council",
+      "source": {},
+      "contentDigest": "608222d288d5d4f5cc10fd2d96f2a81baa187366236c7cc19e9b73fbaeac8cb3"
+    },
+    {
+      "name": "exa-web-search",
+      "path": "skills/01-discovery/exa-web-search",
+      "source": {},
+      "contentDigest": "56af2322413664bf7b9dc2bd88c80e5e2c871617495ba5df4f6feef95f545e88"
+    },
+    {
+      "name": "feature-systems-pattern",
+      "path": "skills/03-engineering-design/feature-systems-pattern",
+      "source": {},
+      "contentDigest": "734529c51f82901959396eca3ddf9a9e9099fd259e0346c230f5f6cc2900dc31"
+    },
+    {
+      "name": "firecrawl",
+      "path": "skills/01-discovery/firecrawl",
+      "source": {},
+      "contentDigest": "b02b8467e6f4de9d01daa960f9efb17ff2c2655e397abf7fc93c9179c9e5d178"
+    },
+    {
+      "name": "game-changing-features",
+      "path": "skills/01-discovery/game-changing-features",
+      "source": {},
+      "contentDigest": "e3f70ff71c67be7efe5ae608bcafa9b9e998e117568dee6b4124610321f82cb0"
+    },
+    {
+      "name": "humanizer",
+      "path": "skills/07-evidence-delivery/humanizer",
+      "source": {},
+      "contentDigest": "243aecdafecb5e11c2d45e2e088b7876e3f6eee34aa50c53f624d8468039afa8"
+    },
+    {
+      "name": "refactoring-analysis",
+      "path": "skills/06-review-repair/refactoring-analysis",
+      "source": {},
+      "contentDigest": "0fcf2ed9dfc16941c27034894c33795b017067d2cba1d111c59700afd5a78d9c"
+    },
+    {
+      "name": "roundfix",
+      "path": "skills/06-review-repair/roundfix",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "9d5f117db9afffa08807377b5710b8408f53c3787e7225b286b892e892a8de55"
+    },
+    {
+      "name": "the-fool",
+      "path": "skills/01-discovery/the-fool",
+      "source": {},
+      "contentDigest": "db7d40b13a4aa6a78d75b7bbe42babf0b47c0aa365db02404cfe57cc92e09dcb"
+    },
+    {
+      "name": "write-idea",
+      "path": "skills/01-discovery/write-idea",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "2a9fc0d53d8614a667969abbd718537e18d6e159daacda76ba66d787a4532f1c"
+    },
+    {
+      "name": "triage",
+      "path": "skills/04-issue-decomposition/triage",
+      "source": {},
+      "contentDigest": "d45827c299c021f77b0f146fefa3ee679b13f99e9a2ffdf48e8de2347adeefe1"
+    },
+    {
+      "name": "to-prompt",
+      "path": "skills/05-implementation-loop/to-prompt",
+      "source": {},
+      "contentDigest": "4d2d9fc6b3ef07dd50351b057392484d082366e7a971f25ee43afcfd8e11360d"
+    },
+    {
+      "name": "writing-clearly-and-concisely",
+      "path": "skills/07-evidence-delivery/writing-clearly-and-concisely",
+      "source": {},
+      "contentDigest": "fe876c3c09fc444d4c962cbb47e5dbe0782cefd5f893456c7bbfc23a5cad61ea"
+    }
+  ]
+}

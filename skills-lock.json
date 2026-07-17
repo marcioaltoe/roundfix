@@ -8,6 +8,12 @@
       "skillPath": "skills/03-engineering-design/agentic-cli-design/SKILL.md",
       "computedHash": "76efd87702573d94f0140801085893ca6d4e26af2ee104aaeccf96304e562e4b"
     },
+    "autoresearch": {
+      "source": "marcioaltoe/skills",
+      "sourceType": "github",
+      "skillPath": "skills/09-learning-loop/autoresearch/SKILL.md",
+      "computedHash": "047afef0fb8965b8d4d9f7bfefbf8819530842281ba8f9e7b40bfd5abaa68419"
+    },
     "bubbletea": {
       "source": "marcioaltoe/skills",
       "ref": "main",

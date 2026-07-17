@@ -1,135 +1,111 @@
 # Autonomous work: Supervisor and implementation runtimes
 
-Who does what when this repo works autonomously. One Supervisor session orchestrates;
-implementation is delegated to an ACP Runtime, normally through a Roundfix Run. The split binds
-every autonomous session, interactive or unattended: Supervisor capacity is reserved for
-orchestration and judgment, and operational work goes to implementation runtimes. AGENTS.md
-enforces this as a hard rule. Command contracts (flags, outcomes, monitoring) live in the
-`roundfix` skill; this doc fixes the role split, runtime routing, and how the Supervisor authors
-Specs.
+One Supervisor session orchestrates autonomous work. Implementation is
+delegated to an ACP Runtime through a Roundfix Run. This split binds interactive
+and unattended sessions.
 
 ## Roles
 
-| Role | Model | Job |
+| Role | Agent Model and reasoning | Work |
 | --- | --- | --- |
-| Supervisor | Supervising Claude Code session | Author Specs, launch and monitor Runs, integrate outcomes, run `qa-gate`, archive, boundary commits, route work to a runtime |
-| Default implementer | Codex `gpt-5.5` with `xhigh` Default Reasoning Effort | Every Spec Task and Review Issue Batch not routed below |
-| Design implementer | Claude with `opus` at `high` or `xhigh` Default Reasoning Effort | Tasks dominated by design, UI, UX, or frontend work |
+| Supervisor | Supervising Claude Code session | Author Specs, launch and monitor Runs, integrate outcomes, run `qa-gate`, archive, make boundary commits, and route work |
+| Non-frontend implementer | Codex `gpt-5.5` with `xhigh` Default Reasoning Effort | CLI, backend, infrastructure, documentation, and other non-frontend Tasks and Review Issue Batches |
+| Frontend implementer | Claude `opus` (Opus 4.8) with `xhigh` Default Reasoning Effort | Design, UI, UX, Bubble Tea/Lip Gloss TUI, and web frontend Tasks |
 
 ## The Supervisor does not implement
 
-Delegation is mandatory, not a preference: Supervisor capacity is limited and reserved for the
-work that needs its judgment. The Supervisor session:
+The Supervisor:
 
-- routes changes through the spec pipeline (`docs/agents/spec-routing.md`) and authors the
-  planning artifacts
-- launches Runs detached, monitors them with `roundfix events <run-id> --follow` to a terminal
-  outcome, integrates, runs `qa-gate`, and archives on pass
-- picks the implementation runtime per Run (rules below)
-- keeps its own edits boundary-scoped: spec and doc fixes, Run recovery, boundary commits — it
-  does not implement Spec Tasks itself while an ACP Runtime can do the work
+- routes work through `docs/agents/spec-routing.md`;
+- authors planning artifacts;
+- launches detached Runs and monitors them to a terminal outcome;
+- integrates results, runs `qa-gate`, and archives passing Specs;
+- selects the implementation runtime for each Run;
+- limits its direct edits to Spec and documentation fixes, Run recovery, and
+  boundary commits.
 
-Writing feature code, tests, or any other operational implementation directly in the Supervisor
-session violates the hard rule — delegate it, even when doing it inline looks faster.
+Feature code, tests, and operational implementation belong to an ACP Runtime.
 
-Fable is an Agent Model label in the Claude catalog, not the supervising role. Never point
-`--agent` at a Supervisor-backed runtime.
+`Fable` is an Agent Model label, not the Supervisor role. Never pass a
+Supervisor-backed runtime through `--agent`.
 
 ## Authoring Specs
 
-The Supervisor authors every Spec through the pipeline skills (`write-idea`, `write-prd`,
-`write-techspec`, `write-tasks`); which stages a change needs lives in
-`docs/agents/spec-routing.md`. Automated authoring keeps these behaviors:
+The Supervisor authors Specs using `write-idea`, `write-prd`,
+`write-techspec`, and `write-tasks`.
 
-- **Ask before minting a Spec.** When new work surfaces — findings triage, an idea, a bug —
-  propose the Spec (slug, scope, pipeline route) and ask via AskUserQuestion whether to create
-  it with `_prd.md`, `_techspec.md`, and the Task Graph before writing any folder. The
-  authorization boundary sits here: running an approved Spec's Tasks needs no confirmation
-  (invocation is the authorization), but creating a new Spec always does.
-- **Record decisions as ADRs.** Product and technical decisions settled during `write-prd` and
-  `write-techspec` land in `docs/adr/` in the same authoring pass — never only in conversation.
-- **Enrich CONTEXT.md as terms appear.** When a Spec introduces a domain concept the glossary
-  lacks, add the canonical term with its avoid-list instead of inventing synonyms; ask when the
-  term or its meaning needs the user's call.
-- **Hold shared-doc edits to Run boundaries.** CONTEXT.md, ADRs, AGENTS.md, and spec files are
-  edited only while no Run is Active — uncommitted edits to files an Active Run also touches
-  block its integration and leave the Run IntegrationPending.
-- **Author Tasks for the runtime that executes them.** The Daemon runs each Task's
-  `## Verification` commands verbatim after the Agent turn: commands must be fully
-  self-contained in a bare worktree — real paths, no `<placeholders>`, no assumed build, link,
-  or install state, and the repo's build flags (`go build -buildvcs=false`). Pure `go test` and
-  `make verify` fit; install-heavy verifications do not. Add a `## Context` section only for
-  task-specific instruction and interface paths the Agent must see in the path manifest; use
-  `- instruction: <path>` and `- interface: <path>` bullets with clean repository-relative paths.
-- **Sequence the queue.** Keep one explicit, dependency-and-risk-ordered implementation
-  sequence across pending Specs. New Specs slot into that queue when approved; the Supervisor
-  advances it one Run at a time and re-plans the order at each Run boundary.
+- Ask before creating a new Spec. Invoking an approved Spec authorizes its
+  Tasks without another confirmation.
+- Record accepted product and technical decisions in ADRs.
+- Add canonical terms to `CONTEXT.md` as they are resolved.
+- Edit shared files only while no Run is Active.
+- Write self-contained Task Verification commands that run in a bare worktree.
+  Use real paths, no placeholders, no assumed install state, and Roundfix's
+  required `-buildvcs=false` build flags.
+- Use `## Context` only for Task-specific instruction and interface paths:
+  `- instruction: <path>` and `- interface: <path>`.
+- Maintain one dependency-and-risk-ordered queue of approved Specs.
 
-## Default implementer: Codex gpt-5.5 xhigh
+## Non-frontend implementer: Codex gpt-5.5 xhigh
 
 ```bash
 roundfix implement --spec <slug> --agent codex --qa --detach
 ```
 
-Review-surface Runs (`resolve`, `watch`) use the same default runtime. Roundfix owns the
-effective Agent Model and Default Reasoning Effort:
+Review Runs use the same default runtime.
 
 1. `.roundfixrc.yml` pins `defaults.agent: codex`.
-2. `.roundfixrc.yml` pins `runtimes.codex.model: gpt-5.5` and
-   `runtimes.codex.reasoning_effort: xhigh`.
-3. acpx (`~/.acpx/config.json`) maps the `codex` agent to the local `codex-acp` adapter.
+2. `.roundfixrc.yml` pins `runtimes.codex.model: gpt-5.5`.
+3. `.roundfixrc.yml` pins `runtimes.codex.reasoning_effort: xhigh`.
+4. acpx maps `codex` to the local `codex-acp` adapter.
 
-Do not set `defaults.model`; Roundfix ignores it and prints a deprecation warning. Use
-`--model` and `--reasoning-effort` together only for a one-Run exception.
+Use `--model` and `--reasoning-effort` together only for a one-Run exception.
 
-## Design implementer: Claude Code with Opus 4.8
+## Frontend implementer: Claude Opus 4.8 xhigh
 
-Claude Code outperforms Codex on design-heavy work. Route a Run to it when the Task Graph is
-dominated by:
+Route a Run to Claude when its Tasks are dominated by:
 
-- design — visual and interaction design decisions
-- UI and UX — layout, navigation, information hierarchy, feedback states, user-facing copy
-- frontend — in this repo the Bubble Tea v2 TUI and Lip Gloss styling; any future web frontend
-  counts as well
+- visual or interaction design;
+- UI, UX, navigation, information hierarchy, feedback states, or user-facing
+  copy;
+- the Bubble Tea/Lip Gloss TUI;
+- a future web frontend.
 
 ```bash
-roundfix implement --spec <slug> --agent claude --model opus --reasoning-effort high --qa --detach
+roundfix implement --spec <slug> --agent claude --model opus \
+  --reasoning-effort xhigh --qa --detach
 ```
 
-The `claude` runtime launches through `claude-agent-acp`. Roundfix forwards both the Agent Model
-and Default Reasoning Effort. Use the one-Run flags above for a design-heavy exception, or pin
-`runtimes.claude.model` and `runtimes.claude.reasoning_effort` in Project Config when a whole
-repository should use that route.
+The `claude` runtime launches through `claude-agent-acp`.
 
 ## Routing rules
 
-- The routing unit is the Run: one Run drives one Agent. A Spec that mixes backend and
-  design/UI work either runs on the default Codex runtime or is sliced at `write-tasks` time so
-  the design surface gets its own Spec.
-- Work delegated outside a Run (a one-off fix handed to a coding CLI) follows the same routing:
-  Codex `gpt-5.5 xhigh` by default, Claude Code Opus 4.8 for design/UI/UX/frontend.
-- When in doubt, use Codex. The Claude route exists for work where design quality is the point,
-  not as a general alternative.
+- One Run drives one Agent.
+- A Spec mixing frontend and non-frontend work must be sliced during
+  `write-tasks` so the frontend work can run in a separate Spec through Claude.
+- Codex handles work that is not frontend-dominated.
+- Claude handles frontend/design work where interaction and visual quality are
+  part of the outcome.
+- One-off delegation outside a Run follows the same routing.
 
-## What this does not change
+## Verification
 
-- Verification is runtime-independent and Daemon-owned: every Task must pass its
-  `## Verification` section, `make verify` gates every completion claim, and `qa-gate` runs
-  after the last Task regardless of runtime.
-- The spec workflow, issue-tracker conventions, and skill dispatch in AGENTS.md bind every
-  runtime equally.
+Runtime selection does not change completion requirements:
+
+- Every Task passes its `## Verification` commands.
+- `make verify` gates every completion claim.
+- `qa-gate` runs after the final Task regardless of runtime.
+- Agent instructions and Spec conventions bind both runtimes.
 
 ## Monitoring Runs
 
-For unattended monitoring, use the Supervisor Run Event Stream instead of polling or grepping
-Console Log text:
+Supervisors use the Run Event Stream:
 
 ```bash
 roundfix events <run-id> --follow
 roundfix events <run-id> --filter verification,outcome
 ```
 
-Each stdout line is one `roundfix-events/v1` JSON object. The stable categories are
-`task-status`, `batch`, `verification`, and `outcome`; diagnostics go to stderr. Use
-`roundfix attach <run-id>` only when a human needs the Live Run View. The Detached Run Console
-Log is a compact text record and is not a state API.
+Each stdout line is a `roundfix-events/v1` JSON object. Diagnostics go to
+stderr. Use `roundfix attach <run-id>` only when a human needs the Live Run
+View; the Console Log is not a state API.

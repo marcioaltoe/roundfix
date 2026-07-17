@@ -1,0 +1,256 @@
+{
+  "schemaVersion": "setup-context-driven/manual-qa-v1",
+  "qaId": "QA-11",
+  "name": "Optional extra skill report",
+  "status": "pass",
+  "recordedAt": "2026-07-16T16:12:48.212534+00:00",
+  "commands": [
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<source-repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "apply",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--profile",
+        "rust-cli",
+        "--decision",
+        "spec.scaffold=true",
+        "--decision",
+        "domain.layout=single-context",
+        "--decision",
+        "triage.external=false",
+        "--decision",
+        "autonomous.enabled=true",
+        "--decision",
+        "runtime.backend=codex gpt-5.5 xhigh",
+        "--decision",
+        "runtime.design=claude opus-4.8 xhigh",
+        "--decision",
+        "verification.gate=make verify",
+        "--decision",
+        "language.generated=English",
+        "--decision",
+        "secondbrain.enabled=false"
+      ],
+      "cwd": "<source-repo>",
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 1\n  },\n  \"findings\": [\n    {\n      \"code\": \"managed.apply.completed\",\n      \"severity\": \"info\",\n      \"path\": \".\",\n      \"managedId\": \"apply\",\n      \"message\": \"Managed setup content matches the selected profile.\",\n      \"action\": \"No action needed.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<source-repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "audit",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json"
+      ],
+      "cwd": "<source-repo>",
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<source-repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "audit",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json"
+      ],
+      "cwd": "<source-repo>",
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 0\n  },\n  \"findings\": [],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "<source-repo>/.agents/skills/setup-context-driven/scripts/context_setup.py",
+        "audit",
+        "--repo",
+        "<fixture>",
+        "--format",
+        "json",
+        "--show-extra-skills"
+      ],
+      "cwd": "<source-repo>",
+      "exitCode": 0,
+      "stdout": "{\n  \"schemaVersion\": \"setup-context-driven/audit-v1\",\n  \"ok\": true,\n  \"summary\": {\n    \"errors\": 0,\n    \"decisions\": 0,\n    \"warnings\": 0,\n    \"info\": 2\n  },\n  \"findings\": [\n    {\n      \"code\": \"skills.extra.installed\",\n      \"severity\": \"info\",\n      \"path\": \".agents/skills/locked-extra/SKILL.md\",\n      \"managedId\": \"locked-extra\",\n      \"message\": \"Installed locked skill is outside the selected setup.\",\n      \"action\": \"Review whether this locked skill is still useful; no file changes are performed.\"\n    },\n    {\n      \"code\": \"skills.local.untracked\",\n      \"severity\": \"info\",\n      \"path\": \".agents/skills/untracked-extra/SKILL.md\",\n      \"managedId\": \"untracked-extra\",\n      \"message\": \"Installed skill is not locked, setup-required, or manifest-declared repository-owned.\",\n      \"action\": \"Review this untracked skill manually; the workflow will not modify it.\"\n    }\n  ],\n  \"plannedChanges\": []\n}\n",
+      "stderr": ""
+    }
+  ],
+  "checks": [
+    {
+      "message": "apply exits successfully",
+      "passed": true,
+      "actual": {
+        "expected": 0,
+        "actual": 0
+      }
+    },
+    {
+      "message": "audit exits successfully after skills are installed",
+      "passed": true,
+      "actual": {
+        "expected": 0,
+        "actual": 0
+      }
+    },
+    {
+      "message": "clean audit has no findings",
+      "passed": true,
+      "actual": {
+        "expected": [],
+        "actual": []
+      }
+    },
+    {
+      "message": "extras do not block default audit",
+      "passed": true,
+      "actual": {
+        "expected": 0,
+        "actual": 0
+      }
+    },
+    {
+      "message": "extra locked skills are hidden by default",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "opt-in cleanup report remains non-blocking",
+      "passed": true,
+      "actual": {
+        "expected": 0,
+        "actual": 0
+      }
+    },
+    {
+      "message": "locked extra is informational",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "untracked extra is informational",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "report contains no removal command",
+      "passed": true,
+      "actual": null
+    },
+    {
+      "message": "extra-skill report removes nothing",
+      "passed": true,
+      "actual": {
+        "expected": {
+          ".agents/skills/agentic-cli-design/SKILL.md": "168e5b6278872a4c74adccdb5fec06300f6c9fb87014fe056a5039dcd4a82a2e",
+          ".agents/skills/archive-spec/SKILL.md": "ba2c76d2d1f029917e45a501b7f705e0784664384fb8f5b5bf0de97fff692ae1",
+          ".agents/skills/brainstorming/SKILL.md": "99694ffe2b46a3ac37ad2a4c501fa795b5aa723e255aa1f5b99ebe198efb5f73",
+          ".agents/skills/business-analyst/SKILL.md": "76bd4f3f3cd5d43dacbd9c7efb395da1aee014f4c2535399e79a7725c413e683",
+          ".agents/skills/clap-rust/SKILL.md": "09f810ffce5a77d528b08f6bd93cdabecb864fd06929d77dadf5e87b44f0c695",
+          ".agents/skills/coding-guidelines/SKILL.md": "91c644514de02675cb29970dbdadcc733888efbac7d436e7360e499b33341194",
+          ".agents/skills/context7/SKILL.md": "2c7f76bd8407af88d04e257c282b2ad5995caf724af459844de5805075229db1",
+          ".agents/skills/conventional-commits/SKILL.md": "76121d5cdb3f6a454253e2a4fe72f07856105b5345db842645371bf629a65b75",
+          ".agents/skills/council/SKILL.md": "0b7c08ea71006c4c36b6963d237a85192b898c2052b547d26237c0656a0269e5",
+          ".agents/skills/cut-release/SKILL.md": "358cdc1e1ca4a2183c4aab0f718702e70e8f3ca20aeecf5700699c83286d53ce",
+          ".agents/skills/domain-modeling/SKILL.md": "7b29fd4ebc1613479e1660783ef2286d6c1e9903cd669a2e76925e320a5a521a",
+          ".agents/skills/evidence-gate/SKILL.md": "5b9e46a2ea08edf46e65d3ccc4898326261ac5488d13476068777491bbdead3f",
+          ".agents/skills/github-pr-workflow/SKILL.md": "90a429101b2d9c7df09620b3f78ccf86fff9432248772517aa0c8c6478dc9150",
+          ".agents/skills/grill-with-docs/SKILL.md": "2a234b5d9e97e63202a2396990fa466899c08cbb568016c4c6f60280a383dd76",
+          ".agents/skills/grilling/SKILL.md": "4d1cda5bbd9f52bc613800810debc622ac0f7c2bba28d86e8857d79b342d9ced",
+          ".agents/skills/handoff/SKILL.md": "8f28673ac753247476614a40dc3baf19539b89928fdf9868fb884c62def4c66c",
+          ".agents/skills/implement-spec/SKILL.md": "5cd378c0b219df85299de2a40730683ac3086b280e6eda2ef9ceeef3f39300bf",
+          ".agents/skills/implement-task/SKILL.md": "cabb5c274ee2f6787ce4081adcf2ca68c584fd2c7a38721cdd4ace0974bb55be",
+          ".agents/skills/knowledge-workspace/SKILL.md": "b531207253b93916b2f77a735213e23333dcc484c0b93586240c97ef48e55f39",
+          ".agents/skills/locked-extra/SKILL.md": "32f8f53680f6795562a8d660d1b71b26f3a45c6c4ad2e3689e66ad40a8b5f86e",
+          ".agents/skills/no-workarounds/SKILL.md": "2143d6001eed706c96ec2db62bbc30e243bb83f366c30ec44089d93e4a7136b7",
+          ".agents/skills/qa-gate/SKILL.md": "634643f6693dec1f029eb06f141a55d7ecb61f238cfb77417e92cb70d9907d82",
+          ".agents/skills/review/SKILL.md": "eb258dca96515ccc53c0e6d834e232fe73b6e057f363dbfae423784f98aa6473",
+          ".agents/skills/rust/SKILL.md": "3229326ac8f0e116eb8b15302afb25179e7d2cfd900c3fc2e26727dfc7d35806",
+          ".agents/skills/rust-cli/SKILL.md": "06d12fb4287c841625aa6178cd35b216bdb89f15f7df9b2e141c0f50aeb38754",
+          ".agents/skills/setup-context-driven/SKILL.md": "7f3a231d3731a188380920d9cc9ad0d2ecbbf0f61a43e6a6359034b2f0e2804e",
+          ".agents/skills/systematic-debugging/SKILL.md": "a26379755ead1c2a0c95546cd1afa0492b9bd4a004a752657b70a082fb8c270d",
+          ".agents/skills/tech-writer/SKILL.md": "864c0c2e14b26e42498f158f4e0df175fb9a8443b8f2d577ff984466a0024a7c",
+          ".agents/skills/testing-boss/SKILL.md": "203ad7c2bda3dd42baa327307d3ddff00040c1060edffe7bc6d19ee0176f2edd",
+          ".agents/skills/the-fool/SKILL.md": "cd3a16ab1cf84ecffafc8036103533e5b1d6994366e3be239e80a77c4f73e472",
+          ".agents/skills/untracked-extra/SKILL.md": "46c9454d63a12a77e6a06e705969cd3147af87fa97b02bc30724ee426c424754",
+          ".agents/skills/write-idea/SKILL.md": "cff115e419213596eb618442225d5e13aa4717a61ca6e3fd9019116ce76c2ed9",
+          ".agents/skills/write-prd/SKILL.md": "5c63f77d91e0006ee030fbec10ffc9c4a4ed622f326302e3a9fef93b23ee988d",
+          ".agents/skills/write-tasks/SKILL.md": "61d21511b05187fc9649b8e10884bc80ee6e019b53fd2dfa4f858823be480af2",
+          ".agents/skills/write-techspec/SKILL.md": "f64fb5871ced2a4f28a94c7687ea4c90e2b0c4205170eaf128acd2fef8f0a262",
+          "AGENTS.md": "c32cb9974d06809272a3f6f03f6ad2e5444891c4f0f63e46000a3a5c61d18656",
+          "docs/agents/agent-instructions.md": "ae9f7bd9481b5b87ba312a80e8cad2b662ef769dfece12dd8657b328e493e4b7",
+          "docs/agents/autonomous-work.md": "702dfcd4ed1c2e7ce152acf1bef93cf05b9c88c5515c48d1bfc4d8fc6fce44bc",
+          "docs/agents/cli.md": "2fe6fc856e351104a433636536f9203e05e434019dbdfa059308cf2f493c4dd0",
+          "docs/agents/docs-layout.md": "c35a5710f2d484b7793f91dc27b8cab8ccfbeb58a29f7ca43b2f2a0c027bada5",
+          "docs/agents/domain.md": "2ae04a4533fd38890df0377a86b36c2be7fe929f990200e3b1d39124e0ced867",
+          "docs/agents/issue-tracker.md": "6ae26f1124354ce7aa72cf5bf60db46bbaaa8857df67a97bac8786e6d64106a2",
+          "docs/agents/rust.md": "8179c3eb1589adb1627520260117e4a2e09bf715e4f1cf760e3752decbbd4a8d",
+          "docs/agents/setup-context.json": "0883da98ba50651a19438301fd3a17241395633b248a2e8857bac44f3d8533c1",
+          "docs/agents/spec-routing.md": "892b9bb6ea91ae5575034d9550dad9d582aa1d724712f6edb5150db7f6827630",
+          "skills-lock.json": "be3c48bb280a8c93ae0d4971feec359acd99881aeb47f813aa01c7a8b86c312c"
+        },
+        "actual": {
+          ".agents/skills/agentic-cli-design/SKILL.md": "168e5b6278872a4c74adccdb5fec06300f6c9fb87014fe056a5039dcd4a82a2e",
+          ".agents/skills/archive-spec/SKILL.md": "ba2c76d2d1f029917e45a501b7f705e0784664384fb8f5b5bf0de97fff692ae1",
+          ".agents/skills/brainstorming/SKILL.md": "99694ffe2b46a3ac37ad2a4c501fa795b5aa723e255aa1f5b99ebe198efb5f73",
+          ".agents/skills/business-analyst/SKILL.md": "76bd4f3f3cd5d43dacbd9c7efb395da1aee014f4c2535399e79a7725c413e683",
+          ".agents/skills/clap-rust/SKILL.md": "09f810ffce5a77d528b08f6bd93cdabecb864fd06929d77dadf5e87b44f0c695",
+          ".agents/skills/coding-guidelines/SKILL.md": "91c644514de02675cb29970dbdadcc733888efbac7d436e7360e499b33341194",
+          ".agents/skills/context7/SKILL.md": "2c7f76bd8407af88d04e257c282b2ad5995caf724af459844de5805075229db1",
+          ".agents/skills/conventional-commits/SKILL.md": "76121d5cdb3f6a454253e2a4fe72f07856105b5345db842645371bf629a65b75",
+          ".agents/skills/council/SKILL.md": "0b7c08ea71006c4c36b6963d237a85192b898c2052b547d26237c0656a0269e5",
+          ".agents/skills/cut-release/SKILL.md": "358cdc1e1ca4a2183c4aab0f718702e70e8f3ca20aeecf5700699c83286d53ce",
+          ".agents/skills/domain-modeling/SKILL.md": "7b29fd4ebc1613479e1660783ef2286d6c1e9903cd669a2e76925e320a5a521a",
+          ".agents/skills/evidence-gate/SKILL.md": "5b9e46a2ea08edf46e65d3ccc4898326261ac5488d13476068777491bbdead3f",
+          ".agents/skills/github-pr-workflow/SKILL.md": "90a429101b2d9c7df09620b3f78ccf86fff9432248772517aa0c8c6478dc9150",
+          ".agents/skills/grill-with-docs/SKILL.md": "2a234b5d9e97e63202a2396990fa466899c08cbb568016c4c6f60280a383dd76",
+          ".agents/skills/grilling/SKILL.md": "4d1cda5bbd9f52bc613800810debc622ac0f7c2bba28d86e8857d79b342d9ced",
+          ".agents/skills/handoff/SKILL.md": "8f28673ac753247476614a40dc3baf19539b89928fdf9868fb884c62def4c66c",
+          ".agents/skills/implement-spec/SKILL.md": "5cd378c0b219df85299de2a40730683ac3086b280e6eda2ef9ceeef3f39300bf",
+          ".agents/skills/implement-task/SKILL.md": "cabb5c274ee2f6787ce4081adcf2ca68c584fd2c7a38721cdd4ace0974bb55be",
+          ".agents/skills/knowledge-workspace/SKILL.md": "b531207253b93916b2f77a735213e23333dcc484c0b93586240c97ef48e55f39",
+          ".agents/skills/locked-extra/SKILL.md": "32f8f53680f6795562a8d660d1b71b26f3a45c6c4ad2e3689e66ad40a8b5f86e",
+          ".agents/skills/no-workarounds/SKILL.md": "2143d6001eed706c96ec2db62bbc30e243bb83f366c30ec44089d93e4a7136b7",
+          ".agents/skills/qa-gate/SKILL.md": "634643f6693dec1f029eb06f141a55d7ecb61f238cfb77417e92cb70d9907d82",
+          ".agents/skills/review/SKILL.md": "eb258dca96515ccc53c0e6d834e232fe73b6e057f363dbfae423784f98aa6473",
+          ".agents/skills/rust/SKILL.md": "3229326ac8f0e116eb8b15302afb25179e7d2cfd900c3fc2e26727dfc7d35806",
+          ".agents/skills/rust-cli/SKILL.md": "06d12fb4287c841625aa6178cd35b216bdb89f15f7df9b2e141c0f50aeb38754",
+          ".agents/skills/setup-context-driven/SKILL.md": "7f3a231d3731a188380920d9cc9ad0d2ecbbf0f61a43e6a6359034b2f0e2804e",
+          ".agents/skills/systematic-debugging/SKILL.md": "a26379755ead1c2a0c95546cd1afa0492b9bd4a004a752657b70a082fb8c270d",
+          ".agents/skills/tech-writer/SKILL.md": "864c0c2e14b26e42498f158f4e0df175fb9a8443b8f2d577ff984466a0024a7c",
+          ".agents/skills/testing-boss/SKILL.md": "203ad7c2bda3dd42baa327307d3ddff00040c1060edffe7bc6d19ee0176f2edd",
+          ".agents/skills/the-fool/SKILL.md": "cd3a16ab1cf84ecffafc8036103533e5b1d6994366e3be239e80a77c4f73e472",
+          ".agents/skills/untracked-extra/SKILL.md": "46c9454d63a12a77e6a06e705969cd3147af87fa97b02bc30724ee426c424754",
+          ".agents/skills/write-idea/SKILL.md": "cff115e419213596eb618442225d5e13aa4717a61ca6e3fd9019116ce76c2ed9",
+          ".agents/skills/write-prd/SKILL.md": "5c63f77d91e0006ee030fbec10ffc9c4a4ed622f326302e3a9fef93b23ee988d",
+          ".agents/skills/write-tasks/SKILL.md": "61d21511b05187fc9649b8e10884bc80ee6e019b53fd2dfa4f858823be480af2",
+          ".agents/skills/write-techspec/SKILL.md": "f64fb5871ced2a4f28a94c7687ea4c90e2b0c4205170eaf128acd2fef8f0a262",
+          "AGENTS.md": "c32cb9974d06809272a3f6f03f6ad2e5444891c4f0f63e46000a3a5c61d18656",
+          "docs/agents/agent-instructions.md": "ae9f7bd9481b5b87ba312a80e8cad2b662ef769dfece12dd8657b328e493e4b7",
+          "docs/agents/autonomous-work.md": "702dfcd4ed1c2e7ce152acf1bef93cf05b9c88c5515c48d1bfc4d8fc6fce44bc",
+          "docs/agents/cli.md": "2fe6fc856e351104a433636536f9203e05e434019dbdfa059308cf2f493c4dd0",
+          "docs/agents/docs-layout.md": "c35a5710f2d484b7793f91dc27b8cab8ccfbeb58a29f7ca43b2f2a0c027bada5",
+          "docs/agents/domain.md": "2ae04a4533fd38890df0377a86b36c2be7fe929f990200e3b1d39124e0ced867",
+          "docs/agents/issue-tracker.md": "6ae26f1124354ce7aa72cf5bf60db46bbaaa8857df67a97bac8786e6d64106a2",
+          "docs/agents/rust.md": "8179c3eb1589adb1627520260117e4a2e09bf715e4f1cf760e3752decbbd4a8d",
+          "docs/agents/setup-context.json": "0883da98ba50651a19438301fd3a17241395633b248a2e8857bac44f3d8533c1",
+          "docs/agents/spec-routing.md": "892b9bb6ea91ae5575034d9550dad9d582aa1d724712f6edb5150db7f6827630",
+          "skills-lock.json": "be3c48bb280a8c93ae0d4971feec359acd99881aeb47f813aa01c7a8b86c312c"
+        }
+      }
+    }
+  ],
+  "notes": [],
+  "error": null
+}

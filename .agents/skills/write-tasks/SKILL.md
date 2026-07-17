@@ -5,7 +5,7 @@ argument-hint: "<spec slug or path under docs/specs/>"
 metadata:
   category: issue-decomposition
   tags: [issues, workflow, prd, agents]
-  version: 0.1.0
+  version: 0.2.0
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---
@@ -22,6 +22,10 @@ Turn `docs/specs/<slug>/_prd.md` (and `_techspec.md` when present) into the exec
 
 - **Dependencies live only in the `_tasks.md` graph.** Never in task files. Two copies of an edge is how graphs drift.
 - **Status lives only in each task file's frontmatter.** `_tasks.md` owns topology, not progress — schedulers re-read task files for state.
+- **Task Type is required in every task file.** Use exactly one of `backend`,
+  `frontend`, `data`, `infra`, `docs`, `test`, or `chore`. The Implement
+  Command routes Agent Selection Profiles from this value and rejects missing
+  or unknown values; never leave a placeholder or infer the type later.
 - **Content references, never duplicates.** Task files point at PRD/TechSpec sections by name; a task that restates the spec goes stale the first time the spec is amended.
 - **Context entries are labeled paths.** Add `## Context` only when the Task
   needs specific instruction or interface paths beyond the standard Spec
@@ -40,6 +44,24 @@ Turn `docs/specs/<slug>/_prd.md` (and `_techspec.md` when present) into the exec
 - **Verification must be hermetic, portable, effect-proving, and Daemon-owned.** Every task's `## Verification` commands must be satisfiable in a fresh worktree using only repository state, declared config, and task-owned setup. Do not depend on untracked local files, prior Runs, interactive prompts, pushed branches, or ambient machine state unless the task explicitly creates that state. Use portable shell forms: prefer `grep` over `rg` in task gates, avoid `wc`-pipeline assertions that vary across platforms, and use repository build flags such as `go build -buildvcs=false ./...` when a build is required. Verification must prove the Task's effect with executable checks, not only prove that unrelated suites still pass. The Daemon runs these commands after the Agent turn and may send one failure-only Verification Feedback prompt; do not tell the Agent to run the authoritative gate itself.
 - **Commit and push stay out of task criteria.** The Daemon owns Task commits, Run integration, and any configured push. Never put commit, push, PR creation, or branch-publishing requirements in task Requirements, Subtasks, Acceptance Criteria, or Verification commands.
 
+### Task Type selection
+
+Choose the type from the Task's dominant delivered outcome, not from the skill,
+runtime, or Agent Model expected to implement it:
+
+- `backend` — CLI, daemon, service, API, domain, or core runtime behavior;
+- `frontend` — browser UI, TUI, visual, interaction, accessibility, or UX behavior;
+- `data` — persistence model, query, migration, import, or data-pipeline behavior;
+- `infra` — build, CI/CD, packaging, deployment, environment, or operational infrastructure;
+- `docs` — documentation-only behavior or durable knowledge artifacts;
+- `test` — test harness, fixture, evaluation, or coverage work without a product behavior change;
+- `chore` — bounded maintenance that changes none of the preceding product surfaces.
+
+When a vertical slice crosses types, use the type of its primary user-visible or
+operational outcome. If two outcomes are independently valuable or the dominant
+outcome remains ambiguous, split the Task or resolve the type during the approval
+gate; do not encode multiple values.
+
 ## Process
 
 ### 1. Derive the breakdown
@@ -48,11 +70,11 @@ Start from the TechSpec's Build Order (its dependency statements become graph ed
 
 ### 2. Approval gate — the one mandatory human check
 
-Present the breakdown as a table (`id | title | type | complexity | needs`) plus a one-line rationale for the slicing, and iterate until the user explicitly approves. Granularity and dependency correctness are where human judgment pays most — **write no files before approval.**
+Present the breakdown as a table (`id | title | type | complexity | needs`) plus a one-line rationale for the slicing, and iterate until the user explicitly approves. Every `type` cell must already contain one allowed Task Type; a blank, placeholder, or combined value blocks approval. Granularity, dependency correctness, and dominant outcome classification are where human judgment pays most — **write no files before approval.**
 
 ### 3. Write the files
 
-From the templates in [references/task-template.md](references/task-template.md), write `_tasks.md` and every `task_NN.md` (numbered from `01` in topological order). Acceptance criteria must be independently verifiable — a criterion nobody can check is a wish, not a criterion. Include a `## Verification` section with exact, hermetic, portable commands that prove the task's effect in a fresh worktree; the Daemon runs them verbatim after Agent work. Add `## Context` only for task-specific instruction or interface paths that the standard Spec Context Bundle would not make obvious.
+From the templates in [references/task-template.md](references/task-template.md), write `_tasks.md` and every `task_NN.md` (numbered from `01` in topological order). Copy the approved Task Type into each task's `type` frontmatter and the `_tasks.md` projection table. Acceptance criteria must be independently verifiable — a criterion nobody can check is a wish, not a criterion. Include a `## Verification` section with exact, hermetic, portable commands that prove the task's effect in a fresh worktree; the Daemon runs them verbatim after Agent work. Add `## Context` only for task-specific instruction or interface paths that the standard Spec Context Bundle would not make obvious.
 
 Durability applies here too: describe behavior and interfaces, not repo file paths (relative references within the spec folder are fine — the folder moves as a unit).
 
@@ -61,6 +83,9 @@ Durability applies here too: describe behavior and interfaces, not repo file pat
 Before reporting, verify mechanically — parse, don't eyeball:
 
 - Every `graph.nodes[].file` exists and every task file has parseable frontmatter with `status: pending`.
+- Every task file has exactly one `type` value from `backend`, `frontend`,
+  `data`, `infra`, `docs`, `test`, or `chore`; the `_tasks.md` projection row
+  for that task contains the identical value.
 - Every `needs` entry names an existing node id; no cycles (a topological order can be printed).
 - Every PRD user story appears in some task's References.
 
@@ -81,6 +106,8 @@ Reply with the file list and the wave plan.
 - Commit, push, PR, or branch-publishing acceptance criteria — those are Daemon and delivery responsibilities, not task success criteria.
 - Editing the graph and the task files out of sync — regenerate both from the approved breakdown.
 - Writing files before the user approves the breakdown.
+- Missing, placeholder, combined, or invented Task Types — classification is a
+  required routing contract, not descriptive free text.
 
 ## References
 

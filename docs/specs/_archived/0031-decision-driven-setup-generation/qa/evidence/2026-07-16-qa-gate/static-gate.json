@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "roundfix-qa-evidence-v1",
+  "scenario": "static gate",
+  "status": "pass",
+  "commands": [],
+  "checks": [
+    {
+      "message": "final rtk make verify exited 0",
+      "passed": true,
+      "actual": "See QA transcript and report static gate section."
+    }
+  ],
+  "notes": [
+    "First rtk make verify attempt failed in TestACPXRunClosesSessionAfterCancelGracePeriod; exact isolated rerun passed, then full rtk make verify passed."
+  ]
+}

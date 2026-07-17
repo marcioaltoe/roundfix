@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "setup-context-driven/module-v1",
+  "id": "context-workflow",
+  "version": 1,
+  "kind": "workflow",
+  "title": "CONTEXT-driven workflow",
+  "dependsOn": ["core"],
+  "conflictsWith": [],
+  "requiredSkills": [
+    "setup-context-driven",
+    "brainstorming",
+    "write-idea",
+    "write-prd",
+    "write-techspec",
+    "write-tasks",
+    "implement-task",
+    "implement-spec",
+    "qa-gate",
+    "archive-spec",
+    "tech-writer"
+  ],
+  "requiredDecisions": [
+    "domain.layout"
+  ],
+  "rootBlocks": [
+    {
+      "id": "root.context-workflow",
+      "version": 1,
+      "template": "template.root.context-workflow",
+      "rules": [
+        "rule.context.domain-docs",
+        "rule.context.docs-layout"
+      ]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.docs-layout",
+      "version": 1,
+      "path": "docs/agents/docs-layout.md",
+      "template": "template.guide.docs-layout",
+      "rules": ["rule.context.docs-layout"]
+    },
+    {
+      "id": "guide.domain",
+      "version": 1,
+      "path": "docs/agents/domain.md",
+      "template": "template.guide.domain",
+      "rules": ["rule.context.domain-docs"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.context.domain-docs",
+      "version": 1,
+      "summary": "Agents read CONTEXT.md and relevant ADRs before naming domain concepts."
+    },
+    {
+      "id": "rule.context.docs-layout",
+      "version": 1,
+      "summary": "Each docs directory has one job and generated guides live under docs/agents."
+    }
+  ]
+}

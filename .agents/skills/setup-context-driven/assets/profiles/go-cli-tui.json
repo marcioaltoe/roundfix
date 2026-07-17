@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "setup-context-driven/profile-v1",
+  "id": "go-cli-tui",
+  "version": 1,
+  "title": "Go CLI/TUI repository",
+  "setup": "go-cli",
+  "entryDecisions": [
+    "language.generated",
+    "spec.scaffold",
+    "domain.layout",
+    "triage.external",
+    "autonomous.enabled",
+    "secondbrain.enabled"
+  ],
+  "modules": [
+    "core",
+    "context-workflow",
+    "go",
+    "cli-surface",
+    "tui-surface",
+    "autonomous-work"
+  ]
+}

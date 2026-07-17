@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "setup-context-driven/manual-qa-abort-v1",
+  "run": "2026-07-16-manual-variations-02",
+  "status": "aborted",
+  "reason": "The evidence writer could not serialize byte-valued preservation checks.",
+  "lastCompleted": "QA-16",
+  "supersededBy": "2026-07-16-manual-variations-03"
+}

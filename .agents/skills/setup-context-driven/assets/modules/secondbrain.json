@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "setup-context-driven/module-v1",
+  "id": "secondbrain",
+  "version": 1,
+  "kind": "optional-integration",
+  "title": "Read-only Secondbrain guidance",
+  "dependsOn": ["core", "context-workflow"],
+  "conflictsWith": [],
+  "requiredSkills": [],
+  "requiredDecisions": ["secondbrain.enabled"],
+  "rootBlocks": [
+    {
+      "id": "root.secondbrain",
+      "version": 1,
+      "template": "template.root.secondbrain",
+      "rules": [
+        "rule.secondbrain.read-only",
+        "rule.secondbrain.secret-safety",
+        "rule.secondbrain.citations"
+      ]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.secondbrain",
+      "version": 1,
+      "path": "docs/agents/secondbrain.md",
+      "template": "template.guide.secondbrain",
+      "rules": [
+        "rule.secondbrain.index-first",
+        "rule.secondbrain.read-only",
+        "rule.secondbrain.secret-safety",
+        "rule.secondbrain.citations",
+        "rule.secondbrain.hermes-escalation"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.secondbrain.index-first",
+      "version": 1,
+      "summary": "Secondbrain lookup starts at the wiki index, then qmd search, then targeted files."
+    },
+    {
+      "id": "rule.secondbrain.read-only",
+      "version": 1,
+      "summary": "Agents may read approved Secondbrain areas but must not write to the Secondbrain, raw sources, or project mirrors."
+    },
+    {
+      "id": "rule.secondbrain.secret-safety",
+      "version": 1,
+      "summary": "Agents must not read, copy, or expose secrets from the Secondbrain."
+    },
+    {
+      "id": "rule.secondbrain.citations",
+      "version": 1,
+      "summary": "Every answer that uses Secondbrain context cites the exact files read."
+    },
+    {
+      "id": "rule.secondbrain.hermes-escalation",
+      "version": 1,
+      "summary": "Durable Secondbrain updates are escalated to Hermes rather than written from the repository."
+    }
+  ]
+}
