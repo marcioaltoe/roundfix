@@ -17,7 +17,7 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.4
+        model: gpt-5.5
         reasoning_effort: xhigh
   backend:
     preferred:
@@ -26,7 +26,7 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.4
+        model: gpt-5.5
         reasoning_effort: xhigh
   frontend:
     preferred:
@@ -44,7 +44,7 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.4
+        model: gpt-5.5
         reasoning_effort: xhigh
   review:
     preferred:
@@ -53,7 +53,7 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.4
+        model: gpt-5.5
         reasoning_effort: xhigh
 
 review_source:
