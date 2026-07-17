@@ -63,7 +63,7 @@
       "name": "grilling",
       "path": "skills/01-discovery/grilling",
       "source": {},
-      "contentDigest": "5a35925d03a391bcfa46940868b649b72dba89ec9c19525e785bbb6bd3a7f478"
+      "contentDigest": "44331dda57f461db4fec3f2efb6ddabe7aaaa0a57ae0f88a883bc61aed8a0587"
     },
     {
       "name": "write-prd",
@@ -173,7 +173,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "c9dbc6a4fab4f730a7df0c2588a907d7e4c6dfd7ed32668619961dfe8c669f87"
+      "contentDigest": "7bb9f37cf08a6d48bfa5c41a821d864f5d4a234adaf63be46b887d226d0c4f12"
     },
     {
       "name": "ai-sdk",
@@ -645,7 +645,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "6e2c62b5d234a01d1af091ce133cf9b707272e656f9c10028755968c1764cec4"
+      "contentDigest": "7120c738ea9da2ca91f98cf3003399f10a3d27cfc21f26120a2f8f19c373f938"
     },
     {
       "name": "the-fool",

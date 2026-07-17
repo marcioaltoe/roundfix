@@ -32,7 +32,7 @@ func TestSchema9CreatesAgentSelectionTable(t *testing.T) {
 func TestSchema8To9MigratesRunsEventsAndSelectionTable(t *testing.T) {
 	ctx := context.Background()
 	homeDir := t.TempDir()
-	buildV8Fixture(t, homeDir)
+	buildV8Fixture(t, ctx, homeDir)
 
 	runStore := openTestStore(t, ctx, homeDir)
 	defer closeStore(t, runStore)
@@ -203,6 +203,110 @@ func TestSelectionAttemptOrderingRejectsInvalidOrOutOfOrderAppendsWithoutPartial
 	}
 }
 
+func TestAgentSelectionAttemptLifecycleUpdatesSameAttempt(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	run, err := runStore.CreateRun(ctx, sampleImplementCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create Run: %v", err)
+	}
+	base := AgentSelectionAttemptRequest{
+		RunID: run.ID, ScopeKind: AgentSelectionScopeTask, ScopeID: "task_01",
+		Category: "backend", ProfileSource: "project", Attempt: 1,
+		SelectionRole: AgentSelectionRolePreferred, Runtime: "codex", Model: "gpt-5.6-sol",
+		Status: AgentSelectionStatusAttempting,
+	}
+	if _, err := runStore.AppendAgentSelectionAttempt(ctx, base); err != nil {
+		t.Fatalf("append attempting: %v", err)
+	}
+	active := withAttemptOverride(base, func(req *AgentSelectionAttemptRequest) {
+		req.Status = AgentSelectionStatusActive
+	})
+	if _, err := runStore.AppendAgentSelectionAttempt(ctx, active); err != nil {
+		t.Fatalf("append active update: %v", err)
+	}
+	closed := withAttemptOverride(base, func(req *AgentSelectionAttemptRequest) {
+		req.Status = AgentSelectionStatusClosed
+	})
+	if _, err := runStore.AppendAgentSelectionAttempt(ctx, closed); err != nil {
+		t.Fatalf("append closed update: %v", err)
+	}
+	attempts, err := runStore.AgentSelectionAttemptsForScope(ctx, run.ID, AgentSelectionScopeTask, "task_01")
+	if err != nil {
+		t.Fatalf("read attempts: %v", err)
+	}
+	if len(attempts) != 1 || attempts[0].Status != AgentSelectionStatusClosed {
+		t.Fatalf("expected one closed attempt row, got %#v", attempts)
+	}
+	events, err := runStore.RunEventsAfter(ctx, run.ID, 0, 10)
+	if err != nil {
+		t.Fatalf("read Run Events: %v", err)
+	}
+	if got, want := selectionEventKinds(events), []runevent.Kind{
+		runevent.KindDaemonAgentSelectionAttempt,
+		runevent.KindDaemonAgentSelectionActive,
+		runevent.KindDaemonAgentSelectionClosed,
+	}; strings.Join(kindStrings(got), "|") != strings.Join(kindStrings(want), "|") {
+		t.Fatalf("expected lifecycle event kinds %v, got %v", want, got)
+	}
+
+	failed := AgentSelectionAttemptRequest{
+		RunID: run.ID, ScopeKind: AgentSelectionScopeQA, ScopeID: "qa:default",
+		Category: "qa", ProfileSource: "built-in", Attempt: 1,
+		SelectionRole: AgentSelectionRolePreferred, Runtime: "codex", Model: "gpt-5.6-terra",
+		Status: AgentSelectionStatusAttempting,
+	}
+	if _, err := runStore.AppendAgentSelectionAttempt(ctx, failed); err != nil {
+		t.Fatalf("append qa attempting: %v", err)
+	}
+	failed = withAttemptOverride(failed, func(req *AgentSelectionAttemptRequest) {
+		req.Status = AgentSelectionStatusFailed
+		req.ReasonCode = "runtime_unavailable"
+		req.Reason = "runtime failed before start"
+	})
+	if _, err := runStore.AppendAgentSelectionAttempt(ctx, failed); err != nil {
+		t.Fatalf("append failed update: %v", err)
+	}
+}
+
+func TestAgentSelectionAttemptLifecycleRejectsImmutableFieldChanges(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	run, err := runStore.CreateRun(ctx, sampleImplementCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create Run: %v", err)
+	}
+	base := AgentSelectionAttemptRequest{
+		RunID: run.ID, ScopeKind: AgentSelectionScopeTask, ScopeID: "task_01",
+		Category: "backend", ProfileSource: "project", Attempt: 1,
+		SelectionRole: AgentSelectionRolePreferred, Runtime: "codex", Model: "gpt-5.6-sol",
+		Status: AgentSelectionStatusAttempting,
+	}
+	if _, err := runStore.AppendAgentSelectionAttempt(ctx, base); err != nil {
+		t.Fatalf("append attempting: %v", err)
+	}
+	changedModel := withAttemptOverride(base, func(req *AgentSelectionAttemptRequest) {
+		req.Status = AgentSelectionStatusActive
+		req.Model = "different-model"
+	})
+	beforeRows := countAgentSelectionAttempts(t, ctx, runStore, run.ID)
+	beforeEvents := countRunEvents(t, ctx, runStore, run.ID)
+
+	if _, err := runStore.AppendAgentSelectionAttempt(ctx, changedModel); err == nil || !strings.Contains(err.Error(), "selection fields are immutable") {
+		t.Fatalf("expected immutable field rejection, got %v", err)
+	}
+	if got := countAgentSelectionAttempts(t, ctx, runStore, run.ID); got != beforeRows {
+		t.Fatalf("expected row count to remain %d, got %d", beforeRows, got)
+	}
+	if got := countRunEvents(t, ctx, runStore, run.ID); got != beforeEvents {
+		t.Fatalf("expected event count to remain %d, got %d", beforeEvents, got)
+	}
+}
+
 func TestAgentSelectionAttemptsStoreNoSensitiveFields(t *testing.T) {
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
@@ -285,12 +389,31 @@ func TestAgentSelectionAttemptsAppendExhaustedEventFromPersistedHistory(t *testi
 	}); err == nil {
 		t.Fatal("expected exhausted event without persisted attempts to fail")
 	}
-	if got := countRunEvents(t, ctx, runStore, run.ID); got != 2 {
-		t.Fatalf("expected failed exhausted event to leave event count 2, got %d", got)
+	if _, err := runStore.AppendAgentSelectionExhausted(ctx, AgentSelectionExhaustedRequest{
+		RunID: run.ID, ScopeKind: AgentSelectionScopeTask, ScopeID: "task_01", Category: "frontend",
+	}); err == nil || !strings.Contains(err.Error(), "does not match latest failed attempt category") {
+		t.Fatalf("expected mismatched category to fail, got %v", err)
+	}
+	activeAttempt := AgentSelectionAttemptRequest{
+		RunID: run.ID, ScopeKind: AgentSelectionScopeReview, ScopeID: "review:run",
+		Category: "review", ProfileSource: "project", Attempt: 1,
+		SelectionRole: AgentSelectionRolePreferred, Runtime: "codex", Model: "review-model",
+		Status: AgentSelectionStatusActive,
+	}
+	if _, err := runStore.AppendAgentSelectionAttempt(ctx, activeAttempt); err != nil {
+		t.Fatalf("append active review attempt: %v", err)
+	}
+	if _, err := runStore.AppendAgentSelectionExhausted(ctx, AgentSelectionExhaustedRequest{
+		RunID: run.ID, ScopeKind: AgentSelectionScopeReview, ScopeID: "review:run", Category: "review",
+	}); err == nil || !strings.Contains(err.Error(), "must be failed") {
+		t.Fatalf("expected latest active attempt to block exhaustion, got %v", err)
+	}
+	if got := countRunEvents(t, ctx, runStore, run.ID); got != 3 {
+		t.Fatalf("expected failed exhausted events to leave event count 3, got %d", got)
 	}
 }
 
-func buildV8Fixture(t *testing.T, homeDir string) {
+func buildV8Fixture(t *testing.T, ctx context.Context, homeDir string) {
 	t.Helper()
 	path := DatabasePath(homeDir)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -363,7 +486,7 @@ func buildV8Fixture(t *testing.T, homeDir string) {
 		`PRAGMA user_version = 8`,
 	}
 	for _, statement := range statements {
-		if _, err := db.Exec(statement); err != nil {
+		if _, err := db.ExecContext(ctx, statement); err != nil {
 			t.Fatalf("build v8 fixture: %v", err)
 		}
 	}

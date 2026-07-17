@@ -42,14 +42,14 @@ func ClassifyChanges(request ClassifyRequest) (ClassificationResult, error) {
 	for _, commit := range request.Commits {
 		evidence := ClassifyCommit(commit)
 		changes = append(changes, evidence)
-		automaticMinimum = MaxImpact(automaticMinimum, evidence.AutomaticImpact)
-		breaking = breaking || evidence.Breaking
 
 		switch {
-		case evidence.AutomaticImpact != ImpactNone:
-			sources[SourceConventionalCommit] = true
 		case !evidence.CrossesMaintenanceOnlyBoundary:
 			sources[SourceMaintenanceOnly] = true
+		case evidence.AutomaticImpact != ImpactNone:
+			automaticMinimum = MaxImpact(automaticMinimum, evidence.AutomaticImpact)
+			breaking = breaking || evidence.Breaking
+			sources[SourceConventionalCommit] = true
 		default:
 			blockingCommits = append(blockingCommits, evidence.CommitSHA)
 		}

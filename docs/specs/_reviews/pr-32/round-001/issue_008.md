@@ -3,7 +3,7 @@ source: coderabbit
 pr: "32"
 round: 1
 round_created_at: "2026-07-17T10:26:16Z"
-status: pending
+status: duplicated
 head_repository: marcioaltoe/roundfix
 head_branch: ma/release-plan-and-agent-selection-profiles
 head_sha: f7ff075d90b898620702e0d2c3a736020b4750d3
@@ -13,10 +13,11 @@ severity: major
 author: coderabbitai[bot]
 source_ref: thread:PRRT_kwDOS0qyts6Ru5sz,comment:PRRC_kwDOS0qyts7Wt95O
 review_hash: 89560260e8faf906f40f88a2f888b7fecb376bc27a2aa08e66a6e8459bd57ecb
-duplicate_of: ""
+duplicate_of: /Users/marcio/dev/roundfix/docs/specs/_reviews/pr-32/round-002/issue_008.md
 source_review_id: "4721765481"
 source_review_submitted_at: "2026-07-17T10:25:31Z"
 ---
+
 
 # Issue 008: _ Maintainability & Code Quality_ _ Major_ _ Quick win_
 

@@ -177,6 +177,13 @@ func TestCalculateProposal(t *testing.T) {
 			if got.Approval.Required != tt.wantApprovalRequired {
 				t.Fatalf("Approval.Required = %v, want %v", got.Approval.Required, tt.wantApprovalRequired)
 			}
+			wantApprovalIncrement := IncrementNone
+			if tt.wantApprovalRequired {
+				wantApprovalIncrement = tt.wantIncrement
+			}
+			if got.Approval.Increment != wantApprovalIncrement {
+				t.Fatalf("Approval.Increment = %q, want %q", got.Approval.Increment, wantApprovalIncrement)
+			}
 		})
 	}
 }
@@ -264,7 +271,7 @@ func TestApprovalDecision(t *testing.T) {
 			base:                "v1.4.2",
 			input:               ProposalInput{Impact: ImpactPatch},
 			wantRequired:        false,
-			wantIncrement:       "",
+			wantIncrement:       IncrementNone,
 			wantProposedVersion: "",
 			wantQuestion:        "",
 		},

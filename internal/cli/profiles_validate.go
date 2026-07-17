@@ -102,7 +102,9 @@ func runProfilesValidateCommand(ctx context.Context, args []string, stdout, stde
 	if result.Err != nil {
 		return printProfilesValidateError(req, result, result.Err, stdout, stderr)
 	}
-	printProfilesValidateSuccess(req, result, stdout)
+	if err := printProfilesValidateSuccess(req, result, stdout); err != nil {
+		return printProfilesValidateOutputError(err, stderr)
+	}
 	return exitOK
 }
 
@@ -225,10 +227,9 @@ func runtimeForProfileSelectionWithOptions(selection roundconfig.AgentSelection,
 	})
 }
 
-func printProfilesValidateSuccess(req profilesValidateRequest, result profileProofResult, stdout io.Writer) {
+func printProfilesValidateSuccess(req profilesValidateRequest, result profileProofResult, stdout io.Writer) error {
 	if req.json {
-		_ = json.NewEncoder(stdout).Encode(profilesValidateResponseForResult(result, ""))
-		return
+		return json.NewEncoder(stdout).Encode(profilesValidateResponseForResult(result, ""))
 	}
 	fmt.Fprintln(stdout, "Profiles validate passed.")
 	for index, proof := range result.Proofs {
@@ -237,6 +238,12 @@ func printProfilesValidateSuccess(req profilesValidateRequest, result profilePro
 			fmt.Fprintf(stdout, "   - %s\n", formatProfileProofReference(reference))
 		}
 	}
+	return nil
+}
+
+func printProfilesValidateOutputError(err error, stderr io.Writer) int {
+	printProfilesFailure(fmt.Errorf("encode profiles validate JSON: %w", err), stderr)
+	return exitRunFailed
 }
 
 func printProfilesValidateError(req profilesValidateRequest, result profileProofResult, err error, stdout, stderr io.Writer) int {

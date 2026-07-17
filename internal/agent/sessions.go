@@ -89,8 +89,33 @@ func ParseRoundfixSessionName(name string) (RoundfixSession, bool) {
 		session.TaskID = taskID
 		return session, true
 	}
+	switch {
+	case strings.HasSuffix(rest, "-qa"):
+		rest = strings.TrimSuffix(rest, "-qa")
+	case strings.HasSuffix(rest, "-review"):
+		rest = strings.TrimSuffix(rest, "-review")
+	default:
+		if index := strings.LastIndex(rest, "-review-"); index >= 0 {
+			suffix := rest[index+len("-review-"):]
+			if len(suffix) == 3 && allDigits(suffix) {
+				rest = rest[:index]
+			}
+		}
+	}
+	if rest == "" {
+		return RoundfixSession{}, false
+	}
 	session.RunID = rest
 	return session, true
+}
+
+func allDigits(value string) bool {
+	for _, char := range value {
+		if char < '0' || char > '9' {
+			return false
+		}
+	}
+	return value != ""
 }
 
 func collectRoundfixSessionNames(value any, add func(string), allowString bool) {

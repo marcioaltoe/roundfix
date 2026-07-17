@@ -419,13 +419,15 @@ func (owner *agentSessionOwner) closeActive(ctx context.Context) error {
 		return nil
 	}
 	err := owner.engine.deps.Runner.EndSession(ctx, owner.activeRuntime, owner.activeSession)
-	if err == nil {
-		if persistErr := owner.persistSelectionAttempt(ctx, owner.activeCandidate(), store.AgentSelectionStatusClosed, nil); persistErr != nil {
-			owner.active = false
-			return persistErr
-		}
-		_ = owner.publishSessionClosed(ctx)
+	if err != nil {
+		owner.active = false
+		return fmt.Errorf("end Agent Session %q: %w", owner.activeSession.Name, err)
 	}
+	if persistErr := owner.persistSelectionAttempt(ctx, owner.activeCandidate(), store.AgentSelectionStatusClosed, nil); persistErr != nil {
+		owner.active = false
+		return persistErr
+	}
+	_ = owner.publishSessionClosed(ctx)
 	owner.active = false
 	return nil
 }

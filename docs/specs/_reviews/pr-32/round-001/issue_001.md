@@ -3,7 +3,7 @@ source: coderabbit
 pr: "32"
 round: 1
 round_created_at: "2026-07-17T10:26:16Z"
-status: pending
+status: duplicated
 head_repository: marcioaltoe/roundfix
 head_branch: ma/release-plan-and-agent-selection-profiles
 head_sha: f7ff075d90b898620702e0d2c3a736020b4750d3
@@ -13,10 +13,11 @@ severity: review
 author: coderabbitai[bot]
 source_ref: thread:PRRT_kwDOS0qyts6Ru5sG,comment:PRRC_kwDOS0qyts7Wt94S
 review_hash: 9d8693ae5c4576bd718dfedab8753d217941d2d6e5e7a20883f22fab5966182c
-duplicate_of: ""
+duplicate_of: /Users/marcio/dev/roundfix/docs/specs/_reviews/pr-32/round-002/issue_001.md
 source_review_id: "4721765481"
 source_review_submitted_at: "2026-07-17T10:25:30Z"
 ---
+
 
 # Issue 001: _ Stability & Availability_ _ Critical_ _ Quick win_
 

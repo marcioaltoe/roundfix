@@ -730,6 +730,7 @@ type selectionLifecycleRunner struct {
 	qaReport                             string
 	prepareErrByModel                    map[string]error
 	runErrByModel                        map[string]error
+	closeErr                             error
 	prepared                             []agent.ExecuteRequest
 	ran                                  []agent.ExecuteRequest
 	closed                               []agent.SessionRef
@@ -798,7 +799,7 @@ func (runner *selectionLifecycleRunner) EndSession(_ context.Context, _ agent.Ru
 	runner.mu.Lock()
 	defer runner.mu.Unlock()
 	runner.closed = append(runner.closed, session)
-	return nil
+	return runner.closeErr
 }
 
 func (runner *selectionLifecycleRunner) prepareRequests() []agent.ExecuteRequest {

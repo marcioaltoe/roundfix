@@ -708,6 +708,59 @@ watch:
 	if err == nil || !strings.Contains(err.Error(), "must not include other top-level keys") {
 		t.Fatalf("expected strict fragment rejection, got %v", err)
 	}
+
+	_, err = ParseProfilesFragment([]byte(`
+backend:
+  preferred:
+    runtime: codex
+    model: custom-backend
+    reasoning_effort: high
+  fallbacks:
+    - runtime: codex
+      model: custom-fallback
+      reasoning_effort: max
+---
+backend:
+  preferred:
+    runtime: claude
+    model: hidden
+    reasoning_effort: medium
+  fallbacks:
+    - runtime: codex
+      model: hidden-fallback
+      reasoning_effort: high
+`))
+	if err == nil || !strings.Contains(err.Error(), "multiple YAML documents") {
+		t.Fatalf("expected multi-document fragment rejection, got %v", err)
+	}
+}
+
+func TestWriteProfilesConfigRejectsMultiDocumentConfigWithoutMutating(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+	mustMkdir(t, filepath.Join(workDir, ".git"))
+	configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
+	current := "watch:\n  max_rounds: 4\n---\nnotify:\n  enabled: false\n"
+	mustMkdir(t, filepath.Dir(configPath))
+	mustWrite(t, configPath, current)
+
+	_, err := WriteProfilesConfig(context.Background(), ProfileConfigOptions{
+		Scope:   InitScopeUser,
+		HomeDir: homeDir,
+		WorkDir: workDir,
+		Profiles: Profiles{
+			CategoryBackend: {Profile: AgentSelectionProfile{
+				Preferred: AgentSelection{Runtime: "codex", Model: "backend", ReasoningEffort: "high"},
+				Fallbacks: []AgentSelection{{Runtime: "codex", Model: "fallback", ReasoningEffort: "max"}},
+			}},
+		},
+	})
+	if err == nil || !strings.Contains(err.Error(), "multiple YAML documents") {
+		t.Fatalf("expected multi-document config rejection, got %v", err)
+	}
+	if got := mustRead(t, configPath); got != current {
+		t.Fatalf("multi-document config mutated\nwant: %q\n got: %q", current, got)
+	}
 }
 
 func TestBuiltinWatchDefaultsIncludeCheckGracePeriod(t *testing.T) {

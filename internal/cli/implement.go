@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"archive/tar"
 	"bytes"
 	"context"
 	"errors"
@@ -8,6 +9,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -51,6 +54,7 @@ var createRunWorktree = runworktree.Create
 var integrateRunWorktree = runworktree.Integrate
 var cleanupCleanRunWorktree = runworktree.CleanupClean
 var pruneTerminalRunWorktrees = runworktree.PruneTerminalReport
+var loadCommittedSpecGraph = defaultLoadCommittedSpecGraph
 
 // runImplementCommand executes the Implement Command: Preflight Validation,
 // Run creation, the Live Run View, one Task cycle over the Task Graph, and
@@ -112,7 +116,13 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitPreflight
 	}
 	checkoutSpecsRoot := specsRootForWorkDir(resolvedSpecsRoot, gitState.Root, gitState.Root)
-	graph, err := spec.Load(checkoutSpecsRoot, req.spec)
+	if _, err := spec.Load(checkoutSpecsRoot, req.spec); err != nil {
+		// Keep authoring errors tied to the user's checkout paths, but do not
+		// use this potentially dirty graph for routing or execution decisions.
+		printPreflightFailure("implement", err, stderr)
+		return exitPreflight
+	}
+	graph, graphSpecsRoot, err := loadCommittedSpecGraph(ctx, gitState.Root, resolvedSpecsRoot, gitState.HEAD, req.spec)
 	if err != nil {
 		// spec.Load returns typed validation errors whose messages name the
 		// offending Task or check and the next useful action.
@@ -122,7 +132,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	if countNonCompletedTasks(graph.Tasks) == 0 && !req.qa {
 		// With --qa, an all-completed graph is not a no-op: the Run
 		// consists of the qa-gate step only (ADR 0015).
-		counts := printImplementTaskLines(stdout, checkoutSpecsRoot, graph, true)
+		counts := printImplementTaskLines(stdout, graphSpecsRoot, graph, true)
 		fmt.Fprintf(stdout, "All %d Task(s) already completed; no Run was created.\n", counts.total())
 		return exitOK
 	}
@@ -358,6 +368,123 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitRunFailed
 	}
 	return exitOK
+}
+
+func defaultLoadCommittedSpecGraph(ctx context.Context, gitRoot string, resolvedSpecsRoot roundconfig.SpecsRoot, revision string, slug string) (*spec.Graph, string, error) {
+	checkoutSpecsRoot := specsRootForWorkDir(resolvedSpecsRoot, gitRoot, gitRoot)
+	repoRelativeSpecsRoot, ok := repositoryRelativePath(gitRoot, checkoutSpecsRoot)
+	if !ok {
+		graph, err := spec.Load(checkoutSpecsRoot, slug)
+		return graph, checkoutSpecsRoot, err
+	}
+	revision = strings.TrimSpace(revision)
+	if revision == "" {
+		revision = "HEAD"
+	}
+	repoSpecDir := filepath.ToSlash(filepath.Join(repoRelativeSpecsRoot, slug))
+	tempRoot, err := os.MkdirTemp("", "roundfix-committed-spec-*")
+	if err != nil {
+		return nil, "", fmt.Errorf("create temporary committed Spec graph directory: %w", err)
+	}
+	defer func() {
+		_ = os.RemoveAll(tempRoot)
+	}()
+
+	var archive bytes.Buffer
+	var stderr bytes.Buffer
+	cmd := exec.CommandContext(ctx, "git", "-C", gitRoot, "-c", "core.fsmonitor=false", "archive", "--format=tar", revision, repoSpecDir)
+	cmd.Stdout = &archive
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		detail := strings.TrimSpace(stderr.String())
+		if detail == "" {
+			detail = err.Error()
+		}
+		return nil, "", fmt.Errorf("load committed Spec graph from %s:%s: %s: %w", revision, repoSpecDir, detail, err)
+	}
+	if err := unpackTarArchive(archive.Bytes(), tempRoot); err != nil {
+		return nil, "", fmt.Errorf("unpack committed Spec graph from %s:%s: %w", revision, repoSpecDir, err)
+	}
+	committedSpecsRoot := filepath.Join(tempRoot, filepath.FromSlash(repoRelativeSpecsRoot))
+	graph, err := spec.Load(committedSpecsRoot, slug)
+	if err != nil {
+		return nil, committedSpecsRoot, fmt.Errorf("load committed Spec graph from %s:%s: %w", revision, repoSpecDir, err)
+	}
+	return graph, committedSpecsRoot, nil
+}
+
+func repositoryRelativePath(root string, path string) (string, bool) {
+	root = strings.TrimSpace(root)
+	path = strings.TrimSpace(path)
+	if root == "" || path == "" {
+		return "", false
+	}
+	absoluteRoot, err := filepath.Abs(root)
+	if err != nil {
+		return "", false
+	}
+	absolutePath, err := filepath.Abs(path)
+	if err != nil {
+		return "", false
+	}
+	relative, err := filepath.Rel(absoluteRoot, absolutePath)
+	if err != nil {
+		return "", false
+	}
+	if relative == "." {
+		return relative, true
+	}
+	if relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return "", false
+	}
+	return relative, true
+}
+
+func unpackTarArchive(content []byte, destination string) error {
+	reader := tar.NewReader(bytes.NewReader(content))
+	for {
+		header, err := reader.Next()
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		target, err := safeArchiveTarget(destination, header.Name)
+		if err != nil {
+			return err
+		}
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(target, 0o755); err != nil {
+				return fmt.Errorf("create archive directory %q: %w", target, err)
+			}
+		case tar.TypeReg, tar.TypeRegA:
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+				return fmt.Errorf("create archive file parent %q: %w", filepath.Dir(target), err)
+			}
+			file, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, header.FileInfo().Mode())
+			if err != nil {
+				return fmt.Errorf("create archive file %q: %w", target, err)
+			}
+			if _, err := io.Copy(file, reader); err != nil {
+				_ = file.Close()
+				return fmt.Errorf("write archive file %q: %w", target, err)
+			}
+			if err := file.Close(); err != nil {
+				return fmt.Errorf("close archive file %q: %w", target, err)
+			}
+		}
+	}
+}
+
+func safeArchiveTarget(destination string, name string) (string, error) {
+	cleanDestination := filepath.Clean(destination)
+	target := filepath.Clean(filepath.Join(cleanDestination, filepath.FromSlash(name)))
+	if target != cleanDestination && !strings.HasPrefix(target, cleanDestination+string(filepath.Separator)) {
+		return "", fmt.Errorf("archive path %q escapes destination", name)
+	}
+	return target, nil
 }
 
 // parseImplementCommand parses the implement flags over the config defaults,

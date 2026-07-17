@@ -202,7 +202,7 @@ func Load(specsRoot string, slug string) (*Graph, error) {
 	}
 
 	manifestPath := filepath.Join(dir, "_tasks.md")
-	nodes, projections, err := loadManifestNodes(manifestPath)
+	nodes, projections, hasProjections, err := loadManifestNodes(manifestPath)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func Load(specsRoot string, slug string) (*Graph, error) {
 		if err != nil {
 			return nil, err
 		}
-		if len(projections) > 0 {
+		if hasProjections {
 			projected, ok := projections[task.ID]
 			if !ok {
 				return nil, ManifestError{
@@ -296,72 +296,94 @@ func prdStatus(content []byte) (string, error) {
 	return prd.Status, nil
 }
 
-func loadManifestNodes(manifestPath string) ([]manifestNode, map[string]TaskType, error) {
+func loadManifestNodes(manifestPath string) ([]manifestNode, map[string]TaskType, bool, error) {
 	content, err := os.ReadFile(manifestPath)
 	if errors.Is(err, os.ErrNotExist) {
-		return nil, nil, ManifestError{Path: manifestPath, Reason: "file does not exist; run the write-tasks workflow to create the Task Graph"}
+		return nil, nil, false, ManifestError{Path: manifestPath, Reason: "file does not exist; run the write-tasks workflow to create the Task Graph"}
 	}
 	if err != nil {
-		return nil, nil, fmt.Errorf("read Task Graph manifest %q: %w", manifestPath, err)
+		return nil, nil, false, fmt.Errorf("read Task Graph manifest %q: %w", manifestPath, err)
 	}
 	frontmatterBytes, body, err := splitFrontmatter(content)
 	if err != nil {
-		return nil, nil, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}
+		return nil, nil, false, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}
 	}
 	var manifest manifestFrontmatter
 	if err := yaml.Unmarshal(frontmatterBytes, &manifest); err != nil {
-		return nil, nil, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}
+		return nil, nil, false, ManifestError{Path: manifestPath, Reason: "invalid frontmatter", Err: err}
 	}
 	if manifest.Schema != manifestSchema {
-		return nil, nil, ManifestSchemaError{Path: manifestPath, Schema: manifest.Schema}
+		return nil, nil, false, ManifestSchemaError{Path: manifestPath, Schema: manifest.Schema}
 	}
 	nodes := manifest.Graph.Nodes
 	if len(nodes) == 0 {
-		return nil, nil, ManifestError{Path: manifestPath, Reason: "graph has no nodes"}
+		return nil, nil, false, ManifestError{Path: manifestPath, Reason: "graph has no nodes"}
 	}
 
 	known := make(map[string]bool, len(nodes))
 	for index, node := range nodes {
 		if node.ID == "" || node.File == "" {
-			return nil, nil, ManifestError{Path: manifestPath, Reason: fmt.Sprintf("graph node %d is missing id or file", index+1)}
+			return nil, nil, false, ManifestError{Path: manifestPath, Reason: fmt.Sprintf("graph node %d is missing id or file", index+1)}
 		}
 		if known[node.ID] {
-			return nil, nil, ManifestError{Path: manifestPath, Reason: fmt.Sprintf("duplicate Task id %q", node.ID)}
+			return nil, nil, false, ManifestError{Path: manifestPath, Reason: fmt.Sprintf("duplicate Task id %q", node.ID)}
 		}
 		known[node.ID] = true
 	}
 	for _, node := range nodes {
 		for _, need := range node.Needs {
 			if !known[need] {
-				return nil, nil, UnknownNeedError{TaskID: node.ID, Need: need}
+				return nil, nil, false, UnknownNeedError{TaskID: node.ID, Need: need}
 			}
 		}
 	}
-	projections, err := parseTaskTypeProjections(manifestPath, body)
+	projections, hasProjections, err := parseTaskTypeProjections(manifestPath, body)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, false, err
 	}
 	for taskID := range projections {
 		if !known[taskID] {
-			return nil, nil, ManifestError{
+			return nil, nil, false, ManifestError{
 				Path:   manifestPath,
 				Reason: fmt.Sprintf("projection table row names unknown Task %q; remove it or add a matching graph node", taskID),
 			}
 		}
 	}
-	return nodes, projections, nil
+	return nodes, projections, hasProjections, nil
 }
 
-func parseTaskTypeProjections(manifestPath string, body []byte) (map[string]TaskType, error) {
+func parseTaskTypeProjections(manifestPath string, body []byte) (map[string]TaskType, bool, error) {
 	projections := make(map[string]TaskType)
+	inProjectionTable := false
 	for _, line := range strings.Split(string(body), "\n") {
 		cells := markdownTableCells(line)
-		if len(cells) < 5 || !strings.HasPrefix(cells[0], "task_") {
+		if !inProjectionTable {
+			if taskTypeProjectionHeader(cells) {
+				inProjectionTable = true
+			}
 			continue
+		}
+		if len(cells) == 0 {
+			break
+		}
+		if markdownTableSeparator(cells) {
+			continue
+		}
+		if len(cells) < 5 || !strings.HasPrefix(cells[0], "task_") {
+			return nil, true, ManifestError{
+				Path:   manifestPath,
+				Reason: "projection table has a malformed Task row; each row must start with a canonical task_NN id and include title, type, complexity, and needs cells",
+			}
+		}
+		if _, exists := projections[cells[0]]; exists {
+			return nil, true, ManifestError{
+				Path:   manifestPath,
+				Reason: fmt.Sprintf("projection table defines Task %q more than once; remove duplicate rows", cells[0]),
+			}
 		}
 		taskType, err := ParseTaskType(manifestPath, cells[2])
 		if err != nil {
-			return nil, ManifestError{
+			return nil, true, ManifestError{
 				Path:   manifestPath,
 				Reason: fmt.Sprintf("projection row for Task %q has invalid type %q (allowed: %s); update the _tasks.md type cell to one allowed value", cells[0], cells[2], allowedTaskTypeValues()),
 				Err:    err,
@@ -369,7 +391,36 @@ func parseTaskTypeProjections(manifestPath string, body []byte) (map[string]Task
 		}
 		projections[cells[0]] = taskType
 	}
-	return projections, nil
+	return projections, inProjectionTable, nil
+}
+
+func taskTypeProjectionHeader(cells []string) bool {
+	if len(cells) < 5 {
+		return false
+	}
+	return strings.EqualFold(cells[0], "id") &&
+		strings.EqualFold(cells[1], "title") &&
+		strings.EqualFold(cells[2], "type") &&
+		strings.EqualFold(cells[3], "complexity") &&
+		strings.EqualFold(cells[4], "needs")
+}
+
+func markdownTableSeparator(cells []string) bool {
+	if len(cells) == 0 {
+		return false
+	}
+	for _, cell := range cells {
+		trimmed := strings.TrimSpace(cell)
+		if trimmed == "" {
+			return false
+		}
+		for _, char := range trimmed {
+			if char != '-' && char != ':' {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func markdownTableCells(line string) []string {

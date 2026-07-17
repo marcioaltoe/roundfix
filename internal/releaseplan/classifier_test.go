@@ -176,6 +176,8 @@ func TestClassifyChanges(t *testing.T) {
 	featureCommit := Commit{SHA: "feature", Subject: "feat: add release plan command", ChangedPaths: []string{"internal/cli/release.go"}}
 	fixCommit := Commit{SHA: "fix", Subject: "fix: keep artifact validation deterministic", ChangedPaths: []string{"internal/release/release.go"}}
 	maintenanceCommit := Commit{SHA: "docs", Subject: "docs: record release plan task", ChangedPaths: []string{"docs/specs/0034-release-plan/task_02.md"}}
+	maintenanceFixCommit := Commit{SHA: "fix-test", Subject: "fix: repair release plan test", ChangedPaths: []string{"internal/releaseplan/classifier_test.go"}}
+	maintenanceBreakingCommit := Commit{SHA: "breaking-test", Subject: "feat!: remove obsolete test helper", ChangedPaths: []string{"internal/releaseplan/classifier_test.go"}}
 
 	tests := []struct {
 		name                string
@@ -220,6 +222,20 @@ func TestClassifyChanges(t *testing.T) {
 		{
 			name:       "maintenance only produces no release",
 			request:    ClassifyRequest{Commits: []Commit{maintenanceCommit}},
+			wantState:  StateNoRelease,
+			wantImpact: ImpactNone,
+			wantSource: SourceMaintenanceOnly,
+		},
+		{
+			name:       "maintenance only fix produces no release",
+			request:    ClassifyRequest{Commits: []Commit{maintenanceFixCommit}},
+			wantState:  StateNoRelease,
+			wantImpact: ImpactNone,
+			wantSource: SourceMaintenanceOnly,
+		},
+		{
+			name:       "maintenance only breaking feature produces no release",
+			request:    ClassifyRequest{Commits: []Commit{maintenanceBreakingCommit}},
 			wantState:  StateNoRelease,
 			wantImpact: ImpactNone,
 			wantSource: SourceMaintenanceOnly,

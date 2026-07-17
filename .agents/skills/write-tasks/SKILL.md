@@ -16,7 +16,7 @@ Turn `docs/specs/<slug>/_prd.md` (and `_techspec.md` when present) into the exec
 
 ## Preconditions
 
-`$ARGUMENTS` names the spec. `_prd.md` must exist. If `_techspec.md` is missing on a feature with real architectural surface, call that out and say `write-techspec` should run first; proceed only if the user accepts the trade-off, compensating with deeper codebase exploration before decomposing.
+`$ARGUMENTS` names the spec. `_prd.md` must exist. If `_techspec.md` is missing on a feature with real architectural surface, call that out and say `write-techspec` should run first; use `AskUserQuestion` to get explicit user acceptance before proceeding without the tech spec. Continue only after acceptance, compensating with deeper codebase exploration before decomposing.
 
 ## Ownership rules (what lives where, and why)
 

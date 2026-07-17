@@ -111,7 +111,8 @@ const (
 type DefaultRunner struct {
 	Now func() time.Time
 
-	acpx *ACPXRunner
+	acpxOnce sync.Once
+	acpx     *ACPXRunner
 }
 
 type StopError struct {
@@ -318,7 +319,7 @@ func MarkBatchFailed(batch rounds.Batch, terminalReason string) error {
 }
 
 func NewDefaultRunner() *DefaultRunner {
-	return &DefaultRunner{acpx: &ACPXRunner{}}
+	return &DefaultRunner{}
 }
 
 func (runner *DefaultRunner) Probe(ctx context.Context, req ProbeRequest) error {
@@ -358,13 +359,9 @@ func (runner *DefaultRunner) CancelSession(ctx context.Context, runtime RuntimeS
 }
 
 func (runner *DefaultRunner) acpxRunner() *ACPXRunner {
-	if runner.acpx == nil {
-		runner.acpx = &ACPXRunner{}
-	}
-	if runner.acpx.stateMu == nil {
-		runner.acpx.stateMu = &sync.Mutex{}
-	}
-	runner.acpx.Now = runner.Now
+	runner.acpxOnce.Do(func() {
+		runner.acpx = &ACPXRunner{Now: runner.Now}
+	})
 	return runner.acpx
 }
 

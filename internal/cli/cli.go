@@ -48,7 +48,7 @@ Usage:
   roundfix settle --spec <slug> --task <task_id>
   roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
   roundfix profiles show [--category <category>] [--json]
-  roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--json]
+  roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--yes] [--json]
   roundfix profiles validate [--category <category>] [--json]
   roundfix archive <slug>
   roundfix init [--scope <project|user>]
@@ -3875,7 +3875,7 @@ releases, or configuration.
 	case "profiles":
 		return `Usage:
   roundfix profiles show [--category <category>] [--json]
-  roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--json]
+  roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--yes] [--json]
   roundfix profiles validate [--category <category>] [--json]
 
 Commands:
@@ -3900,7 +3900,7 @@ Options:
 `
 	case "profiles configure":
 		return `Usage:
-  roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--json]
+  roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--yes] [--json]
 
 Writes complete Agent Selection Profiles to User Config or Project Config.
 Without --file, collects one profile through Interactive Input, shows the
@@ -3910,6 +3910,7 @@ Options:
   --scope    Required config scope: user or project
   --file     Strict profile fragment YAML; omitted opens Interactive Input
   --dry-run  Validate and render the normalized result without writing
+  --yes      Write without confirmation after validation
   --json     Print deterministic JSON report
 `
 	case "profiles validate":

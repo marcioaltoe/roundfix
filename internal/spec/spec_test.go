@@ -378,6 +378,67 @@ func TestTaskTypeProjectionMustMatchTaskFile(t *testing.T) {
 	}
 }
 
+func TestTaskTypeProjectionTablePresenceValidatesRows(t *testing.T) {
+	tests := []struct {
+		name     string
+		table    string
+		contains []string
+	}{
+		{
+			name: "empty table still requires task rows",
+			table: `
+| id      | title   | type     | complexity | needs |
+| ------- | ------- | -------- | ---------- | ----- |
+`,
+			contains: []string{"projection table has no row", "task_01"},
+		},
+		{
+			name: "malformed task id rejected",
+			table: `
+| id      | title   | type     | complexity | needs |
+| ------- | ------- | -------- | ---------- | ----- |
+| taks_01 | Fixture | backend  | low        | —     |
+`,
+			contains: []string{"malformed Task row", "task_NN"},
+		},
+		{
+			name: "duplicate task id rejected",
+			table: `
+| id      | title   | type     | complexity | needs |
+| ------- | ------- | -------- | ---------- | ----- |
+| task_01 | Fixture | backend  | low        | —     |
+| task_01 | Fixture | backend  | low        | —     |
+`,
+			contains: []string{"defines Task \"task_01\" more than once"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gitRoot := t.TempDir()
+			specsRoot := defaultSpecsRoot(gitRoot)
+			writeSpecDir(t, specsRoot, "demo", map[string]string{
+				"_prd.md": prdFixture("active"),
+				"_tasks.md": manifestFixtureWithBody("spec-tasks/v1", `    - id: task_01
+      file: task_01.md
+      needs: []
+`, tt.table),
+				"task_01.md": taskFixture("task_01", "Fixture", "pending", "backend", defaultVerificationSection),
+			})
+
+			_, err := Load(specsRoot, "demo")
+			if err == nil {
+				t.Fatal("Load succeeded, want projection table validation error")
+			}
+			for _, want := range tt.contains {
+				if !strings.Contains(err.Error(), want) {
+					t.Fatalf("error %q does not contain %q", err, want)
+				}
+			}
+		})
+	}
+}
+
 func TestLoadParsesOptionalTaskContext(t *testing.T) {
 	gitRoot := t.TempDir()
 	specsRoot := defaultSpecsRoot(gitRoot)

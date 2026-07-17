@@ -39,6 +39,9 @@ func ParseProfilesFragment(content []byte) (Profiles, error) {
 		}
 		return nil, fmt.Errorf("parse profile fragment: %w", err)
 	}
+	if err := requireSingleYAMLDocument(decoder); err != nil {
+		return nil, fmt.Errorf("parse profile fragment: %w", err)
+	}
 	root := documentRootMapping(&document)
 	if root == nil {
 		return nil, errors.New("profile fragment must be a mapping")
@@ -187,11 +190,25 @@ func decodeConfigDocumentForProfiles(path string, content []byte) (*yaml.Node, *
 	if err := decoder.Decode(document); err != nil {
 		return nil, nil, fmt.Errorf("parse config %q: %w", path, err)
 	}
+	if err := requireSingleYAMLDocument(decoder); err != nil {
+		return nil, nil, fmt.Errorf("parse config %q: %w", path, err)
+	}
 	root := documentRootMapping(document)
 	if root == nil {
 		return nil, nil, fmt.Errorf("parse config %q: config must be a mapping", path)
 	}
 	return document, root, nil
+}
+
+func requireSingleYAMLDocument(decoder *yaml.Decoder) error {
+	var extra yaml.Node
+	if err := decoder.Decode(&extra); err != nil {
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		return err
+	}
+	return errors.New("multiple YAML documents are not supported")
 }
 
 func onlyProfilesWrapper(root *yaml.Node) (*yaml.Node, bool, error) {

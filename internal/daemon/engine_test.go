@@ -606,6 +606,32 @@ func TestPerWorkAgentSessionReviewUsesReviewProfile(t *testing.T) {
 	}
 }
 
+func TestResolveCycleReportsReviewAgentSessionCloseFailure(t *testing.T) {
+	fixture := newEngineFixture(t)
+	closeErr := errors.New("close failed")
+	runner := &selectionLifecycleRunner{closeErr: closeErr}
+	verifier := &engineFakeVerifier{calls: fixture.calls, store: fixture.store, runID: fixture.run.ID}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, verifier, committer, &engineFakePusher{calls: fixture.calls}, &engineFakeSource{calls: fixture.calls})
+	plan := fixture.plan()
+	plan.AgentSelections = selectionProfilesForTest(map[roundconfig.WorkCategory]roundconfig.AgentSelectionProfile{
+		roundconfig.CategoryReview: selectionProfileForTest(selectionForTest("codex", "review-model", "high"), selectionForTest("codex", "review-fallback", "high")),
+	})
+	plan.RuntimeFactory = runtimeFactoryForLifecycleTest(nil)
+
+	_, err := engine.ResolveCycle(context.Background(), plan)
+
+	if !errors.Is(err, closeErr) {
+		t.Fatalf("ResolveCycle error = %v, want close failure", err)
+	}
+	if !strings.Contains(err.Error(), "close Agent Session") || !strings.Contains(err.Error(), "Batch 001") {
+		t.Fatalf("close failure lacks context: %v", err)
+	}
+	if got := strings.Join(runner.closedSessions(), "\n"); got != "roundfix-"+fixture.run.ID+"-review-001" {
+		t.Fatalf("expected review session close attempted once, got %q", got)
+	}
+}
+
 func TestResolveCyclePropagatesSettledIssueOutcomesIndividually(t *testing.T) {
 	const (
 		resolvedRef   = "thread:PRRT_resolved,comment:PRRC_resolved"

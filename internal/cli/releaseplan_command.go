@@ -233,7 +233,10 @@ func releasePlanChangeLabel(change releaseplan.ChangeEvidence) string {
 func printReleasePlanJSON(plan releaseplan.Plan, stdout io.Writer) error {
 	encoder := json.NewEncoder(stdout)
 	encoder.SetIndent("", "  ")
-	return encoder.Encode(releasePlanJSONFromPlan(plan))
+	if err := encoder.Encode(releasePlanJSONFromPlan(plan)); err != nil {
+		return fmt.Errorf("encode release plan JSON: %w", err)
+	}
+	return nil
 }
 
 type releasePlanJSON struct {

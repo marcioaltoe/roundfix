@@ -508,15 +508,17 @@ func (engine *Engine) FinalPush(ctx context.Context, req FinalPushRequest) error
 	)
 }
 
-func (engine *Engine) resolveBatch(ctx context.Context, plan CyclePlan, batch rounds.Batch, batchIndex int, batchTotal int) (BatchOutcome, int, error) {
-	outcome := BatchOutcome{Batch: batch.Number, Issues: len(batch.Issues)}
+func (engine *Engine) resolveBatch(ctx context.Context, plan CyclePlan, batch rounds.Batch, batchIndex int, batchTotal int) (outcome BatchOutcome, remaining int, err error) {
+	outcome = BatchOutcome{Batch: batch.Number, Issues: len(batch.Issues)}
 	owner, err := engine.reviewAgentSessionOwner(plan, batch.Number)
 	if err != nil {
 		return outcome, 0, err
 	}
 	defer func() {
 		if owner != nil {
-			_ = owner.Close(context.WithoutCancel(ctx))
+			if closeErr := owner.Close(context.WithoutCancel(ctx)); closeErr != nil {
+				err = errors.Join(err, fmt.Errorf("close Agent Session for run %q Batch %03d: %w", plan.RunID, batch.Number, closeErr))
+			}
 		}
 	}()
 	// The before-snapshot is taken at Batch start, so anything already
@@ -575,7 +577,7 @@ func (engine *Engine) resolveBatch(ctx context.Context, plan CyclePlan, batch ro
 		outcome.Failed = true
 		outcome.FailureReason = fmt.Sprintf("Review Source propagation failed for %d Review Issue(s)", propagated.Failed)
 	}
-	remaining, err := remainingUnresolvedIssues(ctx, plan)
+	remaining, err = remainingUnresolvedIssues(ctx, plan)
 	if err != nil {
 		return outcome, 0, fmt.Errorf("compute remaining unresolved issues for run %q after Batch %03d: %w", plan.RunID, batch.Number, err)
 	}

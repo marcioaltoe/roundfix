@@ -371,6 +371,25 @@ func newImplementWorkspace(t *testing.T, seeds []implementSeed) (string, string)
 	return homeDir, resolved
 }
 
+func TestLoadCommittedSpecGraphIgnoresDirtyCheckoutTaskMetadata(t *testing.T) {
+	_, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", taskType: "backend", status: string(spec.StatusPending)}})
+	taskPath := implementTaskPath(repoDir, "task_01")
+	dirty := strings.ReplaceAll(mustRead(t, taskPath), "status: pending\ntype: backend", "status: completed\ntype: frontend")
+	mustWrite(t, taskPath, dirty)
+	head := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+
+	graph, _, err := defaultLoadCommittedSpecGraph(context.Background(), repoDir, roundconfig.SpecsRoot{Path: filepath.Join(repoDir, "docs", "specs")}, head, implementTestSlug)
+	if err != nil {
+		t.Fatalf("load committed graph: %v", err)
+	}
+	if len(graph.Tasks) != 1 {
+		t.Fatalf("len(tasks) = %d, want 1", len(graph.Tasks))
+	}
+	if graph.Tasks[0].Type != spec.TaskTypeBackend || graph.Tasks[0].Status != spec.StatusPending {
+		t.Fatalf("committed graph used dirty task metadata: %+v", graph.Tasks[0])
+	}
+}
+
 func writeUserConfig(t *testing.T, homeDir string, content string) {
 	t.Helper()
 	path := filepath.Join(homeDir, ".roundfix", "config.yml")
@@ -2278,8 +2297,8 @@ func TestRunImplementClosesAgentSessionForTerminalOutcomes(t *testing.T) {
 			inner: &implementFakeRunner{
 				statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
 			},
-			wantCode:  0,
-			wantState: store.StateClean,
+			wantCode:  1,
+			wantState: store.StateFailed,
 			closeErr:  errors.New("close failed"),
 		},
 		{

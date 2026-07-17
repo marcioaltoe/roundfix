@@ -51,6 +51,7 @@ func CalculateProposal(base Version, input ProposalInput) (Proposal, error) {
 		return Proposal{
 			State:     StateManualClassificationRequired,
 			Increment: IncrementNone,
+			Approval:  noApproval(),
 		}, nil
 	}
 	if !AllowedImpact(input.Impact) {
@@ -69,6 +70,7 @@ func CalculateProposal(base Version, input ProposalInput) (Proposal, error) {
 			State:     StateNoRelease,
 			Increment: IncrementNone,
 			Breaking:  breaking,
+			Approval:  noApproval(),
 		}, nil
 	case ImpactPatch:
 		version := base.IncrementPatch()
@@ -77,6 +79,7 @@ func CalculateProposal(base Version, input ProposalInput) (Proposal, error) {
 			ProposedVersion: version.String(),
 			Increment:       IncrementPatch,
 			Breaking:        breaking,
+			Approval:        noApproval(),
 		}, nil
 	case ImpactMinor:
 		version := base.IncrementMinor()
@@ -91,6 +94,10 @@ func CalculateProposal(base Version, input ProposalInput) (Proposal, error) {
 	default:
 		return Proposal{}, UnknownImpactError{Impact: input.Impact}
 	}
+}
+
+func noApproval() Approval {
+	return Approval{Increment: IncrementNone}
 }
 
 func approvalProposal(version Version, increment IncrementKind, breaking bool) Proposal {

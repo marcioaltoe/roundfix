@@ -63,7 +63,7 @@ type ACPXRunner struct {
 	Now              func() time.Time
 	warnf            func(string, ...any)
 	cancelClock      cancellationClock
-	stateMu          *sync.Mutex
+	stateMu          sync.Mutex
 	ensuredSessions  map[string]struct{}
 	codexSpawn       codexSpawnDependencies
 	codexResolutions map[string]codexSpawnResolution
@@ -1072,9 +1072,6 @@ func (runner *ACPXRunner) clearSessionState(sessionName string) {
 }
 
 func (runner *ACPXRunner) lockState() func() {
-	if runner.stateMu == nil {
-		runner.stateMu = &sync.Mutex{}
-	}
 	runner.stateMu.Lock()
 	return runner.stateMu.Unlock
 }

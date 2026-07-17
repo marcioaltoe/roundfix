@@ -177,10 +177,7 @@ func timelineEventRow(entry timelineEntry) string {
 // Events journaled without a summary fall back to their reconstructed
 // console text so older journals stay viewable, bounded the same way.
 func timelineRowSummary(entry timelineEntry) string {
-	if record, ok, err := runevent.ProjectSelectionLifecycle(entry.event); ok {
-		if err != nil {
-			return ""
-		}
+	if record, ok, err := runevent.ProjectSelectionLifecycle(entry.event); ok && err == nil {
 		return runevent.SelectionLifecycleSummary(record)
 	}
 	if strings.TrimSpace(entry.event.Summary) != "" {

@@ -21,6 +21,7 @@ type profilesConfigureRequest struct {
 	file   string
 	dryRun bool
 	json   bool
+	yes    bool
 }
 
 type profilesConfigureResponse struct {
@@ -67,23 +68,29 @@ func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, std
 		if !req.json {
 			fmt.Fprint(stdout, profilesConfigurePreview(result))
 		}
-		printProfilesConfigureSuccess(req, result, stdout)
+		if err := printProfilesConfigureSuccess(req, result, stdout); err != nil {
+			return printProfilesConfigureOutputError(err, stderr)
+		}
 		return exitOK
 	}
 
 	preview := profilesConfigurePreview(result)
-	confirmed, err := confirmProfilesConfigure(ctx, stderr, preview)
-	if err != nil {
-		return printProfilesConfigureError(req, result, err, stdout, stderr)
-	}
-	if !confirmed {
-		result.Changed = false
-		if req.json {
-			printProfilesConfigureSuccess(req, result, stdout)
-		} else {
-			fmt.Fprintf(stdout, "Profile configuration unchanged: confirmation declined for %s\n", result.Path)
+	if !req.yes {
+		confirmed, err := confirmProfilesConfigure(ctx, stderr, preview)
+		if err != nil {
+			return printProfilesConfigureError(req, result, err, stdout, stderr)
 		}
-		return exitOK
+		if !confirmed {
+			result.Changed = false
+			if req.json {
+				if err := printProfilesConfigureSuccess(req, result, stdout); err != nil {
+					return printProfilesConfigureOutputError(err, stderr)
+				}
+			} else {
+				fmt.Fprintf(stdout, "Profile configuration unchanged: confirmation declined for %s\n", result.Path)
+			}
+			return exitOK
+		}
 	}
 
 	result, err = roundconfig.WriteProfilesConfig(ctx, roundconfig.ProfileConfigOptions{
@@ -93,7 +100,9 @@ func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, std
 	if err != nil {
 		return printProfilesConfigureError(req, result, err, stdout, stderr)
 	}
-	printProfilesConfigureSuccess(req, result, stdout)
+	if err := printProfilesConfigureSuccess(req, result, stdout); err != nil {
+		return printProfilesConfigureOutputError(err, stderr)
+	}
 	return exitOK
 }
 
@@ -104,6 +113,7 @@ func parseProfilesConfigureCommand(args []string) (profilesConfigureRequest, err
 	fs.StringVar(&req.file, "file", "", "Strict profile fragment YAML")
 	fs.BoolVar(&req.dryRun, "dry-run", false, "Validate and render without writing")
 	fs.BoolVar(&req.json, "json", false, "Print roundfix/profiles-configure/v1 JSON")
+	fs.BoolVar(&req.yes, "yes", false, "Write without confirmation after validation")
 	if err := fs.Parse(args); err != nil {
 		return req, validationError{message: err.Error()}
 	}
@@ -292,20 +302,25 @@ func profilesConfigurePreview(result roundconfig.ProfileConfigResult) string {
 	return builder.String()
 }
 
-func printProfilesConfigureSuccess(req profilesConfigureRequest, result roundconfig.ProfileConfigResult, stdout io.Writer) {
+func printProfilesConfigureSuccess(req profilesConfigureRequest, result roundconfig.ProfileConfigResult, stdout io.Writer) error {
 	if req.json {
-		_ = json.NewEncoder(stdout).Encode(profilesConfigureResponseForResult(result, ""))
-		return
+		return json.NewEncoder(stdout).Encode(profilesConfigureResponseForResult(result, ""))
 	}
 	if req.dryRun {
 		fmt.Fprintf(stdout, "Profile configuration dry run: %s\n", result.Path)
-		return
+		return nil
 	}
 	if result.Changed {
 		fmt.Fprintf(stdout, "Profile configuration written: %s\n", result.Path)
-		return
+		return nil
 	}
 	fmt.Fprintf(stdout, "Profile configuration unchanged: %s\n", result.Path)
+	return nil
+}
+
+func printProfilesConfigureOutputError(err error, stderr io.Writer) int {
+	printProfilesFailure(fmt.Errorf("encode profiles configure JSON: %w", err), stderr)
+	return exitRunFailed
 }
 
 func printProfilesConfigureError(req profilesConfigureRequest, result roundconfig.ProfileConfigResult, err error, stdout, stderr io.Writer) int {

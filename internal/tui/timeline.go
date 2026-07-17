@@ -43,10 +43,7 @@ func timelineText(event runevent.RunEvent) string {
 	if update, ok := agent.StreamUpdateFromEvent(event); ok {
 		return agent.ConsoleText(update)
 	}
-	if record, ok, err := runevent.ProjectSelectionLifecycle(event); ok {
-		if err != nil {
-			return ""
-		}
+	if record, ok, err := runevent.ProjectSelectionLifecycle(event); ok && err == nil {
 		line := runevent.SelectionLifecycleLine(record)
 		if line == "" {
 			return ""

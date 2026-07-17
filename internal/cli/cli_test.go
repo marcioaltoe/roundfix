@@ -724,6 +724,67 @@ profiles:
 	assertNoRunDatabase(t, homeDir)
 }
 
+func TestProfilesConfigureYesSkipsConfirmation(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	fragmentPath := filepath.Join(repoDir, "backend-profile.yml")
+	mustWrite(t, fragmentPath, `
+backend:
+  preferred:
+    runtime: codex
+    model: noninteractive-backend
+    reasoning_effort: high
+  fallbacks:
+    - runtime: codex
+      model: noninteractive-fallback
+      reasoning_effort: max
+`)
+	withProfilesConfigureConfirm(t, func(context.Context, io.Writer, string) (bool, error) {
+		t.Fatal("--yes must not ask for write confirmation")
+		return false, nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--yes", "--json"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("profiles configure --yes exit = %d stderr=%q", code, stderr.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr with --yes, got %q", stderr.String())
+	}
+	response := decodeProfilesConfigureResponse(t, stdout.String())
+	if !response.Changed {
+		t.Fatalf("expected --yes write to report changed, got %+v", response)
+	}
+	loaded, err := roundconfig.Load(roundconfig.LoadOptions{HomeDir: homeDir, WorkDir: repoDir})
+	if err != nil {
+		t.Fatalf("load config after --yes configure: %v", err)
+	}
+	resolved, err := roundconfig.ResolveProfile(loaded.Config, roundconfig.CategoryBackend, nil)
+	if err != nil {
+		t.Fatalf("resolve backend after --yes configure: %v", err)
+	}
+	if resolved.Profile.Preferred.Model != "noninteractive-backend" {
+		t.Fatalf("preferred model = %q, want noninteractive-backend", resolved.Profile.Preferred.Model)
+	}
+}
+
+func TestProfilesJSONSuccessReturnsEncoderFailures(t *testing.T) {
+	writeErr := errors.New("write failed")
+	writer := failingWriter{err: writeErr}
+
+	configureErr := printProfilesConfigureSuccess(profilesConfigureRequest{json: true}, roundconfig.ProfileConfigResult{Scope: "project"}, writer)
+	if !errors.Is(configureErr, writeErr) {
+		t.Fatalf("profiles configure encode error = %v, want %v", configureErr, writeErr)
+	}
+
+	validateErr := printProfilesValidateSuccess(profilesValidateRequest{json: true}, profileProofResult{}, writer)
+	if !errors.Is(validateErr, writeErr) {
+		t.Fatalf("profiles validate encode error = %v, want %v", validateErr, writeErr)
+	}
+}
+
 func TestProfilesConfigureDryRunAndFailedConfigurationLeaveBytesUnchanged(t *testing.T) {
 	_, repoDir := withCLIWorkspace(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
@@ -5405,8 +5466,8 @@ func TestRunResolveClosesAgentSessionForTerminalOutcomes(t *testing.T) {
 		{
 			name:      "clean",
 			inner:     &fakeAgentRunner{},
-			wantCode:  0,
-			wantState: store.StateClean,
+			wantCode:  1,
+			wantState: store.StateFailed,
 			closeErr:  errors.New("close failed"),
 		},
 		{
@@ -8281,6 +8342,14 @@ func (writer orderedStreamWriter) Write(data []byte) (int, error) {
 		text:   string(data),
 	})
 	return len(data), nil
+}
+
+type failingWriter struct {
+	err error
+}
+
+func (writer failingWriter) Write([]byte) (int, error) {
+	return 0, writer.err
 }
 
 func publishFakeAgentOutput(ctx context.Context, sink runevent.Sink, req agent.ExecuteRequest, text string) error {

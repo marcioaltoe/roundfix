@@ -882,6 +882,28 @@ func TestParseRoundfixSessionsFiltersAndExtractsRunIDs(t *testing.T) {
 	}
 }
 
+func TestParseRoundfixSessionNameRoundTripsGeneratedSessionRefs(t *testing.T) {
+	runID := "run_20260717T132519Z_5fc633528e1ff1c5"
+	tests := []SessionRef{
+		SessionRefForQA(runID, "/repo"),
+		SessionRefForReview(runID, 0, "/repo"),
+		SessionRefForReview(runID, 7, "/repo"),
+	}
+
+	for _, ref := range tests {
+		t.Run(ref.Name, func(t *testing.T) {
+			got, ok := ParseRoundfixSessionName(ref.Name)
+			if !ok {
+				t.Fatalf("ParseRoundfixSessionName(%q) did not recognize generated name", ref.Name)
+			}
+			want := RoundfixSession{Name: ref.Name, RunID: runID}
+			if !reflect.DeepEqual(got, want) {
+				t.Fatalf("unexpected session\nwant: %#v\ngot:  %#v", want, got)
+			}
+		})
+	}
+}
+
 func TestACPXListRoundfixSessionsInvokesSessionsList(t *testing.T) {
 	harness := newFakeACPXHarness(t)
 	t.Setenv(fakeACPXStdoutBy, mustJSONForTest(t, map[string]string{
