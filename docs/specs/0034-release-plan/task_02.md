@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0034-release-plan
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -24,20 +24,20 @@ Turn normalized committed changes into conservative, reproducible Release Plan e
 
 ## Subtasks
 
-- [ ] Parse the supported Conventional Commit evidence subset.
-- [ ] Detect breaking markers in subjects and footers.
-- [ ] Encode the maintenance-only changed-path boundary.
-- [ ] Aggregate mixed commit evidence by maximum impact.
-- [ ] Validate manual impact and reason inputs.
-- [ ] Add ambiguous, maintenance-only, mixed-order, and downgrade-rejection tests.
+- [x] Parse the supported Conventional Commit evidence subset.
+- [x] Detect breaking markers in subjects and footers.
+- [x] Encode the maintenance-only changed-path boundary.
+- [x] Aggregate mixed commit evidence by maximum impact.
+- [x] Validate manual impact and reason inputs.
+- [x] Add ambiguous, maintenance-only, mixed-order, and downgrade-rejection tests.
 
 ## Acceptance Criteria
 
-- [ ] Breaking evidence outranks compatible features, features outrank fixes, and fixes outrank no-release evidence in every commit order.
-- [ ] Documentation-, test-, fixture-, planning-, and CI-only changes qualify for `none` only within the documented boundary.
-- [ ] Ambiguous shipped-surface changes produce `manual_classification_required` and identify the blocking commits.
-- [ ] A valid manual classification records its reason, participates in maximum-impact selection, and does not imply version approval.
-- [ ] Manual impact below an automatic minimum is rejected without producing a partial plan.
+- [x] Breaking evidence outranks compatible features, features outrank fixes, and fixes outrank no-release evidence in every commit order.
+- [x] Documentation-, test-, fixture-, planning-, and CI-only changes qualify for `none` only within the documented boundary.
+- [x] Ambiguous shipped-surface changes produce `manual_classification_required` and identify the blocking commits.
+- [x] A valid manual classification records its reason, participates in maximum-impact selection, and does not imply version approval.
+- [x] Manual impact below an automatic minimum is rejected without producing a partial plan.
 
 ## Context
 
@@ -55,3 +55,25 @@ Turn normalized committed changes into conservative, reproducible Release Plan e
 - `_prd.md` → Goals 1-3; User Stories 1, 3, and 5; Core Features 2-6; Success Metrics.
 - `_techspec.md` → Data Models: ChangeEvidence; API Contracts: automatic classification and maintenance-only boundary; Build Order 2.
 - ADR-0048 → Release planning is read-only and confirmation-gated.
+
+## Result
+
+Implemented commit classification in `internal/releaseplan` without Git, repository, configuration, or external-service access. The classifier now parses the supported Conventional Commit subset, detects subject and footer breaking markers, applies the documented maintenance-only path boundary, retains evidence for every commit, aggregates maximum impact independent of commit order, and validates manual classifications through typed errors.
+
+Verification:
+
+- `go test ./internal/releaseplan -run 'Test(ClassifyCommit|ClassifyChanges|MaintenanceOnly|ValidateManualImpact)' -count=1` — passed after implementation: 47 focused classifier cases.
+- `go test ./internal/releaseplan -count=1` — passed after implementation: 93 package cases.
+- `make verify` — passed after implementation: Go tests, Python skill tests, `roundfix skills check`, and build all completed.
+
+Acceptance evidence:
+
+- Breaking, feature, fix/perf, and no-release ordering is covered in `TestClassifyChanges`.
+- Documentation planning paths, tests, fixtures, and non-release CI boundaries are covered in `TestMaintenanceOnly`.
+- Ambiguous shipped-surface commits return `manual_classification_required` and blocking commit SHAs in `TestClassifyChanges/ambiguous_shipped_surface_requires_manual_classification`.
+- Manual classifications record the reason, participate in max-impact selection, and do not set approval in `TestClassifyChanges/valid_manual_classification_resolves_ambiguity`.
+- Manual downgrades and invalid manual input return typed errors with a zero result in `TestValidateManualImpact` and `TestClassifyChangesRejectsInvalidManualImpactWithoutPartialResult`.
+
+Follow-ups:
+
+- Git range loading, proposal construction from classification output, CLI exit-code mapping, and renderer behavior remain in later tasks.

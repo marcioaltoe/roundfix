@@ -61,6 +61,7 @@ type Classification struct {
 	Breaking                     bool
 	ManualReason                 string
 	ManualClassificationRequired bool
+	BlockingCommits              []string
 }
 
 // ChangeEvidence carries the per-commit evidence used by classifiers and
@@ -72,6 +73,31 @@ type ChangeEvidence struct {
 	Breaking                       bool
 	AutomaticImpact                Impact
 	CrossesMaintenanceOnlyBoundary bool
+}
+
+// Commit is one normalized committed change supplied by a Git adapter. The
+// Release Plan domain never reads Git directly.
+type Commit struct {
+	SHA          string
+	Subject      string
+	Body         string
+	ChangedPaths []string
+}
+
+// ClassifyRequest is the normalized input for conservative release-impact
+// classification.
+type ClassifyRequest struct {
+	Commits      []Commit
+	ManualImpact Impact
+	ManualReason string
+}
+
+// ClassificationResult carries the aggregate classification and all commit
+// evidence used to derive it.
+type ClassificationResult struct {
+	State          State
+	Classification Classification
+	Changes        []ChangeEvidence
 }
 
 // Approval captures the human approval boundary for non-patch increments.
