@@ -160,3 +160,20 @@ que continuava registrado como `IntegrationPending`.
   binário antes do watch.
 - O PR não recebeu commits ou pushes de correção quando nenhum Review Issue
   existia.
+
+## Planned resolution
+
+- Spec [0037 Terminal outcome integrity](../specs/0037-terminal-outcome-integrity/_prd.md)
+  owns findings 4–6: stop-aware waits, compare-and-set completion, owner exit
+  proof, and registered Agent Session cleanup.
+- Spec
+  [0038 Terminal Run Worktree reconciliation](../specs/0038-terminal-run-worktree-reconciliation/_prd.md)
+  owns finding 8: proof-based Integration Pending reconciliation and retained
+  Run Worktree cleanup.
+- Spec
+  [0039 Review Source evidence and Detached Run outcomes](../specs/0039-review-source-evidence-and-detached-outcomes/_prd.md)
+  owns findings 1–3 and 7: observed evidence, Review Skipped, wait projection,
+  and skipped/failed-fetch artifact behavior.
+- Spec [0036 Doctor skill readiness](../specs/0036-doctor-skill-readiness/_prd.md)
+  owns finding 9 through Repository Skill Set readiness and actionable drift
+  reporting.

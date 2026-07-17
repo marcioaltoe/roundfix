@@ -99,3 +99,12 @@ Environment:
 - Standard Git ancestry checks proved that cleanup would not discard unique commits.
 - `git branch -d` refused unsafe branch deletion by default and completed only after ancestry was
   established.
+
+## Planned resolution
+
+Spec [0038 Terminal Run Worktree reconciliation](../specs/0038-terminal-run-worktree-reconciliation/_prd.md)
+owns all three findings: proof-based classification, retained-worktree
+visibility in Run discovery, and the dry-run-first Reconcile Command. It
+depends on spec
+[0037 Terminal outcome integrity](../specs/0037-terminal-outcome-integrity/_prd.md)
+for guarded Integration Pending reconciliation.

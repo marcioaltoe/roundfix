@@ -154,3 +154,19 @@ Environment:
   Issues without manual GitHub mutation.
 - The terminal state was `Failed`, not `Clean`; the Run outcome itself did not hide the broken
   Review Source request.
+
+## Planned resolution
+
+- Spec [0037 Terminal outcome integrity](../specs/0037-terminal-outcome-integrity/_prd.md)
+  owns finding 4: registered Agent Session cleanup, primary-before-secondary
+  diagnostics, and winner-only terminal completion.
+- Spec
+  [0039 Review Source evidence and Detached Run outcomes](../specs/0039-review-source-evidence-and-detached-outcomes/_prd.md)
+  owns findings 1–3 and 5–7: the Supervisor monitor contract, actionable
+  notification context and receipts, transient retry, unknown issue counts,
+  approval evidence, and artifact-only evidence inheritance.
+
+All seven items remain pending until the corresponding Spec Tasks and QA
+pass. The existing Run Event Stream partially addresses Supervisor
+subscription, but successful notification receipts and actionable terminal
+context are not implemented yet.

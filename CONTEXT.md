@@ -24,6 +24,10 @@ _Avoid_: Open run, live run
 A user's explicit request to end an Active Run before it reaches another terminal outcome.
 _Avoid_: Pause, retry, failure
 
+**Force Stop**:
+The Stop Command mode that cancels registered Agent Sessions, terminates the recorded owning process, and completes the Run as Stopped only after owner exit is proven.
+_Avoid_: Lock release, best-effort stop, orphan reclamation
+
 **PR Head Branch**:
 The branch on GitHub that supplies the pull request's head commits.
 _Avoid_: Local branch, checkout branch
@@ -43,6 +47,10 @@ _Avoid_: Provider, backend, integration
 **Review Source**:
 The external review system that produces feedback for an Open Pull Request.
 _Avoid_: Review Provider, Agent, ACP Runtime
+
+**Review Source Evidence**:
+A head-bound signal observed from the Review Source that states whether review is pending, running, completed, verified, skipped, or failed and records which provider signal supports that classification.
+_Avoid_: Check presence, generic approval, inferred clean state
 
 **Spec**:
 One feature's planning artifact set produced by the spec workflow: PRD, Task Graph, Task files, and QA evidence.
@@ -125,7 +133,7 @@ The persistent acpx-backed session through which one Run drives its Agent across
 _Avoid_: ACP session, chat, conversation, thread
 
 **Merge-Ready**:
-The state where the pull request's Review Source status check on the pushed head commit reports success with no new Review Issues, letting a watch Run end Clean.
+The state where accepted Review Source Evidence verifies the pushed head commit, or its proven Roundfix artifact-only descendant, with no new Review Issues, letting a watch Run end Clean.
 _Avoid_: mergeable, green check, approved
 
 **Wave**:
@@ -137,7 +145,7 @@ The ephemeral git worktree one concurrently executing Task runs in — created f
 _Avoid_: Run Worktree, sandbox, scratch dir
 
 **Detached Run**:
-A Run started with the detach flag: roundfix re-executes itself as a session leader independent of the caller, reports the run id, and is followed through Attach and ended through the Stop Command.
+A Run started with the detach flag: roundfix re-executes itself as a session leader independent of the caller, reports the Run ID, is followed by humans through Attach or by Supervisors through the Run Event Stream, and is ended through the Stop Command.
 _Avoid_: Background job, nohup run, daemon
 
 **Run Worktree**:
@@ -147,6 +155,10 @@ _Avoid_: Sandbox, scratch dir, user checkout
 **Run Branch**:
 The named branch (`roundfix/run-<id>`) that carries a spec Run's commits inside its Run Worktree until integration moves them to the user's branch. Review Runs use the user's checkout branch directly; older pending Run Branch work is handled by Branch Integrity Preflight before review work starts.
 _Avoid_: Temp branch, detached HEAD, feature branch
+
+**Run Worktree Reconciliation**:
+The proof-based classification of a terminal spec Run's retained Run Worktree and Run Branch as `safe`, `unintegrated`, `dirty`, `unknown`, or `released`, followed by optional cleanup only for `safe` work.
+_Avoid_: GC, force cleanup, manual branch deletion
 
 **Integration Pending**:
 A terminal spec Run outcome where the spec Run's work completed but its commits could not be fast-forwarded onto the user's branch (local changes overlap or the branch diverged); the commits stay on the Run Branch and the report names the integration command. Review Runs do not end Integration Pending.
@@ -169,8 +181,12 @@ A terminal Run outcome where the cycle completed with nothing unresolved remaini
 _Avoid_: Success, done, green
 
 **Clean Unverified**:
-A terminal review Run outcome where the cycle completed with nothing unresolved and the Final Push succeeded, but the Review Source check for the pushed head never appeared within the grace period, so Merge-Ready was not confirmed. Distinct from Clean by outcome and exit code `3`.
+A terminal review Run outcome where the cycle completed with nothing unresolved and the Final Push succeeded, but accepted Review Source Evidence for the pushed head never appeared within the grace period, so Merge-Ready was not confirmed. Distinct from Clean by outcome and exit code `3`; an explicit skipped review ends Review Skipped instead.
 _Avoid_: Clean, failure, timeout
+
+**Review Skipped**:
+A terminal review Run outcome where the Review Source explicitly reports that it did not review the expected head. It is never Merge-Ready, carries the source-reported reason and next action, and uses a non-zero exit code.
+_Avoid_: Clean, Clean Unverified, zero Review Issues
 
 **Run Budget**:
 A safeguard that stops a Run before it can continue indefinitely and indirectly consume unbounded resources.
@@ -213,6 +229,10 @@ _Avoid_: Workspace, cache, output folder
 **Console Log**:
 The compact caller-visible text record of a Detached Run's progress. It summarizes Agent file reads and edits while the Run Event Journal retains their lossless payloads.
 _Avoid_: Agent log, Run Event Journal, audit log
+
+**Run Outcome Notification**:
+A best-effort terminal notice sent through the configured command or native desktop route, carrying the Run outcome and actionable context while its delivery attempt is recorded separately from the outcome.
+_Avoid_: Run Event Stream, guaranteed delivery, terminal outcome
 
 **Compatible Artifacts**:
 Downloaded markdown artifacts that match the Head Repository, PR Head Branch, and pull request number being resolved.
@@ -281,6 +301,10 @@ _Avoid_: Run command, execute command, spec command
 **Settle Command**:
 The local recovery command that re-runs one failed Task's Verification commands in the current repository. On pass, it settles the Task `completed`, stages all current worktree changes plus the task file, and creates the standard Task commit; it creates no Run and never pushes.
 _Avoid_: Retry command, auto-settle, task fix command
+
+**Reconcile Command**:
+The support command that inspects terminal spec Run Worktrees and Run Branches, reports their Run Worktree Reconciliation state, and removes only `safe` work when explicitly invoked with `--apply`.
+_Avoid_: GC Command, Settle Command, automatic integration
 
 **Reprocess Command**:
 An explicit future command for revisiting selected Terminal Review Issues.
