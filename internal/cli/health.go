@@ -18,12 +18,12 @@ const (
 	CheckStatusSkipped CheckStatus = "skipped"
 	CheckStatusFailed  CheckStatus = "failed"
 
-	HealthCheckNode    = "node"
-	HealthCheckACPX    = "acpx"
-	HealthCheckAdapter = "adapter"
-	HealthCheckAgent   = "agent"
-	HealthCheckModel   = "model"
-	HealthCheckCodex   = "codex"
+	HealthCheckNode     = "node"
+	HealthCheckACPX     = "acpx"
+	HealthCheckAdapter  = "adapter"
+	HealthCheckAgent    = "agent"
+	HealthCheckProfiles = "profiles"
+	HealthCheckCodex    = "codex"
 )
 
 type CheckResult struct {
