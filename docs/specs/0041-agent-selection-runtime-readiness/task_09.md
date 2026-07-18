@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0041-agent-selection-runtime-readiness
-status: pending
+status: completed
 type: docs
 complexity: medium
 ---
@@ -36,30 +36,30 @@ remain synchronized and externally managed skills must remain untouched.
 
 ## Subtasks
 
-- [ ] Update canonical glossary and agent guidance.
-- [ ] Update configuration, usage, command, and Setup/Doctor documentation.
-- [ ] Replace bare-agent examples with profile-led or complete-override forms.
-- [ ] Add release guidance for the override contract correction.
-- [ ] Update the canonical Roundfix Skill and OpenAI manifest.
-- [ ] Regenerate and verify the embedded Roundfix Skill.
-- [ ] Verify links, terminology, command examples, and ownership boundaries.
+- [x] Update canonical glossary and agent guidance.
+- [x] Update configuration, usage, command, and Setup/Doctor documentation.
+- [x] Replace bare-agent examples with profile-led or complete-override forms.
+- [x] Add release guidance for the override contract correction.
+- [x] Update the canonical Roundfix Skill and OpenAI manifest.
+- [x] Regenerate and verify the embedded Roundfix Skill.
+- [x] Verify links, terminology, command examples, and ownership boundaries.
 
 ## Acceptance Criteria
 
-- [ ] Supported docs present the same defaults, adapter identity contract,
+- [x] Supported docs present the same defaults, adapter identity contract,
       capability proof, fallback, and no-mutation behavior as the CLI.
-- [ ] Every canonical Agent-starting example either omits all selection flags
+- [x] Every canonical Agent-starting example either omits all selection flags
       or provides runtime, model, and reasoning effort together.
-- [ ] Users can distinguish valid model identifiers, advisory rankings, and
+- [x] Users can distinguish valid model identifiers, advisory rankings, and
       proven operational availability without reading implementation code.
-- [ ] Setup and Doctor guidance name the official adapter recovery path and do
+- [x] Setup and Doctor guidance name the official adapter recovery path and do
       not recommend model-managed reasoning for rejected explicit `high`.
-- [ ] Release guidance identifies partial overrides as rejected usage and gives
+- [x] Release guidance identifies partial overrides as rejected usage and gives
       both supported invocation forms.
-- [ ] Canonical and embedded Roundfix Skill copies are synchronized and shipped
+- [x] Canonical and embedded Roundfix Skill copies are synchronized and shipped
       skill contract tests enforce the new wording.
-- [ ] No externally managed skill receives an authorial edit.
-- [ ] Spec 0036 remains ordered after profile-aware Doctor readiness and every
+- [x] No externally managed skill receives an authorial edit.
+- [x] Spec 0036 remains ordered after profile-aware Doctor readiness and every
       durable evidence link resolves.
 
 ## Context
@@ -91,3 +91,59 @@ remain synchronized and externally managed skills must remain untouched.
 - `references/validation.md` → Secondbrain, primary-source, and live validation
   evidence.
 
+## Result
+
+Published one Agent Selection readiness contract across the glossary, command
+help, user guides, release guidance, agent guidance, and the shipped Roundfix
+Skill surfaces.
+
+Acceptance evidence:
+
+- `CONTEXT.md`, the configuration and usage guides, and command help now use
+  the accepted Adapter Readiness, Exact Agent Selection Proof, and Agent
+  Selection Profile Readiness vocabulary. They document Sol/high and
+  GPT-5.5/xhigh generated defaults, official model validity, advisory ranking,
+  exact environment proof, fallback, and fail-before-mutation behavior.
+- Documentation-contract tests scan canonical Agent-starting examples and
+  reject partial selections. Supported examples now either use the configured
+  profile with no selection flags or pass `--agent`, `--model`, and
+  `--reasoning-effort` together.
+- Setup, `profiles configure`, `profiles validate`, and Doctor guidance now
+  identifies `@agentclientprotocol/codex-acp` 1.1.4 or newer as the official
+  Codex adapter recovery path, diagnoses the legacy override, requires
+  migration authorization, and preserves rejected explicit `high` rather than
+  recommending model-managed reasoning.
+- The release runbook records partial overrides as intentionally rejected CLI
+  usage, includes both supported invocation forms, and states the exit-2,
+  pre-mutation behavior.
+- The canonical Roundfix Skill and OpenAI manifest were regenerated into their
+  embedded copies. Shipped-skill requirements now enforce the adapter,
+  profile-readiness, and all-or-none wording. The related repo-owned
+  setup-context snapshot was refreshed; no externally managed skill was
+  authorially edited.
+- ADR-0055, the Spec 0041 validation record, the profile-preflight finding, and
+  Spec 0036 all resolve. The guidance keeps Spec 0036 ordered after
+  profile-aware Doctor readiness.
+
+Verification evidence:
+
+- `rtk go test ./internal/cli -run 'Test(CommandUsage|DocumentationContract|RoundfixSkill)' -count=1` passed.
+- `rtk go test ./skills -count=1` passed.
+- `rtk make skills-sync-check` passed.
+- `rtk go run -buildvcs=false ./cmd/roundfix skills check` passed all 14 shipped
+  skill contracts.
+- `rtk make setup-context-check` passed 79 tests and both asset-catalog checks.
+- `rtk git diff --check` passed.
+- The four durable link targets were resolved from the repository.
+- Daemon verification attempt 1 exposed a Doctor help compatibility regression:
+  the established `codex runtime hygiene` phrase had been split by a newline in
+  the raw help string. The source help text was reflowed without weakening the
+  existing assertion.
+- `rtk go test ./internal/cli -run 'TestRunCommandHelp/doctor$' -count=1`
+  reproduced the failure before the repair and passed afterward.
+- `rtk go test ./...` passed after the repair, covering the repository test
+  target that failed inside the first `rtk make verify` attempt.
+- The Daemon owns the single authoritative full Verification rerun after this
+  repair turn, as required by the task execution contract.
+
+Follow-ups: none for Task 09. Spec 0036 retains its declared later ordering.

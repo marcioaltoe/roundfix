@@ -33,6 +33,25 @@ The plan's state controls what a generic release request authorizes:
 After the plan's required decision is satisfied, keep using the tag-triggered
 publication workflow below.
 
+## Agent Selection CLI contract correction
+
+Release notes for this change must identify a partial Agent Selection override
+as rejected usage. `resolve`, `watch`, and `implement` now accept only these two
+forms:
+
+- omit all three selection flags to use Agent Selection Profiles;
+- provide `--agent`, `--model`, and `--reasoning-effort` together for one complete override.
+
+For example:
+
+```bash
+roundfix implement --spec <slug>
+roundfix implement --spec <slug> --agent codex --model gpt-5.6-sol --reasoning-effort high
+```
+
+A bare `--agent`, or any other proper subset, is rejected with exit `2` before configuration, proof, or Run mutation. This is an intentional public CLI correction, not a
+runtime regression.
+
 ## Version agreement
 
 The pushed tag is the single source of truth for the release version. The

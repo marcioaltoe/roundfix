@@ -13,7 +13,7 @@ runtime routing, and how the Supervisor authors Specs.
 | Role | Model | Job |
 | --- | --- | --- |
 | Supervisor | Supervising Claude Code session | Author Specs, launch and monitor Runs, integrate outcomes, run `qa-gate`, archive, boundary commits, route work to a runtime |
-| Default implementer | Codex `gpt-5.5` with `xhigh` Default Reasoning Effort | Every Spec Task and Review Issue Batch not routed below |
+| Default implementer | Codex `gpt-5.6-sol` with `high` Default Reasoning Effort; `gpt-5.5`/`xhigh` fallback | Every Spec Task and Review Issue Batch not routed below |
 | Design implementer | Claude with `opus` at `high` or `xhigh` Default Reasoning Effort | Tasks dominated by design, UI, UX, or frontend work |
 
 ## The Supervisor does not implement
@@ -62,22 +62,24 @@ The Supervisor authors every Spec through the pipeline skills (`write-idea`, `wr
   sequence across pending Specs. New Specs slot into that queue when approved; the Supervisor
   advances it one Run at a time and re-plans the order at each Run boundary.
 
-## Default implementer: Codex gpt-5.5 xhigh
+## Default implementer: Codex Sol/high
 
 ```bash
-roundfix implement --spec <slug> --agent codex --qa --detach
+roundfix implement --spec <slug> --qa --detach
 ```
 
-Review-surface Runs (`resolve`, `watch`) use the same default runtime. Roundfix owns the
-effective Agent Model and Default Reasoning Effort:
+Review-surface Runs (`resolve`, `watch`) use the same profile-led selection. Roundfix owns the
+effective Agent Selection Profiles:
 
-1. The repo's Roundfix Project Config pins `defaults.agent: codex`.
-2. The repo's Roundfix Project Config pins `runtimes.codex.model: gpt-5.5` and
-   `runtimes.codex.reasoning_effort: xhigh`.
-3. acpx (`~/.acpx/config.json`) maps the `codex` agent to the local `codex-acp` adapter.
+1. The repo's Roundfix Project Config pins `profiles.general`, `profiles.backend`,
+   `profiles.qa`, and `profiles.review` to the Sol/high Preferred Selection.
+2. Each Codex-led profile keeps GPT-5.5/xhigh as its ordered Fallback Chain.
+3. Roundfix proves every exact tuple before creating a Run.
+4. The effective Codex adapter proves the official `@agentclientprotocol/codex-acp`
+   lineage and supported version.
 
-Do not set `defaults.model`; Roundfix ignores it and prints a deprecation warning. Use
-`--model` and `--reasoning-effort` together only for a one-Run exception.
+For a one-Run exception, provide `--agent`, `--model`, and `--reasoning-effort`
+together. A partial override is rejected.
 
 ## Design implementer: Claude Code with Opus 4.8
 
@@ -94,8 +96,8 @@ roundfix implement --spec <slug> --agent claude --model opus --reasoning-effort 
 
 The `claude` runtime launches through `claude-agent-acp`. Roundfix forwards both the Agent Model
 and Default Reasoning Effort. Use the one-Run flags above for a design-heavy exception, or pin
-`runtimes.claude.model` and `runtimes.claude.reasoning_effort` in Project Config when a whole
-repository should use that route.
+the complete `profiles.frontend` Preferred Selection and Fallback Chain in Project Config when
+a whole repository should use that route.
 
 ## Routing rules
 
@@ -103,7 +105,8 @@ repository should use that route.
   design/UI work either runs on the default Codex runtime or is sliced at `write-tasks` time so
   the design surface gets its own Spec.
 - Work delegated outside a Run (a one-off fix handed to a coding CLI) follows the same routing:
-  Codex `gpt-5.5 xhigh` by default, Claude Code Opus 4.8 for design/UI/UX/frontend.
+  Codex Sol/high with GPT-5.5/xhigh fallback by default, Claude Code Opus 4.8 for
+  design/UI/UX/frontend.
 - When in doubt, use Codex. The Claude route exists for work where design quality is the point,
   not as a general alternative.
 

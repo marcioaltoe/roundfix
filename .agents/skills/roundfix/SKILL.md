@@ -23,27 +23,24 @@ Supervisor or script needs JSONL progress for one explicit Run.
 Roundfix drives ACP Runtimes through acpx `0.12.0`. Node.js 22.13 or
 newer with npm/npx is a prerequisite. Prefer the Setup Command after
 installing Roundfix; it verifies Node, installs the pinned acpx on
-confirmation or `--yes`, checks the configured Agent adapter binary, probes the
-configured Agent, offers local adapter overrides, and offers User Config and
-Project Config creation. Review work uses owned review Agent Sessions, Spec
+confirmation or `--yes`, proves the effective adapter identity, proves the
+generated Agent Selection Profiles, offers authorized local adapter migration,
+and offers User Config and Project Config creation. Review work uses owned review Agent Sessions, Spec
 Tasks use per-Task Agent Sessions named `roundfix-<run-id>-<task_id>` in their
 Task Worktrees, and QA uses its own Agent Session after Tasks settle.
 
 Use the Doctor Command, `roundfix doctor`, to diagnose Run readiness without
 installing dependencies, writing config, or changing files. Doctor runs the
-shared Node.js, pinned acpx, configured Agent adapter, configured Agent probe,
-the effective Agent Model check, and codex runtime hygiene checks and prints
-one line per check with status `ok`, `failed`, or `skipped`. The adapter check
-resolves the binary acpx will spawn from `~/.acpx/config.json` or the built-in
-runtime default and fails with
-`<adapter> is required but was not found on PATH; install it with: <command>`.
-The configured Agent probe resolves `defaults.agent` plus the runtime's
-effective `runtimes.<agent>.model` and `runtimes.<agent>.reasoning_effort`, then
-validates that selection from the repository Git root when one is available.
-The `model:` line reports whether that runtime accepted the effective Agent
-Model; a not-advertised failure includes the advertised Agent Models and
-`next: <action>` recovery guidance. Failed checks include `next: <action>` when
-Roundfix knows the remediation.
+shared Node.js, pinned acpx, effective adapter, required Agent Selection
+Profiles, and codex runtime hygiene checks and prints one line per check with
+status `ok`, `failed`, or `skipped`. Adapter Readiness requires the effective
+Codex command to prove official `@agentclientprotocol/codex-acp` lineage at
+version `1.1.4` or newer; executable presence and a matching name are not
+proof. The `profiles:` line is the selection authority: it exact-proves every
+distinct Preferred Selection and fallback through disposable ACP Sessions and
+reports affected category references plus one deterministic next action.
+Doctor has no separate legacy `agent:` or `model:` authority. Failed checks
+include `next: <action>` when Roundfix knows the remediation.
 On macOS, the codex hygiene check resolves `CODEX_PATH` first and then `codex`
 on `PATH`, inspects the `com.apple.quarantine` attribute (the real XProtect
 trigger), and verifies the binary's code signature (not `spctl --assess`, which
@@ -80,46 +77,53 @@ and committing.
 ## Setup, doctor, and upgrade
 
 Use `roundfix setup [--yes] [--no-input]` to take a machine from fresh to
-Run-ready. It checks Node.js, pinned acpx, the configured Agent probe, acpx
-local adapter overrides, User Config, and Project Config. The Agent probe
-includes the same adapter-binary preflight used by Runs, so a missing adapter is
-reported before any disposable Agent Session is created. Each check prints one
+Run-ready. It checks Node.js and pinned acpx, proves Adapter Readiness, builds
+the generated Agent Selection Profiles in memory, exact-proves every distinct
+tuple, and only then offers acpx local adapter overrides, User Config, and
+Project Config writes. Each check prints one
 deterministic report line with status `ok`, `installed`, `skipped`,
 `offered: declined`, or `failed`. Tested report lines include:
-
-The Agent probe uses the effective Agent Model and Default Reasoning Effort
-from `runtimes.<agent>` and validates the same selection a later Run would use.
 
 ```text
 node: ok
 acpx: installed
-agent probe: ok
+adapter: ok
+profile readiness: passed
 acpx agents override: installed
 User Config: installed
 Project Config: installed
 ```
 
 `--yes` accepts every offered install or file change. `--no-input` skips
-offers instead of prompting; for a fresh environment that produces report lines
-such as `acpx: skipped`, `agent probe: skipped`, and `Project Config: skipped`.
-When acpx is missing or mismatched, setup offers `npm install -g acpx@0.12.0`.
+offers instead of prompting and writes nothing. When acpx is missing or
+mismatched, setup offers `npm install -g acpx@0.12.0`.
+
+The supported Codex adapter is official
+`@agentclientprotocol/codex-acp` version `1.1.4` or newer. When Setup needs an
+explicit command, it proposes
+`npx -y @agentclientprotocol/codex-acp@1.1.4`. A bare `codex-acp` override can
+resolve to legacy `@zed-industries/codex-acp`; Setup diagnoses that lineage,
+proves the replacement, and asks before migration. The official install action
+is `npm install -g @agentclientprotocol/codex-acp@1.1.4`. Decline,
+`--no-input`, failed exact proof, or a later write failure preserves every
+unauthorized target. A rejected Sol/high proof never becomes an offer to use
+model-managed reasoning.
 
 Use `roundfix doctor` when you only need a read-only readiness report. It runs
-the Node.js, pinned acpx, configured adapter, configured Agent probe, effective
-Agent Model check, and codex runtime hygiene checks and exits nonzero if any
-check fails. Adapter failures print the adapter binary name and
-`next: <install command>`. A rejected Agent Model prints
-`model: failed (...)` with the advertised list and the same `next:` action used
-by Run Preflight Validation: update the ACP Runtime or adapter, choose an
-advertised Agent Model, or pass a one-Run model override. The command has no
-flags.
+the Node.js, pinned acpx, effective adapter, required Agent Selection Profile,
+and codex runtime hygiene checks and exits nonzero if any check fails. Adapter
+failures name the effective command, package classification, and official
+install action. Profile failure names the exact runtime/model/reasoning tuple,
+every affected category, bounded adapter evidence, and the next
+`roundfix profiles configure` or `roundfix profiles validate` action. A
+rejected explicit `high` does not recommend model-managed reasoning. The
+command has no flags and mutates nothing.
 
 ```text
 node: ok
 acpx: ok
-adapter: ok (codex-acp)
-agent: ok (codex)
-model: ok (gpt-5.5)
+adapter: ok (npx -y @agentclientprotocol/codex-acp@1.1.4; package=@agentclientprotocol/codex-acp; version=1.1.4)
+profiles: ok (3 distinct tuples; 10 category references)
 codex: ok
 ```
 
@@ -208,15 +212,18 @@ Required built-ins:
 
 - `general`, `backend`, `qa`, and `review`: preferred
   `codex / gpt-5.6-sol / high`, fallback
-  `codex / gpt-5.6-terra / max`.
+  `codex / gpt-5.5 / xhigh`.
 - `frontend`: preferred `claude / claude-fable-5 / medium`, fallback
   `codex / gpt-5.6-sol / high`.
 
 Optional Task Type categories `data`, `infra`, `docs`, `test`, and `chore`
 inherit the effective `general` profile when absent. If configured, they must
-be complete. Explicit custom model strings, including adapter aliases, are sent
-to the ACP Runtime verbatim; only the built-in identifiers above are official
-Roundfix examples.
+be complete. The Model Catalog recognizes `gpt-5.6-sol`, `gpt-5.6-terra`, and
+`gpt-5.6-luna` as official Codex identifiers. That validity is distinct from
+advisory recommendation rank and from operational availability: exact proof in
+the effective environment is the only readiness authority. Explicit custom
+model strings, including adapter aliases, are sent to the ACP Runtime verbatim
+for the same proof and do not enter an allowlist.
 
 Project Config and User Config use the profile structure:
 
@@ -229,8 +236,8 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: max
+        model: gpt-5.5
+        reasoning_effort: xhigh
   frontend:
     preferred:
       runtime: claude
@@ -257,11 +264,14 @@ five recommendations. Recommendations are dated `2026-07-16`, include
 benchmark/result/cost/rationale evidence, set `category_specific: false`, and
 are advisory only. They never route, prove availability, or mutate config.
 
-`profiles configure` writes only the new `profiles` schema after validation and
+`profiles configure` prepares the candidate in memory, validates it, and
+exact-proves each distinct Preferred Selection and fallback before
 confirmation. `--file` reads a strict profile fragment, Interactive Input
-collects one complete profile, `--dry-run` reports `changed: false`, and
-`--json` returns `roundfix/profiles-configure/v1`. It preserves unrelated
-config and never edits runtime-owned settings or credentials.
+collects one complete profile, `--dry-run` performs proof without writing and
+reports `changed: false`, and `--json` returns
+`roundfix/profiles-configure/v1`. Proof failure, cleanup failure, decline, and
+output failure preserve target bytes. It preserves unrelated config and never
+edits runtime-owned settings or credentials.
 
 `profiles validate` is read-only proof through disposable ACP Sessions. It
 deduplicates exact tuples, reports every category reference, closes every
@@ -269,19 +279,24 @@ disposable session on success or error, sends no prompt, creates no Run, and
 returns `roundfix/profiles-validate/v1` JSON with tuple-level status.
 
 Non-interactive Agent-starting commands (`resolve`, `watch`, and `implement`)
-accept one-Run Preferred Selection overrides:
+accept exactly two selection forms: omit every selection flag to use profiles,
+or provide a complete one-Run Preferred Selection override:
 
 ```bash
+roundfix watch --source coderabbit --pr 123 --until-clean
 roundfix resolve --pr 123 --agent codex --model gpt-5.6-sol --reasoning-effort high --no-input
 roundfix implement --spec example-spec --agent claude --model claude-fable-5 --reasoning-effort medium --qa --detach
 ```
 
-Those flags replace only the Preferred Selection for every relevant category in
-that invocation and preserve each configured Fallback Chain. If one override
-applies across multiple Task or QA categories, Roundfix emits a warning.
-Omitted flags use the effective profile. An explicit empty
-`--reasoning-effort ""` requests model-managed reasoning; an explicit empty
-`--model ""` is invalid and exits `2`.
+`--agent`, `--model`, and `--reasoning-effort` are all-or-none. A partial subset
+exits `2` before config load, adapter or profile proof, Session creation,
+worktree or artifact creation, or Run persistence. A complete override replaces
+only the Preferred Selection for every relevant category and preserves each
+configured Fallback Chain. If one override applies across multiple Task or QA
+categories, Roundfix emits a warning. An explicit empty
+`--reasoning-effort ""` counts as present and requests model-managed reasoning;
+an explicit empty `--model ""` is invalid and exits `2`. Never reinterpret a
+rejected explicit `high` as model-managed reasoning.
 
 Before an operational Run mutates state, Roundfix validates Task Types, resolves
 the relevant profiles, deduplicates exact preferred/fallback tuples, proves
@@ -303,6 +318,12 @@ Legacy `defaults.agent` and `runtimes.<runtime>.model` /
 removing `defaults.agent` and `runtimes`, writing complete profiles with
 `roundfix profiles configure --scope user|project --file <path>`, then running
 `roundfix profiles validate`.
+
+Legacy profile migration is separate from adapter migration. If the effective
+Codex command resolves to `@zed-industries/codex-acp`, use `roundfix setup` to
+diagnose it and authorize the official pinned override. Setup and Doctor use
+the same Adapter Readiness contract; neither treats a same-name executable as
+proof.
 
 Initial progress and the Live Run View show the concrete stored selection:
 
@@ -614,7 +635,7 @@ record, not a stable state API.
 3. Start the watched loop with:
 
    ```bash
-   roundfix watch --source coderabbit --pr <number> --agent <agent> [--spec <slug>] --until-clean
+   roundfix watch --source coderabbit --pr <number> [--spec <slug>] --until-clean
    ```
 
 4. Let Roundfix own Branch Integrity Preflight, Review Source waits,
@@ -634,12 +655,12 @@ Useful commands:
 
 ```bash
 roundfix fetch --source coderabbit --pr <number> [--spec <slug>]
-roundfix resolve --pr <number> --agent <agent> [--spec <slug>]
-roundfix watch --source coderabbit --pr <number> --agent <agent> [--spec <slug>] --until-clean
-roundfix resolve --pr <number> --agent <agent> [--spec <slug>] --detach
-roundfix watch --source coderabbit --pr <number> --agent <agent> [--spec <slug>] --until-clean --detach
-roundfix implement --spec <slug> --agent <agent>
-roundfix implement --spec <slug> --agent <agent> --detach
+roundfix resolve --pr <number> [--spec <slug>]
+roundfix watch --source coderabbit --pr <number> [--spec <slug>] --until-clean
+roundfix resolve --pr <number> [--spec <slug>] --detach
+roundfix watch --source coderabbit --pr <number> [--spec <slug>] --until-clean --detach
+roundfix implement --spec <slug>
+roundfix implement --spec <slug> --detach
 roundfix runs list
 roundfix runs list --state all --limit 0
 roundfix runs
@@ -924,7 +945,7 @@ outcome and never opens pull requests (ADR-0021).
 1. Start the Implement Command with:
 
    ```bash
-   roundfix implement --spec <slug> --agent <agent>
+   roundfix implement --spec <slug>
    ```
 
 2. Flags:
@@ -1085,7 +1106,7 @@ the Implement, Attach, Settle, Stop, and Archive commands documented above.
 2. **Start detached.** Launch the Run without owning its lifetime:
 
    ```bash
-   roundfix implement --spec <slug> --agent codex --detach
+   roundfix implement --spec <slug> --detach
    ```
 
    Capture `<run-id>` from the four-line report. Detach implies non-interactive

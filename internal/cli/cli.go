@@ -3751,9 +3751,11 @@ Options:
 		return `Usage:
   roundfix setup [--yes] [--no-input]
 
-Checks Node.js, the pinned acpx version, the configured Agent probe,
-acpx local adapter overrides, User Config, and Project Config. Each check
-prints one deterministic report line with ok, installed, skipped,
+Checks Node.js and the pinned acpx version, proves the effective official Codex adapter
+and generated Agent Selection profile readiness, then offers acpx local adapter
+overrides, User Config, and Project Config. Proposed profiles are exact-proved
+before writing. Legacy Codex override migration requires authorization. Each
+check prints one deterministic report line with ok, installed, skipped,
 offered: declined, or failed.
 
 Options:
@@ -3765,9 +3767,9 @@ Options:
   roundfix doctor
 
 Diagnoses this machine's readiness for Runs. Checks Node.js, the pinned acpx
-version, the configured Agent probe, and codex runtime hygiene. Prints one
-line per check with ok, failed, or skipped plus the next action for failures.
-Doctor mutates nothing.
+version, the effective adapter, and required Agent Selection Profiles. It also
+checks codex runtime hygiene. The aggregate profiles: line exact-proves every
+distinct tuple and reports the next action for failures. Doctor mutates nothing.
 `
 	case "gc":
 		return `Usage:
@@ -3979,7 +3981,8 @@ Options:
 
 Writes complete Agent Selection Profiles to User Config or Project Config.
 Without --file, collects one profile through Interactive Input, shows the
-normalized profile and target scope, then asks for confirmation before writing.
+normalized profile and target scope, then proves every exact Agent Selection
+before confirmation. --dry-run performs the same proof without writing.
 
 Options:
   --scope    Required config scope: user or project
@@ -3993,7 +3996,7 @@ Options:
   roundfix profiles validate [--category <category>] [--json]
 
 Read-only validation resolves effective profiles, deduplicates exact Agent
-Selections, proves each distinct tuple through a disposable ACP Runtime session,
+Selections, proves each exact tuple through a disposable ACP Runtime session,
 and closes every disposable session on success or error.
 
 Options:

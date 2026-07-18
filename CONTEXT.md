@@ -96,9 +96,21 @@ _Avoid_: Agent role, benchmark category, automatic route
 One exact ACP Runtime, Agent Model, and reasoning-effort tuple that Roundfix can prove and assign to an Agent Session.
 _Avoid_: Model name, runtime default, partial selection
 
+**Adapter Readiness**:
+Proof that the effective ACP adapter command has the supported package lineage and version required by Roundfix. Executable presence or a matching command name alone is not proof.
+_Avoid_: Adapter found, binary check, PATH readiness
+
+**Exact Agent Selection Proof**:
+The token-free disposable Agent Session check that maps one Agent Selection through advertised ACP capabilities, applies its exact model and reasoning assignment, observes matching effective state, and closes the Session successfully.
+_Avoid_: Model validity, catalog match, recommendation rank
+
 **Agent Selection Profile**:
 The atomic policy for one Agent Work Category, containing one Preferred Selection and a non-empty ordered Fallback Chain. A higher-precedence profile replaces the complete lower-precedence profile rather than merging individual fields.
 _Avoid_: Runtime defaults, model preset, partial override
+
+**Agent Selection Profile Readiness**:
+The command-scoped result that resolves effective Agent Selection Profiles, deduplicates their Preferred Selections and Fallback Chains, and requires Exact Agent Selection Proof for every distinct tuple before a Run or configuration mutation.
+_Avoid_: Single-model check, configured Agent probe, cached readiness
 
 **Preferred Selection**:
 The first Agent Selection Roundfix proves and attempts for an Agent Work Category.
@@ -315,7 +327,7 @@ The support command that creates User Config or Project Config before operationa
 _Avoid_: Bootstrap run, setup run
 
 **Setup Command**:
-The support command that verifies and prepares a machine for Roundfix Runs: Node, pinned acpx, configured Agent probe, acpx local adapter overrides, User Config, and Project Config.
+The support command that verifies and prepares a machine for Roundfix Runs: Node, pinned acpx, Adapter Readiness, generated Agent Selection Profile Readiness, acpx local adapter overrides, User Config, and Project Config. It proves proposed state before requesting authorization and writes only authorized changes.
 _Avoid_: Manual bootstrap checklist, environment wizard
 
 **Upgrade Command**:
@@ -331,7 +343,7 @@ The support command that produces a Release Plan without editing release files, 
 _Avoid_: Release Command, publish command, cut-release command
 
 **Doctor Command**:
-The support command that diagnoses a repository and machine's readiness for Roundfix Runs — Repository Skill Set, Node, pinned acpx, configured Agent probe, and codex runtime hygiene — reporting each check with a next action and mutating nothing. Distinct from the Setup Command, which prepares the machine.
+The support command that diagnoses a repository and machine's readiness for Roundfix Runs — Repository Skill Set, Node, pinned acpx, Adapter Readiness, Agent Selection Profile Readiness, and codex runtime hygiene — reporting each check with a next action and mutating nothing. Distinct from the Setup Command, which prepares the machine.
 _Avoid_: Health check run, setup run, environment wizard
 
 **Archive Command**:
