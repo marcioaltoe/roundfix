@@ -66,8 +66,8 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: max
+        model: gpt-5.5
+        reasoning_effort: xhigh
   backend:
     preferred:
       runtime: codex
@@ -75,8 +75,8 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: max
+        model: gpt-5.5
+        reasoning_effort: xhigh
   frontend:
     preferred:
       runtime: claude
@@ -93,8 +93,8 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: max
+        model: gpt-5.5
+        reasoning_effort: xhigh
   review:
     preferred:
       runtime: codex
@@ -102,8 +102,8 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: max
+        model: gpt-5.5
+        reasoning_effort: xhigh
 
 review_source:
   name: coderabbit
@@ -233,15 +233,31 @@ config.
 Built-in required profiles use these official identifiers:
 
 - `general`, `backend`, `qa`, `review`: preferred `codex / gpt-5.6-sol / high`;
-  fallback `codex / gpt-5.6-terra / max`.
+  fallback `codex / gpt-5.5 / xhigh`.
 - `frontend`: preferred `claude / claude-fable-5 / medium`; fallback
   `codex / gpt-5.6-sol / high`.
 
-Custom model strings are accepted verbatim for forward-compatible ACP proof.
-They are not added to an allowlist, and the installed runtime adapter proves
-them before any Run mutation. An explicit empty `reasoning_effort: ""` means
-model-managed reasoning; omitted `reasoning_effort` is invalid because the
-runtime would not receive a complete tuple.
+The Model Catalog recognizes `gpt-5.6-sol`, `gpt-5.6-terra`, and
+`gpt-5.6-luna` as official Codex identifiers. Identifier validity does not
+prove operational availability. Recommendations are advisory rankings only;
+the effective adapter in each environment must complete Exact Agent Selection
+Proof before Roundfix can use a tuple. This exact proof is the operational
+readiness authority. Custom model strings remain accepted
+verbatim for forward-compatible proof and are never added to an allowlist.
+
+For Codex, Adapter Readiness requires the official
+`@agentclientprotocol/codex-acp` package at version `1.1.4` or newer. Setup
+writes the deterministic pinned command
+`npx -y @agentclientprotocol/codex-acp@1.1.4` when an explicit override is
+needed. A bare `codex-acp` override can resolve to the legacy
+`@zed-industries/codex-acp` package; Setup and Doctor diagnose its effective
+lineage and direct the user to
+`npm install -g @agentclientprotocol/codex-acp@1.1.4`.
+
+An explicit empty `reasoning_effort: ""` means model-managed reasoning;
+omitted `reasoning_effort` is invalid because the runtime would not receive a
+complete tuple. Roundfix never changes an explicit `high` request to empty
+reasoning when proof fails.
 
 Manage profiles with:
 
@@ -252,17 +268,25 @@ roundfix profiles configure --scope project --file profiles.yml --dry-run --json
 roundfix profiles validate --category review --json
 ```
 
-`profiles configure` writes only the `profiles` schema after strict validation
-and confirmation. `--dry-run` leaves config bytes unchanged and reports
-`changed: false` in JSON. `profiles validate` proves the selected tuples
-through disposable ACP sessions, deduplicates exact tuples, and closes every
-session without creating a Run, worktree, prompt, credential, or runtime-owned
-setting.
+`profiles configure` prepares the candidate in memory, validates it, and
+proves every distinct Preferred Selection and fallback before confirmation or
+write. `--dry-run` performs the same proof, leaves config bytes unchanged, and
+reports `changed: false` in JSON. Proof failure, cleanup failure, declined
+confirmation, or output failure preserves the target bytes. `profiles
+validate` performs the same read-only Exact Agent Selection Proof over the
+effective profiles, deduplicates exact tuples, and closes every disposable ACP
+Session without creating a Run, worktree, prompt, credential, or
+runtime-owned setting.
 
-One-Run flags such as `--agent`, `--model`, and `--reasoning-effort` replace
-only the Preferred Selection for each relevant category and preserve that
-category's Fallback Chain. When one override spans multiple Task or QA
-categories, text and JSON output include a cross-category warning.
+Agent-starting commands have two supported selection forms: omit `--agent`,
+`--model`, and `--reasoning-effort` to use the effective profiles, or provide
+all three together for one complete one-Run override. A complete override
+replaces only the Preferred Selection for each relevant category and preserves
+that category's Fallback Chain. Any partial subset exits `2` before config
+load, proof, Session creation, or Run mutation. An explicitly empty
+`--reasoning-effort ""` counts as present. When one complete override spans
+multiple Task or QA categories, text and JSON output include a cross-category
+warning.
 
 Recommendations shown by `profiles show` are a dated advisory snapshot
 (`2026-07-16`) with five entries per category, benchmark/result/cost evidence,
@@ -278,6 +302,21 @@ Legacy configs with `defaults.agent` or top-level `runtimes` still load during
 the compatibility window only when the same file has no `profiles` section.
 Do not edit runtime-owned settings or credentials for migration; write complete
 profiles with `roundfix profiles configure --scope user|project`.
+
+Setup treats configuration as one fail-before-mutation proposal. It resolves
+the effective adapter, proposes migration of a stale Codex override, builds
+User Config and Project Config bytes in memory, and proves every generated
+selection before asking to write. `--yes` authorizes offered changes;
+`--no-input` reports diagnosis and writes nothing. Declining the adapter
+migration or any later write leaves every unauthorized target unchanged.
+
+The durable contract is [ADR-0055](../adr/0055-agent-selection-encoding-follows-advertised-acp-capabilities.md).
+Its environment evidence is preserved in the
+[Spec 0041 validation record](../specs/0041-agent-selection-runtime-readiness/references/validation.md)
+and the [profile-preflight dogfood finding](../findings/2026-07-17-agent-selection-profile-preflight-dogfood.md).
+[Spec 0036](../specs/0036-doctor-skill-readiness/_prd.md) remains ordered after
+this profile-aware Doctor readiness work so it can append Repository Skill Set
+readiness without duplicating exact proof.
 
 ## Spec Root
 

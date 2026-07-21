@@ -14,8 +14,8 @@ agent driving Roundfix. For flags, outputs, and boundaries per command, see the
 2. Make the machine Run-ready and check it:
 
    ```bash
-   roundfix setup      # verifies Node, acpx 0.12.0, the Agent probe, config
-   roundfix doctor     # read-only readiness check; mutates nothing
+   roundfix setup      # proves adapters and generated profiles before writes
+   roundfix doctor     # read-only adapter and profile readiness; mutates nothing
    ```
 
 3. Authenticate the GitHub CLI for the repository (`gh auth status`). Review
@@ -34,8 +34,9 @@ Both loops keep the same contract, which is what lets an agent drive them:
   `3` Clean Unverified (watch only); `130` for an in-terminal Ctrl-C.
 - **Outcomes are fixed strings** you can branch on — see each loop below.
 
-An Agent runtime is selected with `--agent`; supported values are `codex`,
-`claude`, and `opencode`. The Review Source is `coderabbit`.
+Agent Selection Profiles choose the runtime, model, and reasoning effort.
+Complete one-Run overrides can use `codex`, `claude`, or `opencode`. The Review
+Source is `coderabbit`.
 
 ## Agent Selection Profiles
 
@@ -52,7 +53,7 @@ one, it must be complete. Built-ins use official model identifiers:
 
 - `general`, `backend`, `qa`, and `review`: preferred
   `codex / gpt-5.6-sol / high`, fallback
-  `codex / gpt-5.6-terra / max`.
+  `codex / gpt-5.5 / xhigh`.
 - `frontend`: preferred `claude / claude-fable-5 / medium`, fallback
   `codex / gpt-5.6-sol / high`.
 
@@ -68,8 +69,8 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: max
+        model: gpt-5.5
+        reasoning_effort: xhigh
   backend:
     preferred:
       runtime: codex
@@ -77,8 +78,8 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: max
+        model: gpt-5.5
+        reasoning_effort: xhigh
   frontend:
     preferred:
       runtime: claude
@@ -95,8 +96,8 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: max
+        model: gpt-5.5
+        reasoning_effort: xhigh
   review:
     preferred:
       runtime: codex
@@ -104,14 +105,25 @@ profiles:
       reasoning_effort: high
     fallbacks:
       - runtime: codex
-        model: gpt-5.6-terra
-        reasoning_effort: max
+        model: gpt-5.5
+        reasoning_effort: xhigh
 ```
 
-`model` values you type explicitly are forward-compatible custom values. For
-example, an adapter-specific alias is accepted as user configuration and sent to
-the ACP Runtime verbatim; Roundfix labels only the built-in identifiers above as
-official.
+The Codex Model Catalog recognizes `gpt-5.6-sol`, `gpt-5.6-terra`, and
+`gpt-5.6-luna` as official identifiers; GPT-5.5/xhigh remains the generated
+fallback for the four Codex-led profiles. A valid identifier and an advisory
+recommendation rank are not readiness claims. Roundfix proves operational
+availability in the effective environment through exact proof of the complete
+runtime/model/reasoning tuple. Custom model values remain forward-compatible:
+Roundfix sends them verbatim for the same proof instead of treating the catalog
+as an allowlist.
+
+Codex Adapter Readiness requires the effective command to prove the official
+`@agentclientprotocol/codex-acp` lineage at version `1.1.4` or newer. A bare
+`codex-acp` override can resolve to legacy `@zed-industries/codex-acp`; use
+Setup to diagnose it and, after authorization, migrate to
+`npx -y @agentclientprotocol/codex-acp@1.1.4`. The deterministic install action
+is `npm install -g @agentclientprotocol/codex-acp@1.1.4`.
 
 ### Inspect profiles
 
@@ -132,8 +144,9 @@ never mutates User Config or Project Config.
 
 ### Configure profiles
 
-`profiles configure` writes only the new `profiles` schema after strict
-validation and confirmation:
+`profiles configure` prepares the candidate in memory, validates it, proves
+every distinct Preferred Selection and fallback, and only then asks for
+confirmation:
 
 ```bash
 roundfix profiles configure --scope project
@@ -158,15 +171,15 @@ backend:
       reasoning_effort: high
 ```
 
-`--dry-run` reports `changed: false` and leaves files unchanged. `--json` uses
-schema `roundfix/profiles-configure/v1`. Configuration failures name the file,
-category, invalid value, and next action; successful writes preserve unrelated
-config keys and never edit runtime-owned settings, credentials, or adapter
-configuration.
+`--dry-run` runs the same exact proof, reports `changed: false`, and leaves
+files unchanged. `--json` uses schema `roundfix/profiles-configure/v1`.
+Validation, proof, cleanup, declined-confirmation, and output failures all
+preserve target bytes. Successful writes preserve unrelated config keys and
+never edit runtime-owned settings, credentials, or adapter configuration.
 
 ### Validate profiles
 
-`profiles validate` is read-only proof through disposable ACP sessions:
+`profiles validate` is read-only exact proof through disposable ACP Sessions:
 
 ```bash
 roundfix profiles validate
@@ -183,10 +196,16 @@ reasoning effort, affected categories, adapter cause, and the next
 ### One-Run overrides and fallback boundaries
 
 Agent-starting commands still accept one-Run `--agent`, `--model`, and
-`--reasoning-effort` flags. Those flags replace only the Preferred Selection for
-each relevant category in that invocation; each category keeps its configured
-Fallback Chain. If one override applies across multiple Task or QA categories,
-Roundfix emits a warning in text output and JSON metadata.
+`--reasoning-effort` flags. Omit all three to use Agent Selection Profiles, or
+provide all three together as one complete override. Every partial subset exits
+`2` before configuration loading, exact proof, Session creation, worktree or
+artifact creation, or Run persistence. An explicit empty
+`--reasoning-effort ""` counts as present and requests model-managed reasoning;
+Roundfix never substitutes it for a rejected explicit `high` request. A
+complete override replaces only the Preferred Selection for each relevant
+category and keeps its configured Fallback Chain. If one override applies
+across multiple Task or QA categories, Roundfix emits a warning in text output
+and JSON metadata.
 
 Operational Runs prove every relevant preferred and fallback tuple before Run
 creation. If a session cannot start after the Run exists, Roundfix records and
@@ -207,6 +226,13 @@ migrate, remove `defaults.agent` and `runtimes`, then write complete profiles:
 roundfix profiles configure --scope project --file profiles.yml
 roundfix profiles validate --json
 ```
+
+Setup diagnoses a stale Codex adapter override before this profile migration.
+It proposes the official pinned command and asks before rewriting the ACPX
+config; `--yes` authorizes the offer, while decline or `--no-input` writes
+nothing. Setup also proves all generated profile tuples before any User Config
+or Project Config write, so failed Sol/high proof never degrades to
+model-managed reasoning and never leaves partial configuration.
 
 ## Release planning before publication
 
@@ -239,7 +265,7 @@ Verification commands gate one commit, and the Run never pushes unless
 ### Foreground
 
 ```bash
-roundfix implement --spec <slug> --agent codex
+roundfix implement --spec <slug>
 ```
 
 stdout is one line per Task in Task Graph order, then one outcome line:
@@ -277,7 +303,7 @@ For scripts, CI, or when you must not own the Run's lifetime, detach. This is th
 default loop for an agent:
 
 ```bash
-roundfix implement --spec <slug> --agent codex --detach
+roundfix implement --spec <slug> --detach
 ```
 
 Detach prints exactly four stdout lines and exits `0`:
@@ -374,7 +400,7 @@ repository are never staged.
 ### One shot: watch until clean
 
 ```bash
-roundfix watch --source coderabbit --pr <number> --agent codex --until-clean
+roundfix watch --source coderabbit --pr <number> --until-clean
 ```
 
 `watch` owns the waits, fetches, Rounds, Agent lifecycle, verification, commits,
@@ -406,7 +432,7 @@ Split the loop when you want to inspect artifacts between stages:
 
 ```bash
 roundfix fetch --source coderabbit --pr <number>   # write Review Issue artifacts only
-roundfix resolve --pr <number> --agent codex       # resolve downloaded issues once
+roundfix resolve --pr <number>                     # resolve downloaded issues once
 ```
 
 `fetch` starts no Agent and never commits or pushes. `resolve` runs one Round

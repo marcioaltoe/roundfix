@@ -28,11 +28,19 @@ installing, substitute `go run ./cmd/roundfix`.
 roundfix setup [--yes] [--no-input]
 ```
 
-Verifies Node.js, the pinned acpx version, the configured Agent probe, acpx
-local adapter overrides, User Config, and Project Config. Each check prints one
-deterministic report line such as `node: ok`, `acpx: installed`, or
+Verifies Node.js, the pinned acpx version, the effective adapter, generated
+Agent Selection Profiles, acpx local adapter overrides, User Config, and
+Project Config. Codex Adapter Readiness requires official
+`@agentclientprotocol/codex-acp` lineage at version `1.1.4` or newer. A stale
+bare override that resolves to legacy `@zed-industries/codex-acp` produces one
+migration offer to `npx -y @agentclientprotocol/codex-acp@1.1.4`.
+
+Setup builds every proposed file in memory and runs exact Agent Selection proof
+before writing. It never changes explicit Sol/high to model-managed reasoning
+when proof fails. Each check prints one deterministic report line such as
+`node: ok`, `adapter: migration proposed`, `profile readiness: passed`, or
 `User Config: skipped`. `--yes` accepts every offered install or file change;
-`--no-input` skips offers instead of prompting.
+`--no-input` performs diagnosis and skips offers without writing.
 
 ### doctor
 
@@ -46,11 +54,15 @@ lines include `next: <action>` when a remediation is known. The checks:
 
 - `node:` — Node.js meets the minimum version.
 - `acpx:` — the pinned acpx version is installed.
-- `adapter:` — the configured runtime's ACP adapter binary resolves on `PATH`;
-  a missing binary fails with its install command.
-- `agent:` — the configured Agent probe succeeds.
-- `model:` — the runtime accepted the effective Agent Model; on failure the
-  line carries the runtime's currently advertised models and a `next:` action.
+- `adapter:` — the effective adapter command proves the required package
+  lineage and supported version; legacy, unknown, old, and missing adapters
+  fail with the official install action.
+- `profiles:` — the required Agent Selection Profiles pass exact proof through
+  disposable ACP Sessions. Success names distinct tuples and category
+  references. Failure names the exact tuple, affected categories,
+  classification, bounded adapter evidence, and the next
+  `roundfix profiles configure` or `roundfix profiles validate` action. A
+  rejected explicit `high` does not recommend model-managed reasoning.
 - `codex:` — macOS-only runtime hygiene: inspects `com.apple.quarantine` (the
   real XProtect trigger) and code-signature validity, resolving `CODEX_PATH`
   first and then `codex` on `PATH`. It does not use `spctl --assess`, which
@@ -58,6 +70,19 @@ lines include `next: <action>` when a remediation is known. The checks:
   improperly-signed codex fails with the next action to reinstall codex with
   the official curl installer into `~/.local/bin` and set `CODEX_PATH`.
   Skipped on non-Darwin platforms.
+
+Doctor has no separate `agent:` or `model:` authority. The aggregate
+`profiles:` result is the readiness contract, and it appears before `codex:` so
+Spec 0036 can append independent Repository Skill Set readiness without
+repeating selection proof.
+
+```text
+node: ok
+acpx: ok
+adapter: ok (...)
+profiles: ok (3 distinct tuples; 10 category references)
+codex: ok
+```
 
 ### upgrade
 
@@ -114,6 +139,28 @@ recommended external skills, which install through your own tooling and are
 never shipped. By default `skills install` writes to `<repo>/.agents/skills`;
 `--target` selects user-scoped Agent skill directories instead.
 
+### profiles
+
+```bash
+roundfix profiles show [--category <category>] [--json]
+roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--yes] [--json]
+roundfix profiles validate [--category <category>] [--json]
+```
+
+`profiles show` renders the effective Preferred Selection, Fallback Chain, and
+dated advisory recommendations. Official model identifiers and advisory rank
+do not prove that a tuple works in the current environment.
+
+`profiles configure` validates a complete candidate and runs exact Agent
+Selection proof for every distinct preferred and fallback tuple before
+confirmation. `--dry-run` performs the proof without writing; proof failure,
+decline, or output failure preserves the target bytes. `profiles validate` is
+read-only, deduplicates exact tuples across category references, proves them
+through disposable ACP Runtime Sessions, sends no Agent prompt, and closes
+every Session on success or error. JSON schemas are
+`roundfix/profiles/v1`, `roundfix/profiles-configure/v1`, and
+`roundfix/profiles-validate/v1`.
+
 ## Review loop: fetch, resolve, watch
 
 Review Runs execute in the user's checkout on the PR Head Branch — they create
@@ -134,6 +181,17 @@ bound to the target, naming the run id and the stop commands.
 audit comment on the pull request recording the run id, the skipped
 guardrails, and the ignored state; a failed publish fails the command.
 
+`resolve`, `watch`, and `implement` accept exactly two Agent Selection forms:
+omit `--agent`, `--model`, and `--reasoning-effort` to use profiles, or provide
+all three together for a complete one-Run override. Any partial subset exits
+`2` before config load, adapter or profile proof, Session creation, or Run
+mutation. For example:
+
+```bash
+roundfix watch --source coderabbit --pr <number> --until-clean
+roundfix watch --source coderabbit --pr <number> --agent codex --model gpt-5.6-sol --reasoning-effort high --until-clean
+```
+
 ### fetch
 
 ```bash
@@ -150,7 +208,7 @@ overwrites existing Round artifacts.
 ### resolve
 
 ```bash
-roundfix resolve --pr <number> --agent codex [--spec <slug>]
+roundfix resolve --pr <number> [--spec <slug>]
 ```
 
 Works only over downloaded Compatible Artifacts — it does not fetch. It
@@ -169,7 +227,7 @@ repository, or reached through a symbolic link, are reported and never staged.
 ### watch
 
 ```bash
-roundfix watch --source coderabbit --pr <number> --agent codex --until-clean [--max-rounds N]
+roundfix watch --source coderabbit --pr <number> --until-clean [--max-rounds N]
 ```
 
 Waits for CodeRabbit status on the current PR HEAD, observes the configured
@@ -199,7 +257,7 @@ Pull Request cumulative: 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unreso
 ### implement
 
 ```bash
-roundfix implement --spec <slug> --agent codex [--qa] [--detach]
+roundfix implement --spec <slug> [--qa] [--detach]
 ```
 
 Executes a Spec's Task Graph in a Run Worktree as one Run — spec Runs keep

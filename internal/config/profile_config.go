@@ -30,6 +30,13 @@ type ProfileConfigResult struct {
 	Profiles Profiles
 }
 
+type ProfileConfigProposal struct {
+	result  ProfileConfigResult
+	before  []byte
+	after   []byte
+	existed bool
+}
+
 func ParseProfilesFragment(content []byte) (Profiles, error) {
 	var document yaml.Node
 	decoder := yaml.NewDecoder(bytes.NewReader(content))
@@ -89,19 +96,30 @@ func NormalizeProfilesFragment(profiles Profiles) (Profiles, error) {
 }
 
 func WriteProfilesConfig(ctx context.Context, opts ProfileConfigOptions) (ProfileConfigResult, error) {
+	proposal, err := PrepareProfilesConfig(ctx, opts)
+	if err != nil {
+		return ProfileConfigResult{}, err
+	}
+	if opts.DryRun {
+		return proposal.Result(), nil
+	}
+	return PersistProfilesConfig(ctx, proposal)
+}
+
+func PrepareProfilesConfig(ctx context.Context, opts ProfileConfigOptions) (ProfileConfigProposal, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	if err := ctx.Err(); err != nil {
-		return ProfileConfigResult{}, err
+		return ProfileConfigProposal{}, err
 	}
 	scope, path, source, err := profileConfigTarget(opts.Scope, opts.HomeDir, opts.WorkDir)
 	if err != nil {
-		return ProfileConfigResult{}, err
+		return ProfileConfigProposal{}, err
 	}
 	profiles, err := NormalizeProfilesFragment(opts.Profiles)
 	if err != nil {
-		return ProfileConfigResult{}, err
+		return ProfileConfigProposal{}, err
 	}
 	result := ProfileConfigResult{
 		Scope:    scope,
@@ -110,21 +128,89 @@ func WriteProfilesConfig(ctx context.Context, opts ProfileConfigOptions) (Profil
 	}
 
 	current, err := os.ReadFile(path)
+	existed := err == nil
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return ProfileConfigResult{}, fmt.Errorf("read config %q: %w", path, err)
+		return ProfileConfigProposal{}, fmt.Errorf("read config %q: %w", path, err)
 	}
 	next, err := mergeProfilesConfigContent(path, current, profiles, source)
 	if err != nil {
+		return ProfileConfigProposal{}, err
+	}
+	return ProfileConfigProposal{
+		result:  result,
+		before:  append([]byte(nil), current...),
+		after:   append([]byte(nil), next...),
+		existed: existed,
+	}, nil
+}
+
+func (proposal ProfileConfigProposal) Result() ProfileConfigResult {
+	result := proposal.result
+	result.Profiles = cloneProfilesForWrite(proposal.result.Profiles)
+	return result
+}
+
+func PersistProfilesConfig(ctx context.Context, proposal ProfileConfigProposal) (ProfileConfigResult, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
 		return ProfileConfigResult{}, err
 	}
-	if bytes.Equal(current, next) || opts.DryRun {
+	result := proposal.Result()
+	if bytes.Equal(proposal.before, proposal.after) {
 		return result, nil
 	}
-	if err := writeFileAtomic(ctx, path, next); err != nil {
+	if err := requireProfileConfigSnapshot(proposal.result.Path, proposal.before, proposal.existed); err != nil {
+		return ProfileConfigResult{}, err
+	}
+	if err := writeFileAtomic(ctx, proposal.result.Path, proposal.after); err != nil {
 		return ProfileConfigResult{}, err
 	}
 	result.Changed = true
 	return result, nil
+}
+
+func RollbackProfilesConfig(ctx context.Context, proposal ProfileConfigProposal) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if bytes.Equal(proposal.before, proposal.after) {
+		return nil
+	}
+	if err := requireProfileConfigSnapshot(proposal.result.Path, proposal.after, true); err != nil {
+		return fmt.Errorf("rollback profiles config: %w", err)
+	}
+	if proposal.existed {
+		if err := writeFileAtomic(ctx, proposal.result.Path, proposal.before); err != nil {
+			return fmt.Errorf("rollback profiles config: %w", err)
+		}
+		return nil
+	}
+	if err := os.Remove(proposal.result.Path); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("rollback profiles config: remove config %q: %w", proposal.result.Path, err)
+	}
+	return nil
+}
+
+func requireProfileConfigSnapshot(path string, expected []byte, expectedExists bool) error {
+	current, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		if !expectedExists {
+			return nil
+		}
+		return fmt.Errorf("config %q changed after proposal preparation", path)
+	}
+	if err != nil {
+		return fmt.Errorf("read config %q: %w", path, err)
+	}
+	if !expectedExists || !bytes.Equal(current, expected) {
+		return fmt.Errorf("config %q changed after proposal preparation", path)
+	}
+	return nil
 }
 
 func ProfileConfigTarget(scope string, homeDir string, workDir string) (string, string, error) {

@@ -188,7 +188,7 @@ func TestRunSettleRetargetsKeptRunWorktreeAndCleansUpAfterIntegration(t *testing
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected unresolved implement exit, got %d stderr=%q", code, stderr.String())

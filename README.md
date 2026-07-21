@@ -29,8 +29,8 @@ npm install -g roundfix       # or: bun add -g roundfix
 Then make the machine Run-ready and check it:
 
 ```bash
-roundfix setup     # verifies Node, pinned acpx, the Agent probe, config
-roundfix doctor    # read-only readiness report; mutates nothing
+roundfix setup     # proves adapters and generated profiles before writes
+roundfix doctor    # read-only adapter and profile readiness; mutates nothing
 ```
 
 ## Requirements
@@ -41,29 +41,31 @@ roundfix doctor    # read-only readiness report; mutates nothing
 - GitHub CLI `gh` authenticated for the target repository (review loops only).
 - Building from source additionally needs Go 1.26+ and `make`.
 
-`roundfix doctor` diagnoses all of it — including macOS codex hygiene and
-whether the runtime accepts your configured Agent Model — with one line per
-check and a `next:` action on failures.
+`roundfix doctor` diagnoses all of it — including official Codex adapter
+identity, exact Agent Selection Profile proof, and macOS codex hygiene — with
+one line per check and a `next:` action on failures. Use `roundfix setup` to
+provision the pinned official adapter or migrate a stale legacy override after
+authorization.
 
 ## Quickstart
 
 Resolve a pull request's CodeRabbit feedback until it is merge-ready:
 
 ```bash
-roundfix watch --source coderabbit --pr <number> --agent codex --until-clean
+roundfix watch --source coderabbit --pr <number> --until-clean
 ```
 
 Execute a Spec's Task Graph (specs live under `docs/specs/<slug>/`), with the
 QA gate at the end:
 
 ```bash
-roundfix implement --spec <slug> --agent codex --qa
+roundfix implement --spec <slug> --qa
 ```
 
 For scripts, CI, or agents, detach the Run and monitor it without owning it:
 
 ```bash
-roundfix implement --spec <slug> --agent codex --detach
+roundfix implement --spec <slug> --detach
 roundfix events <run-id> --follow      # JSONL for automation
 roundfix attach <run-id>               # read-only Live Run View for humans
 ```

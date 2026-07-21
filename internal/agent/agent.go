@@ -89,6 +89,13 @@ type Runner interface {
 	EndSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error
 }
 
+// SelectionProver returns the bounded evidence from one exact disposable
+// Agent Selection proof. Runner implementations that only expose Probe remain
+// valid for non-production test and compatibility boundaries.
+type SelectionProver interface {
+	ProveProfileSelection(ctx context.Context, req ProbeRequest) (SelectionProof, error)
+}
+
 type SessionPreparer interface {
 	PrepareSession(ctx context.Context, req ExecuteRequest, sink runevent.Sink) error
 }
@@ -324,6 +331,14 @@ func NewDefaultRunner() *DefaultRunner {
 
 func (runner *DefaultRunner) Probe(ctx context.Context, req ProbeRequest) error {
 	return runner.acpxRunner().Probe(ctx, req)
+}
+
+func (runner *DefaultRunner) ProveProfileSelection(ctx context.Context, req ProbeRequest) (SelectionProof, error) {
+	acpx := runner.acpxRunner()
+	if err := acpx.probeACPX(ctx); err != nil {
+		return SelectionProof{}, err
+	}
+	return acpx.ProveExactSelection(ctx, req)
 }
 
 func (runner *DefaultRunner) ProbeFallback(ctx context.Context, runtime RuntimeSpec, candidates FallbackCandidateSet) (FallbackSelection, bool, error) {

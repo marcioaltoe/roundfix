@@ -249,12 +249,12 @@ func TestRunCommandHelp(t *testing.T) {
 		{
 			name:     "resolve",
 			args:     []string{"resolve", "--help"},
-			contains: []string{"roundfix resolve --pr <number> --agent <agent>", "Branch Integrity Preflight", "clean tracked checkout", "--reasoning-effort", "--no-agent-console", "--detach"},
+			contains: []string{"roundfix resolve --pr <number> [--spec <slug>]", "--agent <agent> --model <model> --reasoning-effort <effort>", "use the review profile", "Branch Integrity Preflight", "clean tracked checkout", "--reasoning-effort", "--no-agent-console", "--detach"},
 		},
 		{
 			name:     "watch",
 			args:     []string{"watch", "--help"},
-			contains: []string{"roundfix watch --source coderabbit --pr <number> --agent <agent>", "Branch Integrity Preflight", "CleanUnverified", "exits 3", "--reasoning-effort", "--until-clean", "Review Source check", "--no-agent-console", "--detach"},
+			contains: []string{"roundfix watch --source coderabbit --pr <number> [--spec <slug>]", "--agent <agent> --model <model> --reasoning-effort <effort>", "use the review profile", "Branch Integrity Preflight", "CleanUnverified", "exits 3", "--reasoning-effort", "--until-clean", "Review Source check", "--no-agent-console", "--detach"},
 		},
 		{
 			name:     "setup",
@@ -310,6 +310,30 @@ func TestRunCommandHelp(t *testing.T) {
 	}
 }
 
+func TestCommandUsageDocumentsProfileLedAndCompleteSelectionOverrides(t *testing.T) {
+	for _, name := range []string{"resolve", "watch", "implement"} {
+		t.Run(name, func(t *testing.T) {
+			got := commandUsage(name)
+			for _, want := range []string{
+				"Omit all Agent Selection flags",
+				"--agent <agent> --model <model> --reasoning-effort <effort>",
+				"requires --agent, --model, and --reasoning-effort together",
+			} {
+				if !strings.Contains(got, want) {
+					t.Fatalf("%s help missing %q:\n%s", name, want, got)
+				}
+			}
+		})
+	}
+
+	fetchHelp := commandUsage("fetch")
+	for _, forbidden := range []string{"--agent", "--model", "--reasoning-effort", "Agent Selection flags"} {
+		if strings.Contains(fetchHelp, forbidden) {
+			t.Fatalf("fetch help changed to include Agent selection term %q:\n%s", forbidden, fetchHelp)
+		}
+	}
+}
+
 func TestEventsHelpDocumentsAgentSelectionFilter(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -343,9 +367,14 @@ func TestEventsHelpDocumentsAgentSelectionFilter(t *testing.T) {
 
 func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 	repoRoot := cliTestRepoRoot(t)
+	readme := mustRead(t, filepath.Join(repoRoot, "README.md"))
+	commands := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "commands.md"))
 	usage := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "usage.md"))
 	configuration := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "configuration.md"))
+	autonomousWork := mustRead(t, filepath.Join(repoRoot, "docs", "agents", "autonomous-work.md"))
+	releaseRunbook := mustRead(t, filepath.Join(repoRoot, "docs", "user-guide", "release-runbook.md"))
 	roundfixSkill := mustRead(t, filepath.Join(repoRoot, ".agents", "skills", "roundfix", "SKILL.md"))
+	roundfixManifest := mustRead(t, filepath.Join(repoRoot, ".agents", "skills", "roundfix", "agents", "openai.yaml"))
 
 	for _, doc := range []struct {
 		name    string
@@ -367,11 +396,103 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 			"agent_work_started",
 			"defaults.agent",
 			"runtimes",
+			"gpt-5.5",
+			"xhigh",
 		} {
 			if !strings.Contains(doc.content, want) {
 				t.Fatalf("%s documentation is missing %q", doc.name, want)
 			}
 		}
+	}
+
+	for _, doc := range []struct {
+		name    string
+		content string
+	}{
+		{name: "configuration", content: configuration},
+		{name: "usage", content: usage},
+		{name: "roundfix skill", content: roundfixSkill},
+	} {
+		for _, want := range []string{
+			"@agentclientprotocol/codex-acp",
+			"1.1.4",
+			"@zed-industries/codex-acp",
+			"exact proof",
+			"advisory",
+			"gpt-5.6-terra",
+			"gpt-5.6-luna",
+		} {
+			if !strings.Contains(doc.content, want) {
+				t.Fatalf("%s readiness documentation is missing %q", doc.name, want)
+			}
+		}
+		if strings.Contains(doc.content, "fallback `codex / gpt-5.6-terra / max`") {
+			t.Fatalf("%s still documents Terra/max as the generated fallback", doc.name)
+		}
+	}
+
+	for _, want := range []string{
+		"profiles: ok",
+		"roundfix profiles configure",
+		"roundfix profiles validate",
+		"does not recommend model-managed reasoning",
+	} {
+		if !strings.Contains(commands, want) {
+			t.Fatalf("command documentation is missing %q", want)
+		}
+	}
+
+	for _, want := range []string{
+		"partial Agent Selection override",
+		"omit all three selection flags",
+		"provide `--agent`, `--model`, and `--reasoning-effort` together",
+		"exit `2` before configuration, proof, or Run mutation",
+	} {
+		if !strings.Contains(releaseRunbook, want) {
+			t.Fatalf("release guidance is missing %q", want)
+		}
+	}
+
+	for _, want := range []string{
+		"profiles.general",
+		"gpt-5.6-sol",
+		"gpt-5.5",
+		"Fallback Chain",
+	} {
+		if !strings.Contains(autonomousWork, want) {
+			t.Fatalf("autonomous work guidance is missing %q", want)
+		}
+	}
+
+	for _, help := range []struct {
+		name     string
+		snippets []string
+	}{
+		{name: "setup", snippets: []string{"official Codex adapter", "profile readiness", "before writing"}},
+		{name: "doctor", snippets: []string{"Agent Selection Profiles", "profiles:", "mutates nothing"}},
+		{name: "profiles configure", snippets: []string{"exact Agent Selection", "before confirmation", "without writing"}},
+		{name: "profiles validate", snippets: []string{"exact", "Read-only", "disposable ACP Runtime session"}},
+	} {
+		content := commandUsage(help.name)
+		for _, want := range help.snippets {
+			if !strings.Contains(content, want) {
+				t.Fatalf("%s help is missing %q:\n%s", help.name, want, content)
+			}
+		}
+	}
+
+	for _, doc := range []struct {
+		name    string
+		content string
+	}{
+		{name: "README", content: readme},
+		{name: "command reference", content: commands},
+		{name: "usage", content: usage},
+		{name: "autonomous work", content: autonomousWork},
+		{name: "roundfix skill", content: roundfixSkill},
+		{name: "roundfix manifest", content: roundfixManifest},
+	} {
+		assertAgentStartingExamplesUseProfilesOrCompleteOverrides(t, doc.name, doc.content)
 	}
 
 	for _, want := range []string{
@@ -405,6 +526,25 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 			if strings.Contains(content, forbidden) {
 				t.Fatalf("%s must not contain profile policy term %q", path, forbidden)
 			}
+		}
+	}
+}
+
+func assertAgentStartingExamplesUseProfilesOrCompleteOverrides(t *testing.T, label string, content string) {
+	t.Helper()
+	content = strings.ReplaceAll(content, "\\\n", " ")
+	for _, line := range strings.Split(content, "\n") {
+		if !strings.Contains(line, "roundfix resolve") && !strings.Contains(line, "roundfix watch") && !strings.Contains(line, "roundfix implement") {
+			continue
+		}
+		present := 0
+		for _, flag := range []string{"--agent", "--model", "--reasoning-effort"} {
+			if strings.Contains(line, flag) {
+				present++
+			}
+		}
+		if present != 0 && present != 3 {
+			t.Fatalf("%s has a partial Agent Selection example: %q", label, strings.TrimSpace(line))
 		}
 	}
 }
@@ -663,6 +803,7 @@ profiles:
 
 func TestProfilesConfigureFileWritesProjectProfileJSON(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
+	runner := withSuccessfulProfilesConfigureProof(t)
 	fragmentPath := filepath.Join(repoDir, "backend-profile.yml")
 	mustWrite(t, fragmentPath, `
 profiles:
@@ -702,6 +843,9 @@ profiles:
 	if len(response.Profiles) != 1 || response.Profiles[0].Category != roundconfig.CategoryBackend {
 		t.Fatalf("profiles = %+v, want one backend profile", response.Profiles)
 	}
+	if len(runner.exactRequests) != 2 {
+		t.Fatalf("file configure exact proofs = %#v, want preferred and fallback", runner.exactRequests)
+	}
 	for _, want := range []string{"Profile Configure Preview", "Scope: project", "Category: backend", "configured-backend", "configured-fallback"} {
 		if !strings.Contains(preview, want) {
 			t.Fatalf("preview missing %q in:\n%s", want, preview)
@@ -726,6 +870,7 @@ profiles:
 
 func TestProfilesConfigureYesSkipsConfirmation(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
+	runner := withSuccessfulProfilesConfigureProof(t)
 	fragmentPath := filepath.Join(repoDir, "backend-profile.yml")
 	mustWrite(t, fragmentPath, `
 backend:
@@ -757,6 +902,9 @@ backend:
 	if !response.Changed {
 		t.Fatalf("expected --yes write to report changed, got %+v", response)
 	}
+	if len(runner.exactRequests) != 2 {
+		t.Fatalf("--yes exact proofs = %#v, want preferred and fallback", runner.exactRequests)
+	}
 	loaded, err := roundconfig.Load(roundconfig.LoadOptions{HomeDir: homeDir, WorkDir: repoDir})
 	if err != nil {
 		t.Fatalf("load config after --yes configure: %v", err)
@@ -787,6 +935,7 @@ func TestProfilesJSONSuccessReturnsEncoderFailures(t *testing.T) {
 
 func TestProfilesConfigureDryRunAndFailedConfigurationLeaveBytesUnchanged(t *testing.T) {
 	_, repoDir := withCLIWorkspace(t)
+	runner := withSuccessfulProfilesConfigureProof(t)
 	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
 	original := "watch:\n  max_rounds: 4\n"
 	mustWrite(t, configPath, original)
@@ -818,6 +967,9 @@ backend:
 	if response.Changed {
 		t.Fatalf("dry-run changed = true, response=%+v", response)
 	}
+	if len(runner.exactRequests) != 2 {
+		t.Fatalf("dry-run exact proofs = %#v, want preferred and fallback", runner.exactRequests)
+	}
 	if got := mustRead(t, configPath); got != original {
 		t.Fatalf("dry-run mutated config\nwant: %q\n got: %q", original, got)
 	}
@@ -843,6 +995,279 @@ backend:
 	}
 	if got := mustRead(t, configPath); got != original {
 		t.Fatalf("invalid configure mutated config\nwant: %q\n got: %q", original, got)
+	}
+}
+
+func TestProfilesConfigureProofRunsBeforeConfirmationAndWrite(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+	original := "watch:\n  max_rounds: 4\n"
+	mustWrite(t, configPath, original)
+	fragmentPath := filepath.Join(repoDir, "backend-profile.yml")
+	mustWrite(t, fragmentPath, `
+backend:
+  preferred:
+    runtime: codex
+    model: exact-preferred
+    reasoning_effort: high
+  fallbacks:
+    - runtime: claude
+      model: exact-fallback
+      reasoning_effort: ""
+`)
+	runner := withSuccessfulProfilesConfigureProof(t)
+	withProfilesConfigureConfirm(t, func(context.Context, io.Writer, string) (bool, error) {
+		if len(runner.exactRequests) != 2 {
+			t.Fatalf("confirmation reached after %d exact proofs, want 2", len(runner.exactRequests))
+		}
+		if got := mustRead(t, configPath); got != original {
+			t.Fatalf("config mutated before confirmation\nwant: %q\n got: %q", original, got)
+		}
+		return true, nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("configure exit = %d stderr=%q", code, stderr.String())
+	}
+	if len(runner.exactRequests) != 2 {
+		t.Fatalf("exact proof requests = %#v, want preferred and fallback", runner.exactRequests)
+	}
+	if got := runner.exactRequests[0].Runtime; got.Model != "exact-preferred" || got.ReasoningEffort != "high" {
+		t.Fatalf("preferred proof = %+v", got)
+	}
+	if got := runner.exactRequests[1].Runtime; got.ID != "claude" || got.Model != "exact-fallback" || got.ReasoningEffort != "" {
+		t.Fatalf("fallback proof = %+v", got)
+	}
+	if response := decodeProfilesConfigureResponse(t, stdout.String()); !response.Changed {
+		t.Fatalf("configure response = %+v, want changed", response)
+	}
+}
+
+func TestProfilesConfigureInteractiveProofKeepsRecommendationsAdvisory(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+	original := "watch:\n  max_rounds: 4\n"
+	mustWrite(t, configPath, original)
+	withProfilesConfigureInput(t, "backend\ncodex\ninteractive-choice\nhigh\nclaude\ninteractive-fallback\nmedium\n\n")
+	runner := withSuccessfulProfilesConfigureProof(t)
+	withProfilesConfigureConfirm(t, func(context.Context, io.Writer, string) (bool, error) { return false, nil })
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"profiles", "configure", "--scope", "project", "--json"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("interactive configure exit = %d stderr=%q", code, stderr.String())
+	}
+	if len(runner.exactRequests) != 2 {
+		t.Fatalf("interactive exact proofs = %#v, want preferred and fallback", runner.exactRequests)
+	}
+	if got := runner.exactRequests[0].Runtime; got.Model != "interactive-choice" || got.ReasoningEffort != "high" {
+		t.Fatalf("interactive preferred proof = %+v", got)
+	}
+	if got := runner.exactRequests[1].Runtime; got.ID != "claude" || got.Model != "interactive-fallback" || got.ReasoningEffort != "medium" {
+		t.Fatalf("interactive fallback proof = %+v", got)
+	}
+	response := decodeProfilesConfigureResponse(t, stdout.String())
+	if response.Changed || len(response.Profiles) != 1 || response.Profiles[0].Preferred.Model != "interactive-choice" || response.Profiles[0].Fallbacks[0].Model != "interactive-fallback" {
+		t.Fatalf("interactive response inserted or changed a selection: %+v", response)
+	}
+	if got := mustRead(t, configPath); got != original {
+		t.Fatalf("interactive decline mutated config\nwant: %q\n got: %q", original, got)
+	}
+}
+
+func TestProfilesConfigureFallbackFailurePrecedesProofAndPreservesBytes(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+	original := "watch:\n  max_rounds: 4\n"
+	mustWrite(t, configPath, original)
+	runner := withSuccessfulProfilesConfigureProof(t)
+	withProfilesConfigureConfirm(t, func(context.Context, io.Writer, string) (bool, error) {
+		t.Fatal("invalid fallback must fail before confirmation")
+		return false, nil
+	})
+
+	tests := []struct {
+		name     string
+		fragment string
+	}{
+		{
+			name: "missing fallback",
+			fragment: `
+backend:
+  preferred:
+    runtime: codex
+    model: only-selection
+    reasoning_effort: high
+`,
+		},
+		{
+			name: "fallback duplicates preferred",
+			fragment: `
+backend:
+  preferred:
+    runtime: codex
+    model: only-selection
+    reasoning_effort: high
+  fallbacks:
+    - runtime: codex
+      model: only-selection
+      reasoning_effort: high
+`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fragmentPath := filepath.Join(repoDir, strings.ReplaceAll(tt.name, " ", "-")+".yml")
+			mustWrite(t, fragmentPath, tt.fragment)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json", "--yes"}, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("configure exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
+			}
+			response := decodeProfilesConfigureResponse(t, stdout.String())
+			if response.Changed || !strings.Contains(response.Error, "one additional distinct authorized and proven Agent Selection is required") {
+				t.Fatalf("fallback response = %+v", response)
+			}
+			if got := mustRead(t, configPath); got != original {
+				t.Fatalf("fallback failure mutated config\nwant: %q\n got: %q", original, got)
+			}
+		})
+	}
+	if len(runner.exactRequests) != 0 {
+		t.Fatalf("structural fallback failures created disposable Sessions: %#v", runner.exactRequests)
+	}
+}
+
+func TestProfilesConfigureProofFailureYesJSONPreservesBytes(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+	original := "watch:\n  max_rounds: 4\n"
+	mustWrite(t, configPath, original)
+	fragmentPath := filepath.Join(repoDir, "unsupported-profile.yml")
+	mustWrite(t, fragmentPath, `
+backend:
+  preferred:
+    runtime: codex
+    model: unavailable-model
+    reasoning_effort: high
+  fallbacks:
+    - runtime: codex
+      model: proven-fallback
+      reasoning_effort: xhigh
+`)
+	runner := &profileReadinessExactRunner{
+		prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
+			return agent.SelectionProof{}, &agent.SelectionUnsupportedError{
+				Kind:            agent.SelectionModelNotAdvertised,
+				Runtime:         req.Runtime.ID,
+				Model:           req.Runtime.Model,
+				ReasoningEffort: req.Runtime.ReasoningEffort,
+			}
+		},
+	}
+	withAgentRunner(t, runner)
+	withProfilesConfigureConfirm(t, func(context.Context, io.Writer, string) (bool, error) {
+		t.Fatal("--yes proof failure must not confirm")
+		return false, nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--yes", "--json"}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("proof failure exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
+	}
+	response := decodeProfilesConfigureResponse(t, stdout.String())
+	if response.Changed || !strings.Contains(response.Error, agent.SelectionModelNotAdvertised) {
+		t.Fatalf("proof failure response = %+v", response)
+	}
+	if got := mustRead(t, configPath); got != original {
+		t.Fatalf("proof failure mutated config\nwant: %q\n got: %q", original, got)
+	}
+}
+
+func TestProfilesConfigureProofCleanupFailureAndDeclinePreserveBytes(t *testing.T) {
+	t.Run("cleanup failure", func(t *testing.T) {
+		_, repoDir := withCLIWorkspace(t)
+		configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+		original := "watch:\n  max_rounds: 4\n"
+		mustWrite(t, configPath, original)
+		fragmentPath := filepath.Join(repoDir, "cleanup-profile.yml")
+		mustWrite(t, fragmentPath, profilesConfigureTestFragment("cleanup-preferred", "cleanup-fallback"))
+		withAgentRunner(t, &profileReadinessExactRunner{prove: func(agent.ProbeRequest) (agent.SelectionProof, error) {
+			return agent.SelectionProof{}, &agent.AgentSessionCleanupError{Session: "disposable", Err: errors.New("close failed")}
+		}})
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json", "--yes"}, &stdout, &stderr)
+
+		if code != exitPreflight {
+			t.Fatalf("cleanup failure exit = %d stderr=%q", code, stderr.String())
+		}
+		response := decodeProfilesConfigureResponse(t, stdout.String())
+		if response.Changed || !strings.Contains(response.Error, agent.SessionCleanupFailed) {
+			t.Fatalf("cleanup response = %+v", response)
+		}
+		if got := mustRead(t, configPath); got != original {
+			t.Fatalf("cleanup failure mutated config\nwant: %q\n got: %q", original, got)
+		}
+	})
+
+	t.Run("decline", func(t *testing.T) {
+		_, repoDir := withCLIWorkspace(t)
+		configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+		original := "watch:\n  max_rounds: 4\n"
+		mustWrite(t, configPath, original)
+		fragmentPath := filepath.Join(repoDir, "decline-profile.yml")
+		mustWrite(t, fragmentPath, profilesConfigureTestFragment("decline-preferred", "decline-fallback"))
+		withSuccessfulProfilesConfigureProof(t)
+		withProfilesConfigureConfirm(t, func(context.Context, io.Writer, string) (bool, error) { return false, nil })
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+
+		code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json"}, &stdout, &stderr)
+
+		if code != exitOK {
+			t.Fatalf("decline exit = %d stderr=%q", code, stderr.String())
+		}
+		if response := decodeProfilesConfigureResponse(t, stdout.String()); response.Changed {
+			t.Fatalf("decline response = %+v", response)
+		}
+		if got := mustRead(t, configPath); got != original {
+			t.Fatalf("decline mutated config\nwant: %q\n got: %q", original, got)
+		}
+	})
+}
+
+func TestProfilesConfigureJSONOutputFailureDoesNotMutateConfig(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	configPath := filepath.Join(repoDir, ".roundfixrc.yml")
+	original := "watch:\n  max_rounds: 4\n"
+	mustWrite(t, configPath, original)
+	fragmentPath := filepath.Join(repoDir, "output-profile.yml")
+	mustWrite(t, fragmentPath, profilesConfigureTestFragment("output-preferred", "output-fallback"))
+	withSuccessfulProfilesConfigureProof(t)
+	writeErr := errors.New("stdout failed")
+	var stderr bytes.Buffer
+
+	code := Run([]string{"profiles", "configure", "--scope", "project", "--file", fragmentPath, "--json", "--yes"}, failingWriter{err: writeErr}, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("output failure exit = %d, want %d stderr=%q", code, exitRunFailed, stderr.String())
+	}
+	if got := mustRead(t, configPath); got != original {
+		t.Fatalf("output failure mutated config\nwant: %q\n got: %q", original, got)
 	}
 }
 
@@ -894,7 +1319,7 @@ func TestProfilesValidateDeduplicatesProofsAndReportsEveryReference(t *testing.T
 	if len(runner.probeRequests) != 3 {
 		t.Fatalf("expected three unique tuple probes, got %#v", runner.probeRequests)
 	}
-	wantModels := []string{"gpt-5.6-sol", "gpt-5.6-terra", "claude-fable-5"}
+	wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "claude-fable-5"}
 	for index, want := range wantModels {
 		if runner.probeRequests[index].Runtime.Model != want {
 			t.Fatalf("probe %d model = %q, want %q", index, runner.probeRequests[index].Runtime.Model, want)
@@ -969,7 +1394,153 @@ profiles:
 	assertNoRunDatabase(t, homeDir)
 }
 
-func TestProfileOperationalPreflightMixedTaskGraphWithQADeduplicatesStableOrder(t *testing.T) {
+func TestProveProfileSelectionsDeduplicatesReferencesAndStartsFreshProofPass(t *testing.T) {
+	runner := &profileReadinessExactRunner{
+		prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
+			return agent.SelectionProof{
+				Runtime:         req.Runtime.ID,
+				Model:           req.Runtime.Model,
+				ReasoningEffort: req.Runtime.ReasoningEffort,
+				Assignment: agent.SelectionAssignment{
+					Encoding: agent.SelectionEncodingIndependent,
+				},
+				Adapter: agent.AdapterEvidence{
+					Command: "official-adapter",
+					Version: "1.1.4",
+				},
+				Status: agent.SelectionProofStatusProven,
+			}, nil
+		},
+	}
+	categories := roundconfig.RequiredWorkCategories()
+
+	first := proveProfileSelections(context.Background(), roundconfig.Builtin(), categories, "/workspace", runner)
+	second := proveProfileSelections(context.Background(), roundconfig.Builtin(), categories, "/workspace", runner)
+
+	if first.Err != nil || second.Err != nil {
+		t.Fatalf("profile readiness errors: first=%v second=%v", first.Err, second.Err)
+	}
+	if len(runner.exactRequests) != 6 {
+		t.Fatalf("exact proof requests = %d, want two fresh passes of three tuples", len(runner.exactRequests))
+	}
+	if runner.probeCalls != 0 {
+		t.Fatalf("legacy error-only probes = %d, want exact proof results", runner.probeCalls)
+	}
+	if len(first.Proofs) != 3 {
+		t.Fatalf("proofs = %d, want three deduplicated tuples", len(first.Proofs))
+	}
+	proof := first.Proofs[0]
+	if proof.Encoding != agent.SelectionEncodingIndependent || proof.AdapterCommand != "official-adapter" || proof.AdapterVersion != "1.1.4" {
+		t.Fatalf("proof metadata = %+v", proof)
+	}
+	assertProofReferences(t, proof, []string{"general/preferred", "backend/preferred", "frontend/fallback", "qa/preferred", "review/preferred"})
+}
+
+func TestProveProfileSelectionsRetainsStableFallbackPositions(t *testing.T) {
+	config := roundconfig.Builtin()
+	shared := config.Profiles[roundconfig.CategoryBackend].Profile.Fallbacks[0]
+	frontend := config.Profiles[roundconfig.CategoryFrontend]
+	frontend.Profile.Fallbacks = []roundconfig.AgentSelection{
+		{Runtime: "claude", Model: "frontend-first-fallback", ReasoningEffort: ""},
+		shared,
+	}
+	config.Profiles[roundconfig.CategoryFrontend] = frontend
+	runner := &profileReadinessExactRunner{
+		prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
+			return agent.SelectionProof{Runtime: req.Runtime.ID, Model: req.Runtime.Model, ReasoningEffort: req.Runtime.ReasoningEffort}, nil
+		},
+	}
+
+	result := proveProfileSelections(context.Background(), config, []roundconfig.WorkCategory{
+		roundconfig.CategoryBackend,
+		roundconfig.CategoryFrontend,
+	}, "/workspace", runner)
+
+	if result.Err != nil {
+		t.Fatalf("profile readiness error = %v", result.Err)
+	}
+	if len(runner.exactRequests) != 4 {
+		t.Fatalf("exact proof requests = %d, want four unique tuples", len(runner.exactRequests))
+	}
+	sharedProof := result.Proofs[1]
+	if sharedProof.Selection != shared || len(sharedProof.References) != 2 {
+		t.Fatalf("shared fallback proof = %+v", sharedProof)
+	}
+	if got := sharedProof.References[0]; got.Category != roundconfig.CategoryBackend || got.Role != "fallback" || got.FallbackIndex != 1 || got.Source != roundconfig.ProfileSourceBuiltIn {
+		t.Fatalf("backend fallback reference = %+v", got)
+	}
+	if got := sharedProof.References[1]; got.Category != roundconfig.CategoryFrontend || got.Role != "fallback" || got.FallbackIndex != 2 || got.Source != roundconfig.ProfileSourceBuiltIn {
+		t.Fatalf("frontend fallback reference = %+v", got)
+	}
+}
+
+func TestProfileOperationalPreflightMatchesProfilesValidateClassifiedFailure(t *testing.T) {
+	classified := &agent.SelectionUnsupportedError{
+		Kind:                agent.SelectionReasoningControlNotAdvertised,
+		Runtime:             "codex",
+		Model:               "gpt-5.6-sol",
+		ReasoningEffort:     "high",
+		AdvertisedModels:    []string{"gpt-5.6-sol", "gpt-5.5"},
+		AdvertisedReasoning: []string{"low", "medium"},
+	}
+	newRunner := func() *profileReadinessExactRunner {
+		return &profileReadinessExactRunner{
+			prove: func(agent.ProbeRequest) (agent.SelectionProof, error) {
+				return agent.SelectionProof{}, classified
+			},
+		}
+	}
+	config := roundconfig.Builtin()
+	categories := []roundconfig.WorkCategory{roundconfig.CategoryBackend}
+
+	validation := proveProfileSelections(context.Background(), config, categories, "/workspace", newRunner())
+	operational, operationalErr := runProfileOperationalPreflight(context.Background(), commandRequest{name: "implement"}, config, categories, "/workspace", newRunner(), io.Discard)
+
+	if validation.Err == nil || operationalErr == nil {
+		t.Fatalf("expected classified failures: validation=%v operational=%v", validation.Err, operationalErr)
+	}
+	if len(validation.Proofs) == 0 || len(operational.Proofs) == 0 {
+		t.Fatalf("missing failed proof evidence: validation=%+v operational=%+v", validation.Proofs, operational.Proofs)
+	}
+	validateProof := validation.Proofs[0]
+	preflightProof := operational.Proofs[0]
+	if !reflect.DeepEqual(validateProof, preflightProof) {
+		t.Fatalf("consumer proof evidence differs:\nvalidate:   %+v\noperational: %+v", validateProof, preflightProof)
+	}
+	if validateProof.Classification != agent.SelectionReasoningControlNotAdvertised {
+		t.Fatalf("classification = %q", validateProof.Classification)
+	}
+	if validateProof.NextAction == "" || len(validateProof.AdvertisedModels) != 2 || len(validateProof.AdvertisedReasoning) != 2 {
+		t.Fatalf("incomplete bounded failure evidence: %+v", validateProof)
+	}
+
+	var jsonStdout bytes.Buffer
+	var jsonStderr bytes.Buffer
+	if code := printProfilesValidateError(profilesValidateRequest{json: true}, validation, validation.Err, &jsonStdout, &jsonStderr); code != exitPreflight {
+		t.Fatalf("JSON failure exit = %d", code)
+	}
+	response := decodeProfilesValidateResponse(t, jsonStdout.String())
+	if response.Schema != profilesValidateSchema || len(response.Proofs) == 0 || !reflect.DeepEqual(response.Proofs[0], validateProof) {
+		t.Fatalf("unexpected JSON failure response: %+v", response)
+	}
+	for _, want := range []string{validateProof.Classification, "backend preferred", validateProof.NextAction} {
+		if !strings.Contains(jsonStderr.String(), want) {
+			t.Fatalf("JSON stderr missing %q in %q", want, jsonStderr.String())
+		}
+	}
+
+	var textStderr bytes.Buffer
+	if code := printProfilesValidateError(profilesValidateRequest{}, validation, validation.Err, io.Discard, &textStderr); code != exitPreflight {
+		t.Fatalf("text failure exit = %d", code)
+	}
+	for _, want := range []string{validateProof.Classification, "backend preferred", validateProof.NextAction} {
+		if !strings.Contains(textStderr.String(), want) {
+			t.Fatalf("text stderr missing %q in %q", want, textStderr.String())
+		}
+	}
+}
+
+func TestInvocationProfileOverrideOmittedUsesTaskQAAndReviewProfiles(t *testing.T) {
 	runner := &fakeAgentRunner{}
 	var stderr bytes.Buffer
 	graph := &spec.Graph{Tasks: []spec.Task{
@@ -986,7 +1557,7 @@ func TestProfileOperationalPreflightMixedTaskGraphWithQADeduplicatesStableOrder(
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no warning without invocation override, got %q", stderr.String())
 	}
-	wantModels := []string{"gpt-5.6-sol", "gpt-5.6-terra", "claude-fable-5"}
+	wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "claude-fable-5"}
 	if got := probeRequestModels(runner.probeRequests); !reflect.DeepEqual(got, wantModels) {
 		t.Fatalf("probe models = %v, want %v", got, wantModels)
 	}
@@ -1004,6 +1575,17 @@ func TestProfileOperationalPreflightMixedTaskGraphWithQADeduplicatesStableOrder(
 	if runner.calls != 0 || len(runner.fallbackModels) != 0 {
 		t.Fatalf("profile preflight must not prompt or discover fallbacks, calls=%d fallback=%#v", runner.calls, runner.fallbackModels)
 	}
+
+	reviewRunner := &fakeAgentRunner{}
+	reviewResult, err := runProfileOperationalPreflight(context.Background(), commandRequest{name: "resolve"}, roundconfig.Builtin(), reviewProfileCategories(), "/workspace", reviewRunner, io.Discard)
+	if err != nil {
+		t.Fatalf("review profile preflight error = %v", err)
+	}
+	if reviewResult.Override != nil {
+		t.Fatalf("review profile preflight override = %+v, want nil", reviewResult.Override)
+	}
+	assertProofReferences(t, reviewResult.Proofs[0], []string{"review/preferred"})
+	assertProofReferences(t, reviewResult.Proofs[1], []string{"review/fallback"})
 }
 
 func TestInvocationProfileOverrideAppliesAcrossCategoriesPreservesFallbacksAndWarns(t *testing.T) {
@@ -1011,15 +1593,14 @@ func TestInvocationProfileOverrideAppliesAcrossCategoriesPreservesFallbacksAndWa
 	var stderr bytes.Buffer
 	graph := &spec.Graph{Tasks: []spec.Task{
 		{ID: "task_backend", Status: spec.StatusPending, Type: spec.TaskTypeBackend},
-		{ID: "task_frontend", Status: spec.StatusPending, Type: spec.TaskTypeFrontend},
 	}}
 	req := commandRequest{
 		name:               "implement",
 		agent:              "codex",
 		agentSet:           true,
-		model:              "one-run-model",
+		model:              "gpt-5.6-sol",
 		modelSet:           true,
-		reasoningEffort:    "one-run-reasoning",
+		reasoningEffort:    "high",
 		reasoningEffortSet: true,
 	}
 	categories := implementProfileCategories(graph, true)
@@ -1029,20 +1610,33 @@ func TestInvocationProfileOverrideAppliesAcrossCategoriesPreservesFallbacksAndWa
 	if err != nil {
 		t.Fatalf("operational profile preflight error = %v", err)
 	}
-	if result.Override == nil || result.Override.Model != "one-run-model" || result.Override.ReasoningEffort != "one-run-reasoning" {
+	if result.Override == nil || result.Override.Model != "gpt-5.6-sol" || result.Override.ReasoningEffort != "high" {
 		t.Fatalf("unexpected invocation override: %+v", result.Override)
 	}
-	wantModels := []string{"one-run-model", "gpt-5.6-terra", "gpt-5.6-sol"}
+	wantModels := []string{"gpt-5.6-sol", "gpt-5.5"}
 	if got := probeRequestModels(runner.probeRequests); !reflect.DeepEqual(got, wantModels) {
 		t.Fatalf("probe models = %v, want %v", got, wantModels)
 	}
-	assertProofReferences(t, result.Proofs[0], []string{"backend/preferred", "frontend/preferred", "qa/preferred"})
-	if !strings.Contains(stderr.String(), "one invocation Agent Selection override applies to Agent Work Categories backend, frontend, qa") ||
+	assertProofReferences(t, result.Proofs[0], []string{"backend/preferred", "qa/preferred"})
+	if !strings.Contains(stderr.String(), "one invocation Agent Selection override applies to Agent Work Categories backend, qa") ||
 		!strings.Contains(stderr.String(), "Fallback Chains are preserved") {
 		t.Fatalf("expected cross-category warning, got %q", stderr.String())
 	}
 	if len(result.Warnings) != 1 || result.Warnings[0] != strings.TrimSpace(stderr.String()) {
 		t.Fatalf("warning metadata = %#v, stderr=%q", result.Warnings, stderr.String())
+	}
+	profiles, err := operationalAgentSelectionProfiles(roundconfig.Builtin(), categories, result.Override)
+	if err != nil {
+		t.Fatalf("operationalAgentSelectionProfiles() error = %v", err)
+	}
+	for _, category := range categories {
+		withoutOverride, err := roundconfig.ResolveProfile(roundconfig.Builtin(), category, nil)
+		if err != nil {
+			t.Fatalf("ResolveProfile(%s) error = %v", category, err)
+		}
+		if got := profiles[category]; !reflect.DeepEqual(got.Profile.Fallbacks, withoutOverride.Profile.Fallbacks) {
+			t.Fatalf("%s fallback chain = %+v, want %+v", category, got.Profile.Fallbacks, withoutOverride.Profile.Fallbacks)
+		}
 	}
 }
 
@@ -1677,7 +2271,7 @@ func TestRunRunsListOutsideRepositoryRequiresAll(t *testing.T) {
 	}
 }
 
-func TestRunDoctorReportsReadinessChecks(t *testing.T) {
+func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *testing.T) {
 	tests := []struct {
 		name       string
 		checker    *doctorFakeHealthChecker
@@ -1689,15 +2283,13 @@ func TestRunDoctorReportsReadinessChecks(t *testing.T) {
 			checker: newDoctorFakeHealthChecker(
 				CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
 				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
-				CheckResult{Name: HealthCheckAgent, Status: CheckStatusOK, Detail: "codex"},
 				CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK, Detail: "/home/roundfix/.local/bin/codex accepted"},
 			),
 			wantCode: exitOK,
 			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
 				"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
 				"adapter: ok (codex-acp)\n" +
-				"agent: ok (codex)\n" +
-				"model: ok (gpt-5.5)\n" +
+				"profiles: ok (3 distinct tuples; 10 category references)\n" +
 				"codex: ok (/home/roundfix/.local/bin/codex accepted)\n",
 		},
 		{
@@ -1705,15 +2297,13 @@ func TestRunDoctorReportsReadinessChecks(t *testing.T) {
 			checker: newDoctorFakeHealthChecker(
 				CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
 				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
-				CheckResult{Name: HealthCheckAgent, Status: CheckStatusOK, Detail: "codex"},
 				CheckResult{Name: HealthCheckCodex, Status: CheckStatusFailed, Detail: "/tmp/codex is quarantined", NextAction: codex.ReinstallNextAction},
 			),
 			wantCode: exitRunFailed,
 			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
 				"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
 				"adapter: ok (codex-acp)\n" +
-				"agent: ok (codex)\n" +
-				"model: ok (gpt-5.5)\n" +
+				"profiles: ok (3 distinct tuples; 10 category references)\n" +
 				"codex: failed (/tmp/codex is quarantined; next: " + codex.ReinstallNextAction + ")\n",
 		},
 		{
@@ -1721,15 +2311,13 @@ func TestRunDoctorReportsReadinessChecks(t *testing.T) {
 			checker: newDoctorFakeHealthChecker(
 				CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
 				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
-				CheckResult{Name: HealthCheckAgent, Status: CheckStatusOK, Detail: "codex"},
 				CheckResult{Name: HealthCheckCodex, Status: CheckStatusSkipped, Detail: "not-applicable on linux"},
 			),
 			wantCode: exitOK,
 			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
 				"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
 				"adapter: ok (codex-acp)\n" +
-				"agent: ok (codex)\n" +
-				"model: ok (gpt-5.5)\n" +
+				"profiles: ok (3 distinct tuples; 10 category references)\n" +
 				"codex: skipped (not-applicable on linux)\n",
 		},
 	}
@@ -1737,6 +2325,8 @@ func TestRunDoctorReportsReadinessChecks(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			homeDir, repoDir := withCLIWorkspace(t)
+			runner := &profileReadinessExactRunner{}
+			withAgentRunner(t, runner)
 			withDoctorFakeDeps(t, tt.checker)
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
@@ -1752,15 +2342,17 @@ func TestRunDoctorReportsReadinessChecks(t *testing.T) {
 			if stderr.Len() != 0 {
 				t.Fatalf("expected no stderr, got %q", stderr.String())
 			}
-			if len(tt.checker.agentRequests) != 1 {
-				t.Fatalf("expected one configured codex probe, got %#v", tt.checker.agentRequests)
+			if len(runner.exactRequests) != 3 {
+				t.Fatalf("expected three distinct profile proofs, got %#v", runner.exactRequests)
 			}
-			gotProbe := tt.checker.agentRequests[0]
-			if gotProbe.WorkDir != "/repo/project" ||
-				gotProbe.Runtime.ID != "codex" ||
-				gotProbe.Runtime.Model != "gpt-5.5" ||
-				gotProbe.Runtime.ReasoningEffort != "xhigh" {
-				t.Fatalf("expected configured codex selection probe in repo workdir, got %#v", gotProbe)
+			wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "claude-fable-5"}
+			for index, wantModel := range wantModels {
+				if request := runner.exactRequests[index]; request.WorkDir != "/repo/project" || request.Runtime.Model != wantModel {
+					t.Fatalf("profile proof %d = %#v, want model %q in repository", index, request, wantModel)
+				}
+			}
+			if len(tt.checker.agentRequests) != 0 {
+				t.Fatalf("Doctor must not run the legacy configured Agent probe, got %#v", tt.checker.agentRequests)
 			}
 			assertDoctorPathMissing(t, filepath.Join(homeDir, ".acpx"))
 			assertDoctorPathMissing(t, filepath.Join(homeDir, ".roundfix"))
@@ -1769,20 +2361,44 @@ func TestRunDoctorReportsReadinessChecks(t *testing.T) {
 	}
 }
 
-func TestRunDoctorReportsAdapterFailureWithNextAction(t *testing.T) {
+func TestRunDoctorProfileReadinessReportsLegacyAdapterThroughEffectiveProfile(t *testing.T) {
+	config := roundconfig.Builtin()
+	config.Defaults.Agent = "codex"
+	config.Runtimes.Codex.Model = "legacy-model-default"
+	proofs, err := buildProfileProofReports(config, roundconfig.RequiredWorkCategories())
+	if err != nil {
+		t.Fatalf("build profile proof reports: %v", err)
+	}
+	legacy := &agent.AdapterLineageError{
+		Command: "codex-acp",
+		Package: "@zed-industries/codex-acp",
+		Version: "0.16.0",
+	}
+	applyProfileProofFailure(&proofs[0], legacy)
+	readiness := profileProofResult{Proofs: proofs, Err: profileProofError{
+		Selection:      proofs[0].Selection,
+		References:     proofs[0].References,
+		Classification: proofs[0].Classification,
+		NextAction:     proofs[0].NextAction,
+		Err:            legacy,
+	}}
 	checker := newDoctorFakeHealthChecker(
 		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
 		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
-		CheckResult{Name: HealthCheckAgent, Status: CheckStatusOK, Detail: "should not run before adapter failure"},
 		CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK, Detail: "/home/roundfix/.local/bin/codex accepted"},
 	)
 	checker.adapter = CheckResult{
-		Name:       HealthCheckAdapter,
-		Status:     CheckStatusFailed,
-		Detail:     "codex-acp is required but was not found on PATH; install it with: npm install -g @agentclientprotocol/codex-acp",
-		NextAction: "npm install -g @agentclientprotocol/codex-acp",
+		Name:   HealthCheckAdapter,
+		Status: CheckStatusOK,
+		Detail: "command=\"codex-acp\"; package=@zed-industries/codex-acp; version=0.16.0",
 	}
-	withDoctorFakeDeps(t, checker)
+	withDoctorFakeLoadedAndReadiness(t, checker, roundconfig.Loaded{
+		Config:  config,
+		GitRoot: "/repo/project",
+		HomeDir: "/home/roundfix-test",
+	}, func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult {
+		return readiness
+	})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -1792,40 +2408,71 @@ func TestRunDoctorReportsAdapterFailureWithNextAction(t *testing.T) {
 		t.Fatalf("expected doctor adapter failure exit %d, got %d", exitRunFailed, code)
 	}
 	for _, want := range []string{
-		"adapter: failed",
-		"codex-acp is required but was not found on PATH",
-		"next: npm install -g @agentclientprotocol/codex-acp",
-		"agent: skipped (adapter failed)",
+		"adapter: ok (command=\"codex-acp\"; package=@zed-industries/codex-acp; version=0.16.0)",
+		"profiles: failed",
+		`runtime="codex", model="gpt-5.6-sol", reasoning_effort="high"`,
+		"affected categories: general preferred source=built-in, backend preferred source=built-in, frontend fallback[1] source=built-in, qa preferred source=built-in, review preferred source=built-in",
+		"classification: adapter_lineage_unknown",
+		"adapter evidence: command=\"codex-acp\", version=\"0.16.0\"",
+		"next: run `" + agent.CodexAdapterInstallCommand() + "`",
 	} {
 		if !strings.Contains(stdout.String(), want) {
 			t.Fatalf("expected stdout to contain %q, got %q", want, stdout.String())
 		}
 	}
-	if len(checker.agentRequests) != 0 {
-		t.Fatalf("expected adapter failure to skip Agent probe, got %#v", checker.agentRequests)
+	if strings.Contains(stdout.String(), "legacy-model-default") || strings.Contains(stdout.String(), "model:") || strings.Contains(stdout.String(), "agent:") {
+		t.Fatalf("Doctor reported legacy configured-runtime readiness: %q", stdout.String())
 	}
-	if !strings.Contains(stdout.String(), "model: skipped (adapter failed)") {
-		t.Fatalf("expected model check skipped after adapter failure, got %q", stdout.String())
+	if len(checker.adapterRuntimes) != 1 || checker.adapterRuntimes[0].Model != "gpt-5.6-sol" || checker.adapterRuntimes[0].ReasoningEffort != "high" {
+		t.Fatalf("adapter check did not use the effective general profile: %#v", checker.adapterRuntimes)
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
 	}
 }
 
-func TestRunDoctorRejectsMissingConfiguredAgentModel(t *testing.T) {
-	config := roundconfig.Builtin()
-	config.Runtimes.Codex.Model = ""
+func TestRunDoctorProfileReadinessMatchesProfilesValidateFailureEvidence(t *testing.T) {
+	_, repoDir := withCLIWorkspace(t)
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
+profiles:
+  backend:
+    preferred:
+      runtime: codex
+      model: broken-backend
+      reasoning_effort: high
+    fallbacks:
+      - runtime: claude
+        model: backup-backend
+        reasoning_effort: medium
+`)
+	failure := &agent.SelectionUnsupportedError{
+		Kind:                agent.SelectionReasoningControlNotAdvertised,
+		Runtime:             "codex",
+		Model:               "broken-backend",
+		ReasoningEffort:     "high",
+		AdvertisedModels:    []string{"broken-backend", "gpt-5.5"},
+		AdvertisedReasoning: []string{"low", "medium"},
+	}
+	runner := &profileReadinessExactRunner{prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
+		if req.Runtime.Model == "broken-backend" {
+			return agent.SelectionProof{}, failure
+		}
+		return agent.SelectionProof{}, nil
+	}}
+	withAgentRunner(t, runner)
+	var validateStdout bytes.Buffer
+	var validateStderr bytes.Buffer
+	validateCode := Run([]string{"profiles", "validate", "--category", "backend", "--json"}, &validateStdout, &validateStderr)
+	if validateCode != exitPreflight {
+		t.Fatalf("profiles validate exit = %d, want %d", validateCode, exitPreflight)
+	}
+
 	checker := newDoctorFakeHealthChecker(
 		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
 		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
-		CheckResult{Name: HealthCheckAgent, Status: CheckStatusOK, Detail: "should not run"},
 		CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK, Detail: "/home/roundfix/.local/bin/codex accepted"},
 	)
-	withDoctorFakeLoaded(t, checker, roundconfig.Loaded{
-		Config:  config,
-		GitRoot: "/repo/project",
-		HomeDir: "/home/roundfix-test",
-	})
+	withDoctorLiveDeps(t, checker)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -1834,83 +2481,46 @@ func TestRunDoctorRejectsMissingConfiguredAgentModel(t *testing.T) {
 	if code != exitRunFailed {
 		t.Fatalf("expected doctor selection failure exit %d, got %d", exitRunFailed, code)
 	}
-	if !strings.Contains(stdout.String(), `agent: failed (agent selection for runtime "codex" missing model`) {
-		t.Fatalf("expected missing selection diagnostic, got %q", stdout.String())
-	}
-	if !strings.Contains(stdout.String(), "model: skipped (agent selection failed)") {
-		t.Fatalf("expected model check skipped after selection failure, got %q", stdout.String())
-	}
-	if len(checker.agentRequests) != 0 {
-		t.Fatalf("expected invalid selection to skip readiness probe, got %#v", checker.agentRequests)
+	for _, evidence := range []struct {
+		doctor   string
+		validate string
+	}{
+		{`runtime="codex", model="broken-backend", reasoning_effort="high"`, `runtime "codex", model "broken-backend", reasoning_effort "high"`},
+		{"affected categories: backend preferred source=project", "affected categories: backend preferred source=project"},
+		{"classification: reasoning_control_not_advertised", "classification: reasoning_control_not_advertised"},
+		{"advertised_models=broken-backend,gpt-5.5", "advertised Agent Models: broken-backend, gpt-5.5"},
+		{"advertised_reasoning=low,medium", "advertised reasoning efforts: low, medium"},
+		{"roundfix profiles configure --scope user|project", "roundfix profiles configure --scope user|project"},
+	} {
+		if !strings.Contains(stdout.String(), evidence.doctor) {
+			t.Fatalf("Doctor output missing shared failure evidence %q: %q", evidence.doctor, stdout.String())
+		}
+		if !strings.Contains(validateStderr.String(), evidence.validate) {
+			t.Fatalf("profiles validate output missing shared failure evidence %q: %q", evidence.validate, validateStderr.String())
+		}
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
 	}
 }
 
-func TestRunDoctorAcceptsConfiguredEmptyReasoningEffort(t *testing.T) {
-	config := roundconfig.Builtin()
-	config.Runtimes.Codex.Model = "gpt-5.6-sol"
-	config.Runtimes.Codex.ReasoningEffort = ""
+func TestRunDoctorContinuesChecksAfterProfileReadinessFailure(t *testing.T) {
 	checker := newDoctorFakeHealthChecker(
 		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
 		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
-		CheckResult{Name: HealthCheckAgent, Status: CheckStatusOK, Detail: "codex"},
 		CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK, Detail: "/home/roundfix/.local/bin/codex accepted"},
 	)
-	withDoctorFakeLoaded(t, checker, roundconfig.Loaded{
-		Config:  config,
+	proofCalls := 0
+	withDoctorFakeLoadedAndReadiness(t, checker, roundconfig.Loaded{
+		Config:  roundconfig.Builtin(),
 		GitRoot: "/repo/project",
 		HomeDir: "/home/roundfix-test",
-	})
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-
-	code := Run([]string{"doctor"}, &stdout, &stderr)
-
-	if code != exitOK {
-		t.Fatalf("expected doctor success exit %d, got %d", exitOK, code)
-	}
-	if !strings.Contains(stdout.String(), "agent: ok (codex)") {
-		t.Fatalf("expected agent readiness success, got %q", stdout.String())
-	}
-	if !strings.Contains(stdout.String(), "model: ok (gpt-5.6-sol)") {
-		t.Fatalf("expected model readiness success, got %q", stdout.String())
-	}
-	if stderr.Len() != 0 {
-		t.Fatalf("expected no stderr, got %q", stderr.String())
-	}
-	if len(checker.agentRequests) != 1 {
-		t.Fatalf("expected one configured codex probe, got %#v", checker.agentRequests)
-	}
-	gotProbe := checker.agentRequests[0]
-	if gotProbe.WorkDir != "/repo/project" ||
-		gotProbe.Runtime.ID != "codex" ||
-		gotProbe.Runtime.Model != "gpt-5.6-sol" ||
-		gotProbe.Runtime.ReasoningEffort != "" {
-		t.Fatalf("expected model-managed codex selection probe in repo workdir, got %#v", gotProbe)
-	}
-}
-
-func TestRunDoctorReportsModelRejectionWithNextAction(t *testing.T) {
-	config := roundconfig.Builtin()
-	config.Runtimes.Codex.Model = "gpt-5.6-sol"
-	config.Runtimes.Codex.ReasoningEffort = ""
-	rejection := &agent.ModelNotAdvertisedError{
-		Runtime:    "codex",
-		Model:      "gpt-5.6-sol",
-		Advertised: []string{"gpt-5.5", "gpt-5.1"},
-	}
-	checker := newDoctorFakeHealthChecker(
-		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
-		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
-		CheckResult{Name: HealthCheckAgent, Status: CheckStatusFailed, Detail: rejection.Error(), Err: rejection},
-		CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK, Detail: "/home/roundfix/.local/bin/codex accepted"},
-	)
-	withDoctorFakeLoaded(t, checker, roundconfig.Loaded{
-		Config:  config,
-		GitRoot: "/repo/project",
-		HomeDir: "/home/roundfix-test",
+	}, func(_ context.Context, _ roundconfig.Config, categories []roundconfig.WorkCategory, workDir string) profileProofResult {
+		proofCalls++
+		if got := formatWorkCategories(categories); got != "general, backend, frontend, qa, review" || workDir != "/repo/project" {
+			t.Fatalf("profile readiness input categories=%q workDir=%q", got, workDir)
+		}
+		return profileProofResult{Err: errors.New("profile proof unavailable")}
 	})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -1920,20 +2530,20 @@ func TestRunDoctorReportsModelRejectionWithNextAction(t *testing.T) {
 	if code != exitRunFailed {
 		t.Fatalf("expected rejected model exit %d, got %d", exitRunFailed, code)
 	}
-	wantStdout := "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
-		"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
-		"adapter: ok (codex-acp)\n" +
-		"agent: failed (" + rejection.Error() + ")\n" +
-		`model: failed (Agent Model "gpt-5.6-sol" not advertised by runtime "codex"; advertised: gpt-5.5, gpt-5.1; next: update the ACP Runtime or adapter, choose an advertised Agent Model, or pass a one-Run --model override)` + "\n" +
-		"codex: ok (/home/roundfix/.local/bin/codex accepted)\n"
-	if got := stdout.String(); got != wantStdout {
-		t.Fatalf("unexpected stdout:\n got: %q\nwant: %q", got, wantStdout)
+	if proofCalls != 1 || checker.nodeCalls != 1 || checker.acpxCalls != 1 || checker.adapterCalls != 1 || checker.codexCalls != 1 {
+		t.Fatalf("independent check calls profile=%d node=%d acpx=%d adapter=%d codex=%d", proofCalls, checker.nodeCalls, checker.acpxCalls, checker.adapterCalls, checker.codexCalls)
+	}
+	output := stdout.String()
+	for _, want := range []string{"node: ok", "acpx: ok", "adapter: ok", "profiles: failed (profile proof unavailable)", "codex: ok"} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("Doctor output missing %q after profile failure: %q", want, output)
+		}
+	}
+	if strings.Index(output, "profiles:") > strings.Index(output, "codex:") {
+		t.Fatalf("profile readiness must precede Codex so Repository Skill Set readiness can be inserted after it: %q", output)
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
-	}
-	if len(checker.agentRequests) != 1 {
-		t.Fatalf("expected one configured codex probe, got %#v", checker.agentRequests)
 	}
 }
 
@@ -1954,34 +2564,42 @@ func TestRunDoctorRejectsArguments(t *testing.T) {
 	}
 }
 
-func newDoctorFakeHealthChecker(node, acpx, agentResult, codex CheckResult) *doctorFakeHealthChecker {
+func newDoctorFakeHealthChecker(node, acpx, codex CheckResult) *doctorFakeHealthChecker {
 	return &doctorFakeHealthChecker{
-		node:        node,
-		acpx:        acpx,
-		adapter:     CheckResult{Name: HealthCheckAdapter, Status: CheckStatusOK, Detail: "codex-acp"},
-		agentResult: agentResult,
-		codex:       codex,
+		node:    node,
+		acpx:    acpx,
+		adapter: CheckResult{Name: HealthCheckAdapter, Status: CheckStatusOK, Detail: "codex-acp"},
+		codex:   codex,
 	}
 }
 
 type doctorFakeHealthChecker struct {
-	node          CheckResult
-	acpx          CheckResult
-	adapter       CheckResult
-	agentResult   CheckResult
-	codex         CheckResult
-	agentRequests []agent.ProbeRequest
+	node            CheckResult
+	acpx            CheckResult
+	adapter         CheckResult
+	agentResult     CheckResult
+	codex           CheckResult
+	agentRequests   []agent.ProbeRequest
+	adapterRuntimes []agent.RuntimeSpec
+	nodeCalls       int
+	acpxCalls       int
+	adapterCalls    int
+	codexCalls      int
 }
 
 func (checker *doctorFakeHealthChecker) Node(context.Context) CheckResult {
+	checker.nodeCalls++
 	return checker.node
 }
 
 func (checker *doctorFakeHealthChecker) ACPX(context.Context) CheckResult {
+	checker.acpxCalls++
 	return checker.acpx
 }
 
-func (checker *doctorFakeHealthChecker) Adapter(context.Context, agent.RuntimeSpec) CheckResult {
+func (checker *doctorFakeHealthChecker) Adapter(_ context.Context, runtime agent.RuntimeSpec) CheckResult {
+	checker.adapterCalls++
+	checker.adapterRuntimes = append(checker.adapterRuntimes, runtime)
 	return checker.adapter
 }
 
@@ -1991,6 +2609,7 @@ func (checker *doctorFakeHealthChecker) Agent(_ context.Context, req agent.Probe
 }
 
 func (checker *doctorFakeHealthChecker) Codex(context.Context) CheckResult {
+	checker.codexCalls++
 	return checker.codex
 }
 
@@ -2004,6 +2623,10 @@ func withDoctorFakeDeps(t *testing.T, checker HealthChecker) {
 }
 
 func withDoctorFakeLoaded(t *testing.T, checker HealthChecker, loaded roundconfig.Loaded) {
+	withDoctorFakeLoadedAndReadiness(t, checker, loaded, defaultDoctorDependencies().profileReadiness)
+}
+
+func withDoctorFakeLoadedAndReadiness(t *testing.T, checker HealthChecker, loaded roundconfig.Loaded, readiness func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult) {
 	t.Helper()
 	old := doctorDeps
 	doctorDeps = doctorDependencies{
@@ -2013,7 +2636,18 @@ func withDoctorFakeLoaded(t *testing.T, checker HealthChecker, loaded roundconfi
 		healthChecker: func(roundconfig.Loaded) HealthChecker {
 			return checker
 		},
+		profileReadiness: readiness,
 	}
+	t.Cleanup(func() {
+		doctorDeps = old
+	})
+}
+
+func withDoctorLiveDeps(t *testing.T, checker HealthChecker) {
+	t.Helper()
+	old := doctorDeps
+	doctorDeps = defaultDoctorDependencies()
+	doctorDeps.healthChecker = func(roundconfig.Loaded) HealthChecker { return checker }
 	t.Cleanup(func() {
 		doctorDeps = old
 	})
@@ -2060,7 +2694,7 @@ func TestRunDetachRejectsInteractiveWithExistingConflictShape(t *testing.T) {
 func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 	fake := newSetupFakeDeps()
 	fake.acpxErr = errors.New("acpx not found")
-	fake.paths["codex-acp"] = "/bin/codex-acp"
+	fake.paths["claude-agent-acp"] = "/bin/claude-agent-acp"
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -2073,7 +2707,8 @@ func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 	assertSetupLineOrder(t, stdout.String(), []string{
 		"node: ok",
 		"acpx: installed",
-		"agent probe: ok",
+		"adapter: ok",
+		"profile readiness: passed",
 		"acpx agents override: installed",
 		"User Config: installed",
 		"Project Config: installed",
@@ -2084,12 +2719,12 @@ func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 	if got := strings.Join(fake.initScopes, ","); got != "user,project" {
 		t.Fatalf("expected User and Project Config init flows, got %q", got)
 	}
-	if fake.acpxInitCalls != 1 {
-		t.Fatalf("expected one acpx config init call, got %d", fake.acpxInitCalls)
+	if fake.acpxInitCalls != 0 {
+		t.Fatalf("expected in-memory ACPX proposal without config init side effects, got %d init calls", fake.acpxInitCalls)
 	}
 	acpxConfig := fake.files[fake.acpxConfigPath]
-	if !strings.Contains(acpxConfig, `"codex"`) || !strings.Contains(acpxConfig, `"command": "codex-acp"`) {
-		t.Fatalf("expected codex direct adapter override, got %s", acpxConfig)
+	if strings.Contains(acpxConfig, `"codex"`) || !strings.Contains(acpxConfig, `"command": "claude-agent-acp"`) {
+		t.Fatalf("expected only the non-Codex local adapter override, got %s", acpxConfig)
 	}
 	for _, want := range []string{"acpx agents override diff:", "--- ", "+++ ", "+  \"agents\""} {
 		if !strings.Contains(stdout.String(), want) {
@@ -2104,8 +2739,8 @@ func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 func TestRunSetupHealthyMachineIsIdempotent(t *testing.T) {
 	fake := newSetupFakeDeps()
 	fake.paths["codex-acp"] = "/bin/codex-acp"
-	fake.files[fake.userConfigPath] = "defaults:\n  agent: codex\n"
-	fake.files[fake.projectConfigPath] = "defaults:\n  verification: make verify\n"
+	fake.files[fake.userConfigPath] = roundconfig.DefaultConfigYAML()
+	fake.files[fake.projectConfigPath] = roundconfig.DefaultConfigYAML()
 	fake.files[fake.acpxConfigPath] = "{\n  \"agents\": {\n    \"codex\": {\n      \"command\": \"codex-acp\"\n    }\n  }\n}\n"
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
@@ -2119,7 +2754,8 @@ func TestRunSetupHealthyMachineIsIdempotent(t *testing.T) {
 	assertSetupLineOrder(t, stdout.String(), []string{
 		"node: ok",
 		"acpx: ok",
-		"agent probe: ok",
+		"adapter: ok",
+		"profile readiness: passed",
 		"acpx agents override: ok",
 		"User Config: ok",
 		"Project Config: ok",
@@ -2127,22 +2763,326 @@ func TestRunSetupHealthyMachineIsIdempotent(t *testing.T) {
 	if len(fake.installCalls) != 0 || len(fake.initScopes) != 0 || len(fake.writeCalls) != 0 || len(fake.prompts) != 0 {
 		t.Fatalf("expected idempotent setup to avoid side effects, installs=%v init=%v writes=%v prompts=%v", fake.installCalls, fake.initScopes, fake.writeCalls, fake.prompts)
 	}
-	if len(fake.probeRequests) != 1 {
-		t.Fatalf("expected one Agent readiness probe, got %#v", fake.probeRequests)
-	}
-	gotProbe := fake.probeRequests[0]
-	if gotProbe.WorkDir != fake.gitRoot ||
-		gotProbe.Runtime.ID != "codex" ||
-		gotProbe.Runtime.Model != "gpt-5.5" ||
-		gotProbe.Runtime.ReasoningEffort != "xhigh" {
-		t.Fatalf("expected setup to probe the effective Codex selection in the repo workdir, got %#v", gotProbe)
+	if len(fake.probeRequests) != 3 {
+		t.Fatalf("expected three distinct exact profile proofs, got %#v", fake.probeRequests)
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr, got %q", stderr.String())
 	}
 }
 
-func TestRunSetupAgentProbeUsesConfiguredSelectionAndWorkDir(t *testing.T) {
+func TestRunSetupReportsAdapterFailuresWithoutWrites(t *testing.T) {
+	tests := []struct {
+		name       string
+		adapterErr error
+		want       string
+	}{
+		{
+			name: "legacy lineage",
+			adapterErr: &agent.AdapterLineageError{
+				Command: "codex-acp",
+				Package: "@zed-industries/codex-acp",
+				Version: "0.16.0",
+			},
+			want: "legacy package @zed-industries/codex-acp version 0.16.0",
+		},
+		{
+			name: "unsupported official version",
+			adapterErr: &agent.AdapterVersionError{
+				Command:         "codex-acp",
+				Package:         agent.CodexAdapterPackage,
+				FoundVersion:    "1.1.3",
+				RequiredVersion: agent.PinnedCodexAdapterVersion,
+			},
+			want: "package @agentclientprotocol/codex-acp version 1.1.3; required version 1.1.4 or newer",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fake := newSetupFakeDeps()
+			fake.files[fake.userConfigPath] = "user config sentinel\n"
+			fake.files[fake.projectConfigPath] = "project config sentinel\n"
+			fake.files[fake.acpxConfigPath] = "{}\n"
+			fake.adapterErr = tt.adapterErr
+			before := make(map[string]string, len(fake.files))
+			for path, content := range fake.files {
+				before[path] = content
+			}
+			withSetupFakeDeps(t, fake)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+
+			if code != exitRunFailed {
+				t.Fatalf("expected adapter failure exit %d, got %d", exitRunFailed, code)
+			}
+			for _, want := range []string{
+				"adapter: failed",
+				"command \"codex-acp\"",
+				tt.want,
+				agent.CodexAdapterInstallCommand(),
+			} {
+				if !strings.Contains(stdout.String(), want) {
+					t.Fatalf("expected setup output to contain %q, got %q", want, stdout.String())
+				}
+			}
+			if strings.Contains(stdout.String(), "acpx agents override:") || strings.Contains(stdout.String(), "User Config:") || strings.Contains(stdout.String(), "Project Config:") {
+				t.Fatalf("adapter failure continued into mutation surfaces: %q", stdout.String())
+			}
+			if !reflect.DeepEqual(fake.files, before) || len(fake.writeCalls) != 0 || len(fake.initScopes) != 0 || fake.acpxInitCalls != 0 {
+				t.Fatalf("adapter failure changed config state: before=%v after=%v writes=%v init=%v acpxInit=%d", before, fake.files, fake.writeCalls, fake.initScopes, fake.acpxInitCalls)
+			}
+			if len(fake.probeRequests) != 0 {
+				t.Fatalf("adapter failure started profile proof: %#v", fake.probeRequests)
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no stderr, got %q", stderr.String())
+			}
+		})
+	}
+}
+
+func TestRunSetupProfileProofsEveryDistinctTupleOnceBeforePersistence(t *testing.T) {
+	fake := newSetupFakeDeps()
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+	}
+	want := map[roundconfig.AgentSelection]int{
+		{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"}:       1,
+		{Runtime: "codex", Model: "gpt-5.5", ReasoningEffort: "xhigh"}:          1,
+		{Runtime: "claude", Model: "claude-fable-5", ReasoningEffort: "medium"}: 1,
+	}
+	got := map[roundconfig.AgentSelection]int{}
+	for _, request := range fake.probeRequests {
+		got[roundconfig.AgentSelection{
+			Runtime:         strings.TrimSuffix(request.Runtime.ID, "-custom"),
+			Model:           request.Runtime.Model,
+			ReasoningEffort: request.Runtime.ReasoningEffort,
+		}]++
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("profile proof requests = %#v, want %#v", got, want)
+	}
+	if len(fake.initScopes) != 2 {
+		t.Fatalf("expected proof to precede both config writes, init scopes=%v", fake.initScopes)
+	}
+}
+
+func TestRunSetupProfileProofFailurePreservesAllTargets(t *testing.T) {
+	fake := newSetupFakeDeps()
+	fake.files[fake.acpxConfigPath] = "{\n  \"theme\": \"sentinel\"\n}\n"
+	fake.probeErr = &agent.SelectionUnsupportedError{
+		Kind:                agent.SelectionReasoningControlNotAdvertised,
+		Runtime:             "codex",
+		Model:               "gpt-5.6-sol",
+		ReasoningEffort:     "high",
+		AdvertisedModels:    []string{"gpt-5.6-sol"},
+		AdvertisedReasoning: []string{"medium"},
+	}
+	before := cloneSetupFiles(fake.files)
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "profile readiness: failed") {
+		t.Fatalf("expected profile readiness failure, got %q", stdout.String())
+	}
+	if !reflect.DeepEqual(fake.files, before) || len(fake.writeCalls) != 0 || len(fake.initScopes) != 0 {
+		t.Fatalf("proof failure mutated targets: before=%v after=%v writes=%v init=%v", before, fake.files, fake.writeCalls, fake.initScopes)
+	}
+}
+
+func TestRunSetupProfileCleanupAndInvalidEvidencePreserveAllTargets(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want string
+	}{
+		{
+			name: "cleanup failure",
+			err:  &agent.AgentSessionCleanupError{Session: "roundfix-preflight-test", Err: errors.New("close denied")},
+			want: agent.SessionCleanupFailed,
+		},
+		{
+			name: "invalid evidence",
+			err:  &agent.CapabilityEvidenceError{Issues: []string{agent.CapabilityIssueInvalidOption}},
+			want: agent.CapabilityEvidenceInvalid,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fake := newSetupFakeDeps()
+			fake.probeErr = tt.err
+			before := cloneSetupFiles(fake.files)
+			withSetupFakeDeps(t, fake)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+
+			if code != exitRunFailed {
+				t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
+			}
+			if !strings.Contains(stdout.String(), "profile readiness: failed") || !strings.Contains(stdout.String(), tt.want) {
+				t.Fatalf("expected classified profile failure %q, got %q", tt.want, stdout.String())
+			}
+			if !reflect.DeepEqual(fake.files, before) || len(fake.writeCalls) != 0 {
+				t.Fatalf("profile failure mutated targets: before=%v after=%v writes=%v", before, fake.files, fake.writeCalls)
+			}
+		})
+	}
+}
+
+func TestRunSetupProfileWriteFailurePreservesNotYetCommittedTargets(t *testing.T) {
+	fake := newSetupFakeDeps()
+	fake.writeErrors = map[string]error{fake.userConfigPath: errors.New("disk full")}
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitRunFailed, stdout.String(), stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "User Config: failed") || !strings.Contains(stdout.String(), "disk full") {
+		t.Fatalf("expected User Config write failure, got %q", stdout.String())
+	}
+	if _, ok := fake.files[fake.userConfigPath]; ok {
+		t.Fatalf("failed User Config write created target: %v", fake.files)
+	}
+	if _, ok := fake.files[fake.projectConfigPath]; ok {
+		t.Fatalf("later Project Config target changed after User Config failure: %v", fake.files)
+	}
+}
+
+func TestRunSetupProfilePersistenceMatchesSubsequentValidation(t *testing.T) {
+	fake := newSetupFakeDeps()
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+	}
+	resolved, err := roundconfig.ResolveConfigProposal(
+		[]byte(fake.files[fake.userConfigPath]),
+		[]byte(fake.files[fake.projectConfigPath]),
+	)
+	if err != nil {
+		t.Fatalf("resolve persisted config: %v", err)
+	}
+	validationRunner := &profileReadinessExactRunner{
+		prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
+			return agent.SelectionProof{
+				Runtime: req.Runtime.ID, Model: req.Runtime.Model, ReasoningEffort: req.Runtime.ReasoningEffort,
+				Assignment: agent.SelectionAssignment{Encoding: agent.SelectionEncodingIndependent},
+				Adapter:    fake.adapterEvidence,
+				Status:     agent.SelectionProofStatusProven,
+			}, nil
+		},
+	}
+	result := proveProfileSelections(context.Background(), resolved, roundconfig.RequiredWorkCategories(), fake.gitRoot, validationRunner)
+	if result.Err != nil {
+		t.Fatalf("subsequent profile validation: %v", result.Err)
+	}
+	if len(result.Proofs) != 3 || len(validationRunner.exactRequests) != 3 {
+		t.Fatalf("subsequent validation proofs=%d requests=%d, want three distinct tuples", len(result.Proofs), len(validationRunner.exactRequests))
+	}
+}
+
+func TestRunSetupNoInputProfileProofCreatesNoTargets(t *testing.T) {
+	fake := newSetupFakeDeps()
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+	}
+	if len(fake.probeRequests) != 3 || len(fake.files) != 0 || len(fake.writeCalls) != 0 || len(fake.prompts) != 0 {
+		t.Fatalf("--no-input proof/mutation mismatch: proofs=%d files=%v writes=%v prompts=%v", len(fake.probeRequests), fake.files, fake.writeCalls, fake.prompts)
+	}
+}
+
+func TestRunSetupAdapterMigrationDeclinePreservesAllTargets(t *testing.T) {
+	fake := newSetupFakeDeps()
+	fake.files[fake.acpxConfigPath] = "{\n  \"agents\": {\n    \"codex\": {\n      \"command\": \"codex-acp\"\n    }\n  }\n}\n"
+	fake.files[fake.userConfigPath] = "# user config sentinel\n{}\n"
+	fake.files[fake.projectConfigPath] = "# project config sentinel\n{}\n"
+	fake.adapterErr = &agent.AdapterLineageError{
+		Command: "codex-acp",
+		Package: "@zed-industries/codex-acp",
+		Version: "0.16.0",
+	}
+	fake.confirm = func(context.Context, io.Writer, string) (bool, error) { return false, nil }
+	before := cloneSetupFiles(fake.files)
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("declined migration exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+	}
+	if len(fake.prompts) != 1 || !strings.Contains(fake.prompts[0], "Migrate") {
+		t.Fatalf("migration prompts = %v, want one explicit migration offer", fake.prompts)
+	}
+	if !reflect.DeepEqual(fake.files, before) || len(fake.writeCalls) != 0 || len(fake.initScopes) != 0 {
+		t.Fatalf("declined migration mutated targets: before=%v after=%v writes=%v init=%v", before, fake.files, fake.writeCalls, fake.initScopes)
+	}
+}
+
+func TestRunSetupAdapterMigrationPersistsSupportedCommand(t *testing.T) {
+	fake := newSetupFakeDeps()
+	fake.files[fake.acpxConfigPath] = "{\n  \"agents\": {\n    \"codex\": {\n      \"command\": \"codex-acp\"\n    }\n  }\n}\n"
+	fake.adapterErr = &agent.AdapterLineageError{
+		Command: "codex-acp",
+		Package: "@zed-industries/codex-acp",
+		Version: "0.16.0",
+	}
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup", "--yes"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+	}
+	content := fake.files[fake.acpxConfigPath]
+	for _, want := range []string{`"command": "npx"`, `"args": ["-y","` + agent.CodexAdapterPackage + `@` + agent.PinnedCodexAdapterVersion + `"]`} {
+		if !strings.Contains(content, want) {
+			t.Fatalf("migrated ACPX config missing %q:\n%s", want, content)
+		}
+	}
+	if strings.Contains(content, `"command": "codex-acp"`) {
+		t.Fatalf("migrated ACPX config retained bare PATH override:\n%s", content)
+	}
+	if len(fake.adapterRequests) != 2 || fake.adapterRequests[1].Command != agent.CodexAdapterCommand() {
+		t.Fatalf("adapter proof requests = %#v, want current then deterministic proposal", fake.adapterRequests)
+	}
+}
+
+func TestRunSetupProfileProofUsesProposedProfilesAndWorkDir(t *testing.T) {
 	fake := newSetupFakeDeps()
 	fake.config.Runtimes.Codex.Model = "repo-codex"
 	fake.config.Runtimes.Codex.ReasoningEffort = "repo-xhigh"
@@ -2155,22 +3095,21 @@ func TestRunSetupAgentProbeUsesConfiguredSelectionAndWorkDir(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("expected setup exit 0, got %d (stdout %q stderr %q)", code, stdout.String(), stderr.String())
 	}
-	if len(fake.probeRequests) != 1 {
-		t.Fatalf("expected one Agent readiness probe, got %#v", fake.probeRequests)
+	if len(fake.probeRequests) != 3 {
+		t.Fatalf("expected three generated profile proofs, got %#v", fake.probeRequests)
 	}
-	gotProbe := fake.probeRequests[0]
-	if gotProbe.WorkDir != fake.gitRoot ||
-		gotProbe.Runtime.ID != "codex" ||
-		gotProbe.Runtime.Model != "repo-codex" ||
-		gotProbe.Runtime.ReasoningEffort != "repo-xhigh" {
-		t.Fatalf("expected setup probe to use configured Agent selection, got %#v", gotProbe)
+	for _, gotProbe := range fake.probeRequests {
+		if gotProbe.WorkDir != fake.gitRoot {
+			t.Fatalf("expected Setup proof in repository workdir, got %#v", gotProbe)
+		}
 	}
 }
 
 func TestRunSetupAcceptsConfiguredEmptyReasoningEffort(t *testing.T) {
 	fake := newSetupFakeDeps()
-	fake.config.Runtimes.Codex.Model = "gpt-5.6-sol"
-	fake.config.Runtimes.Codex.ReasoningEffort = ""
+	customConfig := strings.ReplaceAll(roundconfig.DefaultConfigYAML(), "reasoning_effort: high", `reasoning_effort: ""`)
+	fake.files[fake.userConfigPath] = customConfig
+	fake.files[fake.projectConfigPath] = customConfig
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -2180,15 +3119,14 @@ func TestRunSetupAcceptsConfiguredEmptyReasoningEffort(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("expected setup exit 0, got %d (stdout %q stderr %q)", code, stdout.String(), stderr.String())
 	}
-	if len(fake.probeRequests) != 1 {
-		t.Fatalf("expected one Agent readiness probe, got %#v", fake.probeRequests)
+	found := false
+	for _, gotProbe := range fake.probeRequests {
+		if gotProbe.Runtime.ID == "codex" && gotProbe.Runtime.Model == "gpt-5.6-sol" && gotProbe.Runtime.ReasoningEffort == "" {
+			found = true
+		}
 	}
-	gotProbe := fake.probeRequests[0]
-	if gotProbe.WorkDir != fake.gitRoot ||
-		gotProbe.Runtime.ID != "codex" ||
-		gotProbe.Runtime.Model != "gpt-5.6-sol" ||
-		gotProbe.Runtime.ReasoningEffort != "" {
-		t.Fatalf("expected setup probe to use model-managed Agent selection, got %#v", gotProbe)
+	if !found {
+		t.Fatalf("expected exact model-managed Agent Selection proof, got %#v", fake.probeRequests)
 	}
 }
 
@@ -2204,7 +3142,7 @@ func TestRunSetupRejectsMissingConfiguredAgentSelection(t *testing.T) {
 	if code != exitRunFailed {
 		t.Fatalf("expected setup selection failure exit %d, got %d", exitRunFailed, code)
 	}
-	if !strings.Contains(stdout.String(), `agent probe: failed (agent selection for runtime "codex" missing model`) {
+	if !strings.Contains(stdout.String(), `adapter: failed (agent selection for runtime "codex" missing model`) {
 		t.Fatalf("expected missing selection diagnostic, got %q", stdout.String())
 	}
 	if len(fake.probeRequests) != 0 {
@@ -2218,8 +3156,8 @@ func TestRunSetupRejectsMissingConfiguredAgentSelection(t *testing.T) {
 func TestRunSetupMismatchedACPXUpgradeOffer(t *testing.T) {
 	fake := newSetupFakeDeps()
 	fake.acpxVersion = "0.11.0"
-	fake.files[fake.userConfigPath] = "defaults:\n  agent: codex\n"
-	fake.files[fake.projectConfigPath] = "defaults:\n  verification: make verify\n"
+	fake.files[fake.userConfigPath] = roundconfig.DefaultConfigYAML()
+	fake.files[fake.projectConfigPath] = roundconfig.DefaultConfigYAML()
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -2239,11 +3177,11 @@ func TestRunSetupMismatchedACPXUpgradeOffer(t *testing.T) {
 
 func TestRunSetupMergesACPXAgentsOverridePreservingUnrelatedBytes(t *testing.T) {
 	fake := newSetupFakeDeps()
-	fake.paths["codex-acp"] = "/bin/codex-acp"
-	fake.files[fake.userConfigPath] = "defaults:\n  agent: codex\n"
-	fake.files[fake.projectConfigPath] = "defaults:\n  verification: make verify\n"
+	fake.paths["claude-agent-acp"] = "/bin/claude-agent-acp"
+	fake.files[fake.userConfigPath] = roundconfig.DefaultConfigYAML()
+	fake.files[fake.projectConfigPath] = roundconfig.DefaultConfigYAML()
 	unrelated := "  \"theme\": {\n    \"color\": \"blue\",\n    \"nested\": [1, 2, 3]\n  }"
-	existingAgent := "    \"claude\": {\n      \"command\": \"existing-claude\"\n    }"
+	existingAgent := "    \"custom\": {\n      \"command\": \"existing-custom\"\n    }"
 	fake.files[fake.acpxConfigPath] = "{\n" + unrelated + ",\n  \"agents\": {\n" + existingAgent + "\n  }\n}\n"
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
@@ -2255,12 +3193,12 @@ func TestRunSetupMergesACPXAgentsOverridePreservingUnrelatedBytes(t *testing.T) 
 		t.Fatalf("expected setup exit 0, got %d (stderr %q)", code, stderr.String())
 	}
 	acpxConfig := fake.files[fake.acpxConfigPath]
-	for _, want := range []string{unrelated, existingAgent, `"codex"`, `"command": "codex-acp"`} {
+	for _, want := range []string{unrelated, existingAgent, `"claude"`, `"command": "claude-agent-acp"`} {
 		if !strings.Contains(acpxConfig, want) {
 			t.Fatalf("expected merged config to preserve/include %q, got %s", want, acpxConfig)
 		}
 	}
-	if !strings.Contains(stdout.String(), "acpx agents override diff:") || !strings.Contains(stdout.String(), "+    \"codex\"") {
+	if !strings.Contains(stdout.String(), "acpx agents override diff:") || !strings.Contains(stdout.String(), "+    \"claude\"") {
 		t.Fatalf("expected before/after diff for override, got %q", stdout.String())
 	}
 }
@@ -2268,7 +3206,7 @@ func TestRunSetupMergesACPXAgentsOverridePreservingUnrelatedBytes(t *testing.T) 
 func TestRunSetupDeclinedOffersReportNoWrites(t *testing.T) {
 	fake := newSetupFakeDeps()
 	fake.acpxErr = errors.New("acpx not found")
-	fake.paths["codex-acp"] = "/bin/codex-acp"
+	fake.paths["claude-agent-acp"] = "/bin/claude-agent-acp"
 	fake.confirm = func(context.Context, io.Writer, string) (bool, error) {
 		return false, nil
 	}
@@ -2284,23 +3222,21 @@ func TestRunSetupDeclinedOffersReportNoWrites(t *testing.T) {
 	assertSetupLineOrder(t, stdout.String(), []string{
 		"node: ok",
 		"acpx: offered: declined",
-		"agent probe: skipped",
-		"acpx agents override: offered: declined",
-		"User Config: offered: declined",
-		"Project Config: offered: declined",
+		"adapter: skipped",
+		"profile readiness: skipped",
 	})
 	if len(fake.installCalls) != 0 || len(fake.initScopes) != 0 || len(fake.writeCalls) != 0 || fake.acpxInitCalls != 0 {
 		t.Fatalf("expected no writes after declined offers, installs=%v init=%v writes=%v acpxInit=%d", fake.installCalls, fake.initScopes, fake.writeCalls, fake.acpxInitCalls)
 	}
-	if len(fake.prompts) != 4 {
-		t.Fatalf("expected four confirmation prompts, got %d: %v", len(fake.prompts), fake.prompts)
+	if len(fake.prompts) != 1 {
+		t.Fatalf("expected one prerequisite confirmation prompt, got %d: %v", len(fake.prompts), fake.prompts)
 	}
 }
 
 func TestRunSetupNoInputSkipsOffers(t *testing.T) {
 	fake := newSetupFakeDeps()
 	fake.acpxErr = errors.New("acpx not found")
-	fake.paths["codex-acp"] = "/bin/codex-acp"
+	fake.paths["claude-agent-acp"] = "/bin/claude-agent-acp"
 	withSetupFakeDeps(t, fake)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -2313,10 +3249,8 @@ func TestRunSetupNoInputSkipsOffers(t *testing.T) {
 	assertSetupLineOrder(t, stdout.String(), []string{
 		"node: ok",
 		"acpx: skipped",
-		"agent probe: skipped",
-		"acpx agents override: skipped",
-		"User Config: skipped",
-		"Project Config: skipped",
+		"adapter: skipped",
+		"profile readiness: skipped",
 	})
 	if len(fake.installCalls) != 0 || len(fake.initScopes) != 0 || len(fake.writeCalls) != 0 || len(fake.prompts) != 0 {
 		t.Fatalf("expected --no-input to avoid side effects, installs=%v init=%v writes=%v prompts=%v", fake.installCalls, fake.initScopes, fake.writeCalls, fake.prompts)
@@ -2375,6 +3309,13 @@ func TestHealthCheckerReturnsStructuredReadOnlyResults(t *testing.T) {
 		acpxVersion: func(context.Context) (string, error) {
 			return agent.PinnedACPXVersion + "\n", nil
 		},
+		checkAdapter: func(context.Context, agent.RuntimeSpec) (agent.AdapterEvidence, error) {
+			return agent.AdapterEvidence{
+				Command: "npx -y " + agent.CodexAdapterPackage,
+				Package: agent.CodexAdapterPackage,
+				Version: agent.PinnedCodexAdapterVersion,
+			}, nil
+		},
 		probeAgent: func(_ context.Context, got agent.ProbeRequest) error {
 			probed = true
 			if !reflect.DeepEqual(got, req) {
@@ -2393,6 +3334,11 @@ func TestHealthCheckerReturnsStructuredReadOnlyResults(t *testing.T) {
 		Name:   HealthCheckACPX,
 		Status: CheckStatusOK,
 		Detail: agent.PinnedACPXVersion,
+	})
+	assertCheckResult(t, checker.Adapter(ctx, req.Runtime), CheckResult{
+		Name:   HealthCheckAdapter,
+		Status: CheckStatusOK,
+		Detail: "command=\"npx -y " + agent.CodexAdapterPackage + "\"; package=" + agent.CodexAdapterPackage + "; version=" + agent.PinnedCodexAdapterVersion,
 	})
 	assertCheckResult(t, checker.Agent(ctx, req), CheckResult{
 		Name:   HealthCheckAgent,
@@ -2648,13 +3594,13 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 		},
 		{
 			name:           "resolve",
-			args:           []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"},
+			args:           []string{"resolve", "--pr", "123", "--round", "all", "--no-input"},
 			expectedCode:   0,
 			expectedOutput: "resolve selected 1 downloaded Unresolved Review Issue",
 		},
 		{
 			name:           "watch",
-			args:           []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"},
+			args:           []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"},
 			expectedCode:   0,
 			expectedOutput: "Watch Run",
 		},
@@ -2955,7 +3901,7 @@ func TestRunWatchPrintsDeterministicStdoutReport(t *testing.T) {
 	}{
 		{
 			name: "clean",
-			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"},
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"},
 			wantStdout: "" +
 				"issue 001 resolved — major: handle test issue\n" +
 				"This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
@@ -2967,7 +3913,7 @@ func TestRunWatchPrintsDeterministicStdoutReport(t *testing.T) {
 				t.Helper()
 				withAgentRunner(t, &fakeAgentRunner{status: rounds.StatusFailed})
 			},
-			args:     []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"},
+			args:     []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"},
 			wantCode: exitRunFailed,
 			wantStdout: "" +
 				"issue 001 failed — major: handle test issue\n" +
@@ -3010,7 +3956,7 @@ resolve:
 					},
 				})
 			},
-			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "1", "--no-input"},
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "1", "--no-input"},
 			wantStdout: "" +
 				"issue 001 resolved — major: handle first issue\n" +
 				"issue 002 failed — major: handle second issue\n" +
@@ -3024,7 +3970,7 @@ resolve:
 				withAgentRunner(t, &fakeStoppingAgentRunner{})
 				withChangedPaths(t, nil)
 			},
-			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"},
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"},
 			wantStdout: "" +
 				"issue 001 unresolved — major: handle test issue\n" +
 				"This Run (Stopped after 1 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 0 failed, 1 unresolved.\n" +
@@ -3061,7 +4007,7 @@ func TestRunResolvePrintsDeterministicStdoutReport(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean resolve exit code 0, got %d stderr=%q", code, stderr.String())
@@ -3349,7 +4295,7 @@ func TestRunOutcomeNotificationsCaptureTerminalResolveWatchAndImplement(t *testi
 	}{
 		{
 			name: "resolve",
-			args: []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"},
+			args: []string{"resolve", "--pr", "123", "--round", "all", "--no-input"},
 			setup: func(t *testing.T) string {
 				t.Helper()
 				homeDir, repoDir := withCLIWorkspace(t)
@@ -3364,7 +4310,7 @@ func TestRunOutcomeNotificationsCaptureTerminalResolveWatchAndImplement(t *testi
 		},
 		{
 			name: "watch",
-			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"},
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"},
 			setup: func(t *testing.T) string {
 				t.Helper()
 				homeDir, repoDir := withCLIWorkspace(t)
@@ -3378,7 +4324,7 @@ func TestRunOutcomeNotificationsCaptureTerminalResolveWatchAndImplement(t *testi
 		},
 		{
 			name: "implement",
-			args: []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"},
+			args: []string{"implement", "--spec", implementTestSlug, "--no-input"},
 			setup: func(t *testing.T) string {
 				t.Helper()
 				homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
@@ -3539,7 +4485,7 @@ func TestRunOutcomeNotificationsDisabledSkipsNotifier(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected resolve exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -3601,7 +4547,7 @@ func TestRunResolveAllowsUntrackedCheckoutFiles(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean resolve exit with untracked file, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -3636,7 +4582,7 @@ func TestRunResolveCommitsOnUserBranchWithoutRunBranch(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -3692,7 +4638,7 @@ func TestRunResolvePushRunsFromUserCheckoutWithoutRunWorktree(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -3771,7 +4717,7 @@ func TestRunWatchReusesUserCheckoutAcrossRoundsWithoutRunBranch(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "2", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "2", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean watch exit, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -3828,7 +4774,7 @@ budget:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected BudgetExceeded exit %d, got %d stderr=%q", exitRunFailed, code, stderr.String())
@@ -3857,7 +4803,7 @@ func TestOperationalStdoutReportStartsAfterTerminalRunLine(t *testing.T) {
 	}{
 		{
 			name:           "watch",
-			args:           []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"},
+			args:           []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"},
 			terminalNeedle: "reached Clean",
 			wantStdout: "" +
 				"issue 001 resolved — major: handle test issue\n" +
@@ -3866,7 +4812,7 @@ func TestOperationalStdoutReportStartsAfterTerminalRunLine(t *testing.T) {
 		},
 		{
 			name: "resolve",
-			args: []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"},
+			args: []string{"resolve", "--pr", "123", "--round", "all", "--no-input"},
 			setup: func(t *testing.T, repoDir string) {
 				t.Helper()
 				persistCLIReviewIssue(t, repoDir, 1, "feature/review")
@@ -3920,12 +4866,12 @@ func TestRunResolveAgentFullAccessIsExplicitOptIn(t *testing.T) {
 	}{
 		{
 			name:       "default sandboxed",
-			args:       []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"},
+			args:       []string{"resolve", "--pr", "123", "--round", "all", "--no-input"},
 			wantAccess: "",
 		},
 		{
 			name:       "command flag opts in",
-			args:       []string{"resolve", "--pr", "123", "--agent", "codex", "--agent-full-access", "--round", "all", "--no-input"},
+			args:       []string{"resolve", "--pr", "123", "--agent-full-access", "--round", "all", "--no-input"},
 			wantAccess: "full-access",
 		},
 		{
@@ -3934,7 +4880,7 @@ func TestRunResolveAgentFullAccessIsExplicitOptIn(t *testing.T) {
 defaults:
   agent_full_access: true
 `,
-			args:       []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"},
+			args:       []string{"resolve", "--pr", "123", "--round", "all", "--no-input"},
 			wantAccess: "full-access",
 		},
 	}
@@ -4026,7 +4972,7 @@ watch:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected watch timeout exit 1, got %d", code)
@@ -4070,7 +5016,7 @@ watch:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != exitUnverified {
 		t.Fatalf("expected CleanUnverified watch exit %d, got %d stderr=%q", exitUnverified, code, stderr.String())
@@ -4160,7 +5106,7 @@ resolve:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "2", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "2", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean watch exit 0, got %d stderr=%q", code, stderr.String())
@@ -4194,7 +5140,7 @@ func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := RunContext(ctx, []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean Stop Request exit 0, got %d", code)
@@ -4237,7 +5183,7 @@ func TestRunResolveStopRequestDuringAgentPreservesWorkAndSkipsDaemonMutations(t 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean Stop Request exit 0, got %d", code)
@@ -4292,7 +5238,7 @@ func TestRunResolveSIGINTStopReturns130(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	stoppedCode := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	stoppedCode := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 	code := exitForInterrupt(stoppedCode, true)
 
 	if code != 130 {
@@ -4338,7 +5284,7 @@ func TestRunResolveRejectsMissingCompatibleArtifactsBeforeRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d", code)
@@ -4370,7 +5316,7 @@ func TestRunResolveHonorsRoundSelector(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--round", "2", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--round", "2", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected Unresolved resolve exit code 1, got %d", code)
@@ -4407,7 +5353,7 @@ func TestRunResolveDeduplicatesBeforeBatching(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful resolve exit code 0, got %d", code)
@@ -4469,7 +5415,7 @@ func TestRunResolveVerificationFailureDoesNotCommit(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected Run failure exit 1, got %d", code)
@@ -4557,7 +5503,7 @@ resolve:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful resolve exit 0, got %d", code)
@@ -4661,7 +5607,7 @@ func TestRunResolveFinalPushRunsOnceAfterAllUnresolvedTerminal(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful resolve exit 0, got %d", code)
@@ -4702,7 +5648,7 @@ func TestRunResolveResolvesInvalidAssignedIssueSourceThread(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected successful resolve exit 0, got %d", code)
@@ -4725,7 +5671,7 @@ func TestRunResolveProbeFailureDoesNotCreateRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected probe preflight exit 2, got %d", code)
@@ -4761,7 +5707,7 @@ runtimes:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected selection preflight exit %d, got %d", exitPreflight, code)
@@ -4811,7 +5757,7 @@ func TestRunWatchSelectionPreflightFailureCreatesNoRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected selection preflight exit %d, got %d", exitPreflight, code)
@@ -4962,12 +5908,12 @@ func TestRunReviewAgentCommandsDoNotPromptForDynamicFallback(t *testing.T) {
 	}{
 		{
 			name:             "resolve",
-			args:             []string{"resolve", "--pr", "123", "--agent", "codex"},
+			args:             []string{"resolve", "--pr", "123"},
 			needsReviewIssue: true,
 		},
 		{
 			name: "watch with model-managed reasoning",
-			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "1"},
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "1"},
 		},
 	}
 	for _, tt := range tests {
@@ -5048,7 +5994,7 @@ func TestRunResolveProfileProofFailureIgnoresFallbackConfirmationInput(t *testin
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"resolve", "--pr", "123", "--agent", "codex"}, &stdout, &stderr)
+			code := Run([]string{"resolve", "--pr", "123"}, &stdout, &stderr)
 
 			if code != exitPreflight {
 				t.Fatalf("expected profile proof preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -5085,7 +6031,7 @@ func TestRunResolveNoInputProfileProofFailureReportsRemediation(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--reasoning-effort", "xhigh", "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected profile proof preflight exit %d, got %d", exitPreflight, code)
@@ -5131,7 +6077,7 @@ func TestRunResolveDetachedChildReportsProfileProofFailure(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--model", "broken-model", "--reasoning-effort", "xhigh"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected detached preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -5202,12 +6148,12 @@ func TestRunReviewAgentCommandsRejectExplicitEmptySelectionOverrides(t *testing.
 	}{
 		{
 			name: "resolve model",
-			args: []string{"resolve", "--pr", "123", "--agent", "codex", "--model=", "--no-input"},
+			args: []string{"resolve", "--pr", "123", "--agent", "codex", "--model=", "--reasoning-effort", "high", "--no-input"},
 			want: "--model cannot be empty",
 		},
 		{
 			name: "watch model",
-			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--model=", "--no-input"},
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--model=", "--reasoning-effort", "high", "--no-input"},
 			want: "--model cannot be empty",
 		},
 	}
@@ -5230,6 +6176,66 @@ func TestRunReviewAgentCommandsRejectExplicitEmptySelectionOverrides(t *testing.
 			}
 			assertNoRunDatabase(t, homeDir)
 		})
+	}
+}
+
+func TestRunResolveSelectionOverrideRejectsPartialBeforeConfigLoad(t *testing.T) {
+	partials := []struct {
+		name string
+		args []string
+	}{
+		{name: "agent only detached", args: []string{"--detach", "--agent", "codex"}},
+		{name: "model only", args: []string{"--model", "gpt-5.6-sol"}},
+		{name: "reasoning only", args: []string{"--reasoning-effort", "high"}},
+		{name: "agent and model", args: []string{"--agent", "codex", "--model", "gpt-5.6-sol"}},
+		{name: "agent and reasoning", args: []string{"--agent", "codex", "--reasoning-effort", "high"}},
+		{name: "model and reasoning", args: []string{"--model", "gpt-5.6-sol", "--reasoning-effort", "high"}},
+	}
+	for _, tt := range partials {
+		t.Run(tt.name, func(t *testing.T) {
+			args := []string{"resolve", "--pr", "123", "--no-input"}
+			args = append(args, tt.args...)
+			assertRunReviewSelectionOverrideRejectsPartialBeforeConfigLoad(t, args)
+		})
+	}
+}
+
+func TestRunWatchSelectionOverrideRejectsPartialBeforeConfigLoad(t *testing.T) {
+	assertRunReviewSelectionOverrideRejectsPartialBeforeConfigLoad(t, []string{
+		"watch", "--source", "coderabbit", "--pr", "123", "--model", "gpt-5.6-sol", "--no-input",
+	})
+}
+
+func assertRunReviewSelectionOverrideRejectsPartialBeforeConfigLoad(t *testing.T, args []string) {
+	t.Helper()
+	homeDir, _ := withCLIWorkspace(t)
+	configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
+	const invalidConfig = "defaults:\n  agent: [\n"
+	mustMkdir(t, filepath.Dir(configPath))
+	mustWrite(t, configPath, invalidConfig)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run(args, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout diagnostics, got %q", stdout.String())
+	}
+	const wantGrammar = "--agent, --model, and --reasoning-effort must be provided together for a one-Run Agent Selection override; omit all three to use Agent Selection Profiles"
+	if !strings.Contains(stderr.String(), wantGrammar) {
+		t.Fatalf("expected selection grammar error before config load, got %q", stderr.String())
+	}
+	if got := mustRead(t, configPath); got != invalidConfig {
+		t.Fatalf("partial override changed User Config\nwant: %q\n got: %q", invalidConfig, got)
+	}
+	assertNoRunDatabase(t, homeDir)
+	if _, err := os.Stat(filepath.Join(homeDir, ".roundfix", "worktrees")); err == nil {
+		t.Fatalf("partial override created a Run Worktree root")
+	} else if !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("stat Run Worktree root: %v", err)
 	}
 }
 
@@ -5269,7 +6275,7 @@ func TestRunResolveACPXProbeFailureReportsActionablePreflight(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+			code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 			if code != 2 {
 				t.Fatalf("expected probe preflight exit 2, got %d", code)
@@ -5302,7 +6308,7 @@ func TestRunResolveAgentFailureMarksBatchFailed(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected Run failure exit 1, got %d", code)
@@ -5369,7 +6375,7 @@ resolve:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected Unresolved exit 1, got %d", code)
@@ -5441,7 +6447,7 @@ resolve:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit 0, got %d stderr=%q", code, stderr.String())
@@ -5507,7 +6513,7 @@ func TestRunResolveClosesAgentSessionForTerminalOutcomes(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+			code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 			if code != tt.wantCode {
 				t.Fatalf("expected exit code %d, got %d stderr=%q", tt.wantCode, code, stderr.String())
@@ -5529,7 +6535,7 @@ func TestRunResolveRejectsIncompatibleArtifacts(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d", code)
@@ -5563,22 +6569,22 @@ func TestRunOperationalCommandRejectsInvalidInput(t *testing.T) {
 		},
 		{
 			name:     "unsupported agent",
-			args:     []string{"resolve", "--pr", "123", "--agent", "other", "--no-input"},
+			args:     []string{"resolve", "--pr", "123", "--agent", "other", "--model", "other-model", "--reasoning-effort", "high", "--no-input"},
 			contains: "unsupported Agent",
 		},
 		{
 			name:     "invalid max rounds",
-			args:     []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--max-rounds", "0", "--no-input"},
+			args:     []string{"watch", "--source", "coderabbit", "--pr", "123", "--max-rounds", "0", "--no-input"},
 			contains: "--max-rounds must be greater than 0",
 		},
 		{
 			name:     "resolve agent console suppression conflicts with interactive input",
-			args:     []string{"resolve", "--pr", "123", "--agent", "codex", "--interactive", "--no-agent-console"},
+			args:     []string{"resolve", "--pr", "123", "--interactive", "--no-agent-console"},
 			contains: "--interactive cannot be used with --no-agent-console",
 		},
 		{
 			name:     "watch agent console suppression conflicts with interactive input",
-			args:     []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--interactive", "--no-agent-console"},
+			args:     []string{"watch", "--source", "coderabbit", "--pr", "123", "--interactive", "--no-agent-console"},
 			contains: "--interactive cannot be used with --no-agent-console",
 		},
 		{
@@ -5625,15 +6631,15 @@ func TestRunNoAgentConsoleRejectsInteractiveCockpit(t *testing.T) {
 	}{
 		{
 			name: "resolve",
-			args: []string{"resolve", "--pr", "123", "--agent", "codex", "--no-agent-console", "--no-input"},
+			args: []string{"resolve", "--pr", "123", "--no-agent-console", "--no-input"},
 		},
 		{
 			name: "watch",
-			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--no-agent-console", "--no-input"},
+			args: []string{"watch", "--source", "coderabbit", "--pr", "123", "--no-agent-console", "--no-input"},
 		},
 		{
 			name: "implement",
-			args: []string{"implement", "--spec", "0001-widget-flow", "--agent", "codex", "--no-agent-console", "--no-input"},
+			args: []string{"implement", "--spec", "0001-widget-flow", "--no-agent-console", "--no-input"},
 		},
 	}
 
@@ -6905,6 +7911,8 @@ type setupFakeDeps struct {
 	nodeErr           error
 	acpxVersion       string
 	acpxErr           error
+	adapterEvidence   agent.AdapterEvidence
+	adapterErr        error
 	probeErr          error
 	paths             map[string]string
 	files             map[string]string
@@ -6912,6 +7920,8 @@ type setupFakeDeps struct {
 	initScopes        []string
 	acpxInitCalls     int
 	writeCalls        []string
+	writeErrors       map[string]error
+	adapterRequests   []agent.RuntimeSpec
 	probeRequests     []agent.ProbeRequest
 	prompts           []string
 	confirm           func(context.Context, io.Writer, string) (bool, error)
@@ -6929,14 +7939,43 @@ func newSetupFakeDeps() *setupFakeDeps {
 		acpxConfigPath:    filepath.Join(homeDir, ".acpx", "config.json"),
 		nodeVersion:       "v25.6.1",
 		acpxVersion:       agent.PinnedACPXVersion,
-		paths:             map[string]string{},
-		files:             map[string]string{},
+		adapterEvidence: agent.AdapterEvidence{
+			Command: "npx -y " + agent.CodexAdapterPackage,
+			Package: agent.CodexAdapterPackage,
+			Version: agent.PinnedCodexAdapterVersion,
+		},
+		paths: map[string]string{},
+		files: map[string]string{},
 	}
+}
+
+func cloneSetupFiles(files map[string]string) map[string]string {
+	cloned := make(map[string]string, len(files))
+	for path, content := range files {
+		cloned[path] = content
+	}
+	return cloned
 }
 
 func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
 	t.Helper()
 	old := setupDeps
+	profileRunner := &profileReadinessExactRunner{
+		prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
+			fake.probeRequests = append(fake.probeRequests, req)
+			if fake.probeErr != nil {
+				return agent.SelectionProof{}, fake.probeErr
+			}
+			return agent.SelectionProof{
+				Runtime:         req.Runtime.ID,
+				Model:           req.Runtime.Model,
+				ReasoningEffort: req.Runtime.ReasoningEffort,
+				Assignment:      agent.SelectionAssignment{Encoding: agent.SelectionEncodingIndependent},
+				Adapter:         fake.adapterEvidence,
+				Status:          agent.SelectionProofStatusProven,
+			}, nil
+		},
+	}
 	setupDeps = setupDependencies{
 		loadConfig: func(roundconfig.LoadOptions) (roundconfig.Loaded, error) {
 			return roundconfig.Loaded{
@@ -6957,6 +7996,18 @@ func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
 			fake.installCalls = append(fake.installCalls, "npm install -g acpx@"+agent.PinnedACPXVersion)
 			return nil
 		},
+		checkAdapter: func(_ context.Context, runtime agent.RuntimeSpec) (agent.AdapterEvidence, error) {
+			fake.adapterRequests = append(fake.adapterRequests, runtime)
+			if fake.adapterErr != nil && strings.TrimSpace(runtime.Command) == "" {
+				return agent.AdapterEvidence{}, fake.adapterErr
+			}
+			evidence := fake.adapterEvidence
+			if strings.TrimSpace(runtime.Command) != "" {
+				evidence.Command = runtime.Command
+			}
+			return evidence, nil
+		},
+		profileRunner: profileRunner,
 		probeAgent: func(_ context.Context, req agent.ProbeRequest) error {
 			fake.probeRequests = append(fake.probeRequests, req)
 			return fake.probeErr
@@ -6980,26 +8031,22 @@ func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
 			return []byte(content), nil
 		},
 		writeFile: func(path string, content []byte) error {
+			if err := fake.writeErrors[path]; err != nil {
+				fake.writeCalls = append(fake.writeCalls, path)
+				return err
+			}
 			fake.files[path] = string(content)
 			fake.writeCalls = append(fake.writeCalls, path)
+			switch path {
+			case fake.userConfigPath:
+				fake.initScopes = append(fake.initScopes, roundconfig.InitScopeUser)
+			case fake.projectConfigPath:
+				fake.initScopes = append(fake.initScopes, roundconfig.InitScopeProject)
+			}
 			return nil
 		},
 		mkdirAll: func(string) error {
 			return nil
-		},
-		initACPXConfig: func(context.Context, string) error {
-			fake.acpxInitCalls++
-			fake.files[fake.acpxConfigPath] = "{\n}\n"
-			return nil
-		},
-		initConfig: func(_ context.Context, opts roundconfig.InitOptions) (roundconfig.InitResult, error) {
-			fake.initScopes = append(fake.initScopes, opts.Scope)
-			path := fake.userConfigPath
-			if opts.Scope == roundconfig.InitScopeProject {
-				path = fake.projectConfigPath
-			}
-			fake.files[path] = roundconfig.DefaultConfigYAML()
-			return roundconfig.InitResult{Scope: opts.Scope, Path: path}, nil
 		},
 		confirm: func(ctx context.Context, stderr io.Writer, prompt string) (bool, error) {
 			fake.prompts = append(fake.prompts, prompt)
@@ -7105,7 +8152,7 @@ func runCleanResolveForOutcomeNotification(t *testing.T, notifyErr error) (strin
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--round", "all", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--round", "all", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean resolve exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -7539,9 +8586,9 @@ func branchIntegrityCommandArgs(command string) []string {
 	case "fetch":
 		return []string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}
 	case "resolve":
-		return []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}
+		return []string{"resolve", "--pr", "123", "--no-input"}
 	case "watch":
-		return []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--no-input"}
+		return []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--no-input"}
 	default:
 		return []string{command}
 	}
@@ -7616,6 +8663,36 @@ func withProfilesConfigureConfirm(t *testing.T, confirm func(context.Context, io
 	t.Cleanup(func() {
 		confirmProfilesConfigure = old
 	})
+}
+
+func withSuccessfulProfilesConfigureProof(t *testing.T) *profileReadinessExactRunner {
+	t.Helper()
+	runner := &profileReadinessExactRunner{
+		prove: func(req agent.ProbeRequest) (agent.SelectionProof, error) {
+			return agent.SelectionProof{
+				Runtime:         req.Runtime.ID,
+				Model:           req.Runtime.Model,
+				ReasoningEffort: req.Runtime.ReasoningEffort,
+				Status:          agent.SelectionProofStatusProven,
+			}, nil
+		},
+	}
+	withAgentRunner(t, runner)
+	return runner
+}
+
+func profilesConfigureTestFragment(preferredModel string, fallbackModel string) string {
+	return fmt.Sprintf(`
+backend:
+  preferred:
+    runtime: codex
+    model: %s
+    reasoning_effort: high
+  fallbacks:
+    - runtime: codex
+      model: %s
+      reasoning_effort: xhigh
+`, preferredModel, fallbackModel)
 }
 
 func withStopAgentSessionCanceler(t *testing.T, cancel func(context.Context, agent.RuntimeSpec, agent.SessionRef) error) {
@@ -8392,6 +9469,26 @@ type fakeAgentRunner struct {
 	runRuntimes    []agent.RuntimeSpec
 }
 
+type profileReadinessExactRunner struct {
+	fakeAgentRunner
+	prove         func(agent.ProbeRequest) (agent.SelectionProof, error)
+	exactRequests []agent.ProbeRequest
+	probeCalls    int
+}
+
+func (runner *profileReadinessExactRunner) ProveProfileSelection(_ context.Context, req agent.ProbeRequest) (agent.SelectionProof, error) {
+	runner.exactRequests = append(runner.exactRequests, req)
+	if runner.prove == nil {
+		return agent.SelectionProof{}, nil
+	}
+	return runner.prove(req)
+}
+
+func (runner *profileReadinessExactRunner) Probe(ctx context.Context, req agent.ProbeRequest) error {
+	runner.probeCalls++
+	return runner.fakeAgentRunner.Probe(ctx, req)
+}
+
 func (runner *fakeAgentRunner) Probe(_ context.Context, req agent.ProbeRequest) error {
 	runner.probeRequests = append(runner.probeRequests, req)
 	runner.probedRuntimes = append(runner.probedRuntimes, req.Runtime)
@@ -8880,7 +9977,7 @@ func TestResolveJournalsAgentRunEventsDurably(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
@@ -8920,7 +10017,7 @@ func TestRunResolveSkipsAgentLogFilesByDefaultAndStillJournals(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
@@ -8941,7 +10038,7 @@ logs:
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
@@ -8965,7 +10062,7 @@ func TestRunResolveNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-agent-console", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-agent-console", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())
@@ -8995,7 +10092,7 @@ func TestRunWatchNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-agent-console", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-agent-console", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean watch exit, got %d stderr=%q", code, stderr.String())
@@ -9035,7 +10132,7 @@ func TestStoppedResolveJournalsStoppedEventBeforeReturning(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean Stop Request exit, got %d stderr=%q", code, stderr.String())
@@ -9083,7 +10180,7 @@ func TestWatchSkipsFinalPushWhenAutoPushDisabled(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean watch exit, got %d stderr=%q", code, stderr.String())
@@ -9107,7 +10204,7 @@ func TestWatchFinalPushRunsOncePerCleanRoundThroughEngine(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean watch exit, got %d stderr=%q", code, stderr.String())
@@ -9129,7 +10226,7 @@ func runResolveForAttachTest(t *testing.T, repoDir string) (string, *bytes.Buffe
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 	if code != 0 {
 		t.Fatalf("seed resolve run failed: %d stderr=%q", code, stderr.String())
 	}
@@ -10496,7 +11593,7 @@ func TestWatchRunJournalsOrderedLoopNarrative(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean watch exit, got %d stderr=%q", code, stderr.String())
@@ -10541,7 +11638,7 @@ func TestStoppedRunJournalsStopWithoutLaterUnsafeDaemonEvents(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean Stop Request exit, got %d", code)
@@ -10576,7 +11673,7 @@ func TestFailedVerificationJournalsFailureWithoutCommitEvents(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code == 0 {
 		t.Fatal("expected failed verification to fail the Run")
@@ -10614,7 +11711,7 @@ func TestTriageOnlyBatchJournalsCommitSkipDecision(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected triage-only Batch to succeed, got %d stderr=%q", code, stderr.String())
@@ -10642,7 +11739,7 @@ func TestAttachRendersWatchDaemonEventsInTimeline(t *testing.T) {
 	withSuccessfulPreflight(t, repoDir)
 	var watchStdout bytes.Buffer
 	var watchStderr bytes.Buffer
-	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--agent", "codex", "--until-clean", "--max-rounds", "6", "--no-input"}, &watchStdout, &watchStderr)
+	code := Run([]string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &watchStdout, &watchStderr)
 	if code != 0 {
 		t.Fatalf("seed watch run failed: %d stderr=%q", code, watchStderr.String())
 	}
@@ -10684,7 +11781,7 @@ func TestResolvePrintsIssueSummaryAfterCompletion(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"resolve", "--pr", "123", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean resolve exit, got %d stderr=%q", code, stderr.String())

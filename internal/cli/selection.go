@@ -209,6 +209,7 @@ func fallbackRerunCommand(req commandRequest, fallback agent.FallbackSelection) 
 		args = append(args, "--detach")
 	}
 	args = append(args,
+		"--agent", strings.TrimSpace(req.agent),
 		"--model", strings.TrimSpace(fallback.Model),
 		"--reasoning-effort", strings.TrimSpace(fallback.ReasoningEffort),
 	)
@@ -226,7 +227,7 @@ func withoutSelectionArgs(args []string) []string {
 	for index := 0; index < len(args); index++ {
 		arg := args[index]
 		name, _, hasValue := strings.Cut(strings.TrimLeft(arg, "-"), "=")
-		if strings.HasPrefix(arg, "-") && (name == "model" || name == "reasoning-effort") {
+		if strings.HasPrefix(arg, "-") && (name == "agent" || name == "model" || name == "reasoning-effort") {
 			if !hasValue && index+1 < len(args) {
 				index++
 			}

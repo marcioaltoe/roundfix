@@ -27,19 +27,19 @@ const (
 var setupDeps = defaultSetupDependencies()
 
 type setupDependencies struct {
-	loadConfig     func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
-	nodeVersion    func(context.Context) (string, error)
-	acpxVersion    func(context.Context) (string, error)
-	installACPX    func(context.Context) error
-	probeAgent     func(context.Context, agent.ProbeRequest) error
-	lookPath       func(string) (string, error)
-	exists         func(string) (bool, error)
-	readFile       func(string) ([]byte, error)
-	writeFile      func(string, []byte) error
-	mkdirAll       func(string) error
-	initACPXConfig func(context.Context, string) error
-	initConfig     func(context.Context, roundconfig.InitOptions) (roundconfig.InitResult, error)
-	confirm        func(context.Context, io.Writer, string) (bool, error)
+	loadConfig    func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
+	nodeVersion   func(context.Context) (string, error)
+	acpxVersion   func(context.Context) (string, error)
+	installACPX   func(context.Context) error
+	checkAdapter  func(context.Context, agent.RuntimeSpec) (agent.AdapterEvidence, error)
+	probeAgent    func(context.Context, agent.ProbeRequest) error
+	profileRunner agent.Runner
+	lookPath      func(string) (string, error)
+	exists        func(string) (bool, error)
+	readFile      func(string) ([]byte, error)
+	writeFile     func(string, []byte) error
+	mkdirAll      func(string) error
+	confirm       func(context.Context, io.Writer, string) (bool, error)
 }
 
 type setupRequest struct {
@@ -56,6 +56,24 @@ type setupRunner struct {
 	stderr    io.Writer
 	failed    bool
 	acpxReady bool
+}
+
+type setupFileProposal struct {
+	label   string
+	path    string
+	before  []byte
+	after   []byte
+	existed bool
+	changed bool
+}
+
+type setupProposal struct {
+	acpx             setupFileProposal
+	user             setupFileProposal
+	project          *setupFileProposal
+	config           roundconfig.Config
+	commandOverrides map[string]string
+	adapterMigration bool
 }
 
 type acpxAgentOverride struct {
@@ -90,14 +108,291 @@ func runSetupCommand(ctx context.Context, args []string, stdout, stderr io.Write
 	}
 	runner.checkNode(ctx)
 	runner.checkACPX(ctx)
-	runner.checkAgentProbe(ctx)
-	runner.checkACPXAgentsOverride(ctx)
-	runner.checkRoundfixConfig(ctx, roundconfig.InitScopeUser)
-	runner.checkRoundfixConfig(ctx, roundconfig.InitScopeProject)
+	if !runner.acpxReady {
+		runner.reportHealthResult(CheckResult{Name: HealthCheckAdapter, Status: CheckStatusSkipped, Detail: "acpx is not at the pinned version"})
+		runner.report("profile readiness", "skipped", "acpx is not at the pinned version")
+		if runner.failed {
+			return exitRunFailed
+		}
+		return exitOK
+	}
+	proposal, ok := runner.buildProposal(ctx)
+	if !ok {
+		return exitRunFailed
+	}
+	if !runner.proveProposal(ctx, &proposal) {
+		return exitRunFailed
+	}
+	runner.persistProposal(ctx, proposal)
 	if runner.failed {
 		return exitRunFailed
 	}
 	return exitOK
+}
+
+func (runner *setupRunner) buildProposal(ctx context.Context) (setupProposal, bool) {
+	runtime, err := runtimeForConfiguredAgent(runner.loaded.Config)
+	if err != nil {
+		runner.report("adapter", "failed", err.Error())
+		return setupProposal{}, false
+	}
+	proposal := setupProposal{commandOverrides: map[string]string{}}
+	evidence, adapterErr := runner.deps.checkAdapter(ctx, runtime)
+	if adapterErr != nil {
+		if strings.TrimSuffix(strings.TrimSpace(runtime.ID), "-custom") != "codex" || !staleCodexAdapter(adapterErr) {
+			runner.reportHealthResult(setupAdapterFailureResult(adapterErr))
+			return setupProposal{}, false
+		}
+		acpxProposal, ok := runner.readFileProposal("acpx agents override", filepath.Join(runner.loaded.HomeDir, ".acpx", "config.json"), []byte("{}\n"))
+		if !ok {
+			return setupProposal{}, false
+		}
+		hasCodex, err := acpxConfigHasAgent(acpxProposal.after, "codex")
+		if err != nil {
+			runner.report("acpx agents override", "failed", fmt.Sprintf("parse %s: %v", acpxProposal.path, err))
+			return setupProposal{}, false
+		}
+		if !hasCodex {
+			runner.reportHealthResult(setupAdapterFailureResult(adapterErr))
+			return setupProposal{}, false
+		}
+
+		proposal.adapterMigration = true
+		proposal.commandOverrides["codex"] = agent.CodexAdapterCommand()
+		proposedRuntime := runtime
+		proposedRuntime.Protocol = agent.ProtocolStdio
+		proposedRuntime.Command = agent.CodexAdapterCommand()
+		evidence, adapterErr = runner.deps.checkAdapter(ctx, proposedRuntime)
+		if adapterErr != nil {
+			runner.reportHealthResult(setupAdapterFailureResult(adapterErr))
+			return setupProposal{}, false
+		}
+		proposal.acpx = acpxProposal
+		runner.report("adapter", "migration proposed", adapterEvidenceDetail(evidence))
+	} else {
+		runner.reportHealthResult(CheckResult{Name: HealthCheckAdapter, Status: CheckStatusOK, Detail: adapterEvidenceDetail(evidence)})
+	}
+
+	if proposal.acpx.path == "" {
+		var ok bool
+		proposal.acpx, ok = runner.readFileProposal("acpx agents override", filepath.Join(runner.loaded.HomeDir, ".acpx", "config.json"), []byte("{}\n"))
+		if !ok {
+			return setupProposal{}, false
+		}
+	}
+	overrides := runner.localACPXAgentOverrides()
+	if proposal.adapterMigration {
+		overrides = append(overrides, officialCodexACPXOverride())
+	}
+	updated, changed, err := mergeACPXAgentOverrides(proposal.acpx.after, overrides)
+	if err != nil {
+		runner.report("acpx agents override", "failed", fmt.Sprintf("merge %s: %v", proposal.acpx.path, err))
+		return setupProposal{}, false
+	}
+	proposal.acpx.after = updated
+	proposal.acpx.changed = changed
+	for _, override := range overrides {
+		if changed {
+			proposal.commandOverrides[override.Agent] = acpxOverrideCommand(override)
+		}
+	}
+
+	var ok bool
+	proposal.user, ok = runner.readFileProposal("User Config", runner.loaded.UserConfigPath, []byte(roundconfig.DefaultConfigYAML()))
+	if !ok {
+		return setupProposal{}, false
+	}
+	if strings.TrimSpace(runner.loaded.GitRoot) != "" {
+		project, ok := runner.readFileProposal("Project Config", runner.loaded.ProjectConfigPath, []byte(roundconfig.DefaultConfigYAML()))
+		if !ok {
+			return setupProposal{}, false
+		}
+		proposal.project = &project
+	}
+	var projectContent []byte
+	if proposal.project != nil {
+		projectContent = proposal.project.after
+	}
+	proposal.config, err = roundconfig.ResolveConfigProposal(proposal.user.after, projectContent)
+	if err != nil {
+		runner.report("config proposal", "failed", err.Error())
+		return setupProposal{}, false
+	}
+	return proposal, true
+}
+
+func (runner *setupRunner) readFileProposal(label string, path string, generated []byte) (setupFileProposal, bool) {
+	exists, err := runner.deps.exists(path)
+	if err != nil {
+		runner.report(label, "failed", fmt.Sprintf("inspect %s: %v", path, err))
+		return setupFileProposal{}, false
+	}
+	proposal := setupFileProposal{label: label, path: path, existed: exists}
+	if exists {
+		content, err := runner.deps.readFile(path)
+		if err != nil {
+			runner.report(label, "failed", fmt.Sprintf("read %s: %v", path, err))
+			return setupFileProposal{}, false
+		}
+		proposal.before = append([]byte(nil), content...)
+		proposal.after = append([]byte(nil), content...)
+		return proposal, true
+	}
+	proposal.after = append([]byte(nil), generated...)
+	proposal.changed = true
+	return proposal, true
+}
+
+func (runner *setupRunner) proveProposal(ctx context.Context, proposal *setupProposal) bool {
+	proofRunner := runner.deps.profileRunner
+	if proofRunner == nil {
+		proofRunner = newEngineCollaborators().runner
+	}
+	if _, ok := proofRunner.(agent.SelectionProver); !ok {
+		runner.report("profile readiness", "failed", "exact Agent Selection proof is unavailable")
+		return false
+	}
+	workDir := strings.TrimSpace(runner.loaded.GitRoot)
+	if workDir == "" {
+		var err error
+		workDir, err = os.Getwd()
+		if err != nil {
+			runner.report("profile readiness", "failed", fmt.Sprintf("resolve Setup proof working directory: %v", err))
+			return false
+		}
+	}
+	result := proveProfileSelectionsWithOptions(
+		ctx,
+		proposal.config,
+		roundconfig.RequiredWorkCategories(),
+		workDir,
+		proofRunner,
+		profileProofOptions{CommandOverrides: proposal.commandOverrides},
+	)
+	if result.Err != nil {
+		runner.report("profile readiness", "failed", result.Err.Error())
+		return false
+	}
+	runner.report("profile readiness", "passed", fmt.Sprintf("%d distinct Agent Selections", len(result.Proofs)))
+	return true
+}
+
+func (runner *setupRunner) persistProposal(ctx context.Context, proposal setupProposal) {
+	files := []*setupFileProposal{&proposal.acpx, &proposal.user}
+	if proposal.project != nil {
+		files = append(files, proposal.project)
+	}
+	if runner.req.noInput {
+		for _, file := range files {
+			runner.reportFileProposal(*file, "skipped")
+		}
+		if proposal.project == nil {
+			runner.report("Project Config", "skipped", "outside a git repository")
+		}
+		return
+	}
+	if !runner.authorizeProposal(ctx, proposal, files) {
+		return
+	}
+	for _, file := range files {
+		if !file.changed {
+			runner.report(file.label, "ok", file.path)
+			continue
+		}
+		if err := runner.deps.mkdirAll(filepath.Dir(file.path)); err != nil {
+			runner.report(file.label, "failed", fmt.Sprintf("create %s: %v", filepath.Dir(file.path), err))
+			return
+		}
+		if err := runner.deps.writeFile(file.path, file.after); err != nil {
+			runner.report(file.label, "failed", fmt.Sprintf("write %s: %v", file.path, err))
+			return
+		}
+		runner.report(file.label, "installed", file.path)
+		if file.label == "acpx agents override" {
+			printSetupDiff(runner.stdout, file.label, file.path, file.before, file.after)
+		}
+	}
+	if proposal.project == nil {
+		runner.report("Project Config", "skipped", "outside a git repository")
+	}
+}
+
+func (runner *setupRunner) authorizeProposal(ctx context.Context, proposal setupProposal, files []*setupFileProposal) bool {
+	if runner.req.yes {
+		return true
+	}
+	for _, file := range files {
+		if !file.changed {
+			continue
+		}
+		prompt := "Create " + file.label + " at " + file.path + "?"
+		if file.label == "acpx agents override" {
+			prompt = "Write acpx local adapter overrides to " + file.path + "?"
+			if proposal.adapterMigration {
+				prompt = "Migrate stale Codex adapter override in " + file.path + " to " + agent.CodexAdapterCommand() + "?"
+			}
+		}
+		accepted, err := runner.deps.confirm(ctx, runner.stderr, prompt)
+		if err != nil {
+			runner.report(file.label, "failed", err.Error())
+			return false
+		}
+		if !accepted {
+			runner.report(file.label, "offered: declined", "would update "+file.path)
+			return false
+		}
+	}
+	return true
+}
+
+func (runner *setupRunner) reportFileProposal(file setupFileProposal, changedStatus string) {
+	if file.changed {
+		runner.report(file.label, changedStatus, "would update "+file.path)
+		return
+	}
+	runner.report(file.label, "ok", file.path)
+}
+
+func officialCodexACPXOverride() acpxAgentOverride {
+	return acpxAgentOverride{
+		Agent:   "codex",
+		Command: "npx",
+		Args:    []string{"-y", agent.CodexAdapterPackage + "@" + agent.PinnedCodexAdapterVersion},
+	}
+}
+
+func acpxOverrideCommand(override acpxAgentOverride) string {
+	parts := append([]string{override.Command}, override.Args...)
+	return strings.Join(parts, " ")
+}
+
+func acpxConfigHasAgent(content []byte, name string) (bool, error) {
+	var config struct {
+		Agents map[string]json.RawMessage `json:"agents"`
+	}
+	if err := json.Unmarshal(normalizeJSONContent(content), &config); err != nil {
+		return false, err
+	}
+	_, ok := config.Agents[name]
+	return ok, nil
+}
+
+func staleCodexAdapter(err error) bool {
+	var lineage *agent.AdapterLineageError
+	if errors.As(err, &lineage) {
+		return true
+	}
+	var version *agent.AdapterVersionError
+	return errors.As(err, &version)
+}
+
+func setupAdapterFailureResult(err error) CheckResult {
+	result := CheckResult{Name: HealthCheckAdapter, Status: CheckStatusFailed, Detail: err.Error()}
+	var installer interface{ InstallCommand() string }
+	if errors.As(err, &installer) {
+		result.NextAction = installer.InstallCommand()
+	}
+	return result
 }
 
 func parseSetupCommand(args []string) (setupRequest, error) {
@@ -158,151 +453,8 @@ func (runner *setupRunner) checkACPX(ctx context.Context) {
 	runner.report("acpx", "installed", detail)
 }
 
-func (runner *setupRunner) checkAgentProbe(ctx context.Context) {
-	if !runner.acpxReady {
-		runner.reportHealthResult(CheckResult{
-			Name:   HealthCheckAgent,
-			Status: CheckStatusSkipped,
-			Detail: "acpx is not at the pinned version",
-		})
-		return
-	}
-	runtime, err := runtimeForConfiguredAgent(runner.loaded.Config)
-	if err != nil {
-		runner.report("agent probe", "failed", err.Error())
-		return
-	}
-	runner.reportHealthResult(runner.health.Agent(ctx, agent.ProbeRequest{
-		Runtime: runtime,
-		WorkDir: runner.loaded.GitRoot,
-	}))
-}
-
-func (runner *setupRunner) checkACPXAgentsOverride(ctx context.Context) {
-	overrides := runner.localACPXAgentOverrides()
-	if len(overrides) == 0 {
-		runner.report("acpx agents override", "ok", "no local adapter binaries found on PATH")
-		return
-	}
-
-	configPath := filepath.Join(runner.loaded.HomeDir, ".acpx", "config.json")
-	exists, err := runner.deps.exists(configPath)
-	if err != nil {
-		runner.report("acpx agents override", "failed", fmt.Sprintf("inspect %s: %v", configPath, err))
-		return
-	}
-	content := []byte("{}\n")
-	if exists {
-		content, err = runner.deps.readFile(configPath)
-		if err != nil {
-			runner.report("acpx agents override", "failed", fmt.Sprintf("read %s: %v", configPath, err))
-			return
-		}
-	}
-	missing, err := missingACPXAgentOverrides(content, overrides)
-	if err != nil {
-		runner.report("acpx agents override", "failed", fmt.Sprintf("parse %s: %v", configPath, err))
-		return
-	}
-	if len(missing) == 0 {
-		runner.report("acpx agents override", "ok", configPath)
-		return
-	}
-	detail := fmt.Sprintf("would update %s", configPath)
-	if runner.req.noInput {
-		runner.report("acpx agents override", "skipped", detail)
-		return
-	}
-	if !runner.req.yes {
-		accepted, confirmErr := runner.deps.confirm(ctx, runner.stderr, "Write acpx local adapter overrides to "+configPath+"?")
-		if confirmErr != nil {
-			runner.report("acpx agents override", "failed", confirmErr.Error())
-			return
-		}
-		if !accepted {
-			runner.report("acpx agents override", "offered: declined", detail)
-			return
-		}
-	}
-	if !exists {
-		if err := runner.deps.initACPXConfig(ctx, configPath); err != nil {
-			runner.report("acpx agents override", "failed", fmt.Sprintf("initialize %s: %v", configPath, err))
-			return
-		}
-		content, err = runner.deps.readFile(configPath)
-		if err != nil {
-			runner.report("acpx agents override", "failed", fmt.Sprintf("read initialized %s: %v", configPath, err))
-			return
-		}
-	}
-	updated, changed, err := mergeACPXAgentOverrides(content, missing)
-	if err != nil {
-		runner.report("acpx agents override", "failed", fmt.Sprintf("merge %s: %v", configPath, err))
-		return
-	}
-	if !changed {
-		runner.report("acpx agents override", "ok", configPath)
-		return
-	}
-	if err := runner.deps.mkdirAll(filepath.Dir(configPath)); err != nil {
-		runner.report("acpx agents override", "failed", fmt.Sprintf("create %s: %v", filepath.Dir(configPath), err))
-		return
-	}
-	if err := runner.deps.writeFile(configPath, updated); err != nil {
-		runner.report("acpx agents override", "failed", fmt.Sprintf("write %s: %v", configPath, err))
-		return
-	}
-	runner.report("acpx agents override", "installed", configPath)
-	printSetupDiff(runner.stdout, "acpx agents override", configPath, content, updated)
-}
-
-func (runner *setupRunner) checkRoundfixConfig(ctx context.Context, scope string) {
-	label := "User Config"
-	path := runner.loaded.UserConfigPath
-	if scope == roundconfig.InitScopeProject {
-		label = "Project Config"
-		path = runner.loaded.ProjectConfigPath
-		if strings.TrimSpace(runner.loaded.GitRoot) == "" {
-			runner.report(label, "skipped", "outside a git repository")
-			return
-		}
-	}
-	exists, err := runner.deps.exists(path)
-	if err != nil {
-		runner.report(label, "failed", fmt.Sprintf("inspect %s: %v", path, err))
-		return
-	}
-	if exists {
-		runner.report(label, "ok", path)
-		return
-	}
-	detail := fmt.Sprintf("would create %s", path)
-	if runner.req.noInput {
-		runner.report(label, "skipped", detail)
-		return
-	}
-	if !runner.req.yes {
-		accepted, confirmErr := runner.deps.confirm(ctx, runner.stderr, "Create "+label+" at "+path+"?")
-		if confirmErr != nil {
-			runner.report(label, "failed", confirmErr.Error())
-			return
-		}
-		if !accepted {
-			runner.report(label, "offered: declined", detail)
-			return
-		}
-	}
-	result, err := runner.deps.initConfig(ctx, roundconfig.InitOptions{Scope: scope})
-	if err != nil {
-		runner.report(label, "failed", err.Error())
-		return
-	}
-	runner.report(label, "installed", result.Path)
-}
-
 func (runner *setupRunner) localACPXAgentOverrides() []acpxAgentOverride {
 	candidates := []acpxAgentOverride{
-		{Agent: "codex", Command: "codex-acp"},
 		{Agent: "claude", Command: "claude-agent-acp"},
 		{Agent: "opencode", Command: "opencode", Args: []string{"acp"}},
 	}
@@ -339,18 +491,21 @@ func setupHealthCheckLabel(name string) string {
 
 func (deps setupDependencies) healthChecker() HealthChecker {
 	return newHealthChecker(healthCheckDependencies{
-		nodeVersion: deps.nodeVersion,
-		acpxVersion: deps.acpxVersion,
-		probeAgent:  deps.probeAgent,
+		nodeVersion:  deps.nodeVersion,
+		acpxVersion:  deps.acpxVersion,
+		checkAdapter: deps.checkAdapter,
+		probeAgent:   deps.probeAgent,
 	})
 }
 
 func defaultSetupDependencies() setupDependencies {
 	return setupDependencies{
-		loadConfig:  roundconfig.Load,
-		nodeVersion: defaultSetupNodeVersion,
-		acpxVersion: defaultSetupACPXVersion,
-		installACPX: defaultSetupInstallACPX,
+		loadConfig:    roundconfig.Load,
+		nodeVersion:   defaultSetupNodeVersion,
+		acpxVersion:   defaultSetupACPXVersion,
+		installACPX:   defaultSetupInstallACPX,
+		checkAdapter:  agent.CheckAdapter,
+		profileRunner: newEngineCollaborators().runner,
 		probeAgent: func(ctx context.Context, req agent.ProbeRequest) error {
 			return newEngineCollaborators().runner.Probe(ctx, req)
 		},
@@ -362,17 +517,46 @@ func defaultSetupDependencies() setupDependencies {
 			}
 			return err == nil, err
 		},
-		readFile: os.ReadFile,
-		writeFile: func(path string, content []byte) error {
-			return os.WriteFile(path, content, 0o644)
-		},
+		readFile:  os.ReadFile,
+		writeFile: defaultSetupWriteFile,
 		mkdirAll: func(path string) error {
 			return os.MkdirAll(path, 0o755)
 		},
-		initACPXConfig: defaultSetupInitACPXConfig,
-		initConfig:     roundconfig.Init,
-		confirm:        defaultSetupConfirm,
+		confirm: defaultSetupConfirm,
 	}
+}
+
+func defaultSetupWriteFile(path string, content []byte) (returnErr error) {
+	temp, err := os.CreateTemp(filepath.Dir(path), ".roundfix-setup-*")
+	if err != nil {
+		return fmt.Errorf("create temporary setup file for %q: %w", path, err)
+	}
+	tempPath := temp.Name()
+	committed := false
+	defer func() {
+		if committed {
+			return
+		}
+		if cleanupErr := os.Remove(tempPath); cleanupErr != nil && !errors.Is(cleanupErr, os.ErrNotExist) {
+			returnErr = errors.Join(returnErr, fmt.Errorf("remove temporary setup file %q: %w", tempPath, cleanupErr))
+		}
+	}()
+	if err := temp.Chmod(0o644); err != nil {
+		_ = temp.Close()
+		return fmt.Errorf("set temporary setup file permissions for %q: %w", path, err)
+	}
+	if _, err := temp.Write(content); err != nil {
+		_ = temp.Close()
+		return fmt.Errorf("write temporary setup file for %q: %w", path, err)
+	}
+	if err := temp.Close(); err != nil {
+		return fmt.Errorf("close temporary setup file for %q: %w", path, err)
+	}
+	if err := os.Rename(tempPath, path); err != nil {
+		return fmt.Errorf("replace setup file %q atomically: %w", path, err)
+	}
+	committed = true
+	return nil
 }
 
 func defaultSetupNodeVersion(ctx context.Context) (string, error) {
@@ -404,21 +588,6 @@ func defaultSetupInstallACPX(ctx context.Context) error {
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return commandOutputError(err, output)
-	}
-	return nil
-}
-
-func defaultSetupInitACPXConfig(ctx context.Context, path string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return fmt.Errorf("create acpx config directory: %w", err)
-	}
-	cmd := exec.CommandContext(ctx, "acpx", "config", "init")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return commandOutputError(err, output)
-	}
-	if _, err := os.Stat(path); err != nil {
-		return fmt.Errorf("acpx config init did not create %s: %w", path, err)
 	}
 	return nil
 }
@@ -524,27 +693,6 @@ func leadingInt(value string) (int, bool) {
 	}
 	number, err := strconv.Atoi(value[:end])
 	return number, err == nil
-}
-
-func missingACPXAgentOverrides(content []byte, overrides []acpxAgentOverride) ([]acpxAgentOverride, error) {
-	content = normalizeJSONContent(content)
-	var config struct {
-		Agents map[string]struct {
-			Command string   `json:"command"`
-			Args    []string `json:"args"`
-		} `json:"agents"`
-	}
-	if err := json.Unmarshal(content, &config); err != nil {
-		return nil, err
-	}
-	missing := []acpxAgentOverride{}
-	for _, override := range overrides {
-		existing, ok := config.Agents[override.Agent]
-		if !ok || existing.Command != override.Command || !stringSlicesEqual(existing.Args, override.Args) {
-			missing = append(missing, override)
-		}
-	}
-	return missing, nil
 }
 
 func mergeACPXAgentOverrides(content []byte, overrides []acpxAgentOverride) ([]byte, bool, error) {

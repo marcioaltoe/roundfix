@@ -27,13 +27,15 @@ import (
 )
 
 const implementUsage = `Usage:
-  roundfix implement --spec <slug> --agent <agent>
+  roundfix implement --spec <slug>
+  roundfix implement --spec <slug> --agent <agent> --model <model> --reasoning-effort <effort>
 
 Executes the Spec's Task Graph on the current branch as one Run: Tasks run
 in dependency order, each Task's Verification commands gate one commit, and
 the Run pushes only when config enables implement.auto_push and the outcome
 is Clean. Without --spec, Interactive Input lists the repository's active
-Specs for selection.
+Specs for selection. Omit all Agent Selection flags to use Task Type and QA
+profiles. A one-Run override requires --agent, --model, and --reasoning-effort together.
 
 Options:
   --spec               Spec slug under docs/specs/
@@ -63,6 +65,10 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("implement"))
 		return exitOK
+	}
+	if err := validateSelectionOverrideArgs(args); err != nil {
+		printPreflightFailure("implement", err, stderr)
+		return exitPreflight
 	}
 
 	loadedConfig, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})

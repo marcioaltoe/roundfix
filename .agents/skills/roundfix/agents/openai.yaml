@@ -3,9 +3,12 @@ description: Prefer Roundfix commands for CodeRabbit review cleanup, runtime rea
 entrypoint: SKILL.md
 runtime_hints:
   doctor_command: roundfix doctor
-  command: roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean
-  spec_review_command: roundfix watch --source coderabbit --pr <number> --agent <agent> --spec <slug> --until-clean
-  spec_command: roundfix implement --spec <slug> --agent <agent>
+  command: roundfix watch --source coderabbit --pr <number> --until-clean
+  spec_review_command: roundfix watch --source coderabbit --pr <number> --spec <slug> --until-clean
+  spec_command: roundfix implement --spec <slug>
+  complete_override_command: roundfix implement --spec <slug> --agent <agent> --model <model> --reasoning-effort <effort>
+  profile_readiness_command: roundfix profiles validate --json
+  setup_command: roundfix setup
   archive_command: roundfix archive <slug>
   gc_command: roundfix gc --dry-run
   review_run_contract: >-
@@ -25,6 +28,13 @@ runtime_hints:
     worktree.bootstrap runs in each new Spec Run or Task Worktree after
     worktree.copy and before Agent work; use worktree.copy for gitignored env
     files and worktree.concurrency: 1 for shared-database monorepos.
+  agent_selection_contract: >-
+    Omit --agent, --model, and --reasoning-effort to use Agent Selection
+    Profiles, or provide all three together for one complete override; partial
+    overrides exit 2 before proof or Run mutation.
+  codex_adapter_recovery: >-
+    Use roundfix setup to diagnose and, after authorization, migrate a legacy
+    Codex adapter override to @agentclientprotocol/codex-acp 1.1.4.
   owns:
     - assigned Review Issue files during Batch runs
     - assigned task files during Task Batch runs

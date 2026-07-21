@@ -9,7 +9,7 @@ and unattended sessions.
 | Role | Agent Model and reasoning | Work |
 | --- | --- | --- |
 | Supervisor | Supervising Claude Code session | Author Specs, launch and monitor Runs, integrate outcomes, run `qa-gate`, archive, make boundary commits, and route work |
-| Non-frontend implementer | Codex `gpt-5.5` with `xhigh` Default Reasoning Effort | CLI, backend, infrastructure, documentation, and other non-frontend Tasks and Review Issue Batches |
+| Non-frontend implementer | Codex `gpt-5.6-sol` with `high` Default Reasoning Effort; `gpt-5.5`/`xhigh` fallback | CLI, backend, infrastructure, documentation, and other non-frontend Tasks and Review Issue Batches |
 | Frontend implementer | Claude `opus` (Opus 4.8) with `xhigh` Default Reasoning Effort | Design, UI, UX, Bubble Tea/Lip Gloss TUI, and web frontend Tasks |
 
 ## The Supervisor does not implement
@@ -46,20 +46,23 @@ The Supervisor authors Specs using `write-idea`, `write-prd`,
   `- instruction: <path>` and `- interface: <path>`.
 - Maintain one dependency-and-risk-ordered queue of approved Specs.
 
-## Non-frontend implementer: Codex gpt-5.5 xhigh
+## Non-frontend implementer: Codex Sol/high
 
 ```bash
-roundfix implement --spec <slug> --agent codex --qa --detach
+roundfix implement --spec <slug> --qa --detach
 ```
 
-Review Runs use the same default runtime.
+Review Runs use the same profile-led selection.
 
-1. `.roundfixrc.yml` pins `defaults.agent: codex`.
-2. `.roundfixrc.yml` pins `runtimes.codex.model: gpt-5.5`.
-3. `.roundfixrc.yml` pins `runtimes.codex.reasoning_effort: xhigh`.
-4. acpx maps `codex` to the local `codex-acp` adapter.
+1. `.roundfixrc.yml` pins `profiles.general`, `profiles.backend`,
+   `profiles.qa`, and `profiles.review` to the Sol/high Preferred Selection.
+2. Each Codex-led profile keeps GPT-5.5/xhigh as its ordered Fallback Chain.
+3. Roundfix proves every exact tuple before creating a Run.
+4. The effective Codex adapter must prove the official
+   `@agentclientprotocol/codex-acp` lineage and supported version.
 
-Use `--model` and `--reasoning-effort` together only for a one-Run exception.
+For a one-Run exception, provide `--agent`, `--model`, and
+`--reasoning-effort` together. A partial override is rejected.
 
 ## Frontend implementer: Claude Opus 4.8 xhigh
 

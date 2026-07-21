@@ -56,17 +56,33 @@ func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, std
 	if err != nil {
 		return printProfilesConfigureError(req, roundconfig.ProfileConfigResult{Scope: req.scope}, err, stdout, stderr)
 	}
-	result, err := roundconfig.WriteProfilesConfig(ctx, roundconfig.ProfileConfigOptions{
+	proposal, err := roundconfig.PrepareProfilesConfig(ctx, roundconfig.ProfileConfigOptions{
 		Scope:    req.scope,
 		Profiles: profiles,
-		DryRun:   true,
 	})
 	if err != nil {
 		return printProfilesConfigureError(req, roundconfig.ProfileConfigResult{Scope: req.scope}, err, stdout, stderr)
 	}
+	result := proposal.Result()
+	workDir, err := os.Getwd()
+	if err != nil {
+		return printProfilesConfigureError(req, result, fmt.Errorf("resolve profiles configure proof working directory: %w", err), stdout, stderr)
+	}
+	readiness := proveProfileSelections(
+		ctx,
+		roundconfig.Config{Profiles: profiles},
+		profilesConfigureCategories(profiles),
+		workDir,
+		newEngineCollaborators().runner,
+	)
+	if readiness.Err != nil {
+		return printProfilesConfigureError(req, result, readiness.Err, stdout, stderr)
+	}
 	if req.dryRun {
 		if !req.json {
-			fmt.Fprint(stdout, profilesConfigurePreview(result))
+			if _, err := fmt.Fprint(stdout, profilesConfigurePreview(result)); err != nil {
+				return printProfilesConfigureOutputError(err, stderr)
+			}
 		}
 		if err := printProfilesConfigureSuccess(req, result, stdout); err != nil {
 			return printProfilesConfigureOutputError(err, stderr)
@@ -82,28 +98,41 @@ func runProfilesConfigureCommand(ctx context.Context, args []string, stdout, std
 		}
 		if !confirmed {
 			result.Changed = false
-			if req.json {
-				if err := printProfilesConfigureSuccess(req, result, stdout); err != nil {
+			if !req.json {
+				if _, err := fmt.Fprintf(stdout, "Profile configuration unchanged: confirmation declined for %s\n", result.Path); err != nil {
 					return printProfilesConfigureOutputError(err, stderr)
 				}
-			} else {
-				fmt.Fprintf(stdout, "Profile configuration unchanged: confirmation declined for %s\n", result.Path)
+				return exitOK
+			}
+			if err := printProfilesConfigureSuccess(req, result, stdout); err != nil {
+				return printProfilesConfigureOutputError(err, stderr)
 			}
 			return exitOK
 		}
 	}
 
-	result, err = roundconfig.WriteProfilesConfig(ctx, roundconfig.ProfileConfigOptions{
-		Scope:    req.scope,
-		Profiles: profiles,
-	})
+	result, err = roundconfig.PersistProfilesConfig(ctx, proposal)
 	if err != nil {
 		return printProfilesConfigureError(req, result, err, stdout, stderr)
 	}
 	if err := printProfilesConfigureSuccess(req, result, stdout); err != nil {
+		rollbackErr := roundconfig.RollbackProfilesConfig(context.WithoutCancel(ctx), proposal)
+		if rollbackErr != nil {
+			err = errors.Join(err, rollbackErr)
+		}
 		return printProfilesConfigureOutputError(err, stderr)
 	}
 	return exitOK
+}
+
+func profilesConfigureCategories(profiles roundconfig.Profiles) []roundconfig.WorkCategory {
+	categories := make([]roundconfig.WorkCategory, 0, len(profiles))
+	for _, category := range roundconfig.AllWorkCategories() {
+		if _, ok := profiles[category]; ok {
+			categories = append(categories, category)
+		}
+	}
+	return categories
 }
 
 func parseProfilesConfigureCommand(args []string) (profilesConfigureRequest, error) {
@@ -175,7 +204,7 @@ func collectProfilesConfigureInput(ctx context.Context, input io.Reader, output 
 		}
 		if strings.TrimSpace(runtime) == "" {
 			if len(fallbacks) == 0 {
-				return nil, validationError{message: "profiles." + string(category) + ".fallbacks must include at least one complete Agent Selection before confirmation"}
+				return nil, validationError{message: "profiles." + string(category) + ".fallbacks must include at least one complete Agent Selection before confirmation; one additional distinct authorized and proven Agent Selection is required"}
 			}
 			break
 		}
@@ -307,15 +336,15 @@ func printProfilesConfigureSuccess(req profilesConfigureRequest, result roundcon
 		return json.NewEncoder(stdout).Encode(profilesConfigureResponseForResult(result, ""))
 	}
 	if req.dryRun {
-		fmt.Fprintf(stdout, "Profile configuration dry run: %s\n", result.Path)
-		return nil
+		_, err := fmt.Fprintf(stdout, "Profile configuration dry run: %s\n", result.Path)
+		return err
 	}
 	if result.Changed {
-		fmt.Fprintf(stdout, "Profile configuration written: %s\n", result.Path)
-		return nil
+		_, err := fmt.Fprintf(stdout, "Profile configuration written: %s\n", result.Path)
+		return err
 	}
-	fmt.Fprintf(stdout, "Profile configuration unchanged: %s\n", result.Path)
-	return nil
+	_, err := fmt.Fprintf(stdout, "Profile configuration unchanged: %s\n", result.Path)
+	return err
 }
 
 func printProfilesConfigureOutputError(err error, stderr io.Writer) int {

@@ -163,7 +163,7 @@ func isOptionalWorkCategory(category WorkCategory) bool {
 func builtinProfiles() Profiles {
 	general := AgentSelectionProfile{
 		Preferred: AgentSelection{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"},
-		Fallbacks: []AgentSelection{{Runtime: "codex", Model: "gpt-5.6-terra", ReasoningEffort: "max"}},
+		Fallbacks: []AgentSelection{{Runtime: "codex", Model: "gpt-5.5", ReasoningEffort: "xhigh"}},
 	}
 	frontend := AgentSelectionProfile{
 		Preferred: AgentSelection{Runtime: "claude", Model: "claude-fable-5", ReasoningEffort: "medium"},
@@ -239,6 +239,11 @@ func applyLegacyRuntimeProfiles(config *Config, source ProfileSource) {
 	for _, category := range requiredWorkCategories {
 		base := cloneProfile(builtins[category].Profile)
 		base.Preferred = selection
+		for index, fallback := range base.Fallbacks {
+			if fallback == selection {
+				base.Fallbacks[index] = builtins[category].Profile.Preferred
+			}
+		}
 		config.Profiles[category] = ProfileEntry{Profile: base, Source: source}
 	}
 }
@@ -297,7 +302,7 @@ func decodeProfile(path string, node *yaml.Node) (AgentSelectionProfile, error) 
 		return AgentSelectionProfile{}, fmt.Errorf("%s.preferred is required", path)
 	}
 	if fallbacksNode == nil {
-		return AgentSelectionProfile{}, fmt.Errorf("%s.fallbacks is required", path)
+		return AgentSelectionProfile{}, fmt.Errorf("%s.fallbacks is required; one additional distinct authorized and proven Agent Selection is required", path)
 	}
 
 	preferred, err := decodeSelection(path+".preferred", preferredNode)
@@ -320,7 +325,7 @@ func decodeFallbacks(path string, node *yaml.Node) ([]AgentSelection, error) {
 		return nil, fmt.Errorf("%s must be a sequence", path)
 	}
 	if len(node.Content) == 0 {
-		return nil, fmt.Errorf("%s must include at least one Agent Selection", path)
+		return nil, fmt.Errorf("%s must include at least one Agent Selection; one additional distinct authorized and proven Agent Selection is required", path)
 	}
 	fallbacks := make([]AgentSelection, 0, len(node.Content))
 	for index, fallbackNode := range node.Content {
@@ -384,7 +389,7 @@ func validateAgentSelectionProfile(path string, profile AgentSelectionProfile) e
 		return err
 	}
 	if len(profile.Fallbacks) == 0 {
-		return fmt.Errorf("%s.fallbacks must include at least one Agent Selection", path)
+		return fmt.Errorf("%s.fallbacks must include at least one Agent Selection; one additional distinct authorized and proven Agent Selection is required", path)
 	}
 	seen := map[AgentSelection]bool{}
 	preferred, _ := normalizeSelection(path+".preferred", profile.Preferred, true)
@@ -395,7 +400,7 @@ func validateAgentSelectionProfile(path string, profile AgentSelectionProfile) e
 			return err
 		}
 		if seen[selection] {
-			return fmt.Errorf("%s contains duplicate Agent Selection %q", path, formatAgentSelection(selection))
+			return fmt.Errorf("%s contains duplicate Agent Selection %q; one additional distinct authorized and proven Agent Selection is required", path, formatAgentSelection(selection))
 		}
 		seen[selection] = true
 	}

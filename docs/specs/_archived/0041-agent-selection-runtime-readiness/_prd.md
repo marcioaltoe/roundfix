@@ -1,7 +1,8 @@
 ---
 spec: 0041-agent-selection-runtime-readiness
-status: active
+status: archived
 created: 2026-07-17
+archived: 2026-07-21
 surfaces: [cli, backend, docs]
 ---
 

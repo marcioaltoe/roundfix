@@ -45,7 +45,7 @@ name: roundfix
 entrypoint: SKILL.md
 runtime:
   hints:
-    command: roundfix watch --source coderabbit --pr <number> --agent <agent> --until-clean
+    command: roundfix watch --source coderabbit --pr <number> --until-clean
 `))
 
 	if len(diagnostics) > 0 {

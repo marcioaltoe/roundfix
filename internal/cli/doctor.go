@@ -2,10 +2,10 @@ package cli
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"roundfix/internal/agent"
@@ -16,8 +16,9 @@ import (
 var doctorDeps = defaultDoctorDependencies()
 
 type doctorDependencies struct {
-	loadConfig    func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
-	healthChecker func(roundconfig.Loaded) HealthChecker
+	loadConfig       func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
+	healthChecker    func(roundconfig.Loaded) HealthChecker
+	profileReadiness func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult
 }
 
 func defaultDoctorDependencies() doctorDependencies {
@@ -25,6 +26,9 @@ func defaultDoctorDependencies() doctorDependencies {
 		loadConfig: roundconfig.Load,
 		healthChecker: func(roundconfig.Loaded) HealthChecker {
 			return setupDeps.healthChecker()
+		},
+		profileReadiness: func(ctx context.Context, config roundconfig.Config, categories []roundconfig.WorkCategory, workDir string) profileProofResult {
+			return proveProfileSelections(ctx, config, categories, workDir, newEngineCollaborators().runner)
 		},
 	}
 }
@@ -46,25 +50,27 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 
 	checker := doctorDeps.healthChecker(loaded)
-	runtime, runtimeErr := runtimeForConfiguredAgent(loaded.Config)
-	adapterResult := doctorAdapterCheck(ctx, checker, runtime, runtimeErr)
-	var agentResult CheckResult
-	if runtimeErr == nil && adapterResult.Status == CheckStatusFailed {
-		agentResult = CheckResult{
-			Name:   HealthCheckAgent,
-			Status: CheckStatusSkipped,
-			Detail: "adapter failed",
+	workDir := strings.TrimSpace(loaded.GitRoot)
+	if workDir == "" {
+		workDir, err = os.Getwd()
+		if err != nil {
+			printDoctorFailure(fmt.Errorf("resolve Doctor working directory: %w", err), stderr)
+			return exitRunFailed
 		}
-	} else {
-		agentResult = doctorAgentCheck(ctx, checker, loaded)
 	}
-	modelResult := doctorModelCheck(runtime, runtimeErr, adapterResult, agentResult)
+
+	profileReadiness := doctorDeps.profileReadiness(ctx, loaded.Config, roundconfig.RequiredWorkCategories(), workDir)
+	profileResult := doctorProfileReadinessResult(profileReadiness)
+	runtime, runtimeErr := doctorAdapterRuntime(loaded.Config)
+
+	// Keep independent checks eager and ordered. Spec 0036 inserts Repository
+	// Skill Set readiness immediately after profileResult without proving
+	// Agent Selections again or changing the remaining check order.
 	results := []CheckResult{
 		checker.Node(ctx),
 		checker.ACPX(ctx),
-		adapterResult,
-		agentResult,
-		modelResult,
+		doctorAdapterCheck(ctx, checker, runtime, runtimeErr),
+		profileResult,
 		checker.Codex(ctx),
 	}
 
@@ -93,6 +99,14 @@ func parseDoctorCommand(args []string) error {
 	return nil
 }
 
+func doctorAdapterRuntime(config roundconfig.Config) (agent.RuntimeSpec, error) {
+	resolved, err := roundconfig.ResolveProfile(config, roundconfig.CategoryGeneral, nil)
+	if err != nil {
+		return agent.RuntimeSpec{}, fmt.Errorf("resolve effective general Agent Selection Profile for adapter readiness: %w", err)
+	}
+	return runtimeForProfileSelection(resolved.Profile.Preferred)
+}
+
 func doctorAdapterCheck(ctx context.Context, checker HealthChecker, runtime agent.RuntimeSpec, runtimeErr error) CheckResult {
 	if runtimeErr != nil {
 		return CheckResult{
@@ -104,81 +118,71 @@ func doctorAdapterCheck(ctx context.Context, checker HealthChecker, runtime agen
 	return checker.Adapter(ctx, runtime)
 }
 
-func doctorAgentCheck(ctx context.Context, checker HealthChecker, loaded roundconfig.Loaded) CheckResult {
-	runtime, err := runtimeForConfiguredAgent(loaded.Config)
-	if err != nil {
-		return CheckResult{
-			Name:   HealthCheckAgent,
-			Status: CheckStatusFailed,
-			Detail: err.Error(),
-			Err:    err,
-		}
-	}
-	return checker.Agent(ctx, agent.ProbeRequest{
-		Runtime: runtime,
-		WorkDir: loaded.GitRoot,
-	})
-}
-
-func doctorModelCheck(runtime agent.RuntimeSpec, runtimeErr error, adapterResult CheckResult, agentResult CheckResult) CheckResult {
-	// Doctor renders this check as the public "model:" line.
-	result := CheckResult{Name: HealthCheckModel}
-	if runtimeErr != nil {
-		result.Status = CheckStatusSkipped
-		result.Detail = "agent selection failed"
-		return result
-	}
-	if adapterResult.Status == CheckStatusFailed {
-		result.Status = CheckStatusSkipped
-		result.Detail = "adapter failed"
-		return result
-	}
-	if agentResult.Status == CheckStatusOK {
+func doctorProfileReadinessResult(readiness profileProofResult) CheckResult {
+	result := CheckResult{Name: HealthCheckProfiles}
+	if readiness.Err == nil {
 		result.Status = CheckStatusOK
-		result.Detail = strings.TrimSpace(runtime.Model)
+		result.Detail = fmt.Sprintf("%d distinct tuples; %d category references", len(readiness.Proofs), profileProofReferenceCount(readiness.Proofs))
 		return result
 	}
-	var modelErr *agent.ModelNotAdvertisedError
-	if errors.As(agentResult.Err, &modelErr) {
-		result.Status = CheckStatusFailed
-		result.Detail = doctorModelNotAdvertisedDetail(runtime, modelErr)
-		result.NextAction = modelErr.RecoveryAction()
+
+	result.Status = CheckStatusFailed
+	failed, ok := firstFailedProfileProof(readiness.Proofs)
+	if !ok {
+		result.Detail = readiness.Err.Error()
 		return result
 	}
-	result.Status = CheckStatusSkipped
-	result.Detail = "agent probe failed"
+	parts := []string{
+		fmt.Sprintf("runtime=%q, model=%q, reasoning_effort=%q", failed.Selection.Runtime, failed.Selection.Model, failed.Selection.ReasoningEffort),
+		"affected categories: " + formatProfileProofReferences(failed.References),
+	}
+	if classification := strings.TrimSpace(failed.Classification); classification != "" {
+		parts = append(parts, "classification: "+classification)
+	}
+	parts = append(parts, "adapter evidence: "+doctorProfileAdapterEvidence(failed))
+	result.Detail = strings.Join(parts, "; ")
+	result.NextAction = strings.TrimSpace(failed.NextAction)
 	return result
 }
 
-func doctorModelNotAdvertisedDetail(runtime agent.RuntimeSpec, modelErr *agent.ModelNotAdvertisedError) string {
-	model := strings.TrimSpace(runtime.Model)
-	runtimeID := strings.TrimSpace(runtime.ID)
-	if modelErr != nil {
-		if rejected := strings.TrimSpace(modelErr.Model); rejected != "" {
-			model = rejected
-		}
-		if rejectedRuntime := strings.TrimSpace(modelErr.Runtime); rejectedRuntime != "" {
-			runtimeID = rejectedRuntime
-		}
+func profileProofReferenceCount(proofs []profileProofReport) int {
+	count := 0
+	for _, proof := range proofs {
+		count += len(proof.References)
 	}
-	return fmt.Sprintf("Agent Model %q not advertised by runtime %q; advertised: %s", model, runtimeID, doctorAdvertisedModels(modelErr))
+	return count
 }
 
-func doctorAdvertisedModels(modelErr *agent.ModelNotAdvertisedError) string {
-	if modelErr == nil {
-		return "unavailable"
-	}
-	advertised := make([]string, 0, len(modelErr.Advertised))
-	for _, model := range modelErr.Advertised {
-		model = strings.TrimSpace(model)
-		if model != "" {
-			advertised = append(advertised, model)
+func firstFailedProfileProof(proofs []profileProofReport) (profileProofReport, bool) {
+	for _, proof := range proofs {
+		if proof.Status == "failed" {
+			return proof, true
 		}
 	}
-	if len(advertised) == 0 {
+	return profileProofReport{}, false
+}
+
+func doctorProfileAdapterEvidence(proof profileProofReport) string {
+	evidence := make([]string, 0, 5)
+	if command := strings.TrimSpace(proof.AdapterCommand); command != "" {
+		evidence = append(evidence, fmt.Sprintf("command=%q", command))
+	}
+	if version := strings.TrimSpace(proof.AdapterVersion); version != "" {
+		evidence = append(evidence, fmt.Sprintf("version=%q", version))
+	}
+	if len(proof.AdvertisedModels) > 0 {
+		evidence = append(evidence, "advertised_models="+strings.Join(proof.AdvertisedModels, ","))
+	}
+	if len(proof.AdvertisedReasoning) > 0 {
+		evidence = append(evidence, "advertised_reasoning="+strings.Join(proof.AdvertisedReasoning, ","))
+	}
+	if detail := strings.TrimSpace(proof.Error); detail != "" {
+		evidence = append(evidence, fmt.Sprintf("error=%q", detail))
+	}
+	if len(evidence) == 0 {
 		return "unavailable"
 	}
-	return strings.Join(advertised, ", ")
+	return strings.Join(evidence, ", ")
 }
 
 func printDoctorResult(stdout io.Writer, result CheckResult) {

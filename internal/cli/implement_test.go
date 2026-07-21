@@ -133,7 +133,58 @@ if [ "$1" = "--version" ]; then
   exit 0
 fi
 case " $* " in
-  *" sessions ensure "*|*" sessions close "*)
+  *" sessions ensure "*)
+    model=""
+    session=""
+    previous=""
+    for argument in "$@"; do
+      if [ "$previous" = "--model" ]; then
+        model="$argument"
+      elif [ "$previous" = "--name" ]; then
+        session="$argument"
+      fi
+      previous="$argument"
+    done
+    printf '%%s' "$model" > "$0.$session.model"
+    exit 0
+    ;;
+  *" sessions show "*)
+    session=""
+    for argument in "$@"; do
+      session="$argument"
+    done
+    model=$(cat "$0.$session.model")
+    printf '{"schema":"acpx.session.v1","acpx":{"current_model_id":"%%s","config_options":[{"id":"model","category":"model","type":"select","currentValue":"%%s","options":[{"value":"%%s"}]},{"id":"reasoning_effort","type":"select","currentValue":"medium","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"maximum"},{"value":"ultra"}]}]}}\n' "$model" "$model" "$model"
+    exit 0
+    ;;
+  *" set model "*|*" set reasoning_effort "*|*" set effort "*)
+    config_id=""
+    config_value=""
+    session=""
+    previous=""
+    for argument in "$@"; do
+      if [ "$previous" = "set" ]; then
+        config_id="$argument"
+      elif [ -n "$config_id" ] && [ -z "$config_value" ]; then
+        config_value="$argument"
+      elif [ "$previous" = "-s" ]; then
+        session="$argument"
+      fi
+      previous="$argument"
+    done
+    state_path="$0.$session.model"
+    model="$config_value"
+    if [ "$config_id" = "model" ]; then
+      printf '%%s' "$model" > "$state_path"
+      current_reasoning="medium"
+    else
+      model=$(cat "$state_path")
+      current_reasoning="$config_value"
+    fi
+    printf '{"action":"config_set","configId":"%%s","value":"%%s","configOptions":[{"id":"model","category":"model","type":"select","currentValue":"%%s","options":[{"value":"%%s"}]},{"id":"reasoning_effort","type":"select","currentValue":"%%s","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"maximum"},{"value":"ultra"}]}]}\n' "$config_id" "$config_value" "$model" "$model" "$current_reasoning"
+    exit 0
+    ;;
+  *" sessions close "*)
     exit 0
     ;;
   *" prompt "*)
@@ -159,7 +210,7 @@ exit 0
 	// fake codex-acp next to the fake acpx so detach children pass preflight
 	// on machines without the real adapter installed (CI runners).
 	adapterPath := filepath.Join(filepath.Dir(path), "codex-acp")
-	if err := os.WriteFile(adapterPath, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+	if err := os.WriteFile(adapterPath, []byte("#!/bin/sh\nprintf '%s\\n' '@agentclientprotocol/codex-acp "+agent.PinnedCodexAdapterVersion+"'\n"), 0o755); err != nil {
 		t.Fatalf("write fake codex-acp: %v", err)
 	}
 	return path
@@ -746,7 +797,7 @@ func runCleanImplementForCleanup(t *testing.T, cleanupErr error) (string, string
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected clean implement exit code 0, got %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
@@ -1033,7 +1084,7 @@ func TestRunImplementDetachPrintsReportAndCompletesRun(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	fakeACPX := fakeACPXCommand(t)
 	stdout, stderr, code := runCLIHelper(t, repoDir, fakeACPX, nil,
-		"implement", "--spec", implementTestSlug, "--agent", "codex", "--agent-command", "codex-acp --stdio", "--detach")
+		"implement", "--spec", implementTestSlug, "--agent-command", "codex-acp --stdio", "--detach")
 
 	if code != exitOK {
 		t.Fatalf("expected detach caller exit 0, got %d stderr=%q stdout=%q", code, stderr, stdout)
@@ -1063,13 +1114,13 @@ func TestRunImplementDetachReportsAndRelaysPreflightFailure(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	var foregroundStdout bytes.Buffer
 	var foregroundStderr bytes.Buffer
-	foregroundCode := RunContext(context.Background(), []string{"implement", "--spec", "9999-missing", "--agent", "codex", "--no-input"}, &foregroundStdout, &foregroundStderr)
+	foregroundCode := RunContext(context.Background(), []string{"implement", "--spec", "9999-missing", "--no-input"}, &foregroundStdout, &foregroundStderr)
 	if foregroundCode != exitPreflight {
 		t.Fatalf("expected foreground preflight exit 2, got %d stderr=%q", foregroundCode, foregroundStderr.String())
 	}
 
 	stdout, stderr, code := runCLIHelper(t, repoDir, "", nil,
-		"implement", "--spec", "9999-missing", "--agent", "codex", "--detach")
+		"implement", "--spec", "9999-missing", "--detach")
 
 	if code != exitPreflight {
 		t.Fatalf("expected detached preflight exit 2, got %d stderr=%q stdout=%q", code, stderr, stdout)
@@ -1095,7 +1146,7 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 		_ = os.WriteFile(releasePrompt, []byte("release\n"), 0o644)
 	})
 	fakeACPX := fakeACPXCommand(t)
-	cmd := exec.Command(os.Args[0], "implement", "--spec", implementTestSlug, "--agent", "codex", "--agent-command", "codex-acp --stdio", "--detach")
+	cmd := exec.Command(os.Args[0], "implement", "--spec", implementTestSlug, "--agent-command", "codex-acp --stdio", "--detach")
 	cmd.Dir = repoDir
 	cmd.Env = cliHelperEnv(fakeACPX, map[string]string{
 		"ROUNDFIX_FAKE_ACPX_PROMPT_STARTED": promptStarted,
@@ -1152,7 +1203,7 @@ func TestRunHelpListsImplementCommand(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d", code)
 	}
-	if !strings.Contains(stdout.String(), "roundfix implement --spec <slug> --agent <agent>") {
+	if !strings.Contains(stdout.String(), "roundfix implement --spec <slug>") {
 		t.Fatalf("expected top-level usage to list implement, got %q", stdout.String())
 	}
 }
@@ -1167,17 +1218,17 @@ func TestRunImplementValidationFailures(t *testing.T) {
 			// The workspace has no docs/specs/, so Spec Root validation fails
 			// before the Spec picker can offer choices.
 			name:    "missing spec without active Specs",
-			args:    []string{"implement", "--agent", "codex"},
+			args:    []string{"implement"},
 			message: "specs.root resolved to",
 		},
 		{
 			name:    "missing spec with no-input",
-			args:    []string{"implement", "--agent", "codex", "--no-input"},
+			args:    []string{"implement", "--no-input"},
 			message: "missing required --spec because --no-input disables Interactive Input",
 		},
 		{
 			name:    "interactive without active Specs",
-			args:    []string{"implement", "--agent", "codex", "--interactive"},
+			args:    []string{"implement", "--interactive"},
 			message: "specs.root resolved to",
 		},
 		{
@@ -1187,24 +1238,22 @@ func TestRunImplementValidationFailures(t *testing.T) {
 		},
 		{
 			name:    "interactive with no-agent-console",
-			args:    []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--interactive", "--no-agent-console"},
+			args:    []string{"implement", "--spec", implementTestSlug, "--interactive", "--no-agent-console"},
 			message: "--interactive cannot be used with --no-agent-console",
 		},
 		{
-			// The built-in config default is codex, so an empty Agent only
-			// happens when the flag explicitly clears it.
 			name:    "explicitly empty agent with no-input",
-			args:    []string{"implement", "--spec", implementTestSlug, "--agent=", "--no-input"},
-			message: "missing required --agent because --no-input disables Interactive Input",
+			args:    []string{"implement", "--spec", implementTestSlug, "--agent=", "--model", "gpt-5.6-sol", "--reasoning-effort", "high", "--no-input"},
+			message: "--agent cannot be empty",
 		},
 		{
 			name:    "unsupported agent",
-			args:    []string{"implement", "--spec", implementTestSlug, "--agent", "gemini"},
+			args:    []string{"implement", "--spec", implementTestSlug, "--agent", "gemini", "--model", "gemini-pro", "--reasoning-effort", "high"},
 			message: `unsupported Agent "gemini"`,
 		},
 		{
 			name:    "unexpected argument",
-			args:    []string{"implement", implementTestSlug, "--agent", "codex"},
+			args:    []string{"implement", implementTestSlug},
 			message: "unexpected argument",
 		},
 	}
@@ -1320,7 +1369,7 @@ func TestRunImplementUsesConfiguredExternalSpecRootEndToEnd(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--qa", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected Clean exit, got %d (stderr %q stdout %q)", code, stderr.String(), stdout.String())
@@ -1364,7 +1413,7 @@ func TestRunImplementInteractiveInputListsConfiguredExternalSpecRoot(t *testing.
 	var collected strings.Builder
 	withInteractiveInput(t, func(ctx context.Context, req roundtui.InputRequest) (roundtui.CommandValues, error) {
 		inputReq = req
-		return roundtui.CollectInput(ctx, req, strings.NewReader("1\ncodex\n\n\n"), &collected)
+		return roundtui.CollectInput(ctx, req, strings.NewReader("1\ncodex\ngpt-5.6-sol\nhigh\n"), &collected)
 	})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -1398,9 +1447,9 @@ func TestRunImplementInteractiveInputMergesQAGateChoice(t *testing.T) {
 		qaReport    string
 		wantQACalls int
 	}{
-		{name: "scripted yes produces QA Run", args: []string{"implement"}, input: "1\ncodex\n\n\ny\n", qaReport: implementQAReport("pass"), wantQACalls: 1},
-		{name: "empty input produces non-QA Run", args: []string{"implement"}, input: "1\ncodex\n\n\n\n", wantQACalls: 0},
-		{name: "qa flag preset keeps QA on with enter", args: []string{"implement", "--qa"}, input: "1\ncodex\n\n\n\n", qaReport: implementQAReport("pass"), wantQACalls: 1},
+		{name: "scripted yes produces QA Run", args: []string{"implement"}, input: "1\ncodex\ngpt-5.6-sol\nhigh\ny\n", qaReport: implementQAReport("pass"), wantQACalls: 1},
+		{name: "empty input produces non-QA Run", args: []string{"implement"}, input: "1\ncodex\ngpt-5.6-sol\nhigh\n\n", wantQACalls: 0},
+		{name: "qa flag preset keeps QA on with enter", args: []string{"implement", "--qa"}, input: "1\ncodex\ngpt-5.6-sol\nhigh\n\n", qaReport: implementQAReport("pass"), wantQACalls: 1},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1435,7 +1484,7 @@ func TestRunImplementInteractiveInputMergesQAGateChoice(t *testing.T) {
 	}
 }
 
-func TestRunImplementInteractiveInputRemembersAgentButNotSpecOrQA(t *testing.T) {
+func TestRunImplementInteractiveInputPersistsAgentButNotSpecOrQA(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Build the widget core"},
 	})
@@ -1463,9 +1512,9 @@ func TestRunImplementInteractiveInputRemembersAgentButNotSpecOrQA(t *testing.T) 
 		t.Fatalf("expected the Agent remembered after the first Run, got %#v", defaults)
 	}
 
-	// A second invocation with the Agent explicitly cleared reopens the
-	// flow: the remembered Agent surfaces as the suggestion, the Spec does
-	// not — each Run's target is an explicit choice.
+	// A second explicit Interactive Input reopens the flow. The configured
+	// Agent remains the suggestion, while the Spec and QA choice are not
+	// remembered because each Run's target is an explicit choice.
 	gitImplement(t, repoDir, "add", "-A")
 	gitImplement(t, repoDir, "commit", "-m", "keep first run")
 	var secondReq roundtui.InputRequest
@@ -1477,11 +1526,11 @@ func TestRunImplementInteractiveInputRemembersAgentButNotSpecOrQA(t *testing.T) 
 	stdout.Reset()
 	stderr.Reset()
 
-	if code := RunContext(context.Background(), []string{"implement", "--agent="}, &stdout, &stderr); code != 0 {
+	if code := RunContext(context.Background(), []string{"implement", "--interactive"}, &stdout, &stderr); code != 0 {
 		t.Fatalf("expected second run exit 0, got %d (stderr %q)", code, stderr.String())
 	}
-	if secondReq.AgentSuggestion.Value != "claude" || secondReq.AgentSuggestion.Source != "remembered" {
-		t.Fatalf("expected the remembered Agent suggestion, got %#v", secondReq.AgentSuggestion)
+	if secondReq.AgentSuggestion.Value != "codex" || secondReq.AgentSuggestion.Source != "config" {
+		t.Fatalf("expected the configured Agent suggestion, got %#v", secondReq.AgentSuggestion)
 	}
 	if secondReq.Values.Spec != "" {
 		t.Fatalf("expected the spec slug not remembered across invocations, got %q", secondReq.Values.Spec)
@@ -1511,7 +1560,7 @@ func TestRunImplementInteractiveForcedWithFlagsProvidedStillOpensFlow(t *testing
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--interactive"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--interactive"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
@@ -1544,7 +1593,7 @@ func TestRunImplementExecutesSpecEndToEnd(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
@@ -1620,7 +1669,7 @@ func TestRunImplementBootstrapFailureEndsFailedBeforeAgentWork(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected bootstrap failure exit %d, got %d (stderr %q)", exitRunFailed, code, stderr.String())
@@ -1694,7 +1743,7 @@ func TestRunImplementBootstrapRunsBeforeAgentWorkAndVerification(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected Clean exit, got %d (stderr %q)", code, stderr.String())
@@ -1754,7 +1803,7 @@ func TestRunImplementBootstrapsEachConcurrentTaskWorktreeBeforeAgentWork(t *test
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected Clean exit, got %d (stderr %q)", code, stderr.String())
@@ -1901,7 +1950,7 @@ func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 			name:           "clean qa pass with key pushes",
 			enableAutoPush: true,
 			configUpstream: true,
-			args:           []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--qa", "--no-input"},
+			args:           []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"},
 			runner: func(repoDir string) *implementFakeRunner {
 				return &implementFakeRunner{
 					gitRoot:      repoDir,
@@ -1921,7 +1970,7 @@ func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 		{
 			name:           "clean without key does not push",
 			configUpstream: true,
-			args:           []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"},
+			args:           []string{"implement", "--spec", implementTestSlug, "--no-input"},
 			runner: func(repoDir string) *implementFakeRunner {
 				return &implementFakeRunner{
 					gitRoot:      repoDir,
@@ -1937,7 +1986,7 @@ func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 			name:           "unresolved failed task does not push",
 			enableAutoPush: true,
 			configUpstream: true,
-			args:           []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"},
+			args:           []string{"implement", "--spec", implementTestSlug, "--no-input"},
 			runner: func(repoDir string) *implementFakeRunner {
 				return &implementFakeRunner{
 					gitRoot:      repoDir,
@@ -1953,7 +2002,7 @@ func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 			name:           "stopped does not push",
 			enableAutoPush: true,
 			configUpstream: true,
-			args:           []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"},
+			args:           []string{"implement", "--spec", implementTestSlug, "--no-input"},
 			runner: func(repoDir string) *implementFakeRunner {
 				return &implementFakeRunner{
 					gitRoot:   repoDir,
@@ -1969,7 +2018,7 @@ func TestRunImplementAutoPushOutcomeMatrix(t *testing.T) {
 			name:           "qa fail does not push",
 			enableAutoPush: true,
 			configUpstream: true,
-			args:           []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--qa", "--no-input"},
+			args:           []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"},
 			runner: func(repoDir string) *implementFakeRunner {
 				return &implementFakeRunner{
 					gitRoot:      repoDir,
@@ -2048,7 +2097,7 @@ func TestRunImplementReportPrintsVerificationFailureReason(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected unresolved implement exit %d, got %d stderr=%q stdout=%q", exitRunFailed, code, stderr.String(), stdout.String())
@@ -2091,7 +2140,7 @@ func TestRunImplementReportPrintsModelNotAdvertisedReason(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--model", "gpt-5.6-sol", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected unresolved implement exit %d, got %d stderr=%q stdout=%q", exitRunFailed, code, stderr.String(), stdout.String())
@@ -2121,7 +2170,7 @@ func TestRunImplementAutoPushMissingUpstreamWarnsAndStaysClean(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected Clean path exit 0, got %d stderr=%q", code, stderr.String())
@@ -2160,7 +2209,7 @@ func TestRunImplementAutoPushFailureEndsFailedAndJournalsPush(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected push failure exit 1, got %d stderr=%q", code, stderr.String())
@@ -2207,7 +2256,7 @@ func TestRunImplementNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-agent-console", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-agent-console", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean implement exit 0, got %d stderr=%q", code, stderr.String())
@@ -2268,7 +2317,7 @@ func TestRunImplementUsesConfiguredArtifactDirectoryForAgentLogs(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+			code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 			if code != 0 {
 				t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
@@ -2311,7 +2360,7 @@ func TestRunImplementUsesOneAgentSessionPerRunAndCloses(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean implement exit 0, got %d stderr=%q", code, stderr.String())
@@ -2381,7 +2430,7 @@ func TestRunImplementClosesAgentSessionForTerminalOutcomes(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+			code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 			if code != tt.wantCode {
 				t.Fatalf("expected exit code %d, got %d stderr=%q", tt.wantCode, code, stderr.String())
@@ -2407,7 +2456,7 @@ func TestRunImplementPreflightFailures(t *testing.T) {
 		{
 			name:     "spec not found",
 			seeds:    []implementSeed{{id: "task_01"}},
-			args:     []string{"implement", "--spec", "9999-missing", "--agent", "codex"},
+			args:     []string{"implement", "--spec", "9999-missing"},
 			messages: []string{`Spec "9999-missing" not found`, "check the slug"},
 		},
 		{
@@ -2452,7 +2501,7 @@ func TestRunImplementPreflightFailures(t *testing.T) {
 			}
 			args := tt.args
 			if args == nil {
-				args = []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}
+				args = []string{"implement", "--spec", implementTestSlug, "--no-input"}
 			}
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
@@ -2487,7 +2536,7 @@ func TestImplementRejectsInvalidTaskTypeBeforeSideEffects(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d (stderr %q)", code, stderr.String())
@@ -2534,7 +2583,7 @@ func TestRunImplementDirtyWorkingTreePrintsNoteAndRuns(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected dirty working tree to continue, got exit %d (stderr %q)", code, stderr.String())
@@ -2576,7 +2625,7 @@ func TestRunImplementRealWorktreeFastForwardsAndCleansPreservingNonOverlappingUs
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected Clean fast-forward exit, got %d (stderr %q)", code, stderr.String())
@@ -2632,7 +2681,7 @@ func TestRunImplementWorktreeIsolationExcludesConcurrentUserCommit(t *testing.T)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected IntegrationPending exit, got %d (stderr %q)", code, stderr.String())
@@ -2689,7 +2738,7 @@ func TestRunImplementOverlapEndsIntegrationPendingAndPrintedCommandWorks(t *test
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected IntegrationPending exit, got %d (stderr %q)", code, stderr.String())
@@ -2742,7 +2791,7 @@ func TestRunImplementUnresolvedKeepsRealRunWorktreeAndPrintsPath(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitRunFailed {
 		t.Fatalf("expected Unresolved exit, got %d (stderr %q)", code, stderr.String())
@@ -2781,7 +2830,7 @@ func TestRunImplementPreflightReapsEmptyTerminalRunAndTaskWorktrees(t *testing.T
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected implement exit 0, got %d stderr=%q", code, stderr.String())
@@ -2839,7 +2888,7 @@ func TestRunImplementPreflightClosesTerminalRunSessionsOnly(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected implement exit 0, got %d stderr=%q", code, stderr.String())
@@ -2890,7 +2939,7 @@ func TestRunImplementPreflightPrunesRetainedRunStorage(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(ctx, []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected implement exit 0, got %d stderr=%q", code, stderr.String())
@@ -2941,7 +2990,7 @@ func TestRunImplementPreflightRetentionPruneFailureIsNonFatal(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(ctx, []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected implement exit 0 despite retention warning, got %d stderr=%q", code, stderr.String())
@@ -2973,7 +3022,7 @@ func TestRunImplementPreflightRetentionZeroSkipsPrune(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(ctx, []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitOK {
 		t.Fatalf("expected implement exit 0, got %d stderr=%q", code, stderr.String())
@@ -3012,7 +3061,7 @@ func TestRunImplementPreflightRejectsActiveRunInWorkingTree(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(ctx, []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d (stderr %q)", code, stderr.String())
@@ -3041,7 +3090,7 @@ func TestRunImplementPreflightProbeFailureCreatesNoRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 2 {
 		t.Fatalf("expected exit code 2, got %d (stderr %q)", code, stderr.String())
@@ -3062,7 +3111,7 @@ func TestImplementProfilePreflightFailureCreatesNoRunWorktreeOrAgentPrompt(t *te
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != exitPreflight {
 		t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
@@ -3160,7 +3209,6 @@ func TestRunImplementSelectionFailureDoesNotPromptForDynamicFallback(t *testing.
 	code := RunContext(context.Background(), []string{
 		"implement",
 		"--spec", implementTestSlug,
-		"--agent", "codex",
 	}, &stdout, &stderr)
 
 	if code != exitPreflight {
@@ -3288,7 +3336,7 @@ func TestRunImplementRejectsExplicitEmptySelectionOverrides(t *testing.T) {
 	}{
 		{
 			name: "model",
-			args: []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--model=", "--no-input"},
+			args: []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--model=", "--reasoning-effort", "high", "--no-input"},
 			want: "--model cannot be empty",
 		},
 	}
@@ -3314,6 +3362,39 @@ func TestRunImplementRejectsExplicitEmptySelectionOverrides(t *testing.T) {
 	}
 }
 
+func TestRunImplementSelectionOverrideRejectsPartialBeforeConfigLoad(t *testing.T) {
+	homeDir, _ := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+	configPath := filepath.Join(homeDir, ".roundfix", "config.yml")
+	const invalidConfig = "defaults:\n  agent: [\n"
+	writeUserConfig(t, homeDir, invalidConfig)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{
+		"implement", "--spec", implementTestSlug, "--reasoning-effort", "high", "--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitPreflight {
+		t.Fatalf("expected preflight exit %d, got %d stderr=%q", exitPreflight, code, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout diagnostics, got %q", stdout.String())
+	}
+	const wantGrammar = "--agent, --model, and --reasoning-effort must be provided together for a one-Run Agent Selection override; omit all three to use Agent Selection Profiles"
+	if !strings.Contains(stderr.String(), wantGrammar) {
+		t.Fatalf("expected selection grammar error before config load, got %q", stderr.String())
+	}
+	if got := mustRead(t, configPath); got != invalidConfig {
+		t.Fatalf("partial override changed User Config\nwant: %q\n got: %q", invalidConfig, got)
+	}
+	assertRunCount(t, store.DatabasePath(homeDir), 0)
+	if _, err := os.Stat(filepath.Join(homeDir, ".roundfix", "worktrees")); err == nil {
+		t.Fatalf("partial override created a Run Worktree root")
+	} else if !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("stat Run Worktree root: %v", err)
+	}
+}
+
 func TestRunImplementAllTasksCompletedReportsWithoutRun(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
 		{id: "task_01", title: "Write the widget guide", status: string(spec.StatusCompleted)},
@@ -3324,7 +3405,7 @@ func TestRunImplementAllTasksCompletedReportsWithoutRun(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
@@ -3358,7 +3439,7 @@ func TestRunImplementFailedTaskEndsUnresolvedAndKeepsWorktree(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected exit code 1, got %d (stderr %q)", code, stderr.String())
@@ -3404,7 +3485,7 @@ func TestRunImplementResumesStaleInProgressTask(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected exit code 0, got %d (stderr %q)", code, stderr.String())
@@ -3434,7 +3515,7 @@ func TestRunImplementStopRequestEndsStoppedWithInterruptMapping(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	stoppedCode := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	stoppedCode := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 	code := exitForInterrupt(stoppedCode, true)
 
 	if stoppedCode != 0 {
@@ -3478,7 +3559,7 @@ func TestRunImplementDatabaseStopRequestAfterTaskCommitEndsStoppedAndReleasesLoc
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected stopped command exit 0, got %d (stderr %q)", code, stderr.String())
@@ -3576,7 +3657,7 @@ func TestRunImplementQAVerdictMatrix(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--qa", "--no-input"}, &stdout, &stderr)
+			code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
 
 			if code != tt.wantCode {
 				t.Fatalf("expected exit code %d, got %d (stderr %q)", tt.wantCode, code, stderr.String())
@@ -3641,7 +3722,7 @@ func TestRunImplementQAStepSkippedWhenAnyTaskFails(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--qa", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected exit code 1, got %d (stderr %q)", code, stderr.String())
@@ -3690,7 +3771,7 @@ func TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--qa", "--no-input"}, &stdout, &stderr)
+			code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
 
 			if code != tt.wantCode {
 				t.Fatalf("expected exit code %d, got %d (stderr %q)", tt.wantCode, code, stderr.String())
@@ -3734,7 +3815,7 @@ func TestAttachReplaysCompletedSpecRunReadOnly(t *testing.T) {
 	withImplementCollaborators(t, runner)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	if code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--qa", "--no-input"}, &stdout, &stderr); code != 0 {
+	if code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr); code != 0 {
 		t.Fatalf("seed implement run failed: %d stderr=%q", code, stderr.String())
 	}
 	runID := implementRunIDFromStderr(t, stderr.String())
@@ -3792,7 +3873,7 @@ func TestRunImplementInfrastructureFailureEndsFailed(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--agent", "codex", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
 
 	if code != 1 {
 		t.Fatalf("expected exit code 1, got %d (stderr %q)", code, stderr.String())
@@ -4079,8 +4160,12 @@ func newMacroFakeACPX(t *testing.T) macroFakeACPX {
 	if err := os.WriteFile(acpxPath, []byte(script), 0o755); err != nil {
 		t.Fatalf("write fake acpx: %v", err)
 	}
-	for _, adapter := range []string{"codex-acp", "claude-code-acp", "opencode"} {
-		if err := os.WriteFile(filepath.Join(binDir, adapter), []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+	for _, adapter := range []string{"codex-acp", "claude-code-acp", "opencode", "npx"} {
+		content := "#!/bin/sh\nexit 0\n"
+		if adapter == "npx" {
+			content = "#!/bin/sh\nprintf '%s\\n' '@agentclientprotocol/codex-acp " + agent.PinnedCodexAdapterVersion + "'\n"
+		}
+		if err := os.WriteFile(filepath.Join(binDir, adapter), []byte(content), 0o755); err != nil {
 			t.Fatalf("write fake adapter %s: %v", adapter, err)
 		}
 	}
@@ -4166,6 +4251,9 @@ def parse(argv):
     if len(tail) >= 2 and tail[0] == "sessions" and tail[1] == "ensure":
         command = "sessions ensure"
         session = arg_value(tail, "--name")
+    elif len(tail) >= 2 and tail[0] == "sessions" and tail[1] == "show":
+        command = "sessions show"
+        session = tail[2] if len(tail) > 2 else ""
     elif len(tail) >= 2 and tail[0] == "sessions" and tail[1] == "close":
         command = "sessions close"
         session = tail[2] if len(tail) > 2 else ""
@@ -4181,6 +4269,8 @@ def parse(argv):
         "model": arg_value(argv, "--model"),
         "session": session,
         "cwd": arg_value(argv, "--cwd") or os.getcwd(),
+        "config_id": tail[1] if command == "set" and len(tail) > 1 else "",
+        "config_value": tail[2] if command == "set" and len(tail) > 2 else "",
         "args": argv,
     }
 
@@ -4191,6 +4281,18 @@ def log(event):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "a", encoding="utf-8") as handle:
         handle.write(json.dumps(event, sort_keys=True) + "\n")
+
+def session_model(session):
+    path = os.environ.get("ROUNDFIX_FAKE_ACPX_LOG", "")
+    if not path or not os.path.exists(path):
+        return ""
+    with open(path, "r", encoding="utf-8") as handle:
+        records = handle.readlines()
+    for raw in reversed(records):
+        record = json.loads(raw)
+        if record.get("session") == session and record.get("model"):
+            return record["model"]
+    return ""
 
 def prompt_field(prompt, label):
     match = re.search(r"^" + re.escape(label) + r":\s*(.+)$", prompt, re.M)
@@ -4280,6 +4382,44 @@ if event["command"] == "sessions ensure":
         log(event)
         sys.stderr.write("selection start rejected\n")
         sys.exit(1)
+
+if event["command"] == "sessions show":
+    model = session_model(event.get("session", ""))
+    reasoning_id = "reasoning_effort" if event.get("agent") == "codex" else "effort"
+    event["model"] = model
+    event["outcome"] = "ok"
+    log(event)
+    print(json.dumps({
+        "schema": "acpx.session.v1",
+        "acpx": {
+            "current_model_id": model,
+            "config_options": [
+                {"id": "model", "category": "model", "type": "select", "currentValue": model, "options": [{"value": model}]},
+                {"id": reasoning_id, "type": "select", "currentValue": "medium", "options": [{"value": value} for value in ["low", "medium", "high", "xhigh", "max", "maximum", "ultra"]]},
+            ],
+        },
+    }, sort_keys=True))
+    sys.exit(0)
+
+if event["command"] == "set":
+    config_id = event.get("config_id", "")
+    config_value = event.get("config_value", "")
+    model = config_value if config_id == "model" else session_model(event.get("session", ""))
+    reasoning_id = config_id if config_id in {"reasoning_effort", "effort"} else ("reasoning_effort" if event.get("agent") == "codex" else "effort")
+    current_reasoning = config_value if config_id == reasoning_id else "medium"
+    event["model"] = model
+    event["outcome"] = "ok"
+    log(event)
+    print(json.dumps({
+        "action": "config_set",
+        "configId": config_id,
+        "value": config_value,
+        "configOptions": [
+            {"id": "model", "category": "model", "type": "select", "currentValue": model, "options": [{"value": model}]},
+            {"id": reasoning_id, "type": "select", "currentValue": current_reasoning, "options": [{"value": value} for value in ["low", "medium", "high", "xhigh", "max", "maximum", "ultra"]]},
+        ],
+    }, sort_keys=True))
+    sys.exit(0)
 
 if event["command"] == "prompt":
     fail_model = os.environ.get("ROUNDFIX_FAKE_ACPX_FAIL_PROMPT_MODEL", "")
@@ -4558,7 +4698,7 @@ func assertMacroSelectionAttempts(t *testing.T, homeDir string, runID string) {
 		"2|backend|project|preferred|0|codex|macro-backend|high|closed||",
 	})
 	assertMacroAttemptSequence(t, byScope["task:task_frontend"], []string{
-		"1|frontend|project|preferred|0|codex|macro-frontend-preferred|high|failed|model_unavailable|selection start rejected",
+		"1|frontend|project|preferred|0|codex|macro-frontend-preferred|high|failed|selection_start_failed|selection start rejected",
 		"2|frontend|project|fallback|1|claude|claude-fable-5|xhigh|active||",
 		"3|frontend|project|fallback|1|claude|claude-fable-5|xhigh|closed||",
 	})
@@ -4657,7 +4797,7 @@ func assertMacroSelectionStream(t *testing.T, binary string, repoDir string, hom
 		}
 		if record.ScopeID == "task_frontend" && record.Attempt == 0 && record.NextModel == "claude-fable-5" {
 			notification = index
-			if record.Runtime != "codex" || record.Model != "macro-frontend-preferred" || record.NextRuntime != "claude" || record.Status != "failed" || record.ReasonCode != "model_unavailable" {
+			if record.Runtime != "codex" || record.Model != "macro-frontend-preferred" || record.NextRuntime != "claude" || record.Status != "failed" || record.ReasonCode != "selection_start_failed" {
 				t.Fatalf("unexpected fallback notification stream record: %#v", record)
 			}
 		}

@@ -42,9 +42,9 @@ Usage:
   roundfix --help
   roundfix --version
   roundfix fetch --source coderabbit --pr <number> [--spec <slug>]
-  roundfix resolve --pr <number> --agent <agent> [--spec <slug>]
-  roundfix watch --source coderabbit --pr <number> --agent <agent> [--spec <slug>] --until-clean
-  roundfix implement --spec <slug> --agent <agent>
+  roundfix resolve --pr <number> [--spec <slug>]
+  roundfix watch --source coderabbit --pr <number> [--spec <slug>] --until-clean
+  roundfix implement --spec <slug>
   roundfix settle --spec <slug> --task <task_id>
   roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
   roundfix profiles show [--category <category>] [--json]
@@ -1052,6 +1052,9 @@ func applyInteractiveValues(req commandRequest, values roundtui.CommandValues) c
 	} else if !req.reasoningEffortSet {
 		req.reasoningEffort = ""
 	}
+	if req.modelSet || req.reasoningEffortSet {
+		req.agentSet = true
+	}
 	if values.MaxRounds > 0 {
 		req.maxRounds = values.MaxRounds
 	}
@@ -1140,6 +1143,12 @@ func runOperationalCommand(ctx context.Context, name string, args []string, stdo
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage(name))
 		return exitOK
+	}
+	if name != "fetch" {
+		if err := validateSelectionOverrideArgs(args); err != nil {
+			printPreflightFailure(name, err, stderr)
+			return exitPreflight
+		}
 	}
 
 	loadedConfig, err := roundconfig.Load(roundconfig.LoadOptions{Stderr: stderr})
@@ -2978,10 +2987,80 @@ func recordSelectionFlagPresence(fs *flag.FlagSet, req *commandRequest) {
 }
 
 func validateExplicitSelectionFlags(req commandRequest) error {
+	presence := invocationSelectionFlagPresence{
+		agent:           req.agentSet,
+		model:           req.modelSet,
+		reasoningEffort: req.reasoningEffortSet,
+	}
+	if err := presence.validate(); err != nil {
+		return err
+	}
+	if presence.empty() {
+		return nil
+	}
+	if strings.TrimSpace(req.agent) == "" {
+		return validationError{message: "--agent cannot be empty in a complete one-Run Agent Selection override"}
+	}
 	if req.modelSet && strings.TrimSpace(req.model) == "" {
-		return emptySelectionFlagError(req, "model", "model")
+		return validationError{message: "--model cannot be empty in a complete one-Run Agent Selection override"}
 	}
 	return nil
+}
+
+type invocationSelectionFlagPresence struct {
+	agent           bool
+	model           bool
+	reasoningEffort bool
+}
+
+func selectionFlagPresence(args []string) invocationSelectionFlagPresence {
+	var presence invocationSelectionFlagPresence
+	for index := 0; index < len(args); index++ {
+		arg := args[index]
+		if arg == "--" {
+			break
+		}
+		if !strings.HasPrefix(arg, "-") {
+			continue
+		}
+		name, _, hasValue := strings.Cut(strings.TrimLeft(arg, "-"), "=")
+		switch name {
+		case "agent":
+			presence.agent = true
+		case "model":
+			presence.model = true
+		case "reasoning-effort":
+			presence.reasoningEffort = true
+		}
+		if !hasValue && selectionFlagConsumesValue(name) && index+1 < len(args) {
+			index++
+		}
+	}
+	return presence
+}
+
+func selectionFlagConsumesValue(name string) bool {
+	switch name {
+	case "agent-full-access", "detach", "interactive", "no-agent-console", "no-input", "qa", "skip-branch-integrity", "until-clean":
+		return false
+	default:
+		return true
+	}
+}
+
+func validateSelectionOverrideArgs(args []string) error {
+	return selectionFlagPresence(args).validate()
+}
+
+func (presence invocationSelectionFlagPresence) empty() bool {
+	return !presence.agent && !presence.model && !presence.reasoningEffort
+}
+
+func (presence invocationSelectionFlagPresence) validate() error {
+	if presence.empty() || (presence.agent && presence.model && presence.reasoningEffort) {
+		return nil
+	}
+	return validationError{message: "--agent, --model, and --reasoning-effort must be provided together for a one-Run Agent Selection override; omit all three to use Agent Selection Profiles"}
 }
 
 func displayReasoningEffort(reasoningEffort string) string {
@@ -2990,14 +3069,6 @@ func displayReasoningEffort(reasoningEffort string) string {
 		return "model-managed"
 	}
 	return reasoningEffort
-}
-
-func emptySelectionFlagError(req commandRequest, flagName string, configKey string) error {
-	runtime := strings.TrimSpace(req.agent)
-	if runtime == "" {
-		runtime = "<agent>"
-	}
-	return validationError{message: fmt.Sprintf("--%s cannot be empty; omit it to use runtimes.%s.%s or pass a concrete value", flagName, runtime, configKey)}
 }
 
 func validateCommandRequest(req commandRequest) error {
@@ -3680,9 +3751,11 @@ Options:
 		return `Usage:
   roundfix setup [--yes] [--no-input]
 
-Checks Node.js, the pinned acpx version, the configured Agent probe,
-acpx local adapter overrides, User Config, and Project Config. Each check
-prints one deterministic report line with ok, installed, skipped,
+Checks Node.js and the pinned acpx version, proves the effective official Codex adapter
+and generated Agent Selection profile readiness, then offers acpx local adapter
+overrides, User Config, and Project Config. Proposed profiles are exact-proved
+before writing. Legacy Codex override migration requires authorization. Each
+check prints one deterministic report line with ok, installed, skipped,
 offered: declined, or failed.
 
 Options:
@@ -3694,9 +3767,9 @@ Options:
   roundfix doctor
 
 Diagnoses this machine's readiness for Runs. Checks Node.js, the pinned acpx
-version, the configured Agent probe, and codex runtime hygiene. Prints one
-line per check with ok, failed, or skipped plus the next action for failures.
-Doctor mutates nothing.
+version, the effective adapter, and required Agent Selection Profiles. It also
+checks codex runtime hygiene. The aggregate profiles: line exact-proves every
+distinct tuple and reports the next action for failures. Doctor mutates nothing.
 `
 	case "gc":
 		return `Usage:
@@ -3767,12 +3840,14 @@ Options:
 `
 	case "resolve":
 		return `Usage:
-  roundfix resolve --pr <number> --agent <agent> [--spec <slug>] [--round <number|all>] [--no-input]
+  roundfix resolve --pr <number> [--spec <slug>] [--round <number|all>] [--no-input]
+  roundfix resolve --pr <number> --agent <agent> --model <model> --reasoning-effort <effort> [--spec <slug>]
 
 Behavior:
   Runs Branch Integrity Preflight and clean tracked checkout validation before
   Agent work. Resolve executes in the user's checkout and creates no Run
-  Worktree.
+  Worktree. Omit all Agent Selection flags to use the review profile. A one-Run
+  override requires --agent, --model, and --reasoning-effort together.
 
 Options:
   --pr           Open Pull Request number
@@ -3796,14 +3871,16 @@ Options:
 `
 	case "watch":
 		return `Usage:
-  roundfix watch --source coderabbit --pr <number> --agent <agent> [--spec <slug>] [--until-clean] [--max-rounds <number>] [--no-input]
+  roundfix watch --source coderabbit --pr <number> [--spec <slug>] [--until-clean] [--max-rounds <number>] [--no-input]
+  roundfix watch --source coderabbit --pr <number> --agent <agent> --model <model> --reasoning-effort <effort> [--spec <slug>]
 
 Behavior:
   Runs Branch Integrity Preflight and clean tracked checkout validation before
   Agent work. Watch executes in the user's checkout and creates no Run
   Worktree. With --until-clean, Clean requires the Review Source check to
   succeed on the pushed head; if the check never appears within the grace
-  period, watch ends CleanUnverified and exits 3.
+  period, watch ends CleanUnverified and exits 3. Omit all Agent Selection flags
+  to use the review profile. A one-Run override requires --agent, --model, and --reasoning-effort together.
 
 Options:
   --source       Review Source. Supported: coderabbit
@@ -3904,7 +3981,8 @@ Options:
 
 Writes complete Agent Selection Profiles to User Config or Project Config.
 Without --file, collects one profile through Interactive Input, shows the
-normalized profile and target scope, then asks for confirmation before writing.
+normalized profile and target scope, then proves every exact Agent Selection
+before confirmation. --dry-run performs the same proof without writing.
 
 Options:
   --scope    Required config scope: user or project
@@ -3918,7 +3996,7 @@ Options:
   roundfix profiles validate [--category <category>] [--json]
 
 Read-only validation resolves effective profiles, deduplicates exact Agent
-Selections, proves each distinct tuple through a disposable ACP Runtime session,
+Selections, proves each exact tuple through a disposable ACP Runtime session,
 and closes every disposable session on success or error.
 
 Options:
