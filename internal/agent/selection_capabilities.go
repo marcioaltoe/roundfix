@@ -117,6 +117,19 @@ type acpxCapabilityResponse struct {
 	ConfigOptions *[]acpSelectOptionPayload `json:"configOptions"`
 }
 
+type acpxSessionCapabilityResponse struct {
+	Schema string `json:"schema"`
+	ACPX   *struct {
+		CurrentModelID string                    `json:"current_model_id"`
+		ConfigOptions  *[]acpSelectOptionPayload `json:"config_options"`
+	} `json:"acpx"`
+}
+
+type acpxModelSetResponse struct {
+	Action  string `json:"action"`
+	ModelID string `json:"modelId"`
+}
+
 type acpSelectOptionPayload struct {
 	ID           string                   `json:"id"`
 	Category     string                   `json:"category"`
@@ -253,6 +266,42 @@ func ParseSessionConfigOptions(payload []byte, adapter AdapterEvidence) (Selecti
 	}, nil
 }
 
+// ParseSessionCapabilitySnapshot validates ACPX's public acpx.session.v1
+// projection and reuses the ACP configOptions validation contract.
+func ParseSessionCapabilitySnapshot(payload []byte, adapter AdapterEvidence) (SelectionCapabilities, error) {
+	issues := newCapabilityIssueSet()
+	if len(payload) == 0 {
+		issues.add(CapabilityIssueMalformedResponse)
+		return SelectionCapabilities{}, issues.err()
+	}
+	if len(payload) > maxCapabilityResponseBytes {
+		issues.add(CapabilityIssueResponseTooLarge)
+		return SelectionCapabilities{}, issues.err()
+	}
+
+	var snapshot acpxSessionCapabilityResponse
+	if err := json.Unmarshal(payload, &snapshot); err != nil || snapshot.Schema != "acpx.session.v1" || snapshot.ACPX == nil || !boundedCapabilityValue(snapshot.ACPX.CurrentModelID) {
+		issues.add(CapabilityIssueMalformedResponse)
+		return SelectionCapabilities{}, issues.err()
+	}
+	if snapshot.ACPX.ConfigOptions == nil {
+		issues.add(CapabilityIssueMissingOptions)
+		return SelectionCapabilities{}, issues.err()
+	}
+
+	projection, err := json.Marshal(acpxCapabilityResponse{
+		Action:        "config_set",
+		ConfigID:      "model",
+		Value:         snapshot.ACPX.CurrentModelID,
+		ConfigOptions: snapshot.ACPX.ConfigOptions,
+	})
+	if err != nil {
+		issues.add(CapabilityIssueMalformedResponse)
+		return SelectionCapabilities{}, issues.err()
+	}
+	return ParseSessionConfigOptions(projection, adapter)
+}
+
 // AcquireSelectionCapabilities uses only ACPX's public strict-JSON command
 // boundary. It does not open ACPX Session files, Codex caches, or other
 // runtime-private persistence.
@@ -281,15 +330,68 @@ func (runner ACPXRunner) acquireSelectionCapabilities(ctx context.Context, reque
 		}
 		return SelectionCapabilities{}, &CapabilityAcquisitionError{Err: err}
 	}
-	capabilities, err := ParseSessionConfigOptions([]byte(output), request.Adapter)
-	if err != nil {
-		return SelectionCapabilities{}, err
+	capabilities, parseErr := ParseSessionConfigOptions([]byte(output), request.Adapter)
+	if parseErr != nil {
+		if request.ConfigID == "model" && exactACPXModelSetResponse([]byte(output), request.Value) {
+			return runner.observeSelectionCapabilities(ctx, request.Runtime, request.Session, request.Adapter, env)
+		}
+		return SelectionCapabilities{}, parseErr
 	}
 	var response acpxCapabilityResponse
 	if err := json.Unmarshal([]byte(output), &response); err != nil || response.ConfigID != request.ConfigID || response.Value != request.Value {
 		return SelectionCapabilities{}, newCapabilityEvidenceError(CapabilityIssueContradictoryResponse)
 	}
 	return capabilities, nil
+}
+
+func (runner ACPXRunner) observeSelectionCapabilities(ctx context.Context, runtime RuntimeSpec, session SessionRef, adapter AdapterEvidence, env []string) (SelectionCapabilities, error) {
+	if ctx == nil {
+		return SelectionCapabilities{}, errors.New("capability observation context is required")
+	}
+	if err := ctx.Err(); err != nil {
+		return SelectionCapabilities{}, err
+	}
+	if issues := capabilityAdapterIssues(adapter); len(issues) > 0 {
+		return SelectionCapabilities{}, newCapabilityEvidenceError(issues...)
+	}
+	args, err := acpxSessionCapabilityArgs(runtime, session)
+	if err != nil {
+		return SelectionCapabilities{}, err
+	}
+	output, err := runner.runACPXCommandOutputWithEnv(ctx, args, env)
+	if err != nil {
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return SelectionCapabilities{}, ctxErr
+		}
+		return SelectionCapabilities{}, &CapabilityAcquisitionError{Err: err}
+	}
+	return ParseSessionCapabilitySnapshot([]byte(output), adapter)
+}
+
+func exactACPXModelSetResponse(payload []byte, expectedModel string) bool {
+	var response acpxModelSetResponse
+	if err := json.Unmarshal(payload, &response); err != nil {
+		return false
+	}
+	return response.Action == "model_set" && response.ModelID == expectedModel
+}
+
+func acpxSessionCapabilityArgs(runtime RuntimeSpec, session SessionRef) ([]string, error) {
+	workDir := strings.TrimSpace(session.WorkDir)
+	if workDir == "" {
+		return nil, errors.New("Agent working directory is required")
+	}
+	sessionName := strings.TrimSpace(session.Name)
+	if sessionName == "" {
+		return nil, errors.New("Agent Session name is required")
+	}
+	agentArgs, err := acpxAgentArgs(runtime)
+	if err != nil {
+		return nil, err
+	}
+	args := []string{"--cwd", workDir, "--format", "json", "--json-strict"}
+	args = append(args, agentArgs...)
+	return append(args, "sessions", "show", sessionName), nil
 }
 
 func acpxCapabilityResponseArgs(runtime RuntimeSpec, configID string, value string, session SessionRef) ([]string, error) {

@@ -137,13 +137,7 @@ func (runner ACPXRunner) startSessionSelection(ctx context.Context, runtime Runt
 		return SelectionCapabilities{}, &SelectionRejectedError{Assignment: assignment, Operation: operation, Err: err}
 	}
 
-	capabilities, err := runner.acquireSelectionCapabilities(ctx, CapabilityAcquisitionRequest{
-		Runtime:  runtime,
-		Session:  session,
-		ConfigID: "model",
-		Value:    strings.TrimSpace(runtime.Model),
-		Adapter:  adapter,
-	}, codexEnv)
+	capabilities, err := runner.observeSelectionCapabilities(ctx, runtime, session, adapter, codexEnv)
 	if err == nil {
 		return capabilities, nil
 	}
@@ -154,15 +148,7 @@ func (runner ACPXRunner) startSessionSelection(ctx context.Context, runtime Runt
 	if errors.As(err, &evidenceErr) {
 		return SelectionCapabilities{}, err
 	}
-	var acquisitionErr *CapabilityAcquisitionError
-	if errors.As(err, &acquisitionErr) {
-		classified := classifyModelNotAdvertised(runtime, acquisitionErr.Err)
-		var modelErr *ModelNotAdvertisedError
-		if errors.As(classified, &modelErr) {
-			return SelectionCapabilities{}, modelErr
-		}
-	}
-	return SelectionCapabilities{}, &SelectionRejectedError{Assignment: canonicalSelection(runtime), Operation: "set model", Err: err}
+	return SelectionCapabilities{}, &SelectionRejectedError{Assignment: canonicalSelection(runtime), Operation: "inspect Agent Session capabilities", Err: err}
 }
 
 func canonicalSelection(runtime RuntimeSpec) SelectionAssignment {

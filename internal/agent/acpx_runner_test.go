@@ -314,7 +314,7 @@ func TestACPXProbeMalformedConfigFallsBackToDefaultAdapter(t *testing.T) {
 	writeACPXConfigForTest(t, `{not json`)
 	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
 	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
-		"set model value=gpt-5.5": selectionStateFixture(t, "model", "gpt-5.5", "gpt-5.5", []string{"gpt-5.5"}, "", "", nil),
+		"sessions show": sessionCapabilitySnapshotFixture(t, "gpt-5.5", []string{"gpt-5.5"}, "", "", nil),
 	}))
 	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.5"}
 
@@ -360,7 +360,7 @@ func TestACPXProbeSkipsEmptyReasoningEffort(t *testing.T) {
 	harness := newFakeACPXHarness(t)
 	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
 	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
-		"set model value=gpt-5.6-sol": selectionStateFixture(t, "model", "gpt-5.6-sol", "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "", "", nil),
+		"sessions show": sessionCapabilitySnapshotFixture(t, "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "", "", nil),
 	}))
 	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol"}
 
@@ -408,6 +408,64 @@ func TestProfileProofAppliesExactReasoningAndClosesDisposableSession(t *testing.
 	wantClose := []string{"--cwd", harness.gitRoot, "codex", "sessions", "close", sessionName}
 	if !reflect.DeepEqual(invocations[4], wantClose) {
 		t.Fatalf("profile proof did not close disposable session\nwant: %#v\ngot:  %#v", wantClose, invocations[4])
+	}
+}
+
+func TestProfileProofUsesSessionSnapshotWhenACPXModelProjectionOmitsOptions(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"set model value=gpt-5.5":          `{"action":"model_set","modelId":"gpt-5.5","resumed":false}`,
+		"sessions show":                    sessionCapabilitySnapshotFixture(t, "gpt-5.5", []string{"gpt-5.6-sol", "gpt-5.5"}, "reasoning_effort", "xhigh", []string{"low", "medium", "high", "xhigh"}),
+		"set reasoning_effort value=xhigh": selectionStateFixture(t, "reasoning_effort", "xhigh", "gpt-5.5", []string{"gpt-5.6-sol", "gpt-5.5"}, "reasoning_effort", "xhigh", []string{"low", "medium", "high", "xhigh"}),
+	}))
+	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.5", ReasoningEffort: "xhigh"}
+
+	err := harness.runner.Probe(context.Background(), ProbeRequest{Runtime: runtime, WorkDir: harness.gitRoot})
+
+	if err != nil {
+		t.Fatalf("expected public config-option response to prove selection: %v", err)
+	}
+	invocations := readJSONInvocations(t, harness.invocationsPath)
+	if containsCommandKey(invocations, "set model") {
+		t.Fatalf("profile proof used ACPX model projection without config options: %#v", invocations)
+	}
+	if !containsCommandKey(invocations, "sessions show") {
+		t.Fatalf("profile proof did not inspect the public Agent Session snapshot: %#v", invocations)
+	}
+	if !containsCommandKey(invocations, "set reasoning_effort") {
+		t.Fatalf("profile proof did not acquire public config-option evidence: %#v", invocations)
+	}
+	assertLastInvocationClosesDisposable(t, harness)
+}
+
+func TestAcquireSelectionCapabilitiesObservesAfterACPXModelProjectionOmitsOptions(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	models := []string{"future-model", "future-model[high]"}
+	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"set model value=future-model[high]": `{"action":"model_set","modelId":"future-model[high]","resumed":false}`,
+		"sessions show":                      sessionCapabilitySnapshotFixture(t, "future-model[high]", models, "", "", nil),
+	}))
+
+	capabilities, err := harness.runner.AcquireSelectionCapabilities(context.Background(), CapabilityAcquisitionRequest{
+		Runtime:  RuntimeSpec{ID: "codex", Protocol: ProtocolACP},
+		Session:  SessionRef{Name: "roundfix-live", WorkDir: harness.gitRoot},
+		ConfigID: "model",
+		Value:    "future-model[high]",
+		Adapter:  AdapterEvidence{Command: "adapter"},
+	})
+
+	if err != nil {
+		t.Fatalf("acquire capabilities after model update: %v", err)
+	}
+	if capabilities.CurrentModel != "future-model[high]" {
+		t.Fatalf("current model = %q, want future-model[high]", capabilities.CurrentModel)
+	}
+	if got, want := selectionCallKeys(readJSONInvocations(t, harness.invocationsPath)), []string{"set model value=future-model[high]"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("selection calls = %#v, want %#v", got, want)
+	}
+	if !containsCommandKey(readJSONInvocations(t, harness.invocationsPath), "sessions show") {
+		t.Fatal("model update did not refresh capabilities from the public Agent Session snapshot")
 	}
 }
 
@@ -559,7 +617,7 @@ func TestProveExactSelectionOfficialFixturesNoPrompt(t *testing.T) {
 			if containsCommandKey(invocations, "prompt") {
 				t.Fatalf("proof sent an Agent prompt: %#v", invocations)
 			}
-			if got, want := selectionCallKeys(invocations), []string{"sessions ensure model=" + tt.model, "set model value=" + tt.model, "set reasoning_effort value=" + tt.effort, "sessions close"}; !reflect.DeepEqual(got, want) {
+			if got, want := selectionCallKeys(invocations), []string{"sessions ensure model=" + tt.model, "set reasoning_effort value=" + tt.effort, "sessions close"}; !reflect.DeepEqual(got, want) {
 				t.Fatalf("proof calls = %#v, want %#v", got, want)
 			}
 		})
@@ -570,6 +628,7 @@ func TestProveExactSelectionModelVariant(t *testing.T) {
 	harness := newFakeACPXHarness(t)
 	models := []string{"future-model", "future-model[high]", "future-model[xhigh]"}
 	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
+		"sessions show":                      sessionCapabilitySnapshotFixture(t, "future-model", models, "", "", nil),
 		"set model value=future-model":       selectionStateFixture(t, "model", "future-model", "future-model", models, "", "", nil),
 		"set model value=future-model[high]": selectionStateFixture(t, "model", "future-model[high]", "future-model[high]", models, "", "", nil),
 	}))
@@ -607,7 +666,7 @@ func TestProveExactSelectionEffectiveMismatchCleanup(t *testing.T) {
 
 func TestProveExactSelectionMalformedEvidenceCleanup(t *testing.T) {
 	harness := newFakeACPXHarness(t)
-	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{"set model value=gpt-5.6-sol": `{`}))
+	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{"sessions show": `{`}))
 
 	_, err := harness.runner.ProveExactSelection(context.Background(), ProbeRequest{Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"}, WorkDir: harness.gitRoot})
 	var evidence *CapabilityEvidenceError
@@ -660,9 +719,9 @@ func TestProveExactSelectionCancelCleanup(t *testing.T) {
 
 func TestProveExactSelectionTimeoutCleanup(t *testing.T) {
 	harness := newFakeACPXHarness(t)
-	started := filepath.Join(harness.gitRoot, "model-state-started")
+	started := filepath.Join(harness.gitRoot, "session-state-started")
 	t.Setenv(fakeACPXStarted, started)
-	t.Setenv(fakeACPXBlockCmd, "set model")
+	t.Setenv(fakeACPXBlockCmd, "sessions show")
 	ctx := newTestDeadlineContext()
 	defer ctx.expire()
 	result := make(chan error, 1)
@@ -699,7 +758,7 @@ func TestApplySessionSelectionDisposableAndLiveOrder(t *testing.T) {
 		t.Fatalf("prepare live selection: %v", err)
 	}
 
-	want := []string{"sessions ensure model=gpt-5.6-sol", "set model value=gpt-5.6-sol", "set reasoning_effort value=high"}
+	want := []string{"sessions ensure model=gpt-5.6-sol", "set reasoning_effort value=high"}
 	if got := selectionCallKeys(readJSONInvocations(t, disposable.invocationsPath)); !reflect.DeepEqual(got[:len(want)], want) {
 		t.Fatalf("disposable calls = %#v, want prefix %#v", got, want)
 	}
@@ -740,7 +799,7 @@ func TestACPXProbeSelectionRejectionClosesDisposableSession(t *testing.T) {
 	harness := newFakeACPXHarness(t)
 	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
 	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
-		"set model value=gpt-5.5": selectionStateFixture(t, "model", "gpt-5.5", "gpt-5.5", []string{"gpt-5.5"}, "reasoning_effort", "medium", []string{"medium", "extreme"}),
+		"sessions show": sessionCapabilitySnapshotFixture(t, "gpt-5.5", []string{"gpt-5.5"}, "reasoning_effort", "medium", []string{"medium", "extreme"}),
 	}))
 	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"set reasoning_effort": 2}))
 	t.Setenv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{"set reasoning_effort": "reasoning value rejected\n"}))
@@ -808,7 +867,7 @@ func TestACPXProbeCleanupFailureJoinsSelectionError(t *testing.T) {
 	harness := newFakeACPXHarness(t)
 	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
 	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
-		"set model value=gpt-5.5": selectionStateFixture(t, "model", "gpt-5.5", "gpt-5.5", []string{"gpt-5.5"}, "reasoning_effort", "medium", []string{"medium", "extreme"}),
+		"sessions show": sessionCapabilitySnapshotFixture(t, "gpt-5.5", []string{"gpt-5.5"}, "reasoning_effort", "medium", []string{"medium", "extreme"}),
 	}))
 	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{
 		"set reasoning_effort": 2,
@@ -1404,7 +1463,7 @@ func TestValidateRuntimeSelectionSkipsReasoningConfigKeyForEmptyEffort(t *testin
 func TestACPXRunSkipsEmptyReasoningEffort(t *testing.T) {
 	harness := newFakeACPXHarness(t)
 	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
-		"set model value=gpt-5.6-sol": selectionStateFixture(t, "model", "gpt-5.6-sol", "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "", "", nil),
+		"sessions show": sessionCapabilitySnapshotFixture(t, "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "", "", nil),
 	}))
 	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol"}
 
@@ -3278,6 +3337,21 @@ func selectionStateFixture(t *testing.T, configID string, value string, currentM
 	})
 }
 
+func sessionCapabilitySnapshotFixture(t *testing.T, currentModel string, models []string, reasoningID string, currentReasoning string, efforts []string) string {
+	t.Helper()
+	var response acpxCapabilityResponse
+	if err := json.Unmarshal([]byte(selectionStateFixture(t, "model", currentModel, currentModel, models, reasoningID, currentReasoning, efforts)), &response); err != nil {
+		t.Fatalf("decode capability response fixture: %v", err)
+	}
+	return mustJSONForTest(t, map[string]any{
+		"schema": "acpx.session.v1",
+		"acpx": map[string]any{
+			"current_model_id": currentModel,
+			"config_options":   response.ConfigOptions,
+		},
+	})
+}
+
 func selectionCallKeys(invocations [][]string) []string {
 	keys := make([]string, 0, len(invocations))
 	for _, invocation := range invocations {
@@ -3324,10 +3398,10 @@ func exactSelectionInvocations(legacy [][]string) [][]string {
 				}
 			}
 		}
-		modelSet := []string{"--cwd", invocationValue(invocation, "--cwd"), "--format", "json", "--json-strict"}
-		modelSet = append(modelSet, agentArgs...)
-		modelSet = append(modelSet, "set", "model", invocationValue(invocation, "--model"), "-s", invocationValue(invocation, "--name"))
-		updated = append(updated, modelSet)
+		sessionShow := []string{"--cwd", invocationValue(invocation, "--cwd"), "--format", "json", "--json-strict"}
+		sessionShow = append(sessionShow, agentArgs...)
+		sessionShow = append(sessionShow, "sessions", "show", invocationValue(invocation, "--name"))
+		updated = append(updated, sessionShow)
 	}
 	return updated
 }
@@ -3606,7 +3680,37 @@ func firstFakeACPXString(values ...string) string {
 
 func fakeSelectionStateOutput(args []string, invocationsPath string) string {
 	command := fakeACPXCommandKey(args)
-	if !containsArg(args, "--json-strict") || (command != "set model" && command != "set reasoning_effort" && command != "set effort") {
+	if !containsArg(args, "--json-strict") {
+		return ""
+	}
+	if command == "sessions show" {
+		model := fakeSessionModel(invocationsPath, args[len(args)-1])
+		if model == "" {
+			return ""
+		}
+		reasoningID := "reasoning_effort"
+		if strings.Contains(strings.Join(args, " "), " claude ") || strings.Contains(strings.Join(args, " "), " opencode ") {
+			reasoningID = "effort"
+		}
+		response := map[string]any{
+			"schema": "acpx.session.v1",
+			"acpx": map[string]any{
+				"current_model_id": model,
+				"config_options": []any{
+					map[string]any{"id": "model", "category": "model", "type": "select", "currentValue": model, "options": []any{map[string]string{"value": model}}},
+					map[string]any{"id": reasoningID, "type": "select", "currentValue": "medium", "options": []any{
+						map[string]string{"value": "low"}, map[string]string{"value": "medium"}, map[string]string{"value": "high"}, map[string]string{"value": "xhigh"}, map[string]string{"value": "maximum"}, map[string]string{"value": "max"}, map[string]string{"value": "ultra"},
+					}},
+				},
+			},
+		}
+		payload, err := json.Marshal(response)
+		if err != nil {
+			return ""
+		}
+		return string(payload)
+	}
+	if command != "set model" && command != "set reasoning_effort" && command != "set effort" {
 		return ""
 	}
 	configID := strings.TrimPrefix(command, "set ")

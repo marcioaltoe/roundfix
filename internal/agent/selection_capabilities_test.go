@@ -73,6 +73,43 @@ func TestSelectionCapabilitiesOfficialAndLegacyFixtures(t *testing.T) {
 	}
 }
 
+func TestParseSessionCapabilitySnapshot(t *testing.T) {
+	t.Parallel()
+
+	snapshot := sessionCapabilitySnapshotFixture(t, "gpt-5.5", []string{"gpt-5.6-sol", "gpt-5.5"}, "reasoning_effort", "xhigh", []string{"low", "medium", "high", "xhigh"})
+	got, err := ParseSessionCapabilitySnapshot([]byte(snapshot), AdapterEvidence{Command: "adapter"})
+	if err != nil {
+		t.Fatalf("parse Agent Session capability snapshot: %v", err)
+	}
+	if got.CurrentModel != "gpt-5.5" || got.ReasoningOption == nil || got.ReasoningOption.CurrentValue != "xhigh" {
+		t.Fatalf("unexpected capabilities: %#v", got)
+	}
+}
+
+func TestParseSessionCapabilitySnapshotRejectsInvalidEvidence(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		payload string
+		issue   string
+	}{
+		{name: "unknown schema", payload: `{"schema":"acpx.session.v2","acpx":{}}`, issue: CapabilityIssueMalformedResponse},
+		{name: "missing options", payload: `{"schema":"acpx.session.v1","acpx":{"current_model_id":"gpt-5.5"}}`, issue: CapabilityIssueMissingOptions},
+		{name: "contradictory model", payload: sessionCapabilitySnapshotFixture(t, "gpt-5.4", []string{"gpt-5.5"}, "", "", nil), issue: CapabilityIssueInvalidCurrentValue},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			_, err := ParseSessionCapabilitySnapshot([]byte(tt.payload), AdapterEvidence{Command: "adapter"})
+			var evidence *CapabilityEvidenceError
+			if !errors.As(err, &evidence) || !containsString(evidence.Issues, tt.issue) {
+				t.Fatalf("error = %T %v, want issue %q", err, err, tt.issue)
+			}
+		})
+	}
+}
+
 func TestSelectionCapabilitiesIndependentAndVariantOptions(t *testing.T) {
 	t.Parallel()
 
