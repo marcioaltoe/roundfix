@@ -133,6 +133,30 @@ if [ "$1" = "--version" ]; then
   exit 0
 fi
 case " $* " in
+  *" sessions ensure "*)
+    model=""
+    session=""
+    previous=""
+    for argument in "$@"; do
+      if [ "$previous" = "--model" ]; then
+        model="$argument"
+      elif [ "$previous" = "--name" ]; then
+        session="$argument"
+      fi
+      previous="$argument"
+    done
+    printf '%%s' "$model" > "$0.$session.model"
+    exit 0
+    ;;
+  *" sessions show "*)
+    session=""
+    for argument in "$@"; do
+      session="$argument"
+    done
+    model=$(cat "$0.$session.model")
+    printf '{"schema":"acpx.session.v1","acpx":{"current_model_id":"%%s","config_options":[{"id":"model","category":"model","type":"select","currentValue":"%%s","options":[{"value":"%%s"}]},{"id":"reasoning_effort","type":"select","currentValue":"medium","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"maximum"},{"value":"ultra"}]}]}}\n' "$model" "$model" "$model"
+    exit 0
+    ;;
   *" set model "*|*" set reasoning_effort "*|*" set effort "*)
     config_id=""
     config_value=""
@@ -160,7 +184,7 @@ case " $* " in
     printf '{"action":"config_set","configId":"%%s","value":"%%s","configOptions":[{"id":"model","category":"model","type":"select","currentValue":"%%s","options":[{"value":"%%s"}]},{"id":"reasoning_effort","type":"select","currentValue":"%%s","options":[{"value":"low"},{"value":"medium"},{"value":"high"},{"value":"xhigh"},{"value":"max"},{"value":"maximum"},{"value":"ultra"}]}]}\n' "$config_id" "$config_value" "$model" "$model" "$current_reasoning"
     exit 0
     ;;
-  *" sessions ensure "*|*" sessions close "*)
+  *" sessions close "*)
     exit 0
     ;;
   *" prompt "*)
@@ -4227,6 +4251,9 @@ def parse(argv):
     if len(tail) >= 2 and tail[0] == "sessions" and tail[1] == "ensure":
         command = "sessions ensure"
         session = arg_value(tail, "--name")
+    elif len(tail) >= 2 and tail[0] == "sessions" and tail[1] == "show":
+        command = "sessions show"
+        session = tail[2] if len(tail) > 2 else ""
     elif len(tail) >= 2 and tail[0] == "sessions" and tail[1] == "close":
         command = "sessions close"
         session = tail[2] if len(tail) > 2 else ""
@@ -4355,6 +4382,24 @@ if event["command"] == "sessions ensure":
         log(event)
         sys.stderr.write("selection start rejected\n")
         sys.exit(1)
+
+if event["command"] == "sessions show":
+    model = session_model(event.get("session", ""))
+    reasoning_id = "reasoning_effort" if event.get("agent") == "codex" else "effort"
+    event["model"] = model
+    event["outcome"] = "ok"
+    log(event)
+    print(json.dumps({
+        "schema": "acpx.session.v1",
+        "acpx": {
+            "current_model_id": model,
+            "config_options": [
+                {"id": "model", "category": "model", "type": "select", "currentValue": model, "options": [{"value": model}]},
+                {"id": reasoning_id, "type": "select", "currentValue": "medium", "options": [{"value": value} for value in ["low", "medium", "high", "xhigh", "max", "maximum", "ultra"]]},
+            ],
+        },
+    }, sort_keys=True))
+    sys.exit(0)
 
 if event["command"] == "set":
     config_id = event.get("config_id", "")
