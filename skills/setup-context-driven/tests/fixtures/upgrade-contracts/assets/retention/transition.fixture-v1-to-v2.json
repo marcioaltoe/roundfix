@@ -4,6 +4,9 @@
   "version": 1,
   "fromBaseline": "baseline.fixture-v1",
   "toBaseline": "baseline.fixture-v2",
+  "legacyManifestFingerprints": [
+    "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  ],
   "priorClauses": [
     {
       "id": "clause.legacy.project-rules",

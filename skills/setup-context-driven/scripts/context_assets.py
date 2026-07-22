@@ -165,6 +165,7 @@ class UpgradeTransition:
     version: int
     from_baseline: str
     to_baseline: str
+    legacy_manifest_fingerprints: tuple[str, ...]
     prior_clauses: tuple[PriorClauseContract, ...]
     mappings: tuple[TransitionMapping, ...]
 
@@ -2337,12 +2338,14 @@ def _validate_upgrade_transitions(
         for clause in rule.clauses
     }
     validated: dict[str, UpgradeTransition] = {}
+    fingerprint_owners: dict[str, str] = {}
     transition_fields = {
         "schemaVersion",
         "id",
         "version",
         "fromBaseline",
         "toBaseline",
+        "legacyManifestFingerprints",
         "priorClauses",
         "mappings",
     }
@@ -2366,6 +2369,36 @@ def _validate_upgrade_transitions(
             continue
         if from_baseline == to_baseline:
             diagnostics.append(f"transition.baseline.same: {transition_id}")
+
+        legacy_manifest_fingerprints = _validated_string_list(
+            transition.get("legacyManifestFingerprints"),
+            f"transition.legacyManifestFingerprints.invalid: {transition_id}",
+            diagnostics,
+        )
+        if not legacy_manifest_fingerprints:
+            diagnostics.append(
+                f"transition.legacyManifestFingerprints.empty: {transition_id}"
+            )
+        if len(set(legacy_manifest_fingerprints)) != len(
+            legacy_manifest_fingerprints
+        ):
+            diagnostics.append(
+                f"transition.legacyManifestFingerprint.duplicate: {transition_id}"
+            )
+        for fingerprint in legacy_manifest_fingerprints:
+            if LOWERCASE_SHA256.fullmatch(fingerprint) is None:
+                diagnostics.append(
+                    f"transition.legacyManifestFingerprint.invalid: "
+                    f"{transition_id} -> {fingerprint}"
+                )
+                continue
+            owner = fingerprint_owners.get(fingerprint)
+            if owner is not None and owner != transition_id:
+                diagnostics.append(
+                    f"transition.legacyManifestFingerprint.duplicate: "
+                    f"{fingerprint}: {owner}, {transition_id}"
+                )
+            fingerprint_owners[fingerprint] = transition_id
 
         raw_prior_clauses = _validated_dict_list(
             transition.get("priorClauses"),
@@ -2501,11 +2534,22 @@ def _validate_upgrade_transitions(
             version=version if isinstance(version, int) else 0,
             from_baseline=from_baseline,
             to_baseline=to_baseline,
+            legacy_manifest_fingerprints=tuple(
+                sorted(legacy_manifest_fingerprints)
+            ),
             prior_clauses=tuple(
                 sorted(prior_clauses, key=lambda clause: clause.clause_id)
             ),
             mappings=tuple(sorted(mappings, key=lambda mapping: mapping.from_clause)),
         )
+    source_baselines = {
+        transition.from_baseline for transition in validated.values()
+    }
+    target_baselines = {
+        transition.to_baseline for transition in validated.values()
+    }
+    if validated and len(target_baselines - source_baselines) != 1:
+        diagnostics.append("transition.currentBaseline.invalid")
     return validated
 
 

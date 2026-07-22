@@ -46,6 +46,10 @@ class UpgradeContractTests(unittest.TestCase):
 
         transition = first.upgrade_transitions["transition.fixture-v1-to-v2"]
         self.assertEqual(
+            transition.legacy_manifest_fingerprints,
+            ("c" * 64,),
+        )
+        self.assertEqual(
             tuple(mapping.from_clause for mapping in transition.mappings),
             (
                 "clause.legacy.project-rules",
@@ -90,6 +94,11 @@ class UpgradeContractTests(unittest.TestCase):
             ("missing clause guidance", self._missing_clause_guidance, "clause.field.missing"),
             ("unknown transition target", self._unknown_transition_target, "transition.target.unknown"),
             ("invalid trigger structure", self._invalid_trigger_structure, "skill.dispatch.triggers.invalid"),
+            (
+                "invalid legacy manifest fingerprint",
+                self._invalid_legacy_manifest_fingerprint,
+                "transition.legacyManifestFingerprint.invalid",
+            ),
         ]
 
         for name, mutator, diagnostic in cases:
@@ -218,6 +227,12 @@ class UpgradeContractTests(unittest.TestCase):
 
     def _incomplete_transition(self, root):
         self._mutate(self._transition_path(root), lambda data: data["mappings"].pop())
+
+    def _invalid_legacy_manifest_fingerprint(self, root):
+        self._mutate(
+            self._transition_path(root),
+            lambda data: data.update(legacyManifestFingerprints=["nearest-match"]),
+        )
 
     def _invalid_delegation_alias(self, root):
         self._mutate(

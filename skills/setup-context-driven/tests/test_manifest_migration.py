@@ -58,6 +58,7 @@ class ManifestMigrationTests(unittest.TestCase):
 
             manifest = read_manifest(repo)
             self.assertEqual(manifest["schemaVersion"], 1)
+            self.assertEqual(manifest["generator"]["baseline"], "baseline.portable-v3")
             for decision_id, decision in decisions.items():
                 self.assertEqual(manifest["decisions"][decision_id], decision)
             self.assertNotIn("spec-workflow", manifest["modules"])
@@ -91,7 +92,7 @@ class ManifestMigrationTests(unittest.TestCase):
             write_legacy_spec0030_repository(repo, decisions)
             before = snapshot_files(repo)
 
-            blocked = run_apply(repo, "rust-cli", [])
+            blocked = run_apply(repo, "typescript-bun-monorepo", [])
             blocked_payload = json.loads(blocked.stdout)
             required = [
                 finding["managedId"]
@@ -102,8 +103,12 @@ class ManifestMigrationTests(unittest.TestCase):
             self.assertEqual(required, ["verification.gate"], blocked_payload)
             self.assertEqual(snapshot_files(repo), before)
 
-            answered = run_apply(repo, "rust-cli", ["verification.gate=make verify"])
-            repeated = run_apply(repo, "rust-cli", [])
+            answered = run_apply(
+                repo,
+                "typescript-bun-monorepo",
+                ["verification.gate=make verify"],
+            )
+            repeated = run_apply(repo, "typescript-bun-monorepo", [])
 
             self.assertEqual(answered.returncode, 0, answered.stderr)
             self.assertEqual(repeated.returncode, 0, repeated.stderr)
@@ -122,11 +127,31 @@ class ManifestMigrationTests(unittest.TestCase):
             )
             before = snapshot_files(repo)
 
-            result = run_apply(repo, "rust-cli", [])
+            result = run_apply(repo, "typescript-bun-monorepo", [])
 
             self.assertEqual(result.returncode, 3)
             self.assertFinding(result, "decision.required", "decision")
             self.assertEqual(snapshot_files(repo), before)
+
+    def test_unknown_legacy_fingerprint_does_not_acquire_baseline_identity(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir)
+            write_legacy_spec0030_repository(repo, legacy_decisions(autonomous=False))
+            manifest_path = repo / "docs" / "agents" / "setup-context.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["managedArtifacts"][0]["digest"] = "f" * 64
+            manifest_path.write_text(
+                json.dumps(manifest, indent=2) + "\n",
+                encoding="utf-8",
+            )
+            before = snapshot_files(repo)
+
+            result = run_apply(repo, "typescript-bun-monorepo", [])
+
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertFinding(result, "retention.baseline.unknown", "error")
+            self.assertEqual(snapshot_files(repo), before)
+            self.assertNotIn("baseline", read_manifest(repo)["generator"])
 
     def assertFinding(self, result, code, severity):
         matches = [

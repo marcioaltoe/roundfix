@@ -25,6 +25,7 @@ from context_assets import (
     ExternalSkillContract,
     PortableTreeError,
     TEMPLATE_TOKEN,
+    UpgradeTransition,
     load_asset_catalog,
     portable_file_digest,
     portable_tree_digest,
@@ -217,6 +218,24 @@ class DecisionPlan:
 
 
 @dataclass(frozen=True)
+class RetentionEntry:
+    from_clause: str
+    enforcement: str
+    disposition: str
+    targets: tuple[str, ...]
+    reason: str
+
+    def to_json(self) -> dict[str, object]:
+        return {
+            "fromClause": self.from_clause,
+            "enforcement": self.enforcement,
+            "disposition": self.disposition,
+            "targets": list(self.targets),
+            "reason": self.reason,
+        }
+
+
+@dataclass(frozen=True)
 class ManagedBlock:
     managed_id: str
     version: int
@@ -247,6 +266,7 @@ class ChangePlan:
     mutations: tuple[FileMutation, ...]
     digest: str | None
     manifest: dict
+    retention: tuple[RetentionEntry, ...] = ()
 
     @property
     def changes(self) -> list[FileMutation]:
@@ -278,6 +298,7 @@ class AuditResult:
     selection: PreviewSelection | None = None
     planned_changes: tuple[PlannedChange, ...] = ()
     plan_digest: str | None = None
+    retention: tuple[RetentionEntry, ...] = ()
 
     @property
     def ok(self) -> bool:
@@ -304,6 +325,10 @@ class AuditResult:
             data["selection"] = self.selection.to_json()
         if self.plan_digest is not None:
             data["planDigest"] = self.plan_digest
+        if self.retention:
+            data["retentionAccounting"] = [
+                entry.to_json() for entry in self.retention
+            ]
         return data
 
 
@@ -1586,6 +1611,7 @@ def run_apply_command(options: argparse.Namespace) -> int:
             selection=result.selection,
             planned_changes=result.planned_changes,
             plan_digest=result.plan_digest,
+            retention=result.retention,
         )
         render_result(blocked, options.format)
         return 3
@@ -1605,6 +1631,7 @@ def run_apply_command(options: argparse.Namespace) -> int:
             selection=result.selection,
             planned_changes=(),
             plan_digest=result.plan_digest,
+            retention=result.retention,
         )
         render_result(empty, options.format)
         return 0
@@ -1624,7 +1651,8 @@ def run_apply_command(options: argparse.Namespace) -> int:
                         "Fix filesystem permissions and rerun apply.",
                     )
                 ]
-            )
+            ),
+            retention=result.retention,
         )
         render_result(failure, options.format)
         return 1
@@ -1643,6 +1671,7 @@ def run_apply_command(options: argparse.Namespace) -> int:
         selection=result.selection,
         planned_changes=result.planned_changes,
         plan_digest=result.plan_digest,
+        retention=result.retention,
     )
     render_result(applied, options.format)
     return 0
@@ -1776,6 +1805,7 @@ def audit_repository(
             selection=plan_result.selection,
             planned_changes=plan_result.planned_changes,
             plan_digest=plan_result.plan_digest,
+            retention=plan_result.retention,
         ),
         invalid_input or plan_invalid_input,
     )
@@ -2159,6 +2189,254 @@ def preview_result(
         ),
         invalid_input,
     )
+
+
+def current_baseline_id(catalog: AssetCatalog) -> str | None:
+    source_baselines = {
+        transition.from_baseline
+        for transition in catalog.upgrade_transitions.values()
+    }
+    target_baselines = {
+        transition.to_baseline
+        for transition in catalog.upgrade_transitions.values()
+    }
+    terminal_baselines = target_baselines - source_baselines
+    if len(terminal_baselines) != 1:
+        return None
+    return next(iter(terminal_baselines))
+
+
+def legacy_manifest_fingerprint(manifest: dict) -> str | None:
+    artifacts = manifest.get("managedArtifacts")
+    if not isinstance(artifacts, list):
+        return None
+    normalized: list[dict[str, object]] = []
+    for artifact in artifacts:
+        if not isinstance(artifact, dict):
+            return None
+        managed_id = artifact.get("id")
+        version = artifact.get("version")
+        template = artifact.get("template")
+        digest = artifact.get("digest")
+        if (
+            not isinstance(managed_id, str)
+            or not managed_id
+            or not isinstance(version, int)
+            or isinstance(version, bool)
+            or version < 1
+            or not isinstance(template, str)
+            or not template
+            or not isinstance(digest, str)
+            or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+        ):
+            return None
+        normalized.append(
+            {
+                "id": managed_id,
+                "version": version,
+                "template": template,
+                "digest": digest,
+            }
+        )
+    normalized.sort(key=lambda item: str(item["id"]))
+    return hashlib.sha256(canonical_json_bytes(normalized)).hexdigest()
+
+
+def resolve_upgrade_transition(
+    catalog: AssetCatalog,
+    manifest: dict | None,
+) -> tuple[UpgradeTransition | None, list[Finding]]:
+    if manifest is None:
+        return None, []
+
+    current_baseline = current_baseline_id(catalog)
+    if current_baseline is None:
+        return None, [
+            finding(
+                "retention.baseline.catalog-invalid",
+                "error",
+                str(MANIFEST_PATH),
+                "manifest",
+                "The bundled upgrade catalog has no unique current baseline.",
+                "Fix the bundled transition graph before upgrading repositories.",
+            )
+        ]
+
+    generator = manifest.get("generator")
+    declared_baseline = (
+        generator.get("baseline") if isinstance(generator, dict) else None
+    )
+    if declared_baseline is not None:
+        if declared_baseline == current_baseline:
+            return None, []
+        matching = [
+            transition
+            for transition in catalog.upgrade_transitions.values()
+            if transition.from_baseline == declared_baseline
+            and transition.to_baseline == current_baseline
+        ]
+        source_description = f"declared baseline {declared_baseline!r}"
+    else:
+        fingerprint = legacy_manifest_fingerprint(manifest)
+        matching = [
+            transition
+            for transition in catalog.upgrade_transitions.values()
+            if fingerprint in transition.legacy_manifest_fingerprints
+        ]
+        source_description = (
+            f"legacy fingerprint {fingerprint}"
+            if fingerprint is not None
+            else "an invalid legacy fingerprint"
+        )
+
+    if len(matching) == 1:
+        return matching[0], []
+    return None, [
+        finding(
+            "retention.baseline.unknown",
+            "error",
+            str(MANIFEST_PATH),
+            "manifest",
+            f"The Setup Manifest has {source_description}, which is not a declared source baseline.",
+            "Restore an exact supported manifest or add a reviewed transition contract before upgrading.",
+        )
+    ]
+
+
+def selected_clause_enforcement(
+    catalog: AssetCatalog,
+    decision_plan: DecisionPlan,
+) -> dict[str, str]:
+    selected_artifacts = {
+        planned.artifact.managed_id
+        for planned in decision_plan.artifacts
+        if planned.present and planned.state == "definite"
+    }
+    reachable: dict[str, str] = {}
+    for module_id in decision_plan.active_modules:
+        module = catalog.modules[module_id]
+        for guide in module.get("supportingGuides", []):
+            if guide.get("id") not in selected_artifacts:
+                continue
+            for rule_id in guide.get("rules", []):
+                rule = catalog.rule_contracts.get(rule_id)
+                if rule is None:
+                    continue
+                for clause in rule.clauses:
+                    reachable[clause.clause_id] = clause.enforcement
+    return reachable
+
+
+def selected_repository_extensions(
+    catalog: AssetCatalog,
+    decision_plan: DecisionPlan,
+) -> set[str]:
+    selected_artifacts = {
+        planned.artifact.managed_id
+        for planned in decision_plan.artifacts
+        if planned.present and planned.state == "definite"
+    }
+    selected: set[str] = set()
+    for extension_id, extension in catalog.repository_extensions.items():
+        decision = decision_plan.resolved_decisions.get(extension.decision_id)
+        if (
+            extension.root_pointer_id in selected_artifacts
+            and isinstance(decision, dict)
+            and decision.get("value") is True
+        ):
+            selected.add(extension_id)
+    return selected
+
+
+def evaluate_retention(
+    catalog: AssetCatalog,
+    manifest: dict | None,
+    decision_plan: DecisionPlan,
+) -> tuple[tuple[RetentionEntry, ...], list[Finding]]:
+    transition, findings = resolve_upgrade_transition(catalog, manifest)
+    if transition is None:
+        return (), findings
+
+    reachable_clauses = selected_clause_enforcement(catalog, decision_plan)
+    reachable_extensions = selected_repository_extensions(catalog, decision_plan)
+    mappings = {mapping.from_clause: mapping for mapping in transition.mappings}
+    entries: list[RetentionEntry] = []
+    for prior in sorted(transition.prior_clauses, key=lambda item: item.clause_id):
+        mapping = mappings.get(prior.clause_id)
+        if mapping is None:
+            findings.append(
+                finding(
+                    "retention.clause.unaccounted",
+                    "error",
+                    str(MANIFEST_PATH),
+                    prior.clause_id,
+                    f"Prior mandatory clause {prior.clause_id} has no transition mapping.",
+                    "Add one reviewed retained, moved, replaced, or rejected mapping with a reason.",
+                )
+            )
+            continue
+
+        entries.append(
+            RetentionEntry(
+                from_clause=prior.clause_id,
+                enforcement=prior.enforcement,
+                disposition=mapping.disposition,
+                targets=mapping.targets,
+                reason=mapping.reason,
+            )
+        )
+        if mapping.disposition == "rejected":
+            continue
+        if not mapping.targets:
+            findings.append(
+                finding(
+                    "retention.clause.unaccounted",
+                    "error",
+                    str(MANIFEST_PATH),
+                    prior.clause_id,
+                    f"Accepted prior clause {prior.clause_id} has no target.",
+                    "Add at least one reachable current clause or Repository-Owned Extension target.",
+                )
+            )
+            continue
+        for target in mapping.targets:
+            if target in catalog.repository_extensions:
+                if target not in reachable_extensions:
+                    findings.append(
+                        finding(
+                            "retention.target.unreachable",
+                            "error",
+                            str(MANIFEST_PATH),
+                            prior.clause_id,
+                            f"Retention target {target} is not selected in the future artifact graph.",
+                            "Select its Repository-Owned Extension or revise the transition mapping.",
+                        )
+                    )
+                continue
+            target_enforcement = reachable_clauses.get(target)
+            if target_enforcement is None:
+                findings.append(
+                    finding(
+                        "retention.target.unreachable",
+                        "error",
+                        str(MANIFEST_PATH),
+                        prior.clause_id,
+                        f"Retention target {target} has no selected supporting-guide carrier.",
+                        "Select the target carrier or revise the transition mapping.",
+                    )
+                )
+            elif target_enforcement != prior.enforcement:
+                findings.append(
+                    finding(
+                        "retention.target.enforcement-mismatch",
+                        "error",
+                        str(MANIFEST_PATH),
+                        prior.clause_id,
+                        f"Retention target {target} uses {target_enforcement} instead of {prior.enforcement} enforcement.",
+                        "Restore equivalent enforcement strength before authorizing the upgrade.",
+                    )
+                )
+    return tuple(entries), findings
 
 
 def resolve_decision_plan(
@@ -2882,12 +3160,21 @@ def plan_apply(
     findings.extend(decision_required_findings(decision_plan))
     if not decision_plan.unresolved_decisions:
         findings.extend(validate_decision_plan_references(repo, catalog, decision_plan))
+    retention: tuple[RetentionEntry, ...] = ()
+    if not findings:
+        retention, retention_findings = evaluate_retention(
+            catalog,
+            existing_manifest,
+            decision_plan,
+        )
+        findings.extend(retention_findings)
     if findings:
         return empty_apply_result(
             findings,
             False,
             selection=decision_plan.selection,
             planned_changes=preview_changes,
+            retention=retention,
         )
 
     decisions = decision_plan.resolved_decisions
@@ -2902,6 +3189,7 @@ def plan_apply(
             False,
             selection=decision_plan.selection,
             planned_changes=preview_changes,
+            retention=retention,
         )
 
     ownership_findings = require_obsolete_artifact_decisions(
@@ -2918,6 +3206,7 @@ def plan_apply(
             False,
             selection=decision_plan.selection,
             planned_changes=preview_changes,
+            retention=retention,
         )
 
     adoption_findings = require_adoption_decisions(
@@ -2932,6 +3221,7 @@ def plan_apply(
             False,
             selection=decision_plan.selection,
             planned_changes=preview_changes,
+            retention=retention,
         )
 
     changed_contents: dict[Path, str | None] = {}
@@ -2951,7 +3241,33 @@ def plan_apply(
         decisions=decisions,
     )
 
-    manifest = build_manifest(profile_id, ordered_modules, expected_artifacts, decisions, existing_manifest)
+    baseline_id = current_baseline_id(catalog)
+    if baseline_id is None:
+        findings.append(
+            finding(
+                "retention.baseline.catalog-invalid",
+                "error",
+                str(MANIFEST_PATH),
+                "manifest",
+                "The bundled upgrade catalog has no unique current baseline.",
+                "Fix the bundled transition graph before applying managed content.",
+            )
+        )
+        return empty_apply_result(
+            findings,
+            False,
+            selection=decision_plan.selection,
+            planned_changes=preview_changes,
+            retention=retention,
+        )
+    manifest = build_manifest(
+        profile_id,
+        ordered_modules,
+        expected_artifacts,
+        decisions,
+        existing_manifest,
+        baseline_id,
+    )
     changed_contents[MANIFEST_PATH] = json.dumps(manifest, indent=2, sort_keys=False) + "\n"
     plan = concrete_change_plan(
         repo=repo,
@@ -2962,6 +3278,7 @@ def plan_apply(
         changed_contents=changed_contents,
         current_files=current_files,
         manifest=manifest,
+        retention=retention,
     )
     validation_findings = validate_change_plan(repo, plan, expected_artifacts)
     findings.extend(validation_findings)
@@ -2971,6 +3288,7 @@ def plan_apply(
             selection=decision_plan.selection,
             planned_changes=plan_operations(plan),
             plan_digest=plan.digest,
+            retention=retention,
         ),
         False,
         plan,
@@ -2982,15 +3300,17 @@ def empty_apply_result(
     invalid_input: bool,
     selection: PreviewSelection | None = None,
     planned_changes: tuple[PlannedChange, ...] = (),
+    retention: tuple[RetentionEntry, ...] = (),
 ) -> tuple[AuditResult, bool, ChangePlan]:
     return (
         AuditResult(
             sorted_findings(findings),
             selection=selection,
             planned_changes=planned_changes,
+            retention=retention,
         ),
         invalid_input,
-        ChangePlan("setup", (), None, {}),
+        ChangePlan("setup", (), None, {}, retention),
     )
 
 
@@ -3490,10 +3810,23 @@ def build_manifest(
     expected_artifacts: list[ExpectedArtifact],
     decisions: dict[str, dict],
     existing_manifest: dict | None,
+    baseline_id: str,
 ) -> dict:
     local_skills = []
     if isinstance(existing_manifest, dict) and isinstance(existing_manifest.get("localSkills"), list):
         local_skills = existing_manifest["localSkills"]
+    generator: dict[str, object] = {}
+    if isinstance(existing_manifest, dict) and isinstance(
+        existing_manifest.get("generator"), dict
+    ):
+        generator = dict(existing_manifest["generator"])
+    generator.update(
+        {
+            "skill": "setup-context-driven",
+            "version": 1,
+            "baseline": baseline_id,
+        }
+    )
     ordered_decisions: dict[str, dict] = {}
     existing_decisions = (
         existing_manifest.get("decisions", {}) if isinstance(existing_manifest, dict) else {}
@@ -3507,7 +3840,7 @@ def build_manifest(
             ordered_decisions[decision_id] = decision
     return {
         "schemaVersion": 1,
-        "generator": {"skill": "setup-context-driven", "version": 1},
+        "generator": generator,
         "profile": profile_id,
         "modules": ordered_modules,
         "decisions": ordered_decisions,
@@ -3536,6 +3869,7 @@ def concrete_change_plan(
     changed_contents: dict[Path, str | None],
     current_files: dict[Path, str],
     manifest: dict,
+    retention: tuple[RetentionEntry, ...],
 ) -> ChangePlan:
     expected_by_path = artifacts_by_path(expected_artifacts)
     old_by_id = manifest_artifacts_by_id(existing_manifest)
@@ -3679,6 +4013,7 @@ def concrete_change_plan(
             for key, value in sorted(decision_plan.resolved_decisions.items())
         },
         "catalogDigest": catalog_digest(catalog),
+        "retentionAccounting": [entry.to_json() for entry in retention],
         "operations": [
             operation.to_json()
             for mutation in mutations
@@ -3694,7 +4029,7 @@ def concrete_change_plan(
         ],
     }
     digest = hashlib.sha256(canonical_json_bytes(digest_payload)).hexdigest()
-    return ChangePlan("setup", tuple(mutations), digest, manifest)
+    return ChangePlan("setup", tuple(mutations), digest, manifest, retention)
 
 
 def manifest_artifacts_by_id(manifest: dict | None) -> dict[str, dict]:
@@ -5468,6 +5803,15 @@ def render_text(result: AuditResult) -> str:
                 location = f"{location} [{finding_item.managed_id}]"
             lines.append(f"- {finding_item.code} {location}: {finding_item.message}")
             lines.append(f"  action: {finding_item.action}")
+    if result.retention:
+        lines.append("retention accounting:")
+        for entry in result.retention:
+            targets = ", ".join(entry.targets) if entry.targets else "-"
+            lines.append(
+                f"- {entry.from_clause} enforcement={entry.enforcement} "
+                f"disposition={entry.disposition} targets={targets}"
+            )
+            lines.append(f"  reason: {entry.reason}")
     planned_changes = planned_changes_for_result(result)
     if planned_changes:
         lines.append("planned changes:")

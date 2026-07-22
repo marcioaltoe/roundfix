@@ -331,7 +331,11 @@ def write_compliant_repository(repo, profile_id, omit_decision=None, install_ski
 
     manifest = {
         "schemaVersion": 1,
-        "generator": {"skill": "setup-context-driven", "version": 1},
+        "generator": {
+            "skill": "setup-context-driven",
+            "version": 1,
+            "baseline": "baseline.portable-v3",
+        },
         "profile": profile_id,
         "modules": modules,
         "decisions": decisions,

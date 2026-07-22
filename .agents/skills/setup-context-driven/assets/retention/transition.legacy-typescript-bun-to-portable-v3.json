@@ -4,6 +4,9 @@
   "version": 1,
   "fromBaseline": "baseline.legacy-typescript-bun-sample",
   "toBaseline": "baseline.portable-v3",
+  "legacyManifestFingerprints": [
+    "d05035b0120c3af96666f14f3bab1de371f685c53de6f555c8187f9727b94a2e"
+  ],
   "priorClauses": [
     {"id": "clause.legacy.read-design-before-ui", "enforcement": "mandatory", "carrier": "legacy.high-priority", "guidanceDigest": "4d373c1f835c6c83951cfc5d5c64641c1bac89ef912ef16b208b8e6697225e52"},
     {"id": "clause.legacy.block-warnings", "enforcement": "mandatory", "carrier": "legacy.high-priority", "guidanceDigest": "6b62bd774e9b65d1dba5e90e6e8ca1932bf4645ac92e4974864b4f6b7d540fe0"},
@@ -34,7 +37,7 @@
     {"id": "clause.legacy.environment-example-parity", "enforcement": "mandatory", "carrier": "legacy.security", "guidanceDigest": "a9f277860e91e14a8f7f34b67f085ad9debf7ebed59c24ec745904da30673745"}
   ],
   "mappings": [
-    {"fromClause": "clause.legacy.read-design-before-ui", "disposition": "replaced", "targets": ["clause.frontend.read-design-contract-before-ui-work"], "reason": "The selected frontend module now carries the portable design-contract precondition."},
+    {"fromClause": "clause.legacy.read-design-before-ui", "disposition": "moved", "targets": ["clause.frontend.read-design-contract-before-ui-work"], "reason": "The selected frontend module now carries the portable design-contract precondition."},
     {"fromClause": "clause.legacy.block-warnings", "disposition": "replaced", "targets": ["clause.bun.block-warnings-when-profile-treats-them-as-errors"], "reason": "The warning gate is conditional on the confirmed TypeScript/Bun profile instead of global."},
     {"fromClause": "clause.legacy.prohibit-verification-config-bypass", "disposition": "replaced", "targets": ["clause.core.prohibit-verification-contract-bypass"], "reason": "The portable clause prohibits changing Verification contracts merely to silence failures."},
     {"fromClause": "clause.legacy.ask-before-verification-config-change", "disposition": "replaced", "targets": ["clause.core.ask-before-verification-configuration-change"], "reason": "Intentional Verification configuration changes now have an explicit authority gate."},
