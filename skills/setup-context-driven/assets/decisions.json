@@ -48,18 +48,11 @@
         },
         {
           "when": {"equals": "multi-context"},
-          "includeArtifacts": [
-            "guide.domain",
-            "guide.monorepo"
-          ],
+          "includeArtifacts": ["guide.domain"],
           "selectTemplates": [
             {
               "artifact": "guide.domain",
               "template": "template.guide.domain.multi-context"
-            },
-            {
-              "artifact": "guide.monorepo",
-              "template": "template.guide.monorepo"
             }
           ]
         }
@@ -99,8 +92,7 @@
           "activateModules": ["autonomous-work"],
           "requireDecisions": [
             "runtime.backend",
-            "runtime.design",
-            "verification.gate"
+            "runtime.design"
           ],
           "includeArtifacts": [
             "root.autonomous-work",
@@ -126,8 +118,8 @@
           "when": {"present": true},
           "renderBindings": [
             {
-              "artifact": "guide.autonomous-work",
-              "template": "template.guide.autonomous-work",
+              "artifact": "guide.agent-instructions",
+              "template": "template.guide.agent-instructions",
               "token": "verification.gate"
             }
           ]

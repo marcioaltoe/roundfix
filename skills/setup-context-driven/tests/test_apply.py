@@ -57,7 +57,7 @@ class ApplyCliTests(unittest.TestCase):
             )
             self.assertIn("runtime.design", manifest["decisions"])
             self.assertTrue(manifest["managedArtifacts"])
-            self.assertIn("<!-- setup-context-driven:begin id=root.rust version=1 -->", (repo / "AGENTS.md").read_text(encoding="utf-8"))
+            self.assertIn("<!-- setup-context-driven:begin id=root.rust version=2 -->", (repo / "AGENTS.md").read_text(encoding="utf-8"))
             self.assertTrue((repo / "docs" / "agents" / "rust.md").is_file())
             install_profile_skills(repo, "rust-cli")
             self.assertEqual(run_audit(repo).returncode, 0)
@@ -238,7 +238,7 @@ class ApplyCliTests(unittest.TestCase):
 
             self.assertEqual(adopted.returncode, 0, adopted.stderr)
             self.assertIn(
-                "<!-- setup-context-driven:begin id=guide.rust version=1 -->",
+                "<!-- setup-context-driven:begin id=guide.rust version=2 -->",
                 rust_guide.read_text(encoding="utf-8"),
             )
             manifest = json.loads(

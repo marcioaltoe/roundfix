@@ -164,6 +164,7 @@
     "profile.rule.module.missing",
     "profile.rule.carrier.missing",
     "profile.rule.binding.missing",
+    "profile.rule.required.mismatch",
     "skill.dispatch.id.duplicate",
     "module.skillDispatch.mismatch",
     "reference.id.duplicate",

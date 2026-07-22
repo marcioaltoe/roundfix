@@ -71,6 +71,7 @@ class SetupWorkflowTests(unittest.TestCase):
                     "domain.layout=single-context",
                     "triage.external=false",
                     "autonomous.enabled=false",
+                    "verification.gate=make workflow-verify",
                     "language.generated=English",
                     "secondbrain.enabled=false",
                 ],
@@ -83,7 +84,6 @@ class SetupWorkflowTests(unittest.TestCase):
                 [
                     "autonomous.enabled=true",
                     "runtime.backend=codex workflow-backend xhigh",
-                    "runtime.design=claude workflow-design xhigh",
                 ],
             )
             blocked_payload = json.loads(blocked.stdout)
@@ -95,7 +95,7 @@ class SetupWorkflowTests(unittest.TestCase):
 
             self.assertEqual(disabled.returncode, 0, disabled.stderr)
             self.assertEqual(blocked.returncode, 3)
-            self.assertEqual(required, ["verification.gate"], blocked_payload)
+            self.assertEqual(required, ["runtime.design"], blocked_payload)
             self.assertEqual(snapshot_files(repo), before)
 
             answered = run_apply(

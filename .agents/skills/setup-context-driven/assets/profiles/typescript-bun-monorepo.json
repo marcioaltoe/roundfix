@@ -1,25 +1,19 @@
 {
-  "schemaVersion": "setup-context-driven/profile-v1",
-  "id": "typescript-bun-monorepo",
-  "version": 1,
-  "title": "TypeScript/Bun monorepo",
-  "setup": "typescript-bun",
-  "entryDecisions": [
-    "language.generated",
-    "spec.scaffold",
-    "domain.layout",
-    "triage.external",
-    "autonomous.enabled",
-    "secondbrain.enabled"
-  ],
-  "modules": [
-    "core",
-    "context-workflow",
-    "typescript",
-    "bun",
-    "monorepo",
-    "backend",
-    "frontend",
-    "autonomous-work"
+  "schemaVersion": "setup-context-driven/profile-v2",
+  "id": "typescript-bun-monorepo", "version": 2, "title": "TypeScript/Bun monorepo", "setup": "typescript-bun",
+  "entryDecisions": ["language.generated", "verification.gate", "spec.scaffold", "domain.layout", "triage.external", "autonomous.enabled", "secondbrain.enabled"],
+  "modules": ["core", "context-workflow", "typescript", "bun", "monorepo", "backend", "frontend", "autonomous-work", "spec-workflow", "external-triage", "secondbrain"],
+  "requiredRules": [
+    "rule.core.compact-root", "rule.core.root-cause-only", "rule.core.evidence-before-complete", "rule.core.verification-selected", "rule.core.verification-integrity", "rule.core.skill-dispatch", "rule.core.english-guidance", "rule.core.research-authority", "rule.core.dependency-discipline", "rule.core.git-delivery", "rule.core.security-configuration",
+    "rule.context.domain-docs", "rule.context.docs-layout",
+    "rule.typescript.current-docs", "rule.typescript.behavior-tests",
+    "rule.bun.package-manager",
+    "rule.monorepo.context-boundaries",
+    "rule.backend.boundary-contracts",
+    "rule.frontend.user-visible-behavior",
+    "rule.autonomous.supervisor-delegates", "rule.autonomous.verification-gate",
+    "rule.spec.artifacts", "rule.spec.docs-layout",
+    "rule.external-triage",
+    "rule.secondbrain.index-first", "rule.secondbrain.read-only", "rule.secondbrain.secret-safety", "rule.secondbrain.citations", "rule.secondbrain.hermes-escalation"
   ]
 }

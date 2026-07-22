@@ -15,6 +15,7 @@ from test_audit import snapshot_files  # noqa: E402
 
 ENTRY_DECISIONS = {
     "language.generated",
+    "verification.gate",
     "spec.scaffold",
     "domain.layout",
     "triage.external",

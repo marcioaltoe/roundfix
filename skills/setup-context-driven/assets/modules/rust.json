@@ -1,51 +1,19 @@
 {
-  "schemaVersion": "setup-context-driven/module-v1",
-  "id": "rust",
-  "version": 1,
-  "kind": "language-runtime",
-  "title": "Rust repository guidance",
-  "dependsOn": ["core"],
-  "conflictsWith": [],
-  "requiredSkills": [
-    "context7",
-    "testing-boss",
-    "agentic-cli-design",
-    "systematic-debugging"
+  "schemaVersion": "setup-context-driven/module-v2", "id": "rust", "version": 2, "kind": "language-runtime", "title": "Rust repository guidance",
+  "dependsOn": ["core"], "conflictsWith": [], "requiredSkills": ["context7", "testing-boss", "agentic-cli-design", "systematic-debugging"],
+  "skillDispatch": [
+    {"id": "context7", "when": "Changing Rust crate APIs, toolchain configuration, or dependencies."},
+    {"id": "testing-boss", "when": "Writing or reviewing Rust unit, integration, or CLI tests."},
+    {"id": "agentic-cli-design", "when": "Changing a Rust CLI's flags, streams, exit codes, JSON, or non-interactive behavior."},
+    {"id": "systematic-debugging", "when": "Diagnosing Rust compiler, test, lint, or runtime failures."}
   ],
   "requiredDecisions": [],
-  "rootBlocks": [
-    {
-      "id": "root.rust",
-      "version": 1,
-      "template": "template.root.rust",
-      "rules": [
-        "rule.rust.current-docs",
-        "rule.rust.cargo-gates"
-      ]
-    }
-  ],
-  "supportingGuides": [
-    {
-      "id": "guide.rust",
-      "version": 1,
-      "path": "docs/agents/rust.md",
-      "template": "template.guide.rust",
-      "rules": [
-        "rule.rust.current-docs",
-        "rule.rust.cargo-gates"
-      ]
-    }
-  ],
+  "rootBlocks": [{"id": "root.rust", "version": 2, "template": "template.root.rust", "rules": [], "references": [
+    {"id": "reference.root.rust", "token": "reference.rust", "ownership": "setup", "managedId": "guide.rust"}
+  ]}],
+  "supportingGuides": [{"id": "guide.rust", "version": 2, "path": "docs/agents/rust.md", "template": "template.guide.rust", "rules": ["rule.rust.current-docs", "rule.rust.cargo-gates"], "references": []}],
   "rules": [
-    {
-      "id": "rule.rust.current-docs",
-      "version": 1,
-      "summary": "Use current crate and toolchain documentation before changing Rust APIs."
-    },
-    {
-      "id": "rule.rust.cargo-gates",
-      "version": 1,
-      "summary": "Prefer focused cargo checks and tests that exercise public behavior."
-    }
+    {"id": "rule.rust.current-docs", "version": 2, "coverage": ["coverage.rust", "coverage.research", "coverage.dependencies"], "guidance": "Use current authoritative crate and toolchain documentation before changing Rust APIs, configuration, or dependencies. Preserve Cargo manifest and lockfile discipline."},
+    {"id": "rule.rust.cargo-gates", "version": 2, "coverage": ["coverage.rust", "coverage.cli", "coverage.verification-integrity"], "guidance": "Use focused `cargo check`, `cargo test`, and lint commands while iterating, then run the selected repository Verification. Treat CLI flags, streams, JSON fields, and exit codes as public behavior and test them through observable command execution."}
   ]
 }

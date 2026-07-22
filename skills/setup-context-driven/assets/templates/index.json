@@ -6,193 +6,225 @@
       "id": "template.root.core",
       "version": 1,
       "kind": "root-block",
-      "path": "root/core.md"
+      "path": "root/core.md",
+      "tokens": ["reference.agent-instructions", "reference.skill-dispatch"]
     },
     {
       "id": "template.root.context-workflow",
       "version": 1,
       "kind": "root-block",
-      "path": "root/context-workflow.md"
+      "path": "root/context-workflow.md",
+      "tokens": ["reference.domain", "reference.docs-layout"]
     },
     {
       "id": "template.root.spec-workflow",
       "version": 1,
       "kind": "root-block",
-      "path": "root/spec-workflow.md"
+      "path": "root/spec-workflow.md",
+      "tokens": ["reference.spec-routing", "reference.issue-tracker"]
     },
     {
       "id": "template.root.external-triage",
       "version": 1,
       "kind": "root-block",
-      "path": "root/external-triage.md"
+      "path": "root/external-triage.md",
+      "tokens": ["reference.external-triage"]
     },
     {
       "id": "template.root.typescript",
       "version": 1,
       "kind": "root-block",
-      "path": "root/typescript.md"
+      "path": "root/typescript.md",
+      "tokens": ["reference.typescript"]
     },
     {
       "id": "template.root.bun",
       "version": 1,
       "kind": "root-block",
-      "path": "root/bun.md"
+      "path": "root/bun.md",
+      "tokens": ["reference.bun"]
     },
     {
       "id": "template.root.monorepo",
       "version": 1,
       "kind": "root-block",
-      "path": "root/monorepo.md"
+      "path": "root/monorepo.md",
+      "tokens": ["reference.monorepo"]
     },
     {
       "id": "template.root.backend",
       "version": 1,
       "kind": "root-block",
-      "path": "root/backend.md"
+      "path": "root/backend.md",
+      "tokens": ["reference.backend"]
     },
     {
       "id": "template.root.frontend",
       "version": 1,
       "kind": "root-block",
-      "path": "root/frontend.md"
+      "path": "root/frontend.md",
+      "tokens": ["reference.frontend"]
     },
     {
       "id": "template.root.go",
       "version": 1,
       "kind": "root-block",
-      "path": "root/go.md"
+      "path": "root/go.md",
+      "tokens": ["reference.go"]
     },
     {
       "id": "template.root.cli-surface",
       "version": 1,
       "kind": "root-block",
-      "path": "root/cli-surface.md"
+      "path": "root/cli-surface.md",
+      "tokens": ["reference.cli"]
     },
     {
       "id": "template.root.tui-surface",
       "version": 1,
       "kind": "root-block",
-      "path": "root/tui-surface.md"
+      "path": "root/tui-surface.md",
+      "tokens": ["reference.tui"]
     },
     {
       "id": "template.root.rust",
       "version": 1,
       "kind": "root-block",
-      "path": "root/rust.md"
+      "path": "root/rust.md",
+      "tokens": ["reference.rust"]
     },
     {
       "id": "template.root.autonomous-work",
       "version": 1,
       "kind": "root-block",
-      "path": "root/autonomous-work.md"
+      "path": "root/autonomous-work.md",
+      "tokens": ["reference.autonomous-work"]
     },
     {
       "id": "template.root.secondbrain",
       "version": 1,
       "kind": "root-block",
-      "path": "root/secondbrain.md"
+      "path": "root/secondbrain.md",
+      "tokens": ["reference.secondbrain"]
     },
     {
       "id": "template.guide.agent-instructions",
       "version": 1,
       "kind": "guide",
-      "path": "guides/agent-instructions.md"
+      "path": "guides/agent-instructions.md",
+      "tokens": ["artifact.rules", "verification.gate"]
     },
     {
       "id": "template.guide.docs-layout",
       "version": 2,
       "kind": "guide",
-      "path": "guides/docs-layout.md"
+      "path": "guides/docs-layout.md",
+      "tokens": ["artifact.rules"]
     },
     {
       "id": "template.guide.spec-docs-layout",
       "version": 1,
       "kind": "guide",
-      "path": "guides/spec-docs-layout.md"
+      "path": "guides/spec-docs-layout.md",
+      "tokens": ["artifact.rules"]
     },
     {
       "id": "template.guide.domain",
       "version": 1,
       "kind": "guide",
-      "path": "guides/domain.md"
+      "path": "guides/domain.md",
+      "tokens": ["artifact.rules"]
     },
     {
       "id": "template.guide.domain.single-context",
       "version": 1,
       "kind": "guide",
-      "path": "guides/domain-single-context.md"
+      "path": "guides/domain-single-context.md",
+      "tokens": ["artifact.rules"]
     },
     {
       "id": "template.guide.domain.multi-context",
       "version": 1,
       "kind": "guide",
-      "path": "guides/domain-multi-context.md"
+      "path": "guides/domain-multi-context.md",
+      "tokens": ["artifact.rules"]
     },
     {
       "id": "template.guide.spec-routing",
       "version": 1,
       "kind": "guide",
-      "path": "guides/spec-routing.md"
+      "path": "guides/spec-routing.md",
+      "tokens": ["artifact.rules"]
     },
     {
       "id": "template.guide.issue-tracker",
       "version": 1,
       "kind": "guide",
-      "path": "guides/issue-tracker.md"
+      "path": "guides/issue-tracker.md",
+      "tokens": ["artifact.rules"]
     },
     {
       "id": "template.guide.external-triage",
       "version": 1,
       "kind": "guide",
-      "path": "guides/external-triage.md"
+      "path": "guides/external-triage.md",
+      "tokens": ["artifact.rules"]
     },
     {
       "id": "template.guide.typescript-bun",
       "version": 1,
       "kind": "guide",
-      "path": "guides/typescript-bun.md"
+      "path": "guides/typescript-bun.md",
+      "tokens": ["artifact.rules"]
     },
     {
       "id": "template.guide.monorepo",
       "version": 1,
       "kind": "guide",
-      "path": "guides/monorepo.md"
+      "path": "guides/monorepo.md",
+      "tokens": ["artifact.rules"]
     },
     {
       "id": "template.guide.backend",
       "version": 1,
       "kind": "guide",
-      "path": "guides/backend.md"
+      "path": "guides/backend.md",
+      "tokens": ["artifact.rules"]
     },
     {
       "id": "template.guide.frontend",
       "version": 1,
       "kind": "guide",
-      "path": "guides/frontend.md"
+      "path": "guides/frontend.md",
+      "tokens": ["artifact.rules", "repository.design-contract"]
     },
     {
       "id": "template.guide.go",
       "version": 1,
       "kind": "guide",
-      "path": "guides/go.md"
+      "path": "guides/go.md",
+      "tokens": ["artifact.rules"]
     },
     {
       "id": "template.guide.cli-surface",
       "version": 1,
       "kind": "guide",
-      "path": "guides/cli-surface.md"
+      "path": "guides/cli-surface.md",
+      "tokens": ["artifact.rules"]
     },
     {
       "id": "template.guide.tui-surface",
       "version": 1,
       "kind": "guide",
-      "path": "guides/tui-surface.md"
+      "path": "guides/tui-surface.md",
+      "tokens": ["artifact.rules"]
     },
     {
       "id": "template.guide.rust",
       "version": 1,
       "kind": "guide",
-      "path": "guides/rust.md"
+      "path": "guides/rust.md",
+      "tokens": ["artifact.rules"]
     },
     {
       "id": "template.guide.autonomous-work",
@@ -200,16 +232,31 @@
       "kind": "guide",
       "path": "guides/autonomous-work.md",
       "tokens": [
+        "artifact.rules",
         "runtime.backend",
-        "runtime.design",
-        "verification.gate"
+        "runtime.design"
       ]
     },
     {
       "id": "template.guide.secondbrain",
       "version": 1,
       "kind": "guide",
-      "path": "guides/secondbrain.md"
+      "path": "guides/secondbrain.md",
+      "tokens": ["artifact.rules"]
+    },
+    {
+      "id": "template.guide.skill-dispatch",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/skill-dispatch.md",
+      "tokens": ["artifact.rules", "active-modules.skill-dispatch"]
+    },
+    {
+      "id": "template.guide.bun",
+      "version": 1,
+      "kind": "guide",
+      "path": "guides/bun.md",
+      "tokens": ["artifact.rules"]
     }
   ]
 }

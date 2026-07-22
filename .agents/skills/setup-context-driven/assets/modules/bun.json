@@ -1,27 +1,11 @@
 {
-  "schemaVersion": "setup-context-driven/module-v1",
-  "id": "bun",
-  "version": 1,
-  "kind": "language-runtime",
-  "title": "Bun runtime guidance",
-  "dependsOn": ["typescript"],
-  "conflictsWith": [],
-  "requiredSkills": ["context7"],
+  "schemaVersion": "setup-context-driven/module-v2", "id": "bun", "version": 2, "kind": "language-runtime", "title": "Bun runtime guidance",
+  "dependsOn": ["typescript"], "conflictsWith": [], "requiredSkills": ["context7"],
+  "skillDispatch": [{"id": "context7", "when": "Changing Bun commands, runtime APIs, package behavior, or configuration."}],
   "requiredDecisions": [],
-  "rootBlocks": [
-    {
-      "id": "root.bun",
-      "version": 1,
-      "template": "template.root.bun",
-      "rules": ["rule.bun.package-manager"]
-    }
-  ],
-  "supportingGuides": [],
-  "rules": [
-    {
-      "id": "rule.bun.package-manager",
-      "version": 1,
-      "summary": "Use Bun commands and lockfiles when the repository is Bun-owned."
-    }
-  ]
+  "rootBlocks": [{"id": "root.bun", "version": 2, "template": "template.root.bun", "rules": [], "references": [
+    {"id": "reference.root.bun", "token": "reference.bun", "ownership": "setup", "managedId": "guide.bun"}
+  ]}],
+  "supportingGuides": [{"id": "guide.bun", "version": 1, "path": "docs/agents/typescript-bun.md", "template": "template.guide.bun", "rules": ["rule.bun.package-manager"], "references": []}],
+  "rules": [{"id": "rule.bun.package-manager", "version": 2, "coverage": ["coverage.bun", "coverage.dependencies"], "guidance": "Use Bun-owned commands for dependency installation, scripts, tests, and lockfile updates. Do not substitute another package manager or hand-edit the lockfile."}]
 }

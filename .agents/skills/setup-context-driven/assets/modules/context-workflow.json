@@ -1,64 +1,44 @@
 {
-  "schemaVersion": "setup-context-driven/module-v1",
+  "schemaVersion": "setup-context-driven/module-v2",
   "id": "context-workflow",
-  "version": 2,
+  "version": 3,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": ["core"],
   "conflictsWith": [],
-  "requiredSkills": [
-    "setup-context-driven",
-    "brainstorming",
-    "write-idea",
-    "write-prd",
-    "write-techspec",
-    "write-tasks",
-    "implement-task",
-    "implement-spec",
-    "qa-gate",
-    "archive-spec",
-    "tech-writer"
+  "requiredSkills": ["setup-context-driven", "brainstorming", "write-idea", "write-prd", "write-techspec", "write-tasks", "implement-task", "implement-spec", "qa-gate", "archive-spec", "tech-writer"],
+  "skillDispatch": [
+    {"id": "setup-context-driven", "when": "Auditing, applying, or refreshing the Context-Driven Baseline."},
+    {"id": "brainstorming", "when": "Starting creative feature or behavior design before implementation."},
+    {"id": "write-idea", "when": "Expanding a product-level idea into a researched opportunity artifact."},
+    {"id": "write-prd", "when": "Defining product requirements and user outcomes."},
+    {"id": "write-techspec", "when": "Settling implementation architecture and technical contracts."},
+    {"id": "write-tasks", "when": "Decomposing an approved Spec into a dependency-ordered Task Graph."},
+    {"id": "implement-task", "when": "Executing exactly one assigned Spec Task."},
+    {"id": "implement-spec", "when": "Executing every pending Task in a Spec Task Graph."},
+    {"id": "qa-gate", "when": "Running final Spec QA after implementation Tasks complete."},
+    {"id": "archive-spec", "when": "Archiving a completed and QA-passed Spec."},
+    {"id": "tech-writer", "when": "Writing CONTEXT-driven guides, Specs, ADRs, findings, or handoffs."}
   ],
-  "requiredDecisions": [
-    "domain.layout"
-  ],
+  "requiredDecisions": ["domain.layout"],
   "rootBlocks": [
     {
       "id": "root.context-workflow",
-      "version": 1,
+      "version": 2,
       "template": "template.root.context-workflow",
-      "rules": [
-        "rule.context.domain-docs",
-        "rule.context.docs-layout"
+      "rules": [],
+      "references": [
+        {"id": "reference.root.context.domain", "token": "reference.domain", "ownership": "setup", "managedId": "guide.domain"},
+        {"id": "reference.root.context.docs-layout", "token": "reference.docs-layout", "ownership": "setup", "managedId": "guide.docs-layout"}
       ]
     }
   ],
   "supportingGuides": [
-    {
-      "id": "guide.docs-layout",
-      "version": 2,
-      "path": "docs/agents/docs-layout.md",
-      "template": "template.guide.docs-layout",
-      "rules": ["rule.context.docs-layout"]
-    },
-    {
-      "id": "guide.domain",
-      "version": 1,
-      "path": "docs/agents/domain.md",
-      "template": "template.guide.domain",
-      "rules": ["rule.context.domain-docs"]
-    }
+    {"id": "guide.docs-layout", "version": 3, "path": "docs/agents/docs-layout.md", "template": "template.guide.docs-layout", "rules": ["rule.context.docs-layout"], "references": []},
+    {"id": "guide.domain", "version": 2, "path": "docs/agents/domain.md", "template": "template.guide.domain", "rules": ["rule.context.domain-docs"], "references": []}
   ],
   "rules": [
-    {
-      "id": "rule.context.domain-docs",
-      "version": 1,
-      "summary": "Agents read CONTEXT.md and relevant ADRs before naming domain concepts."
-    },
-    {
-      "id": "rule.context.docs-layout",
-      "version": 2,
-      "summary": "Each docs directory has one job, generated guides live under docs/agents, and finding status closes on Spec routing rather than implementation progress."
-    }
+    {"id": "rule.context.domain-docs", "version": 2, "coverage": ["coverage.context-workflow", "coverage.research"], "guidance": "Read the repository's selected domain context and relevant accepted ADRs before naming domain concepts or changing behavior. Flag conflicts instead of silently overriding repository decisions."},
+    {"id": "rule.context.docs-layout", "version": 3, "coverage": ["coverage.context-workflow"], "guidance": "Give each documentation directory one job: `docs/_inbox/` for raw notes, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers, and `docs/user-guide/` for human documentation. Findings use `status: pending | partial | deferred | done` with created and updated dates. Set `status: done` as soon as the Spec is created and linked; the Spec owns implementation, QA, archive, and release progress. Preserve repository-authored extensions outside setup markers."}
   ]
 }

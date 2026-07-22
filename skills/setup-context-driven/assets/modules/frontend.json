@@ -1,35 +1,17 @@
 {
-  "schemaVersion": "setup-context-driven/module-v1",
-  "id": "frontend",
-  "version": 1,
-  "kind": "application-surface",
-  "title": "Frontend application guidance",
-  "dependsOn": ["typescript"],
-  "conflictsWith": [],
-  "requiredSkills": ["context7", "testing-boss", "systematic-debugging"],
+  "schemaVersion": "setup-context-driven/module-v2", "id": "frontend", "version": 2, "kind": "application-surface", "title": "Frontend application guidance",
+  "dependsOn": ["typescript"], "conflictsWith": [], "requiredSkills": ["context7", "testing-boss", "systematic-debugging"],
+  "skillDispatch": [
+    {"id": "context7", "when": "Changing frontend framework, component-library, browser, or build-tool APIs."},
+    {"id": "testing-boss", "when": "Writing or reviewing frontend behavior and accessibility tests."},
+    {"id": "systematic-debugging", "when": "Diagnosing frontend rendering, interaction, or browser failures."}
+  ],
   "requiredDecisions": [],
-  "rootBlocks": [
-    {
-      "id": "root.frontend",
-      "version": 1,
-      "template": "template.root.frontend",
-      "rules": ["rule.frontend.user-visible-behavior"]
-    }
-  ],
-  "supportingGuides": [
-    {
-      "id": "guide.frontend",
-      "version": 1,
-      "path": "docs/agents/frontend.md",
-      "template": "template.guide.frontend",
-      "rules": ["rule.frontend.user-visible-behavior"]
-    }
-  ],
-  "rules": [
-    {
-      "id": "rule.frontend.user-visible-behavior",
-      "version": 1,
-      "summary": "Validate user-visible behavior and accessibility, not component internals."
-    }
-  ]
+  "rootBlocks": [{"id": "root.frontend", "version": 2, "template": "template.root.frontend", "rules": [], "references": [
+    {"id": "reference.root.frontend", "token": "reference.frontend", "ownership": "setup", "managedId": "guide.frontend"}
+  ]}],
+  "supportingGuides": [{"id": "guide.frontend", "version": 2, "path": "docs/agents/frontend.md", "template": "template.guide.frontend", "rules": ["rule.frontend.user-visible-behavior"], "references": [
+    {"id": "reference.frontend.design-contract", "token": "repository.design-contract", "ownership": "repository", "path": "DESIGN.md"}
+  ]}],
+  "rules": [{"id": "rule.frontend.user-visible-behavior", "version": 2, "coverage": ["coverage.frontend", "coverage.verification-integrity"], "guidance": "Test user-visible roles, labels, text, state changes, loading, error, and empty states. Avoid component internals and incidental CSS structure. Inspect significant local UI changes through the available browser when the target is runnable, and follow the repository-owned design contract."}]
 }

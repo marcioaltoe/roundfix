@@ -1,8 +1,7 @@
 # Frontend
 
-Test what users can observe: roles, labels, text, state changes, loading,
-error, and empty states. Avoid coupling tests to component internals or CSS
-structure unless a stable test id is the explicit contract.
+This setup-owned guide supplies portable frontend rules. Project-specific
+visual language and interaction decisions belong to the
+repository-owned {{repository.design-contract}}; setup does not invent architecture or product policy.
 
-After significant local UI changes, open the local app in the available browser
-tool and inspect the relevant path when the target URL is known.
+{{artifact.rules}}

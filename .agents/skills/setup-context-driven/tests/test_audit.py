@@ -293,8 +293,8 @@ def make_stale_template_version(repo):
     path = repo / "docs" / "agents" / "rust.md"
     path.write_text(
         path.read_text(encoding="utf-8").replace(
-            "id=guide.rust version=1",
             "id=guide.rust version=2",
+            "id=guide.rust version=1",
         ),
         encoding="utf-8",
     )

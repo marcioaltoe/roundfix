@@ -1,66 +1,39 @@
 {
-  "schemaVersion": "setup-context-driven/module-v1",
+  "schemaVersion": "setup-context-driven/module-v2",
   "id": "spec-workflow",
-  "version": 1,
+  "version": 2,
   "kind": "workflow",
   "title": "Local Spec workflow",
   "dependsOn": ["context-workflow"],
   "conflictsWith": [],
-  "requiredSkills": [
-    "setup-context-driven",
-    "brainstorming",
-    "write-idea",
-    "write-prd",
-    "write-techspec",
-    "write-tasks",
-    "implement-task",
-    "implement-spec",
-    "qa-gate",
-    "archive-spec",
-    "tech-writer"
+  "requiredSkills": ["setup-context-driven", "brainstorming", "write-idea", "write-prd", "write-techspec", "write-tasks", "implement-task", "implement-spec", "qa-gate", "archive-spec", "tech-writer"],
+  "skillDispatch": [
+    {"id": "setup-context-driven", "when": "Preparing a repository to use local Specs."},
+    {"id": "brainstorming", "when": "Clarifying a creative Spec direction before authoring requirements."},
+    {"id": "write-idea", "when": "Creating the researched idea artifact for a large initiative."},
+    {"id": "write-prd", "when": "Authoring a Spec's product requirements."},
+    {"id": "write-techspec", "when": "Authoring a Spec's technical design."},
+    {"id": "write-tasks", "when": "Creating the Spec Task Graph and Task files."},
+    {"id": "implement-task", "when": "Implementing one Task file without crossing its slice."},
+    {"id": "implement-spec", "when": "Implementing the complete Task Graph in dependency order."},
+    {"id": "qa-gate", "when": "Producing the final QA verdict for a completed Spec."},
+    {"id": "archive-spec", "when": "Moving a completed, QA-passed Spec into the archive."},
+    {"id": "tech-writer", "when": "Writing or revising any Spec artifact or verification record."}
   ],
   "requiredDecisions": ["spec.scaffold"],
   "rootBlocks": [
-    {
-      "id": "root.spec-workflow",
-      "version": 1,
-      "template": "template.root.spec-workflow",
-      "rules": ["rule.spec.artifacts"]
-    }
+    {"id": "root.spec-workflow", "version": 2, "template": "template.root.spec-workflow", "rules": [], "references": [
+      {"id": "reference.root.spec.routing", "token": "reference.spec-routing", "ownership": "setup", "managedId": "guide.spec-routing"},
+      {"id": "reference.root.spec.tracker", "token": "reference.issue-tracker", "ownership": "setup", "managedId": "guide.issue-tracker"}
+    ]}
   ],
   "supportingGuides": [
-    {
-      "id": "guide.spec-routing",
-      "version": 1,
-      "path": "docs/agents/spec-routing.md",
-      "template": "template.guide.spec-routing",
-      "rules": ["rule.spec.artifacts"]
-    },
-    {
-      "id": "guide.issue-tracker",
-      "version": 1,
-      "path": "docs/agents/issue-tracker.md",
-      "template": "template.guide.issue-tracker",
-      "rules": ["rule.spec.artifacts"]
-    },
-    {
-      "id": "guide.spec-docs-layout",
-      "version": 1,
-      "path": "docs/agents/docs-layout.md",
-      "template": "template.guide.spec-docs-layout",
-      "rules": ["rule.spec.docs-layout"]
-    }
+    {"id": "guide.spec-routing", "version": 2, "path": "docs/agents/spec-routing.md", "template": "template.guide.spec-routing", "rules": ["rule.spec.artifacts"], "references": []},
+    {"id": "guide.issue-tracker", "version": 2, "path": "docs/agents/issue-tracker.md", "template": "template.guide.issue-tracker", "rules": ["rule.spec.artifacts"], "references": []},
+    {"id": "guide.spec-docs-layout", "version": 2, "path": "docs/agents/docs-layout.md", "template": "template.guide.spec-docs-layout", "rules": ["rule.spec.docs-layout"], "references": []}
   ],
   "rules": [
-    {
-      "id": "rule.spec.artifacts",
-      "version": 1,
-      "summary": "Specs live under docs/specs and task status lives only in task files."
-    },
-    {
-      "id": "rule.spec.docs-layout",
-      "version": 1,
-      "summary": "Spec-specific docs layout is generated only for repositories that use local Specs."
-    }
+    {"id": "rule.spec.artifacts", "version": 2, "coverage": ["coverage.spec-workflow"], "guidance": "Keep each Spec under `docs/specs/<feature-slug>/`. Dependencies live only in `_tasks.md`; status lives only in each Task file. Execute only the assigned Task slice, record fresh evidence in its Result, and never edit another Task file while doing so."},
+    {"id": "rule.spec.docs-layout", "version": 2, "coverage": ["coverage.spec-workflow"], "guidance": "Keep `_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, Task files, and `qa/` evidence under the Spec folder. Archive only completed Specs with a passing QA verdict under `docs/specs/_archived/`."}
   ]
 }

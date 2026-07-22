@@ -1,35 +1,15 @@
 {
-  "schemaVersion": "setup-context-driven/module-v1",
-  "id": "tui-surface",
-  "version": 1,
-  "kind": "application-surface",
-  "title": "Terminal UI surface guidance",
-  "dependsOn": ["cli-surface"],
-  "conflictsWith": [],
-  "requiredSkills": ["bubbletea", "tui-design", "testing-boss"],
+  "schemaVersion": "setup-context-driven/module-v2", "id": "tui-surface", "version": 2, "kind": "application-surface", "title": "Terminal UI surface guidance",
+  "dependsOn": ["cli-surface"], "conflictsWith": [], "requiredSkills": ["bubbletea", "tui-design", "testing-boss"],
+  "skillDispatch": [
+    {"id": "bubbletea", "when": "Building or changing Bubble Tea models, commands, messages, or component composition."},
+    {"id": "tui-design", "when": "Designing terminal layout, navigation, keyboard, mouse, color, or accessibility behavior."},
+    {"id": "testing-boss", "when": "Writing or reviewing TUI model and interaction tests."}
+  ],
   "requiredDecisions": [],
-  "rootBlocks": [
-    {
-      "id": "root.tui-surface",
-      "version": 1,
-      "template": "template.root.tui-surface",
-      "rules": ["rule.tui.synchronous-model-tests"]
-    }
-  ],
-  "supportingGuides": [
-    {
-      "id": "guide.tui-surface",
-      "version": 1,
-      "path": "docs/agents/tui.md",
-      "template": "template.guide.tui-surface",
-      "rules": ["rule.tui.synchronous-model-tests"]
-    }
-  ],
-  "rules": [
-    {
-      "id": "rule.tui.synchronous-model-tests",
-      "version": 1,
-      "summary": "Test TUI models synchronously and keep layout behavior observable."
-    }
-  ]
+  "rootBlocks": [{"id": "root.tui-surface", "version": 2, "template": "template.root.tui-surface", "rules": [], "references": [
+    {"id": "reference.root.tui", "token": "reference.tui", "ownership": "setup", "managedId": "guide.tui-surface"}
+  ]}],
+  "supportingGuides": [{"id": "guide.tui-surface", "version": 2, "path": "docs/agents/tui.md", "template": "template.guide.tui-surface", "rules": ["rule.tui.synchronous-model-tests"], "references": []}],
+  "rules": [{"id": "rule.tui.synchronous-model-tests", "version": 2, "coverage": ["coverage.tui", "coverage.frontend"], "guidance": "Drive TUI model updates synchronously and assert rendered state, messages, and transitions. Use terminal emulation only when model-level tests cannot prove the behavior, and keep layout and interaction policy in repository-owned design guidance."}]
 }

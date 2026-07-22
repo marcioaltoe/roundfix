@@ -8,6 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from context_assets import load_asset_catalog  # noqa: E402
 from context_setup import parse_managed_blocks  # noqa: E402
 from test_apply import BASE_DECISIONS, run_apply, run_audit  # noqa: E402
 from test_audit import install_profile_skills, snapshot_files  # noqa: E402
@@ -108,14 +109,20 @@ class SecondbrainSetupTests(unittest.TestCase):
         guide_template = repo_root / ".agents/skills/setup-context-driven/assets/templates/guides/secondbrain.md"
         root = root_template.read_text(encoding="utf-8")
         guide = guide_template.read_text(encoding="utf-8")
+        catalog = load_asset_catalog(repo_root / ".agents/skills/setup-context-driven")
+        guidance = "\n".join(
+            catalog.rule_contracts[rule_id].guidance
+            for rule_id in catalog.modules["secondbrain"]["supportingGuides"][0]["rules"]
+        )
 
         self.assertLessEqual(len(root.split()), 45)
-        self.assertIn("docs/agents/secondbrain.md", root)
+        self.assertIn("{{reference.secondbrain}}", root)
+        self.assertIn("{{artifact.rules}}", guide)
         self.assertNotIn(" não ", f" {guide.lower()} ")
         self.assertNotIn(" repositorio", f" {guide.lower()} ")
-        self.assertIn("Do not write to the Secondbrain", guide)
-        self.assertIn("Do not edit raw/", guide)
-        self.assertIn("Do not edit projects/*/mirror/", guide)
+        self.assertIn("Do not write to the Secondbrain", guidance)
+        self.assertIn("Do not edit raw/", guidance)
+        self.assertIn("Do not edit projects/*/mirror/", guidance)
 
 
 REQUIRED_GUIDE_PHRASES = [

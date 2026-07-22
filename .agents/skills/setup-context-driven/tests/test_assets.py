@@ -52,6 +52,7 @@ class AssetContractTests(unittest.TestCase):
     def test_versioned_contract_mutations_fail_with_stable_diagnostics(self):
         cases = [
             ("missing rule carrier", self._remove_required_rule_carrier, "profile.rule.carrier.missing"),
+            ("missing required profile rule", self._remove_required_profile_rule, "profile.rule.required.mismatch"),
             ("missing rule owner module", self._remove_rule_owner_module, "profile.rule.module.missing"),
             ("missing rule render binding", self._remove_rule_render_binding, "profile.rule.binding.missing"),
             ("missing dispatch mapping", self._remove_dispatch_mapping, "module.skillDispatch.mismatch"),
@@ -118,6 +119,9 @@ class AssetContractTests(unittest.TestCase):
                     "cli-surface",
                     "tui-surface",
                     "autonomous-work",
+                    "spec-workflow",
+                    "external-triage",
+                    "secondbrain",
                 ],
                 "rust-cli": [
                     "core",
@@ -125,6 +129,9 @@ class AssetContractTests(unittest.TestCase):
                     "rust",
                     "cli-surface",
                     "autonomous-work",
+                    "spec-workflow",
+                    "external-triage",
+                    "secondbrain",
                 ],
                 "typescript-bun-monorepo": [
                     "core",
@@ -135,6 +142,9 @@ class AssetContractTests(unittest.TestCase):
                     "backend",
                     "frontend",
                     "autonomous-work",
+                    "spec-workflow",
+                    "external-triage",
+                    "secondbrain",
                 ],
             },
         )
@@ -192,7 +202,7 @@ class AssetContractTests(unittest.TestCase):
         for template in root_templates:
             content = (templates_root / template["path"]).read_text(encoding="utf-8")
             self.assertLessEqual(len(content.split()), 45, template["id"])
-            self.assertIn("docs/agents/", content, template["id"])
+            self.assertIn("{{reference.", content, template["id"])
 
     def test_assets_are_portable(self):
         load_asset_catalog(SKILL_ROOT)
@@ -284,6 +294,12 @@ class AssetContractTests(unittest.TestCase):
         module = read_json_copy(self._v2_module(temp_root))
         module["skillDispatch"] = []
         write_json(self._v2_module(temp_root), module)
+
+    def _remove_required_profile_rule(self, temp_root):
+        profile_path = temp_root / "assets" / "profiles" / "fixture.json"
+        profile = read_json_copy(profile_path)
+        profile["requiredRules"] = []
+        write_json(profile_path, profile)
 
     def _remove_rule_owner_module(self, temp_root):
         profile_path = temp_root / "assets" / "profiles" / "fixture.json"

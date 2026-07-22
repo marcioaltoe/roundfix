@@ -1,46 +1,17 @@
 {
-  "schemaVersion": "setup-context-driven/module-v1",
-  "id": "cli-surface",
-  "version": 1,
-  "kind": "application-surface",
-  "title": "Agentic CLI surface guidance",
-  "dependsOn": ["core"],
-  "conflictsWith": [],
-  "requiredSkills": ["agentic-cli-design", "testing-boss"],
+  "schemaVersion": "setup-context-driven/module-v2", "id": "cli-surface", "version": 2, "kind": "application-surface", "title": "Agentic CLI surface guidance",
+  "dependsOn": ["core"], "conflictsWith": [], "requiredSkills": ["agentic-cli-design", "testing-boss"],
+  "skillDispatch": [
+    {"id": "agentic-cli-design", "when": "Changing CLI flags, stdout or stderr, exit codes, JSON output, dry-run, non-interactive, or introspection behavior."},
+    {"id": "testing-boss", "when": "Writing or reviewing CLI contract and command-boundary tests."}
+  ],
   "requiredDecisions": [],
-  "rootBlocks": [
-    {
-      "id": "root.cli-surface",
-      "version": 1,
-      "template": "template.root.cli-surface",
-      "rules": [
-        "rule.cli.output-contract",
-        "rule.cli.non-interactive"
-      ]
-    }
-  ],
-  "supportingGuides": [
-    {
-      "id": "guide.cli-surface",
-      "version": 1,
-      "path": "docs/agents/cli.md",
-      "template": "template.guide.cli-surface",
-      "rules": [
-        "rule.cli.output-contract",
-        "rule.cli.non-interactive"
-      ]
-    }
-  ],
+  "rootBlocks": [{"id": "root.cli-surface", "version": 2, "template": "template.root.cli-surface", "rules": [], "references": [
+    {"id": "reference.root.cli", "token": "reference.cli", "ownership": "setup", "managedId": "guide.cli-surface"}
+  ]}],
+  "supportingGuides": [{"id": "guide.cli-surface", "version": 2, "path": "docs/agents/cli.md", "template": "template.guide.cli-surface", "rules": ["rule.cli.output-contract", "rule.cli.non-interactive"], "references": []}],
   "rules": [
-    {
-      "id": "rule.cli.output-contract",
-      "version": 1,
-      "summary": "Keep stdout for command output and stderr for diagnostics."
-    },
-    {
-      "id": "rule.cli.non-interactive",
-      "version": 1,
-      "summary": "Design write operations to be explicit, replayable, and safe by default."
-    }
+    {"id": "rule.cli.output-contract", "version": 2, "coverage": ["coverage.cli"], "guidance": "Treat command names, flags, stdout and stderr placement, machine-readable fields, and exit codes as public API. Keep stdout for requested output and stderr for diagnostics, progress, and warnings."},
+    {"id": "rule.cli.non-interactive", "version": 2, "coverage": ["coverage.cli", "coverage.universal-safety"], "guidance": "Make automation deterministic and non-interactive. Write operations must be explicit, replayable, safe by default, and observable; use dry-run, confirmation, or idempotency contracts where the repository requires them."}
   ]
 }

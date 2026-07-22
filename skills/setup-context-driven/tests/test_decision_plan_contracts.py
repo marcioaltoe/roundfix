@@ -30,6 +30,7 @@ EXPECTED_DECISIONS = (
 )
 EXPECTED_ENTRY_DECISIONS = (
     "language.generated",
+    "verification.gate",
     "spec.scaffold",
     "domain.layout",
     "triage.external",
@@ -62,7 +63,7 @@ class DecisionPlanContractTests(unittest.TestCase):
         self.assertEqual(autonomous_effect.activate_modules, ("autonomous-work",))
         self.assertEqual(
             autonomous_effect.require_decisions,
-            ("runtime.backend", "runtime.design", "verification.gate"),
+            ("runtime.backend", "runtime.design"),
         )
         self.assertEqual(
             autonomous_effect.include_artifacts,

@@ -1,4 +1,3 @@
 ### Frontend
 
-- Validate user-visible behavior, accessibility, and failure states rather than internals.
-- Frontend verification guidance lives in `docs/agents/frontend.md`.
+- Frontend behavior and design-contract rules are mandatory: {{reference.frontend}}.

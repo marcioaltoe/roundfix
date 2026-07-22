@@ -34,7 +34,10 @@ class AutonomousSecondbrainDecisionTests(unittest.TestCase):
             self.assertNotIn("autonomous-work", manifest["modules"])
             self.assertNotIn("runtime.backend", manifest["decisions"])
             self.assertNotIn("runtime.design", manifest["decisions"])
-            self.assertNotIn("verification.gate", manifest["decisions"])
+            self.assertEqual(
+                manifest["decisions"]["verification.gate"]["value"],
+                "make verify",
+            )
             self.assertNotIn(
                 "root.autonomous-work",
                 (repo / "AGENTS.md").read_text(encoding="utf-8"),
@@ -63,10 +66,7 @@ class AutonomousSecondbrainDecisionTests(unittest.TestCase):
                 for finding in payload["findings"]
                 if finding["code"] == "decision.required"
             }
-            self.assertEqual(
-                missing,
-                {"runtime.backend", "runtime.design", "verification.gate"},
-            )
+            self.assertEqual(missing, {"runtime.backend", "runtime.design"})
 
             applied = run_apply(repo, decisions_for(autonomous=True, secondbrain=False))
 
@@ -259,6 +259,7 @@ def decisions_for(autonomous, secondbrain, include_runtime=True):
         "domain.layout=single-context",
         "triage.external=false",
         f"autonomous.enabled={str(autonomous).lower()}",
+        "verification.gate=make verify",
         "language.generated=English",
         f"secondbrain.enabled={str(secondbrain).lower()}",
     ]
@@ -267,7 +268,6 @@ def decisions_for(autonomous, secondbrain, include_runtime=True):
             [
                 "runtime.backend=codex gpt-5.5 xhigh",
                 "runtime.design=claude opus xhigh",
-                "verification.gate=make verify",
             ]
         )
     return decisions

@@ -20,7 +20,7 @@ class DecisionRenderingTests(unittest.TestCase):
     def test_domain_layout_selects_distinct_guidance_and_audits_clean(self):
         cases = [
             ("single-context", "single `CONTEXT.md`", "CONTEXT-MAP.md", False),
-            ("multi-context", "CONTEXT-MAP.md", "single `CONTEXT.md`", True),
+            ("multi-context", "CONTEXT-MAP.md", "single `CONTEXT.md`", False),
         ]
 
         for layout, expected_text, omitted_text, monorepo_expected in cases:
@@ -63,22 +63,65 @@ class DecisionRenderingTests(unittest.TestCase):
             )
 
             self.assertEqual(result.returncode, 0, result.stderr)
-            guide_path = repo / "docs" / "agents" / "autonomous-work.md"
-            guide = guide_path.read_text(encoding="utf-8")
-            self.assertIn(f"```{backend}```", guide)
-            self.assertIn(f"`{design}`", guide)
-            self.assertIn(f"`{verification}`", guide)
-            self.assertNotIn("{{runtime.backend}}", guide)
-            self.assertNotIn("{{runtime.design}}", guide)
-            self.assertNotIn("{{verification.gate}}", guide)
+            autonomous_path = repo / "docs" / "agents" / "autonomous-work.md"
+            autonomous = autonomous_path.read_text(encoding="utf-8")
+            instructions_path = repo / "docs" / "agents" / "agent-instructions.md"
+            instructions = instructions_path.read_text(encoding="utf-8")
+            self.assertIn(f"```{backend}```", autonomous)
+            self.assertIn(f"`{design}`", autonomous)
+            self.assertIn(f"`{verification}`", instructions)
+            self.assertNotIn("{{runtime.backend}}", autonomous)
+            self.assertNotIn("{{runtime.design}}", autonomous)
+            self.assertNotIn("{{verification.gate}}", instructions)
 
-            guide_blocks, _ = parse_managed_blocks(Path("docs/agents/autonomous-work.md"), guide)
+            guide_blocks, _ = parse_managed_blocks(
+                Path("docs/agents/agent-instructions.md"), instructions
+            )
             manifest = read_manifest(repo)
-            artifact = self.managed_artifact(manifest, "guide.autonomous-work")
+            artifact = self.managed_artifact(manifest, "guide.agent-instructions")
             self.assertEqual(
                 artifact["digest"],
-                digest_for(guide_blocks["guide.autonomous-work"].body),
+                digest_for(guide_blocks["guide.agent-instructions"].body),
             )
+
+    def test_verification_renders_in_universal_guidance_without_autonomous_work(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir)
+            verification = "cargo test --workspace --all-targets"
+
+            result = run_apply(
+                repo,
+                decisions_for(
+                    autonomous=False,
+                    verification_gate=verification,
+                ),
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            instructions = (repo / "docs" / "agents" / "agent-instructions.md").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn(f"`{verification}`", instructions)
+            self.assertNotIn("{{verification.gate}}", instructions)
+            self.assertFalse((repo / "docs" / "agents" / "autonomous-work.md").exists())
+
+    def test_frontend_guidance_names_repository_owned_design_contract_only(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir)
+
+            result = run_apply_for_profile(
+                repo,
+                "typescript-bun-monorepo",
+                decisions_for(autonomous=False),
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            frontend = (repo / "docs" / "agents" / "frontend.md").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("repository-owned `DESIGN.md`", frontend)
+            for invented_policy in ["authentication policy", "database policy", "transport policy"]:
+                self.assertNotIn(invented_policy, frontend)
 
     def test_unsafe_inline_decision_values_block_apply_without_writes(self):
         cases = [
@@ -142,7 +185,7 @@ class DecisionRenderingTests(unittest.TestCase):
             applied = run_apply(repo, decisions)
             install_profile_skills(repo, "rust-cli")
             self.assertEqual(applied.returncode, 0, applied.stderr)
-            guide_path = repo / "docs" / "agents" / "autonomous-work.md"
+            guide_path = repo / "docs" / "agents" / "agent-instructions.md"
             guide_path.write_text(
                 guide_path.read_text(encoding="utf-8").replace(
                     "cargo test --all-targets",
@@ -156,12 +199,12 @@ class DecisionRenderingTests(unittest.TestCase):
 
             self.assertEqual(snapshot_files(repo), before_audit)
             payload = json.loads(audit.stdout)
-            self.assertFinding(payload, "managed.content.modified", "guide.autonomous-work")
+            self.assertFinding(payload, "managed.content.modified", "guide.agent-instructions")
             self.assertIn(
                 {
                     "action": "refresh managed content",
-                    "path": "docs/agents/autonomous-work.md",
-                    "managedId": "guide.autonomous-work",
+                    "path": "docs/agents/agent-instructions.md",
+                    "managedId": "guide.agent-instructions",
                 },
                 payload["plannedChanges"],
             )
@@ -245,7 +288,11 @@ def decisions_for(
 
 
 def run_apply(repo, decisions):
-    args = ["apply", "--repo", str(repo), "--format", "json", "--profile", "rust-cli"]
+    return run_apply_for_profile(repo, "rust-cli", decisions)
+
+
+def run_apply_for_profile(repo, profile, decisions):
+    args = ["apply", "--repo", str(repo), "--format", "json", "--profile", profile]
     for decision in decisions:
         args.extend(["--decision", decision])
     return run_context_setup(*args)

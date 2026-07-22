@@ -1,65 +1,15 @@
 {
-  "schemaVersion": "setup-context-driven/module-v1",
-  "id": "secondbrain",
-  "version": 1,
-  "kind": "optional-integration",
-  "title": "Read-only Secondbrain guidance",
-  "dependsOn": ["core", "context-workflow"],
-  "conflictsWith": [],
-  "requiredSkills": [],
-  "requiredDecisions": ["secondbrain.enabled"],
-  "rootBlocks": [
-    {
-      "id": "root.secondbrain",
-      "version": 1,
-      "template": "template.root.secondbrain",
-      "rules": [
-        "rule.secondbrain.read-only",
-        "rule.secondbrain.secret-safety",
-        "rule.secondbrain.citations"
-      ]
-    }
-  ],
-  "supportingGuides": [
-    {
-      "id": "guide.secondbrain",
-      "version": 1,
-      "path": "docs/agents/secondbrain.md",
-      "template": "template.guide.secondbrain",
-      "rules": [
-        "rule.secondbrain.index-first",
-        "rule.secondbrain.read-only",
-        "rule.secondbrain.secret-safety",
-        "rule.secondbrain.citations",
-        "rule.secondbrain.hermes-escalation"
-      ]
-    }
-  ],
+  "schemaVersion": "setup-context-driven/module-v2", "id": "secondbrain", "version": 2, "kind": "knowledge-source", "title": "Read-only Secondbrain guidance",
+  "dependsOn": ["context-workflow"], "conflictsWith": [], "requiredSkills": [], "skillDispatch": [], "requiredDecisions": ["secondbrain.enabled"],
+  "rootBlocks": [{"id": "root.secondbrain", "version": 2, "template": "template.root.secondbrain", "rules": [], "references": [
+    {"id": "reference.root.secondbrain", "token": "reference.secondbrain", "ownership": "setup", "managedId": "guide.secondbrain"}
+  ]}],
+  "supportingGuides": [{"id": "guide.secondbrain", "version": 2, "path": "docs/agents/secondbrain.md", "template": "template.guide.secondbrain", "rules": ["rule.secondbrain.index-first", "rule.secondbrain.read-only", "rule.secondbrain.secret-safety", "rule.secondbrain.citations", "rule.secondbrain.hermes-escalation"], "references": []}],
   "rules": [
-    {
-      "id": "rule.secondbrain.index-first",
-      "version": 1,
-      "summary": "Secondbrain lookup starts at the wiki index, then qmd search, then targeted files."
-    },
-    {
-      "id": "rule.secondbrain.read-only",
-      "version": 1,
-      "summary": "Agents may read approved Secondbrain areas but must not write to the Secondbrain, raw sources, or project mirrors."
-    },
-    {
-      "id": "rule.secondbrain.secret-safety",
-      "version": 1,
-      "summary": "Agents must not read, copy, or expose secrets from the Secondbrain."
-    },
-    {
-      "id": "rule.secondbrain.citations",
-      "version": 1,
-      "summary": "Every answer that uses Secondbrain context cites the exact files read."
-    },
-    {
-      "id": "rule.secondbrain.hermes-escalation",
-      "version": 1,
-      "summary": "Durable Secondbrain updates are escalated to Hermes rather than written from the repository."
-    }
+    {"id": "rule.secondbrain.index-first", "version": 2, "coverage": ["coverage.secondbrain", "coverage.research"], "guidance": "Use the local Secondbrain only when repository context does not answer business, fiscal, tax, cross-project, or shared-architecture questions. Read `wiki/index.md` first, run `qmd query`, and open only the files the results make relevant. Inspect `projects/<project>/mirror/` only after the index and query point there; treat mirrors as references, not workspaces."},
+    {"id": "rule.secondbrain.read-only", "version": 2, "coverage": ["coverage.secondbrain", "coverage.universal-safety"], "guidance": "Do not write to the Secondbrain. Do not edit raw/. Do not edit projects/*/mirror/. Never create, rename, move, or delete its files, and never copy code or generated artifacts from a mirror without a local source check."},
+    {"id": "rule.secondbrain.secret-safety", "version": 2, "coverage": ["coverage.secondbrain", "coverage.security-configuration"], "guidance": "Never read, copy, or expose `.env` files, tokens, credentials, cookies, private keys, API keys, session material, or unsafe personal and client data. Stop at likely secret-bearing sources and request a safe source."},
+    {"id": "rule.secondbrain.citations", "version": 2, "coverage": ["coverage.secondbrain", "coverage.research"], "guidance": "Cite every Secondbrain file used in the final response or handoff by path. Do not claim Secondbrain context when no Secondbrain file was read."},
+    {"id": "rule.secondbrain.hermes-escalation", "version": 2, "coverage": ["coverage.secondbrain"], "guidance": "When Secondbrain knowledge must be added or corrected, ask Hermes to ingest or update it instead of writing from this repository."}
   ]
 }

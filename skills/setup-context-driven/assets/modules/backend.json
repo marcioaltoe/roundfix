@@ -1,35 +1,15 @@
 {
-  "schemaVersion": "setup-context-driven/module-v1",
-  "id": "backend",
-  "version": 1,
-  "kind": "application-surface",
-  "title": "Backend service guidance",
-  "dependsOn": ["core"],
-  "conflictsWith": [],
-  "requiredSkills": ["context7", "testing-boss", "no-workarounds"],
+  "schemaVersion": "setup-context-driven/module-v2", "id": "backend", "version": 2, "kind": "application-surface", "title": "Backend application guidance",
+  "dependsOn": ["typescript"], "conflictsWith": [], "requiredSkills": ["context7", "testing-boss", "no-workarounds"],
+  "skillDispatch": [
+    {"id": "context7", "when": "Changing backend libraries, framework APIs, persistence adapters, or runtime configuration."},
+    {"id": "testing-boss", "when": "Designing backend contract, integration, or failure-path tests."},
+    {"id": "no-workarounds", "when": "Fixing backend defects, boundary failures, or data inconsistencies."}
+  ],
   "requiredDecisions": [],
-  "rootBlocks": [
-    {
-      "id": "root.backend",
-      "version": 1,
-      "template": "template.root.backend",
-      "rules": ["rule.backend.boundary-contracts"]
-    }
-  ],
-  "supportingGuides": [
-    {
-      "id": "guide.backend",
-      "version": 1,
-      "path": "docs/agents/backend.md",
-      "template": "template.guide.backend",
-      "rules": ["rule.backend.boundary-contracts"]
-    }
-  ],
-  "rules": [
-    {
-      "id": "rule.backend.boundary-contracts",
-      "version": 1,
-      "summary": "Keep IO boundaries explicit and test service contracts without network dependencies."
-    }
-  ]
+  "rootBlocks": [{"id": "root.backend", "version": 2, "template": "template.root.backend", "rules": [], "references": [
+    {"id": "reference.root.backend", "token": "reference.backend", "ownership": "setup", "managedId": "guide.backend"}
+  ]}],
+  "supportingGuides": [{"id": "guide.backend", "version": 2, "path": "docs/agents/backend.md", "template": "template.guide.backend", "rules": ["rule.backend.boundary-contracts"], "references": []}],
+  "rules": [{"id": "rule.backend.boundary-contracts", "version": 2, "coverage": ["coverage.backend", "coverage.security-configuration"], "guidance": "Keep blocking, network, process, database, and daemon boundaries explicit about ownership, cancellation, timeouts, and error reporting. Test the lowest real boundary that proves the repository-authored contract; do not invent authentication, database, or transport policy."}]
 }

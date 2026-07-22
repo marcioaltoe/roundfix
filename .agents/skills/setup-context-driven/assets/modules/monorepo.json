@@ -1,35 +1,11 @@
 {
-  "schemaVersion": "setup-context-driven/module-v1",
-  "id": "monorepo",
-  "version": 1,
-  "kind": "repository-shape",
-  "title": "Monorepo context guidance",
-  "dependsOn": ["context-workflow"],
-  "conflictsWith": [],
-  "requiredSkills": ["domain-modeling"],
-  "requiredDecisions": ["domain.layout"],
-  "rootBlocks": [
-    {
-      "id": "root.monorepo",
-      "version": 1,
-      "template": "template.root.monorepo",
-      "rules": ["rule.monorepo.context-boundaries"]
-    }
-  ],
-  "supportingGuides": [
-    {
-      "id": "guide.monorepo",
-      "version": 1,
-      "path": "docs/agents/monorepo.md",
-      "template": "template.guide.monorepo",
-      "rules": ["rule.monorepo.context-boundaries"]
-    }
-  ],
-  "rules": [
-    {
-      "id": "rule.monorepo.context-boundaries",
-      "version": 1,
-      "summary": "Respect context boundaries and read the mapped context before editing a package."
-    }
-  ]
+  "schemaVersion": "setup-context-driven/module-v2", "id": "monorepo", "version": 2, "kind": "repository-layout", "title": "Monorepo context boundaries",
+  "dependsOn": ["context-workflow"], "conflictsWith": [], "requiredSkills": ["domain-modeling"],
+  "skillDispatch": [{"id": "domain-modeling", "when": "Changing bounded-context vocabulary, ownership, or dependencies across packages."}],
+  "requiredDecisions": [],
+  "rootBlocks": [{"id": "root.monorepo", "version": 2, "template": "template.root.monorepo", "rules": [], "references": [
+    {"id": "reference.root.monorepo", "token": "reference.monorepo", "ownership": "setup", "managedId": "guide.monorepo"}
+  ]}],
+  "supportingGuides": [{"id": "guide.monorepo", "version": 2, "path": "docs/agents/monorepo.md", "template": "template.guide.monorepo", "rules": ["rule.monorepo.context-boundaries"], "references": []}],
+  "rules": [{"id": "rule.monorepo.context-boundaries", "version": 2, "coverage": ["coverage.monorepo", "coverage.context-workflow"], "guidance": "Identify the owning package and bounded context before editing. Read its context and local instructions, keep changes inside the Task slice, and require an explicit owning contract plus boundary Verification for cross-package changes."}]
 }

@@ -21,6 +21,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from test_apply import BASE_DECISIONS, run_apply, run_audit  # noqa: E402
 from test_audit import install_profile_skills, snapshot_files, write_skill  # noqa: E402
 from test_skills import write_lockfile  # noqa: E402
+sys.path.insert(0, str(SKILL_ROOT / "scripts"))
+
+from context_assets import load_asset_catalog  # noqa: E402
 
 
 SUPPORTED_PROFILES = [
@@ -31,6 +34,40 @@ SUPPORTED_PROFILES = [
 
 
 class ProfileMacroFlowTests(unittest.TestCase):
+    def test_profiles_declare_complete_rule_coverage_and_verification_entry_decision(self):
+        catalog = load_asset_catalog(SKILL_ROOT)
+
+        for profile_id in SUPPORTED_PROFILES:
+            with self.subTest(profile=profile_id):
+                profile = catalog.profiles[profile_id]
+                declared_rules = set(profile["requiredRules"])
+                module_rules = {
+                    rule["id"]
+                    for module_id in catalog.ordered_modules_by_profile[profile_id]
+                    for rule in catalog.modules[module_id]["rules"]
+                }
+                covered_categories = {
+                    coverage_id
+                    for rule_id in declared_rules
+                    for coverage_id in catalog.rule_contracts[rule_id].coverage
+                }
+
+                self.assertEqual(declared_rules, module_rules)
+                self.assertIn("verification.gate", profile["entryDecisions"])
+                self.assertTrue(
+                    {
+                        "coverage.universal-safety",
+                        "coverage.verification",
+                        "coverage.verification-integrity",
+                        "coverage.skill-dispatch",
+                        "coverage.language",
+                        "coverage.research",
+                        "coverage.dependencies",
+                        "coverage.git-delivery",
+                        "coverage.security-configuration",
+                    }.issubset(covered_categories)
+                )
+
     def test_supported_profiles_apply_audit_clean_and_reapply_without_changes(self):
         for profile_id in SUPPORTED_PROFILES:
             with self.subTest(profile=profile_id):
@@ -121,6 +158,82 @@ class ProfileMacroFlowTests(unittest.TestCase):
                     if profile_id == "typescript-bun-monorepo":
                         self.assertIn("macro-backend", generated)
                         self.assertIn("macro-design", generated)
+
+    def test_every_profile_renders_selected_verification_and_exact_active_skill_dispatch(self):
+        catalog = load_asset_catalog(SKILL_ROOT)
+        verification = "task-02-profile-verification"
+
+        for profile_id in SUPPORTED_PROFILES:
+            with self.subTest(profile=profile_id):
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    repo = Path(temp_dir)
+                    decisions = decisions_with(
+                        autonomous=False,
+                        verification_gate=verification,
+                    )
+
+                    applied = run_apply(repo, profile_id, decisions)
+
+                    self.assertEqual(applied.returncode, 0, applied.stderr)
+                    instructions = (repo / "docs" / "agents" / "agent-instructions.md").read_text(
+                        encoding="utf-8"
+                    )
+                    dispatch = (repo / "docs" / "agents" / "skill-dispatch.md").read_text(
+                        encoding="utf-8"
+                    )
+                    manifest = json.loads(
+                        (repo / "docs" / "agents" / "setup-context.json").read_text(
+                            encoding="utf-8"
+                        )
+                    )
+                    expected_lines = []
+                    seen = set()
+                    for module_id in manifest["modules"]:
+                        for entry in catalog.skill_dispatch_by_module[module_id]:
+                            key = (entry.skill_name, entry.when)
+                            if key in seen:
+                                continue
+                            seen.add(key)
+                            expected_lines.append(f"- `{entry.skill_name}`: {entry.when}")
+
+                    self.assertIn(f"`{verification}`", instructions)
+                    self.assertEqual(
+                        [line for line in dispatch.splitlines() if line.startswith("- `")],
+                        expected_lines,
+                    )
+
+    def test_every_profile_preserves_repository_extensions_and_rerenders_identically(self):
+        for profile_id in SUPPORTED_PROFILES:
+            with self.subTest(profile=profile_id):
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    repo = Path(temp_dir)
+                    applied = run_apply(repo, profile_id, BASE_DECISIONS)
+                    self.assertEqual(applied.returncode, 0, applied.stderr)
+                    root = repo / "AGENTS.md"
+                    extension = "\nRepository-authored extension: keep this byte-for-byte.\n"
+                    root.write_text(root.read_text(encoding="utf-8") + extension, encoding="utf-8")
+                    before = snapshot_files(repo)
+
+                    reapplied = run_apply(repo, profile_id, [])
+
+                    self.assertEqual(reapplied.returncode, 0, reapplied.stderr)
+                    self.assertEqual(snapshot_files(repo), before)
+                    self.assertTrue(root.read_text(encoding="utf-8").endswith(extension))
+
+    def test_typescript_bun_single_context_monorepo_always_generates_monorepo_guide(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir)
+
+            applied = run_apply(
+                repo,
+                "typescript-bun-monorepo",
+                decisions_with(domain_layout="single-context", autonomous=False),
+            )
+
+            self.assertEqual(applied.returncode, 0, applied.stderr)
+            root = (repo / "AGENTS.md").read_text(encoding="utf-8")
+            self.assertIn("id=root.monorepo", root)
+            self.assertTrue((repo / "docs" / "agents" / "monorepo.md").is_file())
 
     def test_required_skill_failure_and_extra_reporting_keep_exit_semantics(self):
         with tempfile.TemporaryDirectory() as temp_dir:

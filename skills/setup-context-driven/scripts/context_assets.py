@@ -1637,6 +1637,20 @@ def _validate_profile_rule_contracts(
         if len(set(required_rules)) != len(required_rules):
             diagnostics.append(f"profile.rule.required.duplicate: {profile_id}")
         selected_modules = set(ordered_modules_by_profile.get(profile_id, []))
+        selected_rules = {
+            rule.get("id")
+            for module_id in selected_modules
+            for rule in _dict_items(modules[module_id].get("rules"))
+            if isinstance(rule.get("id"), str) and rule.get("id")
+        }
+        missing_rules = selected_rules - set(required_rules)
+        extra_rules = set(required_rules) - selected_rules
+        if missing_rules or extra_rules:
+            diagnostics.append(
+                f"profile.rule.required.mismatch: {profile_id}: "
+                f"missing={','.join(sorted(missing_rules)) or '-'}: "
+                f"extra={','.join(sorted(extra_rules)) or '-'}"
+            )
         for rule_id in required_rules:
             if rule_id not in rule_contracts:
                 diagnostics.append(f"profile.rule.required.unknown: {profile_id} -> {rule_id}")

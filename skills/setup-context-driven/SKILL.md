@@ -17,7 +17,8 @@ Configure a repository for CONTEXT-driven development through the portable asset
 ## Asset map
 
 - `assets/profiles/` selects a supported profile and canonical skill setup snapshot: `typescript-bun-monorepo`, `go-cli-tui`, or `rust-cli`.
-- `assets/modules/` owns compact root pointers, supporting guides, rule IDs, required decisions, and required skills.
+- `assets/coverage.json` defines the portable coverage categories every profile must satisfy.
+- `assets/modules/` owns compact root pointers, supporting guides, portable rule guidance, required decisions, and exact skill-dispatch triggers.
 - `assets/templates/` stores generated repository content. Root blocks must stay short and point to `docs/agents/` guides.
 - `assets/setups/` stores bundled canonical skill setup snapshots. Normal audit/apply uses only these bundled files; it never needs `~/dev/skills`, the network, or third-party Python packages.
 - `references/` is workflow guidance for agents, not generated output.
@@ -43,7 +44,7 @@ Configure a repository for CONTEXT-driven development through the portable asset
 
 ## Decisions
 
-Use stored compatible decisions from `docs/agents/setup-context.json` first. Ask only for `decision.required` findings, one decision code at a time, in the order the CLI reports them. This includes dependent questions introduced after an enabled capability changes the Decision Plan, such as `runtime.backend`, `runtime.design`, and `verification.gate` after `autonomous.enabled=true`. Do not ask again for a stored compatible value.
+Use stored compatible decisions from `docs/agents/setup-context.json` first. Ask only for `decision.required` findings, one decision code at a time, in the order the CLI reports them. `verification.gate` is an entry decision for every profile. `runtime.backend` and `runtime.design` become required after `autonomous.enabled=true`. Do not ask again for a stored compatible value.
 
 Question routing:
 

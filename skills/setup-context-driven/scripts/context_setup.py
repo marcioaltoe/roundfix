@@ -975,6 +975,7 @@ def planned_artifacts_for_decision_plan(
             artifact_modules,
             template_overrides=template_overrides_for_effects(matched_effects),
             render_values=render_values_for_effects(matched_effects, resolved_decisions),
+            dispatch_modules=active_modules,
             strict_tokens=False,
         )
     }
@@ -2965,22 +2966,30 @@ def expected_artifacts_for_profile(
     ordered_modules: list[str] | None = None,
     template_overrides: dict[str, str] | None = None,
     render_values: dict[str, dict[str, str]] | None = None,
+    dispatch_modules: Iterable[str] | None = None,
     strict_tokens: bool = True,
 ) -> list[ExpectedArtifact]:
     artifacts: list[ExpectedArtifact] = []
     templates_root = Path(__file__).resolve().parents[1] / "assets" / "templates"
     modules = ordered_modules or catalog.ordered_modules_by_profile[profile_id]
+    dispatch_modules = list(dispatch_modules) if dispatch_modules is not None else modules
     template_overrides = template_overrides or {}
     render_values = render_values or {}
     for module_id in modules:
         module = catalog.modules[module_id]
         for block in module.get("rootBlocks", []):
             template_id = template_overrides.get(block["id"], block["template"])
+            values = computed_render_values(
+                catalog,
+                dispatch_modules,
+                block,
+            )
+            values.update(render_values.get(block["id"], {}))
             content = template_content(
                 templates_root,
                 catalog,
                 template_id,
-                render_values.get(block["id"], {}),
+                values,
                 strict_tokens,
             )
             artifacts.append(
@@ -2997,11 +3006,17 @@ def expected_artifacts_for_profile(
             )
         for guide in module.get("supportingGuides", []):
             template_id = template_overrides.get(guide["id"], guide["template"])
+            values = computed_render_values(
+                catalog,
+                dispatch_modules,
+                guide,
+            )
+            values.update(render_values.get(guide["id"], {}))
             content = template_content(
                 templates_root,
                 catalog,
                 template_id,
-                render_values.get(guide["id"], {}),
+                values,
                 strict_tokens,
             )
             artifacts.append(
@@ -3017,6 +3032,63 @@ def expected_artifacts_for_profile(
                 )
             )
     return artifacts
+
+
+def computed_render_values(
+    catalog: AssetCatalog,
+    active_modules: Iterable[str],
+    artifact: dict,
+) -> dict[str, str]:
+    values: dict[str, str] = {}
+    rule_lines = [
+        f"- {catalog.rule_contracts[rule_id].guidance.strip()}"
+        for rule_id in artifact.get("rules", [])
+        if rule_id in catalog.rule_contracts
+    ]
+    if rule_lines:
+        values["artifact.rules"] = "\n".join(rule_lines)
+
+    if artifact.get("id") == "guide.skill-dispatch":
+        values["active-modules.skill-dispatch"] = render_skill_dispatch(
+            catalog,
+            active_modules,
+        )
+
+    artifact_paths = managed_artifact_paths(catalog)
+    for reference in catalog.references_by_artifact.get(artifact.get("id"), ()):
+        if reference.ownership == "setup":
+            path = artifact_paths.get(reference.target_managed_id)
+        else:
+            path = reference.repository_path
+        if path is not None:
+            values[reference.token] = render_inline_code(path.as_posix())
+    return values
+
+
+def render_skill_dispatch(
+    catalog: AssetCatalog,
+    active_modules: Iterable[str],
+) -> str:
+    lines: list[str] = []
+    seen: set[tuple[str, str]] = set()
+    for module_id in active_modules:
+        for dispatch in catalog.skill_dispatch_by_module.get(module_id, ()):
+            key = (dispatch.skill_name, dispatch.when)
+            if key in seen:
+                continue
+            seen.add(key)
+            lines.append(f"- `{dispatch.skill_name}`: {dispatch.when}")
+    return "\n".join(lines)
+
+
+def managed_artifact_paths(catalog: AssetCatalog) -> dict[str, Path]:
+    paths: dict[str, Path] = {}
+    for module in catalog.modules.values():
+        for block in module.get("rootBlocks", []):
+            paths[block["id"]] = ROOT_INSTRUCTIONS_PATH
+        for guide in module.get("supportingGuides", []):
+            paths[guide["id"]] = Path(guide["path"])
+    return paths
 
 
 def template_content(
