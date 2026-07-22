@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-22
 updated_at: 2026-07-22
 ---
@@ -187,3 +187,9 @@ must not be treated as covered merely because the current catalog passes its
 own v2 asset contract. Route the companion content-regression finding to the
 same follow-up only where its rule-level corrections share this contract;
 Fluxus-owned content restoration remains a separate repository concern.
+
+Routed 2026-07-22:
+[Spec 0044 — Context-Driven Baseline upgrade retention and formatter compatibility](../specs/0044-upgrade-retention-and-formatter-compatibility/_prd.md)
+owns the Upgrade Retention Contract, the legacy hard-rule ledger, the
+supporting-guide restoration, and Formatter-Stable Output, recorded in
+ADR-0058 and ADR-0059.

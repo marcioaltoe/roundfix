@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-22
 updated_at: 2026-07-22
 ---
@@ -225,3 +225,8 @@ Pending. Candidate owners: extend
 with §1–§4 (they are regressions/gaps in the same v2 catalog that Spec 0043
 produced), and route §5's Fluxus-side content restoration as a separate
 repository task in Fluxus itself.
+
+Routed 2026-07-22: Spec 0043 is archived, so §1–§4 plus §5's setup-owned
+delegation audit signal and extension scaffold are owned by
+[Spec 0044 — Context-Driven Baseline upgrade retention and formatter compatibility](../specs/0044-upgrade-retention-and-formatter-compatibility/_prd.md);
+§5's Fluxus-side content restoration remains a Fluxus repository task.

@@ -398,6 +398,18 @@ _Avoid_: Project Config, lock file, generated guide
 An Architecture Decision Record whose reserved identity and invariant belong to the Context-Driven Baseline while project-specific notes remain repository-owned.
 _Avoid_: Example ADR, project ADR, template copy
 
+**Upgrade Retention Contract**:
+The accounting a Context-Driven Baseline version transition must satisfy before mutation: every previously managed mandatory clause maps to a current rule, a Repository-Owned Extension, or an explicit rejection with a recorded reason, and preview and apply block while any clause is unaccounted.
+_Avoid_: Best-effort migration, category coverage, silent rule removal
+
+**Repository-Owned Extension**:
+Project-authored instruction content that lives outside setup markers — optionally in a scaffolded extension document linked from generated root instructions — preserved byte-for-byte and never audited as baseline coverage.
+_Avoid_: Managed guide, adopted file, baseline rule
+
+**Formatter-Stable Output**:
+Generated managed Markdown that the target repository's selected formatter leaves unchanged, so apply, formatting, Verification, audit, and reapply compose with no delta.
+_Avoid_: Renderer-canonical output, format-after-apply fixup
+
 **Internal Identifier**:
 A technical identity for an entity or resource that is generated and controlled by the project.
 _Avoid_: External identifier, natural key, business code
