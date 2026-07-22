@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "setup-context-driven/source-baseline/0.0.1",
+  "version": "0.0.1",
+  "id": "fixture",
+  "profile": "standard-typescript-monorepo",
+  "corpus": "corpus",
+  "manifest": "manifest.json",
+  "entryCount": 2,
+  "corpusDigest": "9f69cfd38c8bad92233dd7192187f318699d0ed3fde242f5cebfe3e3be0718b3",
+  "manifestDigest": "c7ef2055c9b5bfd0880e823b26984a8d195cd6c5bb59e98eacc734b4f301b415"
+}
