@@ -15,6 +15,20 @@ Edit the catalog as one connected contract:
 
 `assets/contract-v1.json` lists the stable loader diagnostics for coverage, rules, dispatch, references, profiles, templates, and setup snapshots. Add mutation tests whenever a new invariant or diagnostic joins that contract.
 
+## Transition-ledger maintenance
+
+The canonical Upgrade Retention Contract assets live under `.agents/skills/setup-context-driven/assets/retention/`. Treat each transition ledger as reviewed migration evidence, not generated output. Its source baseline inventory must list every previously managed mandatory clause, and its mappings must account for each clause exactly once as `retained`, `moved`, `replaced`, or `rejected`, always with a reason. Accepted current-clause targets must be reachable in the destination profile and preserve the exact enforcement enum; a Repository-Owned Extension target records that setup transfers ownership without managing the target bytes.
+
+Review the relevant ledger whenever a baseline ID, legacy fingerprint, clause identity, enforcement value, selected carrier, or destination profile graph changes. Do not infer an unknown source baseline or delete a prior clause to make a transition pass. Update the ledger and its sanitized source fixture together, then run the focused contracts:
+
+```bash
+rtk env PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_legacy_rule_ledger.py'
+rtk env PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_upgrade_contracts.py'
+rtk env PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_upgrade_retention.py'
+```
+
+The Change Plan's ordered `retentionAccounting` and `planDigest` are the operator-visible proof that the reviewed ledger is active.
+
 ## Snapshot-v2 validation
 
 Every `assets/setups/*.json` file uses `setup-context-driven/setup-snapshot-v2`.
@@ -47,3 +61,13 @@ rtk make skills-sync-check
 Before restoration writes ship, the isolated lock adapter must agree with the Spec 0036 lock compatibility fixture. Spec 0036 and the Doctor Command retain ownership of Repository Skill Set readiness and lock-hash compatibility. Setup documentation defines no new Doctor behavior.
 
 Run the setup asset suite, `rtk make skills-sync-check`, and the repository Verification after catalog or workflow changes.
+
+## Formatter-provenance refresh boundary
+
+Formatter compatibility is profile-specific. The selected formatter contract lives in `assets/profiles/<profile>.json`; the TypeScript/Bun proof record lives at `tests/fixtures/formatter-compatibility/typescript-bun-monorepo/provenance.json`, and its `golden/` tree contains the complete generated managed-Markdown corpus. Profiles without a selected Markdown formatter must declare `kind: none` rather than inherit another profile's proof.
+
+Refresh formatter provenance only when the selected formatter identity or version changes, formatter-sensitive rendering changes, or the generated corpus intentionally changes. Regenerate the entire disposable profile fixture through confirmed apply, run the exact pinned formatter, and update the golden bytes, fixture path list, provenance command and argv, and portable golden digest as one reviewable change. Never hand-normalize selected golden files or substitute a newer formatter version without changing the profile contract.
+
+Ordinary `rtk make setup-context-check` is hermetic: it validates the pinned provenance and golden bytes without installing or executing Oxfmt. Final QA owns the real probe recorded in `realFormatterProbe`; run it in the disposable TypeScript/Bun fixture, then run `fixtureVerification`, a fresh audit, and a second apply and require an empty diff and Change Plan. A real-probe failure blocks provenance refresh instead of being converted into a golden update.
+
+After any transition-ledger, formatter-provenance, workflow, or test change, author under `.agents/skills/setup-context-driven/`, run `rtk make skills-sync`, inspect both tree diffs, and run `rtk make skills-sync-check`. The distributed `skills/setup-context-driven/` tree, including tests and fixtures, must remain byte-identical to the canonical tree.

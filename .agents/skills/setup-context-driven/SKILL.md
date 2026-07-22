@@ -41,6 +41,7 @@ The baseline owns only declared managed blocks, setup-owned guides, the Setup Ma
    - active or conditional modules and their trigger decisions;
    - blocking findings by `code`, `managedId`, `path`, `message`, `action`, and structured `remediation` when present;
    - every `plannedChanges` entry, including `action`, `path`, `managedId`, `state`, `reason`, `beforeDigest`, `afterDigest`, and optional `condition`, `fromPath`, and `referenceEdits`;
+   - `retentionAccounting`, when the repository has a recognized source-baseline transition, including every entry's `fromClause`, `enforcement`, `disposition`, `targets`, and `reason`;
    - optional cleanup information only when audit was run with `--show-extra-skills`.
 4. Do not dump generated Markdown by default. Mention that full templates live under `assets/templates/` if the user asks to inspect them.
 
@@ -71,6 +72,12 @@ rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py audit -
 
 Only a fully resolved Decision Plan has an authorizable `planDigest`. If audit still returns `decision.required`, keep the repository unchanged and ask only the next reported decision.
 
+## Upgrade Retention Contract
+
+Before a Context-Driven Baseline version transition can mutate the repository, the Upgrade Retention Contract accounts for every previously managed mandatory clause. Each clause must map to a reachable current clause with the same enforcement strength, a Repository-Owned Extension, or an explicit rejection with a recorded reason. The ordered `retentionAccounting` output is the normative part of the Change Plan: it reports each `fromClause`, its `enforcement`, the `retained`, `moved`, `replaced`, or `rejected` disposition, any `targets`, and the `reason`. The same accounting appears in text output and contributes to `planDigest`, so a normative mapping change makes an earlier confirmation stale even when file bytes are unchanged.
+
+Audit and apply fail closed with exit `1` and no writes when the source baseline is unknown, a prior clause is unaccounted, a target is absent from the selected future artifact graph, or a target weakens enforcement. Report the finding code and affected clause or target. Do not infer a baseline, weaken a clause, edit generated output, or bypass the transition ledger; correct the source-baseline identity or the canonical transition asset, rerun audit, review the new complete Change Plan, and obtain confirmation for its new `planDigest`.
+
 ## Preview and apply
 
 Apply is explicit, local, and network-free. It never runs before the user sees the complete managed change summary from the resolved audit.
@@ -79,6 +86,7 @@ Before applying, tell the user:
 
 - the profile, ordered modules, and canonical skill setup;
 - every managed file or block that will be created, refreshed, or removed;
+- every Upgrade Retention Contract entry, when `retentionAccounting` is present;
 - that only `docs/agents/setup-context.json` and declared setup-owned Markdown boundaries can change;
 - that repository-authored bytes outside managed markers remain untouched;
 - that extra installed skills are informational only and this workflow never removes skills.
@@ -92,6 +100,18 @@ rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py apply -
 If apply returns `plan.confirmation.stale`, the preimage or inputs changed: no write occurred. Present the recomputed plan and ask for confirmation of its new digest. If apply returns `decision.required`, present the unchanged selection and preview and ask only the next unresolved decision. For any other blocking finding, report its code, managed identity, path, reason, and action; do not patch around it manually.
 
 After apply, rerun the same resolved audit in JSON mode. A documentation-clean result exits `0`. Do not treat required-skill drift as permission to fetch or replace anything; restoration is the separate, explicit workflow below.
+
+## Repository ownership and delegation floor
+
+`repository.extension.enabled=true` authorizes setup to create the declared Repository-Owned Extension once when it is absent and include that creation in the confirmed Change Plan. The extension file is unmarked, never enters `managedArtifacts`, and remains outside setup management: audit, reapply, and profile transitions do not compare, rewrite, format, or remove its bytes. Setup owns only the generated typed reference to it. If a previously selected extension is later missing, report the blocking `reference.repository.missing` finding; do not recreate repository content automatically.
+
+Audit also scans bounded root and nested agent-instruction documents for delegation to setup-managed categories. `delegation.baseline-floor` is an informational baseline-floor finding: it names repository-authored documents that delegate to a category absent from the active catalog, but it does not enter the Change Plan, block apply, or grant setup authority over those documents. Explain that the generated baseline is a floor, not a replacement for project-specific policy.
+
+## Skill dispatch and Formatter-Stable Output
+
+The selected catalog is the single source for both the Repository Skill Set and generated dispatch. Each installed skill renders exactly once in `docs/agents/skill-dispatch.md`; that one entry can list multiple distinct triggers. Do not add duplicate dispatch prose to another module or generated guide.
+
+Generated managed Markdown is Formatter-Stable Output for its selected profile. Formatter proof is pinned and profile-specific: the TypeScript/Bun profile binds the declared Oxfmt version, checked-in golden corpus, and provenance digest, while profiles with no selected Markdown formatter declare `none`. Ordinary repository Verification is hermetic and compares generated bytes with that pinned corpus; it downloads nothing and executes no formatter. Final QA separately runs the real pinned formatter probe in a disposable profile fixture, then its selected Verification, a fresh audit, and a second apply. Setup audit and apply never execute a formatter, the repository's Verification, or downloaded content.
 
 ## Explicit Repository Skill Set restoration
 
@@ -118,9 +138,11 @@ After restoration, rerun the same resolved audit. A clean result proves the Cont
 ## Exit categories
 
 - exit `0`: audit is clean, apply completed or was already current, or restoration completed or was already current;
-- exit `1`: blocking audit findings, or a source, proof, safety, lock-adapter, or write failure;
+- exit `1`: blocking audit or retention findings, or a source, proof, safety, lock-adapter, or write failure;
 - exit `2`: invalid arguments, malformed decisions or confirmation digest, invalid skill selection, or malformed lock input;
 - exit `3`: decisions are required, or a non-empty plan needs confirmation or became stale.
+
+Text and `setup-context-driven/audit-v1` JSON results go to stdout. Diagnostics go to stderr. Audit and documentation apply are local, use only bundled assets, and remain network-free; only an explicitly requested `restore-skills` operation owns Git acquisition.
 
 ## Optional reports
 
