@@ -901,6 +901,13 @@ def _validate_versioned_module_contracts(
             )
             raw_extensions.extend((module_id, extension) for extension in extensions)
 
+        _validate_distinct_guide_clause_lists(
+            module_id,
+            module.get("supportingGuides"),
+            rule_contracts,
+            diagnostics,
+        )
+
     repository_extensions = _validate_repository_extensions(
         raw_extensions,
         artifacts,
@@ -927,6 +934,41 @@ def _validate_versioned_module_contracts(
         references_by_artifact,
         repository_extensions,
     )
+
+
+def _validate_distinct_guide_clause_lists(
+    module_id: str,
+    raw_guides: object,
+    rule_contracts: dict[str, RuleContract],
+    diagnostics: list[str],
+) -> None:
+    owners: dict[tuple[tuple[str, str], ...], str] = {}
+    for guide in _dict_items(raw_guides):
+        guide_id = guide.get("id")
+        if not isinstance(guide_id, str) or not guide_id:
+            continue
+        effective_clauses: list[tuple[str, str]] = []
+        for rule_id in _string_items(guide.get("rules")):
+            rule = rule_contracts.get(rule_id)
+            if rule is None:
+                continue
+            if rule.clauses:
+                effective_clauses.extend(
+                    (clause.enforcement, clause.guidance.strip())
+                    for clause in rule.clauses
+                )
+            elif rule.guidance.strip():
+                effective_clauses.append(("legacy", rule.guidance.strip()))
+        signature = tuple(effective_clauses)
+        if not signature:
+            continue
+        owner = owners.get(signature)
+        if owner is not None:
+            diagnostics.append(
+                f"guide.clause-list.duplicate: {module_id}: {owner}, {guide_id}"
+            )
+        else:
+            owners[signature] = guide_id
 
 
 def _validate_clause_contracts(
@@ -2126,6 +2168,11 @@ def _validate_profile_rule_contracts(
             ]
             if not carriers:
                 diagnostics.append(f"profile.rule.carrier.missing: {profile_id} -> {rule_id}")
+                continue
+            if len(carriers) > 1:
+                diagnostics.append(
+                    f"profile.rule.carrier.duplicate: {profile_id} -> {rule_id}"
+                )
                 continue
             if not any(
                 "artifact.rules"

@@ -10,7 +10,7 @@
     "rule.cli.output-contract", "rule.cli.non-interactive",
     "rule.tui.synchronous-model-tests",
     "rule.autonomous.supervisor-delegates", "rule.autonomous.verification-gate",
-    "rule.spec.artifacts", "rule.spec.docs-layout",
+    "rule.spec.routing", "rule.spec.artifacts", "rule.spec.docs-layout",
     "rule.external-triage",
     "rule.secondbrain.index-first", "rule.secondbrain.read-only", "rule.secondbrain.secret-safety", "rule.secondbrain.citations", "rule.secondbrain.hermes-escalation"
   ]

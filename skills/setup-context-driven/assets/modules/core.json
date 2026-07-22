@@ -1,9 +1,9 @@
 {
-  "schemaVersion": "setup-context-driven/module-v2",
+  "schemaVersion": "setup-context-driven/module-v3",
   "id": "core",
-  "version": 2,
-  "kind": "universal",
-  "title": "Universal agent instruction core",
+  "version": 3,
+  "kind": "core",
+  "title": "Universal agent baseline",
   "dependsOn": [],
   "conflictsWith": [],
   "requiredSkills": [
@@ -15,14 +15,65 @@
     "evidence-gate"
   ],
   "skillDispatch": [
-    {"id": "coding-guidelines", "when": "Writing, modifying, refactoring, or reviewing implementation code."},
-    {"id": "testing-boss", "when": "Writing, changing, or reviewing tests and fixtures."},
-    {"id": "tech-writer", "when": "Writing or revising technical documentation and delivery notes."},
-    {"id": "no-workarounds", "when": "Fixing defects, regressions, or verification failures at their root cause."},
-    {"id": "systematic-debugging", "when": "Diagnosing a bug, failing check, or unexpected behavior before proposing a fix."},
-    {"id": "evidence-gate", "when": "Making any completion, readiness, or handoff claim."}
+    {
+      "skill": "coding-guidelines",
+      "triggers": [
+        {
+          "id": "trigger.core.coding-guidelines",
+          "when": "Writing, modifying, refactoring, or reviewing implementation code."
+        }
+      ]
+    },
+    {
+      "skill": "testing-boss",
+      "triggers": [
+        {
+          "id": "trigger.core.testing-boss",
+          "when": "Writing, changing, or reviewing tests and fixtures."
+        }
+      ]
+    },
+    {
+      "skill": "tech-writer",
+      "triggers": [
+        {
+          "id": "trigger.core.tech-writer",
+          "when": "Writing or revising technical documentation and delivery notes."
+        }
+      ]
+    },
+    {
+      "skill": "no-workarounds",
+      "triggers": [
+        {
+          "id": "trigger.core.no-workarounds",
+          "when": "Fixing defects, regressions, or verification failures at their root cause."
+        }
+      ]
+    },
+    {
+      "skill": "systematic-debugging",
+      "triggers": [
+        {
+          "id": "trigger.core.systematic-debugging",
+          "when": "Diagnosing a bug, failing check, or unexpected behavior before proposing a fix."
+        }
+      ]
+    },
+    {
+      "skill": "evidence-gate",
+      "triggers": [
+        {
+          "id": "trigger.core.evidence-gate",
+          "when": "Making any completion, readiness, or handoff claim."
+        }
+      ]
+    }
   ],
-  "requiredDecisions": ["language.generated", "verification.gate"],
+  "requiredDecisions": [
+    "language.generated",
+    "verification.gate"
+  ],
   "rootBlocks": [
     {
       "id": "root.core",
@@ -30,15 +81,25 @@
       "template": "template.root.core",
       "rules": [],
       "references": [
-        {"id": "reference.root.core.agent-instructions", "token": "reference.agent-instructions", "ownership": "setup", "managedId": "guide.agent-instructions"},
-        {"id": "reference.root.core.skill-dispatch", "token": "reference.skill-dispatch", "ownership": "setup", "managedId": "guide.skill-dispatch"}
+        {
+          "id": "reference.root.core.agent-instructions",
+          "token": "reference.agent-instructions",
+          "ownership": "setup",
+          "managedId": "guide.agent-instructions"
+        },
+        {
+          "id": "reference.root.core.skill-dispatch",
+          "token": "reference.skill-dispatch",
+          "ownership": "setup",
+          "managedId": "guide.skill-dispatch"
+        }
       ]
     }
   ],
   "supportingGuides": [
     {
       "id": "guide.agent-instructions",
-      "version": 2,
+      "version": 3,
       "path": "docs/agents/agent-instructions.md",
       "template": "template.guide.agent-instructions",
       "rules": [
@@ -57,24 +118,191 @@
     },
     {
       "id": "guide.skill-dispatch",
-      "version": 1,
+      "version": 2,
       "path": "docs/agents/skill-dispatch.md",
       "template": "template.guide.skill-dispatch",
-      "rules": ["rule.core.skill-dispatch"],
+      "rules": [
+        "rule.core.skill-dispatch"
+      ],
       "references": []
     }
   ],
   "rules": [
-    {"id": "rule.core.compact-root", "version": 2, "coverage": ["coverage.universal-safety"], "guidance": "Keep root agent instructions as short mandatory pointers. Setup owns only marked baseline content; preserve repository-authored bytes outside setup markers and keep project-specific architecture and policy in repository-owned documents."},
-    {"id": "rule.core.root-cause-only", "version": 2, "coverage": ["coverage.universal-safety", "coverage.verification-integrity"], "guidance": "Fix root causes. Do not suppress diagnostics, weaken assertions, swallow errors, add timing hacks, or bypass a required check to produce a passing result."},
-    {"id": "rule.core.evidence-before-complete", "version": 2, "coverage": ["coverage.verification"], "guidance": "Use fresh evidence from the current worktree before claiming work complete, fixed, passing, ready, committed, or delivered. A narrower check supports only the behavior it exercised."},
-    {"id": "rule.core.verification-selected", "version": 1, "coverage": ["coverage.verification"], "guidance": "Run the selected repository Verification before completion claims. Treat every failure as blocking and report the command plus its actionable diagnostic."},
-    {"id": "rule.core.verification-integrity", "version": 1, "coverage": ["coverage.verification-integrity"], "guidance": "Do not edit verification configuration, tests, fixtures, golden files, or generated expectations merely to make a failure disappear. Change them only when the repository contract intentionally changes, and prove the new contract."},
-    {"id": "rule.core.skill-dispatch", "version": 1, "coverage": ["coverage.skill-dispatch"], "guidance": "Activate every matching required skill before governed work. When one skill has distinct active-module triggers, retain and follow each trigger."},
-    {"id": "rule.core.english-guidance", "version": 1, "coverage": ["coverage.language"], "guidance": "Write generated repository guidance, identifiers, headings, and examples in English. Preserve repository-authored language outside setup-owned markers."},
-    {"id": "rule.core.research-authority", "version": 1, "coverage": ["coverage.research"], "guidance": "Search repository files with local code-search tools. For external APIs and libraries, use current authoritative documentation; do not use web research to infer local repository behavior."},
-    {"id": "rule.core.dependency-discipline", "version": 1, "coverage": ["coverage.dependencies"], "guidance": "Use the repository's declared package manager and lockfile workflow. Add or upgrade a dependency only for a named job the existing stack cannot perform, and keep manifest and lockfile changes together."},
-    {"id": "rule.core.git-delivery", "version": 1, "coverage": ["coverage.git-delivery"], "guidance": "Inspect repository status before staging or delivery. Preserve unrelated work, avoid destructive Git operations, and never commit, push, create branches, or open pull requests without explicit authority."},
-    {"id": "rule.core.security-configuration", "version": 1, "coverage": ["coverage.security-configuration"], "guidance": "Never read, print, commit, or generate secrets. Keep credentials and environment-specific values in the repository's existing secure configuration boundary, and do not invent authentication, authorization, database, transport, or deployment policy."}
-  ]
+    {
+      "id": "rule.core.compact-root",
+      "version": 3,
+      "coverage": [
+        "coverage.universal-safety"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.keep-root-compact",
+          "enforcement": "mandatory",
+          "guidance": "Keep root agent instructions as short mandatory pointers. Setup owns only marked baseline content; preserve repository-authored bytes outside setup markers and keep project-specific architecture and policy in repository-owned documents."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.root-cause-only",
+      "version": 3,
+      "coverage": [
+        "coverage.universal-safety",
+        "coverage.verification-integrity"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.fix-root-causes",
+          "enforcement": "mandatory",
+          "guidance": "Fix root causes."
+        },
+        {
+          "id": "clause.core.prohibit-verification-workarounds",
+          "enforcement": "prohibited",
+          "guidance": "Do not suppress diagnostics, weaken assertions, swallow errors, add timing hacks, or bypass a required check to produce a passing result."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.evidence-before-complete",
+      "version": 3,
+      "coverage": [
+        "coverage.verification"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.keep-follow-ups-outside-slice",
+          "enforcement": "mandatory",
+          "guidance": "Keep follow-up work outside the current slice; record it for later instead of expanding the active change."
+        },
+        {
+          "id": "clause.core.record-acceptance-evidence",
+          "enforcement": "mandatory",
+          "guidance": "Record the commands and outcomes that provide fresh evidence for every acceptance criterion."
+        },
+        {
+          "id": "clause.core.require-fresh-evidence",
+          "enforcement": "mandatory",
+          "guidance": "Use fresh evidence from the current worktree before claiming work complete, fixed, passing, ready, committed, or delivered. A narrower check supports only the behavior it exercised."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.verification-selected",
+      "version": 3,
+      "coverage": [
+        "coverage.verification"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.run-selected-verification",
+          "enforcement": "mandatory",
+          "guidance": "Run the selected repository Verification before completion claims. Treat every failure as blocking and report the command plus its actionable diagnostic."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.verification-integrity",
+      "version": 3,
+      "coverage": [
+        "coverage.verification-integrity"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.prohibit-verification-contract-bypass",
+          "enforcement": "prohibited",
+          "guidance": "Do not edit verification configuration, tests, fixtures, golden files, or generated expectations merely to make a failure disappear. Change them only when the repository contract intentionally changes, and prove the new contract."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.skill-dispatch",
+      "version": 3,
+      "coverage": [
+        "coverage.skill-dispatch"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.activate-matching-skills",
+          "enforcement": "mandatory",
+          "guidance": "Activate every matching required skill before governed work. When one skill has distinct active-module triggers, retain and follow each trigger."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.english-guidance",
+      "version": 3,
+      "coverage": [
+        "coverage.language"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.write-generated-guidance-in-english",
+          "enforcement": "mandatory",
+          "guidance": "Write generated repository guidance, identifiers, headings, and examples in English. Preserve repository-authored language outside setup-owned markers."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.research-authority",
+      "version": 3,
+      "coverage": [
+        "coverage.research"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.research-authoritative-external-sources",
+          "enforcement": "mandatory",
+          "guidance": "For external APIs and libraries, use current authoritative documentation."
+        },
+        {
+          "id": "clause.core.research-local-code-locally",
+          "enforcement": "mandatory",
+          "guidance": "Search repository files with local code-search tools; do not use web research to infer local repository behavior."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.dependency-discipline",
+      "version": 3,
+      "coverage": [
+        "coverage.dependencies"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.follow-dependency-workflow",
+          "enforcement": "mandatory",
+          "guidance": "Use the repository's declared package manager and lockfile workflow. Add or upgrade a dependency only for a named job the existing stack cannot perform, and keep manifest and lockfile changes together."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.git-delivery",
+      "version": 3,
+      "coverage": [
+        "coverage.git-delivery"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.preserve-git-scope",
+          "enforcement": "mandatory",
+          "guidance": "Inspect repository status before staging or delivery. Preserve unrelated work, avoid destructive Git operations, and never commit, push, create branches, or open pull requests without explicit authority."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.security-configuration",
+      "version": 3,
+      "coverage": [
+        "coverage.security-configuration"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.prohibit-secret-exposure",
+          "enforcement": "prohibited",
+          "guidance": "Never read, print, commit, or generate secrets. Keep credentials and environment-specific values in the repository's existing secure configuration boundary, and do not invent authentication, authorization, database, transport, or deployment policy."
+        }
+      ]
+    }
+  ],
+  "repositoryExtensions": []
 }

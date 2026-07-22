@@ -5332,11 +5332,18 @@ def computed_render_values(
     artifact: dict,
 ) -> dict[str, str]:
     values: dict[str, str] = {}
-    rule_lines = [
-        f"- {catalog.rule_contracts[rule_id].guidance.strip()}"
-        for rule_id in artifact.get("rules", [])
-        if rule_id in catalog.rule_contracts
-    ]
+    rule_lines: list[str] = []
+    for rule_id in artifact.get("rules", []):
+        rule = catalog.rule_contracts.get(rule_id)
+        if rule is None:
+            continue
+        if rule.clauses:
+            rule_lines.extend(
+                f"- **{clause.enforcement}**: {clause.guidance.strip()}"
+                for clause in rule.clauses
+            )
+        elif rule.guidance.strip():
+            rule_lines.append(f"- {rule.guidance.strip()}")
     if rule_lines:
         values["artifact.rules"] = "\n".join(rule_lines)
 

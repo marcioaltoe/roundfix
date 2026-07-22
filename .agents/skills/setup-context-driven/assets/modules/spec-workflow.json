@@ -1,39 +1,247 @@
 {
-  "schemaVersion": "setup-context-driven/module-v2",
+  "schemaVersion": "setup-context-driven/module-v3",
   "id": "spec-workflow",
-  "version": 2,
+  "version": 3,
   "kind": "workflow",
   "title": "Local Spec workflow",
-  "dependsOn": ["context-workflow"],
-  "conflictsWith": [],
-  "requiredSkills": ["setup-context-driven", "brainstorming", "write-idea", "write-prd", "write-techspec", "write-tasks", "implement-task", "implement-spec", "qa-gate", "archive-spec", "tech-writer"],
-  "skillDispatch": [
-    {"id": "setup-context-driven", "when": "Preparing a repository to use local Specs."},
-    {"id": "brainstorming", "when": "Clarifying a creative Spec direction before authoring requirements."},
-    {"id": "write-idea", "when": "Creating the researched idea artifact for a large initiative."},
-    {"id": "write-prd", "when": "Authoring a Spec's product requirements."},
-    {"id": "write-techspec", "when": "Authoring a Spec's technical design."},
-    {"id": "write-tasks", "when": "Creating the Spec Task Graph and Task files."},
-    {"id": "implement-task", "when": "Implementing one Task file without crossing its slice."},
-    {"id": "implement-spec", "when": "Implementing the complete Task Graph in dependency order."},
-    {"id": "qa-gate", "when": "Producing the final QA verdict for a completed Spec."},
-    {"id": "archive-spec", "when": "Moving a completed, QA-passed Spec into the archive."},
-    {"id": "tech-writer", "when": "Writing or revising any Spec artifact or verification record."}
+  "dependsOn": [
+    "context-workflow"
   ],
-  "requiredDecisions": ["spec.scaffold"],
+  "conflictsWith": [],
+  "requiredSkills": [
+    "setup-context-driven",
+    "brainstorming",
+    "write-idea",
+    "write-prd",
+    "write-techspec",
+    "write-tasks",
+    "implement-task",
+    "implement-spec",
+    "qa-gate",
+    "archive-spec",
+    "tech-writer"
+  ],
+  "skillDispatch": [
+    {
+      "skill": "setup-context-driven",
+      "triggers": [
+        {
+          "id": "trigger.spec-workflow.setup-context-driven",
+          "when": "Preparing a repository to use local Specs."
+        }
+      ]
+    },
+    {
+      "skill": "brainstorming",
+      "triggers": [
+        {
+          "id": "trigger.spec-workflow.brainstorming",
+          "when": "Clarifying a creative Spec direction before authoring requirements."
+        }
+      ]
+    },
+    {
+      "skill": "write-idea",
+      "triggers": [
+        {
+          "id": "trigger.spec-workflow.write-idea",
+          "when": "Creating the researched idea artifact for a large initiative."
+        }
+      ]
+    },
+    {
+      "skill": "write-prd",
+      "triggers": [
+        {
+          "id": "trigger.spec-workflow.write-prd",
+          "when": "Authoring a Spec's product requirements."
+        }
+      ]
+    },
+    {
+      "skill": "write-techspec",
+      "triggers": [
+        {
+          "id": "trigger.spec-workflow.write-techspec",
+          "when": "Authoring a Spec's technical design."
+        }
+      ]
+    },
+    {
+      "skill": "write-tasks",
+      "triggers": [
+        {
+          "id": "trigger.spec-workflow.write-tasks",
+          "when": "Creating the Spec Task Graph and Task files."
+        }
+      ]
+    },
+    {
+      "skill": "implement-task",
+      "triggers": [
+        {
+          "id": "trigger.spec-workflow.implement-task",
+          "when": "Implementing one Task file without crossing its slice."
+        }
+      ]
+    },
+    {
+      "skill": "implement-spec",
+      "triggers": [
+        {
+          "id": "trigger.spec-workflow.implement-spec",
+          "when": "Implementing the complete Task Graph in dependency order."
+        }
+      ]
+    },
+    {
+      "skill": "qa-gate",
+      "triggers": [
+        {
+          "id": "trigger.spec-workflow.qa-gate",
+          "when": "Producing the final QA verdict for a completed Spec."
+        }
+      ]
+    },
+    {
+      "skill": "archive-spec",
+      "triggers": [
+        {
+          "id": "trigger.spec-workflow.archive-spec",
+          "when": "Moving a completed, QA-passed Spec into the archive."
+        }
+      ]
+    },
+    {
+      "skill": "tech-writer",
+      "triggers": [
+        {
+          "id": "trigger.spec-workflow.tech-writer",
+          "when": "Writing or revising any Spec artifact or verification record."
+        }
+      ]
+    }
+  ],
+  "requiredDecisions": [
+    "spec.scaffold"
+  ],
   "rootBlocks": [
-    {"id": "root.spec-workflow", "version": 2, "template": "template.root.spec-workflow", "rules": [], "references": [
-      {"id": "reference.root.spec.routing", "token": "reference.spec-routing", "ownership": "setup", "managedId": "guide.spec-routing"},
-      {"id": "reference.root.spec.tracker", "token": "reference.issue-tracker", "ownership": "setup", "managedId": "guide.issue-tracker"}
-    ]}
+    {
+      "id": "root.spec-workflow",
+      "version": 2,
+      "template": "template.root.spec-workflow",
+      "rules": [],
+      "references": [
+        {
+          "id": "reference.root.spec.routing",
+          "token": "reference.spec-routing",
+          "ownership": "setup",
+          "managedId": "guide.spec-routing"
+        },
+        {
+          "id": "reference.root.spec.tracker",
+          "token": "reference.issue-tracker",
+          "ownership": "setup",
+          "managedId": "guide.issue-tracker"
+        }
+      ]
+    }
   ],
   "supportingGuides": [
-    {"id": "guide.spec-routing", "version": 2, "path": "docs/agents/spec-routing.md", "template": "template.guide.spec-routing", "rules": ["rule.spec.artifacts"], "references": []},
-    {"id": "guide.issue-tracker", "version": 2, "path": "docs/agents/issue-tracker.md", "template": "template.guide.issue-tracker", "rules": ["rule.spec.artifacts"], "references": []},
-    {"id": "guide.spec-docs-layout", "version": 2, "path": "docs/agents/docs-layout.md", "template": "template.guide.spec-docs-layout", "rules": ["rule.spec.docs-layout"], "references": []}
+    {
+      "id": "guide.spec-routing",
+      "version": 3,
+      "path": "docs/agents/spec-routing.md",
+      "template": "template.guide.spec-routing",
+      "rules": [
+        "rule.spec.routing"
+      ],
+      "references": []
+    },
+    {
+      "id": "guide.issue-tracker",
+      "version": 3,
+      "path": "docs/agents/issue-tracker.md",
+      "template": "template.guide.issue-tracker",
+      "rules": [
+        "rule.spec.artifacts"
+      ],
+      "references": []
+    },
+    {
+      "id": "guide.spec-docs-layout",
+      "version": 3,
+      "path": "docs/agents/docs-layout.md",
+      "template": "template.guide.spec-docs-layout",
+      "rules": [
+        "rule.spec.docs-layout"
+      ],
+      "references": []
+    }
   ],
   "rules": [
-    {"id": "rule.spec.artifacts", "version": 2, "coverage": ["coverage.spec-workflow"], "guidance": "Keep each Spec under `docs/specs/<feature-slug>/`. Dependencies live only in `_tasks.md`; status lives only in each Task file. Execute only the assigned Task slice, record fresh evidence in its Result, and never edit another Task file while doing so."},
-    {"id": "rule.spec.docs-layout", "version": 2, "coverage": ["coverage.spec-workflow"], "guidance": "Keep `_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, Task files, and `qa/` evidence under the Spec folder. Archive only completed Specs with a passing QA verdict under `docs/specs/_archived/`."}
-  ]
+    {
+      "id": "rule.spec.routing",
+      "version": 3,
+      "coverage": [
+        "coverage.spec-workflow"
+      ],
+      "clauses": [
+        {
+          "id": "clause.spec.routing-01-large-initiative",
+          "enforcement": "mandatory",
+          "guidance": "Large or fuzzy product initiative: run `write-idea` → `write-prd` → `write-techspec` → `write-tasks`."
+        },
+        {
+          "id": "clause.spec.routing-02-standard-feature",
+          "enforcement": "mandatory",
+          "guidance": "Standard feature that changes product behavior: run `write-prd` → `write-techspec` → `write-tasks`; skip the TechSpec only when the feature has no architectural surface."
+        },
+        {
+          "id": "clause.spec.routing-03-refactor-bugfix",
+          "enforcement": "mandatory",
+          "guidance": "Refactor or bug fix without product-behavior change: run `write-techspec` → `write-tasks` and create the minimal `_prd.md` required by the downstream artifact contract."
+        },
+        {
+          "id": "clause.spec.routing-04-trivial-change",
+          "enforcement": "mandatory",
+          "guidance": "Trivial one-line fix, typo, or configuration tweak: implement directly without a Spec only when intent, acceptance criteria, and Verification are obvious."
+        },
+        {
+          "id": "clause.spec.routing-05-task-graph",
+          "enforcement": "mandatory",
+          "guidance": "Use `brainstorming` before creative or feature work, start with the smaller sufficient route when two routes fit, and execute implementation from the Task Graph."
+        }
+      ]
+    },
+    {
+      "id": "rule.spec.artifacts",
+      "version": 3,
+      "coverage": [
+        "coverage.spec-workflow"
+      ],
+      "clauses": [
+        {
+          "id": "clause.spec.tracker-artifacts",
+          "enforcement": "mandatory",
+          "guidance": "Keep each Spec under `docs/specs/<feature-slug>/`. Dependencies live only in `_tasks.md`; status lives only in each Task file, and the local Task files are the published planning issues."
+        }
+      ]
+    },
+    {
+      "id": "rule.spec.docs-layout",
+      "version": 3,
+      "coverage": [
+        "coverage.spec-workflow"
+      ],
+      "clauses": [
+        {
+          "id": "clause.spec.keep-artifacts-in-spec-folder",
+          "enforcement": "mandatory",
+          "guidance": "Keep `_idea.md`, `_prd.md`, `_techspec.md`, `_tasks.md`, Task files, and `qa/` evidence under the Spec folder. Archive only completed Specs with a passing QA verdict under `docs/specs/_archived/`."
+        }
+      ]
+    }
+  ],
+  "repositoryExtensions": []
 }

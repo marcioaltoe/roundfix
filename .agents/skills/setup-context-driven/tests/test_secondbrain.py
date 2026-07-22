@@ -111,8 +111,9 @@ class SecondbrainSetupTests(unittest.TestCase):
         guide = guide_template.read_text(encoding="utf-8")
         catalog = load_asset_catalog(SKILL_ROOT)
         guidance = "\n".join(
-            catalog.rule_contracts[rule_id].guidance
+            clause.guidance
             for rule_id in catalog.modules["secondbrain"]["supportingGuides"][0]["rules"]
+            for clause in catalog.rule_contracts[rule_id].clauses
         )
 
         self.assertLessEqual(len(root.split()), 45)
@@ -123,6 +124,8 @@ class SecondbrainSetupTests(unittest.TestCase):
         self.assertIn("Do not write to the Secondbrain", guidance)
         self.assertIn("Do not edit raw/", guidance)
         self.assertIn("Do not edit projects/*/mirror/", guidance)
+        self.assertIn('qmd query "<question>" --all --files --min-score 0.3', guidance)
+        self.assertIn("Vortex, Tax, Visio, or Gesttione", guidance)
 
 
 REQUIRED_GUIDE_PHRASES = [

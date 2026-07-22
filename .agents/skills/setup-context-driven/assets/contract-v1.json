@@ -160,6 +160,7 @@
       ],
       "rules": [
         "Every rule contains one or more globally unique clauses with mandatory, prohibited, or stop-and-ask enforcement.",
+        "Every selected clause has exactly one supporting-guide carrier, and no two supporting guides in one module have the same effective clause list.",
         "Every skill dispatch entry owns one or more globally unique stable triggers.",
         "Repository-Owned Extensions use safe repository-relative paths, a scaffold template, a managed root pointer, and a declared decision."
       ]
@@ -232,6 +233,7 @@
     "profile.rule.required.unknown",
     "profile.rule.module.missing",
     "profile.rule.carrier.missing",
+    "profile.rule.carrier.duplicate",
     "profile.rule.binding.missing",
     "profile.rule.required.mismatch",
     "skill.dispatch.id.duplicate",
@@ -247,6 +249,7 @@
     "clause.id.duplicate",
     "clause.enforcement.invalid",
     "clause.field.missing",
+    "guide.clause-list.duplicate",
     "skill.dispatch.trigger.id.duplicate",
     "skill.dispatch.trigger.when.invalid",
     "skill.dispatch.owner.duplicate",

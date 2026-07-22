@@ -127,8 +127,21 @@ class SpecTriageDecisionTests(unittest.TestCase):
             self.assertIn("spec-workflow", manifest["modules"])
             self.assertIn("id=root.spec-workflow", root_content)
             self.assertIn("docs/specs/", docs_layout)
-            self.assertTrue((repo / "docs" / "agents" / "spec-routing.md").is_file())
-            self.assertTrue((repo / "docs" / "agents" / "issue-tracker.md").is_file())
+            spec_routing = (
+                repo / "docs" / "agents" / "spec-routing.md"
+            ).read_text(encoding="utf-8")
+            issue_tracker = (
+                repo / "docs" / "agents" / "issue-tracker.md"
+            ).read_text(encoding="utf-8")
+            for phrase in (
+                "Large or fuzzy product initiative",
+                "Standard feature that changes product behavior",
+                "Refactor or bug fix without product-behavior change",
+                "Trivial one-line fix, typo, or configuration tweak",
+            ):
+                self.assertIn(phrase, spec_routing)
+                self.assertNotIn(phrase, issue_tracker)
+            self.assertIn("Dependencies live only in `_tasks.md`", issue_tracker)
         else:
             self.assertNotIn("spec-workflow", manifest["modules"])
             self.assertNotIn("id=root.spec-workflow", root_content)

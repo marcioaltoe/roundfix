@@ -1,28 +1,116 @@
 {
-  "schemaVersion": "setup-context-driven/module-v2",
+  "schemaVersion": "setup-context-driven/module-v3",
   "id": "autonomous-work",
-  "version": 2,
+  "version": 3,
   "kind": "workflow",
   "title": "Autonomous Supervisor and ACP Runtime model",
-  "dependsOn": ["context-workflow"],
-  "conflictsWith": [],
-  "requiredSkills": ["implement-task", "implement-spec", "evidence-gate"],
-  "skillDispatch": [
-    {"id": "implement-task", "when": "Delegating one autonomous Task to an ACP Runtime."},
-    {"id": "implement-spec", "when": "Delegating a complete autonomous Spec Task Graph."},
-    {"id": "evidence-gate", "when": "Settling an autonomous Task or Run outcome."}
+  "dependsOn": [
+    "context-workflow"
   ],
-  "requiredDecisions": ["autonomous.enabled", "runtime.backend", "runtime.design"],
+  "conflictsWith": [],
+  "requiredSkills": [
+    "implement-task",
+    "implement-spec",
+    "evidence-gate"
+  ],
+  "skillDispatch": [
+    {
+      "skill": "implement-task",
+      "triggers": [
+        {
+          "id": "trigger.autonomous-work.implement-task",
+          "when": "Delegating one autonomous Task to an ACP Runtime."
+        }
+      ]
+    },
+    {
+      "skill": "implement-spec",
+      "triggers": [
+        {
+          "id": "trigger.autonomous-work.implement-spec",
+          "when": "Delegating a complete autonomous Spec Task Graph."
+        }
+      ]
+    },
+    {
+      "skill": "evidence-gate",
+      "triggers": [
+        {
+          "id": "trigger.autonomous-work.evidence-gate",
+          "when": "Settling an autonomous Task or Run outcome."
+        }
+      ]
+    }
+  ],
+  "requiredDecisions": [
+    "autonomous.enabled",
+    "runtime.backend",
+    "runtime.design"
+  ],
   "rootBlocks": [
-    {"id": "root.autonomous-work", "version": 2, "template": "template.root.autonomous-work", "rules": [], "references": [
-      {"id": "reference.root.autonomous-work", "token": "reference.autonomous-work", "ownership": "setup", "managedId": "guide.autonomous-work"}
-    ]}
+    {
+      "id": "root.autonomous-work",
+      "version": 2,
+      "template": "template.root.autonomous-work",
+      "rules": [],
+      "references": [
+        {
+          "id": "reference.root.autonomous-work",
+          "token": "reference.autonomous-work",
+          "ownership": "setup",
+          "managedId": "guide.autonomous-work"
+        }
+      ]
+    }
   ],
   "supportingGuides": [
-    {"id": "guide.autonomous-work", "version": 2, "path": "docs/agents/autonomous-work.md", "template": "template.guide.autonomous-work", "rules": ["rule.autonomous.supervisor-delegates", "rule.autonomous.verification-gate"], "references": []}
+    {
+      "id": "guide.autonomous-work",
+      "version": 3,
+      "path": "docs/agents/autonomous-work.md",
+      "template": "template.guide.autonomous-work",
+      "rules": [
+        "rule.autonomous.supervisor-delegates",
+        "rule.autonomous.verification-gate"
+      ],
+      "references": []
+    }
   ],
   "rules": [
-    {"id": "rule.autonomous.supervisor-delegates", "version": 2, "coverage": ["coverage.autonomous-work"], "guidance": "The Supervisor authors Specs, starts and monitors Runs, and orchestrates outcomes. It delegates implementation code and tests to the selected ACP Runtime for the Task's declared surface."},
-    {"id": "rule.autonomous.verification-gate", "version": 2, "coverage": ["coverage.autonomous-work", "coverage.verification"], "guidance": "The Daemon runs each Task's declared Verification verbatim. A Task can settle `completed` only after that Verification passes; failed diagnostics return to the same Agent Session for the bounded retry policy."}
-  ]
+    {
+      "id": "rule.autonomous.supervisor-delegates",
+      "version": 3,
+      "coverage": [
+        "coverage.autonomous-work"
+      ],
+      "clauses": [
+        {
+          "id": "clause.autonomous.delegate-through-roundfix",
+          "enforcement": "mandatory",
+          "guidance": "The Supervisor authors Specs, starts and monitors Runs, and orchestrates outcomes. Delegate implementation to the selected ACP Runtime through a Roundfix Run."
+        },
+        {
+          "id": "clause.autonomous.supervisor-prohibition",
+          "enforcement": "prohibited",
+          "guidance": "The Supervisor must not write feature code or tests."
+        }
+      ]
+    },
+    {
+      "id": "rule.autonomous.verification-gate",
+      "version": 3,
+      "coverage": [
+        "coverage.autonomous-work",
+        "coverage.verification"
+      ],
+      "clauses": [
+        {
+          "id": "clause.autonomous.daemon-verifies-task",
+          "enforcement": "mandatory",
+          "guidance": "The Daemon runs each Task's declared Verification verbatim. A Task can settle `completed` only after that Verification passes; failed diagnostics return to the same Agent Session for the bounded retry policy."
+        }
+      ]
+    }
+  ],
+  "repositoryExtensions": []
 }
