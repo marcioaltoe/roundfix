@@ -4,7 +4,7 @@
   "entryDecisions": ["language.generated", "verification.gate", "spec.scaffold", "domain.layout", "triage.external", "autonomous.enabled", "secondbrain.enabled"],
   "modules": ["core", "context-workflow", "rust", "cli-surface", "autonomous-work", "spec-workflow", "external-triage", "secondbrain"],
   "requiredRules": [
-    "rule.core.compact-root", "rule.core.root-cause-only", "rule.core.evidence-before-complete", "rule.core.verification-selected", "rule.core.verification-integrity", "rule.core.skill-dispatch", "rule.core.english-guidance", "rule.core.research-authority", "rule.core.dependency-discipline", "rule.core.git-delivery", "rule.core.security-configuration",
+    "rule.core.compact-root", "rule.core.root-cause-only", "rule.core.evidence-before-complete", "rule.core.verification-selected", "rule.core.verification-integrity", "rule.core.skill-dispatch", "rule.core.english-guidance", "rule.core.research-authority", "rule.core.dependency-discipline", "rule.core.git-delivery", "rule.core.decision-authority", "rule.core.security-configuration",
     "rule.context.domain-docs", "rule.context.docs-layout",
     "rule.rust.current-docs", "rule.rust.cargo-gates",
     "rule.cli.output-contract", "rule.cli.non-interactive",

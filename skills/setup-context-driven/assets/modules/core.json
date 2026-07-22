@@ -12,7 +12,9 @@
     "tech-writer",
     "no-workarounds",
     "systematic-debugging",
-    "evidence-gate"
+    "evidence-gate",
+    "conventional-commits",
+    "github-pr-workflow"
   ],
   "skillDispatch": [
     {
@@ -68,6 +70,24 @@
           "when": "Making any completion, readiness, or handoff claim."
         }
       ]
+    },
+    {
+      "skill": "conventional-commits",
+      "triggers": [
+        {
+          "id": "trigger.core.conventional-commits",
+          "when": "Staging changes, writing commit messages, or preparing pull request titles."
+        }
+      ]
+    },
+    {
+      "skill": "github-pr-workflow",
+      "triggers": [
+        {
+          "id": "trigger.core.github-pr-workflow",
+          "when": "Preparing, opening, updating, or handing off a pull request."
+        }
+      ]
     }
   ],
   "requiredDecisions": [
@@ -112,6 +132,7 @@
         "rule.core.research-authority",
         "rule.core.dependency-discipline",
         "rule.core.git-delivery",
+        "rule.core.decision-authority",
         "rule.core.security-configuration"
       ],
       "references": []
@@ -211,6 +232,11 @@
           "id": "clause.core.prohibit-verification-contract-bypass",
           "enforcement": "prohibited",
           "guidance": "Do not edit verification configuration, tests, fixtures, golden files, or generated expectations merely to make a failure disappear. Change them only when the repository contract intentionally changes, and prove the new contract."
+        },
+        {
+          "id": "clause.core.ask-before-verification-configuration-change",
+          "enforcement": "stop-and-ask",
+          "guidance": "Stop and ask for explicit authority before intentionally changing lint, formatter, typecheck, test-runner, architecture, or Verification configuration."
         }
       ]
     },
@@ -225,6 +251,16 @@
           "id": "clause.core.activate-matching-skills",
           "enforcement": "mandatory",
           "guidance": "Activate every matching required skill before governed work. When one skill has distinct active-module triggers, retain and follow each trigger."
+        },
+        {
+          "id": "clause.core.use-conventional-commits",
+          "enforcement": "mandatory",
+          "guidance": "Use the governing `conventional-commits` skill before staging changes, writing commit messages, or preparing pull request titles."
+        },
+        {
+          "id": "clause.core.use-github-pr-workflow",
+          "enforcement": "mandatory",
+          "guidance": "Use the governing `github-pr-workflow` skill before preparing, opening, updating, or handing off a pull request."
         }
       ]
     },
@@ -252,12 +288,22 @@
         {
           "id": "clause.core.research-authoritative-external-sources",
           "enforcement": "mandatory",
-          "guidance": "For external APIs and libraries, use current authoritative documentation."
+          "guidance": "For external APIs and libraries, use current authoritative documentation through the profile's declared documentation skill."
         },
         {
           "id": "clause.core.research-local-code-locally",
           "enforcement": "mandatory",
-          "guidance": "Search repository files with local code-search tools; do not use web research to infer local repository behavior."
+          "guidance": "Search repository files with local code-search tools."
+        },
+        {
+          "id": "clause.core.use-declared-external-research-fallback",
+          "enforcement": "mandatory",
+          "guidance": "When authoritative documentation cannot answer an external question, use the profile's declared external web-research fallback with varied searches and verify conclusions against primary sources."
+        },
+        {
+          "id": "clause.core.prohibit-external-research-for-local-code",
+          "enforcement": "prohibited",
+          "guidance": "Do not use external research tools to discover or infer local repository code or behavior."
         }
       ]
     },
@@ -272,6 +318,11 @@
           "id": "clause.core.follow-dependency-workflow",
           "enforcement": "mandatory",
           "guidance": "Use the repository's declared package manager and lockfile workflow. Add or upgrade a dependency only for a named job the existing stack cannot perform, and keep manifest and lockfile changes together."
+        },
+        {
+          "id": "clause.core.review-new-dependencies",
+          "enforcement": "mandatory",
+          "guidance": "Review every new dependency for necessity, provenance, maintenance, and security before delivery."
         }
       ]
     },
@@ -285,7 +336,31 @@
         {
           "id": "clause.core.preserve-git-scope",
           "enforcement": "mandatory",
-          "guidance": "Inspect repository status before staging or delivery. Preserve unrelated work, avoid destructive Git operations, and never commit, push, create branches, or open pull requests without explicit authority."
+          "guidance": "Inspect repository status before staging or delivery and preserve unrelated work."
+        },
+        {
+          "id": "clause.core.ask-before-destructive-git",
+          "enforcement": "stop-and-ask",
+          "guidance": "Stop and ask for explicit authority before destructive Git operations that discard, overwrite, or remove work."
+        },
+        {
+          "id": "clause.core.ask-before-delivery",
+          "enforcement": "stop-and-ask",
+          "guidance": "Stop and ask for explicit authority before committing, pushing, creating a branch, or opening a pull request when that authority is not already explicit."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.decision-authority",
+      "version": 3,
+      "coverage": [
+        "coverage.universal-safety"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.ask-user-answerable-decisions",
+          "enforcement": "stop-and-ask",
+          "guidance": "Never guess a decision the user can answer cheaply. Ask through the available user-interaction tool, or ask plainly and stop when no such tool exists."
         }
       ]
     },

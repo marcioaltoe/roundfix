@@ -1,11 +1,91 @@
 {
-  "schemaVersion": "setup-context-driven/module-v2", "id": "bun", "version": 2, "kind": "language-runtime", "title": "Bun runtime guidance",
-  "dependsOn": ["typescript"], "conflictsWith": [], "requiredSkills": ["context7"],
-  "skillDispatch": [{"id": "context7", "when": "Changing Bun commands, runtime APIs, package behavior, or configuration."}],
+  "schemaVersion": "setup-context-driven/module-v3",
+  "id": "bun",
+  "version": 3,
+  "kind": "language-runtime",
+  "title": "Bun runtime guidance",
+  "dependsOn": [
+    "typescript"
+  ],
+  "conflictsWith": [],
+  "requiredSkills": [],
+  "skillDispatch": [],
   "requiredDecisions": [],
-  "rootBlocks": [{"id": "root.bun", "version": 2, "template": "template.root.bun", "rules": [], "references": [
-    {"id": "reference.root.bun", "token": "reference.bun", "ownership": "setup", "managedId": "guide.bun"}
-  ]}],
-  "supportingGuides": [{"id": "guide.bun", "version": 1, "path": "docs/agents/typescript-bun.md", "template": "template.guide.bun", "rules": ["rule.bun.package-manager"], "references": []}],
-  "rules": [{"id": "rule.bun.package-manager", "version": 2, "coverage": ["coverage.bun", "coverage.dependencies"], "guidance": "Use Bun-owned commands for dependency installation, scripts, tests, and lockfile updates. Do not substitute another package manager or hand-edit the lockfile."}]
+  "rootBlocks": [
+    {
+      "id": "root.bun",
+      "version": 2,
+      "template": "template.root.bun",
+      "rules": [],
+      "references": [
+        {
+          "id": "reference.root.bun",
+          "token": "reference.bun",
+          "ownership": "setup",
+          "managedId": "guide.bun"
+        }
+      ]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.bun",
+      "version": 2,
+      "path": "docs/agents/typescript-bun.md",
+      "template": "template.guide.bun",
+      "rules": [
+        "rule.bun.package-manager",
+        "rule.bun.warning-free-verification"
+      ],
+      "references": []
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.bun.package-manager",
+      "version": 3,
+      "coverage": [
+        "coverage.bun",
+        "coverage.dependencies"
+      ],
+      "clauses": [
+        {
+          "id": "clause.bun.use-bun-owned-commands",
+          "enforcement": "mandatory",
+          "guidance": "Use Bun-owned commands for dependency installation, scripts, tests, and lockfile updates."
+        },
+        {
+          "id": "clause.bun.verify-dependency-before-add",
+          "enforcement": "mandatory",
+          "guidance": "Verify that a dependency exists and inspect its current version before adding it."
+        },
+        {
+          "id": "clause.bun.add-from-owning-workspace",
+          "enforcement": "mandatory",
+          "guidance": "Run `bun add` from the workspace package that owns the dependency."
+        },
+        {
+          "id": "clause.bun.prohibit-other-package-managers",
+          "enforcement": "prohibited",
+          "guidance": "Do not substitute another package manager or hand-edit the lockfile."
+        }
+      ]
+    },
+    {
+      "id": "rule.bun.warning-free-verification",
+      "version": 1,
+      "coverage": [
+        "coverage.bun",
+        "coverage.verification"
+      ],
+      "clauses": [
+        {
+          "id": "clause.bun.block-warnings-when-profile-treats-them-as-errors",
+          "enforcement": "mandatory",
+          "guidance": "When the selected TypeScript/Bun profile treats warnings as errors, every warning reported by Verification blocks completion."
+        }
+      ]
+    }
+  ],
+  "repositoryExtensions": []
 }

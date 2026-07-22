@@ -100,13 +100,19 @@ class UpgradeContractTests(unittest.TestCase):
                 ):
                     self.assertIn(diagnostic, self._invalid_diagnostics(mutator))
 
-    def test_existing_catalogs_load_without_upgrade_runtime_contracts(self):
+    def test_canonical_catalog_loads_reviewed_ledgers_and_v2_stays_compatible(self):
         canonical = load_asset_catalog(SKILL_ROOT)
         v2 = load_asset_catalog(
             Path(__file__).resolve().parent / "fixtures" / "asset-contracts-v2"
         )
 
-        self.assertEqual(canonical.upgrade_transitions, {})
+        self.assertEqual(
+            set(canonical.upgrade_transitions),
+            {
+                "transition.managed-v2-to-portable-v3",
+                "transition.legacy-typescript-bun-to-portable-v3",
+            },
+        )
         self.assertEqual(canonical.repository_extensions, {})
         self.assertEqual(canonical.formatter_by_profile, {})
         self.assertEqual(v2.upgrade_transitions, {})

@@ -1,19 +1,114 @@
 {
-  "schemaVersion": "setup-context-driven/module-v2", "id": "typescript", "version": 2, "kind": "language-runtime", "title": "TypeScript repository guidance",
-  "dependsOn": ["core"], "conflictsWith": [],
-  "requiredSkills": ["context7", "testing-boss", "systematic-debugging"],
+  "schemaVersion": "setup-context-driven/module-v3",
+  "id": "typescript",
+  "version": 3,
+  "kind": "language-runtime",
+  "title": "TypeScript repository guidance",
+  "dependsOn": [
+    "core"
+  ],
+  "conflictsWith": [],
+  "requiredSkills": [
+    "context7",
+    "exa-web-search"
+  ],
   "skillDispatch": [
-    {"id": "context7", "when": "Using or changing TypeScript libraries, frameworks, runtime APIs, or configuration."},
-    {"id": "testing-boss", "when": "Writing or reviewing TypeScript tests and fixtures."},
-    {"id": "systematic-debugging", "when": "Diagnosing TypeScript failures or unexpected runtime behavior."}
+    {
+      "skill": "context7",
+      "triggers": [
+        {
+          "id": "trigger.typescript.context7",
+          "when": "Using or changing TypeScript libraries, frameworks, runtime APIs, or configuration."
+        }
+      ]
+    },
+    {
+      "skill": "exa-web-search",
+      "triggers": [
+        {
+          "id": "trigger.typescript.exa-web-search",
+          "when": "Researching an external TypeScript or Bun question after authoritative documentation is insufficient."
+        }
+      ]
+    }
   ],
   "requiredDecisions": [],
-  "rootBlocks": [{"id": "root.typescript", "version": 2, "template": "template.root.typescript", "rules": [], "references": [
-    {"id": "reference.root.typescript", "token": "reference.typescript", "ownership": "setup", "managedId": "guide.typescript-bun"}
-  ]}],
-  "supportingGuides": [{"id": "guide.typescript-bun", "version": 2, "path": "docs/agents/typescript-bun.md", "template": "template.guide.typescript-bun", "rules": ["rule.typescript.current-docs", "rule.typescript.behavior-tests"], "references": []}],
+  "rootBlocks": [
+    {
+      "id": "root.typescript",
+      "version": 2,
+      "template": "template.root.typescript",
+      "rules": [],
+      "references": [
+        {
+          "id": "reference.root.typescript",
+          "token": "reference.typescript",
+          "ownership": "setup",
+          "managedId": "guide.typescript-bun"
+        }
+      ]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.typescript-bun",
+      "version": 3,
+      "path": "docs/agents/typescript-bun.md",
+      "template": "template.guide.typescript-bun",
+      "rules": [
+        "rule.typescript.current-docs",
+        "rule.typescript.behavior-tests"
+      ],
+      "references": []
+    }
+  ],
   "rules": [
-    {"id": "rule.typescript.current-docs", "version": 2, "coverage": ["coverage.typescript", "coverage.research", "coverage.dependencies"], "guidance": "Use current authoritative documentation before changing TypeScript library APIs, framework configuration, runtime behavior, or dependencies. Keep type errors visible and preserve the repository's package and lockfile workflow."},
-    {"id": "rule.typescript.behavior-tests", "version": 2, "coverage": ["coverage.typescript", "coverage.verification-integrity"], "guidance": "Test observable behavior and explicit failure modes. Do not make mocks, snapshots of incidental output, private structure, or type assertions the source of correctness."}
-  ]
+    {
+      "id": "rule.typescript.current-docs",
+      "version": 3,
+      "coverage": [
+        "coverage.typescript",
+        "coverage.research",
+        "coverage.dependencies"
+      ],
+      "clauses": [
+        {
+          "id": "clause.typescript.read-current-authoritative-docs",
+          "enforcement": "mandatory",
+          "guidance": "Use current authoritative documentation before changing TypeScript library APIs, framework configuration, runtime behavior, or dependencies."
+        },
+        {
+          "id": "clause.typescript.keep-type-errors-visible",
+          "enforcement": "mandatory",
+          "guidance": "Keep type errors visible and preserve the repository's package and lockfile workflow."
+        }
+      ]
+    },
+    {
+      "id": "rule.typescript.behavior-tests",
+      "version": 3,
+      "coverage": [
+        "coverage.typescript",
+        "coverage.verification-integrity"
+      ],
+      "clauses": [
+        {
+          "id": "clause.typescript.inspect-dependent-interfaces-before-tests",
+          "enforcement": "mandatory",
+          "guidance": "Read the dependent interfaces and their current contracts before writing or changing tests."
+        },
+        {
+          "id": "clause.typescript.test-observable-failure-modes",
+          "enforcement": "mandatory",
+          "guidance": "Test observable behavior and explicit failure modes."
+        },
+        {
+          "id": "clause.typescript.prohibit-incidental-test-oracles",
+          "enforcement": "prohibited",
+          "guidance": "Do not make mocks, snapshots of incidental output, private structure, or type assertions the source of correctness."
+        }
+      ]
+    }
+  ],
+  "repositoryExtensions": []
 }

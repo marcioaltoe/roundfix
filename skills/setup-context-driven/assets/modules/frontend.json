@@ -1,17 +1,82 @@
 {
-  "schemaVersion": "setup-context-driven/module-v2", "id": "frontend", "version": 2, "kind": "application-surface", "title": "Frontend application guidance",
-  "dependsOn": ["typescript"], "conflictsWith": [], "requiredSkills": ["context7", "testing-boss", "systematic-debugging"],
-  "skillDispatch": [
-    {"id": "context7", "when": "Changing frontend framework, component-library, browser, or build-tool APIs."},
-    {"id": "testing-boss", "when": "Writing or reviewing frontend behavior and accessibility tests."},
-    {"id": "systematic-debugging", "when": "Diagnosing frontend rendering, interaction, or browser failures."}
+  "schemaVersion": "setup-context-driven/module-v3",
+  "id": "frontend",
+  "version": 3,
+  "kind": "application-surface",
+  "title": "Frontend application guidance",
+  "dependsOn": [
+    "typescript"
   ],
+  "conflictsWith": [],
+  "requiredSkills": [],
+  "skillDispatch": [],
   "requiredDecisions": [],
-  "rootBlocks": [{"id": "root.frontend", "version": 2, "template": "template.root.frontend", "rules": [], "references": [
-    {"id": "reference.root.frontend", "token": "reference.frontend", "ownership": "setup", "managedId": "guide.frontend"}
-  ]}],
-  "supportingGuides": [{"id": "guide.frontend", "version": 2, "path": "docs/agents/frontend.md", "template": "template.guide.frontend", "rules": ["rule.frontend.user-visible-behavior"], "references": [
-    {"id": "reference.frontend.design-contract", "token": "repository.design-contract", "ownership": "repository", "path": "DESIGN.md"}
-  ]}],
-  "rules": [{"id": "rule.frontend.user-visible-behavior", "version": 2, "coverage": ["coverage.frontend", "coverage.verification-integrity"], "guidance": "Test user-visible roles, labels, text, state changes, loading, error, and empty states. Avoid component internals and incidental CSS structure. Inspect significant local UI changes through the available browser when the target is runnable, and follow the repository-owned design contract."}]
+  "rootBlocks": [
+    {
+      "id": "root.frontend",
+      "version": 2,
+      "template": "template.root.frontend",
+      "rules": [],
+      "references": [
+        {
+          "id": "reference.root.frontend",
+          "token": "reference.frontend",
+          "ownership": "setup",
+          "managedId": "guide.frontend"
+        }
+      ]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.frontend",
+      "version": 3,
+      "path": "docs/agents/frontend.md",
+      "template": "template.guide.frontend",
+      "rules": [
+        "rule.frontend.user-visible-behavior"
+      ],
+      "references": [
+        {
+          "id": "reference.frontend.design-contract",
+          "token": "repository.design-contract",
+          "ownership": "repository",
+          "path": "DESIGN.md"
+        }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.frontend.user-visible-behavior",
+      "version": 3,
+      "coverage": [
+        "coverage.frontend",
+        "coverage.verification-integrity"
+      ],
+      "clauses": [
+        {
+          "id": "clause.frontend.read-design-contract-before-ui-work",
+          "enforcement": "mandatory",
+          "guidance": "Read the repository-owned `DESIGN.md` before writing, modifying, or reviewing UI code, and treat it as the selected design contract."
+        },
+        {
+          "id": "clause.frontend.test-user-visible-behavior",
+          "enforcement": "mandatory",
+          "guidance": "Test user-visible roles, labels, text, state changes, loading, error, and empty states."
+        },
+        {
+          "id": "clause.frontend.prohibit-incidental-ui-assertions",
+          "enforcement": "prohibited",
+          "guidance": "Do not make component internals or incidental CSS structure the source of correctness."
+        },
+        {
+          "id": "clause.frontend.inspect-runnable-ui",
+          "enforcement": "mandatory",
+          "guidance": "Inspect significant local UI changes through the available browser when the target is runnable."
+        }
+      ]
+    }
+  ],
+  "repositoryExtensions": []
 }

@@ -130,6 +130,45 @@ class DecisionRenderingTests(unittest.TestCase):
             for invented_policy in ["authentication policy", "database policy", "transport policy"]:
                 self.assertNotIn(invented_policy, frontend)
 
+    def test_typescript_bun_profile_renders_complete_portable_hard_rules(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir)
+            (repo / "DESIGN.md").write_text("# Design contract\n", encoding="utf-8")
+
+            result = run_apply_for_profile(
+                repo,
+                "typescript-bun-monorepo",
+                decisions_for(autonomous=False),
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            instructions = (repo / "docs" / "agents" / "agent-instructions.md").read_text(
+                encoding="utf-8"
+            )
+            frontend = (repo / "docs" / "agents" / "frontend.md").read_text(
+                encoding="utf-8"
+            )
+            typescript = (repo / "docs" / "agents" / "typescript-bun.md").read_text(
+                encoding="utf-8"
+            )
+            dispatch = (repo / "docs" / "agents" / "skill-dispatch.md").read_text(
+                encoding="utf-8"
+            )
+
+            self.assertIn("warnings as errors", typescript)
+            self.assertIn("explicit authority", instructions)
+            self.assertIn("Read the repository-owned `DESIGN.md`", frontend)
+            self.assertIn("dependent interfaces", typescript)
+            self.assertIn("Never guess a decision", instructions)
+            self.assertIn("external web-research fallback", instructions)
+            self.assertIn("Do not use external research tools", instructions)
+            for skill in (
+                "`conventional-commits`",
+                "`github-pr-workflow`",
+                "`exa-web-search`",
+            ):
+                self.assertIn(skill, dispatch)
+
     def test_unsafe_inline_decision_values_block_apply_without_writes(self):
         cases = [
             ("newline", "cargo test\nmake verify"),
