@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "setup-context-driven/upgrade-transition-v1",
+  "id": "transition.fixture-v1-to-v2",
+  "version": 1,
+  "fromBaseline": "baseline.fixture-v1",
+  "toBaseline": "baseline.fixture-v2",
+  "priorClauses": [
+    {
+      "id": "clause.legacy.project-rules",
+      "enforcement": "mandatory",
+      "carrier": "root.legacy",
+      "guidanceDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    {
+      "id": "clause.legacy.retain-hard-rules",
+      "enforcement": "mandatory",
+      "carrier": "root.legacy",
+      "guidanceDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "mappings": [
+    {
+      "fromClause": "clause.legacy.project-rules",
+      "disposition": "moved",
+      "targets": ["extension.repository-rules"],
+      "reason": "Project-specific hard rules remain repository-owned."
+    },
+    {
+      "fromClause": "clause.legacy.retain-hard-rules",
+      "disposition": "replaced",
+      "targets": ["clause.core.retain-hard-rules"],
+      "reason": "The portable clause now lives in the versioned rule catalog."
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "setup-context-driven/coverage-v2",
+  "version": 2,
+  "coverage": [
+    {
+      "id": "coverage.upgrade-safety",
+      "version": 2,
+      "description": "Portable upgrade safety behavior.",
+      "delegationAliases": ["hard rules", "upgrade safety"]
+    }
+  ]
+}

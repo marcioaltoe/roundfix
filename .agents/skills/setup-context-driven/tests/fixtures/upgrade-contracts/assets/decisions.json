@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "setup-context-driven/decisions-v1",
+  "version": 1,
+  "decisions": [
+    {
+      "id": "repository.extension.enabled",
+      "version": 1,
+      "type": "boolean",
+      "summary": "Create a Repository-Owned Extension.",
+      "effects": [
+        {
+          "when": {"equals": true},
+          "activateModules": ["core"]
+        }
+      ]
+    }
+  ]
+}

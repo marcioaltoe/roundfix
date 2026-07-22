@@ -130,6 +130,75 @@
         "Repository-owned skills remain distinct from external immutable sources.",
         "The snapshot digest covers canonical serialization of complete normalized skill records."
       ]
+    },
+    {
+      "id": "contract.coverage-v2",
+      "version": 2,
+      "path": "assets/coverage.json",
+      "requires": ["id", "version", "description", "delegationAliases"],
+      "rules": [
+        "Delegation aliases are bounded, normalized, unique category phrases.",
+        "Delegation aliases extend coverage identities without inspecting repository content during catalog loading."
+      ]
+    },
+    {
+      "id": "contract.module-v3",
+      "version": 3,
+      "path": "assets/modules/*.json",
+      "requires": [
+        "id",
+        "version",
+        "dependsOn",
+        "conflictsWith",
+        "rootBlocks",
+        "supportingGuides",
+        "rules",
+        "requiredSkills",
+        "skillDispatch",
+        "requiredDecisions",
+        "repositoryExtensions"
+      ],
+      "rules": [
+        "Every rule contains one or more globally unique clauses with mandatory, prohibited, or stop-and-ask enforcement.",
+        "Every skill dispatch entry owns one or more globally unique stable triggers.",
+        "Repository-Owned Extensions use safe repository-relative paths, a scaffold template, a managed root pointer, and a declared decision."
+      ]
+    },
+    {
+      "id": "contract.profile-v3",
+      "version": 3,
+      "path": "assets/profiles/*.json",
+      "requires": [
+        "id",
+        "version",
+        "setup",
+        "entryDecisions",
+        "modules",
+        "requiredRules",
+        "formatter"
+      ],
+      "rules": [
+        "Every profile explicitly selects a pinned formatter contract or declares that no formatter is selected.",
+        "A selected formatter declares safe fixture paths and one lowercase golden-corpus digest."
+      ]
+    },
+    {
+      "id": "contract.upgrade-transition-v1",
+      "version": 1,
+      "path": "assets/retention/*.json",
+      "requires": [
+        "id",
+        "version",
+        "fromBaseline",
+        "toBaseline",
+        "priorClauses",
+        "mappings"
+      ],
+      "rules": [
+        "Every prior clause records its enforcement, carrier, and guidance digest.",
+        "Every prior clause has exactly one retained, moved, replaced, or rejected mapping with a reason.",
+        "Accepted mappings target a current clause with equal enforcement or a declared Repository-Owned Extension; rejected mappings have no target."
+      ]
     }
   ],
   "diagnostics": [
@@ -174,6 +243,26 @@
     "setup.skill.source.path.invalid",
     "setup.skill.treeDigest.invalid",
     "managed.block.id.duplicate",
-    "skills.reference.outside-setup"
+    "skills.reference.outside-setup",
+    "clause.id.duplicate",
+    "clause.enforcement.invalid",
+    "clause.field.missing",
+    "skill.dispatch.trigger.id.duplicate",
+    "skill.dispatch.trigger.when.invalid",
+    "skill.dispatch.owner.duplicate",
+    "coverage.delegationAliases.invalid",
+    "coverage.delegationAliases.duplicate",
+    "extension.path.invalid",
+    "extension.template.unknown",
+    "extension.rootPointer.invalid",
+    "extension.decision.unknown",
+    "profile.formatter.kind.invalid",
+    "profile.formatter.version.invalid",
+    "profile.formatter.fixturePath.invalid",
+    "profile.formatter.goldenDigest.invalid",
+    "transition.mapping.incomplete",
+    "transition.disposition.invalid",
+    "transition.target.unknown",
+    "transition.target.enforcement.mismatch"
   ]
 }

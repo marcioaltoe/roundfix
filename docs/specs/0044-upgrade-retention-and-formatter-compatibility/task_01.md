@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0044-upgrade-retention-and-formatter-compatibility
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -32,27 +32,27 @@ before live modules and planners adopt them.
 
 ## Subtasks
 
-- [ ] Add typed catalog values for every new declarative contract.
-- [ ] Add schema-version routing that preserves supported existing assets.
-- [ ] Add stable validation diagnostics for each new invariant.
-- [ ] Create a valid isolated fixture spanning all new contract shapes.
-- [ ] Add one-field mutation cases for invalid and unsafe shapes.
-- [ ] Synchronize the distributed setup skill copy.
+- [x] Add typed catalog values for every new declarative contract.
+- [x] Add schema-version routing that preserves supported existing assets.
+- [x] Add stable validation diagnostics for each new invariant.
+- [x] Create a valid isolated fixture spanning all new contract shapes.
+- [x] Add one-field mutation cases for invalid and unsafe shapes.
+- [x] Synchronize the distributed setup skill copy.
 
 ## Acceptance Criteria
 
-- [ ] A valid fixture loads the same normalized clause, transition, formatter,
+- [x] A valid fixture loads the same normalized clause, transition, formatter,
       extension, delegation, and dispatch values on repeated reads.
-- [ ] Duplicate clause or trigger IDs and invalid enforcement or disposition
+- [x] Duplicate clause or trigger IDs and invalid enforcement or disposition
       values fail with stable diagnostics.
-- [ ] Unsafe extension paths, malformed formatter metadata, incomplete
+- [x] Unsafe extension paths, malformed formatter metadata, incomplete
       transitions, and invalid delegation aliases fail before repository
       inspection.
-- [ ] Existing canonical profiles and setup snapshots still load without
+- [x] Existing canonical profiles and setup snapshots still load without
       adopting the new runtime behavior prematurely.
-- [ ] Contract loading performs no writes, process execution, or network
+- [x] Contract loading performs no writes, process execution, or network
       access.
-- [ ] Canonical and distributed setup skill trees are byte-identical.
+- [x] Canonical and distributed setup skill trees are byte-identical.
 
 ## Context
 
@@ -76,3 +76,31 @@ before live modules and planners adopt them.
   Approach; Build Order 1.
 - ADR-0046 → declarative setup ownership and stable managed identities.
 - ADR-0047 → declarative Decision Plan inputs.
+
+## Result
+
+Implemented a version-routed, read-only asset boundary for module/profile v3,
+coverage v2, and upgrade-transition v1 documents. The loader now exposes
+frozen clause, transition, formatter, Repository-Owned Extension, delegation,
+and stable dispatch-trigger values in deterministic order while canonical v1
+and v2 profiles retain their existing behavior. An isolated upgrade-contract
+fixture and one-field mutation cases exercise the new shapes without migrating
+bundled profiles.
+
+Verification:
+
+- `rtk env PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_upgrade_contracts.py'`: passed, 6 tests.
+- `rtk make skills-sync-check`: passed; canonical and distributed skill trees match.
+- `rtk make setup-context-check`: passed, 133 tests in each skill tree plus direct catalog loading.
+- `rtk make verify`: passed after allowing access to the existing Go build cache; 1,694 Go tests, 133 tests in each setup skill tree, skill validation, and build passed. The first sandboxed attempt could not read the external Go build cache and produced no test assertion failure.
+
+Acceptance evidence:
+
+- Repeated fixture loads compare equal; clauses, transition mappings, formatter paths, extension paths, delegation aliases, and dispatch triggers are sorted tuples held by frozen dataclasses.
+- Mutation tests assert stable diagnostics for duplicate clause/trigger IDs, invalid enforcement/disposition enums, unsafe extension paths, malformed formatter versions, incomplete mappings, invalid aliases, missing clause fields, unknown targets, and malformed trigger collections.
+- Canonical and existing v2 fixture loads return empty upgrade-transition, extension, and formatter catalogs, proving the new contracts do not activate runtime behavior prematurely.
+- Side-effect guards fail on any `Path.write_text`, `subprocess.run`, or `urllib.request.urlopen` call during catalog loading; fixture bytes remain unchanged.
+- `make skills-sync` regenerated the distributed setup skill, and both the focused byte comparison and `make skills-sync-check` prove parity.
+
+Follow-ups: none for this Task slice. Planner, renderer, manifest migration,
+delegation scanning, and formatter execution remain assigned to later Tasks.
