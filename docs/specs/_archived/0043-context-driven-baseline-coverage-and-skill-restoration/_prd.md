@@ -1,9 +1,12 @@
 ---
 spec: 0043-context-driven-baseline-coverage-and-skill-restoration
-status: active
+status: archived
 created: 2026-07-21
 surfaces: [cli, docs, infra]
+archived: "2026-07-22"
+source_slug: 0043-context-driven-baseline-coverage-and-skill-restoration
 ---
+
 
 # Context-Driven Baseline coverage and Repository Skill Set restoration
 
