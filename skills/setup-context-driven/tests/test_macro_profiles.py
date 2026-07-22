@@ -7,7 +7,6 @@ Boundary OUT: Makefile orchestration and embedded skill synchronization checks.
 """
 
 import json
-import subprocess
 import sys
 import tempfile
 import unittest
@@ -19,7 +18,12 @@ SCRIPT = SKILL_ROOT / "scripts" / "context_setup.py"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from test_apply import BASE_DECISIONS, run_apply, run_audit  # noqa: E402
-from test_audit import install_profile_skills, snapshot_files, write_skill  # noqa: E402
+from test_audit import (  # noqa: E402
+    install_profile_skills,
+    run_audit as run_fixture_audit,
+    snapshot_files,
+    write_skill,
+)
 from test_skills import write_lockfile  # noqa: E402
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
@@ -351,21 +355,7 @@ def prepare_repository_owned_contracts(repo, profile_id):
 
 
 def run_audit_cli(repo, *extra_args):
-    return subprocess.run(
-        [
-            sys.executable,
-            str(SCRIPT),
-            "audit",
-            "--repo",
-            str(repo),
-            "--format",
-            "json",
-            *extra_args,
-        ],
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    return run_fixture_audit(repo, "--format", "json", *extra_args)
 
 
 if __name__ == "__main__":

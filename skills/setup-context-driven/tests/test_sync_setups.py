@@ -1,8 +1,15 @@
+"""Suite: portable setup snapshot synchronization.
+Invariant: external snapshot bytes match immutable Git provenance and repo-owned bytes retain precedence.
+Boundary IN: local Git checkout inspection, complete-tree hashing, and bundled snapshot writes.
+Boundary OUT: installed Repository Skill Set audit and external skill restoration.
+"""
+
 import json
+import os
+import subprocess
 import sys
 import tempfile
 import unittest
-from hashlib import sha256
 from pathlib import Path
 
 
@@ -10,206 +17,294 @@ SKILL_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from context_assets import clone_assets_to  # noqa: E402
+from context_assets import PortableTreeError, clone_assets_to, portable_tree_digest  # noqa: E402
 from context_setup import sync_setup_snapshots  # noqa: E402
 from test_audit import snapshot_files  # noqa: E402
 
 
 class SyncSetupsTests(unittest.TestCase):
-    def test_check_succeeds_when_canonical_snapshots_match(self):
+    def test_portable_tree_digest_covers_complete_tree_and_excludes_dependency_trees(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "nested").mkdir()
+            (root / "nested" / "guide.md").write_text("guide\n", encoding="utf-8")
+            (root / "SKILL.md").write_text("skill\n", encoding="utf-8")
+            baseline = portable_tree_digest(root)
+
+            (root / "nested" / "guide.md").write_text("changed\n", encoding="utf-8")
+            self.assertNotEqual(portable_tree_digest(root), baseline)
+            (root / "nested" / "guide.md").write_text("guide\n", encoding="utf-8")
+            (root / "nested" / "added.md").write_text("added\n", encoding="utf-8")
+            self.assertNotEqual(portable_tree_digest(root), baseline)
+            (root / "nested" / "added.md").unlink()
+            (root / "SKILL.md").unlink()
+            self.assertNotEqual(portable_tree_digest(root), baseline)
+
+            (root / "SKILL.md").write_text("skill\n", encoding="utf-8")
+            (root / "node_modules").mkdir()
+            (root / "node_modules" / "ignored.js").write_text("ignored\n", encoding="utf-8")
+            (root / ".git").mkdir()
+            (root / ".git" / "ignored").write_text("ignored\n", encoding="utf-8")
+            self.assertEqual(portable_tree_digest(root), baseline)
+
+    def test_portable_tree_digest_rejects_links_and_special_files(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            target = root / "target.md"
+            target.write_text("target\n", encoding="utf-8")
+            (root / "link.md").symlink_to(target)
+            with self.assertRaises(PortableTreeError):
+                portable_tree_digest(root)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            target = root / "target.md"
+            target.write_text("target\n", encoding="utf-8")
+            os.link(target, root / "hard-link.md")
+            with self.assertRaises(PortableTreeError):
+                portable_tree_digest(root)
+
+        if hasattr(os, "mkfifo"):
+            with tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                os.mkfifo(root / "named-pipe")
+                with self.assertRaises(PortableTreeError):
+                    portable_tree_digest(root)
+
+    def test_sync_writes_immutable_v2_snapshots_and_is_byte_idempotent(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
             skill_root = temp_root / "skill"
-            source_dir = temp_root / "canonical"
+            checkout = temp_root / "canonical"
             clone_assets_to(SKILL_ROOT, skill_root)
-            copy_setup_sources(source_dir)
-            before = snapshot_files(skill_root)
-
-            result, invalid_input = sync_setup_snapshots(skill_root, source_dir, check=True)
-
-            self.assertFalse(invalid_input)
-            self.assertTrue(result.ok)
-            self.assertEqual(result.findings, [])
-            self.assertEqual(snapshot_files(skill_root), before)
-
-    def test_check_reports_drift_when_canonical_content_differs(self):
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_root = Path(temp_dir)
-            skill_root = temp_root / "skill"
-            source_dir = temp_root / "canonical"
-            clone_assets_to(SKILL_ROOT, skill_root)
-            copy_setup_sources(source_dir)
-            add_source_skill(source_dir / "rust-cli.json", "drift-check")
-
-            result, invalid_input = sync_setup_snapshots(skill_root, source_dir, check=True)
-
-            self.assertFalse(invalid_input)
-            self.assertFalse(result.ok)
-            matches = [finding for finding in result.findings if finding.code == "skills.setup-snapshot.drift"]
-            self.assertEqual(len(matches), 1)
-            self.assertEqual(matches[0].managed_id, "setup.rust-cli")
-
-    def test_sync_updates_snapshots_atomically_and_then_becomes_idempotent(self):
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_root = Path(temp_dir)
-            skill_root = temp_root / "skill"
-            source_dir = temp_root / "canonical"
-            clone_assets_to(SKILL_ROOT, skill_root)
-            copy_setup_sources(source_dir)
-            add_source_skill(source_dir / "rust-cli.json", "drift-update")
+            source_dir, revision = write_git_setup_sources(checkout, skill_root)
 
             updated, invalid_input = sync_setup_snapshots(skill_root, source_dir, check=False)
             after_update = snapshot_files(skill_root)
             repeated, repeated_invalid = sync_setup_snapshots(skill_root, source_dir, check=False)
 
-            self.assertFalse(invalid_input)
-            self.assertEqual(updated.summary["info"], 1)
+            self.assertFalse(invalid_input, updated.findings)
+            self.assertTrue(updated.ok)
             self.assertFalse(repeated_invalid)
             self.assertEqual(repeated.findings, [])
             self.assertEqual(snapshot_files(skill_root), after_update)
-            self.assertEqual(list(skill_root.rglob("*.setup-context.tmp")), [])
-            snapshot = json.loads(
-                (skill_root / "assets" / "setups" / "rust-cli.json").read_text(encoding="utf-8")
+            snapshot = read_snapshot(skill_root, "go-cli")
+            self.assertEqual(snapshot["schemaVersion"], "setup-context-driven/setup-snapshot-v2")
+            self.assertEqual(snapshot["source"]["repository"], "example/skills")
+            external = next(
+                skill for skill in snapshot["skills"] if skill["source"]["type"] == "github"
             )
-            self.assertIn("drift-update", [skill["name"] for skill in snapshot["skills"]])
+            self.assertEqual(external["source"]["ref"], revision)
+            self.assertRegex(external["treeDigest"], r"^[0-9a-f]{64}$")
 
-    def test_text_setup_sources_normalize_comments_and_blank_lines(self):
+    def test_sync_rejects_dirty_or_untracked_source_bytes(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
             skill_root = temp_root / "skill"
-            source_dir = temp_root / "canonical"
+            checkout = temp_root / "canonical"
             clone_assets_to(SKILL_ROOT, skill_root)
-            write_text_setup_sources(source_dir)
-
-            result, invalid_input = sync_setup_snapshots(skill_root, source_dir, check=True)
-
-            self.assertFalse(invalid_input)
-            self.assertTrue(result.ok)
-            self.assertEqual(result.findings, [])
-
-    def test_text_setup_sources_accept_canonical_repository_paths(self):
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_root = Path(temp_dir)
-            skill_root = temp_root / "skill"
-            source_dir = temp_root / "canonical" / "setups"
-            clone_assets_to(SKILL_ROOT, skill_root)
-            write_canonical_repository_setup_sources(source_dir)
-
-            result, invalid_input = sync_setup_snapshots(skill_root, source_dir, check=True)
-
-            self.assertFalse(invalid_input)
-            self.assertFalse(result.ok)
-            self.assertEqual(
-                [finding.managed_id for finding in result.findings],
-                ["setup.go-cli", "setup.rust-cli", "setup.typescript-bun"],
-            )
-
-    def test_json_setup_source_rejects_non_list_skills_without_crashing(self):
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_root = Path(temp_dir)
-            skill_root = temp_root / "skill"
-            source_dir = temp_root / "canonical"
-            clone_assets_to(SKILL_ROOT, skill_root)
-            copy_setup_sources(source_dir)
-            source_path = source_dir / "rust-cli.json"
-            source = json.loads(source_path.read_text(encoding="utf-8"))
-            source["skills"] = None
-            source_path.write_text(json.dumps(source, indent=2) + "\n", encoding="utf-8")
+            source_dir, _ = write_git_setup_sources(checkout, skill_root)
+            (checkout / "untracked.txt").write_text("dirty\n", encoding="utf-8")
 
             result, invalid_input = sync_setup_snapshots(skill_root, source_dir, check=True)
 
             self.assertTrue(invalid_input)
-            matches = [finding for finding in result.findings if finding.code == "skills.setup-snapshot.drift"]
-            self.assertEqual(len(matches), 1)
-            self.assertIn("non-empty skills list", matches[0].message)
+            self.assertFalse(result.ok)
+            self.assertIn("dirty or untracked", result.findings[0].message)
 
-    def test_sync_preserves_canonical_path_and_hashes_skill_file(self):
+    def test_sync_rejects_mutable_ref_and_content_ref_mismatch(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
             skill_root = temp_root / "skill"
-            source_dir = temp_root / "canonical" / "setups"
+            checkout = temp_root / "canonical"
             clone_assets_to(SKILL_ROOT, skill_root)
-            copy_setup_sources(source_dir)
-            source_path = source_dir / "rust-cli.json"
-            source = json.loads(source_path.read_text(encoding="utf-8"))
-            canonical_path = "skills/test/canonical-example"
-            source["skills"].append({"path": canonical_path})
-            source_path.write_text(json.dumps(source, indent=2) + "\n", encoding="utf-8")
-            skill_file = source_dir.parent / canonical_path / "SKILL.md"
-            skill_file.parent.mkdir(parents=True)
-            skill_file.write_text("# Canonical example\n", encoding="utf-8")
-
-            result, invalid_input = sync_setup_snapshots(skill_root, source_dir, check=False)
-
-            self.assertFalse(invalid_input)
-            self.assertTrue(result.ok)
-            snapshot = json.loads(
-                (skill_root / "assets" / "setups" / "rust-cli.json").read_text(
-                    encoding="utf-8"
-                )
+            source_dir, source_revision = write_git_setup_sources(checkout, skill_root)
+            setup = setup_source_json(skill_root, "rust-cli")
+            external = next(
+                skill for skill in setup["skills"] if skill["name"] not in REPO_OWNED_FIXTURE_SKILLS
             )
-            added = next(skill for skill in snapshot["skills"] if skill["name"] == "canonical-example")
-            self.assertEqual(added["path"], canonical_path)
-            self.assertEqual(
-                added["contentDigest"],
-                sha256(skill_file.read_bytes()).hexdigest(),
-            )
+            external["source"] = {
+                "type": "github",
+                "repository": "example/skills",
+                "ref": "main",
+                "path": external["path"],
+            }
+            write_json(source_dir / "rust-cli.json", setup)
+            commit_all(checkout, "mutable ref fixture")
 
-    def test_sync_preserves_existing_predictable_temp_named_user_file(self):
+            mutable, mutable_invalid = sync_setup_snapshots(skill_root, source_dir, check=True)
+
+            self.assertTrue(mutable_invalid)
+            self.assertTrue(any("full immutable commit" in item.message for item in mutable.findings))
+
+            external["source"]["ref"] = source_revision
+            source_skill = checkout / external["path"] / "SKILL.md"
+            source_skill.write_text("changed after declared ref\n", encoding="utf-8")
+            write_json(source_dir / "rust-cli.json", setup)
+            commit_all(checkout, "mismatched ref fixture")
+            mismatched, mismatch_invalid = sync_setup_snapshots(skill_root, source_dir, check=True)
+
+            self.assertTrue(mismatch_invalid)
+            self.assertTrue(any("bytes do not match commit" in item.message for item in mismatched.findings))
+
+    def test_repo_owned_digest_precedes_same_path_external_checkout_content(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_root = Path(temp_dir)
             skill_root = temp_root / "skill"
-            source_dir = temp_root / "canonical"
+            checkout = temp_root / "canonical"
             clone_assets_to(SKILL_ROOT, skill_root)
-            copy_setup_sources(source_dir)
-            add_source_skill(source_dir / "rust-cli.json", "preserve-temp")
-            existing_temp = skill_root / "assets" / "setups" / ".rust-cli.json.setup-context.tmp"
-            existing_temp.write_text("user-owned temp file\n", encoding="utf-8")
+            before = read_snapshot(skill_root, "go-cli")
+            expected = next(
+                skill["contentDigest"]
+                for skill in before["skills"]
+                if skill["name"] == "setup-context-driven"
+            )
+            source_dir, _ = write_git_setup_sources(checkout, skill_root)
+            source_skill = checkout / "skills" / "00-setup" / "setup-context-driven" / "SKILL.md"
+            source_skill.write_text("conflicting external bytes\n", encoding="utf-8")
+            commit_all(checkout, "conflicting repo-owned source")
 
             result, invalid_input = sync_setup_snapshots(skill_root, source_dir, check=False)
 
-            self.assertFalse(invalid_input)
+            self.assertFalse(invalid_input, result.findings)
             self.assertTrue(result.ok)
-            self.assertEqual(existing_temp.read_text(encoding="utf-8"), "user-owned temp file\n")
+            after = read_snapshot(skill_root, "go-cli")
+            repo_owned = next(
+                skill for skill in after["skills"] if skill["name"] == "setup-context-driven"
+            )
+            self.assertEqual(repo_owned["source"], {"type": "repo", "name": "roundfix"})
+            self.assertEqual(repo_owned["contentDigest"], expected)
+
+    def test_sync_rejects_unsafe_source_path_and_symlinked_skill_entry(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            skill_root = temp_root / "skill"
+            checkout = temp_root / "canonical"
+            clone_assets_to(SKILL_ROOT, skill_root)
+            source_dir, _ = write_git_setup_sources(checkout, skill_root)
+            setup = setup_source_json(skill_root, "rust-cli")
+            setup["skills"][0]["path"] = str(checkout / "absolute")
+            write_json(source_dir / "rust-cli.json", setup)
+            commit_all(checkout, "unsafe path fixture")
+
+            unsafe, unsafe_invalid = sync_setup_snapshots(skill_root, source_dir, check=True)
+
+            self.assertTrue(unsafe_invalid)
+            self.assertTrue(any("not portable" in item.message for item in unsafe.findings))
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            skill_root = temp_root / "skill"
+            checkout = temp_root / "canonical"
+            clone_assets_to(SKILL_ROOT, skill_root)
+            source_dir, _ = write_git_setup_sources(checkout, skill_root)
+            external_path = next(
+                Path(skill["path"])
+                for skill in read_snapshot(skill_root, "rust-cli")["skills"]
+                if skill["name"] not in REPO_OWNED_FIXTURE_SKILLS
+            )
+            target = checkout / external_path / "target.md"
+            target.write_text("target\n", encoding="utf-8")
+            (checkout / external_path / "link.md").symlink_to(target)
+            commit_all(checkout, "unsafe symlink fixture")
+
+            result, invalid_input = sync_setup_snapshots(skill_root, source_dir, check=True)
+
+            self.assertTrue(invalid_input)
+            self.assertTrue(any("symbolic link" in item.message for item in result.findings))
 
 
-def copy_setup_sources(source_dir):
+REPO_OWNED_FIXTURE_SKILLS = {
+    "archive-spec",
+    "brainstorming",
+    "business-analyst",
+    "council",
+    "evidence-gate",
+    "implement-spec",
+    "implement-task",
+    "qa-gate",
+    "roundfix",
+    "setup-context-driven",
+    "write-idea",
+    "write-prd",
+    "write-tasks",
+    "write-techspec",
+}
+
+
+def write_git_setup_sources(checkout, skill_root):
+    source_dir = checkout / "setups"
     source_dir.mkdir(parents=True)
-    for source in (SKILL_ROOT / "assets" / "setups").glob("*.json"):
-        (source_dir / source.name).write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
-
-
-def write_text_setup_sources(source_dir):
-    source_dir.mkdir(parents=True)
-    for source in (SKILL_ROOT / "assets" / "setups").glob("*.json"):
-        snapshot = json.loads(source.read_text(encoding="utf-8"))
-        lines = ["# canonical setup", ""]
-        for skill in snapshot["skills"]:
-            lines.append(skill["path"])
-            lines.append("")
-        (source_dir / f"{snapshot['id']}.txt").write_text("\n".join(lines), encoding="utf-8")
-
-
-def write_canonical_repository_setup_sources(source_dir):
-    source_dir.mkdir(parents=True)
-    for source in (SKILL_ROOT / "assets" / "setups").glob("*.json"):
+    paths = set()
+    for source in (skill_root / "assets" / "setups").glob("*.json"):
         snapshot = json.loads(source.read_text(encoding="utf-8"))
         lines = ["# canonical setup"]
-        lines.extend(f"skills/test/{skill['name']}" for skill in snapshot["skills"])
-        (source_dir / f"{snapshot['id']}.txt").write_text("\n".join(lines), encoding="utf-8")
-
-
-def add_source_skill(path, name):
-    snapshot = json.loads(path.read_text(encoding="utf-8"))
-    snapshot["skills"].append(
-        {
-            "name": name,
-            "path": f".agents/skills/{name}/SKILL.md",
-            "source": {"type": "github", "name": "example/skills"},
-            "contentDigest": "1" * 64,
-        }
+        for skill in snapshot["skills"]:
+            lines.append(skill["path"])
+            paths.add(skill["path"])
+        (source_dir / f"{snapshot['id']}.txt").write_text(
+            "\n".join(lines) + "\n",
+            encoding="utf-8",
+        )
+    for path in paths:
+        skill_file = checkout / path / "SKILL.md"
+        skill_file.parent.mkdir(parents=True, exist_ok=True)
+        skill_file.write_text(f"# {Path(path).name}\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q", str(checkout)], check=True)
+    subprocess.run(
+        ["git", "-C", str(checkout), "config", "user.email", "fixture@example.com"],
+        check=True,
     )
-    path.write_text(json.dumps(snapshot, indent=2) + "\n", encoding="utf-8")
+    subprocess.run(
+        ["git", "-C", str(checkout), "config", "user.name", "Fixture"],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(checkout), "config", "commit.gpgsign", "false"],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(checkout), "remote", "add", "origin", "https://github.com/example/skills.git"],
+        check=True,
+    )
+    revision = commit_all(checkout, "fixture source")
+    return source_dir, revision
+
+
+def commit_all(checkout, message):
+    subprocess.run(["git", "-C", str(checkout), "add", "."], check=True)
+    subprocess.run(
+        ["git", "-C", str(checkout), "commit", "-q", "-m", message],
+        check=True,
+    )
+    return subprocess.run(
+        ["git", "-C", str(checkout), "rev-parse", "HEAD"],
+        check=True,
+        text=True,
+        capture_output=True,
+    ).stdout.strip()
+
+
+def setup_source_json(skill_root, setup_id):
+    snapshot = read_snapshot(skill_root, setup_id)
+    return {
+        "skills": [
+            {"name": skill["name"], "path": skill["path"]}
+            for skill in snapshot["skills"]
+        ]
+    }
+
+
+def read_snapshot(skill_root, setup_id):
+    return json.loads(
+        (skill_root / "assets" / "setups" / f"{setup_id}.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+
+def write_json(path, payload):
+    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

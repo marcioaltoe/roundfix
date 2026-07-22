@@ -1,5 +1,4 @@
 import json
-import subprocess
 import sys
 import tempfile
 import unittest
@@ -13,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from test_apply import BASE_DECISIONS, run_apply  # noqa: E402
 from test_audit import (  # noqa: E402
     install_profile_skills,
+    run_context_setup as run_fixture_context_setup,
     snapshot_files,
     write_compliant_repository,
 )
@@ -139,12 +139,7 @@ class SetupWorkflowTests(unittest.TestCase):
 
 
 def run_context_setup(*args):
-    return subprocess.run(
-        [sys.executable, str(SCRIPT), *args],
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    return run_fixture_context_setup(*args)
 
 
 if __name__ == "__main__":

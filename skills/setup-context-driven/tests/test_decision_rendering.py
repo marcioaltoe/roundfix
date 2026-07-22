@@ -1,5 +1,4 @@
 import json
-import subprocess
 import sys
 import tempfile
 import unittest
@@ -13,7 +12,11 @@ sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from context_setup import parse_managed_blocks  # noqa: E402
-from test_audit import install_profile_skills, snapshot_files  # noqa: E402
+from test_audit import (  # noqa: E402
+    install_profile_skills,
+    run_context_setup as run_fixture_context_setup,
+    snapshot_files,
+)
 
 
 class DecisionRenderingTests(unittest.TestCase):
@@ -325,12 +328,7 @@ def digest_for(content):
 
 
 def run_context_setup(*args):
-    return subprocess.run(
-        [sys.executable, str(SCRIPT), *args],
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    return run_fixture_context_setup(*args)
 
 
 if __name__ == "__main__":

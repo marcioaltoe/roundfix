@@ -5,9 +5,12 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import os
 import re
+import stat
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Iterable
 
 
 ASSET_SCHEMA_VERSION = "setup-context-driven/assets-v1"
@@ -45,6 +48,10 @@ class AssetValidationError(Exception):
     def __init__(self, diagnostics: list[str]):
         self.diagnostics = diagnostics
         super().__init__("\n".join(diagnostics))
+
+
+class PortableTreeError(ValueError):
+    """Raised when a skill tree contains an entry that cannot be restored safely."""
 
 
 @dataclass(frozen=True)
@@ -1413,6 +1420,17 @@ def _validate_versioned_setup(
         setup_id,
         diagnostics,
     )
+    if setup.get("version") != 2:
+        diagnostics.append(f"setup.version.invalid: {setup_id}")
+    source_metadata = setup.get("source")
+    if not isinstance(source_metadata, dict):
+        diagnostics.append(f"setup.source.invalid: {setup_id}")
+    else:
+        _validate_github_source(
+            source_metadata,
+            f"setup.source: {setup_id}",
+            diagnostics,
+        )
     skills = _validated_dict_list(
         setup.get("skills"), f"setup.skills.invalid: {setup_id}", diagnostics
     )
@@ -1443,6 +1461,12 @@ def _validate_versioned_setup(
             source_path = source.get("path")
             tree_digest = skill.get("treeDigest")
             valid = True
+            if set(source) != {"type", "repository", "ref", "path"}:
+                diagnostics.append(f"setup.skill.source.fields.invalid: {setup_id}: {name}")
+                valid = False
+            if set(skill) != {"name", "path", "source", "treeDigest"}:
+                diagnostics.append(f"setup.skill.fields.invalid: {setup_id}: {name}")
+                valid = False
             if not isinstance(repository, str) or not _is_github_repository(repository):
                 diagnostics.append(f"setup.skill.source.repository.invalid: {setup_id}: {name}")
                 valid = False
@@ -1488,6 +1512,10 @@ def _validate_versioned_setup(
         if source_type == "repo":
             source_name = source.get("name")
             content_digest = skill.get("contentDigest")
+            if set(source) != {"type", "name"}:
+                diagnostics.append(f"setup.skill.source.fields.invalid: {setup_id}: {name}")
+            if set(skill) != {"name", "path", "source", "contentDigest"}:
+                diagnostics.append(f"setup.skill.fields.invalid: {setup_id}: {name}")
             if not isinstance(source_name, str) or not source_name:
                 diagnostics.append(f"setup.skill.source.repo.invalid: {setup_id}: {name}")
             if not isinstance(content_digest, str) or not LOWERCASE_SHA256.fullmatch(
@@ -1685,6 +1713,8 @@ def _is_unsafe_relative_path(path: str) -> bool:
     candidate = Path(path)
     return (
         not path
+        or candidate.as_posix() == "."
+        or path != candidate.as_posix()
         or candidate.is_absolute()
         or ".." in candidate.parts
         or "\\" in path
@@ -1697,6 +1727,26 @@ def _is_github_repository(repository: str) -> bool:
         return False
     owner, name = repository.split("/", 1)
     return owner not in {".", ".."} and name not in {".", ".."}
+
+
+def _validate_github_source(
+    source: dict,
+    owner: str,
+    diagnostics: list[str],
+) -> None:
+    if set(source) != {"type", "repository", "ref", "path"}:
+        diagnostics.append(f"{owner}.fields.invalid")
+    if source.get("type") != "github":
+        diagnostics.append(f"{owner}.type.invalid")
+    repository = source.get("repository")
+    if not isinstance(repository, str) or not _is_github_repository(repository):
+        diagnostics.append(f"{owner}.repository.invalid")
+    revision = source.get("ref")
+    if not isinstance(revision, str) or not IMMUTABLE_GIT_REF.fullmatch(revision):
+        diagnostics.append(f"{owner}.ref.mutable")
+    source_path = source.get("path")
+    if not isinstance(source_path, str) or _is_unsafe_relative_path(source_path):
+        diagnostics.append(f"{owner}.path.invalid")
 
 
 def _paths_digest(paths: list[str]) -> str:
@@ -1712,3 +1762,72 @@ def _normalized_records_digest(records: list[dict]) -> str:
         ensure_ascii=True,
     )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def setup_records_digest(records: list[dict]) -> str:
+    """Return the canonical digest for complete normalized setup records."""
+
+    return _normalized_records_digest(records)
+
+
+def portable_tree_digest(root: str | Path) -> str:
+    """Hash a complete safe skill tree with portable, unambiguous framing."""
+
+    tree_root = Path(root)
+    try:
+        root_stat = tree_root.lstat()
+    except OSError as error:
+        raise PortableTreeError(f"cannot inspect skill tree {tree_root}: {error}") from error
+    if stat.S_ISLNK(root_stat.st_mode) or not stat.S_ISDIR(root_stat.st_mode):
+        raise PortableTreeError(f"skill tree root is not a regular directory: {tree_root}")
+
+    files: list[tuple[bytes, Path]] = []
+    pending = [tree_root]
+    while pending:
+        directory = pending.pop()
+        try:
+            entries = list(os.scandir(directory))
+        except OSError as error:
+            raise PortableTreeError(f"cannot read skill tree directory {directory}: {error}") from error
+        for entry in entries:
+            path = Path(entry.path)
+            relative = path.relative_to(tree_root)
+            relative_bytes = os.fsencode(relative.as_posix())
+            try:
+                entry_stat = entry.stat(follow_symlinks=False)
+            except OSError as error:
+                raise PortableTreeError(f"cannot inspect skill tree entry {relative.as_posix()}: {error}") from error
+            mode = entry_stat.st_mode
+            if stat.S_ISLNK(mode):
+                raise PortableTreeError(f"skill tree entry is a symbolic link: {relative.as_posix()}")
+            if stat.S_ISDIR(mode):
+                if entry.name not in {".git", "node_modules"}:
+                    pending.append(path)
+                continue
+            if not stat.S_ISREG(mode):
+                raise PortableTreeError(f"skill tree entry is not a regular file: {relative.as_posix()}")
+            if entry_stat.st_nlink != 1:
+                raise PortableTreeError(f"skill tree entry is hard linked: {relative.as_posix()}")
+            files.append((relative_bytes, path))
+
+    framed_files: list[tuple[bytes, bytes]] = []
+    for relative_bytes, path in files:
+        try:
+            content = path.read_bytes()
+        except OSError as error:
+            relative = os.fsdecode(relative_bytes)
+            raise PortableTreeError(f"cannot read skill tree file {relative}: {error}") from error
+        framed_files.append((relative_bytes, content))
+    return portable_file_digest(framed_files)
+
+
+def portable_file_digest(files: Iterable[tuple[bytes, bytes]]) -> str:
+    """Hash relative path/content pairs using the portable tree framing."""
+
+    digest = hashlib.sha256()
+    for relative_bytes, content in sorted(files, key=lambda item: item[0]):
+        digest.update(len(relative_bytes).to_bytes(8, "big"))
+        digest.update(relative_bytes)
+        digest.update(len(content).to_bytes(8, "big"))
+        digest.update(content)
+    return digest.hexdigest()

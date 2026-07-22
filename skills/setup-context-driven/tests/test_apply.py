@@ -1,7 +1,6 @@
 import json
 import io
 import hashlib
-import os
 import subprocess
 import sys
 import tempfile
@@ -19,7 +18,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import context_setup  # noqa: E402
 from context_setup import managed_block, parse_managed_blocks  # noqa: E402
 from context_assets import clone_assets_to, load_asset_catalog, read_json_copy, write_json  # noqa: E402
-from test_audit import install_profile_skills, snapshot_files, write_compliant_repository  # noqa: E402
+from test_audit import (  # noqa: E402
+    install_profile_skills,
+    run_context_setup as run_fixture_context_setup,
+    snapshot_files,
+    write_compliant_repository,
+)
 
 
 BASE_DECISIONS = [
@@ -234,7 +238,12 @@ class ApplyCliTests(unittest.TestCase):
             repo = Path(temp_dir)
             (repo / "AGENTS.md").write_text("custom root\n", encoding="utf-8")
             before = snapshot_files(repo)
-            preview = run_apply_preview(repo, "rust-cli", BASE_DECISIONS)
+            preview = run_apply_in_process(
+                repo,
+                "rust-cli",
+                BASE_DECISIONS,
+                auto_confirm=False,
+            )
             digest = json.loads(preview.stdout)["planDigest"]
             original_replace = context_setup.Path.replace
 
@@ -495,15 +504,7 @@ def run_audit(repo):
 
 
 def run_context_setup(*args):
-    env = os.environ.copy()
-    env["PYTHONDONTWRITEBYTECODE"] = "1"
-    return subprocess.run(
-        [sys.executable, str(SCRIPT), *args],
-        text=True,
-        capture_output=True,
-        check=False,
-        env=env,
-    )
+    return run_fixture_context_setup(*args)
 
 
 def run_context_setup_in_process(*args):

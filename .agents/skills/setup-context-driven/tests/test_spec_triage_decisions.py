@@ -1,5 +1,4 @@
 import json
-import subprocess
 import sys
 import tempfile
 import unittest
@@ -10,7 +9,11 @@ SKILL_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = SKILL_ROOT / "scripts" / "context_setup.py"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from test_audit import install_profile_skills, snapshot_files  # noqa: E402
+from test_audit import (  # noqa: E402
+    install_profile_skills,
+    run_context_setup as run_fixture_context_setup,
+    snapshot_files,
+)
 
 
 class SpecTriageDecisionTests(unittest.TestCase):
@@ -187,12 +190,7 @@ def run_audit(repo):
 
 
 def run_context_setup(*args):
-    return subprocess.run(
-        [sys.executable, str(SCRIPT), *args],
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    return run_fixture_context_setup(*args)
 
 
 if __name__ == "__main__":

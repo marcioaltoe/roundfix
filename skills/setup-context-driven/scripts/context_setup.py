@@ -6,15 +6,28 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
+import subprocess
 import sys
 import tempfile
 from datetime import date
 from dataclasses import asdict, dataclass, is_dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Iterable
 
-from context_assets import AssetCatalog, AssetValidationError, TEMPLATE_TOKEN, load_asset_catalog
+from context_assets import (
+    AssetCatalog,
+    AssetValidationError,
+    ExternalSkillContract,
+    PortableTreeError,
+    TEMPLATE_TOKEN,
+    load_asset_catalog,
+    portable_file_digest,
+    portable_tree_digest,
+    setup_records_digest,
+)
 
 
 AUDIT_SCHEMA_VERSION = "setup-context-driven/audit-v1"
@@ -48,6 +61,26 @@ SECONDBRAIN_REQUIRED_GUIDE_PHRASES = [
     "Hermes",
     "Never read, copy, or expose",
 ]
+IMMUTABLE_GIT_REF = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
+GITHUB_REMOTE = re.compile(
+    r"^(?:https://github\.com/|git@github\.com:|ssh://git@github\.com/)([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+?)(?:\.git)?$"
+)
+REPO_OWNED_SKILLS = {
+    "archive-spec",
+    "brainstorming",
+    "business-analyst",
+    "council",
+    "evidence-gate",
+    "implement-spec",
+    "implement-task",
+    "qa-gate",
+    "roundfix",
+    "setup-context-driven",
+    "write-idea",
+    "write-prd",
+    "write-tasks",
+    "write-techspec",
+}
 
 
 @dataclass(frozen=True)
@@ -58,9 +91,10 @@ class Finding:
     managed_id: str
     message: str
     action: str
+    remediation: dict[str, object] | None = None
 
-    def to_json(self) -> dict[str, str]:
-        return {
+    def to_json(self) -> dict[str, object]:
+        data: dict[str, object] = {
             "code": self.code,
             "severity": self.severity,
             "path": self.path,
@@ -68,6 +102,9 @@ class Finding:
             "message": self.message,
             "action": self.action,
         }
+        if self.remediation is not None:
+            data["remediation"] = self.remediation
+        return data
 
 
 @dataclass(frozen=True)
@@ -212,9 +249,18 @@ class ChangePlan:
 class InstalledSkill:
     name: str
     path: Path
+    root: Path
     locked: bool
     origin: dict
-    content_digest: str
+    content_digest: str | None
+    unsafe_error: str | None = None
+
+
+@dataclass(frozen=True)
+class GitSourceCheckout:
+    root: Path
+    repository: str
+    revision: str
 
 
 @dataclass(frozen=True)
@@ -613,10 +659,20 @@ def validate_installed_skills(
         if isinstance(skill.get("name"), str) and skill["name"]
     ]
     required_names = [skill["name"] for skill in required_skills]
+    external_contracts = {
+        contract.skill_name: contract
+        for contract in catalog.external_sources_by_setup.get(setup_id, ())
+    }
     for skill in required_skills:
         skill_name = skill["name"]
         installed_skill = installed.get(skill_name)
+        external_contract = external_contracts.get(skill_name)
         if installed_skill is None:
+            remediation = (
+                external_skill_remediation(profile_id, external_contract)
+                if external_contract is not None
+                else None
+            )
             findings.append(
                 finding(
                     "skills.required.missing",
@@ -624,16 +680,53 @@ def validate_installed_skills(
                     f".agents/skills/{skill_name}",
                     f"profile.{profile_id}",
                     f"Required skill {skill_name} is not installed.",
-                    f"Install the {setup_id} canonical skill setup or add .agents/skills/{skill_name}/SKILL.md.",
+                    (
+                        "Use remediation.previewArgv to preview exact immutable restoration; audit made no changes."
+                        if remediation is not None
+                        else f"Install the {setup_id} canonical skill setup or add .agents/skills/{skill_name}/SKILL.md."
+                    ),
+                    remediation=remediation,
                 )
             )
+            continue
+        if external_contract is not None:
+            drift_reason = installed_skill.unsafe_error
+            if drift_reason is None:
+                try:
+                    actual_digest = portable_tree_digest(repo / installed_skill.root)
+                except PortableTreeError as error:
+                    drift_reason = str(error)
+                else:
+                    if actual_digest != external_contract.tree_digest:
+                        drift_reason = (
+                            f"complete tree digest {actual_digest} does not match "
+                            f"{external_contract.tree_digest}"
+                        )
+            if drift_reason is not None:
+                findings.append(
+                    finding(
+                        "skills.required.drift",
+                        "error",
+                        installed_skill.root.as_posix(),
+                        skill_name,
+                        f"Required skill {skill_name} differs from the selected immutable snapshot: {drift_reason}.",
+                        "Use remediation.previewArgv to preview exact immutable restoration; audit made no changes.",
+                        remediation=external_skill_remediation(
+                            profile_id,
+                            external_contract,
+                        ),
+                    )
+                )
             continue
         expected_digest = skill.get("contentDigest")
         canonical_skill_file = local_canonical_skill_file(skill_name)
         if (
             canonical_skill_file is not None
             and isinstance(expected_digest, str)
-            and installed_skill.content_digest != expected_digest
+            and (
+                installed_skill.unsafe_error is not None
+                or installed_skill.content_digest != expected_digest
+            )
         ):
             findings.append(
                 finding(
@@ -731,19 +824,94 @@ def discover_installed_skills(
 ) -> dict[str, InstalledSkill]:
     skills_root = repo / ".agents" / "skills"
     installed: dict[str, InstalledSkill] = {}
-    if not skills_root.is_dir():
+    if skills_root.is_symlink() or not skills_root.is_dir():
         return installed
-    for skill_file in sorted(skills_root.glob("*/SKILL.md")):
-        skill_name = skill_file.parent.name
+    for skill_root in sorted(skills_root.iterdir(), key=lambda item: item.name.encode("utf-8")):
+        skill_name = skill_root.name
         lock_entry = lock_entries.get(skill_name)
+        relative_root = skill_root.relative_to(repo)
+        if skill_root.is_symlink() or not skill_root.is_dir():
+            installed[skill_name] = InstalledSkill(
+                name=skill_name,
+                path=relative_root,
+                root=relative_root,
+                locked=lock_entry is not None,
+                origin=lock_entry or {},
+                content_digest=None,
+                unsafe_error="installed skill root is not a regular directory",
+            )
+            continue
+        skill_file = skill_root / "SKILL.md"
+        relative_file = skill_file.relative_to(repo)
+        if skill_file.is_symlink():
+            installed[skill_name] = InstalledSkill(
+                name=skill_name,
+                path=relative_file,
+                root=relative_root,
+                locked=lock_entry is not None,
+                origin=lock_entry or {},
+                content_digest=None,
+                unsafe_error="installed SKILL.md is not a regular file",
+            )
+            continue
+        if not skill_file.exists():
+            continue
+        if not skill_file.is_file():
+            installed[skill_name] = InstalledSkill(
+                name=skill_name,
+                path=relative_file,
+                root=relative_root,
+                locked=lock_entry is not None,
+                origin=lock_entry or {},
+                content_digest=None,
+                unsafe_error="installed SKILL.md is not a regular file",
+            )
+            continue
+        try:
+            content_digest = managed_digest(skill_file.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError) as error:
+            content_digest = None
+            unsafe_error = f"installed SKILL.md cannot be read as UTF-8: {error}"
+        else:
+            unsafe_error = None
         installed[skill_name] = InstalledSkill(
             name=skill_name,
-            path=skill_file.relative_to(repo),
+            path=relative_file,
+            root=relative_root,
             locked=lock_entry is not None,
             origin=lock_entry or {},
-            content_digest=managed_digest(skill_file.read_text(encoding="utf-8")),
+            content_digest=content_digest,
+            unsafe_error=unsafe_error,
         )
     return installed
+
+
+def external_skill_remediation(
+    profile_id: str,
+    contract: ExternalSkillContract,
+) -> dict[str, object]:
+    source = contract.source
+    return {
+        "provider": source.provider,
+        "skill": contract.skill_name,
+        "source": source.repository,
+        "ref": source.revision,
+        "sourcePath": source.source_path.as_posix(),
+        "expectedDigest": contract.tree_digest,
+        "previewArgv": [
+            "python3",
+            ".agents/skills/setup-context-driven/scripts/context_setup.py",
+            "restore-skills",
+            "--repo",
+            ".",
+            "--profile",
+            profile_id,
+            "--skill",
+            contract.skill_name,
+            "--format",
+            "json",
+        ],
+    }
 
 
 def manifest_local_skills(manifest: dict) -> set[str]:
@@ -2713,9 +2881,31 @@ def build_source_setup_snapshot(
     current_snapshot: dict,
 ) -> tuple[dict | None, list[Finding], bool]:
     findings: list[Finding] = []
+    source_dir = source_dir.resolve(strict=False)
     source_doc, source_path, invalid_input = load_source_setup_doc(setup_id, source_dir, findings)
     if invalid_input or source_doc is None or source_path is None:
         return None, findings, invalid_input
+    checkout, checkout_findings = inspect_git_source_checkout(
+        source_dir,
+        source_path,
+        setup_id,
+    )
+    findings.extend(checkout_findings)
+    if checkout is None:
+        return None, findings, True
+    declared_setup_source = source_doc.get("source")
+    if declared_setup_source is not None:
+        source_relative = source_path.relative_to(checkout.root).as_posix()
+        declared_error = validate_declared_external_source(
+            declared_setup_source,
+            checkout,
+            source_relative,
+        )
+        if declared_error is not None:
+            findings.append(
+                setup_snapshot_invalid_finding(source_path, setup_id, declared_error)
+            )
+            return None, findings, True
 
     current_by_path = {
         skill.get("path"): skill
@@ -2748,6 +2938,7 @@ def build_source_setup_snapshot(
             current_by_path=current_by_path,
             current_by_name=current_by_name,
             source_path=source_path,
+            checkout=checkout,
         )
         findings.extend(skill_findings)
         if skill is None:
@@ -2785,22 +2976,20 @@ def build_source_setup_snapshot(
         )
         invalid_input = True
 
-    source_metadata = source_doc.get("source")
-    if not isinstance(source_metadata, dict):
-        source_metadata = current_snapshot.get("source")
-    if not isinstance(source_metadata, dict):
-        source_metadata = {
-            "name": setup_id,
-            "type": "canonical-skill-setup",
-            "revision": "unknown",
-        }
+    source_relative = source_path.relative_to(checkout.root).as_posix()
+    source_metadata = {
+        "type": "github",
+        "repository": checkout.repository,
+        "ref": checkout.revision,
+        "path": source_relative,
+    }
 
     snapshot = {
-        "schemaVersion": "setup-context-driven/setup-snapshot-v1",
+        "schemaVersion": "setup-context-driven/setup-snapshot-v2",
         "id": setup_id,
-        "version": current_snapshot.get("version", 1),
+        "version": 2,
         "source": source_metadata,
-        "digest": setup_paths_digest([skill["path"] for skill in skills]),
+        "digest": setup_records_digest(skills),
         "skills": skills,
     }
     return snapshot, findings, invalid_input
@@ -2861,6 +3050,7 @@ def normalize_source_skill(
     current_by_path: dict[str, dict],
     current_by_name: dict[str, dict],
     source_path: Path,
+    checkout: GitSourceCheckout,
 ) -> tuple[dict | None, list[Finding]]:
     findings: list[Finding] = []
     if isinstance(raw_skill, str):
@@ -2902,24 +3092,108 @@ def normalize_source_skill(
     if not isinstance(name, str) or not name.strip():
         name = infer_skill_name(normalized_path)
     current_skill = current_by_path.get(normalized_path) or current_by_name.get(str(name), {})
-    source = raw_data.get("source")
-    if not isinstance(source, dict):
-        source = lock_style_source(raw_data)
-    if not source and isinstance(current_skill.get("source"), dict):
-        source = current_skill["source"]
-    digest = raw_data.get("contentDigest") or raw_data.get("computedHash")
-    if not isinstance(digest, str) or not digest:
-        source_skill_path = resolve_canonical_skill_file(source_dir, raw_path)
-        if source_skill_path is not None and source_skill_path.is_file():
-            digest = managed_digest(source_skill_path.read_text(encoding="utf-8"))
-        elif isinstance(current_skill.get("contentDigest"), str):
-            digest = current_skill["contentDigest"]
-    if not isinstance(digest, str) or not digest:
+    current_source = current_skill.get("source")
+    repo_owned = str(name).strip() in REPO_OWNED_SKILLS or (
+        isinstance(current_source, dict) and current_source.get("type") == "repo"
+    )
+    if repo_owned:
+        digest = current_skill.get("contentDigest")
+        if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+            digest = raw_data.get("contentDigest")
+        if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+            findings.append(
+                setup_snapshot_invalid_finding(
+                    source_path,
+                    str(name),
+                    f"Repository-owned skill {name} is missing a valid content digest.",
+                )
+            )
+            return None, findings
+        return {
+            "name": str(name).strip(),
+            "path": normalized_path,
+            "source": {"type": "repo", "name": "roundfix"},
+            "contentDigest": digest,
+        }, findings
+
+    declared_source = raw_data.get("source")
+    effective_revision = checkout.revision
+    if declared_source is not None:
+        declared_error = validate_declared_external_source(
+            declared_source,
+            checkout,
+            normalized_path,
+        )
+        if declared_error is not None:
+            findings.append(
+                setup_snapshot_invalid_finding(source_path, str(name), declared_error)
+            )
+            return None, findings
+        effective_revision = declared_source["ref"]
+
+    source_skill_path = resolve_canonical_skill_tree(source_dir, raw_path)
+    if source_skill_path is None or not source_skill_path.exists():
         findings.append(
             setup_snapshot_invalid_finding(
                 source_path,
                 str(name),
-                f"Canonical setup skill {name} is missing a content digest.",
+                f"Canonical setup skill {name} source directory is missing.",
+            )
+        )
+        return None, findings
+    try:
+        source_relative = source_skill_path.relative_to(checkout.root)
+    except ValueError:
+        findings.append(
+            setup_snapshot_invalid_finding(
+                source_path,
+                str(name),
+                f"Canonical setup skill {name} source directory escapes the Git checkout.",
+            )
+        )
+        return None, findings
+    if source_relative.as_posix() != normalized_path:
+        findings.append(
+            setup_snapshot_invalid_finding(
+                source_path,
+                str(name),
+                f"Canonical setup skill {name} source path does not match {normalized_path}.",
+            )
+        )
+        return None, findings
+
+    try:
+        tree_digest = portable_tree_digest(source_skill_path)
+        committed_digest = committed_skill_tree_digest(
+            checkout.root.as_posix(),
+            effective_revision,
+            normalized_path,
+        )
+    except (PortableTreeError, OSError, ValueError) as error:
+        findings.append(
+            setup_snapshot_invalid_finding(
+                source_path,
+                str(name),
+                f"Canonical setup skill {name} cannot be proven: {error}.",
+            )
+        )
+        return None, findings
+    if tree_digest != committed_digest:
+        findings.append(
+            setup_snapshot_invalid_finding(
+                source_path,
+                str(name),
+                f"Canonical setup skill {name} bytes do not match commit {effective_revision}.",
+            )
+        )
+        return None, findings
+    declared_digest = raw_data.get("treeDigest")
+    if declared_digest is not None and declared_digest != tree_digest:
+        findings.append(
+            setup_snapshot_invalid_finding(
+                source_path,
+                str(name),
+                f"Canonical setup skill {name} tree digest does not match its source bytes.",
             )
         )
         return None, findings
@@ -2927,8 +3201,13 @@ def normalize_source_skill(
     return {
         "name": str(name).strip(),
         "path": normalized_path,
-        "source": source,
-        "contentDigest": digest,
+        "source": {
+            "type": "github",
+            "repository": checkout.repository,
+            "ref": effective_revision,
+            "path": normalized_path,
+        },
+        "treeDigest": tree_digest,
     }, findings
 
 
@@ -2937,7 +3216,12 @@ def normalize_skill_path(raw_path: str) -> str | None:
     if not value:
         return None
     candidate = Path(value)
-    if candidate.is_absolute() or ".." in candidate.parts:
+    if (
+        candidate.is_absolute()
+        or ".." in candidate.parts
+        or candidate.as_posix() == "."
+        or ("/" in value and candidate.as_posix() != value)
+    ):
         return None
     if "/" not in value:
         return f".agents/skills/{value}/SKILL.md"
@@ -2956,6 +3240,213 @@ def resolve_canonical_skill_file(source_dir: Path, raw_path: str) -> Path | None
     if source_path.is_dir():
         return source_path / "SKILL.md"
     return source_path
+
+
+def resolve_canonical_skill_tree(source_dir: Path, raw_path: str) -> Path | None:
+    source_path = resolve_canonical_skill_file(source_dir, raw_path)
+    if source_path is None:
+        return None
+    if source_path.name == "SKILL.md":
+        return source_path.parent
+    return source_path
+
+
+def inspect_git_source_checkout(
+    source_dir: Path,
+    source_path: Path,
+    setup_id: str,
+) -> tuple[GitSourceCheckout | None, list[Finding]]:
+    findings: list[Finding] = []
+    try:
+        root_output = run_git(source_dir, "rev-parse", "--show-toplevel")
+        root = Path(root_output.decode("utf-8").strip()).resolve(strict=False)
+        revision = run_git(root, "rev-parse", "--verify", "HEAD^{commit}").decode(
+            "ascii"
+        ).strip()
+        status = run_git(root, "status", "--porcelain=v1", "--untracked-files=all")
+        remote = run_git(root, "remote", "get-url", "origin").decode("utf-8").strip()
+    except (OSError, UnicodeDecodeError, subprocess.CalledProcessError) as error:
+        findings.append(
+            setup_snapshot_invalid_finding(
+                source_path,
+                setup_id,
+                f"Canonical setup source is not a readable Git checkout: {git_error_message(error)}.",
+            )
+        )
+        return None, findings
+
+    if not IMMUTABLE_GIT_REF.fullmatch(revision):
+        findings.append(
+            setup_snapshot_invalid_finding(
+                source_path,
+                setup_id,
+                "Canonical setup source did not resolve to a full immutable commit.",
+            )
+        )
+    if status:
+        findings.append(
+            setup_snapshot_invalid_finding(
+                source_path,
+                setup_id,
+                "Canonical setup Git checkout contains dirty or untracked source bytes.",
+            )
+        )
+    repository = github_repository_from_remote(remote)
+    if repository is None:
+        findings.append(
+            setup_snapshot_invalid_finding(
+                source_path,
+                setup_id,
+                "Canonical setup Git origin is not a portable GitHub repository identity.",
+            )
+        )
+    try:
+        relative_source = source_path.relative_to(root).as_posix()
+    except ValueError:
+        relative_source = ""
+    if not relative_source or safe_relative_path(relative_source) is None:
+        findings.append(
+            setup_snapshot_invalid_finding(
+                source_path,
+                setup_id,
+                "Canonical setup source file is outside the Git checkout.",
+            )
+        )
+    else:
+        try:
+            committed_source = run_git(root, "show", f"{revision}:{relative_source}")
+            if committed_source != source_path.read_bytes():
+                findings.append(
+                    setup_snapshot_invalid_finding(
+                        source_path,
+                        setup_id,
+                        "Canonical setup source file bytes do not match the declared commit.",
+                    )
+                )
+        except (OSError, subprocess.CalledProcessError) as error:
+            findings.append(
+                setup_snapshot_invalid_finding(
+                    source_path,
+                    setup_id,
+                    f"Canonical setup source file is not committed: {git_error_message(error)}.",
+                )
+            )
+    if findings or repository is None:
+        return None, findings
+    return GitSourceCheckout(root=root, repository=repository, revision=revision), findings
+
+
+def run_git(directory: Path, *args: str) -> bytes:
+    environment = os.environ.copy()
+    environment["GIT_TERMINAL_PROMPT"] = "0"
+    result = subprocess.run(
+        ["git", "-C", str(directory), *args],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+        env=environment,
+    )
+    if result.returncode != 0:
+        raise subprocess.CalledProcessError(
+            result.returncode,
+            result.args,
+            output=result.stdout,
+            stderr=result.stderr,
+        )
+    return result.stdout
+
+
+def git_error_message(error: BaseException) -> str:
+    if isinstance(error, subprocess.CalledProcessError):
+        stderr = error.stderr.decode("utf-8", errors="replace").strip()
+        if stderr:
+            return stderr
+    return str(error)
+
+
+def github_repository_from_remote(remote: str) -> str | None:
+    match = GITHUB_REMOTE.fullmatch(remote)
+    if match is None:
+        return None
+    return match.group(1)
+
+
+def validate_declared_external_source(
+    raw_source: object,
+    checkout: GitSourceCheckout,
+    source_path: str,
+) -> str | None:
+    if not isinstance(raw_source, dict) or not raw_source:
+        return "Canonical setup skill has empty external provenance."
+    if set(raw_source) != {"type", "repository", "ref", "path"}:
+        return "Canonical setup skill provenance fields are incomplete or machine-local."
+    if raw_source.get("type") != "github":
+        return "Canonical setup skill provider must be github."
+    if raw_source.get("repository") != checkout.repository:
+        return "Canonical setup skill repository does not match the Git origin."
+    revision = raw_source.get("ref")
+    if not isinstance(revision, str) or not IMMUTABLE_GIT_REF.fullmatch(revision):
+        return "Canonical setup skill ref must be a full immutable commit."
+    try:
+        resolved = run_git(
+            checkout.root,
+            "rev-parse",
+            "--verify",
+            f"{revision}^{{commit}}",
+        ).decode("ascii").strip()
+    except (OSError, UnicodeDecodeError, subprocess.CalledProcessError):
+        return "Canonical setup skill ref is not available in the Git checkout."
+    if resolved != revision:
+        return "Canonical setup skill ref did not resolve to the declared full commit."
+    declared_path = raw_source.get("path")
+    if not isinstance(declared_path, str) or safe_relative_path(declared_path) is None:
+        return "Canonical setup skill source path is not portable."
+    if declared_path != source_path:
+        return "Canonical setup skill source path does not match its setup path."
+    return None
+
+
+@lru_cache(maxsize=None)
+def committed_skill_tree_digest(
+    checkout_root: str,
+    revision: str,
+    source_path: str,
+) -> str:
+    root = Path(checkout_root)
+    output = run_git(
+        root,
+        "ls-tree",
+        "-r",
+        "-z",
+        "--full-tree",
+        revision,
+        "--",
+        source_path,
+    )
+    records: list[tuple[bytes, bytes]] = []
+    prefix = source_path.encode("utf-8") + b"/"
+    for raw_entry in output.split(b"\0"):
+        if not raw_entry:
+            continue
+        header, path_bytes = raw_entry.split(b"\t", 1)
+        mode, object_type, object_id = header.split(b" ", 2)
+        if not path_bytes.startswith(prefix):
+            raise ValueError(f"Git tree entry escapes source path {source_path}")
+        relative = path_bytes[len(prefix) :]
+        if any(
+            part in {b".git", b"node_modules"}
+            for part in relative.split(b"/")[:-1]
+        ):
+            continue
+        if object_type != b"blob" or mode not in {b"100644", b"100755"}:
+            raise ValueError(
+                f"Git tree entry is not a regular file: {os.fsdecode(relative)}"
+            )
+        content = run_git(root, "cat-file", "blob", object_id.decode("ascii"))
+        records.append((relative, content))
+    if not records:
+        raise ValueError(f"Git commit has no regular files under {source_path}")
+    return portable_file_digest(records)
 
 
 def infer_skill_name(path: str) -> str:
@@ -3889,6 +4380,7 @@ def finding(
     managed_id: str,
     message: str,
     action: str,
+    remediation: dict[str, object] | None = None,
 ) -> Finding:
     return Finding(
         code=code,
@@ -3897,6 +4389,7 @@ def finding(
         managed_id=managed_id,
         message=message,
         action=action,
+        remediation=remediation,
     )
 
 

@@ -1,6 +1,12 @@
+"""Suite: installed Repository Skill Set audit.
+Invariant: every required external directory matches its immutable snapshot without audit side effects.
+Boundary IN: local installed skill trees, bundled setup snapshots, findings, and remediation JSON.
+Boundary OUT: Git acquisition, network access, lock generation, and restoration writes.
+"""
+
 import copy
 import json
-import subprocess
+import os
 import sys
 import tempfile
 import unittest
@@ -8,7 +14,6 @@ from pathlib import Path
 
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = SKILL_ROOT / "scripts" / "context_setup.py"
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -16,6 +21,7 @@ from context_assets import load_asset_catalog  # noqa: E402
 from context_setup import validate_profile_skill_references  # noqa: E402
 from test_audit import (  # noqa: E402
     install_profile_skills,
+    run_audit,
     snapshot_files,
     write_compliant_repository,
     write_skill,
@@ -35,7 +41,19 @@ class SkillAuditTests(unittest.TestCase):
             finding = self.finding(result, "skills.required.missing")
             self.assertEqual(finding["severity"], "error")
             self.assertEqual(finding["path"], ".agents/skills/agentic-cli-design")
-            self.assertIn("Install the rust-cli canonical skill setup", finding["action"])
+            self.assertEqual(
+                set(finding["remediation"]),
+                {"provider", "skill", "source", "ref", "sourcePath", "expectedDigest", "previewArgv"},
+            )
+            self.assertEqual(finding["remediation"]["provider"], "github")
+            self.assertEqual(finding["remediation"]["skill"], "agentic-cli-design")
+            self.assertEqual(finding["remediation"]["source"], "marcioaltoe/skills")
+            self.assertRegex(finding["remediation"]["ref"], r"^[0-9a-f]{40}$")
+            self.assertEqual(
+                finding["remediation"]["sourcePath"],
+                "skills/03-engineering-design/agentic-cli-design",
+            )
+            self.assertIn("restore-skills", finding["remediation"]["previewArgv"])
 
     def test_required_skill_digest_drift_blocks_compliance(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -49,7 +67,78 @@ class SkillAuditTests(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             finding = self.finding(result, "skills.required.drift")
             self.assertEqual(finding["severity"], "error")
-            self.assertEqual(finding["path"], ".agents/skills/agentic-cli-design/SKILL.md")
+            self.assertEqual(finding["path"], ".agents/skills/agentic-cli-design")
+            self.assertRegex(finding["remediation"]["expectedDigest"], r"^[0-9a-f]{64}$")
+
+    def test_nested_edit_addition_and_removal_each_report_external_skill_drift(self):
+        mutations = {
+            "edit": lambda root: (root / "references" / "guide.md").write_text(
+                "changed\n", encoding="utf-8"
+            ),
+            "addition": lambda root: (root / "references" / "added.md").write_text(
+                "added\n", encoding="utf-8"
+            ),
+            "removal": lambda root: (root / "references" / "guide.md").unlink(),
+        }
+        for name, mutate in mutations.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as temp_dir:
+                repo = Path(temp_dir)
+                write_compliant_repository(repo, "go-cli-tui")
+                skill_root = repo / ".agents" / "skills" / "domain-modeling"
+                mutate(skill_root)
+
+                result = run_audit(repo, "--format", "json")
+
+                self.assertEqual(result.returncode, 1)
+                finding = self.finding(result, "skills.required.drift")
+                self.assertEqual(finding["managedId"], "domain-modeling")
+
+    def test_links_and_special_files_report_external_skill_drift(self):
+        for entry_kind in ("symlink", "hardlink", "fifo"):
+            if entry_kind == "fifo" and not hasattr(os, "mkfifo"):
+                continue
+            with self.subTest(entry_kind=entry_kind), tempfile.TemporaryDirectory() as temp_dir:
+                repo = Path(temp_dir)
+                write_compliant_repository(repo, "go-cli-tui")
+                skill_root = repo / ".agents" / "skills" / "domain-modeling"
+                target = skill_root / "SKILL.md"
+                unsafe = skill_root / f"unsafe-{entry_kind}"
+                if entry_kind == "symlink":
+                    unsafe.symlink_to(target)
+                elif entry_kind == "hardlink":
+                    os.link(target, unsafe)
+                else:
+                    os.mkfifo(unsafe)
+
+                result = run_audit(repo, "--format", "json")
+
+                self.assertEqual(result.returncode, 1)
+                finding = self.finding(result, "skills.required.drift")
+                self.assertEqual(finding["managedId"], "domain-modeling")
+
+    def test_audit_does_not_invoke_git_or_mutate_repository_state(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            repo = root / "repo"
+            bin_dir = root / "bin"
+            marker = root / "git-invoked"
+            write_compliant_repository(repo, "go-cli-tui")
+            bin_dir.mkdir()
+            git_shim = bin_dir / "git"
+            git_shim.write_text(f"#!/bin/sh\ntouch '{marker}'\nexit 99\n", encoding="utf-8")
+            git_shim.chmod(0o755)
+            before = snapshot_files(repo)
+
+            result = run_audit(
+                repo,
+                "--format",
+                "json",
+                extra_env={"PATH": str(bin_dir)},
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse(marker.exists())
+            self.assertEqual(snapshot_files(repo), before)
 
     def test_extra_locked_skills_are_informational_only_when_requested(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -140,6 +229,17 @@ class SkillAuditTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(json.loads(result.stdout)["findings"], [])
 
+    def test_external_lock_hash_is_not_setup_content_authority(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir)
+            write_compliant_repository(repo, "go-cli-tui")
+            write_lockfile(repo, ["domain-modeling"])
+
+            result = run_audit(repo, "--format", "json")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(json.loads(result.stdout)["findings"], [])
+
     def finding(self, result, code):
         payload = json.loads(result.stdout)
         matches = [finding for finding in payload["findings"] if finding["code"] == code]
@@ -171,15 +271,6 @@ def write_lockfile(repo, skill_names):
     (repo / "skills-lock.json").write_text(
         json.dumps(payload, indent=2) + "\n",
         encoding="utf-8",
-    )
-
-
-def run_audit(repo, *args):
-    return subprocess.run(
-        [sys.executable, str(SCRIPT), "audit", "--repo", str(repo), *args],
-        text=True,
-        capture_output=True,
-        check=False,
     )
 
 

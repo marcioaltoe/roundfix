@@ -3,9 +3,10 @@
   "id": "fixture",
   "version": 2,
   "source": {
-    "name": "fixture",
-    "type": "contract-fixture",
-    "revision": "v2"
+    "type": "github",
+    "repository": "example/skills",
+    "ref": "0123456789abcdef0123456789abcdef01234567",
+    "path": "setups/fixture.txt"
   },
   "digest": "c0a2bb929bd82f83ead9eb30e2833c204046074fcc83db8ea642a92f58d283da",
   "skills": [

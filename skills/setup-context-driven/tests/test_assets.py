@@ -64,8 +64,11 @@ class AssetContractTests(unittest.TestCase):
             ("missing reference ownership", self._missing_reference_ownership, "reference.ownership.unknown"),
             ("absolute repository path", self._absolute_repository_reference, "reference.repository.path.invalid"),
             ("mutable external ref", self._mutable_external_ref, "setup.skill.source.ref.mutable"),
+            ("mutable setup ref", self._mutable_setup_ref, "setup.source: fixture.ref.mutable"),
             ("unsafe source path", self._unsafe_external_source_path, "setup.skill.source.path.invalid"),
+            ("machine-local setup source", self._machine_local_setup_source, "setup.source: fixture.fields.invalid"),
             ("malformed tree digest", self._malformed_tree_digest, "setup.skill.treeDigest.invalid"),
+            ("record provenance changes digest", self._change_external_repository, "setup.digest.mismatch"),
             ("missing rule guidance", self._missing_rule_guidance, "rule.guidance.invalid"),
             ("invalid external source shape", self._invalid_external_source_shape, "setup.skill.source.invalid"),
         ]
@@ -105,6 +108,22 @@ class AssetContractTests(unittest.TestCase):
         embedded = load_asset_catalog(REPO_ROOT / "skills" / "setup-context-driven")
 
         self.assertEqual(canonical.ordered_modules_by_profile, embedded.ordered_modules_by_profile)
+
+    def test_every_bundled_external_skill_has_portable_immutable_provenance(self):
+        catalog = load_asset_catalog(SKILL_ROOT)
+
+        for setup_id, setup in catalog.setups.items():
+            self.assertEqual(setup["schemaVersion"], "setup-context-driven/setup-snapshot-v2")
+            self.assertEqual(setup["version"], 2)
+            external_names = {
+                skill["name"]
+                for skill in setup["skills"]
+                if skill["source"]["type"] == "github"
+            }
+            self.assertEqual(
+                external_names,
+                {contract.skill_name for contract in catalog.external_sources_by_setup[setup_id]},
+            )
 
     def test_supported_profiles_resolve_to_deterministic_module_order(self):
         catalog = load_asset_catalog(SKILL_ROOT)
@@ -365,6 +384,16 @@ class AssetContractTests(unittest.TestCase):
         setup["skills"][0]["source"]["ref"] = "main"
         write_json(self._v2_setup(temp_root), setup)
 
+    def _mutable_setup_ref(self, temp_root):
+        setup = read_json_copy(self._v2_setup(temp_root))
+        setup["source"]["ref"] = "main"
+        write_json(self._v2_setup(temp_root), setup)
+
+    def _machine_local_setup_source(self, temp_root):
+        setup = read_json_copy(self._v2_setup(temp_root))
+        setup["source"]["localPath"] = "/tmp/skills"
+        write_json(self._v2_setup(temp_root), setup)
+
     def _unsafe_external_source_path(self, temp_root):
         setup = read_json_copy(self._v2_setup(temp_root))
         setup["skills"][0]["source"]["path"] = "../coding-guidelines"
@@ -373,6 +402,11 @@ class AssetContractTests(unittest.TestCase):
     def _malformed_tree_digest(self, temp_root):
         setup = read_json_copy(self._v2_setup(temp_root))
         setup["skills"][0]["treeDigest"] = "not-a-digest"
+        write_json(self._v2_setup(temp_root), setup)
+
+    def _change_external_repository(self, temp_root):
+        setup = read_json_copy(self._v2_setup(temp_root))
+        setup["skills"][0]["source"]["repository"] = "example/other-skills"
         write_json(self._v2_setup(temp_root), setup)
 
     def _missing_rule_guidance(self, temp_root):

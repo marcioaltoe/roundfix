@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -14,7 +15,9 @@ sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 from context_assets import (  # noqa: E402
     clone_assets_to,
     load_asset_catalog,
+    portable_file_digest,
     read_json_copy,
+    setup_records_digest,
     write_json,
 )
 from context_setup import (  # noqa: E402
@@ -256,20 +259,27 @@ class AuditCliTests(unittest.TestCase):
             self.assertEqual(matches[0]["severity"], severity)
 
 
-def run_audit(repo, *args):
-    return run_context_setup("audit", "--repo", str(repo), *args)
+def run_audit(repo, *args, extra_env=None):
+    return run_context_setup("audit", "--repo", str(repo), *args, extra_env=extra_env)
 
 
-def run_context_setup(*args):
+def run_context_setup(*args, extra_env=None):
     env = os.environ.copy()
     env["PYTHONDONTWRITEBYTECODE"] = "1"
-    return subprocess.run(
-        [sys.executable, str(SCRIPT), *args],
-        text=True,
-        capture_output=True,
-        check=False,
-        env=env,
-    )
+    if extra_env is not None:
+        env.update(extra_env)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        fixture_root = Path(temp_dir) / "setup-context-driven"
+        clone_assets_to(SKILL_ROOT, fixture_root)
+        shutil.copytree(SKILL_ROOT / "scripts", fixture_root / "scripts")
+        write_fixture_external_digests(fixture_root)
+        return subprocess.run(
+            [sys.executable, str(fixture_root / "scripts" / "context_setup.py"), *args],
+            text=True,
+            capture_output=True,
+            check=False,
+            env=env,
+        )
 
 
 def write_compliant_repository(repo, profile_id, omit_decision=None, install_skills=True):
@@ -362,13 +372,49 @@ def write_skill(repo, name):
     skill_path.parent.mkdir(parents=True, exist_ok=True)
     repo_root = repository_root()
     canonical = repo_root / ".agents" / "skills" / name / "SKILL.md"
-    if canonical.is_file():
+    if fixture_skill_source_type(name) == "repo" and canonical.is_file():
         skill_path.write_text(canonical.read_text(encoding="utf-8"), encoding="utf-8")
     else:
-        skill_path.write_text(
-            f"---\nname: {name}\ndescription: test skill\n---\n# {name}\n",
-            encoding="utf-8",
-        )
+        for relative_path, content in fixture_external_skill_files(name).items():
+            target = skill_path.parent / relative_path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(content)
+
+
+def fixture_external_skill_bytes(name):
+    return f"---\nname: {name}\ndescription: test skill\n---\n# {name}\n".encode("utf-8")
+
+
+def fixture_external_skill_files(name):
+    files = {"SKILL.md": fixture_external_skill_bytes(name)}
+    if name == "domain-modeling":
+        files["references/guide.md"] = b"# Domain modeling fixture\n"
+    return files
+
+
+def fixture_skill_source_type(name):
+    for snapshot_path in (SKILL_ROOT / "assets" / "setups").glob("*.json"):
+        snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+        for skill in snapshot["skills"]:
+            if skill["name"] == name:
+                return skill["source"]["type"]
+    return None
+
+
+def write_fixture_external_digests(skill_root):
+    for snapshot_path in (skill_root / "assets" / "setups").glob("*.json"):
+        snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+        for skill in snapshot["skills"]:
+            if skill["source"]["type"] != "github":
+                continue
+            skill["treeDigest"] = portable_file_digest(
+                [
+                    (path.encode("utf-8"), content)
+                    for path, content in fixture_external_skill_files(skill["name"]).items()
+                ]
+            )
+        snapshot["digest"] = setup_records_digest(snapshot["skills"])
+        snapshot_path.write_text(json.dumps(snapshot, indent=2) + "\n", encoding="utf-8")
 
 
 def snapshot_files(repo):
