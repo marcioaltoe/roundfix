@@ -319,6 +319,7 @@ def decisions_for(
     verification_gate="make verify",
     language="English",
     secondbrain=False,
+    repository_extension=False,
 ):
     return [
         f"spec.scaffold={str(spec).lower()}",
@@ -330,6 +331,7 @@ def decisions_for(
         f"verification.gate={verification_gate}",
         f"language.generated={language}",
         f"secondbrain.enabled={str(secondbrain).lower()}",
+        f"repository.extension.enabled={str(repository_extension).lower()}",
     ]
 
 

@@ -160,6 +160,7 @@ class ProfileMacroFlowTests(unittest.TestCase):
                         "verification.gate",
                         "language.generated",
                         "secondbrain.enabled",
+                        "repository.extension.enabled",
                     ]:
                         self.assertIn(decision_id, manifest["decisions"])
                     if profile_id == "typescript-bun-monorepo":
@@ -341,6 +342,7 @@ def decisions_with(
         "verification.gate": verification_gate,
         "language.generated": "English",
         "secondbrain.enabled": str(secondbrain).lower(),
+        "repository.extension.enabled": "false",
     }
     return [f"{key}={value}" for key, value in values.items()]
 

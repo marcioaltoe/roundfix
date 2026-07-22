@@ -80,6 +80,7 @@ class SetupWorkflowTests(unittest.TestCase):
                     "verification.gate=make workflow-verify",
                     "language.generated=English",
                     "secondbrain.enabled=false",
+                    "repository.extension.enabled=false",
                 ],
             )
             before = snapshot_files(repo)

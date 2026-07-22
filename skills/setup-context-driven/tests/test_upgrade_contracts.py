@@ -122,7 +122,10 @@ class UpgradeContractTests(unittest.TestCase):
                 "transition.legacy-typescript-bun-to-portable-v3",
             },
         )
-        self.assertEqual(canonical.repository_extensions, {})
+        self.assertEqual(
+            set(canonical.repository_extensions),
+            {"extension.repository-rules"},
+        )
         self.assertEqual(canonical.formatter_by_profile, {})
         self.assertEqual(v2.upgrade_transitions, {})
         self.assertEqual(v2.repository_extensions, {})

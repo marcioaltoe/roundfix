@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0044-upgrade-retention-and-formatter-compatibility
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -33,26 +33,26 @@ preserves repository-authored bytes.
 
 ## Subtasks
 
-- [ ] Declare the extension decision, module, path, and scaffold template.
-- [ ] Add the compact root pointer and future-tree reference validation.
-- [ ] Plan and atomically apply only first creation.
-- [ ] Exclude repository-owned bytes from the managed inventory.
-- [ ] Add absent, existing, modified, disabled, and reapply fixtures.
-- [ ] Synchronize the distributed setup skill copy.
+- [x] Declare the extension decision, module, path, and scaffold template.
+- [x] Add the compact root pointer and future-tree reference validation.
+- [x] Plan and atomically apply only first creation.
+- [x] Exclude repository-owned bytes from the managed inventory.
+- [x] Add absent, existing, modified, disabled, and reapply fixtures.
+- [x] Synchronize the distributed setup skill copy.
 
 ## Acceptance Criteria
 
-- [ ] A true decision and absent extension produce one visible create operation
+- [x] A true decision and absent extension produce one visible create operation
       and a confirmable plan digest.
-- [ ] Confirmed apply creates an unmarked extension that is absent from the
+- [x] Confirmed apply creates an unmarked extension that is absent from the
       Setup Manifest's managed inventory.
-- [ ] An existing extension produces no content mutation, even when its bytes
+- [x] An existing extension produces no content mutation, even when its bytes
       differ from the original scaffold.
-- [ ] Audit and reapply preserve existing extension bytes exactly.
-- [ ] A false decision neither creates nor removes the extension.
-- [ ] Root-reference validation accepts the planned scaffold in the future
+- [x] Audit and reapply preserve existing extension bytes exactly.
+- [x] A false decision neither creates nor removes the extension.
+- [x] Root-reference validation accepts the planned scaffold in the future
       tree and reports a missing selected extension without rewriting it.
-- [ ] Canonical and distributed setup skill trees are byte-identical.
+- [x] Canonical and distributed setup skill trees are byte-identical.
 
 ## Context
 
@@ -75,3 +75,40 @@ preserves repository-authored bytes.
 - `_techspec.md` → Data Models; API Contracts; Risks & Considerations; Build
   Order 4.
 - ADR-0046 → preservation outside setup ownership markers.
+
+## Result
+
+Implemented the decision-gated Repository-Owned Extension contract. A resolved
+true decision selects the compact root pointer and authorizes one exact,
+unmarked scaffold creation through the existing digest-confirmed Change Plan.
+The Setup Manifest records that the one-time boundary was crossed without
+placing the file in `managedArtifacts` or recording a content digest. Later
+audit, reapply, decision changes, and profile transitions treat the extension
+as repository-authored bytes and never recreate, rewrite, or remove it.
+
+### Verification
+
+- `rtk env PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_repository_extension.py'` — passed, 6 tests.
+- `rtk make skills-sync-check` — passed; canonical and distributed skill trees match.
+- `rtk make verify` — passed after granting the required Go build-cache access; 1,694 Go tests, both 162-test setup suites, asset loading, skill checks, and the build passed.
+
+### Acceptance evidence
+
+- `test_confirmed_first_creation_is_unmarked_and_outside_managed_inventory`
+  proves the single visible create operation, confirmable digest, exact
+  preimage/postimage, unmarked scaffold, and managed-inventory exclusion.
+- `test_existing_extension_is_never_replaced_or_inventoried` proves differing
+  existing bytes produce no extension mutation and never become managed.
+- `test_audit_reapply_and_profile_transition_preserve_modified_bytes` proves
+  byte-for-byte preservation across audit, reapply, profile transition, and a
+  decision change.
+- `test_false_decision_neither_creates_nor_removes_extension` proves both
+  absent and existing false-decision paths.
+- `test_missing_previously_selected_extension_is_reported_without_recreation`
+  proves future-tree validation accepts initial creation, then reports a
+  later missing selected target without granting recreation authority.
+- `test_atomic_failure_rolls_back_the_first_creation` proves the scaffold is
+  part of the same rollback-protected atomic write boundary as the manifest
+  and managed artifacts.
+
+No follow-up work was discovered within this Task's slice.

@@ -206,6 +206,23 @@
           ]
         }
       ]
+    },
+    {
+      "id": "repository.extension.enabled",
+      "version": 1,
+      "type": "boolean",
+      "summary": "Whether setup creates and links the Repository-Owned Extension for project-specific hard rules.",
+      "effects": [
+        {
+          "when": {"equals": true},
+          "activateModules": ["repository-extension"],
+          "includeArtifacts": ["root.repository-extension"]
+        },
+        {
+          "when": {"equals": false},
+          "excludeArtifacts": ["root.repository-extension"]
+        }
+      ]
     }
   ]
 }

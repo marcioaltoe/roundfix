@@ -3,6 +3,13 @@
   "version": 1,
   "templates": [
     {
+      "id": "template.extension.repository-rules",
+      "version": 1,
+      "kind": "repository-extension",
+      "path": "extensions/repository.md",
+      "tokens": []
+    },
+    {
       "id": "template.root.core",
       "version": 1,
       "kind": "root-block",
@@ -92,6 +99,13 @@
       "kind": "root-block",
       "path": "root/rust.md",
       "tokens": ["reference.rust"]
+    },
+    {
+      "id": "template.root.repository-extension",
+      "version": 1,
+      "kind": "root-block",
+      "path": "root/repository-extension.md",
+      "tokens": ["reference.repository-extension"]
     },
     {
       "id": "template.root.autonomous-work",

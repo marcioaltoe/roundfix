@@ -24,6 +24,7 @@ from context_assets import (
     AssetValidationError,
     ExternalSkillContract,
     PortableTreeError,
+    RepositoryOwnedExtension,
     TEMPLATE_TOKEN,
     UpgradeTransition,
     load_asset_catalog,
@@ -1755,7 +1756,14 @@ def audit_repository(
             planned_changes=planned_changes_for_plan(repo, decision_plan),
         ), invalid_input
 
-    findings.extend(validate_decision_plan_references(repo, catalog, decision_plan))
+    findings.extend(
+        validate_decision_plan_references(
+            repo,
+            catalog,
+            decision_plan,
+            existing_manifest=manifest,
+        )
+    )
 
     ordered_modules = list(decision_plan.active_modules)
     validate_manifest_shape(manifest, profile_id, ordered_modules, catalog, findings)
@@ -2180,7 +2188,14 @@ def preview_result(
     )
     findings.extend(decision_required_findings(decision_plan))
     if not decision_plan.unresolved_decisions:
-        findings.extend(validate_decision_plan_references(repo, catalog, decision_plan))
+        findings.extend(
+            validate_decision_plan_references(
+                repo,
+                catalog,
+                decision_plan,
+                existing_manifest=existing_manifest,
+            )
+        )
     return (
         AuditResult(
             sorted_findings(findings),
@@ -2794,10 +2809,20 @@ def validate_decision_plan_references(
     repo: Path,
     catalog: AssetCatalog,
     decision_plan: DecisionPlan,
+    existing_manifest: dict | None = None,
 ) -> list[Finding]:
     expected_artifacts = expected_artifacts_for_plan(decision_plan)
     definite_by_id = {
         artifact.managed_id: artifact for artifact in expected_artifacts
+    }
+    future_repository_paths = {
+        extension.target_path
+        for extension in repository_extensions_to_create(
+            repo,
+            catalog,
+            decision_plan,
+            existing_manifest,
+        )
     }
     findings: list[Finding] = []
 
@@ -2835,6 +2860,7 @@ def validate_decision_plan_references(
                     source=source,
                     reference_id=reference.reference_id,
                     repository_path=repository_path,
+                    future_repository_paths=future_repository_paths,
                 )
             )
 
@@ -2863,6 +2889,7 @@ def validate_repository_reference(
     source: ExpectedArtifact,
     reference_id: str,
     repository_path: Path,
+    future_repository_paths: set[Path] | None = None,
 ) -> list[Finding]:
     if repository_path.is_absolute() or ".." in repository_path.parts:
         return [
@@ -2882,7 +2909,7 @@ def validate_repository_reference(
             )
         ]
 
-    if target.exists():
+    if target.exists() or repository_path in (future_repository_paths or set()):
         return []
     return [
         finding(
@@ -2900,6 +2927,67 @@ def validate_repository_reference(
             ),
         )
     ]
+
+
+def active_repository_extensions(
+    catalog: AssetCatalog,
+    decision_plan: DecisionPlan,
+) -> list[RepositoryOwnedExtension]:
+    definite_artifact_ids = {
+        artifact.managed_id for artifact in expected_artifacts_for_plan(decision_plan)
+    }
+    active = []
+    for extension_id in sorted(catalog.repository_extensions):
+        extension = catalog.repository_extensions[extension_id]
+        decision = decision_plan.resolved_decisions.get(extension.decision_id)
+        if not isinstance(decision, dict) or decision.get("value") is not True:
+            continue
+        if extension.root_pointer_id not in definite_artifact_ids:
+            continue
+        active.append(extension)
+    return active
+
+
+def manifest_repository_extension_ids(manifest: dict | None) -> set[str]:
+    if not isinstance(manifest, dict):
+        return set()
+    records = manifest.get("repositoryExtensions", [])
+    if not isinstance(records, list):
+        return set()
+    return {
+        record["id"]
+        for record in records
+        if isinstance(record, dict) and isinstance(record.get("id"), str)
+    }
+
+
+def repository_extensions_to_create(
+    repo: Path,
+    catalog: AssetCatalog,
+    decision_plan: DecisionPlan,
+    existing_manifest: dict | None,
+) -> list[RepositoryOwnedExtension]:
+    recorded_ids = manifest_repository_extension_ids(existing_manifest)
+    creations = []
+    for extension in active_repository_extensions(catalog, decision_plan):
+        target = repo / extension.target_path
+        if target.exists() or extension.extension_id in recorded_ids:
+            continue
+        creations.append(extension)
+    return creations
+
+
+def repository_extension_content(
+    catalog: AssetCatalog,
+    extension: RepositoryOwnedExtension,
+) -> str:
+    templates_root = Path(__file__).resolve().parents[1] / "assets" / "templates"
+    return template_content(
+        templates_root,
+        catalog,
+        extension.template_id,
+        strict_tokens=True,
+    )
 
 
 def repository_reference_outside_finding(
@@ -3159,7 +3247,14 @@ def plan_apply(
 
     findings.extend(decision_required_findings(decision_plan))
     if not decision_plan.unresolved_decisions:
-        findings.extend(validate_decision_plan_references(repo, catalog, decision_plan))
+        findings.extend(
+            validate_decision_plan_references(
+                repo,
+                catalog,
+                decision_plan,
+                existing_manifest=existing_manifest,
+            )
+        )
     retention: tuple[RetentionEntry, ...] = ()
     if not findings:
         retention, retention_findings = evaluate_retention(
@@ -3241,6 +3336,18 @@ def plan_apply(
         decisions=decisions,
     )
 
+    extension_creations = repository_extensions_to_create(
+        repo,
+        catalog,
+        decision_plan,
+        existing_manifest,
+    )
+    for extension in extension_creations:
+        changed_contents[extension.target_path] = repository_extension_content(
+            catalog,
+            extension,
+        )
+
     baseline_id = current_baseline_id(catalog)
     if baseline_id is None:
         findings.append(
@@ -3267,6 +3374,13 @@ def plan_apply(
         decisions,
         existing_manifest,
         baseline_id,
+        repository_extension_records(
+            repo,
+            catalog,
+            decision_plan,
+            existing_manifest,
+            extension_creations,
+        ),
     )
     changed_contents[MANIFEST_PATH] = json.dumps(manifest, indent=2, sort_keys=False) + "\n"
     plan = concrete_change_plan(
@@ -3279,6 +3393,7 @@ def plan_apply(
         current_files=current_files,
         manifest=manifest,
         retention=retention,
+        extension_creations=extension_creations,
     )
     validation_findings = validate_change_plan(repo, plan, expected_artifacts)
     findings.extend(validation_findings)
@@ -3811,6 +3926,7 @@ def build_manifest(
     decisions: dict[str, dict],
     existing_manifest: dict | None,
     baseline_id: str,
+    repository_extensions: list[dict[str, str]],
 ) -> dict:
     local_skills = []
     if isinstance(existing_manifest, dict) and isinstance(existing_manifest.get("localSkills"), list):
@@ -3838,7 +3954,7 @@ def build_manifest(
     for decision_id, decision in decisions.items():
         if decision_id not in ordered_decisions:
             ordered_decisions[decision_id] = decision
-    return {
+    manifest = {
         "schemaVersion": 1,
         "generator": generator,
         "profile": profile_id,
@@ -3858,6 +3974,42 @@ def build_manifest(
         ],
         "localSkills": local_skills,
     }
+    if repository_extensions:
+        manifest["repositoryExtensions"] = repository_extensions
+    return manifest
+
+
+def repository_extension_records(
+    repo: Path,
+    catalog: AssetCatalog,
+    decision_plan: DecisionPlan,
+    existing_manifest: dict | None,
+    extension_creations: list[RepositoryOwnedExtension],
+) -> list[dict[str, str]]:
+    records: dict[str, dict[str, str]] = {}
+    if isinstance(existing_manifest, dict):
+        existing_records = existing_manifest.get("repositoryExtensions", [])
+        if isinstance(existing_records, list):
+            for record in existing_records:
+                if (
+                    isinstance(record, dict)
+                    and isinstance(record.get("id"), str)
+                    and isinstance(record.get("path"), str)
+                ):
+                    records[record["id"]] = {
+                        "id": record["id"],
+                        "path": record["path"],
+                    }
+
+    creation_ids = {extension.extension_id for extension in extension_creations}
+    for extension in active_repository_extensions(catalog, decision_plan):
+        if not (repo / extension.target_path).exists() and extension.extension_id not in creation_ids:
+            continue
+        records[extension.extension_id] = {
+            "id": extension.extension_id,
+            "path": extension.target_path.as_posix(),
+        }
+    return [records[extension_id] for extension_id in sorted(records)]
 
 
 def concrete_change_plan(
@@ -3870,6 +4022,7 @@ def concrete_change_plan(
     current_files: dict[Path, str],
     manifest: dict,
     retention: tuple[RetentionEntry, ...],
+    extension_creations: list[RepositoryOwnedExtension],
 ) -> ChangePlan:
     expected_by_path = artifacts_by_path(expected_artifacts)
     old_by_id = manifest_artifacts_by_id(existing_manifest)
@@ -3878,6 +4031,26 @@ def concrete_change_plan(
 
     def add_operation(path: Path, operation: PlannedChange) -> None:
         operations_by_path.setdefault(path, []).append(operation)
+
+    for extension in extension_creations:
+        path = extension.target_path
+        before = current_file_bytes(repo, path)
+        after = content_bytes(changed_contents[path])
+        add_operation(
+            path,
+            PlannedChange(
+                action="create repository extension",
+                path=path,
+                managed_id=extension.extension_id,
+                state="definite",
+                reason=(
+                    "The resolved Decision Plan authorizes the one-time "
+                    "Repository-Owned Extension scaffold."
+                ),
+                before_digest=bytes_digest(before),
+                after_digest=bytes_digest(after),
+            ),
+        )
 
     for path, artifacts in expected_by_path.items():
         before = current_file_bytes(repo, path)
@@ -5132,6 +5305,69 @@ def validate_manifest_shape(
             )
             continue
         validate_decision_value(catalog.decisions[decision_id], decision["value"], findings)
+
+    validate_manifest_repository_extensions(manifest, catalog, findings)
+
+
+def validate_manifest_repository_extensions(
+    manifest: dict,
+    catalog: AssetCatalog,
+    findings: list[Finding],
+) -> None:
+    records = manifest.get("repositoryExtensions", [])
+    if not isinstance(records, list):
+        findings.append(
+            finding(
+                "manifest.invalid",
+                "error",
+                str(MANIFEST_PATH),
+                "repositoryExtensions",
+                "Manifest repositoryExtensions must be a list.",
+                "Refresh the Repository-Owned Extension records.",
+            )
+        )
+        return
+
+    seen: set[str] = set()
+    for record in records:
+        if not isinstance(record, dict) or set(record) != {"id", "path"}:
+            findings.append(
+                finding(
+                    "manifest.invalid",
+                    "error",
+                    str(MANIFEST_PATH),
+                    "repositoryExtensions",
+                    "Each Repository-Owned Extension record must contain only id and path.",
+                    "Refresh the Repository-Owned Extension records.",
+                )
+            )
+            continue
+        extension_id = record.get("id")
+        extension = catalog.repository_extensions.get(extension_id)
+        if extension is None or record.get("path") != extension.target_path.as_posix():
+            findings.append(
+                finding(
+                    "manifest.invalid",
+                    "error",
+                    str(MANIFEST_PATH),
+                    str(extension_id),
+                    "Manifest Repository-Owned Extension record does not match the catalog.",
+                    "Refresh the Repository-Owned Extension records.",
+                )
+            )
+            continue
+        if extension_id in seen:
+            findings.append(
+                finding(
+                    "manifest.invalid",
+                    "error",
+                    str(MANIFEST_PATH),
+                    extension_id,
+                    "Repository-Owned Extension appears more than once in the manifest.",
+                    "Keep one record per Repository-Owned Extension.",
+                )
+            )
+        seen.add(extension_id)
 
 
 def validate_decision_value(

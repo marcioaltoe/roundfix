@@ -181,6 +181,7 @@ def decisions_for(spec_enabled, triage_enabled):
         "verification.gate=make verify",
         "language.generated=English",
         "secondbrain.enabled=false",
+        "repository.extension.enabled=false",
     ]
 
 

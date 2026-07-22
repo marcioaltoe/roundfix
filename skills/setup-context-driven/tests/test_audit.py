@@ -240,6 +240,7 @@ class AuditCliTests(unittest.TestCase):
                     "verification.gate=make verify",
                     "language.generated=English",
                     "secondbrain.enabled=false",
+                    "repository.extension.enabled=false",
                 ],
             )
 
@@ -295,6 +296,7 @@ def write_compliant_repository(repo, profile_id, omit_decision=None, install_ski
         "verification.gate": {"value": "make verify", "confirmedAt": "2026-07-15"},
         "language.generated": {"value": "English", "confirmedAt": "2026-07-15"},
         "secondbrain.enabled": {"value": False, "confirmedAt": "2026-07-15"},
+        "repository.extension.enabled": {"value": False, "confirmedAt": "2026-07-15"},
     }
     plan = resolve_decision_plan(
         catalog,

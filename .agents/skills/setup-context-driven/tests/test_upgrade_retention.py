@@ -313,6 +313,12 @@ def write_legacy_fixture(repo: Path) -> Path:
     manifest_path = repo / context_setup.MANIFEST_PATH
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(FIXTURES / "legacy-manifest.json", manifest_path)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["decisions"]["repository.extension.enabled"] = {
+        "value": False,
+        "confirmedAt": "2026-07-22",
+    }
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     return repo
 
 

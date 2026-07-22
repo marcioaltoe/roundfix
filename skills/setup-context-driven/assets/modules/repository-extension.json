@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "setup-context-driven/module-v3",
+  "id": "repository-extension",
+  "version": 1,
+  "kind": "repository-policy",
+  "title": "Repository-Owned Extension",
+  "dependsOn": ["core"],
+  "conflictsWith": [],
+  "requiredSkills": [],
+  "skillDispatch": [],
+  "requiredDecisions": ["repository.extension.enabled"],
+  "rootBlocks": [
+    {
+      "id": "root.repository-extension",
+      "version": 1,
+      "template": "template.root.repository-extension",
+      "rules": [],
+      "references": [
+        {
+          "id": "reference.root.repository-extension",
+          "token": "reference.repository-extension",
+          "ownership": "repository",
+          "path": "docs/agents/repository.md"
+        }
+      ]
+    }
+  ],
+  "supportingGuides": [],
+  "rules": [],
+  "repositoryExtensions": [
+    {
+      "id": "extension.repository-rules",
+      "path": "docs/agents/repository.md",
+      "template": "template.extension.repository-rules",
+      "rootPointer": "root.repository-extension",
+      "decision": "repository.extension.enabled"
+    }
+  ]
+}

@@ -22,6 +22,7 @@ ENTRY_DECISIONS = {
     "triage.external",
     "autonomous.enabled",
     "secondbrain.enabled",
+    "repository.extension.enabled",
 }
 
 
@@ -48,6 +49,7 @@ class PreviewCliTests(unittest.TestCase):
                 "verification.gate=make verify",
                 "language.generated=English",
                 "secondbrain.enabled=false",
+                "repository.extension.enabled=false",
             ]
             args = [
                 "audit", "--repo", str(repo), "--format", "json", "--profile", "rust-cli"

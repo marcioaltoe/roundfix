@@ -29,6 +29,7 @@ EXPECTED_DECISIONS = (
     "runtime.design",
     "language.generated",
     "secondbrain.enabled",
+    "repository.extension.enabled",
 )
 EXPECTED_ENTRY_DECISIONS = (
     "language.generated",
@@ -38,6 +39,7 @@ EXPECTED_ENTRY_DECISIONS = (
     "triage.external",
     "autonomous.enabled",
     "secondbrain.enabled",
+    "repository.extension.enabled",
 )
 
 
@@ -70,6 +72,18 @@ class DecisionPlanContractTests(unittest.TestCase):
         self.assertEqual(
             autonomous_effect.include_artifacts,
             ("root.autonomous-work", "guide.autonomous-work"),
+        )
+
+        repository_extension_effect = self._effect_for(
+            catalog, "repository.extension.enabled", "equals", True
+        )
+        self.assertEqual(
+            repository_extension_effect.activate_modules,
+            ("repository-extension",),
+        )
+        self.assertEqual(
+            repository_extension_effect.include_artifacts,
+            ("root.repository-extension",),
         )
 
         render_tokens = {
@@ -326,6 +340,7 @@ class DecisionPlanContractTests(unittest.TestCase):
             "verification.gate": "make verify",
             "language.generated": "English",
             "secondbrain.enabled": False,
+            "repository.extension.enabled": False,
         }
         decisions.update(overrides)
         return decisions

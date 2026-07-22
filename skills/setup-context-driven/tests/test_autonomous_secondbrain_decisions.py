@@ -265,6 +265,7 @@ def decisions_for(autonomous, secondbrain, include_runtime=True):
         "verification.gate=make verify",
         "language.generated=English",
         f"secondbrain.enabled={str(secondbrain).lower()}",
+        "repository.extension.enabled=false",
     ]
     if include_runtime:
         decisions.extend(

@@ -144,6 +144,7 @@ class AssetContractTests(unittest.TestCase):
                     "spec-workflow",
                     "external-triage",
                     "secondbrain",
+                    "repository-extension",
                 ],
                 "rust-cli": [
                     "core",
@@ -154,6 +155,7 @@ class AssetContractTests(unittest.TestCase):
                     "spec-workflow",
                     "external-triage",
                     "secondbrain",
+                    "repository-extension",
                 ],
                 "typescript-bun-monorepo": [
                     "core",
@@ -167,6 +169,7 @@ class AssetContractTests(unittest.TestCase):
                     "spec-workflow",
                     "external-triage",
                     "secondbrain",
+                    "repository-extension",
                 ],
             },
         )

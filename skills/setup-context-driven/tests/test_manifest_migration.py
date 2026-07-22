@@ -189,6 +189,7 @@ def legacy_decisions(
         "verification.gate": "make legacy-verify",
         "language.generated": "English",
         "secondbrain.enabled": secondbrain,
+        "repository.extension.enabled": False,
     }
     return {
         decision_id: {"value": value, "confirmedAt": LEGACY_CONFIRMED_AT}
