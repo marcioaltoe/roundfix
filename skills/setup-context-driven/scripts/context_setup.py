@@ -34,6 +34,12 @@ from context_assets import (
 
 AUDIT_SCHEMA_VERSION = "setup-context-driven/audit-v1"
 RESTORE_SCHEMA_VERSION = "setup-context-driven/restore-v1"
+LOCK_HASH_COMPATIBILITY_SCHEMA_VERSION = (
+    "setup-context-driven/external-lock-hash-compatibility-v1"
+)
+LOCK_HASH_COMPATIBILITY_FIXTURE = Path(
+    "assets/lock-hash-compatibility-v1.json"
+)
 MANIFEST_PATH = Path("docs/agents/setup-context.json")
 ROOT_INSTRUCTIONS_PATH = Path("AGENTS.md")
 SEVERITY_ORDER = {"error": 0, "decision": 1, "warning": 2, "info": 3}
@@ -486,23 +492,105 @@ class GitSkillSource:
             )
 
 
-SPEC_0036_LOCK_COMPATIBILITY_DIGEST = (
-    "ebdda12bc5f4c6920e866c330c0e3afd5920f85b6abb1622356dce57ecc10dab"
-)
-SPEC_0036_LOCK_COMPATIBILITY_FILES = (
-    RestoreFile(Path("SKILL.md"), b"---\nname: fixture\n---\n"),
-    RestoreFile(Path("references/guide.md"), b"fixture\n"),
-)
+def lock_adapter_incompatible(reason: str) -> RestoreError:
+    return RestoreError(
+        "lock.adapter-incompatible",
+        "The lock compatibility fixture cannot prove agreement with Spec 0036 "
+        f"Task 01: {reason}.",
+        "Update the isolated lock adapter before restoring skills.",
+    )
+
+
+def load_lock_hash_compatibility_fixture(
+    fixture_path: Path,
+) -> tuple[tuple[RestoreFile, ...], str]:
+    try:
+        document = json.loads(fixture_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise lock_adapter_incompatible(
+            f"could not load {fixture_path.as_posix()}: {error}"
+        ) from error
+
+    required_fields = {
+        "schemaVersion",
+        "version",
+        "files",
+        "expectedSha256",
+    }
+    if not isinstance(document, dict) or set(document) != required_fields:
+        raise lock_adapter_incompatible(
+            "the fixture must contain only schemaVersion, version, files, and expectedSha256"
+        )
+    if (
+        document["schemaVersion"] != LOCK_HASH_COMPATIBILITY_SCHEMA_VERSION
+        or type(document["version"]) is not int
+        or document["version"] != 1
+    ):
+        raise lock_adapter_incompatible(
+            "the fixture schemaVersion and version must identify version 1"
+        )
+    expected = document["expectedSha256"]
+    if not isinstance(expected, str) or re.fullmatch(r"[0-9a-f]{64}", expected) is None:
+        raise lock_adapter_incompatible(
+            "expectedSha256 must be a lowercase SHA-256 digest"
+        )
+    declared_files = document["files"]
+    if not isinstance(declared_files, list) or not declared_files:
+        raise lock_adapter_incompatible("files must be a non-empty array")
+
+    files: list[RestoreFile] = []
+    seen_paths: set[str] = set()
+    for index, item in enumerate(declared_files):
+        if not isinstance(item, dict) or set(item) != {"path", "content"}:
+            raise lock_adapter_incompatible(
+                f"files[{index}] must contain only path and content"
+            )
+        path_value = item["path"]
+        content = item["content"]
+        if not isinstance(path_value, str) or not isinstance(content, str):
+            raise lock_adapter_incompatible(
+                f"files[{index}] path and content must be strings"
+            )
+        path_parts = path_value.split("/")
+        if (
+            not path_value
+            or "\\" in path_value
+            or "\x00" in path_value
+            or path_value.startswith("/")
+            or any(part in {"", ".", ".."} for part in path_parts)
+            or any(part in {".git", "node_modules"} for part in path_parts[:-1])
+        ):
+            raise lock_adapter_incompatible(
+                f"files[{index}] path is not a safe slash-normalized relative path"
+            )
+        if path_value in seen_paths:
+            raise lock_adapter_incompatible(
+                f"files[{index}] duplicates path {path_value!r}"
+            )
+        try:
+            path_value.encode("utf-8")
+            content_bytes = content.encode("utf-8")
+        except UnicodeEncodeError as error:
+            raise lock_adapter_incompatible(
+                f"files[{index}] path and content must be valid UTF-8"
+            ) from error
+        seen_paths.add(path_value)
+        files.append(RestoreFile(Path(*path_parts), content_bytes))
+    return tuple(files), expected
 
 
 class ExternalSkillLockAdapter:
+    def __init__(self, fixture_path: Path | None = None):
+        self.fixture_path = fixture_path or (
+            Path(__file__).resolve().parents[1] / LOCK_HASH_COMPATIBILITY_FIXTURE
+        )
+
     def assert_compatible(self) -> None:
-        observed = external_lock_digest(SPEC_0036_LOCK_COMPATIBILITY_FILES)
-        if observed != SPEC_0036_LOCK_COMPATIBILITY_DIGEST:
-            raise RestoreError(
-                "lock.adapter-incompatible",
-                "The lock compatibility fixture disagrees with Spec 0036 Task 01.",
-                "Update the isolated lock adapter before restoring skills.",
+        files, expected = load_lock_hash_compatibility_fixture(self.fixture_path)
+        observed = external_lock_digest(files)
+        if observed != expected:
+            raise lock_adapter_incompatible(
+                f"computed digest {observed} does not match pinned digest {expected}"
             )
 
     def entry_for(self, source, tree: tuple[RestoreFile, ...]) -> dict:
@@ -5532,7 +5620,7 @@ def print_top_level_help() -> None:
                 "",
                 "Audit is the read-only default when no subcommand is supplied.",
                 "Output formats: text, json. Results go to stdout; diagnostics go to stderr.",
-                "Exit codes: 0 ok, 1 blocking findings, 2 invalid input, 3 decisions required.",
+                "Exit codes: 0 ok, 1 blocking findings, 2 invalid input, 3 decisions required or plan confirmation required/stale.",
                 "",
                 "Subcommands:",
                 "  audit        Read bundled assets and repository state without writes.",

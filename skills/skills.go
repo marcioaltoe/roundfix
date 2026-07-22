@@ -2,6 +2,7 @@ package skills
 
 import (
 	"context"
+	"crypto/sha256"
 	"embed"
 	"errors"
 	"fmt"
@@ -101,6 +102,79 @@ func Files() ([]File, error) {
 		return files[i].Path < files[j].Path
 	})
 	return files, nil
+}
+
+// SkillFolderHash returns the external skills CLI digest for a local skill
+// directory without following links or reading excluded dependency metadata.
+func SkillFolderHash(root string) (string, error) {
+	info, err := os.Lstat(root)
+	if err != nil {
+		return "", fmt.Errorf("inspect skill folder %q: %w", root, err)
+	}
+	if info.Mode()&fs.ModeSymlink != 0 {
+		return "", fmt.Errorf("inspect skill folder %q: root is a symbolic link", root)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("inspect skill folder %q: root is not a directory", root)
+	}
+
+	type hashFile struct {
+		path string
+		data []byte
+	}
+	var files []hashFile
+	tree := os.DirFS(root)
+	if err := fs.WalkDir(tree, ".", func(path string, entry fs.DirEntry, walkErr error) error {
+		fullPath := filepath.Join(root, filepath.FromSlash(path))
+		if walkErr != nil {
+			return fmt.Errorf("walk skill folder entry %q: %w", fullPath, walkErr)
+		}
+		if path == "." {
+			return nil
+		}
+		entryInfo, err := entry.Info()
+		if err != nil {
+			return fmt.Errorf("inspect skill folder entry %q: %w", fullPath, err)
+		}
+		mode := entryInfo.Mode()
+		if mode&fs.ModeSymlink != 0 {
+			return fmt.Errorf("inspect skill folder entry %q: symbolic links are not supported", fullPath)
+		}
+		if mode.IsDir() {
+			if entry.Name() == ".git" || entry.Name() == "node_modules" {
+				return fs.SkipDir
+			}
+			return nil
+		}
+		if !mode.IsRegular() {
+			return fmt.Errorf("inspect skill folder entry %q: special files are not supported", fullPath)
+		}
+		data, err := fs.ReadFile(tree, path)
+		if err != nil {
+			return fmt.Errorf("read skill folder file %q: %w", fullPath, err)
+		}
+		files = append(files, hashFile{
+			path: filepath.ToSlash(path),
+			data: data,
+		})
+		return nil
+	}); err != nil {
+		return "", fmt.Errorf("hash skill folder %q: %w", root, err)
+	}
+
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].path < files[j].path
+	})
+	digest := sha256.New()
+	for _, file := range files {
+		if _, err := digest.Write([]byte(file.path)); err != nil {
+			return "", fmt.Errorf("hash skill folder path %q: %w", file.path, err)
+		}
+		if _, err := digest.Write(file.data); err != nil {
+			return "", fmt.Errorf("hash skill folder file %q: %w", file.path, err)
+		}
+	}
+	return fmt.Sprintf("%x", digest.Sum(nil)), nil
 }
 
 func Check() []Diagnostic {

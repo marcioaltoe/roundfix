@@ -11,9 +11,11 @@ from unittest import mock
 
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
-REPO_ROOT = SKILL_ROOT.parents[2]
 V2_FIXTURE_ROOT = Path(__file__).resolve().parent / "fixtures" / "asset-contracts-v2"
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from test_support import setup_skill_roots  # noqa: E402
 
 from context_assets import (  # noqa: E402
     AssetValidationError,
@@ -104,8 +106,9 @@ class AssetContractTests(unittest.TestCase):
         self.assertEqual(self._asset_bytes(V2_FIXTURE_ROOT), before)
 
     def test_canonical_and_embedded_catalogs_load_successfully(self):
-        canonical = load_asset_catalog(SKILL_ROOT)
-        embedded = load_asset_catalog(REPO_ROOT / "skills" / "setup-context-driven")
+        canonical_root, embedded_root = setup_skill_roots(SKILL_ROOT)
+        canonical = load_asset_catalog(canonical_root)
+        embedded = load_asset_catalog(embedded_root)
 
         self.assertEqual(canonical.ordered_modules_by_profile, embedded.ordered_modules_by_profile)
 

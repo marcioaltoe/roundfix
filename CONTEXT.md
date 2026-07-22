@@ -382,6 +382,18 @@ _Avoid_: Setup command, provisioning, install step
 The portable, versioned set of required project instructions and architectural decisions that makes a repository ready for the CONTEXT-driven workflow.
 _Avoid_: Sample docs, optional setup, repository template
 
+**Decision Plan**:
+The resolved setup proposal produced after every required setup decision has an answer; it is the basis for authorizing setup changes.
+_Avoid_: Setup questionnaire, decision draft, configuration prompt
+
+**Change Plan**:
+The exact set of repository changes proposed for explicit review and confirmation before a setup or restoration operation mutates files.
+_Avoid_: Patch, implicit apply, change preview
+
+**Setup Manifest**:
+The setup-owned record of the selected profile, modules, decisions, and managed artifacts that reproduces and audits a repository's Context-Driven Baseline.
+_Avoid_: Project Config, lock file, generated guide
+
 **Baseline ADR**:
 An Architecture Decision Record whose reserved identity and invariant belong to the Context-Driven Baseline while project-specific notes remain repository-owned.
 _Avoid_: Example ADR, project ADR, template copy

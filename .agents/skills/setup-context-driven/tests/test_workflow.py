@@ -7,10 +7,13 @@ from pathlib import Path
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = SKILL_ROOT / "scripts" / "context_setup.py"
-REPO_ROOT = SKILL_ROOT.parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from test_support import repository_root  # noqa: E402
+
+REPO_ROOT = repository_root(SKILL_ROOT)
 USER_GUIDE = REPO_ROOT / "docs" / "user-guide" / "context-driven-development.md"
 ASSET_GUIDE = SKILL_ROOT / "references" / "asset-maintenance.md"
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from test_apply import BASE_DECISIONS, run_apply  # noqa: E402
 from test_audit import (  # noqa: E402

@@ -26,6 +26,17 @@ ENTRY_DECISIONS = {
 
 
 class PreviewCliTests(unittest.TestCase):
+    def test_top_level_help_names_every_exit_three_condition(self):
+        result = run_context_setup("--help")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stderr, "")
+        self.assertIn(
+            "Exit codes: 0 ok, 1 blocking findings, 2 invalid input, "
+            "3 decisions required or plan confirmation required/stale.",
+            result.stdout.splitlines(),
+        )
+
     def test_audit_repeated_decisions_exposes_authorizable_concrete_digest(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = Path(temp_dir)

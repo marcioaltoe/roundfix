@@ -5,7 +5,8 @@ import unittest
 from pathlib import Path
 
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+SKILL_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from context_assets import load_asset_catalog  # noqa: E402
@@ -104,12 +105,11 @@ class SecondbrainSetupTests(unittest.TestCase):
             self.assertEqual(matches[0]["managedId"], "guide.secondbrain")
 
     def test_secondbrain_generated_content_is_english_and_root_is_index_only(self):
-        repo_root = Path(__file__).resolve().parents[4]
-        root_template = repo_root / ".agents/skills/setup-context-driven/assets/templates/root/secondbrain.md"
-        guide_template = repo_root / ".agents/skills/setup-context-driven/assets/templates/guides/secondbrain.md"
+        root_template = SKILL_ROOT / "assets" / "templates" / "root" / "secondbrain.md"
+        guide_template = SKILL_ROOT / "assets" / "templates" / "guides" / "secondbrain.md"
         root = root_template.read_text(encoding="utf-8")
         guide = guide_template.read_text(encoding="utf-8")
-        catalog = load_asset_catalog(repo_root / ".agents/skills/setup-context-driven")
+        catalog = load_asset_catalog(SKILL_ROOT)
         guidance = "\n".join(
             catalog.rule_contracts[rule_id].guidance
             for rule_id in catalog.modules["secondbrain"]["supportingGuides"][0]["rules"]

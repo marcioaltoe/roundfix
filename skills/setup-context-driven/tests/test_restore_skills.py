@@ -44,6 +44,42 @@ from test_audit import (  # noqa: E402
 
 
 class RestoreSkillsCliTests(unittest.TestCase):
+    def test_versioned_lock_fixture_matches_real_production_adapter(self):
+        ExternalSkillLockAdapter().assert_compatible()
+
+    def test_real_lock_fixture_failures_are_actionable_and_non_mutating(self):
+        cases = {
+            "missing": lambda path: path.unlink(),
+            "malformed": lambda path: path.write_text("{not json", encoding="utf-8"),
+            "digest mismatch": self._write_mismatching_lock_fixture,
+        }
+
+        for name, mutate in cases.items():
+            with self.subTest(name=name), RestoreFixture() as fixture:
+                fixture.add_source_skill(
+                    "agentic-cli-design", {"SKILL.md": b"# restored\n"}
+                )
+                fixture.commit_and_configure("agentic-cli-design")
+                before = snapshot_files(fixture.repo)
+                mutate(fixture.lock_compatibility_fixture)
+
+                result = fixture.restore("--skill", "agentic-cli-design")
+
+                self.assertEqual(result.returncode, 1, result.stderr)
+                finding = json.loads(result.stdout)["finding"]
+                self.assertEqual(finding["code"], "lock.adapter-incompatible")
+                self.assertEqual(
+                    finding["action"],
+                    "Update the isolated lock adapter before restoring skills.",
+                )
+                self.assertEqual(snapshot_files(fixture.repo), before)
+
+    @staticmethod
+    def _write_mismatching_lock_fixture(path):
+        document = json.loads(path.read_text(encoding="utf-8"))
+        document["expectedSha256"] = "0" * 64
+        path.write_text(json.dumps(document), encoding="utf-8")
+
     def test_help_exposes_non_interactive_restore_contract(self):
         with RestoreFixture() as fixture:
             result = fixture.run("restore-skills", "--help")
@@ -433,6 +469,10 @@ class RestoreFixture:
         subprocess.run(["git", "-C", str(self.source), "config", "user.name", "Fixture"], check=True)
         subprocess.run(["git", "-C", str(self.source), "config", "commit.gpgsign", "false"], check=True)
         self.revision = None
+
+    @property
+    def lock_compatibility_fixture(self):
+        return self.skill_root / "assets" / "lock-hash-compatibility-v1.json"
 
     def __enter__(self):
         return self

@@ -1,12 +1,167 @@
 package skills
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+const lockHashCompatibilityFixturePath = "setup-context-driven/assets/lock-hash-compatibility-v1.json"
+
+type lockHashCompatibilityFixture struct {
+	SchemaVersion string `json:"schemaVersion"`
+	Version       int    `json:"version"`
+	Files         []struct {
+		Path    string `json:"path"`
+		Content string `json:"content"`
+	} `json:"files"`
+	ExpectedSHA256 string `json:"expectedSha256"`
+}
+
+func TestSkillFolderHashMatchesExternalCompatibilityFixture(t *testing.T) {
+	data, err := embedded.ReadFile(lockHashCompatibilityFixturePath)
+	if err != nil {
+		t.Fatalf("read embedded lock compatibility fixture: %v", err)
+	}
+	var fixture lockHashCompatibilityFixture
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&fixture); err != nil {
+		t.Fatalf("decode embedded lock compatibility fixture: %v", err)
+	}
+	if fixture.SchemaVersion != "setup-context-driven/external-lock-hash-compatibility-v1" || fixture.Version != 1 {
+		t.Fatalf("unexpected lock compatibility fixture version: %#v", fixture)
+	}
+
+	root := t.TempDir()
+	foundNestedPath := false
+	for _, file := range fixture.Files {
+		if strings.Contains(file.Path, "/") {
+			foundNestedPath = true
+		}
+		path := filepath.Join(root, filepath.FromSlash(file.Path))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("create fixture directory for %q: %v", file.Path, err)
+		}
+		if err := os.WriteFile(path, []byte(file.Content), 0o644); err != nil {
+			t.Fatalf("write fixture file %q: %v", file.Path, err)
+		}
+	}
+	if !foundNestedPath {
+		t.Fatal("lock compatibility fixture must include a slash-normalized nested path")
+	}
+
+	got, err := SkillFolderHash(root)
+	if err != nil {
+		t.Fatalf("hash compatibility fixture: %v", err)
+	}
+	if got != fixture.ExpectedSHA256 {
+		t.Fatalf("SkillFolderHash() = %q, want pinned fixture digest %q", got, fixture.ExpectedSHA256)
+	}
+}
+
+func TestSkillFolderHashExcludesMetadataAndDependencyDirectories(t *testing.T) {
+	root := t.TempDir()
+	writeSkillHashTestFile(t, root, "SKILL.md", "fixture\n")
+	want, err := SkillFolderHash(root)
+	if err != nil {
+		t.Fatalf("hash baseline skill folder: %v", err)
+	}
+
+	for _, path := range []string{
+		".git/config",
+		"node_modules/package/index.js",
+		"references/node_modules/package/index.js",
+	} {
+		writeSkillHashTestFile(t, root, path, "ignored\n")
+	}
+
+	got, err := SkillFolderHash(root)
+	if err != nil {
+		t.Fatalf("hash skill folder with excluded directories: %v", err)
+	}
+	if got != want {
+		t.Fatalf("excluded directories changed hash: got %q, want %q", got, want)
+	}
+}
+
+func TestSkillFolderHashRejectsUnsafeFilesystemShapes(t *testing.T) {
+	tests := []struct {
+		name    string
+		prepare func(*testing.T) string
+	}{
+		{
+			name: "root is regular file",
+			prepare: func(t *testing.T) string {
+				path := filepath.Join(t.TempDir(), "SKILL.md")
+				writeSkillHashTestFile(t, filepath.Dir(path), filepath.Base(path), "fixture\n")
+				return path
+			},
+		},
+		{
+			name: "file symlink",
+			prepare: func(t *testing.T) string {
+				root := t.TempDir()
+				writeSkillHashTestFile(t, root, "SKILL.md", "fixture\n")
+				if err := os.Symlink("SKILL.md", filepath.Join(root, "linked.md")); err != nil {
+					t.Skipf("create file symlink: %v", err)
+				}
+				return root
+			},
+		},
+		{
+			name: "directory symlink",
+			prepare: func(t *testing.T) string {
+				root := t.TempDir()
+				target := t.TempDir()
+				writeSkillHashTestFile(t, target, "outside.md", "outside\n")
+				if err := os.Symlink(target, filepath.Join(root, "linked")); err != nil {
+					t.Skipf("create directory symlink: %v", err)
+				}
+				return root
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if _, err := SkillFolderHash(test.prepare(t)); err == nil {
+				t.Fatal("expected unsafe filesystem shape to be rejected")
+			}
+		})
+	}
+}
+
+func TestSkillFolderHashWrapsMissingRootError(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "missing")
+	_, err := SkillFolderHash(root)
+	if err == nil {
+		t.Fatal("expected missing root error")
+	}
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("expected wrapped fs.ErrNotExist, got %v", err)
+	}
+	if !strings.Contains(err.Error(), root) {
+		t.Fatalf("expected error to name root %q, got %v", root, err)
+	}
+}
+
+func writeSkillHashTestFile(t *testing.T, root string, relative string, content string) {
+	t.Helper()
+	path := filepath.Join(root, filepath.FromSlash(relative))
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("create test directory for %q: %v", relative, err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write test file %q: %v", relative, err)
+	}
+}
 
 func TestCheckValidatesRoundfixSkillArtifacts(t *testing.T) {
 	if diagnostics := Check(); len(diagnostics) > 0 {
