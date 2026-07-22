@@ -5,7 +5,7 @@ disable-model-invocation: true
 metadata:
   category: setup
   tags: [workflow, prd, issues, planning, triage, repository-context, agents]
-  version: 0.8.1
+  version: 0.9.0
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---
@@ -17,11 +17,13 @@ Configure a repository for CONTEXT-driven development through the portable asset
 ## Asset map
 
 - `assets/profiles/` selects a supported profile and canonical skill setup snapshot: `typescript-bun-monorepo`, `go-cli-tui`, or `rust-cli`.
-- `assets/coverage.json` defines the portable coverage categories every profile must satisfy.
-- `assets/modules/` owns compact root pointers, supporting guides, portable rule guidance, required decisions, and exact skill-dispatch triggers.
+- `assets/coverage.json` defines stable semantic coverage categories. A profile's `requiredRules` must prove every universal and applicable category; coverage is not a line-count target.
+- `assets/modules/` owns compact root pointers, supporting guides, portable rule guidance, required decisions, exact `requiredSkills`/`skillDispatch` mappings, and typed references.
 - `assets/templates/` stores generated repository content. Root blocks must stay short and point to `docs/agents/` guides.
-- `assets/setups/` stores bundled canonical skill setup snapshots. Normal audit/apply uses only these bundled files; it never needs `~/dev/skills`, the network, or third-party Python packages.
-- `references/` is workflow guidance for agents, not generated output.
+- `assets/setups/` stores `setup-context-driven/setup-snapshot-v2` records. External skills carry a GitHub repository, immutable commit, safe source path, and complete-tree digest; Roundfix-owned skills remain separate.
+- `references/` is workflow guidance for agents, not generated output. Maintainers must read [`references/asset-maintenance.md`](references/asset-maintenance.md) before changing catalog or snapshot data.
+
+The baseline owns only declared managed blocks, setup-owned guides, the Setup Manifest, and portable workflow rules. Repository-authored architecture and policy remain outside setup ownership. In particular, frontend guidance can require a repository-owned `DESIGN.md`, but setup never generates project-specific architecture.
 
 ## Audit-first workflow
 
@@ -33,12 +35,12 @@ Configure a repository for CONTEXT-driven development through the portable asset
    ```
 
    If a profile is known but the manifest is missing or stale, rerun with `--profile <profile-id>` to preview the selected composition.
-3. Read the JSON result. Present only:
+3. Require JSON schema `setup-context-driven/audit-v1`. Audit is local, read-only, and network-free. Read the result and present only:
    - selected profile and ordered modules;
    - selected canonical skill setup name;
    - active or conditional modules and their trigger decisions;
-   - blocking findings by code/path/action;
-   - `plannedChanges`, including `state` and `condition` for conditional operations;
+   - blocking findings by `code`, `managedId`, `path`, `message`, `action`, and structured `remediation` when present;
+   - every `plannedChanges` entry, including `action`, `path`, `managedId`, `state`, `reason`, `beforeDigest`, `afterDigest`, and optional `condition`, `fromPath`, and `referenceEdits`;
    - optional cleanup information only when audit was run with `--show-extra-skills`.
 4. Do not dump generated Markdown by default. Mention that full templates live under `assets/templates/` if the user asks to inspect them.
 
@@ -59,11 +61,19 @@ Question routing:
 - `secondbrain.enabled` — ask whether read-only local Secondbrain guidance must be generated.
 - `adoption.*` — ask only after showing the existing unmarked file that would become setup-owned.
 
-Record each answer by passing `--decision ID=VALUE` to apply. For newly introduced decisions, ask the new code once, then let the manifest carry it on later runs.
+Record each answer as a repeated `--decision ID=VALUE` argument. For newly introduced decisions, ask the new code once, then let the manifest carry it on later runs.
+
+After every required answer is known, rerun audit with the selected profile and the complete decision set:
+
+```bash
+rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py audit --repo <repo> --format json --profile <profile-id> --decision <id=value> ...
+```
+
+Only a fully resolved Decision Plan has an authorizable `planDigest`. If audit still returns `decision.required`, keep the repository unchanged and ask only the next reported decision.
 
 ## Preview and apply
 
-Apply is explicit and never runs before the user sees the managed change summary.
+Apply is explicit, local, and network-free. It never runs before the user sees the complete managed change summary from the resolved audit.
 
 Before applying, tell the user:
 
@@ -73,13 +83,44 @@ Before applying, tell the user:
 - that repository-authored bytes outside managed markers remain untouched;
 - that extra installed skills are informational only and this workflow never removes skills.
 
-Ask for confirmation. After confirmation, run:
+Ask for confirmation of the exact `planDigest`. After confirmation, rerun with the same profile and decisions and bind the write to that digest:
 
 ```bash
-rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py apply --repo <repo> --format json --profile <profile-id> --decision <id=value> ...
+rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py apply --repo <repo> --format json --profile <profile-id> --decision <id=value> ... --confirm-plan <planDigest>
 ```
 
-If apply returns `decision.required`, stop, present the unchanged selection and preview from the response, and ask only the next unresolved decision. If it returns blocking findings, report the code, path, and action; do not patch around the finding manually.
+If apply returns `plan.confirmation.stale`, the preimage or inputs changed: no write occurred. Present the recomputed plan and ask for confirmation of its new digest. If apply returns `decision.required`, present the unchanged selection and preview and ask only the next unresolved decision. For any other blocking finding, report its code, managed identity, path, reason, and action; do not patch around it manually.
+
+After apply, rerun the same resolved audit in JSON mode. A documentation-clean result exits `0`. Do not treat required-skill drift as permission to fetch or replace anything; restoration is the separate, explicit workflow below.
+
+## Explicit Repository Skill Set restoration
+
+Audit computes installed complete-tree digests from local files. Missing or drifted external required skills include structured `remediation` with the exact provider, skill, repository, immutable ref, source path, expected tree digest, and preview argv. Audit and documentation apply never execute that argv automatically.
+
+Only after the maintainer explicitly requests restoration, preview the affected external skills. The preview owns Git acquisition and can use the network; `--source-dir` instead points to an offline Git checkout or bare object store that contains the declared exact commit.
+
+```bash
+rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py restore-skills --repo <repo> --profile <profile-id> --skill <name> --format json [--source-dir <git-source>]
+```
+
+Require schema `setup-context-driven/restore-v1`. Present its `skills`, `acquisitions`, every created/refreshed/removed file and lock edit in `plannedChanges`, and `planDigest`. The preview exits `3` with `plan.confirmation.required` for a non-empty plan and does not mutate the repository.
+
+Ask for confirmation of that exact digest, then rerun the same preview arguments with the digest:
+
+```bash
+rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py restore-skills --repo <repo> --profile <profile-id> --skill <name> --format json [--source-dir <git-source>] --confirm-plan <planDigest>
+```
+
+The command restores the complete declared directory, including removal of files absent from the immutable source, updates only the selected portable lock entries, and verifies the final tree digest. A stale plan exits `3` without mutation and requires a new preview and confirmation. Source, proof, safety, lock-adapter, or write failures exit `1` before mutation or roll back all targets. There is no branch, default-revision, or generic skill-refresh fallback.
+
+After restoration, rerun the same resolved audit. A clean result proves the Context-Driven Baseline and selected Repository Skill Set; it does not prove project-specific architecture or policy completeness.
+
+## Exit categories
+
+- exit `0`: audit is clean, apply completed or was already current, or restoration completed or was already current;
+- exit `1`: blocking audit findings, or a source, proof, safety, lock-adapter, or write failure;
+- exit `2`: invalid arguments, malformed decisions or confirmation digest, invalid skill selection, or malformed lock input;
+- exit `3`: decisions are required, or a non-empty plan needs confirmation or became stale.
 
 ## Optional reports
 
@@ -107,4 +148,4 @@ Generated Secondbrain guidance must remain read-only. It must require index-firs
 
 ## Completion
 
-After apply, rerun audit in JSON mode. A clean setup has exit code `0`. Report remaining findings by code and path. Do not claim setup is complete without fresh audit evidence.
+Report every remaining finding by code, managed identity, and path. Do not claim setup is complete without a fresh resolved audit at exit `0`. The full sequence is audit, decision resolution, complete plan review, exact digest confirmation, apply, final audit, and—only when explicitly requested—previewed and digest-confirmed drift restoration followed by another audit.

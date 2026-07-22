@@ -7,6 +7,9 @@ from pathlib import Path
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = SKILL_ROOT / "scripts" / "context_setup.py"
+REPO_ROOT = SKILL_ROOT.parents[2]
+USER_GUIDE = REPO_ROOT / "docs" / "user-guide" / "context-driven-development.md"
+ASSET_GUIDE = SKILL_ROOT / "references" / "asset-maintenance.md"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from test_apply import BASE_DECISIONS, run_apply  # noqa: E402
@@ -136,6 +139,71 @@ class SetupWorkflowTests(unittest.TestCase):
         self.assertIn("--show-extra-skills", skill)
         self.assertIn("Never suggest a removal command", skill)
         self.assertIn("Do not dump generated Markdown by default", skill)
+
+    def test_operator_docs_publish_schema_exit_and_confirmation_contract(self):
+        skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        user_guide = USER_GUIDE.read_text(encoding="utf-8")
+
+        for document in (skill, user_guide):
+            self.assertIn("setup-context-driven/audit-v1", document)
+            self.assertIn("setup-context-driven/restore-v1", document)
+            self.assertIn("context_setup.py audit", document)
+            self.assertIn("context_setup.py apply", document)
+            self.assertIn("--confirm-plan", document)
+            self.assertIn("restore-skills", document)
+            self.assertIn("exit `0`", document)
+            self.assertIn("exit `1`", document)
+            self.assertIn("exit `2`", document)
+            self.assertIn("exit `3`", document)
+            for field in (
+                "action",
+                "path",
+                "managedId",
+                "state",
+                "reason",
+                "beforeDigest",
+                "afterDigest",
+                "condition",
+                "fromPath",
+                "referenceEdits",
+            ):
+                self.assertIn(f"`{field}`", document)
+            self.assertNotIn("bunx skills update", document)
+            self.assertNotIn("bunx skills experimental_install", document)
+
+        audit_index = skill.index("context_setup.py audit")
+        resolve_index = skill.index("fully resolved Decision Plan")
+        apply_index = skill.index("context_setup.py apply")
+        final_audit_index = skill.index("After apply, rerun the same resolved audit")
+        restore_index = skill.index("context_setup.py restore-skills")
+        self.assertLess(audit_index, resolve_index)
+        self.assertLess(resolve_index, apply_index)
+        self.assertLess(apply_index, final_audit_index)
+        self.assertLess(final_audit_index, restore_index)
+        self.assertIn("never removes skills", skill)
+        self.assertIn("never generates project-specific architecture", skill)
+        self.assertIn("never execute that argv automatically", skill)
+        self.assertIn("There is no branch, default-revision, or generic skill-refresh fallback", skill)
+
+    def test_asset_maintenance_doc_publishes_catalog_and_source_boundaries(self):
+        guide = ASSET_GUIDE.read_text(encoding="utf-8")
+
+        for token in (
+            "assets/coverage.json",
+            "requiredRules",
+            "skillDispatch",
+            "typed references",
+            "setup-context-driven/setup-snapshot-v2",
+            "treeDigest",
+            "sync-setups",
+            "make skills-sync",
+            ".agents/skills/setup-context-driven",
+            "skills/setup-context-driven",
+        ):
+            self.assertIn(token, guide)
+        self.assertIn("Do not edit upstream-managed skill content", guide)
+        self.assertIn("Spec 0036", guide)
+        self.assertIn("Doctor", guide)
 
 
 def run_context_setup(*args):

@@ -54,6 +54,63 @@ entirely. The routing rules live in
 `write-tasks`, so implementation always executes from a Task Graph rather than an
 ad-hoc plan.
 
+## Configure or audit the baseline
+
+The `setup-context-driven` skill manages the portable Context-Driven Baseline: declared root blocks, setup-owned guides, and `docs/agents/setup-context.json`. It preserves unmarked repository content, does not generate project-specific architecture, and never removes extra installed skills.
+
+Start with a local, read-only audit:
+
+```bash
+rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py audit --repo <repo> --profile <profile-id> --format json
+```
+
+The response uses `setup-context-driven/audit-v1`. Read the selected profile, ordered modules, canonical setup, findings, and complete `plannedChanges`. Each planned change includes `action`, `path`, `managedId`, `state`, `reason`, `beforeDigest`, and `afterDigest`, plus `condition`, `fromPath`, or `referenceEdits` when applicable. Findings name `code`, `managedId`, `path`, `message`, `action`, and structured `remediation` when available.
+
+Resolve each `decision.required` finding one at a time, then rerun audit with the complete decision set:
+
+```bash
+rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py audit --repo <repo> --profile <profile-id> --format json --decision <id=value> ...
+```
+
+`verification.gate` is required for every profile and records the repository's authoritative Verification command. A fully resolved plan carries `planDigest`. Review the entire plan and confirm that exact digest before apply:
+
+```bash
+rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py apply --repo <repo> --profile <profile-id> --format json --decision <id=value> ... --confirm-plan <planDigest>
+```
+
+Apply recomputes the plan. If repository bytes, decisions, the profile, or catalog content changed, it emits `plan.confirmation.stale`, exits `3`, and writes nothing; review the new plan and confirm its new digest. A non-empty apply without `--confirm-plan` emits `plan.confirmation.required`, exits `3`, and writes nothing. An empty plan exits `0` without confirmation. Audit and documentation apply use bundled assets only and remain local and network-free.
+
+After apply, rerun the same resolved audit. A clean audit proves setup-owned semantic coverage, typed references, the authorized managed tree, and installed Repository Skill Set digests. It does not prove repository-authored architecture or policy completeness.
+
+## Restore required external skills
+
+Restoration is never a side effect of audit or documentation apply. Missing or drifted external skills carry structured audit remediation with an immutable GitHub source, exact commit, source path, expected complete-tree digest, and preview argv. Run restoration only as an explicit maintainer action; do not substitute a generic skill refresh.
+
+Preview selected drift without mutating the repository:
+
+```bash
+rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py restore-skills --repo <repo> --profile <profile-id> --skill <name> --format json
+```
+
+Omit `--skill` to select all missing or drifted external skills required by the profile. The preview uses schema `setup-context-driven/restore-v1`, acquires the declared exact commit, verifies each source subtree, and reports all created, refreshed, and removed files plus each `skills-lock.json` edit. It exits `3` with `plan.confirmation.required` for a non-empty plan.
+
+Review `skills`, `acquisitions`, `plannedChanges`, and `planDigest`. Confirm that exact digest by rerunning the same command:
+
+```bash
+rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py restore-skills --repo <repo> --profile <profile-id> --skill <name> --format json --confirm-plan <planDigest>
+```
+
+Use `--source-dir <git-source>` on both preview and confirmation to use an offline Git checkout or bare object store containing the declared commit. Restoration owns Git acquisition; audit and apply never fetch. The command has no branch or default-revision fallback, preserves unrelated lock entries and extra skills, verifies the restored complete-tree digest, and rolls back all targets on an apply failure.
+
+Exit categories are stable across the operator workflow:
+
+- exit `0`: clean audit, successful apply or restoration, or an already-current plan;
+- exit `1`: blocking findings or a restoration source, proof, safety, lock-adapter, or write failure;
+- exit `2`: invalid arguments, decisions, confirmation digest, skill selection, or lock input;
+- exit `3`: unresolved decisions, confirmation required, or stale confirmation.
+
+After restoration, rerun the resolved audit. Spec 0036 and the Doctor Command own Repository Skill Set readiness and lock-hash compatibility; this setup workflow relies on that compatibility gate and does not add Doctor behavior.
+
 ## How Roundfix executes it
 
 Roundfix is the runtime for the implementation half of the pipeline. `roundfix
