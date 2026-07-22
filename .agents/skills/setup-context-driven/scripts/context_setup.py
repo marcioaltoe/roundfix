@@ -53,6 +53,33 @@ END_MARKER = re.compile(
 )
 MARKER = re.compile(r"<!--\s*setup-context-driven:(begin|end)\b[^>]*-->")
 MARKDOWN_LINK = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
+DELEGATION_SIGNAL = re.compile(
+    r"\b(?:consult|defer|deferred|delegate|delegated|delegation|defined|documented|"
+    r"follow|governed|maintained|read|refer|see)\b",
+    re.IGNORECASE,
+)
+DELEGATION_TARGET = re.compile(
+    r"(?:^|[^A-Za-z0-9_.-])(?:\.\.?/|/)*(?:AGENTS\.md|CLAUDE\.md|"
+    r"docs/agents/[A-Za-z0-9_./-]+\.md)(?=$|[^A-Za-z0-9_-])",
+    re.IGNORECASE,
+)
+DELEGATION_DOCUMENT_NAMES = frozenset({"AGENTS.md", "CLAUDE.md"})
+DELEGATION_IGNORED_DIRECTORIES = frozenset(
+    {
+        ".git",
+        ".hg",
+        ".svn",
+        ".venv",
+        "__pycache__",
+        "node_modules",
+        "vendor",
+        "venv",
+    }
+)
+DELEGATION_IGNORED_PREFIXES = (
+    (".agents", "skills", "setup-context-driven"),
+    ("skills", "setup-context-driven"),
+)
 NON_ENGLISH_MARKERS = [
     " não ",
     " obrigatório",
@@ -337,6 +364,12 @@ class AuditResult:
 class RestoreLimits:
     max_files: int = 2_000
     max_bytes: int = 8 * 1024 * 1024
+
+
+@dataclass(frozen=True)
+class DelegationScanLimits:
+    max_files: int = 256
+    max_bytes: int = 2 * 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -1586,6 +1619,9 @@ def run_apply_command(options: argparse.Namespace) -> int:
     if result.summary["errors"] or result.summary["decisions"] or invalid_input:
         render_result(result, options.format)
         return exit_code_for(result, invalid_input)
+    nonblocking_findings = [
+        item for item in result.findings if item.severity in {"warning", "info"}
+    ]
 
     confirmation = options.confirm_plan
     has_writes = any(
@@ -1599,16 +1635,17 @@ def run_apply_command(options: argparse.Namespace) -> int:
             else "The supplied confirmation does not match the current Change Plan."
         )
         blocked = AuditResult(
-            [
-                finding(
+            sorted_findings(
+                nonblocking_findings
+                + [finding(
                     code,
                     "decision",
                     ".",
                     "apply",
                     message,
                     "Review plannedChanges and rerun with --confirm-plan planDigest.",
-                )
-            ],
+                )]
+            ),
             selection=result.selection,
             planned_changes=result.planned_changes,
             plan_digest=result.plan_digest,
@@ -1619,16 +1656,17 @@ def run_apply_command(options: argparse.Namespace) -> int:
 
     if not has_writes:
         empty = AuditResult(
-            [
-                finding(
+            sorted_findings(
+                nonblocking_findings
+                + [finding(
                     "managed.apply.empty",
                     "info",
                     ".",
                     "apply",
                     "The repository already matches the selected Change Plan.",
                     "No action needed.",
-                )
-            ],
+                )]
+            ),
             selection=result.selection,
             planned_changes=(),
             plan_digest=result.plan_digest,
@@ -1659,16 +1697,17 @@ def run_apply_command(options: argparse.Namespace) -> int:
         return 1
 
     applied = AuditResult(
-        [
-            finding(
+        sorted_findings(
+            nonblocking_findings
+            + [finding(
                 "managed.apply.completed",
                 "info",
                 ".",
                 "apply",
                 "Managed setup content matches the selected profile.",
                 "No action needed.",
-            )
-        ],
+            )]
+        ),
         selection=result.selection,
         planned_changes=result.planned_changes,
         plan_digest=result.plan_digest,
@@ -1702,6 +1741,220 @@ def resolve_repo(repo_arg: str) -> Path:
     if not repo.is_absolute():
         repo = Path.cwd() / repo
     return repo.resolve(strict=False)
+
+
+def delegation_findings(
+    repo: Path,
+    catalog: AssetCatalog,
+    profile_id: str,
+    active_modules: Iterable[str] | None = None,
+    limits: DelegationScanLimits | None = None,
+) -> list[Finding]:
+    active_limits = limits or DelegationScanLimits()
+    documents, scan_finding = discover_delegation_documents(repo, active_limits)
+    if scan_finding is not None:
+        return [scan_finding]
+
+    selected_coverage = selected_clause_coverage(
+        catalog,
+        profile_id,
+        active_modules,
+    )
+    findings: list[Finding] = []
+    seen: set[tuple[str, str]] = set()
+    for relative_path, content in documents:
+        authored = repository_authored_instruction_text(relative_path, content)
+        for paragraph in re.split(r"\n\s*\n", authored):
+            if not DELEGATION_SIGNAL.search(paragraph):
+                continue
+            if not DELEGATION_TARGET.search(paragraph):
+                continue
+            for coverage_id, contract in sorted(catalog.coverage_contracts.items()):
+                if coverage_id in selected_coverage:
+                    continue
+                if not any(
+                    contains_delegation_alias(paragraph, alias)
+                    for alias in contract.delegation_aliases
+                ):
+                    continue
+                key = (relative_path.as_posix(), coverage_id)
+                if key in seen:
+                    continue
+                seen.add(key)
+                findings.append(
+                    finding(
+                        "delegation.baseline-floor",
+                        "info",
+                        relative_path.as_posix(),
+                        coverage_id,
+                        (
+                            f"Repository-authored instructions delegate {coverage_id}, "
+                            f"which profile {profile_id} does not cover."
+                        ),
+                        (
+                            "Treat the generated baseline as a floor; preserve the "
+                            "repository-owned guidance and select or add coverage deliberately."
+                        ),
+                    )
+                )
+    return sorted_findings(findings)
+
+
+def selected_clause_coverage(
+    catalog: AssetCatalog,
+    profile_id: str,
+    active_modules: Iterable[str] | None,
+) -> set[str]:
+    if active_modules is None:
+        rule_ids = catalog.profiles[profile_id].get("requiredRules", [])
+    else:
+        rule_ids = [
+            rule.get("id")
+            for module_id in active_modules
+            for rule in catalog.modules[module_id].get("rules", [])
+            if isinstance(rule, dict)
+        ]
+    return {
+        coverage_id
+        for rule_id in rule_ids
+        if isinstance(rule_id, str) and rule_id in catalog.rule_contracts
+        for coverage_id in catalog.rule_contracts[rule_id].coverage
+    }
+
+
+def discover_delegation_documents(
+    repo: Path,
+    limits: DelegationScanLimits,
+) -> tuple[tuple[tuple[Path, str], ...], Finding | None]:
+    if limits.max_files < 1 or limits.max_bytes < 1:
+        return (), delegation_scan_limit_finding(
+            "Delegation scan limits must be positive."
+        )
+
+    documents: list[tuple[Path, str]] = []
+    total_bytes = 0
+    pending: list[tuple[Path, Path]] = [(repo, Path())]
+    while pending:
+        absolute_directory, relative_directory = pending.pop()
+        try:
+            with os.scandir(absolute_directory) as iterator:
+                entries = sorted(iterator, key=lambda item: item.name)
+        except OSError as error:
+            return (), delegation_scan_read_finding(relative_directory, error)
+
+        nested: list[tuple[Path, Path]] = []
+        for entry in entries:
+            relative_path = relative_directory / entry.name
+            try:
+                if entry.is_symlink():
+                    continue
+                if entry.is_dir(follow_symlinks=False):
+                    if delegation_directory_is_ignored(relative_path):
+                        continue
+                    nested.append((Path(entry.path), relative_path))
+                    continue
+                if entry.name not in DELEGATION_DOCUMENT_NAMES:
+                    continue
+                if not entry.is_file(follow_symlinks=False):
+                    continue
+            except OSError as error:
+                return (), delegation_scan_read_finding(relative_path, error)
+
+            if len(documents) >= limits.max_files:
+                return (), delegation_scan_limit_finding(
+                    f"Delegation scan exceeds the {limits.max_files}-file limit."
+                )
+            remaining_bytes = limits.max_bytes - total_bytes
+            try:
+                data = read_instruction_bytes(Path(entry.path), remaining_bytes)
+            except OSError as error:
+                return (), delegation_scan_read_finding(relative_path, error)
+            if data is None:
+                return (), delegation_scan_limit_finding(
+                    f"Delegation scan exceeds the {limits.max_bytes}-byte limit."
+                )
+            try:
+                content = data.decode("utf-8")
+            except UnicodeDecodeError:
+                return (), delegation_scan_read_finding(
+                    relative_path,
+                    ValueError("instruction document is not UTF-8"),
+                )
+            total_bytes += len(data)
+            documents.append((relative_path, content))
+        pending.extend(reversed(nested))
+
+    return tuple(sorted(documents, key=lambda item: item[0].as_posix())), None
+
+
+def delegation_directory_is_ignored(relative_path: Path) -> bool:
+    if relative_path.name in DELEGATION_IGNORED_DIRECTORIES:
+        return True
+    parts = relative_path.parts
+    return any(parts[: len(prefix)] == prefix for prefix in DELEGATION_IGNORED_PREFIXES)
+
+
+def read_instruction_bytes(path: Path, max_bytes: int) -> bytes | None:
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(path, flags)
+    try:
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            return b""
+        chunks: list[bytes] = []
+        total = 0
+        while True:
+            chunk = os.read(descriptor, min(64 * 1024, max_bytes - total + 1))
+            if not chunk:
+                return b"".join(chunks)
+            chunks.append(chunk)
+            total += len(chunk)
+            if total > max_bytes:
+                return None
+    finally:
+        os.close(descriptor)
+
+
+def repository_authored_instruction_text(relative_path: Path, content: str) -> str:
+    spans, _ = parse_managed_block_spans(relative_path, content)
+    if not spans:
+        return content
+    characters = list(content)
+    for span in spans.values():
+        for index in range(span.start, span.end):
+            if characters[index] not in {"\n", "\r"}:
+                characters[index] = " "
+    return "".join(characters)
+
+
+def contains_delegation_alias(paragraph: str, alias: str) -> bool:
+    return re.search(
+        rf"(?<![A-Za-z0-9_]){re.escape(alias)}(?![A-Za-z0-9_])",
+        paragraph,
+        re.IGNORECASE,
+    ) is not None
+
+
+def delegation_scan_limit_finding(message: str) -> Finding:
+    return finding(
+        "delegation.scan-limit",
+        "info",
+        ".",
+        "delegation.scan",
+        message,
+        "Review repository instruction delegation directly; the baseline remains a floor.",
+    )
+
+
+def delegation_scan_read_finding(relative_path: Path, error: Exception) -> Finding:
+    path = relative_path.as_posix() or "."
+    return finding(
+        "delegation.scan-unreadable",
+        "info",
+        path,
+        "delegation.scan",
+        f"Delegation scan could not read {path}: {error}.",
+        "Review that instruction document directly; the baseline remains a floor.",
+    )
 
 
 def audit_repository(
@@ -2194,6 +2447,14 @@ def preview_result(
                 catalog,
                 decision_plan,
                 existing_manifest=existing_manifest,
+            )
+        )
+        findings.extend(
+            delegation_findings(
+                repo,
+                catalog,
+                profile_id,
+                active_modules=decision_plan.active_modules,
             )
         )
     return (
@@ -3397,6 +3658,14 @@ def plan_apply(
     )
     validation_findings = validate_change_plan(repo, plan, expected_artifacts)
     findings.extend(validation_findings)
+    findings.extend(
+        delegation_findings(
+            repo,
+            catalog,
+            profile_id,
+            active_modules=decision_plan.active_modules,
+        )
+    )
     return (
         AuditResult(
             sorted_findings(findings),
