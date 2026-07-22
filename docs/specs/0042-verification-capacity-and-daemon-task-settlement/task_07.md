@@ -97,4 +97,3 @@ must match shipped behavior and preserve skill ownership boundaries.
 - `_techspec.md` → System Architecture; API Contracts; Integration Points; Risks & Considerations; Build Order 7.
 - `../../adr/0056-spec-runs-separate-task-and-verification-capacity.md` → canonical capacity and temporary-failure contract.
 - `../../adr/0057-daemon-exclusively-owns-implement-task-status.md` → canonical Task-status and Agent-handoff contract.
-- `../../findings/2026-07-17-spec-task-verification-resource-contention.md` → incident evidence and preserved behavior.

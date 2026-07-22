@@ -7,7 +7,7 @@ surfaces: [backend, cli, data, docs]
 
 # Terminal outcome integrity
 
-A force-stopped Run can currently be completed again by its still-running owner, a Stop Request can remain unnoticed throughout a Review Source wait, and cleanup can target an Agent Session that never reached the active lifecycle. The resulting state is unsafe for users and Supervisors: the Run Database can contradict the Stop Command, the released lock can coexist with live work, and secondary cleanup noise can obscure the primary failure. These failures were observed in the [Fluxus PR #53 dogfood](../../findings/2026-07-15-fluxus-pr-53-watch-stop-reconciliation.md) and reproduced by the [Vortex detached-watch finding](../../findings/2026-07-16-vortex-pr87-detached-watch-notification.md).
+A force-stopped Run can currently be completed again by its still-running owner, a Stop Request can remain unnoticed throughout a Review Source wait, and cleanup can target an Agent Session that never reached the active lifecycle. The resulting state is unsafe for users and Supervisors: the Run Database can contradict the Stop Command, the released lock can coexist with live work, and secondary cleanup noise can obscure the primary failure. Prior dogfood evidence was absorbed into this Spec and remains in Git history; the still-open behavior is reproduced by the [Vortex detached-watch finding](../../findings/2026-07-16-vortex-pr87-detached-watch-notification.md).
 
 ## Goals
 

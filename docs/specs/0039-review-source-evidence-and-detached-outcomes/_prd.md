@@ -7,7 +7,7 @@ surfaces: [backend, cli, docs]
 
 # Review Source evidence and Detached Run outcomes
 
-Roundfix currently treats several different CodeRabbit states as the same signal: a completed check can mean a real review or an explicit skip, an approval can be ignored when a check is missing, and one transient GitHub failure can end a watch before any Round. When failure happens in a Detached Run, zero issue counts and a context-free notification leave users and Supervisors without the evidence needed to recover. These gaps are documented in the [Fluxus PR #53 dogfood](../../findings/2026-07-15-fluxus-pr-53-watch-stop-reconciliation.md) and the [Vortex detached-watch finding](../../findings/2026-07-16-vortex-pr87-detached-watch-notification.md).
+Roundfix currently treats several different CodeRabbit states as the same signal: a completed check can mean a real review or an explicit skip, an approval can be ignored when a check is missing, and one transient GitHub failure can end a watch before any Round. When failure happens in a Detached Run, zero issue counts and a context-free notification leave users and Supervisors without the evidence needed to recover. Prior dogfood evidence was absorbed into this Spec and remains in Git history; the still-open behavior is documented by the [Vortex detached-watch finding](../../findings/2026-07-16-vortex-pr87-detached-watch-notification.md).
 
 ## Goals
 

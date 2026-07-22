@@ -87,7 +87,7 @@ filesystem mutation.
 
 - instruction: `CONTEXT.md`
 - instruction: `docs/agents/skill-governance.md`
-- instruction: `docs/specs/0041-agent-selection-runtime-readiness/_techspec.md`
+- instruction: `docs/specs/_archived/0041-agent-selection-runtime-readiness/_techspec.md`
 - interface: `skills/skills.go`
 - interface: `skills/skills_test.go`
 - interface: `internal/cli/doctor.go`
@@ -114,13 +114,11 @@ filesystem mutation.
 - `_techspec.md` → Repository readiness contract; Owned-skill comparison;
   External lock and hash comparison; Doctor integration and output; Build Order
   1–3.
-- `docs/specs/0041-agent-selection-runtime-readiness/_techspec.md` → prerequisite
+- `docs/specs/_archived/0041-agent-selection-runtime-readiness/_techspec.md` → prerequisite
   profile-aware Doctor coordinator and output order.
 - `CONTEXT.md` → Doctor Command; Repository Skill Set; Roundfix Skill.
 - `docs/agents/skill-governance.md` → owned versus external authority and
   synchronization boundaries.
-- `docs/findings/2026-07-17-sync-setups-repo-owned-digest-drift.md` → reproduced
-  source-precedence failure and required regression boundary.
 
 ## Result
 

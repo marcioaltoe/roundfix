@@ -101,7 +101,7 @@ failure, and remediation contract as the shipped CLI.
 - `_techspec.md` → Documentation and skill synchronization; Coverage Map; Build
   Order 3; Risks & Considerations.
 - `task_01.md` → the shipped Doctor behavior this guidance must describe.
-- `docs/specs/0041-agent-selection-runtime-readiness/_prd.md` → profile-aware
+- `docs/specs/_archived/0041-agent-selection-runtime-readiness/_prd.md` → profile-aware
   Doctor prerequisite and separation of readiness concerns.
 - `docs/agents/skill-governance.md` → canonical/embedded sync and external
   ownership rules.
