@@ -69,6 +69,67 @@
         "Skill names are unique within a snapshot.",
         "The snapshot digest is the sha256 of ordered normalized paths."
       ]
+    },
+    {
+      "id": "contract.coverage",
+      "version": 1,
+      "path": "assets/coverage.json",
+      "requires": ["id", "version", "description"],
+      "rules": [
+        "Coverage identifiers are unique and stable across the catalog.",
+        "Every versioned rule references only declared coverage identifiers."
+      ]
+    },
+    {
+      "id": "contract.module-v2",
+      "version": 2,
+      "path": "assets/modules/*.json",
+      "requires": [
+        "id",
+        "version",
+        "dependsOn",
+        "conflictsWith",
+        "rootBlocks",
+        "supportingGuides",
+        "rules",
+        "requiredSkills",
+        "skillDispatch",
+        "requiredDecisions"
+      ],
+      "rules": [
+        "Every rule declares coverage identifiers and portable guidance.",
+        "Every required skill has exactly one dispatch declaration and no extra dispatch declaration exists.",
+        "Every required rule is carried by a selected supporting guide whose template renders artifact.rules.",
+        "Setup-owned references resolve by managed identity and repository-owned references use safe repository-relative paths."
+      ]
+    },
+    {
+      "id": "contract.profile-v2",
+      "version": 2,
+      "path": "assets/profiles/*.json",
+      "requires": [
+        "id",
+        "version",
+        "setup",
+        "entryDecisions",
+        "modules",
+        "requiredRules"
+      ],
+      "rules": [
+        "Every required rule belongs to a selected module.",
+        "Every required rule is reachable through a selected supporting-guide carrier."
+      ]
+    },
+    {
+      "id": "contract.setup-snapshot-v2",
+      "version": 2,
+      "path": "assets/setups/*.json",
+      "requires": ["id", "version", "source", "digest", "skills"],
+      "rules": [
+        "External skills declare a GitHub owner/repository, immutable full commit object ID, safe source-relative directory, and lowercase complete-tree digest.",
+        "Repository-owned skills remain distinct from external immutable sources.",
+        "The snapshot digest covers canonical serialization of complete normalized skill records."
+      ]
     }
   ],
   "diagnostics": [
@@ -92,7 +153,25 @@
     "decision.effect.binding.token.unknown",
     "decision.dependency.cycle",
     "template.token.undeclared",
+    "coverage.id.duplicate",
+    "coverage.description.invalid",
     "rule.id.duplicate",
+    "rule.coverage.duplicate",
+    "rule.coverage.unknown",
+    "rule.guidance.invalid",
+    "profile.rule.required.duplicate",
+    "profile.rule.required.unknown",
+    "profile.rule.module.missing",
+    "profile.rule.carrier.missing",
+    "profile.rule.binding.missing",
+    "skill.dispatch.id.duplicate",
+    "module.skillDispatch.mismatch",
+    "reference.id.duplicate",
+    "reference.managed.unknown",
+    "reference.repository.path.invalid",
+    "setup.skill.source.ref.mutable",
+    "setup.skill.source.path.invalid",
+    "setup.skill.treeDigest.invalid",
     "managed.block.id.duplicate",
     "skills.reference.outside-setup"
   ]

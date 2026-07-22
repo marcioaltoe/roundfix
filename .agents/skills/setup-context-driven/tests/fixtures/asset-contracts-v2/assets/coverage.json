@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "setup-context-driven/coverage-v1",
+  "version": 1,
+  "coverage": [
+    {
+      "id": "coverage.universal-safety",
+      "version": 1,
+      "description": "Portable safety behavior required by every profile."
+    }
+  ]
+}

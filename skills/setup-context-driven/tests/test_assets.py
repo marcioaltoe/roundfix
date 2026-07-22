@@ -1,10 +1,18 @@
+# Suite: setup asset contracts
+# Invariant: versioned catalogs accept only complete, safe, deterministic declarations.
+# Boundary IN: local asset loading, normalization, and semantic validation.
+# Boundary OUT: repository inspection, command execution, network access, and rendering.
+
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = SKILL_ROOT.parents[2]
+V2_FIXTURE_ROOT = Path(__file__).resolve().parent / "fixtures" / "asset-contracts-v2"
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 from context_assets import (  # noqa: E402
@@ -17,6 +25,86 @@ from context_assets import (  # noqa: E402
 
 
 class AssetContractTests(unittest.TestCase):
+    def test_versioned_contract_fixture_loads_normalized_values_deterministically(self):
+        first = load_asset_catalog(V2_FIXTURE_ROOT)
+        second = load_asset_catalog(V2_FIXTURE_ROOT)
+
+        self.assertEqual(first, second)
+        self.assertEqual(
+            first.coverage_contracts["coverage.universal-safety"].description,
+            "Portable safety behavior required by every profile.",
+        )
+        self.assertEqual(
+            first.rule_contracts["rule.core.root-cause-only"].coverage,
+            ("coverage.universal-safety",),
+        )
+        self.assertEqual(
+            first.skill_dispatch_by_module["core"][0].skill_name,
+            "coding-guidelines",
+        )
+        references = first.references_by_artifact["guide.agent-instructions"]
+        self.assertEqual(references[0].target_managed_id, "guide.agent-instructions")
+        self.assertEqual(references[1].repository_path, Path("DESIGN.md"))
+        source = first.external_sources_by_setup["fixture"][0]
+        self.assertEqual(source.skill_name, "coding-guidelines")
+        self.assertEqual(source.source.revision, "0123456789abcdef0123456789abcdef01234567")
+
+    def test_versioned_contract_mutations_fail_with_stable_diagnostics(self):
+        cases = [
+            ("missing rule carrier", self._remove_required_rule_carrier, "profile.rule.carrier.missing"),
+            ("missing rule owner module", self._remove_rule_owner_module, "profile.rule.module.missing"),
+            ("missing rule render binding", self._remove_rule_render_binding, "profile.rule.binding.missing"),
+            ("missing dispatch mapping", self._remove_dispatch_mapping, "module.skillDispatch.mismatch"),
+            ("extra dispatch mapping", self._add_extra_dispatch_mapping, "module.skillDispatch.mismatch"),
+            ("unknown rule coverage", self._unknown_rule_coverage, "rule.coverage.unknown"),
+            ("missing rule coverage", self._missing_rule_coverage, "rule.coverage.invalid"),
+            ("missing coverage description", self._missing_coverage_description, "coverage.description.invalid"),
+            ("unknown managed reference", self._unknown_managed_reference, "reference.managed.unknown"),
+            ("missing reference ownership", self._missing_reference_ownership, "reference.ownership.unknown"),
+            ("absolute repository path", self._absolute_repository_reference, "reference.repository.path.invalid"),
+            ("mutable external ref", self._mutable_external_ref, "setup.skill.source.ref.mutable"),
+            ("unsafe source path", self._unsafe_external_source_path, "setup.skill.source.path.invalid"),
+            ("malformed tree digest", self._malformed_tree_digest, "setup.skill.treeDigest.invalid"),
+            ("missing rule guidance", self._missing_rule_guidance, "rule.guidance.invalid"),
+            ("invalid external source shape", self._invalid_external_source_shape, "setup.skill.source.invalid"),
+        ]
+
+        for name, mutator, expected_code in cases:
+            with self.subTest(name=name):
+                diagnostics = self._load_invalid_v2_fixture(mutator)
+                self.assertIn(expected_code, diagnostics)
+
+    def test_versioned_contract_duplicate_identifiers_are_rejected(self):
+        cases = [
+            ("rule", self._duplicate_v2_rule, "rule.id.duplicate"),
+            ("coverage", self._duplicate_coverage, "coverage.id.duplicate"),
+            ("dispatch", self._duplicate_dispatch, "skill.dispatch.id.duplicate"),
+            ("reference", self._duplicate_reference, "reference.id.duplicate"),
+        ]
+
+        for name, mutator, expected_code in cases:
+            with self.subTest(name=name):
+                diagnostics = self._load_invalid_v2_fixture(mutator)
+                self.assertIn(expected_code, diagnostics)
+
+    def test_contract_loading_has_no_write_command_or_network_side_effects(self):
+        before = self._asset_bytes(V2_FIXTURE_ROOT)
+
+        with (
+            mock.patch.object(Path, "write_text", side_effect=AssertionError("write attempted")),
+            mock.patch("subprocess.run", side_effect=AssertionError("command attempted")),
+            mock.patch("urllib.request.urlopen", side_effect=AssertionError("network attempted")),
+        ):
+            load_asset_catalog(V2_FIXTURE_ROOT)
+
+        self.assertEqual(self._asset_bytes(V2_FIXTURE_ROOT), before)
+
+    def test_canonical_and_embedded_catalogs_load_successfully(self):
+        canonical = load_asset_catalog(SKILL_ROOT)
+        embedded = load_asset_catalog(REPO_ROOT / "skills" / "setup-context-driven")
+
+        self.assertEqual(canonical.ordered_modules_by_profile, embedded.ordered_modules_by_profile)
+
     def test_supported_profiles_resolve_to_deterministic_module_order(self):
         catalog = load_asset_catalog(SKILL_ROOT)
 
@@ -162,6 +250,147 @@ class AssetContractTests(unittest.TestCase):
                 load_asset_catalog(temp_root)
 
         return "\n".join(captured.exception.diagnostics)
+
+    def _load_invalid_v2_fixture(self, mutator):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir) / "setup-context-driven"
+            clone_assets_to(V2_FIXTURE_ROOT, temp_root)
+            mutator(temp_root)
+
+            with self.assertRaises(AssetValidationError) as captured:
+                load_asset_catalog(temp_root)
+
+        return "\n".join(captured.exception.diagnostics)
+
+    def _asset_bytes(self, skill_root):
+        return {
+            path.relative_to(skill_root).as_posix(): path.read_bytes()
+            for path in sorted((skill_root / "assets").rglob("*"))
+            if path.is_file()
+        }
+
+    def _v2_module(self, temp_root):
+        return temp_root / "assets" / "modules" / "core.json"
+
+    def _v2_setup(self, temp_root):
+        return temp_root / "assets" / "setups" / "fixture.json"
+
+    def _remove_required_rule_carrier(self, temp_root):
+        module = read_json_copy(self._v2_module(temp_root))
+        module["supportingGuides"][0]["rules"] = []
+        write_json(self._v2_module(temp_root), module)
+
+    def _remove_dispatch_mapping(self, temp_root):
+        module = read_json_copy(self._v2_module(temp_root))
+        module["skillDispatch"] = []
+        write_json(self._v2_module(temp_root), module)
+
+    def _remove_rule_owner_module(self, temp_root):
+        profile_path = temp_root / "assets" / "profiles" / "fixture.json"
+        profile = read_json_copy(profile_path)
+        profile["modules"] = []
+        write_json(profile_path, profile)
+
+    def _remove_rule_render_binding(self, temp_root):
+        template_path = (
+            temp_root
+            / "assets"
+            / "templates"
+            / "guides"
+            / "agent-instructions.md"
+        )
+        template_path.write_text(
+            template_path.read_text(encoding="utf-8").replace(
+                "{{artifact.rules}}", "Portable rules"
+            ),
+            encoding="utf-8",
+        )
+
+    def _add_extra_dispatch_mapping(self, temp_root):
+        module = read_json_copy(self._v2_module(temp_root))
+        module["skillDispatch"].append(
+            {"id": "extra-skill", "when": "An undeclared trigger runs."}
+        )
+        write_json(self._v2_module(temp_root), module)
+
+    def _unknown_rule_coverage(self, temp_root):
+        module = read_json_copy(self._v2_module(temp_root))
+        module["rules"][0]["coverage"] = ["coverage.missing"]
+        write_json(self._v2_module(temp_root), module)
+
+    def _missing_rule_coverage(self, temp_root):
+        module = read_json_copy(self._v2_module(temp_root))
+        del module["rules"][0]["coverage"]
+        write_json(self._v2_module(temp_root), module)
+
+    def _missing_coverage_description(self, temp_root):
+        path = temp_root / "assets" / "coverage.json"
+        coverage = read_json_copy(path)
+        del coverage["coverage"][0]["description"]
+        write_json(path, coverage)
+
+    def _unknown_managed_reference(self, temp_root):
+        module = read_json_copy(self._v2_module(temp_root))
+        module["supportingGuides"][0]["references"][0]["managedId"] = "guide.missing"
+        write_json(self._v2_module(temp_root), module)
+
+    def _missing_reference_ownership(self, temp_root):
+        module = read_json_copy(self._v2_module(temp_root))
+        del module["supportingGuides"][0]["references"][0]["ownership"]
+        write_json(self._v2_module(temp_root), module)
+
+    def _absolute_repository_reference(self, temp_root):
+        module = read_json_copy(self._v2_module(temp_root))
+        module["supportingGuides"][0]["references"][1]["path"] = "/tmp/DESIGN.md"
+        write_json(self._v2_module(temp_root), module)
+
+    def _mutable_external_ref(self, temp_root):
+        setup = read_json_copy(self._v2_setup(temp_root))
+        setup["skills"][0]["source"]["ref"] = "main"
+        write_json(self._v2_setup(temp_root), setup)
+
+    def _unsafe_external_source_path(self, temp_root):
+        setup = read_json_copy(self._v2_setup(temp_root))
+        setup["skills"][0]["source"]["path"] = "../coding-guidelines"
+        write_json(self._v2_setup(temp_root), setup)
+
+    def _malformed_tree_digest(self, temp_root):
+        setup = read_json_copy(self._v2_setup(temp_root))
+        setup["skills"][0]["treeDigest"] = "not-a-digest"
+        write_json(self._v2_setup(temp_root), setup)
+
+    def _missing_rule_guidance(self, temp_root):
+        module = read_json_copy(self._v2_module(temp_root))
+        del module["rules"][0]["guidance"]
+        write_json(self._v2_module(temp_root), module)
+
+    def _invalid_external_source_shape(self, temp_root):
+        setup = read_json_copy(self._v2_setup(temp_root))
+        setup["skills"][0]["source"] = []
+        write_json(self._v2_setup(temp_root), setup)
+
+    def _duplicate_v2_rule(self, temp_root):
+        module = read_json_copy(self._v2_module(temp_root))
+        module["rules"].append(module["rules"][0])
+        write_json(self._v2_module(temp_root), module)
+
+    def _duplicate_coverage(self, temp_root):
+        path = temp_root / "assets" / "coverage.json"
+        coverage = read_json_copy(path)
+        coverage["coverage"].append(coverage["coverage"][0])
+        write_json(path, coverage)
+
+    def _duplicate_dispatch(self, temp_root):
+        module = read_json_copy(self._v2_module(temp_root))
+        module["skillDispatch"].append(module["skillDispatch"][0])
+        write_json(self._v2_module(temp_root), module)
+
+    def _duplicate_reference(self, temp_root):
+        module = read_json_copy(self._v2_module(temp_root))
+        module["supportingGuides"][0]["references"].append(
+            module["supportingGuides"][0]["references"][0]
+        )
+        write_json(self._v2_module(temp_root), module)
 
     def _unknown_profile_module(self, temp_root):
         profile_path = temp_root / "assets" / "profiles" / "rust-cli.json"

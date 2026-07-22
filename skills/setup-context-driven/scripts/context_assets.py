@@ -11,12 +11,21 @@ from pathlib import Path
 
 
 ASSET_SCHEMA_VERSION = "setup-context-driven/assets-v1"
+COVERAGE_SCHEMA_VERSION = "setup-context-driven/coverage-v1"
 DECISIONS_SCHEMA_VERSION = "setup-context-driven/decisions-v1"
 MODULE_SCHEMA_VERSION = "setup-context-driven/module-v1"
+MODULE_SCHEMA_VERSION_V2 = "setup-context-driven/module-v2"
 PROFILE_SCHEMA_VERSION = "setup-context-driven/profile-v1"
+PROFILE_SCHEMA_VERSION_V2 = "setup-context-driven/profile-v2"
 SETUP_SCHEMA_VERSION = "setup-context-driven/setup-snapshot-v1"
+SETUP_SCHEMA_VERSION_V2 = "setup-context-driven/setup-snapshot-v2"
 TEMPLATES_SCHEMA_VERSION = "setup-context-driven/templates-v1"
 TEMPLATE_TOKEN = re.compile(r"\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}")
+LOWERCASE_SHA256 = re.compile(r"^[0-9a-f]{64}$")
+IMMUTABLE_GIT_REF = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
+GITHUB_REPOSITORY = re.compile(
+    r"^[A-Za-z0-9](?:[A-Za-z0-9_.-]{0,38})/[A-Za-z0-9_.-]+$"
+)
 EFFECT_FIELDS = {
     "when",
     "activateModules",
@@ -71,6 +80,50 @@ class DecisionEffect:
 
 
 @dataclass(frozen=True)
+class CoverageContract:
+    coverage_id: str
+    description: str
+
+
+@dataclass(frozen=True)
+class RuleContract:
+    rule_id: str
+    coverage: tuple[str, ...]
+    guidance: str
+
+
+@dataclass(frozen=True)
+class SkillDispatch:
+    skill_name: str
+    when: str
+
+
+@dataclass(frozen=True)
+class ArtifactReference:
+    reference_id: str
+    token: str
+    ownership: str
+    target_managed_id: str | None = None
+    repository_path: Path | None = None
+
+
+@dataclass(frozen=True)
+class SkillSourceRef:
+    provider: str
+    repository: str
+    revision: str
+    source_path: Path
+
+
+@dataclass(frozen=True)
+class ExternalSkillContract:
+    skill_name: str
+    target_path: Path
+    source: SkillSourceRef
+    tree_digest: str
+
+
+@dataclass(frozen=True)
 class AssetCatalog:
     decisions: dict[str, dict]
     modules: dict[str, dict]
@@ -80,6 +133,11 @@ class AssetCatalog:
     ordered_modules_by_profile: dict[str, list[str]]
     profile_entry_decisions: dict[str, tuple[str, ...]]
     decision_effects: dict[str, tuple[DecisionEffect, ...]]
+    coverage_contracts: dict[str, CoverageContract]
+    rule_contracts: dict[str, RuleContract]
+    skill_dispatch_by_module: dict[str, tuple[SkillDispatch, ...]]
+    references_by_artifact: dict[str, tuple[ArtifactReference, ...]]
+    external_sources_by_setup: dict[str, tuple[ExternalSkillContract, ...]]
 
 
 @dataclass(frozen=True)
@@ -103,14 +161,25 @@ def load_asset_catalog(skill_root: str | Path) -> AssetCatalog:
 
     decisions_doc = _read_json(assets_root / "decisions.json", diagnostics)
     templates_doc = _read_json(assets_root / "templates" / "index.json", diagnostics)
+    coverage_path = assets_root / "coverage.json"
+    coverage_doc = _read_json(coverage_path, diagnostics) if coverage_path.is_file() else {}
     modules = _read_collection(
-        assets_root / "modules", MODULE_SCHEMA_VERSION, "module", diagnostics
+        assets_root / "modules",
+        (MODULE_SCHEMA_VERSION, MODULE_SCHEMA_VERSION_V2),
+        "module",
+        diagnostics,
     )
     profiles = _read_collection(
-        assets_root / "profiles", PROFILE_SCHEMA_VERSION, "profile", diagnostics
+        assets_root / "profiles",
+        (PROFILE_SCHEMA_VERSION, PROFILE_SCHEMA_VERSION_V2),
+        "profile",
+        diagnostics,
     )
     setups = _read_collection(
-        assets_root / "setups", SETUP_SCHEMA_VERSION, "setup", diagnostics
+        assets_root / "setups",
+        (SETUP_SCHEMA_VERSION, SETUP_SCHEMA_VERSION_V2),
+        "setup",
+        diagnostics,
     )
 
     decisions = _index_assets(
@@ -127,15 +196,39 @@ def load_asset_catalog(skill_root: str | Path) -> AssetCatalog:
         "template",
         diagnostics,
     )
+    coverage = _index_assets(
+        coverage_doc,
+        "coverage",
+        COVERAGE_SCHEMA_VERSION,
+        "coverage",
+        diagnostics,
+    )
 
+    _validate_versions(coverage, "coverage", diagnostics)
     _validate_versions(decisions, "decision", diagnostics)
     _validate_versions(templates, "template", diagnostics)
     _validate_versions(modules, "module", diagnostics)
     _validate_versions(profiles, "profile", diagnostics)
     _validate_versions(setups, "setup", diagnostics)
-    template_tokens = _validate_templates(assets_root / "templates", templates, diagnostics)
+    coverage_contracts = _validate_coverage_contracts(coverage, diagnostics)
+    template_tokens, rendered_template_tokens = _validate_templates(
+        assets_root / "templates", templates, diagnostics
+    )
     _validate_modules(modules, decisions, templates, diagnostics)
-    _validate_setups(setups, diagnostics)
+    (
+        rule_contracts,
+        skill_dispatch_by_module,
+        references_by_artifact,
+    ) = _validate_versioned_module_contracts(
+        modules,
+        decisions,
+        coverage_contracts,
+        templates,
+        template_tokens,
+        rendered_template_tokens,
+        diagnostics,
+    )
+    external_sources_by_setup = _validate_setups(setups, diagnostics)
     profile_entry_decisions = _validate_profile_entry_decisions(
         profiles, decisions, diagnostics
     )
@@ -161,6 +254,15 @@ def load_asset_catalog(skill_root: str | Path) -> AssetCatalog:
             continue
         _validate_profile_skills(profile_id, ordered_modules, modules, setup, diagnostics)
 
+    _validate_profile_rule_contracts(
+        profiles,
+        ordered_modules_by_profile,
+        modules,
+        rule_contracts,
+        rendered_template_tokens,
+        diagnostics,
+    )
+
     if diagnostics:
         raise AssetValidationError(diagnostics)
 
@@ -173,6 +275,11 @@ def load_asset_catalog(skill_root: str | Path) -> AssetCatalog:
         ordered_modules_by_profile=ordered_modules_by_profile,
         profile_entry_decisions=profile_entry_decisions,
         decision_effects=decision_effects,
+        coverage_contracts=coverage_contracts,
+        rule_contracts=rule_contracts,
+        skill_dispatch_by_module=skill_dispatch_by_module,
+        references_by_artifact=references_by_artifact,
+        external_sources_by_setup=external_sources_by_setup,
     )
 
 
@@ -213,10 +320,13 @@ def _read_json(path: Path, diagnostics: list[str]) -> dict:
 
 def _read_collection(
     directory: Path,
-    schema_version: str,
+    schema_versions: str | tuple[str, ...],
     kind: str,
     diagnostics: list[str],
 ) -> dict[str, dict]:
+    accepted_versions = (
+        (schema_versions,) if isinstance(schema_versions, str) else schema_versions
+    )
     collection: dict[str, dict] = {}
     for path in sorted(directory.glob("*.json")):
         data = _read_json(path, diagnostics)
@@ -225,9 +335,10 @@ def _read_collection(
             continue
         if not data:
             continue
-        if data.get("schemaVersion") != schema_version:
+        if data.get("schemaVersion") not in accepted_versions:
+            expected = ", ".join(accepted_versions)
             diagnostics.append(
-                f"{kind}.schemaVersion: {path.name}: expected {schema_version}"
+                f"{kind}.schemaVersion: {path.name}: expected one of {expected}"
             )
         asset_id = data.get("id")
         if not isinstance(asset_id, str) or not asset_id:
@@ -286,12 +397,29 @@ def _validate_versions(
             diagnostics.append(f"{kind}.version.invalid: {asset_id}")
 
 
+def _validate_coverage_contracts(
+    coverage: dict[str, dict], diagnostics: list[str]
+) -> dict[str, CoverageContract]:
+    contracts: dict[str, CoverageContract] = {}
+    for coverage_id, item in sorted(coverage.items()):
+        description = item.get("description")
+        if not isinstance(description, str) or not description.strip():
+            diagnostics.append(f"coverage.description.invalid: {coverage_id}")
+            continue
+        contracts[coverage_id] = CoverageContract(
+            coverage_id=coverage_id,
+            description=description,
+        )
+    return contracts
+
+
 def _validate_templates(
     templates_root: Path,
     templates: dict[str, dict],
     diagnostics: list[str],
-) -> dict[str, set[str]]:
+) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
     template_tokens: dict[str, set[str]] = {}
+    rendered_tokens: dict[str, set[str]] = {}
     for template_id, template in sorted(templates.items()):
         declared_tokens = _declared_template_tokens(template_id, template, diagnostics)
         template_tokens[template_id] = declared_tokens
@@ -304,10 +432,12 @@ def _validate_templates(
             diagnostics.append(f"template.file.missing: {template_id}: {path}")
             continue
         content = template_path.read_text(encoding="utf-8")
-        for token in sorted(set(TEMPLATE_TOKEN.findall(content))):
+        content_tokens = set(TEMPLATE_TOKEN.findall(content))
+        rendered_tokens[template_id] = content_tokens
+        for token in sorted(content_tokens):
             if token not in declared_tokens:
                 diagnostics.append(f"template.token.undeclared: {template_id} -> {token}")
-    return template_tokens
+    return template_tokens, rendered_tokens
 
 
 def _declared_template_tokens(
@@ -341,6 +471,8 @@ def _validate_modules(
     seen_guides: dict[str, str] = {}
 
     for module_id, module in sorted(modules.items()):
+        if module.get("schemaVersion") == MODULE_SCHEMA_VERSION_V2:
+            continue
         for dependency_id in module.get("dependsOn", []):
             if dependency_id not in modules:
                 diagnostics.append(
@@ -411,6 +543,306 @@ def _validate_modules(
             _validate_rule_references(
                 guide.get("rules", []), module, diagnostics, guide_id
             )
+
+
+def _validate_versioned_module_contracts(
+    modules: dict[str, dict],
+    decisions: dict[str, dict],
+    coverage: dict[str, CoverageContract],
+    templates: dict[str, dict],
+    template_tokens: dict[str, set[str]],
+    rendered_template_tokens: dict[str, set[str]],
+    diagnostics: list[str],
+) -> tuple[
+    dict[str, RuleContract],
+    dict[str, tuple[SkillDispatch, ...]],
+    dict[str, tuple[ArtifactReference, ...]],
+]:
+    versioned_modules = {
+        module_id: module
+        for module_id, module in modules.items()
+        if module.get("schemaVersion") == MODULE_SCHEMA_VERSION_V2
+    }
+    if not versioned_modules:
+        return {}, {}, {}
+    if not coverage:
+        diagnostics.append("coverage.catalog.missing: versioned modules require coverage.json")
+
+    rule_contracts: dict[str, RuleContract] = {}
+    rule_owners: dict[str, str] = {}
+    dispatch_by_module: dict[str, tuple[SkillDispatch, ...]] = {}
+    references_by_artifact: dict[str, tuple[ArtifactReference, ...]] = {}
+    artifacts: dict[str, tuple[str, str, dict]] = {}
+    reference_owners: dict[str, str] = {}
+    block_owners: dict[str, str] = {}
+    guide_owners: dict[str, str] = {}
+
+    for module_id, module in sorted(modules.items()):
+        if module.get("schemaVersion") == MODULE_SCHEMA_VERSION_V2:
+            continue
+        for rule in _dict_items(module.get("rules")):
+            rule_id = rule.get("id")
+            if isinstance(rule_id, str) and rule_id:
+                rule_owners[rule_id] = module_id
+        for block in _dict_items(module.get("rootBlocks")):
+            block_id = block.get("id")
+            if isinstance(block_id, str) and block_id:
+                block_owners[block_id] = module_id
+        for guide in _dict_items(module.get("supportingGuides")):
+            guide_id = guide.get("id")
+            if isinstance(guide_id, str) and guide_id:
+                guide_owners[guide_id] = module_id
+
+    required_module_fields = {
+        "id",
+        "version",
+        "dependsOn",
+        "conflictsWith",
+        "rootBlocks",
+        "supportingGuides",
+        "rules",
+        "requiredSkills",
+        "skillDispatch",
+        "requiredDecisions",
+    }
+    for module_id, module in sorted(versioned_modules.items()):
+        _validate_required_fields(
+            module, required_module_fields, "module", module_id, diagnostics
+        )
+        dependencies = _validated_string_list(
+            module.get("dependsOn"), f"module.dependsOn.invalid: {module_id}", diagnostics
+        )
+        conflicts = _validated_string_list(
+            module.get("conflictsWith"),
+            f"module.conflictsWith.invalid: {module_id}",
+            diagnostics,
+        )
+        required_decisions = _validated_string_list(
+            module.get("requiredDecisions"),
+            f"module.requiredDecisions.invalid: {module_id}",
+            diagnostics,
+        )
+        for dependency_id in dependencies:
+            if dependency_id not in modules:
+                diagnostics.append(
+                    f"module.dependency.unknown: {module_id} -> {dependency_id}"
+                )
+        for conflict_id in conflicts:
+            if conflict_id not in modules:
+                diagnostics.append(f"module.conflict.unknown: {module_id} -> {conflict_id}")
+        for decision_id in required_decisions:
+            if decision_id not in decisions:
+                diagnostics.append(f"module.decision.unknown: {module_id} -> {decision_id}")
+
+        raw_rules = _validated_dict_list(
+            module.get("rules"), f"module.rules.invalid: {module_id}", diagnostics
+        )
+        for rule in raw_rules:
+            rule_id = rule.get("id")
+            if not isinstance(rule_id, str) or not rule_id:
+                diagnostics.append(f"rule.id.missing: {module_id}")
+                continue
+            owner = rule_owners.get(rule_id)
+            if owner is not None:
+                diagnostics.append(f"rule.id.duplicate: {rule_id}: {owner}, {module_id}")
+            rule_owners[rule_id] = module_id
+            if not isinstance(rule.get("version"), int) or rule["version"] < 1:
+                diagnostics.append(f"rule.version.invalid: {rule_id}")
+            raw_coverage = _validated_string_list(
+                rule.get("coverage"), f"rule.coverage.invalid: {rule_id}", diagnostics
+            )
+            if len(set(raw_coverage)) != len(raw_coverage):
+                diagnostics.append(f"rule.coverage.duplicate: {rule_id}")
+            for coverage_id in raw_coverage:
+                if coverage_id not in coverage:
+                    diagnostics.append(f"rule.coverage.unknown: {rule_id} -> {coverage_id}")
+            guidance = rule.get("guidance")
+            if not isinstance(guidance, str) or not guidance.strip():
+                diagnostics.append(f"rule.guidance.invalid: {rule_id}")
+                continue
+            rule_contracts[rule_id] = RuleContract(
+                rule_id=rule_id,
+                coverage=tuple(raw_coverage),
+                guidance=guidance,
+            )
+
+        required_skills = _validated_string_list(
+            module.get("requiredSkills"),
+            f"module.requiredSkills.invalid: {module_id}",
+            diagnostics,
+        )
+        if len(set(required_skills)) != len(required_skills):
+            diagnostics.append(f"module.requiredSkills.duplicate: {module_id}")
+        dispatch_by_module[module_id] = _validate_skill_dispatch(
+            module_id, module.get("skillDispatch"), required_skills, diagnostics
+        )
+
+        for field, kind in (("rootBlocks", "root-block"), ("supportingGuides", "guide")):
+            raw_artifacts = _validated_dict_list(
+                module.get(field), f"module.{field}.invalid: {module_id}", diagnostics
+            )
+            for artifact in raw_artifacts:
+                artifact_id = artifact.get("id")
+                if not isinstance(artifact_id, str) or not artifact_id:
+                    diagnostics.append(f"managed.artifact.id.missing: {module_id}")
+                    continue
+                owners = block_owners if kind == "root-block" else guide_owners
+                diagnostic_kind = "managed.block" if kind == "root-block" else "guide"
+                owner = owners.get(artifact_id)
+                if owner is not None:
+                    diagnostics.append(
+                        f"{diagnostic_kind}.id.duplicate: {artifact_id}: {owner}, {module_id}"
+                    )
+                owners[artifact_id] = module_id
+                if not isinstance(artifact.get("version"), int) or artifact["version"] < 1:
+                    diagnostics.append(f"{diagnostic_kind}.version.invalid: {artifact_id}")
+                if kind == "guide":
+                    target_path = artifact.get("path")
+                    if not isinstance(target_path, str) or _is_unsafe_relative_path(target_path):
+                        diagnostics.append(f"guide.path.invalid: {artifact_id}")
+                _validate_template_reference(
+                    artifact.get("template"), kind, templates, diagnostics, artifact_id
+                )
+                artifact_rules = _validated_string_list(
+                    artifact.get("rules"),
+                    f"rule.references.invalid: {artifact_id}",
+                    diagnostics,
+                )
+                if len(set(artifact_rules)) != len(artifact_rules):
+                    diagnostics.append(f"rule.reference.duplicate: {artifact_id}")
+                module_rule_ids = {item.get("id") for item in raw_rules}
+                for rule_id in artifact_rules:
+                    if rule_id not in module_rule_ids:
+                        diagnostics.append(f"rule.reference.unknown: {artifact_id} -> {rule_id}")
+                if "references" not in artifact:
+                    diagnostics.append(f"reference.collection.missing: {artifact_id}")
+                artifacts[artifact_id] = (module_id, kind, artifact)
+
+    for artifact_id, (_, _, artifact) in sorted(artifacts.items()):
+        references_by_artifact[artifact_id] = _validate_artifact_references(
+            artifact_id,
+            artifact,
+            artifacts,
+            templates,
+            template_tokens,
+            rendered_template_tokens,
+            reference_owners,
+            diagnostics,
+        )
+
+    return rule_contracts, dispatch_by_module, references_by_artifact
+
+
+def _validate_skill_dispatch(
+    module_id: str,
+    raw_dispatch: object,
+    required_skills: list[str],
+    diagnostics: list[str],
+) -> tuple[SkillDispatch, ...]:
+    items = _validated_dict_list(
+        raw_dispatch, f"module.skillDispatch.invalid: {module_id}", diagnostics
+    )
+    dispatch: list[SkillDispatch] = []
+    seen: set[str] = set()
+    for item in items:
+        skill_name = item.get("id")
+        when = item.get("when")
+        if not isinstance(skill_name, str) or not skill_name:
+            diagnostics.append(f"skill.dispatch.id.missing: {module_id}")
+            continue
+        if skill_name in seen:
+            diagnostics.append(f"skill.dispatch.id.duplicate: {module_id} -> {skill_name}")
+        seen.add(skill_name)
+        if not isinstance(when, str) or not when.strip():
+            diagnostics.append(f"skill.dispatch.when.invalid: {module_id} -> {skill_name}")
+            continue
+        dispatch.append(SkillDispatch(skill_name=skill_name, when=when))
+
+    required = set(required_skills)
+    declared = set(seen)
+    if required != declared:
+        missing = ",".join(sorted(required - declared)) or "-"
+        extra = ",".join(sorted(declared - required)) or "-"
+        diagnostics.append(
+            f"module.skillDispatch.mismatch: {module_id}: missing={missing}: extra={extra}"
+        )
+    return tuple(dispatch)
+
+
+def _validate_artifact_references(
+    artifact_id: str,
+    artifact: dict,
+    artifacts: dict[str, tuple[str, str, dict]],
+    templates: dict[str, dict],
+    template_tokens: dict[str, set[str]],
+    rendered_template_tokens: dict[str, set[str]],
+    reference_owners: dict[str, str],
+    diagnostics: list[str],
+) -> tuple[ArtifactReference, ...]:
+    items = _validated_dict_list(
+        artifact.get("references"),
+        f"reference.collection.invalid: {artifact_id}",
+        diagnostics,
+    )
+    template_id = artifact.get("template")
+    declared_tokens = template_tokens.get(template_id, set())
+    rendered_tokens = rendered_template_tokens.get(template_id, set())
+    references: list[ArtifactReference] = []
+    for item in items:
+        reference_id = item.get("id")
+        token = item.get("token")
+        ownership = item.get("ownership")
+        if not isinstance(reference_id, str) or not reference_id:
+            diagnostics.append(f"reference.id.missing: {artifact_id}")
+            continue
+        owner = reference_owners.get(reference_id)
+        if owner is not None:
+            diagnostics.append(f"reference.id.duplicate: {reference_id}: {owner}, {artifact_id}")
+        reference_owners[reference_id] = artifact_id
+        if not isinstance(token, str) or not token:
+            diagnostics.append(f"reference.token.invalid: {reference_id}")
+            continue
+        if token not in declared_tokens or token not in rendered_tokens:
+            diagnostics.append(f"reference.token.unknown: {reference_id} -> {token}")
+
+        if ownership == "setup":
+            managed_id = item.get("managedId")
+            if not isinstance(managed_id, str) or not managed_id:
+                diagnostics.append(f"reference.managed.invalid: {reference_id}")
+                continue
+            if managed_id not in artifacts:
+                diagnostics.append(f"reference.managed.unknown: {reference_id} -> {managed_id}")
+            if "path" in item:
+                diagnostics.append(f"reference.shape.invalid: {reference_id}")
+            references.append(
+                ArtifactReference(
+                    reference_id=reference_id,
+                    token=token,
+                    ownership=ownership,
+                    target_managed_id=managed_id,
+                )
+            )
+            continue
+
+        if ownership == "repository":
+            repository_path = item.get("path")
+            if not isinstance(repository_path, str) or _is_unsafe_relative_path(repository_path):
+                diagnostics.append(f"reference.repository.path.invalid: {reference_id}")
+                continue
+            if "managedId" in item:
+                diagnostics.append(f"reference.shape.invalid: {reference_id}")
+            references.append(
+                ArtifactReference(
+                    reference_id=reference_id,
+                    token=token,
+                    ownership=ownership,
+                    repository_path=Path(repository_path),
+                )
+            )
+            continue
+
+        diagnostics.append(f"reference.ownership.unknown: {reference_id} -> {ownership}")
+    return tuple(references)
 
 
 def _validate_profile_entry_decisions(
@@ -802,6 +1234,55 @@ def _validate_string_list(
     return list(raw_items)
 
 
+def _validate_required_fields(
+    data: dict,
+    fields: set[str],
+    kind: str,
+    asset_id: str,
+    diagnostics: list[str],
+) -> None:
+    for field in sorted(fields - set(data)):
+        diagnostics.append(f"{kind}.field.missing: {asset_id} -> {field}")
+
+
+def _validated_string_list(
+    raw_items: object,
+    diagnostic: str,
+    diagnostics: list[str],
+) -> list[str]:
+    if not isinstance(raw_items, list) or not all(
+        isinstance(item, str) and item for item in raw_items
+    ):
+        diagnostics.append(diagnostic)
+        return []
+    return list(raw_items)
+
+
+def _validated_dict_list(
+    raw_items: object,
+    diagnostic: str,
+    diagnostics: list[str],
+) -> list[dict]:
+    if not isinstance(raw_items, list) or not all(
+        isinstance(item, dict) for item in raw_items
+    ):
+        diagnostics.append(diagnostic)
+        return []
+    return list(raw_items)
+
+
+def _dict_items(raw_items: object) -> list[dict]:
+    if not isinstance(raw_items, list):
+        return []
+    return [item for item in raw_items if isinstance(item, dict)]
+
+
+def _string_items(raw_items: object) -> list[str]:
+    if not isinstance(raw_items, list):
+        return []
+    return [item for item in raw_items if isinstance(item, str)]
+
+
 def _index_artifact_targets(modules: dict[str, dict]) -> dict[str, _ArtifactTarget]:
     artifacts: dict[str, _ArtifactTarget] = {}
     for module_id, module in sorted(modules.items()):
@@ -880,8 +1361,16 @@ def _validate_rule_references(
             diagnostics.append(f"rule.reference.unknown: {owner_id} -> {rule_id}")
 
 
-def _validate_setups(setups: dict[str, dict], diagnostics: list[str]) -> None:
+def _validate_setups(
+    setups: dict[str, dict], diagnostics: list[str]
+) -> dict[str, tuple[ExternalSkillContract, ...]]:
+    external_by_setup: dict[str, tuple[ExternalSkillContract, ...]] = {}
     for setup_id, setup in sorted(setups.items()):
+        if setup.get("schemaVersion") == SETUP_SCHEMA_VERSION_V2:
+            external_by_setup[setup_id] = _validate_versioned_setup(
+                setup_id, setup, diagnostics
+            )
+            continue
         seen_names: set[str] = set()
         normalized_paths: list[str] = []
         for skill in setup.get("skills", []):
@@ -907,6 +1396,119 @@ def _validate_setups(setups: dict[str, dict], diagnostics: list[str]) -> None:
             diagnostics.append(
                 f"setup.digest.mismatch: {setup_id}: expected {expected_digest}"
             )
+    return external_by_setup
+
+
+def _validate_versioned_setup(
+    setup_id: str, setup: dict, diagnostics: list[str]
+) -> tuple[ExternalSkillContract, ...]:
+    _validate_required_fields(
+        setup,
+        {"id", "version", "source", "digest", "skills"},
+        "setup",
+        setup_id,
+        diagnostics,
+    )
+    skills = _validated_dict_list(
+        setup.get("skills"), f"setup.skills.invalid: {setup_id}", diagnostics
+    )
+    external: list[ExternalSkillContract] = []
+    normalized_records: list[dict] = []
+    seen_names: set[str] = set()
+    for skill in skills:
+        name = skill.get("name")
+        target_path = skill.get("path")
+        if not isinstance(name, str) or not name:
+            diagnostics.append(f"setup.skill.name.missing: {setup_id}")
+            continue
+        if name in seen_names:
+            diagnostics.append(f"setup.skill.name.duplicate: {setup_id}: {name}")
+        seen_names.add(name)
+        if not isinstance(target_path, str) or _is_unsafe_relative_path(target_path):
+            diagnostics.append(f"setup.skill.path.invalid: {setup_id}: {name}")
+            continue
+
+        source = skill.get("source")
+        if not isinstance(source, dict):
+            diagnostics.append(f"setup.skill.source.invalid: {setup_id}: {name}")
+            continue
+        source_type = source.get("type")
+        if source_type == "github":
+            repository = source.get("repository")
+            revision = source.get("ref")
+            source_path = source.get("path")
+            tree_digest = skill.get("treeDigest")
+            valid = True
+            if not isinstance(repository, str) or not _is_github_repository(repository):
+                diagnostics.append(f"setup.skill.source.repository.invalid: {setup_id}: {name}")
+                valid = False
+            if not isinstance(revision, str) or not IMMUTABLE_GIT_REF.fullmatch(revision):
+                diagnostics.append(f"setup.skill.source.ref.mutable: {setup_id}: {name}")
+                valid = False
+            if not isinstance(source_path, str) or _is_unsafe_relative_path(source_path):
+                diagnostics.append(f"setup.skill.source.path.invalid: {setup_id}: {name}")
+                valid = False
+            if not isinstance(tree_digest, str) or not LOWERCASE_SHA256.fullmatch(tree_digest):
+                diagnostics.append(f"setup.skill.treeDigest.invalid: {setup_id}: {name}")
+                valid = False
+            normalized_records.append(
+                {
+                    "name": name,
+                    "path": target_path,
+                    "source": {
+                        "type": source_type,
+                        "repository": repository,
+                        "ref": revision,
+                        "path": source_path,
+                    },
+                    "treeDigest": tree_digest,
+                }
+            )
+            if valid:
+                source_ref = SkillSourceRef(
+                    provider="github",
+                    repository=repository,
+                    revision=revision,
+                    source_path=Path(source_path),
+                )
+                external.append(
+                    ExternalSkillContract(
+                        skill_name=name,
+                        target_path=Path(target_path),
+                        source=source_ref,
+                        tree_digest=tree_digest,
+                    )
+                )
+            continue
+
+        if source_type == "repo":
+            source_name = source.get("name")
+            content_digest = skill.get("contentDigest")
+            if not isinstance(source_name, str) or not source_name:
+                diagnostics.append(f"setup.skill.source.repo.invalid: {setup_id}: {name}")
+            if not isinstance(content_digest, str) or not LOWERCASE_SHA256.fullmatch(
+                content_digest
+            ):
+                diagnostics.append(f"setup.skill.contentDigest.invalid: {setup_id}: {name}")
+            normalized_records.append(
+                {
+                    "name": name,
+                    "path": target_path,
+                    "source": {"type": source_type, "name": source_name},
+                    "contentDigest": content_digest,
+                }
+            )
+            continue
+
+        diagnostics.append(f"setup.skill.source.type.unknown: {setup_id}: {name} -> {source_type}")
+
+    declared_digest = setup.get("digest")
+    expected_digest = _normalized_records_digest(normalized_records)
+    if not isinstance(declared_digest, str) or not LOWERCASE_SHA256.fullmatch(declared_digest):
+        diagnostics.append(f"setup.digest.invalid: {setup_id}")
+    elif declared_digest != expected_digest:
+        diagnostics.append(f"setup.digest.mismatch: {setup_id}: expected {expected_digest}")
+    return tuple(external)
 
 
 def _resolve_profile_modules(
@@ -1000,11 +1602,95 @@ def _validate_profile_skills(
                 )
 
 
+def _validate_profile_rule_contracts(
+    profiles: dict[str, dict],
+    ordered_modules_by_profile: dict[str, list[str]],
+    modules: dict[str, dict],
+    rule_contracts: dict[str, RuleContract],
+    rendered_template_tokens: dict[str, set[str]],
+    diagnostics: list[str],
+) -> None:
+    rule_owners: dict[str, str] = {}
+    for module_id, module in sorted(modules.items()):
+        if module.get("schemaVersion") != MODULE_SCHEMA_VERSION_V2:
+            continue
+        for rule in _dict_items(module.get("rules")):
+            rule_id = rule.get("id")
+            if isinstance(rule_id, str) and rule_id:
+                rule_owners[rule_id] = module_id
+
+    for profile_id, profile in sorted(profiles.items()):
+        if profile.get("schemaVersion") != PROFILE_SCHEMA_VERSION_V2:
+            continue
+        _validate_required_fields(
+            profile,
+            {"id", "version", "setup", "entryDecisions", "modules", "requiredRules"},
+            "profile",
+            profile_id,
+            diagnostics,
+        )
+        required_rules = _validated_string_list(
+            profile.get("requiredRules"),
+            f"profile.requiredRules.invalid: {profile_id}",
+            diagnostics,
+        )
+        if len(set(required_rules)) != len(required_rules):
+            diagnostics.append(f"profile.rule.required.duplicate: {profile_id}")
+        selected_modules = set(ordered_modules_by_profile.get(profile_id, []))
+        for rule_id in required_rules:
+            if rule_id not in rule_contracts:
+                diagnostics.append(f"profile.rule.required.unknown: {profile_id} -> {rule_id}")
+                continue
+            owner = rule_owners.get(rule_id)
+            if owner not in selected_modules:
+                diagnostics.append(
+                    f"profile.rule.module.missing: {profile_id}: {rule_id} requires {owner}"
+                )
+                continue
+            carriers = [
+                guide
+                for guide in _dict_items(modules[owner].get("supportingGuides"))
+                if rule_id in _string_items(guide.get("rules"))
+            ]
+            if not carriers:
+                diagnostics.append(f"profile.rule.carrier.missing: {profile_id} -> {rule_id}")
+                continue
+            if not any(
+                "artifact.rules"
+                in rendered_template_tokens.get(guide.get("template"), set())
+                for guide in carriers
+            ):
+                diagnostics.append(f"profile.rule.binding.missing: {profile_id} -> {rule_id}")
+
+
 def _is_unsafe_relative_path(path: str) -> bool:
     candidate = Path(path)
-    return candidate.is_absolute() or ".." in candidate.parts or "\\" in path
+    return (
+        not path
+        or candidate.is_absolute()
+        or ".." in candidate.parts
+        or "\\" in path
+        or re.match(r"^[A-Za-z]:", path) is not None
+    )
+
+
+def _is_github_repository(repository: str) -> bool:
+    if not GITHUB_REPOSITORY.fullmatch(repository):
+        return False
+    owner, name = repository.split("/", 1)
+    return owner not in {".", ".."} and name not in {".", ".."}
 
 
 def _paths_digest(paths: list[str]) -> str:
     payload = "\n".join(paths) + "\n"
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _normalized_records_digest(records: list[dict]) -> str:
+    payload = json.dumps(
+        records,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+    )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
