@@ -6185,7 +6185,7 @@ def computed_render_values(
         elif rule.guidance.strip():
             rule_lines.append(f"- {rule.guidance.strip()}")
     if rule_lines:
-        values["artifact.rules"] = "\n".join(rule_lines)
+        values["artifact.rules"] = "\n\n".join(rule_lines)
 
     if artifact.get("id") == "guide.skill-dispatch":
         values["active-modules.skill-dispatch"] = render_skill_dispatch(
@@ -6464,7 +6464,7 @@ def managed_block(managed_id: str, version: int, content: str) -> str:
     body = content.strip() + "\n"
     return (
         f"<!-- setup-context-driven:begin id={managed_id} version={version} -->\n"
-        f"{body}"
+        f"\n{body}\n"
         f"<!-- setup-context-driven:end id={managed_id} -->\n"
     )
 

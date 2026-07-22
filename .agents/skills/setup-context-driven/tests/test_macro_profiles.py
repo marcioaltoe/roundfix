@@ -25,6 +25,10 @@ from test_audit import (  # noqa: E402
     write_skill,
 )
 from test_skills import write_lockfile  # noqa: E402
+from test_formatter_compatibility import (  # noqa: E402
+    assert_profile_formatter_canonical,
+    formatter_profile_decisions,
+)
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 from context_assets import load_asset_catalog  # noqa: E402
@@ -59,6 +63,7 @@ class ProfileMacroFlowTests(unittest.TestCase):
 
                 self.assertEqual(declared_rules, module_rules)
                 self.assertIn("verification.gate", profile["entryDecisions"])
+                self.assertIn(profile_id, catalog.formatter_by_profile)
                 self.assertTrue(
                     {
                         "coverage.universal-safety",
@@ -74,14 +79,26 @@ class ProfileMacroFlowTests(unittest.TestCase):
                 )
 
     def test_supported_profiles_apply_audit_clean_and_reapply_without_changes(self):
+        catalog = load_asset_catalog(SKILL_ROOT)
         for profile_id in SUPPORTED_PROFILES:
             with self.subTest(profile=profile_id):
                 with tempfile.TemporaryDirectory() as temp_dir:
                     repo = Path(temp_dir)
                     prepare_repository_owned_contracts(repo, profile_id)
+                    formatter = catalog.formatter_by_profile[profile_id]
+                    decisions = (
+                        formatter_profile_decisions()
+                        if formatter.kind == "selected"
+                        else BASE_DECISIONS
+                    )
 
-                    first_apply = run_apply(repo, profile_id, BASE_DECISIONS)
+                    first_apply = run_apply(repo, profile_id, decisions)
                     install_profile_skills(repo, profile_id)
+                    assert_profile_formatter_canonical(
+                        repo,
+                        catalog,
+                        profile_id,
+                    )
                     clean_audit = run_audit(repo)
                     after_audit = snapshot_files(repo)
                     second_apply = run_apply(repo, profile_id, [])

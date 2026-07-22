@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "setup-context-driven/formatter-provenance-v1",
+  "profile": "typescript-bun-monorepo",
+  "formatter": {
+    "id": "formatter.oxfmt-markdown",
+    "package": "oxfmt",
+    "version": "0.59.0"
+  },
+  "generation": {
+    "sequence": [
+      "confirmed setup-context-driven apply with the maximal profile decisions",
+      "oxfmt 0.59.0 AGENTS.md docs/agents"
+    ],
+    "digestAlgorithm": "setup-context-driven/portable-file-v1"
+  },
+  "realFormatterProbe": {
+    "workingDirectory": "<disposable-typescript-bun-fixture>",
+    "command": "rtk bunx oxfmt@0.59.0 --check AGENTS.md docs/agents",
+    "argv": [
+      "bunx",
+      "oxfmt@0.59.0",
+      "--check",
+      "AGENTS.md",
+      "docs/agents"
+    ]
+  },
+  "fixtureVerification": "python3 -B .formatter-fixture-verify.py",
+  "fixturePaths": [
+    "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/AGENTS.md",
+    "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/agent-instructions.md",
+    "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/autonomous-work.md",
+    "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/backend.md",
+    "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/docs-layout.md",
+    "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/domain.md",
+    "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/external-triage.md",
+    "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/frontend.md",
+    "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/issue-tracker.md",
+    "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/monorepo.md",
+    "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/repository.md",
+    "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/secondbrain.md",
+    "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/skill-dispatch.md",
+    "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/spec-routing.md",
+    "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/typescript-bun.md"
+  ],
+  "goldenDigest": "f001aebf81530abb9d5069145db4fe3f3c562306d7030503d65b87687dca5fbb"
+}

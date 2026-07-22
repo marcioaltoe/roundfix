@@ -1,6 +1,29 @@
 {
-  "schemaVersion": "setup-context-driven/profile-v2",
-  "id": "typescript-bun-monorepo", "version": 2, "title": "TypeScript/Bun monorepo", "setup": "typescript-bun",
+  "schemaVersion": "setup-context-driven/profile-v3",
+  "id": "typescript-bun-monorepo", "version": 3, "title": "TypeScript/Bun monorepo", "setup": "typescript-bun",
+  "formatter": {
+    "kind": "selected",
+    "id": "formatter.oxfmt-markdown",
+    "version": "0.59.0",
+    "fixturePaths": [
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/AGENTS.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/agent-instructions.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/autonomous-work.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/backend.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/docs-layout.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/domain.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/external-triage.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/frontend.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/issue-tracker.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/monorepo.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/repository.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/secondbrain.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/skill-dispatch.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/spec-routing.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/typescript-bun.md"
+    ],
+    "goldenDigest": "f001aebf81530abb9d5069145db4fe3f3c562306d7030503d65b87687dca5fbb"
+  },
   "entryDecisions": ["language.generated", "verification.gate", "spec.scaffold", "domain.layout", "triage.external", "autonomous.enabled", "secondbrain.enabled", "repository.extension.enabled"],
   "modules": ["core", "context-workflow", "typescript", "bun", "monorepo", "backend", "frontend", "autonomous-work", "spec-workflow", "external-triage", "secondbrain", "repository-extension"],
   "requiredRules": [

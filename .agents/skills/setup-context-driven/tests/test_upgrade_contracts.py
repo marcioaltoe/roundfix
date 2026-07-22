@@ -126,7 +126,17 @@ class UpgradeContractTests(unittest.TestCase):
             set(canonical.repository_extensions),
             {"extension.repository-rules"},
         )
-        self.assertEqual(canonical.formatter_by_profile, {})
+        self.assertEqual(
+            {
+                profile_id: formatter.kind
+                for profile_id, formatter in canonical.formatter_by_profile.items()
+            },
+            {
+                "go-cli-tui": "none",
+                "rust-cli": "none",
+                "typescript-bun-monorepo": "selected",
+            },
+        )
         self.assertEqual(v2.upgrade_transitions, {})
         self.assertEqual(v2.repository_extensions, {})
         self.assertEqual(v2.formatter_by_profile, {})

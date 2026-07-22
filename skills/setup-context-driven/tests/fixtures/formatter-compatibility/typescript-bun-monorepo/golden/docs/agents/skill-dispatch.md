@@ -1,0 +1,218 @@
+<!-- setup-context-driven:begin id=guide.skill-dispatch version=2 -->
+
+# Skill dispatch
+
+This setup-owned guide is generated from the active modules. Activate every
+matching skill before governed work; repository-authored dispatch extensions
+may add stricter triggers.
+
+- **mandatory**: Activate every matching required skill before governed work. When one skill has distinct active-module triggers, retain and follow each trigger.
+
+- **mandatory**: Use the governing `conventional-commits` skill before staging changes, writing commit messages, or preparing pull request titles.
+
+- **mandatory**: Use the governing `github-pr-workflow` skill before preparing, opening, updating, or handing off a pull request.
+
+- `agent-browser`:
+  - `trigger.frontend.agent-browser`: Exercising frontend behavior in a real browser.
+- `ai-sdk`:
+  - `trigger.backend.ai-sdk`: Building backend AI flows with the selected AI SDK.
+- `architectural-analysis`:
+  - `trigger.typescript.architectural-analysis`: Analyzing TypeScript repository architecture and dependency boundaries.
+- `archive-spec`:
+  - `trigger.context-workflow.archive-spec`: Archiving a completed and QA-passed Spec.
+- `backend-docs`:
+  - `trigger.backend.backend-docs`: Writing backend API or service documentation.
+- `baseline-ui`:
+  - `trigger.frontend.baseline-ui`: Building or reviewing the selected baseline UI system.
+- `better-auth`:
+  - `trigger.backend.better-auth`: Changing authentication or authorization through the installed `better-auth` skill.
+- `brainstorming`:
+  - `trigger.context-workflow.brainstorming`: Starting creative feature or behavior design before implementation.
+- `building-components`:
+  - `trigger.frontend.building-components`: Building reusable frontend components.
+- `bun`:
+  - `trigger.bun.bun`: Changing Bun runtime, package, script, workspace, or test behavior.
+- `business-analyst`:
+  - `trigger.context-workflow.business-analyst`: Evaluating product viability, options, KPIs, or business trade-offs.
+- `business-storyteller`:
+  - `trigger.typescript.business-storyteller`: Turning TypeScript product evidence into a decision-ready narrative.
+- `clean-architecture`:
+  - `trigger.backend.clean-architecture`: Designing backend dependency boundaries with Clean Architecture.
+- `clean-code`:
+  - `trigger.typescript.clean-code`: Refactoring TypeScript code for clarity without changing behavior.
+- `codebase-design`:
+  - `trigger.typescript.codebase-design`: Designing TypeScript codebase structure and component boundaries.
+- `coding-guidelines`:
+  - `trigger.core.coding-guidelines`: Writing, modifying, refactoring, or reviewing implementation code.
+- `context7`:
+  - `trigger.core.context7`: Consulting authoritative current documentation for a library, framework, runtime, or toolchain.
+- `conventional-commits`:
+  - `trigger.core.conventional-commits`: Staging changes, writing commit messages, or preparing pull request titles.
+- `core-web-vitals`:
+  - `trigger.frontend.core-web-vitals`: Measuring or improving frontend Core Web Vitals.
+- `council`:
+  - `trigger.context-workflow.council`: Debating a high-impact product or architecture decision through multiple advisors.
+- `crafting-effective-readmes`:
+  - `trigger.typescript.crafting-effective-readmes`: Writing or revising the TypeScript repository README.
+- `data-sync-workflows`:
+  - `trigger.backend.data-sync-workflows`: Designing backend data synchronization and reconciliation workflows.
+- `design-patterns`:
+  - `trigger.backend.design-patterns`: Selecting or applying backend design patterns.
+- `diagnosing-bugs`:
+  - `trigger.typescript.diagnosing-bugs`: Diagnosing TypeScript or Bun defects and unexpected behavior.
+- `docker`:
+  - `trigger.typescript.docker`: Changing container packaging or local container workflows for the TypeScript stack.
+- `domain-modeling`:
+  - `trigger.context-workflow.domain-modeling`: Defining or changing domain vocabulary, ownership, or bounded-context relationships.
+- `drizzle-orm`:
+  - `trigger.backend.drizzle-orm`: Changing Drizzle schemas, queries, or migrations.
+- `evidence-gate`:
+  - `trigger.core.evidence-gate`: Making any completion, readiness, or handoff claim.
+- `exa-web-search`:
+  - `trigger.typescript.exa-web-search`: Researching an external TypeScript or Bun question after authoritative documentation is insufficient.
+- `external-api-adapters`:
+  - `trigger.backend.external-api-adapters`: Building or changing external API adapter boundaries.
+- `feature-systems-pattern`:
+  - `trigger.typescript.feature-systems-pattern`: Designing a feature system within the TypeScript application.
+- `find-rules`:
+  - `trigger.typescript.find-rules`: Discovering repository rules before TypeScript implementation work.
+- `find-skills`:
+  - `trigger.typescript.find-skills`: Discovering applicable skills for TypeScript repository work.
+- `firecrawl`:
+  - `trigger.typescript.firecrawl`: Collecting external web material for a TypeScript product or integration question.
+- `fixing-accessibility`:
+  - `trigger.frontend.fixing-accessibility`: Diagnosing and fixing frontend accessibility defects.
+- `fixing-metadata`:
+  - `trigger.frontend.fixing-metadata`: Changing frontend metadata and document discovery behavior.
+- `fixing-motion-performance`:
+  - `trigger.frontend.fixing-motion-performance`: Diagnosing and fixing frontend motion performance.
+- `frontend-design`:
+  - `trigger.frontend.frontend-design`: Designing or implementing frontend visual behavior.
+- `frontend-docs`:
+  - `trigger.frontend.frontend-docs`: Writing frontend component or interaction documentation.
+- `game-changing-features`:
+  - `trigger.typescript.game-changing-features`: Exploring high-impact product opportunities for the TypeScript application.
+- `git-rebase`:
+  - `trigger.typescript.git-rebase`: Rebasing TypeScript repository work when explicitly authorized.
+- `github-pr-workflow`:
+  - `trigger.core.github-pr-workflow`: Preparing, opening, updating, or handing off a pull request.
+- `grill-with-docs`:
+  - `trigger.context-workflow.grill-with-docs`: Stress-testing a plan or decision against repository documents.
+- `grilling`:
+  - `trigger.context-workflow.grilling`: Stress-testing an idea or plan through direct questions.
+- `handoff`:
+  - `trigger.core.handoff`: Recording resumable session state for another Agent or maintainer.
+- `hono`:
+  - `trigger.backend.hono`: Building or changing Hono routes, middleware, or handlers.
+- `hono-api-best-practices`:
+  - `trigger.backend.hono-api-best-practices`: Reviewing Hono API contracts and implementation practices.
+- `humanizer`:
+  - `trigger.typescript.humanizer`: Revising generated prose in the TypeScript repository to sound natural and direct.
+- `implement-spec`:
+  - `trigger.autonomous-work.implement-spec`: Delegating a complete autonomous Spec Task Graph.
+  - `trigger.context-workflow.implement-spec`: Executing every pending Task in a Spec Task Graph.
+- `implement-task`:
+  - `trigger.autonomous-work.implement-task`: Delegating one autonomous Task to an ACP Runtime.
+  - `trigger.context-workflow.implement-task`: Executing exactly one assigned Spec Task.
+- `inngest`:
+  - `trigger.backend.inngest`: Building or changing Inngest functions and event workflows.
+- `integration-contract-testing`:
+  - `trigger.backend.integration-contract-testing`: Writing backend integration or provider contract tests.
+- `interaction-design`:
+  - `trigger.frontend.interaction-design`: Designing frontend states, transitions, and interaction flows.
+- `interface-design`:
+  - `trigger.frontend.interface-design`: Designing frontend interface hierarchy and controls.
+- `knowledge-workspace`:
+  - `trigger.context-workflow.knowledge-workspace`: Consulting the configured knowledge workspace for relevant prior context.
+- `logtape`:
+  - `trigger.backend.logtape`: Changing structured logging through LogTape.
+- `motion`:
+  - `trigger.frontend.motion`: Building or changing frontend motion and animation.
+- `no-workarounds`:
+  - `trigger.core.no-workarounds`: Fixing defects, regressions, or verification failures at their root cause.
+- `observability-audit`:
+  - `trigger.backend.observability-audit`: Auditing backend logs, metrics, traces, and operational signals.
+- `onioncry`:
+  - `trigger.typescript.onioncry`: Auditing architectural dependency direction in the TypeScript repository.
+- `qa-gate`:
+  - `trigger.context-workflow.qa-gate`: Running final Spec QA after implementation Tasks complete.
+- `react`:
+  - `trigger.frontend.react`: Building or changing React components and hooks.
+- `react-best-practices`:
+  - `trigger.frontend.react-best-practices`: Reviewing React implementation against current practices.
+- `react-composition-patterns`:
+  - `trigger.frontend.react-composition-patterns`: Designing React component composition and reuse.
+- `react-hook-form-zod`:
+  - `trigger.frontend.react-hook-form-zod`: Building validated React forms with React Hook Form and Zod.
+- `refactoring-analysis`:
+  - `trigger.typescript.refactoring-analysis`: Planning a behavior-preserving TypeScript refactor.
+- `review`:
+  - `trigger.core.review`: Reviewing a change against repository standards and its originating contract.
+- `roundfix`:
+  - `trigger.typescript.roundfix`: Driving Roundfix review or Spec workflows for the TypeScript repository.
+- `security-best-practices`:
+  - `trigger.backend.security-best-practices`: Reviewing backend implementation against security practices.
+- `security-threat-model`:
+  - `trigger.backend.security-threat-model`: Threat-modeling backend data, trust boundaries, and abuse cases.
+- `setup-context-driven`:
+  - `trigger.context-workflow.setup-context-driven`: Auditing, applying, or refreshing the Context-Driven Baseline.
+- `shadcn`:
+  - `trigger.frontend.shadcn`: Building or changing components based on shadcn.
+- `solid`:
+  - `trigger.frontend.solid`: Applying SOLID design to frontend TypeScript boundaries.
+- `systematic-debugging`:
+  - `trigger.core.systematic-debugging`: Diagnosing a bug, failing check, or unexpected behavior before proposing a fix.
+- `tactical-ddd`:
+  - `trigger.backend.tactical-ddd`: Modeling backend aggregates, entities, values, and domain services.
+- `tailwindcss`:
+  - `trigger.frontend.tailwindcss`: Building or changing Tailwind CSS styling and configuration.
+- `tanstack-query`:
+  - `trigger.frontend.tanstack-query`: Changing server-state queries, caching, or mutations with TanStack Query.
+- `tanstack-router`:
+  - `trigger.frontend.tanstack-router`: Changing frontend routes and navigation with TanStack Router.
+- `tanstack-table`:
+  - `trigger.frontend.tanstack-table`: Building or changing data tables with TanStack Table.
+- `tdd`:
+  - `trigger.typescript.tdd`: Developing TypeScript behavior through a red-green-refactor loop.
+- `tech-writer`:
+  - `trigger.core.tech-writer`: Writing or revising technical documentation, Specs, findings, or delivery notes.
+- `testing-boss`:
+  - `trigger.core.testing-boss`: Writing, changing, or reviewing tests and fixtures.
+- `the-fool`:
+  - `trigger.context-workflow.the-fool`: Challenging a proposal through a pre-mortem, red-team, or evidence audit.
+- `to-prompt`:
+  - `trigger.typescript.to-prompt`: Converting TypeScript repository context into a bounded implementation prompt.
+- `triage`:
+  - `trigger.typescript.triage`: Triaging TypeScript repository work or external feedback.
+- `turborepo`:
+  - `trigger.monorepo.turborepo`: Changing Turborepo tasks, caching, package boundaries, or workspace orchestration.
+- `typescript-advanced`:
+  - `trigger.typescript.typescript-advanced`: Using advanced TypeScript types or language features.
+- `ui-ux-pro-max`:
+  - `trigger.frontend.ui-ux-pro-max`: Designing or reviewing polished frontend UI and UX.
+- `vertical-slice-architecture`:
+  - `trigger.backend.vertical-slice-architecture`: Designing backend features as vertical slices.
+- `vite`:
+  - `trigger.typescript.vite`: Changing Vite build, development, or test integration.
+- `vitest`:
+  - `trigger.typescript.vitest`: Writing or changing Vitest suites and configuration.
+- `wcag-audit-patterns`:
+  - `trigger.frontend.wcag-audit-patterns`: Auditing frontend behavior against WCAG patterns.
+- `web-design-guidelines`:
+  - `trigger.frontend.web-design-guidelines`: Reviewing frontend design against web interface guidelines.
+- `write-idea`:
+  - `trigger.context-workflow.write-idea`: Expanding a product-level idea into a researched opportunity artifact.
+- `write-prd`:
+  - `trigger.context-workflow.write-prd`: Defining product requirements and user outcomes.
+- `write-tasks`:
+  - `trigger.context-workflow.write-tasks`: Decomposing an approved Spec into a dependency-ordered Task Graph.
+- `write-techspec`:
+  - `trigger.context-workflow.write-techspec`: Settling implementation architecture and technical contracts.
+- `writing-clearly-and-concisely`:
+  - `trigger.typescript.writing-clearly-and-concisely`: Revising TypeScript repository prose for clarity and brevity.
+- `zod`:
+  - `trigger.typescript.zod`: Designing or changing Zod schemas and validation boundaries.
+- `zustand`:
+  - `trigger.frontend.zustand`: Changing frontend state management with Zustand.
+
+<!-- setup-context-driven:end id=guide.skill-dispatch -->

@@ -1,6 +1,7 @@
 {
-  "schemaVersion": "setup-context-driven/profile-v2",
-  "id": "rust-cli", "version": 2, "title": "Rust CLI repository", "setup": "rust-cli",
+  "schemaVersion": "setup-context-driven/profile-v3",
+  "id": "rust-cli", "version": 3, "title": "Rust CLI repository", "setup": "rust-cli",
+  "formatter": {"kind": "none"},
   "entryDecisions": ["language.generated", "verification.gate", "spec.scaffold", "domain.layout", "triage.external", "autonomous.enabled", "secondbrain.enabled", "repository.extension.enabled"],
   "modules": ["core", "context-workflow", "rust", "cli-surface", "autonomous-work", "spec-workflow", "external-triage", "secondbrain", "repository-extension"],
   "requiredRules": [

@@ -1,6 +1,7 @@
 {
-  "schemaVersion": "setup-context-driven/profile-v2",
-  "id": "go-cli-tui", "version": 2, "title": "Go CLI/TUI repository", "setup": "go-cli",
+  "schemaVersion": "setup-context-driven/profile-v3",
+  "id": "go-cli-tui", "version": 3, "title": "Go CLI/TUI repository", "setup": "go-cli",
+  "formatter": {"kind": "none"},
   "entryDecisions": ["language.generated", "verification.gate", "spec.scaffold", "domain.layout", "triage.external", "autonomous.enabled", "secondbrain.enabled", "repository.extension.enabled"],
   "modules": ["core", "context-workflow", "go", "cli-surface", "tui-surface", "autonomous-work", "spec-workflow", "external-triage", "secondbrain", "repository-extension"],
   "requiredRules": [
