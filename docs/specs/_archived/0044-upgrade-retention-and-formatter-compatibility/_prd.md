@@ -1,7 +1,8 @@
 ---
 spec: 0044-upgrade-retention-and-formatter-compatibility
-status: active
+status: archived
 created: 2026-07-22
+archived: 2026-07-22
 surfaces: [cli, docs, infra]
 ---
 
