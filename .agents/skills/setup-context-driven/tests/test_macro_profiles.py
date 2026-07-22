@@ -73,6 +73,7 @@ class ProfileMacroFlowTests(unittest.TestCase):
             with self.subTest(profile=profile_id):
                 with tempfile.TemporaryDirectory() as temp_dir:
                     repo = Path(temp_dir)
+                    prepare_repository_owned_contracts(repo, profile_id)
 
                     first_apply = run_apply(repo, profile_id, BASE_DECISIONS)
                     install_profile_skills(repo, profile_id)
@@ -124,6 +125,7 @@ class ProfileMacroFlowTests(unittest.TestCase):
             with self.subTest(profile=profile_id):
                 with tempfile.TemporaryDirectory() as temp_dir:
                     repo = Path(temp_dir)
+                    prepare_repository_owned_contracts(repo, profile_id)
 
                     first_apply = run_apply(repo, profile_id, decisions)
                     install_profile_skills(repo, profile_id)
@@ -167,6 +169,7 @@ class ProfileMacroFlowTests(unittest.TestCase):
             with self.subTest(profile=profile_id):
                 with tempfile.TemporaryDirectory() as temp_dir:
                     repo = Path(temp_dir)
+                    prepare_repository_owned_contracts(repo, profile_id)
                     decisions = decisions_with(
                         autonomous=False,
                         verification_gate=verification,
@@ -207,6 +210,7 @@ class ProfileMacroFlowTests(unittest.TestCase):
             with self.subTest(profile=profile_id):
                 with tempfile.TemporaryDirectory() as temp_dir:
                     repo = Path(temp_dir)
+                    prepare_repository_owned_contracts(repo, profile_id)
                     applied = run_apply(repo, profile_id, BASE_DECISIONS)
                     self.assertEqual(applied.returncode, 0, applied.stderr)
                     root = repo / "AGENTS.md"
@@ -223,6 +227,7 @@ class ProfileMacroFlowTests(unittest.TestCase):
     def test_typescript_bun_single_context_monorepo_always_generates_monorepo_guide(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = Path(temp_dir)
+            prepare_repository_owned_contracts(repo, "typescript-bun-monorepo")
 
             applied = run_apply(
                 repo,
@@ -334,6 +339,15 @@ def decisions_with(
 def generated_text(repo):
     paths = [repo / "AGENTS.md", *sorted((repo / "docs" / "agents").glob("*.md"))]
     return "\n".join(path.read_text(encoding="utf-8") for path in paths if path.exists())
+
+
+def prepare_repository_owned_contracts(repo, profile_id):
+    if profile_id != "typescript-bun-monorepo":
+        return
+    (repo / "DESIGN.md").write_text(
+        "# Repository-authored design contract\n",
+        encoding="utf-8",
+    )
 
 
 def run_audit_cli(repo, *extra_args):

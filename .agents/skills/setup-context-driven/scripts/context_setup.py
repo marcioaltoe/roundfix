@@ -412,6 +412,8 @@ def audit_repository(
             planned_changes=planned_changes_for_plan(repo, decision_plan),
         ), invalid_input
 
+    findings.extend(validate_decision_plan_references(repo, catalog, decision_plan))
+
     ordered_modules = list(decision_plan.active_modules)
     validate_manifest_shape(manifest, profile_id, ordered_modules, catalog, findings)
     validate_profile_skill_references(catalog, profile_id, ordered_modules, findings)
@@ -689,6 +691,8 @@ def preview_result(
         cli_decisions=cli_decisions,
     )
     findings.extend(decision_required_findings(decision_plan))
+    if not decision_plan.unresolved_decisions:
+        findings.extend(validate_decision_plan_references(repo, catalog, decision_plan))
     return (
         AuditResult(
             sorted_findings(findings),
@@ -1050,6 +1054,136 @@ def expected_artifacts_for_plan(decision_plan: DecisionPlan) -> list[ExpectedArt
     ]
 
 
+def validate_decision_plan_references(
+    repo: Path,
+    catalog: AssetCatalog,
+    decision_plan: DecisionPlan,
+) -> list[Finding]:
+    expected_artifacts = expected_artifacts_for_plan(decision_plan)
+    definite_by_id = {
+        artifact.managed_id: artifact for artifact in expected_artifacts
+    }
+    findings: list[Finding] = []
+
+    for source in expected_artifacts:
+        references = catalog.references_by_artifact.get(source.managed_id, ())
+        for reference in references:
+            if reference.ownership == "setup":
+                target = definite_by_id.get(reference.target_managed_id)
+                if target is None:
+                    findings.append(
+                        finding(
+                            "reference.managed.missing",
+                            "error",
+                            source.path.as_posix(),
+                            source.managed_id,
+                            (
+                                f"Declared reference {reference.reference_id} targets "
+                                f"{reference.target_managed_id}, which is not present in "
+                                "the definite Decision Plan artifact set."
+                            ),
+                            (
+                                "Update the Decision Plan effects or the setup-owned "
+                                "reference so the selected artifacts resolve together."
+                            ),
+                        )
+                    )
+                continue
+
+            repository_path = reference.repository_path
+            if repository_path is None:
+                continue
+            findings.extend(
+                validate_repository_reference(
+                    repo=repo,
+                    source=source,
+                    reference_id=reference.reference_id,
+                    repository_path=repository_path,
+                )
+            )
+
+    future_paths = {artifact.path for artifact in expected_artifacts}
+    future_absent_paths = {
+        planned_artifact.artifact.path
+        for planned_artifact in decision_plan.artifacts
+        if not planned_artifact.present and planned_artifact.state == "definite"
+    } - future_paths
+    for artifact in expected_artifacts:
+        findings.extend(
+            validate_internal_references(
+                repo=repo,
+                relative_path=artifact.path,
+                content=artifact.content,
+                managed_id=artifact.managed_id,
+                future_paths=future_paths,
+                future_absent_paths=future_absent_paths,
+            )
+        )
+    return sorted_findings(findings)
+
+
+def validate_repository_reference(
+    repo: Path,
+    source: ExpectedArtifact,
+    reference_id: str,
+    repository_path: Path,
+) -> list[Finding]:
+    if repository_path.is_absolute() or ".." in repository_path.parts:
+        return [
+            repository_reference_outside_finding(
+                source, reference_id, repository_path
+            )
+        ]
+
+    repo_root = repo.resolve(strict=False)
+    try:
+        target = (repo_root / repository_path).resolve(strict=False)
+        target.relative_to(repo_root)
+    except (OSError, RuntimeError, ValueError):
+        return [
+            repository_reference_outside_finding(
+                source, reference_id, repository_path
+            )
+        ]
+
+    if target.exists():
+        return []
+    return [
+        finding(
+            "reference.repository.missing",
+            "error",
+            repository_path.as_posix(),
+            source.managed_id,
+            (
+                f"Declared reference {reference_id} requires repository-owned path "
+                f"{repository_path.as_posix()}, but it does not exist."
+            ),
+            (
+                "Create the repository-authored target or select a profile that does "
+                "not require it; setup will not generate repository-owned content."
+            ),
+        )
+    ]
+
+
+def repository_reference_outside_finding(
+    source: ExpectedArtifact,
+    reference_id: str,
+    repository_path: Path,
+) -> Finding:
+    return finding(
+        "reference.repository.outside",
+        "error",
+        repository_path.as_posix(),
+        source.managed_id,
+        (
+            f"Declared reference {reference_id} resolves outside the repository: "
+            f"{repository_path.as_posix()}."
+        ),
+        "Point the repository-owned reference at an existing path inside the repository.",
+    )
+
+
 def template_overrides_for_effects(effects: Iterable) -> dict[str, str]:
     overrides: dict[str, str] = {}
     for effect in effects:
@@ -1248,6 +1382,8 @@ def plan_apply(
         )
 
     findings.extend(decision_required_findings(decision_plan))
+    if not decision_plan.unresolved_decisions:
+        findings.extend(validate_decision_plan_references(repo, catalog, decision_plan))
     if findings:
         return empty_apply_result(
             findings,
@@ -2935,6 +3071,8 @@ def validate_internal_references(
     relative_path: Path,
     content: str,
     managed_id: str,
+    future_paths: set[Path] | None = None,
+    future_absent_paths: set[Path] | None = None,
 ) -> list[Finding]:
     findings: list[Finding] = []
     document_dir = (repo / relative_path).parent
@@ -2947,8 +3085,18 @@ def validate_internal_references(
             continue
         candidate = (document_dir / target_path).resolve(strict=False)
         try:
-            candidate.relative_to(repo)
+            candidate_relative = candidate.relative_to(repo.resolve(strict=False))
         except ValueError:
+            findings.append(
+                broken_reference_finding(relative_path, managed_id, target)
+            )
+            continue
+        if future_paths is not None and candidate_relative in future_paths:
+            continue
+        if (
+            future_absent_paths is not None
+            and candidate_relative in future_absent_paths
+        ):
             findings.append(
                 broken_reference_finding(relative_path, managed_id, target)
             )

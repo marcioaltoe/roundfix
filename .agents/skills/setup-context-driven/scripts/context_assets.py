@@ -788,6 +788,7 @@ def _validate_artifact_references(
     declared_tokens = template_tokens.get(template_id, set())
     rendered_tokens = rendered_template_tokens.get(template_id, set())
     references: list[ArtifactReference] = []
+    bound_tokens: set[str] = set()
     for item in items:
         reference_id = item.get("id")
         token = item.get("token")
@@ -802,6 +803,9 @@ def _validate_artifact_references(
         if not isinstance(token, str) or not token:
             diagnostics.append(f"reference.token.invalid: {reference_id}")
             continue
+        if token in bound_tokens:
+            diagnostics.append(f"reference.token.duplicate: {artifact_id} -> {token}")
+        bound_tokens.add(token)
         if token not in declared_tokens or token not in rendered_tokens:
             diagnostics.append(f"reference.token.unknown: {reference_id} -> {token}")
 

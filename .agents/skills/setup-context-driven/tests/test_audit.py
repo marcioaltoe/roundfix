@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -10,8 +11,19 @@ SKILL_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = SKILL_ROOT / "scripts" / "context_setup.py"
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
-from context_assets import load_asset_catalog  # noqa: E402
-from context_setup import expected_artifacts_for_plan, managed_block, resolve_decision_plan  # noqa: E402
+from context_assets import (  # noqa: E402
+    clone_assets_to,
+    load_asset_catalog,
+    read_json_copy,
+    write_json,
+)
+from context_setup import (  # noqa: E402
+    audit_repository,
+    expected_artifacts_for_plan,
+    managed_block,
+    plan_apply,
+    resolve_decision_plan,
+)
 
 
 class AuditCliTests(unittest.TestCase):
@@ -134,6 +146,108 @@ class AuditCliTests(unittest.TestCase):
             self.assertEqual(first.returncode, second.returncode)
             self.assertEqual(json.loads(first.stdout), json.loads(second.stdout))
 
+    def test_stale_managed_target_cannot_satisfy_excluded_decision_plan_reference(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            repo = root / "repo"
+            write_compliant_repository(repo, "rust-cli")
+            stale_target = repo / "docs" / "agents" / "domain.md"
+            self.assertTrue(stale_target.is_file())
+
+            temp_skill = root / "setup-context-driven"
+            clone_assets_to(SKILL_ROOT, temp_skill)
+            exclude_domain_reference_target(temp_skill)
+            catalog = load_asset_catalog(temp_skill)
+
+            result, invalid_input = audit_repository(repo, catalog)
+
+            self.assertFalse(invalid_input)
+            matches = [
+                finding
+                for finding in result.findings
+                if finding.code == "reference.managed.missing"
+            ]
+            self.assertEqual(len(matches), 1, result.findings)
+            self.assertEqual(matches[0].path, "AGENTS.md")
+            self.assertEqual(matches[0].managed_id, "root.context-workflow")
+            self.assertTrue(stale_target.is_file())
+
+    def test_frontend_missing_repository_design_contract_is_one_read_only_finding(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir)
+            write_compliant_repository(repo, "typescript-bun-monorepo")
+            design_path = repo / "DESIGN.md"
+            design_path.unlink()
+            before = snapshot_files(repo)
+
+            result = run_audit(repo, "--format", "json")
+
+            self.assertEqual(result.returncode, 1, result.stderr)
+            payload = json.loads(result.stdout)
+            matches = [
+                finding
+                for finding in payload["findings"]
+                if finding["code"] == "reference.repository.missing"
+            ]
+            self.assertEqual(len(matches), 1, payload)
+            self.assertEqual(matches[0]["path"], "DESIGN.md")
+            self.assertEqual(matches[0]["managedId"], "guide.frontend")
+            self.assertEqual(snapshot_files(repo), before)
+            self.assertFalse(design_path.exists())
+
+    def test_repository_reference_symlink_outside_repo_is_blocked(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            repo = root / "repo"
+            write_compliant_repository(repo, "typescript-bun-monorepo")
+            design_path = repo / "DESIGN.md"
+            design_path.unlink()
+            outside = root / "outside-design.md"
+            outside.write_text("# Outside\n", encoding="utf-8")
+            design_path.symlink_to(outside)
+
+            result = run_audit(repo, "--format", "json")
+
+            self.assertEqual(result.returncode, 1, result.stderr)
+            payload = json.loads(result.stdout)
+            matches = [
+                finding
+                for finding in payload["findings"]
+                if finding["code"] == "reference.repository.outside"
+            ]
+            self.assertEqual(len(matches), 1, payload)
+            self.assertEqual(matches[0]["path"], "DESIGN.md")
+            self.assertEqual(outside.read_text(encoding="utf-8"), "# Outside\n")
+
+    def test_apply_plan_blocks_before_creating_frontend_pointer_to_missing_design(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir)
+            before = snapshot_files(repo)
+            catalog = load_asset_catalog(SKILL_ROOT)
+
+            result, invalid_input, change_plan = plan_apply(
+                repo=repo,
+                catalog=catalog,
+                profile_override="typescript-bun-monorepo",
+                decision_args=[
+                    "spec.scaffold=true",
+                    "domain.layout=single-context",
+                    "triage.external=false",
+                    "autonomous.enabled=false",
+                    "verification.gate=make verify",
+                    "language.generated=English",
+                    "secondbrain.enabled=false",
+                ],
+            )
+
+            self.assertFalse(invalid_input)
+            self.assertEqual(
+                [finding.code for finding in result.findings],
+                ["reference.repository.missing"],
+            )
+            self.assertEqual(change_plan.changes, [])
+            self.assertEqual(snapshot_files(repo), before)
+
     def assertFinding(self, result, code, severity=None):
         payload = json.loads(result.stdout)
         matches = [finding for finding in payload["findings"] if finding["code"] == code]
@@ -147,11 +261,14 @@ def run_audit(repo, *args):
 
 
 def run_context_setup(*args):
+    env = os.environ.copy()
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
     return subprocess.run(
         [sys.executable, str(SCRIPT), *args],
         text=True,
         capture_output=True,
         check=False,
+        env=env,
     )
 
 
@@ -190,6 +307,14 @@ def write_compliant_repository(repo, profile_id, omit_decision=None, install_ski
             for artifact in path_artifacts
         )
         target.write_text(content, encoding="utf-8")
+
+    for artifact in artifacts:
+        for reference in catalog.references_by_artifact.get(artifact.managed_id, ()):
+            if reference.ownership != "repository":
+                continue
+            target = repo / reference.repository_path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("# Repository-owned contract\n", encoding="utf-8")
 
     if omit_decision is not None:
         decisions.pop(omit_decision)
@@ -309,6 +434,21 @@ def add_non_english_content(repo):
         ),
         encoding="utf-8",
     )
+
+
+def exclude_domain_reference_target(skill_root):
+    decisions_path = skill_root / "assets" / "decisions.json"
+    decisions = read_json_copy(decisions_path)
+    for decision in decisions["decisions"]:
+        if decision["id"] != "domain.layout":
+            continue
+        effect = decision["effects"][0]
+        effect["includeArtifacts"] = []
+        effect["excludeArtifacts"] = ["guide.domain"]
+        effect["selectTemplates"] = []
+        write_json(decisions_path, decisions)
+        return
+    raise AssertionError("missing domain.layout decision")
 
 
 if __name__ == "__main__":

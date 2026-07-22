@@ -108,6 +108,9 @@ class DecisionRenderingTests(unittest.TestCase):
     def test_frontend_guidance_names_repository_owned_design_contract_only(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = Path(temp_dir)
+            design = repo / "DESIGN.md"
+            design.write_text("# Repository-authored design\n", encoding="utf-8")
+            expected_design = design.read_bytes()
 
             result = run_apply_for_profile(
                 repo,
@@ -120,6 +123,7 @@ class DecisionRenderingTests(unittest.TestCase):
                 encoding="utf-8"
             )
             self.assertIn("repository-owned `DESIGN.md`", frontend)
+            self.assertEqual(design.read_bytes(), expected_design)
             for invented_policy in ["authentication policy", "database policy", "transport policy"]:
                 self.assertNotIn(invented_policy, frontend)
 

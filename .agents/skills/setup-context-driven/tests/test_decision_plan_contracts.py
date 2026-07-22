@@ -1,7 +1,8 @@
 import sys
 import tempfile
 import unittest
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
+from itertools import product
 from pathlib import Path
 
 
@@ -15,6 +16,7 @@ from context_assets import (  # noqa: E402
     read_json_copy,
     write_json,
 )
+import context_setup  # noqa: E402
 
 
 EXPECTED_DECISIONS = (
@@ -130,11 +132,218 @@ class DecisionPlanContractTests(unittest.TestCase):
 
         self.assertEqual(self._catalog_snapshot(canonical), self._catalog_snapshot(embedded))
 
+    def test_every_finite_artifact_branch_resolves_declared_references(self):
+        catalog = load_asset_catalog(SKILL_ROOT)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir)
+            (repo / "DESIGN.md").write_text("# Repository design\n", encoding="utf-8")
+            for profile_id in catalog.profiles:
+                finite_decisions = [
+                    decision_id
+                    for decision_id in catalog.profile_entry_decisions[profile_id]
+                    if catalog.decisions[decision_id]["type"] in {"boolean", "enum"}
+                ]
+                finite_values = [
+                    self._finite_values(catalog.decisions[decision_id])
+                    for decision_id in finite_decisions
+                ]
+                for values in product(*finite_values):
+                    decisions = dict(zip(finite_decisions, values, strict=True))
+                    decisions["verification.gate"] = "make verify"
+                    if decisions["autonomous.enabled"]:
+                        decisions["runtime.backend"] = "codex gpt-5.5 xhigh"
+                        decisions["runtime.design"] = "claude opus xhigh"
+                    plan = context_setup.resolve_decision_plan(
+                        catalog,
+                        profile_id,
+                        {"decisions": self._manifest_decisions(decisions)},
+                        {},
+                    )
+
+                    self.assertEqual(plan.unresolved_decisions, (), (profile_id, decisions))
+                    self.assertEqual(
+                        context_setup.validate_decision_plan_references(repo, catalog, plan),
+                        [],
+                        (profile_id, decisions),
+                    )
+
+    def test_single_context_monorepo_selects_its_referenced_guide(self):
+        catalog = load_asset_catalog(SKILL_ROOT)
+        decisions = self._complete_decisions(**{"domain.layout": "single-context"})
+        plan = context_setup.resolve_decision_plan(
+            catalog,
+            "typescript-bun-monorepo",
+            {"decisions": self._manifest_decisions(decisions)},
+            {},
+        )
+
+        definite_ids = {
+            artifact.artifact.managed_id
+            for artifact in plan.artifacts
+            if artifact.present and artifact.state == "definite"
+        }
+        self.assertIn("guide.monorepo", definite_ids)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir)
+            (repo / "DESIGN.md").write_text("# Repository design\n", encoding="utf-8")
+            self.assertEqual(
+                context_setup.validate_decision_plan_references(repo, catalog, plan),
+                [],
+            )
+
+    def test_definite_source_rejects_excluded_managed_reference_target(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir) / "setup-context-driven"
+            clone_assets_to(SKILL_ROOT, temp_root)
+            self._exclude_domain_reference_target(temp_root)
+            catalog = load_asset_catalog(temp_root)
+            plan = context_setup.resolve_decision_plan(
+                catalog,
+                "rust-cli",
+                {"decisions": self._manifest_decisions(self._complete_decisions())},
+                {},
+            )
+            stale_target = Path(temp_dir) / "docs" / "agents" / "domain.md"
+            stale_target.parent.mkdir(parents=True)
+            stale_target.write_text("# Stale domain guide\n", encoding="utf-8")
+            plan = replace(
+                plan,
+                artifacts=tuple(
+                    replace(
+                        planned_artifact,
+                        artifact=replace(
+                            planned_artifact.artifact,
+                            content=(
+                                planned_artifact.artifact.content
+                                + "\n[Domain guide](docs/agents/domain.md)\n"
+                            ),
+                        ),
+                    )
+                    if planned_artifact.artifact.managed_id == "root.context-workflow"
+                    else planned_artifact
+                    for planned_artifact in plan.artifacts
+                ),
+            )
+
+            findings = context_setup.validate_decision_plan_references(
+                Path(temp_dir), catalog, plan
+            )
+
+        managed = [
+            finding for finding in findings if finding.code == "reference.managed.missing"
+        ]
+        markdown = [
+            finding for finding in findings if finding.code == "docs.reference.broken"
+        ]
+        self.assertEqual(len(managed), 1, findings)
+        self.assertEqual(managed[0].path, "AGENTS.md")
+        self.assertEqual(managed[0].managed_id, "root.context-workflow")
+        self.assertIn("guide.domain", managed[0].message)
+        self.assertEqual(len(markdown), 1, findings)
+        self.assertEqual(markdown[0].path, "AGENTS.md")
+
+    def test_repository_reference_paths_reject_absolute_and_escaping_values(self):
+        for name, path_value in (
+            ("absolute", "/tmp/DESIGN.md"),
+            ("escaping", "../DESIGN.md"),
+        ):
+            with self.subTest(name=name):
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    temp_root = Path(temp_dir) / "setup-context-driven"
+                    clone_assets_to(SKILL_ROOT, temp_root)
+                    module_path = temp_root / "assets" / "modules" / "frontend.json"
+                    module = read_json_copy(module_path)
+                    module["supportingGuides"][0]["references"][0]["path"] = path_value
+                    write_json(module_path, module)
+
+                    with self.assertRaises(AssetValidationError) as captured:
+                        load_asset_catalog(temp_root)
+
+                self.assertIn(
+                    "reference.repository.path.invalid",
+                    "\n".join(captured.exception.diagnostics),
+                )
+
+    def test_each_declared_reference_token_has_one_typed_path_binding(self):
+        catalog = load_asset_catalog(SKILL_ROOT)
+        managed_paths = context_setup.managed_artifact_paths(catalog)
+
+        for artifact_id, references in catalog.references_by_artifact.items():
+            tokens = [reference.token for reference in references]
+            self.assertEqual(len(tokens), len(set(tokens)), artifact_id)
+            for reference in references:
+                if reference.ownership == "setup":
+                    self.assertIn(reference.target_managed_id, managed_paths)
+                    self.assertIsNone(reference.repository_path)
+                else:
+                    self.assertIsNotNone(reference.repository_path)
+                    self.assertIsNone(reference.target_managed_id)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir) / "setup-context-driven"
+            clone_assets_to(SKILL_ROOT, temp_root)
+            module_path = temp_root / "assets" / "modules" / "frontend.json"
+            module = read_json_copy(module_path)
+            module["supportingGuides"][0]["references"].append(
+                {
+                    "id": "reference.frontend.duplicate-token",
+                    "token": "repository.design-contract",
+                    "ownership": "setup",
+                    "managedId": "guide.frontend",
+                }
+            )
+            write_json(module_path, module)
+
+            with self.assertRaises(AssetValidationError) as captured:
+                load_asset_catalog(temp_root)
+
+        self.assertIn(
+            "reference.token.duplicate",
+            "\n".join(captured.exception.diagnostics),
+        )
+
     def _effect_for(self, catalog, decision_id, operator, value):
         for effect in catalog.decision_effects[decision_id]:
             if effect.condition.operator == operator and effect.condition.value == value:
                 return effect
         self.fail(f"missing effect for {decision_id} when {operator}={value!r}")
+
+    def _finite_values(self, decision):
+        if decision["type"] == "boolean":
+            return (False, True)
+        return tuple(decision["values"])
+
+    def _complete_decisions(self, **overrides):
+        decisions = {
+            "spec.scaffold": True,
+            "domain.layout": "single-context",
+            "triage.external": False,
+            "autonomous.enabled": True,
+            "runtime.backend": "codex gpt-5.5 xhigh",
+            "runtime.design": "claude opus xhigh",
+            "verification.gate": "make verify",
+            "language.generated": "English",
+            "secondbrain.enabled": False,
+        }
+        decisions.update(overrides)
+        return decisions
+
+    def _manifest_decisions(self, decisions):
+        return {
+            decision_id: {"value": value, "confirmedAt": "2026-07-21"}
+            for decision_id, value in decisions.items()
+        }
+
+    def _exclude_domain_reference_target(self, temp_root):
+        decisions_path = temp_root / "assets" / "decisions.json"
+        decisions = read_json_copy(decisions_path)
+        effect = self._decision(decisions, "domain.layout")["effects"][0]
+        effect["includeArtifacts"] = []
+        effect["excludeArtifacts"] = ["guide.domain"]
+        effect["selectTemplates"] = []
+        write_json(decisions_path, decisions)
 
     def _load_invalid_fixture(self, mutator):
         with tempfile.TemporaryDirectory() as temp_dir:

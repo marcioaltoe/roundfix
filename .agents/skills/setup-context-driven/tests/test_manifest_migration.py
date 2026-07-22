@@ -178,6 +178,10 @@ def write_legacy_spec0030_repository(
     ambiguous_autonomous_guide=False,
 ) -> None:
     repo.mkdir(parents=True, exist_ok=True)
+    (repo / "DESIGN.md").write_text(
+        "# Repository-authored legacy design contract\n",
+        encoding="utf-8",
+    )
     docs_agents = repo / "docs" / "agents"
     docs_agents.mkdir(parents=True, exist_ok=True)
     root_content = (

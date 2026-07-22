@@ -65,8 +65,8 @@ test-race: ## Run Go tests with the race detector
 	$(GO) test -race $(PKGS)
 
 setup-context-check: ## Validate setup-context-driven Python suite and bundled assets
-	PYTHONDONTWRITEBYTECODE=1 $(PYTHON) -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test*.py'
-	PYTHONDONTWRITEBYTECODE=1 $(PYTHON) -c "import sys; from pathlib import Path; sys.path.insert(0, '.agents/skills/setup-context-driven/scripts'); from context_assets import load_asset_catalog; load_asset_catalog(Path('.agents/skills/setup-context-driven')); load_asset_catalog(Path('skills/setup-context-driven')); print('setup-context-driven assets: ok')"
+	$(RTK) env PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test*.py'
+	$(RTK) env PYTHONDONTWRITEBYTECODE=1 python3 -B -c "import sys; from pathlib import Path; sys.path.insert(0, '.agents/skills/setup-context-driven/scripts'); from context_assets import load_asset_catalog; load_asset_catalog(Path('.agents/skills/setup-context-driven')); load_asset_catalog(Path('skills/setup-context-driven')); print('setup-context-driven assets: ok')"
 
 
 ##@ Build & Run
