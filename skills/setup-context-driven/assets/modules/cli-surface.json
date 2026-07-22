@@ -1,9 +1,18 @@
 {
   "schemaVersion": "setup-context-driven/module-v2", "id": "cli-surface", "version": 2, "kind": "application-surface", "title": "Agentic CLI surface guidance",
-  "dependsOn": ["core"], "conflictsWith": [], "requiredSkills": ["agentic-cli-design", "testing-boss"],
+  "dependsOn": ["core"], "conflictsWith": [], "requiredSkills": [
+    "agentic-cli-design"
+  ],
   "skillDispatch": [
-    {"id": "agentic-cli-design", "when": "Changing CLI flags, stdout or stderr, exit codes, JSON output, dry-run, non-interactive, or introspection behavior."},
-    {"id": "testing-boss", "when": "Writing or reviewing CLI contract and command-boundary tests."}
+    {
+      "skill": "agentic-cli-design",
+      "triggers": [
+        {
+          "id": "trigger.cli-surface.agentic-cli-design",
+          "when": "Changing CLI flags, streams, exit codes, JSON, dry-run, non-interactive, or introspection behavior."
+        }
+      ]
+    }
   ],
   "requiredDecisions": [],
   "rootBlocks": [{"id": "root.cli-surface", "version": 2, "template": "template.root.cli-surface", "rules": [], "references": [

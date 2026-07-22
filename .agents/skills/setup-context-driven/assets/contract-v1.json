@@ -98,7 +98,7 @@
       ],
       "rules": [
         "Every rule declares coverage identifiers and portable guidance.",
-        "Every required skill has exactly one dispatch declaration and no extra dispatch declaration exists.",
+        "Every required skill has exactly one dispatch owner, and normalized declarations contain one or more globally unique stable triggers.",
         "Every required rule is carried by a selected supporting guide whose template renders artifact.rules.",
         "Setup-owned references resolve by managed identity and repository-owned references use safe repository-relative paths."
       ]
@@ -253,6 +253,7 @@
     "skill.dispatch.trigger.id.duplicate",
     "skill.dispatch.trigger.when.invalid",
     "skill.dispatch.owner.duplicate",
+    "profile.skill.set.mismatch",
     "coverage.delegationAliases.invalid",
     "coverage.delegationAliases.duplicate",
     "extension.path.invalid",

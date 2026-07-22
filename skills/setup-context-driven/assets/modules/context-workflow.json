@@ -9,19 +9,132 @@
   ],
   "conflictsWith": [],
   "requiredSkills": [
-    "setup-context-driven",
+    "archive-spec",
     "brainstorming",
+    "business-analyst",
+    "council",
+    "domain-modeling",
+    "grill-with-docs",
+    "grilling",
+    "implement-spec",
+    "implement-task",
+    "knowledge-workspace",
+    "qa-gate",
+    "setup-context-driven",
+    "the-fool",
     "write-idea",
     "write-prd",
-    "write-techspec",
     "write-tasks",
-    "implement-task",
-    "implement-spec",
-    "qa-gate",
-    "archive-spec",
-    "tech-writer"
+    "write-techspec"
   ],
   "skillDispatch": [
+    {
+      "skill": "archive-spec",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.archive-spec",
+          "when": "Archiving a completed and QA-passed Spec."
+        }
+      ]
+    },
+    {
+      "skill": "brainstorming",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.brainstorming",
+          "when": "Starting creative feature or behavior design before implementation."
+        }
+      ]
+    },
+    {
+      "skill": "business-analyst",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.business-analyst",
+          "when": "Evaluating product viability, options, KPIs, or business trade-offs."
+        }
+      ]
+    },
+    {
+      "skill": "council",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.council",
+          "when": "Debating a high-impact product or architecture decision through multiple advisors."
+        }
+      ]
+    },
+    {
+      "skill": "domain-modeling",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.domain-modeling",
+          "when": "Defining or changing domain vocabulary, ownership, or bounded-context relationships."
+        }
+      ]
+    },
+    {
+      "skill": "grill-with-docs",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.grill-with-docs",
+          "when": "Stress-testing a plan or decision against repository documents."
+        }
+      ]
+    },
+    {
+      "skill": "grilling",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.grilling",
+          "when": "Stress-testing an idea or plan through direct questions."
+        }
+      ]
+    },
+    {
+      "skill": "implement-spec",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.implement-spec",
+          "when": "Executing every pending Task in a Spec Task Graph."
+        },
+        {
+          "id": "trigger.autonomous-work.implement-spec",
+          "when": "Delegating a complete autonomous Spec Task Graph."
+        }
+      ]
+    },
+    {
+      "skill": "implement-task",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.implement-task",
+          "when": "Executing exactly one assigned Spec Task."
+        },
+        {
+          "id": "trigger.autonomous-work.implement-task",
+          "when": "Delegating one autonomous Task to an ACP Runtime."
+        }
+      ]
+    },
+    {
+      "skill": "knowledge-workspace",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.knowledge-workspace",
+          "when": "Consulting the configured knowledge workspace for relevant prior context."
+        }
+      ]
+    },
+    {
+      "skill": "qa-gate",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.qa-gate",
+          "when": "Running final Spec QA after implementation Tasks complete."
+        }
+      ]
+    },
     {
       "skill": "setup-context-driven",
       "triggers": [
@@ -32,11 +145,11 @@
       ]
     },
     {
-      "skill": "brainstorming",
+      "skill": "the-fool",
       "triggers": [
         {
-          "id": "trigger.context-workflow.brainstorming",
-          "when": "Starting creative feature or behavior design before implementation."
+          "id": "trigger.context-workflow.the-fool",
+          "when": "Challenging a proposal through a pre-mortem, red-team, or evidence audit."
         }
       ]
     },
@@ -59,15 +172,6 @@
       ]
     },
     {
-      "skill": "write-techspec",
-      "triggers": [
-        {
-          "id": "trigger.context-workflow.write-techspec",
-          "when": "Settling implementation architecture and technical contracts."
-        }
-      ]
-    },
-    {
       "skill": "write-tasks",
       "triggers": [
         {
@@ -77,47 +181,11 @@
       ]
     },
     {
-      "skill": "implement-task",
+      "skill": "write-techspec",
       "triggers": [
         {
-          "id": "trigger.context-workflow.implement-task",
-          "when": "Executing exactly one assigned Spec Task."
-        }
-      ]
-    },
-    {
-      "skill": "implement-spec",
-      "triggers": [
-        {
-          "id": "trigger.context-workflow.implement-spec",
-          "when": "Executing every pending Task in a Spec Task Graph."
-        }
-      ]
-    },
-    {
-      "skill": "qa-gate",
-      "triggers": [
-        {
-          "id": "trigger.context-workflow.qa-gate",
-          "when": "Running final Spec QA after implementation Tasks complete."
-        }
-      ]
-    },
-    {
-      "skill": "archive-spec",
-      "triggers": [
-        {
-          "id": "trigger.context-workflow.archive-spec",
-          "when": "Archiving a completed and QA-passed Spec."
-        }
-      ]
-    },
-    {
-      "skill": "tech-writer",
-      "triggers": [
-        {
-          "id": "trigger.context-workflow.tech-writer",
-          "when": "Writing CONTEXT-driven guides, Specs, ADRs, findings, or handoffs."
+          "id": "trigger.context-workflow.write-techspec",
+          "when": "Settling implementation architecture and technical contracts."
         }
       ]
     }

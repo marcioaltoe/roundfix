@@ -8,40 +8,8 @@
     "context-workflow"
   ],
   "conflictsWith": [],
-  "requiredSkills": [
-    "implement-task",
-    "implement-spec",
-    "evidence-gate"
-  ],
-  "skillDispatch": [
-    {
-      "skill": "implement-task",
-      "triggers": [
-        {
-          "id": "trigger.autonomous-work.implement-task",
-          "when": "Delegating one autonomous Task to an ACP Runtime."
-        }
-      ]
-    },
-    {
-      "skill": "implement-spec",
-      "triggers": [
-        {
-          "id": "trigger.autonomous-work.implement-spec",
-          "when": "Delegating a complete autonomous Spec Task Graph."
-        }
-      ]
-    },
-    {
-      "skill": "evidence-gate",
-      "triggers": [
-        {
-          "id": "trigger.autonomous-work.evidence-gate",
-          "when": "Settling an autonomous Task or Run outcome."
-        }
-      ]
-    }
-  ],
+  "requiredSkills": [],
+  "skillDispatch": [],
   "requiredDecisions": [
     "autonomous.enabled",
     "runtime.backend",

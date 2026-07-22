@@ -5368,15 +5368,19 @@ def render_skill_dispatch(
     catalog: AssetCatalog,
     active_modules: Iterable[str],
 ) -> str:
+    active_module_ids = set(active_modules)
     lines: list[str] = []
-    seen: set[tuple[str, str]] = set()
-    for module_id in active_modules:
-        for dispatch in catalog.skill_dispatch_by_module.get(module_id, ()):
-            key = (dispatch.skill_name, dispatch.when)
-            if key in seen:
-                continue
-            seen.add(key)
-            lines.append(f"- `{dispatch.skill_name}`: {dispatch.when}")
+    for skill_name, triggers in catalog.skill_dispatch_by_skill.items():
+        active_triggers = [
+            trigger for trigger in triggers if trigger.owner_module in active_module_ids
+        ]
+        if not active_triggers:
+            continue
+        lines.append(f"- `{skill_name}`:")
+        lines.extend(
+            f"  - `{trigger.trigger_id}`: {trigger.when}"
+            for trigger in active_triggers
+        )
     return "\n".join(lines)
 
 

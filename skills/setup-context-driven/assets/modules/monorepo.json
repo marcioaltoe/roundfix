@@ -1,7 +1,19 @@
 {
   "schemaVersion": "setup-context-driven/module-v2", "id": "monorepo", "version": 2, "kind": "repository-layout", "title": "Monorepo context boundaries",
-  "dependsOn": ["context-workflow"], "conflictsWith": [], "requiredSkills": ["domain-modeling"],
-  "skillDispatch": [{"id": "domain-modeling", "when": "Changing bounded-context vocabulary, ownership, or dependencies across packages."}],
+  "dependsOn": ["context-workflow"], "conflictsWith": [], "requiredSkills": [
+    "turborepo"
+  ],
+  "skillDispatch": [
+    {
+      "skill": "turborepo",
+      "triggers": [
+        {
+          "id": "trigger.monorepo.turborepo",
+          "when": "Changing Turborepo tasks, caching, package boundaries, or workspace orchestration."
+        }
+      ]
+    }
+  ],
   "requiredDecisions": [],
   "rootBlocks": [{"id": "root.monorepo", "version": 2, "template": "template.root.monorepo", "rules": [], "references": [
     {"id": "reference.root.monorepo", "token": "reference.monorepo", "ownership": "setup", "managedId": "guide.monorepo"}

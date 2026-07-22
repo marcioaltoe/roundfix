@@ -8,13 +8,16 @@
   "conflictsWith": [],
   "requiredSkills": [
     "coding-guidelines",
-    "testing-boss",
-    "tech-writer",
-    "no-workarounds",
-    "systematic-debugging",
-    "evidence-gate",
+    "context7",
     "conventional-commits",
-    "github-pr-workflow"
+    "evidence-gate",
+    "github-pr-workflow",
+    "handoff",
+    "no-workarounds",
+    "review",
+    "systematic-debugging",
+    "tech-writer",
+    "testing-boss"
   ],
   "skillDispatch": [
     {
@@ -27,47 +30,11 @@
       ]
     },
     {
-      "skill": "testing-boss",
+      "skill": "context7",
       "triggers": [
         {
-          "id": "trigger.core.testing-boss",
-          "when": "Writing, changing, or reviewing tests and fixtures."
-        }
-      ]
-    },
-    {
-      "skill": "tech-writer",
-      "triggers": [
-        {
-          "id": "trigger.core.tech-writer",
-          "when": "Writing or revising technical documentation and delivery notes."
-        }
-      ]
-    },
-    {
-      "skill": "no-workarounds",
-      "triggers": [
-        {
-          "id": "trigger.core.no-workarounds",
-          "when": "Fixing defects, regressions, or verification failures at their root cause."
-        }
-      ]
-    },
-    {
-      "skill": "systematic-debugging",
-      "triggers": [
-        {
-          "id": "trigger.core.systematic-debugging",
-          "when": "Diagnosing a bug, failing check, or unexpected behavior before proposing a fix."
-        }
-      ]
-    },
-    {
-      "skill": "evidence-gate",
-      "triggers": [
-        {
-          "id": "trigger.core.evidence-gate",
-          "when": "Making any completion, readiness, or handoff claim."
+          "id": "trigger.core.context7",
+          "when": "Consulting authoritative current documentation for a library, framework, runtime, or toolchain."
         }
       ]
     },
@@ -81,11 +48,74 @@
       ]
     },
     {
+      "skill": "evidence-gate",
+      "triggers": [
+        {
+          "id": "trigger.core.evidence-gate",
+          "when": "Making any completion, readiness, or handoff claim."
+        }
+      ]
+    },
+    {
       "skill": "github-pr-workflow",
       "triggers": [
         {
           "id": "trigger.core.github-pr-workflow",
           "when": "Preparing, opening, updating, or handing off a pull request."
+        }
+      ]
+    },
+    {
+      "skill": "handoff",
+      "triggers": [
+        {
+          "id": "trigger.core.handoff",
+          "when": "Recording resumable session state for another Agent or maintainer."
+        }
+      ]
+    },
+    {
+      "skill": "no-workarounds",
+      "triggers": [
+        {
+          "id": "trigger.core.no-workarounds",
+          "when": "Fixing defects, regressions, or verification failures at their root cause."
+        }
+      ]
+    },
+    {
+      "skill": "review",
+      "triggers": [
+        {
+          "id": "trigger.core.review",
+          "when": "Reviewing a change against repository standards and its originating contract."
+        }
+      ]
+    },
+    {
+      "skill": "systematic-debugging",
+      "triggers": [
+        {
+          "id": "trigger.core.systematic-debugging",
+          "when": "Diagnosing a bug, failing check, or unexpected behavior before proposing a fix."
+        }
+      ]
+    },
+    {
+      "skill": "tech-writer",
+      "triggers": [
+        {
+          "id": "trigger.core.tech-writer",
+          "when": "Writing or revising technical documentation, Specs, findings, or delivery notes."
+        }
+      ]
+    },
+    {
+      "skill": "testing-boss",
+      "triggers": [
+        {
+          "id": "trigger.core.testing-boss",
+          "when": "Writing, changing, or reviewing tests and fixtures."
         }
       ]
     }

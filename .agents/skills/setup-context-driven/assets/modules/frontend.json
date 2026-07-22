@@ -8,8 +8,270 @@
     "typescript"
   ],
   "conflictsWith": [],
-  "requiredSkills": [],
-  "skillDispatch": [],
+  "requiredSkills": [
+    "agent-browser",
+    "baseline-ui",
+    "building-components",
+    "core-web-vitals",
+    "fixing-accessibility",
+    "fixing-metadata",
+    "fixing-motion-performance",
+    "frontend-design",
+    "frontend-docs",
+    "interaction-design",
+    "interface-design",
+    "motion",
+    "react",
+    "react-best-practices",
+    "react-composition-patterns",
+    "react-hook-form-zod",
+    "shadcn",
+    "solid",
+    "tailwindcss",
+    "tanstack-query",
+    "tanstack-router",
+    "tanstack-table",
+    "ui-ux-pro-max",
+    "wcag-audit-patterns",
+    "web-design-guidelines",
+    "zustand"
+  ],
+  "skillDispatch": [
+    {
+      "skill": "agent-browser",
+      "triggers": [
+        {
+          "id": "trigger.frontend.agent-browser",
+          "when": "Exercising frontend behavior in a real browser."
+        }
+      ]
+    },
+    {
+      "skill": "baseline-ui",
+      "triggers": [
+        {
+          "id": "trigger.frontend.baseline-ui",
+          "when": "Building or reviewing the selected baseline UI system."
+        }
+      ]
+    },
+    {
+      "skill": "building-components",
+      "triggers": [
+        {
+          "id": "trigger.frontend.building-components",
+          "when": "Building reusable frontend components."
+        }
+      ]
+    },
+    {
+      "skill": "core-web-vitals",
+      "triggers": [
+        {
+          "id": "trigger.frontend.core-web-vitals",
+          "when": "Measuring or improving frontend Core Web Vitals."
+        }
+      ]
+    },
+    {
+      "skill": "fixing-accessibility",
+      "triggers": [
+        {
+          "id": "trigger.frontend.fixing-accessibility",
+          "when": "Diagnosing and fixing frontend accessibility defects."
+        }
+      ]
+    },
+    {
+      "skill": "fixing-metadata",
+      "triggers": [
+        {
+          "id": "trigger.frontend.fixing-metadata",
+          "when": "Changing frontend metadata and document discovery behavior."
+        }
+      ]
+    },
+    {
+      "skill": "fixing-motion-performance",
+      "triggers": [
+        {
+          "id": "trigger.frontend.fixing-motion-performance",
+          "when": "Diagnosing and fixing frontend motion performance."
+        }
+      ]
+    },
+    {
+      "skill": "frontend-design",
+      "triggers": [
+        {
+          "id": "trigger.frontend.frontend-design",
+          "when": "Designing or implementing frontend visual behavior."
+        }
+      ]
+    },
+    {
+      "skill": "frontend-docs",
+      "triggers": [
+        {
+          "id": "trigger.frontend.frontend-docs",
+          "when": "Writing frontend component or interaction documentation."
+        }
+      ]
+    },
+    {
+      "skill": "interaction-design",
+      "triggers": [
+        {
+          "id": "trigger.frontend.interaction-design",
+          "when": "Designing frontend states, transitions, and interaction flows."
+        }
+      ]
+    },
+    {
+      "skill": "interface-design",
+      "triggers": [
+        {
+          "id": "trigger.frontend.interface-design",
+          "when": "Designing frontend interface hierarchy and controls."
+        }
+      ]
+    },
+    {
+      "skill": "motion",
+      "triggers": [
+        {
+          "id": "trigger.frontend.motion",
+          "when": "Building or changing frontend motion and animation."
+        }
+      ]
+    },
+    {
+      "skill": "react",
+      "triggers": [
+        {
+          "id": "trigger.frontend.react",
+          "when": "Building or changing React components and hooks."
+        }
+      ]
+    },
+    {
+      "skill": "react-best-practices",
+      "triggers": [
+        {
+          "id": "trigger.frontend.react-best-practices",
+          "when": "Reviewing React implementation against current practices."
+        }
+      ]
+    },
+    {
+      "skill": "react-composition-patterns",
+      "triggers": [
+        {
+          "id": "trigger.frontend.react-composition-patterns",
+          "when": "Designing React component composition and reuse."
+        }
+      ]
+    },
+    {
+      "skill": "react-hook-form-zod",
+      "triggers": [
+        {
+          "id": "trigger.frontend.react-hook-form-zod",
+          "when": "Building validated React forms with React Hook Form and Zod."
+        }
+      ]
+    },
+    {
+      "skill": "shadcn",
+      "triggers": [
+        {
+          "id": "trigger.frontend.shadcn",
+          "when": "Building or changing components based on shadcn."
+        }
+      ]
+    },
+    {
+      "skill": "solid",
+      "triggers": [
+        {
+          "id": "trigger.frontend.solid",
+          "when": "Applying SOLID design to frontend TypeScript boundaries."
+        }
+      ]
+    },
+    {
+      "skill": "tailwindcss",
+      "triggers": [
+        {
+          "id": "trigger.frontend.tailwindcss",
+          "when": "Building or changing Tailwind CSS styling and configuration."
+        }
+      ]
+    },
+    {
+      "skill": "tanstack-query",
+      "triggers": [
+        {
+          "id": "trigger.frontend.tanstack-query",
+          "when": "Changing server-state queries, caching, or mutations with TanStack Query."
+        }
+      ]
+    },
+    {
+      "skill": "tanstack-router",
+      "triggers": [
+        {
+          "id": "trigger.frontend.tanstack-router",
+          "when": "Changing frontend routes and navigation with TanStack Router."
+        }
+      ]
+    },
+    {
+      "skill": "tanstack-table",
+      "triggers": [
+        {
+          "id": "trigger.frontend.tanstack-table",
+          "when": "Building or changing data tables with TanStack Table."
+        }
+      ]
+    },
+    {
+      "skill": "ui-ux-pro-max",
+      "triggers": [
+        {
+          "id": "trigger.frontend.ui-ux-pro-max",
+          "when": "Designing or reviewing polished frontend UI and UX."
+        }
+      ]
+    },
+    {
+      "skill": "wcag-audit-patterns",
+      "triggers": [
+        {
+          "id": "trigger.frontend.wcag-audit-patterns",
+          "when": "Auditing frontend behavior against WCAG patterns."
+        }
+      ]
+    },
+    {
+      "skill": "web-design-guidelines",
+      "triggers": [
+        {
+          "id": "trigger.frontend.web-design-guidelines",
+          "when": "Reviewing frontend design against web interface guidelines."
+        }
+      ]
+    },
+    {
+      "skill": "zustand",
+      "triggers": [
+        {
+          "id": "trigger.frontend.zustand",
+          "when": "Changing frontend state management with Zustand."
+        }
+      ]
+    }
+  ],
   "requiredDecisions": [],
   "rootBlocks": [
     {

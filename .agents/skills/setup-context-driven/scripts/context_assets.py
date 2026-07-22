@@ -353,6 +353,8 @@ def load_asset_catalog(skill_root: str | Path) -> AssetCatalog:
     skill_dispatch_by_skill = _normalize_profile_dispatch_contracts(
         profiles,
         ordered_modules_by_profile,
+        modules,
+        setups,
         skill_dispatch_by_module,
         diagnostics,
     )
@@ -1028,7 +1030,9 @@ def _validate_skill_dispatch(
     trigger_owners: dict[str, str],
     diagnostics: list[str],
 ) -> tuple[SkillDispatch, ...]:
-    if schema_version == MODULE_SCHEMA_VERSION_V3:
+    dispatch_items = _dict_items(raw_dispatch)
+    uses_trigger_contract = any("skill" in item or "triggers" in item for item in dispatch_items)
+    if schema_version == MODULE_SCHEMA_VERSION_V3 or uses_trigger_contract:
         return _validate_triggered_skill_dispatch(
             module_id,
             raw_dispatch,
@@ -2261,26 +2265,58 @@ def _validate_profile_formatters(
 def _normalize_profile_dispatch_contracts(
     profiles: dict[str, dict],
     ordered_modules_by_profile: dict[str, list[str]],
+    modules: dict[str, dict],
+    setups: dict[str, dict],
     dispatch_by_module: dict[str, tuple[SkillDispatch, ...]],
     diagnostics: list[str],
 ) -> dict[str, tuple[SkillDispatch, ...]]:
     normalized: dict[str, dict[tuple[str, str], SkillDispatch]] = {}
     for profile_id, profile in sorted(profiles.items()):
-        if profile.get("schemaVersion") != PROFILE_SCHEMA_VERSION_V3:
+        setup = setups.get(profile.get("setup"))
+        if setup is None:
             continue
+        ordered_modules = ordered_modules_by_profile.get(profile_id, [])
         owners: dict[str, str] = {}
-        for module_id in ordered_modules_by_profile.get(profile_id, []):
+        duplicate_owners: set[tuple[str, str, str]] = set()
+        dispatched_skills: set[str] = set()
+        for module_id in ordered_modules:
             for entry in dispatch_by_module.get(module_id, ()):
                 owner = owners.get(entry.skill_name)
                 if owner is not None and owner != module_id:
-                    diagnostics.append(
-                        f"skill.dispatch.owner.duplicate: {profile_id}: "
-                        f"{entry.skill_name}: {owner}, {module_id}"
-                    )
+                    duplicate = (entry.skill_name, owner, module_id)
+                    if duplicate not in duplicate_owners:
+                        diagnostics.append(
+                            f"skill.dispatch.owner.duplicate: {profile_id}: "
+                            f"{entry.skill_name}: {owner}, {module_id}"
+                        )
+                        duplicate_owners.add(duplicate)
                 owners[entry.skill_name] = module_id
+                dispatched_skills.add(entry.skill_name)
                 normalized.setdefault(entry.skill_name, {})[
                     (entry.trigger_id, entry.owner_module)
                 ] = entry
+
+        installed_skills = {
+            skill.get("name")
+            for skill in setup.get("skills", [])
+            if isinstance(skill.get("name"), str) and skill.get("name")
+        }
+        required_skills = {
+            skill_name
+            for module_id in ordered_modules
+            for skill_name in modules.get(module_id, {}).get("requiredSkills", [])
+            if isinstance(skill_name, str) and skill_name
+        }
+        if installed_skills != required_skills or required_skills != dispatched_skills:
+            installed_missing = ",".join(sorted(required_skills - installed_skills)) or "-"
+            installed_extra = ",".join(sorted(installed_skills - required_skills)) or "-"
+            dispatch_missing = ",".join(sorted(required_skills - dispatched_skills)) or "-"
+            dispatch_extra = ",".join(sorted(dispatched_skills - required_skills)) or "-"
+            diagnostics.append(
+                f"profile.skill.set.mismatch: {profile_id}: "
+                f"setup-missing={installed_missing}: setup-extra={installed_extra}: "
+                f"dispatch-missing={dispatch_missing}: dispatch-extra={dispatch_extra}"
+            )
     return {
         skill_name: tuple(
             sorted(entries.values(), key=lambda entry: entry.trigger_id)

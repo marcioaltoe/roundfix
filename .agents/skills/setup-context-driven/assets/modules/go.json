@@ -1,14 +1,69 @@
 {
   "schemaVersion": "setup-context-driven/module-v2", "id": "go", "version": 2, "kind": "language-runtime", "title": "Go repository guidance",
   "dependsOn": ["core"], "conflictsWith": [],
-  "requiredSkills": ["golang-cli", "golang-testing", "golang-error-handling", "golang-context", "golang-lint", "golang-concurrency"],
+  "requiredSkills": [
+    "golang-cli",
+    "golang-concurrency",
+    "golang-context",
+    "golang-error-handling",
+    "golang-lint",
+    "golang-testing"
+  ],
   "skillDispatch": [
-    {"id": "golang-cli", "when": "Changing Go command structure, flags, package layout, version output, or command tests."},
-    {"id": "golang-testing", "when": "Writing or reviewing Go tests, fixtures, fuzz tests, or integration tests."},
-    {"id": "golang-error-handling", "when": "Creating, wrapping, matching, logging, or exposing Go errors."},
-    {"id": "golang-context", "when": "Designing Go IO boundaries, cancellation, timeouts, deadlines, or request-scoped values."},
-    {"id": "golang-lint", "when": "Changing Go lint configuration or adding a lint suppression."},
-    {"id": "golang-concurrency", "when": "Using goroutines, channels, locks, worker pools, or other concurrent Go behavior."}
+    {
+      "skill": "golang-cli",
+      "triggers": [
+        {
+          "id": "trigger.go.golang-cli",
+          "when": "Changing Go command structure, flags, package layout, version output, or command tests."
+        }
+      ]
+    },
+    {
+      "skill": "golang-concurrency",
+      "triggers": [
+        {
+          "id": "trigger.go.golang-concurrency",
+          "when": "Using goroutines, channels, locks, worker pools, or other concurrent Go behavior."
+        }
+      ]
+    },
+    {
+      "skill": "golang-context",
+      "triggers": [
+        {
+          "id": "trigger.go.golang-context",
+          "when": "Designing Go IO boundaries, cancellation, timeouts, deadlines, or request-scoped values."
+        }
+      ]
+    },
+    {
+      "skill": "golang-error-handling",
+      "triggers": [
+        {
+          "id": "trigger.go.golang-error-handling",
+          "when": "Creating, wrapping, matching, logging, or exposing Go errors."
+        }
+      ]
+    },
+    {
+      "skill": "golang-lint",
+      "triggers": [
+        {
+          "id": "trigger.go.golang-lint",
+          "when": "Changing Go lint configuration or adding a lint suppression."
+        }
+      ]
+    },
+    {
+      "skill": "golang-testing",
+      "triggers": [
+        {
+          "id": "trigger.go.golang-testing",
+          "when": "Writing or reviewing Go tests, fixtures, fuzz tests, or integration tests."
+        }
+      ]
+    }
   ],
   "requiredDecisions": [],
   "rootBlocks": [{"id": "root.go", "version": 2, "template": "template.root.go", "rules": [], "references": [

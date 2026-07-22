@@ -28,6 +28,7 @@ from test_skills import write_lockfile  # noqa: E402
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
 from context_assets import load_asset_catalog  # noqa: E402
+from context_setup import render_skill_dispatch  # noqa: E402
 
 
 SUPPORTED_PROFILES = [
@@ -193,20 +194,24 @@ class ProfileMacroFlowTests(unittest.TestCase):
                             encoding="utf-8"
                         )
                     )
-                    expected_lines = []
-                    seen = set()
-                    for module_id in manifest["modules"]:
-                        for entry in catalog.skill_dispatch_by_module[module_id]:
-                            key = (entry.skill_name, entry.when)
-                            if key in seen:
-                                continue
-                            seen.add(key)
-                            expected_lines.append(f"- `{entry.skill_name}`: {entry.when}")
+                    setup = catalog.setups[catalog.profiles[profile_id]["setup"]]
+                    installed = {skill["name"] for skill in setup["skills"]}
+                    required = {
+                        skill
+                        for module_id in manifest["modules"]
+                        for skill in catalog.modules[module_id]["requiredSkills"]
+                    }
+                    expected_dispatch = render_skill_dispatch(
+                        catalog,
+                        manifest["modules"],
+                    )
 
                     self.assertIn(f"`{verification}`", instructions)
+                    self.assertEqual(installed, required)
+                    self.assertIn(expected_dispatch, dispatch)
                     self.assertEqual(
                         [line for line in dispatch.splitlines() if line.startswith("- `")],
-                        expected_lines,
+                        [f"- `{skill}`:" for skill in sorted(installed)],
                     )
 
     def test_every_profile_preserves_repository_extensions_and_rerenders_identically(self):

@@ -8,8 +8,20 @@
     "typescript"
   ],
   "conflictsWith": [],
-  "requiredSkills": [],
-  "skillDispatch": [],
+  "requiredSkills": [
+    "bun"
+  ],
+  "skillDispatch": [
+    {
+      "skill": "bun",
+      "triggers": [
+        {
+          "id": "trigger.bun.bun",
+          "when": "Changing Bun runtime, package, script, workspace, or test behavior."
+        }
+      ]
+    }
+  ],
   "requiredDecisions": [],
   "rootBlocks": [
     {

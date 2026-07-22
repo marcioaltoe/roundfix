@@ -9,16 +9,94 @@
   ],
   "conflictsWith": [],
   "requiredSkills": [
-    "context7",
-    "exa-web-search"
+    "architectural-analysis",
+    "business-storyteller",
+    "clean-code",
+    "codebase-design",
+    "crafting-effective-readmes",
+    "diagnosing-bugs",
+    "docker",
+    "exa-web-search",
+    "feature-systems-pattern",
+    "find-rules",
+    "find-skills",
+    "firecrawl",
+    "game-changing-features",
+    "git-rebase",
+    "humanizer",
+    "onioncry",
+    "refactoring-analysis",
+    "roundfix",
+    "tdd",
+    "to-prompt",
+    "triage",
+    "typescript-advanced",
+    "vite",
+    "vitest",
+    "writing-clearly-and-concisely",
+    "zod"
   ],
   "skillDispatch": [
     {
-      "skill": "context7",
+      "skill": "architectural-analysis",
       "triggers": [
         {
-          "id": "trigger.typescript.context7",
-          "when": "Using or changing TypeScript libraries, frameworks, runtime APIs, or configuration."
+          "id": "trigger.typescript.architectural-analysis",
+          "when": "Analyzing TypeScript repository architecture and dependency boundaries."
+        }
+      ]
+    },
+    {
+      "skill": "business-storyteller",
+      "triggers": [
+        {
+          "id": "trigger.typescript.business-storyteller",
+          "when": "Turning TypeScript product evidence into a decision-ready narrative."
+        }
+      ]
+    },
+    {
+      "skill": "clean-code",
+      "triggers": [
+        {
+          "id": "trigger.typescript.clean-code",
+          "when": "Refactoring TypeScript code for clarity without changing behavior."
+        }
+      ]
+    },
+    {
+      "skill": "codebase-design",
+      "triggers": [
+        {
+          "id": "trigger.typescript.codebase-design",
+          "when": "Designing TypeScript codebase structure and component boundaries."
+        }
+      ]
+    },
+    {
+      "skill": "crafting-effective-readmes",
+      "triggers": [
+        {
+          "id": "trigger.typescript.crafting-effective-readmes",
+          "when": "Writing or revising the TypeScript repository README."
+        }
+      ]
+    },
+    {
+      "skill": "diagnosing-bugs",
+      "triggers": [
+        {
+          "id": "trigger.typescript.diagnosing-bugs",
+          "when": "Diagnosing TypeScript or Bun defects and unexpected behavior."
+        }
+      ]
+    },
+    {
+      "skill": "docker",
+      "triggers": [
+        {
+          "id": "trigger.typescript.docker",
+          "when": "Changing container packaging or local container workflows for the TypeScript stack."
         }
       ]
     },
@@ -28,6 +106,168 @@
         {
           "id": "trigger.typescript.exa-web-search",
           "when": "Researching an external TypeScript or Bun question after authoritative documentation is insufficient."
+        }
+      ]
+    },
+    {
+      "skill": "feature-systems-pattern",
+      "triggers": [
+        {
+          "id": "trigger.typescript.feature-systems-pattern",
+          "when": "Designing a feature system within the TypeScript application."
+        }
+      ]
+    },
+    {
+      "skill": "find-rules",
+      "triggers": [
+        {
+          "id": "trigger.typescript.find-rules",
+          "when": "Discovering repository rules before TypeScript implementation work."
+        }
+      ]
+    },
+    {
+      "skill": "find-skills",
+      "triggers": [
+        {
+          "id": "trigger.typescript.find-skills",
+          "when": "Discovering applicable skills for TypeScript repository work."
+        }
+      ]
+    },
+    {
+      "skill": "firecrawl",
+      "triggers": [
+        {
+          "id": "trigger.typescript.firecrawl",
+          "when": "Collecting external web material for a TypeScript product or integration question."
+        }
+      ]
+    },
+    {
+      "skill": "game-changing-features",
+      "triggers": [
+        {
+          "id": "trigger.typescript.game-changing-features",
+          "when": "Exploring high-impact product opportunities for the TypeScript application."
+        }
+      ]
+    },
+    {
+      "skill": "git-rebase",
+      "triggers": [
+        {
+          "id": "trigger.typescript.git-rebase",
+          "when": "Rebasing TypeScript repository work when explicitly authorized."
+        }
+      ]
+    },
+    {
+      "skill": "humanizer",
+      "triggers": [
+        {
+          "id": "trigger.typescript.humanizer",
+          "when": "Revising generated prose in the TypeScript repository to sound natural and direct."
+        }
+      ]
+    },
+    {
+      "skill": "onioncry",
+      "triggers": [
+        {
+          "id": "trigger.typescript.onioncry",
+          "when": "Auditing architectural dependency direction in the TypeScript repository."
+        }
+      ]
+    },
+    {
+      "skill": "refactoring-analysis",
+      "triggers": [
+        {
+          "id": "trigger.typescript.refactoring-analysis",
+          "when": "Planning a behavior-preserving TypeScript refactor."
+        }
+      ]
+    },
+    {
+      "skill": "roundfix",
+      "triggers": [
+        {
+          "id": "trigger.typescript.roundfix",
+          "when": "Driving Roundfix review or Spec workflows for the TypeScript repository."
+        }
+      ]
+    },
+    {
+      "skill": "tdd",
+      "triggers": [
+        {
+          "id": "trigger.typescript.tdd",
+          "when": "Developing TypeScript behavior through a red-green-refactor loop."
+        }
+      ]
+    },
+    {
+      "skill": "to-prompt",
+      "triggers": [
+        {
+          "id": "trigger.typescript.to-prompt",
+          "when": "Converting TypeScript repository context into a bounded implementation prompt."
+        }
+      ]
+    },
+    {
+      "skill": "triage",
+      "triggers": [
+        {
+          "id": "trigger.typescript.triage",
+          "when": "Triaging TypeScript repository work or external feedback."
+        }
+      ]
+    },
+    {
+      "skill": "typescript-advanced",
+      "triggers": [
+        {
+          "id": "trigger.typescript.typescript-advanced",
+          "when": "Using advanced TypeScript types or language features."
+        }
+      ]
+    },
+    {
+      "skill": "vite",
+      "triggers": [
+        {
+          "id": "trigger.typescript.vite",
+          "when": "Changing Vite build, development, or test integration."
+        }
+      ]
+    },
+    {
+      "skill": "vitest",
+      "triggers": [
+        {
+          "id": "trigger.typescript.vitest",
+          "when": "Writing or changing Vitest suites and configuration."
+        }
+      ]
+    },
+    {
+      "skill": "writing-clearly-and-concisely",
+      "triggers": [
+        {
+          "id": "trigger.typescript.writing-clearly-and-concisely",
+          "when": "Revising TypeScript repository prose for clarity and brevity."
+        }
+      ]
+    },
+    {
+      "skill": "zod",
+      "triggers": [
+        {
+          "id": "trigger.typescript.zod",
+          "when": "Designing or changing Zod schemas and validation boundaries."
         }
       ]
     }

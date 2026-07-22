@@ -1,10 +1,28 @@
 {
   "schemaVersion": "setup-context-driven/module-v2", "id": "tui-surface", "version": 2, "kind": "application-surface", "title": "Terminal UI surface guidance",
-  "dependsOn": ["cli-surface"], "conflictsWith": [], "requiredSkills": ["bubbletea", "tui-design", "testing-boss"],
+  "dependsOn": ["cli-surface"], "conflictsWith": [], "requiredSkills": [
+    "bubbletea",
+    "tui-design"
+  ],
   "skillDispatch": [
-    {"id": "bubbletea", "when": "Building or changing Bubble Tea models, commands, messages, or component composition."},
-    {"id": "tui-design", "when": "Designing terminal layout, navigation, keyboard, mouse, color, or accessibility behavior."},
-    {"id": "testing-boss", "when": "Writing or reviewing TUI model and interaction tests."}
+    {
+      "skill": "bubbletea",
+      "triggers": [
+        {
+          "id": "trigger.tui-surface.bubbletea",
+          "when": "Building or changing Bubble Tea models, commands, messages, or component composition."
+        }
+      ]
+    },
+    {
+      "skill": "tui-design",
+      "triggers": [
+        {
+          "id": "trigger.tui-surface.tui-design",
+          "when": "Designing terminal layout, navigation, keyboard, mouse, color, or accessibility behavior."
+        }
+      ]
+    }
   ],
   "requiredDecisions": [],
   "rootBlocks": [{"id": "root.tui-surface", "version": 2, "template": "template.root.tui-surface", "rules": [], "references": [

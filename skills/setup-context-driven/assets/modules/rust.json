@@ -1,11 +1,48 @@
 {
   "schemaVersion": "setup-context-driven/module-v2", "id": "rust", "version": 2, "kind": "language-runtime", "title": "Rust repository guidance",
-  "dependsOn": ["core"], "conflictsWith": [], "requiredSkills": ["context7", "testing-boss", "agentic-cli-design", "systematic-debugging"],
+  "dependsOn": ["core"], "conflictsWith": [], "requiredSkills": [
+    "clap-rust",
+    "cut-release",
+    "rust",
+    "rust-cli"
+  ],
   "skillDispatch": [
-    {"id": "context7", "when": "Changing Rust crate APIs, toolchain configuration, or dependencies."},
-    {"id": "testing-boss", "when": "Writing or reviewing Rust unit, integration, or CLI tests."},
-    {"id": "agentic-cli-design", "when": "Changing a Rust CLI's flags, streams, exit codes, JSON, or non-interactive behavior."},
-    {"id": "systematic-debugging", "when": "Diagnosing Rust compiler, test, lint, or runtime failures."}
+    {
+      "skill": "clap-rust",
+      "triggers": [
+        {
+          "id": "trigger.rust.clap-rust",
+          "when": "Designing or changing Rust command parsing with Clap."
+        }
+      ]
+    },
+    {
+      "skill": "cut-release",
+      "triggers": [
+        {
+          "id": "trigger.rust.cut-release",
+          "when": "Preparing or publishing a Rust CLI release."
+        }
+      ]
+    },
+    {
+      "skill": "rust",
+      "triggers": [
+        {
+          "id": "trigger.rust.rust",
+          "when": "Writing or reviewing general Rust implementation and Cargo behavior."
+        }
+      ]
+    },
+    {
+      "skill": "rust-cli",
+      "triggers": [
+        {
+          "id": "trigger.rust.rust-cli",
+          "when": "Changing Rust CLI structure, behavior, packaging, or command tests."
+        }
+      ]
+    }
   ],
   "requiredDecisions": [],
   "rootBlocks": [{"id": "root.rust", "version": 2, "template": "template.root.rust", "rules": [], "references": [

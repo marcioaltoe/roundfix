@@ -1,6 +1,8 @@
 {
   "schemaVersion": "setup-context-driven/module-v2", "id": "external-triage", "version": 2, "kind": "workflow", "title": "External issue triage",
-  "dependsOn": ["context-workflow"], "conflictsWith": [], "requiredSkills": [], "skillDispatch": [], "requiredDecisions": ["triage.external"],
+  "dependsOn": ["context-workflow"], "conflictsWith": [], "requiredSkills": [],
+  "skillDispatch": [],
+  "requiredDecisions": ["triage.external"],
   "rootBlocks": [{"id": "root.external-triage", "version": 2, "template": "template.root.external-triage", "rules": [], "references": [
     {"id": "reference.root.external-triage", "token": "reference.external-triage", "ownership": "setup", "managedId": "guide.external-triage"}
   ]}],
