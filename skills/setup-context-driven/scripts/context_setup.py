@@ -8,6 +8,8 @@ import hashlib
 import json
 import os
 import re
+import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -31,6 +33,7 @@ from context_assets import (
 
 
 AUDIT_SCHEMA_VERSION = "setup-context-driven/audit-v1"
+RESTORE_SCHEMA_VERSION = "setup-context-driven/restore-v1"
 MANIFEST_PATH = Path("docs/agents/setup-context.json")
 ROOT_INSTRUCTIONS_PATH = Path("AGENTS.md")
 SEVERITY_ORDER = {"error": 0, "decision": 1, "warning": 2, "info": 3}
@@ -298,6 +301,1076 @@ class AuditResult:
         return data
 
 
+@dataclass(frozen=True)
+class RestoreLimits:
+    max_files: int = 2_000
+    max_bytes: int = 8 * 1024 * 1024
+
+
+@dataclass(frozen=True)
+class RestoreFile:
+    path: Path
+    content: bytes
+
+
+@dataclass(frozen=True)
+class RestoreFileChange:
+    action: str
+    path: Path
+    skill_name: str
+    before_digest: str | None
+    after_digest: str | None
+
+    def to_json(self) -> dict[str, object]:
+        return {
+            "action": self.action,
+            "path": self.path.as_posix(),
+            "skill": self.skill_name,
+            "beforeDigest": self.before_digest,
+            "afterDigest": self.after_digest,
+        }
+
+
+@dataclass(frozen=True)
+class RestoreLockEdit:
+    skill_name: str
+    before: dict | None
+    after: dict
+
+    def to_json(self) -> dict[str, object]:
+        return {
+            "action": "update-lock-entry",
+            "path": "skills-lock.json",
+            "skill": self.skill_name,
+            "before": self.before,
+            "after": self.after,
+        }
+
+
+@dataclass(frozen=True)
+class RestoreSkillPlan:
+    contract: ExternalSkillContract
+    target: Path
+    files: tuple[RestoreFile, ...]
+    changes: tuple[RestoreFileChange, ...]
+    lock_edit: RestoreLockEdit | None
+    observed_digest: str | None
+
+    def to_json(self) -> dict[str, object]:
+        source = self.contract.source
+        return {
+            "skill": self.contract.skill_name,
+            "targetPath": self.target.as_posix(),
+            "source": {
+                "provider": source.provider,
+                "repository": source.repository,
+                "ref": source.revision,
+                "path": source.source_path.as_posix(),
+            },
+            "expectedDigest": self.contract.tree_digest,
+            "observedDigest": self.observed_digest,
+            "changes": [change.to_json() for change in self.changes],
+            "lockEdit": self.lock_edit.to_json() if self.lock_edit is not None else None,
+        }
+
+
+@dataclass(frozen=True)
+class RestorePlan:
+    profile_id: str
+    setup_id: str
+    acquisitions: tuple[dict[str, str], ...]
+    skills: tuple[RestoreSkillPlan, ...]
+    lock_before: bytes | None
+    lock_after: bytes | None
+    digest: str
+
+    @property
+    def has_changes(self) -> bool:
+        return bool(self.skills)
+
+    @property
+    def planned_changes(self) -> list[dict[str, object]]:
+        changes: list[dict[str, object]] = []
+        for skill in self.skills:
+            changes.extend(change.to_json() for change in skill.changes)
+            if skill.lock_edit is not None:
+                changes.append(skill.lock_edit.to_json())
+        return changes
+
+    def to_json(
+        self,
+        *,
+        ok: bool,
+        applied: bool,
+        finding_item: dict[str, object] | None = None,
+    ) -> dict[str, object]:
+        payload: dict[str, object] = {
+            "schemaVersion": RESTORE_SCHEMA_VERSION,
+            "ok": ok,
+            "applied": applied,
+            "profile": self.profile_id,
+            "setup": self.setup_id,
+            "acquisitions": list(self.acquisitions),
+            "skills": [skill.to_json() for skill in self.skills],
+            "plannedChanges": self.planned_changes,
+            "planDigest": self.digest,
+        }
+        if finding_item is not None:
+            payload["finding"] = finding_item
+        return payload
+
+
+class RestoreError(Exception):
+    def __init__(self, code: str, message: str, action: str, exit_code: int = 1):
+        self.code = code
+        self.message = message
+        self.action = action
+        self.exit_code = exit_code
+        super().__init__(message)
+
+    def to_json(self) -> dict[str, object]:
+        return {"code": self.code, "message": self.message, "action": self.action}
+
+
+class GitSkillSource:
+    def __init__(self, source_dir: Path | None = None):
+        self.source_dir = source_dir
+
+    def acquire(self, source, target: Path) -> None:
+        if source.provider != "github":
+            raise RestoreError(
+                "source.provider-unsupported",
+                f"Skill source provider {source.provider!r} is not supported.",
+                "Use a bundled snapshot whose external source provider is github.",
+            )
+        if self.source_dir is not None:
+            origin = str(self.source_dir)
+        else:
+            origin = f"https://github.com/{source.repository}.git"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            run_git_argv("init", "--bare", str(target))
+            run_git_argv(
+                "--git-dir",
+                str(target),
+                "fetch",
+                "--no-tags",
+                "--depth=1",
+                origin,
+                source.revision,
+            )
+            resolved = run_git_argv(
+                "--git-dir",
+                str(target),
+                "rev-parse",
+                "--verify",
+                "FETCH_HEAD^{commit}",
+            ).decode("ascii").strip()
+        except FileNotFoundError as error:
+            raise RestoreError(
+                "source.git-missing",
+                "Git is required for immutable external skill acquisition.",
+                "Install Git and rerun the same restore-skills preview.",
+            ) from error
+        except (OSError, UnicodeDecodeError, subprocess.CalledProcessError) as error:
+            raise RestoreError(
+                "source.commit-unavailable",
+                f"The exact commit {source.revision} is unavailable: {git_error_message(error)}.",
+                "Make the declared commit available in --source-dir or verify the bundled GitHub provenance.",
+            ) from error
+        if resolved != source.revision:
+            raise RestoreError(
+                "source.commit-mismatch",
+                f"Git resolved {resolved}, not the declared commit {source.revision}.",
+                "Reject the source and verify its immutable commit identity before retrying.",
+            )
+
+
+SPEC_0036_LOCK_COMPATIBILITY_DIGEST = (
+    "ebdda12bc5f4c6920e866c330c0e3afd5920f85b6abb1622356dce57ecc10dab"
+)
+SPEC_0036_LOCK_COMPATIBILITY_FILES = (
+    RestoreFile(Path("SKILL.md"), b"---\nname: fixture\n---\n"),
+    RestoreFile(Path("references/guide.md"), b"fixture\n"),
+)
+
+
+class ExternalSkillLockAdapter:
+    def assert_compatible(self) -> None:
+        observed = external_lock_digest(SPEC_0036_LOCK_COMPATIBILITY_FILES)
+        if observed != SPEC_0036_LOCK_COMPATIBILITY_DIGEST:
+            raise RestoreError(
+                "lock.adapter-incompatible",
+                "The lock compatibility fixture disagrees with Spec 0036 Task 01.",
+                "Update the isolated lock adapter before restoring skills.",
+            )
+
+    def entry_for(self, source, tree: tuple[RestoreFile, ...]) -> dict:
+        self.assert_compatible()
+        if not any(item.path == Path("SKILL.md") for item in tree):
+            raise RestoreError(
+                "source.skill-file-missing",
+                "The verified source subtree does not contain SKILL.md.",
+                "Fix the immutable source snapshot before restoring this skill.",
+            )
+        return {
+            "source": source.repository,
+            "ref": source.revision,
+            "sourceType": source.provider,
+            "skillPath": (source.source_path / "SKILL.md").as_posix(),
+            "computedHash": external_lock_digest(tree),
+        }
+
+
+class RestoreFilesystem:
+    def replace(self, source: Path, target: Path) -> None:
+        source.replace(target)
+
+    def remove_tree(self, target: Path) -> None:
+        if target.is_symlink() or target.is_file():
+            target.unlink()
+        elif target.exists():
+            shutil.rmtree(target)
+
+    def verify_tree(self, target: Path, expected_digest: str) -> None:
+        try:
+            observed = portable_tree_digest(target)
+        except PortableTreeError as error:
+            raise OSError(str(error)) from error
+        if observed != expected_digest:
+            raise OSError(
+                f"postwrite tree digest {observed} does not match {expected_digest}"
+            )
+
+    def verify_lock(self, target: Path, expected: bytes) -> None:
+        if target.read_bytes() != expected:
+            raise OSError("postwrite skills-lock.json bytes differ from the authorized plan")
+
+
+def external_lock_digest(files: Iterable[RestoreFile]) -> str:
+    digest = hashlib.sha256()
+    for item in sorted(files, key=lambda candidate: candidate.path.as_posix().encode("utf-8")):
+        digest.update(item.path.as_posix().encode("utf-8"))
+        digest.update(item.content)
+    return digest.hexdigest()
+
+
+def run_git_argv(*args: str) -> bytes:
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "GIT_TERMINAL_PROMPT": "0",
+            "GCM_INTERACTIVE": "Never",
+            "GIT_ASKPASS": "",
+            "SSH_ASKPASS": "",
+        }
+    )
+    result = subprocess.run(
+        ["git", *args],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+        env=environment,
+    )
+    if result.returncode != 0:
+        raise subprocess.CalledProcessError(
+            result.returncode,
+            result.args,
+            output=result.stdout,
+            stderr=result.stderr,
+        )
+    return result.stdout
+
+
+def build_restore_plan(
+    repo: Path,
+    catalog: AssetCatalog,
+    profile_id: str,
+    selected_skills: list[str] | tuple[str, ...] | None = None,
+    source_dir: Path | None = None,
+    *,
+    skill_source: GitSkillSource | None = None,
+    lock_adapter: ExternalSkillLockAdapter | None = None,
+    limits: RestoreLimits | None = None,
+) -> RestorePlan:
+    if profile_id not in catalog.profiles:
+        raise RestoreError(
+            "restore.profile-unknown",
+            f"Unknown bundled profile {profile_id!r}.",
+            "Choose a profile id from the bundled setup-context-driven assets.",
+            exit_code=2,
+        )
+    setup_id = catalog.profiles[profile_id]["setup"]
+    contracts = {
+        contract.skill_name: contract
+        for contract in catalog.external_sources_by_setup.get(setup_id, ())
+    }
+    requested = list(selected_skills or [])
+    if requested:
+        unknown = sorted({name for name in requested if name not in contracts})
+        if unknown:
+            raise RestoreError(
+                "restore.skill-invalid",
+                "Selected skills are not external members of this profile: "
+                + ", ".join(unknown)
+                + ".",
+                "Choose repeatable --skill values from this profile's external Repository Skill Set.",
+                exit_code=2,
+            )
+        selected_names = sorted(set(requested))
+    else:
+        selected_names = sorted(contracts)
+
+    resolved_source_dir = source_dir.resolve(strict=False) if source_dir is not None else None
+    if resolved_source_dir is not None and not resolved_source_dir.is_dir():
+        raise RestoreError(
+            "restore.source-dir-invalid",
+            f"Offline Git object store is not a directory: {resolved_source_dir}.",
+            "Pass an existing Git checkout or bare object store to --source-dir.",
+            exit_code=2,
+        )
+    source_adapter = skill_source or GitSkillSource(resolved_source_dir)
+    adapter = lock_adapter or ExternalSkillLockAdapter()
+    adapter.assert_compatible()
+    active_limits = limits or RestoreLimits()
+    if active_limits.max_files < 1 or active_limits.max_bytes < 1:
+        raise RestoreError(
+            "restore.limit-invalid",
+            "Restoration limits must be positive.",
+            "Use positive file-count and byte limits.",
+            exit_code=2,
+        )
+
+    lock_path = repo / "skills-lock.json"
+    lock_document, lock_before = load_restore_lock(lock_path)
+    lock_after_document = copy_json(lock_document)
+    lock_entries = lock_after_document["skills"]
+    acquisitions: list[dict[str, str]] = []
+    acquired_files: dict[str, tuple[RestoreFile, ...]] = {}
+    acquired_count = 0
+    acquired_bytes = 0
+
+    groups: dict[tuple[str, str, str], list[ExternalSkillContract]] = {}
+    for name in selected_names:
+        contract = contracts[name]
+        source = contract.source
+        groups.setdefault(
+            (source.provider, source.repository, source.revision), []
+        ).append(contract)
+
+    with tempfile.TemporaryDirectory(prefix="setup-context-driven-restore-") as temp_dir:
+        temp_root = Path(temp_dir)
+        for index, (group_key, group_contracts) in enumerate(sorted(groups.items())):
+            provider, repository, revision = group_key
+            source = group_contracts[0].source
+            object_store = temp_root / f"source-{index}"
+            source_adapter.acquire(source, object_store)
+            acquisitions.append(
+                {"provider": provider, "repository": repository, "ref": revision}
+            )
+            for contract in sorted(group_contracts, key=lambda item: item.skill_name):
+                files = read_verified_git_skill_tree(object_store, contract, active_limits)
+                acquired_count += len(files)
+                acquired_bytes += sum(len(item.content) for item in files)
+                if acquired_count > active_limits.max_files or acquired_bytes > active_limits.max_bytes:
+                    raise RestoreError(
+                        "source.limit-exceeded",
+                        "Acquired skill content exceeds the restoration file-count or byte limit.",
+                        "Reduce the declared immutable source subtree before retrying.",
+                    )
+                acquired_files[contract.skill_name] = files
+
+    skill_plans: list[RestoreSkillPlan] = []
+    for name in selected_names:
+        contract = contracts[name]
+        files = acquired_files[name]
+        target = Path(".agents") / "skills" / name
+        absolute_target = safe_restore_target(repo, target)
+        current_files = inspect_restore_target(absolute_target, active_limits)
+        observed_digest = (
+            portable_file_digest(
+                (item.path.as_posix().encode("utf-8"), item.content)
+                for item in current_files
+            )
+            if absolute_target.exists()
+            else None
+        )
+        changes = restore_file_changes(name, target, current_files, files)
+        expected_entry = adapter.entry_for(contract.source, files)
+        before_entry = lock_entries.get(name)
+        lock_edit = None
+        if before_entry != expected_entry:
+            lock_edit = RestoreLockEdit(
+                skill_name=name,
+                before=copy_json(before_entry) if isinstance(before_entry, dict) else None,
+                after=expected_entry,
+            )
+            lock_entries[name] = expected_entry
+        if not changes and lock_edit is None:
+            continue
+        skill_plans.append(
+            RestoreSkillPlan(
+                contract=contract,
+                target=target,
+                files=files,
+                changes=changes,
+                lock_edit=lock_edit,
+                observed_digest=observed_digest,
+            )
+        )
+
+    lock_edits = any(skill.lock_edit is not None for skill in skill_plans)
+    lock_after = (
+        (json.dumps(lock_after_document, indent=2, sort_keys=False) + "\n").encode("utf-8")
+        if lock_edits
+        else lock_before
+    )
+    digest_payload = {
+        "kind": "restore-skills",
+        "profile": profile_id,
+        "setup": setup_id,
+        "acquisitions": acquisitions,
+        "skills": [skill.to_json() for skill in skill_plans],
+        "plannedChanges": [
+            item
+            for skill in skill_plans
+            for item in (
+                [change.to_json() for change in skill.changes]
+                + ([skill.lock_edit.to_json()] if skill.lock_edit is not None else [])
+            )
+        ],
+        "lockBeforeDigest": bytes_digest(lock_before),
+        "lockAfterDigest": bytes_digest(lock_after),
+    }
+    plan_digest = hashlib.sha256(canonical_json_bytes(digest_payload)).hexdigest()
+    return RestorePlan(
+        profile_id=profile_id,
+        setup_id=setup_id,
+        acquisitions=tuple(acquisitions),
+        skills=tuple(skill_plans),
+        lock_before=lock_before,
+        lock_after=lock_after,
+        digest=plan_digest,
+    )
+
+
+def copy_json(value):
+    return json.loads(json.dumps(value))
+
+
+def load_restore_lock(path: Path) -> tuple[dict, bytes | None]:
+    if path.is_symlink():
+        raise RestoreError(
+            "lock.unsafe-path",
+            "skills-lock.json is a symbolic link.",
+            "Replace it with a regular repository file before restoring skills.",
+        )
+    try:
+        raw = path.read_bytes()
+    except FileNotFoundError:
+        return {"version": 1, "skills": {}}, None
+    except OSError as error:
+        raise RestoreError(
+            "lock.read-failed",
+            f"Could not read skills-lock.json: {error}.",
+            "Fix repository permissions and rerun restore-skills.",
+        ) from error
+    try:
+        document = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise RestoreError(
+            "lock.invalid",
+            f"skills-lock.json is malformed: {error}.",
+            "Fix skills-lock.json before restoring external skills.",
+            exit_code=2,
+        ) from error
+    if (
+        not isinstance(document, dict)
+        or document.get("version") != 1
+        or not isinstance(document.get("skills"), dict)
+    ):
+        raise RestoreError(
+            "lock.invalid",
+            "skills-lock.json must use version 1 with a skills object.",
+            "Fix skills-lock.json before restoring external skills.",
+            exit_code=2,
+        )
+    return document, raw
+
+
+def read_verified_git_skill_tree(
+    object_store: Path,
+    contract: ExternalSkillContract,
+    limits: RestoreLimits,
+) -> tuple[RestoreFile, ...]:
+    source = contract.source
+    source_path = source.source_path.as_posix()
+    try:
+        output = run_git_argv(
+            "--git-dir",
+            str(object_store),
+            "ls-tree",
+            "-r",
+            "-z",
+            "--full-tree",
+            source.revision,
+            "--",
+            source_path,
+        )
+    except (OSError, subprocess.CalledProcessError) as error:
+        raise RestoreError(
+            "source.commit-unavailable",
+            f"Could not inspect {source.repository}@{source.revision}: {git_error_message(error)}.",
+            "Verify the exact commit and source path in the bundled snapshot.",
+        ) from error
+
+    files: list[RestoreFile] = []
+    total_bytes = 0
+    prefix = source_path.encode("utf-8") + b"/"
+    for raw_entry in output.split(b"\0"):
+        if not raw_entry:
+            continue
+        try:
+            header, path_bytes = raw_entry.split(b"\t", 1)
+            mode, object_type, object_id = header.split(b" ", 2)
+            decoded_path = path_bytes.decode("utf-8")
+        except (ValueError, UnicodeDecodeError) as error:
+            raise RestoreError(
+                "source.unsafe-tree",
+                "The acquired Git tree contains an undecodable or malformed entry.",
+                "Remove unsafe entries from the immutable source and publish a new snapshot.",
+            ) from error
+        if not path_bytes.startswith(prefix):
+            raise RestoreError(
+                "source.unsafe-tree",
+                f"Git tree entry escapes {source_path}: {decoded_path}.",
+                "Remove traversal entries from the immutable source.",
+            )
+        relative_bytes = path_bytes[len(prefix) :]
+        try:
+            relative_text = relative_bytes.decode("utf-8")
+        except UnicodeDecodeError as error:
+            raise RestoreError(
+                "source.unsafe-tree",
+                "The acquired skill subtree contains a non-UTF-8 path.",
+                "Rename the source entry to a portable UTF-8 relative path.",
+            ) from error
+        relative = safe_relative_path(relative_text)
+        if relative is None or relative.as_posix() != relative_text:
+            raise RestoreError(
+                "source.unsafe-tree",
+                f"The acquired skill subtree contains an unsafe path: {relative_text!r}.",
+                "Remove traversal or non-portable entries from the immutable source.",
+            )
+        if any(part in {".git", "node_modules"} for part in relative.parts[:-1]):
+            continue
+        if object_type != b"blob" or mode not in {b"100644", b"100755"}:
+            raise RestoreError(
+                "source.unsafe-tree",
+                f"The acquired skill subtree contains a link, device, or unsupported entry: {relative_text}.",
+                "Replace it with regular files before publishing a new immutable snapshot.",
+            )
+        try:
+            content = run_git_argv(
+                "--git-dir", str(object_store), "cat-file", "blob", object_id.decode("ascii")
+            )
+        except (OSError, UnicodeDecodeError, subprocess.CalledProcessError) as error:
+            raise RestoreError(
+                "source.read-failed",
+                f"Could not read acquired file {relative_text}: {git_error_message(error)}.",
+                "Verify the offline object store or declared GitHub commit and retry.",
+            ) from error
+        files.append(RestoreFile(relative, content))
+        total_bytes += len(content)
+        if len(files) > limits.max_files or total_bytes > limits.max_bytes:
+            raise RestoreError(
+                "source.limit-exceeded",
+                "Acquired skill content exceeds the restoration file-count or byte limit.",
+                "Reduce the declared immutable source subtree before retrying.",
+            )
+    if not files:
+        raise RestoreError(
+            "source.empty-tree",
+            f"The declared source path {source_path} contains no restorable files.",
+            "Fix the snapshot source path and immutable revision.",
+        )
+    files.sort(key=lambda item: item.path.as_posix().encode("utf-8"))
+    observed = portable_file_digest(
+        (item.path.as_posix().encode("utf-8"), item.content) for item in files
+    )
+    if observed != contract.tree_digest:
+        raise RestoreError(
+            "source.digest-mismatch",
+            f"Acquired skill {contract.skill_name} digest {observed} does not match {contract.tree_digest}.",
+            "Regenerate the bundled snapshot from the exact committed skill subtree.",
+        )
+    return tuple(files)
+
+
+def inspect_restore_target(target: Path, limits: RestoreLimits) -> tuple[RestoreFile, ...]:
+    try:
+        root_stat = target.lstat()
+    except FileNotFoundError:
+        return ()
+    except OSError as error:
+        raise RestoreError(
+            "target.read-failed",
+            f"Could not inspect restoration target {target}: {error}.",
+            "Fix repository permissions and rerun restore-skills.",
+        ) from error
+    if stat.S_ISLNK(root_stat.st_mode) or not stat.S_ISDIR(root_stat.st_mode):
+        raise RestoreError(
+            "target.unsafe-tree",
+            f"Restoration target is not a regular directory: {target}.",
+            "Replace the unsafe target manually, then rerun restore-skills.",
+        )
+    files: list[RestoreFile] = []
+    total_bytes = 0
+    pending = [target]
+    while pending:
+        directory = pending.pop()
+        try:
+            entries = list(os.scandir(directory))
+        except OSError as error:
+            raise RestoreError(
+                "target.read-failed",
+                f"Could not read restoration target {directory}: {error}.",
+                "Fix repository permissions and rerun restore-skills.",
+            ) from error
+        for entry in entries:
+            path = Path(entry.path)
+            relative = path.relative_to(target)
+            try:
+                entry_stat = entry.stat(follow_symlinks=False)
+            except OSError as error:
+                raise RestoreError(
+                    "target.read-failed",
+                    f"Could not inspect target entry {relative.as_posix()}: {error}.",
+                    "Fix repository permissions and rerun restore-skills.",
+                ) from error
+            if stat.S_ISDIR(entry_stat.st_mode):
+                pending.append(path)
+                continue
+            if stat.S_ISLNK(entry_stat.st_mode) or not stat.S_ISREG(entry_stat.st_mode) or entry_stat.st_nlink != 1:
+                raise RestoreError(
+                    "target.unsafe-tree",
+                    f"Restoration target contains a link or special entry: {relative.as_posix()}.",
+                    "Remove the unsafe target entry manually, then rerun restore-skills.",
+                )
+            try:
+                content = path.read_bytes()
+            except OSError as error:
+                raise RestoreError(
+                    "target.read-failed",
+                    f"Could not read target file {relative.as_posix()}: {error}.",
+                    "Fix repository permissions and rerun restore-skills.",
+                ) from error
+            files.append(RestoreFile(relative, content))
+            total_bytes += len(content)
+            if len(files) > limits.max_files or total_bytes > limits.max_bytes:
+                raise RestoreError(
+                    "target.limit-exceeded",
+                    "Existing restoration target exceeds the safe inspection limits.",
+                    "Reduce the target directory before retrying.",
+                )
+    files.sort(key=lambda item: item.path.as_posix().encode("utf-8"))
+    return tuple(files)
+
+
+def restore_file_changes(
+    skill_name: str,
+    target: Path,
+    before: tuple[RestoreFile, ...],
+    after: tuple[RestoreFile, ...],
+) -> tuple[RestoreFileChange, ...]:
+    before_by_path = {item.path: item.content for item in before}
+    after_by_path = {item.path: item.content for item in after}
+    changes: list[RestoreFileChange] = []
+    for relative in sorted(
+        set(before_by_path) | set(after_by_path),
+        key=lambda item: item.as_posix().encode("utf-8"),
+    ):
+        before_content = before_by_path.get(relative)
+        after_content = after_by_path.get(relative)
+        if before_content == after_content:
+            continue
+        action = "refresh"
+        if before_content is None:
+            action = "create"
+        elif after_content is None:
+            action = "remove"
+        changes.append(
+            RestoreFileChange(
+                action=action,
+                path=target / relative,
+                skill_name=skill_name,
+                before_digest=bytes_digest(before_content),
+                after_digest=bytes_digest(after_content),
+            )
+        )
+    return tuple(changes)
+
+
+def apply_restore_plan(
+    repo: Path,
+    plan: RestorePlan,
+    *,
+    filesystem: RestoreFilesystem | None = None,
+) -> None:
+    fs = filesystem or RestoreFilesystem()
+    assert_restore_preimage(repo, plan)
+    stages: dict[Path, Path] = {}
+    directory_states: list[dict[str, object]] = []
+    lock_state: dict[str, object] | None = None
+    cleanup_paths: list[Path] = []
+    try:
+        for skill in plan.skills:
+            if not skill.changes:
+                continue
+            target = safe_restore_target(repo, skill.target)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            stage = Path(
+                tempfile.mkdtemp(prefix=".restore-stage-", dir=target.parent)
+            )
+            cleanup_paths.append(stage)
+            for item in skill.files:
+                destination = stage / item.path
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_bytes(item.content)
+            fs.verify_tree(stage, skill.contract.tree_digest)
+            stages[target] = stage
+
+        lock_target = repo / "skills-lock.json"
+        lock_temp: Path | None = None
+        if plan.lock_after is not None and plan.lock_after != plan.lock_before:
+            lock_target.parent.mkdir(parents=True, exist_ok=True)
+            descriptor, temp_name = tempfile.mkstemp(
+                prefix=".restore-lock-", dir=lock_target.parent
+            )
+            lock_temp = Path(temp_name)
+            cleanup_paths.append(lock_temp)
+            with os.fdopen(descriptor, "wb") as handle:
+                handle.write(plan.lock_after)
+
+        for target, stage in sorted(stages.items(), key=lambda item: item[0].as_posix()):
+            backup_container = Path(
+                tempfile.mkdtemp(prefix=".restore-backup-", dir=target.parent)
+            )
+            cleanup_paths.append(backup_container)
+            backup = backup_container / "original"
+            state: dict[str, object] = {
+                "target": target,
+                "backup": backup,
+                "touched": False,
+            }
+            directory_states.append(state)
+            if target.exists() or target.is_symlink():
+                fs.replace(target, backup)
+            state["touched"] = True
+            fs.replace(stage, target)
+
+        if lock_temp is not None:
+            backup_container = Path(
+                tempfile.mkdtemp(prefix=".restore-backup-lock-", dir=lock_target.parent)
+            )
+            cleanup_paths.append(backup_container)
+            backup = backup_container / "original"
+            lock_state = {
+                "target": lock_target,
+                "backup": backup,
+                "touched": False,
+            }
+            if lock_target.exists() or lock_target.is_symlink():
+                fs.replace(lock_target, backup)
+            lock_state["touched"] = True
+            fs.replace(lock_temp, lock_target)
+
+        for skill in plan.skills:
+            target = safe_restore_target(repo, skill.target)
+            fs.verify_tree(target, skill.contract.tree_digest)
+        if plan.lock_after is not None:
+            fs.verify_lock(lock_target, plan.lock_after)
+    except (OSError, PortableTreeError, RestoreError) as error:
+        rollback_errors: list[str] = []
+        states = ([lock_state] if lock_state is not None else []) + list(
+            reversed(directory_states)
+        )
+        for state in states:
+            if state is None or not state["touched"]:
+                continue
+            target = state["target"]
+            backup = state["backup"]
+            try:
+                if target.exists() or target.is_symlink():
+                    fs.remove_tree(target)
+                if backup.exists() or backup.is_symlink():
+                    fs.replace(backup, target)
+            except OSError as rollback_error:
+                rollback_errors.append(f"{target}: {rollback_error}")
+        message = f"Restoration apply failed and was rolled back: {error}."
+        if rollback_errors:
+            message = (
+                f"Restoration apply failed: {error}; rollback also failed for "
+                + "; ".join(rollback_errors)
+                + "."
+            )
+        raise RestoreError(
+            "restore.apply-failed",
+            message,
+            "Fix repository filesystem permissions and rerun the current preview.",
+        ) from error
+    finally:
+        for path in reversed(cleanup_paths):
+            try:
+                if path.is_dir() and not path.is_symlink():
+                    shutil.rmtree(path)
+                elif path.exists() or path.is_symlink():
+                    path.unlink()
+            except OSError:
+                pass
+
+
+def assert_restore_preimage(repo: Path, plan: RestorePlan) -> None:
+    limits = RestoreLimits()
+    for skill in plan.skills:
+        target = safe_restore_target(repo, skill.target)
+        current_files = inspect_restore_target(target, limits)
+        current_digest = (
+            portable_file_digest(
+                (item.path.as_posix().encode("utf-8"), item.content)
+                for item in current_files
+            )
+            if target.exists()
+            else None
+        )
+        if current_digest != skill.observed_digest:
+            raise RestoreError(
+                "plan.confirmation.stale",
+                f"Restoration target changed after planning: {skill.target.as_posix()}.",
+                "Preview the current Change Plan and confirm its new planDigest.",
+                exit_code=3,
+            )
+    lock_path = repo / "skills-lock.json"
+    try:
+        current_lock = lock_path.read_bytes()
+    except FileNotFoundError:
+        current_lock = None
+    except OSError as error:
+        raise RestoreError(
+            "lock.read-failed",
+            f"Could not re-read skills-lock.json before apply: {error}.",
+            "Fix repository permissions and preview restoration again.",
+        ) from error
+    if current_lock != plan.lock_before:
+        raise RestoreError(
+            "plan.confirmation.stale",
+            "skills-lock.json changed after restoration planning.",
+            "Preview the current Change Plan and confirm its new planDigest.",
+            exit_code=3,
+        )
+
+
+def safe_restore_target(repo: Path, relative: Path) -> Path:
+    if relative.is_absolute() or ".." in relative.parts:
+        raise RestoreError(
+            "target.unsafe-path",
+            f"Restoration target is not repository-relative: {relative}.",
+            "Fix the bundled setup snapshot target before retrying.",
+        )
+    current = repo
+    for part in relative.parts[:-1]:
+        current = current / part
+        if current.is_symlink():
+            raise RestoreError(
+                "target.unsafe-path",
+                f"Restoration target parent is a symbolic link: {current}.",
+                "Replace the linked parent with a repository directory before retrying.",
+            )
+    target = repo / relative
+    try:
+        target.parent.resolve(strict=False).relative_to(repo.resolve(strict=False))
+    except ValueError as error:
+        raise RestoreError(
+            "target.unsafe-path",
+            f"Restoration target escapes the repository: {relative}.",
+            "Fix the repository path before retrying.",
+        ) from error
+    return target
+
+
+def run_restore_skills_command(options: argparse.Namespace) -> int:
+    repo = resolve_repo(options.repo)
+    if not repo.is_dir():
+        return render_restore_error(
+            RestoreError(
+                "restore.repo-invalid",
+                f"Repository root is not a directory: {repo}.",
+                "Pass an existing repository directory with --repo.",
+                exit_code=2,
+            ),
+            options.format,
+        )
+    if options.confirm_plan is not None and re.fullmatch(
+        r"[0-9a-f]{64}", options.confirm_plan
+    ) is None:
+        return render_restore_error(
+            RestoreError(
+                "plan.confirmation.invalid",
+                "Plan confirmation must be a lowercase SHA-256 digest.",
+                "Pass the exact planDigest returned by restore-skills preview.",
+                exit_code=2,
+            ),
+            options.format,
+            profile_id=options.profile,
+        )
+
+    skill_root = Path(__file__).resolve().parents[1]
+    try:
+        catalog = load_asset_catalog(skill_root)
+    except AssetValidationError as error:
+        return render_restore_error(
+            RestoreError(
+                "restore.assets-invalid",
+                "Bundled setup assets are invalid: " + "; ".join(error.diagnostics) + ".",
+                "Fix the canonical setup-context-driven assets before restoring skills.",
+                exit_code=2,
+            ),
+            options.format,
+            profile_id=options.profile,
+        )
+
+    source_dir = Path(options.source_dir).expanduser() if options.source_dir else None
+    if source_dir is not None and not source_dir.is_absolute():
+        source_dir = Path.cwd() / source_dir
+    try:
+        plan = build_restore_plan(
+            repo,
+            catalog,
+            options.profile,
+            options.skill,
+            source_dir,
+        )
+    except RestoreError as error:
+        return render_restore_error(
+            error,
+            options.format,
+            profile_id=options.profile,
+        )
+
+    if not plan.has_changes:
+        render_restore_plan(plan, options.format, ok=True, applied=False)
+        return 0
+    if options.confirm_plan != plan.digest:
+        code = (
+            "plan.confirmation.required"
+            if options.confirm_plan is None
+            else "plan.confirmation.stale"
+        )
+        message = (
+            "Restoration requires confirmation of this exact Change Plan."
+            if options.confirm_plan is None
+            else "The supplied confirmation does not match the current restoration Change Plan."
+        )
+        finding_item = {
+            "code": code,
+            "message": message,
+            "action": "Review plannedChanges and rerun with --confirm-plan planDigest.",
+        }
+        render_restore_plan(
+            plan,
+            options.format,
+            ok=False,
+            applied=False,
+            finding_item=finding_item,
+        )
+        return 3
+    try:
+        apply_restore_plan(repo, plan)
+    except RestoreError as error:
+        render_restore_plan(
+            plan,
+            options.format,
+            ok=False,
+            applied=False,
+            finding_item=error.to_json(),
+        )
+        return error.exit_code
+    render_restore_plan(
+        plan,
+        options.format,
+        ok=True,
+        applied=True,
+        finding_item={
+            "code": "restore.completed",
+            "message": "Selected external Repository Skill Set members match their immutable snapshots.",
+            "action": "Run setup-context-driven audit to verify the selected profile.",
+        },
+    )
+    return 0
+
+
+def render_restore_error(
+    error: RestoreError,
+    output_format: str,
+    *,
+    profile_id: str | None = None,
+) -> int:
+    payload = {
+        "schemaVersion": RESTORE_SCHEMA_VERSION,
+        "ok": False,
+        "applied": False,
+        "profile": profile_id,
+        "setup": None,
+        "acquisitions": [],
+        "skills": [],
+        "plannedChanges": [],
+        "planDigest": None,
+        "finding": error.to_json(),
+    }
+    render_restore_payload(payload, output_format)
+    return error.exit_code
+
+
+def render_restore_plan(
+    plan: RestorePlan,
+    output_format: str,
+    *,
+    ok: bool,
+    applied: bool,
+    finding_item: dict[str, object] | None = None,
+) -> None:
+    render_restore_payload(
+        plan.to_json(ok=ok, applied=applied, finding_item=finding_item),
+        output_format,
+    )
+
+
+def render_restore_payload(payload: dict[str, object], output_format: str) -> None:
+    if output_format == "json":
+        print(json.dumps(payload, indent=2, sort_keys=False))
+        return
+    finding_item = payload.get("finding")
+    if payload.get("applied"):
+        heading = "setup-context-driven restore-skills: applied"
+    elif payload.get("ok"):
+        heading = "setup-context-driven restore-skills: no changes"
+    else:
+        heading = "setup-context-driven restore-skills: blocked"
+    lines = [heading]
+    if isinstance(finding_item, dict):
+        lines.append(f"{finding_item.get('code')}: {finding_item.get('message')}")
+        lines.append(f"action: {finding_item.get('action')}")
+    plan_digest = payload.get("planDigest")
+    if plan_digest:
+        lines.append(f"planDigest: {plan_digest}")
+    for change in payload.get("plannedChanges", []):
+        if isinstance(change, dict):
+            lines.append(
+                f"- {change.get('action')} {change.get('path')} [{change.get('skill')}]"
+            )
+    print("\n".join(lines))
+
+
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if args and args[0] in {"-h", "--help"}:
@@ -309,6 +1382,9 @@ def main(argv: list[str] | None = None) -> int:
     if args and args[0] == "sync-setups":
         parser = sync_setups_parser()
         return run_sync_setups_command(parser.parse_args(args[1:]))
+    if args and args[0] == "restore-skills":
+        parser = restore_skills_parser()
+        return run_restore_skills_command(parser.parse_args(args[1:]))
     if args and args[0] == "audit":
         args = args[1:]
 
@@ -4452,6 +5528,7 @@ def print_top_level_help() -> None:
                 "usage: context_setup.py [audit] [--repo PATH] [--format text|json]",
                 "       context_setup.py apply --repo PATH [--format text|json]",
                 "       context_setup.py sync-setups --source-dir PATH [--check] [--format text|json]",
+                "       context_setup.py restore-skills --repo PATH --profile ID [--skill NAME ...] [--format text|json]",
                 "",
                 "Audit is the read-only default when no subcommand is supplied.",
                 "Output formats: text, json. Results go to stdout; diagnostics go to stderr.",
@@ -4460,6 +5537,7 @@ def print_top_level_help() -> None:
                 "Subcommands:",
                 "  audit        Read bundled assets and repository state without writes.",
                 "  apply        Write confirmed managed content through an atomic change plan.",
+                "  restore-skills  Restore selected external skills from immutable provenance.",
                 "  sync-setups  Check or refresh bundled canonical skill setup snapshots.",
             ]
         )
@@ -4533,6 +5611,41 @@ def sync_setups_parser() -> argparse.ArgumentParser:
         "--check",
         action="store_true",
         help="Report snapshot drift without writing bundled assets.",
+    )
+    parser.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Result format written to stdout.",
+    )
+    return parser
+
+
+def restore_skills_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="context_setup.py restore-skills",
+        description=(
+            "Preview or apply immutable external Repository Skill Set restoration.\n\n"
+            "Exit codes: 0 applied or already current; 1 source, proof, or write failure; "
+            "2 invalid input; 3 confirmation required or stale."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("--repo", default=".", help="Repository root. Defaults to cwd.")
+    parser.add_argument("--profile", required=True, help="Bundled profile id to restore.")
+    parser.add_argument(
+        "--skill",
+        action="append",
+        default=[],
+        help="External required skill name. Repeat to select multiple skills; omit for all drift.",
+    )
+    parser.add_argument(
+        "--source-dir",
+        help="Offline Git checkout or bare object store containing the declared exact commit.",
+    )
+    parser.add_argument(
+        "--confirm-plan",
+        help="Exact lowercase SHA-256 planDigest authorizing a non-empty restoration.",
     )
     parser.add_argument(
         "--format",
