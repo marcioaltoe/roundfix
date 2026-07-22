@@ -277,7 +277,14 @@ def run_apply(repo, decisions):
     args = ["apply", "--repo", str(repo), "--format", "json", "--profile", "rust-cli"]
     for decision in decisions:
         args.extend(["--decision", decision])
-    return run_context_setup(*args)
+    result = run_context_setup(*args)
+    payload = json.loads(result.stdout)
+    if result.returncode == 3 and any(
+        finding["code"] == "plan.confirmation.required" for finding in payload["findings"]
+    ):
+        args.extend(["--confirm-plan", payload["planDigest"]])
+        return run_context_setup(*args)
+    return result
 
 
 def run_audit(repo):

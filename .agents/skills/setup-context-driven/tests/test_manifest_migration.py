@@ -111,7 +111,7 @@ class ManifestMigrationTests(unittest.TestCase):
             self.assertEqual(manifest["decisions"]["verification.gate"]["value"], "make verify")
             self.assertNoFinding(repeated, "decision.required")
 
-    def test_ambiguous_legacy_ownership_blocks_without_partial_writes(self):
+    def test_ambiguous_legacy_ownership_requires_decision_without_partial_writes(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = Path(temp_dir)
             decisions = legacy_decisions(autonomous=False)
@@ -124,8 +124,8 @@ class ManifestMigrationTests(unittest.TestCase):
 
             result = run_apply(repo, "rust-cli", [])
 
-            self.assertEqual(result.returncode, 1)
-            self.assertFinding(result, "managed.ownership.ambiguous", "error")
+            self.assertEqual(result.returncode, 3)
+            self.assertFinding(result, "decision.required", "decision")
             self.assertEqual(snapshot_files(repo), before)
 
     def assertFinding(self, result, code, severity):

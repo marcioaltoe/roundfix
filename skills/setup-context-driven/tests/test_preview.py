@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -25,6 +26,42 @@ ENTRY_DECISIONS = {
 
 
 class PreviewCliTests(unittest.TestCase):
+    def test_audit_repeated_decisions_exposes_authorizable_concrete_digest(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir)
+            decisions = [
+                "spec.scaffold=true",
+                "domain.layout=single-context",
+                "triage.external=false",
+                "autonomous.enabled=false",
+                "verification.gate=make verify",
+                "language.generated=English",
+                "secondbrain.enabled=false",
+            ]
+            args = [
+                "audit", "--repo", str(repo), "--format", "json", "--profile", "rust-cli"
+            ]
+            for decision in decisions:
+                args.extend(["--decision", decision])
+
+            first = run_context_setup(*args)
+            second = run_context_setup(*args)
+
+            self.assertEqual(first.returncode, 0, first.stderr)
+            self.assertEqual(second.returncode, 0, second.stderr)
+            first_payload = json.loads(first.stdout)
+            self.assertRegex(first_payload["planDigest"], r"^[0-9a-f]{64}$")
+            self.assertEqual(first_payload, json.loads(second.stdout))
+            self.assertTrue(first_payload["plannedChanges"])
+            for change in first_payload["plannedChanges"]:
+                self.assertEqual(
+                    {
+                        "path", "managedId", "state", "reason",
+                        "beforeDigest", "afterDigest",
+                    }.difference(change),
+                    set(),
+                )
+
     def test_typescript_first_apply_returns_entry_decisions_and_preview(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = Path(temp_dir)
@@ -162,11 +199,14 @@ class PreviewCliTests(unittest.TestCase):
 
 
 def run_context_setup(*args):
+    env = os.environ.copy()
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
     return subprocess.run(
         [sys.executable, str(SCRIPT), *args],
         text=True,
         capture_output=True,
         check=False,
+        env=env,
     )
 
 

@@ -10,7 +10,7 @@ import re
 import sys
 import tempfile
 from datetime import date
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, is_dataclass
 from pathlib import Path
 from typing import Iterable
 
@@ -106,7 +106,12 @@ class PlannedChange:
     path: Path
     managed_id: str
     state: str
+    reason: str
+    before_digest: str | None = None
+    after_digest: str | None = None
     condition: PlanCondition | None = None
+    from_path: Path | None = None
+    reference_edits: tuple[dict[str, str], ...] = ()
 
     def to_json(self) -> dict[str, object]:
         data: dict[str, object] = {
@@ -114,9 +119,16 @@ class PlannedChange:
             "path": self.path.as_posix(),
             "managedId": self.managed_id,
             "state": self.state,
+            "reason": self.reason,
+            "beforeDigest": self.before_digest,
+            "afterDigest": self.after_digest,
         }
         if self.condition is not None:
             data["condition"] = self.condition.to_json()
+        if self.from_path is not None:
+            data["fromPath"] = self.from_path.as_posix()
+        if self.reference_edits:
+            data["referenceEdits"] = list(self.reference_edits)
         return data
 
 
@@ -175,15 +187,25 @@ class ManagedBlockSpan:
 
 
 @dataclass(frozen=True)
-class FileChange:
+class FileMutation:
     path: Path
-    content: str | None
+    before_digest: str | None
+    after_digest: str | None
+    content: bytes | None
+    operations: tuple[PlannedChange, ...]
 
 
 @dataclass(frozen=True)
 class ChangePlan:
-    changes: list[FileChange]
+    kind: str
+    mutations: tuple[FileMutation, ...]
+    digest: str | None
     manifest: dict
+
+    @property
+    def changes(self) -> list[FileMutation]:
+        """Compatibility view for callers that only need affected paths."""
+        return list(self.mutations)
 
 
 @dataclass(frozen=True)
@@ -200,6 +222,7 @@ class AuditResult:
     findings: list[Finding]
     selection: PreviewSelection | None = None
     planned_changes: tuple[PlannedChange, ...] = ()
+    plan_digest: str | None = None
 
     @property
     def ok(self) -> bool:
@@ -224,6 +247,8 @@ class AuditResult:
         }
         if self.selection is not None:
             data["selection"] = self.selection.to_json()
+        if self.plan_digest is not None:
+            data["planDigest"] = self.plan_digest
         return data
 
 
@@ -263,6 +288,16 @@ def run_audit_command(options: argparse.Namespace) -> int:
             print(diagnostic, file=sys.stderr)
         return 2
 
+    if options.decision:
+        result, invalid_input, _ = plan_apply(
+            repo=repo,
+            catalog=catalog,
+            profile_override=options.profile,
+            decision_args=options.decision,
+        )
+        render_result(result, options.format)
+        return exit_code_for(result, invalid_input)
+
     result, invalid_input = audit_repository(
         repo=repo,
         catalog=catalog,
@@ -288,6 +323,24 @@ def run_apply_command(options: argparse.Namespace) -> int:
             print(diagnostic, file=sys.stderr)
         return 2
 
+    if options.confirm_plan is not None and re.fullmatch(
+        r"[0-9a-f]{64}", options.confirm_plan
+    ) is None:
+        malformed = AuditResult(
+            [
+                finding(
+                    "plan.confirmation.invalid",
+                    "error",
+                    ".",
+                    "apply",
+                    "Plan confirmation must be a lowercase SHA-256 digest.",
+                    "Pass the exact planDigest returned by audit or apply preview.",
+                )
+            ]
+        )
+        render_result(malformed, options.format)
+        return 2
+
     result, invalid_input, plan = plan_apply(
         repo=repo,
         catalog=catalog,
@@ -297,6 +350,54 @@ def run_apply_command(options: argparse.Namespace) -> int:
     if result.summary["errors"] or result.summary["decisions"] or invalid_input:
         render_result(result, options.format)
         return exit_code_for(result, invalid_input)
+
+    confirmation = options.confirm_plan
+    has_writes = any(
+        mutation.before_digest != mutation.after_digest for mutation in plan.mutations
+    )
+    if has_writes and confirmation != plan.digest:
+        code = "plan.confirmation.required" if confirmation is None else "plan.confirmation.stale"
+        message = (
+            "Apply requires confirmation of this exact Change Plan."
+            if confirmation is None
+            else "The supplied confirmation does not match the current Change Plan."
+        )
+        blocked = AuditResult(
+            [
+                finding(
+                    code,
+                    "decision",
+                    ".",
+                    "apply",
+                    message,
+                    "Review plannedChanges and rerun with --confirm-plan planDigest.",
+                )
+            ],
+            selection=result.selection,
+            planned_changes=result.planned_changes,
+            plan_digest=result.plan_digest,
+        )
+        render_result(blocked, options.format)
+        return 3
+
+    if not has_writes:
+        empty = AuditResult(
+            [
+                finding(
+                    "managed.apply.empty",
+                    "info",
+                    ".",
+                    "apply",
+                    "The repository already matches the selected Change Plan.",
+                    "No action needed.",
+                )
+            ],
+            selection=result.selection,
+            planned_changes=(),
+            plan_digest=result.plan_digest,
+        )
+        render_result(empty, options.format)
+        return 0
 
     try:
         apply_change_plan(repo, plan)
@@ -328,7 +429,10 @@ def run_apply_command(options: argparse.Namespace) -> int:
                 "Managed setup content matches the selected profile.",
                 "No action needed.",
             )
-        ]
+        ],
+        selection=result.selection,
+        planned_changes=result.planned_changes,
+        plan_digest=result.plan_digest,
     )
     render_result(applied, options.format)
     return 0
@@ -442,7 +546,29 @@ def audit_repository(
     validate_documents(repo, expected_artifacts, findings)
     validate_secondbrain_documents(repo, ordered_modules, findings)
 
-    return AuditResult(sorted_findings(findings)), invalid_input
+    plan_result, plan_invalid_input, _ = plan_apply(
+        repo=repo,
+        catalog=catalog,
+        profile_override=profile_id,
+        decision_args=[],
+    )
+    existing_finding_keys = {
+        (item.code, item.path, item.managed_id, item.message) for item in findings
+    }
+    findings.extend(
+        item
+        for item in plan_result.findings
+        if (item.code, item.path, item.managed_id, item.message) not in existing_finding_keys
+    )
+    return (
+        AuditResult(
+            sorted_findings(findings),
+            selection=plan_result.selection,
+            planned_changes=plan_result.planned_changes,
+            plan_digest=plan_result.plan_digest,
+        ),
+        invalid_input or plan_invalid_input,
+    )
 
 
 def validate_profile_skill_references(
@@ -766,10 +892,10 @@ def resolve_decision_plan(
                     required_set.add(dependent_decision_id)
 
     for decision_id, existing_decision in sorted(existing.items()):
-        if decision_id.startswith("adoption.") and isinstance(existing_decision, dict):
+        if decision_id.startswith(("adoption.", "removal.")) and isinstance(existing_decision, dict):
             resolved[decision_id] = existing_decision
     for decision_id, value in sorted(cli_decisions.items()):
-        if decision_id.startswith("adoption."):
+        if decision_id.startswith(("adoption.", "removal.")):
             resolved[decision_id] = {"value": value, "confirmedAt": today}
     preserve_compatible_catalog_decisions(
         catalog=catalog,
@@ -1260,20 +1386,24 @@ def decision_required_findings(decision_plan: DecisionPlan) -> list[Finding]:
 def planned_changes_for_plan(
     repo: Path,
     decision_plan: DecisionPlan,
+    existing_manifest: dict | None = None,
 ) -> tuple[PlannedChange, ...]:
+    manifest_before = current_file_bytes(repo, MANIFEST_PATH)
     changes: list[PlannedChange] = [
         PlannedChange(
-            action="create manifest",
+            action="refresh manifest" if manifest_before is not None else "create manifest",
             path=MANIFEST_PATH,
             managed_id="manifest",
             state="definite",
+            reason="Record the selected profile, decisions, and managed inventory.",
+            before_digest=bytes_digest(manifest_before),
         )
     ]
     seen: set[tuple[str, str, str, str, object]] = {
         ("create manifest", MANIFEST_PATH.as_posix(), "manifest", "", "")
     }
     for planned_artifact in decision_plan.artifacts:
-        change = planned_change_for_artifact(repo, planned_artifact)
+        change = planned_change_for_artifact(repo, planned_artifact, existing_manifest)
         if change is None:
             continue
         condition = change.condition
@@ -1299,28 +1429,64 @@ def planned_changes_for_plan(
 def planned_change_for_artifact(
     repo: Path,
     planned_artifact: PlannedArtifact,
+    existing_manifest: dict | None,
 ) -> PlannedChange | None:
     artifact = planned_artifact.artifact
     target = repo / artifact.path
+    before = current_file_bytes(repo, artifact.path)
+    try:
+        current = before.decode("utf-8") if before is not None else ""
+    except UnicodeDecodeError:
+        return None
     if not planned_artifact.present:
-        if not target.exists():
+        if not target.exists() or not manifest_owns_artifact(
+            existing_manifest, artifact.managed_id, artifact.path
+        ):
             return None
+        spans, marker_findings = parse_managed_block_spans(artifact.path, current)
+        if marker_findings or artifact.managed_id not in spans:
+            return None
+        span = spans[artifact.managed_id]
+        remaining = current[: span.start] + current[span.end :]
+        after = None if artifact.kind == "guide" and not remaining.strip() else remaining.encode("utf-8")
         return PlannedChange(
             action="remove managed content",
             path=artifact.path,
             managed_id=artifact.managed_id,
             state=planned_artifact.state,
+            reason="The resolved Decision Plan excludes previously managed content.",
+            before_digest=bytes_digest(before),
+            after_digest=bytes_digest(after),
             condition=planned_artifact.condition,
         )
     action = "create guide" if artifact.kind == "guide" else "create managed block"
     if target.exists():
         action = "refresh managed content"
+    after = render_expected_path(current, [artifact]).encode("utf-8")
     return PlannedChange(
         action=action,
         path=artifact.path,
         managed_id=artifact.managed_id,
         state=planned_artifact.state,
+        reason="The resolved Decision Plan requires this managed artifact.",
+        before_digest=bytes_digest(before),
+        after_digest=bytes_digest(after),
         condition=planned_artifact.condition,
+    )
+
+
+def manifest_owns_artifact(
+    manifest: dict | None,
+    managed_id: str,
+    path: Path,
+) -> bool:
+    if not isinstance(manifest, dict):
+        return False
+    return any(
+        isinstance(item, dict)
+        and item.get("id") == managed_id
+        and item.get("path") == path.as_posix()
+        for item in manifest.get("managedArtifacts", [])
     )
 
 
@@ -1372,7 +1538,7 @@ def plan_apply(
         existing_manifest,
         cli_decisions,
     )
-    preview_changes = planned_changes_for_plan(repo, decision_plan)
+    preview_changes = planned_changes_for_plan(repo, decision_plan, existing_manifest)
     if parse_findings:
         return empty_apply_result(
             findings,
@@ -1399,17 +1565,28 @@ def plan_apply(
     expected_by_id = {artifact.managed_id: artifact for artifact in expected_artifacts}
     current_files = load_current_files(repo, expected_artifacts, existing_manifest, findings)
     if findings:
-        return empty_apply_result(findings, False)
+        return empty_apply_result(
+            findings,
+            False,
+            selection=decision_plan.selection,
+            planned_changes=preview_changes,
+        )
 
-    ownership_findings = validate_obsolete_artifact_ownership(
+    ownership_findings = require_obsolete_artifact_decisions(
         repo=repo,
         existing_manifest=existing_manifest,
         expected_by_id=expected_by_id,
         current_files=current_files,
+        decisions=decisions,
     )
     findings.extend(ownership_findings)
     if ownership_findings:
-        return empty_apply_result(findings, False)
+        return empty_apply_result(
+            findings,
+            False,
+            selection=decision_plan.selection,
+            planned_changes=preview_changes,
+        )
 
     adoption_findings = require_adoption_decisions(
         current_files=current_files,
@@ -1418,7 +1595,12 @@ def plan_apply(
     )
     findings.extend(adoption_findings)
     if adoption_findings:
-        return empty_apply_result(findings, False)
+        return empty_apply_result(
+            findings,
+            False,
+            selection=decision_plan.selection,
+            planned_changes=preview_changes,
+        )
 
     changed_contents: dict[Path, str | None] = {}
     for relative_path, artifacts in artifacts_by_path(expected_artifacts).items():
@@ -1434,19 +1616,33 @@ def plan_apply(
         expected_by_id=expected_by_id,
         current_files=current_files,
         changed_contents=changed_contents,
+        decisions=decisions,
     )
 
     manifest = build_manifest(profile_id, ordered_modules, expected_artifacts, decisions, existing_manifest)
     changed_contents[MANIFEST_PATH] = json.dumps(manifest, indent=2, sort_keys=False) + "\n"
-    changes = [
-        FileChange(path=path, content=content)
-        for path, content in sorted(changed_contents.items(), key=lambda item: item[0].as_posix())
-        if current_file_bytes(repo, path) != content_bytes(content)
-    ]
-    plan = ChangePlan(changes=changes, manifest=manifest)
+    plan = concrete_change_plan(
+        repo=repo,
+        catalog=catalog,
+        decision_plan=decision_plan,
+        existing_manifest=existing_manifest,
+        expected_artifacts=expected_artifacts,
+        changed_contents=changed_contents,
+        current_files=current_files,
+        manifest=manifest,
+    )
     validation_findings = validate_change_plan(repo, plan, expected_artifacts)
     findings.extend(validation_findings)
-    return AuditResult(sorted_findings(findings)), False, plan
+    return (
+        AuditResult(
+            sorted_findings(findings),
+            selection=decision_plan.selection,
+            planned_changes=plan_operations(plan),
+            plan_digest=plan.digest,
+        ),
+        False,
+        plan,
+    )
 
 
 def empty_apply_result(
@@ -1462,7 +1658,7 @@ def empty_apply_result(
             planned_changes=planned_changes,
         ),
         invalid_input,
-        ChangePlan([], {}),
+        ChangePlan("setup", (), None, {}),
     )
 
 
@@ -1537,6 +1733,9 @@ def parse_decision_args(
             continue
         value = parse_decision_value(decision_id, raw_value, catalog)
         contract = catalog.decisions.get(decision_id)
+        if decision_id.startswith("removal.") and value not in {"preserve", "remove"}:
+            findings.append(invalid_decision_finding(decision_id))
+            continue
         if (
             contract is not None
             and contract.get("type") == "string"
@@ -1556,6 +1755,8 @@ def parse_decision_value(decision_id: str, raw_value: str, catalog: AssetCatalog
     value = raw_value.strip()
     if decision_id.startswith("adoption."):
         return parse_bool_value(value)
+    if decision_id.startswith("removal."):
+        return value
     contract = catalog.decisions.get(decision_id)
     if contract and contract.get("type") == "boolean":
         return parse_bool_value(value)
@@ -1673,7 +1874,8 @@ def load_current_files(
     existing_manifest: dict | None,
     findings: list[Finding],
 ) -> dict[Path, str]:
-    paths = {artifact.path for artifact in expected_artifacts}
+    expected_paths = {artifact.path for artifact in expected_artifacts}
+    paths = set(expected_paths)
     paths.update(manifest_artifact_paths(existing_manifest, repo, findings))
     current: dict[Path, str] = {}
     for relative_path in sorted(paths, key=lambda item: item.as_posix()):
@@ -1707,7 +1909,8 @@ def load_current_files(
             )
             continue
         _, marker_findings = parse_managed_blocks(relative_path, content)
-        findings.extend(marker_findings)
+        if relative_path in expected_paths:
+            findings.extend(marker_findings)
         current[relative_path] = content
     return current
 
@@ -1807,11 +2010,12 @@ def require_adoption_decisions(
     return findings
 
 
-def validate_obsolete_artifact_ownership(
+def require_obsolete_artifact_decisions(
     repo: Path,
     existing_manifest: dict | None,
     expected_by_id: dict[str, ExpectedArtifact],
     current_files: dict[Path, str],
+    decisions: dict[str, dict],
 ) -> list[Finding]:
     findings: list[Finding] = []
     if not isinstance(existing_manifest, dict):
@@ -1823,27 +2027,30 @@ def validate_obsolete_artifact_ownership(
         path_value = artifact.get("path")
         if not isinstance(managed_id, str) or not isinstance(path_value, str):
             continue
-        if managed_id in expected_by_id:
-            continue
         relative_path = safe_relative_path(path_value)
         if relative_path is None or not path_is_inside_repo(repo, relative_path):
+            continue
+        expected = expected_by_id.get(managed_id)
+        if expected is not None and expected.path == relative_path:
             continue
         content = current_files.get(relative_path)
         if content is None:
             continue
         spans, marker_findings = parse_managed_block_spans(relative_path, content)
-        if marker_findings:
+        if not marker_findings and managed_id in spans:
             continue
-        if managed_id in spans:
+        decision_id = f"removal.{managed_id}"
+        decision = decisions.get(decision_id)
+        if isinstance(decision, dict) and decision.get("value") in {"preserve", "remove"}:
             continue
         findings.append(
             finding(
-                "managed.ownership.ambiguous",
-                "error",
+                "decision.required",
+                "decision",
                 relative_path.as_posix(),
-                managed_id,
+                decision_id,
                 "Legacy managed artifact is stale but no ownership marker proves setup owns the content.",
-                "Restore the setup marker or remove the stale manifest entry after manual review.",
+                f"Pass --decision {decision_id}=preserve|remove after reviewing the file.",
             )
         )
     return findings
@@ -1906,6 +2113,7 @@ def remove_obsolete_artifacts(
     expected_by_id: dict[str, ExpectedArtifact],
     current_files: dict[Path, str],
     changed_contents: dict[Path, str | None],
+    decisions: dict[str, dict],
 ) -> None:
     if not isinstance(existing_manifest, dict):
         return
@@ -1916,19 +2124,26 @@ def remove_obsolete_artifacts(
         path_value = artifact.get("path")
         if not isinstance(managed_id, str) or not isinstance(path_value, str):
             continue
-        if managed_id in expected_by_id:
-            continue
         relative_path = safe_relative_path(path_value)
         if relative_path is None or not path_is_inside_repo(repo, relative_path):
+            continue
+        expected = expected_by_id.get(managed_id)
+        if expected is not None and expected.path == relative_path:
             continue
         content = changed_contents.get(relative_path, current_files.get(relative_path))
         if content is None:
             continue
         spans, marker_findings = parse_managed_block_spans(relative_path, content)
         if marker_findings:
+            removal = decisions.get(f"removal.{managed_id}")
+            if isinstance(removal, dict) and removal.get("value") == "remove":
+                changed_contents[relative_path] = None
             continue
         span = spans.get(managed_id)
         if span is None:
+            removal = decisions.get(f"removal.{managed_id}")
+            if isinstance(removal, dict) and removal.get("value") == "remove":
+                changed_contents[relative_path] = None
             continue
         remaining = content[: span.start] + content[span.end :]
         if artifact.get("kind") == "guide" and not remaining.strip():
@@ -1947,12 +2162,23 @@ def build_manifest(
     local_skills = []
     if isinstance(existing_manifest, dict) and isinstance(existing_manifest.get("localSkills"), list):
         local_skills = existing_manifest["localSkills"]
+    ordered_decisions: dict[str, dict] = {}
+    existing_decisions = (
+        existing_manifest.get("decisions", {}) if isinstance(existing_manifest, dict) else {}
+    )
+    if isinstance(existing_decisions, dict):
+        for decision_id in existing_decisions:
+            if decision_id in decisions:
+                ordered_decisions[decision_id] = decisions[decision_id]
+    for decision_id, decision in decisions.items():
+        if decision_id not in ordered_decisions:
+            ordered_decisions[decision_id] = decision
     return {
         "schemaVersion": 1,
         "generator": {"skill": "setup-context-driven", "version": 1},
         "profile": profile_id,
         "modules": ordered_modules,
-        "decisions": decisions,
+        "decisions": ordered_decisions,
         "managedArtifacts": [
             {
                 "id": artifact.managed_id,
@@ -1969,19 +2195,253 @@ def build_manifest(
     }
 
 
+def concrete_change_plan(
+    repo: Path,
+    catalog: AssetCatalog,
+    decision_plan: DecisionPlan,
+    existing_manifest: dict | None,
+    expected_artifacts: list[ExpectedArtifact],
+    changed_contents: dict[Path, str | None],
+    current_files: dict[Path, str],
+    manifest: dict,
+) -> ChangePlan:
+    expected_by_path = artifacts_by_path(expected_artifacts)
+    old_by_id = manifest_artifacts_by_id(existing_manifest)
+    expected_by_id = {artifact.managed_id: artifact for artifact in expected_artifacts}
+    operations_by_path: dict[Path, list[PlannedChange]] = {}
+
+    def add_operation(path: Path, operation: PlannedChange) -> None:
+        operations_by_path.setdefault(path, []).append(operation)
+
+    for path, artifacts in expected_by_path.items():
+        before = current_file_bytes(repo, path)
+        after = content_bytes(changed_contents.get(path, current_files.get(path)))
+        if before == after:
+            continue
+        before_content = current_files.get(path, "")
+        before_spans, _ = parse_managed_block_spans(path, before_content)
+        for artifact in artifacts:
+            old = old_by_id.get(artifact.managed_id)
+            old_path = safe_relative_path(old.get("path", "")) if isinstance(old, dict) else None
+            from_path = old_path if old_path is not None and old_path != path else None
+            before_span = before_spans.get(artifact.managed_id)
+            expected_block = managed_block(
+                artifact.managed_id,
+                artifact.version,
+                artifact.content,
+            )
+            if (
+                from_path is None
+                and before_span is not None
+                and before_content[before_span.start : before_span.end] == expected_block
+            ):
+                continue
+            if from_path is not None:
+                action = "rename managed content"
+                reason = "The selected artifact moved to its catalog path."
+            elif artifact.managed_id not in before_spans:
+                action = "create guide" if artifact.kind == "guide" else "create managed block"
+                reason = "The selected profile requires this managed artifact."
+            elif catalog.references_by_artifact.get(artifact.managed_id):
+                action = "edit managed references"
+                reason = "The selected Decision Plan changes this artifact's managed references."
+            else:
+                action = "refresh managed content"
+                reason = "The selected catalog content differs from the repository bytes."
+            add_operation(
+                path,
+                PlannedChange(
+                    action=action,
+                    path=path,
+                    managed_id=artifact.managed_id,
+                    state="definite",
+                    reason=reason,
+                    before_digest=bytes_digest(before),
+                    after_digest=bytes_digest(after),
+                    from_path=from_path,
+                    reference_edits=reference_edit_details(catalog, artifact.managed_id)
+                    if action == "edit managed references"
+                    else (),
+                ),
+            )
+
+    for managed_id, old in sorted(old_by_id.items()):
+        path = safe_relative_path(old.get("path", ""))
+        if path is None:
+            continue
+        expected = expected_by_id.get(managed_id)
+        if expected is not None and expected.path == path:
+            continue
+        before = current_file_bytes(repo, path)
+        after = content_bytes(changed_contents.get(path, current_files.get(path)))
+        removal_id = f"removal.{managed_id}"
+        removal = decision_plan.resolved_decisions.get(removal_id)
+        if before == after and isinstance(removal, dict) and removal.get("value") == "preserve":
+            add_operation(
+                path,
+                PlannedChange(
+                    action="preserve unmarked content",
+                    path=path,
+                    managed_id=managed_id,
+                    state="definite",
+                    reason="The explicit removal decision preserves repository-authored bytes.",
+                    before_digest=bytes_digest(before),
+                    after_digest=bytes_digest(after),
+                ),
+            )
+        elif before != after:
+            add_operation(
+                path,
+                PlannedChange(
+                    action="remove managed content",
+                    path=path,
+                    managed_id=managed_id,
+                    state="definite",
+                    reason="The selected profile no longer includes previously owned content.",
+                    before_digest=bytes_digest(before),
+                    after_digest=bytes_digest(after),
+                ),
+            )
+
+    manifest_before = current_file_bytes(repo, MANIFEST_PATH)
+    manifest_after = content_bytes(changed_contents[MANIFEST_PATH])
+    if manifest_before != manifest_after:
+        add_operation(
+            MANIFEST_PATH,
+            PlannedChange(
+                action="refresh manifest" if manifest_before is not None else "create manifest",
+                path=MANIFEST_PATH,
+                managed_id="manifest",
+                state="definite",
+                reason="Record the selected profile, decisions, and managed inventory.",
+                before_digest=bytes_digest(manifest_before),
+                after_digest=bytes_digest(manifest_after),
+            ),
+        )
+
+    mutations: list[FileMutation] = []
+    all_paths = set(operations_by_path)
+    all_paths.update(
+        path
+        for path, content in changed_contents.items()
+        if current_file_bytes(repo, path) != content_bytes(content)
+    )
+    for path in sorted(all_paths, key=lambda item: item.as_posix()):
+        before = current_file_bytes(repo, path)
+        after = content_bytes(changed_contents.get(path, current_files.get(path)))
+        mutations.append(
+            FileMutation(
+                path=path,
+                before_digest=bytes_digest(before),
+                after_digest=bytes_digest(after),
+                content=after,
+                operations=tuple(operations_by_path.get(path, ())),
+            )
+        )
+
+    digest_payload = {
+        "kind": "setup",
+        "selection": decision_plan.selection.to_json(),
+        "decisions": {
+            key: value.get("value")
+            for key, value in sorted(decision_plan.resolved_decisions.items())
+        },
+        "catalogDigest": catalog_digest(catalog),
+        "operations": [
+            operation.to_json()
+            for mutation in mutations
+            for operation in mutation.operations
+        ],
+        "paths": [
+            {
+                "path": mutation.path.as_posix(),
+                "beforeDigest": mutation.before_digest,
+                "afterDigest": mutation.after_digest,
+            }
+            for mutation in mutations
+        ],
+    }
+    digest = hashlib.sha256(canonical_json_bytes(digest_payload)).hexdigest()
+    return ChangePlan("setup", tuple(mutations), digest, manifest)
+
+
+def manifest_artifacts_by_id(manifest: dict | None) -> dict[str, dict]:
+    if not isinstance(manifest, dict):
+        return {}
+    return {
+        item["id"]: item
+        for item in manifest.get("managedArtifacts", [])
+        if isinstance(item, dict) and isinstance(item.get("id"), str)
+    }
+
+
+def reference_edit_details(
+    catalog: AssetCatalog,
+    managed_id: str,
+) -> tuple[dict[str, str], ...]:
+    details: list[dict[str, str]] = []
+    for reference in catalog.references_by_artifact.get(managed_id, ()):
+        detail = {"id": reference.reference_id, "ownership": reference.ownership}
+        if reference.target_managed_id is not None:
+            detail["targetManagedId"] = reference.target_managed_id
+        if reference.repository_path is not None:
+            detail["repositoryPath"] = reference.repository_path.as_posix()
+        details.append(detail)
+    return tuple(details)
+
+
+def plan_operations(plan: ChangePlan) -> tuple[PlannedChange, ...]:
+    return tuple(
+        operation
+        for mutation in plan.mutations
+        for operation in mutation.operations
+    )
+
+
+def bytes_digest(content: bytes | None) -> str | None:
+    if content is None:
+        return None
+    return hashlib.sha256(content).hexdigest()
+
+
+def canonical_json_bytes(value: object) -> bytes:
+    return json.dumps(
+        normalize_digest_value(value),
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode("utf-8")
+
+
+def normalize_digest_value(value: object) -> object:
+    if is_dataclass(value):
+        return normalize_digest_value(asdict(value))
+    if isinstance(value, Path):
+        return value.as_posix()
+    if isinstance(value, dict):
+        return {str(key): normalize_digest_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [normalize_digest_value(item) for item in value]
+    return value
+
+
+def catalog_digest(catalog: AssetCatalog) -> str:
+    return hashlib.sha256(canonical_json_bytes(catalog)).hexdigest()
+
+
 def validate_change_plan(
     repo: Path,
     plan: ChangePlan,
     expected_artifacts: list[ExpectedArtifact],
 ) -> list[Finding]:
     findings: list[Finding] = []
-    planned = {change.path: change.content for change in plan.changes}
+    planned = {mutation.path: mutation.content for mutation in plan.mutations}
     for artifact in expected_artifacts:
         content = planned.get(artifact.path)
         if content is None:
             path = repo / artifact.path
             if path.exists() and path.is_file():
-                content = path.read_text(encoding="utf-8")
+                content = path.read_bytes()
         if content is None:
             findings.append(
                 finding(
@@ -1994,7 +2454,21 @@ def validate_change_plan(
                 )
             )
             continue
-        blocks, marker_findings = parse_managed_blocks(artifact.path, content)
+        try:
+            text = content.decode("utf-8")
+        except UnicodeDecodeError:
+            findings.append(
+                finding(
+                    "manifest.invalid",
+                    "error",
+                    artifact.path.as_posix(),
+                    artifact.managed_id,
+                    "Change plan output is not UTF-8 text.",
+                    "Rebuild the apply plan from bundled assets.",
+                )
+            )
+            continue
+        blocks, marker_findings = parse_managed_blocks(artifact.path, text)
         findings.extend(marker_findings)
         block = blocks.get(artifact.managed_id)
         if block is None:
@@ -2028,22 +2502,34 @@ def apply_change_plan(repo: Path, plan: ChangePlan) -> None:
     created_dirs: list[Path] = []
     temp_by_target: dict[Path, Path] = {}
     try:
-        for change in plan.changes:
-            target = safe_repo_target(repo, change.path)
+        for mutation in plan.mutations:
+            target = safe_repo_target(repo, mutation.path)
             originals[target] = target.read_bytes() if target.exists() and target.is_file() else None
-            if change.content is None:
+            if bytes_digest(originals[target]) != mutation.before_digest:
+                raise OSError(f"preimage changed for {mutation.path}")
+            if mutation.before_digest == mutation.after_digest or mutation.content is None:
                 continue
             ensure_parent_dir(target.parent, created_dirs)
-            temp_by_target[target] = write_unique_temp_text(target, change.content, temp_paths)
+            temp_by_target[target] = write_unique_temp_bytes(target, mutation.content, temp_paths)
 
-        for change in plan.changes:
-            target = safe_repo_target(repo, change.path)
-            if change.content is None:
+        for mutation in plan.mutations:
+            target = safe_repo_target(repo, mutation.path)
+            if mutation.before_digest == mutation.after_digest:
+                continue
+            if mutation.content is None:
                 if target.exists() and target.is_file():
                     target.unlink()
                 continue
             temp_path = temp_by_target[target]
             temp_path.replace(target)
+
+        mismatches = [
+            mutation.path.as_posix()
+            for mutation in plan.mutations
+            if bytes_digest(current_file_bytes(repo, mutation.path)) != mutation.after_digest
+        ]
+        if mismatches:
+            raise OSError(f"postwrite delta mismatch for {', '.join(mismatches)}")
     except OSError:
         for target, original in originals.items():
             if original is None:
@@ -2076,10 +2562,9 @@ def safe_repo_target(repo: Path, relative_path: Path) -> Path:
     return target
 
 
-def write_unique_temp_text(target: Path, content: str, temp_paths: list[Path]) -> Path:
+def write_unique_temp_bytes(target: Path, content: bytes, temp_paths: list[Path]) -> Path:
     with tempfile.NamedTemporaryFile(
-        "w",
-        encoding="utf-8",
+        "wb",
         dir=target.parent,
         prefix=f".{target.name}.setup-context.",
         suffix=".tmp",
@@ -2089,6 +2574,10 @@ def write_unique_temp_text(target: Path, content: str, temp_paths: list[Path]) -
         temp_paths.append(temp_path)
         handle.write(content)
     return temp_path
+
+
+def write_unique_temp_text(target: Path, content: str, temp_paths: list[Path]) -> Path:
+    return write_unique_temp_bytes(target, content.encode("utf-8"), temp_paths)
 
 
 def ensure_parent_dir(directory: Path, created_dirs: list[Path]) -> None:
@@ -3281,7 +3770,7 @@ def render_result(result: AuditResult, output_format: str) -> None:
 
 
 def render_text(result: AuditResult) -> str:
-    if not result.findings and result.selection is None and not result.planned_changes:
+    if not result.findings and not result.planned_changes:
         return "setup-context-driven audit: ok"
 
     lines = [
@@ -3498,6 +3987,12 @@ def audit_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--profile", help="Override the manifest profile for audit.")
     parser.add_argument(
+        "--decision",
+        action="append",
+        default=[],
+        help="Decision in ID=VALUE form. Repeat to resolve a concrete read-only plan.",
+    )
+    parser.add_argument(
         "--show-extra-skills",
         action="store_true",
         help="Show informational findings for installed skills outside the selected setup.",
@@ -3527,6 +4022,10 @@ def apply_parser() -> argparse.ArgumentParser:
         action="append",
         default=[],
         help="Confirmed decision in ID=VALUE form. Repeat for multiple decisions.",
+    )
+    parser.add_argument(
+        "--confirm-plan",
+        help="Exact lowercase SHA-256 planDigest authorizing a non-empty apply.",
     )
     return parser
 

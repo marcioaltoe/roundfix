@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0043-context-driven-baseline-coverage-and-skill-restoration
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -37,34 +37,34 @@ or an observed delta mismatch produces no unapproved mutation.
 
 ## Subtasks
 
-- [ ] Consolidate public operations and executable file mutations under one
+- [x] Consolidate public operations and executable file mutations under one
       Change Plan.
-- [ ] Add exact operation metadata and canonical plan digest calculation.
-- [ ] Add audit decision inputs and digest-bound apply confirmation.
-- [ ] Add explicit preserve/remove decisions for ambiguous old inventory.
-- [ ] Add rename and reference-edit planning without double-counting path
+- [x] Add exact operation metadata and canonical plan digest calculation.
+- [x] Add audit decision inputs and digest-bound apply confirmation.
+- [x] Add explicit preserve/remove decisions for ambiguous old inventory.
+- [x] Add rename and reference-edit planning without double-counting path
       deltas.
-- [ ] Add postwrite delta proof and rollback across all affected paths.
-- [ ] Reproduce the observed omitted-removal and false-positive-removal cases.
+- [x] Add postwrite delta proof and rollback across all affected paths.
+- [x] Reproduce the observed omitted-removal and false-positive-removal cases.
 
 ## Acceptance Criteria
 
-- [ ] The resolved public plan's unique path/digest triples equal the complete
+- [x] The resolved public plan's unique path/digest triples equal the complete
       observed before/after tree delta after apply.
-- [ ] The Go-to-Rust transition previews every actual managed removal before
+- [x] The Go-to-Rust transition previews every actual managed removal before
       confirmation.
-- [ ] An unmarked conditional guide outside prior manifest ownership is
+- [x] An unmarked conditional guide outside prior manifest ownership is
       preserved and never appears as a removal candidate.
-- [ ] Missing confirmation and stale confirmation exit `3` with the current
+- [x] Missing confirmation and stale confirmation exit `3` with the current
       plan and no writes; malformed confirmation exits `2`.
-- [ ] A matching digest applies only the listed mutations and returns
+- [x] A matching digest applies only the listed mutations and returns
       structured success without mixing diagnostics into stdout.
-- [ ] Missing or invalid old ownership markers require an explicit
+- [x] Missing or invalid old ownership markers require an explicit
       `preserve|remove` answer before any affected path can change.
-- [ ] A forced postwrite mismatch or I/O failure restores all original bytes.
-- [ ] Repeating confirmed apply against the resulting repository reports an
+- [x] A forced postwrite mismatch or I/O failure restores all original bytes.
+- [x] Repeating confirmed apply against the resulting repository reports an
       empty plan and exits `0` without another confirmation.
-- [ ] Canonical and embedded setup skill trees are synchronized after the
+- [x] Canonical and embedded setup skill trees are synchronized after the
       slice.
 
 ## Context
@@ -96,3 +96,65 @@ or an observed delta mismatch produces no unapproved mutation.
   Order 4.
 - ADR-0046 → explicit ownership and confirmation boundaries.
 - ADR-0047 → one shared Decision Plan across preview, audit, and apply.
+
+## Result
+
+Implemented one concrete, deterministic Change Plan as the authority for both
+`plannedChanges` and filesystem writes. Every operation now carries its reason
+and exact path preimage/postimage digests; resolved plans carry a canonical
+digest over the selected profile, decision values, catalog, ordered operations,
+and path digests. Audit accepts repeated decisions, while non-empty apply
+requires the matching `--confirm-plan` digest and rejects missing, malformed,
+or stale confirmation without writes.
+
+Ambiguous old inventory now introduces an explicit
+`removal.<managed-id>=preserve|remove` decision. Proven marker ownership still
+permits automatic managed removal, while unmarked paths outside the old Setup
+Manifest remain outside the plan. Apply stages exact bytes, verifies every
+affected path against the authorized postimage, and restores all original
+bytes after an I/O failure or postwrite mismatch. Rename and managed-reference
+edits are represented as logical operations on the same path mutations.
+
+Acceptance evidence:
+
+- Exact delta parity, matching confirmation, stdout/stderr separation, and an
+  empty second apply pass in
+  `test_confirmed_plan_matches_complete_tree_delta_and_second_apply_is_empty`.
+- The Go-to-Rust managed-removal path and preservation of unrelated content
+  pass in `test_obsolete_managed_artifacts_are_removed_without_unowned_deletions`.
+- The false-positive conditional removal case passes in
+  `test_unmarked_conditional_guide_outside_manifest_is_never_removed`.
+- Missing, stale, and malformed confirmation behavior passes in
+  `test_non_empty_apply_requires_matching_plan_digest_without_writes`.
+- Explicit preserve/remove authority passes in
+  `test_ambiguous_old_inventory_requires_explicit_preserve_or_remove`.
+- I/O rollback and forced postwrite-mismatch rollback pass in
+  `test_failure_before_commit_preserves_target_files` and
+  `test_postwrite_delta_mismatch_restores_every_original_byte`.
+- Rename, reference-edit metadata, and complete delta parity pass in
+  `test_catalog_path_move_plans_rename_and_reference_edit_without_delta_gaps`.
+- Repeated audit decisions produce the same authorizable digest in
+  `test_audit_repeated_decisions_exposes_authorizable_concrete_digest`.
+- `make skills-sync` refreshed the embedded setup skill from the canonical
+  tree; the repository verification gate confirmed the trees match.
+
+Verification:
+
+- `rtk python3 -B .agents/skills/setup-context-driven/tests/test_preview.py`
+  passed: 5 tests.
+- `rtk python3 -B .agents/skills/setup-context-driven/tests/test_apply.py`
+  passed: 17 tests.
+- `rtk make verify` passed: 1,687 Go tests across 20 packages, 106 setup
+  tests, both asset catalogs, the Roundfix skill check, and the Go build.
+
+Follow-ups: none.
+
+Verification feedback repair:
+
+- Attempts 1 and 2 passed the Go and Python suites but failed the skill distribution
+  equality check because generated Python bytecode existed only under the
+  canonical setup skill tree.
+- The preview and apply subprocess helpers now propagate
+  `PYTHONDONTWRITEBYTECODE=1` to the CLI processes they own. After removing the
+  generated cache and synchronizing the embedded tree, each focused test leaves
+  the trees byte-identical and `rtk make skills-sync-check` exits `0`.
