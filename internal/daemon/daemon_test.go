@@ -174,6 +174,52 @@ func TestGitCommitterExcludesProjectConfigFromBatchCommit(t *testing.T) {
 	}
 }
 
+func TestGitCommitterStagesSelectedTrackedPathMatchedByGlobalIgnore(t *testing.T) {
+	repoDir := t.TempDir()
+	globalConfigDir := t.TempDir()
+	globalIgnore := filepath.Join(globalConfigDir, "git", "ignore")
+	if err := os.MkdirAll(filepath.Dir(globalIgnore), 0o755); err != nil {
+		t.Fatalf("create global git config directory: %v", err)
+	}
+	mustWriteForTest(t, globalIgnore, "dist/\n")
+	t.Setenv("XDG_CONFIG_HOME", globalConfigDir)
+	runGitForTest(t, repoDir, "init", "-q")
+	runGitForTest(t, repoDir, "config", "user.email", "test@example.com")
+	runGitForTest(t, repoDir, "config", "user.name", "Test")
+	runGitForTest(t, repoDir, "config", "commit.gpgsign", "false")
+	trackedPath := filepath.Join(repoDir, "dist", "tracked.txt")
+	ignoredPath := filepath.Join(repoDir, "dist", "untracked.txt")
+	if err := os.MkdirAll(filepath.Dir(trackedPath), 0o755); err != nil {
+		t.Fatalf("create dist directory: %v", err)
+	}
+	mustWriteForTest(t, trackedPath, "base\n")
+	runGitForTest(t, repoDir, "add", "-f", "dist/tracked.txt")
+	runGitForTest(t, repoDir, "commit", "-q", "-m", "init")
+
+	mustWriteForTest(t, trackedPath, "changed\n")
+	mustWriteForTest(t, ignoredPath, "not selected\n")
+
+	err := GitCommitter{}.Commit(context.Background(), CommitRequest{
+		WorkDir: repoDir,
+		Message: "fix: test exact staging",
+		Paths:   []string{"dist/tracked.txt"},
+	})
+	if err != nil {
+		t.Fatalf("commit selected tracked path matched by global ignore: %v", err)
+	}
+
+	committed := runGitForTest(t, repoDir, "show", "--name-only", "--format=", "HEAD")
+	if !strings.Contains(committed, "dist/tracked.txt") {
+		t.Fatalf("expected selected tracked path in commit, got %q", committed)
+	}
+	if strings.Contains(committed, "dist/untracked.txt") {
+		t.Fatalf("did not expect unselected ignored path in commit, got %q", committed)
+	}
+	if _, err := os.Stat(ignoredPath); err != nil {
+		t.Fatalf("expected unselected ignored file preserved: %v", err)
+	}
+}
+
 func TestGitPusherValidatesRequest(t *testing.T) {
 	err := GitPusher{}.Push(context.Background(), PushRequest{})
 
