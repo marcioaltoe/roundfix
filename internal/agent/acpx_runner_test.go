@@ -3449,7 +3449,7 @@ func runFakeACPXProcess() int {
 			return 2
 		}
 	}
-	if path := os.Getenv(fakeACPXPromptPath); path != "" {
+	if path := os.Getenv(fakeACPXPromptPath); path != "" && commandKey == "prompt" {
 		prompt, err := io.ReadAll(os.Stdin)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "read stdin: %v\n", err)
@@ -3586,20 +3586,26 @@ func writeFakeACPXPromptCompletion() error {
 
 // fakeACPXCommandKey mirrors the real acpx grammar: program-level global
 // options come first (--cwd, --format, --model, --agent, ... take a value;
-// --json-strict and --approve-all are booleans), then the agent name (unless
+// permission and terminal controls are booleans), then the agent name (unless
 // --agent supplied the raw command), then the subcommand.
 func fakeACPXCommandKey(args []string) string {
 	valueGlobals := map[string]bool{
-		"--cwd":     true,
-		"--format":  true,
-		"--model":   true,
-		"--agent":   true,
-		"--timeout": true,
-		"--ttl":     true,
+		"--cwd":                         true,
+		"--format":                      true,
+		"--model":                       true,
+		"--agent":                       true,
+		"--timeout":                     true,
+		"--ttl":                         true,
+		"--non-interactive-permissions": true,
+		"--allowed-tools":               true,
+		"--max-turns":                   true,
+		"--prompt-retries":              true,
 	}
 	booleanGlobals := map[string]bool{
 		"--json-strict": true,
 		"--approve-all": true,
+		"--deny-all":    true,
+		"--no-terminal": true,
 	}
 	sawAgentOverride := false
 	index := 0

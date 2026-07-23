@@ -949,7 +949,7 @@ func buildDecisionSkeleton(source ReadoptionSourceBaseline) DecisionSkeleton {
 					Digest:        hex.EncodeToString(sum[:]),
 					ProposedBytes: base64.StdEncoding.EncodeToString(entry.SourceBytes),
 				},
-				Reason: "",
+				Reason: "Preserve this source entry as a Repository-Specific Normative Rule for human review.",
 			},
 		)
 	}
