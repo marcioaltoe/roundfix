@@ -87,9 +87,20 @@ class UpgradeRetentionTests(unittest.TestCase):
             )
             apply = run_apply_preview(repo, PROFILE, [])
 
-            self.assertEqual(preview.returncode, 1, preview.stderr)
+            self.assertEqual(preview.returncode, 3, preview.stderr)
             self.assertEqual(apply.returncode, 1, apply.stderr)
-            self.assertFinding(preview, "retention.baseline.unknown")
+            preview_payload = json.loads(preview.stdout)
+            self.assertEqual(
+                preview_payload["sourceBaseline"]["compatibility"], "incompatible"
+            )
+            self.assertTrue(preview_payload["sourceEntries"])
+            self.assertTrue(
+                all(
+                    "disposition" not in entry
+                    for entry in preview_payload["sourceEntries"]
+                )
+            )
+            self.assertFinding(preview, "readoption.disposition.required")
             self.assertFinding(apply, "retention.baseline.unknown")
             self.assertEqual(snapshot_files(repo), before)
 

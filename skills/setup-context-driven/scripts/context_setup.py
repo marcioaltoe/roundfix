@@ -34,6 +34,11 @@ from context_assets import (
     portable_tree_digest,
     setup_snapshot_digest,
 )
+from context_baseline import (
+    IncompatibleSourceBaseline,
+    SourceInventoryError,
+    inventory_incompatible_source_baseline,
+)
 
 
 AUDIT_SCHEMA_VERSION = "setup-context-driven/audit-v1"
@@ -329,6 +334,7 @@ class AuditResult:
     planned_changes: tuple[PlannedChange, ...] = ()
     plan_digest: str | None = None
     retention: tuple[RetentionEntry, ...] = ()
+    source_baseline: IncompatibleSourceBaseline | None = None
 
     @property
     def ok(self) -> bool:
@@ -358,6 +364,11 @@ class AuditResult:
         if self.retention:
             data["retentionAccounting"] = [
                 entry.to_json() for entry in self.retention
+            ]
+        if self.source_baseline is not None:
+            data["sourceBaseline"] = self.source_baseline.identity_json()
+            data["sourceEntries"] = [
+                entry.to_json() for entry in self.source_baseline.entries
             ]
         return data
 
@@ -1560,6 +1571,12 @@ def run_audit_command(options: argparse.Namespace) -> int:
         return 2
 
     if options.decision:
+        readoption_result, readoption_invalid = audit_readoption_repository(
+            repo, catalog
+        )
+        if readoption_result is not None:
+            render_result(readoption_result, options.format)
+            return exit_code_for(readoption_result, readoption_invalid)
         result, invalid_input, _ = plan_apply(
             repo=repo,
             catalog=catalog,
@@ -1966,6 +1983,10 @@ def audit_repository(
     show_extra_skills: bool = False,
     setups_dir: str | None = None,
 ) -> tuple[AuditResult, bool]:
+    readoption_result, readoption_invalid = audit_readoption_repository(repo, catalog)
+    if readoption_result is not None:
+        return readoption_result, readoption_invalid
+
     findings: list[Finding] = []
     manifest, invalid_input = load_manifest(repo, findings)
     if manifest is None:
@@ -2071,6 +2092,92 @@ def audit_repository(
             retention=plan_result.retention,
         ),
         invalid_input or plan_invalid_input,
+    )
+
+
+def audit_readoption_repository(
+    repo: Path, catalog: AssetCatalog
+) -> tuple[AuditResult | None, bool]:
+    manifest_findings: list[Finding] = []
+    manifest, invalid_input = load_manifest(repo, manifest_findings)
+    if invalid_input:
+        return None, invalid_input
+
+    declared_identity: str | None = None
+    if manifest is None:
+        declared_identity = "manifest.missing"
+    else:
+        _, transition_findings = resolve_upgrade_transition(catalog, manifest)
+        if any(
+            item.code == "retention.baseline.unknown"
+            for item in transition_findings
+        ):
+            generator = manifest.get("generator")
+            baseline = (
+                generator.get("baseline") if isinstance(generator, dict) else None
+            )
+            if isinstance(baseline, str) and baseline:
+                declared_identity = baseline
+            else:
+                fingerprint = legacy_manifest_fingerprint(manifest)
+                declared_identity = (
+                    f"manifest.fingerprint.{fingerprint}"
+                    if fingerprint is not None
+                    else "manifest.incompatible"
+                )
+
+    if declared_identity is None:
+        return None, False
+
+    try:
+        inventory = inventory_incompatible_source_baseline(repo, declared_identity)
+    except SourceInventoryError as error:
+        findings = [
+            finding(
+                diagnostic.code,
+                "error",
+                diagnostic.path.as_posix() or ".",
+                "source-baseline",
+                diagnostic.message,
+                "Replace the unsafe carrier with a bounded regular file and rerun audit.",
+            )
+            for diagnostic in error.diagnostics
+        ]
+        return AuditResult(sorted_findings(findings)), False
+
+    if manifest is None and not inventory.carriers:
+        return None, False
+
+    findings = [
+        finding(
+            "readoption.baseline.incompatible",
+            "info",
+            str(MANIFEST_PATH),
+            inventory.baseline_id,
+            (
+                f"Source Baseline {declared_identity!r} is incompatible; "
+                f"audit inventoried {len(inventory.entries)} structural entries."
+            ),
+            "Review every sourceEntries item before supplying Readoption dispositions.",
+        )
+    ]
+    findings.extend(
+        finding(
+            "readoption.disposition.required",
+            "decision",
+            entry.path.as_posix(),
+            entry.entry_id,
+            "Source Baseline Entry has no Readoption disposition.",
+            "Supply one explicit classification and disposition for this entry.",
+        )
+        for entry in inventory.entries
+    )
+    return (
+        AuditResult(
+            sorted_findings(findings),
+            source_baseline=inventory,
+        ),
+        False,
     )
 
 
@@ -6330,6 +6437,24 @@ def render_text(result: AuditResult) -> str:
             f"{module.module_id}({module.state})" for module in result.selection.modules
         )
         lines.append(f"- modules {module_summary}")
+    if result.source_baseline is not None:
+        source = result.source_baseline
+        lines.append("source baseline:")
+        lines.append(
+            f"- {source.baseline_id} declared={source.declared_identity} "
+            f"carriers={len(source.carriers)} entries={len(source.entries)} "
+            f"bytes={source.byte_count} digest={source.digest}"
+        )
+        lines.append("source entries:")
+        for entry in source.entries:
+            provenance = json.dumps(
+                dict(entry.provenance), sort_keys=True, separators=(",", ":")
+            )
+            lines.append(
+                f"- {entry.entry_id} {entry.path.as_posix()} kind={entry.kind} "
+                f"range={entry.start}:{entry.end} digest={entry.digest} "
+                f"provenance={provenance}"
+            )
     grouped: dict[str, list[Finding]] = {severity: [] for severity in SEVERITY_ORDER}
     for finding_item in sorted_findings(result.findings):
         grouped[finding_item.severity].append(finding_item)

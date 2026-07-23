@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
+import os
 import re
+import stat
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
@@ -30,6 +33,28 @@ _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _OPEN_MARKER = re.compile(
     rb"(?m)^<!-- source-baseline-entry: ([a-z0-9][a-z0-9._-]*) -->\r?\n"
 )
+_MANAGED_BEGIN_MARKER = re.compile(
+    rb"<!--\s*setup-context-driven:begin\s+id=([A-Za-z0-9_.-]+)"
+    rb"\s+version=([0-9]+)\s*-->"
+)
+_INSTRUCTION_NAMES = frozenset({"AGENTS.md", "CLAUDE.md"})
+_INVENTORY_IGNORED_DIRECTORIES = frozenset(
+    {
+        ".git",
+        ".hg",
+        ".svn",
+        ".venv",
+        "__pycache__",
+        "node_modules",
+        "vendor",
+        "venv",
+    }
+)
+_INVENTORY_IGNORED_PREFIXES = (
+    (".agents", "skills"),
+    ("skills",),
+)
+_MANIFEST_CARRIER = Path("docs/agents/setup-context.json")
 
 
 class SourceBaselineValidationError(ValueError):
@@ -38,6 +63,793 @@ class SourceBaselineValidationError(ValueError):
     def __init__(self, diagnostics: list[str]):
         self.diagnostics = tuple(diagnostics)
         super().__init__("\n".join(diagnostics))
+
+
+@dataclass(frozen=True)
+class SourceInventoryDiagnostic:
+    code: str
+    path: Path
+    message: str
+
+
+class SourceInventoryError(ValueError):
+    """Raised when a bounded carrier cannot be inventoried safely."""
+
+    def __init__(self, diagnostics: list[SourceInventoryDiagnostic]):
+        self.diagnostics = tuple(diagnostics)
+        super().__init__(
+            "\n".join(
+                f"{item.code}: {item.path.as_posix()}: {item.message}"
+                for item in diagnostics
+            )
+        )
+
+
+@dataclass(frozen=True)
+class SourceInventoryLimits:
+    max_files: int = 256
+    max_file_bytes: int = 2 * 1024 * 1024
+    max_total_bytes: int = 8 * 1024 * 1024
+
+
+@dataclass(frozen=True)
+class ReadoptionSourceEntry:
+    entry_id: str
+    path: Path
+    kind: str
+    start: int
+    end: int
+    digest: str
+    carrier_digest: str
+    source_bytes: bytes
+    provenance: tuple[tuple[str, object], ...]
+
+    def to_json(self) -> dict[str, object]:
+        return {
+            "id": self.entry_id,
+            "path": self.path.as_posix(),
+            "carrier": self.path.as_posix(),
+            "kind": self.kind,
+            "start": self.start,
+            "end": self.end,
+            "digest": self.digest,
+            "carrierDigest": self.carrier_digest,
+            "sourceBytes": base64.b64encode(self.source_bytes).decode("ascii"),
+            "encoding": "base64",
+            "structuralProvenance": dict(self.provenance),
+        }
+
+
+@dataclass(frozen=True)
+class IncompatibleSourceBaseline:
+    baseline_id: str
+    declared_identity: str
+    digest: str
+    carriers: tuple[Path, ...]
+    entries: tuple[ReadoptionSourceEntry, ...]
+    byte_count: int
+
+    def identity_json(self) -> dict[str, object]:
+        return {
+            "id": self.baseline_id,
+            "declaredIdentity": self.declared_identity,
+            "compatibility": "incompatible",
+            "digest": self.digest,
+            "carrierCount": len(self.carriers),
+            "entryCount": len(self.entries),
+            "byteCount": self.byte_count,
+        }
+
+
+def inventory_incompatible_source_baseline(
+    repo: str | Path,
+    declared_identity: str,
+    *,
+    limits: SourceInventoryLimits | None = None,
+) -> IncompatibleSourceBaseline:
+    """Inventory bounded historical setup carriers without classifying meaning."""
+
+    root = Path(repo)
+    active_limits = limits or SourceInventoryLimits()
+    paths = _discover_inventory_carriers(root)
+    if len(paths) > active_limits.max_files:
+        raise SourceInventoryError(
+            [
+                SourceInventoryDiagnostic(
+                    "source-inventory.limit.files",
+                    Path("."),
+                    f"carrier count {len(paths)} exceeds {active_limits.max_files}",
+                )
+            ]
+        )
+
+    contents: list[tuple[Path, bytes]] = []
+    total_bytes = 0
+    diagnostics: list[SourceInventoryDiagnostic] = []
+    for relative_path in paths:
+        try:
+            content = _read_inventory_carrier(
+                root, relative_path, active_limits.max_file_bytes
+            )
+        except SourceInventoryError as error:
+            diagnostics.extend(error.diagnostics)
+            continue
+        total_bytes += len(content)
+        if total_bytes > active_limits.max_total_bytes:
+            diagnostics.append(
+                SourceInventoryDiagnostic(
+                    "source-inventory.limit.total-bytes",
+                    relative_path,
+                    f"carrier bytes exceed {active_limits.max_total_bytes}",
+                )
+            )
+            break
+        contents.append((relative_path, content))
+
+    if diagnostics:
+        raise SourceInventoryError(diagnostics)
+
+    entries: list[ReadoptionSourceEntry] = []
+    identity_digest = hashlib.sha256()
+    for relative_path, content in contents:
+        path_bytes = relative_path.as_posix().encode("utf-8")
+        identity_digest.update(len(path_bytes).to_bytes(8, "big"))
+        identity_digest.update(path_bytes)
+        identity_digest.update(len(content).to_bytes(8, "big"))
+        identity_digest.update(content)
+        if relative_path == _MANIFEST_CARRIER:
+            _validate_inventory_manifest_paths(relative_path, content)
+        entries.extend(_partition_inventory_carrier(relative_path, content))
+
+    digest = identity_digest.hexdigest()
+    entries.sort(
+        key=lambda entry: (
+            entry.path.as_posix(),
+            entry.start,
+            entry.end,
+            entry.kind,
+        )
+    )
+    return IncompatibleSourceBaseline(
+        baseline_id=f"baseline.readoption.{digest}",
+        declared_identity=declared_identity,
+        digest=digest,
+        carriers=tuple(path for path, _ in contents),
+        entries=tuple(entries),
+        byte_count=total_bytes,
+    )
+
+
+def _discover_inventory_carriers(root: Path) -> tuple[Path, ...]:
+    diagnostics: list[SourceInventoryDiagnostic] = []
+    try:
+        root_stat = root.lstat()
+    except OSError as error:
+        raise SourceInventoryError(
+            [
+                SourceInventoryDiagnostic(
+                    "source-inventory.root.invalid", Path("."), str(error)
+                )
+            ]
+        ) from error
+    if stat.S_ISLNK(root_stat.st_mode) or not stat.S_ISDIR(root_stat.st_mode):
+        raise SourceInventoryError(
+            [
+                SourceInventoryDiagnostic(
+                    "source-inventory.root.invalid",
+                    Path("."),
+                    "repository root must be a real directory",
+                )
+            ]
+        )
+
+    carriers: set[Path] = set()
+
+    def walk(directory: Path, relative_directory: Path) -> None:
+        try:
+            children = sorted(os.scandir(directory), key=lambda child: child.name)
+        except OSError as error:
+            diagnostics.append(
+                SourceInventoryDiagnostic(
+                    "source-inventory.directory.read",
+                    relative_directory,
+                    str(error),
+                )
+            )
+            return
+        for child in children:
+            relative = relative_directory / child.name
+            if _inventory_path_is_ignored(relative):
+                continue
+            if relative.parts[:2] == ("docs", "agents"):
+                continue
+            try:
+                child_stat = child.stat(follow_symlinks=False)
+            except OSError as error:
+                diagnostics.append(
+                    SourceInventoryDiagnostic(
+                        "source-inventory.carrier.read", relative, str(error)
+                    )
+                )
+                continue
+            if stat.S_ISLNK(child_stat.st_mode):
+                if child.name in _INSTRUCTION_NAMES:
+                    diagnostics.append(
+                        SourceInventoryDiagnostic(
+                            "source-inventory.carrier.symlink",
+                            relative,
+                            "instruction carrier must not be a symlink",
+                        )
+                    )
+                continue
+            if stat.S_ISDIR(child_stat.st_mode):
+                walk(Path(child.path), relative)
+                continue
+            if child.name not in _INSTRUCTION_NAMES:
+                continue
+            if stat.S_ISREG(child_stat.st_mode):
+                carriers.add(relative)
+            else:
+                diagnostics.append(
+                    SourceInventoryDiagnostic(
+                        "source-inventory.carrier.special",
+                        relative,
+                        "instruction carrier must be a regular file",
+                    )
+                )
+
+    walk(root, Path())
+    _discover_docs_agent_carriers(root, carriers, diagnostics)
+    if diagnostics:
+        raise SourceInventoryError(
+            sorted(diagnostics, key=lambda item: (item.path.as_posix(), item.code))
+        )
+    return tuple(sorted(carriers, key=lambda path: path.as_posix()))
+
+
+def _discover_docs_agent_carriers(
+    root: Path,
+    carriers: set[Path],
+    diagnostics: list[SourceInventoryDiagnostic],
+) -> None:
+    docs = root / "docs"
+    agents = docs / "agents"
+    if not docs.exists() and not docs.is_symlink():
+        return
+    for path, relative in ((docs, Path("docs")), (agents, Path("docs/agents"))):
+        try:
+            path_stat = path.lstat()
+        except FileNotFoundError:
+            return
+        except OSError as error:
+            diagnostics.append(
+                SourceInventoryDiagnostic(
+                    "source-inventory.directory.read", relative, str(error)
+                )
+            )
+            return
+        if stat.S_ISLNK(path_stat.st_mode):
+            diagnostics.append(
+                SourceInventoryDiagnostic(
+                    "source-inventory.carrier.symlink",
+                    relative,
+                    "bounded carrier directory must not be a symlink",
+                )
+            )
+            return
+        if not stat.S_ISDIR(path_stat.st_mode):
+            diagnostics.append(
+                SourceInventoryDiagnostic(
+                    "source-inventory.carrier.special",
+                    relative,
+                    "bounded carrier directory must be a real directory",
+                )
+            )
+            return
+
+    def walk(directory: Path, relative_directory: Path) -> None:
+        try:
+            children = sorted(os.scandir(directory), key=lambda child: child.name)
+        except OSError as error:
+            diagnostics.append(
+                SourceInventoryDiagnostic(
+                    "source-inventory.directory.read",
+                    relative_directory,
+                    str(error),
+                )
+            )
+            return
+        for child in children:
+            relative = relative_directory / child.name
+            try:
+                child_stat = child.stat(follow_symlinks=False)
+            except OSError as error:
+                diagnostics.append(
+                    SourceInventoryDiagnostic(
+                        "source-inventory.carrier.read", relative, str(error)
+                    )
+                )
+                continue
+            if stat.S_ISLNK(child_stat.st_mode):
+                diagnostics.append(
+                    SourceInventoryDiagnostic(
+                        "source-inventory.carrier.symlink",
+                        relative,
+                        "bounded carrier must not be a symlink",
+                    )
+                )
+            elif stat.S_ISDIR(child_stat.st_mode):
+                walk(Path(child.path), relative)
+            elif stat.S_ISREG(child_stat.st_mode):
+                carriers.add(relative)
+            else:
+                diagnostics.append(
+                    SourceInventoryDiagnostic(
+                        "source-inventory.carrier.special",
+                        relative,
+                        "bounded carrier must be a regular file",
+                    )
+                )
+
+    walk(agents, Path("docs/agents"))
+
+
+def _inventory_path_is_ignored(relative: Path) -> bool:
+    if any(part in _INVENTORY_IGNORED_DIRECTORIES for part in relative.parts):
+        return True
+    return any(
+        relative.parts[: len(prefix)] == prefix
+        for prefix in _INVENTORY_IGNORED_PREFIXES
+    )
+
+
+def _read_inventory_carrier(root: Path, relative: Path, max_bytes: int) -> bytes:
+    if (
+        relative.is_absolute()
+        or not relative.parts
+        or any(part in {"", ".", ".."} for part in relative.parts)
+    ):
+        raise SourceInventoryError(
+            [
+                SourceInventoryDiagnostic(
+                    "source-inventory.path.unsafe",
+                    relative,
+                    "carrier path must stay inside the repository",
+                )
+            ]
+        )
+    target = root / relative
+    flags = os.O_RDONLY
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        descriptor = os.open(target, flags)
+    except OSError as error:
+        raise SourceInventoryError(
+            [
+                SourceInventoryDiagnostic(
+                    "source-inventory.carrier.read", relative, str(error)
+                )
+            ]
+        ) from error
+    try:
+        target_stat = os.fstat(descriptor)
+        if not stat.S_ISREG(target_stat.st_mode):
+            raise SourceInventoryError(
+                [
+                    SourceInventoryDiagnostic(
+                        "source-inventory.carrier.special",
+                        relative,
+                        "bounded carrier must be a regular file",
+                    )
+                ]
+            )
+        if target_stat.st_size > max_bytes:
+            raise SourceInventoryError(
+                [
+                    SourceInventoryDiagnostic(
+                        "source-inventory.limit.file-bytes",
+                        relative,
+                        f"carrier size {target_stat.st_size} exceeds {max_bytes}",
+                    )
+                ]
+            )
+        content = bytearray()
+        while True:
+            chunk = os.read(descriptor, min(64 * 1024, max_bytes + 1 - len(content)))
+            if not chunk:
+                break
+            content.extend(chunk)
+            if len(content) > max_bytes:
+                raise SourceInventoryError(
+                    [
+                        SourceInventoryDiagnostic(
+                            "source-inventory.limit.file-bytes",
+                            relative,
+                            f"carrier bytes exceed {max_bytes}",
+                        )
+                    ]
+                )
+        return bytes(content)
+    finally:
+        os.close(descriptor)
+
+
+def _partition_inventory_carrier(
+    relative: Path, content: bytes
+) -> list[ReadoptionSourceEntry]:
+    carrier_digest = hashlib.sha256(content).hexdigest()
+    if relative == _MANIFEST_CARRIER:
+        spans = _manifest_record_spans(content)
+        if spans:
+            return _entries_from_structural_spans(
+                relative, content, carrier_digest, spans
+            )
+    if relative.suffix.casefold() == ".md":
+        spans = _managed_block_spans(content)
+        if spans:
+            return _entries_from_structural_spans(
+                relative, content, carrier_digest, spans
+            )
+        return [
+            _inventory_entry(
+                relative,
+                "unmarked-span",
+                0,
+                len(content),
+                content,
+                carrier_digest,
+                (("markerState", "unmarked"),),
+            )
+        ]
+    return [
+        _inventory_entry(
+            relative,
+            "file",
+            0,
+            len(content),
+            content,
+            carrier_digest,
+            (("boundary", "whole-file"),),
+        )
+    ]
+
+
+def _managed_block_spans(
+    content: bytes,
+) -> list[tuple[int, int, str, tuple[tuple[str, object], ...]]]:
+    spans: list[tuple[int, int, str, tuple[tuple[str, object], ...]]] = []
+    cursor = 0
+    while True:
+        opening = _MANAGED_BEGIN_MARKER.search(content, cursor)
+        if opening is None:
+            break
+        managed_id = opening.group(1)
+        closing_pattern = re.compile(
+            rb"<!--\s*setup-context-driven:end\s+id="
+            + re.escape(managed_id)
+            + rb"\s*-->"
+        )
+        closing = closing_pattern.search(content, opening.end())
+        if closing is None:
+            cursor = opening.end()
+            continue
+        end = closing.end()
+        if content.startswith(b"\r\n", end):
+            end += 2
+        elif content.startswith(b"\n", end):
+            end += 1
+        spans.append(
+            (
+                opening.start(),
+                end,
+                "managed-block",
+                (
+                    ("managedId", managed_id.decode("ascii")),
+                    ("markerVersion", int(opening.group(2))),
+                ),
+            )
+        )
+        cursor = end
+    return spans
+
+
+def _entries_from_structural_spans(
+    relative: Path,
+    content: bytes,
+    carrier_digest: str,
+    spans: list[tuple[int, int, str, tuple[tuple[str, object], ...]]],
+) -> list[ReadoptionSourceEntry]:
+    entries: list[ReadoptionSourceEntry] = []
+    cursor = 0
+    for start, end, kind, provenance in sorted(spans):
+        if start < cursor or end < start or end > len(content):
+            continue
+        if start > cursor:
+            entries.append(
+                _inventory_entry(
+                    relative,
+                    "unmarked-span",
+                    cursor,
+                    start,
+                    content[cursor:start],
+                    carrier_digest,
+                    (("markerState", "unmarked"),),
+                )
+            )
+        entries.append(
+            _inventory_entry(
+                relative,
+                kind,
+                start,
+                end,
+                content[start:end],
+                carrier_digest,
+                provenance,
+            )
+        )
+        cursor = end
+    if cursor < len(content):
+        entries.append(
+            _inventory_entry(
+                relative,
+                "unmarked-span",
+                cursor,
+                len(content),
+                content[cursor:],
+                carrier_digest,
+                (("markerState", "unmarked"),),
+            )
+        )
+    return entries
+
+
+def _inventory_entry(
+    relative: Path,
+    kind: str,
+    start: int,
+    end: int,
+    source_bytes: bytes,
+    carrier_digest: str,
+    provenance: tuple[tuple[str, object], ...],
+) -> ReadoptionSourceEntry:
+    digest = hashlib.sha256(source_bytes).hexdigest()
+    identity = hashlib.sha256()
+    for value in (
+        relative.as_posix(),
+        kind,
+        str(start),
+        str(end),
+        digest,
+        json.dumps(dict(provenance), sort_keys=True, separators=(",", ":")),
+    ):
+        encoded = value.encode("utf-8")
+        identity.update(len(encoded).to_bytes(8, "big"))
+        identity.update(encoded)
+    return ReadoptionSourceEntry(
+        entry_id=f"source-entry.{identity.hexdigest()}",
+        path=relative,
+        kind=kind,
+        start=start,
+        end=end,
+        digest=digest,
+        carrier_digest=carrier_digest,
+        source_bytes=source_bytes,
+        provenance=provenance,
+    )
+
+
+def _validate_inventory_manifest_paths(relative: Path, content: bytes) -> None:
+    try:
+        document = json.loads(content)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return
+    if not isinstance(document, dict):
+        return
+    diagnostics: list[SourceInventoryDiagnostic] = []
+    for collection_name in ("managedArtifacts", "repositoryExtensions"):
+        records = document.get(collection_name, [])
+        if not isinstance(records, list):
+            continue
+        for index, record in enumerate(records):
+            if not isinstance(record, dict) or "path" not in record:
+                continue
+            value = record["path"]
+            if not _inventory_manifest_path_is_safe(value):
+                diagnostics.append(
+                    SourceInventoryDiagnostic(
+                        "source-inventory.manifest.path.unsafe",
+                        relative,
+                        f"{collection_name}[{index}].path is unsafe: {value!r}",
+                    )
+                )
+    if diagnostics:
+        raise SourceInventoryError(diagnostics)
+
+
+def _inventory_manifest_path_is_safe(value: object) -> bool:
+    if not isinstance(value, str) or not value or "\\" in value:
+        return False
+    path = PurePosixPath(value)
+    return not path.is_absolute() and all(
+        part not in {"", ".", ".."} for part in path.parts
+    )
+
+
+def _manifest_record_spans(
+    content: bytes,
+) -> list[tuple[int, int, str, tuple[tuple[str, object], ...]]]:
+    try:
+        members = _json_object_members(content, 0)
+    except ValueError:
+        return []
+    spans: list[tuple[int, int, str, tuple[tuple[str, object], ...]]] = []
+    for key, key_start, value_start, value_end in members:
+        if key == "managedArtifacts":
+            try:
+                elements = _json_array_elements(content, value_start)
+            except ValueError:
+                elements = []
+            if elements:
+                for index, (start, end) in enumerate(elements):
+                    provenance: list[tuple[str, object]] = [
+                        ("recordKey", key),
+                        ("recordIndex", index),
+                    ]
+                    try:
+                        record = json.loads(content[start:end])
+                    except (UnicodeDecodeError, json.JSONDecodeError):
+                        record = None
+                    if isinstance(record, dict) and isinstance(record.get("id"), str):
+                        provenance.append(("managedId", record["id"]))
+                    spans.append(
+                        (start, end, "manifest-record", tuple(provenance))
+                    )
+                continue
+        if key == "decisions":
+            try:
+                decisions = _json_object_members(content, value_start)
+            except ValueError:
+                decisions = []
+            if decisions:
+                for decision_id, start, _, end in decisions:
+                    spans.append(
+                        (
+                            start,
+                            end,
+                            "manifest-record",
+                            (("recordKey", key), ("decisionId", decision_id)),
+                        )
+                    )
+                continue
+        spans.append(
+            (
+                key_start,
+                value_end,
+                "manifest-record",
+                (("recordKey", key),),
+            )
+        )
+    return spans
+
+
+def _json_object_members(
+    content: bytes, start: int
+) -> list[tuple[str, int, int, int]]:
+    cursor = _json_skip_whitespace(content, start)
+    if cursor >= len(content) or content[cursor] != ord("{"):
+        raise ValueError("expected JSON object")
+    cursor += 1
+    members: list[tuple[str, int, int, int]] = []
+    while True:
+        cursor = _json_skip_whitespace(content, cursor)
+        if cursor >= len(content):
+            raise ValueError("unterminated JSON object")
+        if content[cursor] == ord("}"):
+            return members
+        key_start = cursor
+        key_end = _json_string_end(content, cursor)
+        try:
+            key = json.loads(content[key_start:key_end])
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise ValueError("invalid JSON object key") from error
+        if not isinstance(key, str):
+            raise ValueError("JSON object key must be a string")
+        cursor = _json_skip_whitespace(content, key_end)
+        if cursor >= len(content) or content[cursor] != ord(":"):
+            raise ValueError("missing JSON member colon")
+        value_start = _json_skip_whitespace(content, cursor + 1)
+        value_end = _json_value_end(content, value_start)
+        members.append((key, key_start, value_start, value_end))
+        cursor = _json_skip_whitespace(content, value_end)
+        if cursor >= len(content):
+            raise ValueError("unterminated JSON object")
+        if content[cursor] == ord(","):
+            cursor += 1
+            continue
+        if content[cursor] == ord("}"):
+            return members
+        raise ValueError("invalid JSON object separator")
+
+
+def _json_array_elements(content: bytes, start: int) -> list[tuple[int, int]]:
+    cursor = _json_skip_whitespace(content, start)
+    if cursor >= len(content) or content[cursor] != ord("["):
+        raise ValueError("expected JSON array")
+    cursor += 1
+    elements: list[tuple[int, int]] = []
+    while True:
+        cursor = _json_skip_whitespace(content, cursor)
+        if cursor >= len(content):
+            raise ValueError("unterminated JSON array")
+        if content[cursor] == ord("]"):
+            return elements
+        end = _json_value_end(content, cursor)
+        elements.append((cursor, end))
+        cursor = _json_skip_whitespace(content, end)
+        if cursor >= len(content):
+            raise ValueError("unterminated JSON array")
+        if content[cursor] == ord(","):
+            cursor += 1
+            continue
+        if content[cursor] == ord("]"):
+            return elements
+        raise ValueError("invalid JSON array separator")
+
+
+def _json_value_end(content: bytes, start: int) -> int:
+    cursor = _json_skip_whitespace(content, start)
+    if cursor >= len(content):
+        raise ValueError("missing JSON value")
+    token = content[cursor]
+    if token == ord('"'):
+        return _json_string_end(content, cursor)
+    if token in {ord("{"), ord("[")}:
+        opening = token
+        closing = ord("}") if token == ord("{") else ord("]")
+        depth = 0
+        while cursor < len(content):
+            token = content[cursor]
+            if token == ord('"'):
+                cursor = _json_string_end(content, cursor)
+                continue
+            if token == opening:
+                depth += 1
+            elif token == closing:
+                depth -= 1
+                if depth == 0:
+                    return cursor + 1
+            elif token in {ord("{"), ord("[")} and token != opening:
+                cursor = _json_value_end(content, cursor)
+                continue
+            cursor += 1
+        raise ValueError("unterminated JSON container")
+    end = cursor
+    while end < len(content) and content[end] not in b",]} \t\r\n":
+        end += 1
+    if end == cursor:
+        raise ValueError("empty JSON primitive")
+    return end
+
+
+def _json_string_end(content: bytes, start: int) -> int:
+    if start >= len(content) or content[start] != ord('"'):
+        raise ValueError("expected JSON string")
+    cursor = start + 1
+    while cursor < len(content):
+        if content[cursor] == ord("\\"):
+            cursor += 2
+            continue
+        if content[cursor] == ord('"'):
+            return cursor + 1
+        cursor += 1
+    raise ValueError("unterminated JSON string")
+
+
+def _json_skip_whitespace(content: bytes, cursor: int) -> int:
+    while cursor < len(content) and content[cursor] in b" \t\r\n":
+        cursor += 1
+    return cursor
 
 
 @dataclass(frozen=True)
