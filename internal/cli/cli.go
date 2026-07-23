@@ -48,7 +48,7 @@ Usage:
   roundfix settle --spec <slug> --task <task_id>
   roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
   roundfix release plan --reset-to <version> [--format <text|json>]
-  roundfix baseline plan [--repo <path>] [--format <text|json>]
+  roundfix baseline plan --profile <id> [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
   roundfix baseline profile init --id <id> [--from <built-in-id>]
   roundfix baseline profile show <id> [--format <text|json>]
   roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
@@ -3968,13 +3968,13 @@ explicit post-QA authority.
 `
 	case "baseline":
 		return `Usage:
-  roundfix baseline plan [--repo <path>] [--format <text|json>]
+  roundfix baseline plan --profile <id> [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
   roundfix baseline profile init --id <id> [--from <built-in-id>]
   roundfix baseline profile show <id> [--format <text|json>]
   roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
 
 Commands:
-  plan     Inspect local Git lineage and bounded repository carriers without writing.
+  plan     Emit a portable, digest-bound Baseline Plan without writing.
   profile  Author, inspect, and validate built-in or repository-owned Baseline Profiles.
 
 Repository-owned profiles live only under
@@ -3983,23 +3983,29 @@ embedded Baseline catalog.
 `
 	case "baseline plan":
 		return `Usage:
-  roundfix baseline plan [--repo <path>] [--format <text|json>]
+  roundfix baseline plan --profile <id> [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
 
-Runs the read-only Baseline preflight. It derives clone-stable Git lineage,
-inventories bounded instruction and agent-document carriers, records portable
-preimages, and reports warnings or apply-blocking repository conditions. This
-tracer-bullet stage returns action_required after a safe inspection because
-instruction-preservation decisions are still required. It never prompts,
-writes repository bytes, executes repository-defined commands, or uses the
-network.
+Builds the complete portable roundfix/baseline-plan/v1 document from
+clone-stable Git lineage, bounded repository preimages, one selected Baseline
+Profile, and normalized decisions. JSON is the portable apply input; text is a
+concise file-level projection. Missing decisions return a
+roundfix/baseline-result/v1 next action without a partial plan.
+
+The command never prompts, writes repository bytes, executes
+repository-defined commands, or uses the network. Select instruction handling
+with --decision preservation.mode=greenfield|preservation.
 
 Exit codes:
+  0  complete Baseline Plan emitted
   2  invalid arguments, Git/repository failure, or unsafe bounded carrier
-  3  preflight passed and a Baseline decision is required
+  3  a decision, manual classification, or repository-alignment action is required
 
 Options:
-  --repo    Git worktree or a path inside it (default current directory)
-  --format  Output format: text or json (default text)
+  --profile       Built-in or repository-owned Baseline Profile
+  --decision      Decision as id=value; repeat for multiple answers
+  --decision-file Strict Decision Document path; repeat to merge inputs
+  --repo          Git worktree or a path inside it (default current directory)
+  --format        Output format: text or json (default text)
 `
 	case "baseline profile":
 		return `Usage:

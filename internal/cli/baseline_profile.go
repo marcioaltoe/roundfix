@@ -32,17 +32,6 @@ type baselineProfileResult struct {
 	NextAction    string                     `json:"nextAction,omitempty"`
 }
 
-type baselinePlanPreflightResult struct {
-	SchemaVersion string                      `json:"schemaVersion"`
-	Operation     string                      `json:"operation"`
-	State         string                      `json:"state"`
-	Category      string                      `json:"category"`
-	Repository    baseline.RepositoryIdentity `json:"repository"`
-	Snapshot      baseline.RepositorySnapshot `json:"snapshot"`
-	Message       string                      `json:"message"`
-	NextAction    string                      `json:"nextAction"`
-}
-
 func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 || len(args) == 1 && commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("baseline"))
@@ -73,57 +62,59 @@ func runBaselinePlanCommand(ctx context.Context, args []string, stdout, stderr i
 	req, err := parseBaselinePlanCommand(args)
 	jsonOutput := req.format == "json" || baselinePlanJSONRequested(args)
 	if err != nil {
-		printBaselinePlanFailure(err, jsonOutput, baselinePlanPreflightResult{}, stdout, stderr)
+		printBaselinePlanFailure(err, jsonOutput, stdout, stderr)
 		return exitPreflight
 	}
-	inspection, err := baseline.InspectRepository(ctx, req.repo, nil)
+	decisionInput, preservation, err := loadBaselinePlanDecisions(req)
 	if err != nil {
-		printBaselinePlanFailure(err, jsonOutput, baselinePlanPreflightResult{}, stdout, stderr)
+		printBaselinePlanFailure(err, jsonOutput, stdout, stderr)
 		return exitPreflight
 	}
-	result := baselinePlanPreflightResult{
-		SchemaVersion: baselineResultSchema,
-		Operation:     "plan",
-		Repository:    inspection.Identity,
-		Snapshot:      inspection.Snapshot,
-	}
-	if len(inspection.Snapshot.Blocking) != 0 {
-		result.State = "failed"
-		result.Category = "preflight"
-		result.Message = "repository preflight found unsafe bounded carriers"
-		result.NextAction = "repair each blocking carrier and rerun roundfix baseline plan"
-		for _, finding := range inspection.Snapshot.Blocking {
-			fmt.Fprintf(stderr, "%s: %s: %s: %s\n", app.Name, finding.Code, finding.Path, finding.Message)
-		}
-		if jsonOutput {
-			if err := encodeBaselinePlanResult(stdout, result); err != nil {
-				fmt.Fprintf(stderr, "%s: baseline plan output failed: %v\n", app.Name, err)
-				return exitRunFailed
-			}
-		} else {
-			printBaselinePlanText(result, stdout)
-		}
+	outcome, err := baseline.BuildPlan(ctx, baseline.PlanRequest{
+		Repository:   req.repo,
+		ProfileID:    req.profile,
+		Decisions:    decisionInput,
+		Preservation: preservation,
+	})
+	if err != nil {
+		printBaselinePlanFailure(err, jsonOutput, stdout, stderr)
 		return exitPreflight
 	}
-
-	result.State = "action_required"
-	result.Category = "decision"
-	result.Message = "repository preflight passed; instruction preservation requires a decision"
-	result.NextAction = "choose greenfield or preservation mode before completing the Baseline Plan"
-	if jsonOutput {
-		if err := encodeBaselinePlanResult(stdout, result); err != nil {
+	if outcome.Plan == nil {
+		if err := writeBaselinePlanResult(outcome.Result, jsonOutput, stdout); err != nil {
 			fmt.Fprintf(stderr, "%s: baseline plan output failed: %v\n", app.Name, err)
 			return exitRunFailed
 		}
-	} else {
-		printBaselinePlanText(result, stdout)
+		if outcome.Result.Category == "preflight" {
+			for _, finding := range outcome.Result.Warnings {
+				fmt.Fprintf(stderr, "%s: %s: %s: %s\n", app.Name, finding.Code, finding.Path, finding.Message)
+			}
+			return exitPreflight
+		}
+		return exitUnverified
 	}
-	return exitUnverified
+	if jsonOutput {
+		data, err := baseline.MarshalPlanDocument(*outcome.Plan)
+		if err != nil {
+			fmt.Fprintf(stderr, "%s: baseline plan output failed: %v\n", app.Name, err)
+			return exitRunFailed
+		}
+		if _, err := stdout.Write(data); err != nil {
+			fmt.Fprintf(stderr, "%s: baseline plan output failed: %v\n", app.Name, err)
+			return exitRunFailed
+		}
+		return exitOK
+	}
+	printBaselinePlanText(*outcome.Plan, stdout)
+	return exitOK
 }
 
 type baselinePlanCommandRequest struct {
-	repo   string
-	format string
+	repo          string
+	profile       string
+	format        string
+	decisions     stringListFlag
+	decisionFiles stringListFlag
 }
 
 func parseBaselinePlanCommand(args []string) (baselinePlanCommandRequest, error) {
@@ -131,6 +122,9 @@ func parseBaselinePlanCommand(args []string) (baselinePlanCommandRequest, error)
 	flags := flag.NewFlagSet("baseline plan", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
 	flags.StringVar(&req.repo, "repo", ".", "Git worktree or a path inside it")
+	flags.StringVar(&req.profile, "profile", "", "Built-in or repository-owned Baseline Profile")
+	flags.Var(&req.decisions, "decision", "Baseline decision as id=value (repeatable)")
+	flags.Var(&req.decisionFiles, "decision-file", "Strict Decision Document path (repeatable)")
 	flags.StringVar(&req.format, "format", "text", "Output format: text or json")
 	if err := flags.Parse(args); err != nil {
 		return baselinePlanCommandRequest{}, validationError{
@@ -143,6 +137,7 @@ func parseBaselinePlanCommand(args []string) (baselinePlanCommandRequest, error)
 		}
 	}
 	req.repo = strings.TrimSpace(req.repo)
+	req.profile = strings.TrimSpace(req.profile)
 	req.format = strings.TrimSpace(req.format)
 	if req.repo == "" {
 		return baselinePlanCommandRequest{}, validationError{message: "--repo cannot be empty"}
@@ -155,38 +150,131 @@ func parseBaselinePlanCommand(args []string) (baselinePlanCommandRequest, error)
 	return req, nil
 }
 
-func printBaselinePlanText(result baselinePlanPreflightResult, stdout io.Writer) {
-	state := strings.ReplaceAll(result.State, "_", " ")
-	fmt.Fprintf(stdout, "Baseline plan preflight: %s\n", state)
-	if result.Repository.Digest != "" {
-		fmt.Fprintf(stdout, "Repository identity: %s\n", result.Repository.Digest)
-		fmt.Fprintf(stdout, "Git object format: %s\n", result.Repository.ObjectFormat)
-		fmt.Fprintf(stdout, "Root commits: %d\n", len(result.Repository.RootCommits))
+type stringListFlag []string
+
+func (values *stringListFlag) String() string {
+	return strings.Join(*values, ",")
+}
+
+func (values *stringListFlag) Set(value string) error {
+	*values = append(*values, value)
+	return nil
+}
+
+func loadBaselinePlanDecisions(
+	request baselinePlanCommandRequest,
+) ([]baseline.DecisionValue, baseline.RootPreservationRequest, error) {
+	var decisions []baseline.DecisionValue
+	preservation := baseline.RootPreservationRequest{}
+	for _, raw := range request.decisions {
+		id, value, ok := strings.Cut(raw, "=")
+		id = strings.TrimSpace(id)
+		if !ok || id == "" {
+			return nil, baseline.RootPreservationRequest{}, validationError{
+				message: fmt.Sprintf("invalid --decision %q; expected id=value", raw),
+			}
+		}
+		if id == "preservation.mode" {
+			mode := baseline.PreservationMode(strings.TrimSpace(value))
+			if mode != baseline.PreservationModeGreenfield && mode != baseline.PreservationModePreservation {
+				return nil, baseline.RootPreservationRequest{}, validationError{
+					message: "preservation.mode must be greenfield or preservation",
+				}
+			}
+			if preservation.Mode != "" {
+				return nil, baseline.RootPreservationRequest{}, validationError{
+					message: "preservation.mode may be specified only once",
+				}
+			}
+			preservation.Mode = mode
+			continue
+		}
+		decisions = append(decisions, baseline.DecisionValue{
+			ID:    id,
+			Value: parseBaselineInlineDecision(value),
+		})
 	}
-	if result.Snapshot.Digest != "" {
-		fmt.Fprintf(stdout, "Bounded snapshot: %s\n", result.Snapshot.Digest)
-		fmt.Fprintf(stdout, "Instruction carriers: %d\n", len(result.Snapshot.Carriers))
-		fmt.Fprintf(stdout, "Trusted sources: %d\n", len(result.Snapshot.Sources))
-		fmt.Fprintf(stdout, "Bounded preimages: %d\n", len(result.Snapshot.Preimages))
+	for _, decisionPath := range request.decisionFiles {
+		data, err := os.ReadFile(decisionPath)
+		if err != nil {
+			return nil, baseline.RootPreservationRequest{}, fmt.Errorf(
+				"read decision file %q: %w", decisionPath, err,
+			)
+		}
+		document, err := baseline.ParseDecisionDocument(data, decisionPath)
+		if err != nil {
+			return nil, baseline.RootPreservationRequest{}, err
+		}
+		for _, decision := range document.Decisions {
+			if decision.ID != "preservation.mode" {
+				decisions = append(decisions, decision)
+				continue
+			}
+			mode, ok := decision.Value.(string)
+			if !ok {
+				return nil, baseline.RootPreservationRequest{}, validationError{
+					message: "preservation.mode in a decision file must be a string",
+				}
+			}
+			normalized := baseline.PreservationMode(strings.TrimSpace(mode))
+			if normalized != baseline.PreservationModeGreenfield &&
+				normalized != baseline.PreservationModePreservation {
+				return nil, baseline.RootPreservationRequest{}, validationError{
+					message: "preservation.mode must be greenfield or preservation",
+				}
+			}
+			if preservation.Mode != "" {
+				return nil, baseline.RootPreservationRequest{}, validationError{
+					message: "preservation.mode may be specified only once",
+				}
+			}
+			preservation.Mode = normalized
+		}
+		if document.Readoption != nil {
+			if preservation.Decisions != nil {
+				return nil, baseline.RootPreservationRequest{}, validationError{
+					message: "readoption decisions may appear in only one decision file",
+				}
+			}
+			copy := document
+			preservation.Decisions = &copy
+		}
 	}
-	for _, warning := range result.Snapshot.Warnings {
+	return decisions, preservation, nil
+}
+
+func parseBaselineInlineDecision(value string) any {
+	trimmed := strings.TrimSpace(value)
+	var parsed any
+	if json.Unmarshal([]byte(trimmed), &parsed) == nil {
+		switch parsed.(type) {
+		case bool, map[string]any, []any, float64:
+			return parsed
+		}
+	}
+	return trimmed
+}
+
+func printBaselinePlanText(plan baseline.PlanDocument, stdout io.Writer) {
+	fmt.Fprintln(stdout, "Baseline Plan: ready")
+	fmt.Fprintf(stdout, "Plan Digest: %s\n", plan.PlanDigest)
+	fmt.Fprintf(stdout, "Repository identity: %s\n", plan.Repository.Digest)
+	fmt.Fprintf(stdout, "Catalog identity: %s\n", plan.Catalog.Digest)
+	fmt.Fprintf(stdout, "Baseline Profile: %s\n", plan.Profile.ID)
+	fmt.Fprintf(stdout, "Managed entries: %d\n", len(plan.ManagedEntries))
+	fmt.Fprintf(stdout, "File changes: %d\n", len(plan.FileChanges))
+	for _, change := range plan.FileChanges {
+		fmt.Fprintf(stdout, "- %s %s (%d managed entries)\n",
+			change.Action, change.Path, len(change.ManagedEntries))
+	}
+	for _, warning := range plan.Warnings {
 		fmt.Fprintf(stdout, "Warning: %s: %s: %s\n", warning.Code, warning.Path, warning.Message)
-	}
-	for _, finding := range result.Snapshot.Blocking {
-		fmt.Fprintf(stdout, "Blocking: %s: %s: %s\n", finding.Code, finding.Path, finding.Message)
-	}
-	if result.Message != "" {
-		fmt.Fprintf(stdout, "Result: %s\n", result.Message)
-	}
-	if result.NextAction != "" {
-		fmt.Fprintf(stdout, "Next action: %s\n", result.NextAction)
 	}
 }
 
 func printBaselinePlanFailure(
 	err error,
 	jsonOutput bool,
-	base baselinePlanPreflightResult,
 	stdout io.Writer,
 	stderr io.Writer,
 ) {
@@ -195,22 +283,37 @@ func printBaselinePlanFailure(
 	if !jsonOutput {
 		return
 	}
-	base.SchemaVersion = baselineResultSchema
-	base.Operation = "plan"
-	base.State = "failed"
-	base.Category = "preflight"
-	base.Message = err.Error()
-	base.NextAction = "correct the repository or command input and rerun roundfix baseline plan"
-	if encodeErr := encodeBaselinePlanResult(stdout, base); encodeErr != nil {
+	result := baseline.Result{
+		SchemaVersion:      baseline.ResultSchemaVersion,
+		Operation:          "plan",
+		State:              "failed",
+		Category:           "preflight",
+		Message:            err.Error(),
+		NextAction:         "correct the repository or command input and rerun roundfix baseline plan",
+		VerifiedPostimages: []baseline.Postimage{},
+		Warnings:           []baseline.Finding{},
+		Recommendations:    []string{},
+	}
+	if encodeErr := writeBaselinePlanResult(result, true, stdout); encodeErr != nil {
 		fmt.Fprintf(stderr, "%s: baseline plan output failed: %v\n", app.Name, encodeErr)
 	}
 }
 
-func encodeBaselinePlanResult(stdout io.Writer, result baselinePlanPreflightResult) error {
-	encoder := json.NewEncoder(stdout)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(result); err != nil {
-		return fmt.Errorf("encode Baseline result: %w", err)
+func writeBaselinePlanResult(result baseline.Result, jsonOutput bool, stdout io.Writer) error {
+	if jsonOutput {
+		data, err := baseline.MarshalResult(result)
+		if err != nil {
+			return err
+		}
+		_, err = stdout.Write(data)
+		return err
+	}
+	fmt.Fprintf(stdout, "Baseline plan: %s\n", strings.ReplaceAll(result.State, "_", " "))
+	fmt.Fprintf(stdout, "Category: %s\n", result.Category)
+	fmt.Fprintf(stdout, "Result: %s\n", result.Message)
+	fmt.Fprintf(stdout, "Next action: %s\n", result.NextAction)
+	for _, warning := range result.Warnings {
+		fmt.Fprintf(stdout, "Warning: %s: %s: %s\n", warning.Code, warning.Path, warning.Message)
 	}
 	return nil
 }

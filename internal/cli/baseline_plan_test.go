@@ -19,6 +19,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"roundfix/internal/baseline"
 )
 
 func TestBaselinePlanPreflightJSONActionRequired(t *testing.T) {
@@ -39,23 +41,17 @@ func TestBaselinePlanPreflightJSONActionRequired(t *testing.T) {
 	if stderr.Len() != 0 {
 		t.Fatalf("action-required plan stderr = %q, want empty", stderr.String())
 	}
-	var result baselinePlanPreflightResult
+	var result baseline.Result
 	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
 		t.Fatalf("decode baseline plan JSON: %v\n%s", err, stdout.String())
 	}
 	if result.SchemaVersion != baselineResultSchema || result.Operation != "plan" ||
 		result.State != "action_required" || result.Category != "decision" ||
-		result.Repository.Digest == "" || result.Snapshot.Digest == "" ||
 		result.NextAction == "" {
 		t.Fatalf("baseline plan result = %+v", result)
 	}
 	if strings.Contains(stdout.String(), filepath.ToSlash(repo)) {
 		t.Fatalf("portable preflight JSON contains absolute checkout path %q:\n%s", repo, stdout.String())
-	}
-	for _, preimage := range result.Snapshot.Preimages {
-		if preimage.Path == "scratch.txt" {
-			t.Fatalf("unrelated dirty path entered snapshot: %+v", result.Snapshot.Preimages)
-		}
 	}
 	after := baselinePlanTestTree(t, repo)
 	if before != after {
@@ -77,11 +73,9 @@ func TestBaselinePlanPreflightText(t *testing.T) {
 		t.Fatalf("baseline plan text exit = %d stdout=%q stderr=%q", code, stdout.String(), stderr.String())
 	}
 	for _, want := range []string{
-		"Baseline plan preflight: action required",
-		"Repository identity: sha256:",
-		"Bounded snapshot: sha256:",
-		"Instruction carriers: 1",
-		"baseline.inventory.nested-carrier-conflict: nested/CLAUDE.md",
+		"Baseline plan: action required",
+		"Category: decision",
+		"Baseline Profile selection is required",
 		"Next action:",
 	} {
 		if !strings.Contains(stdout.String(), want) {
@@ -111,12 +105,12 @@ func TestBaselinePlanPreflightBlocksUnsafeRepository(t *testing.T) {
 	if !strings.Contains(stderr.String(), "baseline.inventory.unsafe-alias") {
 		t.Fatalf("unsafe baseline plan diagnostic = %q", stderr.String())
 	}
-	var result baselinePlanPreflightResult
+	var result baseline.Result
 	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
 		t.Fatalf("decode unsafe baseline plan JSON: %v\n%s", err, stdout.String())
 	}
-	if result.State != "failed" || result.Category != "preflight" ||
-		len(result.Snapshot.Blocking) == 0 || result.NextAction == "" {
+	if result.State != "action_required" || result.Category != "preflight" ||
+		len(result.Warnings) == 0 || result.NextAction == "" {
 		t.Fatalf("unsafe baseline plan result = %+v", result)
 	}
 }
@@ -164,8 +158,11 @@ func TestBaselinePlanPreflightHelp(t *testing.T) {
 	for _, want := range []string{
 		"roundfix baseline plan",
 		"--repo",
+		"--profile",
+		"--decision",
+		"--decision-file",
 		"--format",
-		"read-only",
+		"never prompts",
 		"Exit codes:",
 	} {
 		if !strings.Contains(stdout.String(), want) {
@@ -209,12 +206,86 @@ func TestBaselinePlanPreflightRealCLI(t *testing.T) {
 	if stderr.Len() != 0 {
 		t.Fatalf("real CLI stderr = %q, want empty", stderr.String())
 	}
-	var result baselinePlanPreflightResult
+	var result baseline.Result
 	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
 		t.Fatalf("decode real CLI JSON: %v\n%s", err, stdout.String())
 	}
-	if result.State != "action_required" || result.Repository.Digest == "" || result.Snapshot.Digest == "" {
+	if result.State != "action_required" || result.Category != "decision" {
 		t.Fatalf("real CLI result = %+v", result)
+	}
+}
+
+func TestBaselinePlanCommandEmitsPortableJSONAndNormalizesDecisionFiles(t *testing.T) {
+	repo := newBaselinePlanTestRepository(t)
+	writeBaselinePlanTestFile(t, repo, ".agents/skills/context7/SKILL.md", "# context7\n")
+	writeBaselinePlanTestFile(t, repo, ".agents/skills/exa-web-search/SKILL.md", "# exa\n")
+	writeBaselinePlanTestFile(t, repo, "Makefile", "verify:\n\t@true\n")
+	commitBaselinePlanTestRepository(t, repo)
+
+	inline := []string{
+		"baseline", "plan", "--repo", repo, "--profile", "go-cli-tui",
+		"--decision", "preservation.mode=greenfield",
+		"--decision", "language.generated=English",
+		"--decision", "verification.gate=make verify",
+		"--decision", "spec.scaffold=true",
+		"--decision", "domain.layout=single-context",
+		"--decision", "triage.external=false",
+		"--decision", "autonomous.enabled=true",
+		"--decision", "runtime.backend=codex gpt-5.5 xhigh",
+		"--decision", "runtime.design=claude opus xhigh",
+		"--decision", "secondbrain.enabled=false",
+		"--decision", "repository.extension.enabled=false",
+		"--format", "json",
+	}
+	before := baselinePlanTestTree(t, repo)
+	var inlineOut bytes.Buffer
+	var inlineErr bytes.Buffer
+	if code := RunContext(context.Background(), inline, &inlineOut, &inlineErr); code != exitOK {
+		t.Fatalf("inline plan exit = %d stdout=%s stderr=%s", code, inlineOut.String(), inlineErr.String())
+	}
+	inlinePlan, err := baseline.ParsePlanDocument(inlineOut.Bytes())
+	if err != nil {
+		t.Fatalf("parse inline plan: %v\n%s", err, inlineOut.String())
+	}
+	if strings.Contains(inlineOut.String(), filepath.ToSlash(repo)) {
+		t.Fatalf("plan contains checkout path %q", repo)
+	}
+	if after := baselinePlanTestTree(t, repo); after != before {
+		t.Fatalf("planning mutated repository: before=%s after=%s", before, after)
+	}
+
+	document := baseline.DecisionDocument{
+		SchemaVersion: baseline.DecisionDocumentSchemaVersion,
+		Version:       baseline.DecisionDocumentVersion,
+		Decisions: append(
+			[]baseline.DecisionValue{{ID: "preservation.mode", Value: "greenfield"}},
+			inlinePlan.Decisions...,
+		),
+	}
+	decisionBytes, err := json.MarshalIndent(document, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	decisionPath := filepath.Join(t.TempDir(), "decisions.json")
+	if err := os.WriteFile(decisionPath, append(decisionBytes, '\n'), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var fileOut bytes.Buffer
+	var fileErr bytes.Buffer
+	code := RunContext(context.Background(), []string{
+		"baseline", "plan", "--repo", repo, "--profile", "go-cli-tui",
+		"--decision-file", decisionPath, "--format=json",
+	}, &fileOut, &fileErr)
+	if code != exitOK {
+		t.Fatalf("file plan exit = %d stdout=%s stderr=%s", code, fileOut.String(), fileErr.String())
+	}
+	filePlan, err := baseline.ParsePlanDocument(fileOut.Bytes())
+	if err != nil {
+		t.Fatalf("parse file plan: %v", err)
+	}
+	if filePlan.PlanDigest != inlinePlan.PlanDigest {
+		t.Fatalf("decision source changed digest: inline=%s file=%s",
+			inlinePlan.PlanDigest, filePlan.PlanDigest)
 	}
 }
 
