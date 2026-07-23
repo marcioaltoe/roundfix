@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0046-public-context-driven-baseline-command
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -30,20 +30,20 @@ and Verification evidence without inventing repository policy.
 
 ## Subtasks
 
-- [ ] Port Repository Capability evaluation and evidence ranking.
-- [ ] Resolve profile alignment and divergence decision states.
-- [ ] Add HTTP route-candidate and source-digest projection.
-- [ ] Separate implementation, contract, portable-role, and executable-command evidence.
-- [ ] Add finding regression and profile parity tests.
+- [x] Port Repository Capability evaluation and evidence ranking.
+- [x] Resolve profile alignment and divergence decision states.
+- [x] Add HTTP route-candidate and source-digest projection.
+- [x] Separate implementation, contract, portable-role, and executable-command evidence.
+- [x] Add finding regression and profile parity tests.
 
 ## Acceptance Criteria
 
-- [ ] Required divergence prevents a ready Plan until explicitly resolved.
-- [ ] Advisory divergence never blocks and never becomes inferred policy.
-- [ ] HTTP candidates contain facts but no inferred Normative Clause.
-- [ ] PostgreSQL diagnostics report found implementation evidence separately from contract absence.
-- [ ] A nonexistent formatter or Verification script is never labeled executable.
-- [ ] Equivalent evidence and answers produce equivalent normalized decisions across interaction modes.
+- [x] Required divergence prevents a ready Plan until explicitly resolved.
+- [x] Advisory divergence never blocks and never becomes inferred policy.
+- [x] HTTP candidates contain facts but no inferred Normative Clause.
+- [x] PostgreSQL diagnostics report found implementation evidence separately from contract absence.
+- [x] A nonexistent formatter or Verification script is never labeled executable.
+- [x] Equivalent evidence and answers produce equivalent normalized decisions across interaction modes.
 
 ## Context
 
@@ -63,3 +63,87 @@ and Verification evidence without inventing repository policy.
 - `_prd.md` → User Stories 4 and 8; Core Features 3–4, 10, 14, 17–18.
 - `_techspec.md` → Data Models: Catalog and RepositorySnapshot; Testing Approach: Fluxus assertions; Build Order 3–4.
 - ADR-0063 → repository-owned HTTP contract policy.
+
+## Result
+
+Roundfix now resolves one exact built-in or repository-owned Baseline Profile
+into a deterministic, read-only alignment result. Explicit decision answers
+are validated against the selected profile and normalized by ID. Missing
+required answers or Repository Capabilities produce blocking divergences and
+`action_required`; recommended and optional gaps remain visible advisory
+divergences and never enter the normalized decision set.
+
+Repository Capability evaluation ports the maintained evidence-strength order
+(`none < declared < discovered < verified`) over bounded declared files,
+installed Repository Skills, and PATH discovery that inspects executable file
+metadata without launching a process. The audit is context-aware, root
+confined, size/count bounded, network-free, and performs no repository writes.
+
+For the Standard TypeScript Monorepo Profile, the result now includes:
+
+- bounded HTTP route candidates with only observed scope, methods, source path,
+  and `sha256:` source identity; the model has no mode, owner, reason,
+  rationale, or Normative Clause field;
+- PostgreSQL implementation evidence from local driver, adapter,
+  configuration, or compose declarations, kept separate from the accepted
+  repository contract paths and contract evidence;
+- portable Verification role expectations kept distinct from the selected
+  repository Verification command, with `repositoryExecutable: true` only
+  after an exact root `package.json` script or Make target declaration is
+  validated locally.
+
+Acceptance evidence:
+
+- `TestRequiredDivergencePreventsReadyPlan` held the result at
+  `action_required` while Better Auth evidence was absent and became ready only
+  after the declared evidence was added.
+- `TestProfileAlignmentAdvisoryDivergenceNeverBlocksOrInfersPolicy` kept a
+  missing recommended Firecrawl capability advisory and absent from normalized
+  decisions.
+- `TestHTTPRouteCandidatesContainFactsWithoutNormativeClause` projected GET,
+  POST, and unclassified route-scope facts with one source digest and rejected
+  every policy-bearing field from the serialized shape.
+- `TestPostgreSQLEvidenceSeparatesImplementationAndContract` reported package
+  and compose implementation evidence while blocking on the absent accepted
+  contract, named all accepted paths, then became ready after `DATABASE.md`
+  supplied the repository contract.
+- `TestExecutableVerificationCommandRequiresLocalDeclaration` kept nonexistent
+  formatter, workspace, and selected Verification commands non-executable;
+  only an exact `Makefile` target changed the selected gate to executable.
+- `TestProfileAlignmentEquivalentNormalizedDecisions` produced byte-identical
+  JSON for equivalent answers supplied in opposite orders.
+- `TestProfileAlignmentResolvesExactlyOneProfile` covered built-in and
+  repository-owned profiles and rejected missing or unknown selection;
+  `TestProfileAlignmentCapabilityEvidenceRanking` covered satisfied,
+  insufficient, blocking, and advisory evidence ranks.
+- `TestCapabilityAuditNoExecution` placed executable trap files on PATH,
+  observed zero execution, and compared the complete repository tree before
+  and after the audit with no change.
+
+Verification:
+
+- Pre-change focused tests failed to compile because the profile-alignment
+  engine and result models did not exist.
+- `rtk env GOCACHE=/private/tmp/roundfix-task06-go-cache go test -count=1
+  ./internal/baseline ./internal/cli -run
+  'TestProfileAlignment|TestRequiredDivergence|TestHTTPRouteCandidates|TestPostgreSQLEvidence|TestExecutableVerificationCommand'`:
+  passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task06-go-cache go test -count=1
+  ./internal/baseline -run TestCapabilityAuditNoExecution`: passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task06-go-cache go test -count=1
+  ./internal/baseline ./internal/cli`: passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task06-go-cache go vet
+  ./internal/baseline ./internal/cli`: passed.
+- One earlier full package run observed the pre-existing
+  `TestBaselinePlanPreflightJSONActionRequired` tree snapshot racing with a
+  disappearing Git `maintenance.lock`. The exact test immediately passed in
+  isolation, no Task 06 code touches Git or that helper, and the fresh complete
+  package run passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task06-go-cache make verify`: passed,
+  including 1,812 Go tests in 21 packages, both 256-test setup-skill suites,
+  catalog asset validation, shipped-skill checks, and the binary build.
+
+The isolated `GOCACHE` keeps build artifacts inside the Task Worktree sandbox.
+The Daemon remains responsible for the task file's verbatim authoritative
+Verification commands. No other Task file or Task Graph manifest was edited,
+and no commit, push, or pull request was created.
