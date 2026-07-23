@@ -25,6 +25,7 @@ EXPECTED_DECISIONS = (
     "triage.external",
     "autonomous.enabled",
     "verification.gate",
+    "http.contract",
     "runtime.backend",
     "runtime.design",
     "language.generated",
@@ -34,6 +35,17 @@ EXPECTED_DECISIONS = (
 EXPECTED_ENTRY_DECISIONS = (
     "language.generated",
     "verification.gate",
+    "spec.scaffold",
+    "domain.layout",
+    "triage.external",
+    "autonomous.enabled",
+    "secondbrain.enabled",
+    "repository.extension.enabled",
+)
+STANDARD_ENTRY_DECISIONS = (
+    "language.generated",
+    "verification.gate",
+    "http.contract",
     "spec.scaffold",
     "domain.layout",
     "triage.external",
@@ -57,6 +69,7 @@ class DecisionPlanContractTests(unittest.TestCase):
             {
                 "go-cli-tui": EXPECTED_ENTRY_DECISIONS,
                 "rust-cli": EXPECTED_ENTRY_DECISIONS,
+                "standard-typescript-monorepo": STANDARD_ENTRY_DECISIONS,
                 "typescript-bun-monorepo": EXPECTED_ENTRY_DECISIONS,
             },
         )
@@ -165,6 +178,15 @@ class DecisionPlanContractTests(unittest.TestCase):
                 for values in product(*finite_values):
                     decisions = dict(zip(finite_decisions, values, strict=True))
                     decisions["verification.gate"] = "make verify"
+                    if profile_id == "standard-typescript-monorepo":
+                        decisions["http.contract"] = {
+                            "mode": "REST",
+                            "exceptions": [],
+                            "source": {
+                                "path": "docs/architecture/http-contract.json",
+                                "digest": "d" * 64,
+                            },
+                        }
                     if decisions["autonomous.enabled"]:
                         decisions["runtime.backend"] = "codex gpt-5.5 xhigh"
                         decisions["runtime.design"] = "claude opus xhigh"

@@ -31,7 +31,11 @@ from test_formatter_compatibility import (  # noqa: E402
 )
 sys.path.insert(0, str(SKILL_ROOT / "scripts"))
 
-from context_assets import load_asset_catalog  # noqa: E402
+from context_assets import (  # noqa: E402
+    build_standard_profile_plan,
+    load_asset_catalog,
+    render_standard_profile_snapshot,
+)
 from context_setup import render_skill_dispatch  # noqa: E402
 
 
@@ -43,6 +47,29 @@ SUPPORTED_PROFILES = [
 
 
 class ProfileMacroFlowTests(unittest.TestCase):
+    def test_standard_profile_snapshot_is_deterministic_alongside_existing_profiles(self):
+        catalog = load_asset_catalog(SKILL_ROOT)
+        decision = {
+            "mode": "REST",
+            "exceptions": [],
+            "source": {
+                "path": "docs/architecture/http-contract.json",
+                "digest": "c" * 64,
+            },
+        }
+
+        first = build_standard_profile_plan(catalog, decision)
+        second = build_standard_profile_plan(catalog, decision)
+
+        self.assertEqual(
+            render_standard_profile_snapshot(first),
+            render_standard_profile_snapshot(second),
+        )
+        self.assertEqual(
+            set(SUPPORTED_PROFILES) | {"standard-typescript-monorepo"},
+            set(catalog.profiles),
+        )
+
     def test_profiles_declare_complete_rule_coverage_and_verification_entry_decision(self):
         catalog = load_asset_catalog(SKILL_ROOT)
 

@@ -127,6 +127,18 @@
       ]
     },
     {
+      "id": "http.contract",
+      "version": 1,
+      "type": "http-contract",
+      "modes": ["REST", "Post-only"],
+      "summary": "The repository-owned HTTP Contract Decision and its explicit typed exceptions.",
+      "effects": [
+        {
+          "when": {"present": true}
+        }
+      ]
+    },
+    {
       "id": "runtime.backend",
       "version": 1,
       "type": "string",

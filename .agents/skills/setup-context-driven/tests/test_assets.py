@@ -157,6 +157,20 @@ class AssetContractTests(unittest.TestCase):
                     "secondbrain",
                     "repository-extension",
                 ],
+                "standard-typescript-monorepo": [
+                    "core",
+                    "context-workflow",
+                    "typescript",
+                    "bun",
+                    "monorepo",
+                    "backend",
+                    "frontend",
+                    "autonomous-work",
+                    "spec-workflow",
+                    "external-triage",
+                    "secondbrain",
+                    "repository-extension",
+                ],
                 "typescript-bun-monorepo": [
                     "core",
                     "context-workflow",
@@ -186,6 +200,9 @@ class AssetContractTests(unittest.TestCase):
         ]:
             for asset_id, asset in collection.items():
                 self.assertEqual(asset["id"], asset_id)
+                if asset.get("schemaVersion") == "setup-context-driven/profile/0.0.1":
+                    self.assertEqual(asset["version"], "0.0.1")
+                    continue
                 self.assertIsInstance(asset["version"], int)
                 self.assertGreaterEqual(asset["version"], 1)
 

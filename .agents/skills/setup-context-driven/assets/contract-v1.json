@@ -196,6 +196,36 @@
       ]
     },
     {
+      "id": "contract.profile-0.0.1",
+      "version": 1,
+      "path": "assets/profiles/*.json",
+      "requires": [
+        "id",
+        "version",
+        "markerVersion",
+        "setup",
+        "entryDecisions",
+        "modules",
+        "requiredRules",
+        "formatter",
+        "stack",
+        "workspaces",
+        "optionalModules",
+        "architecture",
+        "httpContract",
+        "capabilitySets",
+        "capabilities",
+        "activationBundles",
+        "verification"
+      ],
+      "rules": [
+        "The profile, rendered plan, rendered snapshot, and managed marker use only the 0.0.1 owned generation.",
+        "Every required stack, workspace, architecture, capability, activation, HTTP decision, and Verification contract is explicit and deterministic.",
+        "Required capability gaps block readiness; optional module gaps do not.",
+        "The repository-owned HTTP Contract Decision has no default and accepts only REST or Post-only plus ordered typed exceptions."
+      ]
+    },
+    {
       "id": "contract.upgrade-transition-v1",
       "version": 1,
       "path": "assets/retention/*.json",
@@ -308,6 +338,16 @@
     "profile.formatter.version.invalid",
     "profile.formatter.fixturePath.invalid",
     "profile.formatter.goldenDigest.invalid",
+    "profile.markerVersion.invalid",
+    "profile.stack.capability.mismatch",
+    "profile.workspace.capability.mismatch",
+    "profile.optionalModule.capability.mismatch",
+    "profile.architecture.invalid",
+    "profile.httpContract.default.invalid",
+    "profile.capability.invalid",
+    "profile.activationBundles.mismatch",
+    "profile.verification.mismatch",
+    "decision.modes.invalid",
     "transition.mapping.incomplete",
     "transition.disposition.invalid",
     "transition.target.unknown",

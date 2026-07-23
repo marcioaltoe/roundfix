@@ -12,6 +12,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
+from context_capabilities import (
+    EvidenceKind,
+    EvidenceStrength,
+    RepositoryCapability,
+    RequirementStrength,
+)
+
 
 ASSET_SCHEMA_VERSION = "setup-context-driven/assets-v1"
 COVERAGE_SCHEMA_VERSION = "setup-context-driven/coverage-v1"
@@ -23,6 +30,9 @@ MODULE_SCHEMA_VERSION_V3 = "setup-context-driven/module-v3"
 PROFILE_SCHEMA_VERSION = "setup-context-driven/profile-v1"
 PROFILE_SCHEMA_VERSION_V2 = "setup-context-driven/profile-v2"
 PROFILE_SCHEMA_VERSION_V3 = "setup-context-driven/profile-v3"
+PROFILE_SCHEMA_VERSION_0_0_1 = "setup-context-driven/profile/0.0.1"
+PROFILE_PLAN_SCHEMA_VERSION_0_0_1 = "setup-context-driven/profile-plan/0.0.1"
+PROFILE_SNAPSHOT_SCHEMA_VERSION_0_0_1 = "setup-context-driven/profile-snapshot/0.0.1"
 SETUP_SCHEMA_VERSION = "setup-context-driven/setup-snapshot-v1"
 SETUP_SCHEMA_VERSION_V2 = "setup-context-driven/setup-snapshot-v2"
 SKILL_ACTIVATIONS_SCHEMA_VERSION = "setup-context-driven/skill-activations-v1"
@@ -44,12 +54,13 @@ EFFECT_FIELDS = {
     "renderBindings",
 }
 CONDITION_OPERATORS = {"equals", "present"}
-DECISION_TYPES = {"boolean", "enum", "string"}
+DECISION_TYPES = {"boolean", "enum", "http-contract", "string"}
 CLAUSE_ENFORCEMENTS = {"mandatory", "prohibited", "stop-and-ask"}
 TRANSITION_DISPOSITIONS = {"retained", "moved", "replaced", "rejected"}
 FORMATTER_KINDS = {"none", "selected"}
 MAX_DELEGATION_ALIASES = 16
 MAX_DELEGATION_ALIAS_LENGTH = 80
+HTTP_METHOD = re.compile(r"^[A-Z]+$")
 
 
 class AssetValidationError(Exception):
@@ -160,6 +171,68 @@ class FormatterContract:
 
 
 @dataclass(frozen=True)
+class ProfileArchitectureContract:
+    frontend_organization: str
+    frontend_public_boundary: str
+    frontend_internal_imports: str
+    backend_layers: tuple[str, ...]
+    backend_http_handlers: str
+    backend_use_cases: str
+    backend_persistence: str
+    rejected_normative_buckets: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ProfileVerificationEntry:
+    entry_id: str
+    kind: str
+    tool: str
+    command: str
+
+
+@dataclass(frozen=True)
+class HTTPContractException:
+    scope: str
+    methods: tuple[str, ...]
+    owner: str
+    reason: str
+
+
+@dataclass(frozen=True)
+class HTTPContractDecision:
+    mode: str
+    exceptions: tuple[HTTPContractException, ...]
+    source_path: Path
+    source_digest: str
+
+
+@dataclass(frozen=True)
+class StandardProfileContract:
+    profile_id: str
+    version: str
+    marker_version: str
+    title: str
+    stack: tuple[str, ...]
+    required_workspaces: tuple[str, ...]
+    optional_modules: tuple[str, ...]
+    architecture: ProfileArchitectureContract
+    http_decision_id: str
+    http_modes: tuple[str, ...]
+    capability_sets: tuple[str, ...]
+    capabilities: tuple[RepositoryCapability, ...]
+    capability_categories: tuple[tuple[str, str], ...]
+    activation_bundles: tuple[str, ...]
+    verification: tuple[ProfileVerificationEntry, ...]
+
+
+@dataclass(frozen=True)
+class StandardProfilePlan:
+    contract: StandardProfileContract
+    http_contract: HTTPContractDecision | None
+    unresolved_decisions: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class PriorClauseContract:
     clause_id: str
     enforcement: str
@@ -233,6 +306,7 @@ class AssetCatalog:
     activation_bundles: dict[str, SkillActivationBundle]
     skill_activations: tuple[SkillActivation, ...]
     activation_bundles_by_setup: dict[str, tuple[SkillActivationBundle, ...]]
+    standard_profiles: dict[str, StandardProfileContract]
 
 
 @dataclass(frozen=True)
@@ -270,7 +344,12 @@ def load_asset_catalog(skill_root: str | Path) -> AssetCatalog:
     )
     profiles = _read_collection(
         assets_root / "profiles",
-        (PROFILE_SCHEMA_VERSION, PROFILE_SCHEMA_VERSION_V2, PROFILE_SCHEMA_VERSION_V3),
+        (
+            PROFILE_SCHEMA_VERSION,
+            PROFILE_SCHEMA_VERSION_V2,
+            PROFILE_SCHEMA_VERSION_V3,
+            PROFILE_SCHEMA_VERSION_0_0_1,
+        ),
         "profile",
         diagnostics,
     )
@@ -377,6 +456,11 @@ def load_asset_catalog(skill_root: str | Path) -> AssetCatalog:
         setups,
         diagnostics,
     )
+    standard_profiles = _validate_standard_profile_contracts(
+        profiles,
+        activation_bundles_by_setup,
+        diagnostics,
+    )
 
     _validate_profile_rule_contracts(
         profiles,
@@ -426,6 +510,7 @@ def load_asset_catalog(skill_root: str | Path) -> AssetCatalog:
         activation_bundles=activation_bundles,
         skill_activations=skill_activations,
         activation_bundles_by_setup=activation_bundles_by_setup,
+        standard_profiles=standard_profiles,
     )
 
 
@@ -544,6 +629,10 @@ def _validate_versions(
 ) -> None:
     for asset_id, data in sorted(assets.items()):
         version = data.get("version")
+        if data.get("schemaVersion") == PROFILE_SCHEMA_VERSION_0_0_1:
+            if version != "0.0.1":
+                diagnostics.append(f"{kind}.version.invalid: {asset_id}")
+            continue
         if not isinstance(version, int) or version < 1:
             diagnostics.append(f"{kind}.version.invalid: {asset_id}")
 
@@ -1384,6 +1473,12 @@ def _validate_decision_contracts(
             continue
 
         values = decision.get("values")
+        if decision_type == "http-contract":
+            if decision.get("modes") != ["REST", "Post-only"]:
+                diagnostics.append(f"decision.modes.invalid: {decision_id}")
+            if "values" in decision:
+                diagnostics.append(f"decision.values.invalid: {decision_id}")
+            continue
         if decision_type != "enum":
             if "values" in decision:
                 diagnostics.append(f"decision.values.invalid: {decision_id}")
@@ -2452,6 +2547,7 @@ def _validate_profile_rule_contracts(
         if profile.get("schemaVersion") not in {
             PROFILE_SCHEMA_VERSION_V2,
             PROFILE_SCHEMA_VERSION_V3,
+            PROFILE_SCHEMA_VERSION_0_0_1,
         }:
             continue
         required_profile_fields = {
@@ -2462,7 +2558,10 @@ def _validate_profile_rule_contracts(
             "modules",
             "requiredRules",
         }
-        if profile.get("schemaVersion") == PROFILE_SCHEMA_VERSION_V3:
+        if profile.get("schemaVersion") in {
+            PROFILE_SCHEMA_VERSION_V3,
+            PROFILE_SCHEMA_VERSION_0_0_1,
+        }:
             required_profile_fields.add("formatter")
         _validate_required_fields(
             profile,
@@ -2530,7 +2629,10 @@ def _validate_profile_formatters(
     formatters: dict[str, FormatterContract] = {}
     selected_fields = {"kind", "id", "version", "fixturePaths", "goldenDigest"}
     for profile_id, profile in sorted(profiles.items()):
-        if profile.get("schemaVersion") != PROFILE_SCHEMA_VERSION_V3:
+        if profile.get("schemaVersion") not in {
+            PROFILE_SCHEMA_VERSION_V3,
+            PROFILE_SCHEMA_VERSION_0_0_1,
+        }:
             continue
         raw_formatter = profile.get("formatter")
         if not isinstance(raw_formatter, dict):
@@ -2598,6 +2700,611 @@ def _validate_profile_formatters(
             golden_digest=golden_digest,
         )
     return formatters
+
+
+def _validate_standard_profile_contracts(
+    profiles: dict[str, dict],
+    activation_bundles_by_setup: dict[str, tuple[SkillActivationBundle, ...]],
+    diagnostics: list[str],
+) -> dict[str, StandardProfileContract]:
+    contracts: dict[str, StandardProfileContract] = {}
+    exact_fields = {
+        "schemaVersion",
+        "id",
+        "version",
+        "markerVersion",
+        "title",
+        "setup",
+        "formatter",
+        "entryDecisions",
+        "modules",
+        "requiredRules",
+        "stack",
+        "workspaces",
+        "optionalModules",
+        "architecture",
+        "httpContract",
+        "capabilitySets",
+        "capabilities",
+        "activationBundles",
+        "verification",
+    }
+    for profile_id, profile in sorted(profiles.items()):
+        if profile.get("schemaVersion") != PROFILE_SCHEMA_VERSION_0_0_1:
+            continue
+        _validate_exact_fields(profile, exact_fields, "profile", profile_id, diagnostics)
+        marker_version = profile.get("markerVersion")
+        if marker_version != "0.0.1":
+            diagnostics.append(f"profile.markerVersion.invalid: {profile_id}")
+        title = profile.get("title")
+        if not isinstance(title, str) or not title.strip():
+            diagnostics.append(f"profile.title.invalid: {profile_id}")
+            title = profile_id
+
+        stack = tuple(
+            _validated_string_list(
+                profile.get("stack"), f"profile.stack.invalid: {profile_id}", diagnostics
+            )
+        )
+        if not stack or len(stack) != len(set(stack)):
+            diagnostics.append(f"profile.stack.invalid: {profile_id}")
+
+        workspaces = _validate_profile_workspaces(
+            profile_id, profile.get("workspaces"), diagnostics
+        )
+        optional_modules = tuple(
+            _validated_string_list(
+                profile.get("optionalModules"),
+                f"profile.optionalModules.invalid: {profile_id}",
+                diagnostics,
+            )
+        )
+        if len(optional_modules) != len(set(optional_modules)):
+            diagnostics.append(f"profile.optionalModules.invalid: {profile_id}")
+
+        architecture = _validate_profile_architecture(
+            profile_id, profile.get("architecture"), diagnostics
+        )
+        http_decision_id, http_modes = _validate_profile_http_contract(
+            profile_id, profile.get("httpContract"), diagnostics
+        )
+        if http_decision_id not in profile.get("entryDecisions", []):
+            diagnostics.append(f"profile.httpContract.decision.missing: {profile_id}")
+
+        capability_sets = tuple(
+            _validated_string_list(
+                profile.get("capabilitySets"),
+                f"profile.capabilitySets.invalid: {profile_id}",
+                diagnostics,
+            )
+        )
+        if capability_sets != ("universal",):
+            diagnostics.append(f"profile.capabilitySets.invalid: {profile_id}")
+        capabilities, capability_categories = _validate_profile_capabilities(
+            profile_id, profile.get("capabilities"), diagnostics
+        )
+        titles_by_category: dict[str, set[str]] = {}
+        for capability in capabilities:
+            category = capability_categories.get(capability.capability_id, "")
+            titles_by_category.setdefault(category, set()).add(capability.title)
+        if titles_by_category.get("stack", set()) != set(stack):
+            diagnostics.append(f"profile.stack.capability.mismatch: {profile_id}")
+        if titles_by_category.get("workspace", set()) != set(workspaces):
+            diagnostics.append(f"profile.workspace.capability.mismatch: {profile_id}")
+        if titles_by_category.get("optional-module", set()) != set(optional_modules):
+            diagnostics.append(f"profile.optionalModule.capability.mismatch: {profile_id}")
+
+        activation_bundles = tuple(
+            _validated_string_list(
+                profile.get("activationBundles"),
+                f"profile.activationBundles.invalid: {profile_id}",
+                diagnostics,
+            )
+        )
+        setup_id = profile.get("setup")
+        expected_bundles = tuple(
+            bundle.bundle_id
+            for bundle in activation_bundles_by_setup.get(setup_id, ())
+        )
+        if activation_bundles != expected_bundles:
+            diagnostics.append(f"profile.activationBundles.mismatch: {profile_id}")
+
+        verification = _validate_profile_verification(
+            profile_id, profile.get("verification"), diagnostics
+        )
+        if architecture is None or not http_decision_id or not http_modes:
+            continue
+        contracts[profile_id] = StandardProfileContract(
+            profile_id=profile_id,
+            version=str(profile.get("version", "")),
+            marker_version=str(marker_version or ""),
+            title=title,
+            stack=stack,
+            required_workspaces=workspaces,
+            optional_modules=optional_modules,
+            architecture=architecture,
+            http_decision_id=http_decision_id,
+            http_modes=http_modes,
+            capability_sets=capability_sets,
+            capabilities=capabilities,
+            capability_categories=tuple(sorted(capability_categories.items())),
+            activation_bundles=activation_bundles,
+            verification=verification,
+        )
+    return contracts
+
+
+def _validate_profile_workspaces(
+    profile_id: str, raw_workspaces: object, diagnostics: list[str]
+) -> tuple[str, ...]:
+    items = _validated_dict_list(
+        raw_workspaces, f"profile.workspaces.invalid: {profile_id}", diagnostics
+    )
+    workspaces: list[str] = []
+    for item in items:
+        _validate_exact_fields(
+            item, {"path", "strength"}, "profile.workspace", profile_id, diagnostics
+        )
+        path = item.get("path")
+        if (
+            not isinstance(path, str)
+            or _is_unsafe_relative_path(path)
+            or not path.startswith("packages/")
+        ):
+            diagnostics.append(f"profile.workspace.path.invalid: {profile_id}")
+            continue
+        if item.get("strength") != "required":
+            diagnostics.append(f"profile.workspace.strength.invalid: {profile_id} -> {path}")
+        workspaces.append(path)
+    if not workspaces or len(workspaces) != len(set(workspaces)):
+        diagnostics.append(f"profile.workspaces.invalid: {profile_id}")
+    return tuple(workspaces)
+
+
+def _validate_profile_architecture(
+    profile_id: str, raw_architecture: object, diagnostics: list[str]
+) -> ProfileArchitectureContract | None:
+    if not isinstance(raw_architecture, dict):
+        diagnostics.append(f"profile.architecture.invalid: {profile_id}")
+        return None
+    _validate_exact_fields(
+        raw_architecture,
+        {"frontend", "backend", "rejectedNormativeBuckets"},
+        "profile.architecture",
+        profile_id,
+        diagnostics,
+    )
+    frontend = raw_architecture.get("frontend")
+    backend = raw_architecture.get("backend")
+    if not isinstance(frontend, dict) or not isinstance(backend, dict):
+        diagnostics.append(f"profile.architecture.invalid: {profile_id}")
+        return None
+    _validate_exact_fields(
+        frontend,
+        {"organization", "publicBoundary", "internalImports"},
+        "profile.architecture.frontend",
+        profile_id,
+        diagnostics,
+    )
+    _validate_exact_fields(
+        backend,
+        {"layers", "httpHandlers", "useCases", "persistence"},
+        "profile.architecture.backend",
+        profile_id,
+        diagnostics,
+    )
+    layers = tuple(
+        _validated_string_list(
+            backend.get("layers"),
+            f"profile.architecture.backend.layers.invalid: {profile_id}",
+            diagnostics,
+        )
+    )
+    rejected = tuple(
+        _validated_string_list(
+            raw_architecture.get("rejectedNormativeBuckets"),
+            f"profile.architecture.rejected.invalid: {profile_id}",
+            diagnostics,
+        )
+    )
+    expected = {
+        "frontend.organization": (frontend.get("organization"), "systems"),
+        "frontend.publicBoundary": (
+            frontend.get("publicBoundary"),
+            "public system boundary",
+        ),
+        "frontend.internalImports": (frontend.get("internalImports"), "direct"),
+        "backend.layers": (layers, ("domain", "application", "infrastructure")),
+        "backend.httpHandlers": (backend.get("httpHandlers"), "thin"),
+        "backend.useCases": (backend.get("useCases"), "HTTP-independent"),
+        "backend.persistence": (backend.get("persistence"), "Drizzle-owned"),
+        "rejectedNormativeBuckets": (rejected, ("modules", "services")),
+    }
+    for field, (actual, required) in expected.items():
+        if actual != required:
+            diagnostics.append(f"profile.architecture.{field}.invalid: {profile_id}")
+    return ProfileArchitectureContract(
+        frontend_organization=str(frontend.get("organization", "")),
+        frontend_public_boundary=str(frontend.get("publicBoundary", "")),
+        frontend_internal_imports=str(frontend.get("internalImports", "")),
+        backend_layers=layers,
+        backend_http_handlers=str(backend.get("httpHandlers", "")),
+        backend_use_cases=str(backend.get("useCases", "")),
+        backend_persistence=str(backend.get("persistence", "")),
+        rejected_normative_buckets=rejected,
+    )
+
+
+def _validate_profile_http_contract(
+    profile_id: str, raw_contract: object, diagnostics: list[str]
+) -> tuple[str, tuple[str, ...]]:
+    if not isinstance(raw_contract, dict):
+        diagnostics.append(f"profile.httpContract.invalid: {profile_id}")
+        return "", ()
+    _validate_exact_fields(
+        raw_contract,
+        {"decisionId", "ownership", "required", "default", "modes", "exceptions"},
+        "profile.httpContract",
+        profile_id,
+        diagnostics,
+    )
+    decision_id = raw_contract.get("decisionId")
+    if decision_id != "http.contract":
+        diagnostics.append(f"profile.httpContract.decision.invalid: {profile_id}")
+    if raw_contract.get("ownership") != "repository" or raw_contract.get("required") is not True:
+        diagnostics.append(f"profile.httpContract.ownership.invalid: {profile_id}")
+    if raw_contract.get("default") is not None:
+        diagnostics.append(f"profile.httpContract.default.invalid: {profile_id}")
+    modes = tuple(
+        _validated_string_list(
+            raw_contract.get("modes"),
+            f"profile.httpContract.modes.invalid: {profile_id}",
+            diagnostics,
+        )
+    )
+    if modes != ("REST", "Post-only"):
+        diagnostics.append(f"profile.httpContract.modes.invalid: {profile_id}")
+    exceptions = raw_contract.get("exceptions")
+    if not isinstance(exceptions, dict):
+        diagnostics.append(f"profile.httpContract.exceptions.invalid: {profile_id}")
+    else:
+        _validate_exact_fields(
+            exceptions,
+            {"ordered", "requiredFields"},
+            "profile.httpContract.exceptions",
+            profile_id,
+            diagnostics,
+        )
+        if exceptions.get("ordered") is not True or exceptions.get("requiredFields") != [
+            "scope",
+            "methods",
+            "owner",
+            "reason",
+        ]:
+            diagnostics.append(f"profile.httpContract.exceptions.invalid: {profile_id}")
+    return decision_id if isinstance(decision_id, str) else "", modes
+
+
+def _validate_profile_capabilities(
+    profile_id: str, raw_capabilities: object, diagnostics: list[str]
+) -> tuple[tuple[RepositoryCapability, ...], dict[str, str]]:
+    items = _validated_dict_list(
+        raw_capabilities, f"profile.capabilities.invalid: {profile_id}", diagnostics
+    )
+    identifiers = [item.get("id") for item in items]
+    if identifiers != sorted(identifiers, key=str):
+        diagnostics.append(f"profile.capabilities.order.invalid: {profile_id}")
+    capabilities: list[RepositoryCapability] = []
+    categories: dict[str, str] = {}
+    for item in items:
+        capability_id = item.get("id")
+        label = capability_id if isinstance(capability_id, str) else profile_id
+        _validate_exact_fields(
+            item,
+            {"id", "title", "category", "strength", "probe"},
+            "profile.capability",
+            label,
+            diagnostics,
+        )
+        title = item.get("title")
+        category = item.get("category")
+        strength = item.get("strength")
+        probe = item.get("probe")
+        if not isinstance(probe, dict):
+            diagnostics.append(f"profile.capability.probe.invalid: {label}")
+            continue
+        evidence_kind = probe.get("kind")
+        probe_fields = {key: value for key, value in probe.items() if key != "kind"}
+        if category not in {"stack", "workspace", "optional-module"}:
+            diagnostics.append(f"profile.capability.category.invalid: {label}")
+            continue
+        if category == "optional-module" and strength != "optional":
+            diagnostics.append(f"profile.capability.strength.invalid: {label}")
+        if category != "optional-module" and strength != "required":
+            diagnostics.append(f"profile.capability.strength.invalid: {label}")
+        try:
+            kind = EvidenceKind(evidence_kind)
+            minimum = (
+                EvidenceStrength.DISCOVERED
+                if kind is EvidenceKind.EXECUTABLE
+                else EvidenceStrength.DECLARED
+            )
+            capability = RepositoryCapability(
+                capability_id=str(capability_id),
+                title=str(title),
+                strength=RequirementStrength(strength),
+                evidence_kind=kind,
+                minimum_evidence=minimum,
+                probe=probe_fields,
+                explanation=f"{title} is {strength} for the {profile_id} profile.",
+                next_action=(
+                    f"Add compatible local {title} evidence and rerun capability evaluation."
+                ),
+            )
+        except (TypeError, ValueError):
+            diagnostics.append(f"profile.capability.invalid: {label}")
+            continue
+        if capability.capability_id in categories:
+            diagnostics.append(f"profile.capability.id.duplicate: {label}")
+        categories[capability.capability_id] = str(category)
+        capabilities.append(capability)
+    return tuple(capabilities), categories
+
+
+def _validate_profile_verification(
+    profile_id: str, raw_verification: object, diagnostics: list[str]
+) -> tuple[ProfileVerificationEntry, ...]:
+    items = _validated_dict_list(
+        raw_verification, f"profile.verification.invalid: {profile_id}", diagnostics
+    )
+    expected = (
+        ("verification.format", "format", "Oxfmt", "bun run format"),
+        ("verification.lint", "lint", "Oxlint", "bun run lint"),
+        ("verification.test", "test", "Vitest", "bun run test"),
+        ("verification.build", "build", "Turborepo", "bun run build"),
+        ("verification.workspace", "workspace", "Bun", "bun run verify"),
+    )
+    entries: list[ProfileVerificationEntry] = []
+    for item in items:
+        _validate_exact_fields(
+            item,
+            {"id", "kind", "tool", "command"},
+            "profile.verification",
+            profile_id,
+            diagnostics,
+        )
+        values = tuple(item.get(key) for key in ("id", "kind", "tool", "command"))
+        if not all(isinstance(value, str) and value.strip() for value in values):
+            diagnostics.append(f"profile.verification.invalid: {profile_id}")
+            continue
+        entries.append(ProfileVerificationEntry(*values))
+    if tuple(
+        (entry.entry_id, entry.kind, entry.tool, entry.command) for entry in entries
+    ) != expected:
+        diagnostics.append(f"profile.verification.mismatch: {profile_id}")
+    return tuple(entries)
+
+
+def build_standard_profile_plan(
+    catalog: AssetCatalog,
+    http_contract: dict[str, object] | None = None,
+    profile_id: str = "standard-typescript-monorepo",
+) -> StandardProfilePlan:
+    """Resolve the strict profile contract without mutating a repository."""
+
+    contract = catalog.standard_profiles.get(profile_id)
+    if contract is None:
+        raise ValueError(f"unknown strict profile {profile_id!r}")
+    if http_contract is None:
+        return StandardProfilePlan(
+            contract=contract,
+            http_contract=None,
+            unresolved_decisions=(contract.http_decision_id,),
+        )
+    decision = _normalize_http_contract_decision(contract.http_modes, http_contract)
+    return StandardProfilePlan(
+        contract=contract,
+        http_contract=decision,
+        unresolved_decisions=(),
+    )
+
+
+def render_standard_profile_plan(plan: StandardProfilePlan) -> bytes:
+    """Render a deterministic, strict 0.0.1 profile Decision Plan."""
+
+    document = {
+        "schemaVersion": PROFILE_PLAN_SCHEMA_VERSION_0_0_1,
+        "version": "0.0.1",
+        "markerVersion": plan.contract.marker_version,
+        "profile": _standard_profile_document(plan.contract),
+        "httpContract": _http_contract_document(plan.http_contract),
+        "unresolvedDecisions": [
+            {
+                "id": plan.contract.http_decision_id,
+                "prompt": "Choose the repository HTTP Contract Decision.",
+                "values": list(plan.contract.http_modes),
+            }
+            for _decision_id in plan.unresolved_decisions
+        ],
+    }
+    return _render_stable_json(document)
+
+
+def render_standard_profile_snapshot(plan: StandardProfilePlan) -> bytes:
+    """Render the resolved profile snapshot; unresolved decisions are rejected."""
+
+    if plan.unresolved_decisions or plan.http_contract is None:
+        raise ValueError("profile snapshot requires a resolved HTTP Contract Decision")
+    document = {
+        "schemaVersion": PROFILE_SNAPSHOT_SCHEMA_VERSION_0_0_1,
+        "version": "0.0.1",
+        "markerVersion": plan.contract.marker_version,
+        "profile": _standard_profile_document(plan.contract),
+        "httpContract": _http_contract_document(plan.http_contract),
+    }
+    return _render_stable_json(document)
+
+
+def _normalize_http_contract_decision(
+    modes: tuple[str, ...], raw_decision: dict[str, object]
+) -> HTTPContractDecision:
+    if not isinstance(raw_decision, dict) or set(raw_decision) != {
+        "mode",
+        "exceptions",
+        "source",
+    }:
+        raise ValueError("HTTP Contract Decision fields are invalid")
+    mode = raw_decision.get("mode")
+    if mode not in modes:
+        raise ValueError("HTTP Contract Decision mode is invalid")
+    raw_source = raw_decision.get("source")
+    if not isinstance(raw_source, dict) or set(raw_source) != {"path", "digest"}:
+        raise ValueError("HTTP Contract Decision source is invalid")
+    source_path = raw_source.get("path")
+    source_digest = raw_source.get("digest")
+    if (
+        not isinstance(source_path, str)
+        or _is_unsafe_relative_path(source_path)
+        or not isinstance(source_digest, str)
+        or not LOWERCASE_SHA256.fullmatch(source_digest)
+    ):
+        raise ValueError("HTTP Contract Decision source evidence is invalid")
+    raw_exceptions = raw_decision.get("exceptions")
+    if not isinstance(raw_exceptions, list):
+        raise ValueError("HTTP Contract Decision exceptions must be ordered")
+    exceptions: list[HTTPContractException] = []
+    for raw_exception in raw_exceptions:
+        if not isinstance(raw_exception, dict) or set(raw_exception) != {
+            "scope",
+            "methods",
+            "owner",
+            "reason",
+        }:
+            raise ValueError("HTTP Contract Decision exception fields are invalid")
+        scope = raw_exception.get("scope")
+        methods = raw_exception.get("methods")
+        owner = raw_exception.get("owner")
+        reason = raw_exception.get("reason")
+        if (
+            not isinstance(scope, str)
+            or not scope.strip()
+            or not isinstance(methods, list)
+            or not methods
+            or not all(isinstance(method, str) and HTTP_METHOD.fullmatch(method) for method in methods)
+            or len(methods) != len(set(methods))
+            or not isinstance(owner, str)
+            or not owner.strip()
+            or not isinstance(reason, str)
+            or not reason.strip()
+        ):
+            raise ValueError("HTTP Contract Decision exception is invalid")
+        exceptions.append(
+            HTTPContractException(
+                scope=scope,
+                methods=tuple(methods),
+                owner=owner,
+                reason=reason,
+            )
+        )
+    return HTTPContractDecision(
+        mode=str(mode),
+        exceptions=tuple(exceptions),
+        source_path=Path(source_path),
+        source_digest=source_digest,
+    )
+
+
+def is_http_contract_decision_value_valid(
+    value: object, modes: Iterable[str] = ("REST", "Post-only")
+) -> bool:
+    """Return whether a value is a complete typed HTTP Contract Decision."""
+
+    if not isinstance(value, dict):
+        return False
+    try:
+        _normalize_http_contract_decision(tuple(modes), value)
+    except ValueError:
+        return False
+    return True
+
+
+def _standard_profile_document(contract: StandardProfileContract) -> dict[str, object]:
+    categories = dict(contract.capability_categories)
+    return {
+        "id": contract.profile_id,
+        "version": contract.version,
+        "stack": list(contract.stack),
+        "workspaces": list(contract.required_workspaces),
+        "optionalModules": list(contract.optional_modules),
+        "architecture": {
+            "frontend": {
+                "organization": contract.architecture.frontend_organization,
+                "publicBoundary": contract.architecture.frontend_public_boundary,
+                "internalImports": contract.architecture.frontend_internal_imports,
+            },
+            "backend": {
+                "layers": list(contract.architecture.backend_layers),
+                "httpHandlers": contract.architecture.backend_http_handlers,
+                "useCases": contract.architecture.backend_use_cases,
+                "persistence": contract.architecture.backend_persistence,
+            },
+            "rejectedNormativeBuckets": list(
+                contract.architecture.rejected_normative_buckets
+            ),
+        },
+        "capabilitySets": list(contract.capability_sets),
+        "capabilities": [
+            {
+                "id": capability.capability_id,
+                "title": capability.title,
+                "category": categories[capability.capability_id],
+                "strength": capability.strength.value,
+                "evidenceKind": capability.evidence_kind.value,
+                "probe": dict(capability.probe),
+            }
+            for capability in contract.capabilities
+        ],
+        "activationBundles": list(contract.activation_bundles),
+        "verification": [
+            {
+                "id": entry.entry_id,
+                "kind": entry.kind,
+                "tool": entry.tool,
+                "command": entry.command,
+            }
+            for entry in contract.verification
+        ],
+    }
+
+
+def _http_contract_document(
+    decision: HTTPContractDecision | None,
+) -> dict[str, object] | None:
+    if decision is None:
+        return None
+    return {
+        "mode": decision.mode,
+        "exceptions": [
+            {
+                "scope": exception.scope,
+                "methods": list(exception.methods),
+                "owner": exception.owner,
+                "reason": exception.reason,
+            }
+            for exception in decision.exceptions
+        ],
+        "source": {
+            "path": decision.source_path.as_posix(),
+            "digest": decision.source_digest,
+        },
+    }
+
+
+def _render_stable_json(document: dict[str, object]) -> bytes:
+    return (
+        json.dumps(document, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+        + "\n"
+    ).encode("utf-8")
 
 
 def _normalize_profile_dispatch_contracts(

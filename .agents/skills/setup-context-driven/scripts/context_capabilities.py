@@ -111,6 +111,11 @@ class RepositoryCapability:
         if not self.title:
             object.__setattr__(self, "title", self.capability_id)
 
+    def __deepcopy__(self, _memo: dict[int, object]) -> RepositoryCapability:
+        """Return this immutable value when a catalog mutation test is copied."""
+
+        return self
+
 
 @dataclass(frozen=True)
 class CapabilityEvidence:

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import Mapping
 import hashlib
 import json
 import os
@@ -14,7 +15,7 @@ import subprocess
 import sys
 import tempfile
 from datetime import date
-from dataclasses import asdict, dataclass, is_dataclass
+from dataclasses import dataclass, fields, is_dataclass
 from functools import lru_cache
 from pathlib import Path
 from typing import Iterable
@@ -27,6 +28,7 @@ from context_assets import (
     RepositoryOwnedExtension,
     TEMPLATE_TOKEN,
     UpgradeTransition,
+    is_http_contract_decision_value_valid,
     load_asset_catalog,
     portable_file_digest,
     portable_tree_digest,
@@ -3890,7 +3892,11 @@ def is_decision_value_valid(decision_contract: dict, value: object) -> bool:
         )
     if decision_type == "enum":
         return value in decision_contract.get("values", [])
-    return True
+    if decision_type == "http-contract":
+        return is_http_contract_decision_value_valid(
+            value, decision_contract.get("modes", ())
+        )
+    return False
 
 
 def invalid_decision_finding(decision_id: str) -> Finding:
@@ -4524,10 +4530,13 @@ def canonical_json_bytes(value: object) -> bytes:
 
 def normalize_digest_value(value: object) -> object:
     if is_dataclass(value):
-        return normalize_digest_value(asdict(value))
+        return {
+            field.name: normalize_digest_value(getattr(value, field.name))
+            for field in fields(value)
+        }
     if isinstance(value, Path):
         return value.as_posix()
-    if isinstance(value, dict):
+    if isinstance(value, Mapping):
         return {str(key): normalize_digest_value(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
         return [normalize_digest_value(item) for item in value]
@@ -5656,6 +5665,10 @@ def validate_decision_value(
         valid = isinstance(value, str) and bool(value.strip())
     elif decision_type == "enum":
         valid = value in decision_contract.get("values", [])
+    elif decision_type == "http-contract":
+        valid = is_http_contract_decision_value_valid(
+            value, decision_contract.get("modes", ())
+        )
 
     if not valid:
         findings.append(
