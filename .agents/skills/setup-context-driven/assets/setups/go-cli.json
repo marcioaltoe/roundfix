@@ -8,7 +8,17 @@
     "ref": "236847f6956134bf468abb641bac0493a899bca5",
     "path": "setups/go-cli.txt"
   },
-  "digest": "5d4584711f0a8af604ab26d33a91a7dd5cffd0bab1bb2e8821fafe117c605127",
+  "digest": "5bc3680a351e55b07d24e262769ab05c415950dbfdcff0f24fa0bf5f1511c719",
+  "activationBundles": [
+    {
+      "id": "bundle.delivery",
+      "skills": ["conventional-commits", "github-pr-workflow"]
+    },
+    {
+      "id": "bundle.qa",
+      "skills": ["qa-gate", "evidence-gate"]
+    }
+  ],
   "skills": [
     {
       "name": "knowledge-workspace",

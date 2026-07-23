@@ -42,5 +42,5 @@
     "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/spec-routing.md",
     "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/typescript-bun.md"
   ],
-  "goldenDigest": "f001aebf81530abb9d5069145db4fe3f3c562306d7030503d65b87687dca5fbb"
+  "goldenDigest": "126b75eeac272100ffb239c66a4006fa154e003ebe203f51fd964618fb2f4fce"
 }

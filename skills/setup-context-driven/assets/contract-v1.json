@@ -128,7 +128,19 @@
       "rules": [
         "External skills declare a GitHub owner/repository, immutable full commit object ID, safe source-relative directory, and lowercase complete-tree digest.",
         "Repository-owned skills remain distinct from external immutable sources.",
-        "The snapshot digest covers canonical serialization of complete normalized skill records."
+        "The snapshot digest covers canonical serialization of complete normalized skill records and any declared activation bundles."
+      ]
+    },
+    {
+      "id": "contract.skill-activations-v1",
+      "version": 1,
+      "path": "assets/skill-activations.json",
+      "requires": ["version", "bundles", "activations"],
+      "rules": [
+        "Activation bundles have stable identities and ordered exact skill membership.",
+        "Activation contracts have globally unique stable trigger identities, one module owner, one exact bundle, and an optional capability condition.",
+        "Every selected Setup Snapshot persists exactly the active bundle identities and ordered memberships.",
+        "Bundle and trigger declarations use stable byte order and reference only selected snapshot skills before rendering."
       ]
     },
     {
@@ -256,6 +268,36 @@
     "skill.dispatch.trigger.when.invalid",
     "skill.dispatch.owner.duplicate",
     "profile.skill.set.mismatch",
+    "skill.activation.schemaVersion.invalid",
+    "skill.activation.version.invalid",
+    "skill.activation.bundles.invalid",
+    "skill.activation.bundle.order.invalid",
+    "skill.activation.bundle.id.invalid",
+    "skill.activation.bundle.id.duplicate",
+    "skill.activation.bundle.members.invalid",
+    "skill.activation.bundle.members.empty",
+    "skill.activation.bundle.member.duplicate",
+    "skill.activation.bundle.unknown",
+    "skill.activation.bundle.unused",
+    "skill.activation.skill.unknown",
+    "skill.activation.activations.invalid",
+    "skill.activation.trigger.order.invalid",
+    "skill.activation.trigger.id.invalid",
+    "skill.activation.trigger.id.duplicate",
+    "skill.activation.trigger.when.invalid",
+    "skill.activation.owner.unknown",
+    "skill.activation.owner.duplicate",
+    "skill.activation.condition.invalid",
+    "skill.activation.snapshot.member.missing",
+    "setup.activationBundles.invalid",
+    "setup.activationBundles.mismatch",
+    "setup.activationBundle.id.invalid",
+    "setup.activationBundle.id.duplicate",
+    "setup.activationBundle.members.invalid",
+    "setup.activationBundle.members.empty",
+    "setup.activationBundle.member.duplicate",
+    "setup.activationBundle.members.mismatch",
+    "setup.activationBundle.order.invalid",
     "coverage.delegationAliases.invalid",
     "coverage.delegationAliases.duplicate",
     "extension.path.invalid",

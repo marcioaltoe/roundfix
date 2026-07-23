@@ -17,7 +17,7 @@ from context_assets import (  # noqa: E402
     load_asset_catalog,
     portable_file_digest,
     read_json_copy,
-    setup_records_digest,
+    setup_snapshot_digest,
     write_json,
 )
 from context_setup import (  # noqa: E402
@@ -419,7 +419,9 @@ def write_fixture_external_digests(skill_root):
                     for path, content in fixture_external_skill_files(skill["name"]).items()
                 ]
             )
-        snapshot["digest"] = setup_records_digest(snapshot["skills"])
+        snapshot["digest"] = setup_snapshot_digest(
+            snapshot["skills"], snapshot.get("activationBundles")
+        )
         snapshot_path.write_text(json.dumps(snapshot, indent=2) + "\n", encoding="utf-8")
 
 

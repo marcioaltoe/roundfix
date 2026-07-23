@@ -25,6 +25,7 @@ PROFILE_SCHEMA_VERSION_V2 = "setup-context-driven/profile-v2"
 PROFILE_SCHEMA_VERSION_V3 = "setup-context-driven/profile-v3"
 SETUP_SCHEMA_VERSION = "setup-context-driven/setup-snapshot-v1"
 SETUP_SCHEMA_VERSION_V2 = "setup-context-driven/setup-snapshot-v2"
+SKILL_ACTIVATIONS_SCHEMA_VERSION = "setup-context-driven/skill-activations-v1"
 TEMPLATES_SCHEMA_VERSION = "setup-context-driven/templates-v1"
 UPGRADE_TRANSITION_SCHEMA_VERSION = "setup-context-driven/upgrade-transition-v1"
 TEMPLATE_TOKEN = re.compile(r"\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}")
@@ -126,6 +127,21 @@ class SkillDispatch:
 
 
 @dataclass(frozen=True)
+class SkillActivationBundle:
+    bundle_id: str
+    skills: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class SkillActivation:
+    trigger_id: str
+    owner_module: str
+    when: str
+    bundle_id: str
+    capability_condition: str | None = None
+
+
+@dataclass(frozen=True)
 class RepositoryOwnedExtension:
     extension_id: str
     target_path: Path
@@ -214,6 +230,9 @@ class AssetCatalog:
     formatter_by_profile: dict[str, FormatterContract]
     upgrade_transitions: dict[str, UpgradeTransition]
     skill_dispatch_by_skill: dict[str, tuple[SkillDispatch, ...]]
+    activation_bundles: dict[str, SkillActivationBundle]
+    skill_activations: tuple[SkillActivation, ...]
+    activation_bundles_by_setup: dict[str, tuple[SkillActivationBundle, ...]]
 
 
 @dataclass(frozen=True)
@@ -239,6 +258,10 @@ def load_asset_catalog(skill_root: str | Path) -> AssetCatalog:
     templates_doc = _read_json(assets_root / "templates" / "index.json", diagnostics)
     coverage_path = assets_root / "coverage.json"
     coverage_doc = _read_json(coverage_path, diagnostics) if coverage_path.is_file() else {}
+    activations_path = assets_root / "skill-activations.json"
+    activations_doc = (
+        _read_json(activations_path, diagnostics) if activations_path.is_file() else {}
+    )
     modules = _read_collection(
         assets_root / "modules",
         (MODULE_SCHEMA_VERSION, MODULE_SCHEMA_VERSION_V2, MODULE_SCHEMA_VERSION_V3),
@@ -342,6 +365,19 @@ def load_asset_catalog(skill_root: str | Path) -> AssetCatalog:
             continue
         _validate_profile_skills(profile_id, ordered_modules, modules, setup, diagnostics)
 
+    (
+        activation_bundles,
+        skill_activations,
+        activation_bundles_by_setup,
+    ) = _validate_skill_activations(
+        activations_doc,
+        modules,
+        profiles,
+        ordered_modules_by_profile,
+        setups,
+        diagnostics,
+    )
+
     _validate_profile_rule_contracts(
         profiles,
         ordered_modules_by_profile,
@@ -387,6 +423,9 @@ def load_asset_catalog(skill_root: str | Path) -> AssetCatalog:
         formatter_by_profile=formatter_by_profile,
         upgrade_transitions=upgrade_transitions,
         skill_dispatch_by_skill=skill_dispatch_by_skill,
+        activation_bundles=activation_bundles,
+        skill_activations=skill_activations,
+        activation_bundles_by_setup=activation_bundles_by_setup,
     )
 
 
@@ -1992,7 +2031,20 @@ def _validate_versioned_setup(
         diagnostics.append(f"setup.skill.source.type.unknown: {setup_id}: {name} -> {source_type}")
 
     declared_digest = setup.get("digest")
-    expected_digest = _normalized_records_digest(normalized_records)
+    raw_activation_bundles = setup.get("activationBundles")
+    normalized_activation_bundles = None
+    if raw_activation_bundles is not None:
+        normalized_activation_bundles = [
+            {
+                "id": item.get("id"),
+                "skills": item.get("skills"),
+            }
+            for item in _dict_items(raw_activation_bundles)
+        ]
+    expected_digest = setup_snapshot_digest(
+        normalized_records,
+        normalized_activation_bundles,
+    )
     if not isinstance(declared_digest, str) or not LOWERCASE_SHA256.fullmatch(declared_digest):
         diagnostics.append(f"setup.digest.invalid: {setup_id}")
     elif declared_digest != expected_digest:
@@ -2089,6 +2141,291 @@ def _validate_profile_skills(
                     f"skills.reference.outside-setup: {profile_id}: "
                     f"{module_id} requires {skill_name}"
                 )
+
+
+def _validate_skill_activations(
+    document: dict,
+    modules: dict[str, dict],
+    profiles: dict[str, dict],
+    ordered_modules_by_profile: dict[str, list[str]],
+    setups: dict[str, dict],
+    diagnostics: list[str],
+) -> tuple[
+    dict[str, SkillActivationBundle],
+    tuple[SkillActivation, ...],
+    dict[str, tuple[SkillActivationBundle, ...]],
+]:
+    if not document:
+        return {}, (), {}
+
+    _validate_exact_fields(
+        document,
+        {"schemaVersion", "version", "bundles", "activations"},
+        "skill.activation.document",
+        "catalog",
+        diagnostics,
+    )
+    if document.get("schemaVersion") != SKILL_ACTIVATIONS_SCHEMA_VERSION:
+        diagnostics.append("skill.activation.schemaVersion.invalid")
+    if document.get("version") != 1:
+        diagnostics.append("skill.activation.version.invalid")
+
+    raw_bundles = _validated_dict_list(
+        document.get("bundles"), "skill.activation.bundles.invalid", diagnostics
+    )
+    raw_bundle_ids = [
+        item.get("id")
+        for item in raw_bundles
+        if isinstance(item.get("id"), str) and item.get("id")
+    ]
+    if raw_bundle_ids != sorted(raw_bundle_ids):
+        diagnostics.append("skill.activation.bundle.order.invalid")
+
+    all_snapshot_skills = {
+        skill.get("name")
+        for setup in setups.values()
+        for skill in _dict_items(setup.get("skills"))
+        if isinstance(skill.get("name"), str) and skill.get("name")
+    }
+    bundles: dict[str, SkillActivationBundle] = {}
+    for item in raw_bundles:
+        bundle_id = item.get("id")
+        bundle_label = bundle_id if isinstance(bundle_id, str) and bundle_id else "catalog"
+        _validate_exact_fields(
+            item,
+            {"id", "skills"},
+            "skill.activation.bundle",
+            bundle_label,
+            diagnostics,
+        )
+        if not isinstance(bundle_id, str) or not bundle_id.startswith("bundle."):
+            diagnostics.append("skill.activation.bundle.id.invalid")
+            continue
+        if bundle_id in bundles:
+            diagnostics.append(f"skill.activation.bundle.id.duplicate: {bundle_id}")
+        skills = _validated_string_list(
+            item.get("skills"),
+            f"skill.activation.bundle.members.invalid: {bundle_id}",
+            diagnostics,
+        )
+        if not skills:
+            diagnostics.append(f"skill.activation.bundle.members.empty: {bundle_id}")
+        if len(set(skills)) != len(skills):
+            diagnostics.append(
+                f"skill.activation.bundle.member.duplicate: {bundle_id}"
+            )
+        for skill_name in skills:
+            if skill_name not in all_snapshot_skills:
+                diagnostics.append(
+                    f"skill.activation.skill.unknown: {bundle_id} -> {skill_name}"
+                )
+        bundles[bundle_id] = SkillActivationBundle(
+            bundle_id=bundle_id,
+            skills=tuple(skills),
+        )
+
+    raw_activations = _validated_dict_list(
+        document.get("activations"),
+        "skill.activation.activations.invalid",
+        diagnostics,
+    )
+    raw_trigger_ids = [
+        item.get("id")
+        for item in raw_activations
+        if isinstance(item.get("id"), str) and item.get("id")
+    ]
+    if raw_trigger_ids != sorted(raw_trigger_ids):
+        diagnostics.append("skill.activation.trigger.order.invalid")
+
+    activations: list[SkillActivation] = []
+    trigger_owners: dict[str, str] = {}
+    bundle_owners: dict[str, str] = {}
+    used_bundles: set[str] = set()
+    for item in raw_activations:
+        trigger_id = item.get("id")
+        trigger_label = (
+            trigger_id if isinstance(trigger_id, str) and trigger_id else "catalog"
+        )
+        allowed_fields = {"id", "owner", "when", "bundle"}
+        if "condition" in item:
+            allowed_fields.add("condition")
+        _validate_exact_fields(
+            item,
+            allowed_fields,
+            "skill.activation.trigger",
+            trigger_label,
+            diagnostics,
+        )
+        if not isinstance(trigger_id, str) or not trigger_id.startswith("trigger."):
+            diagnostics.append("skill.activation.trigger.id.invalid")
+            continue
+        owner_module = item.get("owner")
+        if not isinstance(owner_module, str) or owner_module not in modules:
+            diagnostics.append(
+                f"skill.activation.owner.unknown: {trigger_id} -> {owner_module}"
+            )
+            continue
+        prior_trigger_owner = trigger_owners.get(trigger_id)
+        if prior_trigger_owner is not None:
+            diagnostics.append(
+                f"skill.activation.trigger.id.duplicate: {trigger_id}: "
+                f"{prior_trigger_owner}, {owner_module}"
+            )
+        trigger_owners[trigger_id] = owner_module
+
+        when = item.get("when")
+        if not isinstance(when, str) or not when.strip():
+            diagnostics.append(f"skill.activation.trigger.when.invalid: {trigger_id}")
+            continue
+        bundle_id = item.get("bundle")
+        if not isinstance(bundle_id, str) or bundle_id not in bundles:
+            diagnostics.append(
+                f"skill.activation.bundle.unknown: {trigger_id} -> {bundle_id}"
+            )
+            continue
+        prior_bundle_owner = bundle_owners.get(bundle_id)
+        if prior_bundle_owner is not None and prior_bundle_owner != owner_module:
+            diagnostics.append(
+                f"skill.activation.owner.duplicate: {bundle_id}: "
+                f"{prior_bundle_owner}, {owner_module}"
+            )
+        bundle_owners[bundle_id] = owner_module
+        used_bundles.add(bundle_id)
+
+        condition = item.get("condition")
+        if condition is not None and (
+            not isinstance(condition, str) or not condition.startswith("capability.")
+        ):
+            diagnostics.append(f"skill.activation.condition.invalid: {trigger_id}")
+            condition = None
+        activations.append(
+            SkillActivation(
+                trigger_id=trigger_id,
+                owner_module=owner_module,
+                when=when,
+                bundle_id=bundle_id,
+                capability_condition=condition,
+            )
+        )
+
+    for bundle_id in sorted(set(bundles) - used_bundles):
+        diagnostics.append(f"skill.activation.bundle.unused: {bundle_id}")
+
+    expected_bundle_ids_by_setup: dict[str, set[str]] = {
+        setup_id: set() for setup_id in setups
+    }
+    for profile_id, profile in sorted(profiles.items()):
+        setup_id = profile.get("setup")
+        setup = setups.get(setup_id)
+        if setup is None:
+            continue
+        active_modules = set(ordered_modules_by_profile.get(profile_id, []))
+        active_bundle_ids = {
+            activation.bundle_id
+            for activation in activations
+            if activation.owner_module in active_modules
+        }
+        expected_bundle_ids_by_setup.setdefault(setup_id, set()).update(
+            active_bundle_ids
+        )
+        setup_skills = {
+            skill.get("name")
+            for skill in _dict_items(setup.get("skills"))
+            if isinstance(skill.get("name"), str) and skill.get("name")
+        }
+        for bundle_id in sorted(active_bundle_ids):
+            for skill_name in bundles[bundle_id].skills:
+                if skill_name not in setup_skills:
+                    diagnostics.append(
+                        f"skill.activation.snapshot.member.missing: {profile_id}: "
+                        f"{bundle_id} -> {skill_name}"
+                    )
+
+    bundles_by_setup: dict[str, tuple[SkillActivationBundle, ...]] = {}
+    for setup_id, setup in sorted(setups.items()):
+        declared = _validate_snapshot_activation_bundles(
+            setup_id,
+            setup.get("activationBundles"),
+            diagnostics,
+        )
+        expected_ids = sorted(expected_bundle_ids_by_setup.get(setup_id, set()))
+        declared_ids = [record.bundle_id for record in declared]
+        if declared_ids != expected_ids:
+            diagnostics.append(
+                f"setup.activationBundles.mismatch: {setup_id}: "
+                f"expected={','.join(expected_ids) or '-'}: "
+                f"declared={','.join(declared_ids) or '-'}"
+            )
+        declared_by_id = {record.bundle_id: record for record in declared}
+        for bundle_id in expected_ids:
+            declared_bundle = declared_by_id.get(bundle_id)
+            if declared_bundle is None:
+                continue
+            if declared_bundle.skills != bundles[bundle_id].skills:
+                diagnostics.append(
+                    f"setup.activationBundle.members.mismatch: {setup_id}: {bundle_id}"
+                )
+        bundles_by_setup[setup_id] = tuple(
+            bundles[bundle_id] for bundle_id in expected_ids if bundle_id in bundles
+        )
+
+    return bundles, tuple(activations), bundles_by_setup
+
+
+def _validate_snapshot_activation_bundles(
+    setup_id: str,
+    raw_bundles: object,
+    diagnostics: list[str],
+) -> tuple[SkillActivationBundle, ...]:
+    items = _validated_dict_list(
+        raw_bundles,
+        f"setup.activationBundles.invalid: {setup_id}",
+        diagnostics,
+    )
+    bundle_ids = [
+        item.get("id")
+        for item in items
+        if isinstance(item.get("id"), str) and item.get("id")
+    ]
+    if bundle_ids != sorted(bundle_ids):
+        diagnostics.append(f"setup.activationBundle.order.invalid: {setup_id}")
+    seen: set[str] = set()
+    normalized: list[SkillActivationBundle] = []
+    for item in items:
+        bundle_id = item.get("id")
+        bundle_label = bundle_id if isinstance(bundle_id, str) and bundle_id else setup_id
+        _validate_exact_fields(
+            item,
+            {"id", "skills"},
+            "setup.activationBundle",
+            bundle_label,
+            diagnostics,
+        )
+        if not isinstance(bundle_id, str) or not bundle_id.startswith("bundle."):
+            diagnostics.append(f"setup.activationBundle.id.invalid: {setup_id}")
+            continue
+        if bundle_id in seen:
+            diagnostics.append(
+                f"setup.activationBundle.id.duplicate: {setup_id} -> {bundle_id}"
+            )
+        seen.add(bundle_id)
+        skills = _validated_string_list(
+            item.get("skills"),
+            f"setup.activationBundle.members.invalid: {setup_id} -> {bundle_id}",
+            diagnostics,
+        )
+        if not skills:
+            diagnostics.append(
+                f"setup.activationBundle.members.empty: {setup_id} -> {bundle_id}"
+            )
+        if len(set(skills)) != len(skills):
+            diagnostics.append(
+                f"setup.activationBundle.member.duplicate: {setup_id} -> {bundle_id}"
+            )
+        normalized.append(
+            SkillActivationBundle(bundle_id=bundle_id, skills=tuple(skills))
+        )
+    return tuple(normalized)
 
 
 def _validate_profile_rule_contracts(
@@ -2612,6 +2949,26 @@ def setup_records_digest(records: list[dict]) -> str:
     """Return the canonical digest for complete normalized setup records."""
 
     return _normalized_records_digest(records)
+
+
+def setup_snapshot_digest(
+    skill_records: list[dict],
+    activation_bundles: list[dict] | None = None,
+) -> str:
+    """Return the canonical digest for a normalized Setup Snapshot."""
+
+    if activation_bundles is None:
+        return setup_records_digest(skill_records)
+    payload = json.dumps(
+        {
+            "activationBundles": activation_bundles,
+            "skills": skill_records,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def portable_tree_digest(root: str | Path) -> str:

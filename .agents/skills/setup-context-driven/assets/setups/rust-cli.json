@@ -8,7 +8,17 @@
     "ref": "236847f6956134bf468abb641bac0493a899bca5",
     "path": "setups/rust-cli.txt"
   },
-  "digest": "8c6890761b8c4d6caae97ada2b47440e5111113b43b0535c144c781348de0a47",
+  "digest": "cf2d8814eff4f44b5f1638b778345c0b01a443fe259af7ee77912505c99a7a98",
+  "activationBundles": [
+    {
+      "id": "bundle.delivery",
+      "skills": ["conventional-commits", "github-pr-workflow"]
+    },
+    {
+      "id": "bundle.qa",
+      "skills": ["qa-gate", "evidence-gate"]
+    }
+  ],
   "skills": [
     {
       "name": "knowledge-workspace",

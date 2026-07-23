@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
@@ -18,7 +19,7 @@ from context_assets import (  # noqa: E402
     clone_assets_to,
     load_asset_catalog,
     read_json_copy,
-    setup_records_digest,
+    setup_snapshot_digest,
     write_json,
 )
 from context_setup import render_skill_dispatch  # noqa: E402
@@ -114,6 +115,165 @@ class SkillDispatchContractTests(unittest.TestCase):
         self.assertIn("- `golang-cli`:", go_dispatch)
         self.assertNotIn("- `golang-cli`:", typescript_dispatch)
         self.assertNotIn("- `golang-cli`:", rust_dispatch)
+
+    def test_typescript_profile_renders_exact_activation_bundles_deterministically(self):
+        catalog = load_asset_catalog(SKILL_ROOT)
+        modules = catalog.ordered_modules_by_profile["typescript-bun-monorepo"]
+
+        first = render_skill_dispatch(catalog, modules)
+        second = render_skill_dispatch(catalog, modules)
+
+        self.assertEqual(first, second)
+        self.assertEqual(
+            {
+                bundle_id: bundle.skills
+                for bundle_id, bundle in catalog.activation_bundles.items()
+            },
+            {
+                "bundle.debugging": (
+                    "systematic-debugging",
+                    "diagnosing-bugs",
+                    "no-workarounds",
+                ),
+                "bundle.delivery": (
+                    "conventional-commits",
+                    "github-pr-workflow",
+                ),
+                "bundle.frontend-react": (
+                    "react",
+                    "react-best-practices",
+                    "react-composition-patterns",
+                ),
+                "bundle.frontend-ui-quality": (
+                    "frontend-design",
+                    "interaction-design",
+                    "interface-design",
+                    "fixing-accessibility",
+                    "wcag-audit-patterns",
+                    "web-design-guidelines",
+                ),
+                "bundle.hono-endpoint": (
+                    "hono-api-best-practices",
+                    "hono",
+                    "zod",
+                ),
+                "bundle.hono-endpoint-persistence": (
+                    "hono-api-best-practices",
+                    "hono",
+                    "zod",
+                    "drizzle-orm",
+                ),
+                "bundle.production-code": (
+                    "coding-guidelines",
+                    "clean-code",
+                    "solid",
+                ),
+                "bundle.qa": ("qa-gate", "evidence-gate"),
+                "bundle.security": (
+                    "security-best-practices",
+                    "security-threat-model",
+                ),
+                "bundle.testing": ("testing-boss", "tdd", "vitest"),
+            },
+        )
+        self.assertIn(
+            "- `trigger.production-code`: Writing, modifying, or reviewing production code.\n"
+            "  - `bundle.production-code`: `coding-guidelines`, `clean-code`, `solid`",
+            first,
+        )
+        self.assertIn(
+            "- `trigger.hono.endpoint`: Creating, modifying, or reviewing a Hono endpoint without persistence behavior.\n"
+            "  - `bundle.hono-endpoint`: `hono-api-best-practices`, `hono`, `zod`",
+            first,
+        )
+        self.assertIn(
+            "- `trigger.hono.endpoint-persistence`: Creating, modifying, or reviewing a Hono endpoint with persistence behavior.\n"
+            "  - `bundle.hono-endpoint-persistence`: `hono-api-best-practices`, `hono`, `zod`, `drizzle-orm`",
+            first,
+        )
+
+    def test_specialist_activation_bundles_remain_distinct_and_snapshot_backed(self):
+        catalog = load_asset_catalog(SKILL_ROOT)
+        setup = catalog.setups["typescript-bun"]
+
+        self.assertEqual(
+            setup["activationBundles"],
+            [
+                {
+                    "id": bundle.bundle_id,
+                    "skills": list(bundle.skills),
+                }
+                for bundle in catalog.activation_bundles_by_setup["typescript-bun"]
+            ],
+        )
+        specialist_triggers = {
+            "trigger.frontend.react-feature": "bundle.frontend-react",
+            "trigger.frontend.ui-quality": "bundle.frontend-ui-quality",
+            "trigger.testing": "bundle.testing",
+            "trigger.security": "bundle.security",
+            "trigger.delivery": "bundle.delivery",
+        }
+        self.assertEqual(
+            {
+                activation.trigger_id: activation.bundle_id
+                for activation in catalog.skill_activations
+                if activation.trigger_id in specialist_triggers
+            },
+            specialist_triggers,
+        )
+        self.assertEqual(
+            len(set(specialist_triggers.values())),
+            len(specialist_triggers),
+        )
+
+    def test_invalid_activation_documents_fail_before_repository_writes(self):
+        cases = [
+            (
+                "missing snapshot member",
+                self._remove_snapshot_bundle_member,
+                "setup.activationBundle.members.mismatch",
+            ),
+            (
+                "duplicate bundle member",
+                self._duplicate_activation_bundle_member,
+                "skill.activation.bundle.member.duplicate",
+            ),
+            (
+                "duplicate trigger id",
+                self._duplicate_activation_trigger,
+                "skill.activation.trigger.id.duplicate",
+            ),
+            (
+                "duplicate bundle owner",
+                self._duplicate_activation_bundle_owner,
+                "skill.activation.owner.duplicate",
+            ),
+            (
+                "unknown skill",
+                self._add_unknown_activation_skill,
+                "skill.activation.skill.unknown",
+            ),
+            (
+                "unstable bundle order",
+                self._reverse_activation_bundle_order,
+                "skill.activation.bundle.order.invalid",
+            ),
+        ]
+
+        for name, mutator, expected_code in cases:
+            with self.subTest(name=name):
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    temp_root = Path(temp_dir) / "setup-context-driven"
+                    clone_assets_to(SKILL_ROOT, temp_root)
+                    mutator(temp_root)
+                    with mock.patch.object(
+                        Path,
+                        "write_text",
+                        side_effect=AssertionError("repository write attempted"),
+                    ):
+                        with self.assertRaises(AssetValidationError) as captured:
+                            load_asset_catalog(temp_root)
+                self.assertIn(expected_code, "\n".join(captured.exception.diagnostics))
 
     def _load_invalid_fixture(self, mutator):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -218,8 +378,63 @@ class SkillDispatchContractTests(unittest.TestCase):
                 "contentDigest": "d" * 64,
             }
         )
-        setup["digest"] = setup_records_digest(setup["skills"])
+        setup["digest"] = setup_snapshot_digest(
+            setup["skills"], setup.get("activationBundles")
+        )
         write_json(setup_path, setup)
+
+    def _activation_document(self, temp_root):
+        return temp_root / "assets" / "skill-activations.json"
+
+    def _remove_snapshot_bundle_member(self, temp_root):
+        setup_path = temp_root / "assets" / "setups" / "typescript-bun.json"
+        setup = read_json_copy(setup_path)
+        production = next(
+            bundle
+            for bundle in setup["activationBundles"]
+            if bundle["id"] == "bundle.production-code"
+        )
+        production["skills"].remove("solid")
+        write_json(setup_path, setup)
+
+    def _duplicate_activation_bundle_member(self, temp_root):
+        path = self._activation_document(temp_root)
+        document = read_json_copy(path)
+        document["bundles"][0]["skills"].append(
+            document["bundles"][0]["skills"][0]
+        )
+        write_json(path, document)
+
+    def _duplicate_activation_trigger(self, temp_root):
+        path = self._activation_document(temp_root)
+        document = read_json_copy(path)
+        document["activations"].append(dict(document["activations"][0]))
+        write_json(path, document)
+
+    def _duplicate_activation_bundle_owner(self, temp_root):
+        path = self._activation_document(temp_root)
+        document = read_json_copy(path)
+        document["activations"].append(
+            {
+                "id": "trigger.z-duplicate-delivery-owner",
+                "owner": "context-workflow",
+                "when": "Using the delivery bundle through another owner.",
+                "bundle": "bundle.delivery",
+            }
+        )
+        write_json(path, document)
+
+    def _add_unknown_activation_skill(self, temp_root):
+        path = self._activation_document(temp_root)
+        document = read_json_copy(path)
+        document["bundles"][0]["skills"].append("missing-skill")
+        write_json(path, document)
+
+    def _reverse_activation_bundle_order(self, temp_root):
+        path = self._activation_document(temp_root)
+        document = read_json_copy(path)
+        document["bundles"].reverse()
+        write_json(path, document)
 
 
 if __name__ == "__main__":

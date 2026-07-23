@@ -12,6 +12,31 @@ may add stricter triggers.
 
 - **mandatory**: Use the governing `github-pr-workflow` skill before preparing, opening, updating, or handing off a pull request.
 
+Exact activation bundles:
+
+- `trigger.debugging`: Diagnosing or fixing unexpected behavior.
+  - `bundle.debugging`: `systematic-debugging`, `diagnosing-bugs`, `no-workarounds`
+- `trigger.delivery`: Preparing commits or pull request delivery.
+  - `bundle.delivery`: `conventional-commits`, `github-pr-workflow`
+- `trigger.frontend.react-feature`: Building or reviewing a React feature.
+  - `bundle.frontend-react`: `react`, `react-best-practices`, `react-composition-patterns`
+- `trigger.frontend.ui-quality`: Designing or reviewing frontend UI and accessibility.
+  - `bundle.frontend-ui-quality`: `frontend-design`, `interaction-design`, `interface-design`, `fixing-accessibility`, `wcag-audit-patterns`, `web-design-guidelines`
+- `trigger.hono.endpoint`: Creating, modifying, or reviewing a Hono endpoint without persistence behavior.
+  - `bundle.hono-endpoint`: `hono-api-best-practices`, `hono`, `zod`
+- `trigger.hono.endpoint-persistence`: Creating, modifying, or reviewing a Hono endpoint with persistence behavior.
+  - `bundle.hono-endpoint-persistence`: `hono-api-best-practices`, `hono`, `zod`, `drizzle-orm`
+- `trigger.production-code`: Writing, modifying, or reviewing production code.
+  - `bundle.production-code`: `coding-guidelines`, `clean-code`, `solid`
+- `trigger.qa`: Running final Spec QA.
+  - `bundle.qa`: `qa-gate`, `evidence-gate`
+- `trigger.security`: Reviewing authentication, authorization, data, or trust-boundary security.
+  - `bundle.security`: `security-best-practices`, `security-threat-model`
+- `trigger.testing`: Writing or changing tests.
+  - `bundle.testing`: `testing-boss`, `tdd`, `vitest`
+
+Individual skill triggers:
+
 - `agent-browser`:
   - `trigger.frontend.agent-browser`: Exercising frontend behavior in a real browser.
 - `ai-sdk`:

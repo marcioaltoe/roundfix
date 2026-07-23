@@ -228,7 +228,12 @@ class ProfileMacroFlowTests(unittest.TestCase):
                     self.assertEqual(installed, required)
                     self.assertIn(expected_dispatch, dispatch)
                     self.assertEqual(
-                        [line for line in dispatch.splitlines() if line.startswith("- `")],
+                        [
+                            line
+                            for line in dispatch.splitlines()
+                            if line.startswith("- `")
+                            and not line.startswith("- `trigger.")
+                        ],
                         [f"- `{skill}`:" for skill in sorted(installed)],
                     )
 

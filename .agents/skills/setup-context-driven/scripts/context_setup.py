@@ -30,7 +30,7 @@ from context_assets import (
     load_asset_catalog,
     portable_file_digest,
     portable_tree_digest,
-    setup_records_digest,
+    setup_snapshot_digest,
 )
 
 
@@ -4925,14 +4925,17 @@ def build_source_setup_snapshot(
         "path": source_relative,
     }
 
+    activation_bundles = current_snapshot.get("activationBundles")
     snapshot = {
         "schemaVersion": "setup-context-driven/setup-snapshot-v2",
         "id": setup_id,
         "version": 2,
         "source": source_metadata,
-        "digest": setup_records_digest(skills),
+        "digest": setup_snapshot_digest(skills, activation_bundles),
         "skills": skills,
     }
+    if isinstance(activation_bundles, list):
+        snapshot["activationBundles"] = activation_bundles
     return snapshot, findings, invalid_input
 
 
@@ -6210,6 +6213,25 @@ def render_skill_dispatch(
 ) -> str:
     active_module_ids = set(active_modules)
     lines: list[str] = []
+    active_activations = [
+        activation
+        for activation in catalog.skill_activations
+        if activation.owner_module in active_module_ids
+    ]
+    if active_activations:
+        lines.extend(["Exact activation bundles:", ""])
+        for activation in active_activations:
+            description = activation.when
+            if activation.capability_condition is not None:
+                description = (
+                    f"When `{activation.capability_condition}` is selected: "
+                    f"{description}"
+                )
+            bundle = catalog.activation_bundles[activation.bundle_id]
+            rendered_skills = ", ".join(f"`{skill}`" for skill in bundle.skills)
+            lines.append(f"- `{activation.trigger_id}`: {description}")
+            lines.append(f"  - `{bundle.bundle_id}`: {rendered_skills}")
+        lines.extend(["", "Individual skill triggers:", ""])
     for skill_name, triggers in catalog.skill_dispatch_by_skill.items():
         active_triggers = [
             trigger for trigger in triggers if trigger.owner_module in active_module_ids

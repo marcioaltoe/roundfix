@@ -25,7 +25,7 @@ from context_assets import (  # noqa: E402
     clone_assets_to,
     load_asset_catalog,
     portable_file_digest,
-    setup_records_digest,
+    setup_snapshot_digest,
 )
 from context_setup import (  # noqa: E402
     ExternalSkillLockAdapter,
@@ -517,14 +517,18 @@ class RestoreFixture:
                 "path": source_path,
             }
             item["treeDigest"] = digest_override or portable_file_digest(files)
-        snapshot["digest"] = setup_records_digest(snapshot["skills"])
+        snapshot["digest"] = setup_snapshot_digest(
+            snapshot["skills"], snapshot.get("activationBundles")
+        )
         self.write_snapshot(snapshot)
 
     def set_ref(self, name, revision):
         snapshot = self.read_snapshot()
         item = next(item for item in snapshot["skills"] if item["name"] == name)
         item["source"]["ref"] = revision
-        snapshot["digest"] = setup_records_digest(snapshot["skills"])
+        snapshot["digest"] = setup_snapshot_digest(
+            snapshot["skills"], snapshot.get("activationBundles")
+        )
         self.write_snapshot(snapshot)
 
     def read_snapshot(self):
