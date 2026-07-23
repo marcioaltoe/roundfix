@@ -398,11 +398,13 @@ func (builder *inventoryBuilder) walk(relative string, entry fs.DirEntry, walkEr
 	default:
 		builder.preimages[normalized] = preimageFromInfo(normalized, info, "")
 		builder.carriers[normalized] = InstructionCarrier{Path: normalized, Scope: scope, Kind: CarrierOpaque}
-		builder.blocking = append(builder.blocking, Finding{
-			Code:    "baseline.inventory.special-carrier",
-			Path:    normalized,
-			Message: "bounded carrier must be a regular file or safe in-repository alias",
-		})
+		if scope == "root" {
+			builder.blocking = append(builder.blocking, Finding{
+				Code:    "baseline.inventory.special-carrier",
+				Path:    normalized,
+				Message: "bounded carrier must be a regular file or safe in-repository alias",
+			})
+		}
 	}
 	if scope == "nested" {
 		builder.warnings = append(builder.warnings, Finding{
@@ -418,7 +420,7 @@ func (builder *inventoryBuilder) walk(relative string, entry fs.DirEntry, walkEr
 }
 
 func (builder *inventoryBuilder) addRegularCarrier(carrierPath, sourcePath, scope string) {
-	contentIdentity, ok := builder.readTrustedSource(sourcePath)
+	contentIdentity, ok := builder.readTrustedSource(sourcePath, scope)
 	if !ok {
 		builder.carriers[carrierPath] = InstructionCarrier{Path: carrierPath, Scope: scope, Kind: CarrierOpaque}
 		return
@@ -435,26 +437,26 @@ func (builder *inventoryBuilder) addRegularCarrier(carrierPath, sourcePath, scop
 func (builder *inventoryBuilder) addAliasCarrier(carrierPath, scope string) {
 	info, err := builder.root.Lstat(filepath.FromSlash(carrierPath))
 	if err != nil {
-		builder.blockUnsafeAlias(carrierPath, "alias metadata cannot be read")
+		builder.blockUnsafeAlias(carrierPath, scope, "alias metadata cannot be read")
 		return
 	}
 	linkTarget, err := builder.root.Readlink(filepath.FromSlash(carrierPath))
 	if err != nil {
 		builder.preimages[carrierPath] = preimageFromInfo(carrierPath, info, "")
-		builder.blockUnsafeAlias(carrierPath, "alias target cannot be read")
+		builder.blockUnsafeAlias(carrierPath, scope, "alias target cannot be read")
 		return
 	}
 	builder.preimages[carrierPath] = preimageFromInfo(carrierPath, info, filepath.ToSlash(linkTarget))
 	targetPath, err := builder.resolveAlias(carrierPath, linkTarget)
 	if err != nil {
 		builder.carriers[carrierPath] = InstructionCarrier{Path: carrierPath, Scope: scope, Kind: CarrierOpaque}
-		builder.blockUnsafeAlias(carrierPath, err.Error())
+		builder.blockUnsafeAlias(carrierPath, scope, err.Error())
 		return
 	}
-	contentIdentity, ok := builder.readTrustedSource(targetPath)
+	contentIdentity, ok := builder.readTrustedSource(targetPath, scope)
 	if !ok {
 		builder.carriers[carrierPath] = InstructionCarrier{Path: carrierPath, Scope: scope, Kind: CarrierOpaque}
-		builder.blockUnsafeAlias(carrierPath, "alias target is not trusted regular-file evidence")
+		builder.blockUnsafeAlias(carrierPath, scope, "alias target is not trusted regular-file evidence")
 		return
 	}
 	builder.carriers[carrierPath] = InstructionCarrier{
@@ -466,7 +468,10 @@ func (builder *inventoryBuilder) addAliasCarrier(carrierPath, scope string) {
 	}
 }
 
-func (builder *inventoryBuilder) blockUnsafeAlias(carrierPath, message string) {
+func (builder *inventoryBuilder) blockUnsafeAlias(carrierPath, scope, message string) {
+	if scope != "root" {
+		return
+	}
 	builder.blocking = append(builder.blocking, Finding{
 		Code:    "baseline.inventory.unsafe-alias",
 		Path:    carrierPath,
@@ -537,13 +542,13 @@ func (builder *inventoryBuilder) resolveAlias(aliasPath, linkTarget string) (str
 	return "", errors.New("alias target has too many symbolic-link resolutions")
 }
 
-func (builder *inventoryBuilder) readTrustedSource(relative string) (string, bool) {
+func (builder *inventoryBuilder) readTrustedSource(relative, scope string) (string, bool) {
 	if source, exists := builder.sources[relative]; exists {
 		return source.ContentIdentity, true
 	}
 	info, err := builder.root.Lstat(filepath.FromSlash(relative))
 	if err != nil {
-		builder.blocking = append(builder.blocking, Finding{
+		builder.addCarrierBlocking(scope, Finding{
 			Code:    "baseline.inventory.carrier-unreadable",
 			Path:    relative,
 			Message: "bounded carrier cannot be inspected",
@@ -552,7 +557,7 @@ func (builder *inventoryBuilder) readTrustedSource(relative string) (string, boo
 	}
 	if !info.Mode().IsRegular() {
 		builder.preimages[relative] = preimageFromInfo(relative, info, "")
-		builder.blocking = append(builder.blocking, Finding{
+		builder.addCarrierBlocking(scope, Finding{
 			Code:    "baseline.inventory.special-carrier",
 			Path:    relative,
 			Message: "trusted carrier source must be a regular file",
@@ -561,7 +566,7 @@ func (builder *inventoryBuilder) readTrustedSource(relative string) (string, boo
 	}
 	if info.Size() > maxInventoryFileBytes {
 		builder.preimages[relative] = preimageFromInfo(relative, info, "")
-		builder.blocking = append(builder.blocking, Finding{
+		builder.addCarrierBlocking(scope, Finding{
 			Code:    "baseline.inventory.limit.file-bytes",
 			Path:    relative,
 			Message: fmt.Sprintf("carrier size %d exceeds %d", info.Size(), maxInventoryFileBytes),
@@ -570,7 +575,7 @@ func (builder *inventoryBuilder) readTrustedSource(relative string) (string, boo
 	}
 	file, err := builder.root.Open(filepath.FromSlash(relative))
 	if err != nil {
-		builder.blocking = append(builder.blocking, Finding{
+		builder.addCarrierBlocking(scope, Finding{
 			Code:    "baseline.inventory.carrier-unreadable",
 			Path:    relative,
 			Message: "bounded carrier bytes cannot be read",
@@ -580,7 +585,7 @@ func (builder *inventoryBuilder) readTrustedSource(relative string) (string, boo
 	defer file.Close()
 	openedInfo, err := file.Stat()
 	if err != nil || !openedInfo.Mode().IsRegular() || !os.SameFile(info, openedInfo) {
-		builder.blocking = append(builder.blocking, Finding{
+		builder.addCarrierBlocking(scope, Finding{
 			Code:    "baseline.inventory.carrier-changed",
 			Path:    relative,
 			Message: "bounded carrier changed while it was inspected",
@@ -589,7 +594,7 @@ func (builder *inventoryBuilder) readTrustedSource(relative string) (string, boo
 	}
 	data, err := io.ReadAll(io.LimitReader(file, maxInventoryFileBytes+1))
 	if err != nil {
-		builder.blocking = append(builder.blocking, Finding{
+		builder.addCarrierBlocking(scope, Finding{
 			Code:    "baseline.inventory.carrier-unreadable",
 			Path:    relative,
 			Message: "bounded carrier bytes cannot be read",
@@ -597,7 +602,7 @@ func (builder *inventoryBuilder) readTrustedSource(relative string) (string, boo
 		return "", false
 	}
 	if len(data) > maxInventoryFileBytes {
-		builder.blocking = append(builder.blocking, Finding{
+		builder.addCarrierBlocking(scope, Finding{
 			Code:    "baseline.inventory.limit.file-bytes",
 			Path:    relative,
 			Message: fmt.Sprintf("carrier bytes exceed %d", maxInventoryFileBytes),
@@ -606,7 +611,7 @@ func (builder *inventoryBuilder) readTrustedSource(relative string) (string, boo
 	}
 	builder.totalBytes += int64(len(data))
 	if builder.totalBytes > maxInventoryBytes {
-		builder.blocking = append(builder.blocking, Finding{
+		builder.addCarrierBlocking(scope, Finding{
 			Code:    "baseline.inventory.limit.total-bytes",
 			Path:    relative,
 			Message: fmt.Sprintf("carrier bytes exceed %d", maxInventoryBytes),
@@ -629,6 +634,12 @@ func (builder *inventoryBuilder) readTrustedSource(relative string) (string, boo
 		ContentIdentity: identity,
 	}
 	return identity, true
+}
+
+func (builder *inventoryBuilder) addCarrierBlocking(scope string, finding Finding) {
+	if scope == "root" {
+		builder.blocking = append(builder.blocking, finding)
+	}
 }
 
 func (builder *inventoryBuilder) recordPath(relative string) {
