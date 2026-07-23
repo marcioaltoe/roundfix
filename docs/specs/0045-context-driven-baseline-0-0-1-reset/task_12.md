@@ -1,7 +1,7 @@
 ---
 task: task_12
 spec: 0045-context-driven-baseline-0-0-1-reset
-status: pending
+status: completed
 type: test
 complexity: high
 ---
@@ -38,29 +38,29 @@ high-risk blocking and preservation paths remain observable.
 
 ## Subtasks
 
-- [ ] Build reusable disposable repositories for every maintained profile.
-- [ ] Add the full apply/format/verify/audit/reapply journey.
-- [ ] Add TypeScript HTTP, optional-module, workspace, and capability variants.
-- [ ] Add complete Readoption, preservation, stale-plan, and rollback journeys.
-- [ ] Add owned/protected version-matrix coverage.
-- [ ] Add temporary Git and paginated GitHub reset-plan journeys.
-- [ ] Run the same embedded suite from both skill-tree locations.
+- [x] Build reusable disposable repositories for every maintained profile.
+- [x] Add the full apply/format/verify/audit/reapply journey.
+- [x] Add TypeScript HTTP, optional-module, workspace, and capability variants.
+- [x] Add complete Readoption, preservation, stale-plan, and rollback journeys.
+- [x] Add owned/protected version-matrix coverage.
+- [x] Add temporary Git and paginated GitHub reset-plan journeys.
+- [x] Run the same embedded suite from both skill-tree locations.
 
 ## Acceptance Criteria
 
-- [ ] Every maintained profile completes the macro journey and finishes with a
+- [x] Every maintained profile completes the macro journey and finishes with a
       clean audit and byte-identical reapply.
-- [ ] REST and Post-only TypeScript fixtures preserve their typed contracts and
+- [x] REST and Post-only TypeScript fixtures preserve their typed contracts and
       explicit exceptions across snapshot and reapply.
-- [ ] Every Source Baseline Entry kind is dispositioned explicitly, and
+- [x] Every Source Baseline Entry kind is dispositioned explicitly, and
       repository-owned files remain unchanged on later setup runs.
-- [ ] Required-capability absence blocks with no writes; recommended absence
+- [x] Required-capability absence blocks with no writes; recommended absence
       emits a stable warning and allows the journey to continue.
-- [ ] One-field mutations across every owned version surface fail, while
+- [x] One-field mutations across every owned version surface fail, while
       protected operational and upstream versions remain accepted unchanged.
-- [ ] Reset-plan fixtures exhaust pagination, return approval-required exit 3,
+- [x] Reset-plan fixtures exhaust pagination, return approval-required exit 3,
       and record zero mutation calls.
-- [ ] Canonical and distributed suites are independently runnable and pass the
+- [x] Canonical and distributed suites are independently runnable and pass the
       same cases.
 
 ## Context
@@ -86,3 +86,53 @@ high-risk blocking and preservation paths remain observable.
 - `_techspec.md` → Testing Approach; Risks & Considerations; Build Order 8.
 - ADR-0059 → declared formatter stability.
 - ADR-0060 through ADR-0065 → complete 0.0.1 behavior and safety boundaries.
+
+## Result
+
+Implemented project-neutral disposable-repository journeys that compose
+confirmed setup, the profile's declared formatter contract, the persisted
+Verification, two clean audits, and byte-identical reapply for all three
+maintained profiles. Added strict Standard TypeScript Monorepo Profile journeys
+for REST and Post-only HTTP Contract Decisions with typed exceptions, selected
+Inngest evidence, absent Docker evidence, and exact frontend/backend workspace
+paths.
+
+Added a complete Baseline Readoption journey whose inventory contains every
+structural Source Baseline Entry kind and exercises all four dispositions:
+current managed entry, typed repository document, Repository-Specific Normative
+Rules, and individual rejection. The journey proves confirmed creation,
+typed-document preservation, maintainer edits surviving reapply, stale-plan
+rejection, required-capability no-write blocking, recommended-capability
+warnings, and atomic rollback on write or postwrite failure.
+
+Expanded the owned-version contract to a 66-field mutation matrix spanning Go,
+Python, npm packages and dependency pins, both Roundfix-owned skill trees,
+profile/setup/source schemas and snapshots, the Release Plan schema, and the
+changelog. Every one-field mutation is rejected, while the existing protected
+Run Database, external lock, protocol, and upstream-skill fixture remains
+accepted unchanged.
+
+Added a public Release Plan Command journey backed by a real disposable Git
+repository and bare remote plus a fake two-page GitHub provider. It inventories
+shared, local-only, and remote-only stable tags, exhausts all release pages,
+returns approval-required exit `3`, preserves stdout/stderr discipline, leaves
+the repository unchanged, and records zero Git or GitHub mutation calls.
+
+Acceptance evidence:
+
+- Every maintained profile: `ProfileMacroFlowTests.test_supported_profiles_apply_audit_clean_and_reapply_without_changes` executes formatter compatibility, the persisted Verification, two audits, and reapply with identical repository bytes.
+- TypeScript contracts: `ReadoptionApplyTests.test_rest_and_post_only_contracts_persist_typed_exceptions_and_exact_workspace_evidence` preserves both modes, ordered typed exceptions, optional-module status, and exact workspace evidence in the Setup Snapshot and reapply.
+- Readoption completeness: `ReadoptionApplyTests.test_every_structural_entry_kind_has_an_individual_destination_and_preserves_repository_bytes` covers `file`, `managed-block`, `manifest-record`, and `unmarked-span`; existing stale-confirmation and rollback cases remain green in the same suite.
+- Capability safety: the Readoption required-capability case proves zero writes, the new recommended-capability case proves stable non-blocking warnings, and `RepositoryCapabilityTests.test_capability_evaluation_has_no_write_install_network_or_script_side_effects` rejects forbidden evaluation side effects.
+- Version ownership: `VersionContractTests.test_authoritative_distribution_surfaces_report_0_0_1` validates and mutation-tests all 66 owned fields; `test_protected_versions_match_the_operational_and_upstream_fixture` proves protected versions remain unchanged.
+- Reset planning: `TestReleasePlanResetInventoriesTemporaryGitRemoteAndPaginatedGitHubReadOnly` proves real Git inventory, fake GitHub pagination, exit `3`, repository preservation, and zero mutation calls.
+- Distribution parity: `make skills-sync-check` and a recursive tree comparison reported no canonical/distributed difference.
+
+Verification:
+
+- `rtk env PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s .agents/skills/setup-context-driven/tests` — passed, 246 tests.
+- `rtk env PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s skills/setup-context-driven/tests` — passed, the same 246 tests.
+- `rtk go test ./internal/releaseplan ./internal/cli ./skills` — passed, 740 tests across 3 packages.
+- `rtk make verify` — passed: both 246-test setup suites, 1,727 Go tests across 20 packages, asset loading, Repository Skill Set check, and build.
+
+Follow-ups: none.

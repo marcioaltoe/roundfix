@@ -497,6 +497,92 @@ func TestReleasePlanResetTextAndJSONInventoryMatchThroughRunBoundary(t *testing.
 	}
 }
 
+func TestReleasePlanResetInventoriesTemporaryGitRemoteAndPaginatedGitHubReadOnly(t *testing.T) {
+	repoDir := newEmptyReleasePlanGitRepo(t)
+	writeReleasePlanFile(t, repoDir, "README.md", "seed\n")
+	gitReleasePlan(t, repoDir, "add", "-A")
+	commitReleasePlan(t, repoDir, "chore: seed")
+	gitReleasePlan(t, repoDir, "tag", "v0.1.0")
+	writeReleasePlanFile(t, repoDir, "release.txt", "second\n")
+	gitReleasePlan(t, repoDir, "add", "-A")
+	commitReleasePlan(t, repoDir, "feat: second release")
+	gitReleasePlan(t, repoDir, "tag", "v0.2.0")
+
+	remoteDir := t.TempDir()
+	gitReleasePlan(t, repoDir, "init", "--bare", remoteDir)
+	gitReleasePlan(t, repoDir, "remote", "add", "origin", remoteDir)
+	gitReleasePlan(t, repoDir, "push", "origin", "main", "v0.1.0", "v0.2.0")
+	gitReleasePlan(t, repoDir, "tag", "v0.3.0")
+	gitReleasePlan(t, repoDir, "push", "origin", "v0.3.0")
+	gitReleasePlan(t, repoDir, "tag", "-d", "v0.3.0")
+	gitReleasePlan(t, repoDir, "tag", "v0.4.0")
+
+	gitRunner := &resetPlanExecGitRunner{delegate: preflight.ExecGitRunner{}}
+	ghRunner := &resetPlanRecordingGHRunner{
+		output: `[
+			[
+				{"id":40,"node_id":"RE_node_40","name":"Fourth release","tag_name":"v0.4.0","target_commitish":"main"},
+				{"id":10,"node_id":"RE_node_10","name":"First release","tag_name":"v0.1.0","target_commitish":"main"}
+			],
+			[
+				{"id":20,"node_id":"RE_node_20","name":"Second release","tag_name":"v0.2.0","target_commitish":"main"},
+				{"id":30,"node_id":"RE_node_30","name":"Third release","tag_name":"v0.3.0","target_commitish":"main"}
+			]
+		]`,
+	}
+	restore := setReleasePlanCommandRunnersForTest(gitRunner, ghRunner)
+	t.Cleanup(restore)
+	before := snapshotReleasePlanRepo(t, repoDir)
+	t.Chdir(repoDir)
+
+	var stdout, stderr bytes.Buffer
+	code := RunContext(
+		context.Background(),
+		[]string{"release", "plan", "--reset-to", "v0.0.1", "--format", "json"},
+		&stdout,
+		&stderr,
+	)
+
+	if code != exitUnverified {
+		t.Fatalf("exit = %d, want 3 stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+	}
+	assertReleasePlanNoStderr(t, stderr.String())
+	plan := decodeReleaseResetPlanJSON(t, stdout.String())
+	if plan.State != releaseplan.StateApprovalRequired || !plan.Approval.Required {
+		t.Fatalf("decision = state:%q approval:%+v, want approval_required and required", plan.State, plan.Approval)
+	}
+	if len(plan.Tags) != 6 {
+		t.Fatalf("tags = %+v, want three shared/local tags plus one remote-only and one local-only identity", plan.Tags)
+	}
+	tagInventory := map[string]bool{}
+	for _, tag := range plan.Tags {
+		tagInventory[string(tag.Source)+":"+tag.Name] = true
+	}
+	wantTags := []string{
+		"local:v0.1.0",
+		"local:v0.2.0",
+		"local:v0.4.0",
+		"remote:v0.1.0",
+		"remote:v0.2.0",
+		"remote:v0.3.0",
+	}
+	for _, want := range wantTags {
+		if !tagInventory[want] {
+			t.Fatalf("tag inventory missing %q: %+v", want, plan.Tags)
+		}
+	}
+	if got := []int64{plan.Releases[0].ID, plan.Releases[1].ID, plan.Releases[2].ID, plan.Releases[3].ID}; !reflect.DeepEqual(got, []int64{10, 20, 30, 40}) {
+		t.Fatalf("release IDs = %v, want every paginated release in deterministic tag order", got)
+	}
+	if gitRunner.mutationCalls != 0 || ghRunner.mutationCalls != 0 {
+		t.Fatalf("mutation calls = git:%d GitHub:%d, want zero", gitRunner.mutationCalls, ghRunner.mutationCalls)
+	}
+	if len(ghRunner.calls) != 1 {
+		t.Fatalf("GitHub calls = %v, want one exhaustive paginated read", ghRunner.calls)
+	}
+	assertReleasePlanRepoUnchanged(t, repoDir, before)
+}
+
 func TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory(t *testing.T) {
 	tests := []struct {
 		name string
@@ -608,6 +694,21 @@ type resetPlanRecordingGitRunner struct {
 	dirtyStatus   string
 	remoteErr     error
 	mutationCalls int
+}
+
+type resetPlanExecGitRunner struct {
+	delegate      preflight.GitRunner
+	calls         [][]string
+	mutationCalls int
+}
+
+func (runner *resetPlanExecGitRunner) RunGit(ctx context.Context, workDir string, args ...string) (string, error) {
+	runner.calls = append(runner.calls, append([]string(nil), args...))
+	if resetPlanGitCallMutates(args) {
+		runner.mutationCalls++
+		return "", errors.New("mutation forbidden")
+	}
+	return runner.delegate.RunGit(ctx, workDir, args...)
 }
 
 func newResetPlanRecordingGitRunner() *resetPlanRecordingGitRunner {

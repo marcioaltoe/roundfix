@@ -113,6 +113,288 @@ class ReadoptionApplyTests(unittest.TestCase):
             self.assertEqual(audit.returncode, 0, audit.stderr)
             self.assertEqual(snapshot_files(repo), after)
 
+    def test_every_structural_entry_kind_has_an_individual_destination_and_preserves_repository_bytes(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo, decision_file, _, proposed_rules = self.fixture(Path(temp_dir))
+            nested_carrier = repo / "packages/api/CLAUDE.md"
+            nested_carrier.parent.mkdir(parents=True)
+            nested_carrier.write_text(
+                "# Nested agent instructions\n\nPreserve this structural file.\n",
+                encoding="utf-8",
+            )
+            (repo / "docs/agents/opaque.bin").write_bytes(b"\x00\xff\n")
+            inventory = inventory_incompatible_source_baseline(
+                repo, "baseline.pre-0.0.1"
+            )
+            document = json.loads(decision_file.read_text(encoding="utf-8"))
+            document["readoption"]["sourceBaseline"] = {
+                "id": inventory.baseline_id,
+                "digest": inventory.digest,
+            }
+            typed_path = repo / "DESIGN.md"
+            typed_bytes = typed_path.read_bytes()
+            first_by_kind = {}
+            for entry in inventory.entries:
+                first_by_kind.setdefault(entry.kind, entry)
+            self.assertEqual(
+                set(first_by_kind),
+                {"file", "managed-block", "manifest-record", "unmarked-span"},
+            )
+
+            dispositions = []
+            for entry in inventory.entries:
+                if entry == first_by_kind["file"]:
+                    disposition = {
+                        "entryId": entry.entry_id,
+                        "entryDigest": entry.digest,
+                        "classification": "operational-contract",
+                        "disposition": "repository-document",
+                        "destination": {
+                            "documentType": "design-contract",
+                            "path": "DESIGN.md",
+                            "digest": hashlib.sha256(typed_bytes).hexdigest(),
+                        },
+                        "reason": "",
+                    }
+                elif entry == first_by_kind["managed-block"]:
+                    disposition = {
+                        "entryId": entry.entry_id,
+                        "entryDigest": entry.digest,
+                        "classification": "normative-clause",
+                        "disposition": "managed-entry",
+                        "destination": {"managedId": "root.context-workflow"},
+                        "reason": "",
+                    }
+                elif entry == first_by_kind["unmarked-span"]:
+                    disposition = {
+                        "entryId": entry.entry_id,
+                        "entryDigest": entry.digest,
+                        "classification": "normative-clause",
+                        "disposition": "repository-rules",
+                        "destination": {
+                            "documentType": "repository-rules",
+                            "path": REPOSITORY_RULES.as_posix(),
+                            "proposedBytes": base64.b64encode(proposed_rules).decode(
+                                "ascii"
+                            ),
+                            "digest": hashlib.sha256(proposed_rules).hexdigest(),
+                        },
+                        "reason": "",
+                    }
+                else:
+                    disposition = {
+                        "entryId": entry.entry_id,
+                        "entryDigest": entry.digest,
+                        "classification": "non-governed",
+                        "disposition": "rejected",
+                        "destination": None,
+                        "reason": (
+                            "This structural entry is retained only as source evidence."
+                        ),
+                    }
+                dispositions.append(disposition)
+            document["readoption"]["dispositions"] = dispositions
+            decision_file.write_text(
+                json.dumps(document, indent=2) + "\n", encoding="utf-8"
+            )
+
+            preview = run_apply(repo, decision_file)
+            preview_payload = json.loads(preview.stdout)
+
+            self.assertEqual(preview.returncode, 3, preview.stderr)
+            normalized = {
+                item["entryId"]: item
+                for item in preview_payload["decisionDocument"]["readoption"][
+                    "dispositions"
+                ]
+            }
+            for entry in inventory.entries:
+                self.assertIn(entry.entry_id, normalized)
+            self.assertEqual(
+                {item["disposition"] for item in normalized.values()},
+                {
+                    "managed-entry",
+                    "rejected",
+                    "repository-document",
+                    "repository-rules",
+                },
+            )
+
+            applied = run_apply(
+                repo, decision_file, preview_payload["planDigest"]
+            )
+
+            self.assertEqual(applied.returncode, 0, applied.stderr)
+            self.assertEqual((repo / REPOSITORY_RULES).read_bytes(), proposed_rules)
+            self.assertEqual(typed_path.read_bytes(), typed_bytes)
+
+            repository_owned = proposed_rules + b"\nMaintainer-owned follow-up.\n"
+            (repo / REPOSITORY_RULES).write_bytes(repository_owned)
+            before_reapply = snapshot_files(repo)
+            reapplied = run_apply(repo, decision_file)
+
+            self.assertEqual(reapplied.returncode, 0, reapplied.stderr)
+            self.assertEqual((repo / REPOSITORY_RULES).read_bytes(), repository_owned)
+            self.assertEqual(typed_path.read_bytes(), typed_bytes)
+            self.assertEqual(snapshot_files(repo), before_reapply)
+
+    def test_rest_and_post_only_contracts_persist_typed_exceptions_and_exact_workspace_evidence(self):
+        cases = (
+            (
+                "REST",
+                [
+                    {
+                        "scope": "/webhooks/*",
+                        "methods": ["POST"],
+                        "owner": "payments",
+                        "reason": "The provider owns webhook delivery semantics.",
+                    }
+                ],
+            ),
+            (
+                "Post-only",
+                [
+                    {
+                        "scope": "/health",
+                        "methods": ["GET"],
+                        "owner": "operations",
+                        "reason": "Health probes require a safe read endpoint.",
+                    }
+                ],
+            ),
+        )
+        restricted_environment = {
+            "PATH": "/usr/bin:/bin",
+            "PYTHONDONTWRITEBYTECODE": "1",
+        }
+
+        for mode, exceptions in cases:
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temp_dir:
+                repo, decision_file, _, _ = self.fixture(Path(temp_dir))
+                package_path = repo / "package.json"
+                package = json.loads(package_path.read_text(encoding="utf-8"))
+                package["dependencies"]["inngest"] = "1"
+                package_path.write_text(
+                    json.dumps(package, sort_keys=True) + "\n", encoding="utf-8"
+                )
+                http_path = repo / "docs/architecture/http-contract.json"
+                http_bytes = (
+                    json.dumps({"mode": mode}, separators=(",", ":")) + "\n"
+                ).encode("utf-8")
+                http_path.write_bytes(http_bytes)
+                document = json.loads(decision_file.read_text(encoding="utf-8"))
+                http_decision = next(
+                    item
+                    for item in document["decisions"]
+                    if item["id"] == "http.contract"
+                )
+                http_decision["value"] = {
+                    "mode": mode,
+                    "exceptions": exceptions,
+                    "source": {
+                        "path": "docs/architecture/http-contract.json",
+                        "digest": hashlib.sha256(http_bytes).hexdigest(),
+                    },
+                }
+                decision_file.write_text(
+                    json.dumps(document, indent=2) + "\n", encoding="utf-8"
+                )
+
+                preview = run_apply(
+                    repo, decision_file, extra_env=restricted_environment
+                )
+                payload = json.loads(preview.stdout)
+
+                self.assertEqual(preview.returncode, 3, preview.stderr)
+                self.assertEqual(
+                    payload["setupSnapshot"]["httpContract"],
+                    http_decision["value"],
+                )
+                capabilities = {
+                    item["id"]: item for item in payload["capabilities"]
+                }
+                for workspace in ("backend", "frontend"):
+                    capability = capabilities[f"capability.workspace.{workspace}"]
+                    self.assertEqual(capability["status"], "satisfied")
+                    self.assertEqual(
+                        capability["evidence"][0]["sourcePath"],
+                        f"packages/{workspace}/package.json",
+                    )
+                self.assertEqual(
+                    capabilities["capability.optional.inngest"]["status"],
+                    "satisfied",
+                )
+                self.assertEqual(
+                    capabilities["capability.optional.docker"]["status"],
+                    "missing",
+                )
+
+                applied = run_apply(
+                    repo,
+                    decision_file,
+                    payload["planDigest"],
+                    extra_env=restricted_environment,
+                )
+                self.assertEqual(applied.returncode, 0, applied.stderr)
+                after_apply = snapshot_files(repo)
+                manifest = json.loads(
+                    (repo / MANIFEST).read_text(encoding="utf-8")
+                )
+                self.assertEqual(
+                    manifest["setupSnapshot"]["httpContract"],
+                    http_decision["value"],
+                )
+
+                reapplied = run_apply(
+                    repo, decision_file, extra_env=restricted_environment
+                )
+
+                self.assertEqual(reapplied.returncode, 0, reapplied.stderr)
+                self.assertEqual(snapshot_files(repo), after_apply)
+
+    def test_missing_recommended_capabilities_warn_and_still_allow_confirmed_apply(self):
+        restricted_environment = {
+            "PATH": "/usr/bin:/bin",
+            "PYTHONDONTWRITEBYTECODE": "1",
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo, decision_file, _, _ = self.fixture(Path(temp_dir))
+            firecrawl = repo / ".agents/skills/firecrawl/SKILL.md"
+            firecrawl.unlink()
+            before = snapshot_files(repo)
+
+            preview = run_apply(
+                repo, decision_file, extra_env=restricted_environment
+            )
+            payload = json.loads(preview.stdout)
+
+            self.assertEqual(preview.returncode, 3, preview.stderr)
+            self.assertEqual(snapshot_files(repo), before)
+            warnings = {
+                item["managedId"]
+                for item in payload["findings"]
+                if item["code"] == "capability.recommended.missing"
+            }
+            self.assertEqual(
+                warnings,
+                {"capability.firecrawl", "capability.rg", "capability.rtk"},
+            )
+
+            applied = run_apply(
+                repo,
+                decision_file,
+                payload["planDigest"],
+                extra_env=restricted_environment,
+            )
+
+            self.assertEqual(applied.returncode, 0, applied.stderr)
+            applied_warnings = {
+                item["managedId"]
+                for item in json.loads(applied.stdout)["findings"]
+                if item["code"] == "capability.recommended.missing"
+            }
+            self.assertEqual(applied_warnings, warnings)
+
     def test_missing_required_capability_and_stale_confirmation_write_nothing(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo, decision_file, _, _ = self.fixture(Path(temp_dir))
@@ -360,7 +642,7 @@ class ReadoptionApplyTests(unittest.TestCase):
             raise AssertionError(f"missing finding {code}: {payload['findings']}")
 
 
-def run_apply(repo, decision_file, confirmation=None):
+def run_apply(repo, decision_file, confirmation=None, extra_env=None):
     args = [
         "apply",
         "--repo",
@@ -374,7 +656,7 @@ def run_apply(repo, decision_file, confirmation=None):
     ]
     if confirmation is not None:
         args.extend(["--confirm-plan", confirmation])
-    return run_context_setup(*args)
+    return run_context_setup(*args, extra_env=extra_env)
 
 
 def run_apply_in_process(repo, decision_file, confirmation=None):

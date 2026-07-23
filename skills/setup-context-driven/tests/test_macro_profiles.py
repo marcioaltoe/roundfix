@@ -8,6 +8,9 @@ Boundary OUT: Makefile orchestration and embedded skill synchronization checks.
 
 import hashlib
 import json
+import os
+import shlex
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -27,6 +30,7 @@ from test_audit import (  # noqa: E402
 )
 from test_skills import write_lockfile  # noqa: E402
 from test_formatter_compatibility import (  # noqa: E402
+    VERIFICATION_SOURCE as FORMATTER_VERIFICATION_SOURCE,
     assert_profile_formatter_canonical,
     formatter_profile_decisions,
 )
@@ -45,6 +49,13 @@ SUPPORTED_PROFILES = [
     "rust-cli",
     "standard-typescript-monorepo",
 ]
+MACRO_VERIFICATION_COMMAND = "python3 -B .macro-profile-verify.py"
+MACRO_VERIFICATION_SOURCE = (
+    Path(__file__).resolve().parent
+    / "fixtures"
+    / "macro-profiles"
+    / "verify_fixture.py"
+)
 
 
 class ProfileMacroFlowTests(unittest.TestCase):
@@ -114,27 +125,38 @@ class ProfileMacroFlowTests(unittest.TestCase):
                     repo = Path(temp_dir)
                     prepare_repository_owned_contracts(repo, profile_id)
                     formatter = catalog.formatter_by_profile[profile_id]
-                    decisions = (
-                        formatter_profile_decisions()
-                        if formatter.kind == "selected"
-                        else BASE_DECISIONS
-                    )
+                    if formatter.kind == "selected":
+                        (repo / ".formatter-fixture-verify.py").write_bytes(
+                            FORMATTER_VERIFICATION_SOURCE.read_bytes()
+                        )
+                        decisions = formatter_profile_decisions()
+                    else:
+                        (repo / ".macro-profile-verify.py").write_bytes(
+                            MACRO_VERIFICATION_SOURCE.read_bytes()
+                        )
+                        decisions = decisions_with(
+                            autonomous=False,
+                            verification_gate=MACRO_VERIFICATION_COMMAND,
+                        )
 
                     first_apply = run_profile_apply(repo, profile_id, decisions)
                     install_profile_skills(repo, profile_id)
-                    assert_profile_formatter_canonical(
-                        repo,
-                        catalog,
-                        profile_id,
-                    )
-                    clean_audit = run_audit(repo)
-                    after_audit = snapshot_files(repo)
+                    after_apply = snapshot_files(repo)
+                    run_profile_formatter(repo, catalog, profile_id)
+                    verification = run_persisted_verification(repo)
+                    first_audit = run_audit(repo)
+                    run_profile_formatter(repo, catalog, profile_id)
+                    second_audit = run_audit(repo)
+                    after_composition = snapshot_files(repo)
                     second_apply = run_profile_apply(repo, profile_id, [])
 
                     self.assertEqual(first_apply.returncode, 0, first_apply.stderr)
-                    self.assertEqual(clean_audit.returncode, 0, clean_audit.stderr)
+                    self.assertEqual(verification.returncode, 0, verification.stderr)
+                    self.assertEqual(first_audit.returncode, 0, first_audit.stderr)
+                    self.assertEqual(second_audit.returncode, 0, second_audit.stderr)
                     self.assertEqual(second_apply.returncode, 0, second_apply.stderr)
-                    self.assertEqual(snapshot_files(repo), after_audit)
+                    self.assertEqual(after_composition, after_apply)
+                    self.assertEqual(snapshot_files(repo), after_composition)
 
     def test_supported_profiles_cover_representative_decision_combinations(self):
         cases = [
@@ -400,6 +422,33 @@ def decisions_with(
 def generated_text(repo):
     paths = [repo / "AGENTS.md", *sorted((repo / "docs" / "agents").glob("*.md"))]
     return "\n".join(path.read_text(encoding="utf-8") for path in paths if path.exists())
+
+
+def run_profile_formatter(repo, catalog, profile_id):
+    contract = catalog.formatter_by_profile[profile_id]
+    if contract.kind == "none":
+        return
+    assert_profile_formatter_canonical(repo, catalog, profile_id)
+
+
+def run_persisted_verification(repo):
+    manifest = json.loads(
+        (repo / "docs" / "agents" / "setup-context.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    command = manifest["decisions"]["verification.gate"]["value"]
+    return subprocess.run(
+        shlex.split(command),
+        cwd=repo,
+        text=True,
+        capture_output=True,
+        check=False,
+        env={
+            **os.environ,
+            "PYTHONDONTWRITEBYTECODE": "1",
+        },
+    )
 
 
 def prepare_repository_owned_contracts(repo, profile_id):

@@ -83,6 +83,16 @@ def skill_version(test, path):
     ).strip()
 
 
+def assert_owned_version_matrix(observed, expected):
+    mismatches = [
+        f"{surface}: got {observed.get(surface)!r}, want {version!r}"
+        for surface, version in sorted(expected.items())
+        if observed.get(surface) != version
+    ]
+    if mismatches:
+        raise AssertionError("owned version mismatch: " + "; ".join(mismatches))
+
+
 class VersionContractTests(unittest.TestCase):
     def test_authoritative_distribution_surfaces_report_0_0_1(self):
         owned_versions = {
@@ -131,6 +141,7 @@ class VersionContractTests(unittest.TestCase):
                     REPOSITORY_ROOT / tree / name / "SKILL.md",
                 )
 
+        schema_expectations = {}
         profile_root = SKILL_ROOT / "assets" / "profiles"
         self.assertEqual(
             {path.name for path in profile_root.glob("*.json")},
@@ -139,10 +150,11 @@ class VersionContractTests(unittest.TestCase):
         for profile_id, filename in MAINTAINED_PROFILES.items():
             profile = read_json(profile_root / filename)
             self.assertEqual(profile["id"], profile_id)
-            self.assertEqual(
-                profile["schemaVersion"],
-                "setup-context-driven/profile/0.0.1",
-            )
+            profile_schema = "setup-context-driven/profile/0.0.1"
+            owned_versions[f"profile-schema:{profile_id}"] = profile[
+                "schemaVersion"
+            ]
+            schema_expectations[f"profile-schema:{profile_id}"] = profile_schema
             owned_versions[f"profile:{profile_id}"] = profile["version"]
             owned_versions[f"profile-marker:{profile_id}"] = profile["markerVersion"]
 
@@ -154,10 +166,13 @@ class VersionContractTests(unittest.TestCase):
         for setup_id, filename in SETUP_SNAPSHOTS.items():
             setup = read_json(setup_root / filename)
             self.assertEqual(setup["id"], setup_id)
-            self.assertEqual(
-                setup["schemaVersion"],
-                "setup-context-driven/setup-snapshot/0.0.1",
-            )
+            setup_schema = "setup-context-driven/setup-snapshot/0.0.1"
+            owned_versions[f"setup-snapshot-schema:{setup_id}"] = setup[
+                "schemaVersion"
+            ]
+            schema_expectations[
+                f"setup-snapshot-schema:{setup_id}"
+            ] = setup_schema
             owned_versions[f"setup-snapshot:{setup_id}"] = setup["version"]
 
         baseline_root = (
@@ -186,20 +201,35 @@ class VersionContractTests(unittest.TestCase):
         }
         for name, (path, schema) in baseline_documents.items():
             document = read_json(path)
-            self.assertEqual(document["schemaVersion"], schema)
+            owned_versions[f"{name}-schema"] = document["schemaVersion"]
+            schema_expectations[f"{name}-schema"] = schema
             owned_versions[name] = document["version"]
-
-        self.assertEqual(len(owned_versions), 54)
-        for surface, version in sorted(owned_versions.items()):
-            with self.subTest(surface=surface):
-                self.assertEqual(version, OWNED_VERSION)
 
         release_schema = require_match(
             self,
             REPOSITORY_ROOT / "internal" / "releaseplan" / "model.go",
             r'^const SchemaVersion = "([^"]+)"$',
         )
-        self.assertEqual(release_schema, RELEASE_PLAN_SCHEMA)
+        owned_versions["schema:release-plan"] = release_schema
+        schema_expectations["schema:release-plan"] = RELEASE_PLAN_SCHEMA
+        changelog = (REPOSITORY_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+        headings = re.findall(r"^## \[([^\]]+)\]", changelog, flags=re.MULTILINE)
+        self.assertEqual(headings, [OWNED_VERSION])
+        owned_versions["changelog"] = headings[0]
+
+        expected_versions = {
+            surface: schema_expectations.get(surface, OWNED_VERSION)
+            for surface in owned_versions
+        }
+        self.assertEqual(len(owned_versions), 66)
+        assert_owned_version_matrix(owned_versions, expected_versions)
+        for surface in sorted(owned_versions):
+            with self.subTest(mutated_surface=surface):
+                mutated = dict(owned_versions)
+                mutated[surface] = mutated[surface] + "-mutated"
+                with self.assertRaisesRegex(AssertionError, re.escape(surface)):
+                    assert_owned_version_matrix(mutated, expected_versions)
+
         self.assertNotEqual(release_schema, "roundfix.release-plan/v1")
 
     def test_changelog_restarts_at_only_0_0_1(self):
