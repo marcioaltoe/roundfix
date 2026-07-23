@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0045-context-driven-baseline-0-0-1-reset
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -36,27 +36,27 @@ and audit must all describe the same immutable Change Plan.
 
 ## Subtasks
 
-- [ ] Extend Decision Plan and Change Plan composition with the new contracts.
-- [ ] Extend canonical digest framing for decisions, capabilities, entries,
+- [x] Extend Decision Plan and Change Plan composition with the new contracts.
+- [x] Extend canonical digest framing for decisions, capabilities, entries,
       outputs, and Verification.
-- [ ] Integrate stale-plan and required-capability gates before writes.
-- [ ] Apply exact dispositions and repository-owned rule creation atomically.
-- [ ] Extend preimage, postwrite, rollback, manifest, and snapshot behavior.
-- [ ] Add partial-failure, stale-plan, tampering, and idempotency probes.
-- [ ] Synchronize the canonical and distributed setup skill trees.
+- [x] Integrate stale-plan and required-capability gates before writes.
+- [x] Apply exact dispositions and repository-owned rule creation atomically.
+- [x] Extend preimage, postwrite, rollback, manifest, and snapshot behavior.
+- [x] Add partial-failure, stale-plan, tampering, and idempotency probes.
+- [x] Synchronize the canonical and distributed setup skill trees.
 
 ## Acceptance Criteria
 
-- [ ] Preview and apply report the same plan digest and exact byte changes for
+- [x] Preview and apply report the same plan digest and exact byte changes for
       identical inputs.
-- [ ] Missing decisions, missing required capabilities, changed preimages, and
+- [x] Missing decisions, missing required capabilities, changed preimages, and
       stale confirmation produce no repository writes.
-- [ ] A forced failure after one planned write restores every preimage and
+- [x] A forced failure after one planned write restores every preimage and
       leaves no partial manifest or snapshot update.
-- [ ] Successful apply writes the exact previewed bytes, a strict 0.0.1
+- [x] Successful apply writes the exact previewed bytes, a strict 0.0.1
       manifest and snapshot, and preserves existing repository-owned rules.
-- [ ] Postwrite tampering is detected and rolled back.
-- [ ] Reapply produces no content change and audit reports a clean baseline.
+- [x] Postwrite tampering is detected and rolled back.
+- [x] Reapply produces no content change and audit reports a clean baseline.
 
 ## Context
 
@@ -85,3 +85,42 @@ and audit must all describe the same immutable Change Plan.
 - ADR-0047 → immutable confirmed Decision Plan effects.
 - ADR-0058 → fail-closed retention and atomic upgrade behavior.
 - ADR-0064 → complete entry-level Readoption input.
+
+## Result
+
+Implemented Baseline Readoption as one byte-exact Change Plan in the canonical
+setup skill and synchronized the distributed skill tree. The plan now carries
+the Source Baseline identity and complete inventory, normalized decisions and
+dispositions, Repository Capability outcomes, strict Setup Snapshot,
+Verification entries, and exact base64-encoded outputs. Its timestamp-free
+digest frames those values together with every planned preimage and postimage.
+
+Acceptance evidence:
+
+- Preview and confirmed apply return the same `planDigest` and
+  `plannedOutputs`; the test decodes every previewed output and compares it to
+  the bytes written by apply.
+- Missing `verification.gate`, missing required `context7`, concurrent
+  preimage change, and stale confirmation probes leave the repository
+  unchanged. Apply rechecks all preimages immediately before mutation.
+- Injected failure after the second replacement restores every mutated
+  preimage and leaves no manifest, snapshot, or repository-rules residue.
+- Successful apply writes strict `setup-context-driven/manifest/0.0.1` and
+  `0.0.1` version markers, embeds the strict Setup Snapshot, creates the exact
+  confirmed unmarked repository-rules bytes only when absent, and preserves
+  existing repository-owned guide bytes.
+- Injected postwrite tampering fails postimage verification and rolls back the
+  full mutated set.
+- A second apply plans no content changes, preserves the post-apply byte
+  snapshot, and a subsequent audit exits cleanly.
+
+Verification evidence:
+
+- `test_readoption_apply.py`: 9 tests passed.
+- `test_apply.py`: 17 tests passed.
+- `make skills-sync-check`: passed.
+- `make verify`: passed; 1,694 Go tests and both 229-test canonical/distributed
+  setup-skill suites passed, asset validation passed, Roundfix skill check
+  passed, and the CLI build completed.
+
+Follow-up notes: none.

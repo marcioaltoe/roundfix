@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 from collections.abc import Mapping
 import hashlib
 import json
@@ -28,11 +29,20 @@ from context_assets import (
     RepositoryOwnedExtension,
     TEMPLATE_TOKEN,
     UpgradeTransition,
+    build_standard_profile_plan,
     is_http_contract_decision_value_valid,
     load_asset_catalog,
     portable_file_digest,
     portable_tree_digest,
+    render_standard_profile_snapshot,
     setup_snapshot_digest,
+)
+from context_capabilities import (
+    CapabilityEvaluation,
+    RequirementStrength,
+    UNIVERSAL_CAPABILITIES,
+    evaluate_repository_capabilities,
+    render_capability_json,
 )
 from context_baseline import (
     DecisionDocumentDiagnostic,
@@ -50,6 +60,8 @@ from context_baseline import (
 
 
 AUDIT_SCHEMA_VERSION = "setup-context-driven/audit-v1"
+MANIFEST_SCHEMA_VERSION_0_0_1 = "setup-context-driven/manifest/0.0.1"
+OWNED_VERSION_0_0_1 = "0.0.1"
 RESTORE_SCHEMA_VERSION = "setup-context-driven/restore-v1"
 LOCK_HASH_COMPATIBILITY_SCHEMA_VERSION = (
     "setup-context-driven/external-lock-hash-compatibility-v1"
@@ -61,7 +73,7 @@ MANIFEST_PATH = Path("docs/agents/setup-context.json")
 ROOT_INSTRUCTIONS_PATH = Path("AGENTS.md")
 SEVERITY_ORDER = {"error": 0, "decision": 1, "warning": 2, "info": 3}
 BEGIN_MARKER = re.compile(
-    r"<!--\s*setup-context-driven:begin\s+id=([A-Za-z0-9_.-]+)\s+version=([0-9]+)\s*-->"
+    r"<!--\s*setup-context-driven:begin\s+id=([A-Za-z0-9_.-]+)\s+version=([0-9]+(?:\.[0-9]+\.[0-9]+)?)\s*-->"
 )
 END_MARKER = re.compile(
     r"<!--\s*setup-context-driven:end\s+id=([A-Za-z0-9_.-]+)\s*-->"
@@ -167,7 +179,7 @@ class ExpectedArtifact:
     kind: str
     module_id: str
     template_id: str
-    version: int
+    version: int | str
     content: str
     digest: str
 
@@ -281,14 +293,14 @@ class RetentionEntry:
 @dataclass(frozen=True)
 class ManagedBlock:
     managed_id: str
-    version: int
+    version: int | str
     body: str
 
 
 @dataclass(frozen=True)
 class ManagedBlockSpan:
     managed_id: str
-    version: int
+    version: int | str
     body: str
     start: int
     end: int
@@ -302,6 +314,31 @@ class FileMutation:
     content: bytes | None
     operations: tuple[PlannedChange, ...]
 
+    def output_json(self) -> dict[str, object]:
+        return {
+            "path": self.path.as_posix(),
+            "beforeDigest": self.before_digest,
+            "afterDigest": self.after_digest,
+            "afterBytes": (
+                base64.b64encode(self.content).decode("ascii")
+                if self.content is not None
+                else None
+            ),
+            "encoding": "base64",
+        }
+
+
+@dataclass(frozen=True)
+class ReadoptionPlanContext:
+    source_baseline: IncompatibleSourceBaseline
+    dispositions: tuple[ReadoptionDisposition, ...]
+    decision_document: dict[str, object]
+    decision_file_digests: tuple[str, ...]
+    capabilities: tuple[dict[str, object], ...]
+    setup_snapshot: dict[str, object]
+    verification: tuple[dict[str, str], ...]
+    repository_rules: bytes
+
 
 @dataclass(frozen=True)
 class ChangePlan:
@@ -310,6 +347,7 @@ class ChangePlan:
     digest: str | None
     manifest: dict
     retention: tuple[RetentionEntry, ...] = ()
+    readoption: ReadoptionPlanContext | None = None
 
     @property
     def changes(self) -> list[FileMutation]:
@@ -344,6 +382,10 @@ class AuditResult:
     retention: tuple[RetentionEntry, ...] = ()
     source_baseline: IncompatibleSourceBaseline | None = None
     decision_document: dict[str, object] | None = None
+    planned_outputs: tuple[FileMutation, ...] = ()
+    capabilities: tuple[dict[str, object], ...] = ()
+    setup_snapshot: dict[str, object] | None = None
+    verification: tuple[dict[str, str], ...] = ()
 
     @property
     def ok(self) -> bool:
@@ -381,6 +423,16 @@ class AuditResult:
             ]
         if self.decision_document is not None:
             data["decisionDocument"] = self.decision_document
+        if self.planned_outputs:
+            data["plannedOutputs"] = [
+                mutation.output_json() for mutation in self.planned_outputs
+            ]
+        if self.capabilities:
+            data["capabilities"] = list(self.capabilities)
+        if self.setup_snapshot is not None:
+            data["setupSnapshot"] = self.setup_snapshot
+        if self.verification:
+            data["verification"] = list(self.verification)
         return data
 
 
@@ -1625,6 +1677,7 @@ def run_audit_command(options: argparse.Namespace) -> int:
             catalog,
             decision_document=decision_document,
             decision_args=options.decision,
+            profile_override=options.profile,
         )
         if readoption_result is not None:
             render_result(readoption_result, options.format)
@@ -1705,24 +1758,41 @@ def run_apply_command(options: argparse.Namespace) -> int:
         render_result(malformed, options.format)
         return 2
 
+    readoption_apply = False
     if decision_document is not None and decision_document.readoption is not None:
         readoption_result, readoption_invalid = audit_readoption_repository(
             repo,
             catalog,
             decision_document=decision_document,
             decision_args=options.decision,
+            profile_override=options.profile,
         )
         if readoption_result is not None:
-            render_result(readoption_result, options.format)
-            return exit_code_for(readoption_result, readoption_invalid)
-
-    result, invalid_input, plan = plan_apply(
-        repo=repo,
-        catalog=catalog,
-        profile_override=options.profile,
-        decision_args=options.decision,
-        decision_document=decision_document,
-    )
+            if (
+                readoption_result.summary["errors"]
+                or readoption_result.summary["decisions"]
+                or readoption_invalid
+            ):
+                render_result(readoption_result, options.format)
+                return exit_code_for(readoption_result, readoption_invalid)
+            result = readoption_result
+            invalid_input = False
+            manifest = manifest_from_mutations(readoption_result.planned_outputs)
+            plan = ChangePlan(
+                "baseline-readoption",
+                readoption_result.planned_outputs,
+                readoption_result.plan_digest,
+                manifest,
+            )
+            readoption_apply = True
+    if not readoption_apply:
+        result, invalid_input, plan = plan_apply(
+            repo=repo,
+            catalog=catalog,
+            profile_override=options.profile,
+            decision_args=options.decision,
+            decision_document=decision_document,
+        )
     if result.summary["errors"] or result.summary["decisions"] or invalid_input:
         render_result(result, options.format)
         return exit_code_for(result, invalid_input)
@@ -1757,6 +1827,12 @@ def run_apply_command(options: argparse.Namespace) -> int:
             planned_changes=result.planned_changes,
             plan_digest=result.plan_digest,
             retention=result.retention,
+            source_baseline=result.source_baseline,
+            decision_document=result.decision_document,
+            planned_outputs=result.planned_outputs,
+            capabilities=result.capabilities,
+            setup_snapshot=result.setup_snapshot,
+            verification=result.verification,
         )
         render_result(blocked, options.format)
         return 3
@@ -1778,6 +1854,11 @@ def run_apply_command(options: argparse.Namespace) -> int:
             planned_changes=(),
             plan_digest=result.plan_digest,
             retention=result.retention,
+            source_baseline=result.source_baseline,
+            decision_document=result.decision_document,
+            capabilities=result.capabilities,
+            setup_snapshot=result.setup_snapshot,
+            verification=result.verification,
         )
         render_result(empty, options.format)
         return 0
@@ -1799,6 +1880,11 @@ def run_apply_command(options: argparse.Namespace) -> int:
                 ]
             ),
             retention=result.retention,
+            source_baseline=result.source_baseline,
+            decision_document=result.decision_document,
+            capabilities=result.capabilities,
+            setup_snapshot=result.setup_snapshot,
+            verification=result.verification,
         )
         render_result(failure, options.format)
         return 1
@@ -1819,9 +1905,27 @@ def run_apply_command(options: argparse.Namespace) -> int:
         planned_changes=result.planned_changes,
         plan_digest=result.plan_digest,
         retention=result.retention,
+        source_baseline=result.source_baseline,
+        decision_document=result.decision_document,
+        planned_outputs=result.planned_outputs,
+        capabilities=result.capabilities,
+        setup_snapshot=result.setup_snapshot,
+        verification=result.verification,
     )
     render_result(applied, options.format)
     return 0
+
+
+def manifest_from_mutations(mutations: tuple[FileMutation, ...]) -> dict:
+    for mutation in mutations:
+        if mutation.path != MANIFEST_PATH or mutation.content is None:
+            continue
+        try:
+            manifest = json.loads(mutation.content)
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return {}
+        return manifest if isinstance(manifest, dict) else {}
+    return {}
 
 
 def run_sync_setups_command(options: argparse.Namespace) -> int:
@@ -2189,6 +2293,7 @@ def audit_readoption_repository(
     *,
     decision_document: StructuredDecisionDocument | None = None,
     decision_args: list[str] | None = None,
+    profile_override: str | None = None,
 ) -> tuple[AuditResult | None, bool]:
     manifest_findings: list[Finding] = []
     manifest, invalid_input = load_manifest(repo, manifest_findings)
@@ -2198,6 +2303,8 @@ def audit_readoption_repository(
     declared_identity: str | None = None
     if manifest is None:
         declared_identity = "manifest.missing"
+    elif is_current_strict_manifest(manifest, catalog):
+        return None, False
     else:
         _, transition_findings = resolve_upgrade_transition(catalog, manifest)
         if any(
@@ -2337,6 +2444,64 @@ def audit_readoption_repository(
             True,
         )
 
+    if profile_override is not None:
+        readoption_context, context_findings = prepare_readoption_plan_context(
+            repo=repo,
+            catalog=catalog,
+            profile_id=profile_override,
+            inventory=inventory,
+            dispositions=dispositions,
+            decision_document=decision_document,
+            normalized_document=normalized_document,
+            cli_decisions=cli_decisions,
+            file_decisions=file_decisions,
+        )
+        findings.extend(context_findings)
+        if readoption_context is None:
+            return (
+                AuditResult(
+                    sorted_findings(findings),
+                    source_baseline=inventory,
+                    decision_document=normalized_document,
+                ),
+                any(item.severity == "error" for item in context_findings),
+            )
+        if any(item.severity == "error" for item in context_findings):
+            return (
+                AuditResult(
+                    sorted_findings(findings),
+                    source_baseline=inventory,
+                    decision_document=normalized_document,
+                    capabilities=readoption_context.capabilities,
+                    setup_snapshot=readoption_context.setup_snapshot,
+                    verification=readoption_context.verification,
+                ),
+                False,
+            )
+        plan_result, plan_invalid, plan = plan_apply(
+            repo=repo,
+            catalog=catalog,
+            profile_override=profile_override,
+            decision_args=decision_args or [],
+            decision_document=decision_document,
+            readoption=readoption_context,
+        )
+        return (
+            AuditResult(
+                sorted_findings(findings + plan_result.findings),
+                selection=plan_result.selection,
+                planned_changes=plan_result.planned_changes,
+                plan_digest=plan_result.plan_digest,
+                source_baseline=inventory,
+                decision_document=normalized_document,
+                planned_outputs=plan.mutations,
+                capabilities=readoption_context.capabilities,
+                setup_snapshot=readoption_context.setup_snapshot,
+                verification=readoption_context.verification,
+            ),
+            plan_invalid,
+        )
+
     planned_changes: tuple[PlannedChange, ...] = ()
     proposed_rules = repository_rules_proposed_bytes(dispositions)
     repository_rules_path = Path("docs/agents/repository-rules.md")
@@ -2432,6 +2597,146 @@ def audit_readoption_repository(
             decision_document=normalized_document,
         ),
         False,
+    )
+
+
+def prepare_readoption_plan_context(
+    repo: Path,
+    catalog: AssetCatalog,
+    profile_id: str,
+    inventory: IncompatibleSourceBaseline,
+    dispositions: tuple[ReadoptionDisposition, ...],
+    decision_document: StructuredDecisionDocument,
+    normalized_document: dict[str, object],
+    cli_decisions: dict[str, object],
+    file_decisions: dict[str, object],
+) -> tuple[ReadoptionPlanContext | None, list[Finding]]:
+    findings: list[Finding] = []
+    contract = catalog.standard_profiles.get(profile_id)
+    if contract is None:
+        findings.append(
+            finding(
+                "profile.readoption.unsupported",
+                "error",
+                str(MANIFEST_PATH),
+                profile_id,
+                "Baseline Readoption requires a strict 0.0.1 profile.",
+                "Select standard-typescript-monorepo for this generation.",
+            )
+        )
+        return None, findings
+
+    decisions = {**file_decisions, **cli_decisions}
+    decision_plan = resolve_decision_plan(catalog, profile_id, None, decisions)
+    findings.extend(decision_required_findings(decision_plan))
+    if decision_plan.unresolved_decisions:
+        return None, findings
+
+    http_answer = decision_plan.resolved_decisions.get(contract.http_decision_id)
+    http_value = http_answer.get("value") if isinstance(http_answer, dict) else None
+    try:
+        profile_plan = build_standard_profile_plan(catalog, http_value, profile_id)
+        setup_snapshot = json.loads(render_standard_profile_snapshot(profile_plan))
+    except (TypeError, ValueError, json.JSONDecodeError) as error:
+        findings.append(
+            finding(
+                "profile.snapshot.invalid",
+                "error",
+                str(MANIFEST_PATH),
+                profile_id,
+                f"Strict Setup Snapshot could not be resolved: {error}.",
+                "Supply a valid typed HTTP Contract Decision and rerun preview.",
+            )
+        )
+        return None, findings
+
+    evaluation = evaluate_repository_capabilities(
+        repo,
+        (*UNIVERSAL_CAPABILITIES, *contract.capabilities),
+    )
+    capability_document = json.loads(render_capability_json(evaluation))
+    capabilities = tuple(capability_document["capabilities"])
+    findings.extend(capability_findings(evaluation))
+
+    expected_paths = {
+        artifact.path for artifact in expected_artifacts_for_plan(decision_plan)
+    }
+    for disposition in dispositions:
+        if disposition.disposition != "repository-document" or disposition.destination is None:
+            continue
+        target_path = Path(str(disposition.destination["path"]))
+        if target_path in expected_paths:
+            findings.append(
+                finding(
+                    "readoption.destination.managed-collision",
+                    "error",
+                    target_path.as_posix(),
+                    disposition.entry_id,
+                    "A typed repository document cannot also be a setup-managed output.",
+                    "Choose a distinct typed repository document or a managed-entry disposition.",
+                )
+            )
+    verification = tuple(
+        {
+            "id": entry.entry_id,
+            "kind": entry.kind,
+            "tool": entry.tool,
+            "command": entry.command,
+        }
+        for entry in contract.verification
+    )
+    context = ReadoptionPlanContext(
+        source_baseline=inventory,
+        dispositions=dispositions,
+        decision_document=normalized_document,
+        decision_file_digests=decision_document.source_digests,
+        capabilities=capabilities,
+        setup_snapshot=setup_snapshot,
+        verification=verification,
+        repository_rules=repository_rules_proposed_bytes(dispositions),
+    )
+    return context, findings
+
+
+def capability_findings(evaluation: CapabilityEvaluation) -> list[Finding]:
+    findings: list[Finding] = []
+    for outcome in evaluation.outcomes:
+        if outcome.diagnostic.code == "capability.satisfied":
+            continue
+        if outcome.blocking:
+            severity = "error"
+        elif outcome.capability.strength is RequirementStrength.RECOMMENDED:
+            severity = "warning"
+        else:
+            continue
+        findings.append(
+            finding(
+                outcome.diagnostic.code,
+                severity,
+                (
+                    outcome.evidence[0].source_path.as_posix()
+                    if outcome.evidence and outcome.evidence[0].source_path is not None
+                    else "."
+                ),
+                outcome.capability.capability_id,
+                outcome.diagnostic.message,
+                outcome.diagnostic.next_action,
+            )
+        )
+    return findings
+
+
+def is_current_strict_manifest(manifest: dict, catalog: AssetCatalog) -> bool:
+    profile_id = manifest.get("profile")
+    generator = manifest.get("generator")
+    return (
+        manifest.get("schemaVersion") == MANIFEST_SCHEMA_VERSION_0_0_1
+        and manifest.get("version") == OWNED_VERSION_0_0_1
+        and isinstance(profile_id, str)
+        and profile_id in catalog.standard_profiles
+        and isinstance(generator, dict)
+        and generator.get("version") == OWNED_VERSION_0_0_1
+        and generator.get("baseline") == f"baseline.{profile_id}-0.0.1"
     )
 
 
@@ -3002,6 +3307,8 @@ def evaluate_retention(
     manifest: dict | None,
     decision_plan: DecisionPlan,
 ) -> tuple[tuple[RetentionEntry, ...], list[Finding]]:
+    if isinstance(manifest, dict) and is_current_strict_manifest(manifest, catalog):
+        return (), []
     transition, findings = resolve_upgrade_transition(catalog, manifest)
     if transition is None:
         return (), findings
@@ -3828,13 +4135,20 @@ def plan_apply(
     profile_override: str | None,
     decision_args: list[str],
     decision_document: StructuredDecisionDocument | None = None,
+    readoption: ReadoptionPlanContext | None = None,
 ) -> tuple[AuditResult, bool, ChangePlan]:
     findings: list[Finding] = []
     existing_manifest, invalid_input = load_manifest_for_apply(repo, findings)
     if invalid_input:
         return empty_apply_result(findings, invalid_input)
 
-    if existing_manifest is not None and existing_manifest.get("schemaVersion") != 1:
+    planning_manifest = None if readoption is not None else existing_manifest
+    if (
+        readoption is None
+        and existing_manifest is not None
+        and existing_manifest.get("schemaVersion")
+        not in {1, MANIFEST_SCHEMA_VERSION_0_0_1}
+    ):
         findings.append(
             finding(
                 "manifest.migration-required",
@@ -3848,7 +4162,7 @@ def plan_apply(
         return empty_apply_result(findings, False)
 
     profile_id = profile_override or (
-        existing_manifest.get("profile") if isinstance(existing_manifest, dict) else None
+        planning_manifest.get("profile") if isinstance(planning_manifest, dict) else None
     )
     if not isinstance(profile_id, str) or profile_id not in catalog.profiles:
         findings.append(
@@ -3886,10 +4200,10 @@ def plan_apply(
     decision_plan = resolve_decision_plan(
         catalog,
         profile_id,
-        existing_manifest,
+        planning_manifest,
         cli_decisions,
     )
-    preview_changes = planned_changes_for_plan(repo, decision_plan, existing_manifest)
+    preview_changes = planned_changes_for_plan(repo, decision_plan, planning_manifest)
     if parse_findings:
         return empty_apply_result(
             findings,
@@ -3905,14 +4219,14 @@ def plan_apply(
                 repo,
                 catalog,
                 decision_plan,
-                existing_manifest=existing_manifest,
+                existing_manifest=planning_manifest,
             )
         )
     retention: tuple[RetentionEntry, ...] = ()
-    if not findings:
+    if not findings and readoption is None:
         retention, retention_findings = evaluate_retention(
             catalog,
-            existing_manifest,
+            planning_manifest,
             decision_plan,
         )
         findings.extend(retention_findings)
@@ -3930,7 +4244,7 @@ def plan_apply(
     expected_artifacts = expected_artifacts_for_plan(decision_plan)
 
     expected_by_id = {artifact.managed_id: artifact for artifact in expected_artifacts}
-    current_files = load_current_files(repo, expected_artifacts, existing_manifest, findings)
+    current_files = load_current_files(repo, expected_artifacts, planning_manifest, findings)
     if findings:
         return empty_apply_result(
             findings,
@@ -3942,7 +4256,7 @@ def plan_apply(
 
     ownership_findings = require_obsolete_artifact_decisions(
         repo=repo,
-        existing_manifest=existing_manifest,
+        existing_manifest=planning_manifest,
         expected_by_id=expected_by_id,
         current_files=current_files,
         decisions=decisions,
@@ -3957,10 +4271,14 @@ def plan_apply(
             retention=retention,
         )
 
-    adoption_findings = require_adoption_decisions(
-        current_files=current_files,
-        expected_artifacts=expected_artifacts,
-        decisions=decisions,
+    adoption_findings = (
+        []
+        if readoption is not None
+        else require_adoption_decisions(
+            current_files=current_files,
+            expected_artifacts=expected_artifacts,
+            decisions=decisions,
+        )
     )
     findings.extend(adoption_findings)
     if adoption_findings:
@@ -3972,17 +4290,45 @@ def plan_apply(
             retention=retention,
         )
 
-    changed_contents: dict[Path, str | None] = {}
+    changed_contents: dict[Path, str | bytes | None] = {}
+    if readoption is not None:
+        for relative_path, content in readoption_carrier_outputs(repo, readoption).items():
+            if relative_path == MANIFEST_PATH:
+                continue
+            if relative_path in current_files:
+                try:
+                    current_files[relative_path] = content.decode("utf-8")
+                except UnicodeDecodeError:
+                    findings.append(
+                        finding(
+                            "readoption.carrier.encoding.invalid",
+                            "error",
+                            relative_path.as_posix(),
+                            "source-baseline",
+                            "A managed output carrier is not UTF-8 after applying dispositions.",
+                            "Move binary evidence to a non-managed carrier before applying.",
+                        )
+                    )
+            elif content != current_file_bytes(repo, relative_path):
+                changed_contents[relative_path] = content
+        if findings:
+            return empty_apply_result(
+                findings,
+                False,
+                selection=decision_plan.selection,
+                planned_changes=preview_changes,
+            )
     for relative_path, artifacts in artifacts_by_path(expected_artifacts).items():
         current = current_files.get(relative_path, "")
-        changed_contents[relative_path] = render_expected_path(
-            current=current,
-            artifacts=artifacts,
+        changed_contents[relative_path] = (
+            render_shared_path(current, artifacts)
+            if readoption is not None and all(item.kind == "guide" for item in artifacts)
+            else render_expected_path(current=current, artifacts=artifacts)
         )
 
     remove_obsolete_artifacts(
         repo=repo,
-        existing_manifest=existing_manifest,
+        existing_manifest=planning_manifest,
         expected_by_id=expected_by_id,
         current_files=current_files,
         changed_contents=changed_contents,
@@ -3993,7 +4339,7 @@ def plan_apply(
         repo,
         catalog,
         decision_plan,
-        existing_manifest,
+        planning_manifest,
     )
     for extension in extension_creations:
         changed_contents[extension.target_path] = repository_extension_content(
@@ -4001,7 +4347,23 @@ def plan_apply(
             extension,
         )
 
-    baseline_id = current_baseline_id(catalog)
+    if (
+        readoption is not None
+        and readoption.repository_rules
+        and current_file_bytes(repo, Path("docs/agents/repository-rules.md")) is None
+    ):
+        changed_contents[Path("docs/agents/repository-rules.md")] = (
+            readoption.repository_rules
+        )
+
+    baseline_id = (
+        f"baseline.{profile_id}-0.0.1"
+        if readoption is not None
+        else existing_manifest["generator"]["baseline"]
+        if isinstance(existing_manifest, dict)
+        and is_current_strict_manifest(existing_manifest, catalog)
+        else current_baseline_id(catalog)
+    )
     if baseline_id is None:
         findings.append(
             finding(
@@ -4020,27 +4382,50 @@ def plan_apply(
             planned_changes=preview_changes,
             retention=retention,
         )
-    manifest = build_manifest(
-        profile_id,
-        ordered_modules,
-        expected_artifacts,
-        decisions,
-        existing_manifest,
-        baseline_id,
-        repository_extension_records(
+    repository_extensions = repository_extension_records(
+        repo,
+        catalog,
+        decision_plan,
+        planning_manifest,
+        extension_creations,
+    )
+    manifest = (
+        build_readoption_manifest(
+            profile_id,
+            ordered_modules,
+            expected_artifacts,
+            decisions,
+            baseline_id,
+            repository_extensions,
+            readoption,
             repo,
-            catalog,
-            decision_plan,
+        )
+        if readoption is not None
+        else refresh_strict_manifest(
             existing_manifest,
-            extension_creations,
-        ),
+            ordered_modules,
+            expected_artifacts,
+            decisions,
+            repository_extensions,
+        )
+        if isinstance(existing_manifest, dict)
+        and is_current_strict_manifest(existing_manifest, catalog)
+        else build_manifest(
+            profile_id,
+            ordered_modules,
+            expected_artifacts,
+            decisions,
+            planning_manifest,
+            baseline_id,
+            repository_extensions,
+        )
     )
     changed_contents[MANIFEST_PATH] = json.dumps(manifest, indent=2, sort_keys=False) + "\n"
     plan = concrete_change_plan(
         repo=repo,
         catalog=catalog,
         decision_plan=decision_plan,
-        existing_manifest=existing_manifest,
+        existing_manifest=planning_manifest,
         expected_artifacts=expected_artifacts,
         changed_contents=changed_contents,
         current_files=current_files,
@@ -4055,6 +4440,7 @@ def plan_apply(
             if decision_document is not None
             else ()
         ),
+        readoption=readoption,
     )
     validation_findings = validate_change_plan(repo, plan, expected_artifacts)
     findings.extend(validation_findings)
@@ -4078,6 +4464,13 @@ def plan_apply(
                 if decision_document is not None
                 else None
             ),
+            planned_outputs=plan.mutations if readoption is not None else (),
+            source_baseline=(
+                readoption.source_baseline if readoption is not None else None
+            ),
+            capabilities=(readoption.capabilities if readoption is not None else ()),
+            setup_snapshot=(readoption.setup_snapshot if readoption is not None else None),
+            verification=(readoption.verification if readoption is not None else ()),
         ),
         False,
         plan,
@@ -4706,6 +5099,121 @@ def build_manifest(
     return manifest
 
 
+def build_readoption_manifest(
+    profile_id: str,
+    ordered_modules: list[str],
+    expected_artifacts: list[ExpectedArtifact],
+    decisions: dict[str, dict],
+    baseline_id: str,
+    repository_extensions: list[dict[str, str]],
+    readoption: ReadoptionPlanContext,
+    repo: Path,
+) -> dict:
+    manifest: dict[str, object] = {
+        "schemaVersion": MANIFEST_SCHEMA_VERSION_0_0_1,
+        "version": OWNED_VERSION_0_0_1,
+        "generator": {
+            "skill": "setup-context-driven",
+            "version": OWNED_VERSION_0_0_1,
+            "baseline": baseline_id,
+        },
+        "profile": profile_id,
+        "modules": ordered_modules,
+        "decisions": {
+            decision_id: {"value": decision["value"]}
+            for decision_id, decision in sorted(decisions.items())
+            if isinstance(decision, dict) and "value" in decision
+        },
+        "sourceBaseline": readoption.source_baseline.identity_json(),
+        "sourceEntries": [
+            entry.to_json() for entry in readoption.source_baseline.entries
+        ],
+        "readoptionDispositions": [
+            disposition.to_json() for disposition in readoption.dispositions
+        ],
+        "capabilities": list(readoption.capabilities),
+        "setupSnapshot": readoption.setup_snapshot,
+        "verification": list(readoption.verification),
+        "managedArtifacts": [
+            {
+                "id": artifact.managed_id,
+                "path": artifact.path.as_posix(),
+                "kind": artifact.kind,
+                "module": artifact.module_id,
+                "template": artifact.template_id,
+                "version": OWNED_VERSION_0_0_1,
+                "digest": artifact.digest,
+            }
+            for artifact in expected_artifacts
+        ],
+        "localSkills": [],
+    }
+    if repository_extensions:
+        manifest["repositoryExtensions"] = repository_extensions
+    repository_rules_path = Path("docs/agents/repository-rules.md")
+    if readoption.repository_rules or (repo / repository_rules_path).is_file():
+        manifest["repositoryRules"] = {
+            "path": repository_rules_path.as_posix(),
+            "ownership": "repository",
+        }
+    return manifest
+
+
+def refresh_strict_manifest(
+    existing_manifest: dict,
+    ordered_modules: list[str],
+    expected_artifacts: list[ExpectedArtifact],
+    decisions: dict[str, dict],
+    repository_extensions: list[dict[str, str]],
+) -> dict:
+    manifest = dict(existing_manifest)
+    manifest["modules"] = ordered_modules
+    manifest["decisions"] = {
+        decision_id: {"value": decision["value"]}
+        for decision_id, decision in sorted(decisions.items())
+        if isinstance(decision, dict) and "value" in decision
+    }
+    manifest["managedArtifacts"] = [
+        {
+            "id": artifact.managed_id,
+            "path": artifact.path.as_posix(),
+            "kind": artifact.kind,
+            "module": artifact.module_id,
+            "template": artifact.template_id,
+            "version": OWNED_VERSION_0_0_1,
+            "digest": artifact.digest,
+        }
+        for artifact in expected_artifacts
+    ]
+    if repository_extensions:
+        manifest["repositoryExtensions"] = repository_extensions
+    else:
+        manifest.pop("repositoryExtensions", None)
+    return manifest
+
+
+def readoption_carrier_outputs(
+    repo: Path,
+    readoption: ReadoptionPlanContext,
+) -> dict[Path, bytes]:
+    outputs: dict[Path, bytes] = {}
+    entries_by_path: dict[Path, list] = {}
+    for entry in readoption.source_baseline.entries:
+        entries_by_path.setdefault(entry.path, []).append(entry)
+    for relative_path, entries in entries_by_path.items():
+        current = current_file_bytes(repo, relative_path)
+        if current is None:
+            continue
+        output = b"".join(
+            entry.source_bytes
+            for entry in entries
+            if entry.kind != "managed-block"
+        )
+        if output != current:
+            outputs[relative_path] = output
+    return outputs
+
+
 def repository_extension_records(
     repo: Path,
     catalog: AssetCatalog,
@@ -4745,13 +5253,14 @@ def concrete_change_plan(
     decision_plan: DecisionPlan,
     existing_manifest: dict | None,
     expected_artifacts: list[ExpectedArtifact],
-    changed_contents: dict[Path, str | None],
+    changed_contents: dict[Path, str | bytes | None],
     current_files: dict[Path, str],
     manifest: dict,
     retention: tuple[RetentionEntry, ...],
     extension_creations: list[RepositoryOwnedExtension],
     decision_document: dict[str, object] | None,
     decision_file_digests: tuple[str, ...],
+    readoption: ReadoptionPlanContext | None = None,
 ) -> ChangePlan:
     expected_by_path = artifacts_by_path(expected_artifacts)
     old_by_id = manifest_artifacts_by_id(existing_manifest)
@@ -4760,6 +5269,43 @@ def concrete_change_plan(
 
     def add_operation(path: Path, operation: PlannedChange) -> None:
         operations_by_path.setdefault(path, []).append(operation)
+
+    if readoption is not None:
+        carrier_outputs = readoption_carrier_outputs(repo, readoption)
+        for entry in readoption.source_baseline.entries:
+            if entry.kind != "managed-block" or entry.path not in carrier_outputs:
+                continue
+            add_operation(
+                entry.path,
+                PlannedChange(
+                    action="remove source managed content",
+                    path=entry.path,
+                    managed_id=entry.entry_id,
+                    state="definite",
+                    reason="The confirmed Readoption disposition retires prior setup-owned bytes.",
+                    before_digest=bytes_digest(current_file_bytes(repo, entry.path)),
+                    after_digest=bytes_digest(
+                        content_bytes(changed_contents.get(entry.path, carrier_outputs[entry.path]))
+                    ),
+                ),
+            )
+        repository_rules_path = Path("docs/agents/repository-rules.md")
+        if (
+            readoption.repository_rules
+            and current_file_bytes(repo, repository_rules_path) is None
+        ):
+            add_operation(
+                repository_rules_path,
+                PlannedChange(
+                    action="create repository-specific normative rules",
+                    path=repository_rules_path,
+                    managed_id="repository-rules.readoption",
+                    state="definite",
+                    reason="Explicit Readoption dispositions authorize these exact repository-owned bytes.",
+                    before_digest=None,
+                    after_digest=bytes_digest(readoption.repository_rules),
+                ),
+            )
 
     for extension in extension_creations:
         path = extension.target_path
@@ -4908,7 +5454,7 @@ def concrete_change_plan(
         )
 
     digest_payload = {
-        "kind": "setup",
+        "kind": "baseline-readoption" if readoption is not None else "setup",
         "selection": decision_plan.selection.to_json(),
         "decisions": {
             key: value.get("value")
@@ -4932,8 +5478,31 @@ def concrete_change_plan(
             for mutation in mutations
         ],
     }
+    if readoption is not None:
+        digest_payload.update(
+            {
+                "sourceBaseline": readoption.source_baseline.identity_json(),
+                "sourceEntries": [
+                    entry.to_json() for entry in readoption.source_baseline.entries
+                ],
+                "dispositions": [
+                    disposition.to_json() for disposition in readoption.dispositions
+                ],
+                "capabilities": list(readoption.capabilities),
+                "setupSnapshot": readoption.setup_snapshot,
+                "verification": list(readoption.verification),
+                "outputs": [mutation.output_json() for mutation in mutations],
+            }
+        )
     digest = hashlib.sha256(canonical_json_bytes(digest_payload)).hexdigest()
-    return ChangePlan("setup", tuple(mutations), digest, manifest, retention)
+    return ChangePlan(
+        "baseline-readoption" if readoption is not None else "setup",
+        tuple(mutations),
+        digest,
+        manifest,
+        retention,
+        readoption,
+    )
 
 
 def manifest_artifacts_by_id(manifest: dict | None) -> dict[str, dict]:
@@ -5075,6 +5644,7 @@ def apply_change_plan(repo: Path, plan: ChangePlan) -> None:
     originals: dict[Path, bytes | None] = {}
     created_dirs: list[Path] = []
     temp_by_target: dict[Path, Path] = {}
+    mutated_targets: set[Path] = set()
     try:
         for mutation in plan.mutations:
             target = safe_repo_target(repo, mutation.path)
@@ -5088,8 +5658,15 @@ def apply_change_plan(repo: Path, plan: ChangePlan) -> None:
 
         for mutation in plan.mutations:
             target = safe_repo_target(repo, mutation.path)
+            observed = target.read_bytes() if target.exists() and target.is_file() else None
+            if bytes_digest(observed) != mutation.before_digest:
+                raise OSError(f"preimage changed for {mutation.path}")
+
+        for mutation in plan.mutations:
+            target = safe_repo_target(repo, mutation.path)
             if mutation.before_digest == mutation.after_digest:
                 continue
+            mutated_targets.add(target)
             if mutation.content is None:
                 if target.exists() and target.is_file():
                     target.unlink()
@@ -5105,7 +5682,8 @@ def apply_change_plan(repo: Path, plan: ChangePlan) -> None:
         if mismatches:
             raise OSError(f"postwrite delta mismatch for {', '.join(mismatches)}")
     except OSError:
-        for target, original in originals.items():
+        for target in mutated_targets:
+            original = originals[target]
             if original is None:
                 if target.exists() and target.is_file():
                     target.unlink()
@@ -5172,9 +5750,11 @@ def current_file_bytes(repo: Path, path: Path) -> bytes | None:
     return target.read_bytes()
 
 
-def content_bytes(content: str | None) -> bytes | None:
+def content_bytes(content: str | bytes | None) -> bytes | None:
     if content is None:
         return None
+    if isinstance(content, bytes):
+        return content
     return content.encode("utf-8")
 
 
@@ -5988,7 +6568,8 @@ def validate_manifest_shape(
     catalog: AssetCatalog,
     findings: list[Finding],
 ) -> None:
-    if manifest.get("schemaVersion") != 1:
+    strict_manifest = is_current_strict_manifest(manifest, catalog)
+    if manifest.get("schemaVersion") != 1 and not strict_manifest:
         findings.append(
             finding(
                 "manifest.migration-required",
@@ -5999,6 +6580,24 @@ def validate_manifest_shape(
                 "Migrate the manifest before auditing generated guidance.",
             )
         )
+    if strict_manifest:
+        snapshot = manifest.get("setupSnapshot")
+        if (
+            not isinstance(snapshot, dict)
+            or snapshot.get("schemaVersion")
+            != "setup-context-driven/profile-snapshot/0.0.1"
+            or snapshot.get("version") != OWNED_VERSION_0_0_1
+        ):
+            findings.append(
+                finding(
+                    "manifest.snapshot.invalid",
+                    "error",
+                    str(MANIFEST_PATH),
+                    "setupSnapshot",
+                    "Strict Setup Manifest has no valid 0.0.1 Setup Snapshot.",
+                    "Reapply the confirmed Change Plan to restore the strict snapshot.",
+                )
+            )
 
     manifest_modules = manifest.get("modules")
     if manifest_modules != ordered_modules:
@@ -6434,7 +7033,7 @@ def parse_managed_block_spans(
 ) -> tuple[dict[str, ManagedBlockSpan], list[Finding]]:
     findings: list[Finding] = []
     blocks: dict[str, ManagedBlockSpan] = {}
-    open_marker: tuple[str, int, int, int] | None = None
+    open_marker: tuple[str, int | str, int, int] | None = None
 
     for marker in MARKER.finditer(content):
         text = marker.group(0)
@@ -6442,7 +7041,10 @@ def parse_managed_block_spans(
         end = END_MARKER.fullmatch(text)
         if begin:
             managed_id = begin.group(1)
-            version = int(begin.group(2))
+            version_text = begin.group(2)
+            version: int | str = (
+                int(version_text) if version_text.isdigit() else version_text
+            )
             if open_marker is not None:
                 findings.append(
                     marker_invalid_finding(
@@ -6579,6 +7181,10 @@ def expected_artifacts_for_profile(
     dispatch_modules = list(dispatch_modules) if dispatch_modules is not None else modules
     template_overrides = template_overrides or {}
     render_values = render_values or {}
+    marker_version: int | str | None = None
+    strict_profile = catalog.standard_profiles.get(profile_id)
+    if strict_profile is not None:
+        marker_version = strict_profile.marker_version
     for module_id in modules:
         module = catalog.modules[module_id]
         for block in module.get("rootBlocks", []):
@@ -6603,7 +7209,7 @@ def expected_artifacts_for_profile(
                     kind="root-block",
                     module_id=module_id,
                     template_id=template_id,
-                    version=block["version"],
+                    version=marker_version or block["version"],
                     content=content,
                     digest=managed_digest(content),
                 )
@@ -6630,7 +7236,7 @@ def expected_artifacts_for_profile(
                     kind="guide",
                     module_id=module_id,
                     template_id=template_id,
-                    version=guide["version"],
+                    version=marker_version or guide["version"],
                     content=content,
                     digest=managed_digest(content),
                 )
@@ -6969,7 +7575,7 @@ def managed_digest(content: str) -> str:
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 
-def managed_block(managed_id: str, version: int, content: str) -> str:
+def managed_block(managed_id: str, version: int | str, content: str) -> str:
     body = content.strip() + "\n"
     return (
         f"<!-- setup-context-driven:begin id={managed_id} version={version} -->\n"
