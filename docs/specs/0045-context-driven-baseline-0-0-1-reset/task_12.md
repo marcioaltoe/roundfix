@@ -1,7 +1,7 @@
 ---
 task: task_12
 spec: 0045-context-driven-baseline-0-0-1-reset
-status: pending
+status: completed
 type: test
 complexity: high
 ---
@@ -103,50 +103,59 @@ and distributed skill trees.
 
 ## Result
 
-Implemented project-neutral disposable-repository journeys that compose
-confirmed setup, the profile's declared formatter contract, the persisted
-Verification, two clean audits, and byte-identical reapply for all three
-maintained profiles. Added strict Standard TypeScript Monorepo Profile journeys
-for REST and Post-only HTTP Contract Decisions with typed exceptions, selected
-Inngest evidence, absent Docker evidence, and exact frontend/backend workspace
-paths.
+The QA-reopened clean-adoption journey is covered by the public disposable
+repository regression
+`ReadoptionApplyTests.test_clean_profile_adoption_uses_the_strict_change_plan`.
+It starts with a complete `0.0.1` Decision File but no package, workspace,
+PostgreSQL, or LogTape evidence; the public Setup Command exits `1` with
+`capability.required.missing` and leaves every repository byte unchanged. The
+same repository then receives the exact required evidence and completes
+preview, digest-confirmed apply, clean audit, and byte-empty reapply.
 
-Added a complete Baseline Readoption journey whose inventory contains every
-structural Source Baseline Entry kind and exercises all four dispositions:
-current managed entry, typed repository document, Repository-Specific Normative
-Rules, and individual rejection. The journey proves confirmed creation,
-typed-document preservation, maintainer edits surviving reapply, stale-plan
-rejection, required-capability no-write blocking, recommended-capability
-warnings, and atomic rollback on write or postwrite failure.
-
-Expanded the owned-version contract to a 66-field mutation matrix spanning Go,
-Python, npm packages and dependency pins, both Roundfix-owned skill trees,
-profile/setup/source schemas and snapshots, the Release Plan schema, and the
-changelog. Every one-field mutation is rejected, while the existing protected
-Run Database, external lock, protocol, and upstream-skill fixture remains
-accepted unchanged.
-
-Added a public Release Plan Command journey backed by a real disposable Git
-repository and bare remote plus a fake two-page GitHub provider. It inventories
-shared, local-only, and remote-only stable tags, exhausts all release pages,
-returns approval-required exit `3`, preserves stdout/stderr discipline, leaves
-the repository unchanged, and records zero Git or GitHub mutation calls.
+The regression also proves the strict output contract: profile snapshot schema
+`setup-context-driven/profile-snapshot/0.0.1`, manifest schema
+`setup-context-driven/manifest/0.0.1`, version and generator version `0.0.1`,
+baseline `baseline.standard-typescript-monorepo-0.0.1`, exact embedded Setup
+Snapshot identity, and the frontend/backend architecture carriers required by
+the Standard TypeScript Monorepo Profile. It already lived at the public script
+boundary after Task 08 repaired the shared strict planning path, so Task 12 did
+not add a duplicate macro assertion.
 
 Acceptance evidence:
 
-- Every maintained profile: `ProfileMacroFlowTests.test_supported_profiles_apply_audit_clean_and_reapply_without_changes` executes formatter compatibility, the persisted Verification, two audits, and reapply with identical repository bytes.
-- TypeScript contracts: `ReadoptionApplyTests.test_rest_and_post_only_contracts_persist_typed_exceptions_and_exact_workspace_evidence` preserves both modes, ordered typed exceptions, optional-module status, and exact workspace evidence in the Setup Snapshot and reapply.
-- Readoption completeness: `ReadoptionApplyTests.test_every_structural_entry_kind_has_an_individual_destination_and_preserves_repository_bytes` covers `file`, `managed-block`, `manifest-record`, and `unmarked-span`; existing stale-confirmation and rollback cases remain green in the same suite.
-- Capability safety: the Readoption required-capability case proves zero writes, the new recommended-capability case proves stable non-blocking warnings, and `RepositoryCapabilityTests.test_capability_evaluation_has_no_write_install_network_or_script_side_effects` rejects forbidden evaluation side effects.
-- Version ownership: `VersionContractTests.test_authoritative_distribution_surfaces_report_0_0_1` validates and mutation-tests all 66 owned fields; `test_protected_versions_match_the_operational_and_upstream_fixture` proves protected versions remain unchanged.
-- Reset planning: `TestReleasePlanResetInventoriesTemporaryGitRemoteAndPaginatedGitHubReadOnly` proves real Git inventory, fake GitHub pagination, exit `3`, repository preservation, and zero mutation calls.
-- Distribution parity: `make skills-sync-check` and a recursive tree comparison reported no canonical/distributed difference.
+- Every maintained profile: the canonical and distributed suites passed
+  `ProfileMacroFlowTests.test_supported_profiles_apply_audit_clean_and_reapply_without_changes`,
+  covering apply, declared formatter, persisted Verification, two clean audits,
+  and byte-identical reapply.
+- TypeScript decisions and exact workspaces: both suites passed
+  `ReadoptionApplyTests.test_rest_and_post_only_contracts_persist_typed_exceptions_and_exact_workspace_evidence`.
+- Source Baseline Entry dispositions and repository-byte preservation: both
+  suites passed the structural inventory, stale confirmation, preservation,
+  and rollback cases in `ReadoptionApplyTests`.
+- Capability safety: the QA-reopened public regression passed independently in
+  each skill tree and again in both full suites; the required-capability,
+  recommended-capability, and side-effect rejection cases also passed.
+- Owned/protected versions: both suites passed the complete mutation matrix and
+  protected operational/upstream version fixture.
+- Reset planning: `rtk go test ./internal/releaseplan ./internal/cli ./skills`
+  passed 740 tests, including temporary Git remote, paginated GitHub inventory,
+  approval-required exit `3`, and zero mutation calls.
+- Distribution parity: `rtk make skills-sync-check` passed, and the canonical
+  and distributed suites independently passed the same 252 tests.
 
 Verification:
 
-- `rtk env PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s .agents/skills/setup-context-driven/tests` — passed, 246 tests.
-- `rtk env PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s skills/setup-context-driven/tests` — passed, the same 246 tests.
-- `rtk go test ./internal/releaseplan ./internal/cli ./skills` — passed, 740 tests across 3 packages.
-- `rtk make verify` — passed: both 246-test setup suites, 1,727 Go tests across 20 packages, asset loading, Repository Skill Set check, and build.
+- Focused QA-reopen regression in `.agents/skills/setup-context-driven/tests` —
+  passed.
+- Focused QA-reopen regression in `skills/setup-context-driven/tests` — passed.
+- `rtk env PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s .agents/skills/setup-context-driven/tests`
+  — passed, 252 tests.
+- `rtk env PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s skills/setup-context-driven/tests`
+  — passed, 252 tests.
+- `rtk go test ./internal/releaseplan ./internal/cli ./skills` — passed, 740
+  tests across 3 packages.
+- `rtk make skills-sync-check` — passed.
+- `rtk make verify` — passed: both 252-test setup suites, 1,727 Go tests across
+  20 packages, asset loading, Repository Skill Set check, and build.
 
 Follow-ups: none.
