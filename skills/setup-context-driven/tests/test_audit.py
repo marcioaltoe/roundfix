@@ -272,10 +272,9 @@ class AuditCliTests(unittest.TestCase):
                 )
 
             self.assertFalse(invalid_input)
-            self.assertEqual(
-                [finding.code for finding in result.findings],
-                ["reference.repository.missing"],
-            )
+            finding_codes = [finding.code for finding in result.findings]
+            self.assertIn("reference.repository.missing", finding_codes)
+            self.assertIn("capability.required.missing", finding_codes)
             self.assertEqual(change_plan.changes, [])
             self.assertEqual(snapshot_files(repo), before)
 
@@ -414,6 +413,37 @@ def install_profile_skills(repo, profile_id, omit=None):
         if name in omitted:
             continue
         write_skill(repo, name)
+
+
+def write_standard_profile_capability_evidence(repo):
+    package = {
+        "name": "fixture",
+        "packageManager": "bun@1.2.0",
+        "dependencies": {
+            "typescript": "1",
+            "turbo": "1",
+            "vite": "1",
+            "react": "1",
+            "hono": "1",
+            "drizzle-orm": "1",
+            "zod": "1",
+            "tailwindcss": "1",
+            "shadcn": "1",
+            "@tanstack/react-query": "1",
+            "@tanstack/react-router": "1",
+            "better-auth": "1",
+            "@logtape/logtape": "1",
+            "oxlint": "1",
+            "oxfmt": "1",
+            "vitest": "1",
+        },
+    }
+    (repo / "package.json").write_text(json.dumps(package), encoding="utf-8")
+    for workspace in ("frontend", "backend"):
+        path = repo / "packages" / workspace / "package.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"name": workspace}), encoding="utf-8")
+    (repo / "DATABASE.md").write_text("PostgreSQL 17\n", encoding="utf-8")
 
 
 def write_skill(repo, name):

@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0045-context-driven-baseline-0-0-1-reset
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -135,5 +135,53 @@ Verification evidence:
 - `make verify`: passed; 1,694 Go tests and both 229-test canonical/distributed
   setup-skill suites passed, asset validation passed, Roundfix skill check
   passed, and the CLI build completed.
+
+Follow-up notes: none.
+
+## Result
+
+Repaired the QA-reopened clean `standard-typescript-monorepo` adoption path.
+Clean adoption now resolves the same strict profile context used by Baseline
+Readoption before it can build a Change Plan. Required Repository Capability
+gaps block before confirmation or mutation; a ready repository receives
+digest-bound exact outputs, strict `0.0.1` Setup Manifest and Setup Snapshot
+state, Verification entries, and the complete frontend and backend
+architecture carriers. Existing manifest migration paths remain unchanged.
+
+Acceptance evidence:
+
+- The public clean-repository regression first ran without application stack
+  or workspace evidence. Apply exited `1` with
+  `capability.required.missing`, did not emit
+  `plan.confirmation.required`, and left the repository snapshot unchanged.
+- After adding the exact required stack, workspaces, PostgreSQL contract, and
+  Repository Skill Set evidence, preview exited `3` with a digest-bound
+  confirmation. Confirmed apply returned the same `planDigest` and
+  `plannedOutputs`; every decoded preview output matched the bytes on disk.
+- The successful Setup Manifest uses
+  `setup-context-driven/manifest/0.0.1`, version `0.0.1`, generator version
+  `0.0.1`, and baseline
+  `baseline.standard-typescript-monorepo-0.0.1`. Its Setup Snapshot matches
+  preview and contains the strict profile architecture, capabilities, and
+  Verification contract.
+- Generated frontend guidance now carries domain-system organization, one
+  public system boundary, and direct internal imports. Generated backend
+  guidance carries domain/application/infrastructure layers, thin HTTP
+  handlers, HTTP-independent use cases, infrastructure-owned persistence,
+  and the prohibition on generic `modules` or `services` architecture.
+- A post-apply public audit exited `0`; reapply exited `0` with no planned
+  changes and preserved the complete repository snapshot.
+- The pinned Oxfmt corpus and provenance digest now cover the exact strict
+  architecture carriers, and the canonical and distributed skill trees are
+  byte-identical.
+
+Verification evidence:
+
+- `test_readoption_apply.py`: 13 tests passed.
+- `test_apply.py`: 17 tests passed.
+- `make skills-sync-check`: passed.
+- `make verify`: passed; 1,727 Go tests, 252 canonical setup-skill tests, and
+  252 distributed setup-skill tests passed. Both asset catalogs loaded, the
+  Roundfix skill check passed, and the CLI build completed.
 
 Follow-up notes: none.

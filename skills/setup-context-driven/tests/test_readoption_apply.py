@@ -42,6 +42,128 @@ REPOSITORY_RULES = Path("docs/agents/repository-rules.md")
 
 
 class ReadoptionApplyTests(unittest.TestCase):
+    def test_clean_profile_adoption_uses_the_strict_change_plan(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            repo = root / "repo"
+            repo.mkdir()
+            install_profile_skills(repo, PROFILE)
+            (repo / "DESIGN.md").write_text(
+                "# Design contract\n", encoding="utf-8"
+            )
+            http_path = repo / "docs/architecture/http-contract.json"
+            http_path.parent.mkdir(parents=True)
+            http_path.write_text('{"mode":"REST"}\n', encoding="utf-8")
+            decision_file = root / "decisions.json"
+            decision_file.write_text(
+                json.dumps(
+                    {
+                        "schemaVersion": DECISION_SCHEMA,
+                        "version": "0.0.1",
+                        "decisions": self.profile_decisions(),
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            before = snapshot_files(repo)
+
+            blocked = run_apply(repo, decision_file)
+            blocked_payload = json.loads(blocked.stdout)
+
+            self.assertEqual(blocked.returncode, 1, blocked.stderr)
+            self.assertFinding(blocked_payload, "capability.required.missing")
+            self.assertNotIn("plan.confirmation.required", {
+                item["code"] for item in blocked_payload["findings"]
+            })
+            self.assertEqual(snapshot_files(repo), before)
+
+            self.write_capability_evidence(repo)
+            preview = run_apply(repo, decision_file)
+            preview_payload = json.loads(preview.stdout)
+            before_apply = snapshot_files(repo)
+
+            self.assertEqual(preview.returncode, 3, preview.stderr)
+            self.assertFinding(preview_payload, "plan.confirmation.required")
+            self.assertTrue(preview_payload["capabilities"])
+            self.assertTrue(preview_payload["verification"])
+            self.assertTrue(preview_payload["plannedOutputs"])
+            self.assertEqual(
+                preview_payload["setupSnapshot"]["schemaVersion"],
+                "setup-context-driven/profile-snapshot/0.0.1",
+            )
+            self.assertEqual(snapshot_files(repo), before_apply)
+
+            applied = run_apply(
+                repo, decision_file, preview_payload["planDigest"]
+            )
+            applied_payload = json.loads(applied.stdout)
+
+            self.assertEqual(applied.returncode, 0, applied.stderr)
+            self.assertEqual(applied.stderr, "")
+            self.assertEqual(
+                applied_payload["planDigest"], preview_payload["planDigest"]
+            )
+            self.assertEqual(
+                applied_payload["plannedOutputs"],
+                preview_payload["plannedOutputs"],
+            )
+            for output in preview_payload["plannedOutputs"]:
+                target = repo / output["path"]
+                expected = (
+                    base64.b64decode(output["afterBytes"])
+                    if output["afterBytes"] is not None
+                    else None
+                )
+                self.assertEqual(
+                    target.read_bytes() if target.is_file() else None,
+                    expected,
+                )
+
+            manifest = json.loads((repo / MANIFEST).read_text(encoding="utf-8"))
+            self.assertEqual(
+                manifest["schemaVersion"],
+                "setup-context-driven/manifest/0.0.1",
+            )
+            self.assertEqual(manifest["version"], "0.0.1")
+            self.assertEqual(manifest["generator"]["version"], "0.0.1")
+            self.assertEqual(
+                manifest["generator"]["baseline"],
+                "baseline.standard-typescript-monorepo-0.0.1",
+            )
+            self.assertEqual(
+                manifest["setupSnapshot"], preview_payload["setupSnapshot"]
+            )
+            self.assertNotIn("sourceBaseline", manifest)
+            frontend = (repo / "docs/agents/frontend.md").read_text(
+                encoding="utf-8"
+            )
+            backend = (repo / "docs/agents/backend.md").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn(
+                "organize frontend feature code by domain system", frontend
+            )
+            self.assertIn("one public boundary", frontend)
+            self.assertIn(
+                "domain, application, and infrastructure layers", backend
+            )
+            self.assertIn("keep HTTP handlers thin", backend)
+            self.assertIn("independent of HTTP", backend)
+            self.assertIn("persistence implementation in infrastructure", backend)
+
+            after_apply = snapshot_files(repo)
+            audit = run_context_setup(
+                "audit", "--repo", str(repo), "--format", "json"
+            )
+            reapplied = run_apply(repo, decision_file)
+
+            self.assertEqual(audit.returncode, 0, audit.stderr)
+            self.assertEqual(reapplied.returncode, 0, reapplied.stderr)
+            self.assertEqual(json.loads(reapplied.stdout)["plannedChanges"], [])
+            self.assertEqual(snapshot_files(repo), after_apply)
+
     def test_preview_apply_reapply_and_audit_share_exact_strict_plan(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo, decision_file, original_guide, proposed_rules = self.fixture(
@@ -565,7 +687,7 @@ class ReadoptionApplyTests(unittest.TestCase):
         (repo / "DATABASE.md").write_text("PostgreSQL 17\n", encoding="utf-8")
         (repo / "DESIGN.md").write_text("# Design contract\n", encoding="utf-8")
         http_path = repo / "docs/architecture/http-contract.json"
-        http_path.parent.mkdir(parents=True)
+        http_path.parent.mkdir(parents=True, exist_ok=True)
         http_path.write_text('{"mode":"REST"}\n', encoding="utf-8")
 
     def decision_document(self, inventory, proposed_rules):
@@ -599,8 +721,24 @@ class ReadoptionApplyTests(unittest.TestCase):
                         "reason": "Structural evidence is not a current governed instruction.",
                     }
                 )
+        return {
+            "schemaVersion": DECISION_SCHEMA,
+            "version": "0.0.1",
+            "decisions": self.profile_decisions(),
+            "readoption": {
+                "sourceBaseline": {
+                    "id": inventory.baseline_id,
+                    "digest": inventory.digest,
+                },
+                "dispositions": dispositions,
+            },
+        }
+
+    @staticmethod
+    def profile_decisions():
+        http_path = Path("docs/architecture/http-contract.json")
         source_bytes = b'{"mode":"REST"}\n'
-        decisions = [
+        return [
             {"id": "language.generated", "value": "English"},
             {"id": "verification.gate", "value": "bun run verify"},
             {
@@ -623,18 +761,6 @@ class ReadoptionApplyTests(unittest.TestCase):
             {"id": "secondbrain.enabled", "value": False},
             {"id": "repository.extension.enabled", "value": False},
         ]
-        return {
-            "schemaVersion": DECISION_SCHEMA,
-            "version": "0.0.1",
-            "decisions": decisions,
-            "readoption": {
-                "sourceBaseline": {
-                    "id": inventory.baseline_id,
-                    "digest": inventory.digest,
-                },
-                "dispositions": dispositions,
-            },
-        }
 
     @staticmethod
     def assertFinding(payload, code):

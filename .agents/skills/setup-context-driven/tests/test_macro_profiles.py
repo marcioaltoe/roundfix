@@ -26,6 +26,7 @@ from test_audit import (  # noqa: E402
     install_profile_skills,
     run_audit as run_fixture_audit,
     snapshot_files,
+    write_standard_profile_capability_evidence,
     write_skill,
 )
 from test_skills import write_lockfile  # noqa: E402
@@ -454,6 +455,8 @@ def run_persisted_verification(repo):
 def prepare_repository_owned_contracts(repo, profile_id):
     if profile_id != "standard-typescript-monorepo":
         return
+    install_profile_skills(repo, profile_id)
+    write_standard_profile_capability_evidence(repo)
     (repo / "DESIGN.md").write_text(
         "# Repository-authored design contract\n",
         encoding="utf-8",

@@ -16,6 +16,7 @@ from test_audit import (  # noqa: E402
     install_profile_skills,
     run_context_setup as run_fixture_context_setup,
     snapshot_files,
+    write_standard_profile_capability_evidence,
 )
 
 
@@ -157,7 +158,10 @@ class DecisionRenderingTests(unittest.TestCase):
 
             self.assertIn("warnings as errors", typescript)
             self.assertIn("explicit authority", instructions)
-            self.assertIn("Read the repository-owned `DESIGN.md`", frontend)
+            self.assertIn(
+                "MUST read the repository-owned design contract",
+                frontend,
+            )
             self.assertIn("dependent interfaces", typescript)
             self.assertIn("Never guess a decision", instructions)
             self.assertIn("external web-research fallback", instructions)
@@ -341,6 +345,8 @@ def run_apply(repo, decisions):
 
 def run_apply_for_profile(repo, profile, decisions):
     if profile == "standard-typescript-monorepo":
+        install_profile_skills(repo, profile)
+        write_standard_profile_capability_evidence(repo)
         http_path = repo / "docs" / "architecture" / "http-contract.json"
         http_path.parent.mkdir(parents=True, exist_ok=True)
         http_bytes = b'{"mode":"REST"}\n'

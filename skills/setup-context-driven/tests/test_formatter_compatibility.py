@@ -47,6 +47,7 @@ from test_audit import (  # noqa: E402
     install_profile_skills,
     run_audit as run_fixture_audit,
     snapshot_files,
+    write_standard_profile_capability_evidence,
 )
 
 
@@ -255,6 +256,8 @@ class FormatterCompatibilityTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = Path(temp_dir)
+            install_profile_skills(repo, PROFILE_ID)
+            write_standard_profile_capability_evidence(repo)
             (repo / "DESIGN.md").write_text(
                 "# Repository-authored design contract\n",
                 encoding="utf-8",

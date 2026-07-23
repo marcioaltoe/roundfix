@@ -329,14 +329,18 @@ class FileMutation:
 
 
 @dataclass(frozen=True)
-class ReadoptionPlanContext:
+class ProfilePlanContext:
+    capabilities: tuple[dict[str, object], ...]
+    setup_snapshot: dict[str, object]
+    verification: tuple[dict[str, str], ...]
+
+
+@dataclass(frozen=True)
+class ReadoptionPlanContext(ProfilePlanContext):
     source_baseline: IncompatibleSourceBaseline
     dispositions: tuple[ReadoptionDisposition, ...]
     decision_document: dict[str, object]
     decision_file_digests: tuple[str, ...]
-    capabilities: tuple[dict[str, object], ...]
-    setup_snapshot: dict[str, object]
-    verification: tuple[dict[str, str], ...]
     repository_rules: bytes
 
 
@@ -2600,6 +2604,74 @@ def audit_readoption_repository(
     )
 
 
+def prepare_profile_plan_context(
+    repo: Path,
+    catalog: AssetCatalog,
+    profile_id: str,
+    decision_plan: DecisionPlan,
+) -> tuple[ProfilePlanContext | None, list[Finding]]:
+    findings: list[Finding] = []
+    contract = catalog.standard_profiles.get(profile_id)
+    if contract is None:
+        findings.append(
+            finding(
+                "profile.strict.unsupported",
+                "error",
+                str(MANIFEST_PATH),
+                profile_id,
+                "The selected profile has no strict 0.0.1 contract.",
+                "Select a maintained strict 0.0.1 profile.",
+            )
+        )
+        return None, findings
+
+    http_answer = (
+        decision_plan.resolved_decisions.get(contract.http_decision_id)
+        if contract.http_decision_id
+        else None
+    )
+    http_value = http_answer.get("value") if isinstance(http_answer, dict) else None
+    try:
+        profile_plan = build_standard_profile_plan(catalog, http_value, profile_id)
+        setup_snapshot = json.loads(render_standard_profile_snapshot(profile_plan))
+    except (TypeError, ValueError, json.JSONDecodeError) as error:
+        findings.append(
+            finding(
+                "profile.snapshot.invalid",
+                "error",
+                str(MANIFEST_PATH),
+                profile_id,
+                f"Strict Setup Snapshot could not be resolved: {error}.",
+                "Supply a valid typed HTTP Contract Decision and rerun preview.",
+            )
+        )
+        return None, findings
+
+    evaluation = evaluate_repository_capabilities(
+        repo,
+        (*UNIVERSAL_CAPABILITIES, *contract.capabilities),
+    )
+    capability_document = json.loads(render_capability_json(evaluation))
+    findings.extend(capability_findings(evaluation))
+    verification = tuple(
+        {
+            "id": entry.entry_id,
+            "kind": entry.kind,
+            "tool": entry.tool,
+            "command": entry.command,
+        }
+        for entry in contract.verification
+    )
+    return (
+        ProfilePlanContext(
+            capabilities=tuple(capability_document["capabilities"]),
+            setup_snapshot=setup_snapshot,
+            verification=verification,
+        ),
+        findings,
+    )
+
+
 def prepare_readoption_plan_context(
     repo: Path,
     catalog: AssetCatalog,
@@ -2632,35 +2704,15 @@ def prepare_readoption_plan_context(
     if decision_plan.unresolved_decisions:
         return None, findings
 
-    http_answer = (
-        decision_plan.resolved_decisions.get(contract.http_decision_id)
-        if contract.http_decision_id
-        else None
-    )
-    http_value = http_answer.get("value") if isinstance(http_answer, dict) else None
-    try:
-        profile_plan = build_standard_profile_plan(catalog, http_value, profile_id)
-        setup_snapshot = json.loads(render_standard_profile_snapshot(profile_plan))
-    except (TypeError, ValueError, json.JSONDecodeError) as error:
-        findings.append(
-            finding(
-                "profile.snapshot.invalid",
-                "error",
-                str(MANIFEST_PATH),
-                profile_id,
-                f"Strict Setup Snapshot could not be resolved: {error}.",
-                "Supply a valid typed HTTP Contract Decision and rerun preview.",
-            )
-        )
-        return None, findings
-
-    evaluation = evaluate_repository_capabilities(
+    profile_context, profile_findings = prepare_profile_plan_context(
         repo,
-        (*UNIVERSAL_CAPABILITIES, *contract.capabilities),
+        catalog,
+        profile_id,
+        decision_plan,
     )
-    capability_document = json.loads(render_capability_json(evaluation))
-    capabilities = tuple(capability_document["capabilities"])
-    findings.extend(capability_findings(evaluation))
+    findings.extend(profile_findings)
+    if profile_context is None:
+        return None, findings
 
     expected_paths = {
         artifact.path for artifact in expected_artifacts_for_plan(decision_plan)
@@ -2680,23 +2732,14 @@ def prepare_readoption_plan_context(
                     "Choose a distinct typed repository document or a managed-entry disposition.",
                 )
             )
-    verification = tuple(
-        {
-            "id": entry.entry_id,
-            "kind": entry.kind,
-            "tool": entry.tool,
-            "command": entry.command,
-        }
-        for entry in contract.verification
-    )
     context = ReadoptionPlanContext(
         source_baseline=inventory,
         dispositions=dispositions,
         decision_document=normalized_document,
         decision_file_digests=decision_document.source_digests,
-        capabilities=capabilities,
-        setup_snapshot=setup_snapshot,
-        verification=verification,
+        capabilities=profile_context.capabilities,
+        setup_snapshot=profile_context.setup_snapshot,
+        verification=profile_context.verification,
         repository_rules=repository_rules_proposed_bytes(dispositions),
     )
     return context, findings
@@ -4226,8 +4269,22 @@ def plan_apply(
                 existing_manifest=planning_manifest,
             )
         )
+    profile_context: ProfilePlanContext | None = readoption
+    if (
+        profile_context is None
+        and not decision_plan.unresolved_decisions
+        and profile_id == "standard-typescript-monorepo"
+        and planning_manifest is None
+    ):
+        profile_context, profile_findings = prepare_profile_plan_context(
+            repo,
+            catalog,
+            profile_id,
+            decision_plan,
+        )
+        findings.extend(profile_findings)
     retention: tuple[RetentionEntry, ...] = ()
-    if not findings and readoption is None:
+    if not findings and profile_context is None:
         retention, retention_findings = evaluate_retention(
             catalog,
             planning_manifest,
@@ -4241,6 +4298,7 @@ def plan_apply(
             selection=decision_plan.selection,
             planned_changes=preview_changes,
             retention=retention,
+            profile_context=profile_context,
         )
 
     decisions = decision_plan.resolved_decisions
@@ -4256,6 +4314,7 @@ def plan_apply(
             selection=decision_plan.selection,
             planned_changes=preview_changes,
             retention=retention,
+            profile_context=profile_context,
         )
 
     ownership_findings = require_obsolete_artifact_decisions(
@@ -4273,6 +4332,7 @@ def plan_apply(
             selection=decision_plan.selection,
             planned_changes=preview_changes,
             retention=retention,
+            profile_context=profile_context,
         )
 
     adoption_findings = (
@@ -4292,6 +4352,7 @@ def plan_apply(
             selection=decision_plan.selection,
             planned_changes=preview_changes,
             retention=retention,
+            profile_context=profile_context,
         )
 
     changed_contents: dict[Path, str | bytes | None] = {}
@@ -4321,6 +4382,7 @@ def plan_apply(
                 False,
                 selection=decision_plan.selection,
                 planned_changes=preview_changes,
+                profile_context=profile_context,
             )
     for relative_path, artifacts in artifacts_by_path(expected_artifacts).items():
         current = current_files.get(relative_path, "")
@@ -4362,7 +4424,7 @@ def plan_apply(
 
     baseline_id = (
         f"baseline.{profile_id}-0.0.1"
-        if readoption is not None
+        if profile_context is not None
         else existing_manifest["generator"]["baseline"]
         if isinstance(existing_manifest, dict)
         and is_current_strict_manifest(existing_manifest, catalog)
@@ -4385,6 +4447,7 @@ def plan_apply(
             selection=decision_plan.selection,
             planned_changes=preview_changes,
             retention=retention,
+            profile_context=profile_context,
         )
     repository_extensions = repository_extension_records(
         repo,
@@ -4411,9 +4474,20 @@ def plan_apply(
             expected_artifacts,
             decisions,
             repository_extensions,
+            profile_context,
         )
         if isinstance(existing_manifest, dict)
         and is_current_strict_manifest(existing_manifest, catalog)
+        else build_profile_manifest(
+            profile_id,
+            ordered_modules,
+            expected_artifacts,
+            decisions,
+            baseline_id,
+            repository_extensions,
+            profile_context,
+        )
+        if profile_context is not None
         else build_manifest(
             profile_id,
             ordered_modules,
@@ -4445,6 +4519,7 @@ def plan_apply(
             else ()
         ),
         readoption=readoption,
+        profile_context=profile_context,
     )
     validation_findings = validate_change_plan(repo, plan, expected_artifacts)
     findings.extend(validation_findings)
@@ -4468,13 +4543,21 @@ def plan_apply(
                 if decision_document is not None
                 else None
             ),
-            planned_outputs=plan.mutations if readoption is not None else (),
+            planned_outputs=plan.mutations if profile_context is not None else (),
             source_baseline=(
                 readoption.source_baseline if readoption is not None else None
             ),
-            capabilities=(readoption.capabilities if readoption is not None else ()),
-            setup_snapshot=(readoption.setup_snapshot if readoption is not None else None),
-            verification=(readoption.verification if readoption is not None else ()),
+            capabilities=(
+                profile_context.capabilities if profile_context is not None else ()
+            ),
+            setup_snapshot=(
+                profile_context.setup_snapshot
+                if profile_context is not None
+                else None
+            ),
+            verification=(
+                profile_context.verification if profile_context is not None else ()
+            ),
         ),
         False,
         plan,
@@ -4487,6 +4570,7 @@ def empty_apply_result(
     selection: PreviewSelection | None = None,
     planned_changes: tuple[PlannedChange, ...] = (),
     retention: tuple[RetentionEntry, ...] = (),
+    profile_context: ProfilePlanContext | None = None,
 ) -> tuple[AuditResult, bool, ChangePlan]:
     return (
         AuditResult(
@@ -4494,6 +4578,17 @@ def empty_apply_result(
             selection=selection,
             planned_changes=planned_changes,
             retention=retention,
+            capabilities=(
+                profile_context.capabilities if profile_context is not None else ()
+            ),
+            setup_snapshot=(
+                profile_context.setup_snapshot
+                if profile_context is not None
+                else None
+            ),
+            verification=(
+                profile_context.verification if profile_context is not None else ()
+            ),
         ),
         invalid_input,
         ChangePlan("setup", (), None, {}, retention),
@@ -5163,12 +5258,59 @@ def build_readoption_manifest(
     return manifest
 
 
+def build_profile_manifest(
+    profile_id: str,
+    ordered_modules: list[str],
+    expected_artifacts: list[ExpectedArtifact],
+    decisions: dict[str, dict],
+    baseline_id: str,
+    repository_extensions: list[dict[str, str]],
+    profile_context: ProfilePlanContext,
+) -> dict:
+    manifest: dict[str, object] = {
+        "schemaVersion": MANIFEST_SCHEMA_VERSION_0_0_1,
+        "version": OWNED_VERSION_0_0_1,
+        "generator": {
+            "skill": "setup-context-driven",
+            "version": OWNED_VERSION_0_0_1,
+            "baseline": baseline_id,
+        },
+        "profile": profile_id,
+        "modules": ordered_modules,
+        "decisions": {
+            decision_id: {"value": decision["value"]}
+            for decision_id, decision in sorted(decisions.items())
+            if isinstance(decision, dict) and "value" in decision
+        },
+        "capabilities": list(profile_context.capabilities),
+        "setupSnapshot": profile_context.setup_snapshot,
+        "verification": list(profile_context.verification),
+        "managedArtifacts": [
+            {
+                "id": artifact.managed_id,
+                "path": artifact.path.as_posix(),
+                "kind": artifact.kind,
+                "module": artifact.module_id,
+                "template": artifact.template_id,
+                "version": OWNED_VERSION_0_0_1,
+                "digest": artifact.digest,
+            }
+            for artifact in expected_artifacts
+        ],
+        "localSkills": [],
+    }
+    if repository_extensions:
+        manifest["repositoryExtensions"] = repository_extensions
+    return manifest
+
+
 def refresh_strict_manifest(
     existing_manifest: dict,
     ordered_modules: list[str],
     expected_artifacts: list[ExpectedArtifact],
     decisions: dict[str, dict],
     repository_extensions: list[dict[str, str]],
+    profile_context: ProfilePlanContext | None,
 ) -> dict:
     manifest = dict(existing_manifest)
     manifest["modules"] = ordered_modules
@@ -5177,6 +5319,10 @@ def refresh_strict_manifest(
         for decision_id, decision in sorted(decisions.items())
         if isinstance(decision, dict) and "value" in decision
     }
+    if profile_context is not None:
+        manifest["capabilities"] = list(profile_context.capabilities)
+        manifest["setupSnapshot"] = profile_context.setup_snapshot
+        manifest["verification"] = list(profile_context.verification)
     manifest["managedArtifacts"] = [
         {
             "id": artifact.managed_id,
@@ -5265,6 +5411,7 @@ def concrete_change_plan(
     decision_document: dict[str, object] | None,
     decision_file_digests: tuple[str, ...],
     readoption: ReadoptionPlanContext | None = None,
+    profile_context: ProfilePlanContext | None = None,
 ) -> ChangePlan:
     expected_by_path = artifacts_by_path(expected_artifacts)
     old_by_id = manifest_artifacts_by_id(existing_manifest)
@@ -5492,9 +5639,14 @@ def concrete_change_plan(
                 "dispositions": [
                     disposition.to_json() for disposition in readoption.dispositions
                 ],
-                "capabilities": list(readoption.capabilities),
-                "setupSnapshot": readoption.setup_snapshot,
-                "verification": list(readoption.verification),
+            }
+        )
+    if profile_context is not None:
+        digest_payload.update(
+            {
+                "capabilities": list(profile_context.capabilities),
+                "setupSnapshot": profile_context.setup_snapshot,
+                "verification": list(profile_context.verification),
                 "outputs": [mutation.output_json() for mutation in mutations],
             }
         )
@@ -7197,6 +7349,7 @@ def expected_artifacts_for_profile(
                 catalog,
                 dispatch_modules,
                 block,
+                profile_id,
             )
             values.update(render_values.get(block["id"], {}))
             content = template_content(
@@ -7224,6 +7377,7 @@ def expected_artifacts_for_profile(
                 catalog,
                 dispatch_modules,
                 guide,
+                profile_id,
             )
             values.update(render_values.get(guide["id"], {}))
             content = template_content(
@@ -7252,20 +7406,28 @@ def computed_render_values(
     catalog: AssetCatalog,
     active_modules: Iterable[str],
     artifact: dict,
+    profile_id: str | None = None,
 ) -> dict[str, str]:
     values: dict[str, str] = {}
     rule_lines: list[str] = []
-    for rule_id in artifact.get("rules", []):
-        rule = catalog.rule_contracts.get(rule_id)
-        if rule is None:
-            continue
-        if rule.clauses:
-            rule_lines.extend(
-                f"- **{clause.enforcement}**: {clause.guidance.strip()}"
-                for clause in rule.clauses
-            )
-        elif rule.guidance.strip():
-            rule_lines.append(f"- {rule.guidance.strip()}")
+    strict_rules = strict_profile_carrier_rules(
+        profile_id,
+        artifact.get("id"),
+    )
+    if strict_rules is not None:
+        rule_lines.append(strict_rules)
+    else:
+        for rule_id in artifact.get("rules", []):
+            rule = catalog.rule_contracts.get(rule_id)
+            if rule is None:
+                continue
+            if rule.clauses:
+                rule_lines.extend(
+                    f"- **{clause.enforcement}**: {clause.guidance.strip()}"
+                    for clause in rule.clauses
+                )
+            elif rule.guidance.strip():
+                rule_lines.append(f"- {rule.guidance.strip()}")
     if rule_lines:
         values["artifact.rules"] = "\n\n".join(rule_lines)
 
@@ -7284,6 +7446,38 @@ def computed_render_values(
         if path is not None:
             values[reference.token] = render_inline_code(path.as_posix())
     return values
+
+
+def strict_profile_carrier_rules(
+    profile_id: str | None,
+    managed_id: object,
+) -> str | None:
+    if profile_id != "standard-typescript-monorepo":
+        return None
+    carrier_names = {
+        "guide.frontend": "frontend.md",
+        "guide.backend": "backend.md",
+    }
+    carrier_name = carrier_names.get(managed_id)
+    if carrier_name is None:
+        return None
+    carrier_path = (
+        Path(__file__).resolve().parents[1]
+        / "assets"
+        / "source-baselines"
+        / "baseline.standard-typescript-monorepo-0.0.1"
+        / "corpus"
+        / "docs"
+        / "agents"
+        / carrier_name
+    )
+    lines = [
+        line
+        for line in carrier_path.read_text(encoding="utf-8").splitlines()
+        if not line.strip().startswith("<!-- source-baseline-entry:")
+        and not line.strip().startswith("<!-- /source-baseline-entry:")
+    ]
+    return "\n".join(lines).strip()
 
 
 def render_skill_dispatch(
