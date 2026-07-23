@@ -2,7 +2,7 @@ package releaseplan
 
 import "context"
 
-const SchemaVersion = "roundfix.release-plan/v1"
+const SchemaVersion = "roundfix.release-plan/0.0.1"
 
 // State is the final Release Plan decision state.
 type State string

@@ -333,8 +333,8 @@ func TestPlanSchemaVersionAndEvidence(t *testing.T) {
 	if plan.SchemaVersion != SchemaVersion {
 		t.Fatalf("SchemaVersion = %q, want %q", plan.SchemaVersion, SchemaVersion)
 	}
-	if plan.SchemaVersion != "roundfix.release-plan/v1" {
-		t.Fatalf("schema identifier = %q, want roundfix.release-plan/v1", plan.SchemaVersion)
+	if plan.SchemaVersion != "roundfix.release-plan/0.0.1" {
+		t.Fatalf("schema identifier = %q, want roundfix.release-plan/0.0.1", plan.SchemaVersion)
 	}
 	if len(plan.Changes) != 1 || plan.Changes[0].CommitSHA != "abc123" {
 		t.Fatalf("Changes = %+v, want copied evidence with original commit SHA", plan.Changes)

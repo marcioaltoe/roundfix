@@ -35,6 +35,11 @@ jobs:
             echo "::error::tag $GITHUB_REF_NAME is not a semver version (expected vMAJOR.MINOR.PATCH)"
             exit 1
           fi
+          OWNED_VERSION="$(jq -r .version dist/npm/roundfix/package.json)"
+          if [ "$TAG" != "$OWNED_VERSION" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match the checked-in Roundfix version $OWNED_VERSION"
+            exit 1
+          fi
           echo "releasing $TAG"
 
       # The full local gate must pass before any build or publish.

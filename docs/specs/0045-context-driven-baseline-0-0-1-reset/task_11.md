@@ -1,7 +1,7 @@
 ---
 task: task_11
 spec: 0045-context-driven-baseline-0-0-1-reset
-status: pending
+status: completed
 type: infra
 complexity: high
 ---
@@ -39,25 +39,25 @@ outside the owned version contract.
 
 ## Subtasks
 
-- [ ] Reset application and npm distribution versions.
-- [ ] Reset all fourteen owned skill metadata versions.
-- [ ] Reset setup generation and Release Plan schema identity.
-- [ ] Replace the changelog with the 0.0.1 history.
-- [ ] Align packaging and owned-version validation.
-- [ ] Add protected operational/upstream version assertions.
-- [ ] Verify no release-history mutation surface was introduced.
+- [x] Reset application and npm distribution versions.
+- [x] Reset all fourteen owned skill metadata versions.
+- [x] Reset setup generation and Release Plan schema identity.
+- [x] Replace the changelog with the 0.0.1 history.
+- [x] Align packaging and owned-version validation.
+- [x] Add protected operational/upstream version assertions.
+- [x] Verify no release-history mutation surface was introduced.
 
 ## Acceptance Criteria
 
-- [ ] One owned-version check reports `0.0.1` for every authoritative Roundfix
+- [x] One owned-version check reports `0.0.1` for every authoritative Roundfix
       distribution surface and fails if any one surface is changed.
-- [ ] CLI version output reports semantic version 0.0.1 while retaining Build
+- [x] CLI version output reports semantic version 0.0.1 while retaining Build
       Commit and Build Time fields.
-- [ ] Release Plan JSON uses only `roundfix.release-plan/0.0.1`.
-- [ ] The changelog begins at 0.0.1 and contains no obsolete release sections.
-- [ ] Fixtures prove Run Database, external lock, third-party, and upstream
+- [x] Release Plan JSON uses only `roundfix.release-plan/0.0.1`.
+- [x] The changelog begins at 0.0.1 and contains no obsolete release sections.
+- [x] Fixtures prove Run Database, external lock, third-party, and upstream
       metadata versions are unchanged.
-- [ ] Tests and workflow inspection prove the implementation performs no tag
+- [x] Tests and workflow inspection prove the implementation performs no tag
       or GitHub Release deletion.
 
 ## Context
@@ -84,3 +84,43 @@ outside the owned version contract.
   Order 6–7.
 - ADR-0062 → exhaustive owned-version reset and excluded contracts.
 - ADR-0065 → no release-history mutation during implementation.
+
+## Result
+
+Aligned the checked-in Roundfix distribution with the single `0.0.1` product
+identity.
+
+- The application, launcher package, five platform packages, launcher
+  dependencies, current setup generation, Release Plan schema, and all 14
+  canonical and embedded Roundfix-owned skills now agree on `0.0.1`. The
+  version-contract suite enumerates 54 owned version fields and fails with the
+  changed surface named when one disagrees.
+- The CLI retains Build Commit and Build Time as local source-state evidence.
+  `rtk ./bin/roundfix version` reported
+  `roundfix 0.0.1 (27f9398-dirty, built 2026-07-23 00:45:52 -0300)` after the
+  verification build.
+- Normal and reset Release Plan JSON now use only
+  `roundfix.release-plan/0.0.1`; the previous
+  `roundfix.release-plan/v1` identity is rejected by the exact schema
+  assertion.
+- `CHANGELOG.md` now contains only the `0.0.1` release section. The release
+  workflow requires the pushed tag to equal the checked-in launcher version
+  before it can build or publish packages.
+- The protected-version fixture pins Run Database schema `9`, external
+  `skills-lock.json` and lock-hash compatibility schema `1`, ACP protocol `1`,
+  JSON-RPC `2.0`, and ten upstream skill versions. These values remain outside
+  the Roundfix-owned reset.
+- Static release-surface inspection rejects tag- or GitHub Release-deletion
+  commands. The implementation adds no release-history mutation method; remote
+  cleanup remains outside this Task.
+- `rtk env GOCACHE=/tmp/roundfix-task11-go-cache go test ./internal/app ./internal/releaseplan ./skills`
+  — PASS.
+- `rtk env PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_version_contract.py'`
+  — PASS, 4 tests.
+- `rtk env GOCACHE=/tmp/roundfix-task11-go-cache go run -buildvcs=false ./cmd/roundfix version`
+  — PASS; reported `roundfix 0.0.1`.
+- `rtk make skills-sync-check` — PASS; canonical and distributed skill trees
+  are byte-identical.
+- `rtk env GOCACHE=/tmp/roundfix-task11-go-cache make verify` — PASS; 1,725 Go
+  tests, 243 canonical setup tests, 243 distributed setup tests, asset
+  validation, owned-skill validation, and the stamped CLI build completed.

@@ -1,0 +1,30 @@
+{
+  "runDatabaseSchema": 9,
+  "skillsLockSchema": 1,
+  "externalLockHashCompatibility": {
+    "schemaVersion": "setup-context-driven/external-lock-hash-compatibility-v1",
+    "version": 1
+  },
+  "thirdPartyProtocols": [
+    {
+      "path": "internal/agent/acpx_integration_test.go",
+      "fragment": "\"protocolVersion\": 1"
+    },
+    {
+      "path": "internal/agent/acpx_integration_test.go",
+      "fragment": "\"jsonrpc\": \"2.0\""
+    }
+  ],
+  "upstreamSkills": {
+    "coding-guidelines": "1.0.0",
+    "conventional-commits": "0.1.0",
+    "golang-cli": "1.2.0",
+    "golang-concurrency": "1.1.5",
+    "golang-context": "1.2.1",
+    "golang-error-handling": "1.2.1",
+    "golang-lint": "1.2.3",
+    "golang-testing": "1.2.3",
+    "tech-writer": "0.4.0",
+    "the-fool": "2.0.0"
+  }
+}

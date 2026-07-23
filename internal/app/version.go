@@ -4,10 +4,10 @@ import "strings"
 
 const Name = "roundfix"
 
-// Version is the build version. Local and dev builds report "0.0.0-dev"; the
-// release workflow overrides it with the pushed tag via
+// Version is the Roundfix semantic version. Local builds keep this product
+// identity; the release workflow overrides it with the matching pushed tag via
 // -ldflags "-X roundfix/internal/app.Version=<version>".
-var Version = "0.0.0-dev"
+var Version = "0.0.1"
 
 // BuildCommit and BuildTime identify a local build. The Makefile build and
 // install targets stamp them via -ldflags with the short commit SHA (plus
@@ -20,7 +20,7 @@ var (
 
 // VersionLine is the complete `--version` line body: the plain version for
 // release builds, and the version plus build identity for stamped local
-// builds, shaped like `0.0.0-dev (a1b2c3d, built 2026-07-15 14:32:05 -0300)`.
+// builds, shaped like `0.0.1 (a1b2c3d, built 2026-07-15 14:32:05 -0300)`.
 func VersionLine() string {
 	commit := strings.TrimSpace(BuildCommit)
 	builtAt := strings.TrimSpace(BuildTime)
