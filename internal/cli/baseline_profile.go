@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -31,12 +32,25 @@ type baselineProfileResult struct {
 	NextAction    string                     `json:"nextAction,omitempty"`
 }
 
-func runBaselineCommand(args []string, stdout, stderr io.Writer) int {
+type baselinePlanPreflightResult struct {
+	SchemaVersion string                      `json:"schemaVersion"`
+	Operation     string                      `json:"operation"`
+	State         string                      `json:"state"`
+	Category      string                      `json:"category"`
+	Repository    baseline.RepositoryIdentity `json:"repository"`
+	Snapshot      baseline.RepositorySnapshot `json:"snapshot"`
+	Message       string                      `json:"message"`
+	NextAction    string                      `json:"nextAction"`
+}
+
+func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 || len(args) == 1 && commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("baseline"))
 		return exitOK
 	}
 	switch args[0] {
+	case "plan":
+		return runBaselinePlanCommand(ctx, args[1:], stdout, stderr)
 	case "profile":
 		return runBaselineProfileCommand(args[1:], stdout, stderr)
 	default:
@@ -49,6 +63,168 @@ func runBaselineCommand(args []string, stdout, stderr io.Writer) int {
 		)
 		return exitPreflight
 	}
+}
+
+func runBaselinePlanCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
+	if commandWantsHelp(args) {
+		fmt.Fprint(stdout, commandUsage("baseline plan"))
+		return exitOK
+	}
+	req, err := parseBaselinePlanCommand(args)
+	jsonOutput := req.format == "json" || baselinePlanJSONRequested(args)
+	if err != nil {
+		printBaselinePlanFailure(err, jsonOutput, baselinePlanPreflightResult{}, stdout, stderr)
+		return exitPreflight
+	}
+	inspection, err := baseline.InspectRepository(ctx, req.repo, nil)
+	if err != nil {
+		printBaselinePlanFailure(err, jsonOutput, baselinePlanPreflightResult{}, stdout, stderr)
+		return exitPreflight
+	}
+	result := baselinePlanPreflightResult{
+		SchemaVersion: baselineResultSchema,
+		Operation:     "plan",
+		Repository:    inspection.Identity,
+		Snapshot:      inspection.Snapshot,
+	}
+	if len(inspection.Snapshot.Blocking) != 0 {
+		result.State = "failed"
+		result.Category = "preflight"
+		result.Message = "repository preflight found unsafe bounded carriers"
+		result.NextAction = "repair each blocking carrier and rerun roundfix baseline plan"
+		for _, finding := range inspection.Snapshot.Blocking {
+			fmt.Fprintf(stderr, "%s: %s: %s: %s\n", app.Name, finding.Code, finding.Path, finding.Message)
+		}
+		if jsonOutput {
+			if err := encodeBaselinePlanResult(stdout, result); err != nil {
+				fmt.Fprintf(stderr, "%s: baseline plan output failed: %v\n", app.Name, err)
+				return exitRunFailed
+			}
+		} else {
+			printBaselinePlanText(result, stdout)
+		}
+		return exitPreflight
+	}
+
+	result.State = "action_required"
+	result.Category = "decision"
+	result.Message = "repository preflight passed; instruction preservation requires a decision"
+	result.NextAction = "choose greenfield or preservation mode before completing the Baseline Plan"
+	if jsonOutput {
+		if err := encodeBaselinePlanResult(stdout, result); err != nil {
+			fmt.Fprintf(stderr, "%s: baseline plan output failed: %v\n", app.Name, err)
+			return exitRunFailed
+		}
+	} else {
+		printBaselinePlanText(result, stdout)
+	}
+	return exitUnverified
+}
+
+type baselinePlanCommandRequest struct {
+	repo   string
+	format string
+}
+
+func parseBaselinePlanCommand(args []string) (baselinePlanCommandRequest, error) {
+	req := baselinePlanCommandRequest{repo: ".", format: "text"}
+	flags := flag.NewFlagSet("baseline plan", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	flags.StringVar(&req.repo, "repo", ".", "Git worktree or a path inside it")
+	flags.StringVar(&req.format, "format", "text", "Output format: text or json")
+	if err := flags.Parse(args); err != nil {
+		return baselinePlanCommandRequest{}, validationError{
+			message: fmt.Sprintf("invalid baseline plan arguments: %v; run '%s baseline plan --help' for usage", err, app.Name),
+		}
+	}
+	if remaining := flags.Args(); len(remaining) != 0 {
+		return baselinePlanCommandRequest{}, validationError{
+			message: fmt.Sprintf("unexpected argument %q; run '%s baseline plan --help' for usage", remaining[0], app.Name),
+		}
+	}
+	req.repo = strings.TrimSpace(req.repo)
+	req.format = strings.TrimSpace(req.format)
+	if req.repo == "" {
+		return baselinePlanCommandRequest{}, validationError{message: "--repo cannot be empty"}
+	}
+	if req.format != "text" && req.format != "json" {
+		return baselinePlanCommandRequest{}, validationError{
+			message: fmt.Sprintf("unsupported --format %q; use text or json", req.format),
+		}
+	}
+	return req, nil
+}
+
+func printBaselinePlanText(result baselinePlanPreflightResult, stdout io.Writer) {
+	state := strings.ReplaceAll(result.State, "_", " ")
+	fmt.Fprintf(stdout, "Baseline plan preflight: %s\n", state)
+	if result.Repository.Digest != "" {
+		fmt.Fprintf(stdout, "Repository identity: %s\n", result.Repository.Digest)
+		fmt.Fprintf(stdout, "Git object format: %s\n", result.Repository.ObjectFormat)
+		fmt.Fprintf(stdout, "Root commits: %d\n", len(result.Repository.RootCommits))
+	}
+	if result.Snapshot.Digest != "" {
+		fmt.Fprintf(stdout, "Bounded snapshot: %s\n", result.Snapshot.Digest)
+		fmt.Fprintf(stdout, "Instruction carriers: %d\n", len(result.Snapshot.Carriers))
+		fmt.Fprintf(stdout, "Trusted sources: %d\n", len(result.Snapshot.Sources))
+		fmt.Fprintf(stdout, "Bounded preimages: %d\n", len(result.Snapshot.Preimages))
+	}
+	for _, warning := range result.Snapshot.Warnings {
+		fmt.Fprintf(stdout, "Warning: %s: %s: %s\n", warning.Code, warning.Path, warning.Message)
+	}
+	for _, finding := range result.Snapshot.Blocking {
+		fmt.Fprintf(stdout, "Blocking: %s: %s: %s\n", finding.Code, finding.Path, finding.Message)
+	}
+	if result.Message != "" {
+		fmt.Fprintf(stdout, "Result: %s\n", result.Message)
+	}
+	if result.NextAction != "" {
+		fmt.Fprintf(stdout, "Next action: %s\n", result.NextAction)
+	}
+}
+
+func printBaselinePlanFailure(
+	err error,
+	jsonOutput bool,
+	base baselinePlanPreflightResult,
+	stdout io.Writer,
+	stderr io.Writer,
+) {
+	fmt.Fprintf(stderr, "%s: baseline plan failed: %v\n", app.Name, err)
+	fmt.Fprintf(stderr, "Run '%s baseline plan --help' for usage.\n", app.Name)
+	if !jsonOutput {
+		return
+	}
+	base.SchemaVersion = baselineResultSchema
+	base.Operation = "plan"
+	base.State = "failed"
+	base.Category = "preflight"
+	base.Message = err.Error()
+	base.NextAction = "correct the repository or command input and rerun roundfix baseline plan"
+	if encodeErr := encodeBaselinePlanResult(stdout, base); encodeErr != nil {
+		fmt.Fprintf(stderr, "%s: baseline plan output failed: %v\n", app.Name, encodeErr)
+	}
+}
+
+func encodeBaselinePlanResult(stdout io.Writer, result baselinePlanPreflightResult) error {
+	encoder := json.NewEncoder(stdout)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(result); err != nil {
+		return fmt.Errorf("encode Baseline result: %w", err)
+	}
+	return nil
+}
+
+func baselinePlanJSONRequested(args []string) bool {
+	for index, arg := range args {
+		if arg == "--format" && index+1 < len(args) && strings.TrimSpace(args[index+1]) == "json" {
+			return true
+		}
+		if strings.HasPrefix(arg, "--format=") && strings.TrimSpace(strings.TrimPrefix(arg, "--format=")) == "json" {
+			return true
+		}
+	}
+	return false
 }
 
 func runBaselineProfileCommand(args []string, stdout, stderr io.Writer) int {

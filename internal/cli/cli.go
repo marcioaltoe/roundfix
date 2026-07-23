@@ -48,6 +48,7 @@ Usage:
   roundfix settle --spec <slug> --task <task_id>
   roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
   roundfix release plan --reset-to <version> [--format <text|json>]
+  roundfix baseline plan [--repo <path>] [--format <text|json>]
   roundfix baseline profile init --id <id> [--from <built-in-id>]
   roundfix baseline profile show <id> [--format <text|json>]
   roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
@@ -239,7 +240,7 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 	case "release":
 		return runReleaseCommand(ctx, args[1:], stdout, stderr)
 	case "baseline":
-		return runBaselineCommand(args[1:], stdout, stderr)
+		return runBaselineCommand(ctx, args[1:], stdout, stderr)
 	case "profiles":
 		return runProfilesCommand(ctx, args[1:], stdout, stderr)
 	case "archive":
@@ -3967,16 +3968,38 @@ explicit post-QA authority.
 `
 	case "baseline":
 		return `Usage:
+  roundfix baseline plan [--repo <path>] [--format <text|json>]
   roundfix baseline profile init --id <id> [--from <built-in-id>]
   roundfix baseline profile show <id> [--format <text|json>]
   roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
 
 Commands:
+  plan     Inspect local Git lineage and bounded repository carriers without writing.
   profile  Author, inspect, and validate built-in or repository-owned Baseline Profiles.
 
 Repository-owned profiles live only under
 .roundfix/baseline/profiles/<id>.json and may reference only entries in the
 embedded Baseline catalog.
+`
+	case "baseline plan":
+		return `Usage:
+  roundfix baseline plan [--repo <path>] [--format <text|json>]
+
+Runs the read-only Baseline preflight. It derives clone-stable Git lineage,
+inventories bounded instruction and agent-document carriers, records portable
+preimages, and reports warnings or apply-blocking repository conditions. This
+tracer-bullet stage returns action_required after a safe inspection because
+instruction-preservation decisions are still required. It never prompts,
+writes repository bytes, executes repository-defined commands, or uses the
+network.
+
+Exit codes:
+  2  invalid arguments, Git/repository failure, or unsafe bounded carrier
+  3  preflight passed and a Baseline decision is required
+
+Options:
+  --repo    Git worktree or a path inside it (default current directory)
+  --format  Output format: text or json (default text)
 `
 	case "baseline profile":
 		return `Usage:
