@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-23
 updated_at: 2026-07-23
 ---
@@ -66,12 +66,11 @@ Session evidence:
   `plannedChanges` entry from each audit. The machine contract has unresolved
   decision identifiers, but no compact `nextDecision`, resumable Decision File
   skeleton, or aggregate plan projection for this progressive phase.
-- **Action / suggestion**: Keep one-at-a-time confirmation and never infer an
-  answer. Add a deterministic `nextDecision` object and a complete
-  `decisionDocumentTemplate` to unresolved audit output, or add a read-only
-  command that prints that template to stdout. Add a compact provisional
-  `planSummary` while retaining the complete canonical `plannedChanges` array
-  for the final resolved review.
+- **Action / suggestion**: Replace repeated audit invocations with one stateful
+  Baseline workflow. Collect each required repository decision without
+  inferring an answer, then present one consolidated, editable review and final
+  Change Plan. Non-interactive use must emit the complete plan in one
+  machine-readable response and apply only its exact approved digest.
 
 ## 3. The skill's Decision File description omits a required schema field
 
@@ -182,8 +181,18 @@ Session evidence:
 
 ## Routing
 
-No implementation Spec covers these post-0045 adoption findings yet. When
-triaged, create and link a follow-up Spec for the inventory-remediation,
-decision UX, capability-evidence, plan-presentation, and verification-command
-contracts; then set this finding to `done` without waiting for that Spec's
-implementation or QA.
+[Spec 0046](../specs/0046-public-context-driven-baseline-command/_prd.md)
+owns the inventory-remediation, decision UX, capability-evidence,
+plan-presentation, verification-command, public CLI authority, custom-profile,
+and Python-removal contracts identified here. Its approved product direction
+uses one `roundfix baseline` workflow, immutable root-instruction backups,
+supervised read-only ACP proposals, one selected Baseline Profile, consolidated
+plan review, and digest-bound non-interactive apply. Audit remains
+repository-wide even though automatic preservation changes only root
+instruction carriers.
+
+The Spec's future Task Graph must contain a dedicated Roundfix documentation
+Task covering the user guide, CLI reference and examples, automation,
+migration from the Python-backed skill, recovery, troubleshooting, and the thin
+setup skill. This finding is triaged and closed; Spec implementation and QA
+remain tracked by that Spec.

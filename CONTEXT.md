@@ -382,6 +382,14 @@ _Avoid_: Setup command, provisioning, install step
 The portable, versioned set of required project instructions and architectural decisions that makes a repository ready for the CONTEXT-driven workflow.
 _Avoid_: Sample docs, optional setup, repository template
 
+**Baseline Profile**:
+A versioned composition of modules, Repository Capabilities, decisions, managed artifacts, and verification roles that defines one reproducible Context-Driven Baseline. Roundfix ships built-in profiles; a repository may own additional profiles for its own workflow.
+_Avoid_: Agent Selection Profile, setup template, user profile
+
+**Baseline Command**:
+The public `roundfix baseline` command that authors and validates Baseline Profiles and drives one preflight-to-verification adoption or update flow without requiring an Agent Skill.
+_Avoid_: Setup Command, setup skill, configuration wizard
+
 **Source Baseline**:
 The immutable Setup Manifest and governed instruction corpus that a setup transition or Baseline Readoption recognizes as its exact origin.
 _Avoid_: Legacy Baseline, inferred preimage, current files
