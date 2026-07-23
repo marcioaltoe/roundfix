@@ -129,6 +129,7 @@ type transactionJournal struct {
 type fileTransaction struct {
 	root           string
 	anchored       *os.Root
+	document       PlanDocument
 	privateDir     string
 	stateDir       string
 	lock           *os.File
@@ -225,6 +226,7 @@ func beginTransaction(
 	transaction := &fileTransaction{
 		root:       root,
 		anchored:   anchored,
+		document:   document,
 		privateDir: privateDir,
 		stateDir:   stateDir,
 		lock:       lock,
@@ -295,6 +297,9 @@ func (transaction *fileTransaction) Apply(ctx context.Context) (VerificationEvid
 		if err := verifyTransactionPostimage(transaction.anchored, entry.After); err != nil {
 			return VerificationEvidence{}, transaction.failApply(ctx, err)
 		}
+	}
+	if err := verifyAppliedPlanState(transaction.root, transaction.document); err != nil {
+		return VerificationEvidence{}, transaction.failApply(ctx, err)
 	}
 	if err := transaction.runPhaseHook(transactionFaultPoint{Phase: transactionPhaseCommitting}); err != nil {
 		return VerificationEvidence{}, transaction.failApply(ctx, err)

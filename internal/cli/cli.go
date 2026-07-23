@@ -49,6 +49,7 @@ Usage:
   roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
   roundfix release plan --reset-to <version> [--format <text|json>]
   roundfix baseline plan --profile <id> [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
+  roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
   roundfix baseline profile init --id <id> [--from <built-in-id>]
   roundfix baseline profile show <id> [--format <text|json>]
   roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
@@ -77,7 +78,7 @@ Commands:
   implement  Execute a Spec's Task Graph as one Run
   settle     Verify and commit all current worktree changes for one failed Task
   release    Plan the next release version without mutating repository or release state
-  baseline   Author and validate Context-Driven Baseline Profiles
+  baseline   Plan, apply, and validate a Context-Driven Baseline
   profiles   Show Agent Selection Profiles and advisory recommendations
   archive    Archive a completed Spec
   stop       Request or force-stop an Active Run
@@ -3969,12 +3970,14 @@ explicit post-QA authority.
 	case "baseline":
 		return `Usage:
   roundfix baseline plan --profile <id> [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
+  roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
   roundfix baseline profile init --id <id> [--from <built-in-id>]
   roundfix baseline profile show <id> [--format <text|json>]
   roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
 
 Commands:
   plan     Emit a portable, digest-bound Baseline Plan without writing.
+  apply    Apply and verify exactly one approved portable Baseline Plan.
   profile  Author, inspect, and validate built-in or repository-owned Baseline Profiles.
 
 Repository-owned profiles live only under
@@ -4004,6 +4007,32 @@ Options:
   --profile       Built-in or repository-owned Baseline Profile
   --decision      Decision as id=value; repeat for multiple answers
   --decision-file Strict Decision Document path; repeat to merge inputs
+  --repo          Git worktree or a path inside it (default current directory)
+  --format        Output format: text or json (default text)
+`
+	case "baseline apply":
+		return `Usage:
+  roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
+
+Strictly parses one portable roundfix/baseline-plan/v1 document, confirms its
+exact Plan Digest, validates clone-stable Git lineage and every bounded
+preimage, then applies only the supplied postimages through the recoverable
+transaction. An exact empty reapply is a verified success.
+
+Baseline verification checks managed postimages, immutable backups, carrier
+relationships, Setup Manifest identity, retention accounting, and resolved
+audit state. Repository formatter and Verification commands are reported as
+recommendations and are never run.
+
+Exit codes:
+  0  approved plan applied or already applied, and Baseline verification passed
+  1  apply, verification, output, rollback, or recovery failure
+  2  invalid arguments, plan schema, or unsafe repository
+  3  confirmation mismatch, stale preimage, or unrelated Git lineage
+
+Options:
+  --plan          Portable roundfix/baseline-plan/v1 JSON file
+  --confirm-plan  Exact approved Plan Digest from the supplied document
   --repo          Git worktree or a path inside it (default current directory)
   --format        Output format: text or json (default text)
 `

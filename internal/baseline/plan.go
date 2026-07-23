@@ -1375,6 +1375,9 @@ func ValidatePlanDocument(document PlanDocument) error {
 	if document.PlanDigest != digest {
 		return fmt.Errorf("Baseline Plan digest mismatch: got %q, want %q", document.PlanDigest, digest)
 	}
+	if err := validatePlanApplyContract(document); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -1542,5 +1545,5 @@ func cloneFindings(findings []Finding) []Finding {
 	if findings == nil {
 		return []Finding{}
 	}
-	return append([]Finding(nil), findings...)
+	return append([]Finding{}, findings...)
 }

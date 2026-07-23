@@ -40,6 +40,8 @@ func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 	switch args[0] {
 	case "plan":
 		return runBaselinePlanCommand(ctx, args[1:], stdout, stderr)
+	case "apply":
+		return runBaselineApplyCommand(ctx, args[1:], stdout, stderr)
 	case "profile":
 		return runBaselineProfileCommand(args[1:], stdout, stderr)
 	default:

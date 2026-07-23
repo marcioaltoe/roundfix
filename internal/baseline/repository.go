@@ -656,6 +656,10 @@ func (builder *inventoryBuilder) recordPath(relative string) {
 		})
 		return
 	}
+	if info.Mode().IsRegular() {
+		builder.readTrustedSource(relative, "root")
+		return
+	}
 	linkTarget := ""
 	if info.Mode()&fs.ModeSymlink != 0 {
 		if target, linkErr := builder.root.Readlink(filepath.FromSlash(relative)); linkErr == nil {
