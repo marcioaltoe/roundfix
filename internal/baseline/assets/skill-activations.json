@@ -1,0 +1,128 @@
+{
+  "schemaVersion": "setup-context-driven/skill-activations-v1",
+  "version": 1,
+  "bundles": [
+    {
+      "id": "bundle.debugging",
+      "skills": [
+        "systematic-debugging",
+        "diagnosing-bugs",
+        "no-workarounds"
+      ]
+    },
+    {
+      "id": "bundle.delivery",
+      "skills": ["conventional-commits", "github-pr-workflow"]
+    },
+    {
+      "id": "bundle.frontend-react",
+      "skills": [
+        "react",
+        "react-best-practices",
+        "react-composition-patterns"
+      ]
+    },
+    {
+      "id": "bundle.frontend-ui-quality",
+      "skills": [
+        "frontend-design",
+        "interaction-design",
+        "interface-design",
+        "fixing-accessibility",
+        "wcag-audit-patterns",
+        "web-design-guidelines"
+      ]
+    },
+    {
+      "id": "bundle.hono-endpoint",
+      "skills": ["hono-api-best-practices", "hono", "zod"]
+    },
+    {
+      "id": "bundle.hono-endpoint-persistence",
+      "skills": [
+        "hono-api-best-practices",
+        "hono",
+        "zod",
+        "drizzle-orm"
+      ]
+    },
+    {
+      "id": "bundle.production-code",
+      "skills": ["coding-guidelines", "clean-code", "solid"]
+    },
+    {
+      "id": "bundle.qa",
+      "skills": ["qa-gate", "evidence-gate"]
+    },
+    {
+      "id": "bundle.security",
+      "skills": ["security-best-practices", "security-threat-model"]
+    },
+    {
+      "id": "bundle.testing",
+      "skills": ["testing-boss", "tdd", "vitest"]
+    }
+  ],
+  "activations": [
+    {
+      "id": "trigger.debugging",
+      "owner": "typescript",
+      "when": "Diagnosing or fixing unexpected behavior.",
+      "bundle": "bundle.debugging"
+    },
+    {
+      "id": "trigger.delivery",
+      "owner": "core",
+      "when": "Preparing commits or pull request delivery.",
+      "bundle": "bundle.delivery"
+    },
+    {
+      "id": "trigger.frontend.react-feature",
+      "owner": "frontend",
+      "when": "Building or reviewing a React feature.",
+      "bundle": "bundle.frontend-react"
+    },
+    {
+      "id": "trigger.frontend.ui-quality",
+      "owner": "frontend",
+      "when": "Designing or reviewing frontend UI and accessibility.",
+      "bundle": "bundle.frontend-ui-quality"
+    },
+    {
+      "id": "trigger.hono.endpoint",
+      "owner": "backend",
+      "when": "Creating, modifying, or reviewing a Hono endpoint without persistence behavior.",
+      "bundle": "bundle.hono-endpoint"
+    },
+    {
+      "id": "trigger.hono.endpoint-persistence",
+      "owner": "backend",
+      "when": "Creating, modifying, or reviewing a Hono endpoint with persistence behavior.",
+      "bundle": "bundle.hono-endpoint-persistence"
+    },
+    {
+      "id": "trigger.production-code",
+      "owner": "typescript",
+      "when": "Writing, modifying, or reviewing production code.",
+      "bundle": "bundle.production-code"
+    },
+    {
+      "id": "trigger.qa",
+      "owner": "context-workflow",
+      "when": "Running final Spec QA.",
+      "bundle": "bundle.qa"
+    },
+    {
+      "id": "trigger.security",
+      "owner": "backend",
+      "when": "Reviewing authentication, authorization, data, or trust-boundary security.",
+      "bundle": "bundle.security"
+    },
+    {
+      "id": "trigger.testing",
+      "owner": "typescript",
+      "when": "Writing or changing tests.",
+      "bundle": "bundle.testing"
+    }
+  ]
+}

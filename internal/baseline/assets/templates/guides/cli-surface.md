@@ -1,0 +1,3 @@
+# CLI surface
+
+{{artifact.rules}}

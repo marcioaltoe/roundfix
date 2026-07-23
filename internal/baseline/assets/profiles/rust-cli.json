@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "setup-context-driven/profile/0.0.1",
+  "id": "rust-cli", "version": "0.0.1", "markerVersion": "0.0.1", "title": "Rust CLI repository", "setup": "rust-cli",
+  "formatter": {"kind": "none"},
+  "entryDecisions": ["language.generated", "verification.gate", "spec.scaffold", "domain.layout", "triage.external", "autonomous.enabled", "secondbrain.enabled", "repository.extension.enabled"],
+  "modules": ["core", "context-workflow", "rust", "cli-surface", "autonomous-work", "spec-workflow", "external-triage", "secondbrain", "repository-extension"],
+  "requiredRules": [
+    "rule.core.compact-root", "rule.core.root-cause-only", "rule.core.evidence-before-complete", "rule.core.verification-selected", "rule.core.verification-integrity", "rule.core.skill-dispatch", "rule.core.english-guidance", "rule.core.research-authority", "rule.core.dependency-discipline", "rule.core.git-delivery", "rule.core.decision-authority", "rule.core.security-configuration",
+    "rule.context.domain-docs", "rule.context.docs-layout",
+    "rule.rust.current-docs", "rule.rust.cargo-gates",
+    "rule.cli.output-contract", "rule.cli.non-interactive",
+    "rule.autonomous.supervisor-delegates", "rule.autonomous.verification-gate",
+    "rule.spec.routing", "rule.spec.artifacts", "rule.spec.docs-layout",
+    "rule.external-triage",
+    "rule.secondbrain.index-first", "rule.secondbrain.read-only", "rule.secondbrain.secret-safety", "rule.secondbrain.citations", "rule.secondbrain.hermes-escalation"
+  ],
+  "capabilitySets": ["universal"],
+  "activationBundles": ["bundle.delivery", "bundle.qa"]
+}

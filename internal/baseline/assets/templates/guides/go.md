@@ -1,0 +1,3 @@
+# Go
+
+{{artifact.rules}}

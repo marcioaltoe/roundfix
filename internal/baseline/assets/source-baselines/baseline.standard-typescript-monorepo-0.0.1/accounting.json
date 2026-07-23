@@ -1,0 +1,447 @@
+{
+  "schemaVersion": "setup-context-driven/source-accounting/0.0.1",
+  "version": "0.0.1",
+  "baseline": "baseline.standard-typescript-monorepo-0.0.1",
+  "entries": [
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.read-design-before-ui",
+      "disposition": "moved",
+      "targets": [
+        "clause.frontend.read-design-contract-before-ui-work"
+      ],
+      "reason": "The selected frontend module now carries the portable design-contract precondition."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.block-warnings",
+      "disposition": "replaced",
+      "targets": [
+        "clause.bun.block-warnings-when-profile-treats-them-as-errors"
+      ],
+      "reason": "The warning gate is conditional on the confirmed TypeScript/Bun profile instead of global."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.prohibit-verification-config-bypass",
+      "disposition": "replaced",
+      "targets": [
+        "clause.core.prohibit-verification-contract-bypass"
+      ],
+      "reason": "The portable clause prohibits changing Verification contracts merely to silence failures."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.ask-before-verification-config-change",
+      "disposition": "replaced",
+      "targets": [
+        "clause.core.ask-before-verification-configuration-change"
+      ],
+      "reason": "Intentional Verification configuration changes now have an explicit authority gate."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.inspect-dependent-interfaces",
+      "disposition": "replaced",
+      "targets": [
+        "clause.typescript.inspect-dependent-interfaces-before-tests"
+      ],
+      "reason": "The selected TypeScript testing guide carries the dependent-interface precondition."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.coding-reference-trio",
+      "disposition": "rejected",
+      "targets": [],
+      "reason": "The exact three-skill bundle is sample-specific; the baseline dispatches only governing skills declared by the selected catalog."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.activate-fix-and-test-skills",
+      "disposition": "retained",
+      "targets": [
+        "clause.core.activate-matching-skills"
+      ],
+      "reason": "The core dispatch owns the same mandatory fix, debug, and test skill activation behavior."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.use-authoritative-external-docs",
+      "disposition": "replaced",
+      "targets": [
+        "contract.research.sequence"
+      ],
+      "reason": "The portable rule routes external technical questions through the profile's documentation skill."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.use-web-research-fallback",
+      "disposition": "replaced",
+      "targets": [
+        "contract.research.sequence"
+      ],
+      "reason": "The fallback is declared by the selected profile and requires varied searches plus primary-source verification."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.prohibit-external-tools-for-local-code",
+      "disposition": "replaced",
+      "targets": [
+        "contract.research.sequence"
+      ],
+      "reason": "The prohibition is now tool-agnostic and portable."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.verify-dependency-before-add",
+      "disposition": "replaced",
+      "targets": [
+        "clause.bun.verify-dependency-before-add"
+      ],
+      "reason": "The Bun module confirms the package-manager capability before rendering this requirement."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.add-from-owning-workspace",
+      "disposition": "replaced",
+      "targets": [
+        "clause.bun.add-from-owning-workspace"
+      ],
+      "reason": "The Bun module owns workspace-scoped dependency installation."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.ask-user-answerable-decisions",
+      "disposition": "replaced",
+      "targets": [
+        "clause.core.ask-user-answerable-decisions"
+      ],
+      "reason": "Cheap user-answerable decisions now use a portable stop-and-ask clause."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.ask-before-destructive-git",
+      "disposition": "replaced",
+      "targets": [
+        "clause.core.ask-before-destructive-git"
+      ],
+      "reason": "Destructive Git operations retain an explicit authority gate."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.use-conventional-commits",
+      "disposition": "replaced",
+      "targets": [
+        "clause.core.use-conventional-commits"
+      ],
+      "reason": "Commit and pull request title work dispatches to the installed governing skill."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.use-github-pr-workflow",
+      "disposition": "replaced",
+      "targets": [
+        "clause.core.use-github-pr-workflow"
+      ],
+      "reason": "Pull request delivery work dispatches to the installed governing workflow skill."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.prohibit-secret-files",
+      "disposition": "replaced",
+      "targets": [
+        "clause.core.prohibit-secret-exposure"
+      ],
+      "reason": "The portable secret boundary keeps source-control exposure prohibited."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.audit-new-dependencies",
+      "disposition": "replaced",
+      "targets": [
+        "clause.core.review-new-dependencies"
+      ],
+      "reason": "Every new dependency now has an explicit portable review gate."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.knowledge-workspace-sparse-checkout",
+      "disposition": "rejected",
+      "targets": [],
+      "reason": "The sparse-checkout knowledge flow is retired and conflicts with the current read-only Secondbrain contract."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.separate-documentation-commit",
+      "disposition": "rejected",
+      "targets": [],
+      "reason": "The separate documentation commit flow depended on the retired knowledge workspace."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.fable-runtime-defaults",
+      "disposition": "rejected",
+      "targets": [],
+      "reason": "Runtime and model selections are repository decisions; obsolete sample defaults cannot enter the baseline."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.template-product-stack",
+      "disposition": "rejected",
+      "targets": [],
+      "reason": "Product naming, database, authentication, and template stack assumptions are repository-specific."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.standard-rest-contract",
+      "disposition": "rejected",
+      "targets": [],
+      "reason": "A universal REST policy can conflict with the repository's explicit API contract."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.feature-systems-layout",
+      "disposition": "rejected",
+      "targets": [],
+      "reason": "Feature layout is repository-authored architecture and is not inferred from the frontend capability."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.unconfirmed-domain-skill-matrix",
+      "disposition": "rejected",
+      "targets": [],
+      "reason": "Stack dispatch renders only skills owned by confirmed profile modules; the sample matrix is not universally selected."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.code-language-policy",
+      "disposition": "rejected",
+      "targets": [],
+      "reason": "Code and domain language are repository-authored policy; setup owns only generated-guidance language."
+    },
+    {
+      "sourceBaseline": "baseline.legacy-typescript-bun-sample",
+      "sourceEntry": "clause.legacy.environment-example-parity",
+      "disposition": "rejected",
+      "targets": [],
+      "reason": "Environment example parity depends on the repository's configuration contract and stays outside the baseline."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.keep-root-compact",
+      "disposition": "replaced",
+      "targets": [
+        "clause.core.keep-root-compact"
+      ],
+      "reason": "The compact-root contract remains portable and keeps mandatory strength."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.preserve-repository-authored-policy",
+      "disposition": "retained",
+      "targets": [
+        "clause.core.keep-root-compact"
+      ],
+      "reason": "The current compact-root clause still preserves repository-authored policy outside setup markers."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.fix-root-causes",
+      "disposition": "retained",
+      "targets": [
+        "clause.core.fix-root-causes"
+      ],
+      "reason": "Root-cause correction remains mandatory."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.prohibit-verification-workarounds",
+      "disposition": "moved",
+      "targets": [
+        "clause.core.prohibit-verification-workarounds"
+      ],
+      "reason": "The prohibition moved into its own stable clause without weakening."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.require-fresh-evidence",
+      "disposition": "retained",
+      "targets": [
+        "clause.core.require-fresh-evidence"
+      ],
+      "reason": "Fresh evidence remains mandatory before claims."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.run-selected-verification",
+      "disposition": "retained",
+      "targets": [
+        "clause.core.run-selected-verification"
+      ],
+      "reason": "Selected Verification still gates completion."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.prohibit-verification-contract-bypass",
+      "disposition": "retained",
+      "targets": [
+        "clause.core.prohibit-verification-contract-bypass"
+      ],
+      "reason": "The current clause retains the same prohibition."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.activate-matching-skills",
+      "disposition": "retained",
+      "targets": [
+        "clause.core.activate-matching-skills"
+      ],
+      "reason": "Matching-skill activation remains mandatory."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.write-generated-guidance-in-english",
+      "disposition": "retained",
+      "targets": [
+        "clause.core.write-generated-guidance-in-english"
+      ],
+      "reason": "Generated guidance keeps its existing language contract."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.research-authoritative-external-sources",
+      "disposition": "replaced",
+      "targets": [
+        "contract.research.sequence"
+      ],
+      "reason": "Authoritative external documentation remains required."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.research-local-code-locally",
+      "disposition": "replaced",
+      "targets": [
+        "contract.research.sequence"
+      ],
+      "reason": "Local discovery remains assigned to local search tools."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.prohibit-web-research-for-local-code",
+      "disposition": "moved",
+      "targets": [
+        "contract.research.sequence"
+      ],
+      "reason": "The local-code prohibition now has an explicit prohibited clause."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.follow-dependency-workflow",
+      "disposition": "retained",
+      "targets": [
+        "clause.core.follow-dependency-workflow"
+      ],
+      "reason": "The repository package and lockfile workflow remains mandatory."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.preserve-git-scope",
+      "disposition": "retained",
+      "targets": [
+        "clause.core.preserve-git-scope"
+      ],
+      "reason": "Status inspection and unrelated-work preservation remain mandatory."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.ask-before-delivery",
+      "disposition": "replaced",
+      "targets": [
+        "clause.core.ask-before-delivery"
+      ],
+      "reason": "The authority boundary is now represented by a stop-and-ask clause."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.prohibit-secret-exposure",
+      "disposition": "retained",
+      "targets": [
+        "clause.core.prohibit-secret-exposure"
+      ],
+      "reason": "Secret exposure remains prohibited."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.test-user-visible-behavior",
+      "disposition": "retained",
+      "targets": [
+        "clause.frontend.test-user-visible-behavior"
+      ],
+      "reason": "Frontend tests still target user-visible behavior."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.follow-frontend-contract",
+      "disposition": "replaced",
+      "targets": [
+        "clause.frontend.read-design-contract-before-ui-work",
+        "clause.frontend.inspect-runnable-ui"
+      ],
+      "reason": "The prior combined guidance is now two explicit mandatory preconditions."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.read-typescript-docs",
+      "disposition": "retained",
+      "targets": [
+        "clause.typescript.read-current-authoritative-docs"
+      ],
+      "reason": "Current authoritative TypeScript documentation remains required."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.keep-type-errors-visible",
+      "disposition": "retained",
+      "targets": [
+        "clause.typescript.keep-type-errors-visible"
+      ],
+      "reason": "Visible type errors and lockfile discipline retain mandatory strength."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.test-observable-failure-modes",
+      "disposition": "retained",
+      "targets": [
+        "clause.typescript.test-observable-failure-modes"
+      ],
+      "reason": "Observable behavior and explicit failures remain required test targets."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.prohibit-incidental-test-oracles",
+      "disposition": "retained",
+      "targets": [
+        "clause.typescript.prohibit-incidental-test-oracles"
+      ],
+      "reason": "Incidental test oracles remain prohibited."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.use-bun-owned-commands",
+      "disposition": "retained",
+      "targets": [
+        "clause.bun.use-bun-owned-commands"
+      ],
+      "reason": "Bun remains the declared package and script tool for the selected module."
+    },
+    {
+      "sourceBaseline": "baseline.managed-v2",
+      "sourceEntry": "clause.managed-v2.prohibit-other-package-managers",
+      "disposition": "retained",
+      "targets": [
+        "clause.bun.prohibit-other-package-managers"
+      ],
+      "reason": "Substituting package managers or hand-editing the lockfile remains prohibited."
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "setup-context-driven/module-v2",
+  "id": "core",
+  "version": 2,
+  "kind": "universal",
+  "title": "Contract fixture core",
+  "dependsOn": [],
+  "conflictsWith": [],
+  "requiredSkills": ["coding-guidelines"],
+  "skillDispatch": [
+    {
+      "id": "coding-guidelines",
+      "when": "Writing or changing implementation code."
+    }
+  ],
+  "requiredDecisions": [],
+  "rootBlocks": [],
+  "supportingGuides": [
+    {
+      "id": "guide.agent-instructions",
+      "version": 2,
+      "path": "docs/agents/agent-instructions.md",
+      "template": "template.guide.agent-instructions",
+      "rules": ["rule.core.root-cause-only"],
+      "references": [
+        {
+          "id": "reference.core.instructions",
+          "token": "guide.agent-instructions",
+          "ownership": "setup",
+          "managedId": "guide.agent-instructions"
+        },
+        {
+          "id": "reference.core.design",
+          "token": "repository.design-contract",
+          "ownership": "repository",
+          "path": "DESIGN.md"
+        }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.core.root-cause-only",
+      "version": 2,
+      "coverage": ["coverage.universal-safety"],
+      "guidance": "Fix root causes and preserve validation signals."
+    }
+  ]
+}

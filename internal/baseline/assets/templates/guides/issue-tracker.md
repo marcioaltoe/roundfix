@@ -1,0 +1,3 @@
+# Issue tracker
+
+{{artifact.rules}}

@@ -1,0 +1,3 @@
+# Monorepo
+
+{{artifact.rules}}
