@@ -17,6 +17,14 @@ SOURCE_BASELINE_MANIFEST_SCHEMA = (
 SOURCE_BASELINE_INDEX_SCHEMA = "setup-context-driven/source-baseline-index/0.0.1"
 
 _ENTRY_KINDS = {"normative-clause", "recommendation", "operational-contract"}
+_NORMATIVE_ENFORCEMENTS = {"mandatory", "prohibited", "stop-and-ask"}
+_OPERATIONAL_STRUCTURES = {
+    "decision-matrix",
+    "lifecycle",
+    "ordered-procedure",
+    "protocol",
+    "template",
+}
 _IDENTIFIER = re.compile(r"^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _OPEN_MARKER = re.compile(
@@ -37,6 +45,9 @@ class SourceBaselineEntry:
     entry_id: str
     path: Path
     kind: str
+    enforcement: str
+    carrier: Path
+    structure: str | None
     start: int
     end: int
     digest: str
@@ -60,6 +71,7 @@ class SourceBaselineIdentity:
     entry_count: int
     corpus_digest: str
     manifest_digest: str
+    denied_project_tokens: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -156,6 +168,24 @@ def load_source_baseline(
     )
 
 
+def render_source_baseline_carriers(
+    skill_root: str | Path, baseline_id: str
+) -> dict[Path, bytes]:
+    """Render complete carrier bytes from one validated Source Baseline."""
+
+    root = _source_baselines_root(Path(skill_root))
+    baseline = load_source_baseline(root, baseline_id)
+    baseline_root = root / baseline.index_entry.path
+    fragments: dict[Path, list[bytes]] = {}
+    for entry in baseline.entries:
+        content = (baseline_root / entry.path).read_bytes()[entry.start : entry.end]
+        fragments.setdefault(entry.carrier, []).append(content.rstrip())
+    return {
+        carrier: b"\n\n".join(parts) + b"\n"
+        for carrier, parts in fragments.items()
+    }
+
+
 def compute_corpus_digest(corpus_root: str | Path) -> str:
     """Return the deterministic path-and-byte digest used by Source Baselines."""
 
@@ -213,6 +243,11 @@ def _load_indexed_baseline(
         index_entry,
         corpus_digest,
         manifest_digest,
+        diagnostics,
+    )
+    _validate_corpus_policy(
+        corpus_root,
+        identity.denied_project_tokens,
         diagnostics,
     )
 
@@ -326,6 +361,7 @@ def _parse_identity(
         "entryCount",
         "corpusDigest",
         "manifestDigest",
+        "deniedProjectTokens",
     }
     if not _document_fields(document, fields, "identity", diagnostics):
         return None
@@ -340,6 +376,11 @@ def _parse_identity(
         _count(document["entryCount"], "identity.entryCount", diagnostics),
         _digest(document["corpusDigest"], "identity.corpusDigest", diagnostics),
         _digest(document["manifestDigest"], "identity.manifestDigest", diagnostics),
+        _project_tokens(
+            document["deniedProjectTokens"],
+            "identity.deniedProjectTokens",
+            diagnostics,
+        ),
     )
 
 
@@ -360,7 +401,17 @@ def _parse_manifest(
     seen: set[str] = set()
     for position, raw_entry in enumerate(raw_entries):
         label = f"manifest.entries[{position}]"
-        fields = {"id", "path", "kind", "start", "end", "digest"}
+        fields = {
+            "id",
+            "path",
+            "kind",
+            "enforcement",
+            "carrier",
+            "structure",
+            "start",
+            "end",
+            "digest",
+        }
         if not _document_fields(raw_entry, fields, label, diagnostics):
             continue
         assert isinstance(raw_entry, dict)
@@ -381,6 +432,15 @@ def _parse_manifest(
                 f"source-baseline.entry.kind.invalid: {entry_id!r} has kind {kind!r}"
             )
             kind = ""
+        enforcement = _entry_enforcement(
+            raw_entry["enforcement"], entry_id, kind, diagnostics
+        )
+        carrier = _safe_path(
+            raw_entry["carrier"], f"{label}.carrier", diagnostics
+        )
+        structure = _entry_structure(
+            raw_entry["structure"], entry_id, kind, diagnostics
+        )
         start = _count(raw_entry["start"], f"{label}.start", diagnostics)
         end = _count(raw_entry["end"], f"{label}.end", diagnostics)
         if end <= start:
@@ -392,6 +452,9 @@ def _parse_manifest(
                 entry_id,
                 path,
                 kind,
+                enforcement,
+                carrier,
+                structure,
                 start,
                 end,
                 _digest(raw_entry["digest"], f"{label}.digest", diagnostics),
@@ -729,3 +792,100 @@ def _digest(value: object, label: str, diagnostics: list[str]) -> str:
         )
         return ""
     return value
+
+
+def _entry_enforcement(
+    value: object, entry_id: str, kind: str, diagnostics: list[str]
+) -> str:
+    allowed = {"recommended"} if kind == "recommendation" else _NORMATIVE_ENFORCEMENTS
+    if not isinstance(value, str) or value not in allowed:
+        diagnostics.append(
+            "source-baseline.entry.enforcement.invalid: "
+            f"{entry_id!r} kind {kind!r} cannot use {value!r}"
+        )
+        return ""
+    return value
+
+
+def _entry_structure(
+    value: object, entry_id: str, kind: str, diagnostics: list[str]
+) -> str | None:
+    if kind == "operational-contract":
+        if not isinstance(value, str) or value not in _OPERATIONAL_STRUCTURES:
+            diagnostics.append(
+                "source-baseline.entry.structure.invalid: "
+                f"{entry_id!r} requires a supported Operational Contract structure"
+            )
+            return None
+        return value
+    if value is not None:
+        diagnostics.append(
+            "source-baseline.entry.structure.invalid: "
+            f"{entry_id!r} is not an Operational Contract"
+        )
+    return None
+
+
+def _project_tokens(
+    value: object, label: str, diagnostics: list[str]
+) -> tuple[str, ...]:
+    if not isinstance(value, list) or not value:
+        diagnostics.append(
+            f"source-baseline.project-token.list.invalid: {label} must be a non-empty list"
+        )
+        return ()
+    tokens: list[str] = []
+    for position, item in enumerate(value):
+        if not isinstance(item, str) or not item.strip() or item != item.casefold():
+            diagnostics.append(
+                "source-baseline.project-token.invalid: "
+                f"{label}[{position}] must be a non-empty case-folded string"
+            )
+            continue
+        tokens.append(item)
+    if len(tokens) != len(set(tokens)):
+        diagnostics.append(
+            f"source-baseline.project-token.duplicate: {label} repeats a token"
+        )
+    return tuple(tokens)
+
+
+def _validate_corpus_policy(
+    corpus_root: Path,
+    denied_project_tokens: tuple[str, ...],
+    diagnostics: list[str],
+) -> None:
+    try:
+        paths = _corpus_files(corpus_root)
+    except ValueError:
+        return
+    for path in paths:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as error:
+            diagnostics.append(
+                f"source-baseline.corpus.invalid: cannot inspect {path}: {error}"
+            )
+            continue
+        folded = text.casefold()
+        for token in denied_project_tokens:
+            if token in folded:
+                diagnostics.append(
+                    "source-baseline.project-token.denied: "
+                    f"{path.relative_to(corpus_root)} contains {token!r}"
+                )
+        if "<!-- setup-context-driven:" in folded:
+            diagnostics.append(
+                "source-baseline.generated-artifact.denied: "
+                f"{path.relative_to(corpus_root)} contains a generated managed marker"
+            )
+        if re.search(r"(?i)(?:^|[\s`\"'])/(?:users|home)/", text):
+            diagnostics.append(
+                "source-baseline.path-token.denied: "
+                f"{path.relative_to(corpus_root)} contains a machine-specific path"
+            )
+        if re.search(r"(?i)(?:^|[\s`\"'])[a-z]:\\users\\", text):
+            diagnostics.append(
+                "source-baseline.path-token.denied: "
+                f"{path.relative_to(corpus_root)} contains a machine-specific path"
+            )

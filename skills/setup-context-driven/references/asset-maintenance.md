@@ -2,6 +2,12 @@
 
 Treat `.agents/skills/setup-context-driven` as the only authorial source for this repo-owned skill. The catalog must prove semantic coverage and source identity before repository inspection or generated-document apply can begin.
 
+## Governed Source Baselines
+
+Author the current governed corpus under `assets/source-baselines/`. Every retained Normative Clause, recommendation, and Operational Contract has one marker-bounded entry, one manifest record with enforcement and carrier, and one independently pinned index identity. Operational Contracts declare their required structure and retain the complete template, lifecycle, decision matrix, ordered procedure, or protocol; a summary is not an acceptable replacement.
+
+Keep root carriers as compact delegation indexes and place durable behavior in `docs/agents/` carriers. Record prior-clause retention or intentional rejection individually in the strict `0.0.1` accounting document. Before refreshing corpus, manifest, or index digests, run the governed-corpus mutation gate and confirm the denylist rejects project names, brands, machine-specific paths, and copied generated markers.
+
 ## Catalog contracts
 
 Edit the catalog as one connected contract:

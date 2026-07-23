@@ -7,5 +7,8 @@
   "manifest": "manifest.json",
   "entryCount": 2,
   "corpusDigest": "9f69cfd38c8bad92233dd7192187f318699d0ed3fde242f5cebfe3e3be0718b3",
-  "manifestDigest": "c7ef2055c9b5bfd0880e823b26984a8d195cd6c5bb59e98eacc734b4f301b415"
+  "manifestDigest": "18158033e4723b9311d2fb28d6a1eaad70862a208a701cc44a86b06203f0863f",
+  "deniedProjectTokens": [
+    "example-project"
+  ]
 }

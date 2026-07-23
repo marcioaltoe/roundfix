@@ -8,6 +8,9 @@
       "id": "clause.root-cause",
       "path": "corpus/AGENTS.md",
       "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/agent-instructions.md",
+      "structure": null,
       "start": 50,
       "end": 83,
       "digest": "a064cace9135984813a887ae7b6d8449f538ef9a2ca1a268d124205c3411bfbb"
@@ -16,6 +19,9 @@
       "id": "contract.verification",
       "path": "corpus/AGENTS.md",
       "kind": "operational-contract",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/agent-instructions.md",
+      "structure": "ordered-procedure",
       "start": 190,
       "end": 237,
       "digest": "11c3ecf38b062d587b61bd2342581025745cd2dc94c27fa4438b4a57ea0b8d23"

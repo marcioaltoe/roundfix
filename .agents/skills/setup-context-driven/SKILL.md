@@ -17,6 +17,7 @@ Configure a repository for CONTEXT-driven development through the portable asset
 ## Asset map
 
 - `assets/profiles/` selects a supported profile and canonical skill setup snapshot: `typescript-bun-monorepo`, `go-cli-tui`, or `rust-cli`.
+- `assets/source-baselines/` publishes strict `0.0.1` project-agnostic governed corpora. Each independent index pins every Normative Clause, recommendation, and Operational Contract; `accounting.json` records individual retained or rejected prior clauses.
 - `assets/coverage.json` defines stable semantic coverage categories. A profile's `requiredRules` must prove every universal and applicable category; coverage is not a line-count target.
 - `assets/modules/` owns compact root pointers, supporting guides, portable rule guidance, required decisions, exact `requiredSkills`/`skillDispatch` mappings, and typed references.
 - `assets/templates/` stores generated repository content. Root blocks must stay short and point to `docs/agents/` guides.
@@ -24,6 +25,8 @@ Configure a repository for CONTEXT-driven development through the portable asset
 - `references/` is workflow guidance for agents, not generated output. Maintainers must read [`references/asset-maintenance.md`](references/asset-maintenance.md) before changing catalog or snapshot data.
 
 The baseline owns only declared managed blocks, setup-owned guides, the Setup Manifest, and portable workflow rules. Repository-authored architecture and policy remain outside setup ownership. In particular, frontend guidance can require a repository-owned `DESIGN.md`, but setup never generates project-specific architecture.
+
+Source Baseline carriers keep root instructions compact and render full guide fragments. Corpus validation rejects denied project tokens, machine-specific paths, and copied generated managed markers before any carrier can be planned.
 
 ## Audit-first workflow
 

@@ -133,6 +133,16 @@ class SourceBaselineContractTests(unittest.TestCase):
                 "source-baseline.manifest.document.invalid",
             ),
             ("invalid entry kind", self._invalid_entry_kind, "source-baseline.entry.kind.invalid"),
+            (
+                "invalid clause enforcement",
+                self._invalid_entry_enforcement,
+                "source-baseline.entry.enforcement.invalid",
+            ),
+            (
+                "missing contract structure",
+                self._missing_contract_structure,
+                "source-baseline.entry.structure.invalid",
+            ),
             ("wrong byte range", self._wrong_entry_range, "source-baseline.entry.range.mismatch"),
             (
                 "wrong entry digest",
@@ -312,6 +322,18 @@ class SourceBaselineContractTests(unittest.TestCase):
         self._mutate_json(
             self._manifest_path(root),
             lambda document: document["entries"][0].update(kind="summary"),
+        )
+
+    def _invalid_entry_enforcement(self, root):
+        self._mutate_json(
+            self._manifest_path(root),
+            lambda document: document["entries"][0].update(enforcement="recommended"),
+        )
+
+    def _missing_contract_structure(self, root):
+        self._mutate_json(
+            self._manifest_path(root),
+            lambda document: document["entries"][1].update(structure=None),
         )
 
     def _wrong_entry_range(self, root):

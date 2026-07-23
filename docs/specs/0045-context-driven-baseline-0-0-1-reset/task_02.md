@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0045-context-driven-baseline-0-0-1-reset
-status: pending
+status: completed
 type: docs
 complexity: high
 ---
@@ -34,27 +34,27 @@ and Operational Contract must have one explicit home and one indexed identity.
 
 ## Subtasks
 
-- [ ] Reconcile every prior clause and recommendation with a retained or
+- [x] Reconcile every prior clause and recommendation with a retained or
       intentionally excluded 0.0.1 entry.
-- [ ] Author the complete governed guide and template corpus.
-- [ ] Preserve the findings lifecycle template as a first-class source entry.
-- [ ] Reduce root instruction sources to compact delegations.
-- [ ] Add project-token and corpus-completeness checks.
-- [ ] Remove obsolete bundled-asset compatibility after migration.
-- [ ] Synchronize the canonical and distributed setup skill trees.
+- [x] Author the complete governed guide and template corpus.
+- [x] Preserve the findings lifecycle template as a first-class source entry.
+- [x] Reduce root instruction sources to compact delegations.
+- [x] Add project-token and corpus-completeness checks.
+- [x] Remove obsolete bundled-asset compatibility after migration.
+- [x] Synchronize the canonical and distributed setup skill trees.
 
 ## Acceptance Criteria
 
-- [ ] Every retained source requirement has exactly one stable entry identity
+- [x] Every retained source requirement has exactly one stable entry identity
       and is reachable from the independent Source Baseline index.
-- [ ] Generated guides contain the full Operational Contracts and the findings
+- [x] Generated guides contain the full Operational Contracts and the findings
       lifecycle template specified by the PRD.
-- [ ] Root instruction output delegates to complete guides without duplicating
+- [x] Root instruction output delegates to complete guides without duplicating
       their full content.
-- [ ] A denied project token inserted into any governed source entry fails the
+- [x] A denied project token inserted into any governed source entry fails the
       corpus gate.
-- [ ] New catalog output contains only strict 0.0.1 schemas and versions.
-- [ ] Canonical and distributed setup skill trees are byte-identical.
+- [x] New catalog output contains only strict 0.0.1 schemas and versions.
+- [x] Canonical and distributed setup skill trees are byte-identical.
 
 ## Context
 
@@ -79,3 +79,61 @@ and Operational Contract must have one explicit home and one indexed identity.
 - `_techspec.md` → System Architecture; Coverage Map; Build Order 2.
 - ADR-0060 → complete project-agnostic Source Baseline content.
 - ADR-0062 → removal of obsolete owned compatibility layers.
+
+## Result
+
+Published the independent Standard TypeScript Monorepo Source Baseline as 56
+marker-bounded, individually indexed entries. The corpus distinguishes
+Normative Clauses, recommendations, and structured Operational Contracts;
+renders complete root and guide carriers; preserves the findings template and
+lifecycle; and records an individual disposition for all 51 prior governed
+clauses. The current Source Baseline catalog emits only strict `0.0.1`
+documents, so prior catalog generations remain evidence for Baseline
+Readoption rather than current governed output.
+
+Extended Source Baseline validation with explicit enforcement, carrier, and
+Operational Contract structure metadata. Corpus policy now fails closed on
+denied project tokens, copied generated managed markers, and machine-specific
+paths. Root output remains a compact delegation index while durable behavior
+lives in generated `docs/agents/` carriers.
+
+Verification:
+
+- `rtk env PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_governed_corpus.py'`
+  — passed 6 tests covering indexed identity, complete carrier rendering,
+  prior-clause accounting, compact root delegation, corpus policy rejection,
+  and strict `0.0.1` documents.
+- `rtk make skills-sync-check` — passed; canonical and distributed setup skill
+  trees are byte-identical.
+- `rtk make verify` — passed on the approved unchanged rerun: 1,694 Go tests,
+  183 canonical setup tests, 183 distributed setup tests, both setup asset
+  loads, owned-skill validation, and the build passed. The initial sandboxed
+  attempt could not read the host Go build cache and did not reach a product
+  failure.
+
+Acceptance evidence:
+
+- Stable identity and reachability: the governed-corpus gate compared all 56
+  unique manifest entries with the independent index order and required a
+  non-empty generated carrier for every entry.
+- Complete Operational Contracts: nine first-class contracts retain the root
+  template, docs directory matrix, findings template and lifecycle, Spec route
+  matrix, Task ownership, autonomous Supervisor/ACP Runtime protocol, research
+  procedure, and Secondbrain protocol. Carrier rendering proved the findings
+  frontmatter, status semantics, and autonomous prohibition survive intact.
+- Compact root delegation: the root carrier stayed below 1,500 bytes, linked
+  the complete agent, Spec-routing, and docs-layout guides, and contained no
+  copy of the findings template.
+- Project-agnostic corpus: mutations containing a denied project token, a
+  generated managed marker, or a machine-specific path each failed with its
+  asserted stable diagnostic.
+- Strict generation: every JSON document below `assets/source-baselines/`
+  reports a `setup-context-driven/.../0.0.1` schema and string version
+  `0.0.1`; the 51-entry accounting maps every retained target to a current
+  indexed entry and gives each rejection its own reason.
+- Distribution parity: `rtk make skills-sync-check` passed after regenerating
+  the distributed setup skill tree from the canonical authorial tree.
+
+Follow-ups: Task 03 owns typed exact Skill Activation bundle rendering. Later
+profile and Readoption Tasks consume this corpus; they are outside this Task's
+diff.
