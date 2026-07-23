@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0045-context-driven-baseline-0-0-1-reset
-status: completed
+status: pending
 type: backend
 complexity: high
 ---
@@ -85,6 +85,19 @@ and audit must all describe the same immutable Change Plan.
 - ADR-0047 → immutable confirmed Decision Plan effects.
 - ADR-0058 → fail-closed retention and atomic upgrade behavior.
 - ADR-0064 → complete entry-level Readoption input.
+
+## QA Reopen
+
+Final QA found that clean `standard-typescript-monorepo` adoption still uses
+the legacy portable apply path instead of this task's strict 0.0.1 Change Plan.
+See [F-01 in the 2026-07-23 QA report](qa/qa-report-2026-07-23.md#f-01--clean-standard-typescript-monorepo-adoption-bypasses-the-001-contract).
+
+The repair MUST route clean profile adoption through the same capability,
+decision, manifest, snapshot, architecture, audit, and reapply integration as
+Baseline Readoption. Missing required stack or workspace evidence MUST block
+before writes. A successful confirmed apply MUST emit only strict 0.0.1 state,
+produce the exact profile architecture carriers, audit cleanly, and reapply
+with no changes.
 
 ## Result
 

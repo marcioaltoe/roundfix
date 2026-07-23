@@ -1,7 +1,7 @@
 ---
 task: task_12
 spec: 0045-context-driven-baseline-0-0-1-reset
-status: completed
+status: pending
 type: test
 complexity: high
 ---
@@ -86,6 +86,20 @@ high-risk blocking and preservation paths remain observable.
 - `_techspec.md` → Testing Approach; Risks & Considerations; Build Order 8.
 - ADR-0059 → declared formatter stability.
 - ADR-0060 through ADR-0065 → complete 0.0.1 behavior and safety boundaries.
+
+## QA Reopen
+
+Final QA reproduced a clean `standard-typescript-monorepo` apply that accepted
+no package, workspace, PostgreSQL, or LogTape evidence and wrote legacy
+portable manifest and guide contracts. See
+[F-01 in the 2026-07-23 QA report](qa/qa-report-2026-07-23.md#f-01--clean-standard-typescript-monorepo-adoption-bypasses-the-001-contract).
+
+Add a public disposable-repository regression that starts without required
+capability evidence and proves no-write blocking. After supplying the exact
+requirements, the same journey MUST prove the frontend/backend architecture
+carriers, strict manifest and snapshot identity, clean audit, and byte-empty
+reapply through the public setup entry point. Run the case from both canonical
+and distributed skill trees.
 
 ## Result
 
