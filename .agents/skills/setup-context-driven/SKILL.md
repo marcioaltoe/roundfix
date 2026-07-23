@@ -67,6 +67,30 @@ Question routing:
 
 Record each answer as a repeated `--decision ID=VALUE` argument. For newly introduced decisions, ask the new code once, then let the manifest carry it on later runs.
 
+Use repeatable `--decision-file <path>` for structured decisions. Each file is
+strict `setup-context-driven/decisions/0.0.1` JSON with `version: "0.0.1"`, an
+ordered `decisions` array of exact `{id, value}` records, and an optional
+`readoption` object. Scalar values can remain on `--decision`; conflicting
+values across inputs are invalid.
+
+Readoption decisions bind `sourceBaseline.id` and `sourceBaseline.digest`, then
+map every reported Source Baseline Entry exactly once through ordered
+`dispositions`. Each record declares `entryId`, `entryDigest`, one explicit
+classification (`normative-clause`, `recommendation`, `operational-contract`,
+or `non-governed`), one typed disposition (`managed-entry`,
+`repository-document`, `repository-rules`, or `rejected`), its exact typed
+destination, and an individual reason when rejected or non-governed. Existing
+typed documents require a supported `documentType`, safe path, and current
+digest. Repository-Specific Normative Rules use
+`docs/agents/repository-rules.md` and require exact base64 `proposedBytes` plus
+their SHA-256 digest.
+
+Audit rejects missing, duplicate, unknown, stale, unsafe, or structurally
+invalid entries without writing. A first Repository-Specific Normative Rules
+creation appears in the normalized decision document and Change Plan preview
+and requires confirmation of the returned `planDigest`. If the unmarked file
+already exists, setup treats it as repository-owned and preserves its bytes.
+
 After every required answer is known, rerun audit with the selected profile and the complete decision set:
 
 ```bash

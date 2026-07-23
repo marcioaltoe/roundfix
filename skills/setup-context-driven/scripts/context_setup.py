@@ -35,9 +35,17 @@ from context_assets import (
     setup_snapshot_digest,
 )
 from context_baseline import (
+    DecisionDocumentDiagnostic,
+    DecisionDocumentError,
     IncompatibleSourceBaseline,
+    ReadoptionDisposition,
     SourceInventoryError,
+    StructuredDecisionDocument,
     inventory_incompatible_source_baseline,
+    load_decision_document,
+    merge_decision_documents,
+    repository_rules_proposed_bytes,
+    validate_readoption_decisions,
 )
 
 
@@ -335,6 +343,7 @@ class AuditResult:
     plan_digest: str | None = None
     retention: tuple[RetentionEntry, ...] = ()
     source_baseline: IncompatibleSourceBaseline | None = None
+    decision_document: dict[str, object] | None = None
 
     @property
     def ok(self) -> bool:
@@ -370,6 +379,8 @@ class AuditResult:
             data["sourceEntries"] = [
                 entry.to_json() for entry in self.source_baseline.entries
             ]
+        if self.decision_document is not None:
+            data["decisionDocument"] = self.decision_document
         return data
 
 
@@ -1553,6 +1564,37 @@ def main(argv: list[str] | None = None) -> int:
     return run_audit_command(options)
 
 
+def load_structured_decision_files(
+    paths: list[str],
+) -> tuple[StructuredDecisionDocument | None, list[Finding]]:
+    documents: list[StructuredDecisionDocument] = []
+    diagnostics: list[DecisionDocumentDiagnostic] = []
+    for path in paths:
+        try:
+            documents.append(load_decision_document(path))
+        except DecisionDocumentError as error:
+            diagnostics.extend(error.diagnostics)
+    if not diagnostics:
+        try:
+            merged = merge_decision_documents(tuple(documents))
+        except DecisionDocumentError as error:
+            diagnostics.extend(error.diagnostics)
+        else:
+            return merged, []
+    return None, [decision_document_finding(item) for item in diagnostics]
+
+
+def decision_document_finding(diagnostic: DecisionDocumentDiagnostic) -> Finding:
+    return finding(
+        diagnostic.code,
+        "error",
+        diagnostic.path.as_posix() or ".",
+        diagnostic.item_id,
+        diagnostic.message,
+        "Correct the named structured decision entry and rerun without changing repository bytes.",
+    )
+
+
 def run_audit_command(options: argparse.Namespace) -> int:
     repo = Path(options.repo).expanduser()
     if not repo.is_absolute():
@@ -1570,18 +1612,45 @@ def run_audit_command(options: argparse.Namespace) -> int:
             print(diagnostic, file=sys.stderr)
         return 2
 
-    if options.decision:
+    decision_document, decision_file_findings = load_structured_decision_files(
+        options.decision_file
+    )
+    if decision_file_findings:
+        render_result(AuditResult(sorted_findings(decision_file_findings)), options.format)
+        return 2
+
+    if options.decision or decision_document is not None:
         readoption_result, readoption_invalid = audit_readoption_repository(
-            repo, catalog
+            repo,
+            catalog,
+            decision_document=decision_document,
+            decision_args=options.decision,
         )
         if readoption_result is not None:
             render_result(readoption_result, options.format)
             return exit_code_for(readoption_result, readoption_invalid)
+        if decision_document is not None and decision_document.readoption is not None:
+            unexpected = AuditResult(
+                [
+                    finding(
+                        "readoption.source.unexpected",
+                        "error",
+                        decision_document.source_paths[0].as_posix(),
+                        decision_document.readoption.source_baseline_id,
+                        "Decision file contains Readoption data for a compatible repository.",
+                        "Remove the stale readoption section and rerun audit.",
+                    )
+                ],
+                decision_document=decision_document.to_json(),
+            )
+            render_result(unexpected, options.format)
+            return 2
         result, invalid_input, _ = plan_apply(
             repo=repo,
             catalog=catalog,
             profile_override=options.profile,
             decision_args=options.decision,
+            decision_document=decision_document,
         )
         render_result(result, options.format)
         return exit_code_for(result, invalid_input)
@@ -1611,6 +1680,13 @@ def run_apply_command(options: argparse.Namespace) -> int:
             print(diagnostic, file=sys.stderr)
         return 2
 
+    decision_document, decision_file_findings = load_structured_decision_files(
+        options.decision_file
+    )
+    if decision_file_findings:
+        render_result(AuditResult(sorted_findings(decision_file_findings)), options.format)
+        return 2
+
     if options.confirm_plan is not None and re.fullmatch(
         r"[0-9a-f]{64}", options.confirm_plan
     ) is None:
@@ -1629,11 +1705,23 @@ def run_apply_command(options: argparse.Namespace) -> int:
         render_result(malformed, options.format)
         return 2
 
+    if decision_document is not None and decision_document.readoption is not None:
+        readoption_result, readoption_invalid = audit_readoption_repository(
+            repo,
+            catalog,
+            decision_document=decision_document,
+            decision_args=options.decision,
+        )
+        if readoption_result is not None:
+            render_result(readoption_result, options.format)
+            return exit_code_for(readoption_result, readoption_invalid)
+
     result, invalid_input, plan = plan_apply(
         repo=repo,
         catalog=catalog,
         profile_override=options.profile,
         decision_args=options.decision,
+        decision_document=decision_document,
     )
     if result.summary["errors"] or result.summary["decisions"] or invalid_input:
         render_result(result, options.format)
@@ -2096,7 +2184,11 @@ def audit_repository(
 
 
 def audit_readoption_repository(
-    repo: Path, catalog: AssetCatalog
+    repo: Path,
+    catalog: AssetCatalog,
+    *,
+    decision_document: StructuredDecisionDocument | None = None,
+    decision_args: list[str] | None = None,
 ) -> tuple[AuditResult | None, bool]:
     manifest_findings: list[Finding] = []
     manifest, invalid_input = load_manifest(repo, manifest_findings)
@@ -2148,7 +2240,7 @@ def audit_readoption_repository(
     if manifest is None and not inventory.carriers:
         return None, False
 
-    findings = [
+    findings: list[Finding] = [
         finding(
             "readoption.baseline.incompatible",
             "info",
@@ -2161,24 +2253,196 @@ def audit_readoption_repository(
             "Review every sourceEntries item before supplying Readoption dispositions.",
         )
     ]
-    findings.extend(
-        finding(
-            "readoption.disposition.required",
-            "decision",
-            entry.path.as_posix(),
-            entry.entry_id,
-            "Source Baseline Entry has no Readoption disposition.",
-            "Supply one explicit classification and disposition for this entry.",
+    if decision_document is None or decision_document.readoption is None:
+        findings.extend(
+            finding(
+                "readoption.disposition.required",
+                "decision",
+                entry.path.as_posix(),
+                entry.entry_id,
+                "Source Baseline Entry has no Readoption disposition.",
+                "Supply one explicit classification and disposition for this entry.",
+            )
+            for entry in inventory.entries
         )
-        for entry in inventory.entries
+        return (
+            AuditResult(
+                sorted_findings(findings),
+                source_baseline=inventory,
+                decision_document=(
+                    decision_document.to_json()
+                    if decision_document is not None
+                    else None
+                ),
+            ),
+            False,
+        )
+
+    cli_decisions, cli_findings = parse_decision_args(decision_args or [], catalog)
+    file_decisions, file_findings = structured_decision_values(
+        decision_document, catalog
     )
+    findings.extend(cli_findings)
+    findings.extend(file_findings)
+    for decision_id in sorted(set(cli_decisions).intersection(file_decisions)):
+        if cli_decisions[decision_id] == file_decisions[decision_id]:
+            continue
+        findings.append(
+            finding(
+                "decision-file.decision.conflict",
+                "error",
+                decision_document.source_paths[0].as_posix(),
+                decision_id,
+                "--decision conflicts with the structured decision-file value.",
+                "Keep the decision in one input or make both values identical.",
+            )
+        )
+
+    dispositions, disposition_diagnostics = validate_readoption_decisions(
+        repo,
+        inventory,
+        decision_document.readoption,
+    )
+    findings.extend(
+        decision_document_finding(item) for item in disposition_diagnostics
+    )
+    managed_ids = catalog_managed_entry_ids(catalog)
+    for item in dispositions:
+        if item.disposition != "managed-entry" or item.destination is None:
+            continue
+        managed_id = item.destination.get("managedId")
+        if managed_id not in managed_ids:
+            findings.append(
+                finding(
+                    "readoption.destination.managed-entry.unknown",
+                    "error",
+                    decision_document.source_paths[0].as_posix(),
+                    item.entry_id,
+                    f"Managed destination {managed_id!r} is not in the current catalog.",
+                    "Choose a current managed entry or another typed disposition.",
+                )
+            )
+
+    normalized_document = decision_document.to_json()
+    normalized_readoption = dict(normalized_document["readoption"])
+    normalized_readoption["dispositions"] = [item.to_json() for item in dispositions]
+    normalized_document["readoption"] = normalized_readoption
+    if any(item.severity == "error" for item in findings):
+        return (
+            AuditResult(
+                sorted_findings(findings),
+                source_baseline=inventory,
+                decision_document=normalized_document,
+            ),
+            True,
+        )
+
+    planned_changes: tuple[PlannedChange, ...] = ()
+    proposed_rules = repository_rules_proposed_bytes(dispositions)
+    repository_rules_path = Path("docs/agents/repository-rules.md")
+    if proposed_rules:
+        target = repo / repository_rules_path
+        if target.exists() or target.is_symlink():
+            try:
+                target_stat = target.lstat()
+            except OSError as error:
+                findings.append(
+                    finding(
+                        "readoption.repository-rules.read",
+                        "error",
+                        repository_rules_path.as_posix(),
+                        "repository-rules",
+                        f"Repository-Specific Normative Rules cannot be inspected: {error}.",
+                        "Replace the target with a regular repository-owned file and rerun.",
+                    )
+                )
+            else:
+                if not stat.S_ISREG(target_stat.st_mode) or stat.S_ISLNK(
+                    target_stat.st_mode
+                ):
+                    findings.append(
+                        finding(
+                            "readoption.repository-rules.type.invalid",
+                            "error",
+                            repository_rules_path.as_posix(),
+                            "repository-rules",
+                            "Repository-Specific Normative Rules must be a regular non-symlink file.",
+                            "Replace the target with a regular repository-owned file and rerun.",
+                        )
+                    )
+        else:
+            planned_changes = (
+                PlannedChange(
+                    action="create repository-specific normative rules",
+                    path=repository_rules_path,
+                    managed_id="repository-rules.readoption",
+                    state="definite",
+                    reason="Explicit Readoption dispositions propose exact repository-owned bytes.",
+                    before_digest=None,
+                    after_digest=hashlib.sha256(proposed_rules).hexdigest(),
+                ),
+            )
+
+    if any(item.severity == "error" for item in findings):
+        return (
+            AuditResult(
+                sorted_findings(findings),
+                source_baseline=inventory,
+                decision_document=normalized_document,
+            ),
+            True,
+        )
+
+    digest_payload = {
+        "kind": "baseline-readoption-decisions",
+        "sourceBaseline": inventory.identity_json(),
+        "sourceEntries": [entry.to_json() for entry in inventory.entries],
+        "decisionDocument": normalized_document,
+        "decisionFileDigests": list(decision_document.source_digests),
+        "operations": [item.to_json() for item in planned_changes],
+    }
+    plan_digest = hashlib.sha256(canonical_json_bytes(digest_payload)).hexdigest()
+    findings.append(
+        finding(
+            "readoption.dispositions.resolved",
+            "info",
+            str(MANIFEST_PATH),
+            inventory.baseline_id,
+            f"Every one of {len(inventory.entries)} Source Baseline Entries has one explicit disposition.",
+            "Review the normalized decision document and deterministic plan digest.",
+        )
+    )
+    if planned_changes:
+        findings.append(
+            finding(
+                "plan.confirmation.required",
+                "decision",
+                repository_rules_path.as_posix(),
+                "repository-rules.readoption",
+                "Creating Repository-Specific Normative Rules requires confirmation of this exact plan.",
+                "Review the proposed bytes and rerun apply with --confirm-plan planDigest.",
+            )
+        )
     return (
         AuditResult(
             sorted_findings(findings),
             source_baseline=inventory,
+            planned_changes=planned_changes,
+            plan_digest=plan_digest,
+            decision_document=normalized_document,
         ),
         False,
     )
+
+
+def catalog_managed_entry_ids(catalog: AssetCatalog) -> set[str]:
+    managed_ids: set[str] = set()
+    for module in catalog.modules.values():
+        for collection_name in ("rootBlocks", "supportingGuides"):
+            for item in module.get(collection_name, []):
+                if isinstance(item, dict) and isinstance(item.get("id"), str):
+                    managed_ids.add(item["id"])
+    return managed_ids
 
 
 def validate_profile_skill_references(
@@ -3563,6 +3827,7 @@ def plan_apply(
     catalog: AssetCatalog,
     profile_override: str | None,
     decision_args: list[str],
+    decision_document: StructuredDecisionDocument | None = None,
 ) -> tuple[AuditResult, bool, ChangePlan]:
     findings: list[Finding] = []
     existing_manifest, invalid_input = load_manifest_for_apply(repo, findings)
@@ -3599,6 +3864,24 @@ def plan_apply(
         return empty_apply_result(findings, False)
 
     cli_decisions, parse_findings = parse_decision_args(decision_args, catalog)
+    file_decisions, file_findings = structured_decision_values(
+        decision_document, catalog
+    )
+    parse_findings.extend(file_findings)
+    for decision_id in sorted(set(cli_decisions).intersection(file_decisions)):
+        if cli_decisions[decision_id] == file_decisions[decision_id]:
+            continue
+        parse_findings.append(
+            finding(
+                "decision-file.decision.conflict",
+                "error",
+                decision_document.source_paths[0].as_posix(),
+                decision_id,
+                "--decision conflicts with the structured decision-file value.",
+                "Keep the decision in one input or make both values identical.",
+            )
+        )
+    cli_decisions = {**file_decisions, **cli_decisions}
     findings.extend(parse_findings)
     decision_plan = resolve_decision_plan(
         catalog,
@@ -3764,6 +4047,14 @@ def plan_apply(
         manifest=manifest,
         retention=retention,
         extension_creations=extension_creations,
+        decision_document=(
+            decision_document.to_json() if decision_document is not None else None
+        ),
+        decision_file_digests=(
+            decision_document.source_digests
+            if decision_document is not None
+            else ()
+        ),
     )
     validation_findings = validate_change_plan(repo, plan, expected_artifacts)
     findings.extend(validation_findings)
@@ -3782,6 +4073,11 @@ def plan_apply(
             planned_changes=plan_operations(plan),
             plan_digest=plan.digest,
             retention=retention,
+            decision_document=(
+                decision_document.to_json()
+                if decision_document is not None
+                else None
+            ),
         ),
         False,
         plan,
@@ -3890,6 +4186,55 @@ def parse_decision_args(
             findings.append(unsafe_decision_value_finding(decision_id))
             continue
         if contract is not None and not is_decision_value_valid(contract, value):
+            findings.append(invalid_decision_finding(decision_id))
+            continue
+        decisions[decision_id] = value
+    return decisions, findings
+
+
+def structured_decision_values(
+    document: StructuredDecisionDocument | None,
+    catalog: AssetCatalog,
+) -> tuple[dict[str, object], list[Finding]]:
+    if document is None:
+        return {}, []
+    decisions: dict[str, object] = {}
+    findings: list[Finding] = []
+    source_path = document.source_paths[0].as_posix()
+    for decision_id, value in document.decisions:
+        if decision_id.startswith("adoption."):
+            if not isinstance(value, bool):
+                findings.append(invalid_decision_finding(decision_id))
+                continue
+            decisions[decision_id] = value
+            continue
+        if decision_id.startswith("removal."):
+            if value not in {"preserve", "remove"}:
+                findings.append(invalid_decision_finding(decision_id))
+                continue
+            decisions[decision_id] = value
+            continue
+        contract = catalog.decisions.get(decision_id)
+        if contract is None:
+            findings.append(
+                finding(
+                    "decision-file.decision.unknown",
+                    "error",
+                    source_path,
+                    decision_id,
+                    f"Structured decision {decision_id!r} is not in the current catalog.",
+                    "Remove the stale decision or select a catalog decision id.",
+                )
+            )
+            continue
+        if (
+            contract.get("type") == "string"
+            and isinstance(value, str)
+            and is_unsafe_inline_decision_value(value)
+        ):
+            findings.append(unsafe_decision_value_finding(decision_id))
+            continue
+        if not is_decision_value_valid(contract, value):
             findings.append(invalid_decision_finding(decision_id))
             continue
         decisions[decision_id] = value
@@ -4405,6 +4750,8 @@ def concrete_change_plan(
     manifest: dict,
     retention: tuple[RetentionEntry, ...],
     extension_creations: list[RepositoryOwnedExtension],
+    decision_document: dict[str, object] | None,
+    decision_file_digests: tuple[str, ...],
 ) -> ChangePlan:
     expected_by_path = artifacts_by_path(expected_artifacts)
     old_by_id = manifest_artifacts_by_id(existing_manifest)
@@ -4568,6 +4915,8 @@ def concrete_change_plan(
             for key, value in sorted(decision_plan.resolved_decisions.items())
         },
         "catalogDigest": catalog_digest(catalog),
+        "decisionDocument": decision_document,
+        "decisionFileDigests": list(decision_file_digests),
         "retentionAccounting": [entry.to_json() for entry in retention],
         "operations": [
             operation.to_json()
@@ -6672,6 +7021,12 @@ def audit_parser() -> argparse.ArgumentParser:
         help="Decision in ID=VALUE form. Repeat to resolve a concrete read-only plan.",
     )
     parser.add_argument(
+        "--decision-file",
+        action="append",
+        default=[],
+        help="Structured setup-context-driven/decisions/0.0.1 document. Repeatable.",
+    )
+    parser.add_argument(
         "--show-extra-skills",
         action="store_true",
         help="Show informational findings for installed skills outside the selected setup.",
@@ -6701,6 +7056,12 @@ def apply_parser() -> argparse.ArgumentParser:
         action="append",
         default=[],
         help="Confirmed decision in ID=VALUE form. Repeat for multiple decisions.",
+    )
+    parser.add_argument(
+        "--decision-file",
+        action="append",
+        default=[],
+        help="Structured setup-context-driven/decisions/0.0.1 document. Repeatable.",
     )
     parser.add_argument(
         "--confirm-plan",

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import hashlib
 import json
 import os
@@ -18,6 +19,8 @@ SOURCE_BASELINE_MANIFEST_SCHEMA = (
     "setup-context-driven/source-baseline-manifest/0.0.1"
 )
 SOURCE_BASELINE_INDEX_SCHEMA = "setup-context-driven/source-baseline-index/0.0.1"
+DECISION_DOCUMENT_SCHEMA = "setup-context-driven/decisions/0.0.1"
+DECISION_DOCUMENT_VERSION = "0.0.1"
 
 _ENTRY_KINDS = {"normative-clause", "recommendation", "operational-contract"}
 _NORMATIVE_ENFORCEMENTS = {"mandatory", "prohibited", "stop-and-ask"}
@@ -55,6 +58,26 @@ _INVENTORY_IGNORED_PREFIXES = (
     ("skills",),
 )
 _MANIFEST_CARRIER = Path("docs/agents/setup-context.json")
+_REPOSITORY_RULES_PATH = PurePosixPath("docs/agents/repository-rules.md")
+_READOPTION_CLASSIFICATIONS = {
+    "non-governed",
+    "normative-clause",
+    "operational-contract",
+    "recommendation",
+}
+_READOPTION_DISPOSITIONS = {
+    "managed-entry",
+    "rejected",
+    "repository-document",
+    "repository-rules",
+}
+_TYPED_DOCUMENTS = {
+    "agent-guide",
+    "architecture-decision",
+    "design-contract",
+    "domain-context",
+    "http-contract",
+}
 
 
 class SourceBaselineValidationError(ValueError):
@@ -80,6 +103,27 @@ class SourceInventoryError(ValueError):
         super().__init__(
             "\n".join(
                 f"{item.code}: {item.path.as_posix()}: {item.message}"
+                for item in diagnostics
+            )
+        )
+
+
+@dataclass(frozen=True)
+class DecisionDocumentDiagnostic:
+    code: str
+    path: Path
+    item_id: str
+    message: str
+
+
+class DecisionDocumentError(ValueError):
+    """Raised when a structured decision document is malformed or unsafe."""
+
+    def __init__(self, diagnostics: list[DecisionDocumentDiagnostic]):
+        self.diagnostics = tuple(diagnostics)
+        super().__init__(
+            "\n".join(
+                f"{item.code}: {item.path.as_posix()}: {item.item_id}: {item.message}"
                 for item in diagnostics
             )
         )
@@ -139,6 +183,691 @@ class IncompatibleSourceBaseline:
             "entryCount": len(self.entries),
             "byteCount": self.byte_count,
         }
+
+
+@dataclass(frozen=True)
+class ReadoptionDisposition:
+    entry_id: str
+    entry_digest: str
+    classification: str
+    disposition: str
+    destination: dict[str, object] | None
+    reason: str
+
+    def to_json(self) -> dict[str, object]:
+        return {
+            "entryId": self.entry_id,
+            "entryDigest": self.entry_digest,
+            "classification": self.classification,
+            "disposition": self.disposition,
+            "destination": self.destination,
+            "reason": self.reason,
+        }
+
+
+@dataclass(frozen=True)
+class ReadoptionDecisions:
+    source_baseline_id: str
+    source_baseline_digest: str
+    dispositions: tuple[ReadoptionDisposition, ...]
+
+    def to_json(self) -> dict[str, object]:
+        return {
+            "sourceBaseline": {
+                "id": self.source_baseline_id,
+                "digest": self.source_baseline_digest,
+            },
+            "dispositions": [item.to_json() for item in self.dispositions],
+        }
+
+
+@dataclass(frozen=True)
+class StructuredDecisionDocument:
+    source_paths: tuple[Path, ...]
+    source_digests: tuple[str, ...]
+    decisions: tuple[tuple[str, object], ...]
+    readoption: ReadoptionDecisions | None
+
+    def to_json(self) -> dict[str, object]:
+        data: dict[str, object] = {
+            "schemaVersion": DECISION_DOCUMENT_SCHEMA,
+            "version": DECISION_DOCUMENT_VERSION,
+            "decisions": [
+                {"id": decision_id, "value": value}
+                for decision_id, value in self.decisions
+            ],
+        }
+        if self.readoption is not None:
+            data["readoption"] = self.readoption.to_json()
+        return data
+
+
+def load_decision_document(path: str | Path) -> StructuredDecisionDocument:
+    """Load one strict structured decision document without repository writes."""
+
+    source_path = Path(path).expanduser()
+    if not source_path.is_absolute():
+        source_path = Path.cwd() / source_path
+    source_path = source_path.resolve(strict=False)
+    try:
+        source_stat = source_path.lstat()
+    except OSError as error:
+        raise _decision_error(
+            "decision-file.read",
+            source_path,
+            "decision-file",
+            f"cannot read decision file: {error}",
+        ) from error
+    if stat.S_ISLNK(source_stat.st_mode) or not stat.S_ISREG(source_stat.st_mode):
+        raise _decision_error(
+            "decision-file.type.invalid",
+            source_path,
+            "decision-file",
+            "decision file must be a regular non-symlink file",
+        )
+    try:
+        content = source_path.read_bytes()
+    except OSError as error:
+        raise _decision_error(
+            "decision-file.read",
+            source_path,
+            "decision-file",
+            f"cannot read decision file: {error}",
+        ) from error
+    try:
+        document = json.loads(content, object_pairs_hook=_strict_json_object)
+    except _DuplicateJSONKey as error:
+        raise _decision_error(
+            "decision-file.json.duplicate-key",
+            source_path,
+            error.key,
+            f"duplicate JSON object key {error.key!r}",
+        ) from error
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise _decision_error(
+            "decision-file.json.invalid",
+            source_path,
+            "decision-file",
+            f"decision file is not valid UTF-8 JSON: {error}",
+        ) from error
+
+    decisions, readoption = _parse_decision_document(source_path, document)
+    return StructuredDecisionDocument(
+        source_paths=(source_path,),
+        source_digests=(hashlib.sha256(content).hexdigest(),),
+        decisions=decisions,
+        readoption=readoption,
+    )
+
+
+def merge_decision_documents(
+    documents: tuple[StructuredDecisionDocument, ...],
+) -> StructuredDecisionDocument | None:
+    """Merge repeated decision files while rejecting conflicting public inputs."""
+
+    if not documents:
+        return None
+    merged_decisions: dict[str, object] = {}
+    readoption: ReadoptionDecisions | None = None
+    diagnostics: list[DecisionDocumentDiagnostic] = []
+    for document in documents:
+        source_path = document.source_paths[0]
+        for decision_id, value in document.decisions:
+            if decision_id in merged_decisions and merged_decisions[decision_id] != value:
+                diagnostics.append(
+                    DecisionDocumentDiagnostic(
+                        "decision-file.decision.conflict",
+                        source_path,
+                        decision_id,
+                        "repeated decision files contain conflicting values",
+                    )
+                )
+                continue
+            merged_decisions[decision_id] = value
+        if document.readoption is None:
+            continue
+        if readoption is not None:
+            diagnostics.append(
+                DecisionDocumentDiagnostic(
+                    "decision-file.readoption.duplicate",
+                    source_path,
+                    "readoption",
+                    "only one repeated decision file may contain Readoption dispositions",
+                )
+            )
+            continue
+        readoption = document.readoption
+    if diagnostics:
+        raise DecisionDocumentError(diagnostics)
+    return StructuredDecisionDocument(
+        source_paths=tuple(path for item in documents for path in item.source_paths),
+        source_digests=tuple(
+            digest for item in documents for digest in item.source_digests
+        ),
+        decisions=tuple(sorted(merged_decisions.items())),
+        readoption=readoption,
+    )
+
+
+def validate_readoption_decisions(
+    repo: str | Path,
+    inventory: IncompatibleSourceBaseline,
+    decisions: ReadoptionDecisions,
+) -> tuple[tuple[ReadoptionDisposition, ...], tuple[DecisionDocumentDiagnostic, ...]]:
+    """Validate individual coverage, stale evidence, and typed destinations."""
+
+    root = Path(repo)
+    document_path = Path("decision-file")
+    diagnostics: list[DecisionDocumentDiagnostic] = []
+    if (
+        decisions.source_baseline_id != inventory.baseline_id
+        or decisions.source_baseline_digest != inventory.digest
+    ):
+        diagnostics.append(
+            DecisionDocumentDiagnostic(
+                "readoption.source.stale",
+                document_path,
+                decisions.source_baseline_id,
+                "decision file Source Baseline identity does not match current bytes",
+            )
+        )
+
+    expected_by_id = {entry.entry_id: entry for entry in inventory.entries}
+    by_id: dict[str, list[ReadoptionDisposition]] = {}
+    for disposition in decisions.dispositions:
+        by_id.setdefault(disposition.entry_id, []).append(disposition)
+
+    for entry_id, candidates in sorted(by_id.items()):
+        if len(candidates) > 1:
+            diagnostics.append(
+                DecisionDocumentDiagnostic(
+                    "readoption.disposition.duplicate",
+                    document_path,
+                    entry_id,
+                    "Source Baseline Entry has more than one disposition",
+                )
+            )
+        entry = expected_by_id.get(entry_id)
+        if entry is None:
+            diagnostics.append(
+                DecisionDocumentDiagnostic(
+                    "readoption.disposition.unknown",
+                    document_path,
+                    entry_id,
+                    "disposition names an entry absent from the current inventory",
+                )
+            )
+            continue
+        candidate = candidates[0]
+        if candidate.entry_digest != entry.digest:
+            diagnostics.append(
+                DecisionDocumentDiagnostic(
+                    "readoption.disposition.stale",
+                    document_path,
+                    entry_id,
+                    "disposition entryDigest does not match the current source bytes",
+                )
+            )
+        diagnostics.extend(_validate_readoption_destination(root, candidate))
+
+    for entry in inventory.entries:
+        if entry.entry_id not in by_id:
+            diagnostics.append(
+                DecisionDocumentDiagnostic(
+                    "readoption.disposition.missing",
+                    entry.path,
+                    entry.entry_id,
+                    "Source Baseline Entry has no disposition",
+                )
+            )
+
+    inventory_order = {entry.entry_id: index for index, entry in enumerate(inventory.entries)}
+    ordered = tuple(
+        sorted(
+            decisions.dispositions,
+            key=lambda item: (inventory_order.get(item.entry_id, len(inventory_order)), item.entry_id),
+        )
+    )
+    return ordered, tuple(diagnostics)
+
+
+def repository_rules_proposed_bytes(
+    dispositions: tuple[ReadoptionDisposition, ...],
+) -> bytes:
+    """Return only exact decision-supplied Repository-Specific Normative Rules bytes."""
+
+    chunks: list[bytes] = []
+    for item in dispositions:
+        if item.disposition != "repository-rules" or item.destination is None:
+            continue
+        chunks.append(
+            base64.b64decode(str(item.destination["proposedBytes"]), validate=True)
+        )
+    return b"".join(chunks)
+
+
+class _DuplicateJSONKey(ValueError):
+    def __init__(self, key: str):
+        self.key = key
+        super().__init__(key)
+
+
+def _strict_json_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise _DuplicateJSONKey(key)
+        result[key] = value
+    return result
+
+
+def _decision_error(
+    code: str, path: Path, item_id: str, message: str
+) -> DecisionDocumentError:
+    return DecisionDocumentError(
+        [DecisionDocumentDiagnostic(code, path, item_id, message)]
+    )
+
+
+def _parse_decision_document(
+    source_path: Path, document: object
+) -> tuple[tuple[tuple[str, object], ...], ReadoptionDecisions | None]:
+    if not isinstance(document, dict):
+        raise _decision_error(
+            "decision-file.schema.invalid",
+            source_path,
+            "decision-file",
+            "decision document must be a JSON object",
+        )
+    allowed_fields = {"schemaVersion", "version", "decisions", "readoption"}
+    if (
+        not {"schemaVersion", "version", "decisions"}.issubset(document)
+        or not set(document).issubset(allowed_fields)
+        or document.get("schemaVersion") != DECISION_DOCUMENT_SCHEMA
+        or document.get("version") != DECISION_DOCUMENT_VERSION
+    ):
+        raise _decision_error(
+            "decision-file.schema.invalid",
+            source_path,
+            "decision-file",
+            (
+                "decision document requires schemaVersion, version, and decisions "
+                "with only the optional readoption field"
+            ),
+        )
+    raw_decisions = document.get("decisions")
+    if not isinstance(raw_decisions, list):
+        raise _decision_error(
+            "decision-file.decisions.invalid",
+            source_path,
+            "decisions",
+            "decisions must be an ordered array",
+        )
+    decisions: dict[str, object] = {}
+    diagnostics: list[DecisionDocumentDiagnostic] = []
+    for index, record in enumerate(raw_decisions):
+        item_id = f"decisions[{index}]"
+        if not isinstance(record, dict) or set(record) != {"id", "value"}:
+            diagnostics.append(
+                DecisionDocumentDiagnostic(
+                    "decision-file.decision.invalid",
+                    source_path,
+                    item_id,
+                    "decision record requires exactly id and value",
+                )
+            )
+            continue
+        decision_id = record.get("id")
+        if not isinstance(decision_id, str) or _IDENTIFIER.fullmatch(decision_id) is None:
+            diagnostics.append(
+                DecisionDocumentDiagnostic(
+                    "decision-file.decision.invalid",
+                    source_path,
+                    item_id,
+                    "decision id is invalid",
+                )
+            )
+            continue
+        if decision_id in decisions:
+            diagnostics.append(
+                DecisionDocumentDiagnostic(
+                    "decision-file.decision.duplicate",
+                    source_path,
+                    decision_id,
+                    "decision id appears more than once",
+                )
+            )
+            continue
+        decisions[decision_id] = record.get("value")
+    readoption = None
+    if "readoption" in document:
+        try:
+            readoption = _parse_readoption_decisions(source_path, document["readoption"])
+        except DecisionDocumentError as error:
+            diagnostics.extend(error.diagnostics)
+    if diagnostics:
+        raise DecisionDocumentError(diagnostics)
+    return tuple(sorted(decisions.items())), readoption
+
+
+def _parse_readoption_decisions(
+    source_path: Path, raw: object
+) -> ReadoptionDecisions:
+    if not isinstance(raw, dict) or set(raw) != {"sourceBaseline", "dispositions"}:
+        raise _decision_error(
+            "decision-file.readoption.invalid",
+            source_path,
+            "readoption",
+            "readoption requires exactly sourceBaseline and dispositions",
+        )
+    source = raw.get("sourceBaseline")
+    if (
+        not isinstance(source, dict)
+        or set(source) != {"id", "digest"}
+        or not isinstance(source.get("id"), str)
+        or not isinstance(source.get("digest"), str)
+        or _SHA256.fullmatch(source["digest"]) is None
+    ):
+        raise _decision_error(
+            "decision-file.readoption.source.invalid",
+            source_path,
+            "sourceBaseline",
+            "sourceBaseline requires an id and lowercase SHA-256 digest",
+        )
+    raw_dispositions = raw.get("dispositions")
+    if not isinstance(raw_dispositions, list):
+        raise _decision_error(
+            "decision-file.readoption.dispositions.invalid",
+            source_path,
+            "dispositions",
+            "dispositions must be an ordered array",
+        )
+    dispositions: list[ReadoptionDisposition] = []
+    diagnostics: list[DecisionDocumentDiagnostic] = []
+    for index, item in enumerate(raw_dispositions):
+        try:
+            dispositions.append(_parse_readoption_disposition(source_path, index, item))
+        except DecisionDocumentError as error:
+            diagnostics.extend(error.diagnostics)
+    if diagnostics:
+        raise DecisionDocumentError(diagnostics)
+    return ReadoptionDecisions(
+        source_baseline_id=source["id"],
+        source_baseline_digest=source["digest"],
+        dispositions=tuple(dispositions),
+    )
+
+
+def _parse_readoption_disposition(
+    source_path: Path, index: int, raw: object
+) -> ReadoptionDisposition:
+    item_id = f"dispositions[{index}]"
+    expected_fields = {
+        "entryId",
+        "entryDigest",
+        "classification",
+        "disposition",
+        "destination",
+        "reason",
+    }
+    if not isinstance(raw, dict) or set(raw) != expected_fields:
+        raise _decision_error(
+            "readoption.disposition.invalid",
+            source_path,
+            str(raw.get("entryId", item_id)) if isinstance(raw, dict) else item_id,
+            "disposition record fields are invalid",
+        )
+    entry_id = raw.get("entryId")
+    entry_digest = raw.get("entryDigest")
+    classification = raw.get("classification")
+    disposition = raw.get("disposition")
+    reason = raw.get("reason")
+    managed_id = str(entry_id) if isinstance(entry_id, str) else item_id
+    if (
+        not isinstance(entry_id, str)
+        or re.fullmatch(r"source-entry\.[0-9a-f]{64}", entry_id) is None
+        or not isinstance(entry_digest, str)
+        or _SHA256.fullmatch(entry_digest) is None
+        or classification not in _READOPTION_CLASSIFICATIONS
+        or disposition not in _READOPTION_DISPOSITIONS
+        or not isinstance(reason, str)
+    ):
+        raise _decision_error(
+            "readoption.disposition.invalid",
+            source_path,
+            managed_id,
+            "entry evidence, classification, disposition, or reason is invalid",
+        )
+    destination = _parse_readoption_destination(
+        source_path, managed_id, disposition, raw.get("destination")
+    )
+    if classification == "non-governed" and disposition != "rejected":
+        raise _decision_error(
+            "readoption.disposition.invalid",
+            source_path,
+            managed_id,
+            "non-governed evidence must use the rejected disposition",
+        )
+    if (classification == "non-governed" or disposition == "rejected") and not reason.strip():
+        raise _decision_error(
+            "readoption.disposition.reason.required",
+            source_path,
+            managed_id,
+            "non-governed or rejected evidence requires an individual reason",
+        )
+    return ReadoptionDisposition(
+        entry_id=entry_id,
+        entry_digest=entry_digest,
+        classification=classification,
+        disposition=disposition,
+        destination=destination,
+        reason=reason,
+    )
+
+
+def _parse_readoption_destination(
+    source_path: Path, entry_id: str, disposition: str, destination: object
+) -> dict[str, object] | None:
+    if disposition == "rejected":
+        if destination is not None:
+            raise _decision_error(
+                "readoption.disposition.invalid",
+                source_path,
+                entry_id,
+                "rejected disposition must have a null destination",
+            )
+        return None
+    if not isinstance(destination, dict):
+        raise _decision_error(
+            "readoption.disposition.invalid",
+            source_path,
+            entry_id,
+            "non-rejected disposition requires a typed destination object",
+        )
+    if disposition == "managed-entry":
+        if set(destination) != {"managedId"} or not isinstance(
+            destination.get("managedId"), str
+        ):
+            raise _decision_error(
+                "readoption.disposition.invalid",
+                source_path,
+                entry_id,
+                "managed-entry destination requires exactly managedId",
+            )
+        return {"managedId": destination["managedId"]}
+    if disposition == "repository-document":
+        if set(destination) != {"documentType", "path", "digest"}:
+            raise _decision_error(
+                "readoption.disposition.invalid",
+                source_path,
+                entry_id,
+                "repository-document destination fields are invalid",
+            )
+        if destination.get("documentType") not in _TYPED_DOCUMENTS:
+            raise _decision_error(
+                "readoption.destination.document-type.invalid",
+                source_path,
+                entry_id,
+                "repository documentType is not supported",
+            )
+        if not isinstance(destination.get("path"), str) or not isinstance(
+            destination.get("digest"), str
+        ) or _SHA256.fullmatch(destination["digest"]) is None:
+            raise _decision_error(
+                "readoption.disposition.invalid",
+                source_path,
+                entry_id,
+                "repository-document destination path or digest is invalid",
+            )
+        return dict(destination)
+    expected = {"documentType", "path", "proposedBytes", "digest"}
+    if set(destination) != expected:
+        raise _decision_error(
+            "readoption.disposition.invalid",
+            source_path,
+            entry_id,
+            "repository-rules destination fields are invalid",
+        )
+    if (
+        destination.get("documentType") != "repository-rules"
+        or destination.get("path") != _REPOSITORY_RULES_PATH.as_posix()
+        or not isinstance(destination.get("proposedBytes"), str)
+        or not isinstance(destination.get("digest"), str)
+        or _SHA256.fullmatch(destination["digest"]) is None
+    ):
+        raise _decision_error(
+            "readoption.destination.repository-rules.invalid",
+            source_path,
+            entry_id,
+            "Repository-Specific Normative Rules require the default typed path and exact bytes",
+        )
+    try:
+        proposed = base64.b64decode(destination["proposedBytes"], validate=True)
+    except (ValueError, binascii.Error) as error:
+        raise _decision_error(
+            "readoption.destination.proposed-bytes.invalid",
+            source_path,
+            entry_id,
+            "proposedBytes must be canonical base64",
+        ) from error
+    if not proposed or hashlib.sha256(proposed).hexdigest() != destination["digest"]:
+        raise _decision_error(
+            "readoption.destination.proposed-bytes.stale",
+            source_path,
+            entry_id,
+            "proposed bytes are empty or do not match the declared digest",
+        )
+    if _MANAGED_BEGIN_MARKER.search(proposed) is not None or b"<!-- setup-context-driven:" in proposed:
+        raise _decision_error(
+            "readoption.destination.proposed-bytes.managed-marker",
+            source_path,
+            entry_id,
+            "Repository-Specific Normative Rules proposed bytes must remain unmarked",
+        )
+    return dict(destination)
+
+
+def _validate_readoption_destination(
+    root: Path, disposition: ReadoptionDisposition
+) -> list[DecisionDocumentDiagnostic]:
+    destination = disposition.destination
+    if destination is None or disposition.disposition in {"rejected", "managed-entry"}:
+        return []
+    entry_id = disposition.entry_id
+    raw_path = destination.get("path")
+    if not isinstance(raw_path, str) or not _decision_destination_path_is_safe(raw_path):
+        return [
+            DecisionDocumentDiagnostic(
+                "readoption.destination.path.unsafe",
+                Path("decision-file"),
+                entry_id,
+                "destination path must be a safe repository-relative path",
+            )
+        ]
+    relative = PurePosixPath(raw_path)
+    if disposition.disposition == "repository-rules":
+        return []
+    document_type = str(destination["documentType"])
+    if not _typed_document_path_matches(document_type, relative):
+        return [
+            DecisionDocumentDiagnostic(
+                "readoption.destination.document-type.invalid",
+                Path(raw_path),
+                entry_id,
+                "destination path does not match its declared documentType",
+            )
+        ]
+    target = root.joinpath(*relative.parts)
+    try:
+        target_stat = target.lstat()
+    except OSError:
+        return [
+            DecisionDocumentDiagnostic(
+                "readoption.destination.missing",
+                Path(raw_path),
+                entry_id,
+                "typed repository document does not exist",
+            )
+        ]
+    if stat.S_ISLNK(target_stat.st_mode) or not stat.S_ISREG(target_stat.st_mode):
+        return [
+            DecisionDocumentDiagnostic(
+                "readoption.destination.type.invalid",
+                Path(raw_path),
+                entry_id,
+                "typed repository document must be a regular non-symlink file",
+            )
+        ]
+    try:
+        observed = hashlib.sha256(target.read_bytes()).hexdigest()
+    except OSError:
+        return [
+            DecisionDocumentDiagnostic(
+                "readoption.destination.read",
+                Path(raw_path),
+                entry_id,
+                "typed repository document cannot be read",
+            )
+        ]
+    if observed != destination["digest"]:
+        return [
+            DecisionDocumentDiagnostic(
+                "readoption.destination.stale",
+                Path(raw_path),
+                entry_id,
+                "typed repository document digest does not match current bytes",
+            )
+        ]
+    return []
+
+
+def _decision_destination_path_is_safe(value: str) -> bool:
+    if not value or "\\" in value:
+        return False
+    path = PurePosixPath(value)
+    return not path.is_absolute() and all(
+        part not in {"", ".", ".."} for part in path.parts
+    )
+
+
+def _typed_document_path_matches(document_type: str, path: PurePosixPath) -> bool:
+    parts = path.parts
+    if document_type == "agent-guide":
+        return (
+            len(parts) >= 3
+            and parts[:2] == ("docs", "agents")
+            and path.suffix == ".md"
+            and path != _REPOSITORY_RULES_PATH
+        )
+    if document_type == "architecture-decision":
+        return len(parts) == 3 and parts[:2] == ("docs", "adr") and path.suffix == ".md"
+    if document_type == "design-contract":
+        return path.name == "DESIGN.md"
+    if document_type == "domain-context":
+        return path.name == "CONTEXT.md"
+    if document_type == "http-contract":
+        return len(parts) >= 3 and parts[:2] == ("docs", "architecture") and path.suffix == ".json"
+    return False
 
 
 def inventory_incompatible_source_baseline(

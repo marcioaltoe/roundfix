@@ -75,6 +75,89 @@ class PreviewCliTests(unittest.TestCase):
                     set(),
                 )
 
+    def test_structured_scalar_decisions_are_normalized_and_digest_bound(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir) / "repo"
+            repo.mkdir()
+            decision_path = Path(temp_dir) / "decisions.json"
+            decisions = [
+                {"id": "spec.scaffold", "value": True},
+                {"id": "domain.layout", "value": "single-context"},
+                {"id": "triage.external", "value": False},
+                {"id": "autonomous.enabled", "value": False},
+                {"id": "verification.gate", "value": "make verify"},
+                {"id": "language.generated", "value": "English"},
+                {"id": "secondbrain.enabled", "value": False},
+                {"id": "repository.extension.enabled", "value": False},
+            ]
+            write_decision_document(decision_path, decisions)
+
+            first = run_context_setup(
+                "audit",
+                "--repo",
+                str(repo),
+                "--format",
+                "json",
+                "--profile",
+                "rust-cli",
+                "--decision-file",
+                str(decision_path),
+            )
+            decisions[2]["value"] = True
+            write_decision_document(decision_path, decisions)
+            changed = run_context_setup(
+                "audit",
+                "--repo",
+                str(repo),
+                "--format",
+                "json",
+                "--profile",
+                "rust-cli",
+                "--decision-file",
+                str(decision_path),
+            )
+
+            self.assertEqual(first.returncode, 0, first.stderr)
+            self.assertEqual(changed.returncode, 0, changed.stderr)
+            first_payload = json.loads(first.stdout)
+            changed_payload = json.loads(changed.stdout)
+            self.assertEqual(
+                first_payload["decisionDocument"]["schemaVersion"],
+                "setup-context-driven/decisions/0.0.1",
+            )
+            self.assertNotEqual(first_payload["planDigest"], changed_payload["planDigest"])
+
+    def test_conflicting_scalar_flag_and_decision_file_is_invalid_input(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = Path(temp_dir) / "repo"
+            repo.mkdir()
+            decision_path = Path(temp_dir) / "decisions.json"
+            write_decision_document(
+                decision_path,
+                [{"id": "domain.layout", "value": "single-context"}],
+            )
+
+            result = run_context_setup(
+                "audit",
+                "--repo",
+                str(repo),
+                "--format",
+                "json",
+                "--profile",
+                "rust-cli",
+                "--decision-file",
+                str(decision_path),
+                "--decision",
+                "domain.layout=multi-context",
+            )
+
+            self.assertEqual(result.returncode, 2, result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertIn(
+                "decision-file.decision.conflict",
+                {item["code"] for item in payload["findings"]},
+            )
+
     def test_typescript_first_apply_returns_entry_decisions_and_preview(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = Path(temp_dir)
@@ -220,6 +303,21 @@ def run_context_setup(*args):
         capture_output=True,
         check=False,
         env=env,
+    )
+
+
+def write_decision_document(path, decisions):
+    path.write_text(
+        json.dumps(
+            {
+                "schemaVersion": "setup-context-driven/decisions/0.0.1",
+                "version": "0.0.1",
+                "decisions": decisions,
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
     )
 
 
