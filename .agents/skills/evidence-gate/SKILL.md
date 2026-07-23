@@ -4,7 +4,7 @@ description: Require fresh verification evidence before claiming work is complet
 metadata:
   category: qa
   tags: [qa, testing, code-review, workflow]
-  version: 0.1.0
+  version: 0.0.1
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---

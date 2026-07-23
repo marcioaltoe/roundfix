@@ -1,4 +1,4 @@
-<!-- setup-context-driven:begin id=guide.docs-layout version=4 -->
+<!-- setup-context-driven:begin id=guide.docs-layout version=0.0.1 -->
 
 # Docs layout
 
@@ -28,7 +28,7 @@ updated_at: YYYY-MM-DD
 
 <!-- setup-context-driven:end id=guide.docs-layout -->
 
-<!-- setup-context-driven:begin id=guide.spec-docs-layout version=3 -->
+<!-- setup-context-driven:begin id=guide.spec-docs-layout version=0.0.1 -->
 
 # Spec docs layout
 

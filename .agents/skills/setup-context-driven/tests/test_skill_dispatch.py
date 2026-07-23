@@ -106,7 +106,7 @@ class SkillDispatchContractTests(unittest.TestCase):
         )
         typescript_dispatch = render_skill_dispatch(
             catalog,
-            catalog.ordered_modules_by_profile["typescript-bun-monorepo"],
+            catalog.ordered_modules_by_profile["standard-typescript-monorepo"],
         )
 
         self.assertIn("- `react`:", typescript_dispatch)
@@ -118,7 +118,7 @@ class SkillDispatchContractTests(unittest.TestCase):
 
     def test_typescript_profile_renders_exact_activation_bundles_deterministically(self):
         catalog = load_asset_catalog(SKILL_ROOT)
-        modules = catalog.ordered_modules_by_profile["typescript-bun-monorepo"]
+        modules = catalog.ordered_modules_by_profile["standard-typescript-monorepo"]
 
         first = render_skill_dispatch(catalog, modules)
         second = render_skill_dispatch(catalog, modules)

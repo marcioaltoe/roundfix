@@ -108,7 +108,7 @@ class LegacyRuleLedgerTests(unittest.TestCase):
 
             result = run_apply_for_profile(
                 repo,
-                "typescript-bun-monorepo",
+                "standard-typescript-monorepo",
                 decisions_for(autonomous=False),
             )
 

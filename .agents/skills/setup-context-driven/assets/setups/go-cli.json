@@ -1,14 +1,14 @@
 {
-  "schemaVersion": "setup-context-driven/setup-snapshot-v2",
+  "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
   "id": "go-cli",
-  "version": 2,
+  "version": "0.0.1",
   "source": {
     "type": "github",
     "repository": "marcioaltoe/skills",
     "ref": "236847f6956134bf468abb641bac0493a899bca5",
     "path": "setups/go-cli.txt"
   },
-  "digest": "5bc3680a351e55b07d24e262769ab05c415950dbfdcff0f24fa0bf5f1511c719",
+  "digest": "2970a598044afdbd36767b9cf9d340db8563be9e6ab390c2a19e1856121a0fc9",
   "activationBundles": [
     {
       "id": "bundle.delivery",
@@ -38,7 +38,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "2e5b08b13d6b470f68bc21f25509d3fc2bc309408be5b70d27bb0970b6a7ce12"
+      "contentDigest": "bd96be270bea02474e60cfa0c7e2528e2eb45129b4ef1355aedb53bab66456d3"
     },
     {
       "name": "brainstorming",
@@ -47,7 +47,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "7039307717e9edcfe3097dfa29038347bd229fe9cde504bab358bad349402513"
+      "contentDigest": "ea5c7eb59554159134f6f00efc5b2e49fbdd983ab46c97103e244458106da6c8"
     },
     {
       "name": "business-analyst",
@@ -56,7 +56,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "5bac46ce17c5521dde5cfbbf875645a52077ebe346fdea4e15b6ab603b95895d"
+      "contentDigest": "91fb85ed8d6d14b621fdc313819114479ca4b695377218066ff2d99840203d4c"
     },
     {
       "name": "context7",
@@ -70,13 +70,35 @@
       "treeDigest": "00ac7891ecaa432562712a2d06b728d37f30b11bbe839fe5e264af7da425180a"
     },
     {
+      "name": "exa-web-search",
+      "path": "skills/01-discovery/exa-web-search",
+      "source": {
+        "type": "github",
+        "repository": "marcioaltoe/skills",
+        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "path": "skills/01-discovery/exa-web-search"
+      },
+      "treeDigest": "9e9f47943ae5d0bf3438013d31e2d02610fd3b8d4b40cf6bd2db17a695b3e7ae"
+    },
+    {
+      "name": "firecrawl",
+      "path": "skills/01-discovery/firecrawl",
+      "source": {
+        "type": "github",
+        "repository": "marcioaltoe/skills",
+        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "path": "skills/01-discovery/firecrawl"
+      },
+      "treeDigest": "55a933a3c330378d75147f66d0c6481915c53e5d16fb18443502fe311204cc09"
+    },
+    {
       "name": "council",
       "path": "skills/01-discovery/council",
       "source": {
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "608222d288d5d4f5cc10fd2d96f2a81baa187366236c7cc19e9b73fbaeac8cb3"
+      "contentDigest": "97abe8113995d8cdaca49473141cab41a496ad7c4a125cce475047f902472e18"
     },
     {
       "name": "grill-with-docs",
@@ -118,7 +140,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "2a9fc0d53d8614a667969abbd718537e18d6e159daacda76ba66d787a4532f1c"
+      "contentDigest": "f15c54937eac295ebdd4d637edd3e37d391e73d8055f2e5c76953bbd3491a67b"
     },
     {
       "name": "write-prd",
@@ -127,7 +149,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "0efde176dfde67ff7dcd32109c5969547d1634598ccd4541ec88bda8c8bb3ed9"
+      "contentDigest": "03711a7eb3504439ba54f711eca14fa794101840ad86b595f223252fe1b952e8"
     },
     {
       "name": "agentic-cli-design",
@@ -169,7 +191,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "a69d70adbd40b1bc79a62b42a0529557d030e7fb0a4cf5175ca350635dda868e"
+      "contentDigest": "bc0e8520fb433f4716f7dea2880762fd3a07f6778103e21cff1efea77e36d1e0"
     },
     {
       "name": "write-tasks",
@@ -178,7 +200,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "7bb9f37cf08a6d48bfa5c41a821d864f5d4a234adaf63be46b887d226d0c4f12"
+      "contentDigest": "0e41e89d0a0753c66de362d55856d098e9bca2783fa2913385c8aa6e6fd87cbc"
     },
     {
       "name": "bubbletea",
@@ -275,7 +297,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "3ac60d9d6d1a93201a7f26317524310f119ea41f907331c0d2a73b53ab613812"
+      "contentDigest": "a10f46b505700ea6f982ccfe4a44219bde291e49f84cbd81a3395b57f3764445"
     },
     {
       "name": "implement-task",
@@ -284,7 +306,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "07cbabaec37c02b09ad593497329e73e20d91420ac484b3519570e86740f8cb9"
+      "contentDigest": "e50207475bbed4664057240dd1af43d73163f2a065f32e26b3602e4602ef8051"
     },
     {
       "name": "no-workarounds",
@@ -315,7 +337,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "2d55edc780e679659f108bb2f38113b24c6cbad8e466d1396871163b38f66875"
+      "contentDigest": "545ce6571669144c59a2fab850f90d8100dcdc55dc4164b3d91dfacf3cedd1f3"
     },
     {
       "name": "qa-gate",
@@ -324,7 +346,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "b3222cdf557f2cf5ff559705982da48e9e7304ba2f30cfeb86c02f028fec51ac"
+      "contentDigest": "5063f644a241a2fa673643aaf184bad03a1a900844a74d1988747135ecb64cc1"
     },
     {
       "name": "review",
@@ -349,13 +371,22 @@
       "treeDigest": "12f5126e8e9bb86c75c58e87aff0e1f08c7143ffe47b1a7694414fa41ddaaba6"
     },
     {
+      "name": "roundfix",
+      "path": "skills/06-review-repair/roundfix",
+      "source": {
+        "type": "repo",
+        "name": "roundfix"
+      },
+      "contentDigest": "63d96d848c2950623dabd54e010ee31b1564cd09020b261f4d19354cd0aba766"
+    },
+    {
       "name": "archive-spec",
       "path": "skills/07-evidence-delivery/archive-spec",
       "source": {
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "58267d93f2f2d067ecc0548f109660da9c6830877e21a5a0c28ddbf33ca1f20c"
+      "contentDigest": "6f54267e9f247925d4328927ac522311b5ba26203542b916e5565e3aada5161e"
     },
     {
       "name": "conventional-commits",

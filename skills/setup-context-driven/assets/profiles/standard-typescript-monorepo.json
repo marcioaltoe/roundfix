@@ -26,7 +26,7 @@
       "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/spec-routing.md",
       "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/typescript-bun.md"
     ],
-    "goldenDigest": "126b75eeac272100ffb239c66a4006fa154e003ebe203f51fd964618fb2f4fce"
+    "goldenDigest": "875eaf41c9472e225d2b26deb0decf83b457e18b9710fc66fd77df097af70d47"
   },
   "entryDecisions": [
     "language.generated",

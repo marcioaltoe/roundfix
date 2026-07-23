@@ -1,4 +1,4 @@
-<!-- setup-context-driven:begin id=guide.monorepo version=2 -->
+<!-- setup-context-driven:begin id=guide.monorepo version=0.0.1 -->
 
 # Monorepo
 

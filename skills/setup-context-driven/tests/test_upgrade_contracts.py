@@ -135,7 +135,6 @@ class UpgradeContractTests(unittest.TestCase):
                 "go-cli-tui": "none",
                 "rust-cli": "none",
                 "standard-typescript-monorepo": "selected",
-                "typescript-bun-monorepo": "selected",
             },
         )
         self.assertEqual(v2.upgrade_transitions, {})

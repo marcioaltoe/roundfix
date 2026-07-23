@@ -2621,7 +2621,7 @@ def prepare_readoption_plan_context(
                 str(MANIFEST_PATH),
                 profile_id,
                 "Baseline Readoption requires a strict 0.0.1 profile.",
-                "Select standard-typescript-monorepo for this generation.",
+                "Select a maintained 0.0.1 profile for this generation.",
             )
         )
         return None, findings
@@ -2632,7 +2632,11 @@ def prepare_readoption_plan_context(
     if decision_plan.unresolved_decisions:
         return None, findings
 
-    http_answer = decision_plan.resolved_decisions.get(contract.http_decision_id)
+    http_answer = (
+        decision_plan.resolved_decisions.get(contract.http_decision_id)
+        if contract.http_decision_id
+        else None
+    )
     http_value = http_answer.get("value") if isinstance(http_answer, dict) else None
     try:
         profile_plan = build_standard_profile_plan(catalog, http_value, profile_id)
@@ -5972,9 +5976,9 @@ def build_source_setup_snapshot(
 
     activation_bundles = current_snapshot.get("activationBundles")
     snapshot = {
-        "schemaVersion": "setup-context-driven/setup-snapshot-v2",
+        "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "id": setup_id,
-        "version": 2,
+        "version": "0.0.1",
         "source": source_metadata,
         "digest": setup_snapshot_digest(skills, activation_bundles),
         "skills": skills,

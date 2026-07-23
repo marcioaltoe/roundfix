@@ -7,6 +7,7 @@ Boundary OUT: manual QA harness storage and Makefile orchestration.
 """
 
 import json
+import hashlib
 import sys
 import tempfile
 import unittest
@@ -43,11 +44,11 @@ class ManifestMigrationTests(unittest.TestCase):
             )
             write_legacy_spec0030_repository(repo, decisions)
 
-            migrated = run_apply(repo, "typescript-bun-monorepo", [])
-            install_profile_skills(repo, "typescript-bun-monorepo")
+            migrated = run_apply(repo, "standard-typescript-monorepo", [])
+            install_profile_skills(repo, "standard-typescript-monorepo")
             audited = run_audit(repo)
             after_audit = snapshot_files(repo)
-            repeated = run_apply(repo, "typescript-bun-monorepo", [])
+            repeated = run_apply(repo, "standard-typescript-monorepo", [])
 
             self.assertEqual(migrated.returncode, 0, migrated.stderr)
             self.assertNoFinding(migrated, "decision.required")
@@ -92,7 +93,7 @@ class ManifestMigrationTests(unittest.TestCase):
             write_legacy_spec0030_repository(repo, decisions)
             before = snapshot_files(repo)
 
-            blocked = run_apply(repo, "typescript-bun-monorepo", [])
+            blocked = run_apply(repo, "standard-typescript-monorepo", [])
             blocked_payload = json.loads(blocked.stdout)
             required = [
                 finding["managedId"]
@@ -105,10 +106,10 @@ class ManifestMigrationTests(unittest.TestCase):
 
             answered = run_apply(
                 repo,
-                "typescript-bun-monorepo",
+                "standard-typescript-monorepo",
                 ["verification.gate=make verify"],
             )
-            repeated = run_apply(repo, "typescript-bun-monorepo", [])
+            repeated = run_apply(repo, "standard-typescript-monorepo", [])
 
             self.assertEqual(answered.returncode, 0, answered.stderr)
             self.assertEqual(repeated.returncode, 0, repeated.stderr)
@@ -127,7 +128,7 @@ class ManifestMigrationTests(unittest.TestCase):
             )
             before = snapshot_files(repo)
 
-            result = run_apply(repo, "typescript-bun-monorepo", [])
+            result = run_apply(repo, "standard-typescript-monorepo", [])
 
             self.assertEqual(result.returncode, 3)
             self.assertFinding(result, "decision.required", "decision")
@@ -146,7 +147,7 @@ class ManifestMigrationTests(unittest.TestCase):
             )
             before = snapshot_files(repo)
 
-            result = run_apply(repo, "typescript-bun-monorepo", [])
+            result = run_apply(repo, "standard-typescript-monorepo", [])
 
             self.assertEqual(result.returncode, 1, result.stderr)
             self.assertFinding(result, "retention.baseline.unknown", "error")
@@ -190,6 +191,14 @@ def legacy_decisions(
         "language.generated": "English",
         "secondbrain.enabled": secondbrain,
         "repository.extension.enabled": False,
+        "http.contract": {
+            "mode": "REST",
+            "exceptions": [],
+            "source": {
+                "path": "docs/architecture/http-contract.json",
+                "digest": hashlib.sha256(b'{"mode":"REST"}\n').hexdigest(),
+            },
+        },
     }
     return {
         decision_id: {"value": value, "confirmedAt": LEGACY_CONFIRMED_AT}
@@ -208,6 +217,9 @@ def write_legacy_spec0030_repository(
         "# Repository-authored legacy design contract\n",
         encoding="utf-8",
     )
+    http_path = repo / "docs" / "architecture" / "http-contract.json"
+    http_path.parent.mkdir(parents=True, exist_ok=True)
+    http_path.write_text('{"mode":"REST"}\n', encoding="utf-8")
     docs_agents = repo / "docs" / "agents"
     docs_agents.mkdir(parents=True, exist_ok=True)
     root_content = (
@@ -254,7 +266,7 @@ def write_legacy_spec0030_repository(
     manifest = {
         "schemaVersion": 1,
         "generator": {"skill": "setup-context-driven", "version": 1},
-        "profile": "typescript-bun-monorepo",
+        "profile": "standard-typescript-monorepo",
         "modules": [
             "core",
             "context-workflow",

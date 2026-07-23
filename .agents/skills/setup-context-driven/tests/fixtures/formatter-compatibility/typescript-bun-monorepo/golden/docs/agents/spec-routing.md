@@ -1,4 +1,4 @@
-<!-- setup-context-driven:begin id=guide.spec-routing version=3 -->
+<!-- setup-context-driven:begin id=guide.spec-routing version=0.0.1 -->
 
 # Spec routing
 

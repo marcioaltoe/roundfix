@@ -117,7 +117,7 @@ class DecisionRenderingTests(unittest.TestCase):
 
             result = run_apply_for_profile(
                 repo,
-                "typescript-bun-monorepo",
+                "standard-typescript-monorepo",
                 decisions_for(autonomous=False),
             )
 
@@ -137,7 +137,7 @@ class DecisionRenderingTests(unittest.TestCase):
 
             result = run_apply_for_profile(
                 repo,
-                "typescript-bun-monorepo",
+                "standard-typescript-monorepo",
                 decisions_for(autonomous=False),
             )
 
@@ -340,9 +340,56 @@ def run_apply(repo, decisions):
 
 
 def run_apply_for_profile(repo, profile, decisions):
-    args = ["apply", "--repo", str(repo), "--format", "json", "--profile", profile]
+    if profile == "standard-typescript-monorepo":
+        http_path = repo / "docs" / "architecture" / "http-contract.json"
+        http_path.parent.mkdir(parents=True, exist_ok=True)
+        http_bytes = b'{"mode":"REST"}\n'
+        http_path.write_bytes(http_bytes)
+        document_decisions = []
+        for decision in decisions:
+            decision_id, _, raw_value = decision.partition("=")
+            value = {"true": True, "false": False}.get(raw_value, raw_value)
+            document_decisions.append({"id": decision_id, "value": value})
+        document_decisions.append(
+            {
+                "id": "http.contract",
+                "value": {
+                    "mode": "REST",
+                    "exceptions": [],
+                    "source": {
+                        "path": "docs/architecture/http-contract.json",
+                        "digest": sha256(http_bytes).hexdigest(),
+                    },
+                },
+            }
+        )
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", encoding="utf-8"
+        ) as handle:
+            json.dump(
+                {
+                    "schemaVersion": "setup-context-driven/decisions/0.0.1",
+                    "version": "0.0.1",
+                    "decisions": document_decisions,
+                },
+                handle,
+            )
+            handle.flush()
+            return run_apply_args(
+                repo,
+                profile,
+                ["--decision-file", handle.name],
+            )
+
+    decision_args = []
     for decision in decisions:
-        args.extend(["--decision", decision])
+        decision_args.extend(["--decision", decision])
+    return run_apply_args(repo, profile, decision_args)
+
+
+def run_apply_args(repo, profile, decision_args):
+    args = ["apply", "--repo", str(repo), "--format", "json", "--profile", profile]
+    args.extend(decision_args)
     result = run_context_setup(*args)
     payload = json.loads(result.stdout)
     if result.returncode == 3 and any(

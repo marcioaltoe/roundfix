@@ -1,4 +1,4 @@
-<!-- setup-context-driven:begin id=guide.secondbrain version=3 -->
+<!-- setup-context-driven:begin id=guide.secondbrain version=0.0.1 -->
 
 # Secondbrain
 

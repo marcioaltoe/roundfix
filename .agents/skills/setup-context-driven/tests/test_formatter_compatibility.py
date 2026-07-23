@@ -6,6 +6,7 @@ Boundary IN: profile formatter contracts, setup apply/audit, and checked-in gold
 Boundary OUT: downloading or installing Oxfmt; final QA owns the real formatter probe.
 """
 
+import hashlib
 import json
 import os
 import shlex
@@ -37,7 +38,11 @@ sys.path.insert(0, str(TESTS_ROOT))
 
 import context_setup  # noqa: E402
 from context_assets import load_asset_catalog, portable_file_digest  # noqa: E402
-from test_apply import BASE_DECISIONS, run_apply_in_process  # noqa: E402
+from test_apply import (  # noqa: E402
+    BASE_DECISIONS,
+    run_apply_in_process,
+    run_context_setup_in_process,
+)
 from test_audit import (  # noqa: E402
     install_profile_skills,
     run_audit as run_fixture_audit,
@@ -45,7 +50,7 @@ from test_audit import (  # noqa: E402
 )
 
 
-PROFILE_ID = "typescript-bun-monorepo"
+PROFILE_ID = "standard-typescript-monorepo"
 
 
 def formatter_profile_decisions():
@@ -61,6 +66,66 @@ def formatter_profile_decisions():
         decision_id, _, value = decision.partition("=")
         decisions.append(f"{decision_id}={replacements.get(decision_id, value)}")
     return decisions
+
+
+def run_standard_apply_in_process(repo, decisions):
+    http_path = repo / "docs" / "architecture" / "http-contract.json"
+    http_path.parent.mkdir(parents=True, exist_ok=True)
+    http_bytes = b'{"mode":"REST"}\n'
+    http_path.write_bytes(http_bytes)
+    document_decisions = []
+    for decision in decisions:
+        decision_id, _, raw_value = decision.partition("=")
+        value = {"true": True, "false": False}.get(raw_value, raw_value)
+        document_decisions.append({"id": decision_id, "value": value})
+    document_decisions.append(
+        {
+            "id": "http.contract",
+            "value": {
+                "mode": "REST",
+                "exceptions": [],
+                "source": {
+                    "path": "docs/architecture/http-contract.json",
+                    "digest": hashlib.sha256(http_bytes).hexdigest(),
+                },
+            },
+        }
+    )
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", encoding="utf-8") as handle:
+        json.dump(
+            {
+                "schemaVersion": "setup-context-driven/decisions/0.0.1",
+                "version": "0.0.1",
+                "decisions": document_decisions,
+            },
+            handle,
+        )
+        handle.flush()
+        args = [
+            "apply",
+            "--repo",
+            str(repo),
+            "--format",
+            "json",
+            "--profile",
+            PROFILE_ID,
+            "--decision-file",
+            handle.name,
+        ]
+        preview = run_context_setup_in_process(*args)
+        if preview.returncode != 3:
+            return preview
+        payload = json.loads(preview.stdout)
+        if not any(
+            finding["code"] == "plan.confirmation.required"
+            for finding in payload["findings"]
+        ):
+            return preview
+        return run_context_setup_in_process(
+            *args,
+            "--confirm-plan",
+            payload["planDigest"],
+        )
 
 
 def load_provenance():
@@ -204,7 +269,7 @@ class FormatterCompatibilityTests(unittest.TestCase):
                 "run",
                 side_effect=reject_formatter_process,
             ):
-                first_apply = run_apply_in_process(repo, PROFILE_ID, decisions)
+                first_apply = run_standard_apply_in_process(repo, decisions)
 
             self.assertEqual(first_apply.returncode, 0, first_apply.stderr)
             install_profile_skills(repo, PROFILE_ID)

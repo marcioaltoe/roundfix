@@ -70,7 +70,6 @@ class DecisionPlanContractTests(unittest.TestCase):
                 "go-cli-tui": EXPECTED_ENTRY_DECISIONS,
                 "rust-cli": EXPECTED_ENTRY_DECISIONS,
                 "standard-typescript-monorepo": STANDARD_ENTRY_DECISIONS,
-                "typescript-bun-monorepo": EXPECTED_ENTRY_DECISIONS,
             },
         )
 
@@ -207,9 +206,17 @@ class DecisionPlanContractTests(unittest.TestCase):
     def test_single_context_monorepo_selects_its_referenced_guide(self):
         catalog = load_asset_catalog(SKILL_ROOT)
         decisions = self._complete_decisions(**{"domain.layout": "single-context"})
+        decisions["http.contract"] = {
+            "mode": "REST",
+            "exceptions": [],
+            "source": {
+                "path": "docs/architecture/http-contract.json",
+                "digest": "d" * 64,
+            },
+        }
         plan = context_setup.resolve_decision_plan(
             catalog,
-            "typescript-bun-monorepo",
+            "standard-typescript-monorepo",
             {"decisions": self._manifest_decisions(decisions)},
             {},
         )

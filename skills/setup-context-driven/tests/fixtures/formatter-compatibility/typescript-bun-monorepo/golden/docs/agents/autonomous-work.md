@@ -1,4 +1,4 @@
-<!-- setup-context-driven:begin id=guide.autonomous-work version=3 -->
+<!-- setup-context-driven:begin id=guide.autonomous-work version=0.0.1 -->
 
 # Autonomous work
 

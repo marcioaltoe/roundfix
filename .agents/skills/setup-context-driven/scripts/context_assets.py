@@ -35,6 +35,7 @@ PROFILE_PLAN_SCHEMA_VERSION_0_0_1 = "setup-context-driven/profile-plan/0.0.1"
 PROFILE_SNAPSHOT_SCHEMA_VERSION_0_0_1 = "setup-context-driven/profile-snapshot/0.0.1"
 SETUP_SCHEMA_VERSION = "setup-context-driven/setup-snapshot-v1"
 SETUP_SCHEMA_VERSION_V2 = "setup-context-driven/setup-snapshot-v2"
+SETUP_SCHEMA_VERSION_0_0_1 = "setup-context-driven/setup-snapshot/0.0.1"
 SKILL_ACTIVATIONS_SCHEMA_VERSION = "setup-context-driven/skill-activations-v1"
 TEMPLATES_SCHEMA_VERSION = "setup-context-driven/templates-v1"
 UPGRADE_TRANSITION_SCHEMA_VERSION = "setup-context-driven/upgrade-transition-v1"
@@ -215,7 +216,7 @@ class StandardProfileContract:
     stack: tuple[str, ...]
     required_workspaces: tuple[str, ...]
     optional_modules: tuple[str, ...]
-    architecture: ProfileArchitectureContract
+    architecture: ProfileArchitectureContract | None
     http_decision_id: str
     http_modes: tuple[str, ...]
     capability_sets: tuple[str, ...]
@@ -355,7 +356,7 @@ def load_asset_catalog(skill_root: str | Path) -> AssetCatalog:
     )
     setups = _read_collection(
         assets_root / "setups",
-        (SETUP_SCHEMA_VERSION, SETUP_SCHEMA_VERSION_V2),
+        (SETUP_SCHEMA_VERSION, SETUP_SCHEMA_VERSION_V2, SETUP_SCHEMA_VERSION_0_0_1),
         "setup",
         diagnostics,
     )
@@ -629,7 +630,10 @@ def _validate_versions(
 ) -> None:
     for asset_id, data in sorted(assets.items()):
         version = data.get("version")
-        if data.get("schemaVersion") == PROFILE_SCHEMA_VERSION_0_0_1:
+        if data.get("schemaVersion") in {
+            PROFILE_SCHEMA_VERSION_0_0_1,
+            SETUP_SCHEMA_VERSION_0_0_1,
+        }:
             if version != "0.0.1":
                 diagnostics.append(f"{kind}.version.invalid: {asset_id}")
             continue
@@ -1968,7 +1972,10 @@ def _validate_setups(
 ) -> dict[str, tuple[ExternalSkillContract, ...]]:
     external_by_setup: dict[str, tuple[ExternalSkillContract, ...]] = {}
     for setup_id, setup in sorted(setups.items()):
-        if setup.get("schemaVersion") == SETUP_SCHEMA_VERSION_V2:
+        if setup.get("schemaVersion") in {
+            SETUP_SCHEMA_VERSION_V2,
+            SETUP_SCHEMA_VERSION_0_0_1,
+        }:
             external_by_setup[setup_id] = _validate_versioned_setup(
                 setup_id, setup, diagnostics
             )
@@ -2011,7 +2018,12 @@ def _validate_versioned_setup(
         setup_id,
         diagnostics,
     )
-    if setup.get("version") != 2:
+    expected_version: int | str = (
+        "0.0.1"
+        if setup.get("schemaVersion") == SETUP_SCHEMA_VERSION_0_0_1
+        else 2
+    )
+    if setup.get("version") != expected_version:
         diagnostics.append(f"setup.version.invalid: {setup_id}")
     source_metadata = setup.get("source")
     if not isinstance(source_metadata, dict):
@@ -2708,7 +2720,7 @@ def _validate_standard_profile_contracts(
     diagnostics: list[str],
 ) -> dict[str, StandardProfileContract]:
     contracts: dict[str, StandardProfileContract] = {}
-    exact_fields = {
+    maintained_fields = {
         "schemaVersion",
         "id",
         "version",
@@ -2719,20 +2731,29 @@ def _validate_standard_profile_contracts(
         "entryDecisions",
         "modules",
         "requiredRules",
+        "capabilitySets",
+        "activationBundles",
+    }
+    typescript_fields = maintained_fields | {
         "stack",
         "workspaces",
         "optionalModules",
         "architecture",
         "httpContract",
-        "capabilitySets",
         "capabilities",
-        "activationBundles",
         "verification",
     }
     for profile_id, profile in sorted(profiles.items()):
         if profile.get("schemaVersion") != PROFILE_SCHEMA_VERSION_0_0_1:
             continue
-        _validate_exact_fields(profile, exact_fields, "profile", profile_id, diagnostics)
+        is_typescript = profile_id == "standard-typescript-monorepo"
+        _validate_exact_fields(
+            profile,
+            typescript_fields if is_typescript else maintained_fields,
+            "profile",
+            profile_id,
+            diagnostics,
+        )
         marker_version = profile.get("markerVersion")
         if marker_version != "0.0.1":
             diagnostics.append(f"profile.markerVersion.invalid: {profile_id}")
@@ -2740,36 +2761,6 @@ def _validate_standard_profile_contracts(
         if not isinstance(title, str) or not title.strip():
             diagnostics.append(f"profile.title.invalid: {profile_id}")
             title = profile_id
-
-        stack = tuple(
-            _validated_string_list(
-                profile.get("stack"), f"profile.stack.invalid: {profile_id}", diagnostics
-            )
-        )
-        if not stack or len(stack) != len(set(stack)):
-            diagnostics.append(f"profile.stack.invalid: {profile_id}")
-
-        workspaces = _validate_profile_workspaces(
-            profile_id, profile.get("workspaces"), diagnostics
-        )
-        optional_modules = tuple(
-            _validated_string_list(
-                profile.get("optionalModules"),
-                f"profile.optionalModules.invalid: {profile_id}",
-                diagnostics,
-            )
-        )
-        if len(optional_modules) != len(set(optional_modules)):
-            diagnostics.append(f"profile.optionalModules.invalid: {profile_id}")
-
-        architecture = _validate_profile_architecture(
-            profile_id, profile.get("architecture"), diagnostics
-        )
-        http_decision_id, http_modes = _validate_profile_http_contract(
-            profile_id, profile.get("httpContract"), diagnostics
-        )
-        if http_decision_id not in profile.get("entryDecisions", []):
-            diagnostics.append(f"profile.httpContract.decision.missing: {profile_id}")
 
         capability_sets = tuple(
             _validated_string_list(
@@ -2780,19 +2771,6 @@ def _validate_standard_profile_contracts(
         )
         if capability_sets != ("universal",):
             diagnostics.append(f"profile.capabilitySets.invalid: {profile_id}")
-        capabilities, capability_categories = _validate_profile_capabilities(
-            profile_id, profile.get("capabilities"), diagnostics
-        )
-        titles_by_category: dict[str, set[str]] = {}
-        for capability in capabilities:
-            category = capability_categories.get(capability.capability_id, "")
-            titles_by_category.setdefault(category, set()).add(capability.title)
-        if titles_by_category.get("stack", set()) != set(stack):
-            diagnostics.append(f"profile.stack.capability.mismatch: {profile_id}")
-        if titles_by_category.get("workspace", set()) != set(workspaces):
-            diagnostics.append(f"profile.workspace.capability.mismatch: {profile_id}")
-        if titles_by_category.get("optional-module", set()) != set(optional_modules):
-            diagnostics.append(f"profile.optionalModule.capability.mismatch: {profile_id}")
 
         activation_bundles = tuple(
             _validated_string_list(
@@ -2809,11 +2787,69 @@ def _validate_standard_profile_contracts(
         if activation_bundles != expected_bundles:
             diagnostics.append(f"profile.activationBundles.mismatch: {profile_id}")
 
-        verification = _validate_profile_verification(
-            profile_id, profile.get("verification"), diagnostics
-        )
-        if architecture is None or not http_decision_id or not http_modes:
-            continue
+        stack: tuple[str, ...] = ()
+        workspaces: tuple[str, ...] = ()
+        optional_modules: tuple[str, ...] = ()
+        architecture: ProfileArchitectureContract | None = None
+        http_decision_id = ""
+        http_modes: tuple[str, ...] = ()
+        capabilities: tuple[RepositoryCapability, ...] = ()
+        capability_categories: dict[str, str] = {}
+        verification: tuple[ProfileVerificationEntry, ...] = ()
+        if is_typescript:
+            stack = tuple(
+                _validated_string_list(
+                    profile.get("stack"),
+                    f"profile.stack.invalid: {profile_id}",
+                    diagnostics,
+                )
+            )
+            if not stack or len(stack) != len(set(stack)):
+                diagnostics.append(f"profile.stack.invalid: {profile_id}")
+            workspaces = _validate_profile_workspaces(
+                profile_id, profile.get("workspaces"), diagnostics
+            )
+            optional_modules = tuple(
+                _validated_string_list(
+                    profile.get("optionalModules"),
+                    f"profile.optionalModules.invalid: {profile_id}",
+                    diagnostics,
+                )
+            )
+            if len(optional_modules) != len(set(optional_modules)):
+                diagnostics.append(f"profile.optionalModules.invalid: {profile_id}")
+            architecture = _validate_profile_architecture(
+                profile_id, profile.get("architecture"), diagnostics
+            )
+            http_decision_id, http_modes = _validate_profile_http_contract(
+                profile_id, profile.get("httpContract"), diagnostics
+            )
+            if http_decision_id not in profile.get("entryDecisions", []):
+                diagnostics.append(
+                    f"profile.httpContract.decision.missing: {profile_id}"
+                )
+            capabilities, capability_categories = _validate_profile_capabilities(
+                profile_id, profile.get("capabilities"), diagnostics
+            )
+            titles_by_category: dict[str, set[str]] = {}
+            for capability in capabilities:
+                category = capability_categories.get(capability.capability_id, "")
+                titles_by_category.setdefault(category, set()).add(capability.title)
+            if titles_by_category.get("stack", set()) != set(stack):
+                diagnostics.append(f"profile.stack.capability.mismatch: {profile_id}")
+            if titles_by_category.get("workspace", set()) != set(workspaces):
+                diagnostics.append(f"profile.workspace.capability.mismatch: {profile_id}")
+            if titles_by_category.get("optional-module", set()) != set(
+                optional_modules
+            ):
+                diagnostics.append(
+                    f"profile.optionalModule.capability.mismatch: {profile_id}"
+                )
+            verification = _validate_profile_verification(
+                profile_id, profile.get("verification"), diagnostics
+            )
+            if architecture is None or not http_decision_id or not http_modes:
+                continue
         contracts[profile_id] = StandardProfileContract(
             profile_id=profile_id,
             version=str(profile.get("version", "")),
@@ -3095,6 +3131,12 @@ def build_standard_profile_plan(
     contract = catalog.standard_profiles.get(profile_id)
     if contract is None:
         raise ValueError(f"unknown strict profile {profile_id!r}")
+    if not contract.http_decision_id:
+        return StandardProfilePlan(
+            contract=contract,
+            http_contract=None,
+            unresolved_decisions=(),
+        )
     if http_contract is None:
         return StandardProfilePlan(
             contract=contract,
@@ -3133,7 +3175,9 @@ def render_standard_profile_plan(plan: StandardProfilePlan) -> bytes:
 def render_standard_profile_snapshot(plan: StandardProfilePlan) -> bytes:
     """Render the resolved profile snapshot; unresolved decisions are rejected."""
 
-    if plan.unresolved_decisions or plan.http_contract is None:
+    if plan.unresolved_decisions or (
+        plan.contract.http_decision_id and plan.http_contract is None
+    ):
         raise ValueError("profile snapshot requires a resolved HTTP Contract Decision")
     document = {
         "schemaVersion": PROFILE_SNAPSHOT_SCHEMA_VERSION_0_0_1,
@@ -3230,28 +3274,9 @@ def is_http_contract_decision_value_valid(
 
 def _standard_profile_document(contract: StandardProfileContract) -> dict[str, object]:
     categories = dict(contract.capability_categories)
-    return {
+    document: dict[str, object] = {
         "id": contract.profile_id,
         "version": contract.version,
-        "stack": list(contract.stack),
-        "workspaces": list(contract.required_workspaces),
-        "optionalModules": list(contract.optional_modules),
-        "architecture": {
-            "frontend": {
-                "organization": contract.architecture.frontend_organization,
-                "publicBoundary": contract.architecture.frontend_public_boundary,
-                "internalImports": contract.architecture.frontend_internal_imports,
-            },
-            "backend": {
-                "layers": list(contract.architecture.backend_layers),
-                "httpHandlers": contract.architecture.backend_http_handlers,
-                "useCases": contract.architecture.backend_use_cases,
-                "persistence": contract.architecture.backend_persistence,
-            },
-            "rejectedNormativeBuckets": list(
-                contract.architecture.rejected_normative_buckets
-            ),
-        },
         "capabilitySets": list(contract.capability_sets),
         "capabilities": [
             {
@@ -3275,6 +3300,31 @@ def _standard_profile_document(contract: StandardProfileContract) -> dict[str, o
             for entry in contract.verification
         ],
     }
+    if contract.architecture is not None:
+        document.update(
+            {
+                "stack": list(contract.stack),
+                "workspaces": list(contract.required_workspaces),
+                "optionalModules": list(contract.optional_modules),
+                "architecture": {
+                    "frontend": {
+                        "organization": contract.architecture.frontend_organization,
+                        "publicBoundary": contract.architecture.frontend_public_boundary,
+                        "internalImports": contract.architecture.frontend_internal_imports,
+                    },
+                    "backend": {
+                        "layers": list(contract.architecture.backend_layers),
+                        "httpHandlers": contract.architecture.backend_http_handlers,
+                        "useCases": contract.architecture.backend_use_cases,
+                        "persistence": contract.architecture.backend_persistence,
+                    },
+                    "rejectedNormativeBuckets": list(
+                        contract.architecture.rejected_normative_buckets
+                    ),
+                },
+            }
+        )
+    return document
 
 
 def _http_contract_document(

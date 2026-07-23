@@ -7,6 +7,7 @@ Boundary OUT: asset-schema mutation diagnostics owned by test_upgrade_contracts.
 """
 
 import io
+import hashlib
 import json
 import shutil
 import subprocess
@@ -36,7 +37,7 @@ from test_apply import (  # noqa: E402
 from test_audit import snapshot_files  # noqa: E402
 
 
-PROFILE = "typescript-bun-monorepo"
+PROFILE = "standard-typescript-monorepo"
 TRANSITION_ID = "transition.legacy-typescript-bun-to-portable-v3"
 
 
@@ -325,6 +326,22 @@ def write_legacy_fixture(repo: Path) -> Path:
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(FIXTURES / "legacy-manifest.json", manifest_path)
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["profile"] = PROFILE
+    http_path = repo / "docs" / "architecture" / "http-contract.json"
+    http_path.parent.mkdir(parents=True, exist_ok=True)
+    http_bytes = b'{"mode":"REST"}\n'
+    http_path.write_bytes(http_bytes)
+    manifest["decisions"]["http.contract"] = {
+        "value": {
+            "mode": "REST",
+            "exceptions": [],
+            "source": {
+                "path": "docs/architecture/http-contract.json",
+                "digest": hashlib.sha256(http_bytes).hexdigest(),
+            },
+        },
+        "confirmedAt": "2026-07-22",
+    }
     manifest["decisions"]["repository.extension.enabled"] = {
         "value": False,
         "confirmedAt": "2026-07-22",

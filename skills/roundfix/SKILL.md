@@ -4,7 +4,7 @@ description: Use Roundfix to plan releases with the read-only Release Plan Comma
 metadata:
   category: code-review
   tags: [code-review, coderabbit, roundfix, doctor, gc, retention, github, qa, agents]
-  version: 0.3.0
+  version: 0.0.1
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/roundfix
 ---

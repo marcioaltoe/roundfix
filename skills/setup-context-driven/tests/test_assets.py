@@ -116,8 +116,11 @@ class AssetContractTests(unittest.TestCase):
         catalog = load_asset_catalog(SKILL_ROOT)
 
         for setup_id, setup in catalog.setups.items():
-            self.assertEqual(setup["schemaVersion"], "setup-context-driven/setup-snapshot-v2")
-            self.assertEqual(setup["version"], 2)
+            self.assertEqual(
+                setup["schemaVersion"],
+                "setup-context-driven/setup-snapshot/0.0.1",
+            )
+            self.assertEqual(setup["version"], "0.0.1")
             external_names = {
                 skill["name"]
                 for skill in setup["skills"]
@@ -171,20 +174,6 @@ class AssetContractTests(unittest.TestCase):
                     "secondbrain",
                     "repository-extension",
                 ],
-                "typescript-bun-monorepo": [
-                    "core",
-                    "context-workflow",
-                    "typescript",
-                    "bun",
-                    "monorepo",
-                    "backend",
-                    "frontend",
-                    "autonomous-work",
-                    "spec-workflow",
-                    "external-triage",
-                    "secondbrain",
-                    "repository-extension",
-                ],
             },
         )
 
@@ -200,7 +189,10 @@ class AssetContractTests(unittest.TestCase):
         ]:
             for asset_id, asset in collection.items():
                 self.assertEqual(asset["id"], asset_id)
-                if asset.get("schemaVersion") == "setup-context-driven/profile/0.0.1":
+                if asset.get("schemaVersion") in {
+                    "setup-context-driven/profile/0.0.1",
+                    "setup-context-driven/setup-snapshot/0.0.1",
+                }:
                     self.assertEqual(asset["version"], "0.0.1")
                     continue
                 self.assertIsInstance(asset["version"], int)

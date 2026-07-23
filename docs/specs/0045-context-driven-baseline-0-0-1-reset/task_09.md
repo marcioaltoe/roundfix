@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0045-context-driven-baseline-0-0-1-reset
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -36,29 +36,29 @@ capability contract.
 
 ## Subtasks
 
-- [ ] Reset Go and Rust profile generation metadata and universal capability
+- [x] Reset Go and Rust profile generation metadata and universal capability
       bindings.
-- [ ] Retire the old TypeScript profile identity from current-state loaders.
-- [ ] Regenerate deterministic snapshots for every maintained profile.
-- [ ] Extend Repository Skill Set membership and owned-version validation.
-- [ ] Align trusted restoration metadata and exact-byte verification.
-- [ ] Add upstream-metadata and external-schema preservation assertions.
-- [ ] Synchronize and run both setup skill copies in place.
+- [x] Retire the old TypeScript profile identity from current-state loaders.
+- [x] Regenerate deterministic snapshots for every maintained profile.
+- [x] Extend Repository Skill Set membership and owned-version validation.
+- [x] Align trusted restoration metadata and exact-byte verification.
+- [x] Add upstream-metadata and external-schema preservation assertions.
+- [x] Synchronize and run both setup skill copies in place.
 
 ## Acceptance Criteria
 
-- [ ] Go and Rust generated content differs from its prior governed content
+- [x] Go and Rust generated content differs from its prior governed content
       only where the 0.0.1 generation and universal capabilities require it.
-- [ ] Every maintained profile reports the same exact owned skill membership
+- [x] Every maintained profile reports the same exact owned skill membership
       as its snapshot and fails on missing, extra, duplicate, or mismatched
       members.
-- [ ] The former TypeScript profile ID is rejected as current state and routed
+- [x] The former TypeScript profile ID is rejected as current state and routed
       through Baseline Readoption when encountered as source evidence.
-- [ ] Skill restoration verifies the immutable source commit and exact restored
+- [x] Skill restoration verifies the immutable source commit and exact restored
       bytes before reporting success.
-- [ ] Upstream skill metadata and external `skills-lock.json` schema fixtures
+- [x] Upstream skill metadata and external `skills-lock.json` schema fixtures
       remain byte-identical.
-- [ ] Canonical and embedded test suites are runnable from their own trees and
+- [x] Canonical and embedded test suites are runnable from their own trees and
       produce the same result.
 
 ## Context
@@ -86,3 +86,40 @@ capability contract.
 - `_techspec.md` → Data Models; Integration Points; Build Order 6.
 - ADR-0061 → maintained profile policy.
 - ADR-0062 → owned-version scope and protected upstream contracts.
+
+## Result
+
+Completed the maintained-profile and Repository Skill Set reset to generation
+`0.0.1`.
+
+- Go and Rust retain their existing profile modules, rules, formatter choice,
+  and entry decisions; their owned changes are the `0.0.1` schema/version and
+  marker metadata plus the universal capability and activation-bundle bindings.
+  The regenerated formatter corpus confirms that substantive TypeScript
+  guidance changed only for the universal Exa, Firecrawl, and Roundfix dispatch
+  ownership required by this Task.
+- The current profile catalog now contains exactly `go-cli-tui`, `rust-cli`,
+  and `standard-typescript-monorepo`. The former
+  `typescript-bun-monorepo` asset was removed, and the alignment test proves
+  that legacy occurrences are rejected as current state and surfaced through
+  Baseline Readoption as source evidence.
+- Every setup snapshot now uses `setup-context-driven/setup-snapshot/0.0.1`,
+  has deterministic activation bundles, includes the universal Context7/Exa
+  requirements and Firecrawl recommendation, and carries exactly the 14
+  Roundfix-owned skills at version `0.0.1`. Mutation tests reject missing,
+  unexpected, duplicate, bundle-mismatched, and version-disagreeing members.
+- Restoration remains bound to immutable Git commit and tree evidence. The
+  distributed restoration suite verifies the commit identity and exact restored
+  bytes; the Go installer test additionally compares every installed owned file
+  with its trusted embedded bytes across all supported targets.
+- The profile-alignment test pins the external `skills-lock.json` and isolated
+  compatibility-fixture bytes and validates its external schema. No
+  upstream-managed skill metadata was added to Roundfix ownership or edited by
+  this Task.
+- `rtk env PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_profile_alignment.py'` — PASS, 10 tests.
+- `rtk env PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s skills/setup-context-driven/tests -p 'test_restore_skills.py'` — PASS, 14 tests.
+- `rtk go test ./skills` — PASS, 25 tests.
+- `rtk make skills-sync-check` — PASS; canonical and distributed trees are byte-identical.
+- `rtk make verify` — PASS; both setup trees passed 239 tests each, Go passed
+  1,699 tests across 20 packages, the owned-skill check passed, and the CLI
+  build completed.

@@ -1,4 +1,5 @@
 import json
+import hashlib
 import os
 import shutil
 import subprocess
@@ -23,6 +24,7 @@ from context_assets import (  # noqa: E402
 from context_setup import (  # noqa: E402
     audit_repository,
     expected_artifacts_for_plan,
+    load_decision_document,
     managed_block,
     plan_apply,
     resolve_decision_plan,
@@ -178,7 +180,7 @@ class AuditCliTests(unittest.TestCase):
     def test_frontend_missing_repository_design_contract_is_one_read_only_finding(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = Path(temp_dir)
-            write_compliant_repository(repo, "typescript-bun-monorepo")
+            write_compliant_repository(repo, "standard-typescript-monorepo")
             design_path = repo / "DESIGN.md"
             design_path.unlink()
             before = snapshot_files(repo)
@@ -202,7 +204,7 @@ class AuditCliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             repo = root / "repo"
-            write_compliant_repository(repo, "typescript-bun-monorepo")
+            write_compliant_repository(repo, "standard-typescript-monorepo")
             design_path = repo / "DESIGN.md"
             design_path.unlink()
             outside = root / "outside-design.md"
@@ -228,21 +230,46 @@ class AuditCliTests(unittest.TestCase):
             before = snapshot_files(repo)
             catalog = load_asset_catalog(SKILL_ROOT)
 
-            result, invalid_input, change_plan = plan_apply(
-                repo=repo,
-                catalog=catalog,
-                profile_override="typescript-bun-monorepo",
-                decision_args=[
-                    "spec.scaffold=true",
-                    "domain.layout=single-context",
-                    "triage.external=false",
-                    "autonomous.enabled=false",
-                    "verification.gate=make verify",
-                    "language.generated=English",
-                    "secondbrain.enabled=false",
-                    "repository.extension.enabled=false",
-                ],
-            )
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".json", encoding="utf-8"
+            ) as handle:
+                json.dump(
+                    {
+                        "schemaVersion": "setup-context-driven/decisions/0.0.1",
+                        "version": "0.0.1",
+                        "decisions": [
+                            {
+                                "id": "http.contract",
+                                "value": {
+                                    "mode": "REST",
+                                    "exceptions": [],
+                                    "source": {
+                                        "path": "docs/architecture/http-contract.json",
+                                        "digest": "d" * 64,
+                                    },
+                                },
+                            }
+                        ],
+                    },
+                    handle,
+                )
+                handle.flush()
+                result, invalid_input, change_plan = plan_apply(
+                    repo=repo,
+                    catalog=catalog,
+                    profile_override="standard-typescript-monorepo",
+                    decision_args=[
+                        "spec.scaffold=true",
+                        "domain.layout=single-context",
+                        "triage.external=false",
+                        "autonomous.enabled=false",
+                        "verification.gate=make verify",
+                        "language.generated=English",
+                        "secondbrain.enabled=false",
+                        "repository.extension.enabled=false",
+                    ],
+                    decision_document=load_decision_document(handle.name),
+                )
 
             self.assertFalse(invalid_input)
             self.assertEqual(
@@ -298,6 +325,22 @@ def write_compliant_repository(repo, profile_id, omit_decision=None, install_ski
         "secondbrain.enabled": {"value": False, "confirmedAt": "2026-07-15"},
         "repository.extension.enabled": {"value": False, "confirmedAt": "2026-07-15"},
     }
+    if profile_id == "standard-typescript-monorepo":
+        http_path = repo / "docs" / "architecture" / "http-contract.json"
+        http_path.parent.mkdir(parents=True, exist_ok=True)
+        http_bytes = b'{"mode":"REST"}\n'
+        http_path.write_bytes(http_bytes)
+        decisions["http.contract"] = {
+            "value": {
+                "mode": "REST",
+                "exceptions": [],
+                "source": {
+                    "path": "docs/architecture/http-contract.json",
+                    "digest": hashlib.sha256(http_bytes).hexdigest(),
+                },
+            },
+            "confirmedAt": "2026-07-15",
+        }
     plan = resolve_decision_plan(
         catalog,
         profile_id,
@@ -472,8 +515,8 @@ def make_stale_template_version(repo):
     path = repo / "docs" / "agents" / "rust.md"
     path.write_text(
         path.read_text(encoding="utf-8").replace(
-            "id=guide.rust version=2",
-            "id=guide.rust version=1",
+            "id=guide.rust version=0.0.1",
+            "id=guide.rust version=0.0.0",
         ),
         encoding="utf-8",
     )

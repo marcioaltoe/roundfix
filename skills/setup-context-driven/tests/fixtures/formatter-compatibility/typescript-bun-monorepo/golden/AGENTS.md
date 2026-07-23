@@ -1,4 +1,4 @@
-<!-- setup-context-driven:begin id=root.context-workflow version=2 -->
+<!-- setup-context-driven:begin id=root.context-workflow version=0.0.1 -->
 
 ### CONTEXT-driven workflow
 
@@ -6,7 +6,7 @@
 
 <!-- setup-context-driven:end id=root.context-workflow -->
 
-<!-- setup-context-driven:begin id=root.typescript version=2 -->
+<!-- setup-context-driven:begin id=root.typescript version=0.0.1 -->
 
 ### TypeScript
 
@@ -14,7 +14,7 @@
 
 <!-- setup-context-driven:end id=root.typescript -->
 
-<!-- setup-context-driven:begin id=root.bun version=2 -->
+<!-- setup-context-driven:begin id=root.bun version=0.0.1 -->
 
 ### Bun
 
@@ -22,7 +22,7 @@
 
 <!-- setup-context-driven:end id=root.bun -->
 
-<!-- setup-context-driven:begin id=root.monorepo version=2 -->
+<!-- setup-context-driven:begin id=root.monorepo version=0.0.1 -->
 
 ### Monorepo
 
@@ -30,7 +30,7 @@
 
 <!-- setup-context-driven:end id=root.monorepo -->
 
-<!-- setup-context-driven:begin id=root.backend version=2 -->
+<!-- setup-context-driven:begin id=root.backend version=0.0.1 -->
 
 ### Backend
 
@@ -38,7 +38,7 @@
 
 <!-- setup-context-driven:end id=root.backend -->
 
-<!-- setup-context-driven:begin id=root.frontend version=2 -->
+<!-- setup-context-driven:begin id=root.frontend version=0.0.1 -->
 
 ### Frontend
 
@@ -46,7 +46,7 @@
 
 <!-- setup-context-driven:end id=root.frontend -->
 
-<!-- setup-context-driven:begin id=root.core version=2 -->
+<!-- setup-context-driven:begin id=root.core version=0.0.1 -->
 
 ### Core agent rules
 
@@ -55,7 +55,7 @@
 
 <!-- setup-context-driven:end id=root.core -->
 
-<!-- setup-context-driven:begin id=root.spec-workflow version=2 -->
+<!-- setup-context-driven:begin id=root.spec-workflow version=0.0.1 -->
 
 ### Local Spec workflow
 
@@ -63,7 +63,7 @@
 
 <!-- setup-context-driven:end id=root.spec-workflow -->
 
-<!-- setup-context-driven:begin id=root.external-triage version=2 -->
+<!-- setup-context-driven:begin id=root.external-triage version=0.0.1 -->
 
 ### External triage
 
@@ -71,7 +71,7 @@
 
 <!-- setup-context-driven:end id=root.external-triage -->
 
-<!-- setup-context-driven:begin id=root.autonomous-work version=2 -->
+<!-- setup-context-driven:begin id=root.autonomous-work version=0.0.1 -->
 
 ### Autonomous work
 
@@ -79,7 +79,7 @@
 
 <!-- setup-context-driven:end id=root.autonomous-work -->
 
-<!-- setup-context-driven:begin id=root.secondbrain version=2 -->
+<!-- setup-context-driven:begin id=root.secondbrain version=0.0.1 -->
 
 ### Secondbrain
 
@@ -87,7 +87,7 @@
 
 <!-- setup-context-driven:end id=root.secondbrain -->
 
-<!-- setup-context-driven:begin id=root.repository-extension version=1 -->
+<!-- setup-context-driven:begin id=root.repository-extension version=0.0.1 -->
 
 ### Repository-owned rules
 

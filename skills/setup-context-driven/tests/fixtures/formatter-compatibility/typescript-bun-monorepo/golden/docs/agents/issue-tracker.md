@@ -1,4 +1,4 @@
-<!-- setup-context-driven:begin id=guide.issue-tracker version=3 -->
+<!-- setup-context-driven:begin id=guide.issue-tracker version=0.0.1 -->
 
 # Issue tracker
 

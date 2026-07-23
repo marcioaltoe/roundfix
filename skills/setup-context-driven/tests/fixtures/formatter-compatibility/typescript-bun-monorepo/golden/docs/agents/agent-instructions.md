@@ -1,4 +1,4 @@
-<!-- setup-context-driven:begin id=guide.agent-instructions version=3 -->
+<!-- setup-context-driven:begin id=guide.agent-instructions version=0.0.1 -->
 
 # Agent instructions
 

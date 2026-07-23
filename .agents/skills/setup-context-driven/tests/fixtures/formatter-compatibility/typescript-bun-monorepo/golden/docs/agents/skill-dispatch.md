@@ -1,4 +1,4 @@
-<!-- setup-context-driven:begin id=guide.skill-dispatch version=2 -->
+<!-- setup-context-driven:begin id=guide.skill-dispatch version=0.0.1 -->
 
 # Skill dispatch
 
@@ -94,7 +94,7 @@ Individual skill triggers:
 - `evidence-gate`:
   - `trigger.core.evidence-gate`: Making any completion, readiness, or handoff claim.
 - `exa-web-search`:
-  - `trigger.typescript.exa-web-search`: Researching an external TypeScript or Bun question after authoritative documentation is insufficient.
+  - `trigger.core.exa-web-search`: Researching a broad external question after local code and authoritative documentation are insufficient.
 - `external-api-adapters`:
   - `trigger.backend.external-api-adapters`: Building or changing external API adapter boundaries.
 - `feature-systems-pattern`:
@@ -104,7 +104,7 @@ Individual skill triggers:
 - `find-skills`:
   - `trigger.typescript.find-skills`: Discovering applicable skills for TypeScript repository work.
 - `firecrawl`:
-  - `trigger.typescript.firecrawl`: Collecting external web material for a TypeScript product or integration question.
+  - `trigger.core.firecrawl`: Collecting structured external web material when the recommended Firecrawl capability is available.
 - `fixing-accessibility`:
   - `trigger.frontend.fixing-accessibility`: Diagnosing and fixing frontend accessibility defects.
 - `fixing-metadata`:
@@ -174,7 +174,7 @@ Individual skill triggers:
 - `review`:
   - `trigger.core.review`: Reviewing a change against repository standards and its originating contract.
 - `roundfix`:
-  - `trigger.typescript.roundfix`: Driving Roundfix review or Spec workflows for the TypeScript repository.
+  - `trigger.core.roundfix`: Driving Roundfix review or Spec workflows for the repository.
 - `security-best-practices`:
   - `trigger.backend.security-best-practices`: Reviewing backend implementation against security practices.
 - `security-threat-model`:

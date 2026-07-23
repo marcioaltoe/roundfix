@@ -6,6 +6,7 @@ Boundary IN: context_setup.py CLI, bundled assets, temporary repository files.
 Boundary OUT: Makefile orchestration and embedded skill synchronization checks.
 """
 
+import hashlib
 import json
 import sys
 import tempfile
@@ -17,7 +18,7 @@ SKILL_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = SKILL_ROOT / "scripts" / "context_setup.py"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from test_apply import BASE_DECISIONS, run_apply, run_audit  # noqa: E402
+from test_apply import BASE_DECISIONS, run_apply, run_audit, run_context_setup  # noqa: E402
 from test_audit import (  # noqa: E402
     install_profile_skills,
     run_audit as run_fixture_audit,
@@ -40,9 +41,9 @@ from context_setup import render_skill_dispatch  # noqa: E402
 
 
 SUPPORTED_PROFILES = [
-    "typescript-bun-monorepo",
     "go-cli-tui",
     "rust-cli",
+    "standard-typescript-monorepo",
 ]
 
 
@@ -66,7 +67,7 @@ class ProfileMacroFlowTests(unittest.TestCase):
             render_standard_profile_snapshot(second),
         )
         self.assertEqual(
-            set(SUPPORTED_PROFILES) | {"standard-typescript-monorepo"},
+            set(SUPPORTED_PROFILES),
             set(catalog.profiles),
         )
 
@@ -119,7 +120,7 @@ class ProfileMacroFlowTests(unittest.TestCase):
                         else BASE_DECISIONS
                     )
 
-                    first_apply = run_apply(repo, profile_id, decisions)
+                    first_apply = run_profile_apply(repo, profile_id, decisions)
                     install_profile_skills(repo, profile_id)
                     assert_profile_formatter_canonical(
                         repo,
@@ -128,7 +129,7 @@ class ProfileMacroFlowTests(unittest.TestCase):
                     )
                     clean_audit = run_audit(repo)
                     after_audit = snapshot_files(repo)
-                    second_apply = run_apply(repo, profile_id, [])
+                    second_apply = run_profile_apply(repo, profile_id, [])
 
                     self.assertEqual(first_apply.returncode, 0, first_apply.stderr)
                     self.assertEqual(clean_audit.returncode, 0, clean_audit.stderr)
@@ -138,7 +139,7 @@ class ProfileMacroFlowTests(unittest.TestCase):
     def test_supported_profiles_cover_representative_decision_combinations(self):
         cases = [
             (
-                "typescript-bun-monorepo",
+                "standard-typescript-monorepo",
                 decisions_with(
                     domain_layout="multi-context",
                     triage_external=True,
@@ -176,11 +177,11 @@ class ProfileMacroFlowTests(unittest.TestCase):
                     repo = Path(temp_dir)
                     prepare_repository_owned_contracts(repo, profile_id)
 
-                    first_apply = run_apply(repo, profile_id, decisions)
+                    first_apply = run_profile_apply(repo, profile_id, decisions)
                     install_profile_skills(repo, profile_id)
                     clean_audit = run_audit(repo)
                     after_audit = snapshot_files(repo)
-                    second_apply = run_apply(repo, profile_id, [])
+                    second_apply = run_profile_apply(repo, profile_id, [])
 
                     self.assertEqual(first_apply.returncode, 0, first_apply.stderr)
                     self.assertEqual(clean_audit.returncode, 0, clean_audit.stderr)
@@ -207,7 +208,7 @@ class ProfileMacroFlowTests(unittest.TestCase):
                         "repository.extension.enabled",
                     ]:
                         self.assertIn(decision_id, manifest["decisions"])
-                    if profile_id == "typescript-bun-monorepo":
+                    if profile_id == "standard-typescript-monorepo":
                         self.assertIn("macro-backend", generated)
                         self.assertIn("macro-design", generated)
 
@@ -225,7 +226,7 @@ class ProfileMacroFlowTests(unittest.TestCase):
                         verification_gate=verification,
                     )
 
-                    applied = run_apply(repo, profile_id, decisions)
+                    applied = run_profile_apply(repo, profile_id, decisions)
 
                     self.assertEqual(applied.returncode, 0, applied.stderr)
                     instructions = (repo / "docs" / "agents" / "agent-instructions.md").read_text(
@@ -270,27 +271,27 @@ class ProfileMacroFlowTests(unittest.TestCase):
                 with tempfile.TemporaryDirectory() as temp_dir:
                     repo = Path(temp_dir)
                     prepare_repository_owned_contracts(repo, profile_id)
-                    applied = run_apply(repo, profile_id, BASE_DECISIONS)
+                    applied = run_profile_apply(repo, profile_id, BASE_DECISIONS)
                     self.assertEqual(applied.returncode, 0, applied.stderr)
                     root = repo / "AGENTS.md"
                     extension = "\nRepository-authored extension: keep this byte-for-byte.\n"
                     root.write_text(root.read_text(encoding="utf-8") + extension, encoding="utf-8")
                     before = snapshot_files(repo)
 
-                    reapplied = run_apply(repo, profile_id, [])
+                    reapplied = run_profile_apply(repo, profile_id, [])
 
                     self.assertEqual(reapplied.returncode, 0, reapplied.stderr)
                     self.assertEqual(snapshot_files(repo), before)
                     self.assertTrue(root.read_text(encoding="utf-8").endswith(extension))
 
-    def test_typescript_bun_single_context_monorepo_always_generates_monorepo_guide(self):
+    def test_standard_typescript_single_context_monorepo_always_generates_monorepo_guide(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = Path(temp_dir)
-            prepare_repository_owned_contracts(repo, "typescript-bun-monorepo")
+            prepare_repository_owned_contracts(repo, "standard-typescript-monorepo")
 
-            applied = run_apply(
+            applied = run_profile_apply(
                 repo,
-                "typescript-bun-monorepo",
+                "standard-typescript-monorepo",
                 decisions_with(domain_layout="single-context", autonomous=False),
             )
 
@@ -402,12 +403,71 @@ def generated_text(repo):
 
 
 def prepare_repository_owned_contracts(repo, profile_id):
-    if profile_id != "typescript-bun-monorepo":
+    if profile_id != "standard-typescript-monorepo":
         return
     (repo / "DESIGN.md").write_text(
         "# Repository-authored design contract\n",
         encoding="utf-8",
     )
+    http_path = repo / "docs" / "architecture" / "http-contract.json"
+    http_path.parent.mkdir(parents=True)
+    http_path.write_text('{"mode":"REST"}\n', encoding="utf-8")
+
+
+def run_profile_apply(repo, profile_id, decisions):
+    if profile_id != "standard-typescript-monorepo" or not decisions:
+        return run_apply(repo, profile_id, decisions)
+
+    http_bytes = (repo / "docs" / "architecture" / "http-contract.json").read_bytes()
+    document_decisions = []
+    for decision in decisions:
+        decision_id, _, raw_value = decision.partition("=")
+        value = {"true": True, "false": False}.get(raw_value, raw_value)
+        document_decisions.append({"id": decision_id, "value": value})
+    document_decisions.append(
+        {
+            "id": "http.contract",
+            "value": {
+                "mode": "REST",
+                "exceptions": [],
+                "source": {
+                    "path": "docs/architecture/http-contract.json",
+                    "digest": hashlib.sha256(http_bytes).hexdigest(),
+                },
+            },
+        }
+    )
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", encoding="utf-8") as handle:
+        json.dump(
+            {
+                "schemaVersion": "setup-context-driven/decisions/0.0.1",
+                "version": "0.0.1",
+                "decisions": document_decisions,
+            },
+            handle,
+        )
+        handle.flush()
+        args = [
+            "apply",
+            "--repo",
+            str(repo),
+            "--format",
+            "json",
+            "--profile",
+            profile_id,
+            "--decision-file",
+            handle.name,
+        ]
+        preview = run_context_setup(*args)
+        if preview.returncode != 3:
+            return preview
+        payload = json.loads(preview.stdout)
+        if not any(
+            finding["code"] == "plan.confirmation.required"
+            for finding in payload["findings"]
+        ):
+            return preview
+        return run_context_setup(*args, "--confirm-plan", payload["planDigest"])
 
 
 def run_audit_cli(repo, *extra_args):

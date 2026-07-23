@@ -16,17 +16,14 @@
     "crafting-effective-readmes",
     "diagnosing-bugs",
     "docker",
-    "exa-web-search",
     "feature-systems-pattern",
     "find-rules",
     "find-skills",
-    "firecrawl",
     "game-changing-features",
     "git-rebase",
     "humanizer",
     "onioncry",
     "refactoring-analysis",
-    "roundfix",
     "tdd",
     "to-prompt",
     "triage",
@@ -101,15 +98,6 @@
       ]
     },
     {
-      "skill": "exa-web-search",
-      "triggers": [
-        {
-          "id": "trigger.typescript.exa-web-search",
-          "when": "Researching an external TypeScript or Bun question after authoritative documentation is insufficient."
-        }
-      ]
-    },
-    {
       "skill": "feature-systems-pattern",
       "triggers": [
         {
@@ -133,15 +121,6 @@
         {
           "id": "trigger.typescript.find-skills",
           "when": "Discovering applicable skills for TypeScript repository work."
-        }
-      ]
-    },
-    {
-      "skill": "firecrawl",
-      "triggers": [
-        {
-          "id": "trigger.typescript.firecrawl",
-          "when": "Collecting external web material for a TypeScript product or integration question."
         }
       ]
     },
@@ -187,15 +166,6 @@
         {
           "id": "trigger.typescript.refactoring-analysis",
           "when": "Planning a behavior-preserving TypeScript refactor."
-        }
-      ]
-    },
-    {
-      "skill": "roundfix",
-      "triggers": [
-        {
-          "id": "trigger.typescript.roundfix",
-          "when": "Driving Roundfix review or Spec workflows for the TypeScript repository."
         }
       ]
     },

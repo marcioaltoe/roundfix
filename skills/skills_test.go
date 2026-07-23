@@ -173,6 +173,78 @@ func TestCheckValidatesRoundfixSkillArtifacts(t *testing.T) {
 	}
 }
 
+func TestOwnedSkillContractRejectsSetAndVersionDisagreement(t *testing.T) {
+	files, err := Files()
+	if err != nil {
+		t.Fatalf("read skill files: %v", err)
+	}
+
+	tests := []struct {
+		name      string
+		mutate    func([]string, []File) ([]string, []File)
+		wantMatch string
+	}{
+		{
+			name: "missing owned skill",
+			mutate: func(names []string, files []File) ([]string, []File) {
+				return names[1:], files
+			},
+			wantMatch: "missing owned skill",
+		},
+		{
+			name: "unexpected owned skill",
+			mutate: func(names []string, files []File) ([]string, []File) {
+				return append(names, "unexpected-owned"), append(files, File{
+					Skill: "unexpected-owned",
+					Path:  "unexpected-owned/SKILL.md",
+					Data:  []byte("---\nname: unexpected-owned\nmetadata:\n  version: 0.0.1\n---\n"),
+				})
+			},
+			wantMatch: "unexpected owned skill",
+		},
+		{
+			name: "duplicate owned skill",
+			mutate: func(names []string, files []File) ([]string, []File) {
+				return append(names, names[0]), files
+			},
+			wantMatch: "duplicate owned skill",
+		},
+		{
+			name: "owned version disagreement",
+			mutate: func(names []string, files []File) ([]string, []File) {
+				mutated := append([]File(nil), files...)
+				for index := range mutated {
+					if mutated[index].Path == "roundfix/SKILL.md" {
+						mutated[index].Data = bytes.Replace(
+							mutated[index].Data,
+							[]byte("version: 0.0.1"),
+							[]byte("version: 9.9.9"),
+							1,
+						)
+						break
+					}
+				}
+				return names, mutated
+			},
+			wantMatch: "metadata.version",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			names, mutatedFiles := test.mutate(Names(), files)
+			diagnostics := checkOwnedSkillBundle(names, mutatedFiles)
+			messages := make([]string, 0, len(diagnostics))
+			for _, diagnostic := range diagnostics {
+				messages = append(messages, diagnostic.Message)
+			}
+			if joined := strings.Join(messages, "\n"); !strings.Contains(joined, test.wantMatch) {
+				t.Fatalf("expected diagnostic containing %q, got %s", test.wantMatch, joined)
+			}
+		})
+	}
+}
+
 func TestCheckOpenAIManifestRequiresEntrypointAndRuntimeCommand(t *testing.T) {
 	diagnostics := checkOpenAIManifest("roundfix/agents/openai.yaml", []byte(`
 name: roundfix
@@ -290,17 +362,21 @@ func TestInstallCopiesSkillsToSupportedTargetDirectories(t *testing.T) {
 		t.Fatalf("expected three install targets, got %#v", result.Targets)
 	}
 	wantFiles := embeddedFileCount(t)
+	embeddedFiles, err := Files()
+	if err != nil {
+		t.Fatalf("read embedded files: %v", err)
+	}
 	for _, target := range result.Targets {
 		if target.Files != wantFiles {
 			t.Fatalf("expected %d files for %s, got %d", wantFiles, target.Target, target.Files)
 		}
-		for _, path := range []string{
-			"roundfix/SKILL.md",
-			"roundfix/agents/openai.yaml",
-			"write-prd/SKILL.md",
-		} {
-			if _, err := os.Stat(filepath.Join(target.Dir, path)); err != nil {
-				t.Fatalf("expected installed file %s for %s: %v", path, target.Target, err)
+		for _, file := range embeddedFiles {
+			installed, err := os.ReadFile(filepath.Join(target.Dir, file.Path))
+			if err != nil {
+				t.Fatalf("read installed file %s for %s: %v", file.Path, target.Target, err)
+			}
+			if !bytes.Equal(installed, file.Data) {
+				t.Fatalf("installed file %s for %s differs from trusted embedded bytes", file.Path, target.Target)
 			}
 		}
 	}

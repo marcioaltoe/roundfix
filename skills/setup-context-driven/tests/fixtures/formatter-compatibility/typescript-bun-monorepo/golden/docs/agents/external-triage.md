@@ -1,4 +1,4 @@
-<!-- setup-context-driven:begin id=guide.external-triage version=2 -->
+<!-- setup-context-driven:begin id=guide.external-triage version=0.0.1 -->
 
 # External triage
 

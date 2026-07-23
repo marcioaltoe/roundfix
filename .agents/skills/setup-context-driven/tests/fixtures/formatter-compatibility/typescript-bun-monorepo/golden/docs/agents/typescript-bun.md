@@ -1,4 +1,4 @@
-<!-- setup-context-driven:begin id=guide.typescript-bun version=3 -->
+<!-- setup-context-driven:begin id=guide.typescript-bun version=0.0.1 -->
 
 # TypeScript and Bun
 
@@ -14,7 +14,7 @@
 
 <!-- setup-context-driven:end id=guide.typescript-bun -->
 
-<!-- setup-context-driven:begin id=guide.bun version=2 -->
+<!-- setup-context-driven:begin id=guide.bun version=0.0.1 -->
 
 # Bun
 

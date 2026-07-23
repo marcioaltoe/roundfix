@@ -89,7 +89,11 @@ class SyncSetupsTests(unittest.TestCase):
             self.assertEqual(repeated.findings, [])
             self.assertEqual(snapshot_files(skill_root), after_update)
             snapshot = read_snapshot(skill_root, "go-cli")
-            self.assertEqual(snapshot["schemaVersion"], "setup-context-driven/setup-snapshot-v2")
+            self.assertEqual(
+                snapshot["schemaVersion"],
+                "setup-context-driven/setup-snapshot/0.0.1",
+            )
+            self.assertEqual(snapshot["version"], "0.0.1")
             self.assertEqual(snapshot["source"]["repository"], "example/skills")
             external = next(
                 skill for skill in snapshot["skills"] if skill["source"]["type"] == "github"

@@ -29,6 +29,25 @@ var skillNames = []string{
 	"archive-spec", "qa-gate", "evidence-gate",
 }
 
+const ownedSkillVersion = "0.0.1"
+
+var ownedSkillContract = map[string]string{
+	"roundfix":             ownedSkillVersion,
+	"write-idea":           ownedSkillVersion,
+	"write-prd":            ownedSkillVersion,
+	"write-techspec":       ownedSkillVersion,
+	"write-tasks":          ownedSkillVersion,
+	"setup-context-driven": ownedSkillVersion,
+	"implement-task":       ownedSkillVersion,
+	"implement-spec":       ownedSkillVersion,
+	"brainstorming":        ownedSkillVersion,
+	"council":              ownedSkillVersion,
+	"business-analyst":     ownedSkillVersion,
+	"archive-spec":         ownedSkillVersion,
+	"qa-gate":              ownedSkillVersion,
+	"evidence-gate":        ownedSkillVersion,
+}
+
 type File struct {
 	Skill string
 	Path  string
@@ -183,6 +202,15 @@ func Check() []Diagnostic {
 		"Reference Project",
 	}
 	var diagnostics []Diagnostic
+	files, err := Files()
+	if err != nil {
+		diagnostics = append(diagnostics, Diagnostic{
+			Path:    "skills",
+			Message: fmt.Sprintf("read owned skill bundle: %v", err),
+		})
+	} else {
+		diagnostics = append(diagnostics, checkOwnedSkillBundle(skillNames, files)...)
+	}
 
 	// The operational roundfix skill carries a strict contract: required
 	// wording, Roundfix branding, and a valid OpenAI manifest.
@@ -258,9 +286,8 @@ func Check() []Diagnostic {
 		}
 	}
 
-	// The authorial workflow skills get structural validation only: a SKILL.md
-	// that parses with a name and carries no reference-project branding. Their
-	// generic authorial language and independent versions never trip the check.
+	// Authorial workflow skills also keep their generic language and branding
+	// checks after the exact owned-set and version contract above.
 	for _, skill := range skillNames {
 		if skill == "roundfix" {
 			continue
@@ -294,25 +321,110 @@ func Check() []Diagnostic {
 	return diagnostics
 }
 
-// frontmatterName returns the name field from a SKILL.md YAML frontmatter block,
-// or "" when there is none.
-func frontmatterName(text string) string {
+func checkOwnedSkillBundle(names []string, files []File) []Diagnostic {
+	var diagnostics []Diagnostic
+	declared := make(map[string]int, len(names))
+	for _, name := range names {
+		declared[name]++
+		if declared[name] > 1 {
+			diagnostics = append(diagnostics, Diagnostic{
+				Path:    name,
+				Message: fmt.Sprintf("duplicate owned skill %q", name),
+			})
+		}
+		if _, ok := ownedSkillContract[name]; !ok {
+			diagnostics = append(diagnostics, Diagnostic{
+				Path:    name,
+				Message: fmt.Sprintf("unexpected owned skill %q", name),
+			})
+		}
+	}
+	for name := range ownedSkillContract {
+		if declared[name] == 0 {
+			diagnostics = append(diagnostics, Diagnostic{
+				Path:    name,
+				Message: fmt.Sprintf("missing owned skill %q", name),
+			})
+		}
+	}
+
+	filesByPath := make(map[string][]byte, len(files))
+	for _, file := range files {
+		if _, exists := filesByPath[file.Path]; exists {
+			diagnostics = append(diagnostics, Diagnostic{
+				Path:    file.Path,
+				Message: "duplicate owned skill artifact",
+			})
+			continue
+		}
+		filesByPath[file.Path] = file.Data
+	}
+	for name, version := range ownedSkillContract {
+		path := name + "/SKILL.md"
+		data, ok := filesByPath[path]
+		if !ok {
+			diagnostics = append(diagnostics, Diagnostic{
+				Path:    path,
+				Message: "missing owned SKILL.md",
+			})
+			continue
+		}
+		metadata, ok := parseSkillFrontmatter(string(data))
+		if !ok {
+			diagnostics = append(diagnostics, Diagnostic{
+				Path:    path,
+				Message: "SKILL.md frontmatter is invalid",
+			})
+			continue
+		}
+		if strings.TrimSpace(metadata.Name) != name {
+			diagnostics = append(diagnostics, Diagnostic{
+				Path:    path,
+				Message: fmt.Sprintf("frontmatter name %q does not match skill directory %q", metadata.Name, name),
+			})
+		}
+		if strings.TrimSpace(metadata.Metadata.Version) != version {
+			diagnostics = append(diagnostics, Diagnostic{
+				Path:    path,
+				Message: fmt.Sprintf("metadata.version must be %s", version),
+			})
+		}
+	}
+	return diagnostics
+}
+
+type skillFrontmatter struct {
+	Name     string `yaml:"name"`
+	Metadata struct {
+		Version string `yaml:"version"`
+	} `yaml:"metadata"`
+}
+
+func parseSkillFrontmatter(text string) (skillFrontmatter, bool) {
+	var metadata skillFrontmatter
 	trimmed := strings.TrimSpace(text)
 	if !strings.HasPrefix(trimmed, "---") {
-		return ""
+		return metadata, false
 	}
 	rest := strings.TrimPrefix(trimmed, "---")
 	end := strings.Index(rest, "\n---")
 	if end < 0 {
+		return metadata, false
+	}
+	if err := yaml.Unmarshal([]byte(rest[:end]), &metadata); err != nil {
+		return skillFrontmatter{}, false
+	}
+	return metadata, true
+}
+
+// frontmatterName returns the name field from a SKILL.md YAML frontmatter block,
+// or "" when there is none.
+func frontmatterName(text string) string {
+	metadata, ok := parseSkillFrontmatter(text)
+	if !ok {
 		return ""
 	}
-	var meta struct {
-		Name string `yaml:"name"`
-	}
-	if err := yaml.Unmarshal([]byte(rest[:end]), &meta); err != nil {
-		return ""
-	}
-	return strings.TrimSpace(meta.Name)
+	return strings.TrimSpace(metadata.Name)
 }
 
 // Recommended returns the externally-managed skills (from skills-lock.json) that

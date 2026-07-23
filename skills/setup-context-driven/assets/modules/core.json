@@ -11,10 +11,13 @@
     "context7",
     "conventional-commits",
     "evidence-gate",
+    "exa-web-search",
+    "firecrawl",
     "github-pr-workflow",
     "handoff",
     "no-workarounds",
     "review",
+    "roundfix",
     "systematic-debugging",
     "tech-writer",
     "testing-boss"
@@ -57,6 +60,24 @@
       ]
     },
     {
+      "skill": "exa-web-search",
+      "triggers": [
+        {
+          "id": "trigger.core.exa-web-search",
+          "when": "Researching a broad external question after local code and authoritative documentation are insufficient."
+        }
+      ]
+    },
+    {
+      "skill": "firecrawl",
+      "triggers": [
+        {
+          "id": "trigger.core.firecrawl",
+          "when": "Collecting structured external web material when the recommended Firecrawl capability is available."
+        }
+      ]
+    },
+    {
       "skill": "github-pr-workflow",
       "triggers": [
         {
@@ -89,6 +110,15 @@
         {
           "id": "trigger.core.review",
           "when": "Reviewing a change against repository standards and its originating contract."
+        }
+      ]
+    },
+    {
+      "skill": "roundfix",
+      "triggers": [
+        {
+          "id": "trigger.core.roundfix",
+          "when": "Driving Roundfix review or Spec workflows for the repository."
         }
       ]
     },

@@ -17,6 +17,7 @@ from test_audit import snapshot_files  # noqa: E402
 ENTRY_DECISIONS = {
     "language.generated",
     "verification.gate",
+    "http.contract",
     "spec.scaffold",
     "domain.layout",
     "triage.external",
@@ -170,7 +171,7 @@ class PreviewCliTests(unittest.TestCase):
                 "--format",
                 "json",
                 "--profile",
-                "typescript-bun-monorepo",
+                "standard-typescript-monorepo",
             )
 
             self.assertEqual(result.returncode, 3, result.stderr)
@@ -186,7 +187,7 @@ class PreviewCliTests(unittest.TestCase):
                 set(payload["findings"][0]),
                 {"code", "severity", "path", "managedId", "message", "action"},
             )
-            self.assertEqual(payload["selection"]["profile"], "typescript-bun-monorepo")
+            self.assertEqual(payload["selection"]["profile"], "standard-typescript-monorepo")
             self.assertEqual(payload["selection"]["setup"], "typescript-bun")
             self.assertIn(
                 {"id": "core", "state": "active"},
@@ -220,7 +221,7 @@ class PreviewCliTests(unittest.TestCase):
                 "--format",
                 "json",
                 "--profile",
-                "typescript-bun-monorepo",
+                "standard-typescript-monorepo",
             )
             after_audit = snapshot_files(repo)
             apply = run_context_setup(
@@ -230,7 +231,7 @@ class PreviewCliTests(unittest.TestCase):
                 "--format",
                 "json",
                 "--profile",
-                "typescript-bun-monorepo",
+                "standard-typescript-monorepo",
             )
 
             self.assertEqual(audit.returncode, 3, audit.stderr)
@@ -253,7 +254,7 @@ class PreviewCliTests(unittest.TestCase):
                 "--format",
                 "json",
                 "--profile",
-                "typescript-bun-monorepo",
+                "standard-typescript-monorepo",
             )
             second = run_context_setup(
                 "audit",
@@ -262,7 +263,7 @@ class PreviewCliTests(unittest.TestCase):
                 "--format",
                 "json",
                 "--profile",
-                "typescript-bun-monorepo",
+                "standard-typescript-monorepo",
             )
 
             self.assertEqual(first.returncode, 3, first.stderr)

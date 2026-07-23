@@ -1,4 +1,4 @@
-<!-- setup-context-driven:begin id=guide.domain version=3 -->
+<!-- setup-context-driven:begin id=guide.domain version=0.0.1 -->
 
 # Domain docs
 
