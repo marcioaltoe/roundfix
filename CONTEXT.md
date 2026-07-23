@@ -414,6 +414,10 @@ _Avoid_: Project-specific profile, generic TypeScript profile, sample template
 A profile-declared skill, tool, dependency, workspace, or repository contract whose required, recommended, or optional status is evaluated from explicit local evidence.
 _Avoid_: Assumed stack, installed package list, inferred readiness
 
+**Skill Activation**:
+A declarative mapping from one stable work trigger to one exact required Agent Skill bundle, optionally conditioned on a selected Repository Capability.
+_Avoid_: Suggested skill, inferred bundle, partial activation
+
 **Decision Plan**:
 The resolved setup proposal produced after every required setup decision has an answer; it is the basis for authorizing setup changes.
 _Avoid_: Setup questionnaire, decision draft, configuration prompt

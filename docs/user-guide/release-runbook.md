@@ -30,8 +30,44 @@ The plan's state controls what a generic release request authorizes:
   minor, major, or version-zero breaking version.
 - `no_release` means there is no release to cut for the committed range.
 
-After the plan's required decision is satisfied, keep using the tag-triggered
-publication workflow below.
+For ordinary range planning, after the plan's required decision is satisfied,
+keep using the tag-triggered publication workflow below.
+
+## Planning the 0.0.1 release history reset
+
+The exceptional `0.0.1` reset starts with a clean checkout whose `HEAD` is
+committed, then runs:
+
+```bash
+roundfix release plan --reset-to v0.0.1
+```
+
+This mode is read-only. It inventories every local and remote stable tag and
+every GitHub Release through complete pagination, sorts the
+inventory deterministically, and binds the reset target, committed target
+revision, tags, and releases to `planDigest`. Text output lists every immutable
+identity and target commit. Use `--format json` for the
+`roundfix.release-plan/0.0.1` structured result.
+
+`--reset-to` cannot be combined with `--from`, `--to`, `--impact`, or
+`--reason`. A complete reset plan returns state `approval_required`, prints the
+approval question, and exits `3`. Invalid flags, a dirty tree, an invalid
+target, incomplete local or remote tag access, or incomplete GitHub Release
+inventory exits `2` without a partial plan. The command creates no Run, reads
+no Roundfix configuration, and never edits files, refs, tags, remotes,
+packages, releases, or configuration.
+
+Exit `3` is the planning boundary, not authorization to delete anything. The
+Release Plan Command exposes no tag or GitHub Release deletion action. Review
+the complete inventory and digest, then stop. Implementation and QA may inspect
+this plan, but they must not mutate release history.
+
+After implementation and QA pass, rerun the same command to obtain a fresh
+inventory and `planDigest`. If the inventory or target changed, the new digest
+replaces the earlier one. Any later tag or GitHub Release deletion is a
+separate destructive release operation and requires explicit human approval
+for that fresh plan. Approval of setup, implementation, QA, a prior plan, or
+the public CLI's printed question does not grant deletion authority.
 
 ## Agent Selection CLI contract correction
 

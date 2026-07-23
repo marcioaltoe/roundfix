@@ -16,17 +16,75 @@ Configure a repository for CONTEXT-driven development through the portable asset
 
 ## Asset map
 
-- `assets/profiles/` selects a supported profile and canonical skill setup snapshot: `typescript-bun-monorepo`, `go-cli-tui`, or `rust-cli`.
+- `assets/profiles/` selects a supported profile and canonical skill setup snapshot: `standard-typescript-monorepo`, `go-cli-tui`, or `rust-cli`.
 - `assets/source-baselines/` publishes strict `0.0.1` project-agnostic governed corpora. Each independent index pins every Normative Clause, recommendation, and Operational Contract; `accounting.json` records individual retained or rejected prior clauses.
 - `assets/coverage.json` defines stable semantic coverage categories. A profile's `requiredRules` must prove every universal and applicable category; coverage is not a line-count target.
 - `assets/modules/` owns compact root pointers, supporting guides, portable rule guidance, required decisions, exact `requiredSkills`/`skillDispatch` mappings, and typed references.
 - `assets/templates/` stores generated repository content. Root blocks must stay short and point to `docs/agents/` guides.
-- `assets/setups/` stores `setup-context-driven/setup-snapshot-v2` records. External skills carry a GitHub repository, immutable commit, safe source path, and complete-tree digest; Roundfix-owned skills remain separate.
+- `assets/setups/` stores `setup-context-driven/setup-snapshot/0.0.1` records. External skills carry a GitHub repository, immutable commit, safe source path, and complete-tree digest; Roundfix-owned skills remain separate.
 - `references/` is workflow guidance for agents, not generated output. Maintainers must read [`references/asset-maintenance.md`](references/asset-maintenance.md) before changing catalog or snapshot data.
 
 The baseline owns only declared managed blocks, setup-owned guides, the Setup Manifest, and portable workflow rules. Repository-authored architecture and policy remain outside setup ownership. In particular, frontend guidance can require a repository-owned `DESIGN.md`, but setup never generates project-specific architecture.
 
 Source Baseline carriers keep root instructions compact and render full guide fragments. Corpus validation rejects denied project tokens, machine-specific paths, and copied generated managed markers before any carrier can be planned.
+
+## Standard TypeScript Monorepo Profile
+
+Select `standard-typescript-monorepo` only for the exact
+`packages/frontend` and `packages/backend` topology. Required Repository
+Capabilities are TypeScript, Bun, Turborepo, Vite, React, Hono, Drizzle, Zod,
+Tailwind, shadcn, TanStack Query, TanStack Router, Better Auth, PostgreSQL,
+LogTape, Oxlint, Oxfmt, and Vitest. Frontend code uses systems with a public
+system boundary and direct internal imports. Backend code uses `domain`,
+`application`, and `infrastructure` layers, thin HTTP handlers,
+HTTP-independent use cases, and Drizzle-owned persistence. Do not invent
+generic `modules` or a `services` layer. Inngest and Docker are optional
+modules.
+
+The profile has no default HTTP policy. Reuse a supported repository-owned
+HTTP Contract Decision or ask for exactly `REST` or `Post-only`. Each ordered
+exception records `scope`, non-empty unique uppercase `methods`, `owner`, and
+`reason`; source evidence records a safe repository-relative `path` and its
+lowercase SHA-256 `digest`. Hono capability cannot answer this decision.
+
+Missing required Repository Capabilities block readiness. A present capability
+with an absent or incompatible version stays unresolved until the maintainer
+answers the reported version decision. Missing recommended capabilities emit
+one `capability.recommended.missing` warning with an explanation and next
+action, but do not block. Optional modules activate only from local evidence or
+an explicit repository contract. Setup never installs the application stack,
+runs repository scripts, or connects to PostgreSQL.
+
+Exact activation bundles for this profile are:
+
+- `trigger.production-code` → `bundle.production-code`:
+  `coding-guidelines`, `clean-code`, `solid`
+- `trigger.frontend.react-feature` → `bundle.frontend-react`:
+  `react`, `react-best-practices`, `react-composition-patterns`
+- `trigger.frontend.ui-quality` → `bundle.frontend-ui-quality`:
+  `frontend-design`, `interaction-design`, `interface-design`,
+  `fixing-accessibility`, `wcag-audit-patterns`, `web-design-guidelines`
+- `trigger.hono.endpoint` → `bundle.hono-endpoint`:
+  `hono-api-best-practices`, `hono`, `zod`
+- `trigger.hono.endpoint-persistence` →
+  `bundle.hono-endpoint-persistence`: `hono-api-best-practices`, `hono`,
+  `zod`, `drizzle-orm`
+- `trigger.testing` → `bundle.testing`: `testing-boss`, `tdd`, `vitest`
+- `trigger.debugging` → `bundle.debugging`: `systematic-debugging`,
+  `diagnosing-bugs`, `no-workarounds`
+- `trigger.security` → `bundle.security`: `security-best-practices`,
+  `security-threat-model`
+- `trigger.qa` → `bundle.qa`: `qa-gate`, `evidence-gate`
+- `trigger.delivery` → `bundle.delivery`: `conventional-commits`,
+  `github-pr-workflow`
+
+Context7 and Exa are required universal Repository Capabilities. Firecrawl,
+`rtk`, and `rg` are recommended. Search local repository code and
+documentation first, using `rg` when available. Use Context7 for authoritative
+current documentation. If it cannot answer an external question, use Exa for
+three to seven varied searches and verify conclusions against primary sources.
+Use Firecrawl only for structured external material. External research never
+substitutes for local code search.
 
 ## Audit-first workflow
 
@@ -61,6 +119,8 @@ Question routing:
 - `runtime.backend` — ask for the backend/default implementation runtime and model.
 - `runtime.design` — ask for the design, UI, UX, or frontend runtime and model.
 - `verification.gate` — ask for the command agents must run before completion claims.
+- `http.contract` — reuse supported typed evidence or ask for `REST` or
+  `Post-only` plus ordered typed exceptions and source evidence.
 - `language.generated` — generated repository content must be `English`.
 - `secondbrain.enabled` — ask whether read-only local Secondbrain guidance must be generated.
 - `adoption.*` — ask only after showing the existing unmarked file that would become setup-owned.
@@ -195,6 +255,45 @@ Secondbrain is opt-in through `secondbrain.enabled=true`. When enabled, apply cr
 
 Generated Secondbrain guidance must remain read-only. It must require index-first lookup, `qmd query`, project-mirror caution, file citations, Hermes escalation for durable updates, and secret safety. It must forbid writes to the Secondbrain, `raw/`, and `projects/*/mirror/`.
 
+## 0.0.1 ownership boundary
+
+Roundfix-owned release and setup surfaces share version `0.0.1`: the CLI and
+npm packages; Context-Driven Baseline and Source Baseline assets; setup
+schemas, manifests, profiles, modules, decisions, templates, setup snapshots,
+managed artifacts, formatter provenance, compatibility fixtures, and markers;
+all Roundfix-owned canonical and distributed skills; the Release Plan JSON
+schema; and the restarted changelog.
+
+Do not reset operational, upstream, or third-party contracts. User Config,
+Project Config, Runs, Run Database rows, and existing operational state remain
+intact. The Run Database `PRAGMA user_version`, external `skills-lock.json`
+schema, upstream-managed skill content and metadata versions, third-party
+protocol versions, Git history, Specs, and accepted or partially superseded
+ADRs retain their owners and meanings. Historical tags and GitHub Releases are
+handled only by the separate read-only Release Plan workflow and a separately
+approved post-QA release operation.
+
 ## Completion
 
-Report every remaining finding by code, managed identity, and path. Do not claim setup is complete without a fresh resolved audit at exit `0`. The full sequence is audit, decision resolution, complete plan review, exact digest confirmation, apply, final audit, and—only when explicitly requested—previewed and digest-confirmed drift restoration followed by another audit.
+Report every remaining finding by code, managed identity, and path. Do not
+claim setup is complete without a fresh resolved audit at exit `0` and an empty
+reapply.
+
+For a repository setup or Baseline Readoption, the complete sequence is:
+
+1. Run the initial read-only audit.
+2. Resolve scalar and structured decisions in
+   `setup-context-driven/decisions/0.0.1` decision files, including every
+   Source Baseline Entry disposition when Readoption is active.
+3. Rerun audit and review the complete digest-bound Decision Plan and Change
+   Plan as the mutation preview.
+4. Ask for confirmation of the exact `planDigest`.
+5. Run apply with the same profile and decisions plus
+   `--confirm-plan <planDigest>`.
+6. Run the repository's selected formatter and Verification.
+7. Rerun the same resolved audit; require exit `0`.
+8. Rerun apply without confirmation; require an empty plan, exit `0`, and no
+   generated delta.
+
+Do not claim completion from an audit alone. Formatter, Verification, the
+post-format audit, and the empty reapply are required evidence.

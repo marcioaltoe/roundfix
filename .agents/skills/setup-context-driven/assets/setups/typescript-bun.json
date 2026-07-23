@@ -8,7 +8,7 @@
     "ref": "236847f6956134bf468abb641bac0493a899bca5",
     "path": "setups/typescript-bun.txt"
   },
-  "digest": "30206969ad93415ab160dd897c2eee7aca2925dcb3e9ebf97077efb3bc48108c",
+  "digest": "2c9d1c0e08634ec60691118eb032a34f658d8bdcee5040b6947553ef02733f02",
   "activationBundles": [
     {
       "id": "bundle.debugging",
@@ -112,7 +112,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "bd96be270bea02474e60cfa0c7e2528e2eb45129b4ef1355aedb53bab66456d3"
+      "contentDigest": "adf70c6bc4d550b2d3cabf69a3d2d4303a98ee589f3c385002561d8c1296993b"
     },
     {
       "name": "turborepo",
@@ -1089,7 +1089,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "63d96d848c2950623dabd54e010ee31b1564cd09020b261f4d19354cd0aba766"
+      "contentDigest": "4a4dd9136f11bc0fa85992b731eecaba8306ec5079ce910c64427be2099e3b43"
     },
     {
       "name": "the-fool",

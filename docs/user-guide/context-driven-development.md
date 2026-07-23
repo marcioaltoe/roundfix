@@ -56,37 +56,277 @@ ad-hoc plan.
 
 ## Configure or audit the baseline
 
-The `setup-context-driven` skill manages the portable Context-Driven Baseline: declared root blocks, setup-owned guides, and `docs/agents/setup-context.json`. It preserves unmarked repository content, does not generate project-specific architecture, and never removes extra installed skills.
+The `setup-context-driven` skill manages the portable Context-Driven Baseline:
+declared root blocks, setup-owned guides, and
+`docs/agents/setup-context.json`. A Source Baseline is the immutable input
+corpus and identity. Its independent Normative Clause Manifest accounts for
+every Normative Clause, recommendation, and Operational Contract. The Setup
+Manifest records the selected profile, modules, Repository Capabilities,
+decisions, and managed artifacts.
+
+Setup preserves unmarked repository content, does not generate
+project-specific architecture, and never removes extra installed skills.
+Repository-authored policy belongs in a recognized typed document or in
+Repository-Specific Normative Rules, not in the portable Source Baseline.
+
+### Standard TypeScript Monorepo Profile
+
+Select `standard-typescript-monorepo` only when the repository uses both
+required workspaces:
+
+- `packages/frontend`
+- `packages/backend`
+
+The profile requires TypeScript, Bun, Turborepo, Vite, React, Hono, Drizzle,
+Zod, Tailwind, shadcn, TanStack Query, TanStack Router, Better Auth,
+PostgreSQL, LogTape, Oxlint, Oxfmt, and Vitest. Setup proves these Repository
+Capabilities from local package, workspace, executable, installed-skill, and
+repository-contract evidence. It does not install the stack, connect to
+PostgreSQL, or execute repository scripts.
+
+Frontend feature code uses systems with a public system boundary; code inside
+one system imports its internal modules directly. Backend code uses `domain`,
+`application`, and `infrastructure` layers. HTTP handlers stay thin, use cases
+stay HTTP-independent, and Drizzle owns persistence. The profile does not
+create generic `modules` or a `services` layer. Inngest and Docker are
+optional modules.
+
+Each repository must persist an HTTP Contract Decision with one mode:
+
+- `REST`
+- `Post-only`
+
+The decision has no default. Each exception is ordered and records `scope`,
+`methods`, `owner`, and `reason`. Setup can reuse a supported typed repository
+document and its digest; otherwise the maintainer supplies the decision in a
+decision file. Hono capability never determines HTTP policy.
+
+Each Repository Capability is required, recommended, or optional. Required
+Repository Capabilities block readiness when absent. A present capability with
+no usable version remains an unresolved decision.
+Recommended-capability gaps emit one non-blocking
+`capability.recommended.missing` warning with an explanation and next action.
+Optional modules activate only when local evidence or an explicit repository
+contract selects them.
+
+Context7 and Exa are required Repository Capabilities. Firecrawl, `rtk`, and
+`rg` are recommended. Search local repository code and documentation first,
+using `rg` when available. Use Context7 for authoritative current library,
+framework, runtime, and tool documentation. If that cannot answer an external
+question, use Exa for three to seven varied searches, then verify conclusions
+against primary sources. Firecrawl can collect structured external material,
+but external research never substitutes for local code search.
+
+The profile installs exact Skill Activation bundles:
+
+| Trigger ID | Bundle ID | Required skills |
+| --- | --- | --- |
+| `trigger.production-code` | `bundle.production-code` | `coding-guidelines`, `clean-code`, `solid` |
+| `trigger.frontend.react-feature` | `bundle.frontend-react` | `react`, `react-best-practices`, `react-composition-patterns` |
+| `trigger.frontend.ui-quality` | `bundle.frontend-ui-quality` | `frontend-design`, `interaction-design`, `interface-design`, `fixing-accessibility`, `wcag-audit-patterns`, `web-design-guidelines` |
+| `trigger.hono.endpoint` | `bundle.hono-endpoint` | `hono-api-best-practices`, `hono`, `zod` |
+| `trigger.hono.endpoint-persistence` | `bundle.hono-endpoint-persistence` | `hono-api-best-practices`, `hono`, `zod`, `drizzle-orm` |
+| `trigger.testing` | `bundle.testing` | `testing-boss`, `tdd`, `vitest` |
+| `trigger.debugging` | `bundle.debugging` | `systematic-debugging`, `diagnosing-bugs`, `no-workarounds` |
+| `trigger.security` | `bundle.security` | `security-best-practices`, `security-threat-model` |
+| `trigger.qa` | `bundle.qa` | `qa-gate`, `evidence-gate` |
+| `trigger.delivery` | `bundle.delivery` | `conventional-commits`, `github-pr-workflow` |
 
 Start with a local, read-only audit:
 
 ```bash
-rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py audit --repo <repo> --profile <profile-id> --format json
+rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py audit --repo <repo> --profile standard-typescript-monorepo --format json
 ```
 
-The response uses `setup-context-driven/audit-v1`. Read the selected profile, ordered modules, canonical setup, findings, and complete `plannedChanges`. Each planned change includes `action`, `path`, `managedId`, `state`, `reason`, `beforeDigest`, and `afterDigest`, plus `condition`, `fromPath`, or `referenceEdits` when applicable. Findings name `code`, `managedId`, `path`, `message`, `action`, and structured `remediation` when available.
+The response uses `setup-context-driven/audit-v1`. Read the selected profile,
+ordered modules, canonical setup, `capabilities`, `sourceBaseline`,
+`sourceEntries`, findings, and complete `plannedChanges`. Each planned change
+includes `action`, `path`, `managedId`, `state`, `reason`, `beforeDigest`, and
+`afterDigest`, plus `condition`, `fromPath`, or `referenceEdits` when
+applicable. Findings name `code`, `managedId`, `path`, `message`, `action`, and
+structured `remediation` when available.
 
-Resolve each `decision.required` finding one at a time, then rerun audit with the complete decision set:
+Resolve each `decision.required` finding one at a time. Scalar answers can use
+repeatable `--decision <id=value>`. Structured decisions use a repeatable
+`--decision-file <path>`. A decision file has this strict shape:
+
+```json
+{
+  "schemaVersion": "setup-context-driven/decisions/0.0.1",
+  "version": "0.0.1",
+  "decisions": [
+    {
+      "id": "verification.gate",
+      "value": "<verification-command>"
+    },
+    {
+      "id": "http.contract",
+      "value": {
+        "mode": "REST",
+        "exceptions": [],
+        "source": {
+          "path": "docs/architecture/http-contract.json",
+          "digest": "<lowercase-sha256>"
+        }
+      }
+    }
+  ]
+}
+```
+
+The ordered `decisions` array contains exact `{id, value}` records. An HTTP
+Contract Decision contains only `mode`, ordered `exceptions`, and `source`.
+`source.path` is repository-relative and `source.digest` binds the current
+typed source. Use `Post-only` instead of `REST` when that is the repository's
+policy. Conflicting scalar answers across `--decision` and decision files are
+invalid input.
+
+`verification.gate` is required for every profile and records the repository's
+authoritative Verification command. Rerun audit with the complete decision
+set:
 
 ```bash
-rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py audit --repo <repo> --profile <profile-id> --format json --decision <id=value> ...
+rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py audit --repo <repo> --profile standard-typescript-monorepo --format json --decision-file <decision-file>
 ```
 
-`verification.gate` is required for every profile and records the repository's authoritative Verification command. A fully resolved plan carries `planDigest`. Review the entire plan and confirm that exact digest before apply:
+Only a fully resolved Decision Plan has an authorizable `planDigest`. Review
+the complete Change Plan, including capabilities, source entries, dispositions,
+Repository-Specific Normative Rules bytes, retention accounting, and every
+planned file change. Preview apply without mutation:
 
 ```bash
-rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py apply --repo <repo> --profile <profile-id> --format json --decision <id=value> ... --confirm-plan <planDigest>
+rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py apply --repo <repo> --profile standard-typescript-monorepo --format json --decision-file <decision-file>
 ```
 
-Apply recomputes the plan. If repository bytes, decisions, the profile, or catalog content changed, it emits `plan.confirmation.stale`, exits `3`, and writes nothing; review the new plan and confirm its new digest. A non-empty apply without `--confirm-plan` emits `plan.confirmation.required`, exits `3`, and writes nothing. An empty plan exits `0` without confirmation. Audit and documentation apply use bundled assets only and remain local and network-free.
+A non-empty preview emits `plan.confirmation.required`, exits `3`, and writes
+nothing. Confirm only the exact returned digest:
 
-After apply, rerun the same resolved audit. A clean audit proves setup-owned semantic coverage, typed references, the authorized managed tree, and installed Repository Skill Set digests. It does not prove repository-authored architecture or policy completeness.
+```bash
+rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py apply --repo <repo> --profile standard-typescript-monorepo --format json --decision-file <decision-file> --confirm-plan <planDigest>
+```
+
+Apply recomputes the plan. If repository bytes, decisions, profile, or catalog
+content changed, it emits `plan.confirmation.stale`, exits `3`, and writes
+nothing. Review the recomputed plan and confirm its new digest. An empty plan
+exits `0` without confirmation. Audit and apply use bundled assets only and
+remain local and network-free.
+
+After apply, run the repository's selected formatter and Verification. Then
+rerun the same resolved audit and an unconfirmed reapply preview:
+
+```bash
+<formatter-command>
+<verification-command>
+rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py audit --repo <repo> --profile standard-typescript-monorepo --format json --decision-file <decision-file>
+rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py apply --repo <repo> --profile standard-typescript-monorepo --format json --decision-file <decision-file>
+```
+
+The final audit must exit `0`; the reapply preview must report no changes and
+exit `0` without confirmation. This audit → decisions → apply preview → exact
+confirmation → apply → formatter → Verification → audit → reapply sequence is
+the complete operating workflow. A clean audit proves setup-owned semantic
+coverage, typed references, the authorized managed tree, and installed
+Repository Skill Set digests. It does not prove repository-authored
+architecture or policy completeness.
+
+### Baseline Readoption
+
+An older or incompatible Setup Manifest starts Baseline Readoption. Setup does
+not interpret it as a clean install or permission to overwrite. The initial
+audit inventories bounded root and nested `AGENTS.md`, `CLAUDE.md`, and
+`docs/agents/` carriers. Every nonblank byte enters exactly one structural
+Source Baseline Entry with an ID, byte range, kind, digest, and opaque bytes.
+The scanner does not infer whether an entry is normative.
+
+Copy `sourceBaseline.id`, `sourceBaseline.digest`, and every ordered
+`sourceEntries` record from the fresh audit into the optional `readoption`
+object in the same decision file:
+
+```json
+{
+  "schemaVersion": "setup-context-driven/decisions/0.0.1",
+  "version": "0.0.1",
+  "decisions": [],
+  "readoption": {
+    "sourceBaseline": {
+      "id": "<source-baseline-id>",
+      "digest": "<lowercase-sha256>"
+    },
+    "dispositions": [
+      {
+        "entryId": "<source-entry-id>",
+        "entryDigest": "<lowercase-sha256>",
+        "classification": "normative-clause",
+        "disposition": "managed-entry",
+        "destination": {
+          "managedId": "<managed-entry-id>"
+        },
+        "reason": ""
+      }
+    ]
+  }
+}
+```
+
+Map every source entry exactly once. `classification` is one of
+`normative-clause`, `recommendation`, `operational-contract`, or
+`non-governed`. `disposition` is one of:
+
+- `managed-entry`: `destination` contains exactly `managedId`.
+- `repository-document`: `destination` contains a supported `documentType`,
+  safe repository-relative `path`, and current `digest`.
+- `repository-rules`: `destination` identifies
+  `docs/agents/repository-rules.md`, declares `documentType` as
+  `repository-rules`, and contains canonical base64 `proposedBytes` plus their
+  lowercase SHA-256 `digest`.
+- `rejected`: `destination` is `null` and `reason` is non-empty.
+
+A `non-governed` classification also requires its own reason. Missing,
+duplicate, unknown, stale, unsafe, or structurally invalid records block
+without writes. Source identity, ordered entries, classifications,
+destinations, reasons, proposed Repository-Specific Normative Rules bytes, and
+the complete Change Plan all contribute to `planDigest`.
+
+The first confirmed `repository-rules` write creates an unmarked,
+repository-owned file. Later setup runs require the typed target to exist but
+never compare, format, restore, rewrite, or remove its bytes. Complete
+Baseline Readoption through the same preview, exact confirmation, apply,
+formatter, Verification, audit, and reapply sequence above.
 
 ### Upgrade Retention Contract
 
 A baseline version transition is authorizable only after the Upgrade Retention Contract accounts for every previously managed mandatory clause. The Change Plan adds ordered `retentionAccounting` when the repository has a recognized source-baseline transition. Each entry reports `fromClause`, `enforcement`, a `retained`, `moved`, `replaced`, or `rejected` disposition, `targets`, and a recorded `reason`. Accepted targets must exist in the selected future artifact graph and preserve the clause's enforcement strength. This normative accounting contributes to `planDigest`, so changing only a transition mapping still invalidates an earlier confirmation.
 
 An unknown source baseline, unaccounted clause, unreachable target, or enforcement mismatch is a blocking finding: audit and apply exit `1` without writes. Use the finding code to correct the Setup Manifest identity or the canonical transition ledger, then rerun audit and review and confirm the complete new Change Plan. Do not infer an unknown baseline or patch generated Markdown around the failure. Decisions and missing or stale confirmation remain exit `3` and use the existing confirmation flow shown above.
+
+### The 0.0.1 version boundary
+
+`0.0.1` is the shared identity for Roundfix-owned release and setup surfaces:
+
+- the Roundfix CLI and its npm launcher and platform packages;
+- the Context-Driven Baseline, Source Baseline assets, schemas, manifests,
+  profiles, modules, decisions, templates, setup snapshots, managed artifacts,
+  formatter provenance, compatibility fixtures, and managed markers;
+- all Roundfix-owned distributed skills, including their canonical and embedded
+  copies;
+- the Release Plan JSON schema and restarted changelog.
+
+The reset does not erase or renumber operational, upstream, or third-party
+contracts:
+
+- User Config, Project Config, Runs, Run Database rows, and existing
+  operational state remain intact;
+- the Run Database `PRAGMA user_version` and external `skills-lock.json` schema
+  retain their operational meanings;
+- upstream-managed skill content and metadata versions remain owned by their
+  upstream source;
+- third-party protocol versions remain unchanged;
+- Git history, Specs, and accepted or partially superseded ADRs remain
+  authoritative.
+
+Historical tags and GitHub Releases are neither setup state nor permission to
+mutate remote history. Their separate read-only reset workflow is documented
+in the [release runbook](release-runbook.md#planning-the-001-release-history-reset).
 
 ### Repository ownership and delegation floor
 

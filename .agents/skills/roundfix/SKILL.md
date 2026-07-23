@@ -175,11 +175,38 @@ records the impact and reason, but it does not approve a resulting minor,
 major, or version-zero breaking version. State `no_release` means no release
 is required for the committed range.
 
-After the plan's required decision is satisfied, follow the repository release
-runbook. Preserve the existing tag-triggered workflow: validate the tag, keep
-artifact versions in agreement, publish npm packages through the release
-workflow, upload GitHub Release assets, and leave the Upgrade Command asset
-contract unchanged.
+For the exceptional `0.0.1` release-history reset, require a clean committed
+target and run:
+
+```bash
+roundfix release plan --reset-to v0.0.1
+```
+
+Reset mode is mutually exclusive with `--from`, `--to`, `--impact`, and
+`--reason`. It inventories every local and remote stable tag and every GitHub
+Release through complete pagination, sorts the inventory deterministically,
+and binds the reset target, target revision, tag identities, and Release
+identities to `planDigest`. Use `--format json` for the
+`roundfix.release-plan/0.0.1` result.
+
+A complete reset plan always returns `approval_required` with exit `3`. This is
+the read-only planning boundary: the command creates no Run, changes no files
+or refs, and exposes no tag or GitHub Release deletion action. Missing or
+partial inventory, a dirty tree, invalid flags, or an invalid target exits `2`
+without a partial plan.
+
+Review the complete inventory and stop. After implementation and QA pass,
+rerun the same command for a fresh inventory and digest. Any tag or GitHub
+Release deletion is a separate destructive release operation and requires
+explicit human approval for that fresh plan. Approval of setup,
+implementation, QA, an earlier plan, or the printed approval question does not
+grant deletion authority.
+
+For ordinary range planning, after the plan's required decision is satisfied,
+follow the repository release runbook. Preserve the existing tag-triggered
+workflow: validate the tag, keep artifact versions in agreement, publish npm
+packages through the release workflow, upload GitHub Release assets, and leave
+the Upgrade Command asset contract unchanged.
 
 ## Config compatibility
 
