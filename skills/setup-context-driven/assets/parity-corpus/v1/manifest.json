@@ -1,0 +1,127 @@
+{
+  "adoptionStates": [
+    "asset-sync",
+    "capability-refusal",
+    "formatter-composition",
+    "greenfield",
+    "preservation",
+    "profile-change",
+    "rollback",
+    "skill-restoration",
+    "skill-restoration-rollback",
+    "stale-input",
+    "unsafe-carrier",
+    "update"
+  ],
+  "artifacts": [
+    {
+      "bytes": 699916,
+      "path": "blobs.json",
+      "sha256": "dd0399eb90954f649be7b2302a0364b9cad6bc667fc9759d9f3828cf4c3bfcdd"
+    },
+    {
+      "bytes": 85164,
+      "path": "fixtures/asset-sync.json",
+      "sha256": "19d48917b75df4dfd26fdfd5422e575a4648ae0adb306e5a0e94acd76cc86865"
+    },
+    {
+      "bytes": 330239,
+      "path": "fixtures/atomic-rollback.json",
+      "sha256": "891c669a6169b90157592f0191c739162252c049175847cbbd5ec88bd6579f11"
+    },
+    {
+      "bytes": 12892,
+      "path": "fixtures/formatter-composition.json",
+      "sha256": "ebcd40f1e8f8a3f8b5f34d95d38a7e5a14edc89cfabf8217331ceda0176e1a20"
+    },
+    {
+      "bytes": 39760,
+      "path": "fixtures/greenfield-go-cli-tui.json",
+      "sha256": "1c72c5906157e6ca0794f1164f31ba0c09d42c597a742fcb424441144dcdc238"
+    },
+    {
+      "bytes": 36104,
+      "path": "fixtures/greenfield-rust-cli.json",
+      "sha256": "85955daf13dcbb573967e51ab21b99bded731fb395313b61a79cef7a467aa380"
+    },
+    {
+      "bytes": 417770,
+      "path": "fixtures/greenfield-standard-typescript-monorepo.json",
+      "sha256": "f0f08ad8c31ad55ba7097005210820a0434f4a7c8a7498ad4b5f9cc9d4e5d711"
+    },
+    {
+      "bytes": 109278,
+      "path": "fixtures/missing-capability-refusal.json",
+      "sha256": "7cbc648b0463a5a1ee0edbb80db4d3e51808cd5631b3ffaac892e348e43a4b80"
+    },
+    {
+      "bytes": 49045,
+      "path": "fixtures/profile-change-rust-to-go-cli-tui.json",
+      "sha256": "47d35ddc17c53ab8efc7fc6aa0c9bd396f8fade69d290ac719417add7a251360"
+    },
+    {
+      "bytes": 555043,
+      "path": "fixtures/readoption-preservation.json",
+      "sha256": "9c1dbe10abcf6f8a47fd39d5d48cd5927600dc5f4984476ae7d9876c5dd133ad"
+    },
+    {
+      "bytes": 25041,
+      "path": "fixtures/skill-restoration-rollback.json",
+      "sha256": "dfaa9764b0866c7620e792c75dd971be4229f9dccf53f7300c1aa32f52c2ccf2"
+    },
+    {
+      "bytes": 32672,
+      "path": "fixtures/skill-restoration.json",
+      "sha256": "671579521b7a429c4d34fc42135fe6e46b0db1f07ee76aaa922c60e0e3374c0c"
+    },
+    {
+      "bytes": 22914,
+      "path": "fixtures/stale-plan-refusal.json",
+      "sha256": "66500d635d58ac6b29b5fd6dd48dd87ef894189cf29768f76d51deecb49e96a6"
+    },
+    {
+      "bytes": 3050,
+      "path": "fixtures/unsafe-carrier-refusal.json",
+      "sha256": "005e6f308daf072623297a5c10785c48eb6771a3489379b6930e44a48f6021b7"
+    },
+    {
+      "bytes": 41363,
+      "path": "fixtures/update-rust-cli.json",
+      "sha256": "019ccd4b249e2386a8a1b12af0a2e85123552a9d65cacb586511e26b8864c46c"
+    },
+    {
+      "bytes": 188373,
+      "path": "matrix.json",
+      "sha256": "add8ff57477d3a033e3422df0670057f420a8b8d45c047b120c6c3f6736c27b4"
+    }
+  ],
+  "fixtureIds": [
+    "greenfield-rust-cli",
+    "greenfield-go-cli-tui",
+    "greenfield-standard-typescript-monorepo",
+    "update-rust-cli",
+    "profile-change-rust-to-go-cli-tui",
+    "readoption-preservation",
+    "stale-plan-refusal",
+    "unsafe-carrier-refusal",
+    "missing-capability-refusal",
+    "formatter-composition",
+    "skill-restoration",
+    "skill-restoration-rollback",
+    "asset-sync",
+    "atomic-rollback"
+  ],
+  "frozenDate": "2026-07-23",
+  "profiles": [
+    "go-cli-tui",
+    "rust-cli",
+    "standard-typescript-monorepo"
+  ],
+  "retiredBehavior": [],
+  "schemaVersion": "setup-context-driven/parity-corpus/v1",
+  "sourceSuite": {
+    "inventoryDigest": "sha256:f555c5db89e7e80d6ac4887ac016efd49adf33c8994dd4a84744c081dc9f05e2",
+    "root": "tests",
+    "testCount": 240
+  }
+}

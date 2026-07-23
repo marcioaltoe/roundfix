@@ -1,0 +1,1315 @@
+{
+  "adoptionState": "update",
+  "classification": "exact",
+  "contractAreas": [
+    "state",
+    "action",
+    "digest",
+    "planned-byte-sequence",
+    "manifest",
+    "post-state"
+  ],
+  "fileIdentities": {
+    "postimage": "sha256:3b4f9028ae2eb57da7d10c2b669a371b22017cf95066a04179a920bffde2a9cd",
+    "preimage": "sha256:8942f346a06ec924676faada5b685674a5edd66b6be07f729cbf98fc27d6bdc2"
+  },
+  "id": "update-rust-cli",
+  "input": {
+    "action": "update",
+    "decisions": [
+      "secondbrain.enabled=true"
+    ],
+    "profile": "rust-cli"
+  },
+  "managedEntryLedger": [
+    {
+      "digest": "ea8a66555ce543d22b87cf7ec052ee31e35d309cfd4b8e9970795da989d4d1bc",
+      "id": "guide.skill-dispatch",
+      "kind": "guide",
+      "module": "core",
+      "path": "docs/agents/skill-dispatch.md",
+      "template": "template.guide.skill-dispatch",
+      "version": "0.0.1"
+    },
+    {
+      "digest": "4001ce64061ffafedf2456ffd958e3fe700e1da954d7c42867f1aad6fa10e0a8",
+      "id": "root.context-workflow",
+      "kind": "root-block",
+      "module": "context-workflow",
+      "path": "AGENTS.md",
+      "template": "template.root.context-workflow",
+      "version": "0.0.1"
+    },
+    {
+      "digest": "2c50930be6999ff9bde570379c7b1ad2e436ddcf7bd754b87635217b748c328a",
+      "id": "guide.docs-layout",
+      "kind": "guide",
+      "module": "context-workflow",
+      "path": "docs/agents/docs-layout.md",
+      "template": "template.guide.docs-layout",
+      "version": "0.0.1"
+    },
+    {
+      "digest": "994caf3ffd1089bfe7dc42c012ef23d13c5f48e479f964e9920e22f39f715e85",
+      "id": "root.rust",
+      "kind": "root-block",
+      "module": "rust",
+      "path": "AGENTS.md",
+      "template": "template.root.rust",
+      "version": "0.0.1"
+    },
+    {
+      "digest": "56b9d61a20ea14216a6d2c77d05daa467e643bf94fc43b4f49a77817cc8561ad",
+      "id": "guide.rust",
+      "kind": "guide",
+      "module": "rust",
+      "path": "docs/agents/rust.md",
+      "template": "template.guide.rust",
+      "version": "0.0.1"
+    },
+    {
+      "digest": "00d780aa07a370ecd77b09d4b0eb0326f80980372652be67d30c699aee931bdb",
+      "id": "root.cli-surface",
+      "kind": "root-block",
+      "module": "cli-surface",
+      "path": "AGENTS.md",
+      "template": "template.root.cli-surface",
+      "version": "0.0.1"
+    },
+    {
+      "digest": "eccd16c4b04dd206395f030f64115b5cd1a91450ba745867ef164e2197f73a7a",
+      "id": "guide.cli-surface",
+      "kind": "guide",
+      "module": "cli-surface",
+      "path": "docs/agents/cli.md",
+      "template": "template.guide.cli-surface",
+      "version": "0.0.1"
+    },
+    {
+      "digest": "76798ef5047ed82294c13d45f7873605e576bdb2afc636b88ad3b4edbecd3969",
+      "id": "root.core",
+      "kind": "root-block",
+      "module": "core",
+      "path": "AGENTS.md",
+      "template": "template.root.core",
+      "version": "0.0.1"
+    },
+    {
+      "digest": "20ba86dc653ef7bc6a87bf6d0d0ad85f41311b50281887eebd3d9921b3ef09bc",
+      "id": "guide.agent-instructions",
+      "kind": "guide",
+      "module": "core",
+      "path": "docs/agents/agent-instructions.md",
+      "template": "template.guide.agent-instructions",
+      "version": "0.0.1"
+    },
+    {
+      "digest": "7d263707ada26bf233c9aa823423b6c74dc006b86c503899fcd95a46f6a15e7f",
+      "id": "root.spec-workflow",
+      "kind": "root-block",
+      "module": "spec-workflow",
+      "path": "AGENTS.md",
+      "template": "template.root.spec-workflow",
+      "version": "0.0.1"
+    },
+    {
+      "digest": "e21f5fa10f45b5256bddb848899f4ba446e70197fef355448fa8bfbe3e6f605a",
+      "id": "guide.spec-routing",
+      "kind": "guide",
+      "module": "spec-workflow",
+      "path": "docs/agents/spec-routing.md",
+      "template": "template.guide.spec-routing",
+      "version": "0.0.1"
+    },
+    {
+      "digest": "84ef3c03d23cbae80a202393e2be05ddc345918ff87a69de6299b128b5fb86a3",
+      "id": "guide.issue-tracker",
+      "kind": "guide",
+      "module": "spec-workflow",
+      "path": "docs/agents/issue-tracker.md",
+      "template": "template.guide.issue-tracker",
+      "version": "0.0.1"
+    },
+    {
+      "digest": "35b00b79609481bcce3b2ed06439575ee2be3725e5988e82912cac6fcce58241",
+      "id": "guide.spec-docs-layout",
+      "kind": "guide",
+      "module": "spec-workflow",
+      "path": "docs/agents/docs-layout.md",
+      "template": "template.guide.spec-docs-layout",
+      "version": "0.0.1"
+    },
+    {
+      "digest": "86b13d9ac7cd64f05278c6ea45e4607b3e83a87fcb49930e67d7df637593b304",
+      "id": "guide.domain",
+      "kind": "guide",
+      "module": "context-workflow",
+      "path": "docs/agents/domain.md",
+      "template": "template.guide.domain.single-context",
+      "version": "0.0.1"
+    },
+    {
+      "digest": "f056b3e672ecb439c578096d2e157ed438ec291ece01eade9102a03c7da51dec",
+      "id": "root.autonomous-work",
+      "kind": "root-block",
+      "module": "autonomous-work",
+      "path": "AGENTS.md",
+      "template": "template.root.autonomous-work",
+      "version": "0.0.1"
+    },
+    {
+      "digest": "2d161645512ba3537a7c0fda48843776763efeffe45c9fc18ee18501e3c20140",
+      "id": "guide.autonomous-work",
+      "kind": "guide",
+      "module": "autonomous-work",
+      "path": "docs/agents/autonomous-work.md",
+      "template": "template.guide.autonomous-work",
+      "version": "0.0.1"
+    },
+    {
+      "digest": "56c84ad89f841a990d68316cd8fe91d9cdc0ee0d5317a15dec38cf3369199013",
+      "id": "root.secondbrain",
+      "kind": "root-block",
+      "module": "secondbrain",
+      "path": "AGENTS.md",
+      "template": "template.root.secondbrain",
+      "version": "0.0.1"
+    },
+    {
+      "digest": "de871861b07e07bae3accfdf2f33ddea4acaa9afb16712566e3beb132c37afdc",
+      "id": "guide.secondbrain",
+      "kind": "guide",
+      "module": "secondbrain",
+      "path": "docs/agents/secondbrain.md",
+      "template": "template.guide.secondbrain",
+      "version": "0.0.1"
+    }
+  ],
+  "manifest": {
+    "decisions": {
+      "autonomous.enabled": {
+        "confirmedAt": "2026-07-23",
+        "value": true
+      },
+      "domain.layout": {
+        "confirmedAt": "2026-07-23",
+        "value": "single-context"
+      },
+      "language.generated": {
+        "confirmedAt": "2026-07-23",
+        "value": "English"
+      },
+      "repository.extension.enabled": {
+        "confirmedAt": "2026-07-23",
+        "value": false
+      },
+      "runtime.backend": {
+        "confirmedAt": "2026-07-23",
+        "value": "codex gpt-5.5 xhigh"
+      },
+      "runtime.design": {
+        "confirmedAt": "2026-07-23",
+        "value": "claude opus xhigh"
+      },
+      "secondbrain.enabled": {
+        "confirmedAt": "2026-07-23",
+        "value": true
+      },
+      "spec.scaffold": {
+        "confirmedAt": "2026-07-23",
+        "value": true
+      },
+      "triage.external": {
+        "confirmedAt": "2026-07-23",
+        "value": false
+      },
+      "verification.gate": {
+        "confirmedAt": "2026-07-23",
+        "value": "make verify"
+      }
+    },
+    "generator": {
+      "baseline": "baseline.portable-v3",
+      "skill": "setup-context-driven",
+      "version": 1
+    },
+    "localSkills": [],
+    "managedArtifacts": [
+      {
+        "digest": "ea8a66555ce543d22b87cf7ec052ee31e35d309cfd4b8e9970795da989d4d1bc",
+        "id": "guide.skill-dispatch",
+        "kind": "guide",
+        "module": "core",
+        "path": "docs/agents/skill-dispatch.md",
+        "template": "template.guide.skill-dispatch",
+        "version": "0.0.1"
+      },
+      {
+        "digest": "4001ce64061ffafedf2456ffd958e3fe700e1da954d7c42867f1aad6fa10e0a8",
+        "id": "root.context-workflow",
+        "kind": "root-block",
+        "module": "context-workflow",
+        "path": "AGENTS.md",
+        "template": "template.root.context-workflow",
+        "version": "0.0.1"
+      },
+      {
+        "digest": "2c50930be6999ff9bde570379c7b1ad2e436ddcf7bd754b87635217b748c328a",
+        "id": "guide.docs-layout",
+        "kind": "guide",
+        "module": "context-workflow",
+        "path": "docs/agents/docs-layout.md",
+        "template": "template.guide.docs-layout",
+        "version": "0.0.1"
+      },
+      {
+        "digest": "994caf3ffd1089bfe7dc42c012ef23d13c5f48e479f964e9920e22f39f715e85",
+        "id": "root.rust",
+        "kind": "root-block",
+        "module": "rust",
+        "path": "AGENTS.md",
+        "template": "template.root.rust",
+        "version": "0.0.1"
+      },
+      {
+        "digest": "56b9d61a20ea14216a6d2c77d05daa467e643bf94fc43b4f49a77817cc8561ad",
+        "id": "guide.rust",
+        "kind": "guide",
+        "module": "rust",
+        "path": "docs/agents/rust.md",
+        "template": "template.guide.rust",
+        "version": "0.0.1"
+      },
+      {
+        "digest": "00d780aa07a370ecd77b09d4b0eb0326f80980372652be67d30c699aee931bdb",
+        "id": "root.cli-surface",
+        "kind": "root-block",
+        "module": "cli-surface",
+        "path": "AGENTS.md",
+        "template": "template.root.cli-surface",
+        "version": "0.0.1"
+      },
+      {
+        "digest": "eccd16c4b04dd206395f030f64115b5cd1a91450ba745867ef164e2197f73a7a",
+        "id": "guide.cli-surface",
+        "kind": "guide",
+        "module": "cli-surface",
+        "path": "docs/agents/cli.md",
+        "template": "template.guide.cli-surface",
+        "version": "0.0.1"
+      },
+      {
+        "digest": "76798ef5047ed82294c13d45f7873605e576bdb2afc636b88ad3b4edbecd3969",
+        "id": "root.core",
+        "kind": "root-block",
+        "module": "core",
+        "path": "AGENTS.md",
+        "template": "template.root.core",
+        "version": "0.0.1"
+      },
+      {
+        "digest": "20ba86dc653ef7bc6a87bf6d0d0ad85f41311b50281887eebd3d9921b3ef09bc",
+        "id": "guide.agent-instructions",
+        "kind": "guide",
+        "module": "core",
+        "path": "docs/agents/agent-instructions.md",
+        "template": "template.guide.agent-instructions",
+        "version": "0.0.1"
+      },
+      {
+        "digest": "7d263707ada26bf233c9aa823423b6c74dc006b86c503899fcd95a46f6a15e7f",
+        "id": "root.spec-workflow",
+        "kind": "root-block",
+        "module": "spec-workflow",
+        "path": "AGENTS.md",
+        "template": "template.root.spec-workflow",
+        "version": "0.0.1"
+      },
+      {
+        "digest": "e21f5fa10f45b5256bddb848899f4ba446e70197fef355448fa8bfbe3e6f605a",
+        "id": "guide.spec-routing",
+        "kind": "guide",
+        "module": "spec-workflow",
+        "path": "docs/agents/spec-routing.md",
+        "template": "template.guide.spec-routing",
+        "version": "0.0.1"
+      },
+      {
+        "digest": "84ef3c03d23cbae80a202393e2be05ddc345918ff87a69de6299b128b5fb86a3",
+        "id": "guide.issue-tracker",
+        "kind": "guide",
+        "module": "spec-workflow",
+        "path": "docs/agents/issue-tracker.md",
+        "template": "template.guide.issue-tracker",
+        "version": "0.0.1"
+      },
+      {
+        "digest": "35b00b79609481bcce3b2ed06439575ee2be3725e5988e82912cac6fcce58241",
+        "id": "guide.spec-docs-layout",
+        "kind": "guide",
+        "module": "spec-workflow",
+        "path": "docs/agents/docs-layout.md",
+        "template": "template.guide.spec-docs-layout",
+        "version": "0.0.1"
+      },
+      {
+        "digest": "86b13d9ac7cd64f05278c6ea45e4607b3e83a87fcb49930e67d7df637593b304",
+        "id": "guide.domain",
+        "kind": "guide",
+        "module": "context-workflow",
+        "path": "docs/agents/domain.md",
+        "template": "template.guide.domain.single-context",
+        "version": "0.0.1"
+      },
+      {
+        "digest": "f056b3e672ecb439c578096d2e157ed438ec291ece01eade9102a03c7da51dec",
+        "id": "root.autonomous-work",
+        "kind": "root-block",
+        "module": "autonomous-work",
+        "path": "AGENTS.md",
+        "template": "template.root.autonomous-work",
+        "version": "0.0.1"
+      },
+      {
+        "digest": "2d161645512ba3537a7c0fda48843776763efeffe45c9fc18ee18501e3c20140",
+        "id": "guide.autonomous-work",
+        "kind": "guide",
+        "module": "autonomous-work",
+        "path": "docs/agents/autonomous-work.md",
+        "template": "template.guide.autonomous-work",
+        "version": "0.0.1"
+      },
+      {
+        "digest": "56c84ad89f841a990d68316cd8fe91d9cdc0ee0d5317a15dec38cf3369199013",
+        "id": "root.secondbrain",
+        "kind": "root-block",
+        "module": "secondbrain",
+        "path": "AGENTS.md",
+        "template": "template.root.secondbrain",
+        "version": "0.0.1"
+      },
+      {
+        "digest": "de871861b07e07bae3accfdf2f33ddea4acaa9afb16712566e3beb132c37afdc",
+        "id": "guide.secondbrain",
+        "kind": "guide",
+        "module": "secondbrain",
+        "path": "docs/agents/secondbrain.md",
+        "template": "template.guide.secondbrain",
+        "version": "0.0.1"
+      }
+    ],
+    "modules": [
+      "core",
+      "context-workflow",
+      "rust",
+      "cli-surface",
+      "autonomous-work",
+      "spec-workflow",
+      "secondbrain"
+    ],
+    "profile": "rust-cli",
+    "schemaVersion": 1
+  },
+  "normalizedOutput": {
+    "apply": {
+      "exitCode": 0,
+      "stderr": "",
+      "stdout": {
+        "findings": [
+          {
+            "action": "No action needed.",
+            "code": "managed.apply.completed",
+            "managedId": "apply",
+            "message": "Managed setup content matches the selected profile.",
+            "path": ".",
+            "severity": "info"
+          }
+        ],
+        "ok": true,
+        "planDigest": "a8617c9ac485635ed838f0c3736964cf097ce2c5fb88c3f8eed3b8eaa2f13f4c",
+        "plannedChanges": [
+          {
+            "action": "create managed block",
+            "afterDigest": "989ca5d78b0e334ff2dcd6bf85b26b3e5bb3ee99a4db3d5149a5ac3df8ba18eb",
+            "beforeDigest": "d26f82a50f87498591260952a7ad455e3f732e62152ec2ef9f82611bdff40655",
+            "managedId": "root.secondbrain",
+            "path": "AGENTS.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "fab2b2896ad03e0436414b83e5cd80e7fdc07b96d9231b798194b36314a8e7a7",
+            "beforeDigest": null,
+            "managedId": "guide.secondbrain",
+            "path": "docs/agents/secondbrain.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "refresh manifest",
+            "afterDigest": "5b35c1cdcb97f92c00569308cb7a906d9f3115b9fe9f51efeddc2cd433fa6c2e",
+            "beforeDigest": "de550a51bb91f2be4bc921179626eb4a79cf26e5139f0db66820a0285bab9bbc",
+            "managedId": "manifest",
+            "path": "docs/agents/setup-context.json",
+            "reason": "Record the selected profile, decisions, and managed inventory.",
+            "state": "definite"
+          }
+        ],
+        "schemaVersion": "setup-context-driven/audit-v1",
+        "selection": {
+          "modules": [
+            {
+              "id": "core",
+              "state": "active"
+            },
+            {
+              "id": "context-workflow",
+              "state": "active"
+            },
+            {
+              "id": "rust",
+              "state": "active"
+            },
+            {
+              "id": "cli-surface",
+              "state": "active"
+            },
+            {
+              "id": "autonomous-work",
+              "state": "active"
+            },
+            {
+              "id": "spec-workflow",
+              "state": "active"
+            },
+            {
+              "id": "secondbrain",
+              "state": "active"
+            }
+          ],
+          "profile": "rust-cli",
+          "setup": "rust-cli"
+        },
+        "summary": {
+          "decisions": 0,
+          "errors": 0,
+          "info": 1,
+          "warnings": 0
+        }
+      }
+    },
+    "preview": {
+      "exitCode": 3,
+      "stderr": "",
+      "stdout": {
+        "findings": [
+          {
+            "action": "Review plannedChanges and rerun with --confirm-plan planDigest.",
+            "code": "plan.confirmation.required",
+            "managedId": "apply",
+            "message": "Apply requires confirmation of this exact Change Plan.",
+            "path": ".",
+            "severity": "decision"
+          }
+        ],
+        "ok": false,
+        "planDigest": "a8617c9ac485635ed838f0c3736964cf097ce2c5fb88c3f8eed3b8eaa2f13f4c",
+        "plannedChanges": [
+          {
+            "action": "create managed block",
+            "afterDigest": "989ca5d78b0e334ff2dcd6bf85b26b3e5bb3ee99a4db3d5149a5ac3df8ba18eb",
+            "beforeDigest": "d26f82a50f87498591260952a7ad455e3f732e62152ec2ef9f82611bdff40655",
+            "managedId": "root.secondbrain",
+            "path": "AGENTS.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "fab2b2896ad03e0436414b83e5cd80e7fdc07b96d9231b798194b36314a8e7a7",
+            "beforeDigest": null,
+            "managedId": "guide.secondbrain",
+            "path": "docs/agents/secondbrain.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "refresh manifest",
+            "afterDigest": "5b35c1cdcb97f92c00569308cb7a906d9f3115b9fe9f51efeddc2cd433fa6c2e",
+            "beforeDigest": "de550a51bb91f2be4bc921179626eb4a79cf26e5139f0db66820a0285bab9bbc",
+            "managedId": "manifest",
+            "path": "docs/agents/setup-context.json",
+            "reason": "Record the selected profile, decisions, and managed inventory.",
+            "state": "definite"
+          }
+        ],
+        "schemaVersion": "setup-context-driven/audit-v1",
+        "selection": {
+          "modules": [
+            {
+              "id": "core",
+              "state": "active"
+            },
+            {
+              "id": "context-workflow",
+              "state": "active"
+            },
+            {
+              "id": "rust",
+              "state": "active"
+            },
+            {
+              "id": "cli-surface",
+              "state": "active"
+            },
+            {
+              "id": "autonomous-work",
+              "state": "active"
+            },
+            {
+              "id": "spec-workflow",
+              "state": "active"
+            },
+            {
+              "id": "secondbrain",
+              "state": "active"
+            }
+          ],
+          "profile": "rust-cli",
+          "setup": "rust-cli"
+        },
+        "summary": {
+          "decisions": 1,
+          "errors": 0,
+          "info": 0,
+          "warnings": 0
+        }
+      }
+    }
+  },
+  "planDigest": "a8617c9ac485635ed838f0c3736964cf097ce2c5fb88c3f8eed3b8eaa2f13f4c",
+  "plannedByteSequence": [
+    {
+      "action": "create managed block",
+      "afterIdentity": "sha256:989ca5d78b0e334ff2dcd6bf85b26b3e5bb3ee99a4db3d5149a5ac3df8ba18eb",
+      "beforeIdentity": "sha256:d26f82a50f87498591260952a7ad455e3f732e62152ec2ef9f82611bdff40655",
+      "managedId": "root.secondbrain",
+      "ordinal": 0,
+      "path": "AGENTS.md"
+    },
+    {
+      "action": "create guide",
+      "afterIdentity": "sha256:fab2b2896ad03e0436414b83e5cd80e7fdc07b96d9231b798194b36314a8e7a7",
+      "beforeIdentity": null,
+      "managedId": "guide.secondbrain",
+      "ordinal": 1,
+      "path": "docs/agents/secondbrain.md"
+    },
+    {
+      "action": "refresh manifest",
+      "afterIdentity": "sha256:5b35c1cdcb97f92c00569308cb7a906d9f3115b9fe9f51efeddc2cd433fa6c2e",
+      "beforeIdentity": "sha256:de550a51bb91f2be4bc921179626eb4a79cf26e5139f0db66820a0285bab9bbc",
+      "managedId": "manifest",
+      "ordinal": 2,
+      "path": "docs/agents/setup-context.json"
+    }
+  ],
+  "postState": [
+    {
+      "identity": "sha256:1c46dcad01215b5ed7536c260c60da7fa5078f5ad70b1e0eebb7d59fd7771cca",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/agentic-cli-design/SKILL.md",
+      "size": 78
+    },
+    {
+      "identity": "sha256:6f54267e9f247925d4328927ac522311b5ba26203542b916e5565e3aada5161e",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/archive-spec/SKILL.md",
+      "size": 3769
+    },
+    {
+      "identity": "sha256:ea5c7eb59554159134f6f00efc5b2e49fbdd983ab46c97103e244458106da6c8",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/brainstorming/SKILL.md",
+      "size": 4768
+    },
+    {
+      "identity": "sha256:91fb85ed8d6d14b621fdc313819114479ca4b695377218066ff2d99840203d4c",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/business-analyst/SKILL.md",
+      "size": 4881
+    },
+    {
+      "identity": "sha256:020735dce16638880c13c8f9ccaa0332a0cf5e965bee993d60253b69c7595fc5",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/clap-rust/SKILL.md",
+      "size": 60
+    },
+    {
+      "identity": "sha256:2a1148ecc4d508b03c15a9b2b984196e76d0c0827130b1a50a4ae0d14af6a88f",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/coding-guidelines/SKILL.md",
+      "size": 76
+    },
+    {
+      "identity": "sha256:3241437aa80a05fc6c9f4ef931a4420225835110fefeef7e60fb0df077eb79ff",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/context7/SKILL.md",
+      "size": 58
+    },
+    {
+      "identity": "sha256:ee5fe71f90a11d15460de7673a43f9ce047443d06b48f440cbf8b59e1ff8c5b9",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/conventional-commits/SKILL.md",
+      "size": 82
+    },
+    {
+      "identity": "sha256:97abe8113995d8cdaca49473141cab41a496ad7c4a125cce475047f902472e18",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/council/SKILL.md",
+      "size": 7890
+    },
+    {
+      "identity": "sha256:d6a8fc21bfa555258bacd26c5bd0b8fa7d4cdb4b6e27156afc951d220ed1f107",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/cut-release/SKILL.md",
+      "size": 64
+    },
+    {
+      "identity": "sha256:23663eddb31fd8319a8a32f1f5c738cbb01114ce57c51dd2cc280d1f4e0a3dc6",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/domain-modeling/SKILL.md",
+      "size": 72
+    },
+    {
+      "identity": "sha256:8eb9b3cd3c009e4e806b9e0233d53827cdeed393b809fe1c064ddd3577566ea7",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/domain-modeling/references/guide.md",
+      "size": 26
+    },
+    {
+      "identity": "sha256:545ce6571669144c59a2fab850f90d8100dcdc55dc4164b3d91dfacf3cedd1f3",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/evidence-gate/SKILL.md",
+      "size": 2792
+    },
+    {
+      "identity": "sha256:51f1c464d3470a6acc52e5ca10553ba7e7ae62c63125a49d6092689a50694cfe",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/exa-web-search/SKILL.md",
+      "size": 70
+    },
+    {
+      "identity": "sha256:6e3a74eadde29b46cab4d3bdcd4ccd874ddd3901b2309c064b5cc307735a6548",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/firecrawl/SKILL.md",
+      "size": 60
+    },
+    {
+      "identity": "sha256:cff316403c23cb0623aa2413ff1772b766ea082df0b723f3a0f9900e9fd0fd25",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/github-pr-workflow/SKILL.md",
+      "size": 78
+    },
+    {
+      "identity": "sha256:9c3b1464ed55ee60940477786ddcf6e33e9f62eb532124348f80d9155ac2eb58",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/grill-with-docs/SKILL.md",
+      "size": 72
+    },
+    {
+      "identity": "sha256:f493a1e38441f072d7188b6dd20a3bced325c7394b168f102d050446f699eb8e",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/grilling/SKILL.md",
+      "size": 58
+    },
+    {
+      "identity": "sha256:f71942bfa189db414616fbb54015c8f68d17548a7c40ffa1dda9ccd1e43e933c",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/handoff/SKILL.md",
+      "size": 56
+    },
+    {
+      "identity": "sha256:a10f46b505700ea6f982ccfe4a44219bde291e49f84cbd81a3395b57f3764445",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/implement-spec/SKILL.md",
+      "size": 5215
+    },
+    {
+      "identity": "sha256:e50207475bbed4664057240dd1af43d73163f2a065f32e26b3602e4602ef8051",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/implement-task/SKILL.md",
+      "size": 5021
+    },
+    {
+      "identity": "sha256:9637692c7936b98eb7f22a0d3ff03eb80607ea62e23bab5d4fe8160920f2e71b",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/knowledge-workspace/SKILL.md",
+      "size": 80
+    },
+    {
+      "identity": "sha256:d329983f6ef1c9c480b0ff803933b03a95546eccaf4092cfaf98f48f5c77baa8",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/no-workarounds/SKILL.md",
+      "size": 70
+    },
+    {
+      "identity": "sha256:5063f644a241a2fa673643aaf184bad03a1a900844a74d1988747135ecb64cc1",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/qa-gate/SKILL.md",
+      "size": 13677
+    },
+    {
+      "identity": "sha256:be30a97a009d5c715d9cef5234ca9ab48f7b441b6f1b72b0268976eb5631f3f4",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/review/SKILL.md",
+      "size": 54
+    },
+    {
+      "identity": "sha256:4a4dd9136f11bc0fa85992b731eecaba8306ec5079ce910c64427be2099e3b43",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/roundfix/SKILL.md",
+      "size": 70989
+    },
+    {
+      "identity": "sha256:b01a5ec32fb89526ef9cb3a940b171f90068f7a3880b4783c7562eda8f2e2f8e",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/rust-cli/SKILL.md",
+      "size": 58
+    },
+    {
+      "identity": "sha256:2450a5051f79119bc1d73dd59f2dcd571f6030ab8e65d852369b95ee2968755d",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/rust/SKILL.md",
+      "size": 50
+    },
+    {
+      "identity": "sha256:adf70c6bc4d550b2d3cabf69a3d2d4303a98ee589f3c385002561d8c1296993b",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/setup-context-driven/SKILL.md",
+      "size": 22931
+    },
+    {
+      "identity": "sha256:9e3b9dae5f5b79bb31a048f9d735271a0c8efa1e37bb6264c6327e9c1bbdd017",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/systematic-debugging/SKILL.md",
+      "size": 82
+    },
+    {
+      "identity": "sha256:92931e2cc187b6a753b00ff4b395b4f8749caaf058435e7cd19bd9ca7dc3989e",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/tech-writer/SKILL.md",
+      "size": 64
+    },
+    {
+      "identity": "sha256:79e602eafa1ea7026c3257c05293149fbbfc5388d0843ec738081a3a382b15e1",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/testing-boss/SKILL.md",
+      "size": 66
+    },
+    {
+      "identity": "sha256:4afab0c055c1247bfbd49f92db55312acc03a88abec5e3fc29d7a2888fabff85",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/the-fool/SKILL.md",
+      "size": 58
+    },
+    {
+      "identity": "sha256:f15c54937eac295ebdd4d637edd3e37d391e73d8055f2e5c76953bbd3491a67b",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/write-idea/SKILL.md",
+      "size": 6503
+    },
+    {
+      "identity": "sha256:03711a7eb3504439ba54f711eca14fa794101840ad86b595f223252fe1b952e8",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/write-prd/SKILL.md",
+      "size": 6112
+    },
+    {
+      "identity": "sha256:0e41e89d0a0753c66de362d55856d098e9bca2783fa2913385c8aa6e6fd87cbc",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/write-tasks/SKILL.md",
+      "size": 9287
+    },
+    {
+      "identity": "sha256:bc0e8520fb433f4716f7dea2880762fd3a07f6778103e21cff1efea77e36d1e0",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/write-techspec/SKILL.md",
+      "size": 5524
+    },
+    {
+      "identity": "sha256:989ca5d78b0e334ff2dcd6bf85b26b3e5bb3ee99a4db3d5149a5ac3df8ba18eb",
+      "kind": "file",
+      "mode": 384,
+      "path": "AGENTS.md",
+      "size": 1687
+    },
+    {
+      "identity": "sha256:c3d85b35fc865edc714f65850bca07d415179fffac3dcc846c73c12165dc0358",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/agent-instructions.md",
+      "size": 3743
+    },
+    {
+      "identity": "sha256:76065b3f1b452f647765d01bfb802ca3a0757d7212ba75b8e55d1d6242b0c977",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/autonomous-work.md",
+      "size": 789
+    },
+    {
+      "identity": "sha256:6e614e498b584f16f479dc563dd85e4f517d30cab40c3f0a15765c7db7d3714f",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/cli.md",
+      "size": 564
+    },
+    {
+      "identity": "sha256:51024b4cfa8bd2d83b38be97f51ecfc31391f303d6881960b09877e23d6cbbea",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/docs-layout.md",
+      "size": 1965
+    },
+    {
+      "identity": "sha256:4a1162377d8834a15497ae60c06a537a59357884dc8862063ee0da11dcd6a6ea",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/domain.md",
+      "size": 388
+    },
+    {
+      "identity": "sha256:f2139d498fb79358a240d8c99ab1718764217cf28aec0fb024beadfa2b0231cc",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/issue-tracker.md",
+      "size": 353
+    },
+    {
+      "identity": "sha256:d56feb24cf72bd7b1e447cd07005b4445cef2e7192f0c748d2d703abdfc719a5",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/rust.md",
+      "size": 543
+    },
+    {
+      "identity": "sha256:fab2b2896ad03e0436414b83e5cd80e7fdc07b96d9231b798194b36314a8e7a7",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/secondbrain.md",
+      "size": 1589
+    },
+    {
+      "identity": "sha256:5b35c1cdcb97f92c00569308cb7a906d9f3115b9fe9f51efeddc2cd433fa6c2e",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/setup-context.json",
+      "size": 6677
+    },
+    {
+      "identity": "sha256:f2fdab767245efc22e946f2d3ebb619dda8aca90e7d57205199a8b31c20135d0",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/skill-dispatch.md",
+      "size": 5768
+    },
+    {
+      "identity": "sha256:b13604b0317e1a8ce2d5a9bb8e0cada84eee80cc6cdb92f3370a7fd04527ad34",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/spec-routing.md",
+      "size": 1005
+    }
+  ],
+  "profile": "rust-cli",
+  "rationale": null,
+  "refusal": null,
+  "repositoryPreimage": [
+    {
+      "identity": "sha256:1c46dcad01215b5ed7536c260c60da7fa5078f5ad70b1e0eebb7d59fd7771cca",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/agentic-cli-design/SKILL.md",
+      "size": 78
+    },
+    {
+      "identity": "sha256:6f54267e9f247925d4328927ac522311b5ba26203542b916e5565e3aada5161e",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/archive-spec/SKILL.md",
+      "size": 3769
+    },
+    {
+      "identity": "sha256:ea5c7eb59554159134f6f00efc5b2e49fbdd983ab46c97103e244458106da6c8",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/brainstorming/SKILL.md",
+      "size": 4768
+    },
+    {
+      "identity": "sha256:91fb85ed8d6d14b621fdc313819114479ca4b695377218066ff2d99840203d4c",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/business-analyst/SKILL.md",
+      "size": 4881
+    },
+    {
+      "identity": "sha256:020735dce16638880c13c8f9ccaa0332a0cf5e965bee993d60253b69c7595fc5",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/clap-rust/SKILL.md",
+      "size": 60
+    },
+    {
+      "identity": "sha256:2a1148ecc4d508b03c15a9b2b984196e76d0c0827130b1a50a4ae0d14af6a88f",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/coding-guidelines/SKILL.md",
+      "size": 76
+    },
+    {
+      "identity": "sha256:3241437aa80a05fc6c9f4ef931a4420225835110fefeef7e60fb0df077eb79ff",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/context7/SKILL.md",
+      "size": 58
+    },
+    {
+      "identity": "sha256:ee5fe71f90a11d15460de7673a43f9ce047443d06b48f440cbf8b59e1ff8c5b9",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/conventional-commits/SKILL.md",
+      "size": 82
+    },
+    {
+      "identity": "sha256:97abe8113995d8cdaca49473141cab41a496ad7c4a125cce475047f902472e18",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/council/SKILL.md",
+      "size": 7890
+    },
+    {
+      "identity": "sha256:d6a8fc21bfa555258bacd26c5bd0b8fa7d4cdb4b6e27156afc951d220ed1f107",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/cut-release/SKILL.md",
+      "size": 64
+    },
+    {
+      "identity": "sha256:23663eddb31fd8319a8a32f1f5c738cbb01114ce57c51dd2cc280d1f4e0a3dc6",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/domain-modeling/SKILL.md",
+      "size": 72
+    },
+    {
+      "identity": "sha256:8eb9b3cd3c009e4e806b9e0233d53827cdeed393b809fe1c064ddd3577566ea7",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/domain-modeling/references/guide.md",
+      "size": 26
+    },
+    {
+      "identity": "sha256:545ce6571669144c59a2fab850f90d8100dcdc55dc4164b3d91dfacf3cedd1f3",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/evidence-gate/SKILL.md",
+      "size": 2792
+    },
+    {
+      "identity": "sha256:51f1c464d3470a6acc52e5ca10553ba7e7ae62c63125a49d6092689a50694cfe",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/exa-web-search/SKILL.md",
+      "size": 70
+    },
+    {
+      "identity": "sha256:6e3a74eadde29b46cab4d3bdcd4ccd874ddd3901b2309c064b5cc307735a6548",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/firecrawl/SKILL.md",
+      "size": 60
+    },
+    {
+      "identity": "sha256:cff316403c23cb0623aa2413ff1772b766ea082df0b723f3a0f9900e9fd0fd25",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/github-pr-workflow/SKILL.md",
+      "size": 78
+    },
+    {
+      "identity": "sha256:9c3b1464ed55ee60940477786ddcf6e33e9f62eb532124348f80d9155ac2eb58",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/grill-with-docs/SKILL.md",
+      "size": 72
+    },
+    {
+      "identity": "sha256:f493a1e38441f072d7188b6dd20a3bced325c7394b168f102d050446f699eb8e",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/grilling/SKILL.md",
+      "size": 58
+    },
+    {
+      "identity": "sha256:f71942bfa189db414616fbb54015c8f68d17548a7c40ffa1dda9ccd1e43e933c",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/handoff/SKILL.md",
+      "size": 56
+    },
+    {
+      "identity": "sha256:a10f46b505700ea6f982ccfe4a44219bde291e49f84cbd81a3395b57f3764445",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/implement-spec/SKILL.md",
+      "size": 5215
+    },
+    {
+      "identity": "sha256:e50207475bbed4664057240dd1af43d73163f2a065f32e26b3602e4602ef8051",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/implement-task/SKILL.md",
+      "size": 5021
+    },
+    {
+      "identity": "sha256:9637692c7936b98eb7f22a0d3ff03eb80607ea62e23bab5d4fe8160920f2e71b",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/knowledge-workspace/SKILL.md",
+      "size": 80
+    },
+    {
+      "identity": "sha256:d329983f6ef1c9c480b0ff803933b03a95546eccaf4092cfaf98f48f5c77baa8",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/no-workarounds/SKILL.md",
+      "size": 70
+    },
+    {
+      "identity": "sha256:5063f644a241a2fa673643aaf184bad03a1a900844a74d1988747135ecb64cc1",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/qa-gate/SKILL.md",
+      "size": 13677
+    },
+    {
+      "identity": "sha256:be30a97a009d5c715d9cef5234ca9ab48f7b441b6f1b72b0268976eb5631f3f4",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/review/SKILL.md",
+      "size": 54
+    },
+    {
+      "identity": "sha256:4a4dd9136f11bc0fa85992b731eecaba8306ec5079ce910c64427be2099e3b43",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/roundfix/SKILL.md",
+      "size": 70989
+    },
+    {
+      "identity": "sha256:b01a5ec32fb89526ef9cb3a940b171f90068f7a3880b4783c7562eda8f2e2f8e",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/rust-cli/SKILL.md",
+      "size": 58
+    },
+    {
+      "identity": "sha256:2450a5051f79119bc1d73dd59f2dcd571f6030ab8e65d852369b95ee2968755d",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/rust/SKILL.md",
+      "size": 50
+    },
+    {
+      "identity": "sha256:adf70c6bc4d550b2d3cabf69a3d2d4303a98ee589f3c385002561d8c1296993b",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/setup-context-driven/SKILL.md",
+      "size": 22931
+    },
+    {
+      "identity": "sha256:9e3b9dae5f5b79bb31a048f9d735271a0c8efa1e37bb6264c6327e9c1bbdd017",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/systematic-debugging/SKILL.md",
+      "size": 82
+    },
+    {
+      "identity": "sha256:92931e2cc187b6a753b00ff4b395b4f8749caaf058435e7cd19bd9ca7dc3989e",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/tech-writer/SKILL.md",
+      "size": 64
+    },
+    {
+      "identity": "sha256:79e602eafa1ea7026c3257c05293149fbbfc5388d0843ec738081a3a382b15e1",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/testing-boss/SKILL.md",
+      "size": 66
+    },
+    {
+      "identity": "sha256:4afab0c055c1247bfbd49f92db55312acc03a88abec5e3fc29d7a2888fabff85",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/the-fool/SKILL.md",
+      "size": 58
+    },
+    {
+      "identity": "sha256:f15c54937eac295ebdd4d637edd3e37d391e73d8055f2e5c76953bbd3491a67b",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/write-idea/SKILL.md",
+      "size": 6503
+    },
+    {
+      "identity": "sha256:03711a7eb3504439ba54f711eca14fa794101840ad86b595f223252fe1b952e8",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/write-prd/SKILL.md",
+      "size": 6112
+    },
+    {
+      "identity": "sha256:0e41e89d0a0753c66de362d55856d098e9bca2783fa2913385c8aa6e6fd87cbc",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/write-tasks/SKILL.md",
+      "size": 9287
+    },
+    {
+      "identity": "sha256:bc0e8520fb433f4716f7dea2880762fd3a07f6778103e21cff1efea77e36d1e0",
+      "kind": "file",
+      "mode": 420,
+      "path": ".agents/skills/write-techspec/SKILL.md",
+      "size": 5524
+    },
+    {
+      "identity": "sha256:d26f82a50f87498591260952a7ad455e3f732e62152ec2ef9f82611bdff40655",
+      "kind": "file",
+      "mode": 384,
+      "path": "AGENTS.md",
+      "size": 1470
+    },
+    {
+      "identity": "sha256:c3d85b35fc865edc714f65850bca07d415179fffac3dcc846c73c12165dc0358",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/agent-instructions.md",
+      "size": 3743
+    },
+    {
+      "identity": "sha256:76065b3f1b452f647765d01bfb802ca3a0757d7212ba75b8e55d1d6242b0c977",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/autonomous-work.md",
+      "size": 789
+    },
+    {
+      "identity": "sha256:6e614e498b584f16f479dc563dd85e4f517d30cab40c3f0a15765c7db7d3714f",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/cli.md",
+      "size": 564
+    },
+    {
+      "identity": "sha256:51024b4cfa8bd2d83b38be97f51ecfc31391f303d6881960b09877e23d6cbbea",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/docs-layout.md",
+      "size": 1965
+    },
+    {
+      "identity": "sha256:4a1162377d8834a15497ae60c06a537a59357884dc8862063ee0da11dcd6a6ea",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/domain.md",
+      "size": 388
+    },
+    {
+      "identity": "sha256:f2139d498fb79358a240d8c99ab1718764217cf28aec0fb024beadfa2b0231cc",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/issue-tracker.md",
+      "size": 353
+    },
+    {
+      "identity": "sha256:d56feb24cf72bd7b1e447cd07005b4445cef2e7192f0c748d2d703abdfc719a5",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/rust.md",
+      "size": 543
+    },
+    {
+      "identity": "sha256:de550a51bb91f2be4bc921179626eb4a79cf26e5139f0db66820a0285bab9bbc",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/setup-context.json",
+      "size": 6071
+    },
+    {
+      "identity": "sha256:f2fdab767245efc22e946f2d3ebb619dda8aca90e7d57205199a8b31c20135d0",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/skill-dispatch.md",
+      "size": 5768
+    },
+    {
+      "identity": "sha256:b13604b0317e1a8ce2d5a9bb8e0cada84eee80cc6cdb92f3370a7fd04527ad34",
+      "kind": "file",
+      "mode": 384,
+      "path": "docs/agents/spec-routing.md",
+      "size": 1005
+    }
+  ],
+  "rollback": {
+    "attempted": false,
+    "evidence": "successful update post-state recorded",
+    "restoredPreimage": null,
+    "succeeded": null
+  },
+  "schemaVersion": "setup-context-driven/parity-fixture/v1",
+  "sourceTests": [
+    "tests/test_workflow.py",
+    "tests/test_apply.py"
+  ]
+}
