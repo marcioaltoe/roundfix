@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"reflect"
 	"strings"
 	"testing"
 
+	"roundfix/internal/preflight"
 	"roundfix/internal/releaseplan"
 )
 
@@ -417,10 +420,297 @@ func TestReleasePlanDirtyTreeBlocksWithActionableDiagnostic(t *testing.T) {
 	assertReleasePlanOneDiagnostic(t, stderr, "dirty worktree")
 }
 
+func TestReleasePlanResetTextAndJSONInventoryMatchThroughRunBoundary(t *testing.T) {
+	gitRunner := newResetPlanRecordingGitRunner()
+	ghRunner := &resetPlanRecordingGHRunner{
+		output: `[
+			[
+				{"id":30,"node_id":"RE_node_30","name":"Third release","tag_name":"v0.3.0","target_commitish":"main"},
+				{"id":10,"node_id":"RE_node_10","name":"First release","tag_name":"v0.1.0","target_commitish":"main"}
+			],
+			[
+				{"id":20,"node_id":"RE_node_20","name":"Second release","tag_name":"v0.2.0","target_commitish":"main"}
+			]
+		]`,
+	}
+	restore := setReleasePlanCommandRunnersForTest(gitRunner, ghRunner)
+	t.Cleanup(restore)
+
+	var textStdout, textStderr bytes.Buffer
+	textExit := RunContext(context.Background(), []string{"release", "plan", "--reset-to", "v0.0.1"}, &textStdout, &textStderr)
+	if textExit != exitUnverified {
+		t.Fatalf("text exit = %d, want 3 stdout=%q stderr=%q", textExit, textStdout.String(), textStderr.String())
+	}
+	assertReleasePlanNoStderr(t, textStderr.String())
+
+	var jsonStdout, jsonStderr bytes.Buffer
+	jsonExit := RunContext(context.Background(), []string{"release", "plan", "--reset-to", "v0.0.1", "--format", "json"}, &jsonStdout, &jsonStderr)
+	if jsonExit != exitUnverified {
+		t.Fatalf("JSON exit = %d, want 3 stdout=%q stderr=%q", jsonExit, jsonStdout.String(), jsonStderr.String())
+	}
+	assertReleasePlanNoStderr(t, jsonStderr.String())
+	plan := decodeReleaseResetPlanJSON(t, jsonStdout.String())
+
+	if plan.State != releaseplan.StateApprovalRequired || !plan.Approval.Required {
+		t.Fatalf("decision = state:%q approval:%+v, want approval_required and required", plan.State, plan.Approval)
+	}
+	if plan.TargetVersion != "v0.0.1" || plan.Target.Name != "HEAD" || plan.Target.CommitSHA != resetPlanTargetCommit {
+		t.Fatalf("target = version:%q ref:%+v, want v0.0.1 HEAD at %s", plan.TargetVersion, plan.Target, resetPlanTargetCommit)
+	}
+	if plan.PlanDigest == "" || !strings.Contains(textStdout.String(), "Plan digest: "+plan.PlanDigest) {
+		t.Fatalf("text and JSON digests differ: text=%q JSON=%q", textStdout.String(), plan.PlanDigest)
+	}
+	if len(plan.Tags) != 5 {
+		t.Fatalf("tags = %+v, want every two local and three remote stable tags exactly once", plan.Tags)
+	}
+	if len(plan.Releases) != 3 {
+		t.Fatalf("releases = %+v, want every release from both pages exactly once", plan.Releases)
+	}
+	if got := []int64{plan.Releases[0].ID, plan.Releases[1].ID, plan.Releases[2].ID}; !reflect.DeepEqual(got, []int64{10, 20, 30}) {
+		t.Fatalf("release IDs = %v, want deterministic tag order 10, 20, 30", got)
+	}
+	for _, tag := range plan.Tags {
+		for _, value := range []string{tag.ImmutableID, tag.TargetCommit} {
+			if value == "" || !strings.Contains(textStdout.String(), value) {
+				t.Fatalf("text output missing tag identity value %q from %+v: %q", value, tag, textStdout.String())
+			}
+		}
+	}
+	for _, release := range plan.Releases {
+		for _, value := range []string{release.ImmutableID, release.NodeID, release.TargetCommit} {
+			if value == "" || !strings.Contains(textStdout.String(), value) {
+				t.Fatalf("text output missing release identity value %q from %+v: %q", value, release, textStdout.String())
+			}
+		}
+	}
+	if gitRunner.mutationCalls != 0 || ghRunner.mutationCalls != 0 {
+		t.Fatalf("mutation calls = git:%d GitHub:%d, want zero", gitRunner.mutationCalls, ghRunner.mutationCalls)
+	}
+	if len(ghRunner.calls) != 2 {
+		t.Fatalf("GitHub calls = %v, want one paginated read per text/JSON plan", ghRunner.calls)
+	}
+	for _, call := range ghRunner.calls {
+		want := []string{"api", "--method", "GET", "--paginate", "--slurp", "repos/{owner}/{repo}/releases?per_page=100"}
+		if !reflect.DeepEqual(call, want) {
+			t.Fatalf("GitHub call = %v, want read-only exhaustive pagination %v", call, want)
+		}
+	}
+}
+
+func TestReleasePlanResetRejectsConflictingOrMalformedFlagsBeforeInventory(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{name: "from", args: []string{"--reset-to", "v0.0.1", "--from", "v0.4.0"}, want: "--reset-to cannot be combined with --from"},
+		{name: "to", args: []string{"--reset-to", "v0.0.1", "--to", "main"}, want: "--reset-to cannot be combined with --to"},
+		{name: "impact", args: []string{"--reset-to", "v0.0.1", "--impact", "major"}, want: "--reset-to cannot be combined with --impact"},
+		{name: "reason", args: []string{"--reset-to", "v0.0.1", "--reason", "reset"}, want: "--reset-to cannot be combined with --reason"},
+		{name: "malformed target", args: []string{"--reset-to", "0.0.1"}, want: "expected a stable vMAJOR.MINOR.PATCH tag"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gitRunner := newResetPlanRecordingGitRunner()
+			ghRunner := &resetPlanRecordingGHRunner{output: `[[]]`}
+			restore := setReleasePlanCommandRunnersForTest(gitRunner, ghRunner)
+			t.Cleanup(restore)
+
+			var stdout, stderr bytes.Buffer
+			code := RunContext(context.Background(), append([]string{"release", "plan"}, tt.args...), &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("exit = %d, want 2 stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+			}
+			if stdout.String() != "" {
+				t.Fatalf("invalid reset flags emitted partial stdout plan: %q", stdout.String())
+			}
+			assertReleasePlanOneDiagnostic(t, stderr.String(), tt.want)
+			if len(gitRunner.calls) != 0 || len(ghRunner.calls) != 0 {
+				t.Fatalf("invalid flags reached inventory providers: git=%v GitHub=%v", gitRunner.calls, ghRunner.calls)
+			}
+		})
+	}
+}
+
+func TestReleasePlanResetFailsClosedForDirtyOrIncompleteInventory(t *testing.T) {
+	tests := []struct {
+		name      string
+		configure func(*resetPlanRecordingGitRunner, *resetPlanRecordingGHRunner)
+		want      string
+	}{
+		{
+			name: "dirty target",
+			configure: func(git *resetPlanRecordingGitRunner, _ *resetPlanRecordingGHRunner) {
+				git.dirtyStatus = " M internal/cli/releaseplan_command.go\x00"
+			},
+			want: "dirty worktree",
+		},
+		{
+			name: "remote inventory unavailable",
+			configure: func(git *resetPlanRecordingGitRunner, _ *resetPlanRecordingGHRunner) {
+				git.remoteErr = errors.New("remote unavailable")
+			},
+			want: "inventory remote stable tags",
+		},
+		{
+			name: "GitHub inventory unavailable",
+			configure: func(_ *resetPlanRecordingGitRunner, gh *resetPlanRecordingGHRunner) {
+				gh.err = errors.New("GitHub unavailable")
+			},
+			want: "inventory GitHub Releases",
+		},
+		{
+			name: "GitHub pagination output incomplete",
+			configure: func(_ *resetPlanRecordingGitRunner, gh *resetPlanRecordingGHRunner) {
+				gh.output = `[null]`
+			},
+			want: "complete paginated GitHub Release inventory",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gitRunner := newResetPlanRecordingGitRunner()
+			ghRunner := &resetPlanRecordingGHRunner{output: `[[]]`}
+			tt.configure(gitRunner, ghRunner)
+			restore := setReleasePlanCommandRunnersForTest(gitRunner, ghRunner)
+			t.Cleanup(restore)
+
+			var stdout, stderr bytes.Buffer
+			code := RunContext(context.Background(), []string{"release", "plan", "--reset-to", "v0.0.1", "--format", "json"}, &stdout, &stderr)
+
+			if code != exitPreflight {
+				t.Fatalf("exit = %d, want 2 stdout=%q stderr=%q", code, stdout.String(), stderr.String())
+			}
+			if stdout.String() != "" {
+				t.Fatalf("incomplete reset inventory emitted partial stdout plan: %q", stdout.String())
+			}
+			assertReleasePlanOneDiagnostic(t, stderr.String(), tt.want)
+			if gitRunner.mutationCalls != 0 || ghRunner.mutationCalls != 0 {
+				t.Fatalf("mutation calls = git:%d GitHub:%d, want zero", gitRunner.mutationCalls, ghRunner.mutationCalls)
+			}
+		})
+	}
+}
+
 type releasePlanCommandCommit struct {
 	subject string
 	body    string
 	paths   []string
+}
+
+const resetPlanTargetCommit = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+type resetPlanRecordingGitRunner struct {
+	calls         [][]string
+	dirtyStatus   string
+	remoteErr     error
+	mutationCalls int
+}
+
+func newResetPlanRecordingGitRunner() *resetPlanRecordingGitRunner {
+	return &resetPlanRecordingGitRunner{}
+}
+
+func (runner *resetPlanRecordingGitRunner) RunGit(_ context.Context, _ string, args ...string) (string, error) {
+	call := append([]string(nil), args...)
+	runner.calls = append(runner.calls, call)
+	if resetPlanGitCallMutates(args) {
+		runner.mutationCalls++
+		return "", errors.New("mutation forbidden")
+	}
+	switch strings.Join(args, "\x00") {
+	case "rev-parse\x00--show-toplevel":
+		return "/fixture/roundfix", nil
+	case "--no-optional-locks\x00status\x00--porcelain=v1\x00-z":
+		return runner.dirtyStatus, nil
+	case "rev-parse\x00--verify\x00HEAD":
+		return resetPlanTargetCommit, nil
+	case "rev-parse\x00--verify\x00HEAD^{commit}":
+		return resetPlanTargetCommit, nil
+	case "for-each-ref\x00--format=%(refname)\x00refs/tags":
+		return "refs/tags/v0.2.0\nrefs/tags/v0.1.0\nrefs/tags/v0.3.0-rc.1", nil
+	case "rev-parse\x00--verify\x00refs/tags/v0.1.0^{commit}":
+		return "1111111111111111111111111111111111111111", nil
+	case "rev-parse\x00--verify\x00refs/tags/v0.2.0^{commit}":
+		return "2222222222222222222222222222222222222222", nil
+	case "remote":
+		return "origin\nbackup", nil
+	case "ls-remote\x00--tags\x00origin":
+		if runner.remoteErr != nil {
+			return "", runner.remoteErr
+		}
+		return strings.Join([]string{
+			"1111111111111111111111111111111111111111\trefs/tags/v0.1.0",
+			"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\trefs/tags/v0.3.0",
+			"3333333333333333333333333333333333333333\trefs/tags/v0.3.0^{}",
+			"cccccccccccccccccccccccccccccccccccccccc\trefs/tags/v0.4.0-rc.1",
+		}, "\n"), nil
+	case "ls-remote\x00--tags\x00backup":
+		if runner.remoteErr != nil {
+			return "", runner.remoteErr
+		}
+		return "2222222222222222222222222222222222222222\trefs/tags/v0.2.0", nil
+	default:
+		return "", fmt.Errorf("unexpected read-only git call: %v", args)
+	}
+}
+
+type resetPlanRecordingGHRunner struct {
+	calls         [][]string
+	output        string
+	err           error
+	mutationCalls int
+}
+
+func (runner *resetPlanRecordingGHRunner) RunGH(_ context.Context, _ string, args ...string) (string, error) {
+	call := append([]string(nil), args...)
+	runner.calls = append(runner.calls, call)
+	if resetPlanGHCallMutates(args) {
+		runner.mutationCalls++
+		return "", errors.New("mutation forbidden")
+	}
+	return runner.output, runner.err
+}
+
+func resetPlanGitCallMutates(args []string) bool {
+	if len(args) == 0 {
+		return false
+	}
+	switch args[0] {
+	case "add", "commit", "push", "tag", "update-ref", "branch", "checkout", "switch", "reset", "restore", "clean":
+		return true
+	default:
+		return false
+	}
+}
+
+func resetPlanGHCallMutates(args []string) bool {
+	if len(args) == 0 {
+		return false
+	}
+	if args[0] != "api" {
+		return true
+	}
+	for index, arg := range args {
+		if (arg == "--method" || arg == "-X") && index+1 < len(args) && args[index+1] != "GET" {
+			return true
+		}
+	}
+	return false
+}
+
+func setReleasePlanCommandRunnersForTest(gitRunner preflight.GitRunner, ghRunner preflight.GHRunner) func() {
+	previousGit := releasePlanCommandGitRunner
+	previousGH := releasePlanCommandGHRunner
+	releasePlanCommandGitRunner = gitRunner
+	releasePlanCommandGHRunner = ghRunner
+	return func() {
+		releasePlanCommandGitRunner = previousGit
+		releasePlanCommandGHRunner = previousGH
+	}
 }
 
 func newReleasePlanCommandRepo(t *testing.T, baseTag string, commits ...releasePlanCommandCommit) string {
@@ -468,6 +758,20 @@ func decodeReleasePlanJSON(t *testing.T, output string) releasePlanJSON {
 	var trailing struct{}
 	if err := decoder.Decode(&trailing); err != io.EOF {
 		t.Fatalf("expected exactly one release plan JSON object, got trailing content in %q", output)
+	}
+	return plan
+}
+
+func decodeReleaseResetPlanJSON(t *testing.T, output string) releaseResetPlanJSON {
+	t.Helper()
+	var plan releaseResetPlanJSON
+	decoder := json.NewDecoder(strings.NewReader(output))
+	if err := decoder.Decode(&plan); err != nil {
+		t.Fatalf("decode release reset plan JSON %q: %v", output, err)
+	}
+	var trailing struct{}
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		t.Fatalf("expected exactly one release reset plan JSON object, got trailing content in %q", output)
 	}
 	return plan
 }

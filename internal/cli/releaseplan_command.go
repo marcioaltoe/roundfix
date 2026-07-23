@@ -21,10 +21,16 @@ const (
 type releasePlanCommandRequest struct {
 	from         string
 	to           string
+	resetTo      string
 	impact       releaseplan.Impact
 	reason       string
 	outputFormat string
 }
+
+var (
+	releasePlanCommandGitRunner preflight.GitRunner = preflight.ExecGitRunner{}
+	releasePlanCommandGHRunner  preflight.GHRunner  = preflight.ExecGHRunner{}
+)
 
 func runReleaseCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
@@ -55,7 +61,11 @@ func runReleasePlanCommand(ctx context.Context, args []string, stdout, stderr io
 		return exitPreflight
 	}
 
-	source := newReleasePlanGitSource("", preflight.ExecGitRunner{})
+	if req.resetTo != "" {
+		return runReleaseResetPlanCommand(ctx, req, stdout, stderr)
+	}
+
+	source := newReleasePlanGitSource("", releasePlanCommandGitRunner)
 	plan, err := releaseplan.Build(ctx, releaseplan.Request{
 		From:         req.from,
 		To:           req.to,
@@ -82,6 +92,37 @@ func runReleasePlanCommand(ctx context.Context, args []string, stdout, stderr io
 	return releasePlanExitCode(plan.State)
 }
 
+func runReleaseResetPlanCommand(ctx context.Context, req releasePlanCommandRequest, stdout, stderr io.Writer) int {
+	source := newReleasePlanResetSource("", releasePlanCommandGitRunner, releasePlanCommandGHRunner)
+	target, err := source.ResolveTarget(ctx)
+	if err != nil {
+		printReleasePlanFailure(err, stderr)
+		return exitPreflight
+	}
+	plan, err := releaseplan.BuildReset(ctx, releaseplan.ResetRequest{
+		TargetVersion: req.resetTo,
+		Target:        target,
+	}, source)
+	if err != nil {
+		printReleasePlanFailure(err, stderr)
+		return exitPreflight
+	}
+
+	switch req.outputFormat {
+	case releasePlanFormatText:
+		printReleaseResetPlanText(plan, stdout)
+	case releasePlanFormatJSON:
+		if err := printReleaseResetPlanJSON(plan, stdout); err != nil {
+			printReleasePlanFailure(err, stderr)
+			return exitRunFailed
+		}
+	default:
+		printReleasePlanFailure(validationError{message: fmt.Sprintf("unsupported --format %q; use text or json", req.outputFormat)}, stderr)
+		return exitPreflight
+	}
+	return releasePlanExitCode(plan.State)
+}
+
 func parseReleasePlanCommand(args []string) (releasePlanCommandRequest, error) {
 	req := releasePlanCommandRequest{outputFormat: releasePlanFormatText}
 	fs := flag.NewFlagSet("release plan", flag.ContinueOnError)
@@ -89,6 +130,7 @@ func parseReleasePlanCommand(args []string) (releasePlanCommandRequest, error) {
 	var impact string
 	fs.StringVar(&req.from, "from", "", "Stable release tag to use as the base")
 	fs.StringVar(&req.to, "to", "", "Target revision to analyze")
+	fs.StringVar(&req.resetTo, "reset-to", "", "Stable version for a read-only release history reset plan")
 	fs.StringVar(&impact, "impact", "", "Manual impact for ambiguous changes")
 	fs.StringVar(&req.reason, "reason", "", "Manual classification reason")
 	fs.StringVar(&req.outputFormat, "format", releasePlanFormatText, "Output format: text or json")
@@ -100,6 +142,7 @@ func parseReleasePlanCommand(args []string) (releasePlanCommandRequest, error) {
 	}
 	req.from = strings.TrimSpace(req.from)
 	req.to = strings.TrimSpace(req.to)
+	req.resetTo = strings.TrimSpace(req.resetTo)
 	req.outputFormat = strings.TrimSpace(req.outputFormat)
 	req.reason = strings.TrimSpace(req.reason)
 	if req.outputFormat == "" {
@@ -110,6 +153,22 @@ func parseReleasePlanCommand(args []string) (releasePlanCommandRequest, error) {
 	}
 	if trimmedImpact := strings.TrimSpace(impact); trimmedImpact != "" {
 		req.impact = releaseplan.Impact(trimmedImpact)
+	}
+	visited := map[string]bool{}
+	fs.Visit(func(flag *flag.Flag) {
+		visited[flag.Name] = true
+	})
+	if visited["reset-to"] {
+		for _, incompatible := range []string{"from", "to", "impact", "reason"} {
+			if visited[incompatible] {
+				return releasePlanCommandRequest{}, validationError{
+					message: fmt.Sprintf("--reset-to cannot be combined with --%s; choose range planning or reset planning", incompatible),
+				}
+			}
+		}
+		if _, err := releaseplan.ParseStableVersion(req.resetTo); err != nil {
+			return releasePlanCommandRequest{}, err
+		}
 	}
 	return req, nil
 }
@@ -239,6 +298,58 @@ func printReleasePlanJSON(plan releaseplan.Plan, stdout io.Writer) error {
 	return nil
 }
 
+func printReleaseResetPlanText(plan releaseplan.ResetPlan, stdout io.Writer) {
+	fmt.Fprintf(stdout, "Decision: %s\n", plan.State)
+	fmt.Fprintf(stdout, "Reset target: %s\n", plan.TargetVersion)
+	fmt.Fprintf(stdout, "Target: %s (%s)\n", plan.TargetRevision, plan.TargetCommit)
+	fmt.Fprintf(stdout, "Plan digest: %s\n", plan.PlanDigest)
+	fmt.Fprintln(stdout, "Approval required: yes")
+	fmt.Fprintf(stdout, "Approval question: %s\n", plan.Approval.Question)
+	fmt.Fprintln(stdout, "Stable tags:")
+	for _, tag := range plan.Tags {
+		location := string(tag.Source)
+		if tag.Remote != "" {
+			location += ":" + tag.Remote
+		}
+		fmt.Fprintf(
+			stdout,
+			"- %s %s identity=%s target=%s location=%s\n",
+			tag.Name,
+			tag.Ref,
+			tag.ImmutableID,
+			tag.TargetCommit,
+			location,
+		)
+	}
+	fmt.Fprintln(stdout, "GitHub Releases:")
+	for _, release := range plan.Releases {
+		target := release.TargetCommit
+		if target == "" {
+			target = "unavailable"
+		}
+		fmt.Fprintf(
+			stdout,
+			"- %s name=%q identity=%s node=%s target=%s targetCommitish=%s\n",
+			release.TagName,
+			release.Name,
+			release.ImmutableID,
+			release.NodeID,
+			target,
+			release.TargetCommitish,
+		)
+	}
+	fmt.Fprintln(stdout, "Next action: review this complete inventory; any tag or GitHub Release deletion requires separate explicit post-QA authority.")
+}
+
+func printReleaseResetPlanJSON(plan releaseplan.ResetPlan, stdout io.Writer) error {
+	encoder := json.NewEncoder(stdout)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(releaseResetPlanJSONFromPlan(plan)); err != nil {
+		return fmt.Errorf("encode release reset plan JSON: %w", err)
+	}
+	return nil
+}
+
 type releasePlanJSON struct {
 	SchemaVersion   string                        `json:"schemaVersion"`
 	State           releaseplan.State             `json:"state"`
@@ -286,6 +397,36 @@ type releasePlanChangeJSON struct {
 	CrossesMaintenanceOnlyBoundary bool               `json:"crossesMaintenanceOnlyBoundary"`
 }
 
+type releaseResetPlanJSON struct {
+	SchemaVersion string                     `json:"schemaVersion"`
+	State         releaseplan.State          `json:"state"`
+	TargetVersion string                     `json:"targetVersion"`
+	Target        releasePlanRevisionRefJSON `json:"target"`
+	PlanDigest    string                     `json:"planDigest"`
+	Approval      releasePlanApprovalJSON    `json:"approval"`
+	Tags          []releaseResetTagJSON      `json:"tags"`
+	Releases      []releaseResetReleaseJSON  `json:"releases"`
+}
+
+type releaseResetTagJSON struct {
+	Name         string                `json:"name"`
+	Source       releaseplan.TagSource `json:"source"`
+	Remote       string                `json:"remote,omitempty"`
+	Ref          string                `json:"ref"`
+	ImmutableID  string                `json:"immutableID"`
+	TargetCommit string                `json:"targetCommit"`
+}
+
+type releaseResetReleaseJSON struct {
+	ID              int64  `json:"id"`
+	NodeID          string `json:"nodeID"`
+	Name            string `json:"name"`
+	TagName         string `json:"tagName"`
+	TargetCommitish string `json:"targetCommitish,omitempty"`
+	TargetCommit    string `json:"targetCommit,omitempty"`
+	ImmutableID     string `json:"immutableID"`
+}
+
 func releasePlanJSONFromPlan(plan releaseplan.Plan) releasePlanJSON {
 	changes := make([]releasePlanChangeJSON, 0, len(plan.Changes))
 	for _, change := range plan.Changes {
@@ -326,6 +467,50 @@ func releasePlanJSONFromPlan(plan releaseplan.Plan) releasePlanJSON {
 			Question:        plan.Approval.Question,
 		},
 		Changes: changes,
+	}
+}
+
+func releaseResetPlanJSONFromPlan(plan releaseplan.ResetPlan) releaseResetPlanJSON {
+	tags := make([]releaseResetTagJSON, 0, len(plan.Tags))
+	for _, tag := range plan.Tags {
+		tags = append(tags, releaseResetTagJSON{
+			Name:         tag.Name,
+			Source:       tag.Source,
+			Remote:       tag.Remote,
+			Ref:          tag.Ref,
+			ImmutableID:  tag.ImmutableID,
+			TargetCommit: tag.TargetCommit,
+		})
+	}
+	releases := make([]releaseResetReleaseJSON, 0, len(plan.Releases))
+	for _, release := range plan.Releases {
+		releases = append(releases, releaseResetReleaseJSON{
+			ID:              release.ID,
+			NodeID:          release.NodeID,
+			Name:            release.Name,
+			TagName:         release.TagName,
+			TargetCommitish: release.TargetCommitish,
+			TargetCommit:    release.TargetCommit,
+			ImmutableID:     release.ImmutableID,
+		})
+	}
+	return releaseResetPlanJSON{
+		SchemaVersion: plan.SchemaVersion,
+		State:         plan.State,
+		TargetVersion: plan.TargetVersion,
+		Target: releasePlanRevisionRefJSON{
+			Name:      plan.TargetRevision,
+			CommitSHA: plan.TargetCommit,
+		},
+		PlanDigest: plan.PlanDigest,
+		Approval: releasePlanApprovalJSON{
+			Required:        plan.Approval.Required,
+			Increment:       plan.Approval.Increment,
+			ProposedVersion: plan.Approval.ProposedVersion,
+			Question:        plan.Approval.Question,
+		},
+		Tags:     tags,
+		Releases: releases,
 	}
 }
 

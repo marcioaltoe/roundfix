@@ -2,8 +2,11 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"roundfix/internal/preflight"
@@ -15,11 +18,279 @@ type releasePlanGitSource struct {
 	runner  preflight.GitRunner
 }
 
+type releasePlanResetSource struct {
+	git releasePlanGitSource
+	gh  preflight.GHRunner
+}
+
 func newReleasePlanGitSource(workDir string, runner preflight.GitRunner) releasePlanGitSource {
 	if runner == nil {
 		runner = preflight.ExecGitRunner{}
 	}
 	return releasePlanGitSource{workDir: workDir, runner: runner}
+}
+
+func newReleasePlanResetSource(workDir string, gitRunner preflight.GitRunner, ghRunner preflight.GHRunner) releasePlanResetSource {
+	if ghRunner == nil {
+		ghRunner = preflight.ExecGHRunner{}
+	}
+	return releasePlanResetSource{
+		git: newReleasePlanGitSource(workDir, gitRunner),
+		gh:  ghRunner,
+	}
+}
+
+func (source releasePlanResetSource) ResolveTarget(ctx context.Context) (releaseplan.RevisionRef, error) {
+	root, err := source.gitRoot(ctx)
+	if err != nil {
+		return releaseplan.RevisionRef{}, err
+	}
+	if err := source.git.requireCleanWorktree(ctx, root); err != nil {
+		return releaseplan.RevisionRef{}, err
+	}
+	commitSHA, err := source.git.resolveCommit(ctx, root, "HEAD")
+	if err != nil {
+		return releaseplan.RevisionRef{}, err
+	}
+	return releaseplan.RevisionRef{Name: "HEAD", CommitSHA: commitSHA}, nil
+}
+
+func (source releasePlanResetSource) Tags(ctx context.Context) ([]releaseplan.TagRef, error) {
+	root, err := source.gitRoot(ctx)
+	if err != nil {
+		return nil, err
+	}
+	local, err := source.localStableTags(ctx, root)
+	if err != nil {
+		return nil, err
+	}
+	remote, err := source.remoteStableTags(ctx, root)
+	if err != nil {
+		return nil, err
+	}
+	return append(local, remote...), nil
+}
+
+func (source releasePlanResetSource) Releases(ctx context.Context) ([]releaseplan.ReleaseRef, error) {
+	root, err := source.gitRoot(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	output, err := source.gh.RunGH(
+		ctx,
+		root,
+		"api",
+		"--method",
+		"GET",
+		"--paginate",
+		"--slurp",
+		"repos/{owner}/{repo}/releases?per_page=100",
+	)
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return nil, ctxErr
+	}
+	if err != nil {
+		return nil, fmt.Errorf("read complete paginated GitHub Release inventory: %w", err)
+	}
+	releases, err := parseReleasePlanGitHubPages(output)
+	if err != nil {
+		return nil, fmt.Errorf("read complete paginated GitHub Release inventory: %w", err)
+	}
+	return releases, nil
+}
+
+func (source releasePlanResetSource) localStableTags(ctx context.Context, root string) ([]releaseplan.TagRef, error) {
+	output, err := source.git.git(ctx, root, "for-each-ref", "--format=%(refname)", "refs/tags")
+	if err != nil {
+		return nil, fmt.Errorf("inventory local stable tags: %w", err)
+	}
+	var tags []releaseplan.TagRef
+	for _, ref := range splitNonEmptyLines(output) {
+		name := strings.TrimPrefix(ref, "refs/tags/")
+		if _, err := releaseplan.ParseStableVersion(name); err != nil {
+			continue
+		}
+		commitSHA, err := source.git.git(ctx, root, "rev-parse", "--verify", ref+"^{commit}")
+		if err != nil {
+			return nil, fmt.Errorf("inventory local stable tag %q target commit: %w", ref, err)
+		}
+		commitSHA = strings.TrimSpace(commitSHA)
+		if commitSHA == "" {
+			return nil, fmt.Errorf("inventory local stable tag %q target commit: git returned an empty commit", ref)
+		}
+		tags = append(tags, releaseplan.TagRef{
+			Name:         name,
+			Source:       releaseplan.TagSourceLocal,
+			Ref:          ref,
+			ImmutableID:  resetTagImmutableID(releaseplan.TagSourceLocal, "", ref, commitSHA),
+			TargetCommit: commitSHA,
+		})
+	}
+	return tags, nil
+}
+
+func (source releasePlanResetSource) remoteStableTags(ctx context.Context, root string) ([]releaseplan.TagRef, error) {
+	output, err := source.git.git(ctx, root, "remote")
+	if err != nil {
+		return nil, fmt.Errorf("inventory Git remotes for stable tags: %w", err)
+	}
+	var tags []releaseplan.TagRef
+	for _, remote := range splitNonEmptyLines(output) {
+		remoteOutput, err := source.git.git(ctx, root, "ls-remote", "--tags", remote)
+		if err != nil {
+			return nil, fmt.Errorf("inventory remote stable tags from %q: %w", remote, err)
+		}
+		remoteTags, err := parseReleasePlanRemoteTags(remote, remoteOutput)
+		if err != nil {
+			return nil, fmt.Errorf("inventory remote stable tags from %q: %w", remote, err)
+		}
+		tags = append(tags, remoteTags...)
+	}
+	return tags, nil
+}
+
+func (source releasePlanResetSource) gitRoot(ctx context.Context) (string, error) {
+	root, err := source.git.git(ctx, source.git.workDir, "rev-parse", "--show-toplevel")
+	if err != nil {
+		return "", releaseplan.GitSourceError{
+			Operation:  "resolve release reset Git root",
+			NextAction: "run the Release Plan Command inside a Git repository",
+			Err:        err,
+		}
+	}
+	root = filepath.Clean(strings.TrimSpace(root))
+	if root == "" || root == "." {
+		return "", releaseplan.GitSourceError{
+			Operation:  "resolve release reset Git root",
+			NextAction: "run the Release Plan Command inside a Git repository",
+			Err:        errors.New("git returned an empty root"),
+		}
+	}
+	return root, nil
+}
+
+type releasePlanRemoteTagTarget struct {
+	direct string
+	peeled string
+}
+
+func parseReleasePlanRemoteTags(remote string, output string) ([]releaseplan.TagRef, error) {
+	targets := map[string]releasePlanRemoteTagTarget{}
+	for _, line := range splitNonEmptyLines(output) {
+		fields := strings.Fields(line)
+		if len(fields) != 2 {
+			return nil, fmt.Errorf("malformed ls-remote line %q", line)
+		}
+		objectID := fields[0]
+		ref := fields[1]
+		peeled := strings.HasSuffix(ref, "^{}")
+		ref = strings.TrimSuffix(ref, "^{}")
+		if !strings.HasPrefix(ref, "refs/tags/") {
+			return nil, fmt.Errorf("unexpected remote tag ref %q", ref)
+		}
+		name := strings.TrimPrefix(ref, "refs/tags/")
+		if _, err := releaseplan.ParseStableVersion(name); err != nil {
+			continue
+		}
+		target := targets[ref]
+		if peeled {
+			if target.peeled != "" && target.peeled != objectID {
+				return nil, fmt.Errorf("conflicting peeled targets for %q", ref)
+			}
+			target.peeled = objectID
+		} else {
+			if target.direct != "" && target.direct != objectID {
+				return nil, fmt.Errorf("conflicting direct targets for %q", ref)
+			}
+			target.direct = objectID
+		}
+		targets[ref] = target
+	}
+
+	tags := make([]releaseplan.TagRef, 0, len(targets))
+	for ref, target := range targets {
+		commitSHA := target.peeled
+		if commitSHA == "" {
+			commitSHA = target.direct
+		}
+		if commitSHA == "" {
+			return nil, fmt.Errorf("remote tag %q has no target", ref)
+		}
+		name := strings.TrimPrefix(ref, "refs/tags/")
+		tags = append(tags, releaseplan.TagRef{
+			Name:         name,
+			Source:       releaseplan.TagSourceRemote,
+			Remote:       remote,
+			Ref:          ref,
+			ImmutableID:  resetTagImmutableID(releaseplan.TagSourceRemote, remote, ref, commitSHA),
+			TargetCommit: commitSHA,
+		})
+	}
+	return tags, nil
+}
+
+type releasePlanGitHubRelease struct {
+	ID              int64  `json:"id"`
+	NodeID          string `json:"node_id"`
+	Name            string `json:"name"`
+	TagName         string `json:"tag_name"`
+	TargetCommitish string `json:"target_commitish"`
+}
+
+func parseReleasePlanGitHubPages(output string) ([]releaseplan.ReleaseRef, error) {
+	var pages [][]releasePlanGitHubRelease
+	if err := json.Unmarshal([]byte(output), &pages); err != nil {
+		return nil, fmt.Errorf("decode paginated GitHub Release response: %w", err)
+	}
+	if len(pages) == 0 {
+		return nil, errors.New("GitHub returned no pagination envelope")
+	}
+	var releases []releaseplan.ReleaseRef
+	for pageIndex, page := range pages {
+		if page == nil {
+			return nil, fmt.Errorf("GitHub Release page %d is null", pageIndex+1)
+		}
+		for _, item := range page {
+			targetCommit := ""
+			if isFullGitObjectID(item.TargetCommitish) {
+				targetCommit = item.TargetCommitish
+			}
+			releases = append(releases, releaseplan.ReleaseRef{
+				ID:              item.ID,
+				NodeID:          item.NodeID,
+				Name:            item.Name,
+				TagName:         item.TagName,
+				TargetCommitish: item.TargetCommitish,
+				TargetCommit:    targetCommit,
+				ImmutableID:     "github-release:" + strconv.FormatInt(item.ID, 10),
+			})
+		}
+	}
+	return releases, nil
+}
+
+func resetTagImmutableID(source releaseplan.TagSource, remote string, ref string, targetCommit string) string {
+	parts := []string{string(source)}
+	if remote != "" {
+		parts = append(parts, remote)
+	}
+	parts = append(parts, ref+"@"+targetCommit)
+	return strings.Join(parts, ":")
+}
+
+func isFullGitObjectID(value string) bool {
+	if len(value) != 40 && len(value) != 64 {
+		return false
+	}
+	for _, char := range value {
+		if (char < '0' || char > '9') && (char < 'a' || char > 'f') && (char < 'A' || char > 'F') {
+			return false
+		}
+	}
+	return true
 }
 
 func (source releasePlanGitSource) ResolveRange(ctx context.Context, from string, to string) (releaseplan.Range, error) {
@@ -370,3 +641,4 @@ func compareVersion(left releaseplan.Version, right releaseplan.Version) int {
 }
 
 var _ releaseplan.GitSource = releasePlanGitSource{}
+var _ releaseplan.ResetInventorySource = releasePlanResetSource{}

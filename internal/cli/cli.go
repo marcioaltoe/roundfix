@@ -47,6 +47,7 @@ Usage:
   roundfix implement --spec <slug>
   roundfix settle --spec <slug> --task <task_id>
   roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
+  roundfix release plan --reset-to <version> [--format <text|json>]
   roundfix profiles show [--category <category>] [--json]
   roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--yes] [--json]
   roundfix profiles validate [--category <category>] [--json]
@@ -3911,21 +3912,26 @@ Options:
 	case "release":
 		return `Usage:
   roundfix release plan [--from <tag>] [--to <revision>] [--impact <none|patch|minor|major> --reason <text>] [--format <text|json>]
+  roundfix release plan --reset-to <version> [--format <text|json>]
 
 Commands:
   plan  Analyze committed changes and propose the next semantic version.
 
 Release planning is read-only: it creates no Run, reads no Roundfix config,
-contacts no external service, and never edits files, refs, tags, packages,
-releases, remotes, or configuration.
+and never edits files, refs, tags, packages, releases, remotes, or
+configuration. Range planning stays local; reset planning reads complete Git
+tag and paginated GitHub Release inventory.
 `
 	case "release plan":
 		return `Usage:
   roundfix release plan [--from <tag>] [--to <revision>] [--impact <none|patch|minor|major> --reason <text>] [--format <text|json>]
+  roundfix release plan --reset-to <version> [--format <text|json>]
 
 Builds a read-only Release Plan from a stable vMAJOR.MINOR.PATCH base through
 a committed target revision. --from defaults to the latest reachable stable
-tag; --to defaults to committed HEAD.
+tag; --to defaults to committed HEAD. --reset-to inventories every local and
+remote stable tag and every paginated GitHub Release for a clean committed
+HEAD, binds them to a plan digest, and exposes no deletion action.
 
 Decision states:
   ready                           Patch release can proceed without version approval.
@@ -3943,11 +3949,15 @@ Options:
   --to      Target revision to analyze; defaults to HEAD
   --impact  Manual impact for ambiguous changes: none, patch, minor, or major
   --reason  Non-empty reason required with --impact
+  --reset-to
+            Stable reset target; incompatible with --from, --to, --impact,
+            and --reason
   --format  Output format: text or json (default text)
 
-The command creates no Run, reads no Roundfix configuration, contacts no
-external service, and never mutates files, refs, tags, remotes, packages,
-releases, or configuration.
+The command creates no Run, reads no Roundfix configuration, and never mutates
+files, refs, tags, remotes, packages, releases, or configuration. Reset mode
+uses read-only Git and GitHub inventory calls; any deletion requires separate
+explicit post-QA authority.
 `
 	case "profiles":
 		return `Usage:

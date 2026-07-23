@@ -1,7 +1,7 @@
 ---
 task: task_10
 spec: 0045-context-driven-baseline-0-0-1-reset
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -35,26 +35,26 @@ requirements explicit and expose no deletion capability.
 
 ## Subtasks
 
-- [ ] Add reset-plan domain values and read-only inventory interfaces.
-- [ ] Implement local/remote tag and paginated GitHub Release adapters.
-- [ ] Add deterministic framing and digest calculation.
-- [ ] Add CLI flag validation, text rendering, JSON rendering, and exit mapping.
-- [ ] Add incomplete-inventory, dirty-target, pagination, and digest-sensitivity
+- [x] Add reset-plan domain values and read-only inventory interfaces.
+- [x] Implement local/remote tag and paginated GitHub Release adapters.
+- [x] Add deterministic framing and digest calculation.
+- [x] Add CLI flag validation, text rendering, JSON rendering, and exit mapping.
+- [x] Add incomplete-inventory, dirty-target, pagination, and digest-sensitivity
       tests.
-- [ ] Add mutation-spy tests proving the command remains read-only.
+- [x] Add mutation-spy tests proving the command remains read-only.
 
 ## Acceptance Criteria
 
-- [ ] A complete fixture inventory produces deterministic text and JSON plans
+- [x] A complete fixture inventory produces deterministic text and JSON plans
       with the same digest and exit code 3.
-- [ ] Every stable local tag, remote tag, and paginated GitHub Release appears
+- [x] Every stable local tag, remote tag, and paginated GitHub Release appears
       exactly once with its immutable identity.
-- [ ] A changed target revision, tag, or Release changes the plan digest.
-- [ ] Dirty state, conflicting flags, malformed target versions, and incomplete
+- [x] A changed target revision, tag, or Release changes the plan digest.
+- [x] Dirty state, conflicting flags, malformed target versions, and incomplete
       inventory fail with the documented exit category and useful diagnostic.
-- [ ] Captured provider calls contain only read operations; mutation spies are
+- [x] Captured provider calls contain only read operations; mutation spies are
       never invoked.
-- [ ] The existing non-reset Release Plan behavior remains unchanged.
+- [x] The existing non-reset Release Plan behavior remains unchanged.
 
 ## Context
 
@@ -81,3 +81,48 @@ requirements explicit and expose no deletion capability.
   Contracts; Testing Approach; Build Order 7.
 - ADR-0048 → read-only Release Plan and confirmation boundary.
 - ADR-0065 → complete reset inventory and separate destructive approval.
+
+## Result
+
+Implemented a read-only reset mode through the existing Release Plan Command.
+`roundfix release plan --reset-to <stable-version>` now resolves a clean
+committed `HEAD`, inventories every stable local and remote tag plus every page
+of GitHub Releases, sorts the complete inventory, and returns an
+`approval_required` plan with a digest and exit code 3. Text and JSON output
+include each tag's bound identity and target commit and each GitHub Release's
+database ID, node ID, tag, and target commit when the tag inventory resolves it.
+
+Acceptance evidence:
+
+- `TestReleasePlanResetTextAndJSONInventoryMatchThroughRunBoundary` invokes the
+  public `RunContext(... ) int` boundary twice. The fixture's two local tags,
+  three remote tags, and three GitHub Releases across two pages appear once in
+  deterministic order; text and JSON contain the same digest and both exit 3.
+- `TestBuildResetPlanDigestChangesWithEveryBoundInput` changes the target
+  version, target revision, target commit, tag target, and GitHub Release
+  identity independently; every change produces a different digest.
+- Domain and CLI negative tests reject malformed reset versions, every
+  conflicting range/classification flag, dirty state, unavailable remote tags,
+  unavailable GitHub results, null pagination pages, and duplicate immutable
+  identities without emitting a partial stdout plan.
+- The reset inventory interface exposes only `Tags` and `Releases`. Captured
+  GitHub calls are exactly paginated `GET` requests with `--paginate --slurp`;
+  Git and GitHub mutation spies recorded zero calls.
+- The complete existing `internal/releaseplan` and `internal/cli` suites pass,
+  preserving non-reset range planning, classification, rendering, and exit
+  behavior.
+
+Verification:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task10-go-cache go test ./internal/releaseplan -run 'Reset|Digest|Inventory'` — PASS.
+- `rtk env GOCACHE=/private/tmp/roundfix-task10-go-cache go test ./internal/cli -run 'ReleasePlan.*Reset'` — PASS.
+- `rtk env GOCACHE=/private/tmp/roundfix-task10-go-cache go run -buildvcs=false ./cmd/roundfix release plan --help` — PASS; help documents reset inventory, incompatible flags, exit 3, and the separate deletion authority.
+- `rtk env GOCACHE=/private/tmp/roundfix-task10-go-cache make verify` — PASS.
+- `rtk git diff --check` — PASS.
+
+Follow-ups already owned by the Task Graph:
+
+- Task 11 changes the Release Plan schema identity with the distribution-wide
+  `0.0.1` version reset.
+- Task 13 updates the durable release runbook and shipped Roundfix skill after
+  the dependent distribution and QA tasks complete.

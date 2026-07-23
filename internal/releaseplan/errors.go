@@ -7,16 +7,18 @@ import (
 )
 
 var (
-	ErrMalformedStableVersion = errors.New("malformed stable version")
-	ErrPrereleaseVersion      = errors.New("pre-release version")
-	ErrDirtyWorktree          = errors.New("dirty worktree")
-	ErrNoStableReleaseTag     = errors.New("no stable release tag")
-	ErrUnresolvedRevision     = errors.New("unresolved revision")
-	ErrNonCommitRevision      = errors.New("non-commit revision")
-	ErrInvalidReleaseRange    = errors.New("invalid release range")
-	ErrManualImpactRequired   = errors.New("manual impact required")
-	ErrManualReasonRequired   = errors.New("manual impact reason required")
-	ErrManualImpactTooLow     = errors.New("manual impact below automatic minimum")
+	ErrMalformedStableVersion     = errors.New("malformed stable version")
+	ErrPrereleaseVersion          = errors.New("pre-release version")
+	ErrDirtyWorktree              = errors.New("dirty worktree")
+	ErrNoStableReleaseTag         = errors.New("no stable release tag")
+	ErrUnresolvedRevision         = errors.New("unresolved revision")
+	ErrNonCommitRevision          = errors.New("non-commit revision")
+	ErrInvalidReleaseRange        = errors.New("invalid release range")
+	ErrManualImpactRequired       = errors.New("manual impact required")
+	ErrManualReasonRequired       = errors.New("manual impact reason required")
+	ErrManualImpactTooLow         = errors.New("manual impact below automatic minimum")
+	ErrIncompleteResetInventory   = errors.New("incomplete release reset inventory")
+	ErrDuplicateInventoryIdentity = errors.New("duplicate release reset inventory identity")
 )
 
 // StableVersionError reports why a release base could not be parsed as the
@@ -74,6 +76,38 @@ func (err GitSourceError) Error() string {
 
 func (err GitSourceError) Unwrap() error {
 	return err.Err
+}
+
+// ResetInventoryError reports an incomplete or inconsistent read-only reset
+// inventory with the next action needed before planning can continue.
+type ResetInventoryError struct {
+	Operation  string
+	Identity   string
+	NextAction string
+	Err        error
+	Kinds      []error
+}
+
+func (err ResetInventoryError) Error() string {
+	message := err.Operation
+	if err.Identity != "" {
+		message += fmt.Sprintf(" %q", err.Identity)
+	}
+	if err.Err != nil {
+		message += ": " + err.Err.Error()
+	}
+	if err.NextAction != "" {
+		message += "; " + err.NextAction
+	}
+	return message
+}
+
+func (err ResetInventoryError) Unwrap() []error {
+	causes := make([]error, 0, 1+len(err.Kinds))
+	if err.Err != nil {
+		causes = append(causes, err.Err)
+	}
+	return append(causes, err.Kinds...)
 }
 
 // ManualImpactError reports a rejected manual classification input.
