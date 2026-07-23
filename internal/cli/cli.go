@@ -48,6 +48,9 @@ Usage:
   roundfix settle --spec <slug> --task <task_id>
   roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
   roundfix release plan --reset-to <version> [--format <text|json>]
+  roundfix baseline profile init --id <id> [--from <built-in-id>]
+  roundfix baseline profile show <id> [--format <text|json>]
+  roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
   roundfix profiles show [--category <category>] [--json]
   roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--yes] [--json]
   roundfix profiles validate [--category <category>] [--json]
@@ -73,6 +76,7 @@ Commands:
   implement  Execute a Spec's Task Graph as one Run
   settle     Verify and commit all current worktree changes for one failed Task
   release    Plan the next release version without mutating repository or release state
+  baseline   Author and validate Context-Driven Baseline Profiles
   profiles   Show Agent Selection Profiles and advisory recommendations
   archive    Archive a completed Spec
   stop       Request or force-stop an Active Run
@@ -234,6 +238,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runSettleCommand(ctx, args[1:], stdout, stderr)
 	case "release":
 		return runReleaseCommand(ctx, args[1:], stdout, stderr)
+	case "baseline":
+		return runBaselineCommand(args[1:], stdout, stderr)
 	case "profiles":
 		return runProfilesCommand(ctx, args[1:], stdout, stderr)
 	case "archive":
@@ -3958,6 +3964,63 @@ The command creates no Run, reads no Roundfix configuration, and never mutates
 files, refs, tags, remotes, packages, releases, or configuration. Reset mode
 uses read-only Git and GitHub inventory calls; any deletion requires separate
 explicit post-QA authority.
+`
+	case "baseline":
+		return `Usage:
+  roundfix baseline profile init --id <id> [--from <built-in-id>]
+  roundfix baseline profile show <id> [--format <text|json>]
+  roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
+
+Commands:
+  profile  Author, inspect, and validate built-in or repository-owned Baseline Profiles.
+
+Repository-owned profiles live only under
+.roundfix/baseline/profiles/<id>.json and may reference only entries in the
+embedded Baseline catalog.
+`
+	case "baseline profile":
+		return `Usage:
+  roundfix baseline profile init --id <id> [--from <built-in-id>]
+  roundfix baseline profile show <id> [--format <text|json>]
+  roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
+
+Commands:
+  init      Create one repository-owned profile from an embedded built-in profile.
+  show      Resolve one built-in or repository-owned profile.
+  validate  Validate one profile ID, one repository profile path, or all repository profiles.
+`
+	case "baseline profile init":
+		return `Usage:
+  roundfix baseline profile init --id <id> [--from <built-in-id>]
+
+Creates .roundfix/baseline/profiles/<id>.json exclusively. The declaration
+copies allowed embedded entry IDs from the selected built-in source; it does
+not compose profiles, copy assets, or accept executable or remote content.
+
+Options:
+  --id    Required lowercase repository-owned Baseline Profile ID
+  --from  Embedded built-in Baseline Profile (default go-cli-tui)
+`
+	case "baseline profile show":
+		return `Usage:
+  roundfix baseline profile show <id> [--format <text|json>]
+
+Resolves one built-in or repository-owned Baseline Profile against the
+embedded catalog and prints its normalized composition and digest.
+
+Options:
+  --format  Output format: text or json (default text)
+`
+	case "baseline profile validate":
+		return `Usage:
+  roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
+
+Validates one built-in or repository-owned Baseline Profile by ID, one direct
+file under .roundfix/baseline/profiles, or every repository-owned profile when
+no target is supplied. The command reads no user-scoped profile catalog.
+
+Options:
+  --format  Output format: text or json (default text)
 `
 	case "profiles":
 		return `Usage:
