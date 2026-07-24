@@ -400,6 +400,11 @@ func (l *catalogLoader) validateDecisionEffects(catalog *Catalog) {
 		if !containsString([]string{"boolean", "enum", "http-contract", "string"}, decisionType) {
 			l.add("catalog.decision.type.invalid", decisionID, decisionType)
 		}
+		if value, ok := decision["default"]; ok {
+			if err := validateDecisionValue(decision, value); err != nil {
+				l.add("catalog.decision.default.invalid", decisionID, err.Error())
+			}
+		}
 		effects, ok := objectList(decision["effects"])
 		if !ok || len(effects) == 0 {
 			l.add("catalog.decision.effects.invalid", decisionID, "")

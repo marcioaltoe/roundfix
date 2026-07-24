@@ -82,6 +82,30 @@ shows one consolidated Change Plan with file changes first, and asks once
 whether to apply the displayed Plan Digest. It writes nothing before that final
 confirmation.
 
+Each decision prompt and the contextual preservation prompt mark one visible
+default. Press Enter to accept it. A still-valid value from the existing Setup
+Manifest takes precedence, even when a changed Profile Digest requires
+adoption again. Without a stored value, the embedded catalog suggests:
+
+| Decision | Suggested value |
+| --- | --- |
+| Generated language | `English` |
+| Verification gate | `rtk make verify` |
+| HTTP contract | `Post-only` |
+| Spec artifacts | Yes |
+| Domain layout | `single-context` |
+| External triage | No |
+| Autonomous work | Yes |
+| Backend runtime | `codex gpt-5.6-sol` |
+| Design runtime | `claude fable high` |
+| Secondbrain | Yes |
+| Repository-Owned Extension | Yes |
+
+Existing root instructions make Preservation the default; an empty instruction
+inventory makes Greenfield the default. A recoverable existing profile is the
+profile default. Classification, plan approval, and apply never accept an empty
+answer.
+
 The interactive command refuses redirected or absent terminal input. Scripts,
 CI jobs, and Agents must use the non-interactive `baseline plan` and `baseline
 apply` commands described under [Automation](#automation).
@@ -111,9 +135,10 @@ validation and the maintainer's confirmation remain authoritative.
 ### Update, profile change, and rejected plans
 
 A compatible Setup Manifest enters update with its current Baseline Profile and
-stored decisions. The workflow asks whether to keep or change the profile.
-Changing it produces a new complete Change Plan and Plan Digest; profiles are
-never combined.
+stored decisions. An incompatible Profile Digest enters adoption but retains
+still-valid stored decisions and a resolvable profile as interactive defaults.
+The workflow asks whether to keep or change the profile. Changing it produces a
+new complete Change Plan and Plan Digest; profiles are never combined.
 
 Rejecting a final plan does not authorize a partial write. Select the decision
 area to revisit:

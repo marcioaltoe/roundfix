@@ -222,7 +222,7 @@
         "The profile, rendered plan, rendered snapshot, and managed marker use only the 0.0.1 owned generation.",
         "Every required stack, workspace, architecture, capability, activation, HTTP decision, and Verification contract is explicit and deterministic.",
         "Required capability gaps block readiness; optional module gaps do not.",
-        "The repository-owned HTTP Contract Decision has no default and accepts only REST or Post-only plus ordered typed exceptions."
+        "The repository-owned HTTP Contract Decision accepts only REST or Post-only plus ordered typed exceptions; the interactive workflow suggests Post-only until the maintainer confirms or changes it."
       ]
     },
     {
@@ -344,6 +344,7 @@
     "profile.optionalModule.capability.mismatch",
     "profile.architecture.invalid",
     "profile.httpContract.default.invalid",
+    "catalog.decision.default.invalid",
     "profile.capability.invalid",
     "profile.activationBundles.mismatch",
     "profile.verification.mismatch",

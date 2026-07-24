@@ -247,6 +247,26 @@ func TestCatalogMutation(t *testing.T) {
 			},
 		},
 		{
+			name: "invalid decision default",
+			code: "catalog.decision.default.invalid",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				replaceAsset(
+					t,
+					assets,
+					"decisions.json",
+					`"id": "spec.scaffold",
+      "version": 1,
+      "type": "boolean",
+      "default": true`,
+					`"id": "spec.scaffold",
+      "version": 1,
+      "type": "boolean",
+      "default": "yes"`,
+				)
+			},
+		},
+		{
 			name: "unknown decision effect module",
 			code: "catalog.decision.effect.module.unknown",
 			edit: func(t *testing.T, assets fstest.MapFS) {

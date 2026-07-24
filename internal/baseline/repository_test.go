@@ -178,6 +178,30 @@ func TestInstructionAliasRetainsOneSourceEvidence(t *testing.T) {
 	}
 }
 
+func TestInstructionAliasRetainsDirectSourcePreimageIdentity(t *testing.T) {
+	repo := newInspectionRepository(t)
+	writeInspectionFile(t, repo, "AGENTS.md", "shared policy\n")
+	if err := os.Symlink("AGENTS.md", filepath.Join(repo, "CLAUDE.md")); err != nil {
+		t.Fatalf("create CLAUDE alias: %v", err)
+	}
+	commitInspectionRepository(t, repo, "seed")
+
+	inspection, err := InspectRepository(context.Background(), repo, nil)
+	if err != nil {
+		t.Fatalf("inspect direct source alias: %v", err)
+	}
+	for _, preimage := range inspection.Snapshot.Preimages {
+		if preimage.Path != "AGENTS.md" {
+			continue
+		}
+		if preimage.Kind != PreimageRegular || preimage.ContentIdentity == "" {
+			t.Fatalf("AGENTS preimage lost its trusted identity: %+v", preimage)
+		}
+		return
+	}
+	t.Fatal("AGENTS preimage is missing")
+}
+
 func TestInstructionAliasUnsafeTargetsBlock(t *testing.T) {
 	tests := []struct {
 		name  string

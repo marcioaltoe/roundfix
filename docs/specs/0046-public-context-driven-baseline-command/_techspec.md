@@ -169,6 +169,16 @@ the plan returns to a selected decision area. Without an interactive terminal,
 it exits with a structured next action directing the caller to `baseline
 plan`; it never guesses or prompts through redirected input.
 
+Decision and preservation prompts expose one catalog or Setup Manifest default
+and accept Enter as confirmation. Still-valid manifest values win when a
+changed Profile Digest forces adoption. Catalog defaults are English,
+`rtk make verify`, Post-only, spec artifacts enabled, single-context, external
+triage disabled, autonomous work enabled, `codex gpt-5.6-sol`,
+`claude fable high`, Secondbrain enabled, and the Repository-Owned Extension
+enabled. Existing root instructions default to Preservation; an empty inventory
+defaults to Greenfield. A recoverable existing profile is the profile default.
+Classification, plan approval, and apply require a non-empty explicit choice.
+
 Automation:
 
 ```text
@@ -271,7 +281,8 @@ The Fluxus finding receives seven named macro assertions: safe aliases retain
 source evidence before remediation; decisions are collected without repeated
 full-plan noise; emitted Decision Documents parse with their required schema;
 HTTP candidates include bounded route facts and source digests without policy
-inference; PostgreSQL diagnostics separate implementation evidence from a
+inference; the 256-source and 2 MiB budgets count only files that produce HTTP
+candidates; PostgreSQL diagnostics separate implementation evidence from a
 missing contract; file review leads with `fileChanges`; and only locally
 validated commands are labeled repository-executable. This mapping is part of
 the final QA matrix rather than narrative-only coverage.

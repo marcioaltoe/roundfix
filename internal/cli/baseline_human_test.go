@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -142,6 +143,171 @@ func TestHumanBaselineUpdate(t *testing.T) {
 			humanPlan.PlanDigest,
 			automation.Plan.PlanDigest,
 		)
+	}
+}
+
+func TestHumanBaselineIncompatibleManifestKeepsValidDefaults(t *testing.T) {
+	repo := newHumanBaselineRepository(t)
+	applyHumanBaselineFixturePlan(t, repo)
+	manifestPath := filepath.Join(repo, filepath.FromSlash(baselineSetupManifestPath))
+	data, err := os.ReadFile(manifestPath)
+	if err != nil {
+		t.Fatalf("read Setup Manifest: %v", err)
+	}
+	var manifest baseline.SetupManifest
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		t.Fatalf("decode Setup Manifest: %v", err)
+	}
+	manifest.ProfileDigest = "sha256:" + strings.Repeat("0", 64)
+	data, err = json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		t.Fatalf("encode incompatible Setup Manifest: %v", err)
+	}
+	if err := os.WriteFile(manifestPath, append(data, '\n'), 0o644); err != nil {
+		t.Fatalf("write incompatible Setup Manifest: %v", err)
+	}
+
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load Baseline catalog: %v", err)
+	}
+	state, err := inspectBaselineHumanState(repo, catalog)
+	if err != nil {
+		t.Fatalf("inspect incompatible human state: %v", err)
+	}
+	if state.mode != "adoption" || state.incompatible == "" {
+		t.Fatalf("incompatible state = %+v, want adoption with diagnostic", state)
+	}
+	if state.currentProfile == nil || state.currentProfile.ID != "go-cli-tui" {
+		t.Fatalf("recovered profile = %+v, want go-cli-tui", state.currentProfile)
+	}
+	if got := state.currentDecisions["verification.gate"]; got != "make verify" {
+		t.Fatalf("recovered verification.gate = %#v, want make verify", got)
+	}
+
+	var review bytes.Buffer
+	var prompts bytes.Buffer
+	profile, err := promptBaselineProfile(
+		context.Background(),
+		&baselineHumanPrompt{reader: bufioReader("\n"), writer: &prompts},
+		&review,
+		repo,
+		catalog,
+		state,
+	)
+	if err != nil {
+		t.Fatalf("accept recovered profile default: %v", err)
+	}
+	if profile.ID != "go-cli-tui" {
+		t.Fatalf("accepted profile = %q, want go-cli-tui", profile.ID)
+	}
+	if !strings.Contains(prompts.String(), "Reuse existing profile go-cli-tui (default)") {
+		t.Fatalf("recovered profile default is not visible:\n%s", prompts.String())
+	}
+}
+
+func TestHumanBaselineDecisionDefaults(t *testing.T) {
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load Baseline catalog: %v", err)
+	}
+	tests := []struct {
+		name    string
+		id      string
+		current map[string]any
+		want    any
+	}{
+		{
+			name:    "existing manifest value wins",
+			id:      "verification.gate",
+			current: map[string]any{"verification.gate": "repository verify"},
+			want:    "repository verify",
+		},
+		{
+			name:    "invalid manifest value falls back to catalog",
+			id:      "verification.gate",
+			current: map[string]any{"verification.gate": "  "},
+			want:    "rtk make verify",
+		},
+		{name: "language", id: "language.generated", want: "English"},
+		{name: "verification", id: "verification.gate", want: "rtk make verify"},
+		{name: "HTTP contract", id: "http.contract", want: map[string]any{"mode": "Post-only"}},
+		{name: "spec scaffold", id: "spec.scaffold", want: true},
+		{name: "domain layout", id: "domain.layout", want: "single-context"},
+		{name: "external triage", id: "triage.external", want: false},
+		{name: "autonomous work", id: "autonomous.enabled", want: true},
+		{name: "Secondbrain", id: "secondbrain.enabled", want: true},
+		{name: "repository extension", id: "repository.extension.enabled", want: true},
+		{name: "backend runtime", id: "runtime.backend", want: "codex gpt-5.6-sol"},
+		{name: "design runtime", id: "runtime.design", want: "claude fable high"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var output bytes.Buffer
+			got, err := promptBaselineDecision(
+				context.Background(),
+				&baselineHumanPrompt{reader: bufioReader("\n"), writer: &output},
+				catalog,
+				test.id,
+				test.current,
+			)
+			if err != nil {
+				t.Fatalf("accept %s default: %v", test.id, err)
+			}
+			if !reflect.DeepEqual(got, test.want) {
+				t.Fatalf("%s default = %#v, want %#v", test.id, got, test.want)
+			}
+			if !strings.Contains(output.String(), "default") {
+				t.Fatalf("%s prompt does not expose its default:\n%s", test.id, output.String())
+			}
+		})
+	}
+}
+
+func TestHumanBaselinePreservationDefaultFollowsInstructionInventory(t *testing.T) {
+	tests := []struct {
+		name            string
+		hasInstructions bool
+		want            baseline.PreservationMode
+	}{
+		{name: "instructions use preservation", hasInstructions: true, want: baseline.PreservationModePreservation},
+		{name: "no instructions use greenfield", hasInstructions: false, want: baseline.PreservationModeGreenfield},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var output bytes.Buffer
+			mode, err := promptPreservationMode(
+				context.Background(),
+				&baselineHumanPrompt{reader: bufioReader("\n"), writer: &output},
+				test.hasInstructions,
+			)
+			if err != nil {
+				t.Fatalf("accept preservation default: %v", err)
+			}
+			if mode != test.want {
+				t.Fatalf("preservation default = %q, want %q", mode, test.want)
+			}
+			if !strings.Contains(output.String(), "(default)") {
+				t.Fatalf("preservation prompt does not expose its default:\n%s", output.String())
+			}
+		})
+	}
+}
+
+func TestHumanBaselineConfirmationRequiresExplicitChoice(t *testing.T) {
+	var output bytes.Buffer
+	selected, err := (&baselineHumanPrompt{
+		reader: bufioReader("\n2\n"),
+		writer: &output,
+	}).selectOne(context.Background(), "Apply reviewed Plan", []string{"Apply", "Decline"})
+	if err != nil {
+		t.Fatalf("read explicit confirmation: %v", err)
+	}
+	if selected != 1 {
+		t.Fatalf("confirmation selection = %d, want explicit decline", selected)
+	}
+	if !strings.Contains(output.String(), "Enter a number from 1 to 2") {
+		t.Fatalf("blank confirmation was accepted without an explicit choice:\n%s", output.String())
 	}
 }
 

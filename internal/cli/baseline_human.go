@@ -66,6 +66,7 @@ type baselineDecisionDeclaration struct {
 	Values  []string `json:"values"`
 	Modes   []string `json:"modes"`
 	Summary string   `json:"summary"`
+	Default any      `json:"default"`
 }
 
 func runBaselineHumanCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
@@ -269,7 +270,11 @@ func driveHumanBaselinePlanWithRequest(
 	}
 	renderBaselineHumanState(review, state)
 
-	preservationMode, err := promptPreservationMode(ctx, prompt)
+	preservationMode, err := promptPreservationMode(
+		ctx,
+		prompt,
+		baselineHasRootInstructions(inspection.Snapshot),
+	)
 	if err != nil {
 		return baseline.PlanDocument{}, err
 	}
@@ -460,7 +465,11 @@ func promptStructuredBaselineRevision(
 		if inspectErr != nil {
 			return request, inspectErr
 		}
-		mode, modeErr := promptPreservationMode(ctx, prompt)
+		mode, modeErr := promptPreservationMode(
+			ctx,
+			prompt,
+			baselineHasRootInstructions(inspection.Snapshot),
+		)
 		if modeErr != nil {
 			return request, modeErr
 		}
@@ -534,16 +543,20 @@ func inspectBaselineHumanState(root string, catalog *baseline.Catalog) (baseline
 		state.incompatible = "the existing Setup Manifest is incompatible with the current Baseline"
 		return state, nil
 	}
+	for id, decision := range manifest.Decisions {
+		state.currentDecisions[id] = decision.Value
+	}
 	profile, err := baseline.ResolveProfile(root, manifest.Profile, catalog)
-	if err != nil || profile.Digest != manifest.ProfileDigest {
+	if err != nil {
+		state.incompatible = "the existing Setup Manifest references an unavailable or changed Baseline Profile"
+		return state, nil
+	}
+	state.currentProfile = &profile
+	if profile.Digest != manifest.ProfileDigest {
 		state.incompatible = "the existing Setup Manifest references an unavailable or changed Baseline Profile"
 		return state, nil
 	}
 	state.mode = "update"
-	state.currentProfile = &profile
-	for id, decision := range manifest.Decisions {
-		state.currentDecisions[id] = decision.Value
-	}
 	return state, nil
 }
 
@@ -563,11 +576,16 @@ func renderBaselineHumanState(output io.Writer, state baselineHumanState) {
 func promptPreservationMode(
 	ctx context.Context,
 	prompt *baselineHumanPrompt,
+	hasInstructions bool,
 ) (baseline.PreservationMode, error) {
-	selected, err := prompt.selectOne(ctx, "Instruction preservation", []string{
+	defaultIndex := 0
+	if hasInstructions {
+		defaultIndex = 1
+	}
+	selected, err := prompt.selectOneDefault(ctx, "Instruction preservation", []string{
 		"Greenfield: back up root instruction carriers without importing their rules",
 		"Preservation: back up root instruction carriers and review every proposed classification",
-	})
+	}, defaultIndex)
 	if err != nil {
 		return "", err
 	}
@@ -575,6 +593,15 @@ func promptPreservationMode(
 		return baseline.PreservationModeGreenfield, nil
 	}
 	return baseline.PreservationModePreservation, nil
+}
+
+func baselineHasRootInstructions(snapshot baseline.RepositorySnapshot) bool {
+	for _, carrier := range snapshot.Carriers {
+		if carrier.Scope == "root" {
+			return true
+		}
+	}
+	return false
 }
 
 func promptBaselineProfile(
@@ -586,10 +613,14 @@ func promptBaselineProfile(
 	state baselineHumanState,
 ) (baseline.ResolvedProfile, error) {
 	if state.currentProfile != nil {
-		selected, err := prompt.selectOne(ctx, "Baseline Profile", []string{
-			"Keep current profile " + state.currentProfile.ID,
+		reuseLabel := "Keep current profile " + state.currentProfile.ID
+		if state.mode != "update" {
+			reuseLabel = "Reuse existing profile " + state.currentProfile.ID
+		}
+		selected, err := prompt.selectOneDefault(ctx, "Baseline Profile", []string{
+			reuseLabel,
 			"Change Baseline Profile",
-		})
+		}, 0)
 		if err != nil {
 			return baseline.ResolvedProfile{}, err
 		}
@@ -685,39 +716,70 @@ func promptBaselineDecision(
 		return nil, err
 	}
 	if value, ok := current[id]; ok {
-		encoded, _ := json.Marshal(value)
-		selected, err := prompt.selectOne(ctx, declaration.Summary, []string{
-			fmt.Sprintf("Keep %s=%s", id, encoded),
-			"Change " + id,
-		})
-		if err != nil {
-			return nil, err
-		}
-		if selected == 0 {
-			return value, nil
+		if baselineDecisionValueAllowed(declaration, value) {
+			encoded, _ := json.Marshal(value)
+			selected, err := prompt.selectOneDefault(ctx, declaration.Summary, []string{
+				fmt.Sprintf("Keep %s=%s", id, encoded),
+				"Change " + id,
+			}, 0)
+			if err != nil {
+				return nil, err
+			}
+			if selected == 0 {
+				return value, nil
+			}
 		}
 	}
 
 	switch declaration.Type {
 	case "boolean":
-		selected, err := prompt.selectOne(ctx, declaration.Summary, []string{"Yes", "No"})
+		defaultIndex := -1
+		if value, ok := declaration.Default.(bool); ok {
+			defaultIndex = 1
+			if value {
+				defaultIndex = 0
+			}
+		}
+		selected, err := prompt.selectOneDefault(
+			ctx,
+			declaration.Summary,
+			[]string{"Yes", "No"},
+			defaultIndex,
+		)
 		if err != nil {
 			return nil, err
 		}
 		return selected == 0, nil
 	case "enum":
-		selected, err := prompt.selectOne(ctx, declaration.Summary, declaration.Values)
+		selected, err := prompt.selectOneDefault(
+			ctx,
+			declaration.Summary,
+			declaration.Values,
+			baselineDecisionDefaultIndex(declaration.Values, declaration.Default),
+		)
 		if err != nil {
 			return nil, err
 		}
 		return declaration.Values[selected], nil
 	case "http-contract":
-		selected, err := prompt.selectOne(ctx, declaration.Summary, declaration.Modes)
+		defaultMode := ""
+		if value, ok := declaration.Default.(map[string]any); ok {
+			defaultMode, _ = value["mode"].(string)
+		}
+		selected, err := prompt.selectOneDefault(
+			ctx,
+			declaration.Summary,
+			declaration.Modes,
+			baselineDecisionDefaultIndex(declaration.Modes, defaultMode),
+		)
 		if err != nil {
 			return nil, err
 		}
 		return map[string]any{"mode": declaration.Modes[selected]}, nil
 	case "string":
+		if value, ok := declaration.Default.(string); ok && strings.TrimSpace(value) != "" {
+			return prompt.readNonEmptyDefault(ctx, declaration.Summary+" ("+id+")", value)
+		}
 		return prompt.readNonEmpty(ctx, declaration.Summary+" ("+id+")")
 	default:
 		return nil, fmt.Errorf("prompt Baseline decision %q: unsupported type %q", id, declaration.Type)
@@ -737,6 +799,40 @@ func baselineDecisionDefinition(
 		return baselineDecisionDeclaration{}, fmt.Errorf("decode Baseline decision %q: %w", id, err)
 	}
 	return declaration, nil
+}
+
+func baselineDecisionValueAllowed(declaration baselineDecisionDeclaration, value any) bool {
+	switch declaration.Type {
+	case "boolean":
+		_, ok := value.(bool)
+		return ok
+	case "enum":
+		return baselineDecisionDefaultIndex(declaration.Values, value) >= 0
+	case "http-contract":
+		object, ok := value.(map[string]any)
+		if !ok {
+			return false
+		}
+		return baselineDecisionDefaultIndex(declaration.Modes, object["mode"]) >= 0
+	case "string":
+		text, ok := value.(string)
+		return ok && strings.TrimSpace(text) != ""
+	default:
+		return false
+	}
+}
+
+func baselineDecisionDefaultIndex(options []string, value any) int {
+	text, ok := value.(string)
+	if !ok {
+		return -1
+	}
+	for index, option := range options {
+		if option == text {
+			return index
+		}
+	}
+	return -1
 }
 
 func promptBaselineClassification(
@@ -882,20 +978,40 @@ func (prompt *baselineHumanPrompt) selectOne(
 	label string,
 	options []string,
 ) (int, error) {
+	return prompt.selectOneDefault(ctx, label, options, -1)
+}
+
+func (prompt *baselineHumanPrompt) selectOneDefault(
+	ctx context.Context,
+	label string,
+	options []string,
+	defaultIndex int,
+) (int, error) {
 	if len(options) == 0 {
 		return 0, fmt.Errorf("prompt %q has no options", label)
+	}
+	if defaultIndex >= len(options) {
+		return 0, fmt.Errorf("prompt %q default index %d is outside its options", label, defaultIndex)
 	}
 	prompt.step++
 	fmt.Fprintf(prompt.writer, "\nPrompt %d: %s\n", prompt.step, label)
 	for index, option := range options {
-		fmt.Fprintf(prompt.writer, "  %d. %s\n", index+1, option)
+		suffix := ""
+		if index == defaultIndex {
+			suffix = " (default)"
+		}
+		fmt.Fprintf(prompt.writer, "  %d. %s%s\n", index+1, option, suffix)
 	}
 	for {
 		line, err := prompt.readLine(ctx)
 		if err != nil {
 			return 0, err
 		}
-		choice, err := strconv.Atoi(strings.TrimSpace(line))
+		answer := strings.TrimSpace(line)
+		if answer == "" && defaultIndex >= 0 {
+			return defaultIndex, nil
+		}
+		choice, err := strconv.Atoi(answer)
 		if err == nil && choice >= 1 && choice <= len(options) {
 			return choice - 1, nil
 		}
@@ -916,6 +1032,26 @@ func (prompt *baselineHumanPrompt) readNonEmpty(ctx context.Context, label strin
 		}
 		fmt.Fprint(prompt.writer, "Enter a non-empty value: ")
 	}
+}
+
+func (prompt *baselineHumanPrompt) readNonEmptyDefault(
+	ctx context.Context,
+	label string,
+	defaultValue string,
+) (string, error) {
+	if strings.TrimSpace(defaultValue) == "" {
+		return "", fmt.Errorf("prompt %q has an empty default value", label)
+	}
+	prompt.step++
+	fmt.Fprintf(prompt.writer, "\nPrompt %d: %s\n> [default: %s] ", prompt.step, label, defaultValue)
+	line, err := prompt.readLine(ctx)
+	if err != nil {
+		return "", err
+	}
+	if value := strings.TrimSpace(line); value != "" {
+		return value, nil
+	}
+	return defaultValue, nil
 }
 
 func (prompt *baselineHumanPrompt) readLine(ctx context.Context) (string, error) {

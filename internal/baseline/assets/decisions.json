@@ -6,6 +6,7 @@
       "id": "spec.scaffold",
       "version": 1,
       "type": "boolean",
+      "default": true,
       "summary": "Whether the repository uses local docs/specs artifacts as its planning source.",
       "effects": [
         {
@@ -34,6 +35,7 @@
       "version": 1,
       "type": "enum",
       "values": ["single-context", "multi-context"],
+      "default": "single-context",
       "summary": "The CONTEXT.md layout agents must read before naming domain concepts.",
       "effects": [
         {
@@ -62,6 +64,7 @@
       "id": "triage.external",
       "version": 1,
       "type": "boolean",
+      "default": false,
       "summary": "Whether external forge issues require triage-label guidance.",
       "effects": [
         {
@@ -85,6 +88,7 @@
       "id": "autonomous.enabled",
       "version": 1,
       "type": "boolean",
+      "default": true,
       "summary": "Whether autonomous Supervisor and ACP Runtime delegation applies.",
       "effects": [
         {
@@ -112,6 +116,7 @@
       "id": "verification.gate",
       "version": 1,
       "type": "string",
+      "default": "rtk make verify",
       "summary": "The repository verification command named by generated guidance.",
       "effects": [
         {
@@ -131,6 +136,7 @@
       "version": 1,
       "type": "http-contract",
       "modes": ["REST", "Post-only"],
+      "default": {"mode": "Post-only"},
       "summary": "The repository-owned HTTP Contract Decision and its explicit typed exceptions.",
       "effects": [
         {
@@ -142,6 +148,7 @@
       "id": "runtime.backend",
       "version": 1,
       "type": "string",
+      "default": "codex gpt-5.6-sol",
       "summary": "The default implementation ACP Runtime and model for backend Tasks.",
       "effects": [
         {
@@ -160,6 +167,7 @@
       "id": "runtime.design",
       "version": 1,
       "type": "string",
+      "default": "claude fable high",
       "summary": "The design, UI, UX, or frontend ACP Runtime and model.",
       "effects": [
         {
@@ -179,6 +187,7 @@
       "version": 1,
       "type": "enum",
       "values": ["English"],
+      "default": "English",
       "summary": "The language used for generated repository content.",
       "effects": [
         {
@@ -200,6 +209,7 @@
       "id": "secondbrain.enabled",
       "version": 1,
       "type": "boolean",
+      "default": true,
       "summary": "Whether read-only Secondbrain guidance is generated.",
       "effects": [
         {
@@ -223,6 +233,7 @@
       "id": "repository.extension.enabled",
       "version": 1,
       "type": "boolean",
+      "default": true,
       "summary": "Whether setup creates and links the Repository-Owned Extension for project-specific hard rules.",
       "effects": [
         {

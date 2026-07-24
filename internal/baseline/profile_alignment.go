@@ -783,10 +783,6 @@ func collectHTTPRouteCandidates(
 		if entry.Type()&fs.ModeSymlink != 0 || !httpSourceExtension(filepath.Ext(filePath)) {
 			return nil
 		}
-		sourceFiles++
-		if sourceFiles > maxHTTPSourceFiles {
-			return fmt.Errorf("HTTP candidate source count exceeds %d", maxHTTPSourceFiles)
-		}
 		data, state, detail := readBoundedRegularFile(root, filePath, maxCapabilityFileBytes)
 		if state == CapabilityEvidenceInvalid {
 			return fmt.Errorf("inspect HTTP candidate %q: %s", filePath, detail)
@@ -794,11 +790,19 @@ func collectHTTPRouteCandidates(
 		if state != CapabilityEvidencePresent {
 			return nil
 		}
+		fileCandidates := routeCandidatesFromSource(filePath, data)
+		if len(fileCandidates) == 0 {
+			return nil
+		}
+		sourceFiles++
+		if sourceFiles > maxHTTPSourceFiles {
+			return fmt.Errorf("HTTP candidate source count exceeds %d", maxHTTPSourceFiles)
+		}
 		totalBytes += len(data)
 		if totalBytes > maxHTTPSourceBytes {
 			return fmt.Errorf("HTTP candidate source bytes exceed %d", maxHTTPSourceBytes)
 		}
-		candidates = append(candidates, routeCandidatesFromSource(filePath, data)...)
+		candidates = append(candidates, fileCandidates...)
 		return nil
 	})
 	if err != nil {

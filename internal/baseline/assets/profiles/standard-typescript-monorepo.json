@@ -130,7 +130,7 @@
     "decisionId": "http.contract",
     "ownership": "repository",
     "required": true,
-    "default": null,
+    "default": "Post-only",
     "modes": ["REST", "Post-only"],
     "exceptions": {
       "ordered": true,

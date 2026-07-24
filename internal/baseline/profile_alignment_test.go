@@ -8,6 +8,7 @@ package baseline
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -240,6 +241,57 @@ app.route("/auth", auth)
 		if strings.Contains(strings.ToLower(string(data)), forbidden) {
 			t.Fatalf("HTTP candidates inferred %q policy: %s", forbidden, data)
 		}
+	}
+}
+
+func TestHTTPRouteCandidateLimitIgnoresUnrelatedSourceFiles(t *testing.T) {
+	catalog := loadProfileAlignmentCatalog(t)
+	repository := newAlignedTypeScriptRepository(t)
+	for index := range maxHTTPSourceFiles + 1 {
+		writeProfileAlignmentFile(
+			t,
+			repository,
+			fmt.Sprintf("packages/backend/src/domain/unrelated-%03d.ts", index),
+			"export const value = true\n",
+		)
+	}
+	writeProfileAlignmentFile(
+		t,
+		repository,
+		"packages/backend/src/infra/controllers/http/app.ts",
+		`app.post("/api/orders", createOrder)`,
+	)
+
+	alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+		ProfileID: "standard-typescript-monorepo",
+		Decisions: standardTypeScriptDecisions("make verify"),
+	}, catalog)
+	if err != nil {
+		t.Fatalf("resolve HTTP route candidates in a large codebase: %v", err)
+	}
+	if got := len(alignment.HTTPCandidates); got != 1 {
+		t.Fatalf("HTTP candidate count = %d, want 1", got)
+	}
+}
+
+func TestHTTPRouteCandidateLimitRejectsTooManyRelevantSources(t *testing.T) {
+	catalog := loadProfileAlignmentCatalog(t)
+	repository := newAlignedTypeScriptRepository(t)
+	for index := range maxHTTPSourceFiles + 1 {
+		writeProfileAlignmentFile(
+			t,
+			repository,
+			fmt.Sprintf("packages/backend/src/infra/controllers/routes/route-%03d.ts", index),
+			fmt.Sprintf(`app.get("/route-%03d", handler)`, index),
+		)
+	}
+
+	_, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+		ProfileID: "standard-typescript-monorepo",
+		Decisions: standardTypeScriptDecisions("make verify"),
+	}, catalog)
+	if err == nil || !strings.Contains(err.Error(), "HTTP candidate source count exceeds 256") {
+		t.Fatalf("HTTP relevant-source limit error = %v", err)
 	}
 }
 

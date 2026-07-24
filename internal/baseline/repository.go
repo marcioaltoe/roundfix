@@ -508,7 +508,9 @@ func (builder *inventoryBuilder) resolveAlias(aliasPath, linkTarget string) (str
 					return "", fmt.Errorf("alias target %q cannot be read", candidate)
 				}
 			}
-			builder.preimages[candidate] = preimageFromInfo(candidate, info, filepath.ToSlash(link))
+			if _, recorded := builder.preimages[candidate]; !recorded {
+				builder.preimages[candidate] = preimageFromInfo(candidate, info, filepath.ToSlash(link))
+			}
 			if info.Mode()&fs.ModeSymlink != 0 {
 				if _, cycle := seen[candidate]; cycle {
 					return "", fmt.Errorf("alias target cycle at %q", candidate)

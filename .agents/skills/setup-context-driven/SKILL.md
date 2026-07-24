@@ -57,6 +57,15 @@ selects exactly one Baseline Profile, and shows one consolidated Change Plan
 with file changes first. Do not authorize mutation before the complete plan and
 Plan Digest are visible.
 
+Decision and preservation prompts mark one visible default; Enter confirms it.
+A valid stored Setup Manifest value wins even when a changed Profile Digest
+requires adoption again. Otherwise the CLI uses its embedded catalog
+suggestions, including `codex gpt-5.6-sol` for backend work and
+`claude fable high` for design work. Existing root instructions default to
+Preservation, an empty instruction inventory defaults to Greenfield, and a
+recoverable existing profile is preferred. Classification, Plan approval, and
+apply still require an explicit non-empty choice.
+
 For first adoption, ask the maintainer to choose one instruction mode:
 
 - Greenfield backs up safe root carriers and imports none of their rules.
@@ -70,9 +79,11 @@ manual classification review. Never invent Source Baseline identities,
 classifications, or destinations.
 
 For updates, the current Baseline Profile and compatible decisions are offered
-first. A profile change produces a new full plan. If the maintainer rejects the
-plan, use the command's decision-area revision flow. Every accepted correction
-must produce a new Plan Digest and another complete review.
+first. If only the Profile Digest changed, the command enters adoption but
+retains still-valid profile and decision values as defaults. A profile change
+produces a new full plan. If the maintainer rejects the plan, use the command's
+decision-area revision flow. Every accepted correction must produce a new Plan
+Digest and another complete review.
 
 ## Non-interactive planning
 
