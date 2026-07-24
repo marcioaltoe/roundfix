@@ -965,6 +965,12 @@ func artifactRenderValues(
 		targetID, _ := stringValue(reference, "managedId")
 		if target := artifactPaths[targetID]; target != "" {
 			values[token] = "`" + target + "`"
+			continue
+		}
+		ownership, _ := stringValue(reference, "ownership")
+		repositoryPath, _ := stringValue(reference, "path")
+		if ownership == "repository" && safeRelative(repositoryPath) {
+			values[token] = "`" + repositoryPath + "`"
 		}
 	}
 	return values
