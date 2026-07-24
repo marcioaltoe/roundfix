@@ -54,6 +54,7 @@ Usage:
   roundfix baseline profile show <id> [--format <text|json>]
   roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
   roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+  roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
   roundfix profiles show [--category <category>] [--json]
   roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--yes] [--json]
   roundfix profiles validate [--category <category>] [--json]
@@ -3976,6 +3977,8 @@ explicit post-QA authority.
   roundfix baseline profile init --id <id> [--from <built-in-id>]
   roundfix baseline profile show <id> [--format <text|json>]
   roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
+  roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+  roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
 
 The root command guides one interactive adoption or update from repository
 preflight through Baseline verification. Numbered linear prompts collect one
@@ -3988,6 +3991,7 @@ Commands:
   apply    Automation: apply and verify exactly one approved portable Baseline Plan without prompting.
   profile  Author, inspect, and validate built-in or repository-owned Baseline Profiles.
   skills   Preview or apply immutable external Repository Skill Set restoration.
+  assets   Check or refresh Go-owned canonical Baseline setup snapshots.
 
 The interactive root command refuses redirected or absent terminal input.
 Automation must use baseline plan followed by baseline apply with the exact
@@ -4124,6 +4128,33 @@ Options:
   --confirm-plan  Exact lowercase Plan Digest returned by the current preview
   --repo          Git worktree or a path inside it (default current directory)
   --format        Output format: text or json (default text)
+`
+	case "baseline assets sync":
+		return `Usage:
+  roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
+
+Checks or refreshes the Go-owned canonical Baseline setup snapshots from an
+explicit canonical setups directory. The source must be a clean Git checkout
+with a portable GitHub origin, a full immutable HEAD commit, committed setup
+documents, safe source-relative paths, and complete regular-file skill trees
+whose working bytes match the declared commit.
+
+Check mode is read-only and reports whether every canonical snapshot is
+current. A non-empty refresh first validates the generated catalog in memory,
+then uses the recoverable Baseline transaction to update only
+internal/baseline/assets/setups. It never installs skills, writes the canonical
+source, or reads the installed setup-context-driven skill at runtime.
+
+Exit codes:
+  0  snapshots are current, or a canonical refresh completed
+  1  check-mode drift, refresh, output, rollback, or recovery failure
+  2  invalid arguments, source provenance, path, tree, or catalog compatibility
+  130 operation canceled
+
+Options:
+  --source-dir  Required canonical setups directory inside the immutable source checkout
+  --check       Report snapshot drift without writing canonical assets
+  --format      Output format: text or json (default text)
 `
 	case "profiles":
 		return `Usage:

@@ -59,6 +59,18 @@ func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 			return exitPreflight
 		}
 		return runBaselineSkillsRestoreCommand(ctx, args[2:], stdout, stderr)
+	case "assets":
+		if len(args) == 1 || args[1] != "sync" {
+			printBaselineProfileFailure(
+				"baseline assets",
+				validationError{message: "baseline assets requires the sync command"},
+				false,
+				stdout,
+				stderr,
+			)
+			return exitPreflight
+		}
+		return runBaselineAssetsSyncCommand(ctx, args[2:], stdout, stderr)
 	default:
 		printBaselineProfileFailure(
 			"baseline",
