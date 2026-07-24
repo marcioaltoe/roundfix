@@ -161,6 +161,65 @@ every Session on success or error. JSON schemas are
 `roundfix/profiles/v1`, `roundfix/profiles-configure/v1`, and
 `roundfix/profiles-validate/v1`.
 
+### baseline
+
+```text
+roundfix baseline [--repo <path>] [--format <text|json>]
+roundfix baseline plan --profile <id> [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
+roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
+roundfix baseline profile init --id <id> [--from <built-in-id>]
+roundfix baseline profile show <id> [--format <text|json>]
+roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
+roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
+```
+
+The root command is the terminal-only human workflow for first adoption and
+later updates. It detects existing state, collects instruction preservation,
+one Baseline Profile, and repository decisions, then presents one consolidated
+Change Plan. Rejecting the plan returns to a selected decision area and
+recalculates the complete plan. Mutation requires one explicit confirmation of
+the current displayed Plan Digest.
+
+`baseline plan` is read-only, non-interactive, local, and network-free. JSON
+exit `0` emits one complete `roundfix/baseline-plan/v1` document. Missing
+decisions, manual classification, or unresolved alignment exit `3` with a
+`roundfix/baseline-result/v1` next action and no partial plan.
+
+`baseline apply` accepts only a strict portable JSON plan and its exact
+`planDigest`. It validates clone-stable Git lineage, the embedded catalog,
+profile identity, every bounded preimage, the complete managed-entry ledger,
+and its derived file projection. It never substitutes a newer plan. Matching
+postimages make an exact reapply an idempotent success.
+
+`baseline profile init` creates
+`.roundfix/baseline/profiles/<id>.json` from one embedded built-in profile.
+`show` resolves one built-in or repository-owned profile; `validate` checks one
+ID, one direct profile path, or every repository-owned profile. Repository
+profiles can use embedded entry IDs only and cannot compose profiles or load
+remote executable content.
+
+`baseline skills restore` is a separate confirmation-gated Repository Skill
+Set operation. Its non-empty preview exits `3` with a current Plan Digest;
+`--confirm-plan` applies only that exact preview. `--source-dir` selects an
+offline Git checkout or bare object store containing the declared immutable
+source commit.
+
+`baseline assets sync` is a maintainer operation over an explicit canonical
+setups directory. `--check` is read-only. Refresh validates the generated
+catalog before updating only Go-owned canonical setup snapshots.
+
+Baseline requested output goes to stdout; diagnostics and progress go to
+stderr. Exit categories are `0` success or current no-op, `1` execution,
+verification, output, recovery, or incomplete-rollback failure, `2` invalid
+input/schema or unsafe repository, `3` another owner action or renewed
+approval is required, and `130` cancellation. Baseline reports repository
+formatter and Verification commands as recommendations but never runs them.
+
+For the adoption, automation, Decision Document, cross-clone, migration,
+recovery, and security procedures, read
+[CONTEXT-driven development](context-driven-development.md#adopt-or-update-the-context-driven-baseline).
+
 ## Review loop: fetch, resolve, watch
 
 Review Runs execute in the user's checkout on the PR Head Branch — they create

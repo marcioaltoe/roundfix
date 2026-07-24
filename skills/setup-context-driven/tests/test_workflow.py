@@ -124,70 +124,75 @@ class SetupWorkflowTests(unittest.TestCase):
 
     def test_skill_workflow_requires_preview_and_confirmation_before_apply(self):
         skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        normalized = " ".join(skill.split())
 
-        audit_index = skill.index("Run audit before asking setup questions")
-        preview_index = skill.index("plannedChanges")
-        confirm_index = skill.index("Ask for confirmation")
-        apply_index = skill.index("context_setup.py apply")
+        plan_index = skill.index("roundfix baseline plan")
+        preview_index = skill.index("Review at least:")
+        confirm_index = skill.index("Ask the maintainer to approve")
+        apply_index = skill.index("roundfix baseline apply")
 
-        self.assertLess(audit_index, preview_index)
+        self.assertLess(plan_index, preview_index)
         self.assertLess(preview_index, confirm_index)
         self.assertLess(confirm_index, apply_index)
-        self.assertIn("only `docs/agents/setup-context.json` and declared setup-owned Markdown boundaries can change", skill)
-        self.assertIn("repository-authored bytes outside managed markers remain untouched", skill)
+        self.assertIn("Baseline owns declared root blocks", skill)
+        self.assertIn(
+            "preserves repository-authored bytes outside managed boundaries",
+            normalized,
+        )
 
     def test_skill_names_canonical_setup_and_optional_extra_skill_report(self):
         skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        normalized = " ".join(skill.split())
 
-        self.assertIn("selected canonical skill setup", skill)
-        self.assertIn("--show-extra-skills", skill)
-        self.assertIn("Never suggest a removal command", skill)
-        self.assertIn("Do not dump generated Markdown by default", skill)
+        self.assertIn("## Baseline Profiles", skill)
+        self.assertIn("profile show", skill)
+        self.assertIn("profile validate", skill)
+        self.assertIn("## Repository Skill Set restoration", skill)
+        self.assertIn("never restores them as a side effect", normalized)
+        self.assertIn("## Canonical asset synchronization", skill)
 
     def test_operator_docs_publish_schema_exit_and_confirmation_contract(self):
         skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
         user_guide = USER_GUIDE.read_text(encoding="utf-8")
 
         for document in (skill, user_guide):
-            self.assertIn("setup-context-driven/audit-v1", document)
-            self.assertIn("setup-context-driven/restore-v1", document)
-            self.assertIn("context_setup.py audit", document)
-            self.assertIn("context_setup.py apply", document)
+            normalized = " ".join(document.split())
+            self.assertIn("roundfix/baseline-plan/v1", document)
+            self.assertIn("roundfix/baseline-result/v1", document)
+            self.assertIn("roundfix baseline plan", document)
+            self.assertIn("roundfix baseline apply", document)
             self.assertIn("--confirm-plan", document)
-            self.assertIn("restore-skills", document)
-            self.assertIn("exit `0`", document)
-            self.assertIn("exit `1`", document)
-            self.assertIn("exit `2`", document)
-            self.assertIn("exit `3`", document)
+            self.assertIn("baseline skills restore", document)
+            for exit_code in ("`0`", "`1`", "`2`", "`3`"):
+                self.assertIn(exit_code, normalized)
             for field in (
-                "action",
-                "path",
-                "managedId",
-                "state",
-                "reason",
-                "beforeDigest",
-                "afterDigest",
-                "condition",
-                "fromPath",
-                "referenceEdits",
+                "fileChanges",
+                "managedEntries",
+                "preimage",
+                "postimage",
+                "planDigest",
+                "recommendations",
             ):
-                self.assertIn(f"`{field}`", document)
-            self.assertNotIn("bunx skills update", document)
-            self.assertNotIn("bunx skills experimental_install", document)
+                self.assertIn(field, document)
+            self.assertNotIn("context_setup.py", document)
+            self.assertNotIn("python3", document.lower())
 
-        audit_index = skill.index("context_setup.py audit")
-        resolve_index = skill.index("fully resolved Decision Plan")
-        apply_index = skill.index("context_setup.py apply")
-        final_audit_index = skill.index("After apply, rerun the same resolved audit")
-        restore_index = skill.index("context_setup.py restore-skills")
-        self.assertLess(audit_index, resolve_index)
-        self.assertLess(resolve_index, apply_index)
-        self.assertLess(apply_index, final_audit_index)
-        self.assertLess(final_audit_index, restore_index)
-        self.assertIn("never removes skills", skill)
-        self.assertIn("never generates project-specific architecture", skill)
-        self.assertIn("never execute that argv automatically", skill)
-        self.assertIn("There is no branch, default-revision, or generic skill-refresh fallback", skill)
+        plan_index = skill.index("roundfix baseline plan")
+        review_index = skill.index("Review at least:")
+        apply_index = skill.index("roundfix baseline apply")
+        restore_index = skill.index("roundfix baseline skills restore")
+        completion_index = skill.index("## Completion")
+        self.assertLess(plan_index, review_index)
+        self.assertLess(review_index, apply_index)
+        self.assertLess(apply_index, restore_index)
+        self.assertLess(restore_index, completion_index)
+        normalized_skill = " ".join(skill.split())
+        self.assertIn("never restores them as a side effect", normalized_skill)
+        self.assertIn(
+            "no independent setup engine or behavioral fallback",
+            normalized_skill,
+        )
+        self.assertIn("Never substitute a generic skill refresh", normalized_skill)
 
     def test_asset_maintenance_doc_publishes_catalog_and_source_boundaries(self):
         guide = ASSET_GUIDE.read_text(encoding="utf-8")

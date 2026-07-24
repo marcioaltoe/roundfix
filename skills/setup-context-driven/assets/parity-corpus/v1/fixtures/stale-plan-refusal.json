@@ -16,7 +16,7 @@
   "id": "stale-plan-refusal",
   "input": {
     "action": "apply",
-    "confirmPlan": "8275df625716b5c2115208e4890bbff5edbf6e14eddf4b8bf5f2bf9d3ed1a965",
+    "confirmPlan": "3ecc22b51d87dae428679b485b049be824ad2ef60bec1938301b0d92b566cdef",
     "mutationAfterPreview": {
       "identity": "sha256:ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
       "path": "AGENTS.md"
@@ -41,7 +41,7 @@
           }
         ],
         "ok": false,
-        "planDigest": "dd9499d3125dae3d23eb2e621f7bd578be54037760107b1c3a029cf1f3ab1aa9",
+        "planDigest": "98965ae74fa27d72fbf752497d919afe4c440e7d82602e38cf1bcf881056e115",
         "plannedChanges": [
           {
             "action": "create managed block",
@@ -251,7 +251,7 @@
           }
         ],
         "ok": false,
-        "planDigest": "8275df625716b5c2115208e4890bbff5edbf6e14eddf4b8bf5f2bf9d3ed1a965",
+        "planDigest": "3ecc22b51d87dae428679b485b049be824ad2ef60bec1938301b0d92b566cdef",
         "plannedChanges": [
           {
             "action": "create managed block",
@@ -447,7 +447,7 @@
       }
     }
   },
-  "planDigest": "8275df625716b5c2115208e4890bbff5edbf6e14eddf4b8bf5f2bf9d3ed1a965",
+  "planDigest": "3ecc22b51d87dae428679b485b049be824ad2ef60bec1938301b0d92b566cdef",
   "plannedByteSequence": [
     {
       "action": "create managed block",

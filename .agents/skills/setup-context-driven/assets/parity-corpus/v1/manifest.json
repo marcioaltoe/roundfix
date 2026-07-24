@@ -15,19 +15,19 @@
   ],
   "artifacts": [
     {
-      "bytes": 699916,
+      "bytes": 684732,
       "path": "blobs.json",
-      "sha256": "dd0399eb90954f649be7b2302a0364b9cad6bc667fc9759d9f3828cf4c3bfcdd"
+      "sha256": "247845849dd03055a28d3f41d2e070ae20df43657c20121e7485a0913be64aa8"
     },
     {
       "bytes": 85164,
       "path": "fixtures/asset-sync.json",
-      "sha256": "19d48917b75df4dfd26fdfd5422e575a4648ae0adb306e5a0e94acd76cc86865"
+      "sha256": "4a7b45d16c2a14d350a2b61e7d1a1a63020feec4dc6970feb65540d94ccab875"
     },
     {
-      "bytes": 330239,
+      "bytes": 330237,
       "path": "fixtures/atomic-rollback.json",
-      "sha256": "891c669a6169b90157592f0191c739162252c049175847cbbd5ec88bd6579f11"
+      "sha256": "a37970b894d7165a27c45ba8794f4bcb42c2677c49bf1250988bfc73f33536b4"
     },
     {
       "bytes": 12892,
@@ -37,47 +37,47 @@
     {
       "bytes": 39760,
       "path": "fixtures/greenfield-go-cli-tui.json",
-      "sha256": "1c72c5906157e6ca0794f1164f31ba0c09d42c597a742fcb424441144dcdc238"
+      "sha256": "c2f9a0f2f3942a2330deb6e5c68f8692a88459b7120ebd1824a659672b95fac4"
     },
     {
       "bytes": 36104,
       "path": "fixtures/greenfield-rust-cli.json",
-      "sha256": "85955daf13dcbb573967e51ab21b99bded731fb395313b61a79cef7a467aa380"
+      "sha256": "d7c67bdd4b81eb1d291170853c07f04718e398d11c607536ad5f1f654d7cdedb"
     },
     {
-      "bytes": 417770,
+      "bytes": 417768,
       "path": "fixtures/greenfield-standard-typescript-monorepo.json",
-      "sha256": "f0f08ad8c31ad55ba7097005210820a0434f4a7c8a7498ad4b5f9cc9d4e5d711"
+      "sha256": "0d6394d63f37e241f71f9e97443cecd7c7763d40ee081a2c69a689b58c3289c1"
     },
     {
-      "bytes": 109278,
+      "bytes": 109276,
       "path": "fixtures/missing-capability-refusal.json",
-      "sha256": "7cbc648b0463a5a1ee0edbb80db4d3e51808cd5631b3ffaac892e348e43a4b80"
+      "sha256": "6576315f0beac667d3de44824944b9e7faba42449ff45f877a2bc664add19249"
     },
     {
-      "bytes": 49045,
+      "bytes": 49043,
       "path": "fixtures/profile-change-rust-to-go-cli-tui.json",
-      "sha256": "47d35ddc17c53ab8efc7fc6aa0c9bd396f8fade69d290ac719417add7a251360"
+      "sha256": "323fbc239a16800aa22848f85bf6046a0fbed9708dfc19008391ea97c36fa7b2"
     },
     {
-      "bytes": 555043,
+      "bytes": 555041,
       "path": "fixtures/readoption-preservation.json",
-      "sha256": "9c1dbe10abcf6f8a47fd39d5d48cd5927600dc5f4984476ae7d9876c5dd133ad"
+      "sha256": "29e4dbc0264132beeea229981e1c1d9a4e25e857330ab5e461d2b92a29de2052"
     },
     {
-      "bytes": 25041,
+      "bytes": 25039,
       "path": "fixtures/skill-restoration-rollback.json",
-      "sha256": "dfaa9764b0866c7620e792c75dd971be4229f9dccf53f7300c1aa32f52c2ccf2"
+      "sha256": "55109a01d6a6f1022f1968d00db08d266faa073bee2779261299dc7bb6a7f943"
     },
     {
-      "bytes": 32672,
+      "bytes": 32670,
       "path": "fixtures/skill-restoration.json",
-      "sha256": "671579521b7a429c4d34fc42135fe6e46b0db1f07ee76aaa922c60e0e3374c0c"
+      "sha256": "6234ed30050c8c89ca0f50972050fb68da701d082d5d0a475fd381fcf25e085c"
     },
     {
       "bytes": 22914,
       "path": "fixtures/stale-plan-refusal.json",
-      "sha256": "66500d635d58ac6b29b5fd6dd48dd87ef894189cf29768f76d51deecb49e96a6"
+      "sha256": "c9b7b28f48b72f1743b110981be84b7ecafa3bdf3eeb02047f35e0a3371bedc8"
     },
     {
       "bytes": 3050,
@@ -85,14 +85,14 @@
       "sha256": "005e6f308daf072623297a5c10785c48eb6771a3489379b6930e44a48f6021b7"
     },
     {
-      "bytes": 41363,
+      "bytes": 41361,
       "path": "fixtures/update-rust-cli.json",
-      "sha256": "019ccd4b249e2386a8a1b12af0a2e85123552a9d65cacb586511e26b8864c46c"
+      "sha256": "8bae2c5b7dd3f9138789ad4ba0b4af37d9022f85b39b9aa6c21f4188c537dc38"
     },
     {
-      "bytes": 188373,
+      "bytes": 188343,
       "path": "matrix.json",
-      "sha256": "add8ff57477d3a033e3422df0670057f420a8b8d45c047b120c6c3f6736c27b4"
+      "sha256": "d2e6488260758383043d3e6a4a2861383e40d80090da99eb75e9641c7040ae1f"
     }
   ],
   "fixtureIds": [
@@ -120,7 +120,7 @@
   "retiredBehavior": [],
   "schemaVersion": "setup-context-driven/parity-corpus/v1",
   "sourceSuite": {
-    "inventoryDigest": "sha256:f555c5db89e7e80d6ac4887ac016efd49adf33c8994dd4a84744c081dc9f05e2",
+    "inventoryDigest": "sha256:05673e16ab74ca5af9955d071778a3944f18505ce39d57cba0d7d4e1912e261b",
     "root": "tests",
     "testCount": 240
   }

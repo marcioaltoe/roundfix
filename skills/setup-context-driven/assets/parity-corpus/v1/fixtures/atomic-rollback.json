@@ -11,13 +11,13 @@
     "rollback-outcome"
   ],
   "fileIdentities": {
-    "postimage": "sha256:39b9837e32eafc6cbf497c87e492b07d4e716c69feb27e4fda2c0a9cc517d77c",
-    "preimage": "sha256:7fb0a2c87d1c71ad56191cad3f7db4bb3fcf97a0fb9aa97b8eda62e6b6f3d72e"
+    "postimage": "sha256:7d7ab66a2670a11739533f65b21c88c04a9cacd2b836979ae8271a0454e0d387",
+    "preimage": "sha256:471a2576dd50fa4a5890434a5f0bf1ca0dcb5b38b371c299d6022ca83b1f7a86"
   },
   "id": "atomic-rollback",
   "input": {
     "action": "readoption-apply",
-    "confirmPlan": "1de737691005e332f065cae95c2ac564f134e2c07b4308da203d8c6e6e102e0c",
+    "confirmPlan": "edf4b15c8f52aab033009fd3ff3bc218a06140471e7ece1b0f4f4774006e1398",
     "failurePoint": "second-replace",
     "profile": "standard-typescript-monorepo"
   },
@@ -2684,7 +2684,7 @@
           }
         ],
         "ok": false,
-        "planDigest": "1de737691005e332f065cae95c2ac564f134e2c07b4308da203d8c6e6e102e0c",
+        "planDigest": "edf4b15c8f52aab033009fd3ff3bc218a06140471e7ece1b0f4f4774006e1398",
         "plannedChanges": [
           {
             "action": "remove source managed content",
@@ -3824,7 +3824,7 @@
       }
     }
   },
-  "planDigest": "1de737691005e332f065cae95c2ac564f134e2c07b4308da203d8c6e6e102e0c",
+  "planDigest": "edf4b15c8f52aab033009fd3ff3bc218a06140471e7ece1b0f4f4774006e1398",
   "plannedByteSequence": [
     {
       "action": "remove source managed content",
@@ -4505,11 +4505,11 @@
       "size": 54
     },
     {
-      "identity": "sha256:4a4dd9136f11bc0fa85992b731eecaba8306ec5079ce910c64427be2099e3b43",
+      "identity": "sha256:ef44f9b0486b97e36d479c971de226ed746330db7d479ff0cdbc1e8256422a4b",
       "kind": "file",
       "mode": 420,
       "path": ".agents/skills/roundfix/SKILL.md",
-      "size": 70989
+      "size": 73481
     },
     {
       "identity": "sha256:3763544dd59a7ffdaaf1f05c07e056af3e7525d3ff50a75c579ba67f5ab087d5",
@@ -4526,11 +4526,11 @@
       "size": 84
     },
     {
-      "identity": "sha256:adf70c6bc4d550b2d3cabf69a3d2d4303a98ee589f3c385002561d8c1296993b",
+      "identity": "sha256:ac12b7ade6ac5379c79452eb65239ab7c0e127e5c488753876b09591e321b14d",
       "kind": "file",
       "mode": 420,
       "path": ".agents/skills/setup-context-driven/SKILL.md",
-      "size": 22931
+      "size": 9049
     },
     {
       "identity": "sha256:8c09bcb8e6cc7bae05533db21749657cad1ae440331c2711ba66fefefcbdeb60",
@@ -5285,11 +5285,11 @@
       "size": 54
     },
     {
-      "identity": "sha256:4a4dd9136f11bc0fa85992b731eecaba8306ec5079ce910c64427be2099e3b43",
+      "identity": "sha256:ef44f9b0486b97e36d479c971de226ed746330db7d479ff0cdbc1e8256422a4b",
       "kind": "file",
       "mode": 420,
       "path": ".agents/skills/roundfix/SKILL.md",
-      "size": 70989
+      "size": 73481
     },
     {
       "identity": "sha256:3763544dd59a7ffdaaf1f05c07e056af3e7525d3ff50a75c579ba67f5ab087d5",
@@ -5306,11 +5306,11 @@
       "size": 84
     },
     {
-      "identity": "sha256:adf70c6bc4d550b2d3cabf69a3d2d4303a98ee589f3c385002561d8c1296993b",
+      "identity": "sha256:ac12b7ade6ac5379c79452eb65239ab7c0e127e5c488753876b09591e321b14d",
       "kind": "file",
       "mode": 420,
       "path": ".agents/skills/setup-context-driven/SKILL.md",
-      "size": 22931
+      "size": 9049
     },
     {
       "identity": "sha256:8c09bcb8e6cc7bae05533db21749657cad1ae440331c2711ba66fefefcbdeb60",
@@ -5582,8 +5582,8 @@
   "rollback": {
     "attempted": true,
     "evidence": {
-      "after": "sha256:67c27890afb3d0ba483525bfd80f01053c87bc1bdb9c332d962041bbe2413805",
-      "before": "sha256:67c27890afb3d0ba483525bfd80f01053c87bc1bdb9c332d962041bbe2413805",
+      "after": "sha256:3b84ddbdfdbd95ab47cd0afbfd9b55d765086a51728cc88b16a007ec65b6d297",
+      "before": "sha256:3b84ddbdfdbd95ab47cd0afbfd9b55d765086a51728cc88b16a007ec65b6d297",
       "contract": "paths, kinds, targets, and exact bytes"
     },
     "restoredPreimage": true,

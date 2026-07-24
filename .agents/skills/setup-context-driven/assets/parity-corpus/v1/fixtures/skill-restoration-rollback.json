@@ -10,8 +10,8 @@
     "rollback-outcome"
   ],
   "fileIdentities": {
-    "postimage": "sha256:548526dccd9048e716be913f47acdbbae38403f7872e9652e71be90bac6dfba7",
-    "preimage": "sha256:548526dccd9048e716be913f47acdbbae38403f7872e9652e71be90bac6dfba7"
+    "postimage": "sha256:dd5d64ab1d55858332d2e0035f535dacde6ee467be87351ee80fd1a004ebda22",
+    "preimage": "sha256:dd5d64ab1d55858332d2e0035f535dacde6ee467be87351ee80fd1a004ebda22"
   },
   "id": "skill-restoration-rollback",
   "input": {
@@ -263,11 +263,11 @@
       "size": 54
     },
     {
-      "identity": "sha256:4a4dd9136f11bc0fa85992b731eecaba8306ec5079ce910c64427be2099e3b43",
+      "identity": "sha256:ef44f9b0486b97e36d479c971de226ed746330db7d479ff0cdbc1e8256422a4b",
       "kind": "file",
       "mode": 420,
       "path": ".agents/skills/roundfix/SKILL.md",
-      "size": 70989
+      "size": 73481
     },
     {
       "identity": "sha256:b01a5ec32fb89526ef9cb3a940b171f90068f7a3880b4783c7562eda8f2e2f8e",
@@ -284,11 +284,11 @@
       "size": 50
     },
     {
-      "identity": "sha256:adf70c6bc4d550b2d3cabf69a3d2d4303a98ee589f3c385002561d8c1296993b",
+      "identity": "sha256:ac12b7ade6ac5379c79452eb65239ab7c0e127e5c488753876b09591e321b14d",
       "kind": "file",
       "mode": 420,
       "path": ".agents/skills/setup-context-driven/SKILL.md",
-      "size": 22931
+      "size": 9049
     },
     {
       "identity": "sha256:9e3b9dae5f5b79bb31a048f9d735271a0c8efa1e37bb6264c6327e9c1bbdd017",
@@ -616,11 +616,11 @@
       "size": 54
     },
     {
-      "identity": "sha256:4a4dd9136f11bc0fa85992b731eecaba8306ec5079ce910c64427be2099e3b43",
+      "identity": "sha256:ef44f9b0486b97e36d479c971de226ed746330db7d479ff0cdbc1e8256422a4b",
       "kind": "file",
       "mode": 420,
       "path": ".agents/skills/roundfix/SKILL.md",
-      "size": 70989
+      "size": 73481
     },
     {
       "identity": "sha256:b01a5ec32fb89526ef9cb3a940b171f90068f7a3880b4783c7562eda8f2e2f8e",
@@ -637,11 +637,11 @@
       "size": 50
     },
     {
-      "identity": "sha256:adf70c6bc4d550b2d3cabf69a3d2d4303a98ee589f3c385002561d8c1296993b",
+      "identity": "sha256:ac12b7ade6ac5379c79452eb65239ab7c0e127e5c488753876b09591e321b14d",
       "kind": "file",
       "mode": 420,
       "path": ".agents/skills/setup-context-driven/SKILL.md",
-      "size": 22931
+      "size": 9049
     },
     {
       "identity": "sha256:9e3b9dae5f5b79bb31a048f9d735271a0c8efa1e37bb6264c6327e9c1bbdd017",
@@ -787,8 +787,8 @@
   "rollback": {
     "attempted": true,
     "evidence": {
-      "after": "sha256:b4b869fec1c50eeccd59355258fe2b148a9890699baa9e34e07a89c82ea0e904",
-      "before": "sha256:b4b869fec1c50eeccd59355258fe2b148a9890699baa9e34e07a89c82ea0e904",
+      "after": "sha256:ef32b780530a7ce52f41c97ba3038bf1cfc10823a42b290b304d786916111ab9",
+      "before": "sha256:ef32b780530a7ce52f41c97ba3038bf1cfc10823a42b290b304d786916111ab9",
       "contract": "paths, kinds, targets, and exact bytes"
     },
     "restoredPreimage": true,

@@ -8,7 +8,7 @@
     "ref": "236847f6956134bf468abb641bac0493a899bca5",
     "path": "setups/go-cli.txt"
   },
-  "digest": "96905796b558f6fde6852d5ccae2cdeb94b0e848338f76da51a1b3655ad05f01",
+  "digest": "615fb1ff30fda33001667ef63f65f8407cc85daf3fc65c5255a12f5a021f8224",
   "activationBundles": [
     {
       "id": "bundle.delivery",
@@ -38,7 +38,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "adf70c6bc4d550b2d3cabf69a3d2d4303a98ee589f3c385002561d8c1296993b"
+      "contentDigest": "ac12b7ade6ac5379c79452eb65239ab7c0e127e5c488753876b09591e321b14d"
     },
     {
       "name": "brainstorming",
@@ -377,7 +377,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "4a4dd9136f11bc0fa85992b731eecaba8306ec5079ce910c64427be2099e3b43"
+      "contentDigest": "ef44f9b0486b97e36d479c971de226ed746330db7d479ff0cdbc1e8256422a4b"
     },
     {
       "name": "archive-spec",

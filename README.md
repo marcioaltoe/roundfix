@@ -62,6 +62,13 @@ QA gate at the end:
 roundfix implement --spec <slug> --qa
 ```
 
+Adopt or update the repository's Context-Driven Baseline through the public,
+confirmation-gated workflow:
+
+```bash
+roundfix baseline
+```
+
 For scripts, CI, or agents, detach the Run and monitor it without owning it:
 
 ```bash
@@ -84,7 +91,8 @@ which is what lets an agent drive Roundfix reliably.
 - [Configuration](docs/user-guide/configuration.md) — config precedence, agent
   and model selection, worktrees and bootstrap, retention, local state paths.
 - [CONTEXT-driven development](docs/user-guide/context-driven-development.md)
-  — the method behind the spec pipeline.
+  — the method behind the spec pipeline and the complete Baseline adoption,
+  automation, migration, recovery, and security contract.
 - [Project glossary](CONTEXT.md) and
   [architecture decisions](docs/adr/) — the vocabulary and decision log.
 - [Release runbook](docs/user-guide/release-runbook.md).

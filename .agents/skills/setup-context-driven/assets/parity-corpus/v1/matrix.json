@@ -1643,7 +1643,7 @@
       "sourceTest": "test_uncovered_nested_delegation_emits_one_informational_finding"
     },
     {
-      "behavior": "canonical terms and readoption workflow are actionable",
+      "behavior": "canonical terms and decision input are actionable",
       "classification": "designed-delta",
       "contractDimensions": [
         "input"
@@ -1652,12 +1652,12 @@
         "greenfield-rust-cli"
       ],
       "goDestination": "internal/cli/baseline documentation contracts",
-      "id": "python.test_documentation_contract.DocumentationContractTests.test_canonical_terms_and_readoption_workflow_are_actionable",
+      "id": "python.test_documentation_contract.DocumentationContractTests.test_canonical_terms_and_decision_input_are_actionable",
       "rationale": "The public Baseline Command replaces Python-backed setup documentation; the Go documentation contract retains the behavior without preserving legacy prose.",
       "sourceKind": "python-test",
       "sourcePath": "tests/test_documentation_contract.py",
       "sourceSuite": "DocumentationContractTests",
-      "sourceTest": "test_canonical_terms_and_readoption_workflow_are_actionable"
+      "sourceTest": "test_canonical_terms_and_decision_input_are_actionable"
     },
     {
       "behavior": "examples are project agnostic and skill trees are identical",
@@ -1677,7 +1677,7 @@
       "sourceTest": "test_examples_are_project_agnostic_and_skill_trees_are_identical"
     },
     {
-      "behavior": "owned and protected version surfaces are unambiguous",
+      "behavior": "public command family is the only documented runtime",
       "classification": "designed-delta",
       "contractDimensions": [
         "input"
@@ -1686,12 +1686,29 @@
         "greenfield-rust-cli"
       ],
       "goDestination": "internal/cli/baseline documentation contracts",
-      "id": "python.test_documentation_contract.DocumentationContractTests.test_owned_and_protected_version_surfaces_are_unambiguous",
+      "id": "python.test_documentation_contract.DocumentationContractTests.test_public_command_family_is_the_only_documented_runtime",
       "rationale": "The public Baseline Command replaces Python-backed setup documentation; the Go documentation contract retains the behavior without preserving legacy prose.",
       "sourceKind": "python-test",
       "sourcePath": "tests/test_documentation_contract.py",
       "sourceSuite": "DocumentationContractTests",
-      "sourceTest": "test_owned_and_protected_version_surfaces_are_unambiguous"
+      "sourceTest": "test_public_command_family_is_the_only_documented_runtime"
+    },
+    {
+      "behavior": "recovery security and migration contracts are complete",
+      "classification": "designed-delta",
+      "contractDimensions": [
+        "input"
+      ],
+      "fixtureIds": [
+        "greenfield-rust-cli"
+      ],
+      "goDestination": "internal/cli/baseline documentation contracts",
+      "id": "python.test_documentation_contract.DocumentationContractTests.test_recovery_security_and_migration_contracts_are_complete",
+      "rationale": "The public Baseline Command replaces Python-backed setup documentation; the Go documentation contract retains the behavior without preserving legacy prose.",
+      "sourceKind": "python-test",
+      "sourcePath": "tests/test_documentation_contract.py",
+      "sourceSuite": "DocumentationContractTests",
+      "sourceTest": "test_recovery_security_and_migration_contracts_are_complete"
     },
     {
       "behavior": "release reset guidance stops at a fresh read only plan",
@@ -1710,23 +1727,6 @@
       "sourcePath": "tests/test_documentation_contract.py",
       "sourceSuite": "DocumentationContractTests",
       "sourceTest": "test_release_reset_guidance_stops_at_a_fresh_read_only_plan"
-    },
-    {
-      "behavior": "standard typescript profile and capability policy are exact",
-      "classification": "designed-delta",
-      "contractDimensions": [
-        "input"
-      ],
-      "fixtureIds": [
-        "greenfield-rust-cli"
-      ],
-      "goDestination": "internal/cli/baseline documentation contracts",
-      "id": "python.test_documentation_contract.DocumentationContractTests.test_standard_typescript_profile_and_capability_policy_are_exact",
-      "rationale": "The public Baseline Command replaces Python-backed setup documentation; the Go documentation contract retains the behavior without preserving legacy prose.",
-      "sourceKind": "python-test",
-      "sourcePath": "tests/test_documentation_contract.py",
-      "sourceSuite": "DocumentationContractTests",
-      "sourceTest": "test_standard_typescript_profile_and_capability_policy_are_exact"
     },
     {
       "behavior": "apply formatter verification audit and reapply leave no delta",

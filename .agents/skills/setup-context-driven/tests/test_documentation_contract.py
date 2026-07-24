@@ -1,9 +1,9 @@
-"""0.0.1 documentation contract tests.
+"""Public Baseline documentation contract tests.
 
 Suite: Context-Driven Baseline operating documentation
-Invariant: shipped guides describe the complete project-agnostic 0.0.1 setup, Readoption, and release-reset contracts.
-Boundary IN: canonical glossary, user guides, and canonical/distributed setup and Roundfix skills.
-Boundary OUT: CLI behavior and asset semantics, which their focused Go and Python suites own.
+Invariant: public guides and owned skills describe the shipped Go CLI contract with canonical terms and portable examples.
+Boundary IN: glossary, README, user guides, and canonical/distributed setup and Roundfix skills.
+Boundary OUT: command parsing and strict JSON parsing, which the Go documentation contract suite owns.
 """
 
 import unittest
@@ -11,46 +11,21 @@ from pathlib import Path
 
 
 CANONICAL_TERMS = (
+    "Context-Driven Baseline",
+    "Baseline Profile",
+    "Baseline Command",
     "Source Baseline",
+    "Source Baseline Entry",
     "Normative Clause Manifest",
     "Operational Contract",
     "Repository Capability",
     "Skill Activation",
-    "HTTP Contract Decision",
+    "Decision Plan",
+    "Change Plan",
+    "Setup Manifest",
     "Baseline Readoption",
     "Repository-Specific Normative Rules",
-)
-REQUIRED_STACK = (
-    "TypeScript",
-    "Bun",
-    "Turborepo",
-    "Vite",
-    "React",
-    "Hono",
-    "Drizzle",
-    "Zod",
-    "Tailwind",
-    "shadcn",
-    "TanStack Query",
-    "TanStack Router",
-    "Better Auth",
-    "PostgreSQL",
-    "LogTape",
-    "Oxlint",
-    "Oxfmt",
-    "Vitest",
-)
-ACTIVATION_BUNDLES = (
-    "bundle.production-code",
-    "bundle.frontend-react",
-    "bundle.frontend-ui-quality",
-    "bundle.hono-endpoint",
-    "bundle.hono-endpoint-persistence",
-    "bundle.testing",
-    "bundle.debugging",
-    "bundle.security",
-    "bundle.qa",
-    "bundle.delivery",
+    "Repository Skill Set",
 )
 
 
@@ -63,8 +38,9 @@ def find_repository_root():
 
 
 REPOSITORY_ROOT = find_repository_root()
+README = REPOSITORY_ROOT / "README.md"
 CONTEXT_GUIDE = REPOSITORY_ROOT / "docs/user-guide/context-driven-development.md"
-CONFIGURATION_GUIDE = REPOSITORY_ROOT / "docs/user-guide/configuration.md"
+COMMAND_GUIDE = REPOSITORY_ROOT / "docs/user-guide/commands.md"
 RELEASE_RUNBOOK = REPOSITORY_ROOT / "docs/user-guide/release-runbook.md"
 SETUP_SKILL = REPOSITORY_ROOT / ".agents/skills/setup-context-driven/SKILL.md"
 ROUNDFIX_SKILL = REPOSITORY_ROOT / ".agents/skills/roundfix/SKILL.md"
@@ -83,7 +59,7 @@ def tree_bytes(root):
 
 
 class DocumentationContractTests(unittest.TestCase):
-    def test_canonical_terms_and_readoption_workflow_are_actionable(self):
+    def test_canonical_terms_and_decision_input_are_actionable(self):
         glossary = read(REPOSITORY_ROOT / "CONTEXT.md")
         guide = read(CONTEXT_GUIDE)
 
@@ -94,102 +70,75 @@ class DocumentationContractTests(unittest.TestCase):
 
         for fragment in (
             "setup-context-driven/decisions/0.0.1",
-            '"sourceBaseline"',
-            '"dispositions"',
-            '"entryDigest"',
-            "managed-entry",
-            "repository-document",
-            "repository-rules",
-            "rejected",
-            "--decision-file <decision-file>",
-            "--confirm-plan <planDigest>",
-            "formatter → Verification → audit → reapply",
+            '"schemaVersion"',
+            '"decisions"',
+            '"preservation.mode"',
+            "--decision-file baseline-decisions.json",
+            "--confirm-plan sha256:<64-lowercase-hex>",
+            "roundfix/baseline-plan/v1",
+            "roundfix/baseline-result/v1",
         ):
             with self.subTest(fragment=fragment):
                 self.assertIn(fragment, guide)
 
-    def test_standard_typescript_profile_and_capability_policy_are_exact(self):
-        guide = read(CONTEXT_GUIDE)
-        setup_skill = read(SETUP_SKILL)
-        combined = " ".join((guide + "\n" + setup_skill).split())
-        normalized_guide = " ".join(guide.split())
+    def test_public_command_family_is_the_only_documented_runtime(self):
+        documents = {
+            "README": read(README),
+            "Context-Driven user guide": read(CONTEXT_GUIDE),
+            "command reference": read(COMMAND_GUIDE),
+            "setup skill": read(SETUP_SKILL),
+            "Roundfix skill": read(ROUNDFIX_SKILL),
+        }
 
+        for document_name, document in documents.items():
+            with self.subTest(document=document_name):
+                self.assertIn("roundfix baseline", document)
+                self.assertNotIn("context_setup.py", document)
+                self.assertNotIn("python3", document.lower())
+
+        combined = " ".join("\n".join(documents.values()).split())
         for fragment in (
-            "standard-typescript-monorepo",
-            "packages/frontend",
-            "packages/backend",
-            "public system boundary",
-            "`domain`, `application`, and `infrastructure`",
-            "thin HTTP handlers",
-            "HTTP-independent",
-            "Drizzle-owned",
-            "`REST`",
-            "`Post-only`",
-            "`scope`",
-            "`methods`",
-            "`owner`",
-            "`reason`",
-            "Inngest",
-            "Docker",
+            "roundfix baseline plan",
+            "roundfix baseline apply",
+            "roundfix baseline profile init",
+            "roundfix baseline skills restore",
+            "roundfix baseline assets sync",
+            "stdout",
+            "stderr",
+            "profile expectation",
+            "repository command",
+            "recommendation",
+            "no partial plan",
+            "no independent setup engine",
         ):
             with self.subTest(fragment=fragment):
                 self.assertIn(" ".join(fragment.split()), combined)
 
-        for stack_entry in REQUIRED_STACK:
-            with self.subTest(stack_entry=stack_entry):
-                self.assertIn(stack_entry, guide)
-        for bundle in ACTIVATION_BUNDLES:
-            with self.subTest(bundle=bundle):
-                self.assertIn(bundle, guide)
-
-        self.assertIn("Context7 and Exa are required", normalized_guide)
-        self.assertIn(
-            "Firecrawl, `rtk`, and `rg` are recommended",
-            normalized_guide,
-        )
-        self.assertIn("three to seven varied searches", normalized_guide)
-        self.assertLess(
-            normalized_guide.index("Search local repository code"),
-            normalized_guide.index("Use Context7"),
-        )
-        self.assertIn("capability.recommended.missing", normalized_guide)
-        self.assertIn("do not block", setup_skill)
-
-    def test_owned_and_protected_version_surfaces_are_unambiguous(self):
+    def test_recovery_security_and_migration_contracts_are_complete(self):
         guide = read(CONTEXT_GUIDE)
-        configuration = read(CONFIGURATION_GUIDE)
-        setup_skill = read(SETUP_SKILL)
-        combined = guide + "\n" + configuration + "\n" + setup_skill
 
-        for owned in (
-            "Roundfix CLI",
-            "npm",
-            "Context-Driven Baseline",
-            "Source Baseline",
-            "schemas",
-            "manifests",
-            "profiles",
-            "Roundfix-owned distributed skills",
-            "Release Plan JSON schema",
-            "changelog",
+        for fragment in (
+            "### First adoption",
+            "Greenfield",
+            "Preservation",
+            "profile change",
+            "rejected plans",
+            "Cross-clone",
+            "Stale plan",
+            "Unsafe carrier",
+            "Interrupted transaction",
+            "Incomplete rollback",
+            "Repository Skill Set restoration",
+            "Canonical asset synchronization",
+            "2 MiB",
+            "256 entries",
+            "512 KiB",
+            "never:",
+            "Migrate from the script-backed setup skill",
+            "There is no independent skill",
         ):
-            with self.subTest(owned=owned):
-                self.assertIn(owned, combined)
-        for protected in (
-            "User Config",
-            "Project Config",
-            "Runs",
-            "Run Database",
-            "PRAGMA user_version",
-            "skills-lock.json",
-            "upstream-managed skill",
-            "third-party protocol",
-            "Git history",
-            "Specs",
-            "ADRs",
-        ):
-            with self.subTest(protected=protected):
-                self.assertIn(protected, combined)
+            with self.subTest(fragment=fragment):
+                self.assertIn(fragment, guide)
 
     def test_release_reset_guidance_stops_at_a_fresh_read_only_plan(self):
         documents = (
@@ -224,9 +173,9 @@ class DocumentationContractTests(unittest.TestCase):
         documented_surfaces = "\n".join(
             read(path)
             for path in (
+                README,
                 CONTEXT_GUIDE,
-                CONFIGURATION_GUIDE,
-                RELEASE_RUNBOOK,
+                COMMAND_GUIDE,
                 SETUP_SKILL,
                 ROUNDFIX_SKILL,
             )

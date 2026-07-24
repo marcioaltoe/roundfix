@@ -208,6 +208,60 @@ workflow: validate the tag, keep artifact versions in agreement, publish npm
 packages through the release workflow, upload GitHub Release assets, and leave
 the Upgrade Command asset contract unchanged.
 
+## Context-Driven Baseline
+
+Use the Baseline Command for Context-Driven Baseline adoption, update, profile
+management, recovery, Repository Skill Set restoration, and canonical asset
+synchronization. The CLI is the runtime authority; the
+`setup-context-driven` skill contains recipes only.
+
+At a terminal, the human workflow is:
+
+```bash
+roundfix baseline --repo . --format text
+```
+
+It detects adoption or update, collects one Baseline Profile and repository
+decisions, shows one consolidated Change Plan, and writes only after explicit
+confirmation of the displayed Plan Digest. Rejecting a plan returns to a
+selected decision area and requires a newly calculated complete plan and
+confirmation.
+
+Automation and Agents use the non-interactive pair:
+
+```bash
+roundfix baseline plan --repo . --profile <profile-id> --decision-file <decision-file> --format json
+roundfix baseline apply --repo . --plan <plan-file> --confirm-plan <plan-digest> --format json
+```
+
+Planning never prompts or writes. Exit `0` emits one complete
+`roundfix/baseline-plan/v1` document; exit `3` emits a
+`roundfix/baseline-result/v1` next action and no partial plan. Apply accepts
+only that strict portable document and its exact digest. A stale preimage,
+confirmation mismatch, or unrelated Git lineage exits `3`; generate and
+review a new plan instead of forcing the old one.
+
+Requested results go to stdout; diagnostics and progress go to stderr. Baseline
+reports repository formatter and Verification commands as recommendations and
+never executes them. It also never installs dependencies, connects to live
+infrastructure, follows unsafe links, mutates nested instruction carriers, or
+lets ACP proposals authorize writes.
+
+Use explicit maintenance operations only when the user placed them in scope:
+
+```bash
+roundfix baseline profile show <profile-id> --format json
+roundfix baseline profile validate <profile-id> --format text
+roundfix baseline skills restore --repo . --profile <built-in-id> --skill <skill-name> --format json
+roundfix baseline assets sync --source-dir <canonical-setups> --check --format json
+```
+
+A non-empty skill-restoration preview requires its exact current Plan Digest
+through `--confirm-plan`. Asset refresh without `--check` requires explicit
+maintainer intent. For Decision Documents, preservation, cross-clone safety,
+recovery, migration, security limits, and completion evidence, follow
+`docs/user-guide/context-driven-development.md#adopt-or-update-the-context-driven-baseline`.
+
 ## Config compatibility
 
 Roundfix treats registered removed config keys as migrations, not Preflight

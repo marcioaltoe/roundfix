@@ -11,8 +11,8 @@
     "post-state"
   ],
   "fileIdentities": {
-    "postimage": "sha256:f4c2e9d584f2a97a1e7d4ce1a2c6f60320a0ed7dc77e0ffcb9ca13b7db4c98ae",
-    "preimage": "sha256:3f9f3b940655dfe5842b6b5097337f8148c1088c5e394287562c7df65d527270"
+    "postimage": "sha256:cf730d3717f24b5537c2db1f232f69917e1d721d5227c8a27628db7e19fcaf67",
+    "preimage": "sha256:3eee408e5e66a8ac8c9194eba09d2f025e0eee797fc22e421a5c4793f2429b93"
   },
   "id": "profile-change-rust-to-go-cli-tui",
   "input": {
@@ -426,7 +426,7 @@
           }
         ],
         "ok": true,
-        "planDigest": "9ea50fb08895ed919899111eefaa2d083c2b29a2ae8362e34c4ec02ac2590bcd",
+        "planDigest": "a88504766105cfe354e11c5d7358ef5586745be609a24e73e4ab040174cd623d",
         "plannedChanges": [
           {
             "action": "create managed block",
@@ -559,7 +559,7 @@
           }
         ],
         "ok": false,
-        "planDigest": "9ea50fb08895ed919899111eefaa2d083c2b29a2ae8362e34c4ec02ac2590bcd",
+        "planDigest": "a88504766105cfe354e11c5d7358ef5586745be609a24e73e4ab040174cd623d",
         "plannedChanges": [
           {
             "action": "create managed block",
@@ -678,7 +678,7 @@
       }
     }
   },
-  "planDigest": "9ea50fb08895ed919899111eefaa2d083c2b29a2ae8362e34c4ec02ac2590bcd",
+  "planDigest": "a88504766105cfe354e11c5d7358ef5586745be609a24e73e4ab040174cd623d",
   "plannedByteSequence": [
     {
       "action": "create managed block",
@@ -957,18 +957,18 @@
       "size": 54
     },
     {
-      "identity": "sha256:4a4dd9136f11bc0fa85992b731eecaba8306ec5079ce910c64427be2099e3b43",
+      "identity": "sha256:ef44f9b0486b97e36d479c971de226ed746330db7d479ff0cdbc1e8256422a4b",
       "kind": "file",
       "mode": 420,
       "path": ".agents/skills/roundfix/SKILL.md",
-      "size": 70989
+      "size": 73481
     },
     {
-      "identity": "sha256:adf70c6bc4d550b2d3cabf69a3d2d4303a98ee589f3c385002561d8c1296993b",
+      "identity": "sha256:ac12b7ade6ac5379c79452eb65239ab7c0e127e5c488753876b09591e321b14d",
       "kind": "file",
       "mode": 420,
       "path": ".agents/skills/setup-context-driven/SKILL.md",
-      "size": 22931
+      "size": 9049
     },
     {
       "identity": "sha256:9e3b9dae5f5b79bb31a048f9d735271a0c8efa1e37bb6264c6327e9c1bbdd017",
@@ -1333,18 +1333,18 @@
       "size": 54
     },
     {
-      "identity": "sha256:4a4dd9136f11bc0fa85992b731eecaba8306ec5079ce910c64427be2099e3b43",
+      "identity": "sha256:ef44f9b0486b97e36d479c971de226ed746330db7d479ff0cdbc1e8256422a4b",
       "kind": "file",
       "mode": 420,
       "path": ".agents/skills/roundfix/SKILL.md",
-      "size": 70989
+      "size": 73481
     },
     {
-      "identity": "sha256:adf70c6bc4d550b2d3cabf69a3d2d4303a98ee589f3c385002561d8c1296993b",
+      "identity": "sha256:ac12b7ade6ac5379c79452eb65239ab7c0e127e5c488753876b09591e321b14d",
       "kind": "file",
       "mode": 420,
       "path": ".agents/skills/setup-context-driven/SKILL.md",
-      "size": 22931
+      "size": 9049
     },
     {
       "identity": "sha256:9e3b9dae5f5b79bb31a048f9d735271a0c8efa1e37bb6264c6327e9c1bbdd017",

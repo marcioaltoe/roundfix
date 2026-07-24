@@ -8,7 +8,7 @@
     "ref": "236847f6956134bf468abb641bac0493a899bca5",
     "path": "setups/rust-cli.txt"
   },
-  "digest": "ab8021345b3d9799e641fda6cea81a3a84902ff6d638656cd7161be2ba46a1be",
+  "digest": "cc3307002f13a78973a8822858fec64c799cade69c7882e7590969e139981338",
   "activationBundles": [
     {
       "id": "bundle.delivery",
@@ -38,7 +38,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "adf70c6bc4d550b2d3cabf69a3d2d4303a98ee589f3c385002561d8c1296993b"
+      "contentDigest": "ac12b7ade6ac5379c79452eb65239ab7c0e127e5c488753876b09591e321b14d"
     },
     {
       "name": "brainstorming",
@@ -322,7 +322,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "4a4dd9136f11bc0fa85992b731eecaba8306ec5079ce910c64427be2099e3b43"
+      "contentDigest": "ef44f9b0486b97e36d479c971de226ed746330db7d479ff0cdbc1e8256422a4b"
     },
     {
       "name": "archive-spec",
