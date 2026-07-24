@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -226,6 +227,145 @@ func TestInstructionHierarchyPreservesPlanAndResultSchemas(t *testing.T) {
 		"warnings",
 		"recommendations",
 	})
+}
+
+func TestADRLifecycleContract(t *testing.T) {
+	docsLayout := string(planPostimage(
+		t,
+		buildTestPlan(t, newPlanRepository(t)),
+		"docs/agents/docs-layout.md",
+	).Content)
+	required := []string{
+		"status: proposed # proposed | accepted | rejected | deprecated | superseded",
+		"created_at: YYYY-MM-DDTHH:MM:SSZ",
+		"updated_at: YYYY-MM-DDTHH:MM:SSZ",
+		"deprecated_at: null # null or YYYY-MM-DDTHH:MM:SSZ",
+		"superseded_by: null # null or ADR-NNNN",
+		"Only `accepted` is active.",
+		"without lifecycle frontmatter as active unless its body explicitly marks it inactive",
+		"Do not rewrite existing ADRs solely to adopt lifecycle metadata.",
+		"domain-modeling/ADR-FORMAT.md",
+	}
+	assertContractFragments(t, docsLayout, required)
+
+	fixtures := []struct {
+		name   string
+		path   string
+		active bool
+	}{
+		{name: "accepted lifecycle", path: "accepted.md", active: true},
+		{name: "deprecated lifecycle", path: "deprecated.md", active: false},
+		{name: "legacy active", path: "legacy-active.md", active: true},
+		{name: "legacy explicitly inactive", path: "legacy-inactive.md", active: false},
+	}
+	for _, fixture := range fixtures {
+		t.Run(fixture.name, func(t *testing.T) {
+			content, err := fs.ReadFile(
+				compatibilityFixtures,
+				"testdata/adr-lifecycle/"+fixture.path,
+			)
+			if err != nil {
+				t.Fatalf("read ADR lifecycle fixture: %v", err)
+			}
+			if got := adrFixtureIsActive(content); got != fixture.active {
+				t.Fatalf("adrFixtureIsActive() = %t, want %t", got, fixture.active)
+			}
+		})
+	}
+
+	existing, err := fs.ReadFile(
+		compatibilityFixtures,
+		"testdata/adr-lifecycle/legacy-active.md",
+	)
+	if err != nil {
+		t.Fatalf("read existing ADR fixture: %v", err)
+	}
+	repo := newPlanRepository(t)
+	const existingPath = "docs/adr/0001-legacy-active.md"
+	writeInspectionFile(t, repo, existingPath, string(existing))
+	commitInspectionRepository(t, repo, "add existing ADR fixture")
+	plan := buildTestPlan(t, repo)
+	for _, postimage := range plan.Postimages {
+		if postimage.Path == existingPath {
+			t.Fatalf("plan rewrites existing ADR solely for lifecycle metadata")
+		}
+	}
+	after, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(existingPath)))
+	if err != nil {
+		t.Fatalf("read existing ADR after planning: %v", err)
+	}
+	if !bytes.Equal(after, existing) {
+		t.Fatal("existing ADR fixture bytes changed during planning")
+	}
+}
+
+func TestFindingsOperationalContract(t *testing.T) {
+	docsLayout := string(planPostimage(
+		t,
+		buildTestPlan(t, newPlanRepository(t)),
+		"docs/agents/docs-layout.md",
+	).Content)
+	required := []string{
+		"status: pending # pending | partial | deferred | done",
+		"created_at: YYYY-MM-DD",
+		"updated_at: YYYY-MM-DD",
+		"# <Area> — <short title> (YYYY-MM-DD)",
+		"session or investigation",
+		"## 1. <Finding title — symptom, not hypothesis>",
+		"Symptom / evidence:",
+		"Root cause: <proven cause, or `unknown`",
+		"Action / suggestion:",
+		"route to a Spec",
+		"## What worked — keep",
+		"## Addendum — YYYY-MM-DD — <short title>",
+		"`pending` when the finding is new and has no implementation Spec",
+		"`partial` when a linked Spec covers only the selected implementation scope",
+		"`deferred` only when the finding will not be implemented",
+		"`status: done` as soon as the Spec is created and linked",
+		"append evidence and routing links as dated addenda",
+		"Update `updated_at` whenever status changes or an evidence addendum is appended",
+	}
+	assertContractFragments(t, docsLayout, required)
+}
+
+func assertContractFragments(t *testing.T, content string, required []string) {
+	t.Helper()
+	for _, fragment := range required {
+		if !strings.Contains(content, fragment) {
+			t.Errorf("generated contract missing %q", fragment)
+		}
+		mutated := strings.ReplaceAll(content, fragment, "")
+		if strings.Contains(mutated, fragment) {
+			t.Fatalf("contract mutation did not remove %q", fragment)
+		}
+	}
+}
+
+func adrFixtureIsActive(content []byte) bool {
+	text := string(content)
+	if strings.HasPrefix(text, "---\n") {
+		frontmatter, _, found := strings.Cut(strings.TrimPrefix(text, "---\n"), "\n---\n")
+		if found {
+			for _, line := range strings.Split(frontmatter, "\n") {
+				if value, ok := strings.CutPrefix(strings.TrimSpace(line), "status:"); ok {
+					return strings.TrimSpace(value) == "accepted"
+				}
+			}
+		}
+	}
+
+	lower := strings.ToLower(text)
+	for _, inactive := range []string{
+		"status: proposed",
+		"status: rejected",
+		"status: deprecated",
+		"status: superseded",
+	} {
+		if strings.Contains(lower, inactive) {
+			return false
+		}
+	}
+	return true
 }
 
 func TestGreenfieldRepositoryExtensionDoesNotCreateEmptyCarrier(t *testing.T) {
@@ -454,7 +594,9 @@ func TestPlanDeterminismMatchesMaintainedManagedEntryFixture(t *testing.T) {
 	plan := buildTestPlan(t, newPlanRepository(t))
 	expectedPostimages := make(map[string]string)
 	for _, entry := range fixture.PlannedByteSequence {
-		if entry.Path != manifestPath && entry.Path != "AGENTS.md" {
+		if entry.Path != manifestPath &&
+			entry.Path != "AGENTS.md" &&
+			entry.Path != "docs/agents/docs-layout.md" {
 			expectedPostimages[entry.Path] = entry.AfterIdentity
 		}
 	}

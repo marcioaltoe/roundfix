@@ -2,6 +2,9 @@ package skills
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -155,6 +158,55 @@ func TestThinSetupSkill(t *testing.T) {
 		if strings.HasPrefix(diagnostic.Path, "setup-context-driven/") {
 			t.Fatalf("thin setup skill diagnostic: %s: %s", diagnostic.Path, diagnostic.Message)
 		}
+	}
+}
+
+func TestUpstreamADRFormatUnchanged(t *testing.T) {
+	repoRoot := filepath.Clean(filepath.Join(".."))
+	lockBytes := readBaselineSkillContractFile(
+		t,
+		filepath.Join(repoRoot, "skills-lock.json"),
+	)
+	var lock struct {
+		Version int `json:"version"`
+		Skills  map[string]struct {
+			ComputedHash string `json:"computedHash"`
+		} `json:"skills"`
+	}
+	if err := json.Unmarshal(lockBytes, &lock); err != nil {
+		t.Fatalf("decode skills lock: %v", err)
+	}
+	if lock.Version != 1 || len(lock.Skills) == 0 {
+		t.Fatalf("unexpected skills lock contract: version=%d skills=%d", lock.Version, len(lock.Skills))
+	}
+
+	names := make([]string, 0, len(lock.Skills))
+	for name := range lock.Skills {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	upstreamDigest := sha256.New()
+	for _, name := range names {
+		folderDigest, err := SkillFolderHash(filepath.Join(repoRoot, ".agents", "skills", name))
+		if err != nil {
+			t.Fatalf("hash upstream-managed skill %q: %v", name, err)
+		}
+		_, _ = upstreamDigest.Write([]byte(name))
+		_, _ = upstreamDigest.Write([]byte(folderDigest))
+	}
+	const wantUpstreamDigest = "df289f03c4555e310822426f8521254b13f9befb87263d739c9739680f399814"
+	if got := hex.EncodeToString(upstreamDigest.Sum(nil)); got != wantUpstreamDigest {
+		t.Fatalf("upstream-managed skill tree digest = %q, want %q", got, wantUpstreamDigest)
+	}
+
+	const wantADRFormatSHA256 = "f1f36cd3f8d3b6474ddd5855da4e233bfc4ae1a1c5024909ccf11871819a41b2"
+	adrFormat := readBaselineSkillContractFile(
+		t,
+		filepath.Join(repoRoot, ".agents", "skills", "domain-modeling", "ADR-FORMAT.md"),
+	)
+	sum := sha256.Sum256(adrFormat)
+	if got := hex.EncodeToString(sum[:]); got != wantADRFormatSHA256 {
+		t.Fatalf("domain-modeling/ADR-FORMAT.md digest = %q, want %q", got, wantADRFormatSHA256)
 	}
 }
 

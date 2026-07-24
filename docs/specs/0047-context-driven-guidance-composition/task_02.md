@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0047-context-driven-guidance-composition
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -28,19 +28,19 @@ self-contained while preserving every upstream-managed skill byte.
 
 ## Subtasks
 
-- [ ] Add the ADR lifecycle overlay clauses and template.
-- [ ] Complete the Findings Operational Contract template.
-- [ ] Add legacy ADR and lifecycle validation fixtures.
-- [ ] Add upstream-skill immutability guards.
+- [x] Add the ADR lifecycle overlay clauses and template.
+- [x] Complete the Findings Operational Contract template.
+- [x] Add legacy ADR and lifecycle validation fixtures.
+- [x] Add upstream-skill immutability guards.
 
 ## Acceptance Criteria
 
-- [ ] A new generated ADR template contains every confirmed lifecycle field.
-- [ ] Legacy active and explicitly inactive ADR fixtures classify correctly.
-- [ ] The Findings template contains every confirmed section and lifecycle
+- [x] A new generated ADR template contains every confirmed lifecycle field.
+- [x] Legacy active and explicitly inactive ADR fixtures classify correctly.
+- [x] The Findings template contains every confirmed section and lifecycle
   state.
-- [ ] Existing ADR fixture bytes remain unchanged.
-- [ ] Any upstream skill byte change fails the focused guard.
+- [x] Existing ADR fixture bytes remain unchanged.
+- [x] Any upstream skill byte change fails the focused guard.
 
 ## Context
 
@@ -59,3 +59,40 @@ self-contained while preserving every upstream-managed skill byte.
 - `_prd.md` → Goal 4; User Stories 4–5; Core Features 9–13 and 17.
 - `_techspec.md` → Integration Points; Testing Approach; Build Order 1.
 - ADR-0074 → operative rules remain in repository guidance.
+
+## Result
+
+The active documentation guide now renders the repository-owned ADR lifecycle
+overlay on top of the upstream body format. It includes all five statuses, UTC
+timestamps, nullable deprecation and superseding fields, accepted-only active
+semantics, legacy compatibility, and the no-rewrite rule. The same guide now
+renders one copyable Findings template with session context, evidence-first
+findings, root-cause and routing fields, retained practices, and dated
+append-only addenda.
+
+Verification:
+
+- `rtk go test -count=1 ./internal/baseline ./skills -run
+  'TestADRLifecycleContract|TestFindingsOperationalContract|TestUpstreamADRFormatUnchanged'`
+  passed 7 tests in 2 packages.
+- `rtk make verify` passed 2,122 tests in 22 packages, 4 focused skill contract
+  tests, the Roundfix skill check, and the final build.
+
+Acceptance evidence:
+
+- `TestADRLifecycleContract` proves the generated ADR template contains every
+  lifecycle field, all accepted statuses, RFC 3339 UTC placeholders,
+  accepted-only active semantics, the legacy rule, and the upstream body-format
+  reference.
+- The accepted, deprecated, legacy-active, and legacy-inactive fixtures prove
+  lifecycle and legacy classification. The same test proves planning creates
+  no postimage for an existing ADR and leaves its fixture bytes unchanged.
+- `TestFindingsOperationalContract` proves the generated Findings template
+  contains all four states, frontmatter, session context, symptom/evidence,
+  proven-or-unknown root cause, action or Spec routing, retained practices,
+  lifecycle rules, and the dated addendum.
+- `TestUpstreamADRFormatUnchanged` pins the complete upstream-managed skill tree
+  and separately pins `.agents/skills/domain-modeling/ADR-FORMAT.md`; the final
+  diff contains no upstream-managed skill file.
+
+Follow-ups: none.
