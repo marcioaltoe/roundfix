@@ -130,6 +130,7 @@ type fileTransaction struct {
 	root           string
 	anchored       *os.Root
 	document       PlanDocument
+	verify         func(string, PlanDocument) error
 	privateDir     string
 	stateDir       string
 	lock           *os.File
@@ -157,8 +158,29 @@ func beginTransaction(
 	document PlanDocument,
 	phaseHook func(transactionFaultPoint) error,
 ) (Transaction, error) {
+	return beginFileTransaction(
+		ctx,
+		repository,
+		document,
+		phaseHook,
+		ValidatePlanRepository,
+		verifyAppliedPlanState,
+	)
+}
+
+func beginFileTransaction(
+	ctx context.Context,
+	repository string,
+	document PlanDocument,
+	phaseHook func(transactionFaultPoint) error,
+	validate func(context.Context, string, PlanDocument) error,
+	verify func(string, PlanDocument) error,
+) (Transaction, error) {
 	if ctx == nil {
 		return nil, errors.New("begin Baseline transaction: context is required")
+	}
+	if validate == nil || verify == nil {
+		return nil, errors.New("begin Baseline transaction: validation and verification are required")
 	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -202,7 +224,7 @@ func beginTransaction(
 		release()
 		return nil, err
 	}
-	if err := ValidatePlanRepository(ctx, root, document); err != nil {
+	if err := validate(ctx, root, document); err != nil {
 		_ = anchored.Close()
 		release()
 		return nil, fmt.Errorf("validate Baseline transaction plan: %w", err)
@@ -227,6 +249,7 @@ func beginTransaction(
 		root:       root,
 		anchored:   anchored,
 		document:   document,
+		verify:     verify,
 		privateDir: privateDir,
 		stateDir:   stateDir,
 		lock:       lock,
@@ -298,7 +321,7 @@ func (transaction *fileTransaction) Apply(ctx context.Context) (VerificationEvid
 			return VerificationEvidence{}, transaction.failApply(ctx, err)
 		}
 	}
-	if err := verifyAppliedPlanState(transaction.root, transaction.document); err != nil {
+	if err := transaction.verify(transaction.root, transaction.document); err != nil {
 		return VerificationEvidence{}, transaction.failApply(ctx, err)
 	}
 	if err := transaction.runPhaseHook(transactionFaultPoint{Phase: transactionPhaseCommitting}); err != nil {

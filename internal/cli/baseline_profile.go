@@ -47,6 +47,18 @@ func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		return runBaselineApplyCommand(ctx, args[1:], stdout, stderr)
 	case "profile":
 		return runBaselineProfileCommand(args[1:], stdout, stderr)
+	case "skills":
+		if len(args) == 1 || args[1] != "restore" {
+			printBaselineProfileFailure(
+				"baseline skills",
+				validationError{message: "baseline skills requires the restore command"},
+				false,
+				stdout,
+				stderr,
+			)
+			return exitPreflight
+		}
+		return runBaselineSkillsRestoreCommand(ctx, args[2:], stdout, stderr)
 	default:
 		printBaselineProfileFailure(
 			"baseline",

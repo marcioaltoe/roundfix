@@ -53,6 +53,7 @@ Usage:
   roundfix baseline profile init --id <id> [--from <built-in-id>]
   roundfix baseline profile show <id> [--format <text|json>]
   roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
+  roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
   roundfix profiles show [--category <category>] [--json]
   roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--yes] [--json]
   roundfix profiles validate [--category <category>] [--json]
@@ -3986,6 +3987,7 @@ Commands:
   plan     Automation: emit a portable, digest-bound Baseline Plan without prompting or writing.
   apply    Automation: apply and verify exactly one approved portable Baseline Plan without prompting.
   profile  Author, inspect, and validate built-in or repository-owned Baseline Profiles.
+  skills   Preview or apply immutable external Repository Skill Set restoration.
 
 The interactive root command refuses redirected or absent terminal input.
 Automation must use baseline plan followed by baseline apply with the exact
@@ -4090,6 +4092,38 @@ no target is supplied. The command reads no user-scoped profile catalog.
 
 Options:
   --format  Output format: text or json (default text)
+`
+	case "baseline skills restore":
+		return `Usage:
+  roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+
+Previews or applies exact external Repository Skill Set restoration for one
+built-in Baseline Profile. Sources are grouped by immutable provider,
+repository, and commit provenance. Source bytes, portable tree digests,
+skills-lock.json adapter compatibility, targets, and the complete preimage are
+validated before mutation.
+
+A non-empty preview exits 3 and returns its exact Plan Digest. Apply requires
+that digest through --confirm-plan and uses the recoverable Baseline
+transaction to update selected skill files and skills-lock.json atomically.
+An empty restoration is an idempotent exit 0.
+
+Exit codes:
+  0  selected skills already match, or the confirmed restoration was applied
+  1  source acquisition, proof, apply, output, rollback, or recovery failure
+  2  invalid arguments, profile, skill, lock schema, source, or unsafe target
+  3  confirmation is required or does not match the current Change Plan
+  130 operation canceled
+
+Options:
+  --profile       Required built-in Baseline Profile
+  --skill         External profile skill to restore; repeat to select multiple,
+                  or omit to restore every drifted external profile skill
+  --source-dir    Declared offline Git checkout or bare object store containing
+                  every selected skill's exact immutable commit
+  --confirm-plan  Exact lowercase Plan Digest returned by the current preview
+  --repo          Git worktree or a path inside it (default current directory)
+  --format        Output format: text or json (default text)
 `
 	case "profiles":
 		return `Usage:
