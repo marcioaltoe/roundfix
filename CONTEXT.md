@@ -76,6 +76,10 @@ _Avoid_: Task list, backlog, roadmap
 The bounded Task-start context that gives an Agent the full assigned Task and paths to larger Spec artifacts, relevant interfaces, and files changed by prior Tasks.
 _Avoid_: Repository dump, full Spec payload, cold-start exploration
 
+**Project Constraint**:
+A confirmed project decision or universal Normative Clause that a Spec records as applicable, not applicable with a reason, or explicitly authorized for a bounded change before its Tasks can execute.
+_Avoid_: Optional note, implementation suggestion, inferred permission
+
 **QA Report**:
 The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict in its frontmatter.
 _Avoid_: Test report, QA log
@@ -414,6 +418,10 @@ _Avoid_: Transition mapping, self-declared ledger, category checklist
 An identified structured instruction whose order or shape carries required behavior, such as a template, procedure, or decision matrix.
 _Avoid_: Prose summary, optional example, compressed guidance
 
+**Instruction Hierarchy**:
+The precedence order from universal instructions through context and documentation, Spec workflow, enabled autonomous work, stack and surface guides, and optional knowledge sources. A narrower guide may add constraints but cannot weaken a universal Normative Clause or confirmed project decision.
+_Avoid_: Module list, arbitrary file order, duplicated root policy
+
 **Standard TypeScript Monorepo Profile**:
 The opinionated, project-agnostic Context-Driven Baseline profile for the repository's standard TypeScript monorepo stack.
 _Avoid_: Project-specific profile, generic TypeScript profile, sample template
@@ -447,8 +455,8 @@ The accounting a Context-Driven Baseline transition or Baseline Readoption must 
 _Avoid_: Best-effort migration, category coverage, silent rule removal
 
 **Repository-Specific Normative Rules**:
-Project-authored Normative Clauses that are not portable across the Context-Driven Baseline, live outside setup markers in `docs/agents/specific-repository.md`, and remain byte-preserved after confirmed adoption. Baseline creates and links the carrier only when the rules are non-empty.
-_Avoid_: Repository-Owned Extension, managed guide, baseline rule
+Project-authored Normative Clauses that are not portable across the Context-Driven Baseline and cannot be represented by a typed project decision or managed semantic guide. Baseline assigns every representable rule to its semantic owner; only non-empty residual rules live outside setup markers in `docs/agents/specific-repository.md` and remain byte-preserved after confirmed adoption.
+_Avoid_: Repository-Owned Extension, duplicate managed rule, baseline rule
 
 **HTTP Contract Decision**:
 The repository-owned choice of REST or POST-only application API semantics together with explicit protocol or operational exceptions and their owners.
