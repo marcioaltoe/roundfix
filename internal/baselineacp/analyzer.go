@@ -37,6 +37,73 @@ func NewDefaultAnalyzer() *Analyzer {
 	return NewAnalyzer(agent.NewDefaultRunner())
 }
 
+// Segment eagerly proves both fixed selections, then admits the first
+// byte-exhaustive proposal. Unavailable or invalid analysis preserves every
+// original Source Baseline Entry as one lossless range.
+func (analyzer *Analyzer) Segment(
+	ctx context.Context,
+	snapshot baseline.RuleSegmentationSnapshot,
+) (baseline.RuleSegmentationProposal, error) {
+	if ctx == nil {
+		return baseline.RuleSegmentationProposal{}, errors.New(
+			"Baseline segmentation analysis context is required",
+		)
+	}
+	if err := ctx.Err(); err != nil {
+		return baseline.RuleSegmentationProposal{}, err
+	}
+	if analyzer == nil || analyzer.runtime == nil {
+		return baseline.RuleSegmentationProposal{}, errors.New(
+			"Baseline segmentation analysis runtime is required",
+		)
+	}
+	canonical, err := snapshot.CanonicalBytes()
+	if err != nil {
+		return baseline.RuleSegmentationProposal{}, err
+	}
+
+	selections := []agent.RuntimeSpec{
+		classificationRuntime(PreferredModel),
+		classificationRuntime(FallbackModel),
+	}
+	proven := make([]bool, len(selections))
+	for index, selection := range selections {
+		proof, proofErr := analyzer.proveSelection(ctx, selection)
+		if err := ctx.Err(); err != nil {
+			return baseline.RuleSegmentationProposal{}, err
+		}
+		if proofErr != nil {
+			if cleanupUnproven(proofErr) {
+				return baseline.ManualRuleSegmentationProposal(snapshot)
+			}
+			continue
+		}
+		proven[index] = exactProofMatches(selection, proof)
+	}
+
+	for index, selection := range selections {
+		if !proven[index] {
+			continue
+		}
+		proposal, attemptErr := analyzer.attemptSegmentation(
+			ctx,
+			selection,
+			canonical,
+			snapshot,
+		)
+		if attemptErr == nil {
+			return proposal, nil
+		}
+		if err := ctx.Err(); err != nil {
+			return baseline.RuleSegmentationProposal{}, err
+		}
+		if cleanupUnproven(attemptErr) {
+			break
+		}
+	}
+	return baseline.ManualRuleSegmentationProposal(snapshot)
+}
+
 // Classify eagerly proves both fixed selections, then admits the first
 // complete proposal. Unavailable or invalid analysis returns the complete
 // deterministic manual proposal.
@@ -200,6 +267,31 @@ func (analyzer *Analyzer) attempt(
 		return baseline.ClassificationProposal{}, agent.ErrSealedToolUse
 	}
 	return baseline.ParseClassificationProposal(result.Output, snapshot)
+}
+
+func (analyzer *Analyzer) attemptSegmentation(
+	ctx context.Context,
+	selection agent.RuntimeSpec,
+	canonical []byte,
+	snapshot baseline.RuleSegmentationSnapshot,
+) (baseline.RuleSegmentationProposal, error) {
+	var result agent.SealedPromptResult
+	err := withPrivateDirectory("roundfix-baseline-segmentation-", func(workDir string) error {
+		var attemptErr error
+		result, attemptErr = analyzer.runtime.RunSealedPrompt(ctx, agent.SealedPromptRequest{
+			Runtime: selection,
+			WorkDir: workDir,
+			Input:   append([]byte(nil), canonical...),
+		})
+		return attemptErr
+	})
+	if err != nil {
+		return baseline.RuleSegmentationProposal{}, err
+	}
+	if result.ToolUsed {
+		return baseline.RuleSegmentationProposal{}, agent.ErrSealedToolUse
+	}
+	return baseline.ParseRuleSegmentationProposal(result.Output, snapshot)
 }
 
 func (analyzer *Analyzer) attemptRevision(
