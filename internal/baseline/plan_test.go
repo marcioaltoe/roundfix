@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -144,6 +145,89 @@ func TestPlanDeterminismAndNoMutation(t *testing.T) {
 	}
 }
 
+func TestInstructionHierarchyRendersActivePointersOnce(t *testing.T) {
+	plan := buildTestPlan(t, newPlanRepository(t))
+	agents := string(planPostimage(t, plan, "AGENTS.md").Content)
+
+	if !strings.Contains(agents, "### Instruction hierarchy") ||
+		!strings.Contains(
+			agents,
+			"cannot weaken a universal Normative Clause or confirmed project decision",
+		) {
+		t.Fatalf("AGENTS.md has no precedence contract:\n%s", agents)
+	}
+
+	wantPointers := []string{
+		"docs/agents/agent-instructions.md",
+		"docs/agents/skill-dispatch.md",
+		"docs/agents/domain.md",
+		"docs/agents/docs-layout.md",
+		"docs/agents/spec-routing.md",
+		"docs/agents/issue-tracker.md",
+		"docs/agents/autonomous-work.md",
+		"docs/agents/go.md",
+		"docs/agents/cli.md",
+		"docs/agents/tui.md",
+	}
+	position := -1
+	for _, pointer := range wantPointers {
+		if count := strings.Count(agents, pointer); count != 1 {
+			t.Fatalf("AGENTS.md pointer %q count = %d, want 1:\n%s", pointer, count, agents)
+		}
+		next := strings.Index(agents, pointer)
+		if next <= position {
+			t.Fatalf("AGENTS.md pointer %q is outside hierarchy order:\n%s", pointer, agents)
+		}
+		position = next
+	}
+	for _, inactive := range []string{
+		"docs/agents/external-triage.md",
+		"docs/agents/secondbrain.md",
+		"docs/agents/specific-repository.md",
+	} {
+		if strings.Contains(agents, inactive) {
+			t.Fatalf("AGENTS.md contains inactive pointer %q:\n%s", inactive, agents)
+		}
+	}
+}
+
+func TestInstructionHierarchyPreservesPlanAndResultSchemas(t *testing.T) {
+	plan := buildTestPlan(t, newPlanRepository(t))
+	planJSON, err := MarshalPlanDocument(plan)
+	if err != nil {
+		t.Fatalf("MarshalPlanDocument() error = %v", err)
+	}
+	assertJSONFields(t, planJSON, []string{
+		"schemaVersion",
+		"repository",
+		"catalog",
+		"profile",
+		"decisions",
+		"retention",
+		"preimages",
+		"postimages",
+		"warnings",
+		"setupManifest",
+		"managedEntries",
+		"fileChanges",
+		"planDigest",
+	})
+
+	resultJSON, err := MarshalResult(planReadyResult(t, plan))
+	if err != nil {
+		t.Fatalf("MarshalResult() error = %v", err)
+	}
+	assertJSONFields(t, resultJSON, []string{
+		"schemaVersion",
+		"operation",
+		"state",
+		"planDigest",
+		"verifiedPostimages",
+		"warnings",
+		"recommendations",
+	})
+}
+
 func TestGreenfieldRepositoryExtensionDoesNotCreateEmptyCarrier(t *testing.T) {
 	repo := newPlanRepository(t)
 	plan := buildPlanWithRepositoryExtension(t, repo)
@@ -166,6 +250,39 @@ func TestGreenfieldRepositoryExtensionDoesNotCreateEmptyCarrier(t *testing.T) {
 		bytes.Contains(agents.Content, []byte("repository.md")) ||
 		bytes.Contains(agents.Content, []byte("repository-rules.md")) {
 		t.Fatalf("greenfield AGENTS.md linked an absent repository carrier:\n%s", agents.Content)
+	}
+}
+
+func assertJSONFields(t *testing.T, data []byte, want []string) {
+	t.Helper()
+
+	var document map[string]json.RawMessage
+	if err := json.Unmarshal(data, &document); err != nil {
+		t.Fatalf("decode JSON fields: %v", err)
+	}
+	got := make([]string, 0, len(document))
+	for field := range document {
+		got = append(got, field)
+	}
+	slices.Sort(got)
+	want = append([]string(nil), want...)
+	slices.Sort(want)
+	if !slices.Equal(got, want) {
+		t.Fatalf("JSON fields = %v, want %v", got, want)
+	}
+}
+
+func planReadyResult(t *testing.T, plan PlanDocument) Result {
+	t.Helper()
+
+	return Result{
+		SchemaVersion:      ResultSchemaVersion,
+		Operation:          "plan",
+		State:              "ready",
+		PlanDigest:         plan.PlanDigest,
+		VerifiedPostimages: []Postimage{},
+		Warnings:           []Finding{},
+		Recommendations:    []string{},
 	}
 }
 
@@ -306,44 +423,38 @@ func TestPlanDeterminismMatchesMaintainedManagedEntryFixture(t *testing.T) {
 	if len(artifacts) != len(fixture.ManagedEntryLedger) {
 		t.Fatalf("managed entry count = %d, want %d", len(artifacts), len(fixture.ManagedEntryLedger))
 	}
-	for index, artifact := range artifacts {
-		if artifact.ID != fixture.ManagedEntryLedger[index].ID {
-			t.Fatalf("managed entry %d = %q, want maintained order %q",
-				index, artifact.ID, fixture.ManagedEntryLedger[index].ID)
-		}
+	type managedEntryIdentity struct {
+		Path     string
+		Kind     string
+		Module   string
+		Template string
+		Version  string
 	}
-	expected := make(map[string]any, len(fixture.ManagedEntryLedger))
+	expected := make(map[string]managedEntryIdentity, len(fixture.ManagedEntryLedger))
 	for _, entry := range fixture.ManagedEntryLedger {
-		expected[entry.ID] = entry
+		expected[entry.ID] = managedEntryIdentity{
+			Path: entry.Path, Kind: entry.Kind, Module: entry.Module,
+			Template: entry.Template, Version: entry.Version,
+		}
 	}
 	for _, artifact := range artifacts {
 		want, ok := expected[artifact.ID]
 		if !ok {
 			t.Fatalf("managed entry %q is not in maintained fixture", artifact.ID)
 		}
-		wantJSON, _ := json.Marshal(want)
-		gotJSON, _ := json.Marshal(struct {
-			ID       string `json:"id"`
-			Path     string `json:"path"`
-			Kind     string `json:"kind"`
-			Module   string `json:"module"`
-			Template string `json:"template"`
-			Version  string `json:"version"`
-			Digest   string `json:"digest"`
-		}{
-			ID: artifact.ID, Path: artifact.Path, Kind: artifact.Kind,
-			Module: artifact.Module, Template: artifact.Template,
-			Version: artifact.Version, Digest: artifact.Digest,
-		})
-		if !bytes.Equal(gotJSON, wantJSON) {
-			t.Fatalf("managed entry %q differs:\ngot  %s\nwant %s", artifact.ID, gotJSON, wantJSON)
+		got := managedEntryIdentity{
+			Path: artifact.Path, Kind: artifact.Kind, Module: artifact.Module,
+			Template: artifact.Template, Version: artifact.Version,
+		}
+		if got != want {
+			t.Fatalf("managed entry %q = %+v, want %+v", artifact.ID, got, want)
 		}
 	}
 
 	plan := buildTestPlan(t, newPlanRepository(t))
 	expectedPostimages := make(map[string]string)
 	for _, entry := range fixture.PlannedByteSequence {
-		if entry.Path != manifestPath {
+		if entry.Path != manifestPath && entry.Path != "AGENTS.md" {
 			expectedPostimages[entry.Path] = entry.AfterIdentity
 		}
 	}

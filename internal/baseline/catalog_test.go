@@ -144,6 +144,91 @@ func TestCatalogCompatibility(t *testing.T) {
 	}
 }
 
+func TestInstructionHierarchy(t *testing.T) {
+	t.Parallel()
+
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("LoadEmbeddedCatalog() error = %v", err)
+	}
+
+	levels := catalog.InstructionHierarchy()
+	want := []string{
+		"universal",
+		"context",
+		"spec",
+		"autonomous",
+		"stack",
+		"surface",
+		"optional-knowledge",
+		"repository-specific",
+	}
+	got := make([]string, len(levels))
+	for index, level := range levels {
+		got[index] = level.ID
+	}
+	if !slices.Equal(got, want) {
+		t.Fatalf("InstructionHierarchy() = %v, want %v", got, want)
+	}
+	if got := levels[5].RootBlocks; !slices.Equal(got, []string{
+		"root.cli-surface",
+		"root.tui-surface",
+	}) {
+		t.Fatalf("surface RootBlocks = %v", got)
+	}
+}
+
+func TestSemanticOwnerRegistry(t *testing.T) {
+	t.Parallel()
+
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("LoadEmbeddedCatalog() error = %v", err)
+	}
+	profile, err := ResolveProfile("", "go-cli-tui", catalog)
+	if err != nil {
+		t.Fatalf("ResolveProfile() error = %v", err)
+	}
+	activeModules, artifacts, err := resolveManagedArtifacts(
+		catalog,
+		profile,
+		planTestDecisions(),
+		false,
+	)
+	if err != nil {
+		t.Fatalf("resolveManagedArtifacts() error = %v", err)
+	}
+	activeArtifacts := make([]string, len(artifacts))
+	for index, artifact := range artifacts {
+		activeArtifacts[index] = artifact.ID
+	}
+
+	registry := catalog.SemanticOwnerRegistry(activeModules, activeArtifacts)
+	for _, artifact := range artifacts {
+		if artifact.Kind != "guide" {
+			continue
+		}
+		owner, ok := registry[artifact.ID]
+		if !ok {
+			t.Errorf("active guide %q has no semantic owner", artifact.ID)
+			continue
+		}
+		if owner.ManagedID != artifact.ID || owner.Module != artifact.Module ||
+			owner.Path != artifact.Path || owner.Title == "" ||
+			len(owner.Classifications) == 0 {
+			t.Errorf("semantic owner %q = %+v", artifact.ID, owner)
+		}
+	}
+	for _, inactive := range []string{
+		"guide.external-triage",
+		"guide.secondbrain",
+	} {
+		if _, ok := registry[inactive]; ok {
+			t.Errorf("inactive guide %q has a semantic destination", inactive)
+		}
+	}
+}
+
 func TestCatalogMutation(t *testing.T) {
 	t.Parallel()
 
@@ -318,6 +403,62 @@ func TestCatalogMutation(t *testing.T) {
 			edit: func(t *testing.T, assets fstest.MapFS) {
 				t.Helper()
 				replaceAsset(t, assets, "setups/rust-cli.json", `"digest": "`, `"digest": "0`)
+			},
+		},
+		{
+			name: "invalid instruction precedence",
+			code: "catalog.instruction-hierarchy.order.invalid",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				replaceAsset(
+					t,
+					assets,
+					"modules/core.json",
+					`"id": "context", "title": "Context and documentation"`,
+					`"id": "spec", "title": "Context and documentation"`,
+				)
+			},
+		},
+		{
+			name: "instruction dependency after dependent",
+			code: "catalog.instruction-hierarchy.dependency.order",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				replaceAsset(
+					t,
+					assets,
+					"modules/core.json",
+					`"rootBlocks": ["root.cli-surface", "root.tui-surface"]`,
+					`"rootBlocks": ["root.tui-surface", "root.cli-surface"]`,
+				)
+			},
+		},
+		{
+			name: "duplicate semantic ownership",
+			code: "catalog.semantic-owner.classification.duplicate",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				replaceAsset(
+					t,
+					assets,
+					"modules/core.json",
+					`"classifications": ["domain-language", "identifier-policy"]`,
+					`"classifications": ["universal-execution", "identifier-policy"]`,
+				)
+			},
+		},
+		{
+			name: "narrower clause weakens universal policy",
+			code: "catalog.clause.weakening.prohibited",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				replaceAsset(
+					t,
+					assets,
+					"modules/autonomous-work.json",
+					`"guidance": "The Supervisor must not write feature code or tests."`,
+					`"guidance": "The Supervisor must not write feature code or tests.", "weakens": ["clause.core.fix-root-causes"]`,
+				)
 			},
 		},
 	}

@@ -1059,6 +1059,7 @@ func resolveManagedArtifacts(
 			add(id)
 		}
 	}
+	orderedIDs = orderRootArtifacts(catalog, orderedIDs)
 	var artifacts []plannedArtifact
 	for _, id := range orderedIDs {
 		declaration := declarations[id]
@@ -1071,7 +1072,13 @@ func resolveManagedArtifacts(
 		if !ok {
 			return nil, nil, fmt.Errorf("render managed entry %q: template %q is missing", id, templateID)
 		}
-		valuesForArtifact := artifactRenderValues(catalog, declaration, activeModules, paths)
+		valuesForArtifact := artifactRenderValues(
+			catalog,
+			declaration,
+			activeModules,
+			orderedIDs,
+			paths,
+		)
 		for token, rendered := range renderValues {
 			valuesForArtifact[token] = rendered
 		}
@@ -1096,6 +1103,32 @@ func resolveManagedArtifacts(
 		})
 	}
 	return activeModules, artifacts, nil
+}
+
+func orderRootArtifacts(catalog *Catalog, artifactIDs []string) []string {
+	rank := make(map[string]int)
+	for _, level := range catalog.instructionHierarchy {
+		for _, rootID := range level.RootBlocks {
+			rank[rootID] = len(rank)
+		}
+	}
+	positions := make([]int, 0)
+	roots := make([]string, 0)
+	for index, artifactID := range artifactIDs {
+		if _, ok := rank[artifactID]; !ok {
+			continue
+		}
+		positions = append(positions, index)
+		roots = append(roots, artifactID)
+	}
+	sort.SliceStable(roots, func(i, j int) bool {
+		return rank[roots[i]] < rank[roots[j]]
+	})
+	ordered := append([]string(nil), artifactIDs...)
+	for index, position := range positions {
+		ordered[position] = roots[index]
+	}
+	return ordered
 }
 
 func planConditionMatches(condition document, value any) bool {
@@ -1154,6 +1187,7 @@ func artifactRenderValues(
 	catalog *Catalog,
 	artifact document,
 	activeModules []string,
+	activeArtifacts []string,
 	artifactPaths map[string]string,
 ) map[string]string {
 	values := make(map[string]string)
@@ -1200,6 +1234,9 @@ func artifactRenderValues(
 	if artifact["id"] == "guide.skill-dispatch" {
 		values["active-modules.skill-dispatch"] = renderSkillDispatch(catalog, activeModules)
 	}
+	if artifact["id"] == "root.core" {
+		values["instruction.hierarchy"] = renderInstructionHierarchy(catalog, activeArtifacts)
+	}
 	for _, reference := range objectsOrEmpty(artifact["references"]) {
 		token, _ := stringValue(reference, "token")
 		targetID, _ := stringValue(reference, "managedId")
@@ -1214,6 +1251,32 @@ func artifactRenderValues(
 		}
 	}
 	return values
+}
+
+func renderInstructionHierarchy(catalog *Catalog, activeArtifacts []string) string {
+	active := stringSet(activeArtifacts)
+	lines := []string{
+		"### Instruction hierarchy",
+		"",
+		"Apply active guidance in this order. A narrower guide may add constraints for its concern but cannot weaken a universal Normative Clause or confirmed project decision.",
+		"",
+	}
+	ordinal := 1
+	for _, level := range catalog.instructionHierarchy {
+		levelActive := false
+		for _, rootID := range level.RootBlocks {
+			if _, ok := active[rootID]; ok {
+				levelActive = true
+				break
+			}
+		}
+		if !levelActive {
+			continue
+		}
+		lines = append(lines, fmt.Sprintf("%d. **%s**", ordinal, level.Title))
+		ordinal++
+	}
+	return strings.Join(lines, "\n")
 }
 
 func renderSkillDispatch(catalog *Catalog, activeModules []string) string {

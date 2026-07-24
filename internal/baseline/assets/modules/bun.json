@@ -29,14 +29,7 @@
       "version": 2,
       "template": "template.root.bun",
       "rules": [],
-      "references": [
-        {
-          "id": "reference.root.bun",
-          "token": "reference.bun",
-          "ownership": "setup",
-          "managedId": "guide.bun"
-        }
-      ]
+      "references": []
     }
   ],
   "supportingGuides": [

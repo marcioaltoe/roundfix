@@ -14,7 +14,11 @@
       "version": 1,
       "kind": "root-block",
       "path": "root/core.md",
-      "tokens": ["reference.agent-instructions", "reference.skill-dispatch"]
+      "tokens": [
+        "instruction.hierarchy",
+        "reference.agent-instructions",
+        "reference.skill-dispatch"
+      ]
     },
     {
       "id": "template.root.context-workflow",
@@ -49,7 +53,7 @@
       "version": 1,
       "kind": "root-block",
       "path": "root/bun.md",
-      "tokens": ["reference.bun"]
+      "tokens": []
     },
     {
       "id": "template.root.monorepo",

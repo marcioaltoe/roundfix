@@ -1,3 +1,3 @@
 ### Bun
 
-- Bun runtime rules are mandatory: {{reference.bun}}.
+- Bun runtime constraints compose into the active TypeScript stack guide above.

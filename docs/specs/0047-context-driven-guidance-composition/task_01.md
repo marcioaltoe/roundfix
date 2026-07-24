@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0047-context-driven-guidance-composition
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -29,18 +29,18 @@ weaken.
 
 ## Subtasks
 
-- [ ] Add hierarchy and semantic-owner catalog declarations.
-- [ ] Validate active owner uniqueness and dependency order.
-- [ ] Render the compact root precedence map.
-- [ ] Add catalog mutation and rendering tests.
+- [x] Add hierarchy and semantic-owner catalog declarations.
+- [x] Validate active owner uniqueness and dependency order.
+- [x] Render the compact root precedence map.
+- [x] Add catalog mutation and rendering tests.
 
 ## Acceptance Criteria
 
-- [ ] Every active managed concern resolves to exactly one semantic owner.
-- [ ] Generated root pointers follow the confirmed hierarchy order.
-- [ ] Inactive modules create neither pointers nor semantic destinations.
-- [ ] Duplicate or weakening declarations fail catalog validation.
-- [ ] Plan and Result JSON fixtures retain their existing schemas.
+- [x] Every active managed concern resolves to exactly one semantic owner.
+- [x] Generated root pointers follow the confirmed hierarchy order.
+- [x] Inactive modules create neither pointers nor semantic destinations.
+- [x] Duplicate or weakening declarations fail catalog validation.
+- [x] Plan and Result JSON fixtures retain their existing schemas.
 
 ## Context
 
@@ -60,3 +60,35 @@ weaken.
 - `_prd.md` → Goals 1 and 5; User Stories 1, 3, and 4; Core Features 1–4, 14–15.
 - `_techspec.md` → System Architecture; Implementation Design: Data Models; Build Order 1.
 - ADR-0074 → hybrid semantic ownership.
+
+## Result
+
+The Baseline catalog now declares the complete Instruction Hierarchy and one
+semantic owner for every managed guide. Plan assembly orders active root blocks
+by that hierarchy, renders the precedence contract in the universal root
+block, filters semantic destinations to the resolved active modules and
+artifacts, and keeps shared guide paths to one root pointer.
+
+Verification:
+
+- `rtk go test -count=1 ./internal/baseline -run 'TestInstructionHierarchy|TestSemanticOwnerRegistry|TestCatalog'`
+  passed with 25 tests.
+- `rtk make verify` passed: 2,115 repository tests, 4 setup-skill contract
+  tests, the Roundfix skill check, and the final build completed.
+
+Acceptance evidence:
+
+- `TestSemanticOwnerRegistry` proves every active guide has one owner with its
+  managed ID, module, path, title, and classifications.
+- `TestInstructionHierarchyRendersActivePointersOnce` proves root pointers
+  follow universal, context, Spec, autonomous, stack, surface, and optional
+  knowledge precedence and each active path appears once.
+- The same rendering test and registry test prove inactive external-triage,
+  Secondbrain, and repository-specific artifacts create no pointer or semantic
+  destination.
+- `TestCatalogMutation` rejects invalid hierarchy order, reversed dependency
+  order, duplicate classifications, and an explicit narrower-clause weakening
+  of universal policy.
+- `TestInstructionHierarchyPreservesPlanAndResultSchemas` proves the public
+  Plan and Result JSON field sets remain unchanged; the regenerated catalog
+  identity fixture records only the intentional embedded catalog changes.

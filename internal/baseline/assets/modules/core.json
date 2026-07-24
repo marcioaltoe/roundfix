@@ -154,6 +154,148 @@
     "language.generated",
     "verification.gate"
   ],
+  "instructionHierarchy": {
+    "narrowerPolicy": "strengthen-only",
+    "levels": [
+      {
+        "id": "universal", "title": "Universal instructions",
+        "rootBlocks": ["root.core"]
+      },
+      {
+        "id": "context", "title": "Context and documentation",
+        "rootBlocks": ["root.context-workflow"]
+      },
+      {
+        "id": "spec", "title": "Spec workflow",
+        "rootBlocks": ["root.spec-workflow", "root.external-triage"]
+      },
+      {
+        "id": "autonomous", "title": "Autonomous work",
+        "rootBlocks": ["root.autonomous-work"]
+      },
+      {
+        "id": "stack", "title": "Stack guidance",
+        "rootBlocks": [
+          "root.typescript",
+          "root.bun",
+          "root.monorepo",
+          "root.backend",
+          "root.frontend",
+          "root.go",
+          "root.rust"
+        ]
+      },
+      {
+        "id": "surface", "title": "Surface guidance",
+        "rootBlocks": ["root.cli-surface", "root.tui-surface"]
+      },
+      {
+        "id": "optional-knowledge", "title": "Optional knowledge sources",
+        "rootBlocks": ["root.secondbrain"]
+      },
+      {
+        "id": "repository-specific", "title": "Repository-Specific Normative Rules",
+        "rootBlocks": ["root.repository-extension"]
+      }
+    ]
+  },
+  "semanticOwners": [
+    {
+      "managedId": "guide.agent-instructions",
+      "title": "Universal agent instructions",
+      "classifications": ["universal-execution", "universal-safety"]
+    },
+    {
+      "managedId": "guide.skill-dispatch",
+      "title": "Skill dispatch",
+      "classifications": ["skill-dispatch"]
+    },
+    {
+      "managedId": "guide.docs-layout",
+      "title": "Documentation layout",
+      "classifications": ["documentation-layout"]
+    },
+    {
+      "managedId": "guide.domain",
+      "title": "Domain language",
+      "classifications": ["domain-language", "identifier-policy"]
+    },
+    {
+      "managedId": "guide.spec-routing",
+      "title": "Spec routing",
+      "classifications": ["spec-routing"]
+    },
+    {
+      "managedId": "guide.issue-tracker",
+      "title": "Task tracking",
+      "classifications": ["task-tracking"]
+    },
+    {
+      "managedId": "guide.spec-docs-layout",
+      "title": "Spec documentation layout",
+      "classifications": ["spec-documentation-layout"]
+    },
+    {
+      "managedId": "guide.external-triage",
+      "title": "External issue triage",
+      "classifications": ["external-triage"]
+    },
+    {
+      "managedId": "guide.autonomous-work",
+      "title": "Autonomous work",
+      "classifications": ["autonomous-work"]
+    },
+    {
+      "managedId": "guide.typescript-bun",
+      "title": "TypeScript guidance",
+      "classifications": ["typescript"]
+    },
+    {
+      "managedId": "guide.bun",
+      "title": "Bun guidance",
+      "classifications": ["bun"]
+    },
+    {
+      "managedId": "guide.monorepo",
+      "title": "Monorepo guidance",
+      "classifications": ["monorepo"]
+    },
+    {
+      "managedId": "guide.backend",
+      "title": "Backend guidance",
+      "classifications": ["backend", "http"]
+    },
+    {
+      "managedId": "guide.frontend",
+      "title": "Frontend guidance",
+      "classifications": ["frontend"]
+    },
+    {
+      "managedId": "guide.go",
+      "title": "Go guidance",
+      "classifications": ["go"]
+    },
+    {
+      "managedId": "guide.rust",
+      "title": "Rust guidance",
+      "classifications": ["rust"]
+    },
+    {
+      "managedId": "guide.cli-surface",
+      "title": "CLI surface guidance",
+      "classifications": ["cli"]
+    },
+    {
+      "managedId": "guide.tui-surface",
+      "title": "TUI surface guidance",
+      "classifications": ["tui"]
+    },
+    {
+      "managedId": "guide.secondbrain",
+      "title": "Secondbrain guidance",
+      "classifications": ["secondbrain"]
+    }
+  ],
   "rootBlocks": [
     {
       "id": "root.core",
