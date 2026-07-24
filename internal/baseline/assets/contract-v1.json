@@ -174,7 +174,7 @@
         "Every rule contains one or more globally unique clauses with mandatory, prohibited, or stop-and-ask enforcement.",
         "Every selected clause has exactly one supporting-guide carrier, and no two supporting guides in one module have the same effective clause list.",
         "Every skill dispatch entry owns one or more globally unique stable triggers.",
-        "Repository-Owned Extensions use safe repository-relative paths, a scaffold template, a managed root pointer, and a declared decision."
+        "Repository-Specific Normative Rules use a safe repository-relative path, remain unmarked and byte-preserved, and receive a managed root pointer only when non-empty."
       ]
     },
     {
@@ -242,7 +242,7 @@
         "Every prior clause records its enforcement, carrier, and guidance digest.",
         "Every source baseline declares one or more exact legacy Setup Manifest fingerprints.",
         "Every prior clause has exactly one retained, moved, replaced, or rejected mapping with a reason.",
-        "Accepted mappings target a current clause with equal enforcement or a declared Repository-Owned Extension; rejected mappings have no target."
+        "Accepted mappings target a current clause with equal enforcement or declared Repository-Specific Normative Rules; rejected mappings have no target."
       ]
     }
   ],

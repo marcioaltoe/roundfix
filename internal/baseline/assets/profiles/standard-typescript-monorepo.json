@@ -20,7 +20,7 @@
       "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/frontend.md",
       "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/issue-tracker.md",
       "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/monorepo.md",
-      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/repository.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/specific-repository.md",
       "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/secondbrain.md",
       "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/skill-dispatch.md",
       "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/spec-routing.md",

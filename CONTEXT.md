@@ -447,7 +447,7 @@ The accounting a Context-Driven Baseline transition or Baseline Readoption must 
 _Avoid_: Best-effort migration, category coverage, silent rule removal
 
 **Repository-Specific Normative Rules**:
-Project-authored Normative Clauses that are not portable across the Context-Driven Baseline, live outside setup markers, and remain byte-preserved after confirmed adoption.
+Project-authored Normative Clauses that are not portable across the Context-Driven Baseline, live outside setup markers in `docs/agents/specific-repository.md`, and remain byte-preserved after confirmed adoption. Baseline creates and links the carrier only when the rules are non-empty.
 _Avoid_: Repository-Owned Extension, managed guide, baseline rule
 
 **HTTP Contract Decision**:

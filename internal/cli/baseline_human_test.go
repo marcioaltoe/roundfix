@@ -709,9 +709,10 @@ func humanBaselineAdoptionAnswers(final string) string {
 }
 
 func humanBaselinePreservationAnswers() string {
-	answers := strings.TrimSuffix(humanBaselineAdoptionAnswers(""), "\n")
-	answers = "2" + strings.TrimPrefix(answers, "1")
-	return answers + "\n1\n2\n"
+	answers := strings.Split(strings.TrimSuffix(humanBaselineAdoptionAnswers(""), "\n"), "\n")
+	answers[0] = "2"
+	answers[9] = "1"
+	return strings.Join(answers, "\n") + "\n1\n2\n"
 }
 
 func bufioReader(input string) *bufio.Reader {

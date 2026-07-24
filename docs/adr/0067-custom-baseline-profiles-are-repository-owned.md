@@ -10,4 +10,5 @@ at `.roundfix/baseline/profiles/<id>.json` and may compose only the modules,
 decisions, Repository Capabilities, and templates in the CLI's embedded
 catalog. Custom executable code, templates, and modules are excluded;
 repository-authored rules remain in
-`docs/agents/repository-rules.md`.
+`docs/agents/specific-repository.md`. Baseline creates and links that carrier
+only when it has non-empty Repository-Specific Normative Rules to preserve.

@@ -51,7 +51,7 @@ repository-rules disposition before any instruction carrier can change.
 - instruction: `docs/adr/0058-upgrade-retention-requires-clause-level-accounting.md`
 - instruction: `docs/adr/0070-baseline-audits-all-carriers-but-preserves-root-instructions.md`
 - interface: `.agents/skills/setup-context-driven/scripts/context_baseline.py`
-- interface: `docs/agents/repository-rules.md`
+- interface: `docs/agents/specific-repository.md`
 
 ## Verification
 

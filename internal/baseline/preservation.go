@@ -23,7 +23,7 @@ import (
 const (
 	DecisionDocumentSchemaVersion = "setup-context-driven/decisions/0.0.1"
 	DecisionDocumentVersion       = "0.0.1"
-	repositoryRulesPath           = "docs/agents/repository-rules.md"
+	repositoryRulesPath           = specificRepositoryPath
 )
 
 type PreservationMode string
@@ -462,6 +462,10 @@ func parseReadoptionDestination(
 		targetPath, pathOK := raw["path"].(string)
 		proposedText, bytesOK := raw["proposedBytes"].(string)
 		digest, digestOK := raw["digest"].(string)
+		if pathOK &&
+			(targetPath == legacyRepositoryPath || targetPath == legacyRepositoryRulesPath) {
+			targetPath = repositoryRulesPath
+		}
 		if !typeOK || documentType != "repository-rules" ||
 			!pathOK || targetPath != repositoryRulesPath ||
 			!bytesOK || !digestOK || !isRawSHA256(digest) {

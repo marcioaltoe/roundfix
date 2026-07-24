@@ -144,6 +144,127 @@ func TestPlanDeterminismAndNoMutation(t *testing.T) {
 	}
 }
 
+func TestGreenfieldRepositoryExtensionDoesNotCreateEmptyCarrier(t *testing.T) {
+	repo := newPlanRepository(t)
+	plan := buildPlanWithRepositoryExtension(t, repo)
+
+	for _, postimage := range plan.Postimages {
+		switch postimage.Path {
+		case "docs/agents/specific-repository.md",
+			"docs/agents/repository.md",
+			"docs/agents/repository-rules.md":
+			t.Fatalf("greenfield planned empty repository carrier %q", postimage.Path)
+		}
+	}
+	for _, artifact := range plan.SetupManifest.ManagedArtifacts {
+		if artifact.ID == "root.repository-extension" {
+			t.Fatal("greenfield manifest linked an absent repository carrier")
+		}
+	}
+	agents := planPostimage(t, plan, "AGENTS.md")
+	if bytes.Contains(agents.Content, []byte("specific-repository.md")) ||
+		bytes.Contains(agents.Content, []byte("repository.md")) ||
+		bytes.Contains(agents.Content, []byte("repository-rules.md")) {
+		t.Fatalf("greenfield AGENTS.md linked an absent repository carrier:\n%s", agents.Content)
+	}
+}
+
+func TestRepositoryExtensionMigratesOneLegacyCarrier(t *testing.T) {
+	repo := newPlanRepository(t)
+	const rules = "# Repository rules\n\nKeep the Fluxus boundary explicit.\n"
+	writeInspectionFile(t, repo, "docs/agents/repository.md", rules)
+	commitInspectionRepository(t, repo, "seed legacy repository rules")
+
+	plan := buildPlanWithRepositoryExtension(t, repo)
+	canonical := planPostimage(t, plan, "docs/agents/specific-repository.md")
+	if string(canonical.Content) != rules {
+		t.Fatalf("canonical repository rules = %q, want exact legacy bytes %q", canonical.Content, rules)
+	}
+	legacy := planPostimage(t, plan, "docs/agents/repository.md")
+	if legacy.Kind != PreimageMissing {
+		t.Fatalf("legacy repository carrier postimage kind = %q, want missing", legacy.Kind)
+	}
+	agents := planPostimage(t, plan, "AGENTS.md")
+	if !bytes.Contains(agents.Content, []byte("docs/agents/specific-repository.md")) ||
+		bytes.Contains(agents.Content, []byte("docs/agents/repository.md")) {
+		t.Fatalf("AGENTS.md did not converge on the canonical carrier:\n%s", agents.Content)
+	}
+}
+
+func TestRepositoryExtensionDropsLegacyEmptyScaffold(t *testing.T) {
+	repo := newPlanRepository(t)
+	writeInspectionFile(
+		t,
+		repo,
+		"docs/agents/repository.md",
+		"# Repository instructions\n\nAdd project-specific hard rules here. Setup preserves this file byte-for-byte.\n",
+	)
+	commitInspectionRepository(t, repo, "seed empty repository scaffold")
+
+	plan := buildPlanWithRepositoryExtension(t, repo)
+	legacy := planPostimage(t, plan, "docs/agents/repository.md")
+	if legacy.Kind != PreimageMissing {
+		t.Fatalf("legacy scaffold postimage kind = %q, want missing", legacy.Kind)
+	}
+	for _, postimage := range plan.Postimages {
+		if postimage.Path == "docs/agents/specific-repository.md" {
+			t.Fatalf("legacy empty scaffold created canonical carrier with bytes %q", postimage.Content)
+		}
+	}
+	agents := planPostimage(t, plan, "AGENTS.md")
+	if bytes.Contains(agents.Content, []byte("specific-repository.md")) ||
+		bytes.Contains(agents.Content, []byte("repository.md")) {
+		t.Fatalf("legacy empty scaffold retained a repository carrier pointer:\n%s", agents.Content)
+	}
+}
+
+func TestRepositoryExtensionRejectsDivergentLegacyCarriers(t *testing.T) {
+	repo := newPlanRepository(t)
+	writeInspectionFile(t, repo, "docs/agents/repository.md", "first repository rule\n")
+	writeInspectionFile(t, repo, "docs/agents/repository-rules.md", "different repository rule\n")
+	commitInspectionRepository(t, repo, "seed conflicting repository rules")
+
+	outcome, err := BuildPlan(context.Background(), PlanRequest{
+		Repository: repo,
+		ProfileID:  "go-cli-tui",
+		Decisions:  planTestDecisionsWithRepositoryExtension(),
+		Preservation: RootPreservationRequest{
+			Mode: PreservationModeGreenfield,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if outcome.Plan != nil || outcome.Result.State != "action_required" ||
+		outcome.Result.Category != "classification" ||
+		!strings.Contains(outcome.Result.Message, "repository-specific rule carriers conflict") {
+		t.Fatalf("divergent legacy carrier outcome = %+v", outcome)
+	}
+}
+
+func TestDisabledRepositoryExtensionRejectsNonemptyLegacyCarrier(t *testing.T) {
+	repo := newPlanRepository(t)
+	writeInspectionFile(t, repo, legacyRepositoryPath, "keep this repository rule\n")
+	commitInspectionRepository(t, repo, "seed legacy repository rules")
+
+	outcome, err := BuildPlan(context.Background(), PlanRequest{
+		Repository: repo,
+		ProfileID:  "go-cli-tui",
+		Decisions:  planTestDecisions(),
+		Preservation: RootPreservationRequest{
+			Mode: PreservationModeGreenfield,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if outcome.Plan != nil || outcome.Result.State != "action_required" ||
+		outcome.Result.Category != "classification" ||
+		!strings.Contains(outcome.Result.Message, "require repository.extension.enabled=true") {
+		t.Fatalf("disabled legacy carrier migration outcome = %+v", outcome)
+	}
+}
+
 func TestPlanDeterminismMatchesMaintainedManagedEntryFixture(t *testing.T) {
 	fixturePath := filepath.Join(
 		"testdata", "parity-corpus", "v1", "fixtures", "greenfield-go-cli-tui.json",
@@ -178,7 +299,7 @@ func TestPlanDeterminismMatchesMaintainedManagedEntryFixture(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, artifacts, err := resolveManagedArtifacts(catalog, profile, planTestDecisions())
+	_, artifacts, err := resolveManagedArtifacts(catalog, profile, planTestDecisions(), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -360,6 +481,46 @@ func planTestDecisions() []DecisionValue {
 		{ID: "secondbrain.enabled", Value: false},
 		{ID: "repository.extension.enabled", Value: false},
 	}
+}
+
+func planTestDecisionsWithRepositoryExtension() []DecisionValue {
+	decisions := planTestDecisions()
+	for index := range decisions {
+		if decisions[index].ID == "repository.extension.enabled" {
+			decisions[index].Value = true
+		}
+	}
+	return decisions
+}
+
+func buildPlanWithRepositoryExtension(t *testing.T, repo string) PlanDocument {
+	t.Helper()
+	outcome, err := BuildPlan(context.Background(), PlanRequest{
+		Repository: repo,
+		ProfileID:  "go-cli-tui",
+		Decisions:  planTestDecisionsWithRepositoryExtension(),
+		Preservation: RootPreservationRequest{
+			Mode: PreservationModeGreenfield,
+		},
+	})
+	if err != nil {
+		t.Fatalf("build repository-extension plan: %v", err)
+	}
+	if outcome.Plan == nil {
+		t.Fatalf("build repository-extension plan returned result: %+v", outcome.Result)
+	}
+	return *outcome.Plan
+}
+
+func planPostimage(t *testing.T, plan PlanDocument, path string) Postimage {
+	t.Helper()
+	for _, postimage := range plan.Postimages {
+		if postimage.Path == path {
+			return postimage
+		}
+	}
+	t.Fatalf("plan has no postimage for %q", path)
+	return Postimage{}
 }
 
 func newPlanRepository(t *testing.T) string {

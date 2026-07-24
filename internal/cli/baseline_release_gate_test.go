@@ -54,7 +54,7 @@ func TestBaselineMacroJourneysPublicCLI(t *testing.T) {
 		)
 		baselineReleaseApply(t, binary, repo, plan, planPath)
 
-		rules, err := os.ReadFile(filepath.Join(repo, "docs", "agents", "repository-rules.md"))
+		rules, err := os.ReadFile(filepath.Join(repo, "docs", "agents", "specific-repository.md"))
 		if err != nil || !bytes.Contains(rules, []byte(strings.TrimSpace(repositoryRule))) {
 			t.Fatalf("preserved repository rule = %q error=%v", rules, err)
 		}
@@ -375,6 +375,10 @@ func baselineReleaseDecisionValue(raw string) any {
 }
 
 func baselineReleaseDecisionArgs(profile, preservation string) []string {
+	repositoryExtension := "false"
+	if preservation == "preservation" {
+		repositoryExtension = "true"
+	}
 	decisions := []string{
 		"preservation.mode=" + preservation,
 		"language.generated=English",
@@ -384,7 +388,7 @@ func baselineReleaseDecisionArgs(profile, preservation string) []string {
 		"triage.external=false",
 		"autonomous.enabled=false",
 		"secondbrain.enabled=false",
-		"repository.extension.enabled=false",
+		"repository.extension.enabled=" + repositoryExtension,
 	}
 	if profile == "standard-typescript-monorepo" {
 		decisions = append(decisions, `http.contract={"mode":"REST"}`)

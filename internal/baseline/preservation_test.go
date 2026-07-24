@@ -232,6 +232,16 @@ func TestReadoptionCompatibilityMaintainedFixture(t *testing.T) {
 	if document.Readoption == nil || len(document.Readoption.Dispositions) != 19 {
 		t.Fatalf("maintained Readoption dispositions = %+v, want 19", document.Readoption)
 	}
+	for _, disposition := range document.Readoption.Dispositions {
+		if disposition.Disposition == "repository-rules" &&
+			disposition.Destination.Path != specificRepositoryPath {
+			t.Fatalf(
+				"legacy Readoption destination normalized to %q, want %q",
+				disposition.Destination.Path,
+				specificRepositoryPath,
+			)
+		}
+	}
 
 	catalog, err := LoadEmbeddedCatalog()
 	if err != nil {

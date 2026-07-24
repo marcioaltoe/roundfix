@@ -929,7 +929,7 @@ func promptBaselineClassification(
 			disposition.Disposition = "repository-rules"
 			disposition.Destination = &baseline.ReadoptionDestination{
 				DocumentType:  "repository-rules",
-				Path:          "docs/agents/repository-rules.md",
+				Path:          "docs/agents/specific-repository.md",
 				Digest:        hex.EncodeToString(sum[:]),
 				ProposedBytes: base64.StdEncoding.EncodeToString(entry.SourceBytes),
 			}

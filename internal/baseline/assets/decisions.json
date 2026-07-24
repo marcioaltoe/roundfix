@@ -234,7 +234,7 @@
       "version": 1,
       "type": "boolean",
       "default": true,
-      "summary": "Whether setup creates and links the Repository-Owned Extension for project-specific hard rules.",
+      "summary": "Whether Baseline may preserve and link non-empty Repository-Specific Normative Rules.",
       "effects": [
         {
           "when": {"equals": true},

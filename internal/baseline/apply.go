@@ -292,6 +292,9 @@ func validatePlanApplyContract(document PlanDocument) error {
 	if !bytes.Equal(manifestPostimage.Content, manifestBytes) {
 		return errors.New("Setup Manifest postimage does not match the plan identity")
 	}
+	if err := validateSpecificRepositoryPlan(document, preimages, postimages); err != nil {
+		return err
+	}
 
 	expectedBackups, err := expectedRootBackups(document.Preimages)
 	if err != nil {
@@ -348,6 +351,48 @@ func validatePlanApplyContract(document PlanDocument) error {
 		}
 		if retention.Disposition != "rejected" && len(retention.Targets) == 0 {
 			return fmt.Errorf("retention record %q has no target", retention.FromClause)
+		}
+	}
+	return nil
+}
+
+func validateSpecificRepositoryPlan(
+	document PlanDocument,
+	_ map[string]Preimage,
+	postimages map[string]Postimage,
+) error {
+	includeRoot := containsString(document.SetupManifest.Modules, repositoryExtensionModuleID)
+	enabled := decisionBool(document.Decisions, "repository.extension.enabled")
+	if includeRoot && !enabled {
+		return errors.New("repository-specific rule carrier is linked without owner approval")
+	}
+	for _, legacyPath := range []string{legacyRepositoryPath, legacyRepositoryRulesPath} {
+		if postimage, exists := postimages[legacyPath]; exists &&
+			postimage.Kind != PreimageMissing {
+			return fmt.Errorf("Baseline Plan writes legacy repository-specific rule carrier %q", legacyPath)
+		}
+	}
+
+	canonicalHasContent := false
+	if postimage, exists := postimages[specificRepositoryPath]; exists {
+		switch postimage.Kind {
+		case PreimageMissing:
+		case PreimageRegular:
+			canonicalHasContent = len(bytes.TrimSpace(postimage.Content)) != 0
+			if !canonicalHasContent {
+				return errors.New("Baseline Plan writes an empty repository-specific rule carrier")
+			}
+		default:
+			return errors.New("Baseline Plan has an invalid repository-specific rule carrier postimage")
+		}
+	}
+	if includeRoot && !canonicalHasContent {
+		return errors.New("repository-specific rule pointer has no non-empty canonical carrier")
+	}
+	if !includeRoot {
+		if postimage, exists := postimages[specificRepositoryPath]; exists &&
+			postimage.Kind == PreimageRegular {
+			return errors.New("repository-specific rule carrier is written without its root pointer")
 		}
 	}
 	return nil

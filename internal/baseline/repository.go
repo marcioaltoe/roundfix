@@ -348,8 +348,11 @@ func (builder *inventoryBuilder) inspectAgentDocumentRoots() error {
 }
 
 func (builder *inventoryBuilder) walk(relative string, entry fs.DirEntry, walkErr error) error {
+	normalized := filepath.ToSlash(relative)
 	if walkErr != nil {
-		normalized := filepath.ToSlash(relative)
+		if inventoryPathIgnored(normalized) {
+			return nil
+		}
 		builder.blocking = append(builder.blocking, Finding{
 			Code:    "baseline.inventory.path-unreadable",
 			Path:    normalized,
@@ -363,7 +366,6 @@ func (builder *inventoryBuilder) walk(relative string, entry fs.DirEntry, walkEr
 	if relative == "." {
 		return nil
 	}
-	normalized := filepath.ToSlash(relative)
 	if inventoryPathIgnored(normalized) {
 		if entry.IsDir() {
 			return fs.SkipDir

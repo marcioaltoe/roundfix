@@ -26,11 +26,11 @@ write it.
    declared by the TechSpec; no disposition may be inferred from source text.
 4. MUST require exact proposed bytes, target path, and digest for content moved
    into a typed documentation destination.
-5. MUST use `docs/agents/repository-rules.md` as the default home for
+5. MUST use `docs/agents/specific-repository.md` as the only home for
    Repository-Specific Normative Rules.
-6. MUST require confirmation before the first Repository-Specific Normative
-   Rules file is created, keep the file unmarked, and preserve it on later
-   setup runs.
+6. MUST create and link the unmarked carrier only for confirmed non-empty
+   rules, preserve it on later setup runs, safely migrate either legacy carrier,
+   and block divergent non-empty legacy carriers.
 7. MUST expose stable rejection reasons and a deterministic plan preview while
    performing no writes.
 8. MUST include the full normalized decision document in the plan digest
@@ -100,9 +100,11 @@ the current catalog; existing typed repository documents require a supported
 type, safe path, and matching digest; rejections and non-governed evidence
 require individual reasons. Repository-Specific Normative Rules expose exact
 base64 proposed bytes, target, and digest at
-`docs/agents/repository-rules.md`. An absent file produces a deterministic
-confirmation-gated create preview, while an existing unmarked file remains
-repository-owned and byte-preserved. Confirmed mutation and atomic Readoption
+`docs/agents/specific-repository.md`. An absent file produces a deterministic
+confirmation-gated create preview only when non-empty rules exist, while an
+existing unmarked file remains repository-owned and byte-preserved. The public
+Go Baseline Command also migrates the two legacy carrier names safely and
+removes the known empty scaffold. Confirmed mutation and atomic Readoption
 application remain Task 08's slice.
 
 Verification:

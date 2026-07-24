@@ -287,8 +287,9 @@ substitutes a newer plan, or applies stale input.
   ADR-0070.
 - A greenfield choice creates backups but imports no existing root rule.
 - The maintainer selects exactly one Baseline Profile.
-- Repository-Specific Normative Rules continue to use the existing canonical
-  repository-rules document.
+- Repository-Specific Normative Rules use the single canonical
+  `docs/agents/specific-repository.md` carrier. Baseline creates and links it
+  only for non-empty rules and safely migrates either legacy carrier name.
 - Baseline verification never executes repository formatter or Verification
   commands; it reports them as recommendations.
 - Completion requires full Go parity, a separately authorized live Fluxus

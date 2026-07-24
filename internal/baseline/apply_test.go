@@ -6,6 +6,7 @@
 package baseline
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -16,6 +17,36 @@ import (
 	"strings"
 	"testing"
 )
+
+func TestApplyCanonicalizesLegacyRepositoryRules(t *testing.T) {
+	repo := newPlanRepository(t)
+	const rules = "# Repository rules\n\nKeep the repository boundary explicit.\n"
+	writeInspectionFile(t, repo, legacyRepositoryPath, rules)
+	commitInspectionRepository(t, repo, "seed legacy repository rules")
+
+	plan := buildPlanWithRepositoryExtension(t, repo)
+	if _, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest); err != nil {
+		t.Fatalf("apply legacy repository rule migration: %v", err)
+	}
+	canonical, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(specificRepositoryPath)))
+	if err != nil {
+		t.Fatalf("read canonical repository rules: %v", err)
+	}
+	if !bytes.Equal(canonical, []byte(rules)) {
+		t.Fatalf("canonical repository rules = %q, want exact legacy bytes %q", canonical, rules)
+	}
+	if _, err := os.Lstat(filepath.Join(repo, filepath.FromSlash(legacyRepositoryPath))); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("legacy repository rule carrier remains after apply: %v", err)
+	}
+	agents, err := os.ReadFile(filepath.Join(repo, "AGENTS.md"))
+	if err != nil {
+		t.Fatalf("read applied AGENTS.md: %v", err)
+	}
+	if !bytes.Contains(agents, []byte(specificRepositoryPath)) ||
+		bytes.Contains(agents, []byte(legacyRepositoryPath)) {
+		t.Fatalf("applied AGENTS.md does not point only to the canonical carrier:\n%s", agents)
+	}
+}
 
 func TestApplyExactDigest(t *testing.T) {
 	repo := newPlanRepository(t)

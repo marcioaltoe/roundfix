@@ -3,7 +3,7 @@
   "id": "repository-extension",
   "version": 1,
   "kind": "repository-policy",
-  "title": "Repository-Owned Extension",
+  "title": "Repository-Specific Normative Rules",
   "dependsOn": ["core"],
   "conflictsWith": [],
   "requiredSkills": [],
@@ -20,7 +20,7 @@
           "id": "reference.root.repository-extension",
           "token": "reference.repository-extension",
           "ownership": "repository",
-          "path": "docs/agents/repository.md"
+          "path": "docs/agents/specific-repository.md"
         }
       ]
     }
@@ -30,7 +30,7 @@
   "repositoryExtensions": [
     {
       "id": "extension.repository-rules",
-      "path": "docs/agents/repository.md",
+      "path": "docs/agents/specific-repository.md",
       "template": "template.extension.repository-rules",
       "rootPointer": "root.repository-extension",
       "decision": "repository.extension.enabled"

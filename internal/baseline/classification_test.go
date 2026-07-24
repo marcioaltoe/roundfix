@@ -40,7 +40,7 @@ func TestSealedClassificationSnapshotIsCanonicalAndBounded(t *testing.T) {
 	if len(first.Entries) != len(source.Entries) ||
 		len(first.Destinations) != 2 ||
 		first.Destinations[0].Disposition != "rejected" ||
-		first.Destinations[1].Path != "docs/agents/repository-rules.md" {
+		first.Destinations[1].Path != "docs/agents/specific-repository.md" {
 		t.Fatalf("unexpected sealed snapshot contract: %+v", first)
 	}
 
@@ -179,7 +179,7 @@ func TestManualClassificationFallbackReturnsCompleteDestinations(t *testing.T) {
 			}
 		case "repository-rules":
 			if disposition.Destination == nil ||
-				disposition.Destination.Path != "docs/agents/repository-rules.md" ||
+				disposition.Destination.Path != "docs/agents/specific-repository.md" ||
 				disposition.Destination.ProposedBytes == "" {
 				t.Fatalf("incomplete Repository-Specific Normative Rules destination: %+v", disposition)
 			}
@@ -280,7 +280,7 @@ func classificationTestPlan(t *testing.T, repo string, decisions DecisionDocumen
 	outcome, err := BuildPlan(context.Background(), PlanRequest{
 		Repository: repo,
 		ProfileID:  "go-cli-tui",
-		Decisions:  planTestDecisions(),
+		Decisions:  planTestDecisionsWithRepositoryExtension(),
 		Preservation: RootPreservationRequest{
 			Mode:      PreservationModePreservation,
 			Decisions: &decisions,

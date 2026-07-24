@@ -78,6 +78,16 @@ unavailable or discarded, continue through the public command's structured
 manual classification review. Never invent Source Baseline identities,
 classifications, or destinations.
 
+Repository-Specific Normative Rules have one canonical carrier:
+`docs/agents/specific-repository.md`. The enabling decision permits this
+destination; it does not create an empty scaffold. Baseline creates the file
+and its managed root pointer only for approved non-empty rules. It migrates
+either legacy `docs/agents/repository.md` or
+`docs/agents/repository-rules.md` byte-for-byte, removes the known empty legacy
+scaffold, and blocks divergent non-empty legacy carriers for manual
+reconciliation. Existing `0.0.1` Decision Documents that name either legacy
+destination are normalized to the canonical path.
+
 For updates, the current Baseline Profile and compatible decisions are offered
 first. If only the Profile Digest changed, the command enters adoption but
 retains still-valid profile and decision values as defaults. A profile change

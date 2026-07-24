@@ -99,7 +99,7 @@ adoption again. Without a stored value, the embedded catalog suggests:
 | Backend runtime | `codex gpt-5.6-sol` |
 | Design runtime | `claude fable high` |
 | Secondbrain | Yes |
-| Repository-Owned Extension | Yes |
+| Repository-Specific Normative Rules carrier | Permitted when non-empty |
 
 Existing root instructions make Preservation the default; an empty instruction
 inventory makes Greenfield the default. A recoverable existing profile is the
@@ -121,6 +121,17 @@ instruction mode:
   Baseline Entry, and opens one consolidated classification review. Every entry
   must be retained as a managed entry, a recognized repository document, or a
   Repository-Specific Normative Rule, or rejected with its own reason.
+
+Repository-Specific Normative Rules have one canonical carrier:
+`docs/agents/specific-repository.md`. Baseline creates it and adds its managed
+root pointer only when approved non-empty rules exist. Greenfield therefore
+creates neither an empty carrier nor a dangling pointer. During adoption,
+Roundfix safely migrates the exact non-empty bytes from either legacy
+`docs/agents/repository.md` or `docs/agents/repository-rules.md` and removes an
+empty legacy scaffold. Divergent non-empty legacy carriers block planning for
+manual reconciliation; Roundfix never guesses which rules win.
+Existing `0.0.1` Decision Documents that name either legacy destination are
+normalized to the canonical path before the Plan Digest is computed.
 
 Nested instruction carriers remain repository-owned and unchanged. Conflicts
 found in them appear as warnings. Unsafe root carriers—external or escaping

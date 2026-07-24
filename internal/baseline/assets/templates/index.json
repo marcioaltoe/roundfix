@@ -6,7 +6,7 @@
       "id": "template.extension.repository-rules",
       "version": 1,
       "kind": "repository-extension",
-      "path": "extensions/repository.md",
+      "path": "extensions/specific-repository.md",
       "tokens": []
     },
     {

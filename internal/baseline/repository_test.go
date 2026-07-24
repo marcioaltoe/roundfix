@@ -20,6 +20,24 @@ import (
 	"testing"
 )
 
+func TestInventoryWalkIgnoresTransientErrorsInsideExcludedTrees(t *testing.T) {
+	builder := &inventoryBuilder{}
+	if err := builder.walk(".git/objects/maintenance.lock", nil, fs.ErrNotExist); err != nil {
+		t.Fatalf("walk ignored transient Git path: %v", err)
+	}
+	if len(builder.blocking) != 0 {
+		t.Fatalf("ignored transient Git path produced blocking findings: %+v", builder.blocking)
+	}
+
+	if err := builder.walk("docs/agents/AGENTS.md", nil, fs.ErrNotExist); err != nil {
+		t.Fatalf("walk bounded transient path: %v", err)
+	}
+	if len(builder.blocking) != 1 ||
+		builder.blocking[0].Code != "baseline.inventory.path-unreadable" {
+		t.Fatalf("bounded transient path findings = %+v", builder.blocking)
+	}
+}
+
 func TestRepositoryIdentityEquivalentClones(t *testing.T) {
 	repo := newInspectionRepository(t)
 	writeInspectionFile(t, repo, "README.md", "seed\n")

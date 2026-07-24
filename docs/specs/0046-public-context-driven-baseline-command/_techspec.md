@@ -174,8 +174,9 @@ and accept Enter as confirmation. Still-valid manifest values win when a
 changed Profile Digest forces adoption. Catalog defaults are English,
 `rtk make verify`, Post-only, spec artifacts enabled, single-context, external
 triage disabled, autonomous work enabled, `codex gpt-5.6-sol`,
-`claude fable high`, Secondbrain enabled, and the Repository-Owned Extension
-enabled. Existing root instructions default to Preservation; an empty inventory
+`claude fable high`, Secondbrain enabled, and the Repository-Specific Normative
+Rules carrier permitted. The carrier and its root pointer are emitted only when
+non-empty rules exist. Existing root instructions default to Preservation; an empty inventory
 defaults to Greenfield. A recoverable existing profile is the profile default.
 Classification, plan approval, and apply require a non-empty explicit choice.
 

@@ -24,6 +24,13 @@ const (
 
 	planDigestDomain = PlanSchemaVersion + "\x00"
 	manifestPath     = "docs/agents/setup-context.json"
+
+	specificRepositoryPath      = "docs/agents/specific-repository.md"
+	legacyRepositoryPath        = "docs/agents/repository.md"
+	legacyRepositoryRulesPath   = "docs/agents/repository-rules.md"
+	legacyRepositoryScaffold    = "# Repository instructions\n\nAdd project-specific hard rules here. Setup preserves this file byte-for-byte.\n"
+	repositoryExtensionModuleID = "repository-extension"
+	repositoryExtensionRootID   = "root.repository-extension"
 )
 
 // PlanRequest is the complete normalized non-interactive planning input.
@@ -39,6 +46,12 @@ type PlanRequest struct {
 type PlanOutcome struct {
 	Plan   *PlanDocument
 	Result Result
+}
+
+type specificRepositoryPlan struct {
+	IncludeRoot      bool
+	CanonicalContent []byte
+	DeletePaths      []string
 }
 
 // ResolveDecisionInput normalizes human or automation answers through the
@@ -261,7 +274,29 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 			initial.Snapshot.Warnings), nil
 	}
 
-	activeModules, artifacts, err := resolveManagedArtifacts(catalog, profile, decisions)
+	repositoryPlan, repositoryFindings, err := planSpecificRepository(
+		initial.Root,
+		preservation.RepositoryRulesBytes,
+		decisionBool(decisions, "repository.extension.enabled"),
+	)
+	if err != nil {
+		return PlanOutcome{}, err
+	}
+	if len(repositoryFindings) != 0 {
+		return actionOutcome(
+			"classification",
+			repositoryFindings[0].Message,
+			"resolve the reported repository-specific rule carrier conflict and rerun Baseline planning",
+			append(initial.Snapshot.Warnings, repositoryFindings...),
+		), nil
+	}
+
+	activeModules, artifacts, err := resolveManagedArtifacts(
+		catalog,
+		profile,
+		decisions,
+		repositoryPlan.IncludeRoot,
+	)
 	if err != nil {
 		return PlanOutcome{}, err
 	}
@@ -279,10 +314,13 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 	for _, backup := range preservation.Backups {
 		mutablePaths = append(mutablePaths, backup.Path)
 	}
+	mutablePaths = append(
+		mutablePaths,
+		specificRepositoryPath,
+		legacyRepositoryPath,
+		legacyRepositoryRulesPath,
+	)
 	mutablePaths = append(mutablePaths, alignmentEvidencePaths(alignment)...)
-	if len(preservation.RepositoryRulesBytes) != 0 {
-		mutablePaths = append(mutablePaths, repositoryRulesPath)
-	}
 	snapshot, err := inspectRepositorySnapshot(initial.Root, InventoryRequest{MutablePaths: mutablePaths})
 	if err != nil {
 		return PlanOutcome{}, err
@@ -295,6 +333,25 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 	if preservation.State != PreservationStateReady {
 		return actionOutcome("decision", preservation.NextAction, preservation.NextAction,
 			append(snapshot.Warnings, preservation.Findings...)), nil
+	}
+	currentRepositoryPlan, repositoryFindings, err := planSpecificRepository(
+		initial.Root,
+		preservation.RepositoryRulesBytes,
+		decisionBool(decisions, "repository.extension.enabled"),
+	)
+	if err != nil {
+		return PlanOutcome{}, err
+	}
+	if len(repositoryFindings) != 0 {
+		return actionOutcome(
+			"classification",
+			repositoryFindings[0].Message,
+			"resolve the reported repository-specific rule carrier conflict and rerun Baseline planning",
+			append(snapshot.Warnings, repositoryFindings...),
+		), nil
+	}
+	if !reflectJSONEqual(repositoryPlan, currentRepositoryPlan) {
+		return PlanOutcome{}, errors.New("repository-specific rule carriers changed during planning")
 	}
 	retention, retentionAction, err := resolvePlanRetention(
 		initial.Root,
@@ -315,7 +372,14 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 		), nil
 	}
 
-	postimages, ledger, err := assemblePostimages(initial.Root, snapshot, artifacts, manifestBytes, preservation)
+	postimages, ledger, err := assemblePostimages(
+		initial.Root,
+		snapshot,
+		artifacts,
+		manifestBytes,
+		preservation,
+		repositoryPlan,
+	)
 	if err != nil {
 		return PlanOutcome{}, err
 	}
@@ -372,6 +436,172 @@ func alignmentEvidencePaths(alignment ProfileAlignment) []string {
 		add(verification.DeclarationPath)
 	}
 	return sortedKeys(seen)
+}
+
+func decisionBool(decisions []DecisionValue, id string) bool {
+	for _, decision := range decisions {
+		if decision.ID == id {
+			value, _ := decision.Value.(bool)
+			return value
+		}
+	}
+	return false
+}
+
+func planSpecificRepository(
+	rootPath string,
+	proposed []byte,
+	enabled bool,
+) (specificRepositoryPlan, []Finding, error) {
+	anchored, err := os.OpenRoot(rootPath)
+	if err != nil {
+		return specificRepositoryPlan{}, nil,
+			fmt.Errorf("open repository root for repository-specific rules: %w", err)
+	}
+	defer anchored.Close()
+
+	canonical, canonicalExists, finding := readSpecificRepositoryCarrier(
+		anchored,
+		specificRepositoryPath,
+	)
+	if finding != nil {
+		return specificRepositoryPlan{}, []Finding{*finding}, nil
+	}
+
+	type legacyCarrier struct {
+		path    string
+		content []byte
+	}
+	var legacy []legacyCarrier
+	var deletePaths []string
+	for _, relative := range []string{legacyRepositoryPath, legacyRepositoryRulesPath} {
+		content, exists, carrierFinding := readSpecificRepositoryCarrier(anchored, relative)
+		if carrierFinding != nil {
+			return specificRepositoryPlan{}, []Finding{*carrierFinding}, nil
+		}
+		if !exists {
+			continue
+		}
+		if repositoryCarrierEmpty(content, relative == legacyRepositoryPath) {
+			deletePaths = append(deletePaths, relative)
+			continue
+		}
+		legacy = append(legacy, legacyCarrier{path: relative, content: content})
+	}
+
+	var selected []byte
+	selectedPath := ""
+	if canonicalExists && !repositoryCarrierEmpty(canonical, false) {
+		selected = canonical
+		selectedPath = specificRepositoryPath
+	}
+	for _, carrier := range legacy {
+		if len(selected) == 0 {
+			selected = carrier.content
+			selectedPath = carrier.path
+		} else if !bytes.Equal(selected, carrier.content) {
+			return specificRepositoryPlan{}, []Finding{{
+				Code: "baseline.repository-rules.conflict",
+				Path: carrier.path,
+				Message: fmt.Sprintf(
+					"repository-specific rule carriers conflict: %s and %s contain different bytes",
+					selectedPath,
+					carrier.path,
+				),
+			}}, nil
+		}
+		deletePaths = append(deletePaths, carrier.path)
+	}
+	if len(proposed) != 0 {
+		if len(selected) == 0 {
+			selected = proposed
+			selectedPath = "Baseline Readoption"
+		} else if !bytes.Equal(selected, proposed) {
+			return specificRepositoryPlan{}, []Finding{{
+				Code: "baseline.repository-rules.conflict",
+				Path: specificRepositoryPath,
+				Message: fmt.Sprintf(
+					"repository-specific rule carriers conflict: %s and Baseline Readoption contain different bytes",
+					selectedPath,
+				),
+			}}, nil
+		}
+	}
+	if !enabled {
+		switch {
+		case len(proposed) != 0:
+			return specificRepositoryPlan{}, []Finding{{
+				Code:    "baseline.repository-rules.disabled",
+				Path:    specificRepositoryPath,
+				Message: "Repository-Specific Normative Rules require repository.extension.enabled=true",
+			}}, nil
+		case len(legacy) != 0:
+			return specificRepositoryPlan{}, []Finding{{
+				Code:    "baseline.repository-rules.migration-disabled",
+				Path:    legacy[0].path,
+				Message: "legacy Repository-Specific Normative Rules require repository.extension.enabled=true for canonical migration",
+			}}, nil
+		}
+		if canonicalExists && repositoryCarrierEmpty(canonical, false) {
+			deletePaths = append(deletePaths, specificRepositoryPath)
+		}
+		sort.Strings(deletePaths)
+		return specificRepositoryPlan{DeletePaths: deletePaths}, nil, nil
+	}
+
+	plan := specificRepositoryPlan{
+		IncludeRoot: len(selected) != 0,
+		DeletePaths: deletePaths,
+	}
+	if canonicalExists && repositoryCarrierEmpty(canonical, false) && len(selected) == 0 {
+		plan.DeletePaths = append(plan.DeletePaths, specificRepositoryPath)
+	}
+	if len(selected) != 0 {
+		plan.CanonicalContent = append([]byte(nil), selected...)
+	}
+	sort.Strings(plan.DeletePaths)
+	return plan, nil, nil
+}
+
+func readSpecificRepositoryCarrier(
+	root *os.Root,
+	relative string,
+) ([]byte, bool, *Finding) {
+	info, err := root.Lstat(filepath.FromSlash(relative))
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, &Finding{
+			Code:    "baseline.repository-rules.unreadable",
+			Path:    relative,
+			Message: "repository-specific rule carrier cannot be inspected",
+		}
+	}
+	if !info.Mode().IsRegular() {
+		return nil, true, &Finding{
+			Code:    "baseline.repository-rules.invalid",
+			Path:    relative,
+			Message: "repository-specific rule carrier must be a regular non-symlink file",
+		}
+	}
+	content, err := readRootRegularFile(root, relative)
+	if err != nil {
+		return nil, true, &Finding{
+			Code:    "baseline.repository-rules.unreadable",
+			Path:    relative,
+			Message: "repository-specific rule carrier cannot be read",
+		}
+	}
+	return content, true, nil
+}
+
+func repositoryCarrierEmpty(content []byte, allowLegacyScaffold bool) bool {
+	if len(bytes.TrimSpace(content)) == 0 {
+		return true
+	}
+	return allowLegacyScaffold &&
+		strings.TrimSpace(string(content)) == strings.TrimSpace(legacyRepositoryScaffold)
 }
 
 func actionOutcome(category, message, next string, warnings []Finding) PlanOutcome {
@@ -686,6 +916,7 @@ func resolveManagedArtifacts(
 	catalog *Catalog,
 	profile ResolvedProfile,
 	decisions []DecisionValue,
+	includeRepositoryExtension bool,
 ) ([]string, []plannedArtifact, error) {
 	values := make(map[string]any, len(decisions))
 	for _, decision := range decisions {
@@ -761,6 +992,15 @@ func resolveManagedArtifacts(
 				renderValues[token] = "`" + renderDecisionValue(value) + "`"
 			}
 		}
+	}
+	if includeRepositoryExtension {
+		active[repositoryExtensionModuleID] = true
+		included[repositoryExtensionRootID] = true
+		delete(excluded, repositoryExtensionRootID)
+	} else {
+		delete(active, repositoryExtensionModuleID)
+		excluded[repositoryExtensionRootID] = true
+		delete(included, repositoryExtensionRootID)
 	}
 	activeModules := make([]string, 0, len(profile.Modules))
 	for _, moduleID := range profile.Modules {
@@ -1101,18 +1341,25 @@ func assemblePostimages(
 	artifacts []plannedArtifact,
 	manifestBytes []byte,
 	preservation RootPreservationPlan,
+	repositoryPlan specificRepositoryPlan,
 ) ([]Postimage, []ManagedEntry, error) {
 	byPath := make(map[string][]plannedArtifact)
 	for _, artifact := range artifacts {
 		byPath[artifact.Path] = append(byPath[artifact.Path], artifact)
 	}
 	outputs := make(map[string][]byte)
+	removedRepositoryPointer := false
 	for relative, grouped := range byPath {
 		current, err := readOptionalRegular(root, relative)
 		if err != nil {
 			return nil, nil, err
 		}
 		content := string(current)
+		if relative == "AGENTS.md" && !repositoryPlan.IncludeRoot {
+			withoutPointer := removeManagedBlock(content, repositoryExtensionRootID)
+			removedRepositoryPointer = withoutPointer != content
+			content = withoutPointer
+		}
 		for _, artifact := range grouped {
 			content = upsertManagedBlock(content, artifact)
 		}
@@ -1126,52 +1373,83 @@ func assemblePostimages(
 		}
 		outputs[backup.Path] = source
 	}
-	if len(preservation.RepositoryRulesBytes) != 0 {
-		outputs[repositoryRulesPath] = append([]byte(nil), preservation.RepositoryRulesBytes...)
+	if len(repositoryPlan.CanonicalContent) != 0 {
+		outputs[specificRepositoryPath] = append([]byte(nil), repositoryPlan.CanonicalContent...)
 	}
 
 	preimages := preimagesByPath(snapshot.Preimages)
-	paths := sortedKeys(outputs)
+	pathSet := make(map[string]struct{}, len(outputs)+len(repositoryPlan.DeletePaths))
+	for relative := range outputs {
+		pathSet[relative] = struct{}{}
+	}
+	for _, relative := range repositoryPlan.DeletePaths {
+		pathSet[relative] = struct{}{}
+	}
+	paths := sortedKeys(pathSet)
 	postimages := make([]Postimage, 0, len(paths))
 	ledger := make([]ManagedEntry, 0)
 	for _, relative := range paths {
-		content := outputs[relative]
-		identity := planContentIdentity(content)
-		postimages = append(postimages, Postimage{
-			Path: relative, Kind: PreimageRegular, Mode: 0o644,
-			Content: content, ContentIdentity: identity,
-		})
 		before := preimages[relative].ContentIdentity
-		action := fileAction(preimages[relative], PreimageRegular, before, identity)
+		postimage := Postimage{Path: relative, Kind: PreimageMissing}
+		if content, exists := outputs[relative]; exists {
+			postimage = Postimage{
+				Path: relative, Kind: PreimageRegular, Mode: 0o644,
+				Content: content, ContentIdentity: planContentIdentity(content),
+			}
+		}
+		postimages = append(postimages, postimage)
+		action := fileAction(
+			preimages[relative],
+			postimage.Kind,
+			before,
+			postimage.ContentIdentity,
+		)
 		grouped := byPath[relative]
 		for _, artifact := range grouped {
 			ledger = append(ledger, ManagedEntry{
 				ID: artifact.ID, Path: relative, Action: action, Kind: artifact.Kind,
 				Module: artifact.Module, Template: artifact.Template, Version: artifact.Version,
-				BeforeIdentity: before, AfterIdentity: identity,
+				BeforeIdentity: before, AfterIdentity: postimage.ContentIdentity,
 				ContentIdentity: "sha256:" + artifact.Digest,
 			})
 		}
 		if relative == manifestPath {
 			ledger = append(ledger, ManagedEntry{
 				ID: "manifest", Path: relative, Action: action, Kind: "manifest",
-				Version: ManifestVersion, BeforeIdentity: before, AfterIdentity: identity,
-				ContentIdentity: identity,
+				Version: ManifestVersion, BeforeIdentity: before,
+				AfterIdentity:   postimage.ContentIdentity,
+				ContentIdentity: postimage.ContentIdentity,
 			})
 		}
 		for _, backup := range preservation.Backups {
 			if backup.Path == relative {
 				ledger = append(ledger, ManagedEntry{
 					ID: "backup:" + backup.SourcePath, Path: relative, Action: action, Kind: "backup",
-					BeforeIdentity: before, AfterIdentity: identity, ContentIdentity: backup.ContentIdentity,
+					BeforeIdentity: before, AfterIdentity: postimage.ContentIdentity,
+					ContentIdentity: backup.ContentIdentity,
 				})
 			}
 		}
-		if relative == repositoryRulesPath {
+		if relative == specificRepositoryPath && len(repositoryPlan.CanonicalContent) != 0 {
 			ledger = append(ledger, ManagedEntry{
-				ID: "repository-rules.readoption", Path: relative, Action: action,
-				Kind: "repository-owned", BeforeIdentity: before, AfterIdentity: identity,
-				ContentIdentity: identity,
+				ID: "repository-rules.canonicalize", Path: relative, Action: action,
+				Kind: "repository-owned", BeforeIdentity: before,
+				AfterIdentity:   postimage.ContentIdentity,
+				ContentIdentity: postimage.ContentIdentity,
+			})
+		}
+		if containsString(repositoryPlan.DeletePaths, relative) {
+			ledger = append(ledger, ManagedEntry{
+				ID: "repository-rules.remove:" + relative, Path: relative, Action: action,
+				Kind: "repository-owned", BeforeIdentity: before,
+			})
+		}
+		if relative == "AGENTS.md" && removedRepositoryPointer {
+			ledger = append(ledger, ManagedEntry{
+				ID: "repository-rules.remove-root-pointer", Path: relative, Action: action,
+				Kind: "repository-owned", BeforeIdentity: before,
+				AfterIdentity:   postimage.ContentIdentity,
+				ContentIdentity: postimage.ContentIdentity,
 			})
 		}
 	}
@@ -1198,6 +1476,28 @@ func readOptionalRegular(root, relative string) ([]byte, error) {
 		return nil, fmt.Errorf("read planned path %q: %w", relative, err)
 	}
 	return data, nil
+}
+
+func removeManagedBlock(current, id string) string {
+	begin := fmt.Sprintf("<!-- setup-context-driven:begin id=%s ", id)
+	end := fmt.Sprintf("<!-- setup-context-driven:end id=%s -->", id)
+	start := strings.Index(current, begin)
+	if start < 0 {
+		return current
+	}
+	finish := strings.Index(current[start:], end)
+	if finish < 0 {
+		return current
+	}
+	finish += start + len(end)
+	if finish < len(current) && current[finish] == '\n' {
+		finish++
+	}
+	result := current[:start] + current[finish:]
+	for strings.Contains(result, "\n\n\n") {
+		result = strings.ReplaceAll(result, "\n\n\n", "\n\n")
+	}
+	return strings.TrimLeft(result, "\n")
 }
 
 func upsertManagedBlock(current string, artifact plannedArtifact) string {
@@ -1480,7 +1780,17 @@ func validateSetupManifest(document PlanDocument, catalog *Catalog) error {
 		manifest.Verification == nil {
 		return errors.New("Setup Manifest collections must be arrays or objects")
 	}
-	modules, artifacts, err := resolveManagedArtifacts(catalog, document.Profile, document.Decisions)
+	includeRepositoryExtension := containsString(manifest.Modules, repositoryExtensionModuleID)
+	if includeRepositoryExtension &&
+		!decisionBool(document.Decisions, "repository.extension.enabled") {
+		return errors.New("Setup Manifest enables repository-specific rules without owner approval")
+	}
+	modules, artifacts, err := resolveManagedArtifacts(
+		catalog,
+		document.Profile,
+		document.Decisions,
+		includeRepositoryExtension,
+	)
 	if err != nil {
 		return fmt.Errorf("resolve Setup Manifest validation inventory: %w", err)
 	}
