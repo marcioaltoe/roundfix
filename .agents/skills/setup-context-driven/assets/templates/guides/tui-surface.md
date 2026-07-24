@@ -1,3 +1,0 @@
-# TUI surface
-
-{{artifact.rules}}

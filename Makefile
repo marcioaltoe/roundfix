@@ -25,7 +25,7 @@ GO_FILES := $(shell find . -name '*.go' -not -path './.git/*')
 
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap verify fmt fmt-check test test-race setup-context-check build install run version clean deps skills-check skills-install skills-link skills-sync skills-sync-check
+.PHONY: help bootstrap verify fmt fmt-check test test-race build install run version clean deps skills-check skills-install skills-link skills-sync skills-sync-check
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n"} \
@@ -45,7 +45,7 @@ deps: ## Download, tidy, and verify Go modules
 
 ##@ Quality & Testing
 
-verify: fmt-check test setup-context-check skills-sync-check skills-check build ## Run the required local verification gate
+verify: fmt-check test skills-sync-check skills-check build ## Run the required local verification gate
 
 fmt: ## Format Go files
 	$(GOFMT) -w $(GO_FILES)
@@ -62,12 +62,6 @@ test: ## Run Go tests
 
 test-race: ## Run Go tests with the race detector
 	$(GO) test -race $(PKGS)
-
-setup-context-check: ## Validate setup-context-driven Python suite and bundled assets
-	$(RTK) env PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test*.py'
-	$(RTK) env PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s skills/setup-context-driven/tests -p 'test*.py'
-	$(RTK) env PYTHONDONTWRITEBYTECODE=1 python3 -B -c "import sys; from pathlib import Path; sys.path.insert(0, '.agents/skills/setup-context-driven/scripts'); from context_assets import load_asset_catalog; load_asset_catalog(Path('.agents/skills/setup-context-driven')); load_asset_catalog(Path('skills/setup-context-driven')); print('setup-context-driven assets: ok')"
-
 
 ##@ Build & Run
 
@@ -108,15 +102,13 @@ OWNED_SKILLS := roundfix write-idea write-prd write-techspec write-tasks setup-c
 
 skills-sync: ## Regenerate the embedded skills/ bundle from canonical .agents/skills/
 	@for s in $(OWNED_SKILLS); do rm -rf "skills/$$s"; cp -R ".agents/skills/$$s" "skills/$$s"; done
-	@python3 -c "import json; print('\n'.join(sorted(json.load(open('skills-lock.json'))['skills'].keys())))" > skills/recommended.txt
 
 skills-sync-check: ## Fail when the embedded bundle drifts from canonical .agents/skills/
 	@for s in $(OWNED_SKILLS); do \
 		diff -r ".agents/skills/$$s" "skills/$$s" >/dev/null || { \
 			echo "skills/$$s drifts from .agents/skills/$$s; run 'make skills-sync'"; exit 1; }; \
 	done
-	@python3 -c "import json; print('\n'.join(sorted(json.load(open('skills-lock.json'))['skills'].keys())))" | diff - skills/recommended.txt >/dev/null || { \
-		echo "skills/recommended.txt drifts from skills-lock.json; run 'make skills-sync'"; exit 1; }
+	$(GO) test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
 
 skills-install: ## Install shipped Roundfix skills; pass TARGET=project|codex|claude|opencode|all
 	$(GO) run $(RUN_FLAGS) $(CMD) skills install --target $(TARGET)

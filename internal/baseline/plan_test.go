@@ -146,8 +146,7 @@ func TestPlanDeterminismAndNoMutation(t *testing.T) {
 
 func TestPlanDeterminismMatchesMaintainedManagedEntryFixture(t *testing.T) {
 	fixturePath := filepath.Join(
-		"..", "..", ".agents", "skills", "setup-context-driven", "assets",
-		"parity-corpus", "v1", "fixtures", "greenfield-go-cli-tui.json",
+		"testdata", "parity-corpus", "v1", "fixtures", "greenfield-go-cli-tui.json",
 	)
 	data, err := os.ReadFile(fixturePath)
 	if err != nil {

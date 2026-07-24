@@ -298,7 +298,7 @@ func TestAssetsSyncCompatibilityMatchesMaintainedPythonContract(t *testing.T) {
 	}
 	readAssetsSyncJSON(
 		t,
-		filepath.Join("..", "..", ".agents", "skills", "setup-context-driven", "assets", "parity-corpus", "v1", "fixtures", "asset-sync.json"),
+		filepath.Join("testdata", "parity-corpus", "v1", "fixtures", "asset-sync.json"),
 		&fixture,
 	)
 	if fixture.Classification != "exact" ||

@@ -211,8 +211,7 @@ func TestDecisionDocumentSkeletonRejectsMalformedInput(t *testing.T) {
 
 func TestReadoptionCompatibilityMaintainedFixture(t *testing.T) {
 	fixturePath := filepath.Join(
-		"..", "..", ".agents", "skills", "setup-context-driven", "assets",
-		"parity-corpus", "v1", "fixtures", "readoption-preservation.json",
+		"testdata", "parity-corpus", "v1", "fixtures", "readoption-preservation.json",
 	)
 	data, err := os.ReadFile(fixturePath)
 	if err != nil {

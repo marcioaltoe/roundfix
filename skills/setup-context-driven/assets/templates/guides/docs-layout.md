@@ -1,3 +1,0 @@
-# Docs layout
-
-{{artifact.rules}}

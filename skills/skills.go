@@ -210,6 +210,7 @@ func Check() []Diagnostic {
 		})
 	} else {
 		diagnostics = append(diagnostics, checkOwnedSkillBundle(skillNames, files)...)
+		diagnostics = append(diagnostics, checkThinSetupSkill(files)...)
 	}
 
 	// The operational roundfix skill carries a strict contract: required
@@ -318,6 +319,19 @@ func Check() []Diagnostic {
 		}
 		return diagnostics[i].Path < diagnostics[j].Path
 	})
+	return diagnostics
+}
+
+func checkThinSetupSkill(files []File) []Diagnostic {
+	var diagnostics []Diagnostic
+	for _, file := range files {
+		if file.Skill == "setup-context-driven" && file.Path != "setup-context-driven/SKILL.md" {
+			diagnostics = append(diagnostics, Diagnostic{
+				Path:    file.Path,
+				Message: "setup-context-driven is a thin guidance skill and must not ship runtime, test, reference, or asset files",
+			})
+		}
+	}
 	return diagnostics
 }
 

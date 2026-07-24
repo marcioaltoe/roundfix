@@ -1,3 +1,0 @@
-# Spec routing
-
-{{artifact.rules}}

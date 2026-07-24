@@ -1,3 +1,0 @@
-# Domain docs
-
-{{artifact.rules}}

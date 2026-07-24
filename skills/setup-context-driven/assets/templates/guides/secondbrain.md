@@ -1,3 +1,0 @@
-# Secondbrain
-
-{{artifact.rules}}

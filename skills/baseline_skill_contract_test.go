@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"reflect"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -69,6 +71,89 @@ func TestBaselineSkillContract(t *testing.T) {
 	} {
 		if !strings.Contains(setup, required) {
 			t.Fatalf("setup-context-driven skill missing %q", required)
+		}
+	}
+}
+
+func TestNoPythonBaselineRuntime(t *testing.T) {
+	repoRoot := filepath.Clean(filepath.Join(".."))
+	for _, root := range []string{
+		filepath.Join(repoRoot, ".agents", "skills", "setup-context-driven"),
+		filepath.Join(repoRoot, "skills", "setup-context-driven"),
+	} {
+		var files []string
+		if err := filepath.WalkDir(root, func(filePath string, entry os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if entry.IsDir() {
+				return nil
+			}
+			relative, err := filepath.Rel(root, filePath)
+			if err != nil {
+				return err
+			}
+			files = append(files, filepath.ToSlash(relative))
+			return nil
+		}); err != nil {
+			t.Fatalf("walk setup skill %s: %v", root, err)
+		}
+		sort.Strings(files)
+		if !reflect.DeepEqual(files, []string{"SKILL.md"}) {
+			t.Fatalf("setup skill %s ships non-guidance files: %v", root, files)
+		}
+	}
+
+	makefile := string(readBaselineSkillContractFile(t, filepath.Join(repoRoot, "Makefile")))
+	for _, forbidden := range []string{
+		"setup-context-check",
+		"PYTHONDONTWRITEBYTECODE",
+		"python3",
+	} {
+		if strings.Contains(makefile, forbidden) {
+			t.Fatalf("post-cutover Makefile invokes retired runtime marker %q", forbidden)
+		}
+	}
+
+	for _, relative := range []string{
+		"README.md",
+		filepath.Join("docs", "user-guide", "commands.md"),
+		filepath.Join("docs", "user-guide", "context-driven-development.md"),
+		filepath.Join(".agents", "skills", "setup-context-driven", "SKILL.md"),
+		filepath.Join(".agents", "skills", "roundfix", "SKILL.md"),
+	} {
+		content := string(readBaselineSkillContractFile(t, filepath.Join(repoRoot, relative)))
+		for _, forbidden := range []string{
+			"context_" + "setup.py",
+			"context_" + "baseline.py",
+			"python3",
+			"Python fallback",
+		} {
+			if strings.Contains(content, forbidden) {
+				t.Fatalf("%s references retired Baseline runtime marker %q", relative, forbidden)
+			}
+		}
+	}
+}
+
+func TestThinSetupSkill(t *testing.T) {
+	files, err := Files()
+	if err != nil {
+		t.Fatalf("read embedded skills: %v", err)
+	}
+	var setupFiles []string
+	for _, file := range files {
+		if file.Skill == "setup-context-driven" {
+			setupFiles = append(setupFiles, file.Path)
+		}
+	}
+	sort.Strings(setupFiles)
+	if !reflect.DeepEqual(setupFiles, []string{"setup-context-driven/SKILL.md"}) {
+		t.Fatalf("embedded setup skill files = %v", setupFiles)
+	}
+	for _, diagnostic := range Check() {
+		if strings.HasPrefix(diagnostic.Path, "setup-context-driven/") {
+			t.Fatalf("thin setup skill diagnostic: %s: %s", diagnostic.Path, diagnostic.Message)
 		}
 	}
 }

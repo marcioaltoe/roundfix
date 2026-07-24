@@ -8,11 +8,19 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
+	"sort"
 	"strings"
 	"testing"
 )
 
-const lockHashCompatibilityFixturePath = "setup-context-driven/assets/lock-hash-compatibility-v1.json"
+var lockHashCompatibilityFixturePath = filepath.Join(
+	"..",
+	"internal",
+	"baseline",
+	"assets",
+	"lock-hash-compatibility-v1.json",
+)
 
 type lockHashCompatibilityFixture struct {
 	SchemaVersion string `json:"schemaVersion"`
@@ -25,9 +33,9 @@ type lockHashCompatibilityFixture struct {
 }
 
 func TestSkillFolderHashMatchesExternalCompatibilityFixture(t *testing.T) {
-	data, err := embedded.ReadFile(lockHashCompatibilityFixturePath)
+	data, err := os.ReadFile(lockHashCompatibilityFixturePath)
 	if err != nil {
-		t.Fatalf("read embedded lock compatibility fixture: %v", err)
+		t.Fatalf("read Go-owned lock compatibility fixture: %v", err)
 	}
 	var fixture lockHashCompatibilityFixture
 	decoder := json.NewDecoder(bytes.NewReader(data))
@@ -340,6 +348,53 @@ func TestRecommendedListsExternallyManagedSkills(t *testing.T) {
 		if owned[skill] {
 			t.Fatalf("recommended skill %q must not be an owned bundle skill", skill)
 		}
+	}
+}
+
+func TestRecommendedSkillsMatchLock(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "skills-lock.json"))
+	if err != nil {
+		t.Fatalf("read skills lock: %v", err)
+	}
+	var lock struct {
+		Version int                        `json:"version"`
+		Skills  map[string]json.RawMessage `json:"skills"`
+	}
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&lock); err != nil {
+		t.Fatalf("decode skills lock: %v", err)
+	}
+	if lock.Version != 1 {
+		t.Fatalf("skills lock version = %d, want 1", lock.Version)
+	}
+	want := make([]string, 0, len(lock.Skills))
+	for name := range lock.Skills {
+		want = append(want, name)
+	}
+	sort.Strings(want)
+	if got := Recommended(); !reflect.DeepEqual(got, want) {
+		t.Fatalf("recommended skills = %v, want lock entries %v", got, want)
+	}
+}
+
+func TestCheckRejectsExecutableSetupEngineArtifacts(t *testing.T) {
+	diagnostics := checkThinSetupSkill([]File{
+		{
+			Skill: "setup-context-driven",
+			Path:  "setup-context-driven/SKILL.md",
+		},
+		{
+			Skill: "setup-context-driven",
+			Path:  "setup-context-driven/scripts/" + "context_setup.py",
+		},
+	})
+	if len(diagnostics) != 1 {
+		t.Fatalf("thin setup diagnostics = %#v", diagnostics)
+	}
+	if diagnostics[0].Path != "setup-context-driven/scripts/context_setup.py" ||
+		!strings.Contains(diagnostics[0].Message, "must not ship runtime") {
+		t.Fatalf("thin setup diagnostic = %#v", diagnostics[0])
 	}
 }
 
