@@ -1,11 +1,24 @@
 ---
 spec: 0040-mandatory-context-driven-adrs
-status: active
+status: archived
 created: 2026-07-17
+archived: 2026-07-24
+qa_override: true
+archive_reason: superseded
+superseded_at: 2026-07-24
+superseded_by:
+  - 0047-context-driven-guidance-composition
+  - 0048-context-driven-project-decisions-and-spec-constraints
 surfaces: [docs, tooling]
 ---
 
 # Mandatory Context-Driven ADRs
+
+> Superseded without implementation by
+> [Spec 0047](../../0047-context-driven-guidance-composition/_prd.md) and
+> [Spec 0048](../../0048-context-driven-project-decisions-and-spec-constraints/_prd.md).
+> The replacement contracts keep operative guidance independent of ADR
+> existence and require explicit confirmation of identifier policy.
 
 The Context-Driven Baseline currently generates instructions and supporting
 guides, but it does not install the architectural decisions that make its

@@ -1,8 +1,11 @@
 ---
 spec: 0046-public-context-driven-baseline-command
-status: active
+status: archived
 created: 2026-07-23
 updated: 2026-07-23
+archived: 2026-07-24
+qa_override: true
+release: "https://github.com/marcioaltoe/roundfix/pull/34"
 owner: Roundfix maintainers
 surfaces: [cli, infra, docs]
 ---

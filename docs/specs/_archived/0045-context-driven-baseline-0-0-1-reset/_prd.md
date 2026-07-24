@@ -1,7 +1,9 @@
 ---
 spec: 0045-context-driven-baseline-0-0-1-reset
-status: active
+status: archived
 created: 2026-07-22
+archived: 2026-07-24
+release: "https://github.com/marcioaltoe/roundfix/pull/34"
 surfaces: [cli, infra, docs]
 ---
 
