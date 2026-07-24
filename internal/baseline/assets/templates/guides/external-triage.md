@@ -1,0 +1,3 @@
+# External triage
+
+{{artifact.rules}}

@@ -1,109 +1,244 @@
 ---
 name: setup-context-driven
-description: Configure a repo for CONTEXT-driven development (the method explained in docs/user-guide/context-driven-development.md) — scaffold the full docs/ layout (_inbox, adr, agents, design, findings, handoffs, references, specs, user-guide) and the CONTEXT.md glossary, and seed the docs/agents/ usage guides (docs layout with the findings template, issue tracker, spec routing, domain docs, triage labels, autonomous work model, and optional Secondbrain guidance). Run when preparing a repo for the write-prd/write-tasks/implement pipeline or for Roundfix-driven autonomous work; re-run to audit and refresh only setup-owned managed content.
+description: Adopt, update, or verify a repository's Context-Driven Baseline through the public Roundfix Baseline Command. Use when preparing a repository for the write-prd/write-tasks/implement pipeline, changing its Baseline Profile, preserving existing instructions, restoring its Repository Skill Set, or confirming that Baseline-owned content is current.
 disable-model-invocation: true
 metadata:
   category: setup
   tags: [workflow, prd, issues, planning, triage, repository-context, agents]
-  version: 0.8.1
+  version: 0.0.1
   author: Marcio Altoé
   source: https://github.com/marcioaltoe/skills
 ---
 
 # Setup Context-Driven
 
-Configure a repository for CONTEXT-driven development through the portable asset catalog and `scripts/context_setup.py`. The script is the source of truth for audit, apply, setup snapshots, managed markers, decisions, and finding codes.
+Use the public `roundfix baseline` command family. The Roundfix binary is the
+only runtime authority for Baseline Profiles, repository inspection, Decision
+Plans, Change Plans, confirmation, apply, recovery, and Baseline verification.
+This skill supplies recipes and interpretation only. It has no independent
+setup engine or behavioral fallback.
 
-## Asset map
+Read the durable operating contract before the first adoption or a recovery:
+`docs/user-guide/context-driven-development.md#adopt-or-update-the-context-driven-baseline`.
 
-- `assets/profiles/` selects a supported profile and canonical skill setup snapshot: `typescript-bun-monorepo`, `go-cli-tui`, or `rust-cli`.
-- `assets/modules/` owns compact root pointers, supporting guides, rule IDs, required decisions, and required skills.
-- `assets/templates/` stores generated repository content. Root blocks must stay short and point to `docs/agents/` guides.
-- `assets/setups/` stores bundled canonical skill setup snapshots. Normal audit/apply uses only these bundled files; it never needs `~/dev/skills`, the network, or third-party Python packages.
-- `references/` is workflow guidance for agents, not generated output.
+## Boundaries
 
-## Audit-first workflow
+Baseline owns declared root blocks, setup-owned guides, immutable
+root-instruction backups, and `docs/agents/setup-context.json`. It preserves
+repository-authored bytes outside managed boundaries.
 
-1. Inspect the repository just enough to pick the likely profile. Use local files only: root instructions, `CONTEXT.md`, `docs/`, package files, and language/runtime markers.
-2. Run audit before asking setup questions:
+Baseline never:
 
-   ```bash
-   rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py audit --repo <repo> --format json
-   ```
+- installs application or Agent dependencies;
+- connects to a database or live infrastructure;
+- runs repository formatter, build, test, lint, migration, or Verification
+  commands;
+- follows unsafe links or mutates nested instruction carriers;
+- infers repository policy from implementation evidence;
+- lets ACP proposals authorize mutation;
+- combines profiles or loads user-scoped or remote profiles.
 
-   If a profile is known but the manifest is missing or stale, rerun with `--profile <profile-id>` to preview the selected composition.
-3. Read the JSON result. Present only:
-   - selected profile and ordered modules;
-   - selected canonical skill setup name;
-   - active or conditional modules and their trigger decisions;
-   - blocking findings by code/path/action;
-   - `plannedChanges`, including `state` and `condition` for conditional operations;
-   - optional cleanup information only when audit was run with `--show-extra-skills`.
-4. Do not dump generated Markdown by default. Mention that full templates live under `assets/templates/` if the user asks to inspect them.
+Treat profile expectations, repository commands, and recommendations as
+different facts. A profile expectation is portable policy, not implementation
+proof. A repository command is executable only when the result says
+`repositoryExecutable: true` and binds a local declaration. A recommendation
+is a command for the maintainer to run; Baseline did not execute it.
 
-## Decisions
+## Human adoption or update
 
-Use stored compatible decisions from `docs/agents/setup-context.json` first. Ask only for `decision.required` findings, one decision code at a time, in the order the CLI reports them. This includes dependent questions introduced after an enabled capability changes the Decision Plan, such as `runtime.backend`, `runtime.design`, and `verification.gate` after `autonomous.enabled=true`. Do not ask again for a stored compatible value.
-
-Question routing:
-
-- `spec.scaffold` — confirm local `docs/specs/<feature-slug>/` is the planning source.
-- `domain.layout` — ask whether the repository is `single-context` or `multi-context`.
-- `triage.external` — ask only when external forge issues are relevant.
-- `autonomous.enabled` — ask whether Supervisor-to-ACP Runtime delegation applies.
-- `runtime.backend` — ask for the backend/default implementation runtime and model.
-- `runtime.design` — ask for the design, UI, UX, or frontend runtime and model.
-- `verification.gate` — ask for the command agents must run before completion claims.
-- `language.generated` — generated repository content must be `English`.
-- `secondbrain.enabled` — ask whether read-only local Secondbrain guidance must be generated.
-- `adoption.*` — ask only after showing the existing unmarked file that would become setup-owned.
-
-Record each answer by passing `--decision ID=VALUE` to apply. For newly introduced decisions, ask the new code once, then let the manifest carry it on later runs.
-
-## Preview and apply
-
-Apply is explicit and never runs before the user sees the managed change summary.
-
-Before applying, tell the user:
-
-- the profile, ordered modules, and canonical skill setup;
-- every managed file or block that will be created, refreshed, or removed;
-- that only `docs/agents/setup-context.json` and declared setup-owned Markdown boundaries can change;
-- that repository-authored bytes outside managed markers remain untouched;
-- that extra installed skills are informational only and this workflow never removes skills.
-
-Ask for confirmation. After confirmation, run:
+At an interactive terminal, run:
 
 ```bash
-rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py apply --repo <repo> --format json --profile <profile-id> --decision <id=value> ...
+roundfix baseline --repo . --format text
 ```
 
-If apply returns `decision.required`, stop, present the unchanged selection and preview from the response, and ask only the next unresolved decision. If it returns blocking findings, report the code, path, and action; do not patch around the finding manually.
+The one workflow detects first adoption or update, collects numbered decisions,
+selects exactly one Baseline Profile, and shows one consolidated Change Plan
+with file changes first. Do not authorize mutation before the complete plan and
+Plan Digest are visible.
 
-## Optional reports
+Decision and preservation prompts mark one visible default; Enter confirms it.
+A valid stored Setup Manifest value wins even when a changed Profile Digest
+requires adoption again. Otherwise the CLI uses its embedded catalog
+suggestions, including `codex gpt-5.6-sol` for backend work and
+`claude fable high` for design work. Existing root instructions default to
+Preservation, an empty instruction inventory defaults to Greenfield, and a
+recoverable existing profile is preferred. Classification, Plan approval, and
+apply still require an explicit non-empty choice.
 
-Use `--show-extra-skills` only when the user asks to review installed skills outside the selected setup:
+For first adoption, ask the maintainer to choose one instruction mode:
+
+- Greenfield backs up safe root carriers and imports none of their rules.
+- Preservation backs up safe root carriers and requires one reviewed
+  disposition per Source Baseline Entry.
+
+Nested instruction carriers remain unchanged and appear only as warnings.
+Unsafe root carriers block planning. If sealed ACP classification is
+unavailable or discarded, continue through the public command's structured
+manual classification review. Never invent Source Baseline identities,
+classifications, or destinations.
+
+Repository-Specific Normative Rules have one canonical carrier:
+`docs/agents/specific-repository.md`. The enabling decision permits this
+destination; it does not create an empty scaffold. Baseline creates the file
+and its managed root pointer only for approved non-empty rules. It migrates
+either legacy `docs/agents/repository.md` or
+`docs/agents/repository-rules.md` byte-for-byte, removes the known empty legacy
+scaffold, and blocks divergent non-empty legacy carriers for manual
+reconciliation. Existing `0.0.1` Decision Documents that name either legacy
+destination are normalized to the canonical path.
+
+For updates, the current Baseline Profile and compatible decisions are offered
+first. If only the Profile Digest changed, the command enters adoption but
+retains still-valid profile and decision values as defaults. A profile change
+produces a new full plan. If the maintainer rejects the plan, use the command's
+decision-area revision flow. Every accepted correction must produce a new Plan
+Digest and another complete review.
+
+## Non-interactive planning
+
+The interactive root command refuses redirected or absent terminal input.
+Automation and Agents use:
 
 ```bash
-rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py audit --repo <repo> --format json --show-extra-skills
+roundfix baseline plan --repo . --profile <profile-id> --decision-file <decision-file> --format json
 ```
 
-Report `skills.extra.installed` and `skills.local.untracked` as review information. Never suggest a removal command.
+Scalar answers may use repeatable `--decision <id=value>` flags. Structured
+answers use repeatable strict Decision Documents with schema
+`setup-context-driven/decisions/0.0.1`.
 
-Use `sync-setups` only as a maintainer operation with an explicit canonical setups directory:
+Interpret the result by exit category:
+
+- `0`: stdout is one complete `roundfix/baseline-plan/v1` document.
+- `2`: repair invalid input, schema, Git state, or an unsafe carrier.
+- `3`: follow the `roundfix/baseline-result/v1` `nextAction`; no partial plan
+  exists.
+
+For preservation, use only a current, strict Decision Document derived from the
+public human classification review. It must bind the current Source Baseline
+and every Source Baseline Entry exactly once. Do not reuse identities or
+digests after repository bytes change.
+
+Review at least:
+
+- `repository`, `catalog`, and the one resolved `profile`;
+- normalized `decisions`;
+- `fileChanges` and the complete canonical `managedEntries` ledger;
+- `retention`, `warnings`, and the proposed `setupManifest`;
+- every exact `preimage` and `postimage`;
+- `planDigest`.
+
+The plan can contain repository policy and exact generated bytes. Store and
+transport it as a sensitive review artifact.
+
+## Apply the approved plan
+
+Ask the maintainer to approve the exact current `planDigest`. Then run:
 
 ```bash
-rtk python3 .agents/skills/setup-context-driven/scripts/context_setup.py sync-setups --source-dir <canonical-setups> --check --format json
+roundfix baseline apply --repo . --plan <plan-file> --confirm-plan <plan-digest> --format json
 ```
 
-Normal repository setup does not require this checkout.
+Apply strictly parses the supplied `roundfix/baseline-plan/v1` document and
+applies only its postimages. It never recalculates or substitutes a plan.
 
-## Secondbrain
+On exit:
 
-Secondbrain is opt-in through `secondbrain.enabled=true`. When enabled, apply creates one compact root pointer and `docs/agents/secondbrain.md`. When disabled, apply creates neither; if a previous setup owned those artifacts, apply removes only the marked managed Secondbrain block or guide content.
+- `0`: apply and Baseline verification passed, or the exact postimages were
+  already verified.
+- `1`: inspect execution, verification, recovery, output, or rollback failure.
+- `2`: correct invalid input, plan schema, or an unsafe repository.
+- `3`: confirmation, preimage, catalog, profile, or Git lineage is no longer
+  current. Generate and review a new plan.
+- `130`: the operation was canceled.
 
-Generated Secondbrain guidance must remain read-only. It must require index-first lookup, `qmd query`, project-mirror caution, file citations, Hermes escalation for durable updates, and secret safety. It must forbid writes to the Secondbrain, `raw/`, and `projects/*/mirror/`.
+A portable plan can apply in another clone only when clone-stable Git lineage,
+object format, catalog identity, profile, and all bounded preimages match.
+
+## Baseline Profiles
+
+Inspect and validate profiles through the public CLI:
+
+```bash
+roundfix baseline profile show <profile-id> --format json
+roundfix baseline profile validate <profile-id> --format text
+```
+
+Create one repository-owned profile from one built-in profile:
+
+```bash
+roundfix baseline profile init --id <repository-profile-id> --from <built-in-id>
+roundfix baseline profile validate <repository-profile-id> --format text
+```
+
+Repository-owned profiles live only under
+`.roundfix/baseline/profiles/<id>.json`, compose only embedded catalog entry
+IDs, and must be versioned with the repository. They cannot combine profiles,
+load user-scoped catalogs, or declare executable or remote content.
+
+## Repository Skill Set restoration
+
+Adoption reports missing or drifted external skills but never restores them as
+a side effect. Preview an explicitly requested restoration:
+
+```bash
+roundfix baseline skills restore --repo . --profile <built-in-id> --skill <skill-name> --format json
+```
+
+A non-empty preview exits `3` with a Plan Digest and writes nothing. After the
+maintainer approves that exact preview, rerun:
+
+```bash
+roundfix baseline skills restore --repo . --profile <built-in-id> --skill <skill-name> --confirm-plan <plan-digest> --format json
+```
+
+Use `--source-dir <path>` only for a declared offline Git checkout or bare
+object store containing the exact immutable source commit. Never substitute a
+generic skill refresh.
+
+After restoration, generate the same Baseline Plan again. Restoration success
+proves selected Repository Skill Set bytes, not repository-authored policy.
+
+## Canonical asset synchronization
+
+This is a maintainer-only operation and is never part of ordinary adoption:
+
+```bash
+roundfix baseline assets sync --source-dir <canonical-setups> --check --format json
+```
+
+Run without `--check` only when the maintainer explicitly authorizes refreshing
+the Go-owned canonical setup snapshots. The command validates source
+provenance and the generated catalog before changing only canonical setup
+assets.
+
+## Recovery
+
+- Missing decisions or manual classification: follow `nextAction`, complete
+  current structured input, and rerun planning.
+- Confirmation mismatch: copy the full current Plan Digest from the supplied
+  plan after review.
+- Stale plan: generate and approve a replacement; never edit or force the old
+  plan.
+- Unsafe carrier: repair the exact reported path; never follow or replace it
+  through an ad-hoc workaround.
+- Interrupted transaction: rerun the same public apply command so Roundfix can
+  lock and recover its Git-private journal. Never delete recovery state.
+- Incomplete rollback: stop writes, preserve checkout and recovery state,
+  inspect every reported path, restore trustworthy bytes, and generate a new
+  plan.
 
 ## Completion
 
-After apply, rerun audit in JSON mode. A clean setup has exit code `0`. Report remaining findings by code and path. Do not claim setup is complete without fresh audit evidence.
+Do not claim adoption or update complete from planning alone.
+
+1. Require apply exit `0` and inspect `verifiedPostimages`.
+2. Run each reported formatter or Verification recommendation outside
+   Baseline.
+3. Repair any repository failure outside managed Baseline output.
+4. Generate a fresh plan with the same current decisions.
+5. Require no file changes, or perform an exact idempotent reapply at exit `0`.
+
+Report remaining warnings, recommendations not run, the approved Plan Digest,
+and the final Baseline result state.

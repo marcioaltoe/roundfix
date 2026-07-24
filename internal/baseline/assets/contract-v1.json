@@ -1,0 +1,360 @@
+{
+  "schemaVersion": "setup-context-driven/assets-v1",
+  "version": 1,
+  "contracts": [
+    {
+      "id": "contract.profile",
+      "version": 1,
+      "path": "assets/profiles/*.json",
+      "requires": ["id", "version", "setup", "entryDecisions", "modules"],
+      "rules": [
+        "Profiles reference known modules and one known setup snapshot.",
+        "Profiles declare ordered entry decisions before dependent decisions are resolved.",
+        "Profiles list every required module dependency explicitly.",
+        "Profile module order resolves deterministically through dependency order."
+      ]
+    },
+    {
+      "id": "contract.module",
+      "version": 1,
+      "path": "assets/modules/*.json",
+      "requires": [
+        "id",
+        "version",
+        "dependsOn",
+        "conflictsWith",
+        "rootBlocks",
+        "supportingGuides",
+        "rules",
+        "requiredSkills",
+        "requiredDecisions"
+      ],
+      "rules": [
+        "Module dependencies and conflicts reference known modules.",
+        "Rule identifiers are unique across the catalog.",
+        "Managed root block identifiers are unique across the catalog.",
+        "Supporting guide identifiers are unique across the catalog."
+      ]
+    },
+    {
+      "id": "contract.decision",
+      "version": 1,
+      "path": "assets/decisions.json",
+      "requires": ["id", "version", "type", "summary", "effects"],
+      "rules": [
+        "Decision identifiers are stable public data.",
+        "Decision effects declare typed conditions, activated modules, dependent decisions, artifact inclusion or exclusion, template selections, and render bindings.",
+        "Decision effect targets reference catalog-owned modules, decisions, artifacts, templates, and template tokens.",
+        "A meaning change requires a new version or manifest migration."
+      ]
+    },
+    {
+      "id": "contract.template",
+      "version": 1,
+      "path": "assets/templates/index.json",
+      "requires": ["id", "version", "kind", "path"],
+      "rules": [
+        "Template paths are relative to assets/templates.",
+        "Templates may contain only declared decision tokens.",
+        "Root-block templates stay compact and point to supporting guides."
+      ]
+    },
+    {
+      "id": "contract.setup-snapshot",
+      "version": 1,
+      "path": "assets/setups/*.json",
+      "requires": ["id", "version", "source", "digest", "skills"],
+      "rules": [
+        "Skill paths are normalized relative paths.",
+        "Skill names are unique within a snapshot.",
+        "The snapshot digest is the sha256 of ordered normalized paths."
+      ]
+    },
+    {
+      "id": "contract.coverage",
+      "version": 1,
+      "path": "assets/coverage.json",
+      "requires": ["id", "version", "description"],
+      "rules": [
+        "Coverage identifiers are unique and stable across the catalog.",
+        "Every versioned rule references only declared coverage identifiers."
+      ]
+    },
+    {
+      "id": "contract.module-v2",
+      "version": 2,
+      "path": "assets/modules/*.json",
+      "requires": [
+        "id",
+        "version",
+        "dependsOn",
+        "conflictsWith",
+        "rootBlocks",
+        "supportingGuides",
+        "rules",
+        "requiredSkills",
+        "skillDispatch",
+        "requiredDecisions"
+      ],
+      "rules": [
+        "Every rule declares coverage identifiers and portable guidance.",
+        "Every required skill has exactly one dispatch owner, and normalized declarations contain one or more globally unique stable triggers.",
+        "Every required rule is carried by a selected supporting guide whose template renders artifact.rules.",
+        "Setup-owned references resolve by managed identity and repository-owned references use safe repository-relative paths."
+      ]
+    },
+    {
+      "id": "contract.profile-v2",
+      "version": 2,
+      "path": "assets/profiles/*.json",
+      "requires": [
+        "id",
+        "version",
+        "setup",
+        "entryDecisions",
+        "modules",
+        "requiredRules"
+      ],
+      "rules": [
+        "Every required rule belongs to a selected module.",
+        "Every required rule is reachable through a selected supporting-guide carrier."
+      ]
+    },
+    {
+      "id": "contract.setup-snapshot-v2",
+      "version": 2,
+      "path": "assets/setups/*.json",
+      "requires": ["id", "version", "source", "digest", "skills"],
+      "rules": [
+        "External skills declare a GitHub owner/repository, immutable full commit object ID, safe source-relative directory, and lowercase complete-tree digest.",
+        "Repository-owned skills remain distinct from external immutable sources.",
+        "The snapshot digest covers canonical serialization of complete normalized skill records and any declared activation bundles."
+      ]
+    },
+    {
+      "id": "contract.skill-activations-v1",
+      "version": 1,
+      "path": "assets/skill-activations.json",
+      "requires": ["version", "bundles", "activations"],
+      "rules": [
+        "Activation bundles have stable identities and ordered exact skill membership.",
+        "Activation contracts have globally unique stable trigger identities, one module owner, one exact bundle, and an optional capability condition.",
+        "Every selected Setup Snapshot persists exactly the active bundle identities and ordered memberships.",
+        "Bundle and trigger declarations use stable byte order and reference only selected snapshot skills before rendering."
+      ]
+    },
+    {
+      "id": "contract.coverage-v2",
+      "version": 2,
+      "path": "assets/coverage.json",
+      "requires": ["id", "version", "description", "delegationAliases"],
+      "rules": [
+        "Delegation aliases are bounded, normalized, unique category phrases.",
+        "Delegation aliases extend coverage identities without inspecting repository content during catalog loading."
+      ]
+    },
+    {
+      "id": "contract.module-v3",
+      "version": 3,
+      "path": "assets/modules/*.json",
+      "requires": [
+        "id",
+        "version",
+        "dependsOn",
+        "conflictsWith",
+        "rootBlocks",
+        "supportingGuides",
+        "rules",
+        "requiredSkills",
+        "skillDispatch",
+        "requiredDecisions",
+        "repositoryExtensions"
+      ],
+      "rules": [
+        "Every rule contains one or more globally unique clauses with mandatory, prohibited, or stop-and-ask enforcement.",
+        "Every selected clause has exactly one supporting-guide carrier, and no two supporting guides in one module have the same effective clause list.",
+        "Every skill dispatch entry owns one or more globally unique stable triggers.",
+        "Repository-Specific Normative Rules use a safe repository-relative path, remain unmarked and byte-preserved, and receive a managed root pointer only when non-empty."
+      ]
+    },
+    {
+      "id": "contract.profile-v3",
+      "version": 3,
+      "path": "assets/profiles/*.json",
+      "requires": [
+        "id",
+        "version",
+        "setup",
+        "entryDecisions",
+        "modules",
+        "requiredRules",
+        "formatter"
+      ],
+      "rules": [
+        "Every profile explicitly selects a pinned formatter contract or declares that no formatter is selected.",
+        "A selected formatter declares safe fixture paths and one lowercase golden-corpus digest."
+      ]
+    },
+    {
+      "id": "contract.profile-0.0.1",
+      "version": 1,
+      "path": "assets/profiles/*.json",
+      "requires": [
+        "id",
+        "version",
+        "markerVersion",
+        "setup",
+        "entryDecisions",
+        "modules",
+        "requiredRules",
+        "formatter",
+        "stack",
+        "workspaces",
+        "optionalModules",
+        "architecture",
+        "httpContract",
+        "capabilitySets",
+        "capabilities",
+        "activationBundles",
+        "verification"
+      ],
+      "rules": [
+        "The profile, rendered plan, rendered snapshot, and managed marker use only the 0.0.1 owned generation.",
+        "Every required stack, workspace, architecture, capability, activation, HTTP decision, and Verification contract is explicit and deterministic.",
+        "Required capability gaps block readiness; optional module gaps do not.",
+        "The repository-owned HTTP Contract Decision accepts only REST or Post-only plus ordered typed exceptions; the interactive workflow suggests Post-only until the maintainer confirms or changes it."
+      ]
+    },
+    {
+      "id": "contract.upgrade-transition-v1",
+      "version": 1,
+      "path": "assets/retention/*.json",
+      "requires": [
+        "id",
+        "version",
+        "fromBaseline",
+        "toBaseline",
+        "legacyManifestFingerprints",
+        "priorClauses",
+        "mappings"
+      ],
+      "rules": [
+        "Every prior clause records its enforcement, carrier, and guidance digest.",
+        "Every source baseline declares one or more exact legacy Setup Manifest fingerprints.",
+        "Every prior clause has exactly one retained, moved, replaced, or rejected mapping with a reason.",
+        "Accepted mappings target a current clause with equal enforcement or declared Repository-Specific Normative Rules; rejected mappings have no target."
+      ]
+    }
+  ],
+  "diagnostics": [
+    "module.dependency.unknown",
+    "module.dependency.cycle",
+    "module.conflict",
+    "profile.module.unknown",
+    "profile.setup.unknown",
+    "profile.dependency.missing",
+    "profile.entryDecision.unknown",
+    "profile.entryDecision.duplicate",
+    "decision.effects.invalid",
+    "decision.condition.type.invalid",
+    "decision.effect.module.unknown",
+    "decision.effect.module.unowned",
+    "decision.effect.decision.unknown",
+    "decision.effect.artifact.unknown",
+    "decision.effect.artifact.unowned",
+    "decision.effect.template.unknown",
+    "decision.effect.binding.duplicate",
+    "decision.effect.binding.token.unknown",
+    "decision.dependency.cycle",
+    "template.token.undeclared",
+    "coverage.id.duplicate",
+    "coverage.description.invalid",
+    "rule.id.duplicate",
+    "rule.coverage.duplicate",
+    "rule.coverage.unknown",
+    "rule.guidance.invalid",
+    "profile.rule.required.duplicate",
+    "profile.rule.required.unknown",
+    "profile.rule.module.missing",
+    "profile.rule.carrier.missing",
+    "profile.rule.carrier.duplicate",
+    "profile.rule.binding.missing",
+    "profile.rule.required.mismatch",
+    "skill.dispatch.id.duplicate",
+    "module.skillDispatch.mismatch",
+    "reference.id.duplicate",
+    "reference.managed.unknown",
+    "reference.repository.path.invalid",
+    "setup.skill.source.ref.mutable",
+    "setup.skill.source.path.invalid",
+    "setup.skill.treeDigest.invalid",
+    "managed.block.id.duplicate",
+    "skills.reference.outside-setup",
+    "clause.id.duplicate",
+    "clause.enforcement.invalid",
+    "clause.field.missing",
+    "guide.clause-list.duplicate",
+    "skill.dispatch.trigger.id.duplicate",
+    "skill.dispatch.trigger.when.invalid",
+    "skill.dispatch.owner.duplicate",
+    "profile.skill.set.mismatch",
+    "skill.activation.schemaVersion.invalid",
+    "skill.activation.version.invalid",
+    "skill.activation.bundles.invalid",
+    "skill.activation.bundle.order.invalid",
+    "skill.activation.bundle.id.invalid",
+    "skill.activation.bundle.id.duplicate",
+    "skill.activation.bundle.members.invalid",
+    "skill.activation.bundle.members.empty",
+    "skill.activation.bundle.member.duplicate",
+    "skill.activation.bundle.unknown",
+    "skill.activation.bundle.unused",
+    "skill.activation.skill.unknown",
+    "skill.activation.activations.invalid",
+    "skill.activation.trigger.order.invalid",
+    "skill.activation.trigger.id.invalid",
+    "skill.activation.trigger.id.duplicate",
+    "skill.activation.trigger.when.invalid",
+    "skill.activation.owner.unknown",
+    "skill.activation.owner.duplicate",
+    "skill.activation.condition.invalid",
+    "skill.activation.snapshot.member.missing",
+    "setup.activationBundles.invalid",
+    "setup.activationBundles.mismatch",
+    "setup.activationBundle.id.invalid",
+    "setup.activationBundle.id.duplicate",
+    "setup.activationBundle.members.invalid",
+    "setup.activationBundle.members.empty",
+    "setup.activationBundle.member.duplicate",
+    "setup.activationBundle.members.mismatch",
+    "setup.activationBundle.order.invalid",
+    "coverage.delegationAliases.invalid",
+    "coverage.delegationAliases.duplicate",
+    "extension.path.invalid",
+    "extension.template.unknown",
+    "extension.rootPointer.invalid",
+    "extension.decision.unknown",
+    "profile.formatter.kind.invalid",
+    "profile.formatter.version.invalid",
+    "profile.formatter.fixturePath.invalid",
+    "profile.formatter.goldenDigest.invalid",
+    "profile.markerVersion.invalid",
+    "profile.stack.capability.mismatch",
+    "profile.workspace.capability.mismatch",
+    "profile.optionalModule.capability.mismatch",
+    "profile.architecture.invalid",
+    "profile.httpContract.default.invalid",
+    "catalog.decision.default.invalid",
+    "profile.capability.invalid",
+    "profile.activationBundles.mismatch",
+    "profile.verification.mismatch",
+    "decision.modes.invalid",
+    "transition.mapping.incomplete",
+    "transition.disposition.invalid",
+    "transition.target.unknown",
+    "transition.target.enforcement.mismatch",
+    "transition.legacyManifestFingerprint.invalid",
+    "transition.legacyManifestFingerprint.duplicate",
+    "transition.currentBaseline.invalid"
+  ]
+}

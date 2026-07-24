@@ -1,0 +1,113 @@
+{
+  "adoptionState": "unsafe-carrier",
+  "classification": "exact",
+  "contractAreas": [
+    "input",
+    "state",
+    "refusal",
+    "post-state"
+  ],
+  "fileIdentities": {
+    "postimage": "sha256:a08f7e980a0d65c9769ba2ab34b4e4befd3bf0009906ac47e8354183c27329db",
+    "preimage": "sha256:a08f7e980a0d65c9769ba2ab34b4e4befd3bf0009906ac47e8354183c27329db"
+  },
+  "id": "unsafe-carrier-refusal",
+  "input": {
+    "action": "inventory",
+    "declaredIdentity": "baseline.pre-0.0.1",
+    "unsafePath": "docs/agents/linked.md"
+  },
+  "managedEntryLedger": [],
+  "manifest": null,
+  "normalizedOutput": {
+    "diagnostics": [
+      {
+        "code": "source-inventory.carrier.symlink",
+        "message": "bounded carrier must not be a symlink",
+        "path": "docs/agents/linked.md"
+      }
+    ],
+    "exitCode": 2
+  },
+  "planDigest": null,
+  "plannedByteSequence": [],
+  "postState": [
+    {
+      "identity": "sha256:2ca2ba82571850a3ba2fa988fd2996d0045c818037fe8b90281a219e82128eb7",
+      "kind": "file",
+      "mode": 420,
+      "path": "AGENTS.md",
+      "size": 167
+    },
+    {
+      "identity": "sha256:7349eff7f05417a4f829b4fe6800dd6d1a1a4b7dfd3ea8908809e975a71bddfb",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/guide.md",
+      "size": 28
+    },
+    {
+      "identity": "symlink-sha256:4a1a14578f3249b137ab246bfa5c8a2660a700041f79c95e82d7021e9cfef5d4",
+      "kind": "symlink",
+      "mode": 493,
+      "path": "docs/agents/linked.md",
+      "target": "../../../outside.md"
+    },
+    {
+      "identity": "sha256:b70d1e593e34d6c8a11e19218358c0540f3e671ae15a35dc22f933a40d41bf18",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/setup-context.json",
+      "size": 568
+    }
+  ],
+  "profile": null,
+  "rationale": null,
+  "refusal": {
+    "exitCode": 2,
+    "findingCodes": [
+      "source-inventory.carrier.symlink"
+    ]
+  },
+  "repositoryPreimage": [
+    {
+      "identity": "sha256:2ca2ba82571850a3ba2fa988fd2996d0045c818037fe8b90281a219e82128eb7",
+      "kind": "file",
+      "mode": 420,
+      "path": "AGENTS.md",
+      "size": 167
+    },
+    {
+      "identity": "sha256:7349eff7f05417a4f829b4fe6800dd6d1a1a4b7dfd3ea8908809e975a71bddfb",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/guide.md",
+      "size": 28
+    },
+    {
+      "identity": "symlink-sha256:4a1a14578f3249b137ab246bfa5c8a2660a700041f79c95e82d7021e9cfef5d4",
+      "kind": "symlink",
+      "mode": 493,
+      "path": "docs/agents/linked.md",
+      "target": "../../../outside.md"
+    },
+    {
+      "identity": "sha256:b70d1e593e34d6c8a11e19218358c0540f3e671ae15a35dc22f933a40d41bf18",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/setup-context.json",
+      "size": 568
+    }
+  ],
+  "rollback": {
+    "attempted": false,
+    "evidence": "inventory refusal is read-only",
+    "restoredPreimage": true,
+    "succeeded": null
+  },
+  "schemaVersion": "setup-context-driven/parity-fixture/v1",
+  "sourceTests": [
+    "tests/test_source_inventory.py",
+    "tests/test_audit.py"
+  ]
+}

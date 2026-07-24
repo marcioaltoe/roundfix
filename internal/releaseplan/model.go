@@ -2,7 +2,7 @@ package releaseplan
 
 import "context"
 
-const SchemaVersion = "roundfix.release-plan/v1"
+const SchemaVersion = "roundfix.release-plan/0.0.1"
 
 // State is the final Release Plan decision state.
 type State string
@@ -106,6 +106,65 @@ type Request struct {
 type GitSource interface {
 	ResolveRange(context.Context, string, string) (Range, error)
 	Commits(context.Context, Range) ([]Commit, error)
+}
+
+// TagSource identifies the repository boundary that supplied a stable tag.
+type TagSource string
+
+const (
+	TagSourceLocal  TagSource = "local"
+	TagSourceRemote TagSource = "remote"
+)
+
+// TagRef is one stable local or remote tag in a release reset inventory.
+// ImmutableID binds the tag location to its observed target commit.
+type TagRef struct {
+	Name         string
+	Source       TagSource
+	Remote       string
+	Ref          string
+	ImmutableID  string
+	TargetCommit string
+}
+
+// ReleaseRef is one GitHub Release in a release reset inventory. The numeric
+// ID and NodeID are GitHub's immutable identities; TargetCommit is populated
+// when the complete tag inventory resolves the release tag unambiguously.
+type ReleaseRef struct {
+	ID              int64
+	NodeID          string
+	Name            string
+	TagName         string
+	TargetCommitish string
+	TargetCommit    string
+	ImmutableID     string
+}
+
+// ResetInventorySource supplies the complete read-only tag and GitHub Release
+// inventory used to build a release history reset plan.
+type ResetInventorySource interface {
+	Tags(context.Context) ([]TagRef, error)
+	Releases(context.Context) ([]ReleaseRef, error)
+}
+
+// ResetRequest identifies the committed target and stable version for a
+// release history reset plan.
+type ResetRequest struct {
+	TargetVersion string
+	Target        RevisionRef
+}
+
+// ResetPlan is the digest-bound, read-only release history reset inventory.
+type ResetPlan struct {
+	SchemaVersion  string
+	State          State
+	TargetVersion  string
+	TargetRevision string
+	TargetCommit   string
+	Tags           []TagRef
+	Releases       []ReleaseRef
+	PlanDigest     string
+	Approval       Approval
 }
 
 // ClassifyRequest is the normalized input for conservative release-impact

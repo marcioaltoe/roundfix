@@ -193,8 +193,8 @@ This is an authorial workflow fix in a repo-owned skill, so both canonical and
 embedded copies change together through `make skills-sync`. Regression tests
 cover a text setup source whose external checkout deliberately contains
 conflicting content at a repo-owned path, plus an external entry that still
-refreshes normally. This closes the failure recorded in
-`docs/findings/2026-07-17-sync-setups-repo-owned-digest-drift.md`.
+refreshes normally. This closes the source-precedence failure absorbed into
+this Spec; the original report remains available through Git history.
 
 ### Documentation and skill synchronization
 

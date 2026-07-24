@@ -46,6 +46,22 @@ source. Empty values are valid only where this page defines their behavior:
 Do not use a bare YAML value such as `command:` to mean an empty string. Use
 the explicit value shown above or omit the key to inherit it.
 
+## Context-Driven Baseline state
+
+User Config and Project Config are operational Roundfix state. They do not
+select, version, or authorize a Context-Driven Baseline. The
+`setup-context-driven` workflow stores its Setup Manifest and resolved setup
+decisions in `docs/agents/setup-context.json`; structured setup and Baseline
+Readoption answers use a separate
+`setup-context-driven/decisions/0.0.1` decision file supplied with
+`--decision-file`.
+
+The `0.0.1` reset does not recreate, migrate, or renumber User Config, Project
+Config, Runs, or Run Database state. See
+[CONTEXT-driven development](context-driven-development.md#configure-or-audit-the-baseline)
+for the audit, decision, preview, apply, formatter, Verification, audit, and
+reapply workflow.
+
 ## Full example
 
 ```yaml
@@ -312,8 +328,7 @@ migration or any later write leaves every unauthorized target unchanged.
 
 The durable contract is [ADR-0055](../adr/0055-agent-selection-encoding-follows-advertised-acp-capabilities.md).
 Its environment evidence is preserved in the
-[Spec 0041 validation record](../specs/0041-agent-selection-runtime-readiness/references/validation.md)
-and the [profile-preflight dogfood finding](../findings/2026-07-17-agent-selection-profile-preflight-dogfood.md).
+[archived Spec 0041 validation record](../specs/_archived/0041-agent-selection-runtime-readiness/references/validation.md).
 [Spec 0036](../specs/0036-doctor-skill-readiness/_prd.md) remains ordered after
 this profile-aware Doctor readiness work so it can append Repository Skill Set
 readiness without duplicating exact proof.

@@ -1,0 +1,187 @@
+---
+task: task_08
+spec: 0045-context-driven-baseline-0-0-1-reset
+status: completed
+type: backend
+complexity: high
+---
+
+# Task 08: Apply Baseline Readoption through one Change Plan
+
+## Overview
+
+Integrate the new baseline, capability, and disposition contracts into the
+existing setup transaction. Preview, confirmation, writes, rollback, snapshot,
+and audit must all describe the same immutable Change Plan.
+
+## Requirements
+
+1. MUST incorporate Source Baseline identity, complete entry inventory,
+   structured dispositions, capability outcomes, exact outputs, and
+   Verification entries into one deterministic Decision Plan and Change Plan.
+2. MUST include every normalized decision and planned byte change in the
+   timestamp-free plan digest.
+3. MUST reject missing decisions, missing required capabilities, and stale
+   plan confirmation before performing any write.
+4. MUST verify preimages immediately before mutation and postwrite bytes after
+   mutation, rolling back the full Change Plan on any failure.
+5. MUST apply typed documentation moves and first-time repository-rules
+   creation exactly as previewed while preserving existing repository-owned
+   content.
+6. MUST write only strict 0.0.1 owned schemas and semantic-version markers to
+   the Setup Manifest and Setup Snapshot.
+7. MUST preserve stable exit codes, stdout/stderr separation, and
+   machine-readable output for audit, preview, and apply.
+8. MUST make a successful reapply idempotent and make subsequent audit clean.
+
+## Subtasks
+
+- [x] Extend Decision Plan and Change Plan composition with the new contracts.
+- [x] Extend canonical digest framing for decisions, capabilities, entries,
+      outputs, and Verification.
+- [x] Integrate stale-plan and required-capability gates before writes.
+- [x] Apply exact dispositions and repository-owned rule creation atomically.
+- [x] Extend preimage, postwrite, rollback, manifest, and snapshot behavior.
+- [x] Add partial-failure, stale-plan, tampering, and idempotency probes.
+- [x] Synchronize the canonical and distributed setup skill trees.
+
+## Acceptance Criteria
+
+- [x] Preview and apply report the same plan digest and exact byte changes for
+      identical inputs.
+- [x] Missing decisions, missing required capabilities, changed preimages, and
+      stale confirmation produce no repository writes.
+- [x] A forced failure after one planned write restores every preimage and
+      leaves no partial manifest or snapshot update.
+- [x] Successful apply writes the exact previewed bytes, a strict 0.0.1
+      manifest and snapshot, and preserves existing repository-owned rules.
+- [x] Postwrite tampering is detected and rolled back.
+- [x] Reapply produces no content change and audit reports a clean baseline.
+
+## Context
+
+- instruction: `docs/adr/0046-setup-owned-agent-instructions-are-declarative.md`
+- instruction: `docs/adr/0047-setup-decisions-declare-their-effects.md`
+- instruction: `docs/adr/0058-baseline-upgrades-fail-closed-on-unaccounted-rule-removal.md`
+- instruction: `docs/adr/0064-baseline-readoption-uses-byte-exhaustive-structural-inventory.md`
+- interface: `.agents/skills/setup-context-driven/scripts/context_setup.py`
+- interface: `.agents/skills/setup-context-driven/tests/test_apply.py`
+- interface: `.agents/skills/setup-context-driven/tests/test_manifest_migration.py`
+
+## Verification
+
+- `rtk env PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_readoption_apply.py'` — expected: preview/apply parity, no-write rejection, rollback, exact outputs, and idempotent reapply all pass.
+- `rtk env PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s .agents/skills/setup-context-driven/tests -p 'test_apply.py'` — expected: existing setup transaction and exit-code behavior remain correct.
+- `rtk make skills-sync-check` — expected: canonical and distributed setup skill trees are byte-identical.
+- `rtk make verify` — expected: the full repository gate passes.
+
+## References
+
+- `_prd.md` → Core Features 4–8 and 13; User Stories 1, 3, and 5; Success
+  Metrics.
+- `_techspec.md` → System Architecture; Implementation Design; Integration
+  Points; Build Order 8.
+- ADR-0046 → declarative setup-owned instruction rendering.
+- ADR-0047 → immutable confirmed Decision Plan effects.
+- ADR-0058 → fail-closed retention and atomic upgrade behavior.
+- ADR-0064 → complete entry-level Readoption input.
+
+## QA Reopen
+
+Final QA found that clean `standard-typescript-monorepo` adoption still uses
+the legacy portable apply path instead of this task's strict 0.0.1 Change Plan.
+See [F-01 in the 2026-07-23 QA report](qa/qa-report-2026-07-23.md#f-01--clean-standard-typescript-monorepo-adoption-bypasses-the-001-contract).
+
+The repair MUST route clean profile adoption through the same capability,
+decision, manifest, snapshot, architecture, audit, and reapply integration as
+Baseline Readoption. Missing required stack or workspace evidence MUST block
+before writes. A successful confirmed apply MUST emit only strict 0.0.1 state,
+produce the exact profile architecture carriers, audit cleanly, and reapply
+with no changes.
+
+## Result
+
+Implemented Baseline Readoption as one byte-exact Change Plan in the canonical
+setup skill and synchronized the distributed skill tree. The plan now carries
+the Source Baseline identity and complete inventory, normalized decisions and
+dispositions, Repository Capability outcomes, strict Setup Snapshot,
+Verification entries, and exact base64-encoded outputs. Its timestamp-free
+digest frames those values together with every planned preimage and postimage.
+
+Acceptance evidence:
+
+- Preview and confirmed apply return the same `planDigest` and
+  `plannedOutputs`; the test decodes every previewed output and compares it to
+  the bytes written by apply.
+- Missing `verification.gate`, missing required `context7`, concurrent
+  preimage change, and stale confirmation probes leave the repository
+  unchanged. Apply rechecks all preimages immediately before mutation.
+- Injected failure after the second replacement restores every mutated
+  preimage and leaves no manifest, snapshot, or repository-rules residue.
+- Successful apply writes strict `setup-context-driven/manifest/0.0.1` and
+  `0.0.1` version markers, embeds the strict Setup Snapshot, creates the exact
+  confirmed unmarked repository-rules bytes only when absent, and preserves
+  existing repository-owned guide bytes.
+- Injected postwrite tampering fails postimage verification and rolls back the
+  full mutated set.
+- A second apply plans no content changes, preserves the post-apply byte
+  snapshot, and a subsequent audit exits cleanly.
+
+Verification evidence:
+
+- `test_readoption_apply.py`: 9 tests passed.
+- `test_apply.py`: 17 tests passed.
+- `make skills-sync-check`: passed.
+- `make verify`: passed; 1,694 Go tests and both 229-test canonical/distributed
+  setup-skill suites passed, asset validation passed, Roundfix skill check
+  passed, and the CLI build completed.
+
+Follow-up notes: none.
+
+## Result
+
+Repaired the QA-reopened clean `standard-typescript-monorepo` adoption path.
+Clean adoption now resolves the same strict profile context used by Baseline
+Readoption before it can build a Change Plan. Required Repository Capability
+gaps block before confirmation or mutation; a ready repository receives
+digest-bound exact outputs, strict `0.0.1` Setup Manifest and Setup Snapshot
+state, Verification entries, and the complete frontend and backend
+architecture carriers. Existing manifest migration paths remain unchanged.
+
+Acceptance evidence:
+
+- The public clean-repository regression first ran without application stack
+  or workspace evidence. Apply exited `1` with
+  `capability.required.missing`, did not emit
+  `plan.confirmation.required`, and left the repository snapshot unchanged.
+- After adding the exact required stack, workspaces, PostgreSQL contract, and
+  Repository Skill Set evidence, preview exited `3` with a digest-bound
+  confirmation. Confirmed apply returned the same `planDigest` and
+  `plannedOutputs`; every decoded preview output matched the bytes on disk.
+- The successful Setup Manifest uses
+  `setup-context-driven/manifest/0.0.1`, version `0.0.1`, generator version
+  `0.0.1`, and baseline
+  `baseline.standard-typescript-monorepo-0.0.1`. Its Setup Snapshot matches
+  preview and contains the strict profile architecture, capabilities, and
+  Verification contract.
+- Generated frontend guidance now carries domain-system organization, one
+  public system boundary, and direct internal imports. Generated backend
+  guidance carries domain/application/infrastructure layers, thin HTTP
+  handlers, HTTP-independent use cases, infrastructure-owned persistence,
+  and the prohibition on generic `modules` or `services` architecture.
+- A post-apply public audit exited `0`; reapply exited `0` with no planned
+  changes and preserved the complete repository snapshot.
+- The pinned Oxfmt corpus and provenance digest now cover the exact strict
+  architecture carriers, and the canonical and distributed skill trees are
+  byte-identical.
+
+Verification evidence:
+
+- `test_readoption_apply.py`: 13 tests passed.
+- `test_apply.py`: 17 tests passed.
+- `make skills-sync-check`: passed.
+- `make verify`: passed; 1,727 Go tests, 252 canonical setup-skill tests, and
+  252 distributed setup-skill tests passed. Both asset catalogs loaded, the
+  Roundfix skill check passed, and the CLI build completed.
+
+Follow-up notes: none.

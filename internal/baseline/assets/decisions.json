@@ -1,0 +1,251 @@
+{
+  "schemaVersion": "setup-context-driven/decisions-v1",
+  "version": 1,
+  "decisions": [
+    {
+      "id": "spec.scaffold",
+      "version": 1,
+      "type": "boolean",
+      "default": true,
+      "summary": "Whether the repository uses local docs/specs artifacts as its planning source.",
+      "effects": [
+        {
+          "when": {"equals": true},
+          "activateModules": ["spec-workflow"],
+          "includeArtifacts": [
+            "root.spec-workflow",
+            "guide.spec-routing",
+            "guide.issue-tracker",
+            "guide.spec-docs-layout"
+          ]
+        },
+        {
+          "when": {"equals": false},
+          "excludeArtifacts": [
+            "root.spec-workflow",
+            "guide.spec-routing",
+            "guide.issue-tracker",
+            "guide.spec-docs-layout"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "domain.layout",
+      "version": 1,
+      "type": "enum",
+      "values": ["single-context", "multi-context"],
+      "default": "single-context",
+      "summary": "The CONTEXT.md layout agents must read before naming domain concepts.",
+      "effects": [
+        {
+          "when": {"equals": "single-context"},
+          "includeArtifacts": ["guide.domain"],
+          "selectTemplates": [
+            {
+              "artifact": "guide.domain",
+              "template": "template.guide.domain.single-context"
+            }
+          ]
+        },
+        {
+          "when": {"equals": "multi-context"},
+          "includeArtifacts": ["guide.domain"],
+          "selectTemplates": [
+            {
+              "artifact": "guide.domain",
+              "template": "template.guide.domain.multi-context"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "triage.external",
+      "version": 1,
+      "type": "boolean",
+      "default": false,
+      "summary": "Whether external forge issues require triage-label guidance.",
+      "effects": [
+        {
+          "when": {"equals": true},
+          "activateModules": ["external-triage"],
+          "includeArtifacts": [
+            "root.external-triage",
+            "guide.external-triage"
+          ]
+        },
+        {
+          "when": {"equals": false},
+          "excludeArtifacts": [
+            "root.external-triage",
+            "guide.external-triage"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "autonomous.enabled",
+      "version": 1,
+      "type": "boolean",
+      "default": true,
+      "summary": "Whether autonomous Supervisor and ACP Runtime delegation applies.",
+      "effects": [
+        {
+          "when": {"equals": true},
+          "activateModules": ["autonomous-work"],
+          "requireDecisions": [
+            "runtime.backend",
+            "runtime.design"
+          ],
+          "includeArtifacts": [
+            "root.autonomous-work",
+            "guide.autonomous-work"
+          ]
+        },
+        {
+          "when": {"equals": false},
+          "excludeArtifacts": [
+            "root.autonomous-work",
+            "guide.autonomous-work"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "verification.gate",
+      "version": 1,
+      "type": "string",
+      "default": "rtk make verify",
+      "summary": "The repository verification command named by generated guidance.",
+      "effects": [
+        {
+          "when": {"present": true},
+          "renderBindings": [
+            {
+              "artifact": "guide.agent-instructions",
+              "template": "template.guide.agent-instructions",
+              "token": "verification.gate"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "http.contract",
+      "version": 1,
+      "type": "http-contract",
+      "modes": ["REST", "Post-only"],
+      "default": {"mode": "Post-only"},
+      "summary": "The repository-owned HTTP Contract Decision and its explicit typed exceptions.",
+      "effects": [
+        {
+          "when": {"present": true}
+        }
+      ]
+    },
+    {
+      "id": "runtime.backend",
+      "version": 1,
+      "type": "string",
+      "default": "codex gpt-5.6-sol",
+      "summary": "The default implementation ACP Runtime and model for backend Tasks.",
+      "effects": [
+        {
+          "when": {"present": true},
+          "renderBindings": [
+            {
+              "artifact": "guide.autonomous-work",
+              "template": "template.guide.autonomous-work",
+              "token": "runtime.backend"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "runtime.design",
+      "version": 1,
+      "type": "string",
+      "default": "claude fable high",
+      "summary": "The design, UI, UX, or frontend ACP Runtime and model.",
+      "effects": [
+        {
+          "when": {"present": true},
+          "renderBindings": [
+            {
+              "artifact": "guide.autonomous-work",
+              "template": "template.guide.autonomous-work",
+              "token": "runtime.design"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "language.generated",
+      "version": 1,
+      "type": "enum",
+      "values": ["English"],
+      "default": "English",
+      "summary": "The language used for generated repository content.",
+      "effects": [
+        {
+          "when": {"equals": "English"},
+          "selectTemplates": [
+            {
+              "artifact": "root.core",
+              "template": "template.root.core"
+            },
+            {
+              "artifact": "guide.agent-instructions",
+              "template": "template.guide.agent-instructions"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "secondbrain.enabled",
+      "version": 1,
+      "type": "boolean",
+      "default": true,
+      "summary": "Whether read-only Secondbrain guidance is generated.",
+      "effects": [
+        {
+          "when": {"equals": true},
+          "activateModules": ["secondbrain"],
+          "includeArtifacts": [
+            "root.secondbrain",
+            "guide.secondbrain"
+          ]
+        },
+        {
+          "when": {"equals": false},
+          "excludeArtifacts": [
+            "root.secondbrain",
+            "guide.secondbrain"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "repository.extension.enabled",
+      "version": 1,
+      "type": "boolean",
+      "default": true,
+      "summary": "Whether Baseline may preserve and link non-empty Repository-Specific Normative Rules.",
+      "effects": [
+        {
+          "when": {"equals": true},
+          "activateModules": ["repository-extension"],
+          "includeArtifacts": ["root.repository-extension"]
+        },
+        {
+          "when": {"equals": false},
+          "excludeArtifacts": ["root.repository-extension"]
+        }
+      ]
+    }
+  ]
+}

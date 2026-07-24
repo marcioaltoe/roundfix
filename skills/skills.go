@@ -2,6 +2,7 @@ package skills
 
 import (
 	"context"
+	"crypto/sha256"
 	"embed"
 	"errors"
 	"fmt"
@@ -26,6 +27,25 @@ var skillNames = []string{
 	"setup-context-driven", "implement-task", "implement-spec",
 	"brainstorming", "council", "business-analyst",
 	"archive-spec", "qa-gate", "evidence-gate",
+}
+
+const ownedSkillVersion = "0.0.1"
+
+var ownedSkillContract = map[string]string{
+	"roundfix":             ownedSkillVersion,
+	"write-idea":           ownedSkillVersion,
+	"write-prd":            ownedSkillVersion,
+	"write-techspec":       ownedSkillVersion,
+	"write-tasks":          ownedSkillVersion,
+	"setup-context-driven": ownedSkillVersion,
+	"implement-task":       ownedSkillVersion,
+	"implement-spec":       ownedSkillVersion,
+	"brainstorming":        ownedSkillVersion,
+	"council":              ownedSkillVersion,
+	"business-analyst":     ownedSkillVersion,
+	"archive-spec":         ownedSkillVersion,
+	"qa-gate":              ownedSkillVersion,
+	"evidence-gate":        ownedSkillVersion,
 }
 
 type File struct {
@@ -103,12 +123,95 @@ func Files() ([]File, error) {
 	return files, nil
 }
 
+// SkillFolderHash returns the external skills CLI digest for a local skill
+// directory without following links or reading excluded dependency metadata.
+func SkillFolderHash(root string) (string, error) {
+	info, err := os.Lstat(root)
+	if err != nil {
+		return "", fmt.Errorf("inspect skill folder %q: %w", root, err)
+	}
+	if info.Mode()&fs.ModeSymlink != 0 {
+		return "", fmt.Errorf("inspect skill folder %q: root is a symbolic link", root)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("inspect skill folder %q: root is not a directory", root)
+	}
+
+	type hashFile struct {
+		path string
+		data []byte
+	}
+	var files []hashFile
+	tree := os.DirFS(root)
+	if err := fs.WalkDir(tree, ".", func(path string, entry fs.DirEntry, walkErr error) error {
+		fullPath := filepath.Join(root, filepath.FromSlash(path))
+		if walkErr != nil {
+			return fmt.Errorf("walk skill folder entry %q: %w", fullPath, walkErr)
+		}
+		if path == "." {
+			return nil
+		}
+		entryInfo, err := entry.Info()
+		if err != nil {
+			return fmt.Errorf("inspect skill folder entry %q: %w", fullPath, err)
+		}
+		mode := entryInfo.Mode()
+		if mode&fs.ModeSymlink != 0 {
+			return fmt.Errorf("inspect skill folder entry %q: symbolic links are not supported", fullPath)
+		}
+		if mode.IsDir() {
+			if entry.Name() == ".git" || entry.Name() == "node_modules" {
+				return fs.SkipDir
+			}
+			return nil
+		}
+		if !mode.IsRegular() {
+			return fmt.Errorf("inspect skill folder entry %q: special files are not supported", fullPath)
+		}
+		data, err := fs.ReadFile(tree, path)
+		if err != nil {
+			return fmt.Errorf("read skill folder file %q: %w", fullPath, err)
+		}
+		files = append(files, hashFile{
+			path: filepath.ToSlash(path),
+			data: data,
+		})
+		return nil
+	}); err != nil {
+		return "", fmt.Errorf("hash skill folder %q: %w", root, err)
+	}
+
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].path < files[j].path
+	})
+	digest := sha256.New()
+	for _, file := range files {
+		if _, err := digest.Write([]byte(file.path)); err != nil {
+			return "", fmt.Errorf("hash skill folder path %q: %w", file.path, err)
+		}
+		if _, err := digest.Write(file.data); err != nil {
+			return "", fmt.Errorf("hash skill folder file %q: %w", file.path, err)
+		}
+	}
+	return fmt.Sprintf("%x", digest.Sum(nil)), nil
+}
+
 func Check() []Diagnostic {
 	banned := []string{
 		"reference project",
 		"Reference Project",
 	}
 	var diagnostics []Diagnostic
+	files, err := Files()
+	if err != nil {
+		diagnostics = append(diagnostics, Diagnostic{
+			Path:    "skills",
+			Message: fmt.Sprintf("read owned skill bundle: %v", err),
+		})
+	} else {
+		diagnostics = append(diagnostics, checkOwnedSkillBundle(skillNames, files)...)
+		diagnostics = append(diagnostics, checkThinSetupSkill(files)...)
+	}
 
 	// The operational roundfix skill carries a strict contract: required
 	// wording, Roundfix branding, and a valid OpenAI manifest.
@@ -184,9 +287,8 @@ func Check() []Diagnostic {
 		}
 	}
 
-	// The authorial workflow skills get structural validation only: a SKILL.md
-	// that parses with a name and carries no reference-project branding. Their
-	// generic authorial language and independent versions never trip the check.
+	// Authorial workflow skills also keep their generic language and branding
+	// checks after the exact owned-set and version contract above.
 	for _, skill := range skillNames {
 		if skill == "roundfix" {
 			continue
@@ -220,25 +322,123 @@ func Check() []Diagnostic {
 	return diagnostics
 }
 
-// frontmatterName returns the name field from a SKILL.md YAML frontmatter block,
-// or "" when there is none.
-func frontmatterName(text string) string {
+func checkThinSetupSkill(files []File) []Diagnostic {
+	var diagnostics []Diagnostic
+	for _, file := range files {
+		if file.Skill == "setup-context-driven" && file.Path != "setup-context-driven/SKILL.md" {
+			diagnostics = append(diagnostics, Diagnostic{
+				Path:    file.Path,
+				Message: "setup-context-driven is a thin guidance skill and must not ship runtime, test, reference, or asset files",
+			})
+		}
+	}
+	return diagnostics
+}
+
+func checkOwnedSkillBundle(names []string, files []File) []Diagnostic {
+	var diagnostics []Diagnostic
+	declared := make(map[string]int, len(names))
+	for _, name := range names {
+		declared[name]++
+		if declared[name] > 1 {
+			diagnostics = append(diagnostics, Diagnostic{
+				Path:    name,
+				Message: fmt.Sprintf("duplicate owned skill %q", name),
+			})
+		}
+		if _, ok := ownedSkillContract[name]; !ok {
+			diagnostics = append(diagnostics, Diagnostic{
+				Path:    name,
+				Message: fmt.Sprintf("unexpected owned skill %q", name),
+			})
+		}
+	}
+	for name := range ownedSkillContract {
+		if declared[name] == 0 {
+			diagnostics = append(diagnostics, Diagnostic{
+				Path:    name,
+				Message: fmt.Sprintf("missing owned skill %q", name),
+			})
+		}
+	}
+
+	filesByPath := make(map[string][]byte, len(files))
+	for _, file := range files {
+		if _, exists := filesByPath[file.Path]; exists {
+			diagnostics = append(diagnostics, Diagnostic{
+				Path:    file.Path,
+				Message: "duplicate owned skill artifact",
+			})
+			continue
+		}
+		filesByPath[file.Path] = file.Data
+	}
+	for name, version := range ownedSkillContract {
+		path := name + "/SKILL.md"
+		data, ok := filesByPath[path]
+		if !ok {
+			diagnostics = append(diagnostics, Diagnostic{
+				Path:    path,
+				Message: "missing owned SKILL.md",
+			})
+			continue
+		}
+		metadata, ok := parseSkillFrontmatter(string(data))
+		if !ok {
+			diagnostics = append(diagnostics, Diagnostic{
+				Path:    path,
+				Message: "SKILL.md frontmatter is invalid",
+			})
+			continue
+		}
+		if strings.TrimSpace(metadata.Name) != name {
+			diagnostics = append(diagnostics, Diagnostic{
+				Path:    path,
+				Message: fmt.Sprintf("frontmatter name %q does not match skill directory %q", metadata.Name, name),
+			})
+		}
+		if strings.TrimSpace(metadata.Metadata.Version) != version {
+			diagnostics = append(diagnostics, Diagnostic{
+				Path:    path,
+				Message: fmt.Sprintf("metadata.version must be %s", version),
+			})
+		}
+	}
+	return diagnostics
+}
+
+type skillFrontmatter struct {
+	Name     string `yaml:"name"`
+	Metadata struct {
+		Version string `yaml:"version"`
+	} `yaml:"metadata"`
+}
+
+func parseSkillFrontmatter(text string) (skillFrontmatter, bool) {
+	var metadata skillFrontmatter
 	trimmed := strings.TrimSpace(text)
 	if !strings.HasPrefix(trimmed, "---") {
-		return ""
+		return metadata, false
 	}
 	rest := strings.TrimPrefix(trimmed, "---")
 	end := strings.Index(rest, "\n---")
 	if end < 0 {
+		return metadata, false
+	}
+	if err := yaml.Unmarshal([]byte(rest[:end]), &metadata); err != nil {
+		return skillFrontmatter{}, false
+	}
+	return metadata, true
+}
+
+// frontmatterName returns the name field from a SKILL.md YAML frontmatter block,
+// or "" when there is none.
+func frontmatterName(text string) string {
+	metadata, ok := parseSkillFrontmatter(text)
+	if !ok {
 		return ""
 	}
-	var meta struct {
-		Name string `yaml:"name"`
-	}
-	if err := yaml.Unmarshal([]byte(rest[:end]), &meta); err != nil {
-		return ""
-	}
-	return strings.TrimSpace(meta.Name)
+	return strings.TrimSpace(metadata.Name)
 }
 
 // Recommended returns the externally-managed skills (from skills-lock.json) that

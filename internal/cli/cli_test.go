@@ -2737,6 +2737,15 @@ func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 }
 
 func TestRunSetupHealthyMachineIsIdempotent(t *testing.T) {
+	assertSetupCommandHealthyMachineIsIdempotent(t)
+}
+
+func TestSetupCommandCompatibility(t *testing.T) {
+	assertSetupCommandHealthyMachineIsIdempotent(t)
+}
+
+func assertSetupCommandHealthyMachineIsIdempotent(t *testing.T) {
+	t.Helper()
 	fake := newSetupFakeDeps()
 	fake.paths["codex-acp"] = "/bin/codex-acp"
 	fake.files[fake.userConfigPath] = roundconfig.DefaultConfigYAML()

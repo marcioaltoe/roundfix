@@ -1,0 +1,352 @@
+{
+  "adoptionState": "formatter-composition",
+  "classification": "exact",
+  "contractAreas": [
+    "input",
+    "state",
+    "action",
+    "planned-byte-sequence",
+    "post-state"
+  ],
+  "fileIdentities": {
+    "postimage": "sha256:3a326f104ce74a9012899d4e16962623bcc5c5677ac5bf00492794a2c78d7f2d",
+    "preimage": "sha256:3a326f104ce74a9012899d4e16962623bcc5c5677ac5bf00492794a2c78d7f2d"
+  },
+  "id": "formatter-composition",
+  "input": {
+    "action": "format-compose",
+    "formatter": {
+      "goldenDigest": "aefa999f2dfa12ab00574a6f00f3cc816bb7462c3f768bb9c569149b1b1e69db",
+      "id": "formatter.oxfmt-markdown",
+      "kind": "selected",
+      "version": "0.59.0"
+    },
+    "profile": "standard-typescript-monorepo"
+  },
+  "managedEntryLedger": [],
+  "manifest": {
+    "fixturePaths": [
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/AGENTS.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/agent-instructions.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/autonomous-work.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/backend.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/docs-layout.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/domain.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/external-triage.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/frontend.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/issue-tracker.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/monorepo.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/repository.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/secondbrain.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/skill-dispatch.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/spec-routing.md",
+      "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/typescript-bun.md"
+    ],
+    "fixtureVerification": "python3 -B .formatter-fixture-verify.py",
+    "formatter": {
+      "id": "formatter.oxfmt-markdown",
+      "package": "oxfmt",
+      "version": "0.59.0"
+    },
+    "generation": {
+      "digestAlgorithm": "setup-context-driven/portable-file-v1",
+      "sequence": [
+        "confirmed setup-context-driven apply with the maximal profile decisions",
+        "oxfmt 0.59.0 AGENTS.md docs/agents"
+      ]
+    },
+    "goldenDigest": "aefa999f2dfa12ab00574a6f00f3cc816bb7462c3f768bb9c569149b1b1e69db",
+    "profile": "standard-typescript-monorepo",
+    "realFormatterProbe": {
+      "argv": [
+        "bunx",
+        "oxfmt@0.59.0",
+        "--check",
+        "AGENTS.md",
+        "docs/agents"
+      ],
+      "command": "rtk bunx oxfmt@0.59.0 --check AGENTS.md docs/agents",
+      "workingDirectory": "<disposable-typescript-bun-fixture>"
+    },
+    "schemaVersion": "setup-context-driven/formatter-provenance-v1"
+  },
+  "normalizedOutput": {
+    "changedFiles": [],
+    "corpusDigest": "aefa999f2dfa12ab00574a6f00f3cc816bb7462c3f768bb9c569149b1b1e69db",
+    "provenance": {
+      "fixturePaths": [
+        "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/AGENTS.md",
+        "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/agent-instructions.md",
+        "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/autonomous-work.md",
+        "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/backend.md",
+        "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/docs-layout.md",
+        "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/domain.md",
+        "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/external-triage.md",
+        "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/frontend.md",
+        "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/issue-tracker.md",
+        "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/monorepo.md",
+        "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/repository.md",
+        "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/secondbrain.md",
+        "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/skill-dispatch.md",
+        "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/spec-routing.md",
+        "tests/fixtures/formatter-compatibility/typescript-bun-monorepo/golden/docs/agents/typescript-bun.md"
+      ],
+      "fixtureVerification": "python3 -B .formatter-fixture-verify.py",
+      "formatter": {
+        "id": "formatter.oxfmt-markdown",
+        "package": "oxfmt",
+        "version": "0.59.0"
+      },
+      "generation": {
+        "digestAlgorithm": "setup-context-driven/portable-file-v1",
+        "sequence": [
+          "confirmed setup-context-driven apply with the maximal profile decisions",
+          "oxfmt 0.59.0 AGENTS.md docs/agents"
+        ]
+      },
+      "goldenDigest": "aefa999f2dfa12ab00574a6f00f3cc816bb7462c3f768bb9c569149b1b1e69db",
+      "profile": "standard-typescript-monorepo",
+      "realFormatterProbe": {
+        "argv": [
+          "bunx",
+          "oxfmt@0.59.0",
+          "--check",
+          "AGENTS.md",
+          "docs/agents"
+        ],
+        "command": "rtk bunx oxfmt@0.59.0 --check AGENTS.md docs/agents",
+        "workingDirectory": "<disposable-typescript-bun-fixture>"
+      },
+      "schemaVersion": "setup-context-driven/formatter-provenance-v1"
+    }
+  },
+  "planDigest": null,
+  "plannedByteSequence": [],
+  "postState": [
+    {
+      "identity": "sha256:9df598ec171920d5056bbffe0feb3cfd6c0af99f6b9a99bb65266755688f0a5f",
+      "kind": "file",
+      "mode": 420,
+      "path": "AGENTS.md",
+      "size": 2774
+    },
+    {
+      "identity": "sha256:d803b8d4a8321247c4e26d251f3186d44cf7adbc0e0baa6aa4c97b0e5f4b2e1f",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/agent-instructions.md",
+      "size": 3771
+    },
+    {
+      "identity": "sha256:76065b3f1b452f647765d01bfb802ca3a0757d7212ba75b8e55d1d6242b0c977",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/autonomous-work.md",
+      "size": 789
+    },
+    {
+      "identity": "sha256:841a7ba20c669a691792b18206d5dd032114b68c2ab3ad06b05c49059067b922",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/backend.md",
+      "size": 1232
+    },
+    {
+      "identity": "sha256:51024b4cfa8bd2d83b38be97f51ecfc31391f303d6881960b09877e23d6cbbea",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/docs-layout.md",
+      "size": 1965
+    },
+    {
+      "identity": "sha256:0513b68ed8e2788c368aaa01bee8fdc51d7da2fccc822f07cbcd4ddf1fcb5d7f",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/domain.md",
+      "size": 396
+    },
+    {
+      "identity": "sha256:4e6b2cfafd491161e7666b304ce0d2d6b19ad705613a6471999c84fda1d63e6a",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/external-triage.md",
+      "size": 385
+    },
+    {
+      "identity": "sha256:e549e139d5cb773189f740fa6dbc163c9c20d0591dd957e752b7bf53b94eccf4",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/frontend.md",
+      "size": 1244
+    },
+    {
+      "identity": "sha256:f2139d498fb79358a240d8c99ab1718764217cf28aec0fb024beadfa2b0231cc",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/issue-tracker.md",
+      "size": 353
+    },
+    {
+      "identity": "sha256:47cf6a0ac72c2bcacfc69e5566b1cdcc2102e552b1d91592e5cb1033d30be9e3",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/monorepo.md",
+      "size": 371
+    },
+    {
+      "identity": "sha256:858c6f4db0e83afd64866f243a5967d273a2ed214af588c0635bf8a11ce64b47",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/repository.md",
+      "size": 106
+    },
+    {
+      "identity": "sha256:fab2b2896ad03e0436414b83e5cd80e7fdc07b96d9231b798194b36314a8e7a7",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/secondbrain.md",
+      "size": 1589
+    },
+    {
+      "identity": "sha256:5a55f5b7f4f70b6f29463f6f100f79a7a9104f89b70693570705762c2ce84ded",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/skill-dispatch.md",
+      "size": 14824
+    },
+    {
+      "identity": "sha256:b13604b0317e1a8ce2d5a9bb8e0cada84eee80cc6cdb92f3370a7fd04527ad34",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/spec-routing.md",
+      "size": 1005
+    },
+    {
+      "identity": "sha256:ec114298fee6ef89bbf0423a6b8a467630296264fc49e989d89af3301093b96e",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/typescript-bun.md",
+      "size": 1378
+    }
+  ],
+  "profile": "standard-typescript-monorepo",
+  "rationale": null,
+  "refusal": null,
+  "repositoryPreimage": [
+    {
+      "identity": "sha256:9df598ec171920d5056bbffe0feb3cfd6c0af99f6b9a99bb65266755688f0a5f",
+      "kind": "file",
+      "mode": 420,
+      "path": "AGENTS.md",
+      "size": 2774
+    },
+    {
+      "identity": "sha256:d803b8d4a8321247c4e26d251f3186d44cf7adbc0e0baa6aa4c97b0e5f4b2e1f",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/agent-instructions.md",
+      "size": 3771
+    },
+    {
+      "identity": "sha256:76065b3f1b452f647765d01bfb802ca3a0757d7212ba75b8e55d1d6242b0c977",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/autonomous-work.md",
+      "size": 789
+    },
+    {
+      "identity": "sha256:841a7ba20c669a691792b18206d5dd032114b68c2ab3ad06b05c49059067b922",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/backend.md",
+      "size": 1232
+    },
+    {
+      "identity": "sha256:51024b4cfa8bd2d83b38be97f51ecfc31391f303d6881960b09877e23d6cbbea",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/docs-layout.md",
+      "size": 1965
+    },
+    {
+      "identity": "sha256:0513b68ed8e2788c368aaa01bee8fdc51d7da2fccc822f07cbcd4ddf1fcb5d7f",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/domain.md",
+      "size": 396
+    },
+    {
+      "identity": "sha256:4e6b2cfafd491161e7666b304ce0d2d6b19ad705613a6471999c84fda1d63e6a",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/external-triage.md",
+      "size": 385
+    },
+    {
+      "identity": "sha256:e549e139d5cb773189f740fa6dbc163c9c20d0591dd957e752b7bf53b94eccf4",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/frontend.md",
+      "size": 1244
+    },
+    {
+      "identity": "sha256:f2139d498fb79358a240d8c99ab1718764217cf28aec0fb024beadfa2b0231cc",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/issue-tracker.md",
+      "size": 353
+    },
+    {
+      "identity": "sha256:47cf6a0ac72c2bcacfc69e5566b1cdcc2102e552b1d91592e5cb1033d30be9e3",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/monorepo.md",
+      "size": 371
+    },
+    {
+      "identity": "sha256:858c6f4db0e83afd64866f243a5967d273a2ed214af588c0635bf8a11ce64b47",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/repository.md",
+      "size": 106
+    },
+    {
+      "identity": "sha256:fab2b2896ad03e0436414b83e5cd80e7fdc07b96d9231b798194b36314a8e7a7",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/secondbrain.md",
+      "size": 1589
+    },
+    {
+      "identity": "sha256:5a55f5b7f4f70b6f29463f6f100f79a7a9104f89b70693570705762c2ce84ded",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/skill-dispatch.md",
+      "size": 14824
+    },
+    {
+      "identity": "sha256:b13604b0317e1a8ce2d5a9bb8e0cada84eee80cc6cdb92f3370a7fd04527ad34",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/spec-routing.md",
+      "size": 1005
+    },
+    {
+      "identity": "sha256:ec114298fee6ef89bbf0423a6b8a467630296264fc49e989d89af3301093b96e",
+      "kind": "file",
+      "mode": 420,
+      "path": "docs/agents/typescript-bun.md",
+      "size": 1378
+    }
+  ],
+  "rollback": {
+    "attempted": false,
+    "evidence": "formatter and verification compose without byte changes",
+    "restoredPreimage": null,
+    "succeeded": null
+  },
+  "schemaVersion": "setup-context-driven/parity-fixture/v1",
+  "sourceTests": [
+    "tests/test_formatter_compatibility.py"
+  ]
+}

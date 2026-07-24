@@ -116,7 +116,33 @@ func (runner ACPXRunner) ProveExactSelection(ctx context.Context, request ProbeR
 }
 
 func (runner ACPXRunner) startSessionSelection(ctx context.Context, runtime RuntimeSpec, session SessionRef, adapter AdapterEvidence, codexEnv []string, disposable bool) (SelectionCapabilities, error) {
-	args, err := acpxEnsureArgs(runtime, session.Name, session.WorkDir)
+	operation := "ensure live Agent Session"
+	if disposable {
+		operation = "ensure disposable Agent Session"
+	}
+	return runner.startSessionSelectionWithEnsure(
+		ctx,
+		runtime,
+		session,
+		adapter,
+		codexEnv,
+		operation,
+		acpxEnsureArgs,
+	)
+}
+
+type sessionEnsureArgsBuilder func(RuntimeSpec, string, string) ([]string, error)
+
+func (runner ACPXRunner) startSessionSelectionWithEnsure(
+	ctx context.Context,
+	runtime RuntimeSpec,
+	session SessionRef,
+	adapter AdapterEvidence,
+	codexEnv []string,
+	operation string,
+	buildArgs sessionEnsureArgsBuilder,
+) (SelectionCapabilities, error) {
+	args, err := buildArgs(runtime, session.Name, session.WorkDir)
 	if err != nil {
 		return SelectionCapabilities{}, err
 	}
@@ -130,10 +156,6 @@ func (runner ACPXRunner) startSessionSelection(ctx context.Context, runtime Runt
 			return SelectionCapabilities{}, modelErr
 		}
 		assignment := canonicalSelection(runtime)
-		operation := "ensure live Agent Session"
-		if disposable {
-			operation = "ensure disposable Agent Session"
-		}
 		return SelectionCapabilities{}, &SelectionRejectedError{Assignment: assignment, Operation: operation, Err: err}
 	}
 

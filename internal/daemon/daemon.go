@@ -148,7 +148,7 @@ func (GitCommitter) Commit(ctx context.Context, req CommitRequest) error {
 	}
 	var addArgs []string
 	if len(req.Paths) > 0 {
-		addArgs = append([]string{"add", "--"}, req.Paths...)
+		addArgs = append([]string{"add", "-f", "--"}, req.Paths...)
 	} else {
 		addArgs = []string{"add", "-A", "--", "."}
 		addArgs = append(addArgs, gitExcludePathspecs(req.WorkDir, req.ExcludePaths)...)

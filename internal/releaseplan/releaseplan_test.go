@@ -1,7 +1,9 @@
 package releaseplan
 
 import (
+	"context"
 	"errors"
+	"reflect"
 	"testing"
 )
 
@@ -331,8 +333,8 @@ func TestPlanSchemaVersionAndEvidence(t *testing.T) {
 	if plan.SchemaVersion != SchemaVersion {
 		t.Fatalf("SchemaVersion = %q, want %q", plan.SchemaVersion, SchemaVersion)
 	}
-	if plan.SchemaVersion != "roundfix.release-plan/v1" {
-		t.Fatalf("schema identifier = %q, want roundfix.release-plan/v1", plan.SchemaVersion)
+	if plan.SchemaVersion != "roundfix.release-plan/0.0.1" {
+		t.Fatalf("schema identifier = %q, want roundfix.release-plan/0.0.1", plan.SchemaVersion)
 	}
 	if len(plan.Changes) != 1 || plan.Changes[0].CommitSHA != "abc123" {
 		t.Fatalf("Changes = %+v, want copied evidence with original commit SHA", plan.Changes)
@@ -340,6 +342,298 @@ func TestPlanSchemaVersionAndEvidence(t *testing.T) {
 	if plan.ProposedVersion != "v0.4.1" || plan.State != StateReady {
 		t.Fatalf("plan decision = state %q version %q, want ready v0.4.1", plan.State, plan.ProposedVersion)
 	}
+}
+
+func TestBuildResetPlanSortsCompleteInventoryAndCalculatesDeterministicDigest(t *testing.T) {
+	source := &resetInventoryFixture{
+		tags: []TagRef{
+			{
+				Name:         "v0.2.0",
+				Source:       TagSourceRemote,
+				Remote:       "origin",
+				Ref:          "refs/tags/v0.2.0",
+				ImmutableID:  "remote:origin:refs/tags/v0.2.0@2222222222222222222222222222222222222222",
+				TargetCommit: "2222222222222222222222222222222222222222",
+			},
+			{
+				Name:         "v0.1.0",
+				Source:       TagSourceLocal,
+				Ref:          "refs/tags/v0.1.0",
+				ImmutableID:  "local:refs/tags/v0.1.0@1111111111111111111111111111111111111111",
+				TargetCommit: "1111111111111111111111111111111111111111",
+			},
+			{
+				Name:         "v0.1.0",
+				Source:       TagSourceRemote,
+				Remote:       "origin",
+				Ref:          "refs/tags/v0.1.0",
+				ImmutableID:  "remote:origin:refs/tags/v0.1.0@1111111111111111111111111111111111111111",
+				TargetCommit: "1111111111111111111111111111111111111111",
+			},
+		},
+		releases: []ReleaseRef{
+			{
+				ID:              22,
+				NodeID:          "RE_kwDO_release_22",
+				Name:            "Second release",
+				TagName:         "v0.2.0",
+				TargetCommitish: "main",
+				ImmutableID:     "github-release:22",
+			},
+			{
+				ID:              11,
+				NodeID:          "RE_kwDO_release_11",
+				Name:            "First release",
+				TagName:         "v0.1.0",
+				TargetCommitish: "main",
+				ImmutableID:     "github-release:11",
+			},
+		},
+	}
+	request := ResetRequest{
+		TargetVersion: "v0.0.1",
+		Target: RevisionRef{
+			Name:      "HEAD",
+			CommitSHA: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		},
+	}
+
+	first, err := BuildReset(context.Background(), request, source)
+	if err != nil {
+		t.Fatalf("BuildReset first: %v", err)
+	}
+	second, err := BuildReset(context.Background(), request, source)
+	if err != nil {
+		t.Fatalf("BuildReset second: %v", err)
+	}
+
+	if source.calls != 4 || source.mutations != 0 {
+		t.Fatalf("provider calls = reads:%d mutations:%d, want four reads and zero mutations", source.calls, source.mutations)
+	}
+	if first.State != StateApprovalRequired {
+		t.Fatalf("State = %q, want %q", first.State, StateApprovalRequired)
+	}
+	if first.TargetVersion != "v0.0.1" || first.TargetRevision != "HEAD" || first.TargetCommit != request.Target.CommitSHA {
+		t.Fatalf("target = version:%q revision:%q commit:%q, want v0.0.1 HEAD %s", first.TargetVersion, first.TargetRevision, first.TargetCommit, request.Target.CommitSHA)
+	}
+	if first.PlanDigest == "" || first.PlanDigest != second.PlanDigest {
+		t.Fatalf("digests = %q and %q, want equal non-empty deterministic digest", first.PlanDigest, second.PlanDigest)
+	}
+	if !reflect.DeepEqual(first.Tags, []TagRef{
+		source.tags[1],
+		source.tags[2],
+		source.tags[0],
+	}) {
+		t.Fatalf("Tags = %+v, want deterministic local/name then remote/name order", first.Tags)
+	}
+	if got := []int64{first.Releases[0].ID, first.Releases[1].ID}; !reflect.DeepEqual(got, []int64{11, 22}) {
+		t.Fatalf("release IDs = %v, want tag-name order 11 then 22", got)
+	}
+	for _, release := range first.Releases {
+		if release.TargetCommit == "" {
+			t.Fatalf("release %+v missing target commit derived from complete tag inventory", release)
+		}
+	}
+
+	source.tags[0].TargetCommit = "mutated"
+	source.releases[0].Name = "mutated"
+	if first.Tags[2].TargetCommit != "2222222222222222222222222222222222222222" {
+		t.Fatalf("plan tag inventory changed through source alias: %+v", first.Tags)
+	}
+	if first.Releases[1].Name != "Second release" {
+		t.Fatalf("plan release inventory changed through source alias: %+v", first.Releases)
+	}
+}
+
+func TestBuildResetPlanDigestChangesWithEveryBoundInput(t *testing.T) {
+	baseRequest := ResetRequest{
+		TargetVersion: "v0.0.1",
+		Target: RevisionRef{
+			Name:      "HEAD",
+			CommitSHA: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		},
+	}
+	baseSource := resetInventoryFixture{
+		tags: []TagRef{{
+			Name:         "v0.1.0",
+			Source:       TagSourceLocal,
+			Ref:          "refs/tags/v0.1.0",
+			ImmutableID:  "local:refs/tags/v0.1.0@1111111111111111111111111111111111111111",
+			TargetCommit: "1111111111111111111111111111111111111111",
+		}},
+		releases: []ReleaseRef{{
+			ID:              11,
+			NodeID:          "RE_kwDO_release_11",
+			Name:            "First release",
+			TagName:         "v0.1.0",
+			TargetCommitish: "main",
+			ImmutableID:     "github-release:11",
+		}},
+	}
+	baseline, err := BuildReset(context.Background(), baseRequest, &baseSource)
+	if err != nil {
+		t.Fatalf("BuildReset baseline: %v", err)
+	}
+
+	tests := []struct {
+		name   string
+		mutate func(*ResetRequest, *resetInventoryFixture)
+	}{
+		{
+			name: "target version",
+			mutate: func(request *ResetRequest, _ *resetInventoryFixture) {
+				request.TargetVersion = "v0.0.2"
+			},
+		},
+		{
+			name: "target revision",
+			mutate: func(request *ResetRequest, _ *resetInventoryFixture) {
+				request.Target.Name = "main"
+			},
+		},
+		{
+			name: "target commit",
+			mutate: func(request *ResetRequest, _ *resetInventoryFixture) {
+				request.Target.CommitSHA = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+			},
+		},
+		{
+			name: "tag target",
+			mutate: func(_ *ResetRequest, source *resetInventoryFixture) {
+				source.tags[0].TargetCommit = "3333333333333333333333333333333333333333"
+				source.tags[0].ImmutableID = "local:refs/tags/v0.1.0@3333333333333333333333333333333333333333"
+			},
+		},
+		{
+			name: "release identity",
+			mutate: func(_ *ResetRequest, source *resetInventoryFixture) {
+				source.releases[0].ID = 12
+				source.releases[0].NodeID = "RE_kwDO_release_12"
+				source.releases[0].ImmutableID = "github-release:12"
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := baseRequest
+			source := resetInventoryFixture{
+				tags:     append([]TagRef(nil), baseSource.tags...),
+				releases: append([]ReleaseRef(nil), baseSource.releases...),
+			}
+			tt.mutate(&request, &source)
+			plan, err := BuildReset(context.Background(), request, &source)
+			if err != nil {
+				t.Fatalf("BuildReset: %v", err)
+			}
+			if plan.PlanDigest == baseline.PlanDigest {
+				t.Fatalf("digest remained %q after changing %s", plan.PlanDigest, tt.name)
+			}
+		})
+	}
+}
+
+func TestBuildResetPlanFailsClosedForInvalidOrIncompleteInventory(t *testing.T) {
+	validRequest := ResetRequest{
+		TargetVersion: "v0.0.1",
+		Target:        RevisionRef{Name: "HEAD", CommitSHA: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+	}
+	validTag := TagRef{
+		Name:         "v0.1.0",
+		Source:       TagSourceLocal,
+		Ref:          "refs/tags/v0.1.0",
+		ImmutableID:  "local:refs/tags/v0.1.0@1111111111111111111111111111111111111111",
+		TargetCommit: "1111111111111111111111111111111111111111",
+	}
+	validRelease := ReleaseRef{
+		ID:              11,
+		NodeID:          "RE_kwDO_release_11",
+		Name:            "First release",
+		TagName:         "v0.1.0",
+		TargetCommitish: "main",
+		ImmutableID:     "github-release:11",
+	}
+
+	tests := []struct {
+		name    string
+		request ResetRequest
+		source  resetInventoryFixture
+		want    error
+	}{
+		{
+			name:    "malformed target version",
+			request: ResetRequest{TargetVersion: "0.0.1", Target: validRequest.Target},
+			source:  resetInventoryFixture{tags: []TagRef{validTag}, releases: []ReleaseRef{validRelease}},
+			want:    ErrMalformedStableVersion,
+		},
+		{
+			name:    "missing target commit",
+			request: ResetRequest{TargetVersion: "v0.0.1", Target: RevisionRef{Name: "HEAD"}},
+			source:  resetInventoryFixture{tags: []TagRef{validTag}, releases: []ReleaseRef{validRelease}},
+			want:    ErrIncompleteResetInventory,
+		},
+		{
+			name:    "local or remote tag inventory unavailable",
+			request: validRequest,
+			source:  resetInventoryFixture{tagsErr: errors.New("remote tag page unavailable")},
+			want:    ErrIncompleteResetInventory,
+		},
+		{
+			name:    "GitHub release inventory unavailable",
+			request: validRequest,
+			source:  resetInventoryFixture{tags: []TagRef{validTag}, releasesErr: errors.New("release page unavailable")},
+			want:    ErrIncompleteResetInventory,
+		},
+		{
+			name:    "duplicate tag identity",
+			request: validRequest,
+			source:  resetInventoryFixture{tags: []TagRef{validTag, validTag}, releases: []ReleaseRef{validRelease}},
+			want:    ErrDuplicateInventoryIdentity,
+		},
+		{
+			name:    "duplicate release identity",
+			request: validRequest,
+			source:  resetInventoryFixture{tags: []TagRef{validTag}, releases: []ReleaseRef{validRelease, validRelease}},
+			want:    ErrDuplicateInventoryIdentity,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			plan, err := BuildReset(context.Background(), tt.request, &tt.source)
+			if err == nil {
+				t.Fatalf("BuildReset succeeded with plan %+v, want error", plan)
+			}
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("BuildReset error = %v, want errors.Is(..., %v)", err, tt.want)
+			}
+			if !reflect.DeepEqual(plan, ResetPlan{}) {
+				t.Fatalf("BuildReset returned partial plan %+v, want zero plan", plan)
+			}
+			if tt.source.mutations != 0 {
+				t.Fatalf("mutation calls = %d, want zero", tt.source.mutations)
+			}
+		})
+	}
+}
+
+type resetInventoryFixture struct {
+	tags        []TagRef
+	releases    []ReleaseRef
+	tagsErr     error
+	releasesErr error
+	calls       int
+	mutations   int
+}
+
+func (source *resetInventoryFixture) Tags(context.Context) ([]TagRef, error) {
+	source.calls++
+	return source.tags, source.tagsErr
+}
+
+func (source *resetInventoryFixture) Releases(context.Context) ([]ReleaseRef, error) {
+	source.calls++
+	return source.releases, source.releasesErr
 }
 
 func mustParseVersion(t *testing.T, tag string) Version {

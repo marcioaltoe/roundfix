@@ -76,6 +76,10 @@ _Avoid_: Task list, backlog, roadmap
 The bounded Task-start context that gives an Agent the full assigned Task and paths to larger Spec artifacts, relevant interfaces, and files changed by prior Tasks.
 _Avoid_: Repository dump, full Spec payload, cold-start exploration
 
+**Project Constraint**:
+A confirmed project decision or universal Normative Clause that a Spec records as applicable, not applicable with a reason, or explicitly authorized for a bounded change before its Tasks can execute.
+_Avoid_: Optional note, implementation suggestion, inferred permission
+
 **QA Report**:
 The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict in its frontmatter.
 _Avoid_: Test report, QA log
@@ -382,9 +386,85 @@ _Avoid_: Setup command, provisioning, install step
 The portable, versioned set of required project instructions and architectural decisions that makes a repository ready for the CONTEXT-driven workflow.
 _Avoid_: Sample docs, optional setup, repository template
 
+**Baseline Profile**:
+A versioned composition of modules, Repository Capabilities, decisions, managed artifacts, and verification roles that defines one reproducible Context-Driven Baseline. Roundfix ships built-in profiles; a repository may own additional profiles for its own workflow.
+_Avoid_: Agent Selection Profile, setup template, user profile
+
+**Baseline Command**:
+The public `roundfix baseline` command that authors and validates Baseline Profiles and drives one preflight-to-verification adoption or update flow without requiring an Agent Skill.
+_Avoid_: Setup Command, setup skill, configuration wizard
+
+**Source Baseline**:
+The immutable Setup Manifest and governed instruction corpus that a setup transition or Baseline Readoption recognizes as its exact origin.
+_Avoid_: Legacy Baseline, inferred preimage, current files
+
+**Source Baseline Entry**:
+One byte-evidenced structural unit in a Source Baseline that Baseline Readoption classifies and disposes individually as a Normative Clause, recommendation, Operational Contract, or non-governed evidence.
+_Avoid_: Inferred rule, category summary, untracked paragraph
+
+**Baseline Readoption**:
+The confirmation-gated adoption that inventories an incompatible repository state as a Source Baseline and replaces its setup identity without treating existing instructions as disposable.
+_Avoid_: Clean install, legacy fallback, automatic overwrite
+
+**Normative Clause**:
+An identified repository instruction whose enforcement is mandatory, prohibited, or stop-and-ask.
+_Avoid_: Hard rule, guideline, free-form prose
+
+**Normative Clause Manifest**:
+The digest-bound inventory that independently accounts for a Source Baseline's Normative Clauses, recommendations, and Operational Contracts.
+_Avoid_: Transition mapping, self-declared ledger, category checklist
+
+**Operational Contract**:
+An identified structured instruction whose order or shape carries required behavior, such as a template, procedure, or decision matrix.
+_Avoid_: Prose summary, optional example, compressed guidance
+
+**Instruction Hierarchy**:
+The precedence order from universal instructions through context and documentation, Spec workflow, enabled autonomous work, stack and surface guides, and optional knowledge sources. A narrower guide may add constraints but cannot weaken a universal Normative Clause or confirmed project decision.
+_Avoid_: Module list, arbitrary file order, duplicated root policy
+
+**Standard TypeScript Monorepo Profile**:
+The opinionated, project-agnostic Context-Driven Baseline profile for the repository's standard TypeScript monorepo stack.
+_Avoid_: Project-specific profile, generic TypeScript profile, sample template
+
+**Repository Capability**:
+A profile-declared skill, tool, dependency, workspace, or repository contract whose required, recommended, or optional status is evaluated from explicit local evidence.
+_Avoid_: Assumed stack, installed package list, inferred readiness
+
+**Skill Activation**:
+A declarative mapping from one stable work trigger to one exact required Agent Skill bundle, optionally conditioned on a selected Repository Capability.
+_Avoid_: Suggested skill, inferred bundle, partial activation
+
+**Decision Plan**:
+The resolved setup proposal produced after every required setup decision has an answer; it is the basis for authorizing setup changes.
+_Avoid_: Setup questionnaire, decision draft, configuration prompt
+
+**Change Plan**:
+The exact set of repository changes proposed for explicit review and confirmation before a setup or restoration operation mutates files.
+_Avoid_: Patch, implicit apply, change preview
+
+**Setup Manifest**:
+The setup-owned record of the selected profile, modules, decisions, and managed artifacts that reproduces and audits a repository's Context-Driven Baseline.
+_Avoid_: Project Config, lock file, generated guide
+
 **Baseline ADR**:
 An Architecture Decision Record whose reserved identity and invariant belong to the Context-Driven Baseline while project-specific notes remain repository-owned.
 _Avoid_: Example ADR, project ADR, template copy
+
+**Upgrade Retention Contract**:
+The accounting a Context-Driven Baseline transition or Baseline Readoption must satisfy before mutation: every Source Baseline Normative Clause, recommendation, and Operational Contract maps to a current managed target, Repository-Specific Normative Rules, a recognized typed repository document, or an explicit rejection with a recorded reason.
+_Avoid_: Best-effort migration, category coverage, silent rule removal
+
+**Repository-Specific Normative Rules**:
+Project-authored Normative Clauses that are not portable across the Context-Driven Baseline and cannot be represented by a typed project decision or managed semantic guide. Baseline assigns every representable rule to its semantic owner; only non-empty residual rules live outside setup markers in `docs/agents/specific-repository.md` and remain byte-preserved after confirmed adoption.
+_Avoid_: Repository-Owned Extension, duplicate managed rule, baseline rule
+
+**HTTP Contract Decision**:
+The repository-owned choice of REST or POST-only application API semantics together with explicit protocol or operational exceptions and their owners.
+_Avoid_: HTTP profile, universal REST rule, inferred route style
+
+**Formatter-Stable Output**:
+Generated managed Markdown that the target repository's selected formatter leaves unchanged, so apply, formatting, Verification, audit, and reapply compose with no delta.
+_Avoid_: Renderer-canonical output, format-after-apply fixup
 
 **Internal Identifier**:
 A technical identity for an entity or resource that is generated and controlled by the project.

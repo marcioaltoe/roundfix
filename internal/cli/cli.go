@@ -47,6 +47,14 @@ Usage:
   roundfix implement --spec <slug>
   roundfix settle --spec <slug> --task <task_id>
   roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
+  roundfix release plan --reset-to <version> [--format <text|json>]
+  roundfix baseline plan --profile <id> [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
+  roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
+  roundfix baseline profile init --id <id> [--from <built-in-id>]
+  roundfix baseline profile show <id> [--format <text|json>]
+  roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
+  roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+  roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
   roundfix profiles show [--category <category>] [--json]
   roundfix profiles configure --scope user|project [--file <path>] [--dry-run] [--yes] [--json]
   roundfix profiles validate [--category <category>] [--json]
@@ -72,6 +80,7 @@ Commands:
   implement  Execute a Spec's Task Graph as one Run
   settle     Verify and commit all current worktree changes for one failed Task
   release    Plan the next release version without mutating repository or release state
+  baseline   Plan, apply, and validate a Context-Driven Baseline
   profiles   Show Agent Selection Profiles and advisory recommendations
   archive    Archive a completed Spec
   stop       Request or force-stop an Active Run
@@ -233,6 +242,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runSettleCommand(ctx, args[1:], stdout, stderr)
 	case "release":
 		return runReleaseCommand(ctx, args[1:], stdout, stderr)
+	case "baseline":
+		return runBaselineCommand(ctx, args[1:], stdout, stderr)
 	case "profiles":
 		return runProfilesCommand(ctx, args[1:], stdout, stderr)
 	case "archive":
@@ -3911,21 +3922,26 @@ Options:
 	case "release":
 		return `Usage:
   roundfix release plan [--from <tag>] [--to <revision>] [--impact <none|patch|minor|major> --reason <text>] [--format <text|json>]
+  roundfix release plan --reset-to <version> [--format <text|json>]
 
 Commands:
   plan  Analyze committed changes and propose the next semantic version.
 
 Release planning is read-only: it creates no Run, reads no Roundfix config,
-contacts no external service, and never edits files, refs, tags, packages,
-releases, remotes, or configuration.
+and never edits files, refs, tags, packages, releases, remotes, or
+configuration. Range planning stays local; reset planning reads complete Git
+tag and paginated GitHub Release inventory.
 `
 	case "release plan":
 		return `Usage:
   roundfix release plan [--from <tag>] [--to <revision>] [--impact <none|patch|minor|major> --reason <text>] [--format <text|json>]
+  roundfix release plan --reset-to <version> [--format <text|json>]
 
 Builds a read-only Release Plan from a stable vMAJOR.MINOR.PATCH base through
 a committed target revision. --from defaults to the latest reachable stable
-tag; --to defaults to committed HEAD.
+tag; --to defaults to committed HEAD. --reset-to inventories every local and
+remote stable tag and every paginated GitHub Release for a clean committed
+HEAD, binds them to a plan digest, and exposes no deletion action.
 
 Decision states:
   ready                           Patch release can proceed without version approval.
@@ -3943,11 +3959,202 @@ Options:
   --to      Target revision to analyze; defaults to HEAD
   --impact  Manual impact for ambiguous changes: none, patch, minor, or major
   --reason  Non-empty reason required with --impact
+  --reset-to
+            Stable reset target; incompatible with --from, --to, --impact,
+            and --reason
   --format  Output format: text or json (default text)
 
-The command creates no Run, reads no Roundfix configuration, contacts no
-external service, and never mutates files, refs, tags, remotes, packages,
-releases, or configuration.
+The command creates no Run, reads no Roundfix configuration, and never mutates
+files, refs, tags, remotes, packages, releases, or configuration. Reset mode
+uses read-only Git and GitHub inventory calls; any deletion requires separate
+explicit post-QA authority.
+`
+	case "baseline":
+		return `Usage:
+  roundfix baseline [--repo <path>] [--format <text|json>]
+  roundfix baseline plan --profile <id> [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
+  roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
+  roundfix baseline profile init --id <id> [--from <built-in-id>]
+  roundfix baseline profile show <id> [--format <text|json>]
+  roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
+  roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+  roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
+
+The root command guides one interactive adoption or update from repository
+preflight through Baseline verification. Numbered linear prompts collect one
+Baseline Profile and repository decisions, then present one consolidated
+Change Plan with file changes first. Repository mutation occurs only after
+explicit confirmation of the displayed Plan Digest.
+
+Commands:
+  plan     Automation: emit a portable, digest-bound Baseline Plan without prompting or writing.
+  apply    Automation: apply and verify exactly one approved portable Baseline Plan without prompting.
+  profile  Author, inspect, and validate built-in or repository-owned Baseline Profiles.
+  skills   Preview or apply immutable external Repository Skill Set restoration.
+  assets   Check or refresh Go-owned canonical Baseline setup snapshots.
+
+The interactive root command refuses redirected or absent terminal input.
+Automation must use baseline plan followed by baseline apply with the exact
+approved Plan Digest.
+
+Repository-owned profiles live only under
+.roundfix/baseline/profiles/<id>.json and may reference only entries in the
+embedded Baseline catalog.
+`
+	case "baseline plan":
+		return `Usage:
+  roundfix baseline plan --profile <id> [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
+
+Builds the complete portable roundfix/baseline-plan/v1 document from
+clone-stable Git lineage, bounded repository preimages, one selected Baseline
+Profile, and normalized decisions. JSON is the portable apply input; text is a
+concise file-level projection. Missing decisions return a
+roundfix/baseline-result/v1 next action without a partial plan.
+
+The command never prompts, writes repository bytes, executes
+repository-defined commands, or uses the network. Select instruction handling
+with --decision preservation.mode=greenfield|preservation.
+
+Exit codes:
+  0  complete Baseline Plan emitted
+  2  invalid arguments, Git/repository failure, or unsafe bounded carrier
+  3  a decision, manual classification, or repository-alignment action is required
+
+Options:
+  --profile       Built-in or repository-owned Baseline Profile
+  --decision      Decision as id=value; repeat for multiple answers
+  --decision-file Strict Decision Document path; repeat to merge inputs
+  --repo          Git worktree or a path inside it (default current directory)
+  --format        Output format: text or json (default text)
+`
+	case "baseline apply":
+		return `Usage:
+  roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
+
+Strictly parses one portable roundfix/baseline-plan/v1 document, confirms its
+exact Plan Digest, validates clone-stable Git lineage and every bounded
+preimage, then applies only the supplied postimages through the recoverable
+transaction. An exact empty reapply is a verified success.
+
+Baseline verification checks managed postimages, immutable backups, carrier
+relationships, Setup Manifest identity, retention accounting, and resolved
+audit state. Repository formatter and Verification commands are reported as
+recommendations and are never run.
+
+Exit codes:
+  0  approved plan applied or already applied, and Baseline verification passed
+  1  apply, verification, output, rollback, or recovery failure
+  2  invalid arguments, plan schema, or unsafe repository
+  3  confirmation mismatch, stale preimage, or unrelated Git lineage
+
+Options:
+  --plan          Portable roundfix/baseline-plan/v1 JSON file
+  --confirm-plan  Exact approved Plan Digest from the supplied document
+  --repo          Git worktree or a path inside it (default current directory)
+  --format        Output format: text or json (default text)
+`
+	case "baseline profile":
+		return `Usage:
+  roundfix baseline profile init --id <id> [--from <built-in-id>]
+  roundfix baseline profile show <id> [--format <text|json>]
+  roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
+
+Commands:
+  init      Create one repository-owned profile from an embedded built-in profile.
+  show      Resolve one built-in or repository-owned profile.
+  validate  Validate one profile ID, one repository profile path, or all repository profiles.
+`
+	case "baseline profile init":
+		return `Usage:
+  roundfix baseline profile init --id <id> [--from <built-in-id>]
+
+Creates .roundfix/baseline/profiles/<id>.json exclusively. The declaration
+copies allowed embedded entry IDs from the selected built-in source; it does
+not compose profiles, copy assets, or accept executable or remote content.
+
+Options:
+  --id    Required lowercase repository-owned Baseline Profile ID
+  --from  Embedded built-in Baseline Profile (default go-cli-tui)
+`
+	case "baseline profile show":
+		return `Usage:
+  roundfix baseline profile show <id> [--format <text|json>]
+
+Resolves one built-in or repository-owned Baseline Profile against the
+embedded catalog and prints its normalized composition and digest.
+
+Options:
+  --format  Output format: text or json (default text)
+`
+	case "baseline profile validate":
+		return `Usage:
+  roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
+
+Validates one built-in or repository-owned Baseline Profile by ID, one direct
+file under .roundfix/baseline/profiles, or every repository-owned profile when
+no target is supplied. The command reads no user-scoped profile catalog.
+
+Options:
+  --format  Output format: text or json (default text)
+`
+	case "baseline skills restore":
+		return `Usage:
+  roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+
+Previews or applies exact external Repository Skill Set restoration for one
+built-in Baseline Profile. Sources are grouped by immutable provider,
+repository, and commit provenance. Source bytes, portable tree digests,
+skills-lock.json adapter compatibility, targets, and the complete preimage are
+validated before mutation.
+
+A non-empty preview exits 3 and returns its exact Plan Digest. Apply requires
+that digest through --confirm-plan and uses the recoverable Baseline
+transaction to update selected skill files and skills-lock.json atomically.
+An empty restoration is an idempotent exit 0.
+
+Exit codes:
+  0  selected skills already match, or the confirmed restoration was applied
+  1  source acquisition, proof, apply, output, rollback, or recovery failure
+  2  invalid arguments, profile, skill, lock schema, source, or unsafe target
+  3  confirmation is required or does not match the current Change Plan
+  130 operation canceled
+
+Options:
+  --profile       Required built-in Baseline Profile
+  --skill         External profile skill to restore; repeat to select multiple,
+                  or omit to restore every drifted external profile skill
+  --source-dir    Declared offline Git checkout or bare object store containing
+                  every selected skill's exact immutable commit
+  --confirm-plan  Exact lowercase Plan Digest returned by the current preview
+  --repo          Git worktree or a path inside it (default current directory)
+  --format        Output format: text or json (default text)
+`
+	case "baseline assets sync":
+		return `Usage:
+  roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
+
+Checks or refreshes the Go-owned canonical Baseline setup snapshots from an
+explicit canonical setups directory. The source must be a clean Git checkout
+with a portable GitHub origin, a full immutable HEAD commit, committed setup
+documents, safe source-relative paths, and complete regular-file skill trees
+whose working bytes match the declared commit.
+
+Check mode is read-only and reports whether every canonical snapshot is
+current. A non-empty refresh first validates the generated catalog in memory,
+then uses the recoverable Baseline transaction to update only
+internal/baseline/assets/setups. It never installs skills, writes the canonical
+source, or reads the installed setup-context-driven skill at runtime.
+
+Exit codes:
+  0  snapshots are current, or a canonical refresh completed
+  1  check-mode drift, refresh, output, rollback, or recovery failure
+  2  invalid arguments, source provenance, path, tree, or catalog compatibility
+  130 operation canceled
+
+Options:
+  --source-dir  Required canonical setups directory inside the immutable source checkout
+  --check       Report snapshot drift without writing canonical assets
+  --format      Output format: text or json (default text)
 `
 	case "profiles":
 		return `Usage:

@@ -13,8 +13,8 @@ Verification suites run at once. In Vortex this coupled two useful concurrent
 Agent implementations to two simultaneous integration suites, exhausting
 local listeners and setup capacity. The same Run also let Agents mark Tasks
 `failed` from their own gate runs, which bypassed Daemon Verification,
-Verification Feedback, and repair. The incident is recorded in the
-[verification resource-contention finding](../../findings/2026-07-17-spec-task-verification-resource-contention.md).
+Verification Feedback, and repair. This Spec absorbed the incident evidence;
+the original report remains available through Git history.
 
 This feature separates Verification Capacity from Task Capacity, makes the
 Daemon the sole Task-status writer during an Implement Run, exposes each

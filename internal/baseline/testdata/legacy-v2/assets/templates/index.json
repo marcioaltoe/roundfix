@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "setup-context-driven/templates-v1",
+  "version": 1,
+  "templates": [
+    {
+      "id": "template.guide.agent-instructions",
+      "version": 2,
+      "kind": "guide",
+      "path": "guides/agent-instructions.md",
+      "tokens": [
+        "artifact.rules",
+        "guide.agent-instructions",
+        "repository.design-contract"
+      ]
+    }
+  ]
+}

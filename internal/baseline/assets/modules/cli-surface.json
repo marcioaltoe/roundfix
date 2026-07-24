@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "setup-context-driven/module-v2", "id": "cli-surface", "version": 2, "kind": "application-surface", "title": "Agentic CLI surface guidance",
+  "dependsOn": ["core"], "conflictsWith": [], "requiredSkills": [
+    "agentic-cli-design"
+  ],
+  "skillDispatch": [
+    {
+      "skill": "agentic-cli-design",
+      "triggers": [
+        {
+          "id": "trigger.cli-surface.agentic-cli-design",
+          "when": "Changing CLI flags, streams, exit codes, JSON, dry-run, non-interactive, or introspection behavior."
+        }
+      ]
+    }
+  ],
+  "requiredDecisions": [],
+  "rootBlocks": [{"id": "root.cli-surface", "version": 2, "template": "template.root.cli-surface", "rules": [], "references": [
+    {"id": "reference.root.cli", "token": "reference.cli", "ownership": "setup", "managedId": "guide.cli-surface"}
+  ]}],
+  "supportingGuides": [{"id": "guide.cli-surface", "version": 2, "path": "docs/agents/cli.md", "template": "template.guide.cli-surface", "rules": ["rule.cli.output-contract", "rule.cli.non-interactive"], "references": []}],
+  "rules": [
+    {"id": "rule.cli.output-contract", "version": 2, "coverage": ["coverage.cli"], "guidance": "Treat command names, flags, stdout and stderr placement, machine-readable fields, and exit codes as public API. Keep stdout for requested output and stderr for diagnostics, progress, and warnings."},
+    {"id": "rule.cli.non-interactive", "version": 2, "coverage": ["coverage.cli", "coverage.universal-safety"], "guidance": "Make automation deterministic and non-interactive. Write operations must be explicit, replayable, safe by default, and observable; use dry-run, confirmation, or idempotency contracts where the repository requires them."}
+  ]
+}

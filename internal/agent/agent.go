@@ -357,6 +357,13 @@ func (runner *DefaultRunner) RunPrepared(ctx context.Context, req ExecuteRequest
 	return runner.acpxRunner().RunPrepared(ctx, req, sink)
 }
 
+func (runner *DefaultRunner) RunSealedPrompt(
+	ctx context.Context,
+	req SealedPromptRequest,
+) (SealedPromptResult, error) {
+	return runner.acpxRunner().RunSealedPrompt(ctx, req)
+}
+
 func (runner *DefaultRunner) EndSession(ctx context.Context, runtime RuntimeSpec, session SessionRef) error {
 	return runner.acpxRunner().EndSession(ctx, runtime, session)
 }

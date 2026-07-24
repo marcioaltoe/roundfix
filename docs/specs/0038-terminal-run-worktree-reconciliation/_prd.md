@@ -7,7 +7,7 @@ surfaces: [backend, cli, data, docs]
 
 # Terminal Run Worktree reconciliation
 
-Terminal spec Runs can retain clean Run Worktrees and Run Branches after their commits have already reached the user's target branch. Roundfix currently compares the Run Branch only with its creation base, hides the residue behind the default Active Run listing, and offers no supported cleanup command. The user must prove ancestry and run Git commands manually, as recorded in the [Vortex terminal-worktree finding](../../findings/2026-07-17-vortex-terminal-spec-worktree-reconciliation.md) and the Integration Pending case in the [Fluxus PR #53 dogfood](../../findings/2026-07-15-fluxus-pr-53-watch-stop-reconciliation.md).
+Terminal spec Runs can retain clean Run Worktrees and Run Branches after their commits have already reached the user's target branch. Roundfix currently compares the Run Branch only with its creation base, hides the residue behind the default Active Run listing, and offers no supported cleanup command. Prior dogfood evidence, now absorbed into this Spec and retained in Git history, showed users having to prove ancestry and run Git commands manually.
 
 ## Goals
 

@@ -1,0 +1,307 @@
+{
+  "schemaVersion": "setup-context-driven/module-v3",
+  "id": "context-workflow",
+  "version": 4,
+  "kind": "workflow",
+  "title": "CONTEXT-driven workflow",
+  "dependsOn": [
+    "core"
+  ],
+  "conflictsWith": [],
+  "requiredSkills": [
+    "archive-spec",
+    "brainstorming",
+    "business-analyst",
+    "council",
+    "domain-modeling",
+    "grill-with-docs",
+    "grilling",
+    "implement-spec",
+    "implement-task",
+    "knowledge-workspace",
+    "qa-gate",
+    "setup-context-driven",
+    "the-fool",
+    "write-idea",
+    "write-prd",
+    "write-tasks",
+    "write-techspec"
+  ],
+  "skillDispatch": [
+    {
+      "skill": "archive-spec",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.archive-spec",
+          "when": "Archiving a completed and QA-passed Spec."
+        }
+      ]
+    },
+    {
+      "skill": "brainstorming",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.brainstorming",
+          "when": "Starting creative feature or behavior design before implementation."
+        }
+      ]
+    },
+    {
+      "skill": "business-analyst",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.business-analyst",
+          "when": "Evaluating product viability, options, KPIs, or business trade-offs."
+        }
+      ]
+    },
+    {
+      "skill": "council",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.council",
+          "when": "Debating a high-impact product or architecture decision through multiple advisors."
+        }
+      ]
+    },
+    {
+      "skill": "domain-modeling",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.domain-modeling",
+          "when": "Defining or changing domain vocabulary, ownership, or bounded-context relationships."
+        }
+      ]
+    },
+    {
+      "skill": "grill-with-docs",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.grill-with-docs",
+          "when": "Stress-testing a plan or decision against repository documents."
+        }
+      ]
+    },
+    {
+      "skill": "grilling",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.grilling",
+          "when": "Stress-testing an idea or plan through direct questions."
+        }
+      ]
+    },
+    {
+      "skill": "implement-spec",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.implement-spec",
+          "when": "Executing every pending Task in a Spec Task Graph."
+        },
+        {
+          "id": "trigger.autonomous-work.implement-spec",
+          "when": "Delegating a complete autonomous Spec Task Graph."
+        }
+      ]
+    },
+    {
+      "skill": "implement-task",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.implement-task",
+          "when": "Executing exactly one assigned Spec Task."
+        },
+        {
+          "id": "trigger.autonomous-work.implement-task",
+          "when": "Delegating one autonomous Task to an ACP Runtime."
+        }
+      ]
+    },
+    {
+      "skill": "knowledge-workspace",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.knowledge-workspace",
+          "when": "Consulting the configured knowledge workspace for relevant prior context."
+        }
+      ]
+    },
+    {
+      "skill": "qa-gate",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.qa-gate",
+          "when": "Running final Spec QA after implementation Tasks complete."
+        }
+      ]
+    },
+    {
+      "skill": "setup-context-driven",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.setup-context-driven",
+          "when": "Auditing, applying, or refreshing the Context-Driven Baseline."
+        }
+      ]
+    },
+    {
+      "skill": "the-fool",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.the-fool",
+          "when": "Challenging a proposal through a pre-mortem, red-team, or evidence audit."
+        }
+      ]
+    },
+    {
+      "skill": "write-idea",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.write-idea",
+          "when": "Expanding a product-level idea into a researched opportunity artifact."
+        }
+      ]
+    },
+    {
+      "skill": "write-prd",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.write-prd",
+          "when": "Defining product requirements and user outcomes."
+        }
+      ]
+    },
+    {
+      "skill": "write-tasks",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.write-tasks",
+          "when": "Decomposing an approved Spec into a dependency-ordered Task Graph."
+        }
+      ]
+    },
+    {
+      "skill": "write-techspec",
+      "triggers": [
+        {
+          "id": "trigger.context-workflow.write-techspec",
+          "when": "Settling implementation architecture and technical contracts."
+        }
+      ]
+    }
+  ],
+  "requiredDecisions": [
+    "domain.layout"
+  ],
+  "rootBlocks": [
+    {
+      "id": "root.context-workflow",
+      "version": 2,
+      "template": "template.root.context-workflow",
+      "rules": [],
+      "references": [
+        {
+          "id": "reference.root.context.domain",
+          "token": "reference.domain",
+          "ownership": "setup",
+          "managedId": "guide.domain"
+        },
+        {
+          "id": "reference.root.context.docs-layout",
+          "token": "reference.docs-layout",
+          "ownership": "setup",
+          "managedId": "guide.docs-layout"
+        }
+      ]
+    }
+  ],
+  "supportingGuides": [
+    {
+      "id": "guide.docs-layout",
+      "version": 4,
+      "path": "docs/agents/docs-layout.md",
+      "template": "template.guide.docs-layout",
+      "rules": [
+        "rule.context.docs-layout"
+      ],
+      "references": []
+    },
+    {
+      "id": "guide.domain",
+      "version": 3,
+      "path": "docs/agents/domain.md",
+      "template": "template.guide.domain",
+      "rules": [
+        "rule.context.domain-docs"
+      ],
+      "references": []
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.context.domain-docs",
+      "version": 3,
+      "coverage": [
+        "coverage.context-workflow",
+        "coverage.research"
+      ],
+      "clauses": [
+        {
+          "id": "clause.context.read-domain-contract",
+          "enforcement": "mandatory",
+          "guidance": "Read the repository's selected domain context and relevant accepted ADRs before naming domain concepts or changing behavior. Flag conflicts instead of silently overriding repository decisions."
+        }
+      ]
+    },
+    {
+      "id": "rule.context.docs-layout",
+      "version": 4,
+      "coverage": [
+        "coverage.context-workflow"
+      ],
+      "clauses": [
+        {
+          "id": "clause.context.docs-one-job-per-directory",
+          "enforcement": "mandatory",
+          "guidance": "Give each documentation directory one job: `docs/_inbox/` for raw notes, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers, and `docs/user-guide/` for human documentation. Preserve repository-authored extensions outside setup markers."
+        },
+        {
+          "id": "clause.context.findings-01-frontmatter",
+          "enforcement": "mandatory",
+          "guidance": "Use this copyable frontmatter contract for each findings file:\n\n```yaml\n---\nstatus: pending # pending | partial | deferred | done\ncreated_at: YYYY-MM-DD\nupdated_at: YYYY-MM-DD\n---\n```"
+        },
+        {
+          "id": "clause.context.findings-02-pending",
+          "enforcement": "mandatory",
+          "guidance": "Use `pending` when the finding is new and has no implementation Spec."
+        },
+        {
+          "id": "clause.context.findings-03-partial",
+          "enforcement": "mandatory",
+          "guidance": "Use `partial` when a linked Spec covers only the selected implementation scope. Record the reason the remaining observations are unnecessary and link the covering Spec."
+        },
+        {
+          "id": "clause.context.findings-04-deferred",
+          "enforcement": "mandatory",
+          "guidance": "Use `deferred` only when the finding will not be implemented. Record the reason for deferral."
+        },
+        {
+          "id": "clause.context.findings-05-done",
+          "enforcement": "mandatory",
+          "guidance": "Set `status: done` as soon as the Spec is created and linked; do not wait for its Tasks, QA, archive, or release."
+        },
+        {
+          "id": "clause.context.findings-06-append-evidence",
+          "enforcement": "mandatory",
+          "guidance": "Treat findings as immutable history: append evidence and routing links as dated addenda instead of rewriting the original observations."
+        },
+        {
+          "id": "clause.context.findings-07-update-timestamp",
+          "enforcement": "mandatory",
+          "guidance": "Update `updated_at` whenever status changes or an evidence addendum is appended; keep `created_at` as the document creation date."
+        }
+      ]
+    }
+  ],
+  "repositoryExtensions": []
+}

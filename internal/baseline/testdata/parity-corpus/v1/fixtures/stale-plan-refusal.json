@@ -1,0 +1,626 @@
+{
+  "adoptionState": "stale-input",
+  "classification": "exact",
+  "contractAreas": [
+    "input",
+    "state",
+    "refusal",
+    "digest",
+    "planned-byte-sequence",
+    "post-state"
+  ],
+  "fileIdentities": {
+    "postimage": "sha256:fd0d8c2df1b55d8742cb1c8d5d7e57480afc7bba6c509e19c4c120349537c3e3",
+    "preimage": "sha256:fd0d8c2df1b55d8742cb1c8d5d7e57480afc7bba6c509e19c4c120349537c3e3"
+  },
+  "id": "stale-plan-refusal",
+  "input": {
+    "action": "apply",
+    "confirmPlan": "3ecc22b51d87dae428679b485b049be824ad2ef60bec1938301b0d92b566cdef",
+    "mutationAfterPreview": {
+      "identity": "sha256:ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+      "path": "AGENTS.md"
+    },
+    "profile": "rust-cli"
+  },
+  "managedEntryLedger": [],
+  "manifest": null,
+  "normalizedOutput": {
+    "apply": {
+      "exitCode": 3,
+      "stderr": "",
+      "stdout": {
+        "findings": [
+          {
+            "action": "Review plannedChanges and rerun with --confirm-plan planDigest.",
+            "code": "plan.confirmation.stale",
+            "managedId": "apply",
+            "message": "The supplied confirmation does not match the current Change Plan.",
+            "path": ".",
+            "severity": "decision"
+          }
+        ],
+        "ok": false,
+        "planDigest": "98965ae74fa27d72fbf752497d919afe4c440e7d82602e38cf1bcf881056e115",
+        "plannedChanges": [
+          {
+            "action": "create managed block",
+            "afterDigest": "871f674cec3abe2fee9e943e256fa595210761f8072a00a5758b3fb59e571926",
+            "beforeDigest": "ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+            "managedId": "root.context-workflow",
+            "path": "AGENTS.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create managed block",
+            "afterDigest": "871f674cec3abe2fee9e943e256fa595210761f8072a00a5758b3fb59e571926",
+            "beforeDigest": "ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+            "managedId": "root.rust",
+            "path": "AGENTS.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create managed block",
+            "afterDigest": "871f674cec3abe2fee9e943e256fa595210761f8072a00a5758b3fb59e571926",
+            "beforeDigest": "ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+            "managedId": "root.cli-surface",
+            "path": "AGENTS.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create managed block",
+            "afterDigest": "871f674cec3abe2fee9e943e256fa595210761f8072a00a5758b3fb59e571926",
+            "beforeDigest": "ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+            "managedId": "root.core",
+            "path": "AGENTS.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create managed block",
+            "afterDigest": "871f674cec3abe2fee9e943e256fa595210761f8072a00a5758b3fb59e571926",
+            "beforeDigest": "ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+            "managedId": "root.spec-workflow",
+            "path": "AGENTS.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create managed block",
+            "afterDigest": "871f674cec3abe2fee9e943e256fa595210761f8072a00a5758b3fb59e571926",
+            "beforeDigest": "ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+            "managedId": "root.autonomous-work",
+            "path": "AGENTS.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "c3d85b35fc865edc714f65850bca07d415179fffac3dcc846c73c12165dc0358",
+            "beforeDigest": null,
+            "managedId": "guide.agent-instructions",
+            "path": "docs/agents/agent-instructions.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "76065b3f1b452f647765d01bfb802ca3a0757d7212ba75b8e55d1d6242b0c977",
+            "beforeDigest": null,
+            "managedId": "guide.autonomous-work",
+            "path": "docs/agents/autonomous-work.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "6e614e498b584f16f479dc563dd85e4f517d30cab40c3f0a15765c7db7d3714f",
+            "beforeDigest": null,
+            "managedId": "guide.cli-surface",
+            "path": "docs/agents/cli.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "51024b4cfa8bd2d83b38be97f51ecfc31391f303d6881960b09877e23d6cbbea",
+            "beforeDigest": null,
+            "managedId": "guide.docs-layout",
+            "path": "docs/agents/docs-layout.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "51024b4cfa8bd2d83b38be97f51ecfc31391f303d6881960b09877e23d6cbbea",
+            "beforeDigest": null,
+            "managedId": "guide.spec-docs-layout",
+            "path": "docs/agents/docs-layout.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "4a1162377d8834a15497ae60c06a537a59357884dc8862063ee0da11dcd6a6ea",
+            "beforeDigest": null,
+            "managedId": "guide.domain",
+            "path": "docs/agents/domain.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "f2139d498fb79358a240d8c99ab1718764217cf28aec0fb024beadfa2b0231cc",
+            "beforeDigest": null,
+            "managedId": "guide.issue-tracker",
+            "path": "docs/agents/issue-tracker.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "d56feb24cf72bd7b1e447cd07005b4445cef2e7192f0c748d2d703abdfc719a5",
+            "beforeDigest": null,
+            "managedId": "guide.rust",
+            "path": "docs/agents/rust.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create manifest",
+            "afterDigest": "de550a51bb91f2be4bc921179626eb4a79cf26e5139f0db66820a0285bab9bbc",
+            "beforeDigest": null,
+            "managedId": "manifest",
+            "path": "docs/agents/setup-context.json",
+            "reason": "Record the selected profile, decisions, and managed inventory.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "f2fdab767245efc22e946f2d3ebb619dda8aca90e7d57205199a8b31c20135d0",
+            "beforeDigest": null,
+            "managedId": "guide.skill-dispatch",
+            "path": "docs/agents/skill-dispatch.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "b13604b0317e1a8ce2d5a9bb8e0cada84eee80cc6cdb92f3370a7fd04527ad34",
+            "beforeDigest": null,
+            "managedId": "guide.spec-routing",
+            "path": "docs/agents/spec-routing.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          }
+        ],
+        "schemaVersion": "setup-context-driven/audit-v1",
+        "selection": {
+          "modules": [
+            {
+              "id": "core",
+              "state": "active"
+            },
+            {
+              "id": "context-workflow",
+              "state": "active"
+            },
+            {
+              "id": "rust",
+              "state": "active"
+            },
+            {
+              "id": "cli-surface",
+              "state": "active"
+            },
+            {
+              "id": "autonomous-work",
+              "state": "active"
+            },
+            {
+              "id": "spec-workflow",
+              "state": "active"
+            }
+          ],
+          "profile": "rust-cli",
+          "setup": "rust-cli"
+        },
+        "summary": {
+          "decisions": 1,
+          "errors": 0,
+          "info": 0,
+          "warnings": 0
+        }
+      }
+    },
+    "preview": {
+      "exitCode": 3,
+      "stderr": "",
+      "stdout": {
+        "findings": [
+          {
+            "action": "Review plannedChanges and rerun with --confirm-plan planDigest.",
+            "code": "plan.confirmation.required",
+            "managedId": "apply",
+            "message": "Apply requires confirmation of this exact Change Plan.",
+            "path": ".",
+            "severity": "decision"
+          }
+        ],
+        "ok": false,
+        "planDigest": "3ecc22b51d87dae428679b485b049be824ad2ef60bec1938301b0d92b566cdef",
+        "plannedChanges": [
+          {
+            "action": "create managed block",
+            "afterDigest": "d26f82a50f87498591260952a7ad455e3f732e62152ec2ef9f82611bdff40655",
+            "beforeDigest": null,
+            "managedId": "root.context-workflow",
+            "path": "AGENTS.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create managed block",
+            "afterDigest": "d26f82a50f87498591260952a7ad455e3f732e62152ec2ef9f82611bdff40655",
+            "beforeDigest": null,
+            "managedId": "root.rust",
+            "path": "AGENTS.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create managed block",
+            "afterDigest": "d26f82a50f87498591260952a7ad455e3f732e62152ec2ef9f82611bdff40655",
+            "beforeDigest": null,
+            "managedId": "root.cli-surface",
+            "path": "AGENTS.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create managed block",
+            "afterDigest": "d26f82a50f87498591260952a7ad455e3f732e62152ec2ef9f82611bdff40655",
+            "beforeDigest": null,
+            "managedId": "root.core",
+            "path": "AGENTS.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create managed block",
+            "afterDigest": "d26f82a50f87498591260952a7ad455e3f732e62152ec2ef9f82611bdff40655",
+            "beforeDigest": null,
+            "managedId": "root.spec-workflow",
+            "path": "AGENTS.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create managed block",
+            "afterDigest": "d26f82a50f87498591260952a7ad455e3f732e62152ec2ef9f82611bdff40655",
+            "beforeDigest": null,
+            "managedId": "root.autonomous-work",
+            "path": "AGENTS.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "c3d85b35fc865edc714f65850bca07d415179fffac3dcc846c73c12165dc0358",
+            "beforeDigest": null,
+            "managedId": "guide.agent-instructions",
+            "path": "docs/agents/agent-instructions.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "76065b3f1b452f647765d01bfb802ca3a0757d7212ba75b8e55d1d6242b0c977",
+            "beforeDigest": null,
+            "managedId": "guide.autonomous-work",
+            "path": "docs/agents/autonomous-work.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "6e614e498b584f16f479dc563dd85e4f517d30cab40c3f0a15765c7db7d3714f",
+            "beforeDigest": null,
+            "managedId": "guide.cli-surface",
+            "path": "docs/agents/cli.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "51024b4cfa8bd2d83b38be97f51ecfc31391f303d6881960b09877e23d6cbbea",
+            "beforeDigest": null,
+            "managedId": "guide.docs-layout",
+            "path": "docs/agents/docs-layout.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "51024b4cfa8bd2d83b38be97f51ecfc31391f303d6881960b09877e23d6cbbea",
+            "beforeDigest": null,
+            "managedId": "guide.spec-docs-layout",
+            "path": "docs/agents/docs-layout.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "4a1162377d8834a15497ae60c06a537a59357884dc8862063ee0da11dcd6a6ea",
+            "beforeDigest": null,
+            "managedId": "guide.domain",
+            "path": "docs/agents/domain.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "f2139d498fb79358a240d8c99ab1718764217cf28aec0fb024beadfa2b0231cc",
+            "beforeDigest": null,
+            "managedId": "guide.issue-tracker",
+            "path": "docs/agents/issue-tracker.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "d56feb24cf72bd7b1e447cd07005b4445cef2e7192f0c748d2d703abdfc719a5",
+            "beforeDigest": null,
+            "managedId": "guide.rust",
+            "path": "docs/agents/rust.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create manifest",
+            "afterDigest": "de550a51bb91f2be4bc921179626eb4a79cf26e5139f0db66820a0285bab9bbc",
+            "beforeDigest": null,
+            "managedId": "manifest",
+            "path": "docs/agents/setup-context.json",
+            "reason": "Record the selected profile, decisions, and managed inventory.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "f2fdab767245efc22e946f2d3ebb619dda8aca90e7d57205199a8b31c20135d0",
+            "beforeDigest": null,
+            "managedId": "guide.skill-dispatch",
+            "path": "docs/agents/skill-dispatch.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          },
+          {
+            "action": "create guide",
+            "afterDigest": "b13604b0317e1a8ce2d5a9bb8e0cada84eee80cc6cdb92f3370a7fd04527ad34",
+            "beforeDigest": null,
+            "managedId": "guide.spec-routing",
+            "path": "docs/agents/spec-routing.md",
+            "reason": "The selected profile requires this managed artifact.",
+            "state": "definite"
+          }
+        ],
+        "schemaVersion": "setup-context-driven/audit-v1",
+        "selection": {
+          "modules": [
+            {
+              "id": "core",
+              "state": "active"
+            },
+            {
+              "id": "context-workflow",
+              "state": "active"
+            },
+            {
+              "id": "rust",
+              "state": "active"
+            },
+            {
+              "id": "cli-surface",
+              "state": "active"
+            },
+            {
+              "id": "autonomous-work",
+              "state": "active"
+            },
+            {
+              "id": "spec-workflow",
+              "state": "active"
+            }
+          ],
+          "profile": "rust-cli",
+          "setup": "rust-cli"
+        },
+        "summary": {
+          "decisions": 1,
+          "errors": 0,
+          "info": 0,
+          "warnings": 0
+        }
+      }
+    }
+  },
+  "planDigest": "3ecc22b51d87dae428679b485b049be824ad2ef60bec1938301b0d92b566cdef",
+  "plannedByteSequence": [
+    {
+      "action": "create managed block",
+      "afterIdentity": "sha256:ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+      "beforeIdentity": "sha256:ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+      "managedId": "root.context-workflow",
+      "ordinal": 0,
+      "path": "AGENTS.md"
+    },
+    {
+      "action": "create managed block",
+      "afterIdentity": "sha256:ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+      "beforeIdentity": "sha256:ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+      "managedId": "root.rust",
+      "ordinal": 1,
+      "path": "AGENTS.md"
+    },
+    {
+      "action": "create managed block",
+      "afterIdentity": "sha256:ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+      "beforeIdentity": "sha256:ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+      "managedId": "root.cli-surface",
+      "ordinal": 2,
+      "path": "AGENTS.md"
+    },
+    {
+      "action": "create managed block",
+      "afterIdentity": "sha256:ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+      "beforeIdentity": "sha256:ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+      "managedId": "root.core",
+      "ordinal": 3,
+      "path": "AGENTS.md"
+    },
+    {
+      "action": "create managed block",
+      "afterIdentity": "sha256:ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+      "beforeIdentity": "sha256:ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+      "managedId": "root.spec-workflow",
+      "ordinal": 4,
+      "path": "AGENTS.md"
+    },
+    {
+      "action": "create managed block",
+      "afterIdentity": "sha256:ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+      "beforeIdentity": "sha256:ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+      "managedId": "root.autonomous-work",
+      "ordinal": 5,
+      "path": "AGENTS.md"
+    },
+    {
+      "action": "create guide",
+      "afterIdentity": null,
+      "beforeIdentity": null,
+      "managedId": "guide.agent-instructions",
+      "ordinal": 6,
+      "path": "docs/agents/agent-instructions.md"
+    },
+    {
+      "action": "create guide",
+      "afterIdentity": null,
+      "beforeIdentity": null,
+      "managedId": "guide.autonomous-work",
+      "ordinal": 7,
+      "path": "docs/agents/autonomous-work.md"
+    },
+    {
+      "action": "create guide",
+      "afterIdentity": null,
+      "beforeIdentity": null,
+      "managedId": "guide.cli-surface",
+      "ordinal": 8,
+      "path": "docs/agents/cli.md"
+    },
+    {
+      "action": "create guide",
+      "afterIdentity": null,
+      "beforeIdentity": null,
+      "managedId": "guide.docs-layout",
+      "ordinal": 9,
+      "path": "docs/agents/docs-layout.md"
+    },
+    {
+      "action": "create guide",
+      "afterIdentity": null,
+      "beforeIdentity": null,
+      "managedId": "guide.spec-docs-layout",
+      "ordinal": 10,
+      "path": "docs/agents/docs-layout.md"
+    },
+    {
+      "action": "create guide",
+      "afterIdentity": null,
+      "beforeIdentity": null,
+      "managedId": "guide.domain",
+      "ordinal": 11,
+      "path": "docs/agents/domain.md"
+    },
+    {
+      "action": "create guide",
+      "afterIdentity": null,
+      "beforeIdentity": null,
+      "managedId": "guide.issue-tracker",
+      "ordinal": 12,
+      "path": "docs/agents/issue-tracker.md"
+    },
+    {
+      "action": "create guide",
+      "afterIdentity": null,
+      "beforeIdentity": null,
+      "managedId": "guide.rust",
+      "ordinal": 13,
+      "path": "docs/agents/rust.md"
+    },
+    {
+      "action": "create manifest",
+      "afterIdentity": null,
+      "beforeIdentity": null,
+      "managedId": "manifest",
+      "ordinal": 14,
+      "path": "docs/agents/setup-context.json"
+    },
+    {
+      "action": "create guide",
+      "afterIdentity": null,
+      "beforeIdentity": null,
+      "managedId": "guide.skill-dispatch",
+      "ordinal": 15,
+      "path": "docs/agents/skill-dispatch.md"
+    },
+    {
+      "action": "create guide",
+      "afterIdentity": null,
+      "beforeIdentity": null,
+      "managedId": "guide.spec-routing",
+      "ordinal": 16,
+      "path": "docs/agents/spec-routing.md"
+    }
+  ],
+  "postState": [
+    {
+      "identity": "sha256:ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+      "kind": "file",
+      "mode": 420,
+      "path": "AGENTS.md",
+      "size": 22
+    }
+  ],
+  "profile": "rust-cli",
+  "rationale": null,
+  "refusal": {
+    "exitCode": 3,
+    "findingCodes": [
+      "plan.confirmation.stale"
+    ]
+  },
+  "repositoryPreimage": [
+    {
+      "identity": "sha256:ece0d575a8c62c0478cc6c3f846da401595ebfa5c342e7c5f3cbf53fe11bb1fd",
+      "kind": "file",
+      "mode": 420,
+      "path": "AGENTS.md",
+      "size": 22
+    }
+  ],
+  "rollback": {
+    "attempted": false,
+    "evidence": "stale input was never mutated",
+    "restoredPreimage": true,
+    "succeeded": null
+  },
+  "schemaVersion": "setup-context-driven/parity-fixture/v1",
+  "sourceTests": [
+    "tests/test_apply.py",
+    "tests/test_readoption_apply.py"
+  ]
+}

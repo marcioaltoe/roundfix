@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "setup-context-driven/coverage-v2",
+  "version": 2,
+  "coverage": [
+    {"id": "coverage.universal-safety", "version": 2, "description": "Portable safety behavior required by every profile.", "delegationAliases": ["safety guidance", "safety rules"]},
+    {"id": "coverage.verification", "version": 2, "description": "The selected repository Verification gates completion claims.", "delegationAliases": ["verification", "verification gate"]},
+    {"id": "coverage.verification-integrity", "version": 2, "description": "Agents preserve verification signals and configuration.", "delegationAliases": ["verification integrity"]},
+    {"id": "coverage.skill-dispatch", "version": 2, "description": "Active required skills have explicit work triggers.", "delegationAliases": ["skill dispatch"]},
+    {"id": "coverage.language", "version": 2, "description": "Generated repository guidance uses the selected language.", "delegationAliases": ["language guidance"]},
+    {"id": "coverage.research", "version": 2, "description": "Agents use repository sources and authoritative external documentation.", "delegationAliases": ["research guidance", "research protocol"]},
+    {"id": "coverage.dependencies", "version": 2, "description": "Dependency changes use the repository package manager and remain intentional.", "delegationAliases": ["dependencies", "dependency guidance"]},
+    {"id": "coverage.git-delivery", "version": 2, "description": "Git and delivery actions preserve unrelated work and require explicit authority.", "delegationAliases": ["delivery guidance", "git guidance"]},
+    {"id": "coverage.security-configuration", "version": 2, "description": "Secrets and environment-specific configuration stay out of generated guidance and source control.", "delegationAliases": ["security configuration", "security guidance"]},
+    {"id": "coverage.context-workflow", "version": 2, "description": "Agents use the repository domain vocabulary and documentation layout.", "delegationAliases": ["context workflow", "domain guidance"]},
+    {"id": "coverage.spec-workflow", "version": 2, "description": "Local Specs and Tasks retain their canonical ownership boundaries.", "delegationAliases": ["spec workflow", "task workflow"]},
+    {"id": "coverage.external-triage", "version": 2, "description": "External issue triage remains deliberate and repository-aligned.", "delegationAliases": ["external triage"]},
+    {"id": "coverage.autonomous-work", "version": 2, "description": "Supervisor and ACP Runtime responsibilities remain distinct.", "delegationAliases": ["autonomous work", "supervisor delegation"]},
+    {"id": "coverage.typescript", "version": 2, "description": "TypeScript work uses current contracts and behavior-focused tests.", "delegationAliases": ["typescript", "typescript guidance"]},
+    {"id": "coverage.bun", "version": 2, "description": "Bun owns dependency and script execution for Bun profiles.", "delegationAliases": ["bun", "bun guidance"]},
+    {"id": "coverage.monorepo", "version": 2, "description": "Monorepo work respects package and bounded-context ownership.", "delegationAliases": ["monorepo", "monorepo guidance"]},
+    {"id": "coverage.backend", "version": 2, "description": "Backend boundaries expose ownership, cancellation, and observable errors.", "delegationAliases": ["backend", "backend guidance"]},
+    {"id": "coverage.frontend", "version": 2, "description": "Frontend work follows user-visible behavior and repository-owned design policy.", "delegationAliases": ["frontend", "frontend guidance"]},
+    {"id": "coverage.go", "version": 2, "description": "Go work follows stdlib-first, context, error, and testing contracts.", "delegationAliases": ["go guidance"]},
+    {"id": "coverage.rust", "version": 2, "description": "Rust work uses current toolchain contracts and observable CLI tests.", "delegationAliases": ["rust", "rust guidance"]},
+    {"id": "coverage.cli", "version": 2, "description": "CLI work treats commands and machine interfaces as public API.", "delegationAliases": ["cli", "cli guidance"]},
+    {"id": "coverage.tui", "version": 2, "description": "TUI work keeps interaction and rendering behavior observable.", "delegationAliases": ["tui", "tui guidance"]},
+    {"id": "coverage.secondbrain", "version": 2, "description": "Optional Secondbrain use stays read-only, cited, and secret-safe.", "delegationAliases": ["secondbrain", "secondbrain guidance"]}
+  ]
+}

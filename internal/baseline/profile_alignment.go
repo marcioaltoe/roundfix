@@ -1,0 +1,1138 @@
+package baseline
+
+import (
+	"bytes"
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"regexp"
+	"slices"
+	"sort"
+	"strings"
+)
+
+const (
+	maxCapabilityPaths     = 32
+	maxCapabilityFileBytes = 1024 * 1024
+	maxHTTPSourceFiles     = 256
+	maxHTTPSourceBytes     = 2 * 1024 * 1024
+)
+
+type ProfileAlignmentState string
+
+const (
+	ProfileAlignmentReady          ProfileAlignmentState = "ready"
+	ProfileAlignmentActionRequired ProfileAlignmentState = "action_required"
+)
+
+type CapabilityRequirement string
+
+const (
+	CapabilityRequired    CapabilityRequirement = "required"
+	CapabilityRecommended CapabilityRequirement = "recommended"
+	CapabilityOptional    CapabilityRequirement = "optional"
+)
+
+type CapabilityEvidenceKind string
+
+const (
+	CapabilityEvidenceDeclaredFile   CapabilityEvidenceKind = "declared-file"
+	CapabilityEvidenceExecutable     CapabilityEvidenceKind = "executable"
+	CapabilityEvidenceInstalledSkill CapabilityEvidenceKind = "installed-skill"
+)
+
+type CapabilityEvidenceStrength string
+
+const (
+	CapabilityEvidenceNone       CapabilityEvidenceStrength = "none"
+	CapabilityEvidenceDeclared   CapabilityEvidenceStrength = "declared"
+	CapabilityEvidenceDiscovered CapabilityEvidenceStrength = "discovered"
+	CapabilityEvidenceVerified   CapabilityEvidenceStrength = "verified"
+)
+
+type CapabilityEvidenceStatus string
+
+const (
+	CapabilityEvidenceAbsent  CapabilityEvidenceStatus = "absent"
+	CapabilityEvidenceInvalid CapabilityEvidenceStatus = "invalid"
+	CapabilityEvidencePresent CapabilityEvidenceStatus = "present"
+)
+
+type CapabilityStatus string
+
+const (
+	CapabilityInsufficient CapabilityStatus = "insufficient"
+	CapabilityMissing      CapabilityStatus = "missing"
+	CapabilitySatisfied    CapabilityStatus = "satisfied"
+)
+
+type CapabilityEvidenceClassification string
+
+const (
+	EvidenceProfileRequirement CapabilityEvidenceClassification = "profile-requirement"
+	EvidenceRepositoryContract CapabilityEvidenceClassification = "repository-contract"
+	EvidenceImplementation     CapabilityEvidenceClassification = "implementation"
+)
+
+type RepositoryCapability struct {
+	ID              string
+	Title           string
+	Requirement     CapabilityRequirement
+	EvidenceKind    CapabilityEvidenceKind
+	MinimumEvidence CapabilityEvidenceStrength
+	Probe           map[string]any
+	Explanation     string
+	NextAction      string
+}
+
+type CapabilityEvidence struct {
+	Status         CapabilityEvidenceStatus         `json:"status"`
+	Kind           CapabilityEvidenceKind           `json:"kind"`
+	Strength       CapabilityEvidenceStrength       `json:"strength"`
+	Classification CapabilityEvidenceClassification `json:"classification"`
+	SourcePath     string                           `json:"sourcePath,omitempty"`
+	SourceDigest   string                           `json:"sourceDigest,omitempty"`
+	Detail         string                           `json:"detail,omitempty"`
+}
+
+type CapabilityDiagnostic struct {
+	Code       string `json:"code"`
+	Message    string `json:"message"`
+	NextAction string `json:"nextAction,omitempty"`
+}
+
+type CapabilityOutcome struct {
+	ID              string                     `json:"id"`
+	Title           string                     `json:"title"`
+	Requirement     CapabilityRequirement      `json:"requirement"`
+	EvidenceKind    CapabilityEvidenceKind     `json:"evidenceKind"`
+	MinimumEvidence CapabilityEvidenceStrength `json:"minimumEvidence"`
+	Status          CapabilityStatus           `json:"status"`
+	Blocking        bool                       `json:"blocking"`
+	Evidence        []CapabilityEvidence       `json:"evidence"`
+	Diagnostic      CapabilityDiagnostic       `json:"diagnostic"`
+	Explanation     string                     `json:"explanation"`
+}
+
+type ProfileDivergence struct {
+	Code        string                `json:"code"`
+	ID          string                `json:"id"`
+	Requirement CapabilityRequirement `json:"requirement"`
+	Blocking    bool                  `json:"blocking"`
+	Message     string                `json:"message"`
+	NextAction  string                `json:"nextAction,omitempty"`
+}
+
+// HTTPRouteCandidate records only locally observed route facts. Repository
+// policy fields deliberately do not exist in this projection.
+type HTTPRouteCandidate struct {
+	SourcePath   string   `json:"sourcePath"`
+	SourceDigest string   `json:"sourceDigest"`
+	Scope        string   `json:"scope"`
+	Methods      []string `json:"methods"`
+}
+
+type PostgreSQLEvidence struct {
+	AcceptedContractPaths []string             `json:"acceptedContractPaths"`
+	Contract              *CapabilityEvidence  `json:"contract,omitempty"`
+	Implementation        []CapabilityEvidence `json:"implementation"`
+}
+
+type VerificationClassification string
+
+const (
+	VerificationProfileExpectation VerificationClassification = "profile-expectation"
+	VerificationRepositoryCommand  VerificationClassification = "repository-command"
+)
+
+type VerificationProjection struct {
+	ID                   string                     `json:"id"`
+	Role                 string                     `json:"role"`
+	Tool                 string                     `json:"tool,omitempty"`
+	Command              string                     `json:"command"`
+	Classification       VerificationClassification `json:"classification"`
+	RepositoryExecutable bool                       `json:"repositoryExecutable"`
+	DeclarationPath      string                     `json:"declarationPath,omitempty"`
+	DeclarationDigest    string                     `json:"declarationDigest,omitempty"`
+}
+
+type ProfileAlignmentRequest struct {
+	ProfileID string
+	Decisions []DecisionValue
+}
+
+// ProfileAlignment is the deterministic, read-only result consumed by later
+// planning and interaction layers.
+type ProfileAlignment struct {
+	State          ProfileAlignmentState    `json:"state"`
+	Ready          bool                     `json:"ready"`
+	Profile        ResolvedProfile          `json:"profile"`
+	Decisions      []DecisionValue          `json:"decisions"`
+	Capabilities   []CapabilityOutcome      `json:"capabilities"`
+	Divergences    []ProfileDivergence      `json:"divergences"`
+	HTTPCandidates []HTTPRouteCandidate     `json:"httpRouteCandidates"`
+	PostgreSQL     PostgreSQLEvidence       `json:"postgresql"`
+	Verification   []VerificationProjection `json:"verification"`
+}
+
+var (
+	httpMethodCall = regexp.MustCompile(`(?i)\.\s*(get|post|put|patch|delete|options|head|all)\s*\(\s*["'\x60]([^"'` + "\x60" + `\r\n]+)["'\x60]`)
+	httpScopeCall  = regexp.MustCompile(`(?i)\.\s*(?:route|basePath)\s*\(\s*["'\x60]([^"'` + "\x60" + `\r\n]+)["'\x60]`)
+	makeTargetName = regexp.MustCompile(`^[A-Za-z0-9_.-]+$`)
+)
+
+var universalCapabilities = []RepositoryCapability{
+	{
+		ID:              "capability.context7",
+		Title:           "Context7",
+		Requirement:     CapabilityRequired,
+		EvidenceKind:    CapabilityEvidenceInstalledSkill,
+		MinimumEvidence: CapabilityEvidenceVerified,
+		Probe:           map[string]any{"skill": "context7"},
+		Explanation:     "Context7 provides current authoritative library and API documentation.",
+		NextAction:      "Add the context7 skill to the Repository Skill Set, then rerun capability evaluation.",
+	},
+	{
+		ID:              "capability.exa",
+		Title:           "Exa",
+		Requirement:     CapabilityRequired,
+		EvidenceKind:    CapabilityEvidenceInstalledSkill,
+		MinimumEvidence: CapabilityEvidenceVerified,
+		Probe:           map[string]any{"skill": "exa-web-search"},
+		Explanation:     "Exa provides broad-source searches when local and authoritative sources are insufficient.",
+		NextAction:      "Add the exa-web-search skill to the Repository Skill Set, then rerun capability evaluation.",
+	},
+	{
+		ID:              "capability.firecrawl",
+		Title:           "Firecrawl",
+		Requirement:     CapabilityRecommended,
+		EvidenceKind:    CapabilityEvidenceInstalledSkill,
+		MinimumEvidence: CapabilityEvidenceVerified,
+		Probe:           map[string]any{"skill": "firecrawl"},
+		Explanation:     "Firecrawl provides structured web-content extraction for external research.",
+		NextAction:      "Add the firecrawl skill if structured web extraction is useful.",
+	},
+	{
+		ID:              "capability.rg",
+		Title:           "rg",
+		Requirement:     CapabilityRecommended,
+		EvidenceKind:    CapabilityEvidenceExecutable,
+		MinimumEvidence: CapabilityEvidenceDiscovered,
+		Probe:           map[string]any{"executable": "rg"},
+		Explanation:     "rg provides fast bounded local repository search.",
+		NextAction:      "Install rg and expose it on PATH if faster local search is useful.",
+	},
+	{
+		ID:              "capability.rtk",
+		Title:           "rtk",
+		Requirement:     CapabilityRecommended,
+		EvidenceKind:    CapabilityEvidenceExecutable,
+		MinimumEvidence: CapabilityEvidenceDiscovered,
+		Probe:           map[string]any{"executable": "rtk"},
+		Explanation:     "rtk keeps command evidence compact without changing command behavior.",
+		NextAction:      "Install rtk and expose it on PATH if compact command output is useful.",
+	},
+}
+
+var evidenceRank = map[CapabilityEvidenceStrength]int{
+	CapabilityEvidenceNone:       0,
+	CapabilityEvidenceDeclared:   1,
+	CapabilityEvidenceDiscovered: 2,
+	CapabilityEvidenceVerified:   3,
+}
+
+// ResolveProfileAlignment evaluates one selected Baseline Profile from
+// bounded local evidence. It does not execute repository commands, use the
+// network, or mutate repository bytes.
+func ResolveProfileAlignment(
+	ctx context.Context,
+	repoRoot string,
+	request ProfileAlignmentRequest,
+	catalog *Catalog,
+) (ProfileAlignment, error) {
+	if err := ctx.Err(); err != nil {
+		return ProfileAlignment{}, err
+	}
+	if catalog == nil {
+		return ProfileAlignment{}, errors.New("resolve profile alignment: catalog is required")
+	}
+	profileID := strings.TrimSpace(request.ProfileID)
+	if profileID == "" {
+		return ProfileAlignment{}, errors.New("resolve profile alignment: select exactly one Baseline Profile")
+	}
+	rootPath, err := cleanRepositoryRoot(repoRoot)
+	if err != nil {
+		return ProfileAlignment{}, fmt.Errorf("resolve profile alignment repository: %w", err)
+	}
+	root, err := os.OpenRoot(rootPath)
+	if err != nil {
+		return ProfileAlignment{}, fmt.Errorf("open profile alignment repository: %w", err)
+	}
+	defer root.Close()
+
+	profile, err := ResolveProfile(rootPath, profileID, catalog)
+	if err != nil {
+		return ProfileAlignment{}, fmt.Errorf("resolve selected Baseline Profile %q: %w", profileID, err)
+	}
+	decisions, decisionDivergences, err := normalizeAlignmentDecisions(profile, request.Decisions, catalog)
+	if err != nil {
+		return ProfileAlignment{}, err
+	}
+	capabilities, err := resolvedProfileCapabilities(profile, catalog)
+	if err != nil {
+		return ProfileAlignment{}, err
+	}
+	outcomes, postgres, err := evaluateRepositoryCapabilities(ctx, root, capabilities)
+	if err != nil {
+		return ProfileAlignment{}, err
+	}
+	divergences := append([]ProfileDivergence(nil), decisionDivergences...)
+	for _, outcome := range outcomes {
+		if outcome.Status == CapabilitySatisfied {
+			continue
+		}
+		divergences = append(divergences, ProfileDivergence{
+			Code:        outcome.Diagnostic.Code,
+			ID:          outcome.ID,
+			Requirement: outcome.Requirement,
+			Blocking:    outcome.Blocking,
+			Message:     outcome.Diagnostic.Message,
+			NextAction:  outcome.Diagnostic.NextAction,
+		})
+	}
+
+	httpCandidates, err := collectHTTPRouteCandidates(ctx, root, profile, catalog)
+	if err != nil {
+		return ProfileAlignment{}, err
+	}
+	verification, verificationDivergences, err := resolveVerificationProjection(root, profile, decisions, catalog)
+	if err != nil {
+		return ProfileAlignment{}, err
+	}
+	divergences = append(divergences, verificationDivergences...)
+	sortProfileDivergences(divergences)
+
+	ready := true
+	for _, divergence := range divergences {
+		if divergence.Blocking {
+			ready = false
+			break
+		}
+	}
+	state := ProfileAlignmentReady
+	if !ready {
+		state = ProfileAlignmentActionRequired
+	}
+	return ProfileAlignment{
+		State:          state,
+		Ready:          ready,
+		Profile:        profile,
+		Decisions:      decisions,
+		Capabilities:   outcomes,
+		Divergences:    divergences,
+		HTTPCandidates: httpCandidates,
+		PostgreSQL:     postgres,
+		Verification:   verification,
+	}, nil
+}
+
+func normalizeAlignmentDecisions(
+	profile ResolvedProfile,
+	input []DecisionValue,
+	catalog *Catalog,
+) ([]DecisionValue, []ProfileDivergence, error) {
+	selected := stringSet(profile.Decisions)
+	values := make(map[string]any, len(profile.Values)+len(input))
+	for id, value := range profile.Values {
+		values[id] = cloneJSONValue(value)
+	}
+	for _, decision := range input {
+		id := strings.TrimSpace(decision.ID)
+		if _, ok := selected[id]; !ok {
+			return nil, nil, fmt.Errorf("resolve profile alignment decision %q: not selected by profile %q", id, profile.ID)
+		}
+		if _, duplicate := values[id]; duplicate {
+			return nil, nil, fmt.Errorf("resolve profile alignment decision %q: duplicate answer", id)
+		}
+		declaration, ok := catalog.decisions[id]
+		if !ok {
+			return nil, nil, fmt.Errorf("resolve profile alignment decision %q: catalog declaration is missing", id)
+		}
+		if err := validateDecisionValue(declaration, decision.Value); err != nil {
+			return nil, nil, fmt.Errorf("resolve profile alignment decision %q: %w", id, err)
+		}
+		values[id] = cloneJSONValue(decision.Value)
+	}
+
+	decisions := make([]DecisionValue, 0, len(values))
+	divergences := make([]ProfileDivergence, 0)
+	for _, id := range profile.Decisions {
+		value, ok := values[id]
+		if !ok {
+			divergences = append(divergences, ProfileDivergence{
+				Code:        "profile.decision.required",
+				ID:          id,
+				Requirement: CapabilityRequired,
+				Blocking:    true,
+				Message:     fmt.Sprintf("selected profile decision %q requires an explicit answer", id),
+				NextAction:  fmt.Sprintf("answer %s or select a different Baseline Profile", id),
+			})
+			continue
+		}
+		decisions = append(decisions, DecisionValue{ID: id, Value: value})
+	}
+	sort.Slice(decisions, func(i, j int) bool { return decisions[i].ID < decisions[j].ID })
+	return decisions, divergences, nil
+}
+
+func cloneJSONValue(value any) any {
+	data, err := json.Marshal(value)
+	if err != nil {
+		return value
+	}
+	var cloned any
+	if err := json.Unmarshal(data, &cloned); err != nil {
+		return value
+	}
+	return cloned
+}
+
+func resolvedProfileCapabilities(profile ResolvedProfile, catalog *Catalog) ([]RepositoryCapability, error) {
+	capabilities := append([]RepositoryCapability(nil), universalCapabilities...)
+	if len(profile.Capabilities) == 0 {
+		sort.Slice(capabilities, func(i, j int) bool { return capabilities[i].ID < capabilities[j].ID })
+		return capabilities, nil
+	}
+
+	declarations := make(map[string]RepositoryCapability)
+	for _, profileID := range catalog.ProfileIDs() {
+		raw := catalog.profiles[profileID]
+		for _, value := range objectsOrEmpty(raw["capabilities"]) {
+			capability, err := parseProfileCapability(profileID, value)
+			if err != nil {
+				return nil, err
+			}
+			declarations[capability.ID] = capability
+		}
+	}
+	for _, id := range profile.Capabilities {
+		capability, ok := declarations[id]
+		if !ok {
+			return nil, fmt.Errorf("resolve profile alignment capability %q: catalog declaration is missing", id)
+		}
+		capabilities = append(capabilities, capability)
+	}
+	sort.Slice(capabilities, func(i, j int) bool { return capabilities[i].ID < capabilities[j].ID })
+	return capabilities, nil
+}
+
+func parseProfileCapability(profileID string, raw document) (RepositoryCapability, error) {
+	id, idOK := stringValue(raw, "id")
+	title, titleOK := stringValue(raw, "title")
+	requirementText, requirementOK := stringValue(raw, "strength")
+	probe, probeOK := objectValue(raw["probe"])
+	kindText, kindOK := stringValue(probe, "kind")
+	if !idOK || !titleOK || !requirementOK || !probeOK || !kindOK {
+		return RepositoryCapability{}, fmt.Errorf("resolve profile %q capability declaration: required field is missing", profileID)
+	}
+	requirement := CapabilityRequirement(requirementText)
+	if requirement != CapabilityRequired && requirement != CapabilityRecommended && requirement != CapabilityOptional {
+		return RepositoryCapability{}, fmt.Errorf("resolve profile %q capability %q: unsupported requirement %q", profileID, id, requirement)
+	}
+	kind := CapabilityEvidenceKind(kindText)
+	if kind != CapabilityEvidenceDeclaredFile && kind != CapabilityEvidenceExecutable {
+		return RepositoryCapability{}, fmt.Errorf("resolve profile %q capability %q: unsupported evidence kind %q", profileID, id, kind)
+	}
+	minimum := CapabilityEvidenceDeclared
+	if kind == CapabilityEvidenceExecutable {
+		minimum = CapabilityEvidenceDiscovered
+	}
+	return RepositoryCapability{
+		ID:              id,
+		Title:           title,
+		Requirement:     requirement,
+		EvidenceKind:    kind,
+		MinimumEvidence: minimum,
+		Probe:           cloneJSONMap(probe),
+		Explanation:     fmt.Sprintf("%s is %s for the %s profile.", title, requirement, profileID),
+		NextAction:      fmt.Sprintf("Add compatible local %s evidence and rerun profile alignment.", title),
+	}, nil
+}
+
+func evaluateRepositoryCapabilities(
+	ctx context.Context,
+	root *os.Root,
+	capabilities []RepositoryCapability,
+) ([]CapabilityOutcome, PostgreSQLEvidence, error) {
+	outcomes := make([]CapabilityOutcome, 0, len(capabilities))
+	postgres := PostgreSQLEvidence{}
+	for _, capability := range capabilities {
+		if err := ctx.Err(); err != nil {
+			return nil, PostgreSQLEvidence{}, err
+		}
+		var outcome CapabilityOutcome
+		var err error
+		if capability.ID == "capability.stack.postgresql" {
+			outcome, postgres, err = evaluatePostgreSQLCapability(root, capability)
+		} else {
+			evidence := collectCapabilityEvidence(root, capability)
+			outcome = evaluateCapability(capability, []CapabilityEvidence{evidence})
+		}
+		if err != nil {
+			return nil, PostgreSQLEvidence{}, err
+		}
+		outcomes = append(outcomes, outcome)
+	}
+	return outcomes, postgres, nil
+}
+
+func collectCapabilityEvidence(root *os.Root, capability RepositoryCapability) CapabilityEvidence {
+	switch capability.EvidenceKind {
+	case CapabilityEvidenceDeclaredFile:
+		return collectDeclaredFileEvidence(root, capability)
+	case CapabilityEvidenceInstalledSkill:
+		return collectInstalledSkillEvidence(root, capability)
+	case CapabilityEvidenceExecutable:
+		return collectExecutableEvidence(capability)
+	default:
+		return invalidCapabilityEvidence(capability.EvidenceKind, "unsupported capability evidence kind")
+	}
+}
+
+func collectDeclaredFileEvidence(root *os.Root, capability RepositoryCapability) CapabilityEvidence {
+	paths := stringsFromAny(capability.Probe["paths"])
+	contains, containsOK := capability.Probe["contains"].(string)
+	if len(paths) == 0 || len(paths) > maxCapabilityPaths || !containsOK {
+		return invalidCapabilityEvidence(capability.EvidenceKind, "declared file probe is invalid")
+	}
+	slices.Sort(paths)
+	for _, relative := range paths {
+		data, state, detail := readBoundedRegularFile(root, relative, maxCapabilityFileBytes)
+		if state == CapabilityEvidenceInvalid {
+			return invalidCapabilityEvidence(capability.EvidenceKind, detail)
+		}
+		if state != CapabilityEvidencePresent || !bytes.Contains(data, []byte(contains)) {
+			continue
+		}
+		return CapabilityEvidence{
+			Status:         CapabilityEvidencePresent,
+			Kind:           capability.EvidenceKind,
+			Strength:       CapabilityEvidenceDeclared,
+			Classification: EvidenceProfileRequirement,
+			SourcePath:     relative,
+			SourceDigest:   contentIdentity(data),
+		}
+	}
+	return absentCapabilityEvidence(capability.EvidenceKind)
+}
+
+func collectInstalledSkillEvidence(root *os.Root, capability RepositoryCapability) CapabilityEvidence {
+	skill, ok := capability.Probe["skill"].(string)
+	if !ok || !identifierIsSafe(skill) {
+		return invalidCapabilityEvidence(capability.EvidenceKind, "installed skill probe is invalid")
+	}
+	relative := ".agents/skills/" + skill + "/SKILL.md"
+	data, state, detail := readBoundedRegularFile(root, relative, maxCapabilityFileBytes)
+	if state == CapabilityEvidenceInvalid {
+		return invalidCapabilityEvidence(capability.EvidenceKind, detail)
+	}
+	if state != CapabilityEvidencePresent {
+		return absentCapabilityEvidence(capability.EvidenceKind)
+	}
+	return CapabilityEvidence{
+		Status:         CapabilityEvidencePresent,
+		Kind:           capability.EvidenceKind,
+		Strength:       CapabilityEvidenceVerified,
+		Classification: EvidenceProfileRequirement,
+		SourcePath:     relative,
+		SourceDigest:   contentIdentity(data),
+	}
+}
+
+func collectExecutableEvidence(capability RepositoryCapability) CapabilityEvidence {
+	executable, ok := capability.Probe["executable"].(string)
+	if !ok || !identifierIsSafe(executable) {
+		return invalidCapabilityEvidence(capability.EvidenceKind, "executable probe is invalid")
+	}
+	discovered := lookPathWithoutExecution(executable)
+	if discovered == "" {
+		return absentCapabilityEvidence(capability.EvidenceKind)
+	}
+	return CapabilityEvidence{
+		Status:         CapabilityEvidencePresent,
+		Kind:           capability.EvidenceKind,
+		Strength:       CapabilityEvidenceDiscovered,
+		Classification: EvidenceProfileRequirement,
+		SourcePath:     filepath.ToSlash(discovered),
+	}
+}
+
+func lookPathWithoutExecution(name string) string {
+	for _, directory := range filepath.SplitList(os.Getenv("PATH")) {
+		if directory == "" {
+			directory = "."
+		}
+		candidate := filepath.Join(directory, name)
+		info, err := os.Lstat(candidate)
+		if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0o111 == 0 {
+			continue
+		}
+		absolute, err := filepath.Abs(candidate)
+		if err == nil {
+			return absolute
+		}
+		return candidate
+	}
+	return ""
+}
+
+func evaluateCapability(capability RepositoryCapability, evidence []CapabilityEvidence) CapabilityOutcome {
+	status := CapabilityMissing
+	for _, item := range evidence {
+		if item.Status == CapabilityEvidencePresent &&
+			evidenceRank[item.Strength] >= evidenceRank[capability.MinimumEvidence] {
+			status = CapabilitySatisfied
+			break
+		}
+		if item.Status == CapabilityEvidencePresent || item.Status == CapabilityEvidenceInvalid {
+			status = CapabilityInsufficient
+		}
+	}
+	blocking := capability.Requirement == CapabilityRequired && status != CapabilitySatisfied
+	diagnostic := CapabilityDiagnostic{
+		Code:       capabilityDiagnosticCode(capability.Requirement, status),
+		Message:    fmt.Sprintf("%s has no compatible local evidence.", capability.Title),
+		NextAction: capability.NextAction,
+	}
+	if status == CapabilitySatisfied {
+		diagnostic = CapabilityDiagnostic{
+			Code:    "capability.satisfied",
+			Message: fmt.Sprintf("%s has sufficient local evidence.", capability.Title),
+		}
+	} else if status == CapabilityInsufficient {
+		diagnostic.Code = "capability.evidence.insufficient"
+		diagnostic.Message = fmt.Sprintf("%s local evidence is present but insufficient.", capability.Title)
+	}
+	return CapabilityOutcome{
+		ID:              capability.ID,
+		Title:           capability.Title,
+		Requirement:     capability.Requirement,
+		EvidenceKind:    capability.EvidenceKind,
+		MinimumEvidence: capability.MinimumEvidence,
+		Status:          status,
+		Blocking:        blocking,
+		Evidence:        evidence,
+		Diagnostic:      diagnostic,
+		Explanation:     capability.Explanation,
+	}
+}
+
+func capabilityDiagnosticCode(requirement CapabilityRequirement, status CapabilityStatus) string {
+	if status == CapabilityInsufficient {
+		return "capability.evidence.insufficient"
+	}
+	switch requirement {
+	case CapabilityRequired:
+		return "capability.required.missing"
+	case CapabilityRecommended:
+		return "capability.recommended.missing"
+	default:
+		return "capability.optional.missing"
+	}
+}
+
+func evaluatePostgreSQLCapability(
+	root *os.Root,
+	capability RepositoryCapability,
+) (CapabilityOutcome, PostgreSQLEvidence, error) {
+	accepted := stringsFromAny(capability.Probe["paths"])
+	slices.Sort(accepted)
+	postgres := PostgreSQLEvidence{AcceptedContractPaths: accepted}
+	contains, _ := capability.Probe["contains"].(string)
+	for _, relative := range accepted {
+		data, state, detail := readBoundedRegularFile(root, relative, maxCapabilityFileBytes)
+		if state == CapabilityEvidenceInvalid {
+			return CapabilityOutcome{}, PostgreSQLEvidence{}, fmt.Errorf("inspect PostgreSQL contract %q: %s", relative, detail)
+		}
+		if state != CapabilityEvidencePresent || !bytes.Contains(data, []byte(contains)) {
+			continue
+		}
+		evidence := CapabilityEvidence{
+			Status:         CapabilityEvidencePresent,
+			Kind:           CapabilityEvidenceDeclaredFile,
+			Strength:       CapabilityEvidenceDeclared,
+			Classification: EvidenceRepositoryContract,
+			SourcePath:     relative,
+			SourceDigest:   contentIdentity(data),
+			Detail:         "accepted PostgreSQL repository contract",
+		}
+		postgres.Contract = &evidence
+		break
+	}
+	implementation, err := collectPostgreSQLImplementationEvidence(root)
+	if err != nil {
+		return CapabilityOutcome{}, PostgreSQLEvidence{}, err
+	}
+	postgres.Implementation = implementation
+	if postgres.Contract != nil {
+		return evaluateCapability(capability, []CapabilityEvidence{*postgres.Contract}), postgres, nil
+	}
+
+	evidence := append([]CapabilityEvidence(nil), implementation...)
+	evidence = append(evidence, absentCapabilityEvidence(CapabilityEvidenceDeclaredFile))
+	outcome := evaluateCapability(capability, evidence)
+	outcome.Status = CapabilityMissing
+	outcome.Blocking = capability.Requirement == CapabilityRequired
+	outcome.Diagnostic.Code = "capability.contract.missing"
+	if len(implementation) == 0 {
+		outcome.Diagnostic.Message = "PostgreSQL has no accepted repository contract and no implementation evidence was found."
+	} else {
+		outcome.Diagnostic.Message = "PostgreSQL implementation evidence was found, but the required repository contract is absent."
+	}
+	outcome.Diagnostic.NextAction = "Record the PostgreSQL repository contract at one accepted path: " + strings.Join(accepted, ", ")
+	return outcome, postgres, nil
+}
+
+func collectPostgreSQLImplementationEvidence(root *os.Root) ([]CapabilityEvidence, error) {
+	candidates := []string{
+		"package.json",
+		"packages/backend/package.json",
+		"docker-compose.yml",
+		"docker-compose.yaml",
+		"compose.yml",
+		"compose.yaml",
+		".env.example",
+	}
+	evidence := make([]CapabilityEvidence, 0)
+	for _, relative := range candidates {
+		data, state, detail := readBoundedRegularFile(root, relative, maxCapabilityFileBytes)
+		if state == CapabilityEvidenceInvalid {
+			return nil, fmt.Errorf("inspect PostgreSQL implementation evidence %q: %s", relative, detail)
+		}
+		if state != CapabilityEvidencePresent {
+			continue
+		}
+		lower := strings.ToLower(string(data))
+		facts := make([]string, 0, 3)
+		for _, fact := range []string{"database_url", "drizzle-orm", "postgres"} {
+			if strings.Contains(lower, fact) {
+				facts = append(facts, fact)
+			}
+		}
+		if len(facts) == 0 {
+			continue
+		}
+		evidence = append(evidence, CapabilityEvidence{
+			Status:         CapabilityEvidencePresent,
+			Kind:           CapabilityEvidenceDeclaredFile,
+			Strength:       CapabilityEvidenceDiscovered,
+			Classification: EvidenceImplementation,
+			SourcePath:     relative,
+			SourceDigest:   contentIdentity(data),
+			Detail:         "observed " + strings.Join(facts, ", "),
+		})
+	}
+	return evidence, nil
+}
+
+func collectHTTPRouteCandidates(
+	ctx context.Context,
+	root *os.Root,
+	profile ResolvedProfile,
+	catalog *Catalog,
+) ([]HTTPRouteCandidate, error) {
+	if !profileHasHTTPContract(profile, catalog) {
+		return nil, nil
+	}
+	info, err := root.Lstat(filepath.FromSlash("packages/backend"))
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("inspect HTTP candidate root: %w", err)
+	}
+	if !info.IsDir() {
+		return nil, nil
+	}
+
+	candidates := make([]HTTPRouteCandidate, 0)
+	sourceFiles := 0
+	totalBytes := 0
+	err = fs.WalkDir(root.FS(), "packages/backend", func(filePath string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			switch entry.Name() {
+			case "node_modules", ".git", "dist", "build", "coverage":
+				return fs.SkipDir
+			default:
+				return nil
+			}
+		}
+		if entry.Type()&fs.ModeSymlink != 0 || !httpSourceExtension(filepath.Ext(filePath)) {
+			return nil
+		}
+		data, state, detail := readBoundedRegularFile(root, filePath, maxCapabilityFileBytes)
+		if state == CapabilityEvidenceInvalid {
+			return fmt.Errorf("inspect HTTP candidate %q: %s", filePath, detail)
+		}
+		if state != CapabilityEvidencePresent {
+			return nil
+		}
+		fileCandidates := routeCandidatesFromSource(filePath, data)
+		if len(fileCandidates) == 0 {
+			return nil
+		}
+		sourceFiles++
+		if sourceFiles > maxHTTPSourceFiles {
+			return fmt.Errorf("HTTP candidate source count exceeds %d", maxHTTPSourceFiles)
+		}
+		totalBytes += len(data)
+		if totalBytes > maxHTTPSourceBytes {
+			return fmt.Errorf("HTTP candidate source bytes exceed %d", maxHTTPSourceBytes)
+		}
+		candidates = append(candidates, fileCandidates...)
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("collect bounded HTTP route candidates: %w", err)
+	}
+	sort.Slice(candidates, func(i, j int) bool {
+		if candidates[i].SourcePath != candidates[j].SourcePath {
+			return candidates[i].SourcePath < candidates[j].SourcePath
+		}
+		if candidates[i].Scope != candidates[j].Scope {
+			return candidates[i].Scope < candidates[j].Scope
+		}
+		return strings.Join(candidates[i].Methods, ",") < strings.Join(candidates[j].Methods, ",")
+	})
+	return compactHTTPRouteCandidates(candidates), nil
+}
+
+func profileHasHTTPContract(profile ResolvedProfile, catalog *Catalog) bool {
+	if _, selected := stringSet(profile.Decisions)["http.contract"]; !selected {
+		return false
+	}
+	if profile.Source == ProfileSourceBuiltIn {
+		_, ok := objectValue(catalog.profiles[profile.ID]["httpContract"])
+		return ok
+	}
+	return true
+}
+
+func httpSourceExtension(extension string) bool {
+	switch strings.ToLower(extension) {
+	case ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs":
+		return true
+	default:
+		return false
+	}
+}
+
+func routeCandidatesFromSource(sourcePath string, data []byte) []HTTPRouteCandidate {
+	digest := contentIdentity(data)
+	candidates := make([]HTTPRouteCandidate, 0)
+	for _, match := range httpMethodCall.FindAllSubmatch(data, -1) {
+		candidates = append(candidates, HTTPRouteCandidate{
+			SourcePath:   sourcePath,
+			SourceDigest: digest,
+			Scope:        string(match[2]),
+			Methods:      []string{strings.ToUpper(string(match[1]))},
+		})
+	}
+	for _, match := range httpScopeCall.FindAllSubmatch(data, -1) {
+		candidates = append(candidates, HTTPRouteCandidate{
+			SourcePath:   sourcePath,
+			SourceDigest: digest,
+			Scope:        string(match[1]),
+			Methods:      nil,
+		})
+	}
+	return candidates
+}
+
+func compactHTTPRouteCandidates(input []HTTPRouteCandidate) []HTTPRouteCandidate {
+	if len(input) < 2 {
+		return input
+	}
+	output := input[:1]
+	for _, candidate := range input[1:] {
+		previous := output[len(output)-1]
+		if previous.SourcePath == candidate.SourcePath &&
+			previous.SourceDigest == candidate.SourceDigest &&
+			previous.Scope == candidate.Scope &&
+			slices.Equal(previous.Methods, candidate.Methods) {
+			continue
+		}
+		output = append(output, candidate)
+	}
+	return output
+}
+
+func resolveVerificationProjection(
+	root *os.Root,
+	profile ResolvedProfile,
+	decisions []DecisionValue,
+	catalog *Catalog,
+) ([]VerificationProjection, []ProfileDivergence, error) {
+	projections := make([]VerificationProjection, 0)
+	divergences := make([]ProfileDivergence, 0)
+	if profile.Source == ProfileSourceBuiltIn {
+		for _, raw := range objectsOrEmpty(catalog.profiles[profile.ID]["verification"]) {
+			id, _ := stringValue(raw, "id")
+			role, _ := stringValue(raw, "kind")
+			tool, _ := stringValue(raw, "tool")
+			command, _ := stringValue(raw, "command")
+			declaration, err := validateLocalCommandDeclaration(root, command)
+			if err != nil {
+				return nil, nil, fmt.Errorf("validate profile Verification expectation %q: %w", id, err)
+			}
+			projections = append(projections, VerificationProjection{
+				ID:                   id,
+				Role:                 role,
+				Tool:                 tool,
+				Command:              command,
+				Classification:       VerificationProfileExpectation,
+				RepositoryExecutable: declaration.Path != "",
+				DeclarationPath:      declaration.Path,
+				DeclarationDigest:    declaration.Digest,
+			})
+			if declaration.Path == "" {
+				divergences = append(divergences, ProfileDivergence{
+					Code:        "verification.profile-expectation.unresolved",
+					ID:          id,
+					Requirement: CapabilityRecommended,
+					Blocking:    false,
+					Message:     fmt.Sprintf("portable %s role expects %q, but no matching local declaration exists", role, command),
+					NextAction:  "map the portable role to a declared repository command or keep it as a profile expectation",
+				})
+			}
+		}
+	}
+	for _, decision := range decisions {
+		if decision.ID != "verification.gate" {
+			continue
+		}
+		command, _ := decision.Value.(string)
+		declaration, err := validateLocalCommandDeclaration(root, command)
+		if err != nil {
+			return nil, nil, fmt.Errorf("validate selected repository Verification command: %w", err)
+		}
+		projections = append(projections, VerificationProjection{
+			ID:                   "verification.gate",
+			Role:                 "repository-gate",
+			Command:              command,
+			Classification:       VerificationRepositoryCommand,
+			RepositoryExecutable: declaration.Path != "",
+			DeclarationPath:      declaration.Path,
+			DeclarationDigest:    declaration.Digest,
+		})
+		if declaration.Path == "" {
+			divergences = append(divergences, ProfileDivergence{
+				Code:        "verification.command.undeclared",
+				ID:          "verification.gate",
+				Requirement: CapabilityRequired,
+				Blocking:    true,
+				Message:     fmt.Sprintf("selected repository Verification command %q has no matching local declaration", command),
+				NextAction:  "select a command declared by the repository or add its local declaration",
+			})
+		}
+	}
+	sort.Slice(projections, func(i, j int) bool { return projections[i].ID < projections[j].ID })
+	return projections, divergences, nil
+}
+
+type commandDeclaration struct {
+	Path   string
+	Digest string
+}
+
+func validateLocalCommandDeclaration(root *os.Root, command string) (commandDeclaration, error) {
+	fields := strings.Fields(command)
+	if len(fields) == 0 {
+		return commandDeclaration{}, nil
+	}
+	if fields[0] == "rtk" {
+		fields = fields[1:]
+	}
+	if len(fields) == 0 {
+		return commandDeclaration{}, nil
+	}
+	if fields[0] == "make" && len(fields) == 2 && makeTargetName.MatchString(fields[1]) {
+		return validateMakeTarget(root, fields[1])
+	}
+	if len(fields) == 3 && fields[1] == "run" {
+		switch fields[0] {
+		case "bun", "npm", "pnpm", "yarn":
+			return validatePackageScript(root, fields[2])
+		}
+	}
+	return commandDeclaration{}, nil
+}
+
+func validatePackageScript(root *os.Root, script string) (commandDeclaration, error) {
+	data, state, detail := readBoundedRegularFile(root, "package.json", maxCapabilityFileBytes)
+	if state == CapabilityEvidenceInvalid {
+		return commandDeclaration{}, errors.New(detail)
+	}
+	if state != CapabilityEvidencePresent {
+		return commandDeclaration{}, nil
+	}
+	var declaration struct {
+		Scripts map[string]json.RawMessage `json:"scripts"`
+	}
+	if err := json.Unmarshal(data, &declaration); err != nil {
+		return commandDeclaration{}, fmt.Errorf("parse package.json scripts: %w", err)
+	}
+	value, ok := declaration.Scripts[script]
+	if !ok {
+		return commandDeclaration{}, nil
+	}
+	var command string
+	if err := json.Unmarshal(value, &command); err != nil || strings.TrimSpace(command) == "" {
+		return commandDeclaration{}, nil
+	}
+	return commandDeclaration{Path: "package.json", Digest: contentIdentity(data)}, nil
+}
+
+func validateMakeTarget(root *os.Root, target string) (commandDeclaration, error) {
+	for _, relative := range []string{"Makefile", "makefile", "GNUmakefile"} {
+		data, state, detail := readBoundedRegularFile(root, relative, maxCapabilityFileBytes)
+		if state == CapabilityEvidenceInvalid {
+			return commandDeclaration{}, errors.New(detail)
+		}
+		if state != CapabilityEvidencePresent {
+			continue
+		}
+		pattern := regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(target) + `\s*:(?:[^=]|$)`)
+		if pattern.Match(data) {
+			return commandDeclaration{Path: relative, Digest: contentIdentity(data)}, nil
+		}
+	}
+	return commandDeclaration{}, nil
+}
+
+func readBoundedRegularFile(
+	root *os.Root,
+	relative string,
+	limit int,
+) ([]byte, CapabilityEvidenceStatus, string) {
+	if !repositoryPathIsSafe(relative) {
+		return nil, CapabilityEvidenceInvalid, "path is not normalized and repository-relative"
+	}
+	info, err := root.Lstat(filepath.FromSlash(relative))
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, CapabilityEvidenceAbsent, ""
+	}
+	if err != nil {
+		return nil, CapabilityEvidenceInvalid, "declared file cannot be inspected"
+	}
+	if !info.Mode().IsRegular() {
+		return nil, CapabilityEvidenceInvalid, "declared file must be a regular file"
+	}
+	if info.Size() > int64(limit) {
+		return nil, CapabilityEvidenceInvalid, fmt.Sprintf("declared file exceeds %d bytes", limit)
+	}
+	file, err := root.Open(filepath.FromSlash(relative))
+	if err != nil {
+		return nil, CapabilityEvidenceInvalid, "declared file cannot be opened"
+	}
+	defer file.Close()
+	opened, err := file.Stat()
+	if err != nil || !opened.Mode().IsRegular() || !os.SameFile(info, opened) {
+		return nil, CapabilityEvidenceInvalid, "declared file changed during inspection"
+	}
+	data, err := io.ReadAll(io.LimitReader(file, int64(limit)+1))
+	if err != nil {
+		return nil, CapabilityEvidenceInvalid, "declared file cannot be read"
+	}
+	if len(data) > limit {
+		return nil, CapabilityEvidenceInvalid, fmt.Sprintf("declared file exceeds %d bytes", limit)
+	}
+	return data, CapabilityEvidencePresent, ""
+}
+
+func contentIdentity(data []byte) string {
+	sum := sha256.Sum256(data)
+	return "sha256:" + hex.EncodeToString(sum[:])
+}
+
+func absentCapabilityEvidence(kind CapabilityEvidenceKind) CapabilityEvidence {
+	return CapabilityEvidence{
+		Status:         CapabilityEvidenceAbsent,
+		Kind:           kind,
+		Strength:       CapabilityEvidenceNone,
+		Classification: EvidenceProfileRequirement,
+	}
+}
+
+func invalidCapabilityEvidence(kind CapabilityEvidenceKind, detail string) CapabilityEvidence {
+	return CapabilityEvidence{
+		Status:         CapabilityEvidenceInvalid,
+		Kind:           kind,
+		Strength:       CapabilityEvidenceNone,
+		Classification: EvidenceProfileRequirement,
+		Detail:         detail,
+	}
+}
+
+func stringsFromAny(value any) []string {
+	switch typed := value.(type) {
+	case []string:
+		return append([]string(nil), typed...)
+	case []any:
+		values := make([]string, 0, len(typed))
+		for _, item := range typed {
+			text, ok := item.(string)
+			if !ok {
+				return nil
+			}
+			values = append(values, text)
+		}
+		return values
+	default:
+		return nil
+	}
+}
+
+func identifierIsSafe(value string) bool {
+	if value == "" {
+		return false
+	}
+	for index, character := range value {
+		alphaNumeric := character >= 'a' && character <= 'z' ||
+			character >= 'A' && character <= 'Z' ||
+			character >= '0' && character <= '9'
+		if !alphaNumeric && character != '.' && character != '_' && character != '-' {
+			return false
+		}
+		if (character == '.' || character == '_' || character == '-') &&
+			(index == 0 || index == len(value)-1) {
+			return false
+		}
+	}
+	return true
+}
+
+func sortProfileDivergences(divergences []ProfileDivergence) {
+	sort.Slice(divergences, func(i, j int) bool {
+		if divergences[i].Blocking != divergences[j].Blocking {
+			return divergences[i].Blocking
+		}
+		if divergences[i].ID != divergences[j].ID {
+			return divergences[i].ID < divergences[j].ID
+		}
+		return divergences[i].Code < divergences[j].Code
+	})
+}
