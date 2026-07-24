@@ -253,6 +253,58 @@ func TestAnalyzerNoPersistenceOrRepositoryMutation(t *testing.T) {
 	}
 }
 
+func TestRevisionManualFallback(t *testing.T) {
+	snapshot := analyzerRevisionSnapshot(t)
+	runtime := &fakeSealedRuntime{
+		proofErrors: map[string]error{
+			PreferredModel: errors.New("preferred unavailable"),
+			FallbackModel:  errors.New("fallback unavailable"),
+		},
+	}
+	proposal, err := NewAnalyzer(runtime).Revise(context.Background(), snapshot)
+	if err != nil {
+		t.Fatalf("manual revision fallback: %v", err)
+	}
+	if !proposal.Manual || len(proposal.Changes) != 0 {
+		t.Fatalf("fallback proposal = %+v, want unchanged manual next action", proposal)
+	}
+}
+
+func TestScopedRevisionProposal(t *testing.T) {
+	snapshot := analyzerRevisionSnapshot(t)
+	output, err := json.Marshal(baseline.RevisionProposal{
+		SchemaVersion:  baseline.RevisionProposalSchemaVersion,
+		SnapshotDigest: snapshot.SnapshotDigest,
+		Area:           snapshot.Area,
+		Changes: []baseline.DecisionValue{
+			{ID: snapshot.AllowedDecisionIDs[0], Value: false},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	runtime := &fakeSealedRuntime{
+		outputs: map[string]fakeSealedOutput{
+			PreferredModel: {output: output},
+		},
+	}
+	proposal, err := NewAnalyzer(runtime).Revise(context.Background(), snapshot)
+	if err != nil {
+		t.Fatalf("scoped semantic revision: %v", err)
+	}
+	if proposal.Manual || len(proposal.Changes) != 1 {
+		t.Fatalf("accepted proposal = %+v", proposal)
+	}
+	canonical, err := snapshot.CanonicalBytes()
+	if err != nil {
+		t.Fatal(err)
+	}
+	inputs := runtime.promptInputs()
+	if len(inputs) != 1 || !reflect.DeepEqual(inputs[0], canonical) {
+		t.Fatalf("revision attempt did not receive exact canonical snapshot")
+	}
+}
+
 func TestACPXReadOnlyArguments(t *testing.T) {
 	runtime := agent.RuntimeSpec{
 		ID:              "codex",
@@ -297,6 +349,26 @@ func TestACPXReadOnlyArguments(t *testing.T) {
 }
 
 const checkoutPathForTest = "/repository/checkout"
+
+func analyzerRevisionSnapshot(t *testing.T) baseline.RevisionSnapshot {
+	t.Helper()
+	plan := baseline.PlanDocument{
+		SchemaVersion: baseline.PlanSchemaVersion,
+		PlanDigest:    "sha256:fixture",
+		Decisions: []baseline.DecisionValue{
+			{ID: "spec.scaffold", Value: true},
+		},
+	}
+	snapshot, err := baseline.NewRevisionSnapshot(
+		plan,
+		baseline.RevisionAreaDivergences,
+		"disable spec scaffolding",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return snapshot
+}
 
 type fakeSealedOutput struct {
 	output   []byte

@@ -19,6 +19,7 @@ import (
 
 	"roundfix/internal/app"
 	"roundfix/internal/baseline"
+	"roundfix/internal/baselineacp"
 )
 
 const baselineSetupManifestPath = "docs/agents/setup-context.json"
@@ -29,8 +30,13 @@ type baselineHumanRequest struct {
 }
 
 type baselineHumanCommandIO struct {
-	input       io.Reader
-	interactive bool
+	input            io.Reader
+	interactive      bool
+	revisionAnalyzer baselineRevisionAnalyzer
+}
+
+type baselineRevisionAnalyzer interface {
+	Revise(context.Context, baseline.RevisionSnapshot) (baseline.RevisionProposal, error)
 }
 
 type baselineHumanPrompt struct {
@@ -103,7 +109,8 @@ func runBaselineHumanCommandWithIO(
 		reader: bufio.NewReader(commandIO.input),
 		writer: stderr,
 	}
-	plan, err := driveHumanBaselinePlan(ctx, request.repo, prompt, review)
+	var planRequest baseline.PlanRequest
+	plan, err := driveHumanBaselinePlanWithRequest(ctx, request.repo, prompt, review, &planRequest)
 	if err != nil {
 		var actionErr *baselineHumanActionError
 		if errors.As(err, &actionErr) {
@@ -112,22 +119,46 @@ func runBaselineHumanCommandWithIO(
 		return printBaselineHumanFailure(err, jsonOutput, stdout, stderr)
 	}
 
-	selection, err := prompt.selectOne(
-		ctx,
-		fmt.Sprintf("Final confirmation for Plan Digest %s", plan.PlanDigest),
-		[]string{"Apply this exact Plan Digest", "Decline without writing"},
-	)
-	if err != nil {
-		return printBaselineHumanFailure(err, jsonOutput, stdout, stderr)
-	}
-	if selection != 0 {
-		result := baselineHumanActionResult(
-			"approval",
-			"Baseline Plan was declined; no repository bytes were written",
-			"rerun roundfix baseline to revise or approve a new Plan Digest",
+	originalPlan := plan
+	for {
+		selection, selectionErr := prompt.selectOne(
+			ctx,
+			fmt.Sprintf("Final confirmation for Plan Digest %s", plan.PlanDigest),
+			[]string{
+				"Apply this exact Plan Digest",
+				"Decline without writing",
+				"Reject and revise one decision area",
+			},
 		)
-		result.PlanDigest = plan.PlanDigest
-		return writeBaselineHumanAction(result, jsonOutput, stdout, stderr)
+		if selectionErr != nil {
+			return printBaselineHumanFailure(selectionErr, jsonOutput, stdout, stderr)
+		}
+		if selection == 0 {
+			break
+		}
+		if selection == 1 {
+			result := baselineHumanActionResult(
+				"approval",
+				"Baseline Plan was declined; no repository bytes were written",
+				"rerun roundfix baseline to revise or approve a new Plan Digest",
+			)
+			result.PlanDigest = plan.PlanDigest
+			return writeBaselineHumanAction(result, jsonOutput, stdout, stderr)
+		}
+		revisedPlan, revisedRequest, revisionErr := reviseHumanBaselinePlan(
+			ctx,
+			prompt,
+			review,
+			originalPlan,
+			plan,
+			planRequest,
+			commandIO.revisionAnalyzer,
+		)
+		if revisionErr != nil {
+			return printBaselineHumanFailure(revisionErr, jsonOutput, stdout, stderr)
+		}
+		plan = revisedPlan
+		planRequest = revisedRequest
 	}
 
 	result, err := baseline.ApplyPlan(ctx, request.repo, plan, plan.PlanDigest)
@@ -144,8 +175,9 @@ func runBaselineHumanCommandWithIO(
 func defaultBaselineHumanCommandIO() baselineHumanCommandIO {
 	info, err := os.Stdin.Stat()
 	return baselineHumanCommandIO{
-		input:       os.Stdin,
-		interactive: err == nil && info.Mode()&os.ModeCharDevice != 0,
+		input:            os.Stdin,
+		interactive:      err == nil && info.Mode()&os.ModeCharDevice != 0,
+		revisionAnalyzer: baselineacp.NewDefaultAnalyzer(),
 	}
 }
 
@@ -195,6 +227,16 @@ func driveHumanBaselinePlan(
 	repository string,
 	prompt *baselineHumanPrompt,
 	review io.Writer,
+) (baseline.PlanDocument, error) {
+	return driveHumanBaselinePlanWithRequest(ctx, repository, prompt, review, nil)
+}
+
+func driveHumanBaselinePlanWithRequest(
+	ctx context.Context,
+	repository string,
+	prompt *baselineHumanPrompt,
+	review io.Writer,
+	captured *baseline.PlanRequest,
 ) (baseline.PlanDocument, error) {
 	if prompt == nil {
 		return baseline.PlanDocument{}, errors.New("drive human Baseline workflow: prompt adapter is required")
@@ -250,12 +292,13 @@ func driveHumanBaselinePlan(
 		return baseline.PlanDocument{}, err
 	}
 
-	outcome, err := baseline.BuildPlan(ctx, baseline.PlanRequest{
+	request := baseline.PlanRequest{
 		Repository:   inspection.Root,
 		ProfileID:    profile.ID,
 		Decisions:    decisions,
 		Preservation: preservation,
-	})
+	}
+	outcome, err := baseline.BuildPlan(ctx, request)
 	if err != nil {
 		return baseline.PlanDocument{}, fmt.Errorf("build human Baseline Plan: %w", err)
 	}
@@ -265,7 +308,207 @@ func driveHumanBaselinePlan(
 		return baseline.PlanDocument{}, &baselineHumanActionError{result: outcome.Result}
 	}
 	printConsolidatedBaselineReview(*outcome.Plan, review)
+	if captured != nil {
+		*captured = request
+	}
 	return *outcome.Plan, nil
+}
+
+func reviseHumanBaselinePlan(
+	ctx context.Context,
+	prompt *baselineHumanPrompt,
+	review io.Writer,
+	original baseline.PlanDocument,
+	current baseline.PlanDocument,
+	request baseline.PlanRequest,
+	analyzer baselineRevisionAnalyzer,
+) (baseline.PlanDocument, baseline.PlanRequest, error) {
+	selected, err := prompt.selectOne(ctx, "Decision area to revisit", []string{
+		"Baseline Profile",
+		"Repository-Specific Normative Rules",
+		"Repository divergences and decisions",
+		"Projected files",
+	})
+	if err != nil {
+		return baseline.PlanDocument{}, request, err
+	}
+	areas := []baseline.RevisionArea{
+		baseline.RevisionAreaProfile,
+		baseline.RevisionAreaRepositoryRules,
+		baseline.RevisionAreaDivergences,
+		baseline.RevisionAreaFiles,
+	}
+	area := areas[selected]
+	inputMode, err := prompt.selectOne(ctx, "Revision input", []string{
+		"Make structured changes manually",
+		"Translate a free-form suggestion within Baseline scope",
+	})
+	if err != nil {
+		return baseline.PlanDocument{}, request, err
+	}
+
+	revised := request
+	semanticAccepted := false
+	if inputMode == 1 {
+		suggestion, readErr := prompt.readNonEmpty(ctx, "Scoped Baseline revision suggestion")
+		if readErr != nil {
+			return baseline.PlanDocument{}, request, readErr
+		}
+		if analyzer == nil {
+			fmt.Fprintln(review, "Semantic revision is unavailable; continue with the structured manual revision.")
+		} else {
+			snapshot, snapshotErr := baseline.NewRevisionSnapshot(current, area, suggestion)
+			if snapshotErr != nil {
+				return baseline.PlanDocument{}, request, snapshotErr
+			}
+			proposal, proposalErr := analyzer.Revise(ctx, snapshot)
+			if proposalErr != nil {
+				if ctx.Err() != nil {
+					return baseline.PlanDocument{}, request, proposalErr
+				}
+				fmt.Fprintf(review, "Semantic revision was discarded: %v\n", proposalErr)
+				fmt.Fprintln(review, "Next action: make the correction through the structured manual revision.")
+			} else if proposal.Manual {
+				fmt.Fprintln(review, "Semantic revision is unavailable; continue with the structured manual revision.")
+			} else {
+				decisions, decisionErr := baseline.DecisionsFromRevisionProposal(snapshot, proposal)
+				if decisionErr != nil {
+					fmt.Fprintf(review, "Semantic revision was discarded: %v\n", decisionErr)
+					fmt.Fprintln(review, "Next action: make the correction through the structured manual revision.")
+				} else {
+					catalog, loadErr := baseline.LoadEmbeddedCatalog()
+					if loadErr != nil {
+						return baseline.PlanDocument{}, request, loadErr
+					}
+					profile, resolveErr := baseline.ResolveProfile(request.Repository, request.ProfileID, catalog)
+					if resolveErr != nil {
+						return baseline.PlanDocument{}, request, resolveErr
+					}
+					normalized, missing, normalizeErr := baseline.ResolveDecisionInput(profile, decisions, catalog)
+					if normalizeErr != nil || len(missing) != 0 {
+						fmt.Fprintln(review, "Semantic revision was discarded because it did not produce complete valid Baseline decisions.")
+						fmt.Fprintln(review, "Next action: make the correction through the structured manual revision.")
+					} else {
+						revised.Decisions = normalized
+						semanticAccepted = true
+					}
+				}
+			}
+		}
+	}
+	if !semanticAccepted {
+		revised, err = promptStructuredBaselineRevision(ctx, prompt, review, current, request, area)
+		if err != nil {
+			return baseline.PlanDocument{}, request, err
+		}
+	}
+	outcome, err := baseline.RecalculatePlan(ctx, original, revised)
+	if err != nil {
+		return baseline.PlanDocument{}, request, err
+	}
+	if outcome.Plan == nil {
+		outcome.Result.Operation = "baseline"
+		outcome.Result.NextAction = humanBaselineNextAction(outcome.Result)
+		return baseline.PlanDocument{}, request, &baselineHumanActionError{result: outcome.Result}
+	}
+	if outcome.Plan.PlanDigest == current.PlanDigest {
+		return baseline.PlanDocument{}, request, errors.New(
+			"recalculate Baseline Plan: revision made no decision change; choose a different structured value",
+		)
+	}
+	fmt.Fprintln(review, "\nRejected Plan revision accepted; review the newly computed complete Plan.")
+	printConsolidatedBaselineReview(*outcome.Plan, review)
+	return *outcome.Plan, revised, nil
+}
+
+func promptStructuredBaselineRevision(
+	ctx context.Context,
+	prompt *baselineHumanPrompt,
+	review io.Writer,
+	current baseline.PlanDocument,
+	request baseline.PlanRequest,
+	area baseline.RevisionArea,
+) (baseline.PlanRequest, error) {
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		return request, err
+	}
+	currentValues := make(map[string]any, len(current.Decisions))
+	for _, decision := range current.Decisions {
+		currentValues[decision.ID] = decision.Value
+	}
+	switch area {
+	case baseline.RevisionAreaProfile:
+		profile := current.Profile
+		revisionState := baselineHumanState{
+			mode:             "update",
+			currentProfile:   &profile,
+			currentDecisions: currentValues,
+		}
+		selected, selectErr := promptBaselineProfile(ctx, prompt, review, request.Repository, catalog, revisionState)
+		if selectErr != nil {
+			return request, selectErr
+		}
+		decisions, decisionErr := promptBaselineDecisions(ctx, prompt, catalog, selected, revisionState)
+		if decisionErr != nil {
+			return request, decisionErr
+		}
+		request.ProfileID = selected.ID
+		request.Decisions = decisions
+	case baseline.RevisionAreaRepositoryRules:
+		inspection, inspectErr := baseline.InspectRepository(ctx, request.Repository, nil)
+		if inspectErr != nil {
+			return request, inspectErr
+		}
+		mode, modeErr := promptPreservationMode(ctx, prompt)
+		if modeErr != nil {
+			return request, modeErr
+		}
+		preservation, preservationErr := promptBaselineClassification(ctx, prompt, review, inspection, mode)
+		if preservationErr != nil {
+			return request, preservationErr
+		}
+		request.Preservation = preservation
+	case baseline.RevisionAreaFiles:
+		fmt.Fprintln(review, "Projected files are derived; select the owning Baseline decision to change:")
+		for index, change := range current.FileChanges {
+			fmt.Fprintf(review, "%d. %s %s\n", index+1, change.Action, change.Path)
+		}
+		fallthrough
+	case baseline.RevisionAreaDivergences:
+		decisions, decisionErr := promptOneBaselineDecisionRevision(ctx, prompt, catalog, current.Decisions, currentValues)
+		if decisionErr != nil {
+			return request, decisionErr
+		}
+		request.Decisions = decisions
+	default:
+		return request, fmt.Errorf("structured Baseline revision: unsupported area %q", area)
+	}
+	return request, nil
+}
+
+func promptOneBaselineDecisionRevision(
+	ctx context.Context,
+	prompt *baselineHumanPrompt,
+	catalog *baseline.Catalog,
+	decisions []baseline.DecisionValue,
+	current map[string]any,
+) ([]baseline.DecisionValue, error) {
+	options := make([]string, len(decisions))
+	for index, decision := range decisions {
+		options[index] = decision.ID
+	}
+	selected, err := prompt.selectOne(ctx, "Baseline decision to change", options)
+	if err != nil {
+		return nil, err
+	}
+	value, err := promptBaselineDecision(ctx, prompt, catalog, decisions[selected].ID, current)
+	if err != nil {
+		return nil, err
+	}
+	revised := append([]baseline.DecisionValue(nil), decisions...)
+	revised[selected].Value = value
+	return revised, nil
 }
 
 func inspectBaselineHumanState(root string, catalog *baseline.Catalog) (baselineHumanState, error) {

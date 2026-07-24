@@ -10,9 +10,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -269,6 +271,103 @@ func TestHumanAutomationPlanParity(t *testing.T) {
 	}
 }
 
+func TestRejectedPlanRevision(t *testing.T) {
+	repo := newHumanBaselineRepository(t)
+	initial := humanBaselineFixturePlan(t, repo)
+	specIndex := humanDecisionIndex(t, initial.Decisions, "spec.scaffold")
+	answers := humanBaselineAdoptionAnswers("") +
+		strings.Join([]string{
+			"3", // reject and revise
+			"3", // divergences
+			"1", // structured manual revision
+			strconv.Itoa(specIndex + 1),
+			"2", // change current value
+			"2", // no
+			"2", // decline the revised digest without writing
+		}, "\n") + "\n"
+	analyzer := &countingBaselineRevisionAnalyzer{}
+	before := baselinePlanTestTree(t, repo)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runBaselineHumanCommandWithIO(
+		context.Background(),
+		[]string{"--repo", repo},
+		&stdout,
+		&stderr,
+		baselineHumanCommandIO{
+			input:            strings.NewReader(answers),
+			interactive:      true,
+			revisionAnalyzer: analyzer,
+		},
+	)
+	if code != exitUnverified {
+		t.Fatalf("rejected-plan revision exit = %d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	if analyzer.calls != 0 {
+		t.Fatalf("direct structured revision started %d ACP sessions", analyzer.calls)
+	}
+	digests := humanReviewDigests(stdout.String())
+	if len(digests) != 2 || digests[0] == digests[1] {
+		t.Fatalf("review digests = %v, want distinct original and recomputed approvals\n%s", digests, stdout.String())
+	}
+	for _, want := range []string{
+		"Rejected Plan revision accepted",
+		"File changes:",
+		"Complete managed-entry ledger:",
+	} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("revised review missing %q:\n%s", want, stdout.String())
+		}
+	}
+	if strings.Count(stderr.String(), "Final confirmation for Plan Digest") != 2 {
+		t.Fatalf("revised plan did not require a new exact approval:\n%s", stderr.String())
+	}
+	if after := baselinePlanTestTree(t, repo); after != before {
+		t.Fatalf("rejected and declined revision changed repository bytes")
+	}
+}
+
+func TestRepeatedPlanRevisionDeterminism(t *testing.T) {
+	repo := newHumanBaselineRepository(t)
+	run := func(t *testing.T, repo string) []string {
+		t.Helper()
+		initial := humanBaselineFixturePlan(t, repo)
+		specIndex := humanDecisionIndex(t, initial.Decisions, "spec.scaffold")
+		secondbrainIndex := humanDecisionIndex(t, initial.Decisions, "secondbrain.enabled")
+		answers := humanBaselineAdoptionAnswers("") +
+			strings.Join([]string{
+				"3", "3", "1", strconv.Itoa(specIndex + 1), "2", "2",
+				"3", "4", "1", strconv.Itoa(secondbrainIndex + 1), "2", "1",
+				"2",
+			}, "\n") + "\n"
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+		code := runBaselineHumanCommandWithIO(
+			context.Background(),
+			[]string{"--repo", repo},
+			&stdout,
+			&stderr,
+			baselineHumanCommandIO{input: strings.NewReader(answers), interactive: true},
+		)
+		if code != exitUnverified {
+			t.Fatalf("repeated revision exit = %d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+		}
+		if strings.Count(stdout.String(), "Baseline workflow: adoption") != 1 {
+			t.Fatalf("repeated revision restarted repository adoption:\n%s", stdout.String())
+		}
+		digests := humanReviewDigests(stdout.String())
+		if len(digests) != 3 || digests[0] == digests[1] || digests[1] == digests[2] {
+			t.Fatalf("repeated revision digests = %v", digests)
+		}
+		return digests
+	}
+	first := run(t, repo)
+	second := run(t, repo)
+	if strings.Join(first, "\n") != strings.Join(second, "\n") {
+		t.Fatalf("equivalent repeated revisions are not deterministic:\nfirst=%v\nsecond=%v", first, second)
+	}
+}
+
 func TestBaselineNoTTY(t *testing.T) {
 	repo := newHumanBaselineRepository(t)
 	before := baselinePlanTestTree(t, repo)
@@ -371,6 +470,55 @@ func humanBaselineFixtureDecisions() []baseline.DecisionValue {
 		{ID: "secondbrain.enabled", Value: false},
 		{ID: "repository.extension.enabled", Value: false},
 	}
+}
+
+func humanBaselineFixturePlan(t *testing.T, repo string) baseline.PlanDocument {
+	t.Helper()
+	outcome, err := baseline.BuildPlan(context.Background(), baseline.PlanRequest{
+		Repository: repo,
+		ProfileID:  "go-cli-tui",
+		Decisions:  humanBaselineFixtureDecisions(),
+		Preservation: baseline.RootPreservationRequest{
+			Mode: baseline.PreservationModeGreenfield,
+		},
+	})
+	if err != nil || outcome.Plan == nil {
+		t.Fatalf("build human revision fixture: outcome=%+v error=%v", outcome, err)
+	}
+	return *outcome.Plan
+}
+
+func humanDecisionIndex(t *testing.T, decisions []baseline.DecisionValue, id string) int {
+	t.Helper()
+	for index, decision := range decisions {
+		if decision.ID == id {
+			return index
+		}
+	}
+	t.Fatalf("missing decision %q", id)
+	return -1
+}
+
+func humanReviewDigests(output string) []string {
+	var digests []string
+	for _, line := range strings.Split(output, "\n") {
+		if digest, found := strings.CutPrefix(line, "Plan Digest: "); found {
+			digests = append(digests, digest)
+		}
+	}
+	return digests
+}
+
+type countingBaselineRevisionAnalyzer struct {
+	calls int
+}
+
+func (analyzer *countingBaselineRevisionAnalyzer) Revise(
+	context.Context,
+	baseline.RevisionSnapshot,
+) (baseline.RevisionProposal, error) {
+	analyzer.calls++
+	return baseline.RevisionProposal{}, errors.New("unexpected semantic revision")
 }
 
 func humanBaselineAdoptionAnswers(final string) string {
