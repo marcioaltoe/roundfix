@@ -33,9 +33,12 @@ type baselineProfileResult struct {
 }
 
 func runBaselineCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
-	if len(args) == 0 || len(args) == 1 && commandWantsHelp(args) {
+	if len(args) == 1 && commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("baseline"))
 		return exitOK
+	}
+	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
+		return runBaselineHumanCommand(ctx, args, stdout, stderr)
 	}
 	switch args[0] {
 	case "plan":

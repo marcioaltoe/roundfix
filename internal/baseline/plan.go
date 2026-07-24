@@ -41,6 +41,20 @@ type PlanOutcome struct {
 	Result Result
 }
 
+// ResolveDecisionInput normalizes human or automation answers through the
+// same catalog decision graph used by BuildPlan. Missing IDs are returned in
+// stable lexical order without producing a partial plan.
+func ResolveDecisionInput(
+	profile ResolvedProfile,
+	input []DecisionValue,
+	catalog *Catalog,
+) ([]DecisionValue, []string, error) {
+	if catalog == nil {
+		return nil, nil, errors.New("resolve Baseline decisions: catalog is required")
+	}
+	return normalizePlanDecisions(profile, input, catalog)
+}
+
 // CatalogIdentity binds a plan to the embedded catalog authority.
 type CatalogIdentity struct {
 	SchemaVersion string `json:"schemaVersion"`
@@ -431,6 +445,9 @@ func resolvePlanRetention(
 		declaredBaseline == currentBaseline {
 		return retention, "", nil
 	}
+	if currentSetupManifestProfileIsValid(root, manifest, generator, catalog) {
+		return retention, "", nil
+	}
 	// The portable-v3 manifest remains a supported reader contract while the
 	// current writer emits the profile-bound 0.0.1 identity.
 	if declaredBaseline == "baseline.portable-v3" {
@@ -464,10 +481,34 @@ func resolvePlanRetention(
 	return append(retention, transitionRetentionEvidence(matches[0])...), "", nil
 }
 
+func currentSetupManifestProfileIsValid(
+	root string,
+	manifest document,
+	generator document,
+	catalog *Catalog,
+) bool {
+	if manifest["schemaVersion"] != ManifestSchema ||
+		manifest["version"] != ManifestVersion ||
+		generator["skill"] != "setup-context-driven" ||
+		generator["version"] != ManifestVersion ||
+		manifest["catalogDigest"] != catalog.Digest() {
+		return false
+	}
+	profileID, profileOK := stringValue(manifest, "profile")
+	profileDigest, digestOK := stringValue(manifest, "profileDigest")
+	declaredBaseline, baselineOK := stringValue(generator, "baseline")
+	if !profileOK || !digestOK || !baselineOK ||
+		declaredBaseline != "baseline."+profileID+"-"+ManifestVersion {
+		return false
+	}
+	profile, err := ResolveProfile(root, profileID, catalog)
+	return err == nil && profile.Digest == profileDigest
+}
+
 func readoptionRetentionEvidence(dispositions []ReadoptionDisposition) []RetentionEvidence {
 	result := make([]RetentionEvidence, 0, len(dispositions))
 	for _, disposition := range dispositions {
-		var targets []string
+		targets := []string{}
 		if disposition.Destination != nil {
 			switch disposition.Disposition {
 			case "managed-entry":
