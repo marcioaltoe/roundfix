@@ -24,8 +24,6 @@ import (
 	"roundfix/internal/baseline"
 )
 
-const baselineReleaseOxfmtVersion = "0.59.0"
-
 func TestGuidanceCompositionJourney(t *testing.T) {
 	binary := buildBaselineReleaseBinary(t)
 	catalog, err := baseline.LoadEmbeddedCatalog()
@@ -39,66 +37,115 @@ func TestGuidanceCompositionJourney(t *testing.T) {
 
 	for _, profile := range profiles {
 		t.Run(profile, func(t *testing.T) {
-			repo := newBaselineReleaseRepository(t, profile)
-			plan, planPath := baselineReleasePlan(t, binary, repo, profile)
-			if plan.Profile.ID != profile {
-				t.Fatalf("planned Profile = %q, want %q", plan.Profile.ID, profile)
-			}
-			assertBaselineReleaseCompleteManagedLedger(t, plan)
-			assertBaselineReleaseNoRepositoryCarrier(t, repo, plan)
-
-			first := baselineReleaseApply(t, binary, repo, plan, planPath)
-			assertBaselineReleaseRecommendation(t, first, "make verify")
-			if profile == "standard-typescript-monorepo" {
-				assertBaselineReleaseRecommendation(t, first, "bun run fmt")
-				assertBaselineReleaseNoRecommendation(t, first, "bun run format")
-			}
-			assertBaselineReleaseNoRepositoryCarrier(t, repo, plan)
-			for _, marker := range []string{".qa-verification-ran", ".qa-profile-command-ran"} {
-				if _, err := os.Stat(filepath.Join(repo, marker)); !errors.Is(err, os.ErrNotExist) {
-					t.Fatalf("Baseline executed repository command marker %s: %v", marker, err)
-				}
-			}
-
-			update, updatePath := baselineReleasePlan(t, binary, repo, profile)
-			if len(update.FileChanges) != 0 {
-				t.Fatalf(
-					"first fresh Plan after greenfield apply has %d file changes: %+v",
-					len(update.FileChanges),
-					update.FileChanges,
-				)
-			}
-			assertBaselineReleaseCompleteManagedLedger(t, update)
-			baselineReleaseApply(t, binary, repo, update, updatePath)
-			assertBaselineReleaseNoRepositoryCarrier(t, repo, update)
-
-			managedBefore := baselineReleaseManagedState(t, repo, update)
-			runBaselineReleaseFormatter(t, repo, profile)
-			runBaselineReleaseExternal(t, repo, "make", "verify")
-			if _, err := os.Stat(filepath.Join(repo, ".qa-verification-ran")); err != nil {
-				t.Fatalf("external repository Verification did not run: %v", err)
-			}
-			if managedAfter := baselineReleaseManagedState(t, repo, update); managedAfter != managedBefore {
-				t.Fatalf(
-					"formatter or repository Verification changed managed state:\nbefore=%s\nafter=%s",
-					managedBefore,
-					managedAfter,
-				)
-			}
-
-			fresh, freshPath := baselineReleasePlan(t, binary, repo, profile)
-			if len(fresh.FileChanges) != 0 {
-				t.Fatalf("fresh Plan has %d file changes: %+v", len(fresh.FileChanges), fresh.FileChanges)
-			}
-			beforeReapply := baselineReleaseVisibleState(t, repo)
-			second := baselineReleaseApply(t, binary, repo, fresh, freshPath)
-			if second.State != "verified" || !strings.Contains(second.Message, "already applied") {
-				t.Fatalf("empty update apply result = %+v", second)
-			}
-			if afterReapply := baselineReleaseVisibleState(t, repo); afterReapply != beforeReapply {
-				t.Fatalf("empty update apply changed repository state")
-			}
+			testBaselineReleaseProfileJourney(t, binary, profile)
 		})
+	}
+}
+
+func TestProjectDecisionJourney(t *testing.T) {
+	t.Run("human and automation answers produce one Plan", TestProjectDecisionParity)
+	t.Run("compatible decisions are reused on update", TestProjectDecisionReuse)
+	t.Run("Fluxus-style defaults retain the persisted HTTP reason", TestBetterAuthSuggestionReusesHTTPReason)
+
+	binary := buildBaselineReleaseBinary(t)
+	t.Run("affected Profile apply audit and empty reapply", func(t *testing.T) {
+		testBaselineReleaseProfileJourney(t, binary, "standard-typescript-monorepo")
+	})
+	t.Run("missing automation input stops without mutation", func(t *testing.T) {
+		repo := newBaselineReleaseRepository(t, "standard-typescript-monorepo")
+		before := baselineReleaseVisibleState(t, repo)
+		args := []string{
+			"baseline", "plan",
+			"--repo", repo,
+			"--profile", "standard-typescript-monorepo",
+		}
+		for _, decision := range baselineReleaseDecisionArgs(
+			"standard-typescript-monorepo",
+			"greenfield",
+		) {
+			if strings.HasPrefix(decision, "identifier.strategy=") {
+				continue
+			}
+			args = append(args, "--decision", decision)
+		}
+		args = append(args, "--format=json")
+		code, stdout, stderr := runBaselineReleaseCLI(t, binary, args...)
+		if code != exitUnverified || len(stderr) != 0 {
+			t.Fatalf("missing decision exit=%d stdout=%s stderr=%s", code, stdout, stderr)
+		}
+		result, err := baseline.ParseResult(stdout)
+		if err != nil ||
+			result.State != "action_required" ||
+			result.Category != "decision" ||
+			!strings.Contains(result.Message, "identifier.strategy") {
+			t.Fatalf("missing identifier result = %+v error=%v", result, err)
+		}
+		if after := baselineReleaseVisibleState(t, repo); after != before {
+			t.Fatal("missing automation input changed repository state")
+		}
+	})
+}
+
+func testBaselineReleaseProfileJourney(t *testing.T, binary, profile string) {
+	t.Helper()
+	repo := newBaselineReleaseRepository(t, profile)
+	plan, planPath := baselineReleasePlan(t, binary, repo, profile)
+	if plan.Profile.ID != profile {
+		t.Fatalf("planned Profile = %q, want %q", plan.Profile.ID, profile)
+	}
+	assertBaselineReleaseCompleteManagedLedger(t, plan)
+	assertBaselineReleaseNoRepositoryCarrier(t, repo, plan)
+
+	first := baselineReleaseApply(t, binary, repo, plan, planPath)
+	assertBaselineReleaseRecommendation(t, first, "make verify")
+	if profile == "standard-typescript-monorepo" {
+		assertBaselineReleaseRecommendation(t, first, "bun run fmt")
+		assertBaselineReleaseNoRecommendation(t, first, "bun run format")
+	}
+	assertBaselineReleaseNoRepositoryCarrier(t, repo, plan)
+	for _, marker := range []string{".qa-verification-ran", ".qa-profile-command-ran"} {
+		if _, err := os.Stat(filepath.Join(repo, marker)); !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("Baseline executed repository command marker %s: %v", marker, err)
+		}
+	}
+
+	update, updatePath := baselineReleasePlan(t, binary, repo, profile)
+	if len(update.FileChanges) != 0 {
+		t.Fatalf(
+			"first fresh Plan after greenfield apply has %d file changes: %+v",
+			len(update.FileChanges),
+			update.FileChanges,
+		)
+	}
+	assertBaselineReleaseCompleteManagedLedger(t, update)
+	baselineReleaseApply(t, binary, repo, update, updatePath)
+	assertBaselineReleaseNoRepositoryCarrier(t, repo, update)
+
+	managedBefore := baselineReleaseManagedState(t, repo, update)
+	runBaselineReleaseFormatter(t, repo, profile)
+	runBaselineReleaseExternal(t, repo, "make", "verify")
+	if _, err := os.Stat(filepath.Join(repo, ".qa-verification-ran")); err != nil {
+		t.Fatalf("external repository Verification did not run: %v", err)
+	}
+	if managedAfter := baselineReleaseManagedState(t, repo, update); managedAfter != managedBefore {
+		t.Fatalf(
+			"formatter or repository Verification changed managed state:\nbefore=%s\nafter=%s",
+			managedBefore,
+			managedAfter,
+		)
+	}
+
+	fresh, freshPath := baselineReleasePlan(t, binary, repo, profile)
+	if len(fresh.FileChanges) != 0 {
+		t.Fatalf("fresh audit Plan has %d file changes: %+v", len(fresh.FileChanges), fresh.FileChanges)
+	}
+	beforeReapply := baselineReleaseVisibleState(t, repo)
+	second := baselineReleaseApply(t, binary, repo, fresh, freshPath)
+	if second.State != "verified" || !strings.Contains(second.Message, "already applied") {
+		t.Fatalf("empty update apply result = %+v", second)
+	}
+	if afterReapply := baselineReleaseVisibleState(t, repo); afterReapply != beforeReapply {
+		t.Fatalf("empty update apply changed repository state")
 	}
 }
 
@@ -953,7 +1000,22 @@ func runBaselineReleaseFormatter(t *testing.T, repo, profile string) {
 
 func provisionBaselineReleaseFormatter(t *testing.T, repo string) (string, func()) {
 	t.Helper()
-	toolRoot, err := os.MkdirTemp(repo, ".roundfix-release-tools-")
+	packageData, err := os.ReadFile(filepath.Join(repo, "package.json"))
+	if err != nil {
+		t.Fatalf("read disposable repository package.json: %v", err)
+	}
+	var repositoryPackage struct {
+		Dependencies map[string]string `json:"dependencies"`
+	}
+	if err := json.Unmarshal(packageData, &repositoryPackage); err != nil {
+		t.Fatalf("decode disposable repository package.json: %v", err)
+	}
+	formatterVersion := repositoryPackage.Dependencies["oxfmt"]
+	if strings.TrimSpace(formatterVersion) == "" {
+		t.Fatal("disposable repository does not own an Oxfmt version")
+	}
+
+	toolRoot, err := os.MkdirTemp("", "roundfix-release-tools-")
 	if err != nil {
 		t.Fatalf("create fixture-owned formatter directory: %v", err)
 	}
@@ -966,7 +1028,7 @@ func provisionBaselineReleaseFormatter(t *testing.T, repo string) (string, func(
 		t,
 		toolRoot,
 		"package.json",
-		`{"private":true,"dependencies":{"oxfmt":"`+baselineReleaseOxfmtVersion+`"}}`,
+		`{"private":true,"dependencies":{"oxfmt":"`+formatterVersion+`"}}`,
 	)
 	tempDir := filepath.Join(toolRoot, "tmp")
 	if err := os.Mkdir(tempDir, 0o755); err != nil {
@@ -976,7 +1038,14 @@ func provisionBaselineReleaseFormatter(t *testing.T, repo string) (string, func(
 	runBaselineReleaseExternalWithEnv(
 		t,
 		toolRoot,
-		[]string{"TMPDIR=" + tempDir},
+		[]string{
+			"TMPDIR=" + tempDir,
+			"BUN_INSTALL=" + filepath.Join(toolRoot, "bun-home"),
+			"BUN_INSTALL_CACHE_DIR=" + filepath.Join(toolRoot, "bun-cache"),
+			"BUN_INSTALL_GLOBAL_BIN_DIR=" + filepath.Join(toolRoot, "bun-bin"),
+			"BUN_INSTALL_GLOBAL_DIR=" + filepath.Join(toolRoot, "bun-global"),
+			"BUN_RUNTIME_TRANSPILER_CACHE_PATH=" + filepath.Join(toolRoot, "bun-transpiler-cache"),
+		},
 		"bun",
 		"install",
 		"--ignore-scripts",
@@ -995,12 +1064,12 @@ func provisionBaselineReleaseFormatter(t *testing.T, repo string) (string, func(
 		cleanup()
 		t.Fatalf("decode fixture-owned Oxfmt manifest: %v", err)
 	}
-	if manifest.Version != baselineReleaseOxfmtVersion {
+	if manifest.Version != formatterVersion {
 		cleanup()
 		t.Fatalf(
 			"fixture-owned Oxfmt version = %q, want %q",
 			manifest.Version,
-			baselineReleaseOxfmtVersion,
+			formatterVersion,
 		)
 	}
 	binDir := filepath.Join(toolRoot, "node_modules", ".bin")
@@ -1028,7 +1097,7 @@ func newBaselineReleaseRepository(t *testing.T, profile string) string {
 	case "rust-cli":
 		writeBaselinePlanTestFile(t, repo, "src/main.rs", "fn main( ) {println!(\"ok\");}\n")
 	case "standard-typescript-monorepo":
-		writeBaselinePlanTestFile(t, repo, "package.json", baselineReleaseTypeScriptPackageJSON())
+		writeBaselinePlanTestFile(t, repo, "package.json", baselineReleaseTypeScriptPackageJSON(t))
 		writeBaselinePlanTestFile(t, repo, "packages/frontend/package.json", `{"name":"frontend"}`)
 		writeBaselinePlanTestFile(
 			t,
@@ -1055,7 +1124,27 @@ func newBaselineReleaseRepository(t *testing.T, profile string) string {
 	return repo
 }
 
-func baselineReleaseTypeScriptPackageJSON() string {
+func baselineReleaseTypeScriptPackageJSON(t *testing.T) string {
+	t.Helper()
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load maintained Profile formatter: %v", err)
+	}
+	entry, ok := catalog.Profile("standard-typescript-monorepo")
+	if !ok {
+		t.Fatal("standard TypeScript Profile is missing")
+	}
+	var maintained struct {
+		Formatter struct {
+			Version string `json:"version"`
+		} `json:"formatter"`
+	}
+	if err := json.Unmarshal(entry.Data, &maintained); err != nil {
+		t.Fatalf("decode maintained Profile formatter: %v", err)
+	}
+	if strings.TrimSpace(maintained.Formatter.Version) == "" {
+		t.Fatal("maintained Profile formatter version is empty")
+	}
 	dependencies := []string{
 		`"@logtape/logtape":"latest"`,
 		`"@tanstack/react-query":"latest"`,
@@ -1063,7 +1152,7 @@ func baselineReleaseTypeScriptPackageJSON() string {
 		`"better-auth":"latest"`,
 		`"drizzle-orm":"latest"`,
 		`"hono":"latest"`,
-		`"oxfmt":"` + baselineReleaseOxfmtVersion + `"`,
+		`"oxfmt":"` + maintained.Formatter.Version + `"`,
 		`"oxlint":"latest"`,
 		`"postgres":"latest"`,
 		`"react":"latest"`,

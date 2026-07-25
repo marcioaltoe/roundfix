@@ -7,6 +7,38 @@ package baseline
 
 import "testing"
 
+func TestProjectDecisionJourneyEngine(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func(*testing.T)
+	}{
+		{name: "strict decision objects", run: TestProjectDecisionValidation},
+		{name: "missing decision produces no partial Plan", run: TestPlanDocumentMissingDecisionsReturnsResultWithoutPartialPlan},
+		{name: "identifier strategy is required", run: TestIdentifierStrategyDecision},
+		{name: "Better Auth is capability-bound", run: TestAuthProviderDecision},
+		{name: "derived HTTP conflict stops planning", run: TestHTTPContractConflict},
+		{name: "equivalent normalized decisions", run: TestProfileAlignmentEquivalentNormalizedDecisions},
+		{name: "render apply and empty reapply", run: TestProjectDecisionRendering},
+	}
+	for _, test := range tests {
+		t.Run(test.name, test.run)
+	}
+}
+
+func TestToolingAuthorizationJourneyCoreClause(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func(*testing.T)
+	}{
+		{name: "renders for every maintained Profile", run: TestToolingAuthorityClause},
+		{name: "cannot be disabled", run: TestToolingAuthorityCannotBeDisabled},
+		{name: "remains source-accounted", run: TestToolingAuthorityAccounting},
+	}
+	for _, test := range tests {
+		t.Run(test.name, test.run)
+	}
+}
+
 func TestBaselineReleaseGate(t *testing.T) {
 	tests := []struct {
 		name string

@@ -400,6 +400,133 @@ func TestProjectConstraintQAGate(t *testing.T) {
 	})
 }
 
+func TestProjectConstraintJourney(t *testing.T) {
+	fixtureRoot := filepath.Join("testdata", "project-constraint-journey")
+	fixtures := []string{"_prd.md", "_techspec.md"}
+	for _, fixture := range fixtures {
+		t.Run(fixture, func(t *testing.T) {
+			content := string(readBaselineSkillContractFile(
+				t,
+				filepath.Join(fixtureRoot, fixture),
+			))
+			if missing := missingProjectConstraintFixtureRows(content); len(missing) != 0 {
+				t.Fatalf("Project Constraint fixture missing %v", missing)
+			}
+			for _, row := range []string{
+				"Identifier strategy",
+				"Authentication and HTTP",
+				"Active ADR obligations",
+				"Tooling authority",
+			} {
+				mutated := strings.Replace(content, "- "+row+":", "- Removed row:", 1)
+				if missing := missingProjectConstraintFixtureRows(mutated); !slicesContain(missing, row) {
+					t.Fatalf("removing %q did not fail the fixture contract: %v", row, missing)
+				}
+			}
+		})
+	}
+
+	matrix := string(readBaselineSkillContractFile(
+		t,
+		filepath.Join(fixtureRoot, "qa-matrix.md"),
+	))
+	for _, required := range []string{
+		"fresh disposable Fluxus greenfield clone",
+		"separate fresh disposable Fluxus update clone",
+		"Keep-defaults reuses the persisted Better Auth HTTP reason",
+		"formatter and repository Verification",
+		"audit and empty reapply",
+		"final `qa-gate`",
+	} {
+		if !strings.Contains(matrix, required) {
+			t.Errorf("final QA matrix missing %q", required)
+		}
+	}
+	if rows := strings.Count(matrix, "| pending |"); rows != 2 {
+		t.Errorf("final QA matrix pending rows = %d, want 2", rows)
+	}
+}
+
+func TestToolingAuthorizationJourney(t *testing.T) {
+	fixtureRoot := filepath.Join("testdata", "project-constraint-journey")
+	prd := string(readBaselineSkillContractFile(t, filepath.Join(fixtureRoot, "_prd.md")))
+	techspec := string(readBaselineSkillContractFile(t, filepath.Join(fixtureRoot, "_techspec.md")))
+	prdPaths := projectConstraintAuthorizedPaths(prd)
+	techspecPaths := projectConstraintAuthorizedPaths(techspec)
+	wantPaths := []string{".golangci.yml", "scripts/verify.sh"}
+	if !reflect.DeepEqual(prdPaths, wantPaths) ||
+		!reflect.DeepEqual(techspecPaths, wantPaths) {
+		t.Fatalf(
+			"bounded tooling files differ: PRD=%v TechSpec=%v want=%v",
+			prdPaths,
+			techspecPaths,
+			wantPaths,
+		)
+	}
+
+	tests := []struct {
+		name    string
+		content string
+		changed []string
+		want    bool
+	}{
+		{
+			name:    "exact bounded files are authorized",
+			content: prd,
+			changed: wantPaths,
+			want:    true,
+		},
+		{
+			name: "missing express authorization refuses decomposition",
+			content: strings.Replace(
+				prd,
+				"expressly authorizes changes to exactly",
+				"proposes changes to",
+				1,
+			),
+			changed: wantPaths,
+			want:    false,
+		},
+		{
+			name:    "changed path outside bounds refuses settlement",
+			content: prd,
+			changed: []string{".golangci.yml", "scripts/release.sh"},
+			want:    false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := projectConstraintAllowsToolingChanges(test.content, test.changed); got != test.want {
+				t.Fatalf("tooling authorization = %v, want %v", got, test.want)
+			}
+		})
+	}
+
+	t.Run("decomposition contract", func(t *testing.T) {
+		testWorkflowProjectConstraintContract(t, "write-tasks", []string{
+			"refuse to create or update `_tasks.md`",
+			"express maintainer authorization",
+			"exact bounded repository-relative files",
+		})
+	})
+	t.Run("execution contract", func(t *testing.T) {
+		testWorkflowProjectConstraintContract(t, "implement-task", []string{
+			"mutation allowlist",
+			"before every mutation",
+			"Every newly changed path",
+			"set `status: failed`",
+		})
+	})
+	t.Run("QA contract", func(t *testing.T) {
+		testWorkflowProjectConstraintContract(t, "qa-gate", []string{
+			"exact bounded files",
+			"actual changed paths",
+			"missing authorization",
+			"out-of-scope tooling changes",
+		})
+	})
+}
+
 func TestLegacySpecConstraintExemption(t *testing.T) {
 	repoRoot := filepath.Clean(filepath.Join(".."))
 	for _, skillName := range []string{"write-tasks", "implement-task", "qa-gate"} {
@@ -631,6 +758,91 @@ func slicesContain(values []string, want string) bool {
 		}
 	}
 	return false
+}
+
+func missingProjectConstraintFixtureRows(content string) []string {
+	required := []struct {
+		row    string
+		source string
+	}{
+		{row: "Identifier strategy", source: "docs/agents/domain.md"},
+		{row: "Authentication and HTTP", source: "docs/agents/backend.md"},
+		{row: "Active ADR obligations", source: "docs/agents/domain.md"},
+		{row: "Tooling authority", source: "docs/agents/agent-instructions.md"},
+	}
+	var missing []string
+	for _, requirement := range required {
+		bullet := projectConstraintFixtureBullet(content, requirement.row)
+		if bullet == "" ||
+			!strings.Contains(bullet, "applicable") ||
+			!strings.Contains(bullet, "Source: `"+requirement.source+"`") {
+			missing = append(missing, requirement.row)
+		}
+	}
+	return missing
+}
+
+func projectConstraintFixtureBullet(content, row string) string {
+	sectionStart := strings.Index(content, "## Project Constraints")
+	if sectionStart == -1 {
+		return ""
+	}
+	section := content[sectionStart:]
+	if next := strings.Index(section[len("## Project Constraints"):], "\n## "); next != -1 {
+		section = section[:len("## Project Constraints")+next]
+	}
+	marker := "- " + row + ":"
+	start := strings.Index(section, marker)
+	if start == -1 {
+		return ""
+	}
+	bullet := section[start:]
+	if next := strings.Index(bullet[len(marker):], "\n- "); next != -1 {
+		bullet = bullet[:len(marker)+next]
+	}
+	return strings.Join(strings.Fields(bullet), " ")
+}
+
+func projectConstraintAuthorizedPaths(content string) []string {
+	bullet := projectConstraintFixtureBullet(content, "Tooling authority")
+	if !strings.Contains(bullet, "expressly authorizes changes to exactly") {
+		return nil
+	}
+	var paths []string
+	for {
+		start := strings.Index(bullet, "`")
+		if start == -1 {
+			break
+		}
+		bullet = bullet[start+1:]
+		end := strings.Index(bullet, "`")
+		if end == -1 {
+			return nil
+		}
+		value := bullet[:end]
+		bullet = bullet[end+1:]
+		if !strings.HasPrefix(value, "docs/agents/") {
+			paths = append(paths, value)
+		}
+	}
+	return paths
+}
+
+func projectConstraintAllowsToolingChanges(content string, changed []string) bool {
+	authorized := projectConstraintAuthorizedPaths(content)
+	if len(authorized) == 0 {
+		return false
+	}
+	allowlist := make(map[string]struct{}, len(authorized))
+	for _, path := range authorized {
+		allowlist[path] = struct{}{}
+	}
+	for _, path := range changed {
+		if _, ok := allowlist[path]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 func authoringTemplateFrontmatter(t *testing.T, template string) string {
