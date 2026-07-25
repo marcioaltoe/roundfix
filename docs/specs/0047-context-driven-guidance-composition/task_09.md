@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0047-context-driven-guidance-composition
-status: completed
+status: failed
 type: test
 complexity: high
 ---
@@ -68,6 +68,36 @@ not Task prerequisites.
 - `_prd.md` → Goals 1–6; User Stories 1–7; Core Features 1–20; Success Metrics.
 - `_techspec.md` → Testing Approach; Build Order 8; Risks & Considerations.
 - ADR-0073 → recoverable multi-file apply.
+
+## QA repair cycle — 2026-07-24
+
+The first full QA gate found three Blocks-Completion defects and two
+documentation frictions. Repair the product behavior at its owning boundary,
+extend the hermetic regression coverage, and rerun the complete live matrix.
+
+- [ ] F-01: an update MUST NOT propose setup-managed root bytes as
+  repository-owned rules and then reject its own accepted proposal as stale,
+  empty, or managed.
+- [ ] F-02: a reviewed, catalog-valid repository-owned Profile adaptation MUST
+  reach the final portable Change Plan even when the existing Setup Manifest's
+  Source Baseline has no unique maintained transition.
+- [ ] F-03: the first fresh Plan after a confirmed greenfield apply MUST have
+  zero file changes and MUST NOT create a second digest-addressed root backup.
+- [ ] F-04: the documented complete greenfield Decision Document MUST include
+  every required runtime decision.
+- [ ] F-05: formatter discovery and the reported post-apply recommendation MUST
+  use the repository's real supported command.
+- [ ] The temporary Git fixture used by `TestFormatterComposition` MUST be
+  isolated from host-level `commit.gpgsign=true` without requiring a process
+  environment override.
+- [ ] Fresh regression tests MUST fail before each behavior repair and pass
+  afterward.
+- [ ] The complete Fluxus greenfield/update and Oraculum adaptation live matrix
+  MUST pass from one fresh Roundfix build.
+
+Evidence and exact reproductions:
+`qa/qa-report-2026-07-24.md` and
+`qa/evidence/2026-07-24-guidance-composition/`.
 
 ## Result
 
