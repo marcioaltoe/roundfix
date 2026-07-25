@@ -206,6 +206,103 @@ func TestWriteTechSpecProjectConstraints(t *testing.T) {
 	testAuthoringProjectConstraints(t, "write-techspec", "techspec-template.md")
 }
 
+func TestProjectConstraintTaskGate(t *testing.T) {
+	testWorkflowProjectConstraintContract(t, "write-tasks", []string{
+		"Project Constraint preflight",
+		"active, non-archived, and not already completed",
+		"complete `Project Constraints` sections",
+		"`Identifier strategy`",
+		"`Authentication and HTTP`",
+		"`Active ADR obligations`",
+		"`Tooling authority`",
+		"`docs/agents/` source path",
+		"refuse to create or update `_tasks.md`",
+		"express maintainer authorization",
+		"exact bounded repository-relative files",
+		"Dependencies remain owned only by `_tasks.md`",
+		"Task status remains owned only by each Task file",
+	})
+}
+
+func TestProjectConstraintImplementationGate(t *testing.T) {
+	testWorkflowProjectConstraintContract(t, "implement-task", []string{
+		"Project Constraint preflight",
+		"before changing the Task status to `in_progress`",
+		"Tooling authorization is not implied by Task assignment",
+		"exact bounded repository-relative file list",
+		"assigned Task file itself",
+		"capture the pre-existing changed paths",
+		"before every mutation",
+		"changed-file postflight",
+		"`git status --short` and `git diff --name-only`",
+		"set `status: failed`",
+		"Never edit `_tasks.md` or any other Task file",
+	})
+}
+
+func TestProjectConstraintQAGate(t *testing.T) {
+	testWorkflowProjectConstraintContract(t, "qa-gate", []string{
+		"Project Constraint audit",
+		"applicability",
+		"source path under `docs/agents/`",
+		"express maintainer authorization",
+		"exact bounded files",
+		"actual changed paths",
+		"git diff-tree --no-commit-id --name-only -r",
+		"missing authorization",
+		"out-of-scope tooling changes",
+		"Task status or Task Graph dependencies",
+	})
+}
+
+func TestLegacySpecConstraintExemption(t *testing.T) {
+	repoRoot := filepath.Clean(filepath.Join(".."))
+	for _, skillName := range []string{"write-tasks", "implement-task", "qa-gate"} {
+		t.Run(skillName, func(t *testing.T) {
+			testWorkflowProjectConstraintContract(t, skillName, []string{
+				"completed or archived legacy Spec",
+				"byte-identical",
+			})
+		})
+	}
+
+	module := string(readBaselineSkillContractFile(
+		t,
+		filepath.Join(repoRoot, "internal", "baseline", "assets", "modules", "spec-workflow.json"),
+	))
+	golden := string(readBaselineSkillContractFile(
+		t,
+		filepath.Join(
+			repoRoot,
+			"internal",
+			"baseline",
+			"assets",
+			"formatter-fixtures",
+			"standard-typescript-monorepo",
+			"golden",
+			"docs",
+			"agents",
+			"spec-routing.md",
+		),
+	))
+	for _, required := range []string{
+		"Project Constraints",
+		"express maintainer authorization",
+		"bounded repository-relative files",
+		"actual changed-file scope",
+		"completed or archived legacy Specs byte-identical",
+		"Dependencies remain owned only by the Task Graph",
+		"status remains owned only by each Task file",
+	} {
+		if !strings.Contains(module, required) {
+			t.Errorf("spec-workflow module missing %q", required)
+		}
+		if !strings.Contains(golden, required) {
+			t.Errorf("generated spec-routing fixture missing %q", required)
+		}
+	}
+}
+
 func TestAuthoringConstraintOwnership(t *testing.T) {
 	repoRoot := filepath.Clean(filepath.Join(".."))
 	lockBytes := readBaselineSkillContractFile(t, filepath.Join(repoRoot, "skills-lock.json"))
@@ -342,6 +439,53 @@ func testAuthoringProjectConstraints(t *testing.T, skillName, templateName strin
 	if strings.Contains(strings.ToLower(frontmatter), "authoriz") {
 		t.Errorf("%s template adds authorization frontmatter: %q", skillName, frontmatter)
 	}
+}
+
+func testWorkflowProjectConstraintContract(t *testing.T, skillName string, required []string) {
+	t.Helper()
+	repoRoot := filepath.Clean(filepath.Join(".."))
+	canonicalPath := filepath.Join(repoRoot, ".agents", "skills", skillName, "SKILL.md")
+	distributedPath := filepath.Join(repoRoot, "skills", skillName, "SKILL.md")
+	canonical := readBaselineSkillContractFile(t, canonicalPath)
+	distributed := readBaselineSkillContractFile(t, distributedPath)
+	if !bytes.Equal(canonical, distributed) {
+		t.Fatalf("%s canonical and distributed guidance differ; run make skills-sync", skillName)
+	}
+
+	for _, missing := range missingWorkflowContractClauses(string(canonical), required) {
+		t.Errorf("%s skill missing %q", skillName, missing)
+	}
+	normalized := normalizeWorkflowContract(string(canonical))
+	for _, clause := range required {
+		mutated := strings.ReplaceAll(normalized, normalizeWorkflowContract(clause), "")
+		if missing := missingWorkflowContractClauses(mutated, required); !slicesContain(missing, clause) {
+			t.Errorf("%s contract still accepts removal of %q; missing = %v", skillName, clause, missing)
+		}
+	}
+}
+
+func missingWorkflowContractClauses(content string, required []string) []string {
+	content = normalizeWorkflowContract(content)
+	var missing []string
+	for _, clause := range required {
+		if !strings.Contains(content, normalizeWorkflowContract(clause)) {
+			missing = append(missing, clause)
+		}
+	}
+	return missing
+}
+
+func normalizeWorkflowContract(content string) string {
+	return strings.Join(strings.Fields(content), " ")
+}
+
+func slicesContain(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
 }
 
 func authoringTemplateFrontmatter(t *testing.T, template string) string {

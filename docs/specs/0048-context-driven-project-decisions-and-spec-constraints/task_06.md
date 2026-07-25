@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0048-context-driven-project-decisions-and-spec-constraints
-status: pending
+status: failed
 type: docs
 complexity: high
 ---
@@ -30,20 +30,20 @@ files authorized in the active Spec.
 
 ## Subtasks
 
-- [ ] Add decomposition preconditions to `write-tasks`.
-- [ ] Add bounded mutation enforcement to `implement-task`.
-- [ ] Add Project Constraint checks to `qa-gate`.
-- [ ] Update generated Spec workflow guidance.
-- [ ] Add active, archived, authorized, and refusal tests.
+- [x] Add decomposition preconditions to `write-tasks`.
+- [x] Add bounded mutation enforcement to `implement-task`.
+- [x] Add Project Constraint checks to `qa-gate`.
+- [x] Update generated Spec workflow guidance.
+- [x] Add active, archived, authorized, and refusal tests.
 
 ## Acceptance Criteria
 
-- [ ] An active new Spec without complete constraints cannot produce a Task
+- [x] An active new Spec without complete constraints cannot produce a Task
   Graph.
-- [ ] A tooling Task without bounded authorization cannot start.
-- [ ] An authorized tooling Task can change only the listed files.
-- [ ] QA detects both missing authorization and out-of-scope tooling changes.
-- [ ] Completed and archived legacy Specs remain byte-identical.
+- [x] A tooling Task without bounded authorization cannot start.
+- [x] An authorized tooling Task can change only the listed files.
+- [x] QA detects both missing authorization and out-of-scope tooling changes.
+- [x] Completed and archived legacy Specs remain byte-identical.
 
 ## Context
 
@@ -65,3 +65,58 @@ files authorized in the active Spec.
 - `_prd.md` → Goals 3–4; User Stories 4–6; Core Features 12–15.
 - `_techspec.md` → Implementation Design: API Contracts; Build Order 5.
 - ADR-0077 → downstream Project Constraint enforcement.
+
+## Result
+
+The downstream workflow now fails closed at decomposition, execution, and QA.
+Active Specs must carry complete constraint applicability, reasons, and
+`docs/agents/` sources. Tooling Tasks remain pending without express bounded
+authorization; authorized Tasks preflight every target path and postflight the
+actual worktree delta. QA resolves committed changed paths from Git instead of
+trusting reported file lists. Generated Spec guidance carries the same rules,
+while legacy completed or archived Specs remain exempt from rewriting and Task
+Graph dependency and Task-status ownership stay unchanged.
+
+Acceptance evidence:
+
+- Active incomplete Spec refusal:
+  `TestProjectConstraintTaskGate` passed and rejects removal of any required
+  constraint row, source, refusal, authorization, or ownership clause.
+- Tooling start and bounded mutation:
+  `TestProjectConstraintImplementationGate` passed and requires authorization
+  before `in_progress`, an exact allowlist, per-mutation checks, and a
+  changed-file postflight.
+- QA authorization and scope:
+  `TestProjectConstraintQAGate` passed and requires applicability, source,
+  authorization, `git diff-tree` evidence, and failure on missing or
+  out-of-scope paths.
+- Legacy preservation:
+  `TestLegacySpecConstraintExemption` passed across `write-tasks`,
+  `implement-task`, `qa-gate`, the generated module, and its formatter fixture.
+- Generated identity:
+  `TestCatalogCompatibility`, `TestFormatterComposition`,
+  `TestPlanDeterminismMatchesMaintainedManagedEntryFixture`, and
+  `TestBaselineCompatibilityCorpus` passed after refreshing the maintained
+  guide, catalog, and parity identities.
+
+Verification:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-go-cache go test -count=1 ./skills ./internal/baseline -run 'TestProjectConstraintTaskGate|TestProjectConstraintImplementationGate|TestProjectConstraintQAGate|TestLegacySpecConstraintExemption'`
+  — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-go-cache go run -buildvcs=false ./cmd/roundfix skills check`
+  — passed for every repository-owned workflow skill.
+- `rtk env TMPDIR=/private/tmp GOCACHE=/private/tmp/roundfix-go-cache make verify`
+  — failed in the pre-existing
+  `TestGuidanceCompositionJourney/standard-typescript-monorepo` release
+  journey. Its disposable repository invokes
+  `bunx --no-install oxfmt@0.59.0` without a local dependency bootstrap, and
+  Bun 1.3.14 reports that no existing `oxfmt` binary can be run. The same
+  failure reproduced after installing the exact version globally and running
+  the focused test outside the sandbox.
+
+Follow-up:
+
+- Repair the release-journey prerequisite in its owning test-harness Task:
+  either bootstrap the disposable repository before invoking `--no-install`,
+  or define and provision the external binary prerequisite explicitly. No
+  workaround or out-of-slice test change was added here.

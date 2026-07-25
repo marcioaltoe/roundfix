@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "spec-workflow",
-  "version": 3,
+  "version": 4,
   "kind": "workflow",
   "title": "Local Spec workflow",
   "dependsOn": [
@@ -38,11 +38,12 @@
   "supportingGuides": [
     {
       "id": "guide.spec-routing",
-      "version": 3,
+      "version": 4,
       "path": "docs/agents/spec-routing.md",
       "template": "template.guide.spec-routing",
       "rules": [
-        "rule.spec.routing"
+        "rule.spec.routing",
+        "rule.spec.project-constraints"
       ],
       "references": []
     },
@@ -113,6 +114,40 @@
           "id": "clause.spec.tracker-artifacts",
           "enforcement": "mandatory",
           "guidance": "Keep each Spec under `docs/specs/<feature-slug>/`. Dependencies live only in `_tasks.md`; status lives only in each Task file, and the local Task files are the published planning issues."
+        }
+      ]
+    },
+    {
+      "id": "rule.spec.project-constraints",
+      "version": 1,
+      "coverage": [
+        "coverage.spec-workflow"
+      ],
+      "clauses": [
+        {
+          "id": "clause.spec.project-constraints-01-active-artifacts",
+          "enforcement": "mandatory",
+          "guidance": "Before producing a Task Graph, require every active, non-archived, and not already completed Spec PRD and present TechSpec to contain complete Project Constraints: applicability with reasons for identifier strategy, authentication and HTTP, active ADR obligations, and tooling authority, each citing its operative `docs/agents/` source."
+        },
+        {
+          "id": "clause.spec.project-constraints-02-tooling-authorization",
+          "enforcement": "mandatory",
+          "guidance": "Refuse a tooling Task unless the active PRD and present TechSpec record express maintainer authorization and the exact bounded repository-relative files; Task assignment, setup approval, or generic implementation approval is not authorization."
+        },
+        {
+          "id": "clause.spec.project-constraints-03-bounded-execution",
+          "enforcement": "mandatory",
+          "guidance": "An authorized tooling Task may mutate only its bounded repository-relative files and its own Task file; stop before any other mutation and fail the Task if changed-file postflight finds another path."
+        },
+        {
+          "id": "clause.spec.project-constraints-04-qa-audit",
+          "enforcement": "mandatory",
+          "guidance": "Final QA verifies Project Constraint applicability, operative source paths, tooling authorization, and actual changed-file scope from Git evidence; missing authorization, untraceable scope, or out-of-scope tooling changes fails the gate."
+        },
+        {
+          "id": "clause.spec.project-constraints-05-legacy-and-ownership",
+          "enforcement": "mandatory",
+          "guidance": "Keep completed or archived legacy Specs byte-identical. Dependencies remain owned only by the Task Graph, and status remains owned only by each Task file."
         }
       ]
     },

@@ -24,6 +24,29 @@ Validate the assembled feature against the promises in its spec by exercising th
 
 Resolve `docs/specs/<slug>/`, then read `_prd.md`, every `task_NN.md`, and prior files under `qa/`.
 
+- Run a Project Constraint audit before crediting Task evidence. A completed or
+  archived legacy Spec is exempt from forced backfill; keep every legacy
+  artifact byte-identical and record the proven exemption. Absence of a
+  Project Constraints section by itself is not proof of legacy status.
+- For every active, non-legacy Spec, verify that the PRD and every present
+  TechSpec each account for identifier strategy, authentication and HTTP,
+  active ADR obligations, and tooling authority. Every row must state its
+  applicability or non-applicability with a reason and cite an operative
+  source path under `docs/agents/`.
+- Identify every Task that creates, edits, renames, moves, or deletes
+  repository-tooling configuration, scripts, ignore files, plugin
+  declarations, or version pins. Require express maintainer authorization and
+  exact bounded files in both active Spec artifacts; Task assignment, setup
+  approval, or generic implementation approval does not qualify.
+- Resolve the actual changed paths for each tooling Task from its Daemon-owned
+  Task commit and any current worktree delta. Use
+  `git diff-tree --no-commit-id --name-only -r <commit>` for the committed
+  change rather than trusting a reported file list. Permit only the exact
+  bounded paths and the assigned Task file. Any missing authorization,
+  untraceable scope, or out-of-scope tooling changes is a failed audit row and
+  blocks flow QA.
+- QA writes only its report and evidence. It never changes Task status or Task
+  Graph dependencies.
 - Require every task status to be `completed`. If any task remains incomplete, stop and list it. Run a partial gate only when the user explicitly requests one; mark its scope and final verdict `partial`.
 - Identify the PRD's declared surfaces, user stories, core features, acceptance criteria, user-experience states, and Non-Goals.
 - Read each task's `## Result`. Credit a task-level criterion only when it points to named, reproducible evidence and the current static gate passes. Spend live QA effort on assembled user journeys, cross-task seams, persistence, failure behavior, and scope creep.
