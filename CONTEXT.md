@@ -347,7 +347,7 @@ The support command that creates User Config or Project Config before operationa
 _Avoid_: Bootstrap run, setup run
 
 **Setup Command**:
-The support command that verifies and prepares a machine for Roundfix Runs: Node, pinned acpx, Adapter Readiness, generated Agent Selection Profile Readiness, acpx local adapter overrides, User Config, and Project Config. It proves proposed state before requesting authorization and writes only authorized changes.
+The support command that verifies and prepares a machine for Roundfix Runs: Node, minimum-supported acpx, Adapter Readiness, generated Agent Selection Profile Readiness, acpx local adapter overrides, User Config, and Project Config. It accepts the minimum tested acpx version and every newer compatible version, never downgrades a newer installation, proves proposed state before requesting authorization, and writes only authorized changes.
 _Avoid_: Manual bootstrap checklist, environment wizard
 
 **Upgrade Command**:
@@ -363,7 +363,7 @@ The support command that produces a Release Plan without editing release files, 
 _Avoid_: Release Command, publish command, cut-release command
 
 **Doctor Command**:
-The support command that diagnoses a repository and machine's readiness for Roundfix Runs — Repository Skill Set, Node, pinned acpx, Adapter Readiness, Agent Selection Profile Readiness, and codex runtime hygiene — reporting each check with a next action and mutating nothing. Distinct from the Setup Command, which prepares the machine.
+The support command that diagnoses a repository and machine's readiness for Roundfix Runs — Repository Skill Set, minimum-supported acpx, Adapter Readiness, Agent Selection Profile Readiness, and codex runtime hygiene — reporting the detected acpx version against the minimum, each check with a next action, and mutating nothing. Distinct from the Setup Command, which prepares the machine.
 _Avoid_: Health check run, setup run, environment wizard
 
 **Archive Command**:

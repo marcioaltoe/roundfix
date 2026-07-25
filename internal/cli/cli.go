@@ -3762,7 +3762,7 @@ Options:
 		return `Usage:
   roundfix setup [--yes] [--no-input]
 
-Checks Node.js and the pinned acpx version, proves the effective official Codex adapter
+Checks Node.js and the minimum supported acpx version, proves the effective official Codex adapter
 and generated Agent Selection profile readiness, then offers acpx local adapter
 overrides, User Config, and Project Config. Proposed profiles are exact-proved
 before writing. Legacy Codex override migration requires authorization. Each
@@ -3777,8 +3777,8 @@ Options:
 		return `Usage:
   roundfix doctor
 
-Diagnoses this machine's readiness for Runs. Checks Node.js, the pinned acpx
-version, the effective adapter, and required Agent Selection Profiles. It also
+Diagnoses this machine's readiness for Runs. Checks Node.js, the minimum
+supported acpx version, the effective adapter, and required Agent Selection Profiles. It also
 checks codex runtime hygiene. The aggregate profiles: line exact-proves every
 distinct tuple and reports the next action for failures. Doctor mutates nothing.
 `

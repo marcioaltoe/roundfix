@@ -23,7 +23,7 @@ import (
 
 const (
 	defaultACPXCommand              = "acpx"
-	PinnedACPXVersion               = "0.12.0"
+	MinimumACPXVersion              = "0.12.0"
 	CodexAdapterPackage             = "@agentclientprotocol/codex-acp"
 	PinnedCodexAdapterVersion       = "1.1.4"
 	legacyCodexAdapterPackage       = "@zed-industries/codex-acp"
@@ -269,11 +269,11 @@ func (err *ModelNotAdvertisedError) Classification() string {
 }
 
 type ACPXProbeError struct {
-	Command         string
-	FoundVersion    string
-	RequiredVersion string
-	Missing         bool
-	Err             error
+	Command        string
+	FoundVersion   string
+	MinimumVersion string
+	Missing        bool
+	Err            error
 }
 
 func (err ACPXProbeError) Error() string {
@@ -282,7 +282,7 @@ func (err ACPXProbeError) Error() string {
 		return fmt.Sprintf("acpx is required but was not found on PATH; install it with: %s", install)
 	}
 	if err.FoundVersion != "" {
-		return fmt.Sprintf("acpx version mismatch: found %s, but Roundfix requires %s; upgrade or downgrade with: %s", err.FoundVersion, err.RequiredVersion, install)
+		return fmt.Sprintf("acpx version unsupported: found %s, but Roundfix requires %s or newer; upgrade with: %s", err.FoundVersion, err.MinimumVersion, install)
 	}
 	message := "acpx --version failed"
 	if err.Err != nil {
@@ -701,6 +701,12 @@ func compareAdapterVersions(found string, required string) int {
 	return 0
 }
 
+// SupportsACPXVersion reports whether version satisfies Roundfix's minimum
+// tested acpx version. Malformed versions fail closed.
+func SupportsACPXVersion(version string) bool {
+	return compareAdapterVersions(version, MinimumACPXVersion) >= 0
+}
+
 func parseAdapterVersion(version string) ([3]int, bool) {
 	var parsed [3]int
 	parts := strings.Split(strings.TrimPrefix(strings.TrimSpace(version), "v"), ".")
@@ -720,7 +726,7 @@ func parseAdapterVersion(version string) ([3]int, bool) {
 func (runner ACPXRunner) probeACPX(ctx context.Context) error {
 	command := runner.command()
 	if _, err := exec.LookPath(command); err != nil {
-		return ACPXProbeError{Command: command, RequiredVersion: PinnedACPXVersion, Missing: true, Err: err}
+		return ACPXProbeError{Command: command, MinimumVersion: MinimumACPXVersion, Missing: true, Err: err}
 	}
 	if err := ctx.Err(); err != nil {
 		return err
@@ -735,11 +741,11 @@ func (runner ACPXRunner) probeACPX(ctx context.Context) error {
 		if detail == "" {
 			detail = err.Error()
 		}
-		return ACPXProbeError{Command: command, RequiredVersion: PinnedACPXVersion, Err: errors.New(detail)}
+		return ACPXProbeError{Command: command, MinimumVersion: MinimumACPXVersion, Err: errors.New(detail)}
 	}
 	foundVersion := strings.TrimSpace(string(output))
-	if foundVersion != PinnedACPXVersion {
-		return ACPXProbeError{Command: command, FoundVersion: displayACPXVersion(foundVersion), RequiredVersion: PinnedACPXVersion}
+	if !SupportsACPXVersion(foundVersion) {
+		return ACPXProbeError{Command: command, FoundVersion: displayACPXVersion(foundVersion), MinimumVersion: MinimumACPXVersion}
 	}
 	return nil
 }
@@ -1307,7 +1313,7 @@ func (runner *ACPXRunner) lockState() func() {
 }
 
 func acpxInstallCommand() string {
-	return "npm install -g acpx@" + PinnedACPXVersion
+	return "npm install -g acpx@" + MinimumACPXVersion
 }
 
 func displayACPXVersion(version string) string {

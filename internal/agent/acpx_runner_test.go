@@ -51,7 +51,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestACPXProbePassesWhenVersionMatchesPin(t *testing.T) {
-	invocations, err := runFakeACPXProbe(t, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, PinnedACPXVersion)
+	invocations, err := runFakeACPXProbe(t, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, MinimumACPXVersion)
 
 	if err != nil {
 		t.Fatalf("expected matching acpx version to pass, got %v", err)
@@ -59,6 +59,36 @@ func TestACPXProbePassesWhenVersionMatchesPin(t *testing.T) {
 	want := [][]string{{"--version"}}
 	if !reflect.DeepEqual(invocations, want) {
 		t.Fatalf("unexpected probe invocations\nwant: %#v\ngot:  %#v", want, invocations)
+	}
+}
+
+func TestACPXProbeAcceptsNewerVersion(t *testing.T) {
+	const foundVersion = "0.12.1"
+
+	invocations, err := runFakeACPXProbe(t, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, foundVersion)
+
+	if err != nil {
+		t.Fatalf("expected newer acpx version to pass, got %v", err)
+	}
+	want := [][]string{{"--version"}}
+	if !reflect.DeepEqual(invocations, want) {
+		t.Fatalf("unexpected probe invocations\nwant: %#v\ngot:  %#v", want, invocations)
+	}
+}
+
+func TestACPXProbeRejectsMalformedVersion(t *testing.T) {
+	const foundVersion = "not-semver"
+
+	_, err := runFakeACPXProbe(t, RuntimeSpec{ID: "codex", Protocol: ProtocolACP}, foundVersion)
+
+	if err == nil {
+		t.Fatal("expected malformed acpx version to fail")
+	}
+	message := err.Error()
+	for _, want := range []string{foundVersion, MinimumACPXVersion, acpxInstallCommand()} {
+		if !strings.Contains(message, want) {
+			t.Fatalf("expected probe error to contain %q, got %q", want, message)
+		}
 	}
 }
 
@@ -88,10 +118,13 @@ func TestACPXProbeMismatchedVersionNamesFoundRequiredAndInstallCommand(t *testin
 		t.Fatal("expected mismatched acpx version to fail")
 	}
 	message := err.Error()
-	for _, want := range []string{foundVersion, PinnedACPXVersion, acpxInstallCommand(), "upgrade or downgrade"} {
+	for _, want := range []string{foundVersion, MinimumACPXVersion, acpxInstallCommand(), "or newer", "upgrade"} {
 		if !strings.Contains(message, want) {
 			t.Fatalf("expected probe error to contain %q, got %q", want, message)
 		}
+	}
+	if strings.Contains(message, "downgrade") {
+		t.Fatalf("expected probe error not to recommend a downgrade, got %q", message)
 	}
 	if strings.Count(message, acpxInstallCommand()) != 1 {
 		t.Fatalf("expected exactly one install command, got %q", message)
@@ -105,7 +138,7 @@ func TestACPXProbeMismatchedVersionNamesFoundRequiredAndInstallCommand(t *testin
 func TestACPXProbeCommandOverrideStillChecksACPXClient(t *testing.T) {
 	runtime := RuntimeSpec{ID: "codex-custom", Protocol: ProtocolStdio, Command: "custom-acp --stdio"}
 
-	invocations, err := runFakeACPXProbe(t, runtime, PinnedACPXVersion)
+	invocations, err := runFakeACPXProbe(t, runtime, MinimumACPXVersion)
 
 	if err != nil {
 		t.Fatalf("expected command override probe to pass through acpx, got %v", err)
@@ -286,7 +319,7 @@ func TestACPXProbeMissingAdapterNamesInstallCommandBeforeSession(t *testing.T) {
 	harness := newFakeACPXHarness(t)
 	writeACPXConfigForTest(t, `{"agents":{"codex":{"command":"codex-acp"}}}`)
 	t.Setenv("PATH", t.TempDir())
-	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXStdout, MinimumACPXVersion+"\n")
 
 	err := harness.runner.Probe(context.Background(), ProbeRequest{
 		Runtime: RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.5"},
@@ -312,7 +345,7 @@ func TestACPXProbeMissingAdapterNamesInstallCommandBeforeSession(t *testing.T) {
 func TestACPXProbeMalformedConfigFallsBackToDefaultAdapter(t *testing.T) {
 	harness := newFakeACPXHarness(t)
 	writeACPXConfigForTest(t, `{not json`)
-	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXStdout, MinimumACPXVersion+"\n")
 	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
 		"sessions show": sessionCapabilitySnapshotFixture(t, "gpt-5.5", []string{"gpt-5.5"}, "", "", nil),
 	}))
@@ -327,7 +360,7 @@ func TestACPXProbeMalformedConfigFallsBackToDefaultAdapter(t *testing.T) {
 
 func TestACPXProbeValidatesSelectionWithDisposableSession(t *testing.T) {
 	harness := newFakeACPXHarness(t)
-	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXStdout, MinimumACPXVersion+"\n")
 	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.5", ReasoningEffort: "xhigh"}
 
 	err := harness.runner.Probe(context.Background(), ProbeRequest{Runtime: runtime, WorkDir: harness.gitRoot})
@@ -358,7 +391,7 @@ func TestACPXProbeValidatesSelectionWithDisposableSession(t *testing.T) {
 
 func TestACPXProbeSkipsEmptyReasoningEffort(t *testing.T) {
 	harness := newFakeACPXHarness(t)
-	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXStdout, MinimumACPXVersion+"\n")
 	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
 		"sessions show": sessionCapabilitySnapshotFixture(t, "gpt-5.6-sol", []string{"gpt-5.6-sol"}, "", "", nil),
 	}))
@@ -388,7 +421,7 @@ func TestACPXProbeSkipsEmptyReasoningEffort(t *testing.T) {
 
 func TestProfileProofAppliesExactReasoningAndClosesDisposableSession(t *testing.T) {
 	harness := newFakeACPXHarness(t)
-	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXStdout, MinimumACPXVersion+"\n")
 	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"}
 
 	err := harness.runner.Probe(context.Background(), ProbeRequest{Runtime: runtime, WorkDir: harness.gitRoot})
@@ -413,7 +446,7 @@ func TestProfileProofAppliesExactReasoningAndClosesDisposableSession(t *testing.
 
 func TestProfileProofUsesSessionSnapshotWhenACPXModelProjectionOmitsOptions(t *testing.T) {
 	harness := newFakeACPXHarness(t)
-	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXStdout, MinimumACPXVersion+"\n")
 	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
 		"set model value=gpt-5.5":          `{"action":"model_set","modelId":"gpt-5.5","resumed":false}`,
 		"sessions show":                    sessionCapabilitySnapshotFixture(t, "gpt-5.5", []string{"gpt-5.6-sol", "gpt-5.5"}, "reasoning_effort", "xhigh", []string{"low", "medium", "high", "xhigh"}),
@@ -471,7 +504,7 @@ func TestAcquireSelectionCapabilitiesObservesAfterACPXModelProjectionOmitsOption
 
 func TestProfileProofClosesDisposableSessionOnSelectionFailure(t *testing.T) {
 	harness := newFakeACPXHarness(t)
-	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXStdout, MinimumACPXVersion+"\n")
 	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"set reasoning_effort": 2}))
 	t.Setenv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{"set reasoning_effort": "reasoning rejected\n"}))
 	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "high"}
@@ -769,7 +802,7 @@ func TestApplySessionSelectionDisposableAndLiveOrder(t *testing.T) {
 
 func TestACPXProbeSelectionSetupUsesBoundedContext(t *testing.T) {
 	harness := newFakeACPXHarness(t)
-	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXStdout, MinimumACPXVersion+"\n")
 	t.Setenv(codexPathEnv, "/configured/clean/codex")
 	probe := &deadlineRecordingCodexProbe{}
 	harness.runner.codexSpawn = codexSpawnDependencies{
@@ -797,7 +830,7 @@ func TestACPXProbeSelectionSetupUsesBoundedContext(t *testing.T) {
 
 func TestACPXProbeSelectionRejectionClosesDisposableSession(t *testing.T) {
 	harness := newFakeACPXHarness(t)
-	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXStdout, MinimumACPXVersion+"\n")
 	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
 		"sessions show": sessionCapabilitySnapshotFixture(t, "gpt-5.5", []string{"gpt-5.5"}, "reasoning_effort", "medium", []string{"medium", "extreme"}),
 	}))
@@ -837,7 +870,7 @@ func TestACPXProbeSelectionRejectionClosesDisposableSession(t *testing.T) {
 
 func TestACPXProbeModelRejectionSkipsReasoningAndClosesDisposableSession(t *testing.T) {
 	harness := newFakeACPXHarness(t)
-	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXStdout, MinimumACPXVersion+"\n")
 	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"sessions ensure": 2}))
 	t.Setenv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{"sessions ensure": "missing model metadata\n"}))
 	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "xhigh"}
@@ -865,7 +898,7 @@ func TestACPXProbeModelRejectionSkipsReasoningAndClosesDisposableSession(t *test
 
 func TestACPXProbeCleanupFailureJoinsSelectionError(t *testing.T) {
 	harness := newFakeACPXHarness(t)
-	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXStdout, MinimumACPXVersion+"\n")
 	t.Setenv(fakeACPXStdoutCall, mustJSONForTest(t, map[string]string{
 		"sessions show": sessionCapabilitySnapshotFixture(t, "gpt-5.5", []string{"gpt-5.5"}, "reasoning_effort", "medium", []string{"medium", "extreme"}),
 	}))
@@ -899,7 +932,7 @@ func TestACPXProbeCleanupFailureJoinsSelectionError(t *testing.T) {
 
 func TestACPXProbeCancellationStillClosesDisposableSession(t *testing.T) {
 	harness := newFakeACPXHarness(t)
-	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXStdout, MinimumACPXVersion+"\n")
 	startedPath := filepath.Join(harness.gitRoot, "ensure-started")
 	t.Setenv(fakeACPXStarted, startedPath)
 	t.Setenv(fakeACPXBlockCmd, "sessions ensure")
@@ -1163,7 +1196,7 @@ func TestModelNotAdvertisedPromptExitYieldsTypedError(t *testing.T) {
 
 func TestModelNotAdvertisedSelectionPreflightYieldsTypedErrorThroughWrapChain(t *testing.T) {
 	harness := newFakeACPXHarness(t)
-	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXStdout, MinimumACPXVersion+"\n")
 	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"sessions ensure": 2}))
 	t.Setenv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{
 		"sessions ensure": "adapter stderr prefix\nCannot apply --model gpt-5.6-sol: the ACP agent did not advertise that model.\nAvailable models: gpt-5.5, gpt-5.1, opus\nadapter stderr suffix\n",
@@ -1190,7 +1223,7 @@ func TestModelNotAdvertisedSelectionPreflightYieldsTypedErrorThroughWrapChain(t 
 
 func TestModelNotAdvertisedGarbageStderrKeepsInfrastructureError(t *testing.T) {
 	harness := newFakeACPXHarness(t)
-	t.Setenv(fakeACPXStdout, PinnedACPXVersion+"\n")
+	t.Setenv(fakeACPXStdout, MinimumACPXVersion+"\n")
 	t.Setenv(fakeACPXExitBy, mustJSONForTest(t, map[string]int{"sessions ensure": 2}))
 	t.Setenv(fakeACPXStderrBy, mustJSONForTest(t, map[string]string{"sessions ensure": "unparseable garbage\n"}))
 	runtime := RuntimeSpec{ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.6-sol", ReasoningEffort: "xhigh"}

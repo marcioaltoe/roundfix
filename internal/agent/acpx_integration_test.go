@@ -21,7 +21,7 @@ const realACPXIntegrationEnv = "ROUNDFIX_REAL_ACPX"
 
 func TestRealACPXCommandOverrideRoundTripCancelCrashResume(t *testing.T) {
 	if os.Getenv(realACPXIntegrationEnv) != "1" {
-		t.Skipf("set %s=1 to run the real acpx integration test; requires Node and acpx %s", realACPXIntegrationEnv, PinnedACPXVersion)
+		t.Skipf("set %s=1 to run the real acpx integration test; requires Node and acpx %s or newer", realACPXIntegrationEnv, MinimumACPXVersion)
 	}
 	if _, err := exec.LookPath("node"); err != nil {
 		t.Skipf("Node is required for real acpx integration: %v", err)
@@ -33,7 +33,7 @@ func TestRealACPXCommandOverrideRoundTripCancelCrashResume(t *testing.T) {
 
 	runner := &ACPXRunner{Command: acpxPath}
 	if err := runner.Probe(context.Background(), ProbeRequest{}); err != nil {
-		t.Skipf("pinned acpx %s is required for real acpx integration: %v", PinnedACPXVersion, err)
+		t.Skipf("acpx %s or newer is required for real acpx integration: %v", MinimumACPXVersion, err)
 	}
 
 	dir := t.TempDir()

@@ -109,8 +109,8 @@ func runSetupCommand(ctx context.Context, args []string, stdout, stderr io.Write
 	runner.checkNode(ctx)
 	runner.checkACPX(ctx)
 	if !runner.acpxReady {
-		runner.reportHealthResult(CheckResult{Name: HealthCheckAdapter, Status: CheckStatusSkipped, Detail: "acpx is not at the pinned version"})
-		runner.report("profile readiness", "skipped", "acpx is not at the pinned version")
+		runner.reportHealthResult(CheckResult{Name: HealthCheckAdapter, Status: CheckStatusSkipped, Detail: "acpx does not meet the minimum supported version"})
+		runner.report("profile readiness", "skipped", "acpx does not meet the minimum supported version")
 		if runner.failed {
 			return exitRunFailed
 		}
@@ -435,7 +435,7 @@ func (runner *setupRunner) checkACPX(ctx context.Context) {
 		return
 	}
 	if !runner.req.yes {
-		accepted, confirmErr := runner.deps.confirm(ctx, runner.stderr, "Install pinned acpx with "+installCommand+"?")
+		accepted, confirmErr := runner.deps.confirm(ctx, runner.stderr, "Install the minimum supported acpx with "+installCommand+"?")
 		if confirmErr != nil {
 			runner.report("acpx", "failed", confirmErr.Error())
 			return
@@ -584,7 +584,7 @@ func defaultSetupACPXVersion(ctx context.Context) (string, error) {
 }
 
 func defaultSetupInstallACPX(ctx context.Context) error {
-	cmd := exec.CommandContext(ctx, "npm", "install", "-g", "acpx@"+agent.PinnedACPXVersion)
+	cmd := exec.CommandContext(ctx, "npm", "install", "-g", "acpx@"+agent.MinimumACPXVersion)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return commandOutputError(err, output)
@@ -632,7 +632,7 @@ func commandOutputError(err error, output []byte) error {
 }
 
 func setupACPXInstallCommand() string {
-	return "npm install -g acpx@" + agent.PinnedACPXVersion
+	return "npm install -g acpx@" + agent.MinimumACPXVersion
 }
 
 func compareVersions(found string, minimum string) int {
