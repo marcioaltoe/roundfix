@@ -41,11 +41,15 @@ const (
 	PreservationStateBlocked        PreservationState = "blocked"
 )
 
-// RootPreservationRequest contains the explicit root-instruction choice and
-// any owner-approved Decision Document.
+// RootPreservationRequest contains the explicit instruction-preservation
+// choice, optional locally materialized segmented source, and any
+// owner-approved Decision Document.
 type RootPreservationRequest struct {
-	Mode      PreservationMode
-	Decisions *DecisionDocument
+	Mode           PreservationMode
+	Decisions      *DecisionDocument
+	SourceBaseline *ReadoptionSourceBaseline
+
+	semanticOwners SemanticOwnerRegistry
 }
 
 // RootBackup is one immutable raw-byte backup selected before mutation.
@@ -122,6 +126,17 @@ type ReadoptionDecisions struct {
 	Dispositions []ReadoptionDisposition `json:"dispositions"`
 }
 
+// RepositoryRuleBlock is one accepted byte-exact repository-owned rule
+// destined for an active semantic guide.
+type RepositoryRuleBlock struct {
+	ID             string `json:"id"`
+	SourceEntryID  string `json:"sourceEntryId"`
+	Classification string `json:"classification"`
+	ManagedID      string `json:"managedId"`
+	Path           string `json:"path"`
+	Body           []byte `json:"body"`
+}
+
 // DecisionDocument is the maintained strict setup decision contract.
 type DecisionDocument struct {
 	SchemaVersion string               `json:"schemaVersion"`
@@ -164,14 +179,15 @@ func (e *DecisionDocumentError) Error() string {
 	return strings.Join(messages, "\n")
 }
 
-// RootPreservationPlan is the complete read-only preservation decision
-// result consumed by later portable-plan assembly.
+// RootPreservationPlan is the complete read-only root and recognized
+// repository-rule preservation result consumed by portable-plan assembly.
 type RootPreservationPlan struct {
 	Mode                 PreservationMode         `json:"mode"`
 	State                PreservationState        `json:"state"`
 	Backups              []RootBackup             `json:"backups"`
 	SourceBaseline       ReadoptionSourceBaseline `json:"sourceBaseline"`
 	Dispositions         []ReadoptionDisposition  `json:"dispositions"`
+	RepositoryRuleBlocks []RepositoryRuleBlock    `json:"repositoryRuleBlocks"`
 	RepositoryRulesBytes []byte                   `json:"repositoryRulesBytes,omitempty"`
 	Warnings             []Finding                `json:"warnings"`
 	Findings             []Finding                `json:"findings"`
@@ -503,9 +519,8 @@ func parseReadoptionDestination(
 	}
 }
 
-// PlanRootPreservation resolves only the root-instruction preservation slice.
-// It reads the exact sources already selected by RepositoryInspection and
-// never mutates the repository.
+// PlanRootPreservation resolves root instructions and the three recognized
+// repository-rule carriers. It never mutates the repository.
 func PlanRootPreservation(
 	inspection RepositoryInspection,
 	request RootPreservationRequest,
@@ -522,16 +537,22 @@ func PlanRootPreservation(
 		Warnings: append([]Finding(nil), inspection.Snapshot.Warnings...),
 		Findings: append([]Finding(nil), inspection.Snapshot.Blocking...),
 	}
-	sources, findings, err := loadRootPreservationSources(inspection)
+	rootSources, findings, err := loadRootPreservationSources(inspection)
 	if err != nil {
 		return RootPreservationPlan{}, err
 	}
 	plan.Findings = append(plan.Findings, findings...)
-	plan.Backups, findings, err = planRootBackups(inspection.Root, sources)
+	plan.Backups, findings, err = planRootBackups(inspection.Root, rootSources)
 	if err != nil {
 		return RootPreservationPlan{}, err
 	}
 	plan.Findings = append(plan.Findings, findings...)
+	repositorySources, findings, err := loadRecognizedRepositoryRuleSources(inspection.Root)
+	if err != nil {
+		return RootPreservationPlan{}, err
+	}
+	plan.Findings = append(plan.Findings, findings...)
+	sources := append(rootSources, repositorySources...)
 	plan.SourceBaseline = buildReadoptionSourceBaseline(sources)
 	plan.Findings = sortedFindings(plan.Findings)
 
@@ -546,6 +567,19 @@ func PlanRootPreservation(
 	if len(plan.SourceBaseline.Entries) == 0 {
 		return plan, nil
 	}
+	if request.SourceBaseline != nil {
+		if err := validateClassifiedSourceBaseline(plan.SourceBaseline, *request.SourceBaseline); err != nil {
+			plan.State = PreservationStateActionRequired
+			plan.Findings = []Finding{{
+				Code:    "baseline.preservation.classified-source.invalid",
+				Path:    ".",
+				Message: err.Error(),
+			}}
+			plan.NextAction = "rerun segmentation and classification against the current Source Baseline"
+			return plan, nil
+		}
+		plan.SourceBaseline = cloneReadoptionSourceBaseline(*request.SourceBaseline)
+	}
 	if request.Decisions == nil {
 		skeleton := buildDecisionSkeleton(plan.SourceBaseline)
 		plan.State = PreservationStateActionRequired
@@ -553,12 +587,14 @@ func PlanRootPreservation(
 		plan.NextAction = skeleton.NextAction
 		return plan, nil
 	}
-	dispositions, repositoryRules, decisionFindings := validatePreservationDecisions(
+	dispositions, repositoryBlocks, repositoryRules, decisionFindings := validatePreservationDecisions(
 		inspection.Root,
 		plan.SourceBaseline,
 		*request.Decisions,
+		request.semanticOwners,
 	)
 	plan.Dispositions = dispositions
+	plan.RepositoryRuleBlocks = repositoryBlocks
 	plan.RepositoryRulesBytes = repositoryRules
 	plan.Findings = sortedFindings(decisionFindings)
 	if len(plan.Findings) != 0 {
@@ -636,6 +672,102 @@ func loadRootPreservationSources(
 		return sources[i].carrierPath < sources[j].carrierPath
 	})
 	return sources, findings, nil
+}
+
+func loadRecognizedRepositoryRuleSources(
+	rootPath string,
+) ([]rootPreservationSource, []Finding, error) {
+	anchored, err := os.OpenRoot(rootPath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("open repository root for recognized rule carriers: %w", err)
+	}
+	defer anchored.Close()
+
+	var sources []rootPreservationSource
+	var findings []Finding
+	for _, relative := range []string{
+		specificRepositoryPath,
+		legacyRepositoryPath,
+		legacyRepositoryRulesPath,
+	} {
+		content, exists, finding := readSpecificRepositoryCarrier(anchored, relative)
+		if finding != nil {
+			findings = append(findings, *finding)
+			continue
+		}
+		if !exists || repositoryCarrierEmpty(content, relative == legacyRepositoryPath) {
+			continue
+		}
+		sum := sha256.Sum256(content)
+		sources = append(sources, rootPreservationSource{
+			carrierPath:     relative,
+			sourcePath:      relative,
+			contentIdentity: "sha256:" + hex.EncodeToString(sum[:]),
+			content:         content,
+		})
+	}
+	return sources, findings, nil
+}
+
+func validateClassifiedSourceBaseline(
+	current ReadoptionSourceBaseline,
+	classified ReadoptionSourceBaseline,
+) error {
+	if classified.ID != current.ID ||
+		classified.DeclaredIdentity != current.DeclaredIdentity ||
+		classified.Compatibility != current.Compatibility ||
+		classified.Digest != current.Digest ||
+		classified.CarrierCount != current.CarrierCount ||
+		classified.ByteCount != current.ByteCount ||
+		classified.EntryCount != len(classified.Entries) {
+		return errors.New("classified Source Baseline identity does not match current repository bytes")
+	}
+	if _, err := NewAnalysisSnapshot(classified); err != nil {
+		return fmt.Errorf("classified Source Baseline entries are invalid: %w", err)
+	}
+
+	classifiedIndex := 0
+	for _, original := range current.Entries {
+		cursor := original.Start
+		consumed := 0
+		for classifiedIndex < len(classified.Entries) {
+			entry := classified.Entries[classifiedIndex]
+			if entry.Path != original.Path || entry.Start >= original.End && original.End != original.Start {
+				break
+			}
+			if original.Start == original.End {
+				if entry.Start != original.Start || entry.End != original.End {
+					break
+				}
+			} else if entry.Start != cursor || entry.End <= entry.Start || entry.End > original.End {
+				return fmt.Errorf("classified entry %q leaves a gap, overlaps, or escapes its structural source", entry.ID)
+			}
+			if entry.Kind != original.Kind ||
+				entry.CarrierDigest != original.CarrierDigest ||
+				!reflectJSONEqual(entry.StructuralProvenance, original.StructuralProvenance) {
+				return fmt.Errorf("classified entry %q changes structural provenance", entry.ID)
+			}
+			start := entry.Start - original.Start
+			end := entry.End - original.Start
+			if start < 0 || end < start || end > len(original.SourceBytes) ||
+				!bytes.Equal(entry.SourceBytes, original.SourceBytes[start:end]) {
+				return fmt.Errorf("classified entry %q changes source bytes", entry.ID)
+			}
+			cursor = entry.End
+			classifiedIndex++
+			consumed++
+			if cursor == original.End {
+				break
+			}
+		}
+		if consumed == 0 || cursor != original.End {
+			return fmt.Errorf("classified entries do not cover source entry %q exactly once", original.ID)
+		}
+	}
+	if classifiedIndex != len(classified.Entries) {
+		return fmt.Errorf("classified entry %q has no current structural source", classified.Entries[classifiedIndex].ID)
+	}
+	return nil
 }
 
 func planRootBackups(
@@ -967,7 +1099,8 @@ func validatePreservationDecisions(
 	rootPath string,
 	source ReadoptionSourceBaseline,
 	document DecisionDocument,
-) ([]ReadoptionDisposition, []byte, []Finding) {
+	semanticOwners SemanticOwnerRegistry,
+) ([]ReadoptionDisposition, []RepositoryRuleBlock, []byte, []Finding) {
 	var findings []Finding
 	if document.SchemaVersion != DecisionDocumentSchemaVersion ||
 		document.Version != DecisionDocumentVersion ||
@@ -977,7 +1110,7 @@ func validatePreservationDecisions(
 			Path:    ".",
 			Message: "preservation requires a complete strict Decision Document with Readoption dispositions",
 		})
-		return nil, nil, findings
+		return nil, nil, nil, findings
 	}
 	if document.Readoption.SourceBaseline.ID != source.ID ||
 		document.Readoption.SourceBaseline.Digest != source.Digest {
@@ -1022,15 +1155,8 @@ func validatePreservationDecisions(
 			})
 			continue
 		}
-		if disposition.Disposition != "repository-rules" && disposition.Disposition != "rejected" {
-			findings = append(findings, Finding{
-				Code:    "baseline.preservation.disposition.invalid",
-				Path:    entry.Path,
-				Message: "root instruction preservation accepts only repository-rules or rejected dispositions",
-			})
-			continue
-		}
-		if disposition.Disposition == "rejected" {
+		switch disposition.Disposition {
+		case "rejected":
 			if strings.TrimSpace(disposition.Reason) == "" || disposition.Destination != nil {
 				findings = append(findings, Finding{
 					Code:    "baseline.preservation.disposition.invalid",
@@ -1039,9 +1165,45 @@ func validatePreservationDecisions(
 				})
 				continue
 			}
-		} else if finding := validateRepositoryRulesDisposition(disposition); finding != nil {
-			finding.Path = entry.Path
-			findings = append(findings, *finding)
+		case "managed-entry":
+			if finding := validateManagedEntryDisposition(
+				entry,
+				disposition,
+				semanticOwners,
+			); finding != nil {
+				findings = append(findings, *finding)
+				continue
+			}
+		case "repository-document":
+			if _, finding := semanticOwnerForDisposition(
+				entry,
+				disposition,
+				semanticOwners,
+			); finding != nil {
+				findings = append(findings, *finding)
+				continue
+			}
+		case "repository-rules":
+			if finding := validateRepositoryRulesDisposition(disposition); finding != nil {
+				finding.Path = entry.Path
+				findings = append(findings, *finding)
+				continue
+			}
+			proposed, _ := base64.StdEncoding.DecodeString(disposition.Destination.ProposedBytes)
+			if !bytes.Equal(proposed, entry.SourceBytes) {
+				findings = append(findings, Finding{
+					Code:    "baseline.preservation.repository-rules.invalid",
+					Path:    entry.Path,
+					Message: "Repository-Specific Normative Rules proposed bytes do not match the current source entry",
+				})
+				continue
+			}
+		default:
+			findings = append(findings, Finding{
+				Code:    "baseline.preservation.disposition.invalid",
+				Path:    entry.Path,
+				Message: "root instruction preservation disposition is unsupported",
+			})
 			continue
 		}
 		accepted = append(accepted, disposition)
@@ -1056,23 +1218,113 @@ func validatePreservationDecisions(
 		}
 	}
 	if len(findings) != 0 {
-		return accepted, nil, findings
+		return accepted, nil, nil, findings
 	}
 	sort.Slice(accepted, func(i, j int) bool {
 		return order[accepted[i].EntryID] < order[accepted[j].EntryID]
 	})
+	var repositoryBlocks []RepositoryRuleBlock
 	var repositoryRules []byte
 	for _, disposition := range accepted {
-		if disposition.Disposition != "repository-rules" {
-			continue
+		entry := expected[disposition.EntryID]
+		switch disposition.Disposition {
+		case "repository-document":
+			owner, _ := semanticOwnerForDisposition(entry, disposition, semanticOwners)
+			repositoryBlocks = append(repositoryBlocks, RepositoryRuleBlock{
+				ID:             repositoryRuleStableID(entry, owner),
+				SourceEntryID:  entry.ID,
+				Classification: disposition.Classification,
+				ManagedID:      owner.ManagedID,
+				Path:           owner.Path,
+				Body:           append([]byte(nil), entry.SourceBytes...),
+			})
+		case "repository-rules":
+			proposed, _ := base64.StdEncoding.DecodeString(disposition.Destination.ProposedBytes)
+			repositoryRules = append(repositoryRules, proposed...)
 		}
-		proposed, _ := base64.StdEncoding.DecodeString(disposition.Destination.ProposedBytes)
-		repositoryRules = append(repositoryRules, proposed...)
 	}
 	if finding := validateRepositoryRulesTarget(rootPath, repositoryRules); finding != nil {
-		return accepted, nil, append(findings, *finding)
+		return accepted, repositoryBlocks, nil, append(findings, *finding)
 	}
-	return accepted, repositoryRules, nil
+	return accepted, repositoryBlocks, repositoryRules, nil
+}
+
+func validateManagedEntryDisposition(
+	entry ReadoptionSourceEntry,
+	disposition ReadoptionDisposition,
+	semanticOwners SemanticOwnerRegistry,
+) *Finding {
+	destination := disposition.Destination
+	_, active := semanticOwners[destinationManagedID(destination)]
+	if destination == nil || destination.ManagedID == "" || !active ||
+		disposition.Classification == "non-governed" ||
+		strings.TrimSpace(disposition.Reason) == "" {
+		return &Finding{
+			Code:    "baseline.preservation.managed-entry.invalid",
+			Path:    entry.Path,
+			Message: "managed-entry requires one active managed semantic owner and a review reason",
+		}
+	}
+	return nil
+}
+
+func semanticOwnerForDisposition(
+	entry ReadoptionSourceEntry,
+	disposition ReadoptionDisposition,
+	semanticOwners SemanticOwnerRegistry,
+) (SemanticOwner, *Finding) {
+	destination := disposition.Destination
+	if destination == nil ||
+		destination.ManagedID != "" ||
+		destination.DocumentType != "agent-guide" ||
+		destination.Digest != entry.Digest ||
+		disposition.Classification == "non-governed" ||
+		entry.Kind == "managed-block" ||
+		len(bytes.TrimSpace(entry.SourceBytes)) == 0 ||
+		strings.TrimSpace(disposition.Reason) == "" {
+		return SemanticOwner{}, &Finding{
+			Code:    "baseline.preservation.repository-document.invalid",
+			Path:    entry.Path,
+			Message: "repository-document requires exact non-managed source bytes and an active semantic guide",
+		}
+	}
+	var matched []SemanticOwner
+	for _, owner := range semanticOwners {
+		if owner.Path == destination.Path {
+			matched = append(matched, owner)
+		}
+	}
+	if len(matched) == 0 {
+		return SemanticOwner{}, &Finding{
+			Code:    "baseline.preservation.repository-document.inactive",
+			Path:    destination.Path,
+			Message: "repository-document destination is not one active semantic owner",
+		}
+	}
+	sort.Slice(matched, func(i, j int) bool {
+		return matched[i].ManagedID < matched[j].ManagedID
+	})
+	return matched[0], nil
+}
+
+func destinationManagedID(destination *ReadoptionDestination) string {
+	if destination == nil {
+		return ""
+	}
+	return destination.ManagedID
+}
+
+func repositoryRuleStableID(entry ReadoptionSourceEntry, owner SemanticOwner) string {
+	identity := sha256.New()
+	for _, value := range []string{
+		entry.ID,
+		strconv.Itoa(entry.Start),
+		strconv.Itoa(entry.End),
+		owner.Path,
+	} {
+		writeLengthPrefixed(identity, value)
+	}
+	return "rule." + hex.EncodeToString(identity.Sum(nil))
 }
 
 func validateRepositoryRulesDisposition(disposition ReadoptionDisposition) *Finding {

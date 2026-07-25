@@ -408,7 +408,7 @@ func (builder *inventoryBuilder) walk(relative string, entry fs.DirEntry, walkEr
 			})
 		}
 	}
-	if scope == "nested" {
+	if scope == "nested" && !isRecognizedRepositoryRuleCarrier(normalized) {
 		builder.warnings = append(builder.warnings, Finding{
 			Code:    "baseline.inventory.nested-carrier-conflict",
 			Path:    normalized,
@@ -419,6 +419,12 @@ func (builder *inventoryBuilder) walk(relative string, entry fs.DirEntry, walkEr
 		return fs.SkipDir
 	}
 	return nil
+}
+
+func isRecognizedRepositoryRuleCarrier(relative string) bool {
+	return relative == specificRepositoryPath ||
+		relative == legacyRepositoryPath ||
+		relative == legacyRepositoryRulesPath
 }
 
 func (builder *inventoryBuilder) addRegularCarrier(carrierPath, sourcePath, scope string) {

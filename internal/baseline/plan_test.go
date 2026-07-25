@@ -8,7 +8,9 @@ package baseline
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -519,6 +521,326 @@ func TestDisabledRepositoryExtensionRejectsNonemptyLegacyCarrier(t *testing.T) {
 		outcome.Result.Category != "classification" ||
 		!strings.Contains(outcome.Result.Message, "require repository.extension.enabled=true") {
 		t.Fatalf("disabled legacy carrier migration outcome = %+v", outcome)
+	}
+}
+
+func TestSemanticRuleDistributionMovesExactBytesAndAccountsLedgers(t *testing.T) {
+	repo := newPlanRepository(t)
+	semanticRule := []byte("Keep requested CLI output on stdout.\n")
+	residualRule := []byte("Keep the repository-specific release name.\n")
+	sourceBytes := append(append([]byte(nil), semanticRule...), residualRule...)
+	writeInspectionFile(t, repo, "AGENTS.md", string(sourceBytes))
+	commitInspectionRepository(t, repo, "seed segmented repository rules")
+
+	unresolved, err := PlanRootPreservation(
+		inspectPreservationRepository(t, repo),
+		RootPreservationRequest{Mode: PreservationModePreservation},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	segmentation, err := NewRuleSegmentationSnapshot(unresolved.SourceBaseline)
+	if err != nil {
+		t.Fatal(err)
+	}
+	entry := unresolved.SourceBaseline.Entries[0]
+	proposal := RuleSegmentationProposal{
+		SchemaVersion:  RuleSegmentationProposalSchemaVersion,
+		SnapshotDigest: segmentation.SnapshotDigest,
+		SourceBaseline: ClassificationSource{
+			ID:     segmentation.SourceBaseline.ID,
+			Digest: segmentation.SourceBaseline.Digest,
+		},
+		Segments: []RuleSegmentProposal{
+			{
+				EntryID: entry.ID,
+				Start:   0,
+				End:     len(semanticRule),
+				Digest:  ruleSegmentDigest(semanticRule),
+			},
+			{
+				EntryID: entry.ID,
+				Start:   len(semanticRule),
+				End:     len(sourceBytes),
+				Digest:  ruleSegmentDigest(residualRule),
+			},
+		},
+	}
+	classifiedSource, err := MaterializeRuleSegments(segmentation, proposal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	semanticEntry := classifiedSource.Entries[0]
+	residualEntry := classifiedSource.Entries[1]
+	document := decisionDocumentForSource(classifiedSource, []ReadoptionDisposition{
+		{
+			EntryID:        semanticEntry.ID,
+			EntryDigest:    semanticEntry.Digest,
+			Classification: "normative-clause",
+			Disposition:    "repository-document",
+			Destination: &ReadoptionDestination{
+				DocumentType: "agent-guide",
+				Path:         "docs/agents/cli.md",
+				Digest:       semanticEntry.Digest,
+			},
+			Reason: "The active CLI guide owns this repository policy.",
+		},
+		{
+			EntryID:        residualEntry.ID,
+			EntryDigest:    residualEntry.Digest,
+			Classification: "normative-clause",
+			Disposition:    "repository-rules",
+			Destination: &ReadoptionDestination{
+				DocumentType:  "repository-rules",
+				Path:          specificRepositoryPath,
+				Digest:        residualEntry.Digest,
+				ProposedBytes: base64.StdEncoding.EncodeToString(residualEntry.SourceBytes),
+			},
+			Reason: "No active semantic guide owns this repository-specific policy.",
+		},
+	})
+
+	outcome, err := BuildPlan(context.Background(), PlanRequest{
+		Repository: repo,
+		ProfileID:  "go-cli-tui",
+		Decisions:  planTestDecisionsWithRepositoryExtension(),
+		Preservation: RootPreservationRequest{
+			Mode:           PreservationModePreservation,
+			Decisions:      &document,
+			SourceBaseline: &classifiedSource,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if outcome.Plan == nil {
+		t.Fatalf("semantic distribution returned action: %+v", outcome.Result)
+	}
+	plan := *outcome.Plan
+
+	guide := planPostimage(t, plan, "docs/agents/cli.md")
+	blocks, err := parseRepositoryRuleBlocks(guide.Path, guide.Content)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(blocks) != 1 || !bytes.Equal(blocks[0].Body, semanticRule) {
+		t.Fatalf("semantic block bodies = %+v, want exact bytes %q", blocks, semanticRule)
+	}
+	residual := planPostimage(t, plan, specificRepositoryPath)
+	if !bytes.Equal(residual.Content, residualRule) {
+		t.Fatalf("residual bytes = %q, want %q", residual.Content, residualRule)
+	}
+
+	retentionBySource := make(map[string]RetentionEvidence)
+	for _, evidence := range plan.Retention {
+		retentionBySource[evidence.FromClause] = evidence
+	}
+	if retentionBySource[semanticEntry.ID].Disposition != "repository-document" ||
+		retentionBySource[semanticEntry.ID].Targets[0] != "docs/agents/cli.md" ||
+		retentionBySource[residualEntry.ID].Disposition != "repository-rules" ||
+		retentionBySource[residualEntry.ID].Targets[0] != specificRepositoryPath {
+		t.Fatalf("semantic distribution retention = %+v", plan.Retention)
+	}
+	var repositoryBlockLedger bool
+	for _, managed := range plan.ManagedEntries {
+		if managed.Path == guide.Path &&
+			managed.Kind == "repository-owned" &&
+			strings.HasPrefix(managed.ID, "repository-rule:") &&
+			managed.ContentIdentity == planContentIdentity(semanticRule) {
+			repositoryBlockLedger = true
+		}
+	}
+	if !repositoryBlockLedger {
+		t.Fatal("semantic repository-owned block is absent from the managed-entry ledger")
+	}
+	for _, artifact := range plan.SetupManifest.ManagedArtifacts {
+		if strings.HasPrefix(artifact.ID, "repository-rule:") {
+			t.Fatal("repository-owned semantic block leaked into SetupManifest.ManagedArtifacts")
+		}
+	}
+}
+
+func decisionDocumentForSource(
+	source ReadoptionSourceBaseline,
+	dispositions []ReadoptionDisposition,
+) DecisionDocument {
+	document := DecisionDocument{
+		SchemaVersion: DecisionDocumentSchemaVersion,
+		Version:       DecisionDocumentVersion,
+		Decisions:     []DecisionValue{},
+		Readoption: &ReadoptionDecisions{
+			Dispositions: dispositions,
+		},
+	}
+	document.Readoption.SourceBaseline.ID = source.ID
+	document.Readoption.SourceBaseline.Digest = source.Digest
+	return document
+}
+
+func buildSemanticCarrierPlan(t *testing.T, repo, carrierPath string) PlanDocument {
+	t.Helper()
+	unresolved, err := PlanRootPreservation(
+		inspectPreservationRepository(t, repo),
+		RootPreservationRequest{Mode: PreservationModePreservation},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var entry ReadoptionSourceEntry
+	for _, candidate := range unresolved.SourceBaseline.Entries {
+		if candidate.Path == carrierPath {
+			entry = candidate
+			break
+		}
+	}
+	if entry.ID == "" {
+		t.Fatalf("recognized carrier %q has no Source Baseline Entry", carrierPath)
+	}
+	document := decisionDocumentForSource(
+		unresolved.SourceBaseline,
+		[]ReadoptionDisposition{{
+			EntryID:        entry.ID,
+			EntryDigest:    entry.Digest,
+			Classification: "normative-clause",
+			Disposition:    "repository-document",
+			Destination: &ReadoptionDestination{
+				DocumentType: "agent-guide",
+				Path:         "docs/agents/cli.md",
+				Digest:       entry.Digest,
+			},
+			Reason: "The active CLI guide owns this repository policy.",
+		}},
+	)
+	outcome, err := BuildPlan(context.Background(), PlanRequest{
+		Repository: repo,
+		ProfileID:  "go-cli-tui",
+		Decisions:  planTestDecisions(),
+		Preservation: RootPreservationRequest{
+			Mode:      PreservationModePreservation,
+			Decisions: &document,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if outcome.Plan == nil {
+		t.Fatalf("semantic carrier plan returned action: %+v", outcome.Result)
+	}
+	return *outcome.Plan
+}
+
+func TestResidualCarrierRemovesAllRecognizedEmptyResults(t *testing.T) {
+	for _, carrierPath := range []string{
+		specificRepositoryPath,
+		legacyRepositoryPath,
+		legacyRepositoryRulesPath,
+	} {
+		t.Run(carrierPath, func(t *testing.T) {
+			repo := newPlanRepository(t)
+			rule := []byte("Keep CLI diagnostics on stderr.\n")
+			writeInspectionFile(t, repo, carrierPath, string(rule))
+			commitInspectionRepository(t, repo, "seed recognized repository-rule carrier")
+
+			unresolved, err := PlanRootPreservation(
+				inspectPreservationRepository(t, repo),
+				RootPreservationRequest{Mode: PreservationModePreservation},
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(unresolved.SourceBaseline.Entries) != 1 ||
+				unresolved.SourceBaseline.Entries[0].Path != carrierPath {
+				t.Fatalf("recognized carrier source inventory = %+v", unresolved.SourceBaseline.Entries)
+			}
+			entry := unresolved.SourceBaseline.Entries[0]
+			document := decisionDocumentForSource(
+				unresolved.SourceBaseline,
+				[]ReadoptionDisposition{{
+					EntryID:        entry.ID,
+					EntryDigest:    entry.Digest,
+					Classification: "normative-clause",
+					Disposition:    "repository-document",
+					Destination: &ReadoptionDestination{
+						DocumentType: "agent-guide",
+						Path:         "docs/agents/cli.md",
+						Digest:       entry.Digest,
+					},
+					Reason: "The active CLI guide owns this repository policy.",
+				}},
+			)
+			outcome, err := BuildPlan(context.Background(), PlanRequest{
+				Repository: repo,
+				ProfileID:  "go-cli-tui",
+				Decisions:  planTestDecisions(),
+				Preservation: RootPreservationRequest{
+					Mode:      PreservationModePreservation,
+					Decisions: &document,
+				},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if outcome.Plan == nil {
+				t.Fatalf("recognized carrier distribution returned action: %+v", outcome.Result)
+			}
+			plan := *outcome.Plan
+			removed := planPostimage(t, plan, carrierPath)
+			if removed.Kind != PreimageMissing {
+				t.Fatalf("recognized carrier %q postimage = %+v, want missing", carrierPath, removed)
+			}
+			for _, postimage := range plan.Postimages {
+				if postimage.Path == specificRepositoryPath && postimage.Kind == PreimageRegular {
+					t.Fatalf("empty redistribution retained residual bytes %q", postimage.Content)
+				}
+			}
+			agents := planPostimage(t, plan, "AGENTS.md")
+			if bytes.Contains(agents.Content, []byte(specificRepositoryPath)) ||
+				bytes.Contains(agents.Content, []byte(legacyRepositoryPath)) ||
+				bytes.Contains(agents.Content, []byte(legacyRepositoryRulesPath)) {
+				t.Fatalf("empty redistribution retained a root pointer:\n%s", agents.Content)
+			}
+			if _, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest); err != nil {
+				t.Fatalf("apply recognized carrier distribution: %v", err)
+			}
+			if _, err := os.Lstat(filepath.Join(repo, filepath.FromSlash(carrierPath))); !errors.Is(err, fs.ErrNotExist) {
+				t.Fatalf("recognized carrier remains after apply: %v", err)
+			}
+		})
+	}
+}
+
+func TestNestedCarrierRemainsByteIdenticalAndWarningOnly(t *testing.T) {
+	repo := newPlanRepository(t)
+	const nestedPath = "services/payments/AGENTS.md"
+	nested := []byte("Keep this nested repository policy byte-identical.\r\n")
+	writeInspectionFile(t, repo, nestedPath, string(nested))
+	commitInspectionRepository(t, repo, "seed arbitrary nested carrier")
+
+	plan := buildTestPlan(t, repo)
+	var warned bool
+	for _, warning := range plan.Warnings {
+		if warning.Code == "baseline.inventory.nested-carrier-conflict" &&
+			warning.Path == nestedPath {
+			warned = true
+		}
+	}
+	if !warned {
+		t.Fatalf("nested carrier warnings = %+v", plan.Warnings)
+	}
+	for _, postimage := range plan.Postimages {
+		if postimage.Path == nestedPath {
+			t.Fatal("arbitrary nested carrier became a mutation target")
+		}
+	}
+	if _, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest); err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(nestedPath)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(after, nested) {
+		t.Fatalf("nested carrier bytes = %q, want %q", after, nested)
 	}
 }
 

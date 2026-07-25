@@ -48,6 +48,105 @@ func TestApplyCanonicalizesLegacyRepositoryRules(t *testing.T) {
 	}
 }
 
+func TestRepositoryRuleBlockPreservesRepositoryEditAndEmptyReapply(t *testing.T) {
+	repo := newPlanRepository(t)
+	rule := []byte("Keep CLI diagnostics on stderr for this repository.\n")
+	writeInspectionFile(t, repo, legacyRepositoryPath, string(rule))
+	commitInspectionRepository(t, repo, "seed semantic repository rule")
+
+	plan := buildSemanticCarrierPlan(t, repo, legacyRepositoryPath)
+	if _, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest); err != nil {
+		t.Fatalf("apply semantic repository rule: %v", err)
+	}
+	beforeReapply := snapshotVisibleTree(t, repo)
+	result, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest)
+	if err != nil {
+		t.Fatalf("empty semantic reapply: %v", err)
+	}
+	if result.State != "verified" || !strings.Contains(result.Message, "already applied") {
+		t.Fatalf("empty semantic reapply result = %+v", result)
+	}
+	if afterReapply := snapshotVisibleTree(t, repo); !reflect.DeepEqual(afterReapply, beforeReapply) {
+		t.Fatalf("empty semantic reapply changed managed files")
+	}
+
+	guidePath := "docs/agents/cli.md"
+	guide, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(guidePath)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	editedRule := []byte("Keep CLI diagnostics concise and actionable for this repository.\n")
+	editedGuide := bytes.Replace(guide, rule, editedRule, 1)
+	if bytes.Equal(editedGuide, guide) {
+		t.Fatal("semantic repository-rule body was not found for edit")
+	}
+	writeTransactionFile(t, repo, guidePath, string(editedGuide), 0o644)
+	commitInspectionRepository(t, repo, "edit repository-owned semantic rule")
+
+	fresh := buildTestPlan(t, repo)
+	freshGuide := planPostimage(t, fresh, guidePath)
+	blocks, err := parseRepositoryRuleBlocks(guidePath, freshGuide.Content)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(blocks) != 1 || !bytes.Equal(blocks[0].Body, editedRule) {
+		t.Fatalf("fresh plan semantic blocks = %+v, want edited bytes %q", blocks, editedRule)
+	}
+	for _, change := range fresh.FileChanges {
+		if change.Path == guidePath {
+			t.Fatalf("repository-owned semantic edit was treated as setup drift: %+v", change)
+		}
+	}
+	var retained, inventoried bool
+	for _, evidence := range fresh.Retention {
+		if strings.HasPrefix(evidence.FromClause, "repository-rule.") &&
+			evidence.Disposition == "repository-document" &&
+			len(evidence.Targets) == 1 &&
+			evidence.Targets[0] == guidePath {
+			retained = true
+		}
+	}
+	for _, entry := range fresh.ManagedEntries {
+		if strings.HasPrefix(entry.ID, "repository-rule:") &&
+			entry.Path == guidePath &&
+			entry.Kind == "repository-owned" &&
+			entry.ContentIdentity == planContentIdentity(editedRule) {
+			inventoried = true
+		}
+	}
+	if !retained || !inventoried {
+		t.Fatalf("edited repository rule retention=%t inventory=%t", retained, inventoried)
+	}
+}
+
+func TestRepositoryRuleBlockRollbackRestoresSemanticGuide(t *testing.T) {
+	repo := newPlanRepository(t)
+	const rule = "Keep repository CLI output stable.\n"
+	writeInspectionFile(t, repo, legacyRepositoryRulesPath, rule)
+	commitInspectionRepository(t, repo, "seed semantic rollback rule")
+	plan := buildSemanticCarrierPlan(t, repo, legacyRepositoryRulesPath)
+	before := snapshotVisibleTree(t, repo)
+
+	transaction, err := beginTransaction(context.Background(), repo, plan, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tx := transaction.(*fileTransaction)
+	tx.phaseHook = failTransactionOnce(
+		transactionPhaseVerifying,
+		"docs/agents/cli.md",
+		errors.New("injected semantic guide verification failure"),
+	)
+	if _, err := tx.Apply(context.Background()); err == nil ||
+		!strings.Contains(err.Error(), "injected semantic guide verification failure") {
+		t.Fatalf("semantic rollback Apply() error = %v", err)
+	}
+	if err := tx.Close(); err != nil {
+		t.Fatalf("close semantic rollback transaction: %v", err)
+	}
+	assertVisibleTree(t, repo, before)
+}
+
 func TestApplyExactDigest(t *testing.T) {
 	repo := newPlanRepository(t)
 	plan := buildTestPlan(t, repo)

@@ -29,13 +29,14 @@ type ClassificationSource struct {
 	Digest string `json:"digest"`
 }
 
-// ClassificationDestination is one disposition the sealed analyzer may
-// propose. Root instruction classification is deliberately limited to
-// rejection or Repository-Specific Normative Rules.
+// ClassificationDestination is one active disposition the sealed analyzer
+// may propose for an exact source entry.
 type ClassificationDestination struct {
-	Disposition  string `json:"disposition"`
-	DocumentType string `json:"documentType,omitempty"`
-	Path         string `json:"path,omitempty"`
+	Disposition     string   `json:"disposition"`
+	ManagedID       string   `json:"managedId,omitempty"`
+	DocumentType    string   `json:"documentType,omitempty"`
+	Path            string   `json:"path,omitempty"`
+	Classifications []string `json:"classifications,omitempty"`
 }
 
 // ClassificationProposalContract makes the strict response shape explicit
@@ -72,7 +73,10 @@ type ClassificationProposal struct {
 
 // NewAnalysisSnapshot builds the only semantic payload admitted to the ACP
 // boundary. It contains source bytes and identities, but no checkout path.
-func NewAnalysisSnapshot(source ReadoptionSourceBaseline) (AnalysisSnapshot, error) {
+func NewAnalysisSnapshot(
+	source ReadoptionSourceBaseline,
+	semanticOwners ...SemanticOwnerRegistry,
+) (AnalysisSnapshot, error) {
 	if source.EntryCount != len(source.Entries) {
 		return AnalysisSnapshot{}, fmt.Errorf(
 			"build Analysis Snapshot: Source Baseline declares %d entries but contains %d",
@@ -104,6 +108,15 @@ func NewAnalysisSnapshot(source ReadoptionSourceBaseline) (AnalysisSnapshot, err
 			"build Analysis Snapshot: Source Baseline id and digest do not match",
 		)
 	}
+	var owners SemanticOwnerRegistry
+	if len(semanticOwners) > 1 {
+		return AnalysisSnapshot{}, errors.New(
+			"build Analysis Snapshot: at most one semantic owner registry is allowed",
+		)
+	}
+	if len(semanticOwners) == 1 {
+		owners = semanticOwners[0]
+	}
 	snapshot := AnalysisSnapshot{
 		SchemaVersion:    AnalysisSnapshotSchemaVersion,
 		Operation:        "classify-root-instructions",
@@ -111,7 +124,7 @@ func NewAnalysisSnapshot(source ReadoptionSourceBaseline) (AnalysisSnapshot, err
 		ProposalContract: classificationProposalContract(),
 		SourceBaseline:   ClassificationSource{ID: source.ID, Digest: source.Digest},
 		Entries:          cloneClassificationEntries(source.Entries),
-		Destinations:     supportedClassificationDestinations(),
+		Destinations:     supportedClassificationDestinations(owners),
 	}
 	digest, err := computeAnalysisSnapshotDigest(snapshot)
 	if err != nil {
@@ -275,7 +288,7 @@ func normalizeClassificationProposal(
 			)
 		}
 		seen[disposition.EntryID] = struct{}{}
-		if err := validateClassificationDisposition(entry, disposition); err != nil {
+		if err := validateClassificationDisposition(snapshot, entry, disposition); err != nil {
 			return ClassificationProposal{}, err
 		}
 		normalized = append(normalized, cloneReadoptionDisposition(disposition))
@@ -299,6 +312,7 @@ func normalizeClassificationProposal(
 }
 
 func validateClassificationDisposition(
+	snapshot AnalysisSnapshot,
 	entry ReadoptionSourceEntry,
 	disposition ReadoptionDisposition,
 ) error {
@@ -356,6 +370,49 @@ func validateClassificationDisposition(
 				entry.ID,
 			)
 		}
+	case "managed-entry":
+		destination := disposition.Destination
+		if disposition.Classification == "non-governed" ||
+			destination == nil ||
+			destination.ManagedID == "" ||
+			strings.TrimSpace(disposition.Reason) == "" ||
+			!classificationDestinationAllowed(
+				snapshot.Destinations,
+				disposition.Classification,
+				ClassificationDestination{
+					Disposition: "managed-entry",
+					ManagedID:   destination.ManagedID,
+				},
+			) {
+			return fmt.Errorf(
+				"validate Classification Proposal: unsupported managed destination for %q",
+				entry.ID,
+			)
+		}
+	case "repository-document":
+		destination := disposition.Destination
+		if disposition.Classification == "non-governed" ||
+			entry.Kind == "managed-block" ||
+			len(bytes.TrimSpace(entry.SourceBytes)) == 0 ||
+			strings.TrimSpace(disposition.Reason) == "" ||
+			destination == nil ||
+			destination.ManagedID != "" ||
+			destination.DocumentType != "agent-guide" ||
+			destination.Digest != entry.Digest ||
+			!classificationDestinationAllowed(
+				snapshot.Destinations,
+				disposition.Classification,
+				ClassificationDestination{
+					Disposition:  "repository-document",
+					DocumentType: destination.DocumentType,
+					Path:         destination.Path,
+				},
+			) {
+			return fmt.Errorf(
+				"validate Classification Proposal: unsupported semantic destination for %q",
+				entry.ID,
+			)
+		}
 	default:
 		return fmt.Errorf(
 			"validate Classification Proposal: unsupported disposition %q for %q",
@@ -395,8 +452,8 @@ func validateAnalysisSnapshot(snapshot AnalysisSnapshot) error {
 			AnalysisSnapshotMaxEntries,
 		)
 	}
-	if !equalClassificationDestinations(snapshot.Destinations, supportedClassificationDestinations()) {
-		return errors.New("validate Analysis Snapshot: supported destinations changed")
+	if err := validateClassificationDestinations(snapshot.Destinations); err != nil {
+		return err
 	}
 	seen := make(map[string]struct{}, len(snapshot.Entries))
 	for _, entry := range snapshot.Entries {
@@ -461,8 +518,10 @@ func computeAnalysisSnapshotDigest(snapshot AnalysisSnapshot) (string, error) {
 	return "sha256:" + hex.EncodeToString(sum[:]), nil
 }
 
-func supportedClassificationDestinations() []ClassificationDestination {
-	return []ClassificationDestination{
+func supportedClassificationDestinations(
+	semanticOwners SemanticOwnerRegistry,
+) []ClassificationDestination {
+	destinations := []ClassificationDestination{
 		{Disposition: "rejected"},
 		{
 			Disposition:  "repository-rules",
@@ -470,6 +529,32 @@ func supportedClassificationDestinations() []ClassificationDestination {
 			Path:         repositoryRulesPath,
 		},
 	}
+	documentClassifications := make(map[string]map[string]struct{})
+	for _, managedID := range sortedKeys(semanticOwners) {
+		owner := semanticOwners[managedID]
+		classifications := append([]string(nil), owner.Classifications...)
+		sort.Strings(classifications)
+		destinations = append(destinations, ClassificationDestination{
+			Disposition:     "managed-entry",
+			ManagedID:       owner.ManagedID,
+			Classifications: classifications,
+		})
+		if documentClassifications[owner.Path] == nil {
+			documentClassifications[owner.Path] = make(map[string]struct{})
+		}
+		for _, classification := range owner.Classifications {
+			documentClassifications[owner.Path][classification] = struct{}{}
+		}
+	}
+	for _, relative := range sortedKeys(documentClassifications) {
+		destinations = append(destinations, ClassificationDestination{
+			Disposition:     "repository-document",
+			DocumentType:    "agent-guide",
+			Path:            relative,
+			Classifications: sortedKeys(documentClassifications[relative]),
+		})
+	}
+	return destinations
 }
 
 func classificationProposalContract() ClassificationProposalContract {
@@ -498,6 +583,8 @@ func classificationProposalContract() ClassificationProposalContract {
 			"Return exactly one disposition for every entryId and copy its entryDigest.",
 			"Use rejected with a null destination and non-empty reason for non-governed, managed, or empty evidence.",
 			"Use repository-rules only with the advertised documentType and path, exact source bytes as canonical base64, their digest, and a non-empty reason.",
+			"Use repository-document only with one advertised active agent-guide path, the exact entry digest, and a non-empty reason.",
+			"Use managed-entry only with one advertised active managedId and a non-empty reason.",
 		},
 	}
 }
@@ -529,11 +616,90 @@ func equalClassificationDestinations(first, second []ClassificationDestination) 
 		return false
 	}
 	for index := range first {
+		if first[index].Disposition != second[index].Disposition ||
+			first[index].ManagedID != second[index].ManagedID ||
+			first[index].DocumentType != second[index].DocumentType ||
+			first[index].Path != second[index].Path ||
+			!equalOptionalStrings(first[index].Classifications, second[index].Classifications) {
+			return false
+		}
+	}
+	return true
+}
+
+func equalOptionalStrings(first, second []string) bool {
+	if (first == nil) != (second == nil) || len(first) != len(second) {
+		return false
+	}
+	for index := range first {
 		if first[index] != second[index] {
 			return false
 		}
 	}
 	return true
+}
+
+func validateClassificationDestinations(destinations []ClassificationDestination) error {
+	if destinations == nil || len(destinations) < 2 {
+		return errors.New("validate Analysis Snapshot: supported destinations changed")
+	}
+	fixed := supportedClassificationDestinations(nil)
+	if !equalClassificationDestinations(destinations[:2], fixed) {
+		return errors.New("validate Analysis Snapshot: supported destinations changed")
+	}
+	seenManaged := make(map[string]struct{})
+	seenPaths := make(map[string]struct{})
+	for index := 2; index < len(destinations); index++ {
+		destination := destinations[index]
+		if destination.Classifications == nil {
+			return errors.New("validate Analysis Snapshot: semantic destination classifications are missing")
+		}
+		switch destination.Disposition {
+		case "managed-entry":
+			if destination.ManagedID == "" ||
+				destination.DocumentType != "" ||
+				destination.Path != "" {
+				return errors.New("validate Analysis Snapshot: managed semantic destination is invalid")
+			}
+			if _, duplicate := seenManaged[destination.ManagedID]; duplicate {
+				return errors.New("validate Analysis Snapshot: semantic managed destination is duplicated")
+			}
+			seenManaged[destination.ManagedID] = struct{}{}
+		case "repository-document":
+			if destination.ManagedID != "" ||
+				destination.DocumentType != "agent-guide" ||
+				!repositoryPathIsSafe(destination.Path) {
+				return errors.New("validate Analysis Snapshot: repository semantic destination is invalid")
+			}
+			if _, duplicate := seenPaths[destination.Path]; duplicate {
+				return errors.New("validate Analysis Snapshot: semantic repository destination is duplicated")
+			}
+			seenPaths[destination.Path] = struct{}{}
+		default:
+			return errors.New("validate Analysis Snapshot: unsupported semantic destination")
+		}
+	}
+	return nil
+}
+
+func classificationDestinationAllowed(
+	destinations []ClassificationDestination,
+	classification string,
+	candidate ClassificationDestination,
+) bool {
+	for _, destination := range destinations {
+		if destination.Disposition != candidate.Disposition ||
+			destination.ManagedID != candidate.ManagedID ||
+			destination.DocumentType != candidate.DocumentType ||
+			destination.Path != candidate.Path {
+			continue
+		}
+		// The semantic classifications describe the concern owned by the guide.
+		// Readoption's classification describes enforcement shape, so presence
+		// in an active advertised destination is the binding admission check.
+		return classification != "non-governed"
+	}
+	return false
 }
 
 func cloneClassificationEntries(entries []ReadoptionSourceEntry) []ReadoptionSourceEntry {

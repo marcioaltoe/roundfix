@@ -395,6 +395,55 @@ func validateSpecificRepositoryPlan(
 			return errors.New("repository-specific rule carrier is written without its root pointer")
 		}
 	}
+
+	activeGuides := make(map[string]struct{})
+	for _, artifact := range document.SetupManifest.ManagedArtifacts {
+		if artifact.Kind == "guide" {
+			activeGuides[artifact.Path] = struct{}{}
+		}
+	}
+	ruleEntries := make(map[string]ManagedEntry)
+	for _, entry := range document.ManagedEntries {
+		if !strings.HasPrefix(entry.ID, "repository-rule:") {
+			continue
+		}
+		if entry.Kind != "repository-owned" {
+			return fmt.Errorf("repository-rule ledger entry %q has invalid ownership", entry.ID)
+		}
+		if _, duplicate := ruleEntries[entry.ID]; duplicate {
+			return fmt.Errorf("repository-rule ledger entry %q is duplicated", entry.ID)
+		}
+		ruleEntries[entry.ID] = entry
+	}
+	seenRules := make(map[string]struct{})
+	for relative, postimage := range postimages {
+		if postimage.Kind != PreimageRegular ||
+			!bytes.Contains(postimage.Content, []byte("<!-- roundfix:repository-rule:")) {
+			continue
+		}
+		if _, active := activeGuides[relative]; !active {
+			return fmt.Errorf("repository-rule marker is outside an active semantic guide at %q", relative)
+		}
+		blocks, err := parseRepositoryRuleBlocks(relative, postimage.Content)
+		if err != nil {
+			return err
+		}
+		for _, block := range blocks {
+			entryID := "repository-rule:" + block.ID
+			entry, exists := ruleEntries[entryID]
+			if !exists ||
+				entry.Path != relative ||
+				entry.ContentIdentity != planContentIdentity(block.Body) {
+				return fmt.Errorf("repository-rule marker %q has no exact managed-entry ledger record", block.ID)
+			}
+			seenRules[entryID] = struct{}{}
+		}
+	}
+	for entryID := range ruleEntries {
+		if _, exists := seenRules[entryID]; !exists {
+			return fmt.Errorf("repository-rule ledger entry %q has no semantic guide marker", entryID)
+		}
+	}
 	return nil
 }
 
