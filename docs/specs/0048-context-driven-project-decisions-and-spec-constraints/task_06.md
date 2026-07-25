@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0048-context-driven-project-decisions-and-spec-constraints
-status: failed
+status: pending
 type: docs
 complexity: high
 ---
@@ -27,6 +27,9 @@ files authorized in the active Spec.
 5. MUST exempt existing completed or archived Specs from forced rewriting.
 6. MUST update generated Spec workflow guidance with the same contract.
 7. MUST preserve Task status and dependency ownership boundaries.
+8. MUST keep the release-journey fixture hermetic when the changed generated
+   guidance causes its repository formatter to run: provision the exact
+   fixture-owned formatter dependency before invoking `bunx --no-install`.
 
 ## Subtasks
 
@@ -35,6 +38,7 @@ files authorized in the active Spec.
 - [x] Add Project Constraint checks to `qa-gate`.
 - [x] Update generated Spec workflow guidance.
 - [x] Add active, archived, authorized, and refusal tests.
+- [ ] Provision the release-journey fixture's declared formatter dependency.
 
 ## Acceptance Criteria
 
@@ -44,6 +48,8 @@ files authorized in the active Spec.
 - [x] An authorized tooling Task can change only the listed files.
 - [x] QA detects both missing authorization and out-of-scope tooling changes.
 - [x] Completed and archived legacy Specs remain byte-identical.
+- [ ] The release-journey test passes without relying on a globally installed
+  formatter or network access during `bunx --no-install`.
 
 ## Context
 
@@ -58,6 +64,9 @@ files authorized in the active Spec.
 
 - `rtk go test -count=1 ./skills ./internal/baseline -run 'TestProjectConstraintTaskGate|TestProjectConstraintImplementationGate|TestProjectConstraintQAGate|TestLegacySpecConstraintExemption'` — expected: decomposition, execution, QA, legacy, and ownership boundaries pass.
 - `rtk go run -buildvcs=false ./cmd/roundfix skills check` — expected: all changed repo-owned workflow skills pass.
+- `rtk go test -count=1 ./internal/cli -run '^TestGuidanceCompositionJourney$'`
+  — expected: the disposable repository provisions and runs its exact
+  formatter dependency hermetically.
 - `rtk make verify` — expected: the full repository gate passes.
 
 ## References
@@ -114,9 +123,7 @@ Verification:
   failure reproduced after installing the exact version globally and running
   the focused test outside the sandbox.
 
-Follow-up:
-
-- Repair the release-journey prerequisite in its owning test-harness Task:
-  either bootstrap the disposable repository before invoking `--no-install`,
-  or define and provision the external binary prerequisite explicitly. No
-  workaround or out-of-slice test change was added here.
+Reopened because the generated guidance now makes the release journey exercise
+the repository formatter. The fixture must provision its own exact formatter
+dependency before `bunx --no-install`; a user-global installation is not valid
+acceptance evidence.
