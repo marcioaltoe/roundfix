@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0048-context-driven-project-decisions-and-spec-constraints
-status: completed
+status: pending
 type: backend
 complexity: high
 ---
@@ -27,6 +27,10 @@ conflict.
    Setup Manifest.
 5. MUST re-derive and compare compatible stored values during every update.
 6. MUST preserve exact human and Decision Document parity.
+7. MUST make the human update suggestion reuse the exact rationale from a
+   compatible persisted Better Auth HTTP exception, so accepting both
+   displayed defaults reaches a Plan while an explicitly conflicting
+   Decision Document still fails closed.
 
 ## Subtasks
 
@@ -35,6 +39,8 @@ conflict.
 - [x] Persist and re-audit both decision projections.
 - [x] Add conflict and stable-order diagnostics.
 - [x] Add human and automation parity tests.
+- [ ] Reconcile the human Better Auth suggestion with a compatible persisted
+  HTTP exception.
 
 ## Acceptance Criteria
 
@@ -44,6 +50,8 @@ conflict.
 - [x] A conflicting provider/HTTP pair stops before a complete Plan.
 - [x] Exception ordering and serialized identities are deterministic.
 - [x] Equivalent human and automation answers produce the same Plan Digest.
+- [ ] A compatible Fluxus-style update reaches a Plan when the maintainer
+  accepts both displayed defaults without manually editing either rationale.
 
 ## Context
 
@@ -56,6 +64,9 @@ conflict.
 ## Verification
 
 - `rtk go test -count=1 ./internal/baseline ./internal/cli -run 'TestDeriveBetterAuthHTTPContract|TestHTTPContractConflict|TestProjectDecisionParity|TestProjectDecisionReuse'` — expected: derivation, conflict, ordering, persistence, and interaction parity cases pass.
+- `rtk go test -count=1 ./internal/cli -run 'TestBetterAuthSuggestionReusesHTTPReason'`
+  — expected: the update suggestion adopts the exact compatible persisted
+  rationale while explicit mismatches remain conflicts.
 - `rtk make verify` — expected: the full repository gate passes.
 
 ## References
@@ -103,6 +114,10 @@ update path normalizes stored decisions before offering them for reuse.
 - `rtk make verify` passed: 2,234 Go tests in 22 packages, 4 skill-contract
   tests, the Roundfix skill synchronization check, and the Roundfix build.
 
-### Follow-up
+### Reopened QA repair
 
-None.
+The 2026-07-25 QA gate found that the public Fluxus update offered two
+individually valid defaults whose Better Auth rationale strings differed.
+Accepting both defaults therefore failed before producing a Plan. This Task is
+reopened to align only the human suggestion with an already-compatible
+persisted exception; explicit automation conflicts remain invalid.

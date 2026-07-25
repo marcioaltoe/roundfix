@@ -23,18 +23,17 @@ and resolves the risk with deterministic conflict validation.
 
 - Identifier strategy: applicable. The Baseline decision suggests
   `{"kind":"uuid-v7"}` but this implementation creates no application
-  identifier and migrates no existing value.
+  identifier and migrates no existing value. Source: `docs/agents/domain.md`.
 - Authentication and HTTP: applicable. The Baseline models Better Auth and a
   derived route exception but does not install the provider or mutate
-  application routes.
+  application routes. Source: `docs/agents/backend.md`.
 - Active ADR obligations: ADRs 0063, 0066, 0068, 0071, 0073, 0076, and 0077
   govern HTTP ownership, CLI authority, explicit confirmation, portable
-  planning, apply, decision derivation, and Spec snapshots.
+  planning, apply, decision derivation, and Spec snapshots. Source:
+  `docs/agents/domain.md`.
 - Tooling authority: no tooling configuration, script, ignore file, plugin
-  declaration, or version pin is authorized for modification by this Spec.
-- Sources: `docs/agents/agent-instructions.md`,
-  `docs/agents/domain.md`, `docs/agents/backend.md`, and
-  `docs/agents/spec-routing.md`.
+  declaration, or version pin is proposed or authorized for modification by
+  this Spec. Source: `docs/agents/agent-instructions.md`.
 
 ## System Architecture
 

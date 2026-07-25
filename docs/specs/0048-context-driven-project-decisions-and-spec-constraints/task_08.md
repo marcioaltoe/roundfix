@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0048-context-driven-project-decisions-and-spec-constraints
-status: completed
+status: pending
 type: test
 complexity: high
 ---
@@ -28,6 +28,13 @@ authorized Fluxus journeys remain fresh final QA evidence.
    audit, and empty reapply with zero managed delta.
 6. MUST define fresh Fluxus greenfield and update evidence for final
    `qa-gate`.
+7. MUST implement the named journey tests in this Task's Verification command;
+   a Spec-root-only status commit or a filter that executes no matching tests
+   is not completion evidence.
+8. MUST remove the Task 06 test-only Oxfmt version pin and provision the
+   hermetic formatter from the version already owned by the maintained Profile
+   or disposable repository fixture; this Spec authorizes no new protected
+   tooling version pin.
 
 ## Subtasks
 
@@ -36,6 +43,8 @@ authorized Fluxus journeys remain fresh final QA evidence.
 - [ ] Add PRD and TechSpec authoring fixtures.
 - [ ] Add tooling authorization and refusal journeys.
 - [ ] Add formatter, audit, reapply, and final QA assertions.
+- [ ] Remove the duplicate test-only Oxfmt pin while preserving hermetic
+  formatter execution.
 
 ## Acceptance Criteria
 
@@ -47,6 +56,10 @@ authorized Fluxus journeys remain fresh final QA evidence.
 - [ ] Every affected Profile completes apply, audit, and empty reapply with
   zero managed delta.
 - [ ] The QA matrix requires fresh Fluxus greenfield and update evidence.
+- [ ] Each named journey test exists, executes assertions, and fails when its
+  corresponding contract is removed.
+- [ ] The final Spec delta adds no protected tooling version pin, and the
+  release journey still uses the exact maintained Profile formatter version.
 
 ## Context
 
@@ -67,3 +80,13 @@ authorized Fluxus journeys remain fresh final QA evidence.
 - `_prd.md` → Goals 1–5; User Stories 1–6; Core Features 1–17; Success Metrics.
 - `_techspec.md` → Testing Approach; Build Order 7; Risks & Considerations.
 - ADR-0076 and ADR-0077 → final project-decision and Spec-constraint contracts.
+
+## Reopened QA repair
+
+The 2026-07-25 QA gate found that the prior Daemon-owned commit changed only
+this Task's status. It added no journey tests, left every checkbox open, and
+recorded no Result. The rerun must implement the real journeys, including the
+Fluxus-style keep-defaults update repaired by Task 02, before this Task may
+return to `completed`. It must also remove the duplicate Task 06 Oxfmt pin so
+the final implementation matches the Spec's explicit no-authorization tooling
+constraint.

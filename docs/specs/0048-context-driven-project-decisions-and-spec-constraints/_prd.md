@@ -130,17 +130,20 @@ maintainer records express authorization and the bounded file scope.
 
 - Identifier strategy: applicable to the Baseline contract. The implementation
   models UUID version 7 as the suggested strategy but creates no application
-  identifiers and performs no identifier migration.
+  identifiers and performs no identifier migration. Source:
+  `docs/agents/domain.md`.
 - Authentication and HTTP: applicable to the Baseline contract. The
   implementation models Better Auth and its derived route exception but does
-  not install Better Auth or mutate application routes.
+  not install Better Auth or mutate application routes. Source:
+  `docs/agents/backend.md`.
 - Active ADR obligations: applicable. The implementation must preserve
   repository-owned HTTP policy, CLI authority, confirmation-gated planning,
   portable Plans, and recoverable apply as defined by ADRs 0063, 0066, 0068,
-  0071, and 0073.
+  0071, and 0073. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable. This Spec grants no authorization to create,
   edit, rename, move, or delete tooling configuration, scripts, ignore files,
-  plugin declarations, or version pins.
+  plugin declarations, or version pins; no protected tooling mutation is
+  proposed or authorized. Source: `docs/agents/agent-instructions.md`.
 
 ## Non-Goals / Out of Scope
 
