@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0048-context-driven-project-decisions-and-spec-constraints
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -39,7 +39,7 @@ conflict.
 - [x] Persist and re-audit both decision projections.
 - [x] Add conflict and stable-order diagnostics.
 - [x] Add human and automation parity tests.
-- [ ] Reconcile the human Better Auth suggestion with a compatible persisted
+- [x] Reconcile the human Better Auth suggestion with a compatible persisted
   HTTP exception.
 
 ## Acceptance Criteria
@@ -50,7 +50,7 @@ conflict.
 - [x] A conflicting provider/HTTP pair stops before a complete Plan.
 - [x] Exception ordering and serialized identities are deterministic.
 - [x] Equivalent human and automation answers produce the same Plan Digest.
-- [ ] A compatible Fluxus-style update reaches a Plan when the maintainer
+- [x] A compatible Fluxus-style update reaches a Plan when the maintainer
   accepts both displayed defaults without manually editing either rationale.
 
 ## Context
@@ -121,3 +121,27 @@ individually valid defaults whose Better Auth rationale strings differed.
 Accepting both defaults therefore failed before producing a Plan. This Task is
 reopened to align only the human suggestion with an already-compatible
 persisted exception; explicit automation conflicts remain invalid.
+
+### Reopened QA repair result
+
+The human update prompt now tests each persisted HTTP exception rationale
+against the catalog Better Auth suggestion through the existing
+`ResolveDecisionInput` normalization path. It reuses the exact persisted
+rationale only when the resulting `auth.provider` and `http.contract` pair is
+compatible. The catalog suggestion remains unchanged when no compatible
+exception exists, and explicit Decision Document conflicts still fail closed.
+
+`TestBetterAuthSuggestionReusesHTTPReason` reproduces the Fluxus-style update,
+accepts both displayed defaults, asserts that the persisted rationale is
+visible in the Better Auth suggestion, and reaches a complete Plan. Its
+negative companion changes only the explicit provider rationale and proves
+that normalization still rejects the conflict while naming both decision IDs.
+
+Fresh verification:
+
+- `rtk go test -count=1 ./internal/baseline ./internal/cli -run 'TestDeriveBetterAuthHTTPContract|TestHTTPContractConflict|TestProjectDecisionParity|TestProjectDecisionReuse'`
+  passed: 8 tests in 2 packages.
+- `rtk go test -count=1 ./internal/cli -run 'TestBetterAuthSuggestionReusesHTTPReason'`
+  passed: 1 test.
+- `rtk make verify` passed: 2,294 Go tests in 22 packages, 4 skill-contract
+  tests, the Roundfix skill synchronization check, and the Roundfix build.

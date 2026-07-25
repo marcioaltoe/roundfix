@@ -1208,9 +1208,9 @@ func promptBaselineDecision(
 			"guidance": guidance,
 		}, nil
 	case "auth-provider":
-		suggestion, ok := declaration.Suggestion.(map[string]any)
-		if !ok {
-			return nil, fmt.Errorf("prompt Baseline decision %q: suggestion is invalid", id)
+		suggestion, err := baselineAuthProviderSuggestion(declaration, current, catalog)
+		if err != nil {
+			return nil, fmt.Errorf("prompt Baseline decision %q: %w", id, err)
 		}
 		exception, ok := suggestion["routeException"].(map[string]any)
 		if !ok {
@@ -1320,6 +1320,81 @@ func promptBaselineDecision(
 	default:
 		return nil, fmt.Errorf("prompt Baseline decision %q: unsupported type %q", id, declaration.Type)
 	}
+}
+
+func baselineAuthProviderSuggestion(
+	declaration baselineDecisionDeclaration,
+	current map[string]any,
+	catalog *baseline.Catalog,
+) (map[string]any, error) {
+	raw, ok := declaration.Suggestion.(map[string]any)
+	if !ok {
+		return nil, errors.New("suggestion is invalid")
+	}
+	suggestion, err := cloneBaselineDecisionObject(raw)
+	if err != nil {
+		return nil, fmt.Errorf("clone suggestion: %w", err)
+	}
+
+	httpValue, ok := current["http.contract"]
+	if !ok {
+		return suggestion, nil
+	}
+	contract, ok := httpValue.(map[string]any)
+	if !ok {
+		return suggestion, nil
+	}
+	exceptions, ok := contract["exceptions"].([]any)
+	if !ok {
+		return suggestion, nil
+	}
+	profile := baseline.ResolvedProfile{
+		ID:        "human-auth-provider-suggestion",
+		Decisions: []string{"auth.provider", "http.contract"},
+	}
+	for _, rawException := range exceptions {
+		exception, ok := rawException.(map[string]any)
+		if !ok {
+			continue
+		}
+		reason, ok := exception["reason"].(string)
+		if !ok {
+			continue
+		}
+		candidate, err := cloneBaselineDecisionObject(suggestion)
+		if err != nil {
+			return nil, fmt.Errorf("clone suggestion candidate: %w", err)
+		}
+		routeException, ok := candidate["routeException"].(map[string]any)
+		if !ok {
+			return nil, errors.New("route suggestion is invalid")
+		}
+		routeException["reason"] = reason
+		_, missing, err := baseline.ResolveDecisionInput(
+			profile,
+			[]baseline.DecisionValue{
+				{ID: "auth.provider", Value: candidate},
+				{ID: "http.contract", Value: httpValue},
+			},
+			catalog,
+		)
+		if err == nil && len(missing) == 0 {
+			return candidate, nil
+		}
+	}
+	return suggestion, nil
+}
+
+func cloneBaselineDecisionObject(value map[string]any) (map[string]any, error) {
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		return nil, err
+	}
+	var cloned map[string]any
+	if err := json.Unmarshal(encoded, &cloned); err != nil {
+		return nil, err
+	}
+	return cloned, nil
 }
 
 func baselineDecisionDefinition(

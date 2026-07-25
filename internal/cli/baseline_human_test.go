@@ -539,6 +539,66 @@ func TestProjectDecisionReuse(t *testing.T) {
 	}
 }
 
+func TestBetterAuthSuggestionReusesHTTPReason(t *testing.T) {
+	repository := newCLIProjectDecisionRepository(t)
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load embedded catalog: %v", err)
+	}
+	profile, err := baseline.ResolveProfile(repository, "standard-typescript-monorepo", catalog)
+	if err != nil {
+		t.Fatalf("resolve Standard TypeScript Monorepo Profile: %v", err)
+	}
+
+	const persistedReason = "Preserve the provider-owned session, OAuth redirect, callback, and related protocol semantics."
+	currentHTTP := map[string]any{
+		"mode": "Post-only",
+		"exceptions": []any{
+			map[string]any{
+				"scope":   "/api/auth/*",
+				"methods": []any{"GET", "POST"},
+				"owner":   "Better Auth",
+				"reason":  persistedReason,
+			},
+		},
+	}
+	var output bytes.Buffer
+	decisions, err := promptBaselineDecisions(
+		context.Background(),
+		&baselineHumanPrompt{
+			reader: bufioReader(projectDecisionHumanAnswers()),
+			writer: &output,
+		},
+		catalog,
+		profile,
+		baselineHumanState{currentDecisions: map[string]any{
+			"http.contract": currentHTTP,
+		}},
+	)
+	if err != nil {
+		t.Fatalf("accept project decision defaults: %v", err)
+	}
+	if !strings.Contains(output.String(), persistedReason) {
+		t.Fatalf("Better Auth suggestion does not reuse the persisted HTTP reason:\n%s", output.String())
+	}
+	buildCLIProjectDecisionPlan(t, repository, decisions)
+
+	for index := range decisions {
+		if decisions[index].ID != "auth.provider" {
+			continue
+		}
+		provider := decisions[index].Value.(map[string]any)
+		exception := provider["routeException"].(map[string]any)
+		exception["reason"] = "An explicitly conflicting Decision Document reason."
+		break
+	}
+	if _, _, err := baseline.ResolveDecisionInput(profile, decisions, catalog); err == nil ||
+		!strings.Contains(err.Error(), "auth.provider") ||
+		!strings.Contains(err.Error(), "http.contract") {
+		t.Fatalf("explicit conflicting Decision Document error = %v, want both decision IDs", err)
+	}
+}
+
 func TestHumanBaselinePreservationDefaultFollowsInstructionInventory(t *testing.T) {
 	tests := []struct {
 		name            string
