@@ -837,6 +837,11 @@ func (l *catalogLoader) validateDecisionEffects(catalog *Catalog) {
 	})
 	for decisionID, decision := range catalog.decisions {
 		decisionType, _ := stringValue(decision, "type")
+		structuredRenderer := containsString(
+			[]string{"auth-provider", "http-contract", "identifier-strategy"},
+			decisionType,
+		)
+		renderBindingCount := 0
 		if !containsString(
 			[]string{
 				"auth-provider",
@@ -918,6 +923,7 @@ func (l *catalogLoader) validateDecisionEffects(catalog *Catalog) {
 				}
 			}
 			for _, binding := range objectsOrEmpty(effect["renderBindings"]) {
+				renderBindingCount++
 				artifactID, _ := stringValue(binding, "artifact")
 				templateID, _ := stringValue(binding, "template")
 				token, _ := stringValue(binding, "token")
@@ -931,6 +937,13 @@ func (l *catalogLoader) validateDecisionEffects(catalog *Catalog) {
 					l.add("catalog.decision.effect.token.unknown", decisionID, token)
 				}
 			}
+		}
+		if structuredRenderer && renderBindingCount != 1 {
+			l.add(
+				"catalog.decision.structured-renderer.invalid",
+				decisionID,
+				fmt.Sprintf("bindings %d", renderBindingCount),
+			)
 		}
 	}
 	l.validateDecisionCycles(graph)

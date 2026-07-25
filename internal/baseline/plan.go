@@ -1375,7 +1375,11 @@ func resolveManagedArtifacts(
 			}
 			for _, binding := range objectsOrEmpty(effect["renderBindings"]) {
 				token, _ := stringValue(binding, "token")
-				renderValues[token] = "`" + renderDecisionValue(value) + "`"
+				rendered, err := renderProjectDecision(id, value, declaration)
+				if err != nil {
+					return nil, nil, fmt.Errorf("render project decision %q: %w", id, err)
+				}
+				renderValues[token] = rendered
 			}
 		}
 	}
@@ -1577,6 +1581,13 @@ func artifactRenderValues(
 	artifactPaths map[string]string,
 ) map[string]string {
 	values := make(map[string]string)
+	switch artifact["id"] {
+	case "guide.domain":
+		values["identifier.strategy"] = ""
+	case "guide.backend":
+		values["http.contract"] = ""
+		values["auth.provider"] = ""
+	}
 	var rules []string
 	moduleID := ""
 	for id, module := range catalog.modules {

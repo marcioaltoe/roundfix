@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "context-workflow",
-  "version": 5,
+  "version": 6,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": [
@@ -228,7 +228,7 @@
     },
     {
       "id": "guide.domain",
-      "version": 3,
+      "version": 4,
       "path": "docs/agents/domain.md",
       "template": "template.guide.domain",
       "rules": [

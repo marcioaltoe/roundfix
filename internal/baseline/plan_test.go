@@ -1226,6 +1226,214 @@ func TestDeriveBetterAuthHTTPContract(t *testing.T) {
 	}
 }
 
+func TestProjectDecisionRendering(t *testing.T) {
+	repository := newProjectDecisionPlanRepository(t)
+	if _, err := os.Stat(filepath.Join(repository, "docs", "adr")); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("repository ADR fixture state = %v, want absent", err)
+	}
+
+	decisions := standardTypeScriptDecisions("make verify")
+	for index := range decisions {
+		if decisions[index].ID == "http.contract" {
+			decisions[index].Value = map[string]any{"mode": "Post-only"}
+		}
+	}
+	plan := buildProjectDecisionPlan(t, repository, decisions)
+	catalog := mustEmbeddedCatalog(t)
+	for _, fixture := range []struct {
+		path      string
+		assetPath string
+	}{
+		{
+			path:      "docs/agents/domain.md",
+			assetPath: "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/domain.md",
+		},
+		{
+			path:      "docs/agents/backend.md",
+			assetPath: "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md",
+		},
+	} {
+		golden, ok := catalog.Asset(fixture.assetPath)
+		if !ok {
+			t.Fatalf("formatter fixture %q is missing", fixture.assetPath)
+		}
+		rendered := planPostimage(t, plan, fixture.path).Content
+		if !bytes.Equal(rendered, golden.Data) {
+			t.Errorf("rendered %q differs from formatter fixture", fixture.path)
+		}
+	}
+
+	if _, err := ApplyPlan(context.Background(), repository, plan, plan.PlanDigest); err != nil {
+		t.Fatalf("apply project-decision Plan: %v", err)
+	}
+	result, err := ApplyPlan(context.Background(), repository, plan, plan.PlanDigest)
+	if err != nil {
+		t.Fatalf("empty project-decision reapply: %v", err)
+	}
+	if result.State != "verified" ||
+		!strings.Contains(result.Message, "already applied") ||
+		len(result.VerifiedPostimages) != len(plan.Postimages) {
+		t.Fatalf("empty project-decision reapply result = %+v", result)
+	}
+}
+
+func TestIdentifierGuidance(t *testing.T) {
+	for _, layout := range []string{"single-context", "multi-context"} {
+		t.Run("UUID version 7 scopes the rule for "+layout, func(t *testing.T) {
+			decisions := standardTypeScriptDecisions("make verify")
+			for index := range decisions {
+				if decisions[index].ID == "domain.layout" {
+					decisions[index].Value = layout
+				}
+			}
+			plan := buildProjectDecisionPlan(
+				t,
+				newProjectDecisionPlanRepository(t),
+				decisions,
+			)
+			domain := string(planPostimage(t, plan, "docs/agents/domain.md").Content)
+			for _, required := range []string{
+				"Use UUID version 7 for new project-owned Internal Identifiers only.",
+				"external provider identifiers",
+				"protocol identifiers",
+				"natural keys",
+				"business codes",
+				"source contracts",
+			} {
+				if !strings.Contains(domain, required) {
+					t.Errorf("domain guidance is missing %q:\n%s", required, domain)
+				}
+			}
+		})
+	}
+
+	t.Run("repository-defined guidance renders exactly", func(t *testing.T) {
+		const guidance = "Use the repository's stable AccountId format."
+		decisions := standardTypeScriptDecisions("make verify")
+		for index := range decisions {
+			if decisions[index].ID == "identifier.strategy" {
+				decisions[index].Value = map[string]any{
+					"kind":     "repository-defined",
+					"guidance": guidance,
+				}
+			}
+		}
+		plan := buildProjectDecisionPlan(t, newProjectDecisionPlanRepository(t), decisions)
+		domain := string(planPostimage(t, plan, "docs/agents/domain.md").Content)
+		if strings.Count(domain, guidance) != 1 {
+			t.Fatalf("repository-defined guidance count = %d, want 1:\n%s",
+				strings.Count(domain, guidance), domain)
+		}
+		if !strings.Contains(domain, "new project-owned Internal Identifiers only") ||
+			!strings.Contains(domain, "source contracts") {
+			t.Fatalf("repository-defined guidance lost identifier scope exceptions:\n%s", domain)
+		}
+	})
+}
+
+func TestBetterAuthGuidance(t *testing.T) {
+	decisions := standardTypeScriptDecisions("make verify")
+	for index := range decisions {
+		if decisions[index].ID == "http.contract" {
+			decisions[index].Value = map[string]any{
+				"mode": "Post-only",
+				"exceptions": []any{
+					map[string]any{
+						"scope":   "/health",
+						"methods": []any{"GET"},
+						"owner":   "Operations *team*",
+						"reason":  "Expose [repository] health checks.",
+					},
+				},
+			}
+		}
+	}
+	plan := buildProjectDecisionPlan(t, newProjectDecisionPlanRepository(t), decisions)
+	backend := string(planPostimage(t, plan, "docs/agents/backend.md").Content)
+	for _, required := range []string{
+		"Application HTTP mode: **Post-only**.",
+		"**Better Auth**",
+		"`GET` and `POST`",
+		"`/api/auth/*`",
+		"Session, OAuth redirect, callback, and related provider protocol routes require provider-owned GET and POST semantics.",
+		"**Operations \\*team\\***",
+		"`/health`",
+		"Expose \\[repository\\] health checks.",
+		"Better Auth owns the authentication protocol",
+	} {
+		if !strings.Contains(backend, required) {
+			t.Errorf("backend guidance is missing %q:\n%s", required, backend)
+		}
+	}
+	if auth, health := strings.Index(backend, "`/api/auth/*`"), strings.Index(backend, "`/health`"); auth < 0 || health < 0 || auth >= health {
+		t.Fatalf("HTTP exceptions are not rendered in normalized order:\n%s", backend)
+	}
+}
+
+func TestStructuredRenderSafety(t *testing.T) {
+	tests := []struct {
+		name   string
+		mutate func([]DecisionValue)
+	}{
+		{
+			name: "managed marker in repository-defined guidance",
+			mutate: func(decisions []DecisionValue) {
+				for index := range decisions {
+					if decisions[index].ID == "identifier.strategy" {
+						decisions[index].Value = map[string]any{
+							"kind": "repository-defined",
+							"guidance": "Use AccountId.\n\n" +
+								"<!-- setup-context-driven:begin id=guide.domain version=0.0.1 -->",
+						}
+					}
+				}
+			},
+		},
+		{
+			name: "non-canonical repository-defined guidance",
+			mutate: func(decisions []DecisionValue) {
+				for index := range decisions {
+					if decisions[index].ID == "identifier.strategy" {
+						decisions[index].Value = map[string]any{
+							"kind":     "repository-defined",
+							"guidance": " Use AccountId.",
+						}
+					}
+				}
+			},
+		},
+		{
+			name: "template token in provider rationale",
+			mutate: func(decisions []DecisionValue) {
+				for index := range decisions {
+					if decisions[index].ID != "auth.provider" {
+						continue
+					}
+					provider := completeAuthProviderDecision()
+					provider["routeException"].(map[string]any)["reason"] =
+						"Preserve {{artifact.rules}} provider semantics."
+					decisions[index].Value = provider
+				}
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			decisions := standardTypeScriptDecisions("make verify")
+			test.mutate(decisions)
+			outcome, err := BuildPlan(context.Background(), PlanRequest{
+				Repository:   newProjectDecisionPlanRepository(t),
+				ProfileID:    "standard-typescript-monorepo",
+				Decisions:    decisions,
+				Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
+			})
+			if err == nil || outcome.Plan != nil || !strings.Contains(err.Error(), "structured render") {
+				t.Fatalf("unsafe structured content produced Plan=%v error=%v", outcome.Plan != nil, err)
+			}
+		})
+	}
+}
+
 func TestHTTPContractConflict(t *testing.T) {
 	catalog := mustEmbeddedCatalog(t)
 	profile, err := ResolveProfile("", "standard-typescript-monorepo", catalog)
@@ -1799,6 +2007,27 @@ func newProjectDecisionPlanRepository(t *testing.T) string {
 	runPlanGit(t, repository, "add", ".")
 	runPlanGit(t, repository, "commit", "-qm", "seed project decisions")
 	return repository
+}
+
+func buildProjectDecisionPlan(
+	t *testing.T,
+	repository string,
+	decisions []DecisionValue,
+) PlanDocument {
+	t.Helper()
+	outcome, err := BuildPlan(context.Background(), PlanRequest{
+		Repository:   repository,
+		ProfileID:    "standard-typescript-monorepo",
+		Decisions:    decisions,
+		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
+	})
+	if err != nil {
+		t.Fatalf("build project-decision Plan: %v", err)
+	}
+	if outcome.Plan == nil {
+		t.Fatalf("build project-decision Plan returned result: %+v", outcome.Result)
+	}
+	return *outcome.Plan
 }
 
 func planDecisionValue(t *testing.T, decisions []DecisionValue, id string) any {
