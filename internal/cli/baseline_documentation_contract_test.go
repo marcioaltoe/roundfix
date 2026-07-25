@@ -47,6 +47,9 @@ func TestBaselineDocumentationContract(t *testing.T) {
 				"never prompts",
 				"never",
 				"uses the network",
+				"0  complete Baseline Plan emitted",
+				"2  invalid arguments",
+				"3  a decision",
 			},
 		},
 		{
@@ -58,6 +61,9 @@ func TestBaselineDocumentationContract(t *testing.T) {
 				"transaction",
 				"Repository formatter and Verification commands are reported as",
 				"never run",
+				"0  approved plan applied or already applied",
+				"1  apply, verification, output, rollback, or recovery failure",
+				"3  confirmation mismatch, stale preimage, or unrelated Git lineage",
 			},
 		},
 		{
@@ -76,6 +82,8 @@ func TestBaselineDocumentationContract(t *testing.T) {
 				"complete preimage",
 				"--source-dir",
 				"--confirm-plan",
+				"A non-empty preview exits 3",
+				"An empty restoration is an idempotent exit 0",
 			},
 		},
 		{
@@ -196,6 +204,95 @@ func TestBaselineDocumentationContract(t *testing.T) {
 		if strings.Contains(baselineSection, forbidden) {
 			t.Fatalf("Baseline user guide contains environment-specific or retired runtime text %q", forbidden)
 		}
+	}
+}
+
+func TestGuidanceCompositionDocumentation(t *testing.T) {
+	root := baselineDocumentationRepoRoot()
+	guide := readBaselineDocumentation(
+		t,
+		filepath.Join(root, "docs", "user-guide", "context-driven-development.md"),
+	)
+	assertBaselineDocumentationContains(t, "Context-Driven user guide", guide, []string{
+		"### Instruction hierarchy",
+		"Universal instructions",
+		"Context and documentation",
+		"Spec workflow",
+		"Autonomous work",
+		"Stack guidance",
+		"Surface guidance",
+		"Optional knowledge sources",
+		"A narrower guide may add constraints",
+		"### Greenfield composition and update redistribution",
+		"exact source bytes",
+		"semantic owner",
+		"docs/agents/specific-repository.md",
+		"### ADR and Findings lifecycle",
+		"Only `accepted` is active",
+		"`pending`, `partial`, `deferred`, and `done`",
+		"### Profile alignment and adaptation",
+		"Change Baseline Profile",
+		"repository-owned Profile adaptation",
+		"Decline without writing",
+		"--profile-file",
+		"mutually exclusive",
+		"roundfix baseline skills restore --repo . --profile",
+		"--confirm-plan <digest>",
+		"Generate a fresh plan",
+	})
+
+	generated := readBaselineDocumentation(
+		t,
+		filepath.Join(
+			root,
+			"internal",
+			"baseline",
+			"assets",
+			"formatter-fixtures",
+			"standard-typescript-monorepo",
+			"golden",
+			"docs",
+			"agents",
+			"docs-layout.md",
+		),
+	)
+	tests := []struct {
+		name           string
+		guideStart     string
+		guideEnd       string
+		generatedAfter string
+	}{
+		{
+			name:           "ADR lifecycle template",
+			guideStart:     "<!-- baseline-adr-lifecycle-template:start -->",
+			guideEnd:       "<!-- baseline-adr-lifecycle-template:end -->",
+			generatedAfter: "When creating a new ADR",
+		},
+		{
+			name:           "Findings template",
+			guideStart:     "<!-- baseline-findings-template:start -->",
+			guideEnd:       "<!-- baseline-findings-template:end -->",
+			generatedAfter: "complete copyable Findings Operational Contract",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			published := markdownFenceContent(
+				t,
+				betweenBaselineDocumentation(t, guide, test.guideStart, test.guideEnd),
+			)
+			generatedStart := strings.Index(generated, test.generatedAfter)
+			if generatedStart < 0 {
+				t.Fatalf("generated guidance marker %q is missing", test.generatedAfter)
+			}
+			want := markdownFenceContent(
+				t,
+				generated[generatedStart:],
+			)
+			if published != want {
+				t.Fatalf("%s differs from generated guidance\npublished:\n%s\nwant:\n%s", test.name, published, want)
+			}
+		})
 	}
 }
 
@@ -392,4 +489,20 @@ func betweenBaselineDocumentation(t *testing.T, content, start, end string) stri
 		t.Fatalf("documentation marker %q is missing", end)
 	}
 	return content[startIndex : startIndex+endIndex]
+}
+
+func markdownFenceContent(t *testing.T, content string) string {
+	t.Helper()
+	const opening = "```markdown"
+	start := strings.Index(content, opening)
+	if start < 0 {
+		t.Fatalf("markdown fence %q is missing", opening)
+	}
+	start += len(opening)
+	content = content[start:]
+	end := strings.Index(content, "```")
+	if end < 0 {
+		t.Fatal("closing markdown fence is missing")
+	}
+	return strings.TrimSpace(content[:end])
 }

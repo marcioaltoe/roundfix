@@ -44,6 +44,32 @@ proof. A repository command is executable only when the result says
 `repositoryExecutable: true` and binds a local declaration. A recommendation
 is a command for the maintainer to run; Baseline did not execute it.
 
+## Interpret composed guidance
+
+Read the generated root Instruction Hierarchy from universal instructions
+through context and documentation, Spec workflow, enabled autonomous work,
+stack guidance, surface guidance, and optional knowledge sources. A narrower
+guide may add constraints for its concern but cannot weaken a universal
+Normative Clause or confirmed project decision.
+
+Greenfield composition emits only guides and pointers selected by the Baseline
+Profile. It creates no generic repository guide and no residual carrier when
+there are no Repository-Specific Normative Rules.
+
+For update or Baseline Readoption, interpret the complete retention ledger
+before approving it. Every existing rule must retain its exact source bytes in
+one active semantic owner, a recognized typed repository document, or
+`docs/agents/specific-repository.md`, or have an individual reasoned rejection
+or non-governed classification. An empty residual removes the carrier and root
+pointer; non-empty accepted residuals retain only their exact rules.
+
+Generated `docs/agents/docs-layout.md` owns the copyable ADR and Findings
+contracts. Only `accepted` is active for ADRs; legacy ADRs without lifecycle
+frontmatter remain active unless their body marks them inactive. Findings use
+`pending`, `partial`, `deferred`, and `done`, keep the original observation,
+and append later evidence as dated addenda. Copy those generated templates;
+this skill does not render or replace them.
+
 ## Human adoption or update
 
 At an interactive terminal, run:
@@ -95,6 +121,23 @@ produces a new full plan. If the maintainer rejects the plan, use the command's
 decision-area revision flow. Every accepted correction must produce a new Plan
 Digest and another complete review.
 
+Profile alignment runs before instruction classification. For
+profile-specific blockers, the interactive command offers **Change Baseline
+Profile**, a reviewed **repository-owned Profile adaptation**, or **Decline
+without writing**. An adaptation lists every module and profile-specific
+capability removal, validates a repository-owned Profile ID, re-audits the
+in-memory draft, and proceeds only when alignment is ready. The Profile file is
+part of the final Change Plan and is not written before Plan Digest approval.
+
+Universal required capabilities cannot be removed or waived. Run the exact
+restoration preview named by the result, review its Plan Digest, confirm the
+same current preview, then rerun Profile alignment:
+
+```bash
+roundfix baseline skills restore --repo . --profile <built-in-id> --skill <skill-name> --format json
+roundfix baseline skills restore --repo . --profile <built-in-id> --skill <skill-name> --confirm-plan <digest> --format json
+```
+
 ## Non-interactive planning
 
 The interactive root command refuses redirected or absent terminal input.
@@ -103,6 +146,17 @@ Automation and Agents use:
 ```bash
 roundfix baseline plan --repo . --profile <profile-id> --decision-file <decision-file> --format json
 ```
+
+Automation can pass the equivalent reviewed strict draft:
+
+```bash
+roundfix baseline plan --repo . --profile-file <draft.json> --decision-file <decision-file> --format json
+```
+
+`--profile-file` and `--profile` are mutually exclusive. The CLI validates the
+draft against the embedded catalog, resolves it in memory, and includes its
+canonical repository path and exact bytes in the portable Plan. Do not write,
+normalize, classify, or render the draft through this skill.
 
 Scalar answers may use repeatable `--decision <id=value>` flags. Structured
 answers use repeatable strict Decision Documents with schema
@@ -237,7 +291,7 @@ Do not claim adoption or update complete from planning alone.
 2. Run each reported formatter or Verification recommendation outside
    Baseline.
 3. Repair any repository failure outside managed Baseline output.
-4. Generate a fresh plan with the same current decisions.
+4. Generate a fresh plan with the same current Profile input and decisions.
 5. Require no file changes, or perform an exact idempotent reapply at exit `0`.
 
 Report remaining warnings, recommendations not run, the approved Plan Digest,

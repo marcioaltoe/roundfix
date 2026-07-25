@@ -159,6 +159,43 @@ func TestThinSetupSkill(t *testing.T) {
 			t.Fatalf("thin setup skill diagnostic: %s: %s", diagnostic.Path, diagnostic.Message)
 		}
 	}
+
+	setup := string(readBaselineSkillContractFile(
+		t,
+		filepath.Join("..", ".agents", "skills", "setup-context-driven", "SKILL.md"),
+	))
+	for _, required := range []string{
+		"recipes and interpretation only",
+		"no independent",
+		"behavioral fallback",
+		"Instruction Hierarchy",
+		"exact source bytes",
+		"Repository-Specific Normative Rules",
+		"Only `accepted` is active",
+		"`pending`, `partial`, `deferred`, and `done`",
+		"Profile alignment",
+		"Change Baseline",
+		"repository-owned Profile adaptation",
+		"Decline",
+		"without writing",
+		"--profile-file",
+		"mutually exclusive",
+		"Generate a fresh plan",
+	} {
+		if !strings.Contains(setup, required) {
+			t.Errorf("thin setup skill missing %q", required)
+		}
+	}
+	for _, forbidden := range []string{
+		"classify rules itself",
+		"render managed guidance itself",
+		"write Profile files directly",
+		"mutate repository files itself",
+	} {
+		if strings.Contains(setup, forbidden) {
+			t.Errorf("thin setup skill claims independent behavior %q", forbidden)
+		}
+	}
 }
 
 func TestUpstreamADRFormatUnchanged(t *testing.T) {
