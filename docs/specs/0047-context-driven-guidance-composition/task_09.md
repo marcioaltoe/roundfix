@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0047-context-driven-guidance-composition
-status: failed
+status: completed
 type: test
 complexity: high
 ---
@@ -105,14 +105,14 @@ Evidence and exact reproductions:
 The second full QA gate found a reproducible Git-fixture cleanup race before
 the live matrix could start.
 
-- [ ] F-06: temporary Git fixtures MUST own all spawned Git work and prevent
+- [x] F-06: temporary Git fixtures MUST own all spawned Git work and prevent
   automatic background maintenance from outliving the command and racing
   `t.TempDir` cleanup.
-- [ ] The repair MUST live at the fixture or Git-command boundary; it MUST NOT
+- [x] The repair MUST live at the fixture or Git-command boundary; it MUST NOT
   suppress cleanup errors or depend on a process-level environment override.
-- [ ] The exact failing subtest MUST pass 100 consecutive repetitions without
+- [x] The exact failing subtest MUST pass 100 consecutive repetitions without
   any override.
-- [ ] Unmodified `rtk make verify` MUST pass.
+- [x] Unmodified `rtk make verify` MUST pass.
 - [ ] The complete Fluxus greenfield/update and Oraculum adaptation live matrix
   MUST pass from one fresh Roundfix build.
 
@@ -168,3 +168,53 @@ Verification:
 
 Live QA remains pending by design and requires a separately authorized
 `qa-gate` run using the Spec-local evidence matrix.
+
+### QA repair cycle — 2026-07-25
+
+Repaired F-06 at the asset-sync Git-command boundary. Every Git invocation
+owned by the temporary fixture now disables automatic maintenance alongside
+filesystem monitoring, preventing detached maintenance work from recreating
+`.git/objects/info/packs` after the foreground command exits. The repair uses
+no sleep, retry, cleanup suppression, or process-level Git environment
+override.
+
+Fresh acceptance evidence:
+
+- Every maintained Profile completed the real CLI Plan/apply, formatter,
+  repository Verification, audit, empty-reapply, and zero-second-pass-delta
+  journey in `TestGuidanceCompositionJourney`; the focused journey command
+  passed 34 tests across `internal/baseline` and `internal/cli`.
+- `TestSemanticRedistributionJourney` proved exact semantic redistribution,
+  canonical residual retention, and removal of generic and repository-specific
+  carriers plus root pointers when the residual count is zero.
+- `TestProfileAdaptationJourney` proved the unbranded backend-only TypeScript
+  fixture reaches a catalog-valid repository-owned Profile, keeps universal
+  capabilities required, applies the Profile postimage, and finishes with an
+  empty reapply.
+- `TestBaselineReleaseGate` passed the complete managed-entry and Upgrade
+  Retention ledger checks plus transaction, semantic-guide, and planned-Profile
+  rollback journeys. The planned-Profile rollback restores the complete
+  visible repository preimage.
+- `qa/live-journeys.md` names the separately authorized fresh Fluxus
+  greenfield, Fluxus update, and Oraculum divergence/adaptation evidence
+  requirements. This Task did not read or mutate those live repositories.
+
+Verification:
+
+- Before repair, `rtk go test -count=100 ./internal/baseline -run
+  'TestAssetsSyncProvenanceAndPreMutationRefusals/dirty_or_untracked_checkout'`
+  reproduced the cleanup race: 198 passing parent/subtest results and the
+  failing subtest plus parent, with `TempDir RemoveAll cleanup` reporting
+  `.git/objects/info` as non-empty.
+- After repair, the same exact command passed 200 parent/subtest results across
+  100 consecutive repetitions without a Git environment override.
+- `rtk go test -count=1 ./internal/baseline ./internal/cli -run
+  'TestGuidanceCompositionJourney|TestSemanticRedistributionJourney|TestProfileAdaptationJourney|TestBaselineReleaseGate'`
+  passed 34 tests across both packages.
+- Unmodified `rtk make verify` passed: 2,201 repository tests across 22
+  packages, 4 skill contract tests, `roundfix skills check`, and the Roundfix
+  build.
+- `rtk git diff --check` passed.
+
+The complete live Fluxus and Oraculum matrix remains pending by design for the
+separately authorized `qa-gate` run.
