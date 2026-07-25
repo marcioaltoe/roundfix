@@ -1,8 +1,13 @@
-# Command evidence — build `863af11`
+# Command evidence — build `fd5068d`
 
 ## Environment
 
-- Roundfix source: `863af1100a82c166a314577d7f8de8a50d803db6`
+- Roundfix final QA source:
+  `fd5068dfe12a2fac24aed74cedcfa5480cfe8f07`
+- Fluxus live-journey Roundfix source:
+  `863af1100a82c166a314577d7f8de8a50d803db6`. The final change after those
+  journeys is test-only formatter provisioning and Task evidence; public
+  Baseline behavior is unchanged.
 - Built CLI:
   `rtk go build -buildvcs=false -o /private/tmp/roundfix-spec0048-qa-rerun.VyLHao/roundfix ./cmd/roundfix`
 - Fluxus source: `1aeed7e8370c3d14137c42b0c789dcbe3bd1ba3b`
@@ -27,6 +32,9 @@ Daemon-owned Task paths were resolved with
 `rtk git diff-tree --no-commit-id --name-only -r <commit>`. Task 06 commit
 `7cef20d` temporarily added a test-only Oxfmt constant. Reopened Task 08 commit
 `863af11` removed it and reads the existing maintained Profile version instead.
+Final repair `fd5068d` removed the registry-backed installer and provisions
+only disposable repository-local fixture bytes while preserving that
+Profile-owned version.
 The cumulative Spec diff from base `0ce9144` contains no new protected tooling
 configuration, script, ignore file, plugin declaration, or version pin:
 
@@ -40,20 +48,32 @@ configuration, script, ignore file, plugin declaration, or version pin:
 
 ## Roundfix static and focused gates
 
-The exact full gate is environment-blocked:
+The final fixture contains no `bun install`, `oxfmt@...`, or formatter-version
+literal. It derives the version from the maintained Profile, provisions a
+disposable local executable, checks its `--version` output, requires a fresh
+fixture-owned cache, and refuses any registry value other than the closed
+loopback endpoint.
+
+The exact offline named journey passed:
+
+```text
+rtk env BUN_CONFIG_REGISTRY=http://127.0.0.1:1 go test -count=1 \
+  ./internal/baseline ./internal/cli ./skills \
+  -run 'TestProjectDecisionJourney|TestProjectConstraintJourney|TestToolingAuthorizationJourney|TestBaselineReleaseGate'
+ok roundfix/internal/baseline
+ok roundfix/internal/cli
+ok roundfix/skills
+```
+
+The exact full gate then passed without network permission:
 
 ```text
 rtk make verify
-Go test: 2340 passed, 4 failed, 1 skipped in 22 packages
-TestGuidanceCompositionJourney/standard-typescript-monorepo:
-error: FailedToOpenSocket downloading package manifest oxfmt
-TestProjectDecisionJourney/affected_Profile_apply_audit_and_empty_reapply:
-error: ConnectionRefused downloading package manifest oxfmt
+Go test: 2344 passed in 22 packages
+Go test: 4 passed in 1 packages
+Roundfix skill check passed: 14 repository-owned skills
+roundfix build: passed
 ```
-
-The failing fixture creates an isolated Bun home and cache, then installs
-Oxfmt. The sandbox denies its package-manifest request. Per the daemon QA
-contract, the exact gate was not rerun through a network bypass.
 
 Independent fresh checks:
 
@@ -66,7 +86,7 @@ Task 05 and 06 focused checks: 12 passed
 Task 07 focused checks: 23 passed
 Task 08 engine checks: 59 passed
 Task 08 authoring/tooling skill checks: 10 passed
-Task 08 public CLI checks not requiring download: 5 passed
+Task 08 offline public CLI journey: passed with registry closed
 roundfix skills check: all 14 repository-owned skills passed
 git diff --check: passed
 ```
