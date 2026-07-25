@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0047-context-driven-guidance-composition
-status: completed
+status: failed
 type: test
 complexity: high
 ---
@@ -60,6 +60,7 @@ not Task prerequisites.
 
 ## Verification
 
+- `rtk go test -count=100 ./internal/baseline -run 'TestAssetsSyncProvenanceAndPreMutationRefusals/dirty_or_untracked_checkout'` — expected: temporary Git fixture cleanup passes deterministically without process-level Git configuration overrides.
 - `rtk go test -count=1 ./internal/baseline ./internal/cli -run 'TestGuidanceCompositionJourney|TestSemanticRedistributionJourney|TestProfileAdaptationJourney|TestBaselineReleaseGate'` — expected: greenfield, update, adaptation, formatting, rollback, audit, and reapply journeys pass.
 - `rtk make verify` — expected: the full repository gate passes.
 
@@ -98,6 +99,26 @@ extend the hermetic regression coverage, and rerun the complete live matrix.
 Evidence and exact reproductions:
 `qa/qa-report-2026-07-24.md` and
 `qa/evidence/2026-07-24-guidance-composition/`.
+
+## QA repair cycle — 2026-07-25
+
+The second full QA gate found a reproducible Git-fixture cleanup race before
+the live matrix could start.
+
+- [ ] F-06: temporary Git fixtures MUST own all spawned Git work and prevent
+  automatic background maintenance from outliving the command and racing
+  `t.TempDir` cleanup.
+- [ ] The repair MUST live at the fixture or Git-command boundary; it MUST NOT
+  suppress cleanup errors or depend on a process-level environment override.
+- [ ] The exact failing subtest MUST pass 100 consecutive repetitions without
+  any override.
+- [ ] Unmodified `rtk make verify` MUST pass.
+- [ ] The complete Fluxus greenfield/update and Oraculum adaptation live matrix
+  MUST pass from one fresh Roundfix build.
+
+Evidence and exact reproduction:
+`qa/qa-report-2026-07-25.md` and
+`qa/evidence/2026-07-25-guidance-composition/command-evidence.md`.
 
 ## Result
 
