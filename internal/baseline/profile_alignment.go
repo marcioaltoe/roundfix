@@ -164,9 +164,10 @@ type VerificationProjection struct {
 }
 
 type ProfileAlignmentRequest struct {
-	ProfileID string
-	Decisions []DecisionValue
-	profile   *ResolvedProfile
+	ProfileID            string
+	Decisions            []DecisionValue
+	Profile              *ResolvedProfile
+	RemediationProfileID string
 }
 
 // ProfileAlignment is the deterministic, read-only result consumed by later
@@ -279,8 +280,8 @@ func ResolveProfileAlignment(
 	defer root.Close()
 
 	var profile ResolvedProfile
-	if request.profile != nil {
-		profile = *request.profile
+	if request.Profile != nil {
+		profile = *request.Profile
 		if profile.ID != profileID {
 			return ProfileAlignment{}, fmt.Errorf(
 				"resolve selected Baseline Profile %q: in-memory profile identity is %q",
@@ -306,6 +307,11 @@ func ResolveProfileAlignment(
 	if err != nil {
 		return ProfileAlignment{}, err
 	}
+	remediationProfileID := strings.TrimSpace(request.RemediationProfileID)
+	if remediationProfileID == "" {
+		remediationProfileID = profile.ID
+	}
+	applyUniversalCapabilityRemediation(outcomes, remediationProfileID)
 	divergences := append([]ProfileDivergence(nil), decisionDivergences...)
 	for _, outcome := range outcomes {
 		if outcome.Status == CapabilitySatisfied {
@@ -354,6 +360,27 @@ func ResolveProfileAlignment(
 		PostgreSQL:     postgres,
 		Verification:   verification,
 	}, nil
+}
+
+func applyUniversalCapabilityRemediation(
+	outcomes []CapabilityOutcome,
+	profileID string,
+) {
+	skills := map[string]string{
+		"capability.context7": "context7",
+		"capability.exa":      "exa-web-search",
+	}
+	for index := range outcomes {
+		skill, universal := skills[outcomes[index].ID]
+		if !universal || outcomes[index].Status == CapabilitySatisfied {
+			continue
+		}
+		outcomes[index].Diagnostic.NextAction = fmt.Sprintf(
+			"Run roundfix baseline skills restore --profile %s --skill %s, review its exact restoration Plan Digest, rerun with --confirm-plan <digest>, then rerun profile alignment.",
+			profileID,
+			skill,
+		)
+	}
 }
 
 func normalizeAlignmentDecisions(

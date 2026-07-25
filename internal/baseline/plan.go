@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -283,6 +284,41 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 			"rerun with --decision preservation.mode=greenfield or preservation",
 			initial.Snapshot.Warnings), nil
 	}
+	remediationProfileID := profile.ID
+	if request.ProfileDraft != nil {
+		remediationProfileID = request.ProfileDraft.SourceProfileID
+	}
+	alignment, err := ResolveProfileAlignment(ctx, initial.Root, ProfileAlignmentRequest{
+		ProfileID:            profile.ID,
+		Decisions:            profileAlignmentDecisions(profile, decisions),
+		Profile:              &profile,
+		RemediationProfileID: remediationProfileID,
+	}, catalog)
+	if err != nil {
+		return PlanOutcome{}, err
+	}
+	if !alignment.Ready {
+		blocking := make([]string, 0)
+		nextActions := make([]string, 0)
+		for _, divergence := range alignment.Divergences {
+			if !divergence.Blocking {
+				continue
+			}
+			blocking = append(blocking, divergence.ID)
+			if divergence.NextAction != "" && !slices.Contains(nextActions, divergence.NextAction) {
+				nextActions = append(nextActions, divergence.NextAction)
+			}
+		}
+		nextAction := "provide the missing repository evidence or select a different profile"
+		if len(nextActions) != 0 {
+			nextAction = strings.Join(nextActions, " ")
+		}
+		return actionOutcome("decision",
+			"required profile alignment is unresolved: "+strings.Join(blocking, ", "),
+			nextAction,
+			initial.Snapshot.Warnings), nil
+	}
+
 	classificationModules, classificationArtifacts, err := resolveManagedArtifacts(
 		catalog,
 		profile,
@@ -309,26 +345,6 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 	if preservation.State != PreservationStateReady {
 		return actionOutcome("decision", preservation.NextAction, preservation.NextAction,
 			append(initial.Snapshot.Warnings, preservation.Findings...)), nil
-	}
-	alignment, err := ResolveProfileAlignment(ctx, initial.Root, ProfileAlignmentRequest{
-		ProfileID: profile.ID,
-		Decisions: profileAlignmentDecisions(profile, decisions),
-		profile:   &profile,
-	}, catalog)
-	if err != nil {
-		return PlanOutcome{}, err
-	}
-	if !alignment.Ready {
-		next := make([]string, 0)
-		for _, divergence := range alignment.Divergences {
-			if divergence.Blocking {
-				next = append(next, divergence.ID)
-			}
-		}
-		return actionOutcome("decision",
-			"required profile alignment is unresolved: "+strings.Join(next, ", "),
-			"provide the missing repository evidence or select a different profile",
-			initial.Snapshot.Warnings), nil
 	}
 
 	repositoryPlan, repositoryFindings, err := planSpecificRepository(

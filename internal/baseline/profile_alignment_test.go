@@ -8,6 +8,7 @@ package baseline
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -453,6 +454,150 @@ func TestCapabilityAuditNoExecution(t *testing.T) {
 	if !reflect.DeepEqual(before, after) {
 		t.Fatalf("capability audit changed repository bytes:\nbefore=%+v\nafter=%+v", before, after)
 	}
+}
+
+func TestProfileDivergenceResolution(t *testing.T) {
+	catalog := loadProfileAlignmentCatalog(t)
+	repository := newAlignedTypeScriptRepository(t)
+	writeProfileAlignmentFile(
+		t,
+		repository,
+		"package.json",
+		`{"name":"root","packageManager":"bun@1.3.0","scripts":{"verify":"true"},"dependencies":{"hono":"latest","typescript":"latest","zod":"latest"}}`,
+	)
+	if err := os.RemoveAll(filepath.Join(repository, "packages", "frontend")); err != nil {
+		t.Fatalf("remove frontend fixture: %v", err)
+	}
+
+	source, err := ResolveProfile("", "standard-typescript-monorepo", catalog)
+	if err != nil {
+		t.Fatalf("resolve source Profile: %v", err)
+	}
+	decisions := standardTypeScriptDecisions("make verify")
+	before, err := ResolveProfileAlignment(
+		context.Background(),
+		repository,
+		ProfileAlignmentRequest{
+			ProfileID:            source.ID,
+			Decisions:            decisions,
+			RemediationProfileID: source.ID,
+		},
+		catalog,
+	)
+	if err != nil {
+		t.Fatalf("resolve source divergence: %v", err)
+	}
+	if before.Ready {
+		t.Fatal("backend-only fixture unexpectedly aligned with the full TypeScript Profile")
+	}
+
+	profileCapabilities := stringSet(source.Capabilities)
+	removedCapabilities := make([]string, 0)
+	for _, divergence := range before.Divergences {
+		if !divergence.Blocking {
+			continue
+		}
+		if _, profileSpecific := profileCapabilities[divergence.ID]; profileSpecific {
+			removedCapabilities = append(removedCapabilities, divergence.ID)
+		}
+	}
+	input, err := NewProfileAdaptationDraft(
+		source.ID,
+		"guided-backend",
+		[]string{"frontend", "autonomous-work"},
+		removedCapabilities,
+		catalog,
+	)
+	if err != nil {
+		t.Fatalf("construct reviewed Profile adaptation: %v", err)
+	}
+	adapted, canonical, err := ResolveProfileDraft(repository, input, catalog)
+	if err != nil {
+		t.Fatalf("resolve reviewed Profile adaptation: %v", err)
+	}
+	input.Document = canonical
+	after, err := ResolveProfileAlignment(
+		context.Background(),
+		repository,
+		ProfileAlignmentRequest{
+			ProfileID:            adapted.ID,
+			Decisions:            decisionsForResolvedProfile(decisions, adapted),
+			Profile:              &adapted,
+			RemediationProfileID: input.SourceProfileID,
+		},
+		catalog,
+	)
+	if err != nil {
+		t.Fatalf("re-audit reviewed Profile adaptation: %v", err)
+	}
+	if !after.Ready || after.Profile.ID != "guided-backend" {
+		t.Fatalf("reviewed Profile adaptation remains unresolved: %+v", after.Divergences)
+	}
+	for _, requiredID := range []string{"capability.context7", "capability.exa"} {
+		outcome, ok := findCapabilityOutcome(after.Capabilities, requiredID)
+		if !ok || outcome.Requirement != CapabilityRequired || outcome.Status != CapabilitySatisfied {
+			t.Fatalf("universal requirement %s became a waiver: %+v found=%v", requiredID, outcome, ok)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(repository, filepath.FromSlash(adapted.Path))); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("alignment wrote Profile draft target: %v", err)
+	}
+}
+
+func TestUniversalCapabilityRemediation(t *testing.T) {
+	catalog := loadProfileAlignmentCatalog(t)
+	repository := newAlignedTypeScriptRepository(t)
+	if err := os.Remove(filepath.Join(repository, ".agents", "skills", "context7", "SKILL.md")); err != nil {
+		t.Fatalf("remove Context7 fixture: %v", err)
+	}
+
+	alignment, err := ResolveProfileAlignment(
+		context.Background(),
+		repository,
+		ProfileAlignmentRequest{
+			ProfileID:            "standard-typescript-monorepo",
+			Decisions:            standardTypeScriptDecisions("make verify"),
+			RemediationProfileID: "standard-typescript-monorepo",
+		},
+		catalog,
+	)
+	if err != nil {
+		t.Fatalf("resolve universal capability remediation: %v", err)
+	}
+	divergence, ok := findProfileDivergence(alignment.Divergences, "capability.context7")
+	if !ok || !divergence.Blocking || divergence.Requirement != CapabilityRequired {
+		t.Fatalf("Context7 divergence = %+v found=%v", divergence, ok)
+	}
+	for _, want := range []string{
+		"roundfix baseline skills restore",
+		"--profile standard-typescript-monorepo",
+		"--skill context7",
+		"--confirm-plan <digest>",
+	} {
+		if !strings.Contains(divergence.NextAction, want) {
+			t.Fatalf("universal remediation missing %q: %s", want, divergence.NextAction)
+		}
+	}
+}
+
+func decisionsForResolvedProfile(input []DecisionValue, profile ResolvedProfile) []DecisionValue {
+	selected := stringSet(profile.Decisions)
+	result := make([]DecisionValue, 0, len(input))
+	for _, decision := range input {
+		if _, ok := selected[decision.ID]; ok {
+			result = append(result, decision)
+		}
+	}
+	return result
+}
+
+func findCapabilityOutcome(outcomes []CapabilityOutcome, id string) (CapabilityOutcome, bool) {
+	for _, outcome := range outcomes {
+		if outcome.ID == id {
+			return outcome, true
+		}
+	}
+	return CapabilityOutcome{}, false
 }
 
 func loadProfileAlignmentCatalog(t *testing.T) *Catalog {

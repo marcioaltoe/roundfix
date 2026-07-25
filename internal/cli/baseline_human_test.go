@@ -437,6 +437,159 @@ func TestHumanAutomationPlanParity(t *testing.T) {
 	}
 }
 
+func TestBaselineHumanProfileAdaptation(t *testing.T) {
+	repository, _, _ := baselinePlanProfileFileFixture(t)
+	before := baselinePlanTestTree(t, repository)
+	answers := "\n3\n" +
+		strings.Repeat("\n", 32) +
+		"2\n" +
+		"1\n" +
+		"guided-human-backend\n"
+	var review bytes.Buffer
+	var prompts bytes.Buffer
+	var request baseline.PlanRequest
+	humanPlan, err := driveHumanBaselinePlanWithRequest(
+		context.Background(),
+		repository,
+		&baselineHumanPrompt{
+			reader: bufioReader(answers),
+			writer: &prompts,
+		},
+		&review,
+		&request,
+	)
+	if err != nil {
+		t.Fatalf(
+			"guide human Profile adaptation: %v\nreview=%s\nprompts=%s",
+			err,
+			review.String(),
+			prompts.String(),
+		)
+	}
+	for _, want := range []string{
+		"Baseline Profile alignment: action_required",
+		"blocking capability.workspace.frontend",
+		"advisory capability.firecrawl",
+		"Repository-owned Profile adaptation proposal",
+		"Modules removed",
+		"Capabilities removed",
+		"Baseline Profile alignment: ready",
+		"Consolidated Change Plan review",
+	} {
+		if !strings.Contains(review.String(), want) {
+			t.Fatalf("guided adaptation review missing %q:\n%s", want, review.String())
+		}
+	}
+	if !strings.Contains(prompts.String(), "Change Baseline Profile") ||
+		!strings.Contains(prompts.String(), "repository-owned Profile adaptation") ||
+		!strings.Contains(prompts.String(), "Decline without writing") {
+		t.Fatalf("Profile divergence choices are incomplete:\n%s", prompts.String())
+	}
+	if request.ProfileDraft == nil || request.ProfileID != "" {
+		t.Fatalf("human Profile adaptation request = %+v", request)
+	}
+
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+	automationInput, err := baseline.ProfileDraftInputFromDocument(
+		request.ProfileDraft.Document,
+		catalog,
+	)
+	if err != nil {
+		t.Fatalf("normalize automation Profile draft: %v", err)
+	}
+	automation, err := baseline.BuildPlan(context.Background(), baseline.PlanRequest{
+		Repository:   repository,
+		ProfileDraft: &automationInput,
+		Decisions:    request.Decisions,
+		Preservation: request.Preservation,
+	})
+	if err != nil || automation.Plan == nil {
+		t.Fatalf("build automation Profile draft Plan: outcome=%+v error=%v", automation, err)
+	}
+	if !reflect.DeepEqual(humanPlan.Profile, automation.Plan.Profile) ||
+		!reflect.DeepEqual(humanPlan.Postimages, automation.Plan.Postimages) ||
+		humanPlan.PlanDigest != automation.Plan.PlanDigest {
+		t.Fatalf(
+			"human and automation Profile drafts differ: human=%s automation=%s",
+			humanPlan.PlanDigest,
+			automation.Plan.PlanDigest,
+		)
+	}
+	if after := baselinePlanTestTree(t, repository); before != after {
+		t.Fatal("human Profile adaptation planning wrote repository bytes")
+	}
+
+	t.Run("decline writes nothing", func(t *testing.T) {
+		source, resolveErr := baseline.ResolveProfile(
+			repository,
+			"standard-typescript-monorepo",
+			catalog,
+		)
+		if resolveErr != nil {
+			t.Fatal(resolveErr)
+		}
+		treeBefore := baselinePlanTestTree(t, repository)
+		var declineReview bytes.Buffer
+		var declinePrompts bytes.Buffer
+		_, _, _, declineErr := promptBaselineProfileAlignment(
+			context.Background(),
+			&baselineHumanPrompt{
+				reader: bufioReader("3\n"),
+				writer: &declinePrompts,
+			},
+			&declineReview,
+			repository,
+			catalog,
+			baselineHumanState{},
+			source,
+			[]baseline.DecisionValue{
+				{ID: "language.generated", Value: "English"},
+				{ID: "verification.gate", Value: "make verify"},
+				{ID: "http.contract", Value: map[string]any{"mode": "Post-only"}},
+				{ID: "spec.scaffold", Value: true},
+				{ID: "domain.layout", Value: "single-context"},
+				{ID: "triage.external", Value: false},
+				{ID: "autonomous.enabled", Value: false},
+				{ID: "secondbrain.enabled", Value: false},
+				{ID: "repository.extension.enabled", Value: false},
+			},
+		)
+		var actionErr *baselineHumanActionError
+		if !errors.As(declineErr, &actionErr) ||
+			!strings.Contains(actionErr.result.Message, "declined") {
+			t.Fatalf("decline error = %v", declineErr)
+		}
+		if treeAfter := baselinePlanTestTree(t, repository); treeBefore != treeAfter {
+			t.Fatal("declined Profile adaptation changed repository bytes")
+		}
+	})
+
+	t.Run("review output failure writes nothing", func(t *testing.T) {
+		treeBefore := baselinePlanTestTree(t, repository)
+		var outputErr bytes.Buffer
+		exit := runBaselineHumanCommandWithIO(
+			context.Background(),
+			[]string{"--repo", repository},
+			failingWriter{err: errors.New("injected human review output failure")},
+			&outputErr,
+			baselineHumanCommandIO{
+				input:       strings.NewReader(answers + "1\n"),
+				interactive: true,
+			},
+		)
+		if exit != exitRunFailed ||
+			!strings.Contains(outputErr.String(), "injected human review output failure") {
+			t.Fatalf("output failure exit=%d stderr=%s", exit, outputErr.String())
+		}
+		if treeAfter := baselinePlanTestTree(t, repository); treeBefore != treeAfter {
+			t.Fatal("human review output failure changed repository bytes")
+		}
+	})
+}
+
 func TestRejectedPlanRevision(t *testing.T) {
 	repo := newHumanBaselineRepository(t)
 	initial := humanBaselineFixturePlan(t, repo)

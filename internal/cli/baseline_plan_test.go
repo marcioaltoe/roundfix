@@ -16,6 +16,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
@@ -159,6 +160,7 @@ func TestBaselinePlanPreflightHelp(t *testing.T) {
 		"roundfix baseline plan",
 		"--repo",
 		"--profile",
+		"--profile-file",
 		"--decision",
 		"--decision-file",
 		"--format",
@@ -174,6 +176,125 @@ func TestBaselinePlanPreflightHelp(t *testing.T) {
 			t.Fatalf("baseline plan help advertises interactive flag %q:\n%s", forbidden, stdout.String())
 		}
 	}
+}
+
+func TestBaselinePlanProfileFile(t *testing.T) {
+	repository, input, decisions := baselinePlanProfileFileFixture(t)
+	draftPath := filepath.Join(t.TempDir(), "guided-backend.json")
+	if err := os.WriteFile(draftPath, input.Document, 0o644); err != nil {
+		t.Fatalf("write Profile draft input: %v", err)
+	}
+	args := baselinePlanProfileFileArgs(repository, draftPath, decisions)
+	before := baselinePlanTestTree(t, repository)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := RunContext(context.Background(), args, &stdout, &stderr)
+	if code != exitOK || stderr.Len() != 0 {
+		t.Fatalf("Profile draft plan exit = %d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	automationPlan, err := baseline.ParsePlanDocument(stdout.Bytes())
+	if err != nil {
+		t.Fatalf("parse Profile draft Plan: %v\n%s", err, stdout.String())
+	}
+	direct, err := baseline.BuildPlan(context.Background(), baseline.PlanRequest{
+		Repository:   repository,
+		ProfileDraft: &input,
+		Decisions:    decisions,
+		Preservation: baseline.RootPreservationRequest{Mode: baseline.PreservationModeGreenfield},
+	})
+	if err != nil || direct.Plan == nil {
+		t.Fatalf("build direct Profile draft Plan: outcome=%+v error=%v", direct, err)
+	}
+	if !reflect.DeepEqual(automationPlan.Profile, direct.Plan.Profile) ||
+		!reflect.DeepEqual(automationPlan.Postimages, direct.Plan.Postimages) ||
+		automationPlan.PlanDigest != direct.Plan.PlanDigest {
+		t.Fatalf(
+			"Profile draft normalization differs: cli=%s direct=%s",
+			automationPlan.PlanDigest,
+			direct.Plan.PlanDigest,
+		)
+	}
+	if after := baselinePlanTestTree(t, repository); before != after {
+		t.Fatalf("Profile draft planning changed repository bytes")
+	}
+
+	t.Run("mutually exclusive Profile inputs", func(t *testing.T) {
+		var exclusiveOut bytes.Buffer
+		var exclusiveErr bytes.Buffer
+		exclusiveArgs := append([]string(nil), args...)
+		exclusiveArgs = append(exclusiveArgs, "--profile", "standard-typescript-monorepo")
+		exit := RunContext(context.Background(), exclusiveArgs, &exclusiveOut, &exclusiveErr)
+		if exit != exitPreflight ||
+			!strings.Contains(exclusiveErr.String(), "mutually exclusive") {
+			t.Fatalf(
+				"mutually exclusive inputs exit=%d stdout=%s stderr=%s",
+				exit,
+				exclusiveOut.String(),
+				exclusiveErr.String(),
+			)
+		}
+	})
+
+	tests := []struct {
+		name     string
+		document []byte
+		want     string
+	}{
+		{name: "invalid draft", document: []byte(`{"schemaVersion":`), want: "custom.profile.json"},
+		{
+			name:     "stale draft",
+			document: staleProfileDraftDocument(t, input.Document),
+			want:     "custom.profile.catalog-schema.invalid",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "draft.json")
+			if err := os.WriteFile(path, test.document, 0o644); err != nil {
+				t.Fatal(err)
+			}
+			treeBefore := baselinePlanTestTree(t, repository)
+			var failureOut bytes.Buffer
+			var failureErr bytes.Buffer
+			exit := RunContext(
+				context.Background(),
+				baselinePlanProfileFileArgs(repository, path, decisions),
+				&failureOut,
+				&failureErr,
+			)
+			if exit != exitPreflight || !strings.Contains(failureErr.String(), test.want) {
+				t.Fatalf(
+					"%s exit=%d stdout=%s stderr=%s",
+					test.name,
+					exit,
+					failureOut.String(),
+					failureErr.String(),
+				)
+			}
+			if treeAfter := baselinePlanTestTree(t, repository); treeBefore != treeAfter {
+				t.Fatalf("%s changed repository bytes", test.name)
+			}
+		})
+	}
+
+	t.Run("output failure", func(t *testing.T) {
+		treeBefore := baselinePlanTestTree(t, repository)
+		var outputErr bytes.Buffer
+		exit := RunContext(
+			context.Background(),
+			args,
+			failingWriter{err: errors.New("injected Profile Plan output failure")},
+			&outputErr,
+		)
+		if exit != exitRunFailed ||
+			!strings.Contains(outputErr.String(), "injected Profile Plan output failure") {
+			t.Fatalf("output failure exit=%d stderr=%s", exit, outputErr.String())
+		}
+		if treeAfter := baselinePlanTestTree(t, repository); treeBefore != treeAfter {
+			t.Fatal("Profile Plan output failure changed repository bytes")
+		}
+	})
 }
 
 func TestBaselinePlanPreflightRealCLI(t *testing.T) {
@@ -314,6 +435,127 @@ func writeBaselinePlanTestFile(t *testing.T, repo, relative, content string) {
 	if err := os.WriteFile(target, []byte(content), 0o644); err != nil {
 		t.Fatalf("write %s: %v", relative, err)
 	}
+}
+
+func baselinePlanProfileFileFixture(
+	t *testing.T,
+) (string, baseline.ProfileDraftInput, []baseline.DecisionValue) {
+	t.Helper()
+	repository := newHumanBaselineRepository(t)
+	writeBaselinePlanTestFile(
+		t,
+		repository,
+		"package.json",
+		`{"name":"root","packageManager":"bun@1.3.0","scripts":{"verify":"true"},"dependencies":{"hono":"latest","typescript":"latest","zod":"latest"}}`,
+	)
+	writeBaselinePlanTestFile(t, repository, "packages/backend/package.json", `{"name":"backend"}`)
+	commitBaselinePlanTestRepository(t, repository)
+
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+	source, err := baseline.ResolveProfile("", "standard-typescript-monorepo", catalog)
+	if err != nil {
+		t.Fatal(err)
+	}
+	decisions := []baseline.DecisionValue{
+		{ID: "language.generated", Value: "English"},
+		{ID: "verification.gate", Value: "make verify"},
+		{ID: "http.contract", Value: map[string]any{"mode": "Post-only"}},
+		{ID: "spec.scaffold", Value: true},
+		{ID: "domain.layout", Value: "single-context"},
+		{ID: "triage.external", Value: false},
+		{ID: "autonomous.enabled", Value: false},
+		{ID: "secondbrain.enabled", Value: false},
+		{ID: "repository.extension.enabled", Value: false},
+	}
+	alignment, err := baseline.ResolveProfileAlignment(
+		context.Background(),
+		repository,
+		baseline.ProfileAlignmentRequest{
+			ProfileID:            source.ID,
+			Decisions:            decisions,
+			RemediationProfileID: source.ID,
+		},
+		catalog,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sourceCapabilities := make(map[string]struct{}, len(source.Capabilities))
+	for _, capabilityID := range source.Capabilities {
+		sourceCapabilities[capabilityID] = struct{}{}
+	}
+	removedCapabilities := make([]string, 0)
+	for _, divergence := range alignment.Divergences {
+		if !divergence.Blocking {
+			continue
+		}
+		if _, profileSpecific := sourceCapabilities[divergence.ID]; profileSpecific {
+			removedCapabilities = append(removedCapabilities, divergence.ID)
+		}
+	}
+	input, err := baseline.NewProfileAdaptationDraft(
+		source.ID,
+		"guided-backend",
+		[]string{"frontend", "autonomous-work"},
+		removedCapabilities,
+		catalog,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolved, _, err := baseline.ResolveProfileDraft(repository, input, catalog)
+	if err != nil {
+		t.Fatal(err)
+	}
+	decisions = decisionsSelectedByProfile(decisions, resolved)
+	return repository, input, decisions
+}
+
+func baselinePlanProfileFileArgs(
+	repository string,
+	draftPath string,
+	decisions []baseline.DecisionValue,
+) []string {
+	args := []string{
+		"baseline",
+		"plan",
+		"--repo",
+		repository,
+		"--profile-file",
+		draftPath,
+		"--decision",
+		"preservation.mode=greenfield",
+		"--format=json",
+	}
+	for _, decision := range decisions {
+		value := ""
+		switch typed := decision.Value.(type) {
+		case string:
+			value = typed
+		default:
+			data, _ := json.Marshal(typed)
+			value = string(data)
+		}
+		args = append(args, "--decision", decision.ID+"="+value)
+	}
+	return args
+}
+
+func staleProfileDraftDocument(t *testing.T, document []byte) []byte {
+	t.Helper()
+	var raw map[string]any
+	if err := json.Unmarshal(document, &raw); err != nil {
+		t.Fatal(err)
+	}
+	raw["catalogSchema"] = "roundfix/baseline-catalog/stale"
+	data, err := json.MarshalIndent(raw, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return append(data, '\n')
 }
 
 func runBaselinePlanTestCommand(t *testing.T, dir, name string, args ...string) {

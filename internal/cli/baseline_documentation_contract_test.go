@@ -27,7 +27,7 @@ func TestBaselineDocumentationContract(t *testing.T) {
 			args:    []string{"baseline", "--help"},
 			snippets: []string{
 				"roundfix baseline [--repo <path>] [--format <text|json>]",
-				"roundfix baseline plan --profile <id>",
+				"roundfix baseline plan (--profile <id> | --profile-file <draft.json>)",
 				"roundfix baseline apply --plan <file> --confirm-plan <digest>",
 				"roundfix baseline profile init --id <id>",
 				"roundfix baseline skills restore --profile <id>",
@@ -41,6 +41,8 @@ func TestBaselineDocumentationContract(t *testing.T) {
 			snippets: []string{
 				"roundfix/baseline-plan/v1",
 				"roundfix/baseline-result/v1",
+				"--profile-file",
+				"mutually exclusive",
 				"--decision-file",
 				"never prompts",
 				"never",

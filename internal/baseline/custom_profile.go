@@ -76,6 +76,196 @@ type profileDigestPayload struct {
 	Values        map[string]any `json:"values"`
 }
 
+// ProfileDraftInputFromDocument binds one strict custom Profile document to
+// its only compatible built-in source Profile.
+func ProfileDraftInputFromDocument(document []byte, catalog *Catalog) (ProfileDraftInput, error) {
+	if catalog == nil {
+		return ProfileDraftInput{}, errors.New("resolve custom Profile draft source: catalog is required")
+	}
+	draft, err := ParseCustomProfile(document, "Profile draft", catalog)
+	if err != nil {
+		return ProfileDraftInput{}, err
+	}
+	var sources []string
+	for _, sourceID := range catalog.ProfileIDs() {
+		source, resolveErr := resolveBuiltInProfile(sourceID, catalog)
+		if resolveErr != nil {
+			return ProfileDraftInput{}, resolveErr
+		}
+		if validateProfileAdaptation(source, draft, catalog) == nil {
+			sources = append(sources, sourceID)
+		}
+	}
+	switch len(sources) {
+	case 0:
+		return ProfileDraftInput{}, errors.New(
+			"custom.profile.draft.source.unresolved: document is not a valid adaptation of any built-in Profile",
+		)
+	case 1:
+		return ProfileDraftInput{
+			SourceProfileID: sources[0],
+			Document:        append([]byte(nil), document...),
+		}, nil
+	default:
+		return ProfileDraftInput{}, fmt.Errorf(
+			"custom.profile.draft.source.ambiguous: document matches built-in Profiles %s",
+			strings.Join(sources, ", "),
+		)
+	}
+}
+
+// NewProfileAdaptationDraft creates a strict draft by removing only reviewed
+// modules and profile-specific capabilities from one built-in Profile.
+func NewProfileAdaptationDraft(
+	sourceProfileID string,
+	id string,
+	removedModules []string,
+	removedCapabilities []string,
+	catalog *Catalog,
+) (ProfileDraftInput, error) {
+	if catalog == nil {
+		return ProfileDraftInput{}, errors.New("create Profile adaptation draft: catalog is required")
+	}
+	sourceProfileID = strings.TrimSpace(sourceProfileID)
+	source, err := resolveBuiltInProfile(sourceProfileID, catalog)
+	if err != nil {
+		return ProfileDraftInput{}, fmt.Errorf("create Profile adaptation draft: %w", err)
+	}
+	if err := validateCustomProfileID(id); err != nil {
+		return ProfileDraftInput{}, err
+	}
+	moduleRemovals, err := reviewedProfileRemovals("module", removedModules, source.Modules)
+	if err != nil {
+		return ProfileDraftInput{}, err
+	}
+	capabilityRemovals, err := reviewedProfileRemovals(
+		"capability",
+		removedCapabilities,
+		source.Capabilities,
+	)
+	if err != nil {
+		return ProfileDraftInput{}, err
+	}
+	if len(moduleRemovals) == 0 && len(capabilityRemovals) == 0 {
+		return ProfileDraftInput{}, errors.New("custom.profile.adaptation.removal.required")
+	}
+
+	modules := profileValuesWithout(source.Modules, moduleRemovals)
+	capabilities := profileValuesWithout(source.Capabilities, capabilityRemovals)
+	decisions := profileAdaptationDecisions(source.Decisions, modules, catalog)
+	values := make(map[string]any)
+	selectedDecisions := stringSet(decisions)
+	for decisionID, value := range source.Values {
+		if _, selected := selectedDecisions[decisionID]; selected {
+			values[decisionID] = cloneJSONValue(value)
+		}
+	}
+	document := customProfileDocument{
+		SchemaVersion: CustomProfileSchemaVersion,
+		CatalogSchema: catalogSchema,
+		ID:            strings.TrimSpace(id),
+		Modules:       modules,
+		Decisions:     decisions,
+		Capabilities:  capabilities,
+		Templates:     cloneStrings(source.Templates),
+		Values:        values,
+	}
+	data, err := marshalCustomProfileDocument(document)
+	if err != nil {
+		return ProfileDraftInput{}, fmt.Errorf("serialize Profile adaptation draft: %w", err)
+	}
+	draft, err := ParseCustomProfile(data, "Profile adaptation draft", catalog)
+	if err != nil {
+		return ProfileDraftInput{}, err
+	}
+	if err := validateProfileAdaptation(source, draft, catalog); err != nil {
+		return ProfileDraftInput{}, err
+	}
+	return ProfileDraftInput{SourceProfileID: sourceProfileID, Document: data}, nil
+}
+
+// ResolveProfileDraft validates and normalizes one in-memory Profile draft
+// without writing its canonical repository target.
+func ResolveProfileDraft(
+	repoRoot string,
+	input ProfileDraftInput,
+	catalog *Catalog,
+) (ResolvedProfile, []byte, error) {
+	return resolveProfileDraft(repoRoot, input, catalog)
+}
+
+func reviewedProfileRemovals(kind string, removed, selected []string) (map[string]struct{}, error) {
+	available := stringSet(selected)
+	result := make(map[string]struct{}, len(removed))
+	for _, raw := range removed {
+		id := strings.TrimSpace(raw)
+		if _, ok := available[id]; !ok {
+			return nil, fmt.Errorf("custom.profile.adaptation.%s.removal.invalid: %s", kind, id)
+		}
+		if _, duplicate := result[id]; duplicate {
+			return nil, fmt.Errorf("custom.profile.adaptation.%s.removal.duplicate: %s", kind, id)
+		}
+		result[id] = struct{}{}
+	}
+	return result, nil
+}
+
+func profileValuesWithout(values []string, removed map[string]struct{}) []string {
+	result := make([]string, 0, len(values)-len(removed))
+	for _, value := range values {
+		if _, remove := removed[value]; !remove {
+			result = append(result, value)
+		}
+	}
+	return result
+}
+
+func profileAdaptationDecisions(
+	sourceDecisions []string,
+	selectedModules []string,
+	catalog *Catalog,
+) []string {
+	selected := stringSet(sourceDecisions)
+	modules := stringSet(selectedModules)
+	for changed := true; changed; {
+		changed = false
+		for decisionID := range selected {
+			remove := false
+			for _, effect := range objectsOrEmpty(catalog.decisions[decisionID]["effects"]) {
+				for _, moduleID := range stringsOrEmpty(effect["activateModules"]) {
+					if _, active := modules[moduleID]; !active {
+						remove = true
+						break
+					}
+				}
+				if remove {
+					break
+				}
+				for _, requiredID := range stringsOrEmpty(effect["requireDecisions"]) {
+					if _, retained := selected[requiredID]; !retained {
+						remove = true
+						break
+					}
+				}
+				if remove {
+					break
+				}
+			}
+			if remove {
+				delete(selected, decisionID)
+				changed = true
+			}
+		}
+	}
+	result := make([]string, 0, len(selected))
+	for _, decisionID := range sourceDecisions {
+		if _, retained := selected[decisionID]; retained {
+			result = append(result, decisionID)
+		}
+	}
+	return result
+}
+
 // CatalogSchemaVersion returns the schema identity custom profiles bind to.
 func CatalogSchemaVersion() string {
 	return catalogSchema

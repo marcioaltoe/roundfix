@@ -45,6 +45,22 @@ type baselineHumanPrompt struct {
 	step   int
 }
 
+type baselineHumanOutput struct {
+	writer io.Writer
+	err    error
+}
+
+func (output *baselineHumanOutput) Write(data []byte) (int, error) {
+	if output.err != nil {
+		return 0, output.err
+	}
+	written, err := output.writer.Write(data)
+	if err != nil {
+		output.err = err
+	}
+	return written, err
+}
+
 type baselineHumanState struct {
 	mode             string
 	currentProfile   *baseline.ResolvedProfile
@@ -102,13 +118,15 @@ func runBaselineHumanCommandWithIO(
 		)
 	}
 
-	review := stdout
+	reviewDestination := stdout
 	if jsonOutput {
-		review = stderr
+		reviewDestination = stderr
 	}
+	review := &baselineHumanOutput{writer: reviewDestination}
+	promptOutput := &baselineHumanOutput{writer: stderr}
 	prompt := &baselineHumanPrompt{
 		reader: bufio.NewReader(commandIO.input),
-		writer: stderr,
+		writer: promptOutput,
 	}
 	var planRequest baseline.PlanRequest
 	plan, err := driveHumanBaselinePlanWithRequest(ctx, request.repo, prompt, review, &planRequest)
@@ -118,6 +136,14 @@ func runBaselineHumanCommandWithIO(
 			return writeBaselineHumanAction(actionErr.result, jsonOutput, stdout, stderr)
 		}
 		return printBaselineHumanFailure(err, jsonOutput, stdout, stderr)
+	}
+	if err := baselineHumanOutputFailure(review, promptOutput); err != nil {
+		return printBaselineHumanFailure(
+			fmt.Errorf("write Baseline review: %w", err),
+			jsonOutput,
+			stdout,
+			stderr,
+		)
 	}
 
 	originalPlan := plan
@@ -161,6 +187,14 @@ func runBaselineHumanCommandWithIO(
 		plan = revisedPlan
 		planRequest = revisedRequest
 	}
+	if err := baselineHumanOutputFailure(review, promptOutput); err != nil {
+		return printBaselineHumanFailure(
+			fmt.Errorf("write Baseline confirmation: %w", err),
+			jsonOutput,
+			stdout,
+			stderr,
+		)
+	}
 
 	result, err := baseline.ApplyPlan(ctx, request.repo, plan, plan.PlanDigest)
 	if err != nil {
@@ -171,6 +205,15 @@ func runBaselineHumanCommandWithIO(
 		return exitRunFailed
 	}
 	return exitOK
+}
+
+func baselineHumanOutputFailure(outputs ...*baselineHumanOutput) error {
+	for _, output := range outputs {
+		if output != nil && output.err != nil {
+			return output.err
+		}
+	}
+	return nil
 }
 
 func defaultBaselineHumanCommandIO() baselineHumanCommandIO {
@@ -286,6 +329,19 @@ func driveHumanBaselinePlanWithRequest(
 	if err != nil {
 		return baseline.PlanDocument{}, err
 	}
+	profile, decisions, profileDraft, err := promptBaselineProfileAlignment(
+		ctx,
+		prompt,
+		review,
+		inspection.Root,
+		catalog,
+		state,
+		profile,
+		decisions,
+	)
+	if err != nil {
+		return baseline.PlanDocument{}, err
+	}
 	preservation, err := promptBaselineClassification(
 		ctx,
 		prompt,
@@ -299,9 +355,13 @@ func driveHumanBaselinePlanWithRequest(
 
 	request := baseline.PlanRequest{
 		Repository:   inspection.Root,
-		ProfileID:    profile.ID,
 		Decisions:    decisions,
 		Preservation: preservation,
+	}
+	if profileDraft == nil {
+		request.ProfileID = profile.ID
+	} else {
+		request.ProfileDraft = profileDraft
 	}
 	outcome, err := baseline.BuildPlan(ctx, request)
 	if err != nil {
@@ -385,10 +445,7 @@ func reviseHumanBaselinePlan(
 					if loadErr != nil {
 						return baseline.PlanDocument{}, request, loadErr
 					}
-					profile, resolveErr := baseline.ResolveProfile(request.Repository, request.ProfileID, catalog)
-					if resolveErr != nil {
-						return baseline.PlanDocument{}, request, resolveErr
-					}
+					profile := current.Profile
 					normalized, missing, normalizeErr := baseline.ResolveDecisionInput(profile, decisions, catalog)
 					if normalizeErr != nil || len(missing) != 0 {
 						fmt.Fprintln(review, "Semantic revision was discarded because it did not produce complete valid Baseline decisions.")
@@ -458,7 +515,10 @@ func promptStructuredBaselineRevision(
 		if decisionErr != nil {
 			return request, decisionErr
 		}
-		request.ProfileID = selected.ID
+		if request.ProfileDraft == nil || selected.ID != current.Profile.ID {
+			request.ProfileID = selected.ID
+			request.ProfileDraft = nil
+		}
 		request.Decisions = decisions
 	case baseline.RevisionAreaRepositoryRules:
 		inspection, inspectErr := baseline.InspectRepository(ctx, request.Repository, nil)
@@ -702,6 +762,367 @@ func promptBaselineDecisions(
 			answered[id] = struct{}{}
 		}
 	}
+}
+
+func promptBaselineProfileAlignment(
+	ctx context.Context,
+	prompt *baselineHumanPrompt,
+	review io.Writer,
+	root string,
+	catalog *baseline.Catalog,
+	state baselineHumanState,
+	profile baseline.ResolvedProfile,
+	decisions []baseline.DecisionValue,
+) (baseline.ResolvedProfile, []baseline.DecisionValue, *baseline.ProfileDraftInput, error) {
+	sourceProfileID := profile.ID
+	var draft *baseline.ProfileDraftInput
+	for {
+		alignment, err := baseline.ResolveProfileAlignment(
+			ctx,
+			root,
+			baseline.ProfileAlignmentRequest{
+				ProfileID:            profile.ID,
+				Decisions:            decisionsSelectedByProfile(decisions, profile),
+				Profile:              profilePointer(profile),
+				RemediationProfileID: sourceProfileID,
+			},
+			catalog,
+		)
+		if err != nil {
+			return baseline.ResolvedProfile{}, nil, nil, err
+		}
+		renderBaselineProfileAlignment(review, alignment)
+		if alignment.Ready {
+			return profile, decisions, draft, nil
+		}
+
+		profileCapabilities := make(map[string]struct{}, len(profile.Capabilities))
+		for _, capabilityID := range profile.Capabilities {
+			profileCapabilities[capabilityID] = struct{}{}
+		}
+		var adaptable []baseline.ProfileDivergence
+		var nonRemovable []baseline.ProfileDivergence
+		for _, divergence := range alignment.Divergences {
+			if !divergence.Blocking {
+				continue
+			}
+			if _, profileSpecific := profileCapabilities[divergence.ID]; profileSpecific {
+				adaptable = append(adaptable, divergence)
+			} else {
+				nonRemovable = append(nonRemovable, divergence)
+			}
+		}
+		if len(nonRemovable) != 0 {
+			nextActions := uniqueProfileDivergenceActions(nonRemovable)
+			return baseline.ResolvedProfile{}, nil, nil, &baselineHumanActionError{
+				result: baselineHumanActionResult(
+					"decision",
+					"Profile alignment has non-removable required divergences; instruction classification did not start",
+					strings.Join(nextActions, " "),
+				),
+			}
+		}
+		if len(adaptable) == 0 {
+			return baseline.ResolvedProfile{}, nil, nil, errors.New(
+				"Profile alignment is not ready but has no actionable blocking divergence",
+			)
+		}
+
+		selected, err := prompt.selectOne(ctx, "Profile divergence resolution", []string{
+			"Change Baseline Profile",
+			"Create a reviewed repository-owned Profile adaptation",
+			"Decline without writing",
+		})
+		if err != nil {
+			return baseline.ResolvedProfile{}, nil, nil, err
+		}
+		switch selected {
+		case 0:
+			changed, selectErr := promptBaselineProfile(
+				ctx,
+				prompt,
+				review,
+				root,
+				catalog,
+				baselineHumanState{},
+			)
+			if selectErr != nil {
+				return baseline.ResolvedProfile{}, nil, nil, selectErr
+			}
+			changedDecisions, decisionErr := promptBaselineDecisions(
+				ctx,
+				prompt,
+				catalog,
+				changed,
+				state,
+			)
+			if decisionErr != nil {
+				return baseline.ResolvedProfile{}, nil, nil, decisionErr
+			}
+			profile = changed
+			decisions = changedDecisions
+			sourceProfileID = changed.ID
+			draft = nil
+		case 1:
+			adapted, adaptedDecisions, input, adaptationErr := promptBaselineProfileAdaptation(
+				ctx,
+				prompt,
+				review,
+				root,
+				catalog,
+				sourceProfileID,
+				profile,
+				decisions,
+				adaptable,
+			)
+			if adaptationErr != nil {
+				return baseline.ResolvedProfile{}, nil, nil, adaptationErr
+			}
+			profile = adapted
+			decisions = adaptedDecisions
+			draft = &input
+		default:
+			return baseline.ResolvedProfile{}, nil, nil, &baselineHumanActionError{
+				result: baselineHumanActionResult(
+					"decision",
+					"Profile divergence resolution was declined; instruction classification did not start and no repository bytes were written",
+					"rerun roundfix baseline to change the Profile or review a repository-owned adaptation",
+				),
+			}
+		}
+	}
+}
+
+func promptBaselineProfileAdaptation(
+	ctx context.Context,
+	prompt *baselineHumanPrompt,
+	review io.Writer,
+	root string,
+	catalog *baseline.Catalog,
+	sourceProfileID string,
+	source baseline.ResolvedProfile,
+	decisions []baseline.DecisionValue,
+	blocking []baseline.ProfileDivergence,
+) (baseline.ResolvedProfile, []baseline.DecisionValue, baseline.ProfileDraftInput, error) {
+	removedModules := suggestedProfileModuleRemovals(source, blocking)
+	removedCapabilities := make([]string, 0, len(blocking))
+	for _, divergence := range blocking {
+		removedCapabilities = append(removedCapabilities, divergence.ID)
+	}
+	for {
+		fmt.Fprintln(review, "\nRepository-owned Profile adaptation proposal")
+		printProfileRemovalReview(review, "Modules", removedModules)
+		printProfileRemovalReview(review, "Capabilities", removedCapabilities)
+		selected, err := prompt.selectOne(ctx, "Profile adaptation review", []string{
+			"Accept every listed removal and re-audit",
+			"Review every module and capability selection",
+			"Decline without writing",
+		})
+		if err != nil {
+			return baseline.ResolvedProfile{}, nil, baseline.ProfileDraftInput{}, err
+		}
+		if selected == 2 {
+			return baseline.ResolvedProfile{}, nil, baseline.ProfileDraftInput{},
+				&baselineHumanActionError{result: baselineHumanActionResult(
+					"decision",
+					"Profile adaptation was declined; no repository bytes were written",
+					"rerun roundfix baseline to review a different Profile adaptation",
+				)}
+		}
+		if selected == 1 {
+			removedModules, err = promptProfileRemovals(
+				ctx,
+				prompt,
+				"module",
+				source.Modules,
+				removedModules,
+			)
+			if err != nil {
+				return baseline.ResolvedProfile{}, nil, baseline.ProfileDraftInput{}, err
+			}
+			removedCapabilities, err = promptProfileRemovals(
+				ctx,
+				prompt,
+				"capability",
+				source.Capabilities,
+				removedCapabilities,
+			)
+			if err != nil {
+				return baseline.ResolvedProfile{}, nil, baseline.ProfileDraftInput{}, err
+			}
+		}
+
+		id, err := prompt.readNonEmpty(ctx, "Repository-owned Baseline Profile ID")
+		if err != nil {
+			return baseline.ResolvedProfile{}, nil, baseline.ProfileDraftInput{}, err
+		}
+		input, err := baseline.NewProfileAdaptationDraft(
+			sourceProfileID,
+			id,
+			removedModules,
+			removedCapabilities,
+			catalog,
+		)
+		if err != nil {
+			fmt.Fprintf(review, "Profile adaptation is invalid: %v\n", err)
+			fmt.Fprintln(review, "Review the removals and provide a valid repository-owned Profile ID.")
+			continue
+		}
+		resolved, canonical, err := baseline.ResolveProfileDraft(root, input, catalog)
+		if err != nil {
+			fmt.Fprintf(review, "Profile adaptation is invalid: %v\n", err)
+			fmt.Fprintln(review, "Review the removals and provide a valid repository-owned Profile ID.")
+			continue
+		}
+		input.Document = canonical
+		return resolved, decisionsSelectedByProfile(decisions, resolved), input, nil
+	}
+}
+
+func suggestedProfileModuleRemovals(
+	profile baseline.ResolvedProfile,
+	blocking []baseline.ProfileDivergence,
+) []string {
+	suggestions := map[string]string{
+		"capability.stack.bun":          "bun",
+		"capability.stack.turborepo":    "monorepo",
+		"capability.stack.typescript":   "typescript",
+		"capability.workspace.backend":  "backend",
+		"capability.workspace.frontend": "frontend",
+	}
+	selected := make(map[string]struct{}, len(profile.Modules))
+	for _, moduleID := range profile.Modules {
+		selected[moduleID] = struct{}{}
+	}
+	removed := make(map[string]struct{})
+	for _, divergence := range blocking {
+		moduleID := suggestions[divergence.ID]
+		if _, exists := selected[moduleID]; exists {
+			removed[moduleID] = struct{}{}
+		}
+	}
+	if _, selectedAutonomousWork := selected["autonomous-work"]; selectedAutonomousWork {
+		removed["autonomous-work"] = struct{}{}
+	}
+	result := make([]string, 0, len(removed))
+	for _, moduleID := range profile.Modules {
+		if _, remove := removed[moduleID]; remove {
+			result = append(result, moduleID)
+		}
+	}
+	return result
+}
+
+func promptProfileRemovals(
+	ctx context.Context,
+	prompt *baselineHumanPrompt,
+	kind string,
+	values []string,
+	current []string,
+) ([]string, error) {
+	removed := make(map[string]struct{}, len(current))
+	for _, value := range current {
+		removed[value] = struct{}{}
+	}
+	result := make([]string, 0)
+	for _, value := range values {
+		defaultIndex := 0
+		if _, remove := removed[value]; remove {
+			defaultIndex = 1
+		}
+		selected, err := prompt.selectOneDefault(
+			ctx,
+			fmt.Sprintf("Profile %s %s", kind, value),
+			[]string{"Keep", "Remove"},
+			defaultIndex,
+		)
+		if err != nil {
+			return nil, err
+		}
+		if selected == 1 {
+			result = append(result, value)
+		}
+	}
+	return result, nil
+}
+
+func decisionsSelectedByProfile(
+	decisions []baseline.DecisionValue,
+	profile baseline.ResolvedProfile,
+) []baseline.DecisionValue {
+	selected := make(map[string]struct{}, len(profile.Decisions))
+	for _, decisionID := range profile.Decisions {
+		selected[decisionID] = struct{}{}
+	}
+	result := make([]baseline.DecisionValue, 0, len(decisions))
+	for _, decision := range decisions {
+		if _, retained := selected[decision.ID]; retained {
+			result = append(result, decision)
+		}
+	}
+	return result
+}
+
+func renderBaselineProfileAlignment(output io.Writer, alignment baseline.ProfileAlignment) {
+	fmt.Fprintf(output, "\nBaseline Profile alignment: %s\n", alignment.State)
+	fmt.Fprintf(output, "Profile: %s\n", alignment.Profile.ID)
+	if len(alignment.Divergences) == 0 {
+		fmt.Fprintln(output, "Divergences: none")
+		return
+	}
+	fmt.Fprintln(output, "Divergences:")
+	for _, divergence := range alignment.Divergences {
+		severity := "advisory"
+		if divergence.Blocking {
+			severity = "blocking"
+		}
+		fmt.Fprintf(
+			output,
+			"- %s %s (%s): %s\n",
+			severity,
+			divergence.ID,
+			divergence.Code,
+			divergence.Message,
+		)
+		if divergence.NextAction != "" {
+			fmt.Fprintf(output, "  Next action: %s\n", divergence.NextAction)
+		}
+	}
+}
+
+func printProfileRemovalReview(output io.Writer, label string, removed []string) {
+	fmt.Fprintf(output, "%s removed (%d):\n", label, len(removed))
+	if len(removed) == 0 {
+		fmt.Fprintln(output, "- none")
+		return
+	}
+	for _, id := range removed {
+		fmt.Fprintf(output, "- %s\n", id)
+	}
+}
+
+func uniqueProfileDivergenceActions(divergences []baseline.ProfileDivergence) []string {
+	seen := make(map[string]struct{})
+	actions := make([]string, 0, len(divergences))
+	for _, divergence := range divergences {
+		action := strings.TrimSpace(divergence.NextAction)
+		if action == "" {
+			continue
+		}
+		if _, duplicate := seen[action]; duplicate {
+			continue
+		}
+		seen[action] = struct{}{}
+		actions = append(actions, action)
+	}
+	if len(actions) == 0 {
+		return []string{"resolve every non-removable required divergence and rerun roundfix baseline"}
+	}
+	return actions
+}
+
+func profilePointer(profile baseline.ResolvedProfile) *baseline.ResolvedProfile {
+	return &profile
 }
 
 func promptBaselineDecision(
