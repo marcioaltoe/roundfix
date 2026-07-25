@@ -250,6 +250,7 @@ func profileAdaptationDecisions(
 	selected := stringSet(sourceDecisions)
 	modules := stringSet(selectedModules)
 	capabilities := stringSet(selectedCapabilities)
+	artifacts := profileModuleArtifacts(selectedModules, catalog)
 	for changed := true; changed; {
 		changed = false
 		for decisionID := range selected {
@@ -265,6 +266,15 @@ func profileAdaptationDecisions(
 			for _, effect := range objectsOrEmpty(catalog.decisions[decisionID]["effects"]) {
 				for _, moduleID := range stringsOrEmpty(effect["activateModules"]) {
 					if _, active := modules[moduleID]; !active {
+						remove = true
+						break
+					}
+				}
+				if remove {
+					break
+				}
+				for _, artifactID := range decisionEffectArtifacts(effect) {
+					if _, active := artifacts[artifactID]; !active {
 						remove = true
 						break
 					}
@@ -432,6 +442,7 @@ func validateProfileAdaptation(source, draft ResolvedProfile, catalog *Catalog) 
 	}
 	selectedModules := stringSet(draft.Modules)
 	selectedDecisions := stringSet(draft.Decisions)
+	selectedArtifacts := profileModuleArtifacts(draft.Modules, catalog)
 	for _, moduleID := range draft.Modules {
 		for _, decisionID := range stringsOrEmpty(catalog.modules[moduleID]["requiredDecisions"]) {
 			if _, included := selectedDecisions[decisionID]; !included {
@@ -454,6 +465,15 @@ func validateProfileAdaptation(source, draft ResolvedProfile, catalog *Catalog) 
 					)
 				}
 			}
+			for _, artifactID := range decisionEffectArtifacts(effect) {
+				if _, included := selectedArtifacts[artifactID]; !included {
+					return fmt.Errorf(
+						"custom.profile.adaptation.module.decision-missing: decision %s targets %s from a removed module",
+						decisionID,
+						artifactID,
+					)
+				}
+			}
 			for _, requiredID := range stringsOrEmpty(effect["requireDecisions"]) {
 				if _, included := selectedDecisions[requiredID]; !included {
 					return fmt.Errorf(
@@ -473,6 +493,34 @@ func validateProfileAdaptation(source, draft ResolvedProfile, catalog *Catalog) 
 		return err
 	}
 	return nil
+}
+
+func profileModuleArtifacts(modules []string, catalog *Catalog) map[string]struct{} {
+	artifacts := make(map[string]struct{})
+	for _, moduleID := range modules {
+		module := catalog.modules[moduleID]
+		for _, field := range []string{"rootBlocks", "supportingGuides", "repositoryExtensions"} {
+			for _, declaration := range objectsOrEmpty(module[field]) {
+				if artifactID, ok := stringValue(declaration, "id"); ok {
+					artifacts[artifactID] = struct{}{}
+				}
+			}
+		}
+	}
+	return artifacts
+}
+
+func decisionEffectArtifacts(effect document) []string {
+	var artifacts []string
+	artifacts = append(artifacts, stringsOrEmpty(effect["includeArtifacts"])...)
+	for _, field := range []string{"selectTemplates", "renderBindings"} {
+		for _, declaration := range objectsOrEmpty(effect[field]) {
+			if artifactID, ok := stringValue(declaration, "artifact"); ok {
+				artifacts = append(artifacts, artifactID)
+			}
+		}
+	}
+	return artifacts
 }
 
 func validateProfileFieldSubset(field string, selected, source []string) error {

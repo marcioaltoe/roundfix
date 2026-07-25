@@ -45,7 +45,7 @@ func TestGuidanceCompositionJourney(t *testing.T) {
 func TestProjectDecisionJourney(t *testing.T) {
 	t.Run("human and automation answers produce one Plan", TestProjectDecisionParity)
 	t.Run("compatible decisions are reused on update", TestProjectDecisionReuse)
-	t.Run("Fluxus-style defaults retain the persisted HTTP reason", TestBetterAuthSuggestionReusesHTTPReason)
+	t.Run("Fluxus-style defaults retain the persisted HTTP exception", TestBetterAuthSuggestionReusesFullHTTPException)
 
 	binary := buildBaselineReleaseBinary(t)
 	t.Run("affected Profile apply audit and empty reapply", func(t *testing.T) {

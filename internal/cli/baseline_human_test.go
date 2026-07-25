@@ -240,7 +240,7 @@ func TestHumanBaselineDecisionDefaults(t *testing.T) {
 		{name: "Secondbrain", id: "secondbrain.enabled", want: true},
 		{name: "repository extension", id: "repository.extension.enabled", want: true},
 		{name: "backend runtime", id: "runtime.backend", want: "codex gpt-5.6-sol"},
-		{name: "design runtime", id: "runtime.design", want: "claude fable high"},
+		{name: "design runtime", id: "runtime.design", want: "claude opus 5 xhigh"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -539,7 +539,7 @@ func TestProjectDecisionReuse(t *testing.T) {
 	}
 }
 
-func TestBetterAuthSuggestionReusesHTTPReason(t *testing.T) {
+func TestBetterAuthSuggestionReusesFullHTTPException(t *testing.T) {
 	repository := newCLIProjectDecisionRepository(t)
 	catalog, err := baseline.LoadEmbeddedCatalog()
 	if err != nil {
@@ -555,8 +555,8 @@ func TestBetterAuthSuggestionReusesHTTPReason(t *testing.T) {
 		"mode": "Post-only",
 		"exceptions": []any{
 			map[string]any{
-				"scope":   "/api/auth/*",
-				"methods": []any{"GET", "POST"},
+				"scope":   "/auth/provider/*",
+				"methods": []any{"GET"},
 				"owner":   "Better Auth",
 				"reason":  persistedReason,
 			},
@@ -578,8 +578,10 @@ func TestBetterAuthSuggestionReusesHTTPReason(t *testing.T) {
 	if err != nil {
 		t.Fatalf("accept project decision defaults: %v", err)
 	}
-	if !strings.Contains(output.String(), persistedReason) {
-		t.Fatalf("Better Auth suggestion does not reuse the persisted HTTP reason:\n%s", output.String())
+	if !strings.Contains(output.String(), persistedReason) ||
+		!strings.Contains(output.String(), "/auth/provider/*") ||
+		!strings.Contains(output.String(), `"methods":["GET"]`) {
+		t.Fatalf("Better Auth suggestion does not reuse the full persisted HTTP exception:\n%s", output.String())
 	}
 	buildCLIProjectDecisionPlan(t, repository, decisions)
 
@@ -596,6 +598,70 @@ func TestBetterAuthSuggestionReusesHTTPReason(t *testing.T) {
 		!strings.Contains(err.Error(), "auth.provider") ||
 		!strings.Contains(err.Error(), "http.contract") {
 		t.Fatalf("explicit conflicting Decision Document error = %v, want both decision IDs", err)
+	}
+}
+
+func TestProfileAdaptationRetriesAccumulateEarlierRemovals(t *testing.T) {
+	repository := newCLIProjectDecisionRepository(t)
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load embedded catalog: %v", err)
+	}
+	source, err := baseline.ResolveProfile(
+		repository,
+		"standard-typescript-monorepo",
+		catalog,
+	)
+	if err != nil {
+		t.Fatalf("resolve Standard TypeScript Monorepo Profile: %v", err)
+	}
+	decisions := humanBaselineFixtureDecisions()
+
+	first, firstDecisions, _, err := promptBaselineProfileAdaptation(
+		context.Background(),
+		&baselineHumanPrompt{
+			reader: bufioReader("1\nwithout-react\n"),
+			writer: &bytes.Buffer{},
+		},
+		&bytes.Buffer{},
+		repository,
+		catalog,
+		source.ID,
+		source,
+		decisions,
+		[]baseline.ProfileDivergence{{ID: "capability.stack.react", Blocking: true}},
+	)
+	if err != nil {
+		t.Fatalf("first Profile adaptation: %v", err)
+	}
+	second, _, _, err := promptBaselineProfileAdaptation(
+		context.Background(),
+		&baselineHumanPrompt{
+			reader: bufioReader("1\nwithout-react-or-tailwind\n"),
+			writer: &bytes.Buffer{},
+		},
+		&bytes.Buffer{},
+		repository,
+		catalog,
+		source.ID,
+		first,
+		firstDecisions,
+		[]baseline.ProfileDivergence{{ID: "capability.stack.tailwind", Blocking: true}},
+	)
+	if err != nil {
+		t.Fatalf("second Profile adaptation: %v", err)
+	}
+	for _, capabilityID := range []string{
+		"capability.stack.react",
+		"capability.stack.tailwind",
+	} {
+		if slices.Contains(second.Capabilities, capabilityID) {
+			t.Fatalf(
+				"second Profile adaptation reintroduced capability %q: %v",
+				capabilityID,
+				second.Capabilities,
+			)
+		}
 	}
 }
 
@@ -694,6 +760,44 @@ func TestConsolidatedReview(t *testing.T) {
 	}
 }
 
+func TestHumanBaselineInvokesSemanticSegmentationAndClassification(t *testing.T) {
+	repo := newHumanBaselineRepository(t)
+	writeBaselinePlanTestFile(t, repo, "AGENTS.md", "Use the repository domain language.\n")
+	commitBaselinePlanTestRepository(t, repo)
+	analyzer := &countingBaselineSemanticAnalyzer{}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := runBaselineHumanCommandWithIO(
+		context.Background(),
+		[]string{"--repo", repo},
+		&stdout,
+		&stderr,
+		baselineHumanCommandIO{
+			input:            strings.NewReader(humanBaselinePreservationAnswers()),
+			interactive:      true,
+			semanticAnalyzer: analyzer,
+		},
+	)
+	if code != exitUnverified {
+		t.Fatalf(
+			"semantic preservation review exit = %d stdout=%s stderr=%s",
+			code,
+			stdout.String(),
+			stderr.String(),
+		)
+	}
+	if analyzer.segmentCalls != 1 || analyzer.classifyCalls != 1 {
+		t.Fatalf(
+			"semantic analyzer calls = segment:%d classify:%d, want one each",
+			analyzer.segmentCalls,
+			analyzer.classifyCalls,
+		)
+	}
+	if !strings.Contains(stdout.String(), "normative-clause -> repository-document") {
+		t.Fatalf("semantic repository-document proposal is absent:\n%s", stdout.String())
+	}
+}
+
 func TestConsolidatedReviewEditsManagedClassification(t *testing.T) {
 	repo := newHumanBaselineRepository(t)
 	writeBaselinePlanTestFile(
@@ -706,7 +810,7 @@ func TestConsolidatedReviewEditsManagedClassification(t *testing.T) {
 
 	answers := strings.TrimSuffix(humanBaselineAdoptionAnswers(""), "\n")
 	answers = "2" + strings.TrimPrefix(answers, "1")
-	answers += "\n2\n1\nmanaged setup evidence is not repository policy\n2\n"
+	answers += "\n2\n1\n12\nmanaged setup evidence is not repository policy\n2\n"
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	code := runBaselineHumanCommandWithIO(
@@ -1286,6 +1390,47 @@ func (analyzer *countingBaselineRevisionAnalyzer) Revise(
 ) (baseline.RevisionProposal, error) {
 	analyzer.calls++
 	return baseline.RevisionProposal{}, errors.New("unexpected semantic revision")
+}
+
+type countingBaselineSemanticAnalyzer struct {
+	segmentCalls  int
+	classifyCalls int
+}
+
+func (analyzer *countingBaselineSemanticAnalyzer) Segment(
+	_ context.Context,
+	snapshot baseline.RuleSegmentationSnapshot,
+) (baseline.RuleSegmentationProposal, error) {
+	analyzer.segmentCalls++
+	return baseline.ManualRuleSegmentationProposal(snapshot)
+}
+
+func (analyzer *countingBaselineSemanticAnalyzer) Classify(
+	_ context.Context,
+	snapshot baseline.AnalysisSnapshot,
+) (baseline.ClassificationProposal, error) {
+	analyzer.classifyCalls++
+	proposal, err := baseline.ManualClassificationProposal(snapshot)
+	if err != nil {
+		return baseline.ClassificationProposal{}, err
+	}
+	for _, destination := range snapshot.Destinations {
+		if destination.Disposition != "repository-document" {
+			continue
+		}
+		proposal.Dispositions[0].Classification = "normative-clause"
+		proposal.Dispositions[0].Disposition = "repository-document"
+		proposal.Dispositions[0].Destination = &baseline.ReadoptionDestination{
+			DocumentType: destination.DocumentType,
+			Path:         destination.Path,
+			Digest:       snapshot.Entries[0].Digest,
+		}
+		proposal.Dispositions[0].Reason = "The active semantic guide owns this repository instruction."
+		return proposal, nil
+	}
+	return baseline.ClassificationProposal{}, errors.New(
+		"test semantic analyzer found no active repository-document destination",
+	)
 }
 
 func humanBaselineAdoptionAnswers(final string) string {

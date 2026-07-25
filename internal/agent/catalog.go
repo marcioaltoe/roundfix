@@ -19,6 +19,7 @@ var codexModelCatalog = []ModelChoice{
 }
 
 var claudeModelCatalog = []ModelChoice{
+	{Label: "claude-opus-5", Value: "claude-opus-5", Description: "preferred design and frontend agentic coding model"},
 	{Label: "claude-fable-5", Value: "claude-fable-5", Description: "balanced frontend agentic coding model"},
 	{Label: "claude-opus-4-8", Value: "claude-opus-4-8", Description: "Opus 4.8 with a 1M context window"},
 }

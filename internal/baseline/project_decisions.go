@@ -188,7 +188,7 @@ func normalizeHTTPException(value any) (HTTPException, error) {
 	for index, method := range methods {
 		normalizedMethod := strings.ToUpper(strings.TrimSpace(method))
 		switch normalizedMethod {
-		case "GET", "POST":
+		case "CONNECT", "DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT", "TRACE":
 		default:
 			return HTTPException{}, fmt.Errorf("method %q is not allowed", method)
 		}

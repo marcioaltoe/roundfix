@@ -593,6 +593,9 @@ func baselinePlanTestTree(t *testing.T, root string) string {
 		if err != nil {
 			return err
 		}
+		if relative == ".git" {
+			return filepath.SkipDir
+		}
 		if relative != "." {
 			paths = append(paths, filepath.ToSlash(relative))
 		}

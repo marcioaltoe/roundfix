@@ -3,9 +3,7 @@ package cli
 import (
 	"bufio"
 	"context"
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -33,10 +31,16 @@ type baselineHumanCommandIO struct {
 	input            io.Reader
 	interactive      bool
 	revisionAnalyzer baselineRevisionAnalyzer
+	semanticAnalyzer baselineSemanticAnalyzer
 }
 
 type baselineRevisionAnalyzer interface {
 	Revise(context.Context, baseline.RevisionSnapshot) (baseline.RevisionProposal, error)
+}
+
+type baselineSemanticAnalyzer interface {
+	Segment(context.Context, baseline.RuleSegmentationSnapshot) (baseline.RuleSegmentationProposal, error)
+	Classify(context.Context, baseline.AnalysisSnapshot) (baseline.ClassificationProposal, error)
 }
 
 type baselineHumanPrompt struct {
@@ -130,7 +134,14 @@ func runBaselineHumanCommandWithIO(
 		writer: promptOutput,
 	}
 	var planRequest baseline.PlanRequest
-	plan, err := driveHumanBaselinePlanWithRequest(ctx, request.repo, prompt, review, &planRequest)
+	plan, err := driveHumanBaselinePlanWithAnalyzers(
+		ctx,
+		request.repo,
+		prompt,
+		review,
+		&planRequest,
+		commandIO.semanticAnalyzer,
+	)
 	if err != nil {
 		var actionErr *baselineHumanActionError
 		if errors.As(err, &actionErr) {
@@ -181,6 +192,7 @@ func runBaselineHumanCommandWithIO(
 			plan,
 			planRequest,
 			commandIO.revisionAnalyzer,
+			commandIO.semanticAnalyzer,
 		)
 		if revisionErr != nil {
 			return printBaselineHumanFailure(revisionErr, jsonOutput, stdout, stderr)
@@ -219,10 +231,12 @@ func baselineHumanOutputFailure(outputs ...*baselineHumanOutput) error {
 
 func defaultBaselineHumanCommandIO() baselineHumanCommandIO {
 	info, err := os.Stdin.Stat()
+	analyzer := baselineacp.NewDefaultAnalyzer()
 	return baselineHumanCommandIO{
 		input:            os.Stdin,
 		interactive:      err == nil && info.Mode()&os.ModeCharDevice != 0,
-		revisionAnalyzer: baselineacp.NewDefaultAnalyzer(),
+		revisionAnalyzer: analyzer,
+		semanticAnalyzer: analyzer,
 	}
 }
 
@@ -282,6 +296,24 @@ func driveHumanBaselinePlanWithRequest(
 	prompt *baselineHumanPrompt,
 	review io.Writer,
 	captured *baseline.PlanRequest,
+) (baseline.PlanDocument, error) {
+	return driveHumanBaselinePlanWithAnalyzers(
+		ctx,
+		repository,
+		prompt,
+		review,
+		captured,
+		nil,
+	)
+}
+
+func driveHumanBaselinePlanWithAnalyzers(
+	ctx context.Context,
+	repository string,
+	prompt *baselineHumanPrompt,
+	review io.Writer,
+	captured *baseline.PlanRequest,
+	semanticAnalyzer baselineSemanticAnalyzer,
 ) (baseline.PlanDocument, error) {
 	if prompt == nil {
 		return baseline.PlanDocument{}, errors.New("drive human Baseline workflow: prompt adapter is required")
@@ -349,6 +381,10 @@ func driveHumanBaselinePlanWithRequest(
 		review,
 		inspection,
 		preservationMode,
+		catalog,
+		profile,
+		decisions,
+		semanticAnalyzer,
 	)
 	if err != nil {
 		return baseline.PlanDocument{}, err
@@ -388,6 +424,7 @@ func reviseHumanBaselinePlan(
 	current baseline.PlanDocument,
 	request baseline.PlanRequest,
 	analyzer baselineRevisionAnalyzer,
+	semanticAnalyzer baselineSemanticAnalyzer,
 ) (baseline.PlanDocument, baseline.PlanRequest, error) {
 	selected, err := prompt.selectOne(ctx, "Decision area to revisit", []string{
 		"Baseline Profile",
@@ -460,7 +497,15 @@ func reviseHumanBaselinePlan(
 		}
 	}
 	if !semanticAccepted {
-		revised, err = promptStructuredBaselineRevision(ctx, prompt, review, current, request, area)
+		revised, err = promptStructuredBaselineRevision(
+			ctx,
+			prompt,
+			review,
+			current,
+			request,
+			area,
+			semanticAnalyzer,
+		)
 		if err != nil {
 			return baseline.PlanDocument{}, request, err
 		}
@@ -491,6 +536,7 @@ func promptStructuredBaselineRevision(
 	current baseline.PlanDocument,
 	request baseline.PlanRequest,
 	area baseline.RevisionArea,
+	semanticAnalyzer baselineSemanticAnalyzer,
 ) (baseline.PlanRequest, error) {
 	catalog, err := baseline.LoadEmbeddedCatalog()
 	if err != nil {
@@ -534,7 +580,17 @@ func promptStructuredBaselineRevision(
 		if modeErr != nil {
 			return request, modeErr
 		}
-		preservation, preservationErr := promptBaselineClassification(ctx, prompt, review, inspection, mode)
+		preservation, preservationErr := promptBaselineClassification(
+			ctx,
+			prompt,
+			review,
+			inspection,
+			mode,
+			catalog,
+			current.Profile,
+			current.Decisions,
+			semanticAnalyzer,
+		)
 		if preservationErr != nil {
 			return request, preservationErr
 		}
@@ -923,11 +979,21 @@ func promptBaselineProfileAdaptation(
 	decisions []baseline.DecisionValue,
 	blocking []baseline.ProfileDivergence,
 ) (baseline.ResolvedProfile, []baseline.DecisionValue, baseline.ProfileDraftInput, error) {
-	removedModules := suggestedProfileModuleRemovals(source, blocking)
-	removedCapabilities := make([]string, 0, len(blocking))
-	for _, divergence := range blocking {
-		removedCapabilities = append(removedCapabilities, divergence.ID)
+	base, err := baseline.ResolveProfile(root, sourceProfileID, catalog)
+	if err != nil {
+		return baseline.ResolvedProfile{}, nil, baseline.ProfileDraftInput{},
+			fmt.Errorf("resolve Profile adaptation source: %w", err)
 	}
+	moduleRemovals := profileRemovalSet(profileValuesRemoved(base.Modules, source.Modules))
+	for _, moduleID := range suggestedProfileModuleRemovals(source, blocking) {
+		moduleRemovals[moduleID] = struct{}{}
+	}
+	capabilityRemovals := profileRemovalSet(profileValuesRemoved(base.Capabilities, source.Capabilities))
+	for _, divergence := range blocking {
+		capabilityRemovals[divergence.ID] = struct{}{}
+	}
+	removedModules := selectedProfileRemovals(base.Modules, moduleRemovals)
+	removedCapabilities := selectedProfileRemovals(base.Capabilities, capabilityRemovals)
 	for {
 		fmt.Fprintln(review, "\nRepository-owned Profile adaptation proposal")
 		printProfileRemovalReview(review, "Modules", removedModules)
@@ -953,7 +1019,7 @@ func promptBaselineProfileAdaptation(
 				ctx,
 				prompt,
 				"module",
-				source.Modules,
+				base.Modules,
 				removedModules,
 			)
 			if err != nil {
@@ -963,7 +1029,7 @@ func promptBaselineProfileAdaptation(
 				ctx,
 				prompt,
 				"capability",
-				source.Capabilities,
+				base.Capabilities,
 				removedCapabilities,
 			)
 			if err != nil {
@@ -996,6 +1062,35 @@ func promptBaselineProfileAdaptation(
 		input.Document = canonical
 		return resolved, decisionsSelectedByProfile(decisions, resolved), input, nil
 	}
+}
+
+func profileValuesRemoved(base, selected []string) []string {
+	selectedSet := profileRemovalSet(selected)
+	removed := make([]string, 0, len(base))
+	for _, id := range base {
+		if _, retained := selectedSet[id]; !retained {
+			removed = append(removed, id)
+		}
+	}
+	return removed
+}
+
+func profileRemovalSet(values []string) map[string]struct{} {
+	result := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		result[value] = struct{}{}
+	}
+	return result
+}
+
+func selectedProfileRemovals(order []string, removed map[string]struct{}) []string {
+	result := make([]string, 0, len(removed))
+	for _, id := range order {
+		if _, isRemoved := removed[id]; isRemoved {
+			result = append(result, id)
+		}
+	}
+	return result
 }
 
 func suggestedProfileModuleRemovals(
@@ -1357,19 +1452,15 @@ func baselineAuthProviderSuggestion(
 		if !ok {
 			continue
 		}
-		reason, ok := exception["reason"].(string)
-		if !ok {
-			continue
-		}
 		candidate, err := cloneBaselineDecisionObject(suggestion)
 		if err != nil {
 			return nil, fmt.Errorf("clone suggestion candidate: %w", err)
 		}
-		routeException, ok := candidate["routeException"].(map[string]any)
-		if !ok {
-			return nil, errors.New("route suggestion is invalid")
+		routeException, err := cloneBaselineDecisionObject(exception)
+		if err != nil {
+			return nil, fmt.Errorf("clone persisted route exception: %w", err)
 		}
-		routeException["reason"] = reason
+		candidate["routeException"] = routeException
 		_, missing, err := baseline.ResolveDecisionInput(
 			profile,
 			[]baseline.DecisionValue{
@@ -1431,6 +1522,10 @@ func promptBaselineClassification(
 	review io.Writer,
 	inspection baseline.RepositoryInspection,
 	mode baseline.PreservationMode,
+	catalog *baseline.Catalog,
+	profile baseline.ResolvedProfile,
+	decisions []baseline.DecisionValue,
+	analyzer baselineSemanticAnalyzer,
 ) (baseline.RootPreservationRequest, error) {
 	request := baseline.RootPreservationRequest{Mode: mode}
 	if mode != baseline.PreservationModePreservation {
@@ -1448,19 +1543,82 @@ func promptBaselineClassification(
 	if plan.DecisionSkeleton == nil {
 		return request, nil
 	}
-	document := plan.DecisionSkeleton.Document
+	segmentationSnapshot, err := baseline.NewRuleSegmentationSnapshot(plan.SourceBaseline)
+	if err != nil {
+		return baseline.RootPreservationRequest{}, fmt.Errorf(
+			"prepare semantic segmentation: %w",
+			err,
+		)
+	}
+	var segmentationProposal baseline.RuleSegmentationProposal
+	if analyzer == nil {
+		segmentationProposal, err = baseline.ManualRuleSegmentationProposal(segmentationSnapshot)
+	} else {
+		segmentationProposal, err = analyzer.Segment(ctx, segmentationSnapshot)
+	}
+	if err != nil {
+		return baseline.RootPreservationRequest{}, fmt.Errorf(
+			"analyze semantic segmentation: %w",
+			err,
+		)
+	}
+	source, err := baseline.MaterializeRuleSegments(segmentationSnapshot, segmentationProposal)
+	if err != nil {
+		return baseline.RootPreservationRequest{}, fmt.Errorf(
+			"materialize semantic segmentation: %w",
+			err,
+		)
+	}
+	semanticOwners, err := baseline.ResolveSemanticOwnerRegistry(catalog, profile, decisions)
+	if err != nil {
+		return baseline.RootPreservationRequest{}, err
+	}
+	analysisSnapshot, err := baseline.NewAnalysisSnapshot(source, semanticOwners)
+	if err != nil {
+		return baseline.RootPreservationRequest{}, fmt.Errorf(
+			"prepare semantic classification: %w",
+			err,
+		)
+	}
+	var classificationProposal baseline.ClassificationProposal
+	if analyzer == nil {
+		classificationProposal, err = baseline.ManualClassificationProposal(analysisSnapshot)
+	} else {
+		classificationProposal, err = analyzer.Classify(ctx, analysisSnapshot)
+	}
+	if err != nil {
+		return baseline.RootPreservationRequest{}, fmt.Errorf(
+			"analyze semantic classification: %w",
+			err,
+		)
+	}
+	document, err := baseline.DecisionDocumentFromClassificationProposal(
+		analysisSnapshot,
+		classificationProposal,
+	)
+	if err != nil {
+		return baseline.RootPreservationRequest{}, fmt.Errorf(
+			"admit semantic classification: %w",
+			err,
+		)
+	}
+	entries := make(map[string]baseline.ReadoptionSourceEntry, len(source.Entries))
+	for _, entry := range source.Entries {
+		entries[entry.ID] = entry
+	}
 	fmt.Fprintln(review, "\nConsolidated editable classification review:")
 	for index, disposition := range document.Readoption.Dispositions {
-		entry := plan.SourceBaseline.Entries[index]
+		entry := entries[disposition.EntryID]
 		fmt.Fprintf(
 			review,
-			"%d. %s bytes %d-%d: %s -> %s\n",
+			"%d. %s bytes %d-%d: %s -> %s%s\n",
 			index+1,
 			entry.Path,
 			entry.Start,
 			entry.End,
 			disposition.Classification,
 			disposition.Disposition,
+			baselineClassificationDestinationSuffix(disposition.Destination),
 		)
 	}
 	selected, err := prompt.selectOne(ctx, "Classification review", []string{
@@ -1473,8 +1631,14 @@ func promptBaselineClassification(
 	if selected == 1 {
 		for index := range document.Readoption.Dispositions {
 			disposition := &document.Readoption.Dispositions[index]
-			entry := plan.SourceBaseline.Entries[index]
-			classification, err := prompt.selectOne(ctx, "Classification for "+entry.Path, []string{
+			entry, ok := entries[disposition.EntryID]
+			if !ok {
+				return baseline.RootPreservationRequest{}, fmt.Errorf(
+					"edit semantic classification: source entry %q is missing",
+					disposition.EntryID,
+				)
+			}
+			classificationIndex, err := prompt.selectOne(ctx, "Classification for "+entry.Path, []string{
 				"Normative Clause",
 				"Operational Contract",
 				"Recommendation",
@@ -1483,7 +1647,7 @@ func promptBaselineClassification(
 			if err != nil {
 				return baseline.RootPreservationRequest{}, err
 			}
-			switch classification {
+			switch classificationIndex {
 			case 0:
 				disposition.Classification = "normative-clause"
 			case 1:
@@ -1493,41 +1657,138 @@ func promptBaselineClassification(
 			default:
 				disposition.Classification = "non-governed"
 			}
-			keep := 1
-			canPreserve := entry.Kind != "managed-block" &&
-				len(strings.TrimSpace(string(entry.SourceBytes))) != 0
-			if disposition.Classification != "non-governed" && canPreserve {
-				keep, err = prompt.selectOne(ctx, "Disposition for "+entry.Path, []string{
-					"Preserve in Repository-Specific Normative Rules",
-					"Reject with an individual reason",
-				})
+			choices := baselineClassificationChoices(
+				analysisSnapshot,
+				entry,
+				disposition.Classification,
+			)
+			labels := make([]string, len(choices))
+			for choiceIndex, choice := range choices {
+				labels[choiceIndex] = choice.label
+			}
+			choiceIndex := 0
+			if len(choices) > 1 {
+				choiceIndex, err = prompt.selectOne(ctx, "Disposition for "+entry.Path, labels)
 				if err != nil {
 					return baseline.RootPreservationRequest{}, err
 				}
 			}
-			if disposition.Classification == "non-governed" || keep == 1 {
+			choice := choices[choiceIndex]
+			disposition.Disposition = choice.disposition
+			disposition.Destination = choice.destination
+			if choice.disposition == "rejected" {
 				reason, err := prompt.readNonEmpty(ctx, "Reason for rejecting "+entry.Path)
 				if err != nil {
 					return baseline.RootPreservationRequest{}, err
 				}
-				disposition.Disposition = "rejected"
-				disposition.Destination = nil
 				disposition.Reason = reason
 				continue
 			}
-			sum := sha256.Sum256(entry.SourceBytes)
-			disposition.Disposition = "repository-rules"
-			disposition.Destination = &baseline.ReadoptionDestination{
-				DocumentType:  "repository-rules",
-				Path:          "docs/agents/specific-repository.md",
-				Digest:        hex.EncodeToString(sum[:]),
-				ProposedBytes: base64.StdEncoding.EncodeToString(entry.SourceBytes),
-			}
-			disposition.Reason = "Preserve this source entry as a Repository-Specific Normative Rule after human review."
+			disposition.Reason = choice.reason
+		}
+		classificationProposal = baseline.ClassificationProposal{
+			SchemaVersion:  baseline.ClassificationProposalSchemaVersion,
+			SnapshotDigest: analysisSnapshot.SnapshotDigest,
+			Dispositions:   document.Readoption.Dispositions,
+		}
+		document, err = baseline.DecisionDocumentFromClassificationProposal(
+			analysisSnapshot,
+			classificationProposal,
+		)
+		if err != nil {
+			return baseline.RootPreservationRequest{}, fmt.Errorf(
+				"validate edited semantic classification: %w",
+				err,
+			)
 		}
 	}
+	request.SourceBaseline = &source
 	request.Decisions = &document
 	return request, nil
+}
+
+type baselineClassificationChoice struct {
+	label       string
+	disposition string
+	destination *baseline.ReadoptionDestination
+	reason      string
+}
+
+func baselineClassificationChoices(
+	snapshot baseline.AnalysisSnapshot,
+	entry baseline.ReadoptionSourceEntry,
+	classification string,
+) []baselineClassificationChoice {
+	if classification == "non-governed" {
+		return []baselineClassificationChoice{{
+			label:       "Reject with an individual reason",
+			disposition: "rejected",
+		}}
+	}
+	choices := make([]baselineClassificationChoice, 0, len(snapshot.Destinations))
+	for _, destination := range snapshot.Destinations {
+		switch destination.Disposition {
+		case "repository-rules":
+			if entry.Kind == "managed-block" ||
+				len(strings.TrimSpace(string(entry.SourceBytes))) == 0 {
+				continue
+			}
+			choices = append(choices, baselineClassificationChoice{
+				label:       "Preserve in Repository-Specific Normative Rules",
+				disposition: "repository-rules",
+				reason:      "Preserve this byte-exact source entry as a Repository-Specific Normative Rule after human review.",
+				destination: &baseline.ReadoptionDestination{
+					DocumentType:  "repository-rules",
+					Path:          destination.Path,
+					Digest:        entry.Digest,
+					ProposedBytes: base64.StdEncoding.EncodeToString(entry.SourceBytes),
+				},
+			})
+		case "repository-document":
+			if entry.Kind == "managed-block" ||
+				len(strings.TrimSpace(string(entry.SourceBytes))) == 0 {
+				continue
+			}
+			choices = append(choices, baselineClassificationChoice{
+				label:       "Preserve in active agent guide " + destination.Path,
+				disposition: "repository-document",
+				reason:      "Preserve this byte-exact source entry in the human-selected active semantic guide.",
+				destination: &baseline.ReadoptionDestination{
+					DocumentType: destination.DocumentType,
+					Path:         destination.Path,
+					Digest:       entry.Digest,
+				},
+			})
+		case "managed-entry":
+			choices = append(choices, baselineClassificationChoice{
+				label:       "Classify as already covered by managed entry " + destination.ManagedID,
+				disposition: "managed-entry",
+				reason:      "This exact source entry is already governed by the human-selected active managed entry.",
+				destination: &baseline.ReadoptionDestination{
+					ManagedID: destination.ManagedID,
+				},
+			})
+		}
+	}
+	return append(choices, baselineClassificationChoice{
+		label:       "Reject with an individual reason",
+		disposition: "rejected",
+	})
+}
+
+func baselineClassificationDestinationSuffix(
+	destination *baseline.ReadoptionDestination,
+) string {
+	if destination == nil {
+		return ""
+	}
+	if destination.ManagedID != "" {
+		return " (" + destination.ManagedID + ")"
+	}
+	if destination.Path != "" {
+		return " (" + destination.Path + ")"
+	}
+	return ""
 }
 
 func printConsolidatedBaselineReview(plan baseline.PlanDocument, output io.Writer) {

@@ -119,7 +119,7 @@ adoption again. Without a stored value, the embedded catalog suggests:
 | External triage | No |
 | Autonomous work | Yes |
 | Backend runtime | `codex gpt-5.6-sol` |
-| Design runtime | `claude fable high` |
+| Design runtime | `claude opus 5 xhigh` |
 | Secondbrain | Yes |
 | Repository-Specific Normative Rules carrier | Permitted when non-empty |
 
@@ -399,7 +399,7 @@ repository owner's answers:
     },
     {
       "id": "runtime.design",
-      "value": "claude fable high"
+      "value": "claude opus 5 xhigh"
     },
     {
       "id": "secondbrain.enabled",

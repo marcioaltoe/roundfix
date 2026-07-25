@@ -8,7 +8,7 @@
     "ref": "236847f6956134bf468abb641bac0493a899bca5",
     "path": "setups/rust-cli.txt"
   },
-  "digest": "31f1a0538b6845e296304c8bdf91a471f879ed7037baee419f600dfe91b00272",
+  "digest": "942d56217031103f7be75cf9c59db72bbf19af0cd13dae8aeb5e62531ed6350b",
   "skills": [
     {
       "name": "knowledge-workspace",
@@ -28,7 +28,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "7b9879520f62a5b7de1bfda3c6bec85524b4a222004911b6c6220c544034a8ca"
+      "contentDigest": "a7848c6912f4fce43f5531e1cf2c153e6da2ad8f8310686a2c8b32caae2c96b9"
     },
     {
       "name": "brainstorming",

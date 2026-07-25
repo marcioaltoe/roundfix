@@ -181,6 +181,37 @@ func TestProjectDecisionValidation(t *testing.T) {
 			value: completeAuthProviderDecision(),
 		},
 		{
+			name: "repository-owned HTTP methods",
+			id:   "http.contract",
+			value: map[string]any{
+				"mode": "REST",
+				"exceptions": []any{
+					map[string]any{
+						"scope":   "/api/resources/*",
+						"methods": []any{"PATCH", "DELETE"},
+						"owner":   "Repository API",
+						"reason":  "Resource mutation uses the repository-owned HTTP contract.",
+					},
+				},
+			},
+		},
+		{
+			name: "non-standard HTTP method",
+			id:   "http.contract",
+			value: map[string]any{
+				"mode": "REST",
+				"exceptions": []any{
+					map[string]any{
+						"scope":   "/api/resources/*",
+						"methods": []any{"BREW"},
+						"owner":   "Repository API",
+						"reason":  "Resource mutation uses the repository-owned HTTP contract.",
+					},
+				},
+			},
+			wantErr: "method",
+		},
+		{
 			name: "Better Auth route exception is required",
 			id:   "auth.provider",
 			value: map[string]any{

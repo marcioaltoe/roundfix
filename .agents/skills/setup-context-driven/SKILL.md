@@ -87,7 +87,7 @@ Decision and preservation prompts mark one visible default; Enter confirms it.
 A valid stored Setup Manifest value wins even when a changed Profile Digest
 requires adoption again. Otherwise the CLI uses its embedded catalog
 suggestions, including `codex gpt-5.6-sol` for backend work and
-`claude fable high` for design work. Existing root instructions default to
+`claude opus 5 xhigh` for design work. Existing root instructions default to
 Preservation, an empty instruction inventory defaults to Greenfield, and a
 recoverable existing profile is preferred. Classification, Plan approval, and
 apply still require an explicit non-empty choice.

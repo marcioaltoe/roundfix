@@ -81,6 +81,46 @@ func TestEmbeddedCatalog(t *testing.T) {
 	}
 }
 
+func TestSourceMachinePathRecognizesMarkdownAndFileURLs(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		value string
+		match bool
+	}{
+		{
+			name:  "plain macOS user path",
+			value: "/Users/alice/work",
+			match: true,
+		},
+		{
+			name:  "Markdown link destination",
+			value: "[repo](/Users/alice/work)",
+			match: true,
+		},
+		{
+			name:  "file URL",
+			value: "file:///Users/alice/work",
+			match: true,
+		},
+		{
+			name:  "web URL home segment",
+			value: "https://example.test/home/guide",
+			match: false,
+		},
+	}
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			if got := sourceMachinePath.MatchString(test.value); got != test.match {
+				t.Fatalf("sourceMachinePath.MatchString(%q) = %t, want %t", test.value, got, test.match)
+			}
+		})
+	}
+}
+
 func TestCatalogDigest(t *testing.T) {
 	t.Parallel()
 

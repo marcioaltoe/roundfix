@@ -233,6 +233,7 @@ Automation and Agents use the non-interactive pair:
 
 ```bash
 roundfix baseline plan --repo . --profile <profile-id> --decision-file <decision-file> --format json
+roundfix baseline plan --repo . --profile-file .roundfix/baseline/profiles/<profile-id>.json --decision-file <decision-file> --format json
 roundfix baseline apply --repo . --plan <plan-file> --confirm-plan <plan-digest> --format json
 ```
 
@@ -296,17 +297,18 @@ Required built-ins:
 - `general`, `backend`, `qa`, and `review`: preferred
   `codex / gpt-5.6-sol / high`, fallback
   `codex / gpt-5.5 / xhigh`.
-- `frontend`: preferred `claude / claude-fable-5 / medium`, fallback
+- `frontend`: preferred `claude / claude-opus-5 / xhigh`, fallback
   `codex / gpt-5.6-sol / high`.
 
 Optional Task Type categories `data`, `infra`, `docs`, `test`, and `chore`
 inherit the effective `general` profile when absent. If configured, they must
 be complete. The Model Catalog recognizes `gpt-5.6-sol`, `gpt-5.6-terra`, and
-`gpt-5.6-luna` as official Codex identifiers. That validity is distinct from
-advisory recommendation rank and from operational availability: exact proof in
-the effective environment is the only readiness authority. Explicit custom
-model strings, including adapter aliases, are sent to the ACP Runtime verbatim
-for the same proof and do not enter an allowlist.
+`gpt-5.6-luna` as official Codex identifiers, plus `claude-opus-5`,
+`claude-fable-5`, and `claude-opus-4-8` as Claude identifiers. That validity is
+distinct from advisory recommendation rank and from operational availability:
+exact proof in the effective environment is the only readiness authority.
+Explicit custom model strings, including adapter aliases, are sent to the ACP
+Runtime verbatim for the same proof and do not enter an allowlist.
 
 Project Config and User Config use the profile structure:
 
@@ -324,8 +326,8 @@ profiles:
   frontend:
     preferred:
       runtime: claude
-      model: claude-fable-5
-      reasoning_effort: medium
+      model: claude-opus-5
+      reasoning_effort: xhigh
     fallbacks:
       - runtime: codex
         model: gpt-5.6-sol
@@ -368,7 +370,7 @@ or provide a complete one-Run Preferred Selection override:
 ```bash
 roundfix watch --source coderabbit --pr 123 --until-clean
 roundfix resolve --pr 123 --agent codex --model gpt-5.6-sol --reasoning-effort high --no-input
-roundfix implement --spec example-spec --agent claude --model claude-fable-5 --reasoning-effort medium --qa --detach
+roundfix implement --spec example-spec --agent claude --model claude-opus-5 --reasoning-effort xhigh --qa --detach
 ```
 
 `--agent`, `--model`, and `--reasoning-effort` are all-or-none. A partial subset

@@ -319,24 +319,12 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 			initial.Snapshot.Warnings), nil
 	}
 
-	classificationModules, classificationArtifacts, err := resolveManagedArtifacts(
-		catalog,
-		profile,
-		decisions,
-		false,
-	)
+	semanticOwners, err := ResolveSemanticOwnerRegistry(catalog, profile, decisions)
 	if err != nil {
 		return PlanOutcome{}, err
 	}
-	classificationArtifactIDs := make([]string, len(classificationArtifacts))
-	for index, artifact := range classificationArtifacts {
-		classificationArtifactIDs[index] = artifact.ID
-	}
 	preservationRequest := request.Preservation
-	preservationRequest.semanticOwners = catalog.SemanticOwnerRegistry(
-		classificationModules,
-		classificationArtifactIDs,
-	)
+	preservationRequest.semanticOwners = semanticOwners
 
 	preservation, err := PlanRootPreservation(initial, preservationRequest)
 	if err != nil {
@@ -1493,6 +1481,27 @@ func resolveManagedArtifacts(
 		})
 	}
 	return activeModules, artifacts, nil
+}
+
+// ResolveSemanticOwnerRegistry derives the exact semantic destinations active
+// for a resolved Profile and its confirmed project decisions.
+func ResolveSemanticOwnerRegistry(
+	catalog *Catalog,
+	profile ResolvedProfile,
+	decisions []DecisionValue,
+) (SemanticOwnerRegistry, error) {
+	if catalog == nil {
+		return nil, errors.New("resolve Semantic Owner Registry: catalog is required")
+	}
+	modules, artifacts, err := resolveManagedArtifacts(catalog, profile, decisions, false)
+	if err != nil {
+		return nil, fmt.Errorf("resolve Semantic Owner Registry artifacts: %w", err)
+	}
+	artifactIDs := make([]string, len(artifacts))
+	for index, artifact := range artifacts {
+		artifactIDs[index] = artifact.ID
+	}
+	return catalog.SemanticOwnerRegistry(modules, artifactIDs), nil
 }
 
 func orderRootArtifacts(catalog *Catalog, artifactIDs []string) []string {

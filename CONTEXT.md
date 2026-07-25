@@ -80,6 +80,10 @@ _Avoid_: Repository dump, full Spec payload, cold-start exploration
 A confirmed project decision or universal Normative Clause that a Spec records as applicable, not applicable with a reason, or explicitly authorized for a bounded change before its Tasks can execute.
 _Avoid_: Optional note, implementation suggestion, inferred permission
 
+**Tooling Authority**:
+The universal Normative Clause that forbids changes to linter, formatter, and tool configuration unless the maintainer explicitly authorizes the exact bounded files.
+_Avoid_: Tool preference, implicit permission, cleanup authorization
+
 **QA Report**:
 The qa-gate evidence report written to a Spec's QA directory, carrying a machine-readable verdict in its frontmatter.
 _Avoid_: Test report, QA log
@@ -390,6 +394,14 @@ _Avoid_: Sample docs, optional setup, repository template
 A versioned composition of modules, Repository Capabilities, decisions, managed artifacts, and verification roles that defines one reproducible Context-Driven Baseline. Roundfix ships built-in profiles; a repository may own additional profiles for its own workflow.
 _Avoid_: Agent Selection Profile, setup template, user profile
 
+**Profile Draft**:
+A strict repository-owned Baseline Profile document supplied to planning in memory and admitted only after catalog validation and source binding.
+_Avoid_: Partial profile, unchecked JSON, Profile override
+
+**Profile Adaptation**:
+A maintainer-reviewed Profile Draft that narrows one built-in Baseline Profile by removing repository-inapplicable modules or Repository Capabilities without weakening universal requirements.
+_Avoid_: Profile waiver, capability bypass, silent inference
+
 **Baseline Command**:
 The public `roundfix baseline` command that authors and validates Baseline Profiles and drives one preflight-to-verification adoption or update flow without requiring an Agent Skill.
 _Avoid_: Setup Command, setup skill, configuration wizard
@@ -401,6 +413,22 @@ _Avoid_: Legacy Baseline, inferred preimage, current files
 **Source Baseline Entry**:
 One byte-evidenced structural unit in a Source Baseline that Baseline Readoption classifies and disposes individually as a Normative Clause, recommendation, Operational Contract, or non-governed evidence.
 _Avoid_: Inferred rule, category summary, untracked paragraph
+
+**Segmentation Snapshot**:
+The immutable, checkout-free semantic-analysis input containing one Source Baseline and the strict byte-range proposal contract.
+_Avoid_: Repository prompt, mutable instruction dump, checkout context
+
+**Segmentation Proposal**:
+A digest-bound, byte-exhaustive set of ordered ranges that splits Source Baseline Entries without rewriting or omitting source bytes.
+_Avoid_: Summary, rewritten rules, partial range list
+
+**Analysis Snapshot**:
+The immutable, checkout-free classification input containing segmented Source Baseline Entries and only the semantic destinations active for the confirmed Baseline Profile and project decisions.
+_Avoid_: Repository scan, unrestricted prompt, inferred destination list
+
+**Classification Proposal**:
+A digest-bound disposition for every entry in one Analysis Snapshot, admitted only after deterministic validation and explicit human review.
+_Avoid_: Classification hint, partial proposal, autonomous decision
 
 **Baseline Readoption**:
 The confirmation-gated adoption that inventories an incompatible repository state as a Source Baseline and replaces its setup identity without treating existing instructions as disposable.

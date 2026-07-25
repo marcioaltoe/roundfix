@@ -1,9 +1,12 @@
 ---
 spec: 0048-context-driven-project-decisions-and-spec-constraints
-status: active
+status: archived
 created: 2026-07-24
 surfaces: [cli, infra, docs]
+archived: "2026-07-25"
+source_slug: 0048-context-driven-project-decisions-and-spec-constraints
 ---
+
 
 # Context-Driven project decisions and Spec constraints
 

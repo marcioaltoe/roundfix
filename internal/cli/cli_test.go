@@ -222,7 +222,7 @@ func TestRunInitForceOverwritesExistingConfig(t *testing.T) {
 	}
 	if !strings.Contains(string(content), "profiles:") ||
 		!strings.Contains(string(content), "model: gpt-5.6-sol") ||
-		!strings.Contains(string(content), "model: claude-fable-5") ||
+		!strings.Contains(string(content), "model: claude-opus-5") ||
 		strings.Contains(string(content), "agent: claude") ||
 		strings.Contains(string(content), "runtimes:") {
 		t.Fatalf("expected generated config to replace old content, got %s", string(content))
@@ -390,6 +390,7 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 			"roundfix profiles validate",
 			"gpt-5.6-sol",
 			"gpt-5.6-terra",
+			"claude-opus-5",
 			"claude-fable-5",
 			"2026-07-16",
 			"category_specific: false",
@@ -1319,7 +1320,7 @@ func TestProfilesValidateDeduplicatesProofsAndReportsEveryReference(t *testing.T
 	if len(runner.probeRequests) != 3 {
 		t.Fatalf("expected three unique tuple probes, got %#v", runner.probeRequests)
 	}
-	wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "claude-fable-5"}
+	wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "claude-opus-5"}
 	for index, want := range wantModels {
 		if runner.probeRequests[index].Runtime.Model != want {
 			t.Fatalf("probe %d model = %q, want %q", index, runner.probeRequests[index].Runtime.Model, want)
@@ -1557,7 +1558,7 @@ func TestInvocationProfileOverrideOmittedUsesTaskQAAndReviewProfiles(t *testing.
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no warning without invocation override, got %q", stderr.String())
 	}
-	wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "claude-fable-5"}
+	wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "claude-opus-5"}
 	if got := probeRequestModels(runner.probeRequests); !reflect.DeepEqual(got, wantModels) {
 		t.Fatalf("probe models = %v, want %v", got, wantModels)
 	}
@@ -2345,7 +2346,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 			if len(runner.exactRequests) != 3 {
 				t.Fatalf("expected three distinct profile proofs, got %#v", runner.exactRequests)
 			}
-			wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "claude-fable-5"}
+			wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "claude-opus-5"}
 			for index, wantModel := range wantModels {
 				if request := runner.exactRequests[index]; request.WorkDir != "/repo/project" || request.Runtime.Model != wantModel {
 					t.Fatalf("profile proof %d = %#v, want model %q in repository", index, request, wantModel)
@@ -2889,9 +2890,9 @@ func TestRunSetupProfileProofsEveryDistinctTupleOnceBeforePersistence(t *testing
 		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
 	}
 	want := map[roundconfig.AgentSelection]int{
-		{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"}:       1,
-		{Runtime: "codex", Model: "gpt-5.5", ReasoningEffort: "xhigh"}:          1,
-		{Runtime: "claude", Model: "claude-fable-5", ReasoningEffort: "medium"}: 1,
+		{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"}:     1,
+		{Runtime: "codex", Model: "gpt-5.5", ReasoningEffort: "xhigh"}:        1,
+		{Runtime: "claude", Model: "claude-opus-5", ReasoningEffort: "xhigh"}: 1,
 	}
 	got := map[roundconfig.AgentSelection]int{}
 	for _, request := range fake.probeRequests {

@@ -23,7 +23,7 @@ const (
 )
 
 var sourceMachinePath = regexp.MustCompile(
-	"(?i)(?:^|[\\s`\"'])/(?:users|home)/|(?:^|[\\s`\"'])[a-z]:\\\\users\\\\",
+	"(?i)(?:^|[\\s`\"'(\\[<{=:])(?:file://)?/(?:users|home)/|(?:^|[\\s`\"'(\\[<{=:])[a-z]:\\\\users\\\\",
 )
 
 // SourceBaselineIdentity identifies one immutable maintained corpus.

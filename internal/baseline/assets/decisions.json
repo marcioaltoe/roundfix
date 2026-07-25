@@ -221,7 +221,7 @@
       "id": "runtime.design",
       "version": 1,
       "type": "string",
-      "default": "claude fable high",
+      "default": "claude opus 5 xhigh",
       "summary": "The design, UI, UX, or frontend ACP Runtime and model.",
       "effects": [
         {

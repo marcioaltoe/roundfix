@@ -8,7 +8,7 @@
     "ref": "236847f6956134bf468abb641bac0493a899bca5",
     "path": "setups/go-cli.txt"
   },
-  "digest": "40277b40b5f180923f640994c123110e190c7e4a46417707cdc7f1c51d9b04f9",
+  "digest": "51c5fa027bcf6c59023c988b17dfb6bd2a48828583d340e8f591cf4e6f864076",
   "skills": [
     {
       "name": "knowledge-workspace",
@@ -28,7 +28,7 @@
         "type": "repo",
         "name": "roundfix"
       },
-      "contentDigest": "7b9879520f62a5b7de1bfda3c6bec85524b4a222004911b6c6220c544034a8ca"
+      "contentDigest": "a7848c6912f4fce43f5531e1cf2c153e6da2ad8f8310686a2c8b32caae2c96b9"
     },
     {
       "name": "brainstorming",

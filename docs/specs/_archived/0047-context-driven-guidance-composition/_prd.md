@@ -1,9 +1,12 @@
 ---
 spec: 0047-context-driven-guidance-composition
-status: active
+status: archived
 created: 2026-07-24
 surfaces: [cli, infra, docs]
+archived: "2026-07-25"
+source_slug: 0047-context-driven-guidance-composition
 ---
+
 
 # Context-Driven Baseline guidance composition
 

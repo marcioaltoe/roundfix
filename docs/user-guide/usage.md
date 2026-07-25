@@ -54,7 +54,7 @@ one, it must be complete. Built-ins use official model identifiers:
 - `general`, `backend`, `qa`, and `review`: preferred
   `codex / gpt-5.6-sol / high`, fallback
   `codex / gpt-5.5 / xhigh`.
-- `frontend`: preferred `claude / claude-fable-5 / medium`, fallback
+- `frontend`: preferred `claude / claude-opus-5 / xhigh`, fallback
   `codex / gpt-5.6-sol / high`.
 
 Use this complete Project Config or User Config shape when you want explicit
@@ -83,8 +83,8 @@ profiles:
   frontend:
     preferred:
       runtime: claude
-      model: claude-fable-5
-      reasoning_effort: medium
+      model: claude-opus-5
+      reasoning_effort: xhigh
     fallbacks:
       - runtime: codex
         model: gpt-5.6-sol

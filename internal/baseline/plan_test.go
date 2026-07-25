@@ -1202,6 +1202,59 @@ func TestAuthProviderDecision(t *testing.T) {
 	}
 }
 
+func TestProfileAdaptationRemovesDecisionsWhoseRenderModuleWasRemoved(t *testing.T) {
+	catalog := mustEmbeddedCatalog(t)
+	input, err := NewProfileAdaptationDraft(
+		"standard-typescript-monorepo",
+		"without-backend",
+		[]string{"backend", "autonomous-work"},
+		[]string{"capability.stack.better-auth", "capability.workspace.backend"},
+		catalog,
+	)
+	if err != nil {
+		t.Fatalf("create Profile adaptation without backend: %v", err)
+	}
+	resolved, _, err := ResolveProfileDraft(t.TempDir(), input, catalog)
+	if err != nil {
+		t.Fatalf("resolve Profile adaptation without backend: %v", err)
+	}
+	for _, decisionID := range []string{"http.contract", "auth.provider"} {
+		if slices.Contains(resolved.Decisions, decisionID) {
+			t.Fatalf("adapted Profile decisions = %v, want %s omitted", resolved.Decisions, decisionID)
+		}
+	}
+
+	var document customProfileDocument
+	if err := json.Unmarshal(input.Document, &document); err != nil {
+		t.Fatalf("decode Profile adaptation: %v", err)
+	}
+	source, err := ResolveProfile(t.TempDir(), "standard-typescript-monorepo", catalog)
+	if err != nil {
+		t.Fatalf("resolve source Profile: %v", err)
+	}
+	retained := stringSet(document.Decisions)
+	document.Decisions = document.Decisions[:0]
+	for _, decisionID := range source.Decisions {
+		if decisionID == "http.contract" {
+			document.Decisions = append(document.Decisions, decisionID)
+			continue
+		}
+		if _, ok := retained[decisionID]; ok {
+			document.Decisions = append(document.Decisions, decisionID)
+		}
+	}
+	document.Values["http.contract"] = map[string]any{"mode": "Post-only"}
+	data, err := json.Marshal(document)
+	if err != nil {
+		t.Fatalf("encode invalid Profile adaptation: %v", err)
+	}
+	input.Document = data
+	if _, _, err := ResolveProfileDraft(t.TempDir(), input, catalog); err == nil ||
+		!strings.Contains(err.Error(), "custom.profile.adaptation.module.decision-missing") {
+		t.Fatalf("Profile retaining a decision for a removed render module error = %v", err)
+	}
+}
+
 func TestDeriveBetterAuthHTTPContract(t *testing.T) {
 	repository := newProjectDecisionPlanRepository(t)
 	decisions := standardTypeScriptDecisions("make verify")
@@ -1494,7 +1547,7 @@ func TestHTTPContractConflict(t *testing.T) {
 		{
 			name: "unsupported method",
 			exceptions: []any{map[string]any{
-				"scope": "/api/auth/*", "methods": []any{"PATCH"},
+				"scope": "/api/auth/*", "methods": []any{"BREW"},
 				"owner": "Better Auth", "reason": providerReason,
 			}},
 		},
