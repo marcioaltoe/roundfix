@@ -7,7 +7,7 @@ package baseline
 
 import "testing"
 
-func TestBaselineMacroJourneysEngineSafety(t *testing.T) {
+func TestBaselineReleaseGate(t *testing.T) {
 	tests := []struct {
 		name string
 		run  func(*testing.T)
@@ -19,8 +19,12 @@ func TestBaselineMacroJourneysEngineSafety(t *testing.T) {
 		{name: "cross-clone apply", run: TestApplyCrossClone},
 		{name: "unsafe carrier", run: TestInstructionAliasUnsafeTargetsBlock},
 		{name: "rollback", run: TestTransactionRollback},
+		{name: "semantic redistribution rollback", run: TestRepositoryRuleBlockRollbackRestoresSemanticGuide},
+		{name: "Profile adaptation rollback", run: TestProfileDraftRollbackRestoresMissingProfile},
 		{name: "recovery", run: TestTransactionRecovery},
 		{name: "empty reapply", run: TestEmptyReapply},
+		{name: "Profile divergence adaptation", run: TestProfileDivergenceResolution},
+		{name: "universal capability remediation", run: TestUniversalCapabilityRemediation},
 		{name: "rejected-plan revision", run: TestRejectedPlanRevision},
 		{name: "renewed approval", run: TestRevisionRequiresNewApproval},
 	}
