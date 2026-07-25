@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "setup-context-driven/decisions/0.0.1",
+  "version": "0.0.1",
+  "decisions": [
+    {
+      "id": "autonomous.enabled",
+      "value": true
+    },
+    {
+      "id": "domain.layout",
+      "value": "single-context"
+    },
+    {
+      "id": "http.contract",
+      "value": {
+        "mode": "Post-only"
+      }
+    },
+    {
+      "id": "language.generated",
+      "value": "English"
+    },
+    {
+      "id": "preservation.mode",
+      "value": "preservation"
+    },
+    {
+      "id": "repository.extension.enabled",
+      "value": false
+    },
+    {
+      "id": "runtime.backend",
+      "value": "codex gpt-5.6-sol"
+    },
+    {
+      "id": "runtime.design",
+      "value": "claude fable high"
+    },
+    {
+      "id": "secondbrain.enabled",
+      "value": true
+    },
+    {
+      "id": "spec.scaffold",
+      "value": true
+    },
+    {
+      "id": "triage.external",
+      "value": false
+    },
+    {
+      "id": "verification.gate",
+      "value": "rtk make verify"
+    }
+  ]
+}
