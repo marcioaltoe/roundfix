@@ -350,6 +350,13 @@ func (l *catalogLoader) validateProfiles(catalog *Catalog) {
 				l.add("catalog.profile.entryDecision.unknown", profileID, decisionID)
 			}
 		}
+		if err := validateConditionalProfileDecisions(
+			entryDecisions,
+			profileCapabilityIDs(profile),
+			catalog,
+		); err != nil {
+			l.add("catalog.profile.decision.capability.invalid", profileID, err.Error())
+		}
 		for _, ruleID := range stringsOrEmpty(profile["requiredRules"]) {
 			moduleID, exists := allRules[ruleID]
 			if !exists {
@@ -830,12 +837,41 @@ func (l *catalogLoader) validateDecisionEffects(catalog *Catalog) {
 	})
 	for decisionID, decision := range catalog.decisions {
 		decisionType, _ := stringValue(decision, "type")
-		if !containsString([]string{"boolean", "enum", "http-contract", "string"}, decisionType) {
+		if !containsString(
+			[]string{
+				"auth-provider",
+				"boolean",
+				"enum",
+				"http-contract",
+				"identifier-strategy",
+				"string",
+			},
+			decisionType,
+		) {
 			l.add("catalog.decision.type.invalid", decisionID, decisionType)
 		}
 		if value, ok := decision["default"]; ok {
 			if err := validateDecisionValue(decision, value); err != nil {
 				l.add("catalog.decision.default.invalid", decisionID, err.Error())
+			}
+		}
+		if value, ok := decision["suggestion"]; ok {
+			if err := validateDecisionValue(decision, value); err != nil {
+				l.add("catalog.decision.suggestion.invalid", decisionID, err.Error())
+			}
+		}
+		requiredCapabilities, capabilitiesOK := stringList(decision["requiresCapabilities"])
+		if _, declared := decision["requiresCapabilities"]; declared {
+			if !capabilitiesOK ||
+				len(requiredCapabilities) == 0 ||
+				!uniqueStrings(requiredCapabilities) {
+				l.add("catalog.decision.capabilities.invalid", decisionID, "")
+			}
+			knownCapabilities := catalogCapabilityIDs(catalog)
+			for _, capabilityID := range requiredCapabilities {
+				if _, exists := knownCapabilities[capabilityID]; !exists {
+					l.add("catalog.decision.capability.unknown", decisionID, capabilityID)
+				}
 			}
 		}
 		effects, ok := objectList(decision["effects"])

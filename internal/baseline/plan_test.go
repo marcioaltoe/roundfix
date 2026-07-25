@@ -163,7 +163,9 @@ func TestFormatterComposition(t *testing.T) {
 		Decisions: []DecisionValue{
 			{ID: "language.generated", Value: "English"},
 			{ID: "verification.gate", Value: "make verify"},
+			{ID: "identifier.strategy", Value: map[string]any{"kind": "uuid-v7"}},
 			{ID: "http.contract", Value: map[string]any{"mode": "Post-only"}},
+			{ID: "auth.provider", Value: completeAuthProviderDecision()},
 			{ID: "spec.scaffold", Value: true},
 			{ID: "domain.layout", Value: "single-context"},
 			{ID: "triage.external", Value: true},
@@ -1048,6 +1050,117 @@ func TestPlanDocumentMissingDecisionsReturnsResultWithoutPartialPlan(t *testing.
 	}
 	if _, err := MarshalResult(outcome.Result); err != nil {
 		t.Fatalf("missing-decision result schema: %v", err)
+	}
+}
+
+func TestIdentifierStrategyDecision(t *testing.T) {
+	catalog := mustEmbeddedCatalog(t)
+	profile, err := ResolveProfile("", "standard-typescript-monorepo", catalog)
+	if err != nil {
+		t.Fatalf("resolve Standard TypeScript Monorepo Profile: %v", err)
+	}
+	if !slices.Contains(profile.Decisions, "identifier.strategy") {
+		t.Fatalf("Profile decisions = %v, want identifier.strategy", profile.Decisions)
+	}
+
+	decisions := standardTypeScriptDecisions("make verify")
+	decisions = slices.DeleteFunc(decisions, func(decision DecisionValue) bool {
+		return decision.ID == "identifier.strategy"
+	})
+	outcome, err := BuildPlan(context.Background(), PlanRequest{
+		Repository:   newPlanRepository(t),
+		ProfileID:    profile.ID,
+		Decisions:    decisions,
+		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
+	})
+	if err != nil {
+		t.Fatalf("build Plan without identifier strategy: %v", err)
+	}
+	if outcome.Plan != nil ||
+		outcome.Result.State != "action_required" ||
+		outcome.Result.Category != "decision" ||
+		!strings.Contains(outcome.Result.Message, "identifier.strategy") {
+		t.Fatalf("missing identifier strategy outcome = %+v", outcome)
+	}
+}
+
+func TestAuthProviderDecision(t *testing.T) {
+	catalog := mustEmbeddedCatalog(t)
+	source, err := ResolveProfile("", "standard-typescript-monorepo", catalog)
+	if err != nil {
+		t.Fatalf("resolve Standard TypeScript Monorepo Profile: %v", err)
+	}
+	if !slices.Contains(source.Decisions, "auth.provider") {
+		t.Fatalf("Profile decisions = %v, want auth.provider", source.Decisions)
+	}
+
+	decisions := standardTypeScriptDecisions("make verify")
+	decisions = slices.DeleteFunc(decisions, func(decision DecisionValue) bool {
+		return decision.ID == "auth.provider"
+	})
+	outcome, err := BuildPlan(context.Background(), PlanRequest{
+		Repository:   newPlanRepository(t),
+		ProfileID:    source.ID,
+		Decisions:    decisions,
+		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
+	})
+	if err != nil {
+		t.Fatalf("build Plan without Better Auth provider: %v", err)
+	}
+	if outcome.Plan != nil ||
+		outcome.Result.State != "action_required" ||
+		!strings.Contains(outcome.Result.Message, "auth.provider") {
+		t.Fatalf("missing Better Auth provider outcome = %+v", outcome)
+	}
+
+	input, err := NewProfileAdaptationDraft(
+		source.ID,
+		"without-better-auth",
+		[]string{"autonomous-work"},
+		[]string{"capability.stack.better-auth"},
+		catalog,
+	)
+	if err != nil {
+		t.Fatalf("create Profile adaptation without Better Auth: %v", err)
+	}
+	resolved, _, err := ResolveProfileDraft(t.TempDir(), input, catalog)
+	if err != nil {
+		t.Fatalf("resolve Profile adaptation without Better Auth: %v", err)
+	}
+	if slices.Contains(resolved.Capabilities, "capability.stack.better-auth") {
+		t.Fatalf("adapted Profile retained Better Auth: %v", resolved.Capabilities)
+	}
+	if slices.Contains(resolved.Decisions, "auth.provider") {
+		t.Fatalf("adapted Profile decisions = %v, want auth.provider omitted", resolved.Decisions)
+	}
+	if !slices.Contains(resolved.Decisions, "identifier.strategy") {
+		t.Fatalf("adapted Profile decisions = %v, want identifier.strategy retained", resolved.Decisions)
+	}
+
+	var document map[string]any
+	if err := json.Unmarshal(input.Document, &document); err != nil {
+		t.Fatalf("decode Profile adaptation: %v", err)
+	}
+	selected, ok := document["decisions"].([]any)
+	if !ok {
+		t.Fatalf("Profile adaptation decisions = %#v", document["decisions"])
+	}
+	withAuth := make([]any, 0, len(selected)+1)
+	for _, decisionID := range selected {
+		withAuth = append(withAuth, decisionID)
+		if decisionID == "http.contract" {
+			withAuth = append(withAuth, "auth.provider")
+		}
+	}
+	document["decisions"] = withAuth
+	invalid, err := json.Marshal(document)
+	if err != nil {
+		t.Fatalf("encode invalid Profile adaptation: %v", err)
+	}
+	input.Document = invalid
+	if _, _, err := ResolveProfileDraft(t.TempDir(), input, catalog); err == nil ||
+		!strings.Contains(err.Error(), "custom.profile.decision.capability.unselected") {
+		t.Fatalf("Profile retaining auth.provider without Better Auth error = %v", err)
 	}
 }
 

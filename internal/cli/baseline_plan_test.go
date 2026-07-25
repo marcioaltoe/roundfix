@@ -462,7 +462,20 @@ func baselinePlanProfileFileFixture(
 	decisions := []baseline.DecisionValue{
 		{ID: "language.generated", Value: "English"},
 		{ID: "verification.gate", Value: "make verify"},
+		{ID: "identifier.strategy", Value: map[string]any{"kind": "uuid-v7"}},
 		{ID: "http.contract", Value: map[string]any{"mode": "Post-only"}},
+		{
+			ID: "auth.provider",
+			Value: map[string]any{
+				"kind": "better-auth",
+				"routeException": map[string]any{
+					"scope":   "/api/auth/*",
+					"methods": []any{"GET", "POST"},
+					"owner":   "Better Auth",
+					"reason":  "Provider protocol routes require GET and POST semantics.",
+				},
+			},
+		},
 		{ID: "spec.scaffold", Value: true},
 		{ID: "domain.layout", Value: "single-context"},
 		{ID: "triage.external", Value: false},

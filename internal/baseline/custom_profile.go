@@ -47,6 +47,27 @@ type ResolvedProfile struct {
 	Path          string                `json:"path,omitempty"`
 }
 
+// IdentifierStrategy is the strict project decision for new project-owned
+// Internal Identifiers.
+type IdentifierStrategy struct {
+	Kind     string `json:"kind"`
+	Guidance string `json:"guidance,omitempty"`
+}
+
+// HTTPException is one provider-owned HTTP route exception.
+type HTTPException struct {
+	Scope   string   `json:"scope"`
+	Methods []string `json:"methods"`
+	Owner   string   `json:"owner"`
+	Reason  string   `json:"reason"`
+}
+
+// AuthProviderDecision is the strict authentication-provider decision.
+type AuthProviderDecision struct {
+	Kind           string        `json:"kind"`
+	RouteException HTTPException `json:"routeException"`
+}
+
 // CustomProfileInitResult identifies the repository file created by init.
 type CustomProfileInitResult struct {
 	Path        string
@@ -152,7 +173,7 @@ func NewProfileAdaptationDraft(
 
 	modules := profileValuesWithout(source.Modules, moduleRemovals)
 	capabilities := profileValuesWithout(source.Capabilities, capabilityRemovals)
-	decisions := profileAdaptationDecisions(source.Decisions, modules, catalog)
+	decisions := profileAdaptationDecisions(source.Decisions, modules, capabilities, catalog)
 	values := make(map[string]any)
 	selectedDecisions := stringSet(decisions)
 	for decisionID, value := range source.Values {
@@ -223,14 +244,24 @@ func profileValuesWithout(values []string, removed map[string]struct{}) []string
 func profileAdaptationDecisions(
 	sourceDecisions []string,
 	selectedModules []string,
+	selectedCapabilities []string,
 	catalog *Catalog,
 ) []string {
 	selected := stringSet(sourceDecisions)
 	modules := stringSet(selectedModules)
+	capabilities := stringSet(selectedCapabilities)
 	for changed := true; changed; {
 		changed = false
 		for decisionID := range selected {
 			remove := false
+			for _, capabilityID := range stringsOrEmpty(
+				catalog.decisions[decisionID]["requiresCapabilities"],
+			) {
+				if _, retained := capabilities[capabilityID]; !retained {
+					remove = true
+					break
+				}
+			}
 			for _, effect := range objectsOrEmpty(catalog.decisions[decisionID]["effects"]) {
 				for _, moduleID := range stringsOrEmpty(effect["activateModules"]) {
 					if _, active := modules[moduleID]; !active {
@@ -433,6 +464,13 @@ func validateProfileAdaptation(source, draft ResolvedProfile, catalog *Catalog) 
 				}
 			}
 		}
+	}
+	if err := validateConditionalProfileDecisions(
+		draft.Decisions,
+		draft.Capabilities,
+		catalog,
+	); err != nil {
+		return err
 	}
 	return nil
 }
@@ -781,6 +819,9 @@ func validateCustomProfileReferences(
 			return fmt.Errorf("custom.profile.value.invalid: %s: %w", id, err)
 		}
 	}
+	if err := validateConditionalProfileDecisions(decisions, capabilities, catalog); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -831,8 +872,153 @@ func validateDecisionValue(decision document, value any) error {
 			}
 		}
 		return fmt.Errorf("mode %q is not allowed", mode)
+	case "identifier-strategy":
+		return validateIdentifierStrategy(value)
+	case "auth-provider":
+		return validateAuthProviderDecision(value)
 	default:
 		return fmt.Errorf("decision type %q is unsupported", kind)
+	}
+	return nil
+}
+
+// ValidateDecisionValue validates one value against its embedded catalog
+// declaration.
+func ValidateDecisionValue(catalog *Catalog, id string, value any) error {
+	if catalog == nil {
+		return errors.New("validate Baseline decision: catalog is required")
+	}
+	declaration, ok := catalog.decisions[id]
+	if !ok {
+		return fmt.Errorf("validate Baseline decision: unknown decision %q", id)
+	}
+	if err := validateDecisionValue(declaration, value); err != nil {
+		return fmt.Errorf("validate Baseline decision %q: %w", id, err)
+	}
+	return nil
+}
+
+func validateIdentifierStrategy(value any) error {
+	object, ok := objectValue(value)
+	if !ok {
+		return errors.New("must be an object")
+	}
+	kind, _ := object["kind"].(string)
+	switch kind {
+	case "uuid-v7":
+		if !hasExactFields(object, "kind") {
+			return errors.New("uuid-v7 requires exactly kind")
+		}
+	case "repository-defined":
+		if !hasExactFields(object, "kind", "guidance") {
+			return errors.New("repository-defined requires exactly kind and guidance")
+		}
+		guidance, ok := object["guidance"].(string)
+		if !ok || strings.TrimSpace(guidance) == "" {
+			return errors.New("repository-defined guidance must be a non-empty string")
+		}
+	default:
+		return fmt.Errorf("kind %q is not allowed", kind)
+	}
+	return nil
+}
+
+func validateAuthProviderDecision(value any) error {
+	object, ok := objectValue(value)
+	if !ok {
+		return errors.New("must be an object")
+	}
+	if !hasExactFields(object, "kind", "routeException") {
+		return errors.New("better-auth requires exactly kind and routeException")
+	}
+	kind, ok := object["kind"].(string)
+	if !ok || kind != "better-auth" {
+		return fmt.Errorf("kind %q is not allowed", kind)
+	}
+	exception, ok := objectValue(object["routeException"])
+	if !ok {
+		return errors.New("routeException must be an object")
+	}
+	if !hasExactFields(exception, "scope", "methods", "owner", "reason") {
+		return errors.New("routeException requires exactly scope, methods, owner, and reason")
+	}
+	scope, ok := exception["scope"].(string)
+	if !ok || strings.TrimSpace(scope) == "" {
+		return errors.New("routeException scope must be a non-empty string")
+	}
+	methods, ok := decisionStringList(exception["methods"])
+	if !ok || len(methods) == 0 || !uniqueStrings(methods) {
+		return errors.New("routeException methods must be a non-empty unique string array")
+	}
+	for _, method := range methods {
+		if method != "GET" && method != "POST" {
+			return fmt.Errorf("routeException method %q is not allowed", method)
+		}
+	}
+	if exception["owner"] != "Better Auth" {
+		return errors.New(`routeException owner must be "Better Auth"`)
+	}
+	reason, ok := exception["reason"].(string)
+	if !ok || strings.TrimSpace(reason) == "" {
+		return errors.New("routeException reason must be a non-empty string")
+	}
+	return nil
+}
+
+func decisionStringList(value any) ([]string, bool) {
+	switch values := value.(type) {
+	case []string:
+		return append([]string(nil), values...), true
+	case []any:
+		result := make([]string, 0, len(values))
+		for _, value := range values {
+			text, ok := value.(string)
+			if !ok || text == "" {
+				return nil, false
+			}
+			result = append(result, text)
+		}
+		return result, true
+	default:
+		return nil, false
+	}
+}
+
+func validateConditionalProfileDecisions(
+	decisions []string,
+	capabilities []string,
+	catalog *Catalog,
+) error {
+	selected := stringSet(decisions)
+	retained := stringSet(capabilities)
+	for _, decisionID := range catalog.DecisionIDs() {
+		declaration := catalog.decisions[decisionID]
+		requiredCapabilities := stringsOrEmpty(declaration["requiresCapabilities"])
+		if len(requiredCapabilities) == 0 {
+			continue
+		}
+		applicable := true
+		for _, capabilityID := range requiredCapabilities {
+			if _, ok := retained[capabilityID]; !ok {
+				applicable = false
+				break
+			}
+		}
+		_, included := selected[decisionID]
+		switch {
+		case applicable && !included:
+			return fmt.Errorf(
+				"custom.profile.decision.capability.required: %s requires %s",
+				strings.Join(requiredCapabilities, ", "),
+				decisionID,
+			)
+		case !applicable && included:
+			return fmt.Errorf(
+				"custom.profile.decision.capability.unselected: %s requires %s",
+				decisionID,
+				strings.Join(requiredCapabilities, ", "),
+			)
+		}
 	}
 	return nil
 }

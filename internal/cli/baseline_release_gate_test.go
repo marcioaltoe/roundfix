@@ -669,7 +669,12 @@ func baselineReleaseDecisionArgs(profile, preservation string) []string {
 		"repository.extension.enabled=" + repositoryExtension,
 	}
 	if profile == "standard-typescript-monorepo" {
-		decisions = append(decisions, `http.contract={"mode":"REST"}`)
+		decisions = append(
+			decisions,
+			`identifier.strategy={"kind":"uuid-v7"}`,
+			`http.contract={"mode":"REST"}`,
+			`auth.provider={"kind":"better-auth","routeException":{"scope":"/api/auth/*","methods":["GET","POST"],"owner":"Better Auth","reason":"Provider protocol routes require GET and POST semantics."}}`,
+		)
 	}
 	return decisions
 }

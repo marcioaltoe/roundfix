@@ -151,6 +151,8 @@ func (l *catalogLoader) validateSchemaFields(catalog *Catalog) {
 			"effects",
 			"values",
 			"modes",
+			"suggestion",
+			"requiresCapabilities",
 		)
 	}
 	for id, doc := range catalog.templates {

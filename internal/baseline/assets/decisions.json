@@ -132,12 +132,45 @@
       ]
     },
     {
+      "id": "identifier.strategy",
+      "version": 1,
+      "type": "identifier-strategy",
+      "suggestion": {"kind": "uuid-v7"},
+      "summary": "The strategy for new project-owned Internal Identifiers. UUID version 7 is suggested until the maintainer confirms or changes it.",
+      "effects": [
+        {
+          "when": {"present": true}
+        }
+      ]
+    },
+    {
       "id": "http.contract",
       "version": 1,
       "type": "http-contract",
       "modes": ["REST", "Post-only"],
       "default": {"mode": "Post-only"},
       "summary": "The repository-owned HTTP Contract Decision and its explicit typed exceptions.",
+      "effects": [
+        {
+          "when": {"present": true}
+        }
+      ]
+    },
+    {
+      "id": "auth.provider",
+      "version": 1,
+      "type": "auth-provider",
+      "requiresCapabilities": ["capability.stack.better-auth"],
+      "suggestion": {
+        "kind": "better-auth",
+        "routeException": {
+          "scope": "/api/auth/*",
+          "methods": ["GET", "POST"],
+          "owner": "Better Auth",
+          "reason": "Session, OAuth redirect, callback, and related provider protocol routes require provider-owned GET and POST semantics."
+        }
+      },
+      "summary": "The selected authentication provider and its provider-owned HTTP route exception.",
       "effects": [
         {
           "when": {"present": true}

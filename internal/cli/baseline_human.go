@@ -77,12 +77,13 @@ func (err *baselineHumanActionError) Error() string {
 }
 
 type baselineDecisionDeclaration struct {
-	ID      string   `json:"id"`
-	Type    string   `json:"type"`
-	Values  []string `json:"values"`
-	Modes   []string `json:"modes"`
-	Summary string   `json:"summary"`
-	Default any      `json:"default"`
+	ID         string   `json:"id"`
+	Type       string   `json:"type"`
+	Values     []string `json:"values"`
+	Modes      []string `json:"modes"`
+	Summary    string   `json:"summary"`
+	Default    any      `json:"default"`
+	Suggestion any      `json:"suggestion"`
 }
 
 func runBaselineHumanCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
@@ -1137,7 +1138,7 @@ func promptBaselineDecision(
 		return nil, err
 	}
 	if value, ok := current[id]; ok {
-		if baselineDecisionValueAllowed(declaration, value) {
+		if baseline.ValidateDecisionValue(catalog, id, value) == nil {
 			encoded, _ := json.Marshal(value)
 			selected, err := prompt.selectOneDefault(ctx, declaration.Summary, []string{
 				fmt.Sprintf("Keep %s=%s", id, encoded),
@@ -1153,6 +1154,102 @@ func promptBaselineDecision(
 	}
 
 	switch declaration.Type {
+	case "identifier-strategy":
+		suggestion, ok := declaration.Suggestion.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("prompt Baseline decision %q: suggestion is invalid", id)
+		}
+		encoded, err := json.Marshal(suggestion)
+		if err != nil {
+			return nil, fmt.Errorf("prompt Baseline decision %q: encode suggestion: %w", id, err)
+		}
+		selected, err := prompt.selectOneDefault(
+			ctx,
+			declaration.Summary,
+			[]string{
+				fmt.Sprintf("Keep suggested UUID version 7: %s=%s", id, encoded),
+				"Use a repository-defined identifier strategy",
+			},
+			0,
+		)
+		if err != nil {
+			return nil, err
+		}
+		if selected == 0 {
+			return suggestion, nil
+		}
+		guidance, err := prompt.readNonEmpty(
+			ctx,
+			"Operative rule for new project-owned Internal Identifiers",
+		)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{
+			"kind":     "repository-defined",
+			"guidance": guidance,
+		}, nil
+	case "auth-provider":
+		suggestion, ok := declaration.Suggestion.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("prompt Baseline decision %q: suggestion is invalid", id)
+		}
+		exception, ok := suggestion["routeException"].(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("prompt Baseline decision %q: route suggestion is invalid", id)
+		}
+		encoded, err := json.Marshal(suggestion)
+		if err != nil {
+			return nil, fmt.Errorf("prompt Baseline decision %q: encode suggestion: %w", id, err)
+		}
+		selected, err := prompt.selectOneDefault(
+			ctx,
+			declaration.Summary,
+			[]string{
+				fmt.Sprintf("Keep suggested Better Auth provider: %s=%s", id, encoded),
+				"Change the Better Auth route exception",
+			},
+			0,
+		)
+		if err != nil {
+			return nil, err
+		}
+		if selected == 0 {
+			return suggestion, nil
+		}
+		scope, _ := exception["scope"].(string)
+		scope, err = prompt.readNonEmptyDefault(ctx, "Better Auth route scope", scope)
+		if err != nil {
+			return nil, err
+		}
+		methodSelection, err := prompt.selectOneDefault(
+			ctx,
+			"Better Auth route methods",
+			[]string{"GET and POST", "GET only", "POST only"},
+			0,
+		)
+		if err != nil {
+			return nil, err
+		}
+		methods := []any{"GET", "POST"}
+		if methodSelection == 1 {
+			methods = []any{"GET"}
+		}
+		if methodSelection == 2 {
+			methods = []any{"POST"}
+		}
+		reason, _ := exception["reason"].(string)
+		reason, err = prompt.readNonEmptyDefault(ctx, "Better Auth provider-protocol reason", reason)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{
+			"kind": "better-auth",
+			"routeException": map[string]any{
+				"scope": scope, "methods": methods,
+				"owner": "Better Auth", "reason": reason,
+			},
+		}, nil
 	case "boolean":
 		defaultIndex := -1
 		if value, ok := declaration.Default.(bool); ok {
@@ -1220,27 +1317,6 @@ func baselineDecisionDefinition(
 		return baselineDecisionDeclaration{}, fmt.Errorf("decode Baseline decision %q: %w", id, err)
 	}
 	return declaration, nil
-}
-
-func baselineDecisionValueAllowed(declaration baselineDecisionDeclaration, value any) bool {
-	switch declaration.Type {
-	case "boolean":
-		_, ok := value.(bool)
-		return ok
-	case "enum":
-		return baselineDecisionDefaultIndex(declaration.Values, value) >= 0
-	case "http-contract":
-		object, ok := value.(map[string]any)
-		if !ok {
-			return false
-		}
-		return baselineDecisionDefaultIndex(declaration.Modes, object["mode"]) >= 0
-	case "string":
-		text, ok := value.(string)
-		return ok && strings.TrimSpace(text) != ""
-	default:
-		return false
-	}
 }
 
 func baselineDecisionDefaultIndex(options []string, value any) int {

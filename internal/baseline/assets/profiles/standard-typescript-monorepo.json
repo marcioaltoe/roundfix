@@ -30,7 +30,9 @@
   "entryDecisions": [
     "language.generated",
     "verification.gate",
+    "identifier.strategy",
     "http.contract",
+    "auth.provider",
     "spec.scaffold",
     "domain.layout",
     "triage.external",

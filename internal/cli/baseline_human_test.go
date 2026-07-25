@@ -264,6 +264,117 @@ func TestHumanBaselineDecisionDefaults(t *testing.T) {
 	}
 }
 
+func TestProjectDecisionPrompts(t *testing.T) {
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load Baseline catalog: %v", err)
+	}
+
+	t.Run("UUID version 7 suggestion is visible", func(t *testing.T) {
+		var output bytes.Buffer
+		got, err := promptBaselineDecision(
+			context.Background(),
+			&baselineHumanPrompt{reader: bufioReader("\n"), writer: &output},
+			catalog,
+			"identifier.strategy",
+			nil,
+		)
+		if err != nil {
+			t.Fatalf("accept identifier suggestion: %v", err)
+		}
+		want := map[string]any{"kind": "uuid-v7"}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("identifier suggestion = %#v, want %#v", got, want)
+		}
+		if !strings.Contains(output.String(), "UUID version 7") ||
+			!strings.Contains(output.String(), `"kind":"uuid-v7"`) {
+			t.Fatalf("identifier suggestion is not visible:\n%s", output.String())
+		}
+	})
+
+	t.Run("complete Better Auth suggestion is visible", func(t *testing.T) {
+		var output bytes.Buffer
+		got, err := promptBaselineDecision(
+			context.Background(),
+			&baselineHumanPrompt{reader: bufioReader("\n"), writer: &output},
+			catalog,
+			"auth.provider",
+			nil,
+		)
+		if err != nil {
+			t.Fatalf("accept Better Auth suggestion: %v", err)
+		}
+		encoded, err := json.Marshal(got)
+		if err != nil {
+			t.Fatalf("encode Better Auth suggestion: %v", err)
+		}
+		for _, fragment := range []string{
+			`"kind":"better-auth"`,
+			`"scope":"/api/auth/*"`,
+			`"methods":["GET","POST"]`,
+			`"owner":"Better Auth"`,
+			`"reason":`,
+		} {
+			if !strings.Contains(output.String(), fragment) ||
+				!strings.Contains(string(encoded), fragment) {
+				t.Fatalf("Better Auth suggestion is incomplete for %q:\n%s", fragment, output.String())
+			}
+		}
+	})
+
+	t.Run("compatible stored object is reused", func(t *testing.T) {
+		current := map[string]any{
+			"identifier.strategy": map[string]any{
+				"kind":     "repository-defined",
+				"guidance": "Use immutable aggregate sequence identifiers.",
+			},
+		}
+		var output bytes.Buffer
+		got, err := promptBaselineDecision(
+			context.Background(),
+			&baselineHumanPrompt{reader: bufioReader("\n"), writer: &output},
+			catalog,
+			"identifier.strategy",
+			current,
+		)
+		if err != nil {
+			t.Fatalf("reuse stored identifier strategy: %v", err)
+		}
+		if !reflect.DeepEqual(got, current["identifier.strategy"]) {
+			t.Fatalf("reused identifier = %#v, want %#v", got, current["identifier.strategy"])
+		}
+		if !strings.Contains(output.String(), "Keep identifier.strategy=") {
+			t.Fatalf("stored identifier keep-or-change prompt is missing:\n%s", output.String())
+		}
+	})
+
+	t.Run("invalid stored object is not reused", func(t *testing.T) {
+		current := map[string]any{
+			"identifier.strategy": map[string]any{
+				"kind":    "uuid-v7",
+				"unknown": true,
+			},
+		}
+		var output bytes.Buffer
+		got, err := promptBaselineDecision(
+			context.Background(),
+			&baselineHumanPrompt{reader: bufioReader("\n"), writer: &output},
+			catalog,
+			"identifier.strategy",
+			current,
+		)
+		if err != nil {
+			t.Fatalf("replace invalid stored identifier strategy: %v", err)
+		}
+		if !reflect.DeepEqual(got, map[string]any{"kind": "uuid-v7"}) {
+			t.Fatalf("replacement identifier = %#v", got)
+		}
+		if strings.Contains(output.String(), "Keep identifier.strategy=") {
+			t.Fatalf("invalid stored identifier was offered for reuse:\n%s", output.String())
+		}
+	})
+}
+
 func TestHumanBaselinePreservationDefaultFollowsInstructionInventory(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -548,7 +659,20 @@ func TestBaselineHumanProfileAdaptation(t *testing.T) {
 			[]baseline.DecisionValue{
 				{ID: "language.generated", Value: "English"},
 				{ID: "verification.gate", Value: "make verify"},
+				{ID: "identifier.strategy", Value: map[string]any{"kind": "uuid-v7"}},
 				{ID: "http.contract", Value: map[string]any{"mode": "Post-only"}},
+				{
+					ID: "auth.provider",
+					Value: map[string]any{
+						"kind": "better-auth",
+						"routeException": map[string]any{
+							"scope":   "/api/auth/*",
+							"methods": []any{"GET", "POST"},
+							"owner":   "Better Auth",
+							"reason":  "Provider protocol routes require GET and POST semantics.",
+						},
+					},
+				},
 				{ID: "spec.scaffold", Value: true},
 				{ID: "domain.layout", Value: "single-context"},
 				{ID: "triage.external", Value: false},

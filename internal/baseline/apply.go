@@ -3,7 +3,6 @@ package baseline
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"path"
@@ -284,7 +283,7 @@ func validatePlanApplyContract(document PlanDocument) error {
 	if !ok || manifestPostimage.Kind != PreimageRegular {
 		return errors.New("Baseline Plan has no regular Setup Manifest postimage")
 	}
-	manifestBytes, err := json.MarshalIndent(document.SetupManifest, "", "  ")
+	manifestBytes, err := marshalSetupManifestBytes(document.SetupManifest)
 	if err != nil {
 		return fmt.Errorf("serialize Setup Manifest validation bytes: %w", err)
 	}

@@ -376,7 +376,7 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 		return PlanOutcome{}, err
 	}
 	manifest := buildSetupManifest(catalog, profile, decisions, activeModules, artifacts, alignment.Verification)
-	manifestBytes, err := json.MarshalIndent(manifest, "", "  ")
+	manifestBytes, err := marshalSetupManifestBytes(manifest)
 	if err != nil {
 		return PlanOutcome{}, fmt.Errorf("serialize Setup Manifest: %w", err)
 	}
@@ -1769,6 +1769,68 @@ func buildSetupManifest(
 		ManagedArtifacts: managed, LocalSkills: []string{},
 		Verification: append([]VerificationProjection{}, verification...),
 	}
+}
+
+func marshalSetupManifestBytes(manifest SetupManifest) ([]byte, error) {
+	data, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return compactSetupManifestMethodArrays(data), nil
+}
+
+func compactSetupManifestMethodArrays(data []byte) []byte {
+	lines := strings.Split(string(data), "\n")
+	result := make([]string, 0, len(lines))
+	for index := 0; index < len(lines); index++ {
+		line := lines[index]
+		if strings.TrimSpace(line) != `"methods": [` {
+			result = append(result, line)
+			continue
+		}
+		var methods []string
+		end := index + 1
+		for ; end < len(lines); end++ {
+			trimmed := strings.TrimSpace(lines[end])
+			if trimmed == "]" || trimmed == "]," {
+				break
+			}
+			var method string
+			if err := json.Unmarshal([]byte(strings.TrimSuffix(trimmed, ",")), &method); err != nil {
+				methods = nil
+				break
+			}
+			methods = append(methods, method)
+		}
+		if methods == nil || end >= len(lines) {
+			result = append(result, line)
+			continue
+		}
+		encodedMethods := make([]string, 0, len(methods))
+		for _, method := range methods {
+			encoded, err := json.Marshal(method)
+			if err != nil {
+				encodedMethods = nil
+				break
+			}
+			encodedMethods = append(encodedMethods, string(encoded))
+		}
+		if encodedMethods == nil {
+			result = append(result, line)
+			continue
+		}
+		suffix := ""
+		if strings.TrimSpace(lines[end]) == "]," {
+			suffix = ","
+		}
+		indent := line[:len(line)-len(strings.TrimLeft(line, " "))]
+		result = append(
+			result,
+			indent+`"methods": [`+strings.Join(encodedMethods, ", ")+"]"+suffix,
+		)
+		index = end
+	}
+	return []byte(strings.Join(result, "\n"))
 }
 
 func assemblePostimages(
