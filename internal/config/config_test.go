@@ -198,7 +198,7 @@ func TestAgentSelectionProfileBuiltinsResolveRequiredCategories(t *testing.T) {
 			name:     "frontend",
 			category: CategoryFrontend,
 			want: profileForTest(
-				selectionForTest("claude", "claude-fable-5", "medium"),
+				selectionForTest("claude", "claude-opus-5", "xhigh"),
 				selectionForTest("codex", "gpt-5.6-sol", "high"),
 			),
 		},
@@ -1777,7 +1777,7 @@ func TestInitCreatesUserConfig(t *testing.T) {
 	if !strings.Contains(content, "agent_full_access: false") ||
 		!strings.Contains(content, `artifact_dir: ""`) || !strings.Contains(content, "Roundfix Home artifacts/<repo-id>") ||
 		!strings.Contains(content, "profiles:") || !strings.Contains(content, "model: gpt-5.6-sol") ||
-		!strings.Contains(content, "model: gpt-5.5") || !strings.Contains(content, "model: claude-fable-5") ||
+		!strings.Contains(content, "model: gpt-5.5") || !strings.Contains(content, "model: claude-opus-5") ||
 		!strings.Contains(content, "fallbacks:") ||
 		!strings.Contains(content, "specs:") || !strings.Contains(content, `root: "docs/specs"`) ||
 		!strings.Contains(content, "worktree:") || !strings.Contains(content, `location: "~/.roundfix/worktrees"`) ||
@@ -1825,7 +1825,7 @@ func TestProfileGeneratedConfigUsesCompleteProfilesSchema(t *testing.T) {
 		"review:",
 		"model: gpt-5.6-sol",
 		"model: gpt-5.5",
-		"model: claude-fable-5",
+		"model: claude-opus-5",
 		"fallbacks:",
 	} {
 		if !strings.Contains(content, want) {
@@ -1935,7 +1935,7 @@ func TestInitForceOverwritesExistingConfig(t *testing.T) {
 	}
 	if content := mustRead(t, path); !strings.Contains(content, "profiles:") ||
 		!strings.Contains(content, "model: gpt-5.6-sol") ||
-		!strings.Contains(content, "model: claude-fable-5") ||
+		!strings.Contains(content, "model: claude-opus-5") ||
 		strings.Contains(content, "agent: claude") ||
 		strings.Contains(content, "runtimes:") {
 		t.Fatalf("expected default config to replace old content, got %s", content)

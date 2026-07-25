@@ -35,8 +35,9 @@ roundfix doctor    # read-only adapter and profile readiness; mutates nothing
 
 ## Requirements
 
-- Node.js 22.13+ with npm/npx (the ACP Agent layer runs through acpx `0.12.0`;
-  `setup` installs the pinned version on confirmation).
+- Node.js 22.13+ with npm/npx (the ACP Agent layer requires acpx `0.12.0` or
+  newer; `setup` installs the minimum tested version only when acpx is missing
+  or older).
 - A supported ACP Runtime: `codex`, `claude`, or `opencode`.
 - GitHub CLI `gh` authenticated for the target repository (review loops only).
 - Building from source additionally needs Go 1.26+ and `make`.
@@ -44,8 +45,8 @@ roundfix doctor    # read-only adapter and profile readiness; mutates nothing
 `roundfix doctor` diagnoses all of it — including official Codex adapter
 identity, exact Agent Selection Profile proof, and macOS codex hygiene — with
 one line per check and a `next:` action on failures. Use `roundfix setup` to
-provision the pinned official adapter or migrate a stale legacy override after
-authorization.
+provision the minimum supported acpx or official adapter, or migrate a stale
+legacy override after authorization.
 
 ## Quickstart
 

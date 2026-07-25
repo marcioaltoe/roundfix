@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -27,7 +28,7 @@ func TestBaselineDocumentationContract(t *testing.T) {
 			args:    []string{"baseline", "--help"},
 			snippets: []string{
 				"roundfix baseline [--repo <path>] [--format <text|json>]",
-				"roundfix baseline plan --profile <id>",
+				"roundfix baseline plan (--profile <id> | --profile-file <draft.json>)",
 				"roundfix baseline apply --plan <file> --confirm-plan <digest>",
 				"roundfix baseline profile init --id <id>",
 				"roundfix baseline skills restore --profile <id>",
@@ -41,10 +42,15 @@ func TestBaselineDocumentationContract(t *testing.T) {
 			snippets: []string{
 				"roundfix/baseline-plan/v1",
 				"roundfix/baseline-result/v1",
+				"--profile-file",
+				"mutually exclusive",
 				"--decision-file",
 				"never prompts",
 				"never",
 				"uses the network",
+				"0  complete Baseline Plan emitted",
+				"2  invalid arguments",
+				"3  a decision",
 			},
 		},
 		{
@@ -56,6 +62,9 @@ func TestBaselineDocumentationContract(t *testing.T) {
 				"transaction",
 				"Repository formatter and Verification commands are reported as",
 				"never run",
+				"0  approved plan applied or already applied",
+				"1  apply, verification, output, rollback, or recovery failure",
+				"3  confirmation mismatch, stale preimage, or unrelated Git lineage",
 			},
 		},
 		{
@@ -74,6 +83,8 @@ func TestBaselineDocumentationContract(t *testing.T) {
 				"complete preimage",
 				"--source-dir",
 				"--confirm-plan",
+				"A non-empty preview exits 3",
+				"An empty restoration is an idempotent exit 0",
 			},
 		},
 		{
@@ -197,6 +208,227 @@ func TestBaselineDocumentationContract(t *testing.T) {
 	}
 }
 
+func TestGuidanceCompositionDocumentation(t *testing.T) {
+	root := baselineDocumentationRepoRoot()
+	guide := readBaselineDocumentation(
+		t,
+		filepath.Join(root, "docs", "user-guide", "context-driven-development.md"),
+	)
+	assertBaselineDocumentationContains(t, "Context-Driven user guide", guide, []string{
+		"### Instruction hierarchy",
+		"Universal instructions",
+		"Context and documentation",
+		"Spec workflow",
+		"Autonomous work",
+		"Stack guidance",
+		"Surface guidance",
+		"Optional knowledge sources",
+		"A narrower guide may add constraints",
+		"### Greenfield composition and update redistribution",
+		"exact source bytes",
+		"semantic owner",
+		"docs/agents/specific-repository.md",
+		"### ADR and Findings lifecycle",
+		"Only `accepted` is active",
+		"`pending`, `partial`, `deferred`, and `done`",
+		"### Profile alignment and adaptation",
+		"Change Baseline Profile",
+		"repository-owned Profile adaptation",
+		"Decline without writing",
+		"--profile-file",
+		"mutually exclusive",
+		"roundfix baseline skills restore --repo . --profile",
+		"--confirm-plan <digest>",
+		"Generate a fresh plan",
+	})
+
+	generated := readBaselineDocumentation(
+		t,
+		filepath.Join(
+			root,
+			"internal",
+			"baseline",
+			"assets",
+			"formatter-fixtures",
+			"standard-typescript-monorepo",
+			"golden",
+			"docs",
+			"agents",
+			"docs-layout.md",
+		),
+	)
+	tests := []struct {
+		name           string
+		guideStart     string
+		guideEnd       string
+		generatedAfter string
+	}{
+		{
+			name:           "ADR lifecycle template",
+			guideStart:     "<!-- baseline-adr-lifecycle-template:start -->",
+			guideEnd:       "<!-- baseline-adr-lifecycle-template:end -->",
+			generatedAfter: "When creating a new ADR",
+		},
+		{
+			name:           "Findings template",
+			guideStart:     "<!-- baseline-findings-template:start -->",
+			guideEnd:       "<!-- baseline-findings-template:end -->",
+			generatedAfter: "complete copyable Findings Operational Contract",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			published := markdownFenceContent(
+				t,
+				betweenBaselineDocumentation(t, guide, test.guideStart, test.guideEnd),
+			)
+			generatedStart := strings.Index(generated, test.generatedAfter)
+			if generatedStart < 0 {
+				t.Fatalf("generated guidance marker %q is missing", test.generatedAfter)
+			}
+			want := markdownFenceContent(
+				t,
+				generated[generatedStart:],
+			)
+			if published != want {
+				t.Fatalf("%s differs from generated guidance\npublished:\n%s\nwant:\n%s", test.name, published, want)
+			}
+		})
+	}
+}
+
+func TestProjectConstraintDocumentation(t *testing.T) {
+	root := baselineDocumentationRepoRoot()
+	guidePath := filepath.Join(
+		root,
+		"docs",
+		"user-guide",
+		"context-driven-development.md",
+	)
+	skillPath := filepath.Join(
+		root,
+		".agents",
+		"skills",
+		"setup-context-driven",
+		"SKILL.md",
+	)
+	guide := readBaselineDocumentation(t, guidePath)
+	skill := readBaselineDocumentation(t, skillPath)
+	guideContract := strings.Join(strings.Fields(guide), " ")
+	skillContract := strings.Join(strings.Fields(skill), " ")
+
+	assertBaselineDocumentationContains(t, "Context-Driven user guide", guideContract, []string{
+		"UUID version 7 is a visible suggestion",
+		"`identifier.strategy`",
+		"`auth.provider`",
+		"`GET` and `POST` under `/api/auth/*`",
+		"Session, OAuth redirect, callback, and related provider protocol",
+		"exit `3`",
+		"no partial Plan",
+		"### Project Constraints",
+		"Identifier strategy",
+		"Authentication and HTTP",
+		"Active ADR obligations",
+		"Tooling authority",
+		"express maintainer authorization",
+		"exact bounded repository-relative files",
+		"`docs/agents/agent-instructions.md`",
+		"`docs/agents/domain.md`",
+		"`docs/agents/backend.md`",
+		"`docs/agents/spec-routing.md`",
+	})
+	assertBaselineDocumentationContains(t, "thin setup skill", skillContract, []string{
+		"UUID version 7 is a visible suggestion",
+		"`identifier.strategy`",
+		"`auth.provider`",
+		"`GET` and `POST` under `/api/auth/*`",
+		"Project Constraints",
+		"express maintainer authorization",
+		"exact bounded repository-relative files",
+		"does not collect, derive, validate, or render decisions",
+	})
+
+	example := betweenBaselineDocumentation(
+		t,
+		guide,
+		"<!-- baseline-decision-document:start -->",
+		"<!-- baseline-decision-document:end -->",
+	)
+	example = strings.TrimSpace(example)
+	example = strings.TrimPrefix(example, "```json")
+	example = strings.TrimSuffix(example, "```")
+	example = strings.TrimSpace(example)
+	document, err := baseline.ParseDecisionDocument([]byte(example), guidePath)
+	if err != nil {
+		t.Fatalf("published project Decision Document does not parse: %v", err)
+	}
+	if len(document.Decisions) != 14 {
+		t.Fatalf("published project Decision Document decisions = %d, want 14", len(document.Decisions))
+	}
+
+	byID := make(map[string]any, len(document.Decisions))
+	for _, decision := range document.Decisions {
+		byID[decision.ID] = decision.Value
+	}
+	if !reflect.DeepEqual(
+		byID["identifier.strategy"],
+		map[string]any{"kind": "uuid-v7"},
+	) {
+		t.Fatalf("published identifier strategy = %#v", byID["identifier.strategy"])
+	}
+	wantAuth := map[string]any{
+		"kind": "better-auth",
+		"routeException": map[string]any{
+			"scope":   "/api/auth/*",
+			"methods": []any{"GET", "POST"},
+			"owner":   "Better Auth",
+			"reason": "Session, OAuth redirect, callback, and related provider " +
+				"protocol routes require provider-owned GET and POST semantics.",
+		},
+	}
+	if !reflect.DeepEqual(byID["auth.provider"], wantAuth) {
+		t.Fatalf("published authentication provider = %#v", byID["auth.provider"])
+	}
+
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+	profile, err := baseline.ResolveProfile("", "standard-typescript-monorepo", catalog)
+	if err != nil {
+		t.Fatal(err)
+	}
+	decisions := make([]baseline.DecisionValue, 0, len(document.Decisions))
+	for _, decision := range document.Decisions {
+		if decision.ID != "preservation.mode" {
+			decisions = append(decisions, decision)
+		}
+	}
+	if _, missing, err := baseline.ResolveDecisionInput(profile, decisions, catalog); err != nil {
+		t.Fatalf("published project decisions are invalid: %v", err)
+	} else if len(missing) != 0 {
+		t.Fatalf("published project decisions are incomplete: %v", missing)
+	}
+
+	parsedPlanningExamples := 0
+	for _, content := range []string{guide, skill} {
+		for _, command := range baselineBashExamples(content) {
+			if !strings.Contains(command, "baseline plan") ||
+				!strings.Contains(command, "--decision-file") {
+				continue
+			}
+			args := strings.Fields(command)
+			if err := parsePublishedBaselineExample(args[2:]); err != nil {
+				t.Fatalf("project-decision command %q does not parse: %v", command, err)
+			}
+			parsedPlanningExamples++
+		}
+	}
+	if parsedPlanningExamples < 2 {
+		t.Fatalf("parsed project-decision planning examples = %d, want at least 2", parsedPlanningExamples)
+	}
+}
+
 func TestBaselineExamplesParse(t *testing.T) {
 	root := baselineDocumentationRepoRoot()
 	paths := []string{
@@ -272,8 +504,27 @@ func TestBaselineDecisionExamples(t *testing.T) {
 	}
 	if document.SchemaVersion != baseline.DecisionDocumentSchemaVersion ||
 		document.Version != baseline.DecisionDocumentVersion ||
-		len(document.Decisions) != 9 {
+		len(document.Decisions) != 14 {
 		t.Fatalf("published Decision Document parsed unexpectedly: %#v", document)
+	}
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+	profile, err := baseline.ResolveProfile("", "standard-typescript-monorepo", catalog)
+	if err != nil {
+		t.Fatal(err)
+	}
+	decisions := make([]baseline.DecisionValue, 0, len(document.Decisions))
+	for _, decision := range document.Decisions {
+		if decision.ID != "preservation.mode" {
+			decisions = append(decisions, decision)
+		}
+	}
+	if _, missing, err := baseline.ResolveDecisionInput(profile, decisions, catalog); err != nil {
+		t.Fatalf("published complete Decision Document is invalid for standard-typescript-monorepo: %v", err)
+	} else if len(missing) != 0 {
+		t.Fatalf("published complete Decision Document is missing required decisions: %v", missing)
 	}
 
 	invalid := strings.Replace(example, `"version": "0.0.1",`, `"version": "0.0.1", "unknown": true,`, 1)
@@ -390,4 +641,20 @@ func betweenBaselineDocumentation(t *testing.T, content, start, end string) stri
 		t.Fatalf("documentation marker %q is missing", end)
 	}
 	return content[startIndex : startIndex+endIndex]
+}
+
+func markdownFenceContent(t *testing.T, content string) string {
+	t.Helper()
+	const opening = "```markdown"
+	start := strings.Index(content, opening)
+	if start < 0 {
+		t.Fatalf("markdown fence %q is missing", opening)
+	}
+	start += len(opening)
+	content = content[start:]
+	end := strings.Index(content, "```")
+	if end < 0 {
+		t.Fatal("closing markdown fence is missing")
+	}
+	return strings.TrimSpace(content[:end])
 }

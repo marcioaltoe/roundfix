@@ -33,6 +33,7 @@ func (l *catalogLoader) load() *Catalog {
 		setups:         l.readCollection("setups", setupSchemas, "setup", true),
 		transitions:    l.readCollection("retention", transitionSchemas, "transition", false),
 		orderedModules: make(map[string][]string),
+		semanticOwners: make(map[string]SemanticOwner),
 	}
 	catalog.decisions = l.readIndexed(
 		"decisions.json",
@@ -59,11 +60,15 @@ func (l *catalogLoader) load() *Catalog {
 	l.validateModules(catalog)
 	l.validateModuleCycles(catalog)
 	l.validateProfiles(catalog)
+	l.validateProfileFormatters(catalog)
+	l.validateGuidanceComposition(catalog)
 	l.validateDecisionEffects(catalog)
+	l.validateProjectDecisionAssets(catalog)
 	l.validateSetups(catalog)
 	l.validateSkillActivations(catalog)
 	l.validateTransitions(catalog)
 	l.validateSourceBaselines(catalog)
+	l.validateToolingAuthority(catalog)
 
 	if len(l.diagnostics) == 0 {
 		if err := catalog.finishIdentity(); err != nil {
@@ -92,7 +97,7 @@ func (l *catalogLoader) validateSchemaFields(catalog *Catalog) {
 		"schemaVersion", "id", "version", "kind", "title", "dependsOn",
 		"conflictsWith", "rootBlocks", "supportingGuides", "rules",
 		"requiredSkills", "skillDispatch", "requiredDecisions",
-		"repositoryExtensions",
+		"repositoryExtensions", "instructionHierarchy", "semanticOwners",
 	}
 	for id, doc := range catalog.modules {
 		l.allowFields("catalog.module.field.unknown", id, doc, moduleFields...)
@@ -148,6 +153,8 @@ func (l *catalogLoader) validateSchemaFields(catalog *Catalog) {
 			"effects",
 			"values",
 			"modes",
+			"suggestion",
+			"requiresCapabilities",
 		)
 	}
 	for id, doc := range catalog.templates {

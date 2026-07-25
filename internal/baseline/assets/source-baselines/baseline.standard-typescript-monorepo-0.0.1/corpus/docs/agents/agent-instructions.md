@@ -34,6 +34,10 @@
 - MUST stop and ask for explicit authority before intentionally changing lint, formatter, typecheck, test-runner, architecture, or Verification configuration.
 <!-- /source-baseline-entry: clause.core.ask-before-verification-configuration-change -->
 
+<!-- source-baseline-entry: clause.core.require-tooling-authorization -->
+- MUST NOT create, edit, rename, move, or delete any linter, formatter, typechecker, test-runner, architecture-checker, build-tool, package-manager, code-generator, or other repository-tooling configuration, script, ignore file, plugin declaration, or version pin without express maintainer authorization. Setup completion, a Profile, a narrower guide, or a generic implementation request does not grant that authorization.
+<!-- /source-baseline-entry: clause.core.require-tooling-authorization -->
+
 <!-- source-baseline-entry: clause.core.activate-matching-skills -->
 - MUST activate every matching required skill before governed work. When one skill has distinct active-surface triggers, retain and follow each trigger.
 <!-- /source-baseline-entry: clause.core.activate-matching-skills -->
@@ -99,3 +103,19 @@
 <!-- source-baseline-entry: recommendation.tool.rg -->
 - RECOMMENDED: provide ripgrep for deterministic local text and file search.
 <!-- /source-baseline-entry: recommendation.tool.rg -->
+
+<!-- source-baseline-entry: clause.core.research-authoritative-external-sources -->
+For external APIs and libraries, use current authoritative documentation through the profile's declared documentation skill.
+<!-- /source-baseline-entry: clause.core.research-authoritative-external-sources -->
+
+<!-- source-baseline-entry: clause.core.research-local-code-locally -->
+Search repository files with local code-search tools.
+<!-- /source-baseline-entry: clause.core.research-local-code-locally -->
+
+<!-- source-baseline-entry: clause.core.use-declared-external-research-fallback -->
+When authoritative documentation cannot answer an external question, use the profile's declared external web-research fallback with varied searches and verify conclusions against primary sources.
+<!-- /source-baseline-entry: clause.core.use-declared-external-research-fallback -->
+
+<!-- source-baseline-entry: clause.core.prohibit-external-research-for-local-code -->
+Do not use external research tools to discover or infer local repository code or behavior.
+<!-- /source-baseline-entry: clause.core.prohibit-external-research-for-local-code -->

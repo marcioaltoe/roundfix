@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "context-workflow",
-  "version": 4,
+  "version": 6,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": [
@@ -218,7 +218,7 @@
   "supportingGuides": [
     {
       "id": "guide.docs-layout",
-      "version": 4,
+      "version": 5,
       "path": "docs/agents/docs-layout.md",
       "template": "template.guide.docs-layout",
       "rules": [
@@ -228,7 +228,7 @@
     },
     {
       "id": "guide.domain",
-      "version": 3,
+      "version": 4,
       "path": "docs/agents/domain.md",
       "template": "template.guide.domain",
       "rules": [
@@ -255,11 +255,26 @@
     },
     {
       "id": "rule.context.docs-layout",
-      "version": 4,
+      "version": 5,
       "coverage": [
         "coverage.context-workflow"
       ],
       "clauses": [
+        {
+          "id": "clause.context.adr-01-template",
+          "enforcement": "mandatory",
+          "guidance": "When creating a new ADR, prepend this repository-owned lifecycle overlay to the body contract in `.agents/skills/domain-modeling/ADR-FORMAT.md`:\n\n```markdown\n---\nstatus: proposed # proposed | accepted | rejected | deprecated | superseded\ncreated_at: YYYY-MM-DDTHH:MM:SSZ\nupdated_at: YYYY-MM-DDTHH:MM:SSZ\ndeprecated_at: null # null or YYYY-MM-DDTHH:MM:SSZ\nsuperseded_by: null # null or ADR-NNNN\n---\n\n# <Short title of the decision>\n\n<One to three sentences describing the context, decision, and reason.>\n```"
+        },
+        {
+          "id": "clause.context.adr-02-active-status",
+          "enforcement": "mandatory",
+          "guidance": "Only `accepted` is active. Treat `proposed`, `rejected`, `deprecated`, and `superseded` ADRs as inactive."
+        },
+        {
+          "id": "clause.context.adr-03-legacy-compatibility",
+          "enforcement": "mandatory",
+          "guidance": "Treat a legacy ADR without lifecycle frontmatter as active unless its body explicitly marks it inactive. Do not rewrite existing ADRs solely to adopt lifecycle metadata."
+        },
         {
           "id": "clause.context.docs-one-job-per-directory",
           "enforcement": "mandatory",
@@ -268,7 +283,7 @@
         {
           "id": "clause.context.findings-01-frontmatter",
           "enforcement": "mandatory",
-          "guidance": "Use this copyable frontmatter contract for each findings file:\n\n```yaml\n---\nstatus: pending # pending | partial | deferred | done\ncreated_at: YYYY-MM-DD\nupdated_at: YYYY-MM-DD\n---\n```"
+          "guidance": "Use this complete copyable Findings Operational Contract:\n\n```markdown\n---\nstatus: pending # pending | partial | deferred | done\ncreated_at: YYYY-MM-DD\nupdated_at: YYYY-MM-DD\n---\n\n# <Area> — <short title> (YYYY-MM-DD)\n\n<Two to four sentences describing the session or investigation, the attempted outcome, and links to adjacent evidence.>\n\n## 1. <Finding title — symptom, not hypothesis>\n\n- Symptom / evidence: <observed behavior, command output, identifiers, and paths needed to reproduce>\n- Root cause: <proven cause, or `unknown` with what was ruled out>\n- Action / suggestion: <fix, mitigation, or route to a Spec, direct change, or upstream report>\n\n## 2. <Next finding>\n\n## What worked — keep\n\n<Optional evidence about behavior worth preserving.>\n\n## Addendum — YYYY-MM-DD — <short title>\n\n<Append new evidence, root-cause proof, status context, or routing links without rewriting the original observation.>\n```"
         },
         {
           "id": "clause.context.findings-02-pending",

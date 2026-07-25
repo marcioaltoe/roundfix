@@ -7,7 +7,39 @@ package baseline
 
 import "testing"
 
-func TestBaselineMacroJourneysEngineSafety(t *testing.T) {
+func TestProjectDecisionJourneyEngine(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func(*testing.T)
+	}{
+		{name: "strict decision objects", run: TestProjectDecisionValidation},
+		{name: "missing decision produces no partial Plan", run: TestPlanDocumentMissingDecisionsReturnsResultWithoutPartialPlan},
+		{name: "identifier strategy is required", run: TestIdentifierStrategyDecision},
+		{name: "Better Auth is capability-bound", run: TestAuthProviderDecision},
+		{name: "derived HTTP conflict stops planning", run: TestHTTPContractConflict},
+		{name: "equivalent normalized decisions", run: TestProfileAlignmentEquivalentNormalizedDecisions},
+		{name: "render apply and empty reapply", run: TestProjectDecisionRendering},
+	}
+	for _, test := range tests {
+		t.Run(test.name, test.run)
+	}
+}
+
+func TestToolingAuthorizationJourneyCoreClause(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func(*testing.T)
+	}{
+		{name: "renders for every maintained Profile", run: TestToolingAuthorityClause},
+		{name: "cannot be disabled", run: TestToolingAuthorityCannotBeDisabled},
+		{name: "remains source-accounted", run: TestToolingAuthorityAccounting},
+	}
+	for _, test := range tests {
+		t.Run(test.name, test.run)
+	}
+}
+
+func TestBaselineReleaseGate(t *testing.T) {
 	tests := []struct {
 		name string
 		run  func(*testing.T)
@@ -19,8 +51,12 @@ func TestBaselineMacroJourneysEngineSafety(t *testing.T) {
 		{name: "cross-clone apply", run: TestApplyCrossClone},
 		{name: "unsafe carrier", run: TestInstructionAliasUnsafeTargetsBlock},
 		{name: "rollback", run: TestTransactionRollback},
+		{name: "semantic redistribution rollback", run: TestRepositoryRuleBlockRollbackRestoresSemanticGuide},
+		{name: "Profile adaptation rollback", run: TestProfileDraftRollbackRestoresMissingProfile},
 		{name: "recovery", run: TestTransactionRecovery},
 		{name: "empty reapply", run: TestEmptyReapply},
+		{name: "Profile divergence adaptation", run: TestProfileDivergenceResolution},
+		{name: "universal capability remediation", run: TestUniversalCapabilityRemediation},
 		{name: "rejected-plan revision", run: TestRejectedPlanRevision},
 		{name: "renewed approval", run: TestRevisionRequiresNewApproval},
 	}

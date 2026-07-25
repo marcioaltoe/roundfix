@@ -5,7 +5,7 @@
   "entryDecisions": ["language.generated", "verification.gate", "spec.scaffold", "domain.layout", "triage.external", "autonomous.enabled", "secondbrain.enabled", "repository.extension.enabled"],
   "modules": ["core", "context-workflow", "go", "cli-surface", "tui-surface", "autonomous-work", "spec-workflow", "external-triage", "secondbrain", "repository-extension"],
   "requiredRules": [
-    "rule.core.compact-root", "rule.core.root-cause-only", "rule.core.evidence-before-complete", "rule.core.verification-selected", "rule.core.verification-integrity", "rule.core.skill-dispatch", "rule.core.english-guidance", "rule.core.research-authority", "rule.core.dependency-discipline", "rule.core.git-delivery", "rule.core.decision-authority", "rule.core.security-configuration",
+    "rule.core.compact-root", "rule.core.root-cause-only", "rule.core.evidence-before-complete", "rule.core.verification-selected", "rule.core.verification-integrity", "rule.core.tooling-authority", "rule.core.skill-dispatch", "rule.core.english-guidance", "rule.core.research-authority", "rule.core.dependency-discipline", "rule.core.git-delivery", "rule.core.decision-authority", "rule.core.security-configuration",
     "rule.context.domain-docs", "rule.context.docs-layout",
     "rule.go.stdlib-first", "rule.go.context-errors", "rule.go.observable-tests",
     "rule.cli.output-contract", "rule.cli.non-interactive",

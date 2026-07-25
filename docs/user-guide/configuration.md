@@ -96,8 +96,8 @@ profiles:
   frontend:
     preferred:
       runtime: claude
-      model: claude-fable-5
-      reasoning_effort: medium
+      model: claude-opus-5
+      reasoning_effort: xhigh
     fallbacks:
       - runtime: codex
         model: gpt-5.6-sol
@@ -250,16 +250,19 @@ Built-in required profiles use these official identifiers:
 
 - `general`, `backend`, `qa`, `review`: preferred `codex / gpt-5.6-sol / high`;
   fallback `codex / gpt-5.5 / xhigh`.
-- `frontend`: preferred `claude / claude-fable-5 / medium`; fallback
+- `frontend`: preferred `claude / claude-opus-5 / xhigh`; fallback
   `codex / gpt-5.6-sol / high`.
 
 The Model Catalog recognizes `gpt-5.6-sol`, `gpt-5.6-terra`, and
-`gpt-5.6-luna` as official Codex identifiers. Identifier validity does not
-prove operational availability. Recommendations are advisory rankings only;
-the effective adapter in each environment must complete Exact Agent Selection
-Proof before Roundfix can use a tuple. This exact proof is the operational
-readiness authority. Custom model strings remain accepted
-verbatim for forward-compatible proof and are never added to an allowlist.
+`gpt-5.6-luna` as official Codex identifiers, plus `claude-opus-5`,
+`claude-fable-5`, and `claude-opus-4-8` as Claude identifiers. Identifier
+validity does not prove operational availability. Recommendations are advisory
+rankings only; the effective adapter in each environment must complete Exact
+Agent Selection Proof before Roundfix can use a tuple. This exact proof is the
+operational readiness authority. Custom model strings remain accepted verbatim
+for forward-compatible proof and are never added to an allowlist. A dated
+recommendation can differ from the current built-in Preferred Selection and
+never controls routing.
 
 For Codex, Adapter Readiness requires the official
 `@agentclientprotocol/codex-acp` package at version `1.1.4` or newer. Setup

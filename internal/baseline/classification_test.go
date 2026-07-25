@@ -57,6 +57,82 @@ func TestSealedClassificationSnapshotIsCanonicalAndBounded(t *testing.T) {
 	}
 }
 
+func TestSemanticRuleDistributionAdmitsOnlyActiveSemanticOwners(t *testing.T) {
+	repo := newPlanRepository(t)
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+	profile, err := ResolveProfile(repo, "go-cli-tui", catalog)
+	if err != nil {
+		t.Fatal(err)
+	}
+	modules, artifacts, err := resolveManagedArtifacts(
+		catalog,
+		profile,
+		planTestDecisions(),
+		false,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	artifactIDs := make([]string, len(artifacts))
+	for index, artifact := range artifacts {
+		artifactIDs[index] = artifact.ID
+	}
+	registry := catalog.SemanticOwnerRegistry(modules, artifactIDs)
+	snapshot, err := NewAnalysisSnapshot(classificationTestSource(), registry)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var cliDestination *ClassificationDestination
+	for index := range snapshot.Destinations {
+		destination := &snapshot.Destinations[index]
+		if destination.Disposition == "repository-document" &&
+			destination.Path == "docs/agents/cli.md" {
+			cliDestination = destination
+		}
+		if destination.Path == "docs/agents/frontend.md" {
+			t.Fatal("inactive frontend guide was advertised as a semantic destination")
+		}
+	}
+	if cliDestination == nil {
+		t.Fatal("active CLI guide was not advertised as a semantic destination")
+	}
+
+	proposal := classificationTestProposal(t, snapshot)
+	entry := snapshot.Entries[0]
+	proposal.Dispositions[0] = ReadoptionDisposition{
+		EntryID:        entry.ID,
+		EntryDigest:    entry.Digest,
+		Classification: "normative-clause",
+		Disposition:    "repository-document",
+		Destination: &ReadoptionDestination{
+			DocumentType: "agent-guide",
+			Path:         cliDestination.Path,
+			Digest:       entry.Digest,
+		},
+		Reason: "The active CLI guide owns this repository policy.",
+	}
+	encoded, err := json.Marshal(proposal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ParseClassificationProposal(encoded, snapshot); err != nil {
+		t.Fatalf("active semantic destination was rejected: %v", err)
+	}
+
+	proposal.Dispositions[0].Destination.Path = "docs/agents/frontend.md"
+	encoded, err = json.Marshal(proposal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ParseClassificationProposal(encoded, snapshot); err == nil {
+		t.Fatal("inactive semantic destination was accepted")
+	}
+}
+
 func TestProposalValidationRejectsIncompleteOrUntrustedOutput(t *testing.T) {
 	snapshot := classificationTestSnapshot(t)
 	valid := classificationTestProposal(t, snapshot)

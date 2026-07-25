@@ -48,6 +48,105 @@ func TestApplyCanonicalizesLegacyRepositoryRules(t *testing.T) {
 	}
 }
 
+func TestRepositoryRuleBlockPreservesRepositoryEditAndEmptyReapply(t *testing.T) {
+	repo := newPlanRepository(t)
+	rule := []byte("Keep CLI diagnostics on stderr for this repository.\n")
+	writeInspectionFile(t, repo, legacyRepositoryPath, string(rule))
+	commitInspectionRepository(t, repo, "seed semantic repository rule")
+
+	plan := buildSemanticCarrierPlan(t, repo, legacyRepositoryPath)
+	if _, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest); err != nil {
+		t.Fatalf("apply semantic repository rule: %v", err)
+	}
+	beforeReapply := snapshotVisibleTree(t, repo)
+	result, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest)
+	if err != nil {
+		t.Fatalf("empty semantic reapply: %v", err)
+	}
+	if result.State != "verified" || !strings.Contains(result.Message, "already applied") {
+		t.Fatalf("empty semantic reapply result = %+v", result)
+	}
+	if afterReapply := snapshotVisibleTree(t, repo); !reflect.DeepEqual(afterReapply, beforeReapply) {
+		t.Fatalf("empty semantic reapply changed managed files")
+	}
+
+	guidePath := "docs/agents/cli.md"
+	guide, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(guidePath)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	editedRule := []byte("Keep CLI diagnostics concise and actionable for this repository.\n")
+	editedGuide := bytes.Replace(guide, rule, editedRule, 1)
+	if bytes.Equal(editedGuide, guide) {
+		t.Fatal("semantic repository-rule body was not found for edit")
+	}
+	writeTransactionFile(t, repo, guidePath, string(editedGuide), 0o644)
+	commitInspectionRepository(t, repo, "edit repository-owned semantic rule")
+
+	fresh := buildTestPlan(t, repo)
+	freshGuide := planPostimage(t, fresh, guidePath)
+	blocks, err := parseRepositoryRuleBlocks(guidePath, freshGuide.Content)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(blocks) != 1 || !bytes.Equal(blocks[0].Body, editedRule) {
+		t.Fatalf("fresh plan semantic blocks = %+v, want edited bytes %q", blocks, editedRule)
+	}
+	for _, change := range fresh.FileChanges {
+		if change.Path == guidePath {
+			t.Fatalf("repository-owned semantic edit was treated as setup drift: %+v", change)
+		}
+	}
+	var retained, inventoried bool
+	for _, evidence := range fresh.Retention {
+		if strings.HasPrefix(evidence.FromClause, "repository-rule.") &&
+			evidence.Disposition == "repository-document" &&
+			len(evidence.Targets) == 1 &&
+			evidence.Targets[0] == guidePath {
+			retained = true
+		}
+	}
+	for _, entry := range fresh.ManagedEntries {
+		if strings.HasPrefix(entry.ID, "repository-rule:") &&
+			entry.Path == guidePath &&
+			entry.Kind == "repository-owned" &&
+			entry.ContentIdentity == planContentIdentity(editedRule) {
+			inventoried = true
+		}
+	}
+	if !retained || !inventoried {
+		t.Fatalf("edited repository rule retention=%t inventory=%t", retained, inventoried)
+	}
+}
+
+func TestRepositoryRuleBlockRollbackRestoresSemanticGuide(t *testing.T) {
+	repo := newPlanRepository(t)
+	const rule = "Keep repository CLI output stable.\n"
+	writeInspectionFile(t, repo, legacyRepositoryRulesPath, rule)
+	commitInspectionRepository(t, repo, "seed semantic rollback rule")
+	plan := buildSemanticCarrierPlan(t, repo, legacyRepositoryRulesPath)
+	before := snapshotVisibleTree(t, repo)
+
+	transaction, err := beginTransaction(context.Background(), repo, plan, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tx := transaction.(*fileTransaction)
+	tx.phaseHook = failTransactionOnce(
+		transactionPhaseVerifying,
+		"docs/agents/cli.md",
+		errors.New("injected semantic guide verification failure"),
+	)
+	if _, err := tx.Apply(context.Background()); err == nil ||
+		!strings.Contains(err.Error(), "injected semantic guide verification failure") {
+		t.Fatalf("semantic rollback Apply() error = %v", err)
+	}
+	if err := tx.Close(); err != nil {
+		t.Fatalf("close semantic rollback transaction: %v", err)
+	}
+	assertVisibleTree(t, repo, before)
+}
+
 func TestApplyExactDigest(t *testing.T) {
 	repo := newPlanRepository(t)
 	plan := buildTestPlan(t, repo)
@@ -177,6 +276,65 @@ func TestImmutableRootBackup(t *testing.T) {
 	}
 }
 
+func TestManagedRootFreshPlan(t *testing.T) {
+	const managed = `<!-- setup-context-driven:begin id=root.core version=0.0.1 -->
+managed root guidance
+<!-- setup-context-driven:end id=root.core -->
+`
+	for _, test := range []struct {
+		name       string
+		root       string
+		wantBackup bool
+	}{
+		{
+			name: "setup-managed root needs no backup",
+			root: managed,
+		},
+		{
+			name:       "user-owned root keeps immutable backup",
+			root:       "repository policy\n\n" + managed,
+			wantBackup: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repo := newPlanRepository(t)
+			writeTransactionFile(t, repo, "AGENTS.md", test.root, 0o644)
+			if err := os.Symlink("AGENTS.md", filepath.Join(repo, "CLAUDE.md")); err != nil {
+				t.Fatalf("create root carrier alias: %v", err)
+			}
+			commitInspectionRepository(t, repo, "seed root carrier")
+
+			initial := buildTestPlan(t, repo)
+			if _, err := ApplyPlan(context.Background(), repo, initial, initial.PlanDigest); err != nil {
+				t.Fatalf("ApplyPlan() initial Baseline: %v", err)
+			}
+
+			fresh := buildTestPlan(t, repo)
+			var backups []ManagedEntry
+			for _, entry := range fresh.ManagedEntries {
+				if entry.Kind == "backup" {
+					backups = append(backups, entry)
+				}
+			}
+			if test.wantBackup {
+				if len(backups) != 1 || backups[0].ID != "backup:AGENTS.md" {
+					t.Fatalf("fresh Plan backups = %+v, want AGENTS.md backup", backups)
+				}
+			} else {
+				if len(backups) != 0 {
+					t.Fatalf("fresh Plan backups = %+v, want none", backups)
+				}
+				if len(fresh.FileChanges) != 0 {
+					t.Fatalf("fresh Plan file changes = %+v, want none", fresh.FileChanges)
+				}
+			}
+			if _, err := ApplyPlan(context.Background(), repo, fresh, fresh.PlanDigest); err != nil {
+				t.Fatalf("ApplyPlan() fresh Baseline: %v", err)
+			}
+		})
+	}
+}
+
 func TestApplyPostimageFailureRollsBack(t *testing.T) {
 	repo := newPlanRepository(t)
 	plan := buildTestPlan(t, repo)
@@ -197,6 +355,105 @@ func TestApplyPostimageFailureRollsBack(t *testing.T) {
 	}
 	if err := tx.Close(); err != nil {
 		t.Fatalf("close failed apply: %v", err)
+	}
+	assertVisibleTree(t, repo, before)
+}
+
+func TestProfileAdaptationApplyVerifiesProfileAndManifest(t *testing.T) {
+	repo := newBackendProfileRepository(t, true)
+	request, _ := backendProfileDraftPlanRequest(t, repo)
+	outcome, err := BuildPlan(context.Background(), request)
+	if err != nil || outcome.Plan == nil {
+		t.Fatalf("BuildPlan() profile adaptation = plan=%v result=%+v error=%v",
+			outcome.Plan != nil, outcome.Result, err)
+	}
+	plan := *outcome.Plan
+
+	result, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest)
+	if err != nil {
+		t.Fatalf("ApplyPlan() profile adaptation error = %v", err)
+	}
+	const profilePath = ".roundfix/baseline/profiles/backend-only.json"
+	profileBytes, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(profilePath)))
+	if err != nil {
+		t.Fatalf("read applied Profile: %v", err)
+	}
+	profilePostimage := planPostimage(t, plan, profilePath)
+	if !bytes.Equal(profileBytes, profilePostimage.Content) {
+		t.Fatal("applied Profile bytes differ from the approved postimage")
+	}
+	manifestBytes, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(manifestPath)))
+	if err != nil {
+		t.Fatalf("read applied Setup Manifest: %v", err)
+	}
+	var manifest SetupManifest
+	if err := json.Unmarshal(manifestBytes, &manifest); err != nil {
+		t.Fatalf("decode applied Setup Manifest: %v", err)
+	}
+	if manifest.Profile != plan.Profile.ID || manifest.ProfileDigest != plan.Profile.Digest {
+		t.Fatalf("applied Setup Manifest identity = %q %q, want %q %q",
+			manifest.Profile, manifest.ProfileDigest, plan.Profile.ID, plan.Profile.Digest)
+	}
+	var verifiedProfile bool
+	for _, postimage := range result.VerifiedPostimages {
+		if postimage.Path == profilePath && bytes.Equal(postimage.Content, profileBytes) {
+			verifiedProfile = true
+		}
+	}
+	if !verifiedProfile {
+		t.Fatal("apply result did not verify the planned Profile postimage")
+	}
+}
+
+func TestProfileDraftRollbackRestoresMissingProfile(t *testing.T) {
+	repo := newBackendProfileRepository(t, true)
+	request, _ := backendProfileDraftPlanRequest(t, repo)
+	outcome, err := BuildPlan(context.Background(), request)
+	if err != nil || outcome.Plan == nil {
+		t.Fatalf("BuildPlan() profile rollback = plan=%v result=%+v error=%v",
+			outcome.Plan != nil, outcome.Result, err)
+	}
+	plan := *outcome.Plan
+	before := snapshotVisibleTree(t, repo)
+	transaction, err := beginTransaction(context.Background(), repo, plan, nil)
+	if err != nil {
+		t.Fatalf("begin profile rollback transaction: %v", err)
+	}
+	tx := transaction.(*fileTransaction)
+	tx.phaseHook = failTransactionOnce(
+		transactionPhaseVerifying,
+		".roundfix/baseline/profiles/backend-only.json",
+		errors.New("injected Profile verification failure"),
+	)
+	if _, err := tx.Apply(context.Background()); err == nil ||
+		!strings.Contains(err.Error(), "injected Profile verification failure") {
+		t.Fatalf("profile rollback Apply() error = %v", err)
+	}
+	if err := tx.Close(); err != nil {
+		t.Fatalf("close profile rollback transaction: %v", err)
+	}
+	assertVisibleTree(t, repo, before)
+}
+
+func TestProfileDraftStaleTargetProducesNoMutation(t *testing.T) {
+	repo := newBackendProfileRepository(t, true)
+	request, _ := backendProfileDraftPlanRequest(t, repo)
+	outcome, err := BuildPlan(context.Background(), request)
+	if err != nil || outcome.Plan == nil {
+		t.Fatalf("BuildPlan() stale profile = plan=%v result=%+v error=%v",
+			outcome.Plan != nil, outcome.Result, err)
+	}
+	plan := *outcome.Plan
+	const profilePath = ".roundfix/baseline/profiles/backend-only.json"
+	writeTransactionFile(t, repo, profilePath, "{\"concurrent\":true}\n", 0o644)
+	before := snapshotVisibleTree(t, repo)
+
+	_, err = ApplyPlan(context.Background(), repo, plan, plan.PlanDigest)
+	var applyErr *ApplyError
+	if !errors.As(err, &applyErr) ||
+		applyErr.Kind != ApplyErrorStale ||
+		!strings.Contains(err.Error(), profilePath) {
+		t.Fatalf("ApplyPlan() stale profile error = %v, want stale refusal", err)
 	}
 	assertVisibleTree(t, repo, before)
 }

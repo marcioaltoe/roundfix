@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "setup-context-driven/decisions/0.0.1",
+  "version": "0.0.1",
+  "decisions": [
+    {"id": "autonomous.enabled", "value": true},
+    {"id": "domain.layout", "value": "single-context"},
+    {"id": "identifier.strategy", "value": {"kind": "uuid-v7"}},
+    {
+      "id": "http.contract",
+      "value": {
+        "exceptions": [
+          {
+            "methods": ["GET", "POST"],
+            "owner": "Better Auth",
+            "reason": "Preserve the provider-owned session, OAuth redirect, callback, and related protocol semantics.",
+            "scope": "/api/auth/*"
+          },
+          {
+            "methods": ["GET"],
+            "owner": "Fluxus operations",
+            "reason": "Expose an unauthenticated liveness and readiness endpoint for operational health checks.",
+            "scope": "/health"
+          },
+          {
+            "methods": ["GET"],
+            "owner": "Fluxus API documentation",
+            "reason": "Expose the generated OpenAPI specification when API documentation is enabled.",
+            "scope": "/openapi.json"
+          },
+          {
+            "methods": ["GET"],
+            "owner": "Fluxus API documentation",
+            "reason": "Expose the interactive Scalar API reference when API documentation is enabled.",
+            "scope": "/reference"
+          }
+        ],
+        "mode": "Post-only",
+        "source": {
+          "digest": "397bc399b8bd89d51dc51326354db72962fae0c76f47750dd3be400764be116b",
+          "path": "packages/backend/src/infra/controllers/http/app.ts"
+        }
+      }
+    },
+    {
+      "id": "auth.provider",
+      "value": {
+        "kind": "better-auth",
+        "routeException": {
+          "scope": "/api/auth/*",
+          "methods": ["GET", "POST"],
+          "owner": "Better Auth",
+          "reason": "Preserve the provider-owned session, OAuth redirect, callback, and related protocol semantics."
+        }
+      }
+    },
+    {"id": "language.generated", "value": "English"},
+    {"id": "preservation.mode", "value": "preservation"},
+    {"id": "repository.extension.enabled", "value": false},
+    {"id": "runtime.backend", "value": "codex gpt-5.6-sol"},
+    {"id": "runtime.design", "value": "claude fable high"},
+    {"id": "secondbrain.enabled", "value": true},
+    {"id": "spec.scaffold", "value": true},
+    {"id": "triage.external", "value": false},
+    {"id": "verification.gate", "value": "rtk make verify"}
+  ]
+}

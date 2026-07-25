@@ -195,6 +195,33 @@ func TestDecisionDocumentSkeletonPassesStrictParser(t *testing.T) {
 	}
 }
 
+func TestDecisionDocumentSkeletonDoesNotProposeManagedSemanticVersionBytes(t *testing.T) {
+	repo := newInspectionRepository(t)
+	writeInspectionFile(t, repo, "AGENTS.md", strings.Join([]string{
+		"<!-- setup-context-driven:begin id=root.core version=0.0.1 -->",
+		"managed root guidance",
+		"<!-- setup-context-driven:end id=root.core -->",
+		"",
+	}, "\n"))
+	commitInspectionRepository(t, repo, "seed managed root")
+
+	plan, err := PlanRootPreservation(
+		inspectPreservationRepository(t, repo),
+		RootPreservationRequest{Mode: PreservationModePreservation},
+	)
+	if err != nil {
+		t.Fatalf("plan managed-root preservation: %v", err)
+	}
+	if plan.DecisionSkeleton == nil {
+		t.Fatalf("managed-root preservation has no Decision Document skeleton: %+v", plan)
+	}
+	for _, disposition := range plan.DecisionSkeleton.Document.Readoption.Dispositions {
+		if disposition.Disposition == "repository-rules" || disposition.Destination != nil {
+			t.Fatalf("setup-managed bytes were proposed as repository rules: %+v", disposition)
+		}
+	}
+}
+
 func TestDecisionDocumentSkeletonRejectsMalformedInput(t *testing.T) {
 	_, err := ParseDecisionDocument([]byte(`{
 	  "schemaVersion":"setup-context-driven/decisions/0.0.1",
@@ -251,8 +278,8 @@ func TestReadoptionCompatibilityMaintainedFixture(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load maintained Source Baseline: %v", err)
 	}
-	if len(sourceBaseline.Entries) != 60 ||
-		sourceBaseline.Identity.EntryCount != 60 ||
+	if len(sourceBaseline.Entries) != 96 ||
+		sourceBaseline.Identity.EntryCount != 96 ||
 		len(sourceBaseline.Accounting) != 51 {
 		t.Fatalf(
 			"maintained Source Baseline counts = identity %d entries %d accounting %d",
@@ -269,6 +296,57 @@ func TestReadoptionCompatibilityMaintainedFixture(t *testing.T) {
 		if len(contract.PriorClauses) == 0 ||
 			len(contract.PriorClauses) != len(contract.Accounting) {
 			t.Fatalf("retention contract %s is incomplete: prior=%d accounting=%d", transitionID, len(contract.PriorClauses), len(contract.Accounting))
+		}
+	}
+}
+
+func TestSourceBaselineGuidanceComposition(t *testing.T) {
+	t.Parallel()
+
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load embedded catalog: %v", err)
+	}
+	sourceBaseline, err := catalog.SourceBaseline("baseline.standard-typescript-monorepo-0.0.1")
+	if err != nil {
+		t.Fatalf("load maintained Source Baseline: %v", err)
+	}
+
+	entries := make(map[string]SourceBaselineEntry, len(sourceBaseline.Entries))
+	carriers := make(map[string]bool)
+	for _, entry := range sourceBaseline.Entries {
+		entries[entry.ID] = entry
+		carriers[entry.Carrier] = true
+	}
+	for _, entryID := range []string{
+		"clause.autonomous.delegate-through-roundfix",
+		"clause.context.adr-01-template",
+		"clause.core.research-authoritative-external-sources",
+		"clause.core.require-tooling-authorization",
+		"clause.secondbrain.01-consult-triggers",
+		"clause.spec.routing-01-large-initiative",
+		"rule.backend.boundary-contracts",
+		"rule.external-triage",
+		"rule.monorepo.context-boundaries",
+	} {
+		if _, ok := entries[entryID]; !ok {
+			t.Errorf("Source Baseline entry %q is missing", entryID)
+		}
+	}
+	for _, carrier := range []string{
+		"docs/agents/external-triage.md",
+		"docs/agents/monorepo.md",
+		"docs/agents/skill-dispatch.md",
+	} {
+		if !carriers[carrier] {
+			t.Errorf("semantic destination %q has no Source Baseline evidence", carrier)
+		}
+	}
+	for _, accounting := range sourceBaseline.Accounting {
+		for _, target := range accounting.Targets {
+			if _, ok := entries[target]; !ok {
+				t.Errorf("accounting target %q is not a current Source Baseline entry", target)
+			}
 		}
 	}
 }

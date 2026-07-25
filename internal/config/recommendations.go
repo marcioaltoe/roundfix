@@ -53,7 +53,7 @@ var modelRecommendationsByCategory = map[WorkCategory][]ModelRecommendation{
 		modelRecommendation(CategoryBackend, 5, "codex", "gpt-5.6-luna", "max", 67, 3.03, "Lower-cost option for bounded backend slices."),
 	},
 	CategoryFrontend: {
-		modelRecommendation(CategoryFrontend, 1, "claude", "claude-fable-5", "medium", 65, 6.09, "Preferred balanced frontend profile; task-fit is qualitative because the benchmark has no UI-specific slice."),
+		modelRecommendation(CategoryFrontend, 1, "claude", "claude-fable-5", "medium", 65, 6.09, "Dated benchmark-ranked frontend option; task-fit is qualitative because the benchmark has no UI-specific slice."),
 		modelRecommendation(CategoryFrontend, 2, "codex", "gpt-5.6-sol", "high", 69, 3.47, "Strong cross-runtime fallback for implementation and integration correctness."),
 		modelRecommendation(CategoryFrontend, 3, "claude", "claude-opus-4-8", "high", 52, 4.28, "Design-heavy alternative retained for repositories that have validated Opus; general benchmark result is weaker."),
 		modelRecommendation(CategoryFrontend, 4, "codex", "gpt-5.6-terra", "max", 70, 4.95, "Quality-focused Codex alternative when visual specialization is less important than repository completion."),

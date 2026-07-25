@@ -131,6 +131,162 @@ func TestCustomProfileRejectsInvalidDeclarations(t *testing.T) {
 	}
 }
 
+func TestProjectDecisionValidation(t *testing.T) {
+	t.Parallel()
+
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load embedded catalog: %v", err)
+	}
+	tests := []struct {
+		name    string
+		id      string
+		value   any
+		wantErr string
+	}{
+		{
+			name:  "UUID version 7",
+			id:    "identifier.strategy",
+			value: map[string]any{"kind": "uuid-v7"},
+		},
+		{
+			name: "repository-defined strategy",
+			id:   "identifier.strategy",
+			value: map[string]any{
+				"kind":     "repository-defined",
+				"guidance": "Use the persisted aggregate sequence.",
+			},
+		},
+		{
+			name:    "UUID guidance conflicts with discriminator",
+			id:      "identifier.strategy",
+			value:   map[string]any{"kind": "uuid-v7", "guidance": "Use UUID version 7."},
+			wantErr: "exactly kind",
+		},
+		{
+			name:    "repository-defined guidance is required",
+			id:      "identifier.strategy",
+			value:   map[string]any{"kind": "repository-defined", "guidance": "  "},
+			wantErr: "guidance",
+		},
+		{
+			name:    "unknown identifier field",
+			id:      "identifier.strategy",
+			value:   map[string]any{"kind": "uuid-v7", "unknown": true},
+			wantErr: "exactly kind",
+		},
+		{
+			name:  "complete Better Auth provider",
+			id:    "auth.provider",
+			value: completeAuthProviderDecision(),
+		},
+		{
+			name: "repository-owned HTTP methods",
+			id:   "http.contract",
+			value: map[string]any{
+				"mode": "REST",
+				"exceptions": []any{
+					map[string]any{
+						"scope":   "/api/resources/*",
+						"methods": []any{"PATCH", "DELETE"},
+						"owner":   "Repository API",
+						"reason":  "Resource mutation uses the repository-owned HTTP contract.",
+					},
+				},
+			},
+		},
+		{
+			name: "non-standard HTTP method",
+			id:   "http.contract",
+			value: map[string]any{
+				"mode": "REST",
+				"exceptions": []any{
+					map[string]any{
+						"scope":   "/api/resources/*",
+						"methods": []any{"BREW"},
+						"owner":   "Repository API",
+						"reason":  "Resource mutation uses the repository-owned HTTP contract.",
+					},
+				},
+			},
+			wantErr: "method",
+		},
+		{
+			name: "Better Auth route exception is required",
+			id:   "auth.provider",
+			value: map[string]any{
+				"kind": "better-auth",
+			},
+			wantErr: "routeException",
+		},
+		{
+			name: "Better Auth owner is fixed",
+			id:   "auth.provider",
+			value: map[string]any{
+				"kind": "better-auth",
+				"routeException": map[string]any{
+					"scope": "/api/auth/*", "methods": []any{"GET", "POST"},
+					"owner": "application", "reason": "Provider protocol routes.",
+				},
+			},
+			wantErr: "owner",
+		},
+		{
+			name: "duplicate Better Auth methods",
+			id:   "auth.provider",
+			value: map[string]any{
+				"kind": "better-auth",
+				"routeException": map[string]any{
+					"scope": "/api/auth/*", "methods": []any{"GET", "GET"},
+					"owner": "Better Auth", "reason": "Provider protocol routes.",
+				},
+			},
+			wantErr: "methods",
+		},
+		{
+			name: "unknown Better Auth field",
+			id:   "auth.provider",
+			value: map[string]any{
+				"kind": "better-auth",
+				"routeException": map[string]any{
+					"scope": "/api/auth/*", "methods": []any{"GET", "POST"},
+					"owner": "Better Auth", "reason": "Provider protocol routes.",
+					"unknown": true,
+				},
+			},
+			wantErr: "exactly scope",
+		},
+	}
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			err := ValidateDecisionValue(catalog, test.id, test.value)
+			if test.wantErr == "" {
+				if err != nil {
+					t.Fatalf("ValidateDecisionValue() error = %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
+				t.Fatalf("ValidateDecisionValue() error = %v, want %q", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func completeAuthProviderDecision() map[string]any {
+	return map[string]any{
+		"kind": "better-auth",
+		"routeException": map[string]any{
+			"scope":   "/api/auth/*",
+			"methods": []any{"GET", "POST"},
+			"owner":   "Better Auth",
+			"reason":  "Session, OAuth redirect, callback, and related provider protocol routes require provider-owned GET and POST semantics.",
+		},
+	}
+}
+
 func TestCustomProfileRejectsUnsafePathsAndNonRepositorySources(t *testing.T) {
 	t.Parallel()
 

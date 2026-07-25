@@ -164,8 +164,10 @@ type VerificationProjection struct {
 }
 
 type ProfileAlignmentRequest struct {
-	ProfileID string
-	Decisions []DecisionValue
+	ProfileID            string
+	Decisions            []DecisionValue
+	Profile              *ResolvedProfile
+	RemediationProfileID string
 }
 
 // ProfileAlignment is the deterministic, read-only result consumed by later
@@ -277,9 +279,21 @@ func ResolveProfileAlignment(
 	}
 	defer root.Close()
 
-	profile, err := ResolveProfile(rootPath, profileID, catalog)
-	if err != nil {
-		return ProfileAlignment{}, fmt.Errorf("resolve selected Baseline Profile %q: %w", profileID, err)
+	var profile ResolvedProfile
+	if request.Profile != nil {
+		profile = *request.Profile
+		if profile.ID != profileID {
+			return ProfileAlignment{}, fmt.Errorf(
+				"resolve selected Baseline Profile %q: in-memory profile identity is %q",
+				profileID,
+				profile.ID,
+			)
+		}
+	} else {
+		profile, err = ResolveProfile(rootPath, profileID, catalog)
+		if err != nil {
+			return ProfileAlignment{}, fmt.Errorf("resolve selected Baseline Profile %q: %w", profileID, err)
+		}
 	}
 	decisions, decisionDivergences, err := normalizeAlignmentDecisions(profile, request.Decisions, catalog)
 	if err != nil {
@@ -293,6 +307,11 @@ func ResolveProfileAlignment(
 	if err != nil {
 		return ProfileAlignment{}, err
 	}
+	remediationProfileID := strings.TrimSpace(request.RemediationProfileID)
+	if remediationProfileID == "" {
+		remediationProfileID = profile.ID
+	}
+	applyUniversalCapabilityRemediation(outcomes, remediationProfileID)
 	divergences := append([]ProfileDivergence(nil), decisionDivergences...)
 	for _, outcome := range outcomes {
 		if outcome.Status == CapabilitySatisfied {
@@ -343,6 +362,27 @@ func ResolveProfileAlignment(
 	}, nil
 }
 
+func applyUniversalCapabilityRemediation(
+	outcomes []CapabilityOutcome,
+	profileID string,
+) {
+	skills := map[string]string{
+		"capability.context7": "context7",
+		"capability.exa":      "exa-web-search",
+	}
+	for index := range outcomes {
+		skill, universal := skills[outcomes[index].ID]
+		if !universal || outcomes[index].Status == CapabilitySatisfied {
+			continue
+		}
+		outcomes[index].Diagnostic.NextAction = fmt.Sprintf(
+			"Run roundfix baseline skills restore --profile %s --skill %s, review its exact restoration Plan Digest, rerun with --confirm-plan <digest>, then rerun profile alignment.",
+			profileID,
+			skill,
+		)
+	}
+}
+
 func normalizeAlignmentDecisions(
 	profile ResolvedProfile,
 	input []DecisionValue,
@@ -366,6 +406,12 @@ func normalizeAlignmentDecisions(
 			return nil, nil, fmt.Errorf("resolve profile alignment decision %q: catalog declaration is missing", id)
 		}
 		if err := validateDecisionValue(declaration, decision.Value); err != nil {
+			if id == authProviderDecisionID || id == httpContractDecisionID {
+				return nil, nil, fmt.Errorf(
+					"resolve profile alignment: %w",
+					projectDecisionError(fmt.Errorf("normalize %q: %w", id, err)),
+				)
+			}
 			return nil, nil, fmt.Errorf("resolve profile alignment decision %q: %w", id, err)
 		}
 		values[id] = cloneJSONValue(decision.Value)
@@ -389,6 +435,13 @@ func normalizeAlignmentDecisions(
 		decisions = append(decisions, DecisionValue{ID: id, Value: value})
 	}
 	sort.Slice(decisions, func(i, j int) bool { return decisions[i].ID < decisions[j].ID })
+	if len(divergences) == 0 {
+		var err error
+		decisions, err = normalizeProjectDecisions(decisions, catalog)
+		if err != nil {
+			return nil, nil, fmt.Errorf("resolve profile alignment: %w", err)
+		}
+	}
 	return decisions, divergences, nil
 }
 
@@ -894,16 +947,24 @@ func resolveVerificationProjection(
 			role, _ := stringValue(raw, "kind")
 			tool, _ := stringValue(raw, "tool")
 			command, _ := stringValue(raw, "command")
-			declaration, err := validateLocalCommandDeclaration(root, command)
+			resolvedCommand, declaration, err := resolveProfileVerificationCommand(
+				root,
+				role,
+				command,
+			)
 			if err != nil {
 				return nil, nil, fmt.Errorf("validate profile Verification expectation %q: %w", id, err)
+			}
+			classification := VerificationProfileExpectation
+			if resolvedCommand != command {
+				classification = VerificationRepositoryCommand
 			}
 			projections = append(projections, VerificationProjection{
 				ID:                   id,
 				Role:                 role,
 				Tool:                 tool,
-				Command:              command,
-				Classification:       VerificationProfileExpectation,
+				Command:              resolvedCommand,
+				Classification:       classification,
 				RepositoryExecutable: declaration.Path != "",
 				DeclarationPath:      declaration.Path,
 				DeclarationDigest:    declaration.Digest,
@@ -951,6 +1012,48 @@ func resolveVerificationProjection(
 	}
 	sort.Slice(projections, func(i, j int) bool { return projections[i].ID < projections[j].ID })
 	return projections, divergences, nil
+}
+
+func resolveProfileVerificationCommand(
+	root *os.Root,
+	role string,
+	command string,
+) (string, commandDeclaration, error) {
+	declaration, err := validateLocalCommandDeclaration(root, command)
+	if err != nil || declaration.Path != "" || role != "format" {
+		return command, declaration, err
+	}
+	fields := strings.Fields(command)
+	hasRTK := len(fields) != 0 && fields[0] == "rtk"
+	if hasRTK {
+		fields = fields[1:]
+	}
+	if len(fields) != 3 || fields[1] != "run" {
+		return command, declaration, nil
+	}
+	switch fields[0] {
+	case "bun", "npm", "pnpm", "yarn":
+	default:
+		return command, declaration, nil
+	}
+	for _, script := range []string{"fmt", "format"} {
+		if script == fields[2] {
+			continue
+		}
+		candidateFields := []string{fields[0], "run", script}
+		if hasRTK {
+			candidateFields = append([]string{"rtk"}, candidateFields...)
+		}
+		candidate := strings.Join(candidateFields, " ")
+		candidateDeclaration, candidateErr := validateLocalCommandDeclaration(root, candidate)
+		if candidateErr != nil {
+			return "", commandDeclaration{}, candidateErr
+		}
+		if candidateDeclaration.Path != "" {
+			return candidate, candidateDeclaration, nil
+		}
+	}
+	return command, declaration, nil
 }
 
 type commandDeclaration struct {

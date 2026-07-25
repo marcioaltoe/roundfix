@@ -20,9 +20,9 @@
       "sha256": "247845849dd03055a28d3f41d2e070ae20df43657c20121e7485a0913be64aa8"
     },
     {
-      "bytes": 85164,
+      "bytes": 82752,
       "path": "fixtures/asset-sync.json",
-      "sha256": "4a7b45d16c2a14d350a2b61e7d1a1a63020feec4dc6970feb65540d94ccab875"
+      "sha256": "8f6d61206c7ee9c9f9a06558ff443c466d61c394de3933ea30ae84008eb47e8b"
     },
     {
       "bytes": 330237,
@@ -37,7 +37,7 @@
     {
       "bytes": 39760,
       "path": "fixtures/greenfield-go-cli-tui.json",
-      "sha256": "c2f9a0f2f3942a2330deb6e5c68f8692a88459b7120ebd1824a659672b95fac4"
+      "sha256": "e0f0cc08053e8d3d61d86f8c212152ed28a5e33c8492a4d8bffaf478fddff1e7"
     },
     {
       "bytes": 36104,

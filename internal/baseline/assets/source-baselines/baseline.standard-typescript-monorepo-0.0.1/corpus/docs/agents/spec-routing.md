@@ -21,3 +21,23 @@ Use the smaller sufficient route when two routes fit. Use brainstorming before c
 5. Final QA begins only after every Task is completed.
 6. Archive only a completed Spec with a passing QA verdict under `docs/specs/_archived/`.
 <!-- /source-baseline-entry: contract.spec.task-ownership -->
+
+<!-- source-baseline-entry: clause.spec.routing-01-large-initiative -->
+Large or fuzzy product initiative: run `write-idea` → `write-prd` → `write-techspec` → `write-tasks`.
+<!-- /source-baseline-entry: clause.spec.routing-01-large-initiative -->
+
+<!-- source-baseline-entry: clause.spec.routing-02-standard-feature -->
+Standard feature that changes product behavior: run `write-prd` → `write-techspec` → `write-tasks`; skip the TechSpec only when the feature has no architectural surface.
+<!-- /source-baseline-entry: clause.spec.routing-02-standard-feature -->
+
+<!-- source-baseline-entry: clause.spec.routing-03-refactor-bugfix -->
+Refactor or bug fix without product-behavior change: run `write-techspec` → `write-tasks` and create the minimal `_prd.md` required by the downstream artifact contract.
+<!-- /source-baseline-entry: clause.spec.routing-03-refactor-bugfix -->
+
+<!-- source-baseline-entry: clause.spec.routing-04-trivial-change -->
+Trivial one-line fix, typo, or configuration tweak: implement directly without a Spec only when intent, acceptance criteria, and Verification are obvious.
+<!-- /source-baseline-entry: clause.spec.routing-04-trivial-change -->
+
+<!-- source-baseline-entry: clause.spec.routing-05-task-graph -->
+Use `brainstorming` before creative or feature work, start with the smaller sufficient route when two routes fit, and execute implementation from the Task Graph.
+<!-- /source-baseline-entry: clause.spec.routing-05-task-graph -->

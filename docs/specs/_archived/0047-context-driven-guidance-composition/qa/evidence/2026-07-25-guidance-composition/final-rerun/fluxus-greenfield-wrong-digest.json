@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "roundfix/baseline-result/v1",
+  "operation": "apply",
+  "state": "action_required",
+  "category": "approval",
+  "message": "confirmed Plan Digest \"sha256:0000000000000000000000000000000000000000000000000000000000000000\" does not match supplied plan \"sha256:c52337dce84d5153752f70bebb671f1907bb1d0b8f12cdd29a8709c73952d121\"",
+  "nextAction": "review the supplied plan and rerun with --confirm-plan sha256:c52337dce84d5153752f70bebb671f1907bb1d0b8f12cdd29a8709c73952d121",
+  "planDigest": "sha256:c52337dce84d5153752f70bebb671f1907bb1d0b8f12cdd29a8709c73952d121",
+  "verifiedPostimages": [],
+  "warnings": [],
+  "recommendations": []
+}

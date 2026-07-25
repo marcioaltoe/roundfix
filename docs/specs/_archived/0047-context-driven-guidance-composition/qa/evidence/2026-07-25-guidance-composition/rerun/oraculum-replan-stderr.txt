@@ -1,0 +1,2 @@
+roundfix: baseline plan failed: validate assembled Baseline Plan: root carrier source "AGENTS.md" has no immutable backup
+Run 'roundfix baseline plan --help' for usage.

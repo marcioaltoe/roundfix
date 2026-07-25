@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "roundfix/baseline-result/v1",
+  "operation": "profile.validate",
+  "state": "valid",
+  "profiles": [
+    {
+      "schemaVersion": "roundfix/baseline-profile/v1",
+      "catalogSchema": "roundfix/baseline-catalog/v1",
+      "id": "oraculum-backend",
+      "source": "repository",
+      "modules": [
+        "core",
+        "context-workflow",
+        "typescript",
+        "bun",
+        "monorepo",
+        "backend",
+        "spec-workflow",
+        "external-triage",
+        "secondbrain",
+        "repository-extension"
+      ],
+      "decisions": [
+        "language.generated",
+        "verification.gate",
+        "http.contract",
+        "spec.scaffold",
+        "domain.layout",
+        "triage.external",
+        "secondbrain.enabled",
+        "repository.extension.enabled"
+      ],
+      "capabilities": [
+        "capability.optional.docker",
+        "capability.optional.inngest",
+        "capability.stack.bun",
+        "capability.stack.drizzle",
+        "capability.stack.hono",
+        "capability.stack.oxfmt",
+        "capability.stack.oxlint",
+        "capability.stack.turborepo",
+        "capability.stack.typescript",
+        "capability.stack.vitest",
+        "capability.stack.zod",
+        "capability.workspace.backend"
+      ],
+      "templates": [
+        "template.extension.repository-rules",
+        "template.guide.agent-instructions",
+        "template.guide.backend",
+        "template.guide.bun",
+        "template.guide.docs-layout",
+        "template.guide.domain",
+        "template.guide.domain.multi-context",
+        "template.guide.domain.single-context",
+        "template.guide.external-triage",
+        "template.guide.issue-tracker",
+        "template.guide.monorepo",
+        "template.guide.secondbrain",
+        "template.guide.skill-dispatch",
+        "template.guide.spec-docs-layout",
+        "template.guide.spec-routing",
+        "template.guide.typescript-bun",
+        "template.root.backend",
+        "template.root.bun",
+        "template.root.context-workflow",
+        "template.root.core",
+        "template.root.external-triage",
+        "template.root.monorepo",
+        "template.root.repository-extension",
+        "template.root.secondbrain",
+        "template.root.spec-workflow",
+        "template.root.typescript"
+      ],
+      "values": {},
+      "digest": "sha256:bef6fbeaae59f082973de3be6acfcf36cffdf52b395e2db0328127abd2cb1271",
+      "path": ".roundfix/baseline/profiles/oraculum-backend.json"
+    }
+  ]
+}

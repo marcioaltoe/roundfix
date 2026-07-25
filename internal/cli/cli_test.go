@@ -222,7 +222,7 @@ func TestRunInitForceOverwritesExistingConfig(t *testing.T) {
 	}
 	if !strings.Contains(string(content), "profiles:") ||
 		!strings.Contains(string(content), "model: gpt-5.6-sol") ||
-		!strings.Contains(string(content), "model: claude-fable-5") ||
+		!strings.Contains(string(content), "model: claude-opus-5") ||
 		strings.Contains(string(content), "agent: claude") ||
 		strings.Contains(string(content), "runtimes:") {
 		t.Fatalf("expected generated config to replace old content, got %s", string(content))
@@ -390,6 +390,7 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 			"roundfix profiles validate",
 			"gpt-5.6-sol",
 			"gpt-5.6-terra",
+			"claude-opus-5",
 			"claude-fable-5",
 			"2026-07-16",
 			"category_specific: false",
@@ -1319,7 +1320,7 @@ func TestProfilesValidateDeduplicatesProofsAndReportsEveryReference(t *testing.T
 	if len(runner.probeRequests) != 3 {
 		t.Fatalf("expected three unique tuple probes, got %#v", runner.probeRequests)
 	}
-	wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "claude-fable-5"}
+	wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "claude-opus-5"}
 	for index, want := range wantModels {
 		if runner.probeRequests[index].Runtime.Model != want {
 			t.Fatalf("probe %d model = %q, want %q", index, runner.probeRequests[index].Runtime.Model, want)
@@ -1557,7 +1558,7 @@ func TestInvocationProfileOverrideOmittedUsesTaskQAAndReviewProfiles(t *testing.
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no warning without invocation override, got %q", stderr.String())
 	}
-	wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "claude-fable-5"}
+	wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "claude-opus-5"}
 	if got := probeRequestModels(runner.probeRequests); !reflect.DeepEqual(got, wantModels) {
 		t.Fatalf("probe models = %v, want %v", got, wantModels)
 	}
@@ -2282,12 +2283,12 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 			name: "all checks pass",
 			checker: newDoctorFakeHealthChecker(
 				CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
-				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
+				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion},
 				CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK, Detail: "/home/roundfix/.local/bin/codex accepted"},
 			),
 			wantCode: exitOK,
 			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
-				"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
+				"acpx: ok (" + agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion + ")\n" +
 				"adapter: ok (codex-acp)\n" +
 				"profiles: ok (3 distinct tuples; 10 category references)\n" +
 				"codex: ok (/home/roundfix/.local/bin/codex accepted)\n",
@@ -2296,12 +2297,12 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 			name: "quarantined codex fails with reinstall action",
 			checker: newDoctorFakeHealthChecker(
 				CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
-				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
+				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion},
 				CheckResult{Name: HealthCheckCodex, Status: CheckStatusFailed, Detail: "/tmp/codex is quarantined", NextAction: codex.ReinstallNextAction},
 			),
 			wantCode: exitRunFailed,
 			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
-				"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
+				"acpx: ok (" + agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion + ")\n" +
 				"adapter: ok (codex-acp)\n" +
 				"profiles: ok (3 distinct tuples; 10 category references)\n" +
 				"codex: failed (/tmp/codex is quarantined; next: " + codex.ReinstallNextAction + ")\n",
@@ -2310,12 +2311,12 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 			name: "codex not applicable does not fail",
 			checker: newDoctorFakeHealthChecker(
 				CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
-				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
+				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion},
 				CheckResult{Name: HealthCheckCodex, Status: CheckStatusSkipped, Detail: "not-applicable on linux"},
 			),
 			wantCode: exitOK,
 			wantStdout: "node: ok (v25.6.1 >= " + setupNodeMinimumVersion + ")\n" +
-				"acpx: ok (" + agent.PinnedACPXVersion + ")\n" +
+				"acpx: ok (" + agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion + ")\n" +
 				"adapter: ok (codex-acp)\n" +
 				"profiles: ok (3 distinct tuples; 10 category references)\n" +
 				"codex: skipped (not-applicable on linux)\n",
@@ -2345,7 +2346,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 			if len(runner.exactRequests) != 3 {
 				t.Fatalf("expected three distinct profile proofs, got %#v", runner.exactRequests)
 			}
-			wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "claude-fable-5"}
+			wantModels := []string{"gpt-5.6-sol", "gpt-5.5", "claude-opus-5"}
 			for index, wantModel := range wantModels {
 				if request := runner.exactRequests[index]; request.WorkDir != "/repo/project" || request.Runtime.Model != wantModel {
 					t.Fatalf("profile proof %d = %#v, want model %q in repository", index, request, wantModel)
@@ -2384,7 +2385,7 @@ func TestRunDoctorProfileReadinessReportsLegacyAdapterThroughEffectiveProfile(t 
 	}}
 	checker := newDoctorFakeHealthChecker(
 		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
-		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
+		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion},
 		CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK, Detail: "/home/roundfix/.local/bin/codex accepted"},
 	)
 	checker.adapter = CheckResult{
@@ -2469,7 +2470,7 @@ profiles:
 
 	checker := newDoctorFakeHealthChecker(
 		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
-		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
+		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion},
 		CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK, Detail: "/home/roundfix/.local/bin/codex accepted"},
 	)
 	withDoctorLiveDeps(t, checker)
@@ -2507,7 +2508,7 @@ profiles:
 func TestRunDoctorContinuesChecksAfterProfileReadinessFailure(t *testing.T) {
 	checker := newDoctorFakeHealthChecker(
 		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK, Detail: "v25.6.1 >= " + setupNodeMinimumVersion},
-		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.PinnedACPXVersion},
+		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK, Detail: agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion},
 		CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK, Detail: "/home/roundfix/.local/bin/codex accepted"},
 	)
 	proofCalls := 0
@@ -2713,8 +2714,8 @@ func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 		"User Config: installed",
 		"Project Config: installed",
 	})
-	if got := strings.Join(fake.installCalls, "\n"); got != "npm install -g acpx@"+agent.PinnedACPXVersion {
-		t.Fatalf("expected pinned acpx install command, got %q", got)
+	if got := strings.Join(fake.installCalls, "\n"); got != "npm install -g acpx@"+agent.MinimumACPXVersion {
+		t.Fatalf("expected minimum acpx install command, got %q", got)
 	}
 	if got := strings.Join(fake.initScopes, ","); got != "user,project" {
 		t.Fatalf("expected User and Project Config init flows, got %q", got)
@@ -2738,6 +2739,30 @@ func TestRunSetupFreshMachineAcceptsOffers(t *testing.T) {
 
 func TestRunSetupHealthyMachineIsIdempotent(t *testing.T) {
 	assertSetupCommandHealthyMachineIsIdempotent(t)
+}
+
+func TestRunSetupNewerACPXIsReadyWithoutInstall(t *testing.T) {
+	fake := newSetupFakeDeps()
+	fake.acpxVersion = "0.12.1"
+	fake.paths["codex-acp"] = "/bin/codex-acp"
+	fake.files[fake.userConfigPath] = roundconfig.DefaultConfigYAML()
+	fake.files[fake.projectConfigPath] = roundconfig.DefaultConfigYAML()
+	fake.files[fake.acpxConfigPath] = "{\n  \"agents\": {\n    \"codex\": {\n      \"command\": \"codex-acp\"\n    }\n  }\n}\n"
+	withSetupFakeDeps(t, fake)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"setup"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected setup exit 0, got %d (stderr %q)", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "acpx: ok (0.12.1 >= "+agent.MinimumACPXVersion+")") {
+		t.Fatalf("expected newer acpx readiness report, got %q", stdout.String())
+	}
+	if len(fake.installCalls) != 0 || len(fake.prompts) != 0 {
+		t.Fatalf("expected newer acpx to avoid install and prompt, installs=%v prompts=%v", fake.installCalls, fake.prompts)
+	}
 }
 
 func TestSetupCommandCompatibility(t *testing.T) {
@@ -2865,9 +2890,9 @@ func TestRunSetupProfileProofsEveryDistinctTupleOnceBeforePersistence(t *testing
 		t.Fatalf("setup exit = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
 	}
 	want := map[roundconfig.AgentSelection]int{
-		{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"}:       1,
-		{Runtime: "codex", Model: "gpt-5.5", ReasoningEffort: "xhigh"}:          1,
-		{Runtime: "claude", Model: "claude-fable-5", ReasoningEffort: "medium"}: 1,
+		{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"}:     1,
+		{Runtime: "codex", Model: "gpt-5.5", ReasoningEffort: "xhigh"}:        1,
+		{Runtime: "claude", Model: "claude-opus-5", ReasoningEffort: "xhigh"}: 1,
 	}
 	got := map[roundconfig.AgentSelection]int{}
 	for _, request := range fake.probeRequests {
@@ -3179,8 +3204,8 @@ func TestRunSetupMismatchedACPXUpgradeOffer(t *testing.T) {
 	if !strings.Contains(stdout.String(), "acpx: installed") || !strings.Contains(stdout.String(), "found 0.11.0") {
 		t.Fatalf("expected mismatched acpx upgrade report, got %q", stdout.String())
 	}
-	if got := strings.Join(fake.installCalls, "\n"); got != "npm install -g acpx@"+agent.PinnedACPXVersion {
-		t.Fatalf("expected pinned acpx install command, got %q", got)
+	if got := strings.Join(fake.installCalls, "\n"); got != "npm install -g acpx@"+agent.MinimumACPXVersion {
+		t.Fatalf("expected minimum acpx install command, got %q", got)
 	}
 }
 
@@ -3316,7 +3341,7 @@ func TestHealthCheckerReturnsStructuredReadOnlyResults(t *testing.T) {
 			return " v25.6.1 \n", nil
 		},
 		acpxVersion: func(context.Context) (string, error) {
-			return agent.PinnedACPXVersion + "\n", nil
+			return agent.MinimumACPXVersion + "\n", nil
 		},
 		checkAdapter: func(context.Context, agent.RuntimeSpec) (agent.AdapterEvidence, error) {
 			return agent.AdapterEvidence{
@@ -3342,7 +3367,7 @@ func TestHealthCheckerReturnsStructuredReadOnlyResults(t *testing.T) {
 	assertCheckResult(t, checker.ACPX(ctx), CheckResult{
 		Name:   HealthCheckACPX,
 		Status: CheckStatusOK,
-		Detail: agent.PinnedACPXVersion,
+		Detail: agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion,
 	})
 	assertCheckResult(t, checker.Adapter(ctx, req.Runtime), CheckResult{
 		Name:   HealthCheckAdapter,
@@ -3357,6 +3382,20 @@ func TestHealthCheckerReturnsStructuredReadOnlyResults(t *testing.T) {
 	if !probed {
 		t.Fatal("expected agent probe to run")
 	}
+}
+
+func TestHealthCheckerAcceptsNewerACPXVersion(t *testing.T) {
+	checker := newHealthChecker(healthCheckDependencies{
+		acpxVersion: func(context.Context) (string, error) {
+			return "0.12.1\n", nil
+		},
+	})
+
+	assertCheckResult(t, checker.ACPX(context.Background()), CheckResult{
+		Name:   HealthCheckACPX,
+		Status: CheckStatusOK,
+		Detail: "0.12.1 >= " + agent.MinimumACPXVersion,
+	})
 }
 
 func TestHealthCheckerReportsFailedPrerequisitesWithNextActions(t *testing.T) {
@@ -3383,7 +3422,7 @@ func TestHealthCheckerReportsFailedPrerequisitesWithNextActions(t *testing.T) {
 	assertCheckResult(t, checker.ACPX(ctx), CheckResult{
 		Name:       HealthCheckACPX,
 		Status:     CheckStatusFailed,
-		Detail:     "found 0.11.0; required " + agent.PinnedACPXVersion + "; run " + setupACPXInstallCommand(),
+		Detail:     "found 0.11.0; acpx " + agent.MinimumACPXVersion + " or newer is required; run " + setupACPXInstallCommand(),
 		NextAction: setupACPXInstallCommand(),
 	})
 	assertCheckResult(t, checker.Agent(ctx, agent.ProbeRequest{Runtime: agent.RuntimeSpec{ID: "codex"}}), CheckResult{
@@ -6249,7 +6288,7 @@ func assertRunReviewSelectionOverrideRejectsPartialBeforeConfigLoad(t *testing.T
 }
 
 func TestRunResolveACPXProbeFailureReportsActionablePreflight(t *testing.T) {
-	installCommand := "npm install -g acpx@" + agent.PinnedACPXVersion
+	installCommand := "npm install -g acpx@" + agent.MinimumACPXVersion
 	tests := []struct {
 		name     string
 		runner   agent.Runner
@@ -6268,8 +6307,8 @@ func TestRunResolveACPXProbeFailureReportsActionablePreflight(t *testing.T) {
 			runner: &agent.ACPXRunner{Command: fakeACPXVersionCommand(t, "0.11.0")},
 			contains: []string{
 				"found 0.11.0",
-				"requires " + agent.PinnedACPXVersion,
-				"upgrade or downgrade",
+				"requires " + agent.MinimumACPXVersion,
+				"upgrade",
 				installCommand,
 			},
 		},
@@ -7947,7 +7986,7 @@ func newSetupFakeDeps() *setupFakeDeps {
 		projectConfigPath: filepath.Join(gitRoot, ".roundfixrc.yml"),
 		acpxConfigPath:    filepath.Join(homeDir, ".acpx", "config.json"),
 		nodeVersion:       "v25.6.1",
-		acpxVersion:       agent.PinnedACPXVersion,
+		acpxVersion:       agent.MinimumACPXVersion,
 		adapterEvidence: agent.AdapterEvidence{
 			Command: "npx -y " + agent.CodexAdapterPackage,
 			Package: agent.CodexAdapterPackage,
@@ -8002,7 +8041,7 @@ func withSetupFakeDeps(t *testing.T, fake *setupFakeDeps) {
 			return fake.acpxVersion, fake.acpxErr
 		},
 		installACPX: func(context.Context) error {
-			fake.installCalls = append(fake.installCalls, "npm install -g acpx@"+agent.PinnedACPXVersion)
+			fake.installCalls = append(fake.installCalls, "npm install -g acpx@"+agent.MinimumACPXVersion)
 			return nil
 		},
 		checkAdapter: func(_ context.Context, runtime agent.RuntimeSpec) (agent.AdapterEvidence, error) {

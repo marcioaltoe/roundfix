@@ -28,7 +28,7 @@ installing, substitute `go run ./cmd/roundfix`.
 roundfix setup [--yes] [--no-input]
 ```
 
-Verifies Node.js, the pinned acpx version, the effective adapter, generated
+Verifies Node.js, the minimum supported acpx version, the effective adapter, generated
 Agent Selection Profiles, acpx local adapter overrides, User Config, and
 Project Config. Codex Adapter Readiness requires official
 `@agentclientprotocol/codex-acp` lineage at version `1.1.4` or newer. A stale
@@ -41,6 +41,9 @@ when proof fails. Each check prints one deterministic report line such as
 `node: ok`, `adapter: migration proposed`, `profile readiness: passed`, or
 `User Config: skipped`. `--yes` accepts every offered install or file change;
 `--no-input` performs diagnosis and skips offers without writing.
+When acpx is missing or older than `0.12.0`, Setup offers
+`npm install -g acpx@0.12.0`. It accepts `0.12.0` and newer versions without
+offering a downgrade.
 
 ### doctor
 
@@ -53,7 +56,8 @@ fails. One stdout line per check with `ok`, `failed`, or `skipped`; failure
 lines include `next: <action>` when a remediation is known. The checks:
 
 - `node:` — Node.js meets the minimum version.
-- `acpx:` — the pinned acpx version is installed.
+- `acpx:` — the installed acpx version is at least the minimum supported
+  version. Newer versions are accepted and are not downgraded.
 - `adapter:` — the effective adapter command proves the required package
   lineage and supported version; legacy, unknown, old, and missing adapters
   fail with the official install action.

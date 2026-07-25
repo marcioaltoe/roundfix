@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "roundfix/baseline-result/v1",
+  "operation": "plan",
+  "state": "failed",
+  "category": "preflight",
+  "message": "--profile and --profile-file are mutually exclusive",
+  "nextAction": "correct the repository or command input and rerun roundfix baseline plan",
+  "verifiedPostimages": [],
+  "warnings": [],
+  "recommendations": []
+}

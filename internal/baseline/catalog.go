@@ -80,20 +80,44 @@ type Entry struct {
 	Data          []byte
 }
 
+// InstructionHierarchyLevel is one precedence tier in the generated root
+// instruction map.
+type InstructionHierarchyLevel struct {
+	ID         string   `json:"id"`
+	Title      string   `json:"title"`
+	RootBlocks []string `json:"rootBlocks"`
+}
+
+// SemanticOwner is one active managed guide that owns the named policy
+// classifications.
+type SemanticOwner struct {
+	ManagedID       string   `json:"managedId"`
+	Path            string   `json:"path"`
+	Module          string   `json:"module"`
+	Title           string   `json:"title"`
+	Classifications []string `json:"classifications"`
+}
+
+// SemanticOwnerRegistry contains only semantic destinations active in one
+// resolved Baseline Profile.
+type SemanticOwnerRegistry map[string]SemanticOwner
+
 // Catalog is the validated, deterministic Baseline catalog authority.
 //
 // Its methods return copies so callers cannot mutate catalog state.
 type Catalog struct {
-	assets         map[string][]byte
-	profiles       map[string]document
-	modules        map[string]document
-	decisions      map[string]document
-	templates      map[string]document
-	setups         map[string]document
-	transitions    map[string]document
-	orderedModules map[string][]string
-	normalized     []byte
-	digest         string
+	assets               map[string][]byte
+	profiles             map[string]document
+	modules              map[string]document
+	decisions            map[string]document
+	templates            map[string]document
+	setups               map[string]document
+	transitions          map[string]document
+	orderedModules       map[string][]string
+	instructionHierarchy []InstructionHierarchyLevel
+	semanticOwners       map[string]SemanticOwner
+	normalized           []byte
+	digest               string
 }
 
 // LoadEmbeddedCatalog loads the catalog compiled into the Roundfix binary.
@@ -162,6 +186,38 @@ func (c *Catalog) TransitionIDs() []string {
 func (c *Catalog) OrderedModules(profileID string) ([]string, bool) {
 	modules, ok := c.orderedModules[profileID]
 	return append([]string(nil), modules...), ok
+}
+
+// InstructionHierarchy returns the catalog's confirmed root precedence order.
+func (c *Catalog) InstructionHierarchy() []InstructionHierarchyLevel {
+	levels := make([]InstructionHierarchyLevel, len(c.instructionHierarchy))
+	for index, level := range c.instructionHierarchy {
+		levels[index] = level
+		levels[index].RootBlocks = append([]string(nil), level.RootBlocks...)
+	}
+	return levels
+}
+
+// SemanticOwnerRegistry derives semantic destinations from the intersection
+// of active modules and active managed artifacts.
+func (c *Catalog) SemanticOwnerRegistry(
+	activeModules []string,
+	activeArtifacts []string,
+) SemanticOwnerRegistry {
+	modules := stringSet(activeModules)
+	artifacts := stringSet(activeArtifacts)
+	registry := make(SemanticOwnerRegistry)
+	for managedID, owner := range c.semanticOwners {
+		if _, ok := modules[owner.Module]; !ok {
+			continue
+		}
+		if _, ok := artifacts[managedID]; !ok {
+			continue
+		}
+		owner.Classifications = append([]string(nil), owner.Classifications...)
+		registry[managedID] = owner
+	}
+	return registry
 }
 
 // Asset returns an immutable copy of one catalog file.

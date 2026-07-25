@@ -1,0 +1,60 @@
+$ oxfmt
+$ turbo run lint:fix
+• turbo 2.10.5
+$ turbo run onioncry --concurrency=1
+• turbo 2.10.5
+$ turbo run typecheck
+• turbo 2.10.5
+$ turbo run test
+• turbo 2.10.5
+bun run fmt
+Finished in 181ms on 589 files using 12 threads.
+bun run lint:fix
+   • Packages in scope: @fluxus/backend, @fluxus/frontend
+   • Running lint:fix in 2 packages
+   • Remote caching disabled
+@fluxus/frontend:lint:fix: cache bypass, force executing e7e4bdb1abf034d3
+@fluxus/backend:lint:fix: cache bypass, force executing ff08538fed6c7a86
+@fluxus/frontend:lint:fix: $ cd ../.. && oxlint --fix packages/frontend
+@fluxus/backend:lint:fix: $ cd ../.. && oxlint --fix packages/backend
+@fluxus/frontend:lint:fix: Found 0 warnings and 0 errors.
+@fluxus/frontend:lint:fix: Finished in 1.2s on 99 files with 204 rules using 12 threads.
+@fluxus/backend:lint:fix: Found 0 warnings and 0 errors.
+@fluxus/backend:lint:fix: Finished in 1.7s on 404 files with 204 rules using 12 threads.
+ Tasks:    2 successful, 2 total
+Cached:    0 cached, 2 total
+  Time:    2.27s 
+/Library/Developer/CommandLineTools/usr/bin/make onioncry
+bun run onioncry
+   • Packages in scope: @fluxus/backend, @fluxus/frontend
+   • Running onioncry in 2 packages
+   • Remote caching disabled
+@fluxus/frontend:onioncry: cache miss, executing 5eea787cfb7912fe
+@fluxus/frontend:onioncry: $ bunx onioncry check --llm-mode --fail-on warning
+@fluxus/frontend:onioncry: status: pass
+@fluxus/frontend:onioncry: filesChecked: 97
+@fluxus/frontend:onioncry: problemCount: 0
+@fluxus/frontend:onioncry: errorCount: 0
+@fluxus/frontend:onioncry: warningCount: 0
+@fluxus/frontend:onioncry: groupCount: 0
+@fluxus/frontend:onioncry: 
+@fluxus/frontend:onioncry: ---------------------------------------------------------------------------------------
+@fluxus/frontend:onioncry: onioncry-llm-report v1 revision: unknown
+@fluxus/backend:onioncry: cache miss, executing e51899c77e8f2dfe
+@fluxus/backend:onioncry: $ bunx onioncry check --llm-mode --fail-on warning
+@fluxus/backend:onioncry: status: pass
+@fluxus/backend:onioncry: filesChecked: 391
+@fluxus/backend:onioncry: problemCount: 0
+@fluxus/backend:onioncry: errorCount: 0
+@fluxus/backend:onioncry: warningCount: 0
+@fluxus/backend:onioncry: groupCount: 0
+@fluxus/backend:onioncry: 
+@fluxus/backend:onioncry: ---------------------------------------------------------------------------------------
+@fluxus/backend:onioncry: onioncry-llm-report v1 revision: unknown
+ Tasks:    2 successful, 2 total
+Cached:    0 cached, 2 total
+  Time:    328ms 
+bun run typecheck
+   • Packages in scope: @fluxus/backend, @fluxus/frontend
+   • Running typecheck in 2 packages
+... (59 lines truncated)

@@ -28,7 +28,7 @@ Not every change earns a PRD — it pays for itself when there are product decis
 
 - **Read `CONTEXT.md` and `docs/adr/` before anything else.** Use the glossary's vocabulary throughout — titles, user stories, feature names — and never drift to synonyms the glossary lists under `_Avoid_`. If a concept has no term yet, sharpen one with the user and add it to the glossary right then; a PRD written in fuzzy language produces fuzzy tasks. If either file is missing, proceed silently.
 - **Decide, then write.** Once research and clarifications are done, write the file directly and let the user react to the finished artifact. Do not present outline drafts for approval — reviewing a real PRD is faster than reviewing a promise of one.
-- **Durability.** No file paths, no code snippets, no line numbers. The PRD may sit in a queue for weeks while the codebase moves; describe behavior and interfaces, which survive refactors.
+- **Durability.** No file paths, no code snippets, no line numbers, except the mandatory `docs/agents/` Project Constraint sources and exact files covered by tooling authorization. The PRD may sit in a queue for weeks while the codebase moves; describe behavior and interfaces, which survive refactors.
 
 ## Process
 
@@ -39,6 +39,23 @@ Explore before asking anything — questions the codebase can answer are wasted 
 - Existing behavior and adjacent features the change touches.
 - Prior specs under `docs/specs/` and `docs/specs/_archived/` — overlap with something already built or planned is a finding to surface, not to silently absorb.
 - Market/competitor context via web research when the feature is user-facing and positioning matters.
+
+Resolve the effective Project Constraints from the repository's semantic
+guides before clarification:
+
+- `docs/agents/domain.md` owns identifier guidance and routes active ADR
+  discovery.
+- `docs/agents/backend.md` owns authentication and HTTP policy.
+- `docs/agents/agent-instructions.md` owns universal Normative Clauses,
+  including tooling authority.
+- `docs/agents/spec-routing.md` owns the Spec workflow contract.
+
+Read every path that exists and follow its links to the effective decision
+values. Never infer a suggested default or treat a missing guide as
+authorization. The finished snapshot must classify identifier strategy,
+authentication and HTTP, active ADR obligations, and tooling authority as
+applicable or not applicable with a reason and cite the operative
+`docs/agents/` source path for each row.
 
 ### 2. Clarify
 
@@ -69,7 +86,22 @@ Create `docs/specs/NNNN-<kebab-slug>/` and write `_prd.md` from the template in 
 - `status: active` — flipped to `archived` by `archive-spec` once the spec completes (every task done, QA passed).
 - `surfaces` — every surface the feature touches (`frontend`, `backend`, `cli`, `data`, `infra`, `docs`). `qa-gate` routes browser-based QA from this list, so an omitted `frontend` means the feature ships without browser validation.
 
+`Project Constraints` is body content, never frontmatter. When the PRD
+proposes creating, editing, renaming, moving, or deleting protected tooling
+configuration, scripts, ignore files, plugin declarations, or version pins,
+stop until the maintainer gives express maintainer authorization. Record that
+approval and the exact bounded files in the Tooling authority row. A generic
+implementation request, setup completion, silence, or authorization without
+bounded files does not authorize the mutation.
+
 ### 5. Report
+
+Before reporting, re-read the finished artifact. You MUST NOT report completion
+or recommend the next pipeline step unless `Project Constraints` is present;
+all four rows state applicable or not applicable with a reason; every row cites
+an operative `docs/agents/` source; and any protected tooling mutation records
+express maintainer authorization plus bounded files. Keep authorization out of
+frontmatter.
 
 Reply with the file path, any open questions that survived clarification, and the next step: `write-techspec` for features with architectural decisions to make, `write-tasks` directly when the technical approach is already obvious.
 

@@ -18,6 +18,37 @@ Turn `docs/specs/<slug>/_prd.md` (and `_techspec.md` when present) into the exec
 
 `$ARGUMENTS` names the spec. `_prd.md` must exist. If `_techspec.md` is missing on a feature with real architectural surface, call that out and say `write-techspec` should run first; use `AskUserQuestion` to get explicit user acceptance before proceeding without the tech spec. Continue only after acceptance, compensating with deeper codebase exploration before decomposing.
 
+### Project Constraint preflight
+
+Run this preflight before deriving or approving a breakdown:
+
+1. Classify the Spec. A Spec under `docs/specs/_archived/`, or one proven to
+   have completed before this contract applied, is a completed or archived
+   legacy Spec. Leave every legacy artifact byte-identical: do not backfill,
+   reformat, regenerate, or otherwise rewrite it.
+2. For every active, non-archived, and not already completed Spec, require the
+   PRD and every present TechSpec to contain complete `Project Constraints`
+   sections. Each section must record `Identifier strategy`,
+   `Authentication and HTTP`, `Active ADR obligations`, and `Tooling authority`
+   as applicable or not applicable with a reason, and each row must cite its
+   operative `docs/agents/` source path.
+3. If either active artifact is absent or incomplete, refuse to create or
+   update `_tasks.md` or any Task file. Name every missing row, reason, or
+   source path and send the Spec back through the owning authorial skill.
+4. Inspect the proposed slices for any creation, edit, rename, move, or
+   deletion of repository-tooling configuration, scripts, ignore files, plugin
+   declarations, or version pins. Such work is authorized only when the PRD
+   and present TechSpec record express maintainer authorization and the exact
+   bounded repository-relative files it covers. A generic implementation
+   request, setup approval, or Task assignment is not authorization. Without
+   both the authorization and bounded files, refuse decomposition.
+5. Copy the bounded file list into each authorized tooling Task's scope and
+   acceptance criteria. The Task may change only those paths plus its own Task
+   file; split any work that needs a different boundary.
+
+Dependencies remain owned only by `_tasks.md`; Task status remains owned only
+by each Task file. The preflight never moves either responsibility.
+
 ## Ownership rules (what lives where, and why)
 
 - **Dependencies live only in the `_tasks.md` graph.** Never in task files. Two copies of an edge is how graphs drift.

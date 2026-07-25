@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,6 +23,338 @@ import (
 
 	"roundfix/internal/baseline"
 )
+
+func TestGuidanceCompositionJourney(t *testing.T) {
+	binary := buildBaselineReleaseBinary(t)
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load embedded Baseline catalog: %v", err)
+	}
+	profiles := []string{"go-cli-tui", "rust-cli", "standard-typescript-monorepo"}
+	if got := fmt.Sprint(catalog.ProfileIDs()); got != fmt.Sprint(profiles) {
+		t.Fatalf("maintained Profiles = %s, want %s", got, fmt.Sprint(profiles))
+	}
+
+	for _, profile := range profiles {
+		t.Run(profile, func(t *testing.T) {
+			testBaselineReleaseProfileJourney(t, binary, profile)
+		})
+	}
+}
+
+func TestProjectDecisionJourney(t *testing.T) {
+	t.Run("human and automation answers produce one Plan", TestProjectDecisionParity)
+	t.Run("compatible decisions are reused on update", TestProjectDecisionReuse)
+	t.Run("Fluxus-style defaults retain the persisted HTTP exception", TestBetterAuthSuggestionReusesFullHTTPException)
+
+	binary := buildBaselineReleaseBinary(t)
+	t.Run("affected Profile apply audit and empty reapply", func(t *testing.T) {
+		testBaselineReleaseProfileJourney(t, binary, "standard-typescript-monorepo")
+	})
+	t.Run("missing automation input stops without mutation", func(t *testing.T) {
+		repo := newBaselineReleaseRepository(t, "standard-typescript-monorepo")
+		before := baselineReleaseVisibleState(t, repo)
+		args := []string{
+			"baseline", "plan",
+			"--repo", repo,
+			"--profile", "standard-typescript-monorepo",
+		}
+		for _, decision := range baselineReleaseDecisionArgs(
+			"standard-typescript-monorepo",
+			"greenfield",
+		) {
+			if strings.HasPrefix(decision, "identifier.strategy=") {
+				continue
+			}
+			args = append(args, "--decision", decision)
+		}
+		args = append(args, "--format=json")
+		code, stdout, stderr := runBaselineReleaseCLI(t, binary, args...)
+		if code != exitUnverified || len(stderr) != 0 {
+			t.Fatalf("missing decision exit=%d stdout=%s stderr=%s", code, stdout, stderr)
+		}
+		result, err := baseline.ParseResult(stdout)
+		if err != nil ||
+			result.State != "action_required" ||
+			result.Category != "decision" ||
+			!strings.Contains(result.Message, "identifier.strategy") {
+			t.Fatalf("missing identifier result = %+v error=%v", result, err)
+		}
+		if after := baselineReleaseVisibleState(t, repo); after != before {
+			t.Fatal("missing automation input changed repository state")
+		}
+	})
+}
+
+func testBaselineReleaseProfileJourney(t *testing.T, binary, profile string) {
+	t.Helper()
+	repo := newBaselineReleaseRepository(t, profile)
+	plan, planPath := baselineReleasePlan(t, binary, repo, profile)
+	if plan.Profile.ID != profile {
+		t.Fatalf("planned Profile = %q, want %q", plan.Profile.ID, profile)
+	}
+	assertBaselineReleaseCompleteManagedLedger(t, plan)
+	assertBaselineReleaseNoRepositoryCarrier(t, repo, plan)
+
+	first := baselineReleaseApply(t, binary, repo, plan, planPath)
+	assertBaselineReleaseRecommendation(t, first, "make verify")
+	if profile == "standard-typescript-monorepo" {
+		assertBaselineReleaseRecommendation(t, first, "bun run fmt")
+		assertBaselineReleaseNoRecommendation(t, first, "bun run format")
+	}
+	assertBaselineReleaseNoRepositoryCarrier(t, repo, plan)
+	for _, marker := range []string{".qa-verification-ran", ".qa-profile-command-ran"} {
+		if _, err := os.Stat(filepath.Join(repo, marker)); !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("Baseline executed repository command marker %s: %v", marker, err)
+		}
+	}
+
+	update, updatePath := baselineReleasePlan(t, binary, repo, profile)
+	if len(update.FileChanges) != 0 {
+		t.Fatalf(
+			"first fresh Plan after greenfield apply has %d file changes: %+v",
+			len(update.FileChanges),
+			update.FileChanges,
+		)
+	}
+	assertBaselineReleaseCompleteManagedLedger(t, update)
+	baselineReleaseApply(t, binary, repo, update, updatePath)
+	assertBaselineReleaseNoRepositoryCarrier(t, repo, update)
+
+	managedBefore := baselineReleaseManagedState(t, repo, update)
+	runBaselineReleaseFormatter(t, repo, profile)
+	runBaselineReleaseExternal(t, repo, "make", "verify")
+	if _, err := os.Stat(filepath.Join(repo, ".qa-verification-ran")); err != nil {
+		t.Fatalf("external repository Verification did not run: %v", err)
+	}
+	if managedAfter := baselineReleaseManagedState(t, repo, update); managedAfter != managedBefore {
+		t.Fatalf(
+			"formatter or repository Verification changed managed state:\nbefore=%s\nafter=%s",
+			managedBefore,
+			managedAfter,
+		)
+	}
+
+	fresh, freshPath := baselineReleasePlan(t, binary, repo, profile)
+	if len(fresh.FileChanges) != 0 {
+		t.Fatalf("fresh audit Plan has %d file changes: %+v", len(fresh.FileChanges), fresh.FileChanges)
+	}
+	beforeReapply := baselineReleaseVisibleState(t, repo)
+	second := baselineReleaseApply(t, binary, repo, fresh, freshPath)
+	if second.State != "verified" || !strings.Contains(second.Message, "already applied") {
+		t.Fatalf("empty update apply result = %+v", second)
+	}
+	if afterReapply := baselineReleaseVisibleState(t, repo); afterReapply != beforeReapply {
+		t.Fatalf("empty update apply changed repository state")
+	}
+}
+
+func TestSemanticRedistributionJourney(t *testing.T) {
+	binary := buildBaselineReleaseBinary(t)
+	for _, carrier := range []string{
+		"docs/agents/repository.md",
+		"docs/agents/repository-rules.md",
+	} {
+		t.Run("zero residual from "+filepath.Base(carrier), func(t *testing.T) {
+			repo := newBaselineReleaseRepository(t, "go-cli-tui")
+			rule := []byte("Keep requested CLI output on stdout.\n")
+			writeBaselinePlanTestFile(t, repo, carrier, string(rule))
+			commitBaselinePlanTestRepository(t, repo)
+
+			decisionPath, sourceIDs := baselineReleaseReadoptionDecisionFile(
+				t,
+				repo,
+				"go-cli-tui",
+				func(entry baseline.ReadoptionSourceEntry) baseline.ReadoptionDisposition {
+					return baseline.ReadoptionDisposition{
+						EntryID:        entry.ID,
+						EntryDigest:    entry.Digest,
+						Classification: "normative-clause",
+						Disposition:    "repository-document",
+						Destination: &baseline.ReadoptionDestination{
+							DocumentType: "agent-guide",
+							Path:         "docs/agents/cli.md",
+							Digest:       entry.Digest,
+						},
+						Reason: "The active CLI guide owns this repository policy.",
+					}
+				},
+			)
+			plan, planPath := baselineReleasePlanWithDecisionFile(
+				t,
+				binary,
+				repo,
+				"go-cli-tui",
+				decisionPath,
+			)
+			assertBaselineReleaseCompleteManagedLedger(t, plan)
+			assertBaselineReleaseRetentionLedger(
+				t,
+				plan,
+				sourceIDs,
+				"repository-document",
+				"docs/agents/cli.md",
+			)
+			baselineReleaseApply(t, binary, repo, plan, planPath)
+			assertBaselineReleaseNoRepositoryCarrier(t, repo, plan)
+
+			guide, err := os.ReadFile(filepath.Join(repo, "docs", "agents", "cli.md"))
+			if err != nil || !bytes.Contains(guide, rule) {
+				t.Fatalf("semantic guide does not contain exact redistributed bytes: error=%v\n%s", err, guide)
+			}
+		})
+	}
+
+	t.Run("non-empty residual is retained canonically", func(t *testing.T) {
+		repo := newBaselineReleaseRepository(t, "go-cli-tui")
+		const legacyCarrier = "docs/agents/repository.md"
+		rule := []byte("Keep the repository-specific release name stable.\n")
+		writeBaselinePlanTestFile(t, repo, legacyCarrier, string(rule))
+		commitBaselinePlanTestRepository(t, repo)
+
+		decisionPath, sourceIDs := baselineReleaseReadoptionDecisionFile(
+			t,
+			repo,
+			"go-cli-tui",
+			func(entry baseline.ReadoptionSourceEntry) baseline.ReadoptionDisposition {
+				return baseline.ReadoptionDisposition{
+					EntryID:        entry.ID,
+					EntryDigest:    entry.Digest,
+					Classification: "normative-clause",
+					Disposition:    "repository-rules",
+					Destination: &baseline.ReadoptionDestination{
+						DocumentType:  "repository-rules",
+						Path:          "docs/agents/specific-repository.md",
+						Digest:        entry.Digest,
+						ProposedBytes: base64.StdEncoding.EncodeToString(entry.SourceBytes),
+					},
+					Reason: "No active semantic guide owns this repository-specific policy.",
+				}
+			},
+		)
+		plan, planPath := baselineReleasePlanWithDecisionFile(
+			t,
+			binary,
+			repo,
+			"go-cli-tui",
+			decisionPath,
+		)
+		assertBaselineReleaseCompleteManagedLedger(t, plan)
+		assertBaselineReleaseRetentionLedger(
+			t,
+			plan,
+			sourceIDs,
+			"repository-rules",
+			"docs/agents/specific-repository.md",
+		)
+		baselineReleaseApply(t, binary, repo, plan, planPath)
+
+		if _, err := os.Stat(filepath.Join(repo, filepath.FromSlash(legacyCarrier))); !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("legacy carrier remains after residual migration: %v", err)
+		}
+		residual, err := os.ReadFile(filepath.Join(repo, "docs", "agents", "specific-repository.md"))
+		if err != nil || !bytes.Equal(residual, rule) {
+			t.Fatalf("canonical residual bytes = %q error=%v, want %q", residual, err, rule)
+		}
+		root, err := os.ReadFile(filepath.Join(repo, "AGENTS.md"))
+		if err != nil || !bytes.Contains(root, []byte("docs/agents/specific-repository.md")) {
+			t.Fatalf("root residual pointer missing: error=%v\n%s", err, root)
+		}
+	})
+}
+
+func TestProfileAdaptationJourney(t *testing.T) {
+	binary := buildBaselineReleaseBinary(t)
+	repo, input, decisions := baselinePlanProfileFileFixture(t)
+	seedBaselineReleaseSourceManifest(t, repo, input.SourceProfileID)
+	draftPath := filepath.Join(t.TempDir(), "guided-backend.json")
+	if err := os.WriteFile(draftPath, input.Document, 0o600); err != nil {
+		t.Fatalf("write reviewed Profile adaptation: %v", err)
+	}
+
+	code, stdout, stderr := runBaselineReleaseCLI(
+		t,
+		binary,
+		baselinePlanProfileFileArgs(repo, draftPath, decisions)...,
+	)
+	if code != exitOK {
+		t.Fatalf("Profile adaptation plan exit=%d stdout=%s stderr=%s", code, stdout, stderr)
+	}
+	plan, planPath := baselineReleasePlanFile(t, stdout)
+	if plan.Profile.ID != "guided-backend" ||
+		plan.Profile.Source != baseline.ProfileSourceRepository {
+		t.Fatalf("reviewed repository-owned Profile = %+v", plan.Profile)
+	}
+	assertBaselineReleaseCompleteManagedLedger(t, plan)
+	assertBaselineReleaseProfileLedger(t, plan)
+	assertBaselineReleaseNoRepositoryCarrier(t, repo, plan)
+
+	first := baselineReleaseApply(t, binary, repo, plan, planPath)
+	assertBaselineReleaseRecommendation(t, first, "make verify")
+	profileBytes, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(plan.Profile.Path)))
+	if err != nil || len(profileBytes) == 0 {
+		t.Fatalf("applied repository-owned Profile = %q error=%v", profileBytes, err)
+	}
+
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+	alignment, err := baseline.ResolveProfileAlignment(
+		context.Background(),
+		repo,
+		baseline.ProfileAlignmentRequest{
+			ProfileID:            plan.Profile.ID,
+			Decisions:            plan.Decisions,
+			Profile:              &plan.Profile,
+			RemediationProfileID: input.SourceProfileID,
+		},
+		catalog,
+	)
+	if err != nil {
+		t.Fatalf("audit applied Profile adaptation: %v", err)
+	}
+	if !alignment.Ready {
+		t.Fatalf("applied Profile adaptation remains divergent: %+v", alignment.Divergences)
+	}
+	for _, capabilityID := range []string{"capability.context7", "capability.exa"} {
+		assertBaselineReleaseUniversalCapability(t, alignment, capabilityID)
+	}
+
+	code, stdout, stderr = runBaselineReleaseCLI(
+		t,
+		binary,
+		baselinePlanProfileFileArgs(repo, draftPath, decisions)...,
+	)
+	if code != exitOK {
+		t.Fatalf("Profile update plan exit=%d stdout=%s stderr=%s", code, stdout, stderr)
+	}
+	update, updatePath := baselineReleasePlanFile(t, stdout)
+	assertBaselineReleaseCompleteManagedLedger(t, update)
+	baselineReleaseApply(t, binary, repo, update, updatePath)
+
+	runBaselineReleaseExternal(t, repo, "make", "verify")
+	code, stdout, stderr = runBaselineReleaseCLI(
+		t,
+		binary,
+		baselinePlanProfileFileArgs(repo, draftPath, decisions)...,
+	)
+	if code != exitOK {
+		t.Fatalf("fresh Profile plan exit=%d stdout=%s stderr=%s", code, stdout, stderr)
+	}
+	fresh, freshPath := baselineReleasePlanFile(t, stdout)
+	if len(fresh.FileChanges) != 0 {
+		t.Fatalf("fresh Profile Plan has %d file changes: %+v", len(fresh.FileChanges), fresh.FileChanges)
+	}
+	beforeReapply := baselineReleaseVisibleState(t, repo)
+	second := baselineReleaseApply(t, binary, repo, fresh, freshPath)
+	if second.State != "verified" || !strings.Contains(second.Message, "already applied") {
+		t.Fatalf("empty Profile reapply result = %+v", second)
+	}
+	if afterReapply := baselineReleaseVisibleState(t, repo); afterReapply != beforeReapply {
+		t.Fatal("empty Profile reapply changed repository state")
+	}
+}
 
 func TestBaselineMacroJourneysPublicCLI(t *testing.T) {
 	binary := buildBaselineReleaseBinary(t)
@@ -163,67 +496,6 @@ func TestBaselineFindingRegressionsHumanReview(t *testing.T) {
 func TestBaselineDocumentationContractExamples(t *testing.T) {
 	t.Run("public examples parse", TestBaselineExamplesParse)
 	t.Run("Decision Documents parse", TestBaselineDecisionExamples)
-}
-
-func TestBaselineFormatterComposition(t *testing.T) {
-	binary := buildBaselineReleaseBinary(t)
-	tests := []struct {
-		profile   string
-		formatter func(*testing.T, string)
-	}{
-		{
-			profile: "go-cli-tui",
-			formatter: func(t *testing.T, repo string) {
-				runBaselineReleaseExternal(t, repo, "gofmt", "-w", "main.go")
-			},
-		},
-		{
-			profile: "rust-cli",
-			formatter: func(t *testing.T, repo string) {
-				runBaselineReleaseExternal(t, repo, "rustfmt", "src/main.rs")
-			},
-		},
-		{
-			profile: "standard-typescript-monorepo",
-			formatter: func(t *testing.T, repo string) {
-				runBaselineReleaseExternal(
-					t,
-					repo,
-					"bunx", "--no-install", "oxfmt@0.59.0", "--check", "AGENTS.md", "docs/agents",
-				)
-			},
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.profile, func(t *testing.T) {
-			repo := newBaselineReleaseRepository(t, test.profile)
-			plan, planPath := baselineReleasePlan(t, binary, repo, test.profile)
-			baselineReleaseApply(t, binary, repo, plan, planPath)
-
-			for _, marker := range []string{".qa-verification-ran", ".qa-profile-command-ran"} {
-				if _, err := os.Stat(filepath.Join(repo, marker)); !errors.Is(err, os.ErrNotExist) {
-					t.Fatalf("Baseline executed repository command marker %s: %v", marker, err)
-				}
-			}
-
-			managedBefore := baselineReleaseManagedState(t, repo, plan)
-			test.formatter(t, repo)
-			runBaselineReleaseExternal(t, repo, "make", "verify")
-			if _, err := os.Stat(filepath.Join(repo, ".qa-verification-ran")); err != nil {
-				t.Fatalf("external repository Verification did not run: %v", err)
-			}
-			if managedAfter := baselineReleaseManagedState(t, repo, plan); managedAfter != managedBefore {
-				t.Fatalf("external composition changed managed state:\nbefore=%s\nafter=%s",
-					managedBefore, managedAfter)
-			}
-
-			baselineReleaseApply(t, binary, repo, plan, planPath)
-			if managedAfter := baselineReleaseManagedState(t, repo, plan); managedAfter != managedBefore {
-				t.Fatalf("empty reapply changed managed state:\nbefore=%s\nafter=%s",
-					managedBefore, managedAfter)
-			}
-		})
-	}
 }
 
 func buildBaselineReleaseBinary(t *testing.T) string {
@@ -374,6 +646,61 @@ func baselineReleaseDecisionValue(raw string) any {
 	return raw
 }
 
+func baselineReleaseReadoptionDecisionFile(
+	t *testing.T,
+	repo string,
+	profile string,
+	disposition func(baseline.ReadoptionSourceEntry) baseline.ReadoptionDisposition,
+) (string, []string) {
+	t.Helper()
+	inspection, err := baseline.InspectRepository(context.Background(), repo, nil)
+	if err != nil {
+		t.Fatalf("inspect Readoption repository: %v", err)
+	}
+	preservation, err := baseline.PlanRootPreservation(
+		inspection,
+		baseline.RootPreservationRequest{Mode: baseline.PreservationModePreservation},
+	)
+	if err != nil {
+		t.Fatalf("inventory Readoption source: %v", err)
+	}
+	if preservation.DecisionSkeleton == nil || len(preservation.SourceBaseline.Entries) == 0 {
+		t.Fatalf("Readoption inventory has no editable source: %+v", preservation)
+	}
+	document := preservation.DecisionSkeleton.Document
+	document.Readoption.Dispositions = make(
+		[]baseline.ReadoptionDisposition,
+		0,
+		len(preservation.SourceBaseline.Entries),
+	)
+	sourceIDs := make([]string, 0, len(preservation.SourceBaseline.Entries))
+	for _, entry := range preservation.SourceBaseline.Entries {
+		document.Readoption.Dispositions = append(
+			document.Readoption.Dispositions,
+			disposition(entry),
+		)
+		sourceIDs = append(sourceIDs, entry.ID)
+	}
+	for _, raw := range baselineReleaseDecisionArgs(profile, "preservation") {
+		id, value, ok := strings.Cut(raw, "=")
+		if !ok {
+			t.Fatalf("invalid release decision %q", raw)
+		}
+		document.Decisions = append(document.Decisions, baseline.DecisionValue{
+			ID: id, Value: baselineReleaseDecisionValue(value),
+		})
+	}
+	data, err := json.MarshalIndent(document, "", "  ")
+	if err != nil {
+		t.Fatalf("marshal Readoption Decision Document: %v", err)
+	}
+	decisionPath := filepath.Join(t.TempDir(), "readoption-decisions.json")
+	if err := os.WriteFile(decisionPath, append(data, '\n'), 0o600); err != nil {
+		t.Fatalf("write Readoption Decision Document: %v", err)
+	}
+	return decisionPath, sourceIDs
+}
+
 func baselineReleaseDecisionArgs(profile, preservation string) []string {
 	repositoryExtension := "false"
 	if preservation == "preservation" {
@@ -391,10 +718,359 @@ func baselineReleaseDecisionArgs(profile, preservation string) []string {
 		"repository.extension.enabled=" + repositoryExtension,
 	}
 	if profile == "standard-typescript-monorepo" {
-		decisions = append(decisions, `http.contract={"mode":"REST"}`)
+		decisions = append(
+			decisions,
+			`identifier.strategy={"kind":"uuid-v7"}`,
+			`http.contract={"mode":"REST"}`,
+			`auth.provider={"kind":"better-auth","routeException":{"scope":"/api/auth/*","methods":["GET","POST"],"owner":"Better Auth","reason":"Provider protocol routes require GET and POST semantics."}}`,
+		)
 	}
 	return decisions
 }
+
+func assertBaselineReleaseCompleteManagedLedger(t *testing.T, plan baseline.PlanDocument) {
+	t.Helper()
+	if len(plan.ManagedEntries) == 0 {
+		t.Fatalf(
+			"incomplete Change Plan ledgers: managed=%d fileChanges=%d",
+			len(plan.ManagedEntries),
+			len(plan.FileChanges),
+		)
+	}
+	entries := make(map[string]baseline.ManagedEntry, len(plan.ManagedEntries))
+	for index, entry := range plan.ManagedEntries {
+		if entry.Ordinal != index || entry.ID == "" || entry.Path == "" {
+			t.Fatalf("managed-entry ledger item %d = %+v", index, entry)
+		}
+		if _, duplicate := entries[entry.ID]; duplicate {
+			t.Fatalf("duplicate managed-entry ledger ID %q", entry.ID)
+		}
+		entries[entry.ID] = entry
+	}
+	projected := make(map[string]int, len(entries))
+	for _, change := range plan.FileChanges {
+		if change.Path == "" || len(change.ManagedEntries) == 0 {
+			t.Fatalf("file-change projection is incomplete: %+v", change)
+		}
+		for _, id := range change.ManagedEntries {
+			entry, ok := entries[id]
+			if !ok || entry.Path != change.Path {
+				t.Fatalf("file-change projection %q references invalid entry %q", change.Path, id)
+			}
+			projected[id]++
+		}
+	}
+	for id := range entries {
+		switch projected[id] {
+		case 1:
+			continue
+		case 0:
+			entry := entries[id]
+			if !baselineReleasePathIsUnchanged(plan, entry.Path) {
+				t.Fatalf("unprojected managed entry %q at %q is not unchanged", id, entry.Path)
+			}
+		default:
+			t.Fatalf("managed entry %q appears %d times in file-change projection", id, projected[id])
+		}
+	}
+}
+
+func baselineReleasePathIsUnchanged(plan baseline.PlanDocument, path string) bool {
+	var before baseline.Preimage
+	for _, candidate := range plan.Preimages {
+		if candidate.Path == path {
+			before = candidate
+			break
+		}
+	}
+	var after baseline.Postimage
+	for _, candidate := range plan.Postimages {
+		if candidate.Path == path {
+			after = candidate
+			break
+		}
+	}
+	if before.Exists {
+		return before.Kind == after.Kind && before.ContentIdentity == after.ContentIdentity
+	}
+	return after.Kind == baseline.PreimageMissing
+}
+
+func assertBaselineReleaseRetentionLedger(
+	t *testing.T,
+	plan baseline.PlanDocument,
+	sourceIDs []string,
+	disposition string,
+	target string,
+) {
+	t.Helper()
+	if len(plan.Retention) != len(sourceIDs) {
+		t.Fatalf(
+			"Upgrade Retention Contract has %d entries, want %d: %+v",
+			len(plan.Retention),
+			len(sourceIDs),
+			plan.Retention,
+		)
+	}
+	evidence := make(map[string]baseline.RetentionEvidence, len(plan.Retention))
+	for _, entry := range plan.Retention {
+		if _, duplicate := evidence[entry.FromClause]; duplicate {
+			t.Fatalf("duplicate Upgrade Retention Contract source %q", entry.FromClause)
+		}
+		evidence[entry.FromClause] = entry
+	}
+	for _, sourceID := range sourceIDs {
+		entry, ok := evidence[sourceID]
+		if !ok ||
+			entry.Disposition != disposition ||
+			len(entry.Targets) != 1 ||
+			entry.Targets[0] != target ||
+			strings.TrimSpace(entry.Reason) == "" {
+			t.Fatalf("Upgrade Retention Contract source %q = %+v", sourceID, entry)
+		}
+	}
+}
+
+func assertBaselineReleaseNoRepositoryCarrier(
+	t *testing.T,
+	repo string,
+	plan baseline.PlanDocument,
+) {
+	t.Helper()
+	for _, carrier := range []string{
+		"docs/agents/specific-repository.md",
+		"docs/agents/repository.md",
+		"docs/agents/repository-rules.md",
+	} {
+		for _, postimage := range plan.Postimages {
+			if postimage.Path == carrier && postimage.Kind == baseline.PreimageRegular {
+				t.Fatalf("zero-residual Plan contains repository carrier %q", carrier)
+			}
+		}
+		if _, err := os.Lstat(filepath.Join(repo, filepath.FromSlash(carrier))); !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("zero-residual repository contains carrier %q: %v", carrier, err)
+		}
+	}
+	for _, postimage := range plan.Postimages {
+		if postimage.Path == "AGENTS.md" {
+			for _, carrier := range []string{
+				"docs/agents/specific-repository.md",
+				"docs/agents/repository.md",
+				"docs/agents/repository-rules.md",
+			} {
+				if bytes.Contains(postimage.Content, []byte(carrier)) {
+					t.Fatalf("zero-residual root postimage contains pointer %q", carrier)
+				}
+			}
+		}
+	}
+}
+
+func assertBaselineReleaseProfileLedger(t *testing.T, plan baseline.PlanDocument) {
+	t.Helper()
+	entryID := "profile:" + plan.Profile.ID
+	for _, entry := range plan.ManagedEntries {
+		if entry.ID != entryID {
+			continue
+		}
+		if entry.Kind != "profile" ||
+			entry.Path != plan.Profile.Path ||
+			entry.AfterIdentity == "" ||
+			entry.AfterIdentity != entry.ContentIdentity {
+			t.Fatalf("repository-owned Profile ledger entry = %+v", entry)
+		}
+		for _, change := range plan.FileChanges {
+			if change.Path == entry.Path {
+				for _, managedID := range change.ManagedEntries {
+					if managedID == entryID {
+						return
+					}
+				}
+			}
+		}
+		t.Fatalf("repository-owned Profile %q is absent from file-change projection", entryID)
+	}
+	t.Fatalf("repository-owned Profile %q is absent from managed-entry ledger", entryID)
+}
+
+func assertBaselineReleaseUniversalCapability(
+	t *testing.T,
+	alignment baseline.ProfileAlignment,
+	capabilityID string,
+) {
+	t.Helper()
+	for _, outcome := range alignment.Capabilities {
+		if outcome.ID != capabilityID {
+			continue
+		}
+		if outcome.Requirement != baseline.CapabilityRequired ||
+			outcome.Status != baseline.CapabilitySatisfied ||
+			outcome.Blocking {
+			t.Fatalf("universal capability %q became a waiver: %+v", capabilityID, outcome)
+		}
+		return
+	}
+	t.Fatalf("universal capability %q is absent from the applied audit", capabilityID)
+}
+
+func assertBaselineReleaseRecommendation(t *testing.T, result baseline.Result, command string) {
+	t.Helper()
+	for _, recommendation := range result.Recommendations {
+		if recommendation == command {
+			return
+		}
+	}
+	t.Fatalf("apply recommendations = %v, want %q", result.Recommendations, command)
+}
+
+func assertBaselineReleaseNoRecommendation(t *testing.T, result baseline.Result, command string) {
+	t.Helper()
+	for _, recommendation := range result.Recommendations {
+		if recommendation == command {
+			t.Fatalf("apply recommendations include unsupported command %q: %v", command, result.Recommendations)
+		}
+	}
+}
+
+func seedBaselineReleaseSourceManifest(t *testing.T, repo, profileID string) {
+	t.Helper()
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+	profile, err := baseline.ResolveProfile("", profileID, catalog)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest := baseline.SetupManifest{
+		SchemaVersion: baseline.ManifestSchema,
+		Version:       baseline.ManifestVersion,
+		Generator: baseline.ManifestGenerator{
+			Skill:    "setup-context-driven",
+			Version:  baseline.ManifestVersion,
+			Baseline: "baseline." + profile.ID + "-" + baseline.ManifestVersion,
+		},
+		Profile:          profile.ID,
+		ProfileDigest:    profile.Digest,
+		CatalogDigest:    "sha256:" + strings.Repeat("0", 64),
+		Modules:          []string{},
+		Decisions:        map[string]baseline.ManifestDecision{},
+		ManagedArtifacts: []baseline.ManifestArtifact{},
+		LocalSkills:      []string{},
+		Verification:     []baseline.VerificationProjection{},
+	}
+	data, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeBaselinePlanTestFile(
+		t,
+		repo,
+		"docs/agents/setup-context.json",
+		string(append(data, '\n')),
+	)
+	commitBaselinePlanTestRepository(t, repo)
+}
+
+func runBaselineReleaseFormatter(t *testing.T, repo, profile string) {
+	t.Helper()
+	switch profile {
+	case "go-cli-tui":
+		runBaselineReleaseExternal(t, repo, "gofmt", "-w", "main.go")
+	case "rust-cli":
+		runBaselineReleaseExternal(t, repo, "rustfmt", "src/main.rs")
+	case "standard-typescript-monorepo":
+		formatterBin, formatterVersion := provisionBaselineReleaseFormatter(t, repo)
+		versionOutput := runBaselineReleaseFixtureTool(
+			t,
+			repo,
+			formatterBin,
+			formatterVersion,
+			"oxfmt",
+			"--version",
+		)
+		if got := strings.TrimSpace(string(versionOutput)); got != formatterVersion {
+			t.Fatalf("fixture formatter version = %q, want %q", got, formatterVersion)
+		}
+		runBaselineReleaseFixtureTool(
+			t,
+			repo,
+			formatterBin,
+			formatterVersion,
+			"oxfmt",
+			"--check",
+			"AGENTS.md",
+			"docs/agents",
+		)
+		if _, err := os.Stat(filepath.Join(repo, ".qa-formatter-ran")); err != nil {
+			t.Fatalf("fixture formatter did not run: %v", err)
+		}
+	default:
+		t.Fatalf("unknown maintained Profile %q", profile)
+	}
+}
+
+func provisionBaselineReleaseFormatter(t *testing.T, repo string) (string, string) {
+	t.Helper()
+	packageData, err := os.ReadFile(filepath.Join(repo, "package.json"))
+	if err != nil {
+		t.Fatalf("read disposable repository package.json: %v", err)
+	}
+	var repositoryPackage struct {
+		Dependencies map[string]string `json:"dependencies"`
+	}
+	if err := json.Unmarshal(packageData, &repositoryPackage); err != nil {
+		t.Fatalf("decode disposable repository package.json: %v", err)
+	}
+	formatterVersion := repositoryPackage.Dependencies["oxfmt"]
+	if strings.TrimSpace(formatterVersion) == "" {
+		t.Fatal("disposable repository does not own an Oxfmt version")
+	}
+
+	binDir := filepath.Join(t.TempDir(), "bin")
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		t.Fatalf("create fixture-owned formatter directory: %v", err)
+	}
+	if err := os.WriteFile(
+		filepath.Join(binDir, "oxfmt"),
+		[]byte(baselineReleaseFormatterFixture),
+		0o755,
+	); err != nil {
+		t.Fatalf("provision repository-local formatter fixture: %v", err)
+	}
+	return binDir, formatterVersion
+}
+
+const baselineReleaseFormatterFixture = `#!/bin/sh
+set -eu
+
+version="${ROUNDFIX_FIXTURE_FORMATTER_VERSION:?missing fixture formatter version}"
+if [ "${1:-}" = "--version" ] && [ "$#" -eq 1 ]; then
+	printf '%s\n' "$version"
+	exit 0
+fi
+if [ "${BUN_CONFIG_REGISTRY:-}" != "http://127.0.0.1:1" ]; then
+	printf '%s\n' "formatter fixture requires the unreachable registry" >&2
+	exit 1
+fi
+cache="${BUN_INSTALL_CACHE_DIR:?missing fixture-owned cache}"
+marker="$cache/.roundfix-formatter-fixture-used"
+if [ -e "$marker" ]; then
+	printf '%s\n' "formatter fixture cache was not fresh" >&2
+	exit 1
+fi
+mkdir -p "$cache"
+: > "$marker"
+if [ "$#" -ne 3 ] || [ "$1" != "--check" ] || [ "$2" != "AGENTS.md" ] || [ "$3" != "docs/agents" ]; then
+	printf '%s\n' "unexpected formatter invocation" >&2
+	exit 1
+fi
+if [ ! -s AGENTS.md ] || [ ! -d docs/agents ]; then
+	printf '%s\n' "managed formatter targets are missing" >&2
+	exit 1
+fi
+: > .qa-formatter-ran
+`
 
 func newBaselineReleaseRepository(t *testing.T, profile string) string {
 	t.Helper()
@@ -413,7 +1089,7 @@ func newBaselineReleaseRepository(t *testing.T, profile string) string {
 	case "rust-cli":
 		writeBaselinePlanTestFile(t, repo, "src/main.rs", "fn main( ) {println!(\"ok\");}\n")
 	case "standard-typescript-monorepo":
-		writeBaselinePlanTestFile(t, repo, "package.json", baselineReleaseTypeScriptPackageJSON())
+		writeBaselinePlanTestFile(t, repo, "package.json", baselineReleaseTypeScriptPackageJSON(t))
 		writeBaselinePlanTestFile(t, repo, "packages/frontend/package.json", `{"name":"frontend"}`)
 		writeBaselinePlanTestFile(
 			t,
@@ -440,7 +1116,27 @@ func newBaselineReleaseRepository(t *testing.T, profile string) string {
 	return repo
 }
 
-func baselineReleaseTypeScriptPackageJSON() string {
+func baselineReleaseTypeScriptPackageJSON(t *testing.T) string {
+	t.Helper()
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load maintained Profile formatter: %v", err)
+	}
+	entry, ok := catalog.Profile("standard-typescript-monorepo")
+	if !ok {
+		t.Fatal("standard TypeScript Profile is missing")
+	}
+	var maintained struct {
+		Formatter struct {
+			Version string `json:"version"`
+		} `json:"formatter"`
+	}
+	if err := json.Unmarshal(entry.Data, &maintained); err != nil {
+		t.Fatalf("decode maintained Profile formatter: %v", err)
+	}
+	if strings.TrimSpace(maintained.Formatter.Version) == "" {
+		t.Fatal("maintained Profile formatter version is empty")
+	}
 	dependencies := []string{
 		`"@logtape/logtape":"latest"`,
 		`"@tanstack/react-query":"latest"`,
@@ -448,7 +1144,7 @@ func baselineReleaseTypeScriptPackageJSON() string {
 		`"better-auth":"latest"`,
 		`"drizzle-orm":"latest"`,
 		`"hono":"latest"`,
-		`"oxfmt":"0.59.0"`,
+		`"oxfmt":"` + maintained.Formatter.Version + `"`,
 		`"oxlint":"latest"`,
 		`"postgres":"latest"`,
 		`"react":"latest"`,
@@ -461,7 +1157,7 @@ func baselineReleaseTypeScriptPackageJSON() string {
 		`"zod":"latest"`,
 	}
 	return `{"name":"root","packageManager":"bun@1.3.0","scripts":{` +
-		`"format":"touch .qa-profile-command-ran","lint":"touch .qa-profile-command-ran",` +
+		`"fmt":"touch .qa-profile-command-ran","lint":"touch .qa-profile-command-ran",` +
 		`"test":"touch .qa-profile-command-ran","build":"touch .qa-profile-command-ran",` +
 		`"verify":"touch .qa-profile-command-ran"},` +
 		`"dependencies":{` + strings.Join(dependencies, ",") + `}}`
@@ -492,12 +1188,83 @@ func runBaselineReleaseCLI(
 
 func runBaselineReleaseExternal(t *testing.T, repo, name string, args ...string) {
 	t.Helper()
+	runBaselineReleaseExternalWithEnv(t, repo, nil, name, args...)
+}
+
+func runBaselineReleaseExternalWithEnv(
+	t *testing.T,
+	repo string,
+	environmentOverrides []string,
+	name string,
+	args ...string,
+) {
+	t.Helper()
 	command := exec.Command(name, args...)
 	command.Dir = repo
-	command.Env = append(os.Environ(), "GIT_CONFIG_NOSYSTEM=1", "GIT_OPTIONAL_LOCKS=0")
+	command.Env = baselineReleaseEnvironment(environmentOverrides...)
 	if output, err := command.CombinedOutput(); err != nil {
 		t.Fatalf("run external %s %s: %v\n%s", name, strings.Join(args, " "), err, output)
 	}
+}
+
+func baselineReleaseEnvironment(overrides ...string) []string {
+	replaced := map[string]struct{}{
+		"GIT_CONFIG_NOSYSTEM": {},
+		"GIT_OPTIONAL_LOCKS":  {},
+	}
+	for _, override := range overrides {
+		key, _, _ := strings.Cut(override, "=")
+		replaced[key] = struct{}{}
+	}
+	environment := make([]string, 0, len(os.Environ())+len(overrides)+2)
+	for _, entry := range os.Environ() {
+		key, _, _ := strings.Cut(entry, "=")
+		if _, ok := replaced[key]; !ok {
+			environment = append(environment, entry)
+		}
+	}
+	environment = append(
+		environment,
+		"GIT_CONFIG_NOSYSTEM=1",
+		"GIT_OPTIONAL_LOCKS=0",
+	)
+	return append(environment, overrides...)
+}
+
+func runBaselineReleaseFixtureTool(
+	t *testing.T,
+	repo, fixtureBin, formatterVersion, name string,
+	args ...string,
+) []byte {
+	t.Helper()
+	executable := filepath.Join(fixtureBin, name)
+	if _, err := os.Stat(executable); err != nil {
+		t.Fatalf("find fixture-owned %s: %v", name, err)
+	}
+	command := exec.Command(executable, args...)
+	command.Dir = repo
+	isolatedBunHome := t.TempDir()
+	command.Env = baselineReleaseEnvironment(
+		"BUN_CONFIG_REGISTRY=http://127.0.0.1:1",
+		"BUN_INSTALL="+isolatedBunHome,
+		"BUN_INSTALL_CACHE_DIR="+filepath.Join(isolatedBunHome, "cache"),
+		"BUN_INSTALL_GLOBAL_BIN_DIR="+filepath.Join(isolatedBunHome, "bin"),
+		"BUN_INSTALL_GLOBAL_DIR="+filepath.Join(isolatedBunHome, "global"),
+		"BUN_RUNTIME_TRANSPILER_CACHE_PATH="+filepath.Join(isolatedBunHome, "transpiler-cache"),
+		"ROUNDFIX_FIXTURE_FORMATTER_VERSION="+formatterVersion,
+		"PATH="+strings.Join([]string{
+			fixtureBin,
+			"/usr/bin",
+			"/bin",
+			"/usr/sbin",
+			"/sbin",
+		}, string(os.PathListSeparator)),
+	)
+	output, err := command.CombinedOutput()
+	if err != nil {
+		t.Fatalf("run fixture tool %s %s: %v\n%s", name, strings.Join(args, " "), err, output)
+	}
+	return output
 }
 
 func baselineReleaseManagedState(

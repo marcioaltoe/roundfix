@@ -70,6 +70,26 @@ Decision Documents form the Decision Plan; the projected repository mutation
 is the Change Plan. Repository policy such as an HTTP Contract Decision remains
 repository-owned input; implementation evidence cannot answer it.
 
+### Instruction hierarchy
+
+The generated root index applies only the active tiers, in this order:
+
+1. Universal instructions.
+2. Context and documentation.
+3. Spec workflow.
+4. Autonomous work, when enabled.
+5. Stack guidance.
+6. Surface guidance.
+7. Optional knowledge sources.
+8. Repository-Specific Normative Rules, only when accepted residual rules
+   exist.
+
+A narrower guide may add constraints for its concern but cannot weaken a
+universal Normative Clause or confirmed project decision. Each operative rule
+has one semantic owner, and each active guide has one root pointer. Read the
+universal tier first, then continue through the active tiers that match the
+work; do not use file order or a narrower guide to override earlier policy.
+
 Run the interactive workflow from a terminal:
 
 ```bash
@@ -91,15 +111,31 @@ adoption again. Without a stored value, the embedded catalog suggests:
 | --- | --- |
 | Generated language | `English` |
 | Verification gate | `rtk make verify` |
+| Identifier strategy | `{"kind":"uuid-v7"}` |
 | HTTP contract | `Post-only` |
+| Better Auth provider exception | `GET` and `POST` under `/api/auth/*`, owned by Better Auth |
 | Spec artifacts | Yes |
 | Domain layout | `single-context` |
 | External triage | No |
 | Autonomous work | Yes |
 | Backend runtime | `codex gpt-5.6-sol` |
-| Design runtime | `claude fable high` |
+| Design runtime | `claude opus 5 xhigh` |
 | Secondbrain | Yes |
 | Repository-Specific Normative Rules carrier | Permitted when non-empty |
+
+UUID version 7 is a visible suggestion for `identifier.strategy`, not an
+inferred answer. It applies only to new project-owned Internal Identifiers;
+external provider identifiers, protocol identifiers, natural keys, and
+business codes keep their source contracts. The maintainer must explicitly
+keep the suggestion or provide
+`{"kind":"repository-defined","guidance":"<non-empty operative rule>"}`.
+
+When the selected Profile retains Better Auth, `auth.provider` proposes the
+complete provider-owned exception: `GET` and `POST` under `/api/auth/*`, owner
+`Better Auth`, with a reason covering Session, OAuth redirect, callback, and
+related provider protocol routes. The maintainer must keep or change that
+typed proposal. The CLI derives the matching `http.contract` exception and
+refuses conflicting provider and HTTP values.
 
 Existing root instructions make Preservation the default; an empty instruction
 inventory makes Greenfield the default. A recoverable existing profile is the
@@ -109,6 +145,37 @@ answer.
 The interactive command refuses redirected or absent terminal input. Scripts,
 CI jobs, and Agents must use the non-interactive `baseline plan` and `baseline
 apply` commands described under [Automation](#automation).
+
+### Greenfield composition and update redistribution
+
+Greenfield composition selects exactly one Baseline Profile and renders only
+the semantic guides and root pointers selected by its modules. It does not
+generate a generic repository guide. With no accepted residual rules, it also
+creates no `docs/agents/specific-repository.md` carrier and no root pointer to
+that path.
+
+Update and Baseline Readoption account for every existing repository rule
+before mutation. Roundfix segments the current carriers without changing their
+exact source bytes, then proposes one reviewed disposition for each segment:
+
+- move the exact bytes into a repository-owned block in the active semantic
+  owner, such as the domain, backend, frontend, Spec, or documentation guide;
+- retain genuinely ambiguous or unmodeled rules as Repository-Specific
+  Normative Rules in `docs/agents/specific-repository.md`;
+- retain a recognized typed repository document at its typed destination; or
+- reject or classify non-governed evidence with an individual reason.
+
+The Change Plan exposes each source identity and digest, proposed semantic
+owner, residual disposition, root-pointer effect, before and after identity,
+and Upgrade Retention Contract entry. Review that complete ledger before
+confirmation. No source rule can disappear or be weakened without an explicit,
+reasoned disposition.
+
+Confirmed redistribution removes recognized legacy carriers after their exact
+rules have destinations. If no residual remains, the plan removes the empty
+repository-specific carrier and its root pointer. If residuals remain, the
+carrier contains only those accepted exact rules. Arbitrary nested instruction
+carriers stay repository-owned, byte-identical, and warning-only.
 
 ### First adoption
 
@@ -164,6 +231,108 @@ suggestion within Baseline scope. A valid suggestion is translated into
 proposed decisions only. Roundfix recalculates the complete plan, requires the
 digest to change, displays the new plan, and asks for confirmation again.
 
+### ADR and Findings lifecycle
+
+New ADRs prepend the repository-owned lifecycle overlay to the body contract in
+`.agents/skills/domain-modeling/ADR-FORMAT.md`. Only `accepted` is active;
+`proposed`, `rejected`, `deprecated`, and `superseded` are inactive. A legacy
+ADR without lifecycle frontmatter stays active unless its body explicitly
+marks it inactive, and Baseline never rewrites an existing ADR only to add this
+metadata.
+
+<!-- baseline-adr-lifecycle-template:start -->
+```markdown
+---
+status: proposed # proposed | accepted | rejected | deprecated | superseded
+created_at: YYYY-MM-DDTHH:MM:SSZ
+updated_at: YYYY-MM-DDTHH:MM:SSZ
+deprecated_at: null # null or YYYY-MM-DDTHH:MM:SSZ
+superseded_by: null # null or ADR-NNNN
+---
+
+# <Short title of the decision>
+
+<One to three sentences describing the context, decision, and reason.>
+```
+<!-- baseline-adr-lifecycle-template:end -->
+
+Findings use `pending`, `partial`, `deferred`, and `done`. Set `done` when the
+implementation Spec is created and linked, not when implementation or release
+finishes. Preserve the original investigation and append later evidence,
+routing, and status context as dated addenda.
+
+<!-- baseline-findings-template:start -->
+```markdown
+---
+status: pending # pending | partial | deferred | done
+created_at: YYYY-MM-DD
+updated_at: YYYY-MM-DD
+---
+
+# <Area> — <short title> (YYYY-MM-DD)
+
+<Two to four sentences describing the session or investigation, the attempted outcome, and links to adjacent evidence.>
+
+## 1. <Finding title — symptom, not hypothesis>
+
+- Symptom / evidence: <observed behavior, command output, identifiers, and paths needed to reproduce>
+- Root cause: <proven cause, or `unknown` with what was ruled out>
+- Action / suggestion: <fix, mitigation, or route to a Spec, direct change, or upstream report>
+
+## 2. <Next finding>
+
+## What worked — keep
+
+<Optional evidence about behavior worth preserving.>
+
+## Addendum — YYYY-MM-DD — <short title>
+
+<Append new evidence, root-cause proof, status context, or routing links without rewriting the original observation.>
+```
+<!-- baseline-findings-template:end -->
+
+Use `pending` for a new finding without an implementation Spec. Use `partial`
+when the linked Spec covers only the selected implementation scope and record
+why the rest is unnecessary. Use `deferred` only with a recorded reason not to
+implement. Update `updated_at` for every lifecycle change or addendum and keep
+`created_at` unchanged.
+
+### Profile alignment and adaptation
+
+The interactive workflow audits the selected Baseline Profile before
+instruction classification. It prints each blocking and advisory divergence.
+For profile-specific blockers, choose one explicit path:
+
+1. **Change Baseline Profile** and audit the replacement.
+2. Review a **repository-owned Profile adaptation**.
+3. **Decline without writing**.
+
+An adaptation proposal lists every module and profile-specific Repository
+Capability it would remove. Review those removals, choose a valid repository
+Profile ID, and let Roundfix validate and re-audit the in-memory draft. Only a
+`ready` re-audit proceeds to instruction classification and the consolidated
+Change Plan. The Profile file appears in that plan at
+`.roundfix/baseline/profiles/<id>.json`; planning does not write it, and apply
+writes it only after approval of the final Plan Digest.
+
+Universal required capabilities cannot be removed or waived. Follow the exact
+remediation reported by alignment. For example, preview a missing Context7
+skill restoration:
+
+```bash
+roundfix baseline skills restore --repo . --profile standard-typescript-monorepo --skill context7 --format json
+```
+
+Review the returned restoration Plan Digest, then confirm the same current
+preview:
+
+```bash
+roundfix baseline skills restore --repo . --profile standard-typescript-monorepo --skill context7 --confirm-plan <digest> --format json
+```
+
+Rerun the interactive workflow after remediation. Profile alignment must be
+`ready` before classification or the final Change Plan.
+
 ### Decision Documents
 
 Use repeatable `--decision id=value` flags for scalar answers and repeatable
@@ -182,11 +351,35 @@ repository owner's answers:
   "decisions": [
     {
       "id": "autonomous.enabled",
-      "value": false
+      "value": true
     },
     {
       "id": "domain.layout",
       "value": "single-context"
+    },
+    {
+      "id": "identifier.strategy",
+      "value": {
+        "kind": "uuid-v7"
+      }
+    },
+    {
+      "id": "http.contract",
+      "value": {
+        "mode": "Post-only"
+      }
+    },
+    {
+      "id": "auth.provider",
+      "value": {
+        "kind": "better-auth",
+        "routeException": {
+          "scope": "/api/auth/*",
+          "methods": ["GET", "POST"],
+          "owner": "Better Auth",
+          "reason": "Session, OAuth redirect, callback, and related provider protocol routes require provider-owned GET and POST semantics."
+        }
+      }
     },
     {
       "id": "language.generated",
@@ -199,6 +392,14 @@ repository owner's answers:
     {
       "id": "repository.extension.enabled",
       "value": false
+    },
+    {
+      "id": "runtime.backend",
+      "value": "codex gpt-5.6-sol"
+    },
+    {
+      "id": "runtime.design",
+      "value": "claude opus 5 xhigh"
     },
     {
       "id": "secondbrain.enabled",
@@ -221,6 +422,14 @@ repository owner's answers:
 ```
 <!-- baseline-decision-document:end -->
 
+For the Standard TypeScript Monorepo Profile, omitting
+`identifier.strategy` or `auth.provider` makes planning exit `3` with one
+`roundfix/baseline-result/v1` action-required document that names every missing
+decision. Roundfix emits no partial Plan and mutates no repository file.
+Invalid discriminator fields, an empty repository-defined rule, the wrong
+Better Auth owner, unsupported or duplicate methods, or a conflict with
+`http.contract` refuse planning the same way.
+
 Preservation adds one `readoption` object containing the current
 `sourceBaseline` identity and an ordered `dispositions` array. Each disposition
 names the exact Source Baseline Entry and digest, one classification, one typed
@@ -229,17 +438,73 @@ non-governed. Start from the current workflow's emitted classification
 skeleton; never copy Source Baseline identities or entry digests from another
 repository state.
 
+### Project Constraints
+
+Every new PRD and TechSpec records the repository contract under which the Spec
+was approved. Each row states whether the constraint is applicable or not
+applicable, gives a reason, and names its operative `docs/agents/` source.
+Use the confirmed values from the Setup Manifest and generated guides; do not
+infer them from dependencies or implementation evidence.
+
+```markdown
+## Project Constraints
+
+- Identifier strategy: applicable. New project-owned Internal Identifiers use
+  UUID version 7; provider identifiers, protocol identifiers, natural keys, and
+  business codes retain their source contracts.
+  Source: `docs/agents/domain.md`.
+- Authentication and HTTP: applicable. Application routes use Post-only;
+  Better Auth owns `GET` and `POST` under `/api/auth/*` for its provider
+  protocol.
+  Source: `docs/agents/backend.md`.
+- Active ADR obligations: applicable. ADR-0123 governs the change.
+  Source: `docs/agents/spec-routing.md`.
+- Tooling authority: applicable. No protected tooling mutation is authorized.
+  Source: `docs/agents/agent-instructions.md`.
+```
+
+If a Spec proposes protected tooling work, replace the final row only after
+the maintainer records express maintainer authorization and the exact bounded
+repository-relative files. For example:
+
+```markdown
+- Tooling authority: applicable. The maintainer expressly authorizes edits
+  only to `oxfmt.json` and `package.json`; no other tooling file is authorized.
+  Source: `docs/agents/agent-instructions.md`.
+```
+
+Setup approval, a generic implementation request, or Task assignment does not
+authorize tooling mutation. Task decomposition refuses an incomplete Project
+Constraints section. Task execution refuses tooling work without the recorded
+authorization and exact bounded files, and final QA compares the actual changed
+paths with that scope. Completed and archived legacy Specs remain
+byte-identical.
+
 ### Automation
 
 Planning is read-only and non-interactive:
 
 ```bash
-roundfix baseline plan --repo . --profile go-cli-tui --decision-file baseline-decisions.json --format json
+roundfix baseline plan --repo . --profile standard-typescript-monorepo --decision-file baseline-decisions.json --format json
 ```
+
+Automation can provide the same reviewed repository-owned adaptation as an
+explicit strict Profile document:
+
+```bash
+roundfix baseline plan --repo . --profile-file team-backend.json --decision-file baseline-decisions.json --format json
+```
+
+`--profile-file` and `--profile` are mutually exclusive. The draft must use the
+strict `roundfix/custom-baseline-profile/v1` schema, bind the embedded catalog,
+and be a valid adaptation of one built-in Profile. Roundfix resolves it in
+memory and includes its canonical repository path and exact bytes in the
+portable Plan; it does not write the Profile file during planning.
 
 Write its stdout to `baseline-plan.json` using the calling shell or process.
 Exit `0` emits one complete `roundfix/baseline-plan/v1` document. Exit `3`
-emits a `roundfix/baseline-result/v1` next action and no partial plan.
+emits a `roundfix/baseline-result/v1` next action and no partial plan. Invalid
+or mutually exclusive Profile input exits `2`.
 
 Review the complete document, especially `fileChanges`, `managedEntries`,
 `retention`, `warnings`, and `planDigest`. Apply only the reviewed artifact:
@@ -253,6 +518,11 @@ Apply strictly parses the file, rejects duplicate or unknown fields, verifies
 the document digest, validates repository lineage and every bounded preimage,
 and applies only the supplied postimages. It never recalculates or substitutes
 a newer plan.
+
+Run the reported formatter and repository Verification recommendations outside
+Baseline. Repair any failure outside managed guidance. Generate a fresh plan
+with the same `--profile-file` and decisions; require no file changes, or an
+exact idempotent reapply at exit `0`, before reporting the adaptation current.
 
 Plans use repository-relative paths and clone-stable Git root lineage. A plan
 can move to another clone only when its Git object format, root commits,

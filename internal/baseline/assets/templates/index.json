@@ -14,7 +14,11 @@
       "version": 1,
       "kind": "root-block",
       "path": "root/core.md",
-      "tokens": ["reference.agent-instructions", "reference.skill-dispatch"]
+      "tokens": [
+        "instruction.hierarchy",
+        "reference.agent-instructions",
+        "reference.skill-dispatch"
+      ]
     },
     {
       "id": "template.root.context-workflow",
@@ -49,7 +53,7 @@
       "version": 1,
       "kind": "root-block",
       "path": "root/bun.md",
-      "tokens": ["reference.bun"]
+      "tokens": []
     },
     {
       "id": "template.root.monorepo",
@@ -147,21 +151,21 @@
       "version": 1,
       "kind": "guide",
       "path": "guides/domain.md",
-      "tokens": ["artifact.rules"]
+      "tokens": ["artifact.rules", "identifier.strategy"]
     },
     {
       "id": "template.guide.domain.single-context",
       "version": 1,
       "kind": "guide",
       "path": "guides/domain-single-context.md",
-      "tokens": ["artifact.rules"]
+      "tokens": ["artifact.rules", "identifier.strategy"]
     },
     {
       "id": "template.guide.domain.multi-context",
       "version": 1,
       "kind": "guide",
       "path": "guides/domain-multi-context.md",
-      "tokens": ["artifact.rules"]
+      "tokens": ["artifact.rules", "identifier.strategy"]
     },
     {
       "id": "template.guide.spec-routing",
@@ -203,7 +207,7 @@
       "version": 1,
       "kind": "guide",
       "path": "guides/backend.md",
-      "tokens": ["artifact.rules"]
+      "tokens": ["artifact.rules", "http.contract", "auth.provider"]
     },
     {
       "id": "template.guide.frontend",

@@ -99,9 +99,34 @@ func runBaselinePlanCommand(ctx context.Context, args []string, stdout, stderr i
 		printBaselinePlanFailure(err, jsonOutput, stdout, stderr)
 		return exitPreflight
 	}
+	var profileDraft *baseline.ProfileDraftInput
+	if req.profileFile != "" {
+		catalog, loadErr := baseline.LoadEmbeddedCatalog()
+		if loadErr != nil {
+			printBaselinePlanFailure(loadErr, jsonOutput, stdout, stderr)
+			return exitRunFailed
+		}
+		document, readErr := os.ReadFile(req.profileFile)
+		if readErr != nil {
+			printBaselinePlanFailure(
+				fmt.Errorf("read Profile draft file %q: %w", req.profileFile, readErr),
+				jsonOutput,
+				stdout,
+				stderr,
+			)
+			return exitPreflight
+		}
+		input, resolveErr := baseline.ProfileDraftInputFromDocument(document, catalog)
+		if resolveErr != nil {
+			printBaselinePlanFailure(resolveErr, jsonOutput, stdout, stderr)
+			return exitPreflight
+		}
+		profileDraft = &input
+	}
 	outcome, err := baseline.BuildPlan(ctx, baseline.PlanRequest{
 		Repository:   req.repo,
 		ProfileID:    req.profile,
+		ProfileDraft: profileDraft,
 		Decisions:    decisionInput,
 		Preservation: preservation,
 	})
@@ -141,6 +166,7 @@ func runBaselinePlanCommand(ctx context.Context, args []string, stdout, stderr i
 type baselinePlanCommandRequest struct {
 	repo          string
 	profile       string
+	profileFile   string
 	format        string
 	decisions     stringListFlag
 	decisionFiles stringListFlag
@@ -152,6 +178,7 @@ func parseBaselinePlanCommand(args []string) (baselinePlanCommandRequest, error)
 	flags.SetOutput(io.Discard)
 	flags.StringVar(&req.repo, "repo", ".", "Git worktree or a path inside it")
 	flags.StringVar(&req.profile, "profile", "", "Built-in or repository-owned Baseline Profile")
+	flags.StringVar(&req.profileFile, "profile-file", "", "Strict repository-owned Baseline Profile draft")
 	flags.Var(&req.decisions, "decision", "Baseline decision as id=value (repeatable)")
 	flags.Var(&req.decisionFiles, "decision-file", "Strict Decision Document path (repeatable)")
 	flags.StringVar(&req.format, "format", "text", "Output format: text or json")
@@ -167,6 +194,7 @@ func parseBaselinePlanCommand(args []string) (baselinePlanCommandRequest, error)
 	}
 	req.repo = strings.TrimSpace(req.repo)
 	req.profile = strings.TrimSpace(req.profile)
+	req.profileFile = strings.TrimSpace(req.profileFile)
 	req.format = strings.TrimSpace(req.format)
 	if req.repo == "" {
 		return baselinePlanCommandRequest{}, validationError{message: "--repo cannot be empty"}
@@ -174,6 +202,11 @@ func parseBaselinePlanCommand(args []string) (baselinePlanCommandRequest, error)
 	if req.format != "text" && req.format != "json" {
 		return baselinePlanCommandRequest{}, validationError{
 			message: fmt.Sprintf("unsupported --format %q; use text or json", req.format),
+		}
+	}
+	if req.profile != "" && req.profileFile != "" {
+		return baselinePlanCommandRequest{}, validationError{
+			message: "--profile and --profile-file are mutually exclusive",
 		}
 	}
 	return req, nil

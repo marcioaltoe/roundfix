@@ -17,7 +17,33 @@ Build exactly one task from a spec folder, end to end: load → plan → impleme
 
 ## 1. Load
 
-- Read the assigned `task_NN.md`. Check `status`:
+Read the assigned `task_NN.md`, then run the Project Constraint preflight
+before changing the Task status to `in_progress`:
+
+1. A completed or archived legacy Spec is exempt from forced constraint
+   backfill. Leave its artifacts byte-identical and stop rather than
+   re-executing or rewriting it.
+2. For an active Spec, require complete `Project Constraints` sections in the
+   PRD and every present TechSpec. Each must account for identifier strategy,
+   authentication and HTTP, active ADR obligations, and tooling authority as
+   applicable or not applicable with a reason, with an operative
+   `docs/agents/` source path for every row. Stop without changing Task status
+   when any row, reason, or source is missing.
+3. Determine whether the assigned Task creates, edits, renames, moves, or
+   deletes repository-tooling configuration, scripts, ignore files, plugin
+   declarations, or version pins. Tooling authorization is not implied by Task
+   assignment, setup approval, or a generic implementation request.
+4. Before a tooling Task can start, require express maintainer authorization
+   and an exact bounded repository-relative file list in the PRD and every
+   present TechSpec. The mutation allowlist is those exact paths plus the
+   assigned Task file itself. Missing or conflicting authorization leaves the
+   Task pending and stops execution.
+5. Run `git status --short` and capture the pre-existing changed paths before
+   work begins. They remain user-owned and cannot be counted as this Task's
+   changes.
+
+After the preflight, check `status`:
+
   - `pending` → set `status: in_progress` and proceed.
   - `in_progress` → a previous session may have died mid-task. Inspect the worktree and git log for partial work, report what you find, and ask how to proceed rather than double-building.
   - `completed` / `failed` → stop and report; re-running is an explicit human decision.
@@ -34,6 +60,10 @@ Build exactly one task from a spec folder, end to end: load → plan → impleme
 - Stay inside the slice. The PRD's Non-Goals and the task's scope are walls, not suggestions — work that belongs to another task goes in a follow-up note, not in this diff.
 - Tests first at the seams the TechSpec names (they are pre-agreed; a new seam needs the user's sign-off). Typecheck and run the focused tests frequently; save the full suite for the gate.
 - Root cause only — no lint/type suppressions, no swallowed errors, no timing hacks. A workaround closes the task and opens a bug.
+- For an authorized tooling Task, compare the target path with the mutation
+  allowlist before every mutation. Never edit `_tasks.md` or any other Task
+  file. If a required path is absent from the authorization, stop and request
+  a revised Spec instead of widening the list.
 
 ## 4. Verify — the gate
 
@@ -46,6 +76,14 @@ Evidence before status, always in this order:
    Verification Feedback prompt only for an attempt-1 command failure.
 2. Run the repository's verify pipeline (`make verify`, or the build/lint/typecheck/test equivalents this repo documents) when the current execution mode requires local completion evidence.
 3. Walk Acceptance Criteria one by one: each needs fresh evidence from this session — a command output, a test name that passes, an observed behavior. A green suite is not evidence for a criterion the suite doesn't cover.
+
+For every authorized tooling Task, run a changed-file postflight after the last
+edit. Compare the captured baseline with `git status --short` and
+`git diff --name-only`, accounting for staged, unstaged, and untracked paths.
+Every newly changed path must be either one exact authorized path or the
+assigned Task file. If any other path appears, make no further mutation, set
+`status: failed`, record the out-of-scope paths in `## Result`, and leave the
+worktree intact for recovery.
 
 A narrow verification never supports a broad claim. If any check fails after honest root-cause attempts: set `status: failed`, record what was tried in `## Result`, and report — a loud failure the scheduler can retry beats a quiet "mostly done".
 

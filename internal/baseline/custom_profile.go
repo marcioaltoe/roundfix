@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -46,6 +47,27 @@ type ResolvedProfile struct {
 	Path          string                `json:"path,omitempty"`
 }
 
+// IdentifierStrategy is the strict project decision for new project-owned
+// Internal Identifiers.
+type IdentifierStrategy struct {
+	Kind     string `json:"kind"`
+	Guidance string `json:"guidance,omitempty"`
+}
+
+// HTTPException is one provider-owned HTTP route exception.
+type HTTPException struct {
+	Scope   string   `json:"scope"`
+	Methods []string `json:"methods"`
+	Owner   string   `json:"owner"`
+	Reason  string   `json:"reason"`
+}
+
+// AuthProviderDecision is the strict authentication-provider decision.
+type AuthProviderDecision struct {
+	Kind           string        `json:"kind"`
+	RouteException HTTPException `json:"routeException"`
+}
+
 // CustomProfileInitResult identifies the repository file created by init.
 type CustomProfileInitResult struct {
 	Path        string
@@ -73,6 +95,216 @@ type profileDigestPayload struct {
 	Capabilities  []string       `json:"capabilities"`
 	Templates     []string       `json:"templates"`
 	Values        map[string]any `json:"values"`
+}
+
+// ProfileDraftInputFromDocument binds one strict custom Profile document to
+// its only compatible built-in source Profile.
+func ProfileDraftInputFromDocument(document []byte, catalog *Catalog) (ProfileDraftInput, error) {
+	if catalog == nil {
+		return ProfileDraftInput{}, errors.New("resolve custom Profile draft source: catalog is required")
+	}
+	draft, err := ParseCustomProfile(document, "Profile draft", catalog)
+	if err != nil {
+		return ProfileDraftInput{}, err
+	}
+	var sources []string
+	for _, sourceID := range catalog.ProfileIDs() {
+		source, resolveErr := resolveBuiltInProfile(sourceID, catalog)
+		if resolveErr != nil {
+			return ProfileDraftInput{}, resolveErr
+		}
+		if validateProfileAdaptation(source, draft, catalog) == nil {
+			sources = append(sources, sourceID)
+		}
+	}
+	switch len(sources) {
+	case 0:
+		return ProfileDraftInput{}, errors.New(
+			"custom.profile.draft.source.unresolved: document is not a valid adaptation of any built-in Profile",
+		)
+	case 1:
+		return ProfileDraftInput{
+			SourceProfileID: sources[0],
+			Document:        append([]byte(nil), document...),
+		}, nil
+	default:
+		return ProfileDraftInput{}, fmt.Errorf(
+			"custom.profile.draft.source.ambiguous: document matches built-in Profiles %s",
+			strings.Join(sources, ", "),
+		)
+	}
+}
+
+// NewProfileAdaptationDraft creates a strict draft by removing only reviewed
+// modules and profile-specific capabilities from one built-in Profile.
+func NewProfileAdaptationDraft(
+	sourceProfileID string,
+	id string,
+	removedModules []string,
+	removedCapabilities []string,
+	catalog *Catalog,
+) (ProfileDraftInput, error) {
+	if catalog == nil {
+		return ProfileDraftInput{}, errors.New("create Profile adaptation draft: catalog is required")
+	}
+	sourceProfileID = strings.TrimSpace(sourceProfileID)
+	source, err := resolveBuiltInProfile(sourceProfileID, catalog)
+	if err != nil {
+		return ProfileDraftInput{}, fmt.Errorf("create Profile adaptation draft: %w", err)
+	}
+	if err := validateCustomProfileID(id); err != nil {
+		return ProfileDraftInput{}, err
+	}
+	moduleRemovals, err := reviewedProfileRemovals("module", removedModules, source.Modules)
+	if err != nil {
+		return ProfileDraftInput{}, err
+	}
+	capabilityRemovals, err := reviewedProfileRemovals(
+		"capability",
+		removedCapabilities,
+		source.Capabilities,
+	)
+	if err != nil {
+		return ProfileDraftInput{}, err
+	}
+	if len(moduleRemovals) == 0 && len(capabilityRemovals) == 0 {
+		return ProfileDraftInput{}, errors.New("custom.profile.adaptation.removal.required")
+	}
+
+	modules := profileValuesWithout(source.Modules, moduleRemovals)
+	capabilities := profileValuesWithout(source.Capabilities, capabilityRemovals)
+	decisions := profileAdaptationDecisions(source.Decisions, modules, capabilities, catalog)
+	values := make(map[string]any)
+	selectedDecisions := stringSet(decisions)
+	for decisionID, value := range source.Values {
+		if _, selected := selectedDecisions[decisionID]; selected {
+			values[decisionID] = cloneJSONValue(value)
+		}
+	}
+	document := customProfileDocument{
+		SchemaVersion: CustomProfileSchemaVersion,
+		CatalogSchema: catalogSchema,
+		ID:            strings.TrimSpace(id),
+		Modules:       modules,
+		Decisions:     decisions,
+		Capabilities:  capabilities,
+		Templates:     cloneStrings(source.Templates),
+		Values:        values,
+	}
+	data, err := marshalCustomProfileDocument(document)
+	if err != nil {
+		return ProfileDraftInput{}, fmt.Errorf("serialize Profile adaptation draft: %w", err)
+	}
+	draft, err := ParseCustomProfile(data, "Profile adaptation draft", catalog)
+	if err != nil {
+		return ProfileDraftInput{}, err
+	}
+	if err := validateProfileAdaptation(source, draft, catalog); err != nil {
+		return ProfileDraftInput{}, err
+	}
+	return ProfileDraftInput{SourceProfileID: sourceProfileID, Document: data}, nil
+}
+
+// ResolveProfileDraft validates and normalizes one in-memory Profile draft
+// without writing its canonical repository target.
+func ResolveProfileDraft(
+	repoRoot string,
+	input ProfileDraftInput,
+	catalog *Catalog,
+) (ResolvedProfile, []byte, error) {
+	return resolveProfileDraft(repoRoot, input, catalog)
+}
+
+func reviewedProfileRemovals(kind string, removed, selected []string) (map[string]struct{}, error) {
+	available := stringSet(selected)
+	result := make(map[string]struct{}, len(removed))
+	for _, raw := range removed {
+		id := strings.TrimSpace(raw)
+		if _, ok := available[id]; !ok {
+			return nil, fmt.Errorf("custom.profile.adaptation.%s.removal.invalid: %s", kind, id)
+		}
+		if _, duplicate := result[id]; duplicate {
+			return nil, fmt.Errorf("custom.profile.adaptation.%s.removal.duplicate: %s", kind, id)
+		}
+		result[id] = struct{}{}
+	}
+	return result, nil
+}
+
+func profileValuesWithout(values []string, removed map[string]struct{}) []string {
+	result := make([]string, 0, len(values)-len(removed))
+	for _, value := range values {
+		if _, remove := removed[value]; !remove {
+			result = append(result, value)
+		}
+	}
+	return result
+}
+
+func profileAdaptationDecisions(
+	sourceDecisions []string,
+	selectedModules []string,
+	selectedCapabilities []string,
+	catalog *Catalog,
+) []string {
+	selected := stringSet(sourceDecisions)
+	modules := stringSet(selectedModules)
+	capabilities := stringSet(selectedCapabilities)
+	artifacts := profileModuleArtifacts(selectedModules, catalog)
+	for changed := true; changed; {
+		changed = false
+		for decisionID := range selected {
+			remove := false
+			for _, capabilityID := range stringsOrEmpty(
+				catalog.decisions[decisionID]["requiresCapabilities"],
+			) {
+				if _, retained := capabilities[capabilityID]; !retained {
+					remove = true
+					break
+				}
+			}
+			for _, effect := range objectsOrEmpty(catalog.decisions[decisionID]["effects"]) {
+				for _, moduleID := range stringsOrEmpty(effect["activateModules"]) {
+					if _, active := modules[moduleID]; !active {
+						remove = true
+						break
+					}
+				}
+				if remove {
+					break
+				}
+				for _, artifactID := range decisionEffectArtifacts(effect) {
+					if _, active := artifacts[artifactID]; !active {
+						remove = true
+						break
+					}
+				}
+				if remove {
+					break
+				}
+				for _, requiredID := range stringsOrEmpty(effect["requireDecisions"]) {
+					if _, retained := selected[requiredID]; !retained {
+						remove = true
+						break
+					}
+				}
+				if remove {
+					break
+				}
+			}
+			if remove {
+				delete(selected, decisionID)
+				changed = true
+			}
+		}
+	}
+	result := make([]string, 0, len(selected))
+	for _, decisionID := range sourceDecisions {
+		if _, retained := selected[decisionID]; retained {
+			result = append(result, decisionID)
+		}
+	}
+	return result
 }
 
 // CatalogSchemaVersion returns the schema identity custom profiles bind to.
@@ -109,11 +341,10 @@ func InitCustomProfile(repoRoot, id, from string, catalog *Catalog) (CustomProfi
 		Templates:     cloneStrings(source.Templates),
 		Values:        map[string]any{},
 	}
-	data, err := json.MarshalIndent(document, "", "  ")
+	data, err := marshalCustomProfileDocument(document)
 	if err != nil {
 		return CustomProfileInitResult{}, fmt.Errorf("serialize custom Baseline Profile %q: %w", id, err)
 	}
-	data = append(data, '\n')
 
 	profilePath, err := repositoryProfilePath(repoRoot, id)
 	if err != nil {
@@ -145,6 +376,206 @@ func InitCustomProfile(repoRoot, id, from string, catalog *Catalog) (CustomProfi
 	}
 	resolved.Path = profilePath
 	return CustomProfileInitResult{Path: profilePath, FromProfile: from, Profile: resolved}, nil
+}
+
+func resolveProfileDraft(
+	repoRoot string,
+	input ProfileDraftInput,
+	catalog *Catalog,
+) (ResolvedProfile, []byte, error) {
+	sourceID := strings.TrimSpace(input.SourceProfileID)
+	if sourceID == "" {
+		return ResolvedProfile{}, nil, errors.New("custom.profile.draft.source.required")
+	}
+	source, err := resolveBuiltInProfile(sourceID, catalog)
+	if err != nil {
+		return ResolvedProfile{}, nil, fmt.Errorf("resolve custom Profile draft source: %w", err)
+	}
+	profile, err := ParseCustomProfile(input.Document, "Profile draft", catalog)
+	if err != nil {
+		return ResolvedProfile{}, nil, err
+	}
+	if err := validateProfileAdaptation(source, profile, catalog); err != nil {
+		return ResolvedProfile{}, nil, err
+	}
+	profile.Templates = profileTemplateIDs(catalog, profile.Modules, profile.Decisions)
+	relative := path.Join(customProfileDirectory, profile.ID+".json")
+	if !safeRelative(relative) {
+		return ResolvedProfile{}, nil, fmt.Errorf("%w: %s", ErrUnsafeCustomProfilePath, relative)
+	}
+	root, err := cleanRepositoryRoot(repoRoot)
+	if err != nil {
+		return ResolvedProfile{}, nil, err
+	}
+	anchored, err := os.OpenRoot(root)
+	if err != nil {
+		return ResolvedProfile{}, nil, fmt.Errorf("open repository for custom Profile draft: %w", err)
+	}
+	defer anchored.Close()
+	if err := validatePathParents(anchored, relative); err != nil {
+		return ResolvedProfile{}, nil, fmt.Errorf("%w: %s: %v", ErrUnsafeCustomProfilePath, relative, err)
+	}
+	if err := validateMutationDestination(anchored, relative); err != nil {
+		return ResolvedProfile{}, nil, fmt.Errorf("%w: %s: %v", ErrUnsafeCustomProfilePath, relative, err)
+	}
+	profile.Path = relative
+	profile.Digest, err = profileDigest(profile)
+	if err != nil {
+		return ResolvedProfile{}, nil, err
+	}
+	data, err := marshalResolvedCustomProfile(profile)
+	if err != nil {
+		return ResolvedProfile{}, nil, err
+	}
+	return profile, data, nil
+}
+
+func validateProfileAdaptation(source, draft ResolvedProfile, catalog *Catalog) error {
+	if err := validateProfileFieldSubset("modules", draft.Modules, source.Modules); err != nil {
+		return err
+	}
+	if err := validateProfileFieldSubset("decisions", draft.Decisions, source.Decisions); err != nil {
+		return err
+	}
+	if err := validateProfileFieldSubset("capabilities", draft.Capabilities, source.Capabilities); err != nil {
+		return err
+	}
+	selectedModules := stringSet(draft.Modules)
+	selectedDecisions := stringSet(draft.Decisions)
+	selectedArtifacts := profileModuleArtifacts(draft.Modules, catalog)
+	for _, moduleID := range draft.Modules {
+		for _, decisionID := range stringsOrEmpty(catalog.modules[moduleID]["requiredDecisions"]) {
+			if _, included := selectedDecisions[decisionID]; !included {
+				return fmt.Errorf(
+					"custom.profile.adaptation.decision.required: module %s requires %s",
+					moduleID,
+					decisionID,
+				)
+			}
+		}
+	}
+	for _, decisionID := range draft.Decisions {
+		for _, effect := range objectsOrEmpty(catalog.decisions[decisionID]["effects"]) {
+			for _, moduleID := range stringsOrEmpty(effect["activateModules"]) {
+				if _, included := selectedModules[moduleID]; !included {
+					return fmt.Errorf(
+						"custom.profile.adaptation.module.decision-missing: decision %s can activate %s",
+						decisionID,
+						moduleID,
+					)
+				}
+			}
+			for _, artifactID := range decisionEffectArtifacts(effect) {
+				if _, included := selectedArtifacts[artifactID]; !included {
+					return fmt.Errorf(
+						"custom.profile.adaptation.module.decision-missing: decision %s targets %s from a removed module",
+						decisionID,
+						artifactID,
+					)
+				}
+			}
+			for _, requiredID := range stringsOrEmpty(effect["requireDecisions"]) {
+				if _, included := selectedDecisions[requiredID]; !included {
+					return fmt.Errorf(
+						"custom.profile.adaptation.decision.dependency-missing: %s requires %s",
+						decisionID,
+						requiredID,
+					)
+				}
+			}
+		}
+	}
+	if err := validateConditionalProfileDecisions(
+		draft.Decisions,
+		draft.Capabilities,
+		catalog,
+	); err != nil {
+		return err
+	}
+	return nil
+}
+
+func profileModuleArtifacts(modules []string, catalog *Catalog) map[string]struct{} {
+	artifacts := make(map[string]struct{})
+	for _, moduleID := range modules {
+		module := catalog.modules[moduleID]
+		for _, field := range []string{"rootBlocks", "supportingGuides", "repositoryExtensions"} {
+			for _, declaration := range objectsOrEmpty(module[field]) {
+				if artifactID, ok := stringValue(declaration, "id"); ok {
+					artifacts[artifactID] = struct{}{}
+				}
+			}
+		}
+	}
+	return artifacts
+}
+
+func decisionEffectArtifacts(effect document) []string {
+	var artifacts []string
+	artifacts = append(artifacts, stringsOrEmpty(effect["includeArtifacts"])...)
+	for _, field := range []string{"selectTemplates", "renderBindings"} {
+		for _, declaration := range objectsOrEmpty(effect[field]) {
+			if artifactID, ok := stringValue(declaration, "artifact"); ok {
+				artifacts = append(artifacts, artifactID)
+			}
+		}
+	}
+	return artifacts
+}
+
+func validateProfileFieldSubset(field string, selected, source []string) error {
+	selectedSet := stringSet(selected)
+	normalized := make([]string, 0, len(selected))
+	for _, id := range source {
+		if _, included := selectedSet[id]; included {
+			normalized = append(normalized, id)
+			delete(selectedSet, id)
+		}
+	}
+	if len(selectedSet) != 0 {
+		return fmt.Errorf(
+			"custom.profile.adaptation.%s.addition: %s",
+			field,
+			strings.Join(sortedKeys(selectedSet), ", "),
+		)
+	}
+	if !equalStringLists(selected, normalized) {
+		return fmt.Errorf("custom.profile.adaptation.%s.order.invalid", field)
+	}
+	return nil
+}
+
+func equalStringLists(left, right []string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for index := range left {
+		if left[index] != right[index] {
+			return false
+		}
+	}
+	return true
+}
+
+func marshalResolvedCustomProfile(profile ResolvedProfile) ([]byte, error) {
+	return marshalCustomProfileDocument(customProfileDocument{
+		SchemaVersion: CustomProfileSchemaVersion,
+		CatalogSchema: profile.CatalogSchema,
+		ID:            profile.ID,
+		Modules:       cloneStrings(profile.Modules),
+		Decisions:     cloneStrings(profile.Decisions),
+		Capabilities:  cloneStrings(profile.Capabilities),
+		Templates:     cloneStrings(profile.Templates),
+		Values:        cloneJSONMap(profile.Values),
+	})
+}
+
+func marshalCustomProfileDocument(document customProfileDocument) ([]byte, error) {
+	data, err := json.MarshalIndent(document, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return append(data, '\n'), nil
 }
 
 // ParseCustomProfile strictly parses and resolves one repository declaration.
@@ -237,10 +668,10 @@ func ParseCustomProfile(data []byte, sourcePath string, catalog *Catalog) (Resol
 		CatalogSchema: catalogSchema,
 		ID:            id,
 		Source:        ProfileSourceRepository,
-		Modules:       append([]string(nil), modules...),
-		Decisions:     append([]string(nil), decisions...),
-		Capabilities:  append([]string(nil), capabilities...),
-		Templates:     append([]string(nil), templates...),
+		Modules:       cloneStrings(modules),
+		Decisions:     cloneStrings(decisions),
+		Capabilities:  cloneStrings(capabilities),
+		Templates:     cloneStrings(templates),
 		Values:        cloneJSONMap(values),
 		Path:          sourcePath,
 	}
@@ -416,6 +847,9 @@ func validateCustomProfileReferences(
 	}
 	knownCapabilities := catalogCapabilityIDs(catalog)
 	for _, id := range capabilities {
+		if universalCapability(id) {
+			return fmt.Errorf("custom.profile.capability.universal: %s", id)
+		}
 		if _, exists := knownCapabilities[id]; !exists {
 			return fmt.Errorf("custom.profile.capability.unknown: %s", id)
 		}
@@ -433,7 +867,19 @@ func validateCustomProfileReferences(
 			return fmt.Errorf("custom.profile.value.invalid: %s: %w", id, err)
 		}
 	}
+	if err := validateConditionalProfileDecisions(decisions, capabilities, catalog); err != nil {
+		return err
+	}
 	return nil
+}
+
+func universalCapability(id string) bool {
+	for _, capability := range universalCapabilities {
+		if capability.ID == id {
+			return true
+		}
+	}
+	return false
 }
 
 func validateDecisionValue(decision document, value any) error {
@@ -460,22 +906,118 @@ func validateDecisionValue(decision document, value any) error {
 			return errors.New("must be a non-empty string")
 		}
 	case "http-contract":
-		object, ok := objectValue(value)
-		if !ok {
-			return errors.New("must be an object")
-		}
-		mode, _ := object["mode"].(string)
-		if mode == "" {
-			return errors.New("mode is required")
-		}
-		for _, allowed := range stringsOrEmpty(decision["modes"]) {
-			if mode == allowed {
-				return nil
-			}
-		}
-		return fmt.Errorf("mode %q is not allowed", mode)
+		_, err := normalizeHTTPContract(value, decision)
+		return err
+	case "identifier-strategy":
+		return validateIdentifierStrategy(value)
+	case "auth-provider":
+		return validateAuthProviderDecision(value)
 	default:
 		return fmt.Errorf("decision type %q is unsupported", kind)
+	}
+	return nil
+}
+
+// ValidateDecisionValue validates one value against its embedded catalog
+// declaration.
+func ValidateDecisionValue(catalog *Catalog, id string, value any) error {
+	if catalog == nil {
+		return errors.New("validate Baseline decision: catalog is required")
+	}
+	declaration, ok := catalog.decisions[id]
+	if !ok {
+		return fmt.Errorf("validate Baseline decision: unknown decision %q", id)
+	}
+	if err := validateDecisionValue(declaration, value); err != nil {
+		return fmt.Errorf("validate Baseline decision %q: %w", id, err)
+	}
+	return nil
+}
+
+func validateIdentifierStrategy(value any) error {
+	object, ok := objectValue(value)
+	if !ok {
+		return errors.New("must be an object")
+	}
+	kind, _ := object["kind"].(string)
+	switch kind {
+	case "uuid-v7":
+		if !hasExactFields(object, "kind") {
+			return errors.New("uuid-v7 requires exactly kind")
+		}
+	case "repository-defined":
+		if !hasExactFields(object, "kind", "guidance") {
+			return errors.New("repository-defined requires exactly kind and guidance")
+		}
+		guidance, ok := object["guidance"].(string)
+		if !ok || strings.TrimSpace(guidance) == "" {
+			return errors.New("repository-defined guidance must be a non-empty string")
+		}
+	default:
+		return fmt.Errorf("kind %q is not allowed", kind)
+	}
+	return nil
+}
+
+func validateAuthProviderDecision(value any) error {
+	_, err := normalizeAuthProviderDecision(value)
+	return err
+}
+
+func decisionStringList(value any) ([]string, bool) {
+	switch values := value.(type) {
+	case []string:
+		return append([]string(nil), values...), true
+	case []any:
+		result := make([]string, 0, len(values))
+		for _, value := range values {
+			text, ok := value.(string)
+			if !ok || text == "" {
+				return nil, false
+			}
+			result = append(result, text)
+		}
+		return result, true
+	default:
+		return nil, false
+	}
+}
+
+func validateConditionalProfileDecisions(
+	decisions []string,
+	capabilities []string,
+	catalog *Catalog,
+) error {
+	selected := stringSet(decisions)
+	retained := stringSet(capabilities)
+	for _, decisionID := range catalog.DecisionIDs() {
+		declaration := catalog.decisions[decisionID]
+		requiredCapabilities := stringsOrEmpty(declaration["requiresCapabilities"])
+		if len(requiredCapabilities) == 0 {
+			continue
+		}
+		applicable := true
+		for _, capabilityID := range requiredCapabilities {
+			if _, ok := retained[capabilityID]; !ok {
+				applicable = false
+				break
+			}
+		}
+		_, included := selected[decisionID]
+		switch {
+		case applicable && !included:
+			return fmt.Errorf(
+				"custom.profile.decision.capability.required: %s requires %s",
+				strings.Join(requiredCapabilities, ", "),
+				decisionID,
+			)
+		case !applicable && included:
+			return fmt.Errorf(
+				"custom.profile.decision.capability.unselected: %s requires %s",
+				decisionID,
+				strings.Join(requiredCapabilities, ", "),
+			)
+		}
 	}
 	return nil
 }
@@ -515,9 +1057,16 @@ func catalogCapabilityIDs(catalog *Catalog) map[string]struct{} {
 func profileTemplateIDs(catalog *Catalog, modules, decisions []string) []string {
 	seen := make(map[string]struct{})
 	add := func(value any) {
-		object, ok := objectValue(value)
-		if !ok {
-			return
+		var object document
+		switch typed := value.(type) {
+		case document:
+			object = typed
+		default:
+			var ok bool
+			object, ok = objectValue(value)
+			if !ok {
+				return
+			}
 		}
 		if id, ok := stringValue(object, "template"); ok {
 			seen[id] = struct{}{}

@@ -44,6 +44,32 @@ proof. A repository command is executable only when the result says
 `repositoryExecutable: true` and binds a local declaration. A recommendation
 is a command for the maintainer to run; Baseline did not execute it.
 
+## Interpret composed guidance
+
+Read the generated root Instruction Hierarchy from universal instructions
+through context and documentation, Spec workflow, enabled autonomous work,
+stack guidance, surface guidance, and optional knowledge sources. A narrower
+guide may add constraints for its concern but cannot weaken a universal
+Normative Clause or confirmed project decision.
+
+Greenfield composition emits only guides and pointers selected by the Baseline
+Profile. It creates no generic repository guide and no residual carrier when
+there are no Repository-Specific Normative Rules.
+
+For update or Baseline Readoption, interpret the complete retention ledger
+before approving it. Every existing rule must retain its exact source bytes in
+one active semantic owner, a recognized typed repository document, or
+`docs/agents/specific-repository.md`, or have an individual reasoned rejection
+or non-governed classification. An empty residual removes the carrier and root
+pointer; non-empty accepted residuals retain only their exact rules.
+
+Generated `docs/agents/docs-layout.md` owns the copyable ADR and Findings
+contracts. Only `accepted` is active for ADRs; legacy ADRs without lifecycle
+frontmatter remain active unless their body marks them inactive. Findings use
+`pending`, `partial`, `deferred`, and `done`, keep the original observation,
+and append later evidence as dated addenda. Copy those generated templates;
+this skill does not render or replace them.
+
 ## Human adoption or update
 
 At an interactive terminal, run:
@@ -61,7 +87,7 @@ Decision and preservation prompts mark one visible default; Enter confirms it.
 A valid stored Setup Manifest value wins even when a changed Profile Digest
 requires adoption again. Otherwise the CLI uses its embedded catalog
 suggestions, including `codex gpt-5.6-sol` for backend work and
-`claude fable high` for design work. Existing root instructions default to
+`claude opus 5 xhigh` for design work. Existing root instructions default to
 Preservation, an empty instruction inventory defaults to Greenfield, and a
 recoverable existing profile is preferred. Classification, Plan approval, and
 apply still require an explicit non-empty choice.
@@ -95,6 +121,55 @@ produces a new full plan. If the maintainer rejects the plan, use the command's
 decision-area revision flow. Every accepted correction must produce a new Plan
 Digest and another complete review.
 
+Profile alignment runs before instruction classification. For
+profile-specific blockers, the interactive command offers **Change Baseline
+Profile**, a reviewed **repository-owned Profile adaptation**, or **Decline
+without writing**. An adaptation lists every module and profile-specific
+capability removal, validates a repository-owned Profile ID, re-audits the
+in-memory draft, and proceeds only when alignment is ready. The Profile file is
+part of the final Change Plan and is not written before Plan Digest approval.
+
+Universal required capabilities cannot be removed or waived. Run the exact
+restoration preview named by the result, review its Plan Digest, confirm the
+same current preview, then rerun Profile alignment:
+
+```bash
+roundfix baseline skills restore --repo . --profile <built-in-id> --skill <skill-name> --format json
+roundfix baseline skills restore --repo . --profile <built-in-id> --skill <skill-name> --confirm-plan <digest> --format json
+```
+
+## Project decisions and Spec constraints
+
+The CLI owns project-decision collection and rendering. This skill does not
+collect, derive, validate, or render decisions; it explains the public result
+and sends every correction back through `roundfix baseline`.
+
+For the Standard TypeScript Monorepo Profile, UUID version 7 is a visible
+suggestion for `identifier.strategy`. The human must explicitly keep it or
+provide one non-empty repository-defined rule. When Better Auth remains
+selected, `auth.provider` proposes `GET` and `POST` under `/api/auth/*`, owner
+`Better Auth`, with the Session, OAuth redirect, callback, and related provider
+protocol reason. The human must keep or change that complete typed proposal.
+
+Automation supplies both structured values through the strict Decision
+Document passed to `--decision-file`. If either value is unresolved, planning
+exits `3`, names every missing decision in `roundfix/baseline-result/v1`, emits
+no partial Plan, and writes nothing. Never treat a catalog suggestion,
+repository evidence, setup approval, or an empty answer as authorization.
+
+Every new PRD and TechSpec must contain `Project Constraints` rows for:
+
+- Identifier strategy from `docs/agents/domain.md`;
+- Authentication and HTTP from `docs/agents/backend.md`;
+- active ADR obligations from `docs/agents/spec-routing.md`; and
+- tooling authority from `docs/agents/agent-instructions.md`.
+
+Each row must say applicable or not applicable with a reason. Protected
+tooling work remains blocked until the Spec records express maintainer
+authorization and the exact bounded repository-relative files. Task assignment
+and generic implementation requests do not grant that authority. Keep
+completed and archived legacy Specs byte-identical.
+
 ## Non-interactive planning
 
 The interactive root command refuses redirected or absent terminal input.
@@ -103,6 +178,17 @@ Automation and Agents use:
 ```bash
 roundfix baseline plan --repo . --profile <profile-id> --decision-file <decision-file> --format json
 ```
+
+Automation can pass the equivalent reviewed strict draft:
+
+```bash
+roundfix baseline plan --repo . --profile-file <draft.json> --decision-file <decision-file> --format json
+```
+
+`--profile-file` and `--profile` are mutually exclusive. The CLI validates the
+draft against the embedded catalog, resolves it in memory, and includes its
+canonical repository path and exact bytes in the portable Plan. Do not write,
+normalize, classify, or render the draft through this skill.
 
 Scalar answers may use repeatable `--decision <id=value>` flags. Structured
 answers use repeatable strict Decision Documents with schema
@@ -237,7 +323,7 @@ Do not claim adoption or update complete from planning alone.
 2. Run each reported formatter or Verification recommendation outside
    Baseline.
 3. Repair any repository failure outside managed Baseline output.
-4. Generate a fresh plan with the same current decisions.
+4. Generate a fresh plan with the same current Profile input and decisions.
 5. Require no file changes, or perform an exact idempotent reapply at exit `0`.
 
 Report remaining warnings, recommendations not run, the approved Plan Digest,

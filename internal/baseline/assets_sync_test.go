@@ -487,7 +487,15 @@ func captureAssetsSyncTree(t *testing.T, root string) map[string]string {
 
 func runAssetsSyncGit(t *testing.T, directory string, args ...string) string {
 	t.Helper()
-	command := exec.Command("git", append([]string{"-C", directory}, args...)...)
+	gitArgs := append(
+		[]string{
+			"-C", directory,
+			"-c", "core.fsmonitor=false",
+			"-c", "maintenance.auto=false",
+		},
+		args...,
+	)
+	command := exec.Command("git", gitArgs...)
 	command.Env = append(os.Environ(), "GIT_CONFIG_NOSYSTEM=1")
 	output, err := command.CombinedOutput()
 	if err != nil {

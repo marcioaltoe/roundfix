@@ -81,6 +81,46 @@ func TestEmbeddedCatalog(t *testing.T) {
 	}
 }
 
+func TestSourceMachinePathRecognizesMarkdownAndFileURLs(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		value string
+		match bool
+	}{
+		{
+			name:  "plain macOS user path",
+			value: "/Users/alice/work",
+			match: true,
+		},
+		{
+			name:  "Markdown link destination",
+			value: "[repo](/Users/alice/work)",
+			match: true,
+		},
+		{
+			name:  "file URL",
+			value: "file:///Users/alice/work",
+			match: true,
+		},
+		{
+			name:  "web URL home segment",
+			value: "https://example.test/home/guide",
+			match: false,
+		},
+	}
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			if got := sourceMachinePath.MatchString(test.value); got != test.match {
+				t.Fatalf("sourceMachinePath.MatchString(%q) = %t, want %t", test.value, got, test.match)
+			}
+		})
+	}
+}
+
 func TestCatalogDigest(t *testing.T) {
 	t.Parallel()
 
@@ -104,6 +144,187 @@ func TestCatalogDigest(t *testing.T) {
 	}
 	if !json.Valid(first.Normalized()) {
 		t.Fatal("Normalized() is not valid JSON")
+	}
+}
+
+func TestGuidanceCompositionAssets(t *testing.T) {
+	t.Parallel()
+
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("LoadEmbeddedCatalog() error = %v", err)
+	}
+	if catalog.Digest() == "" {
+		t.Fatal("embedded catalog digest is empty")
+	}
+
+	profile, ok := catalog.Profile("standard-typescript-monorepo")
+	if !ok {
+		t.Fatal("standard TypeScript Profile is missing")
+	}
+	var formatterProfile struct {
+		Formatter struct {
+			FixturePaths []string `json:"fixturePaths"`
+			GoldenDigest string   `json:"goldenDigest"`
+		} `json:"formatter"`
+	}
+	if err := json.Unmarshal(profile.Data, &formatterProfile); err != nil {
+		t.Fatalf("decode formatter Profile: %v", err)
+	}
+	if len(formatterProfile.Formatter.FixturePaths) != 14 ||
+		formatterProfile.Formatter.GoldenDigest == "" {
+		t.Fatalf("formatter contract = %+v, want 14 digest-bound fixtures", formatterProfile.Formatter)
+	}
+	for _, fixturePath := range formatterProfile.Formatter.FixturePaths {
+		if strings.Contains(fixturePath, specificRepositoryPath) {
+			t.Fatalf("greenfield formatter fixture includes repository-specific carrier %q", fixturePath)
+		}
+		if _, ok := catalog.Asset(fixturePath); !ok {
+			t.Errorf("formatter fixture %q is missing", fixturePath)
+		}
+	}
+
+	for assetPath, asset := range cloneEmbeddedAssets(t) {
+		if !strings.HasPrefix(assetPath, "modules/") &&
+			!strings.HasPrefix(assetPath, "templates/") &&
+			!strings.HasPrefix(assetPath, "formatter-fixtures/") &&
+			!strings.Contains(assetPath, "/corpus/") {
+			continue
+		}
+		folded := strings.ToLower(string(asset.Data))
+		for _, brand := range []string{"fluxus", "oraculum"} {
+			if strings.Contains(folded, brand) {
+				t.Errorf("portable asset %q contains project brand %q", assetPath, brand)
+			}
+		}
+	}
+}
+
+func TestProjectDecisionAssets(t *testing.T) {
+	t.Parallel()
+
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load embedded catalog: %v", err)
+	}
+	for _, profileID := range catalog.ProfileIDs() {
+		profile, err := ResolveProfile("", profileID, catalog)
+		if err != nil {
+			t.Fatalf("resolve Profile %q: %v", profileID, err)
+		}
+		hasIdentifier := slices.Contains(profile.Decisions, "identifier.strategy")
+		hasAuthProvider := slices.Contains(profile.Decisions, "auth.provider")
+		switch profileID {
+		case "standard-typescript-monorepo":
+			if !hasIdentifier || !hasAuthProvider {
+				t.Errorf(
+					"Profile %q decisions = %v, want identifier.strategy and auth.provider",
+					profileID,
+					profile.Decisions,
+				)
+			}
+		default:
+			if hasIdentifier || hasAuthProvider {
+				t.Errorf(
+					"Profile %q unexpectedly selects project decisions: %v",
+					profileID,
+					profile.Decisions,
+				)
+			}
+		}
+	}
+
+	for assetPath, required := range map[string][]string{
+		"formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/domain.md": {
+			"Use UUID version 7 for new project-owned Internal Identifiers only.",
+			"external provider identifiers",
+			"natural keys",
+		},
+		"formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md": {
+			"Application HTTP mode: **Post-only**.",
+			"**Better Auth** owns `GET` and `POST` for `/api/auth/*`",
+			"Session, OAuth redirect, callback, and related provider protocol routes",
+		},
+		"formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md": {
+			"without express maintainer authorization",
+			"plugin declaration, or version pin",
+		},
+		"formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md": {
+			"Project Constraints",
+			"bounded repository-relative files",
+			"completed or archived legacy Specs byte-identical",
+		},
+	} {
+		asset, ok := catalog.Asset(assetPath)
+		if !ok {
+			t.Errorf("asset %q is missing", assetPath)
+			continue
+		}
+		for _, clause := range required {
+			if !strings.Contains(string(asset.Data), clause) {
+				t.Errorf("asset %q is missing %q", assetPath, clause)
+			}
+		}
+	}
+
+	const toolingClauseID = "clause.core.require-tooling-authorization"
+	source, err := catalog.SourceBaseline("baseline.standard-typescript-monorepo-0.0.1")
+	if err != nil {
+		t.Fatalf("load maintained Source Baseline: %v", err)
+	}
+	if !sourceBaselineHasEntry(source, toolingClauseID) {
+		t.Errorf("maintained Source Baseline does not account for %q", toolingClauseID)
+	}
+	for _, transitionID := range catalog.TransitionIDs() {
+		transition, err := catalog.UpgradeRetentionContract(transitionID)
+		if err != nil {
+			t.Fatalf("load retention contract %q: %v", transitionID, err)
+		}
+		if !retentionTargetsClause(transition, toolingClauseID) {
+			t.Errorf("retention contract %q does not retain %q", transitionID, toolingClauseID)
+		}
+	}
+
+	for assetPath, asset := range cloneEmbeddedAssets(t) {
+		if !strings.HasPrefix(assetPath, "modules/") &&
+			!strings.HasPrefix(assetPath, "profiles/") &&
+			!strings.HasPrefix(assetPath, "templates/") &&
+			!strings.HasPrefix(assetPath, "formatter-fixtures/") &&
+			!strings.Contains(assetPath, "/corpus/") {
+			continue
+		}
+		folded := strings.ToLower(string(asset.Data))
+		for _, brand := range []string{"fluxus", "oraculum"} {
+			if strings.Contains(folded, brand) {
+				t.Errorf("project-agnostic asset %q contains %q", assetPath, brand)
+			}
+		}
+	}
+
+	tests := []struct {
+		name       string
+		decisionID string
+	}{
+		{name: "identifier strategy", decisionID: "identifier.strategy"},
+		{name: "Better Auth provider", decisionID: "auth.provider"},
+	}
+	for _, test := range tests {
+		t.Run("catalog rejects missing "+test.name, func(t *testing.T) {
+			assets := cloneEmbeddedAssets(t)
+			replaceAsset(
+				t,
+				assets,
+				"profiles/standard-typescript-monorepo.json",
+				`    "`+test.decisionID+`",`+"\n",
+				"",
+			)
+			_, err := LoadCatalog(assets)
+			var validationErr *ValidationError
+			if !errors.As(err, &validationErr) ||
+				!validationErr.Has("catalog.project-decision.profile.missing") {
+				t.Fatalf("LoadCatalog() error = %v, want missing project-decision diagnostic", err)
+			}
+		})
 	}
 }
 
@@ -141,6 +362,91 @@ func TestCatalogCompatibility(t *testing.T) {
 	}
 	if got, want := legacy.ProfileIDs(), []string{"fixture"}; !slices.Equal(got, want) {
 		t.Fatalf("legacy ProfileIDs() = %v, want %v", got, want)
+	}
+}
+
+func TestInstructionHierarchy(t *testing.T) {
+	t.Parallel()
+
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("LoadEmbeddedCatalog() error = %v", err)
+	}
+
+	levels := catalog.InstructionHierarchy()
+	want := []string{
+		"universal",
+		"context",
+		"spec",
+		"autonomous",
+		"stack",
+		"surface",
+		"optional-knowledge",
+		"repository-specific",
+	}
+	got := make([]string, len(levels))
+	for index, level := range levels {
+		got[index] = level.ID
+	}
+	if !slices.Equal(got, want) {
+		t.Fatalf("InstructionHierarchy() = %v, want %v", got, want)
+	}
+	if got := levels[5].RootBlocks; !slices.Equal(got, []string{
+		"root.cli-surface",
+		"root.tui-surface",
+	}) {
+		t.Fatalf("surface RootBlocks = %v", got)
+	}
+}
+
+func TestSemanticOwnerRegistry(t *testing.T) {
+	t.Parallel()
+
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("LoadEmbeddedCatalog() error = %v", err)
+	}
+	profile, err := ResolveProfile("", "go-cli-tui", catalog)
+	if err != nil {
+		t.Fatalf("ResolveProfile() error = %v", err)
+	}
+	activeModules, artifacts, err := resolveManagedArtifacts(
+		catalog,
+		profile,
+		planTestDecisions(),
+		false,
+	)
+	if err != nil {
+		t.Fatalf("resolveManagedArtifacts() error = %v", err)
+	}
+	activeArtifacts := make([]string, len(artifacts))
+	for index, artifact := range artifacts {
+		activeArtifacts[index] = artifact.ID
+	}
+
+	registry := catalog.SemanticOwnerRegistry(activeModules, activeArtifacts)
+	for _, artifact := range artifacts {
+		if artifact.Kind != "guide" {
+			continue
+		}
+		owner, ok := registry[artifact.ID]
+		if !ok {
+			t.Errorf("active guide %q has no semantic owner", artifact.ID)
+			continue
+		}
+		if owner.ManagedID != artifact.ID || owner.Module != artifact.Module ||
+			owner.Path != artifact.Path || owner.Title == "" ||
+			len(owner.Classifications) == 0 {
+			t.Errorf("semantic owner %q = %+v", artifact.ID, owner)
+		}
+	}
+	for _, inactive := range []string{
+		"guide.external-triage",
+		"guide.secondbrain",
+	} {
+		if _, ok := registry[inactive]; ok {
+			t.Errorf("inactive guide %q has a semantic destination", inactive)
+		}
 	}
 }
 
@@ -313,11 +619,103 @@ func TestCatalogMutation(t *testing.T) {
 			},
 		},
 		{
+			name: "missing formatter fixture",
+			code: "catalog.profile.formatter.fixture.missing",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				delete(
+					assets,
+					"formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md",
+				)
+			},
+		},
+		{
+			name: "formatter golden drift",
+			code: "catalog.profile.formatter.goldenDigest.mismatch",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				path := "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md"
+				asset := assets[path]
+				asset.Data = append(append([]byte(nil), asset.Data...), []byte("\ndrift\n")...)
+				assets[path] = asset
+			},
+		},
+		{
+			name: "stale Source Baseline accounting target",
+			code: "catalog.sourceBaseline.integrity.invalid",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				replaceAsset(
+					t,
+					assets,
+					"source-baselines/baseline.standard-typescript-monorepo-0.0.1/accounting.json",
+					`"clause.core.review-new-dependencies"`,
+					`"clause.missing"`,
+				)
+			},
+		},
+		{
 			name: "setup snapshot digest drift",
 			code: "catalog.setup.digest.mismatch",
 			edit: func(t *testing.T, assets fstest.MapFS) {
 				t.Helper()
 				replaceAsset(t, assets, "setups/rust-cli.json", `"digest": "`, `"digest": "0`)
+			},
+		},
+		{
+			name: "invalid instruction precedence",
+			code: "catalog.instruction-hierarchy.order.invalid",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				replaceAsset(
+					t,
+					assets,
+					"modules/core.json",
+					`"id": "context", "title": "Context and documentation"`,
+					`"id": "spec", "title": "Context and documentation"`,
+				)
+			},
+		},
+		{
+			name: "instruction dependency after dependent",
+			code: "catalog.instruction-hierarchy.dependency.order",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				replaceAsset(
+					t,
+					assets,
+					"modules/core.json",
+					`"rootBlocks": ["root.cli-surface", "root.tui-surface"]`,
+					`"rootBlocks": ["root.tui-surface", "root.cli-surface"]`,
+				)
+			},
+		},
+		{
+			name: "duplicate semantic ownership",
+			code: "catalog.semantic-owner.classification.duplicate",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				replaceAsset(
+					t,
+					assets,
+					"modules/core.json",
+					`"classifications": ["domain-language", "identifier-policy"]`,
+					`"classifications": ["universal-execution", "identifier-policy"]`,
+				)
+			},
+		},
+		{
+			name: "narrower clause weakens universal policy",
+			code: "catalog.clause.weakening.prohibited",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				replaceAsset(
+					t,
+					assets,
+					"modules/autonomous-work.json",
+					`"guidance": "The Supervisor must not write feature code or tests."`,
+					`"guidance": "The Supervisor must not write feature code or tests.", "weakens": ["clause.core.fix-root-causes"]`,
+				)
 			},
 		},
 	}
@@ -340,6 +738,156 @@ func TestCatalogMutation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestToolingAuthorityCannotBeDisabled(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		code string
+		edit func(t *testing.T, assets fstest.MapFS)
+	}{
+		{
+			name: "Profile omits the universal rule",
+			code: "catalog.tooling-authority.profile.rule.missing",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				asset := assets["profiles/rust-cli.json"]
+				asset.Data = []byte(strings.Replace(
+					string(asset.Data),
+					`, "rule.core.tooling-authority"`,
+					``,
+					1,
+				))
+				assets["profiles/rust-cli.json"] = asset
+			},
+		},
+		{
+			name: "decision excludes the universal guide",
+			code: "catalog.tooling-authority.effect.prohibited",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				replaceAsset(
+					t,
+					assets,
+					"decisions.json",
+					`"activateModules": ["spec-workflow"]`,
+					`"activateModules": ["spec-workflow"], "excludeArtifacts": ["guide.agent-instructions"]`,
+				)
+			},
+		},
+		{
+			name: "decision controls the core module",
+			code: "catalog.tooling-authority.effect.prohibited",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				replaceAsset(
+					t,
+					assets,
+					"decisions.json",
+					`"activateModules": ["spec-workflow"]`,
+					`"activateModules": ["spec-workflow", "core"]`,
+				)
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assets := cloneEmbeddedAssets(t)
+			test.edit(t, assets)
+
+			_, err := LoadCatalog(assets)
+			if err == nil {
+				t.Fatalf("LoadCatalog() error = nil, want diagnostic %q", test.code)
+			}
+			var validationErr *ValidationError
+			if !errors.As(err, &validationErr) {
+				t.Fatalf("LoadCatalog() error = %T, want *ValidationError: %v", err, err)
+			}
+			if !validationErr.Has(test.code) {
+				t.Fatalf("LoadCatalog() diagnostics = %v, want %q", validationErr.Diagnostics, test.code)
+			}
+		})
+	}
+}
+
+func TestToolingAuthorityAccounting(t *testing.T) {
+	t.Parallel()
+
+	const clauseID = "clause.core.require-tooling-authorization"
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load embedded catalog: %v", err)
+	}
+	source, err := catalog.SourceBaseline("baseline.standard-typescript-monorepo-0.0.1")
+	if err != nil {
+		t.Fatalf("load maintained Source Baseline: %v", err)
+	}
+	if !sourceBaselineHasEntry(source, clauseID) {
+		t.Fatalf("maintained Source Baseline does not account for %q", clauseID)
+	}
+	for _, transitionID := range catalog.TransitionIDs() {
+		transition, err := catalog.UpgradeRetentionContract(transitionID)
+		if err != nil {
+			t.Fatalf("load retention contract %q: %v", transitionID, err)
+		}
+		if !retentionTargetsClause(transition, clauseID) {
+			t.Errorf("retention contract %q does not retain %q", transitionID, clauseID)
+		}
+	}
+
+	t.Run("source accounting removal invalidates the catalog", func(t *testing.T) {
+		assets := cloneEmbeddedAssets(t)
+		replaceAsset(
+			t,
+			assets,
+			"source-baselines/baseline.standard-typescript-monorepo-0.0.1/manifest.json",
+			clauseID,
+			"clause.missing-tooling-authority-accounting",
+		)
+		if _, err := LoadCatalog(assets); err == nil {
+			t.Fatal("LoadCatalog() error = nil after removing tooling-authority source accounting")
+		}
+	})
+
+	t.Run("retention accounting removal invalidates the catalog", func(t *testing.T) {
+		assets := cloneEmbeddedAssets(t)
+		replaceAsset(
+			t,
+			assets,
+			"retention/transition.managed-v2-to-portable-v3.json",
+			`, "`+clauseID+`"`,
+			``,
+		)
+		_, err := LoadCatalog(assets)
+		if err == nil {
+			t.Fatal("LoadCatalog() error = nil after removing tooling-authority retention accounting")
+		}
+		var validationErr *ValidationError
+		if !errors.As(err, &validationErr) ||
+			!validationErr.Has("catalog.tooling-authority.retention.missing") {
+			t.Fatalf("LoadCatalog() error = %v, want tooling-authority retention diagnostic", err)
+		}
+	})
+}
+
+func sourceBaselineHasEntry(source SourceBaseline, id string) bool {
+	for _, entry := range source.Entries {
+		if entry.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
+func retentionTargetsClause(contract UpgradeRetentionContract, clauseID string) bool {
+	for _, accounting := range contract.Accounting {
+		if slices.Contains(accounting.Targets, clauseID) {
+			return true
+		}
+	}
+	return false
 }
 
 func cloneEmbeddedAssets(t *testing.T) fstest.MapFS {

@@ -1,7 +1,9 @@
 package baseline
 
 import (
+	"bytes"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -14,6 +16,25 @@ var (
 	templateToken  = regexp.MustCompile(`\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}`)
 	lowerSHA256    = regexp.MustCompile(`^[0-9a-f]{64}$`)
 	immutableGitID = regexp.MustCompile(`^(?:[0-9a-f]{40}|[0-9a-f]{64})$`)
+)
+
+var confirmedInstructionHierarchy = []string{
+	"universal",
+	"context",
+	"spec",
+	"autonomous",
+	"stack",
+	"surface",
+	"optional-knowledge",
+	"repository-specific",
+}
+
+const (
+	toolingAuthorityRuleID     = "rule.core.tooling-authority"
+	toolingAuthorityClauseID   = "clause.core.require-tooling-authorization"
+	toolingAuthorityCoverageID = "coverage.tooling-authority"
+	toolingAuthorityGuideID    = "guide.agent-instructions"
+	toolingAuthorityGuidance   = "Do not create, edit, rename, move, or delete any linter, formatter, typechecker, test-runner, architecture-checker, build-tool, package-manager, code-generator, or other repository-tooling configuration, script, ignore file, plugin declaration, or version pin without express maintainer authorization. Setup completion, a Profile, a narrower guide, or a generic implementation request does not grant that authorization."
 )
 
 func (l *catalogLoader) validateTemplates(catalog *Catalog) {
@@ -337,6 +358,13 @@ func (l *catalogLoader) validateProfiles(catalog *Catalog) {
 				l.add("catalog.profile.entryDecision.unknown", profileID, decisionID)
 			}
 		}
+		if err := validateConditionalProfileDecisions(
+			entryDecisions,
+			profileCapabilityIDs(profile),
+			catalog,
+		); err != nil {
+			l.add("catalog.profile.decision.capability.invalid", profileID, err.Error())
+		}
 		for _, ruleID := range stringsOrEmpty(profile["requiredRules"]) {
 			moduleID, exists := allRules[ruleID]
 			if !exists {
@@ -383,6 +411,426 @@ func (l *catalogLoader) validateProfileCapabilities(profileID string, profile do
 	}
 }
 
+func (l *catalogLoader) validateProfileFormatters(catalog *Catalog) {
+	for profileID, profile := range catalog.profiles {
+		schema, _ := stringValue(profile, "schemaVersion")
+		if schema != "setup-context-driven/profile/0.0.1" {
+			continue
+		}
+		formatter, ok := objectValue(profile["formatter"])
+		if !ok {
+			l.add("catalog.profile.formatter.invalid", profileID, "formatter must be an object")
+			continue
+		}
+		kind, kindOK := stringValue(formatter, "kind")
+		switch kind {
+		case "none":
+			l.allowFields(
+				"catalog.profile.formatter.field.unknown",
+				profileID,
+				formatter,
+				"kind",
+			)
+		case "selected":
+			l.allowFields(
+				"catalog.profile.formatter.field.unknown",
+				profileID,
+				formatter,
+				"kind",
+				"id",
+				"version",
+				"fixturePaths",
+				"goldenDigest",
+			)
+			formatterID, formatterIDOK := stringValue(formatter, "id")
+			version, versionOK := stringValue(formatter, "version")
+			fixturePaths, fixturePathsOK := stringList(formatter["fixturePaths"])
+			goldenDigest, digestOK := stringValue(formatter, "goldenDigest")
+			if !formatterIDOK || !versionOK || strings.TrimSpace(formatterID) == "" ||
+				strings.TrimSpace(version) == "" {
+				l.add("catalog.profile.formatter.identity.invalid", profileID, "")
+			}
+			if !fixturePathsOK || len(fixturePaths) == 0 || !uniqueStrings(fixturePaths) {
+				l.add("catalog.profile.formatter.fixtures.invalid", profileID, "")
+				continue
+			}
+			fixtures := make(map[string][]byte, len(fixturePaths))
+			prefix := path.Join("formatter-fixtures", profileID, "golden") + "/"
+			for _, fixturePath := range fixturePaths {
+				if !safeRelative(fixturePath) ||
+					!strings.HasPrefix(fixturePath, prefix) ||
+					path.Ext(fixturePath) != ".md" {
+					l.add(
+						"catalog.profile.formatter.fixture.path.invalid",
+						profileID,
+						fixturePath,
+					)
+					continue
+				}
+				content, exists := catalog.assets[fixturePath]
+				if !exists {
+					l.add(
+						"catalog.profile.formatter.fixture.missing",
+						profileID,
+						fixturePath,
+					)
+					continue
+				}
+				fixtures[strings.TrimPrefix(fixturePath, prefix)] = content
+			}
+			if !digestOK || !lowerSHA256.MatchString(goldenDigest) {
+				l.add("catalog.profile.formatter.goldenDigest.invalid", profileID, "")
+				continue
+			}
+			if len(fixtures) != len(fixturePaths) {
+				continue
+			}
+			if observed := portableFileDigest(fixtures); observed != goldenDigest {
+				l.add(
+					"catalog.profile.formatter.goldenDigest.mismatch",
+					profileID,
+					fmt.Sprintf("got %s, want %s", goldenDigest, observed),
+				)
+			}
+		default:
+			if !kindOK {
+				kind = ""
+			}
+			l.add("catalog.profile.formatter.kind.invalid", profileID, kind)
+		}
+	}
+}
+
+func portableFileDigest(files map[string][]byte) string {
+	digest := sha256.New()
+	for _, relative := range sortedKeys(files) {
+		writeLengthPrefixed(digest, relative)
+		var length [8]byte
+		binary.BigEndian.PutUint64(length[:], uint64(len(files[relative])))
+		_, _ = digest.Write(length[:])
+		_, _ = digest.Write(files[relative])
+	}
+	return hex.EncodeToString(digest.Sum(nil))
+}
+
+func (l *catalogLoader) validateGuidanceComposition(catalog *Catalog) {
+	core, ok := catalog.modules["core"]
+	if !ok {
+		return
+	}
+	schema, _ := stringValue(core, "schemaVersion")
+	if schema != "setup-context-driven/module-v3" {
+		return
+	}
+	for moduleID, module := range catalog.modules {
+		if moduleID == "core" {
+			continue
+		}
+		for _, field := range []string{"instructionHierarchy", "semanticOwners"} {
+			if _, exists := module[field]; exists {
+				l.add("catalog.guidance.owner.invalid", moduleID, field)
+			}
+		}
+	}
+
+	rootModules := make(map[string]string)
+	moduleRoots := make(map[string][]string)
+	guides := make(map[string]SemanticOwner)
+	guidePaths := make(map[string][]string)
+	for moduleID, module := range catalog.modules {
+		for _, root := range objectsOrEmpty(module["rootBlocks"]) {
+			rootID, _ := stringValue(root, "id")
+			rootModules[rootID] = moduleID
+			moduleRoots[moduleID] = append(moduleRoots[moduleID], rootID)
+		}
+		for _, guide := range objectsOrEmpty(module["supportingGuides"]) {
+			managedID, _ := stringValue(guide, "id")
+			targetPath, _ := stringValue(guide, "path")
+			guides[managedID] = SemanticOwner{
+				ManagedID: managedID,
+				Path:      targetPath,
+				Module:    moduleID,
+			}
+			guidePaths[targetPath] = append(guidePaths[targetPath], managedID)
+		}
+	}
+
+	hierarchy, hierarchyOK := objectValue(core["instructionHierarchy"])
+	if !hierarchyOK {
+		l.add("catalog.instruction-hierarchy.invalid", "core", "")
+	} else {
+		l.allowFields(
+			"catalog.instruction-hierarchy.field.unknown",
+			"core",
+			hierarchy,
+			"narrowerPolicy",
+			"levels",
+		)
+		policy, _ := stringValue(hierarchy, "narrowerPolicy")
+		if policy != "strengthen-only" {
+			l.add("catalog.instruction-hierarchy.policy.invalid", "core", policy)
+		}
+		levels := objectsOrDiagnostic(
+			l,
+			hierarchy["levels"],
+			"catalog.instruction-hierarchy.levels.invalid",
+			"core",
+		)
+		if len(levels) != len(confirmedInstructionHierarchy) {
+			l.add(
+				"catalog.instruction-hierarchy.order.invalid",
+				"core",
+				fmt.Sprintf("%d levels", len(levels)),
+			)
+		}
+		seenRoots := make(map[string]string)
+		rootPosition := make(map[string]int)
+		validLevels := make([]InstructionHierarchyLevel, 0, len(levels))
+		position := 0
+		for index, level := range levels {
+			levelPath := fmt.Sprintf("core.levels[%d]", index)
+			l.allowFields(
+				"catalog.instruction-hierarchy.level.field.unknown",
+				levelPath,
+				level,
+				"id",
+				"title",
+				"rootBlocks",
+			)
+			levelID, _ := stringValue(level, "id")
+			if index >= len(confirmedInstructionHierarchy) ||
+				levelID != confirmedInstructionHierarchy[index] {
+				l.add("catalog.instruction-hierarchy.order.invalid", levelPath, levelID)
+			}
+			title, titleOK := stringValue(level, "title")
+			if !titleOK {
+				l.add("catalog.instruction-hierarchy.title.invalid", levelPath, "")
+			}
+			rootBlocks, rootsOK := stringList(level["rootBlocks"])
+			if !rootsOK || len(rootBlocks) == 0 || !uniqueStrings(rootBlocks) {
+				l.add("catalog.instruction-hierarchy.roots.invalid", levelPath, "")
+			}
+			for _, rootID := range rootBlocks {
+				_, exists := rootModules[rootID]
+				if !exists {
+					l.add("catalog.instruction-hierarchy.root.unknown", levelPath, rootID)
+					continue
+				}
+				if previous, duplicate := seenRoots[rootID]; duplicate {
+					l.add(
+						"catalog.instruction-hierarchy.root.duplicate",
+						rootID,
+						previous+", "+levelID,
+					)
+				}
+				seenRoots[rootID] = levelID
+				rootPosition[rootID] = position
+				position++
+			}
+			validLevels = append(validLevels, InstructionHierarchyLevel{
+				ID:         levelID,
+				Title:      title,
+				RootBlocks: append([]string(nil), rootBlocks...),
+			})
+		}
+		for rootID := range rootModules {
+			if _, exists := seenRoots[rootID]; !exists {
+				l.add("catalog.instruction-hierarchy.root.missing", rootID, "")
+			}
+		}
+		for rootID, moduleID := range rootModules {
+			current, currentExists := rootPosition[rootID]
+			if !currentExists {
+				continue
+			}
+			for _, dependency := range stringsOrEmpty(catalog.modules[moduleID]["dependsOn"]) {
+				for _, dependencyRoot := range moduleRoots[dependency] {
+					if dependencyPosition, exists := rootPosition[dependencyRoot]; exists &&
+						dependencyPosition >= current {
+						l.add(
+							"catalog.instruction-hierarchy.dependency.order",
+							rootID,
+							dependencyRoot,
+						)
+					}
+				}
+			}
+		}
+		catalog.instructionHierarchy = validLevels
+	}
+
+	owners := objectsOrDiagnostic(
+		l,
+		core["semanticOwners"],
+		"catalog.semantic-owners.invalid",
+		"core",
+	)
+	seenOwners := make(map[string]string)
+	seenClassifications := make(map[string]string)
+	for index, declaration := range owners {
+		ownerPath := fmt.Sprintf("core.semanticOwners[%d]", index)
+		l.allowFields(
+			"catalog.semantic-owner.field.unknown",
+			ownerPath,
+			declaration,
+			"managedId",
+			"title",
+			"classifications",
+		)
+		managedID, managedIDOK := stringValue(declaration, "managedId")
+		if !managedIDOK {
+			l.add("catalog.semantic-owner.managed-id.invalid", ownerPath, "")
+			continue
+		}
+		if previous, duplicate := seenOwners[managedID]; duplicate {
+			l.add(
+				"catalog.semantic-owner.managed-id.duplicate",
+				managedID,
+				previous+", "+ownerPath,
+			)
+		}
+		seenOwners[managedID] = ownerPath
+		owner, exists := guides[managedID]
+		if !exists {
+			l.add("catalog.semantic-owner.destination.unknown", ownerPath, managedID)
+			continue
+		}
+		title, titleOK := stringValue(declaration, "title")
+		if !titleOK {
+			l.add("catalog.semantic-owner.title.invalid", managedID, "")
+		}
+		classifications, classificationsOK := stringList(declaration["classifications"])
+		if !classificationsOK || len(classifications) == 0 ||
+			!uniqueStrings(classifications) {
+			l.add("catalog.semantic-owner.classifications.invalid", managedID, "")
+		}
+		for _, classification := range classifications {
+			if previous, duplicate := seenClassifications[classification]; duplicate {
+				l.add(
+					"catalog.semantic-owner.classification.duplicate",
+					classification,
+					previous+", "+managedID,
+				)
+			}
+			seenClassifications[classification] = managedID
+		}
+		owner.Title = title
+		owner.Classifications = append([]string(nil), classifications...)
+		catalog.semanticOwners[managedID] = owner
+	}
+	for managedID := range guides {
+		if _, exists := seenOwners[managedID]; !exists {
+			l.add("catalog.semantic-owner.destination.missing", managedID, "")
+		}
+	}
+
+	l.validateRootGuidePointers(catalog, guides, guidePaths)
+	l.validateClauseWeakening(catalog)
+}
+
+func (l *catalogLoader) validateRootGuidePointers(
+	catalog *Catalog,
+	guides map[string]SemanticOwner,
+	guidePaths map[string][]string,
+) {
+	pointers := make(map[string]int)
+	for _, module := range catalog.modules {
+		for _, root := range objectsOrEmpty(module["rootBlocks"]) {
+			rootID, _ := stringValue(root, "id")
+			templateID, _ := stringValue(root, "template")
+			template, templateExists := catalog.templates[templateID]
+			if !templateExists {
+				continue
+			}
+			templatePath, _ := stringValue(template, "path")
+			templateBytes, templateBytesExist := catalog.assets[path.Join("templates", templatePath)]
+			if !templateBytesExist {
+				continue
+			}
+			for _, reference := range objectsOrEmpty(root["references"]) {
+				token, _ := stringValue(reference, "token")
+				if occurrences := bytes.Count(
+					templateBytes,
+					[]byte("{{"+token+"}}"),
+				); occurrences != 1 {
+					l.add(
+						"catalog.instruction-hierarchy.pointer.occurrence",
+						rootID,
+						fmt.Sprintf("%s=%d", token, occurrences),
+					)
+				}
+				managedID, managed := stringValue(reference, "managedId")
+				if !managed {
+					continue
+				}
+				owner, exists := guides[managedID]
+				if !exists {
+					l.add(
+						"catalog.instruction-hierarchy.pointer.destination.unknown",
+						rootID,
+						managedID,
+					)
+					continue
+				}
+				pointers[owner.Path]++
+			}
+		}
+	}
+	for targetPath, managedIDs := range guidePaths {
+		switch pointers[targetPath] {
+		case 1:
+		case 0:
+			l.add(
+				"catalog.instruction-hierarchy.pointer.missing",
+				targetPath,
+				strings.Join(managedIDs, ", "),
+			)
+		default:
+			l.add(
+				"catalog.instruction-hierarchy.pointer.duplicate",
+				targetPath,
+				fmt.Sprintf("%d pointers", pointers[targetPath]),
+			)
+		}
+	}
+}
+
+func (l *catalogLoader) validateClauseWeakening(catalog *Catalog) {
+	protected := stringSet(catalog.DecisionIDs())
+	for _, rule := range objectsOrEmpty(catalog.modules["core"]["rules"]) {
+		for _, clause := range objectsOrEmpty(rule["clauses"]) {
+			if clauseID, ok := stringValue(clause, "id"); ok {
+				protected[clauseID] = struct{}{}
+			}
+		}
+	}
+	for moduleID, module := range catalog.modules {
+		if moduleID == "core" {
+			continue
+		}
+		for _, rule := range objectsOrEmpty(module["rules"]) {
+			for _, clause := range objectsOrEmpty(rule["clauses"]) {
+				if _, declared := clause["weakens"]; !declared {
+					continue
+				}
+				clauseID, _ := stringValue(clause, "id")
+				targets, ok := stringList(clause["weakens"])
+				if !ok || len(targets) == 0 {
+					l.add("catalog.clause.weakening.invalid", clauseID, "")
+					continue
+				}
+				for _, target := range targets {
+					if _, protectedTarget := protected[target]; protectedTarget {
+						l.add("catalog.clause.weakening.prohibited", clauseID, target)
+					} else {
+						l.add("catalog.clause.weakening.target.unknown", clauseID, target)
+					}
+				}
+			}
+		}
+	}
+}
+
 func (l *catalogLoader) validateDecisionEffects(catalog *Catalog) {
 	artifacts := catalogArtifacts(catalog)
 	graph := make(map[string][]string)
@@ -397,12 +845,46 @@ func (l *catalogLoader) validateDecisionEffects(catalog *Catalog) {
 	})
 	for decisionID, decision := range catalog.decisions {
 		decisionType, _ := stringValue(decision, "type")
-		if !containsString([]string{"boolean", "enum", "http-contract", "string"}, decisionType) {
+		structuredRenderer := containsString(
+			[]string{"auth-provider", "http-contract", "identifier-strategy"},
+			decisionType,
+		)
+		renderBindingCount := 0
+		if !containsString(
+			[]string{
+				"auth-provider",
+				"boolean",
+				"enum",
+				"http-contract",
+				"identifier-strategy",
+				"string",
+			},
+			decisionType,
+		) {
 			l.add("catalog.decision.type.invalid", decisionID, decisionType)
 		}
 		if value, ok := decision["default"]; ok {
 			if err := validateDecisionValue(decision, value); err != nil {
 				l.add("catalog.decision.default.invalid", decisionID, err.Error())
+			}
+		}
+		if value, ok := decision["suggestion"]; ok {
+			if err := validateDecisionValue(decision, value); err != nil {
+				l.add("catalog.decision.suggestion.invalid", decisionID, err.Error())
+			}
+		}
+		requiredCapabilities, capabilitiesOK := stringList(decision["requiresCapabilities"])
+		if _, declared := decision["requiresCapabilities"]; declared {
+			if !capabilitiesOK ||
+				len(requiredCapabilities) == 0 ||
+				!uniqueStrings(requiredCapabilities) {
+				l.add("catalog.decision.capabilities.invalid", decisionID, "")
+			}
+			knownCapabilities := catalogCapabilityIDs(catalog)
+			for _, capabilityID := range requiredCapabilities {
+				if _, exists := knownCapabilities[capabilityID]; !exists {
+					l.add("catalog.decision.capability.unknown", decisionID, capabilityID)
+				}
 			}
 		}
 		effects, ok := objectList(decision["effects"])
@@ -449,6 +931,7 @@ func (l *catalogLoader) validateDecisionEffects(catalog *Catalog) {
 				}
 			}
 			for _, binding := range objectsOrEmpty(effect["renderBindings"]) {
+				renderBindingCount++
 				artifactID, _ := stringValue(binding, "artifact")
 				templateID, _ := stringValue(binding, "template")
 				token, _ := stringValue(binding, "token")
@@ -463,8 +946,243 @@ func (l *catalogLoader) validateDecisionEffects(catalog *Catalog) {
 				}
 			}
 		}
+		if structuredRenderer && renderBindingCount != 1 {
+			l.add(
+				"catalog.decision.structured-renderer.invalid",
+				decisionID,
+				fmt.Sprintf("bindings %d", renderBindingCount),
+			)
+		}
 	}
 	l.validateDecisionCycles(graph)
+}
+
+func (l *catalogLoader) validateToolingAuthority(catalog *Catalog) {
+	core := catalog.modules["core"]
+	schemaVersion, _ := stringValue(core, "schemaVersion")
+	if schemaVersion != "setup-context-driven/module-v3" {
+		return
+	}
+	var authorityRule document
+	for _, rule := range objectsOrEmpty(core["rules"]) {
+		ruleID, _ := stringValue(rule, "id")
+		if ruleID == toolingAuthorityRuleID {
+			authorityRule = rule
+			break
+		}
+	}
+	if authorityRule == nil {
+		l.add("catalog.tooling-authority.rule.missing", "core", toolingAuthorityRuleID)
+	} else {
+		if !containsString(stringsOrEmpty(authorityRule["coverage"]), toolingAuthorityCoverageID) {
+			l.add(
+				"catalog.tooling-authority.coverage.missing",
+				toolingAuthorityRuleID,
+				toolingAuthorityCoverageID,
+			)
+		}
+		var authorityClause document
+		for _, clause := range objectsOrEmpty(authorityRule["clauses"]) {
+			clauseID, _ := stringValue(clause, "id")
+			if clauseID == toolingAuthorityClauseID {
+				authorityClause = clause
+				break
+			}
+		}
+		if authorityClause == nil {
+			l.add(
+				"catalog.tooling-authority.clause.missing",
+				toolingAuthorityRuleID,
+				toolingAuthorityClauseID,
+			)
+		} else {
+			enforcement, _ := stringValue(authorityClause, "enforcement")
+			guidance, _ := stringValue(authorityClause, "guidance")
+			if enforcement != "prohibited" || guidance != toolingAuthorityGuidance {
+				l.add(
+					"catalog.tooling-authority.clause.invalid",
+					toolingAuthorityClauseID,
+					"the protected operative text or enforcement changed",
+				)
+			}
+		}
+	}
+
+	guideCarriesRule := false
+	for _, guide := range objectsOrEmpty(core["supportingGuides"]) {
+		guideID, _ := stringValue(guide, "id")
+		if guideID == toolingAuthorityGuideID &&
+			containsString(stringsOrEmpty(guide["rules"]), toolingAuthorityRuleID) {
+			guideCarriesRule = true
+		}
+	}
+	if !guideCarriesRule {
+		l.add(
+			"catalog.tooling-authority.carrier.missing",
+			toolingAuthorityGuideID,
+			toolingAuthorityRuleID,
+		)
+	}
+
+	for profileID, profile := range catalog.profiles {
+		if !containsString(stringsOrEmpty(profile["modules"]), "core") ||
+			!containsString(stringsOrEmpty(profile["requiredRules"]), toolingAuthorityRuleID) {
+			l.add(
+				"catalog.tooling-authority.profile.rule.missing",
+				profileID,
+				toolingAuthorityRuleID,
+			)
+		}
+	}
+
+	if _, exists := catalog.decisions["tooling.authority"]; exists {
+		l.add(
+			"catalog.tooling-authority.decision.prohibited",
+			"tooling.authority",
+			"the universal clause is not a setup decision",
+		)
+	}
+	for decisionID, decision := range catalog.decisions {
+		for _, effect := range objectsOrEmpty(decision["effects"]) {
+			if containsString(stringsOrEmpty(effect["activateModules"]), "core") ||
+				containsString(stringsOrEmpty(effect["excludeArtifacts"]), toolingAuthorityGuideID) {
+				l.add(
+					"catalog.tooling-authority.effect.prohibited",
+					decisionID,
+					"core tooling authority cannot be conditional or excluded",
+				)
+			}
+			for _, selection := range objectsOrEmpty(effect["selectTemplates"]) {
+				artifactID, _ := stringValue(selection, "artifact")
+				templateID, _ := stringValue(selection, "template")
+				if artifactID == toolingAuthorityGuideID &&
+					templateID != "template.guide.agent-instructions" {
+					l.add(
+						"catalog.tooling-authority.effect.prohibited",
+						decisionID,
+						"tooling authority cannot select a narrower guide template",
+					)
+				}
+			}
+			for _, binding := range objectsOrEmpty(effect["renderBindings"]) {
+				artifactID, _ := stringValue(binding, "artifact")
+				token, _ := stringValue(binding, "token")
+				if artifactID == toolingAuthorityGuideID && token == "artifact.rules" {
+					l.add(
+						"catalog.tooling-authority.effect.prohibited",
+						decisionID,
+						"tooling authority cannot be replaced by a decision binding",
+					)
+				}
+			}
+		}
+	}
+
+	for transitionID, transition := range catalog.transitions {
+		retained := false
+		for _, mapping := range objectsOrEmpty(transition["mappings"]) {
+			if containsString(stringsOrEmpty(mapping["targets"]), toolingAuthorityClauseID) {
+				retained = true
+				break
+			}
+		}
+		if !retained {
+			l.add(
+				"catalog.tooling-authority.retention.missing",
+				transitionID,
+				toolingAuthorityClauseID,
+			)
+		}
+	}
+
+	index := l.documents["source-baselines/index.json"]
+	for _, declaration := range objectsOrEmpty(index["baselines"]) {
+		baselineID, _ := stringValue(declaration, "id")
+		source, err := catalog.SourceBaseline(baselineID)
+		if err != nil {
+			continue
+		}
+		accounted := false
+		for _, entry := range source.Entries {
+			if entry.ID == toolingAuthorityClauseID {
+				accounted = true
+				break
+			}
+		}
+		if !accounted {
+			l.add(
+				"catalog.tooling-authority.source-accounting.missing",
+				baselineID,
+				toolingAuthorityClauseID,
+			)
+		}
+	}
+}
+
+func (l *catalogLoader) validateProjectDecisionAssets(catalog *Catalog) {
+	const (
+		standardTypeScriptProfileID = "standard-typescript-monorepo"
+		identifierStrategyID        = "identifier.strategy"
+	)
+
+	standardTypeScriptProfile := catalog.profiles[standardTypeScriptProfileID]
+	schemaVersion, _ := stringValue(standardTypeScriptProfile, "schemaVersion")
+	if schemaVersion != "setup-context-driven/profile/0.0.1" {
+		return
+	}
+	if !containsString(
+		stringsOrEmpty(standardTypeScriptProfile["entryDecisions"]),
+		identifierStrategyID,
+	) {
+		l.add(
+			"catalog.project-decision.profile.missing",
+			standardTypeScriptProfileID,
+			identifierStrategyID,
+		)
+	}
+
+	for profileID, profile := range catalog.profiles {
+		schemaVersion, _ := stringValue(profile, "schemaVersion")
+		if schemaVersion != "setup-context-driven/profile/0.0.1" {
+			continue
+		}
+		selectedDecisions := stringSet(stringsOrEmpty(profile["entryDecisions"]))
+		selectedCapabilities := make(map[string]struct{})
+		for _, capability := range objectsOrEmpty(profile["capabilities"]) {
+			if capabilityID, ok := stringValue(capability, "id"); ok {
+				selectedCapabilities[capabilityID] = struct{}{}
+			}
+		}
+
+		for decisionID, decision := range catalog.decisions {
+			requiredCapabilities := stringsOrEmpty(decision["requiresCapabilities"])
+			if len(requiredCapabilities) == 0 {
+				continue
+			}
+			applicable := true
+			for _, capabilityID := range requiredCapabilities {
+				if _, selected := selectedCapabilities[capabilityID]; !selected {
+					applicable = false
+					break
+				}
+			}
+			_, selected := selectedDecisions[decisionID]
+			switch {
+			case applicable && !selected:
+				l.add(
+					"catalog.project-decision.profile.missing",
+					profileID,
+					decisionID,
+				)
+			case !applicable && selected:
+				l.add(
+					"catalog.project-decision.capability.unselected",
+					profileID,
+					decisionID,
+				)
+			}
+		}
+	}
 }
 
 func (l *catalogLoader) validateDecisionCycles(graph map[string][]string) {
@@ -711,6 +1429,72 @@ func (l *catalogLoader) validateSourceBaselines(catalog *Catalog) {
 		}
 		if !foundCorpus {
 			l.add("catalog.sourceBaseline.corpus.missing", baselineID, corpus)
+		}
+		baseline, err := catalog.SourceBaseline(baselineID)
+		if err != nil {
+			l.add("catalog.sourceBaseline.integrity.invalid", baselineID, err.Error())
+			continue
+		}
+		l.validateSourceBaselineCoverage(catalog, baseline)
+	}
+}
+
+func (l *catalogLoader) validateSourceBaselineCoverage(
+	catalog *Catalog,
+	baseline SourceBaseline,
+) {
+	profile := catalog.profiles[baseline.Identity.Profile]
+	selectedModules := stringSet(stringsOrEmpty(profile["modules"]))
+	entryIDs := make(map[string]struct{}, len(baseline.Entries))
+	carriers := make(map[string]struct{}, len(baseline.Entries))
+	for _, entry := range baseline.Entries {
+		entryIDs[entry.ID] = struct{}{}
+		carriers[entry.Carrier] = struct{}{}
+	}
+
+	rules := make(map[string]document)
+	for moduleID := range selectedModules {
+		for _, rule := range objectsOrEmpty(catalog.modules[moduleID]["rules"]) {
+			ruleID, _ := stringValue(rule, "id")
+			rules[ruleID] = rule
+		}
+	}
+	for _, ruleID := range stringsOrEmpty(profile["requiredRules"]) {
+		rule := rules[ruleID]
+		clauses := objectsOrEmpty(rule["clauses"])
+		if len(clauses) == 0 {
+			if _, ok := entryIDs[ruleID]; !ok {
+				l.add(
+					"catalog.sourceBaseline.required-rule.missing",
+					baseline.Identity.ID,
+					ruleID,
+				)
+			}
+			continue
+		}
+		for _, clause := range clauses {
+			clauseID, _ := stringValue(clause, "id")
+			if _, ok := entryIDs[clauseID]; !ok {
+				l.add(
+					"catalog.sourceBaseline.required-clause.missing",
+					baseline.Identity.ID,
+					clauseID,
+				)
+			}
+		}
+	}
+
+	for managedID, owner := range catalog.semanticOwners {
+		if _, active := selectedModules[owner.Module]; !active ||
+			owner.Module == repositoryExtensionModuleID {
+			continue
+		}
+		if _, ok := carriers[owner.Path]; !ok {
+			l.add(
+				"catalog.sourceBaseline.semantic-destination.missing",
+				baseline.Identity.ID,
+				managedID,
+			)
 		}
 	}
 }

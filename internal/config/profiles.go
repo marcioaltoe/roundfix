@@ -166,7 +166,7 @@ func builtinProfiles() Profiles {
 		Fallbacks: []AgentSelection{{Runtime: "codex", Model: "gpt-5.5", ReasoningEffort: "xhigh"}},
 	}
 	frontend := AgentSelectionProfile{
-		Preferred: AgentSelection{Runtime: "claude", Model: "claude-fable-5", ReasoningEffort: "medium"},
+		Preferred: AgentSelection{Runtime: "claude", Model: "claude-opus-5", ReasoningEffort: "xhigh"},
 		Fallbacks: []AgentSelection{{Runtime: "codex", Model: "gpt-5.6-sol", ReasoningEffort: "high"}},
 	}
 	return Profiles{

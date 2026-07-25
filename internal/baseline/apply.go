@@ -3,7 +3,6 @@ package baseline
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"path"
@@ -236,7 +235,7 @@ func preimageMatchesPostimage(preimage Preimage, postimage Postimage) bool {
 func verifiedApplyResult(document PlanDocument, verified []Postimage, alreadyApplied bool) Result {
 	recommendations := make([]string, 0, len(document.SetupManifest.Verification))
 	for _, verification := range document.SetupManifest.Verification {
-		if verification.Command != "" {
+		if verification.RepositoryExecutable && verification.Command != "" {
 			recommendations = append(recommendations, verification.Command)
 		}
 	}
@@ -284,7 +283,7 @@ func validatePlanApplyContract(document PlanDocument) error {
 	if !ok || manifestPostimage.Kind != PreimageRegular {
 		return errors.New("Baseline Plan has no regular Setup Manifest postimage")
 	}
-	manifestBytes, err := json.MarshalIndent(document.SetupManifest, "", "  ")
+	manifestBytes, err := marshalSetupManifestBytes(document.SetupManifest)
 	if err != nil {
 		return fmt.Errorf("serialize Setup Manifest validation bytes: %w", err)
 	}
@@ -292,11 +291,14 @@ func validatePlanApplyContract(document PlanDocument) error {
 	if !bytes.Equal(manifestPostimage.Content, manifestBytes) {
 		return errors.New("Setup Manifest postimage does not match the plan identity")
 	}
+	if err := validatePlannedProfilePostimage(document, preimages, postimages); err != nil {
+		return err
+	}
 	if err := validateSpecificRepositoryPlan(document, preimages, postimages); err != nil {
 		return err
 	}
 
-	expectedBackups, err := expectedRootBackups(document.Preimages)
+	expectedBackups, err := expectedRootBackups(document.Preimages, document.Postimages)
 	if err != nil {
 		return err
 	}
@@ -356,6 +358,57 @@ func validatePlanApplyContract(document PlanDocument) error {
 	return nil
 }
 
+func validatePlannedProfilePostimage(
+	document PlanDocument,
+	preimages map[string]Preimage,
+	postimages map[string]Postimage,
+) error {
+	var entries []ManagedEntry
+	for _, entry := range document.ManagedEntries {
+		if entry.Kind == "profile" {
+			entries = append(entries, entry)
+		}
+	}
+	if len(entries) == 0 {
+		return nil
+	}
+	if len(entries) != 1 {
+		return errors.New("Baseline Plan has multiple repository Profile ledger entries")
+	}
+	expectedPath := path.Join(customProfileDirectory, document.Profile.ID+".json")
+	if document.Profile.Source != ProfileSourceRepository ||
+		document.Profile.Path != expectedPath {
+		return errors.New("Baseline Plan repository Profile path does not match its identity")
+	}
+	postimage, ok := postimages[expectedPath]
+	if !ok || postimage.Kind != PreimageRegular {
+		return errors.New("Baseline Plan has no regular repository Profile postimage")
+	}
+	expectedBytes, err := marshalResolvedCustomProfile(document.Profile)
+	if err != nil {
+		return fmt.Errorf("serialize planned repository Profile validation bytes: %w", err)
+	}
+	if !bytes.Equal(postimage.Content, expectedBytes) {
+		return errors.New("repository Profile postimage does not match the plan identity")
+	}
+	entry := entries[0]
+	preimage := preimages[expectedPath]
+	if entry.ID != "profile:"+document.Profile.ID ||
+		entry.Path != expectedPath ||
+		entry.Action != fileAction(
+			preimage,
+			postimage.Kind,
+			preimage.ContentIdentity,
+			postimage.ContentIdentity,
+		) ||
+		entry.BeforeIdentity != preimage.ContentIdentity ||
+		entry.AfterIdentity != postimage.ContentIdentity ||
+		entry.ContentIdentity != postimage.ContentIdentity {
+		return errors.New("repository Profile managed-entry ledger does not match the planned postimage")
+	}
+	return nil
+}
+
 func validateSpecificRepositoryPlan(
 	document PlanDocument,
 	_ map[string]Preimage,
@@ -395,13 +448,69 @@ func validateSpecificRepositoryPlan(
 			return errors.New("repository-specific rule carrier is written without its root pointer")
 		}
 	}
+
+	activeGuides := make(map[string]struct{})
+	for _, artifact := range document.SetupManifest.ManagedArtifacts {
+		if artifact.Kind == "guide" {
+			activeGuides[artifact.Path] = struct{}{}
+		}
+	}
+	ruleEntries := make(map[string]ManagedEntry)
+	for _, entry := range document.ManagedEntries {
+		if !strings.HasPrefix(entry.ID, "repository-rule:") {
+			continue
+		}
+		if entry.Kind != "repository-owned" {
+			return fmt.Errorf("repository-rule ledger entry %q has invalid ownership", entry.ID)
+		}
+		if _, duplicate := ruleEntries[entry.ID]; duplicate {
+			return fmt.Errorf("repository-rule ledger entry %q is duplicated", entry.ID)
+		}
+		ruleEntries[entry.ID] = entry
+	}
+	seenRules := make(map[string]struct{})
+	for relative, postimage := range postimages {
+		if postimage.Kind != PreimageRegular ||
+			!bytes.Contains(postimage.Content, []byte("<!-- roundfix:repository-rule:")) {
+			continue
+		}
+		if _, active := activeGuides[relative]; !active {
+			return fmt.Errorf("repository-rule marker is outside an active semantic guide at %q", relative)
+		}
+		blocks, err := parseRepositoryRuleBlocks(relative, postimage.Content)
+		if err != nil {
+			return err
+		}
+		for _, block := range blocks {
+			entryID := "repository-rule:" + block.ID
+			entry, exists := ruleEntries[entryID]
+			if !exists ||
+				entry.Path != relative ||
+				entry.ContentIdentity != planContentIdentity(block.Body) {
+				return fmt.Errorf("repository-rule marker %q has no exact managed-entry ledger record", block.ID)
+			}
+			seenRules[entryID] = struct{}{}
+		}
+	}
+	for entryID := range ruleEntries {
+		if _, exists := seenRules[entryID]; !exists {
+			return fmt.Errorf("repository-rule ledger entry %q has no semantic guide marker", entryID)
+		}
+	}
 	return nil
 }
 
 const sha256HexLength = 64
 
-func expectedRootBackups(preimages []Preimage) (map[string]string, error) {
+func expectedRootBackups(
+	preimages []Preimage,
+	postimages []Postimage,
+) (map[string]string, error) {
 	byPath := preimagesByPath(preimages)
+	postimagesByPath := make(map[string]Postimage, len(postimages))
+	for _, postimage := range postimages {
+		postimagesByPath[postimage.Path] = postimage
+	}
 	type carrier struct {
 		path   string
 		source string
@@ -414,15 +523,16 @@ func expectedRootBackups(preimages []Preimage) (map[string]string, error) {
 		if !ok || !preimage.Exists {
 			continue
 		}
+		var candidate carrier
 		switch preimage.Kind {
 		case PreimageRegular:
 			if preimage.ContentIdentity == "" {
 				return nil, fmt.Errorf("root carrier %q has no content identity", carrierPath)
 			}
-			carriers = append(carriers, carrier{
+			candidate = carrier{
 				path: carrierPath, source: carrierPath,
 				digest: preimage.ContentIdentity, direct: true,
-			})
+			}
 		case PreimageSymlink:
 			source := path.Clean(path.Join(path.Dir(carrierPath), preimage.LinkTarget))
 			sourcePreimage, exists := byPath[source]
@@ -430,13 +540,20 @@ func expectedRootBackups(preimages []Preimage) (map[string]string, error) {
 				sourcePreimage.ContentIdentity == "" {
 				return nil, fmt.Errorf("root carrier %q has no safe bounded source", carrierPath)
 			}
-			carriers = append(carriers, carrier{
+			candidate = carrier{
 				path: carrierPath, source: source,
 				digest: sourcePreimage.ContentIdentity,
-			})
+			}
 		default:
 			return nil, fmt.Errorf("root carrier %q has unsupported kind %q", carrierPath, preimage.Kind)
 		}
+		postimage, exists := postimagesByPath[candidate.source]
+		if exists &&
+			postimage.Kind == PreimageRegular &&
+			unchangedSetupManagedGuidance(candidate.digest, postimage.Content) {
+			continue
+		}
+		carriers = append(carriers, candidate)
 	}
 	sort.Slice(carriers, func(i, j int) bool {
 		if carriers[i].source != carriers[j].source {

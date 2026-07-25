@@ -1,0 +1,77 @@
+{
+  "schemaVersion": "roundfix/baseline-result/v1",
+  "operation": "plan",
+  "state": "action_required",
+  "category": "decision",
+  "message": "required profile alignment is unresolved: capability.stack.better-auth, capability.stack.logtape, capability.stack.postgresql, capability.stack.react, capability.stack.shadcn, capability.stack.tailwind, capability.stack.tanstack-query, capability.stack.tanstack-router, capability.stack.vite, capability.workspace.frontend",
+  "nextAction": "Add compatible local Better Auth evidence and rerun profile alignment. Add compatible local LogTape evidence and rerun profile alignment. Record the PostgreSQL repository contract at one accepted path: DATABASE.md, docs/architecture/database.json, docs/architecture/postgresql.json Add compatible local React evidence and rerun profile alignment. Add compatible local shadcn evidence and rerun profile alignment. Add compatible local Tailwind evidence and rerun profile alignment. Add compatible local TanStack Query evidence and rerun profile alignment. Add compatible local TanStack Router evidence and rerun profile alignment. Add compatible local Vite evidence and rerun profile alignment. Add compatible local packages/frontend evidence and rerun profile alignment.",
+  "verifiedPostimages": [],
+  "warnings": [
+    {
+      "code": "baseline.inventory.nested-carrier-conflict",
+      "path": "docs/agents/agent-instructions.md",
+      "message": "nested carrier remains unchanged and requires conflict review"
+    },
+    {
+      "code": "baseline.inventory.nested-carrier-conflict",
+      "path": "docs/agents/autonomous-work.md",
+      "message": "nested carrier remains unchanged and requires conflict review"
+    },
+    {
+      "code": "baseline.inventory.nested-carrier-conflict",
+      "path": "docs/agents/backend.md",
+      "message": "nested carrier remains unchanged and requires conflict review"
+    },
+    {
+      "code": "baseline.inventory.nested-carrier-conflict",
+      "path": "docs/agents/docs-layout.md",
+      "message": "nested carrier remains unchanged and requires conflict review"
+    },
+    {
+      "code": "baseline.inventory.nested-carrier-conflict",
+      "path": "docs/agents/domain.md",
+      "message": "nested carrier remains unchanged and requires conflict review"
+    },
+    {
+      "code": "baseline.inventory.nested-carrier-conflict",
+      "path": "docs/agents/frontend.md",
+      "message": "nested carrier remains unchanged and requires conflict review"
+    },
+    {
+      "code": "baseline.inventory.nested-carrier-conflict",
+      "path": "docs/agents/issue-tracker.md",
+      "message": "nested carrier remains unchanged and requires conflict review"
+    },
+    {
+      "code": "baseline.inventory.nested-carrier-conflict",
+      "path": "docs/agents/monorepo.md",
+      "message": "nested carrier remains unchanged and requires conflict review"
+    },
+    {
+      "code": "baseline.inventory.nested-carrier-conflict",
+      "path": "docs/agents/secondbrain.md",
+      "message": "nested carrier remains unchanged and requires conflict review"
+    },
+    {
+      "code": "baseline.inventory.nested-carrier-conflict",
+      "path": "docs/agents/setup-context.json",
+      "message": "nested carrier remains unchanged and requires conflict review"
+    },
+    {
+      "code": "baseline.inventory.nested-carrier-conflict",
+      "path": "docs/agents/skill-dispatch.md",
+      "message": "nested carrier remains unchanged and requires conflict review"
+    },
+    {
+      "code": "baseline.inventory.nested-carrier-conflict",
+      "path": "docs/agents/spec-routing.md",
+      "message": "nested carrier remains unchanged and requires conflict review"
+    },
+    {
+      "code": "baseline.inventory.nested-carrier-conflict",
+      "path": "docs/agents/typescript-bun.md",
+      "message": "nested carrier remains unchanged and requires conflict review"
+    }
+  ],
+  "recommendations": []
+}

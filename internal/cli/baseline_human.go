@@ -3,9 +3,7 @@ package cli
 import (
 	"bufio"
 	"context"
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -33,16 +31,38 @@ type baselineHumanCommandIO struct {
 	input            io.Reader
 	interactive      bool
 	revisionAnalyzer baselineRevisionAnalyzer
+	semanticAnalyzer baselineSemanticAnalyzer
 }
 
 type baselineRevisionAnalyzer interface {
 	Revise(context.Context, baseline.RevisionSnapshot) (baseline.RevisionProposal, error)
 }
 
+type baselineSemanticAnalyzer interface {
+	Segment(context.Context, baseline.RuleSegmentationSnapshot) (baseline.RuleSegmentationProposal, error)
+	Classify(context.Context, baseline.AnalysisSnapshot) (baseline.ClassificationProposal, error)
+}
+
 type baselineHumanPrompt struct {
 	reader *bufio.Reader
 	writer io.Writer
 	step   int
+}
+
+type baselineHumanOutput struct {
+	writer io.Writer
+	err    error
+}
+
+func (output *baselineHumanOutput) Write(data []byte) (int, error) {
+	if output.err != nil {
+		return 0, output.err
+	}
+	written, err := output.writer.Write(data)
+	if err != nil {
+		output.err = err
+	}
+	return written, err
 }
 
 type baselineHumanState struct {
@@ -61,12 +81,13 @@ func (err *baselineHumanActionError) Error() string {
 }
 
 type baselineDecisionDeclaration struct {
-	ID      string   `json:"id"`
-	Type    string   `json:"type"`
-	Values  []string `json:"values"`
-	Modes   []string `json:"modes"`
-	Summary string   `json:"summary"`
-	Default any      `json:"default"`
+	ID         string   `json:"id"`
+	Type       string   `json:"type"`
+	Values     []string `json:"values"`
+	Modes      []string `json:"modes"`
+	Summary    string   `json:"summary"`
+	Default    any      `json:"default"`
+	Suggestion any      `json:"suggestion"`
 }
 
 func runBaselineHumanCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
@@ -102,22 +123,39 @@ func runBaselineHumanCommandWithIO(
 		)
 	}
 
-	review := stdout
+	reviewDestination := stdout
 	if jsonOutput {
-		review = stderr
+		reviewDestination = stderr
 	}
+	review := &baselineHumanOutput{writer: reviewDestination}
+	promptOutput := &baselineHumanOutput{writer: stderr}
 	prompt := &baselineHumanPrompt{
 		reader: bufio.NewReader(commandIO.input),
-		writer: stderr,
+		writer: promptOutput,
 	}
 	var planRequest baseline.PlanRequest
-	plan, err := driveHumanBaselinePlanWithRequest(ctx, request.repo, prompt, review, &planRequest)
+	plan, err := driveHumanBaselinePlanWithAnalyzers(
+		ctx,
+		request.repo,
+		prompt,
+		review,
+		&planRequest,
+		commandIO.semanticAnalyzer,
+	)
 	if err != nil {
 		var actionErr *baselineHumanActionError
 		if errors.As(err, &actionErr) {
 			return writeBaselineHumanAction(actionErr.result, jsonOutput, stdout, stderr)
 		}
 		return printBaselineHumanFailure(err, jsonOutput, stdout, stderr)
+	}
+	if err := baselineHumanOutputFailure(review, promptOutput); err != nil {
+		return printBaselineHumanFailure(
+			fmt.Errorf("write Baseline review: %w", err),
+			jsonOutput,
+			stdout,
+			stderr,
+		)
 	}
 
 	originalPlan := plan
@@ -154,12 +192,21 @@ func runBaselineHumanCommandWithIO(
 			plan,
 			planRequest,
 			commandIO.revisionAnalyzer,
+			commandIO.semanticAnalyzer,
 		)
 		if revisionErr != nil {
 			return printBaselineHumanFailure(revisionErr, jsonOutput, stdout, stderr)
 		}
 		plan = revisedPlan
 		planRequest = revisedRequest
+	}
+	if err := baselineHumanOutputFailure(review, promptOutput); err != nil {
+		return printBaselineHumanFailure(
+			fmt.Errorf("write Baseline confirmation: %w", err),
+			jsonOutput,
+			stdout,
+			stderr,
+		)
 	}
 
 	result, err := baseline.ApplyPlan(ctx, request.repo, plan, plan.PlanDigest)
@@ -173,12 +220,23 @@ func runBaselineHumanCommandWithIO(
 	return exitOK
 }
 
+func baselineHumanOutputFailure(outputs ...*baselineHumanOutput) error {
+	for _, output := range outputs {
+		if output != nil && output.err != nil {
+			return output.err
+		}
+	}
+	return nil
+}
+
 func defaultBaselineHumanCommandIO() baselineHumanCommandIO {
 	info, err := os.Stdin.Stat()
+	analyzer := baselineacp.NewDefaultAnalyzer()
 	return baselineHumanCommandIO{
 		input:            os.Stdin,
 		interactive:      err == nil && info.Mode()&os.ModeCharDevice != 0,
-		revisionAnalyzer: baselineacp.NewDefaultAnalyzer(),
+		revisionAnalyzer: analyzer,
+		semanticAnalyzer: analyzer,
 	}
 }
 
@@ -239,6 +297,24 @@ func driveHumanBaselinePlanWithRequest(
 	review io.Writer,
 	captured *baseline.PlanRequest,
 ) (baseline.PlanDocument, error) {
+	return driveHumanBaselinePlanWithAnalyzers(
+		ctx,
+		repository,
+		prompt,
+		review,
+		captured,
+		nil,
+	)
+}
+
+func driveHumanBaselinePlanWithAnalyzers(
+	ctx context.Context,
+	repository string,
+	prompt *baselineHumanPrompt,
+	review io.Writer,
+	captured *baseline.PlanRequest,
+	semanticAnalyzer baselineSemanticAnalyzer,
+) (baseline.PlanDocument, error) {
 	if prompt == nil {
 		return baseline.PlanDocument{}, errors.New("drive human Baseline workflow: prompt adapter is required")
 	}
@@ -286,12 +362,29 @@ func driveHumanBaselinePlanWithRequest(
 	if err != nil {
 		return baseline.PlanDocument{}, err
 	}
+	profile, decisions, profileDraft, err := promptBaselineProfileAlignment(
+		ctx,
+		prompt,
+		review,
+		inspection.Root,
+		catalog,
+		state,
+		profile,
+		decisions,
+	)
+	if err != nil {
+		return baseline.PlanDocument{}, err
+	}
 	preservation, err := promptBaselineClassification(
 		ctx,
 		prompt,
 		review,
 		inspection,
 		preservationMode,
+		catalog,
+		profile,
+		decisions,
+		semanticAnalyzer,
 	)
 	if err != nil {
 		return baseline.PlanDocument{}, err
@@ -299,9 +392,13 @@ func driveHumanBaselinePlanWithRequest(
 
 	request := baseline.PlanRequest{
 		Repository:   inspection.Root,
-		ProfileID:    profile.ID,
 		Decisions:    decisions,
 		Preservation: preservation,
+	}
+	if profileDraft == nil {
+		request.ProfileID = profile.ID
+	} else {
+		request.ProfileDraft = profileDraft
 	}
 	outcome, err := baseline.BuildPlan(ctx, request)
 	if err != nil {
@@ -327,6 +424,7 @@ func reviseHumanBaselinePlan(
 	current baseline.PlanDocument,
 	request baseline.PlanRequest,
 	analyzer baselineRevisionAnalyzer,
+	semanticAnalyzer baselineSemanticAnalyzer,
 ) (baseline.PlanDocument, baseline.PlanRequest, error) {
 	selected, err := prompt.selectOne(ctx, "Decision area to revisit", []string{
 		"Baseline Profile",
@@ -385,10 +483,7 @@ func reviseHumanBaselinePlan(
 					if loadErr != nil {
 						return baseline.PlanDocument{}, request, loadErr
 					}
-					profile, resolveErr := baseline.ResolveProfile(request.Repository, request.ProfileID, catalog)
-					if resolveErr != nil {
-						return baseline.PlanDocument{}, request, resolveErr
-					}
+					profile := current.Profile
 					normalized, missing, normalizeErr := baseline.ResolveDecisionInput(profile, decisions, catalog)
 					if normalizeErr != nil || len(missing) != 0 {
 						fmt.Fprintln(review, "Semantic revision was discarded because it did not produce complete valid Baseline decisions.")
@@ -402,7 +497,15 @@ func reviseHumanBaselinePlan(
 		}
 	}
 	if !semanticAccepted {
-		revised, err = promptStructuredBaselineRevision(ctx, prompt, review, current, request, area)
+		revised, err = promptStructuredBaselineRevision(
+			ctx,
+			prompt,
+			review,
+			current,
+			request,
+			area,
+			semanticAnalyzer,
+		)
 		if err != nil {
 			return baseline.PlanDocument{}, request, err
 		}
@@ -433,6 +536,7 @@ func promptStructuredBaselineRevision(
 	current baseline.PlanDocument,
 	request baseline.PlanRequest,
 	area baseline.RevisionArea,
+	semanticAnalyzer baselineSemanticAnalyzer,
 ) (baseline.PlanRequest, error) {
 	catalog, err := baseline.LoadEmbeddedCatalog()
 	if err != nil {
@@ -458,7 +562,10 @@ func promptStructuredBaselineRevision(
 		if decisionErr != nil {
 			return request, decisionErr
 		}
-		request.ProfileID = selected.ID
+		if request.ProfileDraft == nil || selected.ID != current.Profile.ID {
+			request.ProfileID = selected.ID
+			request.ProfileDraft = nil
+		}
 		request.Decisions = decisions
 	case baseline.RevisionAreaRepositoryRules:
 		inspection, inspectErr := baseline.InspectRepository(ctx, request.Repository, nil)
@@ -473,7 +580,17 @@ func promptStructuredBaselineRevision(
 		if modeErr != nil {
 			return request, modeErr
 		}
-		preservation, preservationErr := promptBaselineClassification(ctx, prompt, review, inspection, mode)
+		preservation, preservationErr := promptBaselineClassification(
+			ctx,
+			prompt,
+			review,
+			inspection,
+			mode,
+			catalog,
+			current.Profile,
+			current.Decisions,
+			semanticAnalyzer,
+		)
 		if preservationErr != nil {
 			return request, preservationErr
 		}
@@ -555,6 +672,24 @@ func inspectBaselineHumanState(root string, catalog *baseline.Catalog) (baseline
 	if profile.Digest != manifest.ProfileDigest {
 		state.incompatible = "the existing Setup Manifest references an unavailable or changed Baseline Profile"
 		return state, nil
+	}
+	stored := make([]baseline.DecisionValue, 0, len(manifest.Decisions))
+	for id, decision := range manifest.Decisions {
+		if _, fixed := profile.Values[id]; fixed {
+			continue
+		}
+		stored = append(stored, baseline.DecisionValue{ID: id, Value: decision.Value})
+	}
+	normalized, missing, err := baseline.ResolveDecisionInput(profile, stored, catalog)
+	if err != nil || len(missing) != 0 {
+		state.incompatible = "the existing Setup Manifest contains incompatible project decisions"
+		delete(state.currentDecisions, "auth.provider")
+		delete(state.currentDecisions, "http.contract")
+		return state, nil
+	}
+	state.currentDecisions = make(map[string]any, len(normalized))
+	for _, decision := range normalized {
+		state.currentDecisions[decision.ID] = decision.Value
 	}
 	state.mode = "update"
 	return state, nil
@@ -704,6 +839,406 @@ func promptBaselineDecisions(
 	}
 }
 
+func promptBaselineProfileAlignment(
+	ctx context.Context,
+	prompt *baselineHumanPrompt,
+	review io.Writer,
+	root string,
+	catalog *baseline.Catalog,
+	state baselineHumanState,
+	profile baseline.ResolvedProfile,
+	decisions []baseline.DecisionValue,
+) (baseline.ResolvedProfile, []baseline.DecisionValue, *baseline.ProfileDraftInput, error) {
+	sourceProfileID := profile.ID
+	var draft *baseline.ProfileDraftInput
+	for {
+		alignment, err := baseline.ResolveProfileAlignment(
+			ctx,
+			root,
+			baseline.ProfileAlignmentRequest{
+				ProfileID:            profile.ID,
+				Decisions:            decisionsSelectedByProfile(decisions, profile),
+				Profile:              profilePointer(profile),
+				RemediationProfileID: sourceProfileID,
+			},
+			catalog,
+		)
+		if err != nil {
+			return baseline.ResolvedProfile{}, nil, nil, err
+		}
+		renderBaselineProfileAlignment(review, alignment)
+		if alignment.Ready {
+			return profile, decisions, draft, nil
+		}
+
+		profileCapabilities := make(map[string]struct{}, len(profile.Capabilities))
+		for _, capabilityID := range profile.Capabilities {
+			profileCapabilities[capabilityID] = struct{}{}
+		}
+		var adaptable []baseline.ProfileDivergence
+		var nonRemovable []baseline.ProfileDivergence
+		for _, divergence := range alignment.Divergences {
+			if !divergence.Blocking {
+				continue
+			}
+			if _, profileSpecific := profileCapabilities[divergence.ID]; profileSpecific {
+				adaptable = append(adaptable, divergence)
+			} else {
+				nonRemovable = append(nonRemovable, divergence)
+			}
+		}
+		if len(nonRemovable) != 0 {
+			nextActions := uniqueProfileDivergenceActions(nonRemovable)
+			return baseline.ResolvedProfile{}, nil, nil, &baselineHumanActionError{
+				result: baselineHumanActionResult(
+					"decision",
+					"Profile alignment has non-removable required divergences; instruction classification did not start",
+					strings.Join(nextActions, " "),
+				),
+			}
+		}
+		if len(adaptable) == 0 {
+			return baseline.ResolvedProfile{}, nil, nil, errors.New(
+				"Profile alignment is not ready but has no actionable blocking divergence",
+			)
+		}
+
+		selected, err := prompt.selectOne(ctx, "Profile divergence resolution", []string{
+			"Change Baseline Profile",
+			"Create a reviewed repository-owned Profile adaptation",
+			"Decline without writing",
+		})
+		if err != nil {
+			return baseline.ResolvedProfile{}, nil, nil, err
+		}
+		switch selected {
+		case 0:
+			changed, selectErr := promptBaselineProfile(
+				ctx,
+				prompt,
+				review,
+				root,
+				catalog,
+				baselineHumanState{},
+			)
+			if selectErr != nil {
+				return baseline.ResolvedProfile{}, nil, nil, selectErr
+			}
+			changedDecisions, decisionErr := promptBaselineDecisions(
+				ctx,
+				prompt,
+				catalog,
+				changed,
+				state,
+			)
+			if decisionErr != nil {
+				return baseline.ResolvedProfile{}, nil, nil, decisionErr
+			}
+			profile = changed
+			decisions = changedDecisions
+			sourceProfileID = changed.ID
+			draft = nil
+		case 1:
+			adapted, adaptedDecisions, input, adaptationErr := promptBaselineProfileAdaptation(
+				ctx,
+				prompt,
+				review,
+				root,
+				catalog,
+				sourceProfileID,
+				profile,
+				decisions,
+				adaptable,
+			)
+			if adaptationErr != nil {
+				return baseline.ResolvedProfile{}, nil, nil, adaptationErr
+			}
+			profile = adapted
+			decisions = adaptedDecisions
+			draft = &input
+		default:
+			return baseline.ResolvedProfile{}, nil, nil, &baselineHumanActionError{
+				result: baselineHumanActionResult(
+					"decision",
+					"Profile divergence resolution was declined; instruction classification did not start and no repository bytes were written",
+					"rerun roundfix baseline to change the Profile or review a repository-owned adaptation",
+				),
+			}
+		}
+	}
+}
+
+func promptBaselineProfileAdaptation(
+	ctx context.Context,
+	prompt *baselineHumanPrompt,
+	review io.Writer,
+	root string,
+	catalog *baseline.Catalog,
+	sourceProfileID string,
+	source baseline.ResolvedProfile,
+	decisions []baseline.DecisionValue,
+	blocking []baseline.ProfileDivergence,
+) (baseline.ResolvedProfile, []baseline.DecisionValue, baseline.ProfileDraftInput, error) {
+	base, err := baseline.ResolveProfile(root, sourceProfileID, catalog)
+	if err != nil {
+		return baseline.ResolvedProfile{}, nil, baseline.ProfileDraftInput{},
+			fmt.Errorf("resolve Profile adaptation source: %w", err)
+	}
+	moduleRemovals := profileRemovalSet(profileValuesRemoved(base.Modules, source.Modules))
+	for _, moduleID := range suggestedProfileModuleRemovals(source, blocking) {
+		moduleRemovals[moduleID] = struct{}{}
+	}
+	capabilityRemovals := profileRemovalSet(profileValuesRemoved(base.Capabilities, source.Capabilities))
+	for _, divergence := range blocking {
+		capabilityRemovals[divergence.ID] = struct{}{}
+	}
+	removedModules := selectedProfileRemovals(base.Modules, moduleRemovals)
+	removedCapabilities := selectedProfileRemovals(base.Capabilities, capabilityRemovals)
+	for {
+		fmt.Fprintln(review, "\nRepository-owned Profile adaptation proposal")
+		printProfileRemovalReview(review, "Modules", removedModules)
+		printProfileRemovalReview(review, "Capabilities", removedCapabilities)
+		selected, err := prompt.selectOne(ctx, "Profile adaptation review", []string{
+			"Accept every listed removal and re-audit",
+			"Review every module and capability selection",
+			"Decline without writing",
+		})
+		if err != nil {
+			return baseline.ResolvedProfile{}, nil, baseline.ProfileDraftInput{}, err
+		}
+		if selected == 2 {
+			return baseline.ResolvedProfile{}, nil, baseline.ProfileDraftInput{},
+				&baselineHumanActionError{result: baselineHumanActionResult(
+					"decision",
+					"Profile adaptation was declined; no repository bytes were written",
+					"rerun roundfix baseline to review a different Profile adaptation",
+				)}
+		}
+		if selected == 1 {
+			removedModules, err = promptProfileRemovals(
+				ctx,
+				prompt,
+				"module",
+				base.Modules,
+				removedModules,
+			)
+			if err != nil {
+				return baseline.ResolvedProfile{}, nil, baseline.ProfileDraftInput{}, err
+			}
+			removedCapabilities, err = promptProfileRemovals(
+				ctx,
+				prompt,
+				"capability",
+				base.Capabilities,
+				removedCapabilities,
+			)
+			if err != nil {
+				return baseline.ResolvedProfile{}, nil, baseline.ProfileDraftInput{}, err
+			}
+		}
+
+		id, err := prompt.readNonEmpty(ctx, "Repository-owned Baseline Profile ID")
+		if err != nil {
+			return baseline.ResolvedProfile{}, nil, baseline.ProfileDraftInput{}, err
+		}
+		input, err := baseline.NewProfileAdaptationDraft(
+			sourceProfileID,
+			id,
+			removedModules,
+			removedCapabilities,
+			catalog,
+		)
+		if err != nil {
+			fmt.Fprintf(review, "Profile adaptation is invalid: %v\n", err)
+			fmt.Fprintln(review, "Review the removals and provide a valid repository-owned Profile ID.")
+			continue
+		}
+		resolved, canonical, err := baseline.ResolveProfileDraft(root, input, catalog)
+		if err != nil {
+			fmt.Fprintf(review, "Profile adaptation is invalid: %v\n", err)
+			fmt.Fprintln(review, "Review the removals and provide a valid repository-owned Profile ID.")
+			continue
+		}
+		input.Document = canonical
+		return resolved, decisionsSelectedByProfile(decisions, resolved), input, nil
+	}
+}
+
+func profileValuesRemoved(base, selected []string) []string {
+	selectedSet := profileRemovalSet(selected)
+	removed := make([]string, 0, len(base))
+	for _, id := range base {
+		if _, retained := selectedSet[id]; !retained {
+			removed = append(removed, id)
+		}
+	}
+	return removed
+}
+
+func profileRemovalSet(values []string) map[string]struct{} {
+	result := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		result[value] = struct{}{}
+	}
+	return result
+}
+
+func selectedProfileRemovals(order []string, removed map[string]struct{}) []string {
+	result := make([]string, 0, len(removed))
+	for _, id := range order {
+		if _, isRemoved := removed[id]; isRemoved {
+			result = append(result, id)
+		}
+	}
+	return result
+}
+
+func suggestedProfileModuleRemovals(
+	profile baseline.ResolvedProfile,
+	blocking []baseline.ProfileDivergence,
+) []string {
+	suggestions := map[string]string{
+		"capability.stack.bun":          "bun",
+		"capability.stack.turborepo":    "monorepo",
+		"capability.stack.typescript":   "typescript",
+		"capability.workspace.backend":  "backend",
+		"capability.workspace.frontend": "frontend",
+	}
+	selected := make(map[string]struct{}, len(profile.Modules))
+	for _, moduleID := range profile.Modules {
+		selected[moduleID] = struct{}{}
+	}
+	removed := make(map[string]struct{})
+	for _, divergence := range blocking {
+		moduleID := suggestions[divergence.ID]
+		if _, exists := selected[moduleID]; exists {
+			removed[moduleID] = struct{}{}
+		}
+	}
+	if _, selectedAutonomousWork := selected["autonomous-work"]; selectedAutonomousWork {
+		removed["autonomous-work"] = struct{}{}
+	}
+	result := make([]string, 0, len(removed))
+	for _, moduleID := range profile.Modules {
+		if _, remove := removed[moduleID]; remove {
+			result = append(result, moduleID)
+		}
+	}
+	return result
+}
+
+func promptProfileRemovals(
+	ctx context.Context,
+	prompt *baselineHumanPrompt,
+	kind string,
+	values []string,
+	current []string,
+) ([]string, error) {
+	removed := make(map[string]struct{}, len(current))
+	for _, value := range current {
+		removed[value] = struct{}{}
+	}
+	result := make([]string, 0)
+	for _, value := range values {
+		defaultIndex := 0
+		if _, remove := removed[value]; remove {
+			defaultIndex = 1
+		}
+		selected, err := prompt.selectOneDefault(
+			ctx,
+			fmt.Sprintf("Profile %s %s", kind, value),
+			[]string{"Keep", "Remove"},
+			defaultIndex,
+		)
+		if err != nil {
+			return nil, err
+		}
+		if selected == 1 {
+			result = append(result, value)
+		}
+	}
+	return result, nil
+}
+
+func decisionsSelectedByProfile(
+	decisions []baseline.DecisionValue,
+	profile baseline.ResolvedProfile,
+) []baseline.DecisionValue {
+	selected := make(map[string]struct{}, len(profile.Decisions))
+	for _, decisionID := range profile.Decisions {
+		selected[decisionID] = struct{}{}
+	}
+	result := make([]baseline.DecisionValue, 0, len(decisions))
+	for _, decision := range decisions {
+		if _, retained := selected[decision.ID]; retained {
+			result = append(result, decision)
+		}
+	}
+	return result
+}
+
+func renderBaselineProfileAlignment(output io.Writer, alignment baseline.ProfileAlignment) {
+	fmt.Fprintf(output, "\nBaseline Profile alignment: %s\n", alignment.State)
+	fmt.Fprintf(output, "Profile: %s\n", alignment.Profile.ID)
+	if len(alignment.Divergences) == 0 {
+		fmt.Fprintln(output, "Divergences: none")
+		return
+	}
+	fmt.Fprintln(output, "Divergences:")
+	for _, divergence := range alignment.Divergences {
+		severity := "advisory"
+		if divergence.Blocking {
+			severity = "blocking"
+		}
+		fmt.Fprintf(
+			output,
+			"- %s %s (%s): %s\n",
+			severity,
+			divergence.ID,
+			divergence.Code,
+			divergence.Message,
+		)
+		if divergence.NextAction != "" {
+			fmt.Fprintf(output, "  Next action: %s\n", divergence.NextAction)
+		}
+	}
+}
+
+func printProfileRemovalReview(output io.Writer, label string, removed []string) {
+	fmt.Fprintf(output, "%s removed (%d):\n", label, len(removed))
+	if len(removed) == 0 {
+		fmt.Fprintln(output, "- none")
+		return
+	}
+	for _, id := range removed {
+		fmt.Fprintf(output, "- %s\n", id)
+	}
+}
+
+func uniqueProfileDivergenceActions(divergences []baseline.ProfileDivergence) []string {
+	seen := make(map[string]struct{})
+	actions := make([]string, 0, len(divergences))
+	for _, divergence := range divergences {
+		action := strings.TrimSpace(divergence.NextAction)
+		if action == "" {
+			continue
+		}
+		if _, duplicate := seen[action]; duplicate {
+			continue
+		}
+		seen[action] = struct{}{}
+		actions = append(actions, action)
+	}
+	if len(actions) == 0 {
+		return []string{"resolve every non-removable required divergence and rerun roundfix baseline"}
+	}
+	return actions
+}
+
+func profilePointer(profile baseline.ResolvedProfile) *baseline.ResolvedProfile {
+	return &profile
+}
+
 func promptBaselineDecision(
 	ctx context.Context,
 	prompt *baselineHumanPrompt,
@@ -716,7 +1251,7 @@ func promptBaselineDecision(
 		return nil, err
 	}
 	if value, ok := current[id]; ok {
-		if baselineDecisionValueAllowed(declaration, value) {
+		if baseline.ValidateDecisionValue(catalog, id, value) == nil {
 			encoded, _ := json.Marshal(value)
 			selected, err := prompt.selectOneDefault(ctx, declaration.Summary, []string{
 				fmt.Sprintf("Keep %s=%s", id, encoded),
@@ -732,6 +1267,102 @@ func promptBaselineDecision(
 	}
 
 	switch declaration.Type {
+	case "identifier-strategy":
+		suggestion, ok := declaration.Suggestion.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("prompt Baseline decision %q: suggestion is invalid", id)
+		}
+		encoded, err := json.Marshal(suggestion)
+		if err != nil {
+			return nil, fmt.Errorf("prompt Baseline decision %q: encode suggestion: %w", id, err)
+		}
+		selected, err := prompt.selectOneDefault(
+			ctx,
+			declaration.Summary,
+			[]string{
+				fmt.Sprintf("Keep suggested UUID version 7: %s=%s", id, encoded),
+				"Use a repository-defined identifier strategy",
+			},
+			0,
+		)
+		if err != nil {
+			return nil, err
+		}
+		if selected == 0 {
+			return suggestion, nil
+		}
+		guidance, err := prompt.readNonEmpty(
+			ctx,
+			"Operative rule for new project-owned Internal Identifiers",
+		)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{
+			"kind":     "repository-defined",
+			"guidance": guidance,
+		}, nil
+	case "auth-provider":
+		suggestion, err := baselineAuthProviderSuggestion(declaration, current, catalog)
+		if err != nil {
+			return nil, fmt.Errorf("prompt Baseline decision %q: %w", id, err)
+		}
+		exception, ok := suggestion["routeException"].(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("prompt Baseline decision %q: route suggestion is invalid", id)
+		}
+		encoded, err := json.Marshal(suggestion)
+		if err != nil {
+			return nil, fmt.Errorf("prompt Baseline decision %q: encode suggestion: %w", id, err)
+		}
+		selected, err := prompt.selectOneDefault(
+			ctx,
+			declaration.Summary,
+			[]string{
+				fmt.Sprintf("Keep suggested Better Auth provider: %s=%s", id, encoded),
+				"Change the Better Auth route exception",
+			},
+			0,
+		)
+		if err != nil {
+			return nil, err
+		}
+		if selected == 0 {
+			return suggestion, nil
+		}
+		scope, _ := exception["scope"].(string)
+		scope, err = prompt.readNonEmptyDefault(ctx, "Better Auth route scope", scope)
+		if err != nil {
+			return nil, err
+		}
+		methodSelection, err := prompt.selectOneDefault(
+			ctx,
+			"Better Auth route methods",
+			[]string{"GET and POST", "GET only", "POST only"},
+			0,
+		)
+		if err != nil {
+			return nil, err
+		}
+		methods := []any{"GET", "POST"}
+		if methodSelection == 1 {
+			methods = []any{"GET"}
+		}
+		if methodSelection == 2 {
+			methods = []any{"POST"}
+		}
+		reason, _ := exception["reason"].(string)
+		reason, err = prompt.readNonEmptyDefault(ctx, "Better Auth provider-protocol reason", reason)
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{
+			"kind": "better-auth",
+			"routeException": map[string]any{
+				"scope": scope, "methods": methods,
+				"owner": "Better Auth", "reason": reason,
+			},
+		}, nil
 	case "boolean":
 		defaultIndex := -1
 		if value, ok := declaration.Default.(bool); ok {
@@ -786,6 +1417,77 @@ func promptBaselineDecision(
 	}
 }
 
+func baselineAuthProviderSuggestion(
+	declaration baselineDecisionDeclaration,
+	current map[string]any,
+	catalog *baseline.Catalog,
+) (map[string]any, error) {
+	raw, ok := declaration.Suggestion.(map[string]any)
+	if !ok {
+		return nil, errors.New("suggestion is invalid")
+	}
+	suggestion, err := cloneBaselineDecisionObject(raw)
+	if err != nil {
+		return nil, fmt.Errorf("clone suggestion: %w", err)
+	}
+
+	httpValue, ok := current["http.contract"]
+	if !ok {
+		return suggestion, nil
+	}
+	contract, ok := httpValue.(map[string]any)
+	if !ok {
+		return suggestion, nil
+	}
+	exceptions, ok := contract["exceptions"].([]any)
+	if !ok {
+		return suggestion, nil
+	}
+	profile := baseline.ResolvedProfile{
+		ID:        "human-auth-provider-suggestion",
+		Decisions: []string{"auth.provider", "http.contract"},
+	}
+	for _, rawException := range exceptions {
+		exception, ok := rawException.(map[string]any)
+		if !ok {
+			continue
+		}
+		candidate, err := cloneBaselineDecisionObject(suggestion)
+		if err != nil {
+			return nil, fmt.Errorf("clone suggestion candidate: %w", err)
+		}
+		routeException, err := cloneBaselineDecisionObject(exception)
+		if err != nil {
+			return nil, fmt.Errorf("clone persisted route exception: %w", err)
+		}
+		candidate["routeException"] = routeException
+		_, missing, err := baseline.ResolveDecisionInput(
+			profile,
+			[]baseline.DecisionValue{
+				{ID: "auth.provider", Value: candidate},
+				{ID: "http.contract", Value: httpValue},
+			},
+			catalog,
+		)
+		if err == nil && len(missing) == 0 {
+			return candidate, nil
+		}
+	}
+	return suggestion, nil
+}
+
+func cloneBaselineDecisionObject(value map[string]any) (map[string]any, error) {
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		return nil, err
+	}
+	var cloned map[string]any
+	if err := json.Unmarshal(encoded, &cloned); err != nil {
+		return nil, err
+	}
+	return cloned, nil
+}
+
 func baselineDecisionDefinition(
 	catalog *baseline.Catalog,
 	id string,
@@ -799,27 +1501,6 @@ func baselineDecisionDefinition(
 		return baselineDecisionDeclaration{}, fmt.Errorf("decode Baseline decision %q: %w", id, err)
 	}
 	return declaration, nil
-}
-
-func baselineDecisionValueAllowed(declaration baselineDecisionDeclaration, value any) bool {
-	switch declaration.Type {
-	case "boolean":
-		_, ok := value.(bool)
-		return ok
-	case "enum":
-		return baselineDecisionDefaultIndex(declaration.Values, value) >= 0
-	case "http-contract":
-		object, ok := value.(map[string]any)
-		if !ok {
-			return false
-		}
-		return baselineDecisionDefaultIndex(declaration.Modes, object["mode"]) >= 0
-	case "string":
-		text, ok := value.(string)
-		return ok && strings.TrimSpace(text) != ""
-	default:
-		return false
-	}
 }
 
 func baselineDecisionDefaultIndex(options []string, value any) int {
@@ -841,6 +1522,10 @@ func promptBaselineClassification(
 	review io.Writer,
 	inspection baseline.RepositoryInspection,
 	mode baseline.PreservationMode,
+	catalog *baseline.Catalog,
+	profile baseline.ResolvedProfile,
+	decisions []baseline.DecisionValue,
+	analyzer baselineSemanticAnalyzer,
 ) (baseline.RootPreservationRequest, error) {
 	request := baseline.RootPreservationRequest{Mode: mode}
 	if mode != baseline.PreservationModePreservation {
@@ -858,19 +1543,82 @@ func promptBaselineClassification(
 	if plan.DecisionSkeleton == nil {
 		return request, nil
 	}
-	document := plan.DecisionSkeleton.Document
+	segmentationSnapshot, err := baseline.NewRuleSegmentationSnapshot(plan.SourceBaseline)
+	if err != nil {
+		return baseline.RootPreservationRequest{}, fmt.Errorf(
+			"prepare semantic segmentation: %w",
+			err,
+		)
+	}
+	var segmentationProposal baseline.RuleSegmentationProposal
+	if analyzer == nil {
+		segmentationProposal, err = baseline.ManualRuleSegmentationProposal(segmentationSnapshot)
+	} else {
+		segmentationProposal, err = analyzer.Segment(ctx, segmentationSnapshot)
+	}
+	if err != nil {
+		return baseline.RootPreservationRequest{}, fmt.Errorf(
+			"analyze semantic segmentation: %w",
+			err,
+		)
+	}
+	source, err := baseline.MaterializeRuleSegments(segmentationSnapshot, segmentationProposal)
+	if err != nil {
+		return baseline.RootPreservationRequest{}, fmt.Errorf(
+			"materialize semantic segmentation: %w",
+			err,
+		)
+	}
+	semanticOwners, err := baseline.ResolveSemanticOwnerRegistry(catalog, profile, decisions)
+	if err != nil {
+		return baseline.RootPreservationRequest{}, err
+	}
+	analysisSnapshot, err := baseline.NewAnalysisSnapshot(source, semanticOwners)
+	if err != nil {
+		return baseline.RootPreservationRequest{}, fmt.Errorf(
+			"prepare semantic classification: %w",
+			err,
+		)
+	}
+	var classificationProposal baseline.ClassificationProposal
+	if analyzer == nil {
+		classificationProposal, err = baseline.ManualClassificationProposal(analysisSnapshot)
+	} else {
+		classificationProposal, err = analyzer.Classify(ctx, analysisSnapshot)
+	}
+	if err != nil {
+		return baseline.RootPreservationRequest{}, fmt.Errorf(
+			"analyze semantic classification: %w",
+			err,
+		)
+	}
+	document, err := baseline.DecisionDocumentFromClassificationProposal(
+		analysisSnapshot,
+		classificationProposal,
+	)
+	if err != nil {
+		return baseline.RootPreservationRequest{}, fmt.Errorf(
+			"admit semantic classification: %w",
+			err,
+		)
+	}
+	entries := make(map[string]baseline.ReadoptionSourceEntry, len(source.Entries))
+	for _, entry := range source.Entries {
+		entries[entry.ID] = entry
+	}
 	fmt.Fprintln(review, "\nConsolidated editable classification review:")
 	for index, disposition := range document.Readoption.Dispositions {
-		entry := plan.SourceBaseline.Entries[index]
+		entry := entries[disposition.EntryID]
 		fmt.Fprintf(
 			review,
-			"%d. %s bytes %d-%d: %s -> %s\n",
+			"%d. %s bytes %d-%d: %s -> %s%s\n",
 			index+1,
 			entry.Path,
 			entry.Start,
 			entry.End,
 			disposition.Classification,
 			disposition.Disposition,
+			baselineClassificationDestinationSuffix(disposition.Destination),
 		)
 	}
 	selected, err := prompt.selectOne(ctx, "Classification review", []string{
@@ -883,8 +1631,14 @@ func promptBaselineClassification(
 	if selected == 1 {
 		for index := range document.Readoption.Dispositions {
 			disposition := &document.Readoption.Dispositions[index]
-			entry := plan.SourceBaseline.Entries[index]
-			classification, err := prompt.selectOne(ctx, "Classification for "+entry.Path, []string{
+			entry, ok := entries[disposition.EntryID]
+			if !ok {
+				return baseline.RootPreservationRequest{}, fmt.Errorf(
+					"edit semantic classification: source entry %q is missing",
+					disposition.EntryID,
+				)
+			}
+			classificationIndex, err := prompt.selectOne(ctx, "Classification for "+entry.Path, []string{
 				"Normative Clause",
 				"Operational Contract",
 				"Recommendation",
@@ -893,7 +1647,7 @@ func promptBaselineClassification(
 			if err != nil {
 				return baseline.RootPreservationRequest{}, err
 			}
-			switch classification {
+			switch classificationIndex {
 			case 0:
 				disposition.Classification = "normative-clause"
 			case 1:
@@ -903,41 +1657,138 @@ func promptBaselineClassification(
 			default:
 				disposition.Classification = "non-governed"
 			}
-			keep := 1
-			canPreserve := entry.Kind != "managed-block" &&
-				len(strings.TrimSpace(string(entry.SourceBytes))) != 0
-			if disposition.Classification != "non-governed" && canPreserve {
-				keep, err = prompt.selectOne(ctx, "Disposition for "+entry.Path, []string{
-					"Preserve in Repository-Specific Normative Rules",
-					"Reject with an individual reason",
-				})
+			choices := baselineClassificationChoices(
+				analysisSnapshot,
+				entry,
+				disposition.Classification,
+			)
+			labels := make([]string, len(choices))
+			for choiceIndex, choice := range choices {
+				labels[choiceIndex] = choice.label
+			}
+			choiceIndex := 0
+			if len(choices) > 1 {
+				choiceIndex, err = prompt.selectOne(ctx, "Disposition for "+entry.Path, labels)
 				if err != nil {
 					return baseline.RootPreservationRequest{}, err
 				}
 			}
-			if disposition.Classification == "non-governed" || keep == 1 {
+			choice := choices[choiceIndex]
+			disposition.Disposition = choice.disposition
+			disposition.Destination = choice.destination
+			if choice.disposition == "rejected" {
 				reason, err := prompt.readNonEmpty(ctx, "Reason for rejecting "+entry.Path)
 				if err != nil {
 					return baseline.RootPreservationRequest{}, err
 				}
-				disposition.Disposition = "rejected"
-				disposition.Destination = nil
 				disposition.Reason = reason
 				continue
 			}
-			sum := sha256.Sum256(entry.SourceBytes)
-			disposition.Disposition = "repository-rules"
-			disposition.Destination = &baseline.ReadoptionDestination{
-				DocumentType:  "repository-rules",
-				Path:          "docs/agents/specific-repository.md",
-				Digest:        hex.EncodeToString(sum[:]),
-				ProposedBytes: base64.StdEncoding.EncodeToString(entry.SourceBytes),
-			}
-			disposition.Reason = "Preserve this source entry as a Repository-Specific Normative Rule after human review."
+			disposition.Reason = choice.reason
+		}
+		classificationProposal = baseline.ClassificationProposal{
+			SchemaVersion:  baseline.ClassificationProposalSchemaVersion,
+			SnapshotDigest: analysisSnapshot.SnapshotDigest,
+			Dispositions:   document.Readoption.Dispositions,
+		}
+		document, err = baseline.DecisionDocumentFromClassificationProposal(
+			analysisSnapshot,
+			classificationProposal,
+		)
+		if err != nil {
+			return baseline.RootPreservationRequest{}, fmt.Errorf(
+				"validate edited semantic classification: %w",
+				err,
+			)
 		}
 	}
+	request.SourceBaseline = &source
 	request.Decisions = &document
 	return request, nil
+}
+
+type baselineClassificationChoice struct {
+	label       string
+	disposition string
+	destination *baseline.ReadoptionDestination
+	reason      string
+}
+
+func baselineClassificationChoices(
+	snapshot baseline.AnalysisSnapshot,
+	entry baseline.ReadoptionSourceEntry,
+	classification string,
+) []baselineClassificationChoice {
+	if classification == "non-governed" {
+		return []baselineClassificationChoice{{
+			label:       "Reject with an individual reason",
+			disposition: "rejected",
+		}}
+	}
+	choices := make([]baselineClassificationChoice, 0, len(snapshot.Destinations))
+	for _, destination := range snapshot.Destinations {
+		switch destination.Disposition {
+		case "repository-rules":
+			if entry.Kind == "managed-block" ||
+				len(strings.TrimSpace(string(entry.SourceBytes))) == 0 {
+				continue
+			}
+			choices = append(choices, baselineClassificationChoice{
+				label:       "Preserve in Repository-Specific Normative Rules",
+				disposition: "repository-rules",
+				reason:      "Preserve this byte-exact source entry as a Repository-Specific Normative Rule after human review.",
+				destination: &baseline.ReadoptionDestination{
+					DocumentType:  "repository-rules",
+					Path:          destination.Path,
+					Digest:        entry.Digest,
+					ProposedBytes: base64.StdEncoding.EncodeToString(entry.SourceBytes),
+				},
+			})
+		case "repository-document":
+			if entry.Kind == "managed-block" ||
+				len(strings.TrimSpace(string(entry.SourceBytes))) == 0 {
+				continue
+			}
+			choices = append(choices, baselineClassificationChoice{
+				label:       "Preserve in active agent guide " + destination.Path,
+				disposition: "repository-document",
+				reason:      "Preserve this byte-exact source entry in the human-selected active semantic guide.",
+				destination: &baseline.ReadoptionDestination{
+					DocumentType: destination.DocumentType,
+					Path:         destination.Path,
+					Digest:       entry.Digest,
+				},
+			})
+		case "managed-entry":
+			choices = append(choices, baselineClassificationChoice{
+				label:       "Classify as already covered by managed entry " + destination.ManagedID,
+				disposition: "managed-entry",
+				reason:      "This exact source entry is already governed by the human-selected active managed entry.",
+				destination: &baseline.ReadoptionDestination{
+					ManagedID: destination.ManagedID,
+				},
+			})
+		}
+	}
+	return append(choices, baselineClassificationChoice{
+		label:       "Reject with an individual reason",
+		disposition: "rejected",
+	})
+}
+
+func baselineClassificationDestinationSuffix(
+	destination *baseline.ReadoptionDestination,
+) string {
+	if destination == nil {
+		return ""
+	}
+	if destination.ManagedID != "" {
+		return " (" + destination.ManagedID + ")"
+	}
+	if destination.Path != "" {
+		return " (" + destination.Path + ")"
+	}
+	return ""
 }
 
 func printConsolidatedBaselineReview(plan baseline.PlanDocument, output io.Writer) {

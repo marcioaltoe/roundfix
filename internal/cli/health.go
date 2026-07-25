@@ -89,17 +89,18 @@ func (checker runtimeHealthChecker) Node(ctx context.Context) CheckResult {
 
 func (checker runtimeHealthChecker) ACPX(ctx context.Context) CheckResult {
 	version, err := checker.deps.acpxVersion(ctx)
-	if err == nil && strings.TrimSpace(version) == agent.PinnedACPXVersion {
+	if err == nil && agent.SupportsACPXVersion(version) {
+		foundVersion := strings.TrimSpace(version)
 		return CheckResult{
 			Name:   HealthCheckACPX,
 			Status: CheckStatusOK,
-			Detail: agent.PinnedACPXVersion,
+			Detail: fmt.Sprintf("%s >= %s", foundVersion, agent.MinimumACPXVersion),
 		}
 	}
 
 	detail := fmt.Sprintf("run %s", setupACPXInstallCommand())
 	if err == nil {
-		detail = fmt.Sprintf("found %s; required %s; run %s", strings.TrimSpace(version), agent.PinnedACPXVersion, setupACPXInstallCommand())
+		detail = fmt.Sprintf("found %s; acpx %s or newer is required; run %s", strings.TrimSpace(version), agent.MinimumACPXVersion, setupACPXInstallCommand())
 	}
 	return CheckResult{
 		Name:       HealthCheckACPX,

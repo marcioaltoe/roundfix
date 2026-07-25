@@ -202,7 +202,7 @@ case " $* " in
     ;;
 esac
 exit 0
-`, agent.PinnedACPXVersion)
+`, agent.MinimumACPXVersion)
 	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
 		t.Fatalf("write fake acpx: %v", err)
 	}
@@ -4155,7 +4155,7 @@ func newMacroFakeACPX(t *testing.T) macroFakeACPX {
 	t.Helper()
 	binDir := t.TempDir()
 	logPath := filepath.Join(t.TempDir(), "acpx.jsonl")
-	script := strings.ReplaceAll(macroFakeACPXScript, "__PINNED_ACPX_VERSION__", agent.PinnedACPXVersion)
+	script := strings.ReplaceAll(macroFakeACPXScript, "__PINNED_ACPX_VERSION__", agent.MinimumACPXVersion)
 	acpxPath := filepath.Join(binDir, "acpx")
 	if err := os.WriteFile(acpxPath, []byte(script), 0o755); err != nil {
 		t.Fatalf("write fake acpx: %v", err)

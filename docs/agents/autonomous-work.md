@@ -10,7 +10,7 @@ and unattended sessions.
 | --- | --- | --- |
 | Supervisor | Supervising Claude Code session | Author Specs, launch and monitor Runs, integrate outcomes, run `qa-gate`, archive, make boundary commits, and route work |
 | Non-frontend implementer | Codex `gpt-5.6-sol` with `high` Default Reasoning Effort; `gpt-5.5`/`xhigh` fallback | CLI, backend, infrastructure, documentation, and other non-frontend Tasks and Review Issue Batches |
-| Frontend implementer | Claude `opus` (Opus 4.8) with `xhigh` Default Reasoning Effort | Design, UI, UX, Bubble Tea/Lip Gloss TUI, and web frontend Tasks |
+| Frontend implementer | Claude `claude-opus-5` (Opus 5) with `xhigh` Default Reasoning Effort | Design, UI, UX, Bubble Tea/Lip Gloss TUI, and web frontend Tasks |
 
 ## The Supervisor does not implement
 
@@ -64,7 +64,7 @@ Review Runs use the same profile-led selection.
 For a one-Run exception, provide `--agent`, `--model`, and
 `--reasoning-effort` together. A partial override is rejected.
 
-## Frontend implementer: Claude Opus 4.8 xhigh
+## Frontend implementer: Claude Opus 5 xhigh
 
 Route a Run to Claude when its Tasks are dominated by:
 
@@ -75,7 +75,7 @@ Route a Run to Claude when its Tasks are dominated by:
 - a future web frontend.
 
 ```bash
-roundfix implement --spec <slug> --agent claude --model opus \
+roundfix implement --spec <slug> --agent claude --model claude-opus-5 \
   --reasoning-effort xhigh --qa --detach
 ```
 

@@ -11,6 +11,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -37,8 +39,16 @@ const (
 type PlanRequest struct {
 	Repository   string
 	ProfileID    string
+	ProfileDraft *ProfileDraftInput
 	Decisions    []DecisionValue
 	Preservation RootPreservationRequest
+}
+
+// ProfileDraftInput binds one strict repository-owned Profile draft to the
+// built-in Profile it is allowed to narrow.
+type ProfileDraftInput struct {
+	SourceProfileID string
+	Document        []byte
 }
 
 // PlanOutcome contains either one complete portable plan or an actionable
@@ -52,6 +62,17 @@ type specificRepositoryPlan struct {
 	IncludeRoot      bool
 	CanonicalContent []byte
 	DeletePaths      []string
+}
+
+type repositoryRuleInventory struct {
+	ByPath    map[string][]RepositoryRuleBlock
+	Retention []RetentionEvidence
+}
+
+type plannedProfileDraft struct {
+	ID      string
+	Path    string
+	Content []byte
 }
 
 // ResolveDecisionInput normalizes human or automation answers through the
@@ -220,15 +241,33 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 			append(initial.Snapshot.Warnings, initial.Snapshot.Blocking...)), nil
 	}
 	profileID := strings.TrimSpace(request.ProfileID)
-	if profileID == "" {
+	if profileID != "" && request.ProfileDraft != nil {
+		return PlanOutcome{}, errors.New("select exactly one Baseline Profile ID or Profile draft")
+	}
+	if profileID == "" && request.ProfileDraft == nil {
 		return actionOutcome("decision", "Baseline Profile selection is required",
 			"rerun with --profile <id>", initial.Snapshot.Warnings), nil
 	}
-	profile, err := ResolveProfile(initial.Root, profileID, catalog)
-	if err != nil {
-		return PlanOutcome{}, fmt.Errorf("resolve Baseline Profile: %w", err)
+	var profile ResolvedProfile
+	var plannedDraft *plannedProfileDraft
+	if request.ProfileDraft != nil {
+		var profileBytes []byte
+		profile, profileBytes, err = resolveProfileDraft(initial.Root, *request.ProfileDraft, catalog)
+		if err != nil {
+			return PlanOutcome{}, fmt.Errorf("resolve Baseline Profile draft: %w", err)
+		}
+		plannedDraft = &plannedProfileDraft{
+			ID:      profile.ID,
+			Path:    profile.Path,
+			Content: profileBytes,
+		}
+	} else {
+		profile, err = ResolveProfile(initial.Root, profileID, catalog)
+		if err != nil {
+			return PlanOutcome{}, fmt.Errorf("resolve Baseline Profile: %w", err)
+		}
+		profile.Path = portableProfilePath(initial.Root, profile.Path)
 	}
-	profile.Path = portableProfilePath(initial.Root, profile.Path)
 
 	decisions, missing, err := normalizePlanDecisions(profile, request.Decisions, catalog)
 	if err != nil {
@@ -245,8 +284,49 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 			"rerun with --decision preservation.mode=greenfield or preservation",
 			initial.Snapshot.Warnings), nil
 	}
+	remediationProfileID := profile.ID
+	if request.ProfileDraft != nil {
+		remediationProfileID = request.ProfileDraft.SourceProfileID
+	}
+	alignment, err := ResolveProfileAlignment(ctx, initial.Root, ProfileAlignmentRequest{
+		ProfileID:            profile.ID,
+		Decisions:            profileAlignmentDecisions(profile, decisions),
+		Profile:              &profile,
+		RemediationProfileID: remediationProfileID,
+	}, catalog)
+	if err != nil {
+		return PlanOutcome{}, err
+	}
+	if !alignment.Ready {
+		blocking := make([]string, 0)
+		nextActions := make([]string, 0)
+		for _, divergence := range alignment.Divergences {
+			if !divergence.Blocking {
+				continue
+			}
+			blocking = append(blocking, divergence.ID)
+			if divergence.NextAction != "" && !slices.Contains(nextActions, divergence.NextAction) {
+				nextActions = append(nextActions, divergence.NextAction)
+			}
+		}
+		nextAction := "provide the missing repository evidence or select a different profile"
+		if len(nextActions) != 0 {
+			nextAction = strings.Join(nextActions, " ")
+		}
+		return actionOutcome("decision",
+			"required profile alignment is unresolved: "+strings.Join(blocking, ", "),
+			nextAction,
+			initial.Snapshot.Warnings), nil
+	}
 
-	preservation, err := PlanRootPreservation(initial, request.Preservation)
+	semanticOwners, err := ResolveSemanticOwnerRegistry(catalog, profile, decisions)
+	if err != nil {
+		return PlanOutcome{}, err
+	}
+	preservationRequest := request.Preservation
+	preservationRequest.semanticOwners = semanticOwners
+
+	preservation, err := PlanRootPreservation(initial, preservationRequest)
 	if err != nil {
 		return PlanOutcome{}, err
 	}
@@ -254,30 +334,13 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 		return actionOutcome("decision", preservation.NextAction, preservation.NextAction,
 			append(initial.Snapshot.Warnings, preservation.Findings...)), nil
 	}
-	alignment, err := ResolveProfileAlignment(ctx, initial.Root, ProfileAlignmentRequest{
-		ProfileID: profile.ID,
-		Decisions: profileAlignmentDecisions(profile, decisions),
-	}, catalog)
-	if err != nil {
-		return PlanOutcome{}, err
-	}
-	if !alignment.Ready {
-		next := make([]string, 0)
-		for _, divergence := range alignment.Divergences {
-			if divergence.Blocking {
-				next = append(next, divergence.ID)
-			}
-		}
-		return actionOutcome("decision",
-			"required profile alignment is unresolved: "+strings.Join(next, ", "),
-			"provide the missing repository evidence or select a different profile",
-			initial.Snapshot.Warnings), nil
-	}
 
 	repositoryPlan, repositoryFindings, err := planSpecificRepository(
 		initial.Root,
 		preservation.RepositoryRulesBytes,
 		decisionBool(decisions, "repository.extension.enabled"),
+		preservationRequest.Mode == PreservationModePreservation &&
+			preservationRequest.Decisions != nil,
 	)
 	if err != nil {
 		return PlanOutcome{}, err
@@ -301,7 +364,7 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 		return PlanOutcome{}, err
 	}
 	manifest := buildSetupManifest(catalog, profile, decisions, activeModules, artifacts, alignment.Verification)
-	manifestBytes, err := json.MarshalIndent(manifest, "", "  ")
+	manifestBytes, err := marshalSetupManifestBytes(manifest)
 	if err != nil {
 		return PlanOutcome{}, fmt.Errorf("serialize Setup Manifest: %w", err)
 	}
@@ -321,12 +384,20 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 		legacyRepositoryRulesPath,
 	)
 	mutablePaths = append(mutablePaths, alignmentEvidencePaths(alignment)...)
+	if plannedDraft != nil {
+		mutablePaths = append(mutablePaths, plannedDraft.Path)
+	}
 	snapshot, err := inspectRepositorySnapshot(initial.Root, InventoryRequest{MutablePaths: mutablePaths})
 	if err != nil {
 		return PlanOutcome{}, err
 	}
+	if plannedDraft != nil {
+		if err := validateProfileDraftTarget(snapshot, *plannedDraft); err != nil {
+			return PlanOutcome{}, err
+		}
+	}
 	inspection := RepositoryInspection{Root: initial.Root, Identity: initial.Identity, Snapshot: snapshot}
-	preservation, err = PlanRootPreservation(inspection, request.Preservation)
+	preservation, err = PlanRootPreservation(inspection, preservationRequest)
 	if err != nil {
 		return PlanOutcome{}, err
 	}
@@ -338,6 +409,8 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 		initial.Root,
 		preservation.RepositoryRulesBytes,
 		decisionBool(decisions, "repository.extension.enabled"),
+		preservationRequest.Mode == PreservationModePreservation &&
+			preservationRequest.Decisions != nil,
 	)
 	if err != nil {
 		return PlanOutcome{}, err
@@ -353,11 +426,24 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 	if !reflectJSONEqual(repositoryPlan, currentRepositoryPlan) {
 		return PlanOutcome{}, errors.New("repository-specific rule carriers changed during planning")
 	}
+	repositoryRules, err := inventoryRepositoryRuleBlocks(
+		initial.Root,
+		artifacts,
+		preservation.RepositoryRuleBlocks,
+	)
+	if err != nil {
+		return actionOutcome(
+			"classification",
+			err.Error(),
+			"repair the repository-owned rule markers and rerun Baseline planning",
+			snapshot.Warnings,
+		), nil
+	}
 	retention, retentionAction, err := resolvePlanRetention(
 		initial.Root,
 		snapshot,
 		catalog,
-		profile.ID,
+		compatibleRetentionProfileIDs(profile.ID, request.ProfileDraft),
 		preservation,
 	)
 	if err != nil {
@@ -371,6 +457,7 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 			snapshot.Warnings,
 		), nil
 	}
+	retention = append(retention, repositoryRules.Retention...)
 
 	postimages, ledger, err := assemblePostimages(
 		initial.Root,
@@ -379,6 +466,8 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 		manifestBytes,
 		preservation,
 		repositoryPlan,
+		repositoryRules,
+		plannedDraft,
 	)
 	if err != nil {
 		return PlanOutcome{}, err
@@ -452,6 +541,7 @@ func planSpecificRepository(
 	rootPath string,
 	proposed []byte,
 	enabled bool,
+	redistribute bool,
 ) (specificRepositoryPlan, []Finding, error) {
 	anchored, err := os.OpenRoot(rootPath)
 	if err != nil {
@@ -459,6 +549,37 @@ func planSpecificRepository(
 			fmt.Errorf("open repository root for repository-specific rules: %w", err)
 	}
 	defer anchored.Close()
+
+	if redistribute {
+		plan := specificRepositoryPlan{
+			IncludeRoot: len(proposed) != 0,
+		}
+		for _, relative := range []string{
+			specificRepositoryPath,
+			legacyRepositoryPath,
+			legacyRepositoryRulesPath,
+		} {
+			_, exists, finding := readSpecificRepositoryCarrier(anchored, relative)
+			if finding != nil {
+				return specificRepositoryPlan{}, []Finding{*finding}, nil
+			}
+			if exists && (relative != specificRepositoryPath || len(proposed) == 0) {
+				plan.DeletePaths = append(plan.DeletePaths, relative)
+			}
+		}
+		if len(proposed) != 0 {
+			if !enabled {
+				return specificRepositoryPlan{}, []Finding{{
+					Code:    "baseline.repository-rules.disabled",
+					Path:    specificRepositoryPath,
+					Message: "Repository-Specific Normative Rules require repository.extension.enabled=true",
+				}}, nil
+			}
+			plan.CanonicalContent = append([]byte(nil), proposed...)
+		}
+		sort.Strings(plan.DeletePaths)
+		return plan, nil, nil
+	}
 
 	canonical, canonicalExists, finding := readSpecificRepositoryCarrier(
 		anchored,
@@ -604,6 +725,208 @@ func repositoryCarrierEmpty(content []byte, allowLegacyScaffold bool) bool {
 		strings.TrimSpace(string(content)) == strings.TrimSpace(legacyRepositoryScaffold)
 }
 
+type repositoryRuleSpan struct {
+	ID    string
+	Start int
+	End   int
+	Body  []byte
+}
+
+var repositoryRuleBeginMarker = regexp.MustCompile(
+	`^<!-- roundfix:repository-rule:begin id=([a-z0-9][a-z0-9.-]*) -->\n`,
+)
+
+func inventoryRepositoryRuleBlocks(
+	root string,
+	artifacts []plannedArtifact,
+	proposed []RepositoryRuleBlock,
+) (repositoryRuleInventory, error) {
+	activeGuides := make(map[string]struct{})
+	for _, artifact := range artifacts {
+		if artifact.Kind == "guide" {
+			activeGuides[artifact.Path] = struct{}{}
+		}
+	}
+	inventory := repositoryRuleInventory{
+		ByPath: make(map[string][]RepositoryRuleBlock),
+	}
+	existing := make(map[string]string)
+	for _, relative := range sortedKeys(activeGuides) {
+		content, err := readOptionalRegular(root, relative)
+		if err != nil {
+			return repositoryRuleInventory{}, err
+		}
+		spans, err := parseRepositoryRuleBlocks(relative, content)
+		if err != nil {
+			return repositoryRuleInventory{}, err
+		}
+		for _, span := range spans {
+			if previous, duplicate := existing[span.ID]; duplicate {
+				return repositoryRuleInventory{}, fmt.Errorf(
+					"repository-rule marker %q is duplicated in %q and %q",
+					span.ID,
+					previous,
+					relative,
+				)
+			}
+			existing[span.ID] = relative
+			inventory.ByPath[relative] = append(
+				inventory.ByPath[relative],
+				RepositoryRuleBlock{
+					ID:   span.ID,
+					Path: relative,
+					Body: append([]byte(nil), span.Body...),
+				},
+			)
+		}
+	}
+
+	proposedIDs := make(map[string]struct{}, len(proposed))
+	for _, block := range proposed {
+		if _, active := activeGuides[block.Path]; !active {
+			return repositoryRuleInventory{}, fmt.Errorf(
+				"repository-rule %q targets inactive semantic guide %q",
+				block.ID,
+				block.Path,
+			)
+		}
+		if _, duplicate := proposedIDs[block.ID]; duplicate {
+			return repositoryRuleInventory{}, fmt.Errorf(
+				"repository-rule %q is proposed more than once",
+				block.ID,
+			)
+		}
+		proposedIDs[block.ID] = struct{}{}
+		if currentPath, exists := existing[block.ID]; exists {
+			if currentPath != block.Path {
+				return repositoryRuleInventory{}, fmt.Errorf(
+					"repository-rule %q already belongs to semantic guide %q",
+					block.ID,
+					currentPath,
+				)
+			}
+			continue
+		}
+		cloned := block
+		cloned.Body = append([]byte(nil), block.Body...)
+		inventory.ByPath[block.Path] = append(inventory.ByPath[block.Path], cloned)
+	}
+
+	for _, relative := range sortedKeys(inventory.ByPath) {
+		for _, block := range inventory.ByPath[relative] {
+			if _, planned := proposedIDs[block.ID]; planned {
+				continue
+			}
+			inventory.Retention = append(inventory.Retention, RetentionEvidence{
+				FromClause:  "repository-rule." + block.ID,
+				Enforcement: "repository-owned",
+				Disposition: "repository-document",
+				Targets:     []string{relative},
+				Reason:      "Retain the current repository-owned semantic rule body outside setup-owned markers.",
+			})
+		}
+	}
+	return inventory, nil
+}
+
+func parseRepositoryRuleBlocks(relative string, content []byte) ([]repositoryRuleSpan, error) {
+	var spans []repositoryRuleSpan
+	seen := make(map[string]struct{})
+	cursor := 0
+	const markerPrefix = "<!-- roundfix:repository-rule:"
+	for {
+		offset := bytes.Index(content[cursor:], []byte(markerPrefix))
+		if offset < 0 {
+			break
+		}
+		start := cursor + offset
+		match := repositoryRuleBeginMarker.FindSubmatchIndex(content[start:])
+		if match == nil || match[0] != 0 {
+			return nil, fmt.Errorf(
+				"repository-rule marker in %q is malformed or has no matching begin marker",
+				relative,
+			)
+		}
+		id := string(content[start+match[2] : start+match[3]])
+		if _, duplicate := seen[id]; duplicate {
+			return nil, fmt.Errorf("repository-rule marker %q is duplicated in %q", id, relative)
+		}
+		seen[id] = struct{}{}
+		bodyStart := start + match[1]
+		endMarker := []byte(
+			"\n<!-- roundfix:repository-rule:end id=" + id + " -->",
+		)
+		endOffset := bytes.Index(content[bodyStart:], endMarker)
+		if endOffset < 0 {
+			return nil, fmt.Errorf("repository-rule marker %q in %q is unterminated", id, relative)
+		}
+		bodyEnd := bodyStart + endOffset
+		if nested := bytes.Index(content[bodyStart:bodyEnd], []byte(markerPrefix)); nested >= 0 {
+			return nil, fmt.Errorf("repository-rule marker %q in %q contains a nested marker", id, relative)
+		}
+		end := bodyEnd + len(endMarker)
+		if end < len(content) && content[end] == '\n' {
+			end++
+		}
+		for _, entry := range partitionRootSource(relative, content) {
+			if entry.Kind == "managed-block" && start < entry.End && end > entry.Start {
+				return nil, fmt.Errorf(
+					"repository-rule marker %q in %q is inside a setup-owned block",
+					id,
+					relative,
+				)
+			}
+		}
+		spans = append(spans, repositoryRuleSpan{
+			ID:    id,
+			Start: start,
+			End:   end,
+			Body:  append([]byte(nil), content[bodyStart:bodyEnd]...),
+		})
+		cursor = end
+	}
+	return spans, nil
+}
+
+func upsertRepositoryRuleBlocks(
+	relative string,
+	content []byte,
+	blocks []RepositoryRuleBlock,
+) ([]byte, error) {
+	existing, err := parseRepositoryRuleBlocks(relative, content)
+	if err != nil {
+		return nil, err
+	}
+	seen := make(map[string]struct{}, len(existing))
+	for _, span := range existing {
+		seen[span.ID] = struct{}{}
+	}
+	result := append([]byte(nil), content...)
+	for _, block := range blocks {
+		if _, exists := seen[block.ID]; exists {
+			continue
+		}
+		if len(result) != 0 {
+			if !bytes.HasSuffix(result, []byte("\n")) {
+				result = append(result, '\n')
+			}
+			result = append(result, '\n')
+		}
+		result = append(result,
+			[]byte("<!-- roundfix:repository-rule:begin id="+block.ID+" -->\n")...,
+		)
+		result = append(result, block.Body...)
+		result = append(result,
+			[]byte("\n<!-- roundfix:repository-rule:end id="+block.ID+" -->\n")...,
+		)
+		seen[block.ID] = struct{}{}
+	}
+	if _, err := parseRepositoryRuleBlocks(relative, result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 func actionOutcome(category, message, next string, warnings []Finding) PlanOutcome {
 	if message == "" {
 		message = "Baseline planning requires another action"
@@ -624,7 +947,7 @@ func actionOutcome(category, message, next string, warnings []Finding) PlanOutco
 func readyResult(digest string, warnings []Finding, verification []VerificationProjection) Result {
 	recommendations := make([]string, 0, len(verification))
 	for _, item := range verification {
-		if item.Command != "" {
+		if item.RepositoryExecutable && item.Command != "" {
 			recommendations = append(recommendations, item.Command)
 		}
 	}
@@ -644,7 +967,7 @@ func resolvePlanRetention(
 	root string,
 	snapshot RepositorySnapshot,
 	catalog *Catalog,
-	profileID string,
+	profileIDs []string,
 	preservation RootPreservationPlan,
 ) ([]RetentionEvidence, string, error) {
 	retention := readoptionRetentionEvidence(preservation.Dispositions)
@@ -669,10 +992,14 @@ func resolvePlanRetention(
 
 	generator, _ := objectValue(manifest["generator"])
 	declaredBaseline, _ := stringValue(generator, "baseline")
-	currentBaseline := "baseline." + profileID + "-" + ManifestVersion
+	compatibleBaselines := make(map[string]struct{}, len(profileIDs))
+	for _, profileID := range profileIDs {
+		compatibleBaselines["baseline."+profileID+"-"+ManifestVersion] = struct{}{}
+	}
+	_, compatibleBaseline := compatibleBaselines[declaredBaseline]
 	if manifest["schemaVersion"] == ManifestSchema &&
 		manifest["version"] == ManifestVersion &&
-		declaredBaseline == currentBaseline {
+		compatibleBaseline {
 		return retention, "", nil
 	}
 	if currentSetupManifestProfileIsValid(root, manifest, generator, catalog) {
@@ -709,6 +1036,19 @@ func resolvePlanRetention(
 			nil
 	}
 	return append(retention, transitionRetentionEvidence(matches[0])...), "", nil
+}
+
+func compatibleRetentionProfileIDs(
+	profileID string,
+	draft *ProfileDraftInput,
+) []string {
+	result := []string{profileID}
+	if draft != nil &&
+		draft.SourceProfileID != "" &&
+		draft.SourceProfileID != profileID {
+		result = append(result, draft.SourceProfileID)
+	}
+	return result
 }
 
 func currentSetupManifestProfileIsValid(
@@ -832,6 +1172,12 @@ func normalizePlanDecisions(
 			return nil, nil, fmt.Errorf("normalize Baseline decisions: unknown decision %q", id)
 		}
 		if err := validateDecisionValue(declaration, decision.Value); err != nil {
+			if id == authProviderDecisionID || id == httpContractDecisionID {
+				return nil, nil, fmt.Errorf(
+					"normalize Baseline decisions: %w",
+					projectDecisionError(fmt.Errorf("normalize %q: %w", id, err)),
+				)
+			}
 			return nil, nil, fmt.Errorf("normalize Baseline decision %q: %w", id, err)
 		}
 		values[id] = cloneJSONValue(decision.Value)
@@ -887,6 +1233,13 @@ func normalizePlanDecisions(
 	}
 	sort.Slice(ordered, func(i, j int) bool { return ordered[i].ID < ordered[j].ID })
 	sort.Strings(missing)
+	if len(missing) != 0 {
+		return ordered, missing, nil
+	}
+	ordered, err := normalizeProjectDecisions(ordered, catalog)
+	if err != nil {
+		return nil, nil, fmt.Errorf("normalize Baseline decisions: %w", err)
+	}
 	return ordered, missing, nil
 }
 
@@ -910,6 +1263,27 @@ func portableProfilePath(root, profilePath string) string {
 		return ""
 	}
 	return filepath.ToSlash(relative)
+}
+
+func validateProfileDraftTarget(snapshot RepositorySnapshot, draft plannedProfileDraft) error {
+	preimage, ok := preimagesByPath(snapshot.Preimages)[draft.Path]
+	if !ok {
+		return fmt.Errorf("custom Profile draft target %q has no bounded preimage", draft.Path)
+	}
+	switch preimage.Kind {
+	case PreimageMissing:
+		return nil
+	case PreimageRegular:
+		if preimage.ContentIdentity != planContentIdentity(draft.Content) {
+			return fmt.Errorf(
+				"custom Profile draft target %q conflicts with existing repository bytes",
+				draft.Path,
+			)
+		}
+		return nil
+	default:
+		return fmt.Errorf("%w: %s is %s", ErrUnsafeCustomProfilePath, draft.Path, preimage.Kind)
+	}
 }
 
 func resolveManagedArtifacts(
@@ -989,7 +1363,11 @@ func resolveManagedArtifacts(
 			}
 			for _, binding := range objectsOrEmpty(effect["renderBindings"]) {
 				token, _ := stringValue(binding, "token")
-				renderValues[token] = "`" + renderDecisionValue(value) + "`"
+				rendered, err := renderProjectDecision(id, value, declaration)
+				if err != nil {
+					return nil, nil, fmt.Errorf("render project decision %q: %w", id, err)
+				}
+				renderValues[token] = rendered
 			}
 		}
 	}
@@ -1059,6 +1437,7 @@ func resolveManagedArtifacts(
 			add(id)
 		}
 	}
+	orderedIDs = orderRootArtifacts(catalog, orderedIDs)
 	var artifacts []plannedArtifact
 	for _, id := range orderedIDs {
 		declaration := declarations[id]
@@ -1071,7 +1450,13 @@ func resolveManagedArtifacts(
 		if !ok {
 			return nil, nil, fmt.Errorf("render managed entry %q: template %q is missing", id, templateID)
 		}
-		valuesForArtifact := artifactRenderValues(catalog, declaration, activeModules, paths)
+		valuesForArtifact := artifactRenderValues(
+			catalog,
+			declaration,
+			activeModules,
+			orderedIDs,
+			paths,
+		)
 		for token, rendered := range renderValues {
 			valuesForArtifact[token] = rendered
 		}
@@ -1096,6 +1481,53 @@ func resolveManagedArtifacts(
 		})
 	}
 	return activeModules, artifacts, nil
+}
+
+// ResolveSemanticOwnerRegistry derives the exact semantic destinations active
+// for a resolved Profile and its confirmed project decisions.
+func ResolveSemanticOwnerRegistry(
+	catalog *Catalog,
+	profile ResolvedProfile,
+	decisions []DecisionValue,
+) (SemanticOwnerRegistry, error) {
+	if catalog == nil {
+		return nil, errors.New("resolve Semantic Owner Registry: catalog is required")
+	}
+	modules, artifacts, err := resolveManagedArtifacts(catalog, profile, decisions, false)
+	if err != nil {
+		return nil, fmt.Errorf("resolve Semantic Owner Registry artifacts: %w", err)
+	}
+	artifactIDs := make([]string, len(artifacts))
+	for index, artifact := range artifacts {
+		artifactIDs[index] = artifact.ID
+	}
+	return catalog.SemanticOwnerRegistry(modules, artifactIDs), nil
+}
+
+func orderRootArtifacts(catalog *Catalog, artifactIDs []string) []string {
+	rank := make(map[string]int)
+	for _, level := range catalog.instructionHierarchy {
+		for _, rootID := range level.RootBlocks {
+			rank[rootID] = len(rank)
+		}
+	}
+	positions := make([]int, 0)
+	roots := make([]string, 0)
+	for index, artifactID := range artifactIDs {
+		if _, ok := rank[artifactID]; !ok {
+			continue
+		}
+		positions = append(positions, index)
+		roots = append(roots, artifactID)
+	}
+	sort.SliceStable(roots, func(i, j int) bool {
+		return rank[roots[i]] < rank[roots[j]]
+	})
+	ordered := append([]string(nil), artifactIDs...)
+	for index, position := range positions {
+		ordered[position] = roots[index]
+	}
+	return ordered
 }
 
 func planConditionMatches(condition document, value any) bool {
@@ -1154,9 +1586,17 @@ func artifactRenderValues(
 	catalog *Catalog,
 	artifact document,
 	activeModules []string,
+	activeArtifacts []string,
 	artifactPaths map[string]string,
 ) map[string]string {
 	values := make(map[string]string)
+	switch artifact["id"] {
+	case "guide.domain":
+		values["identifier.strategy"] = ""
+	case "guide.backend":
+		values["http.contract"] = ""
+		values["auth.provider"] = ""
+	}
 	var rules []string
 	moduleID := ""
 	for id, module := range catalog.modules {
@@ -1200,6 +1640,9 @@ func artifactRenderValues(
 	if artifact["id"] == "guide.skill-dispatch" {
 		values["active-modules.skill-dispatch"] = renderSkillDispatch(catalog, activeModules)
 	}
+	if artifact["id"] == "root.core" {
+		values["instruction.hierarchy"] = renderInstructionHierarchy(catalog, activeArtifacts)
+	}
 	for _, reference := range objectsOrEmpty(artifact["references"]) {
 		token, _ := stringValue(reference, "token")
 		targetID, _ := stringValue(reference, "managedId")
@@ -1214,6 +1657,32 @@ func artifactRenderValues(
 		}
 	}
 	return values
+}
+
+func renderInstructionHierarchy(catalog *Catalog, activeArtifacts []string) string {
+	active := stringSet(activeArtifacts)
+	lines := []string{
+		"### Instruction hierarchy",
+		"",
+		"Apply active guidance in this order. A narrower guide may add constraints for its concern but cannot weaken a universal Normative Clause or confirmed project decision.",
+		"",
+	}
+	ordinal := 1
+	for _, level := range catalog.instructionHierarchy {
+		levelActive := false
+		for _, rootID := range level.RootBlocks {
+			if _, ok := active[rootID]; ok {
+				levelActive = true
+				break
+			}
+		}
+		if !levelActive {
+			continue
+		}
+		lines = append(lines, fmt.Sprintf("%d. **%s**", ordinal, level.Title))
+		ordinal++
+	}
+	return strings.Join(lines, "\n")
 }
 
 func renderSkillDispatch(catalog *Catalog, activeModules []string) string {
@@ -1335,6 +1804,68 @@ func buildSetupManifest(
 	}
 }
 
+func marshalSetupManifestBytes(manifest SetupManifest) ([]byte, error) {
+	data, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return compactSetupManifestMethodArrays(data), nil
+}
+
+func compactSetupManifestMethodArrays(data []byte) []byte {
+	lines := strings.Split(string(data), "\n")
+	result := make([]string, 0, len(lines))
+	for index := 0; index < len(lines); index++ {
+		line := lines[index]
+		if strings.TrimSpace(line) != `"methods": [` {
+			result = append(result, line)
+			continue
+		}
+		var methods []string
+		end := index + 1
+		for ; end < len(lines); end++ {
+			trimmed := strings.TrimSpace(lines[end])
+			if trimmed == "]" || trimmed == "]," {
+				break
+			}
+			var method string
+			if err := json.Unmarshal([]byte(strings.TrimSuffix(trimmed, ",")), &method); err != nil {
+				methods = nil
+				break
+			}
+			methods = append(methods, method)
+		}
+		if methods == nil || end >= len(lines) {
+			result = append(result, line)
+			continue
+		}
+		encodedMethods := make([]string, 0, len(methods))
+		for _, method := range methods {
+			encoded, err := json.Marshal(method)
+			if err != nil {
+				encodedMethods = nil
+				break
+			}
+			encodedMethods = append(encodedMethods, string(encoded))
+		}
+		if encodedMethods == nil {
+			result = append(result, line)
+			continue
+		}
+		suffix := ""
+		if strings.TrimSpace(lines[end]) == "]," {
+			suffix = ","
+		}
+		indent := line[:len(line)-len(strings.TrimLeft(line, " "))]
+		result = append(
+			result,
+			indent+`"methods": [`+strings.Join(encodedMethods, ", ")+"]"+suffix,
+		)
+		index = end
+	}
+	return []byte(strings.Join(result, "\n"))
+}
+
 func assemblePostimages(
 	root string,
 	snapshot RepositorySnapshot,
@@ -1342,6 +1873,8 @@ func assemblePostimages(
 	manifestBytes []byte,
 	preservation RootPreservationPlan,
 	repositoryPlan specificRepositoryPlan,
+	repositoryRules repositoryRuleInventory,
+	profileDraft *plannedProfileDraft,
 ) ([]Postimage, []ManagedEntry, error) {
 	byPath := make(map[string][]plannedArtifact)
 	for _, artifact := range artifacts {
@@ -1363,7 +1896,15 @@ func assemblePostimages(
 		for _, artifact := range grouped {
 			content = upsertManagedBlock(content, artifact)
 		}
-		outputs[relative] = []byte(content)
+		rendered, err := upsertRepositoryRuleBlocks(
+			relative,
+			[]byte(content),
+			repositoryRules.ByPath[relative],
+		)
+		if err != nil {
+			return nil, nil, err
+		}
+		outputs[relative] = rendered
 	}
 	outputs[manifestPath] = append([]byte(nil), manifestBytes...)
 	for _, backup := range preservation.Backups {
@@ -1371,10 +1912,18 @@ func assemblePostimages(
 		if err != nil {
 			return nil, nil, err
 		}
+		if rendered, exists := outputs[backup.SourcePath]; exists &&
+			bytes.Equal(source, rendered) &&
+			unchangedSetupManagedGuidance(backup.ContentIdentity, rendered) {
+			continue
+		}
 		outputs[backup.Path] = source
 	}
 	if len(repositoryPlan.CanonicalContent) != 0 {
 		outputs[specificRepositoryPath] = append([]byte(nil), repositoryPlan.CanonicalContent...)
+	}
+	if profileDraft != nil {
+		outputs[profileDraft.Path] = append([]byte(nil), profileDraft.Content...)
 	}
 
 	preimages := preimagesByPath(snapshot.Preimages)
@@ -1413,11 +1962,37 @@ func assemblePostimages(
 				ContentIdentity: "sha256:" + artifact.Digest,
 			})
 		}
+		if content, exists := outputs[relative]; exists &&
+			len(repositoryRules.ByPath[relative]) != 0 {
+			blocks, err := parseRepositoryRuleBlocks(relative, content)
+			if err != nil {
+				return nil, nil, err
+			}
+			for _, block := range blocks {
+				ledger = append(ledger, ManagedEntry{
+					ID:              "repository-rule:" + block.ID,
+					Path:            relative,
+					Action:          action,
+					Kind:            "repository-owned",
+					BeforeIdentity:  before,
+					AfterIdentity:   postimage.ContentIdentity,
+					ContentIdentity: planContentIdentity(block.Body),
+				})
+			}
+		}
 		if relative == manifestPath {
 			ledger = append(ledger, ManagedEntry{
 				ID: "manifest", Path: relative, Action: action, Kind: "manifest",
 				Version: ManifestVersion, BeforeIdentity: before,
 				AfterIdentity:   postimage.ContentIdentity,
+				ContentIdentity: postimage.ContentIdentity,
+			})
+		}
+		if profileDraft != nil && relative == profileDraft.Path {
+			ledger = append(ledger, ManagedEntry{
+				ID:   "profile:" + profileDraft.ID,
+				Path: relative, Action: action, Kind: "profile",
+				BeforeIdentity: before, AfterIdentity: postimage.ContentIdentity,
 				ContentIdentity: postimage.ContentIdentity,
 			})
 		}
@@ -1648,6 +2223,13 @@ func ValidatePlanDocument(document PlanDocument) error {
 		if decision.ID == "" || index > 0 && document.Decisions[index-1].ID >= decision.ID {
 			return errors.New("Baseline Plan decisions must have unique IDs in lexical order")
 		}
+	}
+	normalizedProjectDecisions, err := normalizeProjectDecisions(document.Decisions, catalog)
+	if err != nil {
+		return fmt.Errorf("validate Baseline Plan project decisions: %w", err)
+	}
+	if !reflectJSONEqual(normalizedProjectDecisions, document.Decisions) {
+		return errors.New("Baseline Plan project decisions are not normalized or derived")
 	}
 	for index, retention := range document.Retention {
 		if retention.FromClause == "" || retention.Enforcement == "" ||

@@ -47,6 +47,93 @@ func TestPreferredFallbackValidPreferredPreventsFallback(t *testing.T) {
 	}
 }
 
+func TestRuleSegmentationPreferredFallbackUsesIdenticalSnapshotBytes(t *testing.T) {
+	snapshot := analyzerSegmentationSnapshot(t)
+	runtime := &fakeSealedRuntime{
+		outputs: map[string]fakeSealedOutput{
+			PreferredModel: {output: []byte("not json")},
+			FallbackModel:  {output: analyzerSegmentationProposalJSON(t, snapshot)},
+		},
+	}
+
+	proposal, err := NewAnalyzer(runtime).Segment(context.Background(), snapshot)
+	if err != nil {
+		t.Fatalf("segment with fallback selection: %v", err)
+	}
+	materialized, err := baseline.MaterializeRuleSegments(snapshot, proposal)
+	if err != nil {
+		t.Fatalf("materialize fallback proposal: %v", err)
+	}
+	if !reflect.DeepEqual(materialized, snapshot.SourceBaseline) {
+		t.Fatalf("fallback proposal changed original Source Baseline: %+v", materialized)
+	}
+	if got, want := runtime.provedModels(), []string{PreferredModel, FallbackModel}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("eager proofs\nwant: %v\ngot:  %v", want, got)
+	}
+	if got, want := runtime.attemptedModels(), []string{PreferredModel, FallbackModel}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("attempts\nwant: %v\ngot:  %v", want, got)
+	}
+	inputs := runtime.promptInputs()
+	if len(inputs) != 2 || !reflect.DeepEqual(inputs[0], inputs[1]) {
+		t.Fatalf("preferred and fallback inputs differ:\npreferred: %q\nfallback:  %q", inputs[0], inputs[1])
+	}
+	canonical, err := snapshot.CanonicalBytes()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(inputs[0], canonical) {
+		t.Fatalf("attempt input is not the canonical Segmentation Snapshot:\nwant: %s\ngot:  %s", canonical, inputs[0])
+	}
+}
+
+func TestRuleSegmentationACPFailureRetainsCompleteOriginalEntry(t *testing.T) {
+	snapshot := analyzerSegmentationSnapshot(t)
+	runtime := &fakeSealedRuntime{
+		proofErrors: map[string]error{
+			PreferredModel: errors.New("preferred unavailable"),
+			FallbackModel:  errors.New("fallback unavailable"),
+		},
+	}
+
+	proposal, err := NewAnalyzer(runtime).Segment(context.Background(), snapshot)
+	if err != nil {
+		t.Fatalf("manual segmentation fallback: %v", err)
+	}
+	materialized, err := baseline.MaterializeRuleSegments(snapshot, proposal)
+	if err != nil {
+		t.Fatalf("materialize manual segmentation fallback: %v", err)
+	}
+	if !reflect.DeepEqual(materialized, snapshot.SourceBaseline) {
+		t.Fatalf("ACP failure mutated original Source Baseline:\n got=%+v\nwant=%+v",
+			materialized, snapshot.SourceBaseline)
+	}
+	if len(runtime.attemptedModels()) != 0 {
+		t.Fatalf("unproven selections started segmentation: %v", runtime.attemptedModels())
+	}
+}
+
+func TestRuleSegmentationUsesPrivateCheckoutFreeDirectories(t *testing.T) {
+	snapshot := analyzerSegmentationSnapshot(t)
+	runtime := &fakeSealedRuntime{
+		outputs: map[string]fakeSealedOutput{
+			PreferredModel: {output: analyzerSegmentationProposalJSON(t, snapshot)},
+		},
+		checkPrivateDirectories: true,
+		forbiddenPath:           checkoutPathForTest,
+	}
+
+	if _, err := NewAnalyzer(runtime).Segment(context.Background(), snapshot); err != nil {
+		t.Fatalf("sealed segmentation: %v", err)
+	}
+	if runtime.nonEmptyDirectory || runtime.nonPrivateDirectory || runtime.checkoutExposed {
+		t.Fatalf("sealed directory violation: nonempty=%t nonprivate=%t checkout=%t",
+			runtime.nonEmptyDirectory, runtime.nonPrivateDirectory, runtime.checkoutExposed)
+	}
+	if got, want := runtime.uniqueWorkDirectoryCount(), 3; got != want {
+		t.Fatalf("proofs and attempt used %d private directories, want %d fresh directories", got, want)
+	}
+}
+
 func TestPreferredFallbackInvalidPreferredUsesIdenticalSnapshotBytes(t *testing.T) {
 	snapshot := analyzerTestSnapshot(t)
 	runtime := &fakeSealedRuntime{
@@ -368,6 +455,46 @@ func analyzerRevisionSnapshot(t *testing.T) baseline.RevisionSnapshot {
 		t.Fatal(err)
 	}
 	return snapshot
+}
+
+func analyzerSegmentationSnapshot(t *testing.T) baseline.RuleSegmentationSnapshot {
+	t.Helper()
+	classification := analyzerTestSnapshot(t)
+	byteCount := 0
+	for _, entry := range classification.Entries {
+		byteCount += len(entry.SourceBytes)
+	}
+	source := baseline.ReadoptionSourceBaseline{
+		ID:               classification.SourceBaseline.ID,
+		DeclaredIdentity: "unconfigured",
+		Compatibility:    "incompatible",
+		Digest:           classification.SourceBaseline.Digest,
+		CarrierCount:     1,
+		EntryCount:       len(classification.Entries),
+		ByteCount:        byteCount,
+		Entries:          classification.Entries,
+	}
+	snapshot, err := baseline.NewRuleSegmentationSnapshot(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return snapshot
+}
+
+func analyzerSegmentationProposalJSON(
+	t *testing.T,
+	snapshot baseline.RuleSegmentationSnapshot,
+) []byte {
+	t.Helper()
+	proposal, err := baseline.ManualRuleSegmentationProposal(snapshot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	payload, err := json.Marshal(proposal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return payload
 }
 
 type fakeSealedOutput struct {

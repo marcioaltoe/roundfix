@@ -48,7 +48,7 @@ Usage:
   roundfix settle --spec <slug> --task <task_id>
   roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
   roundfix release plan --reset-to <version> [--format <text|json>]
-  roundfix baseline plan --profile <id> [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
+  roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
   roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
   roundfix baseline profile init --id <id> [--from <built-in-id>]
   roundfix baseline profile show <id> [--format <text|json>]
@@ -3762,7 +3762,7 @@ Options:
 		return `Usage:
   roundfix setup [--yes] [--no-input]
 
-Checks Node.js and the pinned acpx version, proves the effective official Codex adapter
+Checks Node.js and the minimum supported acpx version, proves the effective official Codex adapter
 and generated Agent Selection profile readiness, then offers acpx local adapter
 overrides, User Config, and Project Config. Proposed profiles are exact-proved
 before writing. Legacy Codex override migration requires authorization. Each
@@ -3777,8 +3777,8 @@ Options:
 		return `Usage:
   roundfix doctor
 
-Diagnoses this machine's readiness for Runs. Checks Node.js, the pinned acpx
-version, the effective adapter, and required Agent Selection Profiles. It also
+Diagnoses this machine's readiness for Runs. Checks Node.js, the minimum
+supported acpx version, the effective adapter, and required Agent Selection Profiles. It also
 checks codex runtime hygiene. The aggregate profiles: line exact-proves every
 distinct tuple and reports the next action for failures. Doctor mutates nothing.
 `
@@ -3972,7 +3972,7 @@ explicit post-QA authority.
 	case "baseline":
 		return `Usage:
   roundfix baseline [--repo <path>] [--format <text|json>]
-  roundfix baseline plan --profile <id> [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
+  roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
   roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
   roundfix baseline profile init --id <id> [--from <built-in-id>]
   roundfix baseline profile show <id> [--format <text|json>]
@@ -4003,12 +4003,14 @@ embedded Baseline catalog.
 `
 	case "baseline plan":
 		return `Usage:
-  roundfix baseline plan --profile <id> [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
+  roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
 
 Builds the complete portable roundfix/baseline-plan/v1 document from
 clone-stable Git lineage, bounded repository preimages, one selected Baseline
-Profile, and normalized decisions. JSON is the portable apply input; text is a
-concise file-level projection. Missing decisions return a
+Profile ID or strict repository-owned Profile draft, and normalized decisions.
+The two Profile inputs are mutually exclusive and produce the same normalized
+Plan when they resolve to the same Profile. JSON is the portable apply input;
+text is a concise file-level projection. Missing decisions return a
 roundfix/baseline-result/v1 next action without a partial plan.
 
 The command never prompts, writes repository bytes, executes
@@ -4022,6 +4024,7 @@ Exit codes:
 
 Options:
   --profile       Built-in or repository-owned Baseline Profile
+  --profile-file  Strict repository-owned Profile draft; mutually exclusive with --profile
   --decision      Decision as id=value; repeat for multiple answers
   --decision-file Strict Decision Document path; repeat to merge inputs
   --repo          Git worktree or a path inside it (default current directory)

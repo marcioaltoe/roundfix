@@ -1,0 +1,2 @@
+roundfix: baseline plan failed: normalize Baseline decisions: decision "autonomous.enabled" is not selected by profile "oraculum-backend"
+Run 'roundfix baseline plan --help' for usage.

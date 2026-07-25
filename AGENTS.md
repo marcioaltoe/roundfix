@@ -113,8 +113,8 @@ External GitHub issues use the five canonical triage labels defined in
 Supervisor orchestrates and authors Specs; implementation is delegated to an
 ACP Runtime. Codex (`gpt-5.5` with `xhigh`) handles CLI, backend,
 infrastructure, documentation, and other non-frontend Tasks. Claude
-(`opus`/Opus 4.8 with `xhigh`) handles design, UI, UX, TUI, and web frontend
-Tasks. Binding for every autonomous session. See
+(`claude-opus-5`/Opus 5 with `xhigh`) handles design, UI, UX, TUI, and web
+frontend Tasks. Binding for every autonomous session. See
 `docs/agents/autonomous-work.md`.
 
 ### Skill governance

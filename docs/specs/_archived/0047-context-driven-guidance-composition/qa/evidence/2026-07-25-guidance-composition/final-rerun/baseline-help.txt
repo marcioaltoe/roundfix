@@ -1,0 +1,30 @@
+Usage:
+  roundfix baseline [--repo <path>] [--format <text|json>]
+  roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
+  roundfix baseline apply --plan <file> --confirm-plan <digest> [--repo <path>] [--format <text|json>]
+  roundfix baseline profile init --id <id> [--from <built-in-id>]
+  roundfix baseline profile show <id> [--format <text|json>]
+  roundfix baseline profile validate [<id>|<path>] [--format <text|json>]
+  roundfix baseline skills restore --profile <id> [--skill <name> ...] [--source-dir <path>] [--confirm-plan <digest>] [--repo <path>] [--format <text|json>]
+  roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
+
+The root command guides one interactive adoption or update from repository
+preflight through Baseline verification. Numbered linear prompts collect one
+Baseline Profile and repository decisions, then present one consolidated
+Change Plan with file changes first. Repository mutation occurs only after
+explicit confirmation of the displayed Plan Digest.
+
+Commands:
+  plan     Automation: emit a portable, digest-bound Baseline Plan without prompting or writing.
+  apply    Automation: apply and verify exactly one approved portable Baseline Plan without prompting.
+  profile  Author, inspect, and validate built-in or repository-owned Baseline Profiles.
+  skills   Preview or apply immutable external Repository Skill Set restoration.
+  assets   Check or refresh Go-owned canonical Baseline setup snapshots.
+
+The interactive root command refuses redirected or absent terminal input.
+Automation must use baseline plan followed by baseline apply with the exact
+approved Plan Digest.
+
+Repository-owned profiles live only under
+.roundfix/baseline/profiles/<id>.json and may reference only entries in the
+embedded Baseline catalog.

@@ -69,7 +69,7 @@
       "sourceEntry": "clause.legacy.use-authoritative-external-docs",
       "disposition": "replaced",
       "targets": [
-        "contract.research.sequence"
+        "clause.core.research-authoritative-external-sources"
       ],
       "reason": "The portable rule routes external technical questions through the profile's documentation skill."
     },
@@ -78,7 +78,7 @@
       "sourceEntry": "clause.legacy.use-web-research-fallback",
       "disposition": "replaced",
       "targets": [
-        "contract.research.sequence"
+        "clause.core.use-declared-external-research-fallback"
       ],
       "reason": "The fallback is declared by the selected profile and requires varied searches plus primary-source verification."
     },
@@ -87,7 +87,7 @@
       "sourceEntry": "clause.legacy.prohibit-external-tools-for-local-code",
       "disposition": "replaced",
       "targets": [
-        "contract.research.sequence"
+        "clause.core.prohibit-external-research-for-local-code"
       ],
       "reason": "The prohibition is now tool-agnostic and portable."
     },
@@ -312,7 +312,7 @@
       "sourceEntry": "clause.managed-v2.research-authoritative-external-sources",
       "disposition": "replaced",
       "targets": [
-        "contract.research.sequence"
+        "clause.core.research-authoritative-external-sources"
       ],
       "reason": "Authoritative external documentation remains required."
     },
@@ -321,7 +321,7 @@
       "sourceEntry": "clause.managed-v2.research-local-code-locally",
       "disposition": "replaced",
       "targets": [
-        "contract.research.sequence"
+        "clause.core.research-local-code-locally"
       ],
       "reason": "Local discovery remains assigned to local search tools."
     },
@@ -330,7 +330,7 @@
       "sourceEntry": "clause.managed-v2.prohibit-web-research-for-local-code",
       "disposition": "moved",
       "targets": [
-        "contract.research.sequence"
+        "clause.core.prohibit-external-research-for-local-code"
       ],
       "reason": "The local-code prohibition now has an explicit prohibited clause."
     },
