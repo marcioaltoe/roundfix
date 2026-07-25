@@ -29,6 +29,14 @@ var confirmedInstructionHierarchy = []string{
 	"repository-specific",
 }
 
+const (
+	toolingAuthorityRuleID     = "rule.core.tooling-authority"
+	toolingAuthorityClauseID   = "clause.core.require-tooling-authorization"
+	toolingAuthorityCoverageID = "coverage.tooling-authority"
+	toolingAuthorityGuideID    = "guide.agent-instructions"
+	toolingAuthorityGuidance   = "Do not create, edit, rename, move, or delete any linter, formatter, typechecker, test-runner, architecture-checker, build-tool, package-manager, code-generator, or other repository-tooling configuration, script, ignore file, plugin declaration, or version pin without express maintainer authorization. Setup completion, a Profile, a narrower guide, or a generic implementation request does not grant that authorization."
+)
+
 func (l *catalogLoader) validateTemplates(catalog *Catalog) {
 	for templateID, template := range catalog.templates {
 		requireFields(l, "template", templateID, template, "id", "version", "kind", "path")
@@ -947,6 +955,168 @@ func (l *catalogLoader) validateDecisionEffects(catalog *Catalog) {
 		}
 	}
 	l.validateDecisionCycles(graph)
+}
+
+func (l *catalogLoader) validateToolingAuthority(catalog *Catalog) {
+	core := catalog.modules["core"]
+	schemaVersion, _ := stringValue(core, "schemaVersion")
+	if schemaVersion != "setup-context-driven/module-v3" {
+		return
+	}
+	var authorityRule document
+	for _, rule := range objectsOrEmpty(core["rules"]) {
+		ruleID, _ := stringValue(rule, "id")
+		if ruleID == toolingAuthorityRuleID {
+			authorityRule = rule
+			break
+		}
+	}
+	if authorityRule == nil {
+		l.add("catalog.tooling-authority.rule.missing", "core", toolingAuthorityRuleID)
+	} else {
+		if !containsString(stringsOrEmpty(authorityRule["coverage"]), toolingAuthorityCoverageID) {
+			l.add(
+				"catalog.tooling-authority.coverage.missing",
+				toolingAuthorityRuleID,
+				toolingAuthorityCoverageID,
+			)
+		}
+		var authorityClause document
+		for _, clause := range objectsOrEmpty(authorityRule["clauses"]) {
+			clauseID, _ := stringValue(clause, "id")
+			if clauseID == toolingAuthorityClauseID {
+				authorityClause = clause
+				break
+			}
+		}
+		if authorityClause == nil {
+			l.add(
+				"catalog.tooling-authority.clause.missing",
+				toolingAuthorityRuleID,
+				toolingAuthorityClauseID,
+			)
+		} else {
+			enforcement, _ := stringValue(authorityClause, "enforcement")
+			guidance, _ := stringValue(authorityClause, "guidance")
+			if enforcement != "prohibited" || guidance != toolingAuthorityGuidance {
+				l.add(
+					"catalog.tooling-authority.clause.invalid",
+					toolingAuthorityClauseID,
+					"the protected operative text or enforcement changed",
+				)
+			}
+		}
+	}
+
+	guideCarriesRule := false
+	for _, guide := range objectsOrEmpty(core["supportingGuides"]) {
+		guideID, _ := stringValue(guide, "id")
+		if guideID == toolingAuthorityGuideID &&
+			containsString(stringsOrEmpty(guide["rules"]), toolingAuthorityRuleID) {
+			guideCarriesRule = true
+		}
+	}
+	if !guideCarriesRule {
+		l.add(
+			"catalog.tooling-authority.carrier.missing",
+			toolingAuthorityGuideID,
+			toolingAuthorityRuleID,
+		)
+	}
+
+	for profileID, profile := range catalog.profiles {
+		if !containsString(stringsOrEmpty(profile["modules"]), "core") ||
+			!containsString(stringsOrEmpty(profile["requiredRules"]), toolingAuthorityRuleID) {
+			l.add(
+				"catalog.tooling-authority.profile.rule.missing",
+				profileID,
+				toolingAuthorityRuleID,
+			)
+		}
+	}
+
+	if _, exists := catalog.decisions["tooling.authority"]; exists {
+		l.add(
+			"catalog.tooling-authority.decision.prohibited",
+			"tooling.authority",
+			"the universal clause is not a setup decision",
+		)
+	}
+	for decisionID, decision := range catalog.decisions {
+		for _, effect := range objectsOrEmpty(decision["effects"]) {
+			if containsString(stringsOrEmpty(effect["activateModules"]), "core") ||
+				containsString(stringsOrEmpty(effect["excludeArtifacts"]), toolingAuthorityGuideID) {
+				l.add(
+					"catalog.tooling-authority.effect.prohibited",
+					decisionID,
+					"core tooling authority cannot be conditional or excluded",
+				)
+			}
+			for _, selection := range objectsOrEmpty(effect["selectTemplates"]) {
+				artifactID, _ := stringValue(selection, "artifact")
+				templateID, _ := stringValue(selection, "template")
+				if artifactID == toolingAuthorityGuideID &&
+					templateID != "template.guide.agent-instructions" {
+					l.add(
+						"catalog.tooling-authority.effect.prohibited",
+						decisionID,
+						"tooling authority cannot select a narrower guide template",
+					)
+				}
+			}
+			for _, binding := range objectsOrEmpty(effect["renderBindings"]) {
+				artifactID, _ := stringValue(binding, "artifact")
+				token, _ := stringValue(binding, "token")
+				if artifactID == toolingAuthorityGuideID && token == "artifact.rules" {
+					l.add(
+						"catalog.tooling-authority.effect.prohibited",
+						decisionID,
+						"tooling authority cannot be replaced by a decision binding",
+					)
+				}
+			}
+		}
+	}
+
+	for transitionID, transition := range catalog.transitions {
+		retained := false
+		for _, mapping := range objectsOrEmpty(transition["mappings"]) {
+			if containsString(stringsOrEmpty(mapping["targets"]), toolingAuthorityClauseID) {
+				retained = true
+				break
+			}
+		}
+		if !retained {
+			l.add(
+				"catalog.tooling-authority.retention.missing",
+				transitionID,
+				toolingAuthorityClauseID,
+			)
+		}
+	}
+
+	index := l.documents["source-baselines/index.json"]
+	for _, declaration := range objectsOrEmpty(index["baselines"]) {
+		baselineID, _ := stringValue(declaration, "id")
+		source, err := catalog.SourceBaseline(baselineID)
+		if err != nil {
+			continue
+		}
+		accounted := false
+		for _, entry := range source.Entries {
+			if entry.ID == toolingAuthorityClauseID {
+				accounted = true
+				break
+			}
+		}
+		if !accounted {
+			l.add(
+				"catalog.tooling-authority.source-accounting.missing",
+				baselineID,
+				toolingAuthorityClauseID,
+			)
+		}
+	}
 }
 
 func (l *catalogLoader) validateDecisionCycles(graph map[string][]string) {

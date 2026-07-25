@@ -5,6 +5,7 @@
     {"id": "coverage.universal-safety", "version": 2, "description": "Portable safety behavior required by every profile.", "delegationAliases": ["safety guidance", "safety rules"]},
     {"id": "coverage.verification", "version": 2, "description": "The selected repository Verification gates completion claims.", "delegationAliases": ["verification", "verification gate"]},
     {"id": "coverage.verification-integrity", "version": 2, "description": "Agents preserve verification signals and configuration.", "delegationAliases": ["verification integrity"]},
+    {"id": "coverage.tooling-authority", "version": 1, "description": "Repository tooling mutations require express maintainer authorization.", "delegationAliases": ["tooling authority", "tooling mutation authority"]},
     {"id": "coverage.skill-dispatch", "version": 2, "description": "Active required skills have explicit work triggers.", "delegationAliases": ["skill dispatch"]},
     {"id": "coverage.language", "version": 2, "description": "Generated repository guidance uses the selected language.", "delegationAliases": ["language guidance"]},
     {"id": "coverage.research", "version": 2, "description": "Agents use repository sources and authoritative external documentation.", "delegationAliases": ["research guidance", "research protocol"]},

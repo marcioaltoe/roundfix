@@ -376,6 +376,46 @@ func TestProjectDecisionPrompts(t *testing.T) {
 	})
 }
 
+func TestToolingAuthorityNoPrompt(t *testing.T) {
+	t.Parallel()
+
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load Baseline catalog: %v", err)
+	}
+	for _, profileID := range catalog.ProfileIDs() {
+		profileID := profileID
+		t.Run(profileID, func(t *testing.T) {
+			profile, err := baseline.ResolveProfile(t.TempDir(), profileID, catalog)
+			if err != nil {
+				t.Fatalf("resolve Profile %q: %v", profileID, err)
+			}
+			var output bytes.Buffer
+			answers, err := promptBaselineDecisions(
+				context.Background(),
+				&baselineHumanPrompt{
+					reader: bufioReader(strings.Repeat("\n", 64)),
+					writer: &output,
+				},
+				catalog,
+				profile,
+				baselineHumanState{},
+			)
+			if err != nil {
+				t.Fatalf("prompt Profile %q decisions: %v", profileID, err)
+			}
+			for _, answer := range answers {
+				if strings.Contains(answer.ID, "tooling") {
+					t.Errorf("Profile %q exposed tooling decision %q", profileID, answer.ID)
+				}
+			}
+			if strings.Contains(output.String(), "tooling.authority") {
+				t.Fatalf("Profile %q exposed a tooling-authority prompt:\n%s", profileID, output.String())
+			}
+		})
+	}
+}
+
 func TestProjectDecisionParity(t *testing.T) {
 	repository := newCLIProjectDecisionRepository(t)
 	catalog, err := baseline.LoadEmbeddedCatalog()

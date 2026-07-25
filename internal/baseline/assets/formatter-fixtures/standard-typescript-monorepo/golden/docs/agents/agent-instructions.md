@@ -24,6 +24,8 @@ The selected repository Verification is `make verify`.
 
 - **prohibited**: Do not edit verification configuration, tests, fixtures, golden files, or generated expectations merely to make a failure disappear. Change them only when the repository contract intentionally changes, and prove the new contract.
 
+- **prohibited**: Do not create, edit, rename, move, or delete any linter, formatter, typechecker, test-runner, architecture-checker, build-tool, package-manager, code-generator, or other repository-tooling configuration, script, ignore file, plugin declaration, or version pin without express maintainer authorization. Setup completion, a Profile, a narrower guide, or a generic implementation request does not grant that authorization.
+
 - **mandatory**: Write generated repository guidance, identifiers, headings, and examples in English. Preserve repository-authored language outside setup-owned markers.
 
 - **prohibited**: Do not use external research tools to discover or infer local repository code or behavior.

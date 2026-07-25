@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "core",
-  "version": 3,
+  "version": 4,
   "kind": "core",
   "title": "Universal agent baseline",
   "dependsOn": [],
@@ -291,7 +291,7 @@
   "supportingGuides": [
     {
       "id": "guide.agent-instructions",
-      "version": 3,
+      "version": 4,
       "path": "docs/agents/agent-instructions.md",
       "template": "template.guide.agent-instructions",
       "rules": [
@@ -300,6 +300,7 @@
         "rule.core.evidence-before-complete",
         "rule.core.verification-selected",
         "rule.core.verification-integrity",
+        "rule.core.tooling-authority",
         "rule.core.english-guidance",
         "rule.core.research-authority",
         "rule.core.dependency-discipline",
@@ -409,6 +410,20 @@
           "id": "clause.core.ask-before-verification-configuration-change",
           "enforcement": "stop-and-ask",
           "guidance": "Stop and ask for explicit authority before intentionally changing lint, formatter, typecheck, test-runner, architecture, or Verification configuration."
+        }
+      ]
+    },
+    {
+      "id": "rule.core.tooling-authority",
+      "version": 1,
+      "coverage": [
+        "coverage.tooling-authority"
+      ],
+      "clauses": [
+        {
+          "id": "clause.core.require-tooling-authorization",
+          "enforcement": "prohibited",
+          "guidance": "Do not create, edit, rename, move, or delete any linter, formatter, typechecker, test-runner, architecture-checker, build-tool, package-manager, code-generator, or other repository-tooling configuration, script, ignore file, plugin declaration, or version pin without express maintainer authorization. Setup completion, a Profile, a narrower guide, or a generic implementation request does not grant that authorization."
         }
       ]
     },

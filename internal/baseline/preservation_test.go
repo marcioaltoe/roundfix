@@ -278,8 +278,8 @@ func TestReadoptionCompatibilityMaintainedFixture(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load maintained Source Baseline: %v", err)
 	}
-	if len(sourceBaseline.Entries) != 95 ||
-		sourceBaseline.Identity.EntryCount != 95 ||
+	if len(sourceBaseline.Entries) != 96 ||
+		sourceBaseline.Identity.EntryCount != 96 ||
 		len(sourceBaseline.Accounting) != 51 {
 		t.Fatalf(
 			"maintained Source Baseline counts = identity %d entries %d accounting %d",
@@ -322,6 +322,7 @@ func TestSourceBaselineGuidanceComposition(t *testing.T) {
 		"clause.autonomous.delegate-through-roundfix",
 		"clause.context.adr-01-template",
 		"clause.core.research-authoritative-external-sources",
+		"clause.core.require-tooling-authorization",
 		"clause.secondbrain.01-consult-triggers",
 		"clause.spec.routing-01-large-initiative",
 		"rule.backend.boundary-contracts",

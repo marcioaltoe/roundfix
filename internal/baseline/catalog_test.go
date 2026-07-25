@@ -572,6 +572,156 @@ func TestCatalogMutation(t *testing.T) {
 	}
 }
 
+func TestToolingAuthorityCannotBeDisabled(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		code string
+		edit func(t *testing.T, assets fstest.MapFS)
+	}{
+		{
+			name: "Profile omits the universal rule",
+			code: "catalog.tooling-authority.profile.rule.missing",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				asset := assets["profiles/rust-cli.json"]
+				asset.Data = []byte(strings.Replace(
+					string(asset.Data),
+					`, "rule.core.tooling-authority"`,
+					``,
+					1,
+				))
+				assets["profiles/rust-cli.json"] = asset
+			},
+		},
+		{
+			name: "decision excludes the universal guide",
+			code: "catalog.tooling-authority.effect.prohibited",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				replaceAsset(
+					t,
+					assets,
+					"decisions.json",
+					`"activateModules": ["spec-workflow"]`,
+					`"activateModules": ["spec-workflow"], "excludeArtifacts": ["guide.agent-instructions"]`,
+				)
+			},
+		},
+		{
+			name: "decision controls the core module",
+			code: "catalog.tooling-authority.effect.prohibited",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				replaceAsset(
+					t,
+					assets,
+					"decisions.json",
+					`"activateModules": ["spec-workflow"]`,
+					`"activateModules": ["spec-workflow", "core"]`,
+				)
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assets := cloneEmbeddedAssets(t)
+			test.edit(t, assets)
+
+			_, err := LoadCatalog(assets)
+			if err == nil {
+				t.Fatalf("LoadCatalog() error = nil, want diagnostic %q", test.code)
+			}
+			var validationErr *ValidationError
+			if !errors.As(err, &validationErr) {
+				t.Fatalf("LoadCatalog() error = %T, want *ValidationError: %v", err, err)
+			}
+			if !validationErr.Has(test.code) {
+				t.Fatalf("LoadCatalog() diagnostics = %v, want %q", validationErr.Diagnostics, test.code)
+			}
+		})
+	}
+}
+
+func TestToolingAuthorityAccounting(t *testing.T) {
+	t.Parallel()
+
+	const clauseID = "clause.core.require-tooling-authorization"
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load embedded catalog: %v", err)
+	}
+	source, err := catalog.SourceBaseline("baseline.standard-typescript-monorepo-0.0.1")
+	if err != nil {
+		t.Fatalf("load maintained Source Baseline: %v", err)
+	}
+	if !sourceBaselineHasEntry(source, clauseID) {
+		t.Fatalf("maintained Source Baseline does not account for %q", clauseID)
+	}
+	for _, transitionID := range catalog.TransitionIDs() {
+		transition, err := catalog.UpgradeRetentionContract(transitionID)
+		if err != nil {
+			t.Fatalf("load retention contract %q: %v", transitionID, err)
+		}
+		if !retentionTargetsClause(transition, clauseID) {
+			t.Errorf("retention contract %q does not retain %q", transitionID, clauseID)
+		}
+	}
+
+	t.Run("source accounting removal invalidates the catalog", func(t *testing.T) {
+		assets := cloneEmbeddedAssets(t)
+		replaceAsset(
+			t,
+			assets,
+			"source-baselines/baseline.standard-typescript-monorepo-0.0.1/manifest.json",
+			clauseID,
+			"clause.missing-tooling-authority-accounting",
+		)
+		if _, err := LoadCatalog(assets); err == nil {
+			t.Fatal("LoadCatalog() error = nil after removing tooling-authority source accounting")
+		}
+	})
+
+	t.Run("retention accounting removal invalidates the catalog", func(t *testing.T) {
+		assets := cloneEmbeddedAssets(t)
+		replaceAsset(
+			t,
+			assets,
+			"retention/transition.managed-v2-to-portable-v3.json",
+			`, "`+clauseID+`"`,
+			``,
+		)
+		_, err := LoadCatalog(assets)
+		if err == nil {
+			t.Fatal("LoadCatalog() error = nil after removing tooling-authority retention accounting")
+		}
+		var validationErr *ValidationError
+		if !errors.As(err, &validationErr) ||
+			!validationErr.Has("catalog.tooling-authority.retention.missing") {
+			t.Fatalf("LoadCatalog() error = %v, want tooling-authority retention diagnostic", err)
+		}
+	})
+}
+
+func sourceBaselineHasEntry(source SourceBaseline, id string) bool {
+	for _, entry := range source.Entries {
+		if entry.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
+func retentionTargetsClause(contract UpgradeRetentionContract, clauseID string) bool {
+	for _, accounting := range contract.Accounting {
+		if slices.Contains(accounting.Targets, clauseID) {
+			return true
+		}
+	}
+	return false
+}
+
 func cloneEmbeddedAssets(t *testing.T) fstest.MapFS {
 	t.Helper()
 

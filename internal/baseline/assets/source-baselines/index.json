@@ -17,6 +17,7 @@
         "clause.core.run-selected-verification",
         "clause.core.prohibit-verification-contract-bypass",
         "clause.core.ask-before-verification-configuration-change",
+        "clause.core.require-tooling-authorization",
         "clause.core.activate-matching-skills",
         "clause.core.use-conventional-commits",
         "clause.core.use-github-pr-workflow",
@@ -103,9 +104,9 @@
         "clause.bun.prohibit-other-package-managers",
         "clause.bun.block-warnings-when-profile-treats-them-as-errors"
       ],
-      "entryCount": 95,
-      "corpusDigest": "f68f60a9852289564ac346b9ab5f4255e9b5316e946c9f1133e8547b0381edd5",
-      "manifestDigest": "c01f2174c23363d85ff52662692554c81e6b0068bf88111ad426a0ba86bd4ed4"
+      "entryCount": 96,
+      "corpusDigest": "f4bb26009c1866033782d7492f1d041a3986b3058abc438e2bc580696d90c976",
+      "manifestDigest": "e9a9e91f8dbbea8dc416a03fe813b9c370a2e012118f548b18f1c6a13b6b7662"
     }
   ]
 }

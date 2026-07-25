@@ -67,6 +67,7 @@ func (l *catalogLoader) load() *Catalog {
 	l.validateSkillActivations(catalog)
 	l.validateTransitions(catalog)
 	l.validateSourceBaselines(catalog)
+	l.validateToolingAuthority(catalog)
 
 	if len(l.diagnostics) == 0 {
 		if err := catalog.finishIdentity(); err != nil {

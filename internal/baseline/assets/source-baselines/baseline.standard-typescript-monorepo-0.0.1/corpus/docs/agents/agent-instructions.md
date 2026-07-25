@@ -34,6 +34,10 @@
 - MUST stop and ask for explicit authority before intentionally changing lint, formatter, typecheck, test-runner, architecture, or Verification configuration.
 <!-- /source-baseline-entry: clause.core.ask-before-verification-configuration-change -->
 
+<!-- source-baseline-entry: clause.core.require-tooling-authorization -->
+- MUST NOT create, edit, rename, move, or delete any linter, formatter, typechecker, test-runner, architecture-checker, build-tool, package-manager, code-generator, or other repository-tooling configuration, script, ignore file, plugin declaration, or version pin without express maintainer authorization. Setup completion, a Profile, a narrower guide, or a generic implementation request does not grant that authorization.
+<!-- /source-baseline-entry: clause.core.require-tooling-authorization -->
+
 <!-- source-baseline-entry: clause.core.activate-matching-skills -->
 - MUST activate every matching required skill before governed work. When one skill has distinct active-surface triggers, retain and follow each trigger.
 <!-- /source-baseline-entry: clause.core.activate-matching-skills -->

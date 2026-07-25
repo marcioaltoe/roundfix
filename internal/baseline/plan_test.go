@@ -1011,6 +1011,7 @@ func TestPlanDeterminismMatchesMaintainedManagedEntryFixture(t *testing.T) {
 	for _, entry := range fixture.PlannedByteSequence {
 		if entry.Path != manifestPath &&
 			entry.Path != "AGENTS.md" &&
+			entry.Path != "docs/agents/agent-instructions.md" &&
 			entry.Path != "docs/agents/docs-layout.md" &&
 			entry.Path != "docs/agents/skill-dispatch.md" {
 			expectedPostimages[entry.Path] = entry.AfterIdentity
@@ -1050,6 +1051,43 @@ func TestPlanDocumentMissingDecisionsReturnsResultWithoutPartialPlan(t *testing.
 	}
 	if _, err := MarshalResult(outcome.Result); err != nil {
 		t.Fatalf("missing-decision result schema: %v", err)
+	}
+}
+
+func TestToolingAuthorityClause(t *testing.T) {
+	t.Parallel()
+
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load embedded catalog: %v", err)
+	}
+
+	const clause = "Do not create, edit, rename, move, or delete any linter, formatter, typechecker, test-runner, architecture-checker, build-tool, package-manager, code-generator, or other repository-tooling configuration, script, ignore file, plugin declaration, or version pin without express maintainer authorization. Setup completion, a Profile, a narrower guide, or a generic implementation request does not grant that authorization."
+	for _, profileID := range catalog.ProfileIDs() {
+		profileID := profileID
+		t.Run(profileID, func(t *testing.T) {
+			profile, err := ResolveProfile(t.TempDir(), profileID, catalog)
+			if err != nil {
+				t.Fatalf("resolve Profile %q: %v", profileID, err)
+			}
+			_, artifacts, err := resolveManagedArtifacts(catalog, profile, []DecisionValue{
+				{ID: "language.generated", Value: "English"},
+				{ID: "verification.gate", Value: "rtk make verify"},
+			}, false)
+			if err != nil {
+				t.Fatalf("render Profile %q artifacts: %v", profileID, err)
+			}
+			for _, artifact := range artifacts {
+				if artifact.ID != "guide.agent-instructions" {
+					continue
+				}
+				if !strings.Contains(artifact.Body, clause) {
+					t.Fatalf("Profile %q tooling-authority clause is incomplete:\n%s", profileID, artifact.Body)
+				}
+				return
+			}
+			t.Fatalf("Profile %q did not render guide.agent-instructions", profileID)
+		})
 	}
 }
 
