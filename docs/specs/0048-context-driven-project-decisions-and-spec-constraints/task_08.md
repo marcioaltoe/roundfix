@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0048-context-driven-project-decisions-and-spec-constraints
-status: completed
+status: pending
 type: test
 complexity: high
 ---
@@ -35,6 +35,10 @@ authorized Fluxus journeys remain fresh final QA evidence.
    hermetic formatter from the version already owned by the maintained Profile
    or disposable repository fixture; this Spec authorizes no new protected
    tooling version pin.
+9. MUST prove the formatter journey with the package registry forced to an
+   unreachable loopback endpoint and a fresh fixture-owned cache. Completion
+   MUST include a real change to `internal/cli/baseline_release_gate_test.go`;
+   a Spec-root-only status commit is invalid.
 
 ## Subtasks
 
@@ -72,7 +76,7 @@ authorized Fluxus journeys remain fresh final QA evidence.
 
 ## Verification
 
-- `rtk go test -count=1 ./internal/baseline ./internal/cli ./skills -run 'TestProjectDecisionJourney|TestProjectConstraintJourney|TestToolingAuthorizationJourney|TestBaselineReleaseGate'` — expected: decision, authoring, refusal, formatter, apply, audit, and reapply journeys pass.
+- `rtk env BUN_CONFIG_REGISTRY=http://127.0.0.1:1 go test -count=1 ./internal/baseline ./internal/cli ./skills -run 'TestProjectDecisionJourney|TestProjectConstraintJourney|TestToolingAuthorizationJourney|TestBaselineReleaseGate'` — expected: decision, authoring, refusal, local offline formatter, apply, audit, and reapply journeys pass without registry access.
 - `rtk make verify` — expected: the full repository gate passes.
 
 ## References
@@ -108,7 +112,12 @@ Before this Task may return to `completed`:
 4. the named journey and exact `rtk make verify` MUST pass without elevated
    network access; and
 5. the Result MUST replace the prior claim that a network-backed `bun install`
-   is hermetic with fresh evidence from the offline-capable journey.
+   is hermetic with fresh evidence from the offline-capable journey;
+6. the focused journey MUST pass with
+   `BUN_CONFIG_REGISTRY=http://127.0.0.1:1` and a fresh fixture-owned cache; and
+7. the completion commit MUST change
+   `internal/cli/baseline_release_gate_test.go`; changing only this Task's
+   status is an explicit failure.
 
 ## Result
 
