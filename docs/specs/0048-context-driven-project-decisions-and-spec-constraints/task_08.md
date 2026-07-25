@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0048-context-driven-project-decisions-and-spec-constraints
-status: completed
+status: pending
 type: test
 complexity: high
 ---
@@ -42,8 +42,8 @@ authorized Fluxus journeys remain fresh final QA evidence.
 - [x] Add decision reuse and conflict journeys.
 - [x] Add PRD and TechSpec authoring fixtures.
 - [x] Add tooling authorization and refusal journeys.
-- [x] Add formatter, audit, reapply, and final QA assertions.
-- [x] Remove the duplicate test-only Oxfmt pin while preserving hermetic
+- [ ] Add formatter, audit, reapply, and final QA assertions.
+- [ ] Remove the duplicate test-only Oxfmt pin while preserving hermetic
   formatter execution.
 
 ## Acceptance Criteria
@@ -53,12 +53,12 @@ authorized Fluxus journeys remain fresh final QA evidence.
 - [x] New Spec fixtures contain every required Project Constraint row and
   source.
 - [x] Tooling mutation outside bounded authorization fails before settlement.
-- [x] Every affected Profile completes apply, audit, and empty reapply with
+- [ ] Every affected Profile completes apply, audit, and empty reapply with
   zero managed delta.
 - [x] The QA matrix requires fresh Fluxus greenfield and update evidence.
 - [x] Each named journey test exists, executes assertions, and fails when its
   corresponding contract is removed.
-- [x] The final Spec delta adds no protected tooling version pin, and the
+- [ ] The final Spec delta adds no protected tooling version pin, and the
   release journey still uses the exact maintained Profile formatter version.
 
 ## Context
@@ -90,6 +90,25 @@ Fluxus-style keep-defaults update repaired by Task 02, before this Task may
 return to `completed`. It must also remove the duplicate Task 06 Oxfmt pin so
 the final implementation matches the Spec's explicit no-authorization tooling
 constraint.
+
+## Reopened QA repair: hermetic formatter
+
+The 2026-07-25 QA rerun proved both fresh Fluxus journeys but found that the
+new Roundfix release journey downloads `oxfmt` from the package registry.
+Consequently, the exact `rtk make verify` gate fails when network access is
+unavailable even though focused runs with elevated network access pass.
+
+Before this Task may return to `completed`:
+
+1. the formatter version MUST continue to come from the maintained Profile;
+2. the disposable formatter package or executable MUST be provisioned from a
+   repository-local fixture without registry access or cache priming;
+3. no formatter-version literal or protected tooling configuration mutation
+   may be added;
+4. the named journey and exact `rtk make verify` MUST pass without elevated
+   network access; and
+5. the Result MUST replace the prior claim that a network-backed `bun install`
+   is hermetic with fresh evidence from the offline-capable journey.
 
 ## Result
 
