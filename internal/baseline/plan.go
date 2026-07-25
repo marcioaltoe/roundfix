@@ -1819,7 +1819,7 @@ func assemblePostimages(
 		}
 		if rendered, exists := outputs[backup.SourcePath]; exists &&
 			bytes.Equal(source, rendered) &&
-			containsOnlySetupManagedGuidance(source) {
+			unchangedSetupManagedGuidance(backup.ContentIdentity, rendered) {
 			continue
 		}
 		outputs[backup.Path] = source

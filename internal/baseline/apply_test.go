@@ -276,6 +276,65 @@ func TestImmutableRootBackup(t *testing.T) {
 	}
 }
 
+func TestManagedRootFreshPlan(t *testing.T) {
+	const managed = `<!-- setup-context-driven:begin id=root.core version=0.0.1 -->
+managed root guidance
+<!-- setup-context-driven:end id=root.core -->
+`
+	for _, test := range []struct {
+		name       string
+		root       string
+		wantBackup bool
+	}{
+		{
+			name: "setup-managed root needs no backup",
+			root: managed,
+		},
+		{
+			name:       "user-owned root keeps immutable backup",
+			root:       "repository policy\n\n" + managed,
+			wantBackup: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repo := newPlanRepository(t)
+			writeTransactionFile(t, repo, "AGENTS.md", test.root, 0o644)
+			if err := os.Symlink("AGENTS.md", filepath.Join(repo, "CLAUDE.md")); err != nil {
+				t.Fatalf("create root carrier alias: %v", err)
+			}
+			commitInspectionRepository(t, repo, "seed root carrier")
+
+			initial := buildTestPlan(t, repo)
+			if _, err := ApplyPlan(context.Background(), repo, initial, initial.PlanDigest); err != nil {
+				t.Fatalf("ApplyPlan() initial Baseline: %v", err)
+			}
+
+			fresh := buildTestPlan(t, repo)
+			var backups []ManagedEntry
+			for _, entry := range fresh.ManagedEntries {
+				if entry.Kind == "backup" {
+					backups = append(backups, entry)
+				}
+			}
+			if test.wantBackup {
+				if len(backups) != 1 || backups[0].ID != "backup:AGENTS.md" {
+					t.Fatalf("fresh Plan backups = %+v, want AGENTS.md backup", backups)
+				}
+			} else {
+				if len(backups) != 0 {
+					t.Fatalf("fresh Plan backups = %+v, want none", backups)
+				}
+				if len(fresh.FileChanges) != 0 {
+					t.Fatalf("fresh Plan file changes = %+v, want none", fresh.FileChanges)
+				}
+			}
+			if _, err := ApplyPlan(context.Background(), repo, fresh, fresh.PlanDigest); err != nil {
+				t.Fatalf("ApplyPlan() fresh Baseline: %v", err)
+			}
+		})
+	}
+}
+
 func TestApplyPostimageFailureRollsBack(t *testing.T) {
 	repo := newPlanRepository(t)
 	plan := buildTestPlan(t, repo)

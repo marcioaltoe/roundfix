@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0047-context-driven-guidance-composition
-status: failed
+status: completed
 type: test
 complexity: high
 ---
@@ -127,16 +127,16 @@ The third full QA gate passed the static gate and all initial public
 Plan/apply/Verification paths, but every first fresh Plan failed at the same
 root-backup validation boundary.
 
-- [ ] F-07: a root carrier composed entirely of verified setup-managed bytes
+- [x] F-07: a root carrier composed entirely of verified setup-managed bytes
   MUST NOT require an immutable source backup on the first fresh Plan.
-- [ ] A root carrier that still contains any user-owned source bytes MUST
+- [x] A root carrier that still contains any user-owned source bytes MUST
   continue to require and validate its immutable digest-addressed backup.
-- [ ] Greenfield, update, and repository-owned Profile adaptation MUST each
+- [x] Greenfield, update, and repository-owned Profile adaptation MUST each
   complete Plan → apply → formatter → repository Verification → zero-change
   fresh Plan through public boundaries.
-- [ ] The repair MUST reconcile Plan assembly and Plan/apply validation at the
+- [x] The repair MUST reconcile Plan assembly and Plan/apply validation at the
   same ownership boundary; it MUST NOT suppress the backup invariant globally.
-- [ ] Unmodified `rtk make verify` MUST pass.
+- [x] Unmodified `rtk make verify` MUST pass.
 - [ ] The complete Fluxus greenfield/update and Oraculum adaptation live matrix
   MUST pass from one fresh Roundfix build.
 
@@ -243,3 +243,83 @@ Verification:
 
 The complete live Fluxus and Oraculum matrix remains pending by design for the
 separately authorized `qa-gate` run.
+
+### QA persistence repair cycle — 2026-07-25
+
+Repaired F-07 at the shared root-source ownership boundary. A canonical
+`AGENTS.md` root and a `CLAUDE.md` alias can select the same source bytes.
+Plan assembly already omitted a redundant backup when that source's rendered
+postimage was unchanged and entirely setup-managed, but Plan/apply validation
+exempted only the direct carrier and then demanded a `CLAUDE.<digest>.md`
+backup for the same source. Both boundaries now use the source identity and
+the same unchanged setup-managed predicate. The existing source-byte equality
+guard remains in Plan assembly.
+
+Fresh acceptance evidence:
+
+- `TestManagedRootFreshPlan` reproduced the live `AGENTS.md` plus `CLAUDE.md`
+  alias failure before the repair. The setup-managed subtest failed with
+  `root carrier source "AGENTS.md" has no immutable backup`, while its
+  user-owned negative companion passed.
+- After the repair, the setup-managed journey produced no backup, zero file
+  changes, and a valid empty apply. The mixed user-owned journey still
+  produced `backup:AGENTS.md` and passed strict Plan/apply validation.
+- `TestGuidanceCompositionJourney` passed every maintained Profile through
+  public Plan/apply, formatter, repository Verification, audit, and empty
+  reapply boundaries with zero second-pass delta.
+- `TestSemanticRedistributionJourney` passed exact redistribution, residual
+  retention, and zero-residual carrier cleanup.
+- `TestProfileAdaptationJourney` passed the unbranded backend-only TypeScript
+  divergence and repository-owned Profile adaptation journey without a
+  waiver.
+- `TestBaselineReleaseGate` passed the complete managed-entry and Upgrade
+  Retention ledgers plus exact transaction and planned-Profile rollback.
+- `qa/live-journeys.md` still names the separately authorized fresh Fluxus
+  greenfield/update and Oraculum divergence/adaptation evidence. This Task did
+  not read or mutate those live repositories.
+
+Verification:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-0047-task09-f07-go-cache go test
+  -count=100 ./internal/baseline -run
+  'TestAssetsSyncProvenanceAndPreMutationRefusals/dirty_or_untracked_checkout'`
+  passed 100 consecutive repetitions.
+- `rtk env GOCACHE=/private/tmp/roundfix-0047-task09-f07-go-cache go test
+  -count=1 ./internal/baseline ./internal/cli -run
+  'TestManagedRootFreshPlan|TestGuidanceCompositionJourney|TestSemanticRedistributionJourney|TestProfileAdaptationJourney|TestBaselineReleaseGate'`
+  passed across both packages.
+- The first full-gate attempt encountered one unrelated transient
+  `.git/objects/maintenance.lock` cleanup failure in
+  `TestBaselineMacroJourneysPublicCLI/consolidated_preservation_review`. The
+  exact subtest passed immediately, and the final
+  `rtk env GOCACHE=/private/tmp/roundfix-0047-task09-f07-go-cache make verify`
+  rerun passed 2,204 repository tests across 22 packages, 4 skill contract
+  tests, `roundfix skills check`, and the Roundfix build.
+- `rtk git diff --check` passed.
+
+The complete live Fluxus and Oraculum matrix remains pending by design for the
+separately authorized `qa-gate` run.
+
+### Verification Feedback — attempt 1
+
+The Daemon's full gate exposed a temporary-repository lifecycle race in
+`TestRepositoryInspectionNoMutation`: Git-internal state changed between the
+test's before and after snapshots under full-suite load. The shared inspection
+fixture now disables filesystem monitoring and automatic maintenance inline
+for every Git setup, clone, checkout, add, and commit command. This keeps all
+spawned Git work owned by the foreground fixture command without sleeps,
+retries, cleanup suppression, or process-level Git configuration overrides.
+
+Focused verification after the repair:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-0047-task09-f07-go-cache go test
+  -count=100 ./internal/baseline -run
+  '^TestRepositoryInspectionNoMutation$'` passed 100 consecutive repetitions.
+- `rtk env GOCACHE=/private/tmp/roundfix-0047-task09-f07-go-cache go test
+  -count=1 ./internal/baseline ./internal/cli -run
+  'TestManagedRootFreshPlan|TestGuidanceCompositionJourney|TestProfileAdaptationJourney'`
+  passed across both packages.
+- `rtk git diff --check` passed.
+
+The Daemon owns the single configured Verification rerun after this feedback
+turn.

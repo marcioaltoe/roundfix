@@ -377,6 +377,12 @@ func mustInspectionSymlink(t *testing.T, target, path string) {
 
 func runInspectionCommand(t *testing.T, dir, name string, args ...string) {
 	t.Helper()
+	if name == "git" {
+		args = append([]string{
+			"-c", "core.fsmonitor=false",
+			"-c", "maintenance.auto=false",
+		}, args...)
+	}
 	command := exec.Command(name, args...)
 	command.Dir = dir
 	command.Env = append(os.Environ(), "GIT_CONFIG_NOSYSTEM=1", "GIT_OPTIONAL_LOCKS=0")

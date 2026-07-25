@@ -1026,6 +1026,12 @@ func containsOnlySetupManagedGuidance(content []byte) bool {
 	return hasManaged
 }
 
+func unchangedSetupManagedGuidance(sourceIdentity string, rendered []byte) bool {
+	return sourceIdentity != "" &&
+		planContentIdentity(rendered) == sourceIdentity &&
+		containsOnlySetupManagedGuidance(rendered)
+}
+
 func newReadoptionSourceEntry(
 	sourcePath string,
 	kind string,

@@ -524,21 +524,16 @@ func expectedRootBackups(
 		if !ok || !preimage.Exists {
 			continue
 		}
+		var candidate carrier
 		switch preimage.Kind {
 		case PreimageRegular:
 			if preimage.ContentIdentity == "" {
 				return nil, fmt.Errorf("root carrier %q has no content identity", carrierPath)
 			}
-			if postimage, exists := postimagesByPath[carrierPath]; exists &&
-				postimage.Kind == PreimageRegular &&
-				postimage.ContentIdentity == preimage.ContentIdentity &&
-				containsOnlySetupManagedGuidance(postimage.Content) {
-				continue
-			}
-			carriers = append(carriers, carrier{
+			candidate = carrier{
 				path: carrierPath, source: carrierPath,
 				digest: preimage.ContentIdentity, direct: true,
-			})
+			}
 		case PreimageSymlink:
 			source := path.Clean(path.Join(path.Dir(carrierPath), preimage.LinkTarget))
 			sourcePreimage, exists := byPath[source]
@@ -546,13 +541,20 @@ func expectedRootBackups(
 				sourcePreimage.ContentIdentity == "" {
 				return nil, fmt.Errorf("root carrier %q has no safe bounded source", carrierPath)
 			}
-			carriers = append(carriers, carrier{
+			candidate = carrier{
 				path: carrierPath, source: source,
 				digest: sourcePreimage.ContentIdentity,
-			})
+			}
 		default:
 			return nil, fmt.Errorf("root carrier %q has unsupported kind %q", carrierPath, preimage.Kind)
 		}
+		postimage, exists := postimagesByPath[candidate.source]
+		if exists &&
+			postimage.Kind == PreimageRegular &&
+			unchangedSetupManagedGuidance(candidate.digest, postimage.Content) {
+			continue
+		}
+		carriers = append(carriers, candidate)
 	}
 	sort.Slice(carriers, func(i, j int) bool {
 		if carriers[i].source != carriers[j].source {
