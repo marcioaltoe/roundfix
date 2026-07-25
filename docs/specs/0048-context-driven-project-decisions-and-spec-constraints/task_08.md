@@ -1,7 +1,7 @@
 ---
 task: task_08
 spec: 0048-context-driven-project-decisions-and-spec-constraints
-status: pending
+status: completed
 type: test
 complexity: high
 ---
@@ -46,8 +46,8 @@ authorized Fluxus journeys remain fresh final QA evidence.
 - [x] Add decision reuse and conflict journeys.
 - [x] Add PRD and TechSpec authoring fixtures.
 - [x] Add tooling authorization and refusal journeys.
-- [ ] Add formatter, audit, reapply, and final QA assertions.
-- [ ] Remove the duplicate test-only Oxfmt pin while preserving hermetic
+- [x] Add formatter, audit, reapply, and final QA assertions.
+- [x] Remove the duplicate test-only Oxfmt pin while preserving hermetic
   formatter execution.
 
 ## Acceptance Criteria
@@ -57,12 +57,12 @@ authorized Fluxus journeys remain fresh final QA evidence.
 - [x] New Spec fixtures contain every required Project Constraint row and
   source.
 - [x] Tooling mutation outside bounded authorization fails before settlement.
-- [ ] Every affected Profile completes apply, audit, and empty reapply with
+- [x] Every affected Profile completes apply, audit, and empty reapply with
   zero managed delta.
 - [x] The QA matrix requires fresh Fluxus greenfield and update evidence.
 - [x] Each named journey test exists, executes assertions, and fails when its
   corresponding contract is removed.
-- [ ] The final Spec delta adds no protected tooling version pin, and the
+- [x] The final Spec delta adds no protected tooling version pin, and the
   release journey still uses the exact maintained Profile formatter version.
 
 ## Context
@@ -137,11 +137,13 @@ decomposition, execution, and QA skill clauses. Its QA matrix leaves separate
 fresh Fluxus greenfield and update rows pending for the final `qa-gate`; prior
 Task or QA evidence cannot satisfy them.
 
-Removed the duplicate test-only Oxfmt version constant. The disposable
-TypeScript repository now reads the formatter version from the maintained
-Profile, and the hermetic installer reads that repository-owned version,
-isolates Bun's temp, cache, and home directories, installs it, and verifies the
-installed manifest before running the formatter.
+Removed the registry-backed `bun install` seam. The disposable TypeScript
+repository still reads the Oxfmt version from the maintained Profile. The
+release journey now provisions a test-owned executable from repository-local
+fixture bytes, passes that Profile-owned version to the executable, and checks
+the executable's `--version` output before formatting. The fixture refuses a
+reachable registry, requires a fresh isolated cache, validates the exact
+`oxfmt --check AGENTS.md docs/agents` invocation, and records that it ran.
 
 Acceptance evidence:
 
@@ -159,7 +161,8 @@ Acceptance evidence:
 - Apply, audit, and reapply: the named TypeScript journey and the existing
   all-Profile release journey completed formatter, repository Verification,
   zero-change fresh planning, and verified empty reapply without managed-byte
-  drift.
+  drift. `TestGuidanceCompositionJourney` passed separately with the registry
+  forced to the unreachable loopback endpoint.
 - Fresh final QA: the fixture matrix requires new disposable Fluxus
   greenfield and update clones, command transcripts, clone identities, and
   pending final `qa-gate` evidence.
@@ -168,22 +171,29 @@ Acceptance evidence:
   `TestToolingAuthorizationJourneyCoreClause`, `TestBaselineReleaseGate`,
   `TestProjectDecisionJourney`, `TestProjectConstraintJourney`, and
   `TestToolingAuthorizationJourney`.
-- Formatter provenance: the release-gate test contains neither the removed
-  test-only constant nor a formatter-version literal; the passing journey
-  obtains and verifies the maintained Profile's formatter version.
+- Formatter provenance: the release-gate test contains no formatter-version
+  literal, package install, or protected tooling mutation. The passing journey
+  obtains and verifies the maintained Profile's formatter version, provisions
+  only disposable test-owned bytes, and starts from a fresh cache.
 
 Verification:
 
 - `rtk env TMPDIR=/private/tmp
-  GOCACHE=/private/tmp/roundfix-task08-go-cache go test -count=1
+  GOCACHE=/private/tmp/roundfix-task08-green-cache
+  BUN_CONFIG_REGISTRY=http://127.0.0.1:1 go test -count=1
   ./internal/baseline ./internal/cli ./skills -run
   'TestProjectDecisionJourney|TestProjectConstraintJourney|TestToolingAuthorizationJourney|TestBaselineReleaseGate'`
-  passed in all three packages. The environment only redirects caches around
-  the child-Agent sandbox; the Daemon runs the Task command verbatim.
+  passed in all three packages without registry access.
 - `rtk env TMPDIR=/private/tmp
-  GOCACHE=/private/tmp/roundfix-task08-go-cache make verify` passed: 2,344 Go
-  tests, the four focused skill-runtime tests, `roundfix skills check`, and the
-  final build.
+  GOCACHE=/private/tmp/roundfix-task08-profiles-cache
+  BUN_CONFIG_REGISTRY=http://127.0.0.1:1 go test -count=1 ./internal/cli -run
+  '^TestGuidanceCompositionJourney$'` passed all maintained Profile
+  lifecycles.
+- Exact `rtk make verify` passed on the second full run: 2,344 Go tests, the
+  four focused skill-runtime tests, `roundfix skills check`, and the final
+  build. The first full run had one disappearing Git `maintenance.lock`;
+  `TestHumanBaselineAdoption` passed immediately in isolation before the clean
+  full rerun. No network access was authorized for either run.
 - `rtk git diff --check` passed.
 
 No follow-up implementation belongs to this Task. The live Fluxus executions

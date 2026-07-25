@@ -980,25 +980,37 @@ func runBaselineReleaseFormatter(t *testing.T, repo, profile string) {
 	case "rust-cli":
 		runBaselineReleaseExternal(t, repo, "rustfmt", "src/main.rs")
 	case "standard-typescript-monorepo":
-		formatterBin, cleanup := provisionBaselineReleaseFormatter(t, repo)
-		defer cleanup()
+		formatterBin, formatterVersion := provisionBaselineReleaseFormatter(t, repo)
+		versionOutput := runBaselineReleaseFixtureTool(
+			t,
+			repo,
+			formatterBin,
+			formatterVersion,
+			"oxfmt",
+			"--version",
+		)
+		if got := strings.TrimSpace(string(versionOutput)); got != formatterVersion {
+			t.Fatalf("fixture formatter version = %q, want %q", got, formatterVersion)
+		}
 		runBaselineReleaseFixtureTool(
 			t,
 			repo,
 			formatterBin,
-			"bunx",
-			"--no-install",
+			formatterVersion,
 			"oxfmt",
 			"--check",
 			"AGENTS.md",
 			"docs/agents",
 		)
+		if _, err := os.Stat(filepath.Join(repo, ".qa-formatter-ran")); err != nil {
+			t.Fatalf("fixture formatter did not run: %v", err)
+		}
 	default:
 		t.Fatalf("unknown maintained Profile %q", profile)
 	}
 }
 
-func provisionBaselineReleaseFormatter(t *testing.T, repo string) (string, func()) {
+func provisionBaselineReleaseFormatter(t *testing.T, repo string) (string, string) {
 	t.Helper()
 	packageData, err := os.ReadFile(filepath.Join(repo, "package.json"))
 	if err != nil {
@@ -1015,70 +1027,50 @@ func provisionBaselineReleaseFormatter(t *testing.T, repo string) (string, func(
 		t.Fatal("disposable repository does not own an Oxfmt version")
 	}
 
-	toolRoot, err := os.MkdirTemp("", "roundfix-release-tools-")
-	if err != nil {
+	binDir := filepath.Join(t.TempDir(), "bin")
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
 		t.Fatalf("create fixture-owned formatter directory: %v", err)
 	}
-	cleanup := func() {
-		if err := os.RemoveAll(toolRoot); err != nil {
-			t.Errorf("remove fixture-owned formatter directory: %v", err)
-		}
+	if err := os.WriteFile(
+		filepath.Join(binDir, "oxfmt"),
+		[]byte(baselineReleaseFormatterFixture),
+		0o755,
+	); err != nil {
+		t.Fatalf("provision repository-local formatter fixture: %v", err)
 	}
-	writeBaselinePlanTestFile(
-		t,
-		toolRoot,
-		"package.json",
-		`{"private":true,"dependencies":{"oxfmt":"`+formatterVersion+`"}}`,
-	)
-	tempDir := filepath.Join(toolRoot, "tmp")
-	if err := os.Mkdir(tempDir, 0o755); err != nil {
-		cleanup()
-		t.Fatalf("create fixture-owned Bun temp directory: %v", err)
-	}
-	runBaselineReleaseExternalWithEnv(
-		t,
-		toolRoot,
-		[]string{
-			"TMPDIR=" + tempDir,
-			"BUN_INSTALL=" + filepath.Join(toolRoot, "bun-home"),
-			"BUN_INSTALL_CACHE_DIR=" + filepath.Join(toolRoot, "bun-cache"),
-			"BUN_INSTALL_GLOBAL_BIN_DIR=" + filepath.Join(toolRoot, "bun-bin"),
-			"BUN_INSTALL_GLOBAL_DIR=" + filepath.Join(toolRoot, "bun-global"),
-			"BUN_RUNTIME_TRANSPILER_CACHE_PATH=" + filepath.Join(toolRoot, "bun-transpiler-cache"),
-		},
-		"bun",
-		"install",
-		"--ignore-scripts",
-	)
-
-	manifestPath := filepath.Join(toolRoot, "node_modules", "oxfmt", "package.json")
-	manifestData, err := os.ReadFile(manifestPath)
-	if err != nil {
-		cleanup()
-		t.Fatalf("read fixture-owned Oxfmt manifest: %v", err)
-	}
-	var manifest struct {
-		Version string `json:"version"`
-	}
-	if err := json.Unmarshal(manifestData, &manifest); err != nil {
-		cleanup()
-		t.Fatalf("decode fixture-owned Oxfmt manifest: %v", err)
-	}
-	if manifest.Version != formatterVersion {
-		cleanup()
-		t.Fatalf(
-			"fixture-owned Oxfmt version = %q, want %q",
-			manifest.Version,
-			formatterVersion,
-		)
-	}
-	binDir := filepath.Join(toolRoot, "node_modules", ".bin")
-	if _, err := os.Stat(filepath.Join(binDir, "oxfmt")); err != nil {
-		cleanup()
-		t.Fatalf("find fixture-owned Oxfmt executable: %v", err)
-	}
-	return binDir, cleanup
+	return binDir, formatterVersion
 }
+
+const baselineReleaseFormatterFixture = `#!/bin/sh
+set -eu
+
+version="${ROUNDFIX_FIXTURE_FORMATTER_VERSION:?missing fixture formatter version}"
+if [ "${1:-}" = "--version" ] && [ "$#" -eq 1 ]; then
+	printf '%s\n' "$version"
+	exit 0
+fi
+if [ "${BUN_CONFIG_REGISTRY:-}" != "http://127.0.0.1:1" ]; then
+	printf '%s\n' "formatter fixture requires the unreachable registry" >&2
+	exit 1
+fi
+cache="${BUN_INSTALL_CACHE_DIR:?missing fixture-owned cache}"
+marker="$cache/.roundfix-formatter-fixture-used"
+if [ -e "$marker" ]; then
+	printf '%s\n' "formatter fixture cache was not fresh" >&2
+	exit 1
+fi
+mkdir -p "$cache"
+: > "$marker"
+if [ "$#" -ne 3 ] || [ "$1" != "--check" ] || [ "$2" != "AGENTS.md" ] || [ "$3" != "docs/agents" ]; then
+	printf '%s\n' "unexpected formatter invocation" >&2
+	exit 1
+fi
+if [ ! -s AGENTS.md ] || [ ! -d docs/agents ]; then
+	printf '%s\n' "managed formatter targets are missing" >&2
+	exit 1
+fi
+: > .qa-formatter-ran
+`
 
 func newBaselineReleaseRepository(t *testing.T, profile string) string {
 	t.Helper()
@@ -1241,23 +1233,25 @@ func baselineReleaseEnvironment(overrides ...string) []string {
 
 func runBaselineReleaseFixtureTool(
 	t *testing.T,
-	repo, fixtureBin, name string,
+	repo, fixtureBin, formatterVersion, name string,
 	args ...string,
-) {
+) []byte {
 	t.Helper()
-	executable, err := exec.LookPath(name)
-	if err != nil {
-		t.Fatalf("find external %s: %v", name, err)
+	executable := filepath.Join(fixtureBin, name)
+	if _, err := os.Stat(executable); err != nil {
+		t.Fatalf("find fixture-owned %s: %v", name, err)
 	}
 	command := exec.Command(executable, args...)
 	command.Dir = repo
 	isolatedBunHome := t.TempDir()
 	command.Env = baselineReleaseEnvironment(
+		"BUN_CONFIG_REGISTRY=http://127.0.0.1:1",
 		"BUN_INSTALL="+isolatedBunHome,
 		"BUN_INSTALL_CACHE_DIR="+filepath.Join(isolatedBunHome, "cache"),
 		"BUN_INSTALL_GLOBAL_BIN_DIR="+filepath.Join(isolatedBunHome, "bin"),
 		"BUN_INSTALL_GLOBAL_DIR="+filepath.Join(isolatedBunHome, "global"),
 		"BUN_RUNTIME_TRANSPILER_CACHE_PATH="+filepath.Join(isolatedBunHome, "transpiler-cache"),
+		"ROUNDFIX_FIXTURE_FORMATTER_VERSION="+formatterVersion,
 		"PATH="+strings.Join([]string{
 			fixtureBin,
 			"/usr/bin",
@@ -1266,9 +1260,11 @@ func runBaselineReleaseFixtureTool(
 			"/sbin",
 		}, string(os.PathListSeparator)),
 	)
-	if output, err := command.CombinedOutput(); err != nil {
+	output, err := command.CombinedOutput()
+	if err != nil {
 		t.Fatalf("run fixture tool %s %s: %v\n%s", name, strings.Join(args, " "), err, output)
 	}
+	return output
 }
 
 func baselineReleaseManagedState(
