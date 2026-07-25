@@ -198,6 +198,43 @@ func TestThinSetupSkill(t *testing.T) {
 	}
 }
 
+func TestWritePRDProjectConstraints(t *testing.T) {
+	testAuthoringProjectConstraints(t, "write-prd", "prd-template.md")
+}
+
+func TestWriteTechSpecProjectConstraints(t *testing.T) {
+	testAuthoringProjectConstraints(t, "write-techspec", "techspec-template.md")
+}
+
+func TestAuthoringConstraintOwnership(t *testing.T) {
+	repoRoot := filepath.Clean(filepath.Join(".."))
+	lockBytes := readBaselineSkillContractFile(t, filepath.Join(repoRoot, "skills-lock.json"))
+	var lock struct {
+		Skills map[string]json.RawMessage `json:"skills"`
+	}
+	if err := json.Unmarshal(lockBytes, &lock); err != nil {
+		t.Fatalf("decode skills lock: %v", err)
+	}
+
+	for _, name := range []string{"write-prd", "write-techspec"} {
+		t.Run(name, func(t *testing.T) {
+			if _, managedUpstream := lock.Skills[name]; managedUpstream {
+				t.Fatalf("%s must remain repository-owned and absent from skills-lock.json", name)
+			}
+			assertSkillTreesEqual(
+				t,
+				filepath.Join(repoRoot, ".agents", "skills", name),
+				filepath.Join(repoRoot, "skills", name),
+			)
+		})
+	}
+
+	const wantUpstreamDigest = "df289f03c4555e310822426f8521254b13f9befb87263d739c9739680f399814"
+	if got := upstreamManagedSkillDigest(t, repoRoot, lock.Skills); got != wantUpstreamDigest {
+		t.Fatalf("upstream-managed skill tree digest = %q, want %q", got, wantUpstreamDigest)
+	}
+}
+
 func TestUpstreamADRFormatUnchanged(t *testing.T) {
 	repoRoot := filepath.Clean(filepath.Join(".."))
 	lockBytes := readBaselineSkillContractFile(
@@ -245,6 +282,128 @@ func TestUpstreamADRFormatUnchanged(t *testing.T) {
 	if got := hex.EncodeToString(sum[:]); got != wantADRFormatSHA256 {
 		t.Fatalf("domain-modeling/ADR-FORMAT.md digest = %q, want %q", got, wantADRFormatSHA256)
 	}
+}
+
+func testAuthoringProjectConstraints(t *testing.T, skillName, templateName string) {
+	t.Helper()
+	repoRoot := filepath.Clean(filepath.Join(".."))
+	skill := string(readBaselineSkillContractFile(
+		t,
+		filepath.Join(repoRoot, ".agents", "skills", skillName, "SKILL.md"),
+	))
+	template := string(readBaselineSkillContractFile(
+		t,
+		filepath.Join(repoRoot, ".agents", "skills", skillName, "references", templateName),
+	))
+
+	for _, required := range []string{
+		"Project Constraints",
+		"docs/agents/agent-instructions.md",
+		"docs/agents/domain.md",
+		"docs/agents/backend.md",
+		"docs/agents/spec-routing.md",
+		"applicable or not applicable with a reason",
+		"express maintainer authorization",
+		"bounded files",
+		"MUST NOT report completion",
+	} {
+		if !strings.Contains(skill, required) {
+			t.Errorf("%s skill missing %q", skillName, required)
+		}
+	}
+
+	for _, area := range []string{
+		"Identifier strategy",
+		"Authentication and HTTP",
+		"Active ADR obligations",
+		"Tooling authority",
+	} {
+		if !strings.Contains(template, area) {
+			t.Errorf("%s template missing %q", skillName, area)
+		}
+	}
+	if count := strings.Count(template, "<applicable | not applicable>"); count != 4 {
+		t.Errorf("%s template applicability placeholders = %d, want 4", skillName, count)
+	}
+	if count := strings.Count(template, "Source: `docs/agents/"); count != 4 {
+		t.Errorf("%s template docs/agents source placeholders = %d, want 4", skillName, count)
+	}
+	for _, required := range []string{
+		"express maintainer authorization",
+		"bounded files",
+		"no protected tooling mutation",
+	} {
+		if !strings.Contains(template, required) {
+			t.Errorf("%s template missing tooling authorization guidance %q", skillName, required)
+		}
+	}
+
+	frontmatter := authoringTemplateFrontmatter(t, template)
+	if strings.Contains(strings.ToLower(frontmatter), "authoriz") {
+		t.Errorf("%s template adds authorization frontmatter: %q", skillName, frontmatter)
+	}
+}
+
+func authoringTemplateFrontmatter(t *testing.T, template string) string {
+	t.Helper()
+	const fence = "---"
+	start := strings.Index(template, fence)
+	if start == -1 {
+		t.Fatal("template is missing frontmatter")
+	}
+	rest := template[start+len(fence):]
+	end := strings.Index(rest, fence)
+	if end == -1 {
+		t.Fatal("template has unterminated frontmatter")
+	}
+	return rest[:end]
+}
+
+func assertSkillTreesEqual(t *testing.T, canonicalRoot, distributedRoot string) {
+	t.Helper()
+	if err := filepath.WalkDir(canonicalRoot, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		relative, err := filepath.Rel(canonicalRoot, path)
+		if err != nil {
+			return err
+		}
+		canonical := readBaselineSkillContractFile(t, path)
+		distributed := readBaselineSkillContractFile(t, filepath.Join(distributedRoot, relative))
+		if !bytes.Equal(canonical, distributed) {
+			t.Errorf("%s canonical and distributed bytes differ", filepath.ToSlash(relative))
+		}
+		return nil
+	}); err != nil {
+		t.Fatalf("walk canonical skill tree %s: %v", canonicalRoot, err)
+	}
+}
+
+func upstreamManagedSkillDigest(
+	t *testing.T,
+	repoRoot string,
+	managed map[string]json.RawMessage,
+) string {
+	t.Helper()
+	names := make([]string, 0, len(managed))
+	for name := range managed {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	digest := sha256.New()
+	for _, name := range names {
+		folderDigest, err := SkillFolderHash(filepath.Join(repoRoot, ".agents", "skills", name))
+		if err != nil {
+			t.Fatalf("hash upstream-managed skill %q: %v", name, err)
+		}
+		_, _ = digest.Write([]byte(name))
+		_, _ = digest.Write([]byte(folderDigest))
+	}
+	return hex.EncodeToString(digest.Sum(nil))
 }
 
 func readBaselineSkillContractFile(t *testing.T, path string) []byte {

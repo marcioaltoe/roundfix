@@ -15,6 +15,21 @@ created: YYYY-MM-DD
 
 <!-- 3-6 sentences. Must name the primary technical trade-off this design accepts and why. -->
 
+## Project Constraints
+
+<!-- Replace every placeholder. Each row must state applicable or not applicable, give the
+     effective constraint or the reason it does not apply, and cite its operative source.
+     Keep authorization in this section, never in frontmatter. -->
+
+- Identifier strategy: <applicable | not applicable> — <effective value and reason it applies, or reason it does not apply>. Source: `docs/agents/<path>.md`.
+- Authentication and HTTP: <applicable | not applicable> — <effective policy and reason it applies, or reason it does not apply>. Source: `docs/agents/<path>.md`.
+- Active ADR obligations: <applicable | not applicable> — <active obligations and reason they apply, or reason none apply>. Source: `docs/agents/<path>.md`.
+- Tooling authority: <applicable | not applicable> — <effective constraint and reason it applies, or reason it does not apply>. Source: `docs/agents/<path>.md`.
+
+<!-- With no protected tooling mutation, record: `applicable — no protected tooling mutation proposed or authorized`.
+     When protected tooling mutation is proposed, do not finish without
+     `express maintainer authorization: <approval>; bounded files: <exact repository paths>`. -->
+
 ## System Architecture
 
 <!-- Which existing modules the feature extends, which components are new, and how they connect.

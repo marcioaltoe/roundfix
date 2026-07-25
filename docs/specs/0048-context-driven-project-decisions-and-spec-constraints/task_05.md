@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0048-context-driven-project-decisions-and-spec-constraints
-status: pending
+status: completed
 type: docs
 complexity: high
 ---
@@ -29,21 +29,21 @@ completion until the snapshot is applicable, sourced, and complete.
 
 ## Subtasks
 
-- [ ] Add the readable PRD constraint template.
-- [ ] Add the readable TechSpec constraint template.
-- [ ] Teach both skills to resolve effective constraint sources.
-- [ ] Add completion and authorization gates.
-- [ ] Add ownership and artifact-contract tests.
+- [x] Add the readable PRD constraint template.
+- [x] Add the readable TechSpec constraint template.
+- [x] Teach both skills to resolve effective constraint sources.
+- [x] Add completion and authorization gates.
+- [x] Add ownership and artifact-contract tests.
 
 ## Acceptance Criteria
 
-- [ ] A newly authored PRD and TechSpec contain all four constraint areas and
+- [x] A newly authored PRD and TechSpec contain all four constraint areas and
   source paths.
-- [ ] Each constraint records applicability and a reason.
-- [ ] Tooling work cannot conclude authoring without express bounded
+- [x] Each constraint records applicability and a reason.
+- [x] Tooling work cannot conclude authoring without express bounded
   authorization.
-- [ ] No new authorization frontmatter field appears.
-- [ ] Upstream-managed skill bytes remain unchanged.
+- [x] No new authorization frontmatter field appears.
+- [x] Upstream-managed skill bytes remain unchanged.
 
 ## Context
 
@@ -65,3 +65,33 @@ completion until the snapshot is applicable, sourced, and complete.
 - `_prd.md` → Goal 3; User Stories 4 and 6; Core Features 12–14.
 - `_techspec.md` → Implementation Design: API Contracts; Build Order 5.
 - ADR-0077 → readable mandatory Project Constraint snapshots.
+
+## Result
+
+Added the readable Project Constraint contract to both authoring templates and
+taught `write-prd` and `write-techspec` to resolve the effective identifier,
+authentication and HTTP, active ADR, and tooling constraints from semantic
+guides under `docs/agents/`. Both skills now refuse to report completion when a
+snapshot is absent or incomplete. Protected tooling work additionally requires
+express maintainer authorization and exact bounded files in the Tooling
+authority row; authorization remains out of frontmatter.
+
+Acceptance evidence:
+
+- PRD and TechSpec artifact-contract tests require all four constraint rows,
+  applicability markers, reasons, and `docs/agents/` source paths.
+- Completion-gate assertions require both authoring skills to stop on an
+  incomplete snapshot and on protected tooling work without express bounded
+  authorization.
+- Frontmatter assertions reject any authorization field in either template.
+- Ownership assertions prove `write-prd` and `write-techspec` remain
+  repository-owned, canonical and shipped bytes match, and the locked
+  upstream-managed skill tree retains its prior digest.
+
+Verification:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task05-go-cache go test -count=1 ./skills -run 'TestWritePRDProjectConstraints|TestWriteTechSpecProjectConstraints|TestAuthoringConstraintOwnership'` — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task05-go-cache go run -buildvcs=false ./cmd/roundfix skills check` — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task05-go-cache make verify` — passed: 2,264 tests in 22 packages, skill synchronization/checks, and build.
+
+Follow-ups: None.
