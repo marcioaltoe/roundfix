@@ -99,3 +99,19 @@
 <!-- source-baseline-entry: recommendation.tool.rg -->
 - RECOMMENDED: provide ripgrep for deterministic local text and file search.
 <!-- /source-baseline-entry: recommendation.tool.rg -->
+
+<!-- source-baseline-entry: clause.core.research-authoritative-external-sources -->
+For external APIs and libraries, use current authoritative documentation through the profile's declared documentation skill.
+<!-- /source-baseline-entry: clause.core.research-authoritative-external-sources -->
+
+<!-- source-baseline-entry: clause.core.research-local-code-locally -->
+Search repository files with local code-search tools.
+<!-- /source-baseline-entry: clause.core.research-local-code-locally -->
+
+<!-- source-baseline-entry: clause.core.use-declared-external-research-fallback -->
+When authoritative documentation cannot answer an external question, use the profile's declared external web-research fallback with varied searches and verify conclusions against primary sources.
+<!-- /source-baseline-entry: clause.core.use-declared-external-research-fallback -->
+
+<!-- source-baseline-entry: clause.core.prohibit-external-research-for-local-code -->
+Do not use external research tools to discover or infer local repository code or behavior.
+<!-- /source-baseline-entry: clause.core.prohibit-external-research-for-local-code -->

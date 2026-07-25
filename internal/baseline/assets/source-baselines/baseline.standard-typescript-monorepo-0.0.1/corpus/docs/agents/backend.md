@@ -21,3 +21,7 @@
 <!-- source-baseline-entry: clause.backend.prohibit-generic-layers -->
 - MUST NOT introduce generic `modules` or `services` buckets as the normative backend architecture.
 <!-- /source-baseline-entry: clause.backend.prohibit-generic-layers -->
+
+<!-- source-baseline-entry: rule.backend.boundary-contracts -->
+Keep blocking, network, process, database, and daemon boundaries explicit about ownership, cancellation, timeouts, and error reporting. Test the lowest real boundary that proves the repository-authored contract; do not invent authentication, database, or transport policy.
+<!-- /source-baseline-entry: rule.backend.boundary-contracts -->

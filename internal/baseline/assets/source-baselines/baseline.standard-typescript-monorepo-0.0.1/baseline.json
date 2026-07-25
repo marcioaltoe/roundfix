@@ -1,19 +1,15 @@
 {
-  "schemaVersion": "setup-context-driven/source-baseline/0.0.1",
-  "version": "0.0.1",
-  "id": "baseline.standard-typescript-monorepo-0.0.1",
-  "profile": "standard-typescript-monorepo",
   "corpus": "corpus",
-  "manifest": "manifest.json",
-  "entryCount": 60,
-  "corpusDigest": "848c5880d93ba96474e51f876d93cf6621057c98ffb83fbb5667ee53664a3c7f",
-  "manifestDigest": "1ba4a9c3397cf8552ac61df1fbe595822ba68ce9daaa64fe7bb17c0751693b09",
+  "corpusDigest": "f68f60a9852289564ac346b9ab5f4255e9b5316e946c9f1133e8547b0381edd5",
   "deniedProjectTokens": [
-    "fable",
     "fluxus",
-    "gesttione",
-    "roundfix",
-    "visio",
-    "vortex"
-  ]
+    "oraculum"
+  ],
+  "entryCount": 95,
+  "id": "baseline.standard-typescript-monorepo-0.0.1",
+  "manifest": "manifest.json",
+  "manifestDigest": "c01f2174c23363d85ff52662692554c81e6b0068bf88111ad426a0ba86bd4ed4",
+  "profile": "standard-typescript-monorepo",
+  "schemaVersion": "setup-context-driven/source-baseline/0.0.1",
+  "version": "0.0.1"
 }

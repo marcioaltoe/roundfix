@@ -148,6 +148,96 @@ func TestPlanDeterminismAndNoMutation(t *testing.T) {
 	}
 }
 
+func TestFormatterComposition(t *testing.T) {
+	repository := newAlignedTypeScriptRepository(t)
+	runPlanGit(t, repository, "init", "-q")
+	runPlanGit(t, repository, "config", "user.email", "fixture@example.invalid")
+	runPlanGit(t, repository, "config", "user.name", "Fixture Test")
+	runPlanGit(t, repository, "add", ".")
+	runPlanGit(t, repository, "commit", "-qm", "seed formatter fixture")
+
+	outcome, err := BuildPlan(context.Background(), PlanRequest{
+		Repository: repository,
+		ProfileID:  "standard-typescript-monorepo",
+		Decisions: []DecisionValue{
+			{ID: "language.generated", Value: "English"},
+			{ID: "verification.gate", Value: "make verify"},
+			{ID: "http.contract", Value: map[string]any{"mode": "Post-only"}},
+			{ID: "spec.scaffold", Value: true},
+			{ID: "domain.layout", Value: "single-context"},
+			{ID: "triage.external", Value: true},
+			{ID: "autonomous.enabled", Value: true},
+			{ID: "runtime.backend", Value: "codex gpt-5.5 xhigh"},
+			{ID: "runtime.design", Value: "claude opus xhigh"},
+			{ID: "secondbrain.enabled", Value: true},
+			{ID: "repository.extension.enabled", Value: false},
+		},
+		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
+	})
+	if err != nil {
+		t.Fatalf("BuildPlan() formatter composition error = %v", err)
+	}
+	if outcome.Plan == nil {
+		t.Fatalf("BuildPlan() formatter composition result = %+v", outcome.Result)
+	}
+	plan := *outcome.Plan
+
+	catalog := mustEmbeddedCatalog(t)
+	profile, ok := catalog.Profile("standard-typescript-monorepo")
+	if !ok {
+		t.Fatal("standard TypeScript Profile is missing")
+	}
+	var contract struct {
+		Formatter struct {
+			FixturePaths []string `json:"fixturePaths"`
+		} `json:"formatter"`
+	}
+	if err := json.Unmarshal(profile.Data, &contract); err != nil {
+		t.Fatalf("decode formatter contract: %v", err)
+	}
+	postimages := make(map[string][]byte, len(plan.Postimages))
+	for _, postimage := range plan.Postimages {
+		if postimage.Kind != PreimageMissing {
+			postimages[postimage.Path] = postimage.Content
+		}
+	}
+	const goldenSeparator = "/golden/"
+	for _, fixturePath := range contract.Formatter.FixturePaths {
+		position := strings.Index(fixturePath, goldenSeparator)
+		if position < 0 {
+			t.Fatalf("formatter fixture %q is outside the golden root", fixturePath)
+		}
+		generatedPath := fixturePath[position+len(goldenSeparator):]
+		generated, ok := postimages[generatedPath]
+		if !ok {
+			t.Errorf("Plan has no generated postimage for formatter fixture %q", generatedPath)
+			continue
+		}
+		fixture, ok := catalog.Asset(fixturePath)
+		if !ok {
+			t.Errorf("formatter fixture %q is missing", fixturePath)
+			continue
+		}
+		if !bytes.Equal(generated, fixture.Data) {
+			t.Errorf("generated output %q differs from its formatter fixture", generatedPath)
+		}
+	}
+	if _, ok := postimages[specificRepositoryPath]; ok {
+		t.Fatalf("greenfield formatter composition created %q", specificRepositoryPath)
+	}
+
+	if _, err := ApplyPlan(context.Background(), repository, plan, plan.PlanDigest); err != nil {
+		t.Fatalf("ApplyPlan() formatter composition error = %v", err)
+	}
+	result, err := ApplyPlan(context.Background(), repository, plan, plan.PlanDigest)
+	if err != nil {
+		t.Fatalf("ApplyPlan() empty formatter reapply error = %v", err)
+	}
+	if result.State != "verified" || !strings.Contains(result.Message, "already applied") {
+		t.Fatalf("empty formatter reapply result = %+v", result)
+	}
+}
+
 func TestInstructionHierarchyRendersActivePointersOnce(t *testing.T) {
 	plan := buildTestPlan(t, newPlanRepository(t))
 	agents := string(planPostimage(t, plan, "AGENTS.md").Content)
@@ -918,7 +1008,8 @@ func TestPlanDeterminismMatchesMaintainedManagedEntryFixture(t *testing.T) {
 	for _, entry := range fixture.PlannedByteSequence {
 		if entry.Path != manifestPath &&
 			entry.Path != "AGENTS.md" &&
-			entry.Path != "docs/agents/docs-layout.md" {
+			entry.Path != "docs/agents/docs-layout.md" &&
+			entry.Path != "docs/agents/skill-dispatch.md" {
 			expectedPostimages[entry.Path] = entry.AfterIdentity
 		}
 	}

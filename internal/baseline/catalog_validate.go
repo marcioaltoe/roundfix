@@ -3,6 +3,7 @@ package baseline
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -393,6 +394,108 @@ func (l *catalogLoader) validateProfileCapabilities(profileID string, profile do
 			l.add("catalog.capability.probe.invalid", capabilityID, "")
 		}
 	}
+}
+
+func (l *catalogLoader) validateProfileFormatters(catalog *Catalog) {
+	for profileID, profile := range catalog.profiles {
+		schema, _ := stringValue(profile, "schemaVersion")
+		if schema != "setup-context-driven/profile/0.0.1" {
+			continue
+		}
+		formatter, ok := objectValue(profile["formatter"])
+		if !ok {
+			l.add("catalog.profile.formatter.invalid", profileID, "formatter must be an object")
+			continue
+		}
+		kind, kindOK := stringValue(formatter, "kind")
+		switch kind {
+		case "none":
+			l.allowFields(
+				"catalog.profile.formatter.field.unknown",
+				profileID,
+				formatter,
+				"kind",
+			)
+		case "selected":
+			l.allowFields(
+				"catalog.profile.formatter.field.unknown",
+				profileID,
+				formatter,
+				"kind",
+				"id",
+				"version",
+				"fixturePaths",
+				"goldenDigest",
+			)
+			formatterID, formatterIDOK := stringValue(formatter, "id")
+			version, versionOK := stringValue(formatter, "version")
+			fixturePaths, fixturePathsOK := stringList(formatter["fixturePaths"])
+			goldenDigest, digestOK := stringValue(formatter, "goldenDigest")
+			if !formatterIDOK || !versionOK || strings.TrimSpace(formatterID) == "" ||
+				strings.TrimSpace(version) == "" {
+				l.add("catalog.profile.formatter.identity.invalid", profileID, "")
+			}
+			if !fixturePathsOK || len(fixturePaths) == 0 || !uniqueStrings(fixturePaths) {
+				l.add("catalog.profile.formatter.fixtures.invalid", profileID, "")
+				continue
+			}
+			fixtures := make(map[string][]byte, len(fixturePaths))
+			prefix := path.Join("formatter-fixtures", profileID, "golden") + "/"
+			for _, fixturePath := range fixturePaths {
+				if !safeRelative(fixturePath) ||
+					!strings.HasPrefix(fixturePath, prefix) ||
+					path.Ext(fixturePath) != ".md" {
+					l.add(
+						"catalog.profile.formatter.fixture.path.invalid",
+						profileID,
+						fixturePath,
+					)
+					continue
+				}
+				content, exists := catalog.assets[fixturePath]
+				if !exists {
+					l.add(
+						"catalog.profile.formatter.fixture.missing",
+						profileID,
+						fixturePath,
+					)
+					continue
+				}
+				fixtures[strings.TrimPrefix(fixturePath, prefix)] = content
+			}
+			if !digestOK || !lowerSHA256.MatchString(goldenDigest) {
+				l.add("catalog.profile.formatter.goldenDigest.invalid", profileID, "")
+				continue
+			}
+			if len(fixtures) != len(fixturePaths) {
+				continue
+			}
+			if observed := portableFileDigest(fixtures); observed != goldenDigest {
+				l.add(
+					"catalog.profile.formatter.goldenDigest.mismatch",
+					profileID,
+					fmt.Sprintf("got %s, want %s", goldenDigest, observed),
+				)
+			}
+		default:
+			if !kindOK {
+				kind = ""
+			}
+			l.add("catalog.profile.formatter.kind.invalid", profileID, kind)
+		}
+	}
+}
+
+func portableFileDigest(files map[string][]byte) string {
+	digest := sha256.New()
+	for _, relative := range sortedKeys(files) {
+		writeLengthPrefixed(digest, relative)
+		var length [8]byte
+		binary.BigEndian.PutUint64(length[:], uint64(len(files[relative])))
+		_, _ = digest.Write(length[:])
+		_, _ = digest.Write(files[relative])
+	}
+	return hex.EncodeToString(digest.Sum(nil))
 }
 
 func (l *catalogLoader) validateGuidanceComposition(catalog *Catalog) {
@@ -1041,6 +1144,72 @@ func (l *catalogLoader) validateSourceBaselines(catalog *Catalog) {
 		}
 		if !foundCorpus {
 			l.add("catalog.sourceBaseline.corpus.missing", baselineID, corpus)
+		}
+		baseline, err := catalog.SourceBaseline(baselineID)
+		if err != nil {
+			l.add("catalog.sourceBaseline.integrity.invalid", baselineID, err.Error())
+			continue
+		}
+		l.validateSourceBaselineCoverage(catalog, baseline)
+	}
+}
+
+func (l *catalogLoader) validateSourceBaselineCoverage(
+	catalog *Catalog,
+	baseline SourceBaseline,
+) {
+	profile := catalog.profiles[baseline.Identity.Profile]
+	selectedModules := stringSet(stringsOrEmpty(profile["modules"]))
+	entryIDs := make(map[string]struct{}, len(baseline.Entries))
+	carriers := make(map[string]struct{}, len(baseline.Entries))
+	for _, entry := range baseline.Entries {
+		entryIDs[entry.ID] = struct{}{}
+		carriers[entry.Carrier] = struct{}{}
+	}
+
+	rules := make(map[string]document)
+	for moduleID := range selectedModules {
+		for _, rule := range objectsOrEmpty(catalog.modules[moduleID]["rules"]) {
+			ruleID, _ := stringValue(rule, "id")
+			rules[ruleID] = rule
+		}
+	}
+	for _, ruleID := range stringsOrEmpty(profile["requiredRules"]) {
+		rule := rules[ruleID]
+		clauses := objectsOrEmpty(rule["clauses"])
+		if len(clauses) == 0 {
+			if _, ok := entryIDs[ruleID]; !ok {
+				l.add(
+					"catalog.sourceBaseline.required-rule.missing",
+					baseline.Identity.ID,
+					ruleID,
+				)
+			}
+			continue
+		}
+		for _, clause := range clauses {
+			clauseID, _ := stringValue(clause, "id")
+			if _, ok := entryIDs[clauseID]; !ok {
+				l.add(
+					"catalog.sourceBaseline.required-clause.missing",
+					baseline.Identity.ID,
+					clauseID,
+				)
+			}
+		}
+	}
+
+	for managedID, owner := range catalog.semanticOwners {
+		if _, active := selectedModules[owner.Module]; !active ||
+			owner.Module == repositoryExtensionModuleID {
+			continue
+		}
+		if _, ok := carriers[owner.Path]; !ok {
+			l.add(
+				"catalog.sourceBaseline.semantic-destination.missing",
+				baseline.Identity.ID,
+				managedID,
+			)
 		}
 	}
 }

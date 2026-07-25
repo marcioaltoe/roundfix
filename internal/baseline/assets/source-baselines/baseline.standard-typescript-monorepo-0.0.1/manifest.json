@@ -12,8 +12,8 @@
       "carrier": "AGENTS.md",
       "structure": "template",
       "start": 63,
-      "end": 518,
-      "digest": "4930e44c0e31cb67a31f6c06c8035228a4b2136243a43841e8d7a1553e959d1f"
+      "end": 519,
+      "digest": "b92fe415e6e8a257f56133fa630be873f73281376f84a54b017ccf2481854a87"
     },
     {
       "id": "clause.core.keep-root-compact",
@@ -23,8 +23,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 62,
-      "end": 308,
-      "digest": "7361ef8e3a3843b160ee73b22b5bb5b529f27d023e8ce57591f2e15d38c2511c"
+      "end": 309,
+      "digest": "d609ad0687ca808db60fb1da6de2e558ec81f79ff2073f7d0db341cb94e4721b"
     },
     {
       "id": "clause.core.fix-root-causes",
@@ -34,8 +34,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 433,
-      "end": 456,
-      "digest": "de5943295f2642acf81b52954cd9ef434bc3ca03f5d03566dad83be438b3a157"
+      "end": 457,
+      "digest": "fcb002c83534ee2ae2a0b30c1ab33fa61fa22df6b00dc22c159ff80bbd0ee85f"
     },
     {
       "id": "clause.core.prohibit-verification-workarounds",
@@ -45,8 +45,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 597,
-      "end": 738,
-      "digest": "4baba13996302759e65b3cfcaca92616cb3d96ad9f8d79b6ed61afd32bd28fc8"
+      "end": 739,
+      "digest": "3cc3d2441a9f5993470745f9cb500eec65e6007fe09c1f28911cb25905f4ee8b"
     },
     {
       "id": "clause.core.keep-follow-ups-outside-slice",
@@ -56,8 +56,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 893,
-      "end": 1006,
-      "digest": "58192cec8e52c60f6d1edb326349e3d3cab87c6ac9f7d1a08f95ae93a4d80455"
+      "end": 1007,
+      "digest": "902817a2964f2c3c17be3ee2dd5ceec45dab2621d5bb8e6f0924db3c5a1d8f89"
     },
     {
       "id": "clause.core.record-acceptance-evidence",
@@ -67,8 +67,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 1154,
-      "end": 1253,
-      "digest": "75efb2e0d8e5bc02effe9b89da56daa2faf156a1bc64081207bdefd238cce9a5"
+      "end": 1254,
+      "digest": "121b32bb08da14dca475aa9eaf0c5d90b2c67a22ae2bad4dc98b5d9f94ec0d5f"
     },
     {
       "id": "clause.core.require-fresh-evidence",
@@ -78,8 +78,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 1394,
-      "end": 1582,
-      "digest": "a75efae4dbe868677bd693b7a4170b9dea64686baea010bbb5ac25167c9314de"
+      "end": 1583,
+      "digest": "5316cabd0de386fdc3996edb5ac39ae2148acca0103de179a8b0e223d41fd83a"
     },
     {
       "id": "clause.core.run-selected-verification",
@@ -89,8 +89,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 1722,
-      "end": 1892,
-      "digest": "43b7b8e68331b9d6553a1b2a5c837cdd4b2b7082ebe6b559426c3b45cb02f9dd"
+      "end": 1893,
+      "digest": "2378c346703015d0c67e292f8b15df451eb9ec4ab0f48506096afe47e0156185"
     },
     {
       "id": "clause.core.prohibit-verification-contract-bypass",
@@ -100,8 +100,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 2047,
-      "end": 2280,
-      "digest": "2b87580aebd35dac2f93669981f55c894caa44ffff6c51287c6b9f6038e2ff04"
+      "end": 2281,
+      "digest": "98a3f3a93414af7af4f3bc306f3081a8ac5f89a1ffe0c7c25811ace4c8bce591"
     },
     {
       "id": "clause.core.ask-before-verification-configuration-change",
@@ -111,8 +111,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 2454,
-      "end": 2612,
-      "digest": "353c953a127c93588b8a757e68b6fbc547c76899a362a46feb6abe3dd93e7128"
+      "end": 2613,
+      "digest": "4d7ac3430bba6c3bcd2af64f8ac6ac1dd702a15d4dc830a36e6e2ffa70785af7"
     },
     {
       "id": "clause.core.activate-matching-skills",
@@ -122,8 +122,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 2773,
-      "end": 2925,
-      "digest": "b14c22850fa1845bfefb41c8f1a1ab965f2789ca2df784c56704695bf4bd6086"
+      "end": 2926,
+      "digest": "bd2833829d928a20611e4a4964e8ffc68c64c19c5937257ba95248b592dd4518"
     },
     {
       "id": "clause.core.use-conventional-commits",
@@ -133,8 +133,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 3066,
-      "end": 3203,
-      "digest": "17b004d87eefaca575d7e1f36b82952e12c0d5b66be3c17994472e4f62118774"
+      "end": 3204,
+      "digest": "cb427b0a322fbda28d125c8a7012bc7f747d15931d27ef6dff2c092bc1723a38"
     },
     {
       "id": "clause.core.use-github-pr-workflow",
@@ -144,8 +144,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 3342,
-      "end": 3456,
-      "digest": "b2eaa30a1188125d1d89815172b80e7789d481bf0b20b5a61650c029be97fa1f"
+      "end": 3457,
+      "digest": "848908f0961e72e260aa611f45cc5b271d8aff9f90e2426e43290d487f47e414"
     },
     {
       "id": "clause.core.write-generated-guidance-in-english",
@@ -155,8 +155,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 3606,
-      "end": 3764,
-      "digest": "1b772919941f6b96ef2fbfa554cf783a41c0df9b93abb1029b2d01450a7517d1"
+      "end": 3765,
+      "digest": "f83ec2482d1865a8c1b4b0c2ea9a9428433063a9a99eee305052f7706e9297ce"
     },
     {
       "id": "contract.research.sequence",
@@ -166,8 +166,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": "ordered-procedure",
       "start": 3906,
-      "end": 4455,
-      "digest": "c06beb04e638b6d69f439a73fe7215dc8a2d47c3d0ae2acaa84441c025ce4976"
+      "end": 4456,
+      "digest": "29660424cd4a8d2a86974c87474bdbbcc487371bf6d13bca54d6a4ae9ebdf39e"
     },
     {
       "id": "clause.core.follow-dependency-workflow",
@@ -177,8 +177,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 4588,
-      "end": 4796,
-      "digest": "7f275dbfc83fb3546fdc97dea588e8f167383bc7ef00a4a1023cdcb4d61c3606"
+      "end": 4797,
+      "digest": "55b9963ce5024741381341777635e1839aa3f77d0b38d3b7a04c36aa77511f8e"
     },
     {
       "id": "clause.core.review-new-dependencies",
@@ -188,8 +188,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 4938,
-      "end": 5042,
-      "digest": "57c69d37be3e6e75535db819fcc5e11a836e99fb226042c673ea9552b6519d0d"
+      "end": 5043,
+      "digest": "fbb8406221f590a35be9beeb10f3750f21faae2ab6715060277ca95da81f5b69"
     },
     {
       "id": "clause.core.preserve-git-scope",
@@ -199,8 +199,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 5176,
-      "end": 5264,
-      "digest": "22661f6fff3c39c1d6bf66cb204dd9e41cee1c2141f34faf0e08446aa4d7abd9"
+      "end": 5265,
+      "digest": "b6da516b3e2742e7f9893125385d755b9c9913cb1008a17edde7838a310724a9"
     },
     {
       "id": "clause.core.ask-before-destructive-git",
@@ -210,8 +210,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 5401,
-      "end": 5518,
-      "digest": "6c3be64a541e136ee274bc501f4655cd9824f4878437b63fdf94f1f5dd17dfbc"
+      "end": 5519,
+      "digest": "07d9abe5465527389349fbc5123ca0e123739a92f76e62e69884e738f3395952"
     },
     {
       "id": "clause.core.ask-before-delivery",
@@ -221,8 +221,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 5656,
-      "end": 5816,
-      "digest": "f4252bab177732d08e02084f09ab026c1d06760904aa47e2366bbd994f3a4fc4"
+      "end": 5817,
+      "digest": "85a14c3a9018f6bb1328526b492058a42eef132b089db1e5d2d60a71e90c636b"
     },
     {
       "id": "clause.core.ask-user-answerable-decisions",
@@ -232,8 +232,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 5957,
-      "end": 6112,
-      "digest": "a14e5616c23667cda92e90b39dae45214c38a1401033349db773ff3ac9e21888"
+      "end": 6113,
+      "digest": "b43d80becc4c1c011e204fb90f1fc11d7beac0d6926baaefcd3b6cc2ba0421e9"
     },
     {
       "id": "clause.core.prohibit-secret-exposure",
@@ -243,8 +243,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 6258,
-      "end": 6511,
-      "digest": "8e6146e432820d97d2888478e1d9b8ffc272791ffd5778f128321ff6003ace29"
+      "end": 6512,
+      "digest": "d317c9e18102e0ed19aec89a4e8e8c30d0e4e6a0f97024fc562e2804c5afcd7e"
     },
     {
       "id": "recommendation.capability.firecrawl",
@@ -254,8 +254,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 6651,
-      "end": 6800,
-      "digest": "9be458402a305f0ea2deccd0d395ebb5bb6335a7c1779a4d763ca9418d2c8ee0"
+      "end": 6801,
+      "digest": "addc84e7f37d34d737c1f8b0541939349b6a335171d6b452070ff7df399a92ae"
     },
     {
       "id": "recommendation.tool.rtk",
@@ -265,8 +265,8 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 6927,
-      "end": 7049,
-      "digest": "f1d1a8332df86dcb09b1040d7fe050bb05ef40f9dd750b5366f488c6ca543072"
+      "end": 7050,
+      "digest": "35be36533875ec7d48faa4c8077fa65852926148943c5533b331db3949b9a8e3"
     },
     {
       "id": "recommendation.tool.rg",
@@ -276,8 +276,52 @@
       "carrier": "docs/agents/agent-instructions.md",
       "structure": null,
       "start": 7163,
-      "end": 7239,
-      "digest": "b6d6672f69a67999114f739aa6c2315bc0a3ab2fa5bbe44a51439edb603d6ab8"
+      "end": 7240,
+      "digest": "affe1f6f2668612ba48e531d237860fba7e4787a5813f556a83cadbc9e4613cc"
+    },
+    {
+      "id": "clause.core.research-authoritative-external-sources",
+      "path": "corpus/docs/agents/agent-instructions.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/agent-instructions.md",
+      "structure": null,
+      "start": 7381,
+      "end": 7506,
+      "digest": "108ff4153d82e11db2d7a19b0f75b8239077ccea44c495dd8cca620ae95f1444"
+    },
+    {
+      "id": "clause.core.research-local-code-locally",
+      "path": "corpus/docs/agents/agent-instructions.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/agent-instructions.md",
+      "structure": null,
+      "start": 7664,
+      "end": 7718,
+      "digest": "5d08d2f766ad798d4cda8f64cac8e3bf88167c5fe5c9fbd47c9c2dbeab48de2f"
+    },
+    {
+      "id": "clause.core.use-declared-external-research-fallback",
+      "path": "corpus/docs/agents/agent-instructions.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/agent-instructions.md",
+      "structure": null,
+      "start": 7876,
+      "end": 8072,
+      "digest": "1270c6ba3dafb1cf6716b4f551dec426f28d9787d366677ef504edf548c43b85"
+    },
+    {
+      "id": "clause.core.prohibit-external-research-for-local-code",
+      "path": "corpus/docs/agents/agent-instructions.md",
+      "kind": "normative-clause",
+      "enforcement": "prohibited",
+      "carrier": "docs/agents/agent-instructions.md",
+      "structure": null,
+      "start": 8244,
+      "end": 8335,
+      "digest": "5ca17488bae2a58bd31d28eb23fd6405afb4fb63d4c1859c560b8e14491d93f8"
     },
     {
       "id": "contract.autonomous.supervisor-runtime",
@@ -287,8 +331,41 @@
       "carrier": "docs/agents/autonomous-work.md",
       "structure": "protocol",
       "start": 71,
-      "end": 608,
-      "digest": "9e96287766a5346e6d2d1c659fcca5baaf21649f40731ccd85d91147b560b294"
+      "end": 609,
+      "digest": "aafb47407a9b04d0a5f3fa06c76d047163f24e6d8bf85575df32883334cd1f27"
+    },
+    {
+      "id": "clause.autonomous.delegate-through-roundfix",
+      "path": "corpus/docs/agents/autonomous-work.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/autonomous-work.md",
+      "structure": null,
+      "start": 758,
+      "end": 917,
+      "digest": "96a99a29cafa8695575584fb1e0048dbf3c13e500617876327cbaed4c9c13f50"
+    },
+    {
+      "id": "clause.autonomous.supervisor-prohibition",
+      "path": "corpus/docs/agents/autonomous-work.md",
+      "kind": "normative-clause",
+      "enforcement": "prohibited",
+      "carrier": "docs/agents/autonomous-work.md",
+      "structure": null,
+      "start": 1068,
+      "end": 1121,
+      "digest": "1f1e1670293033353556e9b9180a4350ca50e5328b7458a4d4517a20fbf46459"
+    },
+    {
+      "id": "clause.autonomous.daemon-verifies-task",
+      "path": "corpus/docs/agents/autonomous-work.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/autonomous-work.md",
+      "structure": null,
+      "start": 1267,
+      "end": 1476,
+      "digest": "853eefaa73f3ad2ad7d943aa5372deefe75e4a9f8c3087a4d007f445d9f287ed"
     },
     {
       "id": "clause.backend.boundary-contracts",
@@ -298,8 +375,8 @@
       "carrier": "docs/agents/backend.md",
       "structure": null,
       "start": 66,
-      "end": 345,
-      "digest": "61c2911cca31a9097c3d086bca6eba592c46a27462adb21172c115b234582578"
+      "end": 346,
+      "digest": "432da93e6ebda8e3b83136d3462f1903a410bbd714f0f6d66c44eee663df4623"
     },
     {
       "id": "clause.backend.layered-architecture",
@@ -309,8 +386,8 @@
       "carrier": "docs/agents/backend.md",
       "structure": null,
       "start": 482,
-      "end": 620,
-      "digest": "9e99476ac917fc188c5c6617acb3453c8978130574cdb978a935232a4dee6ee8"
+      "end": 621,
+      "digest": "f521d81c7a1557b9d035182201ce1ce585b33306d19e8c46e4b48b804c6aead2"
     },
     {
       "id": "clause.backend.thin-http-handlers",
@@ -320,8 +397,8 @@
       "carrier": "docs/agents/backend.md",
       "structure": null,
       "start": 757,
-      "end": 923,
-      "digest": "d3b51fe6d8cbf32df63d5e676411a61239af5510bbd3d2cf3f1a2fb39c599a38"
+      "end": 924,
+      "digest": "4ff8a0969a177cb3650d3a7a10e7037dde3abcfd8ab0ed3956c70a929ada9ed9"
     },
     {
       "id": "clause.backend.http-independent-use-cases",
@@ -331,8 +408,8 @@
       "carrier": "docs/agents/backend.md",
       "structure": null,
       "start": 1066,
-      "end": 1168,
-      "digest": "4e585ea256e9eb56e2b9f4ed02e1a99e1f8aca652b80829f995247de2efb64be"
+      "end": 1169,
+      "digest": "92fb7ef44d777b4adc755f7a65eba065e567069c0f1e939c6f792a86847960f2"
     },
     {
       "id": "clause.backend.persistence-owner",
@@ -342,8 +419,8 @@
       "carrier": "docs/agents/backend.md",
       "structure": null,
       "start": 1310,
-      "end": 1483,
-      "digest": "43135281a74ef5b6a8e991b3f5abc677a47a7f147999794b6872469932bd871a"
+      "end": 1484,
+      "digest": "1ed6cb4530df4328eaa41fd0cb6dce378d4664b8b779a849e2b9abbc61d842d4"
     },
     {
       "id": "clause.backend.prohibit-generic-layers",
@@ -353,8 +430,19 @@
       "carrier": "docs/agents/backend.md",
       "structure": null,
       "start": 1622,
-      "end": 1721,
-      "digest": "5d2df816948fc12f8c3a8ee1293ca2ee0c9fc2f5e7506e7ea23a45c947fbc190"
+      "end": 1722,
+      "digest": "3e7abf80cf0502e8714a58ee82bb663e89f8a6d9cdf011d6e465cb27aa08f2ac"
+    },
+    {
+      "id": "rule.backend.boundary-contracts",
+      "path": "corpus/docs/agents/backend.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/backend.md",
+      "structure": null,
+      "start": 1859,
+      "end": 2132,
+      "digest": "7c291f66741713ff48d71d84dc23f20afd2b10639504cd90c7344a0cae6941b3"
     },
     {
       "id": "contract.docs-layout.directory-matrix",
@@ -364,8 +452,8 @@
       "carrier": "docs/agents/docs-layout.md",
       "structure": "decision-matrix",
       "start": 70,
-      "end": 1179,
-      "digest": "acb3ce458f95c58dd1f3a924ec2651c021693677e00170890ac4e6c12be0d364"
+      "end": 1180,
+      "digest": "0c9f7d9837de45ddd7ac444281b5275560fcfd94b2fa51c830a904594e04136e"
     },
     {
       "id": "contract.findings.template",
@@ -375,8 +463,8 @@
       "carrier": "docs/agents/docs-layout.md",
       "structure": "template",
       "start": 1311,
-      "end": 2035,
-      "digest": "a41f0ebc95a758af94dc1409f6c29826ddd2a92a43e485cd7f0072918e034f35"
+      "end": 2036,
+      "digest": "59652b5be8f81c23b62735f0b09f70b877960ea5f94c722f76d81883eee48f36"
     },
     {
       "id": "contract.findings.lifecycle",
@@ -386,8 +474,140 @@
       "carrier": "docs/agents/docs-layout.md",
       "structure": "lifecycle",
       "start": 2157,
-      "end": 2871,
-      "digest": "4463f6a6a80d75bfa95f5dfe8392bc05bbb312203a716481b7876032de193501"
+      "end": 2872,
+      "digest": "bc38e7b4015156c79d026416b96be8c3c7e0229491bc99945ecae508b440fde6"
+    },
+    {
+      "id": "clause.context.adr-01-template",
+      "path": "corpus/docs/agents/docs-layout.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/docs-layout.md",
+      "structure": null,
+      "start": 2997,
+      "end": 3504,
+      "digest": "f37d5b5fe03d118739e68007ae74cadd3422996fdf5b5837ea972f6e64143b3a"
+    },
+    {
+      "id": "clause.context.adr-02-active-status",
+      "path": "corpus/docs/agents/docs-layout.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/docs-layout.md",
+      "structure": null,
+      "start": 3637,
+      "end": 3743,
+      "digest": "35da6835c170db33018ac6610b3144ae370a76ac8b5fa51a53a9668f0aff2fac"
+    },
+    {
+      "id": "clause.context.adr-03-legacy-compatibility",
+      "path": "corpus/docs/agents/docs-layout.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/docs-layout.md",
+      "structure": null,
+      "start": 3888,
+      "end": 4058,
+      "digest": "3abd753a1fa7e0f2b8a458a203a8e7a3b42c2462cf853ae6fc7ca5a6a4a4e96d"
+    },
+    {
+      "id": "clause.context.docs-one-job-per-directory",
+      "path": "corpus/docs/agents/docs-layout.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/docs-layout.md",
+      "structure": null,
+      "start": 4209,
+      "end": 4618,
+      "digest": "2919b5450b40f27cbaffa5c55c639d678eecae7ce15b8269e9c3c13cc8923d23"
+    },
+    {
+      "id": "clause.context.findings-01-frontmatter",
+      "path": "corpus/docs/agents/docs-layout.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/docs-layout.md",
+      "structure": null,
+      "start": 4765,
+      "end": 5693,
+      "digest": "e110a213ed674d69e7fca8ec9079cd6cf2da833f68f9fd6e6ac227beb23d2f77"
+    },
+    {
+      "id": "clause.context.findings-02-pending",
+      "path": "corpus/docs/agents/docs-layout.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/docs-layout.md",
+      "structure": null,
+      "start": 5833,
+      "end": 5903,
+      "digest": "0d99156813f494d0b8a2d6395403eaad5385c00c19294ad845030c49f395a39b"
+    },
+    {
+      "id": "clause.context.findings-03-partial",
+      "path": "corpus/docs/agents/docs-layout.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/docs-layout.md",
+      "structure": null,
+      "start": 6039,
+      "end": 6208,
+      "digest": "4103cbc86cc981f2b06a452fd108041df2495ea5a155561617666e0dfd627f90"
+    },
+    {
+      "id": "clause.context.findings-04-deferred",
+      "path": "corpus/docs/agents/docs-layout.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/docs-layout.md",
+      "structure": null,
+      "start": 6345,
+      "end": 6439,
+      "digest": "113d93416da3b170dd3933085ebbc206d7b224b0e8eabf58b8f652d7ad3ab25f"
+    },
+    {
+      "id": "clause.context.findings-05-done",
+      "path": "corpus/docs/agents/docs-layout.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/docs-layout.md",
+      "structure": null,
+      "start": 6573,
+      "end": 6687,
+      "digest": "7e5c26885c289a99db7fc1b57993412aa0efca85b858394835423110d8b737ac"
+    },
+    {
+      "id": "clause.context.findings-06-append-evidence",
+      "path": "corpus/docs/agents/docs-layout.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/docs-layout.md",
+      "structure": null,
+      "start": 6828,
+      "end": 6964,
+      "digest": "fe598da7ea176f88cc991791977de07d1494f0da10b2e0d3584ff7456ecc767c"
+    },
+    {
+      "id": "clause.context.findings-07-update-timestamp",
+      "path": "corpus/docs/agents/docs-layout.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/docs-layout.md",
+      "structure": null,
+      "start": 7117,
+      "end": 7247,
+      "digest": "becee1d41ae620ddf8856f8231d04d728b2869f784529d4851744a86f35c142b"
+    },
+    {
+      "id": "clause.spec.keep-artifacts-in-spec-folder",
+      "path": "corpus/docs/agents/docs-layout.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/docs-layout.md",
+      "structure": null,
+      "start": 7399,
+      "end": 7596,
+      "digest": "6a6bbd20fad23dc9162a49bdc1b36f36950e55a01456d2d3f4132ac5b10a7ab5"
     },
     {
       "id": "clause.context.read-domain-contract",
@@ -397,8 +617,8 @@
       "carrier": "docs/agents/domain.md",
       "structure": null,
       "start": 68,
-      "end": 267,
-      "digest": "3ad342f65c01a4cc8bd5bca37c78d1f590275fd64cbba1021160c94555ab5f2a"
+      "end": 268,
+      "digest": "62170749e789d02502b62eac8ede9622fd8cdb0af09e04ea3e41ec396c55a4ea"
     },
     {
       "id": "clause.domain.canonical-language",
@@ -408,8 +628,8 @@
       "carrier": "docs/agents/domain.md",
       "structure": null,
       "start": 403,
-      "end": 586,
-      "digest": "626da6f8e2e6ee064dfe74bafb11e4d5e20223d07d494c4a4c282bf849d8064b"
+      "end": 587,
+      "digest": "0a94a5a1defba6aa2522f3c3bdc7a945316955536ed9bee43c598b400e4eb866"
     },
     {
       "id": "clause.domain.layout-decision",
@@ -419,8 +639,19 @@
       "carrier": "docs/agents/domain.md",
       "structure": null,
       "start": 716,
-      "end": 883,
-      "digest": "01b119eb420dc9319b293c7f9e4a4487468b79faba51ed8ab2e0a488c70d416c"
+      "end": 884,
+      "digest": "617ae6c7f444fe1e240c5eb778396b8a0a60eb801dfbccc0dc29528f5d809281"
+    },
+    {
+      "id": "rule.external-triage",
+      "path": "corpus/docs/agents/external-triage.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/external-triage.md",
+      "structure": null,
+      "start": 53,
+      "end": 281,
+      "digest": "096aa5b903ccafca0e9d215eaab8ead211de40769c03b12e5ae3f719aaccbda0"
     },
     {
       "id": "clause.frontend.read-design-contract-before-ui-work",
@@ -430,8 +661,8 @@
       "carrier": "docs/agents/frontend.md",
       "structure": null,
       "start": 84,
-      "end": 228,
-      "digest": "55f01e25663f7c2fdc93f9133969532f6038b8db3fb1385da55cbc110dc124e7"
+      "end": 229,
+      "digest": "5ff73139d69cd4fedabb6adef90977bf1db51cd32502b6ad16109bf7f998f473"
     },
     {
       "id": "clause.frontend.organize-by-system",
@@ -441,8 +672,8 @@
       "carrier": "docs/agents/frontend.md",
       "structure": null,
       "start": 382,
-      "end": 570,
-      "digest": "a69af1137c4c5b7a7cab3a2e952b64e7ffdf117c3c0cd959f718179a3ae62d8a"
+      "end": 571,
+      "digest": "528fd6999720d191516238b0b67da9e97a2511519bb0b106987c22e8273d3d50"
     },
     {
       "id": "clause.frontend.public-system-boundary",
@@ -452,8 +683,8 @@
       "carrier": "docs/agents/frontend.md",
       "structure": null,
       "start": 711,
-      "end": 824,
-      "digest": "feecb9d25f50ca5854615fb23ef58685f4873d8c843b017b7987971b1c5712f2"
+      "end": 825,
+      "digest": "12793e1f7cd8c177e1c1dcab66e12759afce91ba935057ab1de148cc16c5b9cc"
     },
     {
       "id": "clause.frontend.test-user-visible-behavior",
@@ -463,8 +694,8 @@
       "carrier": "docs/agents/frontend.md",
       "structure": null,
       "start": 973,
-      "end": 1067,
-      "digest": "77bc3a7331ac3a76e340ec379fad982bfada834cecb85320e2790340ed44009e"
+      "end": 1068,
+      "digest": "82dc4a5c4742892ac476867d6f4df291bc17723440cfc3bd1786ff42371eae87"
     },
     {
       "id": "clause.frontend.prohibit-incidental-ui-assertions",
@@ -474,8 +705,8 @@
       "carrier": "docs/agents/frontend.md",
       "structure": null,
       "start": 1227,
-      "end": 1317,
-      "digest": "6de78d5de5cddfce31be01637ad8778fd0eecf04137185a5d8cadea89ec6758b"
+      "end": 1318,
+      "digest": "3fc43350459e9329f757b613116808d910a776a7d47cea71073f7ef6a90f4f44"
     },
     {
       "id": "clause.frontend.inspect-runnable-ui",
@@ -485,8 +716,8 @@
       "carrier": "docs/agents/frontend.md",
       "structure": null,
       "start": 1470,
-      "end": 1572,
-      "digest": "64c081cb1c867cf489a7be38e38bce0e13fe82f5bad7f9b07df94bc8ed292268"
+      "end": 1573,
+      "digest": "19c05c4e52867493d3bfdbb1ebd017ac4e732dccc7f588ce47685d88bcf085c3"
     },
     {
       "id": "recommendation.frontend.style-values",
@@ -496,8 +727,8 @@
       "carrier": "docs/agents/frontend.md",
       "structure": null,
       "start": 1712,
-      "end": 1863,
-      "digest": "af772126cf34405632b70d24227b7c4de1c2ec3bb036eb89a0597627fc14bd3f"
+      "end": 1864,
+      "digest": "d004a113e7c9cbb4e86635a891c55af950de1bcf2dfdbcf8db5007044043645e"
     },
     {
       "id": "clause.spec.local-task-tracker-only",
@@ -507,8 +738,8 @@
       "carrier": "docs/agents/issue-tracker.md",
       "structure": null,
       "start": 68,
-      "end": 245,
-      "digest": "8f7e15843ce27c93faa42f50ddd23028942e57ce809c20751ca6bf51c601dfe8"
+      "end": 246,
+      "digest": "ee014e1b1a9e116331c12e350cc68b8767135fca42e2f7b471651d4123b14ded"
     },
     {
       "id": "clause.spec.status-only-in-task",
@@ -518,8 +749,30 @@
       "carrier": "docs/agents/issue-tracker.md",
       "structure": null,
       "start": 380,
-      "end": 511,
-      "digest": "10c38bcea765cdd861f30f3075075b7fc653b9063744884b3fe4397a2ad0ec58"
+      "end": 512,
+      "digest": "3106c55877f5290ef43d33d67509eb0a15457d5267b4a6851a38ba134f83bd09"
+    },
+    {
+      "id": "clause.spec.tracker-artifacts",
+      "path": "corpus/docs/agents/issue-tracker.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/issue-tracker.md",
+      "structure": null,
+      "start": 640,
+      "end": 827,
+      "digest": "356bd6309edab2cee9e681307dcc611cce924e4fcc5b3933ca1baf3b7ca6e0dd"
+    },
+    {
+      "id": "rule.monorepo.context-boundaries",
+      "path": "corpus/docs/agents/monorepo.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/monorepo.md",
+      "structure": null,
+      "start": 65,
+      "end": 300,
+      "digest": "40e8bcd2d06abd41ff861381fcbb951c041fd1ff61ac2b06ff76b597d865575f"
     },
     {
       "id": "contract.secondbrain.protocol",
@@ -529,8 +782,85 @@
       "carrier": "docs/agents/secondbrain.md",
       "structure": "protocol",
       "start": 62,
-      "end": 1057,
-      "digest": "f00ac1777c572fad06c7662081dfc92ba3860a008cd1a62878953487ed9ba7b6"
+      "end": 1058,
+      "digest": "9e85017d65c0d595e7e932357d801a1b320a19760122dbb6f9285c4003c02cac"
+    },
+    {
+      "id": "clause.secondbrain.01-consult-triggers",
+      "path": "corpus/docs/agents/secondbrain.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/secondbrain.md",
+      "structure": null,
+      "start": 1193,
+      "end": 1558,
+      "digest": "ac47e592562ba8ffff41b21a49666d9b92353fc71cd4b142d2c6c6aa232d70f7"
+    },
+    {
+      "id": "clause.secondbrain.02-query-order",
+      "path": "corpus/docs/agents/secondbrain.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/secondbrain.md",
+      "structure": null,
+      "start": 1697,
+      "end": 1962,
+      "digest": "602cd3750408b5dc486b2bfc9c744cf584570ab1248f2a7b246d06a07061eabc"
+    },
+    {
+      "id": "clause.secondbrain.prohibit-writes",
+      "path": "corpus/docs/agents/secondbrain.md",
+      "kind": "normative-clause",
+      "enforcement": "prohibited",
+      "carrier": "docs/agents/secondbrain.md",
+      "structure": null,
+      "start": 2097,
+      "end": 2316,
+      "digest": "5ac631408fcff8555810dce6a17eeb4208a68387aae3a5c18df0670fd08e5e05"
+    },
+    {
+      "id": "clause.secondbrain.prohibit-secret-access",
+      "path": "corpus/docs/agents/secondbrain.md",
+      "kind": "normative-clause",
+      "enforcement": "prohibited",
+      "carrier": "docs/agents/secondbrain.md",
+      "structure": null,
+      "start": 2459,
+      "end": 2674,
+      "digest": "c520b99127df3d92d47786af5b45c573bbeaaa53ec06333672c6e4d5f84c02f0"
+    },
+    {
+      "id": "clause.secondbrain.cite-used-files",
+      "path": "corpus/docs/agents/secondbrain.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/secondbrain.md",
+      "structure": null,
+      "start": 2817,
+      "end": 2960,
+      "digest": "15e0eece3032f56e5cec8f964c440a4aa8fa2a8de12e68e52580efa056a03bf7"
+    },
+    {
+      "id": "clause.secondbrain.escalate-durable-updates",
+      "path": "corpus/docs/agents/secondbrain.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/secondbrain.md",
+      "structure": null,
+      "start": 3105,
+      "end": 3235,
+      "digest": "0af4ae522b06d04fb6797f3001a0531b8d140e4c32f2770e4b19ac6ad820b532"
+    },
+    {
+      "id": "contract.skill-dispatch.active-modules",
+      "path": "corpus/docs/agents/skill-dispatch.md",
+      "kind": "operational-contract",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/skill-dispatch.md",
+      "structure": "protocol",
+      "start": 71,
+      "end": 302,
+      "digest": "c5d72141b7a42ed698fe107c027911ad7e2db5b65025deb80b20325b2476b930"
     },
     {
       "id": "contract.spec.route-matrix",
@@ -540,8 +870,8 @@
       "carrier": "docs/agents/spec-routing.md",
       "structure": "decision-matrix",
       "start": 59,
-      "end": 801,
-      "digest": "c100997a19c2f61c4e2e29d300725d0f42512aaca51ed9ae5203600f3aacca57"
+      "end": 802,
+      "digest": "0f85c1ba822131ee73d99826f2de8208837d66d4434a5d047ae9820ae0a33beb"
     },
     {
       "id": "contract.spec.task-ownership",
@@ -551,8 +881,63 @@
       "carrier": "docs/agents/spec-routing.md",
       "structure": "protocol",
       "start": 924,
-      "end": 1549,
-      "digest": "27e2b47fb8b211ab282b388b3babadead530a78098976b35e1efdb6c8c8a5bb7"
+      "end": 1550,
+      "digest": "e8b160daae9dd948e3531a0f550e2fef4172e2c3943334bdc4194ee7fd855692"
+    },
+    {
+      "id": "clause.spec.routing-01-large-initiative",
+      "path": "corpus/docs/agents/spec-routing.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/spec-routing.md",
+      "structure": null,
+      "start": 1685,
+      "end": 1793,
+      "digest": "7ca102ed5a2d60caae2160f239c6ca0b25291ff21bfe0ccb061031eca36b8032"
+    },
+    {
+      "id": "clause.spec.routing-02-standard-feature",
+      "path": "corpus/docs/agents/spec-routing.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/spec-routing.md",
+      "structure": null,
+      "start": 1939,
+      "end": 2113,
+      "digest": "1e73fbbdb6043e3251080c15392dfb08b670560ccbb8cd6170e8525667b1fef9"
+    },
+    {
+      "id": "clause.spec.routing-03-refactor-bugfix",
+      "path": "corpus/docs/agents/spec-routing.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/spec-routing.md",
+      "structure": null,
+      "start": 2258,
+      "end": 2429,
+      "digest": "bc6b6f8d2a7a51866e398e6eb880f2dc0a7ff961b6f1f64170a5ee0e6b9129da"
+    },
+    {
+      "id": "clause.spec.routing-04-trivial-change",
+      "path": "corpus/docs/agents/spec-routing.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/spec-routing.md",
+      "structure": null,
+      "start": 2572,
+      "end": 2727,
+      "digest": "3530996d49cd1f64e971191cf90bf52aad08c7b546de50738691bdf9a06848be"
+    },
+    {
+      "id": "clause.spec.routing-05-task-graph",
+      "path": "corpus/docs/agents/spec-routing.md",
+      "kind": "normative-clause",
+      "enforcement": "mandatory",
+      "carrier": "docs/agents/spec-routing.md",
+      "structure": null,
+      "start": 2865,
+      "end": 3027,
+      "digest": "8633487060f2243dd17056b0b52415882c48bb108258366e336a0a24d3c19879"
     },
     {
       "id": "clause.typescript.read-current-authoritative-docs",
@@ -562,8 +947,8 @@
       "carrier": "docs/agents/typescript-bun.md",
       "structure": null,
       "start": 82,
-      "end": 229,
-      "digest": "27e1ba0259ec28bdf928d4e0d5807370c5fe17a5e1efef936fdf9447b8a500db"
+      "end": 230,
+      "digest": "0b383035c58cb2da9a294001851542d03bae0202345dda00203f3ea60e472234"
     },
     {
       "id": "clause.typescript.keep-type-errors-visible",
@@ -573,8 +958,8 @@
       "carrier": "docs/agents/typescript-bun.md",
       "structure": null,
       "start": 389,
-      "end": 481,
-      "digest": "b1ffc08fe33560b99793bdaa122bd24dfc896da387cee209e1aaf0dd00453221"
+      "end": 482,
+      "digest": "c12ffe032a1bdac7d48fe7fd94ab938668aa1d8134ebb40e6336f6464846e340"
     },
     {
       "id": "clause.typescript.inspect-dependent-interfaces-before-tests",
@@ -584,8 +969,8 @@
       "carrier": "docs/agents/typescript-bun.md",
       "structure": null,
       "start": 651,
-      "end": 745,
-      "digest": "a95b52cfe0fe1a8c6fca7bc487f2795e854b8cf606cc0940c862e0e356ab810c"
+      "end": 746,
+      "digest": "21e514ea2eeb2e32c12d5717c2f071d468831acd1e0e148f79995471ba94a9bb"
     },
     {
       "id": "clause.typescript.test-observable-failure-modes",
@@ -595,8 +980,8 @@
       "carrier": "docs/agents/typescript-bun.md",
       "structure": null,
       "start": 920,
-      "end": 979,
-      "digest": "bbccda8660ad9cc3141fc344bee82e266a36c7ae49bdb1ea58a26700ab6d5aa0"
+      "end": 980,
+      "digest": "53f5cce4e270cfc3df2a13069691ac3a2a288e9508396aa85cc3d259fc1c0e0c"
     },
     {
       "id": "clause.typescript.prohibit-incidental-test-oracles",
@@ -606,8 +991,8 @@
       "carrier": "docs/agents/typescript-bun.md",
       "structure": null,
       "start": 1145,
-      "end": 1264,
-      "digest": "3bf87f4eda5f3dcbae9413e321420e0dd1d1e974f470bba5f9f7423b06c155cd"
+      "end": 1265,
+      "digest": "3a7b873c3b87ba131bde404c02ad57c46be2f09cfae8cca86372faa9ea074345"
     },
     {
       "id": "clause.bun.use-bun-owned-commands",
@@ -617,8 +1002,8 @@
       "carrier": "docs/agents/typescript-bun.md",
       "structure": null,
       "start": 1416,
-      "end": 1512,
-      "digest": "ddfcde34da3ca7dfd0e82a10bbd215d4f360a1999757ba16e0881daae1e9a512"
+      "end": 1513,
+      "digest": "13501e5d16201a2f4c5c2a8eb40a72dac97be123b57913abd7938673480e893d"
     },
     {
       "id": "clause.bun.verify-dependency-before-add",
@@ -628,8 +1013,8 @@
       "carrier": "docs/agents/typescript-bun.md",
       "structure": null,
       "start": 1653,
-      "end": 1741,
-      "digest": "86f9f004304a3da714e6220827fae14db8db847def393201ad2458ccdbac8a79"
+      "end": 1742,
+      "digest": "0a229bf84dbf988bda6d587621f9619812b22c3481b3a04c661edc8694af89ae"
     },
     {
       "id": "clause.bun.add-from-owning-workspace",
@@ -639,8 +1024,8 @@
       "carrier": "docs/agents/typescript-bun.md",
       "structure": null,
       "start": 1885,
-      "end": 1958,
-      "digest": "72e531b8f455ddb1315382c1cf9e83c4cc91d037fa57fd325519045f7e83d6c4"
+      "end": 1959,
+      "digest": "7e4e72165d2c9eee8b66a14c64c46f531f3657da2cf156f2971845febb002242"
     },
     {
       "id": "clause.bun.prohibit-other-package-managers",
@@ -650,8 +1035,8 @@
       "carrier": "docs/agents/typescript-bun.md",
       "structure": null,
       "start": 2105,
-      "end": 2177,
-      "digest": "38f20cb387923260d74795afe3512d735c0f51fc3817b9d8550bc58c4599d4d9"
+      "end": 2178,
+      "digest": "a6a1e9824f3496ec409bdc4e817b9c47b655df5ef50f99783f59771582c1c24b"
     },
     {
       "id": "clause.bun.block-warnings-when-profile-treats-them-as-errors",
@@ -661,9 +1046,8 @@
       "carrier": "docs/agents/typescript-bun.md",
       "structure": null,
       "start": 2348,
-      "end": 2466,
-      "digest": "f059aac48756bff4c1cad597243888f03f81fa0fac2cddb0e5e867f0458597d5"
+      "end": 2467,
+      "digest": "6b69aed9edfd555561f350967eec615bb14ac27de595ead8f7cfc6d759fc857a"
     }
   ]
 }
-

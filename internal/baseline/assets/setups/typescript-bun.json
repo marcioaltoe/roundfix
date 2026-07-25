@@ -9,68 +9,6 @@
     "path": "setups/typescript-bun.txt"
   },
   "digest": "4c45bab841003aa453d0be9083707a672fb9178dcf9403e25caf522ea19721a4",
-  "activationBundles": [
-    {
-      "id": "bundle.debugging",
-      "skills": [
-        "systematic-debugging",
-        "diagnosing-bugs",
-        "no-workarounds"
-      ]
-    },
-    {
-      "id": "bundle.delivery",
-      "skills": ["conventional-commits", "github-pr-workflow"]
-    },
-    {
-      "id": "bundle.frontend-react",
-      "skills": [
-        "react",
-        "react-best-practices",
-        "react-composition-patterns"
-      ]
-    },
-    {
-      "id": "bundle.frontend-ui-quality",
-      "skills": [
-        "frontend-design",
-        "interaction-design",
-        "interface-design",
-        "fixing-accessibility",
-        "wcag-audit-patterns",
-        "web-design-guidelines"
-      ]
-    },
-    {
-      "id": "bundle.hono-endpoint",
-      "skills": ["hono-api-best-practices", "hono", "zod"]
-    },
-    {
-      "id": "bundle.hono-endpoint-persistence",
-      "skills": [
-        "hono-api-best-practices",
-        "hono",
-        "zod",
-        "drizzle-orm"
-      ]
-    },
-    {
-      "id": "bundle.production-code",
-      "skills": ["coding-guidelines", "clean-code", "solid"]
-    },
-    {
-      "id": "bundle.qa",
-      "skills": ["qa-gate", "evidence-gate"]
-    },
-    {
-      "id": "bundle.security",
-      "skills": ["security-best-practices", "security-threat-model"]
-    },
-    {
-      "id": "bundle.testing",
-      "skills": ["testing-boss", "tdd", "vitest"]
-    }
-  ],
   "skills": [
     {
       "name": "find-rules",
@@ -1143,6 +1081,89 @@
         "path": "skills/07-evidence-delivery/writing-clearly-and-concisely"
       },
       "treeDigest": "afc4647ae8647b242cae327b5fa2f1158273109af08d0fa95c744d2ba68f5ef2"
+    }
+  ],
+  "activationBundles": [
+    {
+      "id": "bundle.debugging",
+      "skills": [
+        "systematic-debugging",
+        "diagnosing-bugs",
+        "no-workarounds"
+      ]
+    },
+    {
+      "id": "bundle.delivery",
+      "skills": [
+        "conventional-commits",
+        "github-pr-workflow"
+      ]
+    },
+    {
+      "id": "bundle.frontend-react",
+      "skills": [
+        "react",
+        "react-best-practices",
+        "react-composition-patterns"
+      ]
+    },
+    {
+      "id": "bundle.frontend-ui-quality",
+      "skills": [
+        "frontend-design",
+        "interaction-design",
+        "interface-design",
+        "fixing-accessibility",
+        "wcag-audit-patterns",
+        "web-design-guidelines"
+      ]
+    },
+    {
+      "id": "bundle.hono-endpoint",
+      "skills": [
+        "hono-api-best-practices",
+        "hono",
+        "zod"
+      ]
+    },
+    {
+      "id": "bundle.hono-endpoint-persistence",
+      "skills": [
+        "hono-api-best-practices",
+        "hono",
+        "zod",
+        "drizzle-orm"
+      ]
+    },
+    {
+      "id": "bundle.production-code",
+      "skills": [
+        "coding-guidelines",
+        "clean-code",
+        "solid"
+      ]
+    },
+    {
+      "id": "bundle.qa",
+      "skills": [
+        "qa-gate",
+        "evidence-gate"
+      ]
+    },
+    {
+      "id": "bundle.security",
+      "skills": [
+        "security-best-practices",
+        "security-threat-model"
+      ]
+    },
+    {
+      "id": "bundle.testing",
+      "skills": [
+        "testing-boss",
+        "tdd",
+        "vitest"
+      ]
     }
   ]
 }

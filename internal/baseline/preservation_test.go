@@ -251,8 +251,8 @@ func TestReadoptionCompatibilityMaintainedFixture(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load maintained Source Baseline: %v", err)
 	}
-	if len(sourceBaseline.Entries) != 60 ||
-		sourceBaseline.Identity.EntryCount != 60 ||
+	if len(sourceBaseline.Entries) != 95 ||
+		sourceBaseline.Identity.EntryCount != 95 ||
 		len(sourceBaseline.Accounting) != 51 {
 		t.Fatalf(
 			"maintained Source Baseline counts = identity %d entries %d accounting %d",
@@ -269,6 +269,56 @@ func TestReadoptionCompatibilityMaintainedFixture(t *testing.T) {
 		if len(contract.PriorClauses) == 0 ||
 			len(contract.PriorClauses) != len(contract.Accounting) {
 			t.Fatalf("retention contract %s is incomplete: prior=%d accounting=%d", transitionID, len(contract.PriorClauses), len(contract.Accounting))
+		}
+	}
+}
+
+func TestSourceBaselineGuidanceComposition(t *testing.T) {
+	t.Parallel()
+
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load embedded catalog: %v", err)
+	}
+	sourceBaseline, err := catalog.SourceBaseline("baseline.standard-typescript-monorepo-0.0.1")
+	if err != nil {
+		t.Fatalf("load maintained Source Baseline: %v", err)
+	}
+
+	entries := make(map[string]SourceBaselineEntry, len(sourceBaseline.Entries))
+	carriers := make(map[string]bool)
+	for _, entry := range sourceBaseline.Entries {
+		entries[entry.ID] = entry
+		carriers[entry.Carrier] = true
+	}
+	for _, entryID := range []string{
+		"clause.autonomous.delegate-through-roundfix",
+		"clause.context.adr-01-template",
+		"clause.core.research-authoritative-external-sources",
+		"clause.secondbrain.01-consult-triggers",
+		"clause.spec.routing-01-large-initiative",
+		"rule.backend.boundary-contracts",
+		"rule.external-triage",
+		"rule.monorepo.context-boundaries",
+	} {
+		if _, ok := entries[entryID]; !ok {
+			t.Errorf("Source Baseline entry %q is missing", entryID)
+		}
+	}
+	for _, carrier := range []string{
+		"docs/agents/external-triage.md",
+		"docs/agents/monorepo.md",
+		"docs/agents/skill-dispatch.md",
+	} {
+		if !carriers[carrier] {
+			t.Errorf("semantic destination %q has no Source Baseline evidence", carrier)
+		}
+	}
+	for _, accounting := range sourceBaseline.Accounting {
+		for _, target := range accounting.Targets {
+			if _, ok := entries[target]; !ok {
+				t.Errorf("accounting target %q is not a current Source Baseline entry", target)
+			}
 		}
 	}
 }

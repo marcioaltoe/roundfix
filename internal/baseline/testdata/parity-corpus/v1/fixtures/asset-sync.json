@@ -107,28 +107,6 @@
             "treeDigest": "12f550a726aecc1b0332b3170875138111ecd100fde2c1969b0e19793e7140f0"
           },
           {
-            "name": "exa-web-search",
-            "path": "skills/01-discovery/exa-web-search",
-            "source": {
-              "path": "skills/01-discovery/exa-web-search",
-              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
-              "repository": "example/skills",
-              "type": "github"
-            },
-            "treeDigest": "01aff779d5fc2e994692d2de6410375e81d4365cd9f65cce2d105d7f405d28ea"
-          },
-          {
-            "name": "firecrawl",
-            "path": "skills/01-discovery/firecrawl",
-            "source": {
-              "path": "skills/01-discovery/firecrawl",
-              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
-              "repository": "example/skills",
-              "type": "github"
-            },
-            "treeDigest": "d47c0c5f2a8f4ff480490112d6176e6cfa4f1b58f04369514662ea2c84169e56"
-          },
-          {
             "contentDigest": "97abe8113995d8cdaca49473141cab41a496ad7c4a125cce475047f902472e18",
             "name": "council",
             "path": "skills/01-discovery/council",
@@ -408,15 +386,6 @@
             "treeDigest": "e2e46f2af6860be4e09df1deae4b322f4f3a77d1a0db406b60c7893a654bc3c6"
           },
           {
-            "contentDigest": "ef44f9b0486b97e36d479c971de226ed746330db7d479ff0cdbc1e8256422a4b",
-            "name": "roundfix",
-            "path": "skills/06-review-repair/roundfix",
-            "source": {
-              "name": "roundfix",
-              "type": "repo"
-            }
-          },
-          {
             "contentDigest": "6f54267e9f247925d4328927ac522311b5ba26203542b916e5565e3aada5161e",
             "name": "archive-spec",
             "path": "skills/07-evidence-delivery/archive-spec",
@@ -547,28 +516,6 @@
               "type": "github"
             },
             "treeDigest": "12f550a726aecc1b0332b3170875138111ecd100fde2c1969b0e19793e7140f0"
-          },
-          {
-            "name": "exa-web-search",
-            "path": "skills/01-discovery/exa-web-search",
-            "source": {
-              "path": "skills/01-discovery/exa-web-search",
-              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
-              "repository": "example/skills",
-              "type": "github"
-            },
-            "treeDigest": "01aff779d5fc2e994692d2de6410375e81d4365cd9f65cce2d105d7f405d28ea"
-          },
-          {
-            "name": "firecrawl",
-            "path": "skills/01-discovery/firecrawl",
-            "source": {
-              "path": "skills/01-discovery/firecrawl",
-              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
-              "repository": "example/skills",
-              "type": "github"
-            },
-            "treeDigest": "d47c0c5f2a8f4ff480490112d6176e6cfa4f1b58f04369514662ea2c84169e56"
           },
           {
             "contentDigest": "97abe8113995d8cdaca49473141cab41a496ad7c4a125cce475047f902472e18",
@@ -793,15 +740,6 @@
               "type": "github"
             },
             "treeDigest": "e2e46f2af6860be4e09df1deae4b322f4f3a77d1a0db406b60c7893a654bc3c6"
-          },
-          {
-            "contentDigest": "ef44f9b0486b97e36d479c971de226ed746330db7d479ff0cdbc1e8256422a4b",
-            "name": "roundfix",
-            "path": "skills/06-review-repair/roundfix",
-            "source": {
-              "name": "roundfix",
-              "type": "repo"
-            }
           },
           {
             "contentDigest": "6f54267e9f247925d4328927ac522311b5ba26203542b916e5565e3aada5161e",

@@ -107,6 +107,59 @@ func TestCatalogDigest(t *testing.T) {
 	}
 }
 
+func TestGuidanceCompositionAssets(t *testing.T) {
+	t.Parallel()
+
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("LoadEmbeddedCatalog() error = %v", err)
+	}
+	if catalog.Digest() == "" {
+		t.Fatal("embedded catalog digest is empty")
+	}
+
+	profile, ok := catalog.Profile("standard-typescript-monorepo")
+	if !ok {
+		t.Fatal("standard TypeScript Profile is missing")
+	}
+	var formatterProfile struct {
+		Formatter struct {
+			FixturePaths []string `json:"fixturePaths"`
+			GoldenDigest string   `json:"goldenDigest"`
+		} `json:"formatter"`
+	}
+	if err := json.Unmarshal(profile.Data, &formatterProfile); err != nil {
+		t.Fatalf("decode formatter Profile: %v", err)
+	}
+	if len(formatterProfile.Formatter.FixturePaths) != 14 ||
+		formatterProfile.Formatter.GoldenDigest == "" {
+		t.Fatalf("formatter contract = %+v, want 14 digest-bound fixtures", formatterProfile.Formatter)
+	}
+	for _, fixturePath := range formatterProfile.Formatter.FixturePaths {
+		if strings.Contains(fixturePath, specificRepositoryPath) {
+			t.Fatalf("greenfield formatter fixture includes repository-specific carrier %q", fixturePath)
+		}
+		if _, ok := catalog.Asset(fixturePath); !ok {
+			t.Errorf("formatter fixture %q is missing", fixturePath)
+		}
+	}
+
+	for assetPath, asset := range cloneEmbeddedAssets(t) {
+		if !strings.HasPrefix(assetPath, "modules/") &&
+			!strings.HasPrefix(assetPath, "templates/") &&
+			!strings.HasPrefix(assetPath, "formatter-fixtures/") &&
+			!strings.Contains(assetPath, "/corpus/") {
+			continue
+		}
+		folded := strings.ToLower(string(asset.Data))
+		for _, brand := range []string{"fluxus", "oraculum"} {
+			if strings.Contains(folded, brand) {
+				t.Errorf("portable asset %q contains project brand %q", assetPath, brand)
+			}
+		}
+	}
+}
+
 func TestCatalogCompatibility(t *testing.T) {
 	t.Parallel()
 
@@ -394,6 +447,42 @@ func TestCatalogMutation(t *testing.T) {
 					"source-baselines/index.json",
 					`"profile": "standard-typescript-monorepo"`,
 					`"profile": "missing-profile"`,
+				)
+			},
+		},
+		{
+			name: "missing formatter fixture",
+			code: "catalog.profile.formatter.fixture.missing",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				delete(
+					assets,
+					"formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md",
+				)
+			},
+		},
+		{
+			name: "formatter golden drift",
+			code: "catalog.profile.formatter.goldenDigest.mismatch",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				path := "formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md"
+				asset := assets[path]
+				asset.Data = append(append([]byte(nil), asset.Data...), []byte("\ndrift\n")...)
+				assets[path] = asset
+			},
+		},
+		{
+			name: "stale Source Baseline accounting target",
+			code: "catalog.sourceBaseline.integrity.invalid",
+			edit: func(t *testing.T, assets fstest.MapFS) {
+				t.Helper()
+				replaceAsset(
+					t,
+					assets,
+					"source-baselines/baseline.standard-typescript-monorepo-0.0.1/accounting.json",
+					`"clause.core.review-new-dependencies"`,
+					`"clause.missing"`,
 				)
 			},
 		},

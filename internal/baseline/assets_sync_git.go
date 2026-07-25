@@ -21,7 +21,11 @@ func inspectAssetsSyncCheckout(
 	ctx context.Context,
 	sourceDir string,
 ) (assetsSyncCheckout, error) {
-	rootOutput, err := runRestoreGit(ctx, "-C", sourceDir, "rev-parse", "--show-toplevel")
+	rootOutput, err := runAssetsSyncSourceGit(
+		ctx,
+		"-C", sourceDir,
+		"rev-parse", "--show-toplevel",
+	)
 	if err != nil {
 		return assetsSyncCheckout{}, assetsSyncError(
 			AssetsSyncInvalid,
@@ -41,7 +45,11 @@ func inspectAssetsSyncCheckout(
 	if resolved, resolveErr := filepath.EvalSymlinks(root); resolveErr == nil {
 		root = resolved
 	}
-	revisionOutput, err := runRestoreGit(ctx, "-C", root, "rev-parse", "--verify", "HEAD^{commit}")
+	revisionOutput, err := runAssetsSyncSourceGit(
+		ctx,
+		"-C", root,
+		"rev-parse", "--verify", "HEAD^{commit}",
+	)
 	if err != nil {
 		return assetsSyncCheckout{}, assetsSyncCheckoutError(sourceDir, err)
 	}
@@ -58,7 +66,11 @@ func inspectAssetsSyncCheckout(
 			errors.New("source revision is not immutable"),
 		)
 	}
-	status, err := runRestoreGit(ctx, "-C", root, "status", "--porcelain=v1", "--untracked-files=all")
+	status, err := runAssetsSyncSourceGit(
+		ctx,
+		"-C", root,
+		"status", "--porcelain=v1", "--untracked-files=all",
+	)
 	if err != nil {
 		return assetsSyncCheckout{}, assetsSyncCheckoutError(sourceDir, err)
 	}
@@ -74,7 +86,11 @@ func inspectAssetsSyncCheckout(
 			errors.New("source checkout is dirty"),
 		)
 	}
-	remote, err := runRestoreGit(ctx, "-C", root, "remote", "get-url", "origin")
+	remote, err := runAssetsSyncSourceGit(
+		ctx,
+		"-C", root,
+		"remote", "get-url", "origin",
+	)
 	if err != nil {
 		return assetsSyncCheckout{}, assetsSyncCheckoutError(sourceDir, err)
 	}
@@ -124,7 +140,7 @@ func verifyAssetsSyncCommittedFile(
 	if err != nil {
 		return fmt.Errorf("Canonical setup source file cannot be read: %w", err)
 	}
-	committed, err := runRestoreGit(
+	committed, err := runAssetsSyncSourceGit(
 		ctx,
 		"-C",
 		checkout.root,
@@ -168,7 +184,7 @@ func validateAssetsSyncDeclaredSource(
 	if !ok || !immutableGitID.MatchString(revision) {
 		return "Canonical setup skill ref must be a full immutable commit."
 	}
-	resolved, err := runRestoreGit(
+	resolved, err := runAssetsSyncSourceGit(
 		ctx,
 		"-C",
 		checkout.root,
@@ -252,7 +268,7 @@ func assetsSyncCommittedTreeDigest(
 	ctx context.Context,
 	checkoutRoot, revision, sourcePath string,
 ) (string, error) {
-	output, err := runRestoreGit(
+	output, err := runAssetsSyncSourceGit(
 		ctx,
 		"-C",
 		checkoutRoot,
@@ -289,7 +305,7 @@ func assetsSyncCommittedTreeDigest(
 			(string(parts[0]) != "100644" && string(parts[0]) != "100755") {
 			return "", fmt.Errorf("Git tree entry is not a regular file: %s", relative)
 		}
-		content, err := runRestoreGit(
+		content, err := runAssetsSyncSourceGit(
 			ctx,
 			"-C",
 			checkoutRoot,
@@ -306,6 +322,11 @@ func assetsSyncCommittedTreeDigest(
 		return "", fmt.Errorf("Git commit has no regular files under %s", sourcePath)
 	}
 	return portableRestoreDigest(files), nil
+}
+
+func runAssetsSyncSourceGit(ctx context.Context, args ...string) ([]byte, error) {
+	gitArgs := append([]string{"-c", "core.fsmonitor=false"}, args...)
+	return runRestoreGit(ctx, gitArgs...)
 }
 
 func assetsSyncIgnoredTreePath(relative string) bool {

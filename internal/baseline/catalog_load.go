@@ -60,6 +60,7 @@ func (l *catalogLoader) load() *Catalog {
 	l.validateModules(catalog)
 	l.validateModuleCycles(catalog)
 	l.validateProfiles(catalog)
+	l.validateProfileFormatters(catalog)
 	l.validateGuidanceComposition(catalog)
 	l.validateDecisionEffects(catalog)
 	l.validateSetups(catalog)

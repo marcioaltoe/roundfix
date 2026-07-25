@@ -8,17 +8,7 @@
     "ref": "236847f6956134bf468abb641bac0493a899bca5",
     "path": "setups/rust-cli.txt"
   },
-  "digest": "cc3307002f13a78973a8822858fec64c799cade69c7882e7590969e139981338",
-  "activationBundles": [
-    {
-      "id": "bundle.delivery",
-      "skills": ["conventional-commits", "github-pr-workflow"]
-    },
-    {
-      "id": "bundle.qa",
-      "skills": ["qa-gate", "evidence-gate"]
-    }
-  ],
+  "digest": "7b9ebd8fc4db2666d90a0c383f0c68b02bfdba19cd36d37609a0b14e54fe7fa1",
   "skills": [
     {
       "name": "knowledge-workspace",
@@ -68,28 +58,6 @@
         "path": "skills/01-discovery/context7"
       },
       "treeDigest": "00ac7891ecaa432562712a2d06b728d37f30b11bbe839fe5e264af7da425180a"
-    },
-    {
-      "name": "exa-web-search",
-      "path": "skills/01-discovery/exa-web-search",
-      "source": {
-        "type": "github",
-        "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
-        "path": "skills/01-discovery/exa-web-search"
-      },
-      "treeDigest": "9e9f47943ae5d0bf3438013d31e2d02610fd3b8d4b40cf6bd2db17a695b3e7ae"
-    },
-    {
-      "name": "firecrawl",
-      "path": "skills/01-discovery/firecrawl",
-      "source": {
-        "type": "github",
-        "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
-        "path": "skills/01-discovery/firecrawl"
-      },
-      "treeDigest": "55a933a3c330378d75147f66d0c6481915c53e5d16fb18443502fe311204cc09"
     },
     {
       "name": "council",
@@ -316,15 +284,6 @@
       "treeDigest": "12f5126e8e9bb86c75c58e87aff0e1f08c7143ffe47b1a7694414fa41ddaaba6"
     },
     {
-      "name": "roundfix",
-      "path": "skills/06-review-repair/roundfix",
-      "source": {
-        "type": "repo",
-        "name": "roundfix"
-      },
-      "contentDigest": "ef44f9b0486b97e36d479c971de226ed746330db7d479ff0cdbc1e8256422a4b"
-    },
-    {
       "name": "archive-spec",
       "path": "skills/07-evidence-delivery/archive-spec",
       "source": {
@@ -387,6 +346,22 @@
         "path": "skills/08-release/cut-release"
       },
       "treeDigest": "0320252020ae5b3fdcb4ccff9b122f1f2366c8b2e4ff7e0aab64e8b665300825"
+    }
+  ],
+  "activationBundles": [
+    {
+      "id": "bundle.delivery",
+      "skills": [
+        "conventional-commits",
+        "github-pr-workflow"
+      ]
+    },
+    {
+      "id": "bundle.qa",
+      "skills": [
+        "qa-gate",
+        "evidence-gate"
+      ]
     }
   ]
 }

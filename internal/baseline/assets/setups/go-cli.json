@@ -8,17 +8,7 @@
     "ref": "236847f6956134bf468abb641bac0493a899bca5",
     "path": "setups/go-cli.txt"
   },
-  "digest": "615fb1ff30fda33001667ef63f65f8407cc85daf3fc65c5255a12f5a021f8224",
-  "activationBundles": [
-    {
-      "id": "bundle.delivery",
-      "skills": ["conventional-commits", "github-pr-workflow"]
-    },
-    {
-      "id": "bundle.qa",
-      "skills": ["qa-gate", "evidence-gate"]
-    }
-  ],
+  "digest": "e4a0d30be9b7f514a797f609f7f89c94faf1500db36887b666d7b3ed6dac2a28",
   "skills": [
     {
       "name": "knowledge-workspace",
@@ -68,28 +58,6 @@
         "path": "skills/01-discovery/context7"
       },
       "treeDigest": "00ac7891ecaa432562712a2d06b728d37f30b11bbe839fe5e264af7da425180a"
-    },
-    {
-      "name": "exa-web-search",
-      "path": "skills/01-discovery/exa-web-search",
-      "source": {
-        "type": "github",
-        "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
-        "path": "skills/01-discovery/exa-web-search"
-      },
-      "treeDigest": "9e9f47943ae5d0bf3438013d31e2d02610fd3b8d4b40cf6bd2db17a695b3e7ae"
-    },
-    {
-      "name": "firecrawl",
-      "path": "skills/01-discovery/firecrawl",
-      "source": {
-        "type": "github",
-        "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
-        "path": "skills/01-discovery/firecrawl"
-      },
-      "treeDigest": "55a933a3c330378d75147f66d0c6481915c53e5d16fb18443502fe311204cc09"
     },
     {
       "name": "council",
@@ -371,15 +339,6 @@
       "treeDigest": "12f5126e8e9bb86c75c58e87aff0e1f08c7143ffe47b1a7694414fa41ddaaba6"
     },
     {
-      "name": "roundfix",
-      "path": "skills/06-review-repair/roundfix",
-      "source": {
-        "type": "repo",
-        "name": "roundfix"
-      },
-      "contentDigest": "ef44f9b0486b97e36d479c971de226ed746330db7d479ff0cdbc1e8256422a4b"
-    },
-    {
       "name": "archive-spec",
       "path": "skills/07-evidence-delivery/archive-spec",
       "source": {
@@ -431,6 +390,22 @@
         "path": "skills/07-evidence-delivery/tech-writer"
       },
       "treeDigest": "18efb1105eebbd46e051d643830f1758f089cdf0f0a912a8be5d79fc657fd606"
+    }
+  ],
+  "activationBundles": [
+    {
+      "id": "bundle.delivery",
+      "skills": [
+        "conventional-commits",
+        "github-pr-workflow"
+      ]
+    },
+    {
+      "id": "bundle.qa",
+      "skills": [
+        "qa-gate",
+        "evidence-gate"
+      ]
     }
   ]
 }

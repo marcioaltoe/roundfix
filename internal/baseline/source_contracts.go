@@ -6,9 +6,11 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"path"
+	"regexp"
 	"sort"
 	"strings"
 )
@@ -18,6 +20,10 @@ const (
 	sourceBaselineManifestSchema = "setup-context-driven/source-baseline-manifest/0.0.1"
 	sourceAccountingSchema       = "setup-context-driven/source-accounting/0.0.1"
 	upgradeTransitionSchema      = "setup-context-driven/upgrade-transition-v1"
+)
+
+var sourceMachinePath = regexp.MustCompile(
+	"(?i)(?:^|[\\s`\"'])/(?:users|home)/|(?:^|[\\s`\"'])[a-z]:\\\\users\\\\",
 )
 
 // SourceBaselineIdentity identifies one immutable maintained corpus.
@@ -204,9 +210,20 @@ func (c *Catalog) SourceBaseline(id string) (SourceBaseline, error) {
 			return SourceBaseline{}, fmt.Errorf("load Source Baseline %q: %w", id, err)
 		}
 	}
-	accounting, err := c.loadSourceAccounting(prefix, id)
+	entryIDs := make(map[string]struct{}, len(manifest.Entries))
+	for _, entry := range manifest.Entries {
+		entryIDs[entry.ID] = struct{}{}
+	}
+	accounting, err := c.loadSourceAccounting(prefix, id, entryIDs)
 	if err != nil {
 		return SourceBaseline{}, err
+	}
+	if err := c.validateSourceCorpusPolicy(
+		prefix,
+		identity.Corpus,
+		identity.DeniedProjectTokens,
+	); err != nil {
+		return SourceBaseline{}, fmt.Errorf("load Source Baseline %q: %w", id, err)
 	}
 	return SourceBaseline{
 		Identity:   identity,
@@ -215,7 +232,10 @@ func (c *Catalog) SourceBaseline(id string) (SourceBaseline, error) {
 	}, nil
 }
 
-func (c *Catalog) loadSourceAccounting(prefix, baselineID string) ([]SourceAccountingEntry, error) {
+func (c *Catalog) loadSourceAccounting(
+	prefix, baselineID string,
+	currentEntries map[string]struct{},
+) ([]SourceAccountingEntry, error) {
 	asset, ok := c.Asset(path.Join(prefix, "accounting.json"))
 	if !ok {
 		return []SourceAccountingEntry{}, nil
@@ -247,8 +267,63 @@ func (c *Catalog) loadSourceAccounting(prefix, baselineID string) ([]SourceAccou
 		} else if len(entry.Targets) == 0 {
 			return nil, fmt.Errorf("load Source Baseline %q: accounting for %q has no target", baselineID, entry.SourceEntry)
 		}
+		for _, target := range entry.Targets {
+			if _, ok := currentEntries[target]; !ok {
+				return nil, fmt.Errorf(
+					"load Source Baseline %q: accounting for %q targets unknown entry %q",
+					baselineID,
+					entry.SourceEntry,
+					target,
+				)
+			}
+		}
 	}
 	return append([]SourceAccountingEntry(nil), document.Entries...), nil
+}
+
+func (c *Catalog) validateSourceCorpusPolicy(
+	prefix, corpusDir string,
+	deniedProjectTokens []string,
+) error {
+	if len(deniedProjectTokens) == 0 || !uniqueStrings(deniedProjectTokens) {
+		return errors.New("Source Baseline denied project tokens are invalid")
+	}
+	for _, token := range deniedProjectTokens {
+		if strings.TrimSpace(token) == "" || strings.ToLower(token) != token {
+			return errors.New("Source Baseline denied project tokens are invalid")
+		}
+	}
+
+	corpusPrefix := path.Join(prefix, corpusDir) + "/"
+	for _, assetPath := range sortedKeys(c.assets) {
+		if !strings.HasPrefix(assetPath, corpusPrefix) {
+			continue
+		}
+		text := string(c.assets[assetPath])
+		folded := strings.ToLower(text)
+		for _, token := range deniedProjectTokens {
+			if strings.Contains(folded, token) {
+				return fmt.Errorf(
+					"Source Baseline corpus %q contains denied project token %q",
+					strings.TrimPrefix(assetPath, corpusPrefix),
+					token,
+				)
+			}
+		}
+		if strings.Contains(folded, "<!-- setup-context-driven:") {
+			return fmt.Errorf(
+				"Source Baseline corpus %q contains a generated managed marker",
+				strings.TrimPrefix(assetPath, corpusPrefix),
+			)
+		}
+		if sourceMachinePath.MatchString(text) {
+			return fmt.Errorf(
+				"Source Baseline corpus %q contains a machine-specific path",
+				strings.TrimPrefix(assetPath, corpusPrefix),
+			)
+		}
+	}
+	return nil
 }
 
 func (c *Catalog) sourceCorpusDigest(prefix, corpusDir string) (string, error) {

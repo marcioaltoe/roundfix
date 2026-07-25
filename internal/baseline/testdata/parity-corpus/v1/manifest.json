@@ -20,9 +20,9 @@
       "sha256": "247845849dd03055a28d3f41d2e070ae20df43657c20121e7485a0913be64aa8"
     },
     {
-      "bytes": 85164,
+      "bytes": 82752,
       "path": "fixtures/asset-sync.json",
-      "sha256": "4a7b45d16c2a14d350a2b61e7d1a1a63020feec4dc6970feb65540d94ccab875"
+      "sha256": "4de9f239b794f7cc065d2e89015fac4e20ec24af7a31c6c0740918161d822e0a"
     },
     {
       "bytes": 330237,
