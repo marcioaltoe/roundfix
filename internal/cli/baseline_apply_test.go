@@ -203,7 +203,7 @@ func TestBaselineApplyCommandRealCLI(t *testing.T) {
 	binary := filepath.Join(t.TempDir(), "roundfix")
 	build := exec.Command("go", "build", "-buildvcs=false", "-o", binary, "./cmd/roundfix")
 	build.Dir = projectRoot
-	build.Env = append(os.Environ(), "GOCACHE=/private/tmp/roundfix-task09-go-cache")
+	build.Env = append(os.Environ(), "GOCACHE="+filepath.Join(t.TempDir(), "go-cache"))
 	if output, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build real roundfix CLI: %v\n%s", err, output)
 	}
