@@ -24,6 +24,8 @@ import (
 	"roundfix/internal/baseline"
 )
 
+const baselineReleaseOxfmtVersion = "0.59.0"
+
 func TestGuidanceCompositionJourney(t *testing.T) {
 	binary := buildBaselineReleaseBinary(t)
 	catalog, err := baseline.LoadEmbeddedCatalog()
@@ -931,14 +933,82 @@ func runBaselineReleaseFormatter(t *testing.T, repo, profile string) {
 	case "rust-cli":
 		runBaselineReleaseExternal(t, repo, "rustfmt", "src/main.rs")
 	case "standard-typescript-monorepo":
-		runBaselineReleaseExternal(
+		formatterBin, cleanup := provisionBaselineReleaseFormatter(t, repo)
+		defer cleanup()
+		runBaselineReleaseFixtureTool(
 			t,
 			repo,
-			"bunx", "--no-install", "oxfmt@0.59.0", "--check", "AGENTS.md", "docs/agents",
+			formatterBin,
+			"bunx",
+			"--no-install",
+			"oxfmt",
+			"--check",
+			"AGENTS.md",
+			"docs/agents",
 		)
 	default:
 		t.Fatalf("unknown maintained Profile %q", profile)
 	}
+}
+
+func provisionBaselineReleaseFormatter(t *testing.T, repo string) (string, func()) {
+	t.Helper()
+	toolRoot, err := os.MkdirTemp(repo, ".roundfix-release-tools-")
+	if err != nil {
+		t.Fatalf("create fixture-owned formatter directory: %v", err)
+	}
+	cleanup := func() {
+		if err := os.RemoveAll(toolRoot); err != nil {
+			t.Errorf("remove fixture-owned formatter directory: %v", err)
+		}
+	}
+	writeBaselinePlanTestFile(
+		t,
+		toolRoot,
+		"package.json",
+		`{"private":true,"dependencies":{"oxfmt":"`+baselineReleaseOxfmtVersion+`"}}`,
+	)
+	tempDir := filepath.Join(toolRoot, "tmp")
+	if err := os.Mkdir(tempDir, 0o755); err != nil {
+		cleanup()
+		t.Fatalf("create fixture-owned Bun temp directory: %v", err)
+	}
+	runBaselineReleaseExternalWithEnv(
+		t,
+		toolRoot,
+		[]string{"TMPDIR=" + tempDir},
+		"bun",
+		"install",
+		"--ignore-scripts",
+	)
+
+	manifestPath := filepath.Join(toolRoot, "node_modules", "oxfmt", "package.json")
+	manifestData, err := os.ReadFile(manifestPath)
+	if err != nil {
+		cleanup()
+		t.Fatalf("read fixture-owned Oxfmt manifest: %v", err)
+	}
+	var manifest struct {
+		Version string `json:"version"`
+	}
+	if err := json.Unmarshal(manifestData, &manifest); err != nil {
+		cleanup()
+		t.Fatalf("decode fixture-owned Oxfmt manifest: %v", err)
+	}
+	if manifest.Version != baselineReleaseOxfmtVersion {
+		cleanup()
+		t.Fatalf(
+			"fixture-owned Oxfmt version = %q, want %q",
+			manifest.Version,
+			baselineReleaseOxfmtVersion,
+		)
+	}
+	binDir := filepath.Join(toolRoot, "node_modules", ".bin")
+	if _, err := os.Stat(filepath.Join(binDir, "oxfmt")); err != nil {
+		cleanup()
+		t.Fatalf("find fixture-owned Oxfmt executable: %v", err)
+	}
+	return binDir, cleanup
 }
 
 func newBaselineReleaseRepository(t *testing.T, profile string) string {
@@ -993,7 +1063,7 @@ func baselineReleaseTypeScriptPackageJSON() string {
 		`"better-auth":"latest"`,
 		`"drizzle-orm":"latest"`,
 		`"hono":"latest"`,
-		`"oxfmt":"0.59.0"`,
+		`"oxfmt":"` + baselineReleaseOxfmtVersion + `"`,
 		`"oxlint":"latest"`,
 		`"postgres":"latest"`,
 		`"react":"latest"`,
@@ -1037,11 +1107,78 @@ func runBaselineReleaseCLI(
 
 func runBaselineReleaseExternal(t *testing.T, repo, name string, args ...string) {
 	t.Helper()
+	runBaselineReleaseExternalWithEnv(t, repo, nil, name, args...)
+}
+
+func runBaselineReleaseExternalWithEnv(
+	t *testing.T,
+	repo string,
+	environmentOverrides []string,
+	name string,
+	args ...string,
+) {
+	t.Helper()
 	command := exec.Command(name, args...)
 	command.Dir = repo
-	command.Env = append(os.Environ(), "GIT_CONFIG_NOSYSTEM=1", "GIT_OPTIONAL_LOCKS=0")
+	command.Env = baselineReleaseEnvironment(environmentOverrides...)
 	if output, err := command.CombinedOutput(); err != nil {
 		t.Fatalf("run external %s %s: %v\n%s", name, strings.Join(args, " "), err, output)
+	}
+}
+
+func baselineReleaseEnvironment(overrides ...string) []string {
+	replaced := map[string]struct{}{
+		"GIT_CONFIG_NOSYSTEM": {},
+		"GIT_OPTIONAL_LOCKS":  {},
+	}
+	for _, override := range overrides {
+		key, _, _ := strings.Cut(override, "=")
+		replaced[key] = struct{}{}
+	}
+	environment := make([]string, 0, len(os.Environ())+len(overrides)+2)
+	for _, entry := range os.Environ() {
+		key, _, _ := strings.Cut(entry, "=")
+		if _, ok := replaced[key]; !ok {
+			environment = append(environment, entry)
+		}
+	}
+	environment = append(
+		environment,
+		"GIT_CONFIG_NOSYSTEM=1",
+		"GIT_OPTIONAL_LOCKS=0",
+	)
+	return append(environment, overrides...)
+}
+
+func runBaselineReleaseFixtureTool(
+	t *testing.T,
+	repo, fixtureBin, name string,
+	args ...string,
+) {
+	t.Helper()
+	executable, err := exec.LookPath(name)
+	if err != nil {
+		t.Fatalf("find external %s: %v", name, err)
+	}
+	command := exec.Command(executable, args...)
+	command.Dir = repo
+	isolatedBunHome := t.TempDir()
+	command.Env = baselineReleaseEnvironment(
+		"BUN_INSTALL="+isolatedBunHome,
+		"BUN_INSTALL_CACHE_DIR="+filepath.Join(isolatedBunHome, "cache"),
+		"BUN_INSTALL_GLOBAL_BIN_DIR="+filepath.Join(isolatedBunHome, "bin"),
+		"BUN_INSTALL_GLOBAL_DIR="+filepath.Join(isolatedBunHome, "global"),
+		"BUN_RUNTIME_TRANSPILER_CACHE_PATH="+filepath.Join(isolatedBunHome, "transpiler-cache"),
+		"PATH="+strings.Join([]string{
+			fixtureBin,
+			"/usr/bin",
+			"/bin",
+			"/usr/sbin",
+			"/sbin",
+		}, string(os.PathListSeparator)),
+	)
+	if output, err := command.CombinedOutput(); err != nil {
+		t.Fatalf("run fixture tool %s %s: %v\n%s", name, strings.Join(args, " "), err, output)
 	}
 }
 

@@ -1,7 +1,7 @@
 ---
 task: task_06
 spec: 0048-context-driven-project-decisions-and-spec-constraints
-status: pending
+status: completed
 type: docs
 complexity: high
 ---
@@ -38,7 +38,7 @@ files authorized in the active Spec.
 - [x] Add Project Constraint checks to `qa-gate`.
 - [x] Update generated Spec workflow guidance.
 - [x] Add active, archived, authorized, and refusal tests.
-- [ ] Provision the release-journey fixture's declared formatter dependency.
+- [x] Provision the release-journey fixture's declared formatter dependency.
 
 ## Acceptance Criteria
 
@@ -48,7 +48,7 @@ files authorized in the active Spec.
 - [x] An authorized tooling Task can change only the listed files.
 - [x] QA detects both missing authorization and out-of-scope tooling changes.
 - [x] Completed and archived legacy Specs remain byte-identical.
-- [ ] The release-journey test passes without relying on a globally installed
+- [x] The release-journey test passes without relying on a globally installed
   formatter or network access during `bunx --no-install`.
 
 ## Context
@@ -127,3 +127,46 @@ Reopened because the generated guidance now makes the release journey exercise
 the repository formatter. The fixture must provision its own exact formatter
 dependency before `bunx --no-install`; a user-global installation is not valid
 acceptance evidence.
+
+### Reopened fixture resolution
+
+The release-journey fixture now provisions a temporary tool-only Bun package
+that declares and installs only Oxfmt 0.59.0. Before formatting, the test
+validates the installed package manifest and local executable. It then runs
+`bunx --no-install oxfmt` with an isolated Bun home and a `PATH` containing
+only the fixture-owned formatter bin plus system paths, so a user-global
+formatter or Bun cache cannot satisfy the command. The temporary tool package
+is removed immediately after the formatter check.
+
+Acceptance evidence:
+
+- Hermetic release journey:
+  `TestGuidanceCompositionJourney` passed for `go-cli-tui`, `rust-cli`, and
+  `standard-typescript-monorepo` after the isolated pre-fix reproduction failed
+  with `Could not find an existing 'oxfmt' binary to run`. The passing fixture
+  validates the exact local Oxfmt version before invoking
+  `bunx --no-install`.
+- Existing downstream gates:
+  `TestProjectConstraintTaskGate`,
+  `TestProjectConstraintImplementationGate`,
+  `TestProjectConstraintQAGate`, and
+  `TestLegacySpecConstraintExemption` remained passing.
+- Repository completion gate:
+  the final `make verify` rerun passed 2,271 Go tests, all repository-owned
+  skill checks, and the Roundfix build. An initial full-gate attempt hit a
+  transient, unrelated `TestBaselineNoTTY` disposable Git-lock inspection
+  failure; the exact focused test passed immediately, and the complete rerun
+  passed.
+
+Verification:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-go-cache go test -count=1 ./skills ./internal/baseline -run 'TestProjectConstraintTaskGate|TestProjectConstraintImplementationGate|TestProjectConstraintQAGate|TestLegacySpecConstraintExemption'`
+  — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-go-cache go run -buildvcs=false ./cmd/roundfix skills check`
+  — passed for every repository-owned workflow skill.
+- `rtk env TMPDIR=/private/tmp GOCACHE=/private/tmp/roundfix-go-cache go test -count=1 ./internal/cli -run '^TestGuidanceCompositionJourney$'`
+  — passed.
+- `rtk env TMPDIR=/private/tmp GOCACHE=/private/tmp/roundfix-go-cache go test -count=1 ./internal/cli -run '^TestBaselineNoTTY$'`
+  — passed after the transient full-gate failure.
+- `rtk env TMPDIR=/private/tmp GOCACHE=/private/tmp/roundfix-go-cache make verify`
+  — passed on the final rerun.
