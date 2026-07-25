@@ -166,6 +166,7 @@ type VerificationProjection struct {
 type ProfileAlignmentRequest struct {
 	ProfileID string
 	Decisions []DecisionValue
+	profile   *ResolvedProfile
 }
 
 // ProfileAlignment is the deterministic, read-only result consumed by later
@@ -277,9 +278,21 @@ func ResolveProfileAlignment(
 	}
 	defer root.Close()
 
-	profile, err := ResolveProfile(rootPath, profileID, catalog)
-	if err != nil {
-		return ProfileAlignment{}, fmt.Errorf("resolve selected Baseline Profile %q: %w", profileID, err)
+	var profile ResolvedProfile
+	if request.profile != nil {
+		profile = *request.profile
+		if profile.ID != profileID {
+			return ProfileAlignment{}, fmt.Errorf(
+				"resolve selected Baseline Profile %q: in-memory profile identity is %q",
+				profileID,
+				profile.ID,
+			)
+		}
+	} else {
+		profile, err = ResolveProfile(rootPath, profileID, catalog)
+		if err != nil {
+			return ProfileAlignment{}, fmt.Errorf("resolve selected Baseline Profile %q: %w", profileID, err)
+		}
 	}
 	decisions, decisionDivergences, err := normalizeAlignmentDecisions(profile, request.Decisions, catalog)
 	if err != nil {

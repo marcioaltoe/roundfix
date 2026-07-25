@@ -292,6 +292,9 @@ func validatePlanApplyContract(document PlanDocument) error {
 	if !bytes.Equal(manifestPostimage.Content, manifestBytes) {
 		return errors.New("Setup Manifest postimage does not match the plan identity")
 	}
+	if err := validatePlannedProfilePostimage(document, preimages, postimages); err != nil {
+		return err
+	}
 	if err := validateSpecificRepositoryPlan(document, preimages, postimages); err != nil {
 		return err
 	}
@@ -352,6 +355,57 @@ func validatePlanApplyContract(document PlanDocument) error {
 		if retention.Disposition != "rejected" && len(retention.Targets) == 0 {
 			return fmt.Errorf("retention record %q has no target", retention.FromClause)
 		}
+	}
+	return nil
+}
+
+func validatePlannedProfilePostimage(
+	document PlanDocument,
+	preimages map[string]Preimage,
+	postimages map[string]Postimage,
+) error {
+	var entries []ManagedEntry
+	for _, entry := range document.ManagedEntries {
+		if entry.Kind == "profile" {
+			entries = append(entries, entry)
+		}
+	}
+	if len(entries) == 0 {
+		return nil
+	}
+	if len(entries) != 1 {
+		return errors.New("Baseline Plan has multiple repository Profile ledger entries")
+	}
+	expectedPath := path.Join(customProfileDirectory, document.Profile.ID+".json")
+	if document.Profile.Source != ProfileSourceRepository ||
+		document.Profile.Path != expectedPath {
+		return errors.New("Baseline Plan repository Profile path does not match its identity")
+	}
+	postimage, ok := postimages[expectedPath]
+	if !ok || postimage.Kind != PreimageRegular {
+		return errors.New("Baseline Plan has no regular repository Profile postimage")
+	}
+	expectedBytes, err := marshalResolvedCustomProfile(document.Profile)
+	if err != nil {
+		return fmt.Errorf("serialize planned repository Profile validation bytes: %w", err)
+	}
+	if !bytes.Equal(postimage.Content, expectedBytes) {
+		return errors.New("repository Profile postimage does not match the plan identity")
+	}
+	entry := entries[0]
+	preimage := preimages[expectedPath]
+	if entry.ID != "profile:"+document.Profile.ID ||
+		entry.Path != expectedPath ||
+		entry.Action != fileAction(
+			preimage,
+			postimage.Kind,
+			preimage.ContentIdentity,
+			postimage.ContentIdentity,
+		) ||
+		entry.BeforeIdentity != preimage.ContentIdentity ||
+		entry.AfterIdentity != postimage.ContentIdentity ||
+		entry.ContentIdentity != postimage.ContentIdentity {
+		return errors.New("repository Profile managed-entry ledger does not match the planned postimage")
 	}
 	return nil
 }

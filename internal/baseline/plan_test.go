@@ -1024,6 +1024,198 @@ func TestPlanDocumentRejectsUnknownManifestRetentionWithoutPartialPlan(t *testin
 	}
 }
 
+func TestProfileDraftPlanIncludesCanonicalRepositoryProfile(t *testing.T) {
+	repo := newBackendProfileRepository(t, true)
+	request, draftTemplates := backendProfileDraftPlanRequest(t, repo)
+
+	outcome, err := BuildPlan(context.Background(), request)
+	if err != nil {
+		t.Fatalf("BuildPlan() profile draft error = %v", err)
+	}
+	if outcome.Plan == nil {
+		t.Fatalf("BuildPlan() profile draft result = %+v", outcome.Result)
+	}
+	plan := *outcome.Plan
+	const profilePath = ".roundfix/baseline/profiles/backend-only.json"
+	if _, err := os.Lstat(filepath.Join(repo, filepath.FromSlash(profilePath))); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("profile draft planning mutated repository: %v", err)
+	}
+	if plan.Profile.ID != "backend-only" ||
+		plan.Profile.Source != ProfileSourceRepository ||
+		plan.Profile.Path != profilePath ||
+		slices.Equal(plan.Profile.Templates, draftTemplates) {
+		t.Fatalf("resolved draft profile = %+v, input templates = %v", plan.Profile, draftTemplates)
+	}
+
+	profilePostimage := planPostimage(t, plan, profilePath)
+	resolved, err := ParseCustomProfile(profilePostimage.Content, profilePath, mustEmbeddedCatalog(t))
+	if err != nil {
+		t.Fatalf("parse planned profile postimage: %v", err)
+	}
+	resolved.Path = profilePath
+	if resolved.Digest != plan.Profile.Digest ||
+		!slices.Equal(resolved.Templates, plan.Profile.Templates) {
+		t.Fatalf("planned profile postimage = %+v, plan profile = %+v", resolved, plan.Profile)
+	}
+	assertProfilePlanLedgers(t, plan, profilePath, profilePostimage.ContentIdentity)
+	if plan.SetupManifest.Profile != plan.Profile.ID ||
+		plan.SetupManifest.ProfileDigest != plan.Profile.Digest {
+		t.Fatalf("Setup Manifest profile identity = %q %q, want %q %q",
+			plan.SetupManifest.Profile,
+			plan.SetupManifest.ProfileDigest,
+			plan.Profile.ID,
+			plan.Profile.Digest,
+		)
+	}
+
+	cloneParent := t.TempDir()
+	clone := filepath.Join(cloneParent, "portable-profile-plan")
+	runPlanGit(t, cloneParent, "clone", "--quiet", repo, clone)
+	if err := ValidatePlanRepository(context.Background(), clone, plan); err != nil {
+		t.Fatalf("ValidatePlanRepository() portable profile plan error = %v", err)
+	}
+}
+
+func TestProfileDraftPlanRejectsSimultaneousAndConflictingInputs(t *testing.T) {
+	t.Run("simultaneous profile inputs", func(t *testing.T) {
+		repo := newBackendProfileRepository(t, true)
+		request, _ := backendProfileDraftPlanRequest(t, repo)
+		request.ProfileID = "go-cli-tui"
+
+		_, err := BuildPlan(context.Background(), request)
+		if err == nil || !strings.Contains(err.Error(), "exactly one Baseline Profile") {
+			t.Fatalf("BuildPlan() simultaneous profile error = %v", err)
+		}
+	})
+
+	t.Run("conflicting canonical target", func(t *testing.T) {
+		repo := newBackendProfileRepository(t, true)
+		const profilePath = ".roundfix/baseline/profiles/backend-only.json"
+		writeInspectionFile(t, repo, profilePath, "{}\n")
+		commitInspectionRepository(t, repo, "seed conflicting profile target")
+		before := snapshotVisibleTree(t, repo)
+		request, _ := backendProfileDraftPlanRequest(t, repo)
+
+		_, err := BuildPlan(context.Background(), request)
+		if err == nil || !strings.Contains(err.Error(), "conflicts with existing repository bytes") {
+			t.Fatalf("BuildPlan() conflicting profile target error = %v", err)
+		}
+		assertVisibleTree(t, repo, before)
+	})
+}
+
+func TestProfileAdaptationCannotRemoveUniversalRequiredCapabilities(t *testing.T) {
+	repo := newBackendProfileRepository(t, false)
+	request, _ := backendProfileDraftPlanRequest(t, repo)
+
+	outcome, err := BuildPlan(context.Background(), request)
+	if err != nil {
+		t.Fatalf("BuildPlan() universal capability error = %v", err)
+	}
+	if outcome.Plan != nil || outcome.Result.State != "action_required" {
+		t.Fatalf("BuildPlan() universal capability outcome = %+v", outcome)
+	}
+	for _, capabilityID := range []string{"capability.context7", "capability.exa"} {
+		if !strings.Contains(outcome.Result.Message, capabilityID) {
+			t.Errorf("universal capability outcome does not name %q: %+v", capabilityID, outcome.Result)
+		}
+	}
+}
+
+func TestProfileAdaptationRejectsInvalidDraftBoundaries(t *testing.T) {
+	tests := []struct {
+		name   string
+		mutate func(*ProfileDraftInput, *customProfileDocument)
+		want   string
+	}{
+		{
+			name: "unknown source Profile",
+			mutate: func(input *ProfileDraftInput, _ *customProfileDocument) {
+				input.SourceProfileID = "missing-profile"
+			},
+			want: "custom.profile.source.unknown",
+		},
+		{
+			name: "module addition",
+			mutate: func(_ *ProfileDraftInput, document *customProfileDocument) {
+				document.Modules = []string{"core", "go", "typescript", "bun", "backend"}
+			},
+			want: "custom.profile.adaptation.modules.addition",
+		},
+		{
+			name: "missing module dependency",
+			mutate: func(_ *ProfileDraftInput, document *customProfileDocument) {
+				document.Modules = []string{"core", "bun", "backend"}
+			},
+			want: "custom.profile.module.dependency.invalid",
+		},
+		{
+			name: "decision addition",
+			mutate: func(_ *ProfileDraftInput, document *customProfileDocument) {
+				document.Decisions = append(document.Decisions, "runtime.backend")
+			},
+			want: "custom.profile.adaptation.decisions.addition",
+		},
+		{
+			name: "universal capability override",
+			mutate: func(_ *ProfileDraftInput, document *customProfileDocument) {
+				document.Capabilities = append(document.Capabilities, "capability.context7")
+			},
+			want: "custom.profile.capability.universal",
+		},
+		{
+			name: "unknown template",
+			mutate: func(_ *ProfileDraftInput, document *customProfileDocument) {
+				document.Templates = []string{"template.missing"}
+			},
+			want: "custom.profile.template.unknown",
+		},
+		{
+			name: "stale catalog binding",
+			mutate: func(_ *ProfileDraftInput, document *customProfileDocument) {
+				document.CatalogSchema = "roundfix/baseline-catalog/stale"
+			},
+			want: "custom.profile.catalog-schema.invalid",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			repo := newBackendProfileRepository(t, true)
+			request, _ := backendProfileDraftPlanRequest(t, repo)
+			var document customProfileDocument
+			if err := json.Unmarshal(request.ProfileDraft.Document, &document); err != nil {
+				t.Fatalf("decode base Profile draft: %v", err)
+			}
+			test.mutate(request.ProfileDraft, &document)
+			data, err := json.MarshalIndent(document, "", "  ")
+			if err != nil {
+				t.Fatalf("marshal invalid Profile draft: %v", err)
+			}
+			request.ProfileDraft.Document = append(data, '\n')
+
+			_, err = BuildPlan(context.Background(), request)
+			if err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("BuildPlan() error = %v, want containing %q", err, test.want)
+			}
+		})
+	}
+}
+
+func TestProfileDraftPlanRejectsUnsafeTargetParent(t *testing.T) {
+	repo := newBackendProfileRepository(t, true)
+	if err := os.Symlink(t.TempDir(), filepath.Join(repo, ".roundfix")); err != nil {
+		t.Fatalf("create unsafe Profile parent: %v", err)
+	}
+	before := snapshotVisibleTree(t, repo)
+	request, _ := backendProfileDraftPlanRequest(t, repo)
+
+	_, err := BuildPlan(context.Background(), request)
+	if !errors.Is(err, ErrUnsafeCustomProfilePath) {
+		t.Fatalf("BuildPlan() unsafe Profile target error = %v, want ErrUnsafeCustomProfilePath", err)
+	}
+	assertVisibleTree(t, repo, before)
+}
+
 func buildTestPlan(t *testing.T, repo string) PlanDocument {
 	t.Helper()
 	outcome, err := BuildPlan(context.Background(), PlanRequest{
@@ -1041,6 +1233,97 @@ func buildTestPlan(t *testing.T, repo string) PlanDocument {
 		t.Fatalf("build plan returned result: %+v", outcome.Result)
 	}
 	return *outcome.Plan
+}
+
+func backendProfileDraftPlanRequest(t *testing.T, repo string) (PlanRequest, []string) {
+	t.Helper()
+	document := customProfileDocument{
+		SchemaVersion: CustomProfileSchemaVersion,
+		CatalogSchema: CatalogSchemaVersion(),
+		ID:            "backend-only",
+		Modules:       []string{"core", "typescript", "bun", "backend"},
+		Decisions:     []string{"language.generated", "verification.gate"},
+		Capabilities: []string{
+			"capability.stack.bun",
+			"capability.stack.hono",
+			"capability.stack.typescript",
+			"capability.stack.zod",
+		},
+		Templates: []string{"template.root.core"},
+		Values:    map[string]any{},
+	}
+	data, err := json.MarshalIndent(document, "", "  ")
+	if err != nil {
+		t.Fatalf("marshal profile draft: %v", err)
+	}
+	data = append(data, '\n')
+	return PlanRequest{
+		Repository: repo,
+		ProfileDraft: &ProfileDraftInput{
+			SourceProfileID: "standard-typescript-monorepo",
+			Document:        data,
+		},
+		Decisions: []DecisionValue{
+			{ID: "language.generated", Value: "English"},
+			{ID: "verification.gate", Value: "make verify"},
+		},
+		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
+	}, append([]string(nil), document.Templates...)
+}
+
+func newBackendProfileRepository(t *testing.T, includeUniversalSkills bool) string {
+	t.Helper()
+	repo := newInspectionRepository(t)
+	if includeUniversalSkills {
+		writeInspectionFile(t, repo, ".agents/skills/context7/SKILL.md", "# context7\n")
+		writeInspectionFile(t, repo, ".agents/skills/exa-web-search/SKILL.md", "# exa\n")
+	}
+	writeInspectionFile(t, repo, "Makefile", "verify:\n\t@true\n")
+	writeInspectionFile(t, repo, "package.json", `{
+  "packageManager": "bun@1.0.0",
+  "dependencies": {
+    "hono": "1.0.0",
+    "typescript": "1.0.0",
+    "zod": "1.0.0"
+  }
+}
+`)
+	commitInspectionRepository(t, repo, "seed backend profile repository")
+	return repo
+}
+
+func mustEmbeddedCatalog(t *testing.T) *Catalog {
+	t.Helper()
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("LoadEmbeddedCatalog() error = %v", err)
+	}
+	return catalog
+}
+
+func assertProfilePlanLedgers(t *testing.T, plan PlanDocument, profilePath, identity string) {
+	t.Helper()
+	entryID := "profile:" + plan.Profile.ID
+	var managed bool
+	for _, entry := range plan.ManagedEntries {
+		if entry.ID == entryID &&
+			entry.Path == profilePath &&
+			entry.Kind == "profile" &&
+			entry.AfterIdentity == identity &&
+			entry.ContentIdentity == identity {
+			managed = true
+			break
+		}
+	}
+	if !managed {
+		t.Fatalf("profile managed-entry ledger is missing %q at %q", entryID, profilePath)
+	}
+	for _, change := range plan.FileChanges {
+		if change.Path == profilePath && slices.Contains(change.ManagedEntries, entryID) {
+			return
+		}
+	}
+	t.Fatalf("profile file-change ledger is missing %q at %q", entryID, profilePath)
 }
 
 func planTestDecisions() []DecisionValue {

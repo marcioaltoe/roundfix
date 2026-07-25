@@ -300,6 +300,105 @@ func TestApplyPostimageFailureRollsBack(t *testing.T) {
 	assertVisibleTree(t, repo, before)
 }
 
+func TestProfileAdaptationApplyVerifiesProfileAndManifest(t *testing.T) {
+	repo := newBackendProfileRepository(t, true)
+	request, _ := backendProfileDraftPlanRequest(t, repo)
+	outcome, err := BuildPlan(context.Background(), request)
+	if err != nil || outcome.Plan == nil {
+		t.Fatalf("BuildPlan() profile adaptation = plan=%v result=%+v error=%v",
+			outcome.Plan != nil, outcome.Result, err)
+	}
+	plan := *outcome.Plan
+
+	result, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest)
+	if err != nil {
+		t.Fatalf("ApplyPlan() profile adaptation error = %v", err)
+	}
+	const profilePath = ".roundfix/baseline/profiles/backend-only.json"
+	profileBytes, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(profilePath)))
+	if err != nil {
+		t.Fatalf("read applied Profile: %v", err)
+	}
+	profilePostimage := planPostimage(t, plan, profilePath)
+	if !bytes.Equal(profileBytes, profilePostimage.Content) {
+		t.Fatal("applied Profile bytes differ from the approved postimage")
+	}
+	manifestBytes, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(manifestPath)))
+	if err != nil {
+		t.Fatalf("read applied Setup Manifest: %v", err)
+	}
+	var manifest SetupManifest
+	if err := json.Unmarshal(manifestBytes, &manifest); err != nil {
+		t.Fatalf("decode applied Setup Manifest: %v", err)
+	}
+	if manifest.Profile != plan.Profile.ID || manifest.ProfileDigest != plan.Profile.Digest {
+		t.Fatalf("applied Setup Manifest identity = %q %q, want %q %q",
+			manifest.Profile, manifest.ProfileDigest, plan.Profile.ID, plan.Profile.Digest)
+	}
+	var verifiedProfile bool
+	for _, postimage := range result.VerifiedPostimages {
+		if postimage.Path == profilePath && bytes.Equal(postimage.Content, profileBytes) {
+			verifiedProfile = true
+		}
+	}
+	if !verifiedProfile {
+		t.Fatal("apply result did not verify the planned Profile postimage")
+	}
+}
+
+func TestProfileDraftRollbackRestoresMissingProfile(t *testing.T) {
+	repo := newBackendProfileRepository(t, true)
+	request, _ := backendProfileDraftPlanRequest(t, repo)
+	outcome, err := BuildPlan(context.Background(), request)
+	if err != nil || outcome.Plan == nil {
+		t.Fatalf("BuildPlan() profile rollback = plan=%v result=%+v error=%v",
+			outcome.Plan != nil, outcome.Result, err)
+	}
+	plan := *outcome.Plan
+	before := snapshotVisibleTree(t, repo)
+	transaction, err := beginTransaction(context.Background(), repo, plan, nil)
+	if err != nil {
+		t.Fatalf("begin profile rollback transaction: %v", err)
+	}
+	tx := transaction.(*fileTransaction)
+	tx.phaseHook = failTransactionOnce(
+		transactionPhaseVerifying,
+		".roundfix/baseline/profiles/backend-only.json",
+		errors.New("injected Profile verification failure"),
+	)
+	if _, err := tx.Apply(context.Background()); err == nil ||
+		!strings.Contains(err.Error(), "injected Profile verification failure") {
+		t.Fatalf("profile rollback Apply() error = %v", err)
+	}
+	if err := tx.Close(); err != nil {
+		t.Fatalf("close profile rollback transaction: %v", err)
+	}
+	assertVisibleTree(t, repo, before)
+}
+
+func TestProfileDraftStaleTargetProducesNoMutation(t *testing.T) {
+	repo := newBackendProfileRepository(t, true)
+	request, _ := backendProfileDraftPlanRequest(t, repo)
+	outcome, err := BuildPlan(context.Background(), request)
+	if err != nil || outcome.Plan == nil {
+		t.Fatalf("BuildPlan() stale profile = plan=%v result=%+v error=%v",
+			outcome.Plan != nil, outcome.Result, err)
+	}
+	plan := *outcome.Plan
+	const profilePath = ".roundfix/baseline/profiles/backend-only.json"
+	writeTransactionFile(t, repo, profilePath, "{\"concurrent\":true}\n", 0o644)
+	before := snapshotVisibleTree(t, repo)
+
+	_, err = ApplyPlan(context.Background(), repo, plan, plan.PlanDigest)
+	var applyErr *ApplyError
+	if !errors.As(err, &applyErr) ||
+		applyErr.Kind != ApplyErrorStale ||
+		!strings.Contains(err.Error(), profilePath) {
+		t.Fatalf("ApplyPlan() stale profile error = %v, want stale refusal", err)
+	}
+	assertVisibleTree(t, repo, before)
+}
+
 func TestBaselineVerification(t *testing.T) {
 	repo := newPlanRepository(t)
 	plan := buildTestPlan(t, repo)

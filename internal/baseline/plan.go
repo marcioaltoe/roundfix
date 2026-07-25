@@ -38,8 +38,16 @@ const (
 type PlanRequest struct {
 	Repository   string
 	ProfileID    string
+	ProfileDraft *ProfileDraftInput
 	Decisions    []DecisionValue
 	Preservation RootPreservationRequest
+}
+
+// ProfileDraftInput binds one strict repository-owned Profile draft to the
+// built-in Profile it is allowed to narrow.
+type ProfileDraftInput struct {
+	SourceProfileID string
+	Document        []byte
 }
 
 // PlanOutcome contains either one complete portable plan or an actionable
@@ -58,6 +66,12 @@ type specificRepositoryPlan struct {
 type repositoryRuleInventory struct {
 	ByPath    map[string][]RepositoryRuleBlock
 	Retention []RetentionEvidence
+}
+
+type plannedProfileDraft struct {
+	ID      string
+	Path    string
+	Content []byte
 }
 
 // ResolveDecisionInput normalizes human or automation answers through the
@@ -226,15 +240,33 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 			append(initial.Snapshot.Warnings, initial.Snapshot.Blocking...)), nil
 	}
 	profileID := strings.TrimSpace(request.ProfileID)
-	if profileID == "" {
+	if profileID != "" && request.ProfileDraft != nil {
+		return PlanOutcome{}, errors.New("select exactly one Baseline Profile ID or Profile draft")
+	}
+	if profileID == "" && request.ProfileDraft == nil {
 		return actionOutcome("decision", "Baseline Profile selection is required",
 			"rerun with --profile <id>", initial.Snapshot.Warnings), nil
 	}
-	profile, err := ResolveProfile(initial.Root, profileID, catalog)
-	if err != nil {
-		return PlanOutcome{}, fmt.Errorf("resolve Baseline Profile: %w", err)
+	var profile ResolvedProfile
+	var plannedDraft *plannedProfileDraft
+	if request.ProfileDraft != nil {
+		var profileBytes []byte
+		profile, profileBytes, err = resolveProfileDraft(initial.Root, *request.ProfileDraft, catalog)
+		if err != nil {
+			return PlanOutcome{}, fmt.Errorf("resolve Baseline Profile draft: %w", err)
+		}
+		plannedDraft = &plannedProfileDraft{
+			ID:      profile.ID,
+			Path:    profile.Path,
+			Content: profileBytes,
+		}
+	} else {
+		profile, err = ResolveProfile(initial.Root, profileID, catalog)
+		if err != nil {
+			return PlanOutcome{}, fmt.Errorf("resolve Baseline Profile: %w", err)
+		}
+		profile.Path = portableProfilePath(initial.Root, profile.Path)
 	}
-	profile.Path = portableProfilePath(initial.Root, profile.Path)
 
 	decisions, missing, err := normalizePlanDecisions(profile, request.Decisions, catalog)
 	if err != nil {
@@ -281,6 +313,7 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 	alignment, err := ResolveProfileAlignment(ctx, initial.Root, ProfileAlignmentRequest{
 		ProfileID: profile.ID,
 		Decisions: profileAlignmentDecisions(profile, decisions),
+		profile:   &profile,
 	}, catalog)
 	if err != nil {
 		return PlanOutcome{}, err
@@ -347,9 +380,17 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 		legacyRepositoryRulesPath,
 	)
 	mutablePaths = append(mutablePaths, alignmentEvidencePaths(alignment)...)
+	if plannedDraft != nil {
+		mutablePaths = append(mutablePaths, plannedDraft.Path)
+	}
 	snapshot, err := inspectRepositorySnapshot(initial.Root, InventoryRequest{MutablePaths: mutablePaths})
 	if err != nil {
 		return PlanOutcome{}, err
+	}
+	if plannedDraft != nil {
+		if err := validateProfileDraftTarget(snapshot, *plannedDraft); err != nil {
+			return PlanOutcome{}, err
+		}
 	}
 	inspection := RepositoryInspection{Root: initial.Root, Identity: initial.Identity, Snapshot: snapshot}
 	preservation, err = PlanRootPreservation(inspection, preservationRequest)
@@ -422,6 +463,7 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 		preservation,
 		repositoryPlan,
 		repositoryRules,
+		plannedDraft,
 	)
 	if err != nil {
 		return PlanOutcome{}, err
@@ -1189,6 +1231,27 @@ func portableProfilePath(root, profilePath string) string {
 	return filepath.ToSlash(relative)
 }
 
+func validateProfileDraftTarget(snapshot RepositorySnapshot, draft plannedProfileDraft) error {
+	preimage, ok := preimagesByPath(snapshot.Preimages)[draft.Path]
+	if !ok {
+		return fmt.Errorf("custom Profile draft target %q has no bounded preimage", draft.Path)
+	}
+	switch preimage.Kind {
+	case PreimageMissing:
+		return nil
+	case PreimageRegular:
+		if preimage.ContentIdentity != planContentIdentity(draft.Content) {
+			return fmt.Errorf(
+				"custom Profile draft target %q conflicts with existing repository bytes",
+				draft.Path,
+			)
+		}
+		return nil
+	default:
+		return fmt.Errorf("%w: %s is %s", ErrUnsafeCustomProfilePath, draft.Path, preimage.Kind)
+	}
+}
+
 func resolveManagedArtifacts(
 	catalog *Catalog,
 	profile ResolvedProfile,
@@ -1683,6 +1746,7 @@ func assemblePostimages(
 	preservation RootPreservationPlan,
 	repositoryPlan specificRepositoryPlan,
 	repositoryRules repositoryRuleInventory,
+	profileDraft *plannedProfileDraft,
 ) ([]Postimage, []ManagedEntry, error) {
 	byPath := make(map[string][]plannedArtifact)
 	for _, artifact := range artifacts {
@@ -1724,6 +1788,9 @@ func assemblePostimages(
 	}
 	if len(repositoryPlan.CanonicalContent) != 0 {
 		outputs[specificRepositoryPath] = append([]byte(nil), repositoryPlan.CanonicalContent...)
+	}
+	if profileDraft != nil {
+		outputs[profileDraft.Path] = append([]byte(nil), profileDraft.Content...)
 	}
 
 	preimages := preimagesByPath(snapshot.Preimages)
@@ -1785,6 +1852,14 @@ func assemblePostimages(
 				ID: "manifest", Path: relative, Action: action, Kind: "manifest",
 				Version: ManifestVersion, BeforeIdentity: before,
 				AfterIdentity:   postimage.ContentIdentity,
+				ContentIdentity: postimage.ContentIdentity,
+			})
+		}
+		if profileDraft != nil && relative == profileDraft.Path {
+			ledger = append(ledger, ManagedEntry{
+				ID:   "profile:" + profileDraft.ID,
+				Path: relative, Action: action, Kind: "profile",
+				BeforeIdentity: before, AfterIdentity: postimage.ContentIdentity,
 				ContentIdentity: postimage.ContentIdentity,
 			})
 		}

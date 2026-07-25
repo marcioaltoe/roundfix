@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0047-context-driven-guidance-composition
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -30,20 +30,20 @@ Profile identity.
 
 ## Subtasks
 
-- [ ] Add in-memory custom Profile draft resolution.
-- [ ] Validate allowed adaptation boundaries.
-- [ ] Assemble the canonical Profile postimage and ledger entry.
-- [ ] Bind Profile identity into Plan and apply verification.
-- [ ] Add portable, stale, unsafe, and rollback tests.
+- [x] Add in-memory custom Profile draft resolution.
+- [x] Validate allowed adaptation boundaries.
+- [x] Assemble the canonical Profile postimage and ledger entry.
+- [x] Bind Profile identity into Plan and apply verification.
+- [x] Add portable, stale, unsafe, and rollback tests.
 
 ## Acceptance Criteria
 
-- [ ] A valid backend-only adaptation resolves without writing during planning.
-- [ ] Universal required capabilities cannot be removed by the draft.
-- [ ] The Profile file appears in the final file-change and managed-entry
+- [x] A valid backend-only adaptation resolves without writing during planning.
+- [x] Universal required capabilities cannot be removed by the draft.
+- [x] The Profile file appears in the final file-change and managed-entry
   ledgers.
-- [ ] Apply verifies the planned Profile bytes and Setup Manifest identity.
-- [ ] Stale or conflicting target bytes produce no repository mutation.
+- [x] Apply verifies the planned Profile bytes and Setup Manifest identity.
+- [x] Stale or conflicting target bytes produce no repository mutation.
 
 ## Context
 
@@ -63,3 +63,45 @@ Profile identity.
 - `_prd.md` → Goal 6; User Story 7; Core Features 18–20.
 - `_techspec.md` → Implementation Design: Interfaces, Data Models, and API Contracts; Build Order 4.
 - ADR-0075 → confirmed repository-owned adaptation.
+
+## Result
+
+Implemented source-bound, in-memory Profile draft planning. Planning now accepts
+exactly one existing Profile ID or strict draft, validates the draft's catalog
+binding and allowed module, decision, capability, template, and path
+boundaries, recalculates templates, and keeps universal capabilities outside
+the adaptation surface.
+
+The canonical repository-owned Profile is now an exact preimage-bound
+postimage with `profile:<id>` managed-entry and file-change ledger records.
+Portable Plan validation binds those bytes to the resolved Profile, while
+apply verifies both the Profile postimage and Setup Manifest identity through
+the existing recoverable transaction.
+
+Verification:
+
+- `rtk go test -count=1 ./internal/baseline -run 'TestProfileDraftPlan|TestProfileAdaptation|TestProfileDraftRollback|TestProfileDraftStale'` — passed, 17 tests.
+- `rtk make verify` — passed: 2,170 Go tests across 22 packages, 4 skill-contract tests, Roundfix skill check, and CLI build.
+
+Acceptance evidence:
+
+- `TestProfileDraftPlanIncludesCanonicalRepositoryProfile` proves a
+  backend-only draft resolves without creating its target during planning and
+  validates in a matching clone.
+- `TestProfileAdaptationCannotRemoveUniversalRequiredCapabilities` and
+  `TestProfileAdaptationRejectsInvalidDraftBoundaries` prove universal
+  requirements remain active and cannot be declared or overridden by a draft.
+- `TestProfileDraftPlanIncludesCanonicalRepositoryProfile` checks the exact
+  Profile postimage, `profile:<id>` managed entry, file change, Profile digest,
+  and Setup Manifest identity.
+- `TestProfileAdaptationApplyVerifiesProfileAndManifest` proves apply installs
+  and reports the exact planned Profile bytes and matching Setup Manifest
+  identity.
+- `TestProfileDraftPlanRejectsSimultaneousAndConflictingInputs`,
+  `TestProfileDraftPlanRejectsUnsafeTargetParent`,
+  `TestProfileDraftStaleTargetProducesNoMutation`, and
+  `TestProfileDraftRollbackRestoresMissingProfile` prove conflicts, unsafe
+  targets, stale bytes, and verification failures leave repository state
+  unchanged.
+
+Follow-ups: none.
