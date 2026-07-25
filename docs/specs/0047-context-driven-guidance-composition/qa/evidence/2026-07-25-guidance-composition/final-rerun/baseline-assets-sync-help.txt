@@ -1,0 +1,25 @@
+Usage:
+  roundfix baseline assets sync --source-dir <path> [--check] [--format <text|json>]
+
+Checks or refreshes the Go-owned canonical Baseline setup snapshots from an
+explicit canonical setups directory. The source must be a clean Git checkout
+with a portable GitHub origin, a full immutable HEAD commit, committed setup
+documents, safe source-relative paths, and complete regular-file skill trees
+whose working bytes match the declared commit.
+
+Check mode is read-only and reports whether every canonical snapshot is
+current. A non-empty refresh first validates the generated catalog in memory,
+then uses the recoverable Baseline transaction to update only
+internal/baseline/assets/setups. It never installs skills, writes the canonical
+source, or reads the installed setup-context-driven skill at runtime.
+
+Exit codes:
+  0  snapshots are current, or a canonical refresh completed
+  1  check-mode drift, refresh, output, rollback, or recovery failure
+  2  invalid arguments, source provenance, path, tree, or catalog compatibility
+  130 operation canceled
+
+Options:
+  --source-dir  Required canonical setups directory inside the immutable source checkout
+  --check       Report snapshot drift without writing canonical assets
+  --format      Output format: text or json (default text)

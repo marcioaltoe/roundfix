@@ -1,0 +1,3 @@
+$ oxfmt
+/opt/homebrew/bin/bash: line 1: oxfmt: command not found
+error: script "fmt" exited with code 127

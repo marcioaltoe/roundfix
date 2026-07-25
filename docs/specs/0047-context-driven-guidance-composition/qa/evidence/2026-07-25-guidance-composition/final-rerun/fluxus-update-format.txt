@@ -1,0 +1,2 @@
+$ oxfmt
+Finished in 194ms on 589 files using 12 threads.

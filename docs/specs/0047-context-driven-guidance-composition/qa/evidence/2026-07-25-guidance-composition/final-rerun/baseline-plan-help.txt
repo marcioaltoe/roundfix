@@ -1,0 +1,27 @@
+Usage:
+  roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
+
+Builds the complete portable roundfix/baseline-plan/v1 document from
+clone-stable Git lineage, bounded repository preimages, one selected Baseline
+Profile ID or strict repository-owned Profile draft, and normalized decisions.
+The two Profile inputs are mutually exclusive and produce the same normalized
+Plan when they resolve to the same Profile. JSON is the portable apply input;
+text is a concise file-level projection. Missing decisions return a
+roundfix/baseline-result/v1 next action without a partial plan.
+
+The command never prompts, writes repository bytes, executes
+repository-defined commands, or uses the network. Select instruction handling
+with --decision preservation.mode=greenfield|preservation.
+
+Exit codes:
+  0  complete Baseline Plan emitted
+  2  invalid arguments, Git/repository failure, or unsafe bounded carrier
+  3  a decision, manual classification, or repository-alignment action is required
+
+Options:
+  --profile       Built-in or repository-owned Baseline Profile
+  --profile-file  Strict repository-owned Profile draft; mutually exclusive with --profile
+  --decision      Decision as id=value; repeat for multiple answers
+  --decision-file Strict Decision Document path; repeat to merge inputs
+  --repo          Git worktree or a path inside it (default current directory)
+  --format        Output format: text or json (default text)

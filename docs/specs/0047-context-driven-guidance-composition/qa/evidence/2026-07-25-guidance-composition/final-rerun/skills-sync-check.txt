@@ -1,0 +1,2 @@
+rtk go test -count=1 ./skills -run 'TestNoPythonBaselineRuntime|TestThinSetupSkill|TestCheckRejectsExecutableSetupEngineArtifacts|TestRecommendedSkillsMatchLock'
+Go test: 4 passed in 1 packages
