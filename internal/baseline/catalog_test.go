@@ -160,6 +160,134 @@ func TestGuidanceCompositionAssets(t *testing.T) {
 	}
 }
 
+func TestProjectDecisionAssets(t *testing.T) {
+	t.Parallel()
+
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load embedded catalog: %v", err)
+	}
+	for _, profileID := range catalog.ProfileIDs() {
+		profile, err := ResolveProfile("", profileID, catalog)
+		if err != nil {
+			t.Fatalf("resolve Profile %q: %v", profileID, err)
+		}
+		hasIdentifier := slices.Contains(profile.Decisions, "identifier.strategy")
+		hasAuthProvider := slices.Contains(profile.Decisions, "auth.provider")
+		switch profileID {
+		case "standard-typescript-monorepo":
+			if !hasIdentifier || !hasAuthProvider {
+				t.Errorf(
+					"Profile %q decisions = %v, want identifier.strategy and auth.provider",
+					profileID,
+					profile.Decisions,
+				)
+			}
+		default:
+			if hasIdentifier || hasAuthProvider {
+				t.Errorf(
+					"Profile %q unexpectedly selects project decisions: %v",
+					profileID,
+					profile.Decisions,
+				)
+			}
+		}
+	}
+
+	for assetPath, required := range map[string][]string{
+		"formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/domain.md": {
+			"Use UUID version 7 for new project-owned Internal Identifiers only.",
+			"external provider identifiers",
+			"natural keys",
+		},
+		"formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/backend.md": {
+			"Application HTTP mode: **Post-only**.",
+			"**Better Auth** owns `GET` and `POST` for `/api/auth/*`",
+			"Session, OAuth redirect, callback, and related provider protocol routes",
+		},
+		"formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/agent-instructions.md": {
+			"without express maintainer authorization",
+			"plugin declaration, or version pin",
+		},
+		"formatter-fixtures/standard-typescript-monorepo/golden/docs/agents/spec-routing.md": {
+			"Project Constraints",
+			"bounded repository-relative files",
+			"completed or archived legacy Specs byte-identical",
+		},
+	} {
+		asset, ok := catalog.Asset(assetPath)
+		if !ok {
+			t.Errorf("asset %q is missing", assetPath)
+			continue
+		}
+		for _, clause := range required {
+			if !strings.Contains(string(asset.Data), clause) {
+				t.Errorf("asset %q is missing %q", assetPath, clause)
+			}
+		}
+	}
+
+	const toolingClauseID = "clause.core.require-tooling-authorization"
+	source, err := catalog.SourceBaseline("baseline.standard-typescript-monorepo-0.0.1")
+	if err != nil {
+		t.Fatalf("load maintained Source Baseline: %v", err)
+	}
+	if !sourceBaselineHasEntry(source, toolingClauseID) {
+		t.Errorf("maintained Source Baseline does not account for %q", toolingClauseID)
+	}
+	for _, transitionID := range catalog.TransitionIDs() {
+		transition, err := catalog.UpgradeRetentionContract(transitionID)
+		if err != nil {
+			t.Fatalf("load retention contract %q: %v", transitionID, err)
+		}
+		if !retentionTargetsClause(transition, toolingClauseID) {
+			t.Errorf("retention contract %q does not retain %q", transitionID, toolingClauseID)
+		}
+	}
+
+	for assetPath, asset := range cloneEmbeddedAssets(t) {
+		if !strings.HasPrefix(assetPath, "modules/") &&
+			!strings.HasPrefix(assetPath, "profiles/") &&
+			!strings.HasPrefix(assetPath, "templates/") &&
+			!strings.HasPrefix(assetPath, "formatter-fixtures/") &&
+			!strings.Contains(assetPath, "/corpus/") {
+			continue
+		}
+		folded := strings.ToLower(string(asset.Data))
+		for _, brand := range []string{"fluxus", "oraculum"} {
+			if strings.Contains(folded, brand) {
+				t.Errorf("project-agnostic asset %q contains %q", assetPath, brand)
+			}
+		}
+	}
+
+	tests := []struct {
+		name       string
+		decisionID string
+	}{
+		{name: "identifier strategy", decisionID: "identifier.strategy"},
+		{name: "Better Auth provider", decisionID: "auth.provider"},
+	}
+	for _, test := range tests {
+		t.Run("catalog rejects missing "+test.name, func(t *testing.T) {
+			assets := cloneEmbeddedAssets(t)
+			replaceAsset(
+				t,
+				assets,
+				"profiles/standard-typescript-monorepo.json",
+				`    "`+test.decisionID+`",`+"\n",
+				"",
+			)
+			_, err := LoadCatalog(assets)
+			var validationErr *ValidationError
+			if !errors.As(err, &validationErr) ||
+				!validationErr.Has("catalog.project-decision.profile.missing") {
+				t.Fatalf("LoadCatalog() error = %v, want missing project-decision diagnostic", err)
+			}
+		})
+	}
+}
+
 func TestCatalogCompatibility(t *testing.T) {
 	t.Parallel()
 

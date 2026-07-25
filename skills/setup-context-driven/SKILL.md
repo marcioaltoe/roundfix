@@ -138,6 +138,38 @@ roundfix baseline skills restore --repo . --profile <built-in-id> --skill <skill
 roundfix baseline skills restore --repo . --profile <built-in-id> --skill <skill-name> --confirm-plan <digest> --format json
 ```
 
+## Project decisions and Spec constraints
+
+The CLI owns project-decision collection and rendering. This skill does not
+collect, derive, validate, or render decisions; it explains the public result
+and sends every correction back through `roundfix baseline`.
+
+For the Standard TypeScript Monorepo Profile, UUID version 7 is a visible
+suggestion for `identifier.strategy`. The human must explicitly keep it or
+provide one non-empty repository-defined rule. When Better Auth remains
+selected, `auth.provider` proposes `GET` and `POST` under `/api/auth/*`, owner
+`Better Auth`, with the Session, OAuth redirect, callback, and related provider
+protocol reason. The human must keep or change that complete typed proposal.
+
+Automation supplies both structured values through the strict Decision
+Document passed to `--decision-file`. If either value is unresolved, planning
+exits `3`, names every missing decision in `roundfix/baseline-result/v1`, emits
+no partial Plan, and writes nothing. Never treat a catalog suggestion,
+repository evidence, setup approval, or an empty answer as authorization.
+
+Every new PRD and TechSpec must contain `Project Constraints` rows for:
+
+- Identifier strategy from `docs/agents/domain.md`;
+- Authentication and HTTP from `docs/agents/backend.md`;
+- active ADR obligations from `docs/agents/spec-routing.md`; and
+- tooling authority from `docs/agents/agent-instructions.md`.
+
+Each row must say applicable or not applicable with a reason. Protected
+tooling work remains blocked until the Spec records express maintainer
+authorization and the exact bounded repository-relative files. Task assignment
+and generic implementation requests do not grant that authority. Keep
+completed and archived legacy Specs byte-identical.
+
 ## Non-interactive planning
 
 The interactive root command refuses redirected or absent terminal input.

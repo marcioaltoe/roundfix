@@ -198,6 +198,151 @@ func TestThinSetupSkill(t *testing.T) {
 	}
 }
 
+func TestAuthorialSkillSync(t *testing.T) {
+	repoRoot := filepath.Clean(filepath.Join(".."))
+	embeddedFiles, err := Files()
+	if err != nil {
+		t.Fatalf("read embedded authorial skills: %v", err)
+	}
+	embeddedByPath := make(map[string][]byte, len(embeddedFiles))
+	for _, file := range embeddedFiles {
+		embeddedByPath[file.Path] = file.Data
+	}
+
+	for _, skillName := range Names() {
+		t.Run(skillName, func(t *testing.T) {
+			canonicalRoot := filepath.Join(repoRoot, ".agents", "skills", skillName)
+			distributedRoot := filepath.Join(repoRoot, "skills", skillName)
+			assertSkillTreesEqual(t, canonicalRoot, distributedRoot)
+
+			canonicalDigest, err := SkillFolderHash(canonicalRoot)
+			if err != nil {
+				t.Fatalf("hash canonical skill: %v", err)
+			}
+			distributedDigest, err := SkillFolderHash(distributedRoot)
+			if err != nil {
+				t.Fatalf("hash distributed skill: %v", err)
+			}
+			if distributedDigest != canonicalDigest {
+				t.Fatalf(
+					"canonical digest = %q, distributed digest = %q",
+					canonicalDigest,
+					distributedDigest,
+				)
+			}
+
+			canonicalFiles := 0
+			if err := filepath.WalkDir(
+				canonicalRoot,
+				func(path string, entry os.DirEntry, walkErr error) error {
+					if walkErr != nil {
+						return walkErr
+					}
+					if entry.IsDir() {
+						return nil
+					}
+					relative, err := filepath.Rel(canonicalRoot, path)
+					if err != nil {
+						return err
+					}
+					canonical := readBaselineSkillContractFile(t, path)
+					embeddedPath := filepath.ToSlash(filepath.Join(skillName, relative))
+					if !bytes.Equal(canonical, embeddedByPath[embeddedPath]) {
+						t.Errorf("%s canonical and embedded bytes differ", embeddedPath)
+					}
+					canonicalFiles++
+					return nil
+				},
+			); err != nil {
+				t.Fatalf("walk canonical skill: %v", err)
+			}
+			embeddedCount := 0
+			for embeddedPath := range embeddedByPath {
+				if strings.HasPrefix(embeddedPath, skillName+"/") {
+					embeddedCount++
+				}
+			}
+			if embeddedCount != canonicalFiles {
+				t.Fatalf(
+					"canonical files = %d, embedded files = %d",
+					canonicalFiles,
+					embeddedCount,
+				)
+			}
+		})
+	}
+
+	setupPaths, err := filepath.Glob(
+		filepath.Join(repoRoot, "internal", "baseline", "assets", "setups", "*.json"),
+	)
+	if err != nil {
+		t.Fatalf("list canonical setup snapshots: %v", err)
+	}
+	if len(setupPaths) == 0 {
+		t.Fatal("canonical setup snapshots are missing")
+	}
+	knownOwned := make(map[string]struct{}, len(Names()))
+	for _, skillName := range Names() {
+		knownOwned[skillName] = struct{}{}
+	}
+	for _, setupPath := range setupPaths {
+		t.Run(filepath.Base(setupPath), func(t *testing.T) {
+			var setup struct {
+				Skills []struct {
+					Name          string `json:"name"`
+					ContentDigest string `json:"contentDigest"`
+					Source        struct {
+						Type string `json:"type"`
+						Name string `json:"name"`
+					} `json:"source"`
+				} `json:"skills"`
+			}
+			if err := json.Unmarshal(readBaselineSkillContractFile(t, setupPath), &setup); err != nil {
+				t.Fatalf("decode setup snapshot: %v", err)
+			}
+			for _, skill := range setup.Skills {
+				if skill.Source.Type != "repo" {
+					continue
+				}
+				if skill.Source.Name != "roundfix" {
+					t.Errorf("%s repository source = %q, want roundfix", skill.Name, skill.Source.Name)
+					continue
+				}
+				if _, ok := knownOwned[skill.Name]; !ok {
+					t.Errorf("%s is repository-sourced but not owned by Roundfix", skill.Name)
+					continue
+				}
+				want, err := SkillFolderHash(
+					filepath.Join(repoRoot, ".agents", "skills", skill.Name),
+				)
+				if err != nil {
+					t.Fatalf("hash repository-owned skill %q: %v", skill.Name, err)
+				}
+				if skill.ContentDigest != want {
+					t.Errorf(
+						"%s contentDigest = %q, want canonical %q",
+						skill.Name,
+						skill.ContentDigest,
+						want,
+					)
+				}
+			}
+		})
+	}
+
+	lockBytes := readBaselineSkillContractFile(t, filepath.Join(repoRoot, "skills-lock.json"))
+	var lock struct {
+		Skills map[string]json.RawMessage `json:"skills"`
+	}
+	if err := json.Unmarshal(lockBytes, &lock); err != nil {
+		t.Fatalf("decode skills lock: %v", err)
+	}
+	const wantUpstreamDigest = "df289f03c4555e310822426f8521254b13f9befb87263d739c9739680f399814"
+	if got := upstreamManagedSkillDigest(t, repoRoot, lock.Skills); got != wantUpstreamDigest {
+		t.Fatalf("upstream-managed skill tree digest = %q, want %q", got, wantUpstreamDigest)
+	}
+}
+
 func TestWritePRDProjectConstraints(t *testing.T) {
 	testAuthoringProjectConstraints(t, "write-prd", "prd-template.md")
 }

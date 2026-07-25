@@ -1119,6 +1119,72 @@ func (l *catalogLoader) validateToolingAuthority(catalog *Catalog) {
 	}
 }
 
+func (l *catalogLoader) validateProjectDecisionAssets(catalog *Catalog) {
+	const (
+		standardTypeScriptProfileID = "standard-typescript-monorepo"
+		identifierStrategyID        = "identifier.strategy"
+	)
+
+	standardTypeScriptProfile := catalog.profiles[standardTypeScriptProfileID]
+	schemaVersion, _ := stringValue(standardTypeScriptProfile, "schemaVersion")
+	if schemaVersion != "setup-context-driven/profile/0.0.1" {
+		return
+	}
+	if !containsString(
+		stringsOrEmpty(standardTypeScriptProfile["entryDecisions"]),
+		identifierStrategyID,
+	) {
+		l.add(
+			"catalog.project-decision.profile.missing",
+			standardTypeScriptProfileID,
+			identifierStrategyID,
+		)
+	}
+
+	for profileID, profile := range catalog.profiles {
+		schemaVersion, _ := stringValue(profile, "schemaVersion")
+		if schemaVersion != "setup-context-driven/profile/0.0.1" {
+			continue
+		}
+		selectedDecisions := stringSet(stringsOrEmpty(profile["entryDecisions"]))
+		selectedCapabilities := make(map[string]struct{})
+		for _, capability := range objectsOrEmpty(profile["capabilities"]) {
+			if capabilityID, ok := stringValue(capability, "id"); ok {
+				selectedCapabilities[capabilityID] = struct{}{}
+			}
+		}
+
+		for decisionID, decision := range catalog.decisions {
+			requiredCapabilities := stringsOrEmpty(decision["requiresCapabilities"])
+			if len(requiredCapabilities) == 0 {
+				continue
+			}
+			applicable := true
+			for _, capabilityID := range requiredCapabilities {
+				if _, selected := selectedCapabilities[capabilityID]; !selected {
+					applicable = false
+					break
+				}
+			}
+			_, selected := selectedDecisions[decisionID]
+			switch {
+			case applicable && !selected:
+				l.add(
+					"catalog.project-decision.profile.missing",
+					profileID,
+					decisionID,
+				)
+			case !applicable && selected:
+				l.add(
+					"catalog.project-decision.capability.unselected",
+					profileID,
+					decisionID,
+				)
+			}
+		}
+	}
+}
+
 func (l *catalogLoader) validateDecisionCycles(graph map[string][]string) {
 	state := make(map[string]int)
 	var visit func(string)

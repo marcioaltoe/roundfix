@@ -111,7 +111,9 @@ adoption again. Without a stored value, the embedded catalog suggests:
 | --- | --- |
 | Generated language | `English` |
 | Verification gate | `rtk make verify` |
+| Identifier strategy | `{"kind":"uuid-v7"}` |
 | HTTP contract | `Post-only` |
+| Better Auth provider exception | `GET` and `POST` under `/api/auth/*`, owned by Better Auth |
 | Spec artifacts | Yes |
 | Domain layout | `single-context` |
 | External triage | No |
@@ -120,6 +122,20 @@ adoption again. Without a stored value, the embedded catalog suggests:
 | Design runtime | `claude fable high` |
 | Secondbrain | Yes |
 | Repository-Specific Normative Rules carrier | Permitted when non-empty |
+
+UUID version 7 is a visible suggestion for `identifier.strategy`, not an
+inferred answer. It applies only to new project-owned Internal Identifiers;
+external provider identifiers, protocol identifiers, natural keys, and
+business codes keep their source contracts. The maintainer must explicitly
+keep the suggestion or provide
+`{"kind":"repository-defined","guidance":"<non-empty operative rule>"}`.
+
+When the selected Profile retains Better Auth, `auth.provider` proposes the
+complete provider-owned exception: `GET` and `POST` under `/api/auth/*`, owner
+`Better Auth`, with a reason covering Session, OAuth redirect, callback, and
+related provider protocol routes. The maintainer must keep or change that
+typed proposal. The CLI derives the matching `http.contract` exception and
+refuses conflicting provider and HTTP values.
 
 Existing root instructions make Preservation the default; an empty instruction
 inventory makes Greenfield the default. A recoverable existing profile is the
@@ -342,6 +358,30 @@ repository owner's answers:
       "value": "single-context"
     },
     {
+      "id": "identifier.strategy",
+      "value": {
+        "kind": "uuid-v7"
+      }
+    },
+    {
+      "id": "http.contract",
+      "value": {
+        "mode": "Post-only"
+      }
+    },
+    {
+      "id": "auth.provider",
+      "value": {
+        "kind": "better-auth",
+        "routeException": {
+          "scope": "/api/auth/*",
+          "methods": ["GET", "POST"],
+          "owner": "Better Auth",
+          "reason": "Session, OAuth redirect, callback, and related provider protocol routes require provider-owned GET and POST semantics."
+        }
+      }
+    },
+    {
       "id": "language.generated",
       "value": "English"
     },
@@ -382,6 +422,14 @@ repository owner's answers:
 ```
 <!-- baseline-decision-document:end -->
 
+For the Standard TypeScript Monorepo Profile, omitting
+`identifier.strategy` or `auth.provider` makes planning exit `3` with one
+`roundfix/baseline-result/v1` action-required document that names every missing
+decision. Roundfix emits no partial Plan and mutates no repository file.
+Invalid discriminator fields, an empty repository-defined rule, the wrong
+Better Auth owner, unsupported or duplicate methods, or a conflict with
+`http.contract` refuse planning the same way.
+
 Preservation adds one `readoption` object containing the current
 `sourceBaseline` identity and an ordered `dispositions` array. Each disposition
 names the exact Source Baseline Entry and digest, one classification, one typed
@@ -390,12 +438,54 @@ non-governed. Start from the current workflow's emitted classification
 skeleton; never copy Source Baseline identities or entry digests from another
 repository state.
 
+### Project Constraints
+
+Every new PRD and TechSpec records the repository contract under which the Spec
+was approved. Each row states whether the constraint is applicable or not
+applicable, gives a reason, and names its operative `docs/agents/` source.
+Use the confirmed values from the Setup Manifest and generated guides; do not
+infer them from dependencies or implementation evidence.
+
+```markdown
+## Project Constraints
+
+- Identifier strategy: applicable. New project-owned Internal Identifiers use
+  UUID version 7; provider identifiers, protocol identifiers, natural keys, and
+  business codes retain their source contracts.
+  Source: `docs/agents/domain.md`.
+- Authentication and HTTP: applicable. Application routes use Post-only;
+  Better Auth owns `GET` and `POST` under `/api/auth/*` for its provider
+  protocol.
+  Source: `docs/agents/backend.md`.
+- Active ADR obligations: applicable. ADR-0123 governs the change.
+  Source: `docs/agents/spec-routing.md`.
+- Tooling authority: applicable. No protected tooling mutation is authorized.
+  Source: `docs/agents/agent-instructions.md`.
+```
+
+If a Spec proposes protected tooling work, replace the final row only after
+the maintainer records express maintainer authorization and the exact bounded
+repository-relative files. For example:
+
+```markdown
+- Tooling authority: applicable. The maintainer expressly authorizes edits
+  only to `oxfmt.json` and `package.json`; no other tooling file is authorized.
+  Source: `docs/agents/agent-instructions.md`.
+```
+
+Setup approval, a generic implementation request, or Task assignment does not
+authorize tooling mutation. Task decomposition refuses an incomplete Project
+Constraints section. Task execution refuses tooling work without the recorded
+authorization and exact bounded files, and final QA compares the actual changed
+paths with that scope. Completed and archived legacy Specs remain
+byte-identical.
+
 ### Automation
 
 Planning is read-only and non-interactive:
 
 ```bash
-roundfix baseline plan --repo . --profile go-cli-tui --decision-file baseline-decisions.json --format json
+roundfix baseline plan --repo . --profile standard-typescript-monorepo --decision-file baseline-decisions.json --format json
 ```
 
 Automation can provide the same reviewed repository-owned adaptation as an
