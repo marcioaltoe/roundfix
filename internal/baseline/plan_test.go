@@ -153,6 +153,7 @@ func TestFormatterComposition(t *testing.T) {
 	runPlanGit(t, repository, "init", "-q")
 	runPlanGit(t, repository, "config", "user.email", "fixture@example.invalid")
 	runPlanGit(t, repository, "config", "user.name", "Fixture Test")
+	runPlanGit(t, repository, "config", "commit.gpgsign", "false")
 	runPlanGit(t, repository, "add", ".")
 	runPlanGit(t, repository, "commit", "-qm", "seed formatter fixture")
 
@@ -1165,6 +1166,53 @@ func TestProfileDraftPlanIncludesCanonicalRepositoryProfile(t *testing.T) {
 	if err := ValidatePlanRepository(context.Background(), clone, plan); err != nil {
 		t.Fatalf("ValidatePlanRepository() portable profile plan error = %v", err)
 	}
+}
+
+func TestProfileDraftPlanAcceptsMatchingSourceBaselineWithoutTransition(t *testing.T) {
+	repo := newBackendProfileRepository(t, true)
+	catalog := mustEmbeddedCatalog(t)
+	source, err := ResolveProfile("", "standard-typescript-monorepo", catalog)
+	if err != nil {
+		t.Fatal(err)
+	}
+	staleManifest := SetupManifest{
+		SchemaVersion: ManifestSchema,
+		Version:       ManifestVersion,
+		Generator: ManifestGenerator{
+			Skill:    "setup-context-driven",
+			Version:  ManifestVersion,
+			Baseline: "baseline." + source.ID + "-" + ManifestVersion,
+		},
+		Profile:          source.ID,
+		ProfileDigest:    source.Digest,
+		CatalogDigest:    "sha256:" + strings.Repeat("0", 64),
+		Modules:          []string{},
+		Decisions:        map[string]ManifestDecision{},
+		ManagedArtifacts: []ManifestArtifact{},
+		LocalSkills:      []string{},
+		Verification:     []VerificationProjection{},
+	}
+	data, err := json.MarshalIndent(staleManifest, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeInspectionFile(t, repo, manifestPath, string(append(data, '\n')))
+	commitInspectionRepository(t, repo, "seed source Baseline manifest")
+
+	request, _ := backendProfileDraftPlanRequest(t, repo)
+	outcome, err := BuildPlan(context.Background(), request)
+	if err != nil {
+		t.Fatalf("BuildPlan() matching source Baseline error = %v", err)
+	}
+	if outcome.Plan == nil {
+		t.Fatalf("matching source Baseline blocked reviewed Profile adaptation: %+v", outcome.Result)
+	}
+	assertProfilePlanLedgers(
+		t,
+		*outcome.Plan,
+		".roundfix/baseline/profiles/backend-only.json",
+		planPostimage(t, *outcome.Plan, ".roundfix/baseline/profiles/backend-only.json").ContentIdentity,
+	)
 }
 
 func TestProfileDraftPlanRejectsSimultaneousAndConflictingInputs(t *testing.T) {

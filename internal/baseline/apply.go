@@ -236,7 +236,7 @@ func preimageMatchesPostimage(preimage Preimage, postimage Postimage) bool {
 func verifiedApplyResult(document PlanDocument, verified []Postimage, alreadyApplied bool) Result {
 	recommendations := make([]string, 0, len(document.SetupManifest.Verification))
 	for _, verification := range document.SetupManifest.Verification {
-		if verification.Command != "" {
+		if verification.RepositoryExecutable && verification.Command != "" {
 			recommendations = append(recommendations, verification.Command)
 		}
 	}
@@ -299,7 +299,7 @@ func validatePlanApplyContract(document PlanDocument) error {
 		return err
 	}
 
-	expectedBackups, err := expectedRootBackups(document.Preimages)
+	expectedBackups, err := expectedRootBackups(document.Preimages, document.Postimages)
 	if err != nil {
 		return err
 	}
@@ -503,8 +503,15 @@ func validateSpecificRepositoryPlan(
 
 const sha256HexLength = 64
 
-func expectedRootBackups(preimages []Preimage) (map[string]string, error) {
+func expectedRootBackups(
+	preimages []Preimage,
+	postimages []Postimage,
+) (map[string]string, error) {
 	byPath := preimagesByPath(preimages)
+	postimagesByPath := make(map[string]Postimage, len(postimages))
+	for _, postimage := range postimages {
+		postimagesByPath[postimage.Path] = postimage
+	}
 	type carrier struct {
 		path   string
 		source string
@@ -521,6 +528,12 @@ func expectedRootBackups(preimages []Preimage) (map[string]string, error) {
 		case PreimageRegular:
 			if preimage.ContentIdentity == "" {
 				return nil, fmt.Errorf("root carrier %q has no content identity", carrierPath)
+			}
+			if postimage, exists := postimagesByPath[carrierPath]; exists &&
+				postimage.Kind == PreimageRegular &&
+				postimage.ContentIdentity == preimage.ContentIdentity &&
+				containsOnlySetupManagedGuidance(postimage.Content) {
+				continue
 			}
 			carriers = append(carriers, carrier{
 				path: carrierPath, source: carrierPath,

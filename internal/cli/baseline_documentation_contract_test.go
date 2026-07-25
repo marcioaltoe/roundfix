@@ -371,8 +371,27 @@ func TestBaselineDecisionExamples(t *testing.T) {
 	}
 	if document.SchemaVersion != baseline.DecisionDocumentSchemaVersion ||
 		document.Version != baseline.DecisionDocumentVersion ||
-		len(document.Decisions) != 9 {
+		len(document.Decisions) != 11 {
 		t.Fatalf("published Decision Document parsed unexpectedly: %#v", document)
+	}
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+	profile, err := baseline.ResolveProfile("", "go-cli-tui", catalog)
+	if err != nil {
+		t.Fatal(err)
+	}
+	decisions := make([]baseline.DecisionValue, 0, len(document.Decisions))
+	for _, decision := range document.Decisions {
+		if decision.ID != "preservation.mode" {
+			decisions = append(decisions, decision)
+		}
+	}
+	if _, missing, err := baseline.ResolveDecisionInput(profile, decisions, catalog); err != nil {
+		t.Fatalf("published complete Decision Document is invalid for go-cli-tui: %v", err)
+	} else if len(missing) != 0 {
+		t.Fatalf("published complete Decision Document is missing required decisions: %v", missing)
 	}
 
 	invalid := strings.Replace(example, `"version": "0.0.1",`, `"version": "0.0.1", "unknown": true,`, 1)

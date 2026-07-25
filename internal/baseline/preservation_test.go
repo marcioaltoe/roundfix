@@ -195,6 +195,33 @@ func TestDecisionDocumentSkeletonPassesStrictParser(t *testing.T) {
 	}
 }
 
+func TestDecisionDocumentSkeletonDoesNotProposeManagedSemanticVersionBytes(t *testing.T) {
+	repo := newInspectionRepository(t)
+	writeInspectionFile(t, repo, "AGENTS.md", strings.Join([]string{
+		"<!-- setup-context-driven:begin id=root.core version=0.0.1 -->",
+		"managed root guidance",
+		"<!-- setup-context-driven:end id=root.core -->",
+		"",
+	}, "\n"))
+	commitInspectionRepository(t, repo, "seed managed root")
+
+	plan, err := PlanRootPreservation(
+		inspectPreservationRepository(t, repo),
+		RootPreservationRequest{Mode: PreservationModePreservation},
+	)
+	if err != nil {
+		t.Fatalf("plan managed-root preservation: %v", err)
+	}
+	if plan.DecisionSkeleton == nil {
+		t.Fatalf("managed-root preservation has no Decision Document skeleton: %+v", plan)
+	}
+	for _, disposition := range plan.DecisionSkeleton.Document.Readoption.Dispositions {
+		if disposition.Disposition == "repository-rules" || disposition.Destination != nil {
+			t.Fatalf("setup-managed bytes were proposed as repository rules: %+v", disposition)
+		}
+	}
+}
+
 func TestDecisionDocumentSkeletonRejectsMalformedInput(t *testing.T) {
 	_, err := ParseDecisionDocument([]byte(`{
 	  "schemaVersion":"setup-context-driven/decisions/0.0.1",

@@ -47,6 +47,10 @@ func TestGuidanceCompositionJourney(t *testing.T) {
 
 			first := baselineReleaseApply(t, binary, repo, plan, planPath)
 			assertBaselineReleaseRecommendation(t, first, "make verify")
+			if profile == "standard-typescript-monorepo" {
+				assertBaselineReleaseRecommendation(t, first, "bun run fmt")
+				assertBaselineReleaseNoRecommendation(t, first, "bun run format")
+			}
 			assertBaselineReleaseNoRepositoryCarrier(t, repo, plan)
 			for _, marker := range []string{".qa-verification-ran", ".qa-profile-command-ran"} {
 				if _, err := os.Stat(filepath.Join(repo, marker)); !errors.Is(err, os.ErrNotExist) {
@@ -55,6 +59,13 @@ func TestGuidanceCompositionJourney(t *testing.T) {
 			}
 
 			update, updatePath := baselineReleasePlan(t, binary, repo, profile)
+			if len(update.FileChanges) != 0 {
+				t.Fatalf(
+					"first fresh Plan after greenfield apply has %d file changes: %+v",
+					len(update.FileChanges),
+					update.FileChanges,
+				)
+			}
 			assertBaselineReleaseCompleteManagedLedger(t, update)
 			baselineReleaseApply(t, binary, repo, update, updatePath)
 			assertBaselineReleaseNoRepositoryCarrier(t, repo, update)
@@ -206,6 +217,7 @@ func TestSemanticRedistributionJourney(t *testing.T) {
 func TestProfileAdaptationJourney(t *testing.T) {
 	binary := buildBaselineReleaseBinary(t)
 	repo, input, decisions := baselinePlanProfileFileFixture(t)
+	seedBaselineReleaseSourceManifest(t, repo, input.SourceProfileID)
 	draftPath := filepath.Join(t.TempDir(), "guided-backend.json")
 	if err := os.WriteFile(draftPath, input.Document, 0o600); err != nil {
 		t.Fatalf("write reviewed Profile adaptation: %v", err)
@@ -664,7 +676,7 @@ func baselineReleaseDecisionArgs(profile, preservation string) []string {
 
 func assertBaselineReleaseCompleteManagedLedger(t *testing.T, plan baseline.PlanDocument) {
 	t.Helper()
-	if len(plan.ManagedEntries) == 0 || len(plan.FileChanges) == 0 {
+	if len(plan.ManagedEntries) == 0 {
 		t.Fatalf(
 			"incomplete Change Plan ledgers: managed=%d fileChanges=%d",
 			len(plan.ManagedEntries),
@@ -857,6 +869,55 @@ func assertBaselineReleaseRecommendation(t *testing.T, result baseline.Result, c
 	t.Fatalf("apply recommendations = %v, want %q", result.Recommendations, command)
 }
 
+func assertBaselineReleaseNoRecommendation(t *testing.T, result baseline.Result, command string) {
+	t.Helper()
+	for _, recommendation := range result.Recommendations {
+		if recommendation == command {
+			t.Fatalf("apply recommendations include unsupported command %q: %v", command, result.Recommendations)
+		}
+	}
+}
+
+func seedBaselineReleaseSourceManifest(t *testing.T, repo, profileID string) {
+	t.Helper()
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+	profile, err := baseline.ResolveProfile("", profileID, catalog)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifest := baseline.SetupManifest{
+		SchemaVersion: baseline.ManifestSchema,
+		Version:       baseline.ManifestVersion,
+		Generator: baseline.ManifestGenerator{
+			Skill:    "setup-context-driven",
+			Version:  baseline.ManifestVersion,
+			Baseline: "baseline." + profile.ID + "-" + baseline.ManifestVersion,
+		},
+		Profile:          profile.ID,
+		ProfileDigest:    profile.Digest,
+		CatalogDigest:    "sha256:" + strings.Repeat("0", 64),
+		Modules:          []string{},
+		Decisions:        map[string]baseline.ManifestDecision{},
+		ManagedArtifacts: []baseline.ManifestArtifact{},
+		LocalSkills:      []string{},
+		Verification:     []baseline.VerificationProjection{},
+	}
+	data, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeBaselinePlanTestFile(
+		t,
+		repo,
+		"docs/agents/setup-context.json",
+		string(append(data, '\n')),
+	)
+	commitBaselinePlanTestRepository(t, repo)
+}
+
 func runBaselineReleaseFormatter(t *testing.T, repo, profile string) {
 	t.Helper()
 	switch profile {
@@ -940,7 +1001,7 @@ func baselineReleaseTypeScriptPackageJSON() string {
 		`"zod":"latest"`,
 	}
 	return `{"name":"root","packageManager":"bun@1.3.0","scripts":{` +
-		`"format":"touch .qa-profile-command-ran","lint":"touch .qa-profile-command-ran",` +
+		`"fmt":"touch .qa-profile-command-ran","lint":"touch .qa-profile-command-ran",` +
 		`"test":"touch .qa-profile-command-ran","build":"touch .qa-profile-command-ran",` +
 		`"verify":"touch .qa-profile-command-ran"},` +
 		`"dependencies":{` + strings.Join(dependencies, ",") + `}}`

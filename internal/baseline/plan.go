@@ -455,7 +455,7 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 		initial.Root,
 		snapshot,
 		catalog,
-		profile.ID,
+		compatibleRetentionProfileIDs(profile.ID, request.ProfileDraft),
 		preservation,
 	)
 	if err != nil {
@@ -959,7 +959,7 @@ func actionOutcome(category, message, next string, warnings []Finding) PlanOutco
 func readyResult(digest string, warnings []Finding, verification []VerificationProjection) Result {
 	recommendations := make([]string, 0, len(verification))
 	for _, item := range verification {
-		if item.Command != "" {
+		if item.RepositoryExecutable && item.Command != "" {
 			recommendations = append(recommendations, item.Command)
 		}
 	}
@@ -979,7 +979,7 @@ func resolvePlanRetention(
 	root string,
 	snapshot RepositorySnapshot,
 	catalog *Catalog,
-	profileID string,
+	profileIDs []string,
 	preservation RootPreservationPlan,
 ) ([]RetentionEvidence, string, error) {
 	retention := readoptionRetentionEvidence(preservation.Dispositions)
@@ -1004,10 +1004,14 @@ func resolvePlanRetention(
 
 	generator, _ := objectValue(manifest["generator"])
 	declaredBaseline, _ := stringValue(generator, "baseline")
-	currentBaseline := "baseline." + profileID + "-" + ManifestVersion
+	compatibleBaselines := make(map[string]struct{}, len(profileIDs))
+	for _, profileID := range profileIDs {
+		compatibleBaselines["baseline."+profileID+"-"+ManifestVersion] = struct{}{}
+	}
+	_, compatibleBaseline := compatibleBaselines[declaredBaseline]
 	if manifest["schemaVersion"] == ManifestSchema &&
 		manifest["version"] == ManifestVersion &&
-		declaredBaseline == currentBaseline {
+		compatibleBaseline {
 		return retention, "", nil
 	}
 	if currentSetupManifestProfileIsValid(root, manifest, generator, catalog) {
@@ -1044,6 +1048,19 @@ func resolvePlanRetention(
 			nil
 	}
 	return append(retention, transitionRetentionEvidence(matches[0])...), "", nil
+}
+
+func compatibleRetentionProfileIDs(
+	profileID string,
+	draft *ProfileDraftInput,
+) []string {
+	result := []string{profileID}
+	if draft != nil &&
+		draft.SourceProfileID != "" &&
+		draft.SourceProfileID != profileID {
+		result = append(result, draft.SourceProfileID)
+	}
+	return result
 }
 
 func currentSetupManifestProfileIsValid(
@@ -1799,6 +1816,11 @@ func assemblePostimages(
 		source, err := readOptionalRegular(root, backup.SourcePath)
 		if err != nil {
 			return nil, nil, err
+		}
+		if rendered, exists := outputs[backup.SourcePath]; exists &&
+			bytes.Equal(source, rendered) &&
+			containsOnlySetupManagedGuidance(source) {
+			continue
 		}
 		outputs[backup.Path] = source
 	}

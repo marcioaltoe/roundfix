@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0047-context-driven-guidance-composition
-status: failed
+status: completed
 type: test
 complexity: high
 ---
@@ -75,22 +75,22 @@ The first full QA gate found three Blocks-Completion defects and two
 documentation frictions. Repair the product behavior at its owning boundary,
 extend the hermetic regression coverage, and rerun the complete live matrix.
 
-- [ ] F-01: an update MUST NOT propose setup-managed root bytes as
+- [x] F-01: an update MUST NOT propose setup-managed root bytes as
   repository-owned rules and then reject its own accepted proposal as stale,
   empty, or managed.
-- [ ] F-02: a reviewed, catalog-valid repository-owned Profile adaptation MUST
+- [x] F-02: a reviewed, catalog-valid repository-owned Profile adaptation MUST
   reach the final portable Change Plan even when the existing Setup Manifest's
   Source Baseline has no unique maintained transition.
-- [ ] F-03: the first fresh Plan after a confirmed greenfield apply MUST have
+- [x] F-03: the first fresh Plan after a confirmed greenfield apply MUST have
   zero file changes and MUST NOT create a second digest-addressed root backup.
-- [ ] F-04: the documented complete greenfield Decision Document MUST include
+- [x] F-04: the documented complete greenfield Decision Document MUST include
   every required runtime decision.
-- [ ] F-05: formatter discovery and the reported post-apply recommendation MUST
+- [x] F-05: formatter discovery and the reported post-apply recommendation MUST
   use the repository's real supported command.
-- [ ] The temporary Git fixture used by `TestFormatterComposition` MUST be
+- [x] The temporary Git fixture used by `TestFormatterComposition` MUST be
   isolated from host-level `commit.gpgsign=true` without requiring a process
   environment override.
-- [ ] Fresh regression tests MUST fail before each behavior repair and pass
+- [x] Fresh regression tests MUST fail before each behavior repair and pass
   afterward.
 - [ ] The complete Fluxus greenfield/update and Oraculum adaptation live matrix
   MUST pass from one fresh Roundfix build.
@@ -101,34 +101,47 @@ Evidence and exact reproductions:
 
 ## Result
 
-Implemented hermetic release-gate journeys at the existing Baseline engine and
-public CLI boundaries.
+Repaired the five QA findings at their owning Baseline boundaries and extended
+the hermetic release-gate journeys.
 
-- `TestGuidanceCompositionJourney` enumerates the embedded catalog's complete
-  maintained Profile set (`go-cli-tui`, `rust-cli`, and
-  `standard-typescript-monorepo`). Each Profile completes greenfield apply,
-  update apply, external formatting, repository Verification, fresh empty
-  planning, and mutation-free reapply through a built Roundfix binary.
-- `TestSemanticRedistributionJourney` moves exact bytes from both legacy
-  generic carriers into the active CLI semantic guide, proves zero-residual
-  cleanup, separately proves canonical residual retention, and validates the
-  complete managed-entry and Upgrade Retention Contract ledgers.
-- `TestProfileAdaptationJourney` reproduces a generic backend-only TypeScript
-  divergence, plans and applies the reviewed repository-owned Profile through
-  `--profile-file`, proves the Profile ledger entry, re-audits universal
-  requirements as required and satisfied, and finishes with an empty reapply.
-- `TestBaselineReleaseGate` now includes semantic-guide and planned-Profile
-  transaction failures. Both injected failures compare the complete visible
-  repository tree with its exact preimage after rollback.
-- `qa/live-journeys.md` defines the separately authorized evidence matrix for
-  fresh Fluxus greenfield and update journeys plus the Oraculum divergence and
-  adaptation journey. Task 09 did not read or mutate either live repository.
+- F-01: setup-managed markers now accept the shipped semantic version, so
+  managed root bytes are excluded from repository-owned Readoption proposals.
+- F-02: reviewed repository-owned Profile adaptation accepts the validated
+  Source Profile Baseline as retention-compatible without inventing a
+  maintained transition.
+- F-03: an unchanged root containing only setup-managed guidance produces no
+  redundant digest-addressed backup; Plan assembly and apply-contract
+  validation enforce the same rule. The first fresh Plan after every
+  maintained Profile's greenfield apply has zero file changes.
+- F-04: the published complete greenfield Decision Document includes both
+  required runtime decisions and is resolved against the embedded Profile
+  catalog in its documentation contract test.
+- F-05: formatter projection discovers the repository-declared `fmt` alias,
+  persists `bun run fmt` into the Setup Manifest, and reports only executable
+  repository recommendations after Plan and Apply.
+- `TestFormatterComposition` sets repository-local `commit.gpgsign=false`, so
+  the hermetic Git fixture does not inherit host signing policy or require a
+  process environment override.
+- The existing semantic redistribution, residual retention, managed-entry,
+  Upgrade Retention, audit, empty-reapply, and exact rollback assertions remain
+  green. Planned-Profile rollback still compares the complete visible
+  repository tree with its preimage.
+- `qa/live-journeys.md` remains the separately authorized evidence matrix for
+  fresh Fluxus greenfield/update and Oraculum divergence/adaptation journeys.
+  Task 09 did not read or mutate either live repository.
 
 Verification:
 
-- `rtk go test -count=1 ./internal/baseline ./internal/cli -run 'TestGuidanceCompositionJourney|TestSemanticRedistributionJourney|TestProfileAdaptationJourney|TestBaselineReleaseGate'`
-  passed with 34 tests across 2 packages.
-- `rtk make verify` passed: 2,198 repository tests, 4 skill contract tests,
+- The focused red regressions reproduced managed-marker redistribution,
+  incompatible source retention, redundant backup, incomplete documentation,
+  formatter mismatch, and host signing failures before their repairs; the same
+  focused suite passed afterward.
+- `rtk env GOCACHE=/private/tmp/roundfix-0047-task09-go-cache go test -count=1
+  ./internal/baseline ./internal/cli -run
+  'TestGuidanceCompositionJourney|TestSemanticRedistributionJourney|TestProfileAdaptationJourney|TestBaselineReleaseGate'`
+  passed across both packages.
+- `rtk env GOCACHE=/private/tmp/roundfix-0047-task09-go-cache make verify` passed:
+  2,201 repository tests across 22 packages, 4 skill contract tests,
   `roundfix skills check`, and the Roundfix build.
 - `rtk git diff --check` passed.
 

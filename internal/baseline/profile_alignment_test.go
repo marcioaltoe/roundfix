@@ -358,7 +358,10 @@ func TestExecutableVerificationCommandRequiresLocalDeclaration(t *testing.T) {
 		t.Fatalf("resolve undeclared Verification commands: %v", err)
 	}
 	format, ok := findVerificationProjection(alignment.Verification, "verification.format")
-	if !ok || format.RepositoryExecutable || format.Classification != VerificationProfileExpectation {
+	if !ok ||
+		!format.RepositoryExecutable ||
+		format.Command != "bun run fmt" ||
+		format.Classification != VerificationRepositoryCommand {
 		t.Fatalf("format projection = %+v, found=%v", format, ok)
 	}
 	workspace, ok := findVerificationProjection(alignment.Verification, "verification.workspace")
@@ -389,6 +392,31 @@ func TestExecutableVerificationCommandRequiresLocalDeclaration(t *testing.T) {
 	}
 	if !resolved.Ready {
 		t.Fatalf("declared Verification command remains blocked: %+v", resolved.Divergences)
+	}
+}
+
+func TestProfileAlignmentDiscoversDeclaredRepositoryFormatter(t *testing.T) {
+	catalog := loadProfileAlignmentCatalog(t)
+	repository := newAlignedTypeScriptRepository(t)
+	writeProfileAlignmentFile(t, repository, "package.json", typeScriptPackageJSON(true, false))
+
+	alignment, err := ResolveProfileAlignment(context.Background(), repository, ProfileAlignmentRequest{
+		ProfileID: "standard-typescript-monorepo",
+		Decisions: standardTypeScriptDecisions("make verify"),
+	}, catalog)
+	if err != nil {
+		t.Fatalf("resolve repository formatter: %v", err)
+	}
+	format, ok := findVerificationProjection(alignment.Verification, "verification.format")
+	if !ok ||
+		format.Command != "bun run fmt" ||
+		!format.RepositoryExecutable ||
+		format.DeclarationPath != "package.json" ||
+		format.Classification != VerificationRepositoryCommand {
+		t.Fatalf("repository formatter projection = %+v, found=%v", format, ok)
+	}
+	if divergence, exists := findProfileDivergence(alignment.Divergences, "verification.format"); exists {
+		t.Fatalf("declared repository formatter remained divergent: %+v", divergence)
 	}
 }
 

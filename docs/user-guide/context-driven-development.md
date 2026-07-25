@@ -335,7 +335,7 @@ repository owner's answers:
   "decisions": [
     {
       "id": "autonomous.enabled",
-      "value": false
+      "value": true
     },
     {
       "id": "domain.layout",
@@ -352,6 +352,14 @@ repository owner's answers:
     {
       "id": "repository.extension.enabled",
       "value": false
+    },
+    {
+      "id": "runtime.backend",
+      "value": "codex gpt-5.6-sol"
+    },
+    {
+      "id": "runtime.design",
+      "value": "claude fable high"
     },
     {
       "id": "secondbrain.enabled",

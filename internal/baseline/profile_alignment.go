@@ -934,16 +934,24 @@ func resolveVerificationProjection(
 			role, _ := stringValue(raw, "kind")
 			tool, _ := stringValue(raw, "tool")
 			command, _ := stringValue(raw, "command")
-			declaration, err := validateLocalCommandDeclaration(root, command)
+			resolvedCommand, declaration, err := resolveProfileVerificationCommand(
+				root,
+				role,
+				command,
+			)
 			if err != nil {
 				return nil, nil, fmt.Errorf("validate profile Verification expectation %q: %w", id, err)
+			}
+			classification := VerificationProfileExpectation
+			if resolvedCommand != command {
+				classification = VerificationRepositoryCommand
 			}
 			projections = append(projections, VerificationProjection{
 				ID:                   id,
 				Role:                 role,
 				Tool:                 tool,
-				Command:              command,
-				Classification:       VerificationProfileExpectation,
+				Command:              resolvedCommand,
+				Classification:       classification,
 				RepositoryExecutable: declaration.Path != "",
 				DeclarationPath:      declaration.Path,
 				DeclarationDigest:    declaration.Digest,
@@ -991,6 +999,48 @@ func resolveVerificationProjection(
 	}
 	sort.Slice(projections, func(i, j int) bool { return projections[i].ID < projections[j].ID })
 	return projections, divergences, nil
+}
+
+func resolveProfileVerificationCommand(
+	root *os.Root,
+	role string,
+	command string,
+) (string, commandDeclaration, error) {
+	declaration, err := validateLocalCommandDeclaration(root, command)
+	if err != nil || declaration.Path != "" || role != "format" {
+		return command, declaration, err
+	}
+	fields := strings.Fields(command)
+	hasRTK := len(fields) != 0 && fields[0] == "rtk"
+	if hasRTK {
+		fields = fields[1:]
+	}
+	if len(fields) != 3 || fields[1] != "run" {
+		return command, declaration, nil
+	}
+	switch fields[0] {
+	case "bun", "npm", "pnpm", "yarn":
+	default:
+		return command, declaration, nil
+	}
+	for _, script := range []string{"fmt", "format"} {
+		if script == fields[2] {
+			continue
+		}
+		candidateFields := []string{fields[0], "run", script}
+		if hasRTK {
+			candidateFields = append([]string{"rtk"}, candidateFields...)
+		}
+		candidate := strings.Join(candidateFields, " ")
+		candidateDeclaration, candidateErr := validateLocalCommandDeclaration(root, candidate)
+		if candidateErr != nil {
+			return "", commandDeclaration{}, candidateErr
+		}
+		if candidateDeclaration.Path != "" {
+			return candidate, candidateDeclaration, nil
+		}
+	}
+	return command, declaration, nil
 }
 
 type commandDeclaration struct {

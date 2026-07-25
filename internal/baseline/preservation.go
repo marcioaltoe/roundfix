@@ -906,7 +906,7 @@ func buildReadoptionSourceBaseline(sources []rootPreservationSource) ReadoptionS
 }
 
 var managedBeginMarker = regexp.MustCompile(
-	`<!--\s*setup-context-driven:begin\s+id=([A-Za-z0-9_.-]+)\s+version=([0-9]+)\s*-->`,
+	`<!--\s*setup-context-driven:begin\s+id=([A-Za-z0-9_.-]+)\s+version=([0-9]+(?:\.[0-9]+)*)\s*-->`,
 )
 
 type sourceSpan struct {
@@ -944,7 +944,10 @@ func partitionRootSource(sourcePath string, content []byte) []ReadoptionSourceEn
 		} else if bytes.HasPrefix(content[end:], []byte("\n")) {
 			end++
 		}
-		version, _ := strconv.Atoi(versionText)
+		var version any = versionText
+		if integerVersion, err := strconv.Atoi(versionText); err == nil {
+			version = integerVersion
+		}
 		spans = append(spans, sourceSpan{
 			start: start,
 			end:   end,
@@ -1006,6 +1009,21 @@ func partitionRootSource(sourcePath string, content []byte) []ReadoptionSourceEn
 		))
 	}
 	return entries
+}
+
+func containsOnlySetupManagedGuidance(content []byte) bool {
+	entries := partitionRootSource("", content)
+	hasManaged := false
+	for _, entry := range entries {
+		if entry.Kind == "managed-block" {
+			hasManaged = true
+			continue
+		}
+		if len(bytes.TrimSpace(entry.SourceBytes)) != 0 {
+			return false
+		}
+	}
+	return hasManaged
 }
 
 func newReadoptionSourceEntry(
