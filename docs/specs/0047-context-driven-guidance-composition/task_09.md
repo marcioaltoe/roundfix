@@ -1,7 +1,7 @@
 ---
 task: task_09
 spec: 0047-context-driven-guidance-composition
-status: completed
+status: failed
 type: test
 complexity: high
 ---
@@ -61,6 +61,7 @@ not Task prerequisites.
 ## Verification
 
 - `rtk go test -count=100 ./internal/baseline -run 'TestAssetsSyncProvenanceAndPreMutationRefusals/dirty_or_untracked_checkout'` — expected: temporary Git fixture cleanup passes deterministically without process-level Git configuration overrides.
+- `rtk go test -count=1 ./internal/baseline ./internal/cli -run 'TestManagedRootFreshPlan|TestGuidanceCompositionJourney|TestProfileAdaptationJourney'` — expected: a verified greenfield, update, and repository-owned Profile apply each produce a valid zero-change fresh Plan while roots that still contain user-owned bytes continue to require an immutable backup.
 - `rtk go test -count=1 ./internal/baseline ./internal/cli -run 'TestGuidanceCompositionJourney|TestSemanticRedistributionJourney|TestProfileAdaptationJourney|TestBaselineReleaseGate'` — expected: greenfield, update, adaptation, formatting, rollback, audit, and reapply journeys pass.
 - `rtk make verify` — expected: the full repository gate passes.
 
@@ -119,6 +120,30 @@ the live matrix could start.
 Evidence and exact reproduction:
 `qa/qa-report-2026-07-25.md` and
 `qa/evidence/2026-07-25-guidance-composition/command-evidence.md`.
+
+## QA persistence repair cycle — 2026-07-25
+
+The third full QA gate passed the static gate and all initial public
+Plan/apply/Verification paths, but every first fresh Plan failed at the same
+root-backup validation boundary.
+
+- [ ] F-07: a root carrier composed entirely of verified setup-managed bytes
+  MUST NOT require an immutable source backup on the first fresh Plan.
+- [ ] A root carrier that still contains any user-owned source bytes MUST
+  continue to require and validate its immutable digest-addressed backup.
+- [ ] Greenfield, update, and repository-owned Profile adaptation MUST each
+  complete Plan → apply → formatter → repository Verification → zero-change
+  fresh Plan through public boundaries.
+- [ ] The repair MUST reconcile Plan assembly and Plan/apply validation at the
+  same ownership boundary; it MUST NOT suppress the backup invariant globally.
+- [ ] Unmodified `rtk make verify` MUST pass.
+- [ ] The complete Fluxus greenfield/update and Oraculum adaptation live matrix
+  MUST pass from one fresh Roundfix build.
+
+Evidence and exact reproductions:
+`qa/qa-report-2026-07-25.md`,
+`qa/evidence/2026-07-25-guidance-composition/command-evidence.md`, and
+`qa/evidence/2026-07-25-guidance-composition/rerun/`.
 
 ## Result
 
