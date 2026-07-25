@@ -1164,6 +1164,152 @@ func TestAuthProviderDecision(t *testing.T) {
 	}
 }
 
+func TestDeriveBetterAuthHTTPContract(t *testing.T) {
+	repository := newProjectDecisionPlanRepository(t)
+	decisions := standardTypeScriptDecisions("make verify")
+	provider := completeAuthProviderDecision()
+	providerException := provider["routeException"].(map[string]any)
+	providerException["methods"] = []any{"POST", "GET"}
+	for index := range decisions {
+		switch decisions[index].ID {
+		case "auth.provider":
+			decisions[index].Value = provider
+		case "http.contract":
+			decisions[index].Value = map[string]any{
+				"mode": "Post-only",
+				"exceptions": []any{
+					map[string]any{
+						"scope":   "/health",
+						"methods": []any{"GET"},
+						"owner":   "Operations",
+						"reason":  "Expose repository health checks.",
+					},
+					map[string]any{
+						"scope":   "/api/auth/*",
+						"methods": []any{"POST", "GET"},
+						"owner":   "Better Auth",
+						"reason":  providerException["reason"],
+					},
+				},
+			}
+		}
+	}
+
+	outcome, err := BuildPlan(context.Background(), PlanRequest{
+		Repository:   repository,
+		ProfileID:    "standard-typescript-monorepo",
+		Decisions:    decisions,
+		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
+	})
+	if err != nil {
+		t.Fatalf("build Better Auth Plan: %v", err)
+	}
+	if outcome.Plan == nil {
+		t.Fatalf("build Better Auth Plan returned result: %+v", outcome.Result)
+	}
+
+	httpDecision := planDecisionValue(t, outcome.Plan.Decisions, "http.contract")
+	httpJSON, err := json.Marshal(httpDecision)
+	if err != nil {
+		t.Fatalf("marshal normalized HTTP Contract Decision: %v", err)
+	}
+	wantHTTP := `{"exceptions":[{"methods":["GET","POST"],"owner":"Better Auth","reason":"Session, OAuth redirect, callback, and related provider protocol routes require provider-owned GET and POST semantics.","scope":"/api/auth/*"},{"methods":["GET"],"owner":"Operations","reason":"Expose repository health checks.","scope":"/health"}],"mode":"Post-only"}`
+	if string(httpJSON) != wantHTTP {
+		t.Fatalf("normalized HTTP Contract Decision = %s, want %s", httpJSON, wantHTTP)
+	}
+	if stored := outcome.Plan.SetupManifest.Decisions["http.contract"].Value; !valuesEqual(stored, httpDecision) {
+		t.Fatalf("Setup Manifest HTTP Contract Decision = %#v, want %#v", stored, httpDecision)
+	}
+	authDecision := planDecisionValue(t, outcome.Plan.Decisions, "auth.provider")
+	if stored := outcome.Plan.SetupManifest.Decisions["auth.provider"].Value; !valuesEqual(stored, authDecision) {
+		t.Fatalf("Setup Manifest auth provider = %#v, want %#v", stored, authDecision)
+	}
+}
+
+func TestHTTPContractConflict(t *testing.T) {
+	catalog := mustEmbeddedCatalog(t)
+	profile, err := ResolveProfile("", "standard-typescript-monorepo", catalog)
+	if err != nil {
+		t.Fatalf("resolve Standard TypeScript Monorepo Profile: %v", err)
+	}
+	provider := completeAuthProviderDecision()
+	providerReason := provider["routeException"].(map[string]any)["reason"]
+	tests := []struct {
+		name       string
+		exceptions []any
+	}{
+		{
+			name: "duplicate normalized methods",
+			exceptions: []any{map[string]any{
+				"scope": "/api/auth/*", "methods": []any{"GET", "get"},
+				"owner": "Better Auth", "reason": providerReason,
+			}},
+		},
+		{
+			name: "unsupported method",
+			exceptions: []any{map[string]any{
+				"scope": "/api/auth/*", "methods": []any{"PATCH"},
+				"owner": "Better Auth", "reason": providerReason,
+			}},
+		},
+		{
+			name: "missing rationale",
+			exceptions: []any{map[string]any{
+				"scope": "/api/auth/*", "methods": []any{"GET", "POST"},
+				"owner": "Better Auth", "reason": " ",
+			}},
+		},
+		{
+			name: "provider projection conflicts with HTTP policy",
+			exceptions: []any{map[string]any{
+				"scope": "/api/auth/*", "methods": []any{"GET"},
+				"owner": "Better Auth", "reason": providerReason,
+			}},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			decisions := standardTypeScriptDecisions("make verify")
+			for index := range decisions {
+				if decisions[index].ID == "http.contract" {
+					decisions[index].Value = map[string]any{
+						"mode":       "Post-only",
+						"exceptions": test.exceptions,
+					}
+				}
+			}
+			_, _, err := ResolveDecisionInput(profile, decisions, catalog)
+			if err == nil ||
+				!strings.Contains(err.Error(), "auth.provider") ||
+				!strings.Contains(err.Error(), "http.contract") {
+				t.Fatalf("ResolveDecisionInput() error = %v, want both decision IDs", err)
+			}
+		})
+	}
+
+	conflicting := standardTypeScriptDecisions("make verify")
+	for index := range conflicting {
+		if conflicting[index].ID == "http.contract" {
+			conflicting[index].Value = map[string]any{
+				"mode": "Post-only",
+				"exceptions": []any{map[string]any{
+					"scope": "/api/auth/*", "methods": []any{"GET"},
+					"owner": "Better Auth", "reason": providerReason,
+				}},
+			}
+		}
+	}
+	outcome, err := BuildPlan(context.Background(), PlanRequest{
+		Repository:   newProjectDecisionPlanRepository(t),
+		ProfileID:    profile.ID,
+		Decisions:    conflicting,
+		Preservation: RootPreservationRequest{Mode: PreservationModeGreenfield},
+	})
+	if err == nil || outcome.Plan != nil {
+		t.Fatalf("conflicting provider/HTTP pair produced Plan=%v error=%v", outcome.Plan != nil, err)
+	}
+}
+
 func TestPlanDocumentIncludesMaintainedUpgradeRetention(t *testing.T) {
 	repo := newPlanRepository(t)
 	writeInspectionFile(t, repo, manifestPath, `{
@@ -1641,6 +1787,29 @@ func newPlanRepository(t *testing.T) string {
 	writeInspectionFile(t, repo, "Makefile", "verify:\n\t@true\n")
 	commitInspectionRepository(t, repo, "seed portable plan")
 	return repo
+}
+
+func newProjectDecisionPlanRepository(t *testing.T) string {
+	t.Helper()
+	repository := newAlignedTypeScriptRepository(t)
+	runPlanGit(t, repository, "init", "-q")
+	runPlanGit(t, repository, "config", "user.email", "fixture@example.invalid")
+	runPlanGit(t, repository, "config", "user.name", "Fixture Test")
+	runPlanGit(t, repository, "config", "commit.gpgsign", "false")
+	runPlanGit(t, repository, "add", ".")
+	runPlanGit(t, repository, "commit", "-qm", "seed project decisions")
+	return repository
+}
+
+func planDecisionValue(t *testing.T, decisions []DecisionValue, id string) any {
+	t.Helper()
+	for _, decision := range decisions {
+		if decision.ID == id {
+			return decision.Value
+		}
+	}
+	t.Fatalf("Plan has no decision %q", id)
+	return nil
 }
 
 func runPlanGit(t *testing.T, dir string, args ...string) {

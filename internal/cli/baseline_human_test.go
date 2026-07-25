@@ -15,6 +15,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -373,6 +374,129 @@ func TestProjectDecisionPrompts(t *testing.T) {
 			t.Fatalf("invalid stored identifier was offered for reuse:\n%s", output.String())
 		}
 	})
+}
+
+func TestProjectDecisionParity(t *testing.T) {
+	repository := newCLIProjectDecisionRepository(t)
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load embedded catalog: %v", err)
+	}
+	profile, err := baseline.ResolveProfile(repository, "standard-typescript-monorepo", catalog)
+	if err != nil {
+		t.Fatalf("resolve Standard TypeScript Monorepo Profile: %v", err)
+	}
+	human, err := promptBaselineDecisions(
+		context.Background(),
+		&baselineHumanPrompt{
+			reader: bufioReader(projectDecisionHumanAnswers()),
+			writer: &bytes.Buffer{},
+		},
+		catalog,
+		profile,
+		baselineHumanState{currentDecisions: map[string]any{}},
+	)
+	if err != nil {
+		t.Fatalf("collect human project decisions: %v", err)
+	}
+
+	encoded, err := json.Marshal(human)
+	if err != nil {
+		t.Fatalf("encode human project decisions: %v", err)
+	}
+	var automation []baseline.DecisionValue
+	if err := json.Unmarshal(encoded, &automation); err != nil {
+		t.Fatalf("decode automation project decisions: %v", err)
+	}
+	for index := range automation {
+		switch automation[index].ID {
+		case "http.contract":
+			automation[index].Value = map[string]any{"mode": "Post-only"}
+		case "auth.provider":
+			provider := automation[index].Value.(map[string]any)
+			exception := provider["routeException"].(map[string]any)
+			exception["methods"] = []any{"POST", "GET"}
+		}
+	}
+	slices.Reverse(automation)
+
+	humanPlan := buildCLIProjectDecisionPlan(t, repository, human)
+	automationPlan := buildCLIProjectDecisionPlan(t, repository, automation)
+	humanBytes, err := baseline.MarshalPlanDocument(humanPlan)
+	if err != nil {
+		t.Fatalf("marshal human Plan: %v", err)
+	}
+	automationBytes, err := baseline.MarshalPlanDocument(automationPlan)
+	if err != nil {
+		t.Fatalf("marshal automation Plan: %v", err)
+	}
+	if humanPlan.PlanDigest != automationPlan.PlanDigest ||
+		!bytes.Equal(humanBytes, automationBytes) {
+		t.Fatalf(
+			"human and automation project decisions differ: human=%s automation=%s",
+			humanPlan.PlanDigest,
+			automationPlan.PlanDigest,
+		)
+	}
+}
+
+func TestProjectDecisionReuse(t *testing.T) {
+	repository := newCLIProjectDecisionRepository(t)
+	catalog, err := baseline.LoadEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("load embedded catalog: %v", err)
+	}
+	profile, err := baseline.ResolveProfile(repository, "standard-typescript-monorepo", catalog)
+	if err != nil {
+		t.Fatalf("resolve Standard TypeScript Monorepo Profile: %v", err)
+	}
+	decisions, err := promptBaselineDecisions(
+		context.Background(),
+		&baselineHumanPrompt{
+			reader: bufioReader(projectDecisionHumanAnswers()),
+			writer: &bytes.Buffer{},
+		},
+		catalog,
+		profile,
+		baselineHumanState{currentDecisions: map[string]any{}},
+	)
+	if err != nil {
+		t.Fatalf("collect initial project decisions: %v", err)
+	}
+	initial := buildCLIProjectDecisionPlan(t, repository, decisions)
+	if _, err := baseline.ApplyPlan(
+		context.Background(),
+		repository,
+		initial,
+		initial.PlanDigest,
+	); err != nil {
+		t.Fatalf("apply initial project decisions: %v", err)
+	}
+
+	state, err := inspectBaselineHumanState(repository, catalog)
+	if err != nil {
+		t.Fatalf("inspect stored project decisions: %v", err)
+	}
+	reused, err := promptBaselineDecisions(
+		context.Background(),
+		&baselineHumanPrompt{
+			reader: bufioReader(strings.Repeat("\n", len(profile.Decisions))),
+			writer: &bytes.Buffer{},
+		},
+		catalog,
+		profile,
+		state,
+	)
+	if err != nil {
+		t.Fatalf("reuse stored project decisions: %v", err)
+	}
+	if !reflect.DeepEqual(reused, decisions) {
+		t.Fatalf("stored project decisions changed after re-audit:\ninitial=%#v\nreused=%#v", decisions, reused)
+	}
+	reapply := buildCLIProjectDecisionPlan(t, repository, reused)
+	if got := countCLIHTTPExceptions(t, reapply.Decisions, "Better Auth", "/api/auth/*"); got != 1 {
+		t.Fatalf("reapplied Better Auth exception count = %d, want 1", got)
+	}
 }
 
 func TestHumanBaselinePreservationDefaultFollowsInstructionInventory(t *testing.T) {
@@ -880,6 +1004,106 @@ func newHumanBaselineRepository(t *testing.T) string {
 	writeBaselinePlanTestFile(t, repo, "Makefile", "verify:\n\t@true\n")
 	commitBaselinePlanTestRepository(t, repo)
 	return repo
+}
+
+func newCLIProjectDecisionRepository(t *testing.T) string {
+	t.Helper()
+	repository := newBaselinePlanTestRepository(t)
+	writeBaselinePlanTestFile(t, repository, "package.json", `{
+  "name": "root",
+  "packageManager": "bun@1.3.0",
+  "scripts": {
+    "format": "oxfmt .",
+    "lint": "oxlint",
+    "test": "vitest",
+    "build": "turbo build",
+    "verify": "bun run lint"
+  },
+  "dependencies": {
+    "@logtape/logtape": "latest",
+    "@tanstack/react-query": "latest",
+    "@tanstack/react-router": "latest",
+    "better-auth": "latest",
+    "drizzle-orm": "latest",
+    "hono": "latest",
+    "oxfmt": "latest",
+    "oxlint": "latest",
+    "postgres": "latest",
+    "react": "latest",
+    "shadcn": "latest",
+    "tailwindcss": "latest",
+    "turbo": "latest",
+    "typescript": "latest",
+    "vite": "latest",
+    "vitest": "latest",
+    "zod": "latest"
+  }
+}`)
+	writeBaselinePlanTestFile(t, repository, "packages/frontend/package.json", `{"name":"frontend"}`)
+	writeBaselinePlanTestFile(t, repository, "packages/backend/package.json", `{"name":"backend","dependencies":{"postgres":"latest","drizzle-orm":"latest"}}`)
+	writeBaselinePlanTestFile(t, repository, "DATABASE.md", "# Database\n\nPostgreSQL is the repository database contract.\n")
+	writeBaselinePlanTestFile(t, repository, "Makefile", "verify:\n\t@true\n")
+	writeBaselinePlanTestFile(t, repository, ".agents/skills/context7/SKILL.md", "# context7\n")
+	writeBaselinePlanTestFile(t, repository, ".agents/skills/exa-web-search/SKILL.md", "# exa\n")
+	commitBaselinePlanTestRepository(t, repository)
+	return repository
+}
+
+func projectDecisionHumanAnswers() string {
+	return "\nmake verify\n\n\n\n\n\n\n2\n2\n2\n"
+}
+
+func buildCLIProjectDecisionPlan(
+	t *testing.T,
+	repository string,
+	decisions []baseline.DecisionValue,
+) baseline.PlanDocument {
+	t.Helper()
+	outcome, err := baseline.BuildPlan(context.Background(), baseline.PlanRequest{
+		Repository:   repository,
+		ProfileID:    "standard-typescript-monorepo",
+		Decisions:    decisions,
+		Preservation: baseline.RootPreservationRequest{Mode: baseline.PreservationModeGreenfield},
+	})
+	if err != nil {
+		t.Fatalf("build project-decision Plan: %v", err)
+	}
+	if outcome.Plan == nil {
+		t.Fatalf("build project-decision Plan returned result: %+v", outcome.Result)
+	}
+	return *outcome.Plan
+}
+
+func countCLIHTTPExceptions(
+	t *testing.T,
+	decisions []baseline.DecisionValue,
+	owner string,
+	scope string,
+) int {
+	t.Helper()
+	for _, decision := range decisions {
+		if decision.ID != "http.contract" {
+			continue
+		}
+		contract, ok := decision.Value.(map[string]any)
+		if !ok {
+			t.Fatalf("HTTP Contract Decision = %#v, want object", decision.Value)
+		}
+		exceptions, ok := contract["exceptions"].([]any)
+		if !ok {
+			t.Fatalf("HTTP Contract Decision exceptions = %#v, want array", contract["exceptions"])
+		}
+		count := 0
+		for _, raw := range exceptions {
+			exception, ok := raw.(map[string]any)
+			if ok && exception["owner"] == owner && exception["scope"] == scope {
+				count++
+			}
+		}
+		return count
+	}
+	t.Fatalf("Plan has no HTTP Contract Decision")
+	return 0
 }
 
 func applyHumanBaselineFixturePlan(t *testing.T, repo string) {

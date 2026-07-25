@@ -858,20 +858,8 @@ func validateDecisionValue(decision document, value any) error {
 			return errors.New("must be a non-empty string")
 		}
 	case "http-contract":
-		object, ok := objectValue(value)
-		if !ok {
-			return errors.New("must be an object")
-		}
-		mode, _ := object["mode"].(string)
-		if mode == "" {
-			return errors.New("mode is required")
-		}
-		for _, allowed := range stringsOrEmpty(decision["modes"]) {
-			if mode == allowed {
-				return nil
-			}
-		}
-		return fmt.Errorf("mode %q is not allowed", mode)
+		_, err := normalizeHTTPContract(value, decision)
+		return err
 	case "identifier-strategy":
 		return validateIdentifierStrategy(value)
 	case "auth-provider":
@@ -924,45 +912,8 @@ func validateIdentifierStrategy(value any) error {
 }
 
 func validateAuthProviderDecision(value any) error {
-	object, ok := objectValue(value)
-	if !ok {
-		return errors.New("must be an object")
-	}
-	if !hasExactFields(object, "kind", "routeException") {
-		return errors.New("better-auth requires exactly kind and routeException")
-	}
-	kind, ok := object["kind"].(string)
-	if !ok || kind != "better-auth" {
-		return fmt.Errorf("kind %q is not allowed", kind)
-	}
-	exception, ok := objectValue(object["routeException"])
-	if !ok {
-		return errors.New("routeException must be an object")
-	}
-	if !hasExactFields(exception, "scope", "methods", "owner", "reason") {
-		return errors.New("routeException requires exactly scope, methods, owner, and reason")
-	}
-	scope, ok := exception["scope"].(string)
-	if !ok || strings.TrimSpace(scope) == "" {
-		return errors.New("routeException scope must be a non-empty string")
-	}
-	methods, ok := decisionStringList(exception["methods"])
-	if !ok || len(methods) == 0 || !uniqueStrings(methods) {
-		return errors.New("routeException methods must be a non-empty unique string array")
-	}
-	for _, method := range methods {
-		if method != "GET" && method != "POST" {
-			return fmt.Errorf("routeException method %q is not allowed", method)
-		}
-	}
-	if exception["owner"] != "Better Auth" {
-		return errors.New(`routeException owner must be "Better Auth"`)
-	}
-	reason, ok := exception["reason"].(string)
-	if !ok || strings.TrimSpace(reason) == "" {
-		return errors.New("routeException reason must be a non-empty string")
-	}
-	return nil
+	_, err := normalizeAuthProviderDecision(value)
+	return err
 }
 
 func decisionStringList(value any) ([]string, bool) {

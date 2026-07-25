@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0048-context-driven-project-decisions-and-spec-constraints
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -30,20 +30,20 @@ conflict.
 
 ## Subtasks
 
-- [ ] Add strict HTTP exception normalization.
-- [ ] Derive and merge the Better Auth exception.
-- [ ] Persist and re-audit both decision projections.
-- [ ] Add conflict and stable-order diagnostics.
-- [ ] Add human and automation parity tests.
+- [x] Add strict HTTP exception normalization.
+- [x] Derive and merge the Better Auth exception.
+- [x] Persist and re-audit both decision projections.
+- [x] Add conflict and stable-order diagnostics.
+- [x] Add human and automation parity tests.
 
 ## Acceptance Criteria
 
-- [ ] The suggested Better Auth value produces one `GET`/`POST`
+- [x] The suggested Better Auth value produces one `GET`/`POST`
   `/api/auth/*` exception owned by Better Auth.
-- [ ] Reapplying an identical provider decision creates no duplicate exception.
-- [ ] A conflicting provider/HTTP pair stops before a complete Plan.
-- [ ] Exception ordering and serialized identities are deterministic.
-- [ ] Equivalent human and automation answers produce the same Plan Digest.
+- [x] Reapplying an identical provider decision creates no duplicate exception.
+- [x] A conflicting provider/HTTP pair stops before a complete Plan.
+- [x] Exception ordering and serialized identities are deterministic.
+- [x] Equivalent human and automation answers produce the same Plan Digest.
 
 ## Context
 
@@ -64,3 +64,45 @@ conflict.
 - `_techspec.md` → Implementation Design: Data Models and API Contracts; Build Order 2.
 - ADR-0063 → repository-owned HTTP policy.
 - ADR-0076 → Better Auth decision and derived exception.
+
+## Result
+
+Baseline planning now normalizes the repository-owned HTTP Contract Decision
+and the selected Better Auth decision through one deterministic path before
+the Plan Digest is calculated. It trims and orders supported methods, rejects
+duplicates and incomplete exceptions, merges identical owner/scope entries
+idempotently, and rejects conflicting projections with diagnostics that name
+both `auth.provider` and `http.contract`.
+
+The normalized provider and derived HTTP contract are persisted together in
+the Setup Manifest. Plan validation re-derives the projection, and the human
+update path normalizes stored decisions before offering them for reuse.
+
+### Acceptance evidence
+
+- `TestDeriveBetterAuthHTTPContract` proves that the suggested provider
+  produces one Better Auth-owned `GET`/`POST /api/auth/*` exception, preserves
+  other HTTP exceptions, orders the serialized contract, and stores both
+  normalized decisions in the Setup Manifest.
+- `TestDeriveBetterAuthHTTPContract` and `TestProjectDecisionReuse` prove that
+  an identical stored or supplied provider exception remains one exception
+  after planning, apply, stored-value inspection, and re-planning.
+- `TestHTTPContractConflict` proves duplicate normalized methods, unsupported
+  methods, missing rationale, and provider/HTTP conflicts stop before a
+  complete Plan and name both decision IDs.
+- `TestDeriveBetterAuthHTTPContract` asserts the exact normalized serialized
+  identity, including scope/owner/method ordering.
+- `TestProjectDecisionParity` proves equivalent human answers and reversed
+  Decision Document input produce byte-identical Plans and the same Plan
+  Digest.
+
+### Verification
+
+- `rtk go test -count=1 ./internal/baseline ./internal/cli -run 'TestDeriveBetterAuthHTTPContract|TestHTTPContractConflict|TestProjectDecisionParity|TestProjectDecisionReuse'`
+  passed: 8 tests in 2 packages.
+- `rtk make verify` passed: 2,234 Go tests in 22 packages, 4 skill-contract
+  tests, the Roundfix skill synchronization check, and the Roundfix build.
+
+### Follow-up
+
+None.

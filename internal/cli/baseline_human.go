@@ -617,6 +617,24 @@ func inspectBaselineHumanState(root string, catalog *baseline.Catalog) (baseline
 		state.incompatible = "the existing Setup Manifest references an unavailable or changed Baseline Profile"
 		return state, nil
 	}
+	stored := make([]baseline.DecisionValue, 0, len(manifest.Decisions))
+	for id, decision := range manifest.Decisions {
+		if _, fixed := profile.Values[id]; fixed {
+			continue
+		}
+		stored = append(stored, baseline.DecisionValue{ID: id, Value: decision.Value})
+	}
+	normalized, missing, err := baseline.ResolveDecisionInput(profile, stored, catalog)
+	if err != nil || len(missing) != 0 {
+		state.incompatible = "the existing Setup Manifest contains incompatible project decisions"
+		delete(state.currentDecisions, "auth.provider")
+		delete(state.currentDecisions, "http.contract")
+		return state, nil
+	}
+	state.currentDecisions = make(map[string]any, len(normalized))
+	for _, decision := range normalized {
+		state.currentDecisions[decision.ID] = decision.Value
+	}
 	state.mode = "update"
 	return state, nil
 }

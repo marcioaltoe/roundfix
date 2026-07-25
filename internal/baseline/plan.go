@@ -1184,6 +1184,12 @@ func normalizePlanDecisions(
 			return nil, nil, fmt.Errorf("normalize Baseline decisions: unknown decision %q", id)
 		}
 		if err := validateDecisionValue(declaration, decision.Value); err != nil {
+			if id == authProviderDecisionID || id == httpContractDecisionID {
+				return nil, nil, fmt.Errorf(
+					"normalize Baseline decisions: %w",
+					projectDecisionError(fmt.Errorf("normalize %q: %w", id, err)),
+				)
+			}
 			return nil, nil, fmt.Errorf("normalize Baseline decision %q: %w", id, err)
 		}
 		values[id] = cloneJSONValue(decision.Value)
@@ -1239,6 +1245,13 @@ func normalizePlanDecisions(
 	}
 	sort.Slice(ordered, func(i, j int) bool { return ordered[i].ID < ordered[j].ID })
 	sort.Strings(missing)
+	if len(missing) != 0 {
+		return ordered, missing, nil
+	}
+	ordered, err := normalizeProjectDecisions(ordered, catalog)
+	if err != nil {
+		return nil, nil, fmt.Errorf("normalize Baseline decisions: %w", err)
+	}
 	return ordered, missing, nil
 }
 
@@ -2190,6 +2203,13 @@ func ValidatePlanDocument(document PlanDocument) error {
 		if decision.ID == "" || index > 0 && document.Decisions[index-1].ID >= decision.ID {
 			return errors.New("Baseline Plan decisions must have unique IDs in lexical order")
 		}
+	}
+	normalizedProjectDecisions, err := normalizeProjectDecisions(document.Decisions, catalog)
+	if err != nil {
+		return fmt.Errorf("validate Baseline Plan project decisions: %w", err)
+	}
+	if !reflectJSONEqual(normalizedProjectDecisions, document.Decisions) {
+		return errors.New("Baseline Plan project decisions are not normalized or derived")
 	}
 	for index, retention := range document.Retention {
 		if retention.FromClause == "" || retention.Enforcement == "" ||

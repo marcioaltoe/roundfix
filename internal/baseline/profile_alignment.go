@@ -406,6 +406,12 @@ func normalizeAlignmentDecisions(
 			return nil, nil, fmt.Errorf("resolve profile alignment decision %q: catalog declaration is missing", id)
 		}
 		if err := validateDecisionValue(declaration, decision.Value); err != nil {
+			if id == authProviderDecisionID || id == httpContractDecisionID {
+				return nil, nil, fmt.Errorf(
+					"resolve profile alignment: %w",
+					projectDecisionError(fmt.Errorf("normalize %q: %w", id, err)),
+				)
+			}
 			return nil, nil, fmt.Errorf("resolve profile alignment decision %q: %w", id, err)
 		}
 		values[id] = cloneJSONValue(decision.Value)
@@ -429,6 +435,13 @@ func normalizeAlignmentDecisions(
 		decisions = append(decisions, DecisionValue{ID: id, Value: value})
 	}
 	sort.Slice(decisions, func(i, j int) bool { return decisions[i].ID < decisions[j].ID })
+	if len(divergences) == 0 {
+		var err error
+		decisions, err = normalizeProjectDecisions(decisions, catalog)
+		if err != nil {
+			return nil, nil, fmt.Errorf("resolve profile alignment: %w", err)
+		}
+	}
 	return decisions, divergences, nil
 }
 
