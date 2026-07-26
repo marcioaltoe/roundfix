@@ -73,14 +73,14 @@ failure, and remediation contract as the shipped CLI.
 
 - instruction: `CONTEXT.md`
 - instruction: `docs/agents/skill-dispatch.md`
-- docs: `README.md`
-- docs: `docs/user-guide/commands.md`
-- docs: `docs/user-guide/usage.md`
+- interface: `README.md`
+- interface: `docs/user-guide/commands.md`
+- interface: `docs/user-guide/usage.md`
 - interface: `.agents/skills/roundfix/SKILL.md`
 - interface: `.agents/skills/roundfix/agents/openai.yaml`
 - interface: `skills/skills.go`
 - interface: `Makefile`
-- data: `skills-lock.json`
+- interface: `skills-lock.json`
 
 ## Verification
 
