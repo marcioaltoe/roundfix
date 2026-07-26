@@ -2648,7 +2648,7 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 				return profileProofResult{}
 			})
 			skillCalls := 0
-			doctorDeps.checkSkills = func(root string) (skills.RepositoryReadiness, error) {
+			doctorDeps.checkSkills = func(_ context.Context, root string) (skills.RepositoryReadiness, error) {
 				skillCalls++
 				recordCall(HealthCheckSkills)
 				if root != "/repo/project" {
@@ -2690,6 +2690,44 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 	}
 }
 
+func TestRunDoctorPassesCommandContextToRepositorySkillReadiness(t *testing.T) {
+	type contextKey struct{}
+	const marker = "doctor-command"
+
+	checker := newDoctorFakeHealthChecker(
+		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK},
+		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK},
+		CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK},
+	)
+	withDoctorFakeLoadedAndReadiness(t, checker, roundconfig.Loaded{
+		Config:  roundconfig.Builtin(),
+		GitRoot: "/repo/project",
+	}, func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult {
+		return profileProofResult{}
+	})
+	doctorDeps.checkSkills = func(ctx context.Context, root string) (skills.RepositoryReadiness, error) {
+		if got := ctx.Value(contextKey{}); got != marker {
+			t.Fatalf("repository checker context marker = %v, want %q", got, marker)
+		}
+		if root != "/repo/project" {
+			t.Fatalf("repository checker root = %q, want /repo/project", root)
+		}
+		return skills.RepositoryReadiness{
+			OwnedRequired:    14,
+			ExternalRequired: 25,
+		}, nil
+	}
+	commandContext := context.WithValue(t.Context(), contextKey{}, marker)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := runDoctorCommand(commandContext, nil, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+	}
+}
+
 func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
 	processDir := t.TempDir()
 	t.Chdir(processDir)
@@ -2713,7 +2751,7 @@ func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
 		return profileProofResult{}
 	})
 	skillCalls := 0
-	doctorDeps.checkSkills = func(root string) (skills.RepositoryReadiness, error) {
+	doctorDeps.checkSkills = func(_ context.Context, root string) (skills.RepositoryReadiness, error) {
 		skillCalls++
 		return skills.RepositoryReadiness{}, fmt.Errorf("unexpected repository check for %q", root)
 	}
@@ -2939,7 +2977,7 @@ func writeDoctorReadyRepositoryFixture(t *testing.T, root string) {
 		skillRoot := filepath.Join(skillsRoot, name)
 		mustMkdir(t, skillRoot)
 		mustWrite(t, filepath.Join(skillRoot, "SKILL.md"), name+"\n")
-		hash, err := skills.SkillFolderHash(skillRoot)
+		hash, err := skills.SkillFolderHash(t.Context(), skillRoot)
 		if err != nil {
 			t.Fatalf("hash external skill fixture %q: %v", name, err)
 		}
@@ -3024,7 +3062,7 @@ func withDoctorFakeLoadedAndReadiness(t *testing.T, checker HealthChecker, loade
 			return checker
 		},
 		profileReadiness: readiness,
-		checkSkills: func(string) (skills.RepositoryReadiness, error) {
+		checkSkills: func(context.Context, string) (skills.RepositoryReadiness, error) {
 			return skills.RepositoryReadiness{
 				OwnedRequired:    14,
 				ExternalRequired: 25,
@@ -3041,7 +3079,7 @@ func withDoctorLiveDeps(t *testing.T, checker HealthChecker) {
 	old := doctorDeps
 	doctorDeps = defaultDoctorDependencies()
 	doctorDeps.healthChecker = func(roundconfig.Loaded) HealthChecker { return checker }
-	doctorDeps.checkSkills = func(string) (skills.RepositoryReadiness, error) {
+	doctorDeps.checkSkills = func(context.Context, string) (skills.RepositoryReadiness, error) {
 		return skills.RepositoryReadiness{
 			OwnedRequired:    14,
 			ExternalRequired: 25,

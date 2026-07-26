@@ -12,6 +12,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"testing/fstest"
+	"time"
 )
 
 var lockHashCompatibilityFixturePath = filepath.Join(
@@ -74,7 +76,7 @@ func TestSkillFolderHashMatchesExternalCompatibilityFixture(t *testing.T) {
 		t.Fatal("lock compatibility fixture must distinguish external CLI locale ordering from Go byte ordering")
 	}
 
-	got, err := SkillFolderHash(root)
+	got, err := SkillFolderHash(t.Context(), root)
 	if err != nil {
 		t.Fatalf("hash compatibility fixture: %v", err)
 	}
@@ -86,7 +88,7 @@ func TestSkillFolderHashMatchesExternalCompatibilityFixture(t *testing.T) {
 func TestSkillFolderHashExcludesMetadataAndDependencyDirectories(t *testing.T) {
 	root := t.TempDir()
 	writeSkillHashTestFile(t, root, "SKILL.md", "fixture\n")
-	want, err := SkillFolderHash(root)
+	want, err := SkillFolderHash(t.Context(), root)
 	if err != nil {
 		t.Fatalf("hash baseline skill folder: %v", err)
 	}
@@ -99,7 +101,7 @@ func TestSkillFolderHashExcludesMetadataAndDependencyDirectories(t *testing.T) {
 		writeSkillHashTestFile(t, root, path, "ignored\n")
 	}
 
-	got, err := SkillFolderHash(root)
+	got, err := SkillFolderHash(t.Context(), root)
 	if err != nil {
 		t.Fatalf("hash skill folder with excluded directories: %v", err)
 	}
@@ -148,7 +150,7 @@ func TestSkillFolderHashRejectsUnsafeFilesystemShapes(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if _, err := SkillFolderHash(test.prepare(t)); err == nil {
+			if _, err := SkillFolderHash(t.Context(), test.prepare(t)); err == nil {
 				t.Fatal("expected unsafe filesystem shape to be rejected")
 			}
 		})
@@ -157,7 +159,7 @@ func TestSkillFolderHashRejectsUnsafeFilesystemShapes(t *testing.T) {
 
 func TestSkillFolderHashWrapsMissingRootError(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "missing")
-	_, err := SkillFolderHash(root)
+	_, err := SkillFolderHash(t.Context(), root)
 	if err == nil {
 		t.Fatal("expected missing root error")
 	}
@@ -167,6 +169,80 @@ func TestSkillFolderHashWrapsMissingRootError(t *testing.T) {
 	if !strings.Contains(err.Error(), root) {
 		t.Fatalf("expected error to name root %q, got %v", root, err)
 	}
+}
+
+func TestSkillFolderHashHonorsPreCanceledContext(t *testing.T) {
+	tests := []struct {
+		name    string
+		context func(*testing.T) context.Context
+		want    error
+	}{
+		{
+			name: "canceled",
+			context: func(t *testing.T) context.Context {
+				t.Helper()
+				ctx, cancel := context.WithCancel(t.Context())
+				cancel()
+				return ctx
+			},
+			want: context.Canceled,
+		},
+		{
+			name: "deadline exceeded",
+			context: func(t *testing.T) context.Context {
+				t.Helper()
+				ctx, cancel := context.WithDeadline(t.Context(), time.Unix(1, 0))
+				t.Cleanup(cancel)
+				return ctx
+			},
+			want: context.DeadlineExceeded,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := filepath.Join(t.TempDir(), "must-not-be-inspected")
+			_, err := SkillFolderHash(test.context(t), root)
+			if !errors.Is(err, test.want) {
+				t.Fatalf("SkillFolderHash() error = %v, want errors.Is(_, %v)", err, test.want)
+			}
+		})
+	}
+}
+
+func TestSkillFolderHashStopsAfterCancellationDuringRead(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	tree := &cancelOnFirstFileOpenFS{
+		FS: fstest.MapFS{
+			"a.txt": &fstest.MapFile{Data: []byte("first\n")},
+			"b.txt": &fstest.MapFile{Data: []byte("second\n")},
+		},
+		cancel: cancel,
+	}
+
+	_, err := skillFolderHash(ctx, tree, ".", "fixture")
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("skillFolderHash() error = %v, want context.Canceled", err)
+	}
+	if !reflect.DeepEqual(tree.filesOpened, []string{"a.txt"}) {
+		t.Fatalf("files opened after cancellation = %v, want only first file", tree.filesOpened)
+	}
+}
+
+type cancelOnFirstFileOpenFS struct {
+	fs.FS
+	cancel      context.CancelFunc
+	filesOpened []string
+}
+
+func (tree *cancelOnFirstFileOpenFS) Open(name string) (fs.File, error) {
+	if file, exists := tree.FS.(fstest.MapFS)[name]; exists && !file.Mode.IsDir() {
+		tree.filesOpened = append(tree.filesOpened, name)
+		if len(tree.filesOpened) == 1 {
+			tree.cancel()
+		}
+	}
+	return tree.FS.Open(name)
 }
 
 func writeSkillHashTestFile(t *testing.T, root string, relative string, content string) {

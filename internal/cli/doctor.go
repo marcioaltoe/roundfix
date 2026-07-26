@@ -21,7 +21,7 @@ type doctorDependencies struct {
 	loadConfig       func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
 	healthChecker    func(roundconfig.Loaded) HealthChecker
 	profileReadiness func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult
-	checkSkills      func(string) (skills.RepositoryReadiness, error)
+	checkSkills      func(context.Context, string) (skills.RepositoryReadiness, error)
 }
 
 func defaultDoctorDependencies() doctorDependencies {
@@ -67,7 +67,7 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	if workDir == "" {
 		results = append(results, doctorMissingRepositoryRootResult())
 	} else {
-		skillReadiness, skillErr := doctorDeps.checkSkills(workDir)
+		skillReadiness, skillErr := doctorDeps.checkSkills(ctx, workDir)
 		results = append(results, doctorSkillReadinessResult(skillReadiness, skillErr))
 	}
 	results = append(results, checker.Codex(ctx))

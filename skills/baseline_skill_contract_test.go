@@ -216,11 +216,11 @@ func TestAuthorialSkillSync(t *testing.T) {
 			distributedRoot := filepath.Join(repoRoot, "skills", skillName)
 			assertSkillTreesEqual(t, canonicalRoot, distributedRoot)
 
-			canonicalDigest, err := SkillFolderHash(canonicalRoot)
+			canonicalDigest, err := SkillFolderHash(t.Context(), canonicalRoot)
 			if err != nil {
 				t.Fatalf("hash canonical skill: %v", err)
 			}
-			distributedDigest, err := SkillFolderHash(distributedRoot)
+			distributedDigest, err := SkillFolderHash(t.Context(), distributedRoot)
 			if err != nil {
 				t.Fatalf("hash distributed skill: %v", err)
 			}
@@ -629,7 +629,7 @@ func TestUpstreamADRFormatUnchanged(t *testing.T) {
 	sort.Strings(names)
 	upstreamDigest := sha256.New()
 	for _, name := range names {
-		folderDigest, err := SkillFolderHash(filepath.Join(repoRoot, ".agents", "skills", name))
+		folderDigest, err := SkillFolderHash(t.Context(), filepath.Join(repoRoot, ".agents", "skills", name))
 		if err != nil {
 			t.Fatalf("hash upstream-managed skill %q: %v", name, err)
 		}
@@ -896,7 +896,7 @@ func upstreamManagedSkillDigest(
 	sort.Strings(names)
 	digest := sha256.New()
 	for _, name := range names {
-		folderDigest, err := SkillFolderHash(filepath.Join(repoRoot, ".agents", "skills", name))
+		folderDigest, err := SkillFolderHash(t.Context(), filepath.Join(repoRoot, ".agents", "skills", name))
 		if err != nil {
 			t.Fatalf("hash upstream-managed skill %q: %v", name, err)
 		}

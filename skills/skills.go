@@ -126,7 +126,10 @@ func Files() ([]File, error) {
 
 // SkillFolderHash returns the external skills CLI digest for a local skill
 // directory without following links or reading excluded dependency metadata.
-func SkillFolderHash(root string) (string, error) {
+func SkillFolderHash(ctx context.Context, root string) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", fmt.Errorf("hash skill folder %q: %w", root, err)
+	}
 	info, err := os.Lstat(root)
 	if err != nil {
 		return "", fmt.Errorf("inspect skill folder %q: %w", root, err)
@@ -138,12 +141,18 @@ func SkillFolderHash(root string) (string, error) {
 		return "", fmt.Errorf("inspect skill folder %q: root is not a directory", root)
 	}
 
-	return skillFolderHash(os.DirFS(root), ".", root)
+	return skillFolderHash(ctx, os.DirFS(root), ".", root)
 }
 
-func skillFolderHash(tree fs.FS, root string, displayRoot string) (string, error) {
+func skillFolderHash(ctx context.Context, tree fs.FS, root string, displayRoot string) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", fmt.Errorf("hash skill folder %q: %w", displayRoot, err)
+	}
 	var files []skillhash.File
 	if err := fs.WalkDir(tree, root, func(path string, entry fs.DirEntry, walkErr error) error {
+		if err := ctx.Err(); err != nil {
+			return fmt.Errorf("walk skill folder %q: %w", displayRoot, err)
+		}
 		relative := path
 		if path == root {
 			relative = "."
@@ -174,8 +183,14 @@ func skillFolderHash(tree fs.FS, root string, displayRoot string) (string, error
 		if !mode.IsRegular() {
 			return fmt.Errorf("inspect skill folder entry %q: special files are not supported", fullPath)
 		}
+		if err := ctx.Err(); err != nil {
+			return fmt.Errorf("read skill folder file %q: %w", fullPath, err)
+		}
 		data, err := fs.ReadFile(tree, path)
 		if err != nil {
+			return fmt.Errorf("read skill folder file %q: %w", fullPath, err)
+		}
+		if err := ctx.Err(); err != nil {
 			return fmt.Errorf("read skill folder file %q: %w", fullPath, err)
 		}
 		files = append(files, skillhash.File{
@@ -184,6 +199,9 @@ func skillFolderHash(tree fs.FS, root string, displayRoot string) (string, error
 		})
 		return nil
 	}); err != nil {
+		return "", fmt.Errorf("hash skill folder %q: %w", displayRoot, err)
+	}
+	if err := ctx.Err(); err != nil {
 		return "", fmt.Errorf("hash skill folder %q: %w", displayRoot, err)
 	}
 

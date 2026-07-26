@@ -1,6 +1,7 @@
 package skills
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io/fs"
@@ -11,6 +12,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestCheckRepositoryMatchesRealRepository(t *testing.T) {
@@ -18,7 +20,7 @@ func TestCheckRepositoryMatchesRealRepository(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve real repository root: %v", err)
 	}
-	got, err := CheckRepository(root)
+	got, err := CheckRepository(t.Context(), root)
 	if err != nil {
 		t.Fatalf("check real repository: %v", err)
 	}
@@ -27,11 +29,61 @@ func TestCheckRepositoryMatchesRealRepository(t *testing.T) {
 	}
 }
 
+func TestCheckRepositoryHonorsPreCanceledContext(t *testing.T) {
+	tests := []struct {
+		name    string
+		context func(*testing.T) context.Context
+		want    error
+	}{
+		{
+			name: "canceled",
+			context: func(t *testing.T) context.Context {
+				t.Helper()
+				ctx, cancel := context.WithCancel(t.Context())
+				cancel()
+				return ctx
+			},
+			want: context.Canceled,
+		},
+		{
+			name: "deadline exceeded",
+			context: func(t *testing.T) context.Context {
+				t.Helper()
+				ctx, cancel := context.WithDeadline(t.Context(), time.Unix(1, 0))
+				t.Cleanup(cancel)
+				return ctx
+			},
+			want: context.DeadlineExceeded,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := test.context(t)
+			root := filepath.Join(t.TempDir(), "must-not-be-inspected")
+
+			_, err := CheckRepository(ctx, root)
+			if !errors.Is(err, test.want) {
+				t.Fatalf("CheckRepository() error = %v, want errors.Is(_, %v)", err, test.want)
+			}
+
+			_, err = checkRepository(ctx, root, nil, nil, nil)
+			if !errors.Is(err, test.want) {
+				t.Fatalf("checkRepository() error = %v, want errors.Is(_, %v)", err, test.want)
+			}
+			var repositoryErr *RepositoryReadinessError
+			if !errors.As(err, &repositoryErr) {
+				t.Fatalf("checkRepository() error type = %T, want RepositoryReadinessError", err)
+			}
+		})
+	}
+}
+
 func TestCheckRepositoryReportsReadyRequiredSetWithoutMutation(t *testing.T) {
 	root := writeReadyRepositoryFixture(t)
 	before := snapshotRepositoryFixture(t, root)
 
-	got, err := CheckRepository(root)
+	got, err := CheckRepository(t.Context(), root)
 	if err != nil {
 		t.Fatalf("check ready repository: %v", err)
 	}
@@ -122,7 +174,7 @@ func TestCheckRepositoryClassifiesMissingAndOutdatedSkills(t *testing.T) {
 			root := writeReadyRepositoryFixture(t)
 			test.mutate(t, root)
 
-			got, err := CheckRepository(root)
+			got, err := CheckRepository(t.Context(), root)
 			if err != nil {
 				t.Fatalf("check repository: %v", err)
 			}
@@ -156,7 +208,7 @@ func TestCheckRepositoryClassifiesMissingSharedSkillDirectories(t *testing.T) {
 				t.Fatalf("remove shared skill directory %q: %v", test.path, err)
 			}
 
-			got, err := CheckRepository(root)
+			got, err := CheckRepository(t.Context(), root)
 			if err != nil {
 				t.Fatalf("check repository: %v", err)
 			}
@@ -177,7 +229,7 @@ func TestCheckRepositoryIgnoresUnrelatedSkillsAndLockEntries(t *testing.T) {
 	lock.Skills["../ignored-unsafe-entry"] = repositoryLockSkillFixture{ComputedHash: "not-a-hash"}
 	writeRepositoryLockFixture(t, root, lock)
 
-	got, err := CheckRepository(root)
+	got, err := CheckRepository(t.Context(), root)
 	if err != nil {
 		t.Fatalf("check repository with unrelated entries: %v", err)
 	}
@@ -250,7 +302,7 @@ func TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames(t *testing.T)
 			root := writeReadyRepositoryFixture(t)
 			test.write(t, root)
 
-			_, err := CheckRepository(root)
+			_, err := CheckRepository(t.Context(), root)
 			if err == nil {
 				t.Fatal("expected repository lock error")
 			}
@@ -270,7 +322,7 @@ func TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames(t *testing.T)
 	root := t.TempDir()
 	outside := filepath.Join(filepath.Dir(root), "outside")
 	writeSkillHashTestFile(t, outside, "marker", "must not be read\n")
-	_, err := checkRepository(root, []string{"../outside"}, nil, nil)
+	_, err := checkRepository(t.Context(), root, []string{"../outside"}, nil, nil)
 	if err == nil || !strings.Contains(err.Error(), "unsafe") {
 		t.Fatalf("expected unsafe required name error, got %v", err)
 	}
@@ -279,7 +331,7 @@ func TestCheckRepositoryRejectsMalformedLockAndUnsafeRequiredNames(t *testing.T)
 func TestCheckRepositoryWrapsFilesystemCauses(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "missing")
 
-	_, err := CheckRepository(root)
+	_, err := CheckRepository(t.Context(), root)
 	if err == nil {
 		t.Fatal("expected missing repository root error")
 	}
@@ -341,7 +393,7 @@ func TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets(t *testi
 				t.Skipf("create authority symlink: %v", err)
 			}
 
-			_, err := CheckRepository(root)
+			_, err := CheckRepository(t.Context(), root)
 			if err == nil {
 				t.Fatal("expected symlinked authority to fail readiness")
 			}
@@ -352,8 +404,12 @@ func TestCheckRepositoryRejectsSymlinkedAuthoritiesBeforeReadingTargets(t *testi
 			if repositoryErr.Path != authority {
 				t.Fatalf("authority error path = %q, want %q", repositoryErr.Path, authority)
 			}
-			if repositoryErr.Ownership != "" {
-				t.Fatalf("authority error ownership = %q, want unclassified", repositoryErr.Ownership)
+			wantOwnership := RepositoryOwnership("")
+			if test.authority == "skills-lock.json" {
+				wantOwnership = RepositoryOwnershipExternal
+			}
+			if repositoryErr.Ownership != wantOwnership {
+				t.Fatalf("authority error ownership = %q, want %q", repositoryErr.Ownership, wantOwnership)
 			}
 			if strings.Contains(repositoryErr.Operation, "decode") {
 				t.Fatalf("authority target was decoded before rejection: %v", err)
@@ -381,7 +437,7 @@ func TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering(t *tes
 		t.Fatal(err)
 	}
 
-	got, err := CheckRepository(root)
+	got, err := CheckRepository(t.Context(), root)
 	if err != nil {
 		t.Fatalf("check repository with owned symlink: %v", err)
 	}
@@ -396,7 +452,7 @@ func TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering(t *tes
 	if err := os.Symlink(filepath.Join(externalRoot, "skills-lock.json"), externalPath); err != nil {
 		t.Skipf("create external symlink: %v", err)
 	}
-	_, err = CheckRepository(externalRoot)
+	_, err = CheckRepository(t.Context(), externalRoot)
 	if err == nil || !strings.Contains(err.Error(), externalPath) {
 		t.Fatalf("expected external symlink error naming %q, got %v", externalPath, err)
 	}
@@ -412,7 +468,7 @@ func TestCheckRepositoryHandlesNestedLinksSpecialEntriesAndStableOrdering(t *tes
 			t.Errorf("close special-entry listener: %v", err)
 		}
 	})
-	_, err = CheckRepository(specialRoot)
+	_, err = CheckRepository(t.Context(), specialRoot)
 	if err == nil || !strings.Contains(err.Error(), specialPath) {
 		t.Fatalf("expected external special-entry error naming %q, got %v", specialPath, err)
 	}
@@ -446,7 +502,7 @@ func writeReadyRepositoryFixture(t *testing.T) string {
 	for _, name := range Recommended() {
 		skillRoot := filepath.Join(skillsRoot, name)
 		writeSkillHashTestFile(t, skillRoot, "SKILL.md", name+"\n")
-		hash, err := SkillFolderHash(skillRoot)
+		hash, err := SkillFolderHash(t.Context(), skillRoot)
 		if err != nil {
 			t.Fatalf("hash external fixture %q: %v", name, err)
 		}
