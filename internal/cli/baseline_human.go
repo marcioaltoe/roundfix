@@ -43,6 +43,10 @@ type baselineSemanticAnalyzer interface {
 	Classify(context.Context, baseline.AnalysisSnapshot) (baseline.ClassificationProposal, error)
 }
 
+type baselineSemanticFindingSource interface {
+	TakeFindings() []baseline.Finding
+}
+
 type baselineHumanPrompt struct {
 	reader *bufio.Reader
 	writer io.Writer
@@ -1562,6 +1566,7 @@ func promptBaselineClassification(
 			err,
 		)
 	}
+	writeBaselineSemanticFindings(review, analyzer)
 	source, err := baseline.MaterializeRuleSegments(segmentationSnapshot, segmentationProposal)
 	if err != nil {
 		return baseline.RootPreservationRequest{}, fmt.Errorf(
@@ -1592,6 +1597,7 @@ func promptBaselineClassification(
 			err,
 		)
 	}
+	writeBaselineSemanticFindings(review, analyzer)
 	document, err := baseline.DecisionDocumentFromClassificationProposal(
 		analysisSnapshot,
 		classificationProposal,
@@ -1705,6 +1711,19 @@ func promptBaselineClassification(
 	request.SourceBaseline = &source
 	request.Decisions = &document
 	return request, nil
+}
+
+func writeBaselineSemanticFindings(
+	review io.Writer,
+	analyzer baselineSemanticAnalyzer,
+) {
+	source, ok := analyzer.(baselineSemanticFindingSource)
+	if !ok {
+		return
+	}
+	for _, finding := range source.TakeFindings() {
+		fmt.Fprintf(review, "Warning: %s: %s\n", finding.Code, finding.Message)
+	}
 }
 
 type baselineClassificationChoice struct {

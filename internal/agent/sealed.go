@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"crypto/rand"
@@ -19,7 +18,7 @@ import (
 const (
 	SealedPromptMaxInputBytes  = 2 << 20
 	SealedPromptMaxOutputBytes = 512 << 10
-	SealedPromptTimeout        = 2 * time.Minute
+	SealedPromptTimeout        = 5 * time.Minute
 
 	sealedACPStreamMaxBytes = 2 << 20
 	sealedSessionPrefix     = "roundfix-baseline-"
@@ -289,16 +288,13 @@ func (runner *ACPXRunner) runSealedPromptCommand(
 	command.Env = acpxCommandEnv(codexEnv)
 	command.Dir = request.WorkDir
 	command.Stdin = bytes.NewReader(request.Input)
-	stdout := newSealedCapture(sealedACPStreamMaxBytes)
+	stdout := newSealedStreamParser()
 	stderr := newSealedCapture(infrastructureStderrTailBytes)
 	command.Stdout = stdout
 	command.Stderr = stderr
 	if err := command.Run(); err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return SealedPromptResult{}, ctxErr
-		}
-		if errors.Is(err, ErrSealedOutputTooLarge) || stdout.overflow {
-			return SealedPromptResult{}, ErrSealedOutputTooLarge
 		}
 		if exitCode, ok := commandExitCode(err); ok {
 			return SealedPromptResult{}, &InfrastructureError{
@@ -309,92 +305,160 @@ func (runner *ACPXRunner) runSealedPromptCommand(
 		}
 		return SealedPromptResult{}, fmt.Errorf("run sealed acpx prompt: %w", err)
 	}
-	if stdout.overflow {
-		return SealedPromptResult{}, ErrSealedOutputTooLarge
-	}
-	return parseSealedPromptStream(stdout.Bytes())
+	return stdout.Result()
 }
 
 func parseSealedPromptStream(stream []byte) (SealedPromptResult, error) {
-	var output bytes.Buffer
-	var stopReason string
-	sawResult := false
-	scanner := bufio.NewScanner(bytes.NewReader(stream))
-	scanner.Buffer(make([]byte, 64<<10), sealedACPStreamMaxBytes)
-	for scanner.Scan() {
-		line := append([]byte(nil), scanner.Bytes()...)
-		var message acpxJSONRPCMessage
-		if err := json.Unmarshal(line, &message); err != nil {
-			return SealedPromptResult{}, fmt.Errorf("parse sealed acpx JSON-RPC line: %w", err)
-		}
-		if message.Error != nil {
-			return SealedPromptResult{}, fmt.Errorf(
-				"sealed acpx JSON-RPC error %d: %s",
-				message.Error.Code,
-				message.Error.Message,
-			)
-		}
-		if message.Method == acpMethodSessionUpdate {
-			update, ok, err := streamUpdateFromSessionUpdatePayload(line)
-			if err != nil {
-				return SealedPromptResult{}, err
-			}
-			if !ok {
-				continue
-			}
-			switch update.Kind {
-			case StreamUpdateMessage:
-				if output.Len()+len(update.Text) > SealedPromptMaxOutputBytes {
-					return SealedPromptResult{}, ErrSealedOutputTooLarge
-				}
-				_, _ = output.WriteString(update.Text)
-			case StreamUpdateThought:
-				// Thought remains ephemeral and outside the proposal.
-			case StreamUpdateToolStarted, StreamUpdateToolUpdated:
-				return SealedPromptResult{ToolUsed: true}, ErrSealedToolUse
-			default:
-				return SealedPromptResult{}, fmt.Errorf(
-					"sealed ACP attempt emitted unsupported update %q",
-					update.Kind,
-				)
-			}
-			continue
-		}
-		if len(message.Result) == 0 {
-			continue
-		}
-		var response struct {
-			StopReason string `json:"stopReason"`
-		}
-		if err := json.Unmarshal(message.Result, &response); err != nil {
-			return SealedPromptResult{}, fmt.Errorf(
-				"parse sealed acpx prompt response: %w",
-				err,
-			)
-		}
-		if sawResult {
-			return SealedPromptResult{}, errors.New(
-				"sealed acpx prompt returned more than one terminal result",
-			)
-		}
-		sawResult = true
-		stopReason = response.StopReason
+	parser := newSealedStreamParser()
+	_, _ = parser.Write(stream)
+	return parser.Result()
+}
+
+type sealedStreamParser struct {
+	line       []byte
+	output     bytes.Buffer
+	stopReason string
+	sawResult  bool
+	toolUsed   bool
+	err        error
+}
+
+func newSealedStreamParser() *sealedStreamParser {
+	return &sealedStreamParser{
+		line: make([]byte, 0, 64<<10),
 	}
-	if err := scanner.Err(); err != nil {
-		return SealedPromptResult{}, fmt.Errorf("read sealed acpx output: %w", err)
+}
+
+// Write consumes ACPX JSON-RPC output incrementally. Thought updates are
+// validated and discarded immediately, so reasoning volume cannot consume the
+// bounded proposal buffer.
+func (parser *sealedStreamParser) Write(data []byte) (int, error) {
+	written := len(data)
+	if parser.err != nil {
+		return written, nil
 	}
-	if !sawResult || strings.TrimSpace(stopReason) == "" {
+	for len(data) > 0 {
+		lineEnd := bytes.IndexByte(data, '\n')
+		if lineEnd < 0 {
+			parser.appendLine(data)
+			break
+		}
+		parser.appendLine(data[:lineEnd])
+		if parser.err == nil {
+			parser.consumeLine(parser.line)
+		}
+		parser.line = parser.line[:0]
+		data = data[lineEnd+1:]
+	}
+	return written, nil
+}
+
+func (parser *sealedStreamParser) appendLine(data []byte) {
+	if parser.err != nil {
+		return
+	}
+	if len(parser.line)+len(data) > sealedACPStreamMaxBytes {
+		parser.err = ErrSealedOutputTooLarge
+		parser.line = parser.line[:0]
+		return
+	}
+	parser.line = append(parser.line, data...)
+}
+
+func (parser *sealedStreamParser) consumeLine(line []byte) {
+	var message acpxJSONRPCMessage
+	if err := json.Unmarshal(line, &message); err != nil {
+		parser.err = fmt.Errorf("parse sealed acpx JSON-RPC line: %w", err)
+		return
+	}
+	if message.Error != nil {
+		parser.err = fmt.Errorf(
+			"sealed acpx JSON-RPC error %d: %s",
+			message.Error.Code,
+			message.Error.Message,
+		)
+		return
+	}
+	if message.Method == acpMethodSessionUpdate {
+		parser.consumeSessionUpdate(line)
+		return
+	}
+	if len(message.Result) == 0 {
+		return
+	}
+	var response struct {
+		StopReason string `json:"stopReason"`
+	}
+	if err := json.Unmarshal(message.Result, &response); err != nil {
+		parser.err = fmt.Errorf("parse sealed acpx prompt response: %w", err)
+		return
+	}
+	if strings.TrimSpace(response.StopReason) == "" {
+		return
+	}
+	if parser.sawResult {
+		parser.err = errors.New(
+			"sealed acpx prompt returned more than one terminal result",
+		)
+		return
+	}
+	parser.sawResult = true
+	parser.stopReason = response.StopReason
+}
+
+func (parser *sealedStreamParser) consumeSessionUpdate(line []byte) {
+	update, ok, err := streamUpdateFromSessionUpdatePayload(line)
+	if err != nil {
+		parser.err = err
+		return
+	}
+	if !ok {
+		return
+	}
+	switch update.Kind {
+	case StreamUpdateMessage:
+		if parser.output.Len()+len(update.Text) > SealedPromptMaxOutputBytes {
+			parser.err = ErrSealedOutputTooLarge
+			return
+		}
+		_, _ = parser.output.WriteString(update.Text)
+	case StreamUpdateThought:
+		// Thought remains ephemeral and outside the proposal.
+	case StreamUpdateToolStarted, StreamUpdateToolUpdated:
+		parser.toolUsed = true
+		parser.err = ErrSealedToolUse
+	default:
+		parser.err = fmt.Errorf(
+			"sealed ACP attempt emitted unsupported update %q",
+			update.Kind,
+		)
+	}
+}
+
+func (parser *sealedStreamParser) Result() (SealedPromptResult, error) {
+	if parser.err == nil && len(parser.line) > 0 {
+		parser.consumeLine(parser.line)
+		parser.line = parser.line[:0]
+	}
+	result := SealedPromptResult{
+		Output:   append([]byte(nil), parser.output.Bytes()...),
+		ToolUsed: parser.toolUsed,
+	}
+	if parser.err != nil {
+		return result, parser.err
+	}
+	if !parser.sawResult || strings.TrimSpace(parser.stopReason) == "" {
 		return SealedPromptResult{}, errors.New(
 			"sealed acpx prompt omitted its terminal result",
 		)
 	}
-	if stopReason != "end_turn" {
+	if parser.stopReason != "end_turn" {
 		return SealedPromptResult{}, fmt.Errorf(
 			"sealed acpx prompt stopped with reason %q",
-			stopReason,
+			parser.stopReason,
 		)
 	}
-	return SealedPromptResult{Output: append([]byte(nil), output.Bytes()...)}, nil
+	return result, nil
 }
 
 type sealedCapture struct {

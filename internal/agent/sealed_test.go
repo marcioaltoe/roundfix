@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"testing"
 )
 
@@ -41,6 +42,50 @@ func TestSealedACPXPromptReturnsMessageAndClosesSession(t *testing.T) {
 	}
 	if got := string(readFile(t, promptPath)); got != `{"sealed":true}` {
 		t.Fatalf("sealed stdin changed: %q", got)
+	}
+	assertLastInvocationClosesDisposable(t, harness)
+}
+
+func TestSealedPromptStreamIgnoresNonTerminalJSONRPCResults(t *testing.T) {
+	stream := `{"jsonrpc":"2.0","id":0,"result":{"protocolVersion":1}}` + "\n" +
+		`{"jsonrpc":"2.0","id":2,"result":{"sessionId":"sealed"}}` + "\n" +
+		acpxUpdateLine(
+			`{"sessionId":"sealed","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"{\"ok\":true}"}}}`,
+		) +
+		acpxPromptResponseLine("end_turn")
+
+	result, err := parseSealedPromptStream([]byte(stream))
+	if err != nil {
+		t.Fatalf("parse sealed stream with setup results: %v", err)
+	}
+	if string(result.Output) != `{"ok":true}` || result.ToolUsed {
+		t.Fatalf("unexpected sealed result: %+v", result)
+	}
+}
+
+func TestSealedACPXPromptDiscardsLargeThoughtStreamIncrementally(t *testing.T) {
+	harness := newFakeACPXHarness(t)
+	workDir := newPrivateEmptyDirectory(t)
+	t.Setenv(fakeACPXStdoutCall, sealedSelectionFixtures(t, "gpt-5.5", "xhigh"))
+	t.Setenv(fakeACPXThoughtLen, strconv.Itoa(sealedACPStreamMaxBytes+1))
+	t.Setenv(fakeACPXStdoutBy, mustJSONForTest(t, map[string]string{
+		"prompt": acpxUpdateLine(
+			`{"sessionId":"sealed","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"{\"ok\":true}"}}}`,
+		) + acpxPromptResponseLine("end_turn"),
+	}))
+
+	result, err := harness.runner.RunSealedPrompt(context.Background(), SealedPromptRequest{
+		Runtime: RuntimeSpec{
+			ID: "codex", Protocol: ProtocolACP, Model: "gpt-5.5", ReasoningEffort: "xhigh",
+		},
+		WorkDir: workDir,
+		Input:   []byte(`{"sealed":true}`),
+	})
+	if err != nil {
+		t.Fatalf("run sealed prompt with large thought stream: %v", err)
+	}
+	if string(result.Output) != `{"ok":true}` || result.ToolUsed {
+		t.Fatalf("unexpected sealed result: %+v", result)
 	}
 	assertLastInvocationClosesDisposable(t, harness)
 }

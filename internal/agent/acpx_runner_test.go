@@ -41,6 +41,7 @@ const (
 	fakeACPXBlockCmd   = "ROUNDFIX_FAKE_ACPX_BLOCK_COMMAND"
 	fakeACPXExitCancel = "ROUNDFIX_FAKE_ACPX_EXIT_AFTER_CANCEL"
 	fakeACPXCodexPath  = "ROUNDFIX_FAKE_ACPX_CODEX_PATH"
+	fakeACPXThoughtLen = "ROUNDFIX_FAKE_ACPX_THOUGHT_LENGTH"
 )
 
 func TestMain(m *testing.M) {
@@ -3552,6 +3553,12 @@ func runFakeACPXProcess() int {
 	stdoutByCommand := fakeACPXStringMap(os.Getenv(fakeACPXStdoutBy))
 	stdoutByCall := fakeACPXStringMap(os.Getenv(fakeACPXStdoutCall))
 	stderrByCommand := fakeACPXStringMap(os.Getenv(fakeACPXStderrBy))
+	if commandKey == "prompt" {
+		if err := writeFakeACPXThoughtStream(os.Getenv(fakeACPXThoughtLen)); err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "write thought stream: %v\n", err)
+			return 2
+		}
+	}
 	_, _ = io.WriteString(os.Stdout, firstFakeACPXString(stdoutByCall[fakeACPXCallKey(args)], stdoutByCommand[commandKey], fakeSelectionStateOutput(args, os.Getenv(fakeACPXInvokes)), os.Getenv(fakeACPXStdout)))
 	_, _ = io.WriteString(os.Stderr, firstFakeACPXString(stderrByCommand[commandKey], os.Getenv(fakeACPXStderr)))
 	exitByCommand := fakeACPXIntMap(os.Getenv(fakeACPXExitBy))
@@ -3571,6 +3578,28 @@ func runFakeACPXProcess() int {
 		return exitCode
 	}
 	return 0
+}
+
+func writeFakeACPXThoughtStream(rawLength string) error {
+	if rawLength == "" {
+		return nil
+	}
+	length, err := strconv.Atoi(rawLength)
+	if err != nil {
+		return fmt.Errorf("parse thought length: %w", err)
+	}
+	const chunkSize = 1024
+	for remaining := length; remaining > 0; {
+		size := min(remaining, chunkSize)
+		update := `{"sessionId":"sealed","update":{"sessionUpdate":"agent_thought_chunk","content":{"type":"text","text":"` +
+			strings.Repeat("x", size) +
+			`"}}}`
+		if _, err := io.WriteString(os.Stdout, acpxUpdateLine(update)); err != nil {
+			return err
+		}
+		remaining -= size
+	}
+	return nil
 }
 
 func appendFakeACPXInvocation(path string, args []string) error {

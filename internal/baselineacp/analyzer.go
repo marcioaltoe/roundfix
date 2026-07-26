@@ -26,7 +26,8 @@ type Runtime interface {
 
 // Analyzer supervises the fixed preferred and fallback Agent Selections.
 type Analyzer struct {
-	runtime Runtime
+	runtime  Runtime
+	findings []baseline.Finding
 }
 
 func NewAnalyzer(runtime Runtime) *Analyzer {
@@ -73,12 +74,20 @@ func (analyzer *Analyzer) Segment(
 			return baseline.RuleSegmentationProposal{}, err
 		}
 		if proofErr != nil {
+			analyzer.recordSelectionFinding("segmentation", selection, proofErr)
 			if cleanupUnproven(proofErr) {
 				return baseline.ManualRuleSegmentationProposal(snapshot)
 			}
 			continue
 		}
 		proven[index] = exactProofMatches(selection, proof)
+		if !proven[index] {
+			analyzer.recordSelectionFinding(
+				"segmentation",
+				selection,
+				errors.New("Exact Agent Selection Proof did not match the requested selection"),
+			)
+		}
 	}
 
 	for index, selection := range selections {
@@ -94,6 +103,7 @@ func (analyzer *Analyzer) Segment(
 		if attemptErr == nil {
 			return proposal, nil
 		}
+		analyzer.recordProposalFinding("segmentation", selection, attemptErr)
 		if err := ctx.Err(); err != nil {
 			return baseline.RuleSegmentationProposal{}, err
 		}
@@ -140,12 +150,20 @@ func (analyzer *Analyzer) Classify(
 			return baseline.ClassificationProposal{}, err
 		}
 		if proofErr != nil {
+			analyzer.recordSelectionFinding("classification", selection, proofErr)
 			if cleanupUnproven(proofErr) {
 				return baseline.ManualClassificationProposal(snapshot)
 			}
 			continue
 		}
 		proven[index] = exactProofMatches(selection, proof)
+		if !proven[index] {
+			analyzer.recordSelectionFinding(
+				"classification",
+				selection,
+				errors.New("Exact Agent Selection Proof did not match the requested selection"),
+			)
+		}
 	}
 
 	for index, selection := range selections {
@@ -156,6 +174,7 @@ func (analyzer *Analyzer) Classify(
 		if attemptErr == nil {
 			return proposal, nil
 		}
+		analyzer.recordProposalFinding("classification", selection, attemptErr)
 		if err := ctx.Err(); err != nil {
 			return baseline.ClassificationProposal{}, err
 		}
@@ -197,12 +216,20 @@ func (analyzer *Analyzer) Revise(
 			return baseline.RevisionProposal{}, err
 		}
 		if proofErr != nil {
+			analyzer.recordSelectionFinding("revision", selection, proofErr)
 			if cleanupUnproven(proofErr) {
 				return baseline.ManualRevisionProposal(snapshot)
 			}
 			continue
 		}
 		proven[index] = exactProofMatches(selection, proof)
+		if !proven[index] {
+			analyzer.recordSelectionFinding(
+				"revision",
+				selection,
+				errors.New("Exact Agent Selection Proof did not match the requested selection"),
+			)
+		}
 	}
 	for index, selection := range selections {
 		if !proven[index] {
@@ -212,6 +239,7 @@ func (analyzer *Analyzer) Revise(
 		if attemptErr == nil {
 			return proposal, nil
 		}
+		analyzer.recordProposalFinding("revision", selection, attemptErr)
 		if err := ctx.Err(); err != nil {
 			return baseline.RevisionProposal{}, err
 		}
@@ -220,6 +248,70 @@ func (analyzer *Analyzer) Revise(
 		}
 	}
 	return baseline.ManualRevisionProposal(snapshot)
+}
+
+// TakeFindings returns and clears sanitized diagnostics from discarded sealed
+// selections and proposals. Proposal output itself is never retained.
+func (analyzer *Analyzer) TakeFindings() []baseline.Finding {
+	if analyzer == nil {
+		return nil
+	}
+	findings := append([]baseline.Finding(nil), analyzer.findings...)
+	analyzer.findings = nil
+	return findings
+}
+
+func (analyzer *Analyzer) recordSelectionFinding(
+	stage string,
+	selection agent.RuntimeSpec,
+	err error,
+) {
+	analyzer.recordFinding(
+		"baseline.semantic."+stage+"-selection.unavailable",
+		stage+" selection",
+		selection,
+		err,
+	)
+}
+
+func (analyzer *Analyzer) recordProposalFinding(
+	stage string,
+	selection agent.RuntimeSpec,
+	err error,
+) {
+	analyzer.recordFinding(
+		"baseline.semantic."+stage+"-proposal.discarded",
+		stage+" proposal",
+		selection,
+		err,
+	)
+}
+
+func (analyzer *Analyzer) recordFinding(
+	code string,
+	subject string,
+	selection agent.RuntimeSpec,
+	err error,
+) {
+	if analyzer == nil || err == nil {
+		return
+	}
+	reason := strings.Join(strings.Fields(err.Error()), " ")
+	const maxReasonRunes = 512
+	runes := []rune(reason)
+	if len(runes) > maxReasonRunes {
+		reason = string(runes[:maxReasonRunes]) + "..."
+	}
+	analyzer.findings = append(analyzer.findings, baseline.Finding{
+		Code: code,
+		Message: fmt.Sprintf(
+			"%s %s %s was discarded: %s",
+			selection.DisplayName,
+			selection.Model,
+			subject,
+			reason,
+		),
+	})
 }
 
 func cleanupUnproven(err error) bool {

@@ -56,9 +56,17 @@ func TestRuleSegmentationPreferredFallbackUsesIdenticalSnapshotBytes(t *testing.
 		},
 	}
 
-	proposal, err := NewAnalyzer(runtime).Segment(context.Background(), snapshot)
+	analyzer := NewAnalyzer(runtime)
+	proposal, err := analyzer.Segment(context.Background(), snapshot)
 	if err != nil {
 		t.Fatalf("segment with fallback selection: %v", err)
+	}
+	findings := analyzer.TakeFindings()
+	if len(findings) != 1 ||
+		findings[0].Code != "baseline.semantic.segmentation-proposal.discarded" ||
+		!strings.Contains(findings[0].Message, PreferredModel) ||
+		!strings.Contains(findings[0].Message, "parse Segmentation Proposal") {
+		t.Fatalf("discarded preferred proposal finding = %+v", findings)
 	}
 	materialized, err := baseline.MaterializeRuleSegments(snapshot, proposal)
 	if err != nil {
@@ -417,8 +425,8 @@ func TestACPXReadOnlyArguments(t *testing.T) {
 			"--allowed-tools\x00",
 			"--max-turns\x001",
 			"--no-terminal",
-			"--timeout\x00120",
-			"--ttl\x00120",
+			"--timeout\x00300",
+			"--ttl\x00300",
 		} {
 			if !strings.Contains(joined, required) {
 				t.Fatalf("%s args omit sealed flag %q: %#v", name, required, args)
