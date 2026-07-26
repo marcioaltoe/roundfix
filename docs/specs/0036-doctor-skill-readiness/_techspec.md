@@ -27,6 +27,24 @@ proves the effective adapter and exact required Agent Selection Profiles. The
 work below injects one independent Repository Skill Set result into that
 boundary and does not preserve or recreate the legacy single-model probe.
 
+## Project Constraints
+
+- Identifier strategy: not applicable — the checker introduces no project-owned
+  Internal Identifier; it consumes existing embedded and lock-declared skill
+  names. Source: `docs/agents/domain.md`.
+- Authentication and HTTP: not applicable — the design is filesystem-only and
+  must not add credentials, HTTP behavior, or network access. Source:
+  `docs/agents/cli.md`.
+- Active ADR obligations: applicable — ADR-0049 and ADR-0055 bind the
+  profile-aware Doctor boundary, and ADR-0066 plus ADR-0072 require any Baseline
+  asset behavior to remain in the Go CLI rather than a Python skill runtime.
+  Source: `docs/agents/domain.md`.
+- Tooling authority: applicable — on 2026-07-26, the maintainer expressly
+  authorizes changes to exactly `.agents/skills/roundfix/SKILL.md` and
+  `skills/roundfix/SKILL.md`; no other protected tooling mutation is
+  authorized. Source:
+  `docs/agents/agent-instructions.md`.
+
 ## System Architecture
 
 - `skills` — add repository readiness types, `skills-lock.json` decoding,
@@ -38,13 +56,11 @@ boundary and does not preserve or recreate the legacy single-model probe.
   translate the structured result into `CheckResult{Name: "skills"}`, and
   append it to the existing deterministic Doctor output. CLI code owns wording
   and exit behavior; the checker owns filesystem facts.
-- `.agents/skills/setup-context-driven` — correct `sync-setups` source
-  precedence so a repository-owned snapshot digest cannot be replaced by a
-  same-path file from the external canonical setup checkout; synchronize the
-  embedded owned copy after focused regression coverage passes.
-- `CONTEXT.md`, `docs/user-guide`, README, and `.agents/skills/roundfix` — add
-  Repository Skill Set vocabulary and describe the new Doctor line and update
-  commands. `make skills-sync` regenerates the embedded Roundfix Skill.
+- `CONTEXT.md`, `docs/user-guide`, and README — add Repository Skill Set
+  vocabulary and describe the new Doctor line and update commands.
+- `.agents/skills/roundfix/SKILL.md` and `skills/roundfix/SKILL.md` — one
+  dedicated tooling-only Task updates the authorized canonical/generated pair
+  without touching other protected tooling.
 - No Run Store, configuration schema, Agent Session, TUI, network, or daemon
   changes. Agent adapter and profile proof belongs exclusively to Spec 0041.
 - No Context-Driven artifact inspection: Doctor proves the installed skill
@@ -156,7 +172,7 @@ and appends its result after the profile-readiness result introduced by Spec
 Success detail is deterministic:
 
 ```text
-skills: ok (38 required: 14 Roundfix-owned, 24 external)
+skills: ok (39 required: 14 Roundfix-owned, 25 external)
 ```
 
 Failure detail uses only non-empty stable groups:
@@ -174,41 +190,20 @@ command. Any failed result uses the existing `exitRunFailed` (`1`); argument or
 usage errors remain `exitPreflight` (`2`). Stdout remains requested Doctor
 output and stderr remains reserved for command-level load/usage failures.
 
-### Ownership-safe setup synchronization
-
-`normalize_source_skill` already resolves the current snapshot entry and the
-incoming source declaration. Make that declaration control digest precedence:
-
-1. Resolve the effective source from the incoming entry, falling back to the
-   current entry as today.
-2. When the effective source has `type: repo` and the current snapshot carries
-   a valid `contentDigest`, preserve that digest before consulting
-   `source_dir`.
-3. For non-repository entries, retain the existing order: explicit incoming
-   digest, resolved external `SKILL.md`, then current digest fallback.
-4. A new repository-owned entry without a current digest must supply an
-   explicit digest; it must not silently hash a same-path external file.
-
-This is an authorial workflow fix in a repo-owned skill, so both canonical and
-embedded copies change together through `make skills-sync`. Regression tests
-cover a text setup source whose external checkout deliberately contains
-conflicting content at a repo-owned path, plus an external entry that still
-refreshes normally. This closes the source-precedence failure absorbed into
-this Spec; the original report remains available through Git history.
-
 ### Documentation and skill synchronization
 
 - Add **Repository Skill Set** to `CONTEXT.md` and extend **Doctor Command** to
   include it.
 - Update README and Doctor command documentation with the `skills:` line,
   ownership rules, failure behavior, and read-only update guidance.
-- Update the canonical `.agents/skills/roundfix` Doctor instructions and
-  OpenAI manifest where the check list is enumerated.
-- Run `make skills-sync` so `skills/roundfix` matches the canonical skill and
-  extend shipped skill contract tests for the new required wording.
-- Keep the externally managed skill files and `skills-lock.json` updates
-  produced by `make skills-update` unchanged; no authorial edits are permitted
-  under those skills.
+- In a separate tooling-only Task, update
+  `.agents/skills/roundfix/SKILL.md` and its
+  `skills/roundfix/SKILL.md` generated copy byte-identically. Do not run the
+  broad `make skills-sync` mutation target because it rewrites every owned
+  skill directory; use `make skills-sync-check` as read-only verification.
+- Keep externally managed skill files, `skills/recommended.txt`, and
+  `skills-lock.json` unchanged; the required external count remains derived
+  from the shipped recommendation list.
 
 ## Coverage Map
 
@@ -217,8 +212,7 @@ this Spec; the original report remains available through Git history.
 - User story 4 → stable Doctor formatter, sorted classifications, exact next
   actions, non-zero exit.
 - User story 5 → local filesystem-only implementation and no-mutation tests.
-- Core feature 6 → setup snapshot source precedence and regression coverage.
-- Core feature 7 → docs, canonical vocabulary, Roundfix Skill sync, and
+- Core feature 6 → docs, canonical vocabulary, Roundfix Skill sync, and
   ownership contract verification.
 
 ## Testing Approach
@@ -237,9 +231,6 @@ this Spec; the original report remains available through Git history.
   output remains byte-stable except for the appended line.
 - No-mutation tests snapshot relevant paths before and after Doctor and assert
   no repository, user config, `.roundfix`, or skill file is created or changed.
-- Setup-context tests prove `source.type: repo` preserves the current bundled
-  digest in the presence of conflicting external content and that ordinary
-  external sources still refresh.
 - QA runs the built binary against a clean disposable repository, then copies
   that fixture and exercises missing and outdated variants without changing
   the working repository.
@@ -251,13 +242,13 @@ this Spec; the original report remains available through Git history.
 Cross-Spec prerequisite: implement Spec 0041 through its profile-aware Doctor
 integration before starting this graph.
 
-1. Ownership-safe setup synchronization and its focused regression tests.
-2. Repository skill readiness types, lock validation, owned comparison,
+1. Repository skill readiness types, lock validation, owned comparison,
    external hash compatibility, and focused package tests.
-3. Doctor dependency injection, rendering after profile readiness, failure
-   semantics, command tests, and CLI help (depends on 2 and Spec 0041).
-4. Canonical vocabulary, user docs, canonical Roundfix Skill update, embedded
-   sync, and contract verification (depends on 1, 3).
+2. Doctor dependency injection, rendering after profile readiness, failure
+   semantics, command tests, and CLI help (depends on 1 and Spec 0041).
+3. Canonical vocabulary and user documentation (depends on 2).
+4. Dedicated tooling-only update of the exact authorized canonical/generated
+   Roundfix Skill files and read-only sync verification (depends on 3).
 
 ## Risks & Considerations
 
@@ -266,7 +257,8 @@ integration before starting this graph.
   directories, and the absence of separators.
 - Comparing the installed owned tree against the running binary intentionally
   means a newly built dirty binary may report local skill drift until
-  `make skills-sync` and rebuild complete; that is the desired pre-PR signal.
+  the authorized canonical/generated pair is synchronized and the binary is
+  rebuilt; that is the desired pre-PR signal.
 - A repository lock can contain stale or malicious paths. Skill names are
   validated as basenames, and the checker never follows symlinked files, so no
   declared value can escape `.agents/skills`.
@@ -275,10 +267,8 @@ integration before starting this graph.
 - Spec 0041 and this Spec both touch Doctor dependencies and output. Implement
   Spec 0041 first and extend its coordinator; do not maintain competing legacy
   and profile-aware runtime checks.
-- The project currently declares 38 required skills. Counts are derived at
+- The project currently declares 39 required skills. Counts are derived at
   runtime and must not be hard-coded in production behavior.
-- External setup checkouts may contain divergent copies of repo-owned skills;
-  source precedence must be decided by metadata, not filesystem coincidence.
 
 ## Decisions
 
@@ -286,10 +276,8 @@ integration before starting this graph.
 - Roundfix-owned authority is the running binary; external authority is the
   current repository's `skills-lock.json` constrained to `Recommended()`.
 - The check reproduces the local hash contract and never invokes `bunx`.
-- `sync-setups` preserves current valid digests for `source.type: repo` and
-  never hashes a conflicting external checkout for those entries.
 - One aggregate `skills:` line preserves Doctor's compact public surface.
-- No ADR is added because this is an extension of the accepted Doctor plus the
-  skill ownership and synchronization boundaries in
+- No ADR is added because this is an extension of the accepted Doctor and the
+  skill ownership boundary in
   `docs/agents/skill-dispatch.md`, not a new hard-to-reverse architecture
   choice.

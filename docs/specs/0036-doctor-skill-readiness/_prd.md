@@ -25,6 +25,24 @@ Doctor's legacy runtime probe with the shared effective-adapter and exact
 Agent Selection Profile proof. This Spec appends only the independent
 Repository Skill Set result and must not recreate or bypass profile proof.
 
+## Project Constraints
+
+- Identifier strategy: not applicable — this feature creates no project-owned
+  Internal Identifier or application identity; skill names remain sourced from
+  the embedded bundle and `skills-lock.json`. Source: `docs/agents/domain.md`.
+- Authentication and HTTP: not applicable — Doctor reads only local repository
+  state and must not add an authentication provider, HTTP route, or network
+  call. Source: `docs/agents/cli.md`.
+- Active ADR obligations: applicable — ADR-0049 and ADR-0055 keep Agent
+  Selection Profile proof authoritative, while ADR-0066 and ADR-0072 keep
+  Baseline execution in the Go CLI and prohibit restoring the removed Python
+  runtime. Source: `docs/agents/domain.md`.
+- Tooling authority: applicable — on 2026-07-26, the maintainer expressly
+  authorizes changes to exactly `.agents/skills/roundfix/SKILL.md` and
+  `skills/roundfix/SKILL.md`; no other protected tooling mutation is
+  authorized. Source:
+  `docs/agents/agent-instructions.md`.
+
 ## Goals
 
 - Make `roundfix doctor` prove that every required repository skill is
@@ -37,8 +55,6 @@ Repository Skill Set result and must not recreate or bypass profile proof.
   skills and provides the exact relevant update command or commands.
 - Keep Doctor diagnosis-only: no downloads, network calls, installs, file
   writes, or lock-file updates.
-- Keep setup snapshot synchronization from replacing Roundfix-owned skill
-  digests with content from an external checkout.
 - Keep `CONTEXT.md`, user guidance, and the canonical Roundfix Skill aligned
   with the shipped Doctor behavior.
 
@@ -85,11 +101,7 @@ Repository Skill Set result and must not recreate or bypass profile proof.
    `roundfix skills install --target project`; external drift points to
    `bunx skills experimental_install && bunx skills update -p -y`. When both
    groups fail, the single Doctor line includes both commands in that order.
-6. **Ownership-safe setup synchronization.** `sync-setups` preserves the
-   existing authoritative digest for entries whose `source.type` is `repo`,
-   even when the external setup checkout contains a different file at the same
-   path. External entries continue to refresh from their declared source.
-7. **Synchronized guidance.** Command help, user documentation, the canonical
+6. **Synchronized guidance.** Command help, user documentation, the canonical
    Roundfix Skill, its embedded copy, and the canonical glossary describe the
    new check and preserve the repository's skill-ownership boundary.
 
@@ -121,11 +133,15 @@ authorization, and rerun Doctor to prove the result.
 - Validating `AGENTS.md`, Context Documents, agent guides, or Baseline ADRs;
   those repository-document contracts belong to `setup-context-driven audit`
   and Spec 0040.
+- Changing Baseline asset synchronization or restoring the removed Python
+  setup runtime. Baseline asset behavior belongs to the Go CLI under ADR-0066
+  and ADR-0072.
 
 ## Success Metrics
 
-- A repository with all 14 owned skills byte-equal to the binary and all 24
-  external skills matching `skills-lock.json` reports `skills: ok` and does
+- A repository with all 14 owned skills byte-equal to the binary and all 25
+  external skills matching `skills-lock.json` reports `skills: ok` for the
+  current derived total of 39 required skills and does
   not fail Doctor on skill readiness.
 - Removing one required skill makes Doctor name it as missing and exit
   non-zero without creating or changing any file.
@@ -135,9 +151,6 @@ authorization, and rerun Doctor to prove the result.
 - A missing or malformed `skills-lock.json`, an empty or malformed
   `computedHash`, or an unreadable required artifact produces a deterministic
   failure with a useful next action rather than a panic.
-- A `sync-setups` regression fixture with conflicting external content keeps
-  the Roundfix-owned digest unchanged while external skill updates remain
-  refreshable.
 - Focused tests cover clean, missing, outdated, mixed-ownership, malformed
   lock, and no-mutation behavior; the full repository verification gate and
   race suite pass.
@@ -152,12 +165,9 @@ authorization, and rerun Doctor to prove the result.
   removal.
 - The local deterministic hash contract is implemented directly rather than
   invoking the external skills CLI.
-- Setup snapshot synchronization resolves digest authority from `source.type`;
-  repository-owned entries never derive their digest from the external setup
-  checkout.
-- This change extends the existing Doctor Command plus the skill ownership and
-  synchronization contracts in `docs/agents/skill-dispatch.md`; it does not
-  require a new architectural decision record.
+- This change extends the existing Doctor Command and the skill ownership
+  contract in `docs/agents/skill-dispatch.md`; it does not require a new
+  architectural decision record.
 
 ## Dependencies
 

@@ -44,9 +44,6 @@ filesystem mutation.
    config writes, lock updates, or skill-tree mutations.
 10. MUST wrap filesystem and decoding errors with the failed operation and path,
     and MUST reject unsafe skill names without reading outside the repository.
-11. MUST fix `sync-setups` so a valid current digest for `source.type: repo`
-    takes precedence over same-path content in the external setup checkout,
-    while non-repository skill refresh behavior remains unchanged.
 
 ## Subtasks
 
@@ -58,15 +55,13 @@ filesystem mutation.
       symlink, mixed-ownership, and ordering cases.
 - [ ] Add exact-output Doctor tests for success, each ownership group, mixed
       remediation, checker errors, exit behavior, and no mutation.
-- [ ] Add setup synchronization regression tests for conflicting repo-owned
-      external content and continuing external-source refresh.
 - [ ] Update Doctor command help for the appended Repository Skill Set check.
 
 ## Acceptance Criteria
 
 - [ ] A complete fixture matching the embedded owned bundle and required lock
-      hashes reports `skills: ok` with derived 14/24/38 counts and exits zero
-      when all other Doctor checks pass.
+      hashes reports `skills: ok` with the current derived 14/25/39 counts and
+      exits zero when all other Doctor checks pass.
 - [ ] Removing one owned or external skill reports that name under `missing`,
       prints the ownership-specific command, and exits one.
 - [ ] Changing, adding, or removing a versioned file reports the affected skill
@@ -79,22 +74,23 @@ filesystem mutation.
       remediation commands exactly once in owned-then-external order.
 - [ ] Doctor runs every existing check even when skill readiness fails and
       changes no repository, user-config, Run, or skill path.
-- [ ] `sync-setups` preserves a Roundfix-owned digest when an external checkout
-      contains conflicting content at the same path, and the canonical and
-      embedded setup-context-driven suites pass together.
 
 ## Context
 
 - instruction: `CONTEXT.md`
 - instruction: `docs/agents/skill-dispatch.md`
+- instruction: `.agents/skills/agentic-cli-design/SKILL.md`
+- instruction: `.agents/skills/coding-guidelines/SKILL.md`
+- instruction: `.agents/skills/golang-cli/SKILL.md`
+- instruction: `.agents/skills/golang-error-handling/SKILL.md`
+- instruction: `.agents/skills/golang-testing/SKILL.md`
+- instruction: `.agents/skills/testing-boss/SKILL.md`
 - instruction: `docs/specs/_archived/0041-agent-selection-runtime-readiness/_techspec.md`
 - interface: `skills/skills.go`
 - interface: `skills/skills_test.go`
 - interface: `internal/cli/doctor.go`
 - interface: `internal/cli/cli_test.go`
 - interface: `internal/cli/cli.go`
-- interface: `.agents/skills/setup-context-driven/scripts/context_setup.py`
-- interface: `.agents/skills/setup-context-driven/tests/test_sync_setups.py`
 
 ## Verification
 
@@ -105,15 +101,13 @@ filesystem mutation.
   `skills:` output, remediation, exit behavior, and existing Doctor lines pass.
 - `rtk go test -race ./skills ./internal/cli -run 'Test(CheckRepository|RunDoctor)' -count=1`
   — expected: injected checks and filesystem reads are race-free.
-- `rtk make setup-context-check` — expected: repo-owned digest precedence,
-  external refresh, and all setup-context-driven flows pass.
 
 ## References
 
-- `_prd.md` → Goals; User Stories 1–5; Core Features 1–6; Success Metrics.
+- `_prd.md` → Goals; User Stories 1–5; Core Features 1–5; Success Metrics.
 - `_techspec.md` → Repository readiness contract; Owned-skill comparison;
-  External lock and hash comparison; Doctor integration and output; Build Order
-  1–3.
+  External lock and hash comparison; Doctor integration and output; Build
+  Order 1–2.
 - `docs/specs/_archived/0041-agent-selection-runtime-readiness/_techspec.md` → prerequisite
   profile-aware Doctor coordinator and output order.
 - `CONTEXT.md` → Doctor Command; Repository Skill Set; Roundfix Skill.
