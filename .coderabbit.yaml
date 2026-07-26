@@ -63,7 +63,6 @@ reviews:
 
     # ----- Roundfix source, tests, contracts, docs, and configuration -----
     - "**/*.go"
-    - "**/*.md"
     - "**/*.golden"
     - "**/*.txt"
     - "**/*.stdout"
