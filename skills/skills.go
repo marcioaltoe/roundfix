@@ -2,7 +2,6 @@ package skills
 
 import (
 	"context"
-	"crypto/sha256"
 	"embed"
 	"errors"
 	"fmt"
@@ -13,6 +12,8 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"roundfix/internal/skillhash"
 )
 
 //go:embed roundfix write-idea write-prd write-techspec write-tasks setup-context-driven implement-task implement-spec brainstorming council business-analyst archive-spec qa-gate evidence-gate recommended.txt
@@ -137,11 +138,7 @@ func SkillFolderHash(root string) (string, error) {
 		return "", fmt.Errorf("inspect skill folder %q: root is not a directory", root)
 	}
 
-	type hashFile struct {
-		path string
-		data []byte
-	}
-	var files []hashFile
+	var files []skillhash.File
 	tree := os.DirFS(root)
 	if err := fs.WalkDir(tree, ".", func(path string, entry fs.DirEntry, walkErr error) error {
 		fullPath := filepath.Join(root, filepath.FromSlash(path))
@@ -172,36 +169,16 @@ func SkillFolderHash(root string) (string, error) {
 		if err != nil {
 			return fmt.Errorf("read skill folder file %q: %w", fullPath, err)
 		}
-		files = append(files, hashFile{
-			path: filepath.ToSlash(path),
-			data: data,
+		files = append(files, skillhash.File{
+			Path:    filepath.ToSlash(path),
+			Content: data,
 		})
 		return nil
 	}); err != nil {
 		return "", fmt.Errorf("hash skill folder %q: %w", root, err)
 	}
 
-	sort.Slice(files, func(i, j int) bool {
-		// String.localeCompare compares the normalized repository paths
-		// case-insensitively first and puts lowercase before uppercase when
-		// paths otherwise collate equally.
-		left := strings.ToLower(files[i].path)
-		right := strings.ToLower(files[j].path)
-		if left == right {
-			return files[i].path > files[j].path
-		}
-		return left < right
-	})
-	digest := sha256.New()
-	for _, file := range files {
-		if _, err := digest.Write([]byte(file.path)); err != nil {
-			return "", fmt.Errorf("hash skill folder path %q: %w", file.path, err)
-		}
-		if _, err := digest.Write(file.data); err != nil {
-			return "", fmt.Errorf("hash skill folder file %q: %w", file.path, err)
-		}
-	}
-	return fmt.Sprintf("%x", digest.Sum(nil)), nil
+	return skillhash.Sum(files), nil
 }
 
 func Check() []Diagnostic {
