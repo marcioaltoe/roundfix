@@ -33,6 +33,7 @@ import (
 	roundtui "roundfix/internal/tui"
 	"roundfix/internal/watch"
 	runworktree "roundfix/internal/worktree"
+	"roundfix/skills"
 )
 
 func init() {
@@ -264,7 +265,7 @@ func TestRunCommandHelp(t *testing.T) {
 		{
 			name:     "doctor",
 			args:     []string{"doctor", "--help"},
-			contains: []string{"roundfix doctor", "codex runtime hygiene", "Doctor mutates nothing"},
+			contains: []string{"roundfix doctor", "Repository Skill Set", "skills:", "codex runtime hygiene", "offline", "read-only", "mutates nothing"},
 		},
 		{
 			name:     "upgrade",
@@ -470,7 +471,7 @@ func TestProfilesDocumentationContractMatchesPublicGuidance(t *testing.T) {
 		snippets []string
 	}{
 		{name: "setup", snippets: []string{"official Codex adapter", "profile readiness", "before writing"}},
-		{name: "doctor", snippets: []string{"Agent Selection Profiles", "profiles:", "mutates nothing"}},
+		{name: "doctor", snippets: []string{"Agent Selection Profiles", "profiles:", "Repository Skill Set", "skills:", "read-only", "mutates nothing"}},
 		{name: "profiles configure", snippets: []string{"exact Agent Selection", "before confirmation", "without writing"}},
 		{name: "profiles validate", snippets: []string{"exact", "Read-only", "disposable ACP Runtime session"}},
 	} {
@@ -2291,6 +2292,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"acpx: ok (" + agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion + ")\n" +
 				"adapter: ok (codex-acp)\n" +
 				"profiles: ok (3 distinct tuples; 10 category references)\n" +
+				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"codex: ok (/home/roundfix/.local/bin/codex accepted)\n",
 		},
 		{
@@ -2305,6 +2307,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"acpx: ok (" + agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion + ")\n" +
 				"adapter: ok (codex-acp)\n" +
 				"profiles: ok (3 distinct tuples; 10 category references)\n" +
+				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"codex: failed (/tmp/codex is quarantined; next: " + codex.ReinstallNextAction + ")\n",
 		},
 		{
@@ -2319,6 +2322,7 @@ func TestRunDoctorProfileReadinessProvesEffectiveCategoriesAndReportsCounts(t *t
 				"acpx: ok (" + agent.MinimumACPXVersion + " >= " + agent.MinimumACPXVersion + ")\n" +
 				"adapter: ok (codex-acp)\n" +
 				"profiles: ok (3 distinct tuples; 10 category references)\n" +
+				"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
 				"codex: skipped (not-applicable on linux)\n",
 		},
 	}
@@ -2548,6 +2552,119 @@ func TestRunDoctorContinuesChecksAfterProfileReadinessFailure(t *testing.T) {
 	}
 }
 
+func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
+	ownedCommand := "roundfix skills install --target project"
+	externalCommand := "bunx skills experimental_install && bunx skills update -p -y"
+	tests := []struct {
+		name      string
+		readiness skills.RepositoryReadiness
+		err       error
+		wantCode  int
+		wantLine  string
+	}{
+		{
+			name: "ready",
+			readiness: skills.RepositoryReadiness{
+				OwnedRequired:    14,
+				ExternalRequired: 25,
+			},
+			wantCode: exitOK,
+			wantLine: "skills: ok (39 required: 14 Roundfix-owned, 25 external)",
+		},
+		{
+			name: "owned failure",
+			readiness: skills.RepositoryReadiness{
+				OwnedRequired: 14,
+				MissingOwned:  []string{"write-prd"},
+				OutdatedOwned: []string{"roundfix"},
+			},
+			wantCode: exitRunFailed,
+			wantLine: "skills: failed (missing: write-prd; outdated: roundfix; next: " +
+				ownedCommand + ")",
+		},
+		{
+			name: "external failure",
+			readiness: skills.RepositoryReadiness{
+				ExternalRequired: 25,
+				MissingExternal:  []string{"testing-boss"},
+				OutdatedExternal: []string{"agentic-cli-design"},
+			},
+			wantCode: exitRunFailed,
+			wantLine: "skills: failed (missing: testing-boss; outdated: agentic-cli-design; next: " +
+				externalCommand + ")",
+		},
+		{
+			name: "mixed failure is sorted with ordered remediation",
+			readiness: skills.RepositoryReadiness{
+				OwnedRequired:    14,
+				ExternalRequired: 25,
+				MissingOwned:     []string{"write-prd"},
+				MissingExternal:  []string{"agentic-cli-design"},
+				OutdatedOwned:    []string{"roundfix"},
+				OutdatedExternal: []string{"testing-boss"},
+			},
+			wantCode: exitRunFailed,
+			wantLine: "skills: failed (missing: agentic-cli-design, write-prd; outdated: roundfix, testing-boss; next: " +
+				ownedCommand + "; " + externalCommand + ")",
+		},
+		{
+			name: "external checker error",
+			err: &skills.RepositoryReadinessError{
+				Ownership: skills.RepositoryOwnershipExternal,
+				Operation: "decode skills lock",
+				Path:      "/repo/project/skills-lock.json",
+				Err:       errors.New("invalid character"),
+			},
+			wantCode: exitRunFailed,
+			wantLine: "skills: failed (decode skills lock \"/repo/project/skills-lock.json\": invalid character; next: " +
+				externalCommand + ")",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			checker := newDoctorFakeHealthChecker(
+				CheckResult{Name: HealthCheckNode, Status: CheckStatusOK},
+				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK},
+				CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK},
+			)
+			withDoctorFakeLoadedAndReadiness(t, checker, roundconfig.Loaded{
+				Config:  roundconfig.Builtin(),
+				GitRoot: "/repo/project",
+			}, func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult {
+				return profileProofResult{}
+			})
+			skillCalls := 0
+			doctorDeps.checkSkills = func(root string) (skills.RepositoryReadiness, error) {
+				skillCalls++
+				if root != "/repo/project" {
+					t.Fatalf("skill readiness root = %q, want /repo/project", root)
+				}
+				return test.readiness, test.err
+			}
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"doctor"}, &stdout, &stderr)
+
+			if code != test.wantCode {
+				t.Fatalf("exit code = %d, want %d; stderr=%q", code, test.wantCode, stderr.String())
+			}
+			lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
+			if len(lines) != 6 || lines[4] != test.wantLine {
+				t.Fatalf("unexpected Doctor output lines:\n%q\nwant skills line %q at index 4", lines, test.wantLine)
+			}
+			if skillCalls != 1 || checker.nodeCalls != 1 || checker.acpxCalls != 1 || checker.adapterCalls != 1 || checker.codexCalls != 1 {
+				t.Fatalf("independent check calls skills=%d node=%d acpx=%d adapter=%d codex=%d",
+					skillCalls, checker.nodeCalls, checker.acpxCalls, checker.adapterCalls, checker.codexCalls)
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no stderr, got %q", stderr.String())
+			}
+		})
+	}
+}
+
 func TestRunDoctorRejectsArguments(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -2638,6 +2755,12 @@ func withDoctorFakeLoadedAndReadiness(t *testing.T, checker HealthChecker, loade
 			return checker
 		},
 		profileReadiness: readiness,
+		checkSkills: func(string) (skills.RepositoryReadiness, error) {
+			return skills.RepositoryReadiness{
+				OwnedRequired:    14,
+				ExternalRequired: 25,
+			}, nil
+		},
 	}
 	t.Cleanup(func() {
 		doctorDeps = old
@@ -2649,6 +2772,12 @@ func withDoctorLiveDeps(t *testing.T, checker HealthChecker) {
 	old := doctorDeps
 	doctorDeps = defaultDoctorDependencies()
 	doctorDeps.healthChecker = func(roundconfig.Loaded) HealthChecker { return checker }
+	doctorDeps.checkSkills = func(string) (skills.RepositoryReadiness, error) {
+		return skills.RepositoryReadiness{
+			OwnedRequired:    14,
+			ExternalRequired: 25,
+		}, nil
+	}
 	t.Cleanup(func() {
 		doctorDeps = old
 	})

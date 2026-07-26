@@ -2,15 +2,18 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
 
 	"roundfix/internal/agent"
 	"roundfix/internal/app"
 	roundconfig "roundfix/internal/config"
+	"roundfix/skills"
 )
 
 var doctorDeps = defaultDoctorDependencies()
@@ -19,6 +22,7 @@ type doctorDependencies struct {
 	loadConfig       func(roundconfig.LoadOptions) (roundconfig.Loaded, error)
 	healthChecker    func(roundconfig.Loaded) HealthChecker
 	profileReadiness func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult
+	checkSkills      func(string) (skills.RepositoryReadiness, error)
 }
 
 func defaultDoctorDependencies() doctorDependencies {
@@ -30,6 +34,7 @@ func defaultDoctorDependencies() doctorDependencies {
 		profileReadiness: func(ctx context.Context, config roundconfig.Config, categories []roundconfig.WorkCategory, workDir string) profileProofResult {
 			return proveProfileSelections(ctx, config, categories, workDir, newEngineCollaborators().runner)
 		},
+		checkSkills: skills.CheckRepository,
 	}
 }
 
@@ -61,16 +66,17 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 
 	profileReadiness := doctorDeps.profileReadiness(ctx, loaded.Config, roundconfig.RequiredWorkCategories(), workDir)
 	profileResult := doctorProfileReadinessResult(profileReadiness)
+	skillReadiness, skillErr := doctorDeps.checkSkills(workDir)
+	skillResult := doctorSkillReadinessResult(skillReadiness, skillErr)
 	runtime, runtimeErr := doctorAdapterRuntime(loaded.Config)
 
-	// Keep independent checks eager and ordered. Spec 0036 inserts Repository
-	// Skill Set readiness immediately after profileResult without proving
-	// Agent Selections again or changing the remaining check order.
+	// Keep independent checks eager and ordered.
 	results := []CheckResult{
 		checker.Node(ctx),
 		checker.ACPX(ctx),
 		doctorAdapterCheck(ctx, checker, runtime, runtimeErr),
 		profileResult,
+		skillResult,
 		checker.Codex(ctx),
 	}
 
@@ -142,6 +148,67 @@ func doctorProfileReadinessResult(readiness profileProofResult) CheckResult {
 	parts = append(parts, "adapter evidence: "+doctorProfileAdapterEvidence(failed))
 	result.Detail = strings.Join(parts, "; ")
 	result.NextAction = strings.TrimSpace(failed.NextAction)
+	return result
+}
+
+const (
+	ownedSkillsNextAction    = "roundfix skills install --target project"
+	externalSkillsNextAction = "bunx skills experimental_install && bunx skills update -p -y"
+)
+
+func doctorSkillReadinessResult(readiness skills.RepositoryReadiness, checkErr error) CheckResult {
+	result := CheckResult{Name: HealthCheckSkills}
+	if checkErr == nil && readiness.Ready() {
+		result.Status = CheckStatusOK
+		result.Detail = fmt.Sprintf(
+			"%d required: %d Roundfix-owned, %d external",
+			readiness.OwnedRequired+readiness.ExternalRequired,
+			readiness.OwnedRequired,
+			readiness.ExternalRequired,
+		)
+		return result
+	}
+
+	result.Status = CheckStatusFailed
+	missing := append([]string{}, readiness.MissingOwned...)
+	missing = append(missing, readiness.MissingExternal...)
+	outdated := append([]string{}, readiness.OutdatedOwned...)
+	outdated = append(outdated, readiness.OutdatedExternal...)
+	sort.Strings(missing)
+	sort.Strings(outdated)
+
+	var details []string
+	if len(missing) > 0 {
+		details = append(details, "missing: "+strings.Join(missing, ", "))
+	}
+	if len(outdated) > 0 {
+		details = append(details, "outdated: "+strings.Join(outdated, ", "))
+	}
+	if checkErr != nil {
+		details = append(details, checkErr.Error())
+		result.Err = checkErr
+	}
+	result.Detail = strings.Join(details, "; ")
+
+	ownedFailure := len(readiness.MissingOwned) > 0 || len(readiness.OutdatedOwned) > 0
+	externalFailure := len(readiness.MissingExternal) > 0 || len(readiness.OutdatedExternal) > 0
+	var readinessErr *skills.RepositoryReadinessError
+	if errors.As(checkErr, &readinessErr) {
+		switch readinessErr.Ownership {
+		case skills.RepositoryOwnershipOwned:
+			ownedFailure = true
+		case skills.RepositoryOwnershipExternal:
+			externalFailure = true
+		}
+	}
+	var next []string
+	if ownedFailure {
+		next = append(next, ownedSkillsNextAction)
+	}
+	if externalFailure {
+		next = append(next, externalSkillsNextAction)
+	}
+	result.NextAction = strings.Join(next, "; ")
 	return result
 }
 
