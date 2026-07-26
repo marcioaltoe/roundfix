@@ -339,8 +339,7 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 		initial.Root,
 		preservation.RepositoryRulesBytes,
 		decisionBool(decisions, "repository.extension.enabled"),
-		preservationRequest.Mode == PreservationModePreservation &&
-			preservationRequest.Decisions != nil,
+		preservationRedistributesRecognizedRepositoryRules(preservation),
 	)
 	if err != nil {
 		return PlanOutcome{}, err
@@ -409,8 +408,7 @@ func BuildPlan(ctx context.Context, request PlanRequest) (PlanOutcome, error) {
 		initial.Root,
 		preservation.RepositoryRulesBytes,
 		decisionBool(decisions, "repository.extension.enabled"),
-		preservationRequest.Mode == PreservationModePreservation &&
-			preservationRequest.Decisions != nil,
+		preservationRedistributesRecognizedRepositoryRules(preservation),
 	)
 	if err != nil {
 		return PlanOutcome{}, err
@@ -638,14 +636,7 @@ func planSpecificRepository(
 			selected = proposed
 			selectedPath = "Baseline Readoption"
 		} else if !bytes.Equal(selected, proposed) {
-			return specificRepositoryPlan{}, []Finding{{
-				Code: "baseline.repository-rules.conflict",
-				Path: specificRepositoryPath,
-				Message: fmt.Sprintf(
-					"repository-specific rule carriers conflict: %s and Baseline Readoption contain different bytes",
-					selectedPath,
-				),
-			}}, nil
+			selected = appendRepositoryRules(selected, proposed)
 		}
 	}
 	if !enabled {
@@ -682,6 +673,35 @@ func planSpecificRepository(
 	}
 	sort.Strings(plan.DeletePaths)
 	return plan, nil, nil
+}
+
+func preservationRedistributesRecognizedRepositoryRules(
+	preservation RootPreservationPlan,
+) bool {
+	if preservation.Mode != PreservationModePreservation ||
+		len(preservation.Dispositions) == 0 {
+		return false
+	}
+	for _, entry := range preservation.SourceBaseline.Entries {
+		switch entry.Path {
+		case specificRepositoryPath, legacyRepositoryPath, legacyRepositoryRulesPath:
+			return true
+		}
+	}
+	return false
+}
+
+func appendRepositoryRules(existing, proposed []byte) []byte {
+	if bytes.Contains(existing, proposed) {
+		return append([]byte(nil), existing...)
+	}
+	combined := append([]byte(nil), existing...)
+	if len(combined) != 0 &&
+		!bytes.HasSuffix(combined, []byte("\n")) &&
+		!bytes.HasPrefix(proposed, []byte("\n")) {
+		combined = append(combined, '\n')
+	}
+	return append(combined, proposed...)
 }
 
 func readSpecificRepositoryCarrier(
@@ -751,6 +771,7 @@ func inventoryRepositoryRuleBlocks(
 		ByPath: make(map[string][]RepositoryRuleBlock),
 	}
 	existing := make(map[string]string)
+	existingBodies := make(map[string][][]byte)
 	for _, relative := range sortedKeys(activeGuides) {
 		content, err := readOptionalRegular(root, relative)
 		if err != nil {
@@ -770,6 +791,10 @@ func inventoryRepositoryRuleBlocks(
 				)
 			}
 			existing[span.ID] = relative
+			existingBodies[relative] = append(
+				existingBodies[relative],
+				append([]byte(nil), span.Body...),
+			)
 			inventory.ByPath[relative] = append(
 				inventory.ByPath[relative],
 				RepositoryRuleBlock{
@@ -805,6 +830,16 @@ func inventoryRepositoryRuleBlocks(
 					currentPath,
 				)
 			}
+			continue
+		}
+		var bodyExists bool
+		for _, body := range existingBodies[block.Path] {
+			if bytes.Equal(body, block.Body) {
+				bodyExists = true
+				break
+			}
+		}
+		if bodyExists {
 			continue
 		}
 		cloned := block
@@ -1888,9 +1923,13 @@ func assemblePostimages(
 			return nil, nil, err
 		}
 		content := string(current)
+		if preservationConsumesRootPath(preservation, relative) {
+			content = ""
+		}
 		if relative == "AGENTS.md" && !repositoryPlan.IncludeRoot {
-			withoutPointer := removeManagedBlock(content, repositoryExtensionRootID)
-			removedRepositoryPointer = withoutPointer != content
+			withoutPointer := removeManagedBlock(string(current), repositoryExtensionRootID)
+			removedRepositoryPointer = withoutPointer != string(current)
+			withoutPointer = removeManagedBlock(content, repositoryExtensionRootID)
 			content = withoutPointer
 		}
 		for _, artifact := range grouped {
@@ -2032,6 +2071,25 @@ func assemblePostimages(
 		ledger[index].Ordinal = index
 	}
 	return postimages, ledger, nil
+}
+
+func preservationConsumesRootPath(preservation RootPreservationPlan, relative string) bool {
+	if preservation.Mode != PreservationModePreservation ||
+		preservation.State != PreservationStateReady {
+		return false
+	}
+	if _, consumed := preservation.consumedRootPaths[relative]; consumed {
+		return relative == "AGENTS.md"
+	}
+	if len(preservation.Dispositions) == 0 {
+		return false
+	}
+	for _, entry := range preservation.SourceBaseline.Entries {
+		if entry.Path == relative {
+			return relative == "AGENTS.md"
+		}
+	}
+	return false
 }
 
 func readOptionalRegular(root, relative string) ([]byte, error) {

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"unicode/utf8"
 )
 
 const (
@@ -34,7 +35,24 @@ type RuleSegmentationSnapshot struct {
 	ProposalSchema   string                           `json:"proposalSchema"`
 	ProposalContract RuleSegmentationProposalContract `json:"proposalContract"`
 	SourceBaseline   ReadoptionSourceBaseline         `json:"sourceBaseline"`
+	SemanticEntries  []RuleSegmentationSemanticEntry  `json:"semanticEntries"`
 	SnapshotDigest   string                           `json:"snapshotDigest"`
+}
+
+// RuleSegmentationSemanticEntry gives a sealed analyzer readable source text
+// and exact line-boundary offsets without making text part of the proposal.
+type RuleSegmentationSemanticEntry struct {
+	EntryID  string                         `json:"entryId"`
+	Readable bool                           `json:"readable"`
+	Lines    []RuleSegmentationSemanticLine `json:"lines"`
+}
+
+// RuleSegmentationSemanticLine binds readable text to exact source byte
+// offsets so the analyzer never has to count or reconstruct boundaries.
+type RuleSegmentationSemanticLine struct {
+	Start int    `json:"start"`
+	End   int    `json:"end"`
+	Text  string `json:"text"`
 }
 
 // RuleSegmentProposal identifies one byte range inside one structural Source
@@ -43,7 +61,7 @@ type RuleSegmentProposal struct {
 	EntryID string `json:"entryId"`
 	Start   int    `json:"start"`
 	End     int    `json:"end"`
-	Digest  string `json:"digest"`
+	Digest  string `json:"digest,omitempty"`
 }
 
 // RuleSegmentationProposal is a complete byte-exhaustive proposal bound to one
@@ -51,7 +69,7 @@ type RuleSegmentProposal struct {
 type RuleSegmentationProposal struct {
 	SchemaVersion  string                `json:"schemaVersion"`
 	SnapshotDigest string                `json:"snapshotDigest"`
-	SourceBaseline ClassificationSource  `json:"sourceBaseline"`
+	SourceBaseline ClassificationSource  `json:"sourceBaseline,omitempty"`
 	Segments       []RuleSegmentProposal `json:"segments"`
 }
 
@@ -72,6 +90,7 @@ func NewRuleSegmentationSnapshot(
 		ProposalSchema:   RuleSegmentationProposalSchemaVersion,
 		ProposalContract: ruleSegmentationProposalContract(),
 		SourceBaseline:   cloneReadoptionSourceBaseline(source),
+		SemanticEntries:  ruleSegmentationSemanticEntries(source.Entries),
 	}
 	digest, err := computeRuleSegmentationSnapshotDigest(snapshot)
 	if err != nil {
@@ -165,8 +184,13 @@ func normalizeRuleSegmentationProposal(
 			"validate Segmentation Proposal: Segmentation Snapshot digest does not match",
 		)
 	}
-	if proposal.SourceBaseline.ID != snapshot.SourceBaseline.ID ||
-		proposal.SourceBaseline.Digest != snapshot.SourceBaseline.Digest {
+	expectedSourceBaseline := ClassificationSource{
+		ID:     snapshot.SourceBaseline.ID,
+		Digest: snapshot.SourceBaseline.Digest,
+	}
+	if proposal.SourceBaseline == (ClassificationSource{}) {
+		proposal.SourceBaseline = expectedSourceBaseline
+	} else if proposal.SourceBaseline != expectedSourceBaseline {
 		return RuleSegmentationProposal{}, errors.New(
 			"validate Segmentation Proposal: Source Baseline identity does not match",
 		)
@@ -198,6 +222,15 @@ func normalizeRuleSegmentationProposal(
 	}
 
 	entries := make(map[string]ReadoptionSourceEntry, len(snapshot.SourceBaseline.Entries))
+	boundaries := make(map[string]map[int]struct{}, len(snapshot.SemanticEntries))
+	for _, semanticEntry := range snapshot.SemanticEntries {
+		entryBoundaries := make(map[int]struct{}, len(semanticEntry.Lines)+1)
+		for _, line := range semanticEntry.Lines {
+			entryBoundaries[line.Start] = struct{}{}
+			entryBoundaries[line.End] = struct{}{}
+		}
+		boundaries[semanticEntry.EntryID] = entryBoundaries
+	}
 	for _, entry := range snapshot.SourceBaseline.Entries {
 		entries[entry.ID] = entry
 	}
@@ -210,6 +243,8 @@ func normalizeRuleSegmentationProposal(
 		}
 	}
 
+	normalized := proposal
+	normalized.Segments = append([]RuleSegmentProposal(nil), proposal.Segments...)
 	segmentIndex := 0
 	for _, entry := range snapshot.SourceBaseline.Entries {
 		if len(entry.SourceBytes) == 0 {
@@ -232,7 +267,7 @@ func normalizeRuleSegmentationProposal(
 		cursor := 0
 		for segmentIndex < len(proposal.Segments) &&
 			proposal.Segments[segmentIndex].EntryID == entry.ID {
-			segment := proposal.Segments[segmentIndex]
+			segment := normalized.Segments[segmentIndex]
 			if segment.Start != cursor {
 				return RuleSegmentationProposal{}, fmt.Errorf(
 					"validate Segmentation Proposal: range [%d,%d) for %q starts at %d; expected %d",
@@ -260,12 +295,28 @@ func normalizeRuleSegmentationProposal(
 					len(entry.SourceBytes),
 				)
 			}
-			if segment.Digest != ruleSegmentDigest(entry.SourceBytes[segment.Start:segment.End]) {
+			if _, ok := boundaries[entry.ID][segment.Start]; !ok {
+				return RuleSegmentationProposal{}, fmt.Errorf(
+					"validate Segmentation Proposal: range start %d for %q is not an advertised boundary",
+					segment.Start,
+					entry.ID,
+				)
+			}
+			if _, ok := boundaries[entry.ID][segment.End]; !ok {
+				return RuleSegmentationProposal{}, fmt.Errorf(
+					"validate Segmentation Proposal: range end %d for %q is not an advertised boundary",
+					segment.End,
+					entry.ID,
+				)
+			}
+			expectedDigest := ruleSegmentDigest(entry.SourceBytes[segment.Start:segment.End])
+			if segment.Digest != "" && segment.Digest != expectedDigest {
 				return RuleSegmentationProposal{}, fmt.Errorf(
 					"validate Segmentation Proposal: range digest for %q does not match sealed source bytes",
 					entry.ID,
 				)
 			}
+			normalized.Segments[segmentIndex].Digest = expectedDigest
 			cursor = segment.End
 			segmentIndex++
 		}
@@ -284,8 +335,6 @@ func normalizeRuleSegmentationProposal(
 		)
 	}
 
-	normalized := proposal
-	normalized.Segments = append([]RuleSegmentProposal(nil), proposal.Segments...)
 	return normalized, nil
 }
 
@@ -392,6 +441,12 @@ func validateRuleSegmentationSnapshot(snapshot RuleSegmentationSnapshot) error {
 			err,
 		)
 	}
+	if !equalRuleSegmentationSemanticEntries(
+		snapshot.SemanticEntries,
+		ruleSegmentationSemanticEntries(snapshot.SourceBaseline.Entries),
+	) {
+		return errors.New("validate Segmentation Snapshot: semantic entries changed")
+	}
 	digest, err := computeRuleSegmentationSnapshotDigest(snapshot)
 	if err != nil {
 		return err
@@ -425,22 +480,113 @@ func ruleSegmentationProposalContract() RuleSegmentationProposalContract {
 		RequiredFields: []string{
 			"schemaVersion",
 			"snapshotDigest",
-			"sourceBaseline",
 			"segments",
 		},
 		RequiredSegmentFields: []string{
 			"entryId",
 			"start",
 			"end",
-			"digest",
 		},
 		Rules: []string{
 			"Return exactly one JSON object with no prose.",
 			"Return only ordered non-empty byte ranges for advertised entryId values.",
+			"Use only start and end offsets advertised by semanticEntries lines.",
+			"Use each semanticEntries line text together with its exact start and end offsets; the sealed snapshot remains the authoritative byte evidence.",
+			"Treat readable=false as unavailable semantic text and return one complete range for that entry.",
+			"Split each readable entry into the smallest coherent instruction clauses that can be classified and routed independently.",
+			"Keep Markdown headings with the content they introduce and group adjacent lines only when separating them would change their meaning.",
+			"Do not return one full-entry range when readable text contains multiple independently enforceable instructions.",
+			"Attach whitespace separators to an adjacent clause so every byte remains covered.",
 			"Cover every byte of every non-empty entry exactly once without gaps, overlap, duplication, or reordering.",
-			"Copy the lowercase SHA-256 digest of each proposed range; never return source content.",
+			"Do not return sourceBaseline, source content, or any digest except snapshotDigest; the planner derives source identity, source content, and segment digests locally.",
 		},
 	}
+}
+
+func ruleSegmentationSemanticEntries(
+	entries []ReadoptionSourceEntry,
+) []RuleSegmentationSemanticEntry {
+	result := make([]RuleSegmentationSemanticEntry, len(entries))
+	for index, entry := range entries {
+		readable := utf8.Valid(entry.SourceBytes)
+		result[index] = RuleSegmentationSemanticEntry{
+			EntryID:  entry.ID,
+			Readable: readable,
+			Lines:    ruleSegmentationSemanticLines(entry.SourceBytes, readable),
+		}
+	}
+	return result
+}
+
+func ruleSegmentationSemanticLines(
+	source []byte,
+	readable bool,
+) []RuleSegmentationSemanticLine {
+	if len(source) == 0 {
+		return []RuleSegmentationSemanticLine{}
+	}
+	if !readable {
+		return []RuleSegmentationSemanticLine{{
+			Start: 0,
+			End:   len(source),
+		}}
+	}
+	lines := make([]RuleSegmentationSemanticLine, 0)
+	start := 0
+	for index, current := range source {
+		if current == '\n' {
+			end := index + 1
+			lines = append(lines, RuleSegmentationSemanticLine{
+				Start: start,
+				End:   end,
+				Text:  string(source[start:end]),
+			})
+			start = end
+		}
+	}
+	if start != len(source) {
+		lines = append(lines, RuleSegmentationSemanticLine{
+			Start: start,
+			End:   len(source),
+			Text:  string(source[start:]),
+		})
+	}
+	return lines
+}
+
+func equalRuleSegmentationSemanticEntries(
+	first []RuleSegmentationSemanticEntry,
+	second []RuleSegmentationSemanticEntry,
+) bool {
+	if first == nil || len(first) != len(second) {
+		return false
+	}
+	for index := range first {
+		if first[index].EntryID != second[index].EntryID ||
+			first[index].Readable != second[index].Readable ||
+			!equalRuleSegmentationSemanticLines(
+				first[index].Lines,
+				second[index].Lines,
+			) {
+			return false
+		}
+	}
+	return true
+}
+
+func equalRuleSegmentationSemanticLines(
+	first []RuleSegmentationSemanticLine,
+	second []RuleSegmentationSemanticLine,
+) bool {
+	if first == nil || len(first) != len(second) {
+		return false
+	}
+	for index := range first {
+		if first[index] != second[index] {
+			return false
+		}
+	}
+	return true
 }
 
 func equalRuleSegmentationProposalContract(

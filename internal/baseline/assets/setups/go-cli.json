@@ -5,10 +5,10 @@
   "source": {
     "type": "github",
     "repository": "marcioaltoe/skills",
-    "ref": "236847f6956134bf468abb641bac0493a899bca5",
+    "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
     "path": "setups/go-cli.txt"
   },
-  "digest": "51c5fa027bcf6c59023c988b17dfb6bd2a48828583d340e8f591cf4e6f864076",
+  "digest": "a63d4f17fb66a345d48ae64e8f199d28f52bf7727e92e47c0a3bbf80fae967cc",
   "skills": [
     {
       "name": "knowledge-workspace",
@@ -16,7 +16,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/00-setup/knowledge-workspace"
       },
       "treeDigest": "9571bdfa23f46ec75bb0c820deaee3d3f5513ab203911f3e72dbae4b5760d346"
@@ -54,7 +54,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/01-discovery/context7"
       },
       "treeDigest": "00ac7891ecaa432562712a2d06b728d37f30b11bbe839fe5e264af7da425180a"
@@ -69,12 +69,23 @@
       "contentDigest": "5163a850925247beeec16475311d1214e7c89258d8d5924ff4a771fb9a6ec079"
     },
     {
+      "name": "exa-web-search",
+      "path": "skills/01-discovery/exa-web-search",
+      "source": {
+        "type": "github",
+        "repository": "marcioaltoe/skills",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
+        "path": "skills/01-discovery/exa-web-search"
+      },
+      "treeDigest": "9e9f47943ae5d0bf3438013d31e2d02610fd3b8d4b40cf6bd2db17a695b3e7ae"
+    },
+    {
       "name": "grill-with-docs",
       "path": "skills/01-discovery/grill-with-docs",
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/01-discovery/grill-with-docs"
       },
       "treeDigest": "717f9874c97277f88ed97d723b62a95e2584e195e596bdf6cd7a17ddd6103e80"
@@ -85,7 +96,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/01-discovery/grilling"
       },
       "treeDigest": "1649e3036843d33d6ca0f9aab79269c456e4ae13e14754422c60920eb3cdc0ac"
@@ -96,7 +107,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/01-discovery/the-fool"
       },
       "treeDigest": "1b4f41804f0c288993b0a5a295d90d538d7dd1bf7d6971f8af13d7ee47cfabb1"
@@ -125,7 +136,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/03-engineering-design/agentic-cli-design"
       },
       "treeDigest": "d261b7713dc1baa3136895904659bffffededfb9926d94f7c7ba030608a4ff79"
@@ -136,7 +147,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/03-engineering-design/domain-modeling"
       },
       "treeDigest": "df407341e313fde8323571b80d2da11cd35d58a362eb5f792edd67ccec30c814"
@@ -147,7 +158,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/03-engineering-design/tui-design"
       },
       "treeDigest": "bca89eb52289063d58aa1d9fd5d2346619c23fa182932ea51d221f513949e6b6"
@@ -176,7 +187,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/05-implementation-loop/bubbletea"
       },
       "treeDigest": "78c2ec366ce04c37d9de64b11e2fe73d75cd374d8e8be6c41eb2381a27351de1"
@@ -187,7 +198,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/05-implementation-loop/coding-guidelines"
       },
       "treeDigest": "1ed1e711b511f8ea14e0e4f83949d3395e7b202e8344c52e586256c7959ce0a8"
@@ -198,7 +209,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/05-implementation-loop/golang-cli"
       },
       "treeDigest": "f28f13c594497f2ae706d64924ef930291d82b3a6061ac9eea57560ba53e91ae"
@@ -209,7 +220,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/05-implementation-loop/golang-concurrency"
       },
       "treeDigest": "ce957e711e22faf2a367bfc08f567b4dac47c2d9afd368f501a24593ca32c456"
@@ -220,7 +231,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/05-implementation-loop/golang-context"
       },
       "treeDigest": "1d843312ec1aefc626a67b4f75cfa4f2b74056d00233e24e251401c1893ed22b"
@@ -231,7 +242,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/05-implementation-loop/golang-error-handling"
       },
       "treeDigest": "4a2818a6d10ed0a0ddd38451d68c55f5707ec94bcbe5d4a7d80d05cfc16257a1"
@@ -242,7 +253,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/05-implementation-loop/golang-lint"
       },
       "treeDigest": "1754a1db0ba3f537438fa7c1b46267f1ea208282a633bf08a880ea018bac859e"
@@ -253,7 +264,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/05-implementation-loop/golang-testing"
       },
       "treeDigest": "9c5288a956ff62f55da8ec527e203ccea9590d54487b1f7e04a471a1de3ba171"
@@ -282,7 +293,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/05-implementation-loop/no-workarounds"
       },
       "treeDigest": "f5b17142f32629700a4f62e1b2cdf2e4ed762aee10cf9105bf9b064a28aa1337"
@@ -293,7 +304,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/05-implementation-loop/testing-boss"
       },
       "treeDigest": "2dd385923c50384455d0722429051b99fd97d9351fc60a0e58191a3bcf982fe6"
@@ -322,7 +333,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/06-review-repair/review"
       },
       "treeDigest": "5d27c3aeaed9505e21ee22e03367f2874db2969699dd5cfca621b2981b524174"
@@ -333,7 +344,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/06-review-repair/systematic-debugging"
       },
       "treeDigest": "12f5126e8e9bb86c75c58e87aff0e1f08c7143ffe47b1a7694414fa41ddaaba6"
@@ -353,7 +364,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/07-evidence-delivery/conventional-commits"
       },
       "treeDigest": "ef7a6718684adba3919e3211d470d95351f5e4949e9d3a9b290e4f2c77a8739c"
@@ -364,7 +375,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/07-evidence-delivery/github-pr-workflow"
       },
       "treeDigest": "082906ba30c577d2ddb4fda1ef0c75bea42fb1ff139c898e377d7f9caba57d4a"
@@ -375,7 +386,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/07-evidence-delivery/handoff"
       },
       "treeDigest": "75b23d67b04e129fb536193e033b1fc8c3caa99f42652077556f051e92f75cfa"
@@ -386,7 +397,7 @@
       "source": {
         "type": "github",
         "repository": "marcioaltoe/skills",
-        "ref": "236847f6956134bf468abb641bac0493a899bca5",
+        "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
         "path": "skills/07-evidence-delivery/tech-writer"
       },
       "treeDigest": "18efb1105eebbd46e051d643830f1758f089cdf0f0a912a8be5d79fc657fd606"

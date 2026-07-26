@@ -59,6 +59,51 @@ func TestSegmentationSnapshotIsCanonicalAndCheckoutFree(t *testing.T) {
 	}
 }
 
+func TestSegmentationSnapshotMakesExactTextAndBoundariesAvailableToSealedAnalysis(t *testing.T) {
+	snapshot := segmentationTestSnapshot(t)
+	canonical, err := snapshot.CanonicalBytes()
+	if err != nil {
+		t.Fatalf("marshal Segmentation Snapshot: %v", err)
+	}
+	entry := snapshot.SourceBaseline.Entries[0]
+	for _, required := range []string{
+		`"semanticEntries"`,
+		`"entryId":"` + entry.ID + `"`,
+		`"lines":[{"start":0,"end":11,"text":"first rule\n"},{"start":11,"end":12,"text":"\n"},{"start":12,"end":24,"text":"second rule\n"}]`,
+		`Split each readable entry into the smallest coherent instruction clauses`,
+	} {
+		if !bytes.Contains(canonical, []byte(required)) {
+			t.Fatalf("Segmentation Snapshot does not expose %q:\n%s", required, canonical)
+		}
+	}
+
+	proposal := map[string]any{
+		"schemaVersion":  RuleSegmentationProposalSchemaVersion,
+		"snapshotDigest": snapshot.SnapshotDigest,
+		"segments": []map[string]any{
+			{"entryId": entry.ID, "start": 0, "end": 11},
+			{"entryId": entry.ID, "start": 11, "end": len(entry.SourceBytes)},
+		},
+	}
+	payload, err := json.Marshal(proposal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, err := ParseRuleSegmentationProposal(payload, snapshot)
+	if err != nil {
+		t.Fatalf("range-only Segmentation Proposal was rejected: %v", err)
+	}
+	if parsed.SourceBaseline.ID != snapshot.SourceBaseline.ID ||
+		parsed.SourceBaseline.Digest != snapshot.SourceBaseline.Digest {
+		t.Fatalf("Source Baseline identity was not derived locally: %+v", parsed.SourceBaseline)
+	}
+	for index, segment := range parsed.Segments {
+		if segment.Digest == "" {
+			t.Fatalf("segment %d digest was not derived locally: %+v", index, segment)
+		}
+	}
+}
+
 func TestSegmentationProposalRejectsInvalidRangesAndStaleIdentity(t *testing.T) {
 	snapshot := segmentationTestSnapshot(t)
 	valid := segmentationTestProposal(t, snapshot, 11)
@@ -85,6 +130,16 @@ func TestSegmentationProposalRejectsInvalidRangesAndStaleIdentity(t *testing.T) 
 			name: "overlap",
 			mutate: func(proposal RuleSegmentationProposal) RuleSegmentationProposal {
 				proposal.Segments[1].Start--
+				return proposal
+			},
+		},
+		{
+			name: "unadvertised boundary",
+			mutate: func(proposal RuleSegmentationProposal) RuleSegmentationProposal {
+				proposal.Segments[0].End = 10
+				proposal.Segments[0].Digest = ""
+				proposal.Segments[1].Start = 10
+				proposal.Segments[1].Digest = ""
 				return proposal
 			},
 		},

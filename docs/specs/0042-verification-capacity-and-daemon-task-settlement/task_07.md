@@ -33,8 +33,9 @@ must match shipped behavior and preserve skill ownership boundaries.
 6. MUST update the canonical Roundfix Skill and repository-owned
    `implement-task` skill, regenerate the embedded Roundfix Skill, and leave
    every upstream-managed skill untouched.
-7. MUST preserve ADR, finding, PRD, Tech Spec, glossary, and skill-governance
-   traceability and keep all repository content in English.
+7. MUST preserve ADR, finding, PRD, Tech Spec, glossary, and skill ownership
+   and synchronization traceability and keep all repository content in
+   English.
 8. MUST run the complete repository verification gate; any format, test, skill
    synchronization, or build failure is blocking.
 
@@ -69,7 +70,7 @@ must match shipped behavior and preserve skill ownership boundaries.
 
 ## Context
 
-- instruction: `docs/agents/skill-governance.md`
+- instruction: `docs/agents/skill-dispatch.md`
 - instruction: `docs/agents/autonomous-work.md`
 - instruction: `.agents/skills/tech-writer/SKILL.md`
 - instruction: `.agents/skills/agentic-cli-design/SKILL.md`

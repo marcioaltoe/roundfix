@@ -8,6 +8,7 @@ package baseline
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -54,6 +55,59 @@ func TestSealedClassificationSnapshotIsCanonicalAndBounded(t *testing.T) {
 	if _, err := NewAnalysisSnapshot(oversized); err == nil ||
 		!strings.Contains(err.Error(), "256 entries") {
 		t.Fatalf("oversized snapshot error = %v", err)
+	}
+}
+
+func TestClassificationSnapshotMakesExactTextAvailableToSealedAnalysis(t *testing.T) {
+	snapshot := classificationTestSnapshot(t)
+	canonical, err := snapshot.CanonicalBytes()
+	if err != nil {
+		t.Fatalf("marshal Analysis Snapshot: %v", err)
+	}
+	entry := snapshot.Entries[0]
+	for _, required := range []string{
+		`"semanticEntries"`,
+		`"entryId":"` + entry.ID + `"`,
+		`"text":"keep this rule\n"`,
+	} {
+		if !bytes.Contains(canonical, []byte(required)) {
+			t.Fatalf("Analysis Snapshot does not expose %q:\n%s", required, canonical)
+		}
+	}
+}
+
+func TestClassificationProposalDerivesByteEvidenceLocally(t *testing.T) {
+	snapshot := classificationTestSnapshot(t)
+	entry := snapshot.Entries[0]
+	destination := snapshot.Destinations[1]
+	proposal := map[string]any{
+		"schemaVersion":  ClassificationProposalSchemaVersion,
+		"snapshotDigest": snapshot.SnapshotDigest,
+		"dispositions": []map[string]any{{
+			"entryId":        entry.ID,
+			"classification": "normative-clause",
+			"disposition":    "repository-rules",
+			"destination": map[string]any{
+				"documentType": destination.DocumentType,
+				"path":         destination.Path,
+			},
+			"reason": "No active semantic guide owns this repository policy.",
+		}},
+	}
+	payload, err := json.Marshal(proposal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, err := ParseClassificationProposal(payload, snapshot)
+	if err != nil {
+		t.Fatalf("classification without agent-computed byte evidence was rejected: %v", err)
+	}
+	got := parsed.Dispositions[0]
+	if got.EntryDigest != entry.Digest ||
+		got.Destination == nil ||
+		got.Destination.Digest != entry.Digest ||
+		got.Destination.ProposedBytes != base64.StdEncoding.EncodeToString(entry.SourceBytes) {
+		t.Fatalf("classification byte evidence was not derived locally: %+v", got)
 	}
 }
 

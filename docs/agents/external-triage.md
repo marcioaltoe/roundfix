@@ -1,4 +1,13 @@
-# Triage labels
+<!-- setup-context-driven:begin id=guide.external-triage version=0.0.1 -->
+
+# External triage
+
+- Use this workflow only for issues managed in an external forge. Classify the user-visible problem and next action in English before changing labels or status, and route implementation through the repository's local Spec policy.
+
+<!-- setup-context-driven:end id=guide.external-triage -->
+
+<!-- roundfix:repository-rule:begin id=rule.164b03244b3e089313c3cd9b379f4cce885e87b985e19ef76fb2ee8bff5ec7e6 -->
+### Triage labels
 
 These labels apply only to external GitHub issues. Internal Spec Tasks use
 `pending | in_progress | completed | failed` in task-file frontmatter.
@@ -13,3 +22,5 @@ These labels apply only to external GitHub issues. Internal Spec Tasks use
 
 Always use the canonical label string. Do not substitute generic GitHub labels
 such as `question`, `invalid`, or `help wanted` for these workflow roles.
+
+<!-- roundfix:repository-rule:end id=rule.164b03244b3e089313c3cd9b379f4cce885e87b985e19ef76fb2ee8bff5ec7e6 -->

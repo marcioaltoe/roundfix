@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"unicode/utf8"
 )
 
 const (
@@ -49,6 +50,14 @@ type ClassificationProposalContract struct {
 	Rules                     []string `json:"rules"`
 }
 
+// ClassificationSemanticEntry exposes the exact readable source text used for
+// semantic analysis without changing the byte evidence that planning admits.
+type ClassificationSemanticEntry struct {
+	EntryID  string `json:"entryId"`
+	Text     string `json:"text"`
+	Readable bool   `json:"readable"`
+}
+
 // AnalysisSnapshot is the canonical, checkout-free input to one sealed
 // semantic classification attempt.
 type AnalysisSnapshot struct {
@@ -58,6 +67,7 @@ type AnalysisSnapshot struct {
 	ProposalContract ClassificationProposalContract `json:"proposalContract"`
 	SourceBaseline   ClassificationSource           `json:"sourceBaseline"`
 	Entries          []ReadoptionSourceEntry        `json:"entries"`
+	SemanticEntries  []ClassificationSemanticEntry  `json:"semanticEntries"`
 	Destinations     []ClassificationDestination    `json:"destinations"`
 	SnapshotDigest   string                         `json:"snapshotDigest"`
 }
@@ -124,6 +134,7 @@ func NewAnalysisSnapshot(
 		ProposalContract: classificationProposalContract(),
 		SourceBaseline:   ClassificationSource{ID: source.ID, Digest: source.Digest},
 		Entries:          cloneClassificationEntries(source.Entries),
+		SemanticEntries:  classificationSemanticEntries(source.Entries),
 		Destinations:     supportedClassificationDestinations(owners),
 	}
 	digest, err := computeAnalysisSnapshotDigest(snapshot)
@@ -288,10 +299,16 @@ func normalizeClassificationProposal(
 			)
 		}
 		seen[disposition.EntryID] = struct{}{}
-		if err := validateClassificationDisposition(snapshot, entry, disposition); err != nil {
+		normalizedDisposition := cloneReadoptionDisposition(disposition)
+		deriveClassificationByteEvidence(entry, &normalizedDisposition)
+		if err := validateClassificationDisposition(
+			snapshot,
+			entry,
+			normalizedDisposition,
+		); err != nil {
 			return ClassificationProposal{}, err
 		}
-		normalized = append(normalized, cloneReadoptionDisposition(disposition))
+		normalized = append(normalized, normalizedDisposition)
 	}
 	for _, entry := range snapshot.Entries {
 		if _, exists := seen[entry.ID]; !exists {
@@ -309,6 +326,32 @@ func normalizeClassificationProposal(
 		SnapshotDigest: snapshot.SnapshotDigest,
 		Dispositions:   normalized,
 	}, nil
+}
+
+func deriveClassificationByteEvidence(
+	entry ReadoptionSourceEntry,
+	disposition *ReadoptionDisposition,
+) {
+	if disposition.EntryDigest == "" {
+		disposition.EntryDigest = entry.Digest
+	}
+	if disposition.Destination == nil {
+		return
+	}
+	switch disposition.Disposition {
+	case "repository-rules":
+		if disposition.Destination.Digest == "" {
+			disposition.Destination.Digest = entry.Digest
+		}
+		if disposition.Destination.ProposedBytes == "" {
+			disposition.Destination.ProposedBytes =
+				base64.StdEncoding.EncodeToString(entry.SourceBytes)
+		}
+	case "repository-document":
+		if disposition.Destination.Digest == "" {
+			disposition.Destination.Digest = entry.Digest
+		}
+	}
 }
 
 func validateClassificationDisposition(
@@ -452,6 +495,12 @@ func validateAnalysisSnapshot(snapshot AnalysisSnapshot) error {
 			AnalysisSnapshotMaxEntries,
 		)
 	}
+	if !equalClassificationSemanticEntries(
+		snapshot.SemanticEntries,
+		classificationSemanticEntries(snapshot.Entries),
+	) {
+		return errors.New("validate Analysis Snapshot: semantic entries changed")
+	}
 	if err := validateClassificationDestinations(snapshot.Destinations); err != nil {
 		return err
 	}
@@ -566,7 +615,6 @@ func classificationProposalContract() ClassificationProposalContract {
 		},
 		RequiredDispositionFields: []string{
 			"entryId",
-			"entryDigest",
 			"classification",
 			"disposition",
 			"destination",
@@ -580,13 +628,47 @@ func classificationProposalContract() ClassificationProposalContract {
 		},
 		Rules: []string{
 			"Return exactly one JSON object with no prose.",
-			"Return exactly one disposition for every entryId and copy its entryDigest.",
+			"Return exactly one disposition for every entryId.",
+			"Use semanticEntries text for meaning; entries sourceBytes remain the authoritative byte evidence.",
+			"Treat readable=false as unavailable semantic text and preserve it conservatively.",
+			"Do not return entryDigest, destination digest, or proposedBytes; the planner derives exact byte evidence locally.",
 			"Use rejected with a null destination and non-empty reason for non-governed, managed, or empty evidence.",
-			"Use repository-rules only with the advertised documentType and path, exact source bytes as canonical base64, their digest, and a non-empty reason.",
-			"Use repository-document only with one advertised active agent-guide path, the exact entry digest, and a non-empty reason.",
+			"Use repository-rules only with the advertised documentType and path and a non-empty reason.",
+			"Use repository-document only with one advertised active agent-guide path and a non-empty reason.",
 			"Use managed-entry only with one advertised active managedId and a non-empty reason.",
 		},
 	}
+}
+
+func classificationSemanticEntries(
+	entries []ReadoptionSourceEntry,
+) []ClassificationSemanticEntry {
+	result := make([]ClassificationSemanticEntry, len(entries))
+	for index, entry := range entries {
+		result[index] = ClassificationSemanticEntry{
+			EntryID:  entry.ID,
+			Readable: utf8.Valid(entry.SourceBytes),
+		}
+		if result[index].Readable {
+			result[index].Text = string(entry.SourceBytes)
+		}
+	}
+	return result
+}
+
+func equalClassificationSemanticEntries(
+	first []ClassificationSemanticEntry,
+	second []ClassificationSemanticEntry,
+) bool {
+	if first == nil || len(first) != len(second) {
+		return false
+	}
+	for index := range first {
+		if first[index] != second[index] {
+			return false
+		}
+	}
+	return true
 }
 
 func equalClassificationProposalContract(

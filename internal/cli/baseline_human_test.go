@@ -793,6 +793,14 @@ func TestHumanBaselineInvokesSemanticSegmentationAndClassification(t *testing.T)
 			analyzer.classifyCalls,
 		)
 	}
+	for _, want := range []string{
+		"baseline.semantic.segmentation-proposal.discarded",
+		"baseline.semantic.classification-proposal.discarded",
+	} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("semantic analyzer finding %q is absent:\n%s", want, stdout.String())
+		}
+	}
 	if !strings.Contains(stdout.String(), "normative-clause -> repository-document") {
 		t.Fatalf("semantic repository-document proposal is absent:\n%s", stdout.String())
 	}
@@ -1395,6 +1403,7 @@ func (analyzer *countingBaselineRevisionAnalyzer) Revise(
 type countingBaselineSemanticAnalyzer struct {
 	segmentCalls  int
 	classifyCalls int
+	findings      []baseline.Finding
 }
 
 func (analyzer *countingBaselineSemanticAnalyzer) Segment(
@@ -1402,6 +1411,10 @@ func (analyzer *countingBaselineSemanticAnalyzer) Segment(
 	snapshot baseline.RuleSegmentationSnapshot,
 ) (baseline.RuleSegmentationProposal, error) {
 	analyzer.segmentCalls++
+	analyzer.findings = append(analyzer.findings, baseline.Finding{
+		Code:    "baseline.semantic.segmentation-proposal.discarded",
+		Message: "Codex test segmentation proposal was discarded: invalid range",
+	})
 	return baseline.ManualRuleSegmentationProposal(snapshot)
 }
 
@@ -1410,6 +1423,10 @@ func (analyzer *countingBaselineSemanticAnalyzer) Classify(
 	snapshot baseline.AnalysisSnapshot,
 ) (baseline.ClassificationProposal, error) {
 	analyzer.classifyCalls++
+	analyzer.findings = append(analyzer.findings, baseline.Finding{
+		Code:    "baseline.semantic.classification-proposal.discarded",
+		Message: "Codex test classification proposal was discarded: invalid destination",
+	})
 	proposal, err := baseline.ManualClassificationProposal(snapshot)
 	if err != nil {
 		return baseline.ClassificationProposal{}, err
@@ -1431,6 +1448,12 @@ func (analyzer *countingBaselineSemanticAnalyzer) Classify(
 	return baseline.ClassificationProposal{}, errors.New(
 		"test semantic analyzer found no active repository-document destination",
 	)
+}
+
+func (analyzer *countingBaselineSemanticAnalyzer) TakeFindings() []baseline.Finding {
+	findings := append([]baseline.Finding(nil), analyzer.findings...)
+	analyzer.findings = nil
+	return findings
 }
 
 func humanBaselineAdoptionAnswers(final string) string {

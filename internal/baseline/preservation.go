@@ -193,6 +193,8 @@ type RootPreservationPlan struct {
 	Findings             []Finding                `json:"findings"`
 	DecisionSkeleton     *DecisionSkeleton        `json:"decisionSkeleton,omitempty"`
 	NextAction           string                   `json:"nextAction,omitempty"`
+
+	consumedRootPaths map[string]struct{}
 }
 
 // ParseDecisionDocument parses the maintained strict Decision Document
@@ -542,17 +544,34 @@ func PlanRootPreservation(
 		return RootPreservationPlan{}, err
 	}
 	plan.Findings = append(plan.Findings, findings...)
+	retainsRepositoryRules, err := currentSetupRetainsRecognizedRepositoryRules(inspection.Root)
+	if err != nil {
+		return RootPreservationPlan{}, err
+	}
+	if request.Mode == PreservationModePreservation && retainsRepositoryRules {
+		rootSources, plan.consumedRootPaths, err = excludePreviouslyBackedUpRootGuidance(
+			inspection.Root,
+			rootSources,
+		)
+		if err != nil {
+			return RootPreservationPlan{}, err
+		}
+	}
+	migrationRootSources := rootSourcesWithUnmarkedGuidance(rootSources)
 	plan.Backups, findings, err = planRootBackups(inspection.Root, rootSources)
 	if err != nil {
 		return RootPreservationPlan{}, err
 	}
 	plan.Findings = append(plan.Findings, findings...)
-	repositorySources, findings, err := loadRecognizedRepositoryRuleSources(inspection.Root)
-	if err != nil {
-		return RootPreservationPlan{}, err
+	var repositorySources []rootPreservationSource
+	if !retainsRepositoryRules {
+		repositorySources, findings, err = loadRecognizedRepositoryRuleSources(inspection.Root)
+		if err != nil {
+			return RootPreservationPlan{}, err
+		}
+		plan.Findings = append(plan.Findings, findings...)
 	}
-	plan.Findings = append(plan.Findings, findings...)
-	sources := append(rootSources, repositorySources...)
+	sources := append(migrationRootSources, repositorySources...)
 	plan.SourceBaseline = buildReadoptionSourceBaseline(sources)
 	plan.Findings = sortedFindings(plan.Findings)
 
@@ -611,6 +630,8 @@ type rootPreservationSource struct {
 	sourcePath      string
 	contentIdentity string
 	content         []byte
+
+	classificationEntries []ReadoptionSourceEntry
 }
 
 func loadRootPreservationSources(
@@ -707,6 +728,186 @@ func loadRecognizedRepositoryRuleSources(
 		})
 	}
 	return sources, findings, nil
+}
+
+func currentSetupRetainsRecognizedRepositoryRules(rootPath string) (bool, error) {
+	manifestBytes, err := readOptionalRegular(rootPath, manifestPath)
+	if err != nil {
+		return false, fmt.Errorf("read current Setup Manifest ownership: %w", err)
+	}
+	if len(manifestBytes) == 0 {
+		return false, nil
+	}
+	var manifest SetupManifest
+	if err := json.Unmarshal(manifestBytes, &manifest); err != nil {
+		return false, nil
+	}
+	if manifest.SchemaVersion != ManifestSchema ||
+		manifest.Version != ManifestVersion ||
+		manifest.Generator.Skill != "setup-context-driven" ||
+		manifest.Generator.Version != ManifestVersion ||
+		manifest.Generator.Baseline != "baseline."+manifest.Profile+"-"+ManifestVersion {
+		return false, nil
+	}
+	catalog, err := LoadEmbeddedCatalog()
+	if err != nil {
+		return false, fmt.Errorf("load catalog for Setup Manifest ownership: %w", err)
+	}
+	if manifest.CatalogDigest != catalog.Digest() {
+		return false, nil
+	}
+	profile, err := ResolveProfile(rootPath, manifest.Profile, catalog)
+	if err != nil || profile.Digest != manifest.ProfileDigest {
+		return false, nil
+	}
+	return true, nil
+}
+
+func rootSourcesWithUnmarkedGuidance(
+	sources []rootPreservationSource,
+) []rootPreservationSource {
+	selected := make([]rootPreservationSource, 0, len(sources))
+	for _, source := range sources {
+		if len(classificationEntries(source)) == 0 {
+			continue
+		}
+		selected = append(selected, source)
+	}
+	return selected
+}
+
+var agentsBackupName = regexp.MustCompile(`^AGENTS\.([a-f0-9]{64})\.md$`)
+
+func excludePreviouslyBackedUpRootGuidance(
+	rootPath string,
+	sources []rootPreservationSource,
+) ([]rootPreservationSource, map[string]struct{}, error) {
+	payloads, err := verifiedAgentsBackupPayloads(rootPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	consumed := make(map[string]struct{})
+	for index := range sources {
+		source := &sources[index]
+		if source.carrierPath != "AGENTS.md" ||
+			source.sourcePath != "AGENTS.md" ||
+			!containsSetupManagedGuidance(source.content) {
+			continue
+		}
+		entries, excluded := excludeBackedUpPayloads(
+			unmarkedSourceEntries(source.sourcePath, source.content),
+			payloads,
+		)
+		source.classificationEntries = entries
+		if excluded {
+			consumed[source.sourcePath] = struct{}{}
+		}
+	}
+	return sources, consumed, nil
+}
+
+func verifiedAgentsBackupPayloads(rootPath string) ([][]byte, error) {
+	entries, err := os.ReadDir(rootPath)
+	if err != nil {
+		return nil, fmt.Errorf("list prior AGENTS backups: %w", err)
+	}
+	anchored, err := os.OpenRoot(rootPath)
+	if err != nil {
+		return nil, fmt.Errorf("open repository root for prior AGENTS backups: %w", err)
+	}
+	defer anchored.Close()
+
+	var payloads [][]byte
+	for _, entry := range entries {
+		match := agentsBackupName.FindStringSubmatch(entry.Name())
+		if len(match) != 2 || entry.Type()&fs.ModeSymlink != 0 {
+			continue
+		}
+		payload, readErr := readRootRegularFile(anchored, entry.Name())
+		if readErr != nil {
+			continue
+		}
+		sum := sha256.Sum256(payload)
+		if hex.EncodeToString(sum[:]) != match[1] {
+			continue
+		}
+		payloads = append(payloads, payload)
+	}
+	sort.Slice(payloads, func(i, j int) bool {
+		if len(payloads[i]) != len(payloads[j]) {
+			return len(payloads[i]) > len(payloads[j])
+		}
+		return bytes.Compare(payloads[i], payloads[j]) < 0
+	})
+	return payloads, nil
+}
+
+func excludeBackedUpPayloads(
+	entries []ReadoptionSourceEntry,
+	payloads [][]byte,
+) ([]ReadoptionSourceEntry, bool) {
+	result := make([]ReadoptionSourceEntry, 0, len(entries))
+	var excluded bool
+	for _, entry := range entries {
+		ranges := [][2]int{{0, len(entry.SourceBytes)}}
+		for _, payload := range payloads {
+			if len(payload) == 0 {
+				continue
+			}
+			var remaining [][2]int
+			for _, current := range ranges {
+				cursor := current[0]
+				for cursor < current[1] {
+					offset := bytes.Index(entry.SourceBytes[cursor:current[1]], payload)
+					if offset < 0 {
+						break
+					}
+					start := cursor + offset
+					if start > cursor {
+						remaining = append(remaining, [2]int{cursor, start})
+					}
+					cursor = start + len(payload)
+					excluded = true
+				}
+				if cursor < current[1] {
+					remaining = append(remaining, [2]int{cursor, current[1]})
+				}
+			}
+			ranges = remaining
+		}
+		for _, current := range ranges {
+			sourceBytes := entry.SourceBytes[current[0]:current[1]]
+			if len(bytes.TrimSpace(sourceBytes)) == 0 {
+				continue
+			}
+			result = append(result, newReadoptionSourceEntry(
+				entry.Path,
+				entry.Kind,
+				entry.Start+current[0],
+				entry.Start+current[1],
+				sourceBytes,
+				entry.CarrierDigest,
+				entry.StructuralProvenance,
+			))
+		}
+	}
+	return result, excluded
+}
+
+func containsSetupManagedGuidance(content []byte) bool {
+	for _, entry := range partitionRootSource("", content) {
+		if entry.Kind == "managed-block" {
+			return true
+		}
+	}
+	return false
+}
+
+func classificationEntries(source rootPreservationSource) []ReadoptionSourceEntry {
+	if source.classificationEntries != nil {
+		return source.classificationEntries
+	}
+	return unmarkedSourceEntries(source.sourcePath, source.content)
 }
 
 func validateClassifiedSourceBaseline(
@@ -871,14 +1072,22 @@ func buildReadoptionSourceBaseline(sources []rootPreservationSource) ReadoptionS
 	identity := sha256.New()
 	var entries []ReadoptionSourceEntry
 	byteCount := 0
+	carrierCount := 0
 	for _, source := range sources {
+		sourceEntries := classificationEntries(source)
+		if len(sourceEntries) == 0 {
+			continue
+		}
 		writeLengthPrefixed(identity, source.sourcePath)
 		var length [8]byte
 		binary.BigEndian.PutUint64(length[:], uint64(len(source.content)))
 		_, _ = identity.Write(length[:])
 		_, _ = identity.Write(source.content)
-		byteCount += len(source.content)
-		entries = append(entries, partitionRootSource(source.sourcePath, source.content)...)
+		carrierCount++
+		for _, entry := range sourceEntries {
+			byteCount += len(entry.SourceBytes)
+			entries = append(entries, entry)
+		}
 	}
 	sort.Slice(entries, func(i, j int) bool {
 		if entries[i].Path != entries[j].Path {
@@ -898,7 +1107,7 @@ func buildReadoptionSourceBaseline(sources []rootPreservationSource) ReadoptionS
 		DeclaredIdentity: "unconfigured",
 		Compatibility:    "incompatible",
 		Digest:           digest,
-		CarrierCount:     len(sources),
+		CarrierCount:     carrierCount,
 		EntryCount:       len(entries),
 		ByteCount:        byteCount,
 		Entries:          entries,
@@ -1007,6 +1216,18 @@ func partitionRootSource(sourcePath string, content []byte) []ReadoptionSourceEn
 			carrierDigest,
 			map[string]any{"markerState": "unmarked"},
 		))
+	}
+	return entries
+}
+
+func unmarkedSourceEntries(sourcePath string, content []byte) []ReadoptionSourceEntry {
+	partitioned := partitionRootSource(sourcePath, content)
+	entries := make([]ReadoptionSourceEntry, 0, len(partitioned))
+	for _, entry := range partitioned {
+		if entry.Kind == "managed-block" || len(bytes.TrimSpace(entry.SourceBytes)) == 0 {
+			continue
+		}
+		entries = append(entries, entry)
 	}
 	return entries
 }

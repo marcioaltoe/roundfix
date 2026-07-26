@@ -167,6 +167,13 @@
       "sourceType": "github",
       "skillPath": "skills/03-engineering-design/tui-design/SKILL.md",
       "computedHash": "92b969f3473842ee731e0c7a5c571e3b89e5dac7da81be5e635e1715b0084e6e"
+    },
+    "exa-web-search": {
+      "source": "marcioaltoe/skills",
+      "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
+      "sourceType": "github",
+      "skillPath": "skills/01-discovery/exa-web-search/SKILL.md",
+      "computedHash": "16a95a38b232f4746ff8785677f48615b5464fa36786a3fc2d23e7e2d1129d72"
     }
   }
 }

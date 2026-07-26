@@ -22,11 +22,11 @@
   },
   "managedEntryLedger": [
     {
-      "digest": "16b3e112e61316ce7218945cc281c0cad0d534e1984f1ad68d460cfb608c7dae",
+      "digest": "e80364c9057d60f384b457607882677bd57a80519fb3390daf0aa57a82007963",
       "id": "go-cli"
     },
     {
-      "digest": "275fa22a2d5ffb8f89cdfdc9e3c473c09218f02028b4dc48cc2892eb36b78a22",
+      "digest": "df7f2640b1d16bec9f2b8ac6e9770b99290aa38706a2f7a87cbd83bb0f4c6156",
       "id": "rust-cli"
     },
     {
@@ -53,7 +53,7 @@
             ]
           }
         ],
-        "digest": "16b3e112e61316ce7218945cc281c0cad0d534e1984f1ad68d460cfb608c7dae",
+        "digest": "e80364c9057d60f384b457607882677bd57a80519fb3390daf0aa57a82007963",
         "id": "go-cli",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -114,6 +114,17 @@
               "name": "roundfix",
               "type": "repo"
             }
+          },
+          {
+            "name": "exa-web-search",
+            "path": "skills/01-discovery/exa-web-search",
+            "source": {
+              "path": "skills/01-discovery/exa-web-search",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "01aff779d5fc2e994692d2de6410375e81d4365cd9f65cce2d105d7f405d28ea"
           },
           {
             "name": "grill-with-docs",
@@ -464,7 +475,7 @@
             ]
           }
         ],
-        "digest": "275fa22a2d5ffb8f89cdfdc9e3c473c09218f02028b4dc48cc2892eb36b78a22",
+        "digest": "df7f2640b1d16bec9f2b8ac6e9770b99290aa38706a2f7a87cbd83bb0f4c6156",
         "id": "rust-cli",
         "schemaVersion": "setup-context-driven/setup-snapshot/0.0.1",
         "skills": [
@@ -525,6 +536,17 @@
               "name": "roundfix",
               "type": "repo"
             }
+          },
+          {
+            "name": "exa-web-search",
+            "path": "skills/01-discovery/exa-web-search",
+            "source": {
+              "path": "skills/01-discovery/exa-web-search",
+              "ref": "21f59c7c11e5e449abbf2731be43d0a380c68854",
+              "repository": "example/skills",
+              "type": "github"
+            },
+            "treeDigest": "01aff779d5fc2e994692d2de6410375e81d4365cd9f65cce2d105d7f405d28ea"
           },
           {
             "name": "grill-with-docs",

@@ -86,7 +86,7 @@ filesystem mutation.
 ## Context
 
 - instruction: `CONTEXT.md`
-- instruction: `docs/agents/skill-governance.md`
+- instruction: `docs/agents/skill-dispatch.md`
 - instruction: `docs/specs/_archived/0041-agent-selection-runtime-readiness/_techspec.md`
 - interface: `skills/skills.go`
 - interface: `skills/skills_test.go`
@@ -117,7 +117,7 @@ filesystem mutation.
 - `docs/specs/_archived/0041-agent-selection-runtime-readiness/_techspec.md` → prerequisite
   profile-aware Doctor coordinator and output order.
 - `CONTEXT.md` → Doctor Command; Repository Skill Set; Roundfix Skill.
-- `docs/agents/skill-governance.md` → owned versus external authority and
+- `docs/agents/skill-dispatch.md` → owned versus upstream-managed authority and
   synchronization boundaries.
 
 ## Result

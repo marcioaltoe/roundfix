@@ -289,5 +289,7 @@ integration before starting this graph.
 - `sync-setups` preserves current valid digests for `source.type: repo` and
   never hashes a conflicting external checkout for those entries.
 - One aggregate `skills:` line preserves Doctor's compact public surface.
-- No ADR is added because this is an extension of the accepted Doctor and
-  skill-governance boundaries, not a new hard-to-reverse architecture choice.
+- No ADR is added because this is an extension of the accepted Doctor plus the
+  skill ownership and synchronization boundaries in
+  `docs/agents/skill-dispatch.md`, not a new hard-to-reverse architecture
+  choice.

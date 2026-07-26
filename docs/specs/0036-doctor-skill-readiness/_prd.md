@@ -155,8 +155,9 @@ authorization, and rerun Doctor to prove the result.
 - Setup snapshot synchronization resolves digest authority from `source.type`;
   repository-owned entries never derive their digest from the external setup
   checkout.
-- This change extends the existing Doctor Command and skill-governance
-  contracts; it does not require a new architectural decision record.
+- This change extends the existing Doctor Command plus the skill ownership and
+  synchronization contracts in `docs/agents/skill-dispatch.md`; it does not
+  require a new architectural decision record.
 
 ## Dependencies
 
