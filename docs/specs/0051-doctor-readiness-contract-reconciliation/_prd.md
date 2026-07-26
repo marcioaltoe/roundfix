@@ -34,9 +34,17 @@ history already accepted by the maintainer.
   on 2026-07-26 to update `go.mod` and `go.sum` through Go tooling for the
   `golang.org/x/text` collation dependency, and to keep
   `.agents/skills/roundfix/SKILL.md` and `skills/roundfix/SKILL.md` aligned
-  with shipped CLI behavior. These four paths are the complete protected
-  tooling boundary for this Spec; no other protected tooling mutation is
-  authorized. Source: `docs/agents/agent-instructions.md`.
+  with shipped CLI behavior. After QA proved that this canonical edit
+  invalidated the repository's authorial Baseline snapshot invariant, the
+  maintainer also authorized the exact derived refresh of
+  `internal/baseline/assets/setups/typescript-bun.json`,
+  `internal/baseline/testdata/catalog.digest`,
+  `internal/baseline/testdata/catalog.normalized.json`,
+  `internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json`, and
+  `internal/baseline/testdata/parity-corpus/v1/manifest.json`. These nine paths
+  are the complete protected tooling boundary for this Spec; no other
+  protected tooling mutation is authorized. Source:
+  `docs/agents/agent-instructions.md`.
 
 ## Goals
 
@@ -90,6 +98,9 @@ history already accepted by the maintainer.
 6. **Synchronized guidance.** User documentation and the canonical and shipped
    Roundfix Skill pair describe the exact Doctor output and remediation
    contract.
+7. **Reconciled derived snapshot.** The TypeScript/Bun Baseline setup snapshot
+   records the current canonical Roundfix Skill digest, and only its directly
+   derived catalog and parity metadata are regenerated.
 
 ## User Experience
 
@@ -109,8 +120,9 @@ update, write, or execute any remediation automatically.
 - Editing any archived Spec, including Specs 0036 and 0050.
 - Reverting or editing the accepted upstream-managed skill update,
   `skills-lock.json`, or `skills/recommended.txt`.
-- Changing Baseline assets, generated Baseline parity artifacts, or the
-  repository-owned digest preservation behavior already implemented.
+- Changing Baseline behavior, source setup authority, or any Baseline asset
+  beyond the exact derived snapshot, catalog, and parity refresh required by
+  the canonical Roundfix Skill bytes.
 - Editing `.coderabbit.yaml` or `.roundfixrc.yml`.
 - Moving Repository Skill Set readiness into `HealthChecker`; the existing
   injected Doctor seam remains the ownership boundary.
@@ -130,6 +142,8 @@ update, write, or execute any remediation automatically.
 - A symlinked lock produces only external remediation; a mixed failure prints
   one owned-then-external chain joined by `&&`.
 - `go mod tidy -diff` is empty after implementation.
+- The authorial skill-snapshot invariant and its catalog/parity compatibility
+  fixtures agree with the canonical Roundfix Skill bytes.
 - Focused tests, affected-package race tests, public Doctor execution, and the
   repository verification gate pass without mutating checked repository
   state.
@@ -147,6 +161,8 @@ update, write, or execute any remediation automatically.
   Profile proof, never for Repository Skill Set inspection.
 - Keep ownership-specific symlink behavior and the existing `HealthChecker`
   boundary unchanged.
+- Treat the failed QA digest mismatch as a required derived-artifact refresh,
+  not as authority to change Baseline behavior or source setup content.
 - Add no ADR because this Spec narrows existing cancellation, hashing, and CLI
   contracts instead of creating a new architectural boundary.
 

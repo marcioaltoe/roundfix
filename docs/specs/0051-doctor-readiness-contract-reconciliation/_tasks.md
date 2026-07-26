@@ -18,6 +18,9 @@ graph:
     - id: task_05
       file: task_05.md
       needs: [task_04]
+    - id: task_06
+      file: task_06.md
+      needs: [task_05]
 ---
 
 # Tasks — Doctor Readiness Contract Reconciliation
@@ -29,5 +32,7 @@ graph:
 | task_03 | Make Repository Skill Set inspection cancellable | backend | high       | task_02 |
 | task_04 | Reconcile Doctor readiness contracts             | backend | medium     | task_03 |
 | task_05 | Synchronize Roundfix Doctor guidance             | docs    | low        | task_04 |
+| task_06 | Reconcile the derived Baseline skill snapshot     | chore   | medium     | task_05 |
 
-Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05 ·
+6 → task_06

@@ -36,9 +36,17 @@ instead of mirroring an undefined tie.
   on 2026-07-26 to update `go.mod` and `go.sum` through Go tooling for the
   `golang.org/x/text` collation dependency, and to keep
   `.agents/skills/roundfix/SKILL.md` and `skills/roundfix/SKILL.md` aligned
-  with shipped CLI behavior. These four paths are the complete protected
-  tooling boundary for this Spec; no other protected tooling mutation is
-  authorized. Source: `docs/agents/agent-instructions.md`.
+  with shipped CLI behavior. After QA proved that this canonical edit
+  invalidated the repository's authorial Baseline snapshot invariant, the
+  maintainer also authorized the exact derived refresh of
+  `internal/baseline/assets/setups/typescript-bun.json`,
+  `internal/baseline/testdata/catalog.digest`,
+  `internal/baseline/testdata/catalog.normalized.json`,
+  `internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json`, and
+  `internal/baseline/testdata/parity-corpus/v1/manifest.json`. These nine paths
+  are the complete protected tooling boundary for this Spec; no other
+  protected tooling mutation is authorized. Source:
+  `docs/agents/agent-instructions.md`.
 
 ## System Architecture
 
@@ -48,9 +56,11 @@ instead of mirroring an undefined tie.
 - `internal/skillhash` keeps the shared pure digest algorithm. Its comparator
   becomes a total order by applying raw normalized path order only when the
   American English collator reports equality for distinct strings.
-- `internal/baseline` remains a consumer of the shared hash. No Baseline
-  assets, manifests, lock files, or synchronization state change in this
-  Spec.
+- `internal/baseline` remains a consumer of the shared hash. The only Baseline
+  mutation is a mechanically derived refresh of the TypeScript/Bun setup
+  snapshot and the catalog/parity metadata that authenticates that snapshot.
+  Baseline behavior, source setup authority, lock files, and synchronization
+  state do not change.
 - `internal/cli` separates the profile-proof working directory from the
   repository readiness root, passes the command context into the injected
   skills seam, and owns canonical detail and fail-closed remediation text.
@@ -192,9 +202,15 @@ After the CLI and user guide settle, update only the canonical Roundfix Skill
 and its shipped copy in a dedicated tooling Task so
 `.agents/skills/roundfix/SKILL.md` and `skills/roundfix/SKILL.md` remain
 byte-identical. Do not combine that protected mutation with code or user-guide
-changes. Do not edit upstream-managed skills, recommendation or lock
-authorities, archived Specs, Baseline artifacts, `.coderabbit.yaml`, or
-`.roundfixrc.yml`.
+changes.
+
+The canonical skill edit changes the repository-owned content digest embedded
+in the TypeScript/Bun Baseline setup snapshot. A subsequent isolated Task
+updates that one digest and regenerates only the directly derived setup digest,
+normalized catalog/digest, parity asset-sync fixture, and parity manifest.
+The Task does not change the Baseline source setup, implementation, schemas, or
+other assets. Do not edit upstream-managed skills, recommendation or lock
+authorities, archived Specs, `.coderabbit.yaml`, or `.roundfixrc.yml`.
 
 ## Data Models
 
@@ -222,6 +238,8 @@ line ordering, status vocabulary, exit codes, stdout/stderr split, and
 - Goal: tool-produced metadata; User Story 5 → bounded module Task and tidy
   postflight.
 - Goal: synchronized guidance → Doctor user guide and Roundfix Skill sync.
+- Goal: repository gate integrity → derived TypeScript/Bun snapshot,
+  catalog, and parity metadata agree with the synchronized Roundfix Skill.
 
 ## Integration Points
 
@@ -274,6 +292,8 @@ unchanged.
    tests, and user guidance (depends on: 3).
 5. Synchronize only the authorized canonical and shipped Roundfix Skill pair
    with the settled Doctor contract (depends on: 4).
+6. Refresh only the derived TypeScript/Bun Baseline snapshot and catalog/parity
+   metadata required by the canonical Roundfix Skill digest (depends on: 5).
 
 ## Risks & Considerations
 
@@ -293,6 +313,10 @@ unchanged.
 - Broad skill synchronization can touch unrelated owned skills. The dedicated
   tooling Task must mutate only the authorized Roundfix Skill pair and its own
   Task file.
+- The TypeScript/Bun setup snapshot participates in nested digest authorities.
+  The derived refresh must update the complete catalog/parity chain and prove
+  it with the existing authorial and compatibility tests; changing only the
+  visible `contentDigest` is incomplete.
 
 ## Decisions
 
@@ -304,3 +328,5 @@ unchanged.
 - Join multiple remediation actions with `&&`, preserving owned-first order.
 - Produce module metadata only through `go mod tidy`.
 - Preserve all prior commits and every archived Spec byte-for-byte.
+- Reconcile the failed QA digest by regenerating the exact derived Baseline
+  chain, without changing Baseline runtime behavior or external authorities.
