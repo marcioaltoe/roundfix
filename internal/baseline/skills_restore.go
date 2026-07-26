@@ -1239,7 +1239,14 @@ func portableRestoreDigest(files []restoreFile) string {
 }
 
 func externalSkillsLockDigest(files []restoreFile) string {
-	sortRestoreFiles(files)
+	sort.Slice(files, func(i, j int) bool {
+		left := strings.ToLower(files[i].Path)
+		right := strings.ToLower(files[j].Path)
+		if left == right {
+			return files[i].Path > files[j].Path
+		}
+		return left < right
+	})
 	digest := sha256.New()
 	for _, file := range files {
 		_, _ = digest.Write([]byte(file.Path))

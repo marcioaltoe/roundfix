@@ -64,6 +64,15 @@ func TestSkillFolderHashMatchesExternalCompatibilityFixture(t *testing.T) {
 	if !foundNestedPath {
 		t.Fatal("lock compatibility fixture must include a slash-normalized nested path")
 	}
+	fixturePaths := make([]string, 0, len(fixture.Files))
+	for _, file := range fixture.Files {
+		fixturePaths = append(fixturePaths, file.Path)
+	}
+	byteOrderedPaths := append([]string(nil), fixturePaths...)
+	sort.Strings(byteOrderedPaths)
+	if reflect.DeepEqual(fixturePaths, byteOrderedPaths) {
+		t.Fatal("lock compatibility fixture must distinguish external CLI locale ordering from Go byte ordering")
+	}
 
 	got, err := SkillFolderHash(root)
 	if err != nil {
@@ -157,6 +166,20 @@ func TestSkillFolderHashWrapsMissingRootError(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), root) {
 		t.Fatalf("expected error to name root %q, got %v", root, err)
+	}
+}
+
+func TestCheckRepositoryMatchesRealRepository(t *testing.T) {
+	root, err := filepath.Abs("..")
+	if err != nil {
+		t.Fatalf("resolve real repository root: %v", err)
+	}
+	got, err := CheckRepository(root)
+	if err != nil {
+		t.Fatalf("check real repository: %v", err)
+	}
+	if !got.Ready() {
+		t.Fatalf("real repository readiness = %#v, want ready", got)
 	}
 }
 

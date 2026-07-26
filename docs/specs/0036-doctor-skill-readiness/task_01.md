@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0036-doctor-skill-readiness
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -49,7 +49,7 @@ filesystem mutation.
 
 - [x] Add repository readiness values and stable ownership classifications.
 - [x] Add exact owned-tree comparison against embedded skill files.
-- [ ] Add strict required lock-entry validation and compatible external hashing.
+- [x] Add strict required lock-entry validation and compatible external hashing.
 - [x] Inject the checker into Doctor and render deterministic success/failure.
 - [x] Add focused package tests for clean, missing, outdated, malformed, unsafe,
       symlink, mixed-ownership, and ordering cases.
@@ -66,7 +66,7 @@ filesystem mutation.
       prints the ownership-specific command, and exits one.
 - [x] Changing, adding, or removing a versioned file reports the affected skill
       under `outdated`; unrelated extra skills remain ignored.
-- [ ] A compatibility fixture produces the exact same digest as the installed
+- [x] A compatibility fixture produces the exact same digest as the installed
       skills CLI algorithm, including path normalization and exclusions.
 - [x] Missing/malformed lock data, invalid hashes, unsafe names, unreadable
       artifacts, and symlinks fail deterministically without panic or traversal.
@@ -132,47 +132,61 @@ suite against the refreshed real repository.
 
 ## Result
 
-Implemented one offline, read-only Repository Skill Set readiness check at the
-`skills` ownership boundary and appended its deterministic `skills:` result
-after Agent Selection Profile readiness in Doctor.
+Repaired the external skill hash compatibility contract. `SkillFolderHash` and
+the Baseline external-lock adapter now reproduce the installed skills CLI
+`localeCompare` ordering for repository paths, while Baseline setup snapshots
+retain their separate byte-ordered content-digest contract.
+
+The compatibility fixture now pins the CLI-derived `501e315e...` digest and
+explicitly fails if its file order no longer distinguishes JavaScript locale
+ordering from Go byte ordering. A read-only real-repository test proves all 25
+refreshed external skill trees against `skills-lock.json`; catalog compatibility
+fixtures carry the resulting lock-adapter artifact digest.
 
 ### Verification
 
-- `rtk env GOCACHE=/tmp/roundfix-task01-go-cache go test ./skills -run 'Test(CheckRepository|SkillFolderHash)' -count=1`
+- `rtk env GOCACHE=/tmp/roundfix-task01-final-skills-cache go test ./skills -run 'Test(CheckRepository|SkillFolderHash)' -count=1`
   — passed (`ok roundfix/skills`).
-- `rtk env GOCACHE=/tmp/roundfix-task01-go-cache go test ./internal/cli -run 'TestRunDoctor' -count=1`
+- `rtk env GOCACHE=/tmp/roundfix-task01-final-cli-cache go test ./internal/cli -run 'TestRunDoctor' -count=1`
   — passed (`ok roundfix/internal/cli`).
-- `rtk env GOCACHE=/tmp/roundfix-task01-go-cache go test -race ./skills ./internal/cli -run 'Test(CheckRepository|RunDoctor)' -count=1`
+- `rtk env GOCACHE=/tmp/roundfix-task01-final-race-cache go test -race ./skills ./internal/cli -run 'Test(CheckRepository|RunDoctor)' -count=1`
   — passed for both packages with the race detector.
-- `rtk env GOCACHE=/tmp/roundfix-task01-go-cache go test ./skills ./internal/cli -count=1`
-  — passed for both complete package suites.
-- `rtk git -c core.fsmonitor=false diff --check` — passed.
+- `rtk env GOCACHE=/tmp/roundfix-task01-final-full-cache go test ./skills -count=1`
+  — passed (`ok roundfix/skills`), including the real repository baseline.
+- `rtk env GOCACHE=/tmp/roundfix-task01-rework-baseline-cache go test ./internal/baseline -run 'Test(EmbeddedCatalog|AssetsSyncCompatibilityMatchesMaintainedPythonContract|SkillsRestore|CatalogCompatibility)' -count=1`
+  — passed (`ok roundfix/internal/baseline`).
+- `rtk env GOCACHE=/tmp/roundfix-task01-rework-verify-cache make verify`
+  — blocked after `2393` passing tests by the pre-existing, out-of-scope
+  `TestProfilesDocumentationContractMatchesPublicGuidance` failure:
+  Doctor help is missing `Agent Selection Profiles`.
 
-The sandbox did not permit Go's default user cache, so focused checks used the
-equivalent temporary `GOCACHE`; the Daemon remains responsible for running the
-task's declared Verification commands verbatim.
+The sandbox does not permit Go's default user cache, so verification used
+task-local temporary `GOCACHE` directories. The Daemon remains responsible for
+running the declared Verification commands verbatim.
 
 ### Acceptance evidence
 
-- The complete embedded-owned plus required-external fixture returns derived
-  `14` owned, `25` external, and Doctor renders `39 required` with exit zero.
-- Owned and external removals are classified under sorted `missing` names;
-  content changes, added files, and removed files are classified under
-  `outdated`; unrelated installed skills and lock entries are ignored.
-- The pinned compatibility fixture, nested slash-normalized paths, lexical
-  ordering, and `.git`/`node_modules` exclusions pass through
-  `SkillFolderHash`.
-- Missing and malformed locks, wrong versions, absent entries, invalid hashes,
-  unsafe names, unreadable artifact shapes, owned symlinks, and external
-  symlinks have deterministic error or readiness outcomes with no traversal.
-- Exact Doctor output tests prove success, owned-only, external-only, mixed,
-  and checker-error lines; mixed remediation appears exactly once in
-  owned-then-external order and all pre-existing checks still execute.
-- A before/after fixture snapshot proves `CheckRepository` performs no
-  mutation. Production code executes no commands, performs no network access,
-  and exposes no write path.
+- AC 1: the complete fixture and exact Doctor tests prove derived `14` owned,
+  `25` external, and `39` total counts with exit zero.
+- AC 2: focused repository and Doctor tests prove owned and external removals
+  are sorted under `missing`, select the ownership-specific command, and exit
+  one.
+- AC 3: focused tests prove changed, added, and removed versioned artifacts are
+  `outdated`, while unrelated installed and lock entries remain ignored.
+- AC 4: the pinned fixture hashes `references/guide.md` before `SKILL.md` to
+  `501e315e486dc59cbaa999085edd4312d35bbc690947dfb59af2e86722466aa9`;
+  the regression rejects Go byte ordering, and the real repository test matches
+  every refreshed external lock hash.
+- AC 5: focused tests prove malformed locks, invalid hashes, unsafe names,
+  unreadable artifacts, and symlinks fail without panic or traversal.
+- AC 6: exact Doctor tests prove one sorted `skills:` line and one copy of each
+  remediation command in owned-then-external order.
+- AC 7: race, no-mutation, and exact Doctor tests prove all existing checks
+  still run and the checker performs no repository, config, Run, lock, or skill
+  mutation.
 
 ### Follow-ups
 
-None. Documentation and Roundfix Skill synchronization remain assigned to
-their separate Tasks in this Spec.
+Restore the pre-existing `Agent Selection Profiles` wording required by
+`TestProfilesDocumentationContractMatchesPublicGuidance` in its owning CLI
+documentation slice; no `internal/cli` file changed in this rework.

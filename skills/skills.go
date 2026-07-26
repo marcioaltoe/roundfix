@@ -182,7 +182,15 @@ func SkillFolderHash(root string) (string, error) {
 	}
 
 	sort.Slice(files, func(i, j int) bool {
-		return files[i].path < files[j].path
+		// String.localeCompare compares the normalized repository paths
+		// case-insensitively first and puts lowercase before uppercase when
+		// paths otherwise collate equally.
+		left := strings.ToLower(files[i].path)
+		right := strings.ToLower(files[j].path)
+		if left == right {
+			return files[i].path > files[j].path
+		}
+		return left < right
 	})
 	digest := sha256.New()
 	for _, file := range files {
