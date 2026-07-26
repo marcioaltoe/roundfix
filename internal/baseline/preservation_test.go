@@ -212,13 +212,10 @@ func TestDecisionDocumentSkeletonDoesNotProposeManagedSemanticVersionBytes(t *te
 	if err != nil {
 		t.Fatalf("plan managed-root preservation: %v", err)
 	}
-	if plan.DecisionSkeleton == nil {
-		t.Fatalf("managed-root preservation has no Decision Document skeleton: %+v", plan)
-	}
-	for _, disposition := range plan.DecisionSkeleton.Document.Readoption.Dispositions {
-		if disposition.Disposition == "repository-rules" || disposition.Destination != nil {
-			t.Fatalf("setup-managed bytes were proposed as repository rules: %+v", disposition)
-		}
+	if plan.State != PreservationStateReady ||
+		plan.DecisionSkeleton != nil ||
+		len(plan.SourceBaseline.Entries) != 0 {
+		t.Fatalf("setup-managed bytes entered classification: %+v", plan)
 	}
 }
 

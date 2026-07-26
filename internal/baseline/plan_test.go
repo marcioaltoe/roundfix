@@ -753,6 +753,421 @@ func TestSemanticRuleDistributionMovesExactBytesAndAccountsLedgers(t *testing.T)
 	}
 }
 
+func TestPreservationSemanticRedistributionConverges(t *testing.T) {
+	repo := newPlanRepository(t)
+	rule := []byte("Keep the repository release name stable.\n")
+	writeInspectionFile(t, repo, "AGENTS.md", string(rule))
+	commitInspectionRepository(t, repo, "seed root repository rule")
+
+	plan := buildRootPreservationPlan(
+		t,
+		repo,
+		"repository-rules",
+		specificRepositoryPath,
+	)
+	agents := planPostimage(t, plan, "AGENTS.md")
+	if bytes.Contains(agents.Content, rule) {
+		t.Fatalf("redistributed source remains in live AGENTS.md:\n%s", agents.Content)
+	}
+	if residual := planPostimage(t, plan, specificRepositoryPath); !bytes.Equal(residual.Content, rule) {
+		t.Fatalf("residual repository rules = %q, want %q", residual.Content, rule)
+	}
+	backup := planBackupEntry(t, plan, "AGENTS.md")
+	if _, err := ApplyPlan(context.Background(), repo, plan, plan.PlanDigest); err != nil {
+		t.Fatalf("apply root semantic redistribution: %v", err)
+	}
+	backupBytes, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(backup.Path)))
+	if err != nil {
+		t.Fatalf("read root backup: %v", err)
+	}
+	if !bytes.Equal(backupBytes, rule) {
+		t.Fatalf("root backup = %q, want exact source %q", backupBytes, rule)
+	}
+
+	freshPreservation, err := PlanRootPreservation(
+		inspectPreservationRepository(t, repo),
+		RootPreservationRequest{Mode: PreservationModePreservation},
+	)
+	if err != nil {
+		t.Fatalf("plan fresh root preservation: %v", err)
+	}
+	if len(freshPreservation.SourceBaseline.Entries) != 0 {
+		t.Fatalf(
+			"fresh Preservation re-inventoried retained rules: entries=%+v",
+			freshPreservation.SourceBaseline.Entries,
+		)
+	}
+	fresh := buildPreservationUpdatePlan(t, repo, nil)
+	if len(fresh.FileChanges) != 0 {
+		t.Fatalf("fresh Preservation file changes = %+v, want none", fresh.FileChanges)
+	}
+	for _, entry := range fresh.ManagedEntries {
+		if entry.Kind == "backup" {
+			t.Fatalf("fresh Preservation planned a second backup: %+v", entry)
+		}
+	}
+}
+
+func TestPreservationLaterUnmarkedAdditionConverges(t *testing.T) {
+	repo := newPlanRepository(t)
+	initialRule := []byte("Keep CLI diagnostics on stderr for this repository.\n")
+	writeInspectionFile(t, repo, "AGENTS.md", string(initialRule))
+	commitInspectionRepository(t, repo, "seed initial root repository rule")
+	initial := buildRootPreservationPlan(t, repo, "repository-rules", specificRepositoryPath)
+	if _, err := ApplyPlan(context.Background(), repo, initial, initial.PlanDigest); err != nil {
+		t.Fatalf("apply initial semantic redistribution: %v", err)
+	}
+
+	laterRule := []byte("Keep the public CLI help concise.\n")
+	agentsPath := filepath.Join(repo, "AGENTS.md")
+	agents, err := os.ReadFile(agentsPath)
+	if err != nil {
+		t.Fatalf("read managed AGENTS.md: %v", err)
+	}
+	preMigration := append(append([]byte(nil), agents...), laterRule...)
+	writeTransactionFile(t, repo, "AGENTS.md", string(preMigration), 0o644)
+	commitInspectionRepository(t, repo, "add later unmarked root rule")
+
+	unresolved, err := PlanRootPreservation(
+		inspectPreservationRepository(t, repo),
+		RootPreservationRequest{Mode: PreservationModePreservation},
+	)
+	if err != nil {
+		t.Fatalf("plan later root preservation: %v", err)
+	}
+	if len(unresolved.SourceBaseline.Entries) != 1 ||
+		!bytes.Equal(unresolved.SourceBaseline.Entries[0].SourceBytes, laterRule) {
+		t.Fatalf(
+			"later Source Baseline entries = %+v, want only %q",
+			unresolved.SourceBaseline.Entries,
+			laterRule,
+		)
+	}
+	later := buildRootPreservationPlan(t, repo, "repository-document", "docs/agents/cli.md")
+	backup := planBackupEntry(t, later, "AGENTS.md")
+	if backup.ContentIdentity != planContentIdentity(preMigration) {
+		t.Fatalf(
+			"later backup identity = %q, want complete root identity %q",
+			backup.ContentIdentity,
+			planContentIdentity(preMigration),
+		)
+	}
+	if _, err := ApplyPlan(context.Background(), repo, later, later.PlanDigest); err != nil {
+		t.Fatalf("apply later semantic redistribution: %v", err)
+	}
+	appliedAgents, err := os.ReadFile(agentsPath)
+	if err != nil {
+		t.Fatalf("read converged AGENTS.md: %v", err)
+	}
+	if bytes.Contains(appliedAgents, laterRule) {
+		t.Fatalf("later source remains in live AGENTS.md:\n%s", appliedAgents)
+	}
+	guide, err := os.ReadFile(filepath.Join(repo, "docs", "agents", "cli.md"))
+	if err != nil {
+		t.Fatalf("read CLI guide: %v", err)
+	}
+	if !bytes.Contains(guide, laterRule) {
+		t.Fatalf("CLI guide does not retain later rule:\n%s", guide)
+	}
+	residual, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(specificRepositoryPath)))
+	if err != nil {
+		t.Fatalf("read retained Repository-Specific Normative Rules: %v", err)
+	}
+	if !bytes.Equal(residual, initialRule) {
+		t.Fatalf("existing Repository-Specific Normative Rules = %q, want %q", residual, initialRule)
+	}
+
+	fresh := buildPreservationUpdatePlan(t, repo, nil)
+	if len(fresh.FileChanges) != 0 {
+		t.Fatalf("post-addition Preservation file changes = %+v, want none", fresh.FileChanges)
+	}
+	for _, entry := range fresh.ManagedEntries {
+		if entry.Kind == "backup" {
+			t.Fatalf("post-addition Preservation planned another backup: %+v", entry)
+		}
+	}
+
+	residualRule := []byte("Keep the project-specific release channel stable.\n")
+	appliedAgents, err = os.ReadFile(agentsPath)
+	if err != nil {
+		t.Fatalf("read managed AGENTS.md before residual addition: %v", err)
+	}
+	writeTransactionFile(
+		t,
+		repo,
+		"AGENTS.md",
+		string(append(appliedAgents, residualRule...)),
+		0o644,
+	)
+	commitInspectionRepository(t, repo, "add later residual root rule")
+	residualPlan := buildRootPreservationPlan(
+		t,
+		repo,
+		"repository-rules",
+		specificRepositoryPath,
+	)
+	if _, err := ApplyPlan(
+		context.Background(),
+		repo,
+		residualPlan,
+		residualPlan.PlanDigest,
+	); err != nil {
+		t.Fatalf("apply later residual redistribution: %v", err)
+	}
+	residual, err = os.ReadFile(filepath.Join(repo, filepath.FromSlash(specificRepositoryPath)))
+	if err != nil {
+		t.Fatalf("read extended Repository-Specific Normative Rules: %v", err)
+	}
+	wantResidual := append(append([]byte(nil), initialRule...), residualRule...)
+	if !bytes.Equal(residual, wantResidual) {
+		t.Fatalf("extended Repository-Specific Normative Rules = %q, want %q", residual, wantResidual)
+	}
+	final := buildPreservationUpdatePlan(t, repo, nil)
+	if len(final.FileChanges) != 0 {
+		t.Fatalf("final Preservation file changes = %+v, want none", final.FileChanges)
+	}
+}
+
+func TestPreservationPreviouslyBackedUpRootGuidanceIsNotReclassified(t *testing.T) {
+	tests := []struct {
+		name        string
+		disposition string
+		path        string
+	}{
+		{
+			name:        "semantic guide",
+			disposition: "repository-document",
+			path:        "docs/agents/cli.md",
+		},
+		{
+			name:        "residual carrier",
+			disposition: "repository-rules",
+			path:        specificRepositoryPath,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			repo := newPlanRepository(t)
+			rule := []byte("Keep the duplicate migration rule single-owned.\n")
+			writeInspectionFile(t, repo, "AGENTS.md", string(rule))
+			commitInspectionRepository(t, repo, "seed root rule")
+			initial := buildRootPreservationPlan(
+				t,
+				repo,
+				test.disposition,
+				test.path,
+			)
+			if _, err := ApplyPlan(
+				context.Background(),
+				repo,
+				initial,
+				initial.PlanDigest,
+			); err != nil {
+				t.Fatalf("apply initial owner migration: %v", err)
+			}
+
+			agents, err := os.ReadFile(filepath.Join(repo, "AGENTS.md"))
+			if err != nil {
+				t.Fatalf("read managed AGENTS.md: %v", err)
+			}
+			ownerBefore, err := os.ReadFile(filepath.Join(repo, filepath.FromSlash(test.path)))
+			if err != nil {
+				t.Fatalf("read approved owner: %v", err)
+			}
+			staleRoot := append(append([]byte(nil), agents...), rule...)
+			writeTransactionFile(
+				t,
+				repo,
+				"AGENTS.md",
+				string(staleRoot),
+				0o644,
+			)
+			commitInspectionRepository(t, repo, "restore already-owned root bytes")
+			retains, err := currentSetupRetainsRecognizedRepositoryRules(repo)
+			if err != nil {
+				t.Fatalf("resolve current Setup Manifest ownership: %v", err)
+			}
+			if !retains {
+				t.Fatal("initial applied Setup Manifest did not prove current ownership")
+			}
+			payloads, err := verifiedAgentsBackupPayloads(repo)
+			if err != nil {
+				t.Fatalf("load verified AGENTS backups: %v", err)
+			}
+			if len(payloads) == 0 || !bytes.Equal(payloads[0], rule) {
+				t.Fatalf("verified AGENTS backup payloads = %q, want %q", payloads, rule)
+			}
+			unresolved, err := PlanRootPreservation(
+				inspectPreservationRepository(t, repo),
+				RootPreservationRequest{Mode: PreservationModePreservation},
+			)
+			if err != nil {
+				t.Fatalf("plan stale-root repair: %v", err)
+			}
+			if len(unresolved.SourceBaseline.Entries) != 0 {
+				t.Fatalf(
+					"previously backed-up root bytes re-entered classification: %+v",
+					unresolved.SourceBaseline.Entries,
+				)
+			}
+			if _, consumed := unresolved.consumedRootPaths["AGENTS.md"]; !consumed {
+				t.Fatal("previously backed-up root bytes did not mark AGENTS.md for repair")
+			}
+			repair := buildPreservationUpdatePlan(t, repo, nil)
+			if bytes.Contains(planPostimage(t, repair, "AGENTS.md").Content, rule) {
+				t.Fatal("already-owned source remains in the live root postimage")
+			}
+			if owner := planPostimage(t, repair, test.path); !bytes.Equal(owner.Content, ownerBefore) {
+				t.Fatalf("approved owner changed during stale-root repair:\n%s", owner.Content)
+			}
+			backup := planBackupEntry(t, repair, "AGENTS.md")
+			if backup.ContentIdentity != planContentIdentity(staleRoot) {
+				t.Fatalf(
+					"stale-root backup identity = %q, want %q",
+					backup.ContentIdentity,
+					planContentIdentity(staleRoot),
+				)
+			}
+			if _, err := ApplyPlan(
+				context.Background(),
+				repo,
+				repair,
+				repair.PlanDigest,
+			); err != nil {
+				t.Fatalf("apply stale-root repair: %v", err)
+			}
+			fresh := buildPreservationUpdatePlan(t, repo, nil)
+			if len(fresh.FileChanges) != 0 {
+				t.Fatalf("repaired fresh Plan changes = %+v, want none", fresh.FileChanges)
+			}
+		})
+	}
+}
+
+func TestPreservationPreviouslyBackedUpRootGuidanceExposesOnlyLaterAddition(t *testing.T) {
+	repo := newPlanRepository(t)
+	approved := []byte("Keep the already approved root rule.\n")
+	writeInspectionFile(t, repo, "AGENTS.md", string(approved))
+	commitInspectionRepository(t, repo, "seed approved root rule")
+	initial := buildRootPreservationPlan(
+		t,
+		repo,
+		"repository-rules",
+		specificRepositoryPath,
+	)
+	if _, err := ApplyPlan(context.Background(), repo, initial, initial.PlanDigest); err != nil {
+		t.Fatalf("apply initial owner migration: %v", err)
+	}
+
+	agents, err := os.ReadFile(filepath.Join(repo, "AGENTS.md"))
+	if err != nil {
+		t.Fatalf("read managed AGENTS.md: %v", err)
+	}
+	later := []byte("Keep the later root rule separately reviewed.\n")
+	staleAndLater := append(append(append([]byte(nil), agents...), approved...), later...)
+	writeTransactionFile(t, repo, "AGENTS.md", string(staleAndLater), 0o644)
+	commitInspectionRepository(t, repo, "restore old bytes and add one rule")
+
+	unresolved, err := PlanRootPreservation(
+		inspectPreservationRepository(t, repo),
+		RootPreservationRequest{Mode: PreservationModePreservation},
+	)
+	if err != nil {
+		t.Fatalf("plan mixed stale and new root guidance: %v", err)
+	}
+	if len(unresolved.SourceBaseline.Entries) != 1 ||
+		!bytes.Equal(unresolved.SourceBaseline.Entries[0].SourceBytes, later) {
+		t.Fatalf(
+			"mixed Source Baseline entries = %+v, want only %q",
+			unresolved.SourceBaseline.Entries,
+			later,
+		)
+	}
+	if _, consumed := unresolved.consumedRootPaths["AGENTS.md"]; !consumed {
+		t.Fatal("mixed stale and new root guidance did not retain stale-root repair")
+	}
+}
+
+func buildRootPreservationPlan(
+	t *testing.T,
+	repo string,
+	disposition string,
+	destinationPath string,
+) PlanDocument {
+	t.Helper()
+	unresolved, err := PlanRootPreservation(
+		inspectPreservationRepository(t, repo),
+		RootPreservationRequest{Mode: PreservationModePreservation},
+	)
+	if err != nil {
+		t.Fatalf("plan unresolved root preservation: %v", err)
+	}
+	if len(unresolved.SourceBaseline.Entries) != 1 {
+		t.Fatalf("root Source Baseline entries = %+v, want one", unresolved.SourceBaseline.Entries)
+	}
+	entry := unresolved.SourceBaseline.Entries[0]
+	destination := &ReadoptionDestination{
+		Digest: entry.Digest,
+		Path:   destinationPath,
+	}
+	switch disposition {
+	case "repository-document":
+		destination.DocumentType = "agent-guide"
+	case "repository-rules":
+		destination.DocumentType = "repository-rules"
+		destination.ProposedBytes = base64.StdEncoding.EncodeToString(entry.SourceBytes)
+	default:
+		t.Fatalf("unsupported test disposition %q", disposition)
+	}
+	document := decisionDocumentForSource(
+		unresolved.SourceBaseline,
+		[]ReadoptionDisposition{{
+			EntryID:        entry.ID,
+			EntryDigest:    entry.Digest,
+			Classification: "normative-clause",
+			Disposition:    disposition,
+			Destination:    destination,
+			Reason:         "The selected repository owner retains this exact rule.",
+		}},
+	)
+	return buildPreservationUpdatePlan(t, repo, &document)
+}
+
+func buildPreservationUpdatePlan(
+	t *testing.T,
+	repo string,
+	document *DecisionDocument,
+) PlanDocument {
+	t.Helper()
+	outcome, err := BuildPlan(context.Background(), PlanRequest{
+		Repository: repo,
+		ProfileID:  "go-cli-tui",
+		Decisions:  planTestDecisionsWithRepositoryExtension(),
+		Preservation: RootPreservationRequest{
+			Mode:      PreservationModePreservation,
+			Decisions: document,
+		},
+	})
+	if err != nil {
+		t.Fatalf("build Preservation update Plan: %v", err)
+	}
+	if outcome.Plan == nil {
+		t.Fatalf("build Preservation update returned result: %+v", outcome.Result)
+	}
+	return *outcome.Plan
+}
+
+func planBackupEntry(t *testing.T, plan PlanDocument, sourcePath string) ManagedEntry {
+	t.Helper()
+	for _, entry := range plan.ManagedEntries {
+		if entry.ID == "backup:"+sourcePath && entry.Kind == "backup" {
+			return entry
+		}
+	}
+	t.Fatalf("Plan has no backup for %q", sourcePath)
+	return ManagedEntry{}
+}
+
 func decisionDocumentForSource(
 	source ReadoptionSourceBaseline,
 	dispositions []ReadoptionDisposition,

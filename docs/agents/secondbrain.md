@@ -42,3 +42,38 @@ documentation fully answer the task.
   it in the Secondbrain.
 - Never read, copy, or expose `.env` files, tokens, credentials, cookies, or
   keys.
+
+<!-- setup-context-driven:begin id=guide.secondbrain version=0.0.1 -->
+
+# Secondbrain
+
+- **mandatory**: Consult the local Secondbrain before acting when repository context does not answer business or prior-decision questions, fiscal or tax concepts, cross-project documentation, knowledge about Vortex, Tax, Visio, or Gesttione, or shared architecture patterns. Do not consult it when local code, `CONTEXT.md`, ADRs, and repository documentation fully answer the task.
+
+- **mandatory**: Read `wiki/index.md` first. Then run `qmd query "<question>" --all --files --min-score 0.3`. Inspect `projects/<project>/mirror/` only when the index and query point there, and open only the files required for the task; treat mirrors as references, not workspaces.
+
+- **prohibited**: Do not write to the Secondbrain. Do not edit raw/. Do not edit projects/*/mirror/. Never create, rename, move, or delete its files, and never copy code or generated artifacts from a mirror without a local source check.
+
+- **prohibited**: Never read, copy, or expose `.env` files, tokens, credentials, cookies, private keys, API keys, session material, or unsafe personal and client data. Stop at likely secret-bearing sources and request a safe source.
+
+- **mandatory**: Cite every Secondbrain file used in the final response or handoff by path. Do not claim Secondbrain context when no Secondbrain file was read.
+
+- **mandatory**: When Secondbrain knowledge must be added or corrected, ask Hermes to ingest or update it instead of writing from this repository.
+
+<!-- setup-context-driven:end id=guide.secondbrain -->
+
+<!-- roundfix:repository-rule:begin id=rule.8d99a6ddc2032d2e4df584b4e9402d7e733345ebb279cfe371423d379054c639 -->
+### Secondbrain
+
+When work depends on business context, prior decisions, cross-project
+documentation, fiscal or tax concepts, Vortex, Tax, Visio, Gesttione, or shared
+architecture patterns, read `docs/agents/secondbrain.md` before acting. Skip it
+for self-contained repository work that the local code and docs fully answer.
+
+<!-- roundfix:repository-rule:end id=rule.8d99a6ddc2032d2e4df584b4e9402d7e733345ebb279cfe371423d379054c639 -->
+
+<!-- roundfix:repository-rule:begin id=rule.cf2bb6e8555b28a55a64f750621e98ecc8adec17060fed22824dacd2bb227bd9 -->
+The Secondbrain is read-only from this repo, and responses must cite every
+Secondbrain file used.
+
+
+<!-- roundfix:repository-rule:end id=rule.cf2bb6e8555b28a55a64f750621e98ecc8adec17060fed22824dacd2bb227bd9 -->

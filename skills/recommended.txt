@@ -5,6 +5,7 @@ coding-guidelines
 context7
 conventional-commits
 domain-modeling
+exa-web-search
 github-pr-workflow
 golang-cli
 golang-concurrency

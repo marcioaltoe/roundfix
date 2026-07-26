@@ -337,7 +337,7 @@ func TestAuthorialSkillSync(t *testing.T) {
 	if err := json.Unmarshal(lockBytes, &lock); err != nil {
 		t.Fatalf("decode skills lock: %v", err)
 	}
-	const wantUpstreamDigest = "df289f03c4555e310822426f8521254b13f9befb87263d739c9739680f399814"
+	const wantUpstreamDigest = "4fb4367c8a086034727b70b23795712be9b436074f4ba6b9bc6ae5da352d21a7"
 	if got := upstreamManagedSkillDigest(t, repoRoot, lock.Skills); got != wantUpstreamDigest {
 		t.Fatalf("upstream-managed skill tree digest = %q, want %q", got, wantUpstreamDigest)
 	}
@@ -598,7 +598,7 @@ func TestAuthoringConstraintOwnership(t *testing.T) {
 		})
 	}
 
-	const wantUpstreamDigest = "df289f03c4555e310822426f8521254b13f9befb87263d739c9739680f399814"
+	const wantUpstreamDigest = "4fb4367c8a086034727b70b23795712be9b436074f4ba6b9bc6ae5da352d21a7"
 	if got := upstreamManagedSkillDigest(t, repoRoot, lock.Skills); got != wantUpstreamDigest {
 		t.Fatalf("upstream-managed skill tree digest = %q, want %q", got, wantUpstreamDigest)
 	}
@@ -637,7 +637,7 @@ func TestUpstreamADRFormatUnchanged(t *testing.T) {
 		_, _ = upstreamDigest.Write([]byte(name))
 		_, _ = upstreamDigest.Write([]byte(folderDigest))
 	}
-	const wantUpstreamDigest = "df289f03c4555e310822426f8521254b13f9befb87263d739c9739680f399814"
+	const wantUpstreamDigest = "4fb4367c8a086034727b70b23795712be9b436074f4ba6b9bc6ae5da352d21a7"
 	if got := hex.EncodeToString(upstreamDigest.Sum(nil)); got != wantUpstreamDigest {
 		t.Fatalf("upstream-managed skill tree digest = %q, want %q", got, wantUpstreamDigest)
 	}

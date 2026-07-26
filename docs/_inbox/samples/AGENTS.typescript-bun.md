@@ -41,7 +41,8 @@ Tasks live as local markdown files under `docs/specs/<feature-slug>/` (the canon
 
 ### Triage labels
 
-The repo uses the default five-role triage vocabulary. See `docs/agents/triage-labels.md`.
+The repo uses the default five-role triage vocabulary. See
+`docs/agents/external-triage.md`.
 
 ### Domain docs
 

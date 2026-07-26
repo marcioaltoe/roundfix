@@ -90,6 +90,14 @@ func TestReleasePlanDocumentationContract(t *testing.T) {
 			name: "root Agent pointer",
 			path: filepath.Join(repoRoot, "AGENTS.md"),
 			snippets: []string{
+				"Repository-owned rules",
+				"docs/agents/specific-repository.md",
+			},
+		},
+		{
+			name: "repository-specific rules",
+			path: filepath.Join(repoRoot, "docs", "agents", "specific-repository.md"),
+			snippets: []string{
 				"HARD RULE — release planning",
 				"roundfix release plan",
 				"before changelog, version, tag, push, package, asset",

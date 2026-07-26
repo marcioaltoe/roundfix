@@ -1,0 +1,277 @@
+{
+  "schemaVersion": "setup-context-driven/manifest/0.0.1",
+  "version": "0.0.1",
+  "generator": {
+    "skill": "setup-context-driven",
+    "version": "0.0.1",
+    "baseline": "baseline.go-cli-tui-0.0.1"
+  },
+  "profile": "go-cli-tui",
+  "profileDigest": "sha256:2b8bd2acd9e79f93524954e5de32e89cd8ba9eea4145e98b06834db56e917ef7",
+  "catalogDigest": "sha256:f082de03ea52e1b17e75daf0d65ef2d535f8d8d36951fe08dd435732e4008c1e",
+  "modules": [
+    "core",
+    "context-workflow",
+    "go",
+    "cli-surface",
+    "tui-surface",
+    "autonomous-work",
+    "spec-workflow",
+    "external-triage",
+    "secondbrain",
+    "repository-extension"
+  ],
+  "decisions": {
+    "autonomous.enabled": {
+      "value": true
+    },
+    "domain.layout": {
+      "value": "single-context"
+    },
+    "language.generated": {
+      "value": "English"
+    },
+    "repository.extension.enabled": {
+      "value": true
+    },
+    "runtime.backend": {
+      "value": "codex gpt-5.6-sol"
+    },
+    "runtime.design": {
+      "value": "claude opus 5 xhigh"
+    },
+    "secondbrain.enabled": {
+      "value": true
+    },
+    "spec.scaffold": {
+      "value": true
+    },
+    "triage.external": {
+      "value": true
+    },
+    "verification.gate": {
+      "value": "rtk make verify"
+    }
+  },
+  "managedArtifacts": [
+    {
+      "id": "guide.skill-dispatch",
+      "path": "docs/agents/skill-dispatch.md",
+      "kind": "guide",
+      "module": "core",
+      "template": "template.guide.skill-dispatch",
+      "version": "0.0.1",
+      "digest": "2b3e6b61cc0942a56ef29b136f3aca9fef6f0412168023385b9c7197e05b8867"
+    },
+    {
+      "id": "root.core",
+      "path": "AGENTS.md",
+      "kind": "root-block",
+      "module": "core",
+      "template": "template.root.core",
+      "version": "0.0.1",
+      "digest": "ab48cdef24be4f92ee6487c142b01a2427e069fb6fbd90a47bd9e61ce0c3d1b2"
+    },
+    {
+      "id": "guide.docs-layout",
+      "path": "docs/agents/docs-layout.md",
+      "kind": "guide",
+      "module": "context-workflow",
+      "template": "template.guide.docs-layout",
+      "version": "0.0.1",
+      "digest": "037dafecb9efa6eb45744dc0d3889a4f0a014aef41914dba151cf14574ab9621"
+    },
+    {
+      "id": "root.context-workflow",
+      "path": "AGENTS.md",
+      "kind": "root-block",
+      "module": "context-workflow",
+      "template": "template.root.context-workflow",
+      "version": "0.0.1",
+      "digest": "4001ce64061ffafedf2456ffd958e3fe700e1da954d7c42867f1aad6fa10e0a8"
+    },
+    {
+      "id": "guide.go",
+      "path": "docs/agents/go.md",
+      "kind": "guide",
+      "module": "go",
+      "template": "template.guide.go",
+      "version": "0.0.1",
+      "digest": "297ec5bfb5a50c1f390568b6519df6985ecbce63295e8357357d80bf993807f6"
+    },
+    {
+      "id": "root.spec-workflow",
+      "path": "AGENTS.md",
+      "kind": "root-block",
+      "module": "spec-workflow",
+      "template": "template.root.spec-workflow",
+      "version": "0.0.1",
+      "digest": "7d263707ada26bf233c9aa823423b6c74dc006b86c503899fcd95a46f6a15e7f"
+    },
+    {
+      "id": "guide.cli-surface",
+      "path": "docs/agents/cli.md",
+      "kind": "guide",
+      "module": "cli-surface",
+      "template": "template.guide.cli-surface",
+      "version": "0.0.1",
+      "digest": "eccd16c4b04dd206395f030f64115b5cd1a91450ba745867ef164e2197f73a7a"
+    },
+    {
+      "id": "root.external-triage",
+      "path": "AGENTS.md",
+      "kind": "root-block",
+      "module": "external-triage",
+      "template": "template.root.external-triage",
+      "version": "0.0.1",
+      "digest": "f8717c0486ab2ab117dcf136148f812e239375d2f720a231172e7c980481e665"
+    },
+    {
+      "id": "guide.tui-surface",
+      "path": "docs/agents/tui.md",
+      "kind": "guide",
+      "module": "tui-surface",
+      "template": "template.guide.tui-surface",
+      "version": "0.0.1",
+      "digest": "487cb07b110df86651c7ef4a45d10799cb64b5dab07afd378fef343f03f69d2a"
+    },
+    {
+      "id": "root.autonomous-work",
+      "path": "AGENTS.md",
+      "kind": "root-block",
+      "module": "autonomous-work",
+      "template": "template.root.autonomous-work",
+      "version": "0.0.1",
+      "digest": "f056b3e672ecb439c578096d2e157ed438ec291ece01eade9102a03c7da51dec"
+    },
+    {
+      "id": "guide.agent-instructions",
+      "path": "docs/agents/agent-instructions.md",
+      "kind": "guide",
+      "module": "core",
+      "template": "template.guide.agent-instructions",
+      "version": "0.0.1",
+      "digest": "c4fec753d0f2464857eeda6dd48af4dead901ef654e725b2dfa9d7b0dc018323"
+    },
+    {
+      "id": "root.go",
+      "path": "AGENTS.md",
+      "kind": "root-block",
+      "module": "go",
+      "template": "template.root.go",
+      "version": "0.0.1",
+      "digest": "66ebe38c0cae01a9039e126979fce84d10f3f4f562b2f5fa08cbe9ecf8b9dc84"
+    },
+    {
+      "id": "guide.spec-routing",
+      "path": "docs/agents/spec-routing.md",
+      "kind": "guide",
+      "module": "spec-workflow",
+      "template": "template.guide.spec-routing",
+      "version": "0.0.1",
+      "digest": "58f95806bfd45ea1091ea3cc910cab3335fb24764c33984e62cf2f385a1832f9"
+    },
+    {
+      "id": "guide.issue-tracker",
+      "path": "docs/agents/issue-tracker.md",
+      "kind": "guide",
+      "module": "spec-workflow",
+      "template": "template.guide.issue-tracker",
+      "version": "0.0.1",
+      "digest": "84ef3c03d23cbae80a202393e2be05ddc345918ff87a69de6299b128b5fb86a3"
+    },
+    {
+      "id": "guide.spec-docs-layout",
+      "path": "docs/agents/docs-layout.md",
+      "kind": "guide",
+      "module": "spec-workflow",
+      "template": "template.guide.spec-docs-layout",
+      "version": "0.0.1",
+      "digest": "35b00b79609481bcce3b2ed06439575ee2be3725e5988e82912cac6fcce58241"
+    },
+    {
+      "id": "guide.domain",
+      "path": "docs/agents/domain.md",
+      "kind": "guide",
+      "module": "context-workflow",
+      "template": "template.guide.domain.single-context",
+      "version": "0.0.1",
+      "digest": "86b13d9ac7cd64f05278c6ea45e4607b3e83a87fcb49930e67d7df637593b304"
+    },
+    {
+      "id": "root.cli-surface",
+      "path": "AGENTS.md",
+      "kind": "root-block",
+      "module": "cli-surface",
+      "template": "template.root.cli-surface",
+      "version": "0.0.1",
+      "digest": "00d780aa07a370ecd77b09d4b0eb0326f80980372652be67d30c699aee931bdb"
+    },
+    {
+      "id": "guide.external-triage",
+      "path": "docs/agents/external-triage.md",
+      "kind": "guide",
+      "module": "external-triage",
+      "template": "template.guide.external-triage",
+      "version": "0.0.1",
+      "digest": "ce7087f8957f7524133f46b3df193a5e4969a4fc193e6d705e5ed3f19b0a519a"
+    },
+    {
+      "id": "root.tui-surface",
+      "path": "AGENTS.md",
+      "kind": "root-block",
+      "module": "tui-surface",
+      "template": "template.root.tui-surface",
+      "version": "0.0.1",
+      "digest": "d6b56fd1f990de1e3c3dd31ba6bf4067fc7f9fa1b6901ba5db671f134f518929"
+    },
+    {
+      "id": "guide.autonomous-work",
+      "path": "docs/agents/autonomous-work.md",
+      "kind": "guide",
+      "module": "autonomous-work",
+      "template": "template.guide.autonomous-work",
+      "version": "0.0.1",
+      "digest": "07845ef3c93229faa1511bf978e778e3c00bcee98f197be49ba8d365c0eb8588"
+    },
+    {
+      "id": "root.secondbrain",
+      "path": "AGENTS.md",
+      "kind": "root-block",
+      "module": "secondbrain",
+      "template": "template.root.secondbrain",
+      "version": "0.0.1",
+      "digest": "56c84ad89f841a990d68316cd8fe91d9cdc0ee0d5317a15dec38cf3369199013"
+    },
+    {
+      "id": "guide.secondbrain",
+      "path": "docs/agents/secondbrain.md",
+      "kind": "guide",
+      "module": "secondbrain",
+      "template": "template.guide.secondbrain",
+      "version": "0.0.1",
+      "digest": "de871861b07e07bae3accfdf2f33ddea4acaa9afb16712566e3beb132c37afdc"
+    },
+    {
+      "id": "root.repository-extension",
+      "path": "AGENTS.md",
+      "kind": "root-block",
+      "module": "repository-extension",
+      "template": "template.root.repository-extension",
+      "version": "0.0.1",
+      "digest": "62ff0225ef4c1b6f53f2be4a54522d69d387c8ba20a8419a71968aa30b0c2780"
+    }
+  ],
+  "localSkills": [],
+  "verification": [
+    {
+      "id": "verification.gate",
+      "role": "repository-gate",
+      "command": "rtk make verify",
+      "classification": "repository-command",
+      "repositoryExecutable": true,
+      "declarationPath": "Makefile",
+      "declarationDigest": "sha256:5f29d5e818fa63ca3e5034629bfc90deff3acada8a403255d2afdf416ef0ea82"
+    }
+  ]
+}

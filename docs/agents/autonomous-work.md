@@ -112,3 +112,40 @@ roundfix events <run-id> --filter verification,outcome
 Each stdout line is a `roundfix-events/v1` JSON object. Diagnostics go to
 stderr. Use `roundfix attach <run-id>` only when a human needs the Live Run
 View; the Console Log is not a state API.
+
+<!-- setup-context-driven:begin id=guide.autonomous-work version=0.0.1 -->
+
+# Autonomous work
+
+Default backend work uses `codex gpt-5.6-sol`. Design, UI, UX, and
+frontend-dominant work uses `claude opus 5 xhigh` when the Task Graph routes that
+surface.
+
+- **mandatory**: The Supervisor authors Specs, starts and monitors Runs, and orchestrates outcomes. Delegate implementation to the selected ACP Runtime through a Roundfix Run.
+
+- **prohibited**: The Supervisor must not write feature code or tests.
+
+- **mandatory**: The Daemon runs each Task's declared Verification verbatim. A Task can settle `completed` only after that Verification passes; failed diagnostics return to the same Agent Session for the bounded retry policy.
+
+<!-- setup-context-driven:end id=guide.autonomous-work -->
+
+<!-- roundfix:repository-rule:begin id=rule.0d49c2a353155f1dc777e6513b646c37287d41769fd717c0463a98c9567d295e -->
+- **HARD RULE — autonomous work model**: binding for every autonomous
+  session — the Supervisor orchestrates only; implementation is delegated to an
+  ACP Runtime per `docs/agents/autonomous-work.md`.
+
+
+<!-- roundfix:repository-rule:end id=rule.0d49c2a353155f1dc777e6513b646c37287d41769fd717c0463a98c9567d295e -->
+
+<!-- roundfix:repository-rule:begin id=rule.6b28f6bdd57f8a34a73143025f571d9c12bd6d571192ec9a27ac12cc21e74bce -->
+### Autonomous work
+
+Supervisor orchestrates and authors Specs; implementation is delegated to an
+ACP Runtime. Codex (`gpt-5.5` with `xhigh`) handles CLI, backend,
+infrastructure, documentation, and other non-frontend Tasks. Claude
+(`claude-opus-5`/Opus 5 with `xhigh`) handles design, UI, UX, TUI, and web
+frontend Tasks. Binding for every autonomous session. See
+`docs/agents/autonomous-work.md`.
+
+
+<!-- roundfix:repository-rule:end id=rule.6b28f6bdd57f8a34a73143025f571d9c12bd6d571192ec9a27ac12cc21e74bce -->

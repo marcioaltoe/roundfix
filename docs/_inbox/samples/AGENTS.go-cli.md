@@ -48,7 +48,8 @@ Read these only when relevant to the task:
   through (large initiative / feature / refactor-bugfix / trivial) and what
   marks a spec done
 - `docs/agents/issue-tracker.md` — the local `docs/specs/` tracker conventions
-- `docs/agents/triage-labels.md` — label mapping for issue triage skills
+- `docs/agents/external-triage.md` — workflow and label mapping for external
+  issue triage
 - `docs/agents/domain.md` — how agents consume `CONTEXT.md` and ADRs
 - `CONTEXT.md` — project vocabulary, command concepts, domain rules, and
   product decisions
