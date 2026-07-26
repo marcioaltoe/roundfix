@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0051-doctor-readiness-contract-reconciliation
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -36,30 +36,30 @@ guidance make the corrected output contract independently reviewable.
 
 ## Subtasks
 
-- [ ] Add the outside-Git profile-workdir regression and checker non-invocation
+- [x] Add the outside-Git profile-workdir regression and checker non-invocation
       assertion.
-- [ ] Restore separate profile and repository root resolution.
-- [ ] Correct missing-root detail and mixed remediation composition.
-- [ ] Move Doctor-specific tests to the source-matched test file without
+- [x] Restore separate profile and repository root resolution.
+- [x] Correct missing-root detail and mixed remediation composition.
+- [x] Move Doctor-specific tests to the source-matched test file without
       weakening assertions.
-- [ ] Update the public Doctor example and explanatory user guidance.
-- [ ] Exercise inside-Git, outside-Git, typed ownership, and unclassified error
+- [x] Update the public Doctor example and explanatory user guidance.
+- [x] Exercise inside-Git, outside-Git, typed ownership, and unclassified error
       paths through the public runner.
 
 ## Acceptance Criteria
 
-- [ ] Outside Git, profile proof receives `os.Getwd()` and the skills checker is
+- [x] Outside Git, profile proof receives `os.Getwd()` and the skills checker is
       not invoked.
-- [ ] Inside Git, profile proof and Repository Skill Set inspection both receive
+- [x] Inside Git, profile proof and Repository Skill Set inspection both receive
       the resolved Git root.
-- [ ] Missing-root output uses the canonical Repository Skill Set term.
-- [ ] Mixed remediation prints one exact `&&`-joined chain and a symlinked lock
+- [x] Missing-root output uses the canonical Repository Skill Set term.
+- [x] Mixed remediation prints one exact `&&`-joined chain and a symlinked lock
       prints only external remediation.
-- [ ] Codex and other independent checks still run after profile or skills
+- [x] Codex and other independent checks still run after profile or skills
       failure and keep their existing order.
-- [ ] Doctor behavior tests live in `internal/cli/doctor_test.go`; CLI-wide
+- [x] Doctor behavior tests live in `internal/cli/doctor_test.go`; CLI-wide
       dispatch/help tests remain in `internal/cli/cli_test.go`.
-- [ ] User guidance matches the shipped text contract and no protected skill
+- [x] User guidance matches the shipped text contract and no protected skill
       file changes in this Task.
 
 ## Context
@@ -90,3 +90,56 @@ guidance make the corrected output contract independently reviewable.
   Success Metrics.
 - `_techspec.md` → Doctor working directories; Ownership and remediation;
   Documentation and skill synchronization; Testing Approach; Build Order 4.
+
+## Result
+
+Doctor now resolves separate profile and repository working directories:
+profile proof falls back to the process working directory outside Git, while
+Repository Skill Set inspection runs only for a non-empty trimmed Git root.
+Missing-root detail uses the canonical term, and multiple ownership actions
+form one owned-then-external `&&` chain without changing the existing
+`"; next: "` output boundary.
+
+Doctor behavior tests and their helpers now live in
+`internal/cli/doctor_test.go`. The CLI-wide suite retains command dispatch and
+help registry coverage. The user guide documents the outside-Git behavior and
+the fail-closed mixed-remediation example.
+
+Acceptance criterion evidence:
+
+1. `TestRunDoctorMissingRepositoryRoot` compares the profile work directory
+   with the process directory and asserts zero Repository Skill Set checker
+   calls.
+2. `TestRunDoctorRepositorySkillReadiness` passes a whitespace-padded Git root
+   and asserts both profile proof and Repository Skill Set inspection receive
+   `/repo/project`.
+3. `TestRunDoctorMissingRepositoryRoot` asserts the exact canonical
+   `Repository Skill Set readiness requires a Git repository` detail and the
+   existing run-from-Git action.
+4. `TestRunDoctorRepositorySkillReadiness` covers exact mixed `&&` composition,
+   external-only remediation for a symlinked lock error, and conservative
+   mixed remediation for an unclassified error.
+5. `TestRunDoctorContinuesChecksAfterProfileReadinessFailure` and
+   `TestRunDoctorRepositorySkillReadiness` assert eager calls, line order,
+   stdout/stderr discipline, and exit codes through the public runner.
+6. Source inspection places all `TestRunDoctor*` behavior tests in
+   `internal/cli/doctor_test.go`; `TestRunCommandHelp` and
+   `TestProfilesDocumentationContractMatchesPublicGuidance` remain in
+   `internal/cli/cli_test.go` and passed.
+7. The user-guide grep found the shipped `&&` chain, and the protected-skill
+   diff check was empty.
+
+Verification:
+
+- `rtk go test ./internal/cli -run 'Test(RunDoctor|Doctor)'` — passed, 18 tests.
+- `rtk go test -race ./internal/cli -run 'Test(RunDoctor|Doctor)'` — passed,
+  18 tests.
+- `rtk go test ./internal/cli -run 'Test(RunCommandHelp|ProfilesDocumentationContractMatchesPublicGuidance)'`
+  — passed, 11 tests.
+- `rtk grep -n '&& bunx skills experimental_install' docs/user-guide/commands.md`
+  — passed; matched the public mixed-remediation example.
+- `rtk git diff --exit-code -- .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md`
+  — passed with no protected skill changes.
+- `rtk git diff --check` — passed.
+
+Follow-ups: none.

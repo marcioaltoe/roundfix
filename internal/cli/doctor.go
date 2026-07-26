@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strings"
 
@@ -54,7 +55,15 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	}
 
 	checker := doctorDeps.healthChecker(loaded)
-	workDir := strings.TrimSpace(loaded.GitRoot)
+	repositoryRoot := strings.TrimSpace(loaded.GitRoot)
+	profileWorkDir := repositoryRoot
+	if profileWorkDir == "" {
+		profileWorkDir, err = os.Getwd()
+		if err != nil {
+			printDoctorFailure(fmt.Errorf("resolve process working directory: %w", err), stderr)
+			return exitRunFailed
+		}
+	}
 
 	// Keep independent checks eager and ordered.
 	results := make([]CheckResult, 0, 6)
@@ -62,12 +71,12 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 	results = append(results, checker.ACPX(ctx))
 	runtime, runtimeErr := doctorAdapterRuntime(loaded.Config)
 	results = append(results, doctorAdapterCheck(ctx, checker, runtime, runtimeErr))
-	profileReadiness := doctorDeps.profileReadiness(ctx, loaded.Config, roundconfig.RequiredWorkCategories(), workDir)
+	profileReadiness := doctorDeps.profileReadiness(ctx, loaded.Config, roundconfig.RequiredWorkCategories(), profileWorkDir)
 	results = append(results, doctorProfileReadinessResult(profileReadiness))
-	if workDir == "" {
+	if repositoryRoot == "" {
 		results = append(results, doctorMissingRepositoryRootResult())
 	} else {
-		skillReadiness, skillErr := doctorDeps.checkSkills(ctx, workDir)
+		skillReadiness, skillErr := doctorDeps.checkSkills(ctx, repositoryRoot)
 		results = append(results, doctorSkillReadinessResult(skillReadiness, skillErr))
 	}
 	results = append(results, checker.Codex(ctx))
@@ -153,7 +162,7 @@ func doctorMissingRepositoryRootResult() CheckResult {
 	return CheckResult{
 		Name:       HealthCheckSkills,
 		Status:     CheckStatusFailed,
-		Detail:     "repository skill check requires a Git repository",
+		Detail:     "Repository Skill Set readiness requires a Git repository",
 		NextAction: missingGitRootNextAction,
 	}
 }
@@ -214,7 +223,7 @@ func doctorSkillReadinessResult(readiness skills.RepositoryReadiness, checkErr e
 	if externalFailure {
 		next = append(next, externalSkillsNextAction)
 	}
-	result.NextAction = strings.Join(next, "; ")
+	result.NextAction = strings.Join(next, " && ")
 	return result
 }
 

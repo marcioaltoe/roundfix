@@ -84,6 +84,10 @@ Doctor has no separate `agent:` or `model:` authority. The aggregate
 `profiles:` result is the Agent Selection Profile Readiness contract.
 Repository Skill Set readiness runs after it as an independent check, even
 when profile proof fails, and appears before `codex:`.
+Outside Git, profile proof uses the process working directory while Repository
+Skill Set inspection does not run. The `skills:` line reports
+`Repository Skill Set readiness requires a Git repository` and keeps the
+run-from-Git next action.
 
 ```text
 node: ok
@@ -99,11 +103,13 @@ prints one sorted blocking line and makes Doctor exit `1`. Doctor still prints
 every other readiness result:
 
 ```text
-skills: failed (missing: handoff; outdated: roundfix; next: roundfix skills install --target project; bunx skills experimental_install && bunx skills update -p -y)
+skills: failed (missing: handoff; outdated: roundfix; next: roundfix skills install --target project && bunx skills experimental_install && bunx skills update -p -y)
 ```
 
-The first update command restores Roundfix-owned skills from the running
-binary. The second updates externally managed skills and their lock state.
+For mixed ownership, Doctor joins the Roundfix-owned restore and external
+update actions with `&&`, so external remediation runs only after the owned
+restore succeeds. A failure owned only by the external lock or skill set prints
+only the external action.
 Doctor never runs either command, never deletes skills, and never updates
 `skills-lock.json`. The check is offline and read-only: it reads only local
 embedded artifacts, `.agents/skills`, and `skills-lock.json`. Unrelated extra
