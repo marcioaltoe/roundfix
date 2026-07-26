@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0036-doctor-skill-readiness
-status: completed
+status: pending
 type: backend
 complexity: high
 ---
@@ -49,7 +49,7 @@ filesystem mutation.
 
 - [x] Add repository readiness values and stable ownership classifications.
 - [x] Add exact owned-tree comparison against embedded skill files.
-- [x] Add strict required lock-entry validation and compatible external hashing.
+- [ ] Add strict required lock-entry validation and compatible external hashing.
 - [x] Inject the checker into Doctor and render deterministic success/failure.
 - [x] Add focused package tests for clean, missing, outdated, malformed, unsafe,
       symlink, mixed-ownership, and ordering cases.
@@ -66,7 +66,7 @@ filesystem mutation.
       prints the ownership-specific command, and exits one.
 - [x] Changing, adding, or removing a versioned file reports the affected skill
       under `outdated`; unrelated extra skills remain ignored.
-- [x] A compatibility fixture produces the exact same digest as the installed
+- [ ] A compatibility fixture produces the exact same digest as the installed
       skills CLI algorithm, including path normalization and exclusions.
 - [x] Missing/malformed lock data, invalid hashes, unsafe names, unreadable
       artifacts, and symlinks fail deterministically without panic or traversal.
@@ -101,6 +101,8 @@ filesystem mutation.
   `skills:` output, remediation, exit behavior, and existing Doctor lines pass.
 - `rtk go test -race ./skills ./internal/cli -run 'Test(CheckRepository|RunDoctor)' -count=1`
   — expected: injected checks and filesystem reads are race-free.
+- `rtk go test ./skills -count=1` — expected: the complete skills suite,
+  including the real repository baseline contract, passes.
 
 ## References
 
@@ -113,6 +115,20 @@ filesystem mutation.
 - `CONTEXT.md` → Doctor Command; Repository Skill Set; Roundfix Skill.
 - `docs/agents/skill-dispatch.md` → owned versus upstream-managed authority and
   synchronization boundaries.
+
+## Rework Trigger
+
+Fresh real-repository evidence invalidated the completed compatibility claim:
+after `bunx skills update -p -y` normalized 25 external lock entries, Doctor
+reported 21 matching skills as outdated.
+
+The installed `skills` CLI versions 1.5.19 and 1.5.20 sort relative paths with
+JavaScript `localeCompare`, while `SkillFolderHash` currently uses Go byte
+ordering. The pinned fixture encodes the Go ordering (`SKILL.md` before
+`references/guide.md`) and therefore proves the implementation against itself
+instead of against the CLI. Repair the production ordering and fixture, add a
+regression that distinguishes these orderings, and prove the complete skills
+suite against the refreshed real repository.
 
 ## Result
 
