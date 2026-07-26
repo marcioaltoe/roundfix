@@ -26,7 +26,11 @@ func Sum(files []File) string {
 
 	collator := collate.New(language.AmericanEnglish)
 	sort.SliceStable(ordered, func(i, j int) bool {
-		return collator.CompareString(ordered[i].Path, ordered[j].Path) < 0
+		comparison := collator.CompareString(ordered[i].Path, ordered[j].Path)
+		if comparison != 0 {
+			return comparison < 0
+		}
+		return ordered[i].Path < ordered[j].Path
 	})
 
 	digest := sha256.New()

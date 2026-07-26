@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-func TestSumMatchesSkillsCLI1519(t *testing.T) {
+func TestSumPreservesSkillsCLI1519PrimaryCollation(t *testing.T) {
 	files := []File{
 		{Path: "nested/É.md", Content: []byte("nested uppercase accent\n")},
 		{Path: "-a", Content: []byte("hyphen\n")},
@@ -29,9 +29,9 @@ func TestSumMatchesSkillsCLI1519(t *testing.T) {
 	}
 	before := append([]File(nil), files...)
 
-	const want = "2a46b6d704729eafc0148969028b9cc4030813059e1f7524def2f38b433011d4"
+	const want = "9a2453ded0dfc2f230f4702e172583f9ec29bfe1891dd27338c04894ee6678e0"
 	if got := Sum(files); got != want {
-		t.Fatalf("Sum() = %q, want skills CLI 1.5.19 digest %q", got, want)
+		t.Fatalf("Sum() = %q, want primary-collation compatibility digest %q", got, want)
 	}
 	if !reflect.DeepEqual(files, before) {
 		t.Fatalf("Sum() changed caller-owned order:\ngot:  %#v\nwant: %#v", files, before)
@@ -49,6 +49,36 @@ func TestSumSortsUnderscoreBeforeHyphen(t *testing.T) {
 
 	if got := Sum(files); got != want {
 		t.Fatalf("Sum() = %q, want underscore-before-hyphen digest %q", got, want)
+	}
+}
+
+func TestSumIsPermutationIndependentForCollationEqualPaths(t *testing.T) {
+	precomposed := File{Path: "é.md", Content: []byte("precomposed\n")}
+	decomposed := File{Path: "é.md", Content: []byte("decomposed\n")}
+	orderedBytes := []byte("é.mddecomposed\né.mdprecomposed\n")
+	wantBytes := sha256.Sum256(orderedBytes)
+	want := hex.EncodeToString(wantBytes[:])
+
+	tests := []struct {
+		name  string
+		files []File
+	}{
+		{
+			name:  "precomposed first",
+			files: []File{precomposed, decomposed},
+		},
+		{
+			name:  "decomposed first",
+			files: []File{decomposed, precomposed},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := Sum(test.files); got != want {
+				t.Fatalf("Sum() = %q, want total-order digest %q", got, want)
+			}
+		})
 	}
 }
 
