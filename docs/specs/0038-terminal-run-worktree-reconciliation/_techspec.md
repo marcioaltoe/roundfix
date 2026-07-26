@@ -10,6 +10,24 @@ created: 2026-07-17
 
 The existing worktree module gains one classifier shared by the new Reconcile Command, the automatic terminal reaper, and Run listing projection. Classification replaces the unsafe creation-base shortcut with two independent proofs: the retained worktree is clean and the Run Branch tip is an ancestor of the recorded target branch tip. The CLI is read-only unless `--apply` is supplied and emits stable text or JSON. The main trade-off is conservative residue: missing refs, missing target metadata, or Git errors remain `unknown` even when a human might infer safety, because preserving redundant storage is cheaper than deleting unique work.
 
+## Project Constraints
+
+- Identifier strategy: not applicable — the classifier consumes existing Run,
+  branch, path, and Git object identities without minting a new project-owned
+  identity. Source: `docs/agents/domain.md`.
+- Authentication and HTTP: not applicable — all inspection and apply behavior
+  stays within local Git and the Run Database. Source:
+  `docs/agents/cli.md`.
+- Active ADR obligations: applicable — ADR-0023, ADR-0024, ADR-0052, and
+  ADR-0053 bind Run Worktree ownership, porcelain integration, the sole guarded
+  terminal transition, and positive cleanup proof. Source:
+  `docs/agents/domain.md`.
+- Tooling authority: applicable — on 2026-07-26, the maintainer expressly
+  authorizes changes to exactly `.agents/skills/roundfix/SKILL.md` and
+  `skills/roundfix/SKILL.md`; no other protected tooling mutation is
+  authorized. Source:
+  `docs/agents/agent-instructions.md`.
+
 ## System Architecture
 
 - **`internal/worktree`** owns `RunWorktreeReconciliation`: discovery, cleanliness inspection, ancestry proof, classification, and safe cleanup. `PruneTerminalReport` delegates to this classifier instead of comparing the branch tip only with its reflog creation base.
@@ -114,7 +132,10 @@ The note counts Runs with an existing recorded worktree path or Run Branch, not 
 3. Store reconciliation event wiring and Integration Pending promotion through spec 0037's guarded transition (depends on: 1, 2, spec 0037).
 4. Reconcile Command parsing, text output, JSON envelope, dry-run/apply, and exit contracts (depends on: 1, 2, 3).
 5. Run listing retained-worktree notes with byte-stable stdout rows (depends on: 1).
-6. User guide, command help, Roundfix Skill, CONTEXT vocabulary, and finding traceability (depends on: 4, 5).
+6. User guide, command help, CONTEXT vocabulary, and finding traceability (depends on: 4, 5).
+7. Dedicated tooling-only update of
+   `.agents/skills/roundfix/SKILL.md` and `skills/roundfix/SKILL.md`, with
+   direct byte-identical edits and read-only sync verification (depends on: 6).
 
 ## Risks & Considerations
 
@@ -131,4 +152,7 @@ Rollout is additive: the new command and stderr guidance can ship without migrat
 - Dedicated Reconcile Command, dry-run by default, with one explicit `--apply` mutation flag.
 - Positive proof requires both clean worktree state and target-branch ancestry.
 - The automatic reaper and CLI share one classifier.
+- Protected Roundfix Skill publication is isolated in one Task whose changed
+  files are the two authorized `SKILL.md` paths and its own Task file; it does
+  not run the broad `make skills-sync` mutation target.
 - See [ADR-0053](../../adr/0053-terminal-run-worktree-reconciliation-is-proof-based.md).

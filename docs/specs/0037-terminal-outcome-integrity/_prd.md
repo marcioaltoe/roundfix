@@ -9,6 +9,24 @@ surfaces: [backend, cli, data, docs]
 
 A force-stopped Run can currently be completed again by its still-running owner, a Stop Request can remain unnoticed throughout a Review Source wait, and cleanup can target an Agent Session that never reached the active lifecycle. The resulting state is unsafe for users and Supervisors: the Run Database can contradict the Stop Command, the released lock can coexist with live work, and secondary cleanup noise can obscure the primary failure. Prior dogfood evidence was absorbed into this Spec and remains in Git history; the still-open behavior is reproduced by the [Vortex detached-watch finding](../../findings/2026-07-16-vortex-pr87-detached-watch-notification.md).
 
+## Project Constraints
+
+- Identifier strategy: not applicable — the feature reuses existing Run,
+  process, Agent Session, and Work Item identities and creates no project-owned
+  Internal Identifier. Source: `docs/agents/domain.md`.
+- Authentication and HTTP: not applicable — process control, Run Database
+  completion, and Stop Request polling change no authentication provider or
+  HTTP contract. Source: `docs/agents/cli.md`.
+- Active ADR obligations: applicable — ADR-0022 keeps Stop Requests in the Run
+  Database, ADR-0044 requires proof before reclaiming an owner, ADR-0051 keeps
+  Agent Sessions scoped to their Work Items, and ADR-0052 makes terminal
+  completion compare-and-set. Source: `docs/agents/domain.md`.
+- Tooling authority: applicable — on 2026-07-26, the maintainer expressly
+  authorizes changes to exactly `.agents/skills/roundfix/SKILL.md` and
+  `skills/roundfix/SKILL.md`; no other protected tooling mutation is
+  authorized. Source:
+  `docs/agents/agent-instructions.md`.
+
 ## Goals
 
 - A terminal Run completion cannot be replaced by a competing terminal outcome.
