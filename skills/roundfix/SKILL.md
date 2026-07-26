@@ -33,15 +33,28 @@ Task Worktrees, and QA uses its own Agent Session after Tasks settle.
 Use the Doctor Command, `roundfix doctor`, to diagnose Run readiness without
 installing dependencies, writing config, or changing files. Doctor runs the
 shared Node.js, minimum-supported acpx, effective adapter, required Agent Selection
-Profiles, and codex runtime hygiene checks and prints one line per check with
-status `ok`, `failed`, or `skipped`. Adapter Readiness requires the effective
-Codex command to prove official `@agentclientprotocol/codex-acp` lineage at
-version `1.1.4` or newer; executable presence and a matching name are not
-proof. The `profiles:` line is the selection authority: it exact-proves every
-distinct Preferred Selection and fallback through disposable ACP Sessions and
-reports affected category references plus one deterministic next action.
-Doctor has no separate legacy `agent:` or `model:` authority. Failed checks
-include `next: <action>` when Roundfix knows the remediation.
+Profiles, Repository Skill Set, and codex runtime hygiene checks and prints one
+line per check with status `ok`, `failed`, or `skipped`. Adapter Readiness
+requires the effective Codex command to prove official
+`@agentclientprotocol/codex-acp` lineage at version `1.1.4` or newer;
+executable presence and a matching name are not proof. The `profiles:` line is
+the selection authority: it exact-proves every distinct Preferred Selection
+and fallback through disposable ACP Sessions and reports affected category
+references plus one deterministic next action. Doctor has no separate legacy
+`agent:` or `model:` authority. Failed checks include `next: <action>` when
+Roundfix knows the remediation.
+
+The blocking `skills:` line runs after, and independently from, `profiles:`.
+The running binary's embedded bundle is authoritative for Roundfix-owned
+skills; each required external skill must match its `computedHash` in
+`skills-lock.json`. Surface a failed `skills:` line and its printed `next:`
+remediation before work continues. Owned failures print
+`roundfix skills install --target project`; external failures print
+`bunx skills experimental_install && bunx skills update -p -y`; mixed failures
+print both commands in that order. Doctor is diagnosis-only: it never runs
+these commands, accesses the network, installs or updates skills, or writes
+repository state. Apply remediation only after explicit workflow
+authorization, then rerun Doctor.
 On macOS, the codex hygiene check resolves `CODEX_PATH` first and then `codex`
 on `PATH`, inspects the `com.apple.quarantine` attribute (the real XProtect
 trigger), and verifies the binary's code signature (not `spctl --assess`, which
@@ -112,20 +125,22 @@ unauthorized target. A rejected Sol/high proof never becomes an offer to use
 model-managed reasoning.
 
 Use `roundfix doctor` when you only need a read-only readiness report. It runs
-the Node.js, minimum-supported acpx, effective adapter, required Agent Selection Profile,
-and codex runtime hygiene checks and exits nonzero if any check fails. Adapter
-failures name the effective command, package classification, and official
-install action. Profile failure names the exact runtime/model/reasoning tuple,
-every affected category, bounded adapter evidence, and the next
-`roundfix profiles configure` or `roundfix profiles validate` action. A
-rejected explicit `high` does not recommend model-managed reasoning. The
-command has no flags and mutates nothing.
+the Node.js, minimum-supported acpx, effective adapter, required Agent Selection
+Profiles, Repository Skill Set, and codex runtime hygiene checks and exits
+nonzero if any check fails. Adapter failures name the effective command,
+package classification, and official install action. Profile failure names the
+exact runtime/model/reasoning tuple, every affected category, bounded adapter
+evidence, and the next `roundfix profiles configure` or
+`roundfix profiles validate` action. A rejected explicit `high` does not
+recommend model-managed reasoning. The command has no flags and mutates
+nothing.
 
 ```text
 node: ok
 acpx: ok
 adapter: ok (npx -y @agentclientprotocol/codex-acp@1.1.4; package=@agentclientprotocol/codex-acp; version=1.1.4)
 profiles: ok (3 distinct tuples; 10 category references)
+skills: ok (39 required: 14 Roundfix-owned, 25 external)
 codex: ok
 ```
 
