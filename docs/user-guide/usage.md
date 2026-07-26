@@ -15,8 +15,17 @@ agent driving Roundfix. For flags, outputs, and boundaries per command, see the
 
    ```bash
    roundfix setup      # proves adapters and generated profiles before writes
-   roundfix doctor     # read-only adapter and profile readiness; mutates nothing
+   roundfix doctor     # read-only profile and Repository Skill Set readiness
    ```
+
+   Doctor prints Agent Selection Profile Readiness first, then independently
+   proves the Repository Skill Set. A ready repository prints
+   `skills: ok (39 required: 14 Roundfix-owned, 25 external)`; a blocking
+   mismatch prints `skills: failed` with the applicable owned or external
+   update command and exits `1`. Doctor is offline and read-only: it never
+   updates or deletes skills, and it ignores unrelated extra installed skills
+   and lock entries. See the [Doctor Command reference](commands.md#doctor)
+   for the ownership authorities and exact remediation commands.
 
 3. Authenticate the GitHub CLI for the repository (`gh auth status`). Review
    loops need it; the implement loop does not.

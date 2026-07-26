@@ -367,7 +367,7 @@ The support command that produces a Release Plan without editing release files, 
 _Avoid_: Release Command, publish command, cut-release command
 
 **Doctor Command**:
-The support command that diagnoses a repository and machine's readiness for Roundfix Runs — Repository Skill Set, minimum-supported acpx, Adapter Readiness, Agent Selection Profile Readiness, and codex runtime hygiene — reporting the detected acpx version against the minimum, each check with a next action, and mutating nothing. Distinct from the Setup Command, which prepares the machine.
+The support command that diagnoses a repository and machine's readiness for Roundfix Runs — minimum-supported acpx, Adapter Readiness, Agent Selection Profile Readiness, Repository Skill Set, and codex runtime hygiene — reporting each check with a next action and mutating nothing. It evaluates Repository Skill Set readiness after, and independently from, Agent Selection Profile Readiness; unlike the Doctor Command, the Setup Command prepares the machine.
 _Avoid_: Health check run, setup run, environment wizard
 
 **Archive Command**:
@@ -503,7 +503,7 @@ A shipped agent skill that teaches an external Agent how to start Roundfix or ho
 _Avoid_: Runtime, Review Source, plugin
 
 **Repository Skill Set**:
-The complete set of Roundfix-owned and externally managed Agent Skills a repository declares for its workflow, with every installed artifact matching its authoritative local source.
+The complete set of Roundfix-owned and externally managed Agent Skills required by a repository workflow. Every required installed artifact matches its authoritative local source; unrelated extras do not join the set.
 _Avoid_: Installed skills, plugin set, global skill set
 
 **Interactive Input**:
