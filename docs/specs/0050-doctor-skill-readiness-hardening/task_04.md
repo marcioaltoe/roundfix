@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0050-doctor-skill-readiness-hardening
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -39,27 +39,27 @@ delimiters.
 
 ## Subtasks
 
-- [ ] Separate missing-Git-root handling from repository checking.
-- [ ] Complete unclassified error remediation.
-- [ ] Add exact-output missing-root and generic-error cases.
-- [ ] Add the real-checker public no-mutation fixture.
-- [ ] Restore the canonical Doctor Command wording.
-- [ ] Run focused, race, and repository-wide verification.
+- [x] Separate missing-Git-root handling from repository checking.
+- [x] Complete unclassified error remediation.
+- [x] Add exact-output missing-root and generic-error cases.
+- [x] Add the real-checker public no-mutation fixture.
+- [x] Restore the canonical Doctor Command wording.
+- [x] Run focused, race, and repository-wide verification.
 
 ## Acceptance Criteria
 
-- [ ] An empty loaded Git root never invokes the repository checker or falls
+- [x] An empty loaded Git root never invokes the repository checker or falls
       back to the process working directory.
-- [ ] Missing-root and generic checker failures print deterministic `next:`
+- [x] Missing-root and generic checker failures print deterministic `next:`
       actions and exit `1`.
-- [ ] All independent checks still run and render in their established order.
-- [ ] The public Doctor no-mutation test proves all relevant snapshots are
+- [x] All independent checks still run and render in their established order.
+- [x] The public Doctor no-mutation test proves all relevant snapshots are
       byte-identical after execution with the real checker.
-- [ ] `CONTEXT.md` again states that Doctor reports the detected acpx version
+- [x] `CONTEXT.md` again states that Doctor reports the detected acpx version
       against the minimum.
-- [ ] Archived Spec 0036 and every protected or upstream-managed path outside
+- [x] Archived Spec 0036 and every protected or upstream-managed path outside
       the approved Task 01 files remain unchanged.
-- [ ] The complete repository Verification passes.
+- [x] The complete repository Verification passes.
 
 ## Context
 
@@ -91,3 +91,52 @@ delimiters.
 - `_techspec.md` → Doctor coordination and remediation; Test ownership and
   no-mutation proof; Contract reconciliation; Testing Approach; Build Order 4.
 
+## Result
+
+Doctor now treats the loaded Git root as the sole Repository Skill Set
+authority. An empty root produces a repository-specific failed result without
+calling the checker, and an unclassified checker error falls back to both
+ownership remediation commands in their established order. The public check
+sequence executes eagerly in its rendered order.
+
+The public `Run([]string{"doctor"}, ...)` regression fixture uses
+`skills.CheckRepository` against a complete disposable Repository Skill Set.
+It compares repository, User Config, user and repository `.roundfix`, lock,
+and skill-tree snapshots before and after the command. `CONTEXT.md` also
+restores the detected-acpx-version wording.
+
+Acceptance evidence:
+
+- AC 1–3: `TestRunDoctorMissingRepositoryRoot` and
+  `TestRunDoctorRepositorySkillReadiness` assert checker call counts, exact
+  stdout, exit `1`, the `"; next: "` boundary, and the ordered Node, acpx,
+  Adapter Readiness, Agent Selection Profile Readiness, Repository Skill Set,
+  and codex calls.
+- AC 4: `TestRunDoctorRealRepositoryCheckDoesNotMutateState` passes with the
+  real repository checker and byte-identical snapshots for every required
+  state surface.
+- AC 5: `CONTEXT.md` states that the Doctor Command reports the detected acpx
+  version against the minimum.
+- AC 6: the changed-file postflight contains only `CONTEXT.md`, this Task file,
+  `internal/cli/doctor.go`, and `internal/cli/cli_test.go`; archived Spec 0036,
+  upstream-managed skills, `skills-lock.json`, `skills/recommended.txt`,
+  `go.mod`, and `go.sum` have no Task 04 diff. Branch history remains at
+  `be91ebc`.
+- AC 7: focused, affected-package race, and full repository gates passed.
+
+Verification:
+
+- Initial red signal:
+  `rtk go test ./internal/cli -run 'TestRunDoctor' -count=1` exposed the
+  process-directory fallback, precomputed check order, and missing generic
+  remediation. The sandbox then required a task-specific `GOCACHE`.
+- `rtk env GOCACHE=/private/tmp/roundfix-task04-go-cache go test ./internal/cli -run 'TestRunDoctor' -count=1`
+  — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task04-go-cache go test -race ./internal/skillhash ./skills ./internal/baseline ./internal/cli -run 'Test(Sum|SkillFolderHash|CheckRepository|SkillsRestore|RunDoctor)' -count=1`
+  — passed across all four affected packages.
+- `rtk env GOCACHE=/private/tmp/roundfix-task04-go-cache make verify` — passed:
+  2,409 tests across 23 packages, four skill contract tests, Repository Skill
+  Set integrity, and the build.
+- `rtk git -c core.fsmonitor=false diff --check` — passed.
+
+Follow-ups: none.

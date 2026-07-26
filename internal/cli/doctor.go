@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"os"
 	"sort"
 	"strings"
 
@@ -56,29 +55,22 @@ func runDoctorCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 
 	checker := doctorDeps.healthChecker(loaded)
 	workDir := strings.TrimSpace(loaded.GitRoot)
-	if workDir == "" {
-		workDir, err = os.Getwd()
-		if err != nil {
-			printDoctorFailure(fmt.Errorf("resolve Doctor working directory: %w", err), stderr)
-			return exitRunFailed
-		}
-	}
-
-	profileReadiness := doctorDeps.profileReadiness(ctx, loaded.Config, roundconfig.RequiredWorkCategories(), workDir)
-	profileResult := doctorProfileReadinessResult(profileReadiness)
-	skillReadiness, skillErr := doctorDeps.checkSkills(workDir)
-	skillResult := doctorSkillReadinessResult(skillReadiness, skillErr)
-	runtime, runtimeErr := doctorAdapterRuntime(loaded.Config)
 
 	// Keep independent checks eager and ordered.
-	results := []CheckResult{
-		checker.Node(ctx),
-		checker.ACPX(ctx),
-		doctorAdapterCheck(ctx, checker, runtime, runtimeErr),
-		profileResult,
-		skillResult,
-		checker.Codex(ctx),
+	results := make([]CheckResult, 0, 6)
+	results = append(results, checker.Node(ctx))
+	results = append(results, checker.ACPX(ctx))
+	runtime, runtimeErr := doctorAdapterRuntime(loaded.Config)
+	results = append(results, doctorAdapterCheck(ctx, checker, runtime, runtimeErr))
+	profileReadiness := doctorDeps.profileReadiness(ctx, loaded.Config, roundconfig.RequiredWorkCategories(), workDir)
+	results = append(results, doctorProfileReadinessResult(profileReadiness))
+	if workDir == "" {
+		results = append(results, doctorMissingRepositoryRootResult())
+	} else {
+		skillReadiness, skillErr := doctorDeps.checkSkills(workDir)
+		results = append(results, doctorSkillReadinessResult(skillReadiness, skillErr))
 	}
+	results = append(results, checker.Codex(ctx))
 
 	failed := false
 	for _, result := range results {
@@ -154,7 +146,17 @@ func doctorProfileReadinessResult(readiness profileProofResult) CheckResult {
 const (
 	ownedSkillsNextAction    = "roundfix skills install --target project"
 	externalSkillsNextAction = "bunx skills experimental_install && bunx skills update -p -y"
+	missingGitRootNextAction = "run roundfix doctor from a Git repository"
 )
+
+func doctorMissingRepositoryRootResult() CheckResult {
+	return CheckResult{
+		Name:       HealthCheckSkills,
+		Status:     CheckStatusFailed,
+		Detail:     "repository skill check requires a Git repository",
+		NextAction: missingGitRootNextAction,
+	}
+}
 
 func doctorSkillReadinessResult(readiness skills.RepositoryReadiness, checkErr error) CheckResult {
 	result := CheckResult{Name: HealthCheckSkills}
@@ -200,6 +202,10 @@ func doctorSkillReadinessResult(readiness skills.RepositoryReadiness, checkErr e
 		case skills.RepositoryOwnershipExternal:
 			externalFailure = true
 		}
+	}
+	if checkErr != nil && !ownedFailure && !externalFailure {
+		ownedFailure = true
+		externalFailure = true
 	}
 	var next []string
 	if ownedFailure {

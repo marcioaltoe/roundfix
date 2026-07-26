@@ -2619,24 +2619,38 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 			wantLine: "skills: failed (decode skills lock \"/repo/project/skills-lock.json\": invalid character; next: " +
 				externalCommand + ")",
 		},
+		{
+			name:     "unclassified checker error",
+			err:      errors.New("repository skill check failed"),
+			wantCode: exitRunFailed,
+			wantLine: "skills: failed (repository skill check failed; next: " +
+				ownedCommand + "; " + externalCommand + ")",
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			var calls []string
+			recordCall := func(name string) {
+				calls = append(calls, name)
+			}
 			checker := newDoctorFakeHealthChecker(
 				CheckResult{Name: HealthCheckNode, Status: CheckStatusOK},
 				CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK},
 				CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK},
 			)
+			checker.recordCall = recordCall
 			withDoctorFakeLoadedAndReadiness(t, checker, roundconfig.Loaded{
 				Config:  roundconfig.Builtin(),
 				GitRoot: "/repo/project",
 			}, func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult {
+				recordCall(HealthCheckProfiles)
 				return profileProofResult{}
 			})
 			skillCalls := 0
 			doctorDeps.checkSkills = func(root string) (skills.RepositoryReadiness, error) {
 				skillCalls++
+				recordCall(HealthCheckSkills)
 				if root != "/repo/project" {
 					t.Fatalf("skill readiness root = %q, want /repo/project", root)
 				}
@@ -2658,10 +2672,161 @@ func TestRunDoctorRepositorySkillReadiness(t *testing.T) {
 				t.Fatalf("independent check calls skills=%d node=%d acpx=%d adapter=%d codex=%d",
 					skillCalls, checker.nodeCalls, checker.acpxCalls, checker.adapterCalls, checker.codexCalls)
 			}
+			wantCalls := []string{
+				HealthCheckNode,
+				HealthCheckACPX,
+				HealthCheckAdapter,
+				HealthCheckProfiles,
+				HealthCheckSkills,
+				HealthCheckCodex,
+			}
+			if !reflect.DeepEqual(calls, wantCalls) {
+				t.Fatalf("check order = %v, want %v", calls, wantCalls)
+			}
 			if stderr.Len() != 0 {
 				t.Fatalf("expected no stderr, got %q", stderr.String())
 			}
 		})
+	}
+}
+
+func TestRunDoctorMissingRepositoryRoot(t *testing.T) {
+	processDir := t.TempDir()
+	t.Chdir(processDir)
+	var calls []string
+	recordCall := func(name string) {
+		calls = append(calls, name)
+	}
+	checker := newDoctorFakeHealthChecker(
+		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK},
+		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK},
+		CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK},
+	)
+	checker.recordCall = recordCall
+	withDoctorFakeLoadedAndReadiness(t, checker, roundconfig.Loaded{
+		Config: roundconfig.Builtin(),
+	}, func(_ context.Context, _ roundconfig.Config, _ []roundconfig.WorkCategory, workDir string) profileProofResult {
+		recordCall(HealthCheckProfiles)
+		if workDir != "" {
+			t.Fatalf("profile readiness work directory = %q, want empty loaded Git root", workDir)
+		}
+		return profileProofResult{}
+	})
+	skillCalls := 0
+	doctorDeps.checkSkills = func(root string) (skills.RepositoryReadiness, error) {
+		skillCalls++
+		return skills.RepositoryReadiness{}, fmt.Errorf("unexpected repository check for %q", root)
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"doctor"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("exit code = %d, want %d", code, exitRunFailed)
+	}
+	wantStdout := "node: ok\n" +
+		"acpx: ok\n" +
+		"adapter: ok (codex-acp)\n" +
+		"profiles: ok (0 distinct tuples; 0 category references)\n" +
+		"skills: failed (repository skill check requires a Git repository; next: run roundfix doctor from a Git repository)\n" +
+		"codex: ok\n"
+	if got := stdout.String(); got != wantStdout {
+		t.Fatalf("unexpected stdout:\n got: %q\nwant: %q", got, wantStdout)
+	}
+	if skillCalls != 0 {
+		t.Fatalf("repository checker calls = %d, want 0", skillCalls)
+	}
+	wantCalls := []string{
+		HealthCheckNode,
+		HealthCheckACPX,
+		HealthCheckAdapter,
+		HealthCheckProfiles,
+		HealthCheckCodex,
+	}
+	if !reflect.DeepEqual(calls, wantCalls) {
+		t.Fatalf("independent check order = %v, want %v", calls, wantCalls)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+}
+
+func TestRunDoctorRealRepositoryCheckDoesNotMutateState(t *testing.T) {
+	homeDir := t.TempDir()
+	repoDir := t.TempDir()
+	t.Setenv("HOME", homeDir)
+	t.Chdir(repoDir)
+	mustMkdir(t, filepath.Join(repoDir, ".git"))
+	writeDoctorReadyRepositoryFixture(t, repoDir)
+
+	userConfigPath := filepath.Join(homeDir, ".roundfix", "config.yml")
+	mustMkdir(t, filepath.Dir(userConfigPath))
+	mustWrite(t, userConfigPath, roundconfig.DefaultConfigYAML())
+	mustWrite(t, filepath.Join(homeDir, ".roundfix", "state-marker"), "user state\n")
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), roundconfig.DefaultConfigYAML())
+	mustMkdir(t, filepath.Join(repoDir, ".roundfix"))
+	mustWrite(t, filepath.Join(repoDir, ".roundfix", "run-marker"), "repository state\n")
+
+	snapshotRoots := map[string]string{
+		"repository":      repoDir,
+		"roundfix home":   filepath.Join(homeDir, ".roundfix"),
+		"repository data": filepath.Join(repoDir, ".roundfix"),
+		"skill state":     filepath.Join(repoDir, ".agents", "skills"),
+	}
+	beforeRoots := make(map[string]map[string]doctorPathSnapshot, len(snapshotRoots))
+	for name, root := range snapshotRoots {
+		beforeRoots[name] = snapshotDoctorPath(t, root)
+	}
+	beforeUserConfig := mustReadBytes(t, userConfigPath)
+	lockPath := filepath.Join(repoDir, "skills-lock.json")
+	beforeLock := mustReadBytes(t, lockPath)
+
+	checker := newDoctorFakeHealthChecker(
+		CheckResult{Name: HealthCheckNode, Status: CheckStatusOK},
+		CheckResult{Name: HealthCheckACPX, Status: CheckStatusOK},
+		CheckResult{Name: HealthCheckCodex, Status: CheckStatusOK},
+	)
+	withDoctorFakeLoadedAndReadiness(t, checker, roundconfig.Loaded{
+		Config:            roundconfig.Builtin(),
+		GitRoot:           repoDir,
+		HomeDir:           homeDir,
+		UserConfigPath:    userConfigPath,
+		ProjectConfigPath: filepath.Join(repoDir, ".roundfixrc.yml"),
+	}, func(context.Context, roundconfig.Config, []roundconfig.WorkCategory, string) profileProofResult {
+		return profileProofResult{}
+	})
+	doctorDeps.checkSkills = skills.CheckRepository
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"doctor"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("exit code = %d, want %d; stdout=%q stderr=%q", code, exitOK, stdout.String(), stderr.String())
+	}
+	wantStdout := "node: ok\n" +
+		"acpx: ok\n" +
+		"adapter: ok (codex-acp)\n" +
+		"profiles: ok (0 distinct tuples; 0 category references)\n" +
+		"skills: ok (39 required: 14 Roundfix-owned, 25 external)\n" +
+		"codex: ok\n"
+	if got := stdout.String(); got != wantStdout {
+		t.Fatalf("unexpected stdout:\n got: %q\nwant: %q", got, wantStdout)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+	for name, root := range snapshotRoots {
+		if after := snapshotDoctorPath(t, root); !reflect.DeepEqual(after, beforeRoots[name]) {
+			t.Fatalf("Doctor mutated %s:\nbefore=%#v\nafter=%#v", name, beforeRoots[name], after)
+		}
+	}
+	if after := mustReadBytes(t, userConfigPath); !bytes.Equal(after, beforeUserConfig) {
+		t.Fatalf("Doctor mutated User Config:\nbefore=%q\nafter=%q", beforeUserConfig, after)
+	}
+	if after := mustReadBytes(t, lockPath); !bytes.Equal(after, beforeLock) {
+		t.Fatalf("Doctor mutated skills lock:\nbefore=%q\nafter=%q", beforeLock, after)
 	}
 }
 
@@ -2703,21 +2868,25 @@ type doctorFakeHealthChecker struct {
 	acpxCalls       int
 	adapterCalls    int
 	codexCalls      int
+	recordCall      func(string)
 }
 
 func (checker *doctorFakeHealthChecker) Node(context.Context) CheckResult {
 	checker.nodeCalls++
+	checker.record(HealthCheckNode)
 	return checker.node
 }
 
 func (checker *doctorFakeHealthChecker) ACPX(context.Context) CheckResult {
 	checker.acpxCalls++
+	checker.record(HealthCheckACPX)
 	return checker.acpx
 }
 
 func (checker *doctorFakeHealthChecker) Adapter(_ context.Context, runtime agent.RuntimeSpec) CheckResult {
 	checker.adapterCalls++
 	checker.adapterRuntimes = append(checker.adapterRuntimes, runtime)
+	checker.record(HealthCheckAdapter)
 	return checker.adapter
 }
 
@@ -2728,7 +2897,107 @@ func (checker *doctorFakeHealthChecker) Agent(_ context.Context, req agent.Probe
 
 func (checker *doctorFakeHealthChecker) Codex(context.Context) CheckResult {
 	checker.codexCalls++
+	checker.record(HealthCheckCodex)
 	return checker.codex
+}
+
+func (checker *doctorFakeHealthChecker) record(name string) {
+	if checker.recordCall != nil {
+		checker.recordCall(name)
+	}
+}
+
+type doctorRepositoryLockFixture struct {
+	Version int                                         `json:"version"`
+	Skills  map[string]doctorRepositoryLockSkillFixture `json:"skills"`
+}
+
+type doctorRepositoryLockSkillFixture struct {
+	ComputedHash string `json:"computedHash"`
+}
+
+func writeDoctorReadyRepositoryFixture(t *testing.T, root string) {
+	t.Helper()
+	skillsRoot := filepath.Join(root, ".agents", "skills")
+	files, err := skills.Files()
+	if err != nil {
+		t.Fatalf("read embedded Repository Skill Set: %v", err)
+	}
+	for _, file := range files {
+		path := filepath.Join(skillsRoot, filepath.FromSlash(file.Path))
+		mustMkdir(t, filepath.Dir(path))
+		if err := os.WriteFile(path, file.Data, 0o644); err != nil {
+			t.Fatalf("write embedded skill artifact %q: %v", path, err)
+		}
+	}
+
+	lock := doctorRepositoryLockFixture{
+		Version: 1,
+		Skills:  make(map[string]doctorRepositoryLockSkillFixture, len(skills.Recommended())),
+	}
+	for _, name := range skills.Recommended() {
+		skillRoot := filepath.Join(skillsRoot, name)
+		mustMkdir(t, skillRoot)
+		mustWrite(t, filepath.Join(skillRoot, "SKILL.md"), name+"\n")
+		hash, err := skills.SkillFolderHash(skillRoot)
+		if err != nil {
+			t.Fatalf("hash external skill fixture %q: %v", name, err)
+		}
+		lock.Skills[name] = doctorRepositoryLockSkillFixture{ComputedHash: hash}
+	}
+	data, err := json.MarshalIndent(lock, "", "  ")
+	if err != nil {
+		t.Fatalf("encode Doctor skills lock fixture: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "skills-lock.json"), append(data, '\n'), 0o644); err != nil {
+		t.Fatalf("write Doctor skills lock fixture: %v", err)
+	}
+}
+
+type doctorPathSnapshot struct {
+	Mode os.FileMode
+	Data string
+}
+
+func snapshotDoctorPath(t *testing.T, root string) map[string]doctorPathSnapshot {
+	t.Helper()
+	snapshot := make(map[string]doctorPathSnapshot)
+	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		relative, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		item := doctorPathSnapshot{Mode: info.Mode()}
+		if info.Mode().IsRegular() {
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			item.Data = string(data)
+		}
+		snapshot[filepath.ToSlash(relative)] = item
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("snapshot Doctor path %q: %v", root, err)
+	}
+	return snapshot
+}
+
+func mustReadBytes(t *testing.T, path string) []byte {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	return data
 }
 
 func withDoctorFakeDeps(t *testing.T, checker HealthChecker) {
