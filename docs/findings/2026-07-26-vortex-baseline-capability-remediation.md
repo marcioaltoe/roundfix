@@ -207,6 +207,40 @@ bun      candidate=/Users/marcio/.bun/bin/bun kind=regular accepted=true
 This corroboration should raise the priority of finding 4 rather than open a
 separate work item.
 
+## 7. A clean adoption warns about the thirteen files it just authored
+
+- Symptom / evidence: After a `verified` greenfield apply in
+  `/Users/marcio/dev/vortex`, an immediate re-plan with identical inputs correctly
+  reported `fileChanges: 0` — the adoption is idempotent — but emitted thirteen
+  warnings, one per generated guide:
+
+  ```text
+  baseline.inventory.nested-carrier-conflict  docs/agents/agent-instructions.md
+  baseline.inventory.nested-carrier-conflict  docs/agents/skill-dispatch.md
+  baseline.inventory.nested-carrier-conflict  docs/agents/setup-context.json
+  … 10 more, covering every file the apply wrote
+  ```
+
+  `docs/agents/specific-repository.md` is the only file under that directory that does
+  not warn.
+- Root cause: The inventory walker in
+  [`repository.go:405`](../internal/baseline/repository.go) warns for every carrier with
+  `scope == "nested"` unless `isRecognizedRepositoryRuleCarrier` matches, and that
+  predicate recognizes only the repository-rules path. Setup-owned guides are nested by
+  construction, carry `setup-context-driven:begin` markers, and are listed in the
+  Setup Manifest and `managedEntries` of the very plan that wrote them — but the walker
+  does not consult either, so it cannot tell its own output from unreviewed
+  repository-authored instructions.
+- Action / suggestion: Treat a nested carrier as setup-owned when the Setup Manifest
+  claims it and its managed markers verify, and warn only for nested carriers that are
+  unclaimed or whose markers fail verification. The current behaviour trains maintainers
+  to dismiss a thirteen-line warning block after every successful adoption, which is
+  exactly how a real conflict gets missed.
+
+This compounds finding 5: with no read-only capability re-check, the idempotent re-plan
+is the natural way to confirm an adoption landed — and it is the path that emits the
+spurious warnings.
+
 ## Recommended implementation order
 
 1. Fix `lookPathWithoutExecution` to resolve a bounded symlink chain
@@ -258,3 +292,6 @@ separate work item.
   in the journal from a decline.
 - A `capability.contract.missing` divergence can produce a contract stub as a
   Change Plan entry gated by the normal Plan Digest confirmation.
+- An idempotent re-plan immediately after a verified apply reports zero file changes and
+  zero warnings; a nested carrier warns only when the Setup Manifest does not claim it or
+  its managed markers fail verification.
