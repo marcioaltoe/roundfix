@@ -44,8 +44,11 @@ boundary and does not preserve or recreate the legacy single-model probe.
   `skills/roundfix/SKILL.md`, plus the mechanically derived Baseline artifacts
   `internal/baseline/assets/setups/typescript-bun.json`,
   `internal/baseline/testdata/catalog.normalized.json`, and
-  `internal/baseline/testdata/catalog.digest`. No other protected tooling
-  mutation is authorized. Source:
+  `internal/baseline/testdata/catalog.digest`, and the mechanically derived
+  parity artifacts
+  `internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json` and
+  `internal/baseline/testdata/parity-corpus/v1/manifest.json`. No other
+  protected tooling mutation is authorized. Source:
   `docs/agents/agent-instructions.md`.
 
 ## System Architecture

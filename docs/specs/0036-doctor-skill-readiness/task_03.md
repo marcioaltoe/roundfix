@@ -26,11 +26,14 @@ Task file.
    `.agents/skills/roundfix/SKILL.md`, `skills/roundfix/SKILL.md`,
    `internal/baseline/assets/setups/typescript-bun.json`,
    `internal/baseline/testdata/catalog.normalized.json`,
-   `internal/baseline/testdata/catalog.digest`, and this `task_03.md` file.
+   `internal/baseline/testdata/catalog.digest`,
+   `internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json`,
+   `internal/baseline/testdata/parity-corpus/v1/manifest.json`, and this
+   `task_03.md` file.
 4. MUST NOT run `make skills-sync`, because that mutation target rewrites every
    owned skill directory; `make skills-sync-check` is the read-only sync gate.
-5. MUST update the three authorized Baseline artifacts only as mechanically
-   derived consequences of the canonical Roundfix Skill bytes.
+5. MUST update the five authorized Baseline and parity artifacts only as
+   mechanically derived consequences of the canonical Roundfix Skill bytes.
 6. MUST leave every external skill, lock file, recommendation file, source code
    file, and user-documentation file unchanged.
 
@@ -47,7 +50,7 @@ Task file.
       performs an update.
 - [ ] The canonical and generated Roundfix `SKILL.md` files are byte-identical.
 - [ ] Git changed-file evidence for this Task contains only the two authorized
-      Skill files, three derived Baseline artifacts, and `task_03.md`.
+      Skill files, five derived Baseline and parity artifacts, and `task_03.md`.
 - [ ] No upstream-managed or other Roundfix-owned skill changes.
 - [ ] The shipped skill check and complete repository gate pass.
 
@@ -61,14 +64,16 @@ Task file.
 - interface: `internal/baseline/assets/setups/typescript-bun.json`
 - interface: `internal/baseline/testdata/catalog.normalized.json`
 - interface: `internal/baseline/testdata/catalog.digest`
+- interface: `internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json`
+- interface: `internal/baseline/testdata/parity-corpus/v1/manifest.json`
 
 ## Verification
 
 - `rtk cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md`
   — expected: no output and exit zero.
-- `rtk git status --porcelain | rtk awk '{path=substr($0,4); if (path != ".agents/skills/roundfix/SKILL.md" && path != "skills/roundfix/SKILL.md" && path != "internal/baseline/assets/setups/typescript-bun.json" && path != "internal/baseline/testdata/catalog.normalized.json" && path != "internal/baseline/testdata/catalog.digest" && path != "docs/specs/0036-doctor-skill-readiness/task_03.md") {print; bad=1}} END {exit bad}'`
+- `rtk git status --porcelain | rtk awk '{path=substr($0,4); if (path != ".agents/skills/roundfix/SKILL.md" && path != "skills/roundfix/SKILL.md" && path != "internal/baseline/assets/setups/typescript-bun.json" && path != "internal/baseline/testdata/catalog.normalized.json" && path != "internal/baseline/testdata/catalog.digest" && path != "internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json" && path != "internal/baseline/testdata/parity-corpus/v1/manifest.json" && path != "docs/specs/0036-doctor-skill-readiness/task_03.md") {print; bad=1}} END {exit bad}'`
   — expected: no changed path outside the authorized Skill pair, derived
-  Baseline artifacts, and this Task file.
+  Baseline and parity artifacts, and this Task file.
 - `rtk make skills-sync-check` — expected: every canonical/generated owned
   skill pair has no drift.
 - `rtk go run -buildvcs=false ./cmd/roundfix skills check` — expected: every
