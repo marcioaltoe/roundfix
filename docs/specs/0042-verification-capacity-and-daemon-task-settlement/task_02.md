@@ -34,6 +34,8 @@ Result evidence, and continue into authoritative Daemon Verification.
 7. MUST preserve one same-Session Verification Feedback turn, failed Task
    Worktree retention, independent Task continuation, dependency blocking,
    and the Settle Command contract.
+8. MUST leave every protected tooling path unchanged; Task 08 owns the isolated
+   authorial Skill update after code and public guidance are complete.
 
 ## Subtasks
 
@@ -41,7 +43,6 @@ Result evidence, and continue into authoritative Daemon Verification.
 - [ ] Replace Agent status/verdict instructions with implementation-ready handoff.
 - [ ] Normalize reloaded Agent status without losing Result content.
 - [ ] Remove the Agent-authored failed-status Verification bypass.
-- [ ] Update the repository-owned implement-task workflow contract.
 - [ ] Replace bypass tests with authoritative Verification and failure-path cases.
 
 ## Acceptance Criteria
@@ -58,6 +59,7 @@ Result evidence, and continue into authoritative Daemon Verification.
       status and preserves resumable evidence.
 - [ ] Prompt and authorial skill tests forbid declared Verification/status
       authorship while still allowing focused checks.
+- [ ] No protected tooling path changes in this Task.
 - [ ] Existing repair, dependency, worktree retention, and Settle Command
       regression tests pass.
 

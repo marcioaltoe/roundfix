@@ -23,6 +23,26 @@ failures one bounded exclusive retry. Projects keep their full Verification
 commands unchanged while concurrent Agents can continue preparing independent
 Tasks.
 
+## Project Constraints
+
+- Identifier strategy: not applicable — capacity, retry, and Task settlement
+  reuse existing Run, Task, Batch, and Verification attempt identities and
+  create no project-owned Internal Identifier. Source:
+  `docs/agents/domain.md`.
+- Authentication and HTTP: not applicable — the feature is confined to local
+  configuration, Agent Sessions, Verification processes, Run Events, and TUI
+  projection. Source: `docs/agents/cli.md`.
+- Active ADR obligations: applicable — ADR-0014 preserves Daemon-run
+  Verification, ADR-0025 preserves Task Graph readiness, ADR-0038 preserves one
+  Agent repair, ADR-0051 routes each Task through its Task Type-selected Agent
+  Session, and ADR-0056 plus ADR-0057 define capacity and Task-status ownership.
+  Source: `docs/agents/domain.md`.
+- Tooling authority: applicable — on 2026-07-26, the maintainer expressly
+  authorizes changes to exactly `.agents/skills/roundfix/SKILL.md`,
+  `skills/roundfix/SKILL.md`, `.agents/skills/implement-task/SKILL.md`, and
+  `skills/implement-task/SKILL.md`; no other protected tooling mutation is
+  authorized. Source: `docs/agents/agent-instructions.md`.
+
 ## Goals
 
 - Let multiple independent Tasks perform Agent work concurrently without
@@ -208,6 +228,13 @@ Feedback contract.
   machine-wide coordination service.
 - Preserve the full Verification gate and diagnose resource ownership at its
   source rather than weakening tests or extending timeouts.
+- Keep backend, frontend, and documentation Tasks in this Task Graph. ADR-0051
+  governs per-Task Agent Session selection by Task Type, superseding older
+  one-Agent-per-Run and separate-frontend-Spec guidance; Task 07 aligns that
+  guidance and the Agent Session glossary.
+- Isolate all protected Skill changes in one tooling-only Task bounded to the
+  four expressly authorized canonical/generated `roundfix` and
+  `implement-task` `SKILL.md` files.
 - See [ADR-0056](../../adr/0056-spec-runs-separate-task-and-verification-capacity.md).
 - See [ADR-0057](../../adr/0057-daemon-exclusively-owns-implement-task-status.md).
 

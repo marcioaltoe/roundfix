@@ -21,6 +21,24 @@ The accepted trade-off is per-Run rather than machine-wide coordination: it
 solves contention caused by one Implement Run without introducing a daemon
 service or claiming control over external processes.
 
+## Project Constraints
+
+- Identifier strategy: not applicable — the design extends existing Run Event
+  and Verification-attempt records without minting a new project-owned
+  identity. Source: `docs/agents/domain.md`.
+- Authentication and HTTP: not applicable — all new behavior remains inside
+  local configuration, Agent Session, Verification, Run Event, and TUI
+  boundaries. Source: `docs/agents/cli.md`.
+- Active ADR obligations: applicable — ADR-0014, ADR-0025, ADR-0038, ADR-0051,
+  ADR-0056, and ADR-0057 bind Daemon Verification, Task readiness, bounded
+  repair, per-Task Agent Selection, independent capacity, and exclusive Task
+  status authorship. Source: `docs/agents/domain.md`.
+- Tooling authority: applicable — on 2026-07-26, the maintainer expressly
+  authorizes changes to exactly `.agents/skills/roundfix/SKILL.md`,
+  `skills/roundfix/SKILL.md`, `.agents/skills/implement-task/SKILL.md`, and
+  `skills/implement-task/SKILL.md`; no other protected tooling mutation is
+  authorized. Source: `docs/agents/agent-instructions.md`.
+
 ## System Architecture
 
 - **`internal/config`** gains a top-level `Verification` configuration section
@@ -260,10 +278,12 @@ or top-level exit code changes.
 - **Bubble Tea v2:** the current synchronous model/event refresh seam derives
   labels. No terminal emulation, new keybinding, panel reflow, or mouse change
   is required.
-- **Roundfix skills:** `.agents/skills/roundfix` remains canonical and
-  `skills/roundfix` is generated through the existing sync gate. The
-  repository-owned `implement-task` skill may be edited under skill
-  governance; upstream-managed skills remain untouched.
+- **Roundfix skills:** one final tooling-only Task owns the authorized
+  `.agents/skills/implement-task/SKILL.md`,
+  `skills/implement-task/SKILL.md`, `.agents/skills/roundfix/SKILL.md`, and
+  `skills/roundfix/SKILL.md` changes. It updates each canonical/generated pair
+  directly and byte-identically without running the broad `make skills-sync`
+  mutation target. Upstream-managed skills remain untouched.
 
 ## Testing Approach
 
@@ -306,8 +326,8 @@ No dependency beyond the standard library is introduced.
 
 1. Add Verification configuration, generated/default documentation, TaskPlan
    plumbing, and capacity fields in the Task-cycle-start event.
-2. Move Implement Task status ownership and Agent prompt/authorial skill
-   contracts fully to the Daemon (depends on: 1).
+2. Move Implement Task status ownership and Agent prompt contracts fully to
+   the Daemon (depends on: 1).
 3. Add the cancellation-aware shared/exclusive Verification gate, waiting
    events, shared attempt acquisition, and concurrency tests (depends on: 1).
 4. Add typed exit-75 classification, distinct retry artifacts, the
@@ -317,9 +337,12 @@ No dependency beyond the standard library is introduced.
    Run View capacity output (depends on: 1, 3, 4).
 6. Add Bubble Tea per-Task phase derivation and accessible labels from
    interleaved Task/Verification events (depends on: 2, 3, 5).
-7. Update configuration/usage guidance, canonical Roundfix Skill, embedded
-   skill copy, ADR/finding traceability, and end-to-end QA fixtures (depends
-   on: 2–6).
+7. Update configuration/usage guidance, align `docs/agents/autonomous-work.md`
+   and the `CONTEXT.md` Agent Session definition with ADR-0051, preserve
+   ADR/finding traceability, and add end-to-end QA fixtures (depends on: 2–6).
+8. In one dedicated tooling-only Task, update the exact four authorized
+   canonical/generated Roundfix and `implement-task` Skill files, then run
+   read-only sync and full repository verification (depends on: 7).
 
 ## Risks & Considerations
 
@@ -345,6 +368,10 @@ No dependency beyond the standard library is introduced.
   demand a full gate before a completion claim. The prompt must state that the
   Agent is not claiming Task completion: focused checks support handoff and
   the Daemon performs the mandatory full Verification before settlement.
+- Current autonomous-work guidance and the Agent Session glossary still
+  describe one Agent per Run and a separate frontend Spec, contrary to
+  ADR-0051. Task 07 corrects those documentation targets; it must not remove
+  the frontend Task from this graph or weaken per-Task Task Type routing.
 
 ## Decisions
 
@@ -360,5 +387,11 @@ No dependency beyond the standard library is introduced.
   Task and Verification capacity fields.
 - Derive task-level UI truth from the Run Event Journal rather than multiplying
   aggregate Run states.
+- Apply ADR-0051 per-Task Agent Session selection to this mixed Task Graph;
+  older one-Agent-per-Run and separate-frontend-Spec prose is a documentation
+  defect, not a reason to split or retype Task 05.
+- Keep protected Skill mutations in the dedicated final tooling Task; code,
+  tests, operator docs, manifests, and other Skill files remain outside that
+  Task's changed-file scope.
 - See [ADR-0056](../../adr/0056-spec-runs-separate-task-and-verification-capacity.md).
 - See [ADR-0057](../../adr/0057-daemon-exclusively-owns-implement-task-status.md).
