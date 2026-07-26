@@ -1,8 +1,11 @@
 ---
 spec: 0050-doctor-skill-readiness-hardening
-status: active
+status: archived
 surfaces: [cli, backend, docs]
+archived: "2026-07-26"
+source_slug: 0050-doctor-skill-readiness-hardening
 ---
+
 
 # Doctor Skill Readiness Hardening
 
