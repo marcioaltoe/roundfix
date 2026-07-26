@@ -3,7 +3,7 @@
 Build: `6e5618dba5059666c891f9078806631d30502d5b`
 
 This rerun closes the environment-only block recorded in
-`qa-report-2026-07-26.md`. The sandboxed QA Agent could observe
+`qa-report-2026-07-26-01-partial.md`. The sandboxed QA Agent could observe
 `skills: ok`, but its runtime reported the configured Codex binary as
 unsigned. A full-access supervisor reproduction proved that
 `/Users/marcio/.local/bin/codex` has a valid signature and no quarantine
