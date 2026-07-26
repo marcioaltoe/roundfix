@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -82,8 +83,8 @@ func CheckRepository(root string) (RepositoryReadiness, error) {
 	return checkRepository(root, owned, external, files)
 }
 
-func checkRepository(root string, owned []string, external []string, files []File) (RepositoryReadiness, error) {
-	readiness := RepositoryReadiness{
+func checkRepository(root string, owned []string, external []string, files []File) (readiness RepositoryReadiness, returnErr error) {
+	readiness = RepositoryReadiness{
 		OwnedRequired:    len(owned),
 		ExternalRequired: len(external),
 	}
@@ -95,23 +96,58 @@ func checkRepository(root string, owned []string, external []string, files []Fil
 		return readiness, repositoryReadinessError("", "validate repository root", "", errors.New("path is empty"))
 	}
 
+	repositoryRoot, err := os.OpenRoot(root)
+	if err != nil {
+		return readiness, repositoryReadinessError("", "open repository root", root, err)
+	}
+	defer func() {
+		if closeErr := repositoryRoot.Close(); closeErr != nil {
+			wrapped := repositoryReadinessError("", "close repository root", root, closeErr)
+			if returnErr == nil {
+				returnErr = wrapped
+				return
+			}
+			returnErr = errors.Join(returnErr, wrapped)
+		}
+	}()
+
 	expected, err := expectedOwnedFiles(owned, files)
 	if err != nil {
 		return readiness, err
 	}
-	lockPath := filepath.Join(root, "skills-lock.json")
-	lock, err := readLocalSkillsLock(lockPath)
+	const lockPath = "skills-lock.json"
+	lockDisplayPath := repositoryDisplayPath(root, lockPath)
+	lock, err := readLocalSkillsLock(repositoryRoot, lockPath, lockDisplayPath)
 	if err != nil {
 		return readiness, err
 	}
-	externalHashes, err := requiredExternalHashes(lockPath, lock, external)
+	externalHashes, err := requiredExternalHashes(lockDisplayPath, lock, external)
 	if err != nil {
 		return readiness, err
 	}
 
-	skillsRoot := filepath.Join(root, ".agents", "skills")
+	for _, sharedDirectory := range []string{".agents", ".agents/skills"} {
+		missing, err := inspectSharedSkillDirectory(repositoryRoot, sharedDirectory, repositoryDisplayPath(root, sharedDirectory))
+		if err != nil {
+			return readiness, err
+		}
+		if missing {
+			readiness.MissingOwned = append(readiness.MissingOwned, owned...)
+			readiness.MissingExternal = append(readiness.MissingExternal, external...)
+			sortRepositoryReadiness(&readiness)
+			return readiness, nil
+		}
+	}
+
+	const skillsRoot = ".agents/skills"
 	for _, name := range owned {
-		missing, outdated, err := compareOwnedSkill(filepath.Join(skillsRoot, name), expected[name])
+		skillRoot := path.Join(skillsRoot, name)
+		missing, outdated, err := compareOwnedSkill(
+			repositoryRoot,
+			skillRoot,
+			repositoryDisplayPath(root, skillRoot),
+			expected[name],
+		)
 		if err != nil {
 			return readiness, err
 		}
@@ -122,29 +158,91 @@ func checkRepository(root string, owned []string, external []string, files []Fil
 		}
 	}
 	for _, name := range external {
-		skillRoot := filepath.Join(skillsRoot, name)
-		_, err := os.Lstat(skillRoot)
+		skillRoot := path.Join(skillsRoot, name)
+		skillDisplayPath := repositoryDisplayPath(root, skillRoot)
+		info, err := repositoryRoot.Lstat(skillRoot)
 		if errors.Is(err, fs.ErrNotExist) {
 			readiness.MissingExternal = append(readiness.MissingExternal, name)
 			continue
 		}
 		if err != nil {
-			return readiness, repositoryReadinessError(RepositoryOwnershipExternal, "inspect external skill", skillRoot, err)
+			return readiness, repositoryReadinessError(
+				RepositoryOwnershipExternal,
+				"inspect external skill",
+				skillDisplayPath,
+				err,
+			)
 		}
-		hash, err := SkillFolderHash(skillRoot)
+		if info.Mode()&fs.ModeSymlink != 0 {
+			return readiness, repositoryReadinessError(
+				RepositoryOwnershipExternal,
+				"inspect external skill",
+				skillDisplayPath,
+				errors.New("symbolic links are not supported"),
+			)
+		}
+		if !info.IsDir() {
+			return readiness, repositoryReadinessError(
+				RepositoryOwnershipExternal,
+				"inspect external skill",
+				skillDisplayPath,
+				errors.New("skill root is not a directory"),
+			)
+		}
+		hash, err := skillFolderHash(repositoryRoot.FS(), skillRoot, skillDisplayPath)
 		if err != nil {
-			return readiness, repositoryReadinessError(RepositoryOwnershipExternal, "hash external skill", skillRoot, err)
+			return readiness, repositoryReadinessError(
+				RepositoryOwnershipExternal,
+				"hash external skill",
+				skillDisplayPath,
+				err,
+			)
 		}
 		if hash != externalHashes[name] {
 			readiness.OutdatedExternal = append(readiness.OutdatedExternal, name)
 		}
 	}
 
+	sortRepositoryReadiness(&readiness)
+	return readiness, nil
+}
+
+func inspectSharedSkillDirectory(repositoryRoot *os.Root, relative string, display string) (bool, error) {
+	info, err := repositoryRoot.Lstat(relative)
+	if errors.Is(err, fs.ErrNotExist) {
+		return true, nil
+	}
+	if err != nil {
+		return false, repositoryReadinessError("", "inspect repository skill directory", display, err)
+	}
+	if info.Mode()&fs.ModeSymlink != 0 {
+		return false, repositoryReadinessError(
+			"",
+			"inspect repository skill directory",
+			display,
+			errors.New("symbolic links are not supported"),
+		)
+	}
+	if !info.IsDir() {
+		return false, repositoryReadinessError(
+			"",
+			"inspect repository skill directory",
+			display,
+			errors.New("path is not a directory"),
+		)
+	}
+	return false, nil
+}
+
+func repositoryDisplayPath(root string, relative string) string {
+	return filepath.Join(root, filepath.FromSlash(relative))
+}
+
+func sortRepositoryReadiness(readiness *RepositoryReadiness) {
 	sort.Strings(readiness.MissingOwned)
 	sort.Strings(readiness.OutdatedOwned)
 	sort.Strings(readiness.MissingExternal)
 	sort.Strings(readiness.OutdatedExternal)
-	return readiness, nil
 }
 
 func validateRequiredSkillNames(owned []string, external []string) error {
@@ -280,28 +378,69 @@ func safeRelativeArtifactPath(path string) bool {
 	return cleaned == path && cleaned != "." && cleaned != ".." && !strings.HasPrefix(cleaned, "../")
 }
 
-func readLocalSkillsLock(path string) (localSkillsLock, error) {
-	data, err := os.ReadFile(path)
+func readLocalSkillsLock(repositoryRoot *os.Root, path string, displayPath string) (localSkillsLock, error) {
+	info, err := repositoryRoot.Lstat(path)
 	if err != nil {
-		return localSkillsLock{}, repositoryReadinessError(RepositoryOwnershipExternal, "read skills lock", path, err)
+		return localSkillsLock{}, repositoryReadinessError(
+			RepositoryOwnershipExternal,
+			"inspect skills lock",
+			displayPath,
+			err,
+		)
+	}
+	if info.Mode()&fs.ModeSymlink != 0 {
+		return localSkillsLock{}, repositoryReadinessError(
+			"",
+			"inspect skills lock",
+			displayPath,
+			errors.New("symbolic links are not supported"),
+		)
+	}
+	if !info.Mode().IsRegular() {
+		return localSkillsLock{}, repositoryReadinessError(
+			RepositoryOwnershipExternal,
+			"inspect skills lock",
+			displayPath,
+			errors.New("lock is not a regular file"),
+		)
+	}
+
+	data, err := repositoryRoot.ReadFile(path)
+	if err != nil {
+		return localSkillsLock{}, repositoryReadinessError(
+			RepositoryOwnershipExternal,
+			"read skills lock",
+			displayPath,
+			err,
+		)
 	}
 	var lock localSkillsLock
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	if err := decoder.Decode(&lock); err != nil {
-		return localSkillsLock{}, repositoryReadinessError(RepositoryOwnershipExternal, "decode skills lock", path, err)
+		return localSkillsLock{}, repositoryReadinessError(
+			RepositoryOwnershipExternal,
+			"decode skills lock",
+			displayPath,
+			err,
+		)
 	}
 	var trailing json.RawMessage
 	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
 		if err == nil {
 			err = errors.New("unexpected trailing JSON value")
 		}
-		return localSkillsLock{}, repositoryReadinessError(RepositoryOwnershipExternal, "decode skills lock", path, err)
+		return localSkillsLock{}, repositoryReadinessError(
+			RepositoryOwnershipExternal,
+			"decode skills lock",
+			displayPath,
+			err,
+		)
 	}
 	if lock.Version != 1 {
 		return localSkillsLock{}, repositoryReadinessError(
 			RepositoryOwnershipExternal,
 			"validate skills lock version",
-			path,
+			displayPath,
 			fmt.Errorf("got %d, want 1", lock.Version),
 		)
 	}
@@ -347,26 +486,40 @@ func lowerHexSHA256(value string) bool {
 
 const sha256HexLength = 64
 
-func compareOwnedSkill(root string, expected map[string][]byte) (missing bool, outdated bool, err error) {
-	info, lstatErr := os.Lstat(root)
+func compareOwnedSkill(
+	repositoryRoot *os.Root,
+	root string,
+	displayRoot string,
+	expected map[string][]byte,
+) (missing bool, outdated bool, err error) {
+	info, lstatErr := repositoryRoot.Lstat(root)
 	if errors.Is(lstatErr, fs.ErrNotExist) {
 		return true, false, nil
 	}
 	if lstatErr != nil {
-		return false, false, repositoryReadinessError(RepositoryOwnershipOwned, "inspect Roundfix-owned skill", root, lstatErr)
+		return false, false, repositoryReadinessError(
+			RepositoryOwnershipOwned,
+			"inspect Roundfix-owned skill",
+			displayRoot,
+			lstatErr,
+		)
 	}
 	if info.Mode()&fs.ModeSymlink != 0 || !info.IsDir() {
 		return false, true, nil
 	}
 
 	found := make(map[string]struct{}, len(expected))
-	tree := os.DirFS(root)
-	walkErr := fs.WalkDir(tree, ".", func(path string, entry fs.DirEntry, walkErr error) error {
-		fullPath := filepath.Join(root, filepath.FromSlash(path))
+	tree := repositoryRoot.FS()
+	walkErr := fs.WalkDir(tree, root, func(entryPath string, entry fs.DirEntry, walkErr error) error {
+		relative := strings.TrimPrefix(entryPath, root+"/")
+		if entryPath == root {
+			relative = "."
+		}
+		fullPath := filepath.Join(displayRoot, filepath.FromSlash(relative))
 		if walkErr != nil {
 			return repositoryReadinessError(RepositoryOwnershipOwned, "walk Roundfix-owned skill artifact", fullPath, walkErr)
 		}
-		if path == "." {
+		if entryPath == root {
 			return nil
 		}
 		if entry.Type()&fs.ModeSymlink != 0 {
@@ -384,13 +537,13 @@ func compareOwnedSkill(root string, expected map[string][]byte) (missing bool, o
 			outdated = true
 			return nil
 		}
-		relative := filepath.ToSlash(path)
+		relative = filepath.ToSlash(relative)
 		want, required := expected[relative]
 		if !required {
 			outdated = true
 			return nil
 		}
-		data, readErr := fs.ReadFile(tree, path)
+		data, readErr := fs.ReadFile(tree, entryPath)
 		if readErr != nil {
 			return repositoryReadinessError(RepositoryOwnershipOwned, "read Roundfix-owned skill artifact", fullPath, readErr)
 		}

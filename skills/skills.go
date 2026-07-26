@@ -138,14 +138,23 @@ func SkillFolderHash(root string) (string, error) {
 		return "", fmt.Errorf("inspect skill folder %q: root is not a directory", root)
 	}
 
+	return skillFolderHash(os.DirFS(root), ".", root)
+}
+
+func skillFolderHash(tree fs.FS, root string, displayRoot string) (string, error) {
 	var files []skillhash.File
-	tree := os.DirFS(root)
-	if err := fs.WalkDir(tree, ".", func(path string, entry fs.DirEntry, walkErr error) error {
-		fullPath := filepath.Join(root, filepath.FromSlash(path))
+	if err := fs.WalkDir(tree, root, func(path string, entry fs.DirEntry, walkErr error) error {
+		relative := path
+		if path == root {
+			relative = "."
+		} else if root != "." {
+			relative = strings.TrimPrefix(path, root+"/")
+		}
+		fullPath := filepath.Join(displayRoot, filepath.FromSlash(relative))
 		if walkErr != nil {
 			return fmt.Errorf("walk skill folder entry %q: %w", fullPath, walkErr)
 		}
-		if path == "." {
+		if path == root {
 			return nil
 		}
 		entryInfo, err := entry.Info()
@@ -170,12 +179,12 @@ func SkillFolderHash(root string) (string, error) {
 			return fmt.Errorf("read skill folder file %q: %w", fullPath, err)
 		}
 		files = append(files, skillhash.File{
-			Path:    filepath.ToSlash(path),
+			Path:    filepath.ToSlash(relative),
 			Content: data,
 		})
 		return nil
 	}); err != nil {
-		return "", fmt.Errorf("hash skill folder %q: %w", root, err)
+		return "", fmt.Errorf("hash skill folder %q: %w", displayRoot, err)
 	}
 
 	return skillhash.Sum(files), nil
