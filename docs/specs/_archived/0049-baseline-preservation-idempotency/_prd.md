@@ -1,7 +1,9 @@
 ---
 spec: 0049-baseline-preservation-idempotency
-status: active
+status: archived
 created: 2026-07-26
+archived: 2026-07-26
+qa_override: true
 surfaces: [cli, infra]
 ---
 
