@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0051-doctor-readiness-contract-reconciliation
-status: pending
+status: completed
 type: chore
 complexity: low
 ---
@@ -28,20 +28,20 @@ the protected mutation stays inside its exact allowlist.
 
 ## Subtasks
 
-- [ ] Capture the current `go mod tidy -diff` delta as the red signal.
-- [ ] Run `go mod tidy` with the repository's selected Go toolchain.
-- [ ] Confirm the resolved module versions did not change.
-- [ ] Prove the protected changed-file allowlist and module integrity.
+- [x] Capture the current `go mod tidy -diff` delta as the red signal.
+- [x] Run `go mod tidy` with the repository's selected Go toolchain.
+- [x] Confirm the resolved module versions did not change.
+- [x] Prove the protected changed-file allowlist and module integrity.
 
 ## Acceptance Criteria
 
-- [ ] `golang.org/x/text v0.40.0` is a direct requirement selected by Go
+- [x] `golang.org/x/text v0.40.0` is a direct requirement selected by Go
       tooling.
-- [ ] Stale sums are removed and required sums are present without a version
+- [x] Stale sums are removed and required sums are present without a version
       upgrade or downgrade.
-- [ ] `go mod tidy -diff` exits successfully with no output.
-- [ ] `go mod verify` succeeds.
-- [ ] Newly changed paths are limited to the two authorized module files and
+- [x] `go mod tidy -diff` exits successfully with no output.
+- [x] `go mod verify` succeeds.
+- [x] Newly changed paths are limited to the two authorized module files and
       this Task file.
 
 ## Context
@@ -61,3 +61,27 @@ the protected mutation stays inside its exact allowlist.
 
 - `_prd.md` → Core Features 5; User Story 5; Success Metrics.
 - `_techspec.md` → Module and naming hygiene; Build Order 1.
+
+## Result
+
+Go 1.26.5 produced the authorized module metadata. The initial
+`rtk go mod tidy -diff` exited `1` and showed the required red delta:
+`golang.org/x/text v0.40.0` moved from indirect to direct, obsolete sums for
+`golang.org/x/mod v0.33.0`, `golang.org/x/sync v0.20.0`, and
+`golang.org/x/tools v0.42.0` were removed, and the selected
+`golang.org/x/mod v0.37.0` and `golang.org/x/tools v0.47.0` module-file sums
+were added. `rtk go mod tidy` then exited `0`.
+
+Acceptance evidence:
+
+- `rtk go mod edit -json` reports `golang.org/x/text v0.40.0` without
+  `Indirect`, proving the direct requirement.
+- Pre- and post-tidy `rtk go list -m all` output selected the same module
+  versions; the `go.mod` diff changes only the direct classification.
+- `rtk go mod tidy -diff` exits `0` with no output after the metadata update.
+- `rtk go mod verify` exits `0` with `all modules verified`.
+- The declared changed-path filter exits `0`, and
+  `rtk git -c core.fsmonitor=false status --short` lists only `go.mod`,
+  `go.sum`, and this Task file.
+
+Follow-ups: none.
