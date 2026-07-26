@@ -47,14 +47,18 @@ Roundfix knows the remediation.
 The blocking `skills:` line runs after, and independently from, `profiles:`.
 The running binary's embedded bundle is authoritative for Roundfix-owned
 skills; each required external skill must match its `computedHash` in
-`skills-lock.json`. Surface a failed `skills:` line and its printed `next:`
-remediation before work continues. Owned failures print
+`skills-lock.json`. Outside a Git repository, Doctor does not inspect the
+Repository Skill Set and prints
+`skills: failed (Repository Skill Set readiness requires a Git repository; next: run roundfix doctor from a Git repository)`.
+Surface a failed `skills:` line and its printed `next:` remediation before work
+continues. Owned failures print
 `roundfix skills install --target project`; external failures print
 `bunx skills experimental_install && bunx skills update -p -y`; mixed failures
-print both commands in that order. Doctor is diagnosis-only: it never runs
-these commands, accesses the network, installs or updates skills, or writes
-repository state. Apply remediation only after explicit workflow
-authorization, then rerun Doctor.
+print
+`roundfix skills install --target project && bunx skills experimental_install && bunx skills update -p -y`.
+Doctor is diagnosis-only: it never runs these commands, accesses the network,
+installs or updates skills, or writes repository state. Apply remediation only
+after explicit workflow authorization, then rerun Doctor.
 On macOS, the codex hygiene check resolves `CODEX_PATH` first and then `codex`
 on `PATH`, inspects the `com.apple.quarantine` attribute (the real XProtect
 trigger), and verifies the binary's code signature (not `spctl --assess`, which

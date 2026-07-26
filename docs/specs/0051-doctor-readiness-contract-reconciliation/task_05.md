@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0051-doctor-readiness-contract-reconciliation
-status: pending
+status: completed
 type: docs
 complexity: low
 ---
@@ -32,21 +32,21 @@ code, upstream-managed skill, lock authority, or generated Baseline artifact.
 
 ## Subtasks
 
-- [ ] Capture the stale Roundfix Skill wording as the red signal.
-- [ ] Update the canonical skill with the settled Doctor contract.
-- [ ] Apply the exact canonical bytes to the shipped copy.
-- [ ] Prove byte equality, repository skill synchronization, and the
+- [x] Capture the stale Roundfix Skill wording as the red signal.
+- [x] Update the canonical skill with the settled Doctor contract.
+- [x] Apply the exact canonical bytes to the shipped copy.
+- [x] Prove byte equality, repository skill synchronization, and the
       changed-file allowlist.
 
 ## Acceptance Criteria
 
-- [ ] Both Roundfix Skill copies describe canonical Repository Skill Set
+- [x] Both Roundfix Skill copies describe canonical Repository Skill Set
       missing-root behavior.
-- [ ] Both copies show mixed remediation as one owned-then-external chain
+- [x] Both copies show mixed remediation as one owned-then-external chain
       joined by `&&`.
-- [ ] The canonical and shipped copies are byte-identical.
-- [ ] Repository-owned skill synchronization checks pass.
-- [ ] Newly changed paths are limited to the two authorized skill files and
+- [x] The canonical and shipped copies are byte-identical.
+- [x] Repository-owned skill synchronization checks pass.
+- [x] Newly changed paths are limited to the two authorized skill files and
       this Task file.
 
 ## Context
@@ -71,3 +71,36 @@ code, upstream-managed skill, lock authority, or generated Baseline artifact.
 
 - `_prd.md` → Core Features 6; Non-Goals; Success Metrics.
 - `_techspec.md` → Documentation and skill synchronization; Build Order 5.
+
+## Result
+
+The Roundfix Skill now states the exact missing-Git Repository Skill Set
+failure and next action. Mixed ownership remediation is one fail-closed shell
+chain in Roundfix-owned-then-external order. The canonical and shipped copies
+contain the same bytes.
+
+Acceptance criterion evidence:
+
+1. Before the edit, exact-string greps for the canonical missing-Git result
+   and full mixed-remediation chain both exited `1`; after the edit, each exact
+   string matched the canonical skill.
+2. `rtk cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` exited
+   `0`, proving both copies contain the same guidance.
+3. `rtk make skills-sync-check` passed its four repository-owned skill tests.
+4. The changed-file postflight listed only the canonical Roundfix Skill, its
+   shipped copy, and this Task file.
+
+Verification:
+
+- `rtk cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md` —
+  passed.
+- `rtk make skills-sync-check` — passed; four tests passed.
+- `rtk grep -n '&& bunx skills experimental_install' .agents/skills/roundfix/SKILL.md`
+  — passed; matched the fail-closed mixed chain.
+- The declared allowlist pipeline exited `0`; Git emitted an fsmonitor IPC
+  diagnostic before the pipe. Repeating the same path predicate with
+  `rtk git -c core.fsmonitor=false status --porcelain` passed cleanly with no
+  out-of-allowlist path.
+- `rtk git diff --check` — passed.
+
+Follow-ups: none.
