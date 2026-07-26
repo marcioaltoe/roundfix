@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0036-doctor-skill-readiness
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -55,7 +55,7 @@ filesystem mutation.
       symlink, mixed-ownership, and ordering cases.
 - [x] Add exact-output Doctor tests for success, each ownership group, mixed
       remediation, checker errors, exit behavior, and no mutation.
-- [ ] Update Doctor command help for the appended Repository Skill Set check.
+- [x] Update Doctor command help for the appended Repository Skill Set check.
 
 ## Acceptance Criteria
 
@@ -74,7 +74,7 @@ filesystem mutation.
       remediation commands exactly once in owned-then-external order.
 - [x] Doctor runs every existing check even when skill readiness fails and
       changes no repository, user-config, Run, or skill path.
-- [ ] Doctor help continues to name both Agent Selection Profiles and the
+- [x] Doctor help continues to name both Agent Selection Profiles and the
       appended Repository Skill Set readiness check.
 
 ## Context
@@ -199,6 +199,39 @@ running the declared Verification commands verbatim.
 
 ### Follow-ups
 
-Restore the pre-existing `Agent Selection Profiles` wording required by
-`TestProfilesDocumentationContractMatchesPublicGuidance` in its owning CLI
-documentation slice; no `internal/cli` file changed in this rework.
+Rework Trigger 2 resolved the prior follow-up. Doctor help now keeps
+`Agent Selection Profiles` contiguous while retaining the additive
+`Repository Skill Set` and `skills:` wording. The existing documentation
+contract reproduced the regression before the production help change and
+passed afterward, so no test expectation changed.
+
+### Rework Trigger 2 verification
+
+- `rtk env GOCACHE=/tmp/roundfix-task01-red-cache go test ./internal/cli -run 'TestProfilesDocumentationContractMatchesPublicGuidance' -count=1`
+  — failed before the fix because Doctor help did not contain the contiguous
+  public term `Agent Selection Profiles`.
+- `rtk env GOCACHE=/tmp/roundfix-task01-skills-focused-cache go test ./skills -run 'Test(CheckRepository|SkillFolderHash)' -count=1`
+  — passed (`ok roundfix/skills`).
+- `rtk env GOCACHE=/tmp/roundfix-task01-cli-focused-cache go test ./internal/cli -run 'Test(RunDoctor|ProfilesDocumentationContractMatchesPublicGuidance)' -count=1`
+  — passed (`ok roundfix/internal/cli`), including the restored Doctor help
+  terminology and the additive Repository Skill Set wording.
+- `rtk env GOCACHE=/tmp/roundfix-task01-race-focused-cache go test -race ./skills ./internal/cli -run 'Test(CheckRepository|RunDoctor)' -count=1`
+  — passed for both packages with the race detector.
+- `rtk env GOCACHE=/tmp/roundfix-task01-skills-full-cache go test ./skills -count=1`
+  — passed (`ok roundfix/skills`), including the real repository baseline.
+
+The sandbox blocks Go's default user cache, so focused verification used
+temporary `GOCACHE` directories. The Daemon remains responsible for running
+the declared Verification commands verbatim.
+
+### Rework Trigger 2 acceptance evidence
+
+- AC 1–7: the focused repository, Doctor, race, and complete skills-suite
+  commands passed after the help change, preserving the previously recorded
+  readiness, ordering, failure, remediation, and no-mutation contracts.
+- AC 8: `TestProfilesDocumentationContractMatchesPublicGuidance` first failed
+  on the missing contiguous `Agent Selection Profiles` phrase, then passed
+  with `Agent Selection Profiles`, `Repository Skill Set`, and `skills:` all
+  present in Doctor help.
+
+No follow-up work remains in this Task slice.
