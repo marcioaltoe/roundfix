@@ -38,9 +38,12 @@ Repository Skill Set result and must not recreate or bypass profile proof.
   Baseline execution in the Go CLI and prohibit restoring the removed Python
   runtime. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — on 2026-07-26, the maintainer expressly
-  authorizes changes to exactly `.agents/skills/roundfix/SKILL.md` and
-  `skills/roundfix/SKILL.md`; no other protected tooling mutation is
-  authorized. Source:
+  authorizes changes to `.agents/skills/roundfix/SKILL.md` and
+  `skills/roundfix/SKILL.md`, plus the mechanically derived Baseline artifacts
+  `internal/baseline/assets/setups/typescript-bun.json`,
+  `internal/baseline/testdata/catalog.normalized.json`, and
+  `internal/baseline/testdata/catalog.digest`. No other protected tooling
+  mutation is authorized. Source:
   `docs/agents/agent-instructions.md`.
 
 ## Goals

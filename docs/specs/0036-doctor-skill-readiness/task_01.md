@@ -1,7 +1,7 @@
 ---
 task: task_01
 spec: 0036-doctor-skill-readiness
-status: completed
+status: pending
 type: backend
 complexity: high
 ---
@@ -55,7 +55,7 @@ filesystem mutation.
       symlink, mixed-ownership, and ordering cases.
 - [x] Add exact-output Doctor tests for success, each ownership group, mixed
       remediation, checker errors, exit behavior, and no mutation.
-- [x] Update Doctor command help for the appended Repository Skill Set check.
+- [ ] Update Doctor command help for the appended Repository Skill Set check.
 
 ## Acceptance Criteria
 
@@ -74,6 +74,8 @@ filesystem mutation.
       remediation commands exactly once in owned-then-external order.
 - [x] Doctor runs every existing check even when skill readiness fails and
       changes no repository, user-config, Run, or skill path.
+- [ ] Doctor help continues to name both Agent Selection Profiles and the
+      appended Repository Skill Set readiness check.
 
 ## Context
 
@@ -97,8 +99,9 @@ filesystem mutation.
 - `rtk go test ./skills -run 'Test(CheckRepository|SkillFolderHash)' -count=1`
   — expected: owned comparison, lock validation, hash compatibility, unsafe
   paths, stable ordering, and no-mutation cases pass.
-- `rtk go test ./internal/cli -run 'TestRunDoctor' -count=1` — expected: exact
-  `skills:` output, remediation, exit behavior, and existing Doctor lines pass.
+- `rtk go test ./internal/cli -run 'Test(RunDoctor|ProfilesDocumentationContractMatchesPublicGuidance)' -count=1`
+  — expected: exact `skills:` output, remediation, exit behavior, existing
+  Doctor lines, and public help terminology pass.
 - `rtk go test -race ./skills ./internal/cli -run 'Test(CheckRepository|RunDoctor)' -count=1`
   — expected: injected checks and filesystem reads are race-free.
 - `rtk go test ./skills -count=1` — expected: the complete skills suite,
@@ -129,6 +132,15 @@ ordering. The pinned fixture encodes the Go ordering (`SKILL.md` before
 instead of against the CLI. Repair the production ordering and fixture, add a
 regression that distinguishes these orderings, and prove the complete skills
 suite against the refreshed real repository.
+
+## Rework Trigger 2
+
+The first Task 03 full gate exposed
+`TestProfilesDocumentationContractMatchesPublicGuidance`: Doctor help no longer
+names `Agent Selection Profiles`, even though Spec 0041 remains the prerequisite
+readiness authority. Restore that existing public term while keeping the new
+Repository Skill Set wording additive, then prove the focused documentation
+contract before Task 03 runs.
 
 ## Result
 
