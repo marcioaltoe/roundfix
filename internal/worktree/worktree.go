@@ -154,9 +154,35 @@ type RunWorktreeReconciliation struct {
 	TargetHead   string
 	Reason       string
 	State        ReconciliationState
+
+	evidence *terminalRunReconciliationEvidence
 }
 
 func InspectTerminalRun(ctx context.Context, run store.Run) (RunWorktreeReconciliation, error) {
+	return inspectTerminalRun(ctx, execGitRunner{}, run)
+}
+
+type terminalRunReconciliationEvidence struct {
+	run              store.Run
+	gitRoot          string
+	snapshot         terminalRunReconciliationSnapshot
+	worktreePresent  bool
+	runBranchPresent bool
+}
+
+type terminalRunReconciliationSnapshot struct {
+	runID        string
+	outcome      string
+	path         string
+	branch       string
+	targetBranch string
+	runHead      string
+	targetHead   string
+	reason       string
+	state        ReconciliationState
+}
+
+func inspectTerminalRun(ctx context.Context, runner gitRunner, run store.Run) (RunWorktreeReconciliation, error) {
 	result := RunWorktreeReconciliation{
 		RunID:        run.ID,
 		Outcome:      run.State,
@@ -167,7 +193,6 @@ func InspectTerminalRun(ctx context.Context, run store.Run) (RunWorktreeReconcil
 		Reason:       reconciliationReasonRunMetadata,
 	}
 
-	runner := execGitRunner{}
 	gitRoot, err := recordedGitRoot(ctx, runner, run.GitRoot)
 	if err != nil {
 		return result, err
@@ -208,6 +233,7 @@ func InspectTerminalRun(ctx context.Context, run store.Run) (RunWorktreeReconcil
 	if !worktreePresent && !runBranchPresent {
 		result.State = ReconciliationReleased
 		result.Reason = reconciliationReasonReleased
+		result.evidence = newTerminalRunReconciliationEvidence(run, gitRoot, result, false, false)
 		return result, nil
 	}
 
@@ -261,7 +287,148 @@ func InspectTerminalRun(ctx context.Context, run store.Run) (RunWorktreeReconcil
 	}
 	result.State = ReconciliationSafe
 	result.Reason = reconciliationReasonSafe
+	result.evidence = newTerminalRunReconciliationEvidence(run, gitRoot, result, worktreePresent, runBranchPresent)
 	return result, nil
+}
+
+func newTerminalRunReconciliationEvidence(run store.Run, gitRoot string, result RunWorktreeReconciliation, worktreePresent, runBranchPresent bool) *terminalRunReconciliationEvidence {
+	return &terminalRunReconciliationEvidence{
+		run:              run,
+		gitRoot:          gitRoot,
+		snapshot:         terminalRunSnapshot(result),
+		worktreePresent:  worktreePresent,
+		runBranchPresent: runBranchPresent,
+	}
+}
+
+func terminalRunSnapshot(result RunWorktreeReconciliation) terminalRunReconciliationSnapshot {
+	return terminalRunReconciliationSnapshot{
+		runID:        result.RunID,
+		outcome:      result.Outcome,
+		path:         result.Path,
+		branch:       result.Branch,
+		targetBranch: result.TargetBranch,
+		runHead:      result.RunHead,
+		targetHead:   result.TargetHead,
+		reason:       result.Reason,
+		state:        result.State,
+	}
+}
+
+type TerminalRunApplyError struct {
+	RunID              string
+	WorktreePath       string
+	RunBranch          string
+	WorktreeRemaining  bool
+	RunBranchRemaining bool
+	Err                error
+}
+
+func (err *TerminalRunApplyError) Error() string {
+	if err == nil {
+		return "apply terminal Run reconciliation failed"
+	}
+	var remaining []string
+	if err.WorktreeRemaining {
+		remaining = append(remaining, "worktree="+err.WorktreePath)
+	}
+	if err.RunBranchRemaining {
+		remaining = append(remaining, "branch="+err.RunBranch)
+	}
+	if len(remaining) == 0 {
+		remaining = append(remaining, "none")
+	}
+	return fmt.Sprintf("apply terminal Run %q: %v; remaining: %s", err.RunID, err.Err, strings.Join(remaining, " "))
+}
+
+func (err *TerminalRunApplyError) Unwrap() error {
+	if err == nil {
+		return nil
+	}
+	return err.Err
+}
+
+func ApplyTerminalRun(ctx context.Context, result RunWorktreeReconciliation) error {
+	return applyTerminalRun(ctx, execGitRunner{}, result)
+}
+
+func applyTerminalRun(ctx context.Context, runner gitRunner, result RunWorktreeReconciliation) error {
+	evidence := result.evidence
+	if evidence == nil || terminalRunSnapshot(result) != evidence.snapshot {
+		return errors.New("apply terminal Run reconciliation: result was not produced by inspection or recorded metadata changed")
+	}
+	if result.State != ReconciliationSafe && result.State != ReconciliationReleased {
+		return fmt.Errorf("apply terminal Run reconciliation: classification %q is not safe", result.State)
+	}
+
+	fresh, err := inspectTerminalRun(ctx, runner, evidence.run)
+	if err != nil {
+		return fmt.Errorf("revalidate terminal Run before cleanup: %w", err)
+	}
+	if fresh.State == ReconciliationReleased {
+		return nil
+	}
+	if result.State != ReconciliationSafe ||
+		fresh.State != ReconciliationSafe ||
+		fresh.RunHead != result.RunHead ||
+		fresh.TargetHead != result.TargetHead {
+		return fmt.Errorf(
+			"apply terminal Run reconciliation: evidence is stale: inspected state=%q Run head=%q target head=%q; current state=%q Run head=%q target head=%q",
+			result.State,
+			result.RunHead,
+			result.TargetHead,
+			fresh.State,
+			fresh.RunHead,
+			fresh.TargetHead,
+		)
+	}
+
+	if fresh.evidence.worktreePresent {
+		if _, err := runner.Run(ctx, evidence.gitRoot, "worktree", "remove", fresh.Path); err != nil {
+			return terminalRunApplyFailure(
+				ctx,
+				runner,
+				evidence.gitRoot,
+				fresh,
+				fmt.Errorf("remove Run Worktree %q: %w", fresh.Path, err),
+			)
+		}
+	}
+	if fresh.evidence.runBranchPresent {
+		if err := deleteRunBranch(ctx, runner, evidence.gitRoot, fresh.Branch); err != nil {
+			return terminalRunApplyFailure(ctx, runner, evidence.gitRoot, fresh, err)
+		}
+	}
+	return nil
+}
+
+func terminalRunApplyFailure(ctx context.Context, runner gitRunner, gitRoot string, result RunWorktreeReconciliation, operationErr error) error {
+	worktreeRemaining, branchRemaining, inspectErr := remainingTerminalRunSurface(ctx, runner, gitRoot, result)
+	if inspectErr != nil {
+		operationErr = errors.Join(operationErr, fmt.Errorf("inspect remaining terminal Run surface: %w", inspectErr))
+	}
+	return &TerminalRunApplyError{
+		RunID:              result.RunID,
+		WorktreePath:       result.Path,
+		RunBranch:          result.Branch,
+		WorktreeRemaining:  worktreeRemaining,
+		RunBranchRemaining: branchRemaining,
+		Err:                operationErr,
+	}
+}
+
+func remainingTerminalRunSurface(ctx context.Context, runner gitRunner, gitRoot string, result RunWorktreeReconciliation) (bool, bool, error) {
+	worktrees, worktreeErr := listRegisteredWorktrees(ctx, runner, gitRoot)
+	worktreeRemaining := samePath(registeredBranchPath(worktrees, result.Branch), result.Path)
+	if !worktreeRemaining {
+		if _, err := os.Stat(result.Path); err == nil {
+			worktreeRemaining = true
+		} else if !errors.Is(err, os.ErrNotExist) {
+			worktreeErr = errors.Join(worktreeErr, fmt.Errorf("stat Run Worktree %q: %w", result.Path, err))
+		}
+	}
+	branchRemaining, branchErr := localBranchExists(ctx, runner, gitRoot, result.Branch)
+	return worktreeRemaining, branchRemaining, errors.Join(worktreeErr, branchErr)
 }
 
 func Create(ctx context.Context, opts CreateOptions) (Ref, error) {
@@ -629,35 +796,91 @@ func CleanupTask(ctx context.Context, task TaskRef) error {
 	return nil
 }
 
-func PruneTerminal(ctx context.Context, userRoot string, location string, isTerminalRun func(runID string) bool) error {
-	_, err := PruneTerminalReport(ctx, userRoot, location, isTerminalRun)
+type TerminalRunLookup func(runID string) (store.Run, bool, error)
+
+func PruneTerminal(ctx context.Context, userRoot string, location string, loadTerminalRun TerminalRunLookup) error {
+	_, err := PruneTerminalReport(ctx, userRoot, location, loadTerminalRun)
 	return err
 }
 
-func PruneTerminalReport(ctx context.Context, userRoot string, location string, isTerminalRun func(runID string) bool) ([]PrunedRef, error) {
+func PruneTerminalReport(ctx context.Context, userRoot string, location string, loadTerminalRun TerminalRunLookup) ([]PrunedRef, error) {
 	userRoot = filepath.Clean(strings.TrimSpace(userRoot))
 	if userRoot == "." || userRoot == "" {
 		return nil, errors.New("prune Run Worktrees: user root is required")
 	}
-	if isTerminalRun == nil {
-		return nil, errors.New("prune Run Worktrees: terminal callback is required")
+	if loadTerminalRun == nil {
+		return nil, errors.New("prune Run Worktrees: terminal Run lookup is required")
 	}
 
 	runner := execGitRunner{}
-	if _, err := runner.Run(ctx, userRoot, "worktree", "prune"); err != nil {
-		return nil, fmt.Errorf("prune git worktrees: %w", err)
-	}
-
 	refs, err := terminalCandidates(ctx, runner, userRoot, location)
 	if err != nil {
 		return nil, err
 	}
 
+	refsByRun := make(map[string][]terminalCandidate)
+	var runIDs []string
+	for _, ref := range refs {
+		if _, found := refsByRun[ref.RunID]; !found {
+			runIDs = append(runIDs, ref.RunID)
+		}
+		refsByRun[ref.RunID] = append(refsByRun[ref.RunID], ref)
+	}
+	sort.Strings(runIDs)
+
 	var pruned []PrunedRef
 	var errs []error
-	for _, ref := range refs {
-		if !isTerminalRun(ref.RunID) {
+	for _, runID := range runIDs {
+		run, found, err := loadTerminalRun(runID)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("load terminal Run %q: %w", runID, err))
 			continue
+		}
+		if !found || !store.IsTerminalState(run.State) || canonicalPath(run.GitRoot) != canonicalPath(userRoot) {
+			continue
+		}
+
+		result, err := inspectTerminalRun(ctx, runner, run)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("inspect terminal Run %q for pruning: %w", runID, err))
+			continue
+		}
+		if result.State != ReconciliationSafe && result.State != ReconciliationReleased {
+			continue
+		}
+
+		if result.State == ReconciliationSafe {
+			if err := applyTerminalRun(ctx, runner, result); err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			pruned = append(pruned, PrunedRef{
+				RunID:  result.RunID,
+				Path:   result.Path,
+				Branch: result.Branch,
+			})
+		}
+
+		prunedTasks, taskErrs := pruneReleasedRunTaskRefs(ctx, runner, userRoot, refsByRun[runID])
+		pruned = append(pruned, prunedTasks...)
+		errs = append(errs, taskErrs...)
+	}
+	return pruned, errors.Join(errs...)
+}
+
+func pruneReleasedRunTaskRefs(ctx context.Context, runner gitRunner, userRoot string, refs []terminalCandidate) ([]PrunedRef, []error) {
+	var pruned []PrunedRef
+	var errs []error
+	worktrees, err := listRegisteredWorktrees(ctx, runner, userRoot)
+	if err != nil {
+		return nil, []error{err}
+	}
+	for _, ref := range refs {
+		if ref.TaskID == "" {
+			continue
+		}
+		if registeredPath := registeredBranchPath(worktrees, ref.Branch); registeredPath != "" {
+			ref.Path = registeredPath
 		}
 		hasCommits, err := branchHasCommitsBeyondBase(ctx, runner, userRoot, ref.Branch)
 		if err != nil {
@@ -669,11 +892,11 @@ func PruneTerminalReport(ctx context.Context, userRoot string, location string, 
 		}
 		if _, err := os.Stat(ref.Path); err == nil {
 			if _, err := runner.Run(ctx, userRoot, "worktree", "remove", "--force", ref.Path); err != nil {
-				errs = append(errs, fmt.Errorf("remove terminal Worktree %q: %w", ref.Path, err))
+				errs = append(errs, fmt.Errorf("remove terminal Task Worktree %q: %w", ref.Path, err))
 				continue
 			}
-		} else if err != nil && !errors.Is(err, os.ErrNotExist) {
-			errs = append(errs, fmt.Errorf("stat terminal Worktree %q: %w", ref.Path, err))
+		} else if !errors.Is(err, os.ErrNotExist) {
+			errs = append(errs, fmt.Errorf("stat terminal Task Worktree %q: %w", ref.Path, err))
 			continue
 		}
 		if err := deleteRunBranch(ctx, runner, userRoot, ref.Branch); err != nil {
@@ -687,7 +910,7 @@ func PruneTerminalReport(ctx context.Context, userRoot string, location string, 
 			Branch: ref.Branch,
 		})
 	}
-	return pruned, errors.Join(errs...)
+	return pruned, errs
 }
 
 func BranchName(runID string) string {

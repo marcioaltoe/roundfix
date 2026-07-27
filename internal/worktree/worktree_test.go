@@ -431,9 +431,6 @@ func TestPruneTerminalReapsOnlyEmptyTerminalRunAndTaskBranches(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create empty Task Worktree: %v", err)
 	}
-	mustWriteWorktreeTest(t, filepath.Join(emptyRun.Path, ".env.local"), "secret=1\n")
-	mustMkdirWorktreeTest(t, filepath.Join(emptyRun.Path, "node_modules", "cache"))
-	mustWriteWorktreeTest(t, filepath.Join(emptyRun.Path, "node_modules", "cache", "entry.txt"), "cache\n")
 	mustWriteWorktreeTest(t, filepath.Join(emptyTask.Path, ".env.local"), "secret=1\n")
 	mustMkdirWorktreeTest(t, filepath.Join(emptyTask.Path, "node_modules", "cache"))
 	mustWriteWorktreeTest(t, filepath.Join(emptyTask.Path, "node_modules", "cache", "entry.txt"), "cache\n")
@@ -457,8 +454,27 @@ func TestPruneTerminalReapsOnlyEmptyTerminalRunAndTaskBranches(t *testing.T) {
 		t.Fatalf("create non-terminal Task Worktree: %v", err)
 	}
 
-	err = PruneTerminal(ctx, repoDir, location, func(runID string) bool {
-		return runID == "empty-run" || runID == "valuable-run"
+	runs := map[string]store.Run{
+		"empty-run": {
+			ID:          "empty-run",
+			Kind:        store.KindImplement,
+			State:       store.StateStopped,
+			GitRoot:     canonicalPath(repoDir),
+			LocalBranch: "main",
+			WorkDir:     canonicalPath(emptyRun.Path),
+		},
+		"valuable-run": {
+			ID:          "valuable-run",
+			Kind:        store.KindImplement,
+			State:       store.StateStopped,
+			GitRoot:     canonicalPath(repoDir),
+			LocalBranch: "main",
+			WorkDir:     canonicalPath(valuableRun.Path),
+		},
+	}
+	err = PruneTerminal(ctx, repoDir, location, func(runID string) (store.Run, bool, error) {
+		run, found := runs[runID]
+		return run, found, nil
 	})
 	if err != nil {
 		t.Fatalf("prune terminal: %v", err)
@@ -783,7 +799,7 @@ func TestCleanupCleanRemovesRunWorktreeWithUntrackedDebris(t *testing.T) {
 	}
 }
 
-func TestPruneTerminalReapsCrashedTerminalCleanRunOnly(t *testing.T) {
+func TestPruneTerminalPreservesCrashedTerminalRunWithoutCleanlinessProof(t *testing.T) {
 	ctx := context.Background()
 	homeDir := t.TempDir()
 	t.Setenv("HOME", homeDir)
@@ -805,15 +821,23 @@ func TestPruneTerminalReapsCrashedTerminalCleanRunOnly(t *testing.T) {
 		t.Fatalf("simulate crashed worktree removal: %v", err)
 	}
 
-	err = PruneTerminal(ctx, repoDir, location, func(runID string) bool {
-		return runID == "terminal-clean"
+	run := store.Run{
+		ID:          "terminal-clean",
+		Kind:        store.KindImplement,
+		State:       store.StateStopped,
+		GitRoot:     canonicalPath(repoDir),
+		LocalBranch: "main",
+		WorkDir:     canonicalPath(cleanRef.Path),
+	}
+	err = PruneTerminal(ctx, repoDir, location, func(runID string) (store.Run, bool, error) {
+		return run, runID == run.ID, nil
 	})
 	if err != nil {
 		t.Fatalf("prune terminal: %v", err)
 	}
 
-	if branchExists(t, repoDir, cleanRef.Branch) {
-		t.Fatalf("expected terminal Clean Run Branch %q deleted", cleanRef.Branch)
+	if !branchExists(t, repoDir, cleanRef.Branch) {
+		t.Fatalf("expected terminal Run Branch %q preserved without cleanliness proof", cleanRef.Branch)
 	}
 	if _, err := os.Stat(keptRef.Path); err != nil {
 		t.Fatalf("expected non-terminal Run Worktree to survive, stat err=%v", err)
@@ -1026,6 +1050,273 @@ func TestInspectTerminalRunSafeWithoutWorktree(t *testing.T) {
 	}
 }
 
+func TestApplyTerminalRunSafe(t *testing.T) {
+	ctx := context.Background()
+	fixture := newTerminalRunFixture(t, "apply-reconcile-safe")
+	fixture.commitRunChange(t, "safe.txt", "safe\n")
+	gitWorktreeTest(t, fixture.repoDir, "merge", "--ff-only", fixture.ref.Branch)
+	result, err := InspectTerminalRun(ctx, fixture.run)
+	if err != nil {
+		t.Fatalf("inspect terminal Run: %v", err)
+	}
+
+	if err := ApplyTerminalRun(ctx, result); err != nil {
+		t.Fatalf("apply terminal Run reconciliation: %v", err)
+	}
+
+	assertPathRemoved(t, fixture.ref.Path)
+	assertBranchRemoved(t, fixture.repoDir, fixture.ref.Branch)
+}
+
+func TestApplyTerminalRunSafeEvidenceOnly(t *testing.T) {
+	ctx := context.Background()
+	fixture := newTerminalRunFixture(t, "apply-safe-evidence-only")
+	fixture.commitRunChange(t, "unique.txt", "unique\n")
+	unintegrated, err := InspectTerminalRun(ctx, fixture.run)
+	if err != nil {
+		t.Fatalf("inspect unintegrated terminal Run: %v", err)
+	}
+
+	if err := ApplyTerminalRun(ctx, unintegrated); err == nil {
+		t.Fatal("expected non-safe inspected result to refuse apply")
+	}
+	forged := unintegrated
+	forged.State = ReconciliationSafe
+	if err := ApplyTerminalRun(ctx, forged); err == nil {
+		t.Fatal("expected forged safe result to refuse apply")
+	}
+
+	assertPathExists(t, fixture.ref.Path)
+	assertRunBranchExists(t, fixture.repoDir, fixture.ref.Branch)
+}
+
+func TestApplyTerminalRunStaleHeads(t *testing.T) {
+	tests := []struct {
+		name   string
+		change func(t *testing.T, fixture terminalRunFixture)
+	}{
+		{
+			name: "Run head changed",
+			change: func(t *testing.T, fixture terminalRunFixture) {
+				fixture.commitRunChange(t, "later-run.txt", "later\n")
+			},
+		},
+		{
+			name: "target head changed",
+			change: func(t *testing.T, fixture terminalRunFixture) {
+				commitWorktreeFile(t, fixture.repoDir, "later-target.txt", "later\n", "later target")
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			fixture := newTerminalRunFixture(t, "apply-stale-"+strings.ReplaceAll(strings.ToLower(test.name), " ", "-"))
+			fixture.commitRunChange(t, "safe.txt", "safe\n")
+			gitWorktreeTest(t, fixture.repoDir, "merge", "--ff-only", fixture.ref.Branch)
+			result, err := InspectTerminalRun(ctx, fixture.run)
+			if err != nil {
+				t.Fatalf("inspect terminal Run: %v", err)
+			}
+			test.change(t, fixture)
+
+			if err := ApplyTerminalRun(ctx, result); err == nil {
+				t.Fatal("expected changed reconciliation heads to refuse apply")
+			}
+
+			assertPathExists(t, fixture.ref.Path)
+			assertRunBranchExists(t, fixture.repoDir, fixture.ref.Branch)
+		})
+	}
+}
+
+func TestApplyTerminalRunStaleMetadata(t *testing.T) {
+	ctx := context.Background()
+	fixture := newTerminalRunFixture(t, "apply-stale-metadata")
+	fixture.commitRunChange(t, "safe.txt", "safe\n")
+	gitWorktreeTest(t, fixture.repoDir, "merge", "--ff-only", fixture.ref.Branch)
+	result, err := InspectTerminalRun(ctx, fixture.run)
+	if err != nil {
+		t.Fatalf("inspect terminal Run: %v", err)
+	}
+	result.TargetBranch = "other"
+
+	if err := ApplyTerminalRun(ctx, result); err == nil {
+		t.Fatal("expected changed recorded metadata to refuse apply")
+	}
+
+	assertPathExists(t, fixture.ref.Path)
+	assertRunBranchExists(t, fixture.repoDir, fixture.ref.Branch)
+}
+
+func TestApplyTerminalRunDirty(t *testing.T) {
+	ctx := context.Background()
+	fixture := newTerminalRunFixture(t, "apply-newly-dirty")
+	fixture.commitRunChange(t, "safe.txt", "safe\n")
+	gitWorktreeTest(t, fixture.repoDir, "merge", "--ff-only", fixture.ref.Branch)
+	result, err := InspectTerminalRun(ctx, fixture.run)
+	if err != nil {
+		t.Fatalf("inspect terminal Run: %v", err)
+	}
+	mustWriteWorktreeTest(t, filepath.Join(fixture.ref.Path, "new-dirt.txt"), "preserve me\n")
+
+	if err := ApplyTerminalRun(ctx, result); err == nil {
+		t.Fatal("expected newly dirty worktree to refuse apply")
+	}
+
+	assertPathExists(t, fixture.ref.Path)
+	assertRunBranchExists(t, fixture.repoDir, fixture.ref.Branch)
+}
+
+func TestApplyTerminalRunRemovalFailure(t *testing.T) {
+	ctx := context.Background()
+	fixture := newTerminalRunFixture(t, "apply-removal-failure")
+	fixture.commitRunChange(t, "safe.txt", "safe\n")
+	gitWorktreeTest(t, fixture.repoDir, "merge", "--ff-only", fixture.ref.Branch)
+	result, err := InspectTerminalRun(ctx, fixture.run)
+	if err != nil {
+		t.Fatalf("inspect terminal Run: %v", err)
+	}
+	runner := &recordingGitRunner{
+		delegate: execGitRunner{},
+		fail: func(_ string, args []string) error {
+			if slicesEqual(args, []string{"worktree", "remove", result.Path}) {
+				return errors.New("injected worktree removal failure")
+			}
+			return nil
+		},
+	}
+
+	err = applyTerminalRun(ctx, runner, result)
+	if err == nil {
+		t.Fatal("expected worktree removal failure")
+	}
+	if strings.Contains(strings.Join(runner.mutations[0], " "), "--force") {
+		t.Fatalf("worktree removal must not use force: %v", runner.mutations[0])
+	}
+	if len(runner.mutations) != 1 {
+		t.Fatalf("branch deletion must not follow failed worktree removal, mutations=%v", runner.mutations)
+	}
+	if !strings.Contains(err.Error(), result.Path) || !strings.Contains(err.Error(), fixture.ref.Branch) {
+		t.Fatalf("expected failure to report remaining worktree and branch, got %v", err)
+	}
+	var applyErr *TerminalRunApplyError
+	if !errors.As(err, &applyErr) || !applyErr.WorktreeRemaining || !applyErr.RunBranchRemaining {
+		t.Fatalf("expected typed remaining worktree and branch evidence, got %#v", applyErr)
+	}
+	assertPathExists(t, fixture.ref.Path)
+	assertRunBranchExists(t, fixture.repoDir, fixture.ref.Branch)
+}
+
+func TestApplyTerminalRunDeletionFailure(t *testing.T) {
+	ctx := context.Background()
+	fixture := newTerminalRunFixture(t, "apply-deletion-failure")
+	fixture.commitRunChange(t, "safe.txt", "safe\n")
+	gitWorktreeTest(t, fixture.repoDir, "merge", "--ff-only", fixture.ref.Branch)
+	result, err := InspectTerminalRun(ctx, fixture.run)
+	if err != nil {
+		t.Fatalf("inspect terminal Run: %v", err)
+	}
+	runner := &recordingGitRunner{
+		delegate: execGitRunner{},
+		fail: func(_ string, args []string) error {
+			if slicesEqual(args, []string{"branch", "-D", fixture.ref.Branch}) {
+				return errors.New("injected branch deletion failure")
+			}
+			return nil
+		},
+	}
+
+	err = applyTerminalRun(ctx, runner, result)
+	if err == nil {
+		t.Fatal("expected branch deletion failure")
+	}
+	if len(runner.mutations) != 2 {
+		t.Fatalf("expected worktree removal before branch deletion, mutations=%v", runner.mutations)
+	}
+	if !slicesEqual(runner.mutations[0], []string{"worktree", "remove", result.Path}) ||
+		!slicesEqual(runner.mutations[1], []string{"branch", "-D", fixture.ref.Branch}) {
+		t.Fatalf("unexpected cleanup order: %v", runner.mutations)
+	}
+	if strings.Contains(err.Error(), "worktree="+result.Path) || !strings.Contains(err.Error(), fixture.ref.Branch) {
+		t.Fatalf("expected failure to report only the remaining branch, got %v", err)
+	}
+	var applyErr *TerminalRunApplyError
+	if !errors.As(err, &applyErr) || applyErr.WorktreeRemaining || !applyErr.RunBranchRemaining {
+		t.Fatalf("expected typed remaining branch evidence, got %#v", applyErr)
+	}
+	assertPathRemoved(t, fixture.ref.Path)
+	assertRunBranchExists(t, fixture.repoDir, fixture.ref.Branch)
+}
+
+func TestApplyTerminalRunReleased(t *testing.T) {
+	ctx := context.Background()
+	fixture := newTerminalRunFixture(t, "apply-released")
+	fixture.commitRunChange(t, "safe.txt", "safe\n")
+	gitWorktreeTest(t, fixture.repoDir, "merge", "--ff-only", fixture.ref.Branch)
+	result, err := InspectTerminalRun(ctx, fixture.run)
+	if err != nil {
+		t.Fatalf("inspect terminal Run: %v", err)
+	}
+	if err := ApplyTerminalRun(ctx, result); err != nil {
+		t.Fatalf("first apply terminal Run reconciliation: %v", err)
+	}
+	runner := &recordingGitRunner{delegate: execGitRunner{}}
+
+	if err := applyTerminalRun(ctx, runner, result); err != nil {
+		t.Fatalf("repeat apply terminal Run reconciliation: %v", err)
+	}
+	if len(runner.mutations) != 0 {
+		t.Fatalf("repeat apply must perform zero mutations, got %v", runner.mutations)
+	}
+	released, err := InspectTerminalRun(ctx, fixture.run)
+	if err != nil {
+		t.Fatalf("inspect released terminal Run: %v", err)
+	}
+	assertTerminalRunReconciliation(t, released, fixture.run, ReconciliationReleased)
+}
+
+func TestPruneTerminalReconciliationReachableChangedBranch(t *testing.T) {
+	ctx := context.Background()
+	fixture := newTerminalRunFixture(t, "prune-reconciliation-reachable")
+	fixture.commitRunChange(t, "reachable.txt", "reachable\n")
+	gitWorktreeTest(t, fixture.repoDir, "merge", "--ff-only", fixture.ref.Branch)
+	location := filepath.Dir(filepath.Dir(fixture.ref.Path))
+
+	pruned, err := PruneTerminalReport(ctx, fixture.repoDir, location, func(runID string) (store.Run, bool, error) {
+		return fixture.run, runID == fixture.run.ID, nil
+	})
+	if err != nil {
+		t.Fatalf("prune terminal reconciliation: %v", err)
+	}
+
+	if len(pruned) != 1 || pruned[0].RunID != fixture.run.ID {
+		t.Fatalf("expected reachable changed Run to be pruned, got %#v", pruned)
+	}
+	assertPathRemoved(t, fixture.ref.Path)
+	assertBranchRemoved(t, fixture.repoDir, fixture.ref.Branch)
+}
+
+func TestPruneTerminalReconciliationPreservesUniqueChangedBranch(t *testing.T) {
+	ctx := context.Background()
+	fixture := newTerminalRunFixture(t, "prune-reconciliation-unique")
+	fixture.commitRunChange(t, "unique.txt", "unique\n")
+	location := filepath.Dir(filepath.Dir(fixture.ref.Path))
+
+	pruned, err := PruneTerminalReport(ctx, fixture.repoDir, location, func(runID string) (store.Run, bool, error) {
+		return fixture.run, runID == fixture.run.ID, nil
+	})
+	if err != nil {
+		t.Fatalf("prune terminal reconciliation: %v", err)
+	}
+
+	if len(pruned) != 0 {
+		t.Fatalf("expected unique changed Run to be preserved, got %#v", pruned)
+	}
+	assertPathExists(t, fixture.ref.Path)
+	assertRunBranchExists(t, fixture.repoDir, fixture.ref.Branch)
+}
+
 func TestInspectTerminalRunUnsafePath(t *testing.T) {
 	t.Run("symlinked worktree", func(t *testing.T) {
 		fixture := newTerminalRunFixture(t, "reconcile-unsafe-symlink")
@@ -1101,6 +1392,36 @@ func TestInspectTerminalRunUnsafePath(t *testing.T) {
 type terminalRunFixture struct {
 	integrationFixture
 	run store.Run
+}
+
+type recordingGitRunner struct {
+	delegate  gitRunner
+	fail      func(workDir string, args []string) error
+	mutations [][]string
+}
+
+func (runner *recordingGitRunner) Run(ctx context.Context, workDir string, args ...string) (string, error) {
+	if len(args) >= 2 && ((args[0] == "worktree" && args[1] == "remove") || (args[0] == "branch" && args[1] == "-D")) {
+		runner.mutations = append(runner.mutations, append([]string(nil), args...))
+	}
+	if runner.fail != nil {
+		if err := runner.fail(workDir, args); err != nil {
+			return "", err
+		}
+	}
+	return runner.delegate.Run(ctx, workDir, args...)
+}
+
+func slicesEqual(left, right []string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for index := range left {
+		if left[index] != right[index] {
+			return false
+		}
+	}
+	return true
 }
 
 func newTerminalRunFixture(t *testing.T, runID string) terminalRunFixture {

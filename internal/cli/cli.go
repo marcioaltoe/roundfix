@@ -669,9 +669,8 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 		return stopResult{Run: active, Warnings: warnings}, err
 	}
 	if strings.TrimSpace(active.GitRoot) != "" && strings.TrimSpace(active.WorkDir) != "" {
-		pruned, pruneErr := pruneTerminalRunWorktrees(ctx, active.GitRoot, worktreeLocation, func(runID string) bool {
-			run, found, err := runStore.Run(ctx, runID)
-			return err == nil && found && store.IsTerminalState(run.State)
+		pruned, pruneErr := pruneTerminalRunWorktrees(ctx, active.GitRoot, worktreeLocation, func(runID string) (store.Run, bool, error) {
+			return runStore.Run(ctx, runID)
 		})
 		for _, ref := range pruned {
 			warnings = append(warnings, cleanupNoticef("reaped terminal Worktree path=%s branch=%s", ref.Path, ref.Branch))
