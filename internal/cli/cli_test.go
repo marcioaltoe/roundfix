@@ -4028,6 +4028,117 @@ func TestRunOutcomeNotificationsCaptureTerminalResolveWatchAndImplement(t *testi
 	}
 }
 
+func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalOutcome(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+
+	agentStarted := make(chan struct{})
+	releaseAgent := make(chan struct{})
+	var releaseOnce sync.Once
+	release := func() {
+		releaseOnce.Do(func() {
+			close(releaseAgent)
+		})
+	}
+	t.Cleanup(release)
+	runner := &fakeAgentRunner{onRun: func(agent.ExecuteRequest) error {
+		close(agentStarted)
+		<-releaseAgent
+		return nil
+	}}
+	withAgentRunner(t, runner)
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return nil
+	})
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int) error {
+		return nil
+	}))
+	notifier := &recordingOutcomeNotifier{}
+	withOutcomeNotifier(t, notifier)
+
+	var resolveStdout bytes.Buffer
+	var resolveStderr bytes.Buffer
+	resolveDone := make(chan int, 1)
+	go func() {
+		resolveDone <- RunContext(context.Background(), []string{
+			"resolve", "--pr", "123", "--round", "all", "--no-input",
+		}, &resolveStdout, &resolveStderr)
+	}()
+
+	<-agentStarted
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		release()
+		t.Fatalf("open store during completion race: %v", err)
+	}
+	active, found, err := runStore.ActiveRun(context.Background(), "owner/project", "feature/review")
+	closeErr := runStore.Close()
+	if err != nil || !found {
+		release()
+		t.Fatalf("read active Run during completion race: found=%v err=%v", found, err)
+	}
+	if closeErr != nil {
+		release()
+		t.Fatalf("close store during completion race: %v", closeErr)
+	}
+
+	var stopStdout bytes.Buffer
+	var stopStderr bytes.Buffer
+	stopCode := RunContext(context.Background(), []string{"stop", "--force", active.ID}, &stopStdout, &stopStderr)
+	if stopCode != exitOK {
+		release()
+		<-resolveDone
+		t.Fatalf("Force Stop winner exit = %d, want %d; stdout=%q stderr=%q", stopCode, exitOK, stopStdout.String(), stopStderr.String())
+	}
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+	release()
+	resolveCode := <-resolveDone
+
+	if resolveCode != exitRunFailed {
+		t.Fatalf("losing owner exit = %d, want %d; stop stdout=%q stop stderr=%q resolve stderr=%q", resolveCode, exitRunFailed, stopStdout.String(), stopStderr.String(), resolveStderr.String())
+	}
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+	events := runEvents(t, homeDir, active.ID)
+	outcomes := 0
+	for _, entry := range events {
+		if entry.Event.Kind == runevent.KindDaemonOutcome {
+			outcomes++
+		}
+	}
+	if outcomes != 1 {
+		t.Fatalf("terminal outcome events = %d, want 1; events=%+v", outcomes, events)
+	}
+	assertRecordedOutcomes(t, notifier, []roundnotify.Outcome{{
+		RunID:  active.ID,
+		State:  store.StateStopped,
+		Kind:   store.KindResolve,
+		Target: "pr:123",
+	}})
+
+	stopStdout.Reset()
+	stopStderr.Reset()
+	if replayCode := RunContext(context.Background(), []string{"stop", "--force", active.ID}, &stopStdout, &stopStderr); replayCode != exitOK {
+		t.Fatalf("identical Force Stop replay exit = %d, want %d; stderr=%q", replayCode, exitOK, stopStderr.String())
+	}
+	events = runEvents(t, homeDir, active.ID)
+	outcomes = 0
+	for _, entry := range events {
+		if entry.Event.Kind == runevent.KindDaemonOutcome {
+			outcomes++
+		}
+	}
+	if outcomes != 1 {
+		t.Fatalf("identical replay published another terminal outcome: events=%+v", events)
+	}
+	assertRecordedOutcomes(t, notifier, []roundnotify.Outcome{{
+		RunID:  active.ID,
+		State:  store.StateStopped,
+		Kind:   store.KindResolve,
+		Target: "pr:123",
+	}})
+}
+
 func TestRunOutcomeNotificationsSkipFetch(t *testing.T) {
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
@@ -7139,6 +7250,64 @@ func TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock(t *testi
 	}
 }
 
+func TestRunForceStopPrimaryFailurePrecedesSecondaryCleanupWarnings(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
+		RunID: active.ID, ScopeKind: store.AgentSelectionScopeTask, ScopeID: "task_01",
+		Category: "backend", ProfileSource: "project", Attempt: 1,
+		SelectionRole: store.AgentSelectionRolePreferred, Runtime: "codex", Model: "task-model",
+		Status: store.AgentSelectionStatusActive,
+	})
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return errors.New("cancel denied")
+	})
+	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return errors.New("close denied")
+	})
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int) error {
+		return store.OwnerProcessControlError{
+			PID:  *active.OwnerPID,
+			Step: "prove owner exit",
+			Err:  context.DeadlineExceeded,
+		}
+	}))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("Force Stop failure exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("Force Stop failure printed success output %q", stdout.String())
+	}
+	primaryIndex := strings.Index(stderr.String(), "Stop failed")
+	secondaryIndex := strings.Index(stderr.String(), "Secondary cleanup warning:")
+	if primaryIndex < 0 || secondaryIndex < 0 || primaryIndex >= secondaryIndex {
+		t.Fatalf("primary failure must precede labeled secondary cleanup warnings, got %q", stderr.String())
+	}
+	assertRunState(t, homeDir, active.ID, store.StateActive)
+
+	events := runEvents(t, homeDir, active.ID)
+	primaryCursor := int64(0)
+	secondaryCursor := int64(0)
+	for _, entry := range events {
+		switch {
+		case strings.Contains(entry.Event.Summary, "Force Stop primary failure"):
+			primaryCursor = entry.Cursor
+		case strings.Contains(entry.Event.Summary, "Secondary cleanup warning"):
+			if secondaryCursor == 0 {
+				secondaryCursor = entry.Cursor
+			}
+		}
+	}
+	if primaryCursor == 0 || secondaryCursor == 0 || primaryCursor >= secondaryCursor {
+		t.Fatalf("journaled primary failure must precede secondary cleanup warnings, got %+v", events)
+	}
+}
+
 func TestRunForceStopOwnerPIDReuseFailsClosed(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
@@ -9774,6 +9943,11 @@ func journaledRunEvents(t *testing.T, homeDir string, stderr string) (string, []
 	if runID == "" {
 		t.Fatalf("expected Run id in stderr, got %q", stderr)
 	}
+	return runID, runEvents(t, homeDir, runID)
+}
+
+func runEvents(t *testing.T, homeDir string, runID string) []store.JournalEvent {
+	t.Helper()
 	reader, err := store.OpenReader(context.Background(), homeDir)
 	if err != nil {
 		t.Fatalf("open Run Database reader: %v", err)
@@ -9785,7 +9959,7 @@ func journaledRunEvents(t *testing.T, homeDir string, stderr string) (string, []
 	if err != nil {
 		t.Fatalf("list journaled Run Events: %v", err)
 	}
-	return runID, events
+	return events
 }
 
 func TestAgentConsoleDisplaySinkKeepsWriterBytesByDefault(t *testing.T) {

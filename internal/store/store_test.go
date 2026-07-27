@@ -696,6 +696,36 @@ func TestTerminalOutcomeConflictPreservesWinner(t *testing.T) {
 	}
 }
 
+func TestTerminalOutcomeRejectsIntermediateStateUpdate(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+	run, err := runStore.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create Run: %v", err)
+	}
+	winner, err := runStore.CompleteRun(ctx, run.ID, StateStopped)
+	if err != nil {
+		t.Fatalf("complete Run: %v", err)
+	}
+
+	err = runStore.UpdateRunState(ctx, run.ID, StateResolvingWithAgent)
+	var conflict TerminalOutcomeConflictError
+	if !errors.As(err, &conflict) {
+		t.Fatalf("expected TerminalOutcomeConflictError, got %T %v", err, err)
+	}
+	if conflict.Stored != StateStopped || conflict.Requested != StateResolvingWithAgent {
+		t.Fatalf("unexpected conflict: %+v", conflict)
+	}
+	stored, found, err := runStore.Run(ctx, run.ID)
+	if err != nil || !found {
+		t.Fatalf("read stored Run: found=%v err=%v", found, err)
+	}
+	if stored.State != StateStopped || !stored.CompletedAt.Equal(*winner.CompletedAt) {
+		t.Fatalf("intermediate update changed terminal winner: before=%+v after=%+v", winner.Run, stored)
+	}
+}
+
 func TestTerminalOutcomeEveryStoredTerminalStateIsImmutable(t *testing.T) {
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())

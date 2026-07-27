@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0037-terminal-outcome-integrity
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -32,24 +32,24 @@ explicit secondary diagnostics.
 
 ## Subtasks
 
-- [ ] Thread the completion transition result through terminal coordinators.
-- [ ] Gate outcome events and notifications on the winning transition.
-- [ ] Normalize replay and conflict handling around stored state.
-- [ ] Order primary failure evidence before cleanup diagnostics.
-- [ ] Cover terminal paths across operational commands.
-- [ ] Add deterministic owner-versus-Force-Stop publication coverage.
+- [x] Thread the completion transition result through terminal coordinators.
+- [x] Gate outcome events and notifications on the winning transition.
+- [x] Normalize replay and conflict handling around stored state.
+- [x] Order primary failure evidence before cleanup diagnostics.
+- [x] Cover terminal paths across operational commands.
+- [x] Add deterministic owner-versus-Force-Stop publication coverage.
 
 ## Acceptance Criteria
 
-- [ ] A completion race stores and publishes exactly one terminal outcome.
-- [ ] The losing owner emits no second outcome event or notification.
-- [ ] An identical replay is silent and returns the stored result.
-- [ ] A conflicting loser cannot change the primary reason, exit code, or
+- [x] A completion race stores and publishes exactly one terminal outcome.
+- [x] The losing owner emits no second outcome event or notification.
+- [x] An identical replay is silent and returns the stored result.
+- [x] A conflicting loser cannot change the primary reason, exit code, or
       notification context.
-- [ ] Cleanup warnings follow the primary failure and are labeled secondary.
-- [ ] Notification failure remains a warning and leaves persisted outcome
+- [x] Cleanup warnings follow the primary failure and are labeled secondary.
+- [x] Notification failure remains a warning and leaves persisted outcome
       unchanged.
-- [ ] Resolve, Watch, Implement, and Stop terminal regressions pass.
+- [x] Resolve, Watch, Implement, and Stop terminal regressions pass.
 
 ## Context
 
@@ -83,3 +83,64 @@ explicit secondary diagnostics.
   Build Order 5.
 - `../../adr/0052-run-completion-is-compare-and-set.md` → winner-only
   publication.
+
+## Result
+
+Terminal coordinators now carry `CompleteRunResult.Transitioned` through
+Resolve, Watch, Implement, failure, graceful-stop, and Force Stop paths. Only a
+winning transition appends `daemon.outcome` and attempts the Run Outcome
+Notification. Identical replays return the stored Run without publication, and
+intermediate owner-state updates use compare-and-set protection so they cannot
+reopen a terminal Run before attempting a conflicting completion.
+
+Force Stop retains Agent Session cleanup failures when owner termination or
+completion fails. It prints and journals the primary failure first, then emits
+each failed or skipped cleanup diagnostic as a labeled
+`Secondary cleanup warning`; those diagnostics do not change the Run state or
+command exit code. Notification delivery remains best-effort and records its
+own warning after the persisted outcome.
+
+Verification:
+
+- Pre-change
+  `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go test ./internal/cli -run 'Test(CompletionWinner|RunForceStopPrimaryFailure)' -count=1`
+  failed because Force Stop emitted no outcome notification or event, the
+  losing owner could rewrite Stopped through an intermediate state and then
+  store Clean, and cleanup failures disappeared behind the owner failure.
+- Pre-change
+  `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go test ./internal/store -run 'TestTerminalOutcomeRejectsIntermediateStateUpdate' -count=1`
+  failed because `UpdateRunState` accepted a terminal-to-intermediate rewrite.
+- `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go test ./internal/cli ./internal/store ./internal/notify ./internal/runevent -run 'Test.*(CompletionWinner|TerminalOutcome|PrimaryFailure|OutcomeNotification)' -count=1`
+  passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go test -race ./internal/cli ./internal/store -run 'Test.*(CompletionWinner|TerminalOutcome)' -count=1`
+  passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache go test ./internal/cli ./internal/store ./internal/notify ./internal/runevent -count=1`
+  passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task05-gocache make verify` passed:
+  2,477 Go tests, the four protected skill tests, the Roundfix skill sync
+  check, and the CLI build.
+- `rtk git -c core.fsmonitor=false diff --check` passed.
+
+Acceptance evidence:
+
+- `TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalOutcome`
+  deterministically pauses a Resolve owner, lets Force Stop win, then resumes
+  the owner. The stored outcome remains Stopped, the owner exits with the Run
+  failure code, and the journal and notifier each contain exactly one Stopped
+  outcome. Replaying the same Force Stop adds neither an event nor a
+  notification.
+- `TestTerminalOutcomeRejectsIntermediateStateUpdate` proves a terminal Run
+  rejects the losing owner's later intermediate state, preserves its completion
+  timestamp, and returns the stored/requested states in
+  `TerminalOutcomeConflictError`.
+- `TestRunForceStopPrimaryFailurePrecedesSecondaryCleanupWarnings` proves
+  printed and journaled owner failure evidence precedes labeled cleanup
+  warnings while the Run stays Active and retains its primary exit behavior.
+- `TestRunOutcomeNotificationFailureWarnsAndJournalsWithoutChangingReportOrExit`
+  proves notifier failure stays a warning and preserves the persisted outcome,
+  report, and exit code.
+- The focused terminal suite covers the existing Resolve, Watch, Implement,
+  Stop, notification, and Run Event regressions; the affected-package run and
+  full repository gate passed afterward.
+
+Follow-up: none.

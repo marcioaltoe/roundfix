@@ -371,10 +371,11 @@ type stopRequest struct {
 }
 
 type stopResult struct {
-	Run       store.Run
-	Requested bool
-	Forced    bool
-	Warnings  []string
+	Run          store.Run
+	Requested    bool
+	Forced       bool
+	Transitioned bool
+	Warnings     []string
 }
 
 type OwnerProcessController interface {
@@ -430,15 +431,25 @@ func runStopCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 	result, err := stopTargetRun(ctx, req, loaded, runStore, stderr)
 	if err != nil {
 		printStopFailure(err, stderr)
+		journalStopPrimaryFailure(ctx, runStore, result.Run.ID, err)
+		reportSecondaryCleanupWarnings(ctx, runStore, result.Run.ID, result.Warnings, stderr)
 		var ownerErr forceStopOwnerError
 		if errors.As(err, &ownerErr) {
 			return exitRunFailed
 		}
 		return exitPreflight
 	}
-	for _, warning := range result.Warnings {
-		fmt.Fprintf(stderr, "%s: %s\n", app.Name, warning)
+	if result.Transitioned {
+		publishTerminalCompletion(
+			ctx,
+			runStore,
+			outcomeNotifierFromConfig(loaded.Config),
+			stderr,
+			store.CompleteRunResult{Run: result.Run, Transitioned: true},
+			0,
+		)
 	}
+	reportSecondaryCleanupWarnings(ctx, runStore, result.Run.ID, result.Warnings, stderr)
 	printStopSuccess(result, stdout)
 	return exitOK
 }
@@ -597,7 +608,7 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 	warnings := bestEffortForceStopAgentSessions(ctx, runStore, active)
 	pid, ok := activeOwnerPID(active)
 	if !ok {
-		return stopResult{}, forceStopOwnerError{
+		return stopResult{Run: active, Warnings: warnings}, forceStopOwnerError{
 			RunID: active.ID,
 			PID:   0,
 			Step:  "validate recorded owner PID",
@@ -610,7 +621,7 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 		if errors.As(err, &controlErr) && strings.TrimSpace(controlErr.Step) != "" {
 			step = controlErr.Step
 		}
-		return stopResult{}, forceStopOwnerError{
+		return stopResult{Run: active, Warnings: warnings}, forceStopOwnerError{
 			RunID: active.ID,
 			PID:   pid,
 			Step:  step,
@@ -619,7 +630,7 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 	}
 	run, err := runStore.CompleteRun(ctx, active.ID, store.StateStopped)
 	if err != nil {
-		return stopResult{}, err
+		return stopResult{Run: active, Warnings: warnings}, err
 	}
 	if strings.TrimSpace(active.GitRoot) != "" && strings.TrimSpace(active.WorkDir) != "" {
 		pruned, pruneErr := pruneTerminalRunWorktrees(ctx, active.GitRoot, worktreeLocation, func(runID string) bool {
@@ -633,7 +644,12 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 			warnings = append(warnings, fmt.Sprintf("terminal Worktree reap failed for Run %s: %v", active.ID, pruneErr))
 		}
 	}
-	return stopResult{Run: run.Run, Forced: true, Warnings: warnings}, nil
+	return stopResult{
+		Run:          run.Run,
+		Forced:       true,
+		Transitioned: run.Transitioned,
+		Warnings:     warnings,
+	}, nil
 }
 
 func bestEffortForceStopAgentSessions(ctx context.Context, runStore *store.Store, run store.Run) []string {
@@ -2084,8 +2100,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		return exitRunFailed
 	}
 	closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, completed.ID, runStore)
-	publishRunOutcome(ctx, runStore, completed.ID, completed.State, cycleResult.Remaining, stderr)
-	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed.Run)
+	publishTerminalCompletion(ctx, runStore, notifier, stderr, completed, cycleResult.Remaining)
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
 	ui.Close()
@@ -2111,8 +2126,7 @@ func completeStoppedRunRecord(runStore *store.Store, runID string, notifier roun
 	if err != nil {
 		return exitRunFailed
 	}
-	publishRunOutcome(ctx, runStore, completed.ID, completed.State, 0, io.Discard)
-	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed.Run)
+	publishTerminalCompletion(ctx, runStore, notifier, stderr, completed, 0)
 	return exitOK
 }
 
@@ -2563,8 +2577,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		return exitRunFailed
 	}
 	closeAgentSession(completeCtx, collaborators.runner, runtime, sessionForClose, completed.ID, runStore)
-	publishRunOutcome(completeCtx, runStore, completed.ID, completed.State, result.Remaining, stderr)
-	notifyTerminalOutcome(completeCtx, runStore, notifier, stderr, completed.Run)
+	publishTerminalCompletion(completeCtx, runStore, notifier, stderr, completed, result.Remaining)
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
 	ui.Close()
@@ -3696,7 +3709,10 @@ func maybeRunFinalPush(ctx context.Context, engine *daemon.Engine, sink runevent
 }
 
 func markRunFailed(ctx context.Context, runStore *store.Store, runID string) {
-	_, _ = completeFailedRun(ctx, runStore, runID)
+	completed, ok := completeFailedRun(ctx, runStore, runID)
+	if ok {
+		publishTerminalCompletion(ctx, runStore, nil, io.Discard, completed, 0)
+	}
 }
 
 func markRunFailedAndNotify(ctx context.Context, runStore *store.Store, runID string, notifier roundnotify.Notifier, stderr io.Writer) {
@@ -3704,17 +3720,16 @@ func markRunFailedAndNotify(ctx context.Context, runStore *store.Store, runID st
 	if !ok {
 		return
 	}
-	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed)
+	publishTerminalCompletion(ctx, runStore, notifier, stderr, completed, 0)
 }
 
-func completeFailedRun(ctx context.Context, runStore *store.Store, runID string) (store.Run, bool) {
+func completeFailedRun(ctx context.Context, runStore *store.Store, runID string) (store.CompleteRunResult, bool) {
 	completeCtx := withoutCancelOrBackground(ctx)
 	completed, err := runStore.CompleteRun(completeCtx, runID, store.StateFailed)
 	if err != nil {
-		return store.Run{}, false
+		return store.CompleteRunResult{}, false
 	}
-	publishRunOutcome(completeCtx, runStore, completed.ID, completed.State, 0, io.Discard)
-	return completed.Run, true
+	return completed, true
 }
 
 func closeAgentSession(ctx context.Context, runner agent.Runner, runtime agent.RuntimeSpec, session agent.SessionRef, runID string, runStore *store.Store) {
@@ -3761,6 +3776,83 @@ func publishRunOutcome(ctx context.Context, runStore *store.Store, runID string,
 	}); err != nil {
 		fmt.Fprintf(stderr, "Warning: terminal outcome event not journaled: %v\n", err)
 	}
+}
+
+func publishTerminalCompletion(
+	ctx context.Context,
+	runStore *store.Store,
+	notifier roundnotify.Notifier,
+	stderr io.Writer,
+	completed store.CompleteRunResult,
+	remaining int,
+) {
+	if !completed.Transitioned {
+		return
+	}
+	publishRunOutcome(ctx, runStore, completed.ID, completed.State, remaining, stderr)
+	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed.Run)
+}
+
+func journalStopPrimaryFailure(ctx context.Context, runStore *store.Store, runID string, primary error) {
+	if runStore == nil || strings.TrimSpace(runID) == "" || primary == nil {
+		return
+	}
+	reason := primary.Error()
+	payload, err := json.Marshal(map[string]string{
+		"event":  "force_stop_primary_failure",
+		"reason": reason,
+	})
+	if err != nil {
+		return
+	}
+	_ = (store.JournalSink{Store: runStore}).Publish(withoutCancelOrBackground(ctx), runevent.RunEvent{
+		RunID:   runID,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonStatus,
+		Summary: runevent.BoundSummary("Force Stop primary failure: " + reason),
+		Time:    time.Now().UTC(),
+		Payload: payload,
+	})
+}
+
+func reportSecondaryCleanupWarnings(
+	ctx context.Context,
+	runStore *store.Store,
+	runID string,
+	warnings []string,
+	stderr io.Writer,
+) {
+	for _, warning := range warnings {
+		if !isCleanupFailureDiagnostic(warning) {
+			fmt.Fprintf(stderr, "%s: %s\n", app.Name, warning)
+			continue
+		}
+		summary := "Secondary cleanup warning: " + warning
+		fmt.Fprintf(stderr, "%s: %s\n", app.Name, summary)
+		if runStore == nil || strings.TrimSpace(runID) == "" {
+			continue
+		}
+		payload, err := json.Marshal(map[string]string{
+			"event":  "secondary_cleanup_warning",
+			"reason": warning,
+		})
+		if err != nil {
+			continue
+		}
+		_ = (store.JournalSink{Store: runStore}).Publish(withoutCancelOrBackground(ctx), runevent.RunEvent{
+			RunID:   runID,
+			Source:  runevent.SourceDaemon,
+			Kind:    runevent.KindDaemonStatus,
+			Summary: runevent.BoundSummary(summary),
+			Time:    time.Now().UTC(),
+			Payload: payload,
+		})
+	}
+}
+
+func isCleanupFailureDiagnostic(diagnostic string) bool {
+	lower := strings.ToLower(diagnostic)
+	return strings.Contains(lower, "failed") || strings.Contains(lower, "skipped")
 }
 
 func warnCleanRunWorktreeCleanupFailed(ctx context.Context, runStore *store.Store, runID string, worktreePath string, cleanupErr error, stderr io.Writer) {

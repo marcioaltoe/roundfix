@@ -352,8 +352,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 		return exitRunFailed
 	}
 	closeAgentSession(ctx, collaborators.runner, runtime, sessionForClose, completed.ID, runStore)
-	publishRunOutcome(ctx, runStore, completed.ID, completed.State, cycleResult.Failed+cycleResult.Skipped, stderr)
-	notifyTerminalOutcome(ctx, runStore, outcomeNotifier, stderr, completed.Run)
+	publishTerminalCompletion(ctx, runStore, outcomeNotifier, stderr, completed, cycleResult.Failed+cycleResult.Skipped)
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
 	ui.Close()

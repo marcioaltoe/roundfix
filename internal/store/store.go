@@ -746,10 +746,23 @@ func (store *Store) UpdateRunState(ctx context.Context, runID string, state stri
 		return fmt.Errorf("update Run state: %q is terminal; use CompleteRun", state)
 	}
 	result, err := store.db.ExecContext(ctx, `
-UPDATE runs SET state = ?, updated_at = ? WHERE id = ?`,
+UPDATE runs
+SET state = ?, updated_at = ?
+WHERE id = ?
+  AND state NOT IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		state,
 		formatTime(store.now()),
 		runID,
+		StateFetched,
+		StateStopped,
+		StateClean,
+		StateCleanUnverified,
+		StateMaxRoundsReached,
+		StateBudgetExceeded,
+		StateTimedOut,
+		StateFailed,
+		StateIntegrationPending,
+		StateUnresolved,
 	)
 	if err != nil {
 		return fmt.Errorf("update Run state: %w", err)
@@ -759,7 +772,18 @@ UPDATE runs SET state = ?, updated_at = ? WHERE id = ?`,
 		return fmt.Errorf("read Run state update result: %w", err)
 	}
 	if affected == 0 {
-		return fmt.Errorf("update Run state: Run %q does not exist", runID)
+		run, found, selectErr := store.Run(ctx, runID)
+		if selectErr != nil {
+			return fmt.Errorf("read Run %q after state update compare-and-set: %w", runID, selectErr)
+		}
+		if !found {
+			return fmt.Errorf("update Run state: Run %q does not exist", runID)
+		}
+		return TerminalOutcomeConflictError{
+			RunID:     runID,
+			Stored:    run.State,
+			Requested: state,
+		}
 	}
 	return nil
 }
