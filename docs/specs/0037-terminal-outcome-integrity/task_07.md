@@ -42,8 +42,9 @@ and this Task file.
 - [x] The Skill surfaces graceful interruption and registered-session cleanup
       consistently with supported docs.
 - [x] Canonical and generated files are byte-identical.
-- [x] Git evidence contains only the two authorized Skill paths and this Task
-      file.
+- [x] Git evidence contains only the two authorized Skill paths, this Task
+      file, and the maintainer-authorized derived Skill-digest pins named in
+      the active Spec artifacts' Tooling authority entries.
 - [x] No other protected or upstream-managed Skill changes.
 - [ ] Shipped Skill validation and the complete repository gate pass.
 
