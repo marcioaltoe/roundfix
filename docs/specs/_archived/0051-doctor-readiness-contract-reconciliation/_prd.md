@@ -1,9 +1,12 @@
 ---
 spec: 0051-doctor-readiness-contract-reconciliation
-status: active
+status: archived
 created: 2026-07-26
 surfaces: [cli, backend, docs]
+archived: "2026-07-26"
+source_slug: 0051-doctor-readiness-contract-reconciliation
 ---
+
 
 # Doctor Readiness Contract Reconciliation
 
