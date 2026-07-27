@@ -1,9 +1,12 @@
 ---
 spec: 0038-terminal-run-worktree-reconciliation
-status: active
+status: archived
 created: 2026-07-17
 surfaces: [backend, cli, data, docs]
+archived: "2026-07-27"
+source_slug: 0038-terminal-run-worktree-reconciliation
 ---
+
 
 # Terminal Run Worktree reconciliation
 
