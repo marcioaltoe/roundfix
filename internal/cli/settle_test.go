@@ -825,6 +825,7 @@ func createImplementRunWorktreeFixture(t *testing.T, homeDir string, repoDir str
 		HeadSHA:     head,
 		SpecSlug:    specSlug,
 		Agent:       "codex",
+		OwnerPID:    os.Getpid(),
 	})
 	if err != nil {
 		t.Fatalf("create implement Run: %v", err)

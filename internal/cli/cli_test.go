@@ -7006,6 +7006,214 @@ func TestRunStopBySpecRecordsStopRequestForMatchingActiveRun(t *testing.T) {
 	}
 }
 
+func TestRunForceStopOwnerExitPrecedesCompletionAndLockRelease(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	proved := false
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(ctx context.Context, pid int) error {
+		if active.OwnerPID == nil || pid != *active.OwnerPID {
+			t.Fatalf("owner process PID = %d, want recorded PID %v", pid, active.OwnerPID)
+		}
+		runStore, err := store.Open(ctx, homeDir)
+		if err != nil {
+			t.Fatalf("open store during owner exit proof: %v", err)
+		}
+		defer func() {
+			if err := runStore.Close(); err != nil {
+				t.Fatalf("close store during owner exit proof: %v", err)
+			}
+		}()
+		current, found, err := runStore.Run(ctx, active.ID)
+		if err != nil || !found {
+			t.Fatalf("read Run during owner exit proof: found=%v err=%v", found, err)
+		}
+		if current.State != store.StateActive {
+			t.Fatalf("Run state during owner exit proof = %q, want Active", current.State)
+		}
+		if _, err := runStore.CreateRun(ctx, request); err == nil {
+			t.Fatal("Active Run lock was released before owner exit proof")
+		}
+		proved = true
+		return nil
+	}))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("force stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	if !proved {
+		t.Fatal("owner exit was not proven")
+	}
+	if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
+		t.Fatalf("expected force stop success report, got %q", stdout.String())
+	}
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+}
+
+func TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock(t *testing.T) {
+	tests := []struct {
+		name string
+		step string
+		err  error
+	}{
+		{
+			name: "permission",
+			step: "send graceful termination",
+			err:  errors.New("operation not permitted"),
+		},
+		{
+			name: "deadline",
+			step: "prove exit after force kill",
+			err:  context.DeadlineExceeded,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+			withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int) error {
+				return store.OwnerProcessControlError{PID: *active.OwnerPID, Step: tt.step, Err: tt.err}
+			}))
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+			if code != exitRunFailed {
+				t.Fatalf("force stop exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("failed force stop printed success output %q", stdout.String())
+			}
+			for _, want := range []string{
+				active.ID,
+				strconv.Itoa(*active.OwnerPID),
+				tt.step,
+				"remains Active",
+				"Active Run lock retained",
+			} {
+				if !strings.Contains(stderr.String(), want) {
+					t.Fatalf("force stop diagnostic missing %q: %q", want, stderr.String())
+				}
+			}
+			assertRunState(t, homeDir, active.ID, store.StateActive)
+			runStore, err := store.Open(context.Background(), homeDir)
+			if err != nil {
+				t.Fatalf("open store after failed force stop: %v", err)
+			}
+			defer func() {
+				if err := runStore.Close(); err != nil {
+					t.Fatalf("close store after failed force stop: %v", err)
+				}
+			}()
+			if _, err := runStore.CreateRun(context.Background(), request); err == nil {
+				t.Fatal("failed force stop released the Active Run lock")
+			}
+		})
+	}
+}
+
+func TestRunForceStopOwnerPIDReuseFailsClosed(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int) error {
+		return store.OwnerProcessControlError{
+			PID:  *active.OwnerPID,
+			Step: "prove owner process identity",
+			Err:  store.ErrOwnerProcessIdentityUnproven,
+		}
+	}))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("force stop exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("failed force stop printed success output %q", stdout.String())
+	}
+	for _, want := range []string{
+		active.ID,
+		strconv.Itoa(*active.OwnerPID),
+		"prove owner process identity",
+		"remains Active",
+		"Active Run lock retained",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("force stop diagnostic missing %q: %q", want, stderr.String())
+		}
+	}
+	assertRunState(t, homeDir, active.ID, store.StateActive)
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open store after reused PID refusal: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close store after reused PID refusal: %v", err)
+		}
+	}()
+	if _, err := runStore.CreateRun(context.Background(), request); err == nil {
+		t.Fatal("reused PID refusal released the Active Run lock")
+	}
+}
+
+func TestRunForceStopStoppedRunIsIdempotentWithoutOwnerOrSessionActions(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
+		RunID: active.ID, ScopeKind: store.AgentSelectionScopeTask, ScopeID: "task_01",
+		Category: "backend", ProfileSource: "project", Attempt: 1,
+		SelectionRole: store.AgentSelectionRolePreferred, Runtime: "codex", Model: "task-model",
+		Status: store.AgentSelectionStatusActive,
+	})
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open store to complete Run: %v", err)
+	}
+	if _, err := runStore.CompleteRun(context.Background(), active.ID, store.StateStopped); err != nil {
+		t.Fatalf("complete Run as Stopped: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close store after completion: %v", err)
+	}
+	cancelCalls := 0
+	closeCalls := 0
+	ownerCalls := 0
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		cancelCalls++
+		return nil
+	})
+	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		closeCalls++
+		return nil
+	})
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int) error {
+		ownerCalls++
+		return nil
+	}))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("idempotent force stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	if cancelCalls != 0 || closeCalls != 0 || ownerCalls != 0 {
+		t.Fatalf("idempotent force stop actions: cancel=%d close=%d owner=%d", cancelCalls, closeCalls, ownerCalls)
+	}
+	if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
+		t.Fatalf("expected idempotent force stop report, got %q", stdout.String())
+	}
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+}
+
 func TestRunStopForceAgentSessionCleanupSkipsRunWithoutActiveLifecycle(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
@@ -7091,6 +7299,10 @@ func TestRunStopForceRegisteredAgentSessionCleanupTargetsActiveScopesInOrder(t *
 		calls = append(calls, "close "+runtime.ID+" "+session.Name+" "+session.WorkDir)
 		return nil
 	})
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(_ context.Context, pid int) error {
+		calls = append(calls, fmt.Sprintf("owner %d", pid))
+		return nil
+	}))
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -7106,6 +7318,7 @@ func TestRunStopForceRegisteredAgentSessionCleanupTargetsActiveScopesInOrder(t *
 		"close opencode roundfix-" + active.ID + "-qa-fallback-01 " + active.WorkDir,
 		"cancel claude roundfix-" + active.ID + "-review-002 " + repoDir,
 		"close claude roundfix-" + active.ID + "-review-002 " + repoDir,
+		fmt.Sprintf("owner %d", *active.OwnerPID),
 	}
 	if !reflect.DeepEqual(calls, wantCalls) {
 		t.Fatalf("unexpected session invocations\nwant: %#v\ngot:  %#v", wantCalls, calls)
@@ -7211,6 +7424,9 @@ func TestRunStopForceReapsEmptyRunAndTaskWorktrees(t *testing.T) {
 	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
 		return nil
 	})
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int) error {
+		return nil
+	}))
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -7253,6 +7469,9 @@ func TestRunStopForceKeepsRunWorktreeWithCommits(t *testing.T) {
 	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
 		return nil
 	})
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int) error {
+		return nil
+	}))
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -8443,6 +8662,21 @@ func withStopAgentSessionCloser(t *testing.T, closeSession func(context.Context,
 	})
 }
 
+type ownerProcessControllerFunc func(context.Context, int) error
+
+func (controller ownerProcessControllerFunc) TerminateAndWait(ctx context.Context, pid int) error {
+	return controller(ctx, pid)
+}
+
+func withOwnerProcessController(t *testing.T, controller OwnerProcessController) {
+	t.Helper()
+	old := ownerProcesses
+	ownerProcesses = controller
+	t.Cleanup(func() {
+		ownerProcesses = old
+	})
+}
+
 func fakeACPXVersionCommand(t *testing.T, version string) string {
 	t.Helper()
 	script := filepath.Join(t.TempDir(), "acpx")
@@ -8675,6 +8909,7 @@ func assertNoRunDatabase(t *testing.T, homeDir string) {
 
 func createActiveImplementRunForStop(t *testing.T, homeDir string, repoDir string, specSlug string, agentID string) (store.Run, store.CreateRunRequest) {
 	t.Helper()
+	ownerPID := os.Getpid()
 	request := store.CreateRunRequest{
 		Kind:        store.KindImplement,
 		GitRoot:     repoDir,
@@ -8682,6 +8917,7 @@ func createActiveImplementRunForStop(t *testing.T, homeDir string, repoDir strin
 		HeadSHA:     "abc123",
 		SpecSlug:    specSlug,
 		Agent:       agentID,
+		OwnerPID:    ownerPID,
 	}
 	runStore, err := store.Open(context.Background(), homeDir)
 	if err != nil {
@@ -8696,6 +8932,12 @@ func createActiveImplementRunForStop(t *testing.T, homeDir string, repoDir strin
 	if err != nil {
 		t.Fatalf("create active implement run: %v", err)
 	}
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(_ context.Context, pid int) error {
+		if pid != ownerPID {
+			t.Fatalf("owner process PID = %d, want %d", pid, ownerPID)
+		}
+		return nil
+	}))
 	return active, request
 }
 

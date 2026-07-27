@@ -168,6 +168,7 @@ var promptProjectClaudeSkillSymlink = defaultPromptProjectClaudeSkillSymlink
 var cancelStopAgentSession = defaultCancelStopAgentSession
 var listRoundfixAgentSessions = defaultListRoundfixAgentSessions
 var closeStopAgentSession = defaultCloseStopAgentSession
+var ownerProcesses OwnerProcessController = store.NewOwnerProcessController()
 
 type validationError struct {
 	message string
@@ -376,6 +377,31 @@ type stopResult struct {
 	Warnings  []string
 }
 
+type OwnerProcessController interface {
+	TerminateAndWait(context.Context, int) error
+}
+
+type forceStopOwnerError struct {
+	RunID string
+	PID   int
+	Step  string
+	Err   error
+}
+
+func (err forceStopOwnerError) Error() string {
+	return fmt.Sprintf(
+		"force stop Run %s owner PID %d failed step %q: %v; Run remains Active; Active Run lock retained",
+		err.RunID,
+		err.PID,
+		err.Step,
+		err.Err,
+	)
+}
+
+func (err forceStopOwnerError) Unwrap() error {
+	return err.Err
+}
+
 func runStopCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	if commandWantsHelp(args) {
 		fmt.Fprint(stdout, commandUsage("stop"))
@@ -404,6 +430,10 @@ func runStopCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 	result, err := stopTargetRun(ctx, req, loaded, runStore, stderr)
 	if err != nil {
 		printStopFailure(err, stderr)
+		var ownerErr forceStopOwnerError
+		if errors.As(err, &ownerErr) {
+			return exitRunFailed
+		}
 		return exitPreflight
 	}
 	for _, warning := range result.Warnings {
@@ -553,7 +583,40 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 }
 
 func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, worktreeLocation string) (stopResult, error) {
+	if store.IsTerminalState(active.State) {
+		if active.State == store.StateStopped {
+			return stopResult{Run: active, Forced: true}, nil
+		}
+		return stopResult{}, store.TerminalOutcomeConflictError{
+			RunID:     active.ID,
+			Stored:    active.State,
+			Requested: store.StateStopped,
+		}
+	}
+
 	warnings := bestEffortForceStopAgentSessions(ctx, runStore, active)
+	pid, ok := activeOwnerPID(active)
+	if !ok {
+		return stopResult{}, forceStopOwnerError{
+			RunID: active.ID,
+			PID:   0,
+			Step:  "validate recorded owner PID",
+			Err:   store.ErrOwnerProcessIdentityUnproven,
+		}
+	}
+	if err := ownerProcesses.TerminateAndWait(ctx, pid); err != nil {
+		step := "prove owner exit"
+		var controlErr store.OwnerProcessControlError
+		if errors.As(err, &controlErr) && strings.TrimSpace(controlErr.Step) != "" {
+			step = controlErr.Step
+		}
+		return stopResult{}, forceStopOwnerError{
+			RunID: active.ID,
+			PID:   pid,
+			Step:  step,
+			Err:   err,
+		}
+	}
 	run, err := runStore.CompleteRun(ctx, active.ID, store.StateStopped)
 	if err != nil {
 		return stopResult{}, err

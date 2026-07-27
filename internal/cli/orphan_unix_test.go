@@ -3,19 +3,161 @@
 package cli
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
+	"time"
 
 	"roundfix/internal/spec"
 	"roundfix/internal/store"
 )
+
+func TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	pid, ownerWait := startCLIForceStopOwnerProcess(t)
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database: %v", err)
+	}
+	active, err := runStore.CreateRun(context.Background(), store.CreateRunRequest{
+		Kind:        store.KindImplement,
+		GitRoot:     repoDir,
+		LocalBranch: "ma/force-stop-owner",
+		HeadSHA:     "abc123",
+		SpecSlug:    "0001-widget-flow",
+		Agent:       "codex",
+		OwnerPID:    pid,
+	})
+	if err != nil {
+		t.Fatalf("create active Run: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close Run Database: %v", err)
+	}
+	type observation struct {
+		ownerAlive bool
+		err        error
+	}
+	observed := make(chan observation, 1)
+	monitorCtx, cancelMonitor := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancelMonitor()
+	go func() {
+		reader, err := store.OpenReader(monitorCtx, homeDir)
+		if err != nil {
+			observed <- observation{err: err}
+			return
+		}
+		defer func() {
+			_ = reader.Close()
+		}()
+		ticker := time.NewTicker(5 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			current, found, err := reader.Run(monitorCtx, active.ID)
+			if err != nil {
+				observed <- observation{err: err}
+				return
+			}
+			if !found {
+				observed <- observation{err: fmt.Errorf("Run %s disappeared", active.ID)}
+				return
+			}
+			if current.State == store.StateStopped {
+				observed <- observation{ownerAlive: store.ProcessAlive(pid)}
+				return
+			}
+			select {
+			case <-monitorCtx.Done():
+				observed <- observation{err: monitorCtx.Err()}
+				return
+			case <-ticker.C:
+			}
+		}
+	}()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("force stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	terminal := <-observed
+	if terminal.err != nil {
+		t.Fatalf("observe terminal Run: %v", terminal.err)
+	}
+	if terminal.ownerAlive {
+		t.Fatalf("Run %s reached Stopped while owner process %d was alive", active.ID, pid)
+	}
+	select {
+	case err := <-ownerWait:
+		if err != nil {
+			t.Fatalf("owner process exit: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatalf("owner process %d did not exit", pid)
+	}
+	if store.ProcessAlive(pid) {
+		t.Fatalf("owner process %d remained alive after force stop", pid)
+	}
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+}
+
+func TestCLIForceStopOwnerProcessHelper(t *testing.T) {
+	if os.Getenv("ROUNDFIX_CLI_FORCE_STOP_OWNER_HELPER") == "" {
+		return
+	}
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGTERM)
+	defer signal.Stop(signals)
+	fmt.Fprintln(os.Stdout, "ready")
+	<-signals
+}
+
+func startCLIForceStopOwnerProcess(t *testing.T) (int, <-chan error) {
+	t.Helper()
+	cmd := exec.Command(os.Args[0], "-test.run=^TestCLIForceStopOwnerProcessHelper$")
+	cmd.Env = append(os.Environ(), "ROUNDFIX_CLI_FORCE_STOP_OWNER_HELPER=1")
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		t.Fatalf("open owner process stdout: %v", err)
+	}
+	cmd.Stderr = os.Stderr
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("start owner process: %v", err)
+	}
+	wait := make(chan error, 1)
+	go func() {
+		wait <- cmd.Wait()
+		close(wait)
+	}()
+	t.Cleanup(func() {
+		if store.ProcessAlive(cmd.Process.Pid) {
+			_ = cmd.Process.Kill()
+		}
+		select {
+		case <-wait:
+		case <-time.After(2 * time.Second):
+		}
+	})
+	scanner := bufio.NewScanner(stdout)
+	if !scanner.Scan() {
+		t.Fatalf("owner process did not become ready: %v", scanner.Err())
+	}
+	if scanner.Text() != "ready" {
+		t.Fatalf("owner process readiness = %q, want ready", scanner.Text())
+	}
+	return cmd.Process.Pid, wait
+}
 
 func TestRunImplementReclaimsDeadOwnerActiveRun(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
