@@ -349,6 +349,60 @@ notification when the Run reaches its terminal outcome. Treat that notification
 as the unattended-Run signal; use `attach` or the console log for details.
 `attach` never stops, commits, or mutates the Run; detaching leaves it running.
 
+### Reconcile retained Run work
+
+Runs List keeps requested rows on stdout. When terminal spec Runs retain a Run
+Worktree or Run Branch in the selected repository scope, it writes the exact
+count and `roundfix reconcile` guidance to stderr without classifying the
+work:
+
+```text
+(2 terminal Run Worktrees retained; run 'roundfix reconcile' to inspect)
+```
+
+Inspect before applying anything. A Run ID selects one terminal spec Run;
+omitting it scans the current repository:
+
+```bash
+roundfix reconcile <run-id>                 # single-Run dry-run
+roundfix reconcile                          # repository-wide dry-run
+roundfix reconcile <run-id> --format json   # requested JSON on stdout
+```
+
+The report classifies every selected Run as `safe`, `unintegrated`, `dirty`,
+`unknown`, or `released`. `safe` requires resolved Run and target heads,
+positive cleanliness for any present registered Run Worktree, and proof that
+the Run head is an ancestor of the target head. `unintegrated` has clean,
+resolved evidence but lacks ancestry; `dirty` has tracked or untracked
+worktree changes; `unknown` lacks trustworthy metadata or Git proof; and
+`released` means both the Run Worktree and Run Branch are absent.
+
+Only `safe` is eligible for cleanup. Age, terminal outcome, or one missing path
+does not establish safety, and Roundfix preserves dirty, unintegrated, and
+unknown work. Redirect requested output and diagnostics separately in scripts:
+
+```bash
+roundfix reconcile --format json > reconcile.json
+roundfix runs list > runs.txt 2> runs.diagnostics
+```
+
+After reviewing the current dry-run, opt into mutation explicitly:
+
+```bash
+roundfix reconcile <run-id> --apply
+roundfix reconcile --apply
+```
+
+`--apply` is the only mutation switch; there is no force bypass. Roundfix
+revalidates cleanliness and both heads, then releases only entries that remain
+`safe`. A safe Integration Pending Run becomes Clean with its evidence
+recorded before cleanup. Other terminal outcomes remain unchanged, and a
+second run reports `released` without another mutation.
+
+See the [Reconcile Command reference](commands.md#reconcile) for the full
+state table, stdout and stderr contract, JSON fields, refusal behavior, and
+links to the glossary, ADR, Spec, and finding trail.
+
 ### Read the outcome and act
 
 | Outcome line | Meaning | Next action |
@@ -537,6 +591,7 @@ For the full failure and replay contract, see the
 | `watch` | Fetch and resolve in a watched loop |
 | `runs` | Browse Runs in the read-only Run Browser (interactive terminal) |
 | `runs list` | List Runs from the Run Database, bounded and plain-text |
+| `reconcile` | Classify retained terminal Run work and explicitly release proven-safe entries |
 | `attach` | Browse or replay a Run's timeline, read-only |
 | `stop` | Request or force-stop an Active Run |
 | `gc` | Prune old terminal Run journals and artifacts |

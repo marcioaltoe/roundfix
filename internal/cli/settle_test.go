@@ -839,6 +839,11 @@ func createImplementRunWorktreeFixture(t *testing.T, homeDir string, repoDir str
 	if err != nil {
 		t.Fatalf("create Run Worktree: %v", err)
 	}
+	runWorktreePath, err := filepath.EvalSymlinks(runRef.Path)
+	if err != nil {
+		t.Fatalf("resolve Run Worktree path: %v", err)
+	}
+	runRef.Path = runWorktreePath
 	run, err = runStore.SetRunWorkDir(ctx, run.ID, runRef.Path)
 	if err != nil {
 		t.Fatalf("record Run Worktree: %v", err)

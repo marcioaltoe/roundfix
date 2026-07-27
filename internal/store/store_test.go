@@ -932,6 +932,7 @@ func TestReconcileIntegrationPendingRecordsEvidence(t *testing.T) {
 	req.Kind = KindImplement
 	req.SpecSlug = "0037-terminal-outcome-integrity"
 	req.LocalBranch = "feature/terminal-outcomes"
+	req.WorkDir = filepath.Join("tmp", "run-worktree")
 	run, err := runStore.CreateRun(ctx, req)
 	if err != nil {
 		t.Fatalf("create Implement Run: %v", err)
@@ -943,11 +944,16 @@ func TestReconcileIntegrationPendingRecordsEvidence(t *testing.T) {
 	reconciledAt := time.Date(2026, 7, 27, 11, 0, 0, 0, time.UTC)
 
 	reconciled, err := runStore.ReconcileIntegration(ctx, IntegrationReconciliation{
-		RunID:        run.ID,
-		RunHead:      "run-head",
-		TargetBranch: req.LocalBranch,
-		TargetHead:   "target-head",
-		Time:         reconciledAt,
+		RunID:           run.ID,
+		PreviousOutcome: StateIntegrationPending,
+		Classification:  "safe",
+		RunBranch:       "roundfix/run-" + run.ID,
+		RunHead:         "run-head",
+		TargetBranch:    req.LocalBranch,
+		TargetHead:      "target-head",
+		Worktree:        req.WorkDir,
+		Action:          "cleanup",
+		Time:            reconciledAt,
 	})
 	if err != nil {
 		t.Fatalf("reconcile Integration Pending Run: %v", err)
@@ -995,6 +1001,7 @@ func TestReconcileIntegrationDatabaseFailureNamesOperationAndRun(t *testing.T) {
 	req := sampleCreateRunRequest()
 	req.Kind = KindImplement
 	req.SpecSlug = "0037-terminal-outcome-integrity"
+	req.WorkDir = filepath.Join("tmp", "run-worktree")
 	run, err := runStore.CreateRun(ctx, req)
 	if err != nil {
 		t.Fatalf("create Implement Run: %v", err)
@@ -1007,14 +1014,19 @@ func TestReconcileIntegrationDatabaseFailureNamesOperationAndRun(t *testing.T) {
 	}
 
 	_, err = runStore.ReconcileIntegration(ctx, IntegrationReconciliation{
-		RunID:        run.ID,
-		RunHead:      "run-head",
-		TargetBranch: req.LocalBranch,
-		TargetHead:   "target-head",
-		Time:         time.Date(2026, 7, 27, 15, 0, 0, 0, time.UTC),
+		RunID:           run.ID,
+		PreviousOutcome: StateIntegrationPending,
+		Classification:  "safe",
+		RunBranch:       "roundfix/run-" + run.ID,
+		RunHead:         "run-head",
+		TargetBranch:    req.LocalBranch,
+		TargetHead:      "target-head",
+		Worktree:        req.WorkDir,
+		Action:          "cleanup",
+		Time:            time.Date(2026, 7, 27, 15, 0, 0, 0, time.UTC),
 	})
 	if err == nil ||
-		!strings.Contains(err.Error(), "begin Integration Pending reconciliation") ||
+		!strings.Contains(err.Error(), "begin terminal Run reconciliation") ||
 		!strings.Contains(err.Error(), run.ID) {
 		t.Fatalf("expected wrapped reconciliation failure naming operation and Run %s, got %v", run.ID, err)
 	}
@@ -1028,6 +1040,7 @@ func TestReconcileIntegrationRejectsIncompleteEvidence(t *testing.T) {
 	req := sampleCreateRunRequest()
 	req.Kind = KindImplement
 	req.SpecSlug = "0037-terminal-outcome-integrity"
+	req.WorkDir = filepath.Join("tmp", "run-worktree")
 	run, err := runStore.CreateRun(ctx, req)
 	if err != nil {
 		t.Fatalf("create Implement Run: %v", err)
@@ -1037,11 +1050,16 @@ func TestReconcileIntegrationRejectsIncompleteEvidence(t *testing.T) {
 		t.Fatalf("complete Run Integration Pending: %v", err)
 	}
 	valid := IntegrationReconciliation{
-		RunID:        run.ID,
-		RunHead:      "run-head",
-		TargetBranch: req.LocalBranch,
-		TargetHead:   "target-head",
-		Time:         time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC),
+		RunID:           run.ID,
+		PreviousOutcome: StateIntegrationPending,
+		Classification:  "safe",
+		RunBranch:       "roundfix/run-" + run.ID,
+		RunHead:         "run-head",
+		TargetBranch:    req.LocalBranch,
+		TargetHead:      "target-head",
+		Worktree:        req.WorkDir,
+		Action:          "cleanup",
+		Time:            time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC),
 	}
 	tests := []struct {
 		name   string
@@ -1086,6 +1104,7 @@ func TestReconcileIntegrationRejectsStaleTargetBranch(t *testing.T) {
 	req.Kind = KindImplement
 	req.SpecSlug = "0037-terminal-outcome-integrity"
 	req.LocalBranch = "feature/terminal-outcomes"
+	req.WorkDir = filepath.Join("tmp", "run-worktree")
 	run, err := runStore.CreateRun(ctx, req)
 	if err != nil {
 		t.Fatalf("create Implement Run: %v", err)
@@ -1096,11 +1115,16 @@ func TestReconcileIntegrationRejectsStaleTargetBranch(t *testing.T) {
 	}
 
 	_, err = runStore.ReconcileIntegration(ctx, IntegrationReconciliation{
-		RunID:        run.ID,
-		RunHead:      "run-head",
-		TargetBranch: "feature/stale-target",
-		TargetHead:   "target-head",
-		Time:         time.Date(2026, 7, 27, 12, 30, 0, 0, time.UTC),
+		RunID:           run.ID,
+		PreviousOutcome: StateIntegrationPending,
+		Classification:  "safe",
+		RunBranch:       "roundfix/run-" + run.ID,
+		RunHead:         "run-head",
+		TargetBranch:    "feature/stale-target",
+		TargetHead:      "target-head",
+		Worktree:        req.WorkDir,
+		Action:          "cleanup",
+		Time:            time.Date(2026, 7, 27, 12, 30, 0, 0, time.UTC),
 	})
 	if err == nil || !strings.Contains(err.Error(), "does not match recorded target branch") {
 		t.Fatalf("expected stale target branch rejection, got %v", err)
@@ -1142,6 +1166,7 @@ func TestReconcileIntegrationRejectsEveryOtherSourceOutcome(t *testing.T) {
 			req.Kind = KindImplement
 			req.SpecSlug = fmt.Sprintf("terminal-source-%d", index)
 			req.LocalBranch = fmt.Sprintf("feature/terminal-source-%d", index)
+			req.WorkDir = filepath.Join("tmp", fmt.Sprintf("run-worktree-%d", index))
 			run, err := runStore.CreateRun(ctx, req)
 			if err != nil {
 				t.Fatalf("create Implement Run: %v", err)
@@ -1152,11 +1177,16 @@ func TestReconcileIntegrationRejectsEveryOtherSourceOutcome(t *testing.T) {
 			}
 
 			_, err = runStore.ReconcileIntegration(ctx, IntegrationReconciliation{
-				RunID:        run.ID,
-				RunHead:      "run-head",
-				TargetBranch: req.LocalBranch,
-				TargetHead:   "target-head",
-				Time:         time.Date(2026, 7, 27, 13, 0, 0, 0, time.UTC),
+				RunID:           run.ID,
+				PreviousOutcome: StateIntegrationPending,
+				Classification:  "safe",
+				RunBranch:       "roundfix/run-" + run.ID,
+				RunHead:         "run-head",
+				TargetBranch:    req.LocalBranch,
+				TargetHead:      "target-head",
+				Worktree:        req.WorkDir,
+				Action:          "cleanup",
+				Time:            time.Date(2026, 7, 27, 13, 0, 0, 0, time.UTC),
 			})
 			var conflict TerminalOutcomeConflictError
 			if !errors.As(err, &conflict) {
@@ -1187,6 +1217,7 @@ func TestReconcileIntegrationRollsBackWhenJournalFails(t *testing.T) {
 	req := sampleCreateRunRequest()
 	req.Kind = KindImplement
 	req.SpecSlug = "0037-terminal-outcome-integrity"
+	req.WorkDir = filepath.Join("tmp", "run-worktree")
 	run, err := runStore.CreateRun(ctx, req)
 	if err != nil {
 		t.Fatalf("create Implement Run: %v", err)
@@ -1205,11 +1236,16 @@ END`); err != nil {
 	}
 
 	_, err = runStore.ReconcileIntegration(ctx, IntegrationReconciliation{
-		RunID:        run.ID,
-		RunHead:      "run-head",
-		TargetBranch: req.LocalBranch,
-		TargetHead:   "target-head",
-		Time:         time.Date(2026, 7, 27, 14, 0, 0, 0, time.UTC),
+		RunID:           run.ID,
+		PreviousOutcome: StateIntegrationPending,
+		Classification:  "safe",
+		RunBranch:       "roundfix/run-" + run.ID,
+		RunHead:         "run-head",
+		TargetBranch:    req.LocalBranch,
+		TargetHead:      "target-head",
+		Worktree:        req.WorkDir,
+		Action:          "cleanup",
+		Time:            time.Date(2026, 7, 27, 14, 0, 0, 0, time.UTC),
 	})
 	if err == nil || !strings.Contains(err.Error(), run.ID) {
 		t.Fatalf("expected reconciliation journal failure naming Run %s, got %v", run.ID, err)
@@ -1226,6 +1262,197 @@ END`); err != nil {
 	}
 	if got := countRunEvents(t, ctx, runStore, run.ID); got != 0 {
 		t.Fatalf("expected failed reconciliation to append no event, got %d", got)
+	}
+}
+
+func TestReconcileIntegrationSafeCompleteEvidence(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	req := sampleCreateRunRequest()
+	req.Kind = KindImplement
+	req.SpecSlug = "0038-terminal-run-worktree-reconciliation"
+	req.LocalBranch = "ma/reconciliation"
+	req.WorkDir = filepath.Join("tmp", "run-worktree")
+	run, err := runStore.CreateRun(ctx, req)
+	if err != nil {
+		t.Fatalf("create Implement Run: %v", err)
+	}
+	if _, err := runStore.CompleteRun(ctx, run.ID, StateIntegrationPending); err != nil {
+		t.Fatalf("complete Run Integration Pending: %v", err)
+	}
+	reconciledAt := time.Date(2026, 7, 27, 16, 0, 0, 0, time.UTC)
+	evidence := IntegrationReconciliation{
+		RunID:           run.ID,
+		PreviousOutcome: StateIntegrationPending,
+		Classification:  "safe",
+		RunBranch:       "roundfix/run-" + run.ID,
+		RunHead:         "run-head",
+		TargetBranch:    req.LocalBranch,
+		TargetHead:      "target-head",
+		Worktree:        req.WorkDir,
+		Action:          "cleanup",
+		Time:            reconciledAt,
+	}
+
+	reconciled, err := runStore.ReconcileIntegration(ctx, evidence)
+	if err != nil {
+		t.Fatalf("reconcile safe Integration Pending Run: %v", err)
+	}
+	if reconciled.State != StateClean {
+		t.Fatalf("expected reconciled Clean Run, got %+v", reconciled)
+	}
+	events, err := runStore.RunEventsAfter(ctx, run.ID, 0, 10)
+	if err != nil {
+		t.Fatalf("read reconciliation event: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("expected one reconciliation event, got %d", len(events))
+	}
+	var payload map[string]string
+	if err := json.Unmarshal(events[0].Event.Payload, &payload); err != nil {
+		t.Fatalf("decode reconciliation event: %v", err)
+	}
+	want := map[string]string{
+		"previous_outcome": StateIntegrationPending,
+		"current_outcome":  StateClean,
+		"classification":   evidence.Classification,
+		"run_branch":       evidence.RunBranch,
+		"run_head":         evidence.RunHead,
+		"target_branch":    evidence.TargetBranch,
+		"target_head":      evidence.TargetHead,
+		"worktree":         evidence.Worktree,
+		"action":           evidence.Action,
+	}
+	for key, value := range want {
+		if payload[key] != value {
+			t.Fatalf("expected reconciliation payload %s=%q, got %q in %#v", key, value, payload[key], payload)
+		}
+	}
+}
+
+func TestReconcileIntegrationInvalidCompleteEvidence(t *testing.T) {
+	valid := IntegrationReconciliation{
+		RunID:           "run_01",
+		PreviousOutcome: StateIntegrationPending,
+		Classification:  "safe",
+		RunBranch:       "roundfix/run-run_01",
+		RunHead:         "run-head",
+		TargetBranch:    "ma/reconciliation",
+		TargetHead:      "target-head",
+		Worktree:        filepath.Join("tmp", "run-worktree"),
+		Action:          "cleanup",
+		Time:            time.Date(2026, 7, 27, 16, 30, 0, 0, time.UTC),
+	}
+	tests := []struct {
+		name   string
+		mutate func(*IntegrationReconciliation)
+	}{
+		{name: "missing previous outcome", mutate: func(req *IntegrationReconciliation) { req.PreviousOutcome = "" }},
+		{name: "unsafe classification", mutate: func(req *IntegrationReconciliation) { req.Classification = "unknown" }},
+		{name: "missing Run Branch", mutate: func(req *IntegrationReconciliation) { req.RunBranch = "" }},
+		{name: "missing worktree", mutate: func(req *IntegrationReconciliation) { req.Worktree = "" }},
+		{name: "missing action", mutate: func(req *IntegrationReconciliation) { req.Action = "" }},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			input := valid
+			test.mutate(&input)
+			if err := validateIntegrationReconciliation(input); err == nil {
+				t.Fatal("expected incomplete or unsafe reconciliation evidence to fail")
+			}
+		})
+	}
+}
+
+func TestReconcileIntegrationOutcomePreservedWithEvidence(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	for index, outcome := range []string{StateUnresolved, StateFailed, StateStopped, StateTimedOut} {
+		t.Run(outcome, func(t *testing.T) {
+			req := sampleCreateRunRequest()
+			req.Kind = KindImplement
+			req.SpecSlug = fmt.Sprintf("0038-outcome-%d", index)
+			req.LocalBranch = fmt.Sprintf("ma/outcome-%d", index)
+			req.WorkDir = filepath.Join("tmp", fmt.Sprintf("run-worktree-%d", index))
+			run, err := runStore.CreateRun(ctx, req)
+			if err != nil {
+				t.Fatalf("create Implement Run: %v", err)
+			}
+			if _, err := runStore.CompleteRun(ctx, run.ID, outcome); err != nil {
+				t.Fatalf("complete Run %s: %v", outcome, err)
+			}
+			evidence := IntegrationReconciliation{
+				RunID:           run.ID,
+				PreviousOutcome: outcome,
+				Classification:  "safe",
+				RunBranch:       "roundfix/run-" + run.ID,
+				RunHead:         "run-head",
+				TargetBranch:    req.LocalBranch,
+				TargetHead:      "target-head",
+				Worktree:        req.WorkDir,
+				Action:          "cleanup",
+				Time:            time.Date(2026, 7, 27, 17, index, 0, 0, time.UTC),
+			}
+
+			reconciled, err := runStore.ReconcileIntegration(ctx, evidence)
+			if err != nil {
+				t.Fatalf("record safe %s reconciliation: %v", outcome, err)
+			}
+			if reconciled.State != outcome {
+				t.Fatalf("expected outcome %s unchanged, got %+v", outcome, reconciled)
+			}
+			if got := countRunEvents(t, ctx, runStore, run.ID); got != 1 {
+				t.Fatalf("expected one cleanup evidence event, got %d", got)
+			}
+		})
+	}
+}
+
+func TestReconcileIntegrationIdempotent(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	req := sampleCreateRunRequest()
+	req.Kind = KindImplement
+	req.SpecSlug = "0038-terminal-run-worktree-reconciliation"
+	req.LocalBranch = "ma/reconciliation"
+	req.WorkDir = filepath.Join("tmp", "run-worktree")
+	run, err := runStore.CreateRun(ctx, req)
+	if err != nil {
+		t.Fatalf("create Implement Run: %v", err)
+	}
+	if _, err := runStore.CompleteRun(ctx, run.ID, StateIntegrationPending); err != nil {
+		t.Fatalf("complete Run Integration Pending: %v", err)
+	}
+	evidence := IntegrationReconciliation{
+		RunID:           run.ID,
+		PreviousOutcome: StateIntegrationPending,
+		Classification:  "safe",
+		RunBranch:       "roundfix/run-" + run.ID,
+		RunHead:         "run-head",
+		TargetBranch:    req.LocalBranch,
+		TargetHead:      "target-head",
+		Worktree:        req.WorkDir,
+		Action:          "cleanup",
+		Time:            time.Date(2026, 7, 27, 17, 30, 0, 0, time.UTC),
+	}
+
+	for attempt := 0; attempt < 2; attempt++ {
+		reconciled, err := runStore.ReconcileIntegration(ctx, evidence)
+		if err != nil {
+			t.Fatalf("reconciliation attempt %d: %v", attempt+1, err)
+		}
+		if reconciled.State != StateClean {
+			t.Fatalf("expected Clean replay, got %+v", reconciled)
+		}
+	}
+	if got := countRunEvents(t, ctx, runStore, run.ID); got != 1 {
+		t.Fatalf("expected exactly one reconciliation event after replay, got %d", got)
 	}
 }
 

@@ -58,7 +58,7 @@ profiles:
 
 review_source:
   name: coderabbit
-  include_nitpicks: false
+  include_nitpicks: true
 
 watch:
   until_clean: true

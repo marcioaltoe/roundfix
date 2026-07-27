@@ -841,7 +841,7 @@ func withFakeRunWorktrees(t *testing.T) {
 	cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
 		return os.RemoveAll(ref.Path)
 	}
-	pruneTerminalRunWorktrees = func(context.Context, string, string, func(string) bool) ([]runworktree.PrunedRef, error) {
+	pruneTerminalRunWorktrees = func(context.Context, string, string, runworktree.TerminalRunReconciliationStore, runworktree.TerminalRunLookup) ([]runworktree.PrunedRef, error) {
 		return nil, nil
 	}
 	t.Cleanup(func() {
@@ -2849,6 +2849,69 @@ func TestRunImplementPreflightReapsEmptyTerminalRunAndTaskWorktrees(t *testing.T
 	assertRunBranchRemoved(t, repoDir, staleTask.Branch)
 	if !strings.Contains(stdout.String(), "Clean: all 1 Task(s) completed.") {
 		t.Fatalf("expected Clean implement output, got %q", stdout.String())
+	}
+}
+
+func TestRunImplementPreflightTerminalReachableChangedBranch(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:     "task_01",
+		title:  "Build after reachable cleanup",
+		status: string(spec.StatusPending),
+	}})
+	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
+	staleRun, staleRef, _ := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "", store.StateStopped)
+	mustWrite(t, filepath.Join(staleRef.Path, "reachable.txt"), "reachable\n")
+	gitImplement(t, staleRef.Path, "add", "reachable.txt")
+	gitImplement(t, staleRef.Path, "commit", "-m", "reachable terminal work")
+	gitImplement(t, repoDir, "merge", "--ff-only", staleRef.Branch)
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected implement exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	assertRunWorktreeRemoved(t, staleRun.WorkDir)
+	assertRunBranchRemoved(t, repoDir, staleRef.Branch)
+	if !strings.Contains(stderr.String(), "roundfix: reaped terminal Worktree path="+staleRun.WorkDir+" branch="+staleRef.Branch) {
+		t.Fatalf("expected reachable terminal Run cleanup notice, got %q", stderr.String())
+	}
+}
+
+func TestRunImplementPreflightTerminalUniqueChangedBranch(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
+		id:     "task_01",
+		title:  "Build while preserving unique work",
+		status: string(spec.StatusPending),
+	}})
+	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
+	staleRun, staleRef, _ := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "", store.StateStopped)
+	mustWrite(t, filepath.Join(staleRef.Path, "unique.txt"), "unique\n")
+	gitImplement(t, staleRef.Path, "add", "unique.txt")
+	gitImplement(t, staleRef.Path, "commit", "-m", "unique terminal work")
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	withAgentRunner(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected implement exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	assertRunWorktreeExists(t, staleRun.WorkDir)
+	assertRunBranchExists(t, repoDir, staleRef.Branch)
+	if strings.Contains(stderr.String(), "reaped terminal Worktree path="+staleRun.WorkDir) {
+		t.Fatalf("expected unique terminal Run to be preserved, got %q", stderr.String())
 	}
 }
 

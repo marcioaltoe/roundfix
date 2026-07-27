@@ -46,6 +46,7 @@ Usage:
   roundfix watch --source coderabbit --pr <number> [--spec <slug>] --until-clean
   roundfix implement --spec <slug>
   roundfix settle --spec <slug> --task <task_id>
+  roundfix reconcile [run-id] [--apply] [--format <text|json>]
   roundfix release plan [--from <tag>] [--to <revision>] [--format <text|json>]
   roundfix release plan --reset-to <version> [--format <text|json>]
   roundfix baseline plan (--profile <id> | --profile-file <draft.json>) [--decision <id=value> ...] [--decision-file <path> ...] [--repo <path>] [--format <text|json>]
@@ -79,6 +80,7 @@ Commands:
   watch      Fetch and resolve in a watched loop
   implement  Execute a Spec's Task Graph as one Run
   settle     Verify and commit all current worktree changes for one failed Task
+  reconcile  Inspect or release proven-safe terminal spec Run worktrees
   release    Plan the next release version without mutating repository or release state
   baseline   Plan, apply, and validate a Context-Driven Baseline
   profiles   Show Agent Selection Profiles and advisory recommendations
@@ -241,6 +243,8 @@ func runWithContext(ctx context.Context, args []string, stdout, stderr io.Writer
 		return runImplementCommand(ctx, args[1:], stdout, stderr, detachChild)
 	case "settle":
 		return runSettleCommand(ctx, args[1:], stdout, stderr)
+	case "reconcile":
+		return runReconcileCommand(ctx, args[1:], stdout, stderr)
 	case "release":
 		return runReleaseCommand(ctx, args[1:], stdout, stderr)
 	case "baseline":
@@ -669,9 +673,8 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 		return stopResult{Run: active, Warnings: warnings}, err
 	}
 	if strings.TrimSpace(active.GitRoot) != "" && strings.TrimSpace(active.WorkDir) != "" {
-		pruned, pruneErr := pruneTerminalRunWorktrees(ctx, active.GitRoot, worktreeLocation, func(runID string) bool {
-			run, found, err := runStore.Run(ctx, runID)
-			return err == nil && found && store.IsTerminalState(run.State)
+		pruned, pruneErr := pruneTerminalRunWorktrees(ctx, active.GitRoot, worktreeLocation, runStore, func(lookupCtx context.Context, runID string) (store.Run, bool, error) {
+			return runStore.Run(lookupCtx, runID)
 		})
 		for _, ref := range pruned {
 			warnings = append(warnings, cleanupNoticef("reaped terminal Worktree path=%s branch=%s", ref.Path, ref.Branch))
@@ -4215,6 +4218,20 @@ Options:
 		return implementUsage
 	case "settle":
 		return settleUsage
+	case "reconcile":
+		return `Usage:
+  roundfix reconcile [run-id] [--apply] [--format <text|json>]
+
+Inspects one terminal spec Run in the current repository, or every terminal
+spec Run in the current repository when no Run ID is supplied. The default is
+a read-only report. --apply releases only entries classified and revalidated
+safe during the current invocation; dirty, unintegrated, unknown, and already
+released entries remain successful preserved results.
+
+Options:
+  --apply   Release freshly revalidated safe Run Worktrees and Run Branches
+  --format  Output format: text (default) or json
+`
 	case "release":
 		return `Usage:
   roundfix release plan [--from <tag>] [--to <revision>] [--impact <none|patch|minor|major> --reason <text>] [--format <text|json>]
