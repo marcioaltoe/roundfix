@@ -7006,18 +7006,17 @@ func TestRunStopBySpecRecordsStopRequestForMatchingActiveRun(t *testing.T) {
 	}
 }
 
-func TestRunStopForceCancelsImplementRunAndReleasesLocks(t *testing.T) {
+func TestRunStopForceAgentSessionCleanupSkipsRunWithoutActiveLifecycle(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
-	var calls []struct {
-		runtime agent.RuntimeSpec
-		session agent.SessionRef
-	}
-	withStopAgentSessionCanceler(t, func(_ context.Context, runtime agent.RuntimeSpec, session agent.SessionRef) error {
-		calls = append(calls, struct {
-			runtime agent.RuntimeSpec
-			session agent.SessionRef
-		}{runtime: runtime, session: session})
+	cancelCalls := 0
+	closeCalls := 0
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		cancelCalls++
+		return nil
+	})
+	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		closeCalls++
 		return nil
 	})
 	var stdout bytes.Buffer
@@ -7028,14 +7027,11 @@ func TestRunStopForceCancelsImplementRunAndReleasesLocks(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
 	}
-	if want := "roundfix: closed session roundfix-" + active.ID; !strings.Contains(stderr.String(), want) {
-		t.Fatalf("expected force close report %q, got %q", want, stderr.String())
+	if strings.Contains(stderr.String(), "Agent Session") || strings.Contains(stderr.String(), "session roundfix-") {
+		t.Fatalf("expected no Agent Session diagnostics without active lifecycle evidence, got %q", stderr.String())
 	}
-	if len(calls) != 1 {
-		t.Fatalf("expected one Agent Session cancel, got %#v", calls)
-	}
-	if calls[0].runtime.ID != "codex" || calls[0].session.Name != "roundfix-"+active.ID || calls[0].session.WorkDir != repoDir {
-		t.Fatalf("unexpected cancel call: %#v", calls[0])
+	if cancelCalls != 0 || closeCalls != 0 {
+		t.Fatalf("expected zero Agent Session calls, got cancel=%d close=%d", cancelCalls, closeCalls)
 	}
 	if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") || !strings.Contains(stdout.String(), active.ID) {
 		t.Fatalf("expected force stop report with Run ID, got %q", stdout.String())
@@ -7060,7 +7056,7 @@ func TestRunStopForceCancelsImplementRunAndReleasesLocks(t *testing.T) {
 	}
 }
 
-func TestRunStopForceCancelsListsAndClosesRunAndTaskSessions(t *testing.T) {
+func TestRunStopForceRegisteredAgentSessionCleanupTargetsActiveScopesInOrder(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
 		title:  "Stopped task",
@@ -7068,17 +7064,28 @@ func TestRunStopForceCancelsListsAndClosesRunAndTaskSessions(t *testing.T) {
 	}})
 	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
 	active, _, taskRef := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "task_01", "")
+	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
+		RunID: active.ID, ScopeKind: store.AgentSelectionScopeReview, ScopeID: "batch-002",
+		Category: "review", ProfileSource: "project", Attempt: 1,
+		SelectionRole: store.AgentSelectionRolePreferred, Runtime: "claude", Model: "review-model",
+		Status: store.AgentSelectionStatusActive,
+	})
+	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
+		RunID: active.ID, ScopeKind: store.AgentSelectionScopeQA, ScopeID: "qa",
+		Category: "qa", ProfileSource: "project", Attempt: 1,
+		SelectionRole: store.AgentSelectionRoleFallback, FallbackIndex: 1,
+		Runtime: "opencode", Model: "qa-model", Status: store.AgentSelectionStatusActive,
+	})
+	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
+		RunID: active.ID, ScopeKind: store.AgentSelectionScopeTask, ScopeID: "task_01",
+		Category: "backend", ProfileSource: "project", Attempt: 1,
+		SelectionRole: store.AgentSelectionRolePreferred, Runtime: "codex", Model: "task-model",
+		Status: store.AgentSelectionStatusActive,
+	})
 	calls := []string{}
 	withStopAgentSessionCanceler(t, func(_ context.Context, runtime agent.RuntimeSpec, session agent.SessionRef) error {
 		calls = append(calls, "cancel "+runtime.ID+" "+session.Name+" "+session.WorkDir)
 		return nil
-	})
-	withRoundfixSessionLister(t, func(_ context.Context, runtime agent.RuntimeSpec, workDir string) ([]agent.RoundfixSession, error) {
-		calls = append(calls, "list "+runtime.ID+" "+workDir)
-		return []agent.RoundfixSession{
-			{Name: "roundfix-" + active.ID + "-task_01", RunID: active.ID, TaskID: "task_01"},
-			{Name: "roundfix-other-run-task_01", RunID: "other-run", TaskID: "task_01"},
-		}, nil
 	})
 	withStopAgentSessionCloser(t, func(_ context.Context, runtime agent.RuntimeSpec, session agent.SessionRef) error {
 		calls = append(calls, "close "+runtime.ID+" "+session.Name+" "+session.WorkDir)
@@ -7093,36 +7100,80 @@ func TestRunStopForceCancelsListsAndClosesRunAndTaskSessions(t *testing.T) {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
 	}
 	wantCalls := []string{
-		"cancel codex roundfix-" + active.ID + " " + active.WorkDir,
-		"list codex " + active.WorkDir,
-		"close codex roundfix-" + active.ID + " " + active.WorkDir,
+		"cancel codex roundfix-" + active.ID + "-task_01 " + taskRef.Path,
 		"close codex roundfix-" + active.ID + "-task_01 " + taskRef.Path,
+		"cancel opencode roundfix-" + active.ID + "-qa-fallback-01 " + active.WorkDir,
+		"close opencode roundfix-" + active.ID + "-qa-fallback-01 " + active.WorkDir,
+		"cancel claude roundfix-" + active.ID + "-review-002 " + repoDir,
+		"close claude roundfix-" + active.ID + "-review-002 " + repoDir,
 	}
 	if !reflect.DeepEqual(calls, wantCalls) {
 		t.Fatalf("unexpected session invocations\nwant: %#v\ngot:  %#v", wantCalls, calls)
 	}
-	for _, want := range []string{
-		"roundfix: closed session roundfix-" + active.ID,
-		"roundfix: closed session roundfix-" + active.ID + "-task_01",
-	} {
-		if !strings.Contains(stderr.String(), want) {
-			t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())
-		}
-	}
-	if strings.Contains(stderr.String(), "other-run") {
-		t.Fatalf("foreign Run session must not be reported or closed, got %q", stderr.String())
+	if strings.Contains(stderr.String(), "Agent Session") || strings.Contains(stderr.String(), "session roundfix-") {
+		t.Fatalf("expected successful registered cleanup to stay silent, got %q", stderr.String())
 	}
 	if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
 		t.Fatalf("expected force stop report, got %q", stdout.String())
 	}
+	assertAgentSelectionScopeStatus(t, homeDir, active.ID, store.AgentSelectionScopeTask, "task_01", store.AgentSelectionStatusClosed)
+	assertAgentSelectionScopeStatus(t, homeDir, active.ID, store.AgentSelectionScopeQA, "qa", store.AgentSelectionStatusClosed)
+	assertAgentSelectionScopeStatus(t, homeDir, active.ID, store.AgentSelectionScopeReview, "batch-002", store.AgentSelectionStatusClosed)
 	assertRunState(t, homeDir, active.ID, store.StateStopped)
 }
 
-func TestRunStopForceCloseFailureStillCompletesStopped(t *testing.T) {
+func TestRunStopForceRegisteredAgentSessionAbsenceIsIdempotent(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
-	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
+		RunID: active.ID, ScopeKind: store.AgentSelectionScopeTask, ScopeID: "task_01",
+		Category: "backend", ProfileSource: "project", Attempt: 1,
+		SelectionRole: store.AgentSelectionRolePreferred, Runtime: "codex", Model: "task-model",
+		Status: store.AgentSelectionStatusActive,
+	})
+	absent := fmt.Errorf("adapter response: %w", &agent.InfrastructureError{ExitCode: 4, Reason: "missing session"})
+	cancelCalls := 0
+	closeCalls := 0
 	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
-		return nil
+		cancelCalls++
+		return absent
+	})
+	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		closeCalls++
+		return absent
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if cancelCalls != 1 || closeCalls != 1 {
+		t.Fatalf("expected one cancel and close attempt, got cancel=%d close=%d", cancelCalls, closeCalls)
+	}
+	if strings.Contains(stderr.String(), "Agent Session") || strings.Contains(stderr.String(), "session roundfix-") {
+		t.Fatalf("expected registered Agent Session absence to stay silent, got %q", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
+		t.Fatalf("expected force stop report, got %q", stdout.String())
+	}
+	assertAgentSelectionScopeStatus(t, homeDir, active.ID, store.AgentSelectionScopeTask, "task_01", store.AgentSelectionStatusClosed)
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+}
+
+func TestRunStopForceAgentSessionCleanupFailureRemainsVisibleWithoutClosedLifecycle(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
+		RunID: active.ID, ScopeKind: store.AgentSelectionScopeTask, ScopeID: "task_01",
+		Category: "backend", ProfileSource: "project", Attempt: 1,
+		SelectionRole: store.AgentSelectionRolePreferred, Runtime: "codex", Model: "task-model",
+		Status: store.AgentSelectionStatusActive,
+	})
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return errors.New("cancel denied")
 	})
 	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
 		return errors.New("close denied")
@@ -7135,26 +7186,18 @@ func TestRunStopForceCloseFailureStillCompletesStopped(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
 	}
-	if want := "roundfix: could not close session roundfix-" + active.ID + ": close denied"; !strings.Contains(stderr.String(), want) {
-		t.Fatalf("expected close failure note %q, got %q", want, stderr.String())
+	for _, want := range []string{
+		"Agent Session cancel failed for task task_01",
+		"cancel denied",
+		"Agent Session close failed for task task_01",
+		"close denied",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("expected cleanup diagnostic %q, got %q", want, stderr.String())
+		}
 	}
-	if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
-		t.Fatalf("expected force stop report, got %q", stdout.String())
-	}
+	assertAgentSelectionScopeStatus(t, homeDir, active.ID, store.AgentSelectionScopeTask, "task_01", store.AgentSelectionStatusActive)
 	assertRunState(t, homeDir, active.ID, store.StateStopped)
-
-	runStore, err := store.Open(context.Background(), homeDir)
-	if err != nil {
-		t.Fatalf("open store: %v", err)
-	}
-	_, err = runStore.CreateRun(context.Background(), request)
-	closeErr := runStore.Close()
-	if err != nil {
-		t.Fatalf("expected force stop to release Spec lock after close failure, got %v", err)
-	}
-	if closeErr != nil {
-		t.Fatalf("close store: %v", closeErr)
-	}
 }
 
 func TestRunStopForceReapsEmptyRunAndTaskWorktrees(t *testing.T) {
@@ -7229,35 +7272,38 @@ func TestRunStopForceKeepsRunWorktreeWithCommits(t *testing.T) {
 func TestRunStopForceReportsCancelFailuresButCompletes(t *testing.T) {
 	tests := []struct {
 		name          string
-		agentID       string
+		runtime       string
 		cancelErr     error
 		wantStderr    []string
 		wantCanceller bool
+		wantStatus    store.AgentSelectionStatus
 	}{
 		{
 			name:          "missing acpx",
-			agentID:       "codex",
+			runtime:       "codex",
 			cancelErr:     errors.New("acpx not found"),
 			wantStderr:    []string{"Agent Session cancel failed", "acpx not found"},
 			wantCanceller: true,
+			wantStatus:    store.AgentSelectionStatusClosed,
 		},
 		{
 			name:          "unknown runtime",
-			agentID:       "gemini",
-			wantStderr:    []string{"Agent Session cancel skipped", `unsupported Agent "gemini"`},
+			runtime:       "gemini",
+			wantStderr:    []string{"Agent Session cleanup skipped", `unsupported Agent "gemini"`},
 			wantCanceller: false,
-		},
-		{
-			name:          "no recorded runtime",
-			agentID:       "",
-			wantStderr:    []string{"Agent Session cancel skipped", "no Agent runtime recorded"},
-			wantCanceller: false,
+			wantStatus:    store.AgentSelectionStatusActive,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			homeDir, repoDir := withCLIWorkspace(t)
-			active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", tt.agentID)
+			active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+			recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
+				RunID: active.ID, ScopeKind: store.AgentSelectionScopeTask, ScopeID: "task_01",
+				Category: "backend", ProfileSource: "project", Attempt: 1,
+				SelectionRole: store.AgentSelectionRolePreferred, Runtime: tt.runtime, Model: "task-model",
+				Status: store.AgentSelectionStatusActive,
+			})
 			cancelCalls := 0
 			withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
 				cancelCalls++
@@ -7285,6 +7331,7 @@ func TestRunStopForceReportsCancelFailuresButCompletes(t *testing.T) {
 			if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
 				t.Fatalf("expected force stop report, got %q", stdout.String())
 			}
+			assertAgentSelectionScopeStatus(t, homeDir, active.ID, store.AgentSelectionScopeTask, "task_01", tt.wantStatus)
 			assertRunState(t, homeDir, active.ID, store.StateStopped)
 			runStore, err := store.Open(context.Background(), homeDir)
 			if err != nil {
@@ -7305,6 +7352,12 @@ func TestRunStopForceReportsCancelFailuresButCompletes(t *testing.T) {
 func TestRunStopGracefulThenForceCompletesImmediately(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
+		RunID: active.ID, ScopeKind: store.AgentSelectionScopeTask, ScopeID: "task_01",
+		Category: "backend", ProfileSource: "project", Attempt: 1,
+		SelectionRole: store.AgentSelectionRolePreferred, Runtime: "codex", Model: "task-model",
+		Status: store.AgentSelectionStatusActive,
+	})
 	var gracefulStdout bytes.Buffer
 	var gracefulStderr bytes.Buffer
 
@@ -7330,8 +7383,8 @@ func TestRunStopGracefulThenForceCompletesImmediately(t *testing.T) {
 	if forceCode != 0 {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", forceCode, forceStderr.String())
 	}
-	if want := "roundfix: closed session roundfix-" + active.ID; !strings.Contains(forceStderr.String(), want) {
-		t.Fatalf("expected force close report %q, got %q", want, forceStderr.String())
+	if strings.Contains(forceStderr.String(), "Agent Session") || strings.Contains(forceStderr.String(), "session roundfix-") {
+		t.Fatalf("expected successful registered cleanup to stay silent, got %q", forceStderr.String())
 	}
 	if cancelCalls != 1 {
 		t.Fatalf("expected one cancel after graceful request, got %d", cancelCalls)
@@ -7339,6 +7392,7 @@ func TestRunStopGracefulThenForceCompletesImmediately(t *testing.T) {
 	if !strings.Contains(forceStdout.String(), "Roundfix Run force-stopped") {
 		t.Fatalf("expected force stop report, got %q", forceStdout.String())
 	}
+	assertAgentSelectionScopeStatus(t, homeDir, active.ID, store.AgentSelectionScopeTask, "task_01", store.AgentSelectionStatusClosed)
 	assertRunState(t, homeDir, active.ID, store.StateStopped)
 
 	runStore, err := store.Open(context.Background(), homeDir)
@@ -8643,6 +8697,52 @@ func createActiveImplementRunForStop(t *testing.T, homeDir string, repoDir strin
 		t.Fatalf("create active implement run: %v", err)
 	}
 	return active, request
+}
+
+func recordAgentSelectionForStop(t *testing.T, homeDir string, req store.AgentSelectionAttemptRequest) {
+	t.Helper()
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open store to record Agent Selection: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close store after recording Agent Selection: %v", err)
+		}
+	}()
+	if _, err := runStore.AppendAgentSelectionAttempt(context.Background(), req); err != nil {
+		t.Fatalf("record Agent Selection for %s %s: %v", req.ScopeKind, req.ScopeID, err)
+	}
+}
+
+func assertAgentSelectionScopeStatus(
+	t *testing.T,
+	homeDir string,
+	runID string,
+	scopeKind store.AgentSelectionScopeKind,
+	scopeID string,
+	want store.AgentSelectionStatus,
+) {
+	t.Helper()
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open store to inspect Agent Selection: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close store after inspecting Agent Selection: %v", err)
+		}
+	}()
+	attempts, err := runStore.AgentSelectionAttemptsForScope(context.Background(), runID, scopeKind, scopeID)
+	if err != nil {
+		t.Fatalf("read Agent Selection for %s %s: %v", scopeKind, scopeID, err)
+	}
+	if len(attempts) == 0 {
+		t.Fatalf("expected Agent Selection lifecycle for %s %s", scopeKind, scopeID)
+	}
+	if got := attempts[len(attempts)-1].Status; got != want {
+		t.Fatalf("Agent Selection lifecycle for %s %s: got %q, want %q", scopeKind, scopeID, got, want)
+	}
 }
 
 func createActiveImplementRunForStopInGitRoot(t *testing.T, homeDir string, gitRoot string, specSlug string) store.Run {

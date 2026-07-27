@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0037-terminal-outcome-integrity
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -29,21 +29,21 @@ already closed sessions produce no misleading cleanup action.
 
 ## Subtasks
 
-- [ ] Add the latest-active-scope store query.
-- [ ] Route cleanup through registered Agent Selection scopes.
-- [ ] Make registered-session absence idempotent.
-- [ ] Persist closed lifecycle after successful cleanup.
-- [ ] Add deterministic ordering and lifecycle-state tests.
-- [ ] Remove unconditional Run-wide session-name cleanup.
+- [x] Add the latest-active-scope store query.
+- [x] Route cleanup through registered Agent Selection scopes.
+- [x] Make registered-session absence idempotent.
+- [x] Persist closed lifecycle after successful cleanup.
+- [x] Add deterministic ordering and lifecycle-state tests.
+- [x] Remove unconditional Run-wide session-name cleanup.
 
 ## Acceptance Criteria
 
-- [ ] Active Task, QA, and review scopes are returned once in stable order.
-- [ ] Failed, closed, and superseded lifecycle attempts are not targeted.
-- [ ] A Run with no active lifecycle record performs zero Agent Session calls.
-- [ ] An already absent registered session closes without a warning.
-- [ ] Other cleanup failures remain visible and do not invent lifecycle state.
-- [ ] Existing Agent Selection history and sensitive-field protections pass.
+- [x] Active Task, QA, and review scopes are returned once in stable order.
+- [x] Failed, closed, and superseded lifecycle attempts are not targeted.
+- [x] A Run with no active lifecycle record performs zero Agent Session calls.
+- [x] An already absent registered session closes without a warning.
+- [x] Other cleanup failures remain visible and do not invent lifecycle state.
+- [x] Existing Agent Selection history and sensitive-field protections pass.
 
 ## Context
 
@@ -71,3 +71,45 @@ already closed sessions produce no misleading cleanup action.
   Build Order 2.
 - `../../adr/0051-tasks-and-qa-own-agent-sessions.md` → Work Item-scoped Agent
   Sessions.
+
+## Result
+
+Implemented persisted Agent Selection lifecycle as the exclusive Force Stop
+Agent Session cleanup registry. Cleanup now reads each scope's latest
+lifecycle, targets only active Task, QA, and review scopes in deterministic
+order, reconstructs the exact fallback session name and runtime, and records
+`closed` only after close succeeds or acpx proves the registered session is
+already absent. Non-absence cancel and close errors remain visible; a failed
+close leaves the lifecycle active for a later retry.
+
+Verification:
+
+- `rtk go test ./internal/store -run 'TestAgentSelection.*(Active|Lifecycle|Cleanup|Scope)' -count=1`
+  — passed, 3 tests.
+- `rtk go test ./internal/cli -run 'Test.*(RegisteredAgentSession|AgentSessionCleanup|PrimaryFailure)' -count=1`
+  — passed, 4 tests.
+- `rtk go test ./internal/agent ./internal/store ./internal/cli -count=1`
+  — passed, 1,108 tests.
+- `rtk git -c core.fsmonitor=false diff --check` — passed.
+
+Acceptance evidence:
+
+- `TestAgentSelectionActiveScopesReturnsLatestLifecycleInStableOrder` proves
+  Task, QA, and review scope ordering and excludes failed, closed, and
+  superseded lifecycles.
+- `TestRunStopForceAgentSessionCleanupSkipsRunWithoutActiveLifecycle` proves
+  zero cancel and close calls without active persisted evidence.
+- `TestRunStopForceRegisteredAgentSessionCleanupTargetsActiveScopesInOrder`
+  proves one ordered cancel/close pair per registered scope, including a
+  fallback Agent Session, followed by persisted `closed` lifecycles.
+- `TestRunStopForceRegisteredAgentSessionAbsenceIsIdempotent` proves wrapped
+  acpx missing-session responses are silent and still persist `closed`.
+- `TestRunStopForceAgentSessionCleanupFailureRemainsVisibleWithoutClosedLifecycle`
+  proves other cleanup failures remain diagnostic and do not fabricate a
+  closed lifecycle.
+- The affected-package run includes the existing Agent Selection history,
+  lifecycle transition, event payload, schema privacy, and sensitive-field
+  protection tests.
+
+Follow-up: TechSpec Build Order 5 still owns primary-before-secondary
+publication ordering and winner-only terminal outcome wiring.

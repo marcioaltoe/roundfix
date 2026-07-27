@@ -553,7 +553,7 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 }
 
 func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, worktreeLocation string) (stopResult, error) {
-	warnings := bestEffortForceStopAgentSessions(ctx, active)
+	warnings := bestEffortForceStopAgentSessions(ctx, runStore, active)
 	run, err := runStore.CompleteRun(ctx, active.ID, store.StateStopped)
 	if err != nil {
 		return stopResult{}, err
@@ -573,66 +573,144 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 	return stopResult{Run: run.Run, Forced: true, Warnings: warnings}, nil
 }
 
-func bestEffortForceStopAgentSessions(ctx context.Context, run store.Run) []string {
-	agentID := strings.TrimSpace(run.Agent)
-	if agentID == "" {
-		return []string{fmt.Sprintf("Agent Session cancel skipped for Run %s: no Agent runtime recorded", run.ID)}
-	}
-	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{Agent: agentID})
+func bestEffortForceStopAgentSessions(ctx context.Context, runStore *store.Store, run store.Run) []string {
+	activeScopes, err := runStore.ActiveAgentSelectionScopes(ctx, run.ID)
 	if err != nil {
-		return []string{fmt.Sprintf("Agent Session cancel skipped for Run %s: %v", run.ID, err)}
+		return []string{fmt.Sprintf("Agent Session cleanup registry failed for Run %s: %v", run.ID, err)}
 	}
-	session := agent.SessionRefForRun(run.ID, runSessionWorkDir(run))
 	warnings := []string{}
-	cancelCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-	defer cancel()
-	if err := cancelStopAgentSession(cancelCtx, runtime, session); err != nil {
-		warnings = append(warnings, fmt.Sprintf("Agent Session cancel failed for Run %s: %v", run.ID, err))
+	for _, selection := range activeScopes {
+		warnings = append(warnings, cleanupRegisteredAgentSession(ctx, runStore, run, selection)...)
 	}
-	return append(warnings, closeForceStoppedRunSessions(ctx, runtime, run, session)...)
+	return warnings
 }
 
 func defaultCancelStopAgentSession(ctx context.Context, runtime agent.RuntimeSpec, session agent.SessionRef) error {
 	return agent.NewDefaultRunner().CancelSession(ctx, runtime, session)
 }
 
-func closeForceStoppedRunSessions(ctx context.Context, runtime agent.RuntimeSpec, run store.Run, runSession agent.SessionRef) []string {
-	closeCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-	defer cancel()
-	discovered, err := listRoundfixAgentSessions(closeCtx, runtime, runSession.WorkDir)
+func cleanupRegisteredAgentSession(
+	ctx context.Context,
+	runStore *store.Store,
+	run store.Run,
+	selection store.AgentSelectionAttempt,
+) []string {
 	warnings := []string{}
-	if err != nil {
-		warnings = append(warnings, fmt.Sprintf("Agent Session discovery failed for Run %s: %v", run.ID, err))
-	}
-	sessions := []agent.RoundfixSession{{
-		Name:  runSession.Name,
-		RunID: run.ID,
-	}}
-	for _, session := range discovered {
-		if session.RunID == run.ID && session.TaskID != "" {
-			sessions = append(sessions, session)
-		}
-	}
-	sort.SliceStable(sessions[1:], func(i, j int) bool {
-		return sessions[i+1].Name < sessions[j+1].Name
+	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
+		Agent:           selection.Runtime,
+		Model:           selection.Model,
+		ReasoningEffort: selection.ReasoningEffort,
 	})
-	seen := map[string]struct{}{}
-	for _, session := range sessions {
-		if strings.TrimSpace(session.Name) == "" {
-			continue
-		}
-		if _, ok := seen[session.Name]; ok {
-			continue
-		}
-		seen[session.Name] = struct{}{}
-		ref := sessionRefForDiscoveredRunSession(run, session)
-		if err := closeStopAgentSession(closeCtx, runtime, ref); err != nil {
-			warnings = append(warnings, fmt.Sprintf("could not close session %s: %v", ref.Name, err))
-			continue
-		}
-		warnings = append(warnings, fmt.Sprintf("closed session %s", ref.Name))
+	if err != nil {
+		return []string{fmt.Sprintf(
+			"Agent Session cleanup skipped for %s %s in Run %s: %v",
+			selection.ScopeKind,
+			selection.ScopeID,
+			run.ID,
+			err,
+		)}
+	}
+	session, err := registeredAgentSessionRef(run, selection)
+	if err != nil {
+		return []string{fmt.Sprintf(
+			"Agent Session cleanup skipped for %s %s in Run %s: %v",
+			selection.ScopeKind,
+			selection.ScopeID,
+			run.ID,
+			err,
+		)}
+	}
+
+	cancelCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	cancelErr := cancelStopAgentSession(cancelCtx, runtime, session)
+	cancel()
+	if cancelErr != nil && !agent.IsAgentSessionAbsent(cancelErr) {
+		warnings = append(warnings, fmt.Sprintf(
+			"Agent Session cancel failed for %s %s (%s): %v",
+			selection.ScopeKind,
+			selection.ScopeID,
+			session.Name,
+			cancelErr,
+		))
+	}
+
+	closeCtx, closeCancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	closeErr := closeStopAgentSession(closeCtx, runtime, session)
+	closeCancel()
+	if closeErr != nil && !agent.IsAgentSessionAbsent(closeErr) {
+		warnings = append(warnings, fmt.Sprintf(
+			"Agent Session close failed for %s %s (%s): %v",
+			selection.ScopeKind,
+			selection.ScopeID,
+			session.Name,
+			closeErr,
+		))
+		return warnings
+	}
+	if err := recordClosedAgentSelection(ctx, runStore, selection); err != nil {
+		warnings = append(warnings, fmt.Sprintf(
+			"Agent Selection closed lifecycle failed for %s %s in Run %s: %v",
+			selection.ScopeKind,
+			selection.ScopeID,
+			run.ID,
+			err,
+		))
 	}
 	return warnings
+}
+
+func registeredAgentSessionRef(run store.Run, selection store.AgentSelectionAttempt) (agent.SessionRef, error) {
+	var session agent.SessionRef
+	switch selection.ScopeKind {
+	case store.AgentSelectionScopeTask:
+		workDir := runSessionWorkDir(run)
+		if taskWorkDir, ok := taskSessionWorkDir(run, selection.ScopeID); ok {
+			workDir = taskWorkDir
+		}
+		session = agent.SessionRefForTask(run.ID, selection.ScopeID, workDir)
+	case store.AgentSelectionScopeQA:
+		session = agent.SessionRefForQA(run.ID, runSessionWorkDir(run))
+	case store.AgentSelectionScopeReview:
+		batchID, ok := strings.CutPrefix(strings.TrimSpace(selection.ScopeID), "batch-")
+		if !ok {
+			return agent.SessionRef{}, fmt.Errorf("review scope ID %q must use batch-NNN", selection.ScopeID)
+		}
+		batchNumber, err := strconv.Atoi(batchID)
+		if err != nil || batchNumber <= 0 {
+			return agent.SessionRef{}, fmt.Errorf("review scope ID %q must use a positive batch number", selection.ScopeID)
+		}
+		session = agent.SessionRefForReview(run.ID, batchNumber, run.GitRoot)
+	default:
+		return agent.SessionRef{}, fmt.Errorf("scope kind %q is unsupported", selection.ScopeKind)
+	}
+	if strings.TrimSpace(session.Name) == "" {
+		return agent.SessionRef{}, errors.New("registered Agent Session name is empty")
+	}
+	if selection.FallbackIndex > 0 {
+		session.Name = fmt.Sprintf("%s-fallback-%02d", session.Name, selection.FallbackIndex)
+	}
+	return session, nil
+}
+
+func recordClosedAgentSelection(ctx context.Context, runStore *store.Store, selection store.AgentSelectionAttempt) error {
+	_, err := runStore.AppendAgentSelectionAttempt(context.WithoutCancel(ctx), store.AgentSelectionAttemptRequest{
+		RunID:           selection.RunID,
+		ScopeKind:       selection.ScopeKind,
+		ScopeID:         selection.ScopeID,
+		Category:        selection.Category,
+		ProfileSource:   selection.ProfileSource,
+		Attempt:         selection.Attempt,
+		SelectionRole:   selection.SelectionRole,
+		FallbackIndex:   selection.FallbackIndex,
+		Runtime:         selection.Runtime,
+		Model:           selection.Model,
+		ReasoningEffort: selection.ReasoningEffort,
+		Status:          store.AgentSelectionStatusClosed,
+	})
+	if err != nil {
+		return fmt.Errorf("record closed Agent Selection lifecycle: %w", err)
+	}
+	return nil
 }
 
 func sessionRefForDiscoveredRunSession(run store.Run, session agent.RoundfixSession) agent.SessionRef {
@@ -2509,7 +2587,7 @@ func reclaimOrphanedActiveRun(ctx context.Context, runStore *store.Store, active
 		return active, false, nil
 	}
 	reason := orphanedActiveRunReason(pid)
-	printForceStopAgentSessionWarnings(stderr, bestEffortForceStopAgentSessions(ctx, active))
+	printForceStopAgentSessionWarnings(stderr, bestEffortForceStopAgentSessions(ctx, runStore, active))
 	if err := runStore.ReclaimOrphanedRun(ctx, active, reason); err != nil {
 		return active, false, fmt.Errorf("reclaim orphaned Active Run %s: %w", active.ID, err)
 	}

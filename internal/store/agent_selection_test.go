@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -287,6 +288,100 @@ func TestAgentSelectionAttemptLifecycleUpdatesSameAttempt(t *testing.T) {
 	}
 	if len(events) == 0 || events[len(events)-1].Event.Kind != runevent.KindDaemonAgentSelectionFallback {
 		t.Fatalf("expected latest Run Event to be fallback, got %#v", events)
+	}
+}
+
+func TestAgentSelectionActiveScopesReturnsLatestLifecycleInStableOrder(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	run, err := runStore.CreateRun(ctx, sampleImplementCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create Run: %v", err)
+	}
+	requests := []AgentSelectionAttemptRequest{
+		{
+			RunID: run.ID, ScopeKind: AgentSelectionScopeReview, ScopeID: "batch-002",
+			Category: "review", ProfileSource: "project", Attempt: 1,
+			SelectionRole: AgentSelectionRolePreferred, Runtime: "opencode", Model: "review-model",
+			Status: AgentSelectionStatusActive,
+		},
+		{
+			RunID: run.ID, ScopeKind: AgentSelectionScopeTask, ScopeID: "task_02",
+			Category: "frontend", ProfileSource: "project", Attempt: 1,
+			SelectionRole: AgentSelectionRolePreferred, Runtime: "claude", Model: "task-model",
+			Status: AgentSelectionStatusActive,
+		},
+		{
+			RunID: run.ID, ScopeKind: AgentSelectionScopeQA, ScopeID: "qa",
+			Category: "qa", ProfileSource: "project", Attempt: 1,
+			SelectionRole: AgentSelectionRoleFallback, FallbackIndex: 1,
+			Runtime: "codex", Model: "qa-model", ReasoningEffort: "high",
+			Status: AgentSelectionStatusActive,
+		},
+		{
+			RunID: run.ID, ScopeKind: AgentSelectionScopeTask, ScopeID: "task_01",
+			Category: "backend", ProfileSource: "project", Attempt: 1,
+			SelectionRole: AgentSelectionRolePreferred, Runtime: "codex", Model: "task-model",
+			Status: AgentSelectionStatusActive,
+		},
+		{
+			RunID: run.ID, ScopeKind: AgentSelectionScopeTask, ScopeID: "task_closed",
+			Category: "backend", ProfileSource: "project", Attempt: 1,
+			SelectionRole: AgentSelectionRolePreferred, Runtime: "codex", Model: "closed-model",
+			Status: AgentSelectionStatusActive,
+		},
+		{
+			RunID: run.ID, ScopeKind: AgentSelectionScopeTask, ScopeID: "task_closed",
+			Category: "backend", ProfileSource: "project", Attempt: 1,
+			SelectionRole: AgentSelectionRolePreferred, Runtime: "codex", Model: "closed-model",
+			Status: AgentSelectionStatusClosed,
+		},
+		{
+			RunID: run.ID, ScopeKind: AgentSelectionScopeTask, ScopeID: "task_superseded",
+			Category: "backend", ProfileSource: "project", Attempt: 1,
+			SelectionRole: AgentSelectionRolePreferred, Runtime: "codex", Model: "old-model",
+			Status: AgentSelectionStatusActive,
+		},
+		{
+			RunID: run.ID, ScopeKind: AgentSelectionScopeTask, ScopeID: "task_superseded",
+			Category: "backend", ProfileSource: "project", Attempt: 2,
+			SelectionRole: AgentSelectionRoleFallback, FallbackIndex: 1,
+			Runtime: "codex", Model: "replacement-model",
+			Status: AgentSelectionStatusFailed, ReasonCode: "runtime_unavailable",
+		},
+		{
+			RunID: run.ID, ScopeKind: AgentSelectionScopeTask, ScopeID: "task_failed",
+			Category: "backend", ProfileSource: "project", Attempt: 1,
+			SelectionRole: AgentSelectionRolePreferred, Runtime: "codex", Model: "failed-model",
+			Status: AgentSelectionStatusFailed, ReasonCode: "runtime_unavailable",
+		},
+	}
+	for _, req := range requests {
+		if _, err := runStore.AppendAgentSelectionAttempt(ctx, req); err != nil {
+			t.Fatalf("append %s %s attempt %d status %s: %v", req.ScopeKind, req.ScopeID, req.Attempt, req.Status, err)
+		}
+	}
+
+	active, err := runStore.ActiveAgentSelectionScopes(ctx, run.ID)
+	if err != nil {
+		t.Fatalf("list active Agent Selection scopes: %v", err)
+	}
+	gotScopes := make([]string, 0, len(active))
+	for _, attempt := range active {
+		gotScopes = append(gotScopes, string(attempt.ScopeKind)+":"+attempt.ScopeID)
+	}
+	wantScopes := []string{"task:task_01", "task:task_02", "qa:qa", "review:batch-002"}
+	if !reflect.DeepEqual(gotScopes, wantScopes) {
+		t.Fatalf("active Agent Selection scope order mismatch\nwant: %#v\ngot:  %#v", wantScopes, gotScopes)
+	}
+	if active[2].SelectionRole != AgentSelectionRoleFallback ||
+		active[2].FallbackIndex != 1 ||
+		active[2].Runtime != "codex" ||
+		active[2].Model != "qa-model" ||
+		active[2].ReasoningEffort != "high" {
+		t.Fatalf("expected active QA fallback selection fields, got %#v", active[2])
 	}
 }
 
