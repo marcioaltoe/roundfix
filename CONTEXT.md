@@ -185,7 +185,7 @@ The named branch (`roundfix/run-<id>`) that carries a spec Run's commits inside 
 _Avoid_: Temp branch, detached HEAD, feature branch
 
 **Run Worktree Reconciliation**:
-The proof-based classification of a terminal spec Run's retained Run Worktree and Run Branch as `safe`, `unintegrated`, `dirty`, `unknown`, or `released`, followed by optional cleanup only for `safe` work.
+The proof-based classification of a terminal spec Run's retained Git surfaces: `safe` when the Run Branch and recorded target resolve, any present Run Worktree is registered and clean, and the Run Branch tip is an ancestor of the target tip; `unintegrated` when the same evidence resolves but ancestry is false; `dirty` when a present Run Worktree has tracked or untracked changes; `unknown` when metadata or Git evidence cannot prove another state; and `released` only when both the Run Worktree and Run Branch are absent. Only `safe` work can be cleaned up, after the proof is rechecked.
 _Avoid_: GC, force cleanup, manual branch deletion
 
 **Integration Pending**:
@@ -339,7 +339,7 @@ The local recovery command that re-runs one failed Task's Verification commands 
 _Avoid_: Retry command, auto-settle, task fix command
 
 **Reconcile Command**:
-The support command that inspects terminal spec Run Worktrees and Run Branches, reports their Run Worktree Reconciliation state, and removes only `safe` work when explicitly invoked with `--apply`.
+The support command that inspects terminal spec Run Worktrees and Run Branches and reports their Run Worktree Reconciliation state. It is read-only by default; `--apply` is its only mutation switch, removes only freshly revalidated `safe` work, and has no force bypass.
 _Avoid_: GC Command, Settle Command, automatic integration
 
 **Reprocess Command**:

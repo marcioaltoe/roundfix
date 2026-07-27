@@ -420,6 +420,85 @@ Non-interactive; creates no Run and never pushes. Verifies every Task is
 `_prd.md` and moves `<specs.root>/<slug>/` to `<specs.root>/_archived/<slug>/`.
 Refusals exit `2` naming the first unmet condition.
 
+### reconcile
+
+```bash
+roundfix reconcile [run-id] [--apply] [--format <text|json>]
+```
+
+The Reconcile Command classifies one terminal spec Run in the current
+repository when a Run ID is supplied. Without a Run ID, it scans every
+terminal spec Run for the current repository. Active Runs, review Runs, Runs
+from another repository, and missing Run IDs fail Preflight Validation without
+Git mutation.
+
+The default is a dry-run. These examples inspect one Run, inspect the current
+repository, and request the versioned JSON report:
+
+```bash
+roundfix reconcile <run-id>
+roundfix reconcile
+roundfix reconcile <run-id> --format json
+```
+
+Text and JSON reports are requested output and go to stdout. Diagnostics,
+including validation and operational failures, go to stderr. Redirect them
+independently when automating:
+
+```bash
+roundfix reconcile --format json > reconcile.json
+roundfix runs list > runs.txt 2> runs.diagnostics
+```
+
+The text report includes the repository, mode, each Run's outcome,
+classification, Run Worktree, Run Branch, target branch, both resolved heads,
+evidence, action, refusal reason, summary counts, and the exact apply command.
+JSON uses the `roundfix-reconcile/v1` envelope with `mode`, `repository`,
+`applyCommand`, `results`, and `summary`.
+
+Run Worktree Reconciliation uses five states:
+
+| State | Evidence and behavior |
+| --- | --- |
+| `safe` | The Run Branch and recorded target branch resolve, any present Run Worktree is registered and clean including untracked files, and the Run Branch tip is an ancestor of the current target tip. This is the only state eligible for cleanup. |
+| `unintegrated` | The worktree cleanliness and ref evidence resolve, but the Run Branch tip is not an ancestor of the target tip. Roundfix preserves the worktree and branch. |
+| `dirty` | A present registered Run Worktree has tracked or untracked changes. Dirty evidence takes precedence and Roundfix preserves the worktree and branch. |
+| `unknown` | Invalid or missing metadata, an unsafe or unregistered worktree, an ambiguous or missing ref, or a Git inspection failure prevents proof. Roundfix preserves every surface it can identify. |
+| `released` | Both the Run Worktree and Run Branch are absent. Repeated dry-run or apply is an idempotent no-op. |
+
+A missing worktree alone is not `released` and never authorizes deletion. When
+the Run Branch remains, Roundfix still requires an unambiguous Run Branch tip,
+the recorded target tip, and ancestry proof. Age and terminal outcome are also
+not cleanup evidence.
+
+`--apply` is the only mutation switch:
+
+```bash
+roundfix reconcile <run-id> --apply
+roundfix reconcile --apply
+```
+
+There is no force flag or user assertion that bypasses the proof. Apply acts
+only on entries classified `safe` during that invocation, then rechecks the
+metadata, worktree cleanliness, Run head, target head, and ancestry before
+mutation. It removes the Run Worktree without force, deletes the Run Branch,
+and reports failures while preserving any remaining path or ref. Dirty,
+unintegrated, unknown, and released entries remain successful preserved
+results unless an operational inspection fails.
+
+Before safe cleanup, Roundfix records the reconciliation evidence. A safe
+Integration Pending Run moves to Clean through the guarded terminal transition;
+every other terminal outcome remains unchanged. The Reconcile Command never
+integrates unique commits, repairs dirty work, chooses another target branch,
+or treats a missing path as proof.
+
+The contract uses the [Roundfix glossary](../../CONTEXT.md#language) and follows
+[ADR-0053](../adr/0053-terminal-run-worktree-reconciliation-is-proof-based.md)
+and [Spec 0038](../specs/0038-terminal-run-worktree-reconciliation/_prd.md).
+Adjacent terminal-cleanup diagnostics remain traced through the
+[Stop Command](#stop) to the
+[detached-watch finding](../findings/2026-07-16-vortex-pr87-detached-watch-notification.md#4-cleanup-noise-appeared-before-the-actionable-failure).
+
 ## Run discovery and monitoring
 
 ### runs and runs list
@@ -442,6 +521,19 @@ current repository's 20 newest Active Runs; `--state` widens the state filter,
 and adds a repository column. When Runs are hidden, exactly one trailing
 stderr note names the hidden count and the widening flag. Empty results print
 `No Runs found.` and exit `0`.
+
+When the selected repository scope contains retained terminal Run Worktrees or
+Run Branches, Runs List keeps the stdout row shape unchanged and writes one
+diagnostic to stderr:
+
+```text
+(2 terminal Run Worktrees retained; run 'roundfix reconcile' to inspect)
+```
+
+The count can appear even when the default Active view has no rows. It is
+discovery guidance, not a `safe` or unsafe classification; use the Reconcile
+Command to classify each retained Run. When present, this retained-worktree
+diagnostic is the one trailing stderr note.
 
 ### attach
 
