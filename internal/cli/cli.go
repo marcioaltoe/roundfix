@@ -2498,6 +2498,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		BudgetEnabled:    loaded.Config.Budget.Enabled,
 		MaxRunDuration:   loaded.Config.Budget.MaxRunDuration,
 	}, watch.Dependencies{
+		StopRequests: runStore,
 		StatusSource: watch.StatusFunc(func(ctx context.Context, statusReq watch.StatusRequest) (watch.Status, error) {
 			status, err := watchReviewStatus(ctx, reviewsource.WatchStatusRequest{
 				Source:         req.source,
@@ -2875,7 +2876,7 @@ func printStopSummary(req commandRequest, preflightResult preflight.Result, stde
 }
 
 func isStopRequest(ctx context.Context, err error) bool {
-	return agent.IsStopError(err) || errors.Is(err, daemon.ErrStopRequested) || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) || (ctx != nil && ctx.Err() != nil)
+	return agent.IsStopError(err) || errors.Is(err, daemon.ErrStopRequested) || errors.Is(err, watch.ErrStopRequested) || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) || (ctx != nil && ctx.Err() != nil)
 }
 
 func defaultInspectChangedPaths(ctx context.Context, gitRoot string) ([]preflight.ChangedPath, error) {

@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0037-terminal-outcome-integrity
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -29,23 +29,23 @@ Source or repository mutation.
 
 ## Subtasks
 
-- [ ] Add the Stop Request source contract to watch dependencies.
-- [ ] Wire the Store-backed source into operational watch Runs.
-- [ ] Cover every status and sleep boundary.
-- [ ] Preserve the existing stopped classification and CLI exit behavior.
-- [ ] Add fake-clock tests for each waiting phase.
-- [ ] Prove no downstream operation starts after observation.
+- [x] Add the Stop Request source contract to watch dependencies.
+- [x] Wire the Store-backed source into operational watch Runs.
+- [x] Cover every status and sleep boundary.
+- [x] Preserve the existing stopped classification and CLI exit behavior.
+- [x] Add fake-clock tests for each waiting phase.
+- [x] Prove no downstream operation starts after observation.
 
 ## Acceptance Criteria
 
-- [ ] A request during status wait reaches Stopped by the next poll.
-- [ ] Requests during quiet period, transient retry sleep, and Merge-Ready wait
+- [x] A request during status wait reaches Stopped by the next poll.
+- [x] Requests during quiet period, transient retry sleep, and Merge-Ready wait
       each interrupt their respective boundary.
-- [ ] No later Review Source call or repository mutation occurs.
-- [ ] Operational runs always provide the Store source; only isolated tests may
+- [x] No later Review Source call or repository mutation occurs.
+- [x] Operational runs always provide the Store source; only isolated tests may
       omit it.
-- [ ] Store read failure is distinguishable from a requested stop.
-- [ ] Existing Run Budget and timeout behavior remains unchanged without a stop.
+- [x] Store read failure is distinguishable from a requested stop.
+- [x] Existing Run Budget and timeout behavior remains unchanged without a stop.
 
 ## Context
 
@@ -78,3 +78,56 @@ Source or repository mutation.
   Requests; Build Order 4.
 - `../../adr/0022-stop-requests-travel-through-the-run-database.md` → durable
   Stop Request transport.
+
+## Result
+
+Implemented a context-aware Stop Request source in the watch dependencies and
+wired the operational Watch Run to its Run Database Store. The watch loop now
+observes Stop Requests before and after Review Source status and Merge-Ready
+accesses and after status-poll, quiet-period, transient-retry, and Merge-Ready
+sleeps. Observation returns the stopped classification before any later fetch,
+check, resolve, artifact, commit, push, or Review Source mutation can start.
+Store observation failures retain their cause and add the Run ID plus boundary
+operation.
+
+Acceptance evidence:
+
+- Status wait: `TestRunStopRequestDuringStatusWaitStopsAtNextPoll` observed the
+  request after one fake-clock poll, returned Stopped with zero fetched Rounds,
+  and made no second status, fetch, or resolve call.
+- Quiet, retry, and Merge-Ready waits:
+  `TestRunStopRequestDuringQuietPeriodStopsBeforeFetch`,
+  `TestRunStopRequestDuringTransientRetryStopsBeforeNextCheck`, and
+  `TestRunStopRequestDuringMergeReadyWaitStopsBeforeNextCheck` each observed
+  the request immediately after the relevant fake-clock sleep and proved no
+  later operation began.
+- Operational source and CLI contract:
+  `TestRunWatchStopRequestBeforeAgentMarksStopped` recorded a real Run Database
+  Stop Request without canceling the context, reached Stopped with exit code
+  zero, and performed no fetch or Agent work. The sole operational
+  `watch.Run` call supplies `StopRequests: runStore`; isolated package tests
+  may leave the source nil.
+- Failure distinction:
+  `TestRunStopRequestSourceFailureIncludesRunAndOperation` preserved the Store
+  error chain, reported Failed rather than Stopped, named `run_123` and the
+  status operation, and made no Review Source call.
+- Unchanged safeguards:
+  `TestRunWithoutStopRequestKeepsRunBudgetBehavior` retained BudgetExceeded
+  behavior with a non-requesting source, and the complete watch and CLI package
+  suites passed.
+
+Verification:
+
+- `rtk env GOCACHE=/private/tmp/roundfix-task04-gocache go test ./internal/watch -run 'TestRun.*StopRequest' -count=1`
+  — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task04-gocache go test ./internal/cli -run 'TestRunWatch.*StopRequest' -count=1`
+  — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task04-gocache go test -race ./internal/watch ./internal/cli -run 'Test.*StopRequest' -count=1`
+  — passed.
+- `rtk env GOCACHE=/private/tmp/roundfix-task04-gocache go test ./internal/watch ./internal/cli -count=1`
+  — passed with process-control permission. The first sandboxed attempt reached
+  the unrelated detached-process test and failed with `operation not
+  permitted`; the identical permitted rerun passed both packages.
+- `rtk git -c core.fsmonitor=false diff --check` — passed.
+
+Follow-ups: none.

@@ -4784,11 +4784,32 @@ resolve:
 
 func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	withSuccessfulPreflight(t, repoDir)
-	withWatchStatus(t, func(context.Context, reviewsource.WatchStatusRequest) (reviewsource.WatchStatus, error) {
-		cancel()
+	statusCalls := 0
+	withWatchStatus(t, func(ctx context.Context, _ reviewsource.WatchStatusRequest) (reviewsource.WatchStatus, error) {
+		statusCalls++
+		if statusCalls > 1 {
+			t.Fatalf("Stop Request must prevent another Review Source status call")
+		}
+		runStore, err := store.Open(ctx, homeDir)
+		if err != nil {
+			t.Fatalf("open Run Database to request Stop: %v", err)
+		}
+		defer func() {
+			if err := runStore.Close(); err != nil {
+				t.Fatalf("close Run Database after Stop Request: %v", err)
+			}
+		}()
+		active, found, err := runStore.ActiveRun(ctx, "owner/project", "feature/review")
+		if err != nil {
+			t.Fatalf("read active watch Run: %v", err)
+		}
+		if !found {
+			t.Fatal("expected active watch Run before Review Source status")
+		}
+		if err := runStore.RequestStop(ctx, active.ID); err != nil {
+			t.Fatalf("request Stop for watch Run: %v", err)
+		}
 		return reviewsource.WatchStatus{State: watch.StatusPending}, nil
 	})
 	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
@@ -4799,7 +4820,7 @@ func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean Stop Request exit 0, got %d", code)
@@ -4819,7 +4840,9 @@ func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
 	if strings.Contains(stderr.String(), "Fetched Round") || strings.Contains(stderr.String(), "fake agent output") {
 		t.Fatalf("Stop Request before Agent must not fetch or run Agent, got %q", stderr.String())
 	}
+	runID := reviewRunIDFromStderr(t, stderr.String())
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
+	assertStopRequested(t, homeDir, runID)
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
 }
 

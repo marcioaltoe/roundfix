@@ -3,6 +3,7 @@ package watch
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -127,6 +128,204 @@ func TestRunSleepsBetweenStatusChecksAndKeepsQuietPeriodWhenReviewSettlesDuringR
 	assertSleeps(t, sleeper.sleeps, req.PollInterval, req.PollInterval, req.QuietPeriod)
 }
 
+func TestRunStopRequestDuringStatusWaitStopsAtNextPoll(t *testing.T) {
+	req := validRequest()
+	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
+	stops := &fakeStopRequestSource{}
+	sleeper := &fakeSleeper{
+		clock: clock,
+		afterSleep: func(time.Duration) {
+			stops.requested = true
+		},
+	}
+	status := &fakeStatusSource{
+		statuses: []Status{
+			{State: StatusPending},
+			{State: StatusSettled},
+		},
+	}
+	fetcher := &fakeFetcher{}
+	resolver := &fakeResolver{}
+
+	result, err := Run(context.Background(), req, Dependencies{
+		StopRequests: stops,
+		StatusSource: status,
+		Fetcher:      fetcher,
+		Resolver:     resolver,
+		Clock:        clock,
+		Sleeper:      sleeper,
+	})
+
+	if !errors.Is(err, ErrStopRequested) {
+		t.Fatalf("expected Stop Request classification, got result=%#v err=%v", result, err)
+	}
+	if result.Outcome != store.StateStopped || result.Rounds != 0 {
+		t.Fatalf("expected Stopped before a fetched Round, got %#v", result)
+	}
+	if stops.calls != 3 || status.calls != 1 {
+		t.Fatalf("expected Stop Request after one status poll, got stop=%d status=%d", stops.calls, status.calls)
+	}
+	if fetcher.calls != 0 || resolver.calls != 0 {
+		t.Fatalf("Stop Request must block later work, got fetch=%d resolve=%d", fetcher.calls, resolver.calls)
+	}
+	assertSleeps(t, sleeper.sleeps, req.PollInterval)
+}
+
+func TestRunStopRequestDuringQuietPeriodStopsBeforeFetch(t *testing.T) {
+	req := validRequest()
+	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
+	stops := &fakeStopRequestSource{}
+	sleeper := &fakeSleeper{
+		clock: clock,
+		afterSleep: func(duration time.Duration) {
+			if duration == req.QuietPeriod {
+				stops.requested = true
+			}
+		},
+	}
+	status := &fakeStatusSource{
+		statuses: []Status{
+			{State: StatusPending},
+			{State: StatusSettled},
+		},
+	}
+	fetcher := &fakeFetcher{}
+	resolver := &fakeResolver{}
+
+	result, err := Run(context.Background(), req, Dependencies{
+		StopRequests: stops,
+		StatusSource: status,
+		Fetcher:      fetcher,
+		Resolver:     resolver,
+		Clock:        clock,
+		Sleeper:      sleeper,
+	})
+
+	if !errors.Is(err, ErrStopRequested) {
+		t.Fatalf("expected Stop Request classification, got result=%#v err=%v", result, err)
+	}
+	if result.Outcome != store.StateStopped || result.Rounds != 0 {
+		t.Fatalf("expected Stopped before fetch, got %#v", result)
+	}
+	if stops.calls != 6 || status.calls != 2 {
+		t.Fatalf("expected Stop Request after quiet-period sleep, got stop=%d status=%d", stops.calls, status.calls)
+	}
+	if fetcher.calls != 0 || resolver.calls != 0 {
+		t.Fatalf("quiet-period Stop Request must block later work, got fetch=%d resolve=%d", fetcher.calls, resolver.calls)
+	}
+	assertSleeps(t, sleeper.sleeps, req.PollInterval, req.QuietPeriod)
+}
+
+func TestRunStopRequestDuringTransientRetryStopsBeforeNextCheck(t *testing.T) {
+	req := validRequest()
+	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
+	stops := &fakeStopRequestSource{}
+	sleeper := &fakeSleeper{
+		clock: clock,
+		afterSleep: func(time.Duration) {
+			stops.requested = true
+		},
+	}
+	status := &fakeStatusSource{statuses: []Status{{State: StatusSettled}}}
+	fetcher := &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 0}}}
+	check := &fakeCheckSource{err: errors.New("temporary Review Source failure")}
+	resolver := &fakeResolver{}
+
+	result, err := Run(context.Background(), req, Dependencies{
+		StopRequests: stops,
+		StatusSource: status,
+		Fetcher:      fetcher,
+		Resolver:     resolver,
+		CheckSource:  check,
+		Clock:        clock,
+		Sleeper:      sleeper,
+	})
+
+	if !errors.Is(err, ErrStopRequested) {
+		t.Fatalf("expected Stop Request classification, got result=%#v err=%v", result, err)
+	}
+	if result.Outcome != store.StateStopped || result.Rounds != 1 {
+		t.Fatalf("expected Stopped after one fetched Round, got %#v", result)
+	}
+	if stops.calls != 5 || check.calls != 1 {
+		t.Fatalf("expected Stop Request after one retry sleep, got stop=%d check=%d", stops.calls, check.calls)
+	}
+	if fetcher.calls != 1 || resolver.calls != 0 {
+		t.Fatalf("retry Stop Request must block later work, got fetch=%d resolve=%d", fetcher.calls, resolver.calls)
+	}
+	assertSleeps(t, sleeper.sleeps, req.PollInterval)
+}
+
+func TestRunStopRequestDuringMergeReadyWaitStopsBeforeNextCheck(t *testing.T) {
+	req := validRequest()
+	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
+	stops := &fakeStopRequestSource{}
+	sleeper := &fakeSleeper{
+		clock: clock,
+		afterSleep: func(time.Duration) {
+			stops.requested = true
+		},
+	}
+	status := &fakeStatusSource{statuses: []Status{{State: StatusSettled}}}
+	fetcher := &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 0}}}
+	check := &fakeCheckSource{states: []HeadCheckState{CheckPending, CheckSuccess}}
+	resolver := &fakeResolver{}
+
+	result, err := Run(context.Background(), req, Dependencies{
+		StopRequests: stops,
+		StatusSource: status,
+		Fetcher:      fetcher,
+		Resolver:     resolver,
+		CheckSource:  check,
+		Clock:        clock,
+		Sleeper:      sleeper,
+	})
+
+	if !errors.Is(err, ErrStopRequested) {
+		t.Fatalf("expected Stop Request classification, got result=%#v err=%v", result, err)
+	}
+	if result.Outcome != store.StateStopped || result.Rounds != 1 {
+		t.Fatalf("expected Stopped after one fetched Round, got %#v", result)
+	}
+	if stops.calls != 5 || check.calls != 1 {
+		t.Fatalf("expected Stop Request after one Merge-Ready sleep, got stop=%d check=%d", stops.calls, check.calls)
+	}
+	if fetcher.calls != 1 || resolver.calls != 0 {
+		t.Fatalf("Merge-Ready Stop Request must block later work, got fetch=%d resolve=%d", fetcher.calls, resolver.calls)
+	}
+	assertSleeps(t, sleeper.sleeps, req.PollInterval)
+}
+
+func TestRunStopRequestSourceFailureIncludesRunAndOperation(t *testing.T) {
+	req := validRequest()
+	sourceErr := errors.New("Run Database unavailable")
+	stops := &fakeStopRequestSource{err: sourceErr, errAtCall: 1}
+	status := &fakeStatusSource{statuses: []Status{{State: StatusSettled}}}
+
+	result, err := Run(context.Background(), req, Dependencies{
+		StopRequests: stops,
+		StatusSource: status,
+		Fetcher:      &fakeFetcher{},
+		Resolver:     &fakeResolver{},
+	})
+
+	if !errors.Is(err, sourceErr) {
+		t.Fatalf("expected Store observation failure, got result=%#v err=%v", result, err)
+	}
+	if errors.Is(err, ErrStopRequested) {
+		t.Fatalf("Store observation failure must not classify as requested stop: %v", err)
+	}
+	if result.Outcome != store.StateFailed {
+		t.Fatalf("expected Failed observation result, got %#v", result)
+	}
+	if !strings.Contains(err.Error(), req.RunID) || !strings.Contains(err.Error(), "before Review Source status") {
+		t.Fatalf("expected Run and operation context, got %q", err)
+	}
+	if status.calls != 0 {
+		t.Fatalf("observation failure must block Review Source status, got %d calls", status.calls)
+	}
+}
+
 func TestRunTimesOutAndOffersManualReviewTrigger(t *testing.T) {
 	req := validRequest()
 	req.ReviewTimeout = 2 * time.Second
@@ -208,7 +407,7 @@ func TestRunStopsAtMaxRoundsReached(t *testing.T) {
 	}
 }
 
-func TestRunStopsWhenBudgetExceeded(t *testing.T) {
+func TestRunWithoutStopRequestKeepsRunBudgetBehavior(t *testing.T) {
 	req := validRequest()
 	req.BudgetEnabled = true
 	req.MaxRunDuration = 2 * time.Second
@@ -226,6 +425,7 @@ func TestRunStopsWhenBudgetExceeded(t *testing.T) {
 	resolver := &fakeResolver{}
 
 	result, err := Run(context.Background(), req, Dependencies{
+		StopRequests: &fakeStopRequestSource{},
 		StatusSource: status,
 		Fetcher:      fetcher,
 		Resolver:     resolver,
@@ -573,6 +773,7 @@ func TestRunDoesNotConfirmMergeReadinessWithoutUntilClean(t *testing.T) {
 
 func validRequest() Request {
 	return Request{
+		RunID:            "run_123",
 		PRNumber:         "123",
 		HeadSHA:          "abc123",
 		UntilClean:       true,
@@ -599,9 +800,10 @@ func (clock *fakeClock) Advance(duration time.Duration) {
 }
 
 type fakeSleeper struct {
-	clock  *fakeClock
-	err    error
-	sleeps []time.Duration
+	clock      *fakeClock
+	err        error
+	afterSleep func(time.Duration)
+	sleeps     []time.Duration
 }
 
 func (sleeper *fakeSleeper) Sleep(_ context.Context, duration time.Duration) error {
@@ -611,6 +813,9 @@ func (sleeper *fakeSleeper) Sleep(_ context.Context, duration time.Duration) err
 	}
 	if sleeper.clock != nil {
 		sleeper.clock.Advance(duration)
+	}
+	if sleeper.afterSleep != nil {
+		sleeper.afterSleep(duration)
 	}
 	return nil
 }
@@ -655,6 +860,21 @@ func (source *fakeStatusSource) Status(context.Context, StatusRequest) (Status, 
 		source.statuses = source.statuses[1:]
 	}
 	return status, nil
+}
+
+type fakeStopRequestSource struct {
+	err       error
+	errAtCall int
+	requested bool
+	calls     int
+}
+
+func (source *fakeStopRequestSource) StopRequested(context.Context, string) (bool, error) {
+	source.calls++
+	if source.err != nil && source.calls == source.errAtCall {
+		return false, source.err
+	}
+	return source.requested, nil
 }
 
 type fakeCheckSource struct {
