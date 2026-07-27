@@ -1,9 +1,12 @@
 ---
 spec: 0037-terminal-outcome-integrity
-status: active
+status: archived
 created: 2026-07-17
 surfaces: [backend, cli, data, docs]
+archived: "2026-07-27"
+source_slug: 0037-terminal-outcome-integrity
 ---
+
 
 # Terminal outcome integrity
 
@@ -23,8 +26,14 @@ A force-stopped Run can currently be completed again by its still-running owner,
   completion compare-and-set. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — on 2026-07-26, the maintainer expressly
   authorizes changes to exactly `.agents/skills/roundfix/SKILL.md` and
-  `skills/roundfix/SKILL.md`; no other protected tooling mutation is
-  authorized. Source:
+  `skills/roundfix/SKILL.md`. On 2026-07-27, the maintainer additionally
+  expressly authorizes the deterministic Skill-digest fallout of that edit in
+  exactly `internal/baseline/assets/setups/typescript-bun.json`,
+  `internal/baseline/testdata/catalog.digest`,
+  `internal/baseline/testdata/catalog.normalized.json`,
+  `internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json`, and
+  `internal/baseline/testdata/parity-corpus/v1/manifest.json`. No other
+  protected tooling mutation is authorized. Source:
   `docs/agents/agent-instructions.md`.
 
 ## Goals
@@ -81,6 +90,7 @@ A force-stopped Run can currently be completed again by its still-running owner,
 - Force Stop fails closed when owner exit cannot be proven; it never releases the lock on a warning-only basis.
 - Agent Selection lifecycle records are the Agent Session registry; no second session table is introduced.
 - General terminal completion is immutable, with one explicit Integration Pending reconciliation transition. See [ADR-0052](../../adr/0052-run-completion-is-compare-and-set.md).
+- The Settle Command never rewrites a settled Run's terminal outcome; a recovered Run keeps its recorded outcome as history, and recovery is reported only through the Settle report and its commits.
 
 ## Open Questions
 

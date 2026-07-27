@@ -4028,6 +4028,120 @@ func TestRunOutcomeNotificationsCaptureTerminalResolveWatchAndImplement(t *testi
 	}
 }
 
+func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalOutcome(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
+
+	agentStarted := make(chan struct{})
+	var startedOnce sync.Once
+	releaseAgent := make(chan struct{})
+	var releaseOnce sync.Once
+	release := func() {
+		releaseOnce.Do(func() {
+			close(releaseAgent)
+		})
+	}
+	t.Cleanup(release)
+	runner := &fakeAgentRunner{onRun: func(agent.ExecuteRequest) error {
+		startedOnce.Do(func() {
+			close(agentStarted)
+		})
+		<-releaseAgent
+		return nil
+	}}
+	withAgentRunner(t, runner)
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return nil
+	})
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int, string) error {
+		return nil
+	}))
+	notifier := &recordingOutcomeNotifier{}
+	withOutcomeNotifier(t, notifier)
+
+	var resolveStdout bytes.Buffer
+	var resolveStderr bytes.Buffer
+	resolveDone := make(chan int, 1)
+	go func() {
+		resolveDone <- RunContext(context.Background(), []string{
+			"resolve", "--pr", "123", "--round", "all", "--no-input",
+		}, &resolveStdout, &resolveStderr)
+	}()
+
+	<-agentStarted
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		release()
+		t.Fatalf("open store during completion race: %v", err)
+	}
+	active, found, err := runStore.ActiveRun(context.Background(), "owner/project", "feature/review")
+	closeErr := runStore.Close()
+	if err != nil || !found {
+		release()
+		t.Fatalf("read active Run during completion race: found=%v err=%v", found, err)
+	}
+	if closeErr != nil {
+		release()
+		t.Fatalf("close store during completion race: %v", closeErr)
+	}
+
+	var stopStdout bytes.Buffer
+	var stopStderr bytes.Buffer
+	stopCode := RunContext(context.Background(), []string{"stop", "--force", active.ID}, &stopStdout, &stopStderr)
+	if stopCode != exitOK {
+		release()
+		<-resolveDone
+		t.Fatalf("Force Stop winner exit = %d, want %d; stdout=%q stderr=%q", stopCode, exitOK, stopStdout.String(), stopStderr.String())
+	}
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+	release()
+	resolveCode := <-resolveDone
+
+	if resolveCode != exitRunFailed {
+		t.Fatalf("losing owner exit = %d, want %d; stop stdout=%q stop stderr=%q resolve stderr=%q", resolveCode, exitRunFailed, stopStdout.String(), stopStderr.String(), resolveStderr.String())
+	}
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+	events := runEvents(t, homeDir, active.ID)
+	outcomes := 0
+	for _, entry := range events {
+		if entry.Event.Kind == runevent.KindDaemonOutcome {
+			outcomes++
+		}
+	}
+	if outcomes != 1 {
+		t.Fatalf("terminal outcome events = %d, want 1; events=%+v", outcomes, events)
+	}
+	assertRecordedOutcomes(t, notifier, []roundnotify.Outcome{{
+		RunID:  active.ID,
+		State:  store.StateStopped,
+		Kind:   store.KindResolve,
+		Target: "pr:123",
+	}})
+
+	stopStdout.Reset()
+	stopStderr.Reset()
+	if replayCode := RunContext(context.Background(), []string{"stop", "--force", active.ID}, &stopStdout, &stopStderr); replayCode != exitOK {
+		t.Fatalf("identical Force Stop replay exit = %d, want %d; stderr=%q", replayCode, exitOK, stopStderr.String())
+	}
+	events = runEvents(t, homeDir, active.ID)
+	outcomes = 0
+	for _, entry := range events {
+		if entry.Event.Kind == runevent.KindDaemonOutcome {
+			outcomes++
+		}
+	}
+	if outcomes != 1 {
+		t.Fatalf("identical replay published another terminal outcome: events=%+v", events)
+	}
+	assertRecordedOutcomes(t, notifier, []roundnotify.Outcome{{
+		RunID:  active.ID,
+		State:  store.StateStopped,
+		Kind:   store.KindResolve,
+		Target: "pr:123",
+	}})
+}
+
 func TestRunOutcomeNotificationsSkipFetch(t *testing.T) {
 	_, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
@@ -4784,11 +4898,32 @@ resolve:
 
 func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	withSuccessfulPreflight(t, repoDir)
-	withWatchStatus(t, func(context.Context, reviewsource.WatchStatusRequest) (reviewsource.WatchStatus, error) {
-		cancel()
+	statusCalls := 0
+	withWatchStatus(t, func(ctx context.Context, _ reviewsource.WatchStatusRequest) (reviewsource.WatchStatus, error) {
+		statusCalls++
+		if statusCalls > 1 {
+			t.Fatalf("Stop Request must prevent another Review Source status call")
+		}
+		runStore, err := store.Open(ctx, homeDir)
+		if err != nil {
+			t.Fatalf("open Run Database to request Stop: %v", err)
+		}
+		defer func() {
+			if err := runStore.Close(); err != nil {
+				t.Fatalf("close Run Database after Stop Request: %v", err)
+			}
+		}()
+		active, found, err := runStore.ActiveRun(ctx, "owner/project", "feature/review")
+		if err != nil {
+			t.Fatalf("read active watch Run: %v", err)
+		}
+		if !found {
+			t.Fatal("expected active watch Run before Review Source status")
+		}
+		if err := runStore.RequestStop(ctx, active.ID); err != nil {
+			t.Fatalf("request Stop for watch Run: %v", err)
+		}
 		return reviewsource.WatchStatus{State: watch.StatusPending}, nil
 	})
 	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
@@ -4799,7 +4934,7 @@ func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	code := RunContext(ctx, []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
 
 	if code != 0 {
 		t.Fatalf("expected clean Stop Request exit 0, got %d", code)
@@ -4819,7 +4954,9 @@ func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
 	if strings.Contains(stderr.String(), "Fetched Round") || strings.Contains(stderr.String(), "fake agent output") {
 		t.Fatalf("Stop Request before Agent must not fetch or run Agent, got %q", stderr.String())
 	}
+	runID := reviewRunIDFromStderr(t, stderr.String())
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
+	assertStopRequested(t, homeDir, runID)
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
 }
 
@@ -6634,6 +6771,71 @@ func TestBranchIntegrityPreflightIntegratesFastForwardRunBranchAndJournals(t *te
 	}
 }
 
+// seedOutdatedV9RunDatabase downgrades a freshly created Run Database to
+// schema v9 by reversing the v9→v10 migration, matching what a historical
+// binary left behind.
+func seedOutdatedV9RunDatabase(t *testing.T, homeDir string) {
+	t.Helper()
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("create Run Database: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close Run Database: %v", err)
+	}
+	db, err := sql.Open("sqlite", "file:"+store.DatabasePath(homeDir)+"?_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)")
+	if err != nil {
+		t.Fatalf("open Run Database for downgrade: %v", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Fatalf("close downgraded Run Database: %v", err)
+		}
+	}()
+	for _, statement := range []string{
+		`ALTER TABLE runs DROP COLUMN owner_identity`,
+		`PRAGMA user_version = 9`,
+	} {
+		if _, err := db.Exec(statement); err != nil {
+			t.Fatalf("downgrade Run Database to v9: %v", err)
+		}
+	}
+}
+
+func TestBranchIntegrityPreflightMigratesOutdatedRunDatabase(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withBranchIntegrity(t, nil, nil)
+	seedOutdatedV9RunDatabase(t, homeDir)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected fetch to migrate the outdated Run Database and proceed, got %d stderr=%q", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Fetch complete") {
+		t.Fatalf("expected fetch success, got %q", stdout.String())
+	}
+	reader, err := store.OpenReader(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("expected migrated Run Database to open read-only, got %v", err)
+	}
+	defer func() {
+		if err := reader.Close(); err != nil {
+			t.Fatalf("close reader after migration: %v", err)
+		}
+	}()
+	version, err := reader.MigrationVersion(context.Background())
+	if err != nil {
+		t.Fatalf("read migrated schema version: %v", err)
+	}
+	if version != 10 {
+		t.Fatalf("expected schema version 10 after preflight migration, got %d", version)
+	}
+}
+
 func TestBranchIntegrityPreflightRejectsActiveRunForReviewCommands(t *testing.T) {
 	for _, command := range []string{"fetch", "resolve", "watch"} {
 		t.Run(command, func(t *testing.T) {
@@ -7006,18 +7208,333 @@ func TestRunStopBySpecRecordsStopRequestForMatchingActiveRun(t *testing.T) {
 	}
 }
 
-func TestRunStopForceCancelsImplementRunAndReleasesLocks(t *testing.T) {
+func TestRunForceStopOwnerExitPrecedesCompletionAndLockRelease(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
-	var calls []struct {
-		runtime agent.RuntimeSpec
-		session agent.SessionRef
+	proved := false
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(ctx context.Context, pid int, recordedIdentity string) error {
+		if active.OwnerPID == nil || pid != *active.OwnerPID {
+			t.Fatalf("owner process PID = %d, want recorded PID %v", pid, active.OwnerPID)
+		}
+		if recordedIdentity != active.OwnerIdentity {
+			t.Fatalf("owner identity = %q, want recorded identity %q", recordedIdentity, active.OwnerIdentity)
+		}
+		runStore, err := store.Open(ctx, homeDir)
+		if err != nil {
+			t.Fatalf("open store during owner exit proof: %v", err)
+		}
+		defer func() {
+			if err := runStore.Close(); err != nil {
+				t.Fatalf("close store during owner exit proof: %v", err)
+			}
+		}()
+		current, found, err := runStore.Run(ctx, active.ID)
+		if err != nil || !found {
+			t.Fatalf("read Run during owner exit proof: found=%v err=%v", found, err)
+		}
+		if current.State != store.StateActive {
+			t.Fatalf("Run state during owner exit proof = %q, want Active", current.State)
+		}
+		if _, err := runStore.CreateRun(ctx, request); err == nil {
+			t.Fatal("Active Run lock was released before owner exit proof")
+		}
+		proved = true
+		return nil
+	}))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("force stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
 	}
-	withStopAgentSessionCanceler(t, func(_ context.Context, runtime agent.RuntimeSpec, session agent.SessionRef) error {
-		calls = append(calls, struct {
-			runtime agent.RuntimeSpec
-			session agent.SessionRef
-		}{runtime: runtime, session: session})
+	if !proved {
+		t.Fatal("owner exit was not proven")
+	}
+	if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
+		t.Fatalf("expected force stop success report, got %q", stdout.String())
+	}
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+}
+
+func TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock(t *testing.T) {
+	tests := []struct {
+		name string
+		step string
+		err  error
+	}{
+		{
+			name: "permission",
+			step: "send graceful termination",
+			err:  errors.New("operation not permitted"),
+		},
+		{
+			name: "deadline",
+			step: "prove exit after force kill",
+			err:  context.DeadlineExceeded,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+			withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int, string) error {
+				return store.OwnerProcessControlError{PID: *active.OwnerPID, Step: tt.step, Err: tt.err}
+			}))
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+			if code != exitRunFailed {
+				t.Fatalf("force stop exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("failed force stop printed success output %q", stdout.String())
+			}
+			for _, want := range []string{
+				active.ID,
+				strconv.Itoa(*active.OwnerPID),
+				tt.step,
+				"remains Active",
+				"Active Run lock retained",
+			} {
+				if !strings.Contains(stderr.String(), want) {
+					t.Fatalf("force stop diagnostic missing %q: %q", want, stderr.String())
+				}
+			}
+			assertRunState(t, homeDir, active.ID, store.StateActive)
+			runStore, err := store.Open(context.Background(), homeDir)
+			if err != nil {
+				t.Fatalf("open store after failed force stop: %v", err)
+			}
+			defer func() {
+				if err := runStore.Close(); err != nil {
+					t.Fatalf("close store after failed force stop: %v", err)
+				}
+			}()
+			if _, err := runStore.CreateRun(context.Background(), request); err == nil {
+				t.Fatal("failed force stop released the Active Run lock")
+			}
+		})
+	}
+}
+
+func TestRunForceStopOwnerProofFailurePreservesAgentSessions(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
+		RunID: active.ID, ScopeKind: store.AgentSelectionScopeTask, ScopeID: "task_01",
+		Category: "backend", ProfileSource: "project", Attempt: 1,
+		SelectionRole: store.AgentSelectionRolePreferred, Runtime: "codex", Model: "task-model",
+		Status: store.AgentSelectionStatusActive,
+	})
+	cancelCalls := 0
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		cancelCalls++
+		return nil
+	})
+	closeCalls := 0
+	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		closeCalls++
+		return nil
+	})
+	terminateCalls := 0
+	withOwnerProcessController(t, ownerProcessControllerStub{
+		prove: func(context.Context, int, string) error {
+			return store.OwnerProcessControlError{
+				PID:  *active.OwnerPID,
+				Step: "prove owner process identity",
+				Err:  store.ErrOwnerProcessIdentityUnproven,
+			}
+		},
+		terminate: func(context.Context, int, string) error {
+			terminateCalls++
+			return nil
+		},
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("Force Stop failure exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("Force Stop failure printed success output %q", stdout.String())
+	}
+	if cancelCalls != 0 || closeCalls != 0 {
+		t.Fatalf("failed owner proof mutated Agent Sessions: cancel=%d close=%d", cancelCalls, closeCalls)
+	}
+	if terminateCalls != 0 {
+		t.Fatalf("failed owner proof still terminated the owner: %d calls", terminateCalls)
+	}
+	if strings.Contains(stderr.String(), "Secondary cleanup warning:") {
+		t.Fatalf("failed owner proof must report no cleanup warnings, got %q", stderr.String())
+	}
+	for _, want := range []string{
+		active.ID,
+		strconv.Itoa(*active.OwnerPID),
+		"prove owner process identity",
+		"remains Active",
+		"Active Run lock retained",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("Force Stop diagnostic missing %q: %q", want, stderr.String())
+		}
+	}
+	assertRunState(t, homeDir, active.ID, store.StateActive)
+
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open store after failed Force Stop: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close store after failed Force Stop: %v", err)
+		}
+	}()
+	activeScopes, err := runStore.ActiveAgentSelectionScopes(context.Background(), active.ID)
+	if err != nil {
+		t.Fatalf("read active Agent Selection scopes: %v", err)
+	}
+	if len(activeScopes) != 1 || activeScopes[0].Status != store.AgentSelectionStatusActive {
+		t.Fatalf("Agent Selection lifecycle changed after owner failure: %+v", activeScopes)
+	}
+	if _, err := runStore.CreateRun(context.Background(), request); err == nil {
+		t.Fatal("failed owner proof released the Active Run lock")
+	}
+}
+
+func TestRunForceStopPrimaryFailurePrecedesSecondaryCleanupWarnings(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
+		RunID: active.ID, ScopeKind: store.AgentSelectionScopeTask, ScopeID: "task_01",
+		Category: "backend", ProfileSource: "project", Attempt: 1,
+		SelectionRole: store.AgentSelectionRolePreferred, Runtime: "codex", Model: "task-model",
+		Status: store.AgentSelectionStatusActive,
+	})
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return errors.New("cancel denied")
+	})
+	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return errors.New("close denied")
+	})
+	// The owner proof succeeds, so Force Stop reaches session cleanup; the
+	// termination that follows fails and must still surface the cleanup
+	// warnings it accumulated, behind the primary failure.
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int, string) error {
+		return store.OwnerProcessControlError{
+			PID:  *active.OwnerPID,
+			Step: "prove owner exit",
+			Err:  context.DeadlineExceeded,
+		}
+	}))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("Force Stop failure exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("Force Stop failure printed success output %q", stdout.String())
+	}
+	primaryIndex := strings.Index(stderr.String(), "Stop failed")
+	secondaryIndex := strings.Index(stderr.String(), "Secondary cleanup warning:")
+	if primaryIndex < 0 || secondaryIndex < 0 || primaryIndex >= secondaryIndex {
+		t.Fatalf("primary failure must precede labeled secondary cleanup warnings, got %q", stderr.String())
+	}
+	assertRunState(t, homeDir, active.ID, store.StateActive)
+
+	events := runEvents(t, homeDir, active.ID)
+	primaryCursor := int64(0)
+	secondaryCursor := int64(0)
+	for _, entry := range events {
+		switch {
+		case strings.Contains(entry.Event.Summary, "Force Stop primary failure"):
+			primaryCursor = entry.Cursor
+		case strings.Contains(entry.Event.Summary, "Secondary cleanup warning"):
+			if secondaryCursor == 0 {
+				secondaryCursor = entry.Cursor
+			}
+		}
+	}
+	if primaryCursor == 0 || secondaryCursor == 0 || primaryCursor >= secondaryCursor {
+		t.Fatalf("journaled primary failure must precede secondary cleanup warnings, got %+v", events)
+	}
+}
+
+// TestRunForceStopOwnerPIDReuseFailsClosed lives in orphan_unix_test.go: it
+// proves the real identity comparison against a live scratch process whose
+// stored owner identity token differs from its genuine one.
+
+func TestRunForceStopStoppedRunIsIdempotentWithoutOwnerOrSessionActions(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
+		RunID: active.ID, ScopeKind: store.AgentSelectionScopeTask, ScopeID: "task_01",
+		Category: "backend", ProfileSource: "project", Attempt: 1,
+		SelectionRole: store.AgentSelectionRolePreferred, Runtime: "codex", Model: "task-model",
+		Status: store.AgentSelectionStatusActive,
+	})
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open store to complete Run: %v", err)
+	}
+	if _, err := runStore.CompleteRun(context.Background(), active.ID, store.StateStopped); err != nil {
+		t.Fatalf("complete Run as Stopped: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close store after completion: %v", err)
+	}
+	cancelCalls := 0
+	closeCalls := 0
+	ownerCalls := 0
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		cancelCalls++
+		return nil
+	})
+	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		closeCalls++
+		return nil
+	})
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int, string) error {
+		ownerCalls++
+		return nil
+	}))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("idempotent force stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	if cancelCalls != 0 || closeCalls != 0 || ownerCalls != 0 {
+		t.Fatalf("idempotent force stop actions: cancel=%d close=%d owner=%d", cancelCalls, closeCalls, ownerCalls)
+	}
+	if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
+		t.Fatalf("expected idempotent force stop report, got %q", stdout.String())
+	}
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+}
+
+func TestRunStopForceAgentSessionCleanupSkipsRunWithoutActiveLifecycle(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	cancelCalls := 0
+	closeCalls := 0
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		cancelCalls++
+		return nil
+	})
+	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		closeCalls++
 		return nil
 	})
 	var stdout bytes.Buffer
@@ -7028,14 +7545,11 @@ func TestRunStopForceCancelsImplementRunAndReleasesLocks(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
 	}
-	if want := "roundfix: closed session roundfix-" + active.ID; !strings.Contains(stderr.String(), want) {
-		t.Fatalf("expected force close report %q, got %q", want, stderr.String())
+	if strings.Contains(stderr.String(), "Agent Session") || strings.Contains(stderr.String(), "session roundfix-") {
+		t.Fatalf("expected no Agent Session diagnostics without active lifecycle evidence, got %q", stderr.String())
 	}
-	if len(calls) != 1 {
-		t.Fatalf("expected one Agent Session cancel, got %#v", calls)
-	}
-	if calls[0].runtime.ID != "codex" || calls[0].session.Name != "roundfix-"+active.ID || calls[0].session.WorkDir != repoDir {
-		t.Fatalf("unexpected cancel call: %#v", calls[0])
+	if cancelCalls != 0 || closeCalls != 0 {
+		t.Fatalf("expected zero Agent Session calls, got cancel=%d close=%d", cancelCalls, closeCalls)
 	}
 	if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") || !strings.Contains(stdout.String(), active.ID) {
 		t.Fatalf("expected force stop report with Run ID, got %q", stdout.String())
@@ -7060,7 +7574,7 @@ func TestRunStopForceCancelsImplementRunAndReleasesLocks(t *testing.T) {
 	}
 }
 
-func TestRunStopForceCancelsListsAndClosesRunAndTaskSessions(t *testing.T) {
+func TestRunStopForceRegisteredAgentSessionCleanupTargetsActiveScopesInOrder(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{
 		id:     "task_01",
 		title:  "Stopped task",
@@ -7068,21 +7582,42 @@ func TestRunStopForceCancelsListsAndClosesRunAndTaskSessions(t *testing.T) {
 	}})
 	location := configureSettleWorktreeLocation(t, repoDir, filepath.Join(homeDir, "worktrees"))
 	active, _, taskRef := createImplementRunWorktreeFixture(t, homeDir, repoDir, location, implementTestSlug, "task_01", "")
+	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
+		RunID: active.ID, ScopeKind: store.AgentSelectionScopeReview, ScopeID: "batch-002",
+		Category: "review", ProfileSource: "project", Attempt: 1,
+		SelectionRole: store.AgentSelectionRolePreferred, Runtime: "claude", Model: "review-model",
+		Status: store.AgentSelectionStatusActive,
+	})
+	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
+		RunID: active.ID, ScopeKind: store.AgentSelectionScopeQA, ScopeID: "qa",
+		Category: "qa", ProfileSource: "project", Attempt: 1,
+		SelectionRole: store.AgentSelectionRoleFallback, FallbackIndex: 1,
+		Runtime: "opencode", Model: "qa-model", Status: store.AgentSelectionStatusActive,
+	})
+	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
+		RunID: active.ID, ScopeKind: store.AgentSelectionScopeTask, ScopeID: "task_01",
+		Category: "backend", ProfileSource: "project", Attempt: 1,
+		SelectionRole: store.AgentSelectionRolePreferred, Runtime: "codex", Model: "task-model",
+		Status: store.AgentSelectionStatusActive,
+	})
 	calls := []string{}
 	withStopAgentSessionCanceler(t, func(_ context.Context, runtime agent.RuntimeSpec, session agent.SessionRef) error {
 		calls = append(calls, "cancel "+runtime.ID+" "+session.Name+" "+session.WorkDir)
 		return nil
 	})
-	withRoundfixSessionLister(t, func(_ context.Context, runtime agent.RuntimeSpec, workDir string) ([]agent.RoundfixSession, error) {
-		calls = append(calls, "list "+runtime.ID+" "+workDir)
-		return []agent.RoundfixSession{
-			{Name: "roundfix-" + active.ID + "-task_01", RunID: active.ID, TaskID: "task_01"},
-			{Name: "roundfix-other-run-task_01", RunID: "other-run", TaskID: "task_01"},
-		}, nil
-	})
 	withStopAgentSessionCloser(t, func(_ context.Context, runtime agent.RuntimeSpec, session agent.SessionRef) error {
 		calls = append(calls, "close "+runtime.ID+" "+session.Name+" "+session.WorkDir)
 		return nil
+	})
+	withOwnerProcessController(t, ownerProcessControllerStub{
+		prove: func(_ context.Context, pid int, _ string) error {
+			calls = append(calls, fmt.Sprintf("prove %d", pid))
+			return nil
+		},
+		terminate: func(_ context.Context, pid int, _ string) error {
+			calls = append(calls, fmt.Sprintf("owner %d", pid))
+			return nil
+		},
 	})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -7092,37 +7627,85 @@ func TestRunStopForceCancelsListsAndClosesRunAndTaskSessions(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
 	}
+	// The read-only owner proof runs first, then every registered Agent
+	// Session is cancelled, and only then is the owner terminated.
 	wantCalls := []string{
-		"cancel codex roundfix-" + active.ID + " " + active.WorkDir,
-		"list codex " + active.WorkDir,
-		"close codex roundfix-" + active.ID + " " + active.WorkDir,
+		fmt.Sprintf("prove %d", *active.OwnerPID),
+		"cancel codex roundfix-" + active.ID + "-task_01 " + taskRef.Path,
 		"close codex roundfix-" + active.ID + "-task_01 " + taskRef.Path,
+		"cancel opencode roundfix-" + active.ID + "-qa-fallback-01 " + active.WorkDir,
+		"close opencode roundfix-" + active.ID + "-qa-fallback-01 " + active.WorkDir,
+		"cancel claude roundfix-" + active.ID + "-review-002 " + repoDir,
+		"close claude roundfix-" + active.ID + "-review-002 " + repoDir,
+		fmt.Sprintf("owner %d", *active.OwnerPID),
 	}
 	if !reflect.DeepEqual(calls, wantCalls) {
 		t.Fatalf("unexpected session invocations\nwant: %#v\ngot:  %#v", wantCalls, calls)
 	}
-	for _, want := range []string{
-		"roundfix: closed session roundfix-" + active.ID,
-		"roundfix: closed session roundfix-" + active.ID + "-task_01",
-	} {
-		if !strings.Contains(stderr.String(), want) {
-			t.Fatalf("expected stderr to contain %q, got %q", want, stderr.String())
-		}
-	}
-	if strings.Contains(stderr.String(), "other-run") {
-		t.Fatalf("foreign Run session must not be reported or closed, got %q", stderr.String())
+	if strings.Contains(stderr.String(), "Agent Session") || strings.Contains(stderr.String(), "session roundfix-") {
+		t.Fatalf("expected successful registered cleanup to stay silent, got %q", stderr.String())
 	}
 	if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
 		t.Fatalf("expected force stop report, got %q", stdout.String())
 	}
+	assertAgentSelectionScopeStatus(t, homeDir, active.ID, store.AgentSelectionScopeTask, "task_01", store.AgentSelectionStatusClosed)
+	assertAgentSelectionScopeStatus(t, homeDir, active.ID, store.AgentSelectionScopeQA, "qa", store.AgentSelectionStatusClosed)
+	assertAgentSelectionScopeStatus(t, homeDir, active.ID, store.AgentSelectionScopeReview, "batch-002", store.AgentSelectionStatusClosed)
 	assertRunState(t, homeDir, active.ID, store.StateStopped)
 }
 
-func TestRunStopForceCloseFailureStillCompletesStopped(t *testing.T) {
+func TestRunStopForceRegisteredAgentSessionAbsenceIsIdempotent(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
-	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
+		RunID: active.ID, ScopeKind: store.AgentSelectionScopeTask, ScopeID: "task_01",
+		Category: "backend", ProfileSource: "project", Attempt: 1,
+		SelectionRole: store.AgentSelectionRolePreferred, Runtime: "codex", Model: "task-model",
+		Status: store.AgentSelectionStatusActive,
+	})
+	absent := fmt.Errorf("adapter response: %w", &agent.InfrastructureError{ExitCode: 4, Reason: "missing session"})
+	cancelCalls := 0
+	closeCalls := 0
 	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
-		return nil
+		cancelCalls++
+		return absent
+	})
+	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		closeCalls++
+		return absent
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
+	}
+	if cancelCalls != 1 || closeCalls != 1 {
+		t.Fatalf("expected one cancel and close attempt, got cancel=%d close=%d", cancelCalls, closeCalls)
+	}
+	if strings.Contains(stderr.String(), "Agent Session") || strings.Contains(stderr.String(), "session roundfix-") {
+		t.Fatalf("expected registered Agent Session absence to stay silent, got %q", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
+		t.Fatalf("expected force stop report, got %q", stdout.String())
+	}
+	assertAgentSelectionScopeStatus(t, homeDir, active.ID, store.AgentSelectionScopeTask, "task_01", store.AgentSelectionStatusClosed)
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+}
+
+func TestRunStopForceAgentSessionCleanupFailureRemainsVisibleWithoutClosedLifecycle(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
+		RunID: active.ID, ScopeKind: store.AgentSelectionScopeTask, ScopeID: "task_01",
+		Category: "backend", ProfileSource: "project", Attempt: 1,
+		SelectionRole: store.AgentSelectionRolePreferred, Runtime: "codex", Model: "task-model",
+		Status: store.AgentSelectionStatusActive,
+	})
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return errors.New("cancel denied")
 	})
 	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
 		return errors.New("close denied")
@@ -7135,26 +7718,18 @@ func TestRunStopForceCloseFailureStillCompletesStopped(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
 	}
-	if want := "roundfix: could not close session roundfix-" + active.ID + ": close denied"; !strings.Contains(stderr.String(), want) {
-		t.Fatalf("expected close failure note %q, got %q", want, stderr.String())
+	for _, want := range []string{
+		"Agent Session cancel failed for task task_01",
+		"cancel denied",
+		"Agent Session close failed for task task_01",
+		"close denied",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("expected cleanup diagnostic %q, got %q", want, stderr.String())
+		}
 	}
-	if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
-		t.Fatalf("expected force stop report, got %q", stdout.String())
-	}
+	assertAgentSelectionScopeStatus(t, homeDir, active.ID, store.AgentSelectionScopeTask, "task_01", store.AgentSelectionStatusActive)
 	assertRunState(t, homeDir, active.ID, store.StateStopped)
-
-	runStore, err := store.Open(context.Background(), homeDir)
-	if err != nil {
-		t.Fatalf("open store: %v", err)
-	}
-	_, err = runStore.CreateRun(context.Background(), request)
-	closeErr := runStore.Close()
-	if err != nil {
-		t.Fatalf("expected force stop to release Spec lock after close failure, got %v", err)
-	}
-	if closeErr != nil {
-		t.Fatalf("close store: %v", closeErr)
-	}
 }
 
 func TestRunStopForceReapsEmptyRunAndTaskWorktrees(t *testing.T) {
@@ -7168,6 +7743,9 @@ func TestRunStopForceReapsEmptyRunAndTaskWorktrees(t *testing.T) {
 	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
 		return nil
 	})
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int, string) error {
+		return nil
+	}))
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -7210,6 +7788,9 @@ func TestRunStopForceKeepsRunWorktreeWithCommits(t *testing.T) {
 	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
 		return nil
 	})
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int, string) error {
+		return nil
+	}))
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -7229,35 +7810,38 @@ func TestRunStopForceKeepsRunWorktreeWithCommits(t *testing.T) {
 func TestRunStopForceReportsCancelFailuresButCompletes(t *testing.T) {
 	tests := []struct {
 		name          string
-		agentID       string
+		runtime       string
 		cancelErr     error
 		wantStderr    []string
 		wantCanceller bool
+		wantStatus    store.AgentSelectionStatus
 	}{
 		{
 			name:          "missing acpx",
-			agentID:       "codex",
+			runtime:       "codex",
 			cancelErr:     errors.New("acpx not found"),
 			wantStderr:    []string{"Agent Session cancel failed", "acpx not found"},
 			wantCanceller: true,
+			wantStatus:    store.AgentSelectionStatusClosed,
 		},
 		{
 			name:          "unknown runtime",
-			agentID:       "gemini",
-			wantStderr:    []string{"Agent Session cancel skipped", `unsupported Agent "gemini"`},
+			runtime:       "gemini",
+			wantStderr:    []string{"Agent Session cleanup skipped", `unsupported Agent "gemini"`},
 			wantCanceller: false,
-		},
-		{
-			name:          "no recorded runtime",
-			agentID:       "",
-			wantStderr:    []string{"Agent Session cancel skipped", "no Agent runtime recorded"},
-			wantCanceller: false,
+			wantStatus:    store.AgentSelectionStatusActive,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			homeDir, repoDir := withCLIWorkspace(t)
-			active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", tt.agentID)
+			active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+			recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
+				RunID: active.ID, ScopeKind: store.AgentSelectionScopeTask, ScopeID: "task_01",
+				Category: "backend", ProfileSource: "project", Attempt: 1,
+				SelectionRole: store.AgentSelectionRolePreferred, Runtime: tt.runtime, Model: "task-model",
+				Status: store.AgentSelectionStatusActive,
+			})
 			cancelCalls := 0
 			withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
 				cancelCalls++
@@ -7282,9 +7866,19 @@ func TestRunStopForceReportsCancelFailuresButCompletes(t *testing.T) {
 			if !tt.wantCanceller && cancelCalls != 0 {
 				t.Fatalf("expected no cancel attempt, got %d", cancelCalls)
 			}
-			if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
-				t.Fatalf("expected force stop report, got %q", stdout.String())
+			for _, want := range []string{
+				"Roundfix Run force-stopped",
+				"proved the recorded owner process exited",
+				"released its Active Run locks",
+			} {
+				if !strings.Contains(stdout.String(), want) {
+					t.Fatalf("expected force stop report to contain %q, got %q", want, stdout.String())
+				}
 			}
+			if strings.Contains(stdout.String(), "immediately") {
+				t.Fatalf("force stop report must not promise immediate completion, got %q", stdout.String())
+			}
+			assertAgentSelectionScopeStatus(t, homeDir, active.ID, store.AgentSelectionScopeTask, "task_01", tt.wantStatus)
 			assertRunState(t, homeDir, active.ID, store.StateStopped)
 			runStore, err := store.Open(context.Background(), homeDir)
 			if err != nil {
@@ -7305,6 +7899,12 @@ func TestRunStopForceReportsCancelFailuresButCompletes(t *testing.T) {
 func TestRunStopGracefulThenForceCompletesImmediately(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
+		RunID: active.ID, ScopeKind: store.AgentSelectionScopeTask, ScopeID: "task_01",
+		Category: "backend", ProfileSource: "project", Attempt: 1,
+		SelectionRole: store.AgentSelectionRolePreferred, Runtime: "codex", Model: "task-model",
+		Status: store.AgentSelectionStatusActive,
+	})
 	var gracefulStdout bytes.Buffer
 	var gracefulStderr bytes.Buffer
 
@@ -7330,8 +7930,8 @@ func TestRunStopGracefulThenForceCompletesImmediately(t *testing.T) {
 	if forceCode != 0 {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", forceCode, forceStderr.String())
 	}
-	if want := "roundfix: closed session roundfix-" + active.ID; !strings.Contains(forceStderr.String(), want) {
-		t.Fatalf("expected force close report %q, got %q", want, forceStderr.String())
+	if strings.Contains(forceStderr.String(), "Agent Session") || strings.Contains(forceStderr.String(), "session roundfix-") {
+		t.Fatalf("expected successful registered cleanup to stay silent, got %q", forceStderr.String())
 	}
 	if cancelCalls != 1 {
 		t.Fatalf("expected one cancel after graceful request, got %d", cancelCalls)
@@ -7339,6 +7939,7 @@ func TestRunStopGracefulThenForceCompletesImmediately(t *testing.T) {
 	if !strings.Contains(forceStdout.String(), "Roundfix Run force-stopped") {
 		t.Fatalf("expected force stop report, got %q", forceStdout.String())
 	}
+	assertAgentSelectionScopeStatus(t, homeDir, active.ID, store.AgentSelectionScopeTask, "task_01", store.AgentSelectionStatusClosed)
 	assertRunState(t, homeDir, active.ID, store.StateStopped)
 
 	runStore, err := store.Open(context.Background(), homeDir)
@@ -7403,7 +8004,7 @@ func TestRunStopBySpecReportsMissingActiveRun(t *testing.T) {
 	}
 }
 
-func TestRunStopHelpListsSpecSelector(t *testing.T) {
+func TestRunStopHelpExplainsProofBeforeCompletion(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -7412,9 +8013,29 @@ func TestRunStopHelpListsSpecSelector(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("expected stop help exit 0, got %d", code)
 	}
-	for _, want := range []string{"roundfix stop --spec <slug>", "--spec", "--force", "dead or runaway", "graceful"} {
+	for _, want := range []string{
+		"roundfix stop --spec <slug>",
+		"--spec",
+		"--force",
+		"graceful",
+		"owner exit is proven",
+		"Run remains Active",
+		"Active Run lock stays retained",
+		"roundfix runs list --state active",
+		"roundfix stop --force <run-id>",
+		"already Stopped",
+		"different terminal outcome",
+	} {
 		if !strings.Contains(stdout.String(), want) {
 			t.Fatalf("expected stop help to contain %q, got %q", want, stdout.String())
+		}
+	}
+	for _, forbidden := range []string{
+		"Immediately stop a dead or runaway Run and release its lock",
+		"completes the Run Stopped immediately",
+	} {
+		if strings.Contains(stdout.String(), forbidden) {
+			t.Fatalf("stop help must not promise %q, got %q", forbidden, stdout.String())
 		}
 	}
 	if stderr.Len() != 0 {
@@ -7859,10 +8480,12 @@ func seedRunsForList(t *testing.T, homeDir string, seeds []runListSeed) []store.
 		switch {
 		case seed.state == "" || seed.state == store.StateActive:
 		case store.IsTerminalState(seed.state):
-			run, err = runStore.CompleteRun(ctx, run.ID, seed.state)
+			completed, completeErr := runStore.CompleteRun(ctx, run.ID, seed.state)
+			err = completeErr
 			if err != nil {
 				t.Fatalf("complete listed Run as %s: %v", seed.state, err)
 			}
+			run = completed.Run
 		default:
 			if err := runStore.UpdateRunState(ctx, run.ID, seed.state); err != nil {
 				t.Fatalf("update listed Run state to %s: %v", seed.state, err)
@@ -8387,6 +9010,49 @@ func withStopAgentSessionCloser(t *testing.T, closeSession func(context.Context,
 	})
 }
 
+// ownerProcessControllerFunc drives the termination phase only; its owner
+// proof always succeeds. Tests that need a failing or observable proof use
+// ownerProcessControllerStub.
+type ownerProcessControllerFunc func(context.Context, int, string) error
+
+func (controller ownerProcessControllerFunc) ProveOwner(context.Context, int, string) error {
+	return nil
+}
+
+func (controller ownerProcessControllerFunc) TerminateAndWait(ctx context.Context, pid int, recordedIdentity string) error {
+	return controller(ctx, pid, recordedIdentity)
+}
+
+// ownerProcessControllerStub drives the owner proof and the termination phase
+// independently so tests can assert their order and their failure isolation.
+type ownerProcessControllerStub struct {
+	prove     func(context.Context, int, string) error
+	terminate func(context.Context, int, string) error
+}
+
+func (controller ownerProcessControllerStub) ProveOwner(ctx context.Context, pid int, recordedIdentity string) error {
+	if controller.prove == nil {
+		return nil
+	}
+	return controller.prove(ctx, pid, recordedIdentity)
+}
+
+func (controller ownerProcessControllerStub) TerminateAndWait(ctx context.Context, pid int, recordedIdentity string) error {
+	if controller.terminate == nil {
+		return nil
+	}
+	return controller.terminate(ctx, pid, recordedIdentity)
+}
+
+func withOwnerProcessController(t *testing.T, controller OwnerProcessController) {
+	t.Helper()
+	old := ownerProcesses
+	ownerProcesses = controller
+	t.Cleanup(func() {
+		ownerProcesses = old
+	})
+}
+
 func fakeACPXVersionCommand(t *testing.T, version string) string {
 	t.Helper()
 	script := filepath.Join(t.TempDir(), "acpx")
@@ -8619,13 +9285,17 @@ func assertNoRunDatabase(t *testing.T, homeDir string) {
 
 func createActiveImplementRunForStop(t *testing.T, homeDir string, repoDir string, specSlug string, agentID string) (store.Run, store.CreateRunRequest) {
 	t.Helper()
+	ownerPID := os.Getpid()
+	ownerIdentity := "cli-test-owner-identity"
 	request := store.CreateRunRequest{
-		Kind:        store.KindImplement,
-		GitRoot:     repoDir,
-		LocalBranch: "ma/implement-spec",
-		HeadSHA:     "abc123",
-		SpecSlug:    specSlug,
-		Agent:       agentID,
+		Kind:          store.KindImplement,
+		GitRoot:       repoDir,
+		LocalBranch:   "ma/implement-spec",
+		HeadSHA:       "abc123",
+		SpecSlug:      specSlug,
+		Agent:         agentID,
+		OwnerPID:      ownerPID,
+		OwnerIdentity: ownerIdentity,
 	}
 	runStore, err := store.Open(context.Background(), homeDir)
 	if err != nil {
@@ -8640,7 +9310,62 @@ func createActiveImplementRunForStop(t *testing.T, homeDir string, repoDir strin
 	if err != nil {
 		t.Fatalf("create active implement run: %v", err)
 	}
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(_ context.Context, pid int, recordedIdentity string) error {
+		if pid != ownerPID {
+			t.Fatalf("owner process PID = %d, want %d", pid, ownerPID)
+		}
+		if recordedIdentity != ownerIdentity {
+			t.Fatalf("owner identity = %q, want recorded identity %q", recordedIdentity, ownerIdentity)
+		}
+		return nil
+	}))
 	return active, request
+}
+
+func recordAgentSelectionForStop(t *testing.T, homeDir string, req store.AgentSelectionAttemptRequest) {
+	t.Helper()
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open store to record Agent Selection: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close store after recording Agent Selection: %v", err)
+		}
+	}()
+	if _, err := runStore.AppendAgentSelectionAttempt(context.Background(), req); err != nil {
+		t.Fatalf("record Agent Selection for %s %s: %v", req.ScopeKind, req.ScopeID, err)
+	}
+}
+
+func assertAgentSelectionScopeStatus(
+	t *testing.T,
+	homeDir string,
+	runID string,
+	scopeKind store.AgentSelectionScopeKind,
+	scopeID string,
+	want store.AgentSelectionStatus,
+) {
+	t.Helper()
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open store to inspect Agent Selection: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close store after inspecting Agent Selection: %v", err)
+		}
+	}()
+	attempts, err := runStore.AgentSelectionAttemptsForScope(context.Background(), runID, scopeKind, scopeID)
+	if err != nil {
+		t.Fatalf("read Agent Selection for %s %s: %v", scopeKind, scopeID, err)
+	}
+	if len(attempts) == 0 {
+		t.Fatalf("expected Agent Selection lifecycle for %s %s", scopeKind, scopeID)
+	}
+	if got := attempts[len(attempts)-1].Status; got != want {
+		t.Fatalf("Agent Selection lifecycle for %s %s: got %q, want %q", scopeKind, scopeID, got, want)
+	}
 }
 
 func createActiveImplementRunForStopInGitRoot(t *testing.T, homeDir string, gitRoot string, specSlug string) store.Run {
@@ -9407,6 +10132,11 @@ func journaledRunEvents(t *testing.T, homeDir string, stderr string) (string, []
 	if runID == "" {
 		t.Fatalf("expected Run id in stderr, got %q", stderr)
 	}
+	return runID, runEvents(t, homeDir, runID)
+}
+
+func runEvents(t *testing.T, homeDir string, runID string) []store.JournalEvent {
+	t.Helper()
 	reader, err := store.OpenReader(context.Background(), homeDir)
 	if err != nil {
 		t.Fatalf("open Run Database reader: %v", err)
@@ -9418,7 +10148,7 @@ func journaledRunEvents(t *testing.T, homeDir string, stderr string) (string, []
 	if err != nil {
 		t.Fatalf("list journaled Run Events: %v", err)
 	}
-	return runID, events
+	return events
 }
 
 func TestAgentConsoleDisplaySinkKeepsWriterBytesByDefault(t *testing.T) {
@@ -10495,7 +11225,7 @@ func createTerminalAttachSpecRun(t *testing.T, homeDir string, repoDir string, w
 	if err != nil {
 		t.Fatalf("complete implement run: %v", err)
 	}
-	return completed
+	return completed.Run
 }
 
 func appendAttachConcurrencyEvent(t *testing.T, homeDir string, runID string, concurrency int) {
@@ -10828,7 +11558,7 @@ func completeEventsRun(t *testing.T, homeDir string, runID string, state string)
 	if err != nil {
 		t.Fatalf("complete events Run: %v", err)
 	}
-	return run
+	return run.Run
 }
 
 func appendEvents(t *testing.T, homeDir string, runID string, events ...runevent.RunEvent) {

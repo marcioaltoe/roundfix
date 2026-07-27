@@ -220,10 +220,12 @@ func TestPruneTerminalRunsDeletesOnlyEligibleJournalRows(t *testing.T) {
 		case tt.terminalState != "":
 			completedAt := tt.completedAt
 			runStore.now = func() time.Time { return completedAt }
-			run, err = runStore.CompleteRun(ctx, run.ID, tt.terminalState)
+			completed, completeErr := runStore.CompleteRun(ctx, run.ID, tt.terminalState)
+			err = completeErr
 			if err != nil {
 				t.Fatalf("%s: complete Run: %v", tt.name, err)
 			}
+			run = completed.Run
 		case tt.nonTerminalState != "":
 			if err := runStore.UpdateRunState(ctx, run.ID, tt.nonTerminalState); err != nil {
 				t.Fatalf("%s: update Run state: %v", tt.name, err)

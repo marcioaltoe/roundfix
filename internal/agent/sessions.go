@@ -3,6 +3,7 @@ package agent
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -14,6 +15,15 @@ type RoundfixSession struct {
 	Name   string
 	RunID  string
 	TaskID string
+}
+
+// IsAgentSessionAbsent reports whether acpx proved that a requested Agent
+// Session no longer exists. Callers may treat that response as idempotent
+// cleanup while preserving every other infrastructure error.
+func IsAgentSessionAbsent(err error) bool {
+	var infrastructureErr *InfrastructureError
+	return errors.As(err, &infrastructureErr) &&
+		infrastructureErr.Reason == acpxExitReasonMissingSession
 }
 
 func SessionRefForQA(runID string, workDir string) SessionRef {

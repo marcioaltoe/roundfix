@@ -168,6 +168,7 @@ var promptProjectClaudeSkillSymlink = defaultPromptProjectClaudeSkillSymlink
 var cancelStopAgentSession = defaultCancelStopAgentSession
 var listRoundfixAgentSessions = defaultListRoundfixAgentSessions
 var closeStopAgentSession = defaultCloseStopAgentSession
+var ownerProcesses OwnerProcessController = store.NewOwnerProcessController()
 
 type validationError struct {
 	message string
@@ -370,10 +371,64 @@ type stopRequest struct {
 }
 
 type stopResult struct {
-	Run       store.Run
-	Requested bool
-	Forced    bool
-	Warnings  []string
+	Run          store.Run
+	Requested    bool
+	Forced       bool
+	Transitioned bool
+	Warnings     []cleanupWarning
+}
+
+// cleanupWarningKind is declared by each secondary cleanup warning producer
+// so consumers branch on the producer's classification instead of matching
+// warning text.
+type cleanupWarningKind int
+
+const (
+	// cleanupWarningNotice reports non-failure cleanup activity.
+	cleanupWarningNotice cleanupWarningKind = iota
+	// cleanupWarningFailure reports a failed or skipped cleanup step.
+	cleanupWarningFailure
+)
+
+type cleanupWarning struct {
+	kind cleanupWarningKind
+	text string
+}
+
+func cleanupNoticef(format string, args ...any) cleanupWarning {
+	return cleanupWarning{kind: cleanupWarningNotice, text: fmt.Sprintf(format, args...)}
+}
+
+func cleanupFailuref(format string, args ...any) cleanupWarning {
+	return cleanupWarning{kind: cleanupWarningFailure, text: fmt.Sprintf(format, args...)}
+}
+
+type OwnerProcessController interface {
+	// ProveOwner proves the recorded owner identity without side effects so
+	// Force Stop can fail closed before touching anything the Run owns.
+	ProveOwner(ctx context.Context, pid int, recordedIdentity string) error
+	TerminateAndWait(ctx context.Context, pid int, recordedIdentity string) error
+}
+
+type forceStopOwnerError struct {
+	RunID string
+	PID   int
+	Step  string
+	Err   error
+}
+
+func (err forceStopOwnerError) Error() string {
+	return fmt.Sprintf(
+		"force stop Run %s owner PID %d failed step %q: %v; Run remains Active; Active Run lock retained",
+		err.RunID,
+		err.PID,
+		err.Step,
+		err.Err,
+	)
+}
+
+func (err forceStopOwnerError) Unwrap() error {
+	return err.Err
 }
 
 func runStopCommand(ctx context.Context, args []string, stdout, stderr io.Writer) int {
@@ -404,11 +459,25 @@ func runStopCommand(ctx context.Context, args []string, stdout, stderr io.Writer
 	result, err := stopTargetRun(ctx, req, loaded, runStore, stderr)
 	if err != nil {
 		printStopFailure(err, stderr)
+		journalStopPrimaryFailure(ctx, runStore, result.Run.ID, err)
+		reportSecondaryCleanupWarnings(ctx, runStore, result.Run.ID, result.Warnings, stderr)
+		var ownerErr forceStopOwnerError
+		if errors.As(err, &ownerErr) {
+			return exitRunFailed
+		}
 		return exitPreflight
 	}
-	for _, warning := range result.Warnings {
-		fmt.Fprintf(stderr, "%s: %s\n", app.Name, warning)
+	if result.Transitioned {
+		publishTerminalCompletion(
+			ctx,
+			runStore,
+			outcomeNotifierFromConfig(loaded.Config),
+			stderr,
+			store.CompleteRunResult{Run: result.Run, Transitioned: true},
+			0,
+		)
 	}
+	reportSecondaryCleanupWarnings(ctx, runStore, result.Run.ID, result.Warnings, stderr)
 	printStopSuccess(result, stdout)
 	return exitOK
 }
@@ -553,10 +622,51 @@ func stopTargetRun(ctx context.Context, req stopRequest, loaded roundconfig.Load
 }
 
 func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, worktreeLocation string) (stopResult, error) {
-	warnings := bestEffortForceStopAgentSessions(ctx, active)
+	if store.IsTerminalState(active.State) {
+		if active.State == store.StateStopped {
+			return stopResult{Run: active, Forced: true}, nil
+		}
+		return stopResult{}, store.TerminalOutcomeConflictError{
+			RunID:     active.ID,
+			Stored:    active.State,
+			Requested: store.StateStopped,
+		}
+	}
+
+	pid, ok := activeOwnerPID(active)
+	if !ok {
+		return stopResult{Run: active}, forceStopOwnerError{
+			RunID: active.ID,
+			PID:   0,
+			Step:  "validate recorded owner PID",
+			Err:   store.ErrOwnerProcessIdentityUnproven,
+		}
+	}
+	// The owner proof is read-only, so it runs before anything the Run owns is
+	// touched: a Run left Active with its lock retained must keep its Agent
+	// Sessions intact. Once the owner is proven, PRD Core Feature 3 orders the
+	// destructive steps: cancel registered Agent Sessions, then terminate the
+	// owner and wait for its exit.
+	if err := ownerProcesses.ProveOwner(ctx, pid, active.OwnerIdentity); err != nil {
+		return stopResult{Run: active}, forceStopOwnerError{
+			RunID: active.ID,
+			PID:   pid,
+			Step:  forceStopOwnerStep(err, "prove owner process identity"),
+			Err:   err,
+		}
+	}
+	warnings := bestEffortForceStopAgentSessions(ctx, runStore, active)
+	if err := ownerProcesses.TerminateAndWait(ctx, pid, active.OwnerIdentity); err != nil {
+		return stopResult{Run: active, Warnings: warnings}, forceStopOwnerError{
+			RunID: active.ID,
+			PID:   pid,
+			Step:  forceStopOwnerStep(err, "prove owner exit"),
+			Err:   err,
+		}
+	}
 	run, err := runStore.CompleteRun(ctx, active.ID, store.StateStopped)
 	if err != nil {
-		return stopResult{}, err
+		return stopResult{Run: active, Warnings: warnings}, err
 	}
 	if strings.TrimSpace(active.GitRoot) != "" && strings.TrimSpace(active.WorkDir) != "" {
 		pruned, pruneErr := pruneTerminalRunWorktrees(ctx, active.GitRoot, worktreeLocation, func(runID string) bool {
@@ -564,75 +674,168 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 			return err == nil && found && store.IsTerminalState(run.State)
 		})
 		for _, ref := range pruned {
-			warnings = append(warnings, fmt.Sprintf("reaped terminal Worktree path=%s branch=%s", ref.Path, ref.Branch))
+			warnings = append(warnings, cleanupNoticef("reaped terminal Worktree path=%s branch=%s", ref.Path, ref.Branch))
 		}
 		if pruneErr != nil {
-			warnings = append(warnings, fmt.Sprintf("terminal Worktree reap failed for Run %s: %v", active.ID, pruneErr))
+			warnings = append(warnings, cleanupFailuref("terminal Worktree reap failed for Run %s: %v", active.ID, pruneErr))
 		}
 	}
-	return stopResult{Run: run, Forced: true, Warnings: warnings}, nil
+	return stopResult{
+		Run:          run.Run,
+		Forced:       true,
+		Transitioned: run.Transitioned,
+		Warnings:     warnings,
+	}, nil
 }
 
-func bestEffortForceStopAgentSessions(ctx context.Context, run store.Run) []string {
-	agentID := strings.TrimSpace(run.Agent)
-	if agentID == "" {
-		return []string{fmt.Sprintf("Agent Session cancel skipped for Run %s: no Agent runtime recorded", run.ID)}
+// forceStopOwnerStep names the owner-control step that failed, preferring the
+// controller's own step label when it reported one.
+func forceStopOwnerStep(err error, fallback string) string {
+	var controlErr store.OwnerProcessControlError
+	if errors.As(err, &controlErr) && strings.TrimSpace(controlErr.Step) != "" {
+		return controlErr.Step
 	}
-	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{Agent: agentID})
+	return fallback
+}
+
+func bestEffortForceStopAgentSessions(ctx context.Context, runStore *store.Store, run store.Run) []cleanupWarning {
+	activeScopes, err := runStore.ActiveAgentSelectionScopes(ctx, run.ID)
 	if err != nil {
-		return []string{fmt.Sprintf("Agent Session cancel skipped for Run %s: %v", run.ID, err)}
+		return []cleanupWarning{cleanupFailuref("Agent Session cleanup registry failed for Run %s: %v", run.ID, err)}
 	}
-	session := agent.SessionRefForRun(run.ID, runSessionWorkDir(run))
-	warnings := []string{}
-	cancelCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-	defer cancel()
-	if err := cancelStopAgentSession(cancelCtx, runtime, session); err != nil {
-		warnings = append(warnings, fmt.Sprintf("Agent Session cancel failed for Run %s: %v", run.ID, err))
+	warnings := []cleanupWarning{}
+	for _, selection := range activeScopes {
+		warnings = append(warnings, cleanupRegisteredAgentSession(ctx, runStore, run, selection)...)
 	}
-	return append(warnings, closeForceStoppedRunSessions(ctx, runtime, run, session)...)
+	return warnings
 }
 
 func defaultCancelStopAgentSession(ctx context.Context, runtime agent.RuntimeSpec, session agent.SessionRef) error {
 	return agent.NewDefaultRunner().CancelSession(ctx, runtime, session)
 }
 
-func closeForceStoppedRunSessions(ctx context.Context, runtime agent.RuntimeSpec, run store.Run, runSession agent.SessionRef) []string {
-	closeCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-	defer cancel()
-	discovered, err := listRoundfixAgentSessions(closeCtx, runtime, runSession.WorkDir)
-	warnings := []string{}
-	if err != nil {
-		warnings = append(warnings, fmt.Sprintf("Agent Session discovery failed for Run %s: %v", run.ID, err))
-	}
-	sessions := []agent.RoundfixSession{{
-		Name:  runSession.Name,
-		RunID: run.ID,
-	}}
-	for _, session := range discovered {
-		if session.RunID == run.ID && session.TaskID != "" {
-			sessions = append(sessions, session)
-		}
-	}
-	sort.SliceStable(sessions[1:], func(i, j int) bool {
-		return sessions[i+1].Name < sessions[j+1].Name
+func cleanupRegisteredAgentSession(
+	ctx context.Context,
+	runStore *store.Store,
+	run store.Run,
+	selection store.AgentSelectionAttempt,
+) []cleanupWarning {
+	warnings := []cleanupWarning{}
+	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
+		Agent:           selection.Runtime,
+		Model:           selection.Model,
+		ReasoningEffort: selection.ReasoningEffort,
 	})
-	seen := map[string]struct{}{}
-	for _, session := range sessions {
-		if strings.TrimSpace(session.Name) == "" {
-			continue
-		}
-		if _, ok := seen[session.Name]; ok {
-			continue
-		}
-		seen[session.Name] = struct{}{}
-		ref := sessionRefForDiscoveredRunSession(run, session)
-		if err := closeStopAgentSession(closeCtx, runtime, ref); err != nil {
-			warnings = append(warnings, fmt.Sprintf("could not close session %s: %v", ref.Name, err))
-			continue
-		}
-		warnings = append(warnings, fmt.Sprintf("closed session %s", ref.Name))
+	if err != nil {
+		return []cleanupWarning{cleanupFailuref(
+			"Agent Session cleanup skipped for %s %s in Run %s: %v",
+			selection.ScopeKind,
+			selection.ScopeID,
+			run.ID,
+			err,
+		)}
+	}
+	session, err := registeredAgentSessionRef(run, selection)
+	if err != nil {
+		return []cleanupWarning{cleanupFailuref(
+			"Agent Session cleanup skipped for %s %s in Run %s: %v",
+			selection.ScopeKind,
+			selection.ScopeID,
+			run.ID,
+			err,
+		)}
+	}
+
+	cancelCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	cancelErr := cancelStopAgentSession(cancelCtx, runtime, session)
+	cancel()
+	if cancelErr != nil && !agent.IsAgentSessionAbsent(cancelErr) {
+		warnings = append(warnings, cleanupFailuref(
+			"Agent Session cancel failed for %s %s (%s): %v",
+			selection.ScopeKind,
+			selection.ScopeID,
+			session.Name,
+			cancelErr,
+		))
+	}
+
+	closeCtx, closeCancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	closeErr := closeStopAgentSession(closeCtx, runtime, session)
+	closeCancel()
+	if closeErr != nil && !agent.IsAgentSessionAbsent(closeErr) {
+		warnings = append(warnings, cleanupFailuref(
+			"Agent Session close failed for %s %s (%s): %v",
+			selection.ScopeKind,
+			selection.ScopeID,
+			session.Name,
+			closeErr,
+		))
+		return warnings
+	}
+	if err := recordClosedAgentSelection(ctx, runStore, selection); err != nil {
+		warnings = append(warnings, cleanupFailuref(
+			"Agent Selection closed lifecycle failed for %s %s in Run %s: %v",
+			selection.ScopeKind,
+			selection.ScopeID,
+			run.ID,
+			err,
+		))
 	}
 	return warnings
+}
+
+func registeredAgentSessionRef(run store.Run, selection store.AgentSelectionAttempt) (agent.SessionRef, error) {
+	var session agent.SessionRef
+	switch selection.ScopeKind {
+	case store.AgentSelectionScopeTask:
+		workDir := runSessionWorkDir(run)
+		if taskWorkDir, ok := taskSessionWorkDir(run, selection.ScopeID); ok {
+			workDir = taskWorkDir
+		}
+		session = agent.SessionRefForTask(run.ID, selection.ScopeID, workDir)
+	case store.AgentSelectionScopeQA:
+		session = agent.SessionRefForQA(run.ID, runSessionWorkDir(run))
+	case store.AgentSelectionScopeReview:
+		batchID, ok := strings.CutPrefix(strings.TrimSpace(selection.ScopeID), "batch-")
+		if !ok {
+			return agent.SessionRef{}, fmt.Errorf("review scope ID %q must use batch-NNN", selection.ScopeID)
+		}
+		batchNumber, err := strconv.Atoi(batchID)
+		if err != nil || batchNumber <= 0 {
+			return agent.SessionRef{}, fmt.Errorf("review scope ID %q must use a positive batch number", selection.ScopeID)
+		}
+		session = agent.SessionRefForReview(run.ID, batchNumber, run.GitRoot)
+	default:
+		return agent.SessionRef{}, fmt.Errorf("scope kind %q is unsupported", selection.ScopeKind)
+	}
+	if strings.TrimSpace(session.Name) == "" {
+		return agent.SessionRef{}, errors.New("registered Agent Session name is empty")
+	}
+	if selection.FallbackIndex > 0 {
+		session.Name = fmt.Sprintf("%s-fallback-%02d", session.Name, selection.FallbackIndex)
+	}
+	return session, nil
+}
+
+func recordClosedAgentSelection(ctx context.Context, runStore *store.Store, selection store.AgentSelectionAttempt) error {
+	_, err := runStore.AppendAgentSelectionAttempt(context.WithoutCancel(ctx), store.AgentSelectionAttemptRequest{
+		RunID:           selection.RunID,
+		ScopeKind:       selection.ScopeKind,
+		ScopeID:         selection.ScopeID,
+		Category:        selection.Category,
+		ProfileSource:   selection.ProfileSource,
+		Attempt:         selection.Attempt,
+		SelectionRole:   selection.SelectionRole,
+		FallbackIndex:   selection.FallbackIndex,
+		Runtime:         selection.Runtime,
+		Model:           selection.Model,
+		ReasoningEffort: selection.ReasoningEffort,
+		Status:          store.AgentSelectionStatusClosed,
+	})
+	if err != nil {
+		return fmt.Errorf("record closed Agent Selection lifecycle: %w", err)
+	}
+	return nil
 }
 
 func sessionRefForDiscoveredRunSession(run store.Run, session agent.RoundfixSession) agent.SessionRef {
@@ -1468,27 +1671,33 @@ func inspectBranchIntegrity(ctx context.Context, homeDir string, preflightResult
 	if err != nil {
 		return report, err
 	}
-	reader, err := store.OpenReader(ctx, homeDir)
+	if _, err := os.Stat(store.DatabasePath(homeDir)); errors.Is(err, os.ErrNotExist) {
+		// No Run Database yet: no Run can attribute the branches, and no
+		// Active Run can exist. Keep every pending branch conservatively
+		// without creating the database on a preflight that may still fail.
+		report.Pending = pending
+		return report, nil
+	} else if err != nil {
+		return report, fmt.Errorf("inspect Run Database before Branch Integrity Preflight: %w", err)
+	}
+	// Open the migrating store: every caller is an operational command that
+	// creates Runs, so upgrading an existing Run Database here is in-contract
+	// and keeps this inspection from querying an unmigrated schema.
+	runStore, err := store.Open(ctx, homeDir)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			// No Run Database yet: no Run can attribute the branches, and no
-			// Active Run can exist. Keep every pending branch conservatively.
-			report.Pending = pending
-			return report, nil
-		}
 		return report, err
 	}
 	defer func() {
-		_ = reader.Close()
+		_ = runStore.Close()
 	}()
-	report.Pending, err = filterPendingRunWorkByTarget(ctx, reader, pending, preflightResult.PullRequest.HeadBranch)
+	report.Pending, err = filterPendingRunWorkByTarget(ctx, runStore, pending, preflightResult.PullRequest.HeadBranch)
 	if err != nil {
 		return report, err
 	}
 	// Scan the runs table instead of the lock table: Runs created with the
 	// Branch Integrity bypass hold no Active Run lock but must stay visible
 	// to subsequent guard checks.
-	active, found, err := reader.ActiveReviewRunByTarget(ctx, preflightResult.PullRequest.HeadRepository, preflightResult.PullRequest.HeadBranch)
+	active, found, err := runStore.ActiveReviewRunByTarget(ctx, preflightResult.PullRequest.HeadRepository, preflightResult.PullRequest.HeadBranch)
 	if err != nil {
 		return report, err
 	}
@@ -1502,7 +1711,7 @@ func inspectBranchIntegrity(ctx context.Context, homeDir string, preflightResult
 // to a different branch: git topology alone cannot tell a Run Branch based on
 // the PR Head Branch from one based on another feature branch. Branches with
 // no Run row are kept conservatively.
-func filterPendingRunWorkByTarget(ctx context.Context, reader *store.Store, pending []runworktree.PendingRunWork, headBranch string) ([]runworktree.PendingRunWork, error) {
+func filterPendingRunWorkByTarget(ctx context.Context, runStore *store.Store, pending []runworktree.PendingRunWork, headBranch string) ([]runworktree.PendingRunWork, error) {
 	headBranch = strings.TrimSpace(headBranch)
 	filtered := make([]runworktree.PendingRunWork, 0, len(pending))
 	for _, work := range pending {
@@ -1511,7 +1720,7 @@ func filterPendingRunWorkByTarget(ctx context.Context, reader *store.Store, pend
 			filtered = append(filtered, work)
 			continue
 		}
-		row, found, err := reader.Run(ctx, runID)
+		row, found, err := runStore.Run(ctx, runID)
 		if err != nil {
 			return nil, fmt.Errorf("attribute pending Run Branch %s: %w", work.Branch, err)
 		}
@@ -1943,8 +2152,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		return exitRunFailed
 	}
 	closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, completed.ID, runStore)
-	publishRunOutcome(ctx, runStore, completed.ID, completed.State, cycleResult.Remaining, stderr)
-	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed)
+	publishTerminalCompletion(ctx, runStore, notifier, stderr, completed, cycleResult.Remaining)
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
 	ui.Close()
@@ -1970,8 +2178,7 @@ func completeStoppedRunRecord(runStore *store.Store, runID string, notifier roun
 	if err != nil {
 		return exitRunFailed
 	}
-	publishRunOutcome(ctx, runStore, completed.ID, completed.State, 0, io.Discard)
-	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed)
+	publishTerminalCompletion(ctx, runStore, notifier, stderr, completed, 0)
 	return exitOK
 }
 
@@ -2357,6 +2564,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		BudgetEnabled:    loaded.Config.Budget.Enabled,
 		MaxRunDuration:   loaded.Config.Budget.MaxRunDuration,
 	}, watch.Dependencies{
+		StopRequests: runStore,
 		StatusSource: watch.StatusFunc(func(ctx context.Context, statusReq watch.StatusRequest) (watch.Status, error) {
 			status, err := watchReviewStatus(ctx, reviewsource.WatchStatusRequest{
 				Source:         req.source,
@@ -2421,8 +2629,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		return exitRunFailed
 	}
 	closeAgentSession(completeCtx, collaborators.runner, runtime, sessionForClose, completed.ID, runStore)
-	publishRunOutcome(completeCtx, runStore, completed.ID, completed.State, result.Remaining, stderr)
-	notifyTerminalOutcome(completeCtx, runStore, notifier, stderr, completed)
+	publishTerminalCompletion(completeCtx, runStore, notifier, stderr, completed, result.Remaining)
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
 	ui.Close()
@@ -2475,6 +2682,7 @@ func createOperationalRun(ctx context.Context, runStore *store.Store, kind strin
 
 func createReviewRun(ctx context.Context, runStore *store.Store, req commandRequest, createReq store.CreateRunRequest, stderr io.Writer) (store.Run, error) {
 	createReq.OwnerPID = os.Getpid()
+	createReq.OwnerIdentity = currentOwnerIdentity(ctx)
 	if req.skipBranchIntegrity && req.branchIntegrity.ActiveRun != nil {
 		return runStore.CreateRunSkippingActiveLock(ctx, createReq)
 	}
@@ -2509,7 +2717,7 @@ func reclaimOrphanedActiveRun(ctx context.Context, runStore *store.Store, active
 		return active, false, nil
 	}
 	reason := orphanedActiveRunReason(pid)
-	printForceStopAgentSessionWarnings(stderr, bestEffortForceStopAgentSessions(ctx, active))
+	printForceStopAgentSessionWarnings(stderr, bestEffortForceStopAgentSessions(ctx, runStore, active))
 	if err := runStore.ReclaimOrphanedRun(ctx, active, reason); err != nil {
 		return active, false, fmt.Errorf("reclaim orphaned Active Run %s: %w", active.ID, err)
 	}
@@ -2524,12 +2732,12 @@ func reclaimOrphanedActiveRun(ctx context.Context, runStore *store.Store, active
 	return reclaimed, true, nil
 }
 
-func printForceStopAgentSessionWarnings(stderr io.Writer, warnings []string) {
+func printForceStopAgentSessionWarnings(stderr io.Writer, warnings []cleanupWarning) {
 	if stderr == nil {
 		return
 	}
 	for _, warning := range warnings {
-		fmt.Fprintf(stderr, "%s: %s\n", app.Name, warning)
+		fmt.Fprintf(stderr, "%s: %s\n", app.Name, warning.text)
 	}
 }
 
@@ -2538,6 +2746,17 @@ func activeOwnerPID(run store.Run) (int, bool) {
 		return 0, false
 	}
 	return *run.OwnerPID, true
+}
+
+// currentOwnerIdentity returns this process's start-time identity token for
+// the Run row, or "" when the platform cannot provide one. An absent token
+// degrades Force Stop to the legacy PID-only owner proof.
+func currentOwnerIdentity(ctx context.Context) string {
+	identity, err := store.OwnerProcessIdentity(ctx, os.Getpid())
+	if err != nil {
+		return ""
+	}
+	return identity
 }
 
 func orphanedActiveRunReason(pid int) string {
@@ -2734,7 +2953,7 @@ func printStopSummary(req commandRequest, preflightResult preflight.Result, stde
 }
 
 func isStopRequest(ctx context.Context, err error) bool {
-	return agent.IsStopError(err) || errors.Is(err, daemon.ErrStopRequested) || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) || (ctx != nil && ctx.Err() != nil)
+	return agent.IsStopError(err) || errors.Is(err, daemon.ErrStopRequested) || errors.Is(err, watch.ErrStopRequested) || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) || (ctx != nil && ctx.Err() != nil)
 }
 
 func defaultInspectChangedPaths(ctx context.Context, gitRoot string) ([]preflight.ChangedPath, error) {
@@ -3554,7 +3773,10 @@ func maybeRunFinalPush(ctx context.Context, engine *daemon.Engine, sink runevent
 }
 
 func markRunFailed(ctx context.Context, runStore *store.Store, runID string) {
-	_, _ = completeFailedRun(ctx, runStore, runID)
+	completed, ok := completeFailedRun(ctx, runStore, runID)
+	if ok {
+		publishTerminalCompletion(ctx, runStore, nil, io.Discard, completed, 0)
+	}
 }
 
 func markRunFailedAndNotify(ctx context.Context, runStore *store.Store, runID string, notifier roundnotify.Notifier, stderr io.Writer) {
@@ -3562,16 +3784,15 @@ func markRunFailedAndNotify(ctx context.Context, runStore *store.Store, runID st
 	if !ok {
 		return
 	}
-	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed)
+	publishTerminalCompletion(ctx, runStore, notifier, stderr, completed, 0)
 }
 
-func completeFailedRun(ctx context.Context, runStore *store.Store, runID string) (store.Run, bool) {
+func completeFailedRun(ctx context.Context, runStore *store.Store, runID string) (store.CompleteRunResult, bool) {
 	completeCtx := withoutCancelOrBackground(ctx)
 	completed, err := runStore.CompleteRun(completeCtx, runID, store.StateFailed)
 	if err != nil {
-		return store.Run{}, false
+		return store.CompleteRunResult{}, false
 	}
-	publishRunOutcome(completeCtx, runStore, completed.ID, completed.State, 0, io.Discard)
 	return completed, true
 }
 
@@ -3618,6 +3839,78 @@ func publishRunOutcome(ctx context.Context, runStore *store.Store, runID string,
 		Payload: payload,
 	}); err != nil {
 		fmt.Fprintf(stderr, "Warning: terminal outcome event not journaled: %v\n", err)
+	}
+}
+
+func publishTerminalCompletion(
+	ctx context.Context,
+	runStore *store.Store,
+	notifier roundnotify.Notifier,
+	stderr io.Writer,
+	completed store.CompleteRunResult,
+	remaining int,
+) {
+	if !completed.Transitioned {
+		return
+	}
+	publishRunOutcome(ctx, runStore, completed.ID, completed.State, remaining, stderr)
+	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed.Run)
+}
+
+func journalStopPrimaryFailure(ctx context.Context, runStore *store.Store, runID string, primary error) {
+	if runStore == nil || strings.TrimSpace(runID) == "" || primary == nil {
+		return
+	}
+	reason := primary.Error()
+	payload, err := json.Marshal(map[string]string{
+		"event":  "force_stop_primary_failure",
+		"reason": reason,
+	})
+	if err != nil {
+		return
+	}
+	_ = (store.JournalSink{Store: runStore}).Publish(withoutCancelOrBackground(ctx), runevent.RunEvent{
+		RunID:   runID,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonStatus,
+		Summary: runevent.BoundSummary("Force Stop primary failure: " + reason),
+		Time:    time.Now().UTC(),
+		Payload: payload,
+	})
+}
+
+func reportSecondaryCleanupWarnings(
+	ctx context.Context,
+	runStore *store.Store,
+	runID string,
+	warnings []cleanupWarning,
+	stderr io.Writer,
+) {
+	for _, warning := range warnings {
+		if warning.kind != cleanupWarningFailure {
+			fmt.Fprintf(stderr, "%s: %s\n", app.Name, warning.text)
+			continue
+		}
+		summary := "Secondary cleanup warning: " + warning.text
+		fmt.Fprintf(stderr, "%s: %s\n", app.Name, summary)
+		if runStore == nil || strings.TrimSpace(runID) == "" {
+			continue
+		}
+		payload, err := json.Marshal(map[string]string{
+			"event":  "secondary_cleanup_warning",
+			"reason": warning.text,
+		})
+		if err != nil {
+			continue
+		}
+		_ = (store.JournalSink{Store: runStore}).Publish(withoutCancelOrBackground(ctx), runevent.RunEvent{
+			RunID:   runID,
+			Source:  runevent.SourceDaemon,
+			Kind:    runevent.KindDaemonStatus,
+			Summary: runevent.BoundSummary(summary),
+			Time:    time.Now().UTC(),
+			Payload: payload,
+		})
 	}
 }
 
@@ -4233,13 +4526,23 @@ Options:
   --spec        Spec slug used to find the Active Run in the current repository
   --head-repo   Explicit Head Repository, owner/name
   --head-branch Explicit PR Head Branch
-  --force       Immediately stop a dead or runaway Run and release its lock
+  --force       Force Stop a dead, stuck, or runaway Run after proving owner exit
 
 Default stop is graceful: it records a Stop Request and the Run stops after
-the current Work Item settles. Use --force only for a dead, stuck, or runaway
-Run; it cancels the Agent Session best-effort and completes the Run Stopped
-immediately. It also reaps provably empty kept Worktrees and branches,
-reporting each reaped path and branch on stderr.
+the current Work Item settles. During a Review Source wait, the owner observes
+the request by the next configured poll boundary and runs no later fetch,
+check, commit, push, or Review Source mutation.
+
+Force Stop cancels registered active Agent Sessions, terminates the recorded
+owner, and reports Stopped only after owner exit is proven. It then releases
+the Active Run lock and may reap provably empty kept Worktrees and branches.
+If exit proof fails, the Run remains Active; its Active Run lock stays retained.
+Inspect it with 'roundfix runs list --state active', resolve the reported
+owner-process failure, then retry 'roundfix stop --force <run-id>'.
+
+Repeating Force Stop for an already Stopped Run reports the existing outcome
+without repeating cleanup. A different terminal outcome is rejected and
+preserved. Cleanup failures are secondary warnings after the primary failure.
 `
 	case "skills":
 		return `Usage:
@@ -4348,7 +4651,7 @@ func printStopSuccess(result stopResult, stdout io.Writer) {
 		printStopRunFields(stdout, run)
 		fmt.Fprintln(stdout)
 		fmt.Fprintf(stdout, "%s\n", style.cyan("Result:"))
-		fmt.Fprintln(stdout, "  Force stop completed the Run as Stopped immediately and released its Active Run locks.")
+		fmt.Fprintln(stdout, "  Force Stop proved the recorded owner process exited, completed the Run as Stopped, and released its Active Run locks.")
 		fmt.Fprintln(stdout)
 		fmt.Fprintf(stdout, "%s\n", style.cyan("No user work side effects:"))
 		fmt.Fprintln(stdout, "  Roundfix did not edit user files, commit, push, fetch, or resolve Review Source threads.")

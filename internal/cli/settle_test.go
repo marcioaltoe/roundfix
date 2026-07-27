@@ -215,9 +215,9 @@ func TestRunSettleRetargetsKeptRunWorktreeAndCleansUpAfterIntegration(t *testing
 	if !strings.Contains(stdout.String(), "settled task_01 completed — ") {
 		t.Fatalf("expected settled line, got %q", stdout.String())
 	}
-	completed := implementRunFromStore(t, homeDir, runID)
-	if completed.State != store.StateClean {
-		t.Fatalf("expected settled Run Clean, got %s", completed.State)
+	settled := implementRunFromStore(t, homeDir, runID)
+	if settled.State != store.StateUnresolved {
+		t.Fatalf("expected settle to preserve the Run's Unresolved outcome, got %s", settled.State)
 	}
 	assertRunWorktreeRemoved(t, run.WorkDir)
 	assertRunBranchRemoved(t, repoDir, runworktree.BranchName(runID))
@@ -308,9 +308,9 @@ func TestRunSettleRetargetsKeptTaskWorktreeAndCleansUpAfterIntegration(t *testin
 	if stdout.String() != expectedStdout {
 		t.Fatalf("expected stdout:\n%q\ngot:\n%q", expectedStdout, stdout.String())
 	}
-	completed := implementRunFromStore(t, homeDir, run.ID)
-	if completed.State != store.StateClean {
-		t.Fatalf("expected settled Run Clean, got %s", completed.State)
+	settled := implementRunFromStore(t, homeDir, run.ID)
+	if settled.State != store.StateUnresolved {
+		t.Fatalf("expected settle to preserve the Run's Unresolved outcome, got %s", settled.State)
 	}
 	assertRunWorktreeRemoved(t, run.WorkDir)
 	assertRunBranchRemoved(t, repoDir, runworktree.BranchName(run.ID))
@@ -825,6 +825,7 @@ func createImplementRunWorktreeFixture(t *testing.T, homeDir string, repoDir str
 		HeadSHA:     head,
 		SpecSlug:    specSlug,
 		Agent:       "codex",
+		OwnerPID:    os.Getpid(),
 	})
 	if err != nil {
 		t.Fatalf("create implement Run: %v", err)
@@ -850,10 +851,12 @@ func createImplementRunWorktreeFixture(t *testing.T, homeDir string, repoDir str
 		}
 	}
 	if terminalState != "" {
-		run, err = runStore.CompleteRun(ctx, run.ID, terminalState)
+		completed, completeErr := runStore.CompleteRun(ctx, run.ID, terminalState)
+		err = completeErr
 		if err != nil {
 			t.Fatalf("complete Run %s: %v", terminalState, err)
 		}
+		run = completed.Run
 	}
 	return run, runRef, taskRef
 }

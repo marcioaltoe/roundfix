@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -10,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"roundfix/internal/runevent"
 )
 
 func TestOpenCreatesRunDatabaseAndAppliesMigrations(t *testing.T) {
@@ -26,8 +29,8 @@ func TestOpenCreatesRunDatabaseAndAppliesMigrations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected migration version, got %v", err)
 	}
-	if version != 9 {
-		t.Fatalf("expected migration version 9, got %d", version)
+	if version != 10 {
+		t.Fatalf("expected migration version 10, got %d", version)
 	}
 }
 
@@ -520,6 +523,70 @@ func TestCreateRunPersistsOwnerPIDAcrossRunQueries(t *testing.T) {
 	}
 }
 
+func TestCreateRunPersistsOwnerIdentityAcrossRunQueries(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	wantIdentity := "owner-identity-start-time-token"
+	req := sampleCreateRunRequest()
+	req.OwnerPID = os.Getpid()
+	req.OwnerIdentity = wantIdentity
+	created, err := runStore.CreateRun(ctx, req)
+	if err != nil {
+		t.Fatalf("expected Run creation, got %v", err)
+	}
+	if created.OwnerIdentity != wantIdentity {
+		t.Fatalf("expected created Run owner identity %q, got %q", wantIdentity, created.OwnerIdentity)
+	}
+
+	found, ok, err := runStore.Run(ctx, created.ID)
+	if err != nil || !ok {
+		t.Fatalf("lookup persisted Run: ok=%v err=%v", ok, err)
+	}
+	if found.OwnerIdentity != wantIdentity {
+		t.Fatalf("expected persisted Run owner identity %q, got %q", wantIdentity, found.OwnerIdentity)
+	}
+
+	active, ok, err := runStore.ActiveRun(ctx, req.HeadRepository, req.HeadBranch)
+	if err != nil || !ok {
+		t.Fatalf("lookup active Run: ok=%v err=%v", ok, err)
+	}
+	if active.OwnerIdentity != wantIdentity {
+		t.Fatalf("expected active Run owner identity %q, got %q", wantIdentity, active.OwnerIdentity)
+	}
+
+	var rawOwnerIdentity string
+	if err := runStore.db.QueryRowContext(ctx, `SELECT owner_identity FROM runs WHERE id = ?`, created.ID).Scan(&rawOwnerIdentity); err != nil {
+		t.Fatalf("read owner_identity: %v", err)
+	}
+	if rawOwnerIdentity != wantIdentity {
+		t.Fatalf("expected raw owner_identity %q, got %q", wantIdentity, rawOwnerIdentity)
+	}
+}
+
+func TestCreateRunWithoutOwnerIdentityStoresNull(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	created, err := runStore.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("expected Run creation, got %v", err)
+	}
+	if created.OwnerIdentity != "" {
+		t.Fatalf("expected empty owner identity, got %q", created.OwnerIdentity)
+	}
+
+	var rawOwnerIdentity any
+	if err := runStore.db.QueryRowContext(ctx, `SELECT owner_identity FROM runs WHERE id = ?`, created.ID).Scan(&rawOwnerIdentity); err != nil {
+		t.Fatalf("read owner_identity: %v", err)
+	}
+	if rawOwnerIdentity != nil {
+		t.Fatalf("expected owner_identity NULL without a recorded token, got %#v", rawOwnerIdentity)
+	}
+}
+
 func TestCreateRunAllowsDifferentHeadBranch(t *testing.T) {
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())
@@ -590,6 +657,575 @@ func TestCompleteRunRejectsNonTerminalState(t *testing.T) {
 	}
 	if !found || active.ID != run.ID {
 		t.Fatalf("expected active lock to remain after failed completion, found=%v active=%#v", found, active)
+	}
+}
+
+func TestCompleteRunWinnerAndIdenticalReplay(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	createdAt := time.Date(2026, 7, 27, 9, 0, 0, 0, time.UTC)
+	completedAt := createdAt.Add(time.Minute)
+	runStore.now = func() time.Time { return createdAt }
+	run, err := runStore.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create Run: %v", err)
+	}
+	if _, err := runStore.AppendRunEvent(ctx, sampleRunEvent(run.ID, "before completion")); err != nil {
+		t.Fatalf("append initial Run Event: %v", err)
+	}
+
+	runStore.now = func() time.Time { return completedAt }
+	first, err := runStore.CompleteRun(ctx, run.ID, StateStopped)
+	if err != nil {
+		t.Fatalf("complete Run: %v", err)
+	}
+	if !first.Transitioned {
+		t.Fatal("expected first completion to report a transition")
+	}
+	if first.Run.State != StateStopped || first.Run.CompletedAt == nil {
+		t.Fatalf("expected terminal Stopped Run, got %+v", first.Run)
+	}
+	if got := countActiveRunLocks(t, ctx, runStore); got != 0 {
+		t.Fatalf("expected winning completion to release one Active Run lock, got %d", got)
+	}
+
+	runStore.now = func() time.Time { return completedAt.Add(time.Hour) }
+	replay, err := runStore.CompleteRun(ctx, run.ID, StateStopped)
+	if err != nil {
+		t.Fatalf("replay identical completion: %v", err)
+	}
+	if replay.Transitioned {
+		t.Fatal("expected identical replay to report no transition")
+	}
+	if replay.Run.State != first.Run.State ||
+		!replay.Run.UpdatedAt.Equal(first.Run.UpdatedAt) ||
+		replay.Run.CompletedAt == nil ||
+		!replay.Run.CompletedAt.Equal(*first.Run.CompletedAt) {
+		t.Fatalf("expected replay to preserve the terminal row, first=%+v replay=%+v", first.Run, replay.Run)
+	}
+	if got := countActiveRunLocks(t, ctx, runStore); got != 0 {
+		t.Fatalf("expected replay to preserve released lock state, got %d locks", got)
+	}
+	if got := countRunEvents(t, ctx, runStore, run.ID); got != 1 {
+		t.Fatalf("expected replay to preserve journal history, got %d events", got)
+	}
+}
+
+func TestTerminalOutcomeConflictPreservesWinner(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	completedAt := time.Date(2026, 7, 27, 10, 0, 0, 0, time.UTC)
+	run, err := runStore.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create Run: %v", err)
+	}
+	if _, err := runStore.AppendRunEvent(ctx, sampleRunEvent(run.ID, "winner evidence")); err != nil {
+		t.Fatalf("append initial Run Event: %v", err)
+	}
+	runStore.now = func() time.Time { return completedAt }
+	winner, err := runStore.CompleteRun(ctx, run.ID, StateStopped)
+	if err != nil {
+		t.Fatalf("complete winning outcome: %v", err)
+	}
+
+	runStore.now = func() time.Time { return completedAt.Add(time.Hour) }
+	_, err = runStore.CompleteRun(ctx, run.ID, StateFailed)
+	var conflict TerminalOutcomeConflictError
+	if !errors.As(err, &conflict) {
+		t.Fatalf("expected TerminalOutcomeConflictError, got %T %v", err, err)
+	}
+	if conflict.RunID != run.ID || conflict.Stored != StateStopped || conflict.Requested != StateFailed {
+		t.Fatalf("unexpected terminal conflict: %+v", conflict)
+	}
+
+	stored, found, err := runStore.Run(ctx, run.ID)
+	if err != nil || !found {
+		t.Fatalf("read terminal winner: found=%v err=%v", found, err)
+	}
+	if stored.State != winner.Run.State ||
+		!stored.UpdatedAt.Equal(winner.Run.UpdatedAt) ||
+		stored.CompletedAt == nil ||
+		!stored.CompletedAt.Equal(*winner.Run.CompletedAt) {
+		t.Fatalf("expected conflict to preserve winner, winner=%+v stored=%+v", winner.Run, stored)
+	}
+	if got := countActiveRunLocks(t, ctx, runStore); got != 0 {
+		t.Fatalf("expected conflict to preserve released lock state, got %d locks", got)
+	}
+	if got := countRunEvents(t, ctx, runStore, run.ID); got != 1 {
+		t.Fatalf("expected conflict to preserve journal history, got %d events", got)
+	}
+}
+
+func TestTerminalOutcomeRejectsIntermediateStateUpdate(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+	run, err := runStore.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create Run: %v", err)
+	}
+	winner, err := runStore.CompleteRun(ctx, run.ID, StateStopped)
+	if err != nil {
+		t.Fatalf("complete Run: %v", err)
+	}
+
+	err = runStore.UpdateRunState(ctx, run.ID, StateResolvingWithAgent)
+	var conflict TerminalOutcomeConflictError
+	if !errors.As(err, &conflict) {
+		t.Fatalf("expected TerminalOutcomeConflictError, got %T %v", err, err)
+	}
+	if conflict.Stored != StateStopped || conflict.Requested != StateResolvingWithAgent {
+		t.Fatalf("unexpected conflict: %+v", conflict)
+	}
+	stored, found, err := runStore.Run(ctx, run.ID)
+	if err != nil || !found {
+		t.Fatalf("read stored Run: found=%v err=%v", found, err)
+	}
+	if stored.State != StateStopped || !stored.CompletedAt.Equal(*winner.CompletedAt) {
+		t.Fatalf("intermediate update changed terminal winner: before=%+v after=%+v", winner.Run, stored)
+	}
+}
+
+func TestTerminalOutcomeEveryStoredTerminalStateIsImmutable(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	sourceOutcomes := []string{
+		StateFetched,
+		StateStopped,
+		StateClean,
+		StateCleanUnverified,
+		StateMaxRoundsReached,
+		StateBudgetExceeded,
+		StateTimedOut,
+		StateFailed,
+		StateIntegrationPending,
+		StateUnresolved,
+	}
+	for index, sourceOutcome := range sourceOutcomes {
+		t.Run(sourceOutcome, func(t *testing.T) {
+			req := sampleCreateRunRequest()
+			req.HeadBranch = fmt.Sprintf("feature/terminal-immutable-%d", index)
+			req.PRNumber = fmt.Sprintf("terminal-immutable-%d", index)
+			run, err := runStore.CreateRun(ctx, req)
+			if err != nil {
+				t.Fatalf("create Run: %v", err)
+			}
+			first, err := runStore.CompleteRun(ctx, run.ID, sourceOutcome)
+			if err != nil {
+				t.Fatalf("complete Run %s: %v", sourceOutcome, err)
+			}
+			requested := StateStopped
+			if sourceOutcome == StateStopped {
+				requested = StateFailed
+			}
+
+			_, err = runStore.CompleteRun(ctx, run.ID, requested)
+			var conflict TerminalOutcomeConflictError
+			if !errors.As(err, &conflict) {
+				t.Fatalf("expected terminal conflict for %s to %s, got %T %v", sourceOutcome, requested, err, err)
+			}
+			stored, found, err := runStore.Run(ctx, run.ID)
+			if err != nil || !found {
+				t.Fatalf("read immutable terminal Run: found=%v err=%v", found, err)
+			}
+			if stored.State != sourceOutcome ||
+				stored.CompletedAt == nil ||
+				first.CompletedAt == nil ||
+				!stored.CompletedAt.Equal(*first.CompletedAt) {
+				t.Fatalf("expected source outcome %s unchanged, got %+v", sourceOutcome, stored)
+			}
+		})
+	}
+}
+
+func TestCompleteRunConcurrentTerminalOutcomesHaveOneWinner(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	run, err := runStore.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create Run: %v", err)
+	}
+	type completion struct {
+		requested string
+		result    CompleteRunResult
+		err       error
+	}
+	start := make(chan struct{})
+	completions := make(chan completion, 2)
+	for _, requested := range []string{StateStopped, StateFailed} {
+		go func(requested string) {
+			<-start
+			result, err := runStore.CompleteRun(ctx, run.ID, requested)
+			completions <- completion{requested: requested, result: result, err: err}
+		}(requested)
+	}
+	close(start)
+
+	winner := ""
+	conflicts := 0
+	for range 2 {
+		completed := <-completions
+		if completed.err == nil {
+			if !completed.result.Transitioned {
+				t.Fatalf("expected successful competing completion for %s to transition", completed.requested)
+			}
+			if winner != "" {
+				t.Fatalf("expected one winner, got %s and %s", winner, completed.requested)
+			}
+			winner = completed.requested
+			continue
+		}
+		var conflict TerminalOutcomeConflictError
+		if !errors.As(completed.err, &conflict) {
+			t.Fatalf("expected competing completion conflict, got %T %v", completed.err, completed.err)
+		}
+		conflicts++
+	}
+	if winner == "" || conflicts != 1 {
+		t.Fatalf("expected exactly one winner and one conflict, winner=%q conflicts=%d", winner, conflicts)
+	}
+	stored, found, err := runStore.Run(ctx, run.ID)
+	if err != nil || !found {
+		t.Fatalf("read competing completion winner: found=%v err=%v", found, err)
+	}
+	if stored.State != winner || stored.CompletedAt == nil {
+		t.Fatalf("expected stable terminal winner %s, got %+v", winner, stored)
+	}
+	if got := countActiveRunLocks(t, ctx, runStore); got != 0 {
+		t.Fatalf("expected one winning lock release, got %d locks", got)
+	}
+}
+
+func TestCompleteRunDatabaseFailureNamesOperationAndRun(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	run, err := runStore.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create Run: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close store: %v", err)
+	}
+
+	_, err = runStore.CompleteRun(ctx, run.ID, StateStopped)
+	if err == nil ||
+		!strings.Contains(err.Error(), "begin completion") ||
+		!strings.Contains(err.Error(), run.ID) {
+		t.Fatalf("expected wrapped completion failure naming operation and Run %s, got %v", run.ID, err)
+	}
+}
+
+func TestReconcileIntegrationPendingRecordsEvidence(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	req := sampleCreateRunRequest()
+	req.Kind = KindImplement
+	req.SpecSlug = "0037-terminal-outcome-integrity"
+	req.LocalBranch = "feature/terminal-outcomes"
+	run, err := runStore.CreateRun(ctx, req)
+	if err != nil {
+		t.Fatalf("create Implement Run: %v", err)
+	}
+	completed, err := runStore.CompleteRun(ctx, run.ID, StateIntegrationPending)
+	if err != nil {
+		t.Fatalf("complete Run Integration Pending: %v", err)
+	}
+	reconciledAt := time.Date(2026, 7, 27, 11, 0, 0, 0, time.UTC)
+
+	reconciled, err := runStore.ReconcileIntegration(ctx, IntegrationReconciliation{
+		RunID:        run.ID,
+		RunHead:      "run-head",
+		TargetBranch: req.LocalBranch,
+		TargetHead:   "target-head",
+		Time:         reconciledAt,
+	})
+	if err != nil {
+		t.Fatalf("reconcile Integration Pending Run: %v", err)
+	}
+	if reconciled.State != StateClean {
+		t.Fatalf("expected reconciled Clean Run, got %+v", reconciled)
+	}
+	if reconciled.CompletedAt == nil || completed.Run.CompletedAt == nil ||
+		!reconciled.CompletedAt.Equal(*completed.Run.CompletedAt) {
+		t.Fatalf("expected reconciliation to preserve original completion time, before=%+v after=%+v", completed.Run, reconciled)
+	}
+	events, err := runStore.RunEventsAfter(ctx, run.ID, 0, 10)
+	if err != nil {
+		t.Fatalf("read reconciliation event: %v", err)
+	}
+	if len(events) != 1 {
+		t.Fatalf("expected one reconciliation event, got %d", len(events))
+	}
+	event := events[0].Event
+	if event.Kind != runevent.KindDaemonOutcome || !event.Time.Equal(reconciledAt) {
+		t.Fatalf("unexpected reconciliation event: %+v", event)
+	}
+	var payload map[string]string
+	if err := json.Unmarshal(event.Payload, &payload); err != nil {
+		t.Fatalf("decode reconciliation event: %v", err)
+	}
+	wantPayload := map[string]string{
+		"event":            "integration_reconciliation",
+		"previous_outcome": StateIntegrationPending,
+		"current_outcome":  StateClean,
+		"run_head":         "run-head",
+		"target_branch":    req.LocalBranch,
+		"target_head":      "target-head",
+	}
+	for key, want := range wantPayload {
+		if payload[key] != want {
+			t.Fatalf("expected reconciliation payload %s=%q, got %q in %#v", key, want, payload[key], payload)
+		}
+	}
+}
+
+func TestReconcileIntegrationDatabaseFailureNamesOperationAndRun(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	req := sampleCreateRunRequest()
+	req.Kind = KindImplement
+	req.SpecSlug = "0037-terminal-outcome-integrity"
+	run, err := runStore.CreateRun(ctx, req)
+	if err != nil {
+		t.Fatalf("create Implement Run: %v", err)
+	}
+	if _, err := runStore.CompleteRun(ctx, run.ID, StateIntegrationPending); err != nil {
+		t.Fatalf("complete Run Integration Pending: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close store: %v", err)
+	}
+
+	_, err = runStore.ReconcileIntegration(ctx, IntegrationReconciliation{
+		RunID:        run.ID,
+		RunHead:      "run-head",
+		TargetBranch: req.LocalBranch,
+		TargetHead:   "target-head",
+		Time:         time.Date(2026, 7, 27, 15, 0, 0, 0, time.UTC),
+	})
+	if err == nil ||
+		!strings.Contains(err.Error(), "begin Integration Pending reconciliation") ||
+		!strings.Contains(err.Error(), run.ID) {
+		t.Fatalf("expected wrapped reconciliation failure naming operation and Run %s, got %v", run.ID, err)
+	}
+}
+
+func TestReconcileIntegrationRejectsIncompleteEvidence(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	req := sampleCreateRunRequest()
+	req.Kind = KindImplement
+	req.SpecSlug = "0037-terminal-outcome-integrity"
+	run, err := runStore.CreateRun(ctx, req)
+	if err != nil {
+		t.Fatalf("create Implement Run: %v", err)
+	}
+	completed, err := runStore.CompleteRun(ctx, run.ID, StateIntegrationPending)
+	if err != nil {
+		t.Fatalf("complete Run Integration Pending: %v", err)
+	}
+	valid := IntegrationReconciliation{
+		RunID:        run.ID,
+		RunHead:      "run-head",
+		TargetBranch: req.LocalBranch,
+		TargetHead:   "target-head",
+		Time:         time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC),
+	}
+	tests := []struct {
+		name   string
+		mutate func(*IntegrationReconciliation)
+	}{
+		{name: "missing Run ID", mutate: func(value *IntegrationReconciliation) { value.RunID = "" }},
+		{name: "missing Run head", mutate: func(value *IntegrationReconciliation) { value.RunHead = "" }},
+		{name: "missing target branch", mutate: func(value *IntegrationReconciliation) { value.TargetBranch = "" }},
+		{name: "missing target head", mutate: func(value *IntegrationReconciliation) { value.TargetHead = "" }},
+		{name: "missing timestamp", mutate: func(value *IntegrationReconciliation) { value.Time = time.Time{} }},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			input := valid
+			tt.mutate(&input)
+			if _, err := runStore.ReconcileIntegration(ctx, input); err == nil {
+				t.Fatal("expected incomplete reconciliation evidence to fail")
+			}
+		})
+	}
+	stored, found, err := runStore.Run(ctx, run.ID)
+	if err != nil || !found {
+		t.Fatalf("read Integration Pending Run: found=%v err=%v", found, err)
+	}
+	if stored.State != StateIntegrationPending ||
+		stored.CompletedAt == nil ||
+		completed.Run.CompletedAt == nil ||
+		!stored.CompletedAt.Equal(*completed.Run.CompletedAt) {
+		t.Fatalf("expected invalid evidence to preserve Integration Pending Run, got %+v", stored)
+	}
+	if got := countRunEvents(t, ctx, runStore, run.ID); got != 0 {
+		t.Fatalf("expected invalid evidence to append no event, got %d", got)
+	}
+}
+
+func TestReconcileIntegrationRejectsStaleTargetBranch(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	req := sampleCreateRunRequest()
+	req.Kind = KindImplement
+	req.SpecSlug = "0037-terminal-outcome-integrity"
+	req.LocalBranch = "feature/terminal-outcomes"
+	run, err := runStore.CreateRun(ctx, req)
+	if err != nil {
+		t.Fatalf("create Implement Run: %v", err)
+	}
+	completed, err := runStore.CompleteRun(ctx, run.ID, StateIntegrationPending)
+	if err != nil {
+		t.Fatalf("complete Run Integration Pending: %v", err)
+	}
+
+	_, err = runStore.ReconcileIntegration(ctx, IntegrationReconciliation{
+		RunID:        run.ID,
+		RunHead:      "run-head",
+		TargetBranch: "feature/stale-target",
+		TargetHead:   "target-head",
+		Time:         time.Date(2026, 7, 27, 12, 30, 0, 0, time.UTC),
+	})
+	if err == nil || !strings.Contains(err.Error(), "does not match recorded target branch") {
+		t.Fatalf("expected stale target branch rejection, got %v", err)
+	}
+	stored, found, readErr := runStore.Run(ctx, run.ID)
+	if readErr != nil || !found {
+		t.Fatalf("read Integration Pending Run: found=%v err=%v", found, readErr)
+	}
+	if stored.State != StateIntegrationPending ||
+		stored.CompletedAt == nil ||
+		completed.CompletedAt == nil ||
+		!stored.CompletedAt.Equal(*completed.CompletedAt) {
+		t.Fatalf("expected stale target evidence to preserve Integration Pending Run, got %+v", stored)
+	}
+	if got := countRunEvents(t, ctx, runStore, run.ID); got != 0 {
+		t.Fatalf("expected stale target evidence to append no event, got %d", got)
+	}
+}
+
+func TestReconcileIntegrationRejectsEveryOtherSourceOutcome(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	sourceOutcomes := []string{
+		StateFetched,
+		StateStopped,
+		StateClean,
+		StateCleanUnverified,
+		StateMaxRoundsReached,
+		StateBudgetExceeded,
+		StateTimedOut,
+		StateFailed,
+		StateUnresolved,
+	}
+	for index, sourceOutcome := range sourceOutcomes {
+		t.Run(sourceOutcome, func(t *testing.T) {
+			req := sampleCreateRunRequest()
+			req.Kind = KindImplement
+			req.SpecSlug = fmt.Sprintf("terminal-source-%d", index)
+			req.LocalBranch = fmt.Sprintf("feature/terminal-source-%d", index)
+			run, err := runStore.CreateRun(ctx, req)
+			if err != nil {
+				t.Fatalf("create Implement Run: %v", err)
+			}
+			completed, err := runStore.CompleteRun(ctx, run.ID, sourceOutcome)
+			if err != nil {
+				t.Fatalf("complete Run %s: %v", sourceOutcome, err)
+			}
+
+			_, err = runStore.ReconcileIntegration(ctx, IntegrationReconciliation{
+				RunID:        run.ID,
+				RunHead:      "run-head",
+				TargetBranch: req.LocalBranch,
+				TargetHead:   "target-head",
+				Time:         time.Date(2026, 7, 27, 13, 0, 0, 0, time.UTC),
+			})
+			var conflict TerminalOutcomeConflictError
+			if !errors.As(err, &conflict) {
+				t.Fatalf("expected terminal conflict for source %s, got %T %v", sourceOutcome, err, err)
+			}
+			stored, found, err := runStore.Run(ctx, run.ID)
+			if err != nil || !found {
+				t.Fatalf("read rejected source Run: found=%v err=%v", found, err)
+			}
+			if stored.State != sourceOutcome ||
+				stored.CompletedAt == nil ||
+				completed.Run.CompletedAt == nil ||
+				!stored.CompletedAt.Equal(*completed.Run.CompletedAt) {
+				t.Fatalf("expected source outcome %s unchanged, got %+v", sourceOutcome, stored)
+			}
+			if got := countRunEvents(t, ctx, runStore, run.ID); got != 0 {
+				t.Fatalf("expected source outcome rejection to append no event, got %d", got)
+			}
+		})
+	}
+}
+
+func TestReconcileIntegrationRollsBackWhenJournalFails(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	req := sampleCreateRunRequest()
+	req.Kind = KindImplement
+	req.SpecSlug = "0037-terminal-outcome-integrity"
+	run, err := runStore.CreateRun(ctx, req)
+	if err != nil {
+		t.Fatalf("create Implement Run: %v", err)
+	}
+	completed, err := runStore.CompleteRun(ctx, run.ID, StateIntegrationPending)
+	if err != nil {
+		t.Fatalf("complete Run Integration Pending: %v", err)
+	}
+	if _, err := runStore.db.ExecContext(ctx, `
+CREATE TRIGGER reject_reconciliation_event
+BEFORE INSERT ON run_events
+BEGIN
+	SELECT RAISE(FAIL, 'reconciliation journal unavailable');
+END`); err != nil {
+		t.Fatalf("create reconciliation journal failure trigger: %v", err)
+	}
+
+	_, err = runStore.ReconcileIntegration(ctx, IntegrationReconciliation{
+		RunID:        run.ID,
+		RunHead:      "run-head",
+		TargetBranch: req.LocalBranch,
+		TargetHead:   "target-head",
+		Time:         time.Date(2026, 7, 27, 14, 0, 0, 0, time.UTC),
+	})
+	if err == nil || !strings.Contains(err.Error(), run.ID) {
+		t.Fatalf("expected reconciliation journal failure naming Run %s, got %v", run.ID, err)
+	}
+	stored, found, readErr := runStore.Run(ctx, run.ID)
+	if readErr != nil || !found {
+		t.Fatalf("read rolled-back Run: found=%v err=%v", found, readErr)
+	}
+	if stored.State != StateIntegrationPending ||
+		stored.CompletedAt == nil ||
+		completed.Run.CompletedAt == nil ||
+		!stored.CompletedAt.Equal(*completed.Run.CompletedAt) {
+		t.Fatalf("expected failed journal append to roll back Run, got %+v", stored)
+	}
+	if got := countRunEvents(t, ctx, runStore, run.ID); got != 0 {
+		t.Fatalf("expected failed reconciliation to append no event, got %d", got)
 	}
 }
 
@@ -747,7 +1383,7 @@ func createListedRun(t *testing.T, ctx context.Context, store *Store, seed liste
 		if err != nil {
 			t.Fatalf("complete listed Run as %s: %v", seed.state, err)
 		}
-		return completed
+		return completed.Run
 	default:
 		if err := store.UpdateRunState(ctx, run.ID, seed.state); err != nil {
 			t.Fatalf("update listed Run state to %s: %v", seed.state, err)
@@ -918,8 +1554,8 @@ func TestOpenMigratesV3RunDatabasePreservingRunsAndRekeyingLocks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 9 {
-		t.Fatalf("expected user_version 9 after migration, got %d", version)
+	if version != 10 {
+		t.Fatalf("expected user_version 10 after migration, got %d", version)
 	}
 
 	count, err := store.RunCount(ctx)
@@ -1073,8 +1709,8 @@ func TestOpenMigratesV4RunDatabasePreservingRunsLocksAndAddingStopRequests(t *te
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 9 {
-		t.Fatalf("expected user_version 9 after migration, got %d", version)
+	if version != 10 {
+		t.Fatalf("expected user_version 10 after migration, got %d", version)
 	}
 	count, err := runStore.RunCount(ctx)
 	if err != nil {
@@ -1226,8 +1862,8 @@ func TestOpenMigratesV5RunDatabasePreservingRunsLocksAndAddingWorkDir(t *testing
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 9 {
-		t.Fatalf("expected user_version 9 after migration, got %d", version)
+	if version != 10 {
+		t.Fatalf("expected user_version 10 after migration, got %d", version)
 	}
 	count, err := runStore.RunCount(ctx)
 	if err != nil {
@@ -1382,8 +2018,8 @@ func TestOpenMigratesV6RunDatabaseAddingSelectionDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 9 {
-		t.Fatalf("expected user_version 9 after migration, got %d", version)
+	if version != 10 {
+		t.Fatalf("expected user_version 10 after migration, got %d", version)
 	}
 	count, err := runStore.RunCount(ctx)
 	if err != nil {
@@ -1514,8 +2150,8 @@ func TestOpenMigratesV7RunDatabaseAddingOwnerPID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 9 {
-		t.Fatalf("expected user_version 9 after migration, got %d", version)
+	if version != 10 {
+		t.Fatalf("expected user_version 10 after migration, got %d", version)
 	}
 
 	active, found, err := runStore.ActiveRun(ctx, "owner/project", "feature/review")
@@ -1528,6 +2164,9 @@ func TestOpenMigratesV7RunDatabaseAddingOwnerPID(t *testing.T) {
 	if active.OwnerPID != nil {
 		t.Fatalf("expected migrated v7 Run to have no owner PID, got %d", *active.OwnerPID)
 	}
+	if active.OwnerIdentity != "" {
+		t.Fatalf("expected migrated v7 Run to have no owner identity, got %q", active.OwnerIdentity)
+	}
 
 	var rawOwnerPID any
 	if err := runStore.db.QueryRowContext(ctx, `SELECT owner_pid FROM runs WHERE id = 'run_v7_active'`).Scan(&rawOwnerPID); err != nil {
@@ -1536,6 +2175,72 @@ func TestOpenMigratesV7RunDatabaseAddingOwnerPID(t *testing.T) {
 	if rawOwnerPID != nil {
 		t.Fatalf("expected migrated owner_pid NULL for legacy row, got %#v", rawOwnerPID)
 	}
+	var rawOwnerIdentity any
+	if err := runStore.db.QueryRowContext(ctx, `SELECT owner_identity FROM runs WHERE id = 'run_v7_active'`).Scan(&rawOwnerIdentity); err != nil {
+		t.Fatalf("read migrated owner_identity column: %v", err)
+	}
+	if rawOwnerIdentity != nil {
+		t.Fatalf("expected migrated owner_identity NULL for legacy row, got %#v", rawOwnerIdentity)
+	}
+}
+
+// buildV9Fixture creates a schema v9 Run Database exactly as historical
+// binaries wrote it: the v7 fixture upgraded through the real v7→v8→v9
+// migration statements, without the v10 owner_identity column.
+func buildV9Fixture(t *testing.T, homeDir string) {
+	t.Helper()
+	buildV7Fixture(t, homeDir)
+	db, err := sql.Open("sqlite", writerDSN(DatabasePath(homeDir)))
+	if err != nil {
+		t.Fatalf("open fixture database: %v", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Fatalf("close fixture database: %v", err)
+		}
+	}()
+	for _, statement := range append(migrateV7ToV8Statements(), migrateV8ToV9Statements()...) {
+		if _, err := db.Exec(statement); err != nil {
+			t.Fatalf("build v9 fixture: %v", err)
+		}
+	}
+}
+
+func TestOpenReaderRejectsMismatchedSchemaVersion(t *testing.T) {
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	buildV9Fixture(t, homeDir)
+
+	_, err := OpenReader(ctx, homeDir)
+
+	var versionErr SchemaVersionError
+	if !errors.As(err, &versionErr) {
+		t.Fatalf("expected SchemaVersionError, got %T %v", err, err)
+	}
+	if versionErr.Found != 9 || versionErr.Supported != schemaVersion || versionErr.Path != DatabasePath(homeDir) {
+		t.Fatalf("schema version diagnostic = %#v", versionErr)
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		t.Fatal("schema version mismatch must not read as a missing Run Database")
+	}
+	for _, want := range []string{
+		"schema version 9",
+		"supports schema version 10",
+		"resolve, watch, or implement",
+	} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("schema version error missing %q: %q", want, err.Error())
+		}
+	}
+
+	// One migrating open upgrades the database; the reader then works.
+	migrated := openTestStore(t, ctx, homeDir)
+	closeStore(t, migrated)
+	reader, err := OpenReader(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("expected reader to open after migration, got %v", err)
+	}
+	closeStore(t, reader)
 }
 
 func TestCreateRunRejectsSecondActiveRunForSameSpecTarget(t *testing.T) {

@@ -532,24 +532,44 @@ Stop Request recorded; the Run stops after the current Work Item settles.
 
 The owning Run finishes the in-flight Work Item's verification, settlement,
 and commit boundary first, then ends Stopped through the normal outcome path.
+During a watch Run's Review Source status, retry, quiet-period, or
+merge-readiness wait, the owner checks for the Stop Request before the next
+status access and after each interruptible sleep. It reaches Stopped by the
+next configured poll boundary. After observing the request, it does not run
+another fetch, check, commit, push, or Review Source mutation.
 
-Use `roundfix stop --force` only for a dead, stuck, or runaway Run. It cancels
-the Agent Session best-effort, completes the Run as Stopped immediately, and
-releases Active Run locks. Cancel failures are warnings on stderr and never
-block force completion. Force stop then closes discovered roundfix Agent
-Sessions for the Run, including Run-level and per-Task sessions. Successful
-session closes and close failures are reported on stderr with these shapes:
+Use `roundfix stop --force` only for a dead, stuck, or runaway Run. It first
+validates the recorded owner PID, terminates the recorded owner process, and
+proves that process exited. Until owner exit is proven, registered Agent
+Sessions and their Agent Selection lifecycles remain active.
 
-```text
-roundfix: closed session <session>
-roundfix: could not close session <session>: <reason>
-```
+After owner exit proof, Force Stop cancels and closes only registered Agent
+Sessions whose latest Agent Selection lifecycle is active. No active lifecycle
+record means no session action, and an already-absent registered session is an
+idempotent cleanup result. Other cleanup failures remain visible as secondary
+warnings.
 
-The force-stop report title includes:
+Only after owner exit proof does Roundfix complete the Run as Stopped, release
+its Active Run lock, and reap eligible kept terminal Worktrees. If owner exit
+cannot be proven, Force Stop prints no stdout success report; its diagnostic
+names the Run ID, owner PID, and failed process-control step. The Run remains
+Active with its Agent Sessions unchanged and its Active Run lock retained.
+Inspect it with `roundfix runs list --state active`, resolve the reported
+owner-process failure, and retry `roundfix stop --force <run-id>`.
+
+After owner exit proof and successful Stopped completion, the force-stop report
+title includes:
 
 ```text
 Roundfix Run force-stopped
 ```
+
+Terminal completion is compare-and-set. The winning transition alone publishes
+the terminal outcome event and notification. Repeating Force Stop for an
+already Stopped Run reports the stored outcome without repeating process,
+session, event, or notification actions. A different terminal outcome is
+rejected and preserved; a losing owner observes that stored outcome and exits
+without publishing another terminal event or notification.
 
 When an Active-Run lock records an owner PID and Roundfix can prove that owner
 process no longer exists, preflight reclaims the orphan automatically: the Run
@@ -592,12 +612,13 @@ The console log path is under the Artifact Directory at
 stderr, Agent output, and terminal outcome messages. `Follow` is the Attach
 surface; `Stop` is the Stop Command surface. Detached Runs behave as normal
 non-TTY Runs after startup: Run Events, Worktrees, integration, outcomes, and
-locks keep their normal contracts. The detached child owns completion and sends
-the configured outcome notification when the Run reaches its terminal outcome;
-use that notification as the unattended-Run signal. Supervisors and scripts
-follow `roundfix events <run-id> --follow` for JSONL state changes, use
-`roundfix attach <run-id>` for the human Live Run View, and treat the console
-log as a compact text record rather than a state API.
+locks keep their normal contracts. The detached child that wins terminal
+completion sends the configured outcome notification; use that notification as
+the unattended-Run signal. A competing completion observes the stored outcome
+and does not send another notification. Supervisors and scripts follow
+`roundfix events <run-id> --follow` for JSONL state changes, use the human Live
+Run View with `roundfix attach <run-id>`, and treat the console log as a compact
+text record rather than a state API.
 
 Detach implies non-interactive mode. `--interactive` is rejected before Run
 creation, and `--no-input` is implied. Startup uses a two-phase handshake: the
@@ -617,10 +638,11 @@ roundfix: Detached Run child exited before the handshake (<exit or signal>); con
 roundfix: Detached Run child exited before the handshake (<exit or signal>) and produced no output
 ```
 
-Operational Runs that reach a terminal outcome through `resolve`, `watch`, or
-`implement` send exactly one outcome notification. `fetch`, `settle`,
-`archive`, and commands that create no Run do not notify. Notification failures
-write one stderr warning shaped as
+The winning terminal transition for an operational Run through `resolve`,
+`watch`, or `implement` sends exactly one outcome notification. Identical
+completion replay and conflicting completion do not republish it. `fetch`,
+`settle`, `archive`, and commands that create no Run do not notify.
+Notification failures write one stderr warning shaped as
 `roundfix: outcome notification failed: <reason>` and one Daemon-source Run
 Event; they never change the Run report, terminal outcome, or exit code.
 
@@ -1193,8 +1215,10 @@ outcome and never opens pull requests (ADR-0021).
    the current repository. This resolves that repository's Spec target and
    records a Stop Request; the Run stops after the current Work Item settles.
    Use `roundfix stop --force --spec <slug>` only for a dead, stuck, or runaway
-   Run; it cancels the Agent Session best-effort, completes the Run Stopped,
-   releases its lock immediately, and reaps empty terminal worktree debris.
+   Run. It proves the recorded owner exited before cleaning up registered
+   active Agent Sessions, and reports Stopped and releases the Active Run lock
+   only after that proof. A failed proof leaves the Run Active with its Agent
+   Sessions unchanged and its lock retained.
 
 ## Driving a Spec implementation loop
 
@@ -1224,8 +1248,9 @@ the Implement, Attach, Settle, Stop, and Archive commands documented above.
    terminal, discover the Run with the bounded `roundfix runs list` or open
    the Run Browser with `roundfix attach`. Attach replays the Run Event
    Journal and follows new events; `q` or `Ctrl-C` detaches and never stops
-   the Run. The detached child sends the configured outcome notification at
-   the terminal outcome, which is the unattended-Run signal.
+   the Run. The detached child sends the configured outcome notification only
+   when it wins terminal completion; that notification is the unattended-Run
+   signal.
 
 4. **Detect the terminal outcome.** The Run ends with exactly one stdout outcome
    line in the console log:

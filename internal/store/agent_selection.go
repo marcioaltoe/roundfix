@@ -201,6 +201,49 @@ ORDER BY scope_kind, scope_id, attempt`, runID)
 	return scanAgentSelectionAttempts(rows, runID)
 }
 
+// ActiveAgentSelectionScopes returns the latest persisted lifecycle for each
+// Run scope only when that lifecycle is active. Scope kinds and IDs are
+// ordered explicitly so Agent Session cleanup is deterministic.
+func (store *Store) ActiveAgentSelectionScopes(ctx context.Context, runID string) ([]AgentSelectionAttempt, error) {
+	runID = strings.TrimSpace(runID)
+	if runID == "" {
+		return nil, errors.New("list active Agent Selection scopes: Run ID is required")
+	}
+	rows, err := store.db.QueryContext(ctx, `
+SELECT selection.id, selection.run_id, selection.scope_kind, selection.scope_id,
+       selection.category, selection.profile_source, selection.attempt,
+       selection.selection_role, selection.fallback_index, selection.runtime,
+       selection.model, selection.reasoning_effort, selection.status,
+       selection.reason_code, selection.reason, selection.created_at
+FROM run_agent_selections AS selection
+WHERE selection.run_id = ?
+  AND selection.status = ?
+  AND selection.attempt = (
+      SELECT MAX(latest.attempt)
+      FROM run_agent_selections AS latest
+      WHERE latest.run_id = selection.run_id
+        AND latest.scope_kind = selection.scope_kind
+        AND latest.scope_id = selection.scope_id
+  )
+ORDER BY CASE selection.scope_kind
+             WHEN 'task' THEN 1
+             WHEN 'qa' THEN 2
+             WHEN 'review' THEN 3
+             ELSE 4
+         END,
+         selection.scope_id`,
+		runID,
+		string(AgentSelectionStatusActive),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list active Agent Selection scopes for Run %q: %w", runID, err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+	return scanAgentSelectionAttempts(rows, runID)
+}
+
 func (store *Store) AgentSelectionAttemptsForScope(ctx context.Context, runID string, scopeKind AgentSelectionScopeKind, scopeID string) ([]AgentSelectionAttempt, error) {
 	runID = strings.TrimSpace(runID)
 	if runID == "" {

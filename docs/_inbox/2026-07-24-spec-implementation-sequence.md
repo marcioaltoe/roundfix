@@ -41,7 +41,7 @@ That earlier sequence remains as historical context.
 4. **[0036 — Doctor skill readiness](../specs/0036-doctor-skill-readiness/_prd.md).**
    Its Spec 0041 prerequisite is already archived as completed, so its existing
    Task Graph is ready after the baseline lane.
-5. **[0037 — Terminal outcome integrity](../specs/0037-terminal-outcome-integrity/_prd.md).**
+5. **[0037 — Terminal outcome integrity](../specs/_archived/0037-terminal-outcome-integrity/_prd.md).**
    Generate and approve its Task Graph, then implement it before Specs 0038 and
    0039. It owns the guarded terminal transitions and stop-aware behavior those
    Specs consume.

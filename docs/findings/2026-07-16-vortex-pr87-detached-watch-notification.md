@@ -157,7 +157,7 @@ Environment:
 
 ## Planned resolution
 
-- Spec [0037 Terminal outcome integrity](../specs/0037-terminal-outcome-integrity/_prd.md)
+- Spec [0037 Terminal outcome integrity](../specs/_archived/0037-terminal-outcome-integrity/_prd.md)
   owns finding 4: registered Agent Session cleanup, primary-before-secondary
   diagnostics, and winner-only terminal completion.
 - Spec

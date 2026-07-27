@@ -17,6 +17,8 @@ const (
 	StatusSettled   = "settled"
 )
 
+var ErrStopRequested = errors.New("stop requested")
+
 type HeadCheckState string
 
 const (
@@ -71,6 +73,10 @@ type Result struct {
 
 type StatusSource interface {
 	Status(context.Context, StatusRequest) (Status, error)
+}
+
+type StopRequestSource interface {
+	StopRequested(context.Context, string) (bool, error)
 }
 
 type StatusFunc func(context.Context, StatusRequest) (Status, error)
@@ -140,6 +146,7 @@ func (realSleeper) Sleep(ctx context.Context, duration time.Duration) error {
 }
 
 type Dependencies struct {
+	StopRequests StopRequestSource
 	StatusSource StatusSource
 	Fetcher      Fetcher
 	Resolver     Resolver
@@ -175,9 +182,9 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 		if budgetExceeded(req, startedAt, clock.Now()) {
 			return Result{Outcome: store.StateBudgetExceeded, Rounds: round - 1}, nil
 		}
-		settledWait, err := waitForSettled(ctx, req, currentHeadSHA, deps.StatusSource, clock, sleeper, publisher)
+		settledWait, err := waitForSettled(ctx, req, currentHeadSHA, deps.StopRequests, deps.StatusSource, clock, sleeper, publisher)
 		if err != nil {
-			return Result{Outcome: store.StateFailed, Rounds: round - 1}, err
+			return resultForError(round-1, err), err
 		}
 		status := settledWait.status
 		if status.State != StatusSettled {
@@ -199,6 +206,9 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 			}
 			if err := sleeper.Sleep(ctx, req.QuietPeriod); err != nil {
 				return Result{Outcome: store.StateFailed, Rounds: round - 1}, err
+			}
+			if err := observeStopRequest(ctx, deps.StopRequests, req.RunID, "after quiet-period wait"); err != nil {
+				return resultForError(round-1, err), err
 			}
 		}
 		if budgetExceeded(req, startedAt, clock.Now()) {
@@ -222,9 +232,9 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 			return Result{Outcome: store.StateFailed, Rounds: round - 1}, err
 		}
 		if fetched.Issues == 0 {
-			confirm, err := confirmMergeReady(ctx, req, deps.CheckSource, currentHeadSHA, clock, sleeper, publisher)
+			confirm, err := confirmMergeReady(ctx, req, deps.StopRequests, deps.CheckSource, currentHeadSHA, clock, sleeper, publisher)
 			if err != nil {
-				return Result{Outcome: store.StateFailed, Rounds: round}, err
+				return resultForError(round, err), err
 			}
 			if confirm.ready {
 				return Result{Outcome: store.StateClean, Rounds: round}, nil
@@ -256,9 +266,9 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 			currentHeadSHA = resolved.HeadSHA
 		}
 		if resolved.Remaining == 0 {
-			confirm, err := confirmMergeReady(ctx, req, deps.CheckSource, currentHeadSHA, clock, sleeper, publisher)
+			confirm, err := confirmMergeReady(ctx, req, deps.StopRequests, deps.CheckSource, currentHeadSHA, clock, sleeper, publisher)
 			if err != nil {
-				return Result{Outcome: store.StateFailed, Rounds: round}, err
+				return resultForError(round, err), err
 			}
 			if confirm.ready {
 				return Result{Outcome: store.StateClean, Rounds: round}, nil
@@ -298,11 +308,14 @@ type settledWaitResult struct {
 	statusChecks int
 }
 
-func waitForSettled(ctx context.Context, req Request, headSHA string, source StatusSource, clock Clock, sleeper Sleeper, publisher watchEventPublisher) (settledWaitResult, error) {
+func waitForSettled(ctx context.Context, req Request, headSHA string, stops StopRequestSource, source StatusSource, clock Clock, sleeper Sleeper, publisher watchEventPublisher) (settledWaitResult, error) {
 	startedAt := clock.Now()
 	statusChecks := 0
 	for {
 		if err := ctx.Err(); err != nil {
+			return settledWaitResult{}, err
+		}
+		if err := observeStopRequest(ctx, stops, req.RunID, "before Review Source status"); err != nil {
 			return settledWaitResult{}, err
 		}
 		status, err := source.Status(ctx, StatusRequest{
@@ -311,6 +324,12 @@ func waitForSettled(ctx context.Context, req Request, headSHA string, source Sta
 		})
 		statusChecks++
 		if err != nil {
+			if stopErr := observeStopRequest(ctx, stops, req.RunID, "after failed Review Source status access"); stopErr != nil {
+				return settledWaitResult{}, stopErr
+			}
+			return settledWaitResult{}, err
+		}
+		if err := observeStopRequest(ctx, stops, req.RunID, "after Review Source status access"); err != nil {
 			return settledWaitResult{}, err
 		}
 		if err := publisher.publish(ctx, runevent.KindDaemonReviewStatus,
@@ -331,6 +350,9 @@ func waitForSettled(ctx context.Context, req Request, headSHA string, source Sta
 		if err := sleeper.Sleep(ctx, req.PollInterval); err != nil {
 			return settledWaitResult{}, err
 		}
+		if err := observeStopRequest(ctx, stops, req.RunID, "after Review Source status wait"); err != nil {
+			return settledWaitResult{}, err
+		}
 	}
 }
 
@@ -340,7 +362,7 @@ type confirmResult struct {
 	timedOut   bool
 }
 
-func confirmMergeReady(ctx context.Context, req Request, source CheckSource, headSHA string, clock Clock, sleeper Sleeper, publisher watchEventPublisher) (confirmResult, error) {
+func confirmMergeReady(ctx context.Context, req Request, stops StopRequestSource, source CheckSource, headSHA string, clock Clock, sleeper Sleeper, publisher watchEventPublisher) (confirmResult, error) {
 	if !req.UntilClean || source == nil {
 		return confirmResult{ready: true}, nil
 	}
@@ -349,9 +371,16 @@ func confirmMergeReady(ctx context.Context, req Request, source CheckSource, hea
 		if err := ctx.Err(); err != nil {
 			return confirmResult{}, err
 		}
+		if err := observeStopRequest(ctx, stops, req.RunID, "before Review Source Merge-Ready check"); err != nil {
+			return confirmResult{}, err
+		}
 		missingCheck := false
+		retrying := false
 		state, err := source.Check(ctx, headSHA)
 		if err == nil {
+			if err := observeStopRequest(ctx, stops, req.RunID, "after Review Source Merge-Ready check"); err != nil {
+				return confirmResult{}, err
+			}
 			if err := publisher.publish(ctx, runevent.KindDaemonReviewStatus,
 				fmt.Sprintf("Review Source check: %s", state),
 				map[string]any{"state": state, "head_sha": headSHA},
@@ -372,11 +401,17 @@ func confirmMergeReady(ctx context.Context, req Request, source CheckSource, hea
 			default:
 				return confirmResult{}, fmt.Errorf("unknown Review Source check state %q", state)
 			}
-		} else if err := publisher.publish(ctx, runevent.KindDaemonReviewStatus,
-			"Review Source check poll failed; retrying.",
-			map[string]any{"head_sha": headSHA, "error": err.Error()},
-		); err != nil {
-			return confirmResult{}, err
+		} else {
+			if stopErr := observeStopRequest(ctx, stops, req.RunID, "after failed Review Source Merge-Ready check"); stopErr != nil {
+				return confirmResult{}, stopErr
+			}
+			if publishErr := publisher.publish(ctx, runevent.KindDaemonReviewStatus,
+				"Review Source check poll failed; retrying.",
+				map[string]any{"head_sha": headSHA, "error": err.Error()},
+			); publishErr != nil {
+				return confirmResult{}, publishErr
+			}
+			retrying = true
 		}
 		if !missingCheck && clock.Now().Sub(startedAt) >= req.ReviewTimeout {
 			return confirmResult{timedOut: true}, nil
@@ -384,7 +419,36 @@ func confirmMergeReady(ctx context.Context, req Request, source CheckSource, hea
 		if err := sleeper.Sleep(ctx, req.PollInterval); err != nil {
 			return confirmResult{}, err
 		}
+		operation := "after Merge-Ready wait"
+		if retrying {
+			operation = "after transient Review Source retry wait"
+		}
+		if err := observeStopRequest(ctx, stops, req.RunID, operation); err != nil {
+			return confirmResult{}, err
+		}
 	}
+}
+
+func observeStopRequest(ctx context.Context, source StopRequestSource, runID string, operation string) error {
+	if source == nil {
+		return nil
+	}
+	requested, err := source.StopRequested(ctx, runID)
+	if err != nil {
+		return fmt.Errorf("observe Stop Request for Run %q %s: %w", runID, operation, err)
+	}
+	if requested {
+		return ErrStopRequested
+	}
+	return nil
+}
+
+func resultForError(rounds int, err error) Result {
+	outcome := store.StateFailed
+	if errors.Is(err, ErrStopRequested) {
+		outcome = store.StateStopped
+	}
+	return Result{Outcome: outcome, Rounds: rounds}
 }
 
 func validateRequest(req Request, deps Dependencies) error {
