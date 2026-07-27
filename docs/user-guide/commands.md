@@ -67,6 +67,11 @@ lines include `next: <action>` when a remediation is known. The checks:
   classification, bounded adapter evidence, and the next
   `roundfix profiles configure` or `roundfix profiles validate` action. A
   rejected explicit `high` does not recommend model-managed reasoning.
+- `skills:` — the required Repository Skill Set matches its local
+  authorities. The running binary's embedded artifacts are authoritative for
+  the 14 Roundfix-owned skills, including the Roundfix Skill. Each of the 25
+  required external skills must hash to its `computedHash` in
+  `skills-lock.json`.
 - `codex:` — macOS-only runtime hygiene: inspects `com.apple.quarantine` (the
   real XProtect trigger) and code-signature validity, resolving `CODEX_PATH`
   first and then `codex` on `PATH`. It does not use `spctl --assess`, which
@@ -76,17 +81,39 @@ lines include `next: <action>` when a remediation is known. The checks:
   Skipped on non-Darwin platforms.
 
 Doctor has no separate `agent:` or `model:` authority. The aggregate
-`profiles:` result is the readiness contract, and it appears before `codex:` so
-Spec 0036 can append independent Repository Skill Set readiness without
-repeating selection proof.
+`profiles:` result is the Agent Selection Profile Readiness contract.
+Repository Skill Set readiness runs after it as an independent check, even
+when profile proof fails, and appears before `codex:`.
+Outside Git, profile proof uses the process working directory while Repository
+Skill Set inspection does not run. The `skills:` line reports
+`Repository Skill Set readiness requires a Git repository` and keeps the
+run-from-Git next action.
 
 ```text
 node: ok
 acpx: ok
 adapter: ok (...)
 profiles: ok (3 distinct tuples; 10 category references)
+skills: ok (39 required: 14 Roundfix-owned, 25 external)
 codex: ok
 ```
+
+A missing or outdated required skill, or an invalid required lock declaration,
+prints one sorted blocking line and makes Doctor exit `1`. Doctor still prints
+every other readiness result:
+
+```text
+skills: failed (missing: handoff; outdated: roundfix; next: roundfix skills install --target project && bunx skills experimental_install && bunx skills update -p -y)
+```
+
+For mixed ownership, Doctor joins the Roundfix-owned restore and external
+update actions with `&&`, so external remediation runs only after the owned
+restore succeeds. A failure owned only by the external lock or skill set prints
+only the external action.
+Doctor never runs either command, never deletes skills, and never updates
+`skills-lock.json`. The check is offline and read-only: it reads only local
+embedded artifacts, `.agents/skills`, and `skills-lock.json`. Unrelated extra
+installed skills and lock entries are ignored and are not removed or flagged.
 
 ### upgrade
 

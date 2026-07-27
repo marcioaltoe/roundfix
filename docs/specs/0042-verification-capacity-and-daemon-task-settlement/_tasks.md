@@ -24,6 +24,9 @@ graph:
     - id: task_07
       file: task_07.md
       needs: [task_01, task_02, task_03, task_04, task_05, task_06]
+    - id: task_08
+      file: task_08.md
+      needs: [task_01, task_02, task_03, task_04, task_05, task_06, task_07]
 ---
 
 # Tasks — Verification Capacity and Daemon Task Settlement
@@ -36,6 +39,7 @@ graph:
 | task_04 | Retry Temporary Verification Failure under exclusive capacity  | backend  | high       | task_03                                           |
 | task_05 | Render per-Task Verification phases in the Live Run View       | frontend | medium     | task_01, task_02, task_03, task_04                |
 | task_06 | Prove the integrated capacity and settlement contract          | test     | high       | task_01, task_02, task_03, task_04, task_05       |
-| task_07 | Align operator docs and shipped Agent Skills                   | docs     | medium     | task_01, task_02, task_03, task_04, task_05, task_06 |
+| task_07 | Align operator docs and prepare Agent Skill wording            | docs     | medium     | task_01, task_02, task_03, task_04, task_05, task_06 |
+| task_08 | Align the protected authorial Skill pairs                      | docs     | low        | task_01, task_02, task_03, task_04, task_05, task_06, task_07 |
 
-Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05 · 6 → task_06 · 7 → task_07
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_03 · 4 → task_04 · 5 → task_05 · 6 → task_06 · 7 → task_07 · 8 → task_08

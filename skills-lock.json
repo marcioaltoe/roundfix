@@ -49,6 +49,13 @@
       "skillPath": "skills/03-engineering-design/domain-modeling/SKILL.md",
       "computedHash": "363cb0f53b0b431e7c00086ad1f823500b7e1b70b5616ee969c979f0934e9e6e"
     },
+    "exa-web-search": {
+      "source": "marcioaltoe/skills",
+      "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
+      "sourceType": "github",
+      "skillPath": "skills/01-discovery/exa-web-search/SKILL.md",
+      "computedHash": "d8b53369f54c57dea66e64d83d6f3a27bfeee364d88ff3845f6b7312f6b3c2ae"
+    },
     "github-pr-workflow": {
       "source": "marcioaltoe/skills",
       "ref": "main",
@@ -96,7 +103,7 @@
       "ref": "main",
       "sourceType": "github",
       "skillPath": "skills/05-implementation-loop/golang-testing/SKILL.md",
-      "computedHash": "150dfb5fe4c56b8d3c141c4b3e70326743b591c1dedf9a32cfba64619bab8784"
+      "computedHash": "5149794b7adbda8f4509fad7ec13b63cbae0c4aacad915b87b324cda2be3f5ac"
     },
     "grill-with-docs": {
       "source": "marcioaltoe/skills",
@@ -167,13 +174,6 @@
       "sourceType": "github",
       "skillPath": "skills/03-engineering-design/tui-design/SKILL.md",
       "computedHash": "92b969f3473842ee731e0c7a5c571e3b89e5dac7da81be5e635e1715b0084e6e"
-    },
-    "exa-web-search": {
-      "source": "marcioaltoe/skills",
-      "ref": "14fdf46befa9a07203fde20b69b885dab4961844",
-      "sourceType": "github",
-      "skillPath": "skills/01-discovery/exa-web-search/SKILL.md",
-      "computedHash": "16a95a38b232f4746ff8785677f48615b5464fa36786a3fc2d23e7e2d1129d72"
     }
   }
 }

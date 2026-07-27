@@ -9,6 +9,24 @@ surfaces: [backend, cli, data, docs]
 
 Terminal spec Runs can retain clean Run Worktrees and Run Branches after their commits have already reached the user's target branch. Roundfix currently compares the Run Branch only with its creation base, hides the residue behind the default Active Run listing, and offers no supported cleanup command. Prior dogfood evidence, now absorbed into this Spec and retained in Git history, showed users having to prove ancestry and run Git commands manually.
 
+## Project Constraints
+
+- Identifier strategy: not applicable — reconciliation reuses Run IDs, recorded
+  branches, and Git object identities and creates no project-owned Internal
+  Identifier. Source: `docs/agents/domain.md`.
+- Authentication and HTTP: not applicable — reconciliation is confined to the
+  local Run Database and Git repository and adds no authentication or HTTP
+  contract. Source: `docs/agents/cli.md`.
+- Active ADR obligations: applicable — ADR-0023 and ADR-0024 govern Run
+  Worktrees and porcelain integration, ADR-0052 owns the guarded terminal
+  transition, and ADR-0053 requires proof-based reconciliation. Source:
+  `docs/agents/domain.md`.
+- Tooling authority: applicable — on 2026-07-26, the maintainer expressly
+  authorizes changes to exactly `.agents/skills/roundfix/SKILL.md` and
+  `skills/roundfix/SKILL.md`; no other protected tooling mutation is
+  authorized. Source:
+  `docs/agents/agent-instructions.md`.
+
 ## Goals
 
 - Users and Supervisors can distinguish safely integrated terminal Run Worktrees from work that must be preserved.

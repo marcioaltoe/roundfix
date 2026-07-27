@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -215,11 +216,11 @@ func TestAuthorialSkillSync(t *testing.T) {
 			distributedRoot := filepath.Join(repoRoot, "skills", skillName)
 			assertSkillTreesEqual(t, canonicalRoot, distributedRoot)
 
-			canonicalDigest, err := SkillFolderHash(canonicalRoot)
+			canonicalDigest, err := SkillFolderHash(t.Context(), canonicalRoot)
 			if err != nil {
 				t.Fatalf("hash canonical skill: %v", err)
 			}
-			distributedDigest, err := SkillFolderHash(distributedRoot)
+			distributedDigest, err := SkillFolderHash(t.Context(), distributedRoot)
 			if err != nil {
 				t.Fatalf("hash distributed skill: %v", err)
 			}
@@ -312,12 +313,10 @@ func TestAuthorialSkillSync(t *testing.T) {
 					t.Errorf("%s is repository-sourced but not owned by Roundfix", skill.Name)
 					continue
 				}
-				want, err := SkillFolderHash(
+				want := baselineSnapshotSkillDigest(
+					t,
 					filepath.Join(repoRoot, ".agents", "skills", skill.Name),
 				)
-				if err != nil {
-					t.Fatalf("hash repository-owned skill %q: %v", skill.Name, err)
-				}
 				if skill.ContentDigest != want {
 					t.Errorf(
 						"%s contentDigest = %q, want canonical %q",
@@ -337,7 +336,7 @@ func TestAuthorialSkillSync(t *testing.T) {
 	if err := json.Unmarshal(lockBytes, &lock); err != nil {
 		t.Fatalf("decode skills lock: %v", err)
 	}
-	const wantUpstreamDigest = "4fb4367c8a086034727b70b23795712be9b436074f4ba6b9bc6ae5da352d21a7"
+	const wantUpstreamDigest = "d61310f840938a57edeae639ad44e5b0140b2bada06bac460ae59216e1a790e7"
 	if got := upstreamManagedSkillDigest(t, repoRoot, lock.Skills); got != wantUpstreamDigest {
 		t.Fatalf("upstream-managed skill tree digest = %q, want %q", got, wantUpstreamDigest)
 	}
@@ -598,7 +597,7 @@ func TestAuthoringConstraintOwnership(t *testing.T) {
 		})
 	}
 
-	const wantUpstreamDigest = "4fb4367c8a086034727b70b23795712be9b436074f4ba6b9bc6ae5da352d21a7"
+	const wantUpstreamDigest = "d61310f840938a57edeae639ad44e5b0140b2bada06bac460ae59216e1a790e7"
 	if got := upstreamManagedSkillDigest(t, repoRoot, lock.Skills); got != wantUpstreamDigest {
 		t.Fatalf("upstream-managed skill tree digest = %q, want %q", got, wantUpstreamDigest)
 	}
@@ -630,14 +629,14 @@ func TestUpstreamADRFormatUnchanged(t *testing.T) {
 	sort.Strings(names)
 	upstreamDigest := sha256.New()
 	for _, name := range names {
-		folderDigest, err := SkillFolderHash(filepath.Join(repoRoot, ".agents", "skills", name))
+		folderDigest, err := SkillFolderHash(t.Context(), filepath.Join(repoRoot, ".agents", "skills", name))
 		if err != nil {
 			t.Fatalf("hash upstream-managed skill %q: %v", name, err)
 		}
 		_, _ = upstreamDigest.Write([]byte(name))
 		_, _ = upstreamDigest.Write([]byte(folderDigest))
 	}
-	const wantUpstreamDigest = "4fb4367c8a086034727b70b23795712be9b436074f4ba6b9bc6ae5da352d21a7"
+	const wantUpstreamDigest = "d61310f840938a57edeae639ad44e5b0140b2bada06bac460ae59216e1a790e7"
 	if got := hex.EncodeToString(upstreamDigest.Sum(nil)); got != wantUpstreamDigest {
 		t.Fatalf("upstream-managed skill tree digest = %q, want %q", got, wantUpstreamDigest)
 	}
@@ -897,12 +896,50 @@ func upstreamManagedSkillDigest(
 	sort.Strings(names)
 	digest := sha256.New()
 	for _, name := range names {
-		folderDigest, err := SkillFolderHash(filepath.Join(repoRoot, ".agents", "skills", name))
+		folderDigest, err := SkillFolderHash(t.Context(), filepath.Join(repoRoot, ".agents", "skills", name))
 		if err != nil {
 			t.Fatalf("hash upstream-managed skill %q: %v", name, err)
 		}
 		_, _ = digest.Write([]byte(name))
 		_, _ = digest.Write([]byte(folderDigest))
+	}
+	return hex.EncodeToString(digest.Sum(nil))
+}
+
+func baselineSnapshotSkillDigest(t *testing.T, root string) string {
+	t.Helper()
+	type digestFile struct {
+		path string
+		data []byte
+	}
+	var files []digestFile
+	if err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		relative, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		files = append(files, digestFile{path: filepath.ToSlash(relative), data: data})
+		return nil
+	}); err != nil {
+		t.Fatalf("hash Baseline snapshot skill %q: %v", root, err)
+	}
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].path < files[j].path
+	})
+	digest := sha256.New()
+	for _, file := range files {
+		_, _ = digest.Write([]byte(file.path))
+		_, _ = digest.Write(file.data)
 	}
 	return hex.EncodeToString(digest.Sum(nil))
 }

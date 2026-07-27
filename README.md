@@ -30,7 +30,7 @@ Then make the machine Run-ready and check it:
 
 ```bash
 roundfix setup     # proves adapters and generated profiles before writes
-roundfix doctor    # read-only adapter and profile readiness; mutates nothing
+roundfix doctor    # read-only profile and Repository Skill Set readiness
 ```
 
 ## Requirements
@@ -43,10 +43,32 @@ roundfix doctor    # read-only adapter and profile readiness; mutates nothing
 - Building from source additionally needs Go 1.26+ and `make`.
 
 `roundfix doctor` diagnoses all of it — including official Codex adapter
-identity, exact Agent Selection Profile proof, and macOS codex hygiene — with
-one line per check and a `next:` action on failures. Use `roundfix setup` to
-provision the minimum supported acpx or official adapter, or migrate a stale
-legacy override after authorization.
+identity, exact Agent Selection Profile proof, Repository Skill Set readiness,
+and macOS codex hygiene — with one line per check and a `next:` action on
+failures. The independent Repository Skill Set result follows `profiles:`:
+
+```text
+profiles: ok (3 distinct tuples; 10 category references)
+skills: ok (39 required: 14 Roundfix-owned, 25 external)
+```
+
+The running binary's embedded bundle is authoritative for Roundfix-owned
+skills, including the Roundfix Skill. Each required external skill must match
+its `computedHash` in the repository's `skills-lock.json`. Missing, outdated,
+or invalid required skill state prints `skills: failed (...)`, still runs the
+other Doctor checks, and makes Doctor exit `1`.
+
+Doctor checks these authorities locally, without network access or writes. It
+ignores unrelated extra skill directories and lock entries, never deletes or
+updates skills automatically, and only prints the applicable command:
+
+```bash
+roundfix skills install --target project
+bunx skills experimental_install && bunx skills update -p -y
+```
+
+Use `roundfix setup` to provision the minimum supported acpx or official
+adapter, or migrate a stale legacy override after authorization.
 
 ## Quickstart
 

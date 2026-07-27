@@ -3778,9 +3778,12 @@ Options:
   roundfix doctor
 
 Diagnoses this machine's readiness for Runs. Checks Node.js, the minimum
-supported acpx version, the effective adapter, and required Agent Selection Profiles. It also
-checks codex runtime hygiene. The aggregate profiles: line exact-proves every
-distinct tuple and reports the next action for failures. Doctor mutates nothing.
+supported acpx version, the effective adapter, the required
+Agent Selection Profiles, the Repository Skill Set, and codex runtime hygiene.
+The aggregate profiles: line exact-proves every distinct tuple. The skills:
+line compares Roundfix-owned artifacts with the running binary and external
+artifacts with skills-lock.json. Each failure reports its next action.
+Doctor is offline, read-only, and mutates nothing.
 `
 	case "gc":
 		return `Usage:

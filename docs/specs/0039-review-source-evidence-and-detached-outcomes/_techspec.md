@@ -10,6 +10,24 @@ created: 2026-07-17
 
 The CodeRabbit adapter gains one shared evidence classifier used by both the pre-fetch wait and Merge-Ready confirmation, eliminating the current disagreement between `WatchStatus` and `HeadCheck`. The watch state machine gains Review Skipped, bounded transient retry, issue-count knowledge, and phase/deadline projection. Terminal context flows once through the outcome event and notification boundary, while the existing Run Event Stream remains the Supervisor subscription. A narrowly proven Daemon-created artifact-only commit may inherit evidence from its parent. The primary trade-off is CodeRabbit-specific precision: CodeRabbit signal parsing becomes richer, but the generic watch loop consumes Review Source-neutral evidence and does not embed GitHub response shapes.
 
+## Project Constraints
+
+- Identifier strategy: not applicable — the design carries existing Run, head,
+  and Review Source-native identities without creating a new Internal
+  Identifier. Source: `docs/agents/domain.md`.
+- Authentication and HTTP: applicable — the CodeRabbit adapter must reuse the
+  existing authenticated `gh` boundary and preserve repository-owned HTTP and
+  credential policy. Source: `docs/agents/cli.md`.
+- Active ADR obligations: applicable — ADR-0036, ADR-0042, ADR-0043, ADR-0052,
+  and ADR-0054 govern artifact commits, review checkout ownership, Clean
+  Unverified, terminal completion, and accepted Review Source Evidence.
+  Source: `docs/agents/domain.md`.
+- Tooling authority: applicable — on 2026-07-26, the maintainer expressly
+  authorizes changes to exactly `.agents/skills/roundfix/SKILL.md` and
+  `skills/roundfix/SKILL.md`; no other protected tooling mutation is
+  authorized. Source:
+  `docs/agents/agent-instructions.md`.
+
 ## System Architecture
 
 - **`internal/reviewsource`** defines Review Source-neutral Evidence and typed transient failures.
@@ -159,7 +177,11 @@ A skipped review never calls the Round fetcher and creates no Round directory. A
 5. Review Issue knowledge and enriched terminal outcome stream/report (depends on: 3, 4).
 6. Notification context, receipts, durable receipt events, and Detached monitor command (depends on: 5).
 7. Daemon artifact-commit identity and verified evidence inheritance (depends on: 2, 5).
-8. User guide, command help, Roundfix Skill, CONTEXT vocabulary, ADR references, and finding traceability (depends on: 3, 4, 6, 7).
+8. User guide, command help, CONTEXT vocabulary, ADR references, and finding
+   traceability (depends on: 3, 4, 6, 7).
+9. Dedicated tooling-only update of
+   `.agents/skills/roundfix/SKILL.md` and `skills/roundfix/SKILL.md`, with
+   direct byte-identical edits and read-only sync verification (depends on: 8).
 
 ## Risks & Considerations
 
@@ -179,4 +201,7 @@ Rollout ships the state reader, writer, reporting, and schema-version fence in o
 - Existing timeout, polling, and Run Budget settings bound retry; no new config is added.
 - Existing Run Event Stream is the Supervisor subscription; notification receipts remain Run Events.
 - Exact Daemon artifact-only descendants inherit verified parent evidence while ADR-0036 remains in force.
+- Protected Roundfix Skill publication is isolated in one Task whose changed
+  files are the two authorized `SKILL.md` paths and its own Task file; it does
+  not run the broad `make skills-sync` mutation target.
 - See [ADR-0054](../../adr/0054-review-source-evidence-determines-review-outcomes.md).

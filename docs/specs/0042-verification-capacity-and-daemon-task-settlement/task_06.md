@@ -78,7 +78,7 @@ replacement for them or a mock-only confidence layer.
 - interface: `internal/cli/cli_test.go`
 - interface: `internal/daemon/task_engine_test.go`
 - interface: `internal/daemon/daemon_test.go`
-- interface: `internal/runevent/stream_test.go`
+- interface: `internal/runevent/event_test.go`
 - interface: `internal/tui/cockpit_test.go`
 - interface: `internal/worktree/worktree_test.go`
 

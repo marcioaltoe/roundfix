@@ -72,7 +72,7 @@ derive Task truth from journal events.
 - instruction: `.agents/skills/golang-testing/SKILL.md`
 - instruction: `.agents/skills/testing-boss/SKILL.md`
 - interface: `internal/cli/attach.go`
-- interface: `internal/cli/attach_test.go`
+- interface: `internal/cli/cli_test.go`
 - interface: `internal/cli/runbrowser.go`
 - interface: `internal/tui/tui.go`
 - interface: `internal/tui/tui_test.go`

@@ -6,7 +6,7 @@ type: docs
 complexity: medium
 ---
 
-# Task 07: Align operator docs and shipped Agent Skills
+# Task 07: Align operator docs and prepare Agent Skill wording
 
 ## Overview
 
@@ -30,24 +30,31 @@ must match shipped behavior and preserve skill ownership boundaries.
    and the prohibition on log heuristics.
 5. MUST document Run Event Stream and Live Run View working, waiting,
    verifying, retry, and capacity evidence with profile-led command examples.
-6. MUST update the canonical Roundfix Skill and repository-owned
-   `implement-task` skill, regenerate the embedded Roundfix Skill, and leave
-   every upstream-managed skill untouched.
+6. MUST leave every protected tooling and upstream-managed Skill path
+   untouched; Task 08 owns the isolated authorial Skill update.
 7. MUST preserve ADR, finding, PRD, Tech Spec, glossary, and skill ownership
    and synchronization traceability and keep all repository content in
    English.
-8. MUST run the complete repository verification gate; any format, test, skill
-   synchronization, or build failure is blocking.
+8. MUST treat the complete Daemon-owned repository verification gate as
+   blocking; any format, test, Skill synchronization, or build failure prevents
+   settlement.
+9. MUST align `docs/agents/autonomous-work.md` and the `CONTEXT.md` Agent
+   Session definition with ADR-0051: each Task owns a Task Type-selected Agent
+   Session, frontend Tasks remain in the same mixed Task Graph, and current
+   Agent Selection Profile defaults remain authoritative.
+10. MUST prepare exact canonical wording for Task 08 without editing its four
+    protected Skill targets.
 
 ## Subtasks
 
 - [ ] Update configuration, command, usage, and autonomous-work guidance.
-- [ ] Align implementation-ready handoff and Daemon Verification instructions.
+- [ ] Verify implementation-ready handoff and Daemon Verification instructions.
 - [ ] Document exit-75 project ownership, exclusive retry, and exhaustion.
 - [ ] Document event and Live Run View capacity/phase evidence.
-- [ ] Update canonical Roundfix and repository-owned workflow skills.
-- [ ] Regenerate embedded skills and verify ownership boundaries.
-- [ ] Resolve links, terminology, examples, and the full repository gate.
+- [ ] Align autonomous-work routing and the Agent Session glossary with
+      ADR-0051.
+- [ ] Prepare the authorial Skill wording and hand it off to Task 08.
+- [ ] Resolve links, terminology, and examples.
 
 ## Acceptance Criteria
 
@@ -62,8 +69,10 @@ must match shipped behavior and preserve skill ownership boundaries.
       wrapper and promises only one observable exclusive retry.
 - [ ] Events/Attach examples use canonical phase names and keep requested
       command output separate from diagnostics.
-- [ ] Canonical and embedded Roundfix Skills are synchronized and their tests
-      enforce the new configuration, status, and retry wording.
+- [ ] Autonomous-work guidance and the Agent Session glossary route every Task
+      through its Task Type-selected Agent Session, keep frontend Task 05 in
+      this graph, and contain no superseded one-Agent-per-Run rule.
+- [ ] No protected tooling path changes in this Task.
 - [ ] No upstream-managed skill changes and every ADR/finding/Spec link resolves.
 - [ ] `make verify` passes completely after all documentation and generated
       skill changes.
@@ -80,17 +89,14 @@ must match shipped behavior and preserve skill ownership boundaries.
 - interface: `docs/user-guide/configuration.md`
 - interface: `docs/user-guide/commands.md`
 - interface: `docs/user-guide/usage.md`
-- interface: `.agents/skills/roundfix/SKILL.md`
-- interface: `.agents/skills/roundfix/agents/openai.yaml`
-- interface: `skills/roundfix/SKILL.md`
 
 ## Verification
 
-- `rtk go test ./internal/cli -run 'Test(CommandUsage|DocumentationContract|RoundfixSkill|ImplementTaskSkill)' -count=1` — expected: user guidance, command examples, manifests, and shipped skill contracts match implemented behavior.
-- `rtk make skills-sync-check` — expected: canonical and embedded Roundfix-owned skills have no drift.
-- `rtk go run -buildvcs=false ./cmd/roundfix skills check` — expected: every shipped Roundfix Skill contract passes.
+- `rtk go test ./internal/cli -run 'Test(CommandUsage|DocumentationContract)' -count=1` — expected: user guidance and command examples match implemented behavior.
 - `rtk git diff --check` — expected: Spec, ADR, finding, documentation, and generated skill files contain no whitespace errors.
-- `rtk make verify` — expected: formatting, Go tests, setup-context checks, skill synchronization, shipped skill validation, and build all pass.
+- `rtk make verify` — expected: formatting, Go tests, setup-context checks,
+  current skill synchronization, shipped skill validation, and build all pass
+  before the protected wording handoff.
 
 ## References
 

@@ -10,6 +10,24 @@ created: 2026-07-17
 
 Run completion becomes a guarded store operation: the first non-terminal-to-terminal transition wins, an identical replay is idempotent, and a conflicting terminal result returns a typed conflict without mutating the row or lock. Force Stop reverses its current unsafe order by proving owner-process exit before calling completion. Review Source waits gain the Run Database as a Stop Request source, and Agent Session cleanup queries the durable Agent Selection lifecycle instead of deriving an unconditional Agent Session name. The primary trade-off is availability for safety: a Force Stop that cannot prove owner exit leaves the Run Active and locked, requiring the user to resolve the owner process instead of risking two live writers.
 
+## Project Constraints
+
+- Identifier strategy: not applicable — all persistence and process operations
+  reuse existing Run, scope, and Agent Session identities. Source:
+  `docs/agents/domain.md`.
+- Authentication and HTTP: not applicable — the implementation changes local
+  process, database, and polling boundaries without changing authentication or
+  HTTP behavior. Source: `docs/agents/cli.md`.
+- Active ADR obligations: applicable — ADR-0022, ADR-0044, ADR-0051, and
+  ADR-0052 govern Stop Request transport, owner-death proof, Work Item Agent
+  Sessions, and terminal compare-and-set behavior. Source:
+  `docs/agents/domain.md`.
+- Tooling authority: applicable — on 2026-07-26, the maintainer expressly
+  authorizes changes to exactly `.agents/skills/roundfix/SKILL.md` and
+  `skills/roundfix/SKILL.md`; no other protected tooling mutation is
+  authorized. Source:
+  `docs/agents/agent-instructions.md`.
+
 ## System Architecture
 
 - **`internal/store`** extends Run completion with compare-and-set semantics and a typed terminal conflict. It also exposes a guarded Integration Pending reconciliation operation and a query that returns Agent Selection scopes whose latest persisted status is active.
@@ -116,7 +134,10 @@ Agent Session cleanup rules:
 3. Platform owner-process controller and reordered force-stop CLI flow (depends on: 1, 2).
 4. Stop Request source across all Review Source wait boundaries (depends on: 1).
 5. Winner-only terminal event/notification wiring and primary-before-secondary diagnostics (depends on: 1, 2, 3, 4).
-6. User guide, command help, Roundfix Skill, and spec finding traceability updates (depends on: 3, 4, 5).
+6. User guide, command help, and spec finding traceability updates (depends on: 3, 4, 5).
+7. Dedicated tooling-only update of
+   `.agents/skills/roundfix/SKILL.md` and `skills/roundfix/SKILL.md`, with
+   direct byte-identical edits and read-only sync verification (depends on: 6).
 
 ## Risks & Considerations
 
@@ -133,4 +154,7 @@ Rollout is an atomic binary change because no schema or public command syntax ch
 - Force Stop fails closed until owner exit is proven.
 - `CompleteRun` remains the ordinary completion boundary and becomes compare-and-set; a separate operation owns the only terminal reconciliation transition.
 - Existing Agent Selection lifecycle records serve as the Agent Session registry.
+- Protected Roundfix Skill publication is isolated in one Task whose changed
+  files are the two authorized `SKILL.md` paths and its own Task file; it does
+  not run the broad `make skills-sync` mutation target.
 - See [ADR-0052](../../adr/0052-run-completion-is-compare-and-set.md).

@@ -2,7 +2,6 @@ package skills
 
 import (
 	"context"
-	"crypto/sha256"
 	"embed"
 	"errors"
 	"fmt"
@@ -13,6 +12,8 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"roundfix/internal/skillhash"
 )
 
 //go:embed roundfix write-idea write-prd write-techspec write-tasks setup-context-driven implement-task implement-spec brainstorming council business-analyst archive-spec qa-gate evidence-gate recommended.txt
@@ -125,7 +126,10 @@ func Files() ([]File, error) {
 
 // SkillFolderHash returns the external skills CLI digest for a local skill
 // directory without following links or reading excluded dependency metadata.
-func SkillFolderHash(root string) (string, error) {
+func SkillFolderHash(ctx context.Context, root string) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", fmt.Errorf("hash skill folder %q: %w", root, err)
+	}
 	info, err := os.Lstat(root)
 	if err != nil {
 		return "", fmt.Errorf("inspect skill folder %q: %w", root, err)
@@ -137,18 +141,29 @@ func SkillFolderHash(root string) (string, error) {
 		return "", fmt.Errorf("inspect skill folder %q: root is not a directory", root)
 	}
 
-	type hashFile struct {
-		path string
-		data []byte
+	return skillFolderHash(ctx, os.DirFS(root), ".", root)
+}
+
+func skillFolderHash(ctx context.Context, tree fs.FS, root string, displayRoot string) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", fmt.Errorf("hash skill folder %q: %w", displayRoot, err)
 	}
-	var files []hashFile
-	tree := os.DirFS(root)
-	if err := fs.WalkDir(tree, ".", func(path string, entry fs.DirEntry, walkErr error) error {
-		fullPath := filepath.Join(root, filepath.FromSlash(path))
+	var files []skillhash.File
+	if err := fs.WalkDir(tree, root, func(path string, entry fs.DirEntry, walkErr error) error {
+		if err := ctx.Err(); err != nil {
+			return fmt.Errorf("walk skill folder %q: %w", displayRoot, err)
+		}
+		relative := path
+		if path == root {
+			relative = "."
+		} else if root != "." {
+			relative = strings.TrimPrefix(path, root+"/")
+		}
+		fullPath := filepath.Join(displayRoot, filepath.FromSlash(relative))
 		if walkErr != nil {
 			return fmt.Errorf("walk skill folder entry %q: %w", fullPath, walkErr)
 		}
-		if path == "." {
+		if path == root {
 			return nil
 		}
 		entryInfo, err := entry.Info()
@@ -168,32 +183,29 @@ func SkillFolderHash(root string) (string, error) {
 		if !mode.IsRegular() {
 			return fmt.Errorf("inspect skill folder entry %q: special files are not supported", fullPath)
 		}
+		if err := ctx.Err(); err != nil {
+			return fmt.Errorf("read skill folder file %q: %w", fullPath, err)
+		}
 		data, err := fs.ReadFile(tree, path)
 		if err != nil {
 			return fmt.Errorf("read skill folder file %q: %w", fullPath, err)
 		}
-		files = append(files, hashFile{
-			path: filepath.ToSlash(path),
-			data: data,
+		if err := ctx.Err(); err != nil {
+			return fmt.Errorf("read skill folder file %q: %w", fullPath, err)
+		}
+		files = append(files, skillhash.File{
+			Path:    filepath.ToSlash(relative),
+			Content: data,
 		})
 		return nil
 	}); err != nil {
-		return "", fmt.Errorf("hash skill folder %q: %w", root, err)
+		return "", fmt.Errorf("hash skill folder %q: %w", displayRoot, err)
+	}
+	if err := ctx.Err(); err != nil {
+		return "", fmt.Errorf("hash skill folder %q: %w", displayRoot, err)
 	}
 
-	sort.Slice(files, func(i, j int) bool {
-		return files[i].path < files[j].path
-	})
-	digest := sha256.New()
-	for _, file := range files {
-		if _, err := digest.Write([]byte(file.path)); err != nil {
-			return "", fmt.Errorf("hash skill folder path %q: %w", file.path, err)
-		}
-		if _, err := digest.Write(file.data); err != nil {
-			return "", fmt.Errorf("hash skill folder file %q: %w", file.path, err)
-		}
-	}
-	return fmt.Sprintf("%x", digest.Sum(nil)), nil
+	return skillhash.Sum(files), nil
 }
 
 func Check() []Diagnostic {

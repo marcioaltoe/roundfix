@@ -19,6 +19,8 @@ import (
 	"sort"
 	"strings"
 	"unicode/utf8"
+
+	"roundfix/internal/skillhash"
 )
 
 const (
@@ -1239,13 +1241,14 @@ func portableRestoreDigest(files []restoreFile) string {
 }
 
 func externalSkillsLockDigest(files []restoreFile) string {
-	sortRestoreFiles(files)
-	digest := sha256.New()
-	for _, file := range files {
-		_, _ = digest.Write([]byte(file.Path))
-		_, _ = digest.Write(file.Content)
+	hashFiles := make([]skillhash.File, len(files))
+	for index, file := range files {
+		hashFiles[index] = skillhash.File{
+			Path:    file.Path,
+			Content: file.Content,
+		}
 	}
-	return hex.EncodeToString(digest.Sum(nil))
+	return skillhash.Sum(hashFiles)
 }
 
 func sortRestoreFiles(files []restoreFile) {

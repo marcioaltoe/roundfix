@@ -1,0 +1,90 @@
+language: "en"
+early_access: true
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "AGENTS.md"
+      - "**/AGENTS.md"
+      - "CONTEXT.md"
+      - "docs/agents/**/*.md"
+      - "docs/adr/**/*.md"
+      - ".agents/skills/**/*.md"
+
+reviews:
+  request_changes_workflow: true
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  sequence_diagrams: true
+  profile: "assertive"
+  related_prs: false
+  tools:
+    golangci-lint:
+      enabled: true
+  path_filters:
+    # ----- Generated mirrors and local agent state -----
+    - "!.claude/**"
+    - "!skills/**"
+
+    # ----- IDE / editor / OS noise -----
+    - "!.vscode/**"
+    - "!.idea/**"
+    - "!**/.DS_Store"
+    - "!**/Thumbs.db"
+    - "!**/*.swp"
+    - "!**/*.sw?"
+
+    # ----- Build, release, log, and runtime artifacts -----
+    - "!bin/**"
+    - "!dist/**"
+    - "!tmp/**"
+    - "!**/.cache/**"
+    - "!**/logs/**"
+    - "!**/*.log"
+    - "!**/.tmp/**"
+    - "!**/*.db"
+    - "!**/*.db-shm"
+    - "!**/*.db-wal"
+    - "!**/*.digest"
+    - "!**/*.sha256"
+    - "!**/*.png"
+    - "!**/*.jpeg"
+    - "!**/*.pdf"
+
+    # ----- Secrets / env -----
+    - "!**/.env"
+    - "!**/.env.local"
+    - "!**/.env.*.local"
+    - "!**/*.local"
+    - "!**/*.pem"
+
+    # ----- Roundfix source, tests, contracts, docs, and configuration -----
+    - "**/*.go"
+    - "**/*.golden"
+    - "**/*.txt"
+    - "**/*.stdout"
+    - "**/*.stderr"
+    - "**/*.json"
+    - "**/*.jsonc"
+    - "**/*.yml"
+    - "**/*.yaml"
+    - "**/*.toml"
+    - ".github/**/*"
+    - ".agents/skills/**/*"
+    - ".coderabbit.yaml"
+    - ".roundfixrc.yml"
+    - ".gitignore"
+    - "AGENTS.md"
+    - "CHANGELOG.md"
+    - "CONTEXT.md"
+    - "LICENSE"
+    - "README.md"
+    - "go.mod"
+    - "go.sum"
+    - "skills-lock.json"
+    - "cog.toml"
+    - "Makefile"
+    - "**/Makefile"

@@ -9,6 +9,26 @@ surfaces: [backend, cli, docs]
 
 Roundfix currently treats several different CodeRabbit states as the same signal: a completed check can mean a real review or an explicit skip, an approval can be ignored when a check is missing, and one transient GitHub failure can end a watch before any Round. When failure happens in a Detached Run, zero issue counts and a context-free notification leave users and Supervisors without the evidence needed to recover. Prior dogfood evidence was absorbed into this Spec and remains in Git history; the still-open behavior is documented by the [Vortex detached-watch finding](../../findings/2026-07-16-vortex-pr87-detached-watch-notification.md).
 
+## Project Constraints
+
+- Identifier strategy: not applicable — Review Source Evidence reuses Run IDs,
+  Git heads, and Review Source-native identities and creates no project-owned
+  Internal Identifier. Source: `docs/agents/domain.md`.
+- Authentication and HTTP: applicable — GitHub and CodeRabbit access must
+  continue through the repository's existing `gh` and Review Source boundaries;
+  this feature adds no authentication provider, credential policy, or HTTP
+  route. Source: `docs/agents/cli.md`.
+- Active ADR obligations: applicable — ADR-0036 preserves the separate
+  review-artifact commit, ADR-0042 keeps review Runs in the user checkout,
+  ADR-0043 preserves Clean Unverified, ADR-0052 protects terminal completion,
+  and ADR-0054 makes head-bound Review Source Evidence authoritative. Source:
+  `docs/agents/domain.md`.
+- Tooling authority: applicable — on 2026-07-26, the maintainer expressly
+  authorizes changes to exactly `.agents/skills/roundfix/SKILL.md` and
+  `skills/roundfix/SKILL.md`; no other protected tooling mutation is
+  authorized. Source:
+  `docs/agents/agent-instructions.md`.
+
 ## Goals
 
 - Review Source outcomes reflect what CodeRabbit actually did on the relevant head, including an explicit skipped review.

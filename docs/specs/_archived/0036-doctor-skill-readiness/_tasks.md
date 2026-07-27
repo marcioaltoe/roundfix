@@ -9,6 +9,9 @@ graph:
     - id: task_02
       file: task_02.md
       needs: [task_01]
+    - id: task_03
+      file: task_03.md
+      needs: [task_02]
 ---
 
 # Tasks — Doctor Skill Readiness
@@ -21,5 +24,6 @@ extends.
 | ------- | ------------------------------------------------ | ------- | ---------- | ------- |
 | task_01 | Diagnose Repository Skill Set readiness          | backend | high       | —       |
 | task_02 | Synchronize Doctor skill-readiness guidance      | docs    | medium     | task_01 |
+| task_03 | Align the protected Roundfix Skill pair          | docs    | low        | task_02 |
 
-Waves: 1 → task_01 · 2 → task_02
+Waves: 1 → task_01 · 2 → task_02 · 3 → task_03

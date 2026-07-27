@@ -23,6 +23,7 @@ const (
 	HealthCheckAdapter  = "adapter"
 	HealthCheckAgent    = "agent"
 	HealthCheckProfiles = "profiles"
+	HealthCheckSkills   = "skills"
 	HealthCheckCodex    = "codex"
 )
 
