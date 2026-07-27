@@ -2,8 +2,11 @@ package coderabbit
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"net"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -692,6 +695,173 @@ func TestHeadCheckMapsGitHubCheckRunJSON(t *testing.T) {
 	}
 }
 
+func TestCheckRunOutputJSONMapping(t *testing.T) {
+	const sensitiveText = "authorization: Bearer secret-that-must-not-escape"
+	fixture := `{
+		"total_count": 1,
+		"check_runs": [{
+			"id": 42,
+			"name": "CodeRabbit",
+			"head_sha": "abc123",
+			"status": "completed",
+			"conclusion": "success",
+			"app": {"name": "CodeRabbit", "slug": "coderabbitai"},
+			"output": {
+				"title": "Review skipped",
+				"summary": "CodeRabbit skipped this review because the change set is too large.",
+				"text": "` + sensitiveText + `"
+			}
+		}]
+	}`
+
+	checkRuns, err := parseCheckRuns([]byte(fixture))
+	if err != nil {
+		t.Fatalf("parse check runs fixture: %v", err)
+	}
+	if len(checkRuns) != 1 {
+		t.Fatalf("check run count = %d, want 1", len(checkRuns))
+	}
+	got := checkRuns[0]
+	if got.DatabaseID != 42 {
+		t.Fatalf("database ID = %d, want 42", got.DatabaseID)
+	}
+	if got.OutputTitle != "Review skipped" {
+		t.Fatalf("output title = %q", got.OutputTitle)
+	}
+	if got.OutputSummary != "CodeRabbit skipped this review because the change set is too large." {
+		t.Fatalf("output summary = %q", got.OutputSummary)
+	}
+	encoded, err := json.Marshal(got)
+	if err != nil {
+		t.Fatalf("marshal check run: %v", err)
+	}
+	if strings.Contains(string(encoded), sensitiveText) {
+		t.Fatalf("check run retained raw output text: %s", encoded)
+	}
+}
+
+func TestSkipSignalStructuredOutputRemainsAvailable(t *testing.T) {
+	fixture := `{
+		"check_runs": [{
+			"name": "CodeRabbit",
+			"head_sha": "abc123",
+			"status": "completed",
+			"conclusion": "success",
+			"output": {
+				"title": "Review skipped",
+				"summary": "Review skipped because this pull request contains too many files."
+			}
+		}]
+	}`
+	checkRuns, err := parseCheckRuns([]byte(fixture))
+	if err != nil {
+		t.Fatalf("parse check runs fixture: %v", err)
+	}
+	if checkRuns[0].OutputTitle == "" || checkRuns[0].OutputSummary == "" {
+		t.Fatalf("structured skip fields were discarded: %+v", checkRuns[0])
+	}
+}
+
+func TestSkipSignalDoesNotInferFromArbitrarySuccessfulText(t *testing.T) {
+	fixture := `{
+		"check_runs": [{
+			"name": "CodeRabbit",
+			"head_sha": "abc123",
+			"status": "completed",
+			"conclusion": "success",
+			"output": {
+				"title": "Review completed",
+				"summary": "All checks passed successfully."
+			}
+		}]
+	}`
+	checkRuns, err := parseCheckRuns([]byte(fixture))
+	if err != nil {
+		t.Fatalf("parse check runs fixture: %v", err)
+	}
+	if checkRuns[0].OutputTitle != "Review completed" || checkRuns[0].OutputSummary != "All checks passed successfully." {
+		t.Fatalf("successful output was rewritten as another signal: %+v", checkRuns[0])
+	}
+}
+
+func TestTransientClassificationMatrix(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+	}{
+		{name: "temporary DNS", err: &net.DNSError{Err: "temporary failure", Name: "api.github.com", IsTemporary: true}},
+		{name: "connection reset", err: syscall.ECONNRESET},
+		{name: "HTTP 429", err: errors.New("HTTP 429: rate limited")},
+		{name: "GitHub HTTP 500", err: errors.New("HTTP 500: internal server error")},
+		{name: "GitHub HTTP 503", err: errors.New("HTTP 503: service unavailable")},
+		{name: "non-parent timeout", err: context.DeadlineExceeded},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			client := Client{GitHub: &fakeGitHubClient{checkRunsErr: testCase.err}}
+			_, err := client.WatchStatus(context.Background(), watchStatusRequest())
+			if err == nil {
+				t.Fatal("expected WatchStatus failure")
+			}
+			if !reviewsource.IsTransient(err) {
+				t.Fatalf("error = %T %v, want transient", err, err)
+			}
+			var transient *reviewsource.TransientError
+			if !errors.As(err, &transient) {
+				t.Fatalf("error = %T, want *reviewsource.TransientError", err)
+			}
+			if transient.Operation != "fetch CodeRabbit check runs" {
+				t.Fatalf("operation = %q", transient.Operation)
+			}
+			if !errors.Is(err, testCase.err) {
+				t.Fatalf("transient error did not wrap cause %v", testCase.err)
+			}
+		})
+	}
+}
+
+func TestTransientPermanentFailureMatrix(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+	}{
+		{name: "authentication", err: errors.New("HTTP 401: bad credentials")},
+		{name: "authorization", err: errors.New("HTTP 403: forbidden")},
+		{name: "invalid request", err: errors.New("HTTP 422: validation failed")},
+		{name: "malformed response", err: &json.SyntaxError{Offset: 1}},
+		{name: "cancellation", err: context.Canceled},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			client := Client{GitHub: &fakeGitHubClient{checkRunsErr: testCase.err}}
+			_, err := client.WatchStatus(context.Background(), watchStatusRequest())
+			if err == nil {
+				t.Fatal("expected WatchStatus failure")
+			}
+			if reviewsource.IsTransient(err) {
+				t.Fatalf("error = %T %v, want permanent", err, err)
+			}
+		})
+	}
+}
+
+func TestTransientParentCancellationIsPermanent(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	client := Client{GitHub: &fakeGitHubClient{
+		checkRunsErr: &net.DNSError{Err: "temporary failure", Name: "api.github.com", IsTemporary: true},
+	}}
+
+	_, err := client.WatchStatus(ctx, watchStatusRequest())
+
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("error = %v, want parent cancellation", err)
+	}
+	if reviewsource.IsTransient(err) {
+		t.Fatalf("parent cancellation classified transient: %v", err)
+	}
+}
+
 func watchStatusRequest() reviewsource.WatchStatusRequest {
 	return reviewsource.WatchStatusRequest{
 		BaseRepository: "owner/project",
@@ -704,6 +874,7 @@ type fakeGitHubClient struct {
 	comments          []ReviewComment
 	threads           []ReviewThread
 	checkRuns         []CheckRun
+	checkRunsErr      error
 	statuses          []CommitStatus
 	reviews           []PullRequestReview
 	resolvedThreads   []string
@@ -721,7 +892,7 @@ func (client fakeGitHubClient) ReviewThreads(context.Context, string, string) ([
 }
 
 func (client fakeGitHubClient) CheckRuns(context.Context, string, string) ([]CheckRun, error) {
-	return client.checkRuns, nil
+	return client.checkRuns, client.checkRunsErr
 }
 
 func (client fakeGitHubClient) CommitStatuses(context.Context, string, string) ([]CommitStatus, error) {

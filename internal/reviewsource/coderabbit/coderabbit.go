@@ -7,9 +7,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"os/exec"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 	"unicode"
 
@@ -64,11 +66,14 @@ type ThreadComment struct {
 }
 
 type CheckRun struct {
-	Name       string
-	AppName    string
-	HeadSHA    string
-	Status     string
-	Conclusion string
+	DatabaseID    int64
+	Name          string
+	AppName       string
+	HeadSHA       string
+	Status        string
+	Conclusion    string
+	OutputTitle   string
+	OutputSummary string
 }
 
 type CommitStatus struct {
@@ -95,11 +100,11 @@ func (client Client) FetchReviews(ctx context.Context, req reviewsource.FetchReq
 
 	comments, err := gh.ReviewComments(ctx, req.BaseRepository, req.PRNumber)
 	if err != nil {
-		return nil, fmt.Errorf("fetch CodeRabbit review comments: %w", err)
+		return nil, reviewSourceAccessError(ctx, "fetch CodeRabbit review comments", err)
 	}
 	threads, err := gh.ReviewThreads(ctx, req.BaseRepository, req.PRNumber)
 	if err != nil {
-		return nil, fmt.Errorf("fetch CodeRabbit review threads: %w", err)
+		return nil, reviewSourceAccessError(ctx, "fetch CodeRabbit review threads", err)
 	}
 
 	unresolved := unresolvedCommentThreads(threads)
@@ -230,15 +235,15 @@ func (client Client) WatchStatus(ctx context.Context, req reviewsource.WatchStat
 
 	checkRuns, err := gh.CheckRuns(ctx, req.BaseRepository, req.HeadSHA)
 	if err != nil {
-		return reviewsource.WatchStatus{}, fmt.Errorf("fetch CodeRabbit check runs: %w", err)
+		return reviewsource.WatchStatus{}, reviewSourceAccessError(ctx, "fetch CodeRabbit check runs", err)
 	}
 	statuses, err := gh.CommitStatuses(ctx, req.BaseRepository, req.HeadSHA)
 	if err != nil {
-		return reviewsource.WatchStatus{}, fmt.Errorf("fetch CodeRabbit commit statuses: %w", err)
+		return reviewsource.WatchStatus{}, reviewSourceAccessError(ctx, "fetch CodeRabbit commit statuses", err)
 	}
 	reviews, err := gh.PullRequestReviews(ctx, req.BaseRepository, req.PRNumber)
 	if err != nil {
-		return reviewsource.WatchStatus{}, fmt.Errorf("fetch CodeRabbit pull request reviews: %w", err)
+		return reviewsource.WatchStatus{}, reviewSourceAccessError(ctx, "fetch CodeRabbit pull request reviews", err)
 	}
 	return classifyWatchStatus(req.HeadSHA, checkRuns, statuses, reviews), nil
 }
@@ -260,7 +265,7 @@ func (client Client) HeadCheck(ctx context.Context, req reviewsource.HeadCheckRe
 
 	checkRuns, err := gh.CheckRuns(ctx, req.BaseRepository, req.HeadSHA)
 	if err != nil {
-		return "", fmt.Errorf("fetch CodeRabbit check runs: %w", err)
+		return "", reviewSourceAccessError(ctx, "fetch CodeRabbit check runs", err)
 	}
 	return classifyHeadCheck(req.HeadSHA, checkRuns), nil
 }
@@ -381,6 +386,7 @@ func (client GHClient) CheckRuns(ctx context.Context, repo string, headSHA strin
 func parseCheckRuns(output []byte) ([]CheckRun, error) {
 	var raw struct {
 		CheckRuns []struct {
+			DatabaseID int64  `json:"id"`
 			Name       string `json:"name"`
 			HeadSHA    string `json:"head_sha"`
 			Status     string `json:"status"`
@@ -389,6 +395,10 @@ func parseCheckRuns(output []byte) ([]CheckRun, error) {
 				Name string `json:"name"`
 				Slug string `json:"slug"`
 			} `json:"app"`
+			Output *struct {
+				Title   string `json:"title"`
+				Summary string `json:"summary"`
+			} `json:"output"`
 		} `json:"check_runs"`
 	}
 	if err := json.Unmarshal(output, &raw); err != nil {
@@ -400,12 +410,21 @@ func parseCheckRuns(output []byte) ([]CheckRun, error) {
 		if run.App != nil {
 			appName = firstNonEmpty(run.App.Name, run.App.Slug)
 		}
+		outputTitle := ""
+		outputSummary := ""
+		if run.Output != nil {
+			outputTitle = reviewsource.BoundEvidenceDetail(run.Output.Title)
+			outputSummary = reviewsource.BoundEvidenceDetail(run.Output.Summary)
+		}
 		checkRuns = append(checkRuns, CheckRun{
-			Name:       run.Name,
-			AppName:    appName,
-			HeadSHA:    run.HeadSHA,
-			Status:     run.Status,
-			Conclusion: run.Conclusion,
+			DatabaseID:    run.DatabaseID,
+			Name:          run.Name,
+			AppName:       appName,
+			HeadSHA:       run.HeadSHA,
+			Status:        run.Status,
+			Conclusion:    run.Conclusion,
+			OutputTitle:   outputTitle,
+			OutputSummary: outputSummary,
 		})
 	}
 	return checkRuns, nil
@@ -780,13 +799,120 @@ func defaultRunGH(ctx context.Context, args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, "gh", args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		detail := strings.TrimSpace(string(output))
-		if detail == "" {
-			detail = err.Error()
+		statusCode := githubHTTPStatusFromText(string(output))
+		return nil, &ghCommandError{
+			statusCode: statusCode,
+			temporary:  temporaryGitHubOutput(string(output)),
+			err:        err,
 		}
-		return nil, fmt.Errorf("gh %s: %s: %w", strings.Join(args, " "), detail, err)
 	}
 	return output, nil
+}
+
+type ghCommandError struct {
+	statusCode int
+	temporary  bool
+	err        error
+}
+
+func (err *ghCommandError) Error() string {
+	if err.statusCode != 0 {
+		return fmt.Sprintf("gh command failed with HTTP %d", err.statusCode)
+	}
+	return "gh command failed"
+}
+
+func (err *ghCommandError) Unwrap() error {
+	return err.err
+}
+
+func (err *ghCommandError) HTTPStatusCode() int {
+	return err.statusCode
+}
+
+func (err *ghCommandError) Temporary() bool {
+	return err.temporary
+}
+
+func reviewSourceAccessError(ctx context.Context, operation string, err error) error {
+	if err == nil {
+		return nil
+	}
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return fmt.Errorf("%s: %w", operation, ctxErr)
+	}
+	if errors.Is(err, context.Canceled) {
+		return fmt.Errorf("%s: %w", operation, err)
+	}
+	if isTemporaryGitHubError(err) {
+		return &reviewsource.TransientError{Operation: operation, Err: err}
+	}
+	return fmt.Errorf("%s: %w", operation, err)
+}
+
+func isTemporaryGitHubError(err error) bool {
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, syscall.ECONNRESET) {
+		return true
+	}
+	var dnsErr *net.DNSError
+	if errors.As(err, &dnsErr) && (dnsErr.IsTemporary || dnsErr.IsTimeout) {
+		return true
+	}
+	var temporary interface {
+		Temporary() bool
+	}
+	if errors.As(err, &temporary) && temporary.Temporary() {
+		return true
+	}
+	statusCode := githubHTTPStatus(err)
+	return statusCode == 429 || statusCode >= 500 && statusCode <= 599
+}
+
+func githubHTTPStatus(err error) int {
+	var statusError interface {
+		HTTPStatusCode() int
+	}
+	if errors.As(err, &statusError) {
+		return statusError.HTTPStatusCode()
+	}
+	return githubHTTPStatusFromText(err.Error())
+}
+
+func githubHTTPStatusFromText(text string) int {
+	lower := strings.ToLower(text)
+	for _, marker := range []string{"http status ", "http ", "status code "} {
+		offset := 0
+		for {
+			index := strings.Index(lower[offset:], marker)
+			if index < 0 {
+				break
+			}
+			start := offset + index + len(marker)
+			if start+3 <= len(lower) {
+				if code, err := strconv.Atoi(lower[start : start+3]); err == nil && code >= 100 && code <= 599 {
+					return code
+				}
+			}
+			offset = start
+		}
+	}
+	return 0
+}
+
+func temporaryGitHubOutput(output string) bool {
+	lower := strings.ToLower(output)
+	for _, signal := range []string{
+		"connection reset by peer",
+		"could not resolve host",
+		"no such host",
+		"server misbehaving",
+		"temporary failure in name resolution",
+	} {
+		if strings.Contains(lower, signal) {
+			return true
+		}
+	}
+	return false
 }
 
 type unresolvedThreadComment struct {
