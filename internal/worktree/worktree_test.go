@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -472,7 +474,10 @@ func TestPruneTerminalReapsOnlyEmptyTerminalRunAndTaskBranches(t *testing.T) {
 			WorkDir:     canonicalPath(valuableRun.Path),
 		},
 	}
-	err = PruneTerminal(ctx, repoDir, location, &recordingTerminalRunStore{}, func(runID string) (store.Run, bool, error) {
+	err = PruneTerminal(ctx, repoDir, location, &recordingTerminalRunStore{}, func(lookupCtx context.Context, runID string) (store.Run, bool, error) {
+		if lookupCtx != ctx {
+			return store.Run{}, false, errors.New("terminal Run lookup received a different context")
+		}
 		run, found := runs[runID]
 		return run, found, nil
 	})
@@ -829,7 +834,7 @@ func TestPruneTerminalPreservesCrashedTerminalRunWithoutCleanlinessProof(t *test
 		LocalBranch: "main",
 		WorkDir:     canonicalPath(cleanRef.Path),
 	}
-	err = PruneTerminal(ctx, repoDir, location, &recordingTerminalRunStore{}, func(runID string) (store.Run, bool, error) {
+	err = PruneTerminal(ctx, repoDir, location, &recordingTerminalRunStore{}, func(_ context.Context, runID string) (store.Run, bool, error) {
 		return run, runID == run.ID, nil
 	})
 	if err != nil {
@@ -891,6 +896,36 @@ func TestInspectTerminalRunConcurrentSafe(t *testing.T) {
 		if got.result.RunHead != runHead || got.result.TargetHead != runHead {
 			t.Fatalf("expected both concurrent heads at %s, got Run=%q target=%q", runHead, got.result.RunHead, got.result.TargetHead)
 		}
+	}
+}
+
+func TestCountRetainedTerminalRunsBatchesGitInspectionByRepository(t *testing.T) {
+	root := canonicalPath(t.TempDir())
+	runner := &retainedTerminalGitRunner{
+		root:     root,
+		branches: BranchName("retained") + "\n",
+	}
+	runs := make([]store.Run, 25)
+	for index := range runs {
+		runs[index] = store.Run{
+			ID:      fmt.Sprintf("released-%02d", index),
+			Kind:    store.KindImplement,
+			State:   store.StateStopped,
+			GitRoot: root,
+		}
+	}
+	runs[len(runs)-1].ID = "retained"
+
+	retained, failures := countRetainedTerminalRuns(context.Background(), runner, runs)
+
+	if retained != 1 {
+		t.Fatalf("expected one retained terminal Run, got %d", retained)
+	}
+	if len(failures) != 0 {
+		t.Fatalf("expected no retained terminal Run inspection failures, got %v", failures)
+	}
+	if len(runner.calls) != 2 {
+		t.Fatalf("expected one root validation and one batched branch listing, got %v", runner.calls)
 	}
 }
 
@@ -1290,7 +1325,7 @@ func TestApplyTerminalRunRemovalFailure(t *testing.T) {
 	runner := &recordingGitRunner{
 		delegate: execGitRunner{},
 		fail: func(_ string, args []string) error {
-			if slicesEqual(args, []string{"worktree", "remove", result.Path}) {
+			if slices.Equal(args, []string{"worktree", "remove", result.Path}) {
 				return errors.New("injected worktree removal failure")
 			}
 			return nil
@@ -1330,7 +1365,7 @@ func TestApplyTerminalRunDeletionFailure(t *testing.T) {
 	runner := &recordingGitRunner{
 		delegate: execGitRunner{},
 		fail: func(_ string, args []string) error {
-			if slicesEqual(args, []string{"branch", "-D", fixture.ref.Branch}) {
+			if slices.Equal(args, []string{"branch", "-D", fixture.ref.Branch}) {
 				return errors.New("injected branch deletion failure")
 			}
 			return nil
@@ -1344,8 +1379,8 @@ func TestApplyTerminalRunDeletionFailure(t *testing.T) {
 	if len(runner.mutations) != 2 {
 		t.Fatalf("expected worktree removal before branch deletion, mutations=%v", runner.mutations)
 	}
-	if !slicesEqual(runner.mutations[0], []string{"worktree", "remove", result.Path}) ||
-		!slicesEqual(runner.mutations[1], []string{"branch", "-D", fixture.ref.Branch}) {
+	if !slices.Equal(runner.mutations[0], []string{"worktree", "remove", result.Path}) ||
+		!slices.Equal(runner.mutations[1], []string{"branch", "-D", fixture.ref.Branch}) {
 		t.Fatalf("unexpected cleanup order: %v", runner.mutations)
 	}
 	if strings.Contains(err.Error(), "worktree="+result.Path) || !strings.Contains(err.Error(), fixture.ref.Branch) {
@@ -1393,7 +1428,7 @@ func TestPruneTerminalReconciliationReachableChangedBranch(t *testing.T) {
 	gitWorktreeTest(t, fixture.repoDir, "merge", "--ff-only", fixture.ref.Branch)
 	location := filepath.Dir(filepath.Dir(fixture.ref.Path))
 
-	pruned, err := PruneTerminalReport(ctx, fixture.repoDir, location, &recordingTerminalRunStore{}, func(runID string) (store.Run, bool, error) {
+	pruned, err := PruneTerminalReport(ctx, fixture.repoDir, location, &recordingTerminalRunStore{}, func(_ context.Context, runID string) (store.Run, bool, error) {
 		return fixture.run, runID == fixture.run.ID, nil
 	})
 	if err != nil {
@@ -1413,7 +1448,7 @@ func TestPruneTerminalReconciliationPreservesUniqueChangedBranch(t *testing.T) {
 	fixture.commitRunChange(t, "unique.txt", "unique\n")
 	location := filepath.Dir(filepath.Dir(fixture.ref.Path))
 
-	pruned, err := PruneTerminalReport(ctx, fixture.repoDir, location, &recordingTerminalRunStore{}, func(runID string) (store.Run, bool, error) {
+	pruned, err := PruneTerminalReport(ctx, fixture.repoDir, location, &recordingTerminalRunStore{}, func(_ context.Context, runID string) (store.Run, bool, error) {
 		return fixture.run, runID == fixture.run.ID, nil
 	})
 	if err != nil {
@@ -1472,6 +1507,21 @@ func TestInspectTerminalRunUnsafePath(t *testing.T) {
 		assertTerminalRunReconciliation(t, result, fixture.run, ReconciliationUnknown)
 	})
 
+	t.Run("existing unregistered worktree path", func(t *testing.T) {
+		fixture := newTerminalRunFixture(t, "reconcile-unregistered-path")
+		fixture.run.WorkDir = canonicalPath(t.TempDir())
+
+		result, err := InspectTerminalRun(context.Background(), fixture.run)
+		if err != nil {
+			t.Fatalf("inspect terminal Run: %v", err)
+		}
+
+		assertTerminalRunReconciliation(t, result, fixture.run, ReconciliationUnknown)
+		if result.Reason != reconciliationReasonWorktreeUnregistered {
+			t.Fatalf("expected unregistered worktree reason, got %q", result.Reason)
+		}
+	})
+
 	t.Run("symlinked Git root", func(t *testing.T) {
 		fixture := newTerminalRunFixture(t, "reconcile-unsafe-root")
 		link := filepath.Join(t.TempDir(), "linked-root")
@@ -1517,6 +1567,12 @@ type recordingGitRunner struct {
 	mutations [][]string
 }
 
+type retainedTerminalGitRunner struct {
+	root     string
+	branches string
+	calls    [][]string
+}
+
 type recordingTerminalRunStore struct {
 	requests []store.IntegrationReconciliation
 	err      error
@@ -1549,16 +1605,16 @@ func (runner *recordingGitRunner) Run(ctx context.Context, workDir string, args 
 	return runner.delegate.Run(ctx, workDir, args...)
 }
 
-func slicesEqual(left, right []string) bool {
-	if len(left) != len(right) {
-		return false
+func (runner *retainedTerminalGitRunner) Run(_ context.Context, _ string, args ...string) (string, error) {
+	runner.calls = append(runner.calls, append([]string(nil), args...))
+	switch {
+	case slices.Equal(args, []string{"rev-parse", "--show-toplevel"}):
+		return runner.root + "\n", nil
+	case slices.Equal(args, []string{"for-each-ref", "--format=%(refname:short)", "refs/heads/roundfix/run-*"}):
+		return runner.branches, nil
+	default:
+		return "", fmt.Errorf("unexpected Git arguments: %v", args)
 	}
-	for index := range left {
-		if left[index] != right[index] {
-			return false
-		}
-	}
-	return true
 }
 
 func newTerminalRunFixture(t *testing.T, runID string) terminalRunFixture {

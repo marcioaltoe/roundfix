@@ -938,8 +938,8 @@ func gitHEAD(ctx context.Context, workDir string) (string, error) {
 }
 
 func pruneTerminalRunWorktreeDebris(ctx context.Context, gitRoot string, location string, runtime agent.RuntimeSpec, runStore *store.Store, stderr io.Writer) error {
-	pruned, err := pruneTerminalRunWorktrees(ctx, gitRoot, location, runStore, func(runID string) (store.Run, bool, error) {
-		return runStore.Run(ctx, runID)
+	pruned, err := pruneTerminalRunWorktrees(ctx, gitRoot, location, runStore, func(lookupCtx context.Context, runID string) (store.Run, bool, error) {
+		return runStore.Run(lookupCtx, runID)
 	})
 	if err != nil {
 		return err

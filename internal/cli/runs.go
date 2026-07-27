@@ -111,7 +111,10 @@ func runRunsListCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		printRunsListFailure(err, stderr)
 		return exitPreflight
 	}
-	retainedWorktrees := countRetainedTerminalRunWorktrees(ctx, runs)
+	retainedWorktrees, retainedInspectionFailures := runworktree.CountRetainedTerminalRuns(ctx, runs)
+	for _, inspectErr := range retainedInspectionFailures {
+		fmt.Fprintf(stderr, "%s: warning: %v\n", app.Name, inspectErr)
+	}
 	matching := filterRunsListState(runs, opts.state)
 	visible := matching
 	if opts.limit > 0 && len(matching) > opts.limit {
@@ -164,20 +167,6 @@ func filterRunsListState(runs []store.Run, state string) []store.Run {
 		}
 	}
 	return matching
-}
-
-func countRetainedTerminalRunWorktrees(ctx context.Context, runs []store.Run) int {
-	retained := 0
-	for _, run := range runs {
-		if run.Kind != store.KindImplement || !store.IsTerminalState(run.State) {
-			continue
-		}
-		inspected, err := runworktree.InspectTerminalRun(ctx, run)
-		if err != nil || inspected.State != runworktree.ReconciliationReleased {
-			retained++
-		}
-	}
-	return retained
 }
 
 func runsListRetainedWorktreeNote(retained int) string {

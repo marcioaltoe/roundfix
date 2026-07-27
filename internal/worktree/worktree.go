@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	runBranchPrefix = "roundfix/run-"
+	runBranchPrefix = store.RunBranchPrefix
 
 	ModeFastForwardMerge = "ff-merge"
 	ModeBranchMove       = "branch-move"
@@ -162,6 +162,112 @@ func InspectTerminalRun(ctx context.Context, run store.Run) (RunWorktreeReconcil
 	return inspectTerminalRun(ctx, execGitRunner{}, run)
 }
 
+// CountRetainedTerminalRuns reports terminal spec Runs with an existing
+// recorded Run Worktree or Run Branch. Git inspection is batched per
+// repository so listing cost does not grow with terminal Run history.
+func CountRetainedTerminalRuns(ctx context.Context, runs []store.Run) (int, []error) {
+	return countRetainedTerminalRuns(ctx, execGitRunner{}, runs)
+}
+
+func countRetainedTerminalRuns(ctx context.Context, runner gitRunner, runs []store.Run) (int, []error) {
+	type repositoryRuns struct {
+		root string
+		runs []store.Run
+	}
+
+	groupsByRoot := make(map[string]*repositoryRuns)
+	groups := make([]*repositoryRuns, 0)
+	for _, run := range runs {
+		if run.Kind != store.KindImplement || !store.IsTerminalState(run.State) {
+			continue
+		}
+		group, found := groupsByRoot[run.GitRoot]
+		if !found {
+			group = &repositoryRuns{root: run.GitRoot}
+			groupsByRoot[run.GitRoot] = group
+			groups = append(groups, group)
+		}
+		group.runs = append(group.runs, run)
+	}
+
+	retained := 0
+	var failures []error
+	for _, group := range groups {
+		branches := map[string]bool{}
+		gitRoot, err := recordedGitRoot(ctx, runner, group.root)
+		if err != nil {
+			failures = append(
+				failures,
+				fmt.Errorf("inspect retained terminal Runs in repository %q: %w", group.root, err),
+			)
+		} else {
+			branches, err = listRunBranches(ctx, runner, gitRoot)
+			if err != nil {
+				failures = append(
+					failures,
+					fmt.Errorf("inspect retained terminal Runs in repository %q: %w", group.root, err),
+				)
+			}
+		}
+
+		for _, run := range group.runs {
+			pathPresent, pathErr := retainedRunWorktreePathExists(run.WorkDir)
+			if pathErr != nil {
+				failures = append(
+					failures,
+					fmt.Errorf("inspect retained terminal Run %q worktree %q: %w", run.ID, run.WorkDir, pathErr),
+				)
+			}
+			if pathPresent || branches[BranchName(run.ID)] {
+				retained++
+			}
+		}
+	}
+	return retained, failures
+}
+
+func retainedRunWorktreePathExists(path string) (bool, error) {
+	if path == "" {
+		return false, nil
+	}
+	if strings.TrimSpace(path) != path || strings.ContainsAny(path, "\r\n\x00") ||
+		!filepath.IsAbs(path) || filepath.Clean(path) != path {
+		return false, errors.New("recorded Run Worktree path is invalid")
+	}
+	info, err := os.Stat(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if !info.IsDir() {
+		return false, errors.New("recorded Run Worktree path is not a directory")
+	}
+	return true, nil
+}
+
+func listRunBranches(ctx context.Context, runner gitRunner, gitRoot string) (map[string]bool, error) {
+	output, err := runner.Run(
+		ctx,
+		gitRoot,
+		"for-each-ref",
+		"--format=%(refname:short)",
+		"refs/heads/"+runBranchPrefix+"*",
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list Run Branches: %w", err)
+	}
+	branches := make(map[string]bool)
+	for _, line := range strings.Split(output, "\n") {
+		branch := strings.TrimSpace(line)
+		if strings.HasPrefix(branch, runBranchPrefix) {
+			branches[branch] = true
+		}
+	}
+	return branches, nil
+}
+
 type terminalRunReconciliationEvidence struct {
 	run              store.Run
 	gitRoot          string
@@ -215,11 +321,16 @@ func inspectTerminalRun(ctx context.Context, runner gitRunner, run store.Run) (R
 		result.Reason = reconciliationReasonWorktreeInspection
 		return result, nil
 	}
-	worktree, worktreePresent, worktreeUnsafe := recordedWorktree(result.Path, worktrees)
-	if worktreeUnsafe {
+	worktree, worktreeState := recordedWorktree(result.Path, worktrees)
+	if worktreeState == recordedWorktreeUnsafe {
 		result.Reason = reconciliationReasonWorktreePath
 		return result, nil
 	}
+	if worktreeState == recordedWorktreeUnregistered {
+		result.Reason = reconciliationReasonWorktreeUnregistered
+		return result, nil
+	}
+	worktreePresent := worktreeState == recordedWorktreePresent
 
 	runBranchPresent, err := localBranchExists(ctx, runner, gitRoot, result.Branch)
 	if err != nil {
@@ -846,7 +957,7 @@ func CleanupTask(ctx context.Context, task TaskRef) error {
 	return nil
 }
 
-type TerminalRunLookup func(runID string) (store.Run, bool, error)
+type TerminalRunLookup func(ctx context.Context, runID string) (store.Run, bool, error)
 
 func PruneTerminal(
 	ctx context.Context,
@@ -896,7 +1007,7 @@ func PruneTerminalReport(
 	var pruned []PrunedRef
 	var errs []error
 	for _, runID := range runIDs {
-		run, found, err := loadTerminalRun(runID)
+		run, found, err := loadTerminalRun(ctx, runID)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("load terminal Run %q: %w", runID, err))
 			continue
@@ -1020,6 +1131,15 @@ type registeredWorktree struct {
 	Branch string
 }
 
+type recordedWorktreeState uint8
+
+const (
+	recordedWorktreeAbsent recordedWorktreeState = iota
+	recordedWorktreePresent
+	recordedWorktreeUnregistered
+	recordedWorktreeUnsafe
+)
+
 func recordedGitRoot(ctx context.Context, runner gitRunner, value string) (string, error) {
 	root := strings.TrimSpace(value)
 	if root == "" {
@@ -1086,34 +1206,34 @@ func listRegisteredWorktrees(ctx context.Context, runner gitRunner, gitRoot stri
 	return worktrees, nil
 }
 
-func recordedWorktree(path string, worktrees []registeredWorktree) (registeredWorktree, bool, bool) {
+func recordedWorktree(path string, worktrees []registeredWorktree) (registeredWorktree, recordedWorktreeState) {
 	if path == "" {
-		return registeredWorktree{}, false, false
+		return registeredWorktree{}, recordedWorktreeAbsent
 	}
 	if strings.ContainsAny(path, "\r\n\x00") {
-		return registeredWorktree{}, false, true
+		return registeredWorktree{}, recordedWorktreeUnsafe
 	}
 	if !filepath.IsAbs(path) || filepath.Clean(path) != path {
-		return registeredWorktree{}, false, true
+		return registeredWorktree{}, recordedWorktreeUnsafe
 	}
 	hasSymlink, err := pathContainsSymlink(path)
 	if errors.Is(err, os.ErrNotExist) {
-		return registeredWorktree{}, false, false
+		return registeredWorktree{}, recordedWorktreeAbsent
 	}
 	if err != nil || hasSymlink {
-		return registeredWorktree{}, false, true
+		return registeredWorktree{}, recordedWorktreeUnsafe
 	}
 	info, err := os.Stat(path)
 	if err != nil || !info.IsDir() {
-		return registeredWorktree{}, false, true
+		return registeredWorktree{}, recordedWorktreeUnsafe
 	}
 	canonical := canonicalPath(path)
 	for _, worktree := range worktrees {
 		if canonicalPath(worktree.Path) == canonical {
-			return worktree, true, false
+			return worktree, recordedWorktreePresent
 		}
 	}
-	return registeredWorktree{}, false, true
+	return registeredWorktree{}, recordedWorktreeUnregistered
 }
 
 func pathContainsSymlink(path string) (bool, error) {

@@ -2555,6 +2555,46 @@ func TestRunRunsListRetainedWorktreeNoteOmittedWhenReleased(t *testing.T) {
 	}
 }
 
+func TestRunRunsListReportsRetainedWorktreeInspectionFailure(t *testing.T) {
+	homeDir, _ := withCLIWorkspace(t)
+	invalidRoot, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatalf("resolve invalid Git root fixture: %v", err)
+	}
+	runs := seedRunsForList(t, homeDir, []runListSeed{
+		{
+			kind:      store.KindImplement,
+			state:     store.StateFailed,
+			gitRoot:   invalidRoot,
+			branch:    "ma/invalid-root",
+			specSlug:  "invalid-root",
+			createdAt: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC),
+		},
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"runs", "list", "--all", "--state", "terminal"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), runs[0].ID+"  ") {
+		t.Fatalf("terminal history row was not printed: %q", stdout.String())
+	}
+	for _, want := range []string{
+		"roundfix: warning: inspect retained terminal Runs in repository",
+		invalidRoot,
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("expected retained-worktree inspection diagnostic %q, got %q", want, stderr.String())
+		}
+	}
+	if strings.Contains(stderr.String(), "retained; run 'roundfix reconcile'") {
+		t.Fatalf("inspection failure must not be silently counted as retained: %q", stderr.String())
+	}
+}
+
 func TestRunRunsListLimitBoundsNewestMatches(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	base := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)

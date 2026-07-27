@@ -27,6 +27,9 @@ const (
 	KindWatch     = "watch"
 	KindImplement = "implement"
 
+	// RunBranchPrefix is the deterministic namespace for spec Run Branches.
+	RunBranchPrefix = "roundfix/run-"
+
 	// Active Run locks are keyed by work target (ADR 0016): review Kinds
 	// lock the Open Pull Request, the implement Kind locks the Spec.
 	targetKindPR   = "pr"
@@ -529,7 +532,7 @@ func (store *Store) ReconcileIntegration(ctx context.Context, req IntegrationRec
 			run.WorkDir,
 		)
 	}
-	expectedRunBranch := "roundfix/run-" + req.RunID
+	expectedRunBranch := RunBranchPrefix + req.RunID
 	if req.RunBranch != expectedRunBranch {
 		return Run{}, fmt.Errorf(
 			"reconcile terminal Run %q: Run Branch %q does not match recorded Run Branch %q",
