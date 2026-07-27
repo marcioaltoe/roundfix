@@ -29,8 +29,8 @@ func TestOpenCreatesRunDatabaseAndAppliesMigrations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected migration version, got %v", err)
 	}
-	if version != 9 {
-		t.Fatalf("expected migration version 9, got %d", version)
+	if version != 10 {
+		t.Fatalf("expected migration version 10, got %d", version)
 	}
 }
 
@@ -520,6 +520,70 @@ func TestCreateRunPersistsOwnerPIDAcrossRunQueries(t *testing.T) {
 	}
 	if rawOwnerPID != wantPID {
 		t.Fatalf("expected raw owner_pid %d, got %d", wantPID, rawOwnerPID)
+	}
+}
+
+func TestCreateRunPersistsOwnerIdentityAcrossRunQueries(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	wantIdentity := "owner-identity-start-time-token"
+	req := sampleCreateRunRequest()
+	req.OwnerPID = os.Getpid()
+	req.OwnerIdentity = wantIdentity
+	created, err := runStore.CreateRun(ctx, req)
+	if err != nil {
+		t.Fatalf("expected Run creation, got %v", err)
+	}
+	if created.OwnerIdentity != wantIdentity {
+		t.Fatalf("expected created Run owner identity %q, got %q", wantIdentity, created.OwnerIdentity)
+	}
+
+	found, ok, err := runStore.Run(ctx, created.ID)
+	if err != nil || !ok {
+		t.Fatalf("lookup persisted Run: ok=%v err=%v", ok, err)
+	}
+	if found.OwnerIdentity != wantIdentity {
+		t.Fatalf("expected persisted Run owner identity %q, got %q", wantIdentity, found.OwnerIdentity)
+	}
+
+	active, ok, err := runStore.ActiveRun(ctx, req.HeadRepository, req.HeadBranch)
+	if err != nil || !ok {
+		t.Fatalf("lookup active Run: ok=%v err=%v", ok, err)
+	}
+	if active.OwnerIdentity != wantIdentity {
+		t.Fatalf("expected active Run owner identity %q, got %q", wantIdentity, active.OwnerIdentity)
+	}
+
+	var rawOwnerIdentity string
+	if err := runStore.db.QueryRowContext(ctx, `SELECT owner_identity FROM runs WHERE id = ?`, created.ID).Scan(&rawOwnerIdentity); err != nil {
+		t.Fatalf("read owner_identity: %v", err)
+	}
+	if rawOwnerIdentity != wantIdentity {
+		t.Fatalf("expected raw owner_identity %q, got %q", wantIdentity, rawOwnerIdentity)
+	}
+}
+
+func TestCreateRunWithoutOwnerIdentityStoresNull(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	created, err := runStore.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("expected Run creation, got %v", err)
+	}
+	if created.OwnerIdentity != "" {
+		t.Fatalf("expected empty owner identity, got %q", created.OwnerIdentity)
+	}
+
+	var rawOwnerIdentity any
+	if err := runStore.db.QueryRowContext(ctx, `SELECT owner_identity FROM runs WHERE id = ?`, created.ID).Scan(&rawOwnerIdentity); err != nil {
+		t.Fatalf("read owner_identity: %v", err)
+	}
+	if rawOwnerIdentity != nil {
+		t.Fatalf("expected owner_identity NULL without a recorded token, got %#v", rawOwnerIdentity)
 	}
 }
 
@@ -1490,8 +1554,8 @@ func TestOpenMigratesV3RunDatabasePreservingRunsAndRekeyingLocks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 9 {
-		t.Fatalf("expected user_version 9 after migration, got %d", version)
+	if version != 10 {
+		t.Fatalf("expected user_version 10 after migration, got %d", version)
 	}
 
 	count, err := store.RunCount(ctx)
@@ -1645,8 +1709,8 @@ func TestOpenMigratesV4RunDatabasePreservingRunsLocksAndAddingStopRequests(t *te
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 9 {
-		t.Fatalf("expected user_version 9 after migration, got %d", version)
+	if version != 10 {
+		t.Fatalf("expected user_version 10 after migration, got %d", version)
 	}
 	count, err := runStore.RunCount(ctx)
 	if err != nil {
@@ -1798,8 +1862,8 @@ func TestOpenMigratesV5RunDatabasePreservingRunsLocksAndAddingWorkDir(t *testing
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 9 {
-		t.Fatalf("expected user_version 9 after migration, got %d", version)
+	if version != 10 {
+		t.Fatalf("expected user_version 10 after migration, got %d", version)
 	}
 	count, err := runStore.RunCount(ctx)
 	if err != nil {
@@ -1954,8 +2018,8 @@ func TestOpenMigratesV6RunDatabaseAddingSelectionDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 9 {
-		t.Fatalf("expected user_version 9 after migration, got %d", version)
+	if version != 10 {
+		t.Fatalf("expected user_version 10 after migration, got %d", version)
 	}
 	count, err := runStore.RunCount(ctx)
 	if err != nil {
@@ -2086,8 +2150,8 @@ func TestOpenMigratesV7RunDatabaseAddingOwnerPID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 9 {
-		t.Fatalf("expected user_version 9 after migration, got %d", version)
+	if version != 10 {
+		t.Fatalf("expected user_version 10 after migration, got %d", version)
 	}
 
 	active, found, err := runStore.ActiveRun(ctx, "owner/project", "feature/review")
@@ -2100,6 +2164,9 @@ func TestOpenMigratesV7RunDatabaseAddingOwnerPID(t *testing.T) {
 	if active.OwnerPID != nil {
 		t.Fatalf("expected migrated v7 Run to have no owner PID, got %d", *active.OwnerPID)
 	}
+	if active.OwnerIdentity != "" {
+		t.Fatalf("expected migrated v7 Run to have no owner identity, got %q", active.OwnerIdentity)
+	}
 
 	var rawOwnerPID any
 	if err := runStore.db.QueryRowContext(ctx, `SELECT owner_pid FROM runs WHERE id = 'run_v7_active'`).Scan(&rawOwnerPID); err != nil {
@@ -2107,6 +2174,13 @@ func TestOpenMigratesV7RunDatabaseAddingOwnerPID(t *testing.T) {
 	}
 	if rawOwnerPID != nil {
 		t.Fatalf("expected migrated owner_pid NULL for legacy row, got %#v", rawOwnerPID)
+	}
+	var rawOwnerIdentity any
+	if err := runStore.db.QueryRowContext(ctx, `SELECT owner_identity FROM runs WHERE id = 'run_v7_active'`).Scan(&rawOwnerIdentity); err != nil {
+		t.Fatalf("read migrated owner_identity column: %v", err)
+	}
+	if rawOwnerIdentity != nil {
+		t.Fatalf("expected migrated owner_identity NULL for legacy row, got %#v", rawOwnerIdentity)
 	}
 }
 

@@ -375,11 +375,36 @@ type stopResult struct {
 	Requested    bool
 	Forced       bool
 	Transitioned bool
-	Warnings     []string
+	Warnings     []cleanupWarning
+}
+
+// cleanupWarningKind is declared by each secondary cleanup warning producer
+// so consumers branch on the producer's classification instead of matching
+// warning text.
+type cleanupWarningKind int
+
+const (
+	// cleanupWarningNotice reports non-failure cleanup activity.
+	cleanupWarningNotice cleanupWarningKind = iota
+	// cleanupWarningFailure reports a failed or skipped cleanup step.
+	cleanupWarningFailure
+)
+
+type cleanupWarning struct {
+	kind cleanupWarningKind
+	text string
+}
+
+func cleanupNoticef(format string, args ...any) cleanupWarning {
+	return cleanupWarning{kind: cleanupWarningNotice, text: fmt.Sprintf(format, args...)}
+}
+
+func cleanupFailuref(format string, args ...any) cleanupWarning {
+	return cleanupWarning{kind: cleanupWarningFailure, text: fmt.Sprintf(format, args...)}
 }
 
 type OwnerProcessController interface {
-	TerminateAndWait(context.Context, int) error
+	TerminateAndWait(ctx context.Context, pid int, recordedIdentity string) error
 }
 
 type forceStopOwnerError struct {
@@ -615,7 +640,7 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 			Err:   store.ErrOwnerProcessIdentityUnproven,
 		}
 	}
-	if err := ownerProcesses.TerminateAndWait(ctx, pid); err != nil {
+	if err := ownerProcesses.TerminateAndWait(ctx, pid, active.OwnerIdentity); err != nil {
 		step := "prove owner exit"
 		var controlErr store.OwnerProcessControlError
 		if errors.As(err, &controlErr) && strings.TrimSpace(controlErr.Step) != "" {
@@ -638,10 +663,10 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 			return err == nil && found && store.IsTerminalState(run.State)
 		})
 		for _, ref := range pruned {
-			warnings = append(warnings, fmt.Sprintf("reaped terminal Worktree path=%s branch=%s", ref.Path, ref.Branch))
+			warnings = append(warnings, cleanupNoticef("reaped terminal Worktree path=%s branch=%s", ref.Path, ref.Branch))
 		}
 		if pruneErr != nil {
-			warnings = append(warnings, fmt.Sprintf("terminal Worktree reap failed for Run %s: %v", active.ID, pruneErr))
+			warnings = append(warnings, cleanupFailuref("terminal Worktree reap failed for Run %s: %v", active.ID, pruneErr))
 		}
 	}
 	return stopResult{
@@ -652,12 +677,12 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 	}, nil
 }
 
-func bestEffortForceStopAgentSessions(ctx context.Context, runStore *store.Store, run store.Run) []string {
+func bestEffortForceStopAgentSessions(ctx context.Context, runStore *store.Store, run store.Run) []cleanupWarning {
 	activeScopes, err := runStore.ActiveAgentSelectionScopes(ctx, run.ID)
 	if err != nil {
-		return []string{fmt.Sprintf("Agent Session cleanup registry failed for Run %s: %v", run.ID, err)}
+		return []cleanupWarning{cleanupFailuref("Agent Session cleanup registry failed for Run %s: %v", run.ID, err)}
 	}
-	warnings := []string{}
+	warnings := []cleanupWarning{}
 	for _, selection := range activeScopes {
 		warnings = append(warnings, cleanupRegisteredAgentSession(ctx, runStore, run, selection)...)
 	}
@@ -673,15 +698,15 @@ func cleanupRegisteredAgentSession(
 	runStore *store.Store,
 	run store.Run,
 	selection store.AgentSelectionAttempt,
-) []string {
-	warnings := []string{}
+) []cleanupWarning {
+	warnings := []cleanupWarning{}
 	runtime, err := agent.RuntimeFor(agent.RuntimeOptions{
 		Agent:           selection.Runtime,
 		Model:           selection.Model,
 		ReasoningEffort: selection.ReasoningEffort,
 	})
 	if err != nil {
-		return []string{fmt.Sprintf(
+		return []cleanupWarning{cleanupFailuref(
 			"Agent Session cleanup skipped for %s %s in Run %s: %v",
 			selection.ScopeKind,
 			selection.ScopeID,
@@ -691,7 +716,7 @@ func cleanupRegisteredAgentSession(
 	}
 	session, err := registeredAgentSessionRef(run, selection)
 	if err != nil {
-		return []string{fmt.Sprintf(
+		return []cleanupWarning{cleanupFailuref(
 			"Agent Session cleanup skipped for %s %s in Run %s: %v",
 			selection.ScopeKind,
 			selection.ScopeID,
@@ -704,7 +729,7 @@ func cleanupRegisteredAgentSession(
 	cancelErr := cancelStopAgentSession(cancelCtx, runtime, session)
 	cancel()
 	if cancelErr != nil && !agent.IsAgentSessionAbsent(cancelErr) {
-		warnings = append(warnings, fmt.Sprintf(
+		warnings = append(warnings, cleanupFailuref(
 			"Agent Session cancel failed for %s %s (%s): %v",
 			selection.ScopeKind,
 			selection.ScopeID,
@@ -717,7 +742,7 @@ func cleanupRegisteredAgentSession(
 	closeErr := closeStopAgentSession(closeCtx, runtime, session)
 	closeCancel()
 	if closeErr != nil && !agent.IsAgentSessionAbsent(closeErr) {
-		warnings = append(warnings, fmt.Sprintf(
+		warnings = append(warnings, cleanupFailuref(
 			"Agent Session close failed for %s %s (%s): %v",
 			selection.ScopeKind,
 			selection.ScopeID,
@@ -727,7 +752,7 @@ func cleanupRegisteredAgentSession(
 		return warnings
 	}
 	if err := recordClosedAgentSelection(ctx, runStore, selection); err != nil {
-		warnings = append(warnings, fmt.Sprintf(
+		warnings = append(warnings, cleanupFailuref(
 			"Agent Selection closed lifecycle failed for %s %s in Run %s: %v",
 			selection.ScopeKind,
 			selection.ScopeID,
@@ -2630,6 +2655,7 @@ func createOperationalRun(ctx context.Context, runStore *store.Store, kind strin
 
 func createReviewRun(ctx context.Context, runStore *store.Store, req commandRequest, createReq store.CreateRunRequest, stderr io.Writer) (store.Run, error) {
 	createReq.OwnerPID = os.Getpid()
+	createReq.OwnerIdentity = currentOwnerIdentity(ctx)
 	if req.skipBranchIntegrity && req.branchIntegrity.ActiveRun != nil {
 		return runStore.CreateRunSkippingActiveLock(ctx, createReq)
 	}
@@ -2679,12 +2705,12 @@ func reclaimOrphanedActiveRun(ctx context.Context, runStore *store.Store, active
 	return reclaimed, true, nil
 }
 
-func printForceStopAgentSessionWarnings(stderr io.Writer, warnings []string) {
+func printForceStopAgentSessionWarnings(stderr io.Writer, warnings []cleanupWarning) {
 	if stderr == nil {
 		return
 	}
 	for _, warning := range warnings {
-		fmt.Fprintf(stderr, "%s: %s\n", app.Name, warning)
+		fmt.Fprintf(stderr, "%s: %s\n", app.Name, warning.text)
 	}
 }
 
@@ -2693,6 +2719,17 @@ func activeOwnerPID(run store.Run) (int, bool) {
 		return 0, false
 	}
 	return *run.OwnerPID, true
+}
+
+// currentOwnerIdentity returns this process's start-time identity token for
+// the Run row, or "" when the platform cannot provide one. An absent token
+// degrades Force Stop to the legacy PID-only owner proof.
+func currentOwnerIdentity(ctx context.Context) string {
+	identity, err := store.OwnerProcessIdentity(ctx, os.Getpid())
+	if err != nil {
+		return ""
+	}
+	return identity
 }
 
 func orphanedActiveRunReason(pid int) string {
@@ -3819,22 +3856,22 @@ func reportSecondaryCleanupWarnings(
 	ctx context.Context,
 	runStore *store.Store,
 	runID string,
-	warnings []string,
+	warnings []cleanupWarning,
 	stderr io.Writer,
 ) {
 	for _, warning := range warnings {
-		if !isCleanupFailureDiagnostic(warning) {
-			fmt.Fprintf(stderr, "%s: %s\n", app.Name, warning)
+		if warning.kind != cleanupWarningFailure {
+			fmt.Fprintf(stderr, "%s: %s\n", app.Name, warning.text)
 			continue
 		}
-		summary := "Secondary cleanup warning: " + warning
+		summary := "Secondary cleanup warning: " + warning.text
 		fmt.Fprintf(stderr, "%s: %s\n", app.Name, summary)
 		if runStore == nil || strings.TrimSpace(runID) == "" {
 			continue
 		}
 		payload, err := json.Marshal(map[string]string{
 			"event":  "secondary_cleanup_warning",
-			"reason": warning,
+			"reason": warning.text,
 		})
 		if err != nil {
 			continue
@@ -3848,11 +3885,6 @@ func reportSecondaryCleanupWarnings(
 			Payload: payload,
 		})
 	}
-}
-
-func isCleanupFailureDiagnostic(diagnostic string) bool {
-	lower := strings.ToLower(diagnostic)
-	return strings.Contains(lower, "failed") || strings.Contains(lower, "skipped")
 }
 
 func warnCleanRunWorktreeCleanupFailed(ctx context.Context, runStore *store.Store, runID string, worktreePath string, cleanupErr error, stderr io.Writer) {

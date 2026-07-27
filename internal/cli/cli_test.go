@@ -4051,7 +4051,7 @@ func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalOutcome(t *test
 	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
 		return nil
 	})
-	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int) error {
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int, string) error {
 		return nil
 	}))
 	notifier := &recordingOutcomeNotifier{}
@@ -7144,9 +7144,12 @@ func TestRunForceStopOwnerExitPrecedesCompletionAndLockRelease(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
 	proved := false
-	withOwnerProcessController(t, ownerProcessControllerFunc(func(ctx context.Context, pid int) error {
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(ctx context.Context, pid int, recordedIdentity string) error {
 		if active.OwnerPID == nil || pid != *active.OwnerPID {
 			t.Fatalf("owner process PID = %d, want recorded PID %v", pid, active.OwnerPID)
+		}
+		if recordedIdentity != active.OwnerIdentity {
+			t.Fatalf("owner identity = %q, want recorded identity %q", recordedIdentity, active.OwnerIdentity)
 		}
 		runStore, err := store.Open(ctx, homeDir)
 		if err != nil {
@@ -7208,7 +7211,7 @@ func TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock(t *testi
 		t.Run(tt.name, func(t *testing.T) {
 			homeDir, repoDir := withCLIWorkspace(t)
 			active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
-			withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int) error {
+			withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int, string) error {
 				return store.OwnerProcessControlError{PID: *active.OwnerPID, Step: tt.step, Err: tt.err}
 			}))
 			var stdout bytes.Buffer
@@ -7265,7 +7268,7 @@ func TestRunForceStopPrimaryFailurePrecedesSecondaryCleanupWarnings(t *testing.T
 	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
 		return errors.New("close denied")
 	})
-	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int) error {
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int, string) error {
 		return store.OwnerProcessControlError{
 			PID:  *active.OwnerPID,
 			Step: "prove owner exit",
@@ -7308,52 +7311,9 @@ func TestRunForceStopPrimaryFailurePrecedesSecondaryCleanupWarnings(t *testing.T
 	}
 }
 
-func TestRunForceStopOwnerPIDReuseFailsClosed(t *testing.T) {
-	homeDir, repoDir := withCLIWorkspace(t)
-	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
-	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int) error {
-		return store.OwnerProcessControlError{
-			PID:  *active.OwnerPID,
-			Step: "prove owner process identity",
-			Err:  store.ErrOwnerProcessIdentityUnproven,
-		}
-	}))
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-
-	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
-
-	if code != exitRunFailed {
-		t.Fatalf("force stop exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
-	}
-	if stdout.Len() != 0 {
-		t.Fatalf("failed force stop printed success output %q", stdout.String())
-	}
-	for _, want := range []string{
-		active.ID,
-		strconv.Itoa(*active.OwnerPID),
-		"prove owner process identity",
-		"remains Active",
-		"Active Run lock retained",
-	} {
-		if !strings.Contains(stderr.String(), want) {
-			t.Fatalf("force stop diagnostic missing %q: %q", want, stderr.String())
-		}
-	}
-	assertRunState(t, homeDir, active.ID, store.StateActive)
-	runStore, err := store.Open(context.Background(), homeDir)
-	if err != nil {
-		t.Fatalf("open store after reused PID refusal: %v", err)
-	}
-	defer func() {
-		if err := runStore.Close(); err != nil {
-			t.Fatalf("close store after reused PID refusal: %v", err)
-		}
-	}()
-	if _, err := runStore.CreateRun(context.Background(), request); err == nil {
-		t.Fatal("reused PID refusal released the Active Run lock")
-	}
-}
+// TestRunForceStopOwnerPIDReuseFailsClosed lives in orphan_unix_test.go: it
+// proves the real identity comparison against a live scratch process whose
+// stored owner identity token differs from its genuine one.
 
 func TestRunForceStopStoppedRunIsIdempotentWithoutOwnerOrSessionActions(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
@@ -7385,7 +7345,7 @@ func TestRunForceStopStoppedRunIsIdempotentWithoutOwnerOrSessionActions(t *testi
 		closeCalls++
 		return nil
 	})
-	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int) error {
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int, string) error {
 		ownerCalls++
 		return nil
 	}))
@@ -7491,7 +7451,7 @@ func TestRunStopForceRegisteredAgentSessionCleanupTargetsActiveScopesInOrder(t *
 		calls = append(calls, "close "+runtime.ID+" "+session.Name+" "+session.WorkDir)
 		return nil
 	})
-	withOwnerProcessController(t, ownerProcessControllerFunc(func(_ context.Context, pid int) error {
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(_ context.Context, pid int, _ string) error {
 		calls = append(calls, fmt.Sprintf("owner %d", pid))
 		return nil
 	}))
@@ -7616,7 +7576,7 @@ func TestRunStopForceReapsEmptyRunAndTaskWorktrees(t *testing.T) {
 	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
 		return nil
 	})
-	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int) error {
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int, string) error {
 		return nil
 	}))
 	var stdout bytes.Buffer
@@ -7661,7 +7621,7 @@ func TestRunStopForceKeepsRunWorktreeWithCommits(t *testing.T) {
 	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
 		return nil
 	})
-	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int) error {
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int, string) error {
 		return nil
 	}))
 	var stdout bytes.Buffer
@@ -8883,10 +8843,10 @@ func withStopAgentSessionCloser(t *testing.T, closeSession func(context.Context,
 	})
 }
 
-type ownerProcessControllerFunc func(context.Context, int) error
+type ownerProcessControllerFunc func(context.Context, int, string) error
 
-func (controller ownerProcessControllerFunc) TerminateAndWait(ctx context.Context, pid int) error {
-	return controller(ctx, pid)
+func (controller ownerProcessControllerFunc) TerminateAndWait(ctx context.Context, pid int, recordedIdentity string) error {
+	return controller(ctx, pid, recordedIdentity)
 }
 
 func withOwnerProcessController(t *testing.T, controller OwnerProcessController) {
@@ -9131,14 +9091,16 @@ func assertNoRunDatabase(t *testing.T, homeDir string) {
 func createActiveImplementRunForStop(t *testing.T, homeDir string, repoDir string, specSlug string, agentID string) (store.Run, store.CreateRunRequest) {
 	t.Helper()
 	ownerPID := os.Getpid()
+	ownerIdentity := "cli-test-owner-identity"
 	request := store.CreateRunRequest{
-		Kind:        store.KindImplement,
-		GitRoot:     repoDir,
-		LocalBranch: "ma/implement-spec",
-		HeadSHA:     "abc123",
-		SpecSlug:    specSlug,
-		Agent:       agentID,
-		OwnerPID:    ownerPID,
+		Kind:          store.KindImplement,
+		GitRoot:       repoDir,
+		LocalBranch:   "ma/implement-spec",
+		HeadSHA:       "abc123",
+		SpecSlug:      specSlug,
+		Agent:         agentID,
+		OwnerPID:      ownerPID,
+		OwnerIdentity: ownerIdentity,
 	}
 	runStore, err := store.Open(context.Background(), homeDir)
 	if err != nil {
@@ -9153,9 +9115,12 @@ func createActiveImplementRunForStop(t *testing.T, homeDir string, repoDir strin
 	if err != nil {
 		t.Fatalf("create active implement run: %v", err)
 	}
-	withOwnerProcessController(t, ownerProcessControllerFunc(func(_ context.Context, pid int) error {
+	withOwnerProcessController(t, ownerProcessControllerFunc(func(_ context.Context, pid int, recordedIdentity string) error {
 		if pid != ownerPID {
 			t.Fatalf("owner process PID = %d, want %d", pid, ownerPID)
+		}
+		if recordedIdentity != ownerIdentity {
+			t.Fatalf("owner identity = %q, want recorded identity %q", recordedIdentity, ownerIdentity)
 		}
 		return nil
 	}))

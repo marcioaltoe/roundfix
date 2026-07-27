@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"testing"
@@ -24,18 +25,23 @@ import (
 func TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	pid, ownerWait := startCLIForceStopOwnerProcess(t)
+	ownerIdentity, err := store.OwnerProcessIdentity(context.Background(), pid)
+	if err != nil {
+		t.Fatalf("read genuine owner process identity: %v", err)
+	}
 	runStore, err := store.Open(context.Background(), homeDir)
 	if err != nil {
 		t.Fatalf("open Run Database: %v", err)
 	}
 	active, err := runStore.CreateRun(context.Background(), store.CreateRunRequest{
-		Kind:        store.KindImplement,
-		GitRoot:     repoDir,
-		LocalBranch: "ma/force-stop-owner",
-		HeadSHA:     "abc123",
-		SpecSlug:    "0001-widget-flow",
-		Agent:       "codex",
-		OwnerPID:    pid,
+		Kind:          store.KindImplement,
+		GitRoot:       repoDir,
+		LocalBranch:   "ma/force-stop-owner",
+		HeadSHA:       "abc123",
+		SpecSlug:      "0001-widget-flow",
+		Agent:         "codex",
+		OwnerPID:      pid,
+		OwnerIdentity: ownerIdentity,
 	})
 	if err != nil {
 		t.Fatalf("create active Run: %v", err)
@@ -108,6 +114,122 @@ func TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion(t *t
 	}
 	if store.ProcessAlive(pid) {
 		t.Fatalf("owner process %d remained alive after force stop", pid)
+	}
+	assertRunState(t, homeDir, active.ID, store.StateStopped)
+}
+
+// TestRunForceStopOwnerPIDReuseFailsClosed exercises the real identity
+// comparison: the Run records the PID of a live scratch process together
+// with the identity token of a different (exited) owner, so Force Stop must
+// refuse before sending any signal, exactly as it must for a reused PID.
+func TestRunForceStopOwnerPIDReuseFailsClosed(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	pid, _ := startCLIForceStopOwnerProcess(t)
+	request := store.CreateRunRequest{
+		Kind:          store.KindImplement,
+		GitRoot:       repoDir,
+		LocalBranch:   "ma/force-stop-reused-pid",
+		HeadSHA:       "abc123",
+		SpecSlug:      "0001-widget-flow",
+		Agent:         "codex",
+		OwnerPID:      pid,
+		OwnerIdentity: "identity-token-of-exited-owner-process",
+	}
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database: %v", err)
+	}
+	active, err := runStore.CreateRun(context.Background(), request)
+	if err != nil {
+		t.Fatalf("create active Run: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close Run Database: %v", err)
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("force stop exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("failed force stop printed success output %q", stdout.String())
+	}
+	for _, want := range []string{
+		active.ID,
+		strconv.Itoa(pid),
+		"prove owner process identity",
+		"remains Active",
+		"Active Run lock retained",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("force stop diagnostic missing %q: %q", want, stderr.String())
+		}
+	}
+	if !store.ProcessAlive(pid) {
+		t.Fatalf("refusal must not signal the live process holding reused PID %d", pid)
+	}
+	assertRunState(t, homeDir, active.ID, store.StateActive)
+	runStore, err = store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open store after reused PID refusal: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close store after reused PID refusal: %v", err)
+		}
+	}()
+	if _, err := runStore.CreateRun(context.Background(), request); err == nil {
+		t.Fatal("reused PID refusal released the Active Run lock")
+	}
+}
+
+// TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner covers Run
+// rows created before owner identity recording existed: an absent stored
+// token keeps the legacy PID-only proof instead of bricking the manual
+// escape hatch.
+func TestRunForceStopLegacyRunWithoutOwnerIdentityStillStopsOwner(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	pid, ownerWait := startCLIForceStopOwnerProcess(t)
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database: %v", err)
+	}
+	active, err := runStore.CreateRun(context.Background(), store.CreateRunRequest{
+		Kind:        store.KindImplement,
+		GitRoot:     repoDir,
+		LocalBranch: "ma/force-stop-legacy-owner",
+		HeadSHA:     "abc123",
+		SpecSlug:    "0001-widget-flow",
+		Agent:       "codex",
+		OwnerPID:    pid,
+	})
+	if err != nil {
+		t.Fatalf("create active Run: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close Run Database: %v", err)
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("legacy force stop exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	select {
+	case err := <-ownerWait:
+		if err != nil {
+			t.Fatalf("owner process exit: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatalf("owner process %d did not exit", pid)
+	}
+	if store.ProcessAlive(pid) {
+		t.Fatalf("owner process %d remained alive after legacy force stop", pid)
 	}
 	assertRunState(t, homeDir, active.ID, store.StateStopped)
 }

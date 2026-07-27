@@ -77,6 +77,7 @@ type Run struct {
 	Model           string
 	ReasoningEffort string
 	OwnerPID        *int
+	OwnerIdentity   string
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 	CompletedAt     *time.Time
@@ -131,6 +132,7 @@ type CreateRunRequest struct {
 	Model           string
 	ReasoningEffort string
 	OwnerPID        int
+	OwnerIdentity   string
 }
 
 // RunStateFilter selects which Run states a listing includes. The zero
@@ -300,8 +302,8 @@ func (store *Store) createRun(ctx context.Context, req CreateRunRequest, acquire
 INSERT INTO runs (
 	id, kind, state, head_repository, head_branch, base_repository,
 	pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
-	spec_slug, agent, model, reasoning_effort, owner_pid, created_at, updated_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	spec_slug, agent, model, reasoning_effort, owner_pid, owner_identity, created_at, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		runID,
 		req.Kind,
 		StateActive,
@@ -319,6 +321,7 @@ INSERT INTO runs (
 		req.Model,
 		req.ReasoningEffort,
 		nullableOwnerPID(req.OwnerPID),
+		nullableOwnerIdentity(req.OwnerIdentity),
 		formatTime(now),
 		formatTime(now),
 	)
@@ -800,7 +803,7 @@ func (store *Store) ActiveReviewRunByTarget(ctx context.Context, headRepository 
 	sqlQuery := `
 SELECT id, kind, state, head_repository, head_branch, base_repository,
        pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
-       spec_slug, agent, model, reasoning_effort, owner_pid, created_at, updated_at, completed_at
+       spec_slug, agent, model, reasoning_effort, owner_pid, owner_identity, created_at, updated_at, completed_at
 FROM runs
 WHERE head_repository = ? AND head_branch = ?
 ORDER BY created_at DESC, id DESC`
@@ -838,7 +841,7 @@ func (store *Store) ActiveRunInGitRoot(ctx context.Context, gitRoot string) (Run
 	row := store.db.QueryRowContext(ctx, `
 SELECT r.id, r.kind, r.state, r.head_repository, r.head_branch, r.base_repository,
        r.pr_number, r.git_root, r.local_branch, r.head_sha, r.artifact_dir, r.work_dir,
-       r.spec_slug, r.agent, r.model, r.reasoning_effort, r.owner_pid, r.created_at, r.updated_at, r.completed_at
+       r.spec_slug, r.agent, r.model, r.reasoning_effort, r.owner_pid, r.owner_identity, r.created_at, r.updated_at, r.completed_at
 FROM active_run_locks l
 JOIN runs r ON r.id = l.run_id
 WHERE r.git_root = ?
@@ -859,7 +862,7 @@ func (store *Store) ListRuns(ctx context.Context, query ListRunsQuery) ([]Run, e
 	sqlQuery := `
 SELECT id, kind, state, head_repository, head_branch, base_repository,
        pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
-       spec_slug, agent, model, reasoning_effort, owner_pid, created_at, updated_at, completed_at
+       spec_slug, agent, model, reasoning_effort, owner_pid, owner_identity, created_at, updated_at, completed_at
 FROM runs`
 	args := []any{}
 	gitRoot := strings.TrimSpace(query.GitRoot)
@@ -918,7 +921,7 @@ func (store *Store) LatestKeptSpecRun(ctx context.Context, gitRoot string, specS
 	row := store.db.QueryRowContext(ctx, `
 SELECT id, kind, state, head_repository, head_branch, base_repository,
        pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
-       spec_slug, agent, model, reasoning_effort, owner_pid, created_at, updated_at, completed_at
+       spec_slug, agent, model, reasoning_effort, owner_pid, owner_identity, created_at, updated_at, completed_at
 FROM runs
 WHERE kind = ? AND git_root = ? AND spec_slug = ?
   AND work_dir IS NOT NULL AND TRIM(work_dir) <> ''
@@ -1048,7 +1051,7 @@ func IsTerminalState(state string) bool {
 	}
 }
 
-const schemaVersion = 9
+const schemaVersion = 10
 
 // activeRunLocksColumns is the schema v4 lock-table shape (ADR 0016): one
 // Active Run per work target, keyed by (target_kind, target_key).
@@ -1080,12 +1083,14 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV6ToV7Statements()...)
 		statements = append(statements, migrateV7ToV8Statements()...)
 		statements = append(statements, migrateV8ToV9Statements()...)
+		statements = append(statements, migrateV9ToV10Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 4:
 		statements := append(migrateV4ToV5Statements(), migrateV5ToV6Statements()...)
 		statements = append(statements, migrateV6ToV7Statements()...)
 		statements = append(statements, migrateV7ToV8Statements()...)
 		statements = append(statements, migrateV8ToV9Statements()...)
+		statements = append(statements, migrateV9ToV10Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 5:
 		if err := store.ensureAgentColumn(ctx); err != nil {
@@ -1094,16 +1099,22 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements := append(migrateV5ToV6Statements(), migrateV6ToV7Statements()...)
 		statements = append(statements, migrateV7ToV8Statements()...)
 		statements = append(statements, migrateV8ToV9Statements()...)
+		statements = append(statements, migrateV9ToV10Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 6:
 		statements := append(migrateV6ToV7Statements(), migrateV7ToV8Statements()...)
 		statements = append(statements, migrateV8ToV9Statements()...)
+		statements = append(statements, migrateV9ToV10Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 7:
 		statements := append(migrateV7ToV8Statements(), migrateV8ToV9Statements()...)
+		statements = append(statements, migrateV9ToV10Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 8:
-		return store.applyMigration(ctx, migrateV8ToV9Statements())
+		statements := append(migrateV8ToV9Statements(), migrateV9ToV10Statements()...)
+		return store.applyMigration(ctx, statements)
+	case 9:
+		return store.applyMigration(ctx, migrateV9ToV10Statements())
 	default:
 		return fmt.Errorf("migrate Run Database: schema version %d is not supported", version)
 	}
@@ -1126,7 +1137,7 @@ func (store *Store) applyMigration(ctx context.Context, statements []string) err
 	return nil
 }
 
-// createSchemaStatements creates schema v9 directly on a fresh Run Database.
+// createSchemaStatements creates schema v10 directly on a fresh Run Database.
 // spec_slug and the PR-shaped columns use the empty string for "not set";
 // which fields a Run must carry is enforced by Kind in CreateRun.
 func createSchemaStatements() []string {
@@ -1149,6 +1160,7 @@ func createSchemaStatements() []string {
 			model TEXT NOT NULL DEFAULT '',
 			reasoning_effort TEXT NOT NULL DEFAULT '',
 			owner_pid INTEGER,
+			owner_identity TEXT,
 			stop_requested_at TEXT,
 			created_at TEXT NOT NULL,
 			updated_at TEXT NOT NULL,
@@ -1179,7 +1191,7 @@ func createSchemaStatements() []string {
 		`CREATE TABLE IF NOT EXISTS run_agent_selections ` + runAgentSelectionsColumns,
 		`CREATE INDEX IF NOT EXISTS idx_run_agent_selections_scope
 			ON run_agent_selections (run_id, scope_kind, scope_id, attempt)`,
-		`PRAGMA user_version = 9`,
+		`PRAGMA user_version = 10`,
 	}
 }
 
@@ -1261,6 +1273,16 @@ func migrateV8ToV9Statements() []string {
 		`CREATE INDEX IF NOT EXISTS idx_run_agent_selections_scope
 			ON run_agent_selections (run_id, scope_kind, scope_id, attempt)`,
 		`PRAGMA user_version = 9`,
+	}
+}
+
+// migrateV9ToV10Statements adds the owner start-time identity token column.
+// Legacy rows keep NULL, which Force Stop treats as the pre-identity
+// PID-only owner proof.
+func migrateV9ToV10Statements() []string {
+	return []string{
+		`ALTER TABLE runs ADD COLUMN owner_identity TEXT`,
+		`PRAGMA user_version = 10`,
 	}
 }
 
@@ -1346,6 +1368,14 @@ func nullableOwnerPID(pid int) any {
 	return pid
 }
 
+func nullableOwnerIdentity(identity string) any {
+	identity = strings.TrimSpace(identity)
+	if identity == "" {
+		return nil
+	}
+	return identity
+}
+
 // lockTarget derives the Active Run lock key for a create request (ADR
 // 0016): review Kinds lock the Open Pull Request, implement locks the Spec.
 func lockTarget(req CreateRunRequest) (string, string) {
@@ -1375,7 +1405,7 @@ func selectActiveRunByTarget(ctx context.Context, querier runQuerier, targetKind
 	row := querier.QueryRowContext(ctx, `
 SELECT r.id, r.kind, r.state, r.head_repository, r.head_branch, r.base_repository,
        r.pr_number, r.git_root, r.local_branch, r.head_sha, r.artifact_dir, r.work_dir,
-       r.spec_slug, r.agent, r.model, r.reasoning_effort, r.owner_pid, r.created_at, r.updated_at, r.completed_at
+       r.spec_slug, r.agent, r.model, r.reasoning_effort, r.owner_pid, r.owner_identity, r.created_at, r.updated_at, r.completed_at
 FROM active_run_locks l
 JOIN runs r ON r.id = l.run_id
 WHERE l.target_kind = ? AND l.target_key = ?`,
@@ -1396,7 +1426,7 @@ func selectRun(ctx context.Context, querier runQuerier, runID string) (Run, erro
 	row := querier.QueryRowContext(ctx, `
 SELECT id, kind, state, head_repository, head_branch, base_repository,
        pr_number, git_root, local_branch, head_sha, artifact_dir, work_dir,
-       spec_slug, agent, model, reasoning_effort, owner_pid, created_at, updated_at, completed_at
+       spec_slug, agent, model, reasoning_effort, owner_pid, owner_identity, created_at, updated_at, completed_at
 FROM runs
 WHERE id = ?`, runID)
 	run, err := scanRun(row)
@@ -1413,6 +1443,7 @@ func scanRun(row runScanner) (Run, error) {
 	var completedAt string
 	var workDir sql.NullString
 	var ownerPID sql.NullInt64
+	var ownerIdentity sql.NullString
 	err := row.Scan(
 		&run.ID,
 		&run.Kind,
@@ -1431,6 +1462,7 @@ func scanRun(row runScanner) (Run, error) {
 		&run.Model,
 		&run.ReasoningEffort,
 		&ownerPID,
+		&ownerIdentity,
 		&createdAt,
 		&updatedAt,
 		&completedAt,
@@ -1444,6 +1476,9 @@ func scanRun(row runScanner) (Run, error) {
 	if ownerPID.Valid {
 		pid := int(ownerPID.Int64)
 		run.OwnerPID = &pid
+	}
+	if ownerIdentity.Valid {
+		run.OwnerIdentity = ownerIdentity.String
 	}
 	parsedCreatedAt, err := parseTime(createdAt)
 	if err != nil {

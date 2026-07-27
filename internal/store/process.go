@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -57,7 +58,13 @@ func newOwnerProcessController(gracePeriod, stopWindow, pollInterval time.Durati
 	}
 }
 
-func (controller *OwnerProcessControl) TerminateAndWait(ctx context.Context, pid int) error {
+// TerminateAndWait proves ownership of pid before sending any signal: when
+// the Run recorded a start-time identity token, the live process must present
+// the same token, otherwise a reused PID would let Force Stop terminate an
+// unrelated process. An empty recorded token comes from a Run created before
+// identity recording existed and keeps the legacy PID-only proof, mirroring
+// the ADR-0044 precedent that PID-less legacy Runs degrade gracefully.
+func (controller *OwnerProcessControl) TerminateAndWait(ctx context.Context, pid int, recordedIdentity string) error {
 	if pid <= 0 || pid == os.Getpid() {
 		return ownerProcessControlError(pid, "prove owner process identity", ErrOwnerProcessIdentityUnproven)
 	}
@@ -67,6 +74,22 @@ func (controller *OwnerProcessControl) TerminateAndWait(ctx context.Context, pid
 	}
 	if absent {
 		return nil
+	}
+	if recorded := strings.TrimSpace(recordedIdentity); recorded != "" {
+		liveIdentity, identityErr := processStartIdentity(ctx, pid)
+		if identityErr != nil {
+			// The owner may have exited between the liveness check and the
+			// identity read; proven absence is the proof Force Stop needs.
+			if absent, absentErr := processAbsent(pid); absentErr == nil && absent {
+				return nil
+			}
+			return ownerProcessControlError(pid, "prove owner process identity",
+				fmt.Errorf("%w: read live owner identity: %v", ErrOwnerProcessIdentityUnproven, identityErr))
+		}
+		if liveIdentity != recorded {
+			return ownerProcessControlError(pid, "prove owner process identity",
+				fmt.Errorf("%w: live process start identity does not match the recorded owner identity", ErrOwnerProcessIdentityUnproven))
+		}
 	}
 
 	stopCtx, cancel := context.WithTimeout(ctx, controller.stopWindow)
@@ -150,4 +173,13 @@ func ProcessAlive(pid int) bool {
 	}
 	absent, err := processAbsent(pid)
 	return err != nil || !absent
+}
+
+// OwnerProcessIdentity returns the opaque start-time identity token for pid.
+// Callers compare tokens verbatim and must not parse them.
+func OwnerProcessIdentity(ctx context.Context, pid int) (string, error) {
+	if pid <= 0 {
+		return "", fmt.Errorf("read owner process identity: pid %d is invalid", pid)
+	}
+	return processStartIdentity(ctx, pid)
 }

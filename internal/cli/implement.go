@@ -208,6 +208,7 @@ func runImplementCommand(ctx context.Context, args []string, stdout, stderr io.W
 			Model:           runtime.Model,
 			ReasoningEffort: runtime.ReasoningEffort,
 			OwnerPID:        os.Getpid(),
+			OwnerIdentity:   currentOwnerIdentity(ctx),
 		})
 	})
 	if err != nil {

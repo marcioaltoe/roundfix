@@ -38,7 +38,7 @@ func TestOwnerProcessControllerGracefulExitProof(t *testing.T) {
 	pid, wait := startOwnerProcessHelper(t, "graceful")
 	controller := newOwnerProcessController(250*time.Millisecond, 2*time.Second, 5*time.Millisecond)
 
-	if err := controller.TerminateAndWait(t.Context(), pid); err != nil {
+	if err := controller.TerminateAndWait(t.Context(), pid, ""); err != nil {
 		t.Fatalf("terminate owner process gracefully: %v", err)
 	}
 
@@ -49,7 +49,7 @@ func TestOwnerProcessControllerForceKillExitProof(t *testing.T) {
 	pid, wait := startOwnerProcessHelper(t, "ignore")
 	controller := newOwnerProcessController(20*time.Millisecond, 2*time.Second, 5*time.Millisecond)
 
-	if err := controller.TerminateAndWait(t.Context(), pid); err != nil {
+	if err := controller.TerminateAndWait(t.Context(), pid, ""); err != nil {
 		t.Fatalf("force-kill owner process: %v", err)
 	}
 
@@ -59,7 +59,7 @@ func TestOwnerProcessControllerForceKillExitProof(t *testing.T) {
 func TestOwnerProcessControllerRejectsUnprovenCurrentProcess(t *testing.T) {
 	controller := newOwnerProcessController(20*time.Millisecond, 100*time.Millisecond, 5*time.Millisecond)
 
-	err := controller.TerminateAndWait(t.Context(), os.Getpid())
+	err := controller.TerminateAndWait(t.Context(), os.Getpid(), "")
 
 	if !errors.Is(err, ErrOwnerProcessIdentityUnproven) {
 		t.Fatalf("current-process error = %v, want ErrOwnerProcessIdentityUnproven", err)
@@ -84,8 +84,73 @@ func TestOwnerProcessControllerAcceptsAlreadyAbsentProcess(t *testing.T) {
 	}
 	controller := newOwnerProcessController(20*time.Millisecond, 100*time.Millisecond, 5*time.Millisecond)
 
-	if err := controller.TerminateAndWait(t.Context(), pid); err != nil {
+	if err := controller.TerminateAndWait(t.Context(), pid, ""); err != nil {
 		t.Fatalf("accept already absent owner process: %v", err)
+	}
+}
+
+func TestOwnerProcessControllerRefusesMismatchedOwnerIdentity(t *testing.T) {
+	pid, _ := startOwnerProcessHelper(t, "graceful")
+	controller := newOwnerProcessController(20*time.Millisecond, 2*time.Second, 5*time.Millisecond)
+
+	err := controller.TerminateAndWait(t.Context(), pid, "identity-token-of-exited-owner-process")
+
+	if !errors.Is(err, ErrOwnerProcessIdentityUnproven) {
+		t.Fatalf("mismatched identity error = %v, want ErrOwnerProcessIdentityUnproven", err)
+	}
+	var controlErr OwnerProcessControlError
+	if !errors.As(err, &controlErr) {
+		t.Fatalf("mismatched identity error type = %T, want OwnerProcessControlError", err)
+	}
+	if controlErr.PID != pid || controlErr.Step != "prove owner process identity" {
+		t.Fatalf("mismatched identity diagnostic = %#v", controlErr)
+	}
+	if !ProcessAlive(pid) {
+		t.Fatalf("refusal must not signal process %d holding the reused PID", pid)
+	}
+}
+
+func TestOwnerProcessControllerMatchingOwnerIdentityProceeds(t *testing.T) {
+	pid, wait := startOwnerProcessHelper(t, "graceful")
+	identity, err := OwnerProcessIdentity(t.Context(), pid)
+	if err != nil {
+		t.Fatalf("read owner process identity: %v", err)
+	}
+	controller := newOwnerProcessController(250*time.Millisecond, 2*time.Second, 5*time.Millisecond)
+
+	if err := controller.TerminateAndWait(t.Context(), pid, identity); err != nil {
+		t.Fatalf("terminate owner process with matching identity: %v", err)
+	}
+
+	assertOwnerProcessExited(t, pid, wait)
+}
+
+func TestOwnerProcessIdentityIsStableForOneProcess(t *testing.T) {
+	first, err := OwnerProcessIdentity(t.Context(), os.Getpid())
+	if err != nil {
+		t.Fatalf("read current process identity: %v", err)
+	}
+	second, err := OwnerProcessIdentity(t.Context(), os.Getpid())
+	if err != nil {
+		t.Fatalf("re-read current process identity: %v", err)
+	}
+	if first != second {
+		t.Fatalf("identity token changed for one process: %q then %q", first, second)
+	}
+}
+
+func TestOwnerProcessIdentityFailsForAbsentProcess(t *testing.T) {
+	cmd := exec.Command("/bin/sh", "-c", "exit 0")
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("start child process: %v", err)
+	}
+	pid := cmd.Process.Pid
+	if err := cmd.Wait(); err != nil {
+		t.Fatalf("wait for child process: %v", err)
+	}
+
+	if identity, err := OwnerProcessIdentity(t.Context(), pid); err == nil {
+		t.Fatalf("expected identity read failure for reaped pid %d, got %q", pid, identity)
 	}
 }
 

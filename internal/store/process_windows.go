@@ -3,6 +3,7 @@
 package store
 
 import (
+	"context"
 	"errors"
 	"os"
 	"syscall"
@@ -56,4 +57,10 @@ func signalOwnerProcess(pid int, force bool) error {
 		return err
 	}
 	return nil
+}
+
+// processStartIdentity is unsupported on Windows: Runs created here record no
+// identity token and keep the legacy PID-only owner proof.
+func processStartIdentity(_ context.Context, _ int) (string, error) {
+	return "", ErrOwnerProcessUnsupported
 }
