@@ -3,7 +3,7 @@ source: coderabbit
 pr: "38"
 round: 1
 round_created_at: "2026-07-27T15:34:32Z"
-status: failed
+status: duplicated
 head_repository: marcioaltoe/roundfix
 head_branch: ma/terminal-outcome-integrity
 head_sha: 9ed57622bb92f138aa3e23d4d59e260ebbff0116
@@ -13,11 +13,11 @@ severity: major
 author: coderabbitai[bot]
 source_ref: thread:PRRT_kwDOS0qyts6UG-Ox,comment:PRRC_kwDOS0qyts7aENB_
 review_hash: d17e9ce472ea04a8112c7b81e638964a491a5a8f02d58d3b5ed7041247d12b70
-duplicate_of: ""
-terminal_reason: 'Verification failed: command "make verify" exited with exit status 2; diagnostics: /Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20260727T152947Z_936cd84aa803ba5d/verification/batch-001-attempt-2.log'
+duplicate_of: /Users/marcio/dev/roundfix/docs/specs/_reviews/pr-38/round-002/issue_001.md
 source_review_id: "4788632386"
 source_review_submitted_at: "2026-07-27T15:23:14Z"
 ---
+
 
 
 # Issue 002: _ Stability & Availability_ _ Major_ _ Heavy lift_

@@ -3,7 +3,7 @@ source: coderabbit
 pr: "38"
 round: 1
 round_created_at: "2026-07-27T15:34:32Z"
-status: failed
+status: resolved
 head_repository: marcioaltoe/roundfix
 head_branch: ma/terminal-outcome-integrity
 head_sha: 9ed57622bb92f138aa3e23d4d59e260ebbff0116
@@ -14,7 +14,6 @@ author: coderabbitai[bot]
 source_ref: thread:PRRT_kwDOS0qyts6UG-Oi,comment:PRRC_kwDOS0qyts7aENBm
 review_hash: 10e8a5818f2835343f1fc2ac79651e469653386bd5f4e9f3cbef38eeec8ee25a
 duplicate_of: ""
-terminal_reason: 'Verification failed: command "make verify" exited with exit status 2; diagnostics: /Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20260727T152947Z_936cd84aa803ba5d/verification/batch-001-attempt-2.log'
 source_review_id: "4788632386"
 source_review_submitted_at: "2026-07-27T15:23:13Z"
 ---
@@ -106,4 +105,4 @@ unchanged.
 ## Triage
 
 - Decision: `VALID`
-- Notes: The callback could close `agentStarted` more than once when the runner executes another Batch. Added a dedicated `sync.Once` guard without changing the release synchronization. Focused evidence: `rtk proxy env GOCACHE=/tmp/roundfix-run-936cd84aa803ba5d-gocache go test ./internal/cli -run '^(TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalOutcome|TestRunForceStopOwnerFailurePreservesAgentSessions)$' -count=1` passed.
+- Notes: The callback could close `agentStarted` more than once when the runner executes another Batch. The current code has a dedicated `sync.Once` guard without changing the release synchronization. Fresh Batch 001 evidence: `rtk proxy env GOCACHE=/tmp/roundfix-batch001-cli-cache go test ./internal/cli -run '^(TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalOutcome|TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion|TestRunForceStopOwnerProofFailurePreservesAgentSessions)$' -count=1` passed.

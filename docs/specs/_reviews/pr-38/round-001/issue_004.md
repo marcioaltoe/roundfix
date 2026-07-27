@@ -3,7 +3,7 @@ source: coderabbit
 pr: "38"
 round: 1
 round_created_at: "2026-07-27T15:34:32Z"
-status: failed
+status: resolved
 head_repository: marcioaltoe/roundfix
 head_branch: ma/terminal-outcome-integrity
 head_sha: 9ed57622bb92f138aa3e23d4d59e260ebbff0116
@@ -14,7 +14,6 @@ author: coderabbitai[bot]
 source_ref: thread:PRRT_kwDOS0qyts6UG-O9,comment:PRRC_kwDOS0qyts7aENCV
 review_hash: 87909db04f3f6cb9ec0a46874523d302d71becbbc75e376a74999a6189f8f1f6
 duplicate_of: ""
-terminal_reason: 'Verification failed: command "make verify" exited with exit status 2; diagnostics: /Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20260727T152947Z_936cd84aa803ba5d/verification/batch-001-attempt-2.log'
 source_review_id: "4788632386"
 source_review_submitted_at: "2026-07-27T15:23:14Z"
 ---
@@ -148,4 +147,4 @@ existing verbatim identity comparison and error handling.
 ## Triage
 
 - Decision: `VALID`
-- Notes: `ps -o lstart=` inherited the caller timezone and produced different opaque identity tokens for the same process. The command now pins `TZ=UTC` and `LC_ALL=C`. Before the fix, the regression observed Honolulu `"Mon Jul 27 05:42:21 2026"` versus Tokyo `"Tue Jul 28 00:42:21 2026"`; after the fix, `rtk proxy env GOCACHE=/tmp/roundfix-run-936cd84aa803ba5d-gocache go test ./internal/store -run '^(TestOwnerProcessIdentityIgnoresCallerTimezone|TestOwnerProcessControllerMatchingOwnerIdentityProceeds)$' -count=1` passed.
+- Notes: `ps -o lstart=` inherited the caller timezone and produced different opaque identity tokens for the same process. The command now pins `TZ=UTC` and `LC_ALL=C`. Before the fix, the regression observed Honolulu `"Mon Jul 27 05:42:21 2026"` versus Tokyo `"Tue Jul 28 00:42:21 2026"`. Fresh Batch 001 evidence: `rtk proxy env GOCACHE=/tmp/roundfix-batch001-store-cache go test ./internal/store -run '^(TestOwnerProcessIdentityIgnoresCallerTimezone|TestOwnerProcessControllerMatchingOwnerIdentityProceeds|TestTerminalOutcomeEveryStoredTerminalStateIsImmutable|TestTerminalOutcomeRejectsIntermediateStateUpdate|TestCompleteRunWinnerAndIdenticalReplay)$' -count=1` passed.

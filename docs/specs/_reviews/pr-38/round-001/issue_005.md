@@ -3,7 +3,7 @@ source: coderabbit
 pr: "38"
 round: 1
 round_created_at: "2026-07-27T15:34:32Z"
-status: failed
+status: resolved
 head_repository: marcioaltoe/roundfix
 head_branch: ma/terminal-outcome-integrity
 head_sha: 9ed57622bb92f138aa3e23d4d59e260ebbff0116
@@ -14,7 +14,6 @@ author: coderabbitai[bot]
 source_ref: thread:PRRT_kwDOS0qyts6UG-PC,comment:PRRC_kwDOS0qyts7aENCb
 review_hash: f09ca3d0edf0a06a0ec7cc0d3a4cf86bf036c9213f36c9634f4a81952e89ceea
 duplicate_of: ""
-terminal_reason: 'Verification failed: command "make verify" exited with exit status 2; diagnostics: /Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20260727T152947Z_936cd84aa803ba5d/verification/batch-001-attempt-2.log'
 source_review_id: "4788632386"
 source_review_submitted_at: "2026-07-27T15:23:14Z"
 ---
@@ -127,4 +126,4 @@ _Source: Linters/SAST tools_
 ## Triage
 
 - Decision: `VALID`
-- Notes: `processAbsent` treated every successfully opened process object as live, including exited objects. It now calls `GetExitCodeProcess` and treats only `STILL_ACTIVE` as present; a Windows regression covers an exited, unreaped child whose process object remains open. Focused evidence: `rtk proxy env GOOS=windows GOARCH=amd64 GOCACHE=/tmp/roundfix-run-936cd84aa803ba5d-gocache go test -c -o /tmp/roundfix-store-windows-936cd84aa803ba5d.test ./internal/store` passed.
+- Notes: `processAbsent` treated every successfully opened process object as live, including exited objects. It now calls `GetExitCodeProcess` and treats only `STILL_ACTIVE` as present; a Windows regression covers an exited, unreaped child whose process object remains open. Fresh Batch 001 evidence: `rtk proxy env GOOS=windows GOARCH=amd64 GOCACHE=/tmp/roundfix-batch001-windows-cache go test -c -o /tmp/roundfix-store-windows-batch001.test ./internal/store` passed.

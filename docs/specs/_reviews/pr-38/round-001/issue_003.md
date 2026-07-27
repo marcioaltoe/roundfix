@@ -3,7 +3,7 @@ source: coderabbit
 pr: "38"
 round: 1
 round_created_at: "2026-07-27T15:34:32Z"
-status: failed
+status: resolved
 head_repository: marcioaltoe/roundfix
 head_branch: ma/terminal-outcome-integrity
 head_sha: 9ed57622bb92f138aa3e23d4d59e260ebbff0116
@@ -14,7 +14,6 @@ author: coderabbitai[bot]
 source_ref: thread:PRRT_kwDOS0qyts6UG-O4,comment:PRRC_kwDOS0qyts7aENCO
 review_hash: e2bd6984b73215ef552a5ae37fee3530a302f3e2d9b1eaab82902b26046e401e
 duplicate_of: ""
-terminal_reason: 'Verification failed: command "make verify" exited with exit status 2; diagnostics: /Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20260727T152947Z_936cd84aa803ba5d/verification/batch-001-attempt-2.log'
 source_review_id: "4788632386"
 source_review_submitted_at: "2026-07-27T15:23:14Z"
 ---
@@ -93,4 +92,4 @@ ability to wait for the process and report early helper failures accurately.
 ## Triage
 
 - Decision: `VALID`
-- Notes: The helper started `cmd.Wait` before draining the readiness line from `StdoutPipe`. It now starts the waiter after validating `ready`; cleanup retains a once-guarded fallback that kills and waits when readiness fails early. Focused evidence: `rtk proxy env GOCACHE=/tmp/roundfix-run-936cd84aa803ba5d-gocache go test ./internal/cli -run '^TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion$' -count=1` passed.
+- Notes: The helper started `cmd.Wait` before draining the readiness line from `StdoutPipe`. It now starts the waiter after validating `ready`; cleanup retains a once-guarded fallback that kills and waits when readiness fails early. Fresh Batch 001 evidence: `rtk proxy env GOCACHE=/tmp/roundfix-batch001-cli-cache go test ./internal/cli -run '^(TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalOutcome|TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion|TestRunForceStopOwnerProofFailurePreservesAgentSessions)$' -count=1` passed.

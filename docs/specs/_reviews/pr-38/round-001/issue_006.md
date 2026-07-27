@@ -3,7 +3,7 @@ source: coderabbit
 pr: "38"
 round: 1
 round_created_at: "2026-07-27T15:34:32Z"
-status: failed
+status: resolved
 head_repository: marcioaltoe/roundfix
 head_branch: ma/terminal-outcome-integrity
 head_sha: 9ed57622bb92f138aa3e23d4d59e260ebbff0116
@@ -14,7 +14,6 @@ author: coderabbitai[bot]
 source_ref: thread:PRRT_kwDOS0qyts6UG-PF,comment:PRRC_kwDOS0qyts7aENCf
 review_hash: bd89437ed3c245af355b6846cef53f6df813ef12b2049665adb904008c5c511c
 duplicate_of: ""
-terminal_reason: 'Verification failed: command "make verify" exited with exit status 2; diagnostics: /Users/marcio/.roundfix/artifacts/339f8dac2b687a04/runs/run_20260727T152947Z_936cd84aa803ba5d/verification/batch-001-attempt-2.log'
 source_review_id: "4788632386"
 source_review_submitted_at: "2026-07-27T15:23:14Z"
 ---
@@ -83,4 +82,4 @@ update IsTerminalState to range over terminalStates.
 ## Triage
 
 - Decision: `VALID`
-- Notes: `CompleteRun`, `UpdateRunState`, and `IsTerminalState` maintained separate terminal-state enumerations. They now share `terminalStates`; both SQL compare-and-set guards derive their placeholders and arguments from that set. Focused evidence: `rtk proxy env GOCACHE=/tmp/roundfix-run-936cd84aa803ba5d-gocache go test ./internal/store -run '^(TestTerminalOutcomeEveryStoredTerminalStateIsImmutable|TestTerminalOutcomeRejectsIntermediateStateUpdate|TestCompleteRunWinnerAndIdenticalReplay)$' -count=1` passed.
+- Notes: `CompleteRun`, `UpdateRunState`, and `IsTerminalState` maintained separate terminal-state enumerations. They now share `terminalStates`; both SQL compare-and-set guards derive their placeholders and arguments from that set. Fresh Batch 001 evidence: `rtk proxy env GOCACHE=/tmp/roundfix-batch001-store-cache go test ./internal/store -run '^(TestOwnerProcessIdentityIgnoresCallerTimezone|TestOwnerProcessControllerMatchingOwnerIdentityProceeds|TestTerminalOutcomeEveryStoredTerminalStateIsImmutable|TestTerminalOutcomeRejectsIntermediateStateUpdate|TestCompleteRunWinnerAndIdenticalReplay)$' -count=1` passed.
