@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0038-terminal-run-worktree-reconciliation
-status: pending
+status: completed
 type: backend
 complexity: medium
 ---
@@ -28,21 +28,21 @@ points to the Reconcile Command as the sole classification surface.
 
 ## Subtasks
 
-- [ ] Derive repository-scoped retained-worktree counts.
-- [ ] Add the exact stderr guidance.
-- [ ] Preserve stdout row serialization.
-- [ ] Cover Active, terminal, and all-state views.
-- [ ] Cover zero-retention and mixed-repository cases.
+- [x] Derive repository-scoped retained-worktree counts.
+- [x] Add the exact stderr guidance.
+- [x] Preserve stdout row serialization.
+- [x] Cover Active, terminal, and all-state views.
+- [x] Cover zero-retention and mixed-repository cases.
 
 ## Acceptance Criteria
 
-- [ ] Active view reports the exact hidden terminal residue count on stderr.
-- [ ] Terminal and all-state views report only retained Runs relevant to their
+- [x] Active view reports the exact hidden terminal residue count on stderr.
+- [x] Terminal and all-state views report only retained Runs relevant to their
       repository scope.
-- [ ] Existing stdout rows remain byte-identical.
-- [ ] The note contains the exact `roundfix reconcile` pointer.
-- [ ] Runs List never labels a retained entry safe or unsafe.
-- [ ] No note is printed when neither worktree nor Run Branch remains.
+- [x] Existing stdout rows remain byte-identical.
+- [x] The note contains the exact `roundfix reconcile` pointer.
+- [x] Runs List never labels a retained entry safe or unsafe.
+- [x] No note is printed when neither worktree nor Run Branch remains.
 
 ## Context
 
@@ -67,3 +67,48 @@ points to the Reconcile Command as the sole classification surface.
 - `_prd.md` → Goal 3; User Story 3; Core Feature 8; Success Metrics.
 - `_techspec.md` → API Contracts: Run listing; Testing Approach; Build Order 5.
 - `CONTEXT.md` → Runs List and Reconcile Command vocabulary.
+
+## Result
+
+Runs List now derives one exact retained terminal Run Worktree count from its
+unbounded, repository-scoped Run query. The shared proof-based inspector
+distinguishes retained terminal spec Runs from `released` history, including
+path-and-branch, path-only, and Run-Branch-only residue. When the count is
+non-zero, stderr prints one bounded note that points to
+`roundfix reconcile`; stdout row formatting and empty-result output are
+unchanged. When no retained surface exists, the existing hidden-row guidance
+remains the fallback.
+
+Verification:
+
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task05-gocache go test ./internal/cli -run 'TestRun.*List.*Retained.*Worktree' -count=1`
+  — passed.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task05-gocache go test ./internal/cli -run 'TestRun.*List.*(Active|Terminal|All)' -count=1`
+  — passed.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task05-gocache go test ./internal/cli -count=1`
+  — passed.
+- `rtk proxy env GOCACHE=/private/tmp/roundfix-task05-gocache make verify`
+  — passed.
+- The first focused invocation without the task-local `GOCACHE` did not reach
+  compilation because the sandbox denied the host Go cache; the equivalent
+  task-local-cache invocation above passed.
+
+Acceptance evidence:
+
+- `TestRunRunsListActiveReportsRetainedWorktreesWithoutChangingStdout` creates
+  path-and-branch, branch-only, path-only, and released terminal spec Runs. The
+  Active view reports exactly three retained Runs on stderr and matches the
+  pre-existing stdout row serialization byte-for-byte.
+- `TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository` proves
+  terminal and all-state views count one retained Run in the current
+  repository and two with `--all`, while excluding the other repository from
+  repository-scoped stdout.
+- The retained note is exactly
+  `(N terminal Run Worktree(s) retained; run 'roundfix reconcile' to inspect)`
+  with grammatical singular/plural rendering. Tests reject the words `safe`
+  and `unsafe` and confirm the pointer never enters stdout.
+- `TestRunRunsListRetainedWorktreeNoteOmittedWhenReleased` removes both the Run
+  Worktree and Run Branch, keeps the terminal history row visible, and observes
+  empty stderr.
+
+Follow-ups: none.

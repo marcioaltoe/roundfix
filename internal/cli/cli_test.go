@@ -2377,6 +2377,184 @@ func TestRunRunsListStateFlagFiltersAndNotes(t *testing.T) {
 	}
 }
 
+func TestRunRunsListActiveReportsRetainedWorktreesWithoutChangingStdout(t *testing.T) {
+	homeDir, repoDir, location := newReconcileWorkspace(t)
+	t.Chdir(repoDir)
+	base := time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)
+	_, retained := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
+	_, branchOnly := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateStopped)
+	gitImplement(t, repoDir, "worktree", "remove", branchOnly.Path)
+	_, worktreeOnly := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateUnresolved)
+	gitImplement(t, worktreeOnly.Path, "checkout", "--detach")
+	gitImplement(t, repoDir, "branch", "-D", worktreeOnly.Branch)
+	_, released := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateClean)
+	gitImplement(t, repoDir, "worktree", "remove", released.Path)
+	gitImplement(t, repoDir, "branch", "-D", released.Branch)
+	active := createReconcileMetadataRun(
+		t,
+		homeDir,
+		store.CreateRunRequest{
+			Kind:        store.KindImplement,
+			GitRoot:     repoDir,
+			LocalBranch: "ma/widget-flow",
+			HeadSHA:     strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD")),
+			SpecSlug:    "active-spec",
+			Agent:       "codex",
+			OwnerPID:    os.Getpid(),
+		},
+		"",
+	)
+	setListedRunCreatedAt(t, homeDir, active.ID, base)
+	withRunsListNow(t, base.Add(10*time.Minute))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"runs", "list"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
+	}
+	wantStdout := fmt.Sprintf(
+		"%s  Active  implement  spec:active-spec  codex  2026-07-27T12:00:00Z  running 10m  ma/widget-flow\n",
+		active.ID,
+	)
+	if stdout.String() != wantStdout {
+		t.Fatalf("retained-worktree note changed stdout:\n got: %q\nwant: %q", stdout.String(), wantStdout)
+	}
+	wantStderr := "(3 terminal Run Worktrees retained; run 'roundfix reconcile' to inspect)\n"
+	if stderr.String() != wantStderr {
+		t.Fatalf("unexpected retained-worktree guidance:\n got: %q\nwant: %q", stderr.String(), wantStderr)
+	}
+	if strings.Contains(stdout.String(), "reconcile") || strings.Contains(stderr.String(), "safe") ||
+		strings.Contains(stderr.String(), "unsafe") {
+		t.Fatalf("Runs List classified retained work or mixed guidance into stdout: stdout=%q stderr=%q", stdout.String(), stderr.String())
+	}
+	if _, err := os.Stat(retained.Path); err != nil {
+		t.Fatalf("expected retained Run Worktree fixture to remain: %v", err)
+	}
+}
+
+func TestRunRunsListTerminalAndAllReportRetainedWorktreesByRepository(t *testing.T) {
+	homeDir, repoDir, location := newReconcileWorkspace(t)
+	t.Chdir(repoDir)
+	currentRun, _ := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
+
+	otherRepo := t.TempDir()
+	gitImplement(t, otherRepo, "init", "--initial-branch=main")
+	gitImplement(t, otherRepo, "config", "user.name", "Roundfix Test")
+	gitImplement(t, otherRepo, "config", "user.email", "roundfix-test@example.com")
+	gitImplement(t, otherRepo, "config", "commit.gpgsign", "false")
+	mustWrite(t, filepath.Join(otherRepo, "README.md"), "other repository\n")
+	gitImplement(t, otherRepo, "add", "README.md")
+	gitImplement(t, otherRepo, "commit", "-m", "seed other repository")
+	gitImplement(t, otherRepo, "checkout", "-b", "ma/other")
+	resolvedOtherRepo, err := filepath.EvalSymlinks(otherRepo)
+	if err != nil {
+		t.Fatalf("resolve other repository: %v", err)
+	}
+	otherRun, _ := createReconcileRun(
+		t,
+		homeDir,
+		resolvedOtherRepo,
+		t.TempDir(),
+		"ma/other",
+		store.StateStopped,
+	)
+	now := time.Now().UTC().Add(time.Minute)
+	withRunsListNow(t, now)
+
+	tests := []struct {
+		name          string
+		args          []string
+		wantCount     int
+		wantRunIDs    []string
+		forbiddenRuns []string
+	}{
+		{
+			name:          "terminal current repository",
+			args:          []string{"runs", "list", "--state", "terminal"},
+			wantCount:     1,
+			wantRunIDs:    []string{currentRun.ID},
+			forbiddenRuns: []string{otherRun.ID},
+		},
+		{
+			name:          "all-state current repository",
+			args:          []string{"runs", "list", "--state", "all"},
+			wantCount:     1,
+			wantRunIDs:    []string{currentRun.ID},
+			forbiddenRuns: []string{otherRun.ID},
+		},
+		{
+			name:       "terminal every repository",
+			args:       []string{"runs", "list", "--all", "--state", "terminal"},
+			wantCount:  2,
+			wantRunIDs: []string{currentRun.ID, otherRun.ID},
+		},
+		{
+			name:       "all-state every repository",
+			args:       []string{"runs", "list", "--all", "--state", "all"},
+			wantCount:  2,
+			wantRunIDs: []string{currentRun.ID, otherRun.ID},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := Run(tt.args, &stdout, &stderr)
+
+			if code != exitOK {
+				t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
+			}
+			for _, runID := range tt.wantRunIDs {
+				if !strings.Contains(stdout.String(), runID+"  ") {
+					t.Fatalf("stdout omitted Run %s: %q", runID, stdout.String())
+				}
+			}
+			for _, runID := range tt.forbiddenRuns {
+				if strings.Contains(stdout.String(), runID) {
+					t.Fatalf("stdout included cross-repository Run %s: %q", runID, stdout.String())
+				}
+			}
+			worktreeNoun := "Run Worktrees"
+			if tt.wantCount == 1 {
+				worktreeNoun = "Run Worktree"
+			}
+			wantStderr := fmt.Sprintf(
+				"(%d terminal %s retained; run 'roundfix reconcile' to inspect)\n",
+				tt.wantCount,
+				worktreeNoun,
+			)
+			if stderr.String() != wantStderr {
+				t.Fatalf("unexpected retained-worktree guidance:\n got: %q\nwant: %q", stderr.String(), wantStderr)
+			}
+		})
+	}
+}
+
+func TestRunRunsListRetainedWorktreeNoteOmittedWhenReleased(t *testing.T) {
+	homeDir, repoDir, location := newReconcileWorkspace(t)
+	t.Chdir(repoDir)
+	run, released := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateClean)
+	gitImplement(t, repoDir, "worktree", "remove", released.Path)
+	gitImplement(t, repoDir, "branch", "-D", released.Branch)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"runs", "list", "--state", "terminal"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), run.ID+"  ") {
+		t.Fatalf("terminal history row was not printed: %q", stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("released Run printed retained-worktree guidance: %q", stderr.String())
+	}
+}
+
 func TestRunRunsListLimitBoundsNewestMatches(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	base := time.Date(2026, 7, 6, 12, 0, 0, 0, time.UTC)

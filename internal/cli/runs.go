@@ -14,6 +14,7 @@ import (
 	roundconfig "roundfix/internal/config"
 	"roundfix/internal/store"
 	roundtui "roundfix/internal/tui"
+	runworktree "roundfix/internal/worktree"
 )
 
 const (
@@ -110,13 +111,18 @@ func runRunsListCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 		printRunsListFailure(err, stderr)
 		return exitPreflight
 	}
+	retainedWorktrees := countRetainedTerminalRunWorktrees(ctx, runs)
 	matching := filterRunsListState(runs, opts.state)
 	visible := matching
 	if opts.limit > 0 && len(matching) > opts.limit {
 		visible = matching[:opts.limit]
 	}
 	printRunsList(stdout, visible, opts, runsListNow())
-	if note := runsListHiddenNote(opts.state, len(runs), len(matching), len(visible)); note != "" {
+	note := runsListRetainedWorktreeNote(retainedWorktrees)
+	if note == "" {
+		note = runsListHiddenNote(opts.state, len(runs), len(matching), len(visible))
+	}
+	if note != "" {
 		fmt.Fprintln(stderr, note)
 	}
 	return exitOK
@@ -158,6 +164,35 @@ func filterRunsListState(runs []store.Run, state string) []store.Run {
 		}
 	}
 	return matching
+}
+
+func countRetainedTerminalRunWorktrees(ctx context.Context, runs []store.Run) int {
+	retained := 0
+	for _, run := range runs {
+		if run.Kind != store.KindImplement || !store.IsTerminalState(run.State) {
+			continue
+		}
+		inspected, err := runworktree.InspectTerminalRun(ctx, run)
+		if err != nil || inspected.State != runworktree.ReconciliationReleased {
+			retained++
+		}
+	}
+	return retained
+}
+
+func runsListRetainedWorktreeNote(retained int) string {
+	if retained <= 0 {
+		return ""
+	}
+	worktree := "Run Worktree"
+	if retained != 1 {
+		worktree += "s"
+	}
+	return fmt.Sprintf(
+		"(%d terminal %s retained; run 'roundfix reconcile' to inspect)",
+		retained,
+		worktree,
+	)
 }
 
 // runsListHiddenNote names what the listing hid and the flag that widens
