@@ -264,7 +264,7 @@ func TestRunCommandHelp(t *testing.T) {
 		{
 			name:     "doctor",
 			args:     []string{"doctor", "--help"},
-			contains: []string{"roundfix doctor", "Repository Skill Set", "skills:", "codex runtime hygiene", "offline", "read-only", "mutates nothing"},
+			contains: []string{"roundfix doctor", "the effective adapter, the required\nAgent Selection Profiles", "Repository Skill Set", "skills:", "codex runtime hygiene", "offline", "read-only", "mutates nothing"},
 		},
 		{
 			name:     "upgrade",
