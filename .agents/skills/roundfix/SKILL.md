@@ -519,6 +519,46 @@ roundfix: warning: Journal Retention prune failed: <reason>
 
 and never block the Run.
 
+## Run Worktree reconciliation
+
+Use the Reconcile Command to inspect retained terminal spec Run Worktrees and
+Run Branches. Always run a dry-run before applying cleanup:
+
+```bash
+roundfix reconcile <run-id>
+roundfix reconcile
+roundfix reconcile <run-id> --format json
+```
+
+A Run ID selects one terminal spec Run; omitting it scans the current
+repository. The report classifies every selected Run into one of five states:
+
+| State | Agent action |
+| --- | --- |
+| `safe` | The Run Branch and recorded target resolve, any present registered Run Worktree is clean, and the Run Branch tip is an ancestor of the target tip. This is the only state eligible for cleanup. |
+| `unintegrated` | Clean, resolved evidence proves that the Run Branch tip is not an ancestor of the target tip. Preserve the Run Worktree and Run Branch. |
+| `dirty` | A present registered Run Worktree has tracked or untracked changes. Preserve the Run Worktree and Run Branch. |
+| `unknown` | Metadata or Git evidence cannot prove another state. Preserve every identified Run Worktree and Run Branch. |
+| `released` | Both the Run Worktree and Run Branch are absent. No cleanup is needed. |
+
+After reviewing the dry-run, apply cleanup explicitly:
+
+```bash
+roundfix reconcile <run-id> --apply
+roundfix reconcile --apply
+```
+
+`--apply` is the only mutation switch. Roundfix acts only on entries classified
+`safe` during that invocation and rechecks their metadata, worktree
+cleanliness, heads, and ancestry before mutation. It preserves `unintegrated`,
+`dirty`, and `unknown` work, and treats `released` as an idempotent no-op.
+There is no force bypass.
+
+Never substitute manual Git deletion for this supported workflow. Do not run
+`git worktree remove`, delete the Run Branch, or remove a recorded worktree
+directory by hand. The Reconcile Command owns safety proof, evidence recording,
+the guarded Integration Pending transition, and cleanup.
+
 ## Stopping Runs
 
 Use `roundfix stop` for a graceful stop. Every selector keeps its existing
