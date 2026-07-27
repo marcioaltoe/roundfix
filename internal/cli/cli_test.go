@@ -7859,10 +7859,12 @@ func seedRunsForList(t *testing.T, homeDir string, seeds []runListSeed) []store.
 		switch {
 		case seed.state == "" || seed.state == store.StateActive:
 		case store.IsTerminalState(seed.state):
-			run, err = runStore.CompleteRun(ctx, run.ID, seed.state)
+			completed, completeErr := runStore.CompleteRun(ctx, run.ID, seed.state)
+			err = completeErr
 			if err != nil {
 				t.Fatalf("complete listed Run as %s: %v", seed.state, err)
 			}
+			run = completed.Run
 		default:
 			if err := runStore.UpdateRunState(ctx, run.ID, seed.state); err != nil {
 				t.Fatalf("update listed Run state to %s: %v", seed.state, err)
@@ -10495,7 +10497,7 @@ func createTerminalAttachSpecRun(t *testing.T, homeDir string, repoDir string, w
 	if err != nil {
 		t.Fatalf("complete implement run: %v", err)
 	}
-	return completed
+	return completed.Run
 }
 
 func appendAttachConcurrencyEvent(t *testing.T, homeDir string, runID string, concurrency int) {
@@ -10828,7 +10830,7 @@ func completeEventsRun(t *testing.T, homeDir string, runID string, state string)
 	if err != nil {
 		t.Fatalf("complete events Run: %v", err)
 	}
-	return run
+	return run.Run
 }
 
 func appendEvents(t *testing.T, homeDir string, runID string, events ...runevent.RunEvent) {

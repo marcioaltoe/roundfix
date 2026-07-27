@@ -543,23 +543,10 @@ func integrateSettledRun(ctx context.Context, plan settlePlan) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	runStore, err := store.Open(ctx, plan.homeDir)
-	if err != nil {
-		return "", err
-	}
-	defer func() {
-		_ = runStore.Close()
-	}()
 	if result.Mode == runworktree.ModePending {
-		if _, err := runStore.CompleteRun(ctx, plan.run.ID, store.StateIntegrationPending); err != nil {
-			return "", err
-		}
 		return implementIntegrationCommand(ref), nil
 	}
 	if err := cleanupCleanRunWorktree(ctx, ref); err != nil {
-		return "", err
-	}
-	if _, err := runStore.CompleteRun(ctx, plan.run.ID, store.StateClean); err != nil {
 		return "", err
 	}
 	return "", nil

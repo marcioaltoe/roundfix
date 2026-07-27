@@ -81,6 +81,7 @@ A force-stopped Run can currently be completed again by its still-running owner,
 - Force Stop fails closed when owner exit cannot be proven; it never releases the lock on a warning-only basis.
 - Agent Selection lifecycle records are the Agent Session registry; no second session table is introduced.
 - General terminal completion is immutable, with one explicit Integration Pending reconciliation transition. See [ADR-0052](../../adr/0052-run-completion-is-compare-and-set.md).
+- The Settle Command never rewrites a settled Run's terminal outcome; a recovered Run keeps its recorded outcome as history, and recovery is reported only through the Settle report and its commits.
 
 ## Open Questions
 

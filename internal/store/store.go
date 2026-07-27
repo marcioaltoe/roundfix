@@ -82,6 +82,34 @@ type Run struct {
 	CompletedAt     *time.Time
 }
 
+type TerminalOutcomeConflictError struct {
+	RunID     string
+	Stored    string
+	Requested string
+}
+
+func (err TerminalOutcomeConflictError) Error() string {
+	return fmt.Sprintf(
+		"terminal outcome conflict for Run %q: stored %q, requested %q",
+		err.RunID,
+		err.Stored,
+		err.Requested,
+	)
+}
+
+type CompleteRunResult struct {
+	Run
+	Transitioned bool
+}
+
+type IntegrationReconciliation struct {
+	RunID        string
+	RunHead      string
+	TargetBranch string
+	TargetHead   string
+	Time         time.Time
+}
+
 type InteractiveDefaults struct {
 	PRNumber string
 	Agent    string
@@ -326,50 +354,212 @@ VALUES (?, ?, ?, ?)`,
 	return run, nil
 }
 
-func (store *Store) CompleteRun(ctx context.Context, runID string, terminalState string) (Run, error) {
+func (store *Store) CompleteRun(ctx context.Context, runID string, terminalState string) (CompleteRunResult, error) {
+	runID = strings.TrimSpace(runID)
+	if runID == "" {
+		return CompleteRunResult{}, errors.New("complete Run: Run ID is required")
+	}
 	if !IsTerminalState(terminalState) {
-		return Run{}, fmt.Errorf("Run state %q is not terminal", terminalState)
+		return CompleteRunResult{}, fmt.Errorf("complete Run %q: Run state %q is not terminal", runID, terminalState)
 	}
 	now := store.now()
 
 	tx, err := store.db.BeginTx(ctx, nil)
 	if err != nil {
-		return Run{}, fmt.Errorf("begin Run completion: %w", err)
+		return CompleteRunResult{}, fmt.Errorf("begin completion for Run %q: %w", runID, err)
 	}
 	defer rollbackUnlessCommitted(tx)
 
 	result, err := tx.ExecContext(ctx, `
 UPDATE runs
 SET state = ?, updated_at = ?, completed_at = ?
-WHERE id = ?`,
+WHERE id = ?
+  AND state NOT IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		terminalState,
 		formatTime(now),
 		formatTime(now),
 		runID,
+		StateFetched,
+		StateStopped,
+		StateClean,
+		StateCleanUnverified,
+		StateMaxRoundsReached,
+		StateBudgetExceeded,
+		StateTimedOut,
+		StateFailed,
+		StateIntegrationPending,
+		StateUnresolved,
 	)
 	if err != nil {
-		return Run{}, fmt.Errorf("update Run terminal state: %w", err)
+		return CompleteRunResult{}, fmt.Errorf("compare-and-set terminal outcome for Run %q: %w", runID, err)
 	}
 	affected, err := result.RowsAffected()
 	if err != nil {
-		return Run{}, fmt.Errorf("read Run completion result: %w", err)
+		return CompleteRunResult{}, fmt.Errorf("read completion result for Run %q: %w", runID, err)
 	}
 	if affected == 0 {
-		return Run{}, fmt.Errorf("Run %q does not exist", runID)
+		run, err := selectRun(ctx, tx, runID)
+		if errors.Is(err, sql.ErrNoRows) {
+			return CompleteRunResult{}, fmt.Errorf("complete Run %q: Run does not exist", runID)
+		}
+		if err != nil {
+			return CompleteRunResult{}, fmt.Errorf("read Run %q after completion compare-and-set: %w", runID, err)
+		}
+		if run.State != terminalState {
+			return CompleteRunResult{}, TerminalOutcomeConflictError{
+				RunID:     runID,
+				Stored:    run.State,
+				Requested: terminalState,
+			}
+		}
+		if err := tx.Commit(); err != nil {
+			return CompleteRunResult{}, fmt.Errorf("commit completion replay for Run %q: %w", runID, err)
+		}
+		return CompleteRunResult{Run: run}, nil
 	}
 
 	if _, err := tx.ExecContext(ctx, `DELETE FROM active_run_locks WHERE run_id = ?`, runID); err != nil {
-		return Run{}, fmt.Errorf("release Active Run lock: %w", err)
+		return CompleteRunResult{}, fmt.Errorf("release Active Run lock for Run %q: %w", runID, err)
 	}
 
 	run, err := selectRun(ctx, tx, runID)
 	if err != nil {
-		return Run{}, err
+		return CompleteRunResult{}, fmt.Errorf("read completed Run %q: %w", runID, err)
 	}
 	if err := tx.Commit(); err != nil {
-		return Run{}, fmt.Errorf("commit Run completion: %w", err)
+		return CompleteRunResult{}, fmt.Errorf("commit completion for Run %q: %w", runID, err)
 	}
-	return run, nil
+	return CompleteRunResult{Run: run, Transitioned: true}, nil
+}
+
+func (store *Store) ReconcileIntegration(ctx context.Context, req IntegrationReconciliation) (Run, error) {
+	if err := validateIntegrationReconciliation(req); err != nil {
+		return Run{}, err
+	}
+	req.RunID = strings.TrimSpace(req.RunID)
+	req.RunHead = strings.TrimSpace(req.RunHead)
+	req.TargetBranch = strings.TrimSpace(req.TargetBranch)
+	req.TargetHead = strings.TrimSpace(req.TargetHead)
+
+	tx, err := store.db.BeginTx(ctx, nil)
+	if err != nil {
+		return Run{}, fmt.Errorf("begin Integration Pending reconciliation for Run %q: %w", req.RunID, err)
+	}
+	defer rollbackUnlessCommitted(tx)
+
+	run, err := selectRun(ctx, tx, req.RunID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Run{}, fmt.Errorf("reconcile Integration Pending Run %q: Run does not exist", req.RunID)
+	}
+	if err != nil {
+		return Run{}, fmt.Errorf("read Run %q before Integration Pending reconciliation: %w", req.RunID, err)
+	}
+	if run.State != StateIntegrationPending {
+		if IsTerminalState(run.State) {
+			return Run{}, TerminalOutcomeConflictError{
+				RunID:     req.RunID,
+				Stored:    run.State,
+				Requested: StateClean,
+			}
+		}
+		return Run{}, fmt.Errorf(
+			"reconcile Integration Pending Run %q: stored state %q is not terminal outcome %q",
+			req.RunID,
+			run.State,
+			StateIntegrationPending,
+		)
+	}
+	if run.Kind != KindImplement {
+		return Run{}, fmt.Errorf(
+			"reconcile Integration Pending Run %q: Run kind %q is not %q",
+			req.RunID,
+			run.Kind,
+			KindImplement,
+		)
+	}
+	if strings.TrimSpace(run.LocalBranch) != req.TargetBranch {
+		return Run{}, fmt.Errorf(
+			"reconcile Integration Pending Run %q: target branch %q does not match recorded target branch %q",
+			req.RunID,
+			req.TargetBranch,
+			run.LocalBranch,
+		)
+	}
+
+	result, err := tx.ExecContext(ctx, `
+UPDATE runs
+SET state = ?, updated_at = ?
+WHERE id = ? AND state = ?`,
+		StateClean,
+		formatTime(req.Time),
+		req.RunID,
+		StateIntegrationPending,
+	)
+	if err != nil {
+		return Run{}, fmt.Errorf("compare-and-set Integration Pending reconciliation for Run %q: %w", req.RunID, err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return Run{}, fmt.Errorf("read Integration Pending reconciliation result for Run %q: %w", req.RunID, err)
+	}
+	if affected != 1 {
+		return Run{}, fmt.Errorf(
+			"reconcile Integration Pending Run %q: compare-and-set affected %d rows",
+			req.RunID,
+			affected,
+		)
+	}
+
+	payload, err := json.Marshal(map[string]string{
+		"event":            "integration_reconciliation",
+		"previous_outcome": StateIntegrationPending,
+		"current_outcome":  StateClean,
+		"run_head":         req.RunHead,
+		"target_branch":    req.TargetBranch,
+		"target_head":      req.TargetHead,
+	})
+	if err != nil {
+		return Run{}, fmt.Errorf("encode Integration Pending reconciliation for Run %q: %w", req.RunID, err)
+	}
+	if _, err := appendRunEvent(ctx, tx, runevent.RunEvent{
+		RunID:   req.RunID,
+		Source:  runevent.SourceDaemon,
+		Kind:    runevent.KindDaemonOutcome,
+		Summary: runevent.BoundSummary("Run reconciled Integration Pending to Clean."),
+		Time:    req.Time,
+		Payload: payload,
+	}); err != nil {
+		return Run{}, fmt.Errorf("journal Integration Pending reconciliation for Run %q: %w", req.RunID, err)
+	}
+
+	reconciled, err := selectRun(ctx, tx, req.RunID)
+	if err != nil {
+		return Run{}, fmt.Errorf("read reconciled Run %q: %w", req.RunID, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return Run{}, fmt.Errorf("commit Integration Pending reconciliation for Run %q: %w", req.RunID, err)
+	}
+	return reconciled, nil
+}
+
+func validateIntegrationReconciliation(req IntegrationReconciliation) error {
+	runID := strings.TrimSpace(req.RunID)
+	if runID == "" {
+		return errors.New("reconcile Integration Pending Run: Run ID is required")
+	}
+	if strings.TrimSpace(req.RunHead) == "" {
+		return fmt.Errorf("reconcile Integration Pending Run %q: Run Branch head is required", runID)
+	}
+	if strings.TrimSpace(req.TargetBranch) == "" {
+		return fmt.Errorf("reconcile Integration Pending Run %q: target branch is required", runID)
+	}
+	if strings.TrimSpace(req.TargetHead) == "" {
+		return fmt.Errorf("reconcile Integration Pending Run %q: target head is required", runID)
+	}
+	if req.Time.IsZero() {
+		return fmt.Errorf("reconcile Integration Pending Run %q: timestamp is required", runID)
+	}
+	return nil
 }
 
 func (store *Store) ReclaimOrphanedRun(ctx context.Context, run Run, reason string) error {

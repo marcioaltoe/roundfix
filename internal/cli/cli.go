@@ -570,7 +570,7 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 			warnings = append(warnings, fmt.Sprintf("terminal Worktree reap failed for Run %s: %v", active.ID, pruneErr))
 		}
 	}
-	return stopResult{Run: run, Forced: true, Warnings: warnings}, nil
+	return stopResult{Run: run.Run, Forced: true, Warnings: warnings}, nil
 }
 
 func bestEffortForceStopAgentSessions(ctx context.Context, run store.Run) []string {
@@ -1944,7 +1944,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 	}
 	closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, completed.ID, runStore)
 	publishRunOutcome(ctx, runStore, completed.ID, completed.State, cycleResult.Remaining, stderr)
-	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed)
+	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed.Run)
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
 	ui.Close()
@@ -1971,7 +1971,7 @@ func completeStoppedRunRecord(runStore *store.Store, runID string, notifier roun
 		return exitRunFailed
 	}
 	publishRunOutcome(ctx, runStore, completed.ID, completed.State, 0, io.Discard)
-	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed)
+	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed.Run)
 	return exitOK
 }
 
@@ -2422,7 +2422,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	}
 	closeAgentSession(completeCtx, collaborators.runner, runtime, sessionForClose, completed.ID, runStore)
 	publishRunOutcome(completeCtx, runStore, completed.ID, completed.State, result.Remaining, stderr)
-	notifyTerminalOutcome(completeCtx, runStore, notifier, stderr, completed)
+	notifyTerminalOutcome(completeCtx, runStore, notifier, stderr, completed.Run)
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
 	ui.Close()
@@ -3572,7 +3572,7 @@ func completeFailedRun(ctx context.Context, runStore *store.Store, runID string)
 		return store.Run{}, false
 	}
 	publishRunOutcome(completeCtx, runStore, completed.ID, completed.State, 0, io.Discard)
-	return completed, true
+	return completed.Run, true
 }
 
 func closeAgentSession(ctx context.Context, runner agent.Runner, runtime agent.RuntimeSpec, session agent.SessionRef, runID string, runStore *store.Store) {
