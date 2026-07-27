@@ -1,9 +1,12 @@
 ---
 spec: 0037-terminal-outcome-integrity
-status: active
+status: archived
 created: 2026-07-17
 surfaces: [backend, cli, data, docs]
+archived: "2026-07-27"
+source_slug: 0037-terminal-outcome-integrity
 ---
+
 
 # Terminal outcome integrity
 
