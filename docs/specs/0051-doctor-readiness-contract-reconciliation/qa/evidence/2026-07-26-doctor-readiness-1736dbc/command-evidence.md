@@ -172,12 +172,13 @@ Fresh evidence that completed:
   `golang.org/x/text v0.40.0` moving from the indirect block to the direct
   block; the selected version is unchanged.
 
-`rtk go mod tidy -diff` could not complete because the daemon sandbox denied
-reads under `/Users/marcio/Library/Caches/go-build` with repeated
-`operation not permitted` diagnostics. This is an environment constraint, not
-a product diagnostic. Per the sandboxed QA contract, the command was not
-retried through a cache workaround. Unblocking requires a full-access session
-that can run the exact command against the host Go cache.
+The daemon sandbox could not complete `rtk go mod tidy -diff` because it
+denied reads under `/Users/marcio/Library/Caches/go-build`. After the Run
+closed and its commits were integrated, the supervisor executed the same
+literal command from the integrated branch in a full-access session. It exited
+0 with no output. No alternate cache, environment override, dependency change,
+or module-file write was used. This closes the environment-only block with the
+exact required evidence.
 
 ## AC-01 — Repository Skill Set inspection
 
