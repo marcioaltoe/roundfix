@@ -1650,27 +1650,33 @@ func inspectBranchIntegrity(ctx context.Context, homeDir string, preflightResult
 	if err != nil {
 		return report, err
 	}
-	reader, err := store.OpenReader(ctx, homeDir)
+	if _, err := os.Stat(store.DatabasePath(homeDir)); errors.Is(err, os.ErrNotExist) {
+		// No Run Database yet: no Run can attribute the branches, and no
+		// Active Run can exist. Keep every pending branch conservatively
+		// without creating the database on a preflight that may still fail.
+		report.Pending = pending
+		return report, nil
+	} else if err != nil {
+		return report, fmt.Errorf("inspect Run Database before Branch Integrity Preflight: %w", err)
+	}
+	// Open the migrating store: every caller is an operational command that
+	// creates Runs, so upgrading an existing Run Database here is in-contract
+	// and keeps this inspection from querying an unmigrated schema.
+	runStore, err := store.Open(ctx, homeDir)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			// No Run Database yet: no Run can attribute the branches, and no
-			// Active Run can exist. Keep every pending branch conservatively.
-			report.Pending = pending
-			return report, nil
-		}
 		return report, err
 	}
 	defer func() {
-		_ = reader.Close()
+		_ = runStore.Close()
 	}()
-	report.Pending, err = filterPendingRunWorkByTarget(ctx, reader, pending, preflightResult.PullRequest.HeadBranch)
+	report.Pending, err = filterPendingRunWorkByTarget(ctx, runStore, pending, preflightResult.PullRequest.HeadBranch)
 	if err != nil {
 		return report, err
 	}
 	// Scan the runs table instead of the lock table: Runs created with the
 	// Branch Integrity bypass hold no Active Run lock but must stay visible
 	// to subsequent guard checks.
-	active, found, err := reader.ActiveReviewRunByTarget(ctx, preflightResult.PullRequest.HeadRepository, preflightResult.PullRequest.HeadBranch)
+	active, found, err := runStore.ActiveReviewRunByTarget(ctx, preflightResult.PullRequest.HeadRepository, preflightResult.PullRequest.HeadBranch)
 	if err != nil {
 		return report, err
 	}
@@ -1684,7 +1690,7 @@ func inspectBranchIntegrity(ctx context.Context, homeDir string, preflightResult
 // to a different branch: git topology alone cannot tell a Run Branch based on
 // the PR Head Branch from one based on another feature branch. Branches with
 // no Run row are kept conservatively.
-func filterPendingRunWorkByTarget(ctx context.Context, reader *store.Store, pending []runworktree.PendingRunWork, headBranch string) ([]runworktree.PendingRunWork, error) {
+func filterPendingRunWorkByTarget(ctx context.Context, runStore *store.Store, pending []runworktree.PendingRunWork, headBranch string) ([]runworktree.PendingRunWork, error) {
 	headBranch = strings.TrimSpace(headBranch)
 	filtered := make([]runworktree.PendingRunWork, 0, len(pending))
 	for _, work := range pending {
@@ -1693,7 +1699,7 @@ func filterPendingRunWorkByTarget(ctx context.Context, reader *store.Store, pend
 			filtered = append(filtered, work)
 			continue
 		}
-		row, found, err := reader.Run(ctx, runID)
+		row, found, err := runStore.Run(ctx, runID)
 		if err != nil {
 			return nil, fmt.Errorf("attribute pending Run Branch %s: %w", work.Branch, err)
 		}

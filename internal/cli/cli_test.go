@@ -6768,6 +6768,71 @@ func TestBranchIntegrityPreflightIntegratesFastForwardRunBranchAndJournals(t *te
 	}
 }
 
+// seedOutdatedV9RunDatabase downgrades a freshly created Run Database to
+// schema v9 by reversing the v9→v10 migration, matching what a historical
+// binary left behind.
+func seedOutdatedV9RunDatabase(t *testing.T, homeDir string) {
+	t.Helper()
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("create Run Database: %v", err)
+	}
+	if err := runStore.Close(); err != nil {
+		t.Fatalf("close Run Database: %v", err)
+	}
+	db, err := sql.Open("sqlite", "file:"+store.DatabasePath(homeDir)+"?_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)")
+	if err != nil {
+		t.Fatalf("open Run Database for downgrade: %v", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Fatalf("close downgraded Run Database: %v", err)
+		}
+	}()
+	for _, statement := range []string{
+		`ALTER TABLE runs DROP COLUMN owner_identity`,
+		`PRAGMA user_version = 9`,
+	} {
+		if _, err := db.Exec(statement); err != nil {
+			t.Fatalf("downgrade Run Database to v9: %v", err)
+		}
+	}
+}
+
+func TestBranchIntegrityPreflightMigratesOutdatedRunDatabase(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withBranchIntegrity(t, nil, nil)
+	seedOutdatedV9RunDatabase(t, homeDir)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"fetch", "--source", "coderabbit", "--pr", "123", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected fetch to migrate the outdated Run Database and proceed, got %d stderr=%q", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "Fetch complete") {
+		t.Fatalf("expected fetch success, got %q", stdout.String())
+	}
+	reader, err := store.OpenReader(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("expected migrated Run Database to open read-only, got %v", err)
+	}
+	defer func() {
+		if err := reader.Close(); err != nil {
+			t.Fatalf("close reader after migration: %v", err)
+		}
+	}()
+	version, err := reader.MigrationVersion(context.Background())
+	if err != nil {
+		t.Fatalf("read migrated schema version: %v", err)
+	}
+	if version != 10 {
+		t.Fatalf("expected schema version 10 after preflight migration, got %d", version)
+	}
+}
+
 func TestBranchIntegrityPreflightRejectsActiveRunForReviewCommands(t *testing.T) {
 	for _, command := range []string{"fetch", "resolve", "watch"} {
 		t.Run(command, func(t *testing.T) {

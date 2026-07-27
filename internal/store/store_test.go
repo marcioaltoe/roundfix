@@ -2184,6 +2184,65 @@ func TestOpenMigratesV7RunDatabaseAddingOwnerPID(t *testing.T) {
 	}
 }
 
+// buildV9Fixture creates a schema v9 Run Database exactly as historical
+// binaries wrote it: the v7 fixture upgraded through the real v7→v8→v9
+// migration statements, without the v10 owner_identity column.
+func buildV9Fixture(t *testing.T, homeDir string) {
+	t.Helper()
+	buildV7Fixture(t, homeDir)
+	db, err := sql.Open("sqlite", writerDSN(DatabasePath(homeDir)))
+	if err != nil {
+		t.Fatalf("open fixture database: %v", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Fatalf("close fixture database: %v", err)
+		}
+	}()
+	for _, statement := range append(migrateV7ToV8Statements(), migrateV8ToV9Statements()...) {
+		if _, err := db.Exec(statement); err != nil {
+			t.Fatalf("build v9 fixture: %v", err)
+		}
+	}
+}
+
+func TestOpenReaderRejectsMismatchedSchemaVersion(t *testing.T) {
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	buildV9Fixture(t, homeDir)
+
+	_, err := OpenReader(ctx, homeDir)
+
+	var versionErr SchemaVersionError
+	if !errors.As(err, &versionErr) {
+		t.Fatalf("expected SchemaVersionError, got %T %v", err, err)
+	}
+	if versionErr.Found != 9 || versionErr.Supported != schemaVersion || versionErr.Path != DatabasePath(homeDir) {
+		t.Fatalf("schema version diagnostic = %#v", versionErr)
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		t.Fatal("schema version mismatch must not read as a missing Run Database")
+	}
+	for _, want := range []string{
+		"schema version 9",
+		"supports schema version 10",
+		"resolve, watch, or implement",
+	} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("schema version error missing %q: %q", want, err.Error())
+		}
+	}
+
+	// One migrating open upgrades the database; the reader then works.
+	migrated := openTestStore(t, ctx, homeDir)
+	closeStore(t, migrated)
+	reader, err := OpenReader(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("expected reader to open after migration, got %v", err)
+	}
+	closeStore(t, reader)
+}
+
 func TestCreateRunRejectsSecondActiveRunForSameSpecTarget(t *testing.T) {
 	ctx := context.Background()
 	store := openTestStore(t, ctx, t.TempDir())

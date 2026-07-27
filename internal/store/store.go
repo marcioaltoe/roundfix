@@ -171,6 +171,25 @@ type ActiveRunError struct {
 	Existing Run
 }
 
+// SchemaVersionError reports a Run Database whose schema version differs from
+// the one this binary supports. Read-only surfaces never migrate; the guard
+// only converts silent SQL errors on unmigrated databases into this
+// deterministic diagnostic.
+type SchemaVersionError struct {
+	Path      string
+	Found     int
+	Supported int
+}
+
+func (err SchemaVersionError) Error() string {
+	return fmt.Sprintf(
+		"Run Database %q has schema version %d, but this binary supports schema version %d; run one operational roundfix command (resolve, watch, or implement) to migrate the Run Database",
+		err.Path,
+		err.Found,
+		err.Supported,
+	)
+}
+
 var ErrTerminalRunStopRequest = errors.New("cannot record Stop Request for terminal Run")
 
 func (err ActiveRunError) Error() string {
@@ -214,7 +233,9 @@ func Open(ctx context.Context, homeDir string) (*Store, error) {
 }
 
 // OpenReader opens a read-only connection for paging Run Events while the
-// writer appends. It never migrates; the Run Database must already exist.
+// writer appends. It never migrates; the Run Database must already exist and
+// carry the supported schema version, otherwise a typed SchemaVersionError
+// names the migration remediation instead of failing on a later query.
 func OpenReader(ctx context.Context, homeDir string) (*Store, error) {
 	if strings.TrimSpace(homeDir) == "" {
 		return nil, errors.New("open Run Database reader: home directory is required")
@@ -236,6 +257,15 @@ func OpenReader(ctx context.Context, homeDir string) (*Store, error) {
 	if err := db.PingContext(ctx); err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("open Run Database reader %q: %w", path, err)
+	}
+	version, err := store.MigrationVersion(ctx)
+	if err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("open Run Database reader %q: %w", path, err)
+	}
+	if version != schemaVersion {
+		_ = db.Close()
+		return nil, SchemaVersionError{Path: path, Found: version, Supported: schemaVersion}
 	}
 	return store, nil
 }
