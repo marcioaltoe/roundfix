@@ -841,7 +841,7 @@ func withFakeRunWorktrees(t *testing.T) {
 	cleanupCleanRunWorktree = func(_ context.Context, ref runworktree.Ref) error {
 		return os.RemoveAll(ref.Path)
 	}
-	pruneTerminalRunWorktrees = func(context.Context, string, string, runworktree.TerminalRunLookup) ([]runworktree.PrunedRef, error) {
+	pruneTerminalRunWorktrees = func(context.Context, string, string, runworktree.TerminalRunReconciliationStore, runworktree.TerminalRunLookup) ([]runworktree.PrunedRef, error) {
 		return nil, nil
 	}
 	t.Cleanup(func() {

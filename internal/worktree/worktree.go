@@ -348,31 +348,77 @@ func (err *TerminalRunApplyError) Unwrap() error {
 	return err.Err
 }
 
-func ApplyTerminalRun(ctx context.Context, result RunWorktreeReconciliation) error {
-	return applyTerminalRun(ctx, execGitRunner{}, result)
+type TerminalRunReconciliationStore interface {
+	ReconcileIntegration(context.Context, store.IntegrationReconciliation) (store.Run, error)
+}
+
+func ApplyTerminalRun(ctx context.Context, runStore TerminalRunReconciliationStore, result RunWorktreeReconciliation) error {
+	return applyTerminalRunWithStore(ctx, execGitRunner{}, runStore, result)
+}
+
+func applyTerminalRunWithStore(
+	ctx context.Context,
+	runner gitRunner,
+	runStore TerminalRunReconciliationStore,
+	result RunWorktreeReconciliation,
+) error {
+	fresh, released, err := revalidateTerminalRunApply(ctx, runner, result)
+	if err != nil || released {
+		return err
+	}
+	if runStore == nil {
+		return errors.New("apply terminal Run reconciliation: Run Store is required before cleanup")
+	}
+	if _, err := runStore.ReconcileIntegration(ctx, store.IntegrationReconciliation{
+		RunID:           fresh.RunID,
+		PreviousOutcome: fresh.Outcome,
+		Classification:  string(fresh.State),
+		RunBranch:       fresh.Branch,
+		RunHead:         fresh.RunHead,
+		TargetBranch:    fresh.TargetBranch,
+		TargetHead:      fresh.TargetHead,
+		Worktree:        fresh.Path,
+		Action:          "cleanup",
+		Time:            time.Now().UTC(),
+	}); err != nil {
+		return fmt.Errorf("persist terminal Run %q reconciliation before cleanup: %w", fresh.RunID, err)
+	}
+	return cleanupTerminalRun(ctx, runner, fresh)
 }
 
 func applyTerminalRun(ctx context.Context, runner gitRunner, result RunWorktreeReconciliation) error {
+	fresh, released, err := revalidateTerminalRunApply(ctx, runner, result)
+	if err != nil || released {
+		return err
+	}
+	return cleanupTerminalRun(ctx, runner, fresh)
+}
+
+func revalidateTerminalRunApply(
+	ctx context.Context,
+	runner gitRunner,
+	result RunWorktreeReconciliation,
+) (RunWorktreeReconciliation, bool, error) {
 	evidence := result.evidence
 	if evidence == nil || terminalRunSnapshot(result) != evidence.snapshot {
-		return errors.New("apply terminal Run reconciliation: result was not produced by inspection or recorded metadata changed")
+		return RunWorktreeReconciliation{}, false, errors.New("apply terminal Run reconciliation: result was not produced by inspection or recorded metadata changed")
 	}
 	if result.State != ReconciliationSafe && result.State != ReconciliationReleased {
-		return fmt.Errorf("apply terminal Run reconciliation: classification %q is not safe", result.State)
+		return RunWorktreeReconciliation{}, false, fmt.Errorf("apply terminal Run reconciliation: classification %q is not safe", result.State)
 	}
 
 	fresh, err := inspectTerminalRun(ctx, runner, evidence.run)
 	if err != nil {
-		return fmt.Errorf("revalidate terminal Run before cleanup: %w", err)
+		return RunWorktreeReconciliation{}, false, fmt.Errorf("revalidate terminal Run before cleanup: %w", err)
 	}
 	if fresh.State == ReconciliationReleased {
-		return nil
+		return fresh, true, nil
 	}
 	if result.State != ReconciliationSafe ||
 		fresh.State != ReconciliationSafe ||
 		fresh.RunHead != result.RunHead ||
 		fresh.TargetHead != result.TargetHead {
-		return fmt.Errorf(
+		return RunWorktreeReconciliation{}, false, fmt.Errorf(
 			"apply terminal Run reconciliation: evidence is stale: inspected state=%q Run head=%q target head=%q; current state=%q Run head=%q target head=%q",
 			result.State,
 			result.RunHead,
@@ -382,7 +428,11 @@ func applyTerminalRun(ctx context.Context, runner gitRunner, result RunWorktreeR
 			fresh.TargetHead,
 		)
 	}
+	return fresh, false, nil
+}
 
+func cleanupTerminalRun(ctx context.Context, runner gitRunner, fresh RunWorktreeReconciliation) error {
+	evidence := fresh.evidence
 	if fresh.evidence.worktreePresent {
 		if _, err := runner.Run(ctx, evidence.gitRoot, "worktree", "remove", fresh.Path); err != nil {
 			return terminalRunApplyFailure(
@@ -798,15 +848,30 @@ func CleanupTask(ctx context.Context, task TaskRef) error {
 
 type TerminalRunLookup func(runID string) (store.Run, bool, error)
 
-func PruneTerminal(ctx context.Context, userRoot string, location string, loadTerminalRun TerminalRunLookup) error {
-	_, err := PruneTerminalReport(ctx, userRoot, location, loadTerminalRun)
+func PruneTerminal(
+	ctx context.Context,
+	userRoot string,
+	location string,
+	runStore TerminalRunReconciliationStore,
+	loadTerminalRun TerminalRunLookup,
+) error {
+	_, err := PruneTerminalReport(ctx, userRoot, location, runStore, loadTerminalRun)
 	return err
 }
 
-func PruneTerminalReport(ctx context.Context, userRoot string, location string, loadTerminalRun TerminalRunLookup) ([]PrunedRef, error) {
+func PruneTerminalReport(
+	ctx context.Context,
+	userRoot string,
+	location string,
+	runStore TerminalRunReconciliationStore,
+	loadTerminalRun TerminalRunLookup,
+) ([]PrunedRef, error) {
 	userRoot = filepath.Clean(strings.TrimSpace(userRoot))
 	if userRoot == "." || userRoot == "" {
 		return nil, errors.New("prune Run Worktrees: user root is required")
+	}
+	if runStore == nil {
+		return nil, errors.New("prune Run Worktrees: Run Store is required before cleanup")
 	}
 	if loadTerminalRun == nil {
 		return nil, errors.New("prune Run Worktrees: terminal Run lookup is required")
@@ -850,7 +915,7 @@ func PruneTerminalReport(ctx context.Context, userRoot string, location string, 
 		}
 
 		if result.State == ReconciliationSafe {
-			if err := applyTerminalRun(ctx, runner, result); err != nil {
+			if err := applyTerminalRunWithStore(ctx, runner, runStore, result); err != nil {
 				errs = append(errs, err)
 				continue
 			}

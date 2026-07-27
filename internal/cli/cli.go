@@ -669,7 +669,7 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 		return stopResult{Run: active, Warnings: warnings}, err
 	}
 	if strings.TrimSpace(active.GitRoot) != "" && strings.TrimSpace(active.WorkDir) != "" {
-		pruned, pruneErr := pruneTerminalRunWorktrees(ctx, active.GitRoot, worktreeLocation, func(runID string) (store.Run, bool, error) {
+		pruned, pruneErr := pruneTerminalRunWorktrees(ctx, active.GitRoot, worktreeLocation, runStore, func(runID string) (store.Run, bool, error) {
 			return runStore.Run(ctx, runID)
 		})
 		for _, ref := range pruned {

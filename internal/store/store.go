@@ -117,11 +117,16 @@ type CompleteRunResult struct {
 }
 
 type IntegrationReconciliation struct {
-	RunID        string
-	RunHead      string
-	TargetBranch string
-	TargetHead   string
-	Time         time.Time
+	RunID           string
+	PreviousOutcome string
+	Classification  string
+	RunBranch       string
+	RunHead         string
+	TargetBranch    string
+	TargetHead      string
+	Worktree        string
+	Action          string
+	Time            time.Time
 }
 
 type InteractiveDefaults struct {
@@ -478,41 +483,31 @@ func (store *Store) ReconcileIntegration(ctx context.Context, req IntegrationRec
 		return Run{}, err
 	}
 	req.RunID = strings.TrimSpace(req.RunID)
+	req.PreviousOutcome = strings.TrimSpace(req.PreviousOutcome)
+	req.Classification = strings.TrimSpace(req.Classification)
+	req.RunBranch = strings.TrimSpace(req.RunBranch)
 	req.RunHead = strings.TrimSpace(req.RunHead)
 	req.TargetBranch = strings.TrimSpace(req.TargetBranch)
 	req.TargetHead = strings.TrimSpace(req.TargetHead)
+	req.Worktree = strings.TrimSpace(req.Worktree)
+	req.Action = strings.TrimSpace(req.Action)
 
 	tx, err := store.db.BeginTx(ctx, nil)
 	if err != nil {
-		return Run{}, fmt.Errorf("begin Integration Pending reconciliation for Run %q: %w", req.RunID, err)
+		return Run{}, fmt.Errorf("begin terminal Run reconciliation for Run %q: %w", req.RunID, err)
 	}
 	defer rollbackUnlessCommitted(tx)
 
 	run, err := selectRun(ctx, tx, req.RunID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return Run{}, fmt.Errorf("reconcile Integration Pending Run %q: Run does not exist", req.RunID)
+		return Run{}, fmt.Errorf("reconcile terminal Run %q: Run does not exist", req.RunID)
 	}
 	if err != nil {
-		return Run{}, fmt.Errorf("read Run %q before Integration Pending reconciliation: %w", req.RunID, err)
-	}
-	if run.State != StateIntegrationPending {
-		if IsTerminalState(run.State) {
-			return Run{}, TerminalOutcomeConflictError{
-				RunID:     req.RunID,
-				Stored:    run.State,
-				Requested: StateClean,
-			}
-		}
-		return Run{}, fmt.Errorf(
-			"reconcile Integration Pending Run %q: stored state %q is not terminal outcome %q",
-			req.RunID,
-			run.State,
-			StateIntegrationPending,
-		)
+		return Run{}, fmt.Errorf("read Run %q before terminal reconciliation: %w", req.RunID, err)
 	}
 	if run.Kind != KindImplement {
 		return Run{}, fmt.Errorf(
-			"reconcile Integration Pending Run %q: Run kind %q is not %q",
+			"reconcile terminal Run %q: Run kind %q is not %q",
 			req.RunID,
 			run.Kind,
 			KindImplement,
@@ -520,57 +515,128 @@ func (store *Store) ReconcileIntegration(ctx context.Context, req IntegrationRec
 	}
 	if strings.TrimSpace(run.LocalBranch) != req.TargetBranch {
 		return Run{}, fmt.Errorf(
-			"reconcile Integration Pending Run %q: target branch %q does not match recorded target branch %q",
+			"reconcile terminal Run %q: target branch %q does not match recorded target branch %q",
 			req.RunID,
 			req.TargetBranch,
 			run.LocalBranch,
 		)
 	}
-
-	result, err := tx.ExecContext(ctx, `
-UPDATE runs
-SET state = ?, updated_at = ?
-WHERE id = ? AND state = ?`,
-		StateClean,
-		formatTime(req.Time),
-		req.RunID,
-		StateIntegrationPending,
-	)
-	if err != nil {
-		return Run{}, fmt.Errorf("compare-and-set Integration Pending reconciliation for Run %q: %w", req.RunID, err)
-	}
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return Run{}, fmt.Errorf("read Integration Pending reconciliation result for Run %q: %w", req.RunID, err)
-	}
-	if affected != 1 {
+	if strings.TrimSpace(run.WorkDir) != req.Worktree {
 		return Run{}, fmt.Errorf(
-			"reconcile Integration Pending Run %q: compare-and-set affected %d rows",
+			"reconcile terminal Run %q: worktree %q does not match recorded worktree %q",
 			req.RunID,
-			affected,
+			req.Worktree,
+			run.WorkDir,
+		)
+	}
+	expectedRunBranch := "roundfix/run-" + req.RunID
+	if req.RunBranch != expectedRunBranch {
+		return Run{}, fmt.Errorf(
+			"reconcile terminal Run %q: Run Branch %q does not match recorded Run Branch %q",
+			req.RunID,
+			req.RunBranch,
+			expectedRunBranch,
 		)
 	}
 
+	currentOutcome := req.PreviousOutcome
+	if req.PreviousOutcome == StateIntegrationPending {
+		currentOutcome = StateClean
+	}
 	payload, err := json.Marshal(map[string]string{
 		"event":            "integration_reconciliation",
-		"previous_outcome": StateIntegrationPending,
-		"current_outcome":  StateClean,
+		"previous_outcome": req.PreviousOutcome,
+		"current_outcome":  currentOutcome,
+		"classification":   req.Classification,
+		"run_branch":       req.RunBranch,
 		"run_head":         req.RunHead,
 		"target_branch":    req.TargetBranch,
 		"target_head":      req.TargetHead,
+		"worktree":         req.Worktree,
+		"action":           req.Action,
 	})
 	if err != nil {
-		return Run{}, fmt.Errorf("encode Integration Pending reconciliation for Run %q: %w", req.RunID, err)
+		return Run{}, fmt.Errorf("encode terminal reconciliation for Run %q: %w", req.RunID, err)
+	}
+
+	var replay int
+	err = tx.QueryRowContext(ctx, `
+SELECT 1
+FROM run_events
+WHERE run_id = ? AND source = ? AND kind = ? AND payload = ?
+LIMIT 1`,
+		req.RunID,
+		string(runevent.SourceDaemon),
+		string(runevent.KindDaemonOutcome),
+		string(payload),
+	).Scan(&replay)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return Run{}, fmt.Errorf("inspect terminal reconciliation replay for Run %q: %w", req.RunID, err)
+	}
+	if err == nil {
+		if run.State != currentOutcome {
+			return Run{}, fmt.Errorf(
+				"reconcile terminal Run %q: recorded evidence expects outcome %q but stored outcome is %q",
+				req.RunID,
+				currentOutcome,
+				run.State,
+			)
+		}
+		if err := tx.Commit(); err != nil {
+			return Run{}, fmt.Errorf("commit terminal reconciliation replay for Run %q: %w", req.RunID, err)
+		}
+		return run, nil
+	}
+	if run.State != req.PreviousOutcome {
+		if IsTerminalState(run.State) {
+			return Run{}, TerminalOutcomeConflictError{
+				RunID:     req.RunID,
+				Stored:    run.State,
+				Requested: currentOutcome,
+			}
+		}
+		return Run{}, fmt.Errorf(
+			"reconcile terminal Run %q: stored state %q is not terminal outcome %q",
+			req.RunID,
+			run.State,
+			req.PreviousOutcome,
+		)
+	}
+
+	if req.PreviousOutcome == StateIntegrationPending {
+		result, err := tx.ExecContext(ctx, `
+UPDATE runs
+SET state = ?, updated_at = ?
+WHERE id = ? AND state = ?`,
+			StateClean,
+			formatTime(req.Time),
+			req.RunID,
+			StateIntegrationPending,
+		)
+		if err != nil {
+			return Run{}, fmt.Errorf("compare-and-set Integration Pending reconciliation for Run %q: %w", req.RunID, err)
+		}
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return Run{}, fmt.Errorf("read Integration Pending reconciliation result for Run %q: %w", req.RunID, err)
+		}
+		if affected != 1 {
+			return Run{}, fmt.Errorf(
+				"reconcile Integration Pending Run %q: compare-and-set affected %d rows",
+				req.RunID,
+				affected,
+			)
+		}
 	}
 	if _, err := appendRunEvent(ctx, tx, runevent.RunEvent{
 		RunID:   req.RunID,
 		Source:  runevent.SourceDaemon,
 		Kind:    runevent.KindDaemonOutcome,
-		Summary: runevent.BoundSummary("Run reconciled Integration Pending to Clean."),
+		Summary: runevent.BoundSummary(fmt.Sprintf("Run reconciled %s to %s before terminal cleanup.", req.PreviousOutcome, currentOutcome)),
 		Time:    req.Time,
 		Payload: payload,
 	}); err != nil {
-		return Run{}, fmt.Errorf("journal Integration Pending reconciliation for Run %q: %w", req.RunID, err)
+		return Run{}, fmt.Errorf("journal terminal reconciliation for Run %q: %w", req.RunID, err)
 	}
 
 	reconciled, err := selectRun(ctx, tx, req.RunID)
@@ -578,7 +644,7 @@ WHERE id = ? AND state = ?`,
 		return Run{}, fmt.Errorf("read reconciled Run %q: %w", req.RunID, err)
 	}
 	if err := tx.Commit(); err != nil {
-		return Run{}, fmt.Errorf("commit Integration Pending reconciliation for Run %q: %w", req.RunID, err)
+		return Run{}, fmt.Errorf("commit terminal reconciliation for Run %q: %w", req.RunID, err)
 	}
 	return reconciled, nil
 }
@@ -586,19 +652,34 @@ WHERE id = ? AND state = ?`,
 func validateIntegrationReconciliation(req IntegrationReconciliation) error {
 	runID := strings.TrimSpace(req.RunID)
 	if runID == "" {
-		return errors.New("reconcile Integration Pending Run: Run ID is required")
+		return errors.New("reconcile terminal Run: Run ID is required")
+	}
+	if !IsTerminalState(strings.TrimSpace(req.PreviousOutcome)) {
+		return fmt.Errorf("reconcile terminal Run %q: previous outcome %q is not terminal", runID, req.PreviousOutcome)
+	}
+	if strings.TrimSpace(req.Classification) != "safe" {
+		return fmt.Errorf("reconcile terminal Run %q: classification must be safe", runID)
+	}
+	if strings.TrimSpace(req.RunBranch) == "" {
+		return fmt.Errorf("reconcile terminal Run %q: Run Branch is required", runID)
 	}
 	if strings.TrimSpace(req.RunHead) == "" {
-		return fmt.Errorf("reconcile Integration Pending Run %q: Run Branch head is required", runID)
+		return fmt.Errorf("reconcile terminal Run %q: Run Branch head is required", runID)
 	}
 	if strings.TrimSpace(req.TargetBranch) == "" {
-		return fmt.Errorf("reconcile Integration Pending Run %q: target branch is required", runID)
+		return fmt.Errorf("reconcile terminal Run %q: target branch is required", runID)
 	}
 	if strings.TrimSpace(req.TargetHead) == "" {
-		return fmt.Errorf("reconcile Integration Pending Run %q: target head is required", runID)
+		return fmt.Errorf("reconcile terminal Run %q: target head is required", runID)
+	}
+	if strings.TrimSpace(req.Worktree) == "" {
+		return fmt.Errorf("reconcile terminal Run %q: worktree is required", runID)
+	}
+	if strings.TrimSpace(req.Action) != "cleanup" {
+		return fmt.Errorf("reconcile terminal Run %q: action must be cleanup", runID)
 	}
 	if req.Time.IsZero() {
-		return fmt.Errorf("reconcile Integration Pending Run %q: timestamp is required", runID)
+		return fmt.Errorf("reconcile terminal Run %q: timestamp is required", runID)
 	}
 	return nil
 }

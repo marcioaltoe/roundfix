@@ -1,7 +1,7 @@
 ---
 task: task_03
 spec: 0038-terminal-run-worktree-reconciliation
-status: pending
+status: completed
 type: data
 complexity: high
 ---
@@ -31,22 +31,22 @@ surface is released; other outcomes retain their stored state.
 
 ## Subtasks
 
-- [ ] Map classifier evidence into the guarded store request.
-- [ ] Journal complete reconciliation evidence transactionally.
-- [ ] Preserve non-Integration-Pending outcomes.
-- [ ] Order durable state before Git cleanup.
-- [ ] Add stale and incomplete-evidence refusal cases.
-- [ ] Add repeat reconciliation coverage.
+- [x] Map classifier evidence into the guarded store request.
+- [x] Journal complete reconciliation evidence transactionally.
+- [x] Preserve non-Integration-Pending outcomes.
+- [x] Order durable state before Git cleanup.
+- [x] Add stale and incomplete-evidence refusal cases.
+- [x] Add repeat reconciliation coverage.
 
 ## Acceptance Criteria
 
-- [ ] A safe Integration Pending Run becomes Clean with one evidence event.
-- [ ] The event contains both outcomes, branches, heads, worktree, and action.
-- [ ] Unresolved, Failed, Stopped, and other terminal outcomes remain unchanged
+- [x] A safe Integration Pending Run becomes Clean with one evidence event.
+- [x] The event contains both outcomes, branches, heads, worktree, and action.
+- [x] Unresolved, Failed, Stopped, and other terminal outcomes remain unchanged
       after safe cleanup.
-- [ ] Missing or stale evidence produces no state or Git mutation.
-- [ ] Database failure starts no worktree or branch removal.
-- [ ] Repeating the operation produces no duplicate transition or evidence.
+- [x] Missing or stale evidence produces no state or Git mutation.
+- [x] Database failure starts no worktree or branch removal.
+- [x] Repeating the operation produces no duplicate transition or evidence.
 
 ## Context
 
@@ -78,3 +78,68 @@ surface is released; other outcomes retain their stored state.
   reconciliation boundary.
 - `../../adr/0052-run-completion-is-compare-and-set.md` → sole terminal
   transition exception.
+
+## Result
+
+Implemented the durable reconciliation barrier shared by explicit terminal Run
+apply and automatic terminal reaping. Freshly revalidated `safe` evidence is
+mapped into one guarded Store request before Git mutation. The Store validates
+the recorded Run outcome, deterministic Run Branch, target branch, and
+worktree; promotes only Integration Pending to Clean; preserves every other
+terminal outcome; and appends the complete cleanup proof in the same
+transaction. Exact evidence replay is a no-op.
+
+### Verification
+
+- Red baseline:
+  `rtk proxy env GOCACHE=/private/tmp/roundfix-task03-gocache go test ./internal/store -run 'TestReconcileIntegration.*(Safe|Stale|Invalid|Idempotent|Outcome)' -count=1`
+  failed to compile because the Store request lacked prior outcome,
+  classification, Run Branch, worktree, and action evidence.
+- Store reconciliation family:
+  `rtk proxy env GOCACHE=/private/tmp/roundfix-task03-gocache go test ./internal/store -run 'TestReconcileIntegration' -count=1`
+  passed.
+- Task-focused worktree reconciliation:
+  `rtk proxy env GOCACHE=/private/tmp/roundfix-task03-gocache go test ./internal/worktree -run 'TestApplyTerminalRun.*(IntegrationPending|StoreFailure|Outcome)' -count=1`
+  passed.
+- Worktree package regression:
+  `rtk proxy env GOCACHE=/private/tmp/roundfix-task03-gocache go test ./internal/worktree -count=1`
+  passed.
+- Automatic-reaper integration:
+  `rtk proxy env GOCACHE=/private/tmp/roundfix-task03-gocache go test ./internal/cli -run 'TestRunImplementPreflight.*Terminal.*(Safe|Unique|Reachable)' -count=1`
+  passed.
+- CLI compile check:
+  `rtk proxy env GOCACHE=/private/tmp/roundfix-task03-gocache go test ./internal/cli -run '^$' -count=1`
+  passed.
+- The broad `internal/store` package run reached unrelated sandbox failures
+  because `/bin/ps` is not permitted in owner-process tests; the complete
+  reconciliation test family above passed. The Daemon remains responsible for
+  running the two declared Verification commands verbatim.
+
+### Acceptance evidence
+
+- `TestApplyTerminalRunIntegrationPendingPersistsBeforeCleanup` proves a fresh
+  safe Integration Pending Run becomes Clean, records exactly one event before
+  cleanup, removes both Git surfaces, and produces no duplicate event on
+  repeat.
+- `TestReconcileIntegrationSafeCompleteEvidence` decodes the durable payload
+  and checks prior/current outcomes, classification, Run Branch and head,
+  target branch and head, worktree, and action.
+- `TestReconcileIntegrationOutcomePreservedWithEvidence` and
+  `TestApplyTerminalRunOutcomeRemainsUnchanged` cover Unresolved, Failed,
+  Stopped, and Timed Out outcomes: cleanup evidence is recorded while the Run
+  row remains unchanged.
+- `TestReconcileIntegrationInvalidCompleteEvidence`,
+  `TestReconcileIntegrationRejectsStaleTargetBranch`, and the existing
+  stale-head, changed-metadata, and newly-dirty worktree tests prove incomplete,
+  mismatched, or stale proof changes neither durable outcome nor Git surface.
+- `TestApplyTerminalRunStoreFailureStartsNoCleanup` injects persistence failure
+  after fresh revalidation and observes zero worktree/branch mutation calls.
+- `TestReconcileIntegrationIdempotent` and the repeated real-Git apply in
+  `TestApplyTerminalRunIntegrationPendingPersistsBeforeCleanup` prove replay
+  performs no duplicate transition, event, worktree removal, or branch
+  deletion.
+
+### Follow-ups
+
+The public Reconcile Command, result rendering, and selector behavior remain
+Task 04.
