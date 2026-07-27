@@ -1,2 +1,4 @@
 # Build artifacts
 /bin/
+# `go build ./cmd/roundfix` without -o writes the binary here
+/roundfix
