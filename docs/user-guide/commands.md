@@ -507,6 +507,12 @@ failures remain visible as secondary warnings after the primary failure. They
 do not replace that failure or authorize terminal completion while the owner
 is still alive.
 
+Exit codes: `0` for a recorded Stop Request, a completed Force Stop, and the
+idempotent already-Stopped report; `1` when Force Stop fails operationally
+because owner exit cannot be proven; `2` for Preflight Validation failures
+such as an invalid selector, no matching Active Run, or stopping a Run that
+already holds a different terminal outcome.
+
 Terminal results are stable. Repeating Force Stop for an already Stopped Run
 reports the existing outcome without repeating process or Agent Session
 actions. Force Stop against a different terminal outcome is rejected and
@@ -522,7 +528,7 @@ authorizes owner reclamation.
 The terminology and behavior trace to the
 [Roundfix glossary](../../CONTEXT.md#language),
 [ADR-0052](../adr/0052-run-completion-is-compare-and-set.md),
-[Spec 0037](../specs/0037-terminal-outcome-integrity/_prd.md), and the
+[Spec 0037](../specs/_archived/0037-terminal-outcome-integrity/_prd.md), and the
 [detached-watch finding](../findings/2026-07-16-vortex-pr87-detached-watch-notification.md#4-cleanup-noise-appeared-before-the-actionable-failure).
 
 ## Detached Runs

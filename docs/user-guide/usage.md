@@ -519,7 +519,7 @@ outcome. Never kill Agent or acpx processes by hand while a Run is Active.
 For the full failure and replay contract, see the
 [Stop Command reference](commands.md#stop), which traces to
 [ADR-0052](../adr/0052-run-completion-is-compare-and-set.md) and the
-[terminal-outcome Spec](../specs/0037-terminal-outcome-integrity/_prd.md).
+[terminal-outcome Spec](../specs/_archived/0037-terminal-outcome-integrity/_prd.md).
 
 ## Command reference
 

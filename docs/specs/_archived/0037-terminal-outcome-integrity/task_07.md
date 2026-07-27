@@ -46,7 +46,7 @@ and this Task file.
       file, and the maintainer-authorized derived Skill-digest pins named in
       the active Spec artifacts' Tooling authority entries.
 - [x] No other protected or upstream-managed Skill changes.
-- [ ] Shipped Skill validation and the complete repository gate pass.
+- [x] Shipped Skill validation and the complete repository gate pass.
 
 ## Context
 
