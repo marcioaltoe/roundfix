@@ -7739,8 +7739,17 @@ func TestRunStopForceReportsCancelFailuresButCompletes(t *testing.T) {
 			if !tt.wantCanceller && cancelCalls != 0 {
 				t.Fatalf("expected no cancel attempt, got %d", cancelCalls)
 			}
-			if !strings.Contains(stdout.String(), "Roundfix Run force-stopped") {
-				t.Fatalf("expected force stop report, got %q", stdout.String())
+			for _, want := range []string{
+				"Roundfix Run force-stopped",
+				"proved the recorded owner process exited",
+				"released its Active Run locks",
+			} {
+				if !strings.Contains(stdout.String(), want) {
+					t.Fatalf("expected force stop report to contain %q, got %q", want, stdout.String())
+				}
+			}
+			if strings.Contains(stdout.String(), "immediately") {
+				t.Fatalf("force stop report must not promise immediate completion, got %q", stdout.String())
 			}
 			assertAgentSelectionScopeStatus(t, homeDir, active.ID, store.AgentSelectionScopeTask, "task_01", tt.wantStatus)
 			assertRunState(t, homeDir, active.ID, store.StateStopped)
@@ -7868,7 +7877,7 @@ func TestRunStopBySpecReportsMissingActiveRun(t *testing.T) {
 	}
 }
 
-func TestRunStopHelpListsSpecSelector(t *testing.T) {
+func TestRunStopHelpExplainsProofBeforeCompletion(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -7877,9 +7886,29 @@ func TestRunStopHelpListsSpecSelector(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("expected stop help exit 0, got %d", code)
 	}
-	for _, want := range []string{"roundfix stop --spec <slug>", "--spec", "--force", "dead or runaway", "graceful"} {
+	for _, want := range []string{
+		"roundfix stop --spec <slug>",
+		"--spec",
+		"--force",
+		"graceful",
+		"owner exit is proven",
+		"Run remains Active",
+		"Active Run lock stays retained",
+		"roundfix runs list --state active",
+		"roundfix stop --force <run-id>",
+		"already Stopped",
+		"different terminal outcome",
+	} {
 		if !strings.Contains(stdout.String(), want) {
 			t.Fatalf("expected stop help to contain %q, got %q", want, stdout.String())
+		}
+	}
+	for _, forbidden := range []string{
+		"Immediately stop a dead or runaway Run and release its lock",
+		"completes the Run Stopped immediately",
+	} {
+		if strings.Contains(stdout.String(), forbidden) {
+			t.Fatalf("stop help must not promise %q, got %q", forbidden, stdout.String())
 		}
 	}
 	if stderr.Len() != 0 {

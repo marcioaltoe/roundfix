@@ -490,10 +490,36 @@ roundfix stop --force <run-id>           # dead, stuck, or runaway Runs only
 ```
 
 Graceful stop records a Stop Request and lets the in-flight Work Item finish its
-verification and commit boundary. `--force` cancels the Agent Session
-best-effort, completes the Run Stopped immediately, releases its locks, and reaps
-empty terminal Worktree debris. Never kill Agent or acpx processes by hand while
-a Run is Active.
+verification and commit boundary. During a Review Source status, retry,
+quiet-period, or merge-readiness wait, the owner observes the request by the
+next configured poll boundary. Once observed, the Run does not start another
+fetch, check, commit, push, or Review Source mutation.
+
+Use Force Stop only for a dead, stuck, or runaway Run. It cancels registered
+active Agent Sessions, terminates the recorded owner process, and reports
+Stopped only after owner exit is proven. Roundfix releases the Active Run lock
+only after that proof. Registered sessions that are already absent need no
+recovery; other cleanup failures appear as secondary warnings after the
+primary failure.
+
+If Force Stop cannot prove owner exit, it fails closed: the Run remains Active
+and the Active Run lock stays retained. Read the reported owner PID and failed
+step, inspect the Run, resolve the process-control failure, and retry:
+
+```bash
+roundfix runs list --state active
+roundfix stop --force <run-id>
+```
+
+Repeating Force Stop after the Run is already Stopped is an idempotent report
+of the same outcome and does not repeat cleanup. If the Run already has a
+different terminal outcome, Roundfix rejects the conflict and preserves that
+outcome. Never kill Agent or acpx processes by hand while a Run is Active.
+
+For the full failure and replay contract, see the
+[Stop Command reference](commands.md#stop), which traces to
+[ADR-0052](../adr/0052-run-completion-is-compare-and-set.md) and the
+[terminal-outcome Spec](../specs/0037-terminal-outcome-integrity/_prd.md).
 
 ## Command reference
 

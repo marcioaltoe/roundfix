@@ -4467,13 +4467,23 @@ Options:
   --spec        Spec slug used to find the Active Run in the current repository
   --head-repo   Explicit Head Repository, owner/name
   --head-branch Explicit PR Head Branch
-  --force       Immediately stop a dead or runaway Run and release its lock
+  --force       Force Stop a dead, stuck, or runaway Run after proving owner exit
 
 Default stop is graceful: it records a Stop Request and the Run stops after
-the current Work Item settles. Use --force only for a dead, stuck, or runaway
-Run; it cancels the Agent Session best-effort and completes the Run Stopped
-immediately. It also reaps provably empty kept Worktrees and branches,
-reporting each reaped path and branch on stderr.
+the current Work Item settles. During a Review Source wait, the owner observes
+the request by the next configured poll boundary and runs no later fetch,
+check, commit, push, or Review Source mutation.
+
+Force Stop cancels registered active Agent Sessions, terminates the recorded
+owner, and reports Stopped only after owner exit is proven. It then releases
+the Active Run lock and may reap provably empty kept Worktrees and branches.
+If exit proof fails, the Run remains Active; its Active Run lock stays retained.
+Inspect it with 'roundfix runs list --state active', resolve the reported
+owner-process failure, then retry 'roundfix stop --force <run-id>'.
+
+Repeating Force Stop for an already Stopped Run reports the existing outcome
+without repeating cleanup. A different terminal outcome is rejected and
+preserved. Cleanup failures are secondary warnings after the primary failure.
 `
 	case "skills":
 		return `Usage:
@@ -4582,7 +4592,7 @@ func printStopSuccess(result stopResult, stdout io.Writer) {
 		printStopRunFields(stdout, run)
 		fmt.Fprintln(stdout)
 		fmt.Fprintf(stdout, "%s\n", style.cyan("Result:"))
-		fmt.Fprintln(stdout, "  Force stop completed the Run as Stopped immediately and released its Active Run locks.")
+		fmt.Fprintln(stdout, "  Force Stop proved the recorded owner process exited, completed the Run as Stopped, and released its Active Run locks.")
 		fmt.Fprintln(stdout)
 		fmt.Fprintf(stdout, "%s\n", style.cyan("No user work side effects:"))
 		fmt.Fprintln(stdout, "  Roundfix did not edit user files, commit, push, fetch, or resolve Review Source threads.")

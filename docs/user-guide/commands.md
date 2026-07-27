@@ -482,16 +482,48 @@ roundfix stop --force <run-id>
 Selectors: positional `<run-id>`, `--run-id`, `--pr`, `--spec`, or
 `--head-repo` plus `--head-branch`. Graceful stop records a Stop Request and
 reports `Stop Request recorded; the Run stops after the current Work Item
-settles.` `--force` is for dead, stuck, or runaway Runs: it cancels the Agent
-Session best-effort, completes the Run Stopped immediately, releases its
-locks, and reaps kept terminal Worktrees whose branch has no commits beyond
-its base.
+settles.`
+
+During a watch Run's Review Source status, retry, quiet-period, or
+merge-readiness wait, the owner checks for the Stop Request before the next
+status access and after each interruptible sleep. It reaches Stopped by the
+next configured poll boundary. After detecting the request, it does not run
+another fetch, check, commit, push, or Review Source mutation. A Work Item
+already in flight still settles before the graceful stop completes.
+
+Force Stop is for dead, stuck, or runaway Runs. It cancels only registered
+Agent Sessions whose current lifecycle is active, then terminates the recorded
+owner process and proves that process exited. Only then does Roundfix report
+Stopped, release the Active Run lock, and reap kept terminal Worktrees whose
+branch has no commits beyond its base. An already-absent registered Agent
+Session is an idempotent cleanup result.
+
+If owner exit cannot be proven, Force Stop fails with no stdout success report.
+The diagnostic names the Run ID, owner PID, and failed process-control step;
+the Run remains Active and its Active Run lock stays retained. Inspect the Run
+with `roundfix runs list --state active`, resolve the reported owner-process
+failure, then retry `roundfix stop --force <run-id>`. Agent Session cleanup
+failures remain visible as secondary warnings after the primary failure. They
+do not replace that failure or authorize terminal completion while the owner
+is still alive.
+
+Terminal results are stable. Repeating Force Stop for an already Stopped Run
+reports the existing outcome without repeating process or Agent Session
+actions. Force Stop against a different terminal outcome is rejected and
+leaves that outcome unchanged.
 
 Orphaned locks rarely need `--force` anymore: Runs record their owner process
 id, and any command blocked by a lock whose owner is provably dead reclaims it
 automatically — the Run completes Failed with the reason journaled and one
 stderr warning names the reclaimed run id. A live owner, a PID-less legacy
-Run, or any liveness result short of proof still blocks.
+Run, or any liveness result short of proof still blocks; a warning alone never
+authorizes owner reclamation.
+
+The terminology and behavior trace to the
+[Roundfix glossary](../../CONTEXT.md#language),
+[ADR-0052](../adr/0052-run-completion-is-compare-and-set.md),
+[Spec 0037](../specs/0037-terminal-outcome-integrity/_prd.md), and the
+[detached-watch finding](../findings/2026-07-16-vortex-pr87-detached-watch-notification.md#4-cleanup-noise-appeared-before-the-actionable-failure).
 
 ## Detached Runs
 
