@@ -16,6 +16,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"roundfix/internal/store"
 )
 
 const (
@@ -115,6 +117,151 @@ type PrunedRef struct {
 	TaskID string
 	Path   string
 	Branch string
+}
+
+type ReconciliationState string
+
+const (
+	ReconciliationSafe         ReconciliationState = "safe"
+	ReconciliationUnintegrated ReconciliationState = "unintegrated"
+	ReconciliationDirty        ReconciliationState = "dirty"
+	ReconciliationUnknown      ReconciliationState = "unknown"
+	ReconciliationReleased     ReconciliationState = "released"
+)
+
+const (
+	reconciliationReasonSafe                 = "Run Branch is integrated and Run Worktree is clean"
+	reconciliationReasonUnintegrated         = "Run Branch is not integrated into the target branch"
+	reconciliationReasonDirty                = "Run Worktree has tracked or untracked changes"
+	reconciliationReasonReleased             = "Run Worktree and Run Branch are absent"
+	reconciliationReasonRunMetadata          = "recorded Run metadata is invalid"
+	reconciliationReasonWorktreePath         = "recorded Run Worktree path is unsafe"
+	reconciliationReasonWorktreeUnregistered = "recorded Run Worktree is not registered in the Git root"
+	reconciliationReasonWorktreeInspection   = "Run Worktree cleanliness could not be inspected"
+	reconciliationReasonRunBranch            = "Run Branch could not be resolved unambiguously"
+	reconciliationReasonTargetMetadata       = "recorded target branch is missing or invalid"
+	reconciliationReasonTargetBranch         = "target branch could not be resolved unambiguously"
+	reconciliationReasonAncestry             = "Run Branch ancestry could not be inspected"
+)
+
+type RunWorktreeReconciliation struct {
+	RunID        string
+	Outcome      string
+	Path         string
+	Branch       string
+	TargetBranch string
+	RunHead      string
+	TargetHead   string
+	Reason       string
+	State        ReconciliationState
+}
+
+func InspectTerminalRun(ctx context.Context, run store.Run) (RunWorktreeReconciliation, error) {
+	result := RunWorktreeReconciliation{
+		RunID:        run.ID,
+		Outcome:      run.State,
+		Path:         run.WorkDir,
+		Branch:       BranchName(run.ID),
+		TargetBranch: run.LocalBranch,
+		State:        ReconciliationUnknown,
+		Reason:       reconciliationReasonRunMetadata,
+	}
+
+	runner := execGitRunner{}
+	gitRoot, err := recordedGitRoot(ctx, runner, run.GitRoot)
+	if err != nil {
+		return result, err
+	}
+	if run.Kind != store.KindImplement || !store.IsTerminalState(run.State) {
+		return result, nil
+	}
+	if strings.TrimSpace(run.ID) != run.ID {
+		return result, nil
+	}
+	if _, err := cleanPathSegment(run.ID); err != nil {
+		return result, nil
+	}
+	if !validLocalBranch(ctx, runner, gitRoot, result.Branch) {
+		return result, nil
+	}
+
+	worktrees, err := listRegisteredWorktrees(ctx, runner, gitRoot)
+	if err != nil {
+		result.Reason = reconciliationReasonWorktreeInspection
+		return result, nil
+	}
+	worktree, worktreePresent, worktreeUnsafe := recordedWorktree(result.Path, worktrees)
+	if worktreeUnsafe {
+		result.Reason = reconciliationReasonWorktreePath
+		return result, nil
+	}
+
+	runBranchPresent, err := localBranchExists(ctx, runner, gitRoot, result.Branch)
+	if err != nil {
+		result.Reason = reconciliationReasonRunBranch
+		return result, nil
+	}
+	if !worktreePresent && registeredBranchPath(worktrees, result.Branch) != "" {
+		result.Reason = reconciliationReasonWorktreeUnregistered
+		return result, nil
+	}
+	if !worktreePresent && !runBranchPresent {
+		result.State = ReconciliationReleased
+		result.Reason = reconciliationReasonReleased
+		return result, nil
+	}
+
+	var runHeadErr error
+	if runBranchPresent {
+		result.RunHead, runHeadErr = resolveUnambiguousLocalBranch(ctx, runner, gitRoot, result.Branch)
+	}
+	targetMetadataValid := validLocalBranch(ctx, runner, gitRoot, result.TargetBranch)
+	var targetHeadErr error
+	if targetMetadataValid {
+		result.TargetHead, targetHeadErr = resolveUnambiguousLocalBranch(ctx, runner, gitRoot, result.TargetBranch)
+	}
+
+	if worktreePresent {
+		if worktree.Branch != result.Branch {
+			result.Reason = reconciliationReasonWorktreeUnregistered
+			return result, nil
+		}
+		status, err := runner.Run(ctx, worktree.Path, "status", "--porcelain=v1", "--untracked-files=all")
+		if err != nil {
+			result.Reason = reconciliationReasonWorktreeInspection
+			return result, nil
+		}
+		if strings.TrimSpace(status) != "" {
+			result.State = ReconciliationDirty
+			result.Reason = reconciliationReasonDirty
+			return result, nil
+		}
+	}
+
+	if runHeadErr != nil || result.RunHead == "" {
+		result.Reason = reconciliationReasonRunBranch
+		return result, nil
+	}
+	if !targetMetadataValid {
+		result.Reason = reconciliationReasonTargetMetadata
+		return result, nil
+	}
+	if targetHeadErr != nil || result.TargetHead == "" {
+		result.Reason = reconciliationReasonTargetBranch
+		return result, nil
+	}
+	if _, err := runner.Run(ctx, gitRoot, "merge-base", "--is-ancestor", result.RunHead, result.TargetHead); err != nil {
+		if isAncestryMiss(err) {
+			result.State = ReconciliationUnintegrated
+			result.Reason = reconciliationReasonUnintegrated
+			return result, nil
+		}
+		result.Reason = reconciliationReasonAncestry
+		return result, nil
+	}
+	result.State = ReconciliationSafe
+	result.Reason = reconciliationReasonSafe
+	return result, nil
 }
 
 func Create(ctx context.Context, opts CreateOptions) (Ref, error) {
@@ -578,6 +725,213 @@ func (execGitRunner) Run(ctx context.Context, workDir string, args ...string) (s
 		}
 	}
 	return stdout.String(), nil
+}
+
+type registeredWorktree struct {
+	Path   string
+	Branch string
+}
+
+func recordedGitRoot(ctx context.Context, runner gitRunner, value string) (string, error) {
+	root := strings.TrimSpace(value)
+	if root == "" {
+		return "", errors.New("inspect terminal Run: recorded Git root is required")
+	}
+	if root != value || strings.ContainsAny(root, "\r\n\x00") {
+		return "", fmt.Errorf("inspect terminal Run: recorded Git root %q is invalid", value)
+	}
+	if !filepath.IsAbs(root) || filepath.Clean(root) != root {
+		return "", fmt.Errorf("inspect terminal Run: recorded Git root %q must be a clean absolute path", value)
+	}
+	hasSymlink, err := pathContainsSymlink(root)
+	if err != nil {
+		return "", fmt.Errorf("inspect terminal Run: stat recorded Git root %q: %w", root, err)
+	}
+	if hasSymlink {
+		return "", fmt.Errorf("inspect terminal Run: recorded Git root %q contains a symlink", root)
+	}
+	info, err := os.Stat(root)
+	if err != nil {
+		return "", fmt.Errorf("inspect terminal Run: stat recorded Git root %q: %w", root, err)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("inspect terminal Run: recorded Git root %q is not a real directory", root)
+	}
+	output, err := runner.Run(ctx, root, "rev-parse", "--show-toplevel")
+	if err != nil {
+		return "", fmt.Errorf("inspect terminal Run: validate recorded Git root %q: %w", root, err)
+	}
+	topLevel := strings.TrimSpace(output)
+	if topLevel == "" || canonicalPath(topLevel) != canonicalPath(root) {
+		return "", fmt.Errorf("inspect terminal Run: recorded Git root %q is not the repository root", root)
+	}
+	return root, nil
+}
+
+func listRegisteredWorktrees(ctx context.Context, runner gitRunner, gitRoot string) ([]registeredWorktree, error) {
+	output, err := runner.Run(ctx, gitRoot, "worktree", "list", "--porcelain", "-z")
+	if err != nil {
+		return nil, fmt.Errorf("list registered Git worktrees: %w", err)
+	}
+	var worktrees []registeredWorktree
+	var current registeredWorktree
+	appendCurrent := func() {
+		if current.Path != "" {
+			worktrees = append(worktrees, current)
+		}
+		current = registeredWorktree{}
+	}
+	for _, field := range strings.Split(output, "\x00") {
+		if field == "" {
+			appendCurrent()
+			continue
+		}
+		if value, ok := strings.CutPrefix(field, "worktree "); ok {
+			current.Path = filepath.Clean(value)
+			continue
+		}
+		if value, ok := strings.CutPrefix(field, "branch refs/heads/"); ok {
+			current.Branch = value
+		}
+	}
+	appendCurrent()
+	return worktrees, nil
+}
+
+func recordedWorktree(path string, worktrees []registeredWorktree) (registeredWorktree, bool, bool) {
+	if path == "" {
+		return registeredWorktree{}, false, false
+	}
+	if strings.ContainsAny(path, "\r\n\x00") {
+		return registeredWorktree{}, false, true
+	}
+	if !filepath.IsAbs(path) || filepath.Clean(path) != path {
+		return registeredWorktree{}, false, true
+	}
+	hasSymlink, err := pathContainsSymlink(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return registeredWorktree{}, false, false
+	}
+	if err != nil || hasSymlink {
+		return registeredWorktree{}, false, true
+	}
+	info, err := os.Stat(path)
+	if err != nil || !info.IsDir() {
+		return registeredWorktree{}, false, true
+	}
+	canonical := canonicalPath(path)
+	for _, worktree := range worktrees {
+		if canonicalPath(worktree.Path) == canonical {
+			return worktree, true, false
+		}
+	}
+	return registeredWorktree{}, false, true
+}
+
+func pathContainsSymlink(path string) (bool, error) {
+	volume := filepath.VolumeName(path)
+	current := volume + string(filepath.Separator)
+	remainder := strings.TrimPrefix(path, current)
+	for _, component := range strings.Split(remainder, string(filepath.Separator)) {
+		if component == "" {
+			continue
+		}
+		current = filepath.Join(current, component)
+		info, err := os.Lstat(current)
+		if err != nil {
+			return false, err
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func registeredBranchPath(worktrees []registeredWorktree, branch string) string {
+	for _, worktree := range worktrees {
+		if worktree.Branch == branch {
+			return worktree.Path
+		}
+	}
+	return ""
+}
+
+func validLocalBranch(ctx context.Context, runner gitRunner, gitRoot, branch string) bool {
+	if branch == "" || strings.TrimSpace(branch) != branch || strings.HasPrefix(branch, "-") {
+		return false
+	}
+	_, err := runner.Run(ctx, gitRoot, "check-ref-format", "refs/heads/"+branch)
+	return err == nil
+}
+
+func localBranchExists(ctx context.Context, runner gitRunner, gitRoot, branch string) (bool, error) {
+	_, err := runner.Run(ctx, gitRoot, "show-ref", "--verify", "--quiet", "refs/heads/"+branch)
+	if err == nil {
+		return true, nil
+	}
+	if isGitExitCode(err, 1) {
+		return false, nil
+	}
+	return false, err
+}
+
+func resolveUnambiguousLocalBranch(ctx context.Context, runner gitRunner, gitRoot, branch string) (string, error) {
+	ambiguous, err := localBranchIsAmbiguous(ctx, runner, gitRoot, branch)
+	if err != nil {
+		return "", err
+	}
+	if ambiguous {
+		return "", fmt.Errorf("resolve local branch %q: short ref is ambiguous", branch)
+	}
+	output, err := runner.Run(ctx, gitRoot, "rev-parse", "--verify", "--end-of-options", "refs/heads/"+branch+"^{commit}")
+	if err != nil {
+		return "", err
+	}
+	head := strings.TrimSpace(output)
+	if head == "" || strings.ContainsAny(head, "\r\n") {
+		return "", fmt.Errorf("resolve local branch %q: Git returned an invalid head", branch)
+	}
+	return head, nil
+}
+
+func localBranchIsAmbiguous(ctx context.Context, runner gitRunner, gitRoot, branch string) (bool, error) {
+	candidates := map[string]bool{
+		"refs/" + branch:                   true,
+		"refs/tags/" + branch:              true,
+		"refs/heads/" + branch:             true,
+		"refs/remotes/" + branch:           true,
+		"refs/remotes/" + branch + "/HEAD": true,
+	}
+	output, err := runner.Run(
+		ctx,
+		gitRoot,
+		"for-each-ref",
+		"--format=%(refname)",
+		"refs/"+branch,
+		"refs/tags/"+branch,
+		"refs/heads/"+branch,
+		"refs/remotes/"+branch,
+	)
+	if err != nil {
+		return false, err
+	}
+	count := 0
+	for _, line := range strings.Split(output, "\n") {
+		if candidates[strings.TrimSpace(line)] {
+			count++
+		}
+	}
+	return count != 1, nil
+}
+
+func isGitExitCode(err error, code int) bool {
+	var gitErr *gitCommandError
+	if !errors.As(err, &gitErr) {
+		return false
+	}
+	var exitErr *exec.ExitError
+	return errors.As(gitErr.err, &exitErr) && exitErr.ExitCode() == code
 }
 
 type gitCommandError struct {
