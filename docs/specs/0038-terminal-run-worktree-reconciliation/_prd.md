@@ -23,8 +23,14 @@ Terminal spec Runs can retain clean Run Worktrees and Run Branches after their c
   `docs/agents/domain.md`.
 - Tooling authority: applicable — on 2026-07-26, the maintainer expressly
   authorizes changes to exactly `.agents/skills/roundfix/SKILL.md` and
-  `skills/roundfix/SKILL.md`; no other protected tooling mutation is
-  authorized. Source:
+  `skills/roundfix/SKILL.md`. On 2026-07-27, the maintainer additionally
+  expressly authorizes the deterministic Skill-digest fallout of that edit in
+  exactly `internal/baseline/assets/setups/typescript-bun.json`,
+  `internal/baseline/testdata/catalog.digest`,
+  `internal/baseline/testdata/catalog.normalized.json`,
+  `internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json`, and
+  `internal/baseline/testdata/parity-corpus/v1/manifest.json`. No other
+  protected tooling mutation is authorized. Source:
   `docs/agents/agent-instructions.md`.
 
 ## Goals
