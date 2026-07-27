@@ -1,7 +1,7 @@
 ---
 task: task_04
 spec: 0038-terminal-run-worktree-reconciliation
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -31,25 +31,25 @@ proven safe during the current invocation.
 
 ## Subtasks
 
-- [ ] Add Reconcile Command parsing and usage.
-- [ ] Resolve one-Run and repository-wide scopes.
-- [ ] Render deterministic text and versioned JSON.
-- [ ] Connect dry-run and explicit apply behavior.
-- [ ] Preserve mixed safe and unsafe scan results.
-- [ ] Add idempotent repeat and invalid-selector coverage.
+- [x] Add Reconcile Command parsing and usage.
+- [x] Resolve one-Run and repository-wide scopes.
+- [x] Render deterministic text and versioned JSON.
+- [x] Connect dry-run and explicit apply behavior.
+- [x] Preserve mixed safe and unsafe scan results.
+- [x] Add idempotent repeat and invalid-selector coverage.
 
 ## Acceptance Criteria
 
-- [ ] Default invocation changes neither Git nor the Run Database.
-- [ ] One-Run and repository-wide results are ordered newest-first.
-- [ ] Text and JSON expose classification, branches, heads, worktree, evidence,
+- [x] Default invocation changes neither Git nor the Run Database.
+- [x] One-Run and repository-wide results are ordered newest-first.
+- [x] Text and JSON expose classification, branches, heads, worktree, evidence,
       action, and refusal reason consistently.
-- [ ] `--apply` removes all and only fresh `safe` results.
-- [ ] Dirty, unintegrated, unknown, and released results are preserved and
+- [x] `--apply` removes all and only fresh `safe` results.
+- [x] Dirty, unintegrated, unknown, and released results are preserved and
       reported without turning a complete scan into failure.
-- [ ] Operational inspection or apply failure returns the Run failure exit code
+- [x] Operational inspection or apply failure returns the Run failure exit code
       and names the next safe action.
-- [ ] A second apply reports `released` and performs zero mutations.
+- [x] A second apply reports `released` and performs zero mutations.
 
 ## Context
 
@@ -80,3 +80,55 @@ proven safe during the current invocation.
 - `_techspec.md` → API Contracts; Integration Points; Build Order 4.
 - `../../adr/0053-terminal-run-worktree-reconciliation-is-proof-based.md` →
   explicit dry-run/apply command.
+
+## Result
+
+Implemented the Reconcile Command as a dry-run-first CLI over the shared
+proof-based classifier. A positional Run ID and flags work in either order;
+the no-ID form queries only terminal spec Runs for the canonical current Git
+root. Text and `roundfix-reconcile/v1` JSON carry the same ordered evidence,
+actions, refusal reasons, and summary counts. Apply opens the writable Run
+Database only when the current scan contains a `safe` result, then delegates
+each such result to stale-proof revalidation and cleanup. Expected preserved
+states remain successful, while inspection, persistence, cleanup, and output
+failures return the Run failure exit code with a rerun command.
+
+Verification:
+
+- `rtk go test ./internal/cli -run 'TestRunReconcile.*(DryRun|Apply|JSON|Repository|Invalid|Mixed|Idempotent)' -count=1`
+  — passed, 12 tests.
+- `rtk go test -race ./internal/cli ./internal/worktree -run 'Test.*Reconcile' -count=1`
+  — passed, 12 tests across both packages.
+- `rtk go build -buildvcs=false ./cmd/roundfix` — passed.
+- `rtk go test ./internal/cli -count=1` — 779 tests passed; the sole remaining
+  sandbox failure was the pre-existing owner-process integration test because
+  `/bin/ps` was denied. Running that exact test outside the sandbox passed.
+- `rtk git diff --check` — passed.
+
+Acceptance evidence:
+
+- `TestRunReconcileDryRunReadOnly` compares the Run Database bytes and the
+  complete Git worktree/ref surface before and after the default invocation;
+  both remain identical.
+- `TestRunReconcileRepositoryScopeNewestFirst` pins creation timestamps,
+  observes newest-first current-repository output, and excludes a newer Run
+  belonging to another repository. A selected one-Run report contains exactly
+  that Run.
+- `TestRunReconcileDryRunReadOnly` and
+  `TestRunReconcileJSONMatchesTextFields` cover classification, Run and target
+  branches and heads, worktree, evidence, action, refusal reason, schema
+  version, mode, repository, apply command, and summary counts.
+- `TestRunReconcileApplyMixedResults` creates `safe`, `dirty`, `unintegrated`,
+  `unknown`, and `released` real-Git fixtures. Apply removes only the freshly
+  revalidated `safe` worktree and branch; all three preserved work surfaces
+  remain and the scan exits successfully.
+- `TestRunReconcileApplyFailureNamesNextSafeAction` uses a locked clean
+  worktree to make real Git removal fail. The command exits with the Run
+  failure code, reports one operational failure and retained evidence, and
+  prints the exact safe rerun action.
+- `TestRunReconcileIdempotentApply` proves the first apply reconciles
+  Integration Pending to Clean and releases Git state. The second apply
+  reports `released`, performs zero Git or Run Database mutations, and reports
+  `applied=0`.
+
+Follow-ups: none.

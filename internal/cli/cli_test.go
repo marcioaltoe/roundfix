@@ -277,6 +277,11 @@ func TestRunCommandHelp(t *testing.T) {
 			contains: []string{"roundfix runs list [--all] [--state <active|terminal|all>] [--limit N]", "--all", "--state", "--limit"},
 		},
 		{
+			name:     "reconcile",
+			args:     []string{"reconcile", "--help"},
+			contains: []string{"roundfix reconcile [run-id] [--apply] [--format <text|json>]", "read-only report", "--apply", "--format"},
+		},
+		{
 			name:     "profiles",
 			args:     []string{"profiles", "--help"},
 			contains: []string{"roundfix profiles show [--category <category>] [--json]", "show"},
@@ -307,6 +312,392 @@ func TestRunCommandHelp(t *testing.T) {
 				t.Fatalf("expected no stderr, got %q", stderr.String())
 			}
 		})
+	}
+}
+
+func TestRunReconcileDryRunReadOnly(t *testing.T) {
+	homeDir, repoDir, location := newReconcileWorkspace(t)
+	run, ref := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
+	beforeDatabase := readReconcileBytes(t, store.DatabasePath(homeDir))
+	beforeGit := reconcileGitSurface(t, repoDir)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(
+		context.Background(),
+		[]string{"reconcile", run.ID, "--format", "text"},
+		&stdout,
+		&stderr,
+	)
+
+	if code != exitOK {
+		t.Fatalf("dry-run exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("dry-run stderr = %q, want empty", stderr.String())
+	}
+	for _, want := range []string{
+		"Run: " + run.ID,
+		"outcome: " + store.StateFailed,
+		"classification: safe",
+		"run-branch: " + ref.Branch,
+		"run-head: ",
+		"target-branch: ma/widget-flow",
+		"target-head: ",
+		"worktree: " + ref.Path,
+		"evidence: ",
+		"action: would release with --apply",
+		"refusal-reason: -",
+		"Apply with: roundfix reconcile " + run.ID + " --apply",
+	} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("dry-run output missing %q:\n%s", want, stdout.String())
+		}
+	}
+	if got := readReconcileBytes(t, store.DatabasePath(homeDir)); !bytes.Equal(got, beforeDatabase) {
+		t.Fatal("dry-run changed the Run Database")
+	}
+	if got := reconcileGitSurface(t, repoDir); got != beforeGit {
+		t.Fatalf("dry-run changed Git state\nbefore:\n%s\nafter:\n%s", beforeGit, got)
+	}
+	assertReconcilePathState(t, ref.Path, true)
+	assertReconcileBranchState(t, repoDir, ref.Branch, true)
+}
+
+func TestRunReconcileDryRunOutputFailure(t *testing.T) {
+	_, _, _ = newReconcileWorkspace(t)
+	var stderr bytes.Buffer
+
+	code := RunContext(
+		context.Background(),
+		[]string{"reconcile"},
+		failingWriter{err: errors.New("output unavailable")},
+		&stderr,
+	)
+
+	if code != exitRunFailed {
+		t.Fatalf("output failure exit = %d, want %d stderr=%q", code, exitRunFailed, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "write reconciliation report: output unavailable") ||
+		!strings.Contains(stderr.String(), "Next safe action: roundfix reconcile") {
+		t.Fatalf("output failure did not name the operation and next safe action: %q", stderr.String())
+	}
+}
+
+func TestRunReconcileJSONMatchesTextFields(t *testing.T) {
+	homeDir, repoDir, location := newReconcileWorkspace(t)
+	run, ref := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateStopped)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(
+		context.Background(),
+		[]string{"reconcile", "--format=json", run.ID},
+		&stdout,
+		&stderr,
+	)
+
+	if code != exitOK {
+		t.Fatalf("JSON dry-run exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("JSON dry-run stderr = %q, want empty", stderr.String())
+	}
+	var report reconcileReport
+	if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
+		t.Fatalf("decode reconciliation JSON: %v\n%s", err, stdout.String())
+	}
+	if report.SchemaVersion != reconcileSchemaVersion ||
+		report.Mode != "dry-run" ||
+		report.Repository != repoDir ||
+		report.ApplyCommand != "roundfix reconcile "+run.ID+" --apply" {
+		t.Fatalf("unexpected JSON envelope: %+v", report)
+	}
+	if len(report.Results) != 1 {
+		t.Fatalf("JSON results = %d, want 1: %+v", len(report.Results), report.Results)
+	}
+	result := report.Results[0]
+	if result.RunID != run.ID ||
+		result.Outcome != store.StateStopped ||
+		result.Classification != "safe" ||
+		result.RunBranch != ref.Branch ||
+		result.RunHead == "" ||
+		result.TargetBranch != "ma/widget-flow" ||
+		result.TargetHead == "" ||
+		result.Worktree != ref.Path ||
+		result.Evidence == "" ||
+		result.Action != "would release with --apply" ||
+		result.RefusalReason != "" {
+		t.Fatalf("JSON result omitted text-contract evidence: %+v", result)
+	}
+	if report.Summary.Total != 1 || report.Summary.Safe != 1 ||
+		report.Summary.Applied != 0 || report.Summary.OperationalFailures != 0 {
+		t.Fatalf("unexpected JSON summary: %+v", report.Summary)
+	}
+}
+
+func TestRunReconcileRepositoryScopeNewestFirst(t *testing.T) {
+	homeDir, repoDir, location := newReconcileWorkspace(t)
+	older, _ := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
+	newer, _ := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateStopped)
+	otherRepo := t.TempDir()
+	other := createReconcileMetadataRun(
+		t,
+		homeDir,
+		store.CreateRunRequest{
+			Kind:        store.KindImplement,
+			GitRoot:     otherRepo,
+			LocalBranch: "ma/other",
+			HeadSHA:     "other-head",
+			SpecSlug:    "other-spec",
+			Agent:       "codex",
+			OwnerPID:    os.Getpid(),
+		},
+		store.StateFailed,
+	)
+	setListedRunCreatedAt(t, homeDir, older.ID, time.Date(2026, 7, 27, 10, 0, 0, 0, time.UTC))
+	setListedRunCreatedAt(t, homeDir, newer.ID, time.Date(2026, 7, 27, 11, 0, 0, 0, time.UTC))
+	setListedRunCreatedAt(t, homeDir, other.ID, time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"reconcile"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("repository scan exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	newerIndex := strings.Index(stdout.String(), "Run: "+newer.ID)
+	olderIndex := strings.Index(stdout.String(), "Run: "+older.ID)
+	if newerIndex < 0 || olderIndex < 0 || newerIndex >= olderIndex {
+		t.Fatalf("repository results are not newest-first:\n%s", stdout.String())
+	}
+	if strings.Contains(stdout.String(), other.ID) {
+		t.Fatalf("repository scan included cross-repository Run %s:\n%s", other.ID, stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "Summary: total=2 ") {
+		t.Fatalf("repository summary did not count only current repository Runs:\n%s", stdout.String())
+	}
+}
+
+func TestRunReconcileInvalidSelectorsMutateNothing(t *testing.T) {
+	homeDir, repoDir, _ := newReconcileWorkspace(t)
+	active := createReconcileMetadataRun(
+		t,
+		homeDir,
+		store.CreateRunRequest{
+			Kind:        store.KindImplement,
+			GitRoot:     repoDir,
+			LocalBranch: "ma/widget-flow",
+			HeadSHA:     strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD")),
+			SpecSlug:    "active-spec",
+			Agent:       "codex",
+			OwnerPID:    os.Getpid(),
+		},
+		"",
+	)
+	review := createReconcileMetadataRun(
+		t,
+		homeDir,
+		store.CreateRunRequest{
+			Kind:           store.KindResolve,
+			HeadRepository: "owner/project",
+			HeadBranch:     "ma/review",
+			BaseRepository: "owner/project",
+			PRNumber:       "38",
+			GitRoot:        repoDir,
+			LocalBranch:    "ma/widget-flow",
+			HeadSHA:        "review-head",
+			ArtifactDir:    filepath.Join(repoDir, ".roundfix", "review"),
+			Agent:          "codex",
+			OwnerPID:       os.Getpid(),
+		},
+		store.StateFailed,
+	)
+	crossRepository := createReconcileMetadataRun(
+		t,
+		homeDir,
+		store.CreateRunRequest{
+			Kind:        store.KindImplement,
+			GitRoot:     t.TempDir(),
+			LocalBranch: "ma/other",
+			HeadSHA:     "other-head",
+			SpecSlug:    "cross-repository",
+			Agent:       "codex",
+			OwnerPID:    os.Getpid(),
+		},
+		store.StateFailed,
+	)
+	beforeDatabase := readReconcileBytes(t, store.DatabasePath(homeDir))
+	beforeGit := reconcileGitSurface(t, repoDir)
+	tests := []struct {
+		name string
+		id   string
+		want string
+	}{
+		{name: "active", id: active.ID, want: "is Active"},
+		{name: "review", id: review.ID, want: "is a review Run"},
+		{name: "missing", id: "run_missing", want: "does not exist"},
+		{name: "cross repository", id: crossRepository.ID, want: "belongs to repository"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(
+				context.Background(),
+				[]string{"reconcile", tt.id, "--apply"},
+				&stdout,
+				&stderr,
+			)
+
+			if code != exitPreflight {
+				t.Fatalf("invalid selector exit = %d, want %d stderr=%q", code, exitPreflight, stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("invalid selector wrote stdout: %q", stdout.String())
+			}
+			if !strings.Contains(stderr.String(), tt.want) {
+				t.Fatalf("invalid selector stderr missing %q: %q", tt.want, stderr.String())
+			}
+			if got := readReconcileBytes(t, store.DatabasePath(homeDir)); !bytes.Equal(got, beforeDatabase) {
+				t.Fatal("invalid selector changed the Run Database")
+			}
+			if got := reconcileGitSurface(t, repoDir); got != beforeGit {
+				t.Fatalf("invalid selector changed Git state\nbefore:\n%s\nafter:\n%s", beforeGit, got)
+			}
+		})
+	}
+}
+
+func TestRunReconcileApplyMixedResults(t *testing.T) {
+	homeDir, repoDir, location := newReconcileWorkspace(t)
+	safeRun, safeRef := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
+	_, dirtyRef := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateStopped)
+	mustWrite(t, filepath.Join(dirtyRef.Path, "dirty.txt"), "preserve\n")
+	_, unintegratedRef := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateUnresolved)
+	mustWrite(t, filepath.Join(unintegratedRef.Path, "unique.txt"), "unique\n")
+	gitImplement(t, unintegratedRef.Path, "add", "unique.txt")
+	gitImplement(t, unintegratedRef.Path, "commit", "-m", "unique work")
+	_, unknownRef := createReconcileRun(t, homeDir, repoDir, location, "ma/missing-target", store.StateTimedOut)
+	_, releasedRef := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateClean)
+	gitImplement(t, repoDir, "worktree", "remove", releasedRef.Path)
+	gitImplement(t, repoDir, "branch", "-D", releasedRef.Branch)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"reconcile", "--apply"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("mixed apply exit = %d, want 0 stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("mixed apply stderr = %q, want empty", stderr.String())
+	}
+	assertReconcilePathState(t, safeRef.Path, false)
+	assertReconcileBranchState(t, repoDir, safeRef.Branch, false)
+	for _, ref := range []runworktree.Ref{dirtyRef, unintegratedRef, unknownRef} {
+		assertReconcilePathState(t, ref.Path, true)
+		assertReconcileBranchState(t, repoDir, ref.Branch, true)
+	}
+	assertReconcilePathState(t, releasedRef.Path, false)
+	assertReconcileBranchState(t, repoDir, releasedRef.Branch, false)
+	for _, want := range []string{
+		"Run: " + safeRun.ID,
+		"classification: safe",
+		"action: released",
+		"Summary: total=5 safe=1 unintegrated=1 dirty=1 unknown=1 released=1 applied=1 preserved=3 operational-failures=0",
+	} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Fatalf("mixed apply output missing %q:\n%s", want, stdout.String())
+		}
+	}
+}
+
+func TestRunReconcileApplyFailureNamesNextSafeAction(t *testing.T) {
+	homeDir, repoDir, location := newReconcileWorkspace(t)
+	run, ref := createReconcileRun(t, homeDir, repoDir, location, "ma/widget-flow", store.StateFailed)
+	gitImplement(t, repoDir, "worktree", "lock", ref.Path)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(
+		context.Background(),
+		[]string{"reconcile", run.ID, "--apply"},
+		&stdout,
+		&stderr,
+	)
+
+	if code != exitRunFailed {
+		t.Fatalf("apply failure exit = %d, want %d stderr=%q stdout=%q", code, exitRunFailed, stderr.String(), stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "Next safe action: roundfix reconcile "+run.ID) {
+		t.Fatalf("apply failure did not name next safe action: %q", stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "operational-failures=1") ||
+		!strings.Contains(stdout.String(), "inspect remaining Git state and rerun") ||
+		!strings.Contains(stdout.String(), "refusal-reason: apply terminal Run") {
+		t.Fatalf("apply failure report is not actionable:\n%s", stdout.String())
+	}
+	assertReconcilePathState(t, ref.Path, true)
+	assertReconcileBranchState(t, repoDir, ref.Branch, true)
+}
+
+func TestRunReconcileIdempotentApply(t *testing.T) {
+	homeDir, repoDir, location := newReconcileWorkspace(t)
+	run, ref := createReconcileRun(
+		t,
+		homeDir,
+		repoDir,
+		location,
+		"ma/widget-flow",
+		store.StateIntegrationPending,
+	)
+	var firstStdout bytes.Buffer
+	var firstStderr bytes.Buffer
+	firstCode := RunContext(
+		context.Background(),
+		[]string{"reconcile", run.ID, "--apply"},
+		&firstStdout,
+		&firstStderr,
+	)
+	if firstCode != exitOK {
+		t.Fatalf("first apply exit = %d, want 0 stderr=%q stdout=%q", firstCode, firstStderr.String(), firstStdout.String())
+	}
+	afterFirstDatabase := readReconcileBytes(t, store.DatabasePath(homeDir))
+	afterFirstGit := reconcileGitSurface(t, repoDir)
+	var secondStdout bytes.Buffer
+	var secondStderr bytes.Buffer
+
+	secondCode := RunContext(
+		context.Background(),
+		[]string{"reconcile", run.ID, "--apply"},
+		&secondStdout,
+		&secondStderr,
+	)
+
+	if secondCode != exitOK {
+		t.Fatalf("second apply exit = %d, want 0 stderr=%q stdout=%q", secondCode, secondStderr.String(), secondStdout.String())
+	}
+	if secondStderr.Len() != 0 {
+		t.Fatalf("second apply stderr = %q, want empty", secondStderr.String())
+	}
+	if !strings.Contains(secondStdout.String(), "classification: released") ||
+		!strings.Contains(secondStdout.String(), "action: none") ||
+		!strings.Contains(secondStdout.String(), "applied=0") {
+		t.Fatalf("second apply did not report a zero-mutation released result:\n%s", secondStdout.String())
+	}
+	if got := readReconcileBytes(t, store.DatabasePath(homeDir)); !bytes.Equal(got, afterFirstDatabase) {
+		t.Fatal("second apply changed the Run Database")
+	}
+	if got := reconcileGitSurface(t, repoDir); got != afterFirstGit {
+		t.Fatalf("second apply changed Git state\nbefore:\n%s\nafter:\n%s", afterFirstGit, got)
+	}
+	assertReconcilePathState(t, ref.Path, false)
+	assertReconcileBranchState(t, repoDir, ref.Branch, false)
+	stored := implementRunFromStore(t, homeDir, run.ID)
+	if stored.State != store.StateClean {
+		t.Fatalf("Integration Pending Run state = %q, want Clean", stored.State)
 	}
 }
 
@@ -8451,6 +8842,136 @@ func withCLIWorkspace(t *testing.T) (string, string) {
 	t.Setenv("HOME", homeDir)
 	t.Chdir(repoDir)
 	return homeDir, repoDir
+}
+
+func newReconcileWorkspace(t *testing.T) (string, string, string) {
+	t.Helper()
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Reconcile terminal work"},
+	})
+	return homeDir, repoDir, t.TempDir()
+}
+
+func createReconcileRun(
+	t *testing.T,
+	homeDir string,
+	repoDir string,
+	location string,
+	targetBranch string,
+	terminalState string,
+) (store.Run, runworktree.Ref) {
+	t.Helper()
+	ctx := context.Background()
+	head := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open reconciliation Run Database: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close reconciliation Run Database: %v", err)
+		}
+	}()
+	run, err := runStore.CreateRun(ctx, store.CreateRunRequest{
+		Kind:        store.KindImplement,
+		GitRoot:     repoDir,
+		LocalBranch: targetBranch,
+		HeadSHA:     head,
+		SpecSlug:    "reconcile-spec",
+		Agent:       "codex",
+		OwnerPID:    os.Getpid(),
+	})
+	if err != nil {
+		t.Fatalf("create reconciliation Run: %v", err)
+	}
+	ref, err := runworktree.Create(ctx, runworktree.CreateOptions{
+		UserRoot: repoDir,
+		Location: location,
+		RunID:    run.ID,
+		HeadSHA:  head,
+	})
+	if err != nil {
+		t.Fatalf("create reconciliation Run Worktree: %v", err)
+	}
+	ref.Path, err = filepath.EvalSymlinks(ref.Path)
+	if err != nil {
+		t.Fatalf("resolve reconciliation Run Worktree path: %v", err)
+	}
+	run, err = runStore.SetRunWorkDir(ctx, run.ID, ref.Path)
+	if err != nil {
+		t.Fatalf("record reconciliation Run Worktree: %v", err)
+	}
+	completed, err := runStore.CompleteRun(ctx, run.ID, terminalState)
+	if err != nil {
+		t.Fatalf("complete reconciliation Run %s: %v", terminalState, err)
+	}
+	return completed.Run, ref
+}
+
+func createReconcileMetadataRun(
+	t *testing.T,
+	homeDir string,
+	request store.CreateRunRequest,
+	terminalState string,
+) store.Run {
+	t.Helper()
+	ctx := context.Background()
+	runStore, err := store.Open(ctx, homeDir)
+	if err != nil {
+		t.Fatalf("open reconciliation metadata store: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close reconciliation metadata store: %v", err)
+		}
+	}()
+	run, err := runStore.CreateRun(ctx, request)
+	if err != nil {
+		t.Fatalf("create reconciliation metadata Run: %v", err)
+	}
+	if terminalState == "" {
+		return run
+	}
+	completed, err := runStore.CompleteRun(ctx, run.ID, terminalState)
+	if err != nil {
+		t.Fatalf("complete reconciliation metadata Run %s: %v", terminalState, err)
+	}
+	return completed.Run
+}
+
+func readReconcileBytes(t *testing.T, path string) []byte {
+	t.Helper()
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	return content
+}
+
+func reconcileGitSurface(t *testing.T, repoDir string) string {
+	t.Helper()
+	return gitImplementOutput(t, repoDir, "worktree", "list", "--porcelain") +
+		gitImplementOutput(t, repoDir, "show-ref")
+}
+
+func assertReconcilePathState(t *testing.T, path string, wantExists bool) {
+	t.Helper()
+	_, err := os.Stat(path)
+	exists := err == nil
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("stat reconciliation path %s: %v", path, err)
+	}
+	if exists != wantExists {
+		t.Fatalf("reconciliation path %s exists=%v, want %v", path, exists, wantExists)
+	}
+}
+
+func assertReconcileBranchState(t *testing.T, repoDir string, branch string, wantExists bool) {
+	t.Helper()
+	exists := strings.TrimSpace(gitImplementOutput(t, repoDir, "branch", "--list", branch)) != ""
+	if exists != wantExists {
+		t.Fatalf("reconciliation branch %s exists=%v, want %v", branch, exists, wantExists)
+	}
 }
 
 type runListSeed struct {
