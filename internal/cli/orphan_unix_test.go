@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -258,14 +259,20 @@ func startCLIForceStopOwnerProcess(t *testing.T) (int, <-chan error) {
 		t.Fatalf("start owner process: %v", err)
 	}
 	wait := make(chan error, 1)
-	go func() {
-		wait <- cmd.Wait()
-		close(wait)
-	}()
+	var waitOnce sync.Once
+	startWait := func() {
+		waitOnce.Do(func() {
+			go func() {
+				wait <- cmd.Wait()
+				close(wait)
+			}()
+		})
+	}
 	t.Cleanup(func() {
 		if store.ProcessAlive(cmd.Process.Pid) {
 			_ = cmd.Process.Kill()
 		}
+		startWait()
 		select {
 		case <-wait:
 		case <-time.After(2 * time.Second):
@@ -278,6 +285,7 @@ func startCLIForceStopOwnerProcess(t *testing.T) (int, <-chan error) {
 	if scanner.Text() != "ready" {
 		t.Fatalf("owner process readiness = %q, want ready", scanner.Text())
 	}
+	startWait()
 	return cmd.Process.Pid, wait
 }
 

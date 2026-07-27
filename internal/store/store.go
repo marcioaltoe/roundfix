@@ -54,6 +54,19 @@ const (
 	StatePushing            = "Pushing"
 )
 
+var terminalStates = []string{
+	StateFetched,
+	StateStopped,
+	StateClean,
+	StateCleanUnverified,
+	StateMaxRoundsReached,
+	StateBudgetExceeded,
+	StateTimedOut,
+	StateFailed,
+	StateIntegrationPending,
+	StateUnresolved,
+}
+
 type Store struct {
 	db  *sql.DB
 	now func() time.Time
@@ -403,25 +416,20 @@ func (store *Store) CompleteRun(ctx context.Context, runID string, terminalState
 	}
 	defer rollbackUnlessCommitted(tx)
 
-	result, err := tx.ExecContext(ctx, `
-UPDATE runs
-SET state = ?, updated_at = ?, completed_at = ?
-WHERE id = ?
-  AND state NOT IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	terminalClause, terminalArguments := terminalStateExclusion()
+	arguments := []any{
 		terminalState,
 		formatTime(now),
 		formatTime(now),
 		runID,
-		StateFetched,
-		StateStopped,
-		StateClean,
-		StateCleanUnverified,
-		StateMaxRoundsReached,
-		StateBudgetExceeded,
-		StateTimedOut,
-		StateFailed,
-		StateIntegrationPending,
-		StateUnresolved,
+	}
+	arguments = append(arguments, terminalArguments...)
+	result, err := tx.ExecContext(ctx, `
+UPDATE runs
+SET state = ?, updated_at = ?, completed_at = ?
+WHERE id = ?
+  AND `+terminalClause,
+		arguments...,
 	)
 	if err != nil {
 		return CompleteRunResult{}, fmt.Errorf("compare-and-set terminal outcome for Run %q: %w", runID, err)
@@ -778,24 +786,19 @@ func (store *Store) UpdateRunState(ctx context.Context, runID string, state stri
 	if IsTerminalState(state) {
 		return fmt.Errorf("update Run state: %q is terminal; use CompleteRun", state)
 	}
+	terminalClause, terminalArguments := terminalStateExclusion()
+	arguments := []any{
+		state,
+		formatTime(store.now()),
+		runID,
+	}
+	arguments = append(arguments, terminalArguments...)
 	result, err := store.db.ExecContext(ctx, `
 UPDATE runs
 SET state = ?, updated_at = ?
 WHERE id = ?
-  AND state NOT IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		state,
-		formatTime(store.now()),
-		runID,
-		StateFetched,
-		StateStopped,
-		StateClean,
-		StateCleanUnverified,
-		StateMaxRoundsReached,
-		StateBudgetExceeded,
-		StateTimedOut,
-		StateFailed,
-		StateIntegrationPending,
-		StateUnresolved,
+  AND `+terminalClause,
+		arguments...,
 	)
 	if err != nil {
 		return fmt.Errorf("update Run state: %w", err)
@@ -1073,12 +1076,22 @@ ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.upd
 }
 
 func IsTerminalState(state string) bool {
-	switch state {
-	case StateFetched, StateStopped, StateClean, StateCleanUnverified, StateMaxRoundsReached, StateBudgetExceeded, StateTimedOut, StateFailed, StateIntegrationPending, StateUnresolved:
-		return true
-	default:
-		return false
+	for _, terminalState := range terminalStates {
+		if state == terminalState {
+			return true
+		}
 	}
+	return false
+}
+
+func terminalStateExclusion() (string, []any) {
+	placeholders := make([]string, len(terminalStates))
+	arguments := make([]any, len(terminalStates))
+	for index, state := range terminalStates {
+		placeholders[index] = "?"
+		arguments[index] = state
+	}
+	return "state NOT IN (" + strings.Join(placeholders, ", ") + ")", arguments
 }
 
 const schemaVersion = 10

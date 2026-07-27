@@ -125,6 +125,70 @@ func TestOwnerProcessControllerMatchingOwnerIdentityProceeds(t *testing.T) {
 	assertOwnerProcessExited(t, pid, wait)
 }
 
+func TestOwnerProcessControllerProveOwnerLeavesProvenOwnerRunning(t *testing.T) {
+	pid, _ := startOwnerProcessHelper(t, "graceful")
+	identity, err := OwnerProcessIdentity(t.Context(), pid)
+	if err != nil {
+		t.Fatalf("read owner process identity: %v", err)
+	}
+	controller := newOwnerProcessController(250*time.Millisecond, 2*time.Second, 5*time.Millisecond)
+
+	if err := controller.ProveOwner(t.Context(), pid, identity); err != nil {
+		t.Fatalf("prove matching owner identity: %v", err)
+	}
+
+	if !ProcessAlive(pid) {
+		t.Fatalf("owner proof must send no signal, but process %d exited", pid)
+	}
+}
+
+func TestOwnerProcessControllerProveOwnerRefusesMismatchedIdentity(t *testing.T) {
+	pid, _ := startOwnerProcessHelper(t, "graceful")
+	controller := newOwnerProcessController(20*time.Millisecond, 2*time.Second, 5*time.Millisecond)
+
+	err := controller.ProveOwner(t.Context(), pid, "identity-token-of-exited-owner-process")
+
+	if !errors.Is(err, ErrOwnerProcessIdentityUnproven) {
+		t.Fatalf("mismatched identity proof error = %v, want ErrOwnerProcessIdentityUnproven", err)
+	}
+	var controlErr OwnerProcessControlError
+	if !errors.As(err, &controlErr) {
+		t.Fatalf("mismatched identity proof error type = %T, want OwnerProcessControlError", err)
+	}
+	if controlErr.PID != pid || controlErr.Step != "prove owner process identity" {
+		t.Fatalf("mismatched identity proof diagnostic = %#v", controlErr)
+	}
+	if !ProcessAlive(pid) {
+		t.Fatalf("refused proof must not signal process %d holding the reused PID", pid)
+	}
+}
+
+func TestOwnerProcessControllerProveOwnerAcceptsAbsentOwner(t *testing.T) {
+	cmd := exec.Command("/bin/sh", "-c", "exit 0")
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("start child process: %v", err)
+	}
+	pid := cmd.Process.Pid
+	if err := cmd.Wait(); err != nil {
+		t.Fatalf("wait for child process: %v", err)
+	}
+	controller := newOwnerProcessController(20*time.Millisecond, 100*time.Millisecond, 5*time.Millisecond)
+
+	if err := controller.ProveOwner(t.Context(), pid, "identity-token-of-exited-owner-process"); err != nil {
+		t.Fatalf("absence is its own proof, got: %v", err)
+	}
+}
+
+func TestOwnerProcessControllerProveOwnerRejectsCurrentProcess(t *testing.T) {
+	controller := newOwnerProcessController(20*time.Millisecond, 100*time.Millisecond, 5*time.Millisecond)
+
+	err := controller.ProveOwner(t.Context(), os.Getpid(), "")
+
+	if !errors.Is(err, ErrOwnerProcessIdentityUnproven) {
+		t.Fatalf("current-process proof error = %v, want ErrOwnerProcessIdentityUnproven", err)
+	}
+}
+
 func TestOwnerProcessIdentityIsStableForOneProcess(t *testing.T) {
 	first, err := OwnerProcessIdentity(t.Context(), os.Getpid())
 	if err != nil {
@@ -136,6 +200,22 @@ func TestOwnerProcessIdentityIsStableForOneProcess(t *testing.T) {
 	}
 	if first != second {
 		t.Fatalf("identity token changed for one process: %q then %q", first, second)
+	}
+}
+
+func TestOwnerProcessIdentityIgnoresCallerTimezone(t *testing.T) {
+	t.Setenv("TZ", "Pacific/Honolulu")
+	first, err := OwnerProcessIdentity(t.Context(), os.Getpid())
+	if err != nil {
+		t.Fatalf("read current process identity in first timezone: %v", err)
+	}
+	t.Setenv("TZ", "Asia/Tokyo")
+	second, err := OwnerProcessIdentity(t.Context(), os.Getpid())
+	if err != nil {
+		t.Fatalf("read current process identity in second timezone: %v", err)
+	}
+	if first != second {
+		t.Fatalf("identity token changed with caller timezone: %q then %q", first, second)
 	}
 }
 

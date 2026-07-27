@@ -39,7 +39,9 @@ func signalOwnerProcess(pid int, force bool) error {
 // it. The verbatim string is the opaque identity token: two processes reusing
 // one PID cannot share it, and equality is the only supported comparison.
 func processStartIdentity(ctx context.Context, pid int) (string, error) {
-	output, err := exec.CommandContext(ctx, "ps", "-p", strconv.Itoa(pid), "-o", "lstart=").Output()
+	command := exec.CommandContext(ctx, "ps", "-p", strconv.Itoa(pid), "-o", "lstart=")
+	command.Env = append(command.Environ(), "TZ=UTC", "LC_ALL=C")
+	output, err := command.Output()
 	if err != nil {
 		return "", fmt.Errorf("read start time for process %d: %w", pid, err)
 	}

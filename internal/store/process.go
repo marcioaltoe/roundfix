@@ -58,22 +58,35 @@ func newOwnerProcessController(gracePeriod, stopWindow, pollInterval time.Durati
 	}
 }
 
-// TerminateAndWait proves ownership of pid before sending any signal: when
-// the Run recorded a start-time identity token, the live process must present
-// the same token, otherwise a reused PID would let Force Stop terminate an
-// unrelated process. An empty recorded token comes from a Run created before
-// identity recording existed and keeps the legacy PID-only proof, mirroring
-// the ADR-0044 precedent that PID-less legacy Runs degrade gracefully.
-func (controller *OwnerProcessControl) TerminateAndWait(ctx context.Context, pid int, recordedIdentity string) error {
+// ProveOwner proves that pid still identifies the process the Run recorded as
+// its owner, without sending any signal or touching any other state. Callers
+// run it before any destructive Force Stop step so a Run whose owner cannot be
+// proven is left exactly as it was found. Success includes a proven-absent
+// owner: absence is its own proof of exit.
+func (controller *OwnerProcessControl) ProveOwner(ctx context.Context, pid int, recordedIdentity string) error {
+	_, err := controller.proveOwner(ctx, pid, recordedIdentity)
+	return err
+}
+
+// proveOwner is the single implementation of the ownership rule. It reports
+// whether the owner is already absent, which every caller treats as success.
+//
+// When the Run recorded a start-time identity token, the live process must
+// present the same token, otherwise a reused PID would let Force Stop
+// terminate an unrelated process. An empty recorded token comes from a Run
+// created before identity recording existed and keeps the legacy PID-only
+// proof, mirroring the ADR-0044 precedent that PID-less legacy Runs degrade
+// gracefully.
+func (controller *OwnerProcessControl) proveOwner(ctx context.Context, pid int, recordedIdentity string) (bool, error) {
 	if pid <= 0 || pid == os.Getpid() {
-		return ownerProcessControlError(pid, "prove owner process identity", ErrOwnerProcessIdentityUnproven)
+		return false, ownerProcessControlError(pid, "prove owner process identity", ErrOwnerProcessIdentityUnproven)
 	}
 	absent, err := processAbsent(pid)
 	if err != nil {
-		return ownerProcessControlError(pid, "prove owner process identity", err)
+		return false, ownerProcessControlError(pid, "prove owner process identity", err)
 	}
 	if absent {
-		return nil
+		return true, nil
 	}
 	if recorded := strings.TrimSpace(recordedIdentity); recorded != "" {
 		liveIdentity, identityErr := processStartIdentity(ctx, pid)
@@ -81,15 +94,30 @@ func (controller *OwnerProcessControl) TerminateAndWait(ctx context.Context, pid
 			// The owner may have exited between the liveness check and the
 			// identity read; proven absence is the proof Force Stop needs.
 			if absent, absentErr := processAbsent(pid); absentErr == nil && absent {
-				return nil
+				return true, nil
 			}
-			return ownerProcessControlError(pid, "prove owner process identity",
+			return false, ownerProcessControlError(pid, "prove owner process identity",
 				fmt.Errorf("%w: read live owner identity: %v", ErrOwnerProcessIdentityUnproven, identityErr))
 		}
 		if liveIdentity != recorded {
-			return ownerProcessControlError(pid, "prove owner process identity",
+			return false, ownerProcessControlError(pid, "prove owner process identity",
 				fmt.Errorf("%w: live process start identity does not match the recorded owner identity", ErrOwnerProcessIdentityUnproven))
 		}
+	}
+	return false, nil
+}
+
+// TerminateAndWait reuses the same ownership proof as ProveOwner before
+// sending any signal, then terminates the owner and returns only once its exit
+// is proven. Callers that already ran ProveOwner pay for a second read-only
+// proof, which keeps this entry point safe on its own.
+func (controller *OwnerProcessControl) TerminateAndWait(ctx context.Context, pid int, recordedIdentity string) error {
+	absent, err := controller.proveOwner(ctx, pid, recordedIdentity)
+	if err != nil {
+		return err
+	}
+	if absent {
+		return nil
 	}
 
 	stopCtx, cancel := context.WithTimeout(ctx, controller.stopWindow)

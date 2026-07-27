@@ -4034,6 +4034,7 @@ func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalOutcome(t *test
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
 
 	agentStarted := make(chan struct{})
+	var startedOnce sync.Once
 	releaseAgent := make(chan struct{})
 	var releaseOnce sync.Once
 	release := func() {
@@ -4043,7 +4044,9 @@ func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalOutcome(t *test
 	}
 	t.Cleanup(release)
 	runner := &fakeAgentRunner{onRun: func(agent.ExecuteRequest) error {
-		close(agentStarted)
+		startedOnce.Do(func() {
+			close(agentStarted)
+		})
 		<-releaseAgent
 		return nil
 	}}
@@ -7318,6 +7321,93 @@ func TestRunForceStopOwnerPermissionAndDeadlineFailuresRetainActiveLock(t *testi
 	}
 }
 
+func TestRunForceStopOwnerProofFailurePreservesAgentSessions(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	active, request := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
+	recordAgentSelectionForStop(t, homeDir, store.AgentSelectionAttemptRequest{
+		RunID: active.ID, ScopeKind: store.AgentSelectionScopeTask, ScopeID: "task_01",
+		Category: "backend", ProfileSource: "project", Attempt: 1,
+		SelectionRole: store.AgentSelectionRolePreferred, Runtime: "codex", Model: "task-model",
+		Status: store.AgentSelectionStatusActive,
+	})
+	cancelCalls := 0
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		cancelCalls++
+		return nil
+	})
+	closeCalls := 0
+	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		closeCalls++
+		return nil
+	})
+	terminateCalls := 0
+	withOwnerProcessController(t, ownerProcessControllerStub{
+		prove: func(context.Context, int, string) error {
+			return store.OwnerProcessControlError{
+				PID:  *active.OwnerPID,
+				Step: "prove owner process identity",
+				Err:  store.ErrOwnerProcessIdentityUnproven,
+			}
+		},
+		terminate: func(context.Context, int, string) error {
+			terminateCalls++
+			return nil
+		},
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"stop", "--force", active.ID}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("Force Stop failure exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+	}
+	if stdout.Len() != 0 {
+		t.Fatalf("Force Stop failure printed success output %q", stdout.String())
+	}
+	if cancelCalls != 0 || closeCalls != 0 {
+		t.Fatalf("failed owner proof mutated Agent Sessions: cancel=%d close=%d", cancelCalls, closeCalls)
+	}
+	if terminateCalls != 0 {
+		t.Fatalf("failed owner proof still terminated the owner: %d calls", terminateCalls)
+	}
+	if strings.Contains(stderr.String(), "Secondary cleanup warning:") {
+		t.Fatalf("failed owner proof must report no cleanup warnings, got %q", stderr.String())
+	}
+	for _, want := range []string{
+		active.ID,
+		strconv.Itoa(*active.OwnerPID),
+		"prove owner process identity",
+		"remains Active",
+		"Active Run lock retained",
+	} {
+		if !strings.Contains(stderr.String(), want) {
+			t.Fatalf("Force Stop diagnostic missing %q: %q", want, stderr.String())
+		}
+	}
+	assertRunState(t, homeDir, active.ID, store.StateActive)
+
+	runStore, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open store after failed Force Stop: %v", err)
+	}
+	defer func() {
+		if err := runStore.Close(); err != nil {
+			t.Fatalf("close store after failed Force Stop: %v", err)
+		}
+	}()
+	activeScopes, err := runStore.ActiveAgentSelectionScopes(context.Background(), active.ID)
+	if err != nil {
+		t.Fatalf("read active Agent Selection scopes: %v", err)
+	}
+	if len(activeScopes) != 1 || activeScopes[0].Status != store.AgentSelectionStatusActive {
+		t.Fatalf("Agent Selection lifecycle changed after owner failure: %+v", activeScopes)
+	}
+	if _, err := runStore.CreateRun(context.Background(), request); err == nil {
+		t.Fatal("failed owner proof released the Active Run lock")
+	}
+}
+
 func TestRunForceStopPrimaryFailurePrecedesSecondaryCleanupWarnings(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	active, _ := createActiveImplementRunForStop(t, homeDir, repoDir, "0001-widget-flow", "codex")
@@ -7333,6 +7423,9 @@ func TestRunForceStopPrimaryFailurePrecedesSecondaryCleanupWarnings(t *testing.T
 	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
 		return errors.New("close denied")
 	})
+	// The owner proof succeeds, so Force Stop reaches session cleanup; the
+	// termination that follows fails and must still surface the cleanup
+	// warnings it accumulated, behind the primary failure.
 	withOwnerProcessController(t, ownerProcessControllerFunc(func(context.Context, int, string) error {
 		return store.OwnerProcessControlError{
 			PID:  *active.OwnerPID,
@@ -7516,10 +7609,16 @@ func TestRunStopForceRegisteredAgentSessionCleanupTargetsActiveScopesInOrder(t *
 		calls = append(calls, "close "+runtime.ID+" "+session.Name+" "+session.WorkDir)
 		return nil
 	})
-	withOwnerProcessController(t, ownerProcessControllerFunc(func(_ context.Context, pid int, _ string) error {
-		calls = append(calls, fmt.Sprintf("owner %d", pid))
-		return nil
-	}))
+	withOwnerProcessController(t, ownerProcessControllerStub{
+		prove: func(_ context.Context, pid int, _ string) error {
+			calls = append(calls, fmt.Sprintf("prove %d", pid))
+			return nil
+		},
+		terminate: func(_ context.Context, pid int, _ string) error {
+			calls = append(calls, fmt.Sprintf("owner %d", pid))
+			return nil
+		},
+	})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -7528,7 +7627,10 @@ func TestRunStopForceRegisteredAgentSessionCleanupTargetsActiveScopesInOrder(t *
 	if code != exitOK {
 		t.Fatalf("expected force stop exit 0, got %d stderr=%q", code, stderr.String())
 	}
+	// The read-only owner proof runs first, then every registered Agent
+	// Session is cancelled, and only then is the owner terminated.
 	wantCalls := []string{
+		fmt.Sprintf("prove %d", *active.OwnerPID),
 		"cancel codex roundfix-" + active.ID + "-task_01 " + taskRef.Path,
 		"close codex roundfix-" + active.ID + "-task_01 " + taskRef.Path,
 		"cancel opencode roundfix-" + active.ID + "-qa-fallback-01 " + active.WorkDir,
@@ -8908,10 +9010,38 @@ func withStopAgentSessionCloser(t *testing.T, closeSession func(context.Context,
 	})
 }
 
+// ownerProcessControllerFunc drives the termination phase only; its owner
+// proof always succeeds. Tests that need a failing or observable proof use
+// ownerProcessControllerStub.
 type ownerProcessControllerFunc func(context.Context, int, string) error
+
+func (controller ownerProcessControllerFunc) ProveOwner(context.Context, int, string) error {
+	return nil
+}
 
 func (controller ownerProcessControllerFunc) TerminateAndWait(ctx context.Context, pid int, recordedIdentity string) error {
 	return controller(ctx, pid, recordedIdentity)
+}
+
+// ownerProcessControllerStub drives the owner proof and the termination phase
+// independently so tests can assert their order and their failure isolation.
+type ownerProcessControllerStub struct {
+	prove     func(context.Context, int, string) error
+	terminate func(context.Context, int, string) error
+}
+
+func (controller ownerProcessControllerStub) ProveOwner(ctx context.Context, pid int, recordedIdentity string) error {
+	if controller.prove == nil {
+		return nil
+	}
+	return controller.prove(ctx, pid, recordedIdentity)
+}
+
+func (controller ownerProcessControllerStub) TerminateAndWait(ctx context.Context, pid int, recordedIdentity string) error {
+	if controller.terminate == nil {
+		return nil
+	}
+	return controller.terminate(ctx, pid, recordedIdentity)
 }
 
 func withOwnerProcessController(t *testing.T, controller OwnerProcessController) {

@@ -538,21 +538,24 @@ status access and after each interruptible sleep. It reaches Stopped by the
 next configured poll boundary. After observing the request, it does not run
 another fetch, check, commit, push, or Review Source mutation.
 
-Use `roundfix stop --force` only for a dead, stuck, or runaway Run. It cancels
-and closes only registered Agent Sessions whose latest Agent Selection
-lifecycle is active. No active lifecycle record means no session action, and
-an already-absent registered session is an idempotent cleanup result. Other
-cleanup failures remain visible as secondary warnings and do not authorize
-terminal completion while the owner remains alive.
+Use `roundfix stop --force` only for a dead, stuck, or runaway Run. It first
+validates the recorded owner PID, terminates the recorded owner process, and
+proves that process exited. Until owner exit is proven, registered Agent
+Sessions and their Agent Selection lifecycles remain active.
 
-Force Stop then terminates the recorded owner process and proves that process
-exited. Only after that proof does Roundfix complete the Run as Stopped,
-release its Active Run lock, and reap eligible kept terminal Worktrees. If
-owner exit cannot be proven, Force Stop prints no stdout success report; its
-diagnostic names the Run ID, owner PID, and failed process-control step. The
-Run remains Active and its Active Run lock stays retained. Inspect it with
-`roundfix runs list --state active`, resolve the reported owner-process
-failure, and retry `roundfix stop --force <run-id>`.
+After owner exit proof, Force Stop cancels and closes only registered Agent
+Sessions whose latest Agent Selection lifecycle is active. No active lifecycle
+record means no session action, and an already-absent registered session is an
+idempotent cleanup result. Other cleanup failures remain visible as secondary
+warnings.
+
+Only after owner exit proof does Roundfix complete the Run as Stopped, release
+its Active Run lock, and reap eligible kept terminal Worktrees. If owner exit
+cannot be proven, Force Stop prints no stdout success report; its diagnostic
+names the Run ID, owner PID, and failed process-control step. The Run remains
+Active with its Agent Sessions unchanged and its Active Run lock retained.
+Inspect it with `roundfix runs list --state active`, resolve the reported
+owner-process failure, and retry `roundfix stop --force <run-id>`.
 
 After owner exit proof and successful Stopped completion, the force-stop report
 title includes:
@@ -1212,9 +1215,10 @@ outcome and never opens pull requests (ADR-0021).
    the current repository. This resolves that repository's Spec target and
    records a Stop Request; the Run stops after the current Work Item settles.
    Use `roundfix stop --force --spec <slug>` only for a dead, stuck, or runaway
-   Run. It cleans up registered active Agent Sessions, terminates the recorded
-   owner, and reports Stopped and releases the Active Run lock only after owner
-   exit is proven. A failed proof leaves the Run Active with its lock retained.
+   Run. It proves the recorded owner exited before cleaning up registered
+   active Agent Sessions, and reports Stopped and releases the Active Run lock
+   only after that proof. A failed proof leaves the Run Active with its Agent
+   Sessions unchanged and its lock retained.
 
 ## Driving a Spec implementation loop
 

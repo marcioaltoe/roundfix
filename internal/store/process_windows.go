@@ -13,6 +13,7 @@ const (
 	processTerminate               = 0x0001
 	processQueryLimitedInformation = 0x1000
 	errorInvalidParameter          = syscall.Errno(87)
+	stillActive                    = 259
 )
 
 func processAbsent(pid int) (bool, error) {
@@ -23,8 +24,14 @@ func processAbsent(pid int) (bool, error) {
 		}
 		return false, err
 	}
-	_ = syscall.CloseHandle(handle)
-	return false, nil
+	defer func() {
+		_ = syscall.CloseHandle(handle)
+	}()
+	var exitCode uint32
+	if err := syscall.GetExitCodeProcess(handle, &exitCode); err != nil {
+		return false, err
+	}
+	return exitCode != stillActive, nil
 }
 
 func signalOwnerProcess(pid int, force bool) error {

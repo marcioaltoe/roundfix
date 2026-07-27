@@ -404,6 +404,9 @@ func cleanupFailuref(format string, args ...any) cleanupWarning {
 }
 
 type OwnerProcessController interface {
+	// ProveOwner proves the recorded owner identity without side effects so
+	// Force Stop can fail closed before touching anything the Run owns.
+	ProveOwner(ctx context.Context, pid int, recordedIdentity string) error
 	TerminateAndWait(ctx context.Context, pid int, recordedIdentity string) error
 }
 
@@ -630,26 +633,34 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 		}
 	}
 
-	warnings := bestEffortForceStopAgentSessions(ctx, runStore, active)
 	pid, ok := activeOwnerPID(active)
 	if !ok {
-		return stopResult{Run: active, Warnings: warnings}, forceStopOwnerError{
+		return stopResult{Run: active}, forceStopOwnerError{
 			RunID: active.ID,
 			PID:   0,
 			Step:  "validate recorded owner PID",
 			Err:   store.ErrOwnerProcessIdentityUnproven,
 		}
 	}
-	if err := ownerProcesses.TerminateAndWait(ctx, pid, active.OwnerIdentity); err != nil {
-		step := "prove owner exit"
-		var controlErr store.OwnerProcessControlError
-		if errors.As(err, &controlErr) && strings.TrimSpace(controlErr.Step) != "" {
-			step = controlErr.Step
+	// The owner proof is read-only, so it runs before anything the Run owns is
+	// touched: a Run left Active with its lock retained must keep its Agent
+	// Sessions intact. Once the owner is proven, PRD Core Feature 3 orders the
+	// destructive steps: cancel registered Agent Sessions, then terminate the
+	// owner and wait for its exit.
+	if err := ownerProcesses.ProveOwner(ctx, pid, active.OwnerIdentity); err != nil {
+		return stopResult{Run: active}, forceStopOwnerError{
+			RunID: active.ID,
+			PID:   pid,
+			Step:  forceStopOwnerStep(err, "prove owner process identity"),
+			Err:   err,
 		}
+	}
+	warnings := bestEffortForceStopAgentSessions(ctx, runStore, active)
+	if err := ownerProcesses.TerminateAndWait(ctx, pid, active.OwnerIdentity); err != nil {
 		return stopResult{Run: active, Warnings: warnings}, forceStopOwnerError{
 			RunID: active.ID,
 			PID:   pid,
-			Step:  step,
+			Step:  forceStopOwnerStep(err, "prove owner exit"),
 			Err:   err,
 		}
 	}
@@ -675,6 +686,16 @@ func forceStopRun(ctx context.Context, runStore *store.Store, active store.Run, 
 		Transitioned: run.Transitioned,
 		Warnings:     warnings,
 	}, nil
+}
+
+// forceStopOwnerStep names the owner-control step that failed, preferring the
+// controller's own step label when it reported one.
+func forceStopOwnerStep(err error, fallback string) string {
+	var controlErr store.OwnerProcessControlError
+	if errors.As(err, &controlErr) && strings.TrimSpace(controlErr.Step) != "" {
+		return controlErr.Step
+	}
+	return fallback
 }
 
 func bestEffortForceStopAgentSessions(ctx context.Context, runStore *store.Store, run store.Run) []cleanupWarning {
