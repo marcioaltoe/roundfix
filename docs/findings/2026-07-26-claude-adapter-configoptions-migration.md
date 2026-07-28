@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-26
 updated_at: 2026-07-28
 ---
@@ -312,4 +312,5 @@ as a reasoning-effort encoding) are recorded in
 whose implementation instructions supersede this report's. Two premises here no
 longer hold for the official adapter: `claude-opus-5` is not advertised (the
 canonical identifier is `opus`), and the "no parser change" claim predates the
-bracket collision. Both findings route to the same implementation Spec.
+bracket collision. Both findings route to
+[Spec 0052 — Claude adapter standardization](../specs/0052-claude-adapter-standardization/_prd.md).
