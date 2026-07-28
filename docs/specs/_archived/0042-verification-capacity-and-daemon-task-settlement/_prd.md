@@ -1,9 +1,12 @@
 ---
 spec: 0042-verification-capacity-and-daemon-task-settlement
-status: active
+status: archived
 created: 2026-07-18
 surfaces: [cli, backend, frontend, docs]
+archived: "2026-07-28"
+source_slug: 0042-verification-capacity-and-daemon-task-settlement
 ---
+
 
 # Verification Capacity and Daemon Task Settlement
 
