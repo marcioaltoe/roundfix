@@ -407,7 +407,7 @@ func (model *cockpitModel) advanceTaskPhase(index int, next taskJournalState) {
 	if index < 0 || index >= len(model.taskJournalStates) {
 		return
 	}
-	if model.taskJournalStates[index].phase.terminal() && !next.phase.terminal() {
+	if model.taskJournalStates[index].phase.terminal() {
 		return
 	}
 	model.taskJournalStates[index] = next

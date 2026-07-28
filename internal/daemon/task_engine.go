@@ -879,11 +879,11 @@ func (engine *Engine) runTaskAgent(ctx context.Context, plan TaskPlan, task *spe
 // Command failures return a typed outcome for the repair loop; the returned
 // error is reserved for Stop Requests and infrastructure failures.
 func (engine *Engine) verifyTask(ctx context.Context, plan TaskPlan, task spec.Task, ordinal int, attempt int, retryUsed *bool) (verificationAttemptOutcome, error) {
-	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateVerifying); err != nil {
-		return verificationAttemptOutcome{}, fmt.Errorf("update run %q to state %q before Task %s verification: %w", plan.RunID, store.StateVerifying, task.ID, err)
-	}
 	if retryUsed == nil {
 		return verificationAttemptOutcome{}, fmt.Errorf("verify run %q Task %s: temporary retry state is required", plan.RunID, task.ID)
+	}
+	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateVerifying); err != nil {
+		return verificationAttemptOutcome{}, fmt.Errorf("update run %q to state %q before Task %s verification: %w", plan.RunID, store.StateVerifying, task.ID, err)
 	}
 	request := verificationAttemptRequest{
 		RunID:                   plan.RunID,

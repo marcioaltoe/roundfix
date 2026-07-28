@@ -2843,6 +2843,27 @@ func TestTaskCycleExecutesAgentVerifySettleCommitContract(t *testing.T) {
 	}
 }
 
+func TestVerifyTaskRejectsMissingRetryStateWithoutMutatingRun(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+	engine := fixture.engine(
+		t,
+		&taskFakeRunner{calls: fixture.calls},
+		&taskFakeVerifier{calls: fixture.calls},
+		&engineFakeCommitter{calls: fixture.calls},
+		fixture.worktree,
+	)
+	before := runStateForTest(fixture.store, fixture.run.ID)
+
+	_, err := engine.verifyTask(context.Background(), fixture.plan(), fixture.graph.Tasks[0], 1, 1, nil)
+
+	if err == nil || !strings.Contains(err.Error(), "temporary retry state is required") {
+		t.Fatalf("verifyTask() error = %v, want missing temporary retry state", err)
+	}
+	if after := runStateForTest(fixture.store, fixture.run.ID); after != before {
+		t.Fatalf("verifyTask() changed Run state from %q to %q for invalid input", before, after)
+	}
+}
+
 func TestTaskCycleRewritesNormalizedStatusAfterAgentReload(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Normalize the task status"}})
 	runner := &taskFakeRunner{

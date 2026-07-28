@@ -2215,6 +2215,17 @@ func TestCockpitSpecRunTaskSettlementResistsStaleAndReplayedEvents(t *testing.T)
 	rendered = viewText(model)
 	assertTaskQueueRow(t, rendered, "task_01", "[fail] "+taskLabelFailed)
 	assertTaskQueueRow(t, rendered, "task_02", "[skip] "+taskLabelSkipped)
+
+	// A conflicting terminal replay is also stale: the first terminal state
+	// remains authoritative for the Work Queue.
+	source.addTaskEvent(t, "task_01", "skipped", "", 0)
+	source.addTaskEvent(t, "task_02", "settled", spec.StatusCompleted, 2)
+	source.version++
+	model.Update(cockpitTickMsg{})
+
+	rendered = viewText(model)
+	assertTaskQueueRow(t, rendered, "task_01", "[fail] "+taskLabelFailed)
+	assertTaskQueueRow(t, rendered, "task_02", "[skip] "+taskLabelSkipped)
 }
 
 func TestCockpitSpecRunTaskPhaseLabelsReadTheSameUnderNoColor(t *testing.T) {

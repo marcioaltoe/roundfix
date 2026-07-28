@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -555,6 +556,47 @@ func TestProjectStreamEventRejectsMalformedRelevantDaemonPayload(t *testing.T) {
 	}, AllStreamCategories())
 	if err == nil {
 		t.Fatal("expected missing phase in relevant daemon payload to fail")
+	}
+}
+
+func TestProjectStreamEventPreservesContextForMalformedOptionalFields(t *testing.T) {
+	tests := []struct {
+		name    string
+		kind    Kind
+		payload string
+		key     string
+	}{
+		{
+			name:    "verification",
+			kind:    KindDaemonVerification,
+			payload: `{"attempt":1,"phase":"started","mode":1}`,
+			key:     "mode",
+		},
+		{
+			name:    "outcome",
+			kind:    KindDaemonOutcome,
+			payload: `{"state":"Failed","next_action":true}`,
+			key:     "next_action",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, err := ProjectStreamEvent(1, RunEvent{
+				RunID:   "run_bad_optional",
+				Source:  SourceDaemon,
+				Kind:    tt.kind,
+				Summary: "malformed optional field",
+				Time:    time.Date(2026, 7, 28, 12, 0, 0, 0, time.UTC),
+				Payload: []byte(tt.payload),
+			}, AllStreamCategories())
+			if err == nil {
+				t.Fatalf("expected malformed %q field to fail", tt.key)
+			}
+			want := fmt.Sprintf("project %s event for Run %q: read payload field %q", tt.kind, "run_bad_optional", tt.key)
+			if !strings.Contains(err.Error(), want) {
+				t.Fatalf("ProjectStreamEvent() error = %q, want context %q", err, want)
+			}
+		})
 	}
 }
 
