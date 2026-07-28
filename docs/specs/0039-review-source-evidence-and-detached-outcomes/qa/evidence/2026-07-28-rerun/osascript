@@ -1,0 +1,6 @@
+#!/bin/sh
+
+set -eu
+
+printf '%s\n' "$*" >> "${QA_NOTIFY_LOG:?QA_NOTIFY_LOG is required}"
+exit 0

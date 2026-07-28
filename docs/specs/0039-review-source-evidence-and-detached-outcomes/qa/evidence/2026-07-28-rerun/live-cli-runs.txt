@@ -1,0 +1,79 @@
+Built-binary live CLI evidence
+Binary: bin/roundfix from affe4b5d333a8f3f1dd7506cf758eeb6e53afc70
+Result: PASS for the exercised journeys
+
+Parity deviation:
+Deterministic local gh and osascript executables replaced live
+GitHub/CodeRabbit and desktop delivery. The production binary, clean temporary
+Git repositories, normal Agent Selection proof, user-scoped Run Database,
+reports, notification boundary, and Run Event Stream were used unchanged.
+
+Foreground Review Skipped:
+- fixture: run-cli-fixture.sh watch-skip
+- Run: run_20260728T040148Z_255e007d4c1e5c44
+- exit: 3
+- observed pending then skipped WaitingForReview projections with expected
+  head affe4b5..., deadline, evidence_kind=check_run, and retry=none;
+- the report named the source reason and reduce/split/request-review action;
+- no numeric Review Issue counts, fetch, Round artifact, commit, push, or Agent;
+- independent `roundfix events ... --filter outcome` replay returned one
+  ReviewSkipped record with reason, next_action, false issue knowledge, and
+  the accepted Evidence head;
+- `roundfix runs list --all --state all --limit 10` reloaded the same terminal
+  Run; the artifact directory contained no files.
+
+Detached Review Skipped:
+- fixture: run-cli-fixture.sh watch-detached
+- Run: run_20260728T040228Z_81c1791c4a81070d
+- foreground exit: 0
+- stdout contained exactly Run ID, Console Log, Attach, Supervisor monitor,
+  and Stop lines;
+- the printed monitor was
+  `roundfix events run_20260728T040228Z_81c1791c4a81070d --follow --filter outcome`;
+- executing that monitor through bin/roundfix exited 0 and returned one
+  terminal ReviewSkipped record with reason, next_action,
+  review_issues_known=false, Console Log, Attach command, evidence kind, and
+  expected head;
+- rereading the Console Log independently showed the same wait and outcome.
+
+Transient recovery:
+- fixture: run-cli-fixture.sh watch-transient
+- Run: run_20260728T040346Z_523da3cdc8bf33a5
+- exit: 3 at the expected later ReviewSkipped outcome;
+- the first check-runs access returned connection reset by peer;
+- output changed retry from none to retrying, reused the existing 30-second
+  poll interval, then changed to recovered;
+- the gh call log contains exactly two check-runs accesses and one access for
+  each remaining Evidence surface;
+- outcome replay persisted ReviewSkipped at cursor 6.
+
+Permanent failure and unknown issue knowledge:
+- fixture: run-cli-fixture.sh watch-failure
+- Run: run_20260728T040316Z_f24bf1bb0c16781b
+- exit: 1
+- one HTTP 401 access ran with no retry;
+- stdout contained only
+  `Review Issues: unknown — fetch did not complete.` for issue knowledge and
+  no numeric summary;
+- the artifact directory remained empty;
+- outcome replay returned Failed with the bounded reason, actionable next
+  action, false issue knowledge, and Attach command.
+
+Known-zero Fetch:
+- fixture: run-cli-fixture.sh fetch-zero
+- Run: run_20260728T040248Z_bd00f064c1b712fa
+- exit: 0
+- the command reported Review Issues: none and created Round 001 without
+  Agent, commit, push, or thread resolution;
+- independent round.md reload contained issue_count: 0, head affe4b5..., and
+  `Fetched 0 Review Issue(s).`
+
+Notification observation:
+- each terminal Watch journey invoked the local native notification route once;
+- captured non-Clean text retained `Next: ...`;
+- independent outcome replay proved notification delivery did not change the
+  stored outcome.
+
+Operational Journal Retention pruned eligible old terminal journal rows during
+startup. It removed no Run row or artifact byte. This is expected configured
+product behavior and not evidence for any Spec criterion.

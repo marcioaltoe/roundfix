@@ -1,0 +1,32 @@
+Full repository Verification
+Build: affe4b5d333a8f3f1dd7506cf758eeb6e53afc70
+Result: PASS
+
+Sandboxed command:
+rtk make verify
+
+Exit: 2
+Environment diagnostic:
+pattern ./...: open /Users/marcio/Library/Caches/go-build/...: operation not permitted
+
+The command stopped before tests because the managed sandbox could not read the
+host Go build cache. No product failure was inferred from that denial.
+
+Approved full-access rerun, exact command:
+rtk make verify
+
+Exit: 0
+Observed:
+- go test ./...: 2659 passed in 23 packages;
+- the four selected Skill tests passed;
+- all fourteen shipped Roundfix Skill contracts passed;
+- the production binary built at bin/roundfix with BuildCommit=affe4b5-dirty.
+
+Independent post-gate checks:
+- rtk git diff --check: exit 0, no output;
+- rtk cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md:
+  exit 0, no output;
+- rtk make skills-sync-check: 4 passed in 1 package.
+
+The dirty build label is caused only by the in-progress Spec-local qa/
+artifacts created before the gate.

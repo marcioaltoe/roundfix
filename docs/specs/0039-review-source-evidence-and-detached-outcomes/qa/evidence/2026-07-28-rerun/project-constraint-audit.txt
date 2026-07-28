@@ -1,0 +1,56 @@
+Project Constraint audit
+Build: affe4b5d333a8f3f1dd7506cf758eeb6e53afc70
+Result: PASS
+
+Applicability:
+- Identifier strategy: not applicable. The change reuses Run IDs, Git heads,
+  and Review Source-native identities and adds no Internal Identifier.
+  Operative source: docs/agents/domain.md.
+- Authentication and HTTP: applicable. Current GitHub and CodeRabbit access
+  remains behind the existing gh/Review Source boundary; no auth provider,
+  credential policy, HTTP route, or config surface changed.
+  Operative source: docs/agents/cli.md.
+- Active ADR obligations: applicable. ADR-0036, ADR-0042, ADR-0043, ADR-0052,
+  and ADR-0054 remain satisfied. Adjacent Detached/artifact ADRs 0019, 0028,
+  0029, and 0030 were also inspected.
+  Operative source: docs/agents/domain.md.
+- Tooling authority: applicable. Both active Spec artifacts contain the same
+  exact authorized paths and cite docs/agents/agent-instructions.md.
+
+All task_01.md through task_09.md report status: completed.
+
+Daemon-owned Task commits, resolved from Roundfix-Task trailers:
+- task_01 a1bb7b6882661e08812a55135e85addb6b1a7dc3
+- task_02 c480088dfc7f93e26c3d0ef849472b7a82e50ca8
+- task_03 bf523e44c53564aaa0dad5658e7a9fb1cc83a551
+- task_04 d82f1a9044933b8ef2786451e27dabb3c812e615
+- task_05 cab39ec7461aff62d7502d12a154768f08cd3c3b
+- task_06 cbd727958f7720c109b2bc1042b1c66a30fccef1
+- task_07 c971146c079261851296660427073fba1d9a2ddf
+- task_08 ba9de3053e9a100e81ba411d603e8b9632f76dd5
+- task_09 053ecf7f97590c24a3ba128fe83294f19f74d7b9
+
+Tooling Task command:
+rtk git -c core.fsmonitor=false diff-tree --no-commit-id --name-only -r 053ecf7f97590c24a3ba128fe83294f19f74d7b9
+
+Actual paths:
+.agents/skills/roundfix/SKILL.md
+docs/specs/0039-review-source-evidence-and-detached-outcomes/task_09.md
+internal/baseline/assets/setups/typescript-bun.json
+internal/baseline/testdata/catalog.digest
+internal/baseline/testdata/catalog.normalized.json
+internal/baseline/testdata/parity-corpus/v1/fixtures/asset-sync.json
+internal/baseline/testdata/parity-corpus/v1/manifest.json
+skills/roundfix/SKILL.md
+
+Authorization ordering:
+- 2e134fc2ff5885aac40ca9ddb7b58d60bece3a79 recorded the five derived
+  digest-pin paths in both active Spec artifacts at 2026-07-28T00:50:31-03:00.
+- 053ecf7f97590c24a3ba128fe83294f19f74d7b9 changed the authorized Skill
+  pair, the five derived pins, and task_09.md at
+  2026-07-28T00:50:35-03:00.
+- 2e134fc is the direct parent of 053ecf7. Reading both active artifacts at
+  053ecf7^ proves exact authorization existed before the tooling mutation.
+
+The prior QA authorization-order failure is closed. The current QA worktree
+delta is confined to the Spec-local qa/ directory.

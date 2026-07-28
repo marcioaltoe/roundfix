@@ -1,0 +1,37 @@
+#!/bin/sh
+
+set -eu
+
+printf '%s\n' "$*" >> "${QA_GH_LOG:?QA_GH_LOG is required}"
+
+case "$*" in
+  *check-runs*)
+    if [ "${QA_GH_MODE:-}" = "permanent_failure" ]; then
+      printf '%s\n' 'HTTP 401 authentication failed' >&2
+      exit 1
+    fi
+    if [ "${QA_GH_MODE:-}" = "transient_then_skip" ] &&
+       [ ! -e "${QA_GH_STATE:?QA_GH_STATE is required for transient mode}" ]; then
+      printf '%s\n' 'first transient failure observed' > "$QA_GH_STATE"
+      printf '%s\n' 'connection reset by peer' >&2
+      exit 1
+    fi
+    printf '%s\n' "{\"check_runs\":[{\"id\":42,\"name\":\"CodeRabbit\",\"head_sha\":\"${QA_EXPECTED_HEAD:?QA_EXPECTED_HEAD is required}\",\"status\":\"completed\",\"conclusion\":\"success\",\"app\":{\"name\":\"CodeRabbit\",\"slug\":\"coderabbitai\"},\"output\":{\"title\":\"Review skipped\",\"summary\":\"Pull request is too large to review\"}}]}"
+    ;;
+  *'/status')
+    printf '%s\n' '{"statuses":[]}'
+    ;;
+  *'/pulls/123/comments')
+    printf '%s\n' '[]'
+    ;;
+  *'/pulls/123/reviews')
+    printf '%s\n' '[]'
+    ;;
+  *'api graphql'*)
+    printf '%s\n' '{"data":{"repository":{"pullRequest":{"reviewThreads":{"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[]}}}}}'
+    ;;
+  *)
+    printf 'unexpected gh invocation: %s\n' "$*" >&2
+    exit 97
+    ;;
+esac
