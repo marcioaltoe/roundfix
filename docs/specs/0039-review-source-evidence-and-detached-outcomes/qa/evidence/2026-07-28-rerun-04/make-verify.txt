@@ -1,0 +1,39 @@
+Full repository Verification
+Build: 234037002497f7d1424a256318db69bf7ccd098e
+Date: 2026-07-28
+Result: pass after two proven sandbox-only constraints
+
+Initial exact command:
+  rtk make verify
+Exit: 2 before tests.
+Environment diagnostic:
+  pattern ./...: open /Users/marcio/Library/Caches/go-build/...: operation not
+  permitted
+
+Portable-cache command:
+  rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-04-gocache
+  GOFLAGS=-buildvcs=false make verify
+Exit: 2 after 2,781 Go tests passed.
+Environment diagnostic:
+  Five owner-process tests were denied while executing /bin/ps:
+  four in internal/store and one in internal/cli.
+
+Approved full-access rerun of the unchanged target:
+  rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-04-gocache
+  GOFLAGS=-buildvcs=false make verify
+Exit: 0.
+Results:
+  Go test: 2,786 passed in 24 packages
+  Selected Skill tests: 4 passed in 1 package
+  Shipped Skill check: all 14 contracts passed
+  Production build: bin/roundfix created with BuildCommit 2340370-dirty
+
+The dirty suffix is expected because the required in-progress QA report and
+evidence existed before Verification.
+
+Post-gate checks:
+
+- Writable-cache make skills-sync-check: 4 passed.
+- bin/roundfix skills check: all 14 shipped contracts passed.
+- cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md: exit 0.
+- git -c core.fsmonitor=false diff --check: exit 0.
