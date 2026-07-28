@@ -408,12 +408,44 @@ roundfix implement --spec <slug> [--qa] [--detach]
 Executes a Spec's Task Graph in a Run Worktree as one Run — spec Runs keep
 worktree isolation. The scheduler executes the current Wave up to
 `worktree.concurrency` at a time (default `2`; `1` keeps sequential behavior),
-with concurrently running Tasks in Task Worktrees and one commit per completed
-Task on the Run Branch. It resolves `specs.root` once from the user's checkout.
+while `verification.concurrency` independently limits concurrent Task
+Verification attempts (default `1`). Concurrently running Tasks use Task
+Worktrees, and each completed Task creates one commit on the Run Branch. Both
+capacities apply only within this Implement Run; they do not coordinate other
+Runs, CI, or external processes. It resolves `specs.root` once from the user's
+checkout.
 `--qa` ends the Run with the qa-gate step; only a `pass` verdict lets the Run
 end Clean. `implement.auto_push: true` makes a Clean Run push its branch
 upstream. Integration Pending, Unresolved, Failed, Stopped, and failing-QA
 Runs never push.
+
+The profile-led default is:
+
+```bash
+roundfix implement --spec <slug> --detach
+```
+
+Each Task owns a Task Type-selected Agent Session. During an Implement Run the
+Daemon is the only Task-status writer: it writes `in_progress`, receives
+implementation-ready work from the Agent, runs the Task's complete
+`## Verification` sequence verbatim, and writes the terminal status. The Agent
+may run focused checks and record their evidence, but it does not run the
+declared Task Verification, edit status, or settle the verdict.
+
+A deterministic Verification failure releases Verification Capacity before
+the Daemon sends diagnostics to the same Agent Session. The Agent receives one
+Verification Feedback repair turn, then the repaired Task queues and acquires
+Verification Capacity again for its final Daemon attempt. Any formatter, test,
+Skill synchronization, or build failure in the declared gate blocks
+settlement.
+
+Exit `75` from a project-authored Verification wrapper is the sole Temporary
+Verification Failure signal. Roundfix retains its diagnostics and grants that
+Task one exclusive retry, which waits for all other Verification attempts in
+the Run to drain and then consumes the entire Verification Capacity. The retry
+does not consume the Agent repair. A second exit `75` exhausts the retry and
+fails the Task; Roundfix never classifies a failure from log text, timing,
+ports, package names, or framework messages.
 
 stdout is one line per Task in Task Graph order — failed and skipped Tasks are
 followed by one indented `  reason: <one line>` naming the failed step (for
@@ -603,7 +635,11 @@ stopping, or resolving threads. Without a Run ID at an interactive terminal it
 opens the Run Browser; in non-interactive mode it exits `2` naming
 `roundfix runs list`. The Live Run View shows a `WORK QUEUE` pane next to a
 `SESSION.TIMELINE` pane grouping Run Events by Batch; raw payloads never
-render inline and full content stays in the Detail Modal.
+render inline and full content stays in the Detail Modal. For spec Runs its
+header reports `Task Capacity` and `Verification Capacity`, and each Task row
+uses `Agent working`, `Waiting for Verification`, or `Verifying` before the
+Daemon settles it. Verification Feedback returns that Task to `Agent working`;
+meaning never depends on color.
 
 ### events
 
@@ -625,6 +661,24 @@ For a Detached Run's stable terminal subscription, use:
 ```bash
 roundfix events <run-id> --follow --filter outcome
 ```
+
+To inspect Task and Verification capacity flow, use the profile-led Run ID from
+`implement --detach`:
+
+```bash
+roundfix events <run-id> --follow \
+  --filter task-status,verification,outcome > run-events.jsonl \
+  2> run-events.diagnostics
+```
+
+The Task-status records identify Agent work and Daemon settlement.
+`daemon.verification` payloads use the canonical phases `waiting`, `started`,
+`command-passed`, `failed`, and `verdict`. They carry the Task, numbered
+attempt, shared or exclusive mode, retry identity, and capacity where
+applicable. A Temporary Verification Failure adds classification `temporary`,
+reason `temporary_verification_failure`, retained `diagnostic_path`, and
+whether the exclusive retry remains available. Requested JSONL remains on
+stdout; follow progress and operational diagnostics remain on stderr.
 
 The outcome record carries the terminal state plus bounded reason and next
 action when non-Clean. When available, it also carries Review Issue knowledge,

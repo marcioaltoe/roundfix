@@ -46,6 +46,37 @@ source. Empty values are valid only where this page defines their behavior:
 Do not use a bare YAML value such as `command:` to mean an empty string. Use
 the explicit value shown above or omit the key to inherit it.
 
+## Task and Verification capacities
+
+Task Capacity and Verification Capacity are independent, config-only limits
+for one Implement Run. Use the built-in Task Capacity `2` and Verification
+Capacity `1` when two implementation-ready Tasks can overlap but the
+repository gate must run sequentially:
+
+```yaml
+worktree:
+  concurrency: 2
+
+verification:
+  concurrency: 1
+```
+
+`worktree.concurrency` limits concurrent Task Worktree lifecycles, including
+Agent work. `verification.concurrency` limits concurrent Task Verification
+attempts inside that Run. The built-in values are `2` and `1`, respectively;
+User Config overrides each built-in value, and Project Config overrides the
+User Config value for the same key. Neither capacity has a command-line flag.
+
+Both values must be positive integers. Zero, negative, fractional, and
+otherwise invalid values fail strict configuration validation before the Run
+is created. Omitting `verification.concurrency` uses `1`; it never inherits
+`worktree.concurrency`.
+
+Verification Capacity is not a machine-wide lock. It does not coordinate
+other Roundfix Runs, CI jobs, manually started commands, or other processes.
+Projects must still choose a safe Task Capacity for Worktree Bootstrap, Agent
+work, and resources used outside Daemon Verification.
+
 ## Context-Driven Baseline state
 
 User Config and Project Config are operational Roundfix state. They do not
@@ -167,6 +198,10 @@ worktree:
   # Maximum time before the bootstrap command fails the owning Run or Task.
   bootstrap_timeout: 10m
 
+verification:
+  # Maximum concurrent Task Verification attempts within one Implement Run.
+  concurrency: 1
+
 store:
   # Terminal Run journals older than this duration are eligible for pruning; 0 keeps everything.
   journal_retention: 336h
@@ -226,6 +261,7 @@ key. Duration values use Go duration syntax such as `30s`, `10m`, and `2h`.
 | --- | --- | --- |
 | `worktree.location` | `~/.roundfix/worktrees` | Sets the parent directory for Run and Task Worktrees. |
 | `worktree.concurrency` | `2` | Limits concurrent Task Worktrees. `1` keeps Task execution sequential. |
+| `verification.concurrency` | `1` | Limits concurrent Task Verification attempts within one Implement Run, independently from Task Capacity. |
 | `worktree.copy` | `[]` | Copies no ignored files. Entries must be repository-relative and already ignored by Git. |
 | `worktree.bootstrap` | `""` | Disables Worktree Bootstrap. A non-empty command runs after copy and before Agent work. |
 | `worktree.bootstrap_timeout` | `10m` | Bounds each Worktree Bootstrap command. |
@@ -419,6 +455,8 @@ locks, and Review artifacts under the Spec Root are never pruned.
 - Detached Run console log: `<artifact-dir>/runs/<run-id>/console.log`
 - Failed Verification diagnostics:
   `<artifact-dir>/runs/<run-id>/verification/batch-<nnn>-attempt-<1|2>.log`
+- Exclusive retry diagnostics:
+  `<artifact-dir>/runs/<run-id>/verification/batch-<nnn>-attempt-<1|2>-retry-1.log`
 
 For review commands, explicit `--spec <slug>` wins over trailer discovery;
 otherwise Roundfix uses the newest `Roundfix-Spec: <slug>` trailer on the PR
@@ -429,10 +467,12 @@ head commit when that Spec folder exists, falling back to the `_reviews` path.
 Roundfix keeps Agent context bounded by design:
 
 - Agent prompts receive the assigned Work Item contract and bounded guidance.
-  Successful Verification output never enters Agent context; on an attempt-1
-  failure the Daemon sends exactly one Verification Feedback prompt with the
-  failed command, wrapped failure, and diagnostic artifact path, then reruns
-  the full Verification sequence and settles from that verdict.
+  Successful Verification output never enters Agent context. On a
+  deterministic first-attempt failure, the Daemon releases Verification
+  Capacity and sends exactly one Verification Feedback prompt with the failed
+  command, wrapped failure, and diagnostic artifact path, then queues and runs
+  the final complete Verification sequence. A Temporary Verification Failure
+  uses the separate exclusive retry protocol and sends no Agent feedback.
 - Spec Task prompts include one complete assigned Task plus a Spec Context
   Bundle: paths for standard Spec artifacts, Task-authored `## Context`
   entries (capped at 50 unique paths), and sorted files changed by prior

@@ -271,6 +271,28 @@ same Spec artifacts. Tasks run in dependency order by Wave, each Task's
 Verification commands gate one commit, and the Run never pushes unless
 `implement.auto_push: true` and the outcome is Clean.
 
+Each Task owns an Agent Session selected by its Task Type profile, so frontend
+and non-frontend Tasks stay in the same mixed Task Graph. The Daemon alone
+writes Task status during the Run. Agents hand back implementation-ready work
+after any useful focused checks; the Daemon then runs the complete declared
+Verification before it can settle the Task.
+
+The recommended capacity split overlaps up to two Task lifecycles while
+serializing the repository gate:
+
+```yaml
+worktree:
+  concurrency: 2
+
+verification:
+  concurrency: 1
+```
+
+These limits apply to one Implement Run only. They do not coordinate another
+Run, CI, or an external command. See
+[Task and Verification capacities](configuration.md#task-and-verification-capacities)
+for defaults, precedence, and validation.
+
 ### Foreground
 
 ```bash
@@ -295,6 +317,14 @@ All 2 Task(s) already completed; no Run was created.
 
 Add `--qa` to end the Run with the qa-gate step; only a `pass` verdict lets the
 Run end Clean, and the report gains a `qa <verdict> — <report path>` line.
+
+When Daemon Verification fails deterministically, the capacity permit is
+released while the same Task Agent Session receives one Verification Feedback
+repair turn. The final Daemon attempt queues for capacity again. A
+project-authored Verification wrapper can instead return exit `75` to classify
+a Temporary Verification Failure. Roundfix retains that diagnostic and grants
+one exclusive retry across the Task lifecycle; another `75` exhausts the retry
+and fails the Task. Log content never triggers this protocol.
 
 When the resolved Spec Root is outside the repository, or a task file or QA
 Report path crosses a symbolic link, Daemon commits leave that artifact out of
@@ -332,6 +362,19 @@ captured Run ID and the stable Supervisor outcome command:
 roundfix events <run-id> --follow --filter outcome
 ```
 
+Use the Verification stream when you need working, queue, retry, and capacity
+evidence:
+
+```bash
+roundfix events <run-id> --follow \
+  --filter task-status,verification,outcome > run-events.jsonl \
+  2> run-events.diagnostics
+```
+
+The requested JSONL records stay on stdout and diagnostics stay on stderr.
+Verification phases appear as `waiting`, `started`, `command-passed`, `failed`,
+and `verdict`; exclusive retry records use `mode: "exclusive"` and `retry: 1`.
+
 At an interactive terminal, browse with the Run Browser; from a script or
 agent, use the bounded plain-text listing:
 
@@ -359,6 +402,10 @@ completion time; acceptance by a local route does not prove a person saw it.
 Use the Supervisor outcome command as the unattended-Run state contract and
 `attach` for the complete read-only Run history.
 `attach` never stops, commits, or mutates the Run; detaching leaves it running.
+For spec Runs the Live Run View reports both effective capacities and labels
+each Task `Agent working`, `Waiting for Verification`, or `Verifying`. After a
+deterministic failure releases capacity for Verification Feedback, that Task
+returns to `Agent working` until its final attempt queues.
 
 ### Reconcile retained Run work
 

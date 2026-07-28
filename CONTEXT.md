@@ -149,7 +149,7 @@ The next configured Agent Selection in a profile's Fallback Chain. Roundfix prov
 _Avoid_: Dynamic fallback, silent model switch, catalog probe winner
 
 **Agent Session**:
-The persistent acpx-backed session through which one Run drives its Agent across Work Items — created when the Run starts Agent work, named by the Run, and closed at the Run's terminal outcome.
+The acpx-backed session owned by one Work Item or action. Each Implement Task owns a Task Type-selected Agent Session, requested QA owns a separate `qa` Agent Session, and review work uses a review-selected Agent Session; effective selection and fallback attempts are persisted for that owner.
 _Avoid_: ACP session, chat, conversation, thread
 
 **Merge-Ready**:

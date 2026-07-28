@@ -3,9 +3,9 @@
 Roundfix is a local-first Go CLI that resolves pull request review feedback and
 executes Spec Task Graphs with local coding agents. It fetches unresolved
 CodeRabbit findings as local markdown artifacts, assigns bounded Batches or
-Tasks to an ACP Agent runtime, verifies every change with your repository's own
-gate, creates Daemon-owned commits, and pushes only when nothing unresolved
-remains.
+Tasks to Task Type-selected ACP Agent Sessions, verifies every change with
+your repository's own gate, creates Daemon-owned commits, and pushes only when
+nothing unresolved remains.
 
 It is not a workflow engine, CI healer, or task orchestrator. It runs two
 loops — review resolution on an Open Pull Request, and Spec Task Graph
@@ -79,11 +79,17 @@ roundfix watch --source coderabbit --pr <number> --until-clean
 ```
 
 Execute a Spec's Task Graph (specs live under `docs/specs/<slug>/`), with the
-QA gate at the end:
+QA gate at the end. Agent selection is profile-led per Task Type; the Daemon
+owns Task status and the complete declared Verification:
 
 ```bash
 roundfix implement --spec <slug> --qa
 ```
+
+Task Capacity defaults to `2`; the independent, per-Run Verification Capacity
+defaults to `1`. See
+[configuration](docs/user-guide/configuration.md#task-and-verification-capacities)
+before raising either limit.
 
 Adopt or update the repository's Context-Driven Baseline through the public,
 confirmation-gated workflow:
