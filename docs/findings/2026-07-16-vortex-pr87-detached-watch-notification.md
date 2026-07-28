@@ -161,7 +161,7 @@ Environment:
   owns finding 4: registered Agent Session cleanup, primary-before-secondary
   diagnostics, and winner-only terminal completion.
 - Spec
-  [0039 Review Source evidence and Detached Run outcomes](../specs/0039-review-source-evidence-and-detached-outcomes/_prd.md)
+  [0039 Review Source evidence and Detached Run outcomes](../specs/_archived/0039-review-source-evidence-and-detached-outcomes/_prd.md)
   owns findings 1–3 and 5–7: the Supervisor monitor contract, actionable
   notification context and receipts, transient retry, unknown issue counts,
   approval evidence, and artifact-only evidence inheritance.
@@ -176,7 +176,7 @@ context are not implemented yet.
 Finding 4 is routed through
 [Spec 0037](../specs/_archived/0037-terminal-outcome-integrity/_prd.md);
 findings 1–3 and 5–7 are routed through
-[Spec 0039](../specs/0039-review-source-evidence-and-detached-outcomes/_prd.md)
+[Spec 0039](../specs/_archived/0039-review-source-evidence-and-detached-outcomes/_prd.md)
 and [ADR-0054](../adr/0054-review-source-evidence-determines-review-outcomes.md).
 The `done` finding status records that routing, not a QA, archive, or release
 verdict. Supported monitoring, Evidence, retry, unknown-count, notification

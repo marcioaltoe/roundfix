@@ -83,6 +83,6 @@ Environment:
 
 No active Spec owns the remaining database-compaction and global Artifact sanitation work as of
 2026-07-17. The terminal Run Worktree cleanup gap is separate and remains owned by
-[Spec 0038 — Terminal Run Worktree reconciliation](../specs/0038-terminal-run-worktree-reconciliation/_prd.md).
+[Spec 0038 — Terminal Run Worktree reconciliation](../specs/_archived/0038-terminal-run-worktree-reconciliation/_prd.md).
 This finding should remain `pending` until the storage sanitation work is routed to a dedicated
 Spec.
