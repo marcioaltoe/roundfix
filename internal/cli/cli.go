@@ -3989,8 +3989,9 @@ func publishTerminalCompletionWithContext(
 	if !completed.Transitioned {
 		return
 	}
+	terminal = normalizedTerminalCompletionContext(completed.State, terminal)
 	publishRunOutcome(ctx, runStore, completed.ID, completed.State, terminal, stderr)
-	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed.Run)
+	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed.Run, terminal)
 }
 
 func journalStopPrimaryFailure(ctx context.Context, runStore *store.Store, runID string, primary error) {
@@ -4075,7 +4076,7 @@ func warnCleanRunWorktreeCleanupFailed(ctx context.Context, runStore *store.Stor
 }
 
 func outcomeNotifierFromConfig(config roundconfig.Config) roundnotify.Notifier {
-	if !config.Notify.Enabled || newOutcomeNotifier == nil {
+	if newOutcomeNotifier == nil {
 		return nil
 	}
 	return newOutcomeNotifier(config)
@@ -4083,23 +4084,43 @@ func outcomeNotifierFromConfig(config roundconfig.Config) roundnotify.Notifier {
 
 const outcomeNotificationTimeout = 30 * time.Second
 
-func notifyTerminalOutcome(ctx context.Context, runStore *store.Store, notifier roundnotify.Notifier, stderr io.Writer, run store.Run) {
+func notifyTerminalOutcome(
+	ctx context.Context,
+	runStore *store.Store,
+	notifier roundnotify.Notifier,
+	stderr io.Writer,
+	run store.Run,
+	terminal terminalCompletionContext,
+) {
 	if notifier == nil {
 		return
 	}
 	notifyCtx, cancel := context.WithTimeout(withoutCancelOrBackground(ctx), outcomeNotificationTimeout)
 	defer cancel()
-	if err := notifier.Notify(notifyCtx, outcomeFromRun(run)); err != nil {
-		reportOutcomeNotificationFailure(notifyCtx, runStore, run.ID, err, stderr)
+	receipt, err := notifier.Notify(notifyCtx, outcomeFromRun(run, terminal))
+	if err != nil {
+		receipt.Status = roundnotify.StatusFailed
+	}
+	if receipt.CompletedAt.IsZero() {
+		receipt.CompletedAt = time.Now().UTC()
+	}
+	journalOutcomeNotificationReceipt(notifyCtx, runStore, run.ID, receipt, err, stderr)
+	if err != nil {
+		reportOutcomeNotificationFailure(err, stderr)
 	}
 }
 
-func outcomeFromRun(run store.Run) roundnotify.Outcome {
+func outcomeFromRun(run store.Run, terminal terminalCompletionContext) roundnotify.Outcome {
 	return roundnotify.Outcome{
-		RunID:  run.ID,
-		State:  run.State,
-		Kind:   run.Kind,
-		Target: outcomeTarget(run),
+		RunID:             run.ID,
+		State:             run.State,
+		Kind:              run.Kind,
+		Target:            outcomeTarget(run),
+		Reason:            terminal.Reason,
+		ConsoleLog:        terminal.ConsoleLog,
+		AttachCommand:     terminal.AttachCommand,
+		ReviewIssuesKnown: terminal.ReviewIssuesKnown,
+		NextAction:        terminal.NextAction,
 	}
 }
 
@@ -4113,7 +4134,7 @@ func outcomeTarget(run store.Run) string {
 	return ""
 }
 
-func reportOutcomeNotificationFailure(ctx context.Context, runStore *store.Store, runID string, err error, stderr io.Writer) {
+func reportOutcomeNotificationFailure(err error, stderr io.Writer) {
 	reason := strings.TrimSpace(err.Error())
 	if reason == "" {
 		reason = "unknown error"
@@ -4122,24 +4143,45 @@ func reportOutcomeNotificationFailure(ctx context.Context, runStore *store.Store
 	if stderr != nil {
 		fmt.Fprintln(stderr, warning)
 	}
+}
+
+func journalOutcomeNotificationReceipt(
+	ctx context.Context,
+	runStore *store.Store,
+	runID string,
+	receipt roundnotify.NotificationReceipt,
+	notifyErr error,
+	stderr io.Writer,
+) {
 	if runStore == nil {
 		return
 	}
-	payload, marshalErr := json.Marshal(map[string]string{
-		"event":  "outcome_notification_failed",
-		"reason": reason,
+	reason := ""
+	if notifyErr != nil {
+		reason = boundTerminalContextText(notifyErr.Error())
+	}
+	eventName := "outcome_notification_" + receipt.Status
+	payload, err := json.Marshal(runevent.NotificationReceiptPayload{
+		Event:       eventName,
+		Route:       receipt.Route,
+		Status:      receipt.Status,
+		CompletedAt: receipt.CompletedAt,
+		Reason:      reason,
 	})
-	if marshalErr != nil {
+	if err != nil {
 		return
 	}
-	_ = (store.JournalSink{Store: runStore}).Publish(withoutCancelOrBackground(ctx), runevent.RunEvent{
+	summary := fmt.Sprintf("Outcome notification %s via %s.", receipt.Status, receipt.Route)
+	if err := (store.JournalSink{Store: runStore}).Publish(withoutCancelOrBackground(ctx), runevent.RunEvent{
 		RunID:   runID,
 		Source:  runevent.SourceDaemon,
 		Kind:    runevent.KindDaemonStatus,
-		Summary: runevent.BoundSummary(warning),
-		Time:    time.Now().UTC(),
+		Summary: runevent.BoundSummary(summary),
+		Time:    receipt.CompletedAt,
 		Payload: payload,
-	})
+	}); err != nil && stderr != nil {
+		fmt.Fprintf(stderr, "Warning: notification receipt event not journaled: %v\n", err)
+	}
 }
 
 func withoutCancelOrBackground(ctx context.Context) context.Context {

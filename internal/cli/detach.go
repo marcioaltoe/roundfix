@@ -307,9 +307,10 @@ func detachPhaseName(phase detachHandshakePhase) string {
 }
 
 func printDetachedReport(stdout io.Writer, runID string, consoleLog string) {
-	fmt.Fprintf(stdout, "Run detached: %s\n", runID)
-	fmt.Fprintf(stdout, "Console log: %s\n", consoleLog)
-	fmt.Fprintf(stdout, "Follow: roundfix attach %s\n", runID)
+	fmt.Fprintf(stdout, "Run ID: %s\n", runID)
+	fmt.Fprintf(stdout, "Console Log: %s\n", consoleLog)
+	fmt.Fprintf(stdout, "Attach: roundfix attach %s\n", runID)
+	fmt.Fprintf(stdout, "Supervisor monitor: roundfix events %s --follow --filter outcome\n", runID)
 	fmt.Fprintf(stdout, "Stop: roundfix stop %s\n", runID)
 }
 

@@ -145,6 +145,16 @@ type RetryPayload struct {
 	Reason    string `json:"reason"`
 }
 
+// NotificationReceiptPayload is the stable daemon.status payload for one
+// completed best-effort terminal notification attempt.
+type NotificationReceiptPayload struct {
+	Event       string    `json:"event"`
+	Route       string    `json:"route"`
+	Status      string    `json:"status"`
+	CompletedAt time.Time `json:"completed_at"`
+	Reason      string    `json:"reason,omitempty"`
+}
+
 // OutcomePayload is the stable daemon.outcome payload. Optional evidence and
 // recovery fields let non-Clean terminal outcomes remain actionable without
 // changing the event kind or stream schema.

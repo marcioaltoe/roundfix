@@ -43,7 +43,7 @@ func TestRunDetachedCommandTimesOutWaitingForLiveness(t *testing.T) {
 	}
 }
 
-func TestRunDetachedCommandAllowsRunCreationPastLivenessDeadline(t *testing.T) {
+func TestRunDetachedCommandMonitorReportAllowsRunCreationPastLivenessDeadline(t *testing.T) {
 	stdout, stderr, code := runDetachParentForTest(t, detachTestChildRunCreated, 500*time.Millisecond, 2*time.Second)
 
 	if code != exitOK {
@@ -56,7 +56,14 @@ func TestRunDetachedCommandAllowsRunCreationPastLivenessDeadline(t *testing.T) {
 	if runID != detachTestRunID {
 		t.Fatalf("expected run id %q, got %q", detachTestRunID, runID)
 	}
-	wantStdout := fmt.Sprintf("Run detached: %s\nConsole log: %s\nFollow: roundfix attach %s\nStop: roundfix stop %s\n", runID, consoleLog, runID, runID)
+	wantStdout := fmt.Sprintf(
+		"Run ID: %s\nConsole Log: %s\nAttach: roundfix attach %s\nSupervisor monitor: roundfix events %s --follow --filter outcome\nStop: roundfix stop %s\n",
+		runID,
+		consoleLog,
+		runID,
+		runID,
+		runID,
+	)
 	if stdout != wantStdout {
 		t.Fatalf("detach stdout mismatch\nwant: %q\ngot:  %q", wantStdout, stdout)
 	}

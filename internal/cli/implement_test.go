@@ -219,22 +219,25 @@ exit 0
 func parseDetachedReport(t *testing.T, stdout string) (string, string) {
 	t.Helper()
 	lines := strings.Split(strings.TrimSuffix(stdout, "\n"), "\n")
-	if len(lines) != 4 {
-		t.Fatalf("expected four detach stdout lines, got %d: %q", len(lines), stdout)
+	if len(lines) != 5 {
+		t.Fatalf("expected five detach stdout lines, got %d: %q", len(lines), stdout)
 	}
-	runID, ok := strings.CutPrefix(lines[0], "Run detached: ")
+	runID, ok := strings.CutPrefix(lines[0], "Run ID: ")
 	if !ok || strings.TrimSpace(runID) == "" {
-		t.Fatalf("expected Run detached line, got %q", lines[0])
+		t.Fatalf("expected Run ID line, got %q", lines[0])
 	}
-	consoleLog, ok := strings.CutPrefix(lines[1], "Console log: ")
+	consoleLog, ok := strings.CutPrefix(lines[1], "Console Log: ")
 	if !ok || strings.TrimSpace(consoleLog) == "" {
-		t.Fatalf("expected Console log line, got %q", lines[1])
+		t.Fatalf("expected Console Log line, got %q", lines[1])
 	}
-	if lines[2] != "Follow: roundfix attach "+runID {
-		t.Fatalf("expected follow line for %s, got %q", runID, lines[2])
+	if lines[2] != "Attach: roundfix attach "+runID {
+		t.Fatalf("expected Attach line for %s, got %q", runID, lines[2])
 	}
-	if lines[3] != "Stop: roundfix stop "+runID {
-		t.Fatalf("expected stop line for %s, got %q", runID, lines[3])
+	if lines[3] != "Supervisor monitor: roundfix events "+runID+" --follow --filter outcome" {
+		t.Fatalf("expected Supervisor monitor line for %s, got %q", runID, lines[3])
+	}
+	if lines[4] != "Stop: roundfix stop "+runID {
+		t.Fatalf("expected stop line for %s, got %q", runID, lines[4])
 	}
 	return runID, consoleLog
 }
@@ -336,18 +339,25 @@ func waitForRunState(t *testing.T, homeDir string, runID string, state string, t
 	return store.Run{}
 }
 
-// waitForCleanOutcomeEvent polls the Run Event Journal until its last event is
-// the Clean Daemon outcome. The store State can flip to Clean a hair before the
-// terminal outcome event is the last visible entry, so a single snapshot races
-// under load; polling removes the race without masking a product bug.
+// waitForCleanOutcomeEvent polls the Run Event Journal until the Clean Daemon
+// outcome and its notification receipt are both visible. The store State can
+// flip to Clean a hair before those durable events are appended, so a single
+// snapshot races under load; polling removes the race without masking a
+// product bug.
 func waitForCleanOutcomeEvent(t *testing.T, homeDir string, runID string, timeout time.Duration) {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
 		events := runEventsForRun(t, homeDir, runID)
-		if len(events) > 0 {
-			last := events[len(events)-1].Event
-			if last.Kind == runevent.KindDaemonOutcome && strings.Contains(string(last.Payload), `"Clean"`) {
+		if len(events) >= 2 {
+			outcome := events[len(events)-2].Event
+			receipt := events[len(events)-1].Event
+			var payload runevent.NotificationReceiptPayload
+			if outcome.Kind == runevent.KindDaemonOutcome &&
+				strings.Contains(string(outcome.Payload), `"Clean"`) &&
+				receipt.Kind == runevent.KindDaemonStatus &&
+				json.Unmarshal(receipt.Payload, &payload) == nil &&
+				strings.HasPrefix(payload.Event, "outcome_notification_") {
 				return
 			}
 		}
@@ -1093,7 +1103,14 @@ func TestRunImplementDetachPrintsReportAndCompletesRun(t *testing.T) {
 		t.Fatalf("expected detach caller stderr empty, got %q", stderr)
 	}
 	runID, consoleLog := parseDetachedReport(t, stdout)
-	wantStdout := fmt.Sprintf("Run detached: %s\nConsole log: %s\nFollow: roundfix attach %s\nStop: roundfix stop %s\n", runID, consoleLog, runID, runID)
+	wantStdout := fmt.Sprintf(
+		"Run ID: %s\nConsole Log: %s\nAttach: roundfix attach %s\nSupervisor monitor: roundfix events %s --follow --filter outcome\nStop: roundfix stop %s\n",
+		runID,
+		consoleLog,
+		runID,
+		runID,
+		runID,
+	)
 	if stdout != wantStdout {
 		t.Fatalf("detach stdout mismatch\nwant: %q\ngot:  %q", wantStdout, stdout)
 	}
@@ -1164,7 +1181,7 @@ func TestRunImplementDetachSurvivesCallerProcessGroupKill(t *testing.T) {
 	}
 
 	firstLine := readLineWithTimeout(t, bufio.NewReader(stdoutPipe), 5*time.Second)
-	runID, ok := strings.CutPrefix(strings.TrimSpace(firstLine), "Run detached: ")
+	runID, ok := strings.CutPrefix(strings.TrimSpace(firstLine), "Run ID: ")
 	if !ok || strings.TrimSpace(runID) == "" {
 		t.Fatalf("expected first detach line with Run id, got %q stderr=%q", firstLine, stderr.String())
 	}

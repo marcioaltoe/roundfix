@@ -81,6 +81,33 @@ func TestReviewRetryPayloadUsesBoundedEpisodeFields(t *testing.T) {
 	}
 }
 
+func TestNotificationReceiptPayloadUsesRouteStatusAndCompletionTime(t *testing.T) {
+	completedAt := time.Date(2026, 7, 27, 12, 34, 56, 0, time.UTC)
+	payload := NotificationReceiptPayload{
+		Event:       "outcome_notification_failed",
+		Route:       "command",
+		Status:      "failed",
+		CompletedAt: completedAt,
+		Reason:      "command exited 1",
+	}
+
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal NotificationReceiptPayload: %v", err)
+	}
+	for _, field := range []string{
+		`"event":"outcome_notification_failed"`,
+		`"route":"command"`,
+		`"status":"failed"`,
+		`"completed_at":"2026-07-27T12:34:56Z"`,
+		`"reason":"command exited 1"`,
+	} {
+		if !strings.Contains(string(raw), field) {
+			t.Fatalf("notification receipt payload missing %s: %s", field, raw)
+		}
+	}
+}
+
 func TestVerificationEventVocabulary(t *testing.T) {
 	if VerificationPhaseStarted != "started" {
 		t.Fatalf("expected started phase, got %q", VerificationPhaseStarted)

@@ -43,8 +43,12 @@ func init() {
 
 type testNoopOutcomeNotifier struct{}
 
-func (testNoopOutcomeNotifier) Notify(context.Context, roundnotify.Outcome) error {
-	return nil
+func (testNoopOutcomeNotifier) Notify(context.Context, roundnotify.Outcome) (roundnotify.NotificationReceipt, error) {
+	return roundnotify.NotificationReceipt{
+		Route:       roundnotify.RouteNative,
+		Status:      roundnotify.StatusSent,
+		CompletedAt: time.Now().UTC(),
+	}, nil
 }
 
 func TestRunHelp(t *testing.T) {
@@ -4802,20 +4806,28 @@ func TestRunOutcomeNotificationsSkipFetch(t *testing.T) {
 	assertRecordedOutcomes(t, notifier, nil)
 }
 
-func TestNotifyTerminalOutcomeDetachesCanceledParentWithBoundedDeadline(t *testing.T) {
+func TestOutcomeNotificationCarriesTerminalContextWithBoundedDeadline(t *testing.T) {
 	parent, cancel := context.WithCancel(context.Background())
 	cancel()
 	notifier := &deadlineRecordingOutcomeNotifier{}
+	known := false
 	run := store.Run{
 		ID:       "run-123",
 		Kind:     store.KindResolve,
-		State:    store.StateClean,
+		State:    store.StateFailed,
 		PRNumber: "123",
+	}
+	terminal := terminalCompletionContext{
+		Reason:            "verification failed",
+		NextAction:        "inspect the Console Log",
+		ReviewIssuesKnown: &known,
+		ConsoleLog:        "/tmp/run-123/console.log",
+		AttachCommand:     "roundfix attach run-123",
 	}
 	var stderr bytes.Buffer
 	start := time.Now()
 
-	notifyTerminalOutcome(parent, nil, notifier, &stderr, run)
+	notifyTerminalOutcome(parent, nil, notifier, &stderr, run, terminal)
 
 	if notifier.wasCanceled {
 		t.Fatal("expected terminal outcome notification context to ignore parent cancellation")
@@ -4827,10 +4839,15 @@ func TestNotifyTerminalOutcomeDetachesCanceledParentWithBoundedDeadline(t *testi
 		t.Fatalf("expected deadline within notification timeout, got %s from start %s", notifier.deadline, start)
 	}
 	want := roundnotify.Outcome{
-		RunID:  "run-123",
-		State:  store.StateClean,
-		Kind:   store.KindResolve,
-		Target: "pr:123",
+		RunID:             "run-123",
+		State:             store.StateFailed,
+		Kind:              store.KindResolve,
+		Target:            "pr:123",
+		Reason:            terminal.Reason,
+		ConsoleLog:        terminal.ConsoleLog,
+		AttachCommand:     terminal.AttachCommand,
+		ReviewIssuesKnown: terminal.ReviewIssuesKnown,
+		NextAction:        terminal.NextAction,
 	}
 	if !reflect.DeepEqual(notifier.outcome, want) {
 		t.Fatalf("notification outcome mismatch\nwant: %#v\ngot:  %#v", want, notifier.outcome)
@@ -4855,16 +4872,80 @@ func TestRunOutcomeNotificationFailureWarnsAndJournalsWithoutChangingReportOrExi
 		t.Fatalf("expected one notification warning %q, got stderr=%q", warning, gotStderr)
 	}
 	runID, events := journaledRunEvents(t, homeDir, gotStderr)
+	receipts := 0
 	for _, entry := range events {
 		event := entry.Event
-		if event.Source == runevent.SourceDaemon &&
-			event.Kind == runevent.KindDaemonStatus &&
-			strings.Contains(event.Summary, "outcome notification failed") &&
-			strings.Contains(string(event.Payload), "forced notifier failure") {
-			return
+		if event.Source != runevent.SourceDaemon || event.Kind != runevent.KindDaemonStatus {
+			continue
+		}
+		var payload runevent.NotificationReceiptPayload
+		if err := json.Unmarshal(event.Payload, &payload); err != nil ||
+			payload.Event != "outcome_notification_failed" {
+			continue
+		}
+		receipts++
+		if payload.Route != roundnotify.RouteCommand ||
+			payload.Status != roundnotify.StatusFailed ||
+			payload.CompletedAt.IsZero() ||
+			payload.Reason != "forced notifier failure" {
+			t.Fatalf("failed notification receipt = %#v", payload)
 		}
 	}
-	t.Fatalf("expected Daemon-source notification failure event for Run %s, got %+v", runID, events)
+	if receipts != 1 {
+		t.Fatalf("failed notification receipt events for Run %s = %d, want 1; events=%+v", runID, receipts, events)
+	}
+}
+
+func TestNotificationReceiptJournalsExactlyOnePerOutcomeAttempt(t *testing.T) {
+	tests := []struct {
+		name   string
+		route  string
+		status string
+		err    error
+	}{
+		{name: "sent command", route: roundnotify.RouteCommand, status: roundnotify.StatusSent},
+		{name: "skipped disabled", route: roundnotify.RouteDisabled, status: roundnotify.StatusSkipped},
+		{name: "failed native", route: roundnotify.RouteNative, status: roundnotify.StatusFailed, err: errors.New("native delivery failed")},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			notifier := &recordingOutcomeNotifier{
+				route:  tt.route,
+				status: tt.status,
+				err:    tt.err,
+			}
+			_, stderr, code, homeDir := runCleanResolveWithOutcomeNotifier(t, notifier)
+
+			if code != exitOK {
+				t.Fatalf("notification receipt changed exit = %d, want %d", code, exitOK)
+			}
+			runID, events := journaledRunEvents(t, homeDir, stderr)
+			assertRunState(t, homeDir, runID, store.StateClean)
+			receipts := 0
+			for _, entry := range events {
+				if entry.Event.Kind != runevent.KindDaemonStatus {
+					continue
+				}
+				var payload runevent.NotificationReceiptPayload
+				if err := json.Unmarshal(entry.Event.Payload, &payload); err != nil ||
+					!strings.HasPrefix(payload.Event, "outcome_notification_") {
+					continue
+				}
+				receipts++
+				if payload.Event != "outcome_notification_"+tt.status ||
+					payload.Route != tt.route ||
+					payload.Status != tt.status ||
+					payload.CompletedAt.IsZero() ||
+					!entry.Event.Time.Equal(payload.CompletedAt) {
+					t.Fatalf("notification receipt payload/event mismatch: payload=%#v event=%#v", payload, entry.Event)
+				}
+			}
+			if receipts != 1 {
+				t.Fatalf("notification receipt events = %d, want 1; events=%+v", receipts, events)
+			}
+		})
+	}
 }
 
 func assertCleanCleanupWarningEvent(t *testing.T, homeDir string, stderr string, keptPath string, reason string) {
@@ -4890,14 +4971,16 @@ func assertCleanCleanupWarningEvent(t *testing.T, homeDir string, stderr string,
 	t.Fatalf("expected Daemon-source cleanup failure event for Run %s, got %+v", runID, events)
 }
 
-func TestRunOutcomeNotificationsDisabledSkipsNotifier(t *testing.T) {
-	_, repoDir := withCLIWorkspace(t)
+func TestRunOutcomeNotificationsDisabledJournalsSkippedReceipt(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "notify:\n  enabled: false\n")
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
-	withOutcomeNotifierFactory(t, func(roundconfig.Config) roundnotify.Notifier {
-		t.Fatal("disabled notifications must not construct a notifier")
-		return nil
+	withOutcomeNotifierFactory(t, func(config roundconfig.Config) roundnotify.Notifier {
+		if config.Notify.Enabled {
+			t.Fatal("expected disabled notification config")
+		}
+		return roundnotify.New(config)
 	})
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -4916,6 +4999,25 @@ func TestRunOutcomeNotificationsDisabledSkipsNotifier(t *testing.T) {
 	}
 	if strings.Contains(stderr.String(), "outcome notification failed") {
 		t.Fatalf("disabled notifications must be silent, got stderr=%q", stderr.String())
+	}
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	receipts := 0
+	for _, entry := range events {
+		var payload runevent.NotificationReceiptPayload
+		if entry.Event.Kind != runevent.KindDaemonStatus ||
+			json.Unmarshal(entry.Event.Payload, &payload) != nil ||
+			payload.Event != "outcome_notification_skipped" {
+			continue
+		}
+		receipts++
+		if payload.Route != roundnotify.RouteDisabled ||
+			payload.Status != roundnotify.StatusSkipped ||
+			payload.CompletedAt.IsZero() {
+			t.Fatalf("disabled notification receipt = %#v", payload)
+		}
+	}
+	if receipts != 1 {
+		t.Fatalf("disabled notification receipt events = %d, want 1; events=%+v", receipts, events)
 	}
 }
 
@@ -9311,18 +9413,39 @@ func assertSetupLineOrder(t *testing.T, output string, lines []string) {
 
 type recordingOutcomeNotifier struct {
 	mu       sync.Mutex
+	route    string
+	status   string
 	err      error
 	outcomes []roundnotify.Outcome
 }
 
-func (notifier *recordingOutcomeNotifier) Notify(ctx context.Context, outcome roundnotify.Outcome) error {
+func (notifier *recordingOutcomeNotifier) Notify(ctx context.Context, outcome roundnotify.Outcome) (roundnotify.NotificationReceipt, error) {
 	if ctx == nil {
-		return errors.New("notification context is required")
+		return roundnotify.NotificationReceipt{
+			Route:       roundnotify.RouteCommand,
+			Status:      roundnotify.StatusFailed,
+			CompletedAt: time.Now().UTC(),
+		}, errors.New("notification context is required")
 	}
 	notifier.mu.Lock()
 	defer notifier.mu.Unlock()
 	notifier.outcomes = append(notifier.outcomes, outcome)
-	return notifier.err
+	route := notifier.route
+	if route == "" {
+		route = roundnotify.RouteCommand
+	}
+	status := notifier.status
+	if status == "" {
+		status = roundnotify.StatusSent
+	}
+	if notifier.err != nil {
+		status = roundnotify.StatusFailed
+	}
+	return roundnotify.NotificationReceipt{
+		Route:       route,
+		Status:      status,
+		CompletedAt: time.Now().UTC(),
+	}, notifier.err
 }
 
 func (notifier *recordingOutcomeNotifier) recorded() []roundnotify.Outcome {
@@ -9338,7 +9461,7 @@ type deadlineRecordingOutcomeNotifier struct {
 	outcome     roundnotify.Outcome
 }
 
-func (notifier *deadlineRecordingOutcomeNotifier) Notify(ctx context.Context, outcome roundnotify.Outcome) error {
+func (notifier *deadlineRecordingOutcomeNotifier) Notify(ctx context.Context, outcome roundnotify.Outcome) (roundnotify.NotificationReceipt, error) {
 	deadline, ok := ctx.Deadline()
 	notifier.hadDeadline = ok
 	notifier.deadline = deadline
@@ -9348,7 +9471,11 @@ func (notifier *deadlineRecordingOutcomeNotifier) Notify(ctx context.Context, ou
 	default:
 	}
 	notifier.outcome = outcome
-	return nil
+	return roundnotify.NotificationReceipt{
+		Route:       roundnotify.RouteCommand,
+		Status:      roundnotify.StatusSent,
+		CompletedAt: time.Now().UTC(),
+	}, nil
 }
 
 func withOutcomeNotifier(t *testing.T, notifier roundnotify.Notifier) {
@@ -9370,17 +9497,38 @@ func withOutcomeNotifierFactory(t *testing.T, factory func(roundconfig.Config) r
 func assertRecordedOutcomes(t *testing.T, notifier *recordingOutcomeNotifier, want []roundnotify.Outcome) {
 	t.Helper()
 	got := notifier.recorded()
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("recorded notification outcomes mismatch\nwant: %#v\ngot:  %#v", want, got)
+	if len(got) != len(want) {
+		t.Fatalf("recorded notification outcome count mismatch\nwant: %#v\ngot:  %#v", want, got)
+	}
+	for index := range want {
+		legacyGot := roundnotify.Outcome{
+			RunID:  got[index].RunID,
+			State:  got[index].State,
+			Kind:   got[index].Kind,
+			Target: got[index].Target,
+		}
+		legacyWant := roundnotify.Outcome{
+			RunID:  want[index].RunID,
+			State:  want[index].State,
+			Kind:   want[index].Kind,
+			Target: want[index].Target,
+		}
+		if !reflect.DeepEqual(legacyGot, legacyWant) {
+			t.Fatalf("recorded notification outcome %d mismatch\nwant: %#v\ngot:  %#v", index, legacyWant, legacyGot)
+		}
 	}
 }
 
 func runCleanResolveForOutcomeNotification(t *testing.T, notifyErr error) (string, string, int, string) {
 	t.Helper()
+	return runCleanResolveWithOutcomeNotifier(t, &recordingOutcomeNotifier{err: notifyErr})
+}
+
+func runCleanResolveWithOutcomeNotifier(t *testing.T, notifier *recordingOutcomeNotifier) (string, string, int, string) {
+	t.Helper()
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
-	notifier := &recordingOutcomeNotifier{err: notifyErr}
 	withOutcomeNotifier(t, notifier)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -13090,10 +13238,7 @@ func TestWatchRunJournalsOrderedLoopNarrative(t *testing.T) {
 	if pushed != 1 {
 		t.Fatalf("expected exactly one pushed decision on the clean Round, got %d", pushed)
 	}
-	last := events[len(events)-1].Event
-	if last.Kind != runevent.KindDaemonOutcome || !strings.Contains(string(last.Payload), `"Clean"`) {
-		t.Fatalf("expected Clean outcome event last, got %+v", last)
-	}
+	assertOutcomeFollowedByNotificationReceipt(t, events, store.StateClean)
 }
 
 func TestStoppedRunJournalsStopWithoutLaterUnsafeDaemonEvents(t *testing.T) {
@@ -13126,10 +13271,7 @@ func TestStoppedRunJournalsStopWithoutLaterUnsafeDaemonEvents(t *testing.T) {
 			t.Fatalf("expected no unsafe daemon events after stop, got %+v", entry.Event)
 		}
 	}
-	last := events[len(events)-1].Event
-	if last.Kind != runevent.KindDaemonOutcome || !strings.Contains(string(last.Payload), `"Stopped"`) {
-		t.Fatalf("expected Stopped outcome event last, got %+v", last)
-	}
+	assertOutcomeFollowedByNotificationReceipt(t, events, store.StateStopped)
 }
 
 func TestFailedVerificationJournalsFailureWithoutCommitEvents(t *testing.T) {
@@ -13161,9 +13303,24 @@ func TestFailedVerificationJournalsFailureWithoutCommitEvents(t *testing.T) {
 	if !failed {
 		t.Fatalf("expected verification failure event journaled, got %+v", events)
 	}
-	last := events[len(events)-1].Event
-	if last.Kind != runevent.KindDaemonOutcome || !strings.Contains(string(last.Payload), `"Unresolved"`) {
-		t.Fatalf("expected Unresolved outcome event last, got %+v", last)
+	assertOutcomeFollowedByNotificationReceipt(t, events, store.StateUnresolved)
+}
+
+func assertOutcomeFollowedByNotificationReceipt(t *testing.T, events []store.JournalEvent, state string) {
+	t.Helper()
+	if len(events) < 2 {
+		t.Fatalf("expected outcome and notification receipt events, got %+v", events)
+	}
+	outcome := events[len(events)-2].Event
+	if outcome.Kind != runevent.KindDaemonOutcome || !strings.Contains(string(outcome.Payload), `"`+state+`"`) {
+		t.Fatalf("expected %s outcome immediately before notification receipt, got %+v", state, outcome)
+	}
+	receipt := events[len(events)-1].Event
+	var payload runevent.NotificationReceiptPayload
+	if receipt.Kind != runevent.KindDaemonStatus ||
+		json.Unmarshal(receipt.Payload, &payload) != nil ||
+		!strings.HasPrefix(payload.Event, "outcome_notification_") {
+		t.Fatalf("expected notification receipt after %s outcome, got %+v", state, receipt)
 	}
 }
 
