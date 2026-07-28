@@ -258,7 +258,7 @@ func TestRunCommandHelp(t *testing.T) {
 		{
 			name:     "watch",
 			args:     []string{"watch", "--help"},
-			contains: []string{"roundfix watch --source coderabbit --pr <number> [--spec <slug>]", "--agent <agent> --model <model> --reasoning-effort <effort>", "use the review profile", "Branch Integrity Preflight", "CleanUnverified", "exits 3", "--reasoning-effort", "--until-clean", "Review Source check", "--no-agent-console", "--detach"},
+			contains: []string{"roundfix watch --source coderabbit --pr <number> [--spec <slug>]", "--agent <agent> --model <model> --reasoning-effort <effort>", "use the review profile", "Branch Integrity Preflight", "CleanUnverified", "exits 3", "--reasoning-effort", "--until-clean", "accepted Review Source Evidence", "CodeRabbit APPROVED review", "--no-agent-console", "--detach"},
 		},
 		{
 			name:     "setup",
@@ -5534,7 +5534,7 @@ watch:
 	if !strings.Contains(stderr.String(), "reached CleanUnverified") {
 		t.Fatalf("expected CleanUnverified terminal outcome, got %q", stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "Next: confirm the pull request's Review Source check before merging.") {
+	if !strings.Contains(stderr.String(), "Next: confirm the pull request's Review Source Evidence before merging.") {
 		t.Fatalf("expected CleanUnverified next action, got %q", stderr.String())
 	}
 	wantStdout := "" +

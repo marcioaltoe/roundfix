@@ -2731,7 +2731,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		fmt.Fprintf(stderr, "Review Source timed out. To request another CodeRabbit review manually, comment: %s\n", result.ManualReviewCommand)
 	}
 	if result.Outcome == store.StateCleanUnverified {
-		fmt.Fprintln(stderr, "CleanUnverified: Merge-Ready was not confirmed because the Review Source check never appeared within the grace period. Next: confirm the pull request's Review Source check before merging.")
+		fmt.Fprintln(stderr, "CleanUnverified: Merge-Ready was not confirmed because no accepted Review Source Evidence appeared within the grace period. Next: confirm the pull request's Review Source Evidence before merging.")
 	}
 	if result.Outcome == store.StateReviewSkipped {
 		printReviewSkippedReport(stdout, result.TerminalReason, result.NextAction)
@@ -3272,7 +3272,7 @@ func parseOperationalCommand(name string, args []string, config roundconfig.Conf
 		fs.StringVar(&req.agentCmd, "agent-command", "", "Agent command override")
 		fs.BoolVar(&req.agentFullAccess, "agent-full-access", req.agentFullAccess, "Opt into Agent runtime full-access mode")
 		fs.BoolVar(&req.noAgentConsole, "no-agent-console", false, "Hide Agent-source console events from non-TTY stderr")
-		fs.BoolVar(&req.untilClean, "until-clean", req.untilClean, "Repeat until no Unresolved Review Issues remain and Review Source check succeeds")
+		fs.BoolVar(&req.untilClean, "until-clean", req.untilClean, "Repeat until no Unresolved Review Issues remain and accepted Review Source Evidence confirms the pushed head")
 		fs.IntVar(&req.maxRounds, "max-rounds", req.maxRounds, "Maximum Review Source rounds")
 	default:
 		return req, validationError{message: fmt.Sprintf("unknown command %q", name)}
@@ -4552,9 +4552,11 @@ Options:
 Behavior:
   Runs Branch Integrity Preflight and clean tracked checkout validation before
   Agent work. Watch executes in the user's checkout and creates no Run
-  Worktree. With --until-clean, Clean requires the Review Source check to
-  succeed on the pushed head; if the check never appears within the grace
-  period, watch ends CleanUnverified and exits 3. Omit all Agent Selection flags
+  Worktree. With --until-clean, Clean requires accepted Review Source Evidence
+  on the pushed head — a successful CodeRabbit check or commit status, or a
+  CodeRabbit APPROVED review — with zero unresolved CodeRabbit threads; if no
+  such Evidence appears within the grace period, watch ends CleanUnverified and
+  exits 3. Omit all Agent Selection flags
   to use the review profile. A one-Run override requires --agent, --model, and --reasoning-effort together.
 
 Options:
@@ -4568,7 +4570,7 @@ Options:
   --agent-full-access Opt into Agent runtime full-access mode
   --no-agent-console Hide Agent-source console events from non-TTY stderr
   --detach       Start a Detached Run and print attach/stop commands
-  --until-clean  Repeat until no Unresolved Review Issues remain and Review Source check succeeds
+  --until-clean  Repeat until no Unresolved Review Issues remain and accepted Review Source Evidence confirms the pushed head
   --max-rounds   Maximum Review Source rounds
   --artifact-dir Artifact Directory
   --base-repo    Explicit base repository, owner/name
