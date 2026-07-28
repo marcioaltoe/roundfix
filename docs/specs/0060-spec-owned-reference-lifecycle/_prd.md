@@ -25,10 +25,11 @@ own. Evidence:
   `docs/agents/domain.md`.
 - Authentication and HTTP: not applicable — documentation lifecycle only;
   no authentication or HTTP surface. Source: `docs/agents/cli.md`.
-- Active ADR obligations: not applicable — no active ADR governs the
-  Spec-artifact documentation lifecycle; the operative contracts are the
-  docs-layout and spec-routing guides, whose repository-authored sections
-  this Spec extends. Source: `docs/agents/domain.md`.
+- Active ADR obligations: applicable — ADR-0083 makes adopted sources move
+  to their one owning Spec with Git history, new promotions only; no other
+  active ADR governs the Spec-artifact documentation lifecycle, whose
+  remaining operative contracts are the docs-layout and spec-routing
+  guides. Source: `docs/agents/domain.md`.
 - Tooling authority: applicable — on 2026-07-28, the maintainer expressly
   authorizes changes to exactly `.agents/skills/write-idea/SKILL.md`,
   `.agents/skills/write-prd/SKILL.md`,
@@ -138,8 +139,12 @@ own. Evidence:
 - `write-prd` owns the move — the first stage where the repository commits
   to implementing the accepted scope; `archive-spec` owns the validation.
 - One move, never a copy or a stub: a document has exactly one
-  authoritative home.
+  authoritative home. See
+  [ADR-0083](../../adr/0083-adopted-sources-move-to-their-owning-spec.md).
 - New promotions only; history is left as history.
+- The `CONTEXT.md` glossary entries this Spec's behavior touches — at least
+  `Spec`, whose artifact set gains the references directory and index —
+  update in this Spec's documentation task, never ahead of implementation.
 
 ## Open Questions
 

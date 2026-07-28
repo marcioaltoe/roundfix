@@ -135,6 +135,10 @@ Spec owns the database and artifact halves.
   filesystem guessing outside recorded roots.
 - The Spec 0014 non-deletion promises hold unless the policy in this Spec
   explicitly bounds a table with measured justification.
+- The `CONTEXT.md` glossary entries this Spec's behavior touches — at least
+  `GC Command`, plus any new compaction, sanitation, or storage-report
+  vocabulary — update in this Spec's documentation task, never ahead of
+  implementation.
 
 ## Open Questions
 

@@ -215,8 +215,16 @@ gate the qa-gate pair edit.
 4. Branch Integrity Preflight: exclude QA-report-only branches from
    auto-integration and render supersession guidance (depends on: 3).
 5. Docs, qa-gate and roundfix Skill pairs (verdict rule, journeys, naming,
-   reconcile vocabulary), and the authorized derived digest pins (depends
-   on: 1–4).
+   reconcile vocabulary), the authorized derived digest pins, and the
+   `CONTEXT.md` glossary entries this Spec's behavior changes — the
+   `Run Worktree Reconciliation` state list gains `superseded`, the
+   `Reconcile Command` entry's "removes only freshly revalidated `safe`
+   work" widens to include revalidated `superseded` work, the
+   `Branch Integrity Preflight` entry's automatic fast-forward integration
+   gains the QA-report-only exclusion, and the `QA Report` entry mentions
+   the typed blocked-cause counts (depends on: 1–4). Until this step lands,
+   those glossary entries describe shipped behavior and MUST NOT be edited
+   ahead of it.
 
 ## Risks & Considerations
 

@@ -30,7 +30,8 @@ launcher. Evidence:
 - Active ADR obligations: applicable — ADR-0031 keeps Roundfix shipping
   through npm platform packages with the existing layout; ADR-0048 keeps
   release planning read-only and confirmation-gated (the Release Plan
-  Command is unchanged; the preflight lives in the workflow). Source:
+  Command is unchanged; the preflight lives in the workflow); ADR-0082
+  makes publication all-or-nothing across the release set. Source:
   `docs/agents/domain.md`.
 - Tooling authority: applicable — on 2026-07-28, the maintainer expressly
   authorizes changes to exactly `.github/workflows/release.yml`. No other
@@ -119,7 +120,8 @@ launcher. Evidence:
 
 - Publication eligibility is all-or-nothing across the release set: five
   installable platform packages without a launcher is a worse outcome than
-  a stopped release.
+  a stopped release. See
+  [ADR-0082](../../adr/0082-release-publication-is-all-or-nothing-across-the-package-set.md).
 - Preflight lives in the workflow, not in the Release Plan Command —
   planning stays local and read-only per ADR-0048; registry truth is
   checked where publication happens.
