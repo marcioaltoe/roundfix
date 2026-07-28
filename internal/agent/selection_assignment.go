@@ -385,7 +385,7 @@ func (runner ACPXRunner) applySelectionOption(ctx context.Context, request Sessi
 func modelsForCanonical(models []ModelCapability, canonical string) []ModelCapability {
 	matched := make([]ModelCapability, 0, len(models))
 	for _, model := range models {
-		if model.CanonicalModel == canonical {
+		if model.CanonicalModel == canonical || model.AdapterValue == canonical {
 			matched = append(matched, model)
 		}
 	}
@@ -431,7 +431,11 @@ func containsCapabilityValue(values []string, want string) bool {
 func unsupportedSelection(kind string, assignment SelectionAssignment, capabilities SelectionCapabilities) *SelectionUnsupportedError {
 	models := make([]string, 0, len(capabilities.Models))
 	for _, model := range capabilities.Models {
-		models = append(models, model.AdapterValue)
+		advertised := model.CanonicalModel
+		if model.AdapterValue != model.CanonicalModel {
+			advertised += " (advertised " + model.AdapterValue + ")"
+		}
+		models = append(models, advertised)
 	}
 	reasoning := []string(nil)
 	if capabilities.ReasoningOption != nil {

@@ -1,7 +1,7 @@
 ---
 task: task_02
 spec: 0052-claude-adapter-standardization
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -85,3 +85,56 @@ through the capability-parsing and assignment-planning unit seams.
 
 `_prd.md` → User Stories 3–4, Core Features 4–5; `_techspec.md` → Build
 Order 2, Interfaces: parseModelCapability; ADR-0079, ADR-0055.
+
+## Result
+
+### Implementation
+
+- Capability projection now resolves the independent reasoning select option
+  before parsing advertised Agent Models. A bracketed value keeps its raw
+  adapter value, gains the bracket-stripped canonical alias, and remains
+  model-managed when that option exists.
+- Assignment planning matches both the canonical alias and raw advertised
+  value. Unsupported-selection diagnostics render the canonical form plus the
+  differing advertised form.
+- Regression coverage exercises config-options and session-snapshot parsing,
+  canonical and raw `opus[1m]` assignment, rejection of `1m` as a reasoning
+  effort, legacy model-variant encoding, and fail-closed opaque-alias
+  collisions.
+
+### Focused checks
+
+- Red signal before the production change:
+  `GOCACHE=/private/tmp/roundfix-task-02-gocache go test -count=1 ./internal/agent -run 'TestSelectionCapabilitiesIndependentAndVariantOptions/opaque|TestParseSessionCapabilitySnapshot/opaque|TestPlanSelectionAssignment/opaque|TestParseSessionConfigOptionsRejectsInvalidEvidence/ambiguous_opaque'`
+  exited 1. The failures showed `opus[1m]` parsed with reasoning effort `1m`,
+  both requested forms rejected for `xhigh`, `1m` accepted, and the alias
+  collision accepted.
+- `gofmt -w internal/agent/selection_capabilities.go internal/agent/selection_assignment.go internal/agent/selection_capabilities_test.go`
+  exited 0.
+- `GOCACHE=/private/tmp/roundfix-task-02-gocache go test -count=1 ./internal/agent -run '^TestSelectionCapabilitiesIndependentAndVariantOptions$'`
+  exited 0.
+- `GOCACHE=/private/tmp/roundfix-task-02-gocache go test -count=1 ./internal/agent -run '^TestPlanSelectionAssignment$'`
+  exited 0.
+- `GOCACHE=/private/tmp/roundfix-task-02-gocache go test -count=1 ./internal/agent -run '^TestParseSessionCapabilitySnapshot(TreatsBracketedModelsAsOpaque)?$'`
+  exited 0.
+- `GOCACHE=/private/tmp/roundfix-task-02-gocache go test -count=1 ./internal/agent -run '^TestParseSessionConfigOptionsRejectsInvalidEvidence$'`
+  exited 0.
+- The Task's declared `## Verification` commands were not run; the Daemon owns
+  that gate.
+
+### Acceptance-criterion evidence
+
+- `TestPlanSelectionAssignment` proves both `opus / xhigh` and
+  `opus[1m] / xhigh` plan the independent encoding with adapter model
+  `opus[1m]` and reasoning option `effort=xhigh`.
+- The same test proves `opus / 1m` returns
+  `reasoning_control_not_advertised`, and its message names `high, xhigh`.
+- The failure lists `opus (advertised opus[1m])`; the canonical and raw
+  planning cases prove both printed identifiers are selectable.
+- `TestSelectionCapabilitiesIndependentAndVariantOptions` and
+  `TestPlanSelectionAssignment` retain the `future-model[high]` model-variant
+  path when no independent reasoning option exists.
+- `TestSelectionCapabilitiesIndependentAndVariantOptions` covers the
+  config-options entry point, and
+  `TestParseSessionCapabilitySnapshotTreatsBracketedModelsAsOpaque` covers the
+  session-snapshot entry point with the same opaque rule.
