@@ -172,12 +172,19 @@ func TestBuildTaskPromptValidatesRequiredFields(t *testing.T) {
 	}
 }
 
+func sampleQAPromptRequest() QAPromptRequest {
+	return QAPromptRequest{
+		SpecSlug:     "0001-implement-command",
+		SpecDir:      "/repo/docs/specs/0001-implement-command",
+		PRDPath:      "/repo/docs/specs/0001-implement-command/_prd.md",
+		RunBranch:    "roundfix/run-run_20260728T041231Z_48d72c1b142ea37b",
+		TargetBranch: "ma/widget-flow",
+		UserCheckout: "/repo",
+	}
+}
+
 func TestBuildQAPromptStatesQAGateContract(t *testing.T) {
-	prompt, err := BuildQAPrompt(
-		"0001-implement-command",
-		"/repo/docs/specs/0001-implement-command",
-		"/repo/docs/specs/0001-implement-command/_prd.md",
-	)
+	prompt, err := BuildQAPrompt(sampleQAPromptRequest())
 	if err != nil {
 		t.Fatalf("BuildQAPrompt returned error: %v", err)
 	}
@@ -198,12 +205,92 @@ func TestBuildQAPromptStatesQAGateContract(t *testing.T) {
 	}
 }
 
-func TestBuildQAPromptDeterministicForIdenticalInput(t *testing.T) {
-	first, err := BuildQAPrompt("0001-implement-command", "/repo/docs/specs/0001-implement-command", "/repo/docs/specs/0001-implement-command/_prd.md")
+// The gate reasons about the user's branch from a checkout that can never
+// be on it, so the prompt has to name both branches and separate them.
+func TestBuildQAPromptStatesCheckoutFactsSeparatingRunBranchFromTarget(t *testing.T) {
+	prompt, err := BuildQAPrompt(sampleQAPromptRequest())
 	if err != nil {
 		t.Fatalf("BuildQAPrompt returned error: %v", err)
 	}
-	second, err := BuildQAPrompt("0001-implement-command", "/repo/docs/specs/0001-implement-command", "/repo/docs/specs/0001-implement-command/_prd.md")
+
+	for _, expected := range []string{
+		"Run Worktree branch: roundfix/run-run_20260728T041231Z_48d72c1b142ea37b (this checkout only — a per-Run branch that is never pushed and has no Pull Request of its own)\n",
+		"Spec target branch: ma/widget-flow (the user branch this Spec's commits land on; any Pull Request for this Spec is open on this branch, never on the Run Worktree branch)\n",
+		"User checkout: /repo (the user's repository root this Run Worktree was created from)\n",
+	} {
+		if !strings.Contains(prompt, expected) {
+			t.Fatalf("expected QA prompt to contain %q, got:\n%s", expected, prompt)
+		}
+	}
+	// Facts only: the QA contract keeps the rules it mirrors from the
+	// protected qa-gate skill, and the checkout facts add none.
+	if got := strings.Count(prompt, qaGateContract); got != 1 {
+		t.Fatalf("expected the QA contract exactly once, got %d in:\n%s", got, prompt)
+	}
+	factsEnd := strings.Index(prompt, qaGateContract)
+	if factsEnd < 0 {
+		t.Fatalf("expected the QA contract in the prompt, got:\n%s", prompt)
+	}
+	if !strings.HasSuffix(prompt[:factsEnd], "created from)\n\n") {
+		t.Fatalf("expected the checkout facts to end the fact block before the QA contract, got:\n%s", prompt)
+	}
+}
+
+func TestBuildQAPromptOmitsUnrecordedCheckoutFacts(t *testing.T) {
+	req := sampleQAPromptRequest()
+	req.RunBranch = ""
+	req.TargetBranch = ""
+	req.UserCheckout = ""
+
+	prompt, err := BuildQAPrompt(req)
+	if err != nil {
+		t.Fatalf("BuildQAPrompt returned error: %v", err)
+	}
+	for _, forbidden := range []string{"Run Worktree branch:", "Spec target branch:", "User checkout:"} {
+		if strings.Contains(prompt, forbidden) {
+			t.Fatalf("expected no %q line for an unrecorded fact, got:\n%s", forbidden, prompt)
+		}
+	}
+	if !strings.Contains(prompt, "PRD: /repo/docs/specs/0001-implement-command/_prd.md\n\n"+qaGateContract) {
+		t.Fatalf("expected a usable prompt with the Spec identity and the QA contract, got:\n%s", prompt)
+	}
+}
+
+func TestBuildQAPromptOmitsIndividuallyUnrecordedCheckoutFacts(t *testing.T) {
+	tests := []struct {
+		name      string
+		mutate    func(req *QAPromptRequest)
+		forbidden string
+	}{
+		{name: "no run branch", mutate: func(req *QAPromptRequest) { req.RunBranch = "" }, forbidden: "Run Worktree branch:"},
+		{name: "no target branch", mutate: func(req *QAPromptRequest) { req.TargetBranch = "" }, forbidden: "Spec target branch:"},
+		{name: "no user checkout", mutate: func(req *QAPromptRequest) { req.UserCheckout = "" }, forbidden: "User checkout:"},
+		{name: "whitespace target branch", mutate: func(req *QAPromptRequest) { req.TargetBranch = "  \t" }, forbidden: "Spec target branch:"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := sampleQAPromptRequest()
+			tt.mutate(&req)
+			prompt, err := BuildQAPrompt(req)
+			if err != nil {
+				t.Fatalf("BuildQAPrompt returned error: %v", err)
+			}
+			if strings.Contains(prompt, tt.forbidden) {
+				t.Fatalf("expected no %q line, got:\n%s", tt.forbidden, prompt)
+			}
+			if !strings.Contains(prompt, qaGateContract) {
+				t.Fatalf("expected the QA contract to survive a missing fact, got:\n%s", prompt)
+			}
+		})
+	}
+}
+
+func TestBuildQAPromptDeterministicForIdenticalInput(t *testing.T) {
+	first, err := BuildQAPrompt(sampleQAPromptRequest())
+	if err != nil {
+		t.Fatalf("BuildQAPrompt returned error: %v", err)
+	}
+	second, err := BuildQAPrompt(sampleQAPromptRequest())
 	if err != nil {
 		t.Fatalf("BuildQAPrompt returned error: %v", err)
 	}
@@ -214,18 +301,18 @@ func TestBuildQAPromptDeterministicForIdenticalInput(t *testing.T) {
 
 func TestBuildQAPromptValidatesRequiredFields(t *testing.T) {
 	tests := []struct {
-		name     string
-		specSlug string
-		specDir  string
-		prdPath  string
+		name   string
+		mutate func(req *QAPromptRequest)
 	}{
-		{name: "empty spec slug", specSlug: "", specDir: "/repo/docs/specs/0001", prdPath: "/repo/docs/specs/0001/_prd.md"},
-		{name: "empty spec directory", specSlug: "0001", specDir: "", prdPath: "/repo/docs/specs/0001/_prd.md"},
-		{name: "empty prd path", specSlug: "0001", specDir: "/repo/docs/specs/0001", prdPath: ""},
+		{name: "empty spec slug", mutate: func(req *QAPromptRequest) { req.SpecSlug = "" }},
+		{name: "empty spec directory", mutate: func(req *QAPromptRequest) { req.SpecDir = "" }},
+		{name: "empty prd path", mutate: func(req *QAPromptRequest) { req.PRDPath = "" }},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prompt, err := BuildQAPrompt(tt.specSlug, tt.specDir, tt.prdPath)
+			req := sampleQAPromptRequest()
+			tt.mutate(&req)
+			prompt, err := BuildQAPrompt(req)
 			if err == nil {
 				t.Fatalf("expected error for %s, got prompt:\n%s", tt.name, prompt)
 			}

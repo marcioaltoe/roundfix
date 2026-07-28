@@ -607,6 +607,7 @@ type implementFakeRunner struct {
 	taskIDs       []string
 	qaReport      string
 	qaCalls       int
+	qaPrompts     []string
 	logPaths      []string
 	writeLogs     bool
 	agentOutput   string
@@ -656,6 +657,7 @@ func (runner *implementFakeRunner) Run(ctx context.Context, req agent.ExecuteReq
 	if taskID == "" && strings.Contains(req.Prompt, "Spec QA gate") {
 		runner.mu.Lock()
 		runner.qaCalls++
+		runner.qaPrompts = append(runner.qaPrompts, req.Prompt)
 		runner.mu.Unlock()
 		if qaReport != "" {
 			reportPath := filepath.Join(implementSpecDirFromPrompt(req.Prompt, executionRoot), "qa", implementQAReportName)
@@ -4800,6 +4802,47 @@ func TestRunImplementQAOnlyRunSettlesOutcomeFromVerdict(t *testing.T) {
 			}
 			assertNoActiveRunInGitRoot(t, homeDir, repoDir)
 		})
+	}
+}
+
+// The QA gate runs in a Run Worktree checked out on the Run Branch, which
+// never owns the Spec's Pull Request. Implement threads the Spec's target
+// branch from the Run record into the QA prompt so the gate can reach the
+// Pull Request the user's branch owns.
+func TestRunImplementQAPromptStatesSpecTargetBranchFromRunRecord(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{
+		{id: "task_01", title: "Write the widget guide", status: string(spec.StatusCompleted)},
+	})
+	runner := &implementFakeRunner{
+		gitRoot:  repoDir,
+		qaReport: implementQAReport("pass"),
+	}
+	withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--qa", "--no-input"}, &stdout, &stderr)
+
+	if code != 0 {
+		t.Fatalf("expected a clean QA-only Run, got %d (stderr %q)", code, stderr.String())
+	}
+	if len(runner.qaPrompts) != 1 {
+		t.Fatalf("expected one QA prompt, got %d", len(runner.qaPrompts))
+	}
+	runID := implementRunIDFromStderr(t, stderr.String())
+	run := implementRunFromStore(t, homeDir, runID)
+	if run.LocalBranch != "ma/widget-flow" {
+		t.Fatalf("expected the Run to record the user branch, got %q", run.LocalBranch)
+	}
+	prompt := runner.qaPrompts[0]
+	for _, expected := range []string{
+		"Run Worktree branch: " + runworktree.BranchName(runID) + " (this checkout only — a per-Run branch that is never pushed and has no Pull Request of its own)\n",
+		"Spec target branch: " + run.LocalBranch + " (the user branch this Spec's commits land on; any Pull Request for this Spec is open on this branch, never on the Run Worktree branch)\n",
+		"User checkout: " + repoDir + " (the user's repository root this Run Worktree was created from)\n",
+	} {
+		if !strings.Contains(prompt, expected) {
+			t.Fatalf("expected the QA prompt to state %q, got:\n%s", expected, prompt)
+		}
 	}
 }
 

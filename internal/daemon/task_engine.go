@@ -190,12 +190,16 @@ func (gate *fairVerificationGate) notifyLocked() {
 // TaskPlan is the validated input for one Task cycle over an
 // already-created implement Run: the full Task Graph in the deterministic
 // topological order spec.Load produced. WorkDir is the git root and the
-// Agent working directory.
+// Agent working directory. RunWorktree is this Run's own checkout, whose
+// Branch is the Run Branch and never the branch the Spec's work lands on;
+// TargetBranch is that branch — the Spec's target branch as recorded on
+// the Run — and stays empty for a Run that recorded none.
 type TaskPlan struct {
 	RunID                   string
 	Session                 agent.SessionRef
 	WorkDir                 string
 	RunWorktree             runworktree.Ref
+	TargetBranch            string
 	HeadSHA                 string
 	SpecsRoot               string
 	ArtifactDir             string
@@ -1369,7 +1373,17 @@ func (engine *Engine) runQAGate(ctx context.Context, plan TaskPlan, ordinal int)
 	if err := engine.deps.Runs.UpdateRunState(ctx, plan.RunID, store.StateResolvingWithAgent); err != nil {
 		return "", "", fmt.Errorf("update run %q to state %q before the QA step: %w", plan.RunID, store.StateResolvingWithAgent, err)
 	}
-	prompt, err := agent.BuildQAPrompt(plan.Spec.Slug, plan.Spec.Dir, filepath.Join(plan.Spec.Dir, "_prd.md"))
+	// The Run Worktree checkout, its Run Branch, and the Spec's target
+	// branch ride along as facts: the gate reasons about the user's branch,
+	// which this checkout structurally cannot name on its own.
+	prompt, err := agent.BuildQAPrompt(agent.QAPromptRequest{
+		SpecSlug:     plan.Spec.Slug,
+		SpecDir:      plan.Spec.Dir,
+		PRDPath:      filepath.Join(plan.Spec.Dir, "_prd.md"),
+		RunBranch:    plan.RunWorktree.Branch,
+		TargetBranch: plan.TargetBranch,
+		UserCheckout: plan.RunWorktree.UserRoot,
+	})
 	if err != nil {
 		return "", "", fmt.Errorf("build QA prompt for run %q: %w", plan.RunID, err)
 	}

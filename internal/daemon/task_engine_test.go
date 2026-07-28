@@ -176,6 +176,7 @@ func (fixture *taskCycleFixture) plan() TaskPlan {
 		Session:                 agent.SessionRefForRun(fixture.run.ID, fixture.gitRoot),
 		WorkDir:                 fixture.gitRoot,
 		RunWorktree:             runworktree.Ref{RunID: fixture.run.ID, Path: fixture.gitRoot, Branch: runworktree.BranchName(fixture.run.ID), UserRoot: fixture.gitRoot},
+		TargetBranch:            fixture.run.LocalBranch,
 		Spec:                    fixture.graph.Spec,
 		SpecsRoot:               fixture.specsRoot,
 		Tasks:                   fixture.graph.Tasks,
@@ -1113,6 +1114,20 @@ func (runner *taskSchedulerRunner) startedTasks() []string {
 	return append([]string(nil), runner.starts...)
 }
 
+// qaPrompts reports the QA gate prompts the Agent received, which is empty
+// whenever the QA step never started.
+func (runner *taskSchedulerRunner) qaPrompts() []string {
+	runner.mu.Lock()
+	defer runner.mu.Unlock()
+	var prompts []string
+	for _, req := range runner.requests {
+		if strings.Contains(req.Prompt, "Spec QA gate") {
+			prompts = append(prompts, req.Prompt)
+		}
+	}
+	return prompts
+}
+
 func waitSchedulerStarts(t *testing.T, runner *taskSchedulerRunner, count int) []string {
 	t.Helper()
 	started := make([]string, 0, count)
@@ -1300,6 +1315,12 @@ func (committer *taskSchedulerCommitter) commitCount() int {
 	committer.mu.Lock()
 	defer committer.mu.Unlock()
 	return len(committer.messages)
+}
+
+func (committer *taskSchedulerCommitter) commitMessages() []string {
+	committer.mu.Lock()
+	defer committer.mu.Unlock()
+	return append([]string(nil), committer.messages...)
 }
 
 type fakeTaskWorktrees struct {
@@ -4332,6 +4353,322 @@ func TestTaskCycleQAOnlyRunWhenEveryTaskAlreadyCompleted(t *testing.T) {
 	}
 	if len(committer.messages) != 1 || !strings.HasPrefix(committer.messages[0], "docs: qa report for "+taskCycleSlug+" (pass)") {
 		t.Fatalf("expected the QA Report commit, got %v", committer.messages)
+	}
+}
+
+// The QA gate reasons about the user's Pull Request from a Run Worktree
+// that is structurally never on the user's branch, so the prompt carries
+// both branch names and the user checkout as facts.
+func TestTaskCycleQAPromptStatesRunBranchAndSpecTargetBranch(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	runner := &taskFakeRunner{
+		calls:    fixture.calls,
+		gitRoot:  fixture.gitRoot,
+		qaReport: qaReportForTest(spec.VerdictPass),
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+
+	result, err := engine.TaskCycle(context.Background(), fixture.qaPlan())
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.QAVerdict != spec.VerdictPass {
+		t.Fatalf("expected the pass verdict, got %+v", result)
+	}
+	if len(runner.qaPrompts) != 1 {
+		t.Fatalf("expected one QA prompt, got %d", len(runner.qaPrompts))
+	}
+	prompt := runner.qaPrompts[0]
+	for _, expected := range []string{
+		"Run Worktree branch: " + runworktree.BranchName(fixture.run.ID) + " (this checkout only — a per-Run branch that is never pushed and has no Pull Request of its own)\n",
+		"Spec target branch: ma/spec-work (the user branch this Spec's commits land on; any Pull Request for this Spec is open on this branch, never on the Run Worktree branch)\n",
+		"User checkout: " + fixture.gitRoot + " (the user's repository root this Run Worktree was created from)\n",
+	} {
+		if !strings.Contains(prompt, expected) {
+			t.Fatalf("expected the QA prompt to state %q, got:\n%s", expected, prompt)
+		}
+	}
+}
+
+func TestTaskCycleQAPromptStaysUsableWithoutRecordedTargetBranch(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", status: string(spec.StatusCompleted)}})
+	runner := &taskFakeRunner{
+		calls:    fixture.calls,
+		gitRoot:  fixture.gitRoot,
+		qaReport: qaReportForTest(spec.VerdictPass),
+	}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.qaPlan()
+	plan.TargetBranch = ""
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.QAVerdict != spec.VerdictPass {
+		t.Fatalf("expected a Run with no recorded target branch to still reach a verdict, got %+v", result)
+	}
+	if len(runner.qaPrompts) != 1 {
+		t.Fatalf("expected one QA prompt, got %d", len(runner.qaPrompts))
+	}
+	prompt := runner.qaPrompts[0]
+	if strings.Contains(prompt, "Spec target branch:") {
+		t.Fatalf("expected no Spec target branch line for a Run that recorded none, got:\n%s", prompt)
+	}
+	if !strings.Contains(prompt, "Spec: "+taskCycleSlug) || !strings.Contains(prompt, "Run the qa-gate process for this Spec") {
+		t.Fatalf("expected the Spec identity and the QA contract to survive, got:\n%s", prompt)
+	}
+}
+
+// The QA gate runs only when every Task in the Task Graph ended completed
+// (ADR 0015). Each case leaves exactly one Task non-completed by a
+// different route and asserts the gate never started: no QA prompt, no
+// daemon.qa event, and no QA Report commit.
+func TestTaskCycleQAStepRequiresEveryGraphTaskCompleted(t *testing.T) {
+	tests := []struct {
+		name          string
+		seeds         []taskSpecSeed
+		wantCompleted int
+		wantFailed    int
+		wantSkipped   int
+	}{
+		{
+			name:       "failed Task",
+			seeds:      []taskSpecSeed{{id: "task_01", verification: []string{"broken"}}},
+			wantFailed: 1,
+		},
+		{
+			name: "skipped Task behind an unmet dependency",
+			seeds: []taskSpecSeed{
+				{id: "task_01", verification: []string{"broken"}},
+				{id: "task_02", needs: []string{"task_01"}},
+			},
+			wantFailed:  1,
+			wantSkipped: 1,
+		},
+		{
+			name: "earlier Run completed one Task while another chain does not finish",
+			seeds: []taskSpecSeed{
+				{id: "task_01", status: string(spec.StatusCompleted)},
+				{id: "task_02", verification: []string{"broken"}},
+				{id: "task_03", needs: []string{"task_02"}},
+			},
+			wantFailed:  1,
+			wantSkipped: 1,
+		},
+		{
+			name: "earlier Run completed every Task but one still has to run and fails",
+			seeds: []taskSpecSeed{
+				{id: "task_01", status: string(spec.StatusCompleted)},
+				{id: "task_02", status: string(spec.StatusCompleted)},
+				{id: "task_03", verification: []string{"broken"}},
+			},
+			wantFailed: 1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fixture := newTaskCycleFixture(t, tt.seeds)
+			runner := &taskFakeRunner{
+				calls:    fixture.calls,
+				gitRoot:  fixture.gitRoot,
+				qaReport: qaReportForTest(spec.VerdictPass),
+			}
+			committer := &engineFakeCommitter{calls: fixture.calls}
+			verifier := &taskFakeVerifier{calls: fixture.calls, failOn: map[string]error{"broken": errors.New("gate broke")}}
+			engine := fixture.engine(t, runner, verifier, committer, fixture.worktree)
+
+			result, err := engine.TaskCycle(context.Background(), fixture.qaPlan())
+
+			if err != nil {
+				t.Fatalf("task cycle: %v", err)
+			}
+			if result.Completed != tt.wantCompleted || result.Failed != tt.wantFailed || result.Skipped != tt.wantSkipped {
+				t.Fatalf("expected %d completed, %d failed, %d skipped, got %+v", tt.wantCompleted, tt.wantFailed, tt.wantSkipped, result)
+			}
+			assertNoQAStep(t, fixture, runner.qaPrompts, committer.messages, result)
+		})
+	}
+}
+
+// A Task the scheduler can never start — spec.Load rejects a need outside
+// the Task Graph, so only a hand-built plan reaches here — settles skipped
+// through the scheduler's defensive pass. The gate stays shut instead of
+// crediting the Tasks that did run.
+func TestTaskCycleQAStepSkippedWhenATaskNeverBecomesReady(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01", title: "Build the feature"}})
+	runner := &taskFakeRunner{
+		calls:        fixture.calls,
+		gitRoot:      fixture.gitRoot,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+		qaReport:     qaReportForTest(spec.VerdictPass),
+	}
+	committer := &engineFakeCommitter{calls: fixture.calls}
+	engine := fixture.engine(t, runner, &taskFakeVerifier{calls: fixture.calls}, committer, fixture.worktree)
+	plan := fixture.qaPlan()
+	plan.Tasks = append(append([]spec.Task(nil), plan.Tasks...), spec.Task{ID: "task_99", Needs: []string{"task_absent"}})
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 || result.Failed != 0 || result.Skipped != 1 {
+		t.Fatalf("expected the ready Task completed and the unreachable Task skipped, got %+v", result)
+	}
+	assertNoQAStep(t, fixture, runner.qaPrompts, committer.messages, result)
+}
+
+// Every Task completing is still not enough: a Stop Request that lands
+// mid-wave ends the Run before the gate, so the QA step never starts even
+// though the Task Graph finished completed.
+func TestTaskCycleStopRequestMidWaveSkipsQAWithEveryTaskCompleted(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", title: "Start first"},
+		{id: "task_02", title: "Start second"},
+	})
+	taskWorktrees := newFakeTaskWorktrees()
+	taskWorktrees.onIntegrate = func(taskID string) {
+		if taskID == "task_01" {
+			_ = fixture.store.RequestStop(context.Background(), fixture.run.ID)
+		}
+	}
+	runner := newTaskSchedulerRunner("task_01", "task_02")
+	committer := &taskSchedulerCommitter{}
+	engine := fixture.engineWithTaskWorktrees(t, runner, &taskSchedulerVerifier{}, committer, fixture.worktree, taskWorktrees)
+	plan := fixture.qaPlan()
+	plan.Concurrency = 2
+
+	resultCh := make(chan struct {
+		result TaskCycleResult
+		err    error
+	}, 1)
+	go func() {
+		result, err := engine.TaskCycle(context.Background(), plan)
+		resultCh <- struct {
+			result TaskCycleResult
+			err    error
+		}{result: result, err: err}
+	}()
+
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	runner.releaseTask("task_01")
+	if got := waitIntegratedTask(t, taskWorktrees); got != "task_01" {
+		t.Fatalf("expected task_01 to integrate first, got %s", got)
+	}
+	runner.releaseTask("task_02")
+
+	outcome := waitTaskCycleResult(t, resultCh)
+	if !errors.Is(outcome.err, ErrStopRequested) {
+		t.Fatalf("expected ErrStopRequested, got %v", outcome.err)
+	}
+	if outcome.result.Completed != 2 || outcome.result.Failed != 0 || outcome.result.Skipped != 0 {
+		t.Fatalf("expected every Task completed before the stop, got %+v", outcome.result)
+	}
+	// Only a completed Task integrates, so both integrations confirm the
+	// Task Graph itself finished completed.
+	assertTaskSet(t, taskWorktrees.integratedTasks(), "task_01", "task_02")
+	assertNoQAStep(t, fixture, runner.qaPrompts(), committer.commitMessages(), outcome.result)
+}
+
+// assertNoQAStep asserts the observable evidence a QA step leaves behind is
+// absent: the Agent got no QA prompt, no daemon.qa Run Event exists, no QA
+// Report commit was created, and the cycle settled no verdict.
+func assertNoQAStep(t *testing.T, fixture *taskCycleFixture, qaPrompts []string, commitMessages []string, result TaskCycleResult) {
+	t.Helper()
+	if len(qaPrompts) != 0 {
+		t.Fatalf("expected no QA prompt, got %v", qaPrompts)
+	}
+	if events := taskEventsOfKind(fixture.sink, runevent.KindDaemonQA); len(events) != 0 {
+		t.Fatalf("expected no daemon.qa event, got %+v", events)
+	}
+	for _, message := range commitMessages {
+		if strings.HasPrefix(message, "docs: qa report for ") {
+			t.Fatalf("expected no QA Report commit, got %v", commitMessages)
+		}
+	}
+	if result.QAVerdict != "" || result.QAReportPath != "" {
+		t.Fatalf("expected no settled QA verdict, got %+v", result)
+	}
+	reportDir := filepath.Join(fixture.specsRoot, taskCycleSlug, "qa")
+	if _, err := os.Stat(reportDir); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected no QA Report directory, got err=%v", err)
+	}
+}
+
+// allTasksRunCompleted is the whole guarantee behind the QA step, so it
+// answers for every Task in the Task Graph — never for the subset this Run
+// happened to execute.
+func TestAllTasksRunCompletedCoversEveryGraphTask(t *testing.T) {
+	tasks := []spec.Task{{ID: "task_01"}, {ID: "task_02"}, {ID: "task_03"}}
+	tests := []struct {
+		name     string
+		statuses map[string]taskRunStatus
+		want     bool
+	}{
+		{
+			name:     "every graph Task completed",
+			statuses: map[string]taskRunStatus{"task_01": taskRunCompleted, "task_02": taskRunCompleted, "task_03": taskRunCompleted},
+			want:     true,
+		},
+		{
+			name:     "one Task still pending",
+			statuses: map[string]taskRunStatus{"task_01": taskRunCompleted, "task_02": taskRunPending, "task_03": taskRunCompleted},
+		},
+		{
+			name:     "one Task still running",
+			statuses: map[string]taskRunStatus{"task_01": taskRunCompleted, "task_02": taskRunRunning, "task_03": taskRunCompleted},
+		},
+		{
+			name:     "one Task failed",
+			statuses: map[string]taskRunStatus{"task_01": taskRunCompleted, "task_02": taskRunFailed, "task_03": taskRunCompleted},
+		},
+		{
+			name:     "one Task skipped",
+			statuses: map[string]taskRunStatus{"task_01": taskRunCompleted, "task_02": taskRunSkipped, "task_03": taskRunCompleted},
+		},
+		{
+			name:     "one graph Task missing from the status map",
+			statuses: map[string]taskRunStatus{"task_01": taskRunCompleted, "task_02": taskRunCompleted},
+		},
+		{
+			name:     "a completed status outside the graph never stands in for a graph Task",
+			statuses: map[string]taskRunStatus{"task_01": taskRunCompleted, "task_02": taskRunCompleted, "task_04": taskRunCompleted},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := allTasksRunCompleted(tasks, tt.statuses); got != tt.want {
+				t.Fatalf("allTasksRunCompleted = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// initialTaskRunStatuses seeds Tasks an earlier Run completed, so the QA
+// gate can credit them, and re-runs every other status.
+func TestInitialTaskRunStatusesSeedsEarlierRunCompletions(t *testing.T) {
+	statuses := initialTaskRunStatuses([]spec.Task{
+		{ID: "task_01", Status: spec.StatusCompleted},
+		{ID: "task_02", Status: spec.StatusPending},
+		{ID: "task_03", Status: spec.StatusInProgress},
+		{ID: "task_04", Status: spec.StatusFailed},
+	})
+	want := map[string]taskRunStatus{
+		"task_01": taskRunCompleted,
+		"task_02": taskRunPending,
+		"task_03": taskRunPending,
+		"task_04": taskRunPending,
+	}
+	if len(statuses) != len(want) {
+		t.Fatalf("expected one status per graph Task, got %v", statuses)
+	}
+	for id, expected := range want {
+		if statuses[id] != expected {
+			t.Fatalf("expected %s seeded %q, got %q", id, expected, statuses[id])
+		}
 	}
 }
 
