@@ -23,8 +23,8 @@ func TestSchema9CreatesAgentSelectionTable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 10 {
-		t.Fatalf("expected schema version 10, got %d", version)
+	if version != 11 {
+		t.Fatalf("expected schema version 11, got %d", version)
 	}
 	assertAgentSelectionTableExists(t, ctx, runStore)
 	assertAgentSelectionSchemaPrivacy(t, ctx, runStore)
@@ -42,8 +42,8 @@ func TestSchema8To9MigratesRunsEventsAndSelectionTable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 10 {
-		t.Fatalf("expected schema version 10, got %d", version)
+	if version != 11 {
+		t.Fatalf("expected schema version 11, got %d", version)
 	}
 	run, ok, err := runStore.Run(ctx, "run_v8_active")
 	if err != nil || !ok {

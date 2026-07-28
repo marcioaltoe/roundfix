@@ -29,8 +29,8 @@ func TestOpenCreatesRunDatabaseAndAppliesMigrations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected migration version, got %v", err)
 	}
-	if version != 10 {
-		t.Fatalf("expected migration version 10, got %d", version)
+	if version != 11 {
+		t.Fatalf("expected migration version 11, got %d", version)
 	}
 }
 
@@ -660,6 +660,32 @@ func TestCompleteRunRejectsNonTerminalState(t *testing.T) {
 	}
 }
 
+func TestCompleteRunReviewSkippedIsTerminal(t *testing.T) {
+	ctx := context.Background()
+	runStore := openTestStore(t, ctx, t.TempDir())
+	defer closeStore(t, runStore)
+
+	run, err := runStore.CreateRun(ctx, sampleCreateRunRequest())
+	if err != nil {
+		t.Fatalf("create Run: %v", err)
+	}
+	completed, err := runStore.CompleteRun(ctx, run.ID, StateReviewSkipped)
+	if err != nil {
+		t.Fatalf("complete Review Skipped Run: %v", err)
+	}
+	if !completed.Transitioned || completed.State != StateReviewSkipped || completed.CompletedAt == nil {
+		t.Fatalf("completed Review Skipped Run = %+v", completed)
+	}
+	if !IsTerminalState(completed.State) {
+		t.Fatalf("Review Skipped state %q is not terminal", completed.State)
+	}
+	if _, found, err := runStore.ActiveRun(ctx, run.HeadRepository, run.HeadBranch); err != nil {
+		t.Fatalf("read Active Run after Review Skipped: %v", err)
+	} else if found {
+		t.Fatal("Review Skipped must release the Active Run lock")
+	}
+}
+
 func TestCompleteRunWinnerAndIdenticalReplay(t *testing.T) {
 	ctx := context.Background()
 	runStore := openTestStore(t, ctx, t.TempDir())
@@ -800,6 +826,7 @@ func TestTerminalOutcomeEveryStoredTerminalStateIsImmutable(t *testing.T) {
 		StateStopped,
 		StateClean,
 		StateCleanUnverified,
+		StateReviewSkipped,
 		StateMaxRoundsReached,
 		StateBudgetExceeded,
 		StateTimedOut,
@@ -1561,6 +1588,7 @@ func TestIsTerminalState(t *testing.T) {
 		{state: StateStopped, want: true},
 		{state: StateClean, want: true},
 		{state: StateCleanUnverified, want: true},
+		{state: StateReviewSkipped, want: true},
 		{state: StateMaxRoundsReached, want: true},
 		{state: StateBudgetExceeded, want: true},
 		{state: StateTimedOut, want: true},
@@ -1781,8 +1809,8 @@ func TestOpenMigratesV3RunDatabasePreservingRunsAndRekeyingLocks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 10 {
-		t.Fatalf("expected user_version 10 after migration, got %d", version)
+	if version != 11 {
+		t.Fatalf("expected user_version 11 after migration, got %d", version)
 	}
 
 	count, err := store.RunCount(ctx)
@@ -1936,8 +1964,8 @@ func TestOpenMigratesV4RunDatabasePreservingRunsLocksAndAddingStopRequests(t *te
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 10 {
-		t.Fatalf("expected user_version 10 after migration, got %d", version)
+	if version != 11 {
+		t.Fatalf("expected user_version 11 after migration, got %d", version)
 	}
 	count, err := runStore.RunCount(ctx)
 	if err != nil {
@@ -2089,8 +2117,8 @@ func TestOpenMigratesV5RunDatabasePreservingRunsLocksAndAddingWorkDir(t *testing
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 10 {
-		t.Fatalf("expected user_version 10 after migration, got %d", version)
+	if version != 11 {
+		t.Fatalf("expected user_version 11 after migration, got %d", version)
 	}
 	count, err := runStore.RunCount(ctx)
 	if err != nil {
@@ -2245,8 +2273,8 @@ func TestOpenMigratesV6RunDatabaseAddingSelectionDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 10 {
-		t.Fatalf("expected user_version 10 after migration, got %d", version)
+	if version != 11 {
+		t.Fatalf("expected user_version 11 after migration, got %d", version)
 	}
 	count, err := runStore.RunCount(ctx)
 	if err != nil {
@@ -2377,8 +2405,8 @@ func TestOpenMigratesV7RunDatabaseAddingOwnerPID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migration version: %v", err)
 	}
-	if version != 10 {
-		t.Fatalf("expected user_version 10 after migration, got %d", version)
+	if version != 11 {
+		t.Fatalf("expected user_version 11 after migration, got %d", version)
 	}
 
 	active, found, err := runStore.ActiveRun(ctx, "owner/project", "feature/review")
@@ -2452,7 +2480,7 @@ func TestOpenReaderRejectsMismatchedSchemaVersion(t *testing.T) {
 	}
 	for _, want := range []string{
 		"schema version 9",
-		"supports schema version 10",
+		"supports schema version 11",
 		"resolve, watch, or implement",
 	} {
 		if !strings.Contains(err.Error(), want) {
@@ -2468,6 +2496,74 @@ func TestOpenReaderRejectsMismatchedSchemaVersion(t *testing.T) {
 		t.Fatalf("expected reader to open after migration, got %v", err)
 	}
 	closeStore(t, reader)
+}
+
+func TestSchemaBeforeReviewSkippedMigrationRequiresWriter(t *testing.T) {
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	buildV9Fixture(t, homeDir)
+	db, err := sql.Open("sqlite", writerDSN(DatabasePath(homeDir)))
+	if err != nil {
+		t.Fatalf("open v9 fixture for v10 migration: %v", err)
+	}
+	for _, statement := range migrateV9ToV10Statements() {
+		if _, err := db.Exec(statement); err != nil {
+			_ = db.Close()
+			t.Fatalf("build v10 fixture: %v", err)
+		}
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("close v10 fixture: %v", err)
+	}
+
+	_, err = OpenReader(ctx, homeDir)
+
+	var versionErr SchemaVersionError
+	if !errors.As(err, &versionErr) {
+		t.Fatalf("expected SchemaVersionError for pre-Review-Skipped schema, got %T %v", err, err)
+	}
+	if versionErr.Found != 10 || versionErr.Supported != schemaVersion {
+		t.Fatalf("schema version diagnostic = %#v", versionErr)
+	}
+
+	migrated := openTestStore(t, ctx, homeDir)
+	defer closeStore(t, migrated)
+	version, err := migrated.MigrationVersion(ctx)
+	if err != nil {
+		t.Fatalf("read migrated schema version: %v", err)
+	}
+	if version != schemaVersion {
+		t.Fatalf("migrated schema version = %d, want %d", version, schemaVersion)
+	}
+}
+
+func TestSchemaReviewSkippedReaderRejectsNewerDatabase(t *testing.T) {
+	ctx := context.Background()
+	homeDir := t.TempDir()
+	runStore := openTestStore(t, ctx, homeDir)
+	closeStore(t, runStore)
+
+	db, err := sql.Open("sqlite", writerDSN(DatabasePath(homeDir)))
+	if err != nil {
+		t.Fatalf("open Review Skipped schema fixture: %v", err)
+	}
+	if _, err := db.Exec(`PRAGMA user_version = 12`); err != nil {
+		_ = db.Close()
+		t.Fatalf("advance fixture beyond supported schema: %v", err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("close newer schema fixture: %v", err)
+	}
+
+	_, err = OpenReader(ctx, homeDir)
+
+	var versionErr SchemaVersionError
+	if !errors.As(err, &versionErr) {
+		t.Fatalf("expected SchemaVersionError for newer Run Database, got %T %v", err, err)
+	}
+	if versionErr.Found != 12 || versionErr.Supported != schemaVersion {
+		t.Fatalf("newer schema version diagnostic = %#v", versionErr)
+	}
 }
 
 func TestCreateRunRejectsSecondActiveRunForSameSpecTarget(t *testing.T) {

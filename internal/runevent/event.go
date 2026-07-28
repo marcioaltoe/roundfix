@@ -131,6 +131,19 @@ type ReviewStatusPayload struct {
 	Reason          string `json:"reason,omitempty"`
 }
 
+// OutcomePayload is the stable daemon.outcome payload. Optional evidence and
+// recovery fields let non-Clean terminal outcomes remain actionable without
+// changing the event kind or stream schema.
+type OutcomePayload struct {
+	State             string `json:"state"`
+	Remaining         int    `json:"remaining"`
+	Reason            string `json:"reason,omitempty"`
+	NextAction        string `json:"next_action,omitempty"`
+	ReviewIssuesKnown *bool  `json:"review_issues_known,omitempty"`
+	EvidenceKind      string `json:"evidence_kind,omitempty"`
+	EvidenceHeadSHA   string `json:"evidence_head_sha,omitempty"`
+}
+
 // Sink consumes published Run Events. Context comes first because durable
 // adapters perform IO.
 type Sink interface {

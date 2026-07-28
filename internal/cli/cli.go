@@ -2198,6 +2198,11 @@ type reviewIssueReport struct {
 	cumulativeUnavailable bool
 }
 
+func printReviewSkippedReport(stdout io.Writer, reason string, nextAction string) {
+	fmt.Fprintf(stdout, "Review Source: skipped — reason: %s\n", reason)
+	fmt.Fprintf(stdout, "Next action: %s\n", nextAction)
+}
+
 // printReviewIssueReport prints the deterministic stdout contract for review
 // Runs after the terminal outcome is known.
 func printReviewIssueReport(stdout io.Writer, outcome string, roundsCompleted int, report reviewIssueReport) {
@@ -2623,13 +2628,39 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printRunFailure(req.name, completeErr, stderr)
 		return exitRunFailed
 	}
-	closeAgentSession(completeCtx, collaborators.runner, runtime, sessionForClose, completed.ID, runStore)
-	publishTerminalCompletion(completeCtx, runStore, notifier, stderr, completed, result.Remaining)
+	var cleanupWarnings []cleanupWarning
+	if result.Outcome == store.StateReviewSkipped {
+		reviewIssuesKnown := false
+		publishTerminalCompletionWithContext(
+			completeCtx,
+			runStore,
+			notifier,
+			stderr,
+			completed,
+			terminalCompletionContext{
+				Remaining:         result.Remaining,
+				Reason:            result.TerminalReason,
+				NextAction:        result.NextAction,
+				ReviewIssuesKnown: &reviewIssuesKnown,
+				EvidenceKind:      string(result.Evidence.Kind),
+				EvidenceHeadSHA:   result.Evidence.ObservedHeadSHA,
+			},
+		)
+		cleanupWarnings = bestEffortForceStopAgentSessions(completeCtx, runStore, completed.Run)
+	} else {
+		closeAgentSession(completeCtx, collaborators.runner, runtime, sessionForClose, completed.ID, runStore)
+		publishTerminalCompletion(completeCtx, runStore, notifier, stderr, completed, result.Remaining)
+	}
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
 	ui.Close()
 
 	fmt.Fprintf(stderr, "Watch Run %s reached %s after %d Round(s).\n", completed.ID, completed.State, result.Rounds)
+	if result.Outcome == store.StateReviewSkipped {
+		fmt.Fprintf(stderr, "Review Skipped: %s\n", result.TerminalReason)
+		fmt.Fprintf(stderr, "Next: %s\n", result.NextAction)
+	}
+	reportSecondaryCleanupWarnings(completeCtx, runStore, completed.ID, cleanupWarnings, stderr)
 	if result.Outcome == store.StateMaxRoundsReached && result.Remaining > 0 {
 		fmt.Fprintf(stderr, "MaxRoundsReached with %d Unresolved Review Issue(s) remaining.\n", result.Remaining)
 		printAgentCheckoutChangesNotice(stderr)
@@ -2644,7 +2675,11 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	if result.Outcome == store.StateCleanUnverified {
 		fmt.Fprintln(stderr, "CleanUnverified: Merge-Ready was not confirmed because the Review Source check never appeared within the grace period. Next: confirm the pull request's Review Source check before merging.")
 	}
-	printReviewIssueReport(stdout, completed.State, result.Rounds, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, watchReportIssues, stderr))
+	if result.Outcome == store.StateReviewSkipped {
+		printReviewSkippedReport(stdout, result.TerminalReason, result.NextAction)
+	} else {
+		printReviewIssueReport(stdout, completed.State, result.Rounds, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, watchReportIssues, stderr))
+	}
 	if stopped {
 		printStopSummary(req, preflightResult, stderr)
 		return exitOK
@@ -2919,6 +2954,8 @@ func exitForWatchOutcome(outcome string) int {
 	case store.StateClean, store.StateMaxRoundsReached, store.StateStopped:
 		return exitOK
 	case store.StateCleanUnverified:
+		return exitUnverified
+	case store.StateReviewSkipped:
 		return exitUnverified
 	case store.StateBudgetExceeded, store.StateTimedOut, store.StateFailed, store.StateUnresolved:
 		return exitRunFailed
@@ -3813,8 +3850,25 @@ func publishAgentSessionStatus(ctx context.Context, sink runevent.Sink, runID st
 
 // publishRunOutcome appends the terminal outcome event after CompleteRun so
 // terminal states are provable from the journal alone.
-func publishRunOutcome(ctx context.Context, runStore *store.Store, runID string, state string, remaining int, stderr io.Writer) {
-	payload, err := json.Marshal(map[string]any{"state": state, "remaining": remaining})
+type terminalCompletionContext struct {
+	Remaining         int
+	Reason            string
+	NextAction        string
+	ReviewIssuesKnown *bool
+	EvidenceKind      string
+	EvidenceHeadSHA   string
+}
+
+func publishRunOutcome(ctx context.Context, runStore *store.Store, runID string, state string, terminal terminalCompletionContext, stderr io.Writer) {
+	payload, err := json.Marshal(runevent.OutcomePayload{
+		State:             state,
+		Remaining:         terminal.Remaining,
+		Reason:            terminal.Reason,
+		NextAction:        terminal.NextAction,
+		ReviewIssuesKnown: terminal.ReviewIssuesKnown,
+		EvidenceKind:      terminal.EvidenceKind,
+		EvidenceHeadSHA:   terminal.EvidenceHeadSHA,
+	})
 	if err != nil {
 		return
 	}
@@ -3838,10 +3892,21 @@ func publishTerminalCompletion(
 	completed store.CompleteRunResult,
 	remaining int,
 ) {
+	publishTerminalCompletionWithContext(ctx, runStore, notifier, stderr, completed, terminalCompletionContext{Remaining: remaining})
+}
+
+func publishTerminalCompletionWithContext(
+	ctx context.Context,
+	runStore *store.Store,
+	notifier roundnotify.Notifier,
+	stderr io.Writer,
+	completed store.CompleteRunResult,
+	terminal terminalCompletionContext,
+) {
 	if !completed.Transitioned {
 		return
 	}
-	publishRunOutcome(ctx, runStore, completed.ID, completed.State, remaining, stderr)
+	publishRunOutcome(ctx, runStore, completed.ID, completed.State, terminal, stderr)
 	notifyTerminalOutcome(ctx, runStore, notifier, stderr, completed.Run)
 }
 

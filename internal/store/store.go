@@ -40,6 +40,7 @@ const (
 	StateStopped            = "Stopped"
 	StateClean              = "Clean"
 	StateCleanUnverified    = "CleanUnverified"
+	StateReviewSkipped      = "ReviewSkipped"
 	StateMaxRoundsReached   = "MaxRoundsReached"
 	StateBudgetExceeded     = "BudgetExceeded"
 	StateTimedOut           = "TimedOut"
@@ -62,6 +63,7 @@ var terminalStates = []string{
 	StateStopped,
 	StateClean,
 	StateCleanUnverified,
+	StateReviewSkipped,
 	StateMaxRoundsReached,
 	StateBudgetExceeded,
 	StateTimedOut,
@@ -1178,7 +1180,7 @@ func terminalStateExclusion() (string, []any) {
 	return "state NOT IN (" + strings.Join(placeholders, ", ") + ")", arguments
 }
 
-const schemaVersion = 10
+const schemaVersion = 11
 
 // activeRunLocksColumns is the schema v4 lock-table shape (ADR 0016): one
 // Active Run per work target, keyed by (target_kind, target_key).
@@ -1211,6 +1213,7 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV7ToV8Statements()...)
 		statements = append(statements, migrateV8ToV9Statements()...)
 		statements = append(statements, migrateV9ToV10Statements()...)
+		statements = append(statements, migrateV10ToV11Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 4:
 		statements := append(migrateV4ToV5Statements(), migrateV5ToV6Statements()...)
@@ -1218,6 +1221,7 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV7ToV8Statements()...)
 		statements = append(statements, migrateV8ToV9Statements()...)
 		statements = append(statements, migrateV9ToV10Statements()...)
+		statements = append(statements, migrateV10ToV11Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 5:
 		if err := store.ensureAgentColumn(ctx); err != nil {
@@ -1227,21 +1231,28 @@ func (store *Store) migrate(ctx context.Context) error {
 		statements = append(statements, migrateV7ToV8Statements()...)
 		statements = append(statements, migrateV8ToV9Statements()...)
 		statements = append(statements, migrateV9ToV10Statements()...)
+		statements = append(statements, migrateV10ToV11Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 6:
 		statements := append(migrateV6ToV7Statements(), migrateV7ToV8Statements()...)
 		statements = append(statements, migrateV8ToV9Statements()...)
 		statements = append(statements, migrateV9ToV10Statements()...)
+		statements = append(statements, migrateV10ToV11Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 7:
 		statements := append(migrateV7ToV8Statements(), migrateV8ToV9Statements()...)
 		statements = append(statements, migrateV9ToV10Statements()...)
+		statements = append(statements, migrateV10ToV11Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 8:
 		statements := append(migrateV8ToV9Statements(), migrateV9ToV10Statements()...)
+		statements = append(statements, migrateV10ToV11Statements()...)
 		return store.applyMigration(ctx, statements)
 	case 9:
-		return store.applyMigration(ctx, migrateV9ToV10Statements())
+		statements := append(migrateV9ToV10Statements(), migrateV10ToV11Statements()...)
+		return store.applyMigration(ctx, statements)
+	case 10:
+		return store.applyMigration(ctx, migrateV10ToV11Statements())
 	default:
 		return fmt.Errorf("migrate Run Database: schema version %d is not supported", version)
 	}
@@ -1264,7 +1275,7 @@ func (store *Store) applyMigration(ctx context.Context, statements []string) err
 	return nil
 }
 
-// createSchemaStatements creates schema v10 directly on a fresh Run Database.
+// createSchemaStatements creates schema v11 directly on a fresh Run Database.
 // spec_slug and the PR-shaped columns use the empty string for "not set";
 // which fields a Run must carry is enforced by Kind in CreateRun.
 func createSchemaStatements() []string {
@@ -1318,7 +1329,7 @@ func createSchemaStatements() []string {
 		`CREATE TABLE IF NOT EXISTS run_agent_selections ` + runAgentSelectionsColumns,
 		`CREATE INDEX IF NOT EXISTS idx_run_agent_selections_scope
 			ON run_agent_selections (run_id, scope_kind, scope_id, attempt)`,
-		`PRAGMA user_version = 10`,
+		`PRAGMA user_version = 11`,
 	}
 }
 
@@ -1410,6 +1421,12 @@ func migrateV9ToV10Statements() []string {
 	return []string{
 		`ALTER TABLE runs ADD COLUMN owner_identity TEXT`,
 		`PRAGMA user_version = 10`,
+	}
+}
+
+func migrateV10ToV11Statements() []string {
+	return []string{
+		`PRAGMA user_version = 11`,
 	}
 }
 

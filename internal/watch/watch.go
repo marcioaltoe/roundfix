@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"roundfix/internal/reviewsource"
@@ -19,6 +20,8 @@ const (
 )
 
 var ErrStopRequested = errors.New("stop requested")
+
+const reviewSkippedNextAction = "Reduce or split the pull request, then request another Review Source review."
 
 type HeadCheckState string
 
@@ -70,6 +73,9 @@ type Result struct {
 	Rounds              int
 	Remaining           int
 	ManualReviewCommand string
+	TerminalReason      string
+	NextAction          string
+	Evidence            reviewsource.Evidence
 }
 
 type StatusSource interface {
@@ -211,6 +217,9 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 				ManualReviewCommand: "@coderabbitai review",
 			}, nil
 		}
+		if settledWait.evidence.State == reviewsource.EvidenceSkipped {
+			return resultForReviewSkipped(round-1, settledWait.evidence), nil
+		}
 		settledBeforeRun := round == 1 && settledWait.statusChecks == 1
 		if !settledBeforeRun {
 			if req.QuietPeriod > 0 {
@@ -253,6 +262,9 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 			if err != nil {
 				return resultForError(round, err), err
 			}
+			if confirm.skipped {
+				return resultForReviewSkipped(round, confirm.evidence), nil
+			}
 			if confirm.ready {
 				return Result{Outcome: store.StateClean, Rounds: round}, nil
 			}
@@ -286,6 +298,9 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 			confirm, err := confirmMergeReady(ctx, req, deps.StopRequests, deps.ReviewEvidence, deps.CheckSource, currentHeadSHA, clock, sleeper, publisher)
 			if err != nil {
 				return resultForError(round, err), err
+			}
+			if confirm.skipped {
+				return resultForReviewSkipped(round, confirm.evidence), nil
 			}
 			if confirm.ready {
 				return Result{Outcome: store.StateClean, Rounds: round}, nil
@@ -323,6 +338,7 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 type settledWaitResult struct {
 	status       Status
 	statusChecks int
+	evidence     reviewsource.Evidence
 }
 
 func waitForSettled(ctx context.Context, req Request, headSHA string, stops StopRequestSource, evidenceSource ReviewEvidenceSource, statusSource StatusSource, clock Clock, sleeper Sleeper, publisher *watchEventPublisher) (settledWaitResult, error) {
@@ -336,9 +352,9 @@ func waitForSettled(ctx context.Context, req Request, headSHA string, stops Stop
 			return settledWaitResult{}, err
 		}
 		var status Status
+		var evidence reviewsource.Evidence
 		var err error
 		if evidenceSource != nil {
-			var evidence reviewsource.Evidence
 			evidence, err = evidenceSource.Evidence(ctx, ReviewEvidenceRequest{
 				PRNumber:        req.PRNumber,
 				ExpectedHeadSHA: headSHA,
@@ -372,7 +388,7 @@ func waitForSettled(ctx context.Context, req Request, headSHA string, stops Stop
 			}
 		}
 		if status.State == StatusSettled {
-			return settledWaitResult{status: status, statusChecks: statusChecks}, nil
+			return settledWaitResult{status: status, statusChecks: statusChecks, evidence: evidence}, nil
 		}
 		if clock.Now().Sub(startedAt) >= req.ReviewTimeout {
 			return settledWaitResult{
@@ -389,10 +405,32 @@ func waitForSettled(ctx context.Context, req Request, headSHA string, stops Stop
 	}
 }
 
+func reviewSkippedReason(evidence reviewsource.Evidence) string {
+	if reason := strings.TrimSpace(evidence.Reason); reason != "" {
+		return reviewsource.BoundEvidenceDetail(reason)
+	}
+	if detail := strings.TrimSpace(evidence.Detail); detail != "" {
+		return reviewsource.BoundEvidenceDetail(detail)
+	}
+	return "Review Source explicitly skipped the review."
+}
+
+func resultForReviewSkipped(rounds int, evidence reviewsource.Evidence) Result {
+	return Result{
+		Outcome:        store.StateReviewSkipped,
+		Rounds:         rounds,
+		TerminalReason: reviewSkippedReason(evidence),
+		NextAction:     reviewSkippedNextAction,
+		Evidence:       evidence,
+	}
+}
+
 type confirmResult struct {
 	ready      bool
 	unverified bool
 	timedOut   bool
+	skipped    bool
+	evidence   reviewsource.Evidence
 }
 
 func confirmMergeReady(ctx context.Context, req Request, stops StopRequestSource, evidenceSource ReviewEvidenceSource, checkSource CheckSource, headSHA string, clock Clock, sleeper Sleeper, publisher *watchEventPublisher) (confirmResult, error) {
@@ -419,6 +457,9 @@ func confirmMergeReady(ctx context.Context, req Request, stops StopRequestSource
 			})
 			if err == nil {
 				err = publisher.publishReviewEvidence(ctx, evidence)
+				if err == nil && evidence.State == reviewsource.EvidenceSkipped {
+					return confirmResult{skipped: true, evidence: evidence}, nil
+				}
 				state = headCheckFromEvidence(evidence)
 			}
 		} else {

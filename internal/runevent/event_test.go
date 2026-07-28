@@ -218,6 +218,25 @@ func TestProjectStreamEventCoversStableCategoriesAndRedactsPayload(t *testing.T)
 	}
 }
 
+func TestProjectStreamEventReviewSkippedOutcome(t *testing.T) {
+	event := RunEvent{
+		RunID:   "run_review_skipped",
+		Source:  SourceDaemon,
+		Kind:    KindDaemonOutcome,
+		Summary: "Run reached ReviewSkipped.",
+		Time:    time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC),
+		Payload: []byte(`{"state":"ReviewSkipped","remaining":0,"reason":"pull request is too large","next_action":"split the pull request"}`),
+	}
+
+	record, ok, err := ProjectStreamEvent(7, event, StreamCategoryFilter{StreamCategoryOutcome: {}})
+	if err != nil {
+		t.Fatalf("project Review Skipped outcome: %v", err)
+	}
+	if !ok || record.Category != StreamCategoryOutcome || record.Outcome != "ReviewSkipped" {
+		t.Fatalf("Review Skipped stream record = %#v, ok=%v", record, ok)
+	}
+}
+
 func TestProjectStreamEventNormalizesLegacyVerificationEvents(t *testing.T) {
 	tests := []struct {
 		name    string

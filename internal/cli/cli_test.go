@@ -5415,6 +5415,204 @@ watch:
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
 }
 
+func TestRunWatchReviewSkippedPublishesReasonWithoutArtifactsOrCleanup(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	reason := "Pull request is too large to review"
+	withWatchEvidence(t, func(_ context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
+		return reviewsource.Evidence{
+			State:           reviewsource.EvidenceSkipped,
+			Kind:            reviewsource.EvidenceKindCheckRun,
+			Identity:        "check_run:42",
+			ExpectedHeadSHA: req.ExpectedHeadSHA,
+			ObservedHeadSHA: req.ExpectedHeadSHA,
+			Conclusion:      "success",
+			Detail:          "CodeRabbit skipped the review",
+			Reason:          reason,
+		}, nil
+	})
+	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
+		t.Fatal("Review Skipped must not fetch Review Source issues")
+		return nil, nil
+	})
+	committer := &fakeCommitter{}
+	withCommitter(t, committer)
+	cleanupCalls := 0
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		cleanupCalls++
+		return nil
+	})
+	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		cleanupCalls++
+		return nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+
+	if code != exitUnverified {
+		t.Fatalf("Review Skipped exit = %d, want %d; stderr=%q", code, exitUnverified, stderr.String())
+	}
+	wantStdout := "Review Source: skipped — reason: " + reason + "\n" +
+		"Next action: Reduce or split the pull request, then request another Review Source review.\n"
+	if stdout.String() != wantStdout {
+		t.Fatalf("Review Skipped stdout = %q, want %q", stdout.String(), wantStdout)
+	}
+	for _, forbidden := range []string{"0 resolved", "Pull Request cumulative:", "Fetched Round"} {
+		if strings.Contains(stdout.String()+stderr.String(), forbidden) {
+			t.Fatalf("Review Skipped report contains %q: stdout=%q stderr=%q", forbidden, stdout.String(), stderr.String())
+		}
+	}
+	if !strings.Contains(stderr.String(), "reached ReviewSkipped") ||
+		!strings.Contains(stderr.String(), "Review Skipped: "+reason) ||
+		!strings.Contains(stderr.String(), "Next: Reduce or split the pull request") {
+		t.Fatalf("Review Skipped diagnostics missing reason or action: %q", stderr.String())
+	}
+	if cleanupCalls != 0 {
+		t.Fatalf("pre-Agent Review Skipped cleanup calls = %d, want 0", cleanupCalls)
+	}
+	if committer.calls != 0 {
+		t.Fatalf("Review Skipped review-artifact commits = %d, want 0", committer.calls)
+	}
+	if _, err := os.Stat(defaultReviewRootForRepo(repoDir, "123")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("Review Skipped artifact root exists or is unreadable: %v", err)
+	}
+
+	runID, events := journaledRunEvents(t, homeDir, stderr.String())
+	var outcome runevent.OutcomePayload
+	foundOutcome := false
+	for _, journaled := range events {
+		if journaled.Event.Kind != runevent.KindDaemonOutcome {
+			continue
+		}
+		if err := json.Unmarshal(journaled.Event.Payload, &outcome); err != nil {
+			t.Fatalf("decode Review Skipped outcome: %v", err)
+		}
+		foundOutcome = true
+	}
+	if !foundOutcome || outcome.State != store.StateReviewSkipped || outcome.Reason != reason ||
+		outcome.NextAction == "" || outcome.EvidenceKind != string(reviewsource.EvidenceKindCheckRun) {
+		t.Fatalf("Review Skipped outcome payload = %#v", outcome)
+	}
+
+	reader, err := store.Open(context.Background(), homeDir)
+	if err != nil {
+		t.Fatalf("open Run Database for Run Browser projection: %v", err)
+	}
+	defer func() {
+		if err := reader.Close(); err != nil {
+			t.Fatalf("close Run Database after Run Browser projection: %v", err)
+		}
+	}()
+	active, all, err := browserRunListings(context.Background(), reader)
+	if err != nil {
+		t.Fatalf("list Run Browser Review Skipped state: %v", err)
+	}
+	if len(active) != 0 || len(all) != 1 || all[0].ID != runID || all[0].State != store.StateReviewSkipped {
+		t.Fatalf("Run Browser listings active=%#v all=%#v", active, all)
+	}
+}
+
+func TestRunWatchCleanupBeforeAgentWarningFollowsReviewSkippedReason(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	reason := "Review Source size limit was exceeded"
+	withWatchEvidence(t, func(ctx context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
+		runStore, err := store.Open(ctx, homeDir)
+		if err != nil {
+			t.Fatalf("open Run Database to seed registered Agent Session: %v", err)
+		}
+		defer func() {
+			if err := runStore.Close(); err != nil {
+				t.Fatalf("close Run Database after seeding registered Agent Session: %v", err)
+			}
+		}()
+		active, found, err := runStore.ActiveRun(ctx, "owner/project", "feature/review")
+		if err != nil || !found {
+			t.Fatalf("read active watch Run: found=%v err=%v", found, err)
+		}
+		if _, err := runStore.AppendAgentSelectionAttempt(ctx, store.AgentSelectionAttemptRequest{
+			RunID:         active.ID,
+			ScopeKind:     store.AgentSelectionScopeReview,
+			ScopeID:       "batch-001",
+			Category:      "review",
+			ProfileSource: "profiles.review",
+			Attempt:       1,
+			SelectionRole: store.AgentSelectionRolePreferred,
+			Runtime:       "codex",
+			Model:         "gpt-5.6-sol",
+			Status:        store.AgentSelectionStatusActive,
+		}); err != nil {
+			t.Fatalf("seed active Agent Selection lifecycle: %v", err)
+		}
+		return reviewsource.Evidence{
+			State:           reviewsource.EvidenceSkipped,
+			Kind:            reviewsource.EvidenceKindCheckRun,
+			ExpectedHeadSHA: req.ExpectedHeadSHA,
+			ObservedHeadSHA: req.ExpectedHeadSHA,
+			Reason:          reason,
+		}, nil
+	})
+	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
+		t.Fatal("Review Skipped must not fetch Review Source issues")
+		return nil, nil
+	})
+	withStopAgentSessionCanceler(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return errors.New("cancel denied")
+	})
+	withStopAgentSessionCloser(t, func(context.Context, agent.RuntimeSpec, agent.SessionRef) error {
+		return nil
+	})
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+
+	if code != exitUnverified {
+		t.Fatalf("Review Skipped exit = %d, want %d; stderr=%q", code, exitUnverified, stderr.String())
+	}
+	reasonIndex := strings.Index(stderr.String(), "Review Skipped: "+reason)
+	warningIndex := strings.Index(stderr.String(), "Secondary cleanup warning:")
+	if reasonIndex < 0 || warningIndex < 0 || warningIndex < reasonIndex {
+		t.Fatalf("primary Review Source reason must precede cleanup warning: %q", stderr.String())
+	}
+}
+
+func TestRunWatchReviewSkippedArtifactBoundaryKeepsFailedFetchUnpublished(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withWatchEvidence(t, func(_ context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
+		return reviewsource.Evidence{
+			State:           reviewsource.EvidenceReviewed,
+			Kind:            reviewsource.EvidenceKindCheckRun,
+			ExpectedHeadSHA: req.ExpectedHeadSHA,
+			ObservedHeadSHA: req.ExpectedHeadSHA,
+		}, nil
+	})
+	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
+		return nil, errors.New("Review Source fetch failed")
+	})
+	committer := &fakeCommitter{}
+	withCommitter(t, committer)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+
+	if code != exitRunFailed {
+		t.Fatalf("failed fetch exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
+	}
+	if committer.calls != 0 {
+		t.Fatalf("failed pre-fetch review-artifact commits = %d, want 0", committer.calls)
+	}
+	if _, err := os.Stat(defaultReviewRootForRepo(repoDir, "123")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("failed pre-fetch artifact root exists or is unreadable: %v", err)
+	}
+	assertRunCount(t, store.DatabasePath(homeDir), 1)
+	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
+}
+
 func TestRunWatchReusesOneAgentSessionAcrossRoundsAndCloses(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
@@ -5655,6 +5853,7 @@ func TestExitForWatchOutcome(t *testing.T) {
 	}{
 		{outcome: store.StateClean, code: exitOK},
 		{outcome: store.StateCleanUnverified, code: exitUnverified},
+		{outcome: store.StateReviewSkipped, code: exitUnverified},
 		{outcome: store.StateMaxRoundsReached, code: exitOK},
 		{outcome: store.StateStopped, code: exitOK},
 		{outcome: store.StateBudgetExceeded, code: exitRunFailed},

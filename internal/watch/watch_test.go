@@ -67,6 +67,95 @@ func TestRunReviewEvidenceSharedByPreFetchAndMergeReady(t *testing.T) {
 	}
 }
 
+func TestRunReviewSkippedStopsBeforeFetch(t *testing.T) {
+	clock := &fakeClock{now: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)}
+	evidence := reviewsource.Evidence{
+		State:           reviewsource.EvidenceSkipped,
+		Kind:            reviewsource.EvidenceKindCheckRun,
+		Identity:        "check_run:42",
+		ExpectedHeadSHA: "abc123",
+		ObservedHeadSHA: "abc123",
+		Conclusion:      "success",
+		Detail:          "CodeRabbit skipped the review",
+		Reason:          "Pull request is too large to review",
+	}
+	source := &fakeReviewEvidenceSource{evidence: evidence}
+	fetcher := &fakeFetcher{}
+	resolver := &fakeResolver{}
+
+	result, err := Run(context.Background(), validRequest(), Dependencies{
+		ReviewEvidence: source,
+		Fetcher:        fetcher,
+		Resolver:       resolver,
+		Clock:          clock,
+		Sleeper:        &fakeSleeper{clock: clock},
+	})
+	if err != nil {
+		t.Fatalf("watch Review Skipped: %v", err)
+	}
+	if result.Outcome != store.StateReviewSkipped || result.Rounds != 0 {
+		t.Fatalf("Review Skipped result = %+v", result)
+	}
+	if result.TerminalReason != evidence.Reason {
+		t.Fatalf("terminal reason = %q, want %q", result.TerminalReason, evidence.Reason)
+	}
+	if result.NextAction != "Reduce or split the pull request, then request another Review Source review." {
+		t.Fatalf("next action = %q", result.NextAction)
+	}
+	if result.Evidence != evidence {
+		t.Fatalf("terminal Evidence = %#v, want %#v", result.Evidence, evidence)
+	}
+	if fetcher.calls != 0 || resolver.calls != 0 {
+		t.Fatalf("Review Skipped reached later work: fetch=%d resolve=%d", fetcher.calls, resolver.calls)
+	}
+	if len(source.requests) != 1 {
+		t.Fatalf("Review Skipped Evidence calls = %d, want 1", len(source.requests))
+	}
+}
+
+func TestRunReviewSkippedDuringMergeReadyPreservesTerminalEvidence(t *testing.T) {
+	clock := &fakeClock{now: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)}
+	calls := 0
+	skipped := reviewsource.Evidence{
+		State:           reviewsource.EvidenceSkipped,
+		Kind:            reviewsource.EvidenceKindCheckRun,
+		Identity:        "check_run:42",
+		ExpectedHeadSHA: "abc123",
+		ObservedHeadSHA: "abc123",
+		Conclusion:      "success",
+		Reason:          "Review Source size limit was exceeded",
+	}
+	source := ReviewEvidenceFunc(func(_ context.Context, _ ReviewEvidenceRequest) (reviewsource.Evidence, error) {
+		calls++
+		if calls == 1 {
+			return reviewsource.Evidence{
+				State:           reviewsource.EvidenceReviewed,
+				Kind:            reviewsource.EvidenceKindCheckRun,
+				ExpectedHeadSHA: "abc123",
+				ObservedHeadSHA: "abc123",
+			}, nil
+		}
+		return skipped, nil
+	})
+
+	result, err := Run(context.Background(), validRequest(), Dependencies{
+		ReviewEvidence: source,
+		Fetcher:        &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 0}}},
+		Resolver:       &fakeResolver{},
+		Clock:          clock,
+		Sleeper:        &fakeSleeper{clock: clock},
+	})
+	if err != nil {
+		t.Fatalf("watch Review Skipped during Merge-Ready: %v", err)
+	}
+	if result.Outcome != store.StateReviewSkipped || result.Rounds != 1 || result.Evidence != skipped {
+		t.Fatalf("Merge-Ready Review Skipped result = %+v", result)
+	}
+	if calls != 2 {
+		t.Fatalf("Review Evidence calls = %d, want pre-fetch and Merge-Ready", calls)
+	}
+}
+
 func TestRunWaitsFetchesResolvesToClean(t *testing.T) {
 	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
 	sleeper := &fakeSleeper{clock: clock}
