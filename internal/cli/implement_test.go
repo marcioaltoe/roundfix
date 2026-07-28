@@ -5207,10 +5207,10 @@ func newMacroFakeACPX(t *testing.T) macroFakeACPX {
 	if err := os.WriteFile(acpxPath, []byte(script), 0o755); err != nil {
 		t.Fatalf("write fake acpx: %v", err)
 	}
-	for _, adapter := range []string{"codex-acp", "claude-code-acp", "opencode", "npx"} {
+	for _, adapter := range []string{"codex-acp", "claude-agent-acp", "opencode", "npx"} {
 		content := "#!/bin/sh\nexit 0\n"
 		if adapter == "npx" {
-			content = "#!/bin/sh\nprintf '%s\\n' '@agentclientprotocol/codex-acp " + agent.PinnedCodexAdapterVersion + "'\n"
+			content = "#!/bin/sh\ncase \"$*\" in\n  *claude-agent-acp*) printf '%s\\n' '" + agent.PinnedClaudeAdapterVersion + "' ;;\n  *) printf '%s\\n' '@agentclientprotocol/codex-acp " + agent.PinnedCodexAdapterVersion + "' ;;\nesac\n"
 		}
 		if err := os.WriteFile(filepath.Join(binDir, adapter), []byte(content), 0o755); err != nil {
 			t.Fatalf("write fake adapter %s: %v", adapter, err)

@@ -3053,7 +3053,7 @@ func TestRunSetupReportsAdapterFailuresWithoutWrites(t *testing.T) {
 				FoundVersion:    "1.1.3",
 				RequiredVersion: agent.PinnedCodexAdapterVersion,
 			},
-			want: "package @agentclientprotocol/codex-acp version 1.1.3; required version 1.1.4 or newer",
+			want: "package @agentclientprotocol/codex-acp version 1.1.3; required version " + agent.PinnedCodexAdapterVersion + " or newer",
 		},
 	}
 
