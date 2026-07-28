@@ -1090,6 +1090,23 @@ func TestRunImplementHelpListsExactlyImplementedFlags(t *testing.T) {
 	}
 }
 
+func TestRunImplementVerificationCapacityDoesNotAddFlag(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--help"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected no stderr, got %q", stderr.String())
+	}
+	if strings.Contains(stdout.String(), "--verification-concurrency") {
+		t.Fatalf("Verification Capacity must remain Config-only:\n%s", stdout.String())
+	}
+}
+
 func TestRunImplementDetachPrintsReportAndCompletesRun(t *testing.T) {
 	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
 	fakeACPX := fakeACPXCommand(t)
@@ -1290,6 +1307,41 @@ func TestRunImplementValidationFailures(t *testing.T) {
 			}
 			if !strings.Contains(stderr.String(), tt.message) {
 				t.Fatalf("expected message %q, got %q", tt.message, stderr.String())
+			}
+			assertNoRunDatabase(t, homeDir)
+		})
+	}
+}
+
+func TestRunImplementRejectsInvalidVerificationCapacityBeforeRunCreation(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   string
+		contains string
+	}{
+		{name: "zero", config: "verification:\n  concurrency: 0\n", contains: "verification.concurrency must be greater than 0"},
+		{name: "negative", config: "verification:\n  concurrency: -1\n", contains: "verification.concurrency must be greater than 0"},
+		{name: "non-integer", config: "verification:\n  concurrency: 1.5\n", contains: "verification.concurrency must be an integer"},
+		{name: "unknown key", config: "verification:\n  concurrent: 1\n", contains: "verification.concurrent is not a supported config key"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01"}})
+			mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), tt.config)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+			if code != 2 {
+				t.Fatalf("expected validation exit code 2, got %d stderr=%q", code, stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("expected no stdout, got %q", stdout.String())
+			}
+			if !strings.Contains(stderr.String(), tt.contains) {
+				t.Fatalf("expected stderr containing %q, got %q", tt.contains, stderr.String())
 			}
 			assertNoRunDatabase(t, homeDir)
 		})
@@ -1654,6 +1706,47 @@ func TestRunImplementExecutesSpecEndToEnd(t *testing.T) {
 		t.Fatalf("unexpected Run row: %#v", run)
 	}
 	assertNoActiveRunInGitRoot(t, homeDir, repoDir)
+}
+
+func TestRunImplementPassesVerificationCapacityIntoTaskCycle(t *testing.T) {
+	homeDir, repoDir := newImplementWorkspace(t, []implementSeed{{id: "task_01", title: "Build the widget backend"}})
+	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), "worktree:\n  concurrency: 1\nverification:\n  concurrency: 3\n")
+	gitImplement(t, repoDir, "add", ".roundfixrc.yml")
+	gitImplement(t, repoDir, "commit", "-m", "configure verification capacity")
+	runner := &implementFakeRunner{
+		gitRoot:      repoDir,
+		statusByTask: map[string]spec.Status{"task_01": spec.StatusCompleted},
+	}
+	withImplementCollaborators(t, runner)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"implement", "--spec", implementTestSlug, "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("expected exit code 0, got %d stderr=%q", code, stderr.String())
+	}
+	runID := implementRunIDFromStderr(t, stderr.String())
+	var startPayload map[string]any
+	for _, entry := range runEventsForRun(t, homeDir, runID) {
+		if entry.Event.Kind != runevent.KindDaemonStatus {
+			continue
+		}
+		var payload map[string]any
+		if err := json.Unmarshal(entry.Event.Payload, &payload); err != nil {
+			t.Fatalf("decode daemon status payload: %v", err)
+		}
+		if payload["spec"] == implementTestSlug {
+			startPayload = payload
+			break
+		}
+	}
+	if startPayload == nil {
+		t.Fatal("expected journaled Task-cycle-start event")
+	}
+	if startPayload["concurrency"] != float64(1) || startPayload["task_capacity"] != float64(1) || startPayload["verification_capacity"] != float64(3) {
+		t.Fatalf("unexpected effective capacities: %+v", startPayload)
+	}
 }
 
 func TestRunImplementCleanCleanupFailureWarnsAndJournalsWithoutChangingReportOrExit(t *testing.T) {

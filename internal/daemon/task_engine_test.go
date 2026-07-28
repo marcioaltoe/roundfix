@@ -170,16 +170,18 @@ func newTaskCycleFixture(t *testing.T, seeds []taskSpecSeed) *taskCycleFixture {
 
 func (fixture *taskCycleFixture) plan() TaskPlan {
 	return TaskPlan{
-		RunID:       fixture.run.ID,
-		Session:     agent.SessionRefForRun(fixture.run.ID, fixture.gitRoot),
-		WorkDir:     fixture.gitRoot,
-		RunWorktree: runworktree.Ref{RunID: fixture.run.ID, Path: fixture.gitRoot, Branch: runworktree.BranchName(fixture.run.ID), UserRoot: fixture.gitRoot},
-		Spec:        fixture.graph.Spec,
-		SpecsRoot:   fixture.specsRoot,
-		Tasks:       fixture.graph.Tasks,
-		Runtime:     agent.RuntimeSpec{ID: "codex", DisplayName: "Codex"},
-		ArtifactDir: fixture.artifactDir,
-		AgentLogs:   true,
+		RunID:                   fixture.run.ID,
+		Session:                 agent.SessionRefForRun(fixture.run.ID, fixture.gitRoot),
+		WorkDir:                 fixture.gitRoot,
+		RunWorktree:             runworktree.Ref{RunID: fixture.run.ID, Path: fixture.gitRoot, Branch: runworktree.BranchName(fixture.run.ID), UserRoot: fixture.gitRoot},
+		Spec:                    fixture.graph.Spec,
+		SpecsRoot:               fixture.specsRoot,
+		Tasks:                   fixture.graph.Tasks,
+		Runtime:                 agent.RuntimeSpec{ID: "codex", DisplayName: "Codex"},
+		ArtifactDir:             fixture.artifactDir,
+		AgentLogs:               true,
+		Concurrency:             1,
+		VerificationConcurrency: 1,
 	}
 }
 
@@ -1497,6 +1499,74 @@ func TestTaskCycleValidatesPlan(t *testing.T) {
 	}
 	if len(*fixture.calls) != 0 {
 		t.Fatalf("expected no daemon actions for invalid plan, got %v", *fixture.calls)
+	}
+}
+
+func TestTaskCyclePublishesCapacities(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+	plan := fixture.plan()
+	plan.Concurrency = 1
+	plan.VerificationConcurrency = 3
+
+	result, err := engine.TaskCycle(context.Background(), plan)
+	if err != nil {
+		t.Fatalf("task cycle: %v", err)
+	}
+	if result.Completed != 1 {
+		t.Fatalf("expected Task to complete, got %+v", result)
+	}
+
+	statusEvents := taskEventsOfKind(fixture.sink, runevent.KindDaemonStatus)
+	if len(statusEvents) == 0 {
+		t.Fatal("expected Task-cycle-start event")
+	}
+	payload := eventPayloadMap(t, statusEvents[0])
+	if payload["concurrency"] != float64(1) || payload["task_capacity"] != float64(1) || payload["verification_capacity"] != float64(3) {
+		t.Fatalf("unexpected Task-cycle capacities: %+v", payload)
+	}
+}
+
+func TestTaskCycleRejectsInvalidCapacitiesBeforeSideEffects(t *testing.T) {
+	tests := []struct {
+		name                 string
+		taskCapacity         int
+		verificationCapacity int
+		want                 string
+	}{
+		{name: "missing Task Capacity", taskCapacity: 0, verificationCapacity: 1, want: "Task Capacity"},
+		{name: "negative Task Capacity", taskCapacity: -1, verificationCapacity: 1, want: "Task Capacity"},
+		{name: "missing Verification Capacity", taskCapacity: 1, verificationCapacity: 0, want: "Verification Capacity"},
+		{name: "negative Verification Capacity", taskCapacity: 1, verificationCapacity: -1, want: "Verification Capacity"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
+			engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
+			plan := fixture.plan()
+			plan.Concurrency = tt.taskCapacity
+			plan.VerificationConcurrency = tt.verificationCapacity
+			stateBefore := runStateForTest(fixture.store, fixture.run.ID)
+
+			_, err := engine.TaskCycle(context.Background(), plan)
+
+			if err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("expected %s validation error, got %v", tt.want, err)
+			}
+			if len(*fixture.calls) != 0 {
+				t.Fatalf("expected no Agent, Verification, or settlement action, got %v", *fixture.calls)
+			}
+			if events := fixture.sink.snapshot(); len(events) != 0 {
+				t.Fatalf("expected no Run Event before capacity validation, got %+v", events)
+			}
+			if fixture.progress.Len() != 0 {
+				t.Fatalf("expected no progress output before capacity validation, got %q", fixture.progress.String())
+			}
+			if got := runStateForTest(fixture.store, fixture.run.ID); got != stateBefore {
+				t.Fatalf("Run state changed from %q to %q", stateBefore, got)
+			}
+		})
 	}
 }
 

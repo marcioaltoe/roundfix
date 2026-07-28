@@ -26,24 +26,25 @@ import (
 // topological order spec.Load produced. WorkDir is the git root and the
 // Agent working directory.
 type TaskPlan struct {
-	RunID           string
-	Session         agent.SessionRef
-	WorkDir         string
-	RunWorktree     runworktree.Ref
-	HeadSHA         string
-	SpecsRoot       string
-	ArtifactDir     string
-	AgentLogs       bool
-	Spec            spec.Spec
-	Tasks           []spec.Task
-	Runtime         agent.RuntimeSpec
-	AgentSelections AgentSelectionProfiles
-	RuntimeFactory  AgentRuntimeFactory
-	QA              bool
-	Concurrency     int
-	CopyList        []string
-	Bootstrap       runworktree.BootstrapSpec
-	BootstrapOutput io.Writer
+	RunID                   string
+	Session                 agent.SessionRef
+	WorkDir                 string
+	RunWorktree             runworktree.Ref
+	HeadSHA                 string
+	SpecsRoot               string
+	ArtifactDir             string
+	AgentLogs               bool
+	Spec                    spec.Spec
+	Tasks                   []spec.Task
+	Runtime                 agent.RuntimeSpec
+	AgentSelections         AgentSelectionProfiles
+	RuntimeFactory          AgentRuntimeFactory
+	QA                      bool
+	Concurrency             int
+	VerificationConcurrency int
+	CopyList                []string
+	Bootstrap               runworktree.BootstrapSpec
+	BootstrapOutput         io.Writer
 }
 
 // TaskOutcome reports one Task's terminal cycle outcome. Reason is empty for
@@ -91,10 +92,17 @@ func (engine *Engine) TaskCycle(ctx context.Context, plan TaskPlan) (TaskCycleRe
 	if err := validateTaskPlan(plan); err != nil {
 		return TaskCycleResult{}, err
 	}
-	concurrency := taskConcurrency(plan)
+	taskCapacity := plan.Concurrency
+	verificationCapacity := plan.VerificationConcurrency
 	if err := engine.publishDaemonEvent(ctx, plan.RunID, 0, runevent.KindDaemonStatus,
-		fmt.Sprintf("Task cycle started with concurrency %d.", concurrency),
-		map[string]any{"spec": plan.Spec.Slug, "tasks": len(plan.Tasks), "concurrency": concurrency},
+		fmt.Sprintf("Task cycle started with Task Capacity %d and Verification Capacity %d.", taskCapacity, verificationCapacity),
+		map[string]any{
+			"spec":                  plan.Spec.Slug,
+			"tasks":                 len(plan.Tasks),
+			"concurrency":           taskCapacity,
+			"task_capacity":         taskCapacity,
+			"verification_capacity": verificationCapacity,
+		},
 	); err != nil {
 		return TaskCycleResult{}, err
 	}
@@ -156,7 +164,7 @@ type taskWorkerResult struct {
 
 func (engine *Engine) runTaskScheduler(ctx context.Context, plan TaskPlan, statuses map[string]taskRunStatus) (TaskCycleResult, int, error) {
 	result := TaskCycleResult{}
-	concurrency := taskConcurrency(plan)
+	concurrency := plan.Concurrency
 	useTaskWorktrees := concurrency > 1 && hasParallelTaskPotential(plan.Tasks, statuses)
 	results := make(chan taskWorkerResult)
 	running := 0
@@ -341,13 +349,6 @@ func initialTaskRunStatuses(tasks []spec.Task) map[string]taskRunStatus {
 		statuses[task.ID] = taskRunPending
 	}
 	return statuses
-}
-
-func taskConcurrency(plan TaskPlan) int {
-	if plan.Concurrency < 1 {
-		return 1
-	}
-	return plan.Concurrency
 }
 
 func hasParallelTaskPotential(tasks []spec.Task, statuses map[string]taskRunStatus) bool {
@@ -1297,6 +1298,12 @@ func (engine *Engine) publishTaskEvent(ctx context.Context, runID string, ordina
 }
 
 func validateTaskPlan(plan TaskPlan) error {
+	if plan.Concurrency < 1 {
+		return errors.New("task cycle: Task Capacity is required and must be greater than 0")
+	}
+	if plan.VerificationConcurrency < 1 {
+		return errors.New("task cycle: Verification Capacity is required and must be greater than 0")
+	}
 	required := map[string]string{
 		"Run ID":             plan.RunID,
 		"Agent Session":      plan.Session.Name,
@@ -1313,7 +1320,7 @@ func validateTaskPlan(plan TaskPlan) error {
 	if len(plan.Tasks) == 0 {
 		return errors.New("task cycle: at least one Task is required")
 	}
-	if taskConcurrency(plan) > 1 {
+	if plan.Concurrency > 1 {
 		concurrentRequired := map[string]string{
 			"Run Worktree path":   plan.RunWorktree.Path,
 			"Run Branch":          plan.RunWorktree.Branch,

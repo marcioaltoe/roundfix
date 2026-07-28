@@ -155,6 +155,37 @@ func TestDefaultConfigYAMLGeneratedCodexPolicy(t *testing.T) {
 	}
 }
 
+func TestDefaultConfigYAMLVerificationCapacity(t *testing.T) {
+	content := DefaultConfigYAML()
+	for _, want := range []string{
+		"# Verification command for review Batches; Spec Tasks use their task file commands.\n  verification: make verify",
+		"verification:\n  # Maximum concurrent Task Verification attempts per spec Run; independent from worktree.concurrency.\n  concurrency: 1",
+	} {
+		if !strings.Contains(content, want) {
+			t.Fatalf("generated config is missing %q:\n%s", want, content)
+		}
+	}
+	for _, scope := range []string{InitScopeUser, InitScopeProject} {
+		t.Run(scope, func(t *testing.T) {
+			homeDir := t.TempDir()
+			workDir := t.TempDir()
+			mustMkdir(t, filepath.Join(workDir, ".git"))
+
+			result, err := Init(context.Background(), InitOptions{
+				Scope:   scope,
+				HomeDir: homeDir,
+				WorkDir: workDir,
+			})
+			if err != nil {
+				t.Fatalf("generate %s config: %v", scope, err)
+			}
+			if got := mustRead(t, result.Path); got != content {
+				t.Fatalf("generated %s config differs from DefaultConfigYAML", scope)
+			}
+		})
+	}
+}
+
 func TestModelCatalogRetainsOfficialCodexIdentifiers(t *testing.T) {
 	catalog := agent.ModelCatalog("codex")
 	for _, identifier := range []string{"gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"} {
@@ -1084,6 +1115,61 @@ worktree:
 	}
 }
 
+func TestLoadVerificationCapacityHierarchy(t *testing.T) {
+	tests := []struct {
+		name          string
+		userConfig    string
+		projectConfig string
+		want          int
+	}{
+		{
+			name:          "omission keeps safe default despite project Task Capacity",
+			projectConfig: "worktree:\n  concurrency: 7\n",
+			want:          1,
+		},
+		{
+			name:       "User Config overrides built-in",
+			userConfig: "verification:\n  concurrency: 3\nworktree:\n  concurrency: 9\n",
+			want:       3,
+		},
+		{
+			name:          "omitted Project Config key inherits User Config",
+			userConfig:    "verification:\n  concurrency: 3\n",
+			projectConfig: "worktree:\n  concurrency: 4\n",
+			want:          3,
+		},
+		{
+			name:          "Project Config overrides User Config",
+			userConfig:    "verification:\n  concurrency: 3\n",
+			projectConfig: "verification:\n  concurrency: 2\n",
+			want:          2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir := t.TempDir()
+			workDir := t.TempDir()
+			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+			mustMkdir(t, filepath.Join(workDir, ".git"))
+			if tt.userConfig != "" {
+				mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.userConfig)
+			}
+			if tt.projectConfig != "" {
+				mustWrite(t, filepath.Join(workDir, ".roundfixrc.yml"), tt.projectConfig)
+			}
+
+			loaded, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+			if err != nil {
+				t.Fatalf("load config: %v", err)
+			}
+			if loaded.Config.Verification.Concurrency != tt.want {
+				t.Fatalf("verification.concurrency = %d, want %d", loaded.Config.Verification.Concurrency, tt.want)
+			}
+		})
+	}
+}
+
 func TestLoadAppliesAgentLogConfigHierarchy(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -1711,6 +1797,58 @@ specs:
 			}
 			if !strings.Contains(err.Error(), tt.contains) {
 				t.Fatalf("expected error to contain %q, got %q", tt.contains, err.Error())
+			}
+		})
+	}
+}
+
+func TestValidateVerificationCapacity(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   string
+		contains string
+	}{
+		{
+			name:     "zero",
+			config:   "verification:\n  concurrency: 0\n",
+			contains: "verification.concurrency must be greater than 0",
+		},
+		{
+			name:     "negative",
+			config:   "verification:\n  concurrency: -1\n",
+			contains: "verification.concurrency must be greater than 0",
+		},
+		{
+			name:     "float",
+			config:   "verification:\n  concurrency: 1.5\n",
+			contains: "verification.concurrency must be an integer",
+		},
+		{
+			name:     "string",
+			config:   "verification:\n  concurrency: many\n",
+			contains: "verification.concurrency must be an integer",
+		},
+		{
+			name:     "unknown key",
+			config:   "verification:\n  concurrent: 2\n",
+			contains: "verification.concurrent is not a supported config key",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			homeDir := t.TempDir()
+			workDir := t.TempDir()
+			mustMkdir(t, filepath.Join(homeDir, ".roundfix"))
+			mustMkdir(t, filepath.Join(workDir, ".git"))
+			mustWrite(t, filepath.Join(homeDir, ".roundfix", "config.yml"), tt.config)
+
+			_, err := Load(LoadOptions{HomeDir: homeDir, WorkDir: workDir})
+			if err == nil {
+				t.Fatal("expected config load to fail")
+			}
+			if !strings.Contains(err.Error(), tt.contains) {
+				t.Fatalf("expected error containing %q, got %q", tt.contains, err.Error())
 			}
 		})
 	}
