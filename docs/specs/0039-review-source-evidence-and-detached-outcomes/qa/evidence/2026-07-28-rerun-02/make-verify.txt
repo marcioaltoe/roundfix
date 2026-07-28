@@ -29,6 +29,15 @@ Result:
 - the production build wrote bin/roundfix with
   BuildCommit=f3649fe-dirty.
 
+Dirty build identity reconciliation:
+- commit `8971bda7bf019cc2633f825b7dc42d59e0dce124` has
+  `f3649fef83f720c51da883444038b76e9def6296` as its exact parent;
+- `git diff-tree --no-commit-id --name-only -r 8971bda7bf019cc2633f825b7dc42d59e0dce124`
+  lists only this rerun's QA report and files below
+  `docs/specs/0039-review-source-evidence-and-detached-outcomes/qa/`;
+- no product path differed in the dirty build. The `-dirty` suffix records the
+  in-progress QA evidence that the next docs-only commit preserved.
+
 Post-gate checks:
 - rtk git diff --check: exit 0, no output.
 - rtk cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md:

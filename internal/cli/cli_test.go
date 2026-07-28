@@ -4132,6 +4132,21 @@ func (runner *fakeReviewSpecGitRunner) RunGit(_ context.Context, _ string, _ ...
 	return runner.message, nil
 }
 
+type failingReviewArtifactProofGitRunner struct {
+	delegate preflight.GitRunner
+	command  string
+	err      error
+	failures int
+}
+
+func (runner *failingReviewArtifactProofGitRunner) RunGit(ctx context.Context, workDir string, args ...string) (string, error) {
+	if len(args) > 0 && args[0] == runner.command {
+		runner.failures++
+		return "", runner.err
+	}
+	return runner.delegate.RunGit(ctx, workDir, args...)
+}
+
 func TestRunFetchWarnsAndIgnoresDeprecatedUserConfig(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
@@ -4660,12 +4675,18 @@ func TestRunOutcomeNotificationsCaptureTerminalResolveWatchAndImplement(t *testi
 				t.Fatalf("expected exit code %d, got %d stderr=%q stdout=%q", tt.wantExitCode, code, stderr.String(), stdout.String())
 			}
 			runID := tt.runID(t, stderr.String())
-			assertRecordedOutcomes(t, notifier, []roundnotify.Outcome{{
+			want := roundnotify.Outcome{
 				RunID:  runID,
 				State:  tt.wantState,
 				Kind:   tt.wantKind,
 				Target: tt.wantTarget,
-			}})
+			}
+			if tt.name == "watch" {
+				known := true
+				want.AttachCommand = "roundfix attach " + runID
+				want.ReviewIssuesKnown = &known
+			}
+			assertRecordedOutcomes(t, notifier, []roundnotify.Outcome{want})
 		})
 	}
 }
@@ -4762,10 +4783,12 @@ func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalContext(t *test
 		t.Fatalf("terminal outcome events = %d, want 1; events=%+v", outcomes, events)
 	}
 	assertRecordedOutcomes(t, notifier, []roundnotify.Outcome{{
-		RunID:  active.ID,
-		State:  store.StateStopped,
-		Kind:   store.KindResolve,
-		Target: "pr:123",
+		RunID:      active.ID,
+		State:      store.StateStopped,
+		Kind:       store.KindResolve,
+		Target:     "pr:123",
+		Reason:     "A Stop Request ended the Run.",
+		NextAction: "Inspect the preserved work before starting another Run.",
 	}})
 
 	stopStdout.Reset()
@@ -4784,10 +4807,12 @@ func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalContext(t *test
 		t.Fatalf("identical replay published another terminal outcome: events=%+v", events)
 	}
 	assertRecordedOutcomes(t, notifier, []roundnotify.Outcome{{
-		RunID:  active.ID,
-		State:  store.StateStopped,
-		Kind:   store.KindResolve,
-		Target: "pr:123",
+		RunID:      active.ID,
+		State:      store.StateStopped,
+		Kind:       store.KindResolve,
+		Target:     "pr:123",
+		Reason:     "A Stop Request ended the Run.",
+		NextAction: "Inspect the preserved work before starting another Run.",
 	}})
 }
 
@@ -4885,8 +4910,8 @@ func TestRunOutcomeNotificationFailureWarnsAndJournalsWithoutChangingReportOrExi
 			continue
 		}
 		receipts++
-		if payload.Route != roundnotify.RouteCommand ||
-			payload.Status != roundnotify.StatusFailed ||
+		if payload.Route != string(roundnotify.RouteCommand) ||
+			payload.Status != string(roundnotify.StatusFailed) ||
 			payload.CompletedAt.IsZero() ||
 			payload.Reason != "forced notifier failure" {
 			t.Fatalf("failed notification receipt = %#v", payload)
@@ -4900,8 +4925,8 @@ func TestRunOutcomeNotificationFailureWarnsAndJournalsWithoutChangingReportOrExi
 func TestNotificationReceiptJournalsExactlyOnePerOutcomeAttempt(t *testing.T) {
 	tests := []struct {
 		name   string
-		route  string
-		status string
+		route  roundnotify.Route
+		status roundnotify.Status
 		err    error
 	}{
 		{name: "sent command", route: roundnotify.RouteCommand, status: roundnotify.StatusSent},
@@ -4934,9 +4959,9 @@ func TestNotificationReceiptJournalsExactlyOnePerOutcomeAttempt(t *testing.T) {
 					continue
 				}
 				receipts++
-				if payload.Event != "outcome_notification_"+tt.status ||
-					payload.Route != tt.route ||
-					payload.Status != tt.status ||
+				if payload.Event != "outcome_notification_"+string(tt.status) ||
+					payload.Route != string(tt.route) ||
+					payload.Status != string(tt.status) ||
 					payload.CompletedAt.IsZero() ||
 					!entry.Event.Time.Equal(payload.CompletedAt) {
 					t.Fatalf("notification receipt payload/event mismatch: payload=%#v event=%#v", payload, entry.Event)
@@ -4944,6 +4969,51 @@ func TestNotificationReceiptJournalsExactlyOnePerOutcomeAttempt(t *testing.T) {
 			}
 			if receipts != 1 {
 				t.Fatalf("notification receipt events = %d, want 1; events=%+v", receipts, events)
+			}
+		})
+	}
+}
+
+func TestNotificationReceiptDefaultsZeroValueFieldsBeforeJournaling(t *testing.T) {
+	tests := []struct {
+		name       string
+		notifyErr  error
+		wantStatus roundnotify.Status
+	}{
+		{name: "skipped without error", wantStatus: roundnotify.StatusSkipped},
+		{name: "failed with error", notifyErr: errors.New("zero receipt failure"), wantStatus: roundnotify.StatusFailed},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			notifier := &recordingOutcomeNotifier{
+				err:                 tt.notifyErr,
+				preserveZeroReceipt: true,
+			}
+			_, stderr, code, homeDir := runCleanResolveWithOutcomeNotifier(t, notifier)
+
+			if code != exitOK {
+				t.Fatalf("zero receipt changed exit = %d, want %d", code, exitOK)
+			}
+			_, events := journaledRunEvents(t, homeDir, stderr)
+			var receipts []runevent.NotificationReceiptPayload
+			for _, entry := range events {
+				if entry.Event.Kind != runevent.KindDaemonStatus {
+					continue
+				}
+				var payload runevent.NotificationReceiptPayload
+				if json.Unmarshal(entry.Event.Payload, &payload) == nil &&
+					strings.HasPrefix(payload.Event, "outcome_notification_") {
+					receipts = append(receipts, payload)
+				}
+			}
+			if len(receipts) != 1 {
+				t.Fatalf("zero-value notification receipts = %d, want 1; events=%+v", len(receipts), events)
+			}
+			if receipts[0].Route != string(roundnotify.RouteDisabled) ||
+				receipts[0].Status != string(tt.wantStatus) ||
+				receipts[0].Event != "outcome_notification_"+string(tt.wantStatus) {
+				t.Fatalf("normalized zero-value receipt = %#v", receipts[0])
 			}
 		})
 	}
@@ -5011,8 +5081,8 @@ func TestRunOutcomeNotificationsDisabledJournalsSkippedReceipt(t *testing.T) {
 			continue
 		}
 		receipts++
-		if payload.Route != roundnotify.RouteDisabled ||
-			payload.Status != roundnotify.StatusSkipped ||
+		if payload.Route != string(roundnotify.RouteDisabled) ||
+			payload.Status != string(roundnotify.StatusSkipped) ||
 			payload.CompletedAt.IsZero() {
 			t.Fatalf("disabled notification receipt = %#v", payload)
 		}
@@ -5887,6 +5957,57 @@ func TestRunWatchArtifactEvidenceInheritedWithoutCurrentHeadPolling(t *testing.T
 		inherited.ObservedHeadSHA != currentHead ||
 		inherited.ParentHeadSHA != parentHead {
 		t.Fatalf("inherited Evidence payload = %#v", inherited)
+	}
+}
+
+func TestRunWatchArtifactEvidenceProofFailureFallsBackAfterPush(t *testing.T) {
+	_, repoDir := withReviewGitWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withRealReviewPreflight(t, repoDir, true)
+	proofRunner := &failingReviewArtifactProofGitRunner{
+		delegate: preflight.ExecGitRunner{},
+		command:  "rev-list",
+		err:      errors.New("forced proof failure"),
+	}
+	withReviewSpecGitRunner(t, proofRunner)
+	withCommitter(t, daemon.GitCommitter{})
+	withFetchReviewItems(t, nil)
+	pusher := &checkingPusher{}
+	withPusher(t, pusher)
+
+	parentHead := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+	var evidenceHeads []string
+	withWatchEvidence(t, func(_ context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
+		evidenceHeads = append(evidenceHeads, req.ExpectedHeadSHA)
+		if len(evidenceHeads) == 1 {
+			return reviewedEvidence(parentHead), nil
+		}
+		return verifiedEvidence(req.ExpectedHeadSHA), nil
+	})
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := RunContext(context.Background(), []string{
+		"watch", "--source", "coderabbit", "--pr", "123",
+		"--until-clean", "--max-rounds", "1", "--no-input",
+	}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("artifact proof fallback exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	if proofRunner.failures != 1 {
+		t.Fatalf("artifact proof failures = %d, want 1", proofRunner.failures)
+	}
+	if pusher.calls != 1 {
+		t.Fatalf("artifact proof fallback Final Push calls = %d, want 1", pusher.calls)
+	}
+	currentHead := strings.TrimSpace(gitImplementOutput(t, repoDir, "rev-parse", "HEAD"))
+	wantHeads := []string{parentHead, parentHead, currentHead}
+	if !reflect.DeepEqual(evidenceHeads, wantHeads) {
+		t.Fatalf("artifact proof fallback Evidence heads = %v, want %v", evidenceHeads, wantHeads)
+	}
+	if !strings.Contains(stderr.String(), "Review artifact Evidence inheritance unavailable; falling back to head polling: prove review artifact parent: forced proof failure") {
+		t.Fatalf("artifact proof fallback warning missing from stderr: %q", stderr.String())
 	}
 }
 
@@ -9714,11 +9835,12 @@ func assertSetupLineOrder(t *testing.T, output string, lines []string) {
 }
 
 type recordingOutcomeNotifier struct {
-	mu       sync.Mutex
-	route    string
-	status   string
-	err      error
-	outcomes []roundnotify.Outcome
+	mu                  sync.Mutex
+	route               roundnotify.Route
+	status              roundnotify.Status
+	err                 error
+	preserveZeroReceipt bool
+	outcomes            []roundnotify.Outcome
 }
 
 func (notifier *recordingOutcomeNotifier) Notify(ctx context.Context, outcome roundnotify.Outcome) (roundnotify.NotificationReceipt, error) {
@@ -9732,6 +9854,9 @@ func (notifier *recordingOutcomeNotifier) Notify(ctx context.Context, outcome ro
 	notifier.mu.Lock()
 	defer notifier.mu.Unlock()
 	notifier.outcomes = append(notifier.outcomes, outcome)
+	if notifier.preserveZeroReceipt {
+		return roundnotify.NotificationReceipt{}, notifier.err
+	}
 	route := notifier.route
 	if route == "" {
 		route = roundnotify.RouteCommand
@@ -9803,20 +9928,8 @@ func assertRecordedOutcomes(t *testing.T, notifier *recordingOutcomeNotifier, wa
 		t.Fatalf("recorded notification outcome count mismatch\nwant: %#v\ngot:  %#v", want, got)
 	}
 	for index := range want {
-		legacyGot := roundnotify.Outcome{
-			RunID:  got[index].RunID,
-			State:  got[index].State,
-			Kind:   got[index].Kind,
-			Target: got[index].Target,
-		}
-		legacyWant := roundnotify.Outcome{
-			RunID:  want[index].RunID,
-			State:  want[index].State,
-			Kind:   want[index].Kind,
-			Target: want[index].Target,
-		}
-		if !reflect.DeepEqual(legacyGot, legacyWant) {
-			t.Fatalf("recorded notification outcome %d mismatch\nwant: %#v\ngot:  %#v", index, legacyWant, legacyGot)
+		if !reflect.DeepEqual(got[index], want[index]) {
+			t.Fatalf("recorded notification outcome %d mismatch\nwant: %#v\ngot:  %#v", index, want[index], got[index])
 		}
 	}
 }

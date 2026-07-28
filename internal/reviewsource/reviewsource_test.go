@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"unicode/utf8"
 )
 
 func TestEvidenceJSONMappingAndBounds(t *testing.T) {
@@ -62,6 +63,16 @@ func TestEvidenceJSONMappingAndBounds(t *testing.T) {
 	}
 	if strings.Contains(string(encoded), "provider_response") {
 		t.Fatalf("Evidence JSON leaked provider response field: %s", encoded)
+	}
+}
+
+func TestBoundEvidenceDetailCutsOnRuneBoundary(t *testing.T) {
+	bounded := BoundEvidenceDetail(strings.Repeat("→", MaxEvidenceDetailLength))
+	if !utf8.ValidString(bounded) {
+		t.Fatalf("bounded detail is not valid UTF-8: %q", bounded)
+	}
+	if len(bounded) > MaxEvidenceDetailLength+len("…") {
+		t.Fatalf("bounded detail length = %d, want at most %d plus ellipsis", len(bounded), MaxEvidenceDetailLength)
 	}
 }
 

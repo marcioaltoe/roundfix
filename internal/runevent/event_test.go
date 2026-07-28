@@ -60,6 +60,23 @@ func TestReviewStatusEventPayloadUsesStableEvidenceFields(t *testing.T) {
 	}
 }
 
+func TestReviewStatusEventPayloadOmitsZeroWaitTimestamps(t *testing.T) {
+	raw, err := json.Marshal(ReviewStatusPayload{
+		State:           "pending",
+		Kind:            "none",
+		Identity:        "none",
+		ExpectedHeadSHA: "expected",
+	})
+	if err != nil {
+		t.Fatalf("marshal ReviewStatusPayload: %v", err)
+	}
+	for _, field := range []string{"started_at", "deadline"} {
+		if strings.Contains(string(raw), `"`+field+`"`) {
+			t.Fatalf("zero Review Status timestamp %q was not omitted: %s", field, raw)
+		}
+	}
+}
+
 func TestReviewRetryPayloadUsesBoundedEpisodeFields(t *testing.T) {
 	payload := RetryPayload{
 		Phase:     "started",

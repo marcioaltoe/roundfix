@@ -2404,17 +2404,7 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 	fmt.Fprintf(ui.progress, "Agent Model: %s\n", resolvePlan.runtime.Model)
 	fmt.Fprintf(ui.progress, "Default Reasoning Effort: %s\n", displayReasoningEffort(resolvePlan.runtime.ReasoningEffort))
 
-	engine, err := daemon.NewEngine(daemon.Dependencies{
-		Runner:    collaborators.runner,
-		Verifier:  collaborators.verifier,
-		Committer: collaborators.committer,
-		Pusher:    collaborators.pusher,
-		Source:    collaborators.source,
-		Runs:      runStore,
-		Worktree:  collaborators.worktree,
-		Sink:      ui.sink,
-		Progress:  ui.progress,
-	})
+	engine, err := newResolveEngine(collaborators, runStore, ui)
 	if err != nil {
 		return resolveBatchResult{}, err
 	}
@@ -2447,6 +2437,20 @@ func executeResolveCycle(ctx context.Context, req commandRequest, loaded roundco
 		return resolveBatchResult{}, err
 	}
 	return resolveBatchResult{Remaining: result.Remaining, CommitCreated: commitCreated}, nil
+}
+
+func newResolveEngine(collaborators engineCollaborators, runStore *store.Store, ui *runUI) (*daemon.Engine, error) {
+	return daemon.NewEngine(daemon.Dependencies{
+		Runner:    collaborators.runner,
+		Verifier:  collaborators.verifier,
+		Committer: collaborators.committer,
+		Pusher:    collaborators.pusher,
+		Source:    collaborators.source,
+		Runs:      runStore,
+		Worktree:  collaborators.worktree,
+		Sink:      ui.sink,
+		Progress:  ui.progress,
+	})
 }
 
 // publishPushDecision journals daemon-owned Final Push gating decisions.
@@ -2616,17 +2620,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 			if err != nil || commit.CommitSHA == "" {
 				return watch.ArtifactPublication{Commit: commit}, err
 			}
-			engine, err := daemon.NewEngine(daemon.Dependencies{
-				Runner:    collaborators.runner,
-				Verifier:  collaborators.verifier,
-				Committer: collaborators.committer,
-				Pusher:    collaborators.pusher,
-				Source:    collaborators.source,
-				Runs:      runStore,
-				Worktree:  collaborators.worktree,
-				Sink:      ui.sink,
-				Progress:  ui.progress,
-			})
+			engine, err := newResolveEngine(collaborators, runStore, ui)
 			if err != nil {
 				return watch.ArtifactPublication{}, err
 			}
@@ -2645,7 +2639,8 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 				ParentHeadSHA:  artifactReq.ParentHeadSHA,
 			})
 			if err != nil {
-				return watch.ArtifactPublication{}, err
+				fmt.Fprintf(ui.progress, "Review artifact Evidence inheritance unavailable; falling back to head polling: %v\n", err)
+				inherited = false
 			}
 			if !inherited {
 				evidence = reviewsource.Evidence{}
@@ -3819,12 +3814,7 @@ type reviewArtifactEvidenceRequest struct {
 
 func inheritReviewArtifactEvidence(ctx context.Context, req reviewArtifactEvidenceRequest) (reviewsource.Evidence, bool, error) {
 	commit := req.Commit
-	if commit.CommitSHA == "" ||
-		commit.ParentSHA == "" ||
-		commit.ReviewRoot == "" ||
-		commit.Message == "" ||
-		req.ParentHeadSHA != commit.ParentSHA ||
-		!exactVerifiedEvidence(req.ParentEvidence, commit.ParentSHA) {
+	if !validReviewArtifactEvidenceRequest(req) {
 		return reviewsource.Evidence{}, false, nil
 	}
 
@@ -3875,12 +3865,8 @@ func inheritReviewArtifactEvidence(ctx context.Context, req reviewArtifactEviden
 	if len(paths) == 0 {
 		return reviewsource.Evidence{}, false, nil
 	}
-	rootPrefix := relativeRoot + "/"
-	for _, path := range paths {
-		clean := filepath.ToSlash(filepath.Clean(path))
-		if clean == "." || clean == ".." || strings.HasPrefix(clean, "../") || !strings.HasPrefix(clean, rootPrefix) {
-			return reviewsource.Evidence{}, false, nil
-		}
+	if !reviewArtifactPathsWithinRoot(paths, relativeRoot) {
+		return reviewsource.Evidence{}, false, nil
 	}
 
 	refreshed, err := watchReviewEvidence(ctx, reviewsource.EvidenceRequest{
@@ -3904,6 +3890,27 @@ func inheritReviewArtifactEvidence(ctx context.Context, req reviewArtifactEviden
 		Conclusion:      "inherited",
 		Detail:          reviewsource.BoundEvidenceDetail("Inherited verified parent Evidence for the exact Daemon review-artifact commit."),
 	}, true, nil
+}
+
+func validReviewArtifactEvidenceRequest(req reviewArtifactEvidenceRequest) bool {
+	commit := req.Commit
+	return commit.CommitSHA != "" &&
+		commit.ParentSHA != "" &&
+		commit.ReviewRoot != "" &&
+		commit.Message != "" &&
+		req.ParentHeadSHA == commit.ParentSHA &&
+		exactVerifiedEvidence(req.ParentEvidence, commit.ParentSHA)
+}
+
+func reviewArtifactPathsWithinRoot(paths []string, relativeRoot string) bool {
+	rootPrefix := relativeRoot + "/"
+	for _, path := range paths {
+		clean := filepath.ToSlash(filepath.Clean(path))
+		if clean == "." || clean == ".." || strings.HasPrefix(clean, "../") || !strings.HasPrefix(clean, rootPrefix) {
+			return false
+		}
+	}
+	return true
 }
 
 func exactVerifiedEvidence(evidence reviewsource.Evidence, headSHA string) bool {
@@ -4291,6 +4298,12 @@ func notifyTerminalOutcome(
 	if err != nil {
 		receipt.Status = roundnotify.StatusFailed
 	}
+	if receipt.Status == "" {
+		receipt.Status = roundnotify.StatusSkipped
+	}
+	if receipt.Route == "" {
+		receipt.Route = roundnotify.RouteDisabled
+	}
 	if receipt.CompletedAt.IsZero() {
 		receipt.CompletedAt = time.Now().UTC()
 	}
@@ -4350,11 +4363,11 @@ func journalOutcomeNotificationReceipt(
 	if notifyErr != nil {
 		reason = boundTerminalContextText(notifyErr.Error())
 	}
-	eventName := "outcome_notification_" + receipt.Status
+	eventName := "outcome_notification_" + string(receipt.Status)
 	payload, err := json.Marshal(runevent.NotificationReceiptPayload{
 		Event:       eventName,
-		Route:       receipt.Route,
-		Status:      receipt.Status,
+		Route:       string(receipt.Route),
+		Status:      string(receipt.Status),
 		CompletedAt: receipt.CompletedAt,
 		Reason:      reason,
 	})

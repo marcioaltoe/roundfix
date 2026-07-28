@@ -276,6 +276,9 @@ func (client Client) Evidence(ctx context.Context, req reviewsource.EvidenceRequ
 	if err != nil {
 		return reviewsource.Evidence{}, reviewSourceAccessError(ctx, "fetch CodeRabbit commit statuses", err)
 	}
+	if evidence, reviewing := reviewingEvidence(req.ExpectedHeadSHA, checkRuns, statuses); reviewing {
+		return evidence, nil
+	}
 	reviews, err := gh.PullRequestReviews(ctx, req.BaseRepository, req.PRNumber)
 	if err != nil {
 		return reviewsource.Evidence{}, reviewSourceAccessError(ctx, "fetch CodeRabbit pull request reviews", err)
@@ -285,6 +288,27 @@ func (client Client) Evidence(ctx context.Context, req reviewsource.EvidenceRequ
 		return reviewsource.Evidence{}, reviewSourceAccessError(ctx, "fetch CodeRabbit review threads", err)
 	}
 	return classifyEvidence(req.ExpectedHeadSHA, checkRuns, statuses, reviews, threads), nil
+}
+
+func reviewingEvidence(expectedHeadSHA string, checkRuns []CheckRun, statuses []CommitStatus) (reviewsource.Evidence, bool) {
+	for _, run := range checkRuns {
+		if currentHeadCheckRun(expectedHeadSHA, run) {
+			if _, skipped := structuredSkipReason(run); skipped {
+				return reviewsource.Evidence{}, false
+			}
+		}
+	}
+	for _, run := range checkRuns {
+		if currentHeadCheckRun(expectedHeadSHA, run) && isPendingSignal(normalized(run.Status)) {
+			return checkRunEvidence(expectedHeadSHA, run, reviewsource.EvidenceReviewing, "", 0), true
+		}
+	}
+	for _, status := range statuses {
+		if isCodeRabbitSignal(status.Context) && isPendingSignal(normalized(status.State)) {
+			return commitStatusEvidence(expectedHeadSHA, status, reviewsource.EvidenceReviewing, 0), true
+		}
+	}
+	return reviewsource.Evidence{}, false
 }
 
 type GHClient struct{}
@@ -643,30 +667,18 @@ func classifyEvidence(expectedHeadSHA string, checkRuns []CheckRun, statuses []C
 
 	for _, run := range checkRuns {
 		if currentHeadCheckRun(expectedHeadSHA, run) && normalized(run.Conclusion) == "success" {
-			state := reviewsource.EvidenceVerified
-			if unresolvedThreads > 0 {
-				state = reviewsource.EvidenceReviewed
-			}
-			return checkRunEvidence(expectedHeadSHA, run, state, "", unresolvedThreads)
+			return checkRunEvidence(expectedHeadSHA, run, settledEvidenceState(unresolvedThreads), "", unresolvedThreads)
 		}
 	}
 	for _, status := range statuses {
 		if isCodeRabbitSignal(status.Context) && normalized(status.State) == "success" {
-			state := reviewsource.EvidenceVerified
-			if unresolvedThreads > 0 {
-				state = reviewsource.EvidenceReviewed
-			}
-			return commitStatusEvidence(expectedHeadSHA, status, state, unresolvedThreads)
+			return commitStatusEvidence(expectedHeadSHA, status, settledEvidenceState(unresolvedThreads), unresolvedThreads)
 		}
 	}
 
 	for _, review := range reviews {
 		if currentHeadReview(expectedHeadSHA, review) && normalized(review.State) == "approved" {
-			state := reviewsource.EvidenceVerified
-			if unresolvedThreads > 0 {
-				state = reviewsource.EvidenceReviewed
-			}
-			return reviewEvidence(expectedHeadSHA, review, state, reviewsource.EvidenceKindReviewApproval, unresolvedThreads)
+			return reviewEvidence(expectedHeadSHA, review, settledEvidenceState(unresolvedThreads), reviewsource.EvidenceKindReviewApproval, unresolvedThreads)
 		}
 	}
 	for _, review := range reviews {
@@ -738,6 +750,13 @@ func classifyEvidence(expectedHeadSHA string, checkRuns []CheckRun, statuses []C
 		ExpectedHeadSHA: expectedHeadSHA,
 		Detail:          "No usable CodeRabbit signal found for the expected head",
 	}
+}
+
+func settledEvidenceState(unresolvedThreads int) reviewsource.EvidenceState {
+	if unresolvedThreads > 0 {
+		return reviewsource.EvidenceReviewed
+	}
+	return reviewsource.EvidenceVerified
 }
 
 func watchStatusFromEvidence(evidence reviewsource.Evidence) reviewsource.WatchStatus {
@@ -1020,7 +1039,7 @@ func isTemporaryGitHubError(err error) bool {
 		return true
 	}
 	statusCode := githubHTTPStatus(err)
-	return statusCode == 429 || statusCode >= 500 && statusCode <= 599
+	return statusCode == 429 || (statusCode >= 500 && statusCode <= 599)
 }
 
 func githubHTTPStatus(err error) int {

@@ -17,14 +17,19 @@ import (
 const (
 	commandTimeout  = 30 * time.Second
 	nativeTextLimit = 256
+)
 
-	RouteCommand  = "command"
-	RouteNative   = "native"
-	RouteDisabled = "disabled"
+type Route string
+type Status string
 
-	StatusSent    = "sent"
-	StatusSkipped = "skipped"
-	StatusFailed  = "failed"
+const (
+	RouteCommand  Route = "command"
+	RouteNative   Route = "native"
+	RouteDisabled Route = "disabled"
+
+	StatusSent    Status = "sent"
+	StatusSkipped Status = "skipped"
+	StatusFailed  Status = "failed"
 )
 
 // Outcome carries the Run context a notification names.
@@ -43,8 +48,8 @@ type Outcome struct {
 // NotificationReceipt records the completed delivery attempt independently
 // from the Run outcome.
 type NotificationReceipt struct {
-	Route       string
-	Status      string
+	Route       Route
+	Status      Status
 	CompletedAt time.Time
 }
 
@@ -97,7 +102,7 @@ func newWithDeps(cfg config.Config, deps dependencies) Notifier {
 }
 
 type noopNotifier struct {
-	route string
+	route Route
 }
 
 func (notifier noopNotifier) Notify(context.Context, Outcome) (NotificationReceipt, error) {
@@ -267,7 +272,7 @@ func boundNativeText(text string, limit int) string {
 	return string(runes[:limit-1]) + "…"
 }
 
-func completedReceipt(route string, status string) NotificationReceipt {
+func completedReceipt(route Route, status Status) NotificationReceipt {
 	return NotificationReceipt{
 		Route:       route,
 		Status:      status,

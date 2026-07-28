@@ -275,10 +275,7 @@ func (req verificationAttemptRequest) summary(phase runevent.VerificationPhase, 
 	if req.WorkItem != "" {
 		target = fmt.Sprintf("Task %s", req.WorkItem)
 	}
-	identity := fmt.Sprintf("attempt %d", req.Attempt)
-	if req.Retry > 0 {
-		identity = fmt.Sprintf("attempt %d retry %d", req.Attempt, req.Retry)
-	}
+	identity := req.identity()
 	switch phase {
 	case runevent.VerificationPhaseWaiting:
 		return fmt.Sprintf("Verification %s for %s waiting for %s capacity.", identity, target, req.Mode)
@@ -293,6 +290,13 @@ func (req verificationAttemptRequest) summary(phase runevent.VerificationPhase, 
 	default:
 		return fmt.Sprintf("Verification %s for %s phase %s.", identity, target, phase)
 	}
+}
+
+func (req verificationAttemptRequest) identity() string {
+	if req.Retry > 0 {
+		return fmt.Sprintf("attempt %d retry %d", req.Attempt, req.Retry)
+	}
+	return fmt.Sprintf("attempt %d", req.Attempt)
 }
 
 func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificationAttemptRequest) (verificationAttemptOutcome, error) {
@@ -326,11 +330,7 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 				if err := req.publishFailedCommand(ctx, command, commandErr, temporary); err != nil {
 					return verificationAttemptOutcome{}, err
 				}
-				identity := fmt.Sprintf("attempt %d", req.Attempt)
-				if req.Retry > 0 {
-					identity = fmt.Sprintf("attempt %d retry %d", req.Attempt, req.Retry)
-				}
-				fmt.Fprintf(engine.deps.Progress, "Verification failed (%s); diagnostics: %s\n", identity, commandErr.OutputPath)
+				fmt.Fprintf(engine.deps.Progress, "Verification failed (%s); diagnostics: %s\n", req.identity(), commandErr.OutputPath)
 				return verificationAttemptOutcome{
 					Failure:          fmt.Sprintf("verification failed: %v", err),
 					CommandFailure:   commandErr,
@@ -349,7 +349,7 @@ func (engine *Engine) runVerificationAttempt(ctx context.Context, req verificati
 	if err := req.publishVerdict(ctx, runevent.VerificationVerdictPassed, "", "", false); err != nil {
 		return verificationAttemptOutcome{}, err
 	}
-	fmt.Fprintf(engine.deps.Progress, "Verification passed (attempt %d).\n", req.Attempt)
+	fmt.Fprintf(engine.deps.Progress, "Verification passed (%s).\n", req.identity())
 	return verificationAttemptOutcome{}, nil
 }
 
@@ -393,10 +393,7 @@ func (req verificationAttemptRequest) publishVerdict(ctx context.Context, verdic
 		payload["retry_available"] = req.TemporaryRetryAvailable
 		payload["reason"] = string(runevent.VerificationReasonTemporaryFailure)
 	}
-	identity := fmt.Sprintf("attempt %d", req.Attempt)
-	if req.Retry > 0 {
-		identity = fmt.Sprintf("attempt %d retry %d", req.Attempt, req.Retry)
-	}
+	identity := req.identity()
 	summary := fmt.Sprintf("Verification %s verdict: %s", identity, verdict)
 	if req.WorkItem != "" {
 		summary = fmt.Sprintf("Verification %s for Task %s verdict: %s", identity, req.WorkItem, verdict)

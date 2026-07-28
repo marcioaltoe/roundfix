@@ -731,6 +731,54 @@ func TestEvidenceHierarchyPrecedence(t *testing.T) {
 	}
 }
 
+func TestEvidenceReviewingSkipsReviewAndThreadRequests(t *testing.T) {
+	tests := []struct {
+		name      string
+		checkRuns []CheckRun
+		statuses  []CommitStatus
+		wantKind  reviewsource.EvidenceKind
+	}{
+		{
+			name: "pending check run",
+			checkRuns: []CheckRun{
+				{DatabaseID: 43, Name: "CodeRabbit", AppName: "CodeRabbit", HeadSHA: "abc123", Status: "in_progress"},
+			},
+			wantKind: reviewsource.EvidenceKindCheckRun,
+		},
+		{
+			name: "pending commit status",
+			statuses: []CommitStatus{
+				{Context: "coderabbitai", State: "pending"},
+			},
+			wantKind: reviewsource.EvidenceKindCommitStatus,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reviewCalls := 0
+			threadCalls := 0
+			client := Client{GitHub: &fakeGitHubClient{
+				checkRuns:   tt.checkRuns,
+				statuses:    tt.statuses,
+				reviewCalls: &reviewCalls,
+				threadCalls: &threadCalls,
+			}}
+
+			evidence, err := client.Evidence(context.Background(), evidenceRequest())
+			if err != nil {
+				t.Fatalf("classify reviewing Evidence: %v", err)
+			}
+			if evidence.State != reviewsource.EvidenceReviewing || evidence.Kind != tt.wantKind {
+				t.Fatalf("reviewing Evidence = %#v, want kind %q", evidence, tt.wantKind)
+			}
+			if reviewCalls != 0 || threadCalls != 0 {
+				t.Fatalf("reviewing Evidence fetched reviews=%d threads=%d, want 0 calls", reviewCalls, threadCalls)
+			}
+		})
+	}
+}
+
 func TestEvidenceExpectedHeadRejectsUnboundAndStaleSignals(t *testing.T) {
 	client := Client{GitHub: &fakeGitHubClient{
 		checkRuns: []CheckRun{
@@ -1035,6 +1083,8 @@ type fakeGitHubClient struct {
 	replies           []reviewThreadReplyCall
 	prComments        []pullRequestCommentCall
 	commentRepository string
+	reviewCalls       *int
+	threadCalls       *int
 }
 
 func (client fakeGitHubClient) ReviewComments(context.Context, string, string) ([]ReviewComment, error) {
@@ -1042,6 +1092,9 @@ func (client fakeGitHubClient) ReviewComments(context.Context, string, string) (
 }
 
 func (client fakeGitHubClient) ReviewThreads(context.Context, string, string) ([]ReviewThread, error) {
+	if client.threadCalls != nil {
+		(*client.threadCalls)++
+	}
 	return client.threads, nil
 }
 
@@ -1054,6 +1107,9 @@ func (client fakeGitHubClient) CommitStatuses(context.Context, string, string) (
 }
 
 func (client fakeGitHubClient) PullRequestReviews(context.Context, string, string) ([]PullRequestReview, error) {
+	if client.reviewCalls != nil {
+		(*client.reviewCalls)++
+	}
 	return client.reviews, nil
 }
 

@@ -177,7 +177,7 @@ func TestDesktopNotifierNativeReceipts(t *testing.T) {
 		name       string
 		lookupErr  error
 		runErr     error
-		wantStatus string
+		wantStatus Status
 		wantCalls  int
 	}{
 		{
@@ -352,7 +352,7 @@ func (sentinelNotifier) Notify(context.Context, Outcome) (NotificationReceipt, e
 	return NotificationReceipt{Route: RouteNative, Status: StatusSent, CompletedAt: time.Now().UTC()}, nil
 }
 
-func assertReceipt(t *testing.T, receipt NotificationReceipt, route string, status string, notBefore time.Time) {
+func assertReceipt(t *testing.T, receipt NotificationReceipt, route Route, status Status, notBefore time.Time) {
 	t.Helper()
 	if receipt.Route != route || receipt.Status != status {
 		t.Fatalf("receipt = %#v, want route %q status %q", receipt, route, status)

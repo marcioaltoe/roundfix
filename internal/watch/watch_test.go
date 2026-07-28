@@ -827,8 +827,8 @@ func TestRunStopRequestDuringTransientRetryStopsBeforeNextCheck(t *testing.T) {
 	if result.Outcome != store.StateStopped || result.Rounds != 1 {
 		t.Fatalf("expected Stopped after one fetched Round, got %#v", result)
 	}
-	if stops.calls != 5 || len(source.requests) != 2 {
-		t.Fatalf("expected Stop Request after one retry sleep, got stop=%d evidence=%d", stops.calls, len(source.requests))
+	if !stops.observed || len(source.requests) != 2 {
+		t.Fatalf("expected Stop Request after one retry sleep, got observed=%v evidence=%d", stops.observed, len(source.requests))
 	}
 	if fetcher.calls != 1 || resolver.calls != 0 {
 		t.Fatalf("retry Stop Request must block later work, got fetch=%d resolve=%d", fetcher.calls, resolver.calls)
@@ -1449,6 +1449,8 @@ type fakeReviewEvidenceSource struct {
 	requests []ReviewEvidenceRequest
 }
 
+// Evidence returns queued results in order and repeats the final result for
+// every later call, so steady-state phases need only one trailing entry.
 func (source *fakeReviewEvidenceSource) Evidence(_ context.Context, req ReviewEvidenceRequest) (reviewsource.Evidence, error) {
 	source.requests = append(source.requests, req)
 	if len(source.results) > 0 {
@@ -1524,6 +1526,7 @@ type fakeStopRequestSource struct {
 	err       error
 	errAtCall int
 	requested bool
+	observed  bool
 	calls     int
 }
 
@@ -1531,6 +1534,9 @@ func (source *fakeStopRequestSource) StopRequested(context.Context, string) (boo
 	source.calls++
 	if source.err != nil && source.calls == source.errAtCall {
 		return false, source.err
+	}
+	if source.requested {
+		source.observed = true
 	}
 	return source.requested, nil
 }

@@ -137,8 +137,8 @@ type RunEvent struct {
 // bodies.
 type ReviewStatusPayload struct {
 	Phase           string    `json:"phase,omitempty"`
-	StartedAt       time.Time `json:"started_at,omitempty"`
-	Deadline        time.Time `json:"deadline,omitempty"`
+	StartedAt       time.Time `json:"started_at,omitzero"`
+	Deadline        time.Time `json:"deadline,omitzero"`
 	EvidenceState   string    `json:"evidence_state,omitempty"`
 	EvidenceKind    string    `json:"evidence_kind,omitempty"`
 	RetryStatus     string    `json:"retry_status,omitempty"`
