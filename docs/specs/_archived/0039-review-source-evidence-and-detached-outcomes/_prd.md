@@ -1,7 +1,10 @@
 ---
 spec: 0039-review-source-evidence-and-detached-outcomes
-status: active
+status: archived
 created: 2026-07-17
+archived: 2026-07-28
+qa_override: true
+release: https://github.com/marcioaltoe/roundfix/pull/40
 surfaces: [backend, cli, docs]
 ---
 

@@ -1,7 +1,7 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-27
-updated_at: 2026-07-27
+updated_at: 2026-07-28
 ---
 
 # Agent Selection — standardize on the official Claude adapter and stop reading `[...]` as reasoning effort (2026-07-27)
@@ -226,3 +226,14 @@ rely on the command name alone: `@zed-industries/claude-agent-acp@0.23.1` and
   capability gap from a parsing defect.
 - Roundfix's error message listing advertised models and efforts is what made
   the bracket collision visible; keep that detail in selection failures.
+
+## Addendum — 2026-07-28 — Routed to Spec 0052
+
+Implementation is owned by
+[Spec 0052 — Claude adapter standardization](../specs/0052-claude-adapter-standardization/_prd.md)
+and
+[ADR-0079](../adr/0079-independent-reasoning-controls-make-model-identifiers-opaque.md).
+The maintainer authorized the Skill-pair edit and its five derived digest pins
+in that Spec's Tooling authority entry, pinned the Claude adapter at `0.63.0`
+and Codex at `1.1.5`, and changed the built-in `frontend` Preferred Selection
+to `claude / opus / xhigh`.

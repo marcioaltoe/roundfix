@@ -1,7 +1,7 @@
 {
   "schemaVersion": "setup-context-driven/module-v3",
   "id": "context-workflow",
-  "version": 6,
+  "version": 7,
   "kind": "workflow",
   "title": "CONTEXT-driven workflow",
   "dependsOn": [
@@ -218,7 +218,7 @@
   "supportingGuides": [
     {
       "id": "guide.docs-layout",
-      "version": 5,
+      "version": 6,
       "path": "docs/agents/docs-layout.md",
       "template": "template.guide.docs-layout",
       "rules": [
@@ -255,7 +255,7 @@
     },
     {
       "id": "rule.context.docs-layout",
-      "version": 5,
+      "version": 6,
       "coverage": [
         "coverage.context-workflow"
       ],
@@ -278,7 +278,12 @@
         {
           "id": "clause.context.docs-one-job-per-directory",
           "enforcement": "mandatory",
-          "guidance": "Give each documentation directory one job: `docs/_inbox/` for raw notes, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers, and `docs/user-guide/` for human documentation. Preserve repository-authored extensions outside setup markers."
+          "guidance": "Give each documentation directory one job: `docs/_inbox/` for raw notes, `docs/adr/` for decisions, `docs/agents/` for agent guidance, `docs/design/` for design artifacts, `docs/findings/` for dated investigations, `docs/handoffs/` for session continuity, `docs/references/` for external pointers and durable project reference documents, and `docs/user-guide/` for human documentation. Preserve repository-authored extensions outside setup markers."
+        },
+        {
+          "id": "clause.context.docs-upstream-flow",
+          "enforcement": "mandatory",
+          "guidance": "Durable knowledge flows upstream only: the project glossary (`CONTEXT.md`) and the agent guides reference accepted ADRs and never reference `docs/specs/` or `docs/findings/` content. Findings are dated reports that become Specs, not reference material; a document meant as durable project reference belongs in `docs/references/`."
         },
         {
           "id": "clause.context.findings-01-frontmatter",

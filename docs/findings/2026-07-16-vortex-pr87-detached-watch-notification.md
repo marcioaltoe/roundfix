@@ -1,7 +1,7 @@
 ---
 status: done
 created_at: 2026-07-16
-updated_at: 2026-07-27
+updated_at: 2026-07-28
 ---
 
 # Detached watch — terminal failure notification lacked actionable context (2026-07-16)
@@ -161,7 +161,7 @@ Environment:
   owns finding 4: registered Agent Session cleanup, primary-before-secondary
   diagnostics, and winner-only terminal completion.
 - Spec
-  [0039 Review Source evidence and Detached Run outcomes](../specs/0039-review-source-evidence-and-detached-outcomes/_prd.md)
+  [0039 Review Source evidence and Detached Run outcomes](../specs/_archived/0039-review-source-evidence-and-detached-outcomes/_prd.md)
   owns findings 1–3 and 5–7: the Supervisor monitor contract, actionable
   notification context and receipts, transient retry, unknown issue counts,
   approval evidence, and artifact-only evidence inheritance.
@@ -176,7 +176,7 @@ context are not implemented yet.
 Finding 4 is routed through
 [Spec 0037](../specs/_archived/0037-terminal-outcome-integrity/_prd.md);
 findings 1–3 and 5–7 are routed through
-[Spec 0039](../specs/0039-review-source-evidence-and-detached-outcomes/_prd.md)
+[Spec 0039](../specs/_archived/0039-review-source-evidence-and-detached-outcomes/_prd.md)
 and [ADR-0054](../adr/0054-review-source-evidence-determines-review-outcomes.md).
 The `done` finding status records that routing, not a QA, archive, or release
 verdict. Supported monitoring, Evidence, retry, unknown-count, notification
@@ -184,3 +184,15 @@ receipt, and artifact-inheritance behavior now lives in the
 [command reference](../user-guide/commands.md#watch) and
 [operational guide](../user-guide/usage.md#one-shot-watch-until-clean); Spec
 Task and QA artifacts remain the implementation authority.
+
+## Addendum — 2026-07-28 — Spec 0039 implementation merged
+
+Spec 0039's Task Graph completed and merged to `main` through Pull Request #40
+(squash commit `ed4abec`). Findings 1–3 and 5–7 are implemented: typed Review
+Source Evidence, Review Skipped, bounded transient retry, unknown Review Issue
+counts, current-head approval evidence, artifact-only inheritance, notification
+receipts, and the Supervisor monitor command in the Detached startup report.
+Finding 4 shipped earlier with archived Spec 0037. Spec 0039 itself remains
+unarchived only because its QA matrix contains Pull Request journeys the gate
+cannot reach from a Run Worktree — see
+[2026-07-28 — QA gate cannot reach Pull Request journeys](2026-07-28-qa-gate-cannot-reach-pull-request-journeys.md).

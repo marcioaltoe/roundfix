@@ -1,7 +1,7 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-27
-updated_at: 2026-07-27
+updated_at: 2026-07-28
 ---
 
 # Build hygiene — `go build ./cmd/roundfix` drops a 20 MiB binary at the repository root, and nothing ignores it (2026-07-27)
@@ -60,3 +60,9 @@ recurrence risk is still open.
 - The gate also caught the supervisor's own over-reach on the repair commit,
   which is the behavior you want from an authorization audit that is not
   deferential to whoever is driving.
+
+## Addendum — 2026-07-28 — Routed to Spec 0054
+
+The maintainer-authorized `/roundfix` ignore entry and the Daemon guard that
+refuses to stage executable files are owned by
+[Spec 0054 — Tooling task and verification hygiene](../specs/0054-tooling-task-and-verification-hygiene/_prd.md).

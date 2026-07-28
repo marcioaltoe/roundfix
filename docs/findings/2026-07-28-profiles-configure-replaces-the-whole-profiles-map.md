@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-28
 updated_at: 2026-07-28
 ---
@@ -98,3 +98,8 @@ non-zero exit or an explicit refusal channel.
 - The proof-before-write behavior is the reason this command is still the right
   surface: it caught an invalid Agent Selection before it could fail a Run. Keep
   that; the defect is in what it writes, not in what it validates.
+
+## Addendum — 2026-07-28 — Routed to Spec 0056
+
+All four suggested resolutions are owned by
+[Spec 0056 — Profiles configure merge semantics](../specs/0056-profiles-configure-merge-semantics/_prd.md).

@@ -1,7 +1,7 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-26
-updated_at: 2026-07-26
+updated_at: 2026-07-28
 ---
 
 # Agent Selection — the configured Claude ACP adapter is deprecated and advertises no capability evidence (2026-07-26)
@@ -299,3 +299,18 @@ check.
   constants, a lineage probe, a version floor, typed errors carrying install
   commands, and a `roundfix setup` migration path. Finding 2 is the same
   problem, and the Codex work is the template.
+
+## Addendum — 2026-07-28 — Continued by the standardization finding
+
+The local machine migration proposed here was executed on 2026-07-27:
+`@agentclientprotocol/claude-agent-acp@0.63.0` installed globally and
+`~/.acpx/config.json` repointed from `claude-code-acp` to `claude-agent-acp`.
+The empirical verification, the complete list of Roundfix code sites still
+naming the deprecated lineage, and one new blocking defect (`opus[1m]` parsed
+as a reasoning-effort encoding) are recorded in
+[2026-07-27 — Claude adapter standardization](2026-07-27-claude-adapter-standardization.md),
+whose implementation instructions supersede this report's. Two premises here no
+longer hold for the official adapter: `claude-opus-5` is not advertised (the
+canonical identifier is `opus`), and the "no parser change" claim predates the
+bracket collision. Both findings route to
+[Spec 0052 — Claude adapter standardization](../specs/0052-claude-adapter-standardization/_prd.md).

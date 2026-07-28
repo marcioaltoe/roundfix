@@ -1,7 +1,7 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-26
-updated_at: 2026-07-26
+updated_at: 2026-07-28
 ---
 
 # Context-Driven Baseline — profile refresh applied without semantic retention accounting (2026-07-26)
@@ -281,3 +281,10 @@ it during Apply.
 - Given successful Apply with repository Verification and idempotence not run,
   the result reports verified postimages without claiming the Baseline update
   complete.
+
+## Addendum — 2026-07-28 — Routed to Spec 0057
+
+All seven findings are owned by
+[Spec 0057 — Baseline capability evidence and retention](../specs/0057-baseline-capability-evidence-and-retention/_prd.md),
+together with the corroborating vortex report. Specs 0049–0051 covered
+Preservation idempotency and Doctor hardening only.

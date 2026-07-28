@@ -55,6 +55,7 @@
         "clause.context.adr-02-active-status",
         "clause.context.adr-03-legacy-compatibility",
         "clause.context.docs-one-job-per-directory",
+        "clause.context.docs-upstream-flow",
         "clause.context.findings-01-frontmatter",
         "clause.context.findings-02-pending",
         "clause.context.findings-03-partial",
@@ -63,6 +64,7 @@
         "clause.context.findings-06-append-evidence",
         "clause.context.findings-07-update-timestamp",
         "clause.spec.keep-artifacts-in-spec-folder",
+        "clause.spec.specs-are-downstream-artifacts",
         "clause.context.read-domain-contract",
         "clause.domain.canonical-language",
         "clause.domain.layout-decision",
@@ -104,9 +106,9 @@
         "clause.bun.prohibit-other-package-managers",
         "clause.bun.block-warnings-when-profile-treats-them-as-errors"
       ],
-      "entryCount": 96,
-      "corpusDigest": "f4bb26009c1866033782d7492f1d041a3986b3058abc438e2bc580696d90c976",
-      "manifestDigest": "e9a9e91f8dbbea8dc416a03fe813b9c370a2e012118f548b18f1c6a13b6b7662"
+      "entryCount": 98,
+      "corpusDigest": "2e51ddb4d198d5d67ba96f6d10bd632108dea9b82f5cfe02d109e02d299f9d91",
+      "manifestDigest": "fd84c23318a1c5f01848dc64c2d0f9dc8f8f253ffa076794a9da007484607deb"
     }
   ]
 }

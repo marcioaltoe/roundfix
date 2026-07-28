@@ -1,7 +1,7 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-25
-updated_at: 2026-07-25
+updated_at: 2026-07-28
 ---
 
 # npm publishing — token authentication and registry state can produce a partial release (2026-07-25)
@@ -91,3 +91,10 @@ A future Spec must define the npm preflight contract, OIDC migration,
 credential rollback window, package-by-package trusted-publisher setup, and
 real release validation. This finding does not authorize renaming packages,
 reusing unpublished versions, or changing the current `v0.0.1` tag.
+
+## Addendum — 2026-07-28 — Routed to Spec 0058
+
+Owned by
+[Spec 0058 — npm Trusted Publishing and release preflight](../specs/0058-npm-trusted-publishing-and-release-preflight/_prd.md);
+the maintainer expressly authorized the `.github/workflows/release.yml`
+mutation in that Spec's Tooling authority entry.

@@ -1,7 +1,7 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-25
-updated_at: 2026-07-25
+updated_at: 2026-07-28
 ---
 
 # Spec workflow — adopted source documents must travel with their owning Spec (2026-07-25)
@@ -115,3 +115,12 @@ This finding proposes a new Spec-authoring workflow and remains `pending` until
 an implementation Spec defines its source inventory, ownership rules,
 reference-index schema, migration boundary, validation errors, skill changes,
 and archive behavior.
+
+## Addendum — 2026-07-28 — Routed to Spec 0060
+
+Owned by
+[Spec 0060 — Spec-owned reference lifecycle](../specs/0060-spec-owned-reference-lifecycle/_prd.md),
+whose PRD resolves this report's open decisions: one primary owning Spec,
+new promotions only, and triaged inbox source material may move directly.
+The authorial-skill mutations were expressly authorized in that Spec's
+Tooling authority entry.

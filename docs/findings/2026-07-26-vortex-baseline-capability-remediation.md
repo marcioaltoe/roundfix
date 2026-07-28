@@ -1,7 +1,7 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-26
-updated_at: 2026-07-26
+updated_at: 2026-07-28
 ---
 
 # Context-Driven Baseline — capability divergences do not carry enough evidence to be remediated (2026-07-26)
@@ -295,3 +295,9 @@ spurious warnings.
 - An idempotent re-plan immediately after a verified apply reports zero file changes and
   zero warnings; a nested carrier warns only when the Setup Manifest does not claim it or
   its managed markers fail verification.
+
+## Addendum — 2026-07-28 — Routed to Spec 0057
+
+All seven findings, including the symlink-discovery corroboration and the
+resolved `rg` classification, are owned by
+[Spec 0057 — Baseline capability evidence and retention](../specs/0057-baseline-capability-evidence-and-retention/_prd.md).
