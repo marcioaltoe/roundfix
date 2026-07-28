@@ -3937,7 +3937,7 @@ func TestRunOperationalCommandAcceptsMVPFlags(t *testing.T) {
 				assertRunCount(t, filepath.Join(os.Getenv("HOME"), ".roundfix", "roundfix.db"), 1)
 				assertNoAgentLogs(t, repoDir)
 			} else if tt.name == "watch" {
-				if !strings.Contains(stderr.String(), "Review Source status: settled") {
+				if !strings.Contains(stderr.String(), "Review Source status: verified") {
 					t.Fatalf("expected fake Review Source status output, got %q", stderr.String())
 				}
 				if !strings.Contains(stderr.String(), "Fetched Round 001 with 1 Review Issue") {
@@ -5058,12 +5058,12 @@ func TestRunResolvePushRunsFromUserCheckoutWithoutRunWorktree(t *testing.T) {
 func TestRunWatchReusesUserCheckoutAcrossRoundsWithoutRunBranch(t *testing.T) {
 	homeDir, repoDir := withReviewGitWorkspace(t)
 	withRealReviewPreflight(t, repoDir, true)
-	withWatchStatus(t, (&fakeWatchStatus{
-		statuses: []reviewsource.WatchStatus{
-			{State: watch.StatusSettled},
-			{State: watch.StatusSettled},
-		},
-	}).Status)
+	withWatchEvidence(t, (&fakeWatchEvidence{evidence: []reviewsource.Evidence{
+		reviewedEvidence("abc123"),
+		reviewedEvidence("abc123"),
+		reviewedEvidence("abc123"),
+		verifiedEvidence("abc123"),
+	}}).Evidence)
 	fetchCalls := 0
 	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
 		fetchCalls++
@@ -5082,8 +5082,6 @@ func TestRunWatchReusesUserCheckoutAcrossRoundsWithoutRunBranch(t *testing.T) {
 			},
 		}, nil
 	})
-	headCheck := &fakeWatchHeadCheck{states: []watch.HeadCheckState{watch.CheckFailure, watch.CheckSuccess}}
-	withWatchHeadCheck(t, headCheck.Check)
 	source := &fakeSourceResolver{}
 	withSourceResolver(t, source)
 	pusher := &checkingPusher{}
@@ -5138,12 +5136,10 @@ func TestRunWatchPrintsBudgetExceededStdoutReport(t *testing.T) {
 	withSuccessfulPreflight(t, repoDir)
 	clock := &fakeWatchClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
 	withWatchTiming(t, clock, &fakeWatchSleeper{clock: clock})
-	withWatchStatus(t, (&fakeWatchStatus{
-		statuses: []reviewsource.WatchStatus{
-			{State: watch.StatusPending},
-			{State: watch.StatusSettled},
-		},
-	}).Status)
+	withWatchEvidence(t, (&fakeWatchEvidence{evidence: []reviewsource.Evidence{
+		pendingEvidence("abc123"),
+		reviewedEvidence("abc123"),
+	}}).Evidence)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
 watch:
   poll_interval: 1s
@@ -5338,13 +5334,11 @@ func TestRunWatchTimeoutOffersManualReviewWithoutFetching(t *testing.T) {
 		t.Fatal("watch timeout must not fetch Review Source issues")
 		return nil, nil
 	})
-	withWatchStatus(t, (&fakeWatchStatus{
-		statuses: []reviewsource.WatchStatus{
-			{State: watch.StatusPending},
-			{State: watch.StatusPending},
-			{State: watch.StatusPending},
-		},
-	}).Status)
+	withWatchEvidence(t, (&fakeWatchEvidence{evidence: []reviewsource.Evidence{
+		pendingEvidence("abc123"),
+		pendingEvidence("abc123"),
+		pendingEvidence("abc123"),
+	}}).Evidence)
 	mustWrite(t, filepath.Join(repoDir, ".roundfixrc.yml"), `
 watch:
   poll_interval: 1s
@@ -5392,9 +5386,10 @@ watch:
   poll_interval: 1ns
   check_grace_period: 1ns
 `)
-	withWatchHeadCheck(t, (&fakeWatchHeadCheck{
-		states: []watch.HeadCheckState{watch.CheckMissing},
-	}).Check)
+	withWatchEvidence(t, (&fakeWatchEvidence{evidence: []reviewsource.Evidence{
+		reviewedEvidence("abc123"),
+		pendingEvidence("abc123"),
+	}}).Evidence)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -5479,12 +5474,11 @@ resolve:
 			}, nil
 		}
 	})
-	withWatchStatus(t, (&fakeWatchStatus{
-		statuses: []reviewsource.WatchStatus{
-			{State: watch.StatusSettled},
-			{State: watch.StatusSettled},
-		},
-	}).Status)
+	withWatchEvidence(t, (&fakeWatchEvidence{evidence: []reviewsource.Evidence{
+		reviewedEvidence("abc123"),
+		reviewedEvidence("abc123"),
+		verifiedEvidence("abc123"),
+	}}).Evidence)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
@@ -5509,7 +5503,7 @@ func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	statusCalls := 0
-	withWatchStatus(t, func(ctx context.Context, _ reviewsource.WatchStatusRequest) (reviewsource.WatchStatus, error) {
+	withWatchEvidence(t, func(ctx context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
 		statusCalls++
 		if statusCalls > 1 {
 			t.Fatalf("Stop Request must prevent another Review Source status call")
@@ -5533,7 +5527,7 @@ func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
 		if err := runStore.RequestStop(ctx, active.ID); err != nil {
 			t.Fatalf("request Stop for watch Run: %v", err)
 		}
-		return reviewsource.WatchStatus{State: watch.StatusPending}, nil
+		return pendingEvidence(req.ExpectedHeadSHA), nil
 	})
 	withFetchReviewItemsFunc(t, func(context.Context, reviewsource.FetchRequest) ([]reviewsource.ReviewItem, error) {
 		t.Fatal("Stop Request before Agent must not fetch Review Source issues")
@@ -9442,12 +9436,9 @@ func withSuccessfulPreflight(t *testing.T, repoDir string) {
 	withBranchIntegrity(t, nil, nil)
 	clock := &fakeWatchClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
 	withWatchTiming(t, clock, &fakeWatchSleeper{clock: clock})
-	withWatchStatus(t, (&fakeWatchStatus{
-		statuses: []reviewsource.WatchStatus{{State: watch.StatusSettled}},
-	}).Status)
-	withWatchHeadCheck(t, (&fakeWatchHeadCheck{
-		states: []watch.HeadCheckState{watch.CheckSuccess},
-	}).Check)
+	withWatchEvidence(t, (&fakeWatchEvidence{
+		evidence: []reviewsource.Evidence{verifiedEvidence("abc123")},
+	}).Evidence)
 	withWatchHeadSHA(t, func(context.Context, string) (string, error) {
 		return "abc123", nil
 	})
@@ -9855,21 +9846,12 @@ func withFakeWorktree(t *testing.T) {
 	})
 }
 
-func withWatchStatus(t *testing.T, fn func(context.Context, reviewsource.WatchStatusRequest) (reviewsource.WatchStatus, error)) {
+func withWatchEvidence(t *testing.T, fn func(context.Context, reviewsource.EvidenceRequest) (reviewsource.Evidence, error)) {
 	t.Helper()
-	old := watchReviewStatus
-	watchReviewStatus = fn
+	old := watchReviewEvidence
+	watchReviewEvidence = fn
 	t.Cleanup(func() {
-		watchReviewStatus = old
-	})
-}
-
-func withWatchHeadCheck(t *testing.T, fn func(context.Context, reviewsource.HeadCheckRequest) (watch.HeadCheckState, error)) {
-	t.Helper()
-	old := watchHeadCheck
-	watchHeadCheck = fn
-	t.Cleanup(func() {
-		watchHeadCheck = old
+		watchReviewEvidence = old
 	})
 }
 
@@ -10423,48 +10405,55 @@ func (pusher *checkingPusher) Push(_ context.Context, req daemon.PushRequest) er
 	return nil
 }
 
-type fakeWatchStatus struct {
+type fakeWatchEvidence struct {
 	err      error
 	calls    int
-	statuses []reviewsource.WatchStatus
+	evidence []reviewsource.Evidence
 }
 
-func (source *fakeWatchStatus) Status(context.Context, reviewsource.WatchStatusRequest) (reviewsource.WatchStatus, error) {
+func (source *fakeWatchEvidence) Evidence(context.Context, reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
 	source.calls++
 	if source.err != nil {
-		return reviewsource.WatchStatus{}, source.err
+		return reviewsource.Evidence{}, source.err
 	}
-	if len(source.statuses) == 0 {
-		return reviewsource.WatchStatus{State: watch.StatusSettled}, nil
+	if len(source.evidence) == 0 {
+		return verifiedEvidence("abc123"), nil
 	}
-	status := source.statuses[0]
-	if len(source.statuses) > 1 {
-		source.statuses = source.statuses[1:]
+	evidence := source.evidence[0]
+	if len(source.evidence) > 1 {
+		source.evidence = source.evidence[1:]
 	}
-	return status, nil
+	return evidence, nil
 }
 
-type fakeWatchHeadCheck struct {
-	err      error
-	calls    int
-	states   []watch.HeadCheckState
-	headSHAs []string
+func pendingEvidence(headSHA string) reviewsource.Evidence {
+	return reviewsource.Evidence{
+		State:           reviewsource.EvidencePending,
+		Kind:            reviewsource.EvidenceKindNone,
+		ExpectedHeadSHA: headSHA,
+	}
 }
 
-func (source *fakeWatchHeadCheck) Check(_ context.Context, req reviewsource.HeadCheckRequest) (watch.HeadCheckState, error) {
-	source.calls++
-	source.headSHAs = append(source.headSHAs, req.HeadSHA)
-	if source.err != nil {
-		return "", source.err
+func reviewedEvidence(headSHA string) reviewsource.Evidence {
+	return reviewsource.Evidence{
+		State:           reviewsource.EvidenceReviewed,
+		Kind:            reviewsource.EvidenceKindCheckRun,
+		Identity:        "check_run:42",
+		ExpectedHeadSHA: headSHA,
+		ObservedHeadSHA: headSHA,
+		Conclusion:      "failure",
 	}
-	if len(source.states) == 0 {
-		return watch.CheckSuccess, nil
+}
+
+func verifiedEvidence(headSHA string) reviewsource.Evidence {
+	return reviewsource.Evidence{
+		State:           reviewsource.EvidenceVerified,
+		Kind:            reviewsource.EvidenceKindCheckRun,
+		Identity:        "check_run:42",
+		ExpectedHeadSHA: headSHA,
+		ObservedHeadSHA: headSHA,
+		Conclusion:      "success",
 	}
-	state := source.states[0]
-	if len(source.states) > 1 {
-		source.states = source.states[1:]
-	}
-	return state, nil
 }
 
 type fakeWatchClock struct {
@@ -11230,7 +11219,7 @@ func TestRunWatchNoAgentConsoleSuppressesAgentDisplayOnly(t *testing.T) {
 	}
 	for _, want := range []string{
 		"Watch Run:",
-		"Review Source status: settled",
+		"Review Source status: verified",
 		"Fetched Round 001 with 1 Review Issue",
 		"Batch: 001/001 (1 Review Issue(s))",
 		"Verification passed (attempt 1).",
@@ -12890,7 +12879,7 @@ func TestAttachRendersWatchDaemonEventsInTimeline(t *testing.T) {
 		t.Fatalf("expected clean attach exit, got %d stderr=%q", attachCode, stderr.String())
 	}
 	for _, expected := range []string{
-		"Review Source status: settled",
+		"Review Source Evidence: verified (check_run)",
 		"Verification attempt 1 for Batch 001 verdict: passed",
 		"Batch commit created:",
 		"Final Push completed:",

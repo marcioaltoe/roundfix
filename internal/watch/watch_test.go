@@ -2,13 +2,70 @@ package watch
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
 	"time"
 
+	"roundfix/internal/reviewsource"
+	"roundfix/internal/runevent"
 	"roundfix/internal/store"
 )
+
+func TestRunReviewEvidenceSharedByPreFetchAndMergeReady(t *testing.T) {
+	clock := &fakeClock{now: time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC)}
+	evidence := reviewsource.Evidence{
+		State:           reviewsource.EvidenceVerified,
+		Kind:            reviewsource.EvidenceKindReviewApproval,
+		Identity:        "review:9001",
+		ExpectedHeadSHA: "abc123",
+		ObservedHeadSHA: "abc123",
+		Conclusion:      "approved",
+		Detail:          "CodeRabbit approved the expected head",
+	}
+	source := &fakeReviewEvidenceSource{evidence: evidence}
+	sink := &recordingEventSink{}
+
+	result, err := Run(context.Background(), validRequest(), Dependencies{
+		ReviewEvidence: source,
+		Fetcher:        &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 0}}},
+		Resolver:       &fakeResolver{},
+		Clock:          clock,
+		Sleeper:        &fakeSleeper{clock: clock},
+		Sink:           sink,
+	})
+	if err != nil {
+		t.Fatalf("watch run: %v", err)
+	}
+	if result.Outcome != store.StateClean {
+		t.Fatalf("outcome = %q, want Clean", result.Outcome)
+	}
+	if len(source.requests) != 2 {
+		t.Fatalf("evidence calls = %d, want pre-fetch and Merge-Ready calls", len(source.requests))
+	}
+	if source.requests[0] != source.requests[1] {
+		t.Fatalf("watch phases received different requests: %#v", source.requests)
+	}
+
+	reviewEvents := sink.eventsOfKind(runevent.KindDaemonReviewStatus)
+	if len(reviewEvents) != 1 {
+		t.Fatalf("changed evidence events = %d, want one event and no unchanged duplicate", len(reviewEvents))
+	}
+	var payload runevent.ReviewStatusPayload
+	if err := json.Unmarshal(reviewEvents[0].Payload, &payload); err != nil {
+		t.Fatalf("decode review status event: %v", err)
+	}
+	if payload.State != string(evidence.State) ||
+		payload.Kind != string(evidence.Kind) ||
+		payload.Identity != evidence.Identity ||
+		payload.ExpectedHeadSHA != evidence.ExpectedHeadSHA ||
+		payload.ObservedHeadSHA != evidence.ObservedHeadSHA ||
+		payload.Conclusion != evidence.Conclusion ||
+		payload.Detail != evidence.Detail {
+		t.Fatalf("review status payload = %#v, want evidence %#v", payload, evidence)
+	}
+}
 
 func TestRunWaitsFetchesResolvesToClean(t *testing.T) {
 	clock := &fakeClock{now: time.Date(2026, 6, 9, 12, 0, 0, 0, time.UTC)}
@@ -860,6 +917,36 @@ func (source *fakeStatusSource) Status(context.Context, StatusRequest) (Status, 
 		source.statuses = source.statuses[1:]
 	}
 	return status, nil
+}
+
+type fakeReviewEvidenceSource struct {
+	evidence reviewsource.Evidence
+	err      error
+	requests []ReviewEvidenceRequest
+}
+
+func (source *fakeReviewEvidenceSource) Evidence(_ context.Context, req ReviewEvidenceRequest) (reviewsource.Evidence, error) {
+	source.requests = append(source.requests, req)
+	return source.evidence, source.err
+}
+
+type recordingEventSink struct {
+	events []runevent.RunEvent
+}
+
+func (sink *recordingEventSink) Publish(_ context.Context, event runevent.RunEvent) error {
+	sink.events = append(sink.events, event)
+	return nil
+}
+
+func (sink *recordingEventSink) eventsOfKind(kind runevent.Kind) []runevent.RunEvent {
+	var events []runevent.RunEvent
+	for _, event := range sink.events {
+		if event.Kind == kind {
+			events = append(events, event)
+		}
+	}
+	return events
 }
 
 type fakeStopRequestSource struct {

@@ -117,6 +117,20 @@ type RunEvent struct {
 	Payload     json.RawMessage
 }
 
+// ReviewStatusPayload is the stable daemon.review_status payload. It carries
+// the bounded Review Source Evidence observation without provider response
+// bodies.
+type ReviewStatusPayload struct {
+	State           string `json:"state"`
+	Kind            string `json:"kind"`
+	Identity        string `json:"identity"`
+	ExpectedHeadSHA string `json:"expected_head_sha"`
+	ObservedHeadSHA string `json:"observed_head_sha,omitempty"`
+	Conclusion      string `json:"conclusion,omitempty"`
+	Detail          string `json:"detail,omitempty"`
+	Reason          string `json:"reason,omitempty"`
+}
+
 // Sink consumes published Run Events. Context comes first because durable
 // adapters perform IO.
 type Sink interface {

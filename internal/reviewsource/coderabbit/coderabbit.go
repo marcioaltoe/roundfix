@@ -28,6 +28,8 @@ type Client struct {
 	GitHub GitHubClient
 }
 
+var _ reviewsource.EvidenceSource = Client{}
+
 type GitHubClient interface {
 	ReviewComments(ctx context.Context, repo string, prNumber string) ([]ReviewComment, error)
 	ReviewThreads(ctx context.Context, repo string, prNumber string) ([]ReviewThread, error)
@@ -219,55 +221,70 @@ func (client Client) ReplyToIssue(ctx context.Context, req reviewsource.IssueCom
 }
 
 func (client Client) WatchStatus(ctx context.Context, req reviewsource.WatchStatusRequest) (reviewsource.WatchStatus, error) {
-	if err := ctx.Err(); err != nil {
+	evidence, err := client.Evidence(ctx, reviewsource.EvidenceRequest{
+		Source:          req.Source,
+		PRNumber:        req.PRNumber,
+		BaseRepository:  req.BaseRepository,
+		HeadRepository:  req.HeadRepository,
+		HeadBranch:      req.HeadBranch,
+		ExpectedHeadSHA: req.HeadSHA,
+	})
+	if err != nil {
 		return reviewsource.WatchStatus{}, err
 	}
-	if strings.TrimSpace(req.BaseRepository) == "" {
-		return reviewsource.WatchStatus{}, errors.New("CodeRabbit watch status requires base repository metadata")
-	}
-	if strings.TrimSpace(req.HeadSHA) == "" {
-		return reviewsource.WatchStatus{}, errors.New("CodeRabbit watch status requires HEAD metadata")
-	}
-	gh := client.GitHub
-	if gh == nil {
-		gh = GHClient{}
-	}
-
-	checkRuns, err := gh.CheckRuns(ctx, req.BaseRepository, req.HeadSHA)
-	if err != nil {
-		return reviewsource.WatchStatus{}, reviewSourceAccessError(ctx, "fetch CodeRabbit check runs", err)
-	}
-	statuses, err := gh.CommitStatuses(ctx, req.BaseRepository, req.HeadSHA)
-	if err != nil {
-		return reviewsource.WatchStatus{}, reviewSourceAccessError(ctx, "fetch CodeRabbit commit statuses", err)
-	}
-	reviews, err := gh.PullRequestReviews(ctx, req.BaseRepository, req.PRNumber)
-	if err != nil {
-		return reviewsource.WatchStatus{}, reviewSourceAccessError(ctx, "fetch CodeRabbit pull request reviews", err)
-	}
-	return classifyWatchStatus(req.HeadSHA, checkRuns, statuses, reviews), nil
+	return watchStatusFromEvidence(evidence), nil
 }
 
 func (client Client) HeadCheck(ctx context.Context, req reviewsource.HeadCheckRequest) (watch.HeadCheckState, error) {
-	if err := ctx.Err(); err != nil {
+	evidence, err := client.Evidence(ctx, reviewsource.EvidenceRequest{
+		Source:          req.Source,
+		PRNumber:        req.PRNumber,
+		BaseRepository:  req.BaseRepository,
+		ExpectedHeadSHA: req.HeadSHA,
+	})
+	if err != nil {
 		return "", err
 	}
-	if strings.TrimSpace(req.BaseRepository) == "" {
-		return "", errors.New("CodeRabbit head check requires base repository metadata")
+	return headCheckFromEvidence(evidence), nil
+}
+
+// Evidence observes CodeRabbit signals for one Open Pull Request and accepts
+// only signals bound to the expected head.
+func (client Client) Evidence(ctx context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
+	if err := ctx.Err(); err != nil {
+		return reviewsource.Evidence{}, err
 	}
-	if strings.TrimSpace(req.HeadSHA) == "" {
-		return "", errors.New("CodeRabbit head check requires HEAD metadata")
+	if strings.TrimSpace(req.BaseRepository) == "" {
+		return reviewsource.Evidence{}, errors.New("CodeRabbit evidence requires base repository metadata")
+	}
+	if strings.TrimSpace(req.PRNumber) == "" {
+		return reviewsource.Evidence{}, errors.New("CodeRabbit evidence requires Open Pull Request metadata")
+	}
+	if strings.TrimSpace(req.ExpectedHeadSHA) == "" {
+		return reviewsource.Evidence{}, errors.New("CodeRabbit evidence requires expected HEAD metadata")
 	}
 	gh := client.GitHub
 	if gh == nil {
 		gh = GHClient{}
 	}
 
-	checkRuns, err := gh.CheckRuns(ctx, req.BaseRepository, req.HeadSHA)
+	checkRuns, err := gh.CheckRuns(ctx, req.BaseRepository, req.ExpectedHeadSHA)
 	if err != nil {
-		return "", reviewSourceAccessError(ctx, "fetch CodeRabbit check runs", err)
+		return reviewsource.Evidence{}, reviewSourceAccessError(ctx, "fetch CodeRabbit check runs", err)
 	}
-	return classifyHeadCheck(req.HeadSHA, checkRuns), nil
+	statuses, err := gh.CommitStatuses(ctx, req.BaseRepository, req.ExpectedHeadSHA)
+	if err != nil {
+		return reviewsource.Evidence{}, reviewSourceAccessError(ctx, "fetch CodeRabbit commit statuses", err)
+	}
+	reviews, err := gh.PullRequestReviews(ctx, req.BaseRepository, req.PRNumber)
+	if err != nil {
+		return reviewsource.Evidence{}, reviewSourceAccessError(ctx, "fetch CodeRabbit pull request reviews", err)
+	}
+	threads, err := gh.ReviewThreads(ctx, req.BaseRepository, req.PRNumber)
+	if err != nil {
+		return reviewsource.Evidence{}, reviewSourceAccessError(ctx, "fetch CodeRabbit review threads", err)
+	}
+	return classifyEvidence(req.ExpectedHeadSHA, checkRuns, statuses, reviews, threads), nil
 }
 
 type GHClient struct{}
@@ -596,139 +613,277 @@ func (client GHClient) reviewThreadsPage(ctx context.Context, owner string, name
 	}, nil
 }
 
-func classifyWatchStatus(headSHA string, checkRuns []CheckRun, statuses []CommitStatus, reviews []PullRequestReview) reviewsource.WatchStatus {
-	if status, ok := classifyCheckRuns(headSHA, checkRuns); ok {
-		return status
-	}
-	if status, ok := classifyCommitStatuses(statuses); ok {
-		return status
-	}
-	if status, ok := classifyPullRequestReviews(headSHA, reviews); ok {
-		return status
-	}
-	return reviewsource.WatchStatus{
-		State:  watch.StatusPending,
-		Detail: "No CodeRabbit status or review found for the current HEAD",
-	}
-}
+func classifyEvidence(expectedHeadSHA string, checkRuns []CheckRun, statuses []CommitStatus, reviews []PullRequestReview, threads []ReviewThread) reviewsource.Evidence {
+	unresolvedThreads := unresolvedCodeRabbitThreadCount(threads)
 
-func classifyHeadCheck(headSHA string, checkRuns []CheckRun) watch.HeadCheckState {
+	// Structured skip is authoritative and must win over every other signal.
 	for _, run := range checkRuns {
-		if !isCodeRabbitSignal(run.Name, run.AppName) {
+		if !currentHeadCheckRun(expectedHeadSHA, run) {
 			continue
 		}
-		if run.HeadSHA != "" && run.HeadSHA != headSHA {
-			continue
-		}
-		status := strings.ToLower(strings.TrimSpace(run.Status))
-		conclusion := strings.ToLower(strings.TrimSpace(run.Conclusion))
-		switch status {
-		case "queued", "in_progress", "pending", "requested", "waiting":
-			return watch.CheckPending
-		case "completed":
-			if conclusion == "success" {
-				return watch.CheckSuccess
-			}
-			return watch.CheckFailure
-		}
-		switch conclusion {
-		case "success":
-			return watch.CheckSuccess
-		case "failure", "error", "cancelled", "timed_out", "action_required", "neutral", "skipped", "stale":
-			return watch.CheckFailure
-		default:
-			return watch.CheckPending
+		if reason, ok := structuredSkipReason(run); ok {
+			return checkRunEvidence(expectedHeadSHA, run, reviewsource.EvidenceSkipped, reason, unresolvedThreads)
 		}
 	}
-	return watch.CheckMissing
-}
 
-func classifyCheckRuns(headSHA string, checkRuns []CheckRun) (reviewsource.WatchStatus, bool) {
 	for _, run := range checkRuns {
-		if !isCodeRabbitSignal(run.Name, run.AppName) {
+		if !currentHeadCheckRun(expectedHeadSHA, run) {
 			continue
 		}
-		if run.HeadSHA != "" && run.HeadSHA != headSHA {
-			continue
+		status := normalized(run.Status)
+		if isPendingSignal(status) {
+			return checkRunEvidence(expectedHeadSHA, run, reviewsource.EvidenceReviewing, "", unresolvedThreads)
 		}
-		status := strings.ToLower(strings.TrimSpace(run.Status))
-		conclusion := strings.ToLower(strings.TrimSpace(run.Conclusion))
-		switch status {
-		case "queued", "in_progress", "pending", "requested", "waiting":
-			return reviewsource.WatchStatus{
-				State:  watch.StatusReviewing,
-				Detail: fmt.Sprintf("CodeRabbit check %q is %s for the current HEAD", run.Name, status),
-			}, true
-		case "completed":
-			return reviewsource.WatchStatus{
-				State:  watch.StatusSettled,
-				Detail: fmt.Sprintf("CodeRabbit check %q completed for the current HEAD with conclusion %q", run.Name, firstNonEmpty(conclusion, "unknown")),
-			}, true
-		}
-		if conclusion != "" {
-			return reviewsource.WatchStatus{
-				State:  watch.StatusSettled,
-				Detail: fmt.Sprintf("CodeRabbit check %q has conclusion %q for the current HEAD", run.Name, conclusion),
-			}, true
-		}
-		return reviewsource.WatchStatus{
-			State:  watch.StatusPending,
-			Detail: fmt.Sprintf("CodeRabbit check %q exists for the current HEAD without a terminal status", run.Name),
-		}, true
 	}
-	return reviewsource.WatchStatus{}, false
-}
-
-func classifyCommitStatuses(statuses []CommitStatus) (reviewsource.WatchStatus, bool) {
 	for _, status := range statuses {
-		if !isCodeRabbitSignal(status.Context) {
-			continue
-		}
-		state := strings.ToLower(strings.TrimSpace(status.State))
-		switch state {
-		case "pending":
-			return reviewsource.WatchStatus{
-				State:  watch.StatusReviewing,
-				Detail: fmt.Sprintf("CodeRabbit commit status %q is pending for the current HEAD", status.Context),
-			}, true
-		case "success", "failure", "error":
-			return reviewsource.WatchStatus{
-				State:  watch.StatusSettled,
-				Detail: fmt.Sprintf("CodeRabbit commit status %q reached %s for the current HEAD", status.Context, state),
-			}, true
-		default:
-			return reviewsource.WatchStatus{
-				State:  watch.StatusPending,
-				Detail: fmt.Sprintf("CodeRabbit commit status %q is %q for the current HEAD", status.Context, state),
-			}, true
+		if isCodeRabbitSignal(status.Context) && isPendingSignal(normalized(status.State)) {
+			return commitStatusEvidence(expectedHeadSHA, status, reviewsource.EvidenceReviewing, unresolvedThreads)
 		}
 	}
-	return reviewsource.WatchStatus{}, false
+
+	for _, run := range checkRuns {
+		if currentHeadCheckRun(expectedHeadSHA, run) && normalized(run.Conclusion) == "success" {
+			state := reviewsource.EvidenceVerified
+			if unresolvedThreads > 0 {
+				state = reviewsource.EvidenceReviewed
+			}
+			return checkRunEvidence(expectedHeadSHA, run, state, "", unresolvedThreads)
+		}
+	}
+	for _, status := range statuses {
+		if isCodeRabbitSignal(status.Context) && normalized(status.State) == "success" {
+			state := reviewsource.EvidenceVerified
+			if unresolvedThreads > 0 {
+				state = reviewsource.EvidenceReviewed
+			}
+			return commitStatusEvidence(expectedHeadSHA, status, state, unresolvedThreads)
+		}
+	}
+
+	for _, review := range reviews {
+		if currentHeadReview(expectedHeadSHA, review) && normalized(review.State) == "approved" {
+			state := reviewsource.EvidenceVerified
+			if unresolvedThreads > 0 {
+				state = reviewsource.EvidenceReviewed
+			}
+			return reviewEvidence(expectedHeadSHA, review, state, reviewsource.EvidenceKindReviewApproval, unresolvedThreads)
+		}
+	}
+	for _, review := range reviews {
+		if currentHeadReview(expectedHeadSHA, review) {
+			return reviewEvidence(expectedHeadSHA, review, reviewsource.EvidenceReviewed, reviewsource.EvidenceKindNone, unresolvedThreads)
+		}
+	}
+
+	for _, run := range checkRuns {
+		if !currentHeadCheckRun(expectedHeadSHA, run) {
+			continue
+		}
+		status := normalized(run.Status)
+		conclusion := normalized(run.Conclusion)
+		if isFailedSignal(status) || isFailedSignal(conclusion) {
+			return checkRunEvidence(expectedHeadSHA, run, reviewsource.EvidenceFailed, "", unresolvedThreads)
+		}
+		if status == "completed" || conclusion != "" {
+			return checkRunEvidence(expectedHeadSHA, run, reviewsource.EvidenceReviewed, "", unresolvedThreads)
+		}
+	}
+	for _, status := range statuses {
+		if isCodeRabbitSignal(status.Context) && isFailedSignal(normalized(status.State)) {
+			return commitStatusEvidence(expectedHeadSHA, status, reviewsource.EvidenceFailed, unresolvedThreads)
+		}
+	}
+
+	for _, run := range checkRuns {
+		if isCodeRabbitSignal(run.Name, run.AppName) && run.HeadSHA != "" && run.HeadSHA != expectedHeadSHA {
+			return reviewsource.Evidence{
+				State:           reviewsource.EvidencePending,
+				Kind:            reviewsource.EvidenceKindNone,
+				Identity:        checkRunIdentity(run),
+				ExpectedHeadSHA: expectedHeadSHA,
+				ObservedHeadSHA: run.HeadSHA,
+				Conclusion:      normalized(run.Conclusion),
+				Detail:          reviewsource.BoundEvidenceDetail("Latest CodeRabbit check is not bound to the expected head"),
+			}
+		}
+	}
+	for _, review := range reviews {
+		if isCodeRabbitSignal(review.Author) && review.CommitSHA != expectedHeadSHA {
+			return reviewsource.Evidence{
+				State:           reviewsource.EvidencePending,
+				Kind:            reviewsource.EvidenceKindNone,
+				Identity:        reviewIdentity(review),
+				ExpectedHeadSHA: expectedHeadSHA,
+				ObservedHeadSHA: review.CommitSHA,
+				Conclusion:      normalized(review.State),
+				Detail:          reviewsource.BoundEvidenceDetail("Latest CodeRabbit review is for a different commit than the expected head"),
+			}
+		}
+	}
+	for _, run := range checkRuns {
+		if isCodeRabbitSignal(run.Name, run.AppName) && run.HeadSHA == "" {
+			return reviewsource.Evidence{
+				State:           reviewsource.EvidencePending,
+				Kind:            reviewsource.EvidenceKindNone,
+				Identity:        checkRunIdentity(run),
+				ExpectedHeadSHA: expectedHeadSHA,
+				Conclusion:      normalized(run.Conclusion),
+				Detail:          reviewsource.BoundEvidenceDetail("Latest CodeRabbit check is not bound to a head"),
+			}
+		}
+	}
+	return reviewsource.Evidence{
+		State:           reviewsource.EvidencePending,
+		Kind:            reviewsource.EvidenceKindNone,
+		ExpectedHeadSHA: expectedHeadSHA,
+		Detail:          "No usable CodeRabbit signal found for the expected head",
+	}
 }
 
-func classifyPullRequestReviews(headSHA string, reviews []PullRequestReview) (reviewsource.WatchStatus, bool) {
-	latestCodeRabbitCommit := ""
-	for _, review := range reviews {
-		if !isCodeRabbitSignal(review.Author) {
+func watchStatusFromEvidence(evidence reviewsource.Evidence) reviewsource.WatchStatus {
+	state := watch.StatusPending
+	switch evidence.State {
+	case reviewsource.EvidenceReviewing:
+		state = watch.StatusReviewing
+	case reviewsource.EvidenceReviewed, reviewsource.EvidenceVerified, reviewsource.EvidenceSkipped, reviewsource.EvidenceFailed:
+		state = watch.StatusSettled
+	}
+	return reviewsource.WatchStatus{State: state, Detail: evidence.Detail}
+}
+
+func headCheckFromEvidence(evidence reviewsource.Evidence) watch.HeadCheckState {
+	switch evidence.State {
+	case reviewsource.EvidenceVerified:
+		return watch.CheckSuccess
+	case reviewsource.EvidencePending:
+		if evidence.Kind == reviewsource.EvidenceKindNone {
+			return watch.CheckMissing
+		}
+		return watch.CheckPending
+	case reviewsource.EvidenceReviewing:
+		return watch.CheckPending
+	default:
+		return watch.CheckFailure
+	}
+}
+
+func currentHeadCheckRun(expectedHeadSHA string, run CheckRun) bool {
+	return isCodeRabbitSignal(run.Name, run.AppName) && run.HeadSHA == expectedHeadSHA
+}
+
+func currentHeadReview(expectedHeadSHA string, review PullRequestReview) bool {
+	return isCodeRabbitSignal(review.Author) && review.CommitSHA == expectedHeadSHA
+}
+
+func structuredSkipReason(run CheckRun) (string, bool) {
+	title := normalized(run.OutputTitle)
+	if title != "review skipped" && !strings.HasPrefix(title, "review skipped:") {
+		return "", false
+	}
+	reason := strings.TrimSpace(firstNonEmpty(run.OutputSummary, run.OutputTitle))
+	return reviewsource.BoundEvidenceDetail(reason), true
+}
+
+func checkRunEvidence(expectedHeadSHA string, run CheckRun, state reviewsource.EvidenceState, reason string, unresolvedThreads int) reviewsource.Evidence {
+	status := normalized(run.Status)
+	conclusion := normalized(run.Conclusion)
+	detail := fmt.Sprintf("CodeRabbit check %q is %s with conclusion %q for the expected head", run.Name, firstNonEmpty(status, "unknown"), firstNonEmpty(conclusion, "unknown"))
+	if unresolvedThreads > 0 {
+		detail = fmt.Sprintf("%s; %d unresolved CodeRabbit thread(s) remain", detail, unresolvedThreads)
+	}
+	return reviewsource.Evidence{
+		State:           state,
+		Kind:            reviewsource.EvidenceKindCheckRun,
+		Identity:        checkRunIdentity(run),
+		ExpectedHeadSHA: expectedHeadSHA,
+		ObservedHeadSHA: run.HeadSHA,
+		Conclusion:      conclusion,
+		Detail:          reviewsource.BoundEvidenceDetail(detail),
+		Reason:          reason,
+	}
+}
+
+func commitStatusEvidence(expectedHeadSHA string, status CommitStatus, state reviewsource.EvidenceState, unresolvedThreads int) reviewsource.Evidence {
+	conclusion := normalized(status.State)
+	detail := fmt.Sprintf("CodeRabbit commit status %q is %s for the expected head", status.Context, firstNonEmpty(conclusion, "unknown"))
+	if unresolvedThreads > 0 {
+		detail = fmt.Sprintf("%s; %d unresolved CodeRabbit thread(s) remain", detail, unresolvedThreads)
+	}
+	return reviewsource.Evidence{
+		State:           state,
+		Kind:            reviewsource.EvidenceKindCommitStatus,
+		Identity:        "commit_status:" + strings.TrimSpace(status.Context),
+		ExpectedHeadSHA: expectedHeadSHA,
+		ObservedHeadSHA: expectedHeadSHA,
+		Conclusion:      conclusion,
+		Detail:          reviewsource.BoundEvidenceDetail(detail),
+	}
+}
+
+func reviewEvidence(expectedHeadSHA string, review PullRequestReview, state reviewsource.EvidenceState, kind reviewsource.EvidenceKind, unresolvedThreads int) reviewsource.Evidence {
+	conclusion := normalized(review.State)
+	detail := fmt.Sprintf("CodeRabbit review %d is %s for the expected head", review.DatabaseID, firstNonEmpty(conclusion, "published"))
+	if unresolvedThreads > 0 {
+		detail = fmt.Sprintf("%s; %d unresolved CodeRabbit thread(s) remain", detail, unresolvedThreads)
+	}
+	return reviewsource.Evidence{
+		State:           state,
+		Kind:            kind,
+		Identity:        reviewIdentity(review),
+		ExpectedHeadSHA: expectedHeadSHA,
+		ObservedHeadSHA: review.CommitSHA,
+		Conclusion:      conclusion,
+		Detail:          reviewsource.BoundEvidenceDetail(detail),
+	}
+}
+
+func unresolvedCodeRabbitThreadCount(threads []ReviewThread) int {
+	count := 0
+	for _, thread := range threads {
+		if thread.IsResolved {
 			continue
 		}
-		if review.CommitSHA == headSHA {
-			return reviewsource.WatchStatus{
-				State:  watch.StatusSettled,
-				Detail: fmt.Sprintf("CodeRabbit review %d is published for the current HEAD", review.DatabaseID),
-			}, true
-		}
-		if review.CommitSHA != "" {
-			latestCodeRabbitCommit = review.CommitSHA
+		for _, comment := range thread.Comments {
+			if isCodeRabbitAuthor(comment.Author) {
+				count++
+				break
+			}
 		}
 	}
-	if latestCodeRabbitCommit != "" {
-		return reviewsource.WatchStatus{
-			State:  watch.StatusPending,
-			Detail: "Latest CodeRabbit review is for a different commit",
-		}, true
+	return count
+}
+
+func checkRunIdentity(run CheckRun) string {
+	if run.DatabaseID != 0 {
+		return fmt.Sprintf("check_run:%d", run.DatabaseID)
 	}
-	return reviewsource.WatchStatus{}, false
+	return "check_run:" + strings.TrimSpace(run.Name)
+}
+
+func reviewIdentity(review PullRequestReview) string {
+	return fmt.Sprintf("review:%d", review.DatabaseID)
+}
+
+func normalized(value string) string {
+	return strings.ToLower(strings.TrimSpace(value))
+}
+
+func isPendingSignal(value string) bool {
+	switch value {
+	case "queued", "in_progress", "pending", "requested", "waiting":
+		return true
+	default:
+		return false
+	}
+}
+
+func isFailedSignal(value string) bool {
+	switch value {
+	case "failure", "error", "cancelled", "timed_out", "action_required", "neutral", "skipped", "stale":
+		return true
+	default:
+		return false
+	}
 }
 
 const roundfixCommentMarkerPrefix = "<!-- roundfix:"

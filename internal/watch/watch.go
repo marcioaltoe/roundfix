@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"roundfix/internal/reviewsource"
 	"roundfix/internal/runevent"
 	"roundfix/internal/store"
 )
@@ -85,6 +86,21 @@ func (fn StatusFunc) Status(ctx context.Context, req StatusRequest) (Status, err
 	return fn(ctx, req)
 }
 
+type ReviewEvidenceRequest struct {
+	PRNumber        string
+	ExpectedHeadSHA string
+}
+
+type ReviewEvidenceSource interface {
+	Evidence(context.Context, ReviewEvidenceRequest) (reviewsource.Evidence, error)
+}
+
+type ReviewEvidenceFunc func(context.Context, ReviewEvidenceRequest) (reviewsource.Evidence, error)
+
+func (fn ReviewEvidenceFunc) Evidence(ctx context.Context, req ReviewEvidenceRequest) (reviewsource.Evidence, error) {
+	return fn(ctx, req)
+}
+
 type Fetcher interface {
 	Fetch(context.Context, int) (FetchResult, error)
 }
@@ -146,13 +162,14 @@ func (realSleeper) Sleep(ctx context.Context, duration time.Duration) error {
 }
 
 type Dependencies struct {
-	StopRequests StopRequestSource
-	StatusSource StatusSource
-	Fetcher      Fetcher
-	Resolver     Resolver
-	CheckSource  CheckSource
-	Clock        Clock
-	Sleeper      Sleeper
+	StopRequests   StopRequestSource
+	ReviewEvidence ReviewEvidenceSource
+	StatusSource   StatusSource
+	Fetcher        Fetcher
+	Resolver       Resolver
+	CheckSource    CheckSource
+	Clock          Clock
+	Sleeper        Sleeper
 	// Sink receives watch-loop Run Events: review status waits, quiet
 	// periods, fetch results, and merge-readiness checks. Nil means
 	// events are discarded.
@@ -174,7 +191,7 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 	if deps.Sink == nil {
 		deps.Sink = runevent.Discard
 	}
-	publisher := watchEventPublisher{sink: deps.Sink, runID: req.RunID, clock: clock}
+	publisher := &watchEventPublisher{sink: deps.Sink, runID: req.RunID, clock: clock}
 
 	startedAt := clock.Now()
 	currentHeadSHA := req.HeadSHA
@@ -182,7 +199,7 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 		if budgetExceeded(req, startedAt, clock.Now()) {
 			return Result{Outcome: store.StateBudgetExceeded, Rounds: round - 1}, nil
 		}
-		settledWait, err := waitForSettled(ctx, req, currentHeadSHA, deps.StopRequests, deps.StatusSource, clock, sleeper, publisher)
+		settledWait, err := waitForSettled(ctx, req, currentHeadSHA, deps.StopRequests, deps.ReviewEvidence, deps.StatusSource, clock, sleeper, publisher)
 		if err != nil {
 			return resultForError(round-1, err), err
 		}
@@ -232,7 +249,7 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 			return Result{Outcome: store.StateFailed, Rounds: round - 1}, err
 		}
 		if fetched.Issues == 0 {
-			confirm, err := confirmMergeReady(ctx, req, deps.StopRequests, deps.CheckSource, currentHeadSHA, clock, sleeper, publisher)
+			confirm, err := confirmMergeReady(ctx, req, deps.StopRequests, deps.ReviewEvidence, deps.CheckSource, currentHeadSHA, clock, sleeper, publisher)
 			if err != nil {
 				return resultForError(round, err), err
 			}
@@ -266,7 +283,7 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 			currentHeadSHA = resolved.HeadSHA
 		}
 		if resolved.Remaining == 0 {
-			confirm, err := confirmMergeReady(ctx, req, deps.StopRequests, deps.CheckSource, currentHeadSHA, clock, sleeper, publisher)
+			confirm, err := confirmMergeReady(ctx, req, deps.StopRequests, deps.ReviewEvidence, deps.CheckSource, currentHeadSHA, clock, sleeper, publisher)
 			if err != nil {
 				return resultForError(round, err), err
 			}
@@ -308,7 +325,7 @@ type settledWaitResult struct {
 	statusChecks int
 }
 
-func waitForSettled(ctx context.Context, req Request, headSHA string, stops StopRequestSource, source StatusSource, clock Clock, sleeper Sleeper, publisher watchEventPublisher) (settledWaitResult, error) {
+func waitForSettled(ctx context.Context, req Request, headSHA string, stops StopRequestSource, evidenceSource ReviewEvidenceSource, statusSource StatusSource, clock Clock, sleeper Sleeper, publisher *watchEventPublisher) (settledWaitResult, error) {
 	startedAt := clock.Now()
 	statusChecks := 0
 	for {
@@ -318,10 +335,24 @@ func waitForSettled(ctx context.Context, req Request, headSHA string, stops Stop
 		if err := observeStopRequest(ctx, stops, req.RunID, "before Review Source status"); err != nil {
 			return settledWaitResult{}, err
 		}
-		status, err := source.Status(ctx, StatusRequest{
-			PRNumber: req.PRNumber,
-			HeadSHA:  headSHA,
-		})
+		var status Status
+		var err error
+		if evidenceSource != nil {
+			var evidence reviewsource.Evidence
+			evidence, err = evidenceSource.Evidence(ctx, ReviewEvidenceRequest{
+				PRNumber:        req.PRNumber,
+				ExpectedHeadSHA: headSHA,
+			})
+			if err == nil {
+				status = statusFromEvidence(evidence)
+				err = publisher.publishReviewEvidence(ctx, evidence)
+			}
+		} else {
+			status, err = statusSource.Status(ctx, StatusRequest{
+				PRNumber: req.PRNumber,
+				HeadSHA:  headSHA,
+			})
+		}
 		statusChecks++
 		if err != nil {
 			if stopErr := observeStopRequest(ctx, stops, req.RunID, "after failed Review Source status access"); stopErr != nil {
@@ -332,11 +363,13 @@ func waitForSettled(ctx context.Context, req Request, headSHA string, stops Stop
 		if err := observeStopRequest(ctx, stops, req.RunID, "after Review Source status access"); err != nil {
 			return settledWaitResult{}, err
 		}
-		if err := publisher.publish(ctx, runevent.KindDaemonReviewStatus,
-			fmt.Sprintf("Review Source status: %s", status.State),
-			map[string]any{"state": status.State, "detail": status.Detail},
-		); err != nil {
-			return settledWaitResult{}, err
+		if evidenceSource == nil {
+			if err := publisher.publish(ctx, runevent.KindDaemonReviewStatus,
+				fmt.Sprintf("Review Source status: %s", status.State),
+				map[string]any{"state": status.State, "detail": status.Detail},
+			); err != nil {
+				return settledWaitResult{}, err
+			}
 		}
 		if status.State == StatusSettled {
 			return settledWaitResult{status: status, statusChecks: statusChecks}, nil
@@ -362,8 +395,8 @@ type confirmResult struct {
 	timedOut   bool
 }
 
-func confirmMergeReady(ctx context.Context, req Request, stops StopRequestSource, source CheckSource, headSHA string, clock Clock, sleeper Sleeper, publisher watchEventPublisher) (confirmResult, error) {
-	if !req.UntilClean || source == nil {
+func confirmMergeReady(ctx context.Context, req Request, stops StopRequestSource, evidenceSource ReviewEvidenceSource, checkSource CheckSource, headSHA string, clock Clock, sleeper Sleeper, publisher *watchEventPublisher) (confirmResult, error) {
+	if !req.UntilClean || evidenceSource == nil && checkSource == nil {
 		return confirmResult{ready: true}, nil
 	}
 	startedAt := clock.Now()
@@ -376,16 +409,32 @@ func confirmMergeReady(ctx context.Context, req Request, stops StopRequestSource
 		}
 		missingCheck := false
 		retrying := false
-		state, err := source.Check(ctx, headSHA)
+		state := CheckMissing
+		var err error
+		if evidenceSource != nil {
+			var evidence reviewsource.Evidence
+			evidence, err = evidenceSource.Evidence(ctx, ReviewEvidenceRequest{
+				PRNumber:        req.PRNumber,
+				ExpectedHeadSHA: headSHA,
+			})
+			if err == nil {
+				err = publisher.publishReviewEvidence(ctx, evidence)
+				state = headCheckFromEvidence(evidence)
+			}
+		} else {
+			state, err = checkSource.Check(ctx, headSHA)
+		}
 		if err == nil {
 			if err := observeStopRequest(ctx, stops, req.RunID, "after Review Source Merge-Ready check"); err != nil {
 				return confirmResult{}, err
 			}
-			if err := publisher.publish(ctx, runevent.KindDaemonReviewStatus,
-				fmt.Sprintf("Review Source check: %s", state),
-				map[string]any{"state": state, "head_sha": headSHA},
-			); err != nil {
-				return confirmResult{}, err
+			if evidenceSource == nil {
+				if err := publisher.publish(ctx, runevent.KindDaemonReviewStatus,
+					fmt.Sprintf("Review Source check: %s", state),
+					map[string]any{"state": state, "head_sha": headSHA},
+				); err != nil {
+					return confirmResult{}, err
+				}
 			}
 			switch state {
 			case CheckSuccess:
@@ -470,14 +519,14 @@ func validateRequest(req Request, deps Dependencies) error {
 	if req.ReviewTimeout <= 0 {
 		return errors.New("watch review timeout must be greater than 0")
 	}
-	if req.UntilClean && deps.CheckSource != nil && req.CheckGracePeriod <= 0 {
+	if req.UntilClean && (deps.ReviewEvidence != nil || deps.CheckSource != nil) && req.CheckGracePeriod <= 0 {
 		return errors.New("watch check grace period must be greater than 0")
 	}
 	if req.BudgetEnabled && req.MaxRunDuration <= 0 {
 		return errors.New("watch max run duration must be greater than 0 when Run Budget is enabled")
 	}
-	if deps.StatusSource == nil {
-		return errors.New("watch requires Review Source status boundary")
+	if deps.ReviewEvidence == nil && deps.StatusSource == nil {
+		return errors.New("watch requires Review Source evidence boundary")
 	}
 	if deps.Fetcher == nil {
 		return errors.New("watch requires fetch boundary")
@@ -496,9 +545,10 @@ func budgetExceeded(req Request, startedAt time.Time, now time.Time) bool {
 // periods, and fetch results. Publication is part of the Run state
 // contract, so a critical sink failure fails the Run.
 type watchEventPublisher struct {
-	sink  runevent.Sink
-	runID string
-	clock Clock
+	sink         runevent.Sink
+	runID        string
+	clock        Clock
+	lastEvidence *reviewsource.Evidence
 }
 
 func (publisher watchEventPublisher) publish(ctx context.Context, kind runevent.Kind, summary string, payload any) error {
@@ -520,4 +570,58 @@ func (publisher watchEventPublisher) publish(ctx context.Context, kind runevent.
 		return fmt.Errorf("publish watch event %s: %w", kind, err)
 	}
 	return nil
+}
+
+func (publisher *watchEventPublisher) publishReviewEvidence(ctx context.Context, evidence reviewsource.Evidence) error {
+	if publisher.lastEvidence != nil && *publisher.lastEvidence == evidence {
+		return nil
+	}
+	payload := runevent.ReviewStatusPayload{
+		State:           string(evidence.State),
+		Kind:            string(evidence.Kind),
+		Identity:        evidence.Identity,
+		ExpectedHeadSHA: evidence.ExpectedHeadSHA,
+		ObservedHeadSHA: evidence.ObservedHeadSHA,
+		Conclusion:      evidence.Conclusion,
+		Detail:          evidence.Detail,
+		Reason:          evidence.Reason,
+	}
+	if err := publisher.publish(
+		ctx,
+		runevent.KindDaemonReviewStatus,
+		fmt.Sprintf("Review Source Evidence: %s (%s)", evidence.State, evidence.Kind),
+		payload,
+	); err != nil {
+		return err
+	}
+	current := evidence
+	publisher.lastEvidence = &current
+	return nil
+}
+
+func statusFromEvidence(evidence reviewsource.Evidence) Status {
+	state := StatusPending
+	switch evidence.State {
+	case reviewsource.EvidenceReviewing:
+		state = StatusReviewing
+	case reviewsource.EvidenceReviewed, reviewsource.EvidenceVerified, reviewsource.EvidenceSkipped, reviewsource.EvidenceFailed:
+		state = StatusSettled
+	}
+	return Status{State: state, Detail: evidence.Detail}
+}
+
+func headCheckFromEvidence(evidence reviewsource.Evidence) HeadCheckState {
+	switch evidence.State {
+	case reviewsource.EvidenceVerified:
+		return CheckSuccess
+	case reviewsource.EvidencePending:
+		if evidence.Kind == reviewsource.EvidenceKindNone {
+			return CheckMissing
+		}
+		return CheckPending
+	case reviewsource.EvidenceReviewing:
+		return CheckPending
+	default:
+		return CheckFailure
+	}
 }

@@ -18,6 +18,35 @@ func TestSpecRunKindsUseDaemonNamespace(t *testing.T) {
 	}
 }
 
+func TestReviewStatusEventPayloadUsesStableEvidenceFields(t *testing.T) {
+	payload := ReviewStatusPayload{
+		State:           "verified",
+		Kind:            "review_approval",
+		Identity:        "review:9001",
+		ExpectedHeadSHA: "expected",
+		ObservedHeadSHA: "observed",
+		Conclusion:      "approved",
+		Detail:          "CodeRabbit approved the expected head",
+	}
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal ReviewStatusPayload: %v", err)
+	}
+	for _, field := range []string{
+		`"state":"verified"`,
+		`"kind":"review_approval"`,
+		`"identity":"review:9001"`,
+		`"expected_head_sha":"expected"`,
+		`"observed_head_sha":"observed"`,
+		`"conclusion":"approved"`,
+		`"detail":"CodeRabbit approved the expected head"`,
+	} {
+		if !strings.Contains(string(raw), field) {
+			t.Fatalf("review status payload missing %s: %s", field, raw)
+		}
+	}
+}
+
 func TestVerificationEventVocabulary(t *testing.T) {
 	if VerificationPhaseStarted != "started" {
 		t.Fatalf("expected started phase, got %q", VerificationPhaseStarted)

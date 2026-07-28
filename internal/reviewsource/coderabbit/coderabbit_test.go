@@ -609,6 +609,151 @@ func TestWatchStatusReportsPendingWithoutCodeRabbitSignal(t *testing.T) {
 	}
 }
 
+func TestEvidenceHierarchyPrecedence(t *testing.T) {
+	unresolvedThread := ReviewThread{
+		ID:         "thread-1",
+		IsResolved: false,
+		Comments: []ThreadComment{
+			{Author: coderabbitBotLogin},
+		},
+	}
+	tests := []struct {
+		name       string
+		checkRuns  []CheckRun
+		statuses   []CommitStatus
+		reviews    []PullRequestReview
+		threads    []ReviewThread
+		wantState  reviewsource.EvidenceState
+		wantKind   reviewsource.EvidenceKind
+		wantReason string
+	}{
+		{
+			name: "explicit skip wins over pending and success",
+			checkRuns: []CheckRun{
+				{
+					DatabaseID:    41,
+					Name:          "CodeRabbit",
+					AppName:       "CodeRabbit",
+					HeadSHA:       "abc123",
+					Status:        "completed",
+					Conclusion:    "success",
+					OutputTitle:   "Review skipped",
+					OutputSummary: "Review skipped because this pull request contains too many files.",
+				},
+				{DatabaseID: 42, Name: "CodeRabbit", AppName: "CodeRabbit", HeadSHA: "abc123", Status: "in_progress"},
+			},
+			statuses:   []CommitStatus{{Context: "coderabbitai", State: "success"}},
+			wantState:  reviewsource.EvidenceSkipped,
+			wantKind:   reviewsource.EvidenceKindCheckRun,
+			wantReason: "Review skipped because this pull request contains too many files.",
+		},
+		{
+			name: "pending check wins over successful status",
+			checkRuns: []CheckRun{
+				{DatabaseID: 43, Name: "CodeRabbit", AppName: "CodeRabbit", HeadSHA: "abc123", Status: "in_progress"},
+			},
+			statuses:  []CommitStatus{{Context: "coderabbitai", State: "success"}},
+			wantState: reviewsource.EvidenceReviewing,
+			wantKind:  reviewsource.EvidenceKindCheckRun,
+		},
+		{
+			name: "successful check verifies with no unresolved threads",
+			checkRuns: []CheckRun{
+				{DatabaseID: 44, Name: "CodeRabbit", AppName: "CodeRabbit", HeadSHA: "abc123", Status: "completed", Conclusion: "success"},
+			},
+			wantState: reviewsource.EvidenceVerified,
+			wantKind:  reviewsource.EvidenceKindCheckRun,
+		},
+		{
+			name: "successful check is reviewed with unresolved thread",
+			checkRuns: []CheckRun{
+				{DatabaseID: 45, Name: "CodeRabbit", AppName: "CodeRabbit", HeadSHA: "abc123", Status: "completed", Conclusion: "success"},
+			},
+			threads:   []ReviewThread{unresolvedThread},
+			wantState: reviewsource.EvidenceReviewed,
+			wantKind:  reviewsource.EvidenceKindCheckRun,
+		},
+		{
+			name: "current approval verifies with no unresolved threads",
+			reviews: []PullRequestReview{
+				{DatabaseID: 9001, Author: coderabbitBotLogin, State: "APPROVED", CommitSHA: "abc123"},
+			},
+			wantState: reviewsource.EvidenceVerified,
+			wantKind:  reviewsource.EvidenceKindReviewApproval,
+		},
+		{
+			name: "current approval is reviewed with unresolved thread",
+			reviews: []PullRequestReview{
+				{DatabaseID: 9002, Author: coderabbitBotLogin, State: "APPROVED", CommitSHA: "abc123"},
+			},
+			threads:   []ReviewThread{unresolvedThread},
+			wantState: reviewsource.EvidenceReviewed,
+			wantKind:  reviewsource.EvidenceKindReviewApproval,
+		},
+		{
+			name: "commented current review is never approval",
+			reviews: []PullRequestReview{
+				{DatabaseID: 9003, Author: coderabbitBotLogin, State: "COMMENTED", CommitSHA: "abc123"},
+			},
+			wantState: reviewsource.EvidenceReviewed,
+			wantKind:  reviewsource.EvidenceKindNone,
+		},
+		{
+			name:      "no usable signal stays pending",
+			wantState: reviewsource.EvidencePending,
+			wantKind:  reviewsource.EvidenceKindNone,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			client := Client{GitHub: &fakeGitHubClient{
+				checkRuns: testCase.checkRuns,
+				statuses:  testCase.statuses,
+				reviews:   testCase.reviews,
+				threads:   testCase.threads,
+			}}
+
+			evidence, err := client.Evidence(context.Background(), evidenceRequest())
+			if err != nil {
+				t.Fatalf("classify evidence: %v", err)
+			}
+			if evidence.State != testCase.wantState || evidence.Kind != testCase.wantKind {
+				t.Fatalf("evidence = %#v, want state %q kind %q", evidence, testCase.wantState, testCase.wantKind)
+			}
+			if evidence.ExpectedHeadSHA != "abc123" {
+				t.Fatalf("expected head = %q, want abc123", evidence.ExpectedHeadSHA)
+			}
+			if evidence.Reason != testCase.wantReason {
+				t.Fatalf("reason = %q, want %q", evidence.Reason, testCase.wantReason)
+			}
+		})
+	}
+}
+
+func TestEvidenceExpectedHeadRejectsUnboundAndStaleSignals(t *testing.T) {
+	client := Client{GitHub: &fakeGitHubClient{
+		checkRuns: []CheckRun{
+			{DatabaseID: 51, Name: "CodeRabbit", AppName: "CodeRabbit", Status: "completed", Conclusion: "success"},
+			{DatabaseID: 52, Name: "CodeRabbit", AppName: "CodeRabbit", HeadSHA: "oldsha", Status: "completed", Conclusion: "success"},
+		},
+		reviews: []PullRequestReview{
+			{DatabaseID: 9004, Author: coderabbitBotLogin, State: "APPROVED", CommitSHA: "oldsha"},
+		},
+	}}
+
+	evidence, err := client.Evidence(context.Background(), evidenceRequest())
+	if err != nil {
+		t.Fatalf("classify evidence: %v", err)
+	}
+	if evidence.State != reviewsource.EvidencePending || evidence.Kind != reviewsource.EvidenceKindNone {
+		t.Fatalf("stale or unbound signal verified expected head: %#v", evidence)
+	}
+	if evidence.ExpectedHeadSHA != "abc123" || evidence.ObservedHeadSHA != "oldsha" {
+		t.Fatalf("expected stale-head detail, got %#v", evidence)
+	}
+}
+
 func TestHeadCheckMapsGitHubCheckRunJSON(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -681,6 +826,7 @@ func TestHeadCheckMapsGitHubCheckRunJSON(t *testing.T) {
 			client := Client{GitHub: &fakeGitHubClient{checkRuns: checkRuns}}
 
 			got, err := client.HeadCheck(context.Background(), reviewsource.HeadCheckRequest{
+				PRNumber:       "123",
 				BaseRepository: "owner/project",
 				HeadSHA:        "abc123",
 			})
@@ -867,6 +1013,14 @@ func watchStatusRequest() reviewsource.WatchStatusRequest {
 		BaseRepository: "owner/project",
 		PRNumber:       "123",
 		HeadSHA:        "abc123",
+	}
+}
+
+func evidenceRequest() reviewsource.EvidenceRequest {
+	return reviewsource.EvidenceRequest{
+		BaseRepository:  "owner/project",
+		PRNumber:        "123",
+		ExpectedHeadSHA: "abc123",
 	}
 }
 

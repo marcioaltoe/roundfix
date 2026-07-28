@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"time"
 	"unicode/utf8"
-
-	"roundfix/internal/watch"
 )
 
 const SourceCodeRabbit = "coderabbit"
@@ -45,6 +43,21 @@ type Evidence struct {
 	Conclusion      string        `json:"conclusion,omitempty"`
 	Detail          string        `json:"detail,omitempty"`
 	Reason          string        `json:"reason,omitempty"`
+}
+
+// EvidenceRequest identifies one Open Pull Request and the exact head whose
+// Review Source signals may be accepted.
+type EvidenceRequest struct {
+	Source          string
+	PRNumber        string
+	BaseRepository  string
+	HeadRepository  string
+	HeadBranch      string
+	ExpectedHeadSHA string
+}
+
+type EvidenceSource interface {
+	Evidence(context.Context, EvidenceRequest) (Evidence, error)
 }
 
 // BoundEvidenceDetail truncates Review Source-authored text on a rune boundary.
@@ -151,10 +164,14 @@ type WatchStatusRequest struct {
 	HeadSHA        string
 }
 
-type WatchStatus = watch.Status
+type WatchStatus struct {
+	State  string
+	Detail string
+}
 
 type HeadCheckRequest struct {
 	Source         string
+	PRNumber       string
 	BaseRepository string
 	HeadSHA        string
 }

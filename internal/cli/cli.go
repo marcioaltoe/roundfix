@@ -150,8 +150,7 @@ var newOutcomeNotifier = roundnotify.New
 // collaborators; orchestration itself lives in the daemon Run engine and
 // receives them through an explicit dependencies struct.
 var newEngineCollaborators = defaultEngineCollaborators
-var watchReviewStatus = defaultWatchReviewStatus
-var watchHeadCheck = defaultWatchHeadCheck
+var watchReviewEvidence = defaultWatchReviewEvidence
 var watchHeadSHA = defaultWatchHeadSHA
 var listPendingRunWork = runworktree.ListPendingRunWork
 var integratePendingRunWork = runworktree.IntegratePendingRunWork
@@ -2568,23 +2567,23 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		MaxRunDuration:   loaded.Config.Budget.MaxRunDuration,
 	}, watch.Dependencies{
 		StopRequests: runStore,
-		StatusSource: watch.StatusFunc(func(ctx context.Context, statusReq watch.StatusRequest) (watch.Status, error) {
-			status, err := watchReviewStatus(ctx, reviewsource.WatchStatusRequest{
-				Source:         req.source,
-				PRNumber:       statusReq.PRNumber,
-				BaseRepository: preflightResult.PullRequest.BaseRepository,
-				HeadRepository: preflightResult.PullRequest.HeadRepository,
-				HeadBranch:     preflightResult.PullRequest.HeadBranch,
-				HeadSHA:        statusReq.HeadSHA,
+		ReviewEvidence: watch.ReviewEvidenceFunc(func(ctx context.Context, evidenceReq watch.ReviewEvidenceRequest) (reviewsource.Evidence, error) {
+			evidence, err := watchReviewEvidence(ctx, reviewsource.EvidenceRequest{
+				Source:          req.source,
+				PRNumber:        evidenceReq.PRNumber,
+				BaseRepository:  preflightResult.PullRequest.BaseRepository,
+				HeadRepository:  preflightResult.PullRequest.HeadRepository,
+				HeadBranch:      preflightResult.PullRequest.HeadBranch,
+				ExpectedHeadSHA: evidenceReq.ExpectedHeadSHA,
 			})
 			if err == nil {
-				line := fmt.Sprintf("Review Source status: %s", status.State)
+				line := fmt.Sprintf("Review Source status: %s", evidence.State)
 				if line != lastReviewStatusLine {
 					fmt.Fprintln(ui.progress, line)
 					lastReviewStatusLine = line
 				}
 			}
-			return status, err
+			return evidence, err
 		}),
 		Fetcher: watch.FetchFunc(func(ctx context.Context, _ int) (watch.FetchResult, error) {
 			fetchResult, issues, err := fetchWatchRound(ctx, req, loaded, preflightResult, ui.progress)
@@ -2595,13 +2594,6 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		}),
 		Resolver: watch.ResolveFunc(func(ctx context.Context) (watch.ResolveResult, error) {
 			return resolveWatchBatches(ctx, req, loaded, preflightResult, runtime, agentSelections, runtimeFactory, run.ID, session, collaborators, runStore, ui)
-		}),
-		CheckSource: watch.CheckFunc(func(ctx context.Context, headSHA string) (watch.HeadCheckState, error) {
-			return watchHeadCheck(ctx, reviewsource.HeadCheckRequest{
-				Source:         req.source,
-				BaseRepository: preflightResult.PullRequest.BaseRepository,
-				HeadSHA:        headSHA,
-			})
 		}),
 		Clock:   watchClock,
 		Sleeper: watchSleeper,
@@ -3592,18 +3584,11 @@ func (defaultReviewSourceResolver) ReplyToIssue(ctx context.Context, req reviews
 	return coderabbit.Client{}.ReplyToIssue(ctx, req)
 }
 
-func defaultWatchReviewStatus(ctx context.Context, req reviewsource.WatchStatusRequest) (reviewsource.WatchStatus, error) {
+func defaultWatchReviewEvidence(ctx context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
 	if req.Source != reviewsource.SourceCodeRabbit {
-		return reviewsource.WatchStatus{}, fmt.Errorf("unsupported Review Source %q; supported value: coderabbit", req.Source)
+		return reviewsource.Evidence{}, fmt.Errorf("unsupported Review Source %q; supported value: coderabbit", req.Source)
 	}
-	return coderabbit.Client{}.WatchStatus(ctx, req)
-}
-
-func defaultWatchHeadCheck(ctx context.Context, req reviewsource.HeadCheckRequest) (watch.HeadCheckState, error) {
-	if req.Source != reviewsource.SourceCodeRabbit {
-		return "", fmt.Errorf("unsupported Review Source %q; supported value: coderabbit", req.Source)
-	}
-	return coderabbit.Client{}.HeadCheck(ctx, req)
+	return coderabbit.Client{}.Evidence(ctx, req)
 }
 
 func defaultWatchHeadSHA(ctx context.Context, gitRoot string) (string, error) {
