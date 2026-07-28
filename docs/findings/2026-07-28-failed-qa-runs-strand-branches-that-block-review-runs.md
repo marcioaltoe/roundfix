@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-28
 updated_at: 2026-07-28
 ---
@@ -86,3 +86,10 @@ by them.
   weakened to fix this. The answer is a new classification, not a laxer default.
 - Branch Integrity Preflight blocking the review Run was right: it prevented a
   Run from starting on top of unresolved state.
+
+## Addendum — 2026-07-28 — Routed to Spec 0053
+
+The `superseded` classification, its `--apply` release, the
+supersession-aware next actions, and the Preflight guard against silently
+fast-forwarding a QA-report-only branch are owned by
+[Spec 0053 — QA gate reachability and verdict semantics](../specs/0053-qa-gate-reachability-and-verdict-semantics/_prd.md).

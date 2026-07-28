@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 created_at: 2026-07-28
 updated_at: 2026-07-28
 ---
@@ -101,3 +101,12 @@ review-artifact commit (`d240e99`), and reached Final Push. Suggestions 2 and
 3 — read-only Pull Request journeys and the blocked-by-environment verdict
 distinction — remain unimplemented, so Spec 0039 stays capped at `partial`
 until one of them lands or a supervisor records the equivalent evidence.
+
+## Addendum — 2026-07-28 — Routed to Spec 0053
+
+Suggestions 2 and 3 are owned by
+[Spec 0053 — QA gate reachability and verdict semantics](../specs/0053-qa-gate-reachability-and-verdict-semantics/_prd.md)
+and
+[ADR-0080](../adr/0080-qa-verdicts-distinguish-environment-blocked-rows.md).
+Spec 0039 was archived the same day with a maintainer `qa_override` and the
+supervised evidence recorded in its final QA report.
