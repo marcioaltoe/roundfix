@@ -186,6 +186,61 @@ func replayJournalEvents(ctx context.Context, source journalEventSource, runID s
 	}
 }
 
+// attachValueFlags are the Attach flags that consume the following
+// argument as their value, so reordering keeps each value with its flag.
+var attachValueFlags = map[string]bool{"run-id": true, "run": true}
+
+// hoistAttachFlags reorders arguments so the documented
+// `roundfix attach <run-id> --no-input` order parses. The standard flag
+// package stops at the first non-flag argument, which would otherwise
+// reject the exact invocation both root help and Attach help print. Flags
+// keep their order and their values, everything after an explicit `--`
+// terminator stays positional, and unknown flags still reach flag.Parse so
+// their existing error text is unchanged.
+func hoistAttachFlags(args []string) []string {
+	flags := make([]string, 0, len(args))
+	operands := make([]string, 0, len(args))
+	terminated := false
+	for index := 0; index < len(args); index++ {
+		arg := args[index]
+		if arg == "--" {
+			terminated = true
+			operands = append(operands, args[index+1:]...)
+			break
+		}
+		name, inlineValue := attachFlagName(arg)
+		if name == "" {
+			operands = append(operands, arg)
+			continue
+		}
+		flags = append(flags, arg)
+		if !inlineValue && attachValueFlags[name] && index+1 < len(args) {
+			index++
+			flags = append(flags, args[index])
+		}
+	}
+	if terminated {
+		flags = append(flags, "--")
+	}
+	return append(flags, operands...)
+}
+
+// attachFlagName reports the flag name in arg and whether its value is
+// already inlined as `--name=value`. An empty name means arg is an operand.
+func attachFlagName(arg string) (string, bool) {
+	if len(arg) < 2 || !strings.HasPrefix(arg, "-") {
+		return "", false
+	}
+	name := strings.TrimPrefix(strings.TrimPrefix(arg, "-"), "-")
+	if name == "" {
+		return "", false
+	}
+	if index := strings.IndexByte(name, '='); index >= 0 {
+		return name[:index], true
+	}
+	return name, false
+}
+
 func parseAttachCommand(args []string) (attachRequest, error) {
 	req := attachRequest{}
 	fs := flag.NewFlagSet("attach", flag.ContinueOnError)
@@ -193,7 +248,7 @@ func parseAttachCommand(args []string) (attachRequest, error) {
 	fs.StringVar(&req.runID, "run-id", "", "Run ID to attach to")
 	fs.StringVar(&req.runID, "run", "", "Run ID to attach to")
 	fs.BoolVar(&req.noInput, "no-input", false, "Fail instead of opening the Run Browser")
-	if err := fs.Parse(args); err != nil {
+	if err := fs.Parse(hoistAttachFlags(args)); err != nil {
 		return req, validationError{message: err.Error()}
 	}
 	remaining := fs.Args()

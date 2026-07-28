@@ -1784,6 +1784,51 @@ func TestTaskCycleExclusiveRetryCancellationRestoresFullSharedCapacity(t *testin
 	releaseAfterCancelSecond()
 }
 
+// TestTaskCycleVerificationGateTryAcquireDistinguishesQueuedAttempts pins
+// the fact the cancellation contract depends on: whether an attempt owns
+// capacity right away, or is queued and must start honoring Stop Requests.
+func TestTaskCycleVerificationGateTryAcquireDistinguishesQueuedAttempts(t *testing.T) {
+	gate := newVerificationGate(1)
+	release, acquired := gate.TryAcquire(verificationShared)
+	if !acquired {
+		t.Fatal("expected free capacity granted without waiting")
+	}
+	if _, queued := gate.TryAcquire(verificationShared); queued {
+		t.Fatal("expected a full gate to report the next attempt as queued")
+	}
+	release()
+	regained, acquired := gate.TryAcquire(verificationShared)
+	if !acquired {
+		t.Fatal("expected a released permit to be reusable")
+	}
+
+	exclusiveEntered := make(chan struct{})
+	exclusiveResults := make(chan gateAcquireResult, 1)
+	go func() {
+		release, err := gate.Acquire(&observedGateContext{Context: context.Background(), entered: exclusiveEntered}, verificationExclusive)
+		exclusiveResults <- gateAcquireResult{release: release, err: err}
+	}()
+	waitObservedGateEntry(t, exclusiveEntered)
+	if _, acquired := gate.TryAcquire(verificationShared); acquired {
+		t.Fatal("expected a queued exclusive retry to keep later shared attempts queued")
+	}
+	if _, acquired := gate.TryAcquire(verificationExclusive); acquired {
+		t.Fatal("expected a queued exclusive retry not to be bypassed")
+	}
+
+	regained()
+	exclusive := waitGateAcquireResult(t, exclusiveResults)
+	if exclusive.err != nil {
+		t.Fatalf("acquire exclusive after shared drain: %v", exclusive.err)
+	}
+	exclusive.release()
+	final, acquired := gate.TryAcquire(verificationShared)
+	if !acquired {
+		t.Fatal("expected full shared capacity back after the exclusive retry released")
+	}
+	final()
+}
+
 func TestTaskCycleValidatesPlan(t *testing.T) {
 	fixture := newTaskCycleFixture(t, []taskSpecSeed{{id: "task_01"}})
 	engine := fixture.engine(t, &taskFakeRunner{calls: fixture.calls, gitRoot: fixture.gitRoot}, &taskFakeVerifier{calls: fixture.calls}, &engineFakeCommitter{calls: fixture.calls}, fixture.worktree)
@@ -2185,6 +2230,99 @@ func TestTaskCycleVerificationCapacityCancellationWhileQueuedStartsNoCommandOrSe
 	taskRef := taskWorktrees.taskRef(queuedTask)
 	if got := taskStatusInSpecRootOnDisk(t, filepath.Join(taskRef.Path, "docs", "specs"), queuedTask); got != string(spec.StatusInProgress) {
 		t.Fatalf("expected queued Task left resumable in_progress, got %q", got)
+	}
+}
+
+// TestTaskCycleStopRequestWhileQueuedForVerificationStartsNoCommandAndStaysResumable
+// covers the public Stop path the direct-cancellation case cannot reach: a
+// Stop Request is durable Run-store state, so the queued attempt has to
+// read it rather than wait for a context that is never cancelled.
+func TestTaskCycleStopRequestWhileQueuedForVerificationStartsNoCommandAndStaysResumable(t *testing.T) {
+	fixture := newTaskCycleFixture(t, []taskSpecSeed{
+		{id: "task_01", verification: []string{"verify-task_01"}},
+		{id: "task_02", verification: []string{"verify-task_02"}},
+	})
+	fixture.sink.published = make(chan runevent.RunEvent, 128)
+	taskWorktrees := newFakeTaskWorktrees()
+	runner := newTaskSchedulerRunner("task_01", "task_02")
+	verifier := newTaskCapacityVerifier("task_01", "task_02")
+	engine := fixture.engineWithTaskWorktrees(t, runner, verifier, &taskSchedulerCommitter{}, fixture.worktree, taskWorktrees)
+	plan := fixture.plan()
+	plan.Concurrency = 2
+	plan.VerificationConcurrency = 1
+
+	resultCh := make(chan struct {
+		result TaskCycleResult
+		err    error
+	}, 1)
+	go func() {
+		result, err := engine.TaskCycle(context.Background(), plan)
+		resultCh <- struct {
+			result TaskCycleResult
+			err    error
+		}{result: result, err: err}
+	}()
+
+	assertTaskSet(t, waitSchedulerStarts(t, runner, 2), "task_01", "task_02")
+	runner.releaseTask("task_01")
+	runner.releaseTask("task_02")
+	active := verifier.waitStart(t)
+	queuedTask := "task_01"
+	if active.taskID == queuedTask {
+		queuedTask = "task_02"
+	}
+	waitPublishedVerificationPhase(t, fixture.sink.published, queuedTask, 1, runevent.VerificationPhaseWaiting)
+	verifier.assertNoStart(t)
+
+	if err := fixture.store.RequestStop(context.Background(), fixture.run.ID); err != nil {
+		t.Fatalf("record public Stop Request: %v", err)
+	}
+	// The queued Task leaves the queue on the Stop Request alone, while the
+	// active attempt still holds the only Verification permit.
+	waitPublishedStopEvent(t, fixture.sink.published)
+	verifier.assertNoStart(t)
+	verifier.releaseAttempt(active.taskID, 1)
+
+	outcome := waitTaskCycleResult(t, resultCh)
+	if !errors.Is(outcome.err, ErrStopRequested) {
+		t.Fatalf("expected the queued Task to end the Run stopped, got result=%+v err=%v", outcome.result, outcome.err)
+	}
+	if _, starts := verifier.observed(); starts != 1 {
+		t.Fatalf("expected zero Verification commands for the queued Task, total starts=%d", starts)
+	}
+	for _, status := range []spec.Status{spec.StatusCompleted, spec.StatusFailed} {
+		if hasTaskSettlementEvent(t, fixture.sink.snapshot(), queuedTask, status) {
+			t.Fatalf("expected no false terminal settlement for queued Task %s", queuedTask)
+		}
+	}
+	queuedRoot := filepath.Join(taskWorktrees.taskRef(queuedTask).Path, "docs", "specs")
+	if got := taskStatusInSpecRootOnDisk(t, queuedRoot, queuedTask); got != string(spec.StatusInProgress) {
+		t.Fatalf("expected queued Task left resumable in_progress, got %q", got)
+	}
+	// The already-running attempt still settles and integrates before the
+	// Run stops, so its status reaches the Run Worktree.
+	if got := taskStatusOnDisk(t, fixture.gitRoot, active.taskID); got != string(spec.StatusCompleted) {
+		t.Fatalf("expected the in-flight Task settled completed, got %q", got)
+	}
+	if !taskWorktrees.integratedTask(active.taskID) {
+		t.Fatalf("expected the in-flight Task integrated before the Run stopped, got %v", taskWorktrees.integratedTasks())
+	}
+	if outcome.result.Completed != 1 || outcome.result.Failed != 0 || outcome.result.Skipped != 0 {
+		t.Fatalf("expected only the in-flight Task counted, got %+v", outcome.result)
+	}
+}
+
+func waitPublishedStopEvent(t *testing.T, published <-chan runevent.RunEvent) {
+	t.Helper()
+	for {
+		select {
+		case event := <-published:
+			if event.Kind == runevent.KindDaemonStatus && strings.Contains(event.Summary, "Stop Request") {
+				return
+			}
+		case <-time.After(2 * time.Second):
+			t.Fatal("timed out waiting for the Stop Request to reach the Run Event Stream")
+		}
 	}
 }
 

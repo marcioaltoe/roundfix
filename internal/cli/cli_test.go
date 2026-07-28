@@ -12601,6 +12601,79 @@ func TestAttachWithoutRunIDNonInteractiveNamesAllRunsList(t *testing.T) {
 	}
 }
 
+// TestAttachAcceptsDocumentedFlagOrders replays the exact invocation root
+// help and Attach help print: the Run ID first, then the flag.
+func TestAttachAcceptsDocumentedFlagOrders(t *testing.T) {
+	orders := map[string]func(runID string) []string{
+		"run id then flag": func(runID string) []string { return []string{"attach", runID, "--no-input"} },
+		"flag then run id": func(runID string) []string { return []string{"attach", "--no-input", runID} },
+		"run id only":      func(runID string) []string { return []string{"attach", runID} },
+	}
+	for name, argsFor := range orders {
+		t.Run(name, func(t *testing.T) {
+			homeDir, repoDir := withCLIWorkspace(t)
+			workDir := t.TempDir()
+			writeImplementSpec(t, repoDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "completed"}})
+			writeImplementSpec(t, workDir, implementTestSlug, []implementSeed{{id: "task_01", title: "Read state", status: "completed"}})
+			run := createTerminalAttachSpecRun(t, homeDir, repoDir, workDir, store.StateClean)
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+
+			code := RunContext(context.Background(), argsFor(run.ID), &stdout, &stderr)
+
+			if code != 0 {
+				t.Fatalf("expected the documented order to replay the Run, got %d stderr=%q", code, stderr.String())
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no failure output, got %q", stderr.String())
+			}
+			want := "Run " + run.ID + " reached Clean; timeline replayed read-only."
+			if !strings.Contains(stdout.String(), want) {
+				t.Fatalf("expected attach output to contain %q, got:\n%s", want, stdout.String())
+			}
+		})
+	}
+}
+
+func TestParseAttachCommandAcceptsFlagsInAnyPosition(t *testing.T) {
+	tests := []struct {
+		name        string
+		args        []string
+		wantRunID   string
+		wantNoInput bool
+		wantErr     string
+	}{
+		{name: "documented trailing flag", args: []string{"run_alpha", "--no-input"}, wantRunID: "run_alpha", wantNoInput: true},
+		{name: "leading flag", args: []string{"--no-input", "run_alpha"}, wantRunID: "run_alpha", wantNoInput: true},
+		{name: "trailing run id flag", args: []string{"--no-input", "--run-id", "run_alpha"}, wantRunID: "run_alpha", wantNoInput: true},
+		{name: "single dash trailing flag", args: []string{"run_alpha", "-no-input"}, wantRunID: "run_alpha", wantNoInput: true},
+		{name: "inline flag value after operand", args: []string{"run_alpha", "--no-input=true"}, wantRunID: "run_alpha", wantNoInput: true},
+		{name: "terminator keeps operand", args: []string{"--no-input", "--", "run_alpha"}, wantRunID: "run_alpha", wantNoInput: true},
+		{name: "run id both ways", args: []string{"run_alpha", "--run-id", "run_beta"}, wantErr: "pass Run ID either as an argument or with --run-id, not both"},
+		{name: "second operand after flag", args: []string{"run_alpha", "--no-input", "extra"}, wantErr: `unexpected argument "extra"`},
+		{name: "unknown trailing flag", args: []string{"run_alpha", "--bogus"}, wantErr: "flag provided but not defined"},
+		{name: "missing flag value", args: []string{"--run-id"}, wantErr: "flag needs an argument"},
+		{name: "dangling run id flag takes the operand", args: []string{"run_alpha", "--run-id"}, wantRunID: "run_alpha"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := parseAttachCommand(tt.args)
+			if tt.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("expected error containing %q, got %v", tt.wantErr, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("parse attach %v: %v", tt.args, err)
+			}
+			if req.runID != tt.wantRunID || req.noInput != tt.wantNoInput {
+				t.Fatalf("expected runID=%q noInput=%v, got runID=%q noInput=%v", tt.wantRunID, tt.wantNoInput, req.runID, req.noInput)
+			}
+		})
+	}
+}
+
 func TestAttachSpecRunReadsTasksFromKeptWorkDir(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	workDir := t.TempDir()

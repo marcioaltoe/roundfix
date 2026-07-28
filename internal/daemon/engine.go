@@ -1326,6 +1326,50 @@ func (engine *Engine) publishStop(ctx context.Context, runID string, batchNumber
 	return nil
 }
 
+// stopRequestPollInterval paces the durable Stop Request reads a blocked
+// Daemon wait makes. It is short enough that leaving a queue feels
+// immediate and long enough that a heavy Verification never churns the Run
+// Database.
+const stopRequestPollInterval = 100 * time.Millisecond
+
+// watchStopRequest derives a context from ctx that is also cancelled once a
+// public Stop Request is recorded for runID, so Daemon work that is only
+// waiting can leave promptly instead of blocking until some later boundary
+// happens to poll. The Stop Request is durable Run-store state a separate
+// process writes, which is why it is read rather than awaited. The returned
+// finish function stops the poller, must be called exactly once, and
+// reports whether a Stop Request is what ended the wait.
+func (engine *Engine) watchStopRequest(ctx context.Context, runID string) (context.Context, func() bool) {
+	watchCtx, cancel := context.WithCancel(ctx)
+	stopped := false
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		ticker := time.NewTicker(stopRequestPollInterval)
+		defer ticker.Stop()
+		for {
+			// A failed read must never invent a Stop Request; the existing
+			// Daemon boundaries still surface a real one.
+			requested, err := engine.deps.Runs.StopRequested(watchCtx, runID)
+			if err == nil && requested {
+				stopped = true
+				cancel()
+				return
+			}
+			select {
+			case <-watchCtx.Done():
+				return
+			case <-ticker.C:
+			}
+		}
+	}()
+	return watchCtx, func() bool {
+		cancel()
+		<-done
+		return stopped
+	}
+}
+
 func (engine *Engine) stopIfRequested(ctx context.Context, runID string, batchNumber int) error {
 	requested, err := engine.deps.Runs.StopRequested(ctx, runID)
 	if err != nil {

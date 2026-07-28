@@ -38,8 +38,13 @@ func (mode verificationMode) String() string {
 	}
 }
 
+// verificationGate hands out Verification Capacity. TryAcquire never
+// blocks: it reports whether the attempt owns capacity right away, which is
+// what tells a caller that the attempt is about to queue and must start
+// honoring Stop Requests for work it has not begun (Core Feature 9).
 type verificationGate interface {
 	Acquire(context.Context, verificationMode) (release func(), err error)
+	TryAcquire(verificationMode) (release func(), acquired bool)
 }
 
 type fairVerificationGate struct {
@@ -77,14 +82,27 @@ func (gate *fairVerificationGate) Acquire(ctx context.Context, mode verification
 	}
 }
 
+// TryAcquire grants capacity only when it is free right now and no
+// exclusive retry is already queued. It never registers a waiter, so a
+// failed try leaves gate state and fairness exactly as it found them.
+func (gate *fairVerificationGate) TryAcquire(mode verificationMode) (func(), bool) {
+	gate.mu.Lock()
+	defer gate.mu.Unlock()
+	if gate.exclusiveWaiters > 0 || !gate.grantableLocked(mode) {
+		return nil, false
+	}
+	gate.grantLocked(mode)
+	return gate.release(mode), true
+}
+
 func (gate *fairVerificationGate) acquireShared(ctx context.Context) (func(), error) {
 	for {
 		if err := ctx.Err(); err != nil {
 			gate.mu.Unlock()
 			return nil, err
 		}
-		if !gate.exclusiveActive && gate.exclusiveWaiters == 0 && gate.activeShared < gate.capacity {
-			gate.activeShared++
+		if gate.grantableLocked(verificationShared) {
+			gate.grantLocked(verificationShared)
 			gate.mu.Unlock()
 			return gate.release(verificationShared), nil
 		}
@@ -106,9 +124,9 @@ func (gate *fairVerificationGate) acquireExclusive(ctx context.Context) (func(),
 			gate.mu.Unlock()
 			return nil, err
 		}
-		if !gate.exclusiveActive && gate.activeShared == 0 {
+		if gate.grantableLocked(verificationExclusive) {
 			gate.exclusiveWaiters--
-			gate.exclusiveActive = true
+			gate.grantLocked(verificationExclusive)
 			gate.mu.Unlock()
 			return gate.release(verificationExclusive), nil
 		}
@@ -119,6 +137,29 @@ func (gate *fairVerificationGate) acquireExclusive(ctx context.Context) (func(),
 		case <-changed:
 		}
 		gate.mu.Lock()
+	}
+}
+
+// grantableLocked reports whether mode can take capacity immediately. A
+// shared attempt also waits behind any queued exclusive retry so the retry
+// cannot starve; an exclusive attempt waits until every attempt drained.
+func (gate *fairVerificationGate) grantableLocked(mode verificationMode) bool {
+	switch mode {
+	case verificationShared:
+		return !gate.exclusiveActive && gate.exclusiveWaiters == 0 && gate.activeShared < gate.capacity
+	case verificationExclusive:
+		return !gate.exclusiveActive && gate.activeShared == 0
+	default:
+		return false
+	}
+}
+
+func (gate *fairVerificationGate) grantLocked(mode verificationMode) {
+	switch mode {
+	case verificationShared:
+		gate.activeShared++
+	case verificationExclusive:
+		gate.exclusiveActive = true
 	}
 }
 
@@ -346,6 +387,16 @@ func (engine *Engine) runTaskScheduler(ctx context.Context, plan TaskPlan, statu
 		running--
 		if workerResult.err != nil {
 			statuses[workerResult.task.ID] = taskRunFailed
+			// A worker that ended on a Stop Request is not an
+			// infrastructure failure: it starts nothing new, yet the Tasks
+			// already in flight still settle and integrate before the Run
+			// reaches Stopped.
+			if isStop(ctx, workerResult.err) {
+				if stopErr == nil {
+					stopErr = workerResult.err
+				}
+				continue
+			}
 			if fatalErr == nil {
 				fatalErr = workerResult.err
 			}
@@ -870,9 +921,9 @@ func (engine *Engine) runTaskVerificationRequest(ctx context.Context, plan TaskP
 	if plan.verificationGate == nil {
 		return verificationAttemptOutcome{}, fmt.Errorf("verify run %q Task %s: Verification gate is required", plan.RunID, task.ID)
 	}
-	release, err := plan.verificationGate.Acquire(ctx, request.Mode)
+	release, err := engine.acquireVerificationCapacity(ctx, plan, task, request)
 	if err != nil {
-		return verificationAttemptOutcome{}, fmt.Errorf("acquire Verification Capacity for run %q Task %s attempt %d retry %d: %w", plan.RunID, task.ID, request.Attempt, request.Retry, err)
+		return verificationAttemptOutcome{}, err
 	}
 
 	verification, err := engine.runVerificationAttempt(ctx, request)
@@ -886,6 +937,43 @@ func (engine *Engine) runTaskVerificationRequest(ctx context.Context, plan TaskP
 		return verificationAttemptOutcome{}, fmt.Errorf("verify run %q Task %s: %w", plan.RunID, task.ID, err)
 	}
 	return verification, nil
+}
+
+// acquireVerificationCapacity puts one Verification attempt through the
+// Run's capacity gate. An attempt that owns capacity immediately is
+// in-flight work and proceeds. An attempt that has to queue has started no
+// child command, so from that moment a public Stop Request ends the wait,
+// starts nothing, and leaves the Task resumable instead of settling it
+// (PRD US8, Core Feature 9). A Stop Request is durable Run-store state a
+// separate process writes, so the queue reads that state; context
+// cancellation alone never observes it.
+func (engine *Engine) acquireVerificationCapacity(ctx context.Context, plan TaskPlan, task spec.Task, request verificationAttemptRequest) (func(), error) {
+	if release, acquired := plan.verificationGate.TryAcquire(request.Mode); acquired {
+		return release, nil
+	}
+	waitCtx, finishWait := engine.watchStopRequest(ctx, plan.RunID)
+	release, err := plan.verificationGate.Acquire(waitCtx, request.Mode)
+	stopped := finishWait()
+	if err != nil {
+		if stopped {
+			return nil, engine.stopQueuedVerification(ctx, plan, task, request)
+		}
+		return nil, fmt.Errorf("acquire Verification Capacity for run %q Task %s attempt %d retry %d: %w", plan.RunID, task.ID, request.Attempt, request.Retry, err)
+	}
+	// Dequeue boundary: capacity can be granted in the same instant the
+	// Stop Request lands, so re-read the flag before any child starts.
+	if stopErr := engine.stopIfRequested(ctx, plan.RunID, request.BatchNumber); stopErr != nil {
+		release()
+		return nil, fmt.Errorf("stop run %q before Task %s Verification attempt %d retry %d: %w", plan.RunID, task.ID, request.Attempt, request.Retry, stopErr)
+	}
+	return release, nil
+}
+
+func (engine *Engine) stopQueuedVerification(ctx context.Context, plan TaskPlan, task spec.Task, request verificationAttemptRequest) error {
+	if err := engine.publishStop(ctx, plan.RunID, request.BatchNumber); err != nil {
+		return fmt.Errorf("publish stop event for run %q while Task %s waited for Verification Capacity: %w", plan.RunID, task.ID, errors.Join(ErrStopRequested, err))
+	}
+	return fmt.Errorf("stop run %q while Task %s waited for Verification Capacity: %w", plan.RunID, task.ID, ErrStopRequested)
 }
 
 func (engine *Engine) repairTaskVerification(ctx context.Context, plan TaskPlan, task *spec.Task, ordinal int, first verificationAttemptOutcome, owner *agentSessionOwner) (string, error) {
