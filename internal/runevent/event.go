@@ -154,8 +154,11 @@ type OutcomePayload struct {
 	Reason            string `json:"reason,omitempty"`
 	NextAction        string `json:"next_action,omitempty"`
 	ReviewIssuesKnown *bool  `json:"review_issues_known,omitempty"`
+	ConsoleLog        string `json:"console_log,omitempty"`
+	AttachCommand     string `json:"attach_command,omitempty"`
 	EvidenceKind      string `json:"evidence_kind,omitempty"`
 	EvidenceHeadSHA   string `json:"evidence_head_sha,omitempty"`
+	VerifiedHeadSHA   string `json:"verified_head_sha,omitempty"`
 }
 
 // Sink consumes published Run Events. Context comes first because durable

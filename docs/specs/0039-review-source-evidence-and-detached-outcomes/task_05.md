@@ -1,7 +1,7 @@
 ---
 task: task_05
 spec: 0039-review-source-evidence-and-detached-outcomes
-status: pending
+status: completed
 type: backend
 complexity: high
 ---
@@ -29,24 +29,24 @@ counts, and every non-Clean outcome gains an actionable next step.
 
 ## Subtasks
 
-- [ ] Extend watch result with issue knowledge and terminal context.
-- [ ] Render unknown versus known-zero reports.
-- [ ] Build one terminal-context boundary.
-- [ ] Extend additive outcome stream projection.
-- [ ] Preserve existing JSONL and filter behavior.
-- [ ] Add pre-fetch, fetched-zero, and terminal-outcome cases.
+- [x] Extend watch result with issue knowledge and terminal context.
+- [x] Render unknown versus known-zero reports.
+- [x] Build one terminal-context boundary.
+- [x] Extend additive outcome stream projection.
+- [x] Preserve existing JSONL and filter behavior.
+- [x] Add pre-fetch, fetched-zero, and terminal-outcome cases.
 
 ## Acceptance Criteria
 
-- [ ] Failed status discovery or fetch emits one unknown line and no numeric
+- [x] Failed status discovery or fetch emits one unknown line and no numeric
       Review Issue counts.
-- [ ] A completed zero-issue fetch remains known and reports valid zeros.
-- [ ] Every non-Clean outcome event contains reason and next action.
-- [ ] Console Log, Attach command, issue knowledge, and Evidence are present
+- [x] A completed zero-issue fetch remains known and reports valid zeros.
+- [x] Every non-Clean outcome event contains reason and next action.
+- [x] Console Log, Attach command, issue knowledge, and Evidence are present
       when available and omitted safely when unavailable.
-- [ ] Existing `roundfix-events/v1` consumers can ignore additive fields.
-- [ ] Requested output remains on stdout and diagnostics remain on stderr.
-- [ ] A losing completion path emits no duplicate terminal context.
+- [x] Existing `roundfix-events/v1` consumers can ignore additive fields.
+- [x] Requested output remains on stdout and diagnostics remain on stderr.
+- [x] A losing completion path emits no duplicate terminal context.
 
 ## Context
 
@@ -80,3 +80,60 @@ counts, and every non-Clean outcome gains an actionable next step.
   stream, and notification; Build Order 5.
 - `../../adr/0052-run-completion-is-compare-and-set.md` → winner-only outcome
   publication.
+
+## Result
+
+Implemented Review Issue knowledge as a watch result invariant: it remains
+false until `Fetch` returns successfully, then remains true through later
+terminal paths, including a fetched-zero Round. Pre-fetch failures now print
+only `Review Issues: unknown — fetch did not complete.` on stdout, while a
+successful zero-issue fetch retains the existing valid zero-count summaries.
+
+Built one winner-gated terminal context carrying bounded reason, next action,
+Review Issue knowledge, Review Source Evidence, verified head, Console Log,
+and Attach command. The durable `daemon.outcome` payload and
+`roundfix-events/v1` projection expose these values as additive optional
+fields. Every non-Clean outcome receives an actionable reason and next action;
+legacy records and consumers continue to omit or ignore absent and unknown
+fields.
+
+### Verification
+
+- `GOCACHE=/tmp/roundfix-task05-gocache rtk go test ./internal/watch ./internal/cli -run 'Test.*(ReviewIssuesKnown|ReviewIssuesUnknown|TerminalContext|FetchedZero)' -count=1`
+  — passed.
+- `GOCACHE=/tmp/roundfix-task05-gocache rtk go test ./internal/runevent -run 'Test.*(Outcome.*Context|ReviewIssues|Evidence)' -count=1`
+  — passed.
+- `GOCACHE=/tmp/roundfix-task05-gocache rtk go test -race ./internal/watch ./internal/cli ./internal/runevent -run 'Test.*(TerminalContext|ReviewIssues)' -count=1`
+  — passed.
+- `GOCACHE=/tmp/roundfix-task05-gocache rtk go test ./internal/cli -run 'TestRunWatch(PrintsBudgetExceededStdoutReport|TimeoutOffersManualReviewWithoutFetching|StopRequestBeforeAgentMarksStopped|ReviewSkippedPublishesReasonWithoutArtifactsOrCleanup|ReviewIssuesUnknownWhenFetchFailsKeepsArtifactsUnpublished|ReviewIssuesKnownAfterFetchedZero)$' -count=1`
+  — passed.
+- `GOCACHE=/tmp/roundfix-task05-gocache rtk go test ./internal/watch ./internal/runevent -count=1`
+  — passed.
+- `rtk git -c core.fsmonitor=false diff --check` — passed.
+
+### Acceptance evidence
+
+- Pre-fetch status and fetch failures produce the single unknown line without
+  numeric status counts; diagnostics remain on stderr.
+- Fetched-zero cases keep `ReviewIssuesKnown=true`, print valid zeros, and
+  retain accepted Evidence plus the verified head.
+- Table coverage proves every non-Clean terminal state receives a bounded
+  reason and next action.
+- Detached terminal-context coverage proves Console Log and Attach command
+  propagation; stream coverage proves false issue knowledge is not omitted.
+- A legacy consumer decodes the additive `roundfix-events/v1` record while a
+  future unknown field is ignored.
+- The owner-versus-Force-Stop race test proves only the compare-and-set winner
+  publishes terminal context; the losing path and identical replay add no
+  duplicate outcome.
+
+### Follow-ups
+
+- An extra broad package run found
+  `TestBranchIntegrityPreflightMigratesOutdatedRunDatabase` still expects
+  schema version 10 while prior Spec work has advanced it to 11. This is
+  outside Task 05 and was left unchanged.
+- The same extra run could not execute
+  `TestRunForceStopOwnerProcessIntegrationProvesExitBeforeStoreCompletion`
+  because the managed sandbox denied `/bin/ps`. The Task-specific race check
+  passed with the writable Task-local Go cache.

@@ -2131,7 +2131,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 			}
 			fmt.Fprintf(stderr, "%s Run %s reached %s.\n", commandDisplayName(req.name), run.ID, store.StateStopped)
 			printStopSummary(req, preflightResult, stderr)
-			printReviewIssueReport(stdout, store.StateStopped, 1, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues, stderr))
+			printReviewIssueReport(stdout, store.StateStopped, 1, true, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues, stderr))
 			return exitOK
 		}
 		closeAgentSession(ctx, collaborators.runner, resolvePlan.runtime, sessionForClose, run.ID, runStore)
@@ -2163,7 +2163,7 @@ func runResolveCommand(ctx context.Context, req commandRequest, loaded roundconf
 		fmt.Fprintf(stderr, "%d Unresolved Review Issue(s) remain; failed issues are retried by the next fetched Round.\n", cycleResult.Remaining)
 		printAgentCheckoutChangesNotice(stderr)
 	}
-	printReviewIssueReport(stdout, completed.State, 1, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues, stderr))
+	printReviewIssueReport(stdout, completed.State, 1, true, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, resolvePlan.selection.Issues, stderr))
 	if completed.State == store.StateUnresolved {
 		return exitRunFailed
 	}
@@ -2218,7 +2218,11 @@ func formatReviewWaitProgress(progress watch.WaitProgress) string {
 
 // printReviewIssueReport prints the deterministic stdout contract for review
 // Runs after the terminal outcome is known.
-func printReviewIssueReport(stdout io.Writer, outcome string, roundsCompleted int, report reviewIssueReport) {
+func printReviewIssueReport(stdout io.Writer, outcome string, roundsCompleted int, reviewIssuesKnown bool, report reviewIssueReport) {
+	if !reviewIssuesKnown {
+		fmt.Fprintln(stdout, "Review Issues: unknown — fetch did not complete.")
+		return
+	}
 	runCounts := reviewIssueReportCounts{}
 	for index, current := range report.runIssues {
 		status := reviewIssueDisplayStatus(current.Status)
@@ -2635,28 +2639,21 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 		printRunFailure(req.name, completeErr, stderr)
 		return exitRunFailed
 	}
+	terminalContext := watchTerminalCompletionContext(req, completed.Run, result)
 	var cleanupWarnings []cleanupWarning
 	if result.Outcome == store.StateReviewSkipped {
-		reviewIssuesKnown := false
 		publishTerminalCompletionWithContext(
 			completeCtx,
 			runStore,
 			notifier,
 			stderr,
 			completed,
-			terminalCompletionContext{
-				Remaining:         result.Remaining,
-				Reason:            result.TerminalReason,
-				NextAction:        result.NextAction,
-				ReviewIssuesKnown: &reviewIssuesKnown,
-				EvidenceKind:      string(result.Evidence.Kind),
-				EvidenceHeadSHA:   result.Evidence.ObservedHeadSHA,
-			},
+			terminalContext,
 		)
 		cleanupWarnings = bestEffortForceStopAgentSessions(completeCtx, runStore, completed.Run)
 	} else {
 		closeAgentSession(completeCtx, collaborators.runner, runtime, sessionForClose, completed.ID, runStore)
-		publishTerminalCompletion(completeCtx, runStore, notifier, stderr, completed, result.Remaining)
+		publishTerminalCompletionWithContext(completeCtx, runStore, notifier, stderr, completed, terminalContext)
 	}
 	// The cockpit stays on screen, read-only, until the user closes it.
 	ui.Wait()
@@ -2685,7 +2682,7 @@ func runWatchCommand(ctx context.Context, req commandRequest, loaded roundconfig
 	if result.Outcome == store.StateReviewSkipped {
 		printReviewSkippedReport(stdout, result.TerminalReason, result.NextAction)
 	} else {
-		printReviewIssueReport(stdout, completed.State, result.Rounds, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, watchReportIssues, stderr))
+		printReviewIssueReport(stdout, completed.State, result.Rounds, result.ReviewIssuesKnown, reviewIssueReportData(context.WithoutCancel(ctx), req, preflightResult, watchReportIssues, stderr))
 	}
 	if stopped {
 		printStopSummary(req, preflightResult, stderr)
@@ -3857,24 +3854,103 @@ func publishAgentSessionStatus(ctx context.Context, sink runevent.Sink, runID st
 
 // publishRunOutcome appends the terminal outcome event after CompleteRun so
 // terminal states are provable from the journal alone.
+func watchTerminalCompletionContext(req commandRequest, run store.Run, result watch.Result) terminalCompletionContext {
+	reviewIssuesKnown := result.ReviewIssuesKnown
+	terminal := terminalCompletionContext{
+		Remaining:         result.Remaining,
+		Reason:            result.TerminalReason,
+		NextAction:        result.NextAction,
+		ReviewIssuesKnown: &reviewIssuesKnown,
+		Evidence:          result.Evidence,
+		VerifiedHeadSHA:   result.VerifiedHeadSHA,
+	}
+	if run.ID != "" {
+		terminal.AttachCommand = "roundfix attach " + run.ID
+	}
+	if req.detachChild != nil && req.artifactDir != "" && run.ID != "" {
+		terminal.ConsoleLog = detachedConsoleLogPath(req.artifactDir, run.ID)
+	}
+	return terminal
+}
+
 type terminalCompletionContext struct {
 	Remaining         int
 	Reason            string
 	NextAction        string
 	ReviewIssuesKnown *bool
-	EvidenceKind      string
-	EvidenceHeadSHA   string
+	ConsoleLog        string
+	AttachCommand     string
+	Evidence          reviewsource.Evidence
+	VerifiedHeadSHA   string
+}
+
+func normalizedTerminalCompletionContext(state string, terminal terminalCompletionContext) terminalCompletionContext {
+	terminal.Reason = boundTerminalContextText(terminal.Reason)
+	terminal.NextAction = boundTerminalContextText(terminal.NextAction)
+	if state == store.StateClean {
+		return terminal
+	}
+	defaultReason, defaultAction := terminalCompletionDefaults(state)
+	if terminal.Reason == "" {
+		terminal.Reason = defaultReason
+	}
+	if terminal.NextAction == "" {
+		terminal.NextAction = defaultAction
+	}
+	return terminal
+}
+
+func terminalCompletionDefaults(state string) (string, string) {
+	switch state {
+	case store.StateFetched:
+		return "The fetch Run completed without resolving Review Issues.", "Run resolve or watch when the Review Issues are ready for Agent work."
+	case store.StateStopped:
+		return "A Stop Request ended the Run.", "Inspect the preserved work before starting another Run."
+	case store.StateCleanUnverified:
+		return "Merge-Ready was not confirmed for the completed Run.", "Confirm the pull request's Review Source Evidence before merging."
+	case store.StateReviewSkipped:
+		return "The Review Source explicitly skipped the review.", "Reduce or split the pull request, then request another Review Source review."
+	case store.StateMaxRoundsReached:
+		return "The configured maximum number of Rounds was reached.", "Review the remaining Review Issues before deciding whether to start another Run."
+	case store.StateBudgetExceeded:
+		return "The Run Budget was exhausted.", "Inspect the Run Event Stream before starting another Run with an appropriate budget."
+	case store.StateTimedOut:
+		return "The Run timed out before reaching Clean.", "Inspect the Run Event Stream, restore the missing prerequisite, and start another Run."
+	case store.StateFailed:
+		return "The Run failed before it could complete.", "Inspect the diagnostics, correct the failure, and start another Run."
+	case store.StateIntegrationPending:
+		return "Completed work could not be integrated into the target branch.", "Inspect the retained Run Worktree and follow the reported integration command."
+	case store.StateUnresolved:
+		return "The Run completed with Unresolved Review Issues.", "Review the remaining Review Issues before starting another Run."
+	default:
+		return "The Run reached a non-Clean outcome.", "Inspect the Run Event Stream before deciding the next recovery step."
+	}
+}
+
+func boundTerminalContextText(text string) string {
+	return reviewsource.BoundEvidenceDetail(strings.Join(strings.Fields(text), " "))
+}
+
+func terminalEvidenceHead(evidence reviewsource.Evidence) string {
+	if evidence.ObservedHeadSHA != "" {
+		return evidence.ObservedHeadSHA
+	}
+	return evidence.ExpectedHeadSHA
 }
 
 func publishRunOutcome(ctx context.Context, runStore *store.Store, runID string, state string, terminal terminalCompletionContext, stderr io.Writer) {
+	terminal = normalizedTerminalCompletionContext(state, terminal)
 	payload, err := json.Marshal(runevent.OutcomePayload{
 		State:             state,
 		Remaining:         terminal.Remaining,
 		Reason:            terminal.Reason,
 		NextAction:        terminal.NextAction,
 		ReviewIssuesKnown: terminal.ReviewIssuesKnown,
-		EvidenceKind:      terminal.EvidenceKind,
-		EvidenceHeadSHA:   terminal.EvidenceHeadSHA,
+		ConsoleLog:        terminal.ConsoleLog,
+		AttachCommand:     terminal.AttachCommand,
+		EvidenceKind:      string(terminal.Evidence.Kind),
+		EvidenceHeadSHA:   terminalEvidenceHead(terminal.Evidence),
+		VerifiedHeadSHA:   terminal.VerifiedHeadSHA,
 	})
 	if err != nil {
 		return

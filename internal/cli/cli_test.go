@@ -4405,7 +4405,7 @@ func TestPrintReviewIssueReportSplitsRunAndCumulativeCountsAndReasons(t *testing
 	}
 	var stdout bytes.Buffer
 
-	printReviewIssueReport(&stdout, store.StateCleanUnverified, 2, report)
+	printReviewIssueReport(&stdout, store.StateCleanUnverified, 2, true, report)
 
 	wantStdout := "" +
 		"issue 001 invalid — major: generated file — reason: invalid: generated file\n" +
@@ -4438,7 +4438,7 @@ func TestReviewIssueReportDataMarksCumulativeUnavailableOnLoadFailure(t *testing
 		t.Fatalf("expected cumulative data unavailable, got %+v", report)
 	}
 	var stdout bytes.Buffer
-	printReviewIssueReport(&stdout, store.StateClean, 1, report)
+	printReviewIssueReport(&stdout, store.StateClean, 1, true, report)
 	wantStdout := "" +
 		"issue 001 resolved — major: handled issue\n" +
 		"This Run (Clean after 1 Round(s)): 1 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
@@ -4665,7 +4665,7 @@ func TestRunOutcomeNotificationsCaptureTerminalResolveWatchAndImplement(t *testi
 	}
 }
 
-func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalOutcome(t *testing.T) {
+func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalContext(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	persistCLIReviewIssue(t, repoDir, 1, "feature/review")
@@ -4744,6 +4744,13 @@ func TestCompletionWinnerOwnerVersusForceStopPublishesOneTerminalOutcome(t *test
 	for _, entry := range events {
 		if entry.Event.Kind == runevent.KindDaemonOutcome {
 			outcomes++
+			var payload runevent.OutcomePayload
+			if err := json.Unmarshal(entry.Event.Payload, &payload); err != nil {
+				t.Fatalf("decode winning terminal context: %v", err)
+			}
+			if payload.Reason == "" || payload.NextAction == "" {
+				t.Fatalf("winning non-Clean terminal context is not actionable: %#v", payload)
+			}
 		}
 	}
 	if outcomes != 1 {
@@ -5185,9 +5192,7 @@ budget:
 	if code != exitRunFailed {
 		t.Fatalf("expected BudgetExceeded exit %d, got %d stderr=%q", exitRunFailed, code, stderr.String())
 	}
-	wantStdout := "" +
-		"This Run (BudgetExceeded after 0 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
-		"Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n"
+	wantStdout := "Review Issues: unknown — fetch did not complete.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected BudgetExceeded stdout report %q, got %q", wantStdout, stdout.String())
 	}
@@ -5381,9 +5386,7 @@ watch:
 	if code != 1 {
 		t.Fatalf("expected watch timeout exit 1, got %d", code)
 	}
-	wantStdout := "" +
-		"This Run (TimedOut after 0 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
-		"Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n"
+	wantStdout := "Review Issues: unknown — fetch did not complete.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected timeout stdout report %q, got %q", wantStdout, stdout.String())
 	}
@@ -5520,7 +5523,10 @@ func TestRunWatchReviewSkippedPublishesReasonWithoutArtifactsOrCleanup(t *testin
 		foundOutcome = true
 	}
 	if !foundOutcome || outcome.State != store.StateReviewSkipped || outcome.Reason != reason ||
-		outcome.NextAction == "" || outcome.EvidenceKind != string(reviewsource.EvidenceKindCheckRun) {
+		outcome.NextAction == "" ||
+		outcome.ReviewIssuesKnown == nil ||
+		*outcome.ReviewIssuesKnown ||
+		outcome.EvidenceKind != string(reviewsource.EvidenceKindCheckRun) {
 		t.Fatalf("Review Skipped outcome payload = %#v", outcome)
 	}
 
@@ -5607,7 +5613,7 @@ func TestRunWatchCleanupBeforeAgentWarningFollowsReviewSkippedReason(t *testing.
 	}
 }
 
-func TestRunWatchReviewSkippedArtifactBoundaryKeepsFailedFetchUnpublished(t *testing.T) {
+func TestRunWatchReviewIssuesUnknownWhenFetchFailsKeepsArtifactsUnpublished(t *testing.T) {
 	homeDir, repoDir := withCLIWorkspace(t)
 	withSuccessfulPreflight(t, repoDir)
 	withWatchEvidence(t, func(_ context.Context, req reviewsource.EvidenceRequest) (reviewsource.Evidence, error) {
@@ -5631,6 +5637,14 @@ func TestRunWatchReviewSkippedArtifactBoundaryKeepsFailedFetchUnpublished(t *tes
 	if code != exitRunFailed {
 		t.Fatalf("failed fetch exit = %d, want %d; stderr=%q", code, exitRunFailed, stderr.String())
 	}
+	if stdout.String() != "Review Issues: unknown — fetch did not complete.\n" {
+		t.Fatalf("failed pre-fetch stdout = %q", stdout.String())
+	}
+	for _, forbidden := range []string{"0 resolved", "0 invalid", "0 duplicated", "0 failed", "0 unresolved"} {
+		if strings.Contains(stdout.String(), forbidden) {
+			t.Fatalf("failed pre-fetch report contains misleading count %q: %q", forbidden, stdout.String())
+		}
+	}
 	if committer.calls != 0 {
 		t.Fatalf("failed pre-fetch review-artifact commits = %d, want 0", committer.calls)
 	}
@@ -5639,6 +5653,117 @@ func TestRunWatchReviewSkippedArtifactBoundaryKeepsFailedFetchUnpublished(t *tes
 	}
 	assertRunCount(t, store.DatabasePath(homeDir), 1)
 	assertNoActiveRun(t, homeDir, "owner/project", "feature/review")
+}
+
+func TestRunWatchReviewIssuesKnownAfterFetchedZero(t *testing.T) {
+	homeDir, repoDir := withCLIWorkspace(t)
+	withSuccessfulPreflight(t, repoDir)
+	withFetchReviewItems(t, nil)
+	withWatchEvidence(t, (&fakeWatchEvidence{evidence: []reviewsource.Evidence{
+		reviewedEvidence("abc123"),
+		{
+			State:           reviewsource.EvidenceVerified,
+			Kind:            reviewsource.EvidenceKindReviewApproval,
+			ExpectedHeadSHA: "abc123",
+			ObservedHeadSHA: "abc123",
+			Conclusion:      "approved",
+		},
+	}}).Evidence)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := RunContext(context.Background(), []string{"watch", "--source", "coderabbit", "--pr", "123", "--until-clean", "--max-rounds", "6", "--no-input"}, &stdout, &stderr)
+
+	if code != exitOK {
+		t.Fatalf("fetched-zero exit = %d, want %d; stderr=%q", code, exitOK, stderr.String())
+	}
+	wantStdout := "" +
+		"This Run (Clean after 1 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
+		"Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n"
+	if stdout.String() != wantStdout {
+		t.Fatalf("fetched-zero stdout = %q, want %q", stdout.String(), wantStdout)
+	}
+
+	_, events := journaledRunEvents(t, homeDir, stderr.String())
+	var outcome runevent.OutcomePayload
+	found := false
+	for _, journaled := range events {
+		if journaled.Event.Kind != runevent.KindDaemonOutcome {
+			continue
+		}
+		if err := json.Unmarshal(journaled.Event.Payload, &outcome); err != nil {
+			t.Fatalf("decode fetched-zero outcome: %v", err)
+		}
+		found = true
+	}
+	if !found ||
+		outcome.ReviewIssuesKnown == nil ||
+		!*outcome.ReviewIssuesKnown ||
+		outcome.EvidenceKind != string(reviewsource.EvidenceKindReviewApproval) ||
+		outcome.EvidenceHeadSHA != "abc123" ||
+		outcome.VerifiedHeadSHA != "abc123" {
+		t.Fatalf("fetched-zero outcome = %#v", outcome)
+	}
+}
+
+func TestWatchTerminalContextCarriesDetachedConsoleAttachEvidenceAndVerifiedHead(t *testing.T) {
+	known := true
+	req := commandRequest{
+		artifactDir: "/tmp/roundfix-artifacts",
+		detachChild: &detachChild{},
+	}
+	run := store.Run{ID: "run_123"}
+	evidence := reviewsource.Evidence{
+		State:           reviewsource.EvidenceVerified,
+		Kind:            reviewsource.EvidenceKindReviewApproval,
+		ExpectedHeadSHA: "abc123",
+		ObservedHeadSHA: "abc123",
+	}
+
+	terminal := watchTerminalCompletionContext(req, run, watch.Result{
+		Outcome:           store.StateCleanUnverified,
+		TerminalReason:    "review was not confirmed",
+		NextAction:        "confirm Review Source Evidence",
+		ReviewIssuesKnown: known,
+		Evidence:          evidence,
+		VerifiedHeadSHA:   "abc123",
+	})
+
+	if terminal.ReviewIssuesKnown == nil || !*terminal.ReviewIssuesKnown {
+		t.Fatalf("terminal Review Issue knowledge = %#v", terminal.ReviewIssuesKnown)
+	}
+	if terminal.ConsoleLog != detachedConsoleLogPath(req.artifactDir, run.ID) ||
+		terminal.AttachCommand != "roundfix attach "+run.ID ||
+		terminal.Evidence != evidence ||
+		terminal.VerifiedHeadSHA != "abc123" ||
+		terminal.Reason == "" ||
+		terminal.NextAction == "" {
+		t.Fatalf("detached terminal context = %#v", terminal)
+	}
+}
+
+func TestTerminalContextAddsReasonAndNextActionForEveryNonCleanOutcome(t *testing.T) {
+	states := []string{
+		store.StateFetched,
+		store.StateStopped,
+		store.StateCleanUnverified,
+		store.StateReviewSkipped,
+		store.StateMaxRoundsReached,
+		store.StateBudgetExceeded,
+		store.StateTimedOut,
+		store.StateFailed,
+		store.StateIntegrationPending,
+		store.StateUnresolved,
+	}
+
+	for _, state := range states {
+		t.Run(state, func(t *testing.T) {
+			terminal := normalizedTerminalCompletionContext(state, terminalCompletionContext{})
+			if terminal.Reason == "" || terminal.NextAction == "" {
+				t.Fatalf("%s terminal context = %#v", state, terminal)
+			}
+		})
+	}
 }
 
 func TestRunWatchReusesOneAgentSessionAcrossRoundsAndCloses(t *testing.T) {
@@ -5768,9 +5893,7 @@ func TestRunWatchStopRequestBeforeAgentMarksStopped(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("expected clean Stop Request exit 0, got %d", code)
 	}
-	wantStdout := "" +
-		"This Run (Stopped after 0 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n" +
-		"Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.\n"
+	wantStdout := "Review Issues: unknown — fetch did not complete.\n"
 	if stdout.String() != wantStdout {
 		t.Fatalf("expected stopped stdout report %q, got %q", wantStdout, stdout.String())
 	}

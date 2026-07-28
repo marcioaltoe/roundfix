@@ -271,6 +271,94 @@ func TestProjectStreamEventReviewSkippedOutcome(t *testing.T) {
 	}
 }
 
+func TestProjectStreamEventOutcomeContextProjectsReviewIssuesEvidenceAndRecovery(t *testing.T) {
+	event := RunEvent{
+		RunID:   "run_context",
+		Source:  SourceDaemon,
+		Kind:    KindDaemonOutcome,
+		Summary: "Run reached CleanUnverified.",
+		Time:    time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC),
+		Payload: []byte(`{
+			"state":"CleanUnverified",
+			"remaining":0,
+			"reason":"Merge-Ready was not confirmed",
+			"next_action":"confirm Review Source Evidence",
+			"review_issues_known":true,
+			"console_log":"/tmp/run_context/console.log",
+			"attach_command":"roundfix attach run_context",
+			"evidence_kind":"review_approval",
+			"evidence_head_sha":"abc123",
+			"verified_head_sha":"abc123",
+			"future_additive_field":"ignored"
+		}`),
+	}
+
+	record, ok, err := ProjectStreamEvent(9, event, StreamCategoryFilter{StreamCategoryOutcome: {}})
+	if err != nil {
+		t.Fatalf("project terminal outcome context: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected terminal outcome context to project")
+	}
+	if record.ReviewIssuesKnown == nil || !*record.ReviewIssuesKnown ||
+		record.Reason == "" ||
+		record.NextAction == "" ||
+		record.ConsoleLog != "/tmp/run_context/console.log" ||
+		record.AttachCommand != "roundfix attach run_context" ||
+		record.EvidenceKind != "review_approval" ||
+		record.EvidenceHeadSHA != "abc123" ||
+		record.VerifiedHeadSHA != "abc123" {
+		t.Fatalf("projected terminal context = %#v", record)
+	}
+
+	raw, err := json.Marshal(record)
+	if err != nil {
+		t.Fatalf("marshal projected terminal context: %v", err)
+	}
+	var legacy struct {
+		Schema   string `json:"schema"`
+		RunID    string `json:"run_id"`
+		Category string `json:"category"`
+		Outcome  string `json:"outcome"`
+	}
+	if err := json.Unmarshal(raw, &legacy); err != nil {
+		t.Fatalf("legacy consumer ignored additive fields: %v", err)
+	}
+	if legacy.Schema != StreamSchema || legacy.RunID != event.RunID || legacy.Category != "outcome" || legacy.Outcome != "CleanUnverified" {
+		t.Fatalf("legacy projection = %#v", legacy)
+	}
+}
+
+func TestProjectStreamEventReviewIssuesUnknownPreservesFalse(t *testing.T) {
+	record, ok, err := ProjectStreamEvent(10, RunEvent{
+		RunID:   "run_unknown",
+		Source:  SourceDaemon,
+		Kind:    KindDaemonOutcome,
+		Summary: "Run reached Failed.",
+		Time:    time.Date(2026, 7, 27, 12, 0, 0, 0, time.UTC),
+		Payload: []byte(`{
+			"state":"Failed",
+			"remaining":0,
+			"reason":"fetch failed",
+			"next_action":"retry after correcting the failure",
+			"review_issues_known":false
+		}`),
+	}, StreamCategoryFilter{StreamCategoryOutcome: {}})
+	if err != nil {
+		t.Fatalf("project unknown Review Issues: %v", err)
+	}
+	if !ok || record.ReviewIssuesKnown == nil || *record.ReviewIssuesKnown {
+		t.Fatalf("unknown Review Issue projection = %#v, ok=%v", record, ok)
+	}
+	raw, err := json.Marshal(record)
+	if err != nil {
+		t.Fatalf("marshal unknown Review Issues: %v", err)
+	}
+	if !strings.Contains(string(raw), `"review_issues_known":false`) {
+		t.Fatalf("unknown Review Issue knowledge omitted from %s", raw)
+	}
+}
+
 func TestProjectStreamEventNormalizesLegacyVerificationEvents(t *testing.T) {
 	tests := []struct {
 		name    string

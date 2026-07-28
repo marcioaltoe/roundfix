@@ -83,9 +83,11 @@ type Result struct {
 	Rounds              int
 	Remaining           int
 	ManualReviewCommand string
+	ReviewIssuesKnown   bool
 	TerminalReason      string
 	NextAction          string
 	Evidence            reviewsource.Evidence
+	VerifiedHeadSHA     string
 }
 
 type StatusSource interface {
@@ -206,10 +208,16 @@ type Dependencies struct {
 	Progress func(WaitProgress)
 }
 
-func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
+func Run(ctx context.Context, req Request, deps Dependencies) (result Result, resultErr error) {
 	if err := validateRequest(req, deps); err != nil {
 		return Result{}, err
 	}
+	reviewIssuesKnown := false
+	terminalEvidence := reviewsource.Evidence{}
+	verifiedHeadSHA := ""
+	defer func() {
+		finalizeResult(&result, resultErr, reviewIssuesKnown, terminalEvidence, verifiedHeadSHA)
+	}()
 	clock := deps.Clock
 	if clock == nil {
 		clock = realClock{}
@@ -242,6 +250,7 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 		if err != nil {
 			return resultForError(round-1, err), err
 		}
+		terminalEvidence = settledWait.evidence
 		if settledWait.budgetExceeded {
 			return Result{Outcome: store.StateBudgetExceeded, Rounds: round - 1}, nil
 		}
@@ -287,6 +296,7 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 		if err != nil {
 			return Result{Outcome: store.StateFailed, Rounds: round - 1}, err
 		}
+		reviewIssuesKnown = true
 		if err := publisher.publish(ctx, runevent.KindDaemonFetch,
 			fmt.Sprintf("Fetched Round %03d with %d Review Issue(s).", fetched.Round, fetched.Issues),
 			map[string]any{"phase": "completed", "round": fetched.Round, "issues": fetched.Issues},
@@ -298,6 +308,9 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 			if err != nil {
 				return resultForError(round, err), err
 			}
+			if confirm.evidence.State != "" {
+				terminalEvidence = confirm.evidence
+			}
 			if confirm.budgetExceeded {
 				return Result{Outcome: store.StateBudgetExceeded, Rounds: round}, nil
 			}
@@ -305,6 +318,7 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 				return resultForReviewSkipped(round, confirm.evidence), nil
 			}
 			if confirm.ready {
+				verifiedHeadSHA = verifiedHeadFromEvidence(confirm.evidence, currentHeadSHA)
 				return Result{Outcome: store.StateClean, Rounds: round}, nil
 			}
 			if confirm.unverified {
@@ -338,6 +352,9 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 			if err != nil {
 				return resultForError(round, err), err
 			}
+			if confirm.evidence.State != "" {
+				terminalEvidence = confirm.evidence
+			}
 			if confirm.budgetExceeded {
 				return Result{Outcome: store.StateBudgetExceeded, Rounds: round}, nil
 			}
@@ -345,6 +362,7 @@ func Run(ctx context.Context, req Request, deps Dependencies) (Result, error) {
 				return resultForReviewSkipped(round, confirm.evidence), nil
 			}
 			if confirm.ready {
+				verifiedHeadSHA = verifiedHeadFromEvidence(confirm.evidence, currentHeadSHA)
 				return Result{Outcome: store.StateClean, Rounds: round}, nil
 			}
 			if confirm.unverified {
@@ -533,14 +551,14 @@ func confirmMergeReady(ctx context.Context, req Request, runDeadline time.Time, 
 				return confirmResult{}, err
 			}
 			if deadlineUsesRunBudget(deadline, runDeadline) {
-				return confirmResult{budgetExceeded: true}, nil
+				return confirmResult{budgetExceeded: true, evidence: progress.Evidence}, nil
 			}
 			if !wasRetrying &&
 				progress.Evidence.State == reviewsource.EvidencePending &&
 				progress.Evidence.Kind == reviewsource.EvidenceKindNone {
-				return confirmResult{unverified: true}, nil
+				return confirmResult{unverified: true, evidence: progress.Evidence}, nil
 			}
-			return confirmResult{timedOut: true}, nil
+			return confirmResult{timedOut: true, evidence: progress.Evidence}, nil
 		}
 		missingCheck := false
 		state := CheckMissing
@@ -598,7 +616,7 @@ func confirmMergeReady(ctx context.Context, req Request, runDeadline time.Time, 
 			}
 			switch state {
 			case CheckSuccess:
-				return confirmResult{ready: true}, nil
+				return confirmResult{ready: true, evidence: evidence}, nil
 			case CheckMissing:
 				missingCheck = true
 			case CheckFailure:
@@ -614,12 +632,12 @@ func confirmMergeReady(ctx context.Context, req Request, runDeadline time.Time, 
 				return confirmResult{}, err
 			}
 			if deadlineUsesRunBudget(deadline, runDeadline) {
-				return confirmResult{budgetExceeded: true}, nil
+				return confirmResult{budgetExceeded: true, evidence: progress.Evidence}, nil
 			}
 			if !wasRetrying && missingCheck {
-				return confirmResult{unverified: true}, nil
+				return confirmResult{unverified: true, evidence: progress.Evidence}, nil
 			}
-			return confirmResult{timedOut: true}, nil
+			return confirmResult{timedOut: true, evidence: progress.Evidence}, nil
 		}
 		if err := sleeper.Sleep(ctx, nextPollDelay(clock.Now(), deadline, req.PollInterval)); err != nil {
 			return confirmResult{}, err
@@ -654,6 +672,74 @@ func resultForError(rounds int, err error) Result {
 		outcome = store.StateStopped
 	}
 	return Result{Outcome: outcome, Rounds: rounds}
+}
+
+func finalizeResult(result *Result, resultErr error, reviewIssuesKnown bool, evidence reviewsource.Evidence, verifiedHeadSHA string) {
+	if result == nil {
+		return
+	}
+	result.ReviewIssuesKnown = reviewIssuesKnown
+	if result.Evidence.State == "" {
+		result.Evidence = evidence
+	}
+	if result.VerifiedHeadSHA == "" {
+		result.VerifiedHeadSHA = verifiedHeadSHA
+	}
+	if result.Outcome == "" || result.Outcome == store.StateClean {
+		return
+	}
+	if result.TerminalReason == "" && resultErr != nil {
+		result.TerminalReason = boundedTerminalText(resultErr.Error())
+	}
+	defaultReason, defaultAction := terminalDefaults(result.Outcome)
+	if result.TerminalReason == "" {
+		result.TerminalReason = defaultReason
+	}
+	if result.NextAction == "" {
+		result.NextAction = defaultAction
+	}
+	result.TerminalReason = boundedTerminalText(result.TerminalReason)
+	result.NextAction = boundedTerminalText(result.NextAction)
+}
+
+func terminalDefaults(outcome string) (string, string) {
+	switch outcome {
+	case store.StateCleanUnverified:
+		return "Merge-Ready was not confirmed for the fetched head.", "Confirm the pull request's Review Source Evidence before merging."
+	case store.StateReviewSkipped:
+		return "The Review Source explicitly skipped the review.", reviewSkippedNextAction
+	case store.StateMaxRoundsReached:
+		return "The configured maximum number of Rounds was reached.", "Review the remaining Review Issues before deciding whether to start another Run."
+	case store.StateBudgetExceeded:
+		return "The Run Budget was exhausted.", "Inspect the Run Event Stream before starting another Run with an appropriate budget."
+	case store.StateTimedOut:
+		return "Review Source Evidence did not arrive before the timeout.", "Request another Review Source review, then start another watch Run."
+	case store.StateUnresolved:
+		return "The last Round settled no Review Issues.", "Review the remaining Review Issues and address them before starting another Run."
+	case store.StateStopped:
+		return "A Stop Request ended the Run.", "Inspect the preserved work before starting another Run."
+	case store.StateFailed:
+		return "The watch Run failed before it could complete.", "Inspect the diagnostics, correct the failure, and start another Run."
+	default:
+		return "The Run reached a non-Clean outcome.", "Inspect the Run Event Stream before deciding the next recovery step."
+	}
+}
+
+func boundedTerminalText(text string) string {
+	return reviewsource.BoundEvidenceDetail(strings.Join(strings.Fields(text), " "))
+}
+
+func verifiedHeadFromEvidence(evidence reviewsource.Evidence, fallback string) string {
+	if evidence.State != reviewsource.EvidenceVerified {
+		return ""
+	}
+	if evidence.ObservedHeadSHA != "" {
+		return evidence.ObservedHeadSHA
+	}
+	if evidence.ExpectedHeadSHA != "" {
+		return evidence.ExpectedHeadSHA
+	}
+	return fallback
 }
 
 func validateRequest(req Request, deps Dependencies) error {

@@ -41,6 +41,15 @@ func TestRunReviewEvidenceSharedByPreFetchAndMergeReady(t *testing.T) {
 	if result.Outcome != store.StateClean {
 		t.Fatalf("outcome = %q, want Clean", result.Outcome)
 	}
+	if !result.ReviewIssuesKnown {
+		t.Fatal("successful zero-issue fetch left Review Issues unknown")
+	}
+	if result.VerifiedHeadSHA != evidence.ObservedHeadSHA {
+		t.Fatalf("verified head = %q, want %q", result.VerifiedHeadSHA, evidence.ObservedHeadSHA)
+	}
+	if result.Evidence != evidence {
+		t.Fatalf("terminal Evidence = %#v, want %#v", result.Evidence, evidence)
+	}
 	if len(source.requests) != 2 {
 		t.Fatalf("evidence calls = %d, want pre-fetch and Merge-Ready calls", len(source.requests))
 	}
@@ -64,6 +73,56 @@ func TestRunReviewEvidenceSharedByPreFetchAndMergeReady(t *testing.T) {
 		payload.Conclusion != evidence.Conclusion ||
 		payload.Detail != evidence.Detail {
 		t.Fatalf("review status payload = %#v, want evidence %#v", payload, evidence)
+	}
+}
+
+func TestRunReviewIssuesUnknownWhenStatusDiscoveryFailsBeforeFetch(t *testing.T) {
+	sourceErr := errors.New("discover Review Source status")
+	fetcher := &fakeFetcher{}
+
+	result, err := Run(context.Background(), validRequest(), Dependencies{
+		ReviewEvidence: ReviewEvidenceFunc(func(context.Context, ReviewEvidenceRequest) (reviewsource.Evidence, error) {
+			return reviewsource.Evidence{}, sourceErr
+		}),
+		Fetcher:  fetcher,
+		Resolver: &fakeResolver{},
+	})
+
+	if !errors.Is(err, sourceErr) {
+		t.Fatalf("status discovery error = %v, want %v", err, sourceErr)
+	}
+	if result.Outcome != store.StateFailed || result.ReviewIssuesKnown {
+		t.Fatalf("pre-fetch failure result = %+v", result)
+	}
+	if result.TerminalReason == "" || result.NextAction == "" {
+		t.Fatalf("pre-fetch failure lacks actionable terminal context: %+v", result)
+	}
+	if fetcher.calls != 0 {
+		t.Fatalf("pre-fetch failure called fetch %d time(s)", fetcher.calls)
+	}
+}
+
+func TestRunReviewIssuesKnownAfterFetchedZero(t *testing.T) {
+	req := validRequest()
+	evidence := evidenceForHead(reviewsource.EvidenceVerified, reviewsource.EvidenceKindCheckRun, req.HeadSHA)
+
+	result, err := Run(context.Background(), req, Dependencies{
+		ReviewEvidence: &fakeReviewEvidenceSource{results: []reviewEvidenceResult{
+			{evidence: evidenceForHead(reviewsource.EvidenceReviewed, reviewsource.EvidenceKindCheckRun, req.HeadSHA)},
+			{evidence: evidence},
+		}},
+		Fetcher:  &fakeFetcher{results: []FetchResult{{Round: 1, Issues: 0}}},
+		Resolver: &fakeResolver{},
+	})
+
+	if err != nil {
+		t.Fatalf("watch fetched zero Review Issues: %v", err)
+	}
+	if result.Outcome != store.StateClean || !result.ReviewIssuesKnown {
+		t.Fatalf("fetched-zero result = %+v", result)
+	}
+	if result.Evidence != evidence || result.VerifiedHeadSHA != req.HeadSHA {
+		t.Fatalf("fetched-zero terminal context = %+v, want Evidence %#v and head %q", result, evidence, req.HeadSHA)
 	}
 }
 
@@ -462,6 +521,9 @@ func TestRunReviewSkippedStopsBeforeFetch(t *testing.T) {
 	if result.Outcome != store.StateReviewSkipped || result.Rounds != 0 {
 		t.Fatalf("Review Skipped result = %+v", result)
 	}
+	if result.ReviewIssuesKnown {
+		t.Fatal("pre-fetch Review Skipped marked Review Issues known")
+	}
 	if result.TerminalReason != evidence.Reason {
 		t.Fatalf("terminal reason = %q, want %q", result.TerminalReason, evidence.Reason)
 	}
@@ -516,6 +578,9 @@ func TestRunReviewSkippedDuringMergeReadyPreservesTerminalEvidence(t *testing.T)
 	}
 	if result.Outcome != store.StateReviewSkipped || result.Rounds != 1 || result.Evidence != skipped {
 		t.Fatalf("Merge-Ready Review Skipped result = %+v", result)
+	}
+	if !result.ReviewIssuesKnown {
+		t.Fatal("post-fetch Review Skipped lost Review Issue knowledge")
 	}
 	if calls != 2 {
 		t.Fatalf("Review Evidence calls = %d, want pre-fetch and Merge-Ready", calls)
