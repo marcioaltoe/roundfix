@@ -482,8 +482,10 @@ the native tool is missing. A non-empty `notify.command` replaces the native
 path and runs through the shell with a 30s timeout. The command receives the
 completed Run context in `ROUNDFIX_RUN_ID`, `ROUNDFIX_OUTCOME`,
 `ROUNDFIX_KIND`, and `ROUNDFIX_TARGET`; targets are `pr:<number>` for review
-Runs and `spec:<slug>` for Spec Runs. Set `notify.enabled: false` to disable
-outcome notifications entirely.
+Runs and `spec:<slug>` for Spec Runs. Terminal context adds
+`ROUNDFIX_REASON`, `ROUNDFIX_CONSOLE_LOG`, `ROUNDFIX_ATTACH_COMMAND`,
+`ROUNDFIX_REVIEW_ISSUES_KNOWN`, and `ROUNDFIX_NEXT_ACTION`. Set
+`notify.enabled: false` to disable outcome notifications entirely.
 
 ## Run storage retention
 
@@ -637,28 +639,30 @@ non-roundfix sessions are ignored.
 
 Use `--detach` on `resolve`, `watch`, or `implement` when the caller must not
 own the Run lifetime, such as scripts and CI jobs. The foreground command
-starts a Detached Run, prints exactly this four-line stdout report, and exits
+starts a Detached Run, prints exactly this five-line stdout report, and exits
 `0`:
 
 ```text
-Run detached: <run-id>
-Console log: <path>
-Follow: roundfix attach <run-id>
+Run ID: <run-id>
+Console Log: <path>
+Attach: roundfix attach <run-id>
+Supervisor monitor: roundfix events <run-id> --follow --filter outcome
 Stop: roundfix stop <run-id>
 ```
 
 The console log path is under the Artifact Directory at
 `<artifact_dir>/runs/<run-id>/console.log`; it receives the detached child's
-stderr, Agent output, and terminal outcome messages. `Follow` is the Attach
-surface; `Stop` is the Stop Command surface. Detached Runs behave as normal
-non-TTY Runs after startup: Run Events, Worktrees, integration, outcomes, and
-locks keep their normal contracts. The detached child that wins terminal
-completion sends the configured outcome notification; use that notification as
-the unattended-Run signal. A competing completion observes the stored outcome
-and does not send another notification. Supervisors and scripts follow
-`roundfix events <run-id> --follow` for JSONL state changes, use the human Live
-Run View with `roundfix attach <run-id>`, and treat the console log as a compact
-text record rather than a state API.
+stderr, Agent output, and terminal outcome messages. `Attach` is the human
+Live Run View; `Supervisor monitor` is the stable terminal outcome
+subscription; `Stop` is the Stop Command surface. Detached Runs behave as
+normal non-TTY Runs after startup: Run Events, Worktrees, integration,
+outcomes, and locks keep their normal contracts. The detached child that wins
+terminal completion sends the configured outcome notification. A competing
+completion observes the stored outcome and does not send another notification.
+Supervisors and scripts use the printed
+`roundfix events <run-id> --follow --filter outcome` command, humans use the
+Live Run View with `roundfix attach <run-id>`, and neither treats the console
+log as a state API.
 
 Detach implies non-interactive mode. `--interactive` is rejected before Run
 creation, and `--no-input` is implied. Startup uses a two-phase handshake: the
@@ -685,6 +689,9 @@ completion replay and conflicting completion do not republish it. `fetch`,
 Notification failures write one stderr warning shaped as
 `roundfix: outcome notification failed: <reason>` and one Daemon-source Run
 Event; they never change the Run report, terminal outcome, or exit code.
+Every notification attempt appends exactly one durable receipt Run Event with
+its route, completion time, and status `sent`, `skipped`, or `failed`. A sent
+receipt means the local route accepted the request, not that a person saw it.
 
 ## Run discovery and Attach
 
@@ -779,7 +786,7 @@ Stable fields:
 | `task-status` | `schema`, `run_id`, `category`, `time`, `cursor`, `batch`, `work_item`, `phase`, `status`, `summary` |
 | `batch` | `schema`, `run_id`, `category`, `time`, `cursor`, `batch`, `phase`, `summary` |
 | `verification` | `schema`, `run_id`, `category`, `time`, `cursor`, `batch`, `work_item`, `attempt`, `phase`, `verdict`, `summary` |
-| `outcome` | `schema`, `run_id`, `category`, `time`, `cursor`, `outcome`, `summary` |
+| `outcome` | `schema`, `run_id`, `category`, `time`, `cursor`, `outcome`, `summary`; optional terminal `reason`, `next_action`, `review_issues_known`, `console_log`, `attach_command`, `evidence_kind`, `evidence_head_sha`, and `verified_head_sha` |
 
 Copy-paste examples:
 
@@ -885,7 +892,24 @@ comment, code change, commit, or push for `fetch`, `resolve`, and `watch`.
 Review Runs have no Integration Pending outcome. They either mutate the user's
 checkout directly, stop before side effects through Preflight Validation, or
 end with a review outcome such as Clean, CleanUnverified, MaxRoundsReached,
-TimedOut, Failed, Stopped, or Unresolved.
+TimedOut, Failed, Stopped, ReviewSkipped, or Unresolved.
+
+Review Source Evidence is bound to the expected head. `pending` means no usable
+expected-head signal exists; `reviewing` means a current-head CodeRabbit check
+or status is still in progress; `reviewed` means CodeRabbit produced a
+current-head result that does not prove Merge-Ready; and `verified` requires a
+successful current-head CodeRabbit check or commit status, or a current-head
+CodeRabbit `APPROVED` review, with zero unresolved CodeRabbit threads. A stale
+signal never verifies the expected head. `skipped` requires an explicit
+structured current-head skip, and `failed` records an explicit current-head
+Review Source failure.
+
+Roundfix retries only typed transient Review Source failures: a context
+deadline not caused by Run cancellation, temporary DNS failure, connection
+reset, HTTP `429`, or GitHub `5xx` response. One retry episode records
+`started`, then `recovered` or `exhausted`. Retry sleeps reuse the existing poll
+interval and remain bounded by the Review Source timeout and Run Budget; there
+is no retry configuration or log-text inference.
 
 Spec Runs (`implement`) keep worktree isolation because Task concurrency needs
 it:
@@ -971,14 +995,24 @@ Review Run output and completion contract:
   `failed`, `duplicated`, or `unresolved`. Failed, invalid, and unresolved
   lines include — `reason: <terminal_reason>` when the issue artifact carries
   one. `resolve` uses the same report shape with `1 Round(s)`.
-- A terminal Run with no fetched Review Issues still prints the two count
-  lines; for example:
+- Before a Review Source fetch completes, Review Issue knowledge is unknown.
+  The report omits every zero-valued status summary and prints only:
 
   ```text
-  This Run (TimedOut after 0 Round(s)): 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.
-  Pull Request cumulative: 0 resolved, 0 invalid, 0 duplicated, 0 failed, 0 unresolved.
+  Review Issues: unknown — fetch did not complete.
   ```
 
+  A completed fetch that returns zero Review Issues is known-zero and keeps the
+  two count lines. An explicit structured skip instead ends Review Skipped with
+  exit `3`, fetches no Review Issues, and prints:
+
+  ```text
+  Review Source: skipped — reason: <Review Source reason>
+  Next action: Reduce or split the pull request, then request another Review Source review.
+  ```
+
+  Review Skipped is not Clean, Clean Unverified, or a successful zero-issue
+  Round.
 - Roundfix publishes Outcome Comments on Review Source threads for
   non-resolved outcomes. Invalid and duplicated issues get the comment before
   the thread resolves. Failed issues stay open with the failed-step comment.
@@ -1019,6 +1053,16 @@ explicit external Artifact Directory, an external Spec Root, or a path
 crossing a symbolic link — are never staged; the Run reports them kept
 outside the repository and proceeds. Agents never create this commit by hand;
 the Daemon owns it.
+
+After Final Push, an exact Daemon-created artifact-only descendant can inherit
+its verified parent Evidence without another Roundfix review request or wait.
+Roundfix requires the recorded artifact commit to be the current head with
+exactly the recorded verified parent and the Daemon-generated subject. Its
+non-empty diff must stay entirely below the resolved in-repository review root
+without a symbolic-link crossing, and refreshed parent Evidence must still be
+verified with zero unresolved CodeRabbit threads. A user-authored, empty,
+mixed-path, out-of-root, wrong-parent, stale, or unresolved descendant returns
+to normal current-head Evidence polling.
 
 ## Live Run View
 
@@ -1127,8 +1171,8 @@ outcome and never opens pull requests (ADR-0021).
    - `--agent-full-access` — opt into Agent runtime full-access mode.
    - `--no-agent-console` — hide Agent-source console events from non-TTY
      stderr; the Run Event Journal is not filtered.
-   - `--detach` — start a Detached Run and print the four-line attach/stop
-     report.
+   - `--detach` — start a Detached Run and print the five-line report with
+     Console Log, Attach, Supervisor monitor, and Stop actions.
    - `--interactive` — open Interactive Input before starting.
    - `--no-input` — fail instead of opening Interactive Input.
 
@@ -1277,20 +1321,19 @@ the Implement, Attach, Settle, Stop, and Archive commands documented above.
    roundfix implement --spec <slug> --detach
    ```
 
-   Capture `<run-id>` from the four-line report. Detach implies non-interactive
+   Capture `<run-id>` from the five-line report. Detach implies non-interactive
    mode. If startup fails before the handshake, the foreground command relays
    the child's stderr and exit code with no stdout report — fix the reported
    Preflight Validation failure and start again.
 
-3. **Monitor without owning.** If you captured the id, follow progress through
-   the console log at `<artifact-dir>/runs/<run-id>/console.log`, or open the
-   read-only Live Run View with `roundfix attach <run-id>`. From a fresh
+3. **Monitor without owning.** Use the printed
+   `roundfix events <run-id> --follow --filter outcome` command for the stable
+   terminal subscription. Open the read-only Live Run View with
+   `roundfix attach <run-id>` when a human needs progress detail. From a fresh
    terminal, discover the Run with the bounded `roundfix runs list` or open
    the Run Browser with `roundfix attach`. Attach replays the Run Event
    Journal and follows new events; `q` or `Ctrl-C` detaches and never stops
-   the Run. The detached child sends the configured outcome notification only
-   when it wins terminal completion; that notification is the unattended-Run
-   signal.
+   the Run. The Console Log is a compact text record, not a state API.
 
 4. **Detect the terminal outcome.** The Run ends with exactly one stdout outcome
    line in the console log:
