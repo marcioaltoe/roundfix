@@ -1,0 +1,41 @@
+Full repository Verification
+Build: f3649fef83f720c51da883444038b76e9def6296
+Result: PASS with the required host process boundary
+
+Sandboxed command:
+rtk make verify
+
+Exit: 2 before tests.
+Cause:
+open /Users/marcio/Library/Caches/go-build/...: operation not permitted
+
+Managed command with a writable cache:
+rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-02-gocache GOFLAGS=-buildvcs=false make verify
+
+Exit: 2.
+Result:
+- 2,654 tests passed, 5 failed, 2 skipped in 23 packages.
+- All five failures were owner-process identity tests whose first failing
+  operation was the managed sandbox's denied /bin/ps execution.
+
+Approved full-access rerun:
+rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-02-gocache GOFLAGS=-buildvcs=false make verify
+
+Exit: 0.
+Result:
+- 2,659 Go tests passed in 23 packages.
+- 4 selected Skill tests passed.
+- all 14 shipped Roundfix Skill contracts passed.
+- the production build wrote bin/roundfix with
+  BuildCommit=f3649fe-dirty.
+
+Post-gate checks:
+- rtk git diff --check: exit 0, no output.
+- rtk cmp .agents/skills/roundfix/SKILL.md skills/roundfix/SKILL.md:
+  exit 0, no output.
+- rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-02-gocache
+  GOFLAGS=-buildvcs=false make skills-sync-check:
+  exit 0, 4 tests passed.
+- rtk env GOCACHE=/private/tmp/roundfix-qa0039-rerun-02-gocache
+  GOFLAGS=-buildvcs=false go run -buildvcs=false ./cmd/roundfix skills check:
+  exit 0, all 14 shipped Skills passed.
